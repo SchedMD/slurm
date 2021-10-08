@@ -65,7 +65,7 @@ ReservationName=root_3 StartTime=2009-02-06T16:00:00
    Users=root Accounts=(null)
 </pre>
 
-<p>A variation of this would be to configure license to represent system
+<p>A variation of this would be to configure licenses to represent system
 resources, such as a global file system.
 The system resource may not require an actual license for use, but
 Slurm licenses can be used to prevent jobs needed the resource from being
@@ -145,29 +145,6 @@ ReservationName=alan_7 StartTime=2009-02-05T12:00:00
    Nodes= NodeCnt=0
    Features=(null) PartitionName=(null)
    Flags=ANY_NODES Licenses=(null) BurstBuffer=100GB
-   Users=alan,brenda Accounts=(null)
-</pre>
-
-<p>Reservations can be optimized with respect to system topology if the
-reservation request includes information about the sizes of jobs to be created.
-This is especially important for BlueGene systems due to restrictive rules
-about the topology of created blocks (due to hardware constraints and/or
-Slurm's configuration). To take advantage of this optimization, specify the
-sizes of jobs of to be concurrently executed. The example below creates a
-reservation containing 4096 c-nodes on a BlueGene system so that two 2048
-c-node jobs can execute simultaneously.</p>
-
-<pre>
-$ scontrol create reservation user=alan,brenda \
-   starttime=noon duration=60 nodecnt=2k,2k
-Reservation created: alan_8
-
-$ scontrol show res
-ReservationName=alan_8 StartTime=2011-12-05T12:00:00
-   EndTime=2011-12-05T13:00:00 Duration=60
-   Nodes=bgp[000x011,210x311] NodeCnt=4096
-   Features=(null) PartitionName=pdebug
-   Flags= Licenses=(null) BurstBuffers=(null)
    Users=alan,brenda Accounts=(null)
 </pre>
 
@@ -333,7 +310,7 @@ may start in their reservation would have to be completed by 12:30PM,
 when the maintenance reservation begins.</p>
 
 <p>The second exception operates in the same manner as a maintenance
-reservation except that is it not logged in the accounting system as nodes
+reservation except that it is not logged in the accounting system as nodes
 reserved for maintenance.
 It requires the use of the "overlap" flag when creating the second
 reservation.

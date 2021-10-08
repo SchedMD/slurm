@@ -26,16 +26,9 @@
 ############################################################################
 source ./globals
 
-set file_in      "test$test_id\.input"
+set file_in      "$test_dir/input"
 set job_id       0
 set out_path     "/tmp/null"
-set exit_code    0
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
 
 if {[file executable $qalter] == 0} {
 	skip "$qalter does not exist"
@@ -45,13 +38,16 @@ if {[file executable $qsub] == 0} {
 	skip "$qsub does not exits"
 }
 
-# Clean up any vestigial files
-exec $bin_rm -f $file_in
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 make_bash_script $file_in "sleep 200"
 
 proc check_output { path job_id } {
-	global scontrol exit_code
+	global scontrol
 
 #	Support leading options (i.e. original "stdout=...")
 	set re_word_str_slash "\[a-zA-Z0-9=_,\-\/\]*"
@@ -70,10 +66,7 @@ proc check_output { path job_id } {
 			wait
 		}
 	}
-	if {$check_out != 1} {
-		log_error "output path for job $job_id was not set to the correct value"
-		set exit_code 1
-	}
+	subtest {$check_out == 1} "Verify output path for job was set to the correct value"
 }
 
 set job_id 0
@@ -91,8 +84,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	log_error "qsub did not submit job"
-	set exit_code 1
+	fail "qsub did not submit job"
 }
 
 set found 0
@@ -107,11 +99,3 @@ expect {
 }
 
 check_output $out_path $job_id
-
-if {[cancel_job $job_id] != 0} {
-	fail "Unable to cancel job ($job_id)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

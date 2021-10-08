@@ -26,32 +26,28 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id\.bash"
-set job_name    "test$test_id\.newname"
+set file_in     "$test_dir/input"
+set job_name    "${test_name}.newname"
 set job_id      0
-set exit_code   0
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
 
 if {[file executable $qalter] == 0} {
 	skip "$qalter does not exist"
 }
 
 if {[file executable $qsub] == 0} {
-	skip "$qalter does not exist"
+	skip "$qsub does not exist"
 }
 
-# Clean up any vestigial files
-exec $bin_rm -f $file_in
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 make_bash_script $file_in "sleep 200"
 
 proc check_name { job_id name } {
-	global scontrol exit_code
+	global scontrol
 
 	set check_out 0
 	spawn $scontrol show job $job_id
@@ -67,10 +63,7 @@ proc check_name { job_id name } {
 			wait
 		}
 	}
-	if {$check_out != 1} {
-		log_error "Job name for job $job_id was not changed"
-		set exit_code 1
-	}
+	subtest {$check_out == 1} "Verify job name was changed"
 }
 
 spawn $qsub -l walltime=1:00 -o /dev/null -e /dev/null $file_in
@@ -87,8 +80,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	log_error "qsub did not submit job"
-	set exit_code 1
+	fail "qsub did not submit job"
 }
 
 spawn $qalter -N $job_name $job_id
@@ -102,10 +94,3 @@ expect {
 }
 
 check_name $job_id $job_name
-if {[cancel_job $job_id] != 0} {
-	fail "Unable to cancel job ($job_id)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
