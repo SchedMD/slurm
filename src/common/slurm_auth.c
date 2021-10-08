@@ -142,7 +142,8 @@ extern int slurm_auth_init(char *auth_type)
 
 	if (getenv("SLURM_JWT")) {
 		xfree(slurm_conf.authtype);
-		slurm_conf.authtype = xstrdup("auth/jwt");
+		slurm_conf.authtype = xstrdup(
+			auth_get_plugin_name(AUTH_PLUGIN_JWT));
 	} else if (auth_type) {
 		xfree(slurm_conf.authtype);
 		slurm_conf.authtype = xstrdup(auth_type);
