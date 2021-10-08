@@ -28,81 +28,32 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_err	"test$test_id.error"
-set file_in	"test$test_id.input"
-set file_out	"test$test_id.output"
+set file_err    "$test_dir/error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set job_id      0
 
-proc cleanup {} {
-	global bin_rm file_in file_out file_err
-
-	exec $bin_rm -f $file_in $file_out $file_err
-}
-
-if {[file executable $qsub] == 0} {
+if {![file executable $qsub]} {
 	skip "$qsub not found"
 }
 
-set job_id 0
-exec rm -f $file_out $file_err
-make_bash_script $file_in "$bin_echo HELLO; $bin_cat /dummy_file"
-spawn $qsub -l walltime=1:00 -e $file_err -o $file_out $file_in
-expect {
-	-re "($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "qsub not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "qsub failed to submit job"
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
 }
 
-if {[wait_for_file $file_out] != 0} {
-	catch {exec $qdel $job_id}
-	fail "qsub output file not found"
-}
-set matches 0
-spawn $bin_cat $file_out
-expect {
-	-re "HELLO" {
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	log_error "Unexpected qsub output file contents"
-	set exit_code 1
-}
+make_bash_script $file_in "$bin_echo HELLO; $bin_cat $test_dir/nofile"
 
-if {[wait_for_file $file_err] != 0} {
-	catch {exec $qdel $job_id}
-	fail "qsub error file not found"
-}
-set matches 0
-spawn $bin_cat $file_err
-expect {
-	-re "No such file" {
-		log_debug "Message from cat expected, no worries"
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	fail "Unexpected qsub error file contents"
-}
+set output [run_command_output -fail "$qsub -l walltime=1:00 -e $file_err -o $file_out $file_in"]
+subtest {[regexp "$number" $output job_id]} "Verify qsub job submission"
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+wait_for_file -fail $file_out
+wait_for_file -fail $file_err
+
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp -all "HELLO" $output] == 1} "Verify qsub output file contents"
+
+
+set output [run_command -fail "$bin_cat $file_err"]
+subtest {[regexp -all "No such file" $output] == 1} "Verify qsub error file contents"

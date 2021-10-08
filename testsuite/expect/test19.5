@@ -28,19 +28,17 @@
 ############################################################################
 source ./globals
 
-set exit_code     0
-set file_in       "test$test_id.input"
-set file_in_fini  "test$test_id.fini_input"
-set file_in_time  "test$test_id.time_input"
-set file_out_fini "test$test_id.fini_output"
-set file_out_time "test$test_id.time_output"
-set job_id 0
+set file_in       "$test_dir/input"
+set file_in_fini  "$test_dir/fini_input"
+set file_in_time  "$test_dir/time_input"
+set file_out_fini "$test_dir/fini_output"
+set file_out_time "$test_dir/time_output"
+set job_id        0
 
 proc cleanup {} {
-	global bin_rm file_in file_in_fini file_in_time job_id
+	global job_id
 
 	cancel_job $job_id
-	exec $bin_rm -f $file_in $file_in_fini $file_in_time
 }
 
 #
@@ -78,17 +76,15 @@ if {$job_id == 0} {
 #
 # Now add a couple of triggers for that job
 #
-exec rm -f $file_out_fini $file_out_time
-set cwd "[$bin_pwd]"
 make_bash_script $file_in_time "
-	$squeue -j $job_id >$cwd/$file_out_time"
+	$squeue -j $job_id >$file_out_time"
 make_bash_script $file_in_fini "
 	$bin_sleep 5
-	$squeue -j $job_id -tall >$cwd/$file_out_fini 2>&1"
+	$squeue -j $job_id -tall >$file_out_fini 2>&1"
 
 set disabled 0
 set matches  0
-set strigger_pid [spawn $strigger --set -v --time --jobid=$job_id --offset=-90 --program=$cwd/$file_in_time]
+set strigger_pid [spawn $strigger --set -v --time --jobid=$job_id --offset=-90 --program=$file_in_time]
 expect {
 	-re "permission denied" {
 		set disabled 1
@@ -99,7 +95,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $strigger_pid
 		fail "strigger not responding"
 	}
 	eof {
@@ -107,24 +102,20 @@ expect {
 	}
 }
 if {$disabled == 1} {
-	cancel_job $job_id
-	exec rm -f $file_in $file_in_fini $file_in_time
 	skip "Current configuration prevents setting triggers. Need to run as SlurmUser or make SlurmUser=root"
 }
 if {$matches == 0} {
-	log_error "Trigger creation failure"
-	set exit_code 1
+	fail "Trigger creation failure"
 }
 
 set matches 0
-set strigger_pid [spawn $strigger --set -v --fini --jobid=$job_id --program=$cwd/$file_in_fini]
+set strigger_pid [spawn $strigger --set -v --fini --jobid=$job_id --program=$file_in_fini]
 expect {
 	-re "trigger set" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		slow_kill $strigger_pid
 		fail "strigger not responding"
 	}
 	eof {
@@ -132,8 +123,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	log_error "Trigger creation failure"
-	set exit_code 1
+	fail "Trigger creation failure"
 }
 
 set matches 0
@@ -144,7 +134,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $strigger_pid
 		fail "strigger not responding"
 	}
 	eof {
@@ -152,84 +141,60 @@ expect {
 	}
 }
 if {$matches < 2} {
-	log_error "Trigger get failure"
-	set exit_code 1
+	fail "Trigger get failure"
 }
 
-if {[wait_for_job $job_id RUNNING] != 0} {
-	log_error "Error starting job $job_id"
-	set exit_code 1
-}
+wait_for_job -fail $job_id RUNNING
 sleep 60
-if {[wait_for_job $job_id DONE] != 0} {
-	cancel_job $job_id
-	fail "Error completing job $job_id"
-}
-if {[wait_for_file $file_out_time] != 0} {
-	log_error "File $file_out_time is missing"
-	set exit_code 1
-} else {
-	set run_time 0
-	spawn $bin_cat $file_out_time
-	expect {
-		-re "R *0:($number)" {
-			set run_time $expect_out(1,string)
-			exp_continue
-		}
-		-re "CG *0:($number)" {
-			log_error "Job unexpected found in completing state. This may be a sign of node failure and job requeue. Check for job state transistions through RUNNING,COMPLETING, PENDING and RUNNING again"
-			set exit_code 1
-			set run_time $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_job -fail $job_id DONE
+wait_for_file -fail $file_out_time
+set run_time 0
+spawn $bin_cat $file_out_time
+expect {
+	-re "R *0:($number)" {
+		set run_time $expect_out(1,string)
+		exp_continue
 	}
+	-re "CG *0:($number)" {
+		fail "Job unexpected found in completing state. This may be a sign of node failure and job requeue. Check for job state transistions through RUNNING,COMPLETING, PENDING and RUNNING again"
+	}
+	eof {
+		wait
+	}
+}
 #	Trigger events happen on a periodic basis, so there is likely to
 #	be a delay up to 20 seconds
-	if {$run_time < 30 || $run_time > 59} {
-		log_error "File $file_out_time contents are bad, run time"
-		set exit_code 1
-	}
+if {$run_time < 30 || $run_time > 59} {
+	fail "File $file_out_time contents are bad, run time"
 }
-if {[wait_for_file $file_out_fini] != 0} {
-	log_error "File $file_out_fini is missing"
-	set exit_code 1
-} else {
+wait_for_file -fail $file_out_fini
 #	Check that job run time was one minute. If Slurm is configured to
 #	power down idle nodes, this could possibly take a bit more time.
-	set job_fini 0
-	set job_purge 0
-	spawn $bin_cat $file_out_fini
-	expect {
-		-re "Invalid job id specified" {
-			set job_purge 1
-			exp_continue
-		}
-		-re "CD *1:($number)" {
-			set job_fini 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+set job_fini 0
+set job_purge 0
+spawn $bin_cat $file_out_fini
+expect {
+	-re "Invalid job id specified" {
+		set job_purge 1
+		exp_continue
 	}
-	if {$job_fini == 0} {
-		if {$job_purge == 1} {
-			regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
-		}
-		if {$job_purge == 1 && $min_job_age < 60} {
-			log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
-		} elseif [regexp {^(?:NONE|0 sec)$} [get_config_param "SuspendTime"]] {
-			fail "Power save mode is enabled. File $file_out_fini contents are bad, CD run time"
-		} else {
-			log_warn "Job timeout bad, possibly due to power save mode"
-		}
+	-re "CD *1:($number)" {
+		set job_fini 1
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$job_fini == 0} {
+	if {$job_purge == 1} {
+		regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
+	}
+	if {$job_purge == 1 && $min_job_age < 60} {
+		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
+	} elseif [regexp {^(?:NONE|0 sec)$} [get_config_param "SuspendTime"]] {
+		fail "Power save mode is enabled. File $file_out_fini contents are bad, CD run time"
+	} else {
+		log_warn "Job timeout bad, possibly due to power save mode"
+	}
 }
-

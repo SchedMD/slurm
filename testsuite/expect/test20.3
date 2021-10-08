@@ -28,16 +28,10 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in	"test$test_id.input"
-set file_out	"test$test_id.output"
-set file_err	"test$test_id.error"
-
-proc cleanup {} {
-	global bin_rm file_in file_out file_err
-
-	exec $bin_rm -f $file_in $file_out $file_err
-}
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
+set job_id      0
 
 if {[file executable $qsub] == 0} {
 	skip "$qsub does not exists"
@@ -46,7 +40,12 @@ if {[file executable $qdel] == 0} {
 	skip "$qdel does not exists"
 }
 
-set job_id 0
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 make_bash_script $file_in "sleep 60"
 spawn $qsub -l walltime=1:00 -o $file_out -e $file_err $file_in
 expect {
@@ -68,18 +67,13 @@ if {$job_id == 0} {
 #
 # Wait for job to start
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	cancel_job $job_id
-	fail "Waiting for job to start"
-}
+wait_for_job -fail $job_id "RUNNING"
 
 set status 1
 spawn $qdel $job_id
 expect {
 	-re "Invalid job id" {
-		log_error "qdel failed to delete job"
-		set exit_code 1
-		exp_continue
+		fail "qdel failed to delete job"
 	}
 	timeout {
 		fail "qdel not responding"
@@ -91,8 +85,7 @@ expect {
 }
 
 if {$status != 0} {
-	log_error "It appears things worked ok, but we got a non-zero exit from qdel"
-	set exit_code 1
+	fail "It appears that the job was submitted, but we got a non-zero exit from qdel"
 }
 
 set status 0
@@ -116,8 +109,4 @@ expect {
 # we should get an error code here from qdel, but no message
 if {($matches != 0) || ($status == 0)} {
 	fail "No error on attempt to cancel terminated job"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

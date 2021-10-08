@@ -26,16 +26,9 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_err	"test$test_id.error"
-set file_in	"test$test_id.input"
-set file_out	"test$test_id.output"
-
-proc cleanup {} {
-	global bin_rm file_in file_out file_err
-
-	exec $bin_rm -f $file_in $file_out $file_err
-}
+set file_err    "$test_dir/error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
 
 if {[file executable $qsub] == 0} {
 	skip "$qsub not found"
@@ -45,170 +38,40 @@ set exe "hostname"
 set qsub_default "--sbatchline $exe"
 
 # test -b option (sbatch --wrap)
-set matches 0
-eval spawn $qsub -b y $qsub_default
-expect {
-	-re "--wrap=\"${exe}\"" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "qsub not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	log_error "qsub -b option did not set up correctly"
-	set exit_code 1
-}
+set output [run_command_output -fail "$qsub -b y $qsub_default"]
+subtest {[regexp -all "\\-\\-wrap=\\\"$exe\\\"" $output] == 1} "Verify qsub -b option was set up correctly"
 
 # test -pe option (sbatch -c|--cpus-per-task)
 set param 7
-set matches 0
-eval spawn $qsub -pe shm $param $qsub_default
-expect {
-	-re "--cpus-per-task=$param" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "qsub not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	log_error "qsub -pe option did not set up correctly"
-	set exit_code 1
-}
+set output [run_command_output -fail "$qsub -pe shm $param $qsub_default"]
+subtest {[regexp -all "\\-\\-cpus\\-per\\-task=$param" $output] == 1} "Verify qsub -pe option was set up correctly"
 
 # test -P option (sbatch --wckey)
 set param "test_wckey"
-set matches 0
-eval spawn $qsub -P $param $qsub_default
-expect {
-	-re "--wckey=$param" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "qsub not responding"
-	}
-	eof {
-		wait
-	}
-}
+set output [run_command_output -fail "$qsub -P $param $qsub_default"]
+subtest {[regexp -all "\\-\\-wckey=$param" $output] == 1} "Verify qsub -P option was set up correctly"
 
 # test -r option (sbatch --requeue)
-set matches 0
-eval spawn $qsub -r y $qsub_default
-expect {
-	-re "--requeue" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "qsub not responding"
-	}
-	eof {
-		wait
-	}
-}
+set output [run_command_output -fail "$qsub -r y $qsub_default"]
+subtest {[regexp -all "\\-\\-requeue" $output] == 1} "Verify qsub -r option was set up correctly"
 
 # test -wd option (sbatch -D)
 set param "/new/dir"
-set matches 0
-eval spawn $qsub -wd $param $qsub_default
-expect {
-	-re "-D$param" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "qsub not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-
-if {$matches != 1} {
-	log_error "qsub -D option did not set up correctly"
-	set exit_code 1
-}
+set output [run_command_output -fail "$qsub -wd $param $qsub_default"]
+subtest {[regexp -all "\\-D$param" $output] == 1} "Verify qsub -D option was set up correctly"
 
 # test -l h_rt option (sbatch -t)
 set param "300"
-set matches 0
-eval spawn $qsub -l h_rt=$param $qsub_default
+set output [run_command_output -fail "$qsub -l h_rt=$param $qsub_default"]
 set param [expr $param / 60]
-expect {
-	-re "-t$param" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "qsub not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	log_error "qsub -l h_rt option did not set up correctly"
-	set exit_code 1
-}
+subtest {[regexp -all "\\-t$param" $output] == 1} "Verify qsub -l h_rt option was set up correctly"
 
 # test -l h_rt option (sbatch -t)
 set param "00:05:00"
-set matches 0
-eval spawn $qsub -l h_rt=$param $qsub_default
-expect {
-	-re "-t5" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "qsub not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	log_error "qsub -l h_rt option did not set up correctly"
-	set exit_code 1
-}
+set output [run_command_output -fail "$qsub -l h_rt=$param $qsub_default"]
+subtest {[regexp -all "\\-t5" $output] == 1} "Verify qsub -l h_rt option was set up correctly"
 
 # test -l h_vmem option (sbatch --mem)
 set param "3000"
-set matches 0
-eval spawn $qsub -l h_vmem=$param $qsub_default
-expect {
-	-re "--mem=$param" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "qsub not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	fail "qsub -l h_vmem option did not set up correctly"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -fail "$qsub -l h_vmem=$param $qsub_default"]
+subtest {[regexp -all "\\-\\-mem=$param" $output] == 1} "Verify qsub -l h_vmem option was set up correctly"
