@@ -592,12 +592,13 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 				break;
 			}
 		}
-	} else if (job_gres_ptr->type_name) {
+	} else {
 		gres_cnt = job_gres_ptr->gres_per_node;
 		for (j = 0; j < node_gres_ptr->type_cnt; j++) {
 			int64_t k;
-			if (job_gres_ptr->type_id !=
-			    node_gres_ptr->type_id[j])
+			if (job_gres_ptr->type_name &&
+			    (job_gres_ptr->type_id !=
+			     node_gres_ptr->type_id[j]))
 				continue;
 			k = node_gres_ptr->type_cnt_avail[j] -
 				node_gres_ptr->type_cnt_alloc[j];
