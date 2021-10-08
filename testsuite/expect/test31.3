@@ -26,46 +26,33 @@
 ############################################################################
 source ./globals
 
-set exit_code       0
-set prolog          "test$test_id\_prolog.sh"
-set epilog          "test$test_id\_epilog.sh"
-set prolog_out      "test$test_id\_prolog.out"
-set epilog_out      "test$test_id\_epilog.out"
+set prolog          "$test_dir/prolog"
+set epilog          "$test_dir/epilog"
+set prolog_out      "$test_dir/prolog.out"
+set epilog_out      "$test_dir/epilog.out"
 set test_node       [lindex [get_nodes_by_state] 0]
 set job_id          0
 set skipped         ""
 
 proc cleanup { } {
-	global config_dir exit_code bin_rm
-	global prolog epilog prolog_out epilog_out
+	global config_dir
 
 	restore_conf $config_dir/slurm.conf
 	reconfigure
-	exec $bin_rm -f $prolog $epilog $prolog_out $epilog_out
 }
 
 proc check_prolog { pattern } {
-	global prolog_out exit_code bin_grep
+	global prolog_out bin_grep
 
 	set rc [wait_for_command_match -timeout 5 "$bin_grep $pattern $prolog_out" $pattern]
-	if { $rc == 0 } {
-		log_info "Prolog: Found '$pattern'"
-	} else {
-		log_error "Prolog: Could not find '$pattern'!"
-		set exit_code 1
-	}
+	subtest {$rc == 0} "Check for '$pattern' in prolog output"
 }
 
 proc check_epilog { pattern } {
 	global epilog_out exit_code bin_grep
 
 	set rc [wait_for_command_match -timeout 5 "$bin_grep $pattern $epilog_out" $pattern]
-	if { $rc == 0 } {
-		log_info "Epilog: Found '$pattern'"
-	} else {
-		log_error "Epilog: Could not find '$pattern'!"
-		set exit_code 1
-	}
+	subtest {$rc == 0} "Check for '$pattern' in epilog output"
 }
 
 # Get the location of the slurm.conf file
@@ -76,13 +63,8 @@ set config_dir [get_conf_path]
 #
 save_conf $config_dir/slurm.conf
 
-set cwd [$bin_pwd]
-make_bash_script $prolog "
-env > $cwd\/$prolog_out
-"
-make_bash_script $epilog "
-env > $cwd\/$epilog_out
-"
+make_bash_script $prolog "env > $prolog_out"
+make_bash_script $epilog "env > $epilog_out"
 
 # Ensure that Prolog, Epilog, and nohold_on_prolog_fail params are removed
 exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
@@ -93,8 +75,8 @@ exec $bin_sed -i {s/nohold_on_prolog_fail//gI} $config_dir/slurm.conf
 exec $bin_echo "" >> $config_dir/slurm.conf
 
 # Append Prolog and Epilog config to the slurm.conf
-exec $bin_echo "Prolog=$cwd/$prolog" >> $config_dir/slurm.conf
-exec $bin_echo "Epilog=$cwd/$epilog" >> $config_dir/slurm.conf
+exec $bin_echo "Prolog=$prolog" >> $config_dir/slurm.conf
+exec $bin_echo "Epilog=$epilog" >> $config_dir/slurm.conf
 reconfigure -fail
 
 # Test whether env vars exist in Prolog and Epilog
@@ -191,10 +173,6 @@ if {[llength $test_node] != 1} {
 
 	check_prolog "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE="
 	check_epilog "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE="
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 if {[llength $skipped]} {
