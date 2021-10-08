@@ -354,8 +354,8 @@ void *auth_g_unpack(buf_t *buf, uint16_t protocol_version)
 				return cred;
 			}
 		}
-		error("%s: remote plugin_id %u not found",
-		      __func__, plugin_id);
+		error("%s: authentication plugin %s(%u) not found",
+		      __func__, auth_get_plugin_name(plugin_id), plugin_id);
 		return NULL;
 	}  else {
 		error("%s: protocol_version %hu not supported",
