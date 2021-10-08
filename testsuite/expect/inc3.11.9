@@ -41,7 +41,7 @@ proc inc3_11_9 {} {
 
 	# Assumes nodes have sequential suffix numbers
 	set min_node_inx $def_node_inx_min
-	set max_node_inx [expr $def_node_inx_min + 4]
+	set max_node_inx [expr min($def_node_inx_min + 4,$def_node_inx_max)]
 	set min_len [string length $min_node_inx]
 	set max_len [string length $max_node_inx]
 	if {$min_len > $max_len} {
@@ -115,8 +115,8 @@ proc inc3_11_9 {} {
 	}
 
 	# Make a reservation using 1 core per node in first 5 nodes
-	if {$num_nodes < 5} {
-		log_warn "Insufficient node count for remaining test"
+	if {[expr $max_node_inx - $min_node_inx] != 4} {
+		subskip "Insufficient node count for remaining subtests (needs at least 5)"
 		cancel_job $job_id
 		return
 	}
