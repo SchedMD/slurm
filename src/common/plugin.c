@@ -175,16 +175,6 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	*p = PLUGIN_INVALID_HANDLE;
 
 	/*
-	 *  Check for file existence and access permissions
-	 */
-	if (access(fq_path, R_OK) < 0) {
-		if (errno == ENOENT)
-			return EPLUGIN_NOTFOUND;
-		else
-			return EPLUGIN_ACCESS_ERROR;
-	}
-
-	/*
 	 * Try to open the shared object.
 	 *
 	 * Use RTLD_LAZY to allow plugins to use symbols that may be
