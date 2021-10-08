@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Unlink unix sockets before binding to avoid errors where
     previous run of slurmrestd did not properly cleanup the sockets.
  -- Add extra 'EnvironmentFile=-/etc/default/$service' setting to service files.
+ -- slurmctld/agent - spawn more agent threads in a single _agent_retry().
 
 * Changes in Slurm 21.08.4
 ==========================

@@ -1592,12 +1592,15 @@ static void _agent_retry(int min_wait, bool mail_too)
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
 	mail_info_t *mi = NULL;
+	int list_size = 0, agent_started = 0;
 
+next:
 	slurm_mutex_lock(&retry_mutex);
-	if (retry_list) {
+	if (retry_list && !list_size) {
 		static time_t last_msg_time = (time_t) 0;
 		uint32_t msg_type[5] = {0, 0, 0, 0, 0};
-		int i = 0, list_size = list_count(retry_list);
+		int i = 0;
+		list_size = list_count(retry_list);
 		if (((list_size > 100) &&
 		     (difftime(now, last_msg_time) > 300)) ||
 		    ((list_size > 0) &&
@@ -1654,8 +1657,15 @@ static void _agent_retry(int min_wait, bool mail_too)
 			debug2("Spawning RPC agent for msg_type %s",
 			       rpc_num2string(agent_arg_ptr->msg_type));
 			slurm_thread_create_detached(NULL, agent, agent_arg_ptr);
+			agent_started++;
 		} else
 			error("agent_retry found record with no agent_args");
+
+		if ((list_size > agent_started) && !LOTS_OF_AGENTS) {
+			log_flag(AGENT, "%s: created %d agent, try to start more",
+				 __func__, agent_started);
+			goto next;
+		}
 	} else if (mail_too) {
 		slurm_mutex_lock(&agent_cnt_mutex);
 		slurm_mutex_lock(&mail_mutex);
