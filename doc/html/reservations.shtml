@@ -65,7 +65,7 @@ ReservationName=root_3 StartTime=2009-02-06T16:00:00
    Users=root Accounts=(null)
 </pre>
 
-<p>A variation of this would be to configure license to represent system
+<p>A variation of this would be to configure licenses to represent system
 resources, such as a global file system.
 The system resource may not require an actual license for use, but
 Slurm licenses can be used to prevent jobs needed the resource from being
@@ -310,7 +310,7 @@ may start in their reservation would have to be completed by 12:30PM,
 when the maintenance reservation begins.</p>
 
 <p>The second exception operates in the same manner as a maintenance
-reservation except that is it not logged in the accounting system as nodes
+reservation except that it is not logged in the accounting system as nodes
 reserved for maintenance.
 It requires the use of the "overlap" flag when creating the second
 reservation.
