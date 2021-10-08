@@ -113,4 +113,9 @@ extern int auth_g_thread_config(const char *token, const char *username);
  */
 extern void auth_g_thread_clear(void);
 
+/*
+ * Give auth plugin type if known from plugin_id
+ */
+extern const char *auth_get_plugin_name(int plugin_id);
+
 #endif /*__SLURM_AUTHENTICATION_H__*/

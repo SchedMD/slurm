@@ -624,7 +624,10 @@ enum job_acct_types {
 #define PARTITION_ENFORCE_ANY  2 /* job limit must be valid for ANY
 				  * partition */
 
-/* Auth plugin (id) used for communication */
+/*
+ * Auth plugin (id) used for communication.
+ * Update auth_plugin_types in slurm_auth.c if changed.
+ */
 enum auth_plugin_type {
 	AUTH_PLUGIN_NONE	= 100,
 	AUTH_PLUGIN_MUNGE	= 101,
