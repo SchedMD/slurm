@@ -42,130 +42,44 @@ proc cleanup {} {
 	cancel_job $job_id
 }
 
-proc hold_job {job} {
-	global scontrol
-
-	spawn $scontrol hold $job
-	expect {
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-proc release_job {job} {
-	global scontrol
-
-	spawn $scontrol release $job
-	expect {
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-}
-
 #change this so it checks through all the jobs in the array
 proc check_hold_job {job} {
-	global scontrol number
-
-	set pmatch 0
-	spawn $scontrol show job $job
-	expect {
-		-re "Priority=($number)" {
-			if {$expect_out(1,string) == 0} {
-				incr pmatch
-			}
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$pmatch!=1} {
-		fail "Job $job did not hold"
-	}
+	set job_dict [lindex [dict values [get_jobs $job]] 0]
+	subtest {[dict get $job_dict "Priority"] == 0} "Check job $job is hold"
 }
 
 proc check_release_job { job } {
 	global scontrol number
 
-	set pmatch 0
-	spawn $scontrol show job $job
-	expect {
-		-re "Priority=($number)" {
-			if {$expect_out(1,string) != 0} {
-				incr pmatch
-			}
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$pmatch!=1} {
-		fail "Job $job was not released"
-	}
+	set job_dict [lindex [dict values [get_jobs $job]] 0]
+	subtest {[dict get $job_dict "Priority"] != 0} "Check job $job is released"
 }
 
 ################Test Starts Here################
 make_bash_script $file_script "sleep 10"
 
-spawn $sbatch -N1 --array=0-[expr $array_size -1] --begin=midnight --output=/dev/null -t1 $file_script
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		log_debug "Job $job_id was submitted"
-		exp_continue
-	}
-	-re "error" {
-		fail "sbatch did not submit jobs"
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-
+set job_id [submit_job -fail "-N1 --array=0-[expr $array_size -1] --begin=midnight --output=/dev/null -t1 $file_script"]
 
 # hold the whole array then release individual jobs in the array
-if {$job_id == 0} {
-	fail "Unable to submit job"
-}
-
 log_debug "Holding entire job array"
-hold_job $job_id
+run_command -fail "$scontrol hold $job_id"
 check_hold_job ${job_id}_0
 check_hold_job ${job_id}_1
 
 log_debug "Releasing job index $array_in in the array"
-release_job ${job_id}_$array_in
+run_command -fail "$scontrol release ${job_id}_$array_in"
 check_hold_job ${job_id}_0
 check_release_job ${job_id}_$array_in
 
 log_debug "Releasing the entire job array"
-release_job $job_id
+run_command -fail "$scontrol release $job_id"
 check_release_job ${job_id}_0
 check_release_job ${job_id}_1
 
 log_debug "Holding job index $array_in in the array"
-hold_job ${job_id}_$array_in
+run_command -fail "$scontrol hold ${job_id}_$array_in"
 check_hold_job ${job_id}_$array_in
 
 log_debug "Releasing job index $array_in in the array"
-release_job ${job_id}_$array_in
+run_command -fail "$scontrol release ${job_id}_$array_in"
 check_release_job ${job_id}_$array_in
