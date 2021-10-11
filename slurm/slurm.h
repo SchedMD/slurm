@@ -1587,6 +1587,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				   SLURM_DIST_PLANE */
 	uint8_t power_flags;	/* power management flags,
 				 * see SLURM_POWER_FLAGS_ */
+	char *prefer;		/* soft feature specification,
+				 * default NONE */
 	uint32_t priority;	/* relative priority of the job,
 				 * explicitly set only for user root,
 				 * 0 == held (don't initiate) */
@@ -1771,6 +1773,7 @@ typedef struct job_info {
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_tasks;	/* requested task count */
 	char *partition;	/* name of assigned partition */
+	char *prefer;		/* comma separated list of soft features */
 	uint64_t pn_min_memory; /* minimum real memory per node, default=0 */
 	uint16_t pn_min_cpus;   /* minimum # CPUs per node, default=0 */
 	uint32_t pn_min_tmp_disk; /* minimum tmp disk per node, default=0 */

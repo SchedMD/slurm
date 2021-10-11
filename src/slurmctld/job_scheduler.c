@@ -4638,13 +4638,16 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 	bool can_reboot;
 
 	/* no hard constraints */
-	if (!detail_ptr || !detail_ptr->features) {
+	if (!detail_ptr || (!detail_ptr->features && !detail_ptr->prefer)) {
 		if (job_ptr->batch_features)
 			return ESLURM_BATCH_CONSTRAINT;
 		return SLURM_SUCCESS;
 	}
 
 	if (prefer) {
+		features = detail_ptr->prefer;
+		feature_list = &detail_ptr->prefer_list;
+		feature_err = ESLURM_INVALID_PREFER;
 	} else {
 		features = detail_ptr->features;
 		feature_list = &detail_ptr->feature_list;

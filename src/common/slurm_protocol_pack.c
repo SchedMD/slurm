@@ -3084,6 +3084,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		/*** unpack default job details ***/
 		safe_unpackstr_xmalloc(&job->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->prefer, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->cluster_features, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&job->work_dir, &uint32_tmp, buffer);
@@ -5322,6 +5323,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		pack64(job_desc_ptr->pn_min_memory, buffer);
 		pack32(job_desc_ptr->pn_min_tmp_disk, buffer);
 		pack8(job_desc_ptr->power_flags, buffer);
+		packstr(job_desc_ptr->prefer, buffer);
 
 		pack32(job_desc_ptr->cpu_freq_min, buffer);
 		pack32(job_desc_ptr->cpu_freq_max, buffer);
@@ -5787,6 +5789,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpack32(&job_desc_ptr->pn_min_tmp_disk, buffer);
 		safe_unpack8(&job_desc_ptr->power_flags,   buffer);
 
+		safe_unpackstr_xmalloc(&job_desc_ptr->prefer,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&job_desc_ptr->cpu_freq_min, buffer);
 		safe_unpack32(&job_desc_ptr->cpu_freq_max, buffer);
 		safe_unpack32(&job_desc_ptr->cpu_freq_gov, buffer);

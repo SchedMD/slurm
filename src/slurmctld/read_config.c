@@ -2686,6 +2686,16 @@ static void _restore_job_accounting(void)
 	list_iterator_reset(job_iterator);
 	while ((job_ptr = list_next(job_iterator))) {
 		(void) build_feature_list(job_ptr, false);
+		(void) build_feature_list(job_ptr, true);
+
+		if (job_ptr->details->features_use ==
+		    job_ptr->details->features)
+			job_ptr->details->feature_list_use =
+				job_ptr->details->feature_list;
+		else if (job_ptr->details->features_use ==
+			 job_ptr->details->prefer)
+			job_ptr->details->feature_list_use =
+				job_ptr->details->prefer_list;
 
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			job_array_start(job_ptr);

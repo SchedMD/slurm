@@ -889,6 +889,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line (optional) ******/
+	if (job_ptr->prefer) {
+		xstrfmtcat(out, "Prefer=%s", job_ptr->prefer);
+		xstrcat(out, line_end);
+	}
+
+	/****** Line (optional) ******/
 	if (job_ptr->resv_name) {
 		xstrfmtcat(out, "Reservation=%s", job_ptr->resv_name);
 		xstrcat(out, line_end);

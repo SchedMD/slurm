@@ -3611,6 +3611,19 @@ static slurm_cli_opt_t slurm_opt_power = {
 	.reset_each_pass = true,
 };
 
+COMMON_STRING_OPTION(prefer);
+static slurm_cli_opt_t slurm_opt_prefer = {
+	.name = "prefer",
+	.has_arg = required_argument,
+	.val = LONG_OPT_PREFER,
+	.set_func_salloc = arg_set_prefer,
+	.set_func_sbatch = arg_set_prefer,
+	.set_func_srun = arg_set_prefer,
+	.set_func_data = arg_set_data_prefer,
+	.get_func = arg_get_prefer,
+	.reset_func = arg_reset_prefer,
+};
+
 COMMON_SRUN_BOOL_OPTION(preserve_env);
 static slurm_cli_opt_t slurm_opt_preserve_env = {
 	.name = "preserve-env",
@@ -5150,6 +5163,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_parsable,
 	&slurm_opt_partition,
 	&slurm_opt_power,
+	&slurm_opt_prefer,
 	&slurm_opt_preserve_env,
 	&slurm_opt_priority,
 	&slurm_opt_profile,
@@ -5969,6 +5983,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	job_desc->extra = xstrdup(opt_local->extra);
 	job_desc->exc_nodes = xstrdup(opt_local->exclude);
 	job_desc->features = xstrdup(opt_local->constraint);
+	job_desc->prefer = xstrdup(opt_local->prefer);
 
 	/* fed_siblings_active not filled in here */
 	/* fed_siblings_viable not filled in here */

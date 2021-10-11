@@ -223,7 +223,8 @@ An arbitrary comment.
 \fB\-C\fR, \fB\-\-constraint\fR=<\fIlist\fR>
 Nodes can have \fBfeatures\fR assigned to them by the Slurm administrator.
 Users can specify which of these \fBfeatures\fR are required by their job
-using the constraint option.
+using the constraint option. If you are looking for 'soft' constraints please
+see see \fB\-\-prefer\fR for more information.
 Only nodes having features matching the job constraints will be used to
 satisfy the request.
 Multiple constraints may be specified with AND, OR, matching OR,
@@ -1579,6 +1580,18 @@ Comma separated list of power management plugin options.
 Currently available flags include:
 level (all nodes allocated to the job should have identical power caps,
 may be disabled by the Slurm configuration option PowerParameters=job_no_level).
+
+.TP
+\fB\-\-prefer\fR=<\fIlist\fR>
+Nodes can have \fBfeatures\fR assigned to them by the Slurm administrator.
+Users can specify which of these \fBfeatures\fR are desired but not required by
+their job using the prefer option.
+This option operates independently from \fB\-\-constraints\fR and will override
+whatever is set there if possible.
+When scheduling the features in \fB\-\-prefer\fR are tried first if a node set
+isn't available with those features then \fB\-\-constraints\fR is attempted.
+See \fB\-\-constraints\fR for more information, this option behaves the same
+way.
 
 .TP
 \fB\-\-priority\fR=<\fIvalue\fR>

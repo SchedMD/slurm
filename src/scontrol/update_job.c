@@ -1042,6 +1042,10 @@ extern int scontrol_update_job(int argc, char **argv)
 			job_msg.features = val;
 			update_cnt++;
 		}
+		else if (xstrncasecmp(tag, "Prefer", MAX(taglen, 3)) == 0) {
+			job_msg.prefer = val;
+			update_cnt++;
+		}
 		else if (xstrncasecmp(tag, "Gres", MAX(taglen, 2)) == 0) {
 			/* "gres" replaced by "tres_per_node" in v18.08 */
 			if (!xstrcasecmp(val, "help") ||

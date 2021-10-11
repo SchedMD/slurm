@@ -150,6 +150,7 @@ enum {
 	LONG_OPT_HET_GROUP,
 	LONG_OPT_PARSABLE,
 	LONG_OPT_POWER,
+	LONG_OPT_PREFER,
 	LONG_OPT_PRIORITY,
 	LONG_OPT_PROFILE,
 	LONG_OPT_PROLOG,
@@ -370,6 +371,7 @@ typedef struct {
 	uint64_t mem_per_gpu;		/* --mem-per-gpu		*/
 	uint64_t pn_min_memory;		/* --mem			*/
 	uint64_t pn_min_tmp_disk;	/* --tmp			*/
+	char *prefer;			/* --prefer			*/
 	char *constraint;		/* --constraint			*/
 	char *c_constraint;		/* --cluster-constraint		*/
 	char *gres;			/* --gres			*/

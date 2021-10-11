@@ -558,7 +558,11 @@ struct job_details {
 	uint32_t expanding_jobid;	/* ID of job to be expanded */
 	char *extra;			/* extra field, unused */
 	List feature_list;		/* required features with node counts */
+	List feature_list_use;		/* Use these features for scheduling,
+					 * DO NOT FREE or PACK */
 	char *features;			/* required features */
+	char *features_use;		/* Use these features for scheduling,
+					 * DO NOT FREE or PACK */
 	uint32_t max_cpus;		/* maximum number of cpus */
 	uint32_t orig_max_cpus;		/* requested value of max_cpus */
 	uint32_t max_nodes;		/* maximum number of nodes */
@@ -591,6 +595,8 @@ struct job_details {
 					 * CPU | MEM_PER_CPU */
 	uint64_t orig_pn_min_memory;	/* requested value of pn_min_memory */
 	uint32_t pn_min_tmp_disk;	/* minimum tempdisk per node, MB */
+	List prefer_list;		/* soft features with node counts */
+	char *prefer;			/* soft features */
 	uint8_t prolog_running;		/* set while prolog_slurmctld is
 					 * running */
 	uint32_t reserved_resources;	/* CPU minutes of resources reserved

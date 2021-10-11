@@ -211,6 +211,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 #define job_format_add_cluster_features(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix, \
 				_print_job_cluster_features)
+#define job_format_add_prefer(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_prefer)
 #define job_format_add_account(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_account)
 #define job_format_add_dependency(list,wid,right,suffix) \
@@ -456,6 +458,8 @@ int _print_job_features(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_cluster_features(job_info_t * job, int width, bool right_justify,
 				char* suffix);
+int _print_job_prefer(job_info_t * job, int width, bool right_justify,
+		      char* suffix);
 int _print_job_account(job_info_t * job, int width, bool right_justify,
 		       char* suffix);
 int _print_job_dependency(job_info_t * job, int width, bool right_justify,

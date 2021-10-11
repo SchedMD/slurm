@@ -859,6 +859,10 @@ This option can only be changed for pending jobs.
 \fIPartition\fP=<name>
 Set the job's partition to the specified value.
 .TP
+\fIPrefer\fP=<features>
+Set the job's preferred node features. This list is only preferred, not required
+like \fIFeatures\fP is.  This list will override what is requested in Features. See \fIFeatures\fP option above.
+.TP
 \fIPriority\fP=<number>
 Set the job's priority to the specified value.
 Note that a job priority of zero prevents the job from ever being scheduled.

@@ -675,6 +675,8 @@ static void _delete_job_details(job_record_t *job_entry)
 	xfree(job_entry->details->std_in);
 	xfree(job_entry->details->mc_ptr);
 	xfree(job_entry->details->mem_bind);
+	FREE_NULL_LIST(job_entry->details->prefer_list);
+	xfree(job_entry->details->prefer);
 	xfree(job_entry->details->req_context);
 	xfree(job_entry->details->std_out);
 	xfree(job_entry->details->submit_line);
@@ -2516,6 +2518,13 @@ void _dump_job_details(struct job_details *detail_ptr, buf_t *buffer)
 	packstr(detail_ptr->exc_nodes,  buffer);
 	packstr(detail_ptr->features,   buffer);
 	packstr(detail_ptr->cluster_features, buffer);
+	packstr(detail_ptr->prefer, buffer);
+	if (detail_ptr->features_use == detail_ptr->features)
+		pack8(1, buffer);
+	else if (detail_ptr->features_use == detail_ptr->prefer)
+		pack8(2, buffer);
+	else
+		pack8(0, buffer);
 	pack_dep_list(detail_ptr->depend_list, buffer, SLURM_PROTOCOL_VERSION);
 	packstr(detail_ptr->dependency, buffer);
 	packstr(detail_ptr->orig_dependency, buffer);	/* subject to change */
@@ -2544,7 +2553,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	char *orig_dependency = NULL, *mem_bind, *cluster_features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
-	char *submit_line = NULL;
+	char *submit_line = NULL, *prefer = NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
 	uint32_t pn_min_cpus, pn_min_tmp_disk;
@@ -2557,7 +2566,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint16_t ntasks_per_node, cpus_per_task, requeue;
 	uint16_t cpu_bind_type, mem_bind_type, plane_size;
 	uint8_t open_mode, overcommit, prolog_running;
-	uint8_t share_res, whole_node;
+	uint8_t share_res, whole_node, features_use = 0;
 	time_t begin_time, accrue_time = 0, submit_time;
 	int i;
 	List depend_list = NULL;
@@ -2608,6 +2617,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
 		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
 		safe_unpackstr_xmalloc(&cluster_features, &name_len, buffer);
+		safe_unpackstr_xmalloc(&prefer, &name_len, buffer);
+		safe_unpack8(&features_use, buffer);
+
 		unpack_dep_list(&depend_list, buffer, protocol_version);
 		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
 		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
@@ -2786,6 +2798,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	xfree(job_ptr->details->exc_nodes);
 	xfree(job_ptr->details->features);
 	xfree(job_ptr->details->cluster_features);
+	xfree(job_ptr->details->prefer);
 	xfree(job_ptr->details->std_in);
 	xfree(job_ptr->details->mem_bind);
 	xfree(job_ptr->details->std_out);
@@ -2821,6 +2834,21 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->exc_nodes = exc_nodes;
 	job_ptr->details->features = features;
 	job_ptr->details->cluster_features = cluster_features;
+	job_ptr->details->prefer = prefer;
+	switch (features_use) {
+	case 0:
+		break;
+	case 1:
+		job_ptr->details->features_use = job_ptr->details->features;
+		break;
+	case 2:
+		job_ptr->details->features_use = job_ptr->details->prefer;
+		break;
+	default:
+		error("unknown detail_use given %d", features_use);
+		break;
+	}
+
 	job_ptr->details->std_in = in;
 	job_ptr->details->pn_min_cpus = pn_min_cpus;
 	job_ptr->details->orig_pn_min_cpus = pn_min_cpus;
@@ -2872,6 +2900,7 @@ unpack_error:
 	xfree(exc_nodes);
 	xfree(features);
 	xfree(cluster_features);
+	xfree(prefer);
 	xfree(in);
 	xfree(mem_bind);
 	xfree(out);
@@ -4119,9 +4148,9 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	immediate = (job_specs->immediate == 0) ? 0L : 1L;
 	debug3("   immediate=%ld reservation=%s",
 	       immediate, job_specs->reservation);
-	debug3("   features=%s batch_features=%s cluster_features=%s",
+	debug3("   features=%s batch_features=%s cluster_features=%s prefer=%s",
 	       job_specs->features, job_specs->batch_features,
-	       job_specs->cluster_features);
+	       job_specs->cluster_features, job_specs->prefer);
 
 	debug3("   req_nodes=%s exc_nodes=%s",
 	       job_specs->req_nodes, job_specs->exc_nodes);
@@ -4560,6 +4589,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 		feature_list_copy(job_details->feature_list);
 	details_new->features = xstrdup(job_details->features);
 	details_new->cluster_features = xstrdup(job_details->cluster_features);
+	details_new->prefer = xstrdup(job_details->prefer);
+	details_new->prefer_list =
+		feature_list_copy(job_details->prefer_list);
 	if (job_details->mc_ptr) {
 		i = sizeof(multi_core_data_t);
 		details_new->mc_ptr = xmalloc(i);
@@ -7208,6 +7240,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	if ((error_code = build_feature_list(job_ptr, false)))
 		goto cleanup_fail;
 
+	if ((error_code = build_feature_list(job_ptr, true)))
+		goto cleanup_fail;
+
 	/*
 	 * NOTE: If this job is being used to expand another job, this job's
 	 * gres_list has already been filled in with a copy of gres_list job
@@ -7431,6 +7466,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->name, "name", 1024)			||
 	    _test_strlen(job_desc->network, "network", 1024)		||
 	    _test_strlen(job_desc->partition, "partition", 1024)	||
+	    _test_strlen(job_desc->prefer, "prefer", 1024)		||
 	    _test_strlen(job_desc->qos, "qos", 1024)			||
 	    _test_strlen(job_desc->reservation, "reservation", 1024)	||
 	    _test_strlen(job_desc->script, "script", max_script)	||
@@ -7491,6 +7527,13 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	rc = node_features_g_job_valid(job_desc->features);
 	if (rc != SLURM_SUCCESS)
 		return rc;
+
+	rc = node_features_g_job_valid(job_desc->prefer);
+	if (rc == ESLURM_INVALID_FEATURE)
+		return ESLURM_INVALID_PREFER;
+	else if (rc != SLURM_SUCCESS) {
+		return rc;
+	}
 
 	rc = _test_job_desc_fields(job_desc);
 	if (rc != SLURM_SUCCESS)
@@ -8183,6 +8226,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	}
 	detail_ptr->features = xstrdup(job_desc->features);
 	detail_ptr->cluster_features = xstrdup(job_desc->cluster_features);
+	detail_ptr->prefer = xstrdup(job_desc->prefer);
 	if (job_desc->fed_siblings_viable) {
 		job_ptr->fed_details = xmalloc(sizeof(job_fed_details_t));
 		job_ptr->fed_details->siblings_viable =
@@ -10602,7 +10646,13 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		if (detail_ptr) {
-			packstr(detail_ptr->features, buffer);
+			if (!IS_JOB_PENDING(job_ptr)) {
+				packstr(detail_ptr->features_use, buffer);
+				packnull(buffer);
+			} else {
+				packstr(detail_ptr->features, buffer);
+				packstr(detail_ptr->prefer, buffer);
+			}
 			packstr(detail_ptr->cluster_features, buffer);
 			packstr(detail_ptr->work_dir, buffer);
 			packstr(detail_ptr->dependency, buffer);
@@ -12110,6 +12160,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
+	error_code = node_features_g_job_valid(job_specs->prefer);
+	if (error_code == ESLURM_INVALID_FEATURE)
+		return ESLURM_INVALID_PREFER;
+	else if (error_code != SLURM_SUCCESS)
+		return error_code;
+
 	error_code = _test_job_desc_fields(job_specs);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
@@ -13540,6 +13596,43 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				   job_ptr);
 			xfree(detail_ptr->features);
 			FREE_NULL_LIST(detail_ptr->feature_list);
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_specs->prefer && detail_ptr &&
+	    !xstrcmp(job_specs->prefer, detail_ptr->prefer)) {
+		sched_debug("%s: new prefer identical to old prefer %s",
+			    __func__, job_specs->prefer);
+	} else if (job_specs->prefer) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (job_specs->prefer[0] != '\0') {
+			char *old_prefer = detail_ptr->prefer;
+			List old_list = detail_ptr->prefer_list;
+			detail_ptr->prefer = xstrdup(job_specs->prefer);
+			detail_ptr->prefer_list = NULL;
+			if (build_feature_list(job_ptr, true)) {
+				sched_info("%s: invalid prefer(%s) for %pJ",
+					   __func__, job_specs->prefer,
+					   job_ptr);
+				FREE_NULL_LIST(detail_ptr->prefer_list);
+				detail_ptr->prefer = old_prefer;
+				detail_ptr->prefer_list = old_list;
+				error_code = ESLURM_INVALID_PREFER;
+			} else {
+				sched_info("%s: setting prefer to %s for %pJ",
+					   __func__, job_specs->prefer,
+					   job_ptr);
+				xfree(old_prefer);
+				FREE_NULL_LIST(old_list);
+			}
+		} else {
+			sched_info("%s: cleared prefer for %pJ", __func__,
+				   job_ptr);
+			xfree(detail_ptr->prefer);
+			FREE_NULL_LIST(detail_ptr->prefer_list);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -17923,6 +18016,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->overcommit        = details->overcommit;
 	job_desc->partition         = xstrdup(job_ptr->partition);
 	job_desc->plane_size        = details->plane_size;
+	job_desc->prefer            = xstrdup(details->prefer);
 	job_desc->priority          = job_ptr->priority;
 	if (job_ptr->qos_ptr)
 		job_desc->qos       = xstrdup(job_ptr->qos_ptr->name);
@@ -18779,6 +18873,7 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	}
 
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
+	/* FIXME: Should be the features we used, soft or hard */
 	if (job_ptr->details && job_ptr->details->features) {
 		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS",
 			"%s", job_ptr->details->features);

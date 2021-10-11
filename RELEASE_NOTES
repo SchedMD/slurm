@@ -33,6 +33,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Remove support for (non-functional) --cpu-bind=boards.
+ -- Added --prefer option at job submission to allow for 'soft' constraints.
 
 API CHANGES
 ===========

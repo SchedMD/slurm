@@ -165,6 +165,7 @@ enum {
 	SORTID_OVER_SUBSCRIBE,
 	SORTID_PARTITION,
 	SORTID_PREEMPT_TIME,
+	SORTID_PREFER,
 	SORTID_PRIORITY,
 	SORTID_QOS,
 	SORTID_REASON,
@@ -353,6 +354,8 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_SWITCHES, "Switches",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_FEATURES, "Features",
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_PREFER, "Prefer",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_FED_ACTIVE_SIBS, "FedActiveSiblings",
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
@@ -934,6 +937,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->features = xstrdup(new_text);
 		type = "features";
 		break;
+	case SORTID_PREFER:
+		job_msg->prefer = xstrdup(new_text);
+		type = "prefer";
+		break;
 	case SORTID_CPUS_PER_TRES:
 		job_msg->cpus_per_tres = xstrdup(new_text);
 		type = "cpus_per_tres";
@@ -1406,6 +1413,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_FEATURES),
 				   job_ptr->features);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_PREFER),
+				   job_ptr->prefer);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -2268,6 +2280,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_DERIVED_EC,   tmp_derived_ec,
 				   SORTID_EXIT_CODE,    tmp_exit,
 				   SORTID_FEATURES,     job_ptr->features,
+				   SORTID_PREFER, job_ptr->prefer,
 				   SORTID_FED_ACTIVE_SIBS,
 				   job_ptr->fed_siblings_active_str,
 				   SORTID_FED_ORIGIN,   job_ptr->fed_origin_str,
