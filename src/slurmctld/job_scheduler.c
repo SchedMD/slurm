@@ -964,6 +964,19 @@ extern void fill_array_reasons(job_record_t *job_ptr,
 	}
 }
 
+static job_queue_rec_t *_create_job_queue_rec(job_queue_req_t *job_queue_req)
+{
+	job_queue_rec_t *job_queue_rec = xmalloc(sizeof(*job_queue_rec));
+	job_queue_rec->array_task_id = job_queue_req->job_ptr->array_task_id;
+	job_queue_rec->job_id   = job_queue_req->job_ptr->job_id;
+	job_queue_rec->job_ptr  = job_queue_req->job_ptr;
+	job_queue_rec->part_ptr = job_queue_req->part_ptr;
+	job_queue_rec->priority = job_queue_req->prio;
+	job_queue_rec->resv_ptr = job_queue_req->resv_ptr;
+
+	return job_queue_rec;
+}
+
 extern void job_queue_append_internal(job_queue_req_t *job_queue_req)
 {
 	job_queue_rec_t *job_queue_rec;
@@ -973,13 +986,8 @@ extern void job_queue_append_internal(job_queue_req_t *job_queue_req)
 	xassert(job_queue_req->job_queue);
 	xassert(job_queue_req->part_ptr);
 
-	job_queue_rec = xmalloc(sizeof(job_queue_rec_t));
-	job_queue_rec->array_task_id = job_queue_req->job_ptr->array_task_id;
-	job_queue_rec->job_id   = job_queue_req->job_ptr->job_id;
-	job_queue_rec->job_ptr  = job_queue_req->job_ptr;
-	job_queue_rec->part_ptr = job_queue_req->part_ptr;
-	job_queue_rec->priority = job_queue_req->prio;
-	job_queue_rec->resv_ptr = job_queue_req->resv_ptr;
+	job_queue_rec = _create_job_queue_rec(job_queue_req);
+
 	list_append(job_queue_req->job_queue, job_queue_rec);
 }
 
