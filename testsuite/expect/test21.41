@@ -27,8 +27,6 @@
 source ./globals
 source ./globals_accounting
 
-set exit_code     0
-
 # globals
 set access_err    0
 set timeout 120
@@ -230,13 +228,13 @@ proc test_job_update {sacctmgr_args expected_jobs} {
 
 proc _run_test { update_str expected_jobs } {
 	global sql_rem_clus1 sql_rem_clus2 sql_in_clus1 sql_in_clus2
-	global exit_code
 
-	incr exit_code [archive_load $sql_rem_clus1]
-	incr exit_code [archive_load $sql_rem_clus2]
-	incr exit_code [archive_load $sql_in_clus1]
-	incr exit_code [archive_load $sql_in_clus2]
-	if {$exit_code != 0} {
+	set rc 0
+	incr rc [archive_load $sql_rem_clus1]
+	incr rc [archive_load $sql_rem_clus2]
+	incr rc [archive_load $sql_in_clus1]
+	incr rc [archive_load $sql_in_clus2]
+	if {$rc} {
 		fail "Unable to load archive"
 	}
 
@@ -310,10 +308,11 @@ remove_acct    "" $accounts
 remove_cluster $clusters
 
 # Add cluster
-incr exit_code [add_cluster $cluster1 [array get clus_req]]
-incr exit_code [add_cluster $cluster2 [array get clus_req]]
-if {$exit_code != 0} {
-	fail "Unable to add clusters"
+if [add_cluster $cluster1 [array get clus_req]] {
+	fail "Unable to add cluster1"
+}
+if [add_cluster $cluster2 [array get clus_req]] {
+	fail "Unable to add cluster2"
 }
 
 # Add accounts
@@ -337,8 +336,7 @@ set user2acct2 0
 set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
 expect {
 	-re "There was a problem" {
-		log_error "there was a problem with the sacctmgr command"
-		incr exit_code 1
+		fail "there was a problem with the sacctmgr command"
 	}
 	-re "$user1.$account1.($number)." {
 		set user1acct1 $expect_out(1,string)
@@ -355,8 +353,7 @@ expect {
 set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
 expect {
 	-re "There was a problem" {
-		log_error "there was a problem with the sacctmgr command"
-		incr exit_code 1
+		fail "there was a problem with the sacctmgr command"
 	}
 	-re "$user1.$account2.($number)." {
 		set user1acct2 $expect_out(1,string)
@@ -373,8 +370,7 @@ expect {
 set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
 expect {
 	-re "There was a problem" {
-		log_error "there was a problem with the sacctmgr command"
-		incr exit_code 1
+		fail "there was a problem with the sacctmgr command"
 	}
 	-re "$user2.$account1.($number)." {
 		set user2acct1 $expect_out(1,string)
@@ -391,8 +387,7 @@ expect {
 set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
 expect {
 	-re "There was a problem" {
-		log_error "there was a problem with the sacctmgr command"
-		incr exit_code 1
+		fail "there was a problem with the sacctmgr command"
 	}
 	-re "$user2.$account2.($number)." {
 		set user2acct2 $expect_out(1,string)
@@ -422,8 +417,7 @@ set user2wckey2 0
 set my_pid [eval spawn $sacctmgr -n -p list wckeys users=$users cluster=$clusters format="user,wckey,id"]
 expect {
 	-re "There was a problem" {
-		log_error "There was a problem with the sacctmgr command"
-		incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "$user1.$wckey1.($number)." {
 		set user1wckey1 $expect_out(1,string)

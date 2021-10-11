@@ -29,7 +29,6 @@
 source ./globals_accounting
 
 set test_nu     "test21-19"
-set exit_code   0
 set clu		cluster
 set tc1		[format "%s%s" $test_nu "clus1"]
 set tc2		[format "%s%s" $test_nu "clus2"]
@@ -106,48 +105,38 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-#make sure we have a clean system and permission to do this work
-remove_user "" "" "$us1,$us2,$us3"
-remove_acct "" "$nm1,$nm2,$nm3"
+# Make sure we have a clean system and permission to do this work
 remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
 
-#add cluster
-incr exit_code [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]]
-if { $exit_code } {
+proc cleanup {} {
+	global nm1 nm2 nm3 tc1 tc2 tc3 us1 us2 us3
+
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2,$tc3"
+}
+
+# Add cluster
+if [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]] {
 	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
 }
 
-#add accounts
-incr exit_code [add_acct "$nm1,$nm2,$nm3" [array get acct_req]]
-if { $exit_code } {
-	remove_user "" "" "$us1,$us2,$us3"
-	remove_acct "" "$nm1,$nm2,$nm3"
-	remove_cluster "$tc1,$tc2,$tc3"
+# Add accounts
+if [add_acct "$nm1,$nm2,$nm3" [array get acct_req]] {
 	fail "Unable to add account ($nm1,$nm2,$nm3)"
 }
 
-#add users
-incr exit_code [add_user "$us1,$us2,$us3" [array get user_req]]
-if { $exit_code } {
-	remove_user "" "" "$us1,$us2,$us3"
-	remove_acct "" "$nm1,$nm2,$nm3"
-	remove_cluster "$tc1,$tc2,$tc3"
+# Add users
+if [add_user "$us1,$us2,$us3" [array get user_req]] {
 	fail "Unable to add user ($us1,$us2,$us3)"
 }
 
 # Add a coordinator
 # accounts names
-incr exit_code [add_coor $nm1 $us1]
-if { $exit_code } {
-	remove_user "" "" "$us1,$us2,$us3"
-	remove_acct "" "$nm1,$nm2,$nm3"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [add_coor $nm1 $us1] {
 	fail "Unable to add coordinator ($nm1 $us1)"
 }
 
@@ -158,17 +147,14 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,DefaultAccount,Admin,Coord cluster=$tc1]
 expect {
 	-re "There was a problem" {
-	        log_error "There was a problem with the sacctmgr command"
-	    	incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "($us1.$nm1.$aln.$nm1.|($us2|$us3).$nm1.$aln..)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -176,16 +162,11 @@ expect {
 }
 
 if {$matches != 3} {
-	log_error "Coordinator add 3 incorrect with only $matches"
-	incr exit_code 1
+	fail "Coordinator add 3 incorrect with only $matches"
 }
 
 # Next, add coordinator to two users
-incr exit_code [add_coor "$nm1,$nm3" "$us2,$us3"]
-if { $exit_code } {
-	remove_user "" "" "$us1,$us2,$us3"
-	remove_acct "" "$nm1,$nm2,$nm3"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [add_coor "$nm1,$nm3" "$us2,$us3"] {
 	fail "Unable to add coordinator ($nm1,$nm3 $us2,$us3)"
 }
 
@@ -196,17 +177,14 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,DefaultAccount,Admin,Coord cluster=$tc1]
 expect {
 	-re "There was a problem" {
-	    log_error "There was a problem with the sacctmgr command"
-	   	incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "($us1.$nm1.$aln.$nm1.|($us2|$us3).$nm1.$aln.$nm1,$nm3)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -214,16 +192,5 @@ expect {
 }
 
 if {$matches != 3} {
-	log_error "User modification 3 incorrect with only $matches"
-	incr exit_code 1
-}
-
-# This is the end below here
-
-incr exit_code [remove_user "" "" "$us1,$us2,$us3"]
-incr exit_code [remove_acct "" "$nm1,$nm2,$nm3"]
-incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
+	fail "User modification 3 incorrect with only $matches"
 }

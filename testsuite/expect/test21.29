@@ -28,15 +28,14 @@
 ############################################################################
 source ./globals_accounting
 
-set test_nu     "test21-29"
+set test_nu            "test21-29"
 set usagefactor_reset  1.000000
 set priority_reset     0
-set exit_code   0
-set access_err  0
+set access_err         0
 
 # QoS Limits
 array set qos {}
-set qos_name          [format "%s%s" $test_nu "qosnormal"]
+set qos_name           [format "%s%s" $test_nu "qosnormal"]
 set qos(GrpCPUMins)    240000
 set qos(GrpCPUs)       80
 set qos(GrpJobs)       500
@@ -74,11 +73,17 @@ if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
 
-#add qos
+proc cleanup {} {
+	global qos_name
+
+	remove_qos "$qos_name"
+}
+
+# Add qos
 add_qos $qos_name [array get qos]
 
 # Use sacctmgr list to verify the test qos fields
-incr exit_code [check_qos_limits $qos_name  [array get qos]]
+check_qos_limits $qos_name [array get qos]
 
 # Setup the qos array so that we clear all the limits
 foreach option [array name qos] {
@@ -91,15 +96,10 @@ set qos(UsageFactor) $usagefactor_reset
 set qos(Description) ""
 set qos(Priority) $priority_reset
 
-#modify qos
-incr exit_code [mod_qos $qos_name [array get qos]]
+# Modify qos
+if [mod_qos $qos_name [array get qos]] {
+	fail "Unable to modify QOS ($qos_name)"
+}
 
 # Check that the modified QoS limits are correct
-incr exit_code [check_qos_limits $qos_name [array get qos]]
-
-# Next is clean up and the end
-incr exit_code [remove_qos "$qos_name"]
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}
+check_qos_limits $qos_name [array get qos]

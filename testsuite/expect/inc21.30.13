@@ -27,63 +27,65 @@
 ############################################################################
 
 proc inc21_30_13 { wait_reason } {
-	global salloc srun acct bin_sleep maxcpumin_num number exit_code
+	global salloc srun acct bin_sleep maxcpumin_num number
 
 	log_info "Starting MaxCpuMins test"
 	set job_id1 0
 	set job_id2 0
 
-	spawn $salloc --account=$acct -n$maxcpumin_num -t1 $srun $bin_sleep 10
-	expect {
-		-re "Granted job allocation ($number)" {
-			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted"
-		}
-		-re "Pending job allocation ($number)" {
-			set job_id1 $expect_out(1,string)
-			log_error "This job should not be pending"
-			set exit_code 1
-		}
-		-re "error" {
-			log_error "Job allocation should not have failed"
-			set exit_code 1
-		}
-		timeout {
-			log_error "salloc not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	# Raise an error to abort the catch block
+	set exception_code [catch {
 
-	spawn $salloc --account=$acct -n[expr $maxcpumin_num + 1] -t1 $srun $bin_sleep 10
-	expect {
-		-re " Pending job allocation ($number)" {
-			set job_id2 $expect_out(1,string)
-			log_debug "Job $job_id2 is waiting for resources. This is expected"
+		spawn $salloc --account=$acct -n$maxcpumin_num -t1 $srun $bin_sleep 10
+		expect {
+			-re "Granted job allocation ($number)" {
+				set job_id1 $expect_out(1,string)
+				log_debug "Job $job_id1 has been submitted"
+			}
+			-re "Pending job allocation ($number)" {
+				set job_id1 $expect_out(1,string)
+				error "This job should not be pending"
+			}
+			-re "error" {
+				error "Job allocation should not have failed"
+			}
+			timeout {
+				error "salloc not responding"
+			}
+			eof {
+				wait
+			}
+		}
 
-		}
-		-re "Granted job allocation ($number)" {
-			set job_id2 $expect_out(1,string)
-			log_error "Job $job_id2 should be pending but is not"
-			set exit_code 1
-		}
-		timeout {
-			log_error "salloc is not responing"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+		spawn $salloc --account=$acct -n[expr $maxcpumin_num + 1] -t1 $srun $bin_sleep 10
+		expect {
+			-re " Pending job allocation ($number)" {
+				set job_id2 $expect_out(1,string)
+				log_debug "Job $job_id2 is waiting for resources. This is expected"
 
-	if {![check_reason $job_id2 $wait_reason]} {
-		log_error "Bad job wait reason"
-		set exit_code 1
-	}
+			}
+			-re "Granted job allocation ($number)" {
+				set job_id2 $expect_out(1,string)
+				error "Job $job_id2 should be pending but is not"
+			}
+			timeout {
+				error "salloc is not responing"
+			}
+			eof {
+				wait
+			}
+		}
+
+		subtest [check_reason $job_id2 $wait_reason] "Job should have wait reason $wait_reason"
+
+	} message] ; # Store the error message in $message
 
 	# Cancel jobs
 	cancel_job $job_id1
 	cancel_job $job_id2
+
+	# Convert any errors into failures (after cleaning up)
+	if {$exception_code == 1} { ; # errors only
+		fail "Failure testing $wait_reason: $message"
+	}
 }

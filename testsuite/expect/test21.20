@@ -28,21 +28,20 @@
 ############################################################################
 source ./globals_accounting
 
-set exit_code   0
-set tc1		"$test_id-cluster-1"
-set tc2		"$test_id-cluster-2"
-set tc3		"$test_id-cluster-3"
-set ta1		"$test_id-account.1"
-set ta2		"$test_id-account.2"
-set ta3		"$test_id-account.3"
-set qs		QosLevel
-set qs1		tnormal
-set qs2		texpedite
-set qs3		tstandby
-set tu1         "$test_id-user.1"
-set tu2         "$test_id-user.2"
-set tu3         "$test_id-user.3"
-set alo		Operator
+set tc1         "${test_name}-cluster-1"
+set tc2         "${test_name}-cluster-2"
+set tc3         "${test_name}-cluster-3"
+set ta1         "${test_name}-account.1"
+set ta2         "${test_name}-account.2"
+set ta3         "${test_name}-account.3"
+set qs          QosLevel
+set qs1         tnormal
+set qs2         texpedite
+set qs3         tstandby
+set tu1         "${test_name}-user.1"
+set tu2         "${test_name}-user.2"
+set tu3         "${test_name}-user.3"
+set alo         Operator
 set access_err  0
 
 # Cluster
@@ -96,53 +95,39 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-#make sure we have a clean system and permission to do this work
-remove_user "" "" "$tu1,$tu2,$tu3"
-remove_acct "" "$ta1,$ta2,$ta3"
-remove_qos "$qs1,$qs2,$qs3"
+# Make sure we have a clean system and permission to do this work
 remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
 
-#add cluster
-incr exit_code [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]]
-if { $exit_code } {
+proc cleanup {} {
+	global ta1 ta2 ta3 tc1 tc2 tc3 tu1 tu2 tu3 qs1 qs2 qs3
+
 	remove_user "" "" "$tu1,$tu2,$tu3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_qos "$qs1,$qs2,$qs3"
 	remove_cluster "$tc1,$tc2,$tc3"
+}
+
+# Add cluster
+if [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]] {
 	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
 }
 
-#add qos
-incr exit_code [add_qos "$qs1,$qs2,$qs3" ""]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_qos "$qs1,$qs2,$qs3"
-	remove_cluster "$tc1,$tc2,$tc3"
+# Add qos
+if [add_qos "$qs1,$qs2,$qs3" ""] {
 	fail "Unable to add qos ($qs1,$qs2,$qs3)"
 }
 
-#add accounts
-incr exit_code [add_acct "$ta1,$ta2,$ta3" [array get acct_req]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_qos "$qs1,$qs2,$qs3"
-	remove_cluster "$tc1,$tc2,$tc3"
+# Add accounts
+if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
 	fail "Unable to add account ($ta1,$ta2,$ta3)"
 }
 
-#add users
+# Add users
 # cluster account name part admin dacct dwckey wckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall
-incr exit_code [add_user "$tu1,$tu2,$tu3" [array get user_req]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_qos "$qs1,$qs2,$qs3"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [add_user "$tu1,$tu2,$tu3" [array get user_req]] {
 	fail "Unable to add user ($tu1,$tu2,$tu3)"
 }
 
@@ -153,17 +138,14 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	        log_error "There was a problem with the sacctmgr command"
-	    	incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "(($tu1|$tu2|$tu3).($qs1|$qs2))." {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -171,8 +153,7 @@ expect {
 }
 
 if {$matches != 27} {
-	log_error "Account addition 27 incorrect with only $matches"
-	incr exit_code 1
+	fail "Account addition 27 incorrect with only $matches"
 }
 
 #modify user1 QoS
@@ -181,12 +162,7 @@ if {$matches != 27} {
 # Second array: account information about user (ie. adminlevel, default account, ...)
 # Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
 
-incr exit_code [mod_user $tu1 [array get user_mod_info] [array get user_mod_acct] [array get user_mod_assoc]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_qos "$qs1,$qs2,$qs3"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [mod_user $tu1 [array get user_mod_info] [array get user_mod_acct] [array get user_mod_assoc]] {
 	fail "Unable to modify user ($tu1)"
 }
 
@@ -197,8 +173,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	    log_error "There was a problem with the sacctmgr command"
-	    incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "$tu1.$qs3." {
 		incr matches
@@ -209,9 +184,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -219,8 +192,7 @@ expect {
 }
 
 if {$matches != 21} {
-	log_error "Account addition 21 incorrect with only $matches"
-	incr exit_code 1
+	fail "Account addition 21 incorrect with only $matches"
 }
 
 #modify user2 QoS
@@ -229,13 +201,7 @@ if {$matches != 21} {
 # Second array: account information about user (ie. adminlevel, default account, ...)
 # Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
 
-incr exit_code [mod_user $tu2 [array get user_mod_info2] [array get user_mod_acct2] [array get user_mod_assoc2]]
-
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_qos "$qs1,$qs2,$qs3"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [mod_user $tu2 [array get user_mod_info2] [array get user_mod_acct2] [array get user_mod_assoc2]] {
 	fail "Unable to modify user ($tu2)"
 }
 
@@ -246,8 +212,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	    log_error "There was a problem with the sacctmgr command"
-	    incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "$tu1.$qs3." {
 		incr matches
@@ -262,9 +227,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -272,8 +235,7 @@ expect {
 }
 
 if {$matches != 15} {
-	log_error "Account addition 15 incorrect with only $matches"
-	incr exit_code 1
+	fail "Account addition 15 incorrect with only $matches"
 }
 
 
@@ -283,13 +245,7 @@ if {$matches != 15} {
 # Second array: account information about user (ie. adminlevel, default account, ...)
 # Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
 
-incr exit_code [mod_user $tu3 [array get user_mod_info3] [array get user_mod_acct3] [array get user_mod_assoc3]]
-
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_qos "$qs1,$qs2,$qs3"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [mod_user $tu3 [array get user_mod_info3] [array get user_mod_acct3] [array get user_mod_assoc3]] {
 	fail "Unable to modify user ($tu3)"
 }
 
@@ -300,8 +256,7 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
 expect {
 	-re "There was a problem" {
-	    log_error "There was a problem with the sacctmgr command"
-	    incr exit_code 1
+	    fail "There was a problem with the sacctmgr command"
 	}
 	-re "$tu1.$qs3." {
 		incr matches
@@ -316,9 +271,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -326,17 +279,5 @@ expect {
 }
 
 if {$matches != 9} {
-	log_error "Account addition 9 incorrect with only $matches"
-	incr exit_code 1
-}
-
-# This is the end below here
-
-incr exit_code [remove_user "" "" "$tu1,$tu2,$tu3"]
-incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
-incr exit_code [remove_qos "$qs1,$qs2,$qs3"]
-incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
+	fail "Account addition 9 incorrect with only $matches"
 }

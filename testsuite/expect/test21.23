@@ -28,27 +28,31 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set cwd          "[$bin_pwd]"
-set file_in     "test.$test_id.input"
-set ta		"test$test_id-account.1"
-set wk          "test$test_id-wckey"
-set wk2         "test$test_id-wckey2"
-set wk3         "test$test_id-wckey3"
-set timeout 60
+set file_in     "$test_dir/input"
+set ta          "${test_name}-account.1"
+set wk          "${test_name}-wckey"
+set wk2         "${test_name}-wckey2"
+set wk3         "${test_name}-wckey3"
+set timeout     60
 set reconfigured false
 set config_path [get_conf_path]
 set config_file $config_path/slurm.conf
+set cn [get_config_param "ClusterName"]
+set user_name [get_my_user_name]
 
 proc cleanup {} {
-	global reconfigured config_file bin_rm file_in
+	global reconfigured config_file
+	global sacctmgr user_name ta cn wk wk2 wk3
 
 	if {$reconfigured} {
 		restore_conf $config_file
 		reconfigure
 	}
 
-	exec $bin_rm -f $file_in
+	run_command -none "$sacctmgr -i delete user name=$user_name account=$ta cluster=$cn"
+	run_command -none "$sacctmgr -i delete account $ta cluster=$cn"
+
+	run_command -none "$sacctmgr -i delete user $user_name cluster=$cn wckey=$wk,$wk2,$wk3"
 }
 
 #
@@ -64,69 +68,25 @@ if {[string compare [get_admin_level] "Administrator"]} {
 
 set accounting_storage_type [get_config_param "AccountingStorageType"]
 
-set cn [get_config_param "ClusterName"]
 
 #
 # Identify the user and his current default account
 #
 set acct_name ""
-set user_name [get_my_user_name]
-
-set s_pid [spawn $sacctmgr show user $user_name]
-expect {
-	-re "$user_name *($re_word_str)" {
-		set acct_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $s_pid
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail "$sacctmgr -nP show user format=DefaultAccount $user_name"]
+if {![regexp "$re_word_str" $output acct_name]} {
+	fail "Not able to found DefaultAccount"
 }
 
 #
 # Use sacctmgr to add an account
 #
-set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $ta cluster=$cn]
-expect {
-	-re "Adding Account" {
-		incr aamatches
-		exp_continue
-	}
-	-re "Nothing new added" {
-		log_warn "Vestigial account $ta found"
-		incr aamatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadd_pid
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$aamatches != 1} {
-	fail "sacctmgr had a problem adding account."
-}
+run_command -fail "$sacctmgr -i add account $ta cluster=$cn"
 
 #
 # Add self to this new account and wckey
 #
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$ta cluster=$cn wckeys=$wk]
-expect {
-	 timeout {
-		slow_kill $sadd_pid
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$sacctmgr -i create user name=$user_name account=$ta cluster=$cn wckeys=$wk"
 
 #
 # Enable TrackWCKey
@@ -167,280 +127,80 @@ expect {
 		wait
 	}
 }
+if {$job_id == 0} {
+	fail "salloc failed to initiate job"
+}
+if {$matches != 1} {
+	fail "salloc failed to use desired wckey"
+}
 
 if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
 	sleep 5
 }
 
-spawn $sacct -p -j $job_id --format=wckey
-	expect {
-		-re "$wk" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-if {$job_id == 0} {
-	log_error "salloc failed to initiate job"
-	set exit_code 1
-} elseif {$matches != 2} {
-	log_error "salloc failed to use desired wckey"
-	set exit_code 1
-}
+set output [run_command_output -fail "$sacct -p -j $job_id --format=wckey"]
+subtest {[regexp "$wk" $output]} "Verify WCKey in sacct"
 
 #
 # Spawn a job via sbatch using this wckey
 #
 make_bash_script $file_in "$bin_id"
-set job_id 0
-spawn $sbatch -N1 --account=$ta --wckey=$wk --output=none $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	log_error "did not get sbatch job_id"
-	set exit_code 1
-} else {
-	set matches 0
-	spawn $scontrol show job $job_id
-	expect {
-		-re "WCKey=$wk" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
-		sleep 5
-	}
+set job_id [submit_job -fail "-N1 --account=$ta --wckey=$wk --output=none $file_in"]
 
-	spawn $sacct -p -j $job_id --format=wckey
-	expect {
-		-re "$wk" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 2} {
-		log_error "sbatch failed to use specified wckey"
-		set exit_code 1
-	}
+set output [run_command_output -fail "$scontrol show job $job_id"]
+subtest {[regexp "WCKey=$wk" $output]} "Verify WCKey in scontrol"
+
+if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
+	sleep 5
 }
+
+set output [run_command_output -fail "$sacct -p -j $job_id --format=wckey"]
+subtest {[regexp "$wk" $output]} "Verify WCKey in sacct"
 
 #
 # Spawn a job via srun using this wckey
 #
-set job_id 0
-spawn $srun -N1 -v --account=$ta --wckey=$wk $bin_id
-expect {
-	-re "launching StepId=($number)\\.$re_word_str" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	log_error "did not get srun job_id"
-	set exit_code 1
-} else {
-	set matches 0
-	spawn $scontrol show job $job_id
-	expect {
-		 -re "WCKey=$wk" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
-		sleep 5
-	}
-
-	spawn $sacct -p -j $job_id --format=wckey
-	expect {
-		-re "$wk" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 2} {
-		log_error "srun failed to use specified wckey"
-		set exit_code 1
-	}
+set output [run_command_output -fail "$srun -N1 -v --account=$ta --wckey=$wk $bin_id"]
+if {![regexp "launching StepId=($number)\\.$re_word_str" $output - job_id]} {
+	fail "srun failed"
 }
 
-#
-# Use sacctmgr to delete the test account
-#
-set damatches 0
-set sadel_pid [spawn $sacctmgr -i delete account $ta]
-expect {
-	-re "Deleting account" {
-		incr damatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail "$scontrol show job $job_id"]
+subtest {[regexp "WCKey=$wk" $output]} "Verify WCKey in scontrol"
+
+if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
+	sleep 5
 }
-if {$damatches != 1} {
-	log_error "sacctmgr had a problem deleting account"
-	set exit_code 1
-}
+
+set output [run_command_output -fail "$sacct -p -j $job_id --format=wckey"]
+subtest {[regexp "$wk" $output]} "Verify WCKey in sacct"
 
 #
 # Add more test WCKeys the user
 #
-set awmatches 0
-set saadd_pid [spawn $sacctmgr -i add user $user_name cluster=$cn wckey=$wk,$wk2,$wk3]
-
-expect {
-	-re "W ="	{
-		incr awmatches
-		exp_continue
-	}
-	-re "Nothing new added" {
-		log_error "WCKeys used in test already existed"
-		set exit_code 1
-	}
-	timeout {
-		slow_kill $saadd_pid
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
-
 # $wk should be there before, so only $wk2 and $wk3 was added
-if {$awmatches!=2} {
-	log_error "sacctmgr had problems adding two WCKey at once"
-	set exit_code 1
+set output [run_command_output -fail "$sacctmgr -i add user $user_name cluster=$cn wckey=$wk,$wk2,$wk3"]
+if {[regexp -all "W =" $output] != 2} {
+	fail "sacctmgr had problems adding two WCKey at once"
 }
 
 #
 # Verify that we have 3 WCKeys in DB
 #
-set swmatches 0
-set salist_pid [spawn $sacctmgr list -p wckey user=$user_name]
-expect {
-	-ex "\n$wk\|$cn\|$user_name\|"  {
-		incr swmatches
-		exp_continue
-	}
-	-ex "\n$wk2\|$cn\|$user_name\|" {
-		incr swmatches
-		exp_continue
-	}
-	-ex "\n$wk3\|$cn\|$user_name\|" {
-		incr swmatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $salist_pid
-		fail "sacctmgr list not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$swmatches!=3} {
-	log_error "We should have 3 test WCKeys configured we have $swmatches"
-	set exit_code 1
-}
+set output [run_command_output -fail "$sacctmgr list -p wckey user=$user_name"]
+subtest {[regexp "\n$wk\|$cn\|$user_name\|" $output]} "Verify wk1"
+subtest {[regexp "\n$wk2\|$cn\|$user_name\|" $output]} "Verify wk2"
+subtest {[regexp "\n$wk3\|$cn\|$user_name\|" $output]} "Verify wk3"
 
 #
 # Use sacctmgr to delete test WCKeys
 #
-set dwmatches 0
-set sadel_pid [spawn $sacctmgr -i delete user $user_name wckey=$wk,$wk2,$wk3]
-expect {
-	-re "Deleteing WCKeys" {
-		incr dwmatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$sacctmgr -i delete user $user_name wckey=$wk,$wk2,$wk3"
 
 #
 # Use sacctmgr to verify if WCKeys were removed
 #
-set salist_pid [spawn $sacctmgr -p list wckey where user=$user_name]
-expect {
-	-ex "\n$wk\|$cn\|$user_name\|" {
-		set exit_code 1
-		log_error "WCKey = $wk should be deleted, but was not"
-	}
-	-ex "\n$wk2\|$cn\|$user_name\|" {
-		set exit_code 1
-		log_error "WCKey = $wk2 should be deleted, but was not"
-	}
-	-ex "\n$wk3\|$cn\|$user_name\|" {
-		set exit_code 1
-		log_error "WCKey = $wk3 should be deleted, but was not"
-	}
-	timeout {
-		slow_kill $salist_pid
-		fail "sacctmgr list not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -fail "$sacctmgr -p list wckey where user=$user_name"]
+subtest {[regexp "\n$wk\|$cn\|$user_name\|" $output]} "Verify WCKey = $wk has been deleted"
+subtest {[regexp "\n$wk2\|$cn\|$user_name\|" $output]} "Verify WCKey = $wk2 has been deleted"
+subtest {[regexp "\n$wk3\|$cn\|$user_name\|" $output]} "Verify WCKey = $wk3 has been deleted"

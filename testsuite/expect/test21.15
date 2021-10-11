@@ -28,16 +28,15 @@
 ############################################################################
 source ./globals_accounting
 
-set exit_code   0
-set tc1		"test$test_id-cluster-1"
-set tc2		"test$test_id-cluster-2"
-set tc3		"test$test_id-cluster-3"
-set dqos1       "test$test_id\_qos"
-set ta1		"test$test_id-account.1"
-set ta2		"test$test_id-account.2"
-set ta3		"test$test_id-account.3"
-set tu1         "test$test_id-user.1"
-set tu2         "test$test_id-user.2"
+set tc1         "${test_name}-cluster-1"
+set tc2         "${test_name}-cluster-2"
+set tc3         "${test_name}-cluster-3"
+set dqos1       "${test_name}_qos"
+set ta1         "${test_name}-account.1"
+set ta2         "${test_name}-account.2"
+set ta3         "${test_name}-account.3"
+set tu1         "${test_name}-user.1"
+set tu2         "${test_name}-user.2"
 set access_err  0
 
 # Cluster
@@ -98,40 +97,36 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
+proc cleanup {} {
+	global dqos1 ta1 ta2 ta3 tc1 tc2 tc3 tu1 tu2
+
+	remove_user "$tc1" "" "$tu1"
+	remove_user "" "$ta1,$ta2,$ta3" "$tu1,$tu2"
+	remove_user "" "" "$tu1,$tu2"
+	remove_acct "" "$ta1,$ta2,$ta3"
+	remove_cluster "$tc1,$tc2,$tc3"
+	remove_qos "$dqos1"
+}
+
 #make sure we have a clean system and permission to do this work
-remove_user "" "" "$tu1,$tu2"
-remove_acct "" "$ta1,$ta2,$ta3"
 remove_cluster "$tc1,$tc2,$tc3"
-remove_qos "$dqos1"
 if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
 
-#add cluster
-incr exit_code [add_cluster "$tc1,$tc2,$tc3" ""]
-if { $exit_code } {
-	remove_user "" "" "$tu1"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2,$tc3"
+# Add cluster
+if [add_cluster "$tc1,$tc2,$tc3" ""] {
 	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
 }
 
-#add accounts
-incr exit_code [add_acct "$ta1,$ta2,$ta3" [array get acct_req]]
-if { $exit_code } {
-	remove_user "" "" "$tu1"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2,$tc3"
+# Add accounts
+if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
 	fail "Unable to add account ($ta1,$ta2,$ta3)"
 }
 
-#add users
+# Add users
 # account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name
-incr exit_code [add_user $tu1 [array get user_req1]]
-if { $exit_code } {
-	remove_user "" "" "$tu1"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [add_user $tu1 [array get user_req1]] {
 	fail "Unable to add user ($tu1)"
 }
 
@@ -142,17 +137,14 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$tu1 withassoc]
 expect {
 	-re "There was a problem" {
-	        log_error "There was a problem with the sacctmgr command"
-	    	incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "($tu1.$ta2.$user_req1(adminlevel).($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$user_req1(fairshare).$user_req1(maxcpumin).$user_req1(maxjob).$user_req1(maxnode).$user_req1(maxwall).)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -160,17 +152,14 @@ expect {
 }
 
 if {$matches != 9} {
-	log_error "Account addition 9 incorrect with only $matches"
-	incr exit_code 1
+	fail "Account addition 9 incorrect with only $matches"
 }
 
 #
 # From here we test all the limits associated with the user
 #
 
-incr exit_code [add_qos "$dqos1" ""]
-if { $exit_code } {
-	remove_qos "$dqos1"
+if [add_qos "$dqos1" ""] {
 	fail "Unable to add qos ($dqos1)"
 }
 
@@ -178,29 +167,10 @@ if { $exit_code } {
 #
 # Add user with all limits set
 #
-incr exit_code [add_user $tu2 [array get user_req2]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2"
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2,$tc3"
-	remove_qos "$dqos1"
+if [add_user $tu2 [array get user_req2]] {
 	fail "Unable to add user ($tu2)"
 }
 
 if {![check_assoc_limit 3 user $tu2 [array get user_req2]]} {
-	log_error "The association limits for user $tu2 are incorrect"
-	set exit_code 1
-}
-
-# This is the end below here
-
-incr exit_code [remove_user "$tc1" "" "$tu1"]
-incr exit_code [remove_user "" "$ta1,$ta2,$ta3" "$tu1,$tu2"]
-incr exit_code [remove_user "" "" "$tu1,$tu2"]
-incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
-incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
-incr exit_code [remove_qos "$dqos1"]
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
+	fail "The association limits for user $tu2 are incorrect"
 }

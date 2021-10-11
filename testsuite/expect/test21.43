@@ -148,28 +148,8 @@ proc test_usage_factor { qos usage_factor } {
 	# Submit a short job to the specified qos
 	#
 	set job_time 2
-	set script "\"sleep 10\""
-	set command "$sbatch -J ${test_name} -t $job_time --account=$test_acct --qos=$qos --wrap $script"
 	set observed_usage -1
-	set job_id 0
-
-	spawn {*}$command
-	expect {
-		-re "Submitted batch job (\\d+)" {
-			set job_id $expect_out(1,string)
-			lappend job_list $job_id
-			exp_continue
-		}
-		timeout {
-			fail "sbatch not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_id == 0} {
-		fail "sbatch did not return a job id"
-	}
+	set job_id [submit_job -fail "-J ${test_name} -t $job_time --account=$test_acct --qos=$qos --wrap 'sleep 10' -o none -e none"]
 
 	#
 	# Wait for job to enter running state

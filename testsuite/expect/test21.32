@@ -28,13 +28,12 @@
 source ./globals
 source ./globals_accounting
 
-set exit_code    0
 set qos_test(0)  "test$test_id\_qos_0"
 set qos_test(1)  "test$test_id\_qos_1"
 set qos_test(2)  "test$test_id\_qos_2"
 set qos_test(3)  "test$test_id\_qos_3"
 set qos_test(4)  "test$test_id\_qos_4"
-set access_err  0
+set access_err   0
 
 set qos_names_str 0
 foreach inx [array names qos_test] {
@@ -46,7 +45,7 @@ foreach inx [array names qos_test] {
 }
 
 proc reset_qos { } {
-	global sacctmgr qos_main exit_code qos_test
+	global sacctmgr qos_main qos_test
 
 	set removed 0
 	spawn $sacctmgr -i mod qos $qos_test(0) set preempt=
@@ -63,15 +62,11 @@ proc reset_qos { } {
 		}
 	}
 
-	if {$removed != 1} {
-		log_error "qos $qos_test(0)\'s preempt qos were not removed"
-		set exit_code 1
-	}
-
+	subtest {$removed == 1} "Verify preempt QOS was removed from QOS" "$qos_test(0)"
 }
 
 proc _local_mod_qos { preempt_qos } {
-	global sacctmgr exit_code qos_test
+	global sacctmgr qos_test
 
 	set mod 0
 	spawn $sacctmgr -i mod qos $qos_test(0) set preempt$preempt_qos
@@ -88,14 +83,11 @@ proc _local_mod_qos { preempt_qos } {
 		}
 	}
 
-	if {$mod != 1} {
-		log_error "QoS $qos_test(0) was not modified"
-		set exit_code 1
-	}
+	subtest {$mod == 1} "Verify QOS was modified" "$qos_test(0) => $preempt_qos"
 }
 
 proc check_pre { preempt_qos } {
-	global sacctmgr exit_code re_word_str qos_test
+	global sacctmgr re_word_str qos_test
 
 	set match 0
 	spawn $sacctmgr show qos $qos_test(0) format=preempt%-80 --noheader
@@ -112,10 +104,7 @@ proc check_pre { preempt_qos } {
 		}
 	}
 
-	if {$match != 1} {
-		log_error "preempted QoS do not match what is expected"
-		set exit_code 1
-	}
+	subtest {$match == 1} "Verify preempted QOS" "!= $preempt_qos"
 }
 
 ######################### Test Begins #########################
@@ -137,10 +126,14 @@ if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
 
-# Add a few QoS
-add_qos $qos_names_str ""
-if { $exit_code } {
+proc cleanup {} {
+	global qos_names_str
+
 	remove_qos $qos_names_str
+}
+
+# Add a few QoS
+if [add_qos $qos_names_str ""] {
 	fail "Unable to add QOS ($qos_names_str)"
 }
 
@@ -180,9 +173,3 @@ _local_mod_qos "-=$qos_test(4)"
 check_pre "$qos_test(1),$qos_test(3)"
 _local_mod_qos "-=$qos_test(1),$qos_test(3)"
 check_pre " "
-
-remove_qos $qos_names_str
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}

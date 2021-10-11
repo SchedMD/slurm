@@ -28,12 +28,11 @@
 source ./globals
 source ./globals_accounting
 
-set test_acct    "test$test_id\_acct"
-set test_qos     "test$test_id\_qos"
-set file_in      "test$test_id.sc"
+set test_acct    "${test_name}\_acct"
+set test_qos     "${test_name}\_qos"
+set file_in      "$test_dir/input"
 set max_wall_val 2
 set job_id       0
-set exit_code    0
 
 set save_billing_weights ""
 set tres_cpu_mult 2
@@ -85,7 +84,7 @@ array set reset_assoc_val {
 proc check_limit { type name } {
 	global sacctmgr sbatch lim_type_type i option max_tres_type
 	global job_id test_qos test_acct reset_qos_val reset_assoc_val
-	global file_in number exit_code tres_cpu_mult
+	global file_in number tres_cpu_mult
 
 	set flag ""
 	set modified 0
@@ -108,8 +107,7 @@ proc check_limit { type name } {
 	}
 
 	if {$modified != 1} {
-		log_error "sacctmgr did not modify tres=$option=$max_tres_type($option)"
-		set exit_code 1
+		fail "sacctmgr did not modify tres=$option=$max_tres_type($option)"
 	}
 
 	set tmp [expr  $max_tres_type($option) + 1]
@@ -133,7 +131,6 @@ proc check_limit { type name } {
 		}
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
-			set exit_code 1
 		}
 		timeout {
 			fail "srun is not responding"
@@ -144,7 +141,6 @@ proc check_limit { type name } {
 	}
 
 	if {$match != 1 || $job_id} {
-		cancel_job $job_id
 		fail "Job should have been killed upon submission"
 	}
 
@@ -156,7 +152,7 @@ proc check_limit { type name } {
 
 
 proc cleanup { } {
-	global sacctmgr file_in bin_rm test_acct test_qos exit_code
+	global sacctmgr test_acct test_qos
 	global partition save_billing_weights scontrol job_id
 
 	# Delete test account and qos
@@ -185,7 +181,6 @@ proc cleanup { } {
 		expect {
 			-re "error" {
 				log_error "Failed to reset TRESBillingWeights"
-				set exit_code 1
 			}
 			timeout {
 				fail "scontrol is not responding"
@@ -197,12 +192,7 @@ proc cleanup { } {
 	}
 
 	# Cancel the submitted job
-	if {$job_id != 0} {
-		cancel_job $job_id
-	}
-
-	# Remove test script
-	exec $bin_rm -f $file_in
+	cancel_job $job_id
 }
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
@@ -305,8 +295,7 @@ expect {
 spawn $scontrol update partitionname=$partition tresbillingweights=cpu=$tres_cpu_mult
 expect {
 	-re "error" {
-		log_error "Failed to set TRESBillingWeights"
-		set exit_code 1
+		fail "Failed to set TRESBillingWeights"
 	}
 	timeout {
 		fail "scontrol is not responding"
@@ -314,9 +303,6 @@ expect {
 	eof {
 		wait
 	}
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 for {set i 0} {$i < 3} {incr i} {
@@ -353,8 +339,7 @@ expect {
 }
 
 if {$modified != 1} {
-	log_error "sacctmgr did not modify tres=$option=$max_tres_qos($option)"
-	set exit_code 1
+	fail "sacctmgr did not modify tres=$option=$max_tres_qos($option)"
 }
 
 set match 0
@@ -366,7 +351,6 @@ expect {
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		set exit_code 1
 	}
 	timeout {
 		fail "srun is not responding"
@@ -378,8 +362,4 @@ expect {
 
 if {$match != 1 || $job_id} {
 	fail "Job should have been killed upon submission"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
 }

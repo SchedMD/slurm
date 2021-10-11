@@ -19,11 +19,10 @@
 ############################################################################
 source ./globals_accounting
 
-set exit_code   0
-set tc2		"${test_name}-cluster-2"
-set sr1		[format "%s%s" $test_name "res_1"]
-set sr2		[format "%s%s" $test_name "res_2"]
-set sr3		[format "%s%s" $test_name "res_3"]
+set tc2         "${test_name}-cluster-2"
+set sr1         [format "%s%s" $test_name "res_1"]
+set sr2         [format "%s%s" $test_name "res_2"]
+set sr3         [format "%s%s" $test_name "res_3"]
 
 set res1_desc   sr1
 set res1_cnt    80
@@ -38,9 +37,9 @@ set res2_srvtyp server_type_2
 set res2_srv    server_2
 set res2_type   license
 
-set ser		server
-set ect1	40
-set ect1a	25
+set ser         server
+set ect1	    40
+set ect1a	    25
 set access_err  0
 
 # First test resource
@@ -110,7 +109,7 @@ proc cleanup {} {
 	remove_cluster $tc2
 }
 
-# verify a clean system and permission to do this work
+# Verify a clean system and permission to do this work
 remove_cluster "$tc2"
 remove_res "$sr1"
 if {$access_err != 0} {
@@ -118,10 +117,9 @@ if {$access_err != 0} {
 }
 
 #
-# add cluster
+# Add cluster
 #
-incr exit_code [add_cluster "$tc2" [array get clus_req]]
-if { $exit_code } {
+if [add_cluster "$tc2" [array get clus_req]] {
 	fail "Unable to add cluster ($tc2)"
 }
 
@@ -140,8 +138,7 @@ add_resource $sr1 [array get resource1]
 # Use sacctmgr list to verify the test global resource fields
 #
 if {[check_resource_limits $sr1 [array get resource1_chck]] == 1} {
-	log_error "list resource output is incorrect"
-	incr exit_code 1
+	fail "list resource output is incorrect"
 }
 
 #
@@ -166,16 +163,14 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes"
-	incr exit_code 1
+	fail "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes"
 }
 
 #
 # modify resources
 #
 if {[mod_resource $sr1 [array get resource1_chng]] == 1} {
-	log_error "Resource modify not working ($matches != 1)"
-	incr exit_code 1
+	fail "Resource modify not working ($matches != 1)"
 }
 
 #
@@ -185,8 +180,7 @@ if {[mod_resource $sr1 [array get resource1_chng]] == 1} {
 #
 set resource1_chck(count) $resource1_chng(count)
 if {[check_resource_limits $sr1 [array get resource1_chck]] == 1} {
-	log_error "List resource output is incorrect"
-	incr exit_code 1
+	fail "List resource output is incorrect"
 }
 
 #
@@ -211,14 +205,15 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes"
-	incr exit_code 1
+	fail "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes"
 }
 
 #
 # remove resource
 #
-incr exit_code [remove_res $sr1]
+if [remove_res $sr1] {
+	fail "Unable to remove resource ($sr1)"
+}
 
 #
 # use scontrol to verify cluster license was removed
@@ -238,8 +233,7 @@ expect {
 	}
 }
 if {$matches != 0} {
-	log_error "scontrol failed to remove license $sr1@$resource1(Server)"
-	incr exit_code 1
+	fail "scontrol failed to remove license $sr1@$resource1(Server)"
 }
 
 #
@@ -252,16 +246,10 @@ add_resource "$sr2,$sr3" [array get resource2]
 #
 # Check resource 2
 if {[check_resource_limits $sr2 [array get resource2_chck]] == 1} {
-	log_error "List resource output is incorrect"
-	incr exit_code 1
+	fail "List resource output is incorrect"
 }
 
 # Check resource 3
 if {[check_resource_limits $sr3 [array get resource2_chck]] == 1} {
-	log_error "List resource output is incorrect"
-	incr exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "List resource output is incorrect"
 }

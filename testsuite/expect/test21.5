@@ -29,7 +29,6 @@
 source ./globals
 source ./globals_accounting
 
-set exit_code   0
 set dmatches    0
 # Test Clusters
 set tc1		"test$test_id-cluster.1"
@@ -61,91 +60,11 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-#
-# Use sacctmgr to delete the test cluster
-#
-	set nothing 0
-	set matches 0
+proc cleanup {} {
+	global sacctmgr tc1 cluster
 
-set my_pid [spawn $sacctmgr -i delete cluster $tc1]
-
-	expect {
-		-re "privilege to perform this action" {
-			set access_err 1
-			exp_continue
-		}
-		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
-			log_error "There was a problem with the sacctmgr command"
-			incr exit_code 1
-		}
-		-re "Problem getting" {
-			log_error "There was a problem getting information from the database"
-			incr exit_code 1
-		}
-		-re "Problem adding" {
-			log_error "There was an unknown problem"
-			incr exit_code 1
-		}
-		-re "No associations" {
-			log_error "Your command didn't return anything"
-			incr exit_code 1
-		}
-		-re "Deleting clusters" {
-			incr matches
-			exp_continue
-		}
-		-re " Nothing deleted" {
-			incr matches
-			set nothing 1
-			exp_continue
-		}
-		timeout {
-			slow_kill $my_pid
-			fail "sacctmgr delete not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$access_err != 0} {
-		return 1
-	}
-	if {$matches != 1} {
-		log_error "sacctmgr had a problem deleting cluster got $matches"
-		incr exit_code 1
-	}
-	if { !$nothing } {
-		if {![check_acct_associations]} {
-			log_error "Our associations don't line up"
-			incr exit_code 1
-		}
-	}
-#
-# Delete vestigial QOSs
-#
-set dmatches 0
-set sadel_pid [spawn $sacctmgr -i delete qos $cluster(DefaultQos)]
-expect {
-	-re "Deleting QOS" {
-		incr dmatches
-		exp_continue
-	}
-	-re "Nothing deleted" {
-		incr dmatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$dmatches != 1} {
-	log_error "sacctmgr had a problem deleting QOS got $dmatches"
-	set exit_code 1
+	run_command "$sacctmgr -i delete cluster $tc1"
+	run_command "$sacctmgr -i delete qos $cluster(DefaultQos)"
 }
 
 #
@@ -166,8 +85,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	log_error "QOS $cluster(DefaultQos) was not created"
-	set exit_code 1
+	fail "QOS $cluster(DefaultQos) was not created"
 }
 
 #
@@ -184,72 +102,10 @@ if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
 
-check_assoc_limit 1 cluster $tc1 [array get cluster]
 if {![check_assoc_limit 1 cluster $tc1 [array get cluster]]} {
-	log_error "The association limits for cluster $tc1 are incorrect"
-	set exit_code 1
-}
-
-if {![check_acct_associations]} {
-	log_error "Our associations don't line up"
-	set exit_code 1
-}
-
-#
-# Use sacctmgr to delete the test cluster
-#
-set dmatches 0
-set sadel_pid [spawn $sacctmgr -i delete cluster $tc1]
-expect {
-	-re "Deleting clusters" {
-		incr dmatches
-		exp_continue
-	}
-	-re "$tc1" {
-		incr dmatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$dmatches != 2} {
-	log_error "sacctmgr had a problem deleting cluster got $dmatches"
-	set exit_code 1
-}
-
-#
-# Delete Qos
-#
-set dmatches 0
-set sadel_pid [spawn $sacctmgr -i delete qos $cluster(DefaultQos)]
-expect {
-	-re "Deleting QOS" {
-		incr dmatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$dmatches != 1} {
-	fail "sacctmgr had a problem deleting QOS got $dmatches"
+	fail "The association limits for cluster $tc1 are incorrect"
 }
 
 if {![check_acct_associations]} {
 	fail "Our associations don't line up"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

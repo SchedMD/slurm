@@ -29,23 +29,22 @@
 source ./globals
 source ./globals_accounting
 
-set exit_code   0
 set almatches   0
 set damatches   0
 set dcmatches   0
 # Cluster Names #
-set tc1		"test$test_id-cluster-1"
-set tc2		"test$test_id-cluster-2"
+set tc1                 "${test_name}-cluster-1"
+set tc2                 "${test_name}-cluster-2"
 # Cluster values #
 array set cluster {}
-set cluster(Fairshare)     2500
-set cluster(MaxCPUs)       100
-set cluster(MaxJobs)       50
-set cluster(MaxNodes)      300
-set cluster(MaxWall)       01:00:00
+set cluster(Fairshare)  2500
+set cluster(MaxCPUs)    100
+set cluster(MaxJobs)    50
+set cluster(MaxNodes)   300
+set cluster(MaxWall)    01:00:00
 # Account Name #
-set ta1		"test$test_id-account.1"
-set ta2		"test$test_id-account.2"
+set ta1                 "${test_name}-account.1"
+set ta2                 "${test_name}-account.2"
 # Account Limits #
 array set acct {}
 set acct(Cluster)       $tc1
@@ -64,7 +63,7 @@ set acct(MaxJobs)       50
 set acct(MaxSubmitJobs) 60
 set acct(MaxNodes)      300
 set acct(MaxWall)       01:00:00
-set acct(DefaultQos)    "test$test_id\_qos"
+set acct(DefaultQos)    "${test_name}_qos"
 set acct(Organization)  "Account_Org_A1"
 set acct(Description)   "Test_Account_A1"
 
@@ -89,6 +88,14 @@ if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
 
+proc cleanup {} {
+	global sacctmgr ta1 ta2 tc1 tc2 acct
+
+	run_command "$sacctmgr -i delete account $ta1,$ta2"
+	run_command "$sacctmgr -i delete cluster $tc1,$tc2"
+	run_command "$sacctmgr -i delete qos $acct(DefaultQos)"
+}
+
 #
 # Add test Cluster
 #
@@ -99,8 +106,7 @@ if {$access_err != 0} {
 }
 
 if {![check_acct_associations]} {
-	log_error "Our associations don't line up"
-	set exit_code 1
+	fail "Our associations don't line up"
 }
 
 #
@@ -121,8 +127,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	log_error "QOS $acct(DefaultQos) was not created"
-	set exit_code 1
+	fail "QOS $acct(DefaultQos) was not created"
 }
 
 #
@@ -144,14 +149,10 @@ expect {
 		exp_continue
 	}
 	-re "$tc2.$ta1" {
-		set exit_code 1
-		log_error "$ta1 account erroneously added to $tc2"
-		exp_continue
+		fail "$ta1 account erroneously added to $tc2"
 	}
 	-re "$tc2.$ta2" {
-		exp_continue
-		log_error "$ta2 account erroneously added to $tc2"
-		set exit_code 1
+		fail "$ta2 account erroneously added to $tc2"
 	}
 	timeout {
 		slow_kill $as_list_pid
@@ -163,127 +164,16 @@ expect {
 }
 
 if {$almatches != 2} {
-	log_error "Added associations not found. Need 2 matches and got $almatches instead"
-	set exit_code 1
+	fail "Added associations not found. Need 2 matches and got $almatches instead"
 }
 # Check that the Association was set correctly
 if {![check_assoc_limit 2 account $ta1 [array get acct]]} {
-	log_error "The association limits for account $ta1 were not set correctly"
-	set exit_code 1
+	fail "The association limits for account $ta1 were not set correctly"
 }
 if {![check_assoc_limit 2 account $ta2 [array get acct]]} {
-	log_error "The association limits for account $ta2 were not set correctly"
-	set exit_code 1
-}
-
-if {![check_acct_associations]} {
-	log_error "Our associations don't line up"
-	set exit_code 1
-}
-
-#
-# Use sacctmgr to delete the test account
-#
-set sadel_pid [spawn $sacctmgr -i delete account $ta1,$ta2]
-expect {
-	-re "Deleting account" {
-		incr damatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$damatches != 1} {
-	log_error "sacctmgr had a problem deleting cluster got $damatches"
-	set exit_code 1
-}
-
-if {![check_acct_associations]} {
-	log_error "Our associations don't line up"
-	set exit_code 1
-}
-
-#
-# Use sacctmgr to delete the test cluster
-#
-set sadel_pid [spawn $sacctmgr -i delete cluster $tc1,$tc2]
-expect {
-	-re "Deleting clusters" {
-		incr dcmatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$dcmatches != 1} {
-	log_error "sacctmgr had a problem deleting cluster got $dcmatches"
-	set exit_code 1
-}
-
-#
-# Delete Qos
-#
-set dmatches 0
-set sadel_pid [spawn $sacctmgr -i delete qos $acct(DefaultQos)]
-expect {
-	-re "Deleting QOS" {
-		incr dmatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$dmatches != 1} {
-	log_error "sacctmgr had a problem deleting QOS got $dmatches"
-	set exit_code 1
-}
-
-#
-# Use sacctmgr to list the test associations
-#
-set as2_list_pid [spawn $sacctmgr list association cluster=$tc1 ]
-expect {
-	-re "$tc1 *$ta1" {
-		exp_continue
-		log_error "Test associations still exist"
-		set exit_code 1
-	}
-	-re "$tc1 *$ta2" {
-		exp_continue
-		log_error "Test associations still exist"
-		set exit_code 1
-	}
-	timeout {
-		slow_kill $as2_list_pid
-		log_debug "Test associations delete verified"
-	}
-	eof {
-		wait
-	}
+	fail "The association limits for account $ta2 were not set correctly"
 }
 
 if {![check_acct_associations]} {
 	fail "Our associations don't line up"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
