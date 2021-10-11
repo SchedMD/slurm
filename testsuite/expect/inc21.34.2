@@ -27,82 +27,84 @@
 ############################################################################
 
 proc inc21_34_2 { qostest } {
-	global salloc srun acct bin_sleep grpwall_num number exit_code
+	global salloc srun acct bin_sleep grpwall_num number
 
 	log_info "Starting Grpwall test"
 	set job_id1 0
 	set job_id2 0
-	set timeout 120
 
-	# Since wall is a decayed variable, reset it to make sure the test
-	# gets exactly what we would expect.
-	incr exit_code [reset_qos_usage "" $qostest]
+	# Raise an error to abort the catch block
+	set exception_code [catch {
 
-	spawn $salloc --account=$acct -N2 -t1 $srun $bin_sleep [expr $grpwall_num * 60 + 1]
-	expect {
-		-re "Granted job allocation ($number)" {
-			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted"
-		}
-		-re "Job violates accounting/QOS policy" {
-			log_error "This job should not be pending, but is"
-			set exit_code 1
-		}
-		-re "error" {
-			log_error "Job allocation should not have failed"
-			set exit_code 1
-		}
-		timeout {
-			log_error "salloc not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+		set timeout 120
 
-	if {$job_id1 == 0} {
-		log_error "Job was not submitted"
-		set exit_code 1
-	} else {
-		# Wait for job 1 to finish so that we can test wall time limit
-		wait_for_job $job_id1 DONE
-	}
+		# Since wall is a decayed variable, reset it to make sure the test
+		# gets exactly what we would expect.
+		if [reset_qos_usage "" $qostest] {
+			error "Unable to reset QOS usage"
+		}
 
-	set match 0
-	spawn $salloc -I --account=$acct -N2 -t1 $srun $bin_sleep 10
-	expect {
-		-re "Job violates accounting/QOS policy" {
-			log_debug "Job is waiting for resources. This is exected"
-			set match 1
+		spawn $salloc --account=$acct -N2 -t1 $srun $bin_sleep [expr $grpwall_num * 60 + 1]
+		expect {
+			-re "Granted job allocation ($number)" {
+				set job_id1 $expect_out(1,string)
+				log_debug "Job $job_id1 has been submitted"
+			}
+			-re "Job violates accounting/QOS policy" {
+				error "This job should not be pending, but is"
+			}
+			-re "error" {
+				error "Job allocation should not have failed"
+			}
+			timeout {
+				error "salloc not responding"
+			}
+			eof {
+				wait
+			}
 		}
-		-re "Granted job allocation ($number)" {
-			set job_id2 $expect_out(1,string)
-			log_error "Job $job_id2 should be waiting for resources, but is not"
-			set exit_code 1
-		}
-		timeout {
-			log_error "salloc is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
 
-	if {$match != 1} {
-		log_error "Job was submitted when it should not have been"
-		set exit_code 1
-	}
+		if {$job_id1 == 0} {
+			error "Job was not submitted"
+		} else {
+			# Wait for job 1 to finish so that we can test wall time limit
+			wait_for_job $job_id1 DONE
+		}
+
+		set match 0
+		spawn $salloc -I --account=$acct -N2 -t1 $srun $bin_sleep 10
+		expect {
+			-re "Job violates accounting/QOS policy" {
+				log_debug "Job is waiting for resources. This is exected"
+				set match 1
+			}
+			-re "Granted job allocation ($number)" {
+				set job_id2 $expect_out(1,string)
+				error "Job $job_id2 should be waiting for resources, but is not"
+			}
+			timeout {
+				error "salloc is not responding"
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$match != 1} {
+			error "Job was submitted when it should not have been"
+		}
+
+	} message] ; # Store the error message in $message
 
 	# Reset QoS usage
-	incr exit_code [reset_qos_usage "" $qostest]
+	reset_qos_usage "" $qostest
 
 	# Cancel job
-	if {$exit_code} {
-		cancel_job $job_id2
-		cancel_job $job_id1
-	} else {
-		cancel_job $job_id2
+	cancel_job $job_id1
+	cancel_job $job_id2
+
+	# Convert any errors into failures (after cleaning up)
+	if {$exception_code == 1} { ; # errors only
+		fail "Failure testing Group wall: $message"
 	}
 }

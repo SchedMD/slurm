@@ -30,75 +30,69 @@
 proc inc21_30_1 { wait_reason } {
 
 	global srun salloc acct bin_sleep number grn_num check_reason
-	global exit_code
 
 	log_info "Starting GrpNode limit test"
 	set job_id1  0
 	set job_id2  0
-	spawn $salloc -N$grn_num --account=$acct --exclusive -t1 $srun $bin_sleep 10
-	expect {
-		-re "Granted job allocation ($number)" {
-			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted"
-		}
-		-re "Pending job allocation ($number)" {
-			log_error "Job should be running, but is not"
-			set job_id1 $expect_out(1,string)
-			set exit_code 1
-		}
-		-re "error" {
-			log_error "Job allocation should not have failed"
-			set exit_code 1
-		}
-		timeout {
-			log_error "salloc is not reponding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_id1 == 0} {
-		log_error "Jobs were not submitted"
-		set exit_code 1
-		return
-	}
 
-	spawn $salloc -N1 --account=$acct --exclusive -t1 $srun $bin_sleep 10
-	expect {
-		-re "Pending job allocation ($number)" {
-			set job_id2 $expect_out(1,string)
-			log_debug "Job $job_id2 is waiting for resources. This is expected"
-		}
-		-re "Granted job allocation ($number)" {
-			log_error "This should be pended but is not"
-			set exit_code 1
-		}
-		timeout {
-			log_error "salloc is not reponding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_id2 == 0} {
-		log_error "Jobs were not submitted"
-		set exit_code 1
-	} else {
-		# checks the state of the job
-		if {![check_job_state $job_id2 PENDING]} {
-			log_error "Job was not on the desired state"
-			set exit_code 1
-		}
-	}
+	# Raise an error to abort the catch block
+	set exception_code [catch {
 
-	if {![check_reason $job_id2 $wait_reason]} {
-		log_error "Bad job wait reason"
-		set exit_code 1
-	}
+		spawn $salloc -N$grn_num --account=$acct --exclusive -t1 $srun $bin_sleep 10
+			expect {
+				-re "Granted job allocation ($number)" {
+					set job_id1 $expect_out(1,string)
+					log_debug "Job $job_id1 has been submitted"
+				}
+				-re "Pending job allocation ($number)" {
+					set job_id1 $expect_out(1,string)
+					error "Job should be running, but is not"
+				}
+				-re "error" {
+					error "Job allocation should not have failed"
+				}
+				timeout {
+					error "salloc is not reponding"
+				}
+				eof {
+					wait
+				}
+			}
+		if {$job_id1 == 0} {
+			error "Jobs were not submitted"
+		}
+
+		spawn $salloc -N1 --account=$acct --exclusive -t1 $srun $bin_sleep 10
+			expect {
+				-re "Pending job allocation ($number)" {
+					set job_id2 $expect_out(1,string)
+					log_debug "Job $job_id2 is waiting for resources. This is expected"
+				}
+				-re "Granted job allocation ($number)" {
+					error "This should be pended but is not"
+				}
+				timeout {
+					error "salloc is not reponding"
+				}
+				eof {
+					wait
+				}
+			}
+		if {$job_id2 == 0} {
+			error "Jobs were not submitted"
+		}
+
+		subtest [check_job_state $job_id2 PENDING] "Job should be in the PENDING state"
+		subtest [check_reason $job_id2 $wait_reason] "Job should have wait reason $wait_reason"
+
+	} message] ; # Store the error message in $message
 
 	# Cancels remaining jobs
 	cancel_job $job_id1
 	cancel_job $job_id2
+
+	# Convert any errors into failures (after cleaning up)
+	if {$exception_code == 1} { ; # errors only
+	    fail "Failure testing GrpNode limit: $message"
+	}
 }

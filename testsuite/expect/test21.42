@@ -26,14 +26,11 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Report the sacctmgr usage format
 #
-
 proc test_header_in_format { entity } {
-	global sacctmgr exit_code
+	global sacctmgr
 	log_info "Verifying sacctmgr show $entity format="
 	log_user 0
 	spawn $sacctmgr show $entity -p
@@ -45,8 +42,7 @@ proc test_header_in_format { entity } {
 					spawn $sacctmgr show $entity format=$name
 					expect {
 						-re "Unknown field" {
-							log_error "Failed to validate use of $name in sacctmgr show $entity format."
-							set exit_code 1
+							fail "Failed to validate use of $name in sacctmgr show $entity format."
 						}
 					}
 				}
@@ -57,8 +53,3 @@ proc test_header_in_format { entity } {
 }
 
 test_header_in_format "qos"
-
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

@@ -320,7 +320,7 @@ if {![regexp -line "^\\S+\\|$ta1\\|$tu1\\|normal,$tq1" [run_command_output "$sac
 }
 
 # Submit a delayed job that wants to run in the test qos
-regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta1 --wrap \"$srun sleep 10\""] {} job_id_1
+regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta1 --wrap \"$srun sleep 10\" -o none -e none"] {} job_id_1
 
 # The first job should get queued
 if {[wait_for_job $job_id_1 "PENDING"] != 0} {
@@ -331,7 +331,7 @@ if {[wait_for_job $job_id_1 "PENDING"] != 0} {
 run_command "$sacctmgr -vi modify account name=$ta1 user=$tu1 set qos=normal"
 
 # Submit a second delayed job requesting the test qos. It should be rejected
-if {![run_command_status -none "$sbatch --begin=now+2 --qos=$tq1 -A $ta1 --wrap \"$srun sleep 10\""]} {
+if {![run_command_status -none "$sbatch --begin=now+2 --qos=$tq1 -A $ta1 --wrap \"$srun sleep 10\" -o none -e none"]} {
 	fail "Job submitted with unassociated qos should have failed"
 } else {
 	log_debug "The preceding job failure was expected"
@@ -386,7 +386,7 @@ if {![regexp -line "^\\S+\\|$ta2\\|$tu1\\|normal,$tq1" [run_command_output "$sac
 # that it cannot delete an account with active jobs.
 wait_for -fail {$delete_account_status == 0} {
 	# Submit a delayed job that wants to run with the test qos and test account 2
-	regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"$srun sleep 10\""] {} job_id_1
+	regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"$srun sleep 10\" -o none -e none"] {} job_id_1
 
 	# The first job should get queued
 	if [wait_for_job $job_id_1 "PENDING"] {
@@ -409,7 +409,7 @@ wait_for -fail {$delete_account_status == 0} {
 }
 
 # Submit a second delayed job requesting test account 2. It should be rejected
-if {![run_command_status -none "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"$srun sleep 10\""]} {
+if {![run_command_status -none "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"$srun sleep 10\" -o none -e none"]} {
 	fail "Job submitted with unassociated account should have failed"
 } else {
 	log_debug "The preceding job failure was expected"

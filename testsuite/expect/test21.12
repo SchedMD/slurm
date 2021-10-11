@@ -29,14 +29,13 @@
 source ./globals
 source ./globals_accounting
 
-set exit_code   0
 set almatches   0
 set aclmatches  0
 set damatches   0
 set dcmatches   0
 # Test Cluster #
-set tc1		"test$test_id-cluster-1"
-set tc2		"test$test_id-cluster-2"
+set tc1 "${test_name}-cluster-1"
+set tc2 "${test_name}-cluster-2"
 # Cluster Limits
 array set cluster {}
 set cluster(Fairshare)     2500
@@ -45,8 +44,8 @@ set cluster(MaxJobs)       50
 set cluster(MaxNodes)      300
 set cluster(MaxWall)       01:00:00
 # Test Accounts #
-set ta1		"test$test_id-account.1"
-set ta2		"test$test_id-account.2"
+set ta1 "${test_name}-account.1"
+set ta2 "${test_name}-account.2"
 # Account Limits
 array set acct {}
 set acct(Cluster)       $tc1
@@ -73,6 +72,13 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
+proc cleanup {} {
+	global sacctmgr ta1 ta2 tc1 tc2
+
+	run_command "$sacctmgr -i remove account $ta1,$ta2"
+	run_command "$sacctmgr -i remove cluster $tc1,$tc2"
+}
+
 #
 # Add test cluster
 #
@@ -83,8 +89,7 @@ if {$access_err != 0} {
 }
 
 if {![check_acct_associations]} {
-	log_error "Our associations don't line up"
-	set exit_code 1
+	fail "Our associations don't line up"
 }
 
 #
@@ -106,14 +111,10 @@ expect {
 		exp_continue
 	}
 	-re "$tc2.$ta1" {
-		set exit_code 1
-		log_error "$ta1 account erroneously added to $tc2"
-		exp_continue
+		fail "$ta1 account erroneously added to $tc2"
 	}
 	-re "$tc2.$ta2" {
-		exp_continue
-		log_error "$ta2 account erroneously added to $tc2"
-		set exit_code 1
+		fail "$ta2 account erroneously added to $tc2"
 	}
 	timeout {
 		slow_kill $as_list_pid
@@ -125,13 +126,11 @@ expect {
 }
 
 if {$almatches != 2} {
-	log_error "Added associations not found. Need 2 matches and got $almatches instead"
-	set exit_code 1
+	fail "Added associations not found. Need 2 matches and got $almatches instead"
 }
 
 if {![check_acct_associations]} {
-	log_error "Our associations don't line up"
-	set exit_code 1
+	fail "Our associations don't line up"
 }
 
 #
@@ -157,90 +156,5 @@ expect {
 }
 
 if {$aclmatches != 2} {
-	log_error "Added account incorrect. Need 2 matches and got $aclmatches instead"
-	set exit_code 1
-}
-
-#
-# Use sacctmgr to delete the test account
-#
-set sadel_pid [spawn $sacctmgr -i delete account $ta1,$ta2]
-expect {
-	-re "Deleting account" {
-		incr damatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$damatches != 1} {
-	log_error "sacctmgr had a problem deleting cluster got $damatches"
-	set exit_code 1
-}
-
-if {![check_acct_associations]} {
-	log_error "Our associations don't line up"
-	set exit_code 1
-}
-
-#
-# Use sacctmgr to delete the test cluster
-#
-set sadel_pid [spawn $sacctmgr -i delete cluster $tc1,$tc2]
-expect {
-	-re "Deleting clusters" {
-		incr dcmatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$dcmatches != 1} {
-	log_error "sacctmgr had a problem deleting cluster got $dcmatches"
-	set exit_code 1
-}
-
-#
-# Use sacctmgr to list the test associations
-#
-set as2_list_pid [spawn $sacctmgr list associations cluster=$tc1 ]
-expect {
-	-re "$tc1 *$ta1" {
-		exp_continue
-		log_error "Test associations still exist"
-		set exit_code 1
-	}
-	-re "$tc1 *$ta2" {
-		exp_continue
-		log_error "Test associations still exist"
-		set exit_code 1
-	}
-	timeout {
-		log_debug "Test associations delete verified"
-		slow_kill $as2_list_pid
-	}
-	eof {
-		wait
-	}
-}
-
-if {![check_acct_associations]} {
-	log_error "Our associations don't line up"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
+	fail "Added account incorrect. Need 2 matches and got $aclmatches instead"
 }

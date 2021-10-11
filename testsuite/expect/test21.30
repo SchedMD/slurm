@@ -80,7 +80,6 @@ if {[check_config_select "linear"] || [default_part_exclusive]} {
 	skip "This test is incompatible with exclusive node allocations"
 }
 
-set exit_code	0
 set skips       0
 set test_node   ""
 # Total cpus in test node
@@ -323,8 +322,7 @@ expect {
 		exp_continue
 	}
 	-re "Error" {
-		log_error "Account was not deleted"
-		set exit_code 1
+		fail "Account was not deleted"
 	}
 	timeout {
 		fail "sacctmgr is not responding"
@@ -392,9 +390,6 @@ set mod_qos_vals(GrpNodes) $grn_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_1 "QOSGrpNodeLimit"
-if {$exit_code != 0} {
-	fail "Failure testing GrpNode limit"
-}
 # Reset the value to 0
 set mod_qos_vals(GrpNodes) "-1"
 
@@ -410,9 +405,6 @@ if { $one_task_pc } {
 }
 
 inc21_30_2 "QOSGrpCpuLimit"
-if {$exit_code != 0} {
-	fail "Failure testing GrpCpus"
-}
 set mod_qos_vals(GrpCpus) "-1"
 
 #
@@ -422,9 +414,6 @@ set mod_qos_vals(GrpJobs) $grjobs_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_3 "QOSGrpJobsLimit"
-if {$exit_code != 0} {
-	fail "Failure testing GrpJob limits"
-}
 set mod_qos_vals(GrpJobs) "-1"
 
 #
@@ -434,9 +423,6 @@ set mod_qos_vals(GrpSubmit) $grsub_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_4
-if {$exit_code != 0} {
-	fail "Failure testing GrpSubmit"
-}
 set mod_qos_vals(GrpSubmit) "-1"
 
 #
@@ -452,9 +438,6 @@ if { $one_task_pc } {
 
 
 inc21_30_5 "QOSMaxCpuPerJobLimit"
-if {$exit_code != 0} {
-	fail "Failure testing QOSMaxCpuPerJobLimit"
-}
 set mod_qos_vals(MaxCpus) "-1"
 
 #
@@ -464,9 +447,6 @@ set mod_qos_vals(MaxNodes) $maxnode_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_6 "QOSMaxNodePerJobLimit|PartitionConfig"
-if {$exit_code != 0} {
-	fail "Failure testing MaxNode limit"
-}
 set mod_qos_vals(MaxNodes) "-1"
 
 #
@@ -476,9 +456,6 @@ set mod_qos_vals(MaxJobs) $maxjobs_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_7 "QOSMaxJobsPerUserLimit"
-if {$exit_code != 0} {
-	fail "Failure testing MaxJobs limit"
-}
 set mod_qos_vals(MaxJobs) "-1"
 
 #
@@ -488,9 +465,6 @@ set mod_qos_vals(MaxSubmitJobs) $maxjobsub_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_8
-if {$exit_code != 0} {
-	fail "Failure testing MaxJobsSubmits limit"
-}
 set mod_qos_vals(MaxSubmitJobs) "-1"
 
 #
@@ -503,9 +477,6 @@ if { $one_task_pc } {
 	set grpcpumin_num [expr $grpcpumin_num / $nthreads]
 }
 inc21_30_9 "QOSGrpCPUMinutesLimit"
-if {$exit_code != 0 } {
-	fail "Failure testing GroupCPUMins"
-}
 set mod_qos_vals(GrpCpuMin) "-1"
 
 #
@@ -520,9 +491,6 @@ if { $prio_multifactor != 0 } {
 		set grpcpurunmin_num [expr $grpcpurunmin_num / $nthreads]
 	}
 	inc21_30_10 "QOSGrpCPURunMinutesLimit"
-	if {$exit_code != 0 } {
-		fail "Failure testing GroupCPURunMins"
-	}
 	set mod_qos_vals(GrpCpuRunMin) "-1"
 }
 
@@ -533,9 +501,6 @@ set mod_qos_vals(GrpMem) $grpmem_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_11 "QOSGrpMemLimit"
-if {$exit_code != 0 } {
-	fail "Failure testing Group Memory"
-}
 set mod_qos_vals(GrpMem) "-1"
 
 #
@@ -547,9 +512,6 @@ if { $prio_multifactor != 0 } {
 	mod_qos $qostest [array get mod_qos_vals]
 	sleep $time_spacing
 	inc21_30_12
-	if {$exit_code != 0 } {
-		fail "Failure testing Group wall"
-	}
 	set mod_qos_vals(GrpWall) "-1"
 }
 
@@ -563,9 +525,6 @@ if { $one_task_pc } {
 	set maxcpumin_num [expr $maxcpumin_num / $nthreads]
 }
 inc21_30_13 "QOSMaxCpuMinutesPerJobLimit"
-if {$exit_code != 0 } {
-	fail "Failure testing Max Cpu Mins"
-}
 set mod_qos_vals(MaxCpuMin) "-1"
 
 #
@@ -575,9 +534,6 @@ set mod_qos_vals(MaxWall) $maxwall_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_14 "QOSMaxWallDurationPerJobLimit"
-if {$exit_code != 0 } {
-	fail "Failure testing Max Wall"
-}
 set mod_qos_vals(MaxWall) "-1"
 
 #
@@ -596,9 +552,6 @@ if { $one_task_pc } {
 	set maxcpuspu_num [expr $maxcpuspu_num / $nthreads]
 }
 inc21_30_15 "QOSMaxCpuPerUserLimit"
-if {$exit_code != 0 } {
-	fail "Failure testing QOSMaxCpuPerUserLimit"
-}
 set mod_qos_vals(MaxCpusPerUser) "-1"
 
 #
@@ -608,9 +561,6 @@ set mod_qos_vals(MaxNodesPerUser) $maxnodespu_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_16 "QOSMaxNodePerUserLimit|PartitionConfig"
-if {$exit_code != 0 } {
-	fail "Failure testing MaxNodesPerUser"
-}
 set mod_qos_vals(MaxNodesPerUser) "-1"
 
 #
@@ -621,9 +571,6 @@ set mod_qos_vals(MaxWall) $maxwall_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
 inc21_30_17
-if {$exit_code != 0 } {
-	fail "Failure testing MaxWall is used as job's timelimit if job was requested without --time option"
-}
 set mod_qos_vals(MaxWall) "-1"
 
 
@@ -632,8 +579,7 @@ set mod_qos_vals(MaxWall) "-1"
 spawn $scontrol update partitionname=$partition tresbillingweights=cpu=$tres_cpu_mult
 expect {
 	-re "error" {
-		log_error "Failed to set TRESBillingWeights"
-		set exit_code 1
+		fail "Failed to set TRESBillingWeights"
 	}
 	timeout {
 		fail "scontrol is not responding"
@@ -641,9 +587,6 @@ expect {
 	eof {
 		wait
 	}
-}
-if {$exit_code != 0} {
-	fail "Failure testing TRESBillingWeights"
 }
 
 #
@@ -658,9 +601,6 @@ if { $one_task_pc } {
 }
 
 inc21_30_2 "QOSGrpBilling"
-if {$exit_code != 0} {
-	fail "Failure testing GrpTRES=billing"
-}
 set mod_qos_vals(GrpTRES=billing) "-1"
 
 
@@ -674,9 +614,6 @@ if { $one_task_pc } {
 	set grpcpumin_num [expr $grpcpumin_num / $nthreads]
 }
 inc21_30_9 "QOSGrpBillingMinutes"
-if {$exit_code != 0 } {
-	fail "Failure testing GrpTRESMins=billing"
-}
 set mod_qos_vals(GrpTRESMins=billing) "-1"
 
 
@@ -692,9 +629,6 @@ if { $prio_multifactor != 0 } {
 		set grpcpurunmin_num [expr $grpcpurunmin_num / $nthreads]
 	}
 	inc21_30_10 "QOSGrpBillingRunMinutes"
-	if {$exit_code != 0 } {
-		fail "Failure testing GroupTRESRunMins=billing"
-	}
 	set mod_qos_vals(GrpTRESRunMins=billing) "-1"
 }
 
@@ -711,9 +645,6 @@ if { $one_task_pc } {
 }
 
 inc21_30_5 "QOSMaxBillingPerJob"
-if {$exit_code != 0} {
-	fail "Failure testing GrpTRES=billing limits"
-}
 set mod_qos_vals(MaxTRESPerJob=billing) "-1"
 
 #
@@ -726,9 +657,6 @@ if { $one_task_pc } {
 	set maxcpumin_num [expr $maxcpumin_num / $nthreads]
 }
 inc21_30_13 "QOSMaxBillingMinutesPerJob"
-if {$exit_code != 0 } {
-	fail "Failure testing MaxTRESMinsPerJob=billing"
-}
 set mod_qos_vals(MaxTRESMinsPerJob=billing) "-1"
 
 #
@@ -747,14 +675,7 @@ if { $one_task_pc } {
 	set maxcpuspu_num [expr $maxcpuspu_num / $nthreads]
 }
 inc21_30_15 "QOSMaxBillingPerUser"
-if {$exit_code != 0 } {
-	fail "Failure testing QOSMaxBillingPerUser"
-}
 set mod_qos_vals(MaxTRESPerUser=billing) "-1"
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
 
 if {$skips != 0} {
 	skip "Test was partially skipped (skips = $skips)"

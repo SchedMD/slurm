@@ -29,12 +29,11 @@
 source ./globals
 source ./globals_accounting
 
-set exit_code   0
 set amatches    0
 set dmatches    0
-set tc1		"test$test_id-cluster-1"
-set tc2		"test$test_id-cluster-2"
-set tc3		"test$test_id-cluster-3"
+set tc1		"${test_name}-cluster-1"
+set tc2		"${test_name}-cluster-2"
+set tc3		"${test_name}-cluster-3"
 
 array set cluster {}
 set cluster(Fairshare)     2500
@@ -62,11 +61,16 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
+proc cleanup {} {
+	global tc1 tc2 tc3
+
+	remove_cluster "$tc1,$tc2,$tc3"
+}
+
 #
 # Remove any vestigial clusters
 #
-remove_cluster "$tc1,$tc2,$tc3"
-
+cleanup
 
 #
 # Add a cluster to use for testing
@@ -81,56 +85,11 @@ if {$access_err != 0} {
 # Check cluster limits
 #
 if {![check_assoc_limit 1 cluster $tc1 [array get cluster]]} {
-	log_error "The association limits for cluster $tc1 are incorrect"
-	set exit_code 1
+	fail "The association limits for cluster $tc1 are incorrect"
 }
 if {![check_assoc_limit 1 cluster $tc2 [array get cluster]]} {
-	log_error "The association limits for cluster $tc2 are incorrect"
-	set exit_code 1
+	fail "The association limits for cluster $tc2 are incorrect"
 }
 if {![check_assoc_limit 1 cluster $tc3 [array get cluster]]} {
-	log_error "The association limits for cluster $tc3 are incorrect"
-	set exit_code 1
-}
-
-#
-# Use sacctmgr to delete the test cluster
-#
-set sadel_pid [spawn $sacctmgr delete cluster $tc1,$tc2,$tc3]
-expect {
-	-re "Deleting clusters" {
-		incr dmatches
-		exp_continue
-	}
-	-re "$tc1" {
-		incr dmatches
-		exp_continue
-	}
-	-re "Would you like to commit changes\\\? \\\(You have 30 seconds to decide\\\)" {
-		incr dmatches
-		exp_continue
-	}
-	-re "\\\(N\\\/y\\\):" {
-		incr dmatches
-		send "Y"
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$dmatches != 4} {
-	fail "sacctmgr had a problem deleting cluster"
-}
-if {![check_acct_associations]} {
-	fail "Our associations don't line up"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "The association limits for cluster $tc3 are incorrect"
 }
