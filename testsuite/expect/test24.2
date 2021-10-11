@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code	0
 set timeout	60
 
 #
@@ -299,77 +298,37 @@ proc sshare_opt { soption } {
 ################################################################
 
 set matches [sshare_opt -help ]
-if {$matches != 3} {
-	log_error "sshare --help failed ($matches != 3)"
-	set exit_code 1
-}
+subtest {$matches == 3} "Verify sshare --help option" "$matches != 3"
 
 set matches [sshare_opt -usage ]
-if {$matches != 3} {
-	log_error "sshare --usage failed ($matches != 3)"
-	set exit_code 1
-}
+subtest {$matches == 3} "Verify sshare --usage option" "$matches != 3"
 
 set matches [sshare_opt n ]
-if {$matches != 0} {
-	log_error "sshare -n failed ($matches != 0)"
-	set exit_code 1
-}
+subtest {$matches == 0} "Verify sshare -n option" "$matches != 0"
 
 set matches [sshare_opt -noheader ]
-if {$matches != 0} {
-	log_error "sshare --noheader failed ($matches != 0)"
-	set exit_code 1
-}
+subtest {$matches == 0} "Verify sshare --noheader option" "$matches != 0"
 
 set matches [sshare_opt p ]
-if {$matches != 2} {
-	log_error "sshare -p failed ($matches != 2)"
-	set exit_code 1
-}
+subtest {$matches == 2} "Verify sshare -p option" "$matches != 2"
 
 set matches [sshare_opt -parsable ]
-if {$matches != 2} {
-	log_error "sshare --parsable failed ($matches != 2)"
-	set exit_code 1
-}
+subtest {$matches == 2} "Verify sshare --parsable option" "$matches != 2"
 
 set matches [sshare_opt P ]
-if {$matches != 2} {
-	log_error "sshare -P failed ($matches != 2)"
-	set exit_code 1
-}
+subtest {$matches == 2} "Verify sshare -P option" "$matches != 2"
 
 set matches [sshare_opt -parsable2 ]
-if {$matches != 2} {
-	log_error "sshare --parsable2 failed ($matches != 2)"
-	set exit_code 1
-}
+subtest {$matches == 2} "Verify sshare --parsable2 option" "$matches != 2"
 
 set matches [sshare_opt v ]
-if {$matches != 2} {
-	log_error "sshare -v failed ($matches != 2)"
-	set exit_code 1
-}
+subtest {$matches == 2} "Verify sshare -v option" "$matches != 2"
 
 set matches [sshare_opt -verbose ]
-if {$matches != 2} {
-	log_error "sshare --verbose failed ($matches != 2)"
-	set exit_code 1
-}
+subtest {$matches == 2} "Verify sshare --verbose option" "$matches != 2"
 
 set matches [sshare_opt V ]
-if {$matches != 1} {
-	log_error "sshare -v failed ($matches != 1)"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify sshare -V option" "$matches != 1"
 
 set matches [sshare_opt -version ]
-if {$matches != 1} {
-	log_error "sshare --verbose failed ($matches != 1)"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}
+subtest {$matches == 1} "Verify sshare --version option" "$matches != 1"
