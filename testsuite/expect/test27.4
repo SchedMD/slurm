@@ -25,10 +25,8 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 proc sdiag_all { } {
-	global sdiag number exit_code
+	global sdiag number
 	global jobs_submitted jobs_started
 
 	set matches 0
@@ -52,10 +50,7 @@ proc sdiag_all { } {
 		}
 	}
 
-	if {$matches != 2} {
-		log_error "sdiag --all failed ($matches)"
-		set exit_code 1
-	}
+	subtest {$matches == 2} "Verify sdiag --all option" "$matches"
 }
 
 sdiag_all
@@ -86,8 +81,4 @@ if {$jobs_submitted <= $submit_begin} {
 }
 if {$jobs_started <= $start_begin} {
 	fail "sdiag job start count not incremented"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

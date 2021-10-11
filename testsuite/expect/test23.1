@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
 set not_support 0
 
@@ -47,7 +46,6 @@ set not_support 0
 proc sstat_job { soption } {
 	global number sstat
 	set debug	0
-	set exit_code   0
 	set matches     0
 	set not_support 0
 	log_debug "sstat -$soption "
@@ -79,11 +77,7 @@ proc sstat_job { soption } {
 			}
 		}
 
-		if {$matches != 3} {
-			log_error "sstat -$soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 3} "Verify sstat -$soption option"
 	}
 
 	if { $soption == "-usage" } {
@@ -108,11 +102,7 @@ proc sstat_job { soption } {
 			}
 		}
 
-		if {$matches != 2} {
-			log_error "sstat -$soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 2} "Verify sstat -$soption option"
 	}
 
 	if { $soption == "V" || $soption == "-version" } {
@@ -132,53 +122,13 @@ proc sstat_job { soption } {
 			}
 		}
 
-		if {$matches != 1} {
-			log_error "sstat -$soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 1} "Verify sstat -$soption option"
 	}
 }
 ################################################################
 
-set matches [sstat_job h ]
-if {$matches != 3} {
-	log_error "sstat -h failed ($matches)"
-	set exit_code 1
-} else {
-	log_debug "Sstat -h test GOOD!"
-}
-
-set matches [sstat_job -help ]
-if {$matches != 3} {
-	log_error "sstat --help failed ($matches)"
-	set exit_code 1
-} else {
-	log_debug "Sstat --help test GOOD!"
-}
-
-set matches [sstat_job -usage ]
-if {$matches != 2} {
-	log_error "sstat --usage failed ($matches)"
-	set exit_code 1
-} else {
-	log_debug "Sstat --usage test GOOD!"
-}
-
-set matches [sstat_job V ]
-if {$matches != 1} {
-	fail "sstat -V failed ($matches)"
-} else {
-	log_debug "Sstat -V test GOOD!"
-}
-
-set matches [sstat_job -version ]
-if {$matches != 1} {
-	fail "sstat --version failed ($matches)"
-} else {
-	log_debug "Sstat --version test GOOD!"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+sstat_job h
+sstat_job -help
+sstat_job -usage
+sstat_job V
+sstat_job -version
