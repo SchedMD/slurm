@@ -115,7 +115,8 @@ static bool	_scan_depend(List dependency_list, job_record_t *job_ptr);
 static void *	_sched_agent(void *args);
 static int	_schedule(bool full_queue);
 static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
-static int	_valid_feature_list(job_record_t *job_ptr, bool can_reboot);
+static int	_valid_feature_list(job_record_t *job_ptr, List feature_list,
+				    bool can_reboot);
 static int	_valid_node_feature(char *feature, bool can_reboot);
 #ifndef HAVE_FRONT_END
 static void *	_wait_boot(void *arg);
@@ -4624,30 +4625,45 @@ extern List feature_list_copy(List feature_list_src)
  * OUT details->feature_list
  * RET error code
  */
-extern int build_feature_list(job_record_t *job_ptr)
+extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	char *tmp_requested, *str_ptr, *feature = NULL;
+	char *features;
+	List *feature_list;
+	int feature_err;
 	int bracket = 0, count = 0, i, paren = 0, rc;
 	bool fail = false;
 	job_feature_t *feat;
 	bool can_reboot;
 
-	if (!detail_ptr || !detail_ptr->features) {	/* no constraints */
+	/* no hard constraints */
+	if (!detail_ptr || !detail_ptr->features) {
 		if (job_ptr->batch_features)
 			return ESLURM_BATCH_CONSTRAINT;
 		return SLURM_SUCCESS;
 	}
-	if (detail_ptr->feature_list)		/* already processed */
+
+	if (prefer) {
+	} else {
+		features = detail_ptr->features;
+		feature_list = &detail_ptr->feature_list;
+		feature_err = ESLURM_INVALID_FEATURE;
+	}
+
+	if (!features) /* The other constraint is non NULL. */
+		return SLURM_SUCCESS;
+
+	if (*feature_list)		/* already processed */
 		return SLURM_SUCCESS;
 
 	/* Use of commas separator is a common error. Replace them with '&' */
-	while ((str_ptr = strstr(detail_ptr->features, ",")))
+	while ((str_ptr = strstr(features, ",")))
 		str_ptr[0] = '&';
 
 	can_reboot = node_features_g_user_update(job_ptr->user_id);
-	tmp_requested = xstrdup(detail_ptr->features);
-	detail_ptr->feature_list = list_create(feature_list_delete);
+	tmp_requested = xstrdup(features);
+	*feature_list = list_create(feature_list_delete);
 	for (i = 0; ; i++) {
 		if (tmp_requested[i] == '*') {
 			tmp_requested[i] = '\0';
@@ -4675,7 +4691,7 @@ extern int build_feature_list(job_record_t *job_ptr)
 				feat->op_code = FEATURE_OP_XAND;
 			else
 				feat->op_code = FEATURE_OP_AND;
-			list_append(detail_ptr->feature_list, feat);
+			list_append(*feature_list, feat);
 			feature = NULL;
 			count = 0;
 		} else if (tmp_requested[i] == '|') {
@@ -4709,7 +4725,7 @@ extern int build_feature_list(job_record_t *job_ptr)
 				feat->op_code = FEATURE_OP_XOR;
 			else
 				feat->op_code = FEATURE_OP_OR;
-			list_append(detail_ptr->feature_list, feat);
+			list_append(*feature_list, feat);
 			feature = NULL;
 			count = 0;
 		} else if (tmp_requested[i] == '[') {
@@ -4724,13 +4740,13 @@ extern int build_feature_list(job_record_t *job_ptr)
 			if ((feature == NULL) || (bracket == 0)) {
 				if (job_ptr->job_id) {
 					verbose("%pJ invalid constraint %s",
-						job_ptr, detail_ptr->features);
+						job_ptr, features);
 				} else {
 					verbose("Reservation invalid constraint %s",
-						detail_ptr->features);
+						features);
 				}
 				xfree(tmp_requested);
-				return ESLURM_INVALID_FEATURE;
+				return feature_err;
 			}
 			bracket--;
 		} else if (tmp_requested[i] == '(') {
@@ -4756,7 +4772,7 @@ extern int build_feature_list(job_record_t *job_ptr)
 				feat->count = count;
 				feat->paren = paren;
 				feat->op_code = FEATURE_OP_END;
-				list_append(detail_ptr->feature_list, feat);
+				list_append(*feature_list, feat);
 			}
 			break;
 		} else if (feature == NULL) {
@@ -4767,32 +4783,32 @@ extern int build_feature_list(job_record_t *job_ptr)
 	if (fail) {
 		if (job_ptr->job_id) {
 			verbose("%pJ invalid constraint %s",
-				job_ptr, detail_ptr->features);
+				job_ptr, features);
 		} else {
 			verbose("Reservation invalid constraint %s",
-				detail_ptr->features);
+				features);
 		}
 		return ESLURM_INVALID_FEATURE;
 	}
 	if (bracket != 0) {
 		if (job_ptr->job_id) {
 			verbose("%pJ constraint has unbalanced brackets: %s",
-				job_ptr, detail_ptr->features);
+				job_ptr, features);
 		} else {
 			verbose("Reservation constraint has unbalanced brackets: %s",
-				detail_ptr->features);
+				features);
 		}
 		return ESLURM_INVALID_FEATURE;
 	}
 	if (paren != 0) {
 		if (job_ptr->job_id) {
 			verbose("%pJ constraint has unbalanced parenthesis: %s",
-				job_ptr, detail_ptr->features);
+				job_ptr, features);
 		} else {
 			verbose("Reservation constraint has unbalanced parenthesis: %s",
-				detail_ptr->features);
+				features);
 		}
-		return ESLURM_INVALID_FEATURE;
+		return feature_err;
 	}
 
 	if (job_ptr->batch_features) {
@@ -4801,7 +4817,10 @@ extern int build_feature_list(job_record_t *job_ptr)
 			return rc;
 	}
 
-	return _valid_feature_list(job_ptr, can_reboot);
+	rc = _valid_feature_list(job_ptr, *feature_list, can_reboot);
+	if (rc == ESLURM_INVALID_FEATURE)
+		return feature_err;
+	return rc;
 }
 
 /*
@@ -4865,9 +4884,9 @@ static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 	return rc;
 }
 
-static int _valid_feature_list(job_record_t *job_ptr, bool can_reboot)
+static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
+			       bool can_reboot)
 {
-	List feature_list = job_ptr->details->feature_list;
 	ListIterator feat_iter;
 	job_feature_t *feat_ptr;
 	char *buf = NULL;

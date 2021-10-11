@@ -70,11 +70,12 @@ extern void main_sched_fini(void);
 
 /*
  * build_feature_list - Translate a job's feature string into a feature_list
- * IN  details->features
- * OUT details->feature_list
+ * IN  details->features|prefer
+ * OUT details->feature_list|prefer_list
+ * IN  prefer - if prefer or feature is being processed
  * RET error code
  */
-extern int build_feature_list(job_record_t *job_ptr);
+extern int build_feature_list(job_record_t *job_ptr, bool prefer);
 
 /*
  * Set up job_queue_rec->job_ptr to use a magnetic reservation if the
