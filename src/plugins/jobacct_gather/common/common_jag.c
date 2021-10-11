@@ -189,9 +189,10 @@ static int _get_pss(char *proc_smaps_file, jag_prec_t *prec)
         fclose(fp);
         /* Sanity checks */
 
-        if (pss > 0 && prec->tres_data[TRES_ARRAY_MEM].size_read > pss) {
+        if (pss > 0) {
 		pss *= 1024; /* Scale KB to B */
-                prec->tres_data[TRES_ARRAY_MEM].size_read = pss;
+		if (prec->tres_data[TRES_ARRAY_MEM].size_read > pss)
+			prec->tres_data[TRES_ARRAY_MEM].size_read = pss;
         }
 
 	log_flag(JAG, "%s read pss %"PRIu64" for process %s",
