@@ -4823,7 +4823,11 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 	}
 
 	if (job_ptr->batch_features) {
+		detail_ptr->feature_list_use = *feature_list;
+		detail_ptr->features_use = features;
 		rc = _valid_batch_features(job_ptr, can_reboot);
+		detail_ptr->feature_list_use = NULL;
+		detail_ptr->features_use = NULL;
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	}
@@ -4864,7 +4868,7 @@ static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 
 	if (!job_ptr->batch_features)
 		return SLURM_SUCCESS;
-	if (!job_ptr->details || !job_ptr->details->feature_list)
+	if (!job_ptr->details || !job_ptr->details->feature_list_use)
 		return ESLURM_BATCH_CONSTRAINT;
 
 	if (strchr(job_ptr->batch_features, '|'))
@@ -4872,7 +4876,7 @@ static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 	tmp = xstrdup(job_ptr->batch_features);
 	tok = strtok_r(tmp, "&|", &save_ptr);
 	while (tok) {
-		if (!list_find_first(job_ptr->details->feature_list,
+		if (!list_find_first(job_ptr->details->feature_list_use,
 				     _match_job_feature, tok)) {
 			rc = ESLURM_BATCH_CONSTRAINT;
 			break;
