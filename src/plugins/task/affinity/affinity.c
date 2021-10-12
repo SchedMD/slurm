@@ -205,7 +205,6 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
 				_bind_ldom(base + 2, mask);
 			if (val & 8)
 				_bind_ldom(base + 3, mask);
-			len--;
 			ptr--;
 			base += 4;
 		}

@@ -116,7 +116,6 @@ static int _str_to_memset(nodemask_t *mask, const char* str, int local_id)
 			nodemask_set(mask, base+2);
 		if (val & 8)
 			nodemask_set(mask, base+3);
-		len--;
 		ptr--;
 		base += 4;
 	}

@@ -1204,7 +1204,6 @@ static int _str_to_memset(bitstr_t *mask, char *str)
 		if ((val & 8) && (base < MAX_NUMA_CNT))
 			bit_set(mask, base);
 		base++;
-		len--;
 		ptr--;
 	}
 

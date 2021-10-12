@@ -637,7 +637,6 @@ extern int task_str_to_cpuset(cpu_set_t *mask, const char* str)
 			CPU_SET(base + 2, mask);
 		if (val & 8)
 			CPU_SET(base + 3, mask);
-		len--;
 		ptr--;
 		base += 4;
 	}
