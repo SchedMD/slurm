@@ -56,7 +56,7 @@
 
 #include "src/slurmrestd/operations.h"
 
-#include "src/plugins/openapi/dbv0.0.37/api.h"
+#include "src/plugins/openapi/dbv0.0.38/api.h"
 
 enum {
 	TAG_ALL_QOS = 0,
@@ -256,9 +256,9 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 
 extern void init_op_qos(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.37/qos/", op_handler_qos,
+	bind_operation_handler("/slurmdb/v0.0.38/qos/", op_handler_qos,
 			       TAG_ALL_QOS);
-	bind_operation_handler("/slurmdb/v0.0.37/qos/{qos_name}",
+	bind_operation_handler("/slurmdb/v0.0.38/qos/{qos_name}",
 			       op_handler_qos, TAG_SINGLE_QOS);
 }
 

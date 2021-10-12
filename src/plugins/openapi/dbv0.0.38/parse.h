@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef SLURMRESTD_OPENAPI_DB_PARSE_V0037
-#define SLURMRESTD_OPENAPI_DB_PARSE_V0037
+#ifndef SLURMRESTD_OPENAPI_DB_PARSE_V0038
+#define SLURMRESTD_OPENAPI_DB_PARSE_V0038
 
 #include "config.h"
 #include "slurm/slurm.h"

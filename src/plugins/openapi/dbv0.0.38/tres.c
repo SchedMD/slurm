@@ -55,7 +55,7 @@
 
 #include "src/slurmrestd/operations.h"
 
-#include "src/plugins/openapi/dbv0.0.37/api.h"
+#include "src/plugins/openapi/dbv0.0.38/api.h"
 
 static int _foreach_dump_tres(void *x, void *arg)
 {
@@ -174,7 +174,7 @@ extern int op_handler_tres(const char *context_id, http_request_method_t method,
 
 extern void init_op_tres(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.37/tres/", op_handler_tres, 0);
+	bind_operation_handler("/slurmdb/v0.0.38/tres/", op_handler_tres, 0);
 }
 
 extern void destroy_op_tres(void)

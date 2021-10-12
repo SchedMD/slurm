@@ -55,7 +55,7 @@
 
 #include "src/slurmrestd/operations.h"
 
-#include "src/plugins/openapi/dbv0.0.37/api.h"
+#include "src/plugins/openapi/dbv0.0.38/api.h"
 
 #define MAGIC_FOREACH_WCKEY 0xb3a2faf2
 typedef struct {
@@ -262,9 +262,9 @@ extern int op_handler_wckeys(const char *context_id,
 
 extern void init_op_wckeys(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.37/wckeys/", op_handler_wckeys,
+	bind_operation_handler("/slurmdb/v0.0.38/wckeys/", op_handler_wckeys,
 			       0);
-	bind_operation_handler("/slurmdb/v0.0.37/wckey/{wckey}",
+	bind_operation_handler("/slurmdb/v0.0.38/wckey/{wckey}",
 			       op_handler_wckey, 0);
 }
 

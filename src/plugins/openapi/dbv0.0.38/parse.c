@@ -52,7 +52,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/plugins/openapi/dbv0.0.37/api.h"
+#include "src/plugins/openapi/dbv0.0.38/api.h"
 
 /*
  * WARNING: parser uses a ton of macros to avoid massive amounts of copy and

@@ -55,7 +55,7 @@
 
 #include "src/slurmrestd/operations.h"
 
-#include "src/plugins/openapi/dbv0.0.37/api.h"
+#include "src/plugins/openapi/dbv0.0.38/api.h"
 
 #define MAGIC_FOREACH_USER 0xa13efef2
 typedef struct {
@@ -403,8 +403,8 @@ static int op_handler_user(const char *context_id, http_request_method_t method,
 
 extern void init_op_users(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.37/users/", op_handler_users, 0);
-	bind_operation_handler("/slurmdb/v0.0.37/user/{user_name}",
+	bind_operation_handler("/slurmdb/v0.0.38/users/", op_handler_users, 0);
+	bind_operation_handler("/slurmdb/v0.0.38/user/{user_name}",
 			       op_handler_user, 0);
 }
 
