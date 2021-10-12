@@ -26,12 +26,11 @@
 ############################################################################
 source ./globals
 
-set inc_slurm        "pro_epi_$test_name"
-set pro_epi_prog     "$test_name\_prog"
+set inc_slurm        "pro_epi"
+set pro_epi_prog     "prog"
 set proc             ""
 set run_host         ""
 set make_file        0
-set exit_code        0
 set pcmd_prog        "/opt/cray/nodehealth/default/bin/pcmd"
 
 # Use PID to avoid issues with ps aux killall
@@ -54,10 +53,9 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 }
 
 proc cleanup { } {
-	global bin_rm test_dir config_file
+	global config_file
 
-	# Clean up vestigial files and restore original slurm.conf file
-	exec $bin_rm -fr $test_dir
+	# Restore original slurm.conf file
 	restore_conf $config_file
 	reconfigure
 }
@@ -65,7 +63,7 @@ proc cleanup { } {
 set timeout $max_job_delay
 
 proc change_pro_epi { arg program_name conf_change task_pro } {
-	global inc_slurm bin_chmod bin_rm test_dir pro_epi_prog bin_echo test_name bin_pwd re_word_str make_file bin_bash exit_code file_dir bin_ln
+	global inc_slurm bin_chmod bin_rm test_dir pro_epi_prog bin_echo test_name bin_pwd re_word_str make_file bin_bash file_dir bin_ln
 	global bin_sleep
 
 	if {$conf_change == 0} {
@@ -81,8 +79,7 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 			exp_continue
 		}
 		timeout {
-			log_error "There was a problem creating the link"
-			set exit_code 1
+			fail "There was a problem creating the link"
 		}
 		eof {
 			wait
@@ -90,8 +87,7 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 	}
 
 	if {$make_ln != 1} {
-		log_error "Link was not created"
-		set exit_code 1
+		fail "Link was not created"
 	}
 
 	exec $bin_echo "#!$bin_bash\n" > $test_dir/$pro_epi_prog
@@ -109,7 +105,7 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 }
 
 proc check_file { file_name } {
-	global exit_code file_dir run_host pcmd_prog
+	global file_dir run_host pcmd_prog
 
 	sleep 1
 
@@ -129,15 +125,12 @@ proc check_file { file_name } {
 	}
 
 	if {$found == 1} {
-		log_error "The file $file_name should have been removed"
-		# Root may of created this file so we can't remove it
-		# exec $bin_rm -f $file_dir/$file_name
-		set exit_code 1
+		fail "The file $file_name should have been removed"
 	}
 }
 
 proc check_proc {program_name} {
-	global bin_ps bin_bash bin_grep exit_code
+	global bin_ps bin_bash bin_grep
 
 	set proc_exist 0
 	spawn $bin_bash -c "exec $bin_ps -ef | $bin_grep $program_name"
@@ -154,14 +147,13 @@ proc check_proc {program_name} {
 		}
 	}
 	if {$proc_exist == 1} {
-		log_error "$program_name should have been killed"
 		exec killall -9 $program_name
-		set exit_code 1
+		fail "$program_name should have been killed"
 	}
 }
 
 proc run_job { file_type program_name conf_change task_pro} {
-	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep test_dir test_name
+	global srun run_host make_file bin_rm bin_printenv bin_sleep test_dir test_name
 
 	# Change the included file to epilog in the slurm.conf
 	change_pro_epi $file_type $program_name $conf_change $task_pro
@@ -188,8 +180,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	}
 
 	if {$sub_job != 1} {
-		log_error "srun did not start job"
-		set exit_code 1
+		fail "srun did not start job"
 	}
 
 	# wait for file
@@ -212,7 +203,6 @@ proc run_job { file_type program_name conf_change task_pro} {
 #
 set config_dir [get_conf_path]
 set config_file $config_dir/slurm.conf
-
 save_conf $config_file
 
 set get_name 0
@@ -224,8 +214,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "Did not get run_host"
-		set exit_code 1
+		fail "Did not get run_host"
 	}
 	eof {
 		wait
@@ -260,8 +249,7 @@ expect {
 	}
 }
 if {$sub_job != 1} {
-	log_error "srun did not submit job"
-	set exit_code 1
+	fail "srun did not submit job"
 }
 
 if {$make_file == 1} {
@@ -315,8 +303,7 @@ if {$make_file == 1} {
 		}
 	}
 	if {$sub_job != 1} {
-		log_error "srun did not submit job"
-		set exit_code 1
+		fail "srun did not submit job"
 	}
 
 	check_file ${test_name}_sbcast
@@ -357,7 +344,3 @@ run_job taskepilog taskepilog_${test_name}_${test_pid} 0 0
 # Test Prolog param
 #
 run_job prolog prolog_${test_name}_${test_pid} 0 0
-
-if {$exit_code} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

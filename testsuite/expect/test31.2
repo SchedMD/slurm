@@ -27,13 +27,12 @@
 ############################################################################
 source ./globals
 
-set exit_code       0
-set good_prolog     "test$test_id\_good.sh"
-set bad_prolog      "test$test_id\_bad.sh"
+set good_prolog     "$test_dir/good_prolog"
+set bad_prolog      "$test_dir/bad_prolog"
 set test_node       [lindex [get_nodes_by_state] 0]
 set job_id          0
 set job_list        {}
-set test_script     "test$test_id\.sh"
+set test_script     "$test_dir/script"
 
 if {![is_super_user]} {
 	skip "Test can only be run as SlurmUser"
@@ -43,36 +42,20 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 }
 
 proc cleanup { } {
-	global cwd config_file exit_code bin_rm bin_cp good_prolog bad_prolog
-	global scontrol test_node test_script test_id scancel job_list
+	global job_list config_file scontrol test_node
 
 	# Cancel any lingering jobs
 	cancel_job $job_list
 
 	restore_conf $config_file
-	exec $bin_rm $test_script $good_prolog $bad_prolog
 	reconfigure
 
-	spawn $scontrol update node=$test_node state=idle
-	expect {
-		timeout {
-			log_error "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	run_command "$scontrol update node=$test_node state=idle"
 }
 
-make_bash_script $good_prolog "
-exit 0
-"
-make_bash_script $bad_prolog "
-exit 1
-"
-make_bash_script $test_script "
-sleep 20
-"
+make_bash_script $good_prolog "exit 0"
+make_bash_script $bad_prolog "exit 1"
+make_bash_script $test_script "sleep 20"
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
@@ -81,7 +64,6 @@ set config_file $config_dir/slurm.conf
 #
 # Copy slurm.conf file
 #
-set cwd [$bin_pwd]
 save_conf $config_file
 
 # Ensure that Prolog and nohold_on_prolog_fail params are removed
@@ -90,7 +72,7 @@ exec $bin_sed -i {s/nohold_on_prolog_fail//gI; \
 		  s/^SchedulerParameters=$//gI} $config_file
 
 # Append Prolog config to the slurm.conf
-exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_file
+exec $bin_echo "Prolog=$good_prolog" >> $config_file
 reconfigure -fail
 
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
@@ -119,7 +101,7 @@ if {[wait_job_reason $job_id "RUNNING" "None"] != 0} {
 exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_file
 
 # Append Prolog config to the slurm.conf
-exec $bin_echo "Prolog=$cwd/$bad_prolog" >> $config_file
+exec $bin_echo "Prolog=$bad_prolog" >> $config_file
 reconfigure -fail
 
 set job_id 0
@@ -215,7 +197,3 @@ expect {
 }
 
 subtest {$priority != 0} "Job with nohold_on_prolog_fail should not be held"
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
