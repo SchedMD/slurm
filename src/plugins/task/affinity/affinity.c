@@ -93,7 +93,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
 {
 	int nummasks, maskid, i, threads;
 	char *curstr, *selstr;
-	char mstr[1 + CPU_SETSIZE / 4];
+	char mstr[CPU_SET_HEX_STR_SIZE];
 	uint32_t local_id = node_tid;
 	char buftype[1024];
 
@@ -323,7 +323,7 @@ void reset_cpuset(cpu_set_t *new_mask, cpu_set_t *cur_mask)
 int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 {
 	int rval;
-	char mstr[1 + CPU_SETSIZE / 4];
+	char mstr[CPU_SET_HEX_STR_SIZE];
 
 #ifdef __FreeBSD__
         rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID,
@@ -341,7 +341,7 @@ int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
 {
 	int rval;
-	char mstr[1 + CPU_SETSIZE / 4];
+	char mstr[CPU_SET_HEX_STR_SIZE];
 
 	CPU_ZERO(mask);
 

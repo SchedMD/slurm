@@ -89,7 +89,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 extern int init (void)
 {
 	cpu_set_t cur_mask;
-	char mstr[1 + CPU_SETSIZE / 4];
+	char mstr[CPU_SET_HEX_STR_SIZE];
 
 	slurm_getaffinity(0, sizeof(cur_mask), &cur_mask);
 	task_cpuset_to_str(&cur_mask, mstr);

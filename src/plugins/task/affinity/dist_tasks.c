@@ -326,7 +326,7 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 	tok = strtok_r(req->cpu_bind, ",", &save_ptr);
 	while (tok) {
 		int i, overlaps = 0;
-		char mask_str[1 + CPU_SETSIZE / 4];
+		char mask_str[CPU_SET_HEX_STR_SIZE];
 		CPU_ZERO(&task_cpus);
 		(void) task_str_to_cpuset(&task_cpus, tok);
 		for (i = 0; i < CPU_SETSIZE; i++) {

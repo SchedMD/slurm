@@ -515,7 +515,7 @@ extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
 	fatal("%s: not supported on macOS", __func__);
 #else
 	char *bind_type, *action, *status, *units;
-	char mstr[1 + CPU_SETSIZE / 4];
+	char mstr[CPU_SET_HEX_STR_SIZE];
 
 	if (!(job->cpu_bind_type & CPU_BIND_VERBOSE))
 		return;

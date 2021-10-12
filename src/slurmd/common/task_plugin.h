@@ -48,6 +48,9 @@ typedef cpuset_t cpu_set_t;
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+/* The size to represent a cpu_set_t as a hex string (including null) */
+#define CPU_SET_HEX_STR_SIZE (1 + (CPU_SETSIZE / 4))
+
 /*
  * Initialize the task plugin.
  *
