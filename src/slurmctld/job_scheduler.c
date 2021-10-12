@@ -4223,7 +4223,8 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr)
 	if (feature_node_bitmap == NULL) /* No nodes under NodeFeaturesPlugin */
 		return NULL;
 
-	reboot_features = node_features_g_job_xlate(job_ptr->details->features);
+	reboot_features = node_features_g_job_xlate(
+		job_ptr->details->features_use);
 	tmp_bitmap = build_active_feature_bitmap2(reboot_features);
 	xfree(reboot_features);
 	boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
@@ -4350,10 +4351,10 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		node_ptr->boot_req_time = now;
 	}
 
-	if (job_ptr->details->features &&
+	if (job_ptr->details->features_use &&
 	    node_features_g_user_update(job_ptr->user_id)) {
 		reboot_features = node_features_g_job_xlate(
-			job_ptr->details->features);
+			job_ptr->details->features_use);
 		if (reboot_features)
 			feature_node_bitmap = node_features_g_get_node_bitmap();
 		if (feature_node_bitmap)

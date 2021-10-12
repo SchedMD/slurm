@@ -5169,6 +5169,20 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	no_alloc = no_alloc || (!job_ptr->resv_name &&
 				get_magnetic_resv_count());
 
+	/*
+	 * If we have a prefer feature list check that, if not check the
+	 * normal features.
+	 */
+	if (job_ptr->details->prefer) {
+		job_ptr->details->features_use = job_ptr->details->prefer;
+		job_ptr->details->feature_list_use =
+			job_ptr->details->prefer_list;
+	} else {
+		job_ptr->details->features_use = job_ptr->details->features;
+		job_ptr->details->feature_list_use =
+			job_ptr->details->feature_list;
+	}
+
 	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL, err_msg);
 	if (!test_only) {
 		last_job_update = now;
@@ -5222,6 +5236,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			    (error_code == ESLURM_ACCOUNTING_POLICY) ||
 			    ((error_code == ESLURM_PARTITION_DOWN) &&
 			     (job_ptr->batch_flag))) {
+				job_ptr->details->features_use = NULL;
+				job_ptr->details->feature_list_use = NULL;
 				error_code = SLURM_SUCCESS;
 			}
 		}
@@ -18873,10 +18889,10 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	}
 
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
-	/* FIXME: Should be the features we used, soft or hard */
-	if (job_ptr->details && job_ptr->details->features) {
+
+	if (job_ptr->details && job_ptr->details->features_use) {
 		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS",
-			"%s", job_ptr->details->features);
+			"%s", job_ptr->details->features_use);
 	}
 
 	if (is_complete) {

@@ -650,13 +650,13 @@ extern void build_active_feature_bitmap(job_record_t *job_ptr,
 	bool can_reboot;
 
 	*active_bitmap = NULL;
-	if (!details_ptr->feature_list ||	/* nothing to look for */
+	if (!details_ptr->feature_list_use ||	/* nothing to look for */
 	    (node_features_g_count() == 0))	/* No inactive features */
 		return;
 
 	can_reboot = node_features_g_user_update(job_ptr->user_id);
-	find_feature_nodes(details_ptr->feature_list, can_reboot);
-	if (_match_feature(details_ptr->feature_list, &tmp_bitmap) == 0)
+	find_feature_nodes(details_ptr->feature_list_use, can_reboot);
+	if (_match_feature(details_ptr->feature_list_use, &tmp_bitmap) == 0)
 		return;		/* No inactive features */
 
 	bit_not(tmp_bitmap);
@@ -1128,7 +1128,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 	/* Accumulate nodes with required feature counts. */
 	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
-	if (job_ptr->details->feature_list) {
+	if (job_ptr->details->feature_list_use) {
 		ListIterator feat_iter;
 		job_feature_t *feat_ptr;
 		int last_paren_cnt = 0, last_paren_opt = FEATURE_OP_AND;
@@ -1138,7 +1138,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		bool feat_change = false;
 
 		feat_iter = list_iterator_create(
-				job_ptr->details->feature_list);
+				job_ptr->details->feature_list_use);
 		while ((feat_ptr = list_next(feat_iter))) {
 			bool sort_again = false;
 			if (last_paren_cnt < feat_ptr->paren) {
@@ -1146,7 +1146,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				if (paren_bitmap) {
 					error("%s@%d: %pJ has bad feature expression: %s",
 					      __func__, __LINE__, job_ptr,
-					      job_ptr->details->features);
+					      job_ptr->details->features_use);
 					bit_free(paren_bitmap);
 				}
 				feat_change |= feat_ptr->changeable;
@@ -1362,7 +1362,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		if (paren_bitmap) {
 			error("%s@%d: %pJ has bad feature expression: %s",
 			      __func__, __LINE__, job_ptr,
-			      job_ptr->details->features);
+			      job_ptr->details->features_use);
 			bit_free(paren_bitmap);
 		}
 	}
@@ -3078,20 +3078,35 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 	bitstr_t *tmp_bitmap, *work_bitmap;
 	bool have_count = false, user_update;
 	int rc = SLURM_SUCCESS;
+	List feature_list;
+	char *features;
 
 	xassert(detail_ptr);
 	xassert(node_bitmap);
 	xassert(has_xor);
 
+	/*
+	 * This is used in two different ways.  1 to pick nodes where
+	 * feature_use is set and another to set the predicted start time where
+	 * it isn't.
+	 */
+	if (detail_ptr->features_use) {
+		feature_list = detail_ptr->feature_list_use;
+		features = detail_ptr->features_use;
+	} else {
+		feature_list = detail_ptr->feature_list;
+		features = detail_ptr->features;
+	}
+
 	*has_xor = false;
-	if (detail_ptr->feature_list == NULL)	/* no constraints */
+	if (!feature_list)	/* no constraints */
 		return rc;
 
 	user_update = node_features_g_user_update(job_ptr->user_id);
-	find_feature_nodes(detail_ptr->feature_list, user_update);
+	find_feature_nodes(feature_list, user_update);
 	feature_bitmap = bit_copy(node_bitmap);
 	work_bitmap = feature_bitmap;
-	job_feat_iter = list_iterator_create(detail_ptr->feature_list);
+	job_feat_iter = list_iterator_create(feature_list);
 	while ((job_feat_ptr = list_next(job_feat_iter))) {
 		if (last_paren_cnt < job_feat_ptr->paren) {
 			/* Start of expression in parenthesis */
@@ -3101,10 +3116,10 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				if (job_ptr->job_id) {
 					error("%s: %pJ has bad feature expression: %s",
 					      __func__, job_ptr,
-					      detail_ptr->features);
+					      features);
 				} else {
 					error("%s: Reservation has bad feature expression: %s",
-					      __func__, detail_ptr->features);
+					      __func__, features);
 				}
 				bit_free(paren_bitmap);
 			}
@@ -3524,7 +3539,7 @@ static int _build_node_list(job_record_t *job_ptr,
 				node_maps[REBOOT] = bit_copy(reboot_bitmap);
 			} else {
 				(void) _match_feature(
-					job_ptr->details->feature_list,
+					job_ptr->details->feature_list_use,
 					&node_maps[REBOOT]);
 			}
 			/* No nodes in set require reboot */
@@ -4112,13 +4127,13 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 	int last_op = FEATURE_OP_AND, paren_op = FEATURE_OP_AND;
 	int last_paren = 0, position = 0;
 
-	if (details_ptr->feature_list == NULL) {	/* no constraints */
+	if (details_ptr->feature_list_use == NULL) {	/* no constraints */
 		result_node_bitmap = bit_alloc(MAX_FEATURES);
 		bit_set(result_node_bitmap, 0);
 		return result_node_bitmap;
 	}
 
-	feat_iter = list_iterator_create(details_ptr->feature_list);
+	feat_iter = list_iterator_create(details_ptr->feature_list_use);
 	while ((job_feat_ptr = list_next(feat_iter))) {
 		if (job_feat_ptr->paren > last_paren) {
 			/* Combine features within parenthesis */
@@ -4150,7 +4165,7 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 				} else {
 					error("%s: Bad feature expression for %pJ: %s",
 					      __func__, job_ptr,
-					      details_ptr->features);
+					      details_ptr->features_use);
 					break;
 				}
 				paren_op = job_feat_ptr->op_code;
@@ -4166,7 +4181,7 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 
 		if (!job_feat_ptr) {
 			error("%s: Bad feature expression for %pJ: %s",
-			      __func__, job_ptr, details_ptr->features);
+			      __func__, job_ptr, details_ptr->features_use);
 		}
 		if ((job_feat_ptr->op_code == FEATURE_OP_XAND) ||
 		    (job_feat_ptr->op_code == FEATURE_OP_XOR)  ||

@@ -688,10 +688,10 @@ extern int power_job_reboot(job_record_t *job_ptr)
 		bit_set(booting_node_bitmap, i);
 	}
 
-	if (job_ptr->details && job_ptr->details->features &&
+	if (job_ptr->details && job_ptr->details->features_use &&
 	    node_features_g_user_update(job_ptr->user_id)) {
 		reboot_features = node_features_g_job_xlate(
-					job_ptr->details->features);
+					job_ptr->details->features_use);
 		if (reboot_features)
 			feature_node_bitmap = node_features_g_get_node_bitmap();
 		if (feature_node_bitmap)
