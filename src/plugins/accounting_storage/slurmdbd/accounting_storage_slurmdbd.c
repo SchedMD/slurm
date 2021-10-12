@@ -2568,6 +2568,9 @@ extern int clusteracct_storage_p_node_up(void *db_conn, node_record_t *node_ptr,
 	persist_msg_t msg = {0};
 	dbd_node_state_msg_t req;
 
+	if (IS_NODE_FUTURE(node_ptr))
+		return SLURM_SUCCESS;
+
 	memset(&req, 0, sizeof(dbd_node_state_msg_t));
 	req.hostlist   = node_ptr->name;
 	req.new_state  = DBD_NODE_STATE_UP;

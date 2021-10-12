@@ -1514,6 +1514,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 							xstrdup(node_ptr->name));
 					}
 					bit_set(future_node_bitmap, node_inx);
+					clusteracct_storage_g_node_down(
+						acct_db_conn,
+						node_ptr, now,
+						"Set to State=FUTURE",
+						node_ptr->reason_uid);
 				}
 			} else if (state_val == NODE_STATE_IDLE) {
 				/* assume they want to clear DRAIN and
@@ -2791,11 +2796,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 	} else {
 		if (IS_NODE_UNKNOWN(node_ptr) || IS_NODE_FUTURE(node_ptr)) {
-			bool unknown = 0;
-
-			if (IS_NODE_UNKNOWN(node_ptr))
-				unknown = 1;
-
 			debug("validate_node_specs: node %s registered with "
 			      "%u jobs",
 			      reg_msg->node_name,reg_msg->job_count);
@@ -2817,7 +2817,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			last_node_update = now;
 
 			/* don't send this on a slurmctld unless needed */
-			if (unknown && slurmctld_init_db
+			if (slurmctld_init_db
 			    && !IS_NODE_DRAIN(node_ptr)
 			    && !IS_NODE_FAIL(node_ptr)) {
 				/* reason information is handled in
@@ -4179,7 +4179,8 @@ extern int send_nodes_to_accounting(time_t event_time)
 			reason = "First Registration";
 		if (IS_NODE_DRAIN(node_ptr) ||
 		    IS_NODE_FAIL(node_ptr) ||
-		    IS_NODE_DOWN(node_ptr))
+		    IS_NODE_DOWN(node_ptr) ||
+		    IS_NODE_FUTURE(node_ptr))
 			rc = clusteracct_storage_g_node_down(
 				acct_db_conn,
 				node_ptr, event_time,
