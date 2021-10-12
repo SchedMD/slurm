@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - enable job priority field for job submissions and updates.
  -- openapi/v0.0.38 - request node states query includes MIXED state instead of
     only allocated.
+ -- openapi/dbv0.0.38 - Correct tree position of dbv0.0.38_job_step.
 
 * Changes in Slurm 21.08.3
 ==========================
