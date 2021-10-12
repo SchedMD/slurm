@@ -186,7 +186,7 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 	    return;
 
 	if (!avail_res) {
-		info("Node:%s No resources", node_name);
+		log_flag(SELECT_TYPE, "Node:%s No resources", node_name);
 		return;
 	}
 
