@@ -463,6 +463,9 @@ static void _do_power_work(time_t now)
 			bit_set(wake_node_bitmap,    i);
 
 			bit_clear(job_power_node_bitmap, i);
+
+			clusteracct_storage_g_node_up(acct_db_conn, node_ptr,
+						      now);
 		}
 
 		/* Suspend nodes as appropriate */
@@ -486,8 +489,6 @@ static void _do_power_work(time_t now)
 			/* Clear power_down_asap */
 			if (IS_NODE_POWER_DOWN(node_ptr) &&
 			    IS_NODE_DRAIN(node_ptr)) {
-				clusteracct_storage_g_node_up(acct_db_conn,
-							      node_ptr, now);
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			}
 
@@ -506,13 +507,6 @@ static void _do_power_work(time_t now)
 			if (idle_on_node_suspend) {
 				if (IS_NODE_DOWN(node_ptr)) {
 					trigger_node_up(node_ptr);
-					clusteracct_storage_g_node_up(
-						acct_db_conn, node_ptr, now);
-				} else if (IS_NODE_IDLE(node_ptr) &&
-					   (IS_NODE_DRAIN(node_ptr) ||
-					    IS_NODE_FAIL(node_ptr))) {
-					clusteracct_storage_g_node_up(
-						acct_db_conn, node_ptr, now);
 				}
 
 				node_ptr->node_state =
@@ -543,6 +537,11 @@ static void _do_power_work(time_t now)
 
 			node_ptr->last_busy = 0;
 			node_ptr->power_save_req_time = 0;
+
+			clusteracct_storage_g_node_down(
+				acct_db_conn, node_ptr, now,
+				"Powered down after SuspendTimeout",
+				node_ptr->reason_uid);
 		}
 
 		/*
@@ -555,13 +554,19 @@ static void _do_power_work(time_t now)
 		    IS_NODE_NO_RESPOND(node_ptr)) {
 			info("node %s not resumed by ResumeTimeout(%d) - marking down and power_save",
 			     node_ptr->name, node_ptr->resume_timeout);
+			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
+			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 			/*
 			 * set_node_down_ptr() will remove the node from the
 			 * avail_node_bitmap.
+			 *
+			 * Call AFTER setting state adding POWERED_DOWN so that
+			 * the node is marked as "planned down" in the usage
+			 * tables becase:
+			 * set_node_down_ptr()->_make_node_down()->
+			 * clusteracct_storage_g_node_down().
 			 */
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
-			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
-			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 			bit_set(power_node_bitmap, i);
 			bit_clear(booting_node_bitmap, i);
 			node_ptr->last_busy = 0;

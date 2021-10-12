@@ -1449,6 +1449,12 @@ int update_node ( update_node_msg_t * update_node_msg )
 							xstrdup(node_ptr->name));
 
 					node_ptr->power_save_req_time = 0;
+
+					clusteracct_storage_g_node_down(
+						acct_db_conn,
+						node_ptr, now,
+						"Powered down after resume",
+						node_ptr->reason_uid);
 				}
 
 				if (IS_NODE_DOWN(node_ptr)) {
@@ -2733,6 +2739,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	    IS_NODE_POWERING_UP(node_ptr) ||
 	    IS_NODE_POWERING_DOWN(node_ptr) ||
 	    IS_NODE_POWERED_DOWN(node_ptr)) {
+		bool was_powered_down = IS_NODE_POWERED_DOWN(node_ptr);
+
 		info("Node %s now responding", node_ptr->name);
 
 		/*
@@ -2763,6 +2771,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		bit_clear(power_node_bitmap, node_inx);
 
 		last_node_update = now;
+
+		if (was_powered_down)
+			clusteracct_storage_g_node_up(acct_db_conn, node_ptr,
+						      now);
 	}
 
 	node_ptr->node_state &= ~NODE_STATE_INVALID_REG;
@@ -2796,6 +2808,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 	} else {
 		if (IS_NODE_UNKNOWN(node_ptr) || IS_NODE_FUTURE(node_ptr)) {
+			bool was_future = IS_NODE_FUTURE(node_ptr);
 			debug("validate_node_specs: node %s registered with "
 			      "%u jobs",
 			      reg_msg->node_name,reg_msg->job_count);
@@ -2817,9 +2830,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			last_node_update = now;
 
 			/* don't send this on a slurmctld unless needed */
-			if (slurmctld_init_db
-			    && !IS_NODE_DRAIN(node_ptr)
-			    && !IS_NODE_FAIL(node_ptr)) {
+			if (was_future || /* always send FUTURE checkins */
+			    (slurmctld_init_db &&
+			     !IS_NODE_DRAIN(node_ptr) &&
+			     !IS_NODE_FAIL(node_ptr))) {
 				/* reason information is handled in
 				   clusteracct_storage_g_node_up()
 				*/
@@ -4180,7 +4194,9 @@ extern int send_nodes_to_accounting(time_t event_time)
 		if (IS_NODE_DRAIN(node_ptr) ||
 		    IS_NODE_FAIL(node_ptr) ||
 		    IS_NODE_DOWN(node_ptr) ||
-		    IS_NODE_FUTURE(node_ptr))
+		    IS_NODE_FUTURE(node_ptr) ||
+		    (IS_NODE_CLOUD(node_ptr) &&
+		     IS_NODE_POWERED_DOWN(node_ptr)))
 			rc = clusteracct_storage_g_node_down(
 				acct_db_conn,
 				node_ptr, event_time,
