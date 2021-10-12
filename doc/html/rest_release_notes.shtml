@@ -39,6 +39,23 @@ guide to where changes have taken place in the OpenAPI specifications.</p>
 href="https://stedolan.github.io/jq/">jq</a>. Make sure to always place the
 paths in a single quote string to avoid shell replacements.</p>
 
+<h2>Slurm 21.05.0pre1</h2>
+
+<h3>openapi/v0.0.38 (src/plugins/openapi/v0.0.38/openapi.json)</h3>
+
+<h4>add plugin</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new v0.0.38 openapi plugin</td>
+	<td class="tdchange">
+		<ul>
+			<li>clone of existing v0.0.37 openapi plugin</li>
+			<li>all paths renamed from v0.0.37 to v0.0.38</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h2>Slurm 21.08.0pre1</h2>
 
 <p>All of the OpenAPI plugins have moved from "src/slurmrestd/plugins/openapi/"

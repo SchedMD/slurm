@@ -556,6 +556,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/openapi/Makefile
 		 src/plugins/openapi/v0.0.36/Makefile
 		 src/plugins/openapi/v0.0.37/Makefile
+		 src/plugins/openapi/v0.0.38/Makefile
 		 src/plugins/openapi/dbv0.0.36/Makefile
 		 src/plugins/openapi/dbv0.0.37/Makefile
 		 src/plugins/power/Makefile
