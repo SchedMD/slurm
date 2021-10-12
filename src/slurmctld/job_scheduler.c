@@ -2631,7 +2631,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.gid       = launch_msg_ptr->gid;
 	cred_arg.pw_name   = launch_msg_ptr->user_name;
 	cred_arg.x11       = job_ptr->details->x11;
-	cred_arg.job_constraints     = job_ptr->details->features;
+	cred_arg.job_constraints     = job_ptr->details->features_use;
 	cred_arg.job_hostlist        = job_resrcs_ptr->nodes;
 	cred_arg.job_core_bitmap     = job_resrcs_ptr->core_bitmap;
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;
