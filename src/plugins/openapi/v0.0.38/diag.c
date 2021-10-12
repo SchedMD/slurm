@@ -212,14 +212,58 @@ static int _op_handler_ping(const char *context_id,
 	return rc;
 }
 
+/* based on _print_license_info() from scontrol */
+static int _op_handler_licenses(const char *context_id,
+				http_request_method_t method,
+				data_t *parameters, data_t *query, int tag,
+				data_t *resp_ptr, void *auth)
+{
+	int rc;
+	license_info_msg_t *msg;
+	const uint16_t show_flags = 0;
+	const time_t last_update = 0;
+	data_t *licenses, *errors;
+
+	errors = populate_response_format(resp_ptr);
+
+	if ((rc = slurm_load_licenses(last_update, &msg, show_flags))) {
+		slurm_free_license_info_msg(msg);
+		return resp_error(errors, rc, "slurm_load_licenses",
+				  "slurmctld unable to load licenses");
+	}
+
+	licenses = data_set_list(data_key_set(resp_ptr, "licenses"));
+
+	for (int cc = 0; cc < msg->num_lic; cc++) {
+		data_t *lic = data_set_dict(data_list_append(licenses));
+		data_set_string(data_key_set(lic, "LicenseName"),
+				msg->lic_array[cc].name);
+		data_set_int(data_key_set(lic, "Total"),
+			     msg->lic_array[cc].total);
+		data_set_int(data_key_set(lic, "Used"),
+			     msg->lic_array[cc].in_use);
+		data_set_int(data_key_set(lic, "Free"),
+			     msg->lic_array[cc].available);
+		data_set_int(data_key_set(lic, "Reserved"),
+			     msg->lic_array[cc].reserved);
+		data_set_bool(data_key_set(lic, "Remote"),
+			      msg->lic_array[cc].remote);
+	}
+
+	slurm_free_license_info_msg(msg);
+	return rc;
+}
+
 extern void init_op_diag(void)
 {
 	bind_operation_handler("/slurm/v0.0.38/diag/", _op_handler_diag, 0);
 	bind_operation_handler("/slurm/v0.0.38/ping/", _op_handler_ping, 0);
+	bind_operation_handler("/slurm/v0.0.38/licenses/", _op_handler_licenses, 0);
 }
 
 extern void destroy_op_diag(void)
 {
 	unbind_operation_handler(_op_handler_diag);
 	unbind_operation_handler(_op_handler_ping);
+	unbind_operation_handler(_op_handler_licenses);
 }

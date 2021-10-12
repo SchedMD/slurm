@@ -98,6 +98,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - added fields bf_table_size and bf_table_size_mean to
     diag query.
  -- Handle scontrol setdebug[flags] and scontrol reconfigure in slurmscriptd.
+ -- openapi/v0.0.38 - add /licenses endpoint.
 
 * Changes in Slurm 21.08.7
 ==========================

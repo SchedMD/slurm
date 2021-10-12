@@ -66,6 +66,35 @@
         }
       }
     },
+    "/licenses/": {
+      "get": {
+        "tags": [
+          "slurm"
+        ],
+        "operationId": "slurmctld_get_licenses",
+        "summary": "get all Slurm tracked license info",
+        "responses": {
+          "200": {
+            "description": "results of get all licenses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_licenses"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_licenses"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unable to request licenses"
+          }
+        }
+      }
+    },
     "/ping/": {
       "get": {
         "tags": [
@@ -855,6 +884,54 @@
                 "description": "Backfill Schedule currently active"
               }
             }
+          }
+        }
+      },
+      "v0.0.38_licenses": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/v0.0.38_error"
+            }
+          },
+          "licenses": {
+            "type": "array",
+            "description": "licenses info",
+            "items": {
+              "$ref": "#/components/schemas/v0.0.38_license"
+            }
+          }
+        }
+      },
+      "v0.0.38_license": {
+        "type": "object",
+        "properties": {
+          "LicenseName": {
+            "type": "string",
+            "description": "name of license"
+          },
+          "Total": {
+            "type": "integer",
+            "description": "total number of licenses"
+          },
+          "Used": {
+            "type": "integer",
+            "description": "number of licenses in use"
+          },
+          "Free": {
+            "type": "integer",
+            "description": "number of licenses available"
+          },
+          "Reserved": {
+            "type": "integer",
+            "description": "number of licenses reserved"
+          },
+          "Remote": {
+            "type": "boolean",
+            "description": "license is remote"
           }
         }
       },
