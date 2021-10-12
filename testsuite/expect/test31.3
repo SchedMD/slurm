@@ -32,7 +32,6 @@ set prolog_out      "$test_dir/prolog.out"
 set epilog_out      "$test_dir/epilog.out"
 set test_node       [lindex [get_nodes_by_state] 0]
 set job_id          0
-set skipped         ""
 
 proc cleanup { } {
 	global config_dir
@@ -81,22 +80,7 @@ reconfigure -fail
 
 # Test whether env vars exist in Prolog and Epilog
 log_info "Checking for regular env vars"
-spawn $sbatch -t1 -N1 -w$test_node -o/dev/null --wrap="hostname"
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { !$job_id } {
-	fail "Error submitting the batch job"
-}
+set job_id [submit_job -fail "-t1 -N1 -w$test_node -o/dev/null --wrap='hostname'"]
 
 wait_for_job $job_id "DONE"
 
@@ -121,22 +105,11 @@ check_epilog "SLURM_SCRIPT_CONTEXT=epilog_slurmd"
 
 set test_node [get_nodes_by_request "--gres=gpu:1 -t1"]
 if {[llength $test_node] != 1} {
-	lappend skipped "This test requires being able to submit job with --gres=gpu:1"
+	subskip "This test requires being able to submit job with --gres=gpu:1"
 } else {
 	log_info "Checking for GPU-related env vars"
-	spawn $sbatch -t1 -N1 -w$test_node -o/dev/null --wrap="hostname" --gres=gpu:1
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sbatch is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	set job_id [submit_job -fail "-t1 -N1 -w$test_node -o/dev/null --wrap='hostname' --gres=gpu:1"]
+
 	wait_for_job $job_id "DONE"
 
 	check_prolog "CUDA_VISIBLE_DEVICES="
@@ -153,28 +126,13 @@ if {[llength $test_node] != 1} {
 
 set test_node [get_nodes_by_request "--gres=mps:1 -t1"]
 if {[llength $test_node] != 1} {
-	lappend skipped "This test requires being able to submit job with --gres=mps:1"
+	subskip "This test requires being able to submit job with --gres=mps:1"
 } else {
 	log_info "Checking for MPS-related env vars"
-	spawn $sbatch -t1 -N1 -w$test_node -o/dev/null --wrap="hostname" --gres=mps:1
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sbatch is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	set job_id [submit_job -fail "-t1 -N1 -w$test_node -o/dev/null --wrap='hostname' --gres=mps:1"]
+
 	wait_for_job $job_id "DONE"
 
 	check_prolog "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE="
 	check_epilog "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE="
-}
-
-if {[llength $skipped]} {
-	skip [join $skipped "\n"]
 }
