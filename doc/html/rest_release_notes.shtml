@@ -41,6 +41,21 @@ paths in a single quote string to avoid shell replacements.</p>
 
 <h2>Slurm 21.05.0pre1</h2>
 
+<h3>openapi/dbv0.0.38 (src/plugins/openapi/dbv0.0.38/openapi.json)</h3>
+
+<h4>add plugin</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new dbv0.0.38 openapi plugin</td>
+	<td class="tdchange">
+		<ul>
+			<li>clone of existing dbv0.0.37 openapi plugin</li>
+			<li>all paths renamed from dbv0.0.37 to dbv0.0.38</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h3>openapi/v0.0.38 (src/plugins/openapi/v0.0.38/openapi.json)</h3>
 
 <h4>add plugin</h4>

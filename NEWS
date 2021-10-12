@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- gres/gpu - Fix configured/system-detected GRES match for some combinations
     for which the sorting affected the expected selection result.
  -- openapi/v0.0.38 - Fork existing openapi/v0.0.37 plugin.
+ -- openapi/dbv0.0.38 - Fork existing openapi/dbv0.0.37 plugin.
 
 * Changes in Slurm 21.08.3
 ==========================
