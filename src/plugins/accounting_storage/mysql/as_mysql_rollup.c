@@ -1032,11 +1032,20 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 			continue;
 
 		seconds -= resv_seconds;
-		if (seconds > 0)
-			_add_tres_time_2_list(c_usage->loc_tres,
-					      row[EVENT_REQ_TRES],
-					      TIME_DOWN,
-					      seconds, 0, 0);
+		if (seconds > 0) {
+			if (((state & NODE_STATE_BASE) == NODE_STATE_FUTURE) ||
+			    ((state & NODE_STATE_CLOUD) &&
+			     (state & NODE_STATE_POWERED_DOWN)))
+				_add_tres_time_2_list(c_usage->loc_tres,
+						      row[EVENT_REQ_TRES],
+						      TIME_PDOWN,
+						      seconds, 0, 0);
+			else
+				_add_tres_time_2_list(c_usage->loc_tres,
+						      row[EVENT_REQ_TRES],
+						      TIME_DOWN,
+						      seconds, 0, 0);
+		}
 
 		/*
 		 * Now remove this time if there was a
