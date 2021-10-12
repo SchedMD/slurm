@@ -3020,8 +3020,10 @@
               },
               "name": {
                 "type": "string",
-                "description": "Step name"
-              },
+		"description": "Step name"
+              }
+            }
+          },
               "task": {
                 "type": "object",
                 "description": "Task properties",
@@ -3076,8 +3078,6 @@
                     "$ref": "#/components/schemas/dbv0.0.37_tres_list"
                   }
                 }
-              }
-            }
           }
         }
       },
