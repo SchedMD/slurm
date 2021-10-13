@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld/gres_ctld - fix deallocation of typed GRES without device.
  -- scrontab - fix capturing the cronspec request in the job script.
  -- openapi/dbv0.0.37 - Add missing method POST for /associations/.
+ -- If ALTER TABLE was already run, continue with database upgrade.
 
 * Changes in Slurm 21.08.2
 ==========================
