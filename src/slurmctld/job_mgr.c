@@ -5154,6 +5154,12 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	}
 
 	/*
+	 * We should have a job_ptr->details here if not something is really
+	 * wrong.
+	 */
+	xassert(job_ptr->details);
+
+	/*
 	 * fed jobs need to go to the siblings first so don't attempt to
 	 * schedule the job now.
 	 */
