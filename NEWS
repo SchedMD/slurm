@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove support for PMIx 1.x
  -- slurmrestd - Unlink unix sockets before binding to avoid errors where
     previous run of slurmrestd did not properly cleanup the sockets.
+ -- Add extra 'EnvironmentFile=-/etc/default/$service' setting to service files.
 
 * Changes in Slurm 21.08.4
 ==========================

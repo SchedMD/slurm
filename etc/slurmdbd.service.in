@@ -7,6 +7,7 @@ ConditionPathExists=@sysconfdir@/slurmdbd.conf
 [Service]
 Type=simple
 EnvironmentFile=-/etc/sysconfig/slurmdbd
+EnvironmentFile=-/etc/default/slurmdbd
 ExecStart=@sbindir@/slurmdbd -D -s $SLURMDBD_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
 LimitNOFILE=65536
