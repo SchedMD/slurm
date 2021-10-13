@@ -1,0 +1,213 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test srun --overlap
+############################################################################
+# Copyright (C) 2022 SchedMD LLC.
+# Written by Marshall Garey <marshall@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id 0
+set file_in "$test_dir/input"
+set nodes ""
+set desired_cpus ""
+
+##############################################################################
+# Functions
+##############################################################################
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+proc set_nodes_and_threads_by_request {request {nodes_expected 1}} {
+	global nodes desired_cpus
+
+	set nodes [get_nodes_by_request $request]
+	if {[llength $nodes] != $nodes_expected} {
+		return $::RETURN_ERROR
+	}
+
+	set desired_cpus [get_node_param $nodes "ThreadsPerCore"]
+
+	return $::RETURN_SUCCESS
+}
+
+proc subtest_step_tres {step_id desired_mem desired_gres} {
+	global scontrol number desired_cpus
+
+	set got_cpus ""
+	set got_gres ""
+	set got_mem ""
+
+	set output [run_command -fail "$scontrol show step $step_id"]
+	regexp "TRES=cpu=($number)" $output - got_cpus
+	regexp "gres/gpu=($number)" $output - got_gres
+	regexp "mem=($number)" $output - got_mem
+
+	log_debug "$step_id allocated cpu: desired=$desired_cpus, got=$got_cpus"
+	subtest {$desired_cpus==$got_cpus} "Verify $step_id allocated TRES cpu=$desired_cpus"
+
+	if {$desired_mem != ""} {
+		log_debug "$step_id allocated mem: desired=$desired_mem, got=$got_mem"
+		subtest {$desired_mem==$got_mem} "Verify $step_id allocated TRES mem=$desired_mem"
+	}
+
+	if {$desired_gres != ""} {
+		log_debug "$step_id allocated GRES: desired=$desired_gres, got=$got_gres"
+		subtest {$desired_gres==$got_gres} "Verify $step_id allocated TRES gres/gpu=$desired_gres"
+	}
+}
+
+proc test_overlap_after_overlap {} {
+	global file_in srun bin_sleep nodes job_id
+
+	make_bash_script $file_in "
+	  $srun --overlap --mem=50 $bin_sleep 60 &
+	  $srun --overlap --mem=50 $bin_sleep 60 &
+	  wait
+	"
+
+	set job_id [submit_job -fail "-N1 -n1 -w$nodes --mem=100 --time=1 --output=none $file_in"]
+
+	subtest {![wait_for_step -timeout 10 $job_id.0]} "Verify $job_id.0 is found"
+	subtest {![wait_for_step -timeout 10 $job_id.1]} "Verify $job_id.1 is found"
+
+	subtest_step_tres "$job_id.0" "" ""
+	subtest_step_tres "$job_id.1" "" ""
+
+	cancel_job $job_id
+}
+
+proc test_overlap_after_exclusive {} {
+	global file_in srun bin_sleep nodes job_id
+
+	# Test that srun --overlap runs when called after a non-overlapping step
+	make_bash_script $file_in "
+	  $srun --mem=50 $bin_sleep 60
+	"
+
+	set job_id [submit_job -fail "-N1 -n1 -w$nodes --mem=100 --time=1 --output=none $file_in"]
+	subtest {![wait_for_step -timeout 10 $job_id.0]} "Verify $job_id.0 is found"
+
+	spawn $srun --jobid=$job_id --overlap --mem=50 $bin_sleep 60
+	subtest {![wait_for_step -timeout 10 $job_id.1]} "Verify $job_id.1 is found"
+
+	subtest_step_tres "$job_id.1" "" ""
+
+	cancel_job $job_id
+}
+
+proc test_exclusive_after_overlap {} {
+	global file_in srun bin_sleep nodes job_id
+
+	# Test that an exclusive step runs when called after an --overlap step
+	make_bash_script $file_in "
+	  $srun --overlap --mem=50 $bin_sleep 60
+	"
+
+	set job_id [submit_job -fail "-N1 -n1 -w$nodes --mem=100 --time=1 --output=none $file_in"]
+	subtest {![wait_for_step -timeout 10 $job_id.0]} "Verify $job_id.0 is found"
+
+	spawn $srun --jobid=$job_id --mem=50 $bin_sleep 60
+	subtest {![wait_for_step -timeout 10 $job_id.1]} "Verify $job_id.1 is found"
+
+	subtest_step_tres "$job_id.0" "" ""
+
+	cancel_job $job_id
+}
+
+proc test_overlap_memory {} {
+	global file_in srun bin_sleep nodes job_id
+
+	# NOTE: It doesn't matter in which order these steps start; we are
+	# testing that they all start.
+	make_bash_script $file_in "
+	  $srun --mem=100 $bin_sleep 60 &
+	  $srun --overlap --mem=100 $bin_sleep 60 &
+	  $srun --overlap --mem=100 $bin_sleep 60 &
+	  wait
+	"
+
+	set job_id [submit_job -fail "-N1 -n1 -w$nodes --mem=100 --time=1 --output=none $file_in"]
+
+	subtest {![wait_for_step -timeout 10 $job_id.0]} "Verify $job_id.0 is found"
+	subtest {![wait_for_step -timeout 10 $job_id.1]} "Verify $job_id.1 is found"
+	subtest {![wait_for_step -timeout 10 $job_id.2]} "Verify $job_id.2 is found"
+
+	subtest_step_tres "$job_id.1" 100 ""
+	subtest_step_tres "$job_id.2" 100 ""
+
+	cancel_job $job_id
+}
+
+proc test_overlap_gpus {} {
+	global file_in srun bin_sleep nodes job_id
+
+	# NOTE: It doesn't matter in which order these steps start; we are
+	# testing that they all start.
+	make_bash_script $file_in "
+	  $srun --gres=gpu:1 --mem=100 $bin_sleep 60 &
+	  $srun --gres=gpu:1 --overlap --mem=100 $bin_sleep 60 &
+	  $srun --gres=gpu:1 --overlap --mem=100 $bin_sleep 60 &
+	  wait
+	"
+
+	set job_id [submit_job -fail "-N1 -n1 -w$nodes --gres=gpu:1 --mem=100 --time=1 --output=none $file_in"]
+
+	subtest {![wait_for_step -timeout 10 $job_id.0]} "Verify $job_id.0 is found"
+	subtest {![wait_for_step -timeout 10 $job_id.1]} "Verify $job_id.1 is found"
+	subtest {![wait_for_step -timeout 10 $job_id.2]} "Verify $job_id.2 is found"
+
+	subtest_step_tres "$job_id.1" 100 1
+	subtest_step_tres "$job_id.2" 100 1
+
+	cancel_job $job_id
+}
+
+##############################################################################
+# Begin the test
+##############################################################################
+
+if {[set_nodes_and_threads_by_request "-N1"]} {
+	skip "Test needs to be able to submit a job with -N1."
+}
+
+testproc test_overlap_after_overlap
+testproc test_overlap_after_exclusive
+testproc test_exclusive_after_overlap
+
+if {![param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
+	skip_following_testprocs "Test needs SelectTypeParameters to include CR_*MEMORY"
+}
+
+testproc test_overlap_memory
+
+run_following_testprocs
+
+# Only if gres/gpu is configured
+if {[set_nodes_and_threads_by_request "--gres=gpu:1"]} {
+	skip_following_testprocs "Testproc needs to be able to submit a job with --gres=gpu:1."
+}
+
+testproc test_overlap_gpus
