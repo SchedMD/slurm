@@ -26,20 +26,18 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_script "test$test_id.bash"
+set file_script "$test_dir/script"
 set job_id      0
-
-proc cleanup {} {
-	global job_id file_script
-
-	cancel_job $job_id
-	file delete $file_script
-}
 
 regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 if {$min_job_age > 60} {
 	skip "MinJobAge too large for this test ($min_job_age > 60)"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
 }
 
 make_bash_script $file_script "
@@ -70,10 +68,7 @@ expect {
 }
 
 # wait for head job to complete
-if {[wait_for_job $job_id "DONE"] != 0} {
-	cancel_job $job_id
-	fail "Error waiting for job $job_id to complete"
-}
+wait_for_job -fail $job_id "DONE"
 
 # wait a while for job purge to happen
 log_debug "Waiting for job record purge to happen.."
@@ -88,9 +83,7 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Error running squeue"
-		set exit_code 1
-		exp_continue
+		fail "Error running squeue"
 	}
 	timeout {
 		fail "squeue not responding"
@@ -101,8 +94,4 @@ expect {
 }
 if {$match != 1} {
 	fail "Head job not found"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

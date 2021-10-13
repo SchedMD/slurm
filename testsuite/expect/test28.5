@@ -27,156 +27,59 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set job_id       0
 set array_in     2
 set array_size   4
-set file_script  "test$test_id.sh"
-
-proc cleanup {} {
-	global bin_rm file_script
-
-	exec $bin_rm -f $file_script
-}
+set file_script  "$test_dir/script"
 
 if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
 	skip "MaxArraySize is to small for this test"
 }
 
-proc hold_job {job} {
-	global scontrol exit_code
+proc cleanup {} {
+	global job_id
 
-	spawn $scontrol hold $job
-	expect {
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-proc release_job {job} {
-	global scontrol exit_code
-
-	spawn $scontrol release $job
-	expect {
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	cancel_job $job_id
 }
 
 #change this so it checks through all the jobs in the array
 proc check_hold_job {job} {
-	global scontrol exit_code number
-
-	set pmatch 0
-	spawn $scontrol show job $job
-	expect {
-		-re "Priority=($number)" {
-			if {$expect_out(1,string) == 0} {
-				incr pmatch
-			}
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$pmatch!=1} {
-		log_error "Job $job did not hold"
-		set exit_code 1
-	}
+	set job_dict [lindex [dict values [get_jobs $job]] 0]
+	subtest {[dict get $job_dict "Priority"] == 0} "Check job $job is hold"
 }
 
 proc check_release_job { job } {
-	global scontrol exit_code number
+	global scontrol number
 
-	set pmatch 0
-	spawn $scontrol show job $job
-	expect {
-		-re "Priority=($number)" {
-			if {$expect_out(1,string) != 0} {
-				incr pmatch
-			}
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$pmatch!=1} {
-		log_error "Job $job was not released"
-		set exit_code 1
-	}
+	set job_dict [lindex [dict values [get_jobs $job]] 0]
+	subtest {[dict get $job_dict "Priority"] != 0} "Check job $job is released"
 }
 
 ################Test Starts Here################
 make_bash_script $file_script "sleep 10"
 
-spawn $sbatch -N1 --array=0-[expr $array_size -1] --begin=midnight --output=/dev/null -t1 $file_script
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		log_debug "Job $job_id was submitted"
-		exp_continue
-	}
-	-re "error" {
-		log_error "sbatch did not submit jobs"
-		set exit_code 1
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-
+set job_id [submit_job -fail "-N1 --array=0-[expr $array_size -1] --begin=midnight --output=/dev/null -t1 $file_script"]
 
 # hold the whole array then release individual jobs in the array
-if {$job_id != 0} {
+log_debug "Holding entire job array"
+run_command -fail "$scontrol hold $job_id"
+check_hold_job ${job_id}_0
+check_hold_job ${job_id}_1
 
-	log_debug "Holding entire job array"
-	hold_job $job_id
-	check_hold_job ${job_id}_0
-	check_hold_job ${job_id}_1
+log_debug "Releasing job index $array_in in the array"
+run_command -fail "$scontrol release ${job_id}_$array_in"
+check_hold_job ${job_id}_0
+check_release_job ${job_id}_$array_in
 
-	log_debug "Releasing job index $array_in in the array"
-	release_job ${job_id}_$array_in
-	check_hold_job ${job_id}_0
-	check_release_job ${job_id}_$array_in
+log_debug "Releasing the entire job array"
+run_command -fail "$scontrol release $job_id"
+check_release_job ${job_id}_0
+check_release_job ${job_id}_1
 
-	log_debug "Releasing the entire job array"
-	release_job $job_id
-	check_release_job ${job_id}_0
-	check_release_job ${job_id}_1
+log_debug "Holding job index $array_in in the array"
+run_command -fail "$scontrol hold ${job_id}_$array_in"
+check_hold_job ${job_id}_$array_in
 
-	log_debug "Holding job index $array_in in the array"
-	hold_job ${job_id}_$array_in
-	check_hold_job ${job_id}_$array_in
-
-	log_debug "Releasing job index $array_in in the array"
-	release_job ${job_id}_$array_in
-	check_release_job ${job_id}_$array_in
-
-	if {[cancel_job $job_id] != 0} {
-		fail "Unable to cancel job ($job_id)"
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+log_debug "Releasing job index $array_in in the array"
+run_command -fail "$scontrol release ${job_id}_$array_in"
+check_release_job ${job_id}_$array_in
