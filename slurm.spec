@@ -321,7 +321,6 @@ Provides a REST interface to Slurm.
 Summary: support daemons and software for the Cray SMW
 Group: System Environment/Base
 Requires: %{name}%{?_isa} = %{version}-%{release}
-Obsoletes: craysmw
 %description slurmsmwd
 support daemons and software for the Cray SMW.  Includes slurmsmwd which
 notifies slurm about failed nodes.
