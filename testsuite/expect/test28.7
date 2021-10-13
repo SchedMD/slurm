@@ -26,113 +26,40 @@
 ############################################################################
 source ./globals
 
-set exit_code     0
 set array_size    3
 set top_array_task_id [expr $array_size - 1]
 set job_id        0
-
-proc cleanup {} {
-	global job_id
-
-	cancel_job $job_id
-}
+set job_id2       0
+set timeout       $max_job_delay
 
 if {$array_size > [get_config_param "MaxArraySize"]} {
 	skip "MaxArraySize is too small"
 }
 
+proc cleanup {} {
+	global job_id job_id2
+
+	cancel_job [list $job_id $job_id2]
+}
+
 #
 # Submit a job array for first dependency test
 #
-spawn $sbatch -N1 -t1 -a 0-$top_array_task_id -o /dev/null -e /dev/null --wrap "sleep \$(( ( RANDOM % 10 ) + 1 ))"
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "sbatch did not submit job"
-}
+set job_id [submit_job -fail "-N1 -t1 -a 0-$top_array_task_id -o /dev/null -e /dev/null --wrap 'sleep \$(( ( RANDOM % 10 ) + 1 ))'"]
 
 #
 # Submit a dependent job dependent upon a single job array element of that job array
 #
-set timeout $max_job_delay
-set match_job_state 0
-set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id\_$top_array_task_id $scontrol show job $job_id\_$top_array_task_id]
-expect {
-	-re "JobState=COMPLETED|COMPLETING" {
-		set match_job_state 1
-		exp_continue
-	}
-	timeout {
-		slow_kill $srun_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$match_job_state != 1} {
-	log_error "Dependent job not completed"
-	set exit_code 1
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-log_debug "So far, so good"
+set output [run_command_output -fail "$srun -t1 --dependency=afterany:$job_id\_$top_array_task_id $scontrol show job $job_id\_$top_array_task_id"]
+subtest {[regexp -all "JobState=COMPLETED|COMPLETING" $output] == 1} "Verify that dependent job was completed"
 
 #
 # Submit a job array for second dependency test
 #
-set job_id 0
-spawn $sbatch -N1 -t1 -a 0-[expr $array_size - 1] -o /dev/null -e /dev/null --wrap "sleep \$(( ( RANDOM % 10 ) + 1 ))"
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "sbatch did not submit job"
-}
+set job_id2 [submit_job -fail "-N1 -t1 -a 0-[expr $array_size - 1] -o /dev/null -e /dev/null --wrap 'sleep \$(( ( RANDOM % 10 ) + 1 ))'"]
 
 #
 # Submit a dependent job dependent upon a full job array
 #
-set timeout $max_job_delay
-set match_job_state 0
-set srun_pid [spawn $srun -t1 --dependency=afterany:$job_id $scontrol show job $job_id]
-expect {
-	-re "JobState=COMPLETED|COMPLETING" {
-		incr match_job_state
-		exp_continue
-	}
-	timeout {
-		slow_kill $srun_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$match_job_state != $array_size} {
-	fail "Dependent job not completed ($match_job_state != $array_size)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -fail "$srun -t1 --dependency=afterany:$job_id2 $scontrol show job $job_id2"]
+subtest {[regexp -all "JobState=COMPLETED|COMPLETING" $output] == $array_size} "Verify that dependent job array was fully completed"

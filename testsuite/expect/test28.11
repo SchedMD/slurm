@@ -26,11 +26,8 @@
 # with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
-
-
 source ./globals
 
-set exit_code 0
 set file_script "test$test_id.sh"
 set config_path ""
 set cwd "[$bin_pwd]"
@@ -76,31 +73,7 @@ if {$min_job_age != 10} {
 
 # It doesn't matter how long the job sleeps; it will be cancelled anyway.
 make_bash_script $file_script "sleep 5"
-set job_id 0
-spawn $sbatch --constraint=$node_feature --array=1-2 --output="/dev/null" \
-			   $file_script
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		log_debug "Job $job_id was submitted"
-		exp_continue
-	}
-	-re "Batch job submission failed" {
-		set exit_code 1
-		log_error "Batch job submission failed"
-		exp_continue
-	}
-	timeout {
-		fail "sbatch timed out"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Error submitting job"
-}
+set job_id [submit_job -fail "--constraint=$node_feature --array=1-2 --output=/dev/null $file_script"]
 
 # Wait enough time for the jobs to be in the controller
 set count 0
@@ -122,22 +95,9 @@ if [cancel_job $job_id] {
 	fail "Problem cancelling job $job_id"
 }
 
-set exit_code 1
 set sleep_time $min_job_age
 incr sleep_time 10
 log_info "Waiting for $sleep_time seconds for the jobs to be purged from the controller"
 $bin_sleep $sleep_time
-spawn $scontrol show job $job_id
-expect {
-	-re "Invalid job id specified" {
-		# Good, the job isn't in the controller anymore
-		set exit_code 0
-		exp_continue
-	}
-	timeout {
-		fail "scontrol timed out"
-	}
-	eof {
-		wait
-	}
-}
+set output [run_command_output -xfail -fail "$scontrol show job $job_id"]
+subtest {[regexp "Invalid job id specified" $output]} "Verify that the job isn't in the controller anymore"
