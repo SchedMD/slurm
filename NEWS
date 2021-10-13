@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
     path.
  -- Added --prefer option at job submission to allow for 'soft' constraints.
  -- Remove support for PMIx 1.x
+ -- slurmrestd - Unlink unix sockets before binding to avoid errors where
+    previous run of slurmrestd did not properly cleanup the sockets.
 
 * Changes in Slurm 21.08.4
 ==========================

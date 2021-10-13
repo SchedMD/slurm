@@ -1804,6 +1804,9 @@ static int _create_socket(void *x, void *arg)
 			fatal("%s: [%s] Invalid UNIX socket",
 			      __func__, hostport);
 
+		if (unlink(unixsock) && (errno != ENOENT))
+			error("Error unlink(%s): %m", unixsock);
+
 		/* set value of socket path */
 		strlcpy(addr.sun_path, unixsock, sizeof(addr.sun_path));
 		if ((rc = bind(fd, (const struct sockaddr *) &addr,
