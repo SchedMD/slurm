@@ -207,7 +207,11 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->db_flags      = job_ptr->db_flags;
 
 	req->db_index      = job_ptr->db_index;
-	req->constraints   = xstrdup(job_ptr->details->features);
+	if (!IS_JOB_PENDING(job_ptr))
+		req->constraints   = xstrdup(job_ptr->details->features_use);
+	else
+		req->constraints   = xstrdup(job_ptr->details->features);
+
 	req->container     = xstrdup(job_ptr->container);
 	req->job_state     = job_ptr->job_state;
 	req->state_reason_prev = job_ptr->state_reason_prev_db;
