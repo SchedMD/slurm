@@ -27,6 +27,7 @@ HIGHLIGHTS
  -- The template slurmrestd.service unit file now defaults to enable auth/jwt and
     the munge unit is no longer a dependency by default.
  -- Add extra 'EnvironmentFile=-/etc/default/$service' setting to service files.
+ -- Allow jobs to pack onto nodes already rebooting with the desired features.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

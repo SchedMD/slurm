@@ -4320,8 +4320,13 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	} else {
 		boot_node_bitmap = node_features_reboot(job_ptr);
-		if (boot_node_bitmap == NULL)
+		if (boot_node_bitmap == NULL) {
+			if (bit_overlap_any(job_ptr->node_bitmap,
+					    booting_node_bitmap))
+				/* launch_job() when all nodes have booted */
+				job_ptr->bit_flags |= NODE_REBOOT;
 			return SLURM_SUCCESS;
+		}
 	}
 
 	wait_boot_arg = xmalloc(sizeof(wait_boot_arg_t));
@@ -4382,12 +4387,44 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		reboot_agent_args->msg_args = reboot_msg;
 		reboot_msg->features = reboot_features;	/* Move, not copy */
 		for (i = i_first; i <= i_last; i++) {
+			int node_inx;
+			char *tmp_feature, *orig_features_act;
+
 			if (!bit_test(feature_node_bitmap, i))
 				continue;
 			node_ptr = node_record_table_ptr + i;
 			hostlist_push_host(reboot_agent_args->hostlist,
 					   node_ptr->name);
 			reboot_agent_args->node_count++;
+
+			/*
+			 * Update node features now to avoid a race where a
+			 * second job may request that this node gets rebooted
+			 * (in order to get a new active feature) *after* the
+			 * first reboot request but *before* slurmd actually
+			 * starts up. If that would happen then the second job
+			 * would stay configuring forever, waiting for the node
+			 * to reboot even though the node already rebooted.
+			 *
+			 * By setting the node's active features right now, any
+			 * other job that wants that active feature can be
+			 * scheduled onto this node, which will also already be
+			 * rebooting, so those other jobs won't send additional
+			 * reboot requests to change the feature.
+			 */
+			node_inx = node_ptr - node_record_table_ptr;
+			/* Point to node features, don't copy */
+			orig_features_act =
+				node_ptr->features_act ?
+				node_ptr->features_act : node_ptr->features;
+			tmp_feature = node_features_g_node_xlate(
+				reboot_msg->features, orig_features_act,
+				node_ptr->features, node_inx);
+			xfree(node_ptr->features_act);
+			node_ptr->features_act = tmp_feature;
+			(void) update_node_active_features(
+				node_ptr->name, node_ptr->features_act,
+				FEATURE_MODE_IND);
 		}
 		nodes = bitmap2node_name(feature_node_bitmap);
 		if (nodes) {

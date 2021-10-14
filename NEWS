@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - change job response types to more specific types than
     generic string.
  -- srun - refuse to run on malformed SPANK environment variable.
+ -- Allow jobs to pack onto nodes already rebooting with the desired features.
 
 * Changes in Slurm 21.08.5
 ==========================
