@@ -27,9 +27,7 @@
 ############################################################################
 
 proc inc22_1_5 { } {
-
-	global users accounts
-	global sreport exit_code
+	global users accounts sreport
 	global sql_in_clus1 sql_rem_clus1 sql_in_clus2 sql_rem_clus2
 	global user1 user2 account1 account2 account3
 	global cluster1 cluster2
@@ -47,97 +45,21 @@ proc inc22_1_5 { } {
 
 	log_info "Testing sreport for default (non-AcctAsParent) and FlatView"
 
-	# test the job report for root account
-	set matches 0
-	set my_pid [spawn $sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n]
-	expect {
-		-re "There was a problem" {
-			log_error "There was a problem with the sreport command"
-			incr exit_code 1
-		}
-		-re "$cluster1.root.4.*.100.00%" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			log_error "sreport not responding"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	# Test the job report for root account
+	set output [run_command_output -fail "$sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	subtest {[regexp -all "$cluster1.root.4.*.100.00%" $output] == 1} "Test the job report for root account"
 
-	if {$matches != 1} {
-		log_error "sreport didn't give good info test1 $matches"
-		incr exit_code 1
-	}
+	# Test the job report with flatview, should show first level of accounts under root individually
+	set output [run_command_output -fail "$sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n flatview"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	#test22-1clus1|test22-1acct1|2|0|0|0|0|50.00%|
+	#test22-1clus1|test22-1acct2|1|0|0|0|0|25.00%|
+	#test22-1clus1|test22-1acct3|1|0|0|0|0|25.00%|
+	subtest {[regexp -all "$cluster1.$account1.2.*.50.00%.\\\n$cluster1.$account2.1.*.25.00%.\\\n$cluster1.$account3.1.*.25.00%" $output] == 1} "Test the job report with flatview"
 
-	if {$exit_code} {
-		return $exit_code
-	}
-
-	# test the job report with flatview, should show first level of accounts under root individually
-	set matches 0
-	set my_pid [spawn $sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n flatview]
-	expect {
-		-re "There was a problem" {
-			log_error "There was a problem with the sreport command"
-			incr exit_code 1
-		}
-		#test22-1clus1|test22-1acct1|2|0|0|0|0|50.00%|
-		#test22-1clus1|test22-1acct2|1|0|0|0|0|25.00%|
-		#test22-1clus1|test22-1acct3|1|0|0|0|0|25.00%|
-		-re "$cluster1.$account1.2.*.50.00%.\r.$cluster1.$account2.1.*.25.00%.\r.$cluster1.$account3.1.*.25.00%" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			log_error "sreport not responding"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 1} {
-		log_error "sreport didn't give good info test2 $matches"
-		incr exit_code 1
-	}
-
-	if {$exit_code} {
-		return $exit_code
-	}
-
-	# test the job report for specific account, should show just one account with all its jobs
-	set matches 0
-	set my_pid [spawn $sreport job sizesbyaccount printjobcount cluster='$cluster1' account=$account1 start=$start_str end=$end_str -p -n]
-	expect {
-		-re "There was a problem" {
-			log_error "There was a problem with the sreport command"
-			incr exit_code 1
-		}
-		-re "$cluster1.$account1.2.*.100.00%." {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			log_error "sreport not responding"
-			slow_kill $my_pid
-			incr exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 1} {
-		log_error "sreport didn't give good info test3 $matches"
-		incr exit_code 1
-	}
-
-	return $exit_code
+	# Test the job report for specific account, should show just one account with all its jobs
+	set output [run_command_output -fail "$sreport job sizesbyaccount printjobcount cluster='$cluster1' account=$account1 start=$start_str end=$end_str -p -n"]
+	subtest {![regexp "There was a problem" $output]} "Verify no error message is reported by sreport"
+	subtest {[regexp -all "$cluster1.$account1.2.*.100.00%." $output] == 1} "Test the job report for specific account"
 }
