@@ -115,16 +115,19 @@ is as follows:
 <li>acct_gather.conf</li>
 <li>cgroup.conf</li>
 <li>cgroup_allowed_devices_file.conf</li>
+<li>cli_filter.lua</li>
 <li>ext_sensors.conf</li>
 <li>gres.conf</li>
+<li>helpers.conf</li>
 <li>job_container.conf</li>
 <li>knl_cray.conf</li>
 <li>knl_generic.conf</li>
+<li>oci.conf</li>
 <li>plugstack.conf</li>
 <li>topology.conf</li>
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 11 March 2021</p>
+<p style="text-align:center;">Last modified 13 October 2021</p>
 
 <!--#include virtual="footer.txt"-->

@@ -7,42 +7,43 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 
 <h2>Commands</h2>
 <table border="1">
-<tr><td><a href="sacct.html">sacct</a></td><td>displays accounting data for all jobs and job steps in the Slurm job accounting log or Slurm database</td></tr>
+<tr><td><a href="sacct.html">sacct</a></td><td>Displays accounting data for all jobs and job steps in the Slurm job accounting log or Slurm database.</td></tr>
 <tr><td><a href="sacctmgr.html">sacctmgr</a></td><td>Used to view and modify Slurm account information.</td></tr>
 <tr><td><a href="salloc.html">salloc</a></td><td>Obtain a Slurm job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.</td></tr>
 <tr><td><a href="sattach.html">sattach</a></td><td>Attach to a Slurm job step.</td></tr>
 <tr><td><a href="sbatch.html">sbatch</a></td><td>Submit a batch script to Slurm.</td></tr>
-<tr><td><a href="sbcast.html">sbcast</a></td><td>transmit a file to the nodes allocated to a Slurm job.</td></tr>
+<tr><td><a href="sbcast.html">sbcast</a></td><td>Transmit a file to the nodes allocated to a Slurm job.</td></tr>
 <tr><td><a href="scancel.html">scancel</a></td><td>Used to signal jobs or job steps that are under the control of Slurm.</td></tr>
-<tr><td><a href="scontrol.html">scontrol</a></td><td>Used view and modify Slurm configuration and state.</td></tr>
-<tr><td><a href="sdiag.html">sdiag</a></td><td>scheduling diagnostic tool.</td></tr>
-<tr><td><a href="sinfo.html">sinfo</a></td><td>view information about Slurm nodes and partitions.</td></tr>
+<tr><td><a href="scontrol.html">scontrol</a></td><td>View or modify Slurm configuration and state.</td></tr>
+<tr><td><a href="scrontab.html">scrontab</a></td><td>Manage Slurm crontab files.</td></tr>
+<tr><td><a href="sdiag.html">sdiag</a></td><td>Scheduling diagnostic tool.</td></tr>
+<tr><td><a href="sh5util.html">sh5util</a></td><td>Merge utility for acct_gather_profile plugin.</td></tr>
+<tr><td><a href="sinfo.html">sinfo</a></td><td>View information about Slurm nodes and partitions.</td></tr>
 <tr><td><a href="slurm.html">slurm</a></td><td>Slurm system overview.</td></tr>
-<tr><td><a href="sprio.html">sprio</a></td><td>view the factors that comprise a job's scheduling priority</td></tr>
-<tr><td><a href="sh5util.html">sh5util</a></td><td>merge utility for acct_gather_profile plugin.</td></tr>
-<tr><td><a href="squeue.html">squeue</a></td><td>view information about jobs located in the Slurm scheduling queue.</td></tr>
+<tr><td><a href="sprio.html">sprio</a></td><td>View the factors that comprise a job's scheduling priority.</td></tr>
+<tr><td><a href="squeue.html">squeue</a></td><td>View information about jobs located in the Slurm scheduling queue.</td></tr>
 <tr><td><a href="sreport.html">sreport</a></td><td>Generate reports from the slurm accounting data.</td></tr>
-<tr><td><a href="srun.html">srun</a></td><td>Run parallel jobs</td></tr>
+<tr><td><a href="srun.html">srun</a></td><td>Run parallel jobs.</td></tr>
 <tr><td><a href="sshare.html">sshare</a></td><td>Tool for listing the shares of associations to a cluster.</td></tr>
-<tr><td><a href="sstat.html">sstat</a></td><td>Display various status information of a running job/step.</td></tr>
-<tr><td><a href="strigger.html">strigger</a></td><td>Used set, get or clear Slurm trigger information.</td></tr>
-<tr><td><a href="sview.html">sview</a></td><td>graphical user interface to view and modify Slurm state.</td></tr>
+<tr><td><a href="sstat.html">sstat</a></td><td>Display the status information of a running job/step.</td></tr>
+<tr><td><a href="strigger.html">strigger</a></td><td>Used to set, get or clear Slurm trigger information.</td></tr>
+<tr><td><a href="sview.html">sview</a></td><td>Graphical user interface to view and modify Slurm state.</td></tr>
 </table>
 
 <h2>Configuration Files</h2>
 <table border="1">
-<tr><td><a href="acct_gather.conf.html">acct_gather.conf</a></td><td>Slurm configuration file for the acct_gather plugins</td></tr>
-<tr><td><a href="burst_buffer.conf.html">burst_buffer.conf</a></td><td>Slurm burst buffer configuration</td></tr>
-<tr><td><a href="cgroup.conf.html">cgroup.conf</a></td><td>Slurm configuration file for the cgroup support</td></tr>
-<tr><td><a href="ext_sensors.conf.html">ext_sensors.conf</a></td><td>Slurm configuration file for the external sensor support</td></tr>
+<tr><td><a href="acct_gather.conf.html">acct_gather.conf</a></td><td>Slurm configuration file for the acct_gather plugins.</td></tr>
+<tr><td><a href="burst_buffer.conf.html">burst_buffer.conf</a></td><td>Slurm burst buffer configuration.</td></tr>
+<tr><td><a href="cgroup.conf.html">cgroup.conf</a></td><td>Slurm configuration file for the cgroup support.</td></tr>
+<tr><td><a href="ext_sensors.conf.html">ext_sensors.conf</a></td><td>Slurm configuration file for the external sensor support.</td></tr>
 <tr><td><a href="gres.conf.html">gres.conf</a></td><td>Slurm configuration file for generic resource management.</td></tr>
-<tr><td><a href="job_container.conf.html">job_container.conf</a></td><td>Slurm configuration file for configuring the tmpfs job container plugin</td></tr>
+<tr><td><a href="job_container.conf.html">job_container.conf</a></td><td>Slurm configuration file for configuring the tmpfs job container plugin.</td></tr>
 <tr><td><a href="knl.conf.html">knl.conf</a></td><td>Slurm configuration file for Intel Knights Landing management.</td></tr>
 <tr><td><a href="nonstop.conf.html">nonstop.conf</a></td><td>Slurm configuration file for failure management.</td></tr>
 <tr><td><a href="oci.conf.html">oci.conf</a></td><td>Slurm configuration file for OCI Containers.</td></tr>
-<tr><td><a href="slurm.conf.html">slurm.conf</a></td><td>Slurm configuration file</td></tr>
-<tr><td><a href="slurmdbd.conf.html">slurmdbd.conf</a></td><td>Slurm Database Daemon (SlurmDBD) configuration file</td></tr>
-<tr><td><a href="topology.conf.html">topology.conf</a></td><td>Slurm configuration file for defining the network topology</td></tr>
+<tr><td><a href="slurm.conf.html">slurm.conf</a></td><td>Slurm configuration file.</td></tr>
+<tr><td><a href="slurmdbd.conf.html">slurmdbd.conf</a></td><td>Slurm Database Daemon (SlurmDBD) configuration file.</td></tr>
+<tr><td><a href="topology.conf.html">topology.conf</a></td><td>Slurm configuration file for defining the network topology.</td></tr>
 </table>
 
 <h2>Daemons and Other</h2>
@@ -52,9 +53,9 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="slurmdbd.html">slurmdbd</a></td><td>Slurm Database Daemon.</td></tr>
 <tr><td><a href="slurmrestd.html">slurmrestd</a></td><td>The Slurm REST API daemon.</td></tr>
 <tr><td><a href="slurmstepd.html">slurmstepd</a></td><td>The job step manager for Slurm.</td></tr>
-<tr><td><a href="spank.html">SPANK</a></td><td>Slurm Plug-in Architecture for Node and job (K)control</td></tr>
+<tr><td><a href="spank.html">SPANK</a></td><td>Slurm Plug-in Architecture for Node and job (K)control.</td></tr>
 </table>
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 14 October 2021</p>
 
 <!--#include virtual="footer.txt"-->
