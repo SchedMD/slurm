@@ -44,6 +44,7 @@
 #include "src/common/log.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
+#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -69,6 +70,8 @@ static int _op_handler_diag(const char *context_id,
 
 	data_t *errors = populate_response_format(p);
 	data_t *d = data_set_dict(data_key_set(p, "statistics"));
+	data_t *rpcm = data_set_list(data_key_set(d, "rpcs_by_message_type"));
+	data_t *rpcu = data_set_list(data_key_set(d, "rpcs_by_user"));
 	debug4("%s:[%s] diag handler called", __func__, context_id);
 
 	if ((rc = slurm_get_statistics(&resp, req))) {
@@ -149,6 +152,66 @@ static int _op_handler_diag(const char *context_id,
 	data_set_int(data_key_set(d, "bf_when_last_cycle"),
 		     resp->bf_when_last_cycle);
 	data_set_bool(data_key_set(d, "bf_active"), (resp->bf_active != 0));
+
+	if (resp->rpc_type_size) {
+		uint32_t *rpc_type_ave_time = xcalloc(
+			resp->rpc_type_size, sizeof(*rpc_type_ave_time));
+
+		for (int i = 0; i < resp->rpc_type_size; i++) {
+			rpc_type_ave_time[i] = resp->rpc_type_time[i] /
+					       resp->rpc_type_cnt[i];
+		}
+
+		for (int i = 0; i < resp->rpc_type_size; i++) {
+			data_t *r = data_set_dict(data_list_append(rpcm));
+			data_set_string(data_key_set(r, "message_type"),
+					rpc_num2string(resp->rpc_type_id[i]));
+			data_set_int(data_key_set(r, "type_id"),
+				     resp->rpc_type_id[i]);
+			data_set_int(data_key_set(r, "count"),
+				     resp->rpc_type_cnt[i]);
+			data_set_int(data_key_set(r, "average_time"),
+				     rpc_type_ave_time[i]);
+			data_set_int(data_key_set(r, "total_time"),
+				     resp->rpc_type_time[i]);
+		}
+
+		xfree(rpc_type_ave_time);
+	}
+
+	if (resp->rpc_user_size) {
+		uint32_t *rpc_user_ave_time = xcalloc(
+			resp->rpc_user_size, sizeof(*rpc_user_ave_time));
+
+		for (int i = 0; i < resp->rpc_user_size; i++) {
+			rpc_user_ave_time[i] = resp->rpc_user_time[i] /
+					       resp->rpc_user_cnt[i];
+		}
+
+		for (int i = 0; i < resp->rpc_user_size; i++) {
+			data_t *u = data_set_dict(data_list_append(rpcu));
+			data_t *un = data_key_set(u, "user");
+			char *user = uid_to_string_or_null(
+				resp->rpc_user_id[i]);
+
+			data_set_int(data_key_set(u, "user_id"),
+				     resp->rpc_user_id[i]);
+			data_set_int(data_key_set(u, "count"),
+				     resp->rpc_user_cnt[i]);
+			data_set_int(data_key_set(u, "average_time"),
+				     rpc_user_ave_time[i]);
+			data_set_int(data_key_set(u, "total_time"),
+				     resp->rpc_user_time[i]);
+
+			if (!user)
+				data_set_string_fmt(un, "%u",
+						    resp->rpc_user_id[i]);
+			else
+				data_set_string_own(un, user);
+		}
+
+		xfree(rpc_user_ave_time);
+	}
 
 cleanup:
 	slurm_free_stats_response_msg(resp);
