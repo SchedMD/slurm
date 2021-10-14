@@ -3168,7 +3168,7 @@ proc get_select_type_params { {partition ""} } {
 		set partition [default_partition]
 	}
 
-	if {[string compare $partition ""]} {
+	if {$partition ne ""} {
 		spawn -noecho $bin_bash -c "exec $scontrol show part $partition | $bin_grep SelectTypeParameters"
 		expect {
 			-re "SelectTypeParameters *= *NONE" {
@@ -3183,7 +3183,7 @@ proc get_select_type_params { {partition ""} } {
 			}
 		}
 	}
-	if { [string compare params ""] } {
+	if {$params eq ""} {
 		spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
 		expect {
 			-re "SelectTypeParameters *= *($re_word_str)" {
@@ -3357,7 +3357,7 @@ proc is_super_user {{user ""}} {
 	}
 
 	# Check if user is root
-	if {[string compare $user "root"] == 0} {
+	if {$user eq "root"} {
 		return true
 	}
 
@@ -3534,7 +3534,7 @@ proc default_partition {} {
 proc default_part_exclusive {} {
 	set def_part [default_partition]
 	set oversubscribe [partition_oversubscribe $def_part]
-	if {[string compare $oversubscribe "EXCLUSIVE"] == 0} {
+	if {$oversubscribe eq "EXCLUSIVE"} {
 		return 1
 	} else {
 		return 0
@@ -3905,13 +3905,13 @@ proc change_subbp_state { node ionodes state } {
 
 proc scale_to_megs { value factor } {
 
-	if {[string compare $factor "T"] == 0} {
+	if {$factor == "T"} {
 		set value [expr $value * 1024 * 1024]
-	} elseif {[string compare $factor "G"] == 0} {
+	} elseif {$factor == "G"} {
 		set value [expr $value * 1024]
-	} elseif {[string compare $factor "M"] == 0} {
+	} elseif {$factor == "M"} {
 		set value [expr $value * 1]
-	} elseif {[string compare $factor "K"] == 0} {
+	} elseif {$factor == "K"} {
 		set value [expr $value / 1024]
 		set value [expr {round($value)}]
 	} else {
@@ -3941,11 +3941,11 @@ proc scale_to_megs { value factor } {
 
 proc scale_to_ks { value factor } {
 
-	if {[string compare $factor "G"] == 0} {
+	if {$factor == "G"} {
 		set value [expr $value * 1024 * 1024]
-	} elseif {[string compare $factor "M"] == 0} {
+	} elseif {$factor == "M"} {
 		set value [expr $value * 1024]
-	} elseif {[string compare $factor "K"] == 0} {
+	} elseif {$factor == "K"} {
 		set value [expr $value * 1]
 	} else {
 		set value [expr $value / 1024]
