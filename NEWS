@@ -95,6 +95,8 @@ documents those changes that are of interest to users and administrators.
  -- Make slurmctld call the JobCompPlugin set location operation on SIGUSR2. As
     a relevant consequence, the filetxt plugin reopens the file for potential
     logrotation.
+ -- openapi/v0.0.38 - added fields bf_table_size and bf_table_size_mean to
+    diag query.
 
 * Changes in Slurm 21.08.7
 ==========================

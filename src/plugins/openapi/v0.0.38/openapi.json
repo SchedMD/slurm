@@ -838,6 +838,14 @@
                 "type": "integer",
                 "description": "Backfill Schedule Mean queue length"
               },
+              "bf_table_size": {
+                "type": "integer",
+                "description": "Backfill Schedule Last table size"
+              },
+              "bf_table_size_mean": {
+                "type": "integer",
+                "description": "Backfill Schedule Mean table size"
+              },
               "bf_when_last_cycle": {
                 "type": "integer",
                 "description": "Last cycle timestamp"
