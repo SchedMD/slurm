@@ -952,6 +952,13 @@ typedef struct depend_spec {
 					   singleton dependency */
 } depend_spec_t;
 
+/* Used as the mode for update_node_active_features() */
+typedef enum {
+	FEATURE_MODE_IND,  /* Print each node change indivually */
+	FEATURE_MODE_COMB, /* Try to combine like changes */
+	FEATURE_MODE_PEND, /* Print any pending change message */
+} feature_mode_t;
+
 #define STEP_FLAG 0xbbbb
 #define STEP_MAGIC 0xcafecafe
 
@@ -2844,5 +2851,19 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete);
  * where that node is represented in that array.
  */
 extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
+
+/*
+ * update_node_active_features - Update active features associated with nodes
+ * IN node_names - List of nodes to update
+ * IN active_features - New active features value
+ * IN mode - FEATURE_MODE_IND : Print each node change indivually
+ *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)
+ *           FEATURE_MODE_PEND: Print any pending change message
+ * RET: SLURM_SUCCESS or error code
+ * NOTE: Use mode=FEATURE_MODE_IND in a loop with node write lock set,
+ *	 then call with mode=FEATURE_MODE_PEND at the end of the loop
+ */
+extern int update_node_active_features(char *node_names, char *active_features,
+				       int mode);
 
 #endif /* !_HAVE_SLURMCTLD_H */
