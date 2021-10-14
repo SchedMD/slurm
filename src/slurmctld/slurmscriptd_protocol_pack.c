@@ -150,6 +150,29 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_log_msg(log_msg_t *msg, buf_t *buffer)
+{
+	pack32(msg->debug_level, buffer);
+	packbool(msg->log_rotate, buffer);
+}
+
+static int _unpack_log_msg(log_msg_t **msg, buf_t *buffer)
+{
+	log_msg_t *data = xmalloc(sizeof *data);
+	*msg = data;
+
+	safe_unpack32(&data->debug_level, buffer);
+	safe_unpackbool(&data->log_rotate, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+	xfree(data);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
 extern int slurmscriptd_pack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 {
 	int rc = SLURM_SUCCESS;
@@ -168,6 +191,9 @@ extern int slurmscriptd_pack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 		break;
 	case SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE:
 		_pack_script_complete(msg->msg_data, buffer);
+		break;
+	case SLURMSCRIPTD_REQUEST_UPDATE_LOG:
+		_pack_log_msg(msg->msg_data, buffer);
 		break;
 	case SLURMSCRIPTD_SHUTDOWN:
 		/* Nothing to pack */
@@ -205,6 +231,9 @@ extern int slurmscriptd_unpack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 		rc = _unpack_run_script(
 				(run_script_msg_t **)(&msg->msg_data),
 				buffer);
+		break;
+	case SLURMSCRIPTD_REQUEST_UPDATE_LOG:
+		rc = _unpack_log_msg((log_msg_t **) (&msg->msg_data), buffer);
 		break;
 	case SLURMSCRIPTD_SHUTDOWN:
 		/* Nothing to unpack */

@@ -101,6 +101,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmctld_plugstack.h"
+#include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -5140,6 +5141,7 @@ static void _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 
 	lock_slurmctld(config_write_lock);
 	update_log_levels(debug_level, debug_level);
+	slurmscriptd_update_log_level(debug_level, false);
 
 	info("Set debug level to '%s'", log_num2string(debug_level));
 

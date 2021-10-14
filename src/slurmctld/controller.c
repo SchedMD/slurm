@@ -1147,6 +1147,8 @@ static void *_slurmctld_signal_hand(void *no_data)
 			info("Logrotate signal (SIGUSR2) received");
 			lock_slurmctld(conf_write_lock);
 			update_logging();
+			slurmscriptd_update_log_level(
+				slurm_conf.slurmctld_debug, true);
 			unlock_slurmctld(conf_write_lock);
 			if (jobcomp_g_set_location(slurm_conf.job_comp_loc) !=
 			    SLURM_SUCCESS)

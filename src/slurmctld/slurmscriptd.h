@@ -86,4 +86,13 @@ extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
 extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 				      char *script, char **env);
 
+/*
+ * slurmscriptd_update_log_level
+ * Update the logging level for slurmscriptd.
+ *
+ * IN debug_level
+ * IN log_rotate - true if log_rotate (re-open log files)
+ */
+extern void slurmscriptd_update_log_level(int debug_level, bool log_rotate);
+
 #endif /* !_HAVE_SLURMSCRIPTD_H */

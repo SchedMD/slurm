@@ -58,6 +58,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/burst_buffer.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/slurmscriptd_protocol_defs.h"
@@ -754,6 +755,32 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 	return rc;
 }
 
+static int _handle_update_log(slurmscriptd_msg_t *msg)
+{
+	slurmctld_lock_t config_write_lock =
+		{ .conf = WRITE_LOCK };
+	log_msg_t *log_msg = msg->msg_data;
+	int debug_level = (int) log_msg->debug_level;
+	bool log_rotate = log_msg->log_rotate;
+
+	log_flag(SCRIPT, "Handling %s; set debug level to '%s'%s",
+		 rpc_num2string(msg->msg_type),
+		 log_num2string(debug_level),
+		 log_rotate ? ", logrotate" : "");
+
+	lock_slurmctld(config_write_lock);
+	if (log_rotate) {
+		update_logging();
+	} else {
+		update_log_levels(debug_level, debug_level);
+		slurm_conf.slurmctld_debug = debug_level;
+		slurm_conf.last_update = time(NULL);
+	}
+	unlock_slurmctld(config_write_lock);
+
+	return SLURM_SUCCESS;
+}
+
 static int _handle_request(int req, buf_t *buffer)
 {
 	int rc;
@@ -779,6 +806,9 @@ static int _handle_request(int req, buf_t *buffer)
 			break;
 		case SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE:
 			rc = _handle_script_complete(&recv_msg);
+			break;
+		case SLURMSCRIPTD_REQUEST_UPDATE_LOG:
+			rc = _handle_update_log(&recv_msg);
 			break;
 		case SLURMSCRIPTD_SHUTDOWN:
 			rc = _handle_shutdown(&recv_msg);
@@ -1018,6 +1048,18 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 
 	/* Don't free argv[0], since we did not xstrdup that. */
 	xfree(run_script_msg.argv);
+}
+
+extern void slurmscriptd_update_log_level(int debug_level, bool log_rotate)
+{
+	log_msg_t log_msg;
+
+	memset(&log_msg, 0, sizeof(log_msg));
+
+	log_msg.debug_level = (uint32_t) debug_level;
+	log_msg.log_rotate = log_rotate;
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_UPDATE_LOG, &log_msg,
+			      false, NULL, NULL);
 }
 
 extern int slurmscriptd_init(int argc, char **argv)
