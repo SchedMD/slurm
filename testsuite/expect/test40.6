@@ -26,16 +26,10 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
-set file_in1         "test$test_id.input1"
-set file_in2         "test$test_id.input2"
-set file_out         "test$test_id.output"
-
-proc cleanup {} {
-	global bin_rm file_in1 file_in2 file_out
-
-	exec $bin_rm -f $file_in1 $file_in2 $file_out
-}
+set file_in1         "$test_dir/input1"
+set file_in2         "$test_dir/input2"
+set file_out         "$test_dir/output"
+set job_id           0
 
 if {![check_config_select "cons_tres"]} {
     skip "This test is only compatible with select/cons_tres"
@@ -55,19 +49,24 @@ if {[llength [get_nodes_by_request "--gres=mps:100 -N2 -t2"]] == 0} {
 	skip "This test requires being able to submit job with --gres=mps:100 -N2"
 }
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 #
 # Build input scripts
 # file_in1: Determine MPS allocated, shrink and test again
 # file_in2: Print the hostname and MPS info
 #
-exec $bin_rm -f $file_out
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
-	$srun ./$file_in2
+	$srun $file_in2
 	$scontrol update JobId=\${SLURM_JOBID} NumNodes=1
 	. slurm_job_\${SLURM_JOBID}_resize.sh
 	$scontrol -dd show job \${SLURM_JOBID}
-	$srun ./$file_in2
+	$srun $file_in2
 	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.csh
 	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh
 	exit 0"
@@ -80,35 +79,14 @@ echo 'HOST:'\$SLURMD_NODENAME 'CUDA_VISIBLE_DEVICES:'\$CUDA_VISIBLE_DEVICES 'CUD
 #
 # Submit job to shrink: uses 10 gres/mps on two nodes
 #
-set job_id 0
-spawn $sbatch -N1 --exclusive -J "test$test_id" -t2 --gres=mps:10 -N2 --output=$file_out $file_in1
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Job 1 not submitted"
-}
-if {[wait_for_job $job_id "DONE"] != 0} {
-	cancel_job $job_id
-	fail "Job did not complete"
-}
+set job_id [submit_job -fail "-N1 --exclusive -J $test_name -t2 --gres=mps:10 -N2 --output=$file_out $file_in1"]
+wait_for_job -fail $job_id "DONE"
 
 #
 # Parse the output files from job 1
 #
 log_info "Parse job 1 output"
-if {[wait_for_file $file_out] != 0} {
-	fail "No output file"
-}
+wait_for_file -fail $file_out
 set match 0
 set percentage -1
 spawn $bin_cat $file_out
@@ -123,15 +101,14 @@ expect {
 	}
 }
 if {$match != 3} {
-	log_error "Bad CUDA information about job 1 ($match != 3)"
-	set exit_code 1
+	fail "Bad CUDA information about job 1 ($match != 3)"
 }
 
 #
 # If devices not constrained and Count on all allocated devices is the same
 # then confirm the CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value above is correct
 #
-if {$exit_code == 0 && $constrain_devices == 0} {
+if {$constrain_devices == 0} {
 	set count -1
 	log_user 0
 	spawn $bin_cat $file_out
@@ -152,14 +129,9 @@ if {$exit_code == 0 && $constrain_devices == 0} {
 	if {$count > 0} {
 		set count [expr 10 * 100 / $count]
 		if {$percentage != $count} {
-			log_error "Bad CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value ($percentage != $count)"
-			set exit_code 1
+			fail "Bad CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value ($percentage != $count)"
 		} else {
 			log_debug "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value is good"
 		}
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

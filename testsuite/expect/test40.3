@@ -26,16 +26,10 @@
 ############################################################################
 source ./globals
 
-set exit_code      0
-set file_in1       "test$test_id.input1"
-set file_in2       "test$test_id.input2"
-set file_out       "test$test_id.output"
-
-proc cleanup {} {
-	global bin_rm file_in1 file_in2 file_out
-
-	exec $bin_rm -f $file_in1 $file_in2 $file_out
-}
+set file_in1       "$test_dir/input1"
+set file_in2       "$test_dir/input2"
+set file_out       "$test_dir/output"
+set job_id         0
 
 #
 # Validate the job, batch step and step 0 of a job have the proper MPS counts
@@ -46,7 +40,7 @@ proc cleanup {} {
 #
 proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 	global re_word_str number
-	global bin_cat bin_rm bin_grep exit_code file_out sacct
+	global bin_cat bin_rm bin_grep file_out sacct
 
 	if {$job_id == 0} {
 		return
@@ -71,19 +65,13 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 		expect {
 			-re "gres/mps=($number)" {
 				incr match
-				if {$expect_out(1,string) != $step_mps} {
-					log_error "Bad step MPS count reported by sacct ($expect_out(1,string) != $step_mps)"
-					set exit_code 1
-				}
+				subtest {$expect_out(1,string) == $step_mps} "Verify step MPS count reported by sacct" "$expect_out(1,string) != $step_mps"
 				exp_continue
 			}
 			-re "gres/mps:($re_word_str)=($number)" {
 				if {$have_mps_types != 0} {
 					incr match
-					if {$expect_out(2,string) != $step_mps} {
-						log_error "Bad step MPS count reported by sacct ($expect_out(2,string) != $step_mps)"
-						set exit_code 1
-					}
+					subtest {$expect_out(2,string) == $step_mps} "Verify step MPS count reported by sacct" "$expect_out(2,string) != $step_mps"
 				}
 				exp_continue
 			}
@@ -91,9 +79,7 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 				wait
 			}
 		}
-		if {$match != 1} {
-			log_error "Missing step MPS count report from sacct ($match != 1)"
-		}
+		subtest {$match == 1} "Verify step MPS count is reported from sacct" "$match != 1"
 	}
 
 	# set match 0
@@ -101,46 +87,32 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 	# expect {
 	# 	-re "\[^:\]mps:($number)" {
 	# 		incr match
-	# 		if {$expect_out(1,string) != $job_mps} {
-	# 			log_error "Bad batch MPS count reported by sacct ($expect_out(1,string) != $job_mps)"
-	# 			set exit_code 1
-	# 		}
+	# 		subtest {$expect_out(1,string) == $job_mps} "Verify batch MPS count reported by sacct" "$expect_out(1,string) != $job_mps"
 	# 		exp_continue
 	# 	}
 	# 	-re ":mps:($number)" {
 	# 		incr match
-	# 		if {$expect_out(1,string) != $req_mps} {
-	# 			log_error "Bad batch MPS count reported by sacct ($expect_out(1,string) != $req_mps)"
-	# 			set exit_code 1
-	# 		}
+	# 		subtest {$expect_out(1,string) == $req_mps} "Verify batch MPS count reported by sacct" "$expect_out(1,string) != $req_mps"
 	# 		exp_continue
 	# 	}
 	# 	eof {
 	# 		wait
 	# 	}
 	# }
-	# if {$match != 2} {
-	# 	log_error "Missing batch MPS count report from sacct ($match != 2)"
-	# }
+	# subtest {$match == 2} "Verify batch MPS count is report from sacct" "$match != 2"
 
 	set match 0
 	spawn $bin_grep $job_id| $file_out
 	expect {
 		-re "gres/mps=($number)" {
 			incr match
-			if {$expect_out(1,string) != $job_mps} {
-				log_error "Bad job MPS count reported by sacct ($expect_out(1,string) != $job_mps)"
-				set exit_code 1
-			}
+			subtest {$expect_out(1,string) == $job_mps} "Verify job MPS count reported by sacct" "$expect_out(1,string) != $job_mps"
 			exp_continue
 		}
 		-re "gres/mps:($re_word_str)=($number)" {
 			if {$have_mps_types != 0} {
 				incr match
-				if {$expect_out(2,string) != $job_mps} {
-					log_error "Bad job MPS count reported by sacct ($expect_out(2,string) != $job_mps)"
-					set exit_code 1
-				}
+				subtest {$expect_out(2,string) == $job_mps} "Verify job MPS count reported by sacct" "$expect_out(2,string) != $job_mps"
 			}
 			exp_continue
 		}
@@ -148,9 +120,7 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 			wait
 		}
 	}
-	if {$match != 2} {
-		log_error "Missing job MPS count report from sacct ($match != 2)"
-	}
+	subtest {$match == 2} "Verify job MPS count is reported by sacct" "$match != 2"
 	exec $bin_rm -f $file_out
 	log_user 1
 }
@@ -163,11 +133,9 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 #	are reported based upon the job specification
 #
 proc test_out_file { file_out target } {
-	global re_word_str number bin_cat exit_code
+	global re_word_str number bin_cat
 
-	if {[wait_for_file $file_out] != 0} {
-		fail "No output file"
-	}
+	wait_for_file -fail $file_out
 
 	set match 0
 	spawn $bin_cat $file_out
@@ -184,10 +152,7 @@ proc test_out_file { file_out target } {
 			wait
 		}
 	}
-	if {$match != $target} {
-		log_error "Failed to account for proper MPS count ($match != $target)"
-		set exit_code 1
-	}
+	subtest {$match == $target} "Verify MPS accounting" "$match != $target"
 }
 
 set store_tres [string tolower [get_config_param "AccountingStorageTRES"]]
@@ -211,6 +176,12 @@ if { $nb_nodes == 0} {
 	skip "This test requires being able to submit job with --gres=mps:100 -N2"
 }
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 #
 # Test --gres=mps option by job
 #
@@ -224,9 +195,8 @@ make_bash_script $file_in1 "
 set req_mps 49
 set target [expr $nb_nodes * $req_mps]
 exec $bin_rm -f $file_out
-set job_id 0
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --gres=mps:$req_mps -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
+spawn $sbatch --gres=craynetwork:0 --gres=mps:$req_mps -N$nb_nodes -t1 -o $file_out -J "test$test_id" $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -243,14 +213,9 @@ if {$job_id == 0} {
 	fail "Job not submitted"
 }
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	cancel_job $job_id
-	fail "Job $job_id did not complete"
-}
+wait_for_job -fail $job_id "DONE"
 
-if {[wait_for_file $file_out] != 0} {
-	fail "No output file"
-}
+wait_for_file -fail $file_out
 set have_mps_types 0
 set match 0
 spawn $bin_cat $file_out
@@ -271,8 +236,7 @@ expect {
 	}
 }
 if {$match != $target} {
-	log_error "Failed to account for proper MPS count ($match != $target)"
-	set exit_code 1
+	fail "Failed to account for proper MPS count ($match != $target)"
 }
 test_acct $job_id $target -1 $req_mps $have_mps_types
 
@@ -280,7 +244,7 @@ test_acct $job_id $target -1 $req_mps $have_mps_types
 # Test --gres=mps option by step
 #
 make_bash_script $file_in1 "
-	$srun ./$file_in2
+	$srun $file_in2
 	exit 0"
 
 make_bash_script $file_in2 "
@@ -296,7 +260,7 @@ set target [expr $nb_nodes * $req_mps]
 exec $bin_rm -f $file_out
 set job_id 0
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --gres=mps:$req_mps -N$nb_nodes -t1 -o $file_out -J "test$test_id" ./$file_in1
+spawn $sbatch --gres=craynetwork:0 --gres=mps:$req_mps -N$nb_nodes -t1 -o $file_out -J "test$test_id" $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -313,14 +277,7 @@ if {$job_id == 0} {
 	fail "Job not submitted"
 }
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	cancel_job $job_id
-	fail "Job $job_id did not complete"
-}
+wait_for_job -fail $job_id "DONE"
 
 test_out_file $file_out $target
 test_acct $job_id $target $target $req_mps $have_mps_types
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

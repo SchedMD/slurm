@@ -26,14 +26,12 @@
 ############################################################################
 source ./globals
 
-set skips       0
-set file_in1   "test$test_id.input1"
-set file_in2   "test$test_id.input2"
-set file_out1  "test$test_id.output1"
-set file_out2  "test$test_id.output2"
+set file_in1    "$test_dir/input1"
+set file_in2    "$test_dir/input2"
+set file_out1   "$test_dir/output1"
+set file_out2   "$test_dir/output2"
 set job_id      0
 set job_list    {}
-set failure_count 0
 set mps_cnt     100
 
 if {![check_config_select "cons_tres"]} {
@@ -46,10 +44,9 @@ if {[llength $node_with_mps] != 1} {
 }
 
 proc cleanup {} {
-	global bin_rm file_in1 file_in2 file_out1 file_out2 job_list scancel
+	global job_list
 
 	cancel_job $job_list
-	run_command -none "$bin_rm -f $file_in1 $file_in2 $file_out1 $file_out2"
 }
 
 #
@@ -67,7 +64,7 @@ set host "unknown"
 set matches 0
 set percentage -1
 set target_job  [expr $mps_cnt / 2]
-set srun_pid [spawn $srun --gres=mps:$target_job -w $node_with_mps -n1 -t1 -J "test$test_id" $file_in1]
+set srun_pid [spawn $srun --gres=mps:$target_job -w $node_with_mps -n1 -t1 -J $test_name $file_in1]
 expect {
 	-re "HOST:($re_word_str)" {
 		incr matches
@@ -75,10 +72,7 @@ expect {
 		exp_continue
 	}
 	-re "CUDA_VISIBLE_DEVICES:($number)" {
-		if {$expect_out(1,string) != 0} {
-			log_error "CUDA_VISIBLE_DEVICES != 0"
-			incr failure_count
-		}
+		subtest {$expect_out(1,string) == 0} "Verify CUDA_VISIBLE_DEVICES == 0" "$expect_out(1,string) != 0"
 		incr matches
 		exp_continue
 	}
@@ -94,10 +88,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 3} {
-	log_error "Output is bad ($matches != 3)"
-	incr failure_count
-}
+subtest {$matches == 3} "Verify expected output" "$matches != 3"
 
 #
 # Run two steps in parallel to consume gres/mps using sbatch
@@ -110,7 +101,7 @@ echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS
 $bin_sleep 5
 exit 0"
 make_bash_script $file_in2 "
-$srun --mem=0 --overlap --gres=mps:$target_job  $file_in1 &
+$srun --mem=0 --overlap --gres=mps:$target_job $file_in1 &
 wait
 $bin_date
 $srun --mem=0 --overlap --gres=mps:$target_step $file_in1 &
@@ -120,7 +111,7 @@ $bin_date
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
+set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J $test_name $file_in2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -137,20 +128,13 @@ expect {
 if {$job_id == 0} {
 	fail "Job not submitted"
 }
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Job $job_id did not complete"
-}
-if {[wait_for_file $file_out1] != 0} {
-	fail "No output file"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out1
 set match 0
 spawn $bin_cat $file_out1
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
-		if {$expect_out(1,string) != 0} {
-			log_error "CUDA_VISIBLE_DEVICES != 0"
-			incr failure_count
-		}
+		subtest {$expect_out(1,string) == 0} "Verify CUDA_VISIBLE_DEVICES == 0" "$expect_out(1,string) != 0"
 		incr match
 		if {$match == 1} {
 			set perc $expect_out(2,string)
@@ -158,12 +142,8 @@ expect {
 			if {$match == 2} {
 				set perc_sum $expect_out(2,string)
 			} else {
-				if {$perc_sum != $expect_out(2,string)} {
-					log_error "Bad CUDA percentage ($perc_sum != $expect_out(2,string))"
-					incr failure_count
-				} elseif {[expr $perc - $perc_sum - $expect_out(2,string)] > 1} {
-					log_error "Bad CUDA percentage ($perc != ($perc_sum - $expect_out(2,string))"
-					incr failure_count
+				if {[subtest {$expect_out(2,string) == $perc_sum} "Verify CUDA percentage == $perc_sum" "$expect_out(2,string) != $perc_sum"]} {
+					subtest {[expr $perc - $perc_sum - $expect_out(2,string)] <= 1} "Verify CUDA percentage" "$perc != $perc_sum - $expect_out(2,string)"
 				}
 			}
 		}
@@ -173,10 +153,7 @@ expect {
 		wait
 	}
 }
-if {$match != 3} {
-	log_error "Bad CUDA information about job ($match != 3)"
-	incr failure_count
-}
+subtest {$matches == 3} "Verify CUDA information about job" "$matches != 3"
 
 #
 # Run two steps in parallel to consume gres/mps using salloc
@@ -184,13 +161,10 @@ if {$match != 3} {
 #
 log_info "==== TEST 3 ===="
 set match 0
-set salloc_pid [spawn $salloc --gres=mps:$target_job -w $node_with_mps -n1 -t1 -J "test$test_id" ./$file_in2]
+set salloc_pid [spawn $salloc --gres=mps:$target_job -w $node_with_mps -n1 -t1 -J $test_name $file_in2]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
-		if {$expect_out(1,string) != 0} {
-			log_error "CUDA_VISIBLE_DEVICES != 0"
-			incr failure_count
-		}
+		subtest {$expect_out(1,string) == 0} "Verify CUDA_VISIBLE_DEVICES == 0" "$expect_out(1,string) != 0"
 		incr match
 		if {$match == 1} {
 			set perc $expect_out(2,string)
@@ -198,12 +172,8 @@ expect {
 			if {$match == 2} {
 				set perc_sum $expect_out(2,string)
 			} else {
-				if {$perc_sum != $expect_out(2,string)} {
-					log_error "Bad CUDA percentage ($perc_sum != $expect_out(2,string))"
-					incr failure_count
-				} elseif {[expr $perc - $perc_sum - $expect_out(2,string)] > 1} {
-					log_error "Bad CUDA percentage ($perc != ($perc_sum - $expect_out(2,string))"
-					incr failure_count
+				if {[subtest {$expect_out(2,string) == $perc_sum} "Verify CUDA percentage == $perc_sum" "$expect_out(2,string) != $perc_sum"]} {
+					subtest {[expr $perc - $perc_sum - $expect_out(2,string)] <= 1} "Verify CUDA percentage" "$perc != $perc_sum - $expect_out(2,string)"
 				}
 			}
 		}
@@ -217,10 +187,7 @@ expect {
 		wait
 	}
 }
-if {$match != 3} {
-	log_error "Bad CUDA information about job ($match != 3)"
-	incr failure_count
-}
+subtest {$matches == 3} "Verify CUDA information about job" "$matches != 3"
 
 #
 # Run three steps in parallel to make sure steps get delay as needed to avoid
@@ -242,7 +209,7 @@ $bin_date
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
+set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J $test_name $file_in2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -259,28 +226,18 @@ expect {
 if {$job_id == 0} {
 	fail "Job not submitted"
 }
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Job $job_id did not complete"
-}
-if {[wait_for_file $file_out1] != 0} {
-	fail "No output file"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out1
 set match 0
 spawn $bin_cat $file_out1
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
-		if {$expect_out(1,string) != 0} {
-			log_error "CUDA_VISIBLE_DEVICES != 0"
-			incr failure_count
-		}
+		subtest {$expect_out(1,string) == 0} "Verify CUDA_VISIBLE_DEVICES == 0" "$expect_out(1,string) != 0"
 		incr match
 		if {$match == 1} {
 			set perc $expect_out(2,string)
 		} else {
-			if {$perc != $expect_out(2,string)} {
-				log_error "Inconsistent step MPS percentages ($perc != $expect_out(2,string))"
-				incr failure_count
-			}
+			subtest {$expect_out(2,string) == $perc} "Verify MPS percentage on step" "$expect_out(2,string) != $perc"
 		}
 		exp_continue
 	}
@@ -288,10 +245,8 @@ expect {
 		wait
 	}
 }
-if {$match != 3} {
-	log_error "Bad CUDA information about job ($match != 3)"
-	incr failure_count
-}
+subtest {$matches == 3} "Verify CUDA information about job" "$matches != 3"
+
 log_user 0
 set match 0
 spawn $bin_cat $file_out1
@@ -305,10 +260,7 @@ expect {
 	}
 }
 log_user 1
-if {$match != 1} {
-	log_error "Failed to delay step for sufficient MPS resources ($match != 1)"
-	incr failure_count
-}
+subtest {$match == 1} "Verify delay step for sufficient MPS resources" "$match != 1"
 
 #
 # Run step to try to consume gres/mps than allocated to the job
@@ -325,7 +277,7 @@ $srun --mem=0 --overlap --gres=mps:$target_step $file_in1
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
+set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J $test_name $file_in2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -342,32 +294,11 @@ expect {
 if {$job_id == 0} {
 	fail "Job not submitted"
 }
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Job $job_id did not complete"
-}
-if {[wait_for_file $file_out1] != 0} {
-	fail "No output file"
-}
-set match 0
-spawn $bin_cat $file_out1
-expect {
-	-re "Unable to create step" {
-		log_debug "Error is expected, no worries"
-		incr match
-		exp_continue
-	}
-	-re "CUDA_VISIBLE_DEVICES" {
-		log_error "Failed to reject bad step ($match != 1)"
-		incr failure_count
-	}
-	eof {
-		wait
-	}
-}
-if {$match != 1} {
-	log_error "Failed to reject bad step ($match != 1)"
-	incr failure_count
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out1
+set output [run_command_output -fail "$bin_cat $file_out1"]
+subtest {![regexp "CUDA_VISIBLE_DEVICES" $output]} "Verify step didn't run"
+subtest {[regexp "Unable to create step" $output]} "Verify step rejection message"
 
 #
 # Run multi-node job
@@ -386,35 +317,30 @@ set match 0
 set hostname "NO_VAL"
 set subtest6_nodes [get_nodes_by_request "--gres=mps:$target_job -N$node_cnt -t1"]
 if {[llength $subtest6_nodes] != $node_cnt} {
-	log_warn "SKIP: Subtest 6 requires being able to submit job with --gres=mps:$target_job -N$node_cnt"
-	incr skips
-}
-
-set srun_pid [spawn $srun --gres=mps:$target_job -N$node_cnt -w[join $subtest6_nodes ","] -t1 -J "test$test_id" $file_in1]
-expect {
-	-re "HOST:($re_word_str)" {
-		incr match
-		if {$match == 1} {
-			set hostname $expect_out(1,string)
-		} elseif {[get_config_param "FrontendName"] ne "MISSING"} {
-			log_debug "Duplicate SLURMD_HOSTNAME in front-end mode as expected"
-		} elseif {[string compare $hostname $expect_out(1,string)] == 0} {
-			log_error "Two tasks ran on same node ($hostname))"
-			incr failure_count
+	subskip "Requires being able to submit job with --gres=mps:$target_job -N$node_cnt"
+} else {
+	set srun_pid [spawn $srun --gres=mps:$target_job -N$node_cnt -w[join $subtest6_nodes ","] -t1 -J $test_name $file_in1]
+	expect {
+		-re "HOST:($re_word_str)" {
+			incr match
+			if {$match == 1} {
+				set hostname $expect_out(1,string)
+			} elseif {[get_config_param "FrontendName"] ne "MISSING"} {
+				log_debug "Duplicate SLURMD_HOSTNAME in front-end mode as expected"
+			} else {
+				subtest {$expect_out(1,string) != $hostname} "Verify that only 1 task run on same node ($hostname)"
+			}
+			exp_continue
 		}
-		exp_continue
+		timeout {
+			slow_kill $srun_pid
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		slow_kill $srun_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$match != $node_cnt} {
-	log_error "Failed to get data from multiple nodes ($match != $node_cnt)"
-	incr failure_count
+	subtest {$match == $node_cnt} "Verify getting data from multiple nodes" "$match != $node_cnt"
 }
 
 #
@@ -422,27 +348,26 @@ if {$match != $node_cnt} {
 # or run at different times
 #
 if {[get_config_param "FrontendName"] ne "MISSING"} {
-	log_warn "SKIP: Subtest 7 doesn't work with front_end"
-	incr skips
+	subskip "Doesn't work with front_end"
 } else {
 	log_info "==== TEST 7 ===="
 	set target_job [expr $mps_cnt / 2]
 	make_bash_script $file_in1 "
 	echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
 	$scontrol -dd show job \$SLURM_JOB_ID
-	$sbatch --gres=mps:$target_job -w \$SLURMD_NODENAME -n1 -t1 -o $file_out2 -J test$test_id $file_in2
+	$sbatch --gres=mps:$target_job -w \$SLURMD_NODENAME -n1 -t1 -o $file_out2 -J $test_name $file_in2
 	sleep 30
 	exit 0"
 
 	make_bash_script $file_in2 "
 	echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
 	$scontrol -dd show job \$SLURM_JOB_ID
-	$squeue --name=test$test_id --noheader --state=r --format=\"jobid=%i state=%T\"
+	$squeue --name=$test_name --noheader --state=r --format=\"jobid=%i state=%T\"
 	exit 0"
 
 	exec $bin_rm -f $file_out1 $file_out2
 	set job_id1 0
-	set sbatch_pid [spawn $sbatch --gres=gpu:1 -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in1]
+	set sbatch_pid [spawn $sbatch --gres=gpu:1 -w $node_with_mps -n1 -t1 -o $file_out1 -J $test_name $file_in1]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -457,12 +382,8 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 		}
 	}
 	sleep 30
-	if {[wait_for_job $job_id1 "DONE"] != 0} {
-		fail "Job $job_id1 did not complete"
-	}
-	if {[wait_for_file $file_out1] != 0} {
-		fail "No output file"
-	}
+	wait_for_job -fail $job_id1 "DONE"
+	wait_for_file -fail $file_out1
 	set dev1 -1
 	set job_id2 0
 	set match 0
@@ -485,25 +406,12 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 			wait
 		}
 	}
-	if {$match == 0} {
-		log_error "CUDA_VISIBLE_DEVICES not set"
-		incr failure_count
-	}
-	if {$dev1 == -1} {
-		log_error "GPU device index not found"
-		incr failure_count
-	}
-	if {$job_id2 == 0} {
-		log_error "Failed to submit second job"
-		incr failure_count
-	}
+	subtest {$match != 0} "Verify CUDA_VISIBLE_DEVICES is set"
+	subtest {$dev1 != -1} "Verify GPU device index is found"
+	subtest {$job_id2 != 0} "Verify second job is correctly submitted"
 
-	if {[wait_for_job $job_id2 "DONE"] != 0} {
-		fail "Job $job_id2 did not complete"
-	}
-	if {[wait_for_file $file_out2] != 0} {
-		fail "No output file"
-	}
+	wait_for_job -fail $job_id2 "DONE"
+	wait_for_file -fail $file_out2
 	set dev2 -1
 	set match 0
 	set running 0
@@ -532,31 +440,14 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 			wait
 		}
 	}
-	if {$match != 2} {
-		log_error "CUDA_VISIBLE_DEVICES or CUDA_MPS_ACTIVE_THREAD_PERCENTAGE not set"
-		incr failure_count
-	}
-	if {$dev2 == -1} {
-		log_error "GPU device index not found"
-		incr failure_count
-	} elseif {$dev1 == $dev2} {
+	subtest {$match == 2} "Verify CUDA_VISIBLE_DEVICES and CUDA_MPS_ACTIVE_THREAD_PERCENTAGE are set"
+	if {[subtest {$dev2 != -1} "Verify GPU device index is found"]} {
 		if {$running == 0} {
 			log_debug "The jobs are using the same GPU ($dev1) and running at different times, which is fine"
 		} else {
-			log_error "The jobs are using the same GPU ($dev1) and running at the same time"
-			incr failure_count
+			subtest {$dev1 != $dev2} "Verify the jobs are NOT using the same GPU and running at the same time"
 		}
 	} else {
 		log_debug "The jobs are using different GPUs ($dev1 != $dev2), which is fine"
 	}
-}
-
-#
-# Clean up and exit
-#
-if {$failure_count != 0} {
-	fail "Test failed due to previous errors (\$failure_count = $failure_count)"
-}
-if {$skips != 0} {
-	skip "Some subtest was skipped ($skips)"
 }

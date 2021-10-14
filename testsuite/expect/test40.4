@@ -32,17 +32,17 @@
 source ./globals
 source ./globals_accounting
 
-set acct           "test$test_id\_acct"
+set acct           "${test_name}_acct"
+set file_in        "$test_dir/input"
+set file_out1      "$test_dir/output1"
+set file_out2      "$test_dir/output2"
 set cluster        [get_config_param "ClusterName"]
-set exit_code      0
-set file_in        "test$test_id.input"
-set file_out1      "test$test_id.output1"
-set file_out2      "test$test_id.output2"
 set user           [get_my_user_name]
 set job_id1        0
+set job_id2        0
 
 proc setup { mps_limit } {
-	global acct cluster exit_code user
+	global acct cluster user
 
 	set acct_req(cluster) $cluster
 	set acct_req(parent)  "root"
@@ -52,18 +52,12 @@ proc setup { mps_limit } {
 	set user_req(account) $acct
 
 	if { [add_acct $acct [array get acct_req]] } {
-		log_error "Child account was not added"
-		incr exit_code
-		return 1
+		fail "Child account was not added"
 	}
 
 	if { [add_user $user [array get user_req]] } {
-		log_error "User was not added to child account"
-		incr exit_code
-		return 1
+		fail "User was not added to child account"
 	}
-
-	return 0
 }
 
 set store_tres [string tolower [get_config_param "AccountingStorageTRES"]]
@@ -100,11 +94,10 @@ if {$mps_cnt < 100} {
 log_debug "MPS count is $mps_cnt"
 
 proc cleanup {} {
-	global acct job_id1 bin_rm file_in file_out1 file_out2
+	global acct job_id1 job_id2
 
+	cancel_job [list $job_id1 $job_id2]
 	remove_acct "" $acct
-	cancel_job $job_id1
-	exec $bin_rm -f $file_in $file_out1 $file_out2
 }
 
 # Remove any vestigial test account
@@ -117,9 +110,7 @@ if {$mps_limit > 8} {
 } else {
 	incr mps_limit -1
 }
-if {[setup $mps_limit]} {
-	fail "Failure in setup ($mps_limit)"
-}
+setup $mps_limit
 
 make_bash_script $file_in "
 	$scontrol -dd show job \${SLURM_JOBID} | grep mps
@@ -131,14 +122,13 @@ make_bash_script $file_in "
 log_info "TEST 1: --gres=mps option by job (first job over limit, second job under limit)"
 
 set timeout $max_job_delay
-exec $bin_rm -f $file_out1  $file_out2
 set mps_good_cnt [expr ($mps_limit + $nb_nodes - 1) / $nb_nodes]
 if {$nb_nodes == 1} {
 	set mps_fail_cnt [expr $mps_limit + 1]
 } else {
 	set mps_fail_cnt [expr $mps_good_cnt + 1]
 }
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gres=mps:$mps_fail_cnt -N$nb_nodes -t1 -o $file_out1 -J "test$test_id" ./$file_in
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gres=mps:$mps_fail_cnt -N$nb_nodes -t1 -o $file_out1 -J "test$test_id" $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -152,12 +142,10 @@ expect {
 	}
 }
 if {$job_id1 == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
+	fail "Job not submitted"
 }
 
-set job_id2 0
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gres=mps:$mps_good_cnt -N$nb_nodes -t1 -o $file_out2 -J "test$test_id" ./$file_in
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gres=mps:$mps_good_cnt -N$nb_nodes -t1 -o $file_out2 -J "test$test_id" $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
@@ -171,15 +159,10 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
+	fail "Job not submitted"
 }
 
-if {[wait_for_job $job_id2 "DONE"] != 0} {
-	log_error "Job $job_id2 did not complete"
-	cancel_job $job_id2
-	set exit_code 1
-}
+wait_for_job -fail $job_id2 "DONE"
 
 set match 0
 spawn $scontrol show job $job_id1
@@ -200,10 +183,5 @@ expect {
 	}
 }
 if {$match != 2} {
-	log_error "Job $job_id1 state is bad"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "Job $job_id1 state is bad"
 }
