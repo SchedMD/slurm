@@ -1904,11 +1904,12 @@ proc wait_for_file args {
 #	desired_state
 #		The state you want the job to attain before
 #		returning.  Currently supports:
-#			DONE any terminated state
-#			PENDING job is pending
-#			RUNNING job is running
+#			CANCELLED - job is cancelled
+#			DONE      - any terminated state (includes cancelled)
+#			PENDING   - job is pending
+#			RUNNING   - job is running
 #			SPECIAL_EXIT
-#			SUSPENDED job is suspended
+#			SUSPENDED - job is suspended
 #
 # RETURN VALUE
 #	RETURN_SUCCESS, or non-zero on error.
@@ -1943,6 +1944,7 @@ proc _wait_for_single_job args {
 
 	# First verify that desired_state is supported
 	switch $desired_state {
+		"CANCELLED" {}
 		"DONE" {}
 		"PENDING" {}
 		"RUNNING" {}
@@ -1977,9 +1979,26 @@ proc _wait_for_single_job args {
 		}
 
 		switch $state {
+			"CANCELLED" {
+				if {$desired_state eq "CANCELLED"} {
+					log_debug "Job $job_id is CANCELLED"
+					sleep 2
+					return $::RETURN_SUCCESS
+				}
+				if {$desired_state eq "DONE"} {
+					log_debug "Job $job_id is DONE ($state)"
+					sleep 2
+					return $::RETURN_SUCCESS
+				}
+				set message "Job $job_id is $state, but we wanted $desired_state"
+				if {$fatal} {
+					fail $message
+				}
+				log_debug $message
+				return $::RETURN_ERROR
+			}
 			"NOT_FOUND" -
 			"BOOT_FAIL" -
-			"CANCELLED" -
 			"COMPLETED" -
 			"DEADLINE" -
 			"FAILED" -
@@ -1987,17 +2006,12 @@ proc _wait_for_single_job args {
 			"OUT_OF_MEMORY" -
 			"PREEMPTED" -
 			"TIMEOUT" {
-				if {[string compare $desired_state "DONE"] == 0} {
+				if {$desired_state eq "DONE"} {
 					log_debug "Job $job_id is DONE ($state)"
 					sleep 2
 					return $::RETURN_SUCCESS
 				}
-				if {[string compare $desired_state "RUNNING"] == 0} {
-					set message "Job $job_id is $state, but we wanted RUNNING"
-				}
-				if {[string compare $desired_state "SUSPENDED"] == 0} {
-					set message "Job $job_id is $state, but we wanted SUSPENDED"
-				}
+				set message "Job $job_id is $state, but we wanted $desired_state"
 				if {$fatal} {
 					fail $message
 				}
@@ -2005,28 +2019,28 @@ proc _wait_for_single_job args {
 				return $::RETURN_ERROR
 			}
 			"PENDING" {
-				if {[string compare $desired_state "PENDING"] == 0} {
+				if {$desired_state eq "PENDING"} {
 					log_debug "Job $job_id is PENDING"
 					return $::RETURN_SUCCESS
 				}
 				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"RUNNING" {
-				if {[string compare $desired_state "RUNNING"] == 0} {
+				if {$desired_state eq "RUNNING"} {
 					log_debug "Job $job_id is RUNNING"
 					return $::RETURN_SUCCESS
 				}
 				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SPECIAL_EXIT" {
-				if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
+				if {$desired_state eq "SPECIAL_EXIT"} {
 					log_debug "Job $job_id is SPECIAL_EXIT"
 					return $::RETURN_SUCCESS
 				}
 				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SUSPENDED" {
-				if {[string compare $desired_state "SUSPENDED"] == 0} {
+				if {$desired_state eq "SUSPENDED"} {
 					log_debug "Job $job_id is SUSPENDED"
 					return $::RETURN_SUCCESS
 				}
@@ -2079,11 +2093,12 @@ proc _wait_for_single_job args {
 #	desired_state
 #		The state you want the job to attain before returning.
 #		Currently supports:
-#			DONE any terminated state
-#			PENDING job is pending
-#			RUNNING job is running
+#			CANCELLED - job is cancelled
+#			DONE      - any terminated state (including cancelled)
+#			PENDING   - job is pending
+#			RUNNING   - job is running
 #			SPECIAL_EXIT
-#			SUSPENDED job is suspended
+#			SUSPENDED - job is suspended
 #	het_job
 #		If set, checks the state of each component job if the job
 #		is a het one.
