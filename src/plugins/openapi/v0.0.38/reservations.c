@@ -51,7 +51,7 @@
 
 #include "src/slurmrestd/operations.h"
 
-#include "src/plugins/openapi/v0.0.37/api.h"
+#include "src/plugins/openapi/v0.0.38/api.h"
 
 typedef enum {
 	URL_TAG_UNKNOWN = 0,
@@ -202,9 +202,9 @@ done:
 
 extern void init_op_reservations(void)
 {
-	bind_operation_handler("/slurm/v0.0.37/reservations/",
+	bind_operation_handler("/slurm/v0.0.38/reservations/",
 			       _op_handler_reservations, URL_TAG_RESERVATIONS);
-	bind_operation_handler("/slurm/v0.0.37/reservation/{reservation_name}",
+	bind_operation_handler("/slurm/v0.0.38/reservation/{reservation_name}",
 			       _op_handler_reservations, URL_TAG_RESERVATION);
 }
 

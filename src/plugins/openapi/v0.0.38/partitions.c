@@ -51,7 +51,7 @@
 
 #include "src/slurmrestd/operations.h"
 
-#include "src/plugins/openapi/v0.0.37/api.h"
+#include "src/plugins/openapi/v0.0.38/api.h"
 
 typedef enum {
 	URL_TAG_UNKNOWN = 0,
@@ -237,9 +237,9 @@ done:
 
 extern void init_op_partitions(void)
 {
-	bind_operation_handler("/slurm/v0.0.37/partitions/",
+	bind_operation_handler("/slurm/v0.0.38/partitions/",
 			       _op_handler_partitions, URL_TAG_PARTITIONS);
-	bind_operation_handler("/slurm/v0.0.37/partition/{partition_name}",
+	bind_operation_handler("/slurm/v0.0.38/partition/{partition_name}",
 			       _op_handler_partitions, URL_TAG_PARTITION);
 }
 
