@@ -305,10 +305,18 @@ set _testproc_messages    [dict create]
 set _testproc_skip_next   false
 set _testproc_skip_reason ""
 set _incomplete_reason    ""
+set _subtest_messages     [dict create]
+
 set _subtest_pass_count   0
 set _subtest_skip_count   0
 set _subtest_fail_count   0
-set _subtest_messages     [dict create]
+
+set STATUS_PASS 0
+set STATUS_FAIL 1
+set STATUS_SKIP -1
+
+# Final test status
+set test_status $STATUS_PASS
 
 # Other common variables
 set re_word_str          "\\S+"
@@ -376,7 +384,7 @@ set RETURN_TIMEOUT 110 ; # ETIMEDOUT
 ################################################################
 
 proc fail { message } {
-	global _incomplete_reason
+	global _incomplete_reason STATUS_FAIL
 
 	# Avoid recursive calls from within cleanup
 	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
@@ -388,7 +396,7 @@ proc fail { message } {
 	set _incomplete_reason $message
 
 	# _test_fini will handle cleanup and print the failure message.
-	_test_fini 1
+	_test_fini $STATUS_FAIL
 }
 
 
@@ -412,7 +420,7 @@ proc fail { message } {
 ################################################################
 
 proc skip { message } {
-	global _incomplete_reason
+	global _incomplete_reason STATUS_SKIP
 
 	# Avoid recursive calls from within cleanup
 	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
@@ -424,7 +432,7 @@ proc skip { message } {
 	set _incomplete_reason $message
 
 	# _test_fini will handle cleanup and print the skipped message.
-	_test_fini -1
+	_test_fini $STATUS_SKIP
 }
 
 
@@ -447,6 +455,7 @@ proc skip { message } {
 ################################################################
 
 proc pass { } {
+	global STATUS_PASS
 
 	# Avoid recursive calls from within cleanup
 	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
@@ -455,7 +464,7 @@ proc pass { } {
 	}
 
 	# _test_fini will handle cleanup and print the success message.
-	_test_fini 0
+	_test_fini $STATUS_PASS
 }
 
 
@@ -7171,6 +7180,7 @@ proc _test_init {} {
 proc _test_fini { status } {
 	global testsuite_cleanup_on_failure _test_fini_called
 	global _subtest_fail_count _subtest_skip_count
+	global STATUS_FAIL STATUS_PASS STATUS_SKIP
 
 	# Avoid potential infinite recursive calls.
 	# _test_fini should be called only once, but custom cleanup procs
@@ -7183,19 +7193,22 @@ proc _test_fini { status } {
 
 
 	# Determine if test completed or was aborted
-	set completed [expr $status == 0 ? true : false]
+	set completed [expr $status == $STATUS_PASS ? true : false]
 
 	# Override status with subtest status if available and necessary
-	if {$status < 1} {
+	if {$status != $STATUS_FAIL} {
 		if {$_subtest_fail_count > 0} {
-			set status 1
+			set status $STATUS_FAIL
 		} elseif {$_subtest_skip_count > 0} {
-			set status -1
+			set status $STATUS_SKIP
 		}
 	}
 
+	# Set final test status global variable so it can be used in cleanup
+	set test_status $status
+
 	# Only cleanup if test not failed or configured to do so
-	if {$status != 1 || $testsuite_cleanup_on_failure} {
+	if {$status != $STATUS_FAIL || $testsuite_cleanup_on_failure} {
 		_test_cleanup
 	}
 	_print_summary $status $completed
