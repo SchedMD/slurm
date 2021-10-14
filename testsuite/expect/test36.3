@@ -26,118 +26,26 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
 set job_id      0
-set exit_code   0
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
-
-if {[file executable $sbatch] == 0} {
-	skip "$sbatch does not exist"
-}
 
 if {[file executable $bkill] == 0} {
 	skip "$bkill does not exist"
 }
 
-if {[file executable $scontrol] == 0} {
-	skip "$scontrol does not exist"
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
 }
 
 #
 # Submit a slurm job
 #
-exec $bin_rm -f $file_in
-make_bash_script $file_in "
-  $bin_sleep 20
-"
+set job_id [submit_job -fail "-N1 -o /dev/null --wrap '$bin_sleep 30'"]
 
-set job_submitted 0
-spawn $sbatch -N1 -o /dev/null $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		set job_submitted 1
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
-
-if {$job_submitted == 1} {
-	#
-	# Test bkill $job_id
-	#
-	set job_sent_kill 0
-	spawn $bkill $job_id
-	expect {
-		-re "Job <$job_id> is being terminated" {
-			set job_sent_kill 1
-			exp_continue
-		}
-		timeout {
-			fail "bkill not responding"
-		}
-		eof {
-			wait
-		}
-	}
-} else {
-	fail "Unable to submit a test job through sbatch"
-}
-
-if {$job_sent_kill == 1} {
-	#
-	# Test job state is now CANCELLED
-	#
-	set state_match 0
-	set cycle_count 8
-	for {set inx 0} {$inx < $cycle_count} {incr inx} {
-		spawn $scontrol show job $job_id
-		expect {
-		        -re "JobState=CANCELLED" {
-		                incr state_match
-				set exit_code 0
-				break
-			}
-			-re "JobState=" {
-				sleep 2
-				set exit_code 1
-				exp_continue
-			}
-			timeout {
-				fail "scontrol not responding"
-			}
-			eof {
-				wait
-			}
-		}
-	}
-	if {$exit_code == 1} {
-		if {$cycle_count == 8} {
-			fail "Job not switched to CANCELLED"
-		}
-	}
-} else {
-	cancel_job $job_id
-	fail "Unable bkill $job_id"
-}
-
-if {$state_match != 1} {
-	fail "Job should be CANCELLED, but is not"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+#
+# Test bkill $job_id
+#
+set output [run_command_output -fail "$bkill $job_id"]
+subtest {[regexp "Job <$job_id> is being terminated" $output]} "Verify termination message"
+subtest {![wait_for_job -timeout 15 $job_id CANCELLED]} "Verify job state is now CANCELLED"

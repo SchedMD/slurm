@@ -27,16 +27,10 @@
 
 source ./globals
 
-set exit_code   0
-set file_err	"test$test_id.error"
-set file_in	"test$test_id.input"
-set file_out	"test$test_id.output"
-
-proc cleanup {} {
-	global bin_rm file_in file_out file_err
-
-	exec $bin_rm -f $file_in $file_out $file_err
-}
+set file_err    "$test_dir/error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set job_id      0
 
 if {[file executable $bsub] == 0} {
 	skip "$bsub not found"
@@ -46,10 +40,14 @@ if {[file executable $bkill] == 0} {
 	skip "$bkill not found"
 }
 
-set job_id 0
-exec rm -f $file_out $file_err
+proc cleanup {} {
+	global qdel job_id
+
+	run_command -none "$qdel $job_id"
+}
+
 make_bash_script $file_in "$bin_echo HELLO; $bin_cat /dummy_file"
-spawn $bsub -W 01:00 -e $file_err -o $file_out ./$file_in
+spawn $bsub -W 01:00 -e $file_err -o $file_out $file_in
 expect {
 	-re "($number)" {
 		set job_id $expect_out(1,string)
@@ -66,10 +64,7 @@ if {$job_id == 0} {
 	fail "bsub failed to submit job"
 }
 
-if {[wait_for_file $file_out] != 0} {
-	catch {exec $bkill $job_id}
-	fail "bsub output file not found"
-}
+wait_for_file -fail $file_out
 set matches 0
 spawn $bin_cat $file_out
 expect {
@@ -81,15 +76,9 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "Unexpected bsub output file contents"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify expected bsub output file contents"
 
-if {[wait_for_file $file_err] != 0} {
-	catch {exec $qdel $job_id}
-	fail "bsub error file not found"
-}
+wait_for_file -fail $file_err
 set matches 0
 spawn $bin_cat $file_err
 expect {
@@ -102,10 +91,4 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	fail "Unexpected bsub error file contents"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Verify expected bsub error file contents"
