@@ -577,6 +577,11 @@ static data_t *_get_container_state()
 			  0, &rc);
 	debug("%s: RunTimeQuery rc:%u output:%s", __func__, rc, out);
 
+	if (!out || !out[0]) {
+		error("%s: RunTimeQuery failed rc:%u output:%s", __func__, rc, out);
+		return NULL;
+	}
+
 	if (data_g_deserialize(&state, out, strlen(out), MIME_TYPE_JSON)) {
 		error("%s: unable to parse JSON: %s",
 		      __func__, out);
@@ -591,6 +596,9 @@ static char *_get_container_status()
 {
 	char *state = NULL;
 	data_t *dstate = _get_container_state();
+
+	if (!dstate)
+		return NULL;
 
 	if (data_retrieve_dict_path_string(dstate, "/status/", &state))
 		debug("%s: unable to find /status", __func__);
