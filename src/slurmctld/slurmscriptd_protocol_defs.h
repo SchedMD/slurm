@@ -39,14 +39,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* slurmscriptd message types */
-enum {
-	SLURMSCRIPTD_REQUEST_FLUSH,
-	SLURMSCRIPTD_REQUEST_FLUSH_JOB,
-	SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-	SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE,
-	SLURMSCRIPTD_SHUTDOWN,
-};
+#include "src/common/slurm_protocol_defs.h"
+
+/* slurmscriptd message types are defined in slurm_msg_type_t */
 
 typedef enum {
 	SLURMSCRIPTD_NONE = 0, /* 0 so that initializing data to zero will init
