@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "September 2021" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "October 2021" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -2143,7 +2143,7 @@ All limits listed below (default)
 No limits listed below
 .TP
 \fBAS\fR
-The maximum address space for a process
+The maximum address space (virtual memory) for a process.
 .TP
 \fBCORE\fR
 The maximum size of core file
@@ -2169,7 +2169,8 @@ The maximum number of open files
 The maximum number of processes available
 .TP
 \fBRSS\fR
-The maximum resident set size
+The maximum resident set size. Note that this only has effect with Linux
+kernels 2.4.30 or older or BSD.
 .TP
 \fBSTACK\fR
 The maximum stack size
