@@ -48,6 +48,12 @@ if {[expr {[get_config_param "ConstrainDevices"] ne "yes"}]} {
 	skip "This test requires devices to be constrained by cgroups"
 }
 
+set sockets_per_node [list [get_node_param [lindex $nodes 0] "Sockets"] \
+			   [get_node_param [lindex $nodes 1] "Sockets"]]
+
+log_debug "`[lindex $nodes 0]` Sockets per node: [lindex $sockets_per_node 0]"
+log_debug "`[lindex $nodes 1]` Sockets per node: [lindex $sockets_per_node 1]"
+
 
 ################################################################################
 # Cleanup
