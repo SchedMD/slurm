@@ -5103,6 +5103,7 @@ static void _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	slurm_conf.debug_flags &= (~request_msg->debug_flags_minus);
 	slurm_conf.debug_flags |= request_msg->debug_flags_plus;
 	slurm_conf.last_update = time(NULL);
+	slurmscriptd_update_debug_flags(slurm_conf.debug_flags);
 
 	/* Reset cached debug_flags values */
 	gs_reconfig();

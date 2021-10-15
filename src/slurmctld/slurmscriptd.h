@@ -87,6 +87,12 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 				      char *script, char **env);
 
 /*
+ * slurmscriptd_update_debug_flags
+ * Update the debug flags for slurmscriptd.
+ */
+extern void slurmscriptd_update_debug_flags(uint64_t debug_flags);
+
+/*
  * slurmscriptd_update_log_level
  * Update the logging level for slurmscriptd.
  *

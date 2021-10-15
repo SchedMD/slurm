@@ -755,6 +755,27 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 	return rc;
 }
 
+static int _handle_update_debug_flags(slurmscriptd_msg_t *msg)
+{
+	slurmctld_lock_t config_write_lock =
+		{ .conf = WRITE_LOCK };
+	debug_flags_msg_t *debug_msg = msg->msg_data;
+	char *flag_string;
+
+	flag_string = debug_flags2str(debug_msg->debug_flags);
+	log_flag(SCRIPT, "Handling %s; set DebugFlags to '%s'",
+		 rpc_num2string(msg->msg_type),
+		 flag_string ? flag_string : "none");
+	xfree(flag_string);
+
+	lock_slurmctld(config_write_lock);
+	slurm_conf.debug_flags = debug_msg->debug_flags;
+	slurm_conf.last_update = time(NULL);
+	unlock_slurmctld(config_write_lock);
+
+	return SLURM_SUCCESS;
+}
+
 static int _handle_update_log(slurmscriptd_msg_t *msg)
 {
 	slurmctld_lock_t config_write_lock =
@@ -806,6 +827,9 @@ static int _handle_request(int req, buf_t *buffer)
 			break;
 		case SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE:
 			rc = _handle_script_complete(&recv_msg);
+			break;
+		case SLURMSCRIPTD_REQUEST_UPDATE_DEBUG_FLAGS:
+			rc = _handle_update_debug_flags(&recv_msg);
 			break;
 		case SLURMSCRIPTD_REQUEST_UPDATE_LOG:
 			rc = _handle_update_log(&recv_msg);
@@ -1048,6 +1072,17 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 
 	/* Don't free argv[0], since we did not xstrdup that. */
 	xfree(run_script_msg.argv);
+}
+
+extern void slurmscriptd_update_debug_flags(uint64_t debug_flags)
+{
+	debug_flags_msg_t msg;
+
+	memset(&msg, 0, sizeof(msg));
+
+	msg.debug_flags = debug_flags;
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_UPDATE_DEBUG_FLAGS, &msg,
+			      false, NULL, NULL);
 }
 
 extern void slurmscriptd_update_log_level(int debug_level, bool log_rotate)

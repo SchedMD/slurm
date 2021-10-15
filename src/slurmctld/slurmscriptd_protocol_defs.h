@@ -84,6 +84,10 @@ typedef struct {
 } flush_job_msg_t;
 
 typedef struct {
+	uint64_t debug_flags;
+} debug_flags_msg_t;
+
+typedef struct {
 	uint32_t debug_level;
 	bool log_rotate;
 } log_msg_t;
