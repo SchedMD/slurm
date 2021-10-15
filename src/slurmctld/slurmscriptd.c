@@ -390,8 +390,12 @@ static int _run_script(char *script, char **argv, char **env, uint32_t job_id,
 		      __func__, job_id, script_name, WEXITSTATUS(status),
 		      WTERMSIG(status));
 	} else {
-		log_flag(SCRIPT, "%s JobId=%u %s completed",
-			 __func__, job_id, script_name);
+		if (job_id)
+			log_flag(SCRIPT, "%s JobId=%u %s completed",
+				 __func__, job_id, script_name);
+		else
+			log_flag(SCRIPT, "%s %s completed",
+				 __func__, script_name);
 	}
 
 	/*
@@ -412,7 +416,7 @@ static int _run_script(char *script, char **argv, char **env, uint32_t job_id,
 
 static int _handle_flush(slurmscriptd_msg_t *recv_msg)
 {
-	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH");
+	log_flag(SCRIPT, "Handling %s", rpc_num2string(recv_msg->msg_type));
 	/* Kill all running scripts */
 	run_command_shutdown();
 	track_script_flush();
@@ -429,8 +433,8 @@ static int _handle_flush_job(slurmscriptd_msg_t *recv_msg)
 {
 	flush_job_msg_t *flush_msg = recv_msg->msg_data;
 
-	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH_JOB for JobId=%u",
-		 flush_msg->job_id);
+	log_flag(SCRIPT, "Handling %s for JobId=%u",
+		 rpc_num2string(recv_msg->msg_type), flush_msg->job_id);
 
 	track_script_flush_job(flush_msg->job_id);
 
@@ -588,7 +592,7 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 
 static int _handle_shutdown(slurmscriptd_msg_t *recv_msg)
 {
-	log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
+	log_flag(SCRIPT, "Handling %s", rpc_num2string(recv_msg->msg_type));
 	/* Kill all running scripts. */
 	run_command_shutdown();
 	track_script_flush();
@@ -607,7 +611,8 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 
 	switch (script_msg->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
-		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_SCRIPT (burst_buffer.lua:%s) for JobId=%u: timeout=%u seconds, argc=%u, key=%s",
+		log_flag(SCRIPT, "Handling %s (burst_buffer.lua:%s) for JobId=%u: timeout=%u seconds, argc=%u, key=%s",
+			 rpc_num2string(recv_msg->msg_type),
 			 script_msg->script_name, script_msg->job_id,
 			 script_msg->timeout, script_msg->argc, recv_msg->key);
 		status = _run_bb_script(script_msg->script_name,
@@ -618,8 +623,14 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		break;
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
 	case SLURMSCRIPTD_PROLOG:
-		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_SCRIPT (%s) for JobId=%u",
-			 script_msg->script_name, script_msg->job_id);
+		if (script_msg->job_id)
+			log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
+				 rpc_num2string(recv_msg->msg_type),
+				 script_msg->script_name, script_msg->job_id);
+		else
+			log_flag(SCRIPT, "Handling %s (%s)",
+				 rpc_num2string(recv_msg->msg_type),
+				 script_msg->script_name);
 		status = _run_script(script_msg->script_path, script_msg->argv,
 				     script_msg->env, script_msg->job_id,
 				     script_msg->script_name,
@@ -683,17 +694,26 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 
 	switch (script_complete->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
-		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE (%s) for JobId=%u",
-			 script_complete->script_name, script_complete->job_id);
+		if (script_complete->job_id)
+			log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
+				 rpc_num2string(msg->msg_type),
+				 script_complete->script_name,
+				 script_complete->job_id);
+		else
+			log_flag(SCRIPT, "Handling %s (%s)",
+				 rpc_num2string(msg->msg_type),
+				 script_complete->script_name);
 		break; /* Nothing more to do */
 	case SLURMSCRIPTD_EPILOG:
-		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE (%s) for JobId=%u",
+		log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
+			 rpc_num2string(msg->msg_type),
 			 script_complete->script_name, script_complete->job_id);
 		prep_epilog_slurmctld_callback(script_complete->status,
 					       script_complete->job_id);
 		break;
 	case SLURMSCRIPTD_PROLOG:
-		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE (%s) for JobId=%u",
+		log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
+			 rpc_num2string(msg->msg_type),
 			 script_complete->script_name, script_complete->job_id);
 		prep_prolog_slurmctld_callback(script_complete->status,
 					       script_complete->job_id);
@@ -706,11 +726,13 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 		 * since it wasn't a script that ran, so we just return right
 		 * now.
 		 */
-		log_flag(SCRIPT, "Received response from %s",
+		log_flag(SCRIPT, "Handling %s: Received response from %s",
+			 rpc_num2string(msg->msg_type),
 			 script_complete->script_name);
 		return SLURM_SUCCESS;
 	default:
-		error("SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE: unknown script type for script=%s, JobId=%u",
+		error("%s: unknown script type for script=%s, JobId=%u",
+		      rpc_num2string(msg->msg_type),
 		      script_complete->script_name, script_complete->job_id);
 		break;
 	}
