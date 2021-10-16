@@ -196,18 +196,9 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 		return -1;
 	}
 
-	cc = sock_bind_range(*fd, ports, local);
-	if (cc < 0) {
-		close(*fd);
+	if ((cc = sock_bind_listen_range(*fd, ports, local)) < 0)
 		return -1;
-	}
 	*port = cc;
-
-	cc = listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG);
-	if (cc < 0) {
-		close(*fd);
-		return -1;
-	}
 
 	return *fd;
 }

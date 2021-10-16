@@ -422,32 +422,37 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 	return recvlen;
 }
 
-extern int slurm_init_msg_engine(slurm_addr_t *addr)
+extern int slurm_init_msg_engine(slurm_addr_t *addr, bool quiet)
 {
 	int rc;
 	int fd;
+	int log_lvl = LOG_LEVEL_ERROR;
 	const int one = 1;
 	const size_t sz1 = sizeof(one);
 
+	if (quiet)
+		log_lvl = LOG_LEVEL_DEBUG;
+
 	if ((fd = socket(addr->ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-		error("Error creating slurm stream socket: %m");
+		format_print(log_lvl, "Error creating slurm stream socket: %m");
 		return fd;
 	}
 
 	rc = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sz1);
 	if (rc < 0) {
-		error("setsockopt SO_REUSEADDR failed: %m");
+		format_print(log_lvl, "setsockopt SO_REUSEADDR failed: %m");
 		goto error;
 	}
 
 	rc = bind(fd, (struct sockaddr const *) addr, sizeof(*addr));
 	if (rc < 0) {
-		error("Error binding slurm stream socket: %m");
+		format_print(log_lvl, "Error binding slurm stream socket: %m");
 		goto error;
 	}
 
 	if (listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG) < 0) {
-		error( "Error listening on slurm stream socket: %m" ) ;
+		format_print(log_lvl,
+			     "Error listening on slurm stream socket: %m");
 		rc = SLURM_ERROR;
 		goto error;
 	}

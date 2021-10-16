@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.37 - Add missing method POST for /associations/.
  -- If ALTER TABLE was already run, continue with database upgrade.
  -- slurmstepd - Gracefully handle RunTimeQuery returning no output.
+ -- srun - automatically handle issues with races to listen() on an ephemeral
+    socket, and suppress otherwise needless error messages.
 
 * Changes in Slurm 21.08.2
 ==========================
