@@ -26,21 +26,17 @@
 ############################################################################
 source ./globals
 
-set file_in1       "test$test_id.input1"
-set file_in2       "test$test_id.input2"
-set file_out       "test$test_id.output"
-set job_list       ""
+set file_in1       "$test_dir/input1"
+set file_in2       "$test_dir/input2"
+set file_out       "$test_dir/output"
+set job_list       [list]
 set number_commas  "\[0-9_,\]+"
 
 proc cleanup {} {
-	global job_list file_out file_in1 file_in2 bin_rm
+	global job_list
 
 	# cancel jobs
 	cancel_job $job_list
-
-	# remove vestigial files
-	run_command -none "$bin_rm ${file_out}.*"
-	run_command -none "$bin_rm -f $file_in1 $file_in2"
 }
 cleanup
 
@@ -94,15 +90,15 @@ make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$C
 #
 # Submit job with various --gpus counters, up to 2 full nodes or 32 GPUs
 #
-#	spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $node_name -J "test$test_id" --output=$ofile ./$file_in1
+#	spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $node_name -J "test$test_id" --output=$ofile $file_in1
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set job_id 0
 	set ofile ${file_out}.${inx}
 	if {$tot_gpus > $tot_cpus} {
 		# Assumes no configured DefCPUsPerGPU
-		set job_id [submit_job "--gpus=$inx -t1 -w $node_name -J \"test$test_id\" --output=$ofile ./$file_in1"]
+		set job_id [submit_job "--gpus=$inx -t1 -w $node_name -J \"test$test_id\" --output=$ofile $file_in1"]
 	} else {
-		set job_id [submit_job "--cpus-per-gpu=1 --gpus=$inx -t1 -w $node_name -J \"test$test_id\" --output=$ofile ./$file_in1"]
+		set job_id [submit_job "--cpus-per-gpu=1 --gpus=$inx -t1 -w $node_name -J \"test$test_id\" --output=$ofile $file_in1"]
 	}
 	if {$job_id == 0} {
 		fail "sbatch job submit failure"

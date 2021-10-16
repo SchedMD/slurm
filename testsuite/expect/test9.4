@@ -36,23 +36,21 @@
 ############################################################################
 source ./globals
 
-set exit_code     0
-set file_in       "test$test_id.input"
-set file_in_task  "test$test_id.%t.input"
-set file_out_task "test$test_id.%t.output"
-set job_name      "test$test_id"
+set file_in       "$test_dir/input"
+set file_in_task  "$test_name.%t.input"
+set file_out_task "$test_name.%t.output"
+set job_name      $test_name
 set cycle_count   [get_cycle_count]
 set task_cnt      $max_stress_tasks
 
 proc cleanup {} {
-	global bin_rm file_in test_id task_cnt
+	global test_name task_cnt
 
 	# Destroy all input/output files
-	exec $bin_rm -f $file_in
 	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
-		set file_in_glob  "test$test_id.$tsk.input"
-		set file_out_glob "test$test_id.$tsk.output"
-		exec $bin_rm -f $file_in_glob $file_out_glob
+		set file_in_glob  "$test_name.$tsk.input"
+		set file_out_glob "$test_name.$tsk.output"
+		file delete $file_in_glob $file_out_glob
 	}
 }
 
@@ -89,8 +87,7 @@ proc run_cat_job { input_file output_file } {
 #
 # Create a sizable text file
 #
-exec $bin_rm -f $file_in
-exec $bin_cat /etc/hosts   >$file_in
+exec $bin_cat /etc/hosts >$file_in
 exec $bin_cat /etc/passwd >>$file_in
 set stdin_lines [get_line_cnt $file_in]
 
@@ -117,16 +114,15 @@ set success_cnt 0
 set timeout $max_job_delay
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
-		set file_out_glob "test$test_id.$tsk.output"
+		set file_out_glob "$test_name.$tsk.output"
 		exec $bin_rm -f $file_out_glob
 	}
 	if {[run_cat_job $file_in_task $file_out_task]} {
-		set exit_code 1
-		continue
+		fail "Unable to run cat job"
 	}
 #	Test output file sizes
 	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
-		set file_out_glob "test$test_id.$tsk.output"
+		set file_out_glob "$test_name.$tsk.output"
 		wait_for_file $file_out_glob
 		set stdout_lines [get_line_cnt $file_out_glob]
 		if {$stdout_lines != $stdin_lines} {
@@ -135,18 +131,12 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 		}
 		if {$stdout_lines != $stdin_lines} {
 			if {$stdout_lines == 0} {
-				log_error "Stdout is empty, is current working directory writable from compute nodes?"
+				fail "Stdout is empty, is current working directory writable from compute nodes?"
 			} else {
-				log_error "Stdout is incomplete"
+				fail "Stdout is incomplete"
 			}
-			set exit_code 1
-			break
 		} else {
 			incr success_cnt
 		}
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Only $success_cnt of [expr $cycle_count * $task_cnt] task I/O tests passed"
 }
