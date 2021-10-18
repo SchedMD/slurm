@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- srun - automatically handle issues with races to listen() on an ephemeral
     socket, and suppress otherwise needless error messages.
  -- Schedule sooner after Epilog completion with SchedulerParameters=defer.
+ -- Improve performance for AccountingStoreFlags=job_env.
 
 * Changes in Slurm 21.08.2
 ==========================

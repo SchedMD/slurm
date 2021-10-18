@@ -251,8 +251,10 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 			uint32_t env_size = 0;
 			char **env = get_job_env(job_ptr, &env_size);
 			if (env) {
+				char *pos = NULL;
 				for (int i = 0; i < env_size; i++)
-					xstrfmtcat(req->env, "%s\n", env[i]);
+					xstrfmtcatat(req->env, &pos,
+						     "%s\n", env[i]);
 				xfree(env[0]);
 				xfree(env);
 			}
