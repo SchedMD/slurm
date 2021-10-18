@@ -2029,6 +2029,8 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 		 */
 		if (!LOTS_OF_AGENTS && !defer_sched)
 			schedule(false);	/* Has own locking */
+		else
+			queue_job_scheduler();
 		schedule_node_save();		/* Has own locking */
 		schedule_job_save();		/* Has own locking */
 	}
