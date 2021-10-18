@@ -5379,6 +5379,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
 
+	no_alloc = no_alloc || (!job_ptr->resv_name &&
+				get_magnetic_resv_count());
+
 	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL, err_msg);
 	if (!test_only) {
 		last_job_update = now;
