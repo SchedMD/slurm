@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
     socket, and suppress otherwise needless error messages.
  -- Schedule sooner after Epilog completion with SchedulerParameters=defer.
  -- Improve performance for AccountingStoreFlags=job_env.
+ -- Expose missing SLURMD_NODENAME and SLURM_NODEID to TaskEpilog environment.
 
 * Changes in Slurm 21.08.2
 ==========================
