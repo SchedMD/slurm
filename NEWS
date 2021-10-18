@@ -40,6 +40,9 @@ documents those changes that are of interest to users and administrators.
     when requesting jobs so needs a 'gres' prefix.
  -- Fix regression where MPS would not deallocate from the node properly.
  -- Fix --gpu-bind=verbose to work correctly.
+ -- Do not deny --constraint with special operators "[]()|*" when no changeable
+    features are requested, but continue to deny --constraint with special
+    operators when changeable features are requested.
 
 * Changes in Slurm 21.08.2
 ==========================
