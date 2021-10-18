@@ -26,7 +26,9 @@
 ############################################################################
 source ./globals
 
-set timeout	60
+set array1_job_id 0
+set array2_job_id 0
+set timeout $max_job_delay
 
 #
 # Check accounting config and bail if not found.
@@ -39,6 +41,12 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
         skip "This test is incompatible with front-end systems"
 } else {
 	set task_num 2
+}
+
+proc cleanup {} {
+	global array1_job_id array2_job_id
+
+	cancel_job [list $array1_job_id $array2_job_id]
 }
 
 proc run_sacct { jobs exp_match_1 exp_match_2 } {
@@ -81,10 +89,6 @@ proc run_sacct { jobs exp_match_1 exp_match_2 } {
 		fail "sacct failure ($matches != $expected_matches)"
 	}
 }
-
-set array1_job_id 0
-set array2_job_id 0
-set timeout $max_job_delay
 
 spawn $sbatch -N1 --array=0-5 --output=/dev/null -t1 --wrap=exit
 expect {
@@ -131,11 +135,8 @@ if {[param_contains [get_config_param "PrologFlags"] "Contain"]} {
 #
 # Wait for both jobs to complete
 #
-if {[wait_for_job $array1_job_id "DONE"] || [wait_for_job $array2_job_id "DONE"]} {
-	cancel_job $array1_job_id
-	cancel_job $array2_job_id
-	fail "Waiting for jobs to complete"
-}
+wait_for_job -fail $array1_job_id "DONE"
+wait_for_job -fail $array2_job_id "DONE"
 
 # Wait for accounting records to reach slurmdbd
 sleep 5

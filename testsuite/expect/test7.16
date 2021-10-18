@@ -26,6 +26,8 @@
 ############################################################################
 source ./globals
 
+set job_id 0
+
 #
 # Check if we have auth/munge configured
 #
@@ -33,5 +35,10 @@ if {[get_config_param "AuthType"] != "auth/munge"} {
 	skip "Not running auth/munge, test is not applicable"
 }
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 set job_id [submit_job -xfail -subtest -env SLURM_MUNGE_AUTH_FAIL_TEST=1 "-N1 -o /dev/null -e /dev/null --wrap 'hostname'"]
-cancel_job $job_id
