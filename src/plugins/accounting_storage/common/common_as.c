@@ -910,19 +910,7 @@ extern int archive_write_file(buf_t *buffer, char *cluster_name,
 		error("Can't save archive, create file %s error %m", new_file);
 		rc = SLURM_ERROR;
 	} else {
-		int amount;
-		uint32_t pos = 0, nwrite = get_buf_offset(buffer);
-		char *data = (char *)get_buf_data(buffer);
-		while (nwrite > 0) {
-			amount = write(fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				rc = SLURM_ERROR;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
+		safe_write(fd, get_buf_data(buffer), get_buf_offset(buffer));
 		fsync(fd);
 		close(fd);
 	}
@@ -931,4 +919,12 @@ extern int archive_write_file(buf_t *buffer, char *cluster_name,
 	slurm_mutex_unlock(&local_file_lock);
 
 	return rc;
+
+rwfail:
+	error("Error writing file %s, %m", new_file);
+	close(fd);
+	xfree(new_file);
+	slurm_mutex_unlock(&local_file_lock);
+
+	return SLURM_ERROR;
 }
