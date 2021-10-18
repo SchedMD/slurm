@@ -55,12 +55,11 @@ NOTE: You will need to install this configuration file on all nodes of the clust
 </ul></li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
 </ol>
-<p>NOTE: Items 3 through 8 can be replaced with
+<p>NOTE: Items 3 through 8 can be replaced with</p>
 <ol>
 <li><code>rpmbuild -ta slurm*.tar.bz2</code></li>
 <li><code>rpm --install &lt;the rpm files&gt;</code></li>
 </ol>
-</p>
 
 <p>FreeBSD administrators should see the <a href="#FreeBSD">FreeBSD</a> section below.</p>
 
@@ -72,7 +71,7 @@ NOTE: You will need to install this configuration file on all nodes of the clust
 See the README and INSTALL files in the source distribution for more details.
 </p>
 <ol>
-<li>Unpack the distributed tarball:</br>
+<li>Unpack the distributed tarball:<br>
 <code>tar -xaf slurm*tar.bz2</code>
 <li><code>cd</code> to the directory containing the Slurm source and type
 <code>./configure</code> with appropriate options (see below).</li>
@@ -139,7 +138,7 @@ present. Build dependencies for various plugins and commands are denoted below:
 <li> <b>sview</b> The sview command will be built only if <i>gtk+-2.0</i>
 		is installed.</li>
 </ul>
-Please see the <a href="download.html">Download</a> page for references to
+<p>Please see the <a href="download.html">Download</a> page for references to
 required software to build these plugins.</p>
 
 <p>To build RPMs directly, copy the distributed tarball into a directory
@@ -164,7 +163,7 @@ Some macro definitions that may be used in building Slurm include:
 <dt>with_ssl
 <dd>Specifies SSL library installation location
 </dl>
-<p>An example .rpmmacros file:
+<p>An example .rpmmacros file:</p>
 <pre>
 # .rpmmacros
 # Override some RPM macros from /usr/lib/rpm/macros
@@ -175,7 +174,7 @@ Some macro definitions that may be used in building Slurm include:
 %_sysconfdir       %{_prefix}/etc/slurm
 %_defaultdocdir    %{_prefix}/doc
 %with_munge        "--with-munge=/opt/munge"
-</pre></p>
+</pre>
 
 <h3 id="rpms">RPMs Installed<a class="slurm_link" href="#rpms"></a></h3>
 
@@ -183,18 +182,20 @@ Some macro definitions that may be used in building Slurm include:
 by configuration, but here is a suggested starting point:
 <ul>
 <li>Head Node (where the slurmctld daemon runs),<br>
-    Compute and Login Nodes</li>
+    Compute and Login Nodes
 	<ul>
 	<li>slurm</li>
 	<li>slurm-perlapi</li>
 	<li>slurm-slurmctld (only on the head node)</li>
 	<li>slurm-slurmd (only on the compute nodes)</li>
 	</ul>
-<li>SlurmDBD Node</li>
+</li>
+<li>SlurmDBD Node
 	<ul>
 	<li>slurm</li>
 	<li>slurm-slurmdbd</li>
 	</ul>
+</li>
 </ul>
 
 <h2 id="daemons">Daemons<a class="slurm_link" href="#daemons"></a></h2>
@@ -251,6 +252,12 @@ mode. The primary reads the saved state and resumes normal operation. Likewise,
 if both of the first two listed hosts fail the third SlurmctldHost will take
 over until the primary returns to service. Other than a brief period of non-
 responsiveness, the transition back and forth should go undetected.</p>
+
+<p>Note that with an already running cluster, changing the order of the
+SlurmctldHost entries via <code>scontrol reconfigure</code> is not supported.
+The supported method is to drain and restart the cluster since running jobs
+may still go the prevous primary controller when completing and delay
+scheduling.</p>
 
 <p>Prior to 18.08, Slurm used the <a href="slurm.conf.html#OPT_BackupAddr">
 &quot;BackupAddr&quot;</a> and <a href="slurm.conf.html#OPT_BackupController">
@@ -732,26 +739,34 @@ You can either increase the timeout values during an upgrade or ensure that the
 slurmd daemons on compute nodes are not down for longer than SlurmdTimeout.
 The recommended upgrade order is as follows:</p>
 <ol>
-<li>Shutdown the slurmdbd daemon</li>
+<li>Shutdown the slurmdbd daemon.</li>
 <li>Backup the Slurm database using mysqldump (or similar tool), e.g. <span
     class="commandline">mysqldump --databases slurm_acct_db > backup.sql</span>.
     You may also want to take this opportunity to verify that
     the innodb_buffer_pool_size in my.cnf is at least 128M.</li>
-<li>Upgrade the slurmdbd daemon</li>
-<li>Restart the slurmdbd daemon</li>
+<li>Upgrade the slurmdbd daemon.</li>
+<li>Restart the slurmdbd daemon.</li>
+<ul>
+<li><b>NOTE</b>: The first time slurmdbd is started after an upgrade it will
+take some time to update existing records in the database. If slurmdbd is
+started with systemd, it may think that slurmdbd is not responding and kill
+the process when it reaches its timeout value, which causes problems with the
+upgrade. We recommend starting slurmdbd by calling the command directly rather
+than using systemd when performing an upgrade.</li>
+</ul>
 <li>Increase configured SlurmdTimeout and SlurmctldTimeout values and
-    execute "scontrol reconfig" for them to take effect</li>
-<li>Shutdown the slurmctld daemon(s)</li>
-<li>Shutdown the slurmd daemons on the compute nodes</li>
+    execute "scontrol reconfig" for them to take effect.</li>
+<li>Shutdown the slurmctld daemon(s).</li>
+<li>Shutdown the slurmd daemons on the compute nodes.</li>
 <li>Copy the contents of the configured StateSaveLocation directory (in case
-    of any possible failure)</li>
-<li>Upgrade the slurmctld and slurmd daemons</li>
-<li>Restart the slurmd daemons on the compute nodes</li>
-<li>Restart the slurmctld daemon(s)</li>
-<li>Validate proper operation</li>
+    of any possible failure).</li>
+<li>Upgrade the slurmctld and slurmd daemons.</li>
+<li>Restart the slurmd daemons on the compute nodes.</li>
+<li>Restart the slurmctld daemon(s).</li>
+<li>Validate proper operation.</li>
 <li>Restore configured SlurmdTimeout and SlurmctldTimeout values and
-    execute "scontrol reconfig" for them to take effect</li>
-<li>Destroy backup copies of database and/or state files</li>
+    execute "scontrol reconfig" for them to take effect.</li>
+<li>Destroy backup copies of database and/or state files.</li>
 </ol>
 <p><b>Note</b>: It is possible to update the slurmd daemons on a node-by-node
 basis after the slurmctld daemon(s) are upgraded, but do make sure their down
@@ -779,6 +794,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 20 August 2021</p>
+<p style="text-align:center;">Last modified 18 October 2021</p>
 
 <!--#include virtual="footer.txt"-->

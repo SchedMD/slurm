@@ -222,6 +222,12 @@ specific, it is highly recommended that you work with your site's security
 group to ensure all policies are enforced at the proxy before connecting to
 slurmrestd.</p>
 
+<p>Slurm tries not to give potential attackers any hints when there are
+authentication failures. This results in the client getting this rather terse
+message: <code>Authentication failure</code>. When this happens, take a look at
+the logs for the relevant Slurm daemon (i.e. <i>slurmdbd</i>, <i>slurmctld</i>
+or <i>slurmd</i>) for information about the actual issue.</p>
+
 <h2 id="jwt">JSON Web Token (JWT) Authentication
 <a class="slurm_link" href="#jwt"></a>
 </h2>
@@ -283,6 +289,6 @@ internal tool</a> used for testing and training. It uses
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 17 September 2021</p>
+<p style="text-align:center;">Last modified 18 October 2021</p>
 
 <!--#include virtual="footer.txt"-->
