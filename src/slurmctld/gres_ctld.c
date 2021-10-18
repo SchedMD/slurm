@@ -181,11 +181,6 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 	xassert(job_gres_ptr);
 	xassert(node_gres_ptr);
 
-	if (node_gres_ptr->no_consume) {
-		job_gres_ptr->total_gres = NO_CONSUME_VAL64;
-		return SLURM_SUCCESS;
-	}
-
 	if (gres_id_shared(plugin_id)) {
 		shared_gres = true;
 		gres_per_bit = job_gres_ptr->gres_per_node;
@@ -615,8 +610,16 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 	}
 
 	/* If we are already allocated (state restore | reconfig) end now. */
-	if (!new_alloc)
+	if (!new_alloc) {
+		if (node_gres_ptr->no_consume) {
+			node_gres_ptr->gres_cnt_alloc = pre_alloc_gres_cnt;
+			for (j = 0; j < node_gres_ptr->type_cnt; j++)
+				node_gres_ptr->type_cnt_alloc[j] =
+					pre_alloc_type_cnt[j];
+		}
+
 		goto already_alloced;
+	}
 
 	/*
 	 * Here we fill job_gres_list_alloc with
@@ -635,8 +638,18 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 			node_gres_ptr->type_name[j], node_cnt);
 		gres_cnt = node_gres_ptr->type_cnt_alloc[j] -
 			   pre_alloc_type_cnt[j];
-		job_alloc_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_cnt;
-		job_alloc_gres_ptr->total_gres += gres_cnt;
+		if (node_gres_ptr->no_consume) {
+			node_gres_ptr->type_cnt_alloc[j] =
+				pre_alloc_type_cnt[j];
+			node_gres_ptr->gres_cnt_alloc = pre_alloc_gres_cnt;
+			job_alloc_gres_ptr->gres_cnt_node_alloc[node_offset] =
+				NO_CONSUME_VAL64;
+			job_alloc_gres_ptr->total_gres = NO_CONSUME_VAL64;
+		} else {
+			job_alloc_gres_ptr->gres_cnt_node_alloc[node_offset] =
+				gres_cnt;
+			job_alloc_gres_ptr->total_gres += gres_cnt;
+		}
 
 		if (job_gres_ptr->gres_bit_alloc &&
 		    job_gres_ptr->gres_bit_alloc[node_offset]) {
@@ -661,8 +674,16 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 			job_gres_list_alloc, plugin_id, NO_VAL,
 			gres_name, NULL, node_cnt);
 		gres_cnt = node_gres_ptr->gres_cnt_alloc - pre_alloc_gres_cnt;
-		job_alloc_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_cnt;
-		job_alloc_gres_ptr->total_gres += gres_cnt;
+		if (node_gres_ptr->no_consume) {
+			node_gres_ptr->gres_cnt_alloc = pre_alloc_gres_cnt;
+			job_alloc_gres_ptr->gres_cnt_node_alloc[node_offset] =
+				NO_CONSUME_VAL64;
+			job_alloc_gres_ptr->total_gres = NO_CONSUME_VAL64;
+		} else {
+			job_alloc_gres_ptr->gres_cnt_node_alloc[node_offset] =
+				gres_cnt;
+			job_alloc_gres_ptr->total_gres += gres_cnt;
+		}
 
 		if (job_gres_ptr->gres_bit_alloc &&
 		    job_gres_ptr->gres_bit_alloc[node_offset])
@@ -980,8 +1001,7 @@ extern int gres_ctld_job_alloc_whole_node(
 		gres_key_t job_search_key;
 		node_state_ptr = (gres_node_state_t *) node_gres_ptr->gres_data;
 
-		if (node_state_ptr->no_consume ||
-		    !node_state_ptr->gres_cnt_config)
+		if (!node_state_ptr->gres_cnt_config)
 			continue;
 
 		job_search_key.plugin_id = node_gres_ptr->plugin_id;
@@ -1931,7 +1951,8 @@ static uint64_t _step_get_gres_avail(gres_job_state_t *job_gres_ptr,
 		return SLURM_ERROR;
 	}
 
-	gres_avail -= job_gres_ptr->gres_cnt_step_alloc[node_offset];
+	if (gres_avail != NO_CONSUME_VAL64)
+		gres_avail -= job_gres_ptr->gres_cnt_step_alloc[node_offset];
 
 	return gres_avail;
 }
@@ -1975,7 +1996,12 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 	}
 
 	gres_alloc = _step_get_gres_avail(job_gres_ptr, node_offset);
-	if (*gres_needed != INFINITE64) {
+	if (gres_alloc == NO_CONSUME_VAL64) {
+		if (*gres_needed != INFINITE64)
+			*gres_needed = 0;
+		step_gres_ptr->total_gres = NO_CONSUME_VAL64;
+		return SLURM_SUCCESS;
+	} else if (*gres_needed != INFINITE64) {
 		if (*max_gres) {
 			gres_alloc = MIN(gres_alloc, *max_gres);
 			*max_gres -= gres_alloc;
