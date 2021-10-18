@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set skipped     ""
 set file_in     "$test_dir/input"
 set number_commas  "\[0-9_,\]+"
 
@@ -225,7 +224,7 @@ if {$use_gpus_per_job < $nb_nodes} {
 
 set node_list [get_nodes_by_request "--gres=craynetwork:1,gpu:1 --nodes=$nb_nodes"]
 if { [llength $node_list] != $nb_nodes } {
-	lappend skipped "This test need to be able to submit jobs with at least --gres=craynetwork:1,gpu:1 --nodes=$nb_nodes"
+	subskip "This test need to be able to submit jobs with at least --gres=craynetwork:1,gpu:1 --nodes=$nb_nodes"
 } else {
 	set gpus_per_node [get_gres_count "gpu" [join $node_list ',']]
 	set expected_gpus 0
@@ -300,8 +299,3 @@ expect {
 subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
 set expected_gpus [expr $use_gpus_per_node * $use_gpus_per_node]
 subtest {$match_gpu == $expected_gpus} "Verify srun --gpus-per-task" "$match_gpu != $expected_gpus"
-
-if {[llength $skipped] != 0} {
-	skip "Some tests skipped:\n[join $skipped \n]"
-}
-
