@@ -739,6 +739,14 @@ The recommended upgrade order is as follows:</p>
     the innodb_buffer_pool_size in my.cnf is at least 128M.</li>
 <li>Upgrade the slurmdbd daemon.</li>
 <li>Restart the slurmdbd daemon.</li>
+<ul>
+<li><b>NOTE</b>: The first time slurmdbd is started after an upgrade it will
+take some time to update existing records in the database. If slurmdbd is
+started with systemd, it may think that slurmdbd is not responding and kill
+the process when it reaches its timeout value, which causes problems with the
+upgrade. We recommend starting slurmdbd by calling the command directly rather
+than using systemd when performing an upgrade.</li>
+</ul>
 <li>Increase configured SlurmdTimeout and SlurmctldTimeout values and
     execute "scontrol reconfig" for them to take effect.</li>
 <li>Shutdown the slurmctld daemon(s).</li>
@@ -779,6 +787,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 20 August 2021</p>
+<p style="text-align:center;">Last modified 18 October 2021</p>
 
 <!--#include virtual="footer.txt"-->
