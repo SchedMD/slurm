@@ -6108,6 +6108,7 @@ proc get_nodes_by_request args {
 		fail "[lindex [info level 0] 0]: Invalid number of arguments ([llength $args]): $args"
 	}
 
+	log_debug "Getting nodes that can be allocated with request: $request_args"
 	set command "$srun -Q $request_args printenv SLURMD_NODENAME"
 	set result [run_command {*}$options $command]
 
