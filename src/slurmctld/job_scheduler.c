@@ -5087,7 +5087,7 @@ waitpid_timeout(const char *name, pid_t pid, int *pstatus, int timeout)
 		if (rc < 0) {
 			if (errno == EINTR)
 				continue;
-			error("waidpid: %m");
+			error("waitpid: %m");
 			return -1;
 		}
 		else if (timeout_ms <= 0) {

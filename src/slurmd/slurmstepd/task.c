@@ -254,7 +254,7 @@ _run_script_and_set_env(const char *name, const char *path,
 		if (rc < 0) {
 			if (errno == EINTR)
 				continue;
-			error("waidpid: %m");
+			error("waitpid: %m");
 			return 0;
 		} else  {
 			killpg(cpid, SIGKILL);  /* kill children too */
