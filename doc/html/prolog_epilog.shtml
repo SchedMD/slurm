@@ -688,6 +688,13 @@ If the PrologSlurmctld fails (returns a non-zero exit code), this will cause
 the job to be requeued. Only batch jobs can be requeued. Interactive jobs
 (salloc and srun) will be cancelled if the PrologSlurmctld fails.</p>
 
+<p>If a task epilog or srun epilog fails (returns a non-zero exit code) this
+will only be logged.
+If a task prolog fails (returns a non-zero exit code), the task will be
+canceled.
+If the srun prolog fails (returns a non-zero exit code), the step will be
+canceled.</p>
+
 <HR SIZE=4>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
