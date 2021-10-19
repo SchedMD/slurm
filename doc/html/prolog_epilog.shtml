@@ -435,8 +435,8 @@ Distribution type for the job. Available in SrunProlog and SrunEpilog.</li>
 <li><b>SLURMD_NODENAME</b>
 Name of the node running the task. In the case of a parallel job executing
 on multiple compute nodes, the various tasks will have this environment
-variable set to different values on each compute node. Available in
-Prolog, SrunProlog, TaskProlog, Epilog, SrunEpilog and TaskEpilog.</li>
+variable set to different values on each compute node. Available in Prolog,
+TaskProlog, Epilog and TaskEpilog.</li>
 
 <li><b>SLURM_GPUS</b>
 Count of the GPUs available to the job. Available in SrunProlog, TaskProlog,
@@ -559,7 +559,7 @@ SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_NODEID</b>
 ID of current node relative to other nodes in a multi-node job. Available in
-SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+TaskProlog and TaskEpilog.</li>
 
 <li><b>SLURM_PRIO_PROCESS</b>
 Scheduling priority (nice value) at the time of submission. Available in
