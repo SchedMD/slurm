@@ -26,15 +26,8 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set number_commas  "\[0-9_,\]+"
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
 
 if {![check_config_select "cons_tres"]} {
     skip "This test is only compatible with select/cons_tres"
@@ -67,7 +60,7 @@ if {$craynetwork_count > 1} {
 } else {
 	set gres_target $craynetwork_count
 }
-set srun_pid [spawn $srun --gres=craynetwork:$gres_target -t1 -J "test$test_id" -l ./$file_in]
+set srun_pid [spawn $srun --gres=craynetwork:$gres_target -t1 -J "test$test_id" -l $file_in]
 expect {
 	-re "craynetwork.CNT:($number)" {
 		incr match $expect_out(1,string)
@@ -82,8 +75,7 @@ expect {
 	}
 }
 if {$match != $gres_target} {
-	log_error "srun --gres failure ($match != $gres_target)"
-	set exit_code 1
+	fail "srun --gres failure ($match != $gres_target)"
 }
 
 if {0} {
@@ -102,7 +94,7 @@ if {0} {
 		set gres_target $craynetwork_count
 		set node_target 1
 	}
-	set srun_pid [spawn $srun --tres-per-job=craynetwork:$gres_target -N $node_target -t1 -J "test$test_id" -l ./$file_in]
+	set srun_pid [spawn $srun --tres-per-job=craynetwork:$gres_target -N $node_target -t1 -J "test$test_id" -l $file_in]
 	expect {
 		-re "NumNodes=($number)" {
 			set node_cnt $expect_out(1,string)
@@ -126,8 +118,4 @@ if {0} {
 	if {$match != $gres_target} {
 		fail "srun --gres-per-job failure ($match != $gres_target)"
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

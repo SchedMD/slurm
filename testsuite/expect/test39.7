@@ -26,22 +26,15 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set number_commas  "\[0-9_,\]+"
 set timeout $max_job_delay
 
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
-
 proc run_gpu_per_job { cpus_per_gpu } {
-	global exit_code file_in number srun test_id timeout
+	global file_in number srun test_id timeout
 
 	set cpu_count 0
-	set srun_pid [spawn $srun --gpus=1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 ./$file_in]
+	set srun_pid [spawn $srun --gpus=1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 $file_in]
 	expect {
 		-re "NumCPUs=($number)" {
 			set cpu_count $expect_out(1,string)
@@ -55,18 +48,17 @@ proc run_gpu_per_job { cpus_per_gpu } {
 			wait
 		}
 	}
-#	Depending upon minimal allocation unit, job can be allocated extra CPUs
+	# Depending upon minimal allocation unit, job can be allocated extra CPUs
 	if {$cpu_count < $cpus_per_gpu} {
-		log_error "srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)"
-		set exit_code 1
+		fail "srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)"
 	}
 }
 
 proc run_gpu_per_node { cpus_per_gpu } {
-	global exit_code file_in number srun test_id timeout
+	global file_in number srun test_id timeout
 
 	set cpu_count 0
-	set srun_pid [spawn $srun --gpus-per-node=1 -N1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 ./$file_in]
+	set srun_pid [spawn $srun --gpus-per-node=1 -N1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 $file_in]
 	expect {
 		-re "NumCPUs=($number)" {
 			set cpu_count $expect_out(1,string)
@@ -80,18 +72,17 @@ proc run_gpu_per_node { cpus_per_gpu } {
 			wait
 		}
 	}
-#	Depending upon minimal allocation unit, job can be allocated extra CPUs
+	# Depending upon minimal allocation unit, job can be allocated extra CPUs
 	if {$cpu_count < $cpus_per_gpu} {
-		log_error "srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)"
-		set exit_code 1
+		fail "srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)"
 	}
 }
 
 proc run_gpu_per_task { cpus_per_gpu } {
-	global exit_code file_in number srun test_id timeout
+	global file_in number srun test_id timeout
 
 	set cpu_count 0
-	set srun_pid [spawn $srun --gpus-per-task=1 -n1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 ./$file_in]
+	set srun_pid [spawn $srun --gpus-per-task=1 -n1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 $file_in]
 	expect {
 		-re "NumCPUs=($number)" {
 			set cpu_count $expect_out(1,string)
@@ -105,10 +96,9 @@ proc run_gpu_per_task { cpus_per_gpu } {
 			wait
 		}
 	}
-#	Depending upon minimal allocation unit, job can be allocated extra CPUs
+	# Depending upon minimal allocation unit, job can be allocated extra CPUs
 	if {$cpu_count < $cpus_per_gpu} {
-		log_error "srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)"
-		set exit_code 1
+		fail "srun --cpus-per-gpu failure ($cpu_count < $cpus_per_gpu)"
 	}
 }
 
@@ -143,7 +133,6 @@ if {$cpus_per_node < 1} {
 #
 # Build input script file
 #
-exec $bin_rm -f $file_in
 make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 $scontrol show job \$SLURM_JOB_ID
 exit 0"
@@ -154,9 +143,6 @@ exit 0"
 #
 for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
 	run_gpu_per_job $inx
-	if {$exit_code != 0} {
-		break
-	}
 }
 
 #
@@ -165,9 +151,6 @@ for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
 #
 for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
 	run_gpu_per_node $inx
-	if {$exit_code != 0} {
-		break
-	}
 }
 
 #
@@ -176,9 +159,6 @@ for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
 #
 for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
 	run_gpu_per_task $inx
-	if {$exit_code != 0} {
-		break
-	}
 }
 
 #
@@ -187,7 +167,7 @@ for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
 if {$gpu_cnt > 1 && $nb_nodes > 1} {
 	set cpu_count 0
 	set node_count 0
-	set srun_pid [spawn $srun --gpus=2 --cpus-per-gpu=$cpus_per_node -J "test$test_id" -t1 ./$file_in]
+	set srun_pid [spawn $srun --gpus=2 --cpus-per-gpu=$cpus_per_node -J "test$test_id" -t1 $file_in]
 	expect {
 		-re "NumNodes=($number)" {
 			set node_count $expect_out(1,string)
@@ -214,8 +194,4 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 	if {$node_count < $node_target} {
 		fail "srun --cpus-per-gpu failure, bad node count ($node_count < $node_target)"
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

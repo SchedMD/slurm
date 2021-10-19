@@ -32,17 +32,18 @@
 source ./globals
 source ./globals_accounting
 
-set acct           "test$test_id\_acct"
+set acct           "${test_name}_acct"
 set cluster        [get_config_param "ClusterName"]
-set exit_code      0
-set file_in        "test$test_id.input"
-set file_out1      "test$test_id.output1"
-set file_out2      "test$test_id.output2"
+set file_in        "$test_dir/input"
+set file_out1      "$test_dir/output1"
+set file_out2      "$test_dir/output2"
 set one_task_pc    0
 set user           [get_my_user_name]
+set job_id1        0
+set job_id2        0
 
 proc setup { gpu_limit } {
-	global acct cluster exit_code user
+	global acct cluster user
 
 	set acct_req(cluster) $cluster
 	set acct_req(parent)  "root"
@@ -52,18 +53,12 @@ proc setup { gpu_limit } {
 	set user_req(account) $acct
 
 	if { [add_acct $acct [array get acct_req]] } {
-		log_error "Child account was not added"
-		incr exit_code
-		return 1
+		fail "Child account was not added"
 	}
 
 	if { [add_user $user [array get user_req]] } {
-		log_error "User was not added to child account"
-		incr exit_code
-		return 1
+		fail "User was not added to child account"
 	}
-
-	return 0
 }
 
 set store_tres [string tolower [get_config_param "AccountingStorageTRES"]]
@@ -120,10 +115,10 @@ if {$cpus_per_node < 3} {
 }
 
 proc cleanup {} {
-	global acct bin_rm file_in file_out1 file_out2
+	global job_id1 job_id2 acct
 
+	cancel_job [list $job_id1 $job_id2]
 	remove_acct "" $acct
-	exec $bin_rm -f $file_in $file_out1 $file_out2
 }
 
 # Remove any vestigial test account
@@ -136,10 +131,7 @@ if {$gpu_limit > 8} {
 } else {
 	incr gpu_limit -1
 }
-if {[setup $gpu_limit]} {
-	fail "Setup failed (gpu_limit = $gpu_limit)"
-}
-
+setup $gpu_limit
 
 make_bash_script $file_in "
 	$scontrol -dd show job \${SLURM_JOBID} | grep gpu
@@ -151,51 +143,12 @@ make_bash_script $file_in "
 log_info "TEST 1: --gpus option by job (first job over limit, second job under limit)"
 
 set timeout $max_job_delay
-exec $bin_rm -f $file_out1  $file_out2
+file delete $file_out1 $file_out2
 set gpu_fail_cnt [expr $gpu_limit + 1]
-set job_id1 0
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus=$gpu_fail_cnt -t1 -o $file_out1 -J "test$test_id" ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id1 == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
-}
+set job_id1 [submit_job -fail "--account=$acct --gres=craynetwork:0 --gpus=$gpu_fail_cnt -t1 -o $file_out1 -J $test_name $file_in"]
+set job_id2 [submit_job -fail "--account=$acct --gres=craynetwork:0 --gpus=$gpu_limit -t1 -o $file_out2 -J $test_name $file_in"]
 
-set job_id2 0
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus=$gpu_limit -t1 -o $file_out2 -J "test$test_id" ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id2 == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
-}
-
-if {[wait_for_job $job_id2 "DONE"] != 0} {
-	log_error "Job $job_id2 did not complete"
-	cancel_job $job_id2
-	set exit_code 1
-}
+wait_for_job -fail $job_id2 "DONE"
 
 set match 0
 spawn $scontrol show job $job_id1
@@ -216,13 +169,9 @@ expect {
 	}
 }
 if {$match != 2} {
-	log_error "Job $job_id1 state is bad"
-	set exit_code 1
+	fail "Job $job_id1 state is bad"
 }
 cancel_job $job_id1
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
 
 #
 # Test --gpus-per-node option by job (first job over limit, second job under limit)
@@ -230,56 +179,17 @@ if {$exit_code != 0} {
 log_info "TEST 2: --gpus-per-node option by job (first job over limit, second job under limit)"
 
 set timeout $max_job_delay
-exec $bin_rm -f $file_out1  $file_out2
+file delete $file_out1 $file_out2
 set gpu_good_cnt [expr $gpu_limit / $nb_nodes]
 if {$nb_nodes == 1} {
 	set gpu_fail_cnt [expr $gpu_limit + 1]
 } else {
 	set gpu_fail_cnt [expr $gpu_good_cnt + 1]
 }
-set job_id1 0
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-node=$gpu_fail_cnt -N$nb_nodes -t1 -o $file_out1 -J "test$test_id" ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id1 == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
-}
+set job_id1 [submit_job -fail "--account=$acct --gres=craynetwork:0 --gpus-per-node=$gpu_fail_cnt -N$nb_nodes -t1 -o $file_out1 -J $test_name $file_in"]
+set job_id2 [submit_job -fail "--account=$acct --gres=craynetwork:0 --gpus-per-node=$gpu_good_cnt -N$nb_nodes -t1 -o $file_out2 -J $test_name $file_in"]
 
-set job_id2 0
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-node=$gpu_good_cnt -N$nb_nodes -t1 -o $file_out2 -J "test$test_id" ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id2 == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
-}
-
-if {[wait_for_job $job_id2 "DONE"] != 0} {
-	log_error "Job $job_id2 did not complete"
-	cancel_job $job_id2
-	set exit_code 1
-}
+wait_for_job -fail $job_id2 "DONE"
 
 set match 0
 spawn $scontrol show job $job_id1
@@ -300,13 +210,9 @@ expect {
 	}
 }
 if {$match != 2} {
-	log_error "Job $job_id1 state is bad"
-	set exit_code 1
+	fail "Job $job_id1 state is bad"
 }
 cancel_job $job_id1
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
 
 #
 # Test --gpus-per-task option by job (first job over limit, second job under limit)
@@ -322,52 +228,13 @@ if {$one_task_pc && $cpus_per_node > $total_cores} {
 }
 
 set timeout $max_job_delay
-exec $bin_rm -f $file_out1  $file_out2
+file delete $file_out1 $file_out2
 set gpu_good_cnt $gpu_limit
 set gpu_fail_cnt [expr $gpu_limit + 1]
-set job_id1 0
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-task=1 -n$gpu_fail_cnt $extra_opt -t1 -o $file_out1 -J "test$test_id" ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id1 == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
-}
+set job_id1 [submit_job -fail "--account=$acct --gres=craynetwork:0 --gpus-per-task=1 -n$gpu_fail_cnt $extra_opt -t1 -o $file_out1 -J $test_name $file_in"]
+set job_id2 [submit_job -fail "--account=$acct --gres=craynetwork:0 --gpus-per-task=1 -n$gpu_good_cnt $extra_opt -t1 -o $file_out2 -J $test_name $file_in"]
 
-set job_id2 0
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-task=1 -n$gpu_good_cnt $extra_opt -t1 -o $file_out2 -J "test$test_id" ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id2 == 0} {
-	log_error "Job not submitted"
-	set exit_code 1
-}
-
-if {[wait_for_job $job_id2 "DONE"] != 0} {
-	log_error "Job $job_id2 did not complete"
-	cancel_job $job_id2
-	set exit_code 1
-}
+wait_for_job -fail $job_id2 "DONE"
 
 set match 0
 spawn $scontrol show job $job_id1
@@ -388,10 +255,5 @@ expect {
 	}
 }
 if {$match != 2} {
-	log_error "Job $job_id1 state is bad"
-	set exit_code 1
-}
-cancel_job $job_id1
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "Job $job_id1 state is bad"
 }

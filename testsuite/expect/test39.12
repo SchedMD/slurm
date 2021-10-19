@@ -26,15 +26,8 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set skipped     ""
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set number_commas  "\[0-9_,\]+"
-
-proc cleanup {} {
-	global bin_rm file_in
-	exec $bin_rm -f $file_in
-}
 
 if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
@@ -122,7 +115,7 @@ if {$tot_gpus > 1} {
 } else {
 	set use_gpus_per_job $tot_gpus
 }
-set srun_pid [spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
+set srun_pid [spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l $file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match_gpu [cuda_count $expect_out(1,string)]
@@ -144,22 +137,16 @@ expect {
 		wait
 	}
 }
-if {$match_craynetwork < 1} {
-	log_error "srun --gres=craynetwork failure ($match_craynetwork < 1)"
-	set exit_code 1
-}
+subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
 set expected_gpus $use_gpus_per_job
-if {$match_gpu != $expected_gpus} {
-	log_error "srun --gpus failure ($match_gpu != $expected_gpus)"
-	set exit_code 1
-}
+subtest {$match_gpu == $expected_gpus} "Verify srun --gpus" "$match_gpu != $expected_gpus"
 
 if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
 	log_info "TEST: --gpus option, part 2"
 	set match_craynetwork 0
 	set match_gpu 0
 	incr use_gpus_per_job -2
-	set srun_pid [spawn $srun --gres=craynetwork:1 --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
+	set srun_pid [spawn $srun --gres=craynetwork:1 --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l $file_in]
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr match_gpu [cuda_count $expect_out(1,string)]
@@ -181,15 +168,9 @@ if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
 			wait
 		}
 	}
-	if {$match_craynetwork < 1} {
-		log_error "srun --gres=craynetwork failure ($match_craynetwork < 1)"
-		set exit_code 1
-	}
+	subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
 	set expected_gpus $use_gpus_per_job
-	if {$match_gpu != $expected_gpus} {
-		log_error "srun --gpus failure ($match_gpu != $expected_gpus)"
-		set exit_code 1
-	}
+	subtest {$match_gpu == $expected_gpus} "Verify srun --gpus" "$match_gpu != $expected_gpus"
 }
 
 #
@@ -203,7 +184,7 @@ if {$gpus_per_node > 1} {
 } else {
 	set use_gpus_per_node $gpus_per_node
 }
-set srun_pid [spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
+set srun_pid [spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -J "test$test_id" -l $file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match_gpu [cuda_count $expect_out(1,string)]
@@ -225,15 +206,9 @@ expect {
 		wait
 	}
 }
-if {$match_craynetwork < 1} {
-	log_error "srun --gres=craynetwork failure ($match_craynetwork < 1)"
-	set exit_code 1
-}
+subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
 set expected_gpus [expr $use_gpus_per_node * $nb_nodes]
-if {$match_gpu != $expected_gpus} {
-	log_error "srun --gpus-per-node failure ($match_gpu != $expected_gpus)"
-	set exit_code 1
-}
+subtest {$match_gpu == $expected_gpus} "Verify srun --gpus-per-node" "$match_gpu != $expected_gpus"
 
 #
 # Test --gpus-per-socket options using a subset of GPUs actually available on the node
@@ -249,7 +224,7 @@ if {$use_gpus_per_job < $nb_nodes} {
 
 set node_list [get_nodes_by_request "--gres=craynetwork:1,gpu:1 --nodes=$nb_nodes"]
 if { [llength $node_list] != $nb_nodes } {
-	lappend skipped "This test need to be able to submit jobs with at least --gres=craynetwork:1,gpu:1 --nodes=$nb_nodes"
+	subskip "This test need to be able to submit jobs with at least --gres=craynetwork:1,gpu:1 --nodes=$nb_nodes"
 } else {
 	set gpus_per_node [get_gres_count "gpu" [join $node_list ',']]
 	set expected_gpus 0
@@ -262,7 +237,7 @@ if { [llength $node_list] != $nb_nodes } {
 	} else {
 		set cpus_per_task 1
 	}
-	set srun_pid [spawn $srun --gres=craynetwork --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodelist=[join $node_list ","] --ntasks=$nb_nodes --cpus-per-task=$cpus_per_task -t1 -J "test$test_id" -l ./$file_in]
+	set srun_pid [spawn $srun --gres=craynetwork --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodelist=[join $node_list ","] --ntasks=$nb_nodes --cpus-per-task=$cpus_per_task -t1 -J "test$test_id" -l $file_in]
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr match_gpu [cuda_count $expect_out(1,string)]
@@ -284,14 +259,8 @@ if { [llength $node_list] != $nb_nodes } {
 			wait
 		}
 	}
-	if {$match_craynetwork < 1} {
-		log_error "srun --gres=craynetwork failure ($match_craynetwork < 1)"
-		set exit_code 1
-	}
-	if {$match_gpu != $expected_gpus} {
-		log_error "srun --gpus-per-socket failure ($match_gpu != $expected_gpus)"
-		set exit_code 1
-	}
+	subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
+	subtest {$match_gpu == $expected_gpus} "Verify srun --gpus-per-socket" "$match_gpu != $expected_gpus"
 }
 
 #
@@ -305,7 +274,7 @@ if {$gpu_cnt > 1} {
 } else {
 	set use_gpus_per_node $gpu_cnt
 }
-set srun_pid [spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -J "test$test_id" -l ./$file_in]
+set srun_pid [spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -J "test$test_id" -l $file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match_gpu [cuda_count $expect_out(1,string)]
@@ -327,18 +296,6 @@ expect {
 		wait
 	}
 }
-if {$match_craynetwork < 1} {
-	fail "srun --gres=craynetwork failure ($match_craynetwork < 1)"
-}
+subtest {$match_craynetwork >= 1}  "Verify srun --gres=craynetwork" "$match_craynetwork < 1"
 set expected_gpus [expr $use_gpus_per_node * $use_gpus_per_node]
-if {$match_gpu != $expected_gpus} {
-	fail "srun --gpus-per-task failure ($match_gpu != $expected_gpus)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-if {[llength $skipped] != 0} {
-	skip "Some tests skipped:\n[join $skipped \n]"
-}
-
+subtest {$match_gpu == $expected_gpus} "Verify srun --gpus-per-task" "$match_gpu != $expected_gpus"
