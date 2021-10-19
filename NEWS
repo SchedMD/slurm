@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- Schedule sooner after Epilog completion with SchedulerParameters=defer.
  -- Improve performance for AccountingStoreFlags=job_env.
  -- Expose missing SLURMD_NODENAME and SLURM_NODEID to TaskEpilog environment.
+ -- Bring slurm_completion.sh up to date with changes to commands.
 
 * Changes in Slurm 21.08.2
 ==========================
