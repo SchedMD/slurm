@@ -1344,7 +1344,7 @@ _scancel()
     local shortoptions=" -A -b -f -H -i -M -n -p -q -Q -R -s -t -u -v -V -w"
     local longoptions="--account=<account_list> --batch --clusters=<string>\
 		       --ctld --full --help --hurry --interactive\
-		       --jobname=<job_name> --name=<job_name>\
+		       --jobname=<job_name> --me --name=<job_name>\
 		       --nodelist=<hostlist> --partition=<partition_name>\
 		       --qos=<qos_list> --quiet\
 		       --reservation=<reservation_name> --sibling=<cluster>\
