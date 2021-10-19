@@ -2172,14 +2172,20 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 				conf->node_name);
 
 			if (job->task_epilog) {
-				_run_script_as_user("user task_epilog",
-						    job->task_epilog,
-						    job, 5, job->env);
+				rc = _run_script_as_user("user task_epilog",
+							 job->task_epilog, job,
+							 5, job->env);
+				if (rc)
+					error("TaskEpilog failed status=%d",
+					      rc);
 			}
 			if (slurm_conf.task_epilog) {
-				_run_script_as_user("slurm task_epilog",
-						    slurm_conf.task_epilog,
-						    job, -1, job->env);
+				rc = _run_script_as_user("slurm task_epilog",
+							 slurm_conf.task_epilog,
+							 job, -1, job->env);
+				if (rc)
+					error("--task-epilog failed status=%d",
+					      rc);
 			}
 
 			if (spank_task_exit (job, t->id) < 0) {
