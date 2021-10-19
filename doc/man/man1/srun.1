@@ -742,13 +742,6 @@ in some failed state (non\-zero exit code, node failure, timed out, etc).
 This job can begin execution after the specified jobs have successfully
 executed (ran to completion with an exit code of zero).
 .TP
-\fBexpand:job_id\fR
-Resources allocated to this job should be used to expand the specified job.
-The job to expand must share the same QOS (Quality of Service) and partition.
-Gang scheduling of resources in the partition is also not supported.
-"expand" is not allowed for jobs that didn't originate on the same cluster
-as the submitted job.
-.TP
 \fBsingleton\fR
 This job can begin execution after any previously launched jobs
 sharing the same job name and user have terminated.

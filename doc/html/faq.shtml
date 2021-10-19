@@ -631,21 +631,9 @@ http://groups.google.com/group/slurm-users</a></p>
 
 <p><a id="job_size"><b>Can I change my job's size after it has started
 running?</b></a><br>
-Slurm supports the ability to both increase and decrease the size of jobs.
-While the size of a pending job may be changed with few restrictions, several
-significant restrictions apply to changing the size of a running job, as noted
-below:
-<ol>
-<li>Requesting fewer hardware resources, and changing partition, qos,
-reservation, licenses, etc. is only allowed for pending jobs.</li>
-<li>Job(s) changing size must not be in a suspended state, including jobs
-suspended for gang scheduling. The jobs must be in a state of pending or
-running.</li>
-<li>Job expansion for running jobs is disabled by default.
-Site administrators can enable this capability by setting
-<i>SchedulerParameters=permit_job_expansion</i> in <i>slurm.conf</i></li>
-</ol>
-</p>
+Slurm supports the ability to decrease the size of jobs.
+Requesting fewer hardware resources, and changing partition, qos,
+reservation, licenses, etc. is only allowed for pending jobs.</p>
 
 <p>Use the <i>scontrol</i> command to change a job's size either by specifying
 a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
@@ -671,104 +659,6 @@ scontrol update JobId=$SLURM_JOB_ID NumNodes=2
 . slurm_job_${SLURM_JOB_ID}_resize.sh
 srun -N2 my_small_job
 rm slurm_job_${SLURM_JOB_ID}_resize.*
-</pre>
-
-<p><b>Increasing a job's size</b><br>
-Directly increasing the size of a running job would adversely affect the
-scheduling of pending jobs.
-For the sake of fairness in job scheduling, expanding a running job requires
-the user to submit a new job, but specify the option
-<i>--dependency=expand:&lt;jobid&gt;</i>.
-This option tells Slurm that the job, when scheduled, can be used to expand
-the specified jobid.
-Other job options would be used to identify the required resources
-(e.g. task count, node count, node features, etc.).
-This new job's time limit will be automatically set to reflect the end time of
-the job being expanded.
-This new job's generic resources specification will be automatically set
-equal to that of the job being merged to. This is due to the current Slurm
-restriction of all nodes associated with a job needing to have the same
-generic resource specification (i.e. a job can not have one GPU on one
-node and two GPUs on another node), although this restriction may be removed
-in the future. This restriction can pose some problems when both jobs can be
-allocated resources on the same node, in which case the generic resources
-allocated to the new job will be released. If the jobs are allocated resources
-on different nodes, the generic resources associated with the resulting job
-allocation after the merge will be consistent as expected.
-Any licenses associated with the new job will be added to those available in
-the job being merged to.
-Note that partition and Quality Of Service (QOS) limits will be applied
-independently to the new job allocation so the expanded job may exceed size
-limits configured for an individual job.</p>
-
-<p>After the new job is allocated resources, merge that job's allocation
-into that of the original job by executing:<br>
-<i>scontrol update jobid=&lt;jobid&gt; NumNodes=0</i><br>
-The <i>jobid</i> above is that of the job to relinquish its resources.
-To provide more control over when the job expansion occurs, the resources are
-not merged into the original job until explicitly requested.
-These resources will be transferred to the original job and the scontrol
-command will generate a script to reset variables in the second
-job's environment to reflect its modified resource allocation (which would
-be no resources).
-One would normally exit this second job at this point, since it has no
-associated resources.
-In order to generate a script to modify the environment variables for the
-expanded job, execute:<br>
-<i>scontrol update jobid=&lt;jobid&gt; NumNodes=ALL</i><br>
-Then execute the script generated.
-Note that this command does not change the original job's size, but only
-generates the script to change its environment variables.
-Until the environment variables are modified (e.g. the job's node count,
-CPU count, hostlist, etc.), any srun command will only consider the resources
-in the original resource allocation.
-Note that the original job may have active job steps at the time of its
-expansion, but they will not be affected by the change.
-An example of the procedure is shown below in which the original job
-allocation waits until the second resource allocation request can be
-satisfied. The job requesting additional resources could also use the sbatch
-command and permit the original job to continue execution at its initial size.
-Note that the development of additional user tools to manage Slurm resource
-allocations is planned in the future to make this process both simpler and
-more flexible.</p>
-
-<pre>
-$ salloc -N4 -C haswell bash
-salloc: Granted job allocation 65542
-$ srun hostname
-icrm1
-icrm2
-icrm3
-icrm4
-
-$ salloc -N4 -C knl,snc4,flat --dependency=expand:$SLURM_JOB_ID bash
-salloc: Granted job allocation 65543
-$ scontrol update jobid=$SLURM_JOB_ID NumNodes=0
-To reset Slurm environment variables, execute
-  For bash or sh shells:  . ./slurm_job_65543_resize.sh
-  For csh shells:         source ./slurm_job_65543_resize.csh
-$ exit
-exit
-salloc: Relinquishing job allocation 65543
-
-$ scontrol update jobid=$SLURM_JOB_ID NumNodes=ALL
-To reset Slurm environment variables, execute
-  For bash or sh shells:  . ./slurm_job_65542_resize.sh
-  For csh shells:         source ./slurm_job_65542_resize.csh
-$ . ./slurm_job_${SLURM_JOB_ID}_resize.sh
-
-$ srun hostname
-icrm1
-icrm2
-icrm3
-icrm4
-icrm5
-icrm6
-icrm7
-icrm8
-$ exit
-exit
-salloc: Relinquishing job allocation 65542
 </pre>
 
 <p><a id="mpi_symbols"><b>Why is my MPICH2 or MVAPICH2 job not running with
