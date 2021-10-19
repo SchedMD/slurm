@@ -26,20 +26,13 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set number_commas  "\[0-9_,\]+"
 set freq_parse_nvml "GpuFreq=memory_freq:($number),graphics_freq:($number)"
 set freq_parse_generic "GpuFreq=control_disabled"
 set freq_parse_not_supported "Failed to get .* Not Supported"
 set generic_msg "The gpu/generic plugin is loaded, so Slurm can't really test GPU frequency operations. Please set `Autodetect=nvml` in gres.conf to load the gpu/nvml plugin instead."
 set not_supported_msg "This test requires a GPU that supports frequency scaling."
-
-# cleanup function automatically called by the testsuite
-proc cleanup {} {
-	global bin_rm file_in
-	exec $bin_rm -f $file_in
-}
 
 if {![have_nvml]} {
 	skip "NVML must be installed and enabled to test GPU frequency operations"
@@ -65,7 +58,6 @@ log_debug "GPU count is $gpu_cnt"
 # Build input script file
 #
 print_time
-exec $bin_rm -f $file_in
 make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 $scontrol -dd show job \$SLURM_JOB_ID
 exit 0"
@@ -76,7 +68,7 @@ exit 0"
 log_info "TEST 1"
 set timeout $max_job_delay
 set match 0
-set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=low,verbose -J "test$test_id" -t1 ./$file_in]
+set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=low,verbose -J "test$test_id" -t1 $file_in]
 expect {
 	-re $freq_parse_not_supported {
 		skip $not_supported_msg
@@ -96,17 +88,15 @@ expect {
 		wait
 	}
 }
-if {$match != 1} {
-	log_error "srun '--gpu-freq=low,verbose' failure ($match != 1)"
-	set exit_code 1
-}
+subtest {$match == 1} "Verify srun --gpu-freq=low,verbose" "$match != 1"
+
 
 #
 # Test of --gpu-freq=medium,memory=medium,verbose
 #
 log_info "TEST 2"
 set match 0
-set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J "test$test_id" -t1 ./$file_in]
+set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J "test$test_id" -t1 $file_in]
 expect {
 	-re $freq_parse_nvml {
 		incr match
@@ -120,17 +110,14 @@ expect {
 		wait
 	}
 }
-if {$match != 1} {
-	log_error "srun '--gpu-freq=medium,memory=medium,verbose' failure ($match != 1)"
-	set exit_code 1
-}
+subtest {$match == 1} "Verify srun --gpu-freq=medium,memory=medium,verbose" "$match != 1"
 
 #
 # Test of --gpu-freq=highm1,verbose
 #
 log_info "TEST 3"
 set match 0
-set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=highm1,verbose -J "test$test_id" -t1 ./$file_in]
+set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=highm1,verbose -J "test$test_id" -t1 $file_in]
 expect {
 	-re $freq_parse_nvml {
 		incr match
@@ -144,10 +131,7 @@ expect {
 		wait
 	}
 }
-if {$match != 1} {
-	log_error "srun '--gpu-freq=highm1,verbose' failure ($match != 1)"
-	set exit_code 1
-}
+subtest {$match == 1} "Verify srun --gpu-freq=highm1,verbose" "$match != 1"
 
 #
 # Test of --gpu-freq=high,memory=high,verbose
@@ -155,7 +139,7 @@ if {$match != 1} {
 log_info "TEST 4"
 set hostname "UNKNOWN"
 set match 0
-set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=high,memory=high,verbose -J "test$test_id" -t1 ./$file_in]
+set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=high,memory=high,verbose -J "test$test_id" -t1 $file_in]
 expect {
 	-re $freq_parse_nvml {
 		set high_freq $expect_out(1,string)
@@ -176,9 +160,9 @@ expect {
 		wait
 	}
 }
-if {$match == 2} {
+if {[subtest {$match == 2} "Verify srun --gpu-freq=x,memory=x,verbose" "$match != 2"]} {
 	log_info "TEST 5"
-	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J "test$test_id" -t1 ./$file_in]
+	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J "test$test_id" -t1 $file_in]
 	expect {
 		-re $freq_parse_nvml {
 			set medium_freq $expect_out(1,string)
@@ -196,7 +180,7 @@ if {$match == 2} {
 	}
 
 	log_info "TEST 6"
-	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=low,memory=low,verbose -J "test$test_id" -t1 ./$file_in]
+	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=low,memory=low,verbose -J "test$test_id" -t1 $file_in]
 	expect {
 		-re $freq_parse_nvml {
 			set low_freq $expect_out(1,string)
@@ -212,22 +196,10 @@ if {$match == 2} {
 			wait
 		}
 	}
-	if {$match != 4} {
-		log_error "srun '--gpu-freq=x,memory=x,verbose' failure ($match != 4)"
-		set exit_code 1
-	} else {
-		if {$low_freq > $medium_freq || $medium_freq > $high_freq} {
-			log_error "GPU frequency low > medium or medium > high"
-			set exit_code 1
-		}
-		if {$low_mem > $medium_mem || $medium_mem > $high_mem} {
-			log_error "GPU memory frequency low > medium or medium > high"
-			set exit_code 1
-		}
+	if {[subtest {$match == 4} "Verify srun --gpu-freq=x,memory=x,verbose" "$match != 4"]} {
+		subtest {$low_freq <= $medium_freq && $medium_freq <= $high_freq} "Verify frequencies order" "$low_freq > $medium_freq || $medium_freq > $high_freq"
+		subtest {$low_mem <= $medium_mem && $medium_mem <= $high_mem} "Verify memories" "$low_mem > $medium_mem || $medium_mem > $high_mem"
 	}
-} else {
-	log_error "srun '--gpu-freq=x,memory=x,verbose' failure ($match != 2)"
-	set exit_code 1
 }
 
 #
@@ -236,7 +208,7 @@ if {$match == 2} {
 #
 log_info "TEST 7"
 set match 0
-set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=verbose -J "test$test_id" -t1 ./$file_in]
+set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=verbose -J "test$test_id" -t1 $file_in]
 expect {
 	-re $freq_parse_nvml {
 		incr match
@@ -250,11 +222,6 @@ expect {
 		wait
 	}
 }
-if {$match != 1} {
-	fail "srun '--gpu-freq=verbose' failure ($match != 1)"
-}
+subtest {$match == 1} "Verify srun --gpu-freq=verbose" "$match != 1"
 
 print_time
-if {$exit_code} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
