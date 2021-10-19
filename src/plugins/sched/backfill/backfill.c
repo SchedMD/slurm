@@ -2440,14 +2440,26 @@ next_task:
 		if ((job_ptr->start_time <= now) &&
 		    ((bb = bb_g_job_test_stage_in(job_ptr, true)) != 1)) {
 			if (job_ptr->state_reason != WAIT_NO_REASON) {
+				/*
+				 * Don't change state_reason if it was already
+				 * set.
+				 */
 				;
 			} else if (bb == -1) {
+				/*
+				 * Set reason now instead of in if (bb == -1)
+				 * below for the sched_debug3()
+				 */
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_BURST_BUFFER_RESOURCE;
 			} else {	/* bb == 0 */
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason=WAIT_BURST_BUFFER_STAGING;
+				/*
+				 * Cannot start now, set start time in the
+				 * future.
+				 */
 				job_ptr->start_time = now + 1;
 			}
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
