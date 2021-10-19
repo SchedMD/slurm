@@ -4683,13 +4683,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 
 	job_ptr_pend->front_end_ptr = NULL;
 	/* struct job_details *details;		*** NOTE: Copied below */
-	if (job_ptr->gres_list_alloc) {
-		job_ptr_pend->gres_list_alloc =
-			gres_job_state_dup(job_ptr->gres_list_alloc);
-	}
-	job_ptr_pend->gres_detail_cnt = 0;
-	job_ptr_pend->gres_detail_str = NULL;
-	job_ptr_pend->gres_used = NULL;
 
 	job_ptr_pend->limit_set.tres = xcalloc(slurmctld_tres_cnt,
 					       sizeof(uint16_t));
@@ -4857,6 +4850,11 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 			job_ptr_pend->gres_list_req =
 				gres_job_state_dup(job_ptr->gres_list_req);
 	}
+	job_ptr_pend->gres_list_alloc = NULL;
+	job_ptr_pend->gres_detail_cnt = 0;
+	job_ptr_pend->gres_detail_str = NULL;
+	job_ptr_pend->gres_used = NULL;
+
 	if (job_ptr->fed_details) {
 		add_fed_job_info(job_ptr);
 		/*
