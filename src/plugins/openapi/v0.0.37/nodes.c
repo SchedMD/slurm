@@ -244,7 +244,7 @@ static int _op_handler_nodes(const char *context_id,
 		if ((rc = get_date_param(query, "update_time", &update_time)))
 			goto done;
 		rc = slurm_load_node(update_time, &node_info_ptr,
-				     SHOW_ALL|SHOW_DETAIL);
+				     SHOW_ALL|SHOW_DETAIL|SHOW_MIXED);
 	} else if (tag == URL_TAG_NODE) {
 		const data_t *node_name = data_key_get_const(parameters,
 							     "node_name");
@@ -254,7 +254,7 @@ static int _op_handler_nodes(const char *context_id,
 			rc = ESLURM_INVALID_NODE_NAME;
 		else
 			rc = slurm_load_node_single(&node_info_ptr, name,
-						       SHOW_ALL|SHOW_DETAIL);
+				SHOW_ALL|SHOW_DETAIL|SHOW_MIXED);
 
 		xfree(name);
 	} else
