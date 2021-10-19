@@ -38,6 +38,9 @@ documents those changes that are of interest to users and administrators.
  -- Improve performance for AccountingStoreFlags=job_env.
  -- Expose missing SLURMD_NODENAME and SLURM_NODEID to TaskEpilog environment.
  -- Bring slurm_completion.sh up to date with changes to commands.
+ -- Fix issue where burst buffer stage-in could only start for one job in a job
+    array per scheduling cycle instead of bb_array_stage_cnt jobs per scheduling
+    cycle.
 
 * Changes in Slurm 21.08.2
 ==========================
