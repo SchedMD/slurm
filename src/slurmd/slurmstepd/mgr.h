@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/slurmd/slurmstepd/mgr.c - job management functions for slurmstepd
+ * src/slurmd/slurmstepd/mgr.h - job management functions for slurmstepd
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

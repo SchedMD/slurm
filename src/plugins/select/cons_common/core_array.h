@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  core_array.c - Handle functions dealing with core_arrays.
+ *  core_array.h - Handle functions dealing with core_arrays.
  *****************************************************************************
  *  Copyright (C) 2019 SchedMD LLC
  *

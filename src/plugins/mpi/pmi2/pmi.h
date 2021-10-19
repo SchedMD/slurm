@@ -1,5 +1,5 @@
 /*****************************************************************************\
- **  pmi.c - PMI common definitions
+ **  pmi.h - PMI common definitions
  *****************************************************************************
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.

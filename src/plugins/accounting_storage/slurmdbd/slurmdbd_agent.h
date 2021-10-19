@@ -1,5 +1,5 @@
 /****************************************************************************\
- *  slurmdbd_agent.c - functions to manage the connection to the SlurmDBD
+ *  slurmdbd_agent.h - functions to manage the connection to the SlurmDBD
  *****************************************************************************
  *  Copyright (C) 2011-2018 SchedMD LLC.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.

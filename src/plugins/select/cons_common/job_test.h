@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_test.c - functions to test job on resources
+ *  job_test.h - functions to test job on resources
  *****************************************************************************
  *  Copyright (C) 2019 SchedMD LLC
  *  Derived in large part from select/cons_[res|tres] plugins

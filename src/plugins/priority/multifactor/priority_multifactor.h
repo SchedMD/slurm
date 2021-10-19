@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  priority_multifactor.c - slurm multifactor priority plugin.
+ *  priority_multifactor.h - slurm multifactor priority plugin.
  *****************************************************************************
  *  Copyright (C) 2012  Aalto University
  *  Written by Janne Blomqvist <janne.blomqvist@aalto.fi>

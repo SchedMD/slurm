@@ -1,5 +1,5 @@
 /*****************************************************************************\
- **  spawn.c - PMI job spawn handling
+ **  spawn.h - PMI job spawn handling
  *****************************************************************************
  *  Copyright (C) 2011-2012 National University of Defense Technology.
  *  Written by Hongjia Cao <hjcao@nudt.edu.cn>.

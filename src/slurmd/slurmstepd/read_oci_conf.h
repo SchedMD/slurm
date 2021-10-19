@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_oci_conf.c - parse oci.conf configuration file.
+ *  read_oci_conf.h - parse oci.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2021 SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>

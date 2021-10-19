@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurmdb_pack.h - un/pack definitions used by slurmdb api
+ *  slurmdb_pack.c - un/pack definitions used by slurmdb api
  ******************************************************************************
  *  Copyright (C) 2011-2015 SchedMD LLC.
  *  Copyright (C) 2010 Lawrence Livermore National Security.

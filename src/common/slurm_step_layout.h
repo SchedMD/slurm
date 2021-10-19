@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_step_layout.c - function to distribute tasks over nodes.
+ *  slurm_step_layout.h - function to distribute tasks over nodes.
  *****************************************************************************
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Chris Holmes, <cholmes@hp.com>, who borrowed heavily

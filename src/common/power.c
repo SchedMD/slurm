@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/common/power.hc - Generic power management plugin wrapper functions.
+ *  src/common/power.c - Generic power management plugin wrapper functions.
  *****************************************************************************
  *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
