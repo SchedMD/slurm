@@ -28,18 +28,11 @@
 ############################################################################
 source ./globals
 
-set file_in            "test$test_id.input"
-set file_out           "test$test_id.output"
-set file_err           "test$test_id.error"
-set test_prog          "test$test_id.prog"
+set file_in            "$test_dir/input"
+set file_out           "$test_dir/output"
+set file_err           "$test_dir/error"
+set test_prog          "$test_name.prog"
 set job_id             0
-
-proc cleanup {} {
-	global bin_rm file_in file_out file_err test_prog job_id
-
-	cancel_job $job_id
-	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
-}
 
 #
 # Test for existence of mpi compiler
@@ -54,10 +47,16 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
+proc cleanup {} {
+	global job_id test_prog
+
+	cancel_job $job_id
+	file delete $test_prog ${test_prog}.o
+}
+
 #
-# Delete left-over program and rebuild it
+# Rebuild program
 #
-exec $bin_rm -f $test_prog ${test_prog}.o
 if {$use_pmi} {
 	spawn $mpicc -Xlinker -rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi -o $test_prog ${test_prog}.c
 	expect {
@@ -76,9 +75,6 @@ if {$use_pmi} {
 if {![file exists $test_prog]} {
 	skip "Unable to build test program"
 }
-
-# Delete left-over stdout/err files
-file delete $file_out $file_err
 
 #
 # OpenMPI can only run in multi-slurmd mode if no more than one node has

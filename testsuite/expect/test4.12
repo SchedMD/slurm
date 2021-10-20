@@ -28,7 +28,7 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.in"
+set file_in     "$test_dir/input"
 set pnumsc      0
 set pnumsi      0
 set aprocsc     0
@@ -41,10 +41,9 @@ set select_type ""
 set job_id      0
 
 proc cleanup {} {
-	global job_id file_in
+	global job_id
 
 	cancel_job $job_id
-	file delete $file_in
 }
 
 proc scontrol_test { node proc_cnt } {
@@ -184,7 +183,7 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 	  $bin_bash --norc
 	"
 
-	spawn $salloc -w $node -N 1 -t 5 -n $proc_cnt ./$file_in
+	spawn $salloc -w $node -N 1 -t 5 -n $proc_cnt $file_in
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)

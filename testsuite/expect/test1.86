@@ -30,7 +30,7 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -64,7 +64,7 @@ set env(PATH) "${slurm_dir}/bin:$env(PATH)"
 #
 set job_id 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N2 -t1 ./$file_in]
+spawn $salloc -N2 -t1 $file_in
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -81,7 +81,6 @@ expect {
 		log_debug "Job initiated"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "salloc not responding"
 	}
 	eof {
@@ -115,7 +114,6 @@ expect {
 		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -150,7 +148,6 @@ expect {
 		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -181,7 +178,6 @@ expect {
 		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -216,7 +212,6 @@ expect {
 		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -247,7 +242,6 @@ expect {
 		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -278,7 +272,6 @@ expect {
 		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -306,7 +299,6 @@ expect {
 		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -345,7 +337,6 @@ expect {
 		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -376,7 +367,6 @@ expect {
 		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -401,7 +391,6 @@ expect {
 		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -421,7 +410,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "srun not responding"
 	}
 	eof {

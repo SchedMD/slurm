@@ -29,10 +29,10 @@
 ############################################################################
 source ./globals
 
-set file_in            "test$test_id.input"
-set file_out           "test$test_id.output"
-set file_err           "test$test_id.error"
-set test_prog          "test$test_id.prog"
+set file_in            "$test_dir/input"
+set file_out           "$test_dir/output"
+set file_err           "$test_dir/error"
+set test_prog          "$test_name.prog"
 set job_id             0
 
 #
@@ -49,18 +49,15 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 }
 
 proc cleanup {} {
-	global job_id
-	global file_in file_out file_err test_prog
+	global job_id test_prog
 
 	cancel_job $job_id
-	file delete $file_in $file_out $file_err $test_prog ${test_prog}.o
+	file delete $test_prog ${test_prog}.o
 }
 
 #
-# Delete left-over files and rebuild the program
+# Compile the program
 #
-file delete $file_out $file_err $test_prog ${test_prog}.o
-
 if {$use_pmi} {
 	spawn $mpicc -Xlinker -rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi -o $test_prog ${test_prog}.c
 	expect {

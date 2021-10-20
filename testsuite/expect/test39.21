@@ -26,15 +26,13 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set file_prog   "test$test_id.prog"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_prog   "$test_name.prog"
 set job_id      0
 
-proc cleanup {} {
-	global bin_rm file_in file_out file_prog
-
-	exec $bin_rm -f $file_in $file_out $file_prog
+if {![file exists $nvcc]} {
+	skip "Could not find program nvcc (CUDA compiler)"
 }
 
 set gpu_cnt [get_highest_gres_count 1 "gpu"]
@@ -43,10 +41,16 @@ if {$gpu_cnt < 1} {
 }
 log_debug "GPUs per node count is $gpu_cnt"
 
+proc cleanup {} {
+	global job_id file_prog
+
+	cancel_job $job_id
+	file delete $file_prog
+}
+
 #
 # Build input script file
 #
-exec $bin_rm -f $file_in $file_out $file_prog
 make_bash_script $file_in "
 ls $nvcc
 $nvcc ${file_prog}.cu -o $file_prog
@@ -55,56 +59,13 @@ $nvcc ${file_prog}.cu -o $file_prog
 #
 # Spawn a batch job to build and run CUDA job
 #
-spawn $sbatch --output=$file_out -N1 --gres=gpu:1 -t1 ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Batch not submitted"
-}
+set job_id [submit_job -fail "--output=$file_out -N1 --gres=gpu:1 -t1 $file_in"]
 
 #
 # Wait for job to complete and check for file
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	cancel_job $job_id
-	fail "Waiting for job to complete"
-}
-if {[wait_for_file $file_out] == 0} {
-	set matches 0
-	set no_nvcc 0
-	spawn $bin_cat $file_out
-	expect {
-		-re "No such file" {
-			incr no_nvcc
-			exp_continue
-		}
-		-re "Could not find" {
-			incr no_nvcc
-			exp_continue
-		}
-		-re "Max error: 0" {
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$no_nvcc != 0} {
-		log_warn "Could not find program nvcc (CUDA compiler)"
-	} elseif {$matches != 1} {
-		fail "CUDA output not as expected"
-	}
-} else {
-	fail "Failed waiting for file ($file_out)"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp -all "Max error: 0" $output] ==1} "Verify Max error message"

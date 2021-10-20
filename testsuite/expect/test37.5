@@ -28,15 +28,15 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set long_script         "test$test_id\.long"
-set complete_script     "test$test_id\.bash"
-set exit_script         "test$test_id\.exit"
-set exithold_script     "test$test_id\.exithold"
-set fail_script         "test$test_id\.fail"
-set file_out            "test$test_id\.out"
-set prolog_script       "test$test_id\.prolog"
-set prologctl_script    "test$test_id\.prolog"
-set epilog_script       "test$test_id\.prolog"
+set long_script         "$test_dir/long"
+set complete_script     "$test_dir/bash"
+set exit_script         "$test_dir/exit"
+set exithold_script     "$test_dir/exithold"
+set fail_script         "$test_dir/fail"
+set file_out            "$test_dir/output"
+set prolog_script       "$test_dir/prolog"
+set prologctl_script    "$test_dir/prologctl"
+set epilog_script       "$test_dir/epilog"
 set fed_name            "feda"
 set long_running_job_id ""
 set long_running_job_id2 ""
@@ -83,15 +83,10 @@ proc cancel_federation_jobs { } {
 }
 
 proc cleanup { } {
-	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3 \
-		long_script complete_script fail_script exit_script \
-		exithold_script file_out
+	global fed_name
 
 	cancel_federation_jobs
-	exec $bin_rm -f $long_script $complete_script $fail_script \
-			$exit_script $exithold_script $file_out
-
-	return [delete_federations $fed_name]
+	delete_federations $fed_name
 }
 
 proc check_ctl_state { job_id state cluster } {
@@ -344,11 +339,9 @@ proc get_slurm_conf { cluster } {
 
 
 # Remove existing setup
-if {[cleanup] != 0} {
-	fail "Failed to cleanup"
-}
+cleanup
 
-# add clusters to federation
+# Add clusters to federation
 if {[setup_federation $fed_name]} {
 	fail "Failed to setup federation"
 }

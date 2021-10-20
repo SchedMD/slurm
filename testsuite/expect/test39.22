@@ -26,15 +26,9 @@
 ############################################################################
 source ./globals
 
-set file_in1       "test$test_id.input1"
-set file_in2       "test$test_id.input2"
+set file_in1       "$test_dir/input1"
+set file_in2       "$test_dir/input2"
 set number_commas  "\[0-9_,\]+"
-
-proc cleanup {} {
-	global bin_rm file_in1 file_in2
-
-	exec $bin_rm -f $file_in1 $file_in2
-}
 
 if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
@@ -60,14 +54,14 @@ if {$gpu_cnt < 1} {
 # Build input script files
 #
 make_bash_script $file_in1 "$scontrol -dd show job \$SLURM_JOB_ID
-$srun --mpi=none --het-group=0,1 -l ./$file_in2
+$srun --mpi=none --het-group=0,1 -l $file_in2
 exit 0"
 
 make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES"
 
 set timeout $max_job_delay
 set match   0
-set salloc_pid [spawn $salloc --gpus=$gpu_cnt --nodes=1 -t1 -J "test$test_id" : --gpus=1 --nodes=1 ./$file_in1]
+set salloc_pid [spawn $salloc --gpus=$gpu_cnt --nodes=1 -t1 -J "test$test_id" : --gpus=1 --nodes=1 $file_in1]
 expect {
 	-re "($number): HOST:($re_word_str) CUDA_VISIBLE_DEVICES:($number_commas)" {
 		set gpu_alloc [cuda_count $expect_out(3,string)]

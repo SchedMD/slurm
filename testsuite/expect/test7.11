@@ -28,13 +28,14 @@
 ############################################################################
 source ./globals
 
-set cwd		    "[$bin_pwd]"
-set file_in         "${cwd}/test${test_id}.in"
-set file_out	    "${cwd}/test${test_id}.out"
-set file_prog	    "${cwd}/test${test_id}.prog"
-set orig_spank_conf "${cwd}/test${test_id}.orig_conf"
-set new_spank_conf  "${cwd}/test${test_id}.new_conf"
-set spank_out       "${cwd}/test${test_id}.spank.out"
+set cwd             "[$bin_pwd]"
+set file_in         "$test_dir/input"
+set file_out        "$test_dir/output"
+set file_prog       "$cwd/$test_name.prog"
+set orig_spank_conf "$test_dir/orig_conf"
+set new_spank_conf  "$test_dir/new_conf"
+set spank_out       "$test_dir/spank.out"
+set job_id          0
 
 if {![is_super_user]} {
 	skip "This test must be run as SlurmUser"
@@ -43,9 +44,20 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
+set config_dir [get_conf_path]
+set spank_conf_file ${config_dir}/plugstack.conf
+
+regexp {^(\d+\.\d+)} [get_config_param SLURM_VERSION] - ctld_slurm_ver
+regexp {slurm (\d+\.\d+)} [run_command_output -fail "$scontrol -V"] - loc_slurm_ver
+if {[string compare $ctld_slurm_ver $loc_slurm_ver]} {
+	skip "Slurmctld ($ctld_slurm_ver) and local Slurm ($loc_slurm_ver) versions are not the same, can not continue"
+}
+
 proc cleanup {} {
-	global test_id orig_spank_conf spank_conf_file new_spank_conf spank_out
-	global file_out spank_out bin_cp bin_rm file_in file_prog
+	global job_id orig_spank_conf spank_conf_file
+	global bin_cp bin_rm file_prog test_status STATUS_FAIL
+
+	cancel_job $job_id
 
 	#
 	# Restore the original plugstack
@@ -57,59 +69,18 @@ proc cleanup {} {
 	}
 	reconfigure
 
-	exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
+	file delete ${file_prog}.so
+
+	if {$test_status == $STATUS_FAIL} {
+		log_warn "Check for matching checksums on the plugstack.conf file. Different checksums could indicate file system delays"
+	}
 }
 
 #
 # Build the plugin
 #
-exec $bin_rm -f ${file_prog}.so
 exec $bin_cc -fPIC -shared -I${slurm_dir}/include -o ${file_prog}.so ${file_prog}.c
 
-#
-# Locate slurm.conf's directory, copy the original plugstack.conf file
-# and create an updated one using our new plugin
-#
-log_user 0
-set config_dir ""
-set ctld_slurm_ver ""
-spawn $scontrol show config
-expect {
-	-re "SLURM_CONF.*= (/.*)/${re_word_str}${eol}SLURM_VERSION *= ($float)" {
-		set config_dir $expect_out(1,string)
-		set ctld_slurm_ver $expect_out(2,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {[string compare $config_dir ""] == 0} {
-	fail "Could not locate slurm.conf directory"
-}
-
-log_user 0
-set loc_slurm_ver ""
-spawn $scontrol -V
-expect {
-	-re "slurm ($float)" {
-		set loc_slurm_ver $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-
-if {[string compare $ctld_slurm_ver $loc_slurm_ver]} {
-	skip "Slurmctld ($ctld_slurm_ver) and local Slurm ($loc_slurm_ver) versions are not the same, can not continue"
-}
-
-
-set spank_conf_file ${config_dir}/plugstack.conf
-exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_out $spank_out
 if {[file exists $spank_conf_file]} {
 	spawn $bin_cat $spank_conf_file
 	expect {
@@ -150,7 +121,7 @@ log_info "Testing srun help message........."
 
 make_bash_script $file_in "$srun --help | $bin_grep test"
 set matches 0
-set srun_pid [spawn $file_in]
+spawn $file_in
 expect {
 	-re "Component of slurm test suite" {
 		incr matches
@@ -161,7 +132,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -183,14 +153,13 @@ log_info "Testing salloc help message........."
 
 make_bash_script $file_in "$salloc --help | $bin_grep test"
 set matches 0
-set srun_pid [spawn $file_in]
+spawn $file_in
 expect {
 	-re "Registered component of slurm test suite" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "salloc not responding"
 	}
 	eof {
@@ -212,14 +181,13 @@ log_info "Testing sbatch help message........."
 
 make_bash_script $file_in "$sbatch --help | $bin_grep test"
 set matches 0
-set srun_pid [spawn $file_in]
+spawn $file_in
 expect {
 	-re "Registered component of slurm test suite" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -263,7 +231,6 @@ if {![param_contains [get_config_param "SlurmctldParameters"] "enable_configless
 	"
 }
 
-set job_id 0
 set matches 0
 spawn $sbatch --test_suite_sbatch=4 -N1 -t1 -o $file_out $file_in
 expect {
@@ -296,151 +263,133 @@ if {$matches != 2} {
 #
 # Wait for job to complete and check for files
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	cancel_job $job_id
-	fail "Waiting for job to complete"
-}
+wait_for_job -fail $job_id "DONE"
 
 # NOTE: spank logs from sbatch and srun would be intermingled here
-if {[wait_for_file $file_out] == 0} {
-	set matches 0
-	set matches_sbatch 0
-	set matches_srun 0
-	spawn $bin_cat $file_out
-	expect {
-		-re "error" {
-			fail "Some error happened"
-		}
-		-re "_test_opt_process_(.*?=$number)" {
-			set substr $expect_out(1,string)
-			if {[string equal "sbatch: opt_arg_sbatch=4" $substr]} {
-				incr matches_sbatch
-			} elseif {[string equal "srun: opt_arg_srun=5" $substr]} {
-				incr matches_srun
-			}
-			exp_continue
-		}
-		-re "slurm_spank_local_user_init" {
-			incr matches
-			exp_continue
-		}
-		-re "slurm_spank_exit: opt_arg_sbatch=4 opt_arg_srun=5" {
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_out
+set matches 0
+set matches_sbatch 0
+set matches_srun 0
+spawn $bin_cat $file_out
+expect {
+	-re "error" {
+		fail "Some error happened"
 	}
-	if {$matches_sbatch != 1} {
-		fail "Local (srun) sbatch spank plugin failure ($matches_sbatch != 1)"
-	} elseif {$matches_srun != 1} {
-		fail "Local (srun) srun spank plugin failure ($matches_srun != 1)"
-	} elseif {$matches != 2} {
-		fail "Local (srun) spank plugin failure ($matches != 2)"
-	} else {
-		log_debug "Local (srun) spank plugin success"
+	-re "_test_opt_process_(.*?=$number)" {
+		set substr $expect_out(1,string)
+		if {[string equal "sbatch: opt_arg_sbatch=4" $substr]} {
+			incr matches_sbatch
+		} elseif {[string equal "srun: opt_arg_srun=5" $substr]} {
+			incr matches_srun
+		}
+		exp_continue
 	}
+	-re "slurm_spank_local_user_init" {
+		incr matches
+		exp_continue
+	}
+	-re "slurm_spank_exit: opt_arg_sbatch=4 opt_arg_srun=5" {
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches_sbatch != 1} {
+	fail "Local (srun) sbatch spank plugin failure ($matches_sbatch != 1)"
+} elseif {$matches_srun != 1} {
+	fail "Local (srun) srun spank plugin failure ($matches_srun != 1)"
+} elseif {$matches != 2} {
+	fail "Local (srun) spank plugin failure ($matches != 2)"
 } else {
-	fail "Job output file ($file_out) did not appear"
+	log_debug "Local (srun) spank plugin success"
 }
 
 #
 # Test for slurmd output in file
 #
-if {[wait_for_file $spank_out] == 0} {
-	set matches        0
-	set matches_sbatch 0
-	set matches_srun   0
-	set matches_spank_exit 0
-	set matches_spank_init 0
+wait_for_file -fail $spank_out
+set matches        0
+set matches_sbatch 0
+set matches_srun   0
+set matches_spank_exit 0
+set matches_spank_init 0
 
-	set expected_spank_exit 2
-	set expected_spank_init 2
-	set expected_sbatch     2
-	set expected_srun       2
-	set expected_items      5
+set expected_spank_exit 2
+set expected_spank_init 2
+set expected_sbatch     2
+set expected_srun       2
+set expected_items      5
 
-	# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
-	# launched on each node, so we need to check for additional output
-	log_user 0
-	spawn $scontrol show config
-	expect {
-		-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
-			incr expected_spank_exit
-		}
-		timeout {
-			fail "scontrol show config not responding"
-		}
-		eof {
-			wait
-		}
+# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
+# launched on each node, so we need to check for additional output
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
+		incr expected_spank_exit
 	}
-	log_user 1
+	timeout {
+		fail "scontrol show config not responding"
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
 
-	spawn $bin_sort $spank_out
-	expect {
-		-re "slurm_spank_(\\S+): opt_arg_sbatch=($number) opt_arg_srun=($number)" {
-			set spank_type $expect_out(1,string)
-			set sbatch_arg $expect_out(2,string)
-			set srun_arg   $expect_out(3,string)
+spawn $bin_sort $spank_out
+expect {
+	-re "slurm_spank_(\\S+): opt_arg_sbatch=($number) opt_arg_srun=($number)" {
+		set spank_type $expect_out(1,string)
+		set sbatch_arg $expect_out(2,string)
+		set srun_arg   $expect_out(3,string)
 
-			if {$spank_type eq "exit"} {
-				incr matches_spank_exit
-			} elseif {$spank_type eq "task_init"} {
-				incr matches_spank_init
-			}
+		if {$spank_type eq "exit"} {
+			incr matches_spank_exit
+		} elseif {$spank_type eq "task_init"} {
+			incr matches_spank_init
+		}
 
-			if {($sbatch_arg eq "4") && ($srun_arg eq "0")} {
-				incr matches_sbatch
-			} elseif {($sbatch_arg eq "4") && ($srun_arg eq "5")} {
-				incr matches_srun
-			}
-			exp_continue
+		if {($sbatch_arg eq "4") && ($srun_arg eq "0")} {
+			incr matches_sbatch
+		} elseif {($sbatch_arg eq "4") && ($srun_arg eq "5")} {
+			incr matches_srun
 		}
-		-re "spank_get_item: argv" {
-			incr matches
-			exp_continue
-		}
-		-re "spank_get_item: my_uid=" {
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
+		exp_continue
 	}
-
-	set fail_cnt 0
-	if {$matches_spank_exit != $expected_spank_exit} {
-		log_error "Remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != $expected_spank_exit)"
-		set fail_cnt 1
+	-re "spank_get_item: argv" {
+		incr matches
+		exp_continue
 	}
-	if {$matches_spank_init != $expected_spank_init} {
-		log_error "Remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != $expected_spank_init)"
-		set fail_cnt 1
+	-re "spank_get_item: my_uid=" {
+		incr matches
+		exp_continue
 	}
-	if {$matches_sbatch != $expected_sbatch} {
-		log_error "Remote (slurmd) sbatch spank plugin failure ($matches_sbatch != $expected_sbatch)"
-		set fail_cnt 1
+	eof {
+		wait
 	}
-	if {$matches_srun != $expected_srun} {
-		log_error "Remote (slurmd) srun spank plugin failure ($matches_srun != $expected_srun)"
-		set fail_cnt 1
-	}
-	if {$matches != $expected_items} {
-		log_error "Remote (slurmd) spank plugin failure ($matches != $expected_items)"
-		set fail_cnt 1
-	}
-	if {$fail_cnt != 0} {
-		fail "Check for matching checksums on the plugstack.conf file. Different checksums could indicate file system delays"
-	}
-	log_debug "Remote (slurmd) spank plugin success"
-} else {
-	fail "Spank output file ($spank_out) was not created"
 }
 
-#Test if internal spank option parsing works (Bug 10454)
+if {$matches_spank_exit != $expected_spank_exit} {
+	fail "Remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != $expected_spank_exit)"
+}
+if {$matches_spank_init != $expected_spank_init} {
+	fail "Remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != $expected_spank_init)"
+}
+if {$matches_sbatch != $expected_sbatch} {
+	fail "Remote (slurmd) sbatch spank plugin failure ($matches_sbatch != $expected_sbatch)"
+}
+if {$matches_srun != $expected_srun} {
+	fail "Remote (slurmd) srun spank plugin failure ($matches_srun != $expected_srun)"
+}
+if {$matches != $expected_items} {
+	fail "Remote (slurmd) spank plugin failure ($matches != $expected_items)"
+}
+log_debug "Remote (slurmd) spank plugin success"
+
+# Test if internal spank option parsing works (Bug 10454)
 set output [run_command_output -timeout 2 -xfail -subtest "$sbatch --test_suite_sbatch=NaN --wrap='/bin/true'"]
 subtest {[regexp "sbatch: error: Non-zero argument required" $output]} "sbatch should print error message from spank"
 

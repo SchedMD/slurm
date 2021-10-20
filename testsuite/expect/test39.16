@@ -26,7 +26,7 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
+set file_in        "$test_dir/input"
 set number_commas  "\[0-9_,\]+"
 
 if {![check_config_select "cons_tres"]} {
@@ -64,11 +64,6 @@ if {$gpu_cnt > $cpus_per_node} {
 	log_warn "This test needs CPUs >= GPUs in the node. On current configuration it will only test the expected error."
 }
 
-proc cleanup {} {
-	global bin_rm file_in
-	exec $bin_rm -f $file_in
-}
-
 #
 # Build input script files
 #
@@ -83,7 +78,7 @@ exit 0"
 set match 0
 set res_alloc_error 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 --nodes=$nb_nodes --exclusive --ntasks=$nb_tasks -t1 -J "test$test_id" -l ./$file_in]
+spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 --nodes=$nb_nodes --exclusive --ntasks=$nb_tasks -t1 -J "test$test_id" -l $file_in
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
@@ -94,7 +89,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

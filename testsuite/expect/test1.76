@@ -33,13 +33,14 @@ source ./globals
 # - all cpus on a node have the same scaling options.
 # - task affinity either cgroups or cpusets
 
-set nerr	0
+set nerr        0
 set test_prog   "test$test_id.prog"
-set avail_freq	[split "1000 2000" " "]
-set nfreq	0
+set avail_freq  [split "1000 2000" " "]
+set nfreq       0
 set have_on_demand 1
 set have_user_space 1
-set wd		[pwd]
+set file_out    "$test_dir/output"
+set wd          [pwd]
 
 ################################################################
 # Run a test case.
@@ -59,11 +60,12 @@ set wd		[pwd]
 #   ERROR message is sent to user on failure.
 ################################################################
 proc test_freq {opt expmin expcur expmax expgov} {
-	global bin_rm srun sbatch test_node test_cpu wd number
+	global bin_rm srun sbatch test_node test_cpu wd number file_out test_name
+
 	log_user 0
-	exec $bin_rm -f $wd/test1.76.out
+	exec $bin_rm -f $file_out
 	set job_id 0
-	spawn $sbatch -w $test_node --exclusive -o test1.76.out -t1 test1.76.batch $test_cpu $opt $wd $srun
+	spawn $sbatch -w $test_node --exclusive -o $file_out -t1 $test_name.batch $test_cpu $opt $wd $srun
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -84,16 +86,13 @@ proc test_freq {opt expmin expcur expmax expgov} {
 		log_error "Waiting for job to complete"
 		return 1
 	}
-	if {[wait_for_file $wd/test1.76.out] != 0} {
-		log_error "Waiting for file $wd/test1.76.out"
-		return 1
-	}
+	wait_for_file -fail $file_out
 	set line ""
 	set start_value ""
 	set test_value ""
 	set end_value ""
 	set fd 0
-	set fd [open $wd/test1.76.out "r"]
+	set fd [open $file_out "r"]
 
 	# Search for starting values
 	while {$fd > 0 && [gets $fd line] != -1} {
@@ -310,7 +309,7 @@ log_debug "Test node is $test_node, test_cpu is $test_cpu"
 set have_on_demand 0
 set have_user_space 0
 set nfreq 0
-spawn $srun -w $test_node --exclusive -t1 ./test1.76.bash $test_cpu
+spawn $srun -w $test_node --exclusive -t1 ./$test_name.bash $test_cpu
 expect {
 	-re "scaling frequency not supported" {
 		skip "Test requires frequency scaling"
@@ -377,6 +376,4 @@ if {$nfreq > 3} {
 
 if {$nerr != 0} {
 	fail "$nerr test cases failed."
-} else {
-	exec $bin_rm -f $wd/test1.76.out
 }

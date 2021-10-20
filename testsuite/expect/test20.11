@@ -26,14 +26,8 @@
 ############################################################################
 source ./globals
 
-set file_in    "test$test_id.input"
-set file_out   "test$test_id.output"
-
-proc cleanup {} {
-	global bin_rm file_in file_out
-
-	exec $bin_rm -f $file_in $file_out
-}
+set file_in    "$test_dir/input"
+set file_out   "$test_dir/output"
 
 if {[file executable $qrerun] == 0} {
 	skip "qrerun was not found"
@@ -57,9 +51,8 @@ expect {
 }
 log_user 1
 
-exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "$qrerun --man >$file_out"
-exec ./$file_in
+exec $file_in
 set matches 0
 spawn $bin_cat $file_out
 expect {

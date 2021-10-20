@@ -28,14 +28,8 @@
 ############################################################################
 source ./globals
 
-set file_in      "test$test_id.input"
-set file_script  "test$test_id.script"
-
-proc cleanup {} {
-	global bin_rm file_in file_script
-
-	exec $bin_rm -f $file_in $file_script
-}
+set file_in      "$test_dir/input"
+set file_script  "$test_dir/job_script"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -48,7 +42,7 @@ make_bash_script $file_in "umask"
 
 make_bash_script $file_script "
   umask 023
-  $srun -N1 -t1 ./$file_in
+  $srun -N1 -t1 $file_in
 "
 
 #
@@ -56,14 +50,13 @@ make_bash_script $file_script "
 #
 set matches 0
 set timeout $max_job_delay
-set srun_pid [spawn ./$file_script]
+spawn $file_script
 expect {
 	-re (0023|023) {
 		set matches 1
 		exp_continue
 	}
 	timeout {
-		slow_kill [expr 0 - $srun_pid]
 		fail "srun not responding"
 	}
 	eof {

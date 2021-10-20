@@ -27,16 +27,11 @@
 source ./globals
 
 set skipped        ""
-set file_in1       "test$test_id.input1"
-set file_in2       "test$test_id.input2"
+set file_in1       "$test_dir/input1"
+set file_in2       "$test_dir/input2"
 set number_commas  "\[0-9_,\]+"
 set one_task_pc    0
 set cpu_to_socket  {}
-
-proc cleanup {} {
-	global bin_rm file_in1 file_in2
-	exec $bin_rm -f $file_in1 $file_in2
-}
 
 proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
 	global file_in1 test_id srun number_commas cpu_to_socket
@@ -46,7 +41,7 @@ proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
 	set cpus_allowed_list [list]
 	set allocated_sockets 0
 
-	set srun_pid [spawn /bin/sh -c "$srun $srun_opts -t1 -J test$test_id -l ./$file_in1"]
+	spawn /bin/sh -c "$srun $srun_opts -t1 -J test$test_id -l $file_in1"
 	expect {
 		-re "JOB_GRES=gpu:(\[0-9\]+)|CUDA_VISIBLE_DEVICES:($number_commas)|Cpus_allowed_list:\t(\[0-9,-\]+)" {
 			if {[string first "JOB_GRES" $expect_out(0,string)] != -1} {
@@ -205,7 +200,7 @@ set node_list [get_nodes_by_request "--gpus-per-socket=1 --sockets-per-node=$soc
 if { [llength $node_list] != $nb_nodes } {
 	lappend skipped "This test need to be able to submit jobs with at least --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodes=$node_list"
 } else {
-	set srun_pid [spawn $srun --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --ntasks-per-socket=1 --exclusive --nodelist=[join $node_list ","] -t1 -J "test$test_id" -l ./$file_in1]
+	spawn $srun --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --ntasks-per-socket=1 --exclusive --nodelist=[join $node_list ","] -t1 -J "test$test_id" -l $file_in1
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr match [cuda_count $expect_out(1,string)]

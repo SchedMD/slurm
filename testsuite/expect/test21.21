@@ -31,9 +31,9 @@ source ./globals
 source ./globals_accounting
 source ./inc21.21_tests
 
-set test_qos    "test$test_id\_qos"
-set file_in     "test.$test_id.input"
-set ta		"test$test_id-account.1"
+set test_qos    "${test_name}_qos"
+set file_in     "$test_dir/input"
+set ta          "${test_name}-account.1"
 set maxcpu      MaxCpus
 set maxcpu_num  0
 set grcpu       GrpCpus
@@ -44,7 +44,6 @@ set test_node   " "
 set selectparam  0
 set one_task_pc  0
 set job_id       0
-set is_skip      0
 
 # test maxjob maxnode maxsubmit maxwall
 array set acct_mod_desc {}
@@ -115,7 +114,7 @@ if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
 
 # Define global cleanup routine so it can be called on exit
 proc cleanup { } {
-	global bin_rm file_in sacctmgr ta test_qos job_id
+	global sacctmgr ta test_qos job_id
 
 	# First wait for the job to complete
 	if { $job_id } {
@@ -125,47 +124,12 @@ proc cleanup { } {
 	#
 	# Use sacctmgr to delete the test account
 	#
-	set damatches 0
-	set sadel_pid [spawn $sacctmgr -i delete account $ta]
-	expect {
-		-re "Deleting account" {
-			incr damatches
-			exp_continue
-		}
-		timeout {
-			slow_kill $sadel_pid
-			fail "sacctmgr delete not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$damatches != 1} {
-		log_warn "sacctmgr didn't delete any account"
-	}
+	run_command "$sacctmgr -i delete account $ta"
 
 	#
 	# Remove test QoS
 	#
-	set match 0
-	spawn $sacctmgr -i delete qos $test_qos
-	expect {
-		-re "Deleting QOS" {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr delete not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$match != 1} {
-		log_warn "sacctmgr didn't delete any QOS"
-	}
-
-	exec $bin_rm -f $file_in
+	run_command "$sacctmgr -i delete qos $test_qos"
 }
 
 set got_node 0
@@ -261,25 +225,19 @@ proc _test_limits { } {
 set acct_name ""
 set user_name [get_my_user_name]
 
-set s_pid [spawn $sacctmgr show user $user_name]
+spawn $sacctmgr show user $user_name
 expect {
 	-re "$user_name *($re_word_str)" {
 		set acct_name $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $s_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
 	}
 }
-
-#
-# Test Fixture
-#
-cleanup
 
 #
 # Use sacctmgr to add an account
@@ -452,11 +410,5 @@ if {$job_id == 0} {
 if [param_contains [get_config_param "AccountingStorageEnforce"] "limits"] {
 	_test_limits
 } else {
-	log_warn "Tests requiring limits enforcement were skipped"
-	set is_skip 1
-}
-
-# Check for partials skips
-if { $is_skip } {
-	skip "This test was partially skipped"
+	subskip "Tests requiring limits enforcement were skipped"
 }

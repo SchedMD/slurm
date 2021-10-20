@@ -29,17 +29,10 @@
 ############################################################################
 source ./globals
 
-set file_in      "test$test_id.input"
-set file_out     "test$test_id.output"
-set file_prog    "test$test_id.prog"
+set file_in      "$test_dir/input"
+set file_out     "$test_dir/output"
+set file_prog    "$test_name.prog"
 set job_id       0
-
-proc cleanup {} {
-	global job_id file_in file_out file_prog
-
-	cancel_job $job_id
-	exec rm -f $file_in $file_out $file_prog
-}
 
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.
@@ -49,12 +42,18 @@ if {$overtimelim != 0} {
 	skip "Cannot run this test when OverTimeLimit is set. Exiting now"
 }
 
+proc cleanup {} {
+	global job_id file_prog
+
+	cancel_job $job_id
+	file delete $file_prog
+}
+
 #
 # Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output
 # of the ulimit program is inconsistent across systems.
 #
-exec rm -f $file_prog $file_in $file_out
 exec $bin_cc -O -o $file_prog ${file_prog}.c
 make_bash_script $file_in "
  $srun ./$file_prog
@@ -63,23 +62,8 @@ make_bash_script $file_in "
 #
 # Submit a job so we have something to work with
 #
-set sbatch_pid [spawn $sbatch --output=$file_out -t1 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Job submission failed"
-}
+set job_id [submit_job -fail "--output=$file_out -t1 $file_in"]
+
 wait_for_job -fail $job_id RUNNING
 # Allow time for poe to start the step
 # This could take a while with launch/poe
@@ -152,21 +136,7 @@ make_bash_script $file_in "
 #
 # Submit a job so we have something to work with
 #
-set job_id 0
-set sbatch_pid [spawn $sbatch --output=$file_out -t1 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
+set job_id [submit_job -fail "--output=$file_out -t1 $file_in"]
 
 wait_for_job -fail $job_id RUNNING
 sleep 5

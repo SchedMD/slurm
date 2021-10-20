@@ -26,7 +26,7 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set job_id      0
 
 if {[file executable $sbatch] == 0} {
@@ -38,10 +38,9 @@ if {[file executable $bjobs] == 0} {
 }
 
 proc cleanup {} {
-	global bin_rm file_in job_id
+	global job_id
 
 	cancel_job $job_id
-	exec $bin_rm -f $file_in
 }
 
 spawn $bjobs
@@ -64,7 +63,6 @@ expect {
 #
 # Submit a slurm job
 #
-exec $bin_rm -f $file_in
 make_bash_script $file_in "
   $bin_sleep 10
 "

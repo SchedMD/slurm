@@ -47,8 +47,8 @@ set c3 $fedc3
 set job_id1 0
 set job_id2 0
 set user_name [get_my_user_name]
-set file_in_long "test$test_id\_long.in"
-set file_in_short "test$test_id\_short.in"
+set file_in_long "$test_dir/long.in"
+set file_in_short "$test_dir/short.in"
 set my_scancel "${fed_slurm_base}/$c1/bin/scancel"
 set my_scontrol "${fed_slurm_base}/$c1/bin/scontrol"
 set reason ""
@@ -1035,12 +1035,11 @@ if {[check_federation_setup]} {
 }
 
 proc cleanup {} {
-	global bin_rm file_in_long file_in_short fed_name test_id
+	global fed_name bin_rm file_in_long file_in_short
 
 	delete_federations $fed_name
 	cancel_federation_jobs
-	exec $bin_rm -f $file_in_long
-	exec $bin_rm -f $file_in_short
+	exec $bin_rm -f $file_in_long $file_in_short
 }
 
 ###############################################################################
@@ -1070,7 +1069,7 @@ test_local_afternotok
 test_local_singleton
 test_local_or_dependencies
 test_local_and_dependencies
-# test --depend=expand in another test.
+# Test --depend=expand in another test
 
 if {![check_federation_setup]} {
 	skip "Subtests with federations cannot be run"

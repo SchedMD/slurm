@@ -28,20 +28,12 @@
 ############################################################################
 source ./globals
 
-set file_in            "test$test_id.input"
-set file_out           "test$test_id.output"
-set file_err           "test$test_id.error"
-set server_prog        "test$test_id.server"
-set client_prog        "test$test_id.client"
+set file_in            "$test_dir/input"
+set file_out           "$test_dir/output"
+set file_err           "$test_dir/error"
+set server_prog        "$test_name.server"
+set client_prog        "$test_name.client"
 set job_id             0
-
-proc cleanup {} {
-	global bin_rm file_in file_out file_err server_prog client_prog
-
-	exec $bin_rm -f $file_in $file_out $file_err
-	exec $bin_rm -f $server_prog ${server_prog}.o
-	exec $bin_rm -f $client_prog ${client_prog}.o
-}
 
 #
 # Test for existence of mpi compiler
@@ -52,6 +44,15 @@ if {[info exists mpicc] == 0} {
 if {[file executable $mpicc] == 0} {
 	skip "$mpicc does not exists"
 }
+
+proc cleanup {} {
+	global job_id server_prog client_prog
+
+	cancel_job $job_id
+	file delete $server_prog ${server_prog}.o
+	file delete $client_prog ${client_prog}.o
+}
+
 #
 # Test is only works with mpi/pmi2 plugin.
 #
@@ -78,11 +79,9 @@ if {$invalid == 1} {
 #
 # Delete left-over program and rebuild it
 #
-exec $bin_rm -f $file_in $file_out $file_err
-exec $bin_rm -f $server_prog ${server_prog}.o
-exec $bin_rm -f $client_prog  ${client_prog}.o
-exec $mpicc -o $server_prog  ${server_prog}.c
-exec $mpicc -o $client_prog  ${client_prog}.c
+cleanup
+run_command -fail "$mpicc -o $server_prog  ${server_prog}.c"
+run_command -fail "$mpicc -o $client_prog  ${client_prog}.c"
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
@@ -90,44 +89,13 @@ file delete $file_out $file_err
 #
 # Build input script file
 #
-make_bash_script $file_in "
-  $srun -n1 --mem=0 $server_prog $client_prog
-"
+make_bash_script $file_in "$srun -n1 --mem=0 $server_prog $client_prog"
 
 #
 # Spawn an sbatch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-set no_start 0
-set sbatch_pid [spawn $sbatch -n4 --mem=0 --output=$file_out --error=$file_err -t1 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "Batch job submission failed" {
-		set no_start 1
-		exp_continue
-	}
-	-re "Unable to contact" {
-		fail "Slurm appears to be down"
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$no_start != 0} {
-	cancel_job $job_id
-	skip "Partition too small for test"
-}
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "-n4 --mem=0 --output=$file_out --error=$file_err -t1 $file_in"]
 
 #
 # Wait for job to complete

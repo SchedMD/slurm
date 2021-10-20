@@ -33,7 +33,7 @@
 source ./globals
 
 set authorized     1
-set file_in        "test$test_id.input"
+set file_in        "$test_dir/input"
 
 if {![is_super_user]} {
 	skip "This test can't be run without being a super user of the cluster"
@@ -45,7 +45,7 @@ if {![is_super_user]} {
 make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME"
 set timeout $max_job_delay
 set matches 0
-set srun_pid [spawn $srun -n1 --gres=gpu:2 $file_in]
+spawn $srun -n1 --gres=gpu:2 $file_in
 expect {
         -re "HOST:($re_word_str)" {
                 incr matches
@@ -53,14 +53,12 @@ expect {
                 exp_continue
         }
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
-exec $bin_rm -f $file_in
 if {$matches != 1} {
 	skip "This test can't be run without a node with at least 2 gres/gpu"
 }

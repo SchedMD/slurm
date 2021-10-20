@@ -29,23 +29,22 @@
 ############################################################################
 source ./globals
 
-set file_in        "test$test_id.bash"
-set test_prog      "test$test_id.prog"
-
-proc cleanup {} {
-	global bin_rm file_in test_prog
-
-	exec $bin_rm -f $file_in $test_prog
-}
+set file_in        "$test_dir/job_script"
+set test_prog      "$test_name.prog"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
+proc cleanup {} {
+	global test_prog
+
+	file delete $test_prog
+}
+
 #
 # Delete left-over program and rebuild it
 #
-file delete $test_prog
 exec $bin_cc -o $test_prog ${test_prog}.c
 exec $bin_chmod 700 $test_prog
 make_bash_script $file_in "
@@ -57,7 +56,7 @@ $bin_rm -f *${test_prog}*core /tmp/*${test_prog}*core core.*"
 #
 set matches 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -n1 -t1 ./$file_in]
+spawn $srun -n1 -t1 $file_in
 expect {
 	-re "Segmentation fault" {
 		log_debug "This Seg Fault was expected, no worries"
@@ -65,7 +64,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

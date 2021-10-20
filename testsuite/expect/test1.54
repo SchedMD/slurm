@@ -28,23 +28,23 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
+set file_in     "$test_dir/input"
+set job_id      0
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
 }
 
 #
 # Delete left-over input script
 # Build input script file
 #
-exec $bin_rm -f $file_in
 set file [open $file_in "w"]
 puts $file "# multi-program configuration file
 1-2   $bin_echo task:%t:offset:%o
@@ -58,7 +58,7 @@ exec $bin_chmod 700 $file_in
 #
 set matches 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog ./$file_in]
+set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog $file_in]
 expect {
 	-re "($number): *task:($number):offset:($number)" {
 		set label       $expect_out(1,string)
@@ -79,7 +79,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -108,9 +107,8 @@ puts $file "# multi-program configuration file
 close $file
 exec $bin_chmod 700 $file_in
 
-set job_id    0
 set matches   0
-set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog --debugger-test -v ./$file_in]
+set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog --debugger-test -v $file_in]
 expect {
 	-re "launching StepId=($number)\\.($re_word_str)" {
 		set job_id $expect_out(1,string)
@@ -129,7 +127,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -142,21 +139,18 @@ if {$job_id == 0} {
 
 subtest {$matches == 4} "Expecting to generate full list of executables" "$matches != 4"
 
-cancel_job $job_id
-
 #
 # Submit a slurm job that asks for more tasks than specified in our
 # configuration file
 #
 set matches   0
-set srun_pid [spawn $srun -N1 -n5 --overcommit -l -t1 --multi-prog  ./$file_in]
+set srun_pid [spawn $srun -N1 -n5 --overcommit -l -t1 --multi-prog $file_in]
 expect {
 	-re "Configuration file .* invalid" {
 		log_debug "No worries. This error is expected"
 		incr matches
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -179,7 +173,7 @@ close $file
 exec $bin_chmod 700 $file_in
 
 set matches   0
-set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog ./$file_in]
+set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog $file_in]
 expect {
 	-re "($number): aaaa task:($number):offset:($number) bbbb" {
 		if {$expect_out(1,string) == 0 && $expect_out(2,string) == 0 && $expect_out(3,string) == 0} {
@@ -192,7 +186,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

@@ -28,19 +28,20 @@
 ############################################################################
 source ./globals
 
-set file_in              "test$test_id.input"
-set file_out             "test$test_id.input"
+set file_in              "$test_dir/input"
+set file_out             "$test_dir/output"
 set got_job_grps         0
 set got_login_grps       0
-
-proc cleanup {} {
-	global file_in file_out
-
-	file delete $file_in $file_out
-}
+set job_id               0
 
 if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
 	skip "This test is incompatible with front-end systems"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
 }
 
 #
@@ -53,13 +54,11 @@ set login_grp_info [get_my_user_name]
 # Delete left-over input script
 # Build input script file
 #
-file delete $file_in $file_out
 make_bash_script $file_in "$bin_id -un"
 
 #
 # Submit a slurm job that will execute 'id'
 #
-set job_id 0
 spawn $sbatch -N1 -t1 --job-name=test$test_id --output=$file_out --mail-type=all --mail-user=$login_grp_info $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -77,14 +76,8 @@ if {$job_id == 0} {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	cancel_job $job_id
-	fail "Waiting for job to complete"
-}
-
-if {[wait_for_file $file_out] != 0} {
-	fail "Job did not produce output"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 
 spawn $bin_cat $file_out
 expect {

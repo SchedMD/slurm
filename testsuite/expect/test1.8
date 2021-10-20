@@ -32,9 +32,9 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
 
 set login_grp_info       ""
 set job_grp_info         ""
@@ -42,17 +42,10 @@ set got_job_grps         0
 set got_login_grps       0
 set got_sleep_err        0
 
-proc cleanup {} {
-	global bin_rm file_in file_out file_err
-
-	exec $bin_rm -f $file_in $file_out $file_err
-}
-
 #
 # Delete left-over stdin/out/err files
 # Build stdin file
 #
-exec $bin_rm -f $file_in $file_out $file_err
 exec echo "$bin_id"         >$file_in
 exec echo "$bin_sleep aaa" >>$file_in
 exec echo "exit 0"         >>$file_in
@@ -62,13 +55,12 @@ exec $bin_chmod 700 $file_in
 # Spawn a shell via srun that uses stdin/out/err and confirm their contents
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --input=$file_in --output=$file_out --error=$file_err -t1 $bin_bash]
+spawn $srun --input=$file_in --output=$file_out --error=$file_err -t1 $bin_bash
 expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -82,41 +74,38 @@ expect {
 
 set login_grp_info [get_my_id]
 
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "(uid=.*\n)" {
-			set job_grp_info $expect_out(1,string)
-			set got_job_grps 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_out
+spawn $bin_cat $file_out
+expect {
+	-re "(uid=.*\n)" {
+		set job_grp_info $expect_out(1,string)
+		set got_job_grps 1
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
-
 subtest {$got_job_grps != 0} "User and group ID should be seen in stdout"
 subtest {[string compare $login_grp_info $job_grp_info] == 0} "Login information should match that of the test user"
 
 #
 # Check for sleep input specification error in stderr
 #
-if {[wait_for_file $file_err] == 0} {
-	spawn $bin_cat $file_err
-	expect {
-		-re "$sleep_error_message" {
-			log_debug "No worries, this error is expected"
-			set got_sleep_err 1
-			exp_continue
-		}
-		-re "Specify time as a positive integer.*\n" {
-			set got_sleep_err 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_err
+spawn $bin_cat $file_err
+expect {
+	-re "$sleep_error_message" {
+		log_debug "No worries, this error is expected"
+		set got_sleep_err 1
+		exp_continue
+	}
+	-re "Specify time as a positive integer.*\n" {
+		set got_sleep_err 1
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 subtest {$got_sleep_err != 0} "Stderr should show sleep error message"
@@ -124,7 +113,7 @@ subtest {$got_sleep_err != 0} "Stderr should show sleep error message"
 #
 # Spawn a program to run for a while with no input, output or error
 #
-set srun_pid [spawn $srun --input=none --output=none --error=none -t1 -N1 $bin_head $file_in]
+spawn $srun --input=none --output=none --error=none -t1 -N1 $bin_head $file_in
 expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
@@ -136,7 +125,6 @@ expect {
 		fail "srun failed to complete"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

@@ -32,7 +32,7 @@ set gpu_req_cnt 1
 set time_str "00:02:00"
 set job_id 0
 
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 
 if {[file executable $qsub] == 0} {
 	skip "$qsub not found"
@@ -55,6 +55,7 @@ set ppn_cnt [get_node_param $node_name "CPUTot"]
 
 proc cleanup {} {
 	global job_id
+
 	cancel_job $job_id
 }
 

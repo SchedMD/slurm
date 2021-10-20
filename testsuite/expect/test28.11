@@ -28,26 +28,26 @@
 ############################################################################
 source ./globals
 
-set file_script "test$test_id.sh"
-set config_path ""
-set cwd "[$bin_pwd]"
-set node_feature "$test_name"
+set file_script     "$test_dir/job_script"
+set config_path     [get_conf_path]
+set node_feature    $test_name
+set job_id          0
 
 if {![is_super_user]} {
 	skip "This test must be run as SlurmUser or root"
 }
 
 proc cleanup { } {
-	global config_file file_script
+	global job_id config_file
+
+	cancel_job $job_id
 
 	# Restore previous MinJobAge and AvailableFeatures
 	restore_conf $config_file
 	reconfigure
-	file delete $file_script
 }
 
 # Change the slurm.conf MinJobAge=10 so we don't have to wait very long.
-set config_path [get_conf_path]
 set config_file $config_path/slurm.conf
 save_conf $config_file
 

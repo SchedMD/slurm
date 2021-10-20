@@ -27,14 +27,8 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
+set file_in        "$test_dir/input"
 set number_commas  "\[0-9_,\]+"
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
 
 proc multi_socket_gres { gres_string } {
 	set offset 0
@@ -135,7 +129,6 @@ log_debug "CPUs per node is $cpus_per_node"
 #
 # Build input script file
 #
-exec $bin_rm -f $file_in
 make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 $scontrol show node \$SLURM_JOB_NODENAME | grep Gres
 $scontrol -dd show job \$SLURM_JOB_ID | grep CPU_IDs
@@ -146,9 +139,7 @@ exit 0"
 #
 set match 0
 set multi_socket 0
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --nodes=1 \
-			  --ntasks=1 -t1 -l \
-			  ./$file_in]
+spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --nodes=1 --ntasks=1 -t1 -l $file_in
 
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
@@ -166,7 +157,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

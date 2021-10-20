@@ -32,10 +32,11 @@ set cwd           "[$bin_pwd]"
 set test_node     ""
 set job_id        0
 set step_id       0
-set file_err      "${cwd}/test${test_id}_err"
-set file_in       "test${test_id}_script"
-set file_out      "${cwd}/test${test_id}_out"
-set test_acct     "test${test_id}_acct"
+set job_script    "job_script"
+set file_err      "$test_dir/error"
+set file_in       "$test_dir/$job_script"
+set file_out      "$test_dir/output"
+set test_acct     "${test_name}_acct"
 
 ############################Job Format Test############################
 
@@ -57,7 +58,7 @@ set sq_format(numnodes)      1
 # timelimit
 set sq_format(timelimit)     2
 # job
-set sq_format(name)          $file_in
+set sq_format(name)          $job_script
 # account
 set sq_format(account)       $test_acct
 # cpus-per-task
@@ -97,16 +98,11 @@ if {$available < 2} {
 }
 
 proc cleanup {} {
-	global job_id test_acct bin_rm file_err file_out file_in
+	global job_id test_acct
 
 	cancel_job $job_id
-
 	remove_acct "" $test_acct
-
-	exec $bin_rm -f $file_err $file_out $file_in
 }
-
-remove_acct [get_config_param "ClusterName"] $test_acct
 
 # Run a job to get a usable node to test
 set tmp_sc  "tmp_sc"
@@ -239,7 +235,7 @@ spawn $sbatch -A$sq_format(account) -N$sq_format(numnodes) \
     --profile=$sq_format(profile) --ntasks-per-socket=$sq_format(ntpersocket) \
     --ntasks-per-node=$sq_format(ntpernode) -o$sq_format(stdout) \
     --comment=$sq_format(comment) -e$sq_format(stderr) --exclusive \
-    -w$test_node $sq_format(name)
+    -w$test_node $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)

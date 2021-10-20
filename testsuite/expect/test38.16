@@ -25,18 +25,15 @@
 ############################################################################
 source ./globals
 
-set file_in	"test$test_id.bash"
-set file_out	"test$test_id.out"
-set timeout	60
+set file_in     "$test_dir/job_script"
+set file_out    "$test_dir/output"
 set het_job_id  0
+set timeout     60
 
 proc cleanup {} {
-	global het_job_id scancel bin_rm file_in file_out
+	global het_job_id
 
-	if {$het_job_id > 0} {
-		exec $scancel $het_job_id
-	}
-	exec $bin_rm -f $file_in $file_out
+	cancel_job $het_job_id
 }
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
@@ -57,7 +54,6 @@ if {$nb_nodes < 2} {
 make_bash_script $file_in "
   $bin_env | grep SLURM_NODELIST
 "
-exec $bin_rm -f $file_out
 
 set component(0) 0
 set matches 0
@@ -126,9 +122,7 @@ expect {
 		wait
 	}
 }
-if {[wait_for_file $file_out] != 0} {
-	fail "srun output file not found"
-}
+wait_for_file -fail $file_out
 
 set het_nodelist ""
 send "$bin_sort -d $file_out\r"

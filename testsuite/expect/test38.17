@@ -26,20 +26,10 @@
 
 source ./globals
 
-set file_in1     "test$test_id.in1"
-set file_in2     "test$test_id.in2"
-set file_in3     "test$test_id.in3"
+set file_in1     "$test_dir/input1"
+set file_in2     "$test_dir/input2"
+set file_in3     "$test_dir/input3"
 set job_id       0
-set matches      0
-
-proc cleanup {} {
-	global job_id scancel bin_rm file_in1 file_in2 file_in3 test_id
-
-	if {$job_id != 0} {
-		exec $scancel $job_id
-	}
-	exec $bin_rm -f $file_in1 $file_in2 $file_in3
-}
 
 # find out if we have enough nodes to test functionality
 set node_count [get_partition_param [default_partition] "TotalNodes"]
@@ -54,12 +44,19 @@ if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
 }
 
-make_bash_script $file_in1 "$srun -l --mpi=none --het-group=0,2 ./$file_in2 : --het-group=1 ./$file_in3"
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+make_bash_script $file_in1 "$srun -l --mpi=none --het-group=0,2 $file_in2 : --het-group=1 $file_in3"
 make_bash_script $file_in2 "$bin_echo FILE2"
 make_bash_script $file_in3 "$bin_echo FILE3"
 
 set timeout $max_job_delay
-spawn $salloc -t1 -N1 : -N1 : -N1 ./$file_in1
+set matches 0
+spawn $salloc -t1 -N1 : -N1 : -N1 $file_in1
 expect {
 	-re "Job submit/allocate failed" {
 		skip "Unable to execute test due to system configuration"

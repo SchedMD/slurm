@@ -28,7 +28,7 @@
 ############################################################################
 source ./globals
 
-set file_in        "test$test_id.input"
+set file_in        "$test_dir/input"
 set num_procs      10
 set ii             0
 set job_id         ""
@@ -42,17 +42,15 @@ set job_list       {}
 set job_index      -1
 
 proc cleanup {} {
-	global scancel submitted_jobs_all file_in
+	global submitted_jobs_all
 
 	#
 	# Clean up any jobs submitted by this test, which were not mapped to a node,
 	# and thus not cancelled in the previous block of code
 	#
-	run_command "$scancel -v [join $submitted_jobs_all ","]"
-
-	# cleanup vestigial files
-	exec rm -f $file_in
+	cancel_job $submitted_jobs_all
 }
+
 #
 # Build input script file
 #
@@ -63,24 +61,9 @@ make_bash_script $file_in "$srun $bin_sleep 600"
 #
 set timeout 20
 for {set ii 0} {$ii < $num_procs} {incr ii} {
-	set sbatch_pid [spawn $sbatch -J $test_name --output=/dev/null --error=/dev/null -n1 -N1 $file_in]
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-			lappend submitted_jobs $job_id
-			lappend submitted_jobs_all $job_id
-			exp_continue
-		}
-		timeout {
-			fail "sbatch not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_id == 0} {
-		fail "Job submit failure"
-	}
+	set job_id [submit_job -fail "-J $test_name --output=/dev/null --error=/dev/null -n1 -N1 $file_in"]
+	lappend submitted_jobs $job_id
+	lappend submitted_jobs_all $job_id
 }
 
 #

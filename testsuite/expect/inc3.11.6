@@ -30,7 +30,7 @@
 ############################################################################
 
 proc inc3_11_6 {} {
-	global user_name file_in bin_rm
+	global user_name
 
 	set res_name "resv3.11.6"
 	set res_name_test "resv3.11.6.0"
@@ -70,8 +70,4 @@ proc inc3_11_6 {} {
 	if {$ret_code != 0} {
 		fail "Unable to delete reservation ($res_name)"
 	}
-
-	#
-	# Remove the temporary job script
-	exec $bin_rm -f $file_in
 }

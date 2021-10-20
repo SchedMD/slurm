@@ -40,29 +40,23 @@ source ./inc3.11.9
 source ./inc3.11.10
 source ./inc3.11.11
 
-set file_in		"test$test_id.input"
-set res_name		""
-set res_name_save	""
-set res_nodes		""
-set res_nodecnt		0
-set res_thread_cnt	0
-set res_partition	""
-set res_flags		""
-set user_name		""
+set file_in         "$test_dir/input"
+set res_name        ""
+set res_name_save   ""
+set res_nodes       ""
+set res_nodecnt     0
+set res_thread_cnt  0
+set res_partition   ""
+set res_flags       ""
+set user_name       ""
 set def_oversubscribe_force 0
-set def_partition	""
-set def_node		""
-set def_node_name	""
-set def_node_inx_min	-1
-set def_node_inx_max	-1
-set ii			0
-set log_cpu_cnt		0
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
+set def_partition   ""
+set def_node        ""
+set def_node_name   ""
+set def_node_inx_min -1
+set def_node_inx_max -1
+set ii              0
+set log_cpu_cnt     0
 
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
@@ -91,7 +85,7 @@ if {$have_resv != 0} {
 # Identify usable nodes in default partition
 #
 set def_partition [default_partition]
-if {[string compare $def_partition ""] == 0} {
+if {$def_partition eq ""} {
 	fail "Failed to find default partition"
 }
 
@@ -115,7 +109,7 @@ expect {
 		wait
 	}
 }
-if {[string compare $def_node ""] == 0} {
+if {$def_node eq ""} {
 	fail "Default partition seems to have no nodes"
 }
 

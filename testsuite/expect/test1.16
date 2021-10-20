@@ -30,7 +30,7 @@ source ./globals
 
 set job_id             0
 set matches            0
-set scratch_file       "scratch.$test_id"
+set scratch_file       "$test_dir/scratch"
 
 #
 # Create a scratch file
@@ -67,6 +67,5 @@ expect {
 #
 
 if {$matches != 1} {
-	exec $bin_rm -f $scratch_file
 	fail "srun --unbuffered option failure"
 }

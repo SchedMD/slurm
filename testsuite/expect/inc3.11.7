@@ -32,7 +32,7 @@
 ############################################################################
 
 proc inc3_11_7 {} {
-	global re_word_str bin_rm bin_sleep cluster_cpus cores_per_node
+	global re_word_str bin_sleep cluster_cpus cores_per_node
 	global def_partition file_in number part_cores part_node
 	global part_node_cnt part_node_cores
 	global sbatch scancel scontrol user_name wait_for_job
@@ -70,7 +70,6 @@ proc inc3_11_7 {} {
 	set thread_res_num [ expr $corecnt * $threadcnt ]
 
 	# Make the job script
-	exec $bin_rm -f $file_in
 	make_bash_script $file_in "$bin_sleep 100"
 
 	# Sleep short time in case clocks are not synchronized

@@ -33,7 +33,7 @@
 
 proc inc3_11_3 {} {
 	global user_name
-	global bin_rm file_in bin_sleep sbatch number scontrol
+	global file_in bin_sleep sbatch number scontrol
 	global re_word_str scancel
 
 	set res_name "resv3.11.3"
@@ -48,7 +48,6 @@ proc inc3_11_3 {} {
 	}
 
 	# Make the job script
-	exec $bin_rm -f $file_in
 	make_bash_script $file_in "$bin_sleep 10"
 
 	# Submit the batch job

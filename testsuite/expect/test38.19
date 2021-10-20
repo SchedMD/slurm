@@ -26,18 +26,12 @@
 
 source ./globals
 
-set file_in1     "$test_name.in1"
-set file_in2     "$test_name.in2"
-set file_in3     "$test_name.in3"
-set file_out     "$test_name.out"
-set job_id_list  ""
+set file_in1     "$test_dir/input1"
+set file_in2     "$test_dir/input2"
+set file_in3     "$test_dir/input3"
+set file_out     "$test_dir/output"
+set job_id_list  [list]
 set matches      0
-
-proc cleanup {} {
-	global job_id_list bin_rm file_in1 file_in2 file_in3 file_out
-	cancel_job $job_id_list
-	exec $bin_rm -f $file_in1 $file_in2 $file_in3 $file_out
-}
 
 proc get_first_node_of_job {job_id} {
 	global scontrol
@@ -68,14 +62,20 @@ if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
 }
 
+proc cleanup {} {
+	global job_id_list
+
+	cancel_job $job_id_list
+}
+
 # het job
-make_bash_script $file_in1 "$srun -l --mpi=none ./$file_in2 : ./$file_in3"
+make_bash_script $file_in1 "$srun -l --mpi=none $file_in2 : $file_in3"
 make_bash_script $file_in2 "$bin_echo FILE2"
 make_bash_script $file_in3 "$bin_echo FILE3"
 
 log_info "SUBTEST: Confirm het job srun runs within non-het job salloc"
 set matches 0
-set output [run_command_output -fail "$salloc -N2 ./$file_in1"]
+set output [run_command_output -fail "$salloc -N2 $file_in1"]
 if {[regexp "Granted job allocation ($number)" $output - job_id]} {
 	lappend job_id_list $job_id
 } else {
@@ -95,14 +95,10 @@ subtest {$matches == 2} "Job should be granted and output match the expected" "$
 
 log_info "SUBTEST: Confirm het job srun runs within non-het job sbatch"
 set matches 0
-set job_id [submit_job -fail "-N2 -o $file_out ./$file_in1"]
+set job_id [submit_job -fail "-N2 -o $file_out $file_in1"]
 lappend job_id_list $job_id
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Job $job_id did not complete"
-}
-if {[wait_for_file $file_out] != 0} {
-	fail "No output file"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 set output [run_command_output -fail "$bin_cat $file_out"]
 set matches [regexp -all {FILE[23]} $output]
 subtest {$matches == 2} "Job should be granted and output match the expected" "$matches != 2"
@@ -111,13 +107,9 @@ log_info "SUBTEST: Confirm het job srun runs on different nodes in non-het job s
 set matches 0
 set job_id [submit_job -fail "-N2 -o $file_out --wrap=\"$srun $bin_printenv SLURMD_NODENAME\""]
 lappend job_id_list $job_id
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Job $job_id did not complete"
-}
-if {[wait_for_file $file_out] != 0} {
-	fail "No output file"
-}
-set matches [run_command_output -fail "sort -u $file_out|wc -l"]
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+set matches [run_command_output -fail "sort -u $file_out | wc -l"]
 subtest {$matches == 2} "Job should be granted and output match the expected" "$matches != 2"
 
 log_info "SUBTEST: Confirm het job srun with gres runs in non-het job sbatch"
@@ -125,13 +117,9 @@ if [check_config_select "cons_tres"] {
 	set matches 0
 	set job_id [submit_job -fail "-N2 --gpus=2 -o $file_out --wrap=\"$srun --gpus=1 echo ok : --gpus=1 echo ok\""]
 	lappend job_id_list $job_id
-	if {[wait_for_job $job_id "DONE"] != 0} {
-		fail "Job $job_id did not complete"
-	}
-	if {[wait_for_file $file_out] != 0} {
-		fail "No output file"
-	}
-	set matches [run_command_output -fail "grep ok $file_out|wc -l"]
+	wait_for_job -fail $job_id "DONE"
+	wait_for_file -fail $file_out
+	set matches [run_command_output -fail "grep ok $file_out | wc -l"]
 	subtest {$matches == 2} "Job should be granted and output match the expected" "$matches != 2"
 } else {
 	subskip "Subtest requires SelectType=select/cons_tres (Job should be granted and output match the expected)"

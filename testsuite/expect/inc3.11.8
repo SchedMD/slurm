@@ -33,7 +33,7 @@
 
 proc inc3_11_8 {} {
 	global user_name
-	global bin_rm file_in bin_sleep sbatch number scontrol
+	global file_in bin_sleep sbatch number scontrol
 	global re_word_str scancel
 	global cluster_cpus def_partition
 
@@ -42,7 +42,6 @@ proc inc3_11_8 {} {
 	log_info "+++++ STARTING TEST 8 +++++"
 
 	# Make the job script
-	exec $bin_rm -f $file_in
 	make_bash_script $file_in "$bin_sleep 100"
 
 	# Make a reservation, just to get node size information

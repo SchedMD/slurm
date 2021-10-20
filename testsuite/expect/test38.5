@@ -30,8 +30,8 @@
 source ./globals
 source ./globals_het_jobs
 
-set file_in      "test$test_id.in"
-set file_out     "test$test_id.out"
+set file_in      "$test_dir/input"
+set file_out     "$test_dir/output"
 set job_id       0
 
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
@@ -72,14 +72,12 @@ proc sbatch {} {
 }
 
 proc cleanup { } {
-	global job_id user_name bin_rm file_in file_out
+	global job_id
 
 	cancel_job $job_id
-
-	exec $bin_rm -f $file_in $file_out
 }
 
-#start test
+# Start test
 
 make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1 -t1
 #SBATCH hetjob

@@ -5275,10 +5275,10 @@ proc _set_gpu_socket_range { sock_first_inx sock_last_inx } {
 ################################################################
 
 proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
-	global re_word_str bin_rm number scontrol srun
-	global gpu_sock_list
+	global test_dir re_word_str bin_rm number scontrol srun gpu_sock_list
+
 	set sockets_with_gpus 1
-	set file_in "test_get_gpu_socket_count.input"
+	set file_in "$test_dir/test_get_gpu_socket_count"
 
 	if {$sockets_per_node == 1} {
 		return 1
@@ -5342,7 +5342,6 @@ proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
 		}
 	}
 	log_user 1
-	exec $bin_rm -f $file_in
 
 	set sock_cnt [llength $gpu_sock_list]
 	if {$sock_cnt > 1} {
