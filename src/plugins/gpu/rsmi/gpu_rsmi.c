@@ -525,8 +525,6 @@ static void _reset_freq(bitstr_t *gpus)
 		debug2("Graphics frequency after reset: %u",
 		       _rsmi_get_gfx_freq(i));
 
-		// TODO: Check to make sure that the frequency reset
-
 		if (freq_reset) {
 			log_flag(GRES, "Successfully reset GPU[%d]", i);
 			count_set++;

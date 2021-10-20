@@ -586,8 +586,6 @@ static void _reset_freq(bitstr_t *gpus)
 		debug2("Graphics frequency after reset: %u",
 		       _nvml_get_gfx_freq(&device));
 
-		// TODO: Check to make sure that the frequency reset
-
 		if (freq_reset) {
 			log_flag(GRES, "Successfully reset GPU[%d]", i);
 			count_set++;
