@@ -206,112 +206,6 @@ static void _nvml_shutdown(void)
 		debug2("Successfully shut down NVML");
 }
 
-static unsigned int _xlate_freq_value(char *gpu_freq)
-{
-	unsigned int value;
-
-	if ((gpu_freq[0] < '0') && (gpu_freq[0] > '9'))
-		return 0;	/* Not a numeric value */
-	value = strtoul(gpu_freq, NULL, 10);
-	return value;
-}
-
-static unsigned int _xlate_freq_code(char *gpu_freq)
-{
-	if (!gpu_freq || !gpu_freq[0])
-		return 0;
-	if ((gpu_freq[0] >= '0') && (gpu_freq[0] <= '9'))
-		return 0;	/* Pure numeric value */
-	if (!xstrcasecmp(gpu_freq, "low"))
-		return GPU_LOW;
-	else if (!xstrcasecmp(gpu_freq, "medium"))
-		return GPU_MEDIUM;
-	else if (!xstrcasecmp(gpu_freq, "highm1"))
-		return GPU_HIGH_M1;
-	else if (!xstrcasecmp(gpu_freq, "high"))
-		return GPU_HIGH;
-
-	debug("%s: %s: Invalid job GPU frequency (%s)",
-	      plugin_type, __func__, gpu_freq);
-	return 0;	/* Bad user input */
-}
-
-static void _parse_gpu_freq2(char *gpu_freq, unsigned int *gpu_freq_code,
-			     unsigned int *gpu_freq_value,
-			     unsigned int *mem_freq_code,
-			     unsigned int *mem_freq_value, bool *verbose_flag)
-{
-	char *tmp, *tok, *sep, *save_ptr = NULL;
-	if (!gpu_freq || !gpu_freq[0])
-		return;
-	tmp = xstrdup(gpu_freq);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		sep = strchr(tok, '=');
-		if (sep) {
-			sep[0] = '\0';
-			sep++;
-			if (!xstrcasecmp(tok, "memory")) {
-				if (!(*mem_freq_code = _xlate_freq_code(sep)) &&
-				    !(*mem_freq_value =_xlate_freq_value(sep))){
-					debug("Invalid job GPU memory frequency: %s",
-					      tok);
-				}
-			} else {
-				debug("%s: %s: Invalid job device frequency type: %s",
-				      plugin_type, __func__, tok);
-			}
-		} else if (!xstrcasecmp(tok, "verbose")) {
-			*verbose_flag = true;
-		} else {
-			if (!(*gpu_freq_code = _xlate_freq_code(tok)) &&
-			    !(*gpu_freq_value = _xlate_freq_value(tok))) {
-				debug("Invalid job GPU frequency: %s", tok);
-			}
-		}
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
-}
-
-static void _parse_gpu_freq(char *gpu_freq, unsigned int *gpu_freq_num,
-			    unsigned int *mem_freq_num, bool *verbose_flag)
-{
-	unsigned int def_gpu_freq_code = 0, def_gpu_freq_value = 0;
-	unsigned int def_mem_freq_code = 0, def_mem_freq_value = 0;
-	unsigned int job_gpu_freq_code = 0, job_gpu_freq_value = 0;
-	unsigned int job_mem_freq_code = 0, job_mem_freq_value = 0;
-	char *def_freq;
-
-	_parse_gpu_freq2(gpu_freq, &job_gpu_freq_code, &job_gpu_freq_value,
-			 &job_mem_freq_code, &job_mem_freq_value, verbose_flag);
-
-	// Defaults to high for both mem and gfx
-	def_freq = slurm_get_gpu_freq_def();
-	_parse_gpu_freq2(def_freq, &def_gpu_freq_code, &def_gpu_freq_value,
-			 &def_mem_freq_code, &def_mem_freq_value, verbose_flag);
-	xfree(def_freq);
-
-	if (job_gpu_freq_code)
-		*gpu_freq_num = job_gpu_freq_code;
-	else if (job_gpu_freq_value)
-		*gpu_freq_num = job_gpu_freq_value;
-	else if (def_gpu_freq_code)
-		*gpu_freq_num = def_gpu_freq_code;
-	else if (def_gpu_freq_value)
-		*gpu_freq_num = def_gpu_freq_value;
-
-	if (job_mem_freq_code)
-		*mem_freq_num = job_mem_freq_code;
-	else if (job_mem_freq_value)
-		*mem_freq_num = job_mem_freq_value;
-	else if (def_mem_freq_code)
-		*mem_freq_num = def_mem_freq_code;
-	else if (def_mem_freq_value)
-		*mem_freq_num = def_mem_freq_value;
-}
-
-
 /*
  * Get the handle to the GPU for the passed index
  *
@@ -743,7 +637,8 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	 * Parse frequency information
 	 */
 	debug2("_parse_gpu_freq(%s)", gpu_freq);
-	_parse_gpu_freq(gpu_freq, &gpu_freq_num, &mem_freq_num, &verbose_flag);
+	gpu_common_parse_gpu_freq(gpu_freq, &gpu_freq_num, &mem_freq_num,
+				  &verbose_flag);
 	if (verbose_flag)
 		debug2("verbose_flag ON");
 

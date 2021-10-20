@@ -37,6 +37,8 @@
 #ifndef _GPU_COMMON_H
 #define _GPU_COMMON_H
 
+#include "slurm/slurm.h"
+
 #define FREQS_CONCISE   5 /* This must never be smaller than 5, or error */
 
 #define GPU_LOW         ((unsigned int) -1)
@@ -64,5 +66,10 @@ extern char *gpu_common_freq_value_to_string(unsigned int freq);
 extern void gpu_common_get_nearest_freq(unsigned int *freq,
 					unsigned int freqs_size,
 					unsigned int *freqs);
+
+extern void gpu_common_parse_gpu_freq(char *gpu_freq,
+				      unsigned int *gpu_freq_num,
+				      unsigned int *mem_freq_num,
+				      bool *verbose_flag);
 
 #endif /* !_GPU_COMMON_H */
