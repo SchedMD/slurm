@@ -557,7 +557,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	int gpu_len = 0;
 	int i = -1, count = 0, count_set = 0;
 	unsigned int gpu_freq_num = 0, mem_freq_num = 0;
-	uint64_t mem_bitmask = 0, gpu_bitmask = 0;
 	bool freq_set = false, freq_logged = false;
 	char *tmp = NULL;
 	bool task_cgroup = false;
@@ -607,6 +606,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	// Set the frequency of each device allocated to the step
 	for (i = 0; i < gpu_len; i++) {
 		char *sep = "";
+		uint64_t mem_bitmask = 0, gpu_bitmask = 0;
 
 		// Only check the global GPU bitstring if not using cgroups
 		if (!cgroups_active && !bit_test(gpus, i)) {
