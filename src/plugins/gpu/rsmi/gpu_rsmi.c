@@ -616,27 +616,6 @@ static unsigned int _rsmi_get_mem_freq(uint32_t dv_ind)
 }
 
 /*
- * Convert a frequency value to a string
- * Returned string must be xfree()'ed
- */
-//TODO: Duplicated from NVML plugin. Move to a common directory
-static char *_freq_value_to_string(unsigned int freq)
-{
-	switch (freq) {
-	case GPU_LOW:
-		return xstrdup("low");
-	case GPU_MEDIUM:
-		return xstrdup("medium");
-	case GPU_HIGH:
-		return xstrdup("high");
-	case GPU_HIGH_M1:
-		return xstrdup("highm1");
-	default:
-		return xstrdup_printf("%u", freq);
-	}
-}
-
-/*
  * Reset the frequencies of each GPU in the step to the hardware default
  * NOTE: RSMI must be initialized beforehand
  *
@@ -711,10 +690,10 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	if (verbose_flag)
 		debug2("verbose_flag ON");
 
-	tmp = _freq_value_to_string(mem_freq_num);
+	tmp = gpu_common_freq_value_to_string(mem_freq_num);
 	debug2("Requested GPU memory frequency: %s", tmp);
 	xfree(tmp);
-	tmp = _freq_value_to_string(gpu_freq_num);
+	tmp = gpu_common_freq_value_to_string(gpu_freq_num);
 	debug2("Requested GPU graphics frequency: %s", tmp);
 	xfree(tmp);
 

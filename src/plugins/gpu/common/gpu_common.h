@@ -45,6 +45,12 @@
 #define GPU_HIGH        ((unsigned int) -4)
 
 /*
+ * Convert a frequency value to a string
+ * Returned string must be xfree()'ed
+ */
+extern char *gpu_common_freq_value_to_string(unsigned int freq);
+
+/*
  * Convert frequency to nearest valid frequency found in frequency array
  *
  * freq         (IN/OUT) The frequency to check, in MHz. Also the output, if

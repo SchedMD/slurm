@@ -38,6 +38,27 @@
 
 #include "src/common/log.h"
 #include "src/common/read_config.h"
+#include "src/common/xstring.h"
+
+/*
+ * Convert a frequency value to a string
+ * Returned string must be xfree()'ed
+ */
+extern char *gpu_common_freq_value_to_string(unsigned int freq)
+{
+	switch (freq) {
+	case GPU_LOW:
+		return xstrdup("low");
+	case GPU_MEDIUM:
+		return xstrdup("medium");
+	case GPU_HIGH:
+		return xstrdup("high");
+	case GPU_HIGH_M1:
+		return xstrdup("highm1");
+	default:
+		return xstrdup_printf("%u", freq);
+	}
+}
 
 /*
  * Convert frequency to nearest valid frequency found in frequency array

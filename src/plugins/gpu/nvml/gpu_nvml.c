@@ -666,31 +666,6 @@ static unsigned int _nvml_get_mem_freq(nvmlDevice_t *device)
 }
 
 /*
- * Convert a frequency value to a string
- * Returned string must be xfree()'ed
- */
-static char *_freq_value_to_string(unsigned int freq)
-{
-	switch (freq) {
-	case GPU_LOW:
-		return xstrdup("low");
-		break;
-	case GPU_MEDIUM:
-		return xstrdup("medium");
-		break;
-	case GPU_HIGH:
-		return xstrdup("high");
-		break;
-	case GPU_HIGH_M1:
-		return xstrdup("highm1");
-		break;
-	default:
-		return xstrdup_printf("%u", freq);
-		break;
-	}
-}
-
-/*
  * Reset the frequencies of each GPU in the step to the hardware default
  * NOTE: NVML must be initialized beforehand
  *
@@ -772,10 +747,10 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	if (verbose_flag)
 		debug2("verbose_flag ON");
 
-	tmp = _freq_value_to_string(mem_freq_num);
+	tmp = gpu_common_freq_value_to_string(mem_freq_num);
 	debug2("Requested GPU memory frequency: %s", tmp);
 	xfree(tmp);
-	tmp = _freq_value_to_string(gpu_freq_num);
+	tmp = gpu_common_freq_value_to_string(gpu_freq_num);
 	debug2("Requested GPU graphics frequency: %s", tmp);
 	xfree(tmp);
 
