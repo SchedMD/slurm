@@ -247,7 +247,9 @@ extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr)
 /*
  * slurm_xlate_job_id - Translate a Slurm job ID string into a slurm job ID
  *	number. If this job ID contains an array index, map this to the
- *	equivalent Slurm job ID number (e.g. "123_2" to 124)
+ *	equivalent Slurm job ID number (e.g. "123_2" to 124). If this job ID
+ *	contains an HetJob component, map this to the equivalent Slurm job ID
+ *	number (e.g. "123+2" to 125).
  *
  * IN job_id_str - String containing a single job ID number
  * RET - equivalent job ID number or 0 on error
@@ -284,6 +286,17 @@ extern uint32_t slurm_xlate_job_id(char *job_id_str)
 
 		slurm_free_job_info_msg(resp);
 		return job_id;
+	}
+
+	if (next_str[0] == '+') {
+		uint16_t comp_offset =
+			(uint16_t) strtol(next_str + 1, &next_str, 10);
+
+		if (next_str[0] != '\0') {
+			return (uint32_t) 0;
+		}
+
+		return job_id + comp_offset;
 	}
 
 	return (uint32_t) 0;
