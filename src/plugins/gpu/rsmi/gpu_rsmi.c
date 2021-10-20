@@ -134,12 +134,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-//TODO: Duplicated from NVML plugin. Move to a common directory
-static int _sort_freq_descending(const void *a, const void *b)
-{
-	return (*(unsigned long *)b - *(unsigned long *)a);
-}
-
 /*
  * Get all possible memory frequencies for the device
  *
@@ -238,8 +232,8 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 	if (!_rsmi_get_mem_freqs(dv_ind, &size, mem_freqs))
 		return;
 
-	qsort(mem_freqs, size,
-	      sizeof(unsigned int), _sort_freq_descending);
+	qsort(mem_freqs, size, sizeof(unsigned int),
+	      gpu_common_sort_freq_descending);
 	if ((size > 1) && (mem_freqs[0] <= mem_freqs[(size)-1])) {
 		error("%s: memory frequencies are not stored in descending order!",
 		      __func__);
@@ -272,8 +266,8 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 	if (!_rsmi_get_gfx_freqs(dv_ind, &size, gfx_freqs))
 		return;
 
-	qsort(gfx_freqs, size,
-	      sizeof(unsigned int), _sort_freq_descending);
+	qsort(gfx_freqs, size, sizeof(unsigned int),
+	      gpu_common_sort_freq_descending);
 	if ((size > 1) && (gfx_freqs[0] <= gfx_freqs[(size)-1])) {
 		error("%s: Graphics frequencies are not stored in descending order!",
 		      __func__);
@@ -330,8 +324,8 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind,
 		return;
 
 	memcpy(mem_freqs_sort, mem_freqs, mem_freqs_size*sizeof(unsigned int));
-	qsort(mem_freqs_sort, mem_freqs_size,
-	      sizeof(unsigned int), _sort_freq_descending);
+	qsort(mem_freqs_sort, mem_freqs_size, sizeof(unsigned int),
+	      gpu_common_sort_freq_descending);
 	if ((mem_freqs_size > 1) &&
 	    (mem_freqs_sort[0] <= mem_freqs_sort[(mem_freqs_size)-1])) {
 		error("%s: memory frequencies are not stored in descending order!",
@@ -354,8 +348,8 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind,
 		return;
 
 	memcpy(gfx_freqs_sort, gfx_freqs, gfx_freqs_size*sizeof(unsigned int));
-	qsort(gfx_freqs_sort, gfx_freqs_size,
-	      sizeof(unsigned int), _sort_freq_descending);
+	qsort(gfx_freqs_sort, gfx_freqs_size, sizeof(unsigned int),
+	      gpu_common_sort_freq_descending);
 	if ((gfx_freqs_size > 1) &&
 	    (gfx_freqs_sort[0] <= gfx_freqs_sort[(gfx_freqs_size)-1])) {
 		error("%s: graphics frequencies are not stored in descending order!",

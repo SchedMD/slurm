@@ -267,3 +267,8 @@ extern void gpu_common_parse_gpu_freq(char *gpu_freq,
 	else if (def_mem_freq_value)
 		*mem_freq_num = def_mem_freq_value;
 }
+
+extern int gpu_common_sort_freq_descending(const void *a, const void *b)
+{
+	return (*(unsigned long*)b - *(unsigned long*)a);
+}
