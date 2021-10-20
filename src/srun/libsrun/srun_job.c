@@ -1887,7 +1887,9 @@ static void _run_srun_epilog (srun_job_t *job)
 		if (setenvf(NULL, "SLURM_SCRIPT_CONTEXT", "epilog_srun") < 0)
 			error("unable to set SLURM_SCRIPT_CONTEXT in environment");
 		rc = _run_srun_script(job, sropt.epilog);
-		debug("srun epilog rc = %d", rc);
+		if (rc) {
+			error("srun epilog failed status=%d", rc);
+		}
 	}
 }
 
@@ -1899,7 +1901,10 @@ static void _run_srun_prolog (srun_job_t *job)
 		if (setenvf(NULL, "SLURM_SCRIPT_CONTEXT", "prolog_srun") < 0)
 			error("unable to set SLURM_SCRIPT_CONTEXT in environment");
 		rc = _run_srun_script(job, sropt.prolog);
-		debug("srun prolog rc = %d", rc);
+		if (rc) {
+			error("srun prolog failed rc = %d. Aborting step.", rc);
+			slurm_step_launch_abort(job->step_ctx);
+		}
 	}
 }
 
