@@ -37,4 +37,26 @@
 #ifndef _GPU_COMMON_H
 #define _GPU_COMMON_H
 
+#define FREQS_CONCISE   5 /* This must never be smaller than 5, or error */
+
+#define GPU_LOW         ((unsigned int) -1)
+#define GPU_MEDIUM      ((unsigned int) -2)
+#define GPU_HIGH_M1     ((unsigned int) -3)
+#define GPU_HIGH        ((unsigned int) -4)
+
+/*
+ * Convert frequency to nearest valid frequency found in frequency array
+ *
+ * freq         (IN/OUT) The frequency to check, in MHz. Also the output, if
+ *              it needs to be changed.
+ * freqs_size   (IN) The size of the freqs array
+ * freqs        (IN) An array of frequency values in MHz, sorted highest to
+ *              lowest
+ *
+ * Inspired by src/common/cpu_frequency#_cpu_freq_freqspec_num()
+ */
+extern void gpu_common_get_nearest_freq(unsigned int *freq,
+					unsigned int freqs_size,
+					unsigned int *freqs);
+
 #endif /* !_GPU_COMMON_H */

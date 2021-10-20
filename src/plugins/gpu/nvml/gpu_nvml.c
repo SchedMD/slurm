@@ -45,6 +45,8 @@
 #include "src/common/read_config.h"
 #include "ctype.h"
 
+#include "../common/gpu_common.h"
+
 #include <nvml.h>
 #include <math.h>
 
@@ -66,12 +68,6 @@
 #define NVLINK_SELF	-1
 #define NVLINK_NONE	0
 #define FREQS_SIZE	512
-#define FREQS_CONCISE	5 // This must never be smaller than 5, or error
-
-#define GPU_LOW		((unsigned int) -1)
-#define GPU_MEDIUM	((unsigned int) -2)
-#define GPU_HIGH_M1	((unsigned int) -3)
-#define GPU_HIGH	((unsigned int) -4)
 
 #define MIG_LINE_SIZE	128
 
@@ -531,101 +527,6 @@ static void _nvml_print_freqs(nvmlDevice_t *device, log_level_t l)
 }
 
 /*
- * Convert frequency to nearest valid frequency found in frequency array
- *
- * freq		(IN/OUT) The frequency to check, in MHz. Also the output, if
- * 		it needs to be changed.
- * freqs_size	(IN) The size of the freqs array
- * freqs	(IN) An array of frequency values in MHz, sorted highest to
- * 		lowest
- *
- * Inspired by src/common/cpu_frequency#_cpu_freq_freqspec_num()
- */
-static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
-			      unsigned int *freqs)
-{
-	unsigned int i;
-
-	if (!freq || !(*freq)) {
-		log_flag(GRES, "%s: No frequency supplied", __func__);
-		return;
-	}
-	if (!freqs || !(*freqs)) {
-		log_flag(GRES, "%s: No frequency list supplied", __func__);
-		return;
-	}
-	if (freqs_size <= 0) {
-		log_flag(GRES, "%s: Frequency list is empty", __func__);
-		return;
-	}
-
-	// Check for special case values; freqs is sorted in descending order
-	switch ((*freq)) {
-	case GPU_LOW:
-		*freq = freqs[freqs_size - 1];
-		debug2("Frequency GPU_LOW: %u MHz", *freq);
-		return;
-
-	case GPU_MEDIUM:
-		*freq = freqs[(freqs_size - 1) / 2];
-		debug2("Frequency GPU_MEDIUM: %u MHz", *freq);
-		return;
-
-	case GPU_HIGH_M1:
-		if (freqs_size == 1)
-			*freq = freqs[0];
-		else
-			*freq = freqs[1];
-		debug2("Frequency GPU_HIGH_M1: %u MHz", *freq);
-		return;
-
-	case GPU_HIGH:
-		*freq = freqs[0];
-		debug2("Frequency GPU_HIGH: %u MHz", *freq);
-		return;
-
-	default:
-		debug2("Freq is not a special case. Continue...");
-		break;
-	}
-
-	/* check if freq is out of bounds of freqs */
-	if (*freq > freqs[0]) {
-		log_flag(GRES, "Rounding requested frequency %u MHz down to %u MHz (highest available)",
-		         *freq, freqs[0]);
-		*freq = freqs[0];
-		return;
-	} else if (*freq < freqs[freqs_size - 1]) {
-		log_flag(GRES, "Rounding requested frequency %u MHz up to %u MHz (lowest available)",
-		         *freq, freqs[freqs_size - 1]);
-		*freq = freqs[freqs_size - 1];
-		return;
-	}
-
-	/* check for frequency, and round up if no exact match */
-	for (i = 0; i < freqs_size - 1;) {
-		if (*freq == freqs[i]) {
-			// No change necessary
-			debug2("No change necessary. Freq: %u MHz", *freq);
-			return;
-		}
-		i++;
-		/*
-		 * Step down to next element to round up.
-		 * Safe to advance due to bounds checks above here
-		 */
-		if (*freq > freqs[i]) {
-			log_flag(GRES, "Rounding requested frequency %u MHz up to %u MHz (next available)",
-			         *freq, freqs[i - 1]);
-			*freq = freqs[i - 1];
-			return;
-		}
-	}
-	error("%s: Got to the end of the function. This shouldn't happen. Freq:"
-	      " %u MHz", __func__, *freq);
-}
-
-/*
  * Get the nearest valid memory and graphics clock frequencies
  *
  * device		(IN) The NVML GPU device handle
@@ -648,13 +549,13 @@ static void _nvml_get_nearest_freqs(nvmlDevice_t *device,
 		return;
 
 	// Set the nearest valid memory frequency for the requested frequency
-	_get_nearest_freq(mem_freq, mem_freqs_size, mem_freqs);
+	gpu_common_get_nearest_freq(mem_freq, mem_freqs_size, mem_freqs);
 
 	// Get the graphics frequencies at this memory frequency
 	if (!_nvml_get_gfx_freqs(device, *mem_freq, &gfx_freqs_size, gfx_freqs))
 		return;
 	// Set the nearest valid graphics frequency for the requested frequency
-	_get_nearest_freq(gfx_freq, gfx_freqs_size, gfx_freqs);
+	gpu_common_get_nearest_freq(gfx_freq, gfx_freqs_size, gfx_freqs);
 }
 
 /*
