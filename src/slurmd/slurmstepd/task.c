@@ -185,7 +185,7 @@ rwfail:		 /* process rest of script output */
  * path IN: pathname of program to run
  * job IN/OUT: pointer to associated job, can update job->env
  *	if prolog
- * RET 0 on success, -1 on failure.
+ * RET the exit status of the script or 1 on generic error and 0 on success
  */
 static int
 _run_script_and_set_env(const char *name, const char *path,
@@ -206,15 +206,15 @@ _run_script_and_set_env(const char *name, const char *path,
 
 	if (access(path, R_OK | X_OK) < 0) {
 		error("Could not run %s [%s]: %m", name, path);
-		return -1;
+		return 1;
 	}
 	if (pipe(pfd) < 0) {
 		error("executing %s: pipe: %m", name);
-		return -1;
+		return 1;
 	}
 	if ((cpid = fork()) < 0) {
 		error("executing %s: fork: %m", name);
-		return -1;
+		return 1;
 	}
 	if (cpid == 0) {
 		char *argv[2];
@@ -258,7 +258,12 @@ _run_script_and_set_env(const char *name, const char *path,
 			return 0;
 		} else  {
 			killpg(cpid, SIGKILL);  /* kill children too */
-			return status;
+			if (WIFEXITED(status))
+				return WEXITSTATUS(status);
+			else {
+				error("script did not exit normally");
+				return 1;
+			}
 		}
 	}
 
