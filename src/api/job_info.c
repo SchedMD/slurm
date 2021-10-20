@@ -255,17 +255,17 @@ extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr)
 extern uint32_t slurm_xlate_job_id(char *job_id_str)
 {
 	char *next_str;
-	uint32_t i, job_id;
-	uint16_t array_id;
-	job_info_msg_t *resp = NULL;
-	slurm_job_info_t *job_ptr;
+	uint32_t job_id;
 
 	job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
 	if (next_str[0] == '\0')
 		return job_id;
 
 	if (next_str[0] == '_') {
-		array_id = (uint16_t) strtol(next_str + 1, &next_str, 10);
+		job_info_msg_t *resp = NULL;
+		slurm_job_info_t *job_ptr;
+		uint16_t array_id = (uint16_t) strtol(next_str + 1, &next_str,
+						      10);
 		if (next_str[0] != '\0')
 			return (uint32_t) 0;
 
@@ -274,8 +274,8 @@ extern uint32_t slurm_xlate_job_id(char *job_id_str)
 			return (uint32_t) 0;
 
 		job_id = 0;
-		for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
-		     i++, job_ptr++) {
+		job_ptr = resp->job_array;
+		for (uint32_t i = 0; i < resp->record_count; i++, job_ptr++) {
 			if (job_ptr->array_task_id == array_id) {
 				job_id = job_ptr->job_id;
 				break;
