@@ -263,23 +263,30 @@ extern uint32_t slurm_xlate_job_id(char *job_id_str)
 	job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
 	if (next_str[0] == '\0')
 		return job_id;
-	if (next_str[0] != '_')
-		return (uint32_t) 0;
-	array_id = (uint16_t) strtol(next_str + 1, &next_str, 10);
-	if (next_str[0] != '\0')
-		return (uint32_t) 0;
-	if ((slurm_load_job(&resp, job_id, SHOW_ALL) != 0) || (resp == NULL))
-		return (uint32_t) 0;
-	job_id = 0;
-	for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
-	     i++, job_ptr++) {
-		if (job_ptr->array_task_id == array_id) {
-			job_id = job_ptr->job_id;
-			break;
+
+	if (next_str[0] == '_') {
+		array_id = (uint16_t) strtol(next_str + 1, &next_str, 10);
+		if (next_str[0] != '\0')
+			return (uint32_t) 0;
+
+		if ((slurm_load_job(&resp, job_id, SHOW_ALL) != 0) ||
+		    (resp == NULL))
+			return (uint32_t) 0;
+
+		job_id = 0;
+		for (i = 0, job_ptr = resp->job_array; i < resp->record_count;
+		     i++, job_ptr++) {
+			if (job_ptr->array_task_id == array_id) {
+				job_id = job_ptr->job_id;
+				break;
+			}
 		}
+
+		slurm_free_job_info_msg(resp);
+		return job_id;
 	}
-	slurm_free_job_info_msg(resp);
-	return job_id;
+
+	return (uint32_t) 0;
 }
 
 /*
