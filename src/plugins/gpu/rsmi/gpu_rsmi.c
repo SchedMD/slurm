@@ -482,10 +482,11 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 
 	/* check for frequency, and round up if no exact match */
 	for (i = 0; i < freqs_size - 1;) {
-		if (*freq == freqs[i])
+		if (*freq == freqs[i]) {
 			// No change necessary
 			debug2("No change necessary. Freq: %u MHz", *freq);
-		return;
+			return;
+		}
 		i++;
 		/*
 		 * Step down to next element to round up.

@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
     reservation NULL node_bitmap.
  -- Fix slurmctld segfault due to a bit_copy() call with a REPLACE+ANY_NODES
     reservation NULL node_bitmap.
+ -- Fix error in GPU frequency validation logic.
 
 * Changes in Slurm 20.11.8
 ==========================
