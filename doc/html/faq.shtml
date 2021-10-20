@@ -195,6 +195,8 @@ script for Slurm?</a></li>
     PMIx, and complaining about GPUs being 'In use by another client'?</a></li>
 <li><a href="#tmpfs_jobcontainer">How can I set up a private /tmp and /dev/shm for
     jobs on my machine?</a></li>
+<li><a href="#json_serializer">Why am I getting the following error: "Unable to
+    find plugin: serializer/json"?</a></li>
 </ul>
 
 <h2>For Management</h2>
@@ -2223,7 +2225,33 @@ but can be disabled explicitly by appending <i>join_container=false</i> as shown
 account	sufficient  pam_slurm_adopt.so join_container=false
 </pre>
 
+<p><a id="json_serializer"><b>Why am I getting the following error: "Unable to
+    find plugin: serializer/json"?</b></a>
+<br/>
+Several parts of Slurm have swapped to using our centralized serializer
+code. JSON or YAML plugins are only required if one of the functions that
+require it is executed. If one of the functions is executed it will fail to
+create the JSON/YAML output and the linker will fail with the following error:
+<pre>
+slurmctld: fatal: Unable to find plugin: serializer/json
+</pre>
+In most cases, these are required for new functionality added after Slurm-20.02.
+However, with each release, we have been adding more places that use the
+serializer plugins. Because the list is evolving we do not plan on listing all
+the commands that require the plugins but will instead provide the error
+(shown above). To correct the issue, please make sure that Slurm is configured,
+compiled and installed with the relavent JSON or YAML library (or preferably
+both). Configure can be made to explicity request these libraries:
+<pre>
+./configure --with-json=PATH --with-yaml=PATH $@
+</pre>
+Most distributions include packages to make installation relatively easy.
+Please make sure to install the 'dev' or 'devel' packages along with the
+library packages. We also provide explicit instructions on how to install from
+source: <a href="download.html#yaml">libyaml</a> and <a
+href="download.html#jwt">libjwt</a>.
+</p>
 
-<p style="text-align:center;">Last modified 26 July 2021</p>
+<p style="text-align:center;">Last modified 20 Oct 2021</p>
 
 <!--#include virtual="footer.txt"-->
