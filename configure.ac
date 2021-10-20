@@ -508,6 +508,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/ext_sensors/rrd/Makefile
 		 src/plugins/ext_sensors/none/Makefile
 		 src/plugins/gpu/Makefile
+		 src/plugins/gpu/common/Makefile
 		 src/plugins/gpu/generic/Makefile
 		 src/plugins/gpu/nvml/Makefile
 		 src/plugins/gpu/rsmi/Makefile

@@ -1,6 +1,6 @@
 # Makefile for gpu plugins
 
-SUBDIRS = generic
+SUBDIRS = common generic
 
 if BUILD_RSMI
 SUBDIRS += rsmi
