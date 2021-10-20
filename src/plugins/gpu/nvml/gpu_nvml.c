@@ -53,8 +53,6 @@
 /*
  * #defines needed to test nvml.
  */
-#define GPU_MODE_FREQ	1
-#define GPU_MODE_MEM	2
 #define MAX_CPUS	0x8000
 #define ULONG_BYTES	(sizeof(unsigned long))
 #define ULONG_BITS	(ULONG_BYTES * 8)
