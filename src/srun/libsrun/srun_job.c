@@ -1903,6 +1903,11 @@ static void _run_srun_prolog (srun_job_t *job)
 	}
 }
 
+/*
+ * Run srun prolog/epilog script.
+ *
+ * RET the exit status of the script or 1 on generic error and 0 on success
+ */
 static int _run_srun_script (srun_job_t *job, char *script)
 {
 	int status;
@@ -1920,7 +1925,7 @@ static int _run_srun_script (srun_job_t *job, char *script)
 
 	if ((cpid = fork()) < 0) {
 		error ("run_srun_script: fork: %m");
-		return -1;
+		return 1;
 	}
 	if (cpid == 0) {
 		/*
@@ -1945,8 +1950,12 @@ static int _run_srun_script (srun_job_t *job, char *script)
 				continue;
 			error("waitpid: %m");
 			return 0;
-		} else
-			return status;
+		} else if (WIFEXITED(status)) {
+			return WEXITSTATUS(status);
+		} else {
+			error("script did not exit normally");
+			return 1;
+		}
 	} while(1);
 
 	/* NOTREACHED */
