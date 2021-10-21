@@ -19,6 +19,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where burst buffer stage-in could only start for one job in a job
     array per scheduling cycle instead of bb_array_stage_cnt jobs per scheduling
     cycle.
+ -- Fix checking if the dependency is the same job for array jobs.
+ -- Fix checking for circular dependencies with job arrays.
+ -- Restore dependent job pointers on slurmctld startup to avoid race.
 
 * Changes in Slurm 21.08.2
 ==========================

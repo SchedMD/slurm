@@ -2720,11 +2720,27 @@ static void _restore_job_accounting(void)
 	list_iterator_destroy(job_iterator);
 }
 
+static int _init_dep_job_ptr(void *object, void *arg)
+{
+	depend_spec_t *dep_ptr = (depend_spec_t *)object;
+	dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
+					      dep_ptr->array_task_id);
+	return SLURM_SUCCESS;
+}
+
 /*
- * NOTE: Can be removed in/after 21.08 because the controller won't need to
+ * NOTE:
+ * Most of this can be removed in/after 21.08 because slurmctld won't need to
  * build details->depend_list from the dependency string anymore because in
  * 20.02 the depend_list is state saved and doesn't rely on the dependency
  * string anymore.
+ * However, we will still need to keep the call to _init_dep_job_ptr.
+ * test_job_dependency() initializes dep_ptr->job_ptr but in
+ * case a job's dependency is updated before test_job_dependency() is called,
+ * dep_ptr->job_ptr needs to be initialized for all jobs so that we can test
+ * for circular dependencies properly. Otherwise, if slurmctld is restarted,
+ * then immediately a job dependency is updated before test_job_dependency()
+ * is called, it is possible to create a circular dependency.
  */
 extern int restore_job_dependencies(void)
 {
@@ -2739,9 +2755,13 @@ extern int restore_job_dependencies(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		if ((job_ptr->details == NULL) ||
-		    (job_ptr->details->dependency == NULL) ||
-		    job_ptr->details->depend_list)
+		    (job_ptr->details->dependency == NULL))
 			continue;
+		if (job_ptr->details->depend_list) {
+			list_for_each(job_ptr->details->depend_list,
+				      _init_dep_job_ptr, NULL);
+			continue;
+		}
 		new_depend = job_ptr->details->dependency;
 		job_ptr->details->dependency = NULL;
 		rc = update_job_dependency(job_ptr, new_depend);
