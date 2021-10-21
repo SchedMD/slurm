@@ -243,6 +243,7 @@ static void         _parse_commandline(int argc, char **argv);
 static void *       _purge_files_thread(void *no_data);
 static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
+static void         _restore_job_dependencies(void);
 static void         _run_primary_prog(bool primary_on);
 static void *       _service_connection(void *arg);
 static void         _set_work_dir(void);
@@ -698,6 +699,8 @@ int main(int argc, char **argv)
 		 * control_host and control_port will be filled in.
 		 */
 		fed_mgr_init(acct_db_conn);
+
+		_restore_job_dependencies();
 
 		if (priority_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
@@ -3548,6 +3551,42 @@ static void _run_primary_prog(bool primary_on)
 	wait_arg->cpid = cpid;
 	wait_arg->prog_type = xstrdup(prog_type);
 	slurm_thread_create_detached(NULL, _wait_primary_prog, wait_arg);
+}
+
+static int _init_dep_job_ptr(void *object, void *arg)
+{
+	depend_spec_t *dep_ptr = (depend_spec_t *)object;
+	dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
+					      dep_ptr->array_task_id);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Restore dependency job pointers.
+ *
+ * test_job_dependency() initializes dep_ptr->job_ptr but in
+ * case a job's dependency is updated before test_job_dependency() is called,
+ * dep_ptr->job_ptr needs to be initialized for all jobs so that we can test
+ * for circular dependencies properly. Otherwise, if slurmctld is restarted,
+ * then immediately a job dependency is updated before test_job_dependency()
+ * is called, it is possible to create a circular dependency.
+ */
+static void _restore_job_dependencies(void)
+{
+	job_record_t *job_ptr;
+	ListIterator job_iterator;
+	slurmctld_lock_t job_fed_lock = {.job = WRITE_LOCK, .fed = READ_LOCK};
+
+	lock_slurmctld(job_fed_lock);
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		if (job_ptr->details && job_ptr->details->depend_list)
+			list_for_each(job_ptr->details->depend_list,
+				      _init_dep_job_ptr, NULL);
+	}
+	list_iterator_destroy(job_iterator);
+	unlock_slurmctld(job_fed_lock);
 }
 
 /*

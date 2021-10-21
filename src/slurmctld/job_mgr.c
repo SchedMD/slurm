@@ -4341,11 +4341,33 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	xfree(job_ptr_pend->array_recs->task_id_str);
 	if (job_ptr_pend->array_recs->task_cnt) {
 		job_ptr_pend->array_recs->task_cnt--;
+		if (job_ptr_pend->array_recs->task_cnt <= 1) {
+			/*
+			 * This is the last task of the job array, so we need to
+			 * set array_task_id to a specific task id. We also
+			 * need to call job_array_post_sched() to do cleanup
+			 * on the array, specifically how job_array_post_sched()
+			 * handles adding the job to the array_hash, otherwise
+			 * we'll get errors.
+			 */
+			i = bit_ffs(job_ptr_pend->array_recs->task_id_bitmap);
+			if (i < 0) {
+				error("%s: No tasks in task_id_bitmap for %pJ",
+				      __func__, job_ptr_pend);
+				job_ptr_pend->array_task_id = NO_VAL;
+			} else {
+				job_ptr_pend->array_task_id = i;
+				job_array_post_sched(job_ptr_pend);
+			}
+		} else {
+			/* Still have tasks left to split off in the array */
+			job_ptr_pend->array_task_id = NO_VAL;
+		}
 	} else {
 		error("%pJ array_recs->task_cnt underflow",
 		      job_ptr);
+		job_ptr_pend->array_task_id = NO_VAL;
 	}
-	job_ptr_pend->array_task_id = NO_VAL;
 
 	job_ptr_pend->batch_host = NULL;
 	job_ptr_pend->burst_buffer = xstrdup(job_ptr->burst_buffer);
