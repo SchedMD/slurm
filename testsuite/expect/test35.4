@@ -34,23 +34,6 @@ set job_id_mk   0
 set job_id_rm   0
 set job_id_use  0
 
-proc find_bb_name { fname bb_name } {
-	global bin_cat
-
-	set found 0
-	spawn $bin_cat $fname
-	expect {
-		-re "Name=$bb_name" {
-			set found 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	return $found
-}
-
 if {[get_my_uid] == 0} {
 	skip "This test can't be run as user root"
 }
@@ -72,13 +55,13 @@ proc cleanup {} {
 	wait_for_job -timeout 660 $job_id "DONE"
 }
 
-make_bash_script $script_mk "#BB create_persistent name=test$test_id capacity=48 access=striped type=scratch
+make_bash_script $script_mk "#BB create_persistent name=$test_name capacity=48 access=striped type=scratch
 $scontrol show burst"
 
-make_bash_script $script_rm "#BB destroy_persistent name=test$test_id
+make_bash_script $script_rm "#BB destroy_persistent name=$test_name
 $scontrol show burst"
 
-make_bash_script $script_use "#DW persistentdw name=test$test_id
+make_bash_script $script_use "#DW persistentdw name=$test_name
 $scontrol show burst"
 
 #
@@ -86,44 +69,12 @@ $scontrol show burst"
 # to create the burst buffer, make sure the buffer creation happens first
 #
 log_debug "Create and use a burst buffer"
-spawn $sbatch -t1 -N1 --output=$output_use $script_use
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id_use $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
+set job_id_use [submit_job -fail "-t1 -N1 --output=$output_use $script_use"]
+set job_id_mk  [submit_job -fail "-t1 -N0 --output=/dev/null $script_mk"]
 
-spawn $sbatch -t1 -N0 --output=/dev/null $script_mk
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id_mk $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id_mk == 0} {
-	fail "Job did not launch"
-}
 wait_for_job -fail -timeout 660 $job_id_mk "DONE"
-
-if {$job_id_use == 0} {
-	fail "Job did not launch"
-}
 wait_for_job -fail -timeout 660 $job_id_use "DONE"
 wait_for_file -fail -timeout 660 $output_use
-if {[find_bb_name $output_use test$test_id] == 0} {
-	fail "Job using burst buffer ran before creation"
-}
+
+set output [run_command_output -fail "$bin_cat $output_use"]
+subtest {[regexp "Name=$test_name" $output]} "Verify buffer creation happen first"
