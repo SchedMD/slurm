@@ -367,10 +367,12 @@ extern int gres_find_job_by_key_with_cnt(void *x, void *key)
 
 	if (!gres_find_job_by_key(x, key))
 		return 0;
-	/* ignore count on no_consume gres */
+
+	/* This gres has been allocated on this node */
 	if (!gres_data_ptr->node_cnt ||
 	    gres_data_ptr->gres_cnt_node_alloc[job_key->node_offset])
 		return 1;
+
 	return 0;
 }
 
