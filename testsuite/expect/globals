@@ -5455,8 +5455,7 @@ proc get_conf_path { } {
 ################################################################
 
 proc save_conf { file_name } {
-	global test_id
-	global bin_chmod bin_cp bin_mv bin_touch
+	global bin_chmod bin_cp bin_mv bin_touch test_name
 
 	log_debug "Saving backup of $file_name"
 
@@ -5478,7 +5477,7 @@ proc save_conf { file_name } {
 	# the sticky bit set and allow the test to continue.
 	# restore_conf will remove the file.
 	#
-	set new_backup_file "$file_name.test$test_id"
+	set new_backup_file "$file_name.$test_name"
 	if {![file exists $file_name]} {
 		log_warn "Backup of a nonexistent file requested: $file_name"
 		run_command -fail -nolog "$bin_touch $new_backup_file"
@@ -5511,7 +5510,6 @@ proc save_conf { file_name } {
 ################################################################
 
 proc restore_conf { file_name } {
-	global test_id
 	global bin_mv bin_rm
 
 	log_debug "Restoring backup of $file_name"
@@ -6012,7 +6010,7 @@ proc get_nodes_by_request args {
 				lappend options [lrange $args 0 0]
 				set args [lrange $args 1 end]
 			}
-			default  break
+			default break
 		}
 	}
 

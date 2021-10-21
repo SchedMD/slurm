@@ -25,7 +25,7 @@
 ############################################################################
 source ./globals
 
-set test_prog   "test$test_id.prog"
+set test_prog   "$test_name.prog"
 set cfgdir      [pwd]
 
 if {[get_config_param "SwitchType"] eq "switch/cray"} {

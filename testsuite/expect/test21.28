@@ -195,7 +195,7 @@ foreach atest $lista {
 
 set count [list_test_users]
 if { $count != 27 } {
-	fail "This test$test_id concludes that sacctmgr did not abort delete of accounts $count"
+	fail "This $test_name concludes that sacctmgr did not abort delete of accounts $count"
 }
 
 #
@@ -215,7 +215,7 @@ foreach ctest $listc {
 
 set count [list_test_users]
 if { $count != 27 } {
-	fail "This test$test_id concludes that sacctmgr did not abort delete of $clu $count"
+	fail "This $test_name concludes that sacctmgr did not abort delete of $clu $count"
 }
 
 #
@@ -234,7 +234,7 @@ foreach utest $listu {
 
 set count [list_test_users]
 if { $count != 27 } {
-	fail "This test$test_id concludes that sacctmgr did not abort delete of users $count"
+	fail "This $test_name concludes that sacctmgr did not abort delete of users $count"
 }
 
 ################################################################
@@ -256,7 +256,7 @@ foreach udtest $listu {
 }
 
 if { [list_test_object $tu1 $tu2 $tu3 user] != 0 } {
-	fail "This test$test_id concludes that sacctmgr did not delete users"
+	fail "This $test_name concludes that sacctmgr did not delete users"
 }
 
 #
@@ -276,7 +276,7 @@ foreach adtest $lista {
 
 
 if { [list_test_object $ta1 $ta2 $ta3 account] != 0 } {
-	fail "This test$test_id concludes that sacctmgr did not delete accounts"
+	fail "This $test_name concludes that sacctmgr did not delete accounts"
 }
 
 #
@@ -295,5 +295,5 @@ foreach cdtest $listc {
 
 
 if { [list_test_object $tc1 $tc2 $tc3 cluster] != 0 } {
-	fail "This test$test_id concludes that sacctmgr did not delete $clu"
+	fail "This $test_name concludes that sacctmgr did not delete $clu"
 }

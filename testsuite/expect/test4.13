@@ -28,8 +28,8 @@
 source ./globals
 source ./globals_accounting
 
-set test_acct           "test$test_id\_acct"
-set test_part           "test$test_id\_part"
+set test_acct           "${test_name}_acct"
+set test_part           "${test_name}_part"
 set test_node           [lindex [get_nodes_by_state] 0]
 
 array set node_sinfo_vals { }

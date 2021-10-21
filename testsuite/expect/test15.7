@@ -31,9 +31,8 @@
 ############################################################################
 source ./globals
 
-set job_id      0
-
 set cpu_cnt     1
+set job_id      0
 set mem_size    13
 set tmp_size    2
 set matches     0
@@ -41,19 +40,17 @@ set matches     0
 proc cleanup {} {
 	global job_id
 
-	if {$job_id} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 }
 
 proc sbatch_mem_error {arg} {
-	global sbatch test_id number job_id
+	global sbatch test_name number job_id
 
 	set matches 0
 	set job_id 0
 
-	set cmd "$sbatch -Jtest$test_id --wrap=hostname $arg"
-	set sbatch_pid [spawn {*}$cmd]
+	set cmd "$sbatch -J$test_name --wrap=hostname $arg"
+	spawn {*}$cmd
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -62,7 +59,6 @@ proc sbatch_mem_error {arg} {
 			incr matches
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			fail "sbatch not responding"
 		}
 		eof {
@@ -80,7 +76,7 @@ proc sbatch_mem_error {arg} {
 #
 # Spawn a salloc job with constraints
 #
-set salloc_pid [spawn $salloc --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $bin_id]
+spawn $salloc --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $bin_id
 expect {
 	-re "Pending job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -89,7 +85,6 @@ expect {
 		fail "salloc --hold option ineffective"
 	}
 	timeout {
-		slow_kill [expr 0 - $salloc_pid]
 		fail "salloc not responding"
 	}
 	eof {

@@ -76,7 +76,7 @@ set login_grp_info [get_my_user_name]
 set job_id 0
 set got_job_id 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 --job-name=test$test_id --mail-type=all --mail-user=$login_grp_info /bin/bash -c "echo \$SLURM_JOB_ID"]
+set srun_pid [spawn $srun -N1 -t1 --job-name=$test_name --mail-type=all --mail-user=$login_grp_info /bin/bash -c "echo \$SLURM_JOB_ID"]
 expect {
 	-re "error" {
 		fail "Error running srun"
@@ -100,14 +100,12 @@ if {$got_job_id == 0} {
 }
 
 # Wait for mails to go through agent
-if {[wait_for_file $mail_prog_out] != 0} {
-	fail "No output file"
-}
+wait_for_file -fail $mail_prog_out
 
 set output [run_command_output -fail "$bin_cat $mail_prog_out"]
-if {![regexp "-s Slurm Job_id=$job_id Name=test$test_id Began" $output]} {
+if {![regexp "-s Slurm Job_id=$job_id Name=$test_name Began" $output]} {
 	fail "Began mail not sent for $job_id"
 }
-if {![regexp "-s Slurm Job_id=$job_id Name=test$test_id Ended" $output]} {
+if {![regexp "-s Slurm Job_id=$job_id Name=$test_name Ended" $output]} {
 	fail "Ended mail not sent for $job_id"
 }

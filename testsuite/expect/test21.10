@@ -55,8 +55,8 @@ set acct(MaxJobs)       500
 set acct(MaxSubmitJobs) 400
 set acct(MaxNodes)      200
 set acct(MaxWall)       01:00:00
-set acct(DefaultQos)    "test$test_id\_qos"
-set acct(QosLevel)      "test$test_id\_qos"
+set acct(DefaultQos)    "${test_name}_qos"
+set acct(QosLevel)      "${test_name}_qos"
 set acct(Organization)  "Account_Org_A1"
 set acct(Description)   "Test_Account_A1"
 

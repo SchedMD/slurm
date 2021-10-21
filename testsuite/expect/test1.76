@@ -34,7 +34,7 @@ source ./globals
 # - task affinity either cgroups or cpusets
 
 set nerr        0
-set test_prog   "test$test_id.prog"
+set test_prog   "$test_name.prog"
 set avail_freq  [split "1000 2000" " "]
 set nfreq       0
 set have_on_demand 1

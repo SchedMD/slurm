@@ -26,25 +26,25 @@
 source ./globals
 source ./globals_accounting
 
-set timeout	60
+set timeout	    60
 
-set ta1         "test$test_id-account.1"
-set ta2         "test$test_id-account.2"
-set tq1         "test$test_id-qos.1"
-set tq2         "test$test_id-qos.2"
+set ta1         "$test_name-account.1"
+set ta2         "$test_name-account.2"
+set tq1         "$test_name-qos.1"
+set tq2         "$test_name-qos.2"
 
-set p1         "test$test_id-part.1"
-set p2         "test$test_id-part.2"
+set p1          "$test_name-part.1"
+set p2          "$test_name-part.2"
 
-set config_path  ""
+set config_path ""
 
-set jobid_list ""
+set jobid_list  ""
 
-set cwd "[$bin_pwd]"
+set cwd         "[$bin_pwd]"
 
-set access_err 0
+set access_err  0
 
-set user [get_my_user_name]
+set user        [get_my_user_name]
 
 #
 # Check accounting config and bail if not found.

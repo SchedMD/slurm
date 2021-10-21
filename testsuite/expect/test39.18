@@ -26,7 +26,7 @@
 ############################################################################
 source ./globals
 
-set test_prog		"test$test_id.prog"
+set test_prog		"$test_name.prog"
 set nodename_base	"tux"
 set nodename		"${nodename_base}0"
 set nodename_diff	"${nodename_base}1"

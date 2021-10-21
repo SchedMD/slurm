@@ -42,7 +42,6 @@ source ./globals_accounting
 source ./globals_federation
 
 set fed_name     "feda"
-set file_in      "test$test_id.in"
 set user_name    ""
 set srun_job_cnt 0
 set my_scontrol  "${fed_slurm_base}/$fedc1/bin/scontrol"
@@ -221,17 +220,14 @@ proc cancel_federation_jobs { } {
 }
 
 proc cleanup { } {
-	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
-	global test_id bin_bash my_sacctmgr
+	global fed_name bin_bash bin_rm test_name
 
 	cancel_federation_jobs
-	exec $bin_rm -f $file_in
-	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
-
-	return [delete_federations $fed_name]
+	delete_federations $fed_name
+	exec $bin_bash -c "$bin_rm -f $test_name*.out"
 }
 
-#start test
+# Start test
 
 if {![check_federation_setup]} {
 	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
@@ -244,15 +240,10 @@ if {![check_federation_up]} {
 set user_name [get_my_user_name]
 
 # Remove existing setup
-if {[cleanup] != 0} {
-	fail "Failed to cleanup"
-}
+cleanup
 
-# get number of nodes per cluster
+# Get number of nodes per cluster
 set node_count [llength [get_nodes_by_state idle,alloc,comp]]
-
-make_bash_script $file_in "env; $bin_sleep 300"
-
 
 log_info "################################################################"
 log_info "Setup cluster features"
@@ -419,7 +410,7 @@ sacctmgr_show "\\s+ACTIVE\\s+"
 scontrol jobs "Requeue=0.+"
 
 
-#Make sure we can submit to removed cluster.
+# Make sure we can submit to removed cluster.
 
 set job_id [sbatch 1 0]
 

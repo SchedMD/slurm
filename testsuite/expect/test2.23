@@ -26,23 +26,19 @@
 ############################################################################
 source ./globals
 
-set script             "test$test_id\.bash"
+set script             "$test_dir/job_script"
 set job_id             0
-
-proc cleanup {} {
-	global bin_rm script job_id
-
-	cancel_job $job_id
-	exec $bin_rm -f $script
-}
 
 regexp "($number)" [get_config_param "MinJobAge"] {} min_age
 if {$min_age < 10} {
 	skip "MinJobAge too low for this test ($min_age < 10)"
 }
 
-# Remove any vestigial files
-exec $bin_rm -f $script
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 make_bash_script $script "$bin_sleep 20"
 

@@ -30,7 +30,7 @@ source ./globals
 set node_list        ""
 set highest_cpu_cnt  0
 set default_part     [default_partition]
-set script           "test$test_id\_script"
+set script           "$test_dir/job_script"
 set job_id           0
 set node_l           ""
 set cpu_l_cnt        0
@@ -38,24 +38,19 @@ set node_m           ""
 set cpu_m_cnt        0
 set node_h           ""
 set cpu_h_cnt        0
-set test_part        "test$test_id\_part"
-
-proc cleanup {} {
-	global job_id scontrol test_part script
-
-	cancel_job $job_id
-	run_command "$scontrol delete partition=$test_part"
-	file delete $script
-}
-
-make_bash_script $script "
-sleep 10
-"
+set test_part        "${test_name}_part"
 
 if {![is_super_user]} {
     skip "This test can't be run without being a super user of the cluster"
 } elseif {[param_contains [get_config_param "SelectTypeParameters"] "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
+}
+
+proc cleanup {} {
+	global job_id scontrol test_part
+
+	cancel_job $job_id
+	run_command "$scontrol delete partition=$test_part"
 }
 
 proc sub_job { cpu_cnt part } {
@@ -121,6 +116,7 @@ proc test_and_check { job_id part exp_nodes } {
 	check_node_cnt $exp_nodes
 }
 
+make_bash_script $script "sleep 10"
 
 # only works when job is in hold. should also work when jobs are waiting
 
@@ -259,8 +255,6 @@ log_debug "L:$node_l:$cpu_l_cnt M:$node_m:$cpu_m_cnt H:$node_h:$cpu_h_cnt"
 if {$cpu_l_cnt == $cpu_h_cnt} {
 	log_debug "The rest of this test expects to have three different nodes \
 		each with different cpu counts -- finishing test now."
-
-	exec $bin_rm -fr $script
 	pass
 }
 

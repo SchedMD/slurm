@@ -33,7 +33,7 @@ set file_in     "$test_dir/input"
 set job_id      0
 set test_node   [lindex [get_nodes_by_state] 0]
 set part1       [default_partition]
-set part2       "test$test_id\_part"
+set part2       "${test_name}_part"
 
 proc cleanup {} {
 	global job_id scontrol part2

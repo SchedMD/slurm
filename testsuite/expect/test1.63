@@ -29,12 +29,12 @@
 ############################################################################
 source ./globals
 
-set file_prog   "test$test_id.prog"
+set file_prog   "$test_name.prog"
 
 proc cleanup {} {
-	global bin_rm file_prog
+	global file_prog
 
-	exec $bin_rm -f $file_prog
+	file delete $file_prog
 }
 
 #

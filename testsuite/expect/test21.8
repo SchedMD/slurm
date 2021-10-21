@@ -48,7 +48,7 @@ set cluster(MaxJobs)       500
 set cluster(MaxSubmitJobs) 400
 set cluster(MaxNodes)      200
 set cluster(MaxWall)       01:00:00
-set cluster(DefaultQos)    "test$test_id\_qos_1"
+set cluster(DefaultQos)    "${test_name}_qos_1"
 
 array set mod_cluster {}
 set mod_cluster(Fairshare)     1375
@@ -63,7 +63,7 @@ set mod_cluster(MaxJobs)       600
 set mod_cluster(MaxSubmitJobs) 700
 set mod_cluster(MaxNodes)      300
 set mod_cluster(MaxWall)       12:00:00
-set mod_cluster(DefaultQos)    "test$test_id\_qos_2"
+set mod_cluster(DefaultQos)    "${test_name}_qos_2"
 set access_err  0
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {

@@ -194,10 +194,8 @@ proc scontrol_show { category tasks regex option } {
 		}
 	}
 	if {$matches != 1} {
-		fail Uunexpected error in scontrol_show. expected $regex \
-			$matches matches"
+		fail "Unexpected error in scontrol_show. Expected $regex $matches matches"
 	}
-
 }
 
 proc cancel_federation_jobs { } {
@@ -213,12 +211,11 @@ proc cancel_federation_jobs { } {
 }
 
 proc cleanup { } {
-	global scancel fed_name user_name bin_rm fedc1 fedc2 fedc3
-	global test_id bin_bash my_sacctmgr
+	global fed_name bin_bash bin_rm test_name
 
 	cancel_federation_jobs
 	delete_federations $fed_name
-	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
+	exec $bin_bash -c "$bin_rm -f $test_name*.out"
 }
 
 # Start test

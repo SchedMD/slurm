@@ -30,17 +30,19 @@
 ############################################################################
 source ./globals
 
-set io_prog     "test$test_id.io"
-set test_prog   "test$test_id.prog"
-
-proc cleanup {} {
-	global io_prog test_prog
-
-	file delete $io_prog $test_prog
-}
+set io_prog     "$test_name.io"
+set test_prog   "$test_name.prog"
+set job_id      0
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
+}
+
+proc cleanup {} {
+	global job_id io_prog test_prog
+
+	cancel_job $job_id
+	file delete $io_prog $test_prog
 }
 
 #
@@ -63,7 +65,6 @@ if [compile_against_libslurm ${test_prog}] {
 # exec it and then scan the output)
 #
 set timeout $max_job_delay
-set job_id 0
 set matches 0
 set task_cnt 1
 # Usage: test7.3.prog [min_nodes] [max_nodes] [tasks]
@@ -105,7 +106,6 @@ expect {
 		fail "Some error occurred"
 	}
 	timeout {
-		cancel_job $job_id
 		fail "Spawn IO not responding"
 	}
 	eof {

@@ -29,16 +29,17 @@ set job_id 0
 
 proc cleanup {} {
 	global job_id
+
 	cancel_job $job_id
 }
 
 proc check_error {client option prog error} {
-	global sbatch salloc srun test_id number job_id
-	set cmd "$client -v -H -Jtest$test_id -t1 --hint=nomultithread $option $prog"
+	global sbatch salloc srun test_name number job_id
 
+	set cmd "$client -v -H -J$test_name -t1 --hint=nomultithread $option $prog"
 	set job_id 0
 	set matches 0
-	set pid [spawn {*}$cmd]
+	spawn {*}$cmd
 	expect {
 		-ex "$error" {
 			incr matches
@@ -60,7 +61,7 @@ proc check_error {client option prog error} {
 
 
 proc mutual_error_tests {} {
-	global sbatch salloc srun test_id number job_id
+	global sbatch salloc srun test_name number job_id
 
 	set clients [list "$sbatch" "$salloc" "$srun"]
 	set options [list "--threads-per-core=1" "--ntasks-per-core=1" "-B1"]
@@ -86,11 +87,11 @@ proc mutual_error_tests {} {
 
 	set options [list "--cpu-bind=verbose"]
 	foreach option $options {
-		set cmd "$client -v -H -Jtest$test_id -t1 --begin=now+1 --hint=nomultithread $option $prog"
+		set cmd "$client -v -H -J$test_name -t1 --begin=now+1 --hint=nomultithread $option $prog"
 
 		set job_id 0
 		set matches 0
-		set pid [spawn {*}$cmd]
+		spawn {*}$cmd
 		expect {
 			"mutually exclusive" {
 				incr matches
@@ -121,11 +122,11 @@ set client "$sbatch"
 set prog "--wrap=hostname"
 set options [list "--threads-per-core=2 --ntasks-per-core=3"]
 foreach option $options {
-	set cmd "$client -v -H -Jtest$test_id -t1 $option $prog"
+	set cmd "$client -v -H -J$test_name -t1 $option $prog"
 
 	set job_id 0
 	set matches 0
-	set pid [spawn {*}$cmd]
+	spawn {*}$cmd
 	expect {
 		"mutually exclusive" {
 			incr matches

@@ -67,7 +67,7 @@ if {[string compare [get_admin_level] "Administrator"]} {
 proc setup_cluster_features {} {
 	global sacctmgr fedc1 fedc2 fedc3 eol
 	set matches 0
-	set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
+	spawn $sacctmgr -i modify cluster $fedc1 set features=fa
 	expect {
 		-re "Setting$eol" {
 			incr matches
@@ -86,7 +86,6 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $my_pid
 			fail "sacctmgr mod not responding"
 		}
 		eof {
@@ -98,7 +97,7 @@ proc setup_cluster_features {} {
 	}
 
 	set matches 0
-	set my_pid [spawn $sacctmgr -i modify cluster $fedc2 set features=fb]
+	spawn $sacctmgr -i modify cluster $fedc2 set features=fb
 	expect {
 		-re "Setting$eol" {
 			incr matches
@@ -117,7 +116,6 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $my_pid
 			fail "sacctmgr mod not responding"
 		}
 		eof {
@@ -129,7 +127,7 @@ proc setup_cluster_features {} {
 	}
 
 	set matches 0
-	set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features=fc]
+	spawn $sacctmgr -i modify cluster $fedc3 set features=fc
 	expect {
 		-re "Setting$eol" {
 			incr matches
@@ -148,7 +146,6 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $my_pid
 			fail "sacctmgr mod not responding"
 		}
 		eof {
@@ -284,16 +281,15 @@ proc cancel_job { job_id options  } {
 }
 
 proc cleanup { } {
-	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
-	global test_id bin_bash my_sacctmgr
+	global fed_name bin_rm global test_name bin_bash
 
 	cancel_federation_jobs
-	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
+	exec $bin_bash -c "$bin_rm -f $test_name*.out"
 
 	return [delete_federations $fed_name]
 }
 
-#start test
+# Start test
 
 if {![check_federation_setup]} {
 	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
@@ -310,7 +306,7 @@ if {[cleanup] != 0} {
 	fail "Failed to cleanup"
 }
 
-# add clusters to federation
+# Add clusters to federation
 if {[setup_federation $fed_name]} {
 	fail "Failed to setup federation"
 }
