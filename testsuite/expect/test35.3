@@ -36,42 +36,6 @@ set script_use  "$test_dir/use.bash"
 set tmp_file    "$test_dir/tmp_file"
 set job_id      0
 
-proc find_bb_jobid { fname bb_jobid } {
-	global bin_cat
-
-	set found 0
-	log_user 0
-	spawn $bin_cat $fname
-	expect {
-		-re "JobID=$bb_jobid" {
-			set found 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $found
-}
-
-proc find_bb_data { file_name string_seek } {
-	global bin_cat
-
-	set found 0
-	spawn $bin_cat $file_name
-	expect {
-		-re $string_seek {
-			set found 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	return $found
-}
-
 if {[get_my_uid] == 0} {
 	skip "This test can't be run as user root"
 }
@@ -113,35 +77,17 @@ for {set cnt 1} {$cnt<=$array_end} {incr cnt} {
 	set job_array_id "${job_id}_${cnt}"
 	set output_file "$test_dir/${job_array_id}.output"
 	wait_for_file -fail -timeout 660 $output_file
-	if {[find_bb_jobid $output_file $job_array_id] == 0} {
-		fail "Job array $job_array_id burst buffer not found"
-	}
-	if {[find_bb_data $output_file $data_in] == 0} {
-		fail "Job array $job_array_id burst buffer input data not found"
-	}
-	log_debug "Job array task $cnt output file is good"
+
+	set output [run_command_output -fail "$bin_cat $output_file"]
+	subtest {[regexp "JobID=$job_array_id" $output]} "Verify burst buffer is found for $job_array_id"
+	subtest {[regexp "$data_in" $output]} "Verify burst buffer input is found for $job_array_id"
 }
 
-if {[find_bb_data $output_data $data_out] == 0} {
-	fail "Job burst buffer output data not found"
-}
+set output [run_command_output -fail "$bin_cat $output_data"]
+subtest {[regexp "$data_out" $output]} "Verify burst buffer output is found"
 
 # Wait for stage-out completion
 sleep 5
-set found 0
-spawn $scontrol show burst
-expect {
-	-re "JobID=$job_id" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found != 0} {
-	fail "Job burst buffer not removed"
-}
+
+set output [run_command_output -fail "$scontrol show burst"]
+subtest {![regexp "JobID=$job_id" $output]} "Verify burst buffer is removed"
