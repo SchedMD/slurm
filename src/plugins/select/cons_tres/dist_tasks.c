@@ -100,7 +100,6 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	char *err_msg = NULL;
 	uint16_t *vpus;
 	bool space_remaining;
-	bool test_tres_tasks;
 	int i, i_first, i_last, rem_cpus, rem_tasks;
 	uint16_t cpus_per_task;
 
@@ -265,40 +264,6 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	}
 	xfree(avail_cpus);
 	xfree(vpus);
-
-	if (job_ptr->details->overcommit && job_ptr->tres_per_task)
-		maxtasks = job_ptr->details->num_tasks;
-	/*
-	 * Distribute any remaining tasks (without dedicated CPUs) evenly
-	 * across nodes
-	 */
-	test_tres_tasks = true;
-	while (tid < maxtasks) {
-		bool more_tres_tasks = false;
-		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
-			if (test_tres_tasks) {
-				if (!dist_tasks_tres_tasks_avail(
-					    gres_task_limit, job_res, n))
-					continue;
-				if (_at_tpn_limit(n, job_ptr,
-						  "fill non-dedicated CPUs",
-						  true) >= 0)
-					continue;
-			}
-
-			more_tres_tasks = true;
-			tid++;
-			job_res->tasks_per_node[n]++;
-		}
-		if (!more_tres_tasks) {
-			if (!test_tres_tasks) {
-				error("failed to find additional placement for task %u for %pJ",
-				      tid, job_ptr);
-				return SLURM_ERROR;
-			} else
-				test_tres_tasks = false;
-		}
-	}
 
 	return SLURM_SUCCESS;
 }
