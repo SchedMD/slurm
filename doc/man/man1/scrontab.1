@@ -163,6 +163,10 @@ you would add the following to \fBscrontab\fR.
 .fi
 .RE
 
+.SH "LIMITATIONS"
+The Slurm controller's timezone is what will be used to evaluate each crontab's
+repetition intervals. User\-specific timezones are not supported.
+
 .SH "COPYING"
 Copyright (C) 2020\-2021 SchedMD LLC.
 .LP
