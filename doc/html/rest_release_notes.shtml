@@ -56,6 +56,24 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h2>Slurm 21.08.3</h2>
+
+<h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>
+
+<h4>Allow strings for JobIds instead of only numerical JobIds.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Change job_id parameter to string</td>
+	<td class="tdchange">
+		<ul>
+			<li>.paths."/job/{job_id}".get.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".post.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".delete.parameters[].schema</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h4>Add POST method for /associations<h4>
 <table class="tchange">
 <tr>
@@ -89,6 +107,8 @@ paths in a single quote string to avoid shell replacements.</p>
 The v0.0.35 plugin has now been removed.
 
 
+=======
+>>>>>>> origin/slurm-21.08
 <h2>Slurm 21.08.0pre1</h2>
 
 <p>All of the OpenAPI plugins have moved from "src/slurmrestd/plugins/openapi/"

@@ -1021,11 +1021,20 @@ done:
 
 static int _handle_job_get(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, const uint32_t job_id,
+			   data_t *resp, const char *job_id_str,
 			   data_t *const errors)
 {
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
+	uint32_t job_id = slurm_xlate_job_id((char *) job_id_str);
+
+	if (!job_id) {
+		rc = ESLURM_REST_INVALID_JOBS_DESC;
+		resp_error(errors, rc, "_handle_job_get",
+			   "Unable to find JobId=%s", job_id_str);
+		return rc;
+	}
+
 	rc = slurm_load_job(&job_info_ptr, job_id, SHOW_ALL|SHOW_DETAIL);
 	data_t *jobs = data_set_list(data_key_set(resp, "jobs"));
 
@@ -1036,7 +1045,7 @@ static int _handle_job_get(const char *context_id, http_request_method_t method,
 		}
 	} else {
 		resp_error(errors, rc, "slurm_load_job",
-			   "Failed while looking for job: %u", job_id);
+			   "Unable to find JobId=%s", job_id_str);
 	}
 
 	slurm_free_job_info_msg(job_info_ptr);
@@ -1047,16 +1056,16 @@ static int _handle_job_get(const char *context_id, http_request_method_t method,
 static int _handle_job_delete(const char *context_id,
 			      http_request_method_t method,
 			      data_t *parameters, data_t *query, int tag,
-			      data_t *resp, const uint32_t job_id,
+			      data_t *resp, const char *job_id,
 			      data_t *const errors, const int signal)
 {
-	if (slurm_kill_job(job_id, signal, KILL_FULL_JOB)) {
+	if (slurm_kill_job2(job_id, signal, KILL_FULL_JOB, NULL)) {
 		/* Already signaled jobs are considered a success here */
 		if (errno == ESLURM_ALREADY_DONE)
 			return SLURM_SUCCESS;
 
 		return resp_error(errors, errno,"slurm_kill_job",
-				  "unable to kill job %d with signal %d: %s",
+				  "unable to kill JobId=%s with signal %d: %s",
 				  job_id, signal, slurm_strerror(errno));
 	}
 
@@ -1066,7 +1075,7 @@ static int _handle_job_delete(const char *context_id,
 static int _handle_job_post(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
 			    data_t *query, int tag, data_t *resp,
-			    const uint32_t job_id, data_t *const errors)
+			    const char *job_id, data_t *const errors)
 {
 	int rc = SLURM_SUCCESS;
 	job_parse_list_t jobs_rc;
@@ -1097,8 +1106,8 @@ static int _handle_job_post(const char *context_id,
 		} else {
 			job_array_resp_msg_t *resp = NULL;
 			errno = 0;
-			jobs_rc.job->job_id = job_id;
-			debug5("%s: sending job_id:%d update for %s",
+			jobs_rc.job->job_id_str = xstrdup(job_id);
+			debug5("%s: sending JobId=%s update for %s",
 			       __func__, job_id, context_id);
 
 			rc = slurm_update_job2(jobs_rc.job, &resp);
@@ -1129,7 +1138,8 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 {
 	int rc = SLURM_SUCCESS;
 	data_t *data_jobid;
-	uint32_t job_id = 0;
+
+	const char *job_id_str = NULL;
 	data_t *errors = populate_response_format(resp);
 	debug4("%s: job handler %s called by %s with tag %d",
 	       __func__, get_http_method_string(method), context_id, tag);
@@ -1144,29 +1154,26 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 				  "HTTP request",
 				  "[%s] missing job_id in parameters",
 				  context_id);
-	} else if (data_get_type(data_jobid) != DATA_TYPE_INT_64) {
+	} else if (data_convert_type(data_jobid, DATA_TYPE_STRING) !=
+		   DATA_TYPE_STRING) {
 		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
 				  "HTTP request",
-				  "[%s] invalid job_id data type", context_id);
-	} else if (data_get_int(data_jobid) == 0) {
-		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				  "HTTP request",
-				  "[%s] job_id %"PRId64" is invalid",
-				  context_id, data_get_int(data_jobid));
-	} else if (data_get_int(data_jobid) >= NO_VAL) {
-		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				  "HTTP request",
-				  "[%s] job_id %"PRId64" is invalid",
-				  context_id, data_get_int(data_jobid));
+				  "[%s] job_id is invalid",
+				  context_id);
 	} else {
-		job_id = data_get_int(data_jobid);
+		job_id_str = data_get_string(data_jobid);
 	}
 
 	if (rc) {
 		/* do nothing */
+	} else if (!job_id_str || !job_id_str[0]) {
+		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				  "HTTP request",
+				  "[%s] job_id is empty",
+				  context_id);
 	} else if (tag == URL_TAG_JOB && method == HTTP_REQUEST_GET) {
 		rc = _handle_job_get(context_id, method, parameters, query, tag,
-				     resp, job_id, errors);
+				     resp, job_id_str, errors);
 	} else if (tag == URL_TAG_JOB &&
 		   method == HTTP_REQUEST_DELETE) {
 		int signal = 0;
@@ -1185,13 +1192,13 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 					"invalid signal: %d", signal);
 		} else {
 			rc = _handle_job_delete(context_id, method, parameters,
-						query, tag, resp, job_id,
+						query, tag, resp, job_id_str,
 						errors, signal);
 		}
 	} else if (tag == URL_TAG_JOB &&
 		   method == HTTP_REQUEST_POST) {
 		rc = _handle_job_post(context_id, method, parameters, query,
-				      tag, resp, job_id, errors);
+				      tag, resp, job_id_str, errors);
 	} else {
 		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
 				"HTTP request", "%s: unknown request",

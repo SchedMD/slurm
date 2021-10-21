@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix checking if the dependency is the same job for array jobs.
  -- Fix checking for circular dependencies with job arrays.
  -- Restore dependent job pointers on slurmctld startup to avoid race.
+ -- openapi/v0.0.37 - Allow strings for JobIds instead of only numerical JobIds
+    for GET, DELETE, and POST job methods.
 
 * Changes in Slurm 21.08.2
 ==========================
