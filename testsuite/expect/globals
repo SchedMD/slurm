@@ -3047,46 +3047,6 @@ proc check_bb_persistent { } {
 ################################################################
 #
 # NAME
-#	get_bb_types - gets the burst buffer plugins running with task/ stripped
-#
-# SYNOPSIS
-#	get_bb_types
-#
-# RETURN VALUE
-#	Returns comma separated list of task plugins running without the task/
-#
-################################################################
-
-proc get_bb_types { } {
-	global scontrol re_word_str
-
-	log_user 0
-	set bb_types ""
-	spawn $scontrol show config
-	expect {
-		-re "BurstBufferType *= ($re_word_str)" {
-			set parts [split $expect_out(1,string) ",/"]
-			while 1 {
-				set task_found [lsearch $parts "burst_buffer"]
-				if { $task_found == -1 } break
-				set parts [lreplace $parts $task_found $task_found]
-			}
-			set bb_types [join $parts ","]
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $bb_types
-}
-
-
-################################################################
-#
-# NAME
 #	get_default_acct - gets user's default account
 #
 # SYNOPSIS

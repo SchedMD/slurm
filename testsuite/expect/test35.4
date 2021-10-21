@@ -55,8 +55,7 @@ if {[get_my_uid] == 0} {
 	skip "This test can't be run as user root"
 }
 
-set bb_types [get_bb_types]
-if {[string first "datawarp" $bb_types] == -1} {
+if {![param_contains [get_config_param "BurstBufferType"] "*datawarp"]} {
 	skip "This test can only be run with the burst_buffer/datawarp plugin"
 }
 if {![check_bb_persistent]} {
