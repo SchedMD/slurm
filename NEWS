@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Make DefMemPerCPU/MaxMemPerCPU and DefMemPerNode/MaxMemPerNode precedence
     at the global level the same as in partition level, and print an error
     if both of a pair are set.
+ -- openapi/v0.0.38 - Allow strings for JobIds instead of only numerical JobIds
+    for GET, DELETE, and POST job methods.
 
 * Changes in Slurm 21.08.3
 ==========================
