@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     default associations.
  -- Fix error in GPU frequency validation logic.
  -- Fix regression in 21.08.1 that broke federated jobs.
+ -- Correctly handle requested GRES when used in job arrays.
 
 * Changes in Slurm 21.08.2
 ==========================
