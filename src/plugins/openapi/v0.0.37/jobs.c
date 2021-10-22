@@ -1402,12 +1402,12 @@ extern void init_op_jobs(void)
 			      __func__);
 	}
 
+	bind_operation_handler("/slurm/v0.0.37/job/submit",
+			       _op_handler_submit_job, URL_TAG_JOB_SUBMIT);
 	bind_operation_handler("/slurm/v0.0.37/jobs/", _op_handler_jobs,
 			       URL_TAG_JOBS);
 	bind_operation_handler("/slurm/v0.0.37/job/{job_id}", _op_handler_job,
 			       URL_TAG_JOB);
-	bind_operation_handler("/slurm/v0.0.37/job/submit",
-			       _op_handler_submit_job, URL_TAG_JOB_SUBMIT);
 }
 
 extern void destroy_op_jobs(void)

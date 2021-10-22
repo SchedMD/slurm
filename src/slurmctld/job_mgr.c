@@ -4380,17 +4380,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 
 	job_ptr_pend->front_end_ptr = NULL;
 	/* struct job_details *details;		*** NOTE: Copied below */
-	if (job_ptr->gres_list_req) {
-		job_ptr_pend->gres_list_req =
-			gres_job_state_dup(job_ptr->gres_list_req);
-	}
-	if (job_ptr->gres_list_alloc) {
-		job_ptr_pend->gres_list_alloc =
-			gres_job_state_dup(job_ptr->gres_list_alloc);
-	}
-	job_ptr_pend->gres_detail_cnt = 0;
-	job_ptr_pend->gres_detail_str = NULL;
-	job_ptr_pend->gres_used = NULL;
 
 	job_ptr_pend->limit_set.tres = xcalloc(slurmctld_tres_cnt,
 					       sizeof(uint16_t));
@@ -4529,6 +4518,39 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	details_new->submit_line = xstrdup(job_details->submit_line);
 	details_new->work_dir = xstrdup(job_details->work_dir);
 	details_new->x11_magic_cookie = xstrdup(job_details->x11_magic_cookie);
+
+	if (job_ptr->gres_list_req) {
+		if (details_new->whole_node == 1) {
+			/*
+			 * We need to reset the gres_list to what was requested
+			 * instead of what was given exclusively.
+			 */
+			job_ptr_pend->gres_list_req = NULL;
+			(void)gres_job_state_validate(
+				job_ptr_pend->cpus_per_tres,
+				job_ptr_pend->tres_freq,
+				job_ptr_pend->tres_per_job,
+				job_ptr_pend->tres_per_node,
+				job_ptr_pend->tres_per_socket,
+				job_ptr_pend->tres_per_task,
+				job_ptr_pend->mem_per_tres,
+				&details_new->num_tasks,
+				&details_new->min_nodes,
+				&details_new->max_nodes,
+				&details_new->ntasks_per_node,
+				&details_new->mc_ptr->ntasks_per_socket,
+				&details_new->mc_ptr->sockets_per_node,
+				&details_new->orig_cpus_per_task,
+				&details_new->ntasks_per_tres,
+				&job_ptr_pend->gres_list_req);
+		} else
+			job_ptr_pend->gres_list_req =
+				gres_job_state_dup(job_ptr->gres_list_req);
+	}
+	job_ptr_pend->gres_list_alloc = NULL;
+	job_ptr_pend->gres_detail_cnt = 0;
+	job_ptr_pend->gres_detail_str = NULL;
+	job_ptr_pend->gres_used = NULL;
 
 	if (job_ptr->fed_details) {
 		add_fed_job_info(job_ptr);
