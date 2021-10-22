@@ -52,7 +52,7 @@ proc cleanup {} {
 }
 
 run_command -fail "$bin_cc -o $test_dir/prog test3.7.prog.c"
-make_bash_script $file_script "srun $test_dir/prog 10"
+make_bash_script $file_script "$srun $test_dir/prog 10"
 
 set job_id [submit_job -fail "-N1 --array=0-[expr $array_size -1] --output=$test_dir/%A_%a.out -t1 $file_script"]
 wait_for_job -fail ${job_id}_1 RUNNING
