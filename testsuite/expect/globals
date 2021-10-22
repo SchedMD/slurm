@@ -620,6 +620,23 @@ proc subskip args {
 ################################################################
 #
 # NAME
+#	get_subtest_fail_count - returns the current subtest failure count
+#
+# SYNOPSIS
+#	get_subtest_fail_count
+#
+################################################################
+
+proc get_subtest_fail_count {} {
+	global _subtest_fail_count
+
+	return $_subtest_fail_count
+}
+
+
+################################################################
+#
+# NAME
 #	print_time - prints the current date and time
 #
 # SYNOPSIS
