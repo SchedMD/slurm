@@ -62,7 +62,7 @@ to be preempted for its initiation will be preempted (this may be a subset of
 the jobs whose preemption is simulated).</p>
 
 <p>Other functions exist to support suspending jobs, resuming jobs, terminating
-jobs, expanding/shrinking job allocations, un/packing job state information,
+jobs, shrinking job allocations, un/packing job state information,
 un/packing node state information, etc. The operation of those functions is
 relatively straightforward and not detailed here.</p>
 
