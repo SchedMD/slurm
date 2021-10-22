@@ -42,6 +42,9 @@ set oversubscribe_j_cnt 2
 set job_id              0
 set node_name           ""
 
+# TODO: Temporary variables to debug bug 12729 (remove once fixed)
+set config_dir          [get_conf_path]
+
 if {[check_config_select "linear"]} {
 	skip "Test is not compatible with a config of SelectType=select/linear"
 }
@@ -82,6 +85,12 @@ proc cleanup {} {
 	run_command -none "$scontrol delete partitionname=$test_part_1"
 	run_command -none "$scontrol delete partitionname=$test_part_2"
 	run_command -none "$scontrol delete partitionname=$test_part_3"
+
+	# TODO: Temporary cleanup of debug for bug 12729 (remove once fixed)
+	global config_dir
+	run_command "$scontrol show node"
+	restore_conf $config_dir/slurm.conf
+	run_command "$scontrol reconfigure"
 }
 
 proc cr_core_cpu { node } {
@@ -146,8 +155,12 @@ proc check_job { exp_num_jobs } {
 }
 
 ##################################Test Begins##################################
-# Start clean
-cleanup
+
+# TODO: Temporarily increase logging to debug bug 12729 (remove once fixed)
+save_conf $config_dir/slurm.conf
+run_command -none "$bin_echo SlurmdDebug=debug3 >> $config_dir/slurm.conf"
+run_command -none "$bin_echo DebugFlags=cgroup >> $config_dir/slurm.conf"
+run_command "$scontrol reconfigure"
 
 make_bash_script $file_in "sleep 10"
 
