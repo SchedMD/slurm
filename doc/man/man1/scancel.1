@@ -1,4 +1,4 @@
-.TH scancel "1" "Slurm Commands" "May 2021" "Slurm Commands"
+.TH scancel "1" "Slurm Commands" "October 2021" "Slurm Commands"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -15,11 +15,11 @@ If the job ID of a job array is specified with an array ID value then only that
 job array element will be cancelled.
 If the job ID of a job array is specified without an array ID value then all
 job array elements will be cancelled.
-While a heterogeneous job is in pending state, only the entire job can be
+While a heterogeneous job is in a PENDING state, only the entire job can be
 cancelled rather than its individual components.
-A request to cancel an individual component of a heterogeneous job not in
-pending state will return an error.
-After the job has begun execution, the individual component can be cancelled.
+A request to cancel an individual component of a heterogeneous job while in
+a PENDING state will return an error.
+After the job has begun execution, an individual component can be cancelled.
 A job or job step can only be signaled by the owner of that job or user root.
 If an attempt is made by an unauthorized user to signal a job or job step, an
 error message will be printed and the job will not be signaled.
