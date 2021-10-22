@@ -307,22 +307,21 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 	free_buf(buffer);
 
 	confl->log_opts.prefix_level = 1;
-	confl->log_opts.stderr_level = confl->debug_level;
 	confl->log_opts.logfile_level = confl->debug_level;
-	confl->log_opts.syslog_level = confl->debug_level;
-	/*
-	 * If daemonizing, turn off stderr logging -- also, if
-	 * logging to a file, turn off syslog.
-	 *
-	 * Otherwise, if remaining in foreground, turn off logging
-	 * to syslog (but keep logfile level)
-	 */
-	if (confl->daemonize) {
+
+	if (confl->daemonize)
 		confl->log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (confl->logfile)
-			confl->log_opts.syslog_level = LOG_LEVEL_QUIET;
+	else
+		confl->log_opts.stderr_level = confl->debug_level;
+
+	if (confl->syslog_debug != LOG_LEVEL_END) {
+		confl->log_opts.syslog_level = confl->syslog_debug;
+	} else if (!confl->daemonize) {
+		confl->log_opts.syslog_level = LOG_LEVEL_QUIET;
+	} else if ((confl->debug_level > LOG_LEVEL_QUIET) && !confl->logfile) {
+		confl->log_opts.syslog_level = confl->debug_level;
 	} else
-		confl->log_opts.syslog_level  = LOG_LEVEL_QUIET;
+		confl->log_opts.syslog_level = LOG_LEVEL_FATAL;
 
 	/*
 	 * LOGGING BEFORE THIS WILL NOT WORK!  Only afterwards will it show
