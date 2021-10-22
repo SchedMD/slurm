@@ -361,6 +361,10 @@ static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 
 	desc->env_size = envcount(desc->environment);
 
+	/* Disable sending uid/gid as it is handled by auth layer */
+	desc->user_id = NO_VAL;
+	desc->group_id = NO_VAL;
+
 	desc->argc     = sbopt->script_argc;
 	desc->argv     = sbopt->script_argv;
 	desc->std_err  = xstrdup(opt->efname);
