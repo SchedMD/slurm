@@ -650,6 +650,15 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 			job_alloc_gres_ptr->gres_cnt_node_alloc[node_offset] =
 				gres_cnt;
 			job_alloc_gres_ptr->total_gres += gres_cnt;
+			if (shared_gres) {
+				/*
+				 * Propagate gres_per_node from gres_list_req to
+				 * gres_list_alloc, so we can properly dealloc
+				 * MPS by looking at just gres_list_alloc.
+				 */
+				job_alloc_gres_ptr->gres_per_node =
+					gres_per_bit;
+			}
 		}
 
 		if (job_gres_ptr->gres_bit_alloc &&
@@ -684,6 +693,15 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 			job_alloc_gres_ptr->gres_cnt_node_alloc[node_offset] =
 				gres_cnt;
 			job_alloc_gres_ptr->total_gres += gres_cnt;
+			if (shared_gres) {
+				/*
+				 * Propagate gres_per_node from gres_list_req to
+				 * gres_list_alloc, so we can properly dealloc
+				 * MPS by looking at just gres_list_alloc.
+				 */
+				job_alloc_gres_ptr->gres_per_node =
+					gres_per_bit;
+			}
 		}
 
 		if (job_gres_ptr->gres_bit_alloc &&
@@ -1066,8 +1084,10 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		return SLURM_ERROR;
 	}
 
-	if (gres_id_shared(plugin_id))
+	if (gres_id_shared(plugin_id)) {
 		gres_per_bit = job_gres_ptr->gres_per_node;
+		xassert(gres_per_bit);
+	}
 
 	xfree(node_gres_ptr->gres_used);	/* Clear cache */
 	if (node_gres_ptr->gres_bit_alloc && job_gres_ptr->gres_bit_alloc &&
