@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id      0
 
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
@@ -43,9 +42,7 @@ spawn $sbatch --gres=mps:1,gpu:1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
 		cancel_job $expect_out(1,string)
-		log_error "batch request not rejected"
-		set exit_code 1
-		exp_continue
+		fail "batch request not rejected"
 	}
 	-re "error: " {
 		log_debug "Error is expected, no worries"
@@ -67,9 +64,7 @@ spawn $sbatch --gres=mps:1 --gpu-freq=high -N1 --output=/dev/null -t1 --wrap $bi
 expect {
 	-re "Submitted batch job ($number)" {
 		cancel_job $expect_out(1,string)
-		log_error "batch request not rejected"
-		set exit_code 1
-		exp_continue
+		fail "batch request not rejected"
 	}
 	-re "error: " {
 		log_debug "Error is expected, no worries"
@@ -91,7 +86,3 @@ expect {
 # FIXME: Add these tests whenever tres-per-* options added
 #	 The tests already exist in src/common/gres.c to reject such jobs
 #
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
