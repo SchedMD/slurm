@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix job_submit/lua support for 'gres' which is now stored as a 'tres'
     when requesting jobs so needs a 'gres' prefix.
  -- Fix regression where MPS would not deallocate from the node properly.
+ -- Fix --gpu-bind=verbose to work correctly.
 
 * Changes in Slurm 21.08.2
 ==========================

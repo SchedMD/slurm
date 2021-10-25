@@ -173,6 +173,7 @@ typedef struct {
 	bool bind_gpu; /* If we are binding to a gpu or not. */
 	bool bind_nic; /* If we are binding to a nic or not. */
 	uint32_t gpus_per_task; /* How many gpus per task requested. */
+	gres_internal_flags_t gres_internal_flags;
 	char *map_gpu; /* GPU map requested. */
 	char *mask_gpu; /* GPU mask requested. */
 	char *request;
@@ -9562,12 +9563,16 @@ static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 	xassert(tres_bind);
 	memset(tres_bind, 0, sizeof(tres_bind_t));
 
+	tres_bind->gres_internal_flags = GRES_INTERNAL_FLAG_NONE;
+
 	tres_bind->bind_gpu = accel_bind_type & ACCEL_BIND_CLOSEST_GPU;
 	tres_bind->bind_nic = accel_bind_type & ACCEL_BIND_CLOSEST_NIC;
 	if (!tres_bind->bind_gpu && (sep = xstrstr(tres_bind_str, "gpu:"))) {
 		sep += 4;
 		if (!xstrncasecmp(sep, "verbose,", 8)) {
 			sep += 8;
+			tres_bind->gres_internal_flags |=
+				GRES_INTERNAL_FLAG_VERBOSE;
 		}
 		if (!xstrncasecmp(sep, "single:", 7)) {
 			sep += 7;
@@ -9717,7 +9722,6 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
 	bitstr_t *usable_gres = NULL;
-	gres_internal_flags_t gres_internal_flags = GRES_INTERNAL_FLAG_NONE;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
 	tres_bind_t tres_bind;
@@ -9749,7 +9753,7 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 		list_iterator_destroy(gres_iter);
 		(*(gres_ctx.ops.task_set_env))(job_env_ptr, gres_bit_alloc,
 					       gres_cnt, usable_gres,
-					       gres_internal_flags);
+					       tres_bind.gres_internal_flags);
 		gres_cnt = 0;
 		FREE_NULL_BITMAP(gres_bit_alloc);
 		FREE_NULL_BITMAP(usable_gres);
