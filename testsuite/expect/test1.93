@@ -158,9 +158,6 @@ proc cleanup { } {
 set_cpu_bind "node" $node_0 "core"
 set_cpu_bind "node" $node_1 "thread"
 set_cpu_bind "partition" $partition "socket"
-if {$_subtest_fail_count > 0} {
-	pass
-}
 
 run_prog $node_0 "core"
 run_prog $node_1 "thread"

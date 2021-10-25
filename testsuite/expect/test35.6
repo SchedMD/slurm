@@ -26,30 +26,25 @@
 ############################################################################
 source ./globals
 
-set exit_code      0
-set output_child   "test$test_id.child.output"
-set output_parent  "test$test_id.parent.output"
-set script_child   "test$test_id.child.bash"
-set script_parent  "test$test_id.parent.bash"
-
-proc cleanup {} {
-	global bin_rm script_child script_parent
-	global output_child output_parent
-
-	exec $bin_rm -f $script_child $script_parent
-	exec $bin_rm -f $output_child $output_parent
-}
+set output_child   "$test_dir/child.output"
+set output_parent  "$test_dir/parent.output"
+set script_child   "$test_dir/child.bash"
+set script_parent  "$test_dir/parent.bash"
+set job_id_parent  0
 
 if {[get_my_uid] == 0} {
 	skip "This test can't be run as user root"
 }
 
-set bb_types [get_bb_types]
-if {[string first "datawarp" $bb_types] == -1} {
+if {![param_contains [get_config_param "BurstBufferType"] "*datawarp"]} {
 	skip "This test can only be run with the burst_buffer/datawarp plugin"
 }
 
-exec $bin_rm -f $output_child $output_parent
+proc cleanup {} {
+	global job_id_parent
+
+	cancel_job $job_id_parent
+}
 
 make_bash_script $script_parent "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private type=scratch
 $sbatch --depend=afterburstbuffer:\$SLURM_JOB_ID -t1 -n1 --output=$output_child $script_child \$SLURM_JOB_ID
@@ -58,7 +53,6 @@ exit 0"
 
 make_bash_script $script_child "$scontrol show job \$1"
 
-set job_id_use 0
 spawn $sbatch -t1 -N1 --output=$output_parent $script_parent
 expect {
 	-re "Submitted batch job ($number)" {
@@ -74,19 +68,10 @@ expect {
 }
 
 if {$job_id_parent == 0} {
-	log_error "Job did not launch"
-	set exit_code 1
-} elseif {[wait_for_job -timeout 660 $job_id_parent "DONE"] != 0} {
-	log_error "Job did not complete"
-	set exit_code 1
-	cancel_job $job_id_parent
-} elseif {[wait_for_file -timeout 660 $output_child] != 0} {
-	set exit_code 1
+	fail "Job did not launch"
 }
-if {$exit_code != 0} {
-	log_error "Job did not launch"
-	set exit_code 1
-}
+wait_for_job -fail -timeout 660 $job_id_parent "DONE"
+wait_for_file -fail -timeout 660 $output_child
 
 # Wait for purge of buffer to complete
 sleep 10
@@ -104,8 +89,4 @@ expect {
 }
 if {$found == 0} {
 	fail "Dependent job not completed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

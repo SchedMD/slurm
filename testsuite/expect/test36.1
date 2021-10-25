@@ -26,8 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 if {[file executable $lsid] == 0} {
 	skip "$lsid does not exist"
 }
@@ -57,16 +55,6 @@ expect {
 	}
 }
 
-if {[string compare $cluster_name $lsid_cluster_name]} {
-	log_error "lsid's cluster name does not match the configured parameter ($cluster_name != $lsid_cluster_name)"
-	set exit_code 1
-}
+subtest {$cluster_name eq $lsid_cluster_name} "Verify lsid's cluster name matches the configured ClusterName" "$cluster_name != $lsid_cluster_name"
 
-if {[string compare $control_machine $lsid_control_machine]} {
-	log_error "lsid's master name does not match the configured parameter ($control_machine != $lsid_control_machine)"
-	set exit_code 1
-}
-
-if {$exit_code} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$control_machine eq $lsid_control_machine} "Verify lsid's master name matches the configured SlurmctldHost\[0\]" "$control_machine != $lsid_control_machine"

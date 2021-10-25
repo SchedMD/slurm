@@ -27,17 +27,16 @@
 source ./globals
 source ./globals_accounting
 
-set exit_code   0
 set user        ""
-set acct_1      "test$test_id\_acct1"
-set acct_2      "test$test_id\_acct2"
-set qos_1       "test$test_id\_qos1"
-set qos_2       "test$test_id\_qos2"
-set qos_1_id    0
-set qos_2_id    0
-set file_in     "test$test_id\_sc"
+set acct_1      "${test_name}_acct1"
+set acct_2      "${test_name}_acct2"
+set qos_1       "${test_name}_qos1"
+set qos_2       "${test_name}_qos2"
+set file_in     "$test_dir/job_script"
 set nodes       [llength [get_nodes_by_state]]
 set job_id      0
+set qos_1_id    0
+set qos_2_id    0
 
 # job states
 set done_state      "DONE"
@@ -144,10 +143,7 @@ proc sub_job { acct1 {het_job false} } {
 }
 
 proc cleanup {} {
-	global acct_1 acct_2 qos_1 qos_2 qos_1_id qos_2_id sacctmgr exit_code
-	global user bin_rm file_in
-
-	run_command "$bin_rm $file_in"
+	global user acct_1 acct_2 qos_1 qos_2 qos_1_id qos_2_id sacctmgr
 
 	set cleanacct(0) $acct_1
 	set cleanacct(1) $acct_2
@@ -191,7 +187,6 @@ proc cleanup {} {
 
 	if { $clean != 4 } {
 		log_error "Unable to clean up accounts and qos"
-		set exit_code 1
 	}
 }
 
@@ -200,12 +195,12 @@ make_bash_script $file_in "sleep 30"
 
 set user [get_my_user_name]
 
-# preempt modes to test
+# Preempt modes to test
 set preempt_mode_cancel  "cancel"
 set preempt_mode_requeue "requeue"
 set preempt_mode_list "$preempt_mode_cancel $preempt_mode_requeue"
 
-# job types to test for each mode
+# Job types to test for each mode
 set job_type_batch "batch"
 set job_type_het   "het"
 set job_type_list "$job_type_batch $job_type_het"
@@ -246,21 +241,21 @@ foreach preempt_mode $preempt_mode_list {
 			}
 			subtest {$jobs_ok} "Job $qos_1_id should be (fully) on $preempted_state state"
 		} else {
-			# requeue state
+			# Requeue state
 			set jobs_ok false
 			wait_for {$jobs_ok} {
 				set jobs_ok [check_job_state $qos_1_id $pending_state $have_het_job]
 			}
 			subtest {$jobs_ok} "Job $qos_1_id should be (fully) on $pending_state state"
 
-			# make job eligible to run now to avoid delay
+			# Make job eligible to run now to avoid delay
 			run_command "$scontrol update job $qos_2_id $eligible_now_job_directive"
 			if { [wait_for_job $qos_2_id $done_state] != 0} {
 				fail "Job $qos_2_id failed to complete"
 			}
 			# Wait for requeued job to restart
 
-			# make job eligible to run now to avoid delay
+			# Make job eligible to run now to avoid delay
 			run_command "$scontrol update job $qos_1_id $eligible_now_job_directive"
 			if { [wait_for_job $qos_1_id $running_state $have_het_job] } {
 				fail "Job $qos_1_id failed to start"
@@ -275,8 +270,4 @@ foreach preempt_mode $preempt_mode_list {
 
 		wait_for_account_done $acct_1,$acct_2
 	}
-}
-
-if {$exit_code} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
