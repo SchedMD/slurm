@@ -2660,10 +2660,17 @@ information you are trying to gather.
 
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP
-Some srun options may be set via environment variables.
-These environment variables, along with their corresponding options,
-are listed below.
-Note: Command line options will always override these settings.
+Upon startup, srun will read and handle the options set in the following
+environment variables. The majority of these variables are set the same way
+the options are set, as defined above. For flag options that are defined to
+expect no argument, the option can be enabled by setting the environment
+variable without a value (empty or NULL string), the string 'yes', or a
+non-zero number. Any other value for the environment variable will result in
+the option not being set.
+There are a couple exceptions to these rules that are noted below.
+.br
+\fBNOTE\fR: Command line options always override environment variable settings.
+
 .TP 22
 \fBPMI_FANOUT\fR
 This is used exclusively with PMI (MPICH2 and MVAPICH2) and
@@ -2688,7 +2695,8 @@ may be required to forward the data to tasks on other hosts.
 Setting \fBPMI_FANOUT_OFF_HOST\fR may increase performance.
 Since more work is performed by the PMI library loaded by
 the user application, failures also can be more common and
-more difficult to diagnose.
+more difficult to diagnose. Should be disabled/enabled by
+setting to 0 or 1.
 .TP
 \fBPMI_TIME\fR
 This is used exclusively with PMI (MPICH2 and MVAPICH2) and
@@ -2742,7 +2750,8 @@ Same as \fB\-\-cpus\-per\-gpu\fR
 Same as \fB\-c, \-\-cpus\-per\-task\fR
 .TP
 \fBSLURM_DEBUG\fR
-Same as \fB\-v, \-\-verbose\fR
+Same as \fB\-v, \-\-verbose\fR. Must be set to 0 or 1 to disable or enable
+the option.
 .TP
 \fBSLURM_DELAY_BOOT\fR
 Same as \fB\-\-delay\-boot\fR
@@ -2826,7 +2835,8 @@ Same as \fB\-N, \-\-nodes\fR.
 Total number of nodes in the job’s resource allocation.
 .TP
 \fBSLURM_KILL_BAD_EXIT\fR
-Same as \fB\-K, \-\-kill\-on\-bad\-exit\fR
+Same as \fB\-K, \-\-kill\-on\-bad\-exit\fR. Must be set to 0 or 1 to disable
+or enable the option.
 .TP
 \fBSLURM_LABELIO\fR
 Same as \fB\-l, \-\-label\fR
@@ -2993,7 +3003,8 @@ Same as \fB\-W, \-\-wckey\fR
 \fB\-D, \-\-chdir\fR
 .TP
 \fBSLURMD_DEBUG\fR
-Same as \fB\-d, \-\-slurmd\-debug\fR
+Same as \fB\-d, \-\-slurmd\-debug\fR. Must be set to 0 or 1 to disable or enable
+the option.
 .TP
 \fBSRUN_CONTAINER\fR
 Same as \fB\-\-container\fR.

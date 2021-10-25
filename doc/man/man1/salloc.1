@@ -1820,8 +1820,15 @@ necessary for the information you are trying to gather.
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP
 Upon startup, salloc will read and handle the options set in the following
-environment variables.  Note: Command line options always override environment
-variables settings.
+environment variables. The majority of these variables are set the same way
+the options are set, as defined above. For flag options that are defined to
+expect no argument, the option can be enabled by setting the environment
+variable without a value (empty or NULL string), the string 'yes', or a
+non-zero number. Any other value for the environment variable will result in
+the option not being set.
+There are a couple exceptions to these rules that are noted below.
+.br
+\fBNOTE\fR: Command line options always override environment variables settings.
 
 .TP 22
 \fBSALLOC_ACCOUNT\fR
@@ -1852,7 +1859,8 @@ Same as \fB\-\-core\-spec\fR
 Same as \fB\-\-cpus\-per\-gpu\fR
 .TP
 \fBSALLOC_DEBUG\fR
-Same as \fB\-v, \-\-verbose\fR
+Same as \fB\-v, \-\-verbose\fR. Must be set to 0 or 1 to disable or enable
+the option.
 .TP
 \fBSALLOC_DELAY_BOOT\fR
 Same as \fB\-\-delay\-boot\fR
@@ -1953,7 +1961,8 @@ Same as \fB\-t, \-\-time\fR
 Same as \fB\-\-use\-min\-nodes\fR
 .TP
 \fBSALLOC_WAIT_ALL_NODES\fR
-Same as \fB\-\-wait\-all\-nodes\fR
+Same as \fB\-\-wait\-all\-nodes\fR. Must be set to 0 or 1 to disable or enable
+the option.
 .TP
 \fBSALLOC_WAIT4SWITCH\fR
 Max time waiting for requested switches. See \fB\-\-switches\fR

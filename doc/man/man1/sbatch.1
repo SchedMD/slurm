@@ -2074,9 +2074,16 @@ necessary for the information you are trying to gather.
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP
 Upon startup, sbatch will read and handle the options set in the following
-environment variables.  Note that environment variables will override any
-options set in a batch script, and command line options will override any
-environment variables.
+environment variables. The majority of these variables are set the same way
+the options are set, as defined above. For flag options that are defined to
+expect no argument, the option can be enabled by setting the environment
+variable without a value (empty or NULL string), the string 'yes', or a
+non-zero number. Any other value for the environment variable will result in
+the option not being set.
+There are a couple exceptions to these rules that are noted below.
+.br
+\fBNOTE\fR: Environment variables will override any options set in a batch
+script, and command line options will override any environment variables.
 
 .TP 22
 \fBSBATCH_ACCOUNT\fR
@@ -2107,7 +2114,8 @@ Same as \fB\-\-core\-spec\fR
 Same as \fB\-\-cpus\-per\-gpu\fR
 .TP
 \fBSBATCH_DEBUG\fR
-Same as \fB\-v, \-\-verbose\fR
+Same as \fB\-v, \-\-verbose\fR. Must be set to 0 or 1 to disable or enable
+the option.
 .TP
 \fBSBATCH_DELAY_BOOT\fR
 Same as \fB\-\-delay\-boot\fR
@@ -2226,7 +2234,8 @@ Same as \fB\-\-use\-min\-nodes\fR
 Same as \fB\-W\fR, \fB\-\-wait\fR
 .TP
 \fBSBATCH_WAIT_ALL_NODES\fR
-Same as \fB\-\-wait\-all\-nodes\fR
+Same as \fB\-\-wait\-all\-nodes\fR. Must be set to 0 or 1 to disable or enable
+the option.
 .TP
 \fBSBATCH_WAIT4SWITCH\fR
 Max time waiting for requested switches. See \fB\-\-switches\fR
