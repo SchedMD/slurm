@@ -316,8 +316,12 @@ static void _lock_down(void)
 		fatal("Unable to setuid: %m");
 	if (check_user && (getuid() == 0))
 		fatal("slurmrestd should not be run as the root user.");
+	if (check_user && (getgid() == 0))
+		fatal("slurmrestd should not be run with the root goup.");
 	if (check_user && (slurm_conf.slurm_user_id == getuid()))
 		fatal("slurmrestd should not be run as SlurmUser");
+	if (check_user && (gid_from_uid(slurm_conf.slurm_user_id) == getgid()))
+		fatal("slurmrestd should not be run with SlurmUser's group.");
 }
 
 /* simple wrapper to hand over operations router in http context */
