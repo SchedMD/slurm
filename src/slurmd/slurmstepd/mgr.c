@@ -1705,7 +1705,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	/*
 	 * Reclaim privileges to do the io setup
 	 */
-	_reclaim_privileges (&sprivs);
+	_reclaim_privileges(&sprivs);
 	if (rc)
 		goto fail1; /* pam_setup error */
 
