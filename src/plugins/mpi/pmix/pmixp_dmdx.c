@@ -53,7 +53,7 @@ typedef struct {
 	time_t ts;
 #ifndef NDEBUG
 	/* we need this only for verification */
-	char nspace[PMIXP_MAX_NSLEN];
+	char nspace[PMIXP_MAX_NSLEN+1];
 	int rank;
 #endif
 	void *cbfunc;
