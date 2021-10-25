@@ -152,3 +152,7 @@ expect {
 if {$match != 1} {
 	fail "srun gpu options not fully processed ($match != 1)"
 }
+
+# Test srun and --gpu-bind=verbose (needs >= 2 tasks and a GPU)
+set output [run_command_output -fail "$srun -n2 --gpus=1 -l --gpu-bind=verbose,closest hostname"]
+subtest {[regexp -all "gpu-bind: usable_gres=" $output] == 2} "Verify --gpu-bind=verbose prints 2 bindings"

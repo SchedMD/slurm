@@ -148,3 +148,8 @@ expect {
 if {$match != 1} {
 	fail "salloc gpu options not fully processed ($match != 1)"
 }
+
+# Test salloc propagating --gpu-bind=verbose to srun (needs >= 2 tasks and a
+# GPU)
+set output [run_command_output -fail "$salloc --gpu-bind=verbose,closest -n2 --gpus=1 $srun -l hostname"]
+subtest {[regexp -all "gpu-bind: usable_gres=" $output] == 2} "Verify --gpu-bind=verbose prints 2 bindings"
