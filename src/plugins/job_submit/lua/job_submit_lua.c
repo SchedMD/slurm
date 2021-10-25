@@ -56,6 +56,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/assoc_mgr.h"
+#include "src/common/gres.h"
 #include "src/common/uid.h"
 #include "src/lua/slurm_lua.h"
 #include "src/slurmctld/locks.h"
@@ -822,7 +823,8 @@ static int _set_job_req_field(lua_State *L)
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->tres_per_node);
 		if (strlen(value_str))
-			job_desc->tres_per_node = xstrdup(value_str);
+			job_desc->tres_per_node =
+				gres_prepend_tres_type(value_str);
 	} else if (!xstrcmp(name, "immediate")) {
 		job_desc->immediate = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "licenses")) {

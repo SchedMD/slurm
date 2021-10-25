@@ -367,10 +367,12 @@ extern int gres_find_job_by_key_with_cnt(void *x, void *key)
 
 	if (!gres_find_job_by_key(x, key))
 		return 0;
-	/* ignore count on no_consume gres */
+
+	/* This gres has been allocated on this node */
 	if (!gres_data_ptr->node_cnt ||
 	    gres_data_ptr->gres_cnt_node_alloc[job_key->node_offset])
 		return 1;
+
 	return 0;
 }
 
@@ -9905,7 +9907,9 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 				    &foreach_gres_cnt);
 
 		if (foreach_gres_cnt.gres_cnt == INFINITE64) {
-			/* job lack resources required by the step */
+			log_flag(GRES, "%s: Job lacks GRES (%s:%s) required by the step",
+				 __func__, step_gres_ptr->gres_name,
+				 step_data_ptr->type_name);
 			core_cnt = 0;
 			break;
 		}

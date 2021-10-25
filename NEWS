@@ -58,6 +58,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 21.08.1 that broke federated jobs.
  -- Correctly handle requested GRES when used in job arrays.
  -- Fix error in pmix logic dealing with the incorrect size of buffer.
+ -- Fix handling of no_consume GRES, add it to allocated job allocated TRES.
+ -- Fix issue with typed GRES without Files= (bitmap).
+ -- Fix job_submit/lua support for 'gres' which is now stored as a 'tres'
+    when requesting jobs so needs a 'gres' prefix.
+ -- Fix regression where MPS would not deallocate from the node properly.
 
 * Changes in Slurm 21.08.2
 ==========================
