@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sending multiple features to RebootProgram.
  -- If a task/srun prolog fails don't allow the step to continue running.
  -- Fail srun when using invalid --cpu-bind options.
+ -- cgroup/v1 - Set swappiness at job level instead of at root level.
 
 * Changes in Slurm 21.08.5
 ==========================

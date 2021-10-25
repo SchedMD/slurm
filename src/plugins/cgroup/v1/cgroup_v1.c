@@ -915,7 +915,8 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 #endif
 		break;
 	case CG_MEMORY:
-		if (level == CG_LEVEL_ROOT) {
+		if ((level == CG_LEVEL_JOB) &&
+		    (limits->swappiness != NO_VAL64)) {
 			rc = common_cgroup_set_uint64_param(&int_cg[sub][level],
 							    "memory.swappiness",
 							    limits->swappiness);
