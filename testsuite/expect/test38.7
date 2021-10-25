@@ -28,12 +28,12 @@
 ############################################################################
 source ./globals
 
-set exit_code          0
+set file_in            "$test_dir/input"
+set file_out           "$test_dir/output"
+set file_err           "$test_dir/error"
+set test_prog          "$test_name.prog"
 set skips              0
-set file_in            "test$test_id.input"
-set file_out           "test$test_id.output"
-set file_err           "test$test_id.error"
-set test_prog          "test$test_id.prog"
+set job_id             0
 
 proc run_pmix_het_job {comp_count} {
 	global eol max_job_delay number srun
@@ -52,12 +52,6 @@ proc run_pmix_het_job {comp_count} {
 	if {$comp_found != $comp_count} {
 		fail "srun hetjob failed with $comp_count components"
 	}
-}
-
-proc cleanup {} {
-	global bin_rm file_in file_out file_err test_prog
-
-	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
 }
 
 #
@@ -80,6 +74,22 @@ if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 if {$nb_nodes < 2} {
 	skip "Need 2 or more nodes in default partition"
+}
+
+proc cleanup {} {
+	global job_id test_prog file_err test_status STATUS_FAIL
+
+	cancel_job $job_id
+	file delete $test_prog ${test_prog}.o
+
+	if {$test_status == $STATUS_FAIL && [file exists $file_err] && [file size $file_err] != 0} {
+		set matches [regexp "Error creating CQ" [run_command_output "head $file_err"]]
+		if {$matches != 0} {
+			log_warn "If using MVAPICH then configure \"PropagateResourceLimitsExcept=MEMLOCK\". Also start slurmd with \"ulimit -l unlimited\""
+		} else {
+			log_debug "Check contents of $file_err"
+		}
+	}
 }
 
 #
@@ -129,9 +139,8 @@ make_bash_script $file_in "
 # Spawn an sbatch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-set job_id   0
 set no_start 0
-set sbatch_pid [spawn $sbatch -N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 ./$file_in]
+set sbatch_pid [spawn $sbatch -N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -154,7 +163,6 @@ expect {
 }
 
 if {$no_start != 0} {
-	cancel_job $job_id
 	skip "Partition too small for test"
 }
 if {$job_id == 0} {
@@ -164,52 +172,41 @@ if {$job_id == 0} {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job $job_id to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output in stdout
 #
-if {[wait_for_file $file_out] == 0} {
-	set complete 0
-	set expected_sum 2
-	set expected_msg 2
-	set matches  0
-	set rank_sum 0
-	spawn $bin_cat $file_out
-	expect {
-                -re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
-			incr rank_sum $expect_out(1,string)
-			incr rank_sum $expect_out(2,string)
-			incr matches
-                        exp_continue
-                }
-		-re "TEST_COMPLETE" {
-			incr complete
-                        exp_continue
-		}
-		eof {
-			wait
-		}
-        }
-	if {$matches == 0} {
-		log_error "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
-		set exit_code 1
-	} elseif {$matches != $expected_msg} {
-		log_error "Unexpected output ($matches of $expected_msg)"
-		set exit_code 1
-	} elseif {$complete == 0} {
-		log_error "Test failed to complete"
-		set exit_code 1
-	} elseif {$rank_sum != $expected_sum} {
-		log_error "Invalid rank values ($rank_sum != $expected_sum)"
-		set exit_code 1
+wait_for_file -fail $file_out
+set complete 0
+set expected_sum 2
+set expected_msg 2
+set matches  0
+set rank_sum 0
+spawn $bin_cat $file_out
+expect {
+	-re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
+		incr rank_sum $expect_out(1,string)
+		incr rank_sum $expect_out(2,string)
+		incr matches
+		exp_continue
 	}
-} else {
-	set exit_code 1
+	-re "TEST_COMPLETE" {
+		incr complete
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	fail "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
+} elseif {$matches != $expected_msg} {
+	fail "Unexpected output ($matches of $expected_msg)"
+} elseif {$complete == 0} {
+	fail "Test failed to complete"
+} elseif {$rank_sum != $expected_sum} {
+	fail "Invalid rank values ($rank_sum != $expected_sum)"
 }
 
 ########################################################################
@@ -237,7 +234,7 @@ make_bash_script $file_in "
 #
 set job_id   0
 set no_start 0
-set sbatch_pid [spawn $sbatch -N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 ./$file_in]
+set sbatch_pid [spawn $sbatch -N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -260,7 +257,6 @@ expect {
 }
 
 if {$no_start != 0} {
-	cancel_job $job_id
 	skip "Partition too small for test"
 }
 if {$job_id == 0} {
@@ -270,52 +266,42 @@ if {$job_id == 0} {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job $job_id to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output in stdout
 #
-if {[wait_for_file $file_out] == 0} {
-	set complete 0
-	set expected_sum 2
-	set expected_msg 2
-	set matches  0
-	set rank_sum 0
-	spawn $bin_cat $file_out
-	expect {
-                -re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
-			incr rank_sum $expect_out(1,string)
-			incr rank_sum $expect_out(2,string)
-			incr matches
-                        exp_continue
-                }
-		-re "TEST_COMPLETE" {
-			incr complete
-                        exp_continue
-		}
-		eof {
-			wait
-		}
-        }
-	if {$matches == 0} {
-		log_error "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
-		set exit_code 1
-	} elseif {$matches != $expected_msg} {
-		log_error "Unexpected output ($matches of $expected_msg)"
-		set exit_code 1
-	} elseif {$complete == 0} {
-		log_error "Test failed to complete"
-		set exit_code 1
-	} elseif {$rank_sum != $expected_sum} {
-		log_error "Invalid rank values ($rank_sum != $expected_sum)"
-		set exit_code 1
+wait_for_file -fail $file_out
+set complete 0
+set expected_sum 2
+set expected_msg 2
+set matches  0
+set rank_sum 0
+spawn $bin_cat $file_out
+expect {
+	-re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
+		incr rank_sum $expect_out(1,string)
+		incr rank_sum $expect_out(2,string)
+		incr matches
+		exp_continue
 	}
-} else {
-	set exit_code 1
+	-re "TEST_COMPLETE" {
+		incr complete
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches == 0} {
+	fail "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
+} elseif {$matches != $expected_msg} {
+	fail "Unexpected output ($matches of $expected_msg)"
+} elseif {$complete == 0} {
+	fail "Test failed to complete"
+} elseif {$rank_sum != $expected_sum} {
+	fail "Invalid rank values ($rank_sum != $expected_sum)"
 }
 
 ########################################################################
@@ -371,7 +357,7 @@ make_bash_script $file_in "
 #
 set job_id   0
 set no_start 0
-set sbatch_pid [spawn $sbatch -N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 ./$file_in]
+set sbatch_pid [spawn $sbatch -N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -394,7 +380,6 @@ expect {
 }
 
 if {$no_start != 0} {
-	cancel_job $job_id
 	skip "Partition too small for test"
 }
 if {$job_id == 0} {
@@ -404,52 +389,41 @@ if {$job_id == 0} {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job $job_id to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output in stdout
 #
-if {[wait_for_file $file_out] == 0} {
-	set complete 0
-	set expected_sum 12
-	set expected_msg 4
-	set matches  0
-	set rank_sum 0
-	spawn $bin_cat $file_out
-	expect {
-                -re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
-			incr rank_sum $expect_out(1,string)
-			incr rank_sum $expect_out(2,string)
-			incr matches
-                        exp_continue
-                }
-		-re "TEST_COMPLETE" {
-			incr complete
-                        exp_continue
-		}
-		eof {
-			wait
-		}
-        }
-	if {$matches == 0} {
-		log_error "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
-		set exit_code 1
-	} elseif {$matches != $expected_msg} {
-		log_error "Unexpected output ($matches of $expected_msg)"
-		set exit_code 1
-	} elseif {$complete == 0} {
-		log_error "Test failed to complete"
-		set exit_code 1
-	} elseif {$rank_sum != $expected_sum} {
-		log_error "Invalid rank values ($rank_sum != $expected_sum)"
-		set exit_code 1
+wait_for_file -fail $file_out
+set complete 0
+set expected_sum 12
+set expected_msg 4
+set matches  0
+set rank_sum 0
+spawn $bin_cat $file_out
+expect {
+	-re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
+		incr rank_sum $expect_out(1,string)
+		incr rank_sum $expect_out(2,string)
+		incr matches
+		exp_continue
 	}
-} else {
-	set exit_code 1
+	-re "TEST_COMPLETE" {
+		incr complete
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$matches == 0} {
+	fail "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
+} elseif {$matches != $expected_msg} {
+	fail "Unexpected output ($matches of $expected_msg)"
+} elseif {$complete == 0} {
+	fail "Test failed to complete"
+} elseif {$rank_sum != $expected_sum} {
+	fail "Invalid rank values ($rank_sum != $expected_sum)"
 }
 
 ########################################################################
@@ -479,7 +453,7 @@ make_bash_script $file_in "
 #
 set job_id   0
 set no_start 0
-set sbatch_pid [spawn $sbatch -N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 ./$file_in]
+set sbatch_pid [spawn $sbatch -N1 -n2 --output=$file_out --error=$file_err -t1 : -N1 -n2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -502,7 +476,6 @@ expect {
 }
 
 if {$no_start != 0} {
-	cancel_job $job_id
 	skip "Partition too small for test"
 }
 if {$job_id == 0} {
@@ -512,71 +485,39 @@ if {$job_id == 0} {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job $job_id to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output in stdout
 #
-if {[wait_for_file $file_out] == 0} {
-	set complete 0
-	set expected_sum 14
-	set expected_msg 6
-	set matches  0
-	set rank_sum 0
-	spawn $bin_cat $file_out
-	expect {
-                -re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
-			incr rank_sum $expect_out(1,string)
-			incr rank_sum $expect_out(2,string)
-			incr matches
-                        exp_continue
-                }
-		-re "TEST_COMPLETE" {
-			incr complete
-                        exp_continue
-		}
-		eof {
-			wait
-		}
-        }
-	if {$matches == 0} {
-		log_error "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
-		set exit_code 1
-	} elseif {$matches != $expected_msg} {
-		log_error "Unexpected output ($matches of $expected_msg)"
-		set exit_code 1
-	} elseif {$complete == 0} {
-		log_error "Test failed to complete"
-		set exit_code 1
-	} elseif {$rank_sum != $expected_sum} {
-		log_error "Invalid rank values ($rank_sum != $expected_sum)"
-		set exit_code 1
+wait_for_file -fail $file_out
+set complete 0
+set expected_sum 14
+set expected_msg 6
+set matches  0
+set rank_sum 0
+spawn $bin_cat $file_out
+expect {
+	-re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
+		incr rank_sum $expect_out(1,string)
+		incr rank_sum $expect_out(2,string)
+		incr matches
+		exp_continue
 	}
-} else {
-	set exit_code 1
+	-re "TEST_COMPLETE" {
+		incr complete
+		exp_continue
+	}
+	eof {
+		wait
+	}
 }
-
-if {$exit_code != 0} {
-	set matches 0
-	spawn head $file_err
-	expect {
-		-re "Error creating CQ" {
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 0} {
-		log_warn "If using MVAPICH then configure \"PropagateResourceLimitsExcept=MEMLOCK\". Also start slurmd with \"ulimit -l unlimited\""
-	} else {
-		log_debug "Check contents of $file_err"
-	}
-
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$matches == 0} {
+	fail "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
+} elseif {$matches != $expected_msg} {
+	fail "Unexpected output ($matches of $expected_msg)"
+} elseif {$complete == 0} {
+	fail "Test failed to complete"
+} elseif {$rank_sum != $expected_sum} {
+	fail "Invalid rank values ($rank_sum != $expected_sum)"
 }

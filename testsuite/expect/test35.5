@@ -27,10 +27,7 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
-set bb_types [get_bb_types]
-if {[string first "datawarp" $bb_types] == -1} {
+if {![param_contains [get_config_param "BurstBufferType"] "*datawarp"]} {
 	skip "This test can only be run with the burst_buffer/datawarp plugin"
 }
 
@@ -79,8 +76,7 @@ if {$fail == 1} {
 	fail "'dwstat' is not configured properly"
 }
 if {$matches == 0} {
-	log_error "'dwstat' output does not match expected form"
-	set exit_code 1
+	fail "'dwstat' output does not match expected form"
 }
 
 set matches 0
@@ -102,8 +98,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	log_error "'dwstat configurations' output does not match expected form"
-	set exit_code 1
+	fail "'dwstat configurations' output does not match expected form"
 }
 
 set matches 0
@@ -126,8 +121,4 @@ expect {
 }
 if {$matches == 0} {
 	fail "'dwstat sessions' output does not match expected form"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

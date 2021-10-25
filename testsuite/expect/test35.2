@@ -28,148 +28,65 @@ source ./globals
 
 set data_in     "DATA_IN_0123456789"
 set data_out    "DATA_OUT_9876543210"
-set exit_code   0
-set input_data  "test$test_id.data.in"
-set output_data "test$test_id.data.out"
-set output_use  "test$test_id.use.output"
-set script_use  "test$test_id.use.bash"
-set tmp_file    "test$test_id"
+set input_data  "$test_dir/data.in"
+set output_data "$test_dir/data.out"
+set output_use  "$test_dir/use.output"
+set script_use  "$test_dir/use.bash"
+set tmp_file    "$test_dir/tmp_file"
+set job_id      0
 
-proc cleanup {} {
-	global bin_rm input_data output_data
-	global output_use script_use
-
-	exec $bin_rm -f $input_data $output_data
-	exec $bin_rm -f $output_use $script_use
-}
-
-proc find_bb_jobid { fname bb_jobid } {
-	global bin_cat
-
-	set found 0
-	log_user 0
-	spawn $bin_cat $fname
-	expect {
-		-re "JobID=$bb_jobid" {
-			set found 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $found
-}
-
-proc find_bb_data { file_name string_seek } {
-	global bin_cat
-
-	set found 0
-	spawn $bin_cat $file_name
-	expect {
-		-re $string_seek {
-			set found 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	return $found
-}
 
 if {[get_my_uid] == 0} {
 	skip "This test can't be run as user root"
 }
 
-set bb_types [get_bb_types]
-if {[string first "datawarp" $bb_types] == -1} {
+if {![param_contains [get_config_param "BurstBufferType"] "*datawarp"]} {
 	skip "This test can only be run with the burst_buffer/datawarp plugin"
 }
 
-set cwd [$bin_pwd]
-exec $bin_rm -f $input_data $output_data $output_use
-exec $bin_echo $data_in >$cwd/$input_data
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+run_command -fail "$bin_echo $data_in >$input_data"
 
 if [check_bb_emulate] {
 make_bash_script $script_use "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private type=scratch
-#DW stage_in type=file source=$cwd/$input_data destination=\$DW_JOB_STRIPED/$tmp_file
-#DW stage_out type=file destination=$cwd/$output_data source=\$DW_JOB_STRIPED/$tmp_file
-$bin_cat  $cwd/$input_data
-$bin_echo $data_out >$cwd/$output_data
+#DW stage_in type=file source=$input_data destination=\$DW_JOB_STRIPED/$tmp_file
+#DW stage_out type=file destination=$output_data source=\$DW_JOB_STRIPED/$tmp_file
+$bin_cat $input_data
+$bin_echo $data_out >$output_data
 $scontrol show burst
 exit 0"
 } else {
 make_bash_script $script_use "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private type=scratch
-#DW stage_in type=file source=$cwd/$input_data destination=\$DW_JOB_STRIPED/$tmp_file
-#DW stage_out type=file destination=$cwd/$output_data source=\$DW_JOB_STRIPED/$tmp_file
-$bin_cat  \$DW_JOB_STRIPED/$tmp_file
+#DW stage_in type=file source=$input_data destination=\$DW_JOB_STRIPED/$tmp_file
+#DW stage_out type=file destination=$output_data source=\$DW_JOB_STRIPED/$tmp_file
+$bin_cat \$DW_JOB_STRIPED/$tmp_file
 $bin_echo $data_out >\$DW_JOB_STRIPED/$tmp_file
 $scontrol show burst
 exit 0"
 }
 
-set job_id_use 0
-spawn $sbatch -t1 -N1 --output=$output_use $script_use
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id_use $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
+set job_id [submit_job -fail "-t1 -N1 --output=$output_use $script_use"]
 
-if {$job_id_use == 0} {
-	log_error "Job did not launch"
-	set exit_code 1
-} elseif {[wait_for_job -timeout 660 $job_id_use "DONE"] != 0} {
-	log_error "Job did not complete"
-	set exit_code 1
-	cancel_job $job_id_use
-} elseif {[wait_for_file -timeout 660 $output_use] != 0} {
-	set exit_code 1
-} elseif {[find_bb_jobid $output_use $job_id_use] == 0} {
-	log_error "Job burst buffer not found"
-	set exit_code 1
-} elseif {[find_bb_data $output_use $data_in] == 0} {
-	log_error "Job burst buffer input data not found"
-	set exit_code 1
-} elseif {[find_bb_data $output_data $data_out] == 0} {
-	log_error "Job burst buffer output data not found"
-	set exit_code 1
-}
+wait_for_job -fail -timeout 660 $job_id "DONE"
+wait_for_file -fail -timeout 660 $output_use
+
+set output [run_command_output -fail "$bin_cat $output_use"]
+subtest {[regexp "JobID=$job_id" $output]} "Verify burst buffer is found"
+subtest {[regexp "$data_in" $output]} "Verify burst buffer input is found"
+
+set output [run_command_output -fail "$bin_cat $output_data"]
+subtest {[regexp "$data_out" $output]} "Verify burst buffer output is found"
 
 # Wait for purge of buffer to complete
 sleep 10
 
-set found 0
-spawn $scontrol show burst
-expect {
-	-re "JobID=$job_id_use" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found != 0} {
-	fail "Job burst buffer not removed"
-}
+set output [run_command_output -fail "$scontrol show burst"]
+subtest {![regexp "JobID=$job_id" $output]} "Verify burst buffer is removed"
 
-if {[find_bb_data $output_data $data_out] == 0} {
-	fail "Job output burst buffer data not correct"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -fail "$bin_cat $output_data"]
+subtest {[regexp "$data_out" $output]} "Verify job output burst buffer data is correct"

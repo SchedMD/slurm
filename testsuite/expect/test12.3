@@ -78,10 +78,10 @@ proc cleanup {} {
 	global sacctmgr test_acct config_dir
 
 	# TODO: Temporarily dump database on subtest failure to debug bug 9681 (restore once fixed)
-	global _subtest_fail_count slurm_dir
+	global slurm_dir
 	set username [get_my_user_name]
 	set hostname [string trimright [run_command_output "hostname -s"]]
-	if {$hostname eq "knl2" && $username eq "jenkins" && $_subtest_fail_count > 0} {
+	if {$hostname eq "knl2" && $username eq "jenkins" && [get_subtest_fail_count] > 0} {
 		set dbd_dict [get_config -dbd]
 		set database_user [dict get $dbd_dict "StorageUser"]
 		set database_host [dict get $dbd_dict "StorageHost"]
@@ -218,7 +218,7 @@ if [wait_for_command_match "$sacct -A 'slurm_test-account.1' --name=$job_name_2 
 }
 
 # Only run these sub-tests if we haven't failed already
-if {$_subtest_fail_count == 0} {
+if {[get_subtest_fail_count] == 0} {
 	#
 	# Execute sub-tests based upon these jobs
 	#

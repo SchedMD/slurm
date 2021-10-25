@@ -311,10 +311,18 @@ set _testproc_messages    [dict create]
 set _testproc_skip_next   false
 set _testproc_skip_reason ""
 set _incomplete_reason    ""
+set _subtest_messages     [dict create]
+
 set _subtest_pass_count   0
 set _subtest_skip_count   0
 set _subtest_fail_count   0
-set _subtest_messages     [dict create]
+
+set STATUS_PASS 0
+set STATUS_FAIL 1
+set STATUS_SKIP -1
+
+# Final test status
+set test_status $STATUS_PASS
 
 # Other common variables
 set re_word_str          "\\S+"
@@ -382,7 +390,7 @@ set RETURN_TIMEOUT 110 ; # ETIMEDOUT
 ################################################################
 
 proc fail { message } {
-	global _incomplete_reason
+	global _incomplete_reason STATUS_FAIL
 
 	# Avoid recursive calls from within cleanup
 	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
@@ -394,7 +402,7 @@ proc fail { message } {
 	set _incomplete_reason $message
 
 	# _test_fini will handle cleanup and print the failure message.
-	_test_fini 1
+	_test_fini $STATUS_FAIL
 }
 
 
@@ -418,7 +426,7 @@ proc fail { message } {
 ################################################################
 
 proc skip { message } {
-	global _incomplete_reason
+	global _incomplete_reason STATUS_SKIP
 
 	# Avoid recursive calls from within cleanup
 	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
@@ -430,7 +438,7 @@ proc skip { message } {
 	set _incomplete_reason $message
 
 	# _test_fini will handle cleanup and print the skipped message.
-	_test_fini -1
+	_test_fini $STATUS_SKIP
 }
 
 
@@ -453,6 +461,7 @@ proc skip { message } {
 ################################################################
 
 proc pass { } {
+	global STATUS_PASS
 
 	# Avoid recursive calls from within cleanup
 	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
@@ -461,7 +470,7 @@ proc pass { } {
 	}
 
 	# _test_fini will handle cleanup and print the success message.
-	_test_fini 0
+	_test_fini $STATUS_PASS
 }
 
 
@@ -611,6 +620,23 @@ proc subskip args {
 	if {$description ne ""} { append message " : $description" }
 	log_warn $message
 	dict set _subtest_messages [expr $subtest_count] [list skip $message]
+}
+
+
+################################################################
+#
+# NAME
+#	get_subtest_fail_count - returns the current subtest failure count
+#
+# SYNOPSIS
+#	get_subtest_fail_count
+#
+################################################################
+
+proc get_subtest_fail_count {} {
+	global _subtest_fail_count
+
+	return $_subtest_fail_count
 }
 
 
@@ -1910,11 +1936,12 @@ proc wait_for_file args {
 #	desired_state
 #		The state you want the job to attain before
 #		returning.  Currently supports:
-#			DONE any terminated state
-#			PENDING job is pending
-#			RUNNING job is running
+#			CANCELLED - job is cancelled
+#			DONE      - any terminated state (includes cancelled)
+#			PENDING   - job is pending
+#			RUNNING   - job is running
 #			SPECIAL_EXIT
-#			SUSPENDED job is suspended
+#			SUSPENDED - job is suspended
 #
 # RETURN VALUE
 #	RETURN_SUCCESS, or non-zero on error.
@@ -1949,6 +1976,7 @@ proc _wait_for_single_job args {
 
 	# First verify that desired_state is supported
 	switch $desired_state {
+		"CANCELLED" {}
 		"DONE" {}
 		"PENDING" {}
 		"RUNNING" {}
@@ -1983,9 +2011,26 @@ proc _wait_for_single_job args {
 		}
 
 		switch $state {
+			"CANCELLED" {
+				if {$desired_state eq "CANCELLED"} {
+					log_debug "Job $job_id is CANCELLED"
+					sleep 2
+					return $::RETURN_SUCCESS
+				}
+				if {$desired_state eq "DONE"} {
+					log_debug "Job $job_id is DONE ($state)"
+					sleep 2
+					return $::RETURN_SUCCESS
+				}
+				set message "Job $job_id is $state, but we wanted $desired_state"
+				if {$fatal} {
+					fail $message
+				}
+				log_debug $message
+				return $::RETURN_ERROR
+			}
 			"NOT_FOUND" -
 			"BOOT_FAIL" -
-			"CANCELLED" -
 			"COMPLETED" -
 			"DEADLINE" -
 			"FAILED" -
@@ -1993,17 +2038,12 @@ proc _wait_for_single_job args {
 			"OUT_OF_MEMORY" -
 			"PREEMPTED" -
 			"TIMEOUT" {
-				if {[string compare $desired_state "DONE"] == 0} {
+				if {$desired_state eq "DONE"} {
 					log_debug "Job $job_id is DONE ($state)"
 					sleep 2
 					return $::RETURN_SUCCESS
 				}
-				if {[string compare $desired_state "RUNNING"] == 0} {
-					set message "Job $job_id is $state, but we wanted RUNNING"
-				}
-				if {[string compare $desired_state "SUSPENDED"] == 0} {
-					set message "Job $job_id is $state, but we wanted SUSPENDED"
-				}
+				set message "Job $job_id is $state, but we wanted $desired_state"
 				if {$fatal} {
 					fail $message
 				}
@@ -2011,28 +2051,28 @@ proc _wait_for_single_job args {
 				return $::RETURN_ERROR
 			}
 			"PENDING" {
-				if {[string compare $desired_state "PENDING"] == 0} {
+				if {$desired_state eq "PENDING"} {
 					log_debug "Job $job_id is PENDING"
 					return $::RETURN_SUCCESS
 				}
 				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"RUNNING" {
-				if {[string compare $desired_state "RUNNING"] == 0} {
+				if {$desired_state eq "RUNNING"} {
 					log_debug "Job $job_id is RUNNING"
 					return $::RETURN_SUCCESS
 				}
 				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SPECIAL_EXIT" {
-				if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
+				if {$desired_state eq "SPECIAL_EXIT"} {
 					log_debug "Job $job_id is SPECIAL_EXIT"
 					return $::RETURN_SUCCESS
 				}
 				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SUSPENDED" {
-				if {[string compare $desired_state "SUSPENDED"] == 0} {
+				if {$desired_state eq "SUSPENDED"} {
 					log_debug "Job $job_id is SUSPENDED"
 					return $::RETURN_SUCCESS
 				}
@@ -2085,11 +2125,12 @@ proc _wait_for_single_job args {
 #	desired_state
 #		The state you want the job to attain before returning.
 #		Currently supports:
-#			DONE any terminated state
-#			PENDING job is pending
-#			RUNNING job is running
+#			CANCELLED - job is cancelled
+#			DONE      - any terminated state (including cancelled)
+#			PENDING   - job is pending
+#			RUNNING   - job is running
 #			SPECIAL_EXIT
-#			SUSPENDED job is suspended
+#			SUSPENDED - job is suspended
 #	het_job
 #		If set, checks the state of each component job if the job
 #		is a het one.
@@ -3029,46 +3070,6 @@ proc check_bb_persistent { } {
 ################################################################
 #
 # NAME
-#	get_bb_types - gets the burst buffer plugins running with task/ stripped
-#
-# SYNOPSIS
-#	get_bb_types
-#
-# RETURN VALUE
-#	Returns comma separated list of task plugins running without the task/
-#
-################################################################
-
-proc get_bb_types { } {
-	global scontrol re_word_str
-
-	log_user 0
-	set bb_types ""
-	spawn $scontrol show config
-	expect {
-		-re "BurstBufferType *= ($re_word_str)" {
-			set parts [split $expect_out(1,string) ",/"]
-			while 1 {
-				set task_found [lsearch $parts "burst_buffer"]
-				if { $task_found == -1 } break
-				set parts [lreplace $parts $task_found $task_found]
-			}
-			set bb_types [join $parts ","]
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $bb_types
-}
-
-
-################################################################
-#
-# NAME
 #	get_default_acct - gets user's default account
 #
 # SYNOPSIS
@@ -3159,7 +3160,7 @@ proc get_select_type_params { {partition ""} } {
 		set partition [default_partition]
 	}
 
-	if {[string compare $partition ""]} {
+	if {$partition ne ""} {
 		spawn -noecho $bin_bash -c "exec $scontrol show part $partition | $bin_grep SelectTypeParameters"
 		expect {
 			-re "SelectTypeParameters *= *NONE" {
@@ -3174,7 +3175,7 @@ proc get_select_type_params { {partition ""} } {
 			}
 		}
 	}
-	if { [string compare params ""] } {
+	if {$params eq ""} {
 		spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
 		expect {
 			-re "SelectTypeParameters *= *($re_word_str)" {
@@ -3348,7 +3349,7 @@ proc is_super_user {{user ""}} {
 	}
 
 	# Check if user is root
-	if {[string compare $user "root"] == 0} {
+	if {$user eq "root"} {
 		return true
 	}
 
@@ -3525,7 +3526,7 @@ proc default_partition {} {
 proc default_part_exclusive {} {
 	set def_part [default_partition]
 	set oversubscribe [partition_oversubscribe $def_part]
-	if {[string compare $oversubscribe "EXCLUSIVE"] == 0} {
+	if {$oversubscribe eq "EXCLUSIVE"} {
 		return 1
 	} else {
 		return 0
@@ -3896,13 +3897,13 @@ proc change_subbp_state { node ionodes state } {
 
 proc scale_to_megs { value factor } {
 
-	if {[string compare $factor "T"] == 0} {
+	if {$factor == "T"} {
 		set value [expr $value * 1024 * 1024]
-	} elseif {[string compare $factor "G"] == 0} {
+	} elseif {$factor == "G"} {
 		set value [expr $value * 1024]
-	} elseif {[string compare $factor "M"] == 0} {
+	} elseif {$factor == "M"} {
 		set value [expr $value * 1]
-	} elseif {[string compare $factor "K"] == 0} {
+	} elseif {$factor == "K"} {
 		set value [expr $value / 1024]
 		set value [expr {round($value)}]
 	} else {
@@ -3932,11 +3933,11 @@ proc scale_to_megs { value factor } {
 
 proc scale_to_ks { value factor } {
 
-	if {[string compare $factor "G"] == 0} {
+	if {$factor == "G"} {
 		set value [expr $value * 1024 * 1024]
-	} elseif {[string compare $factor "M"] == 0} {
+	} elseif {$factor == "M"} {
 		set value [expr $value * 1024]
-	} elseif {[string compare $factor "K"] == 0} {
+	} elseif {$factor == "K"} {
 		set value [expr $value * 1]
 	} else {
 		set value [expr $value / 1024]
@@ -7162,6 +7163,7 @@ proc _test_init {} {
 proc _test_fini { status } {
 	global testsuite_cleanup_on_failure _test_fini_called
 	global _subtest_fail_count _subtest_skip_count
+	global STATUS_FAIL STATUS_PASS STATUS_SKIP
 
 	# Avoid potential infinite recursive calls.
 	# _test_fini should be called only once, but custom cleanup procs
@@ -7174,19 +7176,22 @@ proc _test_fini { status } {
 
 
 	# Determine if test completed or was aborted
-	set completed [expr $status == 0 ? true : false]
+	set completed [expr $status == $STATUS_PASS ? true : false]
 
 	# Override status with subtest status if available and necessary
-	if {$status < 1} {
+	if {$status != $STATUS_FAIL} {
 		if {$_subtest_fail_count > 0} {
-			set status 1
+			set status $STATUS_FAIL
 		} elseif {$_subtest_skip_count > 0} {
-			set status -1
+			set status $STATUS_SKIP
 		}
 	}
 
+	# Set final test status global variable so it can be used in cleanup
+	set test_status $status
+
 	# Only cleanup if test not failed or configured to do so
-	if {$status != 1 || $testsuite_cleanup_on_failure} {
+	if {$status != $STATUS_FAIL || $testsuite_cleanup_on_failure} {
 		_test_cleanup
 	}
 	_print_summary $status $completed
