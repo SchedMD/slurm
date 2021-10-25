@@ -270,16 +270,16 @@ static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
 	/* This limit has to be set only if ConstrainSwapSpace is set to yes. */
 	if (constrain_swap_space) {
 		limits.memsw_limit_in_bytes = mls;
-		info ("%s: alloc=%luMB mem.limit=%luMB "
-		      "memsw.limit=%luMB", is_step ? "step" : "job",
-		      (unsigned long) mem_limit,
-		      (unsigned long) mlb/(1024*1024),
-		      (unsigned long) mls/(1024*1024));
+		info("%s: alloc=%luMB mem.limit=%luMB "
+		     "memsw.limit=%luMB", is_step ? "step" : "job",
+		     (unsigned long) mem_limit,
+		     (unsigned long) mlb/(1024*1024),
+		     (unsigned long) mls/(1024*1024));
 	} else {
-		info ("%s: alloc=%luMB mem.limit=%luMB "
-		      "memsw.limit=unlimited", is_step ? "step" : "job",
-		      (unsigned long) mem_limit,
-		      (unsigned long) mlb/(1024*1024));
+		info("%s: alloc=%luMB mem.limit=%luMB "
+		     "memsw.limit=unlimited", is_step ? "step" : "job",
+		     (unsigned long) mem_limit,
+		     (unsigned long) mlb/(1024*1024));
 	}
 
 	if (!is_step) {
