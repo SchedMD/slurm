@@ -28,17 +28,10 @@ source ./globals
 
 set job_id        0
 set hostname      ""
-set file_in       "test${test_id}.in"
-set file_out      "test${test_id}.out"
-set sgather_tmp   "/tmp/test${test_id}"
-set sgather_out   "test${test_id}_sgather.out"
-set exit_code     0
-
-proc cleanup {} {
-	global bin_rm file_in file_out
-
-	exec $bin_rm -f $file_in $file_out
-}
+set file_in       "$test_dir/input"
+set file_out      "$test_dir/output"
+set sgather_tmp   "/tmp/$test_name"
+set sgather_out   "${test_name}_sgather.out"
 
 if {[file executable $sgather] == 0} {
 	skip "$sgather does not exist"
@@ -54,10 +47,11 @@ if {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test is incompatible with SlurmdUser != root"
 }
 
-#
-# Remove any vestigial files
-#
-exec $bin_rm -f $file_in $file_out
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 # Set env PATH to slurm dir
 set env(PATH) $slurm_dir/bin:$env(PATH)
@@ -91,41 +85,36 @@ if {$job_id == 0} {
 	fail "Batch job was not submitted"
 }
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Error waiting for job $job_id to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
+wai_for_file -fail $file_out
 
 set number_1 -1
 set number_2 -1
 set file_cnt  0
 set rm_cnt    0
 set node_cnt 99
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "SLURM_NNODES=($number)" {
-			set node_cnt $expect_out(1,string)
-			exp_continue
+spawn $bin_cat $file_out
+expect {
+	-re "SLURM_NNODES=($number)" {
+		set node_cnt $expect_out(1,string)
+		exp_continue
+	}
+	-re "\n($number) *($number) " {
+		if {$number_1 == $expect_out(1,string) && $number_2 == $expect_out(2,string)} {
+			incr file_cnt
+		} else {
+			set number_1 $expect_out(1,string)
+			set number_2 $expect_out(2,string)
 		}
-		-re "\n($number) *($number) " {
-			if {$number_1 == $expect_out(1,string) && $number_2 == $expect_out(2,string)} {
-				incr file_cnt
-			} else {
-				set number_1 $expect_out(1,string)
-				set number_2 $expect_out(2,string)
-			}
-			exp_continue
-		}
-		-re "No such file or directory" {
-			log_debug "Error is expected. No worries"
-			incr rm_cnt
-			exp_continue
-		}
-		eof {
-			wait
-		}
+		exp_continue
+	}
+	-re "No such file or directory" {
+		log_debug "Error is expected. No worries"
+		incr rm_cnt
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 if {$file_cnt != $node_cnt} {
@@ -133,8 +122,4 @@ if {$file_cnt != $node_cnt} {
 }
 if {$rm_cnt != $node_cnt} {
 	fail "Failed to remove gathered files from all allocated nodes ($rm_cnt != $node_cnt)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

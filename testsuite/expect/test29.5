@@ -9,21 +9,9 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.script"
+set file_in     "$test_dir/script"
 set node_name   ""
 set job_id      0
-set exit_code   0
-
-proc cleanup {} {
-	global job_id node_name bin_rm file_in
-
-	cancel_job $job_id
-	if {$node_name ne ""} {
-		reset_state $node_name
-	}
-
-	exec $bin_rm -f $file_in
-}
 
 # this test is for the nonstop --replace-node test
 
@@ -32,6 +20,15 @@ if {![param_contains [get_config_param "SlurmctldPlugstack"] "nonstop"]} {
 }
 if {![is_super_user]} {
 	skip "This test is only suitable for a super user (to restore down nodes)"
+}
+
+proc cleanup {} {
+	global job_id node_name
+
+	cancel_job $job_id
+	if {$node_name ne ""} {
+		reset_state $node_name
+	}
 }
 
 proc get_node {job_id} {
@@ -103,17 +100,14 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	log_error "sbatch did not submit job"
-	set exit_code 1
+	fail "sbatch did not submit job"
 }
 
 #
 # Wait for job to start
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-        cancel_job $job_id
-        fail "Waiting for job to start"
-}
+wait_for_job -fail $job_id "RUNNING"
+
 set node_name [get_node $job_id]
 
 #
@@ -135,8 +129,7 @@ expect {
 	}
 }
 if {$sub_match != 1} {
-	log_error "There are nodes that are drained when there should not be"
-	set exit_code 1
+	fail "There are nodes that are drained when there should not be"
 }
 
 #
@@ -157,8 +150,7 @@ expect {
 	}
 }
 if {$sub_match != 1} {
-	log_error "smd did not drain node"
-	set exit_code 1
+	fail "smd did not drain node"
 }
 
 #
@@ -180,10 +172,5 @@ expect {
 
 }
 if {$sub_match != 1} {
-	log_error "smd did not replace the node"
-	set exit_code
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "smd did not replace the node"
 }

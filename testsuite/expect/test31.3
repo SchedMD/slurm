@@ -48,7 +48,7 @@ proc check_prolog { pattern } {
 }
 
 proc check_epilog { pattern } {
-	global epilog_out exit_code bin_grep
+	global epilog_out bin_grep
 
 	set rc [wait_for_command_match -timeout 5 "$bin_grep $pattern $epilog_out" $pattern]
 	subtest {$rc == 0} "Check for '$pattern' in epilog output"
