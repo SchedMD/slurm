@@ -123,6 +123,7 @@ HIGHLIGHTS
     distinguish IPv6 addresses. e.g. <node_name>:[<node_addr>]:<node_hostname>
  -- The job_container/tmpfs plugin now requires PrologFlags=contain to be set in
     slurm.conf.
+ -- Limit max_script_size to 512 MB.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

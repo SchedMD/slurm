@@ -4667,6 +4667,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->sched_params, "SchedulerParameters",
 			      hashtbl);
+	if ((temp_str = xstrcasestr(conf->sched_params, "max_script_size="))) {
+		if (atoi(temp_str + 16) > (512 * 1024 * 1024))
+			fatal("SchedulerParameters option max_script_size cannot exceed 512 MB");
+	}
 
 	if (!s_p_get_uint16(&conf->sched_time_slice, "SchedulerTimeSlice",
 	    hashtbl))

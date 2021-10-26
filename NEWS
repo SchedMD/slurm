@@ -58,6 +58,7 @@ documents those changes that are of interest to users and administrators.
  -- PMIx v1.1.4 and below are no longer supported.
  -- Add comment to service files about disabling logging through journald.
  -- Add SLURM_NODE_ALIASES env to RPC Prolog (PrologFlags=alloc) environment.
+ -- Limit max_script_size to 512 MB.
 
 * Changes in Slurm 21.08.2
 ==========================
