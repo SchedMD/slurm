@@ -7929,7 +7929,7 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 	if (gres_ptr->total_gres)
 		info("  total_gres:%"PRIu64, gres_ptr->total_gres);
 	if (gres_ptr->node_cnt)
-		info("  node_cnt:%"PRIu32, gres_ptr->node_cnt);
+		info("  node_cnt:%u", gres_ptr->node_cnt);
 	for (i = 0; i < gres_ptr->node_cnt; i++) {
 		if (gres_ptr->gres_cnt_node_alloc &&
 		    gres_ptr->gres_cnt_node_alloc[i]) {

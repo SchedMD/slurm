@@ -322,7 +322,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 			fprintf(fp, " ExclusiveUser=YES");
 
 		if (p[i].grace_time)
-			fprintf(fp, " GraceTime=%"PRIu32"", p[i].grace_time);
+			fprintf(fp, " GraceTime=%u", p[i].grace_time);
 
 		if (p[i].flags & PART_FLAG_HIDDEN)
 			fprintf(fp, " Hidden=YES");
@@ -331,7 +331,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	                fprintf(fp, " LLN=YES");
 
 		if (p[i].max_cpus_per_node != INFINITE)
-			fprintf(fp, " MaxCPUsPerNode=%"PRIu32"",
+			fprintf(fp, " MaxCPUsPerNode=%u",
 				p[i].max_cpus_per_node);
 
 		if (p[i].max_mem_per_cpu & MEM_PER_CPU) {
