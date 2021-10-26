@@ -52,6 +52,7 @@ strong_alias(pack_slurmdbd_msg, slurm_pack_slurmdbd_msg);
 strong_alias(unpack_slurmdbd_msg, slurm_unpack_slurmdbd_msg);
 strong_alias(slurmdbd_pack_fini_msg, slurm_slurmdbd_pack_fini_msg);
 
+
 static int _unpack_config_name(char **object, uint16_t rpc_version,
 			       buf_t *buffer)
 {
@@ -1431,8 +1432,10 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg, uint16_t rpc_version,
 		my_function = slurmdb_pack_event_rec;
 		break;
 	case DBD_SEND_MULT_JOB_START:
-		my_function = _pack_job_start_msg;
-		break;
+		slurm_pack_list_until(msg->my_list, _pack_job_start_msg,
+				      buffer, MAX_MSG_SIZE, rpc_version);
+		pack32(msg->return_code, buffer);
+		return;
 	case DBD_GOT_MULT_JOB_START:
 		my_function = slurmdbd_pack_id_rc_msg;
 		break;
