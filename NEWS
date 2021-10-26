@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
  -- mpi/pmix - avoid job hanging until the time limit on PMIx agent failures.
  -- Correct inverted logic where reduced version matching applied to non-SPANK
     plugins where it should have only applied to SPANK plugins.
+ -- Fix issues where prologs would run in serial without PrologFlags=serial.
 
 * Changes in Slurm 21.08.2
 ==========================
