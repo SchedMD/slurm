@@ -125,7 +125,7 @@ plugin_peek( const char *fq_path,
 	}
 
 	/* SPANK plugins need to only match major and minor */
-	if (xstrcmp(type, "spank"))
+	if (!xstrcmp(type, "spank"))
 		mask = 0xffff00;
 
 	version = (uint32_t *) dlsym(plug, PLUGIN_VERSION);
