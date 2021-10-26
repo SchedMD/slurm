@@ -4679,12 +4679,16 @@ extern int build_feature_list(job_record_t *job_ptr)
 			feature = NULL;
 			count = 0;
 		} else if (tmp_requested[i] == '|') {
+			bool changeable;
+
 			tmp_requested[i] = '\0';
 			if (feature == NULL) {
 				fail = true;
 				break;
 			}
-			if (paren && (node_features_g_count() > 0)) {
+			changeable = node_features_g_changeable_feature(
+				feature);
+			if (paren && changeable) {
 				/*
 				 * Most (but not all) of the logic to support
 				 * OR within parenthesis works today except when
@@ -4696,8 +4700,7 @@ extern int build_feature_list(job_record_t *job_ptr)
 			}
 			feat = xmalloc(sizeof(job_feature_t));
 			feat->name = xstrdup(feature);
-			feat->changeable = node_features_g_changeable_feature(
-				feature);
+			feat->changeable = changeable;
 			feat->count = count;
 			feat->paren = paren;
 			if (paren)
