@@ -186,7 +186,7 @@ const params_t job_params[] = {
 	{ "partition", 'p' },
 	{ "power_flags", LONG_OPT_POWER, true },
 	{ "preserve_environment", 'E', true },
-	{ "priority", LONG_OPT_PRIORITY, true },
+	{ "priority", LONG_OPT_PRIORITY, false },
 	{ "profile", LONG_OPT_PROFILE },
 	{ "prolog", LONG_OPT_PROLOG, true },
 	{ "propagate", LONG_OPT_PROPAGATE, true },
