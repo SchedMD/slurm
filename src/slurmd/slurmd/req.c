@@ -225,7 +225,6 @@ static bool _requeue_setup_env_fail(void);
  */
 static List waiters;
 
-static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t startup = 0;		/* daemon startup time */
 static time_t last_slurmctld_msg = 0;
 
@@ -1596,14 +1595,12 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		errnum = errno;
 		goto done;
 	}
-	slurm_mutex_lock(&launch_mutex);
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
 
-	slurm_mutex_unlock(&launch_mutex);
 	_launch_complete_add(req->step_id.job_id);
 
 done:
@@ -2450,7 +2447,6 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	slurm_mutex_lock(&launch_mutex);
 	info("Launching batch job %u for UID %u", req->job_id, req->uid);
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
@@ -2458,7 +2454,6 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 				  (hostset_t)NULL, SLURM_PROTOCOL_VERSION);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
 
-	slurm_mutex_unlock(&launch_mutex);
 	_launch_complete_add(req->job_id);
 
 	/* On a busy system, slurmstepd may take a while to respond,
