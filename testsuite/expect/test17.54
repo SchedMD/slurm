@@ -76,9 +76,7 @@ make_bash_script $file_in "$bin_sleep 1"
 #
 set job_id [submit_job -fail "--output=/dev/null --error=/dev/null --deadline now+1hour $file_in"]
 
-if {[wait_for_job $job_id DONE] != 0} {
-	fail "Job failed to run to completion"
-}
+wait_for_job -fail $job_id DONE
 
 #
 # verify time limit

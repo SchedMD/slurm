@@ -117,9 +117,7 @@ proc sub_job { freq } {
 			fail "srun did not submit job"
 		}
 
-		if {[wait_for_job $job_id "DONE"] != 0} {
-			fail "Error waiting for job $job_id to complete"
-		}
+		wait_for_job -fail $job_id "DONE"
 
 		spawn $sacct -j$job_id -oavecpufreq --noheader
 		expect {

@@ -104,17 +104,16 @@ set my_uid [get_my_uid]
 # Wait a few seconds for various delays
 #
 set matches 0
-if {[wait_for_file $file_out_pre] == 0} {
-	set timeout 5
-	spawn $bin_cat $file_out_pre
-	expect {
-		"uid=$my_uid" {
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_out_pre
+set timeout 5
+spawn $bin_cat $file_out_pre
+expect {
+	"uid=$my_uid" {
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 

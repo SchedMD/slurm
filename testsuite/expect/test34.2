@@ -225,14 +225,10 @@ foreach preempt_mode $preempt_mode_list {
 		}
 
 		set qos_1_id [sub_job $acct_1 $have_het_job]
-		if { [wait_for_job $qos_1_id $running_state $have_het_job] } {
-			fail "Job $qos_1_id failed to start"
-		}
+		wait_for_job -fail $qos_1_id $running_state $have_het_job
 
 		set qos_2_id [sub_job $acct_2]
-		if { [wait_for_job $qos_2_id $running_state] } {
-			fail "Job $qos_2_id failed to start"
-		}
+		wait_for_job -fail $qos_2_id $running_state
 
 		if { $preempt_mode == $preempt_mode_cancel } {
 			set jobs_ok false
@@ -250,16 +246,12 @@ foreach preempt_mode $preempt_mode_list {
 
 			# Make job eligible to run now to avoid delay
 			run_command "$scontrol update job $qos_2_id $eligible_now_job_directive"
-			if { [wait_for_job $qos_2_id $done_state] != 0} {
-				fail "Job $qos_2_id failed to complete"
-			}
+			ait_for_job -fail $qos_2_id $done_state
 			# Wait for requeued job to restart
 
 			# Make job eligible to run now to avoid delay
 			run_command "$scontrol update job $qos_1_id $eligible_now_job_directive"
-			if { [wait_for_job $qos_1_id $running_state $have_het_job] } {
-				fail "Job $qos_1_id failed to start"
-			}
+			wait_for_job -fail $qos_1_id $running_state $have_het_job
 
 			set jobs_ok false
 			wait_for {$jobs_ok} {

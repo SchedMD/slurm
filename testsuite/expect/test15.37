@@ -29,12 +29,7 @@
 ############################################################################
 source ./globals
 
-set job_list ""
-
-proc cleanup {} {
-	global job_list
-	cancel_job $job_list
-}
+set job_list [list]
 
 #
 # Get the node to use
@@ -44,12 +39,18 @@ if {[llength $node] != 1} {
 	skip "This test needs to be able to submit a job with '-N1 -t 5'"
 }
 
+proc cleanup {} {
+	global job_list
+
+	cancel_job $job_list
+}
+
 #
 # Submit a blocking job
 #
 set job_block [submit_job -fail "-w $node --exclusive -t 5 --wrap '$bin_sleep 300' -J $test_name -o /dev/null -e /dev/null"]
 lappend job_list $job_block
-wait_for_job $job_block "RUNNING"
+wait_for_job -fail $job_block "RUNNING"
 
 #
 # Submit a salloc job with deadline that will rest pending until deadlines

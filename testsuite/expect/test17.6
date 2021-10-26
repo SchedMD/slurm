@@ -116,16 +116,15 @@ if { $job_id == 0 } {
 # Wait for job to complete
 #
 wait_for_job -fail $job_id "DONE"
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "uid=" {
-			incr tasks
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_out
+spawn $bin_cat $file_out
+expect {
+	-re "uid=" {
+		incr tasks
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 subtest {$task_cnt == $tasks} "Check for proper number of tasks" "$task_cnt != $tasks"

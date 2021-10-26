@@ -178,9 +178,7 @@ if {[get_job_param $job_id3 "Account"] != $test_acct} {
 #
 # Wait for job to start running, then status it
 #
-if {[wait_for_job $job_id3 "RUNNING"] != 0} {
-	fail "Waiting for job to start running"
-}
+wait_for_job -fail $job_id3 "RUNNING"
 sleep 5
 ################################################################
 #

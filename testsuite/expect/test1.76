@@ -76,16 +76,12 @@ proc test_freq {opt expmin expcur expmax expgov} {
 		}
 	}
 	if {$job_id == 0} {
-		log_error "Batch submit failure"
-		return 1
+		fail "Batch submit failure"
 	}
 	#
 	# Wait for job to complete
 	#
-	if {[wait_for_job $job_id "DONE"] != 0} {
-		log_error "Waiting for job to complete"
-		return 1
-	}
+	wait_for_job -fail $job_id "DONE"
 	wait_for_file -fail $file_out
 	set line ""
 	set start_value ""
