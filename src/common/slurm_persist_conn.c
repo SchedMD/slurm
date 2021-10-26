@@ -56,12 +56,6 @@
 
 #define MAX_THREAD_COUNT 100
 
-/*
- *  Maximum message size. Messages larger than this value (in bytes)
- *  will not be received.
- */
-#define MAX_MSG_SIZE     (16*1024*1024)
-
 typedef struct {
 	void *arg;
 	slurm_persist_conn_t *conn;
