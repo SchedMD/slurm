@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
     if both of a pair are set.
  -- openapi/v0.0.38 - Allow strings for JobIds instead of only numerical JobIds
     for GET, DELETE, and POST job methods.
+ -- openapi/v0.0.38 - enable job priority field for job submissions and updates.
 
 * Changes in Slurm 21.08.3
 ==========================
