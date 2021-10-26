@@ -2859,7 +2859,8 @@ extern int bb_p_state_pack(uid_t uid, buf_t *buffer, uint16_t protocol_version)
  *
  * Returns a Slurm errno.
  */
-extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
+extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
+			     char **err_msg)
 {
 	uint64_t bb_size = 0;
 	int i, rc;

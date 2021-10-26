@@ -108,9 +108,11 @@ extern uint64_t bb_g_get_system_size(char *name);
  *
  * job_desc IN - Job submission request
  * submit_uid IN - ID of the user submitting the job.
+ * err_msg IN/OUT - Message to send to the user in case of error.
  * Returns a Slurm errno.
  */
-extern int bb_g_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid);
+extern int bb_g_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
+			     char **err_msg);
 
 /*
  * Secondary validation of a job submit request with respect to burst buffer

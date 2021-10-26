@@ -53,3 +53,4 @@ COMMAND CHANGES (see man pages for details)
 API CHANGES
 ===========
  -- openapi/v0.0.35 - Plugin has been removed.
+ -- burst_buffer plugins - err_msg added to bb_p_job_validate().

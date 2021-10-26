@@ -7429,7 +7429,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		                        part_ptr->billing_weights,
 		                        slurm_conf.priority_flags, false);
 
-	if ((error_code = bb_g_job_validate(job_desc, submit_uid))
+	if ((error_code = bb_g_job_validate(job_desc, submit_uid, err_msg))
 	    != SLURM_SUCCESS)
 		goto cleanup_fail;
 

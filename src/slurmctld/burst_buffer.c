@@ -64,7 +64,7 @@ typedef struct slurm_bb_ops {
 					 uint16_t protocol_version);
 	int		(*reconfig)	(void);
 	int		(*job_validate)	(job_desc_msg_t *job_desc,
-					 uid_t submit_uid);
+					 uid_t submit_uid, char **err_msg);
 	int		(*job_validate2) (job_record_t *job_ptr,
 					  char **err_msg);
 	void		(*job_set_tres_cnt) (job_record_t *job_ptr,
@@ -362,9 +362,11 @@ extern uint64_t bb_g_get_system_size(char *name)
  *
  * job_desc IN - Job submission request
  * submit_uid IN - ID of the user submitting the job.
+ * err_msg IN/OUT - Message to send to the user in case of error.
  * Returns a Slurm errno.
  */
-extern int bb_g_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
+extern int bb_g_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
+			     char **err_msg)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;
@@ -373,7 +375,7 @@ extern int bb_g_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
-		rc2 = (*(ops[i].job_validate))(job_desc, submit_uid);
+		rc2 = (*(ops[i].job_validate))(job_desc, submit_uid, err_msg);
 		rc = MAX(rc, rc2);
 	}
 	slurm_mutex_unlock(&g_context_lock);

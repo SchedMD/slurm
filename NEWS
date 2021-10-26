@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
     from slurmctld.
  -- Add acct_gather_interconnect/sysfs plugin.
  -- Fix gpus spanning more resources than needed when usng --cpus-per-gpu.
+ -- burst_buffer plugins - err_msg added to bb_p_job_validate().
 
 * Changes in Slurm 21.08.6
 ==========================
