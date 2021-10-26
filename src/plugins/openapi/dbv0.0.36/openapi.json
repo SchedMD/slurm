@@ -2982,61 +2982,61 @@
               "name": {
                 "type": "string",
                 "description": "Step name"
-              },
-              "task": {
+              }
+            }
+          },
+          "task": {
+            "type": "object",
+            "description": "Task properties",
+            "properties": {
+              "distribution": {
+                "type": "string",
+                "description": "Task distribution type"
+              }
+            }
+          },
+          "tres": {
+            "type": "object",
+            "description": "TRES usage",
+            "properties": {
+              "requested": {
                 "type": "object",
-                "description": "Task properties",
+                "description": "TRES requested for job",
                 "properties": {
-                  "distribution": {
-                    "type": "string",
-                    "description": "Task distribution type"
-                  }
-                }
-              },
-              "tres": {
-                "type": "object",
-                "description": "TRES usage",
-                "properties": {
-                  "requested": {
-                    "type": "object",
-                    "description": "TRES requested for job",
-                    "properties": {
-                      "average": {
-                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
-                      },
-                      "max": {
-                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
-                      },
-                      "min": {
-                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
-                      },
-                      "total": {
-                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
-                      }
-                    }
+                  "average": {
+                    "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                   },
-                  "consumed": {
-                    "type": "object",
-                    "description": "TRES requested for job",
-                    "properties": {
-                      "average": {
-                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
-                      },
-                      "max": {
-                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
-                      },
-                      "min": {
-                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
-                      },
-                      "total": {
-                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
-                      }
-                    }
+                  "max": {
+                    "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                   },
-                  "allocated": {
+                  "min": {
+                    "$ref": "#/components/schemas/dbv0.0.36_tres_list"
+                  },
+                  "total": {
                     "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                   }
                 }
+              },
+              "consumed": {
+                "type": "object",
+                "description": "TRES requested for job",
+                "properties": {
+                  "average": {
+                    "$ref": "#/components/schemas/dbv0.0.36_tres_list"
+                  },
+                  "max": {
+                    "$ref": "#/components/schemas/dbv0.0.36_tres_list"
+                  },
+                  "min": {
+                    "$ref": "#/components/schemas/dbv0.0.36_tres_list"
+                  },
+                  "total": {
+                    "$ref": "#/components/schemas/dbv0.0.36_tres_list"
+                  }
+                }
+              },
+              "allocated": {
+                "$ref": "#/components/schemas/dbv0.0.36_tres_list"
               }
             }
           }
