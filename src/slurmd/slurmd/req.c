@@ -1403,8 +1403,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	int node_id = 0;
 	bitstr_t *numa_bitmap = NULL;
 
-	slurm_mutex_lock(&launch_mutex);
-
 #ifndef HAVE_FRONT_END
 	/* It is always 0 for front end systems */
 	node_id = nodelist_find(req->complete_nodelist, conf->node_name);
@@ -1598,11 +1596,14 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		errnum = errno;
 		goto done;
 	}
+	slurm_mutex_lock(&launch_mutex);
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
+
+	slurm_mutex_unlock(&launch_mutex);
 	_launch_complete_add(req->step_id.job_id);
 
 done:
@@ -1630,7 +1631,6 @@ done:
 		send_registration_msg(errnum, false);
 	}
 
-	slurm_mutex_unlock(&launch_mutex);
 }
 
 /*
