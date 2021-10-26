@@ -45,6 +45,10 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
 
+typedef void (*pack_function_t) (void *object,
+				 uint16_t protocol_version,
+				 buf_t *buffer);
+
 /****************************/
 /* Message header functions */
 /****************************/
@@ -94,6 +98,9 @@ extern int slurm_pack_list(List send_list,
 						  uint16_t rpc_version,
 						  buf_t *buffer),
 			   buf_t *buffer, uint16_t protocol_version);
+extern int slurm_pack_list_until(List send_list, pack_function_t pack_function,
+				 buf_t *buffer, uint32_t max_buf_size,
+				 uint16_t protocol_version);
 extern int slurm_unpack_list(List *recv_list,
 			     int (*unpack_function) (void **object,
 						     uint16_t protocol_version,
