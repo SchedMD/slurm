@@ -1858,7 +1858,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	/* We need to over-subscribe one or more cores.
 	 * Use last_core_inx to avoid putting all of the extra
 	 * work onto core zero */
-	verbose("%s: %pS needs to over-subscribe cores required:%"PRIu16" assigned:%u/%"PRIu64 " overcommit:%c exclusive:%c",
+	verbose("%s: %pS needs to over-subscribe cores required:%u assigned:%u/%"PRIu64 " overcommit:%c exclusive:%c",
 		__func__, step_ptr, cores,
 		bit_set_count(job_resrcs_ptr->core_bitmap),
 		bit_size(job_resrcs_ptr->core_bitmap),

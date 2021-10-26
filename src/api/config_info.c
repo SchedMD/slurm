@@ -363,11 +363,11 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 				preempt_mode_string(p[i].preempt_mode));
 
 		if (p[i].priority_job_factor != 1)
-			fprintf(fp, " PriorityJobFactor=%"PRIu16,
+			fprintf(fp, " PriorityJobFactor=%u",
 				p[i].priority_job_factor);
 
 		if (p[i].priority_tier != 1)
-			fprintf(fp, " PriorityTier=%"PRIu16,
+			fprintf(fp, " PriorityTier=%u",
 				p[i].priority_tier);
 
 		if (p[i].qos_char != NULL)

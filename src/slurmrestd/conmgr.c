@@ -1234,7 +1234,7 @@ static inline void _handle_listen_event(con_mgr_t *mgr, int fd,
 		_add_con_work(true, con, _listen_accept, con, "_listen_accept");
 		return;
 	} else /* should never happen */
-		log_flag(NET, "%s: [%s] listen unexpected revents: 0x%04"PRIx16,
+		log_flag(NET, "%s: [%s] listen unexpected revents: 0x%04x",
 			 __func__, con->name, revents);
 
 	_close_con(true, con);

@@ -64,7 +64,7 @@ static int _at_tpn_limit(const uint32_t n, const job_record_t *job_ptr,
 	if ((rc > 0) && (log_error || (slurm_conf.debug_flags &
 				       DEBUG_FLAG_SELECT_TYPE)))
 		log_var(log_lvl,
-			"%s over tasks_per_node for %pJ node:%u task_per_node:%d max:%" PRIu16,
+			"%s over tasks_per_node for %pJ node:%u task_per_node:%d max:%u",
 			tag, job_ptr, n, job_res->tasks_per_node[n],
 			job_ptr->details->ntasks_per_node);
 

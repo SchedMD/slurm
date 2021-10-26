@@ -354,7 +354,7 @@ extern char *poll_revents_to_str(const short revents)
 	if (!revents)
 		xstrfmtcat(txt, "0");
 	else
-		xstrfmtcat(txt, "(0x%04" PRIx16 ")", revents);
+		xstrfmtcat(txt, "(0x%04x)", revents);
 
 	return txt;
 }

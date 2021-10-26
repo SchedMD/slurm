@@ -785,7 +785,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			i *= cpus_per_gres;
 			i = (i + cpus_per_core - 1) / cpus_per_core;
 			if (req_cores < i)
-				log_flag(SELECT_TYPE, "%s: Increasing req_cores=%d from cpus_per_gres=%d cpus_per_core=%"PRIu16,
+				log_flag(SELECT_TYPE, "%s: Increasing req_cores=%d from cpus_per_gres=%d cpus_per_core=%u",
 					 __func__, i, cpus_per_gres,
 					 cpus_per_core);
 			req_cores = MAX(req_cores, i);
