@@ -284,6 +284,7 @@ cset testsuite_subtest_fatal   false
 # Set to all, fail_skip, fail or none print datails of subtests and testprocs
 cset testsuite_subtest_details  fail
 cset testsuite_testproc_details fail
+cset testsuite_testproc_log_calls ignore_skips
 
 # To automatically call cleanup or not when ending the test
 cset testsuite_cleanup_on_failure true
@@ -6666,7 +6667,7 @@ proc run_following_testprocs {} {
 proc testproc args {
 	global _testproc_pass_list _testproc_skip_list _testproc_fail_list
 	global _testproc_skip_next _testproc_skip_reason
-	global _testproc_messages
+	global _testproc_messages testsuite_testproc_log_calls
 	global _subtest_pass_count
 	global _subtest_skip_count
 	global _subtest_fail_count
@@ -6689,13 +6690,25 @@ proc testproc args {
 	set reason ""
 	if {![_is_testproc_included $testproc_num]} {
 		set reason "(Excluded from command line)"
-		subskip "Skipping testproc $testproc_num: {$args} $reason"
+		if {$testsuite_testproc_log_calls == yes} {
+			subskip "Skipping testproc $testproc_num: {$args} $reason"
+		} else {
+			subskip "Skipping testproc $testproc_num: $reason"
+		}
 	} else {
 		if {$_testproc_skip_next} {
 			set reason "($_testproc_skip_reason)"
-			subskip  "Skipping testproc $testproc_num: {$args} $reason"
+			if {$testsuite_testproc_log_calls == yes} {
+				subskip  "Skipping testproc $testproc_num: {$args} $reason"
+			} else {
+				subskip  "Skipping testproc $testproc_num: $reason"
+			}
 		} else {
-			log_info "Running testproc $testproc_num: $args"
+			if {$testsuite_testproc_log_calls != no} {
+				log_info "Running testproc $testproc_num: $args"
+			} else {
+				log_info "Running testproc $testproc_num"
+			}
 			set rc [{*}$args]
 		}
 	}
@@ -6709,13 +6722,26 @@ proc testproc args {
 	if {$_subtest_fail_count > $prev_fail} {
 		set reason "(Subtests: $prev_subtest to $curr_subtest)"
 		lappend  _testproc_fail_list $testproc_num
-		dict set _testproc_messages  $testproc_num [list failed "{$args} $reason"]
+		if {$testsuite_testproc_log_calls != no} {
+			dict set _testproc_messages  $testproc_num [list failed "{$args} $reason"]
+		} else {
+			dict set _testproc_messages  $testproc_num [list failed "$reason"]
+		}
 	} elseif {$_subtest_skip_count > $prev_skip} {
 		lappend  _testproc_skip_list $testproc_num
-		dict set _testproc_messages  $testproc_num [list skipped "{$args} $reason"]
+		if {$testsuite_testproc_log_calls == yes} {
+			dict set _testproc_messages  $testproc_num [list skipped "{$args} $reason"]
+		} else {
+			dict set _testproc_messages  $testproc_num [list skipped "$reason"]
+		}
 	} else {
+		set reason "(Subtests: $prev_subtest to $curr_subtest)"
 		lappend  _testproc_pass_list $testproc_num
-		dict set _testproc_messages  $testproc_num [list passed "{$args}"]
+		if {$testsuite_testproc_log_calls == yes} {
+			dict set _testproc_messages  $testproc_num [list passed "{$args} $reason"]
+		} else {
+			dict set _testproc_messages  $testproc_num [list passed "$reason"]
+		}
 	}
 
 	return $rc
