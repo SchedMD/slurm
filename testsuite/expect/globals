@@ -592,8 +592,14 @@ proc subskip args {
 
 	set description ""
 	set count       1
+	set nolog       0
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
+			-nolog {
+				set nolog 1
+				# Shift args down one
+				set args [lassign $args -]
+			}
 			-count   {set args [lassign $args - count]}
 			-*       {fail "Unknown option: [lindex $args 0]"}
 			default  break
@@ -613,7 +619,9 @@ proc subskip args {
 		set message [format "Subtest %2d skipped" $subtest_count]
 	}
 	if {$description ne ""} { append message " : $description" }
-	log_warn $message
+	if {$nolog != 1} {
+		log_warn $message
+	}
 	dict set _subtest_messages [expr $subtest_count] [list skip $message]
 }
 
@@ -6716,9 +6724,9 @@ proc testproc_alias {alias args} {
 	if {![_is_testproc_included $testproc_id $alias]} {
 		set reason "(Excluded from command line)"
 		if {$testsuite_testproc_log_calls == yes} {
-			subskip "Skipping testproc $testproc_id: {$args} $reason"
+			subskip -nolog "Skipping testproc $testproc_id: {$args} $reason"
 		} else {
-			subskip "Skipping testproc $testproc_id: $reason"
+			subskip -nolog "Skipping testproc $testproc_id: $reason"
 		}
 	} else {
 		if {$_testproc_skip_next} {
