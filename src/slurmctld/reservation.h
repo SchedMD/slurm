@@ -256,4 +256,6 @@ extern List get_resv_list(char *name, char **err_resv);
 
 extern void set_reserved_license_count(licenses_t *license);
 
+extern int get_magnetic_resv_count(void);
+
 #endif /* !_RESERVATION_H */

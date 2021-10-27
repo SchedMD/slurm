@@ -84,6 +84,7 @@ documents those changes that are of interest to users and administrators.
  -- Correct inverted logic where reduced version matching applied to non-SPANK
     plugins where it should have only applied to SPANK plugins.
  -- Fix issues where prologs would run in serial without PrologFlags=serial.
+ -- Make sure a job coming in is initially considered for magnetic reservations.
 
 * Changes in Slurm 21.08.2
 ==========================

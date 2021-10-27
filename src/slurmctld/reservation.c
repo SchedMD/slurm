@@ -7164,3 +7164,10 @@ extern void set_reserved_license_count(licenses_t *license)
 	list_for_each(resv_list, _foreach_reservation_license_list,
 		      license);
 }
+
+extern int get_magnetic_resv_count(void)
+{
+	xassert(magnetic_resv_list);
+
+	return list_count(magnetic_resv_list);
+}
