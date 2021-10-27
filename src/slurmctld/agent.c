@@ -542,10 +542,8 @@ static void _update_wdog_state(thd_t *thread_ptr,
 		if (thread_ptr->end_time <= thd_comp->now) {
 			log_flag(AGENT, "%s: agent thread %lu timed out",
 				 __func__, (unsigned long) thread_ptr->thread);
-			if (pthread_kill(thread_ptr->thread, SIGUSR1) == ESRCH)
-				*state = DSH_NO_RESP;
-			else
-				thread_ptr->end_time += message_timeout;
+			(void) pthread_kill(thread_ptr->thread, SIGUSR1);
+			thread_ptr->end_time += message_timeout;
 		}
 		break;
 	case DSH_NEW:
