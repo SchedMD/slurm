@@ -6539,35 +6539,37 @@ proc subtest args {
 ################################################################
 #
 # NAME
-#	_is_testproc_included - returns if testproc_num was included or not excluded in argv
+#	_is_testproc_included - returns if testproc_id was included or not excluded in argv
 #
 # SYNOPSIS
-#	_is_testproc_included testproc_num
+#	_is_testproc_included testproc_id testproc_alias
 #
 # DESCRIPTION
 #	From command line the test runner can use -i and -e to include or
 #	exclude some test functions by their number. This function must be
 #	used to check if the test runner included or excluded the given
-#	testproc_num.
+#	testproc_id.
 #
 # RETURN VALUE
-#	true is testproc_num was included with -i or not excluded -e,
-#	false otherwise
+#	true is testproc_id or testproc_alias was included with -i or not
+#	excluded -e, false otherwise
 #
 ################################################################
 
-proc _is_testproc_included {testproc_num} {
+proc _is_testproc_included {testproc_id testproc_alias} {
 	global _testproc_included _testproc_excluded
 
 	if {[llength $_testproc_included]} {
-		if {[lsearch $_testproc_included $testproc_num] >= 0} {
+		if {[lsearch $_testproc_included $testproc_id] >= 0 || \
+		    [lsearch $_testproc_included $testproc_alias] >= 0} {
 			return true
 		}
 		return false
 	}
 
 	if {[llength $_testproc_excluded]} {
-		if {[lsearch $_testproc_excluded $testproc_num] >= 0} {
+		if {[lsearch $_testproc_excluded $testproc_id] >= 0 || \
+		    [lsearch $_testproc_excluded $testproc_alias] >= 0} {
 			return false
 		}
 	}
@@ -6665,12 +6667,35 @@ proc run_following_testprocs {} {
 ################################################################
 
 proc testproc args {
+	return [testproc_alias "" {*}$args]
+}
+
+
+################################################################
+#
+# NAME
+#	testproc_alias - launcher to run or skip a testproc_call, with an alias
+#
+# SYNOPSIS
+#	testproc alias testproc_call
+#
+# DESCRIPTION
+#	See testproc
+#
+################################################################
+
+proc testproc_alias {alias args} {
 	global _testproc_pass_list _testproc_skip_list _testproc_fail_list
 	global _testproc_skip_next _testproc_skip_reason
 	global _testproc_messages testsuite_testproc_log_calls
 	global _subtest_pass_count
 	global _subtest_skip_count
 	global _subtest_fail_count
+
+	# Avoid integer alias to avoid confusions with testproc_id
+	if {[llength $alias] && [string is entier $alias]} {
+		fail "testproc_alias doesn't support integer alias, use alphanumeric"
+	}
 
 	# Save previous subtest counts and next subtest num
 	set prev_pass $_subtest_pass_count
@@ -6681,33 +6706,33 @@ proc testproc args {
 	                       $_subtest_fail_count + 1]
 
 	# Get the testproc number
-	set testproc_num [expr [llength $_testproc_pass_list] + \
-	                       [llength $_testproc_skip_list] + \
-	                       [llength $_testproc_fail_list] + 1]
+	set testproc_id [expr [llength $_testproc_pass_list] + \
+	                      [llength $_testproc_skip_list] + \
+	                      [llength $_testproc_fail_list] + 1]
 
 	# Run or skip the testproc
 	set rc $::RETURN_SUCCESS
 	set reason ""
-	if {![_is_testproc_included $testproc_num]} {
+	if {![_is_testproc_included $testproc_id $alias]} {
 		set reason "(Excluded from command line)"
 		if {$testsuite_testproc_log_calls == yes} {
-			subskip "Skipping testproc $testproc_num: {$args} $reason"
+			subskip "Skipping testproc $testproc_id: {$args} $reason"
 		} else {
-			subskip "Skipping testproc $testproc_num: $reason"
+			subskip "Skipping testproc $testproc_id: $reason"
 		}
 	} else {
 		if {$_testproc_skip_next} {
 			set reason "($_testproc_skip_reason)"
 			if {$testsuite_testproc_log_calls == yes} {
-				subskip  "Skipping testproc $testproc_num: {$args} $reason"
+				subskip  "Skipping testproc $testproc_id: {$args} $reason"
 			} else {
-				subskip  "Skipping testproc $testproc_num: $reason"
+				subskip  "Skipping testproc $testproc_id: $reason"
 			}
 		} else {
 			if {$testsuite_testproc_log_calls != no} {
-				log_info "Running testproc $testproc_num: $args"
+				log_info "Running testproc $testproc_id: $args"
 			} else {
-				log_info "Running testproc $testproc_num"
+				log_info "Running testproc $testproc_id"
 			}
 			set rc [{*}$args]
 		}
@@ -6719,28 +6744,31 @@ proc testproc args {
 	                       $_subtest_fail_count]
 
 	# Register the testproc as fail, skip or pass (based on subtests)
+	if {[llength $alias]} {
+		set alias "${alias}: "
+	}
 	if {$_subtest_fail_count > $prev_fail} {
 		set reason "(Subtests: $prev_subtest to $curr_subtest)"
-		lappend  _testproc_fail_list $testproc_num
+		lappend  _testproc_fail_list $testproc_id
 		if {$testsuite_testproc_log_calls != no} {
-			dict set _testproc_messages  $testproc_num [list failed "{$args} $reason"]
+			dict set _testproc_messages  $testproc_id [list failed "$alias{$args} $reason"]
 		} else {
-			dict set _testproc_messages  $testproc_num [list failed "$reason"]
+			dict set _testproc_messages  $testproc_id [list failed "$alias$reason"]
 		}
 	} elseif {$_subtest_skip_count > $prev_skip} {
-		lappend  _testproc_skip_list $testproc_num
+		lappend  _testproc_skip_list $testproc_id
 		if {$testsuite_testproc_log_calls == yes} {
-			dict set _testproc_messages  $testproc_num [list skipped "{$args} $reason"]
+			dict set _testproc_messages  $testproc_id [list skipped "$alias{$args} $reason"]
 		} else {
-			dict set _testproc_messages  $testproc_num [list skipped "$reason"]
+			dict set _testproc_messages  $testproc_id [list skipped "$alias$reason"]
 		}
 	} else {
 		set reason "(Subtests: $prev_subtest to $curr_subtest)"
-		lappend  _testproc_pass_list $testproc_num
+		lappend  _testproc_pass_list $testproc_id
 		if {$testsuite_testproc_log_calls == yes} {
-			dict set _testproc_messages  $testproc_num [list passed "{$args} $reason"]
+			dict set _testproc_messages  $testproc_id [list passed "$alias{$args} $reason"]
 		} else {
-			dict set _testproc_messages  $testproc_num [list passed "$reason"]
+			dict set _testproc_messages  $testproc_id [list passed "$alias$reason"]
 		}
 	}
 
