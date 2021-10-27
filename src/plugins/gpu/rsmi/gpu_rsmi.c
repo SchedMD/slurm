@@ -726,6 +726,7 @@ static void _rsmi_get_device_name(uint32_t dv_ind, char *device_name,
 		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
 		error("RSMI: Failed to get name of the GPU: %s", status_string);
 	}
+	gpu_common_underscorify_tolower(device_name);
 }
 
 /*
