@@ -38,6 +38,15 @@
 #define _GPU_COMMON_H
 
 #include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
+#include "src/common/slurm_xlator.h"
+#include "src/common/cgroup.h"
+#include "src/common/gpu.h"
+#include "src/common/gres.h"
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/read_config.h"
 
 #define FREQS_CONCISE   5 /* This must never be smaller than 5, or error */
 

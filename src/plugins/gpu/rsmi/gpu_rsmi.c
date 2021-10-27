@@ -39,15 +39,10 @@
 #define _GNU_SOURCE
 
 #include <dlfcn.h>
-
-#include "src/common/slurm_xlator.h"
-#include "src/common/cgroup.h"
-#include "src/common/gpu.h"
-#include "src/common/gres.h"
-#include "src/common/log.h"
-#include "src/common/read_config.h"
-#include "../common/gpu_common.h"
 #include <rocm_smi/rocm_smi.h>
+
+
+#include "../common/gpu_common.h"
 
 /*
  * #defines needed to test rsmi.

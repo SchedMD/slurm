@@ -36,18 +36,10 @@
 
 #define _GNU_SOURCE
 
-#include "src/common/slurm_xlator.h"
-#include "src/common/cgroup.h"
-#include "src/common/gpu.h"
-#include "src/common/gres.h"
-#include "src/common/log.h"
-#include "src/common/list.h"
-#include "src/common/read_config.h"
-
-#include "../common/gpu_common.h"
-
 #include <nvml.h>
 #include <math.h>
+
+#include "../common/gpu_common.h"
 
 /*
  * #defines needed to test nvml.
