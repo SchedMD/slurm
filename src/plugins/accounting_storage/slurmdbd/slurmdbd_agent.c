@@ -66,6 +66,7 @@ static pthread_t agent_tid      = 0;
 
 static bool      halt_agent          = 0;
 static time_t    slurmdbd_shutdown   = 0;
+static bool      agent_running       = 0;
 
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
@@ -611,6 +612,10 @@ static void *_agent(void *x)
 	dbd_list_msg_t list_msg;
 	DEF_TIMERS;
 
+	slurm_mutex_lock(&agent_lock);
+	agent_running = true;
+	slurm_mutex_unlock(&agent_lock);
+
 	list_req.msg_type = DBD_SEND_MULT_MSG;
 	list_req.conn = slurmdbd_conn;
 	list_req.data = &list_msg;
@@ -780,6 +785,7 @@ static void *_agent(void *x)
 		 list_count(agent_list));
 
 	FREE_NULL_LIST(agent_list);
+	agent_running = false;
 	slurm_mutex_unlock(&agent_lock);
 	return NULL;
 }
@@ -809,12 +815,20 @@ static void _shutdown_agent(void)
 	if (agent_tid) {
 		slurmdbd_shutdown = time(NULL);
 		for (i=0; i<50; i++) {	/* up to 5 secs total */
+			slurm_mutex_lock(&agent_lock);
+			if (!agent_running) {
+				slurm_mutex_unlock(&agent_lock);
+				goto fini;
+			}
 			slurm_cond_broadcast(&agent_cond);
+			slurm_mutex_unlock(&agent_lock);
+
 			usleep(100000);	/* 0.1 sec per try */
 			if (pthread_kill(agent_tid, SIGUSR1))
 				break;
 
 		}
+
 		/* On rare occasions agent thread may not end quickly,
 		 * perhaps due to communication problems with slurmdbd.
 		 * Cancel it and join before returning or we could remove
@@ -824,6 +838,8 @@ static void _shutdown_agent(void)
 			error("unable to save pending requests");
 			pthread_cancel(agent_tid);
 		}
+
+fini:
 		pthread_join(agent_tid,  NULL);
 		agent_tid = 0;
 	}
