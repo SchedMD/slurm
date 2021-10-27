@@ -1692,7 +1692,7 @@ void env_array_set_environment(char **env_array)
  * Unset all of the environment variables in a user's current
  * environment.
  *
- * (Note: becuae the environ array is decrementing with each
+ * (Note: because the environ array is decrementing with each
  *  unsetenv, only increment the ptr on a failure to unset.)
  */
 void env_unset_environment(void)
