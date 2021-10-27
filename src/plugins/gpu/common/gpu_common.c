@@ -36,6 +36,8 @@
 
 #include "gpu_common.h"
 
+#include <ctype.h>
+
 #include "src/common/log.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
@@ -227,6 +229,15 @@ extern void gpu_common_get_nearest_freq(unsigned int *freq,
 	}
 	error("%s: Got to the end of the function. This shouldn't happen. Freq: %u MHz",
 	      __func__, *freq);
+}
+
+extern void gpu_common_underscorify_tolower(char *str)
+{
+	for (int i = 0; str[i]; i++) {
+		str[i] = tolower(str[i]);
+		if (str[i] == ' ')
+			str[i] = '_';
+	}
 }
 
 extern void gpu_common_parse_gpu_freq(char *gpu_freq,

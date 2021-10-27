@@ -43,7 +43,6 @@
 #include "src/common/log.h"
 #include "src/common/list.h"
 #include "src/common/read_config.h"
-#include "ctype.h"
 
 #include "../common/gpu_common.h"
 
@@ -767,19 +766,6 @@ extern void gpu_p_get_device_count(unsigned int *device_count)
 }
 
 /*
- * Replace all space characters in a string with underscores, and make all
- * characters lower case
- */
-static void _underscorify_tolower(char *str)
-{
-	for (int i = 0; str[i]; i++) {
-		str[i] = tolower(str[i]);
-		if (str[i] == ' ')
-			str[i] = '_';
-	}
-}
-
-/*
  * Get the name of the GPU
  */
 static void _nvml_get_device_name(nvmlDevice_t *device, char *device_name,
@@ -790,7 +776,7 @@ static void _nvml_get_device_name(nvmlDevice_t *device, char *device_name,
 		error("Failed to get name of the GPU: %s",
 		      nvmlErrorString(nvml_rc));
 	}
-	_underscorify_tolower(device_name);
+	gpu_common_underscorify_tolower(device_name);
 }
 
 /*

@@ -72,6 +72,12 @@ extern void gpu_common_parse_gpu_freq(char *gpu_freq,
 				      unsigned int *mem_freq_num,
 				      bool *verbose_flag);
 
+/*
+ * Replace all space characters in a string with underscores, and make all
+ * characters lower case.
+ */
+extern void gpu_common_underscorify_tolower(char *str);
+
 extern int gpu_common_sort_freq_descending(const void *a, const void *b);
 
 #endif /* !_GPU_COMMON_H */
