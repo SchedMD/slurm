@@ -2827,11 +2827,6 @@ Same as \fB\-J, \-\-job\-name\fR except within an existing
 allocation, in which case it is ignored to avoid using the batch job's name
 as the name of each job step.
 .TP
-\fBSLURM_JOB_NODELIST\fR
-Same as \fB\-w\fR, \fB\-\-nodelist\fR=<\fIhost1,host2,...\fR or
-\fIfilename\fR>. If job has been resized, ensure that this nodelist is adjusted
-(or undefined) to avoid jobs steps being rejected due to down nodes.
-.TP
 \fBSLURM_JOB_NUM_NODES\fR
 Same as \fB\-N, \-\-nodes\fR.
 Total number of nodes in the job’s resource allocation.
