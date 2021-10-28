@@ -77,7 +77,14 @@ AC_DEFUN([X_AC_PMIX],
               #endif
             ], [ ] )],
             [ _x_ac_pmix_version="2" ],
+	    [ AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
+              #include<pmix_server.h>
+              #if (PMIX_VERSION_MAJOR != 1L)
+                #error "not version 1"
+              #endif
+            ], [ ] )],
 	    [ _x_ac_pmix_version="1" ] )
+            ])
             ])
             ])
 
