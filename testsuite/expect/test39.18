@@ -64,18 +64,10 @@ proc cleanup {} {
 
 # Run the test under valgrind if any arguments are given
 set use_valgrind 0
-set test_minor_offset 0
-set test_minor_in ""
 
 if {[lindex $argv 0] == "v" || [lindex $argv 0] == "valgrind"} {
 	set use_valgrind 1
-	set test_minor_offset 1
 	log_info "Running tests under valgrind!"
-}
-
-if {[lindex $argv $test_minor_offset] != ""} {
-	set test_minor_in [lindex $argv $test_minor_offset]
-	log_info "Running test $test_id.$test_minor_in"
 }
 
 proc touch_file {file} {
@@ -163,8 +155,7 @@ log_debug "Sizeof(unsigned long) = $ulong_bits"
 # Tests if $test_prog actual output matches expected output
 # NOTE: The output strings are sorted so the order of lines is irrelevant
 #
-# test_minor -		The minor test number (39.18.X). If global variable
-# 			"$test_minor_in" is set, then run only that test.
+# test_minor -		The minor test number (39.18.X).
 # slurm_conf_gres -     This is the `Gres=` value that would be in
 # 			slurm.conf for this node (it's easier to pass it into
 # 			the program directly than to regenerate a slurm.conf
@@ -183,14 +174,9 @@ log_debug "Sizeof(unsigned long) = $ulong_bits"
 # 			then the test will fail.
 #
 proc check_configuration {test_minor slurm_conf_gres gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0} } {
-	global test_dir nodename test_prog re_word_str test_minor_in
+	global test_dir nodename test_prog re_word_str
 	global test_name use_valgrind bin_sort file_in file_out
 	global bin_cat debug_mode
-
-	# Skip all tests not specified by the tester; force string comparison
-	if {$test_minor_in != "" && [string compare "$test_minor" "$test_minor_in"] != 0} {
-		return
-	}
 
 	log_info "====$test_name.$test_minor===="
 
@@ -403,9 +389,6 @@ testproc check_configuration 0.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $ex
 # ##############################################################################
 
 if [have_nvml] {
-	if {$test_minor_in == ""} {
-		log_info "Running NVML-specific tests:"
-	}
 
 # ##############################################################################
 # # Test 0.6 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
