@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld/agent - spawn more agent threads in a single _agent_retry().
  -- openapi/v0.0.38 - change job response types to more specific types than
     generic string.
+ -- srun - refuse to run on malformed SPANK environment variable.
 
 * Changes in Slurm 21.08.5
 ==========================

@@ -1325,8 +1325,8 @@ extern void init_spank_env(void)
 		name = xstrdup(environ[i] + 12);
 		eq = strchr(name, (int)'=');
 		if (eq == NULL) {
-			xfree(name);
-			break;
+			fatal("Malformed SPANK environment entry: %s",
+			      environ[i]);
 		}
 		eq[0] = '\0';
 		value = eq + 1;
