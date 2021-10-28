@@ -467,6 +467,7 @@ documents those changes that are of interest to users and administrators.
     reservation NULL node_bitmap.
  -- Fix error in GPU frequency validation logic.
  -- Fix error in pmix logic dealing with the incorrect size of buffer.
+ -- PMIx v1.1.4 and below are no longer supported.
 
 * Changes in Slurm 20.11.8
 ==========================

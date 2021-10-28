@@ -18,6 +18,8 @@ of Slurm will result in loss of state information.
 All SPANK plugins must be recompiled when upgrading from any Slurm version
 prior to 22.05.
 
+NOTE: PMIx v1.1.4 and below are no longer supported.
+
 HIGHLIGHTS
 ==========
 -- The template slurmrestd.service unit file now defaults to listen on both the
