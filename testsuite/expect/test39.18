@@ -54,6 +54,12 @@ if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	skip "This test can not run on a Cray system"
 }
 
+#
+## testproc configuration
+#
+# Reduce verbosity
+set testsuite_testproc_log_calls no
+
 proc cleanup {} {
 	global test_prog test_ulong_prog
 
