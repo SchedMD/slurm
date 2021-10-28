@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential deadlock when shutting down slurmctld.
  -- Fix regression in 21.08 where multi-node steps that requested MemPerCPU
     were not counted against the job's memory allocation on some nodes.
+ -- Fix issue with select/cons_tres and the partition limit MaxCpusPerNode where
+    the limit was enforced for one less CPU than the configured value.
 
 * Changes in Slurm 21.08.3
 ==========================
