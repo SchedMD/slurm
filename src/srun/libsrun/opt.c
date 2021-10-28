@@ -81,8 +81,6 @@
 #include "multi_prog.h"
 #include "opt.h"
 
-extern char **environ;
-
 static void _help(void);
 static void _usage(void);
 
@@ -1313,6 +1311,7 @@ static bool _opt_verify(void)
  *	via salloc or sbatch commands */
 extern void init_spank_env(void)
 {
+	extern char **environ;
 	int i;
 	char *name, *eq, *value;
 
