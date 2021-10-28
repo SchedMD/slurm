@@ -25,6 +25,8 @@ NOTE: If upgrading from < 20.11.
       be lost and set up AccountingStorageTRES with your GRES to be able to
       get equivalent information out of AllocTRES and ReqTRES after upgrade.
 
+NOTE: PMIx v1.1.4 and below are no longer supported.
+
 HIGHLIGHTS
 ==========
  -- Removed gres/mic plugin used to support Xeon Phi coprocessors.
