@@ -116,8 +116,8 @@ __thread char *thread_username = NULL;
  *		requestor for a given username and duration.
  */
 
-const char *jwt_key_field = "jwt_key=";
-const char *jwks_key_field = "jwks=";
+static const char *jwt_key_field = "jwt_key=";
+static const char *jwks_key_field = "jwks=";
 
 static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 {
