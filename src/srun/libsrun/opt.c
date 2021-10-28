@@ -1313,14 +1313,19 @@ extern void init_spank_env(void)
 {
 	extern char **environ;
 
-	if (environ == NULL)
+	if (environ == NULL) {
+		debug3("%s: environ is NULL", __func__);
 		return;
+	}
 
 	for (int i = 0; environ[i]; i++) {
 		char *name, *eq, *value;
 
-		if (xstrncmp(environ[i], "SLURM_SPANK_", 12))
+		if (xstrncmp(environ[i], "SLURM_SPANK_", 12)) {
+			debug3("%s: skipping environ[%d]: %s",
+			       __func__, i, environ[i]);
 			continue;
+		}
 		name = xstrdup(environ[i] + 12);
 		eq = strchr(name, (int)'=');
 		if (eq == NULL) {
@@ -1331,6 +1336,9 @@ extern void init_spank_env(void)
 		value = eq + 1;
 		spank_set_job_env(name, value, 1);
 		xfree(name);
+
+		debug3("%s: adding SPANK environ[%d]: %s",
+		       __func__, i, environ[i]);
 	}
 
 }
