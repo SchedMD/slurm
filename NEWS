@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
  -- Add acct_gather_interconnect/sysfs plugin.
  -- Fix gpus spanning more resources than needed when usng --cpus-per-gpu.
  -- burst_buffer plugins - err_msg added to bb_p_job_validate().
+ -- burst_buffer plugins - Send user specific error message if permission
+    denied due to AllowUsers or DenyUsers in burst_buffer.conf.
 
 * Changes in Slurm 21.08.6
 ==========================

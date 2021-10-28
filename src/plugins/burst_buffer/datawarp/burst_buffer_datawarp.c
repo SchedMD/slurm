@@ -2867,6 +2867,7 @@ extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
 
 	xassert(job_desc);
 	xassert(job_desc->tres_req_cnt);
+	xassert(err_msg);
 
 	rc = _parse_bb_opts(job_desc, &bb_size, submit_uid);
 	if (rc != SLURM_SUCCESS)
@@ -2883,6 +2884,7 @@ extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
 
 	if (job_desc->user_id == 0) {
 		info("User root can not allocate burst buffers");
+		*err_msg = xstrdup("User root can not allocate burst buffers");
 		return ESLURM_BURST_BUFFER_PERMISSION;
 	}
 
@@ -2897,6 +2899,7 @@ extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
 			}
 		}
 		if (!found_user) {
+			*err_msg = xstrdup("User not found in AllowUsers");
 			rc = ESLURM_BURST_BUFFER_PERMISSION;
 			goto fini;
 		}
@@ -2912,6 +2915,7 @@ extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
 			}
 		}
 		if (found_user) {
+			*err_msg = xstrdup("User found in DenyUsers");
 			rc = ESLURM_BURST_BUFFER_PERMISSION;
 			goto fini;
 		}
