@@ -80,7 +80,14 @@ AC_DEFUN([X_AC_PMIX],
               #endif
             ], [ ] )],
             [ _x_ac_pmix_version="2" ],
+	    [ AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
+              #include<pmix_server.h>
+              #if (PMIX_VERSION_MAJOR != 1L)
+                #error "not version 1"
+              #endif
+            ], [ ] )],
 	    [ _x_ac_pmix_version="1" ] )
+            ])
             ])
             ])
 
@@ -144,23 +151,29 @@ AC_DEFUN([X_AC_PMIX],
               break
             fi
 
-            if [test "$_x_ac_pmix_version" = "4"]; then
-              if [test "$_x_ac_pmix_v4_found" = "1" ]; then
-                m4_define([err_pmix_v4],[error processing $x_ac_cv_pmix_libdir: PMIx v4.x])
-                AC_MSG_ERROR(err_pmix_v4 err_pmix)
-              fi
-              _x_ac_pmix_v4_found="1"
-              PMIX_V4_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
-              if test "$ac_with_rpath" = "yes"; then
-                PMIX_V4_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
-              else
-                PMIX_V4_CPPFLAGS=$PMIX_V4_CPPFLAGS" -DPMIXP_V4_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
-              fi
-              # We don't want to search the other lib after we found it in
-              # one place or we might report a false duplicate if lib64 is a
-              # symlink of lib.
-              break
-            fi
+	    # V4 does not compile with Slurm as of this comment. When and if
+	    # it does in the future just uncomment this block below and v4
+	    # will be allowed to compile. We are waiting on PMIx to make this
+	    # happen. If v4 is important to you please contact them instead of
+	    # opening a bug with SchedMD.
+
+            # if [test "$_x_ac_pmix_version" = "4"]; then
+            #   if [test "$_x_ac_pmix_v4_found" = "1" ]; then
+            #     m4_define([err_pmix_v4],[error processing $x_ac_cv_pmix_libdir: PMIx v4.x])
+            #     AC_MSG_ERROR(err_pmix_v4 err_pmix)
+            #   fi
+            #   _x_ac_pmix_v4_found="1"
+            #   PMIX_V4_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
+            #   if test "$ac_with_rpath" = "yes"; then
+            #     PMIX_V4_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
+            #   else
+            #     PMIX_V4_CPPFLAGS=$PMIX_V4_CPPFLAGS" -DPMIXP_V4_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
+            #   fi
+            #   # We don't want to search the other lib after we found it in
+            #   # one place or we might report a false duplicate if lib64 is a
+            #   # symlink of lib.
+            #   break
+            # fi
           done
         done
       ])
