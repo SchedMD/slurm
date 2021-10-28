@@ -17,6 +17,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 21.08 where slurmd and slurmstepd were not constrained
     with CpuSpecList or CoreSpecCount.
  -- Fix cloud jobs running without powering up nodes after a reconfig/restart.
+ -- CVE-2021-43337 - Fix security issue with new AccountingStoreFlags=job_script
+    and job_env options where users could request scripts and environments they
+    should not have been permitted to access.
 
 * Changes in Slurm 21.08.3
 ==========================
