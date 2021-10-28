@@ -34,6 +34,8 @@ NOTE: In the database the AllocGres and ReqGres columns have been removed as
       be lost and set up AccountingStorageTRES with your GRES to be able to
       get equivalent information out of AllocTRES and ReqTRES after upgrade.
 
+NOTE: PMIx v1.1.4 and below are no longer supported.
+
 HIGHLIGHTS
 ==========
  -- The example systemd unit files have been changed to the "simple" type of
