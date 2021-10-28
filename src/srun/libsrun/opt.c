@@ -1312,13 +1312,13 @@ static bool _opt_verify(void)
 extern void init_spank_env(void)
 {
 	extern char **environ;
-	int i;
-	char *name, *eq, *value;
 
 	if (environ == NULL)
 		return;
 
-	for (i = 0; environ[i]; i++) {
+	for (int i = 0; environ[i]; i++) {
+		char *name, *eq, *value;
+
 		if (xstrncmp(environ[i], "SLURM_SPANK_", 12))
 			continue;
 		name = xstrdup(environ[i] + 12);
