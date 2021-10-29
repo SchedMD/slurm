@@ -137,25 +137,14 @@ if {$rc} {
 
 # Build program to determine size of unsigned long in C
 set build_cmd "$bin_cc ${test_ulong_prog}.c -o ${test_ulong_prog}"
-log_debug "$build_cmd"
+log_debug "Build command: $build_cmd"
 eval exec $build_cmd
 
-spawn ./$test_ulong_prog
-expect {
-	-re "($number)" {
-		set ulong_bits $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "No response from $test_ulong_prog"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail -nolog "./$test_ulong_prog"]
+if {$output != $ulong_bits} {
+	log_warn "We are running on a non-64-bit architecture, where sizeof(unsigned long) * 8 = $output bits"
+	set ulong_bits $output
 }
-
-log_debug "Sizeof(unsigned long) = $ulong_bits"
-
 
 #
 # Tests if $test_prog actual output matches expected output
