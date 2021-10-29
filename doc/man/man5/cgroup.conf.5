@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "September 2021" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "October 2021" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -125,10 +125,14 @@ which case the job's RAM limit will be set to its swap space limit if
 Also see \fBAllowedSwapSpace\fR, \fBAllowedRAMSpace\fR and
 \fBConstrainSwapSpace\fR.
 
-\fBNOTE\fR: When using \fBConstrainRAMSpace\fR, if a process tries to consume
-more memory than is available, this process will be killed. This differs
-from the behavior when using \fBOverMemoryKill\fR, where the whole step
-will be killed.
+\fBNOTE\fR: When using \fBConstrainRAMSpace\fR, if the combined memory used
+by all processes in a step is greater than the limit, then the kernel will
+trigger an OOM event, killing one or more of the processes in the step. The
+step state will be marked as OOM, but the step itself will keep running and
+other processes in the step may continue to run as well.
+This differs from the behavior of \fBOverMemoryKill\fR, where the whole step
+will be killed/cancelled. It also differs in that the memory usage is
+checked on a per-process basis by the JobAcctGather polling system.
 
 \fBNOTE\fR: When enabled, ConstrainRAMSpace can lead to a noticeable decline in
 per\-node job throughout. Sites with high\-throughput requirements should
