@@ -2039,6 +2039,7 @@ _srun()
     --wckey) offer_list "$(_wckeys)" ;;
     --x11) offer_list "all first last" ;;
     :|afterany|after|afternotok|afterok) offer_list "$(_jobs)" ;;
+    *)  COMPREPLY=( $( compgen -c -- "$cur" ) ) ; return
     esac
 }
 complete -F _srun srun
