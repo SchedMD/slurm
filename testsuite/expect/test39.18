@@ -200,85 +200,36 @@ rm -rf $file_out"
 	##
 	### Parse the `GRES_PARSABLE` output
 	##
-	set sorted_actual ""
-
-	if {!$debug_mode} {
-		log_user 0
+	if {$debug_mode} {
+		set output [run_command_output -fail "$file_in"]
+	} else {
+		set output [run_command_output -fail -nolog "$file_in"]
 	}
-	spawn $file_in
-	expect {
-		-re "(GRES_PARSABLE$re_word_str)" {
-			if {$sorted_actual == ""} {
-				set sorted_actual "\n"
-			}
-			# Append string
-			set sorted_actual "$sorted_actual$expect_out(1,string)\n"
-			exp_continue
-		}
-		timeout {
-			fail "No response from $test_prog"
-		}
-		eof {
-			wait
-		}
-	}
+	set sorted_actual [regexp -all -inline "GRES_PARSABLE$re_word_str" $output]
 
-	##
-	### Run through output again to parse the errors (if needed)
-	##
-	# Do this in a separate expect loop to prevent the two unrelated regexes
-	# colliding with each other.
-	# When expect matches something in a chunk of text, if exp_continue is
-	# called, it throws away everything up to and including that text and
-	# then continues searching. This means multiple regexes in the same
-	# expect loop can skip each other. So avoid this.
-	set errs_actual 0
-	# Doing a regex on an empty string stalls expect. So don't do it.
+	# Check for expected errors
 	if {$err_msgs != ""} {
-		# We for sure don't want to print this out
-		log_user 0
-		spawn $file_in
-		expect {
-			-re "($err_msgs)" {
-				log_debug "Found '$err_msgs'"
-				incr errs_actual
-				exp_continue
-			}
-			timeout {
-				fail "No response from $test_prog"
-			}
-			eof {
-				wait
-			}
-		}
+		set errs_actual [regexp -all "$err_msgs" $output]
+	} else {
+		set errs_actual 0
 	}
 
-	set sorted_expected ""
 	make_bash_script $file_in "/bin/echo \"$output_expected\" | $bin_sort"
-	spawn $file_in
-	expect {
-		-re "(GRES_PARSABLE$re_word_str)" {
-			if {$sorted_expected == ""} {
-				set sorted_expected "\n"
-			}
-			# Append string
-			set sorted_expected "$sorted_expected$expect_out(1,string)\n"
-			exp_continue
-		}
-		timeout {
-			fail "No response from $test_prog"
-		}
-		eof {
-			wait
-		}
-	}
+	set output [run_command_output -fail -nolog "$file_in"]
+	set sorted_expected [regexp -all -inline "GRES_PARSABLE$re_word_str" $output]
+
 	file delete $file_in
-	log_user 1
 
 	# Check the output with what is expected
-	log_debug "Actual (sorted): $sorted_actual"
+	log_debug "Actual (sorted):"
+	foreach {value} $sorted_actual {
+		log_debug "$value"
+	}
 	if {![subtest {$sorted_actual == $sorted_expected} "Expected output does not match actual output"]} {
-		log_debug "Expected (sorted): $sorted_expected"
+		log_debug "Expected (sorted):"
+		foreach {value} $sorted_expected {
+			log_debug "$value"
+		}
 	}
 
 	#  Check for expected errors, if applicable
