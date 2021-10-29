@@ -809,39 +809,40 @@ static void _create_agent(void)
 
 static void _shutdown_agent(void)
 {
-	int i;
+	if (!agent_tid)
+		return;
 
-	if (agent_tid) {
-		slurmdbd_shutdown = time(NULL);
-		for (i=0; i<50; i++) {	/* up to 5 secs total */
-			slurm_mutex_lock(&agent_lock);
-			if (!agent_running) {
-				slurm_mutex_unlock(&agent_lock);
-				goto fini;
-			}
-			slurm_cond_broadcast(&agent_cond);
+	slurmdbd_shutdown = time(NULL);
+	for (int i = 0; i < 50; i++) {	/* up to 5 secs total */
+		slurm_mutex_lock(&agent_lock);
+		if (!agent_running) {
 			slurm_mutex_unlock(&agent_lock);
-
-			usleep(100000);	/* 0.1 sec per try */
-			if (pthread_kill(agent_tid, SIGUSR1))
-				break;
-
+			goto fini;
 		}
+		slurm_cond_broadcast(&agent_cond);
+		slurm_mutex_unlock(&agent_lock);
 
-		/* On rare occasions agent thread may not end quickly,
-		 * perhaps due to communication problems with slurmdbd.
-		 * Cancel it and join before returning or we could remove
-		 * and leave the agent without valid data */
-		if (pthread_kill(agent_tid, 0) == 0) {
-			error("agent failed to shutdown gracefully");
-			error("unable to save pending requests");
-			pthread_cancel(agent_tid);
-		}
+		usleep(100000);	/* 0.1 sec per try */
+		if (pthread_kill(agent_tid, SIGUSR1))
+			break;
+
+	}
+
+	/*
+	 * On rare occasions agent thread may not end quickly,
+	 * perhaps due to communication problems with slurmdbd.
+	 * Cancel it and join before returning or we could remove
+	 * and leave the agent without valid data.
+	 */
+	if (pthread_kill(agent_tid, 0) == 0) {
+		error("agent failed to shutdown gracefully");
+		error("unable to save pending requests");
+		pthread_cancel(agent_tid);
+	}
 
 fini:
-		pthread_join(agent_tid,  NULL);
-		agent_tid = 0;
-	}
+	pthread_join(agent_tid,  NULL);
+	agent_tid = 0;
 }
 
 /****************************************************************************
