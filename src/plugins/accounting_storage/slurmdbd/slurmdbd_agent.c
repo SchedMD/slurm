@@ -41,7 +41,6 @@
 
 #include "src/common/fd.h"
 #include "src/common/slurmdbd_pack.h"
-#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "slurmdbd_agent.h"
@@ -549,10 +548,6 @@ static void _max_dbd_msg_action(uint32_t *msg_cnt)
 		*msg_cnt -= _purge_job_start_req();
 }
 
-static void _sig_handler(int signal)
-{
-}
-
 static int _print_agent_list_msg_type(void *x, void *arg)
 {
 	buf_t *buffer = (buf_t *) x;
@@ -606,7 +601,6 @@ static void *_agent(void *x)
 	buf_t *buffer;
 	struct timespec abs_time;
 	static time_t fail_time = 0;
-	int sigarray[] = {SIGUSR1, 0};
 	persist_msg_t list_req = {0};
 	dbd_list_msg_t list_msg;
 	DEF_TIMERS;
@@ -619,11 +613,6 @@ static void *_agent(void *x)
 	list_req.conn = slurmdbd_conn;
 	list_req.data = &list_msg;
 	memset(&list_msg, 0, sizeof(dbd_list_msg_t));
-
-	/* Prepare to catch SIGUSR1 to interrupt pending
-	 * I/O and terminate in a timely fashion. */
-	xsignal(SIGUSR1, _sig_handler);
-	xsignal_unblock(sigarray);
 
 	log_flag(AGENT, "slurmdbd agent_count=%d with msg_type=%s",
 		 list_count(agent_list),
