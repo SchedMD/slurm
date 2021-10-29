@@ -59,6 +59,8 @@ documents those changes that are of interest to users and administrators.
  -- Add comment to service files about disabling logging through journald.
  -- Add SLURM_NODE_ALIASES env to RPC Prolog (PrologFlags=alloc) environment.
  -- Limit max_script_size to 512 MB.
+ -- Fix shutdown of slurmdbd plugin to correctly notice when the agent thread
+    finishes.
 
 * Changes in Slurm 21.08.2
 ==========================
@@ -441,6 +443,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix error in GPU frequency validation logic.
  -- Fix error in pmix logic dealing with the incorrect size of buffer.
  -- PMIx v1.1.4 and below are no longer supported.
+ -- Fix shutdown of slurmdbd plugin to correctly notice when the agent thread
+    finishes.
 
 * Changes in Slurm 20.11.8
 ==========================
