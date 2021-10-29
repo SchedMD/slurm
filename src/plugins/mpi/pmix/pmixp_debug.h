@@ -40,8 +40,6 @@
 #include "pmixp_common.h"
 #include "pmixp_info.h"
 
-#define MAX_MSG_SIZE 1024
-
 #define PMIXP_DEBUG(format, args...) {				\
 	debug("%s [%d]: %s:%d: " format "",			\
 	      pmixp_info_hostname(), pmixp_info_nodeid(),	\
