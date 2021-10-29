@@ -88,6 +88,7 @@ documents those changes that are of interest to users and administrators.
  -- Make sure a job coming in is initially considered for magnetic reservations.
  -- PMIx v1.1.4 and below are no longer supported.
  -- Add comment to service files about disabling logging through journald.
+ -- Add SLURM_NODE_ALIASES env to RPC Prolog (PrologFlags=alloc) environment.
 
 * Changes in Slurm 21.08.2
 ==========================

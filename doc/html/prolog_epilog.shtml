@@ -554,8 +554,8 @@ SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_NODE_ALIASES</b>
 Contains the node name, communication address and hostname of a node.
-Used for cloud environments. Available in SrunProlog, TaskProlog,
-SrunEpilog and TaskEpilog.</li>
+Used for cloud environments. Available in Prolog (PrologFlags=alloc only),
+SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_NODEID</b>
 ID of current node relative to other nodes in a multi-node job. Available in
@@ -692,6 +692,6 @@ the job to be requeued. Only batch jobs can be requeued. Interactive jobs
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 5 August 2021</p>
+<p style="text-align:center;">Last modified 29 October 2021</p>
 
 <!--#include virtual="footer.txt"-->

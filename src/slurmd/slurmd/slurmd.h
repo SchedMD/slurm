@@ -61,6 +61,7 @@ typedef struct {
 	uint32_t het_job_id;
 	uint32_t jobid;
 	uint32_t step_id;
+	char *node_aliases;
 	char *node_list;
 	char *partition;
 	char **spank_job_env;
