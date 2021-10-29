@@ -87,6 +87,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues where prologs would run in serial without PrologFlags=serial.
  -- Make sure a job coming in is initially considered for magnetic reservations.
  -- PMIx v1.1.4 and below are no longer supported.
+ -- Add comment to service files about disabling logging through journald.
 
 * Changes in Slurm 21.08.2
 ==========================
