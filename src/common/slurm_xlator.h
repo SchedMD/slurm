@@ -207,6 +207,8 @@
 #define	list_find		slurm_list_find
 #define	list_remove		slurm_list_remove
 #define	list_delete_item	slurm_list_delete_item
+#define list_flush		slurm_list_flush
+#define list_flush_max		slurm_list_flush_max
 
 /* log.[ch] functions */
 #define get_log_level		slurm_get_log_level

@@ -70,6 +70,7 @@ strong_alias(list_delete_ptr,	slurm_list_delete_ptr);
 strong_alias(list_for_each,	slurm_list_for_each);
 strong_alias(list_for_each_max,	slurm_list_for_each_max);
 strong_alias(list_flush,	slurm_list_flush);
+strong_alias(list_flush_max,	slurm_list_flush_max);
 strong_alias(list_sort,		slurm_list_sort);
 strong_alias(list_flip,		slurm_list_flip);
 strong_alias(list_push,		slurm_list_push);
@@ -545,10 +546,12 @@ int list_for_each_max(List l, int *max, ListForF f, void *arg,
 	return n;
 }
 
-/* list_flush()
- */
-int
-list_flush (List l)
+int list_flush(List l)
+{
+	return list_flush_max(l, -1);
+}
+
+int list_flush_max(List l, int max)
 {
 	ListNode *pp;
 	void *v;
@@ -559,7 +562,7 @@ list_flush (List l)
 	slurm_mutex_lock(&l->mutex);
 
 	pp = &l->head;
-	while (*pp) {
+	for (int i = 0; (max < 0 || i < max) && *pp; i++) {
 		if ((v = _list_node_destroy(l, pp))) {
 			if (l->fDel)
 				l->fDel(v);
