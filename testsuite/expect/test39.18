@@ -257,9 +257,7 @@ rm -rf $file_out"
 		set errs_actual 0
 	}
 
-	make_bash_script $file_in "/bin/echo \"$output_expected\""
-	set output [run_command_output -fail -nolog "$file_in"]
-	set expected [regexp -all -inline "GRES_PARSABLE$re_word_str" $output]
+	set expected [regexp -all -inline "GRES_PARSABLE$re_word_str" $output_expected]
 
 	file delete $file_in
 
