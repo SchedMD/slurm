@@ -277,7 +277,9 @@ rm -rf $file_out"
 
 	# Check the output with what is expected
 	log_debug "Actual (sorted): $sorted_actual"
-	subtest {$sorted_actual == $sorted_expected} "Verify expected output"
+	if {![subtest {$sorted_actual == $sorted_expected} "Expected output does not match actual output"]} {
+		log_debug "Expected (sorted): $sorted_expected"
+	}
 
 	#  Check for expected errors, if applicable
 	if {$err_msgs != ""} {
