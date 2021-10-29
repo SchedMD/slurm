@@ -93,27 +93,22 @@ if {[lindex $argv 0] == "v" || [lindex $argv 0] == "valgrind"} {
 	log_info "Running tests under valgrind!"
 } elseif {[lindex $argv 0] == "i" || [lindex $argv 0] == "info"} {
 	set debug_mode 1
-	set test_minor_offset 1
 	log_info "Running tests under debug mode with log level INFO"
 	set debug_level $SLURM_LOG_LEVEL_INFO
 } elseif {[lindex $argv 0] == "verbose"} {
 	set debug_mode 1
-	set test_minor_offset 1
 	log_info "Running tests under debug mode with log level VERBOSE"
 	set debug_level $SLURM_LOG_LEVEL_VERBOSE
 } elseif {[lindex $argv 0] == "d" || [lindex $argv 0] == "d1" || [lindex $argv 0] == "debug"} {
 	set debug_mode 1
-	set test_minor_offset 1
 	log_info "Running tests under debug mode with log level DEBUG"
 	set debug_level $SLURM_LOG_LEVEL_DEBUG
 } elseif {[lindex $argv 0] == "d2" || [lindex $argv 0] == "debug2"} {
 	set debug_mode 1
-	set test_minor_offset 1
 	log_info "Running tests under debug mode with log level DEBUG2"
 	set debug_level $SLURM_LOG_LEVEL_DEBUG2
 } elseif {[lindex $argv 0] == "d3" || [lindex $argv 0] == "debug3"} {
 	set debug_mode 1
-	set test_minor_offset 1
 	log_info "Running tests under debug mode with log level DEBUG3"
 	set debug_level $SLURM_LOG_LEVEL_DEBUG3
 }
