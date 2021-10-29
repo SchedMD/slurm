@@ -233,7 +233,6 @@ rm -rf $file_out"
 	# then continues searching. This means multiple regexes in the same
 	# expect loop can skip each other. So avoid this.
 	set errs_actual 0
-	set ignore_err_msgs 0
 	# Doing a regex on an empty string stalls expect. So don't do it.
 	if {$err_msgs != ""} {
 		# We for sure don't want to print this out
@@ -242,9 +241,7 @@ rm -rf $file_out"
 		expect {
 			-re "($err_msgs)" {
 				log_debug "Found '$err_msgs'"
-				if {$ignore_err_msgs == 0} {
-					incr errs_actual
-				}
+				incr errs_actual
 				exp_continue
 			}
 			timeout {
