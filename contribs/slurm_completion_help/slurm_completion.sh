@@ -1884,9 +1884,10 @@ _sbatch()
     --wait-all-nodes) offer_list "1 0" ;;
     --wckey) offer_list "$(_wckeys)" ;;
     :|afterany|after|afternotok|afterok) offer_list "$(_jobs)" ;;
+    *)  _filedir
     esac
 }
-complete -F _sbatch sbatch
+complete -o filenames -F _sbatch sbatch
 
 _srun()
 {

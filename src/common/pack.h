@@ -49,6 +49,12 @@
 #include "src/common/bitstring.h"
 #include "src/common/xassert.h"
 
+/*
+ *  Maximum message size. Messages larger than this value (in bytes)
+ *  will not be received.
+ */
+#define MAX_MSG_SIZE (1024 * 1024 * 1024)
+
 #define BUF_MAGIC 0x42554545
 #define BUF_SIZE (16 * 1024)
 #define MAX_BUF_SIZE ((uint32_t) 0xffff0000)	/* avoid going over 32-bits */

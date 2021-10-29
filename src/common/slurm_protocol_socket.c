@@ -72,13 +72,6 @@
 #define RANDOM_USER_PORT ((uint16_t) ((lrand48() % \
 		(MAX_USER_PORT - MIN_USER_PORT + 1)) + MIN_USER_PORT))
 
-/*
- *  Maximum message size. Messages larger than this value (in bytes)
- *  will not be received.
- */
-#define MAX_MSG_SIZE     (1024*1024*1024)
-
-
 /* Static functions */
 static int _slurm_connect(int __fd, struct sockaddr const * __addr,
 			  socklen_t __len);
