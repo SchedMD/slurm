@@ -54,7 +54,7 @@ typedef struct {
 #define PMIXP_INFO_MAGIC 0xCAFE01F0
 	int magic;
 #endif
-	char nspace[PMIXP_MAX_NSLEN+1];
+	pmix_nspace_t nspace;
 	slurm_step_id_t step_id; /* Current step id (or NO_VAL) */
 	uint32_t nnodes; /* number of nodes in current step */
 	uint32_t nnodes_job; /* number of nodes in current job */

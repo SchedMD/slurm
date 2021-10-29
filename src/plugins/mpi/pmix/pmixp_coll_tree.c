@@ -99,7 +99,7 @@ int pmixp_coll_tree_unpack(buf_t *buf, pmixp_coll_type_t *type,
 		/* 3. get namespace/rank of particular process */
 		if ((rc = unpackmem_ptr(&temp_ptr, &tmp, buf)) ||
 		    (strlcpy(procs[i].nspace, temp_ptr,
-			     PMIXP_MAX_NSLEN + 1) > PMIXP_MAX_NSLEN)) {
+			     sizeof(procs[i].nspace)) > PMIX_MAX_NSLEN)) {
 			PMIXP_ERROR("Cannot unpack namespace for process #%d",
 				    i);
 			return rc;

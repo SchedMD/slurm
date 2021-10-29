@@ -1370,7 +1370,7 @@ int pmixp_server_direct_conn_early(void)
 
 	PMIXP_DEBUG("called");
 	proc.rank = pmixp_lib_get_wildcard();
-	strncpy(proc.nspace, _pmixp_job_info.nspace, PMIXP_MAX_NSLEN);
+	strncpy(proc.nspace, _pmixp_job_info.nspace, sizeof(proc.nspace));
 
 	for (i=0; i < sizeof(types)/sizeof(types[0]); i++){
 		if (type != PMIXP_COLL_TYPE_FENCE_MAX && type != types[i]) {
@@ -1977,7 +1977,7 @@ static int _pmixp_server_cperf_iter(pmixp_coll_type_t type, char *data, int ndat
 	int cur_count = _pmixp_server_cperf_count();
 	pmixp_cperf_cbfunc_fn_t cperf_cbfunc = _pmixp_cperf_tree_cbfunc;
 
-	strncpy(procs.nspace, pmixp_info_namespace(), PMIXP_MAX_NSLEN);
+	strncpy(procs.nspace, pmixp_info_namespace(), sizeof(procs.nspace));
 	procs.rank = pmixp_lib_get_wildcard();
 
 	switch (type) {

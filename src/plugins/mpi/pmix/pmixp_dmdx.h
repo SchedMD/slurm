@@ -43,7 +43,7 @@
 
 int pmixp_dmdx_init(void);
 int pmixp_dmdx_finalize(void);
-int pmixp_dmdx_get(const char *nspace, int rank,
+int pmixp_dmdx_get(const pmix_nspace_t nspace, int rank,
 		   void *cbfunc, void *cbdata);
 void pmixp_dmdx_process(buf_t *buf, int nodeid, uint32_t seq);
 void pmixp_dmdx_timeout_cleanup(void);
