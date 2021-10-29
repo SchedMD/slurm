@@ -823,9 +823,6 @@ static void _shutdown_agent(void)
 		slurm_mutex_unlock(&agent_lock);
 
 		usleep(100000);	/* 0.1 sec per try */
-		if (pthread_kill(agent_tid, SIGUSR1))
-			break;
-
 	}
 
 	/*
@@ -834,11 +831,9 @@ static void _shutdown_agent(void)
 	 * Cancel it and join before returning or we could remove
 	 * and leave the agent without valid data.
 	 */
-	if (pthread_kill(agent_tid, 0) == 0) {
-		error("agent failed to shutdown gracefully");
-		error("unable to save pending requests");
-		pthread_cancel(agent_tid);
-	}
+	error("agent failed to shutdown gracefully");
+	error("unable to save pending requests");
+	pthread_cancel(agent_tid);
 
 fini:
 	pthread_join(agent_tid,  NULL);
