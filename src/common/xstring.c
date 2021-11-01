@@ -73,6 +73,8 @@ strong_alias(_xstrcat,		slurm_xstrcat);
 strong_alias(_xstrncat,		slurm_xstrncat);
 strong_alias(_xstrcatchar,	slurm_xstrcatchar);
 strong_alias(_xstrftimecat,	slurm_xstrftimecat);
+strong_alias(_xiso8601timecat,	slurm_xiso8601timecat);
+strong_alias(_xrfc5424timecat,	slurm_xrfc5424timecat);
 strong_alias(_xstrfmtcat,	slurm_xstrfmtcat);
 strong_alias(_xstrfmtcatat,	slurm_xstrfmtcatat);
 strong_alias(_xmemcat,		slurm_xmemcat);
