@@ -66,6 +66,7 @@ documents those changes that are of interest to users and administrators.
     as the resulting RPC generated can exceed internal limits and won't be
     sent, preventing further communication with SlurmDBD.
     This issue is indicated by "error: Invalid msg_size" in your log files.
+ -- Fix compile issue with --without-shared-libslurm.
 
 * Changes in Slurm 21.08.2
 ==========================
