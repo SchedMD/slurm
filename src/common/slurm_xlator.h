@@ -458,6 +458,7 @@
 #define plugrack_read_dir       slurm_plugrack_read_dir
 #define plugrack_use_by_type    slurm_plugrack_use_by_type
 
+/* slurm_jobacct_gather.[ch] functions */
 #define jobacctinfo_pack	slurm_jobacctinfo_pack
 #define jobacctinfo_unpack	slurm_jobacctinfo_unpack
 #define jobacctinfo_create      slurm_jobacctinfo_create
@@ -489,10 +490,10 @@
 #define pack_slurm_step_layout          slurm_pack_slurm_step_layout
 #define unpack_slurm_step_layout        slurm_unpack_slurm_step_layout
 
-/* slurm_step_route.[ch] functions */
+/* slurm_route.[ch] functions */
 #define route_split_hostlist_treewidth	slurm_route_split_hostlist_treewidth
 
-
+/* eio.[ch] functions */
 #define eio_handle_create		slurm_eio_handle_create
 #define eio_handle_destroy		slurm_eio_handle_destroy
 #define eio_handle_mainloop		slurm_eio_handle_mainloop
