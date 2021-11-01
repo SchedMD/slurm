@@ -93,6 +93,11 @@ documents those changes that are of interest to users and administrators.
  -- Limit max_script_size to 512 MB.
  -- Fix shutdown of slurmdbd plugin to correctly notice when the agent thread
     finishes.
+ -- slurmdbd - fix issue with larger batch script files being sent to SlurmDBD
+    with AccountingStoreFlags=job_script that can lead to accounting data loss
+    as the resulting RPC generated can exceed internal limits and won't be
+    sent, preventing further communication with SlurmDBD.
+    This issue is indicated by "error: Invalid msg_size" in your log files.
 
 * Changes in Slurm 21.08.2
 ==========================

@@ -284,6 +284,12 @@ static void *_set_db_inx_thread(void *no_data)
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	/* DEF_TIMERS; */
 
+	/*
+	 * We only want to destory the pointer here not the contents so call
+	 * special function _partial_destroy_dbd_job_start.
+	 */
+	List local_job_list = list_create(_partial_destroy_dbd_job_start);
+
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "dbinx", NULL, NULL, NULL) < 0) {
 		error("cannot set my name to dbinx: %m");
@@ -293,7 +299,6 @@ static void *_set_db_inx_thread(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	while (!plugin_shutdown) {
-		List local_job_list = NULL;
 		/* START_TIMER; */
 		/* info("starting db_thread"); */
 		slurm_mutex_lock(&db_inx_lock);
@@ -353,14 +358,6 @@ static void *_set_db_inx_thread(void *no_data)
 				continue;
 			}
 
-			/*
-			 * We only want to destory the pointer
-			 * here not the contents so call special function
-			 * _partial_destroy_dbd_job_start.
-			 */
-			if (!local_job_list)
-				local_job_list = list_create(
-					_partial_destroy_dbd_job_start);
 			list_append(local_job_list, req);
 			/* Just so we don't have a crazy
 			   amount of messages at once.
@@ -371,7 +368,7 @@ static void *_set_db_inx_thread(void *no_data)
 		list_iterator_destroy(itr);
 		unlock_slurmctld(job_read_lock);
 
-		if (local_job_list) {
+		while (list_count(local_job_list)) {
 			persist_msg_t req = {0}, resp = {0};
 			dbd_list_msg_t send_msg, *got_msg;
 			int rc = SLURM_SUCCESS;
@@ -382,9 +379,9 @@ static void *_set_db_inx_thread(void *no_data)
 
 			req.msg_type = DBD_SEND_MULT_JOB_START;
 			req.data = &send_msg;
+
 			rc = dbd_conn_send_recv(
 				SLURM_PROTOCOL_VERSION, &req, &resp);
-			FREE_NULL_LIST(local_job_list);
 			if (rc != SLURM_SUCCESS) {
 				error("DBD_SEND_MULT_JOB_START "
 				      "failure: %m");
@@ -433,6 +430,20 @@ static void *_set_db_inx_thread(void *no_data)
 				list_iterator_destroy(itr);
 				unlock_slurmctld(job_write_lock);
 
+				/*
+				 * Assume the returned number of elements is
+				 * equivalent to the number that was sent out,
+				 * and thus those have completed processing
+				 * and need to be dropped.
+				 *
+				 * This is due to slurm_pack_list_until()
+				 * potentially sending only a part of the List
+				 * to avoid creating an overly-large RPC that
+				 * cannot be processed the SlurmDBD.
+				 */
+				list_flush_max(local_job_list,
+					       list_count(got_msg->my_list));
+
 				slurmdbd_free_list_msg(got_msg);
 			}
 
@@ -475,6 +486,8 @@ static void *_set_db_inx_thread(void *no_data)
 
 		slurm_mutex_unlock(&db_inx_lock);
 	}
+
+	FREE_NULL_LIST(local_job_list);
 
 	return NULL;
 }

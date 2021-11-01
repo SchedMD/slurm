@@ -258,6 +258,15 @@ int list_for_each_max(List l, int *max, ListForF f, void *arg,
 int list_flush(List l);
 
 /*
+ *  Traverses list [l] and removes items.
+ *  Will process up to [max] number of list items, or set [max] to -1 for all.
+ *  If a deletion function was specified when the list was
+ *  created, it will be called to deallocate each item being removed.
+ *  Returns a count of the number of items removed from the list.
+ */
+int list_flush_max(List l, int max);
+
+/*
  *  Sorts list [l] into ascending order according to the function [f].
  *  Note: Sorting a list resets all iterators associated with the list.
  *  This function uses the libC qsort() algorithm.

@@ -660,23 +660,22 @@ static void *_agent(void *x)
 			info("agent_count:%d", cnt);
 		/* Leave item on the queue until processing complete */
 		if (agent_list) {
-			int handle_agent_count = 1000;
-			if (cnt > handle_agent_count) {
+			uint32_t msg_size = sizeof(list_req);
+			if (cnt > 1) {
 				int agent_count = 0;
 				ListIterator agent_itr =
 					list_iterator_create(agent_list);
 				list_msg.my_list = list_create(NULL);
 				while ((buffer = list_next(agent_itr))) {
+					msg_size += size_buf(buffer);
+					if (msg_size > MAX_MSG_SIZE)
+						break;
 					list_enqueue(list_msg.my_list, buffer);
 					agent_count++;
-					if (agent_count > handle_agent_count)
+					if (agent_count > 1000)
 						break;
 				}
 				list_iterator_destroy(agent_itr);
-				buffer = pack_slurmdbd_msg(
-					&list_req, SLURM_PROTOCOL_VERSION);
-			} else if (cnt > 1) {
-				list_msg.my_list = agent_list;
 				buffer = pack_slurmdbd_msg(
 					&list_req, SLURM_PROTOCOL_VERSION);
 			} else
