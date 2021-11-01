@@ -566,7 +566,7 @@ extern void pmixp_lib_release_invoke(void *rel_fn, void *rel_data)
 }
 
 extern int pmixp_lib_dmodex_request(
-	pmixp_proc_t *proc, void *dmdx_fn, void *caddy)
+	pmix_proc_t *proc, void *dmdx_fn, void *caddy)
 {
 	pmix_status_t rc;
 	pmix_proc_t proc_v1;
@@ -729,7 +729,7 @@ extern int pmixp_libpmix_job_set(void)
 	return ret;
 }
 
-extern int pmixp_lib_fence(const pmixp_proc_t procs[], size_t nprocs,
+extern int pmixp_lib_fence(const pmix_proc_t procs[], size_t nprocs,
 			   bool collect, char *data, size_t ndata,
 			   void *cbfunc, void *cbdata)
 {

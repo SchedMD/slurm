@@ -95,7 +95,7 @@ void pmix_client_new_conn(int fd);
 int pmixp_lib_init(void);
 int pmixp_lib_finalize(void);
 int pmixp_lib_setup_fork(uint32_t rank, const char *nspace, char ***env);
-int pmixp_lib_dmodex_request(pmixp_proc_t *proc, void *dmdx_fn, void *caddy);
+int pmixp_lib_dmodex_request(pmix_proc_t *proc, void *dmdx_fn, void *caddy);
 void pmixp_lib_modex_invoke(void *mdx_fn, int status, const char *data,
 			    size_t ndata, void *cbdata, void *rel_fn,
 			    void *rel_data);
@@ -104,7 +104,7 @@ int pmixp_lib_is_wildcard(uint32_t rank);
 int pmixp_lib_is_undef(uint32_t rank);
 uint32_t pmixp_lib_get_wildcard(void);
 uint32_t pmixp_lib_get_version(void);
-int pmixp_lib_fence(const pmixp_proc_t procs[], size_t nprocs,
+int pmixp_lib_fence(const pmix_proc_t procs[], size_t nprocs,
 		    bool collect, char *data, size_t ndata,
 		    void *cbfunc, void *cbdata);
 extern int pmixp_lib_abort(int status, void *cbfunc, void *cbdata);

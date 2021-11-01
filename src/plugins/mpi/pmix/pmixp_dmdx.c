@@ -62,7 +62,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t seq_num;
-	pmixp_proc_t proc;
+	pmix_proc_t proc;
 	char *sender_ns;
 	int sender_nodeid;
 	int rank;

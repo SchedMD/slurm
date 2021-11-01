@@ -208,9 +208,4 @@ typedef struct {
 typedef char pmix_nspace_t[PMIX_MAX_NSLEN+1];
 #endif
 
-typedef struct {
-    pmix_nspace_t nspace;
-    pmix_rank_t rank;
-} pmixp_proc_t;
-
 #endif /* PMIXP_COMMON_H */

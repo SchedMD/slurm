@@ -78,10 +78,10 @@ static inline void pmixp_state_sanity_check(void)
  */
 
 pmixp_coll_t *pmixp_state_coll_get(pmixp_coll_type_t type,
-				   const pmixp_proc_t *ranges,
+				   const pmix_proc_t *ranges,
 				   size_t nranges);
 pmixp_coll_t *pmixp_state_coll_new(pmixp_coll_type_t type,
-				   const pmixp_proc_t *ranges,
+				   const pmix_proc_t *ranges,
 				   size_t nranges);
 
 void pmixp_state_coll_cleanup(void);

@@ -91,7 +91,7 @@ pmixp_coll_cperf_mode2str(pmixp_coll_cperf_mode_t mode) {
 	}
 }
 
-int pmixp_hostset_from_ranges(const pmixp_proc_t *procs, size_t nprocs,
+int pmixp_hostset_from_ranges(const pmix_proc_t *procs, size_t nprocs,
 			      hostlist_t *hl_out);
 
 /* PMIx Tree collective */
@@ -267,7 +267,7 @@ typedef struct pmixp_coll_s {
 
 	/* PMIx collective id */
 	struct {
-		pmixp_proc_t *procs;
+		pmix_proc_t *procs;
 		size_t nprocs;
 	} pset;
 	int my_peerid;
@@ -306,7 +306,7 @@ void pmixp_coll_tree_bcast(pmixp_coll_t *coll);
 bool pmixp_coll_tree_progress(pmixp_coll_t *coll, char *fwd_node,
 			      void **data, uint64_t size);
 int pmixp_coll_tree_unpack(buf_t *buf, pmixp_coll_type_t *type,
-			   int *nodeid, pmixp_proc_t **r,
+			   int *nodeid, pmix_proc_t **r,
 			   size_t *nr);
 void pmixp_coll_tree_reset_if_to(pmixp_coll_t *coll, time_t ts);
 int pmixp_coll_check(pmixp_coll_t *coll, uint32_t seq);
@@ -322,7 +322,7 @@ int pmixp_coll_ring_neighbor(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr,
 void pmixp_coll_ring_reset(pmixp_coll_ring_ctx_t *coll);
 int pmixp_coll_ring_unpack(buf_t *buf, pmixp_coll_type_t *type,
 			   pmixp_coll_ring_msg_hdr_t *ring_hdr,
-			   pmixp_proc_t **r, size_t *nr);
+			   pmix_proc_t **r, size_t *nr);
 void pmixp_coll_ring_reset_if_to(pmixp_coll_t  *coll, time_t ts);
 pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_select(pmixp_coll_t *coll,
 						  const uint32_t seq);
@@ -338,13 +338,13 @@ static inline void pmixp_coll_sanity_check(pmixp_coll_t *coll)
 	xassert(coll->magic == PMIXP_COLL_STATE_MAGIC);
 }
 int pmixp_coll_init(pmixp_coll_t *coll, pmixp_coll_type_t type,
-		    const pmixp_proc_t *procs, size_t nprocs);
+		    const pmix_proc_t *procs, size_t nprocs);
 int pmixp_coll_contrib_local(pmixp_coll_t *coll, pmixp_coll_type_t type,
 			     char *data, size_t ndata,
 			     void *cbfunc, void *cbdata);
 void pmixp_coll_free(pmixp_coll_t *coll);
 void pmixp_coll_localcb_nodata(pmixp_coll_t *coll, int status);
-int pmixp_coll_belong_chk(const pmixp_proc_t *procs, size_t nprocs);
+int pmixp_coll_belong_chk(const pmix_proc_t *procs, size_t nprocs);
 void pmixp_coll_log(pmixp_coll_t *coll);
 void pmixp_coll_ring_log(pmixp_coll_t *coll);
 void pmixp_coll_tree_log(pmixp_coll_t *coll);
