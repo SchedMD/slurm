@@ -234,7 +234,7 @@ void *xfer_buf_data(buf_t *my_buf)
 	xassert(my_buf->magic == BUF_MAGIC);
 
 	if (my_buf->mmaped)
-		fatal_abort("attempt to grow mmap()'d buffer not supported");
+		fatal_abort("attempt to xfer mmap()'d buffer not supported");
 
 	data_ptr = (void *) my_buf->head;
 	xfree(my_buf);
