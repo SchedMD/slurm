@@ -41,7 +41,7 @@
 #include "src/common/xstring.h"
 
 strong_alias(run_in_daemon, slurm_run_in_daemon);
-strong_alias(running_in_slurmctld, slurm_running_in_daemon);
+strong_alias(running_in_daemon, slurm_running_in_daemon);
 strong_alias(running_in_slurmctld, slurm_running_in_slurmctld);
 strong_alias(running_in_slurmd, slurm_running_in_slurmd);
 strong_alias(running_in_slurmdbd, slurm_running_in_slurmdbd);
