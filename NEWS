@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
     previous run of slurmrestd did not properly cleanup the sockets.
  -- Add extra 'EnvironmentFile=-/etc/default/$service' setting to service files.
  -- slurmctld/agent - spawn more agent threads in a single _agent_retry().
+ -- openapi/v0.0.38 - change job response types to more specific types than
+    generic string.
 
 * Changes in Slurm 21.08.5
 ==========================

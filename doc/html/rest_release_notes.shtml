@@ -130,6 +130,154 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h4>Correct multiple type mistakes<h4>
+<table class="tchange">
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.array_job_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.array_task_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.array_max_tasks</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.association_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.billable_tres</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.deadline</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.delay_boot</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.derived_exit_code</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.group_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.job_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.last_sched_evaluation</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.max_cpus</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.max_nodes</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.nice</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks_per_core</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks_per_socket</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks_per_board</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.cpus</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.node_count</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.het_job_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.het_job_offset</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.memory_per_node</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.memory_per_cpu</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.minimum_cpus_per_node</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.minimum_tmp_disk_per_node</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.priority</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.restart_cnt</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.sockets_per_board</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.sockets_per_node</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.time_limit</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.time_minimum</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.threads_per_core</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.user_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.allocated_nodes</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.cpus</td>
+</tr>
+</table>
+
 <h3>openapi/v0.0.35 (src/plugins/openapi/v0.0.35/openapi.json)</h3>
 
 <h4>Removal notice</h4>
