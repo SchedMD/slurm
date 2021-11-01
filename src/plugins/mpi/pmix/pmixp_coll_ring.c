@@ -735,7 +735,7 @@ void pmixp_coll_ring_reset_if_to(pmixp_coll_t *coll, time_t ts) {
 		}
 		if (ts - coll->ts > pmixp_info_timeout()) {
 			/* respond to the libpmix */
-			pmixp_coll_localcb_nodata(coll, PMIXP_ERR_TIMEOUT);
+			pmixp_coll_localcb_nodata(coll, PMIX_ERR_TIMEOUT);
 
 			/* report the timeout event */
 			PMIXP_ERROR("%p: collective timeout seq=%d",

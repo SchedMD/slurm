@@ -308,7 +308,7 @@ static void _dmdx_req(buf_t *buf, int nodeid, uint32_t seq_num)
 		PMIXP_ERROR("Bad request from %s: asked for nspace = %s, mine is %s",
 			    nodename, ns, pmixp_info_namespace());
 		_respond_with_error(seq_num, nodeid, sender_ns,
-				    PMIXP_ERR_INVALID_NAMESPACE);
+				    PMIX_ERR_INVALID_NAMESPACE);
 		xfree(nodename);
 		goto exit;
 	}
@@ -319,7 +319,7 @@ static void _dmdx_req(buf_t *buf, int nodeid, uint32_t seq_num)
 		PMIXP_ERROR("Bad request from %s: nspace \"%s\" has only %d ranks, asked for %d",
 			    nodename, ns, nsptr->ntasks, rank);
 		_respond_with_error(seq_num, nodeid, sender_ns,
-				    PMIXP_ERR_BAD_PARAM);
+				    PMIX_ERR_BAD_PARAM);
 		xfree(nodename);
 		goto exit;
 	}

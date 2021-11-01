@@ -543,13 +543,13 @@ extern void pmixp_lib_modex_invoke(void *mdx_fn, int status,
 		case SLURM_SUCCESS:
 			rc = PMIX_SUCCESS;
 			break;
-		case PMIXP_ERR_INVALID_NAMESPACE:
+		case PMIX_ERR_INVALID_NAMESPACE:
 			rc = PMIX_ERR_INVALID_NAMESPACE;
 			break;
-		case PMIXP_ERR_BAD_PARAM:
+		case PMIX_ERR_BAD_PARAM:
 			rc = PMIX_ERR_BAD_PARAM;
 			break;
-		case PMIXP_ERR_TIMEOUT:
+		case PMIX_ERR_TIMEOUT:
 			rc = PMIX_ERR_TIMEOUT;
 			break;
 		default:

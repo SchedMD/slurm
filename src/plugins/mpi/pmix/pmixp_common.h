@@ -193,13 +193,6 @@ typedef struct {
 	pmixp_p2p_send_complete_cb_t send_complete;
 } pmixp_p2p_data_t;
 
-#define PMIXP_MAX_NSLEN     255
-#define PMIXP_MAX_KEYLEN    511
-
-#define PMIXP_ERR_TIMEOUT                      -24
-#define PMIXP_ERR_BAD_PARAM                    -27
-#define PMIXP_ERR_INVALID_NAMESPACE            -44
-
 /*
  * pmix_nspace_t did not exist before pmix v3 this is how it has been definied
  * in pmix_common.h since then.
