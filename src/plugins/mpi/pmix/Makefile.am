@@ -30,17 +30,6 @@ pmix_libadd = $(HWLOC_LIBS) $(UCX_LIBS)
 # use pkglib_v#_LTLIBRARIES even though it is the same for each one it still
 # needs to be defined.
 
-if HAVE_PMIX_V1
-
-pkglib_v1dir=$(pkglibdir)
-pkglib_v1_LTLIBRARIES = mpi_pmix_v1.la
-mpi_pmix_v1_la_SOURCES = $(pmix_src) pmixp_client_v1.c
-mpi_pmix_v1_la_LIBADD = $(pmix_libadd)
-mpi_pmix_v1_la_LDFLAGS = $(pmix_ldflags) $(PMIX_V1_LDFLAGS)
-mpi_pmix_v1_la_CPPFLAGS = $(AM_CPPFLAGS) $(PMIX_V1_CPPFLAGS) -DHAVE_PMIX_VER=1
-
-endif
-
 if HAVE_PMIX_V2
 
 pkglib_v2dir=$(pkglibdir)
@@ -84,11 +73,6 @@ else
 
 if HAVE_PMIX_V2
 mpi_pmix_so := mpi_pmix_v2.so
-else
-
-if HAVE_PMIX_V1
-mpi_pmix_so := mpi_pmix_v1.so
-endif
 
 endif
 endif

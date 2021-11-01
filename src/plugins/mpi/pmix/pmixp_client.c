@@ -60,20 +60,8 @@
 #define PMIX_TDIR_RMCLEAN "pmix.tdir.rmclean"
 #endif
 
-#ifndef PMIX_VERSION_MAJOR
-#define PMIX_VERSION_MAJOR	1L
-#define PMIXP_PMIX_PRIOR_115	1
-#endif
-
-#if (HAVE_PMIX_VER == 1L)
-#if (PMIXP_PMIX_PRIOR_115 == 1)
-#define PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array) \
-	{ (kvp)->value.data.array.array = (struct pmix_info_t *)_array; }
-#else
 #define PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array) \
 	{ (kvp)->value.data.array.array = (pmix_info_t *)_array; }
-#endif
-#endif
 
 
 /* Check PMIx version */
@@ -83,19 +71,6 @@
 #pragma message "PMIx version mismatch: the major version seen during configuration was " VALUE(HAVE_PMIX_VER) "L but found " VALUE(PMIX_VERSION_MAJOR) " compilation will most likely fail.  Please reconfigure against the new version."
 #endif
 
-#if (HAVE_PMIX_VER == 1)
-#define PMIXP_INFO_ARRAY_CREATE(kvp, _array, _count)		\
-{								\
-	(kvp)->value.type = PMIX_INFO_ARRAY;			\
-	(kvp)->value.data.array.size = _count;			\
-	PMIXP_INFO_ARRAY_SET_ARRAY(kvp, _array);		\
-}
-
-#define PMIXP_VAL_SET_RANK(value, rank) {			\
-	PMIX_VAL_SET(value, int, rank);				\
-}
-
-#else
 #define PMIXP_INFO_ARRAY_CREATE(kvp, _array, _count)			\
 {									\
 	(kvp)->value.type = PMIX_DATA_ARRAY;				\
@@ -110,8 +85,6 @@
 	(value)->type = PMIX_PROC_RANK;				\
 	(value)->data.rank = _rank;				\
 }
-
-#endif
 
 static pthread_mutex_t _reg_mutex = PTHREAD_MUTEX_INITIALIZER;
 

@@ -15,7 +15,6 @@ AC_DEFUN([X_AC_PMIX],
   _x_ac_pmix_dirs="/usr /usr/local"
   _x_ac_pmix_libs="lib64 lib"
 
-  _x_ac_pmix_v1_found="0"
   _x_ac_pmix_v2_found="0"
   _x_ac_pmix_v3_found="0"
   _x_ac_pmix_v4_found="0"
@@ -79,15 +78,7 @@ AC_DEFUN([X_AC_PMIX],
                 #error "not version 2"
               #endif
             ], [ ] )],
-            [ _x_ac_pmix_version="2" ],
-	    [ AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
-              #include<pmix_server.h>
-              #if (PMIX_VERSION_MAJOR != 1L)
-                #error "not version 1"
-              #endif
-            ], [ ] )],
-	    [ _x_ac_pmix_version="1" ] )
-            ])
+            [ _x_ac_pmix_version="2" ] )
             ])
             ])
 
@@ -95,25 +86,6 @@ AC_DEFUN([X_AC_PMIX],
             LIBS="$_x_ac_pmix_libs_save"
 
             m4_define([err_pmix],[was already found in one of the previous paths])
-
-            if [test "$_x_ac_pmix_version" = "1"]; then
-              if [test "$_x_ac_pmix_v1_found" = "1" ]; then
-                m4_define([err_pmix_v1],[error processing $x_ac_cv_pmix_libdir: PMIx v1.x])
-                AC_MSG_ERROR(err_pmix_v1 err_pmix)
-              fi
-
-              _x_ac_pmix_v1_found="1"
-              PMIX_V1_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
-              if test "$ac_with_rpath" = "yes"; then
-                PMIX_V1_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
-              else
-                PMIX_V1_CPPFLAGS=$PMIX_V1_CPPFLAGS" -DPMIXP_V1_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
-              fi
-              # We don't want to search the other lib after we found it in
-              # one place or we might report a false duplicate if lib64 is a
-              # symlink of lib.
-              break
-            fi
 
             if [test "$_x_ac_pmix_version" = "2"]; then
               if [test "$_x_ac_pmix_v2_found" = "1" ]; then
@@ -180,8 +152,6 @@ AC_DEFUN([X_AC_PMIX],
 
     AC_DEFINE(HAVE_PMIX, 1, [Define to 1 if pmix library found])
 
-    AC_SUBST(PMIX_V1_CPPFLAGS)
-    AC_SUBST(PMIX_V1_LDFLAGS)
     AC_SUBST(PMIX_V2_CPPFLAGS)
     AC_SUBST(PMIX_V2_LDFLAGS)
     AC_SUBST(PMIX_V3_CPPFLAGS)
@@ -189,7 +159,7 @@ AC_DEFUN([X_AC_PMIX],
     AC_SUBST(PMIX_V4_CPPFLAGS)
     AC_SUBST(PMIX_V4_LDFLAGS)
 
-    if test $_x_ac_pmix_v1_found = 0 && test $_x_ac_pmix_v2_found = 0 &&
+    if test $_x_ac_pmix_v2_found = 0 &&
           test $_x_ac_pmix_v3_found = 0 && test $_x_ac_pmix_v4_found = 0; then
       if test -z "$with_pmix"; then
         AC_MSG_WARN([unable to locate pmix installation])
@@ -199,10 +169,9 @@ AC_DEFUN([X_AC_PMIX],
     fi
   fi
 
-  AM_CONDITIONAL(HAVE_PMIX, [test $_x_ac_pmix_v1_found = "1"] ||
+  AM_CONDITIONAL(HAVE_PMIX,
                 [test $_x_ac_pmix_v2_found = "1"] ||
                 [test $_x_ac_pmix_v3_found = "1"] )
-  AM_CONDITIONAL(HAVE_PMIX_V1, [test $_x_ac_pmix_v1_found = "1"])
   AM_CONDITIONAL(HAVE_PMIX_V2, [test $_x_ac_pmix_v2_found = "1"])
   AM_CONDITIONAL(HAVE_PMIX_V3, [test $_x_ac_pmix_v3_found = "1"])
   AM_CONDITIONAL(HAVE_PMIX_V4, [test $_x_ac_pmix_v4_found = "1"])
