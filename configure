@@ -726,8 +726,6 @@ HAVE_PMIX_V3_FALSE
 HAVE_PMIX_V3_TRUE
 HAVE_PMIX_V2_FALSE
 HAVE_PMIX_V2_TRUE
-HAVE_PMIX_V1_FALSE
-HAVE_PMIX_V1_TRUE
 HAVE_PMIX_FALSE
 HAVE_PMIX_TRUE
 PMIX_V4_LDFLAGS
@@ -736,8 +734,6 @@ PMIX_V3_LDFLAGS
 PMIX_V3_CPPFLAGS
 PMIX_V2_LDFLAGS
 PMIX_V2_CPPFLAGS
-PMIX_V1_LDFLAGS
-PMIX_V1_CPPFLAGS
 BUILD_RSMI_FALSE
 BUILD_RSMI_TRUE
 RSMI_LDFLAGS
@@ -21682,7 +21678,6 @@ fi
   _x_ac_pmix_dirs="/usr /usr/local"
   _x_ac_pmix_libs="lib64 lib"
 
-  _x_ac_pmix_v1_found="0"
   _x_ac_pmix_v2_found="0"
   _x_ac_pmix_v3_found="0"
   _x_ac_pmix_v4_found="0"
@@ -21809,28 +21804,6 @@ main ()
 _ACEOF
 if ac_fn_c_try_cpp "$LINENO"; then :
    _x_ac_pmix_version="2"
-else
-   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-              #include<pmix_server.h>
-              #if (PMIX_VERSION_MAJOR != 1L)
-                #error "not version 1"
-              #endif
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_cpp "$LINENO"; then :
-   _x_ac_pmix_version="1"
-fi
-rm -f conftest.err conftest.i conftest.$ac_ext
-
 fi
 rm -f conftest.err conftest.i conftest.$ac_ext
 
@@ -21844,25 +21817,6 @@ rm -f conftest.err conftest.i conftest.$ac_ext
             LIBS="$_x_ac_pmix_libs_save"
 
 
-
-            if test "$_x_ac_pmix_version" = "1"; then
-              if test "$_x_ac_pmix_v1_found" = "1" ; then
-
-                as_fn_error $? "error processing $x_ac_cv_pmix_libdir: PMIx v1.x was already found in one of the previous paths" "$LINENO" 5
-              fi
-
-              _x_ac_pmix_v1_found="1"
-              PMIX_V1_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
-              if test "$ac_with_rpath" = "yes"; then
-                PMIX_V1_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
-              else
-                PMIX_V1_CPPFLAGS=$PMIX_V1_CPPFLAGS" -DPMIXP_V1_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
-              fi
-              # We don't want to search the other lib after we found it in
-              # one place or we might report a false duplicate if lib64 is a
-              # symlink of lib.
-              break
-            fi
 
             if test "$_x_ac_pmix_version" = "2"; then
               if test "$_x_ac_pmix_v2_found" = "1" ; then
@@ -21941,9 +21895,7 @@ $as_echo "#define HAVE_PMIX 1" >>confdefs.h
 
 
 
-
-
-    if test $_x_ac_pmix_v1_found = 0 && test $_x_ac_pmix_v2_found = 0 &&
+    if test $_x_ac_pmix_v2_found = 0 &&
           test $_x_ac_pmix_v3_found = 0 && test $_x_ac_pmix_v4_found = 0; then
       if test -z "$with_pmix"; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate pmix installation" >&5
@@ -21954,22 +21906,13 @@ $as_echo "$as_me: WARNING: unable to locate pmix installation" >&2;}
     fi
   fi
 
-   if test $_x_ac_pmix_v1_found = "1" ||
-                test $_x_ac_pmix_v2_found = "1" ||
+   if test $_x_ac_pmix_v2_found = "1" ||
                 test $_x_ac_pmix_v3_found = "1" ; then
   HAVE_PMIX_TRUE=
   HAVE_PMIX_FALSE='#'
 else
   HAVE_PMIX_TRUE='#'
   HAVE_PMIX_FALSE=
-fi
-
-   if test $_x_ac_pmix_v1_found = "1"; then
-  HAVE_PMIX_V1_TRUE=
-  HAVE_PMIX_V1_FALSE='#'
-else
-  HAVE_PMIX_V1_TRUE='#'
-  HAVE_PMIX_V1_FALSE=
 fi
 
    if test $_x_ac_pmix_v2_found = "1"; then
@@ -25596,10 +25539,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_PMIX_TRUE}" && test -z "${HAVE_PMIX_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_PMIX\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_PMIX_V1_TRUE}" && test -z "${HAVE_PMIX_V1_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_PMIX_V1\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_PMIX_V2_TRUE}" && test -z "${HAVE_PMIX_V2_FALSE}"; then

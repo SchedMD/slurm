@@ -196,7 +196,6 @@ typedef struct {
 #define PMIXP_MAX_NSLEN     255
 #define PMIXP_MAX_KEYLEN    511
 
-
 #define PMIXP_ERR_TIMEOUT                      -24
 #define PMIXP_ERR_BAD_PARAM                    -27
 #define PMIXP_ERR_INVALID_NAMESPACE            -44
