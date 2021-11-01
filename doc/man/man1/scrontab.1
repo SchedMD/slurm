@@ -9,6 +9,7 @@ scrontab [\-u user] file
 scrontab [\-u user] [ \-e | \-l | \-r ]
 
 .SH "DESCRIPTION"
+.LP
 \fBscrontab\fR is used to set, edit, and remove a user's Slurm\-managed crontab.
 This file can define a number of recurring batch jobs to run on a scheduled
 interval.
@@ -161,6 +162,10 @@ you would add the following to \fBscrontab\fR.
 1\-5,30 8\-17/2 * * wed $DIR/example.job
 .fi
 .RE
+
+.SH "LIMITATIONS"
+The Slurm controller's timezone is what will be used to evaluate each crontab's
+repetition intervals. User\-specific timezones are not supported.
 
 .SH "COPYING"
 Copyright (C) 2020\-2021 SchedMD LLC.
