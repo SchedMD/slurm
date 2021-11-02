@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 21.08.4
+==========================
+
 * Changes in Slurm 21.08.3
 ==========================
  -- Return error to sacctmgr when running 'sacctmgr archive load' and the load
