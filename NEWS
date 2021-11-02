@@ -33,6 +33,9 @@ documents those changes that are of interest to users and administrators.
  -- Added --prefer option at job submission to allow for 'soft' constraints.
  -- Remove support for PMIx 1.x
 
+* Changes in Slurm 21.08.4
+==========================
+
 * Changes in Slurm 21.08.3
 ==========================
  -- Return error to sacctmgr when running 'sacctmgr archive load' and the load
