@@ -291,6 +291,16 @@ static int _set_db_inx_for_each(void *x, void *arg)
 	return 0;
 }
 
+static int _reset_db_inx_for_each(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (job_ptr->db_index == NO_VAL64)
+		job_ptr->db_index = 0;
+
+	return 0;
+}
+
 static void *_set_db_inx_thread(void *no_data)
 {
 	job_record_t *job_ptr = NULL;
@@ -445,11 +455,8 @@ static void *_set_db_inx_thread(void *no_data)
 				/* USE READ LOCK, SEE ABOVE on first
 				 * read lock */
 				itr = list_iterator_create(job_list);
-				while ((job_ptr = list_next(itr))) {
-					if (job_ptr->db_index == NO_VAL64)
-						job_ptr->db_index = 0;
-				}
-				list_iterator_destroy(itr);
+				list_for_each(job_list,
+					      _reset_db_inx_for_each, NULL);
 				unlock_slurmctld(job_read_lock);
 			}
 		}
