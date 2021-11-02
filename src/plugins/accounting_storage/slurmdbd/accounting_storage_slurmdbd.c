@@ -268,6 +268,28 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	return SLURM_SUCCESS;
 }
 
+static int _set_db_inx_for_each(void *x, void *arg)
+{
+	dbd_id_rc_msg_t *id_ptr = x;
+	job_record_t *job_ptr;
+
+	if ((job_ptr = find_job_record(id_ptr->job_id))) {
+		if (job_ptr->db_index) {
+			/*
+			 * Only set if db_index != 0.
+			 * Is set to NO_VAL64 previously
+			 * but may have been set to 0
+			 * after the fact, which means
+			 * the start needs to be sent
+			 * again.
+			 */
+			job_ptr->db_index = id_ptr->db_index;
+			job_ptr->job_state &= (~JOB_UPDATE_DB);
+		}
+	}
+
+	return 0;
+}
 
 static void *_set_db_inx_thread(void *no_data)
 {
@@ -393,28 +415,11 @@ static void *_set_db_inx_thread(void *no_data)
 				      resp.msg_type);
 				reset = 1;
 			} else {
-				dbd_id_rc_msg_t *id_ptr = NULL;
 				got_msg = (dbd_list_msg_t *) resp.data;
 
 				lock_slurmctld(job_write_lock);
-				itr = list_iterator_create(got_msg->my_list);
-				while ((id_ptr = list_next(itr))) {
-					if ((job_ptr = find_job_record(
-						     id_ptr->job_id)) &&
-					    job_ptr->db_index) {
-						/* Only set if db_index != 0.
-						 * Is set to NO_VAL64 previously
-						 * but may have been set to 0
-						 * after the fact, which means
-						 * the start needs to be sent
-						 * again. */
-						job_ptr->db_index =
-							id_ptr->db_index;
-						job_ptr->job_state &=
-							(~JOB_UPDATE_DB);
-					}
-				}
-				list_iterator_destroy(itr);
+				list_for_each(got_msg->my_list,
+					      _set_db_inx_for_each, NULL);
 				unlock_slurmctld(job_write_lock);
 
 				/*
