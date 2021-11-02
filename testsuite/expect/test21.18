@@ -146,7 +146,7 @@ if [mod_user "$tu1,$tu2,$tu3" [array get user_mod_info] [array get user_mod_acct
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user names=$tu1,$tu2,$tu3 format="User,DefaultA,Admin" cluster=$tc1]
+spawn $sacctmgr -n -p list user names=$tu1,$tu2,$tu3 format="User,DefaultA,Admin" cluster=$tc1
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -177,7 +177,7 @@ if [mod_user "$tu1,$tu3" [array get user_mod_info2] [array get user_mod_acct2]  
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user names=$tu1,$tu2,$tu3 format="User,DefaultA,Admin" cluster=$tc1]
+spawn $sacctmgr -n -p list user names=$tu1,$tu2,$tu3 format="User,DefaultA,Admin" cluster=$tc1
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -208,7 +208,7 @@ if [mod_user "$tu1,$tu2,$tu3" [array get user_mod_info3] [array get user_mod_acc
 # Use sacctmgr to list the test user modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list assoc users=$tu1,$tu2,$tu3 format="User,Cluster,Fairshare,Maxcpum,MaxJ,MaxN,MaxW"]
+spawn $sacctmgr -n -p list assoc users=$tu1,$tu2,$tu3 format="User,Cluster,Fairshare,Maxcpum,MaxJ,MaxN,MaxW"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -239,7 +239,7 @@ if [mod_user "$tu1,$tu3" [array get user_mod_info4] [array get user_mod_acct4] [
 # Use sacctmgr to list the test user modifications
 #
 set matches 0
-set my_pid [eval spawn $sacctmgr -n -p list assoc user=$tu1,$tu2,$tu3 format="User,Cluster,Fairshare,Maxcpum,MaxJ,MaxN,MaxW"]
+eval spawn $sacctmgr -n -p list assoc user=$tu1,$tu2,$tu3 format="User,Cluster,Fairshare,Maxcpum,MaxJ,MaxN,MaxW"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"

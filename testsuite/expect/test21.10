@@ -84,7 +84,7 @@ proc cleanup {} {
 #
 # Use sacctmgr to create a cluster
 #
-set sadd_pid [spawn $sacctmgr -i add cluster name=$tc1]
+spawn $sacctmgr -i add cluster name=$tc1
 expect {
 	-re "privilege to perform this action" {
 		set access_err 1
@@ -95,7 +95,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {

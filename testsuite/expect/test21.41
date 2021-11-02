@@ -333,7 +333,7 @@ set user1acct1 0
 set user1acct2 0
 set user2acct1 0
 set user2acct2 0
-set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
+eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
 expect {
 	-re "There was a problem" {
 		fail "there was a problem with the sacctmgr command"
@@ -343,14 +343,13 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
 	}
 }
-set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
+eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
 expect {
 	-re "There was a problem" {
 		fail "there was a problem with the sacctmgr command"
@@ -360,14 +359,13 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
 	}
 }
-set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
+eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
 expect {
 	-re "There was a problem" {
 		fail "there was a problem with the sacctmgr command"
@@ -377,14 +375,13 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
 	}
 }
-set my_pid [eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"]
+eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
 expect {
 	-re "There was a problem" {
 		fail "there was a problem with the sacctmgr command"
@@ -394,7 +391,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr list associations not responding"
 	}
 	eof {
@@ -414,7 +410,7 @@ set user1wckey1 0
 set user2wckey1 0
 set user1wckey2 0
 set user2wckey2 0
-set my_pid [eval spawn $sacctmgr -n -p list wckeys users=$users cluster=$clusters format="user,wckey,id"]
+eval spawn $sacctmgr -n -p list wckeys users=$users cluster=$clusters format="user,wckey,id"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -436,7 +432,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr wckeys not responding"
 	}
 	eof {

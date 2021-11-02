@@ -121,7 +121,7 @@ if [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc] [array get acct_mod_asso
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list account account=$ta1,$ta2,$ta3 format="Account,Description,Organization"]
+spawn $sacctmgr -n -p list account account=$ta1,$ta2,$ta3 format="Account,Description,Organization"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -150,7 +150,7 @@ if [mod_acct $ta1  [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list associations account=$ta1,$ta2,$ta3 format="Account,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"]
+spawn $sacctmgr -n -p list associations account=$ta1,$ta2,$ta3 format="Account,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -180,7 +180,7 @@ if [mod_acct $ta1  [array get acct_mod_desc3] [array get acct_mod_assoc_vals3] [
 # Use sacctmgr to list the test account modifications
 #
 set matches 0
-set my_pid [eval spawn $sacctmgr -n -p list account withassoc account=$ta1,$ta2,$ta3 format="Account,Description,Organization,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"]
+eval spawn $sacctmgr -n -p list account withassoc account=$ta1,$ta2,$ta3 format="Account,Description,Organization,Cluster,Fairshare,MaxCPUM,MaxJobs,MaxNodes,MaxWall"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"

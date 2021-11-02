@@ -41,14 +41,13 @@ if [param_contains [get_config_param "LaunchParameters"] "test_exec"] {
 # Debug debug level is 2, value set with --debug has that offset
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 --slurmd-debug=$debug_set -t1 /invalid_executable ]
+spawn $srun -N1 --slurmd-debug=$debug_set -t1 /invalid_executable
 expect {
 	-re "debug level is \'($re_word_str)\'" {
 		set debug_get $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 }

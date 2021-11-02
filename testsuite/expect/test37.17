@@ -85,7 +85,7 @@ proc cancel_job { job_id clusters } {
 }
 
 proc submit_job { options cdir file_in } {
-	global bin_sleep sbatch number fed_slurm_base slow_kill test_name
+	global bin_sleep sbatch number fed_slurm_base test_name
 
 	set job_id 0
 	set my_sbatch "${fed_slurm_base}/$cdir/bin/sbatch"
@@ -94,14 +94,13 @@ proc submit_job { options cdir file_in } {
 	}
 	set command "$my_sbatch --job-name=${test_name}_job -t1 \
 		$options --output=/dev/null $file_in"
-	set sbatch_pid [spawn {*}$command]
+	spawn {*}$command
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			fail "sbatch not responding"
 		}
 		eof {

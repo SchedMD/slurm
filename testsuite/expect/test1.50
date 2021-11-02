@@ -40,7 +40,7 @@ if [param_contains [get_config_param "LaunchParameters"] "test_exec"] {
 #
 set matches 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 /bad/bad/bad]
+spawn $srun -N1 -t1 /bad/bad/bad
 expect {
 	-re "No such file" {
 		log_debug "No worries, this error is expected"
@@ -59,7 +59,6 @@ expect {
 		fail "srun didn't terminate properly"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

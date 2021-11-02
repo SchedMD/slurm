@@ -51,14 +51,13 @@ make_bash_script $file_in "$bin_sleep 5"
 # Spawn an sbatch job that just sleeps for a while
 #
 set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --account=MY_ACCT -t1 $file_in]
+spawn $sbatch --output=/dev/null --error=/dev/null --account=MY_ACCT -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $sbatch_pid
 		fail "sbatch not responding"
 	}
 	eof {
@@ -94,7 +93,7 @@ subtest {$match_acct != 0} "Account information processed"
 #
 make_bash_script $file_in "$bin_env | $bin_grep SLURM_ACCOUNT"
 set match_acct  0
-set srun_pid [spawn $srun -v -t1 $file_in]
+spawn $srun -v -t1 $file_in
 expect {
 	# needed for cray systems
 	-re "Granted job allocation ($number)" {
@@ -110,7 +109,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

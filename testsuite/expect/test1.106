@@ -39,7 +39,7 @@ proc cleanup {} {
 #
 set timeout $max_job_delay
 set time_error 0
-set srun_pid [spawn $srun -v -N1 --deadline now+1hour --time-min 120 $bin_sleep 1]
+spawn $srun -v -N1 --deadline now+1hour --time-min 120 $bin_sleep 1
 expect {
 	-re "Invalid time-min specification" {
 		set time_error 1

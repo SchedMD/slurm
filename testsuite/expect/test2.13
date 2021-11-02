@@ -64,14 +64,13 @@ make_bash_script $file_in2 "
 #
 # Submit a job so we have something to work with
 #
-set srun_pid [spawn $sbatch --output=$file_out -t3 $file_in1]
+spawn $sbatch --output=$file_out -t3 $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

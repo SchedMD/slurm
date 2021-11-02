@@ -69,7 +69,7 @@ proc run_prog { node_name cpu_bind } {
 
 	set matches 0
 	set found_cpu_bind ""
-	set srun_pid [spawn $srun -p $partition -w $node_name -v -t1 $bin_printenv SLURMD_NODENAME]
+	spawn $srun -p $partition -w $node_name -v -t1 $bin_printenv SLURMD_NODENAME
 	expect {
 		-re "CpuBindType=($re_word_str)" {
 			set found_cpu_bind $expect_out(1,string)
@@ -79,7 +79,6 @@ proc run_prog { node_name cpu_bind } {
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {
@@ -114,7 +113,7 @@ set timeout $max_job_delay
 set node_0 ""
 set node_1 ""
 set node_cnt 0
-set srun_pid [spawn $srun -l -N2 -t1 $bin_printenv SLURMD_NODENAME]
+spawn $srun -l -N2 -t1 $bin_printenv SLURMD_NODENAME
 expect {
 	-re "($number): ($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
@@ -128,7 +127,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

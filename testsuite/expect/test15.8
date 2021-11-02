@@ -42,7 +42,7 @@ proc cleanup {} {
 # The job can't run immediately with a priority of zero
 #
 set timeout 10
-set salloc_pid [spawn $salloc --immediate=3 --hold -t1 -v $bin_pwd]
+spawn $salloc --immediate=3 --hold -t1 -v $bin_pwd
 expect {
 	-re "Pending job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -73,7 +73,7 @@ subtest {$matches == 3} "Job with --immediate option should not run with hold"
 #
 set job_id  0
 set matches 0
-set salloc_pid [spawn $salloc --immediate -t1 $bin_pwd]
+spawn $salloc --immediate -t1 $bin_pwd
 expect {
 	-re "error: Job submit/allocate failed" {
 		log_debug "This error is not unexpected, no worries"

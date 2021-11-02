@@ -318,14 +318,13 @@ proc get_slurm_conf { cluster } {
 
 	log_user 1
 	set conf ""
-	set scon_pid [spawn $scontrol -M$cluster show config]
+	spawn $scontrol -M$cluster show config
 	expect {
 		-re "SLURM_CONF\\s+=\\s+(\\S+)" {
 			set conf $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $scon_pid
 			fail "scontrol not responding"
 		}
 		eof {

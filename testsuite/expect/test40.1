@@ -26,8 +26,6 @@
 ############################################################################
 source ./globals
 
-set job_id      0
-
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 
 if {[llength [get_nodes_by_request "--gres=mps:100 -t1"]] == 0} {

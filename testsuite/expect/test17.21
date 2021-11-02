@@ -90,7 +90,7 @@ make_bash_script $file_in "#SBATCH -N1000000k
 $bin_sleep $delay
 "
 set match 0
-set sbatch_pid [spawn $sbatch -o $file_out $file_in]
+spawn $sbatch -o $file_out $file_in
 expect {
 	-re "More processors requested than permitted" {
 		log_debug "This error was expected, no worries"
@@ -99,11 +99,9 @@ expect {
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		cancel_job $job_id
 		fail "Test B was supposed to fail submission"
 	}
 	timeout {
-		slow_kill $sbatch_pid
 		fail "sbatch not responding"
 	}
 	eof {
@@ -120,14 +118,13 @@ make_bash_script $file_in "
 $bin_sleep $delay
 "
 
-set sbatch_pid [spawn $sbatch -N1 -o $file_out $file_in]
+spawn $sbatch -N1 -o $file_out $file_in
 expect {
 	-re "More processors requested than permitted" {
 		fail "sbatch read from the batch file options over writing the commandline options"
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		cancel_job $job_id
 	}
 	timeout {
 		fail "sbatch not responding"

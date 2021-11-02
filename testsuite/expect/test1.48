@@ -76,7 +76,7 @@ set login_grp_info [get_my_user_name]
 set job_id 0
 set got_job_id 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 --job-name=$test_name --mail-type=all --mail-user=$login_grp_info /bin/bash -c "echo \$SLURM_JOB_ID"]
+spawn $srun -N1 -t1 --job-name=$test_name --mail-type=all --mail-user=$login_grp_info /bin/bash -c "echo \$SLURM_JOB_ID"
 expect {
 	-re "error" {
 		fail "Error running srun"
@@ -87,7 +87,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

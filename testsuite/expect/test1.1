@@ -47,7 +47,7 @@ set login_grp_info [get_my_id]
 # Submit a slurm job that will execute 'id'
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 $bin_id]
+spawn $srun -N1 -t1 $bin_id
 expect {
 	-re "(uid=.*\n)" {
 		set job_grp_info $expect_out(1,string)
@@ -55,7 +55,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

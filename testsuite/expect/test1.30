@@ -28,7 +28,7 @@
 ############################################################################
 source ./globals
 
-set error 0
+set error     0
 set srun_opts "-c1"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
@@ -42,7 +42,7 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 #
 set timeout $max_job_delay
 for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt * 2]} {
-	set srun_pid [spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_printenv SLURMD_NODENAME]
+	spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_printenv SLURMD_NODENAME
 	expect {
 		-re "Immediate execution impossible" {
 			log_debug "This error is expected, no worries"
@@ -69,7 +69,6 @@ for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt *
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {

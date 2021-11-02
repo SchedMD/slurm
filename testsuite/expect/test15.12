@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set file_in     "$test_name.input"
-
 #
 # Submit a job with invalid constraint requirement
 #

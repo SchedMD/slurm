@@ -55,10 +55,9 @@ set host_0_num       0
 set host_1_num       0
 set host_2_num       0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N3-3 --contiguous -l -t1 $bin_printenv SLURMD_NODENAME]
+spawn $srun -N3-3 --contiguous -l -t1 $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Required node not available|Node count specification invalid|configuration not available" {
-		slow_kill $srun_pid
 		skip "Can't test srun task distribution"
 	}
 	-re "($number): *($re_word_str)" {
@@ -75,7 +74,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding. This may not be a real failure if the system  lacks three _contiguous_ nodes"
 	}
 	eof {

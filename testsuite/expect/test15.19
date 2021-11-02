@@ -44,7 +44,7 @@ proc cleanup {} {
 set host_0      ""
 set task_cnt  0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1-1 -t1 $srun -c 1 -l $bin_printenv SLURMD_NODENAME]
+spawn $salloc -N1-1 -t1 $srun -c 1 -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -80,7 +80,7 @@ if {[string compare $host_0 ""] == 0} {
 set alloc_fail 0
 set job_id     0
 set task_cnt2  0
-set salloc_pid [spawn $salloc -N1-1 -w DUMMY_HOSTNAME -t1 $srun -n [expr $task_cnt + 1] -l $bin_printenv SLURMD_NODENAME]
+spawn $salloc -N1-1 -w DUMMY_HOSTNAME -t1 $srun -n [expr $task_cnt + 1] -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -111,7 +111,7 @@ set job_id      0
 set host_0      ""
 set host_1      ""
 
-set salloc_pid [spawn $salloc -N1-1 -t1 $srun -l $bin_printenv SLURMD_NODENAME]
+spawn $salloc -N1-1 -t1 $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	 -re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -153,7 +153,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1-3 -t1 $srun -l $bin_printenv SLURMD_NODENAME]
+spawn $salloc -N1-3 -t1 $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -217,7 +217,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N2-3 -t1 $srun -l $bin_printenv SLURMD_NODENAME]
+spawn $salloc -N2-3 -t1 $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

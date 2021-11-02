@@ -61,7 +61,7 @@ set user_gid [get_my_gid]
 # Use sacctmgr to add an account
 #
 set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $test_acct cluster=$cluster]
+spawn $sacctmgr -i add account $test_acct cluster=$cluster
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -73,7 +73,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -87,10 +86,9 @@ if {$aamatches != 1} {
 #
 # Add self to this new account
 #
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cluster]
+spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cluster
 expect {
 	 timeout {
-		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -424,7 +422,7 @@ proc sacct_vargs { soption vargs job_id} {
 # Use sacctmgr to add an account
 #
 set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $test_acct cluster=$cluster]
+spawn $sacctmgr -i add account $test_acct cluster=$cluster
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -436,7 +434,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -450,10 +447,9 @@ if {$aamatches != 1} {
 #
 # Add self to this new account
 #
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cluster]
+spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cluster
 expect {
 	 timeout {
-		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {

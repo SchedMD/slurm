@@ -141,7 +141,7 @@ subtest {$matches == 1} "Job should be granted but allocation should fail" "$mat
 log_info "SUBTEST: Confirm het job srun fails when trying to overlap nodes"
 set matches 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N2 $bin_bash]
+spawn $salloc -N2 $bin_bash
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -157,7 +157,6 @@ expect {
 		# job started
 	}
 	timeout {
-		slow_kill [expr 0 - $salloc_pid]
 		fail "salloc not responding"
 	}
 }

@@ -39,7 +39,7 @@ if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
 }
 
-set sbatch_pid [spawn $sbatch -a 0-1 -t1 -N1 -o /dev/null : -N1 --wrap "date"]
+spawn $sbatch -a 0-1 -t1 -N1 -o /dev/null : -N1 --wrap "date"
 expect {
 	-re "Submitted batch job ($number)" {
 		set het_job_id $expect_out(1,string)
@@ -50,7 +50,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $sbatch_pid
 		fail "sbatch not responding"
 	}
 	eof {

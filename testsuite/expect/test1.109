@@ -33,12 +33,13 @@ proc cleanup {} {
 
 	cancel_job $job_id
 }
+
 #
 # Spawn a job with a deadline and no time limit and a time-min too long
 #
 set timeout [expr $max_job_delay + 1]
 set invalid_tl 0
-set srun_pid [spawn $srun -v --begin now+5 --deadline now+600 --time-min 11 $bin_sleep 1]
+spawn $srun -v --begin now+5 --deadline now+600 --time-min 11 $bin_sleep 1
 expect {
 	-re "Invalid time-min specification" {
 		set invalid_tl 1

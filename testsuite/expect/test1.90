@@ -87,7 +87,7 @@ exec $bin_chmod 700 $file_prog
 #
 # Create an allocation
 #
-set salloc_pid [spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash]
+spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -101,8 +101,7 @@ expect {
 	-re $test_prompt {
 	}
 	timeout {
-		slow_kill $salloc_pid
-		log_error "salloc not responding or failure to recognize prompt"
+		fail "salloc not responding or failure to recognize prompt"
 	}
 }
 
@@ -474,7 +473,6 @@ expect {
 		fail "Some error occurred"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	eof {

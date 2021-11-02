@@ -77,14 +77,13 @@ proc inc3_11_7 {} {
 
 	# (First test) Submit the batch job: a simple job using just 1 core inside the reservation
 	set job_id 0
-	set sbatch_pid [spawn $sbatch -n1 --reservation=$res_name --output=/dev/null $file_in]
+	spawn $sbatch -n1 --reservation=$res_name --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			cancel_job $job_id
 			fail "sbatch not responding"
@@ -104,14 +103,13 @@ proc inc3_11_7 {} {
 	sleep 1
 
 	# (Second test) Submit the batch job: a job using all cores allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$thread_res_num --reservation=$res_name --output=/dev/null $file_in]
+	spawn $sbatch -n$thread_res_num --reservation=$res_name --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			cancel_job $job_id
 			fail "sbatch not responding"
@@ -132,14 +130,13 @@ proc inc3_11_7 {} {
 	sleep 1
 
 	# (Third test) Submit the batch job: a job using all cores not allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$thread_res_num --nodelist=[dict get $res_info $res_name "Nodes"] --output=/dev/null $file_in]
+	spawn $sbatch -n$thread_res_num --nodelist=[dict get $res_info $res_name "Nodes"] --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			cancel_job $job_id
 			fail "sbatch not responding"
@@ -160,14 +157,13 @@ proc inc3_11_7 {} {
 
 	# (Fourth test) Submit a batch job: a job using more cores than allocated by the reservation
 	set thread_res_num [ expr ($thread_res_num + 1) ]
-	set sbatch_pid [spawn $sbatch -n$thread_res_num --reservation=$res_name --output=/dev/null $file_in]
+	spawn $sbatch -n$thread_res_num --reservation=$res_name --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			cancel_job $job_id
 			fail "sbatch not responding"
@@ -214,14 +210,13 @@ proc inc3_11_7 {} {
 
 	# (Fifth test) Submit a batch job: a job specifying node in reservation and
 	#              using more cores than allocated by the reservation
-	set sbatch_pid [spawn $sbatch -n$thread_res_num --nodelist=[dict get $res_info $res_name "Nodes"] --nodes=1 --output=/dev/null $file_in]
+	spawn $sbatch -n$thread_res_num --nodelist=[dict get $res_info $res_name "Nodes"] --nodes=1 --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			cancel_job $job_id
 			fail "sbatch not responding"
