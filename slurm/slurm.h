@@ -182,6 +182,12 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define SLURM_ID_HASH_LEGACY(hash_id) \
 	((hash_id >> 32) * 10000000000 + (hash_id & 0x00000000FFFFFFFF))
 
+/* Slurm hash definition to be used for various purposes */
+typedef struct {
+	unsigned char type;
+	unsigned char hash[32];
+} slurm_hash_t;
+
 /*
  * Bit definitions when setting flags
  *
