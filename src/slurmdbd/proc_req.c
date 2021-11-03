@@ -2219,6 +2219,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	id_rc_msg->return_code = jobacct_storage_g_job_start(
 		slurmdbd_conn->db_conn, &job);
 	id_rc_msg->job_id = job.job_id;
+	id_rc_msg->flags = job.bit_flags;
 	id_rc_msg->db_index = job.db_index;
 
 	/* just in case job.wckey was set because we didn't send one */

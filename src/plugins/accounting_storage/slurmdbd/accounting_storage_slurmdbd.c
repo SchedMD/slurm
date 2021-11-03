@@ -256,6 +256,28 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	return SLURM_SUCCESS;
 }
 
+static void _sending_script_env(dbd_id_rc_msg_t *id_ptr, job_record_t *job_ptr)
+{
+	xassert(id_ptr);
+	xassert(job_ptr);
+	xassert(job_ptr->details);
+
+	if ((slurm_conf.conf_flags & CTL_CONF_SJS) &&
+	    (id_ptr->flags & JOB_SEND_SCRIPT) &&
+	    job_ptr->details->script_hash)
+		job_ptr->bit_flags |= JOB_SEND_SCRIPT;
+	if ((slurm_conf.conf_flags & CTL_CONF_SJE) &&
+	    (id_ptr->flags & JOB_SEND_ENV) &&
+	    job_ptr->details->env_hash)
+		job_ptr->bit_flags |= JOB_SEND_ENV;
+
+	if (jobacct_storage_p_job_heavy(slurmdbd_conn, job_ptr) ==
+	    SLURM_SUCCESS) {
+		job_ptr->bit_flags &= ~JOB_SEND_SCRIPT;
+		job_ptr->bit_flags &= ~JOB_SEND_ENV;
+	}
+}
+
 static int _set_db_inx_for_each(void *x, void *arg)
 {
 	dbd_id_rc_msg_t *id_ptr = x;
@@ -274,6 +296,7 @@ static int _set_db_inx_for_each(void *x, void *arg)
 			job_ptr->db_index = id_ptr->db_index;
 			job_ptr->job_state &= (~JOB_UPDATE_DB);
 		}
+		_sending_script_env(id_ptr, job_ptr);
 	}
 
 	return 0;
@@ -2689,6 +2712,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	} else {
 		resp = (dbd_id_rc_msg_t *) msg_rc.data;
 		job_ptr->db_index = resp->db_index;
+		_sending_script_env(resp, job_ptr);
 		rc = resp->return_code;
 		//info("here got %d for return code", resp->rc);
 		slurmdbd_free_id_rc_msg(resp);
@@ -2700,7 +2724,53 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 
 extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr)
 {
-	return SLURM_SUCCESS;
+	persist_msg_t msg = {0};
+	dbd_job_heavy_msg_t req;
+	int rc = SLURM_SUCCESS;
+
+	/* No reason to be here */
+	if (!(job_ptr->bit_flags & (JOB_SEND_ENV | JOB_SEND_SCRIPT)))
+		return SLURM_SUCCESS;
+
+	if (!job_ptr->db_index
+	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
+		error("%s: Not inputing this job, it has no submit time.",
+		      __func__);
+		return SLURM_ERROR;
+	}
+
+	xassert(job_ptr->details);
+
+	memset(&req, 0, sizeof(req));
+
+	if (job_ptr->bit_flags & JOB_SEND_ENV) {
+		uint32_t env_size = 0;
+		char **env = get_job_env(job_ptr, &env_size);
+		if (env) {
+			char *pos = NULL;
+			for (int i = 0; i < env_size; i++)
+				xstrfmtcatat(req.env, &pos, "%s\n", env[i]);
+			xfree(env[0]);
+			xfree(env);
+		}
+		req.env_hash = job_ptr->details->env_hash;
+	}
+
+	if (job_ptr->bit_flags & JOB_SEND_SCRIPT) {
+		req.script_buf = get_job_script(job_ptr);
+		req.script_hash = job_ptr->details->script_hash;
+	}
+
+	msg.msg_type    = DBD_JOB_HEAVY;
+	msg.conn        = db_conn;
+	msg.data        = &req;
+
+	rc = slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg);
+
+	FREE_NULL_BUFFER(req.script_buf);
+	xfree(req.env);
+
+	return rc;
 }
 
 /*

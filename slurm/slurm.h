@@ -1091,7 +1091,7 @@ enum node_states {
 #define BACKFILL_TEST      SLURM_BIT(3) /* Backfill test in progress */
 #define GRES_ENFORCE_BIND  SLURM_BIT(4) /* Enforce CPU/GRES binding */
 #define TEST_NOW_ONLY      SLURM_BIT(5) /* Test for immediately start only */
-/*                         SLURM_BIT(6), Unused */
+#define JOB_SEND_ENV       SLURM_BIT(6) /* Send env to the dbd */
 #define NODE_REBOOT        SLURM_BIT(7) /* Waiting for node reboot */
 #define SPREAD_JOB         SLURM_BIT(8) /* Spread job across max node count */
 #define USE_MIN_NODES      SLURM_BIT(9) /* Prefer minimum node count */
@@ -1129,6 +1129,7 @@ enum node_states {
 #define BACKFILL_LAST      SLURM_BIT(33) /* Job was considered in last
 					  * schedule attempt */
 #define NOT_LAUNCHED       SLURM_BIT(34) /* Job was alloc'ed but not launched */
+#define JOB_SEND_SCRIPT    SLURM_BIT(35) /* Send script to the dbd */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */

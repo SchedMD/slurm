@@ -297,6 +297,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		(job_ptr->het_job_id) ? job_ptr->het_job_offset : NO_VAL;
 	uint64_t job_db_inx = job_ptr->db_index;
 	job_array_struct_t *array_recs = job_ptr->array_recs;
+	MYSQL_RES *result = NULL;
 
 	if ((!job_ptr->details || !job_ptr->details->submit_time)
 	    && !job_ptr->resize_time) {
@@ -362,7 +363,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 
 	slurm_mutex_lock(&rollup_lock);
 	if (check_time < global_last_rollup) {
-		MYSQL_RES *result = NULL;
 		MYSQL_ROW row;
 
 		/* check to see if we are hearing about this time for the
@@ -766,6 +766,61 @@ no_rollup_change:
 		rc = mysql_db_query(mysql_conn, query);
 	}
 
+	xfree(query);
+
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	/*
+	 * Here we check to see if the env has been added to the database or
+	 * not to inform the slurmctld to send it.
+	 */
+	if (job_ptr->details->env_hash) {
+		query = xstrdup_printf("select env_hash from \"%s_%s\" "
+				       "where env_hash = '%s';",
+				       mysql_conn->cluster_name, job_env_table,
+				       job_ptr->details->env_hash);
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+
+		xfree(query);
+
+		if (mysql_fetch_row(result)) {
+			debug3("%u has an env_hash we have already seen, no need to add again",
+			      job_ptr->job_id);
+		} else
+			job_ptr->bit_flags |= JOB_SEND_ENV;
+		mysql_free_result(result);
+	}
+
+	/*
+	 * Here we check to see if the script has been added to the database or
+	 * not to inform the slurmctld to send it.
+	 */
+	if (job_ptr->details->script_hash) {
+		query = xstrdup_printf("select script_hash from \"%s_%s\" "
+				       "where script_hash = '%s';",
+				       mysql_conn->cluster_name,
+				       job_script_table,
+				       job_ptr->details->script_hash);
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(query);
+			return SLURM_ERROR;
+		}
+
+		xfree(query);
+
+		if (mysql_fetch_row(result)) {
+			debug3("%u has a script_hash we have already seen, no need to add again",
+			      job_ptr->job_id);
+		} else
+			job_ptr->bit_flags |= JOB_SEND_SCRIPT;
+
+		mysql_free_result(result);
+	}
+
 	/* now we will reset all the steps */
 	if (IS_JOB_RESIZING(job_ptr)) {
 		/* FIXME : Verify this is still needed */
@@ -780,7 +835,45 @@ no_rollup_change:
 
 extern int as_mysql_job_heavy(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 {
+	char *query = NULL, *pos = NULL;
 	int rc = SLURM_SUCCESS;
+	struct job_details *details = job_ptr->details;
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return ESLURM_DB_CONNECTION;
+
+	xassert(details);
+
+	debug2("%s() called", __func__);
+
+	/*
+	 * make sure we handle any quotes that may be in the comment
+	 */
+	if (details->env_hash && details->env_sup && details->env_sup[0])
+		xstrfmtcatat(
+			query, &pos,
+			"insert into \"%s_%s\" "
+			"(last_used, env_hash, env_vars) values "
+			"(UNIX_TIMESTAMP(), '%s', '%s') "
+			"on duplicate key update last_used=UNIX_TIMESTAMP();",
+			mysql_conn->cluster_name, job_env_table,
+			details->env_hash, details->env_sup[0]);
+	if (details->script_hash && details->script)
+		xstrfmtcatat(
+			query, &pos,
+			"insert into \"%s_%s\" "
+			"(last_used, script_hash, batch_script) values "
+			"(UNIX_TIMESTAMP(), '%s', '%s') "
+			"on duplicate key update last_used=UNIX_TIMESTAMP();",
+			mysql_conn->cluster_name, job_script_table,
+			details->script_hash, details->script);
+
+	if (!query)
+		return rc;
+
+	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
 
 	return rc;
 }

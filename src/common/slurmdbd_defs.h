@@ -296,6 +296,7 @@ typedef struct dbd_job_start_msg {
 typedef struct dbd_id_rc_msg {
 	uint32_t job_id;
 	uint64_t db_index;
+	uint64_t flags;
 	uint32_t return_code;
 } dbd_id_rc_msg_t;
 

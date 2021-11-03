@@ -1231,6 +1231,7 @@ extern void slurmdbd_pack_id_rc_msg(void *in, uint16_t rpc_version,
 	if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack64(msg->db_index, buffer);
+		pack64(msg->flags, buffer);
 		pack32(msg->return_code, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
@@ -1249,6 +1250,7 @@ extern int slurmdbd_unpack_id_rc_msg(void **msg, uint16_t rpc_version,
 	if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
+		safe_unpack64(&msg_ptr->flags, buffer);
 		safe_unpack32(&msg_ptr->return_code, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->job_id, buffer);
