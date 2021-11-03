@@ -124,6 +124,8 @@ char *convert_version_table = "convert_version_table";
 char *federation_table = "federation_table";
 char *event_table = "event_table";
 char *job_table = "job_table";
+char *job_env_table = "job_env_table";
+char *job_script_table = "job_script_table";
 char *last_ran_table = "last_ran_table";
 char *qos_table = "qos_table";
 char *resv_table = "resv_table";
@@ -1311,6 +1313,20 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ NULL, NULL}
 	};
 
+	storage_field_t job_env_table_fields[] = {
+		{ "last_used", "timestamp DEFAULT CURRENT_TIMESTAMP not null" },
+		{ "env_hash", "text not null" },
+		{ "env_vars", "longtext" },
+		{ NULL, NULL}
+	};
+
+	storage_field_t job_script_table_fields[] = {
+		{ "last_used", "timestamp DEFAULT CURRENT_TIMESTAMP not null" },
+		{ "script_hash", "text not null" },
+		{ "batch_script", "longtext" },
+		{ NULL, NULL}
+	};
+
 	storage_field_t last_ran_table_fields[] = {
 		{ "hourly_rollup", "bigint unsigned default 0 not null" },
 		{ "daily_rollup", "bigint unsigned default 0 not null" },
@@ -1494,7 +1510,29 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "key sacct_def (id_user, time_start, "
 				  "time_end), "
 				  "key sacct_def2 (id_user, time_end, "
-				  "time_eligible))")
+				  "time_eligible), "
+				  "key env_hash_inx (env_hash(66)), "
+				  "key script_hash_inx (script_hash(66)))")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+		 cluster_name, job_env_table);
+	if (mysql_db_create_table(mysql_conn, table_name,
+				  job_env_table_fields,
+				  ", primary key (env_hash(66)), "
+				  "unique index hash_inx "
+				  "(env_hash(66), env_vars(66)))")
+	    == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
+		 cluster_name, job_script_table);
+	if (mysql_db_create_table(mysql_conn, table_name,
+				  job_script_table_fields,
+				  ", primary key (script_hash(66)), "
+				  "unique index hash_inx "
+				  "(script_hash(66), batch_script(66)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 

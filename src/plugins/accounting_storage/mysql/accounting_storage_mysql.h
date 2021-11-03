@@ -92,6 +92,8 @@ extern char *convert_version_table;
 extern char *federation_table;
 extern char *event_table;
 extern char *job_table;
+extern char *job_env_table;
+extern char *job_script_table;
 extern char *last_ran_table;
 extern char *qos_table;
 extern char *resv_table;
