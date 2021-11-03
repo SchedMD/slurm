@@ -61,6 +61,12 @@ if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	skip "This test can not run on a Cray system"
 }
 
+#
+## testproc configuration
+#
+# Reduce verbosity
+set testsuite_testproc_log_calls no
+
 proc cleanup {} {
 	global test_prog test_ulong_prog
 
@@ -71,8 +77,6 @@ proc cleanup {} {
 
 # Run the test under valgrind if any arguments are given
 set use_valgrind 0
-set test_minor_offset 0
-set test_minor_in ""
 
 # log_level_t values in log.h
 # NOTE: The test requires output from log level INFO, so can't go any lower
@@ -86,7 +90,6 @@ set debug_level $SLURM_LOG_LEVEL_INFO
 
 if {[lindex $argv 0] == "v" || [lindex $argv 0] == "valgrind"} {
 	set use_valgrind 1
-	set test_minor_offset 1
 	log_info "Running tests under valgrind!"
 } elseif {[lindex $argv 0] == "i" || [lindex $argv 0] == "info"} {
 	set debug_mode 1
@@ -113,11 +116,6 @@ if {[lindex $argv 0] == "v" || [lindex $argv 0] == "valgrind"} {
 	set test_minor_offset 1
 	log_info "Running tests under debug mode with log level DEBUG3"
 	set debug_level $SLURM_LOG_LEVEL_DEBUG3
-}
-
-if {[lindex $argv $test_minor_offset] != ""} {
-	set test_minor_in [lindex $argv $test_minor_offset]
-	log_info "Running test $test_id.$test_minor_in"
 }
 
 proc touch_file {file} {
@@ -181,31 +179,19 @@ if {$rc} {
 
 # Build program to determine size of unsigned long in C
 set build_cmd "$bin_cc ${test_ulong_prog}.c -o ${test_ulong_prog}"
-log_debug "$build_cmd"
+log_debug "Build command: $build_cmd"
 eval exec $build_cmd
 
-spawn ./$test_ulong_prog
-expect {
-	-re "($number)" {
-		set ulong_bits $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "No response from $test_ulong_prog"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail -nolog "./$test_ulong_prog"]
+if {$output != $ulong_bits} {
+	log_warn "We are running on a non-64-bit architecture, where sizeof(unsigned long) * 8 = $output bits"
+	set ulong_bits $output
 }
-
-log_debug "Sizeof(unsigned long) = $ulong_bits"
-
 
 #
 # Tests if $test_prog actual output matches expected output
 #
-# test_minor -		The minor test number (39.18.X). If global variable
-# 			"$test_minor_in" is set, then run only that test.
+# test_minor -		The minor test number (39.18.X).
 # slurm_conf_gres -     This is the `Gres=` value that would be in
 # 			slurm.conf for this node (it's easier to pass it into
 # 			the program directly than to regenerate a slurm.conf
@@ -223,15 +209,10 @@ log_debug "Sizeof(unsigned long) = $ulong_bits"
 # 			the output. Defaults to 0. If this number isn't hit,
 # 			then the test will fail.
 #
-proc check_configuration {test_minor slurm_conf_gres gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0} } {
-	global test_dir nodename test_prog re_word_str test_minor_in
-	global test_name use_valgrind file_in file_out
+proc test_cfg {test_minor slurm_conf_gres gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0} } {
+	global test_dir nodename test_prog re_word_str
+	global test_name use_valgrind bin_sort file_in file_out
 	global bin_cat debug_mode debug_level
-
-	# Skip all tests not specified by the tester; force string comparison
-	if {$test_minor_in != "" && [string compare "$test_minor" "$test_minor_in"] != 0} {
-		return
-	}
 
 	log_info "====$test_name.$test_minor===="
 
@@ -262,88 +243,37 @@ rm -rf $file_out"
 	# also want to guarantee that the GPU order in gres.conf is preserved if
 	# AutoDetect is NOT used, so users can manually specify the PCI bus
 	# order.
-	#
-	set actual ""
-
-	if {!$debug_mode} {
-		log_user 0
+	if {$debug_mode} {
+		set output [run_command_output -fail "$file_in"]
+	} else {
+		set output [run_command_output -fail -nolog "$file_in"]
 	}
-	spawn $file_in
-	expect {
-		-re "(GRES_PARSABLE$re_word_str)" {
-			if {$actual == ""} {
-				set actual "\n"
-			}
-			# Append string
-			set actual "$actual$expect_out(1,string)\n"
-			exp_continue
-		}
-		timeout {
-			fail "No response from $test_prog"
-		}
-		eof {
-			wait
-		}
-	}
+	set actual [regexp -all -inline "GRES_PARSABLE$re_word_str" $output]
 
-	##
-	### Run through output again to parse the errors (if needed)
-	##
-	# Do this in a separate expect loop to prevent the two unrelated regexes
-	# colliding with each other.
-	# When expect matches something in a chunk of text, if exp_continue is
-	# called, it throws away everything up to and including that text and
-	# then continues searching. This means multiple regexes in the same
-	# expect loop can skip each other. So avoid this.
-	set errs_actual 0
-	set ignore_err_msgs 0
-	# Doing a regex on an empty string stalls expect. So don't do it.
+	# Check for expected errors
 	if {$err_msgs != ""} {
-		# We for sure don't want to print this out
-		log_user 0
-		spawn $file_in
-		expect {
-			-re "($err_msgs)" {
-				log_debug "Found '$err_msgs'"
-				if {$ignore_err_msgs == 0} {
-					incr errs_actual
-				}
-				exp_continue
-			}
-			timeout {
-				fail "No response from $test_prog"
-			}
-			eof {
-				wait
-			}
-		}
+		set errs_actual [regexp -all "$err_msgs" $output]
+	} else {
+		set errs_actual 0
 	}
 
-	set expected ""
 	make_bash_script $file_in "/bin/echo \"$output_expected\""
-	spawn $file_in
-	expect {
-		-re "(GRES_PARSABLE$re_word_str)" {
-			if {$expected == ""} {
-				set expected "\n"
-			}
-			# Append string
-			set expected "$expected$expect_out(1,string)\n"
-			exp_continue
-		}
-		timeout {
-			fail "No response from $test_prog"
-		}
-		eof {
-			wait
-		}
-	}
+	set output [run_command_output -fail -nolog "$file_in"]
+	set expected [regexp -all -inline "GRES_PARSABLE$re_word_str" $output]
+
 	file delete $file_in
-	log_user 1
 
 	# Check the output with what is expected
-	log_debug "Actual: $actual"
-	subtest {$actual == $expected} "Verify expected output"
+	log_debug "Actual:"
+	foreach {value} $actual {
+		log_debug "$value"
+	}
+	if {![subtest {$actual == $expected} "Expected output does not match actual output"]} {
+		log_debug "Expected:"
+		foreach {value} $expected {
+			log_debug "$value"
+		}
+	}
 
 	#  Check for expected errors, if applicable
 	if {$err_msgs != ""} {
@@ -385,7 +315,7 @@ rm -rf $file_out"
 # ##############################################################################
 
 # ##############################################################################
-# # Test 0.2 - Type-less gpu specification in slurm.conf and empty gres.conf
+# # Test a2 - Type-less gpu specification in slurm.conf and empty gres.conf
 # # NOTE the device numbers being out of order
 # ##############################################################################
 
@@ -404,10 +334,10 @@ GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}2|$flags_file
 GRES_PARSABLE\[gpu\](1):(null)|4|2-3|(null)|${dev}3|$flags_file
 GRES_PARSABLE\[gpu\](1):(null)|4|2-3|(null)|${dev}4|$flags_file
 "
-testproc check_configuration 0.2 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a2" test_cfg "a2" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.4 - Test empty and null identifiers in fake_gpus.conf
+# # Test a4 - Test empty and null identifiers in fake_gpus.conf
 # ##############################################################################
 
 set slurm_conf_gres "gpu:8"
@@ -433,7 +363,7 @@ GRES_PARSABLE\[gpu\](1):(null)|4|0-1|-1,0|${dev}4|$flags_file
 GRES_PARSABLE\[gpu\](1):(null)|4|(null)|(null)|${dev}1|$flags_file
 GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}2|$flags_file
 "
-testproc check_configuration 0.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a4" test_cfg "a4" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 
@@ -447,12 +377,9 @@ testproc check_configuration 0.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $ex
 # ##############################################################################
 
 if [have_nvml] {
-	if {$test_minor_in == ""} {
-		log_info "Running NVML-specific tests:"
-	}
 
 # ##############################################################################
-# # Test 0.6 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
+# # Test a6 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 	       Convert device CPU affinity of 20 ulongs with all bits set
 # ##############################################################################
 
@@ -469,10 +396,10 @@ tesla|$cpus_count|~$cpu_array|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|$flags_file
 "
-testproc check_configuration 0.6 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a6" test_cfg "a6" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.8 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
+# # Test a8 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 	       Convert device CPU affinity of 1 ulong with all bits set
 # ##############################################################################
 
@@ -489,10 +416,10 @@ tesla|$cpus_count|~$cpu_array|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|$flags_file
 "
-testproc check_configuration 0.8 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a8" test_cfg "a8" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.10 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
+# # Test a10 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 		Convert device CPU affinity of 3 ulongs with all bits set
 # ##############################################################################
 
@@ -509,10 +436,10 @@ tesla|$cpus_count|~$cpu_array|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|$flags_file
 "
-testproc check_configuration 0.10 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a10" test_cfg "a10" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.12 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
+# # Test a12 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 		Convert device CPU affinity for max # of CPUs supported (2^15)
 # ##############################################################################
 
@@ -529,10 +456,10 @@ tesla|$cpus_count|~max|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|$flags_file
 "
-testproc check_configuration 0.12 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a12" test_cfg "a12" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.14 - Test conversion of NVML-style CPU affinity array to Slurm bitstr
+# # Test a14 - Test conversion of NVML-style CPU affinity array to Slurm bitstr
 # 		Convert device CPU affinity for all zeros (expect this to fatal)
 # ##############################################################################
 
@@ -545,10 +472,10 @@ tesla|0|~zero|(null)|${dev}1
 set expected_output ""
 set err_msgs $cpu_set_err
 set expected_errs 1
-testproc check_configuration 0.14 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "a14" test_cfg "a14" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 0.16 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
+# # Test a16 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 		Convert device CPU affinity for CPU 0 set out of 16 total CPUs
 # ##############################################################################
 
@@ -561,10 +488,10 @@ tesla|16|~one|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|16|0|(null)|${dev}1|$flags_file
 "
-testproc check_configuration 0.16 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a16" test_cfg "a16" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.18 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
+# # Test a18 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 		Convert device CPU affinity for CPUs 0-1 set out of 4 total CPUs
 # ##############################################################################
 
@@ -577,10 +504,10 @@ tesla|4|~three|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}1|$flags_file
 "
-testproc check_configuration 0.18 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a18" test_cfg "a18" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.20 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
+# # Test a20 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 		Convert device CPU affinity for CPUs 8-15 set out of 16 CPUs
 # ##############################################################################
 
@@ -593,7 +520,7 @@ tesla|16|~half|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|16|8-15|(null)|${dev}1|$flags_file
 "
-testproc check_configuration 0.20 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a20" test_cfg "a20" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # End NVML-specific tests
@@ -604,7 +531,7 @@ testproc check_configuration 0.20 $slurm_conf_gres $gres_conf $fake_gpus_conf $e
 }
 
 # ##############################################################################
-# # Test 0.22 - Test that when no GRES type is specified in slurm.conf,
+# # Test a22 - Test that when no GRES type is specified in slurm.conf,
 #               the GRES type is NOT set to what the system detects, but rather
 #               is set to NULL.
 # ##############################################################################
@@ -624,10 +551,10 @@ GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}2|$flags_file
 GRES_PARSABLE\[gpu\](1):(null)|4|2-3|(null)|${dev}3|$flags_file
 GRES_PARSABLE\[gpu\](1):(null)|4|2-3|(null)|${dev}4|$flags_file
 "
-testproc check_configuration 0.22 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a22" test_cfg "a22" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.24 - Test that the GRES type specified in slurm.conf overrides the
+# # Test a24 - Test that the GRES type specified in slurm.conf overrides the
 #               GRES type specified in the system, if it's a substring.
 # ##############################################################################
 
@@ -646,11 +573,11 @@ GRES_PARSABLE\[gpu\](1):v100|4|0-1|(null)|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):v100|4|2-3|(null)|${dev}3|$flags_file_type
 GRES_PARSABLE\[gpu\](1):v100|4|2-3|(null)|${dev}4|$flags_file_type
 "
-testproc check_configuration 0.24 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a24" test_cfg "a24" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 0.26 - Test that the GRES type specified in slurm.conf doesn't need
+# # Test a26 - Test that the GRES type specified in slurm.conf doesn't need
 #               to match the case of the system-detected GRES type, and that it
 #               can also match the first part.
 # ##############################################################################
@@ -670,11 +597,11 @@ GRES_PARSABLE\[gpu\](1):TESLA_V100|4|0-1|(null)|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):TESLA_V100|4|2-3|(null)|${dev}3|$flags_file_type
 GRES_PARSABLE\[gpu\](1):TESLA_V100|4|2-3|(null)|${dev}4|$flags_file_type
 "
-testproc check_configuration 0.26 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a26" test_cfg "a26" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 0.28 - Test that the GRES type specified in slurm.conf can match the
+# # Test a28 - Test that the GRES type specified in slurm.conf can match the
 #               last part of the system-detected GRES type
 # ##############################################################################
 
@@ -693,10 +620,10 @@ GRES_PARSABLE\[gpu\](1):pcie-16gb|4|0-1|(null)|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):pcie-16gb|4|2-3|(null)|${dev}3|$flags_file_type
 GRES_PARSABLE\[gpu\](1):pcie-16gb|4|2-3|(null)|${dev}4|$flags_file_type
 "
-testproc check_configuration 0.28 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a28" test_cfg "a28" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.30 - Test that the GRES type specified in slurm.conf can match the
+# # Test a30 - Test that the GRES type specified in slurm.conf can match the
 #               full system-detected GRES type
 # ##############################################################################
 
@@ -715,10 +642,10 @@ GRES_PARSABLE\[gpu\](1):tesla_v100-pcie-16gb|4|0-1|(null)|${dev}2|$flags_file_ty
 GRES_PARSABLE\[gpu\](1):tesla_v100-pcie-16gb|4|2-3|(null)|${dev}3|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla_v100-pcie-16gb|4|2-3|(null)|${dev}4|$flags_file_type
 "
-testproc check_configuration 0.30 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a30" test_cfg "a30" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.32 - Test that GRES types work as expected when one GRES type is a
+# # Test a32 - Test that GRES types work as expected when one GRES type is a
 #               substring of another GRES type (e.g. k20m + k20m1). See bug 7345
 # ##############################################################################
 
@@ -735,10 +662,10 @@ GRES_PARSABLE\[gpu\](1):k20m1|4|0-1|(null)|${dev}1|$flags_file_type
 GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):v100|4|0-1|(null)|${dev}3|$flags_file_type
 "
-testproc check_configuration 0.32 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a32" test_cfg "a32" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.34 - Test that only the first system device that matches a conf gres
+# # Test a34 - Test that only the first system device that matches a conf gres
 #               is used, and that the gres type is truncated.
 # ##############################################################################
 
@@ -756,10 +683,10 @@ nvidia-p100|4|0-1|(null)|${dev}5
 set expected_output "
 GRES_PARSABLE\[gpu\](1):p100|4|0-1|(null)|${dev}1|$flags_file_type
 "
-testproc check_configuration 0.34 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a34" test_cfg "a34" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.36 - Test that the shorter GRES types don't match against the longer
+# # Test a36 - Test that the shorter GRES types don't match against the longer
 #               GRES types.
 # ##############################################################################
 
@@ -779,10 +706,10 @@ GRES_PARSABLE\[gpu\](1):a|4|0-1|(null)|${dev}3|$flags_file_type
 GRES_PARSABLE\[gpu\](1):aaaa|4|0-1|(null)|${dev}4|$flags_file_type
 "
 
-testproc check_configuration 0.36 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a36" test_cfg "a36" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.38 - Test that the shorter GRES types don't match against the longer
+# # Test a38 - Test that the shorter GRES types don't match against the longer
 #               GRES types prematurely.
 # ##############################################################################
 
@@ -808,10 +735,10 @@ GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}7|$flags_file_type
 GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}8|$flags_file_type
 "
 
-testproc check_configuration 0.38 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a38" test_cfg "a38" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.39 - Show that shorter types will match against longer types if the
+# # Test a39 - Show that shorter types will match against longer types if the
 # 		longer types aren't used up, and that the longer type will be
 # 		truncated accordingly.
 # ##############################################################################
@@ -833,10 +760,10 @@ GRES_PARSABLE\[gpu\](1):k20|4|0-1|(null)|${dev}3|$flags_file_type
 GRES_PARSABLE\[gpu\](1):k20|4|0-1|(null)|${dev}4|$flags_file_type
 "
 
-testproc check_configuration 0.39 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a39" test_cfg "a39" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.40 - Test GRES types that are the same length
+# # Test a40 - Test GRES types that are the same length
 # 		Note: In a real system, the controller would set the node to
 # 		drain, since the node reports one less aaa GPU than the
 # 		controller is expecting.
@@ -861,11 +788,11 @@ GRES_PARSABLE\[gpu\](1):bbb|4|0-1|(null)|${dev}4|$flags_file_type
 GRES_PARSABLE\[gpu\](1):ccc|4|0-1|(null)|${dev}5|$flags_file_type
 "
 
-testproc check_configuration 0.40 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a40" test_cfg "a40" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 0.42 - Test multiple identical GRES type specifications
+# # Test a42 - Test multiple identical GRES type specifications
 # ##############################################################################
 
 set slurm_conf_gres "gpu:aaa:1,gpu:aaa:1,gpu:aaa:1"
@@ -883,11 +810,11 @@ GRES_PARSABLE\[gpu\](1):aaa|4|0-1|(null)|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):aaa|4|0-1|(null)|${dev}3|$flags_file_type
 "
 
-testproc check_configuration 0.42 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a42" test_cfg "a42" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# Test 0.52 - Test slurm.conf, gres.conf, and detected device interaction
+# Test a52 - Test slurm.conf, gres.conf, and detected device interaction
 #
 # The node returns a list of only 3 GPUs, not 4 (since gpu:special is not
 # detected on the system). So the controller should set the node to drain.
@@ -907,11 +834,11 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}1|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}2|$flags_file_type
 "
 
-testproc check_configuration 0.52 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a52" test_cfg "a52" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# Test 0.53 - Test slurm.conf, gres.conf, and detected device interaction
+# Test a53 - Test slurm.conf, gres.conf, and detected device interaction
 #
 # gpu:special is added on via gres.conf. The final GPU list count matches what
 # is expected in slurm.conf. No errors.
@@ -935,10 +862,10 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):special|4|(null)|(null)|${dev}5|$flags_default_type
 "
 
-testproc check_configuration 0.53 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a53" test_cfg "a53" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# Test 0.54 - Test slurm.conf, gres.conf, and detected device interaction
+# Test a54 - Test slurm.conf, gres.conf, and detected device interaction
 #
 # The gres conf record for nvidia1 *does* match a system GPU with the same Type
 # and File. However, Cores is mismatched, so an error is printed in slurmd and
@@ -964,10 +891,10 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):special|4|(null)|(null)|${dev}5|$flags_default_type
 "
 
-testproc check_configuration 0.54 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a54" test_cfg "a54" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# Test 0.55 - Test slurm.conf, gres.conf, and detected device interaction
+# Test a55 - Test slurm.conf, gres.conf, and detected device interaction
 #
 # nvidia[0-2] matches exactly what is found on the system, so no problem there.
 # tesla + nvidia3 does not match any type and file combo found in the system
@@ -999,10 +926,10 @@ GRES_PARSABLE\[gpu\](1):special|4|(null)|(null)|${dev}5|$flags_default_type
 set err_msgs $conf_mismatch_err
 set expected_errs 1
 
-testproc check_configuration 0.55 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "a55" test_cfg "a55" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# Test 0.56 - Test slurm.conf, gres.conf, and detected device interaction
+# Test a56 - Test slurm.conf, gres.conf, and detected device interaction
 #
 # nvidia[0-2] are found on the system, but nvidia3 is not. However, nvidia3 is
 # assumed to be an extra GPU (like gpu:special), so it’s ok.
@@ -1029,10 +956,10 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}3|$flags_default_type
 GRES_PARSABLE\[gpu\](1):special|4|(null)|(null)|${dev}5|$flags_default_type
 "
 
-testproc check_configuration 0.56 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a56" test_cfg "a56" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.57 - Test that an empty slurm.conf yields no devices
+# # Test a57 - Test that an empty slurm.conf yields no devices
 # ##############################################################################
 
 set slurm_conf_gres ""
@@ -1052,10 +979,10 @@ set expected_output ""
 set err_msgs $conf_mismatch_err
 set expected_errs 2
 
-testproc check_configuration 0.57 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "a57" test_cfg "a57" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# Test 0.58 - Test that a non-GPU GRES doesn't need an explicit entry in
+# Test a58 - Test that a non-GPU GRES doesn't need an explicit entry in
 # gres.conf. Also test that GPUs are rejected unless they have a File
 # specification in gres.conf when AutoDetect is turned off.
 # ##############################################################################
@@ -1068,10 +995,10 @@ set fake_gpus_conf ""
 set expected_output "
 GRES_PARSABLE\[tmpdisk\](100):(null)|4|(null)|(null)|(null)|CountOnly
 "
-testproc check_configuration 0.58 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a58" test_cfg "a58" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# Test 0.59 - Test over-specified gres.conf compared to slurm.conf
+# Test a59 - Test over-specified gres.conf compared to slurm.conf
 #
 # This tests that a larger gres.conf line is truncated down to match what
 # slurm.conf specifies. This also tests that user errors are printed whenever
@@ -1103,11 +1030,11 @@ GRES_PARSABLE\[gpu\](1):gtx|4|(null)|(null)|${dev}7|$flags_default_type
 set err_msgs $conf_mismatch_err
 set expected_errs 5
 
-testproc check_configuration 0.59 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "a59" test_cfg "a59" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 
 # ##############################################################################
-# Test 0.60 - Test unique_id parsing (for MIGs)
+# Test a60 - Test unique_id parsing (for MIGs)
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:4"
@@ -1125,7 +1052,7 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}2|MIG-GPU-aaaaaaaa-bbbb-cccc-dd
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}3|MIG-GPU-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/8/0|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}4|MIG-GPU-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/9/0|$flags_file_type
 "
-testproc check_configuration 0.60 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "a60" test_cfg "a60" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
@@ -1136,7 +1063,7 @@ testproc check_configuration 0.60 $slurm_conf_gres $gres_conf $fake_gpus_conf $e
 
 
 # ##############################################################################
-# # Test 1.2 - Test that all MPS is distributed across multiple GPU types
+# # Test b2 - Test that all MPS is distributed across multiple GPU types
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:1,gpu:1080:1,gpu:gtx560:1,mps:300"
@@ -1156,11 +1083,11 @@ GRES_PARSABLE\[mps\](100):1080|4|0-1|(null)|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):1080|4|0-1|(null)|${dev}2|$flags_file_type
 "
 
-testproc check_configuration 1.2 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "b2" test_cfg "b2" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 1.4 - Test that errors are emitted and configured devices omitted when
+# # Test b4 - Test that errors are emitted and configured devices omitted when
 #	       Cores or Links mismatch with the corresponding system devices
 # ##############################################################################
 
@@ -1190,11 +1117,11 @@ GRES_PARSABLE\[gpu\](1):ti|4|0-1|(null)|${dev}2|$flags_file_type
 
 set err_msgs $mismatch_err
 set expected_errs 3
-testproc check_configuration 1.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "b4" test_cfg "b4" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 
 # ##############################################################################
-# # Test 1.5 - Test that GPUs are sorted according to links, not device file
+# # Test b5 - Test that GPUs are sorted according to links, not device file
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a100:8"
@@ -1233,11 +1160,11 @@ GRES_PARSABLE\[gpu\](1):a100|4|2-3|0,0,0,0,0,0,-1,0|${dev}5|$flags_file_type
 GRES_PARSABLE\[gpu\](1):a100|4|2-3|0,0,0,0,0,0,0,-1|${dev}4|$flags_file_type
 "
 
-testproc check_configuration 1.5 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "b5" test_cfg "b5" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 1.6 - Test that "extra" GPUs are still used when not found on system
+# # Test b6 - Test that "extra" GPUs are still used when not found on system
 # ##############################################################################
 
 set slurm_conf_gres "gpu:1080:3"
@@ -1253,12 +1180,12 @@ GRES_PARSABLE\[gpu\](1):1080|4|0-1|(null)|${dev}1|$flags_default_type
 GRES_PARSABLE\[gpu\](1):1080|4|0-1|(null)|${dev}2|$flags_default_type
 "
 
-testproc check_configuration 1.6 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "b6" test_cfg "b6" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 
 # ##############################################################################
-# # Test 1.7 - Test that GPUs are sorted according links, if specified, and
+# # Test b7 - Test that GPUs are sorted according links, if specified, and
 # 	       device file, if not specified. Test also that null links are
 # 	       sorted after non-null links.
 # ##############################################################################
@@ -1299,12 +1226,12 @@ GRES_PARSABLE\[gpu\](1):a100|4|2-3|(null)|${dev}6|$flags_file_type
 GRES_PARSABLE\[gpu\](1):a100|4|2-3|(null)|${dev}7|$flags_file_type
 "
 
-testproc check_configuration 1.7 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "b7" test_cfg "b7" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 
 # ##############################################################################
-# # Test 1.8 - Test that separate "extra" GPUs in gres.conf with different Cores
+# # Test b8 - Test that separate "extra" GPUs in gres.conf with different Cores
 # 	       and Links are properly accounted under the typeless slurm.conf
 # 	       gres specification.
 # ##############################################################################
@@ -1326,10 +1253,10 @@ GRES_PARSABLE\[gpu\](1):(null)|4|0,1|(null)|${dev}1|$flags_default
 GRES_PARSABLE\[gpu\](1):(null)|4|0|(null)|${dev}4|$flags_default
 "
 
-testproc check_configuration 1.8 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "b8" test_cfg "b8" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 1.10 - Test that slurm.conf doesn't allow a mix of Type and no Type
+# # Test b10 - Test that slurm.conf doesn't allow a mix of Type and no Type
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:1,gpu:1"
@@ -1339,10 +1266,10 @@ set expected_output ""
 set err_msgs $slurm_conf_type_err
 set expected_errs 1
 
-testproc check_configuration 1.10 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "b10" test_cfg "b10" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 1.12 - Test that gres.conf doesn't allow a mix of Type and no Type
+# # Test b12 - Test that gres.conf doesn't allow a mix of Type and no Type
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:2,gpu:v100:2"
@@ -1356,10 +1283,10 @@ set expected_output ""
 set err_msgs $gres_conf_type_err
 set expected_errs 1
 
-testproc check_configuration 1.12 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "b12" test_cfg "b12" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 1.14 - Test that gres.conf doesn't allow a mix of File and no File
+# # Test b14 - Test that gres.conf doesn't allow a mix of File and no File
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:2,gpu:v100:2"
@@ -1373,7 +1300,7 @@ set expected_output ""
 set err_msgs $gres_conf_file_err
 set expected_errs 1
 
-testproc check_configuration 1.14 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "b14" test_cfg "b14" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 
 # ##############################################################################
@@ -1384,7 +1311,7 @@ testproc check_configuration 1.14 $slurm_conf_gres $gres_conf $fake_gpus_conf $e
 
 
 # ##############################################################################
-# # Test 2.2 - Test gres/gpu plus gres/mps with count
+# # Test c2 - Test gres/gpu plus gres/mps with count
 # # NOTE the device numbers being out of order
 # ##############################################################################
 
@@ -1403,10 +1330,10 @@ GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|$flags_default_type
 GRES_PARSABLE\[mps\](100):tesla|4|2,3|(null)|${dev}1|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|$flags_default_type
 "
-testproc check_configuration 2.2 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c2" test_cfg "c2" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.4 - Test gres/mps with count and no file names
+# # Test c4 - Test gres/mps with count and no file names
 # # NOTE the device numbers being out of order
 # ##############################################################################
 
@@ -1424,10 +1351,10 @@ GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|$flags_default_type
 GRES_PARSABLE\[mps\](105):tesla|4|2,3|(null)|${dev}1|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|$flags_default_type
 "
-testproc check_configuration 2.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c4" test_cfg "c4" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.6 - Test using only a subset of the system devices found
+# # Test c6 - Test using only a subset of the system devices found
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:3"
@@ -1448,10 +1375,10 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}1|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}3|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}4|$flags_default_type
 "
-testproc check_configuration 2.6 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c6" test_cfg "c6" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.8 - Test disjoint sets of conf and system devices
+# # Test c8 - Test disjoint sets of conf and system devices
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:6"
@@ -1475,10 +1402,10 @@ GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}4|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}5|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}6|$flags_file_type
 "
-testproc check_configuration 2.8 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c8" test_cfg "c8" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.10 - Different links, different records
+# # Test c10 - Different links, different records
 # ##############################################################################
 
 # Devices 0-2 are all doubly linked to each other
@@ -1507,20 +1434,20 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,0,0,1,1,-1,0,0|${dev}5|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,0,0,0,0,0,-1,2|${dev}6|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,0,0,0,0,0,2,-1|${dev}7|$flags_default_type
 "
-testproc check_configuration 2.10 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c10" test_cfg "c10" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.12 - Empty everything
+# # Test c12 - Empty everything
 # ##############################################################################
 
 set slurm_conf_gres ""
 set gres_conf ""
 set fake_gpus_conf ""
 set expected_output ""
-testproc check_configuration 2.12 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c12" test_cfg "c12" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.14 - Empty system devices
+# # Test c14 - Empty system devices
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:4"
@@ -1535,11 +1462,11 @@ GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}2|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}3|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}4|$flags_default_type
 "
-testproc check_configuration 2.14 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c14" test_cfg "c14" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 2.16 - Test non-GPU GRESs with types
+# # Test c16 - Test non-GPU GRESs with types
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:1,tmpdisk:disky:1,nic:nikki:1,mic:mickey:1"
@@ -1557,10 +1484,10 @@ GRES_PARSABLE\[mic\](1):mickey|4|0-3|(null)|${dev}4|$flags_file_type
 GRES_PARSABLE\[tmpdisk\](1):disky|4|0-3|(null)|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|$flags_default_type
 "
-testproc check_configuration 2.16 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c16" test_cfg "c16" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.17 - Test non-GPU GRESs without types
+# # Test c17 - Test non-GPU GRESs without types
 # ##############################################################################
 
 set slurm_conf_gres "gpu:1,tmpdisk:1,nic:1,mic:1"
@@ -1578,10 +1505,10 @@ GRES_PARSABLE\[mic\](1):(null)|4|0-3|(null)|${dev}4|HAS_FILE
 GRES_PARSABLE\[tmpdisk\](1):(null)|4|0-3|(null)|${dev}2|HAS_FILE
 GRES_PARSABLE\[gpu\](1):(null)|4|0-3|(null)|${dev}1|$flags_default
 "
-testproc check_configuration 2.17 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c17" test_cfg "c17" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.18 - Test NodeName when Name isn't specified
+# # Test c18 - Test NodeName when Name isn't specified
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:2"
@@ -1597,10 +1524,10 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|$flags_default_type
 
 set err_msgs $no_name_err
 set expected_errs 1
-testproc check_configuration 2.18 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "c18" test_cfg "c18" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 2.20 - Test that empty Name does not parse and produces error
+# # Test c20 - Test that empty Name does not parse and produces error
 # ##############################################################################
 
 set slurm_conf_gres ""
@@ -1612,10 +1539,10 @@ set fake_gpus_conf ""
 set expected_output ""
 set err_msgs $key_parse_err
 set expected_errs 1
-testproc check_configuration 2.20 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "c20" test_cfg "c20" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 2.22 - Ensure no malloc error for large count with non-GPU GRES
+# # Test c22 - Ensure no malloc error for large count with non-GPU GRES
 #               See bug 6014
 # ##############################################################################
 
@@ -1625,10 +1552,10 @@ set fake_gpus_conf ""
 set expected_output "
 GRES_PARSABLE\[tmpdisk\](10737418240):(null)|4|(null)|(null)|(null)|
 "
-testproc check_configuration 2.22 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c22" test_cfg "c22" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.23 - Ensure no errors for large count with non-GPU GRES *and* with
+# # Test c23 - Ensure no errors for large count with non-GPU GRES *and* with
 # 		Type and Cores specified in gres.conf.
 # ##############################################################################
 
@@ -1638,10 +1565,10 @@ set fake_gpus_conf ""
 set expected_output "
 GRES_PARSABLE\[tmpdisk\](10737418240):tempy|4|0-1|(null)|(null)|HAS_TYPE
 "
-testproc check_configuration 2.23 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c23" test_cfg "c23" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.24 - Different types, different records
+# # Test c24 - Different types, different records
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a:2,gpu:b:2"
@@ -1659,10 +1586,10 @@ GRES_PARSABLE\[gpu\](1):a|4|0-3|(null)|${dev}2|$flags_default_type
 GRES_PARSABLE\[gpu\](1):b|4|0-3|(null)|${dev}5|$flags_default_type
 GRES_PARSABLE\[gpu\](1):b|4|0-3|(null)|${dev}6|$flags_default_type
 "
-testproc check_configuration 2.24 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c24" test_cfg "c24" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.28 - Test alternating device/cpu ranges
+# # Test c28 - Test alternating device/cpu ranges
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla_a:4,gpu:tesla_b:4"
@@ -1686,10 +1613,10 @@ GRES_PARSABLE\[gpu\](1):tesla_b|4|0-3|(null)|${dev}6|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla_a|4|0-3|(null)|${dev}7|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla_b|4|0-3|(null)|${dev}8|$flags_default_type
 "
-testproc check_configuration 2.28 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c28" test_cfg "c28" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.30 - Test duplicate devices in gres.conf
+# # Test c30 - Test duplicate devices in gres.conf
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:6"
@@ -1705,10 +1632,10 @@ set fake_gpus_conf ""
 set expected_output ""
 set err_msgs $dup_err
 set expected_errs 1
-testproc check_configuration 2.30 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "c30" test_cfg "c30" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 2.32 - Test increasing duplicate devices in gres.conf
+# # Test c32 - Test increasing duplicate devices in gres.conf
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:10"
@@ -1723,10 +1650,10 @@ set fake_gpus_conf ""
 set expected_output ""
 set err_msgs $dup_err
 set expected_errs 1
-testproc check_configuration 2.32 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "c32" test_cfg "c32" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 2.34 - Test decreasing duplicate devices in gres.conf
+# # Test c34 - Test decreasing duplicate devices in gres.conf
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:10"
@@ -1741,10 +1668,10 @@ set fake_gpus_conf ""
 set expected_output ""
 set err_msgs $dup_err
 set expected_errs 1
-testproc check_configuration 2.34 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "c34" test_cfg "c34" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 2.36 - Test duplicate devices
+# # Test c36 - Test duplicate devices
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:4"
@@ -1759,10 +1686,10 @@ set fake_gpus_conf ""
 set expected_output ""
 set err_msgs $dup_err
 set expected_errs 1
-testproc check_configuration 2.36 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "c36" test_cfg "c36" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 2.38 - Test overlapping Core ranges
+# # Test c38 - Test overlapping Core ranges
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:4"
@@ -1780,11 +1707,11 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}2|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0-2|(null)|${dev}3|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}4|$flags_default_type
 "
-testproc check_configuration 2.38 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c38" test_cfg "c38" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 2.40 - Test that nulled, empty, and zeroed links produce errors
+# # Test c40 - Test that nulled, empty, and zeroed links produce errors
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:4"
@@ -1804,10 +1731,10 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}4|$flags_default_type
 "
 set err_msgs $links_err
 set expected_errs 3
-testproc check_configuration 2.40 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "c40" test_cfg "c40" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 2.42 - Show link ranges do NOT work - only commas
+# # Test c42 - Show link ranges do NOT work - only commas
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:4"
@@ -1825,10 +1752,10 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,-1,2|${dev}4|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}3|$flags_default_type
 "
-testproc check_configuration 2.42 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c42" test_cfg "c42" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.46 - Type not specified
+# # Test c46 - Type not specified
 # ##############################################################################
 
 set slurm_conf_gres "gpu:4"
@@ -1847,10 +1774,10 @@ GRES_PARSABLE\[gpu\](1):(null)|4|0-3|(null)|${dev}2|$flags_default
 GRES_PARSABLE\[gpu\](1):(null)|4|0-3|(null)|${dev}3|$flags_default
 GRES_PARSABLE\[gpu\](1):(null)|4|0-3|(null)|${dev}4|$flags_default
 "
-testproc check_configuration 2.46 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c46" test_cfg "c46" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.48 - Cores not specified or null
+# # Test c48 - Cores not specified or null
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:5"
@@ -1870,7 +1797,7 @@ GRES_PARSABLE\[gpu\](1):tesla|4||(null)|${dev}3|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|null|(null)|${dev}4|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0|(null)|${dev}5|$flags_default_type
 "
-testproc check_configuration 2.48 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c48" test_cfg "c48" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # TODO: What other tests should we add?
@@ -1880,7 +1807,7 @@ testproc check_configuration 2.48 $slurm_conf_gres $gres_conf $fake_gpus_conf $e
 # Invalid cpu range
 
 # ##############################################################################
-# # Test 2.50 - Test examples in gres.conf docs
+# # Test c50 - Test examples in gres.conf docs
 # ##############################################################################
 
 set slurm_conf_gres "gpu:gtx560:1,gpu:tesla:1,mps:200"
@@ -1898,10 +1825,10 @@ GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|$flags_default_type
 GRES_PARSABLE\[mps\](100):tesla|4|2,3|(null)|${dev}1|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|$flags_default_type
 "
-testproc check_configuration 2.50 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c50" test_cfg "c50" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.52 - Test examples in gres.conf docs
+# # Test c52 - Test examples in gres.conf docs
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:3"
@@ -1918,10 +1845,10 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0,1|(null)|${dev}0|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|0,1|(null)|${dev}1|$flags_default_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}3|$flags_default_type
 "
-testproc check_configuration 2.52 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c52" test_cfg "c52" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.54 - Test examples in gres.conf docs
+# # Test c54 - Test examples in gres.conf docs
 # #		Note: ${nodename_base}0 == $nodename, so only node 0's GRES
 # #		definitions will apply to this test
 # ##############################################################################
@@ -1943,10 +1870,10 @@ GRES_PARSABLE\[gpu\](1):(null)|4|(null)|(null)|${dev}1|$flags_default
 GRES_PARSABLE\[gpu\](1):(null)|4|(null)|(null)|${dev}2|$flags_default
 GRES_PARSABLE\[gpu\](1):(null)|4|(null)|(null)|${dev}3|$flags_default
 "
-testproc check_configuration 2.54 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "c54" test_cfg "c54" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.56 - Test gres/mps with count on only some devices
+# # Test c56 - Test gres/mps with count on only some devices
 # # NOTE the device numbers being out of order, one GPU without a gres/mps and
 # #      a gres/mps with a device file not valid for any configured GPU
 # ##############################################################################
@@ -1970,17 +1897,16 @@ GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|$flags_default_type
 GRES_PARSABLE\[mps\](300):tesla|4|2,3|(null)|${dev}3|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}3|$flags_default_type
 "
-testproc check_configuration 2.56 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
-
+testproc_alias "c56" test_cfg "c56" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ==============================================================================
 # ==============================================================================
-# # Test 3.x - Test Flags parsing with and without AutoDetect
+# # Tests dX - Test Flags parsing with and without AutoDetect
 # ==============================================================================
 # ==============================================================================
 
 # ##############################################################################
-# # Test 3.1 - Default (all envs set)
+# # Test d1 - Default (all envs set)
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a100:4"
@@ -2000,11 +1926,11 @@ GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}2|$flags_default_type
 GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}3|$flags_default_type
 "
 
-testproc check_configuration 3.1 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "d1" test_cfg "d1" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 3.2 - No envs set
+# # Test d2 - No envs set
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a100:4"
@@ -2024,10 +1950,10 @@ GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}3|$flags_file_type
 "
 
-testproc check_configuration 3.2 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "d2" test_cfg "d2" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 3.3 - Test with NodeName
+# # Test d3 - Test with NodeName
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a100:4"
@@ -2045,10 +1971,10 @@ GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}0|$flags_file_type,ENV_RSMI
 GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}1|$flags_file_type,ENV_RSMI
 "
 
-testproc check_configuration 3.3 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "d3" test_cfg "d3" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 3.4 - AutoDetect match with conf does NOT overwrite no_gpu_env
+# # Test d4 - AutoDetect match with conf does NOT overwrite no_gpu_env
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a100:4"
@@ -2070,10 +1996,10 @@ GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}2|$flags_file_type
 GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}3|$flags_file_type
 "
 
-testproc check_configuration 3.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "d4" test_cfg "d4" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 3.5 - Test that AutoDetect and conf can match with correct Flags
+# # Test d5 - Test that AutoDetect and conf can match with correct Flags
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a100:4"
@@ -2095,11 +2021,11 @@ GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}2|$flags_file_type,ENV_NVML
 GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}3|$flags_file_type,ENV_NVML
 "
 
-testproc check_configuration 3.5 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "d5" test_cfg "d5" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 3.6 - Test that AutoDetect works with no conf
+# # Test d6 - Test that AutoDetect works with no conf
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a100:4"
@@ -2120,11 +2046,11 @@ GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}2|$flags_file_type,ENV_NVML
 GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}3|$flags_file_type,ENV_NVML
 "
 
-testproc check_configuration 3.6 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "d6" test_cfg "d6" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 3.7 - Test that AutoDetect works with no conf, and other conf different
+# # Test d7 - Test that AutoDetect works with no conf, and other conf different
 #              NOTE: The stepd will combine all env flags of records on the same
 #              node, so in reality, both CUDA_* and ROCR_* would be set on all.
 # ##############################################################################
@@ -2147,11 +2073,11 @@ GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}2|$flags_file_type,ENV_RSMI
 GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}3|$flags_file_type,ENV_RSMI
 "
 
-testproc check_configuration 3.7 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "d7" test_cfg "d7" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 3.8 - Test that flags propagate to next GRES line
+# # Test d8 - Test that flags propagate to next GRES line
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a100:4"
@@ -2171,10 +2097,10 @@ GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}2|$flags_file_type,ENV_NVML,ENV_
 GRES_PARSABLE\[gpu\](1):a100|4|0-1|(null)|${dev}3|$flags_file_type,ENV_NVML,ENV_RSMI
 "
 
-testproc check_configuration 3.8 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "d8" test_cfg "d8" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 3.9 - Fatal on env flag mismatch
+# # Test d9 - Fatal on env flag mismatch
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a100:4"
@@ -2188,10 +2114,10 @@ set fake_gpus_conf ""
 set expected_output ""
 set err_msgs $flags_mismatch_err
 set expected_errs 1
-testproc check_configuration 3.9 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "d9" test_cfg "d9" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 3.10 - Fatal on env flag mismatch with default
+# # Test d10 - Fatal on env flag mismatch with default
 # ##############################################################################
 
 set slurm_conf_gres "gpu:a100:4"
@@ -2210,10 +2136,10 @@ set expected_output ""
 set err_msgs $flags_mismatch_err
 set expected_errs 1
 
-testproc check_configuration 3.10 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+testproc_alias "d10" test_cfg "d10" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 3.11 - Make sure that env flag propagation works with different types
+# # Test d11 - Make sure that env flag propagation works with different types
 #               of the same GRES name
 # ##############################################################################
 
@@ -2234,4 +2160,4 @@ GRES_PARSABLE\[gpu\](1):c100|4|0-1|(null)|${dev}2|$flags_file_type,ENV_RSMI
 GRES_PARSABLE\[gpu\](1):d100|4|0-1|(null)|${dev}3|$flags_file_type,ENV_RSMI
 "
 
-testproc check_configuration 3.11 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+testproc_alias "d11" test_cfg "d11" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
