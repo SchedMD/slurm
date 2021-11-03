@@ -4252,11 +4252,19 @@ extern void check_reboot_nodes()
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_conf.resume_timeout;
+	static bool power_save_on = false;
+	static time_t sched_update = 0;
+
+	if (sched_update != slurm_conf.last_update) {
+		power_save_on = power_save_test();
+		sched_update = slurm_conf.last_update;
+	}
 
 	for (i = 0; i < node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
 
-		if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
+		if ((IS_NODE_REBOOT_ISSUED(node_ptr) ||
+		     (!power_save_on && IS_NODE_POWERING_UP(node_ptr))) &&
 		    node_ptr->boot_req_time &&
 		    (node_ptr->boot_req_time + resume_timeout < now)) {
 			char *timeout_msg = "reboot timed out";
@@ -4275,6 +4283,7 @@ extern void check_reboot_nodes()
 			/*
 			 * Remove states now so that event state shows as DOWN.
 			 */
+			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			node_ptr->node_state &= (~NODE_STATE_REBOOT_ISSUED);
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->boot_req_time = 0;

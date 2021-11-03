@@ -100,11 +100,6 @@
 #define BUILD_TIMEOUT 2000000	/* Max build_job_queue() run time in usec */
 #define MAX_FAILED_RESV 10
 
-typedef struct wait_boot_arg {
-	uint32_t job_id;
-	bitstr_t *node_bitmap;
-} wait_boot_arg_t;
-
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static void	_job_queue_append(List job_queue, job_record_t *job_ptr,
@@ -118,9 +113,6 @@ static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
 static int	_valid_feature_list(job_record_t *job_ptr, List feature_list,
 				    bool can_reboot);
 static int	_valid_node_feature(char *feature, bool can_reboot);
-#ifndef HAVE_FRONT_END
-static void *	_wait_boot(void *arg);
-#endif
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
 static int	save_last_part_update = 0;
@@ -4294,8 +4286,6 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 	bitstr_t *boot_node_bitmap = NULL, *feature_node_bitmap = NULL;
 	char *nodes, *reboot_features = NULL;
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
-	wait_boot_arg_t *wait_boot_arg;
-	pthread_t tid;
 	static bool power_save_on = false;
 	static time_t sched_update = 0;
 
@@ -4329,9 +4319,8 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		}
 	}
 
-	wait_boot_arg = xmalloc(sizeof(wait_boot_arg_t));
-	wait_boot_arg->job_id = job_ptr->job_id;
-	wait_boot_arg->node_bitmap = bit_alloc(node_record_count);
+	/* launch_job() when all nodes have booted */
+	job_ptr->bit_flags |= NODE_REBOOT;
 
 	/* Modify state information for all nodes, KNL and others */
 	i_first = bit_ffs(boot_node_bitmap);
@@ -4349,7 +4338,6 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		node_ptr->node_state |= NODE_STATE_POWERING_UP;
 		bit_clear(avail_node_bitmap, i);
 		bit_set(booting_node_bitmap, i);
-		bit_set(wait_boot_arg->node_bitmap, i);
 		node_ptr->boot_req_time = now;
 	}
 
@@ -4469,95 +4457,10 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		agent_queue_request(reboot_agent_args);
 	}
 
-	job_ptr->details->prolog_running++;
-	slurm_thread_create(&tid, _wait_boot, wait_boot_arg);
 	FREE_NULL_BITMAP(boot_node_bitmap);
 	FREE_NULL_BITMAP(feature_node_bitmap);
 
 	return rc;
-}
-
-static void *_wait_boot(void *arg)
-{
-	wait_boot_arg_t *wait_boot_arg = (wait_boot_arg_t *) arg;
-	job_record_t *job_ptr;
-	bitstr_t *boot_node_bitmap = wait_boot_arg->node_bitmap;
-	/* Locks: Write jobs; read nodes */
-	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-	/* Locks: Write jobs; write nodes */
-	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
-	node_record_t *node_ptr;
-	time_t start_time = time(NULL);
-	int i, total_node_cnt, wait_node_cnt;
-	bool job_timeout = false;
-
-	/*
-	 * This adds the process to the list, we don't need the return pointer
-	 */
-	(void)track_script_rec_add(wait_boot_arg->job_id, 0, pthread_self());
-
-	do {
-		sleep(5);
-		total_node_cnt = wait_node_cnt = 0;
-		lock_slurmctld(job_write_lock);
-		if (!(job_ptr = find_job_record(wait_boot_arg->job_id))) {
-			error("%s: JobId=%u vanished while waiting for node boot",
-			      __func__, wait_boot_arg->job_id);
-			unlock_slurmctld(job_write_lock);
-			track_script_remove(pthread_self());
-			return NULL;
-		}
-		if (IS_JOB_PENDING(job_ptr) ||	/* Job requeued or killed */
-		    IS_JOB_FINISHED(job_ptr) ||
-		    !job_ptr->node_bitmap) {
-			verbose("%pJ no longer waiting for node boot",
-				job_ptr);
-			unlock_slurmctld(job_write_lock);
-			track_script_remove(pthread_self());
-			return NULL;
-		}
-		for (i = 0, node_ptr = node_record_table_ptr;
-		     i < node_record_count; i++, node_ptr++) {
-			if (!bit_test(boot_node_bitmap, i))
-				continue;
-			total_node_cnt++;
-			if (node_ptr->boot_time < start_time)
-				wait_node_cnt++;
-		}
-		if (wait_node_cnt) {
-			debug("%pJ still waiting for %d of %d nodes to boot",
-			      job_ptr, wait_node_cnt, total_node_cnt);
-		} else {
-			info("%pJ boot complete for all %d nodes",
-			     job_ptr, total_node_cnt);
-		}
-		i = (int) difftime(time(NULL), start_time);
-		if (i >= slurm_conf.resume_timeout) {
-			error("%pJ timeout waiting for node %d of %d boots",
-			      job_ptr, wait_node_cnt, total_node_cnt);
-			wait_node_cnt = 0;
-			job_timeout = true;
-		}
-		unlock_slurmctld(job_write_lock);
-	} while (wait_node_cnt);
-
-	lock_slurmctld(node_write_lock);
-	if (!(job_ptr = find_job_record(wait_boot_arg->job_id))) {
-		error("%s: missing JobId=%u after node_write_lock acquired",
-		      __func__, wait_boot_arg->job_id);
-	} else {
-		if (job_timeout)
-			(void) job_requeue(getuid(), job_ptr->job_id, NULL, false, 0);
-		prolog_running_decr(job_ptr);
-	}
-	unlock_slurmctld(node_write_lock);
-
-	FREE_NULL_BITMAP(wait_boot_arg->node_bitmap);
-	xfree(arg);
-	track_script_remove(pthread_self());
-	return NULL;
 }
 #endif
 
