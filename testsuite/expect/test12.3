@@ -71,33 +71,11 @@ if {[llength $nodes] != 3} {
 }
 lassign $nodes node1 node2 node3
 
-set config_dir [get_conf_path]
-save_conf $config_dir/slurmdbd.conf
-
 proc cleanup {} {
-	global sacctmgr test_acct config_dir
-
-	# TODO: Temporarily dump database on subtest failure to debug bug 9681 (restore once fixed)
-	global slurm_dir
-	set username [get_my_user_name]
-	set hostname [string trimright [run_command_output "hostname -s"]]
-	if {$hostname eq "knl2" && $username eq "jenkins" && [get_subtest_fail_count] > 0} {
-		set dbd_dict [get_config -dbd]
-		set database_user [dict get $dbd_dict "StorageUser"]
-		set database_host [dict get $dbd_dict "StorageHost"]
-		set database_port [dict get $dbd_dict "StoragePort"]
-		set database_name [dict get $dbd_dict "StorageLoc"]
-		run_command "mysqldump -u $database_user -h $database_host -P $database_port $database_name > $slurm_dir/log/slurmdb.sql"
-	}
+	global sacctmgr test_acct
 
 	run_command "$sacctmgr -i delete account $test_acct"
-	restore_conf $config_dir/slurmdbd.conf
-	run_command "$sacctmgr reconfigure"
 }
-
-# Add slurmdbd job query logging to troubleshoot bug 9681
-run_command "$bin_echo DebugFlags=DB_JOB >> $config_dir/slurmdbd.conf"
-run_command "$sacctmgr reconfigure"
 
 #
 # Identify the user and his current default account
@@ -208,12 +186,10 @@ subtest {$job_2_node_inx == 2} "Verify host count for job 2" "srun host count ba
 # Wait for accounting data to be propagated to slurmdbd
 # Third job explicitly excludes node 1 from previous job
 #
-# Displaying start and end times to troubleshoot bug 9681
-#
-if [wait_for_command_match "$sacct -A 'slurm_test-account.1' --name=$job_name_1 -X -n -P -j $job_id_1 -o jobid,jobname,start,end" "$job_id_1.$job_name_1"] {
+if [wait_for_command_match "$sacct -A 'slurm_test-account.1' --name=$job_name_1 -X -n -P -j $job_id_1 -o jobid,jobname" "$job_id_1.$job_name_1"] {
 	fail "Accounting data for job 1 ($job_id_1) not propogated to slurmdbd"
 }
-if [wait_for_command_match "$sacct -A 'slurm_test-account.1' --name=$job_name_2 -X -n -P -j $job_id_2 -o jobid,jobname,start,end" "$job_id_2.$job_name_2"] {
+if [wait_for_command_match "$sacct -A 'slurm_test-account.1' --name=$job_name_2 -X -n -P -j $job_id_2 -o jobid,jobname" "$job_id_2.$job_name_2"] {
 	fail "Accounting data for job 2 ($job_id_2) not propogated to slurmdbd"
 }
 
