@@ -3254,13 +3254,13 @@ proc check_config_select { type } {
 ################################################################
 #
 # NAME
-#	get_total_cpus - gets the total amount of CPUs on the default partition
+#	get_total_cpus - gets the total available CPUs on the default partition
 #
 # SYNOPSIS
 #	get_total_cpus
 #
 # RETURN VALUE
-#	The total amount of CPUs on the default partition.
+#	The total available CPUs on the default partition.
 #
 # NOTE
 #	CoreSpecCount are not part of the total.
@@ -3268,34 +3268,30 @@ proc check_config_select { type } {
 ################################################################
 
 proc get_total_cpus {} {
-	global sinfo scontrol re_word_str
 
-	set partition [default_partition]
-	set cpu_cnt 0
-	set nodes_matched [list]
+	set total_cpu_count 0
 
-	set re_with_cs    "NodeName=($re_word_str).*CPUTot=(\\d+).*CoreSpecCount=(\\d+).*ThreadsPerCore=(\\d+)"
-	set re_without_cs "NodeName=($re_word_str).*CPUTot=(\\d+)"
+	# Obtain the list of available nodes in the default partition
+	set node_list [get_nodes_by_state]
 
-	set out [run_command_output -fail "$sinfo -h -o \"%P %N\" -p $partition --state=idle"]
-	if {[regexp "$partition\\* ($re_word_str)" $out - def_hostlist] != 1} {
-		fail "Not able to get the hostlist from sinfo"
-	}
+	# Tally the cpus on these nodes
+	set nodes_dict [get_nodes]
+	foreach node_name $node_list {
+		set node_dict [dict get $nodes_dict $node_name]
+		set node_cpu_count [dict get $node_dict "CPUTot"]
 
-	set out [run_command_output "$scontrol --oneliner show node $def_hostlist"]
-	foreach {re node_name tmp_cpu_cnt core_spec_cnt threads_per_core} [regexp -all -inline -linestop $re_with_cs $out] {
-		set cpu_cnt [expr $cpu_cnt + $tmp_cpu_cnt - $core_spec_cnt * $threads_per_core]
-		lappend nodes_matched $node_name
-	}
-	foreach {re node_name tmp_cpu_cnt} [regexp -all -inline -linestop $re_without_cs $out] {
-		# Not count nodes already counted
-		if {[lsearch $nodes_matched $node_name] == -1} {
-			set cpu_cnt [expr $cpu_cnt + $tmp_cpu_cnt]
+		# Subtract out any spec cores
+		if {[dict exists $node_dict "CoreSpecCount"] && [dict exists $node_dict "ThreadsPerCore"]} {
+			set spec_cpu_count [expr [dict get $node_dict "CPUTot"] * [dict get $node_dict "ThreadsPerCore"]]
+			incr node_cpu_count -$spec_cpu_count
 		}
+
+		incr total_cpu_count $node_cpu_count
 	}
 
-	return $cpu_cnt
+	return $total_cpu_count
 }
+
 
 ################################################################
 #
@@ -4211,13 +4207,15 @@ proc range_to_list {range_expression} {
 #	get_nodes_by_state partition states
 #
 # DESCRIPTION
-#	Get the list of node names in a given partition/states
+#	sinfo is used to list node names and states in the specified partition.
+#	This list of nodes is filtered to return only the nodes matching one of
+#	the requested states.
 #
 # ARGUMENTS
 #	partition
 #		partition to get nodes off
 #	states
-#		states to filter on nodes
+#		comma-separated list of allowed states
 #
 # RETURN VALUE
 #	node names list, -1 on sinfo error
@@ -4225,35 +4223,29 @@ proc range_to_list {range_expression} {
 #####################################################################
 
 proc get_nodes_by_state {{states ""} {partition ""}} {
+	global sinfo
 
-	global sinfo re_word_str
-	log_user 0
-	set node_list ""
+	set node_list [list]
 
-	if {[string length $partition] == 0} {
+	if {$partition eq ""} {
 		set partition [default_partition]
 	}
 
-	if {[string length $states] == 0} {
-		set states "Idle"
+	if {$states eq ""} {
+		set states "idle"
 	}
 
-	set sinfo_pid [spawn -noecho $sinfo -h -N -p $partition -o %N -t $states -e]
-	expect {
-		-re "($re_word_str)" {
-			lappend node_list $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			slow_kill $sinfo_pid
-			fail "sinfo not responding"
-		}
-		eof {
-			wait
+	set output [run_command_output -fail "$sinfo -h -N -p $partition -o '%N|%t' -e"]
+	foreach line [split $output "\n"] {
+		if {$line eq ""} { continue }
+		lassign [split $line |] node_name node_state
+		foreach requested_state [split $states ,] {
+			if {$node_state eq $requested_state} {
+				lappend node_list $node_name
+			}
 		}
 	}
 
-	log_user 1
 	return $node_list
 }
 
