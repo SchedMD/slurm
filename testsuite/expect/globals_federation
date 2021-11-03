@@ -362,43 +362,6 @@ proc remove_cluster_from_fed {cname fed_name} {
 }
 
 
-proc modify_federation_flags {fed_name mode flags} {
-	global sacctmgr eol
-	set matches 0
-	set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags$mode$flags]
-	expect {
-		-re "Setting$eol" {
-			incr matches
-			exp_continue
-		}
-		-re "^\\s+Flags\\s+\\$mode\\s+$flags$eol" {
-			incr matches
-			exp_continue
-		}
-		-re "^\\s+Modified federation...$eol" {
-			incr matches
-			exp_continue
-		}
-		-re "^\\s+$fed_name$eol" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			end_it 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 4} {
-		log_error "$matches unexpected error"
-		end_it 1
-	}
-}
-
-
 ################################################################
 #
 # NAME
