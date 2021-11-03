@@ -1283,12 +1283,14 @@ int PMI_KVS_Commit( const char kvsname[] )
 			(kvs_set.kvs_comm_recs+1)));
 		if (!kvs_set.kvs_comm_ptr) {
 			pmi_nomem_error(__FILE__, __LINE__, "PMI_KVS_Commit");
+			_pmi_mutex_unlock(&kvs_mutex);
 			return PMI_FAIL; /* Fix CLANG false positive */
 		}
 		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs] =
 			malloc(sizeof(struct kvs_comm));
 		if (!kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]) {
 			pmi_nomem_error(__FILE__, __LINE__, "PMI_KVS_Commit");
+			_pmi_mutex_unlock(&kvs_mutex);
 			return PMI_FAIL; /* Fix CLANG false positive */
 		}
 		kvs_set.kvs_comm_ptr[kvs_set.kvs_comm_recs]->kvs_name   =

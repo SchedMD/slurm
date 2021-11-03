@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 21.08.4
 ==========================
+ -- Fix potential deadlock when using PMI v1.
 
 * Changes in Slurm 21.08.3
 ==========================
