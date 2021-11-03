@@ -509,6 +509,10 @@ no_rollup_change:
 			xstrcat(query, ", submit_line");
 		if (job_ptr->container)
 			xstrcat(query, ", container");
+		if (job_ptr->details->env_hash)
+			xstrcat(query, ", env_hash");
+		if (job_ptr->details->script_hash)
+			xstrcat(query, ", script_hash");
 
 		xstrfmtcat(query,
 			   ") values (%u, UNIX_TIMESTAMP(), "
@@ -571,6 +575,12 @@ no_rollup_change:
 		if (job_ptr->container)
 			xstrfmtcat(query, ", '%s'",
 				   job_ptr->container);
+		if (job_ptr->details->env_hash)
+			xstrfmtcat(query, ", '%s'",
+				   job_ptr->details->env_hash);
+		if (job_ptr->details->script_hash)
+			xstrfmtcat(query, ", '%s'",
+				   job_ptr->details->script_hash);
 
 		xstrfmtcat(query,
 			   ") on duplicate key update "
@@ -648,6 +658,12 @@ no_rollup_change:
 		if (job_ptr->container)
 			xstrfmtcat(query, ", container='%s'",
 				   job_ptr->container);
+		if (job_ptr->details->env_hash)
+			xstrfmtcat(query, ", env_hash='%s'",
+				   job_ptr->details->env_hash);
+		if (job_ptr->details->script_hash)
+			xstrfmtcat(query, ", script_hash='%s'",
+				   job_ptr->details->script_hash);
 
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 	try_again:
@@ -719,6 +735,12 @@ no_rollup_change:
 		if (job_ptr->container)
 			xstrfmtcat(query, "container='%s', ",
 				   job_ptr->container);
+		if (job_ptr->details->env_hash)
+			xstrfmtcat(query, "env_hash='%s', ",
+				   job_ptr->details->env_hash);
+		if (job_ptr->details->script_hash)
+			xstrfmtcat(query, "script_hash='%s', ",
+				   job_ptr->details->script_hash);
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', "
 			   "state=greatest(state, %u), "

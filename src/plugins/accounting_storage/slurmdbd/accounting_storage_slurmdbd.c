@@ -128,7 +128,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->account);
 		xfree(req->array_task_str);
 		xfree(req->constraints);
-		xfree(req->env);
+		xfree(req->env_hash);
 		xfree(req->mcs_label);
 		xfree(req->name);
 		xfree(req->nodes);
@@ -136,7 +136,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->node_inx);
 		xfree(req->wckey);
 		xfree(req->gres_used);
-		FREE_NULL_BUFFER(req->script_buf);
+		xfree(req->script_hash);
 		xfree(req->submit_line);
 		xfree(req->tres_alloc_str);
 		xfree(req->tres_req_str);
@@ -235,6 +235,12 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 		req->req_cpus = job_ptr->details->min_cpus;
 		req->req_mem = job_ptr->details->pn_min_memory;
 		req->submit_line = xstrdup(job_ptr->details->submit_line);
+		/* Only send this once per instance of the job! */
+		if (!job_ptr->db_index || (job_ptr->db_index == NO_VAL64)) {
+			req->env_hash = xstrdup(job_ptr->details->env_hash);
+			req->script_hash =
+				xstrdup(job_ptr->details->script_hash);
+		}
 	}
 	req->resv_id       = job_ptr->resv_id;
 	req->priority      = job_ptr->priority;
@@ -246,25 +252,6 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->uid           = job_ptr->user_id;
 	req->qos_id        = job_ptr->qos_id;
 	req->gres_used     = xstrdup(job_ptr->gres_used);
-
-	/* Only send this once per instance of the job! */
-	if (!job_ptr->db_index || (job_ptr->db_index == NO_VAL64)) {
-		if (slurm_conf.conf_flags & CTL_CONF_SJS)
-			req->script_buf = get_job_script(job_ptr);
-		if (job_ptr->batch_flag &&
-		    (slurm_conf.conf_flags & CTL_CONF_SJE)) {
-			uint32_t env_size = 0;
-			char **env = get_job_env(job_ptr, &env_size);
-			if (env) {
-				char *pos = NULL;
-				for (int i = 0; i < env_size; i++)
-					xstrfmtcatat(req->env, &pos,
-						     "%s\n", env[i]);
-				xfree(env[0]);
-				xfree(env);
-			}
-		}
-	}
 
 	return SLURM_SUCCESS;
 }

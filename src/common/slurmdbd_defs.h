@@ -257,7 +257,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t db_flags;      /* flags about job */
 	uint64_t db_index;	/* index into the db for this job */
 	time_t   eligible_time;	/* time job becomes eligible to run */
-	char *env;              /* job environment in text form */
+	char *env_hash;         /* hash value of env */
 	uint32_t gid;	        /* group ID */
 	uint32_t het_job_id;	/* ID of hetjob leader or 0 */
 	uint32_t het_job_offset; /* Hetjob component ID, zero-origin */
@@ -274,8 +274,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t req_cpus;	/* count of req processors */
 	uint64_t req_mem;       /* requested minimum memory */
 	uint32_t resv_id;	/* reservation id */
-	char *script;           /* job_script in text form */
-	buf_t *script_buf;	/* job script as mmap buf */
+	char *script_hash;      /* hash value of script */
 	time_t   start_time;	/* job start time */
 	uint32_t state_reason_prev; /* Last reason of blocking before job
 				     * started */

@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/hash.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurmdb_pack.h"
 #include "src/common/slurmdbd_defs.h"
@@ -429,9 +430,6 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 {
 	dbd_job_start_msg_t *msg = (dbd_job_start_msg_t *)in;
 
-	if (msg->script_buf)
-		msg->script = msg->script_buf->head;
-
 	if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		pack32(msg->alloc_nodes, buffer);
@@ -446,7 +444,6 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->db_flags, buffer);
 		pack64(msg->db_index, buffer);
 		pack_time(msg->eligible_time, buffer);
-		packstr(msg->env, buffer);
 		pack32(msg->gid, buffer);
 		packstr(msg->gres_used, buffer);
 		pack32(msg->job_id, buffer);
@@ -464,7 +461,6 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->req_cpus, buffer);
 		pack64(msg->req_mem, buffer);
 		pack32(msg->resv_id, buffer);
-		packstr(msg->script, buffer);
 		pack_time(msg->start_time, buffer);
 		packstr(msg->submit_line, buffer);
 		pack_time(msg->submit_time, buffer);
@@ -474,6 +470,8 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->uid, buffer);
 		packstr(msg->wckey, buffer);
 		packstr(msg->work_dir, buffer);
+		packstr(msg->env_hash, buffer);
+		packstr(msg->script_hash, buffer);
 	} else if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		pack32(msg->alloc_nodes, buffer);
@@ -488,7 +486,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->db_flags, buffer);
 		pack64(msg->db_index, buffer);
 		pack_time(msg->eligible_time, buffer);
-		packstr(msg->env, buffer);
+		packnull(buffer);
 		pack32(msg->gid, buffer);
 		packstr(msg->gres_used, buffer);
 		pack32(msg->job_id, buffer);
@@ -506,7 +504,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->req_cpus, buffer);
 		pack64(msg->req_mem, buffer);
 		pack32(msg->resv_id, buffer);
-		packstr(msg->script, buffer);
+		packnull(buffer);
 		pack_time(msg->start_time, buffer);
 		packstr(msg->submit_line, buffer);
 		pack_time(msg->submit_time, buffer);
@@ -555,9 +553,6 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		packstr(msg->wckey, buffer);
 		packstr(msg->work_dir, buffer);
 	}
-
-	if (msg->script_buf)
-		msg->script = NULL;
 }
 
 static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
@@ -587,7 +582,6 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->db_flags, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->env, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
 				       buffer);
@@ -608,7 +602,6 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->req_cpus, buffer);
 		safe_unpack64(&msg_ptr->req_mem, buffer);
 		safe_unpack32(&msg_ptr->resv_id, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->script, &uint32_tmp, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->submit_line,
 				       &uint32_tmp, buffer);
@@ -621,7 +614,14 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->wckey, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->work_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->env_hash, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->script_hash,
+				       &uint32_tmp, buffer);
 	} else if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		char *env, *script;
+		slurm_hash_t hash = {
+			.type = HASH_PLUGIN_K12,
+		};
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_nodes, buffer);
 		safe_unpack32(&msg_ptr->array_job_id, buffer);
@@ -638,7 +638,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->db_flags, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->env, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&env, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
 				       buffer);
@@ -659,7 +659,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->req_cpus, buffer);
 		safe_unpack64(&msg_ptr->req_mem, buffer);
 		safe_unpack32(&msg_ptr->resv_id, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->script, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&script, &uint32_tmp, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->submit_line,
 				       &uint32_tmp, buffer);
@@ -672,6 +672,20 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->wckey, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->work_dir, &uint32_tmp, buffer);
+		if (env) {
+			(void) hash_g_compute(env, strlen(env),
+					      NULL, 0, &hash);
+			msg_ptr->env_hash = xstrdup_printf(
+				"%c:%s", hash.type, hash.hash);
+			xfree(env);
+		}
+		if (script) {
+			(void) hash_g_compute(script, strlen(script),
+					      NULL, 0, &hash);
+			msg_ptr->script_hash = xstrdup_printf(
+				"%c:%s", hash.type, hash.hash);
+			xfree(script);
+		}
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_nodes, buffer);

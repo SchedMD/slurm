@@ -1075,15 +1075,14 @@ extern void slurmdbd_free_job_start_msg(void *in)
 		xfree(msg->array_task_str);
 		xfree(msg->constraints);
 		xfree(msg->container);
-		xfree(msg->env);
+		xfree(msg->env_hash);
 		xfree(msg->gres_used);
 		xfree(msg->mcs_label);
 		xfree(msg->name);
 		xfree(msg->nodes);
 		xfree(msg->node_inx);
 		xfree(msg->partition);
-		xfree(msg->script);
-		FREE_NULL_BUFFER(msg->script_buf);
+		xfree(msg->script_hash);
 		xfree(msg->submit_line);
 		xfree(msg->tres_alloc_str);
 		xfree(msg->tres_req_str);
