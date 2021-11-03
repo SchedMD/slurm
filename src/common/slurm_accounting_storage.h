@@ -612,6 +612,12 @@ extern int jobacct_storage_g_job_start(void *db_conn,
 				       job_record_t *job_ptr);
 
 /*
+ * load into the storage heavy information about a job,
+ * typically when it begins execution, but possibly earlier
+ */
+extern int jobacct_storage_g_job_heavy(void *db_conn, job_record_t *job_ptr);
+
+/*
  * load into the storage the end of a job
  */
 extern int jobacct_storage_g_job_complete(void *db_conn,

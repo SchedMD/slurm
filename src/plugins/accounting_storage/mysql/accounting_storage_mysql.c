@@ -3332,6 +3332,15 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 }
 
 /*
+ * load into the storage the start of a job
+ */
+extern int jobacct_storage_p_job_heavy(mysql_conn_t *mysql_conn,
+				       job_record_t *job_ptr)
+{
+	return as_mysql_job_heavy(mysql_conn, job_ptr);
+}
+
+/*
  * load into the storage the end of a job
  */
 extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,

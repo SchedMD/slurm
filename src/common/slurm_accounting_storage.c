@@ -185,6 +185,7 @@ typedef struct slurm_acct_storage_ops {
 	int  (*fini_ctld)          (void *db_conn,
 				    slurmdb_cluster_rec_t *cluster_rec);
 	int  (*job_start)          (void *db_conn, job_record_t *job_ptr);
+	int  (*job_heavy)          (void *db_conn, job_record_t *job_ptr);
 	int  (*job_complete)       (void *db_conn, job_record_t *job_ptr);
 	int  (*step_start)         (void *db_conn, step_record_t *step_ptr);
 	int  (*step_complete)      (void *db_conn, step_record_t *step_ptr);
@@ -270,6 +271,7 @@ static const char *syms[] = {
 	"clusteracct_storage_p_register_disconn_ctld",
 	"clusteracct_storage_p_fini_ctld",
 	"jobacct_storage_p_job_start",
+	"jobacct_storage_p_job_heavy",
 	"jobacct_storage_p_job_complete",
 	"jobacct_storage_p_step_start",
 	"jobacct_storage_p_step_complete",
@@ -875,6 +877,18 @@ extern int jobacct_storage_g_job_start(void *db_conn,
 	}
 
 	return (*(ops.job_start))(db_conn, job_ptr);
+}
+
+/*
+ * load into the storage heavy information of a job
+ */
+extern int jobacct_storage_g_job_heavy(void *db_conn, job_record_t *job_ptr)
+{
+	if (slurm_acct_storage_init() < 0)
+		return SLURM_ERROR;
+	if (slurm_conf.accounting_storage_enforce & ACCOUNTING_ENFORCE_NO_JOBS)
+		return SLURM_SUCCESS;
+	return (*(ops.job_heavy))(db_conn, job_ptr);
 }
 
 /*

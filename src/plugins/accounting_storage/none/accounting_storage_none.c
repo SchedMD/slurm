@@ -455,6 +455,14 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 }
 
 /*
+ * load into the storage heavy info of a job
+ */
+extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/*
  * load into the storage the end of a job
  */
 extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)

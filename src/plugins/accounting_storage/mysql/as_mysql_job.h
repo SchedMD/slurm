@@ -43,6 +43,8 @@
 
 extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr);
 
+extern int as_mysql_job_heavy(mysql_conn_t *mysql_conn, job_record_t *job_ptr);
+
 extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 				slurmdb_job_cond_t *job_cond,
 				slurmdb_job_rec_t *job);

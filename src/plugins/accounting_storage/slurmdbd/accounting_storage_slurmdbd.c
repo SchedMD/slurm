@@ -119,6 +119,7 @@ static int first = 1;
 static time_t plugin_shutdown = 0;
 
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
+extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
 
 static void _partial_free_dbd_job_start(void *object)
 {
@@ -2708,6 +2709,11 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	_partial_free_dbd_job_start(&req);
 
 	return rc;
+}
+
+extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr)
+{
+	return SLURM_SUCCESS;
 }
 
 /*
