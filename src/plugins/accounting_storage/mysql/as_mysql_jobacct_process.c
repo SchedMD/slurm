@@ -102,9 +102,9 @@ char *job_req_inx[] = {
 	"t1.tres_req",
 	"t1.work_dir",
 	"t1.mcs_label",
-	"t1.batch_script",
+	"t4.batch_script",
 	"t1.submit_line",
-	"t1.env_vars",
+	"t4.env_vars",
 	"t2.acct",
 	"t2.lft",
 	"t2.user"
@@ -577,6 +577,17 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			       job_fields, cluster_name, job_table,
 			       cluster_name, assoc_table,
 			       cluster_name, resv_table);
+
+	if (job_cond->flags & JOBCOND_FLAG_SCRIPT)
+		xstrfmtcat(query,
+			   " left join \"%s_%s\" as t4 "
+			   "on t1.script_hash=t4.script_hash",
+			   cluster_name, job_script_table);
+	else if (job_cond->flags & JOBCOND_FLAG_ENV)
+		xstrfmtcat(query,
+			   " left join \"%s_%s\" as t4 "
+			   "on t1.env_hash=t4.env_hash",
+			   cluster_name, job_env_table);
 
 	if (job_cond->flags & JOBCOND_FLAG_RUNAWAY) {
 		if (extra)

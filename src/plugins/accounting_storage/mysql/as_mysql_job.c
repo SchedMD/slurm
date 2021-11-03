@@ -501,10 +501,6 @@ no_rollup_change:
 			xstrcat(query, ", work_dir");
 		if (job_ptr->details->features)
 			xstrcat(query, ", constraints");
-		if (job_ptr->details->script)
-			xstrcat(query, ", batch_script");
-		if (job_ptr->details->env_sup)
-			xstrcat(query, ", env_vars");
 		if (job_ptr->details->submit_line)
 			xstrcat(query, ", submit_line");
 		if (job_ptr->container)
@@ -563,12 +559,6 @@ no_rollup_change:
 		if (job_ptr->details->features)
 			xstrfmtcat(query, ", '%s'",
 				   job_ptr->details->features);
-		if (job_ptr->details->script)
-			xstrfmtcat(query, ", '%s'",
-				   job_ptr->details->script);
-		if (job_ptr->details->env_sup)
-			xstrfmtcat(query, ", '%s'",
-				   job_ptr->details->env_sup[0]);
 		if (job_ptr->details->submit_line)
 			xstrfmtcat(query, ", '%s'",
 				   job_ptr->details->submit_line);
@@ -644,14 +634,6 @@ no_rollup_change:
 			xstrfmtcat(query, ", constraints='%s'",
 				   job_ptr->details->features);
 
-		if (job_ptr->details->script)
-			xstrfmtcat(query, ", batch_script='%s'",
-				   job_ptr->details->script);
-
-		if (job_ptr->details->env_sup)
-			xstrfmtcat(query, ", env_vars='%s'",
-				   job_ptr->details->env_sup[0]);
-
 		if (job_ptr->details->submit_line)
 			xstrfmtcat(query, ", submit_line='%s'",
 				   job_ptr->details->submit_line);
@@ -720,14 +702,6 @@ no_rollup_change:
 		if (job_ptr->details->features)
 			xstrfmtcat(query, "constraints='%s', ",
 				   job_ptr->details->features);
-
-		if (job_ptr->details->script)
-			xstrfmtcat(query, "batch_script='%s', ",
-				   job_ptr->details->script);
-
-		if (job_ptr->details->env_sup)
-			xstrfmtcat(query, "env_vars='%s', ",
-				   job_ptr->details->env_sup[0]);
 
 		if (job_ptr->details->submit_line)
 			xstrfmtcat(query, "submit_line='%s', ",
