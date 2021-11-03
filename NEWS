@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     --ntasks-per-tres.
  -- Correctly detect when a step requests bad gres inside an allocation.
  -- slurmstepd - Correct possible deadlock when UnkillableStepTimeout triggers.
+ -- srun - use maximum number of open files while handling job I/O.
 
 * Changes in Slurm 21.08.4
 ==========================
