@@ -1333,65 +1333,6 @@ proc add_resource {name res_limits} {
 
 
 #
-# Use sacctmgr to create a clus_res
-#
-proc add_clus_res {name allowed} {
-	global sacctmgr timeout
-
-	set rc $::RETURN_SUCCESS
-	set matches 0
-
-	if { ![string length $name] } {
-		log_error "Need name of clus_res to add"
-		return $::RETURN_ERROR
-	}
-	set command "name=$name"
-
-	if { [string length $allowed] } {
-		set command "$command allowed=$allowed"
-	}
-
-	set my_pid [eval spawn $sacctmgr -i add clus_res $command]
-	expect {
-		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
-			log_error "There was a problem with the sacctmgr command"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Problem getting" {
-			log_error "There was a problem getting cluster resources from the database"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Problem adding" {
-			log_error "There was an unknown problem"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Adding cluster resource(s)" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 1} {
-		log_error "sacctmgr had a problem adding cluster resource got $matches"
-		set rc $::RETURN_ERROR
-	}
-
-	return $rc
-}
-
-
-#
 # Use sacctmgr to remove the test res
 #
 proc remove_res {name} {
@@ -1449,72 +1390,6 @@ proc remove_res {name} {
 	}
 	if {$access_err != 0} {
 		return $::RETURN_ERROR
-	}
-
-	return $rc
-}
-
-
-#
-# Use sacctmgr to remove the test clus_res
-#
-proc remove_clus_res {name} {
-	global access_err sacctmgr timeout
-
-	set rc $::RETURN_SUCCESS
-	set matches 0
-	set nothing 0
-
-	if { ![string length $name] } {
-		log_error "We need a name to remove"
-		return $::RETURN_ERROR
-	}
-
-	set my_pid [eval spawn $sacctmgr -i delete clus_res $name]
-	expect {
-		-re "privilege to perform this action" {
-			set access_err 1
-			exp_continue
-		}
-		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
-			log_error "There was a problem with the sacctmgr command"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Problem getting" {
-			log_error "There was a problem getting information from the database"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Problem adding" {
-			log_error "There was an unknown problem"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Deleting cluster resource" {
-			incr matches
-			exp_continue
-		}
-		-re " Nothing deleted" {
-			incr matches
-			set nothing 1
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr delete not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
-		}
-		eof {
-			wait
-		}
-	}
-	if {$access_err != 0} {
-		return $::RETURN_ERROR
-	}
-	if {$matches != 1} {
-		log_error "sacctmgr had a problem deleting cluster resource. Got $matches"
-		set rc $::RETURN_ERROR
 	}
 
 	return $rc
