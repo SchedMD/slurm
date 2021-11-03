@@ -1563,6 +1563,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * scheduling in the future */
 	char **environment;	/* environment variables to set for job,
 				 *  name=value pairs, one per line */
+	slurm_hash_t env_hash;  /* hash value of environment NO NOT PACK */
 	uint32_t env_size;	/* element count in environment */
 	char *extra;		/* unused */
 	char *exc_nodes;	/* comma separated list of nodes excluded
@@ -1619,6 +1620,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *reservation;	/* name of reservation to use */
 	char *script;		/* the actual job script, default NONE */
 	void *script_buf;	/* job script as mmap buf */
+	slurm_hash_t script_hash; /* hash value of script NO NOT PACK */
 	uint16_t shared;	/* 2 if the job can only share nodes with other
 				 *   jobs owned by that user,
 				 * 1 if job can share nodes with other jobs,

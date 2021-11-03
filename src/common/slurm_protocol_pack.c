@@ -49,6 +49,7 @@
 #include "src/common/fetch_config.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
+#include "src/common/hash.h"
 #include "src/common/job_options.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
@@ -108,6 +109,7 @@ static int _unpack_ret_list(List *ret_list, uint16_t size_val, buf_t *buffer,
 			    uint16_t protocol_version);
 
 static void _priority_factors_resp_list_del(void *x);
+
 
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
@@ -5802,7 +5804,7 @@ static int
 _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		     uint16_t protocol_version)
 {
-	uint32_t uint32_tmp;
+	uint32_t uint32_tmp, start;
 	job_desc_msg_t *job_desc_ptr = NULL;
 	char *temp_str;
 
@@ -5885,9 +5887,17 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->exc_nodes,
 				       &uint32_tmp, buffer);
-
+		start = buffer->processed;
 		safe_unpackstr_array(&job_desc_ptr->environment,
 				     &job_desc_ptr->env_size, buffer);
+
+		if (job_desc_ptr->env_size) {
+			job_desc_ptr->env_hash.type = HASH_PLUGIN_K12;
+			(void) hash_g_compute(&buffer->head[start],
+					      buffer->processed - start,
+					      NULL, 0, &job_desc_ptr->env_hash);
+		}
+
 		if (envcount(job_desc_ptr->environment)
 		    != job_desc_ptr->env_size)
 			goto unpack_error;
@@ -5899,6 +5909,11 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
 				       &uint32_tmp, buffer);
+
+		job_desc_ptr->script_hash.type = HASH_PLUGIN_K12;
+		(void) hash_g_compute(job_desc_ptr->script, uint32_tmp,
+				      NULL, 0, &job_desc_ptr->script_hash);
+
 		safe_unpackstr_array(&job_desc_ptr->argv,
 				     &job_desc_ptr->argc, buffer);
 
@@ -6086,8 +6101,17 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->exc_nodes,
 				       &uint32_tmp, buffer);
 
+		start = buffer->processed;
 		safe_unpackstr_array(&job_desc_ptr->environment,
 				     &job_desc_ptr->env_size, buffer);
+
+		if (job_desc_ptr->env_size) {
+			job_desc_ptr->env_hash.type = HASH_PLUGIN_K12;
+			(void) hash_g_compute(&buffer->head[start],
+					      buffer->processed - start,
+					      NULL, 0, &job_desc_ptr->env_hash);
+		}
+
 		if (envcount(job_desc_ptr->environment)
 		    != job_desc_ptr->env_size)
 			goto unpack_error;
@@ -6099,6 +6123,11 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
 				       &uint32_tmp, buffer);
+
+		job_desc_ptr->script_hash.type = HASH_PLUGIN_K12;
+		(void) hash_g_compute(job_desc_ptr->script, uint32_tmp,
+				      NULL, 0, &job_desc_ptr->script_hash);
+
 		safe_unpackstr_array(&job_desc_ptr->argv,
 				     &job_desc_ptr->argc, buffer);
 
@@ -6281,8 +6310,17 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->exc_nodes,
 				       &uint32_tmp, buffer);
+		start = buffer->processed;
 		safe_unpackstr_array(&job_desc_ptr->environment,
 				     &job_desc_ptr->env_size, buffer);
+
+		if (job_desc_ptr->env_size) {
+			job_desc_ptr->env_hash.type = HASH_PLUGIN_K12;
+			(void) hash_g_compute(&buffer->head[start],
+					      buffer->processed - start,
+					      NULL, 0, &job_desc_ptr->env_hash);
+		}
+
 		if (envcount(job_desc_ptr->environment)
 		    != job_desc_ptr->env_size)
 			goto unpack_error;
@@ -6294,6 +6332,11 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
 				       &uint32_tmp, buffer);
+
+		job_desc_ptr->script_hash.type = HASH_PLUGIN_K12;
+		(void) hash_g_compute(job_desc_ptr->script, uint32_tmp,
+				      NULL, 0, &job_desc_ptr->script_hash);
+
 		safe_unpackstr_array(&job_desc_ptr->argv,
 				     &job_desc_ptr->argc, buffer);
 

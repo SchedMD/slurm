@@ -67,6 +67,7 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
+#include "src/common/hash.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_features.h"
 #include "src/common/parse_time.h"
@@ -665,6 +666,7 @@ static void _delete_job_details(job_record_t *job_entry)
 	FREE_NULL_LIST(job_entry->details->depend_list);
 	xfree(job_entry->details->dependency);
 	xfree(job_entry->details->orig_dependency);
+	xfree(job_entry->details->env_hash);
 	for (i=0; i<job_entry->details->env_cnt; i++)
 		xfree(job_entry->details->env_sup[i]);
 	xfree(job_entry->details->env_sup);
@@ -686,6 +688,7 @@ static void _delete_job_details(job_record_t *job_entry)
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
 	xfree(job_entry->details->req_nodes);
 	xfree(job_entry->details->script);
+	xfree(job_entry->details->script_hash);
 	xfree(job_entry->details->work_dir);
 	xfree(job_entry->details->x11_magic_cookie);
 	xfree(job_entry->details->x11_target);
@@ -2542,6 +2545,8 @@ void _dump_job_details(struct job_details *detail_ptr, buf_t *buffer)
 
 	pack_cron_entry(detail_ptr->crontab_entry, SLURM_PROTOCOL_VERSION,
 			buffer);
+	packstr(detail_ptr->env_hash, buffer);
+	packstr(detail_ptr->script_hash, buffer);
 }
 
 /* _load_job_details - Unpack a job details information from buffer */
@@ -2554,7 +2559,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	char *submit_line = NULL, *prefer = NULL;
-	uint32_t min_nodes, max_nodes;
+	char *env_hash = NULL, *script_hash = NULL;
+	uint32_t min_nodes, max_nodes, tmp32;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
 	uint32_t pn_min_cpus, pn_min_tmp_disk;
 	uint64_t pn_min_memory;
@@ -2638,6 +2644,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		if (unpack_cron_entry((void **) &crontab_entry,
 				      protocol_version, buffer))
 			goto unpack_error;
+		safe_unpackstr_xmalloc(&env_hash, &name_len, buffer);
+		safe_unpackstr_xmalloc(&script_hash, &name_len, buffer);
 	} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
@@ -2694,7 +2702,22 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
 		safe_unpackstr_array(&argv, &argc, buffer);
+		tmp32 = buffer->processed;
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+		if (env_cnt) {
+			slurm_hash_t hash = {
+				.type = HASH_PLUGIN_K12,
+			};
+			char *tmp;
+			(void) hash_g_compute(&buffer->head[tmp32],
+					      buffer->processed - tmp32,
+					      NULL, 0, &hash);
+			tmp = xstring_bytes2hex(hash.hash, sizeof(hash.hash),
+						NULL);
+			env_hash = xstrdup_printf("%d:%s",
+						  hash.type, tmp);
+			xfree(tmp);
+		}
 
 		if (unpack_cron_entry((void **) &crontab_entry,
 				      protocol_version, buffer))
@@ -2754,7 +2777,22 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
 		safe_unpackstr_array(&argv, &argc, buffer);
+		tmp32 = buffer->processed;
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+		if (env_cnt) {
+			slurm_hash_t hash = {
+				.type = HASH_PLUGIN_K12,
+			};
+			char *tmp;
+			(void) hash_g_compute(&buffer->head[tmp32],
+					      buffer->processed - tmp32,
+					      NULL, 0, &hash);
+			tmp = xstring_bytes2hex(hash.hash, sizeof(hash.hash),
+						NULL);
+			env_hash = xstrdup_printf("%d:%s",
+						  hash.type, tmp);
+			xfree(tmp);
+		}
 
 		if (unpack_cron_entry((void **) &crontab_entry,
 				      protocol_version, buffer))
@@ -2792,6 +2830,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	xfree(job_ptr->details->dependency);
 	xfree(job_ptr->details->orig_dependency);
 	xfree(job_ptr->details->std_err);
+	xfree(job_ptr->details->env_hash);
 	for (i=0; i<job_ptr->details->env_cnt; i++)
 		xfree(job_ptr->details->env_sup[i]);
 	xfree(job_ptr->details->env_sup);
@@ -2801,6 +2840,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	xfree(job_ptr->details->prefer);
 	xfree(job_ptr->details->std_in);
 	xfree(job_ptr->details->mem_bind);
+	xfree(job_ptr->details->script_hash);
 	xfree(job_ptr->details->std_out);
 	xfree(job_ptr->details->submit_line);
 	xfree(job_ptr->details->req_nodes);
@@ -2835,6 +2875,25 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->features = features;
 	job_ptr->details->cluster_features = cluster_features;
 	job_ptr->details->prefer = prefer;
+	job_ptr->details->env_hash = env_hash;
+
+	/* 2 versions after 22.05 we can remove this if */
+	if (env_hash && !script_hash) {
+		buf_t *script_buf = get_job_script(job_ptr);
+		slurm_hash_t hash = {
+			.type = HASH_PLUGIN_K12,
+		};
+		char *tmp;
+		(void) hash_g_compute(script_buf->head, script_buf->size,
+				      NULL, 0, &hash);
+		tmp = xstring_bytes2hex(hash.hash, sizeof(hash.hash), NULL);
+		script_hash = xstrdup_printf("%d:%s", hash.type, tmp);
+		xfree(tmp);
+		FREE_NULL_BUFFER(script_buf);
+	}
+
+	job_ptr->details->script_hash = script_hash;
+
 	switch (features_use) {
 	case 0:
 		break;
@@ -2895,6 +2954,7 @@ unpack_error:
 	xfree(orig_dependency);
 /*	for (i=0; i<env_cnt; i++)
 	xfree(env_sup[i]);  Don't trust this on unpack error */
+	xfree(env_hash);
 	xfree(env_sup);
 	xfree(err);
 	xfree(exc_nodes);
@@ -2905,6 +2965,7 @@ unpack_error:
 	xfree(mem_bind);
 	xfree(out);
 	xfree(req_nodes);
+	xfree(script_hash);
 	xfree(work_dir);
 	return SLURM_ERROR;
 }
@@ -4611,6 +4672,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	details_new->submit_line = xstrdup(job_details->submit_line);
 	details_new->work_dir = xstrdup(job_details->work_dir);
 	details_new->x11_magic_cookie = xstrdup(job_details->x11_magic_cookie);
+	details_new->env_hash = xstrdup(job_details->env_hash);
+	details_new->script_hash = xstrdup(job_details->script_hash);
 
 	if (job_ptr->gres_list_req) {
 		if (details_new->whole_node == 1) {
@@ -7284,12 +7347,31 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	if (job_desc->script
 	    &&  (!will_run)) {	/* don't bother with copy if just a test */
+		char *tmp;
 		if ((error_code = _copy_job_desc_to_file(job_desc,
 							 job_ptr->job_id))) {
 			error_code = ESLURM_WRITING_TO_FILE;
 			goto cleanup_fail;
 		}
 		job_ptr->batch_flag = 1;
+
+		tmp = xstring_bytes2hex(job_desc->env_hash.hash,
+					sizeof(job_desc->env_hash.hash),
+					NULL);
+
+		job_ptr->details->env_hash =
+			xstrdup_printf("%d:%s",
+				       job_desc->env_hash.type, tmp);
+		xfree(tmp);
+
+		tmp = xstring_bytes2hex(job_desc->script_hash.hash,
+					sizeof(job_desc->script_hash.hash),
+					NULL);
+		job_ptr->details->script_hash =
+			xstrdup_printf("%d:%s",
+				       job_desc->script_hash.type,
+				       tmp);
+		xfree(tmp);
 	} else
 		job_ptr->batch_flag = 0;
 	if (!will_run &&

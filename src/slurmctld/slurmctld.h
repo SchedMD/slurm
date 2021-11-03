@@ -552,6 +552,7 @@ struct job_details {
 	char *dependency;		/* wait for other jobs */
 	char *orig_dependency;		/* original value (for archiving) */
 	uint16_t env_cnt;		/* size of env_sup (see below) */
+	char *env_hash;			/* hash value of environment */
 	char **env_sup;			/* supplemental environment variables */
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *exc_nodes;		/* excluded nodes */
@@ -611,6 +612,7 @@ struct job_details {
 					 * other jobs */
 	char *script;			/* DBD USE ONLY DON'T PACK:
 					 * job's script */
+	char *script_hash;              /* hash value of script NO NOT PACK */
 	char *std_err;			/* pathname of job's stderr file */
 	char *std_in;			/* pathname of job's stdin file */
 	char *std_out;			/* pathname of job's stdout file */
