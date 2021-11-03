@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Fix case where a job submitted with more than one partition
     would not have its reason updated while waiting to start.
  -- Fix memory leak in node feature rebooting.
+ -- Fix time limit permanetly set to 1 minute by backfill for job array tasks
+    higher than the first with QOS NoReserve flag and PreemptMode configured.
 
 * Changes in Slurm 21.08.4
 ==========================

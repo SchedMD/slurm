@@ -1770,6 +1770,16 @@ static int _attempt_backfill(void)
 			/* Restore preemption state if needed. */
 			_restore_preempt_state(job_ptr, &tmp_preempt_start_time,
 			                       &tmp_preempt_in_progress);
+
+			/*
+			 * Restore the original time limit in every corner case
+			 * we didn't have done yet, like when we are looping
+			 * through array tasks.
+			*/
+			if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
+			    slurm_conf.preempt_mode &&
+			    (orig_time_limit != job_ptr->time_limit))
+				job_ptr->time_limit = orig_time_limit;
 		}
 		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
 		if (!job_queue_rec) {
