@@ -742,6 +742,49 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_job_heavy_msg(void *in, uint16_t rpc_version, buf_t *buffer)
+{
+	dbd_job_heavy_msg_t *msg = (dbd_job_heavy_msg_t *)in;
+
+	if (msg->script_buf)
+		msg->script = msg->script_buf->head;
+
+	if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		packstr(msg->env, buffer);
+		packstr(msg->env_hash, buffer);
+		packstr(msg->script, buffer);
+		packstr(msg->script_hash, buffer);
+	}
+
+	if (msg->script_buf)
+		msg->script = NULL;
+}
+
+static int _unpack_job_heavy_msg(void **msg, uint16_t rpc_version,
+				  buf_t *buffer)
+{
+	uint32_t uint32_tmp;
+	dbd_job_heavy_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
+	*msg = msg_ptr;
+
+	if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg_ptr->env, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->env_hash, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->script, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->script_hash,
+				       &uint32_tmp, buffer);
+	} else
+		  goto unpack_error;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdbd_free_job_heavy_msg(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+
+}
+
 static void _pack_job_suspend_msg(dbd_job_suspend_msg_t *msg,
 				  uint16_t rpc_version, buf_t *buffer)
 {
@@ -1388,6 +1431,9 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg, uint16_t rpc_version,
 	case DBD_GOT_MULT_JOB_START:
 		my_function = slurmdbd_pack_id_rc_msg;
 		break;
+	case DBD_JOB_HEAVY:
+		my_function = _pack_job_heavy_msg;
+		break;
 	case DBD_SEND_MULT_MSG:
 	case DBD_GOT_MULT_MSG:
 		my_function = _pack_buffer;
@@ -1490,6 +1536,10 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 	case DBD_GOT_MULT_JOB_START:
 		my_function = slurmdbd_unpack_id_rc_msg;
 		my_destroy = slurmdbd_free_id_rc_msg;
+		break;
+	case DBD_JOB_HEAVY:
+		my_function = _unpack_job_heavy_msg;
+		my_destroy = slurmdbd_free_job_heavy_msg;
 		break;
 	case DBD_SEND_MULT_MSG:
 	case DBD_GOT_MULT_MSG:
@@ -1635,6 +1685,9 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 		break;
 	case DBD_JOB_START:
 		_pack_job_start_msg(req->data, rpc_version, buffer);
+		break;
+	case DBD_JOB_HEAVY:
+		_pack_job_heavy_msg(req->data, rpc_version, buffer);
 		break;
 	case DBD_ID_RC:
 		slurmdbd_pack_id_rc_msg(req->data, rpc_version, buffer);
@@ -1838,6 +1891,9 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 	case DBD_JOB_START:
 		rc = _unpack_job_start_msg(
 			&resp->data, rpc_version, buffer);
+		break;
+	case DBD_JOB_HEAVY:
+		rc = _unpack_job_heavy_msg(&resp->data, rpc_version, buffer);
 		break;
 	case DBD_ID_RC:
 		rc = slurmdbd_unpack_id_rc_msg(

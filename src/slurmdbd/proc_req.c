@@ -1463,6 +1463,53 @@ static int _job_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	return SLURM_SUCCESS;
 }
 
+static int _job_heavy(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		      buf_t **out_buffer, uint32_t *uid)
+{
+	dbd_job_heavy_msg_t *job_heavy_msg = msg->data;
+	job_record_t job;
+	struct job_details details;
+	char *comment = NULL;
+	int rc;
+
+	if (!_validate_slurm_user(*uid)) {
+		comment = "DBD_JOB_HEAVY message from invalid uid";
+		error("CONN:%d %s %u",
+		      slurmdbd_conn->conn->fd, comment, *uid);
+		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
+							ESLURM_ACCESS_DENIED,
+							comment,
+							DBD_JOB_HEAVY);
+		return SLURM_ERROR;
+	}
+
+	debug2("DBD_JOB_HEAVY: SCRIPT:%s ENV:%s",
+	       job_heavy_msg->script ? "yes" : "no",
+	       job_heavy_msg->env ? "yes" : "no");
+
+	memset(&job, 0, sizeof(job_record_t));
+	memset(&details, 0, sizeof(struct job_details));
+
+	if (job_heavy_msg->env) {
+		details.env_sup = xmalloc(sizeof(*details.env_sup));
+		details.env_sup[0] = job_heavy_msg->env;
+	}
+	details.env_hash = job_heavy_msg->env_hash;
+	details.script = job_heavy_msg->script;
+	details.script_hash = job_heavy_msg->script_hash;
+
+	job.details = &details;
+
+	rc = jobacct_storage_g_job_heavy(slurmdbd_conn->db_conn, &job);
+
+	xfree(details.env_sup);
+
+	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
+						rc, comment,
+						DBD_JOB_HEAVY);
+	return SLURM_SUCCESS;
+}
+
 static int _job_suspend(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			buf_t **out_buffer, uint32_t *uid)
 {
@@ -3273,6 +3320,9 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer,
 		break;
 	case DBD_JOB_START:
 		rc = _job_start(slurmdbd_conn, msg, out_buffer, uid);
+		break;
+	case DBD_JOB_HEAVY:
+		rc = _job_heavy(slurmdbd_conn, msg, out_buffer, uid);
 		break;
 	case DBD_JOB_SUSPEND:
 		rc = _job_suspend(slurmdbd_conn, msg, out_buffer, uid);

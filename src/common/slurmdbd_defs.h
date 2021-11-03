@@ -152,6 +152,7 @@ typedef enum {
 	DBD_GOT_FEDERATIONS,	/* Response to DBD_GET_FEDERATIONS 	*/
 	DBD_MODIFY_FEDERATIONS, /* Modify existing federation 		*/
 	DBD_REMOVE_FEDERATIONS, /* Removing existing federation 	*/
+	DBD_JOB_HEAVY,         /* Send job script/env  		*/
 
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the
 				    * REQUEST_PERSIST_INIT also used here.
@@ -298,6 +299,14 @@ typedef struct dbd_id_rc_msg {
 	uint32_t return_code;
 } dbd_id_rc_msg_t;
 
+typedef struct {
+	char *env;              /* job environment in text form */
+	char *env_hash;         /* hash value of env */
+	char *script;           /* job_script in text form */
+	char *script_hash;      /* hash value of script */
+	buf_t *script_buf;	/* job script as mmap buf */
+} dbd_job_heavy_msg_t;
+
 typedef struct dbd_job_suspend_msg {
 	uint32_t assoc_id;	/* accounting association id needed
 				 * to find job record in db */
@@ -409,6 +418,7 @@ extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 extern void slurmdbd_free_fini_msg(dbd_fini_msg_t *msg);
 extern void slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
 extern void slurmdbd_free_job_start_msg(void *in);
+extern void slurmdbd_free_job_heavy_msg(void *in);
 extern void slurmdbd_free_id_rc_msg(void *in);
 extern void slurmdbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg);
 extern void slurmdbd_free_list_msg(dbd_list_msg_t *msg);
