@@ -30,6 +30,7 @@ HIGHLIGHTS
  -- Allow jobs to pack onto nodes already rebooting with the desired features.
  -- Reset job start time after nodes are rebooted, previously only done for
     cloud/power save boots.
+ -- Node features (if any) are passed to RebootProgram if run from slurmctld.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

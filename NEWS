@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- srun - refuse to run on malformed SPANK environment variable.
  -- Allow jobs to pack onto nodes already rebooting with the desired features.
  -- Reset job start time after nodes are rebooted.
+ -- Node features (if any) are passed to RebootProgram if run from slurmctld.
 
 * Changes in Slurm 21.08.5
 ==========================
