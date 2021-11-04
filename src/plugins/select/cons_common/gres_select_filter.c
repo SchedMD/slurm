@@ -273,8 +273,8 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 			    (sock_gres->job_specs->gres_per_node > max_gres) ||
 			    (sock_gres->job_specs->gres_per_task > max_gres) ||
 			    (sock_gres->job_specs->gres_per_socket > max_gres)){
-				log_flag(SELECT_TYPE, "%s: Insufficient CPUs for any GRES: max_gres (%"PRIu64") = max_cpus (%d) / cpus_per_gres (%d)",
-					 __func__, max_gres, max_cpus,
+				log_flag(SELECT_TYPE, "Insufficient CPUs for any GRES: max_gres (%"PRIu64") = max_cpus (%d) / cpus_per_gres (%d)",
+					  max_gres, max_cpus,
 					 cpus_per_gres);
 				rc = -1;
 				break;
@@ -291,8 +291,8 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 				sock_gres->max_node_gres = avail_mem /
 					mem_per_gres;
 			} else {
-				log_flag(SELECT_TYPE, "%s: Insufficient memory for any GRES: mem_per_gres (%"PRIu64") > avail_mem (%"PRIu64")",
-					 __func__, mem_per_gres, avail_mem);
+				log_flag(SELECT_TYPE, "Insufficient memory for any GRES: mem_per_gres (%"PRIu64") > avail_mem (%"PRIu64")",
+					 mem_per_gres, avail_mem);
 				rc = -1;
 				break;
 			}
@@ -346,8 +346,8 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 			cpu_cnt *= cpus_per_core;
 			max_gres = cpu_cnt / cpus_per_gres;
 			if (max_gres == 0) {
-				log_flag(SELECT_TYPE, "%s: max_gres == 0 == cpu_cnt (%d) / cpus_per_gres (%d)",
-					 __func__, cpu_cnt, cpus_per_gres);
+				log_flag(SELECT_TYPE, "max_gres == 0 == cpu_cnt (%d) / cpus_per_gres (%d)",
+					 cpu_cnt, cpus_per_gres);
 				rc = -1;
 				break;
 			} else if ((sock_gres->max_node_gres == 0) ||
@@ -363,8 +363,8 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 		if ((sock_gres->total_cnt < min_gres) ||
 		    ((sock_gres->max_node_gres != 0) &&
 		     (sock_gres->max_node_gres < min_gres))) {
-			log_flag(SELECT_TYPE, "%s: min_gres (%"PRIu64") is > max_node_gres (%"PRIu64") or sock_gres->total_cnt (%"PRIu64")",
-				 __func__, min_gres, sock_gres->max_node_gres,
+			log_flag(SELECT_TYPE, "min_gres (%"PRIu64") is > max_node_gres (%"PRIu64") or sock_gres->total_cnt (%"PRIu64")",
+				 min_gres, sock_gres->max_node_gres,
 				 sock_gres->total_cnt);
 			rc = -1;
 			break;
@@ -696,8 +696,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				sock_gres->total_cnt =
 					MIN(i, sock_gres->total_cnt);
 			}
-			log_flag(SELECT_TYPE, "%s: max_tasks_this_node is set to NO_VAL, won't clear non-needed cores",
-				 __func__);
+			log_flag(SELECT_TYPE, "max_tasks_this_node is set to NO_VAL, won't clear non-needed cores");
 			continue;
 		}
 		if (*max_tasks_this_node < *min_tasks_this_node) {
@@ -739,8 +738,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				req_cores /= threads_per_core;
 				if (req_cores <= avail_cores_tot) {
 					if (removed_tasks)
-						log_flag(SELECT_TYPE, "%s: settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
-							 __func__,
+						log_flag(SELECT_TYPE, "settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
 							 req_cores,
 							 *max_tasks_this_node,
 							 removed_tasks,
@@ -760,40 +758,37 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			int i;
 			if (job_specs->gres_per_node) {
 				i = job_specs->gres_per_node;
-				log_flag(SELECT_TYPE, "%s: estimating req_cores gres_per_node=%"PRIu64,
-					 __func__, job_specs->gres_per_node);
+				log_flag(SELECT_TYPE, "estimating req_cores gres_per_node=%"PRIu64,
+					 job_specs->gres_per_node);
 			} else if (job_specs->gres_per_socket) {
 				i = job_specs->gres_per_socket * sock_cnt;
-				log_flag(SELECT_TYPE, "%s: estimating req_cores gres_per_socket=%"PRIu64,
-					 __func__, job_specs->gres_per_socket);
+				log_flag(SELECT_TYPE, "estimating req_cores gres_per_socket=%"PRIu64,
+					 job_specs->gres_per_socket);
 			} else if (job_specs->gres_per_task) {
 				i = job_specs->gres_per_task *
 					*max_tasks_this_node;
-				log_flag(SELECT_TYPE, "%s: estimating req_cores max_tasks_this_node=%u gres_per_task=%"PRIu64,
-					 __func__,
+				log_flag(SELECT_TYPE, "estimating req_cores max_tasks_this_node=%u gres_per_task=%"PRIu64,
 					 *max_tasks_this_node,
 					 job_specs->gres_per_task);
 			} else if (cnt_avail_total) {
 				i = cnt_avail_total;
-				log_flag(SELECT_TYPE, "%s: estimating req_cores cnt_avail_total=%"PRIu64,
-					 __func__, cnt_avail_total);
+				log_flag(SELECT_TYPE, "estimating req_cores cnt_avail_total=%"PRIu64,
+					 cnt_avail_total);
 			} else {
 				i = 1;
-				log_flag(SELECT_TYPE, "%s: estimating req_cores default to 1 task",
-					 __func__);
+				log_flag(SELECT_TYPE, "estimating req_cores default to 1 task");
 			}
 			i *= cpus_per_gres;
 			i = (i + cpus_per_core - 1) / cpus_per_core;
 			if (req_cores < i)
-				log_flag(SELECT_TYPE, "%s: Increasing req_cores=%d from cpus_per_gres=%d cpus_per_core=%u",
-					 __func__, i, cpus_per_gres,
-					 cpus_per_core);
+				log_flag(SELECT_TYPE, "Increasing req_cores=%d from cpus_per_gres=%d cpus_per_core=%u",
+					 i, cpus_per_gres, cpus_per_core);
 			req_cores = MAX(req_cores, i);
 		}
 
 		if (req_cores > avail_cores_tot) {
-			log_flag(SELECT_TYPE, "%s: Job cannot run on node req_cores:%d > aval_cores_tot:%d",
-				 __func__, req_cores, avail_cores_tot);
+			log_flag(SELECT_TYPE, "Job cannot run on node req_cores:%d > aval_cores_tot:%d",
+				 req_cores, avail_cores_tot);
 			*max_tasks_this_node = 0;
 			break;
 		}
