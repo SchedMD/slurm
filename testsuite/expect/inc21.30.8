@@ -28,7 +28,6 @@
 
 # Test MaxJobsSubmits limit
 proc inc21_30_8 {} {
-
 	global sbatch salloc srun acct bin_rm bin_sleep jobmatch
 	global number maxjobsub_num
 
@@ -74,11 +73,11 @@ proc inc21_30_8 {} {
 		}
 
 		set target_jobs [expr $check_num + 1]
-		subtest {$jobmatch == $target_jobs} "All $target_jobs should have been submitted" "Only $jobmatch jobs were submitted"
+		subtest {$jobmatch == $target_jobs} "All ($target_jobs) jobs should have been submitted" "Only $jobmatch jobs were submitted"
 
 		for {set inx 0} {$inx <= $check_num} {incr inx} {
 			if [info exists job_id($inx)] {
-				# cancels the jobs
+				# Cancels the jobs
 				cancel_job $job_id($inx)
 			}
 		}

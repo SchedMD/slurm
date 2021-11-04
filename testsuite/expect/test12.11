@@ -82,4 +82,4 @@ if {![regexp "${job_id}${whitespace}($number)" $output - idb_rss]} {
 	fail "Unable to get RSS from InfluxDB"
 }
 set idb_rss [expr $idb_rss / 1024]
-subtest {[tolerance $job_rss $idb_rss "10"]} "RSS on InfluxDB ${idb_rss}MB of job $job_id should be close to ${job_rss}MB"
+subtest {[tolerance $job_rss $idb_rss "10"]} "RSS on InfluxDB ${idb_rss}MB of job ($job_id) should be close to ${job_rss}MB"

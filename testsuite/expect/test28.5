@@ -45,14 +45,14 @@ proc cleanup {} {
 #change this so it checks through all the jobs in the array
 proc check_hold_job {job} {
 	set job_dict [lindex [dict values [get_jobs $job]] 0]
-	subtest {[dict get $job_dict "Priority"] == 0} "Check job $job is hold"
+	subtest {[dict get $job_dict "Priority"] == 0} "Check job ($job) is on hold"
 }
 
 proc check_release_job { job } {
 	global scontrol number
 
 	set job_dict [lindex [dict values [get_jobs $job]] 0]
-	subtest {[dict get $job_dict "Priority"] != 0} "Check job $job is released"
+	subtest {[dict get $job_dict "Priority"] != 0} "Check job ($job) is released"
 }
 
 ################Test Starts Here################

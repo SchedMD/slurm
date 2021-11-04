@@ -195,7 +195,7 @@ proc test_usage_factor { qos usage_factor } {
 
 	# A tolerance of -1 (sec) must be permitted because usage can be accrued
 	# one second before the usage value can be returned.
-	subtest [tolerance $expected_usage $observed_usage -1] "Check that usage for qos $qos is within tolerance (-1 sec)" "$observed_usage not in \[$expected_usage-1, $expected_usage\]"
+	subtest [tolerance $expected_usage $observed_usage -1] "Check that usage for qos ($qos) is within tolerance (-1 sec)" "$observed_usage not in \[$expected_usage-1, $expected_usage\]"
 
 	#
 	# Cancel the job

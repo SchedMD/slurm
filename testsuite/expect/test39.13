@@ -121,5 +121,5 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 		incr match [cuda_count $devices]
 	}
 
-	subtest {$match == $inx} "GPU count should be $inx in file $ofile" "$match != $inx, file: $output"
+	subtest {$match == $inx} "GPU count should be $inx in output file" "$match != $inx, file: $ofile, output: $output"
 }

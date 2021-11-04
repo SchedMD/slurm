@@ -86,6 +86,6 @@ wait_for_job -fail $job_id "DONE"
 wait_for_file -fail $file_out
 
 set output [run_command_output -fail "$bin_cat $file_out"]
-subtest {![regexp "differ" $output]} "Verify that sbcast transmits the file correctly (data is correct)"
-subtest {![regexp "no such" $output]} "Verify that sbcast transmits the file correctly (not empty)"
+subtest {![regexp "differ" $output]} "Verify that sbcast transmits the correct data"
+subtest {![regexp "no such" $output]} "Verify that sbcast does not transmit an empty file"
 subtest {![regexp "error" $output]} "Verify that not error is printed"

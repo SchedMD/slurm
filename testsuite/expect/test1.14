@@ -85,13 +85,13 @@ proc test_cpus {} {
 		wait
 	"
 	set job_id [submit_job -fail "--cpus-per-task=2 -N1 -n2 -t2 --gres=craynetwork:0 --mem=10 --output=$file_out $file_in"]
-	subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job $job_id should start"
-	subtest {![wait_for_file $test_dir/step1]} "File $test_dir/step1 should be created by step1"
-	subtest {![wait_for_file $test_dir/step2]} "File $test_dir/step2 should be created by step2"
-	subtest { [wait_for_file -timeout 5 $test_dir/step3]} "File $test_dir/step3 shouldn't exists yet"
+	subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job ($job_id) should start"
+	subtest {![wait_for_file $test_dir/step1]} "File ($test_dir/step1) should be created by step1"
+	subtest {![wait_for_file $test_dir/step2]} "File ($test_dir/step2) should be created by step2"
+	subtest { [wait_for_file -timeout 5 $test_dir/step3]} "File ($test_dir/step3) shouldn't exists yet"
 	run_command -fail "$bin_touch $test_dir/next"
-	subtest {![wait_for_file -timeout 5 $test_dir/step3]} "File $test_dir/step3 should be created by step3"
-	subtest {![wait_for_job -timeout 30 $job_id DONE]} "Job $job_id should finish"
+	subtest {![wait_for_file -timeout 5 $test_dir/step3]} "File ($test_dir/step3) should be created by step3"
+	subtest {![wait_for_job -timeout 30 $job_id DONE]} "Job ($job_id) should finish"
 }
 
 #
@@ -143,11 +143,11 @@ proc test_cpus_immediate {} {
 	"
 
 	set job_id [submit_job -fail "--cpus-per-task=2 -N1 -n2 -t2 --gres=craynetwork:0 --mem=10 --output=$file_out $file_in"]
-	subtest {![wait_for_job -timeout 30 $job_id DONE]} "Job $job_id should finish"
-	subtest {![wait_for_file $test_dir/step1]} "File $test_dir/step1 should be created by step1"
-	subtest {![wait_for_file $test_dir/step2]} "File $test_dir/step2 should be created by step2"
-	subtest {![wait_for_file $test_dir/next]} "File $test_dir/next should be created after step3"
-	subtest { [wait_for_file -timeout 5 $test_dir/step3]} "File $test_dir/step3 should NOT be created, because step3 should fail"
+	subtest {![wait_for_job -timeout 30 $job_id DONE]} "Job ($job_id) should finish"
+	subtest {![wait_for_file $test_dir/step1]} "File ($test_dir/step1) should be created by step1"
+	subtest {![wait_for_file $test_dir/step2]} "File ($test_dir/step2) should be created by step2"
+	subtest {![wait_for_file $test_dir/next]} "File ($test_dir/next) should be created after step3"
+	subtest {[wait_for_file -timeout 5 $test_dir/step3]} "File ($test_dir/step3) should NOT be created, because step3 should fail"
 }
 
 #
@@ -166,7 +166,7 @@ proc test_gpus {node_name} {
 	# Verify that all GPUs and other GRES are allocated with the --exclusive flag
 	#
 	set job_id [submit_job -fail "-n1 -N1 -w $node_name --gres=gpu --exclusive -e none -o none --wrap '$bin_sleep 10'"]
-	subtest {![wait_for_job $job_id RUNNING]} "Job $job_id should start"
+	subtest {![wait_for_job $job_id RUNNING]} "Job ($job_id) should start"
 
 	# Check all GRES of the node were allocated on the job
 	set gres_dict_job  [count_gres [get_job_param  $job_id "JOB_GRES"]]
@@ -179,7 +179,7 @@ proc test_gpus {node_name} {
 			subpass "Gres $gres_name on node $node_name was allocated on job $job_id with --exclusive"
 
 			set gres_count_job [dict get $gres_dict_job $gres_name]
-			subtest { $gres_count_job == $gres_count } "Gres $gres_name on node $node_name fully allocated on job $job_id with --exclusive ($gres_count_job != $gres_count)"
+			subtest { $gres_count_job == $gres_count } "Gres ($gres_name) on node ($node_name) fully allocated on job ($job_id) with --exclusive" "$gres_count_job != $gres_count"
 		}
 	}
 }

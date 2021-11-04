@@ -108,7 +108,7 @@ proc mutual_error_tests {} {
 			}
 		}
 		cancel_job $job_id
-		subtest {$matches == 0} "$cmd should not find 'mutually exclsive'" "(got $matches matches)"
+		subtest {$matches == 0} "$cmd should not find 'mutually exclusive'" "got $matches matches"
 	}
 }
 
@@ -143,14 +143,14 @@ foreach option $options {
 		}
 	}
 	subtest {$job_id != 0} "$cmd should have given an id"
-	subtest {$matches == 0} "$cmd should not find 'mutually exclsive'" "(got $matches matches)"
+	subtest {$matches == 0} "$cmd should not find 'mutually exclusive'" "got $matches matches"
 
 	set threads_req [get_job_param $job_id "ReqB:S:C:T"]
 	set tasks_req [get_job_param $job_id "NtasksPerN:B:S:C"]
 	set threads_match "0:0:*:2"
 	set tasks_match "0:0:*:3"
-	subtest {[string compare $threads_match $threads_req] == 0} "ReqB:S:C:T should be $threads_match" "($threads_req != $threads_match)"
-	subtest {[string compare $tasks_match $tasks_req] == 0} "NtasksPerN:B:S:C should be $tasks_match" "($tasks_req != $tasks_match)"
+	subtest {[string compare $threads_match $threads_req] == 0} "ReqB:S:C:T should be $threads_match" "$threads_req != $threads_match"
+	subtest {[string compare $tasks_match $tasks_req] == 0} "NtasksPerN:B:S:C should be $tasks_match" "$tasks_req != $tasks_match"
 	cancel_job $job_id
 }
 

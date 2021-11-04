@@ -74,6 +74,6 @@ for {set idx 0} {$idx < $array_size} {incr idx} {
 	set filename "$test_dir/${job_id}_${idx}.out"
 	wait_for_file -fail $filename
 	set output [run_command_output -fail "$bin_cat $filename"]
-	subtest {[regexp -all "JobSuspended" $output] == 1} "Verify job ${job_id}_${idx} was suspended"
-	subtest {[regexp -all "AllDone" $output] == 1} "Verify job ${job_id}_${idx} was resumed and end"
+	subtest {[regexp -all "JobSuspended" $output] == 1} "Verify job (${job_id}) index $idx was suspended"
+	subtest {[regexp -all "AllDone" $output] == 1} "Verify job (${job_id}) index $idx resumed and ended"
 }
