@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     not be opened.
  -- If sacctmgr has an association with an unknown qos as the default qos
     print 'UNKN-###' instead of leaving a blank name.
+ -- Correctly determine task count when giving --cpus-per-gpu, --gpus and
+    --ntasks-per-node without task count.
 
 * Changes in Slurm 21.08.4
 ==========================
