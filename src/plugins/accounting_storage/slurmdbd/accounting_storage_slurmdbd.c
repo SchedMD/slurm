@@ -444,6 +444,7 @@ static void *_set_db_inx_thread(void *no_data)
 			}
 
 			if (reset) {
+				list_flush(local_job_list);
 				lock_slurmctld(job_read_lock);
 				/* USE READ LOCK, SEE ABOVE on first
 				 * read lock */
