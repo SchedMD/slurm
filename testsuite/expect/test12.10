@@ -52,18 +52,22 @@ proc sacct_query {jobname sacct_args expected_job {expected_err false}} {
 	set job_found [regexp "($jobname)" $output]
 	set err_found [regexp "sacct: error:" $output]
 
+	regsub -- {-j [^ ]+} $sacct_args "-j <job_id>" filtered_args
+	regsub -- {-S [^ ]+} $filtered_args "-S <start_time>" filtered_args
+	regsub -- {-E [^ ]+} $filtered_args "-E <end_time>" filtered_args
+
 	if {$expected_job} {
-		subtest {$job_found} "Verify that job is shown by sacct using args: $sacct_args"
+		subtest {$job_found} "Verify job is shown by sacct $filtered_args"
 	} else {
-		subtest {!$job_found} "Verify that job is NOT shown by sacct using args: $sacct_args"
+		subtest {!$job_found} "Verify job is NOT shown by sacct $filtered_args"
 	}
 
 	if {$expected_err} {
-		subtest {$err_found} "Verify error message is printed using args: $sacct_args"
-		subtest {[dict get $result exit_code]} "Verify exit code of sacct is an error using: $sacct_args"
+		subtest {$err_found} "Verify error message is printed by sacct $filtered_args"
+		subtest {[dict get $result exit_code]} "Verify exit code is non-zero for sacct $filtered_args"
 	} else {
-		subtest {!$err_found} "Verify error message is NOT printed using args: $sacct_args"
-		subtest {![dict get $result exit_code]} "Verify exit code of sacct is success using: $sacct_args"
+		subtest {!$err_found} "Verify error message is NOT printed by sacct $filtered_args"
+		subtest {![dict get $result exit_code]} "Verify exit code is zero for sacct $filtered_args"
 	}
 }
 
