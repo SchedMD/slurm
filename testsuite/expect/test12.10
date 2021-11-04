@@ -47,25 +47,10 @@ set jobid_queue     0
 proc sacct_query {jobname sacct_args expected_job {expected_err false}} {
 	global sacct
 
-	set job_found false
-	set err_found false
-
-	set cmd_str "$sacct -v -X -p --format=job,jobname,eligible,start,end,state $sacct_args"
-	spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]
-	expect {
-		-re "($jobname)" {
-			set job_found true
-			exp_continue
-		}
-		-re "sacct: error:" {
-			set err_found true
-			exp_continue
-		}
-		timeout {
-			fail "$sacct is not responding"
-		}
-
-	}
+	set result [run_command "$sacct -v -X -p --format=job,jobname,eligible,start,end,state $sacct_args"]
+	set output [dict get $result output]
+	set job_found [regexp "($jobname)" $output]
+	set err_found [regexp "sacct: error:" $output]
 
 	if {$expected_job} {
 		subtest {$job_found} "Verify that job is shown by sacct using args: $sacct_args"
@@ -75,8 +60,10 @@ proc sacct_query {jobname sacct_args expected_job {expected_err false}} {
 
 	if {$expected_err} {
 		subtest {$err_found} "Verify error message is printed using args: $sacct_args"
+		subtest {[dict get $result exit_code]} "Verify exit code of sacct is an error using: $sacct_args"
 	} else {
 		subtest {!$err_found} "Verify error message is NOT printed using args: $sacct_args"
+		subtest {![dict get $result exit_code]} "Verify exit code of sacct is success using: $sacct_args"
 	}
 }
 
@@ -189,9 +176,9 @@ log_info "Unique job name used to avoid false test errors with old/duplicated jo
 # Get query times before any job is run (QsS and QeS)
 #
 set QsS [get_time]
-exec $bin_sleep 2
+sleep 2
 set QeS [get_time]
-exec $bin_sleep 2
+sleep 2
 
 #
 # Start a long job (will be cancelled)
@@ -216,11 +203,11 @@ set jobid [submit_job -fail "-t5 --dependency=afterany:$jobid_dependent -w $def_
 # ensure that job is actually pending (non-elegible)
 wait_for_job $jobid "PENDING"
 
-exec $bin_sleep 2
+sleep 2
 set QsE [get_time]
-exec $bin_sleep 2
+sleep 2
 set QeE [get_time]
-exec $bin_sleep 2
+sleep 2
 
 log_info "Test cases while the job is still NonElegible..."
 
@@ -309,11 +296,11 @@ testproc sacct_query $jobname "-E $QeE" false
 cancel_job $jobid_dependent
 wait_for_job $jobid_queue "RUNNING"
 
-exec $bin_sleep 2
+sleep 2
 set QsP [get_time]
-exec $bin_sleep 2
+sleep 2
 set QeP [get_time]
-exec $bin_sleep 2
+sleep 2
 
 #
 # Test cases while the job is still pending
@@ -450,11 +437,11 @@ wait_for_job $jobid "RUNNING"
 #
 # Get query times while the job is running (QsR and QeR)
 #
-exec $bin_sleep 2
+sleep 2
 set QsR [get_time]
-exec $bin_sleep 2
+sleep 2
 set QeR [get_time]
-exec $bin_sleep 2
+sleep 2
 
 #
 # Test cases while the job is still running
@@ -645,11 +632,11 @@ cancel_job $jobid
 #
 # Get query times when job is no more running
 #
-exec $bin_sleep 2
+sleep 2
 set QsC [get_time]
-exec $bin_sleep 2
+sleep 2
 set QeC [get_time]
-exec $bin_sleep 2
+sleep 2
 
 #
 # Test cases for non-running job
