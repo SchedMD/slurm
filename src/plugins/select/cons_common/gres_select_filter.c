@@ -274,8 +274,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 			    (sock_gres->job_specs->gres_per_task > max_gres) ||
 			    (sock_gres->job_specs->gres_per_socket > max_gres)){
 				log_flag(SELECT_TYPE, "Insufficient CPUs for any GRES: max_gres (%"PRIu64") = max_cpus (%d) / cpus_per_gres (%d)",
-					  max_gres, max_cpus,
-					 cpus_per_gres);
+					 max_gres, max_cpus, cpus_per_gres);
 				rc = -1;
 				break;
 			}
