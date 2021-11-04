@@ -1557,7 +1557,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  step_table_fields,
 				  ", primary key (job_db_inx, id_step, "
 				  "step_het_comp), "
-				  "key no_step_comp (job_db_inx, id_step),"
+				  "key no_step_comp (job_db_inx, id_step), "
 				  "key time_start_end (time_start, time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
