@@ -1613,7 +1613,7 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t * msg)
 		      msg->protocol_version);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_read_lock);
-	END_TIMER2("_slurm_rpc_dump_job_user");
+	END_TIMER2(__func__);
 #if 0
 	info("_slurm_rpc_dump_user_jobs, size=%d %s", dump_size, TIME_STR);
 #endif
