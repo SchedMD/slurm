@@ -19,7 +19,7 @@ perform <a href="#upgrade">upgrades</a>.</p>
 across the cluster.</li>
 <li>Install <a href="https://dun.github.io/munge/">MUNGE</a> for
 authentication. Make sure that all nodes in your cluster have the
-same <i>munge.key</i>. Make sure the MUNGE daemon, <i>munged</i>
+same <i>munge.key</i>. Make sure the MUNGE daemon, <i>munged</i>,
 is started before you start the Slurm daemons.</li>
 <li>bunzip2 the distributed tar-ball and untar the files:<br>
 <i>tar --bzip -x -f slurm*tar.bz2</i></li>
@@ -31,14 +31,14 @@ and <i>--sysconfdir=</i></li>
 header files, etc.</li>
 <li>Build a configuration file using your favorite web browser and the
 <a href="configurator.html">Slurm Configuration Tool</a>.<br>
-NOTE: The <i>SlurmUser</i> must exist prior to starting Slurm
+<b>NOTE</b>: The <i>SlurmUser</i> must exist prior to starting Slurm
 and must exist on all nodes of the cluster.<br>
-NOTE: The parent directories for Slurm's log files, process ID files,
+<b>NOTE</b>: The parent directories for Slurm's log files, process ID files,
 state save directories, etc. are not created by Slurm.
 They must be created and made writable by <i>SlurmUser</i> as needed prior to
 starting Slurm daemons.<br>
-NOTE: If any parent directories are created during the installation process
-(for the executable files, libraries, etc.),
+<b>NOTE</b>: If any parent directories are created during the installation
+process (for the executable files, libraries, etc.),
 those directories will have access rights equal to read/write/execute for
 everyone minus the umask value (e.g. umask=0022 generates directories with
 permissions of "drwxr-r-x" and mask=0000 generates directories with
@@ -46,7 +46,8 @@ permissions of "drwxrwrwx" which is a security problem).</li>
 <li>Type <i>ldconfig -n &lt;library_location&gt;</i> so that the Slurm libraries
 can be found by applications that intend to use Slurm APIs directly.</li>
 <li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.<br>
-NOTE: You will need to install this configuration file on all nodes of the cluster.</li>
+<b>NOTE</b>: You will need to install this configuration file on all nodes of
+the cluster.</li>
 <li>systemd (optional): enable the appropriate services on each system:
 <ul>
 <li>Controller: <code>systemctl enable slurmctld</code>
@@ -55,7 +56,7 @@ NOTE: You will need to install this configuration file on all nodes of the clust
 </ul></li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
 </ol>
-<p>NOTE: Items 3 through 8 can be replaced with</p>
+<p><b>NOTE</b>: Items 3 through 8 can be replaced with</p>
 <ol>
 <li><code>rpmbuild -ta slurm*.tar.bz2</code></li>
 <li><code>rpm --install &lt;the rpm files&gt;</code></li>
@@ -110,7 +111,7 @@ present. Build dependencies for various plugins and commands are denoted below:
 		present.</li>
 <li> <b>HTML Man Pages</b> HTML versions of the man pages will be generated if
 		the <i>man2html</i> command is present.</li>
-<li> <b>IPMI Engergy Consumption</b> The <i>acct_gather_energy/ipmi</i>
+<li> <b>IPMI Energy Consumption</b> The <i>acct_gather_energy/ipmi</i>
 		accouting plugin will be built if the <i>freeipmi</i>
 		development library is present.</li>
 <li> <b>InfiniBand Accounting</b> The <i>acct_gather_interconnect/ofed</i>
@@ -776,7 +777,7 @@ than using systemd when performing an upgrade.</li>
     execute "scontrol reconfig" for them to take effect.</li>
 <li>Destroy backup copies of database and/or state files.</li>
 </ol>
-<p><b>Note</b>: It is possible to update the slurmd daemons on a node-by-node
+<p><b>NOTE</b>: It is possible to update the slurmd daemons on a node-by-node
 basis after the slurmctld daemon(s) are upgraded, but do make sure their down
 time is below the SlurmdTimeout value.</p>
 
