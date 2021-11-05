@@ -46,6 +46,8 @@ documents those changes that are of interest to users and administrators.
  -- If a task/srun prolog fails don't allow the step to continue running.
  -- Fail srun when using invalid --cpu-bind options.
  -- cgroup/v1 - Set swappiness at job level instead of at root level.
+ -- Fix issues where a step's GRES request could never be satisfied but the step
+    remained pending forever instead of being rejected.
 
 * Changes in Slurm 21.08.5
 ==========================
