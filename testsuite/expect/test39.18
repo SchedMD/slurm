@@ -206,7 +206,7 @@ if {$output != $ulong_bits} {
 #
 proc test_cfg {test_minor slurm_conf_gres gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0} } {
 	global test_dir nodename test_prog re_word_str
-	global test_name use_valgrind bin_sort file_in file_out
+	global test_name use_valgrind file_in file_out
 	global bin_cat debug_mode debug_level
 
 	log_info "====$test_name.$test_minor===="
