@@ -324,7 +324,7 @@ static void _nvml_print_gfx_freqs(nvmlDevice_t *device, unsigned int mem_freq,
 	if (!_nvml_get_gfx_freqs(device, mem_freq, &size, gfx_freqs))
 		return;
 
-	gpu_common_print_freqs(gfx_freqs, size, l, "GPU Graphics");
+	gpu_common_print_freqs(gfx_freqs, size, l, "GPU Graphics", 8);
 }
 
 /*

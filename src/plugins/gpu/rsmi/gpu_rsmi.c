@@ -233,7 +233,7 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 		return;
 	}
 
-	gpu_common_print_freqs(mem_freqs, size, l, "GPU Memory");
+	gpu_common_print_freqs(mem_freqs, size, l, "GPU Memory", 0);
 
 	size = RSMI_MAX_NUM_FREQUENCIES;
 	if (!_rsmi_get_gfx_freqs(dv_ind, &size, gfx_freqs))
@@ -247,7 +247,7 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 		return;
 	}
 
-	gpu_common_print_freqs(gfx_freqs, size, l, "GPU Graphics");
+	gpu_common_print_freqs(gfx_freqs, size, l, "GPU Graphics", 0);
 }
 
 /*

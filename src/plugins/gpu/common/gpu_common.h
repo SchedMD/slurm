@@ -91,9 +91,12 @@ extern void gpu_common_parse_gpu_freq(char *gpu_freq,
  * 		E.g., a value of "GPU Graphics" would print a header of
  * 		"Possible GPU Graphics Frequencies". Set to "" or NULL to just
  * 		print "Possible Frequencies".
+ * indent	(IN) (Optional) Whitespace to precede each print line. Set to
+ * 		0 for no additional indentation.
  */
 extern void gpu_common_print_freqs(unsigned int freqs[], unsigned int size,
-				   log_level_t l, char *freq_type);
+				   log_level_t l, char *freq_type,
+				   int indent);
 
 /*
  * Replace all space characters in a string with underscores, and make all
