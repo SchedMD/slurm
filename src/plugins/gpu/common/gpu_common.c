@@ -246,6 +246,9 @@ extern void gpu_common_print_freqs(unsigned int freqs[], unsigned int size,
 				   log_level_t l, char *freq_type)
 {
 	bool concise = false;
+	unsigned int middle;
+	unsigned int penult;
+	unsigned int last;
 
 	if (size > FREQS_CONCISE)
 		concise = true;
@@ -262,15 +265,18 @@ extern void gpu_common_print_freqs(unsigned int freqs[], unsigned int size,
 		return;
 	}
 
+	penult = size - 2;
+	last = size - 1;
+	middle = last / 2;
+
 	/* First, next, ..., middle, ..., penultimate, last */
 	log_var(l, "          *%u MHz [0]", freqs[0]);
 	log_var(l, "          *%u MHz [1]", freqs[1]);
 	log_var(l, "          ...");
-	log_var(l, "          *%u MHz [%u]",
-		freqs[(size - 1) / 2], (size - 1) / 2);
+	log_var(l, "          *%u MHz [%u]", freqs[middle], middle);
 	log_var(l, "          ...");
-	log_var(l, "          *%u MHz [%u]", freqs[size - 2], size - 2);
-	log_var(l, "          *%u MHz [%u]", freqs[size - 1], size - 1);
+	log_var(l, "          *%u MHz [%u]", freqs[penult], penult);
+	log_var(l, "          *%u MHz [%u]", freqs[last], last);
 }
 
 extern void gpu_common_underscorify_tolower(char *str)
