@@ -39,6 +39,28 @@ guide to where changes have taken place in the OpenAPI specifications.</p>
 href="https://stedolan.github.io/jq/">jq</a>. Make sure to always place the
 paths in a single quote string to avoid shell replacements.</p>
 
+<h2>Slurm 21.08.6</h2>
+
+<h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
+
+<h4>Add association fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.37_association".properties.is_default</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.tres.group.minutes</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.tres.group.active</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.jobs.active</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.jobs.accruing</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.jobs.total</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.tres.minutes.per.job</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h2>Slurm 21.08.3</h2>
 
 <h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>

@@ -1965,6 +1965,10 @@
         "type": "object",
         "description": "Association description",
         "properties": {
+          "is_default": {
+            "type": "integer",
+            "description": "is default association"
+          },
           "account": {
             "type": "string",
             "description": "Assigned account"
@@ -1999,6 +2003,18 @@
                 "type": "object",
                 "description": "Max jobs settings",
                 "properties": {
+                  "active": {
+                    "type": "integer",
+                    "description": "Max TRES for active total jobs"
+                  },
+                  "accruing": {
+                    "type": "integer",
+                    "description": "Max TRES for job accruing priority"
+                  },
+                  "total": {
+                    "type": "integer",
+                    "description": "Max TRES for job total submitted"
+                  },
                   "per": {
                     "type": "object",
                     "description": "Max jobs per settings",
@@ -2031,6 +2047,18 @@
                 "type": "object",
                 "description": "Max TRES settings",
                 "properties": {
+                  "group": {
+                    "type": "object",
+                    "description": "Max TRES per group",
+                    "properties": {
+                      "minutes": {
+                        "$ref": "#/components/schemas/dbv0.0.37_tres_list"
+                      },
+                      "active": {
+                        "$ref": "#/components/schemas/dbv0.0.37_tres_list"
+                      }
+                    }
+                  },
                   "per": {
                     "type": "object",
                     "description": "Max TRES per settings",
