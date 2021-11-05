@@ -8305,10 +8305,8 @@ static uint64_t _step_test(void *step_gres_data, bool first_step_node,
 		return 0;
 
 	if (first_step_node) {
-		if (ignore_alloc)
-			step_gres_ptr->gross_gres = 0;
-		else
-			step_gres_ptr->total_gres = 0;
+		step_gres_ptr->gross_gres = 0;
+		step_gres_ptr->total_gres = 0;
 	}
 	if (step_gres_ptr->gres_per_node)
 		min_gres = step_gres_ptr-> gres_per_node;
