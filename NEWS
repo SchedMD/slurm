@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential deadlock when using PMI v1.
  -- Fix tight loop sending DBD_SEND_MULT_JOB_START when the slurmctld has an
     issue talking correctly to the DBD.
+ -- Fix memory leak in step creation.
 
 * Changes in Slurm 21.08.3
 ==========================
