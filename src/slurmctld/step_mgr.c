@@ -2521,6 +2521,10 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
 		_clear_zero_tres(&step_specs->tres_per_socket);
 		_clear_zero_tres(&step_specs->tres_per_task);
 	} else {
+		xfree(step_specs->tres_per_step);
+		xfree(step_specs->tres_per_node);
+		xfree(step_specs->tres_per_socket);
+		xfree(step_specs->tres_per_task);
 		step_specs->tres_per_step   = xstrdup(job_ptr->tres_per_job);
 		step_specs->tres_per_node   = xstrdup(job_ptr->tres_per_node);
 		step_specs->tres_per_socket = xstrdup(job_ptr->tres_per_socket);
