@@ -4274,17 +4274,61 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 #else
-/* NOTE: See power_job_reboot() in power_save.c for similar logic */
-extern int reboot_job_nodes(job_record_t *job_ptr)
+static void _send_reboot_msg(bitstr_t *node_bitmap, char *features,
+			     uint16_t protocol_version)
 {
-	int rc = SLURM_SUCCESS;
-	int i, i_first, i_last;
 	agent_arg_t *reboot_agent_args = NULL;
 	reboot_msg_t *reboot_msg;
+	hostlist_t hostlist;
+
+	reboot_agent_args = xmalloc(sizeof(agent_arg_t));
+	reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
+	reboot_agent_args->retry = 0;
+	reboot_agent_args->node_count = 0;
+	reboot_agent_args->protocol_version = protocol_version;
+
+	if ((hostlist = bitmap2hostlist(node_bitmap))) {
+		reboot_agent_args->hostlist = hostlist;
+		reboot_agent_args->node_count = hostlist_count(hostlist);
+	}
+
+	reboot_msg = xmalloc(sizeof(reboot_msg_t));
+	slurm_init_reboot_msg(reboot_msg, false);
+	reboot_agent_args->msg_args = reboot_msg;
+	reboot_msg->features = xstrdup(features);
+
+	agent_queue_request(reboot_agent_args);
+}
+
+static void _do_reboot(bool power_save_on, bitstr_t *node_bitmap,
+		       job_record_t *job_ptr, char *reboot_features,
+		       uint16_t protocol_version)
+{
+	if (power_save_on)
+		power_job_reboot(node_bitmap, job_ptr, reboot_features);
+	else
+		_send_reboot_msg(node_bitmap, reboot_features,
+				 protocol_version);
+	if (get_log_level() >= LOG_LEVEL_DEBUG) {
+		char *nodes = bitmap2node_name(node_bitmap);
+		if (nodes) {
+			debug("%s: reboot nodes %s features %s",
+			      __func__, nodes,
+			      reboot_features ? "reboot_features" : "N/A");
+		} else {
+			error("%s: bitmap2nodename", __func__);
+		}
+		xfree(nodes);
+	}
+}
+
+extern void reboot_job_nodes(job_record_t *job_ptr)
+{
+	int i, i_first, i_last;
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	bitstr_t *boot_node_bitmap = NULL, *feature_node_bitmap = NULL;
-	char *nodes, *reboot_features = NULL;
+	char *reboot_features = NULL;
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 	static bool power_save_on = false;
 	static time_t sched_update = 0;
@@ -4295,36 +4339,36 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 	}
 
 	if ((job_ptr->details == NULL) || (job_ptr->node_bitmap == NULL))
-		return SLURM_SUCCESS;
-	if (power_save_on)
-		return power_job_reboot(job_ptr);
-	if ((slurm_conf.reboot_program == NULL) ||
-	    (slurm_conf.reboot_program[0] == '\0'))
-		return SLURM_SUCCESS;
+		return;
+	if (!power_save_on &&
+	    ((slurm_conf.reboot_program == NULL) ||
+	     (slurm_conf.reboot_program[0] == '\0')))
+		return;
 
-/*
- *	See power_job_reboot() in power_save.c for similar logic used by
- *	node_features/knl_cray plugin.
- */
-	if (job_ptr->reboot) {
+	if (job_ptr->reboot)
 		boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
-	} else {
+	else
 		boot_node_bitmap = node_features_reboot(job_ptr);
-		if (boot_node_bitmap == NULL) {
-			if (bit_overlap_any(job_ptr->node_bitmap,
-					    booting_node_bitmap))
-				/* Reset job start time when nodes are booted */
-				job_ptr->job_state |= JOB_POWER_UP_NODE;
-				/* launch_job() when all nodes have booted */
-				job_ptr->bit_flags |= NODE_REBOOT;
-			return SLURM_SUCCESS;
+	if (boot_node_bitmap == NULL) {
+		/* launch_job() when all nodes have booted */
+		if (bit_overlap_any(power_node_bitmap, job_ptr->node_bitmap) ||
+		    bit_overlap_any(booting_node_bitmap,
+				    job_ptr->node_bitmap)) {
+			job_ptr->job_state |= JOB_CONFIGURING;
+			/* Reset job start time when nodes are booted */
+			job_ptr->job_state |= JOB_POWER_UP_NODE;
+			job_ptr->bit_flags |= NODE_REBOOT;
+			job_ptr->wait_all_nodes = 1;
 		}
+		return;
 	}
 
+	job_ptr->job_state |= JOB_CONFIGURING;
 	/* Reset job start time when nodes are booted */
 	job_ptr->job_state |= JOB_POWER_UP_NODE;
 	/* launch_job() when all nodes have booted */
 	job_ptr->bit_flags |= NODE_REBOOT;
+	job_ptr->wait_all_nodes = 1;
 
 	/* Modify state information for all nodes, KNL and others */
 	i_first = bit_ffs(boot_node_bitmap);
@@ -4338,9 +4382,11 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		node_ptr = node_record_table_ptr + i;
 		if (protocol_version > node_ptr->protocol_version)
 			protocol_version = node_ptr->protocol_version;
+		node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWERING_UP;
 		bit_clear(avail_node_bitmap, i);
+		bit_clear(power_node_bitmap, i);
 		bit_set(booting_node_bitmap, i);
 		node_ptr->boot_req_time = now;
 	}
@@ -4368,26 +4414,14 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 
 	if (feature_node_bitmap) {
 		/* Reboot nodes to change KNL NUMA and/or MCDRAM mode */
-		reboot_agent_args = xmalloc(sizeof(agent_arg_t));
-		reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
-		reboot_agent_args->retry = 0;
-		reboot_agent_args->node_count = 0;
-		reboot_agent_args->protocol_version = protocol_version;
-		reboot_agent_args->hostlist = hostlist_create(NULL);
-		reboot_msg = xmalloc(sizeof(reboot_msg_t));
-		slurm_init_reboot_msg(reboot_msg, false);
-		reboot_agent_args->msg_args = reboot_msg;
-		reboot_msg->features = reboot_features;	/* Move, not copy */
+		_do_reboot(power_save_on, feature_node_bitmap, job_ptr,
+			   reboot_features, protocol_version);
 		for (i = i_first; i <= i_last; i++) {
 			int node_inx;
 			char *tmp_feature, *orig_features_act;
 
 			if (!bit_test(feature_node_bitmap, i))
 				continue;
-			node_ptr = node_record_table_ptr + i;
-			hostlist_push_host(reboot_agent_args->hostlist,
-					   node_ptr->name);
-			reboot_agent_args->node_count++;
 
 			/*
 			 * Update node features now to avoid a race where a
@@ -4410,7 +4444,7 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 				node_ptr->features_act ?
 				node_ptr->features_act : node_ptr->features;
 			tmp_feature = node_features_g_node_xlate(
-				reboot_msg->features, orig_features_act,
+				reboot_features, orig_features_act,
 				node_ptr->features, node_inx);
 			xfree(node_ptr->features_act);
 			node_ptr->features_act = tmp_feature;
@@ -4418,53 +4452,17 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 				node_ptr->name, node_ptr->features_act,
 				FEATURE_MODE_IND);
 		}
-		nodes = bitmap2node_name(feature_node_bitmap);
-		if (nodes) {
-			info("%s: reboot nodes %s features %s",
-			     __func__, nodes, reboot_features);
-		} else {
-			error("%s: bitmap2nodename", __func__);
-			rc = SLURM_ERROR;
-		}
-		xfree(nodes);
-		agent_queue_request(reboot_agent_args);
 	}
 
 	if (boot_node_bitmap) {
 		/* Reboot nodes with no feature changes */
-		reboot_agent_args = xmalloc(sizeof(agent_arg_t));
-		reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
-		reboot_agent_args->retry = 0;
-		reboot_agent_args->node_count = 0;
-		reboot_agent_args->protocol_version = protocol_version;
-		reboot_agent_args->hostlist = hostlist_create(NULL);
-		reboot_msg = xmalloc(sizeof(reboot_msg_t));
-		slurm_init_reboot_msg(reboot_msg, false);
-		reboot_agent_args->msg_args = reboot_msg;
-		/* reboot_msg->features = NULL; */
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(boot_node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr + i;
-			hostlist_push_host(reboot_agent_args->hostlist,
-					   node_ptr->name);
-			reboot_agent_args->node_count++;
-		}
-		nodes = bitmap2node_name(boot_node_bitmap);
-		if (nodes) {
-			info("%s: reboot nodes %s", __func__, nodes);
-		} else {
-			error("%s: bitmap2nodename", __func__);
-			rc = SLURM_ERROR;
-		}
-		xfree(nodes);
-		agent_queue_request(reboot_agent_args);
+		_do_reboot(power_save_on, boot_node_bitmap, job_ptr, NULL,
+			   protocol_version);
 	}
 
+	xfree(reboot_features);
 	FREE_NULL_BITMAP(boot_node_bitmap);
 	FREE_NULL_BITMAP(feature_node_bitmap);
-
-	return rc;
 }
 #endif
 

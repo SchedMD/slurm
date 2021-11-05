@@ -214,7 +214,7 @@ extern void prolog_slurmctld(job_record_t *job_ptr);
  * IN job_ptr - pointer to job that will be initiated
  * RET SLURM_SUCCESS(0) or error code
  */
-extern int reboot_job_nodes(job_record_t *job_ptr);
+extern void reboot_job_nodes(job_record_t *job_ptr);
 
 /* If a job can run in multiple partitions, make sure that the one
  * actually used is first in the string. Needed for job state save/restore */
