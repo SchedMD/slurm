@@ -237,7 +237,10 @@ extern void gpu_common_get_nearest_freq(unsigned int *freq,
  * freqs	(IN) The array of frequencies to print, in MHz.
  * size		(IN) The size of the freqs array.
  * l		(IN) The log level to print the frequencies at.
- * freq_type	(IN) A short description of the frequencies to print.
+ * freq_type	(IN) (Optional) A short description of the frequencies to print.
+ * 		E.g., a value of "GPU Graphics" would print a header of
+ * 		"Possible GPU Graphics Frequencies". Set to "" or NULL to just
+ * 		print "Possible Frequencies".
  */
 extern void gpu_common_print_freqs(unsigned int freqs[], unsigned int size,
 				   log_level_t l, char *freq_type)
@@ -247,7 +250,10 @@ extern void gpu_common_print_freqs(unsigned int freqs[], unsigned int size,
 	if (size > FREQS_CONCISE)
 		concise = true;
 
-	log_var(l, "        Possible %s Frequencies (%u):", freq_type, size);
+	log_var(l, "        Possible %s%sFrequencies (%u):",
+		freq_type ? freq_type : "",
+		freq_type ? " ": "",
+		size);
 	log_var(l, "        ---------------------------------");
 
 	if (!concise) {
