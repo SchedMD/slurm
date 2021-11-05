@@ -472,7 +472,6 @@ static void _do_power_work(time_t now)
 		    (node_ptr->sus_job_cnt == 0)			&&
 		    (!IS_NODE_COMPLETING(node_ptr))			&&
 		    (!IS_NODE_POWERING_UP(node_ptr))			&&
-		    (!IS_NODE_POWERING_UP(node_ptr))			&&
 		    (!IS_NODE_POWERING_DOWN(node_ptr))			&&
 		    (IS_NODE_POWER_DOWN(node_ptr) ||
 		     ((node_ptr->last_busy != 0) &&
