@@ -231,6 +231,42 @@ extern void gpu_common_get_nearest_freq(unsigned int *freq,
 	      __func__, *freq);
 }
 
+/*
+ * Print out an array of possible frequencies (in MHz).
+ *
+ * freqs	(IN) The array of frequencies to print, in MHz.
+ * size		(IN) The size of the freqs array.
+ * l		(IN) The log level to print the frequencies at.
+ * freq_type	(IN) A short description of the frequencies to print.
+ */
+extern void gpu_common_print_freqs(unsigned int freqs[], unsigned int size,
+				   log_level_t l, char *freq_type)
+{
+	bool concise = false;
+
+	if (size > FREQS_CONCISE)
+		concise = true;
+
+	log_var(l, "        Possible %s Frequencies (%u):", freq_type, size);
+	log_var(l, "        ---------------------------------");
+
+	if (!concise) {
+		for (int i = 0; i < size; ++i)
+			log_var(l, "          *%u MHz [%u]", freqs[i], i);
+		return;
+	}
+
+	/* First, next, ..., middle, ..., penultimate, last */
+	log_var(l, "          *%u MHz [0]", freqs[0]);
+	log_var(l, "          *%u MHz [1]", freqs[1]);
+	log_var(l, "          ...");
+	log_var(l, "          *%u MHz [%u]",
+		freqs[(size - 1) / 2], (size - 1) / 2);
+	log_var(l, "          ...");
+	log_var(l, "          *%u MHz [%u]", freqs[size - 2], size - 2);
+	log_var(l, "          *%u MHz [%u]", freqs[size - 1], size - 1);
+}
+
 extern void gpu_common_underscorify_tolower(char *str)
 {
 	for (int i = 0; str[i]; i++) {
