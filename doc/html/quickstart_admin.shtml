@@ -234,7 +234,15 @@ established on your system. An <a href="accounting.html">Accounting</a> web
 page contains more information.</p>
 
 <p><b>slurmctld</b> and/or <b>slurmd</b> should be initiated at node startup
-time per the Slurm configuration.
+time per the Slurm configuration.</p>
+
+<p>The <b>slurmrestd</b> daemon was introduced in version 20.02 and allows
+clients to communicate with Slurm via the REST API. This is installed by
+default, assuming the <a href="rest.html#prereq">prerequisites</a> are met.
+It has two <a href="slurmrestd.html#SECTION_DESCRIPTION">run modes</a>,
+allowing you to have it run as a traditional Unix service and always listen
+for TCP connections, or you can have it run as an Inet service and only have
+it active when in use.</p>
 
 <h3 id="HA">High Availability<a class="slurm_link" href="#HA"></a></h3>
 
@@ -794,6 +802,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 17 November 2021</p>
+<p style="text-align:center;">Last modified 22 November 2021</p>
 
 <!--#include virtual="footer.txt"-->
