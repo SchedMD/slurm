@@ -39,24 +39,14 @@
 #define _GNU_SOURCE
 
 #include <dlfcn.h>
-
-#include "src/common/slurm_xlator.h"
-#include "src/common/cgroup.h"
-#include "src/common/gpu.h"
-#include "src/common/gres.h"
-#include "src/common/log.h"
-#include "src/common/read_config.h"
 #include <rocm_smi/rocm_smi.h>
+
+
+#include "../common/gpu_common.h"
 
 /*
  * #defines needed to test rsmi.
  */
-#define FREQS_CONCISE	5 // This must never be smaller than 5, or error
-
-#define GPU_LOW		((unsigned int) -1)
-#define GPU_MEDIUM	((unsigned int) -2)
-#define GPU_HIGH_M1	((unsigned int) -3)
-#define GPU_HIGH	((unsigned int) -4)
 
 static bitstr_t	*saved_gpus;
 
@@ -137,124 +127,6 @@ extern int fini(void)
 	rsmi_shut_down();
 
 	return SLURM_SUCCESS;
-}
-
-//TODO: Duplicated from NVML plugin. Move to a common directory
-static unsigned int _xlate_freq_value(char *gpu_freq)
-{
-	unsigned int value;
-
-	if (!gpu_freq && (gpu_freq[0] < '0') && (gpu_freq[0] > '9'))
-		return 0;	/* Not a numeric value */
-	value = strtoul(gpu_freq, NULL, 10);
-	return value;
-}
-
-//TODO: Duplicated from NVML plugin. Move to a common directory
-static unsigned int _xlate_freq_code(char *gpu_freq)
-{
-	//TODO: To be moved to common directory
-	if (!gpu_freq || !gpu_freq[0])
-		return 0;
-	if ((gpu_freq[0] >= '0') && (gpu_freq[0] <= '9'))
-		return 0;	/* Pure numeric value */
-	if (!strcasecmp(gpu_freq, "low"))
-		return GPU_LOW;
-	else if (!strcasecmp(gpu_freq, "medium"))
-		return GPU_MEDIUM;
-	else if (!strcasecmp(gpu_freq, "highm1"))
-		return GPU_HIGH_M1;
-	else if (!strcasecmp(gpu_freq, "high"))
-		return GPU_HIGH;
-
-	debug("%s: %s: Invalid job GPU frequency (%s)",
-	      plugin_type, __func__, gpu_freq);
-	return 0;	/* Bad user input */
-}
-
-//TODO: Duplicated from NVML plugin. Move to a common directory
-static void _parse_gpu_freq2(char *gpu_freq, unsigned int *gpu_freq_code,
-			     unsigned int *gpu_freq_value,
-			     unsigned int *mem_freq_code,
-			     unsigned int *mem_freq_value, bool *verbose_flag)
-{
-	char *tmp, *tok, *sep, *save_ptr = NULL;
-
-	if (!gpu_freq || !gpu_freq[0])
-		return;
-	tmp = xstrdup(gpu_freq);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		sep = strchr(tok, '=');
-		if (sep) {
-			sep[0] = '\0';
-			sep++;
-			if (!strcasecmp(tok, "memory")) {
-				*mem_freq_code = _xlate_freq_code(sep);
-				*mem_freq_value = _xlate_freq_value(sep);
-				if (!(*mem_freq_code) && !(*mem_freq_value)) {
-					debug("Invalid job GPU memory frequency: %s",
-					      tok);
-				}
-			} else {
-				debug("%s: %s: Invalid job device frequency type: %s",
-				      plugin_type, __func__, tok);
-			}
-		} else if (!strcasecmp(tok, "verbose")) {
-			*verbose_flag = true;
-		} else {
-			*gpu_freq_code = _xlate_freq_code(tok);
-			*gpu_freq_value = _xlate_freq_value(tok);
-			if (!(*gpu_freq_code) && !(*gpu_freq_value))
-				debug("Invalid job GPU frequency: %s", tok);
-		}
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
-}
-
-//TODO: Duplicated from NVML plugin. Move to a common directory
-static void _parse_gpu_freq(char *gpu_freq, unsigned int *gpu_freq_num,
-			    unsigned int *mem_freq_num, bool *verbose_flag)
-{
-	unsigned int def_gpu_freq_code = 0, def_gpu_freq_value = 0;
-	unsigned int def_mem_freq_code = 0, def_mem_freq_value = 0;
-	unsigned int job_gpu_freq_code = 0, job_gpu_freq_value = 0;
-	unsigned int job_mem_freq_code = 0, job_mem_freq_value = 0;
-	char *def_freq;
-
-	_parse_gpu_freq2(gpu_freq, &job_gpu_freq_code, &job_gpu_freq_value,
-			 &job_mem_freq_code, &job_mem_freq_value, verbose_flag);
-
-	// Defaults to high for both mem and gfx
-	def_freq = slurm_get_gpu_freq_def();
-	_parse_gpu_freq2(def_freq, &def_gpu_freq_code, &def_gpu_freq_value,
-			 &def_mem_freq_code, &def_mem_freq_value, verbose_flag);
-	xfree(def_freq);
-
-	if (job_gpu_freq_code)
-		*gpu_freq_num = job_gpu_freq_code;
-	else if (job_gpu_freq_value)
-		*gpu_freq_num = job_gpu_freq_value;
-	else if (def_gpu_freq_code)
-		*gpu_freq_num = def_gpu_freq_code;
-	else if (def_gpu_freq_value)
-		*gpu_freq_num = def_gpu_freq_value;
-
-	if (job_mem_freq_code)
-		*mem_freq_num = job_mem_freq_code;
-	else if (job_mem_freq_value)
-		*mem_freq_num = job_mem_freq_value;
-	else if (def_mem_freq_code)
-		*mem_freq_num = def_mem_freq_code;
-	else if (def_mem_freq_value)
-		*mem_freq_num = def_mem_freq_value;
-}
-
-//TODO: Duplicated from NVML plugin. Move to a common directory
-static int _sort_freq_descending(const void *a, const void *b)
-{
-	return (*(unsigned long *)b - *(unsigned long *)a);
 }
 
 /*
@@ -355,8 +227,8 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 	if (!_rsmi_get_mem_freqs(dv_ind, &size, mem_freqs))
 		return;
 
-	qsort(mem_freqs, size,
-	      sizeof(unsigned int), _sort_freq_descending);
+	qsort(mem_freqs, size, sizeof(unsigned int),
+	      gpu_common_sort_freq_descending);
 	if ((size > 1) && (mem_freqs[0] <= mem_freqs[(size)-1])) {
 		error("%s: memory frequencies are not stored in descending order!",
 		      __func__);
@@ -389,8 +261,8 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 	if (!_rsmi_get_gfx_freqs(dv_ind, &size, gfx_freqs))
 		return;
 
-	qsort(gfx_freqs, size,
-	      sizeof(unsigned int), _sort_freq_descending);
+	qsort(gfx_freqs, size, sizeof(unsigned int),
+	      gpu_common_sort_freq_descending);
 	if ((size > 1) && (gfx_freqs[0] <= gfx_freqs[(size)-1])) {
 		error("%s: Graphics frequencies are not stored in descending order!",
 		      __func__);
@@ -416,102 +288,6 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 	log_var(l, "          ...");
 	log_var(l, "          *%u MHz [%u]", gfx_freqs[size - 2], size - 2);
 	log_var(l, "          *%u MHz [%u]", gfx_freqs[size - 1], size - 1);
-}
-
-/*
- * Convert frequency to nearest valid frequency found in frequency array
- *
- * freq		(IN/OUT) The frequency to check, in MHz. Also the output, if
- *		it needs to be changed.
- * freqs_size	(IN) The size of the freqs array
- * freqs	(IN) An array of frequency values in MHz, sorted highest to
- *		lowest
- *
- * Inspired by src/common/cpu_frequency#_cpu_freq_freqspec_num()
- */
-//TODO: Duplicated from NVML plugin. Move to a common directory
-static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
-			      unsigned int *freqs)
-{
-	unsigned int i;
-
-	if (!freq || !(*freq)) {
-		log_flag(GRES, "%s: No frequency supplied", __func__);
-		return;
-	}
-	if (!freqs || !(*freqs)) {
-		log_flag(GRES, "%s: No frequency list supplied", __func__);
-		return;
-	}
-	if (freqs_size <= 0) {
-		log_flag(GRES, "%s: Frequency list is empty", __func__);
-		return;
-	}
-
-	// Check for special case values; freqs is sorted in descending order
-	switch ((*freq)) {
-	case GPU_LOW:
-		*freq = freqs[freqs_size - 1];
-		debug2("Frequency GPU_LOW: %u MHz", *freq);
-		return;
-
-	case GPU_MEDIUM:
-		*freq = freqs[(freqs_size - 1) / 2];
-		debug2("Frequency GPU_MEDIUM: %u MHz", *freq);
-		return;
-
-	case GPU_HIGH_M1:
-		if (freqs_size == 1)
-			*freq = freqs[0];
-		else
-			*freq = freqs[1];
-		debug2("Frequency GPU_HIGH_M1: %u MHz", *freq);
-		return;
-
-	case GPU_HIGH:
-		*freq = freqs[0];
-		debug2("Frequency GPU_HIGH: %u MHz", *freq);
-		return;
-
-	default:
-		debug2("Freq is not a special case. Continue...");
-		break;
-	}
-
-	/* check if freq is out of bounds of freqs */
-	if (*freq > freqs[0]) {
-		log_flag(GRES, "Rounding frequency %u MHz down to %u MHz",
-		         *freq, freqs[0]);
-		*freq = freqs[0];
-		return;
-	} else if (*freq < freqs[freqs_size - 1]) {
-		log_flag(GRES, "Rounding frequency %u MHz up to %u MHz",
-		         *freq, freqs[freqs_size - 1]);
-		*freq = freqs[freqs_size - 1];
-		return;
-	}
-
-	/* check for frequency, and round up if no exact match */
-	for (i = 0; i < freqs_size - 1;) {
-		if (*freq == freqs[i]) {
-			// No change necessary
-			debug2("No change necessary. Freq: %u MHz", *freq);
-			return;
-		}
-		i++;
-		/*
-		 * Step down to next element to round up.
-		 * Safe to advance due to bounds checks above here
-		 */
-		if (*freq > freqs[i]) {
-			log_flag(GRES, "Rounding frequency %u MHz up to %u MHz",
-			         *freq, freqs[i - 1]);
-			*freq = freqs[i - 1];
-			return;
-		}
-	}
-	error("%s: Got to the end of the function. Freq: %u MHz",
-	      __func__, *freq);
 }
 
 /*
@@ -543,8 +319,8 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind,
 		return;
 
 	memcpy(mem_freqs_sort, mem_freqs, mem_freqs_size*sizeof(unsigned int));
-	qsort(mem_freqs_sort, mem_freqs_size,
-	      sizeof(unsigned int), _sort_freq_descending);
+	qsort(mem_freqs_sort, mem_freqs_size, sizeof(unsigned int),
+	      gpu_common_sort_freq_descending);
 	if ((mem_freqs_size > 1) &&
 	    (mem_freqs_sort[0] <= mem_freqs_sort[(mem_freqs_size)-1])) {
 		error("%s: memory frequencies are not stored in descending order!",
@@ -553,7 +329,7 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind,
 	}
 
 	// Set the nearest valid memory frequency for the requested frequency
-	_get_nearest_freq(mem_freq, mem_freqs_size, mem_freqs_sort);
+	gpu_common_get_nearest_freq(mem_freq, mem_freqs_size, mem_freqs_sort);
 
 	// convert the frequency to bit mask
 	for (int i = 0; i < mem_freqs_size; i++)
@@ -567,8 +343,8 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind,
 		return;
 
 	memcpy(gfx_freqs_sort, gfx_freqs, gfx_freqs_size*sizeof(unsigned int));
-	qsort(gfx_freqs_sort, gfx_freqs_size,
-	      sizeof(unsigned int), _sort_freq_descending);
+	qsort(gfx_freqs_sort, gfx_freqs_size, sizeof(unsigned int),
+	      gpu_common_sort_freq_descending);
 	if ((gfx_freqs_size > 1) &&
 	    (gfx_freqs_sort[0] <= gfx_freqs_sort[(gfx_freqs_size)-1])) {
 		error("%s: graphics frequencies are not stored in descending order!",
@@ -577,7 +353,7 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind,
 	}
 
 	// Set the nearest valid graphics frequency for the requested frequency
-	_get_nearest_freq(gfx_freq, gfx_freqs_size, gfx_freqs_sort);
+	gpu_common_get_nearest_freq(gfx_freq, gfx_freqs_size, gfx_freqs_sort);
 
 	// convert the frequency to bit mask
 	for (int i = 0; i < gfx_freqs_size; i++)
@@ -717,27 +493,6 @@ static unsigned int _rsmi_get_mem_freq(uint32_t dv_ind)
 }
 
 /*
- * Convert a frequency value to a string
- * Returned string must be xfree()'ed
- */
-//TODO: Duplicated from NVML plugin. Move to a common directory
-static char *_freq_value_to_string(unsigned int freq)
-{
-	switch (freq) {
-	case GPU_LOW:
-		return xstrdup("low");
-	case GPU_MEDIUM:
-		return xstrdup("medium");
-	case GPU_HIGH:
-		return xstrdup("high");
-	case GPU_HIGH_M1:
-		return xstrdup("highm1");
-	default:
-		return xstrdup_printf("%u", freq);
-	}
-}
-
-/*
  * Reset the frequencies of each GPU in the step to the hardware default
  * NOTE: RSMI must be initialized beforehand
  *
@@ -764,8 +519,6 @@ static void _reset_freq(bitstr_t *gpus)
 		       _rsmi_get_mem_freq(i));
 		debug2("Graphics frequency after reset: %u",
 		       _rsmi_get_gfx_freq(i));
-
-		// TODO: Check to make sure that the frequency reset
 
 		if (freq_reset) {
 			log_flag(GRES, "Successfully reset GPU[%d]", i);
@@ -799,7 +552,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	int gpu_len = 0;
 	int i = -1, count = 0, count_set = 0;
 	unsigned int gpu_freq_num = 0, mem_freq_num = 0;
-	uint64_t mem_bitmask = 0, gpu_bitmask = 0;
 	bool freq_set = false, freq_logged = false;
 	char *tmp = NULL;
 	bool task_cgroup = false;
@@ -808,14 +560,15 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 
 	// Parse frequency information
 	debug2("_parse_gpu_freq(%s)", gpu_freq);
-	_parse_gpu_freq(gpu_freq, &gpu_freq_num, &mem_freq_num, &verbose_flag);
+	gpu_common_parse_gpu_freq(gpu_freq, &gpu_freq_num, &mem_freq_num,
+				  &verbose_flag);
 	if (verbose_flag)
 		debug2("verbose_flag ON");
 
-	tmp = _freq_value_to_string(mem_freq_num);
+	tmp = gpu_common_freq_value_to_string(mem_freq_num);
 	debug2("Requested GPU memory frequency: %s", tmp);
 	xfree(tmp);
-	tmp = _freq_value_to_string(gpu_freq_num);
+	tmp = gpu_common_freq_value_to_string(gpu_freq_num);
 	debug2("Requested GPU graphics frequency: %s", tmp);
 	xfree(tmp);
 
@@ -848,6 +601,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	// Set the frequency of each device allocated to the step
 	for (i = 0; i < gpu_len; i++) {
 		char *sep = "";
+		uint64_t mem_bitmask = 0, gpu_bitmask = 0;
 
 		// Only check the global GPU bitstring if not using cgroups
 		if (!cgroups_active && !bit_test(gpus, i)) {
@@ -967,6 +721,7 @@ static void _rsmi_get_device_name(uint32_t dv_ind, char *device_name,
 		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
 		error("RSMI: Failed to get name of the GPU: %s", status_string);
 	}
+	gpu_common_underscorify_tolower(device_name);
 }
 
 /*
