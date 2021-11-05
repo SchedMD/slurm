@@ -238,7 +238,7 @@ static int _pick_exc_nodes(void *x, void *arg)
 			    IS_NODE_COMPLETING(node_ptr)		||
 			    IS_NODE_DOWN(node_ptr)			||
 			    IS_NODE_DRAIN(node_ptr)			||
-			    IS_NODE_POWERING_UP(node_ptr)			||
+			    IS_NODE_POWERING_UP(node_ptr)		||
 			    IS_NODE_POWERED_DOWN(node_ptr)		||
 			    IS_NODE_POWERING_DOWN(node_ptr)		||
 			    (node_ptr->sus_job_cnt > 0))
