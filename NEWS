@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix tight loop sending DBD_SEND_MULT_JOB_START when the slurmctld has an
     issue talking correctly to the DBD.
  -- Fix memory leak in step creation.
+ -- Fix potential deadlock when shutting down slurmctld.
 
 * Changes in Slurm 21.08.3
 ==========================

@@ -851,9 +851,6 @@ static void *_sched_agent(void *args)
 			} else {
 				slurm_cond_wait(&sched_cond, &sched_mutex);
 			}
-
-			if (slurmctld_config.shutdown_time)
-				return NULL;
 		}
 
 		full_queue = sched_full_queue;
