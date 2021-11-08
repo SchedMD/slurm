@@ -27,6 +27,14 @@ and compiler flags, and any patches would be appreciated.
 </ul>
 </p>
 
+<h2 id="database">Databases<a class="slurm_link" href="#database"></a></h2>
+<p>Slurm will be built with support for MySQL if it finds supported
+development libraries at build time. Although it is possible to build Slurm
+against older versions of MySQL, it is not recommended. SchedMD recommends
+you use modern versions of MySQL or MariaDB, preferably versions newer
+than MySQL 5.5.
+</p>
+
 <h2 id="accel">Accelerators<a class="slurm_link" href="#accel"></a></h2>
 
 <p>Slurm has optional support for managing a variety of accelerator cards.
@@ -37,6 +45,6 @@ Specific plugins have been developed for:
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 14 November 2019</p>
+<p style="text-align:center;">Last modified 7 December 2021</p>
 
 <!--#include virtual="footer.txt"-->
