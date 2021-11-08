@@ -40,7 +40,7 @@ proc inc3_11_10 {} {
 	}
 
 	# Test for reservation conflict
-	set ret_code [create_res $res_name_test "StartTime=now Duration=120 NodeCnt=1 user=$user_name"]
+	set ret_code [create_res $res_name_test "StartTime=now Duration=180 NodeCnt=1 user=$user_name"]
 	if {! [
 		subtest {$ret_code != 0} "Present conflicting reservation should not have been created"
 	]} {
@@ -48,7 +48,7 @@ proc inc3_11_10 {} {
 	}
 
 	# Test for reservation conflict
-	set ret_code [create_res $res_name_test "StartTime=now+6days Duration=120 NodeCnt=1 user=$user_name"]
+	set ret_code [create_res $res_name_test "StartTime=now+6days Duration=180 NodeCnt=1 user=$user_name"]
 	if {! [
 		subtest {$ret_code != 0} "Future conflicting reservation should not have been created"
 	]} {
