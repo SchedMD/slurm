@@ -1591,7 +1591,6 @@ static void _agent_retry(int min_wait, bool mail_too)
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
-	ListIterator retry_iter;
 	mail_info_t *mi = NULL;
 
 	slurm_mutex_lock(&retry_mutex);
@@ -1604,6 +1603,7 @@ static void _agent_retry(int min_wait, bool mail_too)
 		    ((list_size > 0) &&
 		     (slurm_conf.debug_flags & DEBUG_FLAG_AGENT))) {
 			/* Note sizable backlog (retry_list_size()) of work */
+			ListIterator retry_iter;
 			retry_iter = list_iterator_create(retry_list);
 			while ((queued_req_ptr = list_next(retry_iter))) {
 				agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
