@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     issue talking correctly to the DBD.
  -- Fix memory leak in step creation.
  -- Fix potential deadlock when shutting down slurmctld.
+ -- Fix regression in 21.08 where multi-node steps that requested MemPerCPU
+    were not counted against the job's memory allocation on some nodes.
 
 * Changes in Slurm 21.08.3
 ==========================

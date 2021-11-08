@@ -1914,9 +1914,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
-	int cpus_alloc, cpus_alloc_mem;
+	int cpus_alloc, cpus_alloc_mem, cpu_array_inx = 0;
 	int i_node, i_first, i_last;
-	int job_node_inx = -1, step_node_inx = -1;
+	int job_node_inx = -1, step_node_inx = -1, node_cnt = 0;
 	bool first_step_node = true, pick_step_cores = true;
 	bool all_job_mem = false;
 	uint32_t rem_nodes;
@@ -1973,6 +1973,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		uint64_t gres_step_node_mem_alloc = 0;
+
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
 			continue;
 		job_node_inx++;
@@ -1994,9 +1995,15 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		if (first_step_node)
 			step_ptr->cpu_count = 0;
 
+		if ((++node_cnt) >
+		    job_resrcs_ptr->cpu_array_reps[cpu_array_inx]) {
+			cpu_array_inx++;
+			node_cnt = 0;
+		}
+
 		if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc_mem =
-				job_resrcs_ptr->cpu_array_value[job_node_inx];
+				job_resrcs_ptr->cpu_array_value[cpu_array_inx];
 			cpus_alloc =
 				job_resrcs_ptr->cpus[job_node_inx];
 		} else {
@@ -2015,7 +2022,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			if (all_job_mem)
 				cpus_alloc_mem =
 					job_resrcs_ptr->
-					cpu_array_value[job_node_inx];
+					cpu_array_value[cpu_array_inx];
 			else
 				cpus_alloc_mem = cpus_alloc;
 
