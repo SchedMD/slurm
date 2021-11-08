@@ -45,6 +45,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
+#include "src/common/hash.h"
 
 #define OPT_LONG_HIDE    0x102
 #define OPT_LONG_LOCAL   0x103
@@ -932,6 +933,58 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		}
 		exit_flag = 1;
+	} else if (!xstrncasecmp(tag, "hash_file", MAX(tag_len, 15))) {
+		if (argc > 3) {
+			exit_code = 1;
+			fprintf(stderr, "too many arguments for keyword:%s\n",
+				tag);
+		} else if (argc < 2) {
+			exit_code = 1;
+			fprintf(stderr, "missing argument for keyword:%s\n",
+				tag);
+		} else {
+			int hash_len;
+			buf_t *buf;
+			slurm_hash_t hash = { 0 };
+
+			if (argc > 2)
+				hash.type = atoi(argv[2]);
+
+			if (!(buf = create_mmap_buf(argv[1]))) {
+				exit_code = 1;
+				fprintf(stderr, "Can't open `%s`\n", argv[1]);
+			} else {
+				hash_len = hash_g_compute(buf->head, buf->size,
+							  NULL, 0, &hash);
+
+				free_buf(buf);
+				for (int i = 0; i < hash_len; i++)
+					printf("%02x", (int)hash.hash[i]);
+				printf("\n");
+			}
+		}
+	} else if (!xstrncasecmp(tag, "hash", MAX(tag_len, 9))) {
+		if (argc > 3) {
+			exit_code = 1;
+			fprintf(stderr, "too many arguments for keyword:%s\n",
+				tag);
+		} else if (argc < 2) {
+			exit_code = 1;
+			fprintf(stderr, "missing argument for keyword:%s\n",
+				tag);
+		} else {
+			int hash_len;
+			slurm_hash_t hash = { 0 };
+
+			if (argc > 2)
+				hash.type = atoi(argv[2]);
+
+			hash_len = hash_g_compute(argv[1], strlen(argv[1]),
+						  NULL, 0, &hash);
+			for (int i = 0; i < hash_len; i++)
+				printf("%02x", (int)hash.hash[i]);
+			printf("\n");
+		}
 	}
 	else if (xstrncasecmp(tag, "help", MAX(tag_len, 2)) == 0) {
 		if (argc > 1) {
