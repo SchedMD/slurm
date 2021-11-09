@@ -290,14 +290,12 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		*cpu_alloc_size = MIN(*cpu_alloc_size, ncpus_per_core);
 		ntasks_per_socket = mc_ptr->ntasks_per_socket;
 
-		if ((ncpus_per_core != NO_VAL16) &&
-		    (ncpus_per_core != INFINITE16) &&
+		if ((ncpus_per_core != INFINITE16) &&
 		    (ncpus_per_core > threads_per_core)) {
 			goto fini;
 		}
 		threads_per_socket = threads_per_core * cores_per_socket;
-		if ((ntasks_per_socket != NO_VAL16) &&
-		    (ntasks_per_socket != INFINITE16) &&
+		if ((ntasks_per_socket != INFINITE16) &&
 		    (ntasks_per_socket > threads_per_socket)) {
 			goto fini;
 		}
@@ -567,8 +565,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	 * Step 4 - make sure that ntasks_per_socket is enforced when
 	 *          allocating cores
 	 */
-	if ((ntasks_per_socket != NO_VAL16) &&
-	    (ntasks_per_socket != INFINITE16) &&
+	if ((ntasks_per_socket != INFINITE16) &&
 	    (ntasks_per_socket >= 1)) {
 		cps = ntasks_per_socket;
 		if (cpus_per_task > 1)
