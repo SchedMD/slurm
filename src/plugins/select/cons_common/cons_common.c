@@ -403,7 +403,8 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 			if ((part_cpu_limit == 1) &&
 			    (((ntasks_per_core != INFINITE16) &&
 			      (ntasks_per_core > part_cpu_limit)) ||
-			     (ntasks_per_socket > part_cpu_limit) ||
+			     ((ntasks_per_socket != INFINITE16) &&
+			      (ntasks_per_socket > part_cpu_limit)) ||
 			     ((ncpus_per_core != INFINITE16) &&
 			      (ncpus_per_core > part_cpu_limit)) ||
 			     (cpus_per_task > part_cpu_limit))) {
