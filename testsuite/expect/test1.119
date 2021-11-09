@@ -26,9 +26,9 @@
 ############################################################################
 source ./globals
 
-set file_in  "$test_name.input"
-set file_out "$test_name.output"
-set job_list ""
+set file_in  "$test_dir/input"
+set file_out "$test_dir/output"
+set job_list [list]
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front end systems"
@@ -69,8 +69,8 @@ if {[lindex $sockets_per_node 0] != [lindex $sockets_per_node 1]} {
 ################################################################################
 
 proc cleanup {} {
-	global bin_rm file_in file_out job_list
-	exec $bin_rm -f $file_in $file_out
+	global job_list
+
 	cancel_job $job_list
 }
 
@@ -123,15 +123,13 @@ proc test_sbatch {expected_tasks args {env ""}} {
 	set match0 0
 	set match1 0
 
-	set job_id [submit_job -fail -env $env "$args -t1 -o $file_out -J $test_name ./$file_in"]
+	set job_id [submit_job -fail -env $env "$args -t1 -o $file_out -J $test_name $file_in"]
 	lappend job_list $job_id
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
 		fail "Job $job_id did not complete"
 	}
-	if {[wait_for_file $file_out] != 0} {
-		fail "No output file"
-	}
+	wait_for_file -fail $file_out
 	set output [run_command_output -fail "$bin_cat $file_out"]
 	set match  [regexp -all {[0|1]} $output]
 	subtest {$match == $expected_tasks} "Number of tasks bound to 1 GPU should be $expected_tasks" "$match != $expected_tasks"
@@ -143,7 +141,7 @@ proc test_sbatch {expected_tasks args {env ""}} {
 ################################################################################
 
 proc test_invalid {cmd args {env ""}} {
-	global srun file_in file_out test_name number
+	global srun file_out test_name number
 	global bin_cat job_list
 
 	set job_id 0
@@ -158,13 +156,13 @@ proc test_invalid {cmd args {env ""}} {
 		subtest {$job_id == 0} "sbatch should have failed due to invalid argument combination: $args$env_str" "$job_id != 0"
 		lappend job_list $job_id
 	} elseif {$cmd == "srun"} {
-		set exit_code 0
+		set rc 0
 		if {$env != ""} {
-			set exit_code [run_command_status "env $env $srun $args -t1 sleep 30"]
+			set rc [run_command_status "env $env $srun $args -t1 sleep 30"]
 		} else {
-			set exit_code [run_command_status "$srun $args -t1 sleep 30"]
+			set rc [run_command_status "$srun $args -t1 sleep 30"]
 		}
-		subtest {$exit_code == 1} "srun should have failed due to invalid argument combination: $args$env_str" "$job_id != 0"
+		subtest {$rc == 1} "srun should have failed due to invalid argument combination: $args$env_str" "$job_id != 0"
 	} else {
 		fail "`$cmd` is invalid"
 	}

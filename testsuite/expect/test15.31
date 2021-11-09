@@ -59,15 +59,13 @@ if [set_partition_maximum_time_limit "" -1] {
 # Spawn a job that deadline is too short
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 --deadline now+1hour -t120 $bin_sleep 1]
+spawn $salloc -N1 --deadline now+1hour -t120 $bin_sleep 1
 expect {
 	-re "Requested time limit is invalid" {
-		set exit_code 1
-		exp_continue
+		fail "Requested time limit is invalid"
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		set exit_code 0
 		exp_continue
 	}
 	timeout {
@@ -88,8 +86,7 @@ if {$job_id != 0} {
 			log_debug "Timelimit OK"
 		}
 		-re "TimeLimit=" {
-			log_error "Timelimit not OK with deadline"
-			set exit_code 1
+			fail "Timelimit not OK with deadline"
 		}
 		timeout {
 			fail "scontrol not responding"
