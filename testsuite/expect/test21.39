@@ -28,12 +28,13 @@
 source ./globals
 source ./globals_accounting
 
-set part_name   "test$test_id\_part"
-set ta1		"test$test_id-account.1"
-set ta2		"test$test_id-account.2"
-set tu1     [get_my_user_name]
-set tq1     "test$test_id-qos.1"
-set tq2     "test$test_id-qos.2"
+set part_name   "${test_name}_part"
+set ta1         "${test_name}-account.1"
+set ta2         "${test_name}-account.2"
+set tu1         [get_my_user_name]
+set tq1         "${test_name}-qos.1"
+set tq2         "${test_name}-qos.2"
+set job_id_1    0
 
 # account options
 array set acct_1 {}
@@ -76,9 +77,9 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-proc check_rc { exit_code } {
-	if {$exit_code != 0} {
-		fail "Subcommand failed with exit code $exit_code"
+proc check_rc { rc } {
+	if {$rc != 0} {
+		fail "Subcommand failed with return code $rc"
 	}
 }
 
@@ -112,7 +113,9 @@ proc cleanup_accounts {} {
 }
 
 proc cleanup { } {
-	global config_file part_name
+	global job_id_1 config_file part_name
+
+	cancel_job $job_id_1
 
 	cleanup_accounts
 
@@ -126,7 +129,7 @@ proc test_salloc { qos account num_nodes } {
 	set rc -12345
 	set job_id 0
 
-	set my_pid [spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes $bin_bash]
+	spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes $bin_bash
 	expect {
 		-re "allocation ($number)" {
 			set job_id $expect_out(1,string)
