@@ -162,46 +162,6 @@ extern bool gres_sched_test(List job_gres_list, uint32_t job_id)
 }
 
 /*
- * Return TRUE if all gres_per_job specifications will be satisfied with
- *	the addtitional resources provided by a single node
- * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
- * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
- * IN job_id - The job being tested
- */
-extern bool gres_sched_test2(List job_gres_list, List sock_gres_list,
-			     uint32_t job_id)
-{
-	ListIterator iter;
-	gres_state_t *job_gres_state;
-	gres_job_state_t *job_data;
-	sock_gres_t *sock_data;
-	bool rc = true;
-
-	if (!job_gres_list)
-		return rc;
-
-	iter = list_iterator_create(job_gres_list);
-	while ((job_gres_state = list_next(iter))) {
-		job_data = (gres_job_state_t *) job_gres_state->gres_data;
-		if ((job_data->gres_per_job == 0) ||
-		    (job_data->gres_per_job < job_data->total_gres))
-			continue;
-		sock_data = list_find_first(sock_gres_list,
-					    gres_find_sock_by_job_state,
-					    job_gres_state);
-		if (!sock_data ||
-		    (job_data->gres_per_job >
-		     (job_data->total_gres + sock_data->total_cnt))) {
-			rc = false;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return rc;
-}
-
-/*
  * Update a job's total_gres counter as we add a node to potential allocation
  * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
  * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)

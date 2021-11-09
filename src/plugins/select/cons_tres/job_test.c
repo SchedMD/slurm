@@ -908,11 +908,10 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 					if (avail_cpu_per_node[i] < rem_cpus)
 						continue;
 					if (gres_per_job &&
-					    !gres_sched_test2(
+					    !gres_sched_sufficient(
 						    job_ptr->gres_list_req,
 						    avail_res_array[i]->
-						    sock_gres_list,
-						    job_ptr->job_id)) {
+						    sock_gres_list)) {
 						continue;
 					}
 					if ((best_fit == -1) ||
