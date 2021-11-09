@@ -32,6 +32,7 @@ import os
 import re
 import sys
 import time
+import signal
 from optparse import OptionParser
 from optparse import OptionValueError
 from subprocess import Popen
@@ -44,6 +45,7 @@ def main(argv=None):
     passed_tests = []
     skipped_tests = []
     begin = (1,1)
+    abort = False
 
     # Handle command line parameters
     if argv is None:
@@ -131,8 +133,14 @@ def main(argv=None):
             t1 = time.time()
             test_dict['start_time'] = float("%.03f" % t1)
 
-        retcode = Popen(('expect', test[2]), shell=False,
-                        env=test_env, stdout=testlog, stderr=testlog).wait()
+        try:
+            child = Popen(('expect', test[2]), shell=False,
+                            env=test_env, stdout=testlog, stderr=testlog)
+            retcode = child.wait()
+        except KeyboardInterrupt:
+            child.send_signal(signal.SIGINT)
+            retcode = child.wait()
+            abort = True
 
         if options.time_individual:
             t2 = time.time()
@@ -224,6 +232,10 @@ def main(argv=None):
                 break
         sys.stdout.flush()
 
+        if abort:
+            sys.stdout.write('\nRegression interrupted!\n')
+            break
+
     end_time = time.time()
     print('Ended:', time.asctime(time.localtime(end_time)), file=sys.stdout)
     print('\nTestsuite ran for %d minutes %d seconds'\
@@ -247,6 +259,11 @@ def main(argv=None):
             sys.stdout.write('%d.%d'%(test[0], test[1]))
         sys.stdout.write('\n')
         sys.stdout.flush()
+
+    if abort:
+        print('INCOMPLETE', file=sys.stdout)
+
+    if len(failed_tests) > 0:
         return 1
 
 def test_in_list(major, minor, test_list):
