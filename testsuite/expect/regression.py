@@ -189,7 +189,7 @@ def main(argv=None):
                     if re.search(r'^(?:SUCCESS\|SKIPPED\|FAILURE)\s+: test', line):
                         continue
 
-            if fatals and not re.search(r'previous errors', fatals[0]):
+            if fatals:
                 test_dict['reason'] = fatals[0]
             elif errors:
                 test_dict['reason'] = errors[0]
