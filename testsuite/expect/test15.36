@@ -28,11 +28,17 @@ source ./globals
 
 set job_id      0
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 #
 # Spawn a batch job with a deadline and no time
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 --begin now+2hour --deadline now+1hour $bin_sleep 1]
+spawn $salloc -N1 --begin now+2hour --deadline now+1hour $bin_sleep 1
 expect {
 	-re "Requested time limit is invalid" {
 		fail "Requested time limit is invalid"
