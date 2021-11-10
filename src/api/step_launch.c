@@ -1648,6 +1648,13 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 #endif
 
 	slurm_mutex_lock(&sls->lock);
+	for (int i = 0; i < sls->layout->tasks[nodeid]; i++) {
+		debug2("marking task %d done on failed node %d",
+		       sls->layout->tids[nodeid][i], nodeid);
+		bit_set(sls->tasks_started, sls->layout->tids[nodeid][i]);
+		bit_set(sls->tasks_exited, sls->layout->tids[nodeid][i]);
+	}
+
 	sls->abort = true;
 	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
