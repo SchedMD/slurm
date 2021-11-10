@@ -259,7 +259,6 @@ void slurm_print_cpu_bind_help(void)
 "        cores           auto-generated masks bind to cores\n"
 "        threads         auto-generated masks bind to threads\n"
 "        ldoms           auto-generated masks bind to NUMA locality domains\n"
-"        boards          auto-generated masks bind to boards\n"
 "        help            show this help message\n");
 	}
 }
