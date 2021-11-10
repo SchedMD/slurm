@@ -318,7 +318,7 @@ expect {
 		exp_continue
 	}
 	-re "(null)" {
-		fail "NO MCS-label for this job"
+		fail "No MCS-label for this job"
 	}
 	timeout {
 		fail "squeue is not responding"
@@ -359,7 +359,7 @@ if {$found == 0} {
 spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
 expect {
 	-re "MCS_label=$group1" {
-		fail "A mcs_label is found for this job. It was not expected"
+		fail "An mcs_label is found for this job. It was not expected"
 	}
 	-re "MCS_label=N/A" {
 		log_debug "No mcs_label for this node. It was expected"

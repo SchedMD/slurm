@@ -52,7 +52,7 @@ proc add_lic { license } {
 	}
 
 	if {$added != 1} {
-		fail "sacctmgr did not add license: $license"
+		fail "sacctmgr did not add license ($license)"
 	}
 }
 
@@ -75,7 +75,7 @@ proc delete_lic { license } {
 	}
 
 	if { $deleted != 1 } {
-		fail "sacctmgr could not delete license: $license"
+		fail "sacctmgr could not delete license ($license)"
 	}
 }
 

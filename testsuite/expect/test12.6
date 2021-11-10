@@ -90,7 +90,7 @@ expect {
 		fail "Something happened on start of job"
 	}
 	timeout {
-		fail "Srun not responding"
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -101,10 +101,10 @@ set timeout 10
 spawn $sh5util -j $job_id
 expect {
 	"Output file generated is empty" {
-		fail "Sh5util merge didn't make anything"
+		fail "sh5util merge didn't make anything"
 	}
 	timeout {
-		fail "Sh5util merge not responding"
+		fail "sh5util merge not responding"
 	}
 	eof {
 		wait
@@ -114,10 +114,10 @@ expect {
 spawn $sh5util -j $job_id -E -l Node:TimeSeries -s Tasks -o $file_out
 expect {
 	"Output file generated is empty" {
-		fail "Sh5util extract didn't make anything"
+		fail "sh5util extract didn't make anything"
 	}
 	timeout {
-		fail "Sh5util extract not responding"
+		fail "sh5util extract not responding"
 	}
 	eof {
 		wait
@@ -192,9 +192,9 @@ while {$fd > 0 && [gets $fd line] != -1} {
 close $fd
 
 if {$lno == 0} {
-	fail "$file_out is empty"
+	fail "Output file ($file_out) is empty"
 }
 
 if {$nerr > 3} {
-	fail "$nerr is too many values out of range"
+	fail "Too many values out of range ($nerr)"
 }

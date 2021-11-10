@@ -103,8 +103,8 @@ wait_for_file -fail $mail_prog_out
 
 set output [run_command_output -fail "$bin_cat $mail_prog_out"]
 if {![regexp "-s Slurm Job_id=$job_id Name=$test_name Began" $output]} {
-	fail "Began mail not sent for $job_id"
+	fail "Began mail not sent for job ($job_id)"
 }
 if {![regexp "-s Slurm Job_id=$job_id Name=$test_name Ended" $output]} {
-	fail "Ended mail not sent for $job_id"
+	fail "Ended mail not sent for job ($job_id)"
 }

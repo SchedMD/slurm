@@ -209,7 +209,7 @@ if [add_cluster $cluster2 [array get clus_req]] {
 
 # Add accounts
 if [add_acct "$account1,$account2" [array get acct_req1]] {
-	fail "Unable to add account ($account1,$account2)"
+	fail "Unable to add accounts ($account1,$account2)"
 }
 
 # Add accounts
@@ -267,7 +267,7 @@ expect {
 }
 
 if {!$user1acct1 || !$user1acct2 || !$user1acct3 || !$user2acct1 || !$user2acct2|| !$user2acct3} {
-	fail "Didn't get one of the user associations $user1acct1 $user1acct2 $user1acct3 $user2acct1 $user2acct2 $user2acct3"
+	fail "Didn't get one of the user associations ($user1acct1,$user1acct2,$user1acct3,$user2acct1,$user2acct2,$user2acct3)"
 }
 
 # Get the wckey ids for the jobs we plan to add
@@ -298,7 +298,7 @@ if {!$user1wckey1 || !$user2wckey1} {
 	remove_user "" "" $users
 	remove_acct "" $accounts
 	remove_cluster "$cluster1"
-	fail "Didn't get one of the user wckeys $user1wckey1 $user2wckey1"
+	fail "Didn't get one of the user wckeys ($user1wckey1,$user2wckey1)"
 }
 
 proc test_fed {} {
@@ -457,7 +457,7 @@ proc create_sql {cluster sql_in sql_rem} {
 	}
 
 	if {$matches != 3} {
-		fail "Job wasn't loaded correctly with only $matches"
+		fail "Job wasn't loaded correctly ($matches != 3)"
 	}
 
 	#
@@ -491,7 +491,7 @@ proc create_sql {cluster sql_in sql_rem} {
 	}
 
 	if {$matches != 2} {
-		fail "Cluster env wasn't loaded correctly with only $matches"
+		fail "Cluster env wasn't loaded correctly ($matches != 2)"
 	}
 
 	#

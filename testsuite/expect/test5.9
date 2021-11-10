@@ -136,7 +136,7 @@ if {$sq_format(ntpernode) > $core_cnt} {
 }
 
 if {$sq_format(ntpersocket) == 0 || $sq_format(cpuspertask) == 0} {
-	fail "failed to get number of threads or cores ThreadsPerCore=$sq_format(cpuspertask) & CoresPerSocket=$sq_format(ntpersocket)"
+	fail "Failed to get number of threads or cores ThreadsPerCore=$sq_format(cpuspertask) & CoresPerSocket=$sq_format(ntpersocket)"
 }
 
 # Remove the tmp script and cancel tmp job

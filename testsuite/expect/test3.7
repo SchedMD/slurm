@@ -151,7 +151,7 @@ expect {
 	}
 }
 if {$host_name eq ""} {
-	fail "Did not get hostname for job $job_id1"
+	fail "Did not get hostname for job ($job_id1)"
 }
 # Submit another job to that same node
 set job_id2 [submit_job -fail "-N1 -t2 --output=$file_out2 --mem=${job_mem} $file_prog_sh2"]

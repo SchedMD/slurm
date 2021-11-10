@@ -87,7 +87,7 @@ proc sbatch { options regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "batch submit failure: expected $regex"
+		fail "Batch submit failure (expected $regex)"
 	}
 
 	return $job_id
@@ -108,7 +108,7 @@ proc squeue { regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Unexpected error in squeue. expected $regex"
+		fail "Unexpected error in squeue (expected $regex)"
 	}
 }
 
@@ -183,7 +183,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -213,7 +213,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -243,7 +243,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 log_info "################################################################"

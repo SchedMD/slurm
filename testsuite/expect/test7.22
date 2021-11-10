@@ -131,9 +131,9 @@ proc test_bf {job_pd_args job_bf_args bf_expected} {
 	}
 	if {!$end} {
 		if {$bf_expected} {
-			subfail "Job $job_bf should be backfilled before job $job_pd (condition not reached after $bf_interval3)"
+			subfail "Job ($job_bf) should be backfilled before job ($job_pd) (condition not reached after $bf_interval3)"
 		} else {
-			subfail "Job $job_bf should NOT be backfilled before job $job_pd (condition not reached after $bf_interval5)"
+			subfail "Job ($job_bf) should NOT be backfilled before job ($job_pd) (condition not reached after $bf_interval5)"
 		}
 	}
 	cleanup

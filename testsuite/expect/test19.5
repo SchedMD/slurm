@@ -165,7 +165,7 @@ expect {
 #	Trigger events happen on a periodic basis, so there is likely to
 #	be a delay up to 20 seconds
 if {$run_time < 30 || $run_time > 59} {
-	fail "File $file_out_time contents are bad, run time"
+	fail "File ($file_out_time) contents are bad, run time"
 }
 wait_for_file -fail $file_out_fini
 #	Check that job run time was one minute. If Slurm is configured to
@@ -193,7 +193,7 @@ if {$job_fini == 0} {
 	if {$job_purge == 1 && $min_job_age < 60} {
 		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
 	} elseif [regexp {^(?:NONE|0 sec)$} [get_config_param "SuspendTime"]] {
-		fail "Power save mode is enabled. File $file_out_fini contents are bad, CD run time"
+		fail "Power save mode is enabled. File ($file_out_fini) contents are bad, CD run time"
 	} else {
 		log_warn "Job timeout bad, possibly due to power save mode"
 	}

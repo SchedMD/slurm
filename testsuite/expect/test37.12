@@ -96,7 +96,7 @@ proc sbatch_to { options regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Batch submit failure: expected $regex"
+		fail "Batch submit failure (expected $regex)"
 	}
 
 	return $job_id
@@ -126,7 +126,7 @@ proc srun { options regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "srun failure: expected $regex"
+		fail "srun failure (expected $regex)"
 	}
 	return $job_id
 
@@ -206,7 +206,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error: Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -236,7 +236,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -266,7 +266,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 make_bash_script $file_in2 "sleep 900"

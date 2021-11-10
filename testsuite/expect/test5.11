@@ -268,7 +268,7 @@ expect {
 }
 
 if {!$match} {
-	fail "Partition $test_part was not created"
+	fail "Partition ($test_part) was not created"
 }
 
 # Choose a cpu count greater then highest cpu node

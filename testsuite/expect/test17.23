@@ -81,7 +81,7 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	fail "Sbatch submit failed"
+	fail "sbatch submit failed"
 }
 
 spawn $sbatch --output=/dev/null --error=/dev/null -t2 --nice=200 $file_in

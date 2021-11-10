@@ -52,7 +52,7 @@ proc inc21_30_8 {} {
 						log_debug "Job $inx $job_id($inx) was submitted"
 						incr jobmatch
 					} else {
-						error "Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num?"
+						error "Job $inx ($job_id($inx)) wasn't suppose to work but it did, limit was $check_num"
 					}
 				}
 				-re "error" {
@@ -73,7 +73,7 @@ proc inc21_30_8 {} {
 		}
 
 		set target_jobs [expr $check_num + 1]
-		subtest {$jobmatch == $target_jobs} "All ($target_jobs) jobs should have been submitted" "Only $jobmatch jobs were submitted"
+		subtest {$jobmatch == $target_jobs} "All $target_jobs jobs should have been submitted" "Only $jobmatch jobs were submitted"
 
 		for {set inx 0} {$inx <= $check_num} {incr inx} {
 			if [info exists job_id($inx)] {

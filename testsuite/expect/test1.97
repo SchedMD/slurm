@@ -256,7 +256,7 @@ proc submit_tasks {ntasks ntaskpn} {
 	}
 
 	if {$x != 3} {
-		fail "srun did not submit the jobs correctly $x != 3"
+		fail "srun did not submit the jobs correctly ($x != 3)"
 	}
 }
 

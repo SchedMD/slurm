@@ -231,8 +231,8 @@ proc get_clusterfed_info { fed_name } {
 	global sacctmgr eol
 	set matches 0
 	array set clusters {}
-	set my_pid [spawn $sacctmgr show cluster federation=$fed_name \
-		    format="cluster%20,federation%20,id,controlhost,controlport,features,fedstate"]
+	spawn $sacctmgr show cluster federation=$fed_name \
+		    format="cluster%20,federation%20,id,controlhost,controlport,features,fedstate"
 	expect {
 		-re "Cluster\\s+Federation\\s+ID\\s+ControlHost\\s+ControlPort\\s+Features\\s+FedState $eol" {
 			incr matches
@@ -248,7 +248,6 @@ proc get_clusterfed_info { fed_name } {
 			exp_continue
 		}
 		timeout {
-			slow_kill $my_pid
 			fail "sacctmgr add not responding"
 		}
 		eof {
@@ -256,7 +255,7 @@ proc get_clusterfed_info { fed_name } {
 		}
 	}
 	if {$matches < 2} {
-		fail "$matches didn't match enough clusters for $fed_name"
+		fail "Didn't match enough clusters for federation ($fed_name) ($matches < 2)"
 	}
 
 	return [array get clusters]
@@ -300,7 +299,7 @@ proc add_cluster_to_fed {cname fed_name} {
 		}
 	}
 	if {$rc || $matches != 4} {
-		log_error "$matches failed to add $cname to $fed_name"
+		log_error "Failed to add $cname to $fed_name ($matches != 4)"
 		set $rc $::RETURN_ERROR
 	}
 

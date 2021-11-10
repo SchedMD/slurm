@@ -92,7 +92,7 @@ subtest -fail { $count == $count_exp } "Jobs have requested feature $node_featur
 
 # Cancel the jobs and wait for them to purged from the controller
 if [cancel_job $job_id] {
-	fail "Problem cancelling job $job_id"
+	fail "Problem cancelling job ($job_id)"
 }
 
 set sleep_time $min_job_age

@@ -49,7 +49,7 @@ proc check_error {client option prog error} {
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			fail "$client not responding"
+			fail "[file tail $client] not responding"
 		}
 		eof {
 			wait
@@ -101,7 +101,7 @@ proc mutual_error_tests {} {
 				set job_id $expect_out(1,string)
 			}
 			timeout {
-				fail "$client not responding"
+				fail "[file tail $client] not responding"
 			}
 			eof {
 				wait
@@ -136,7 +136,7 @@ foreach option $options {
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			fail "$client not responding"
+			fail "[file tail $client] not responding"
 		}
 		eof {
 			wait

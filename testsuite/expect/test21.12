@@ -111,10 +111,10 @@ expect {
 		exp_continue
 	}
 	-re "$tc2.$ta1" {
-		fail "$ta1 account erroneously added to $tc2"
+		fail "Account 1 ($ta1) erroneously added to cluster 2 ($tc2)"
 	}
 	-re "$tc2.$ta2" {
-		fail "$ta2 account erroneously added to $tc2"
+		fail "Account 2 ($ta2) erroneously added to cluster 2 ($tc2)"
 	}
 	timeout {
 		fail "sacctmgr list associations not responding"
@@ -125,7 +125,7 @@ expect {
 }
 
 if {$almatches != 2} {
-	fail "Added associations not found. Need 2 matches and got $almatches instead"
+	fail "Added associations not found (Need 2 matches and got $almatches instead)"
 }
 
 if {![check_acct_associations]} {
@@ -154,5 +154,5 @@ expect {
 }
 
 if {$aclmatches != 2} {
-	fail "Added account incorrect. Need 2 matches and got $aclmatches instead"
+	fail "Added account incorrect (Need 2 matches and got $aclmatches instead)"
 }

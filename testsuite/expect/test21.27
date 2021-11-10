@@ -57,6 +57,7 @@ if {![check_user_id $tu3]} {
 
 proc cleanup {} {
 	global tu1 tu2 tu3 ta1 ta2 ta3 tc1 tc2
+
 	remove_user "" "" $tu1
 	remove_user "" "" $tu2
 	remove_user "" "" $tu3

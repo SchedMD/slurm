@@ -65,5 +65,5 @@ expect {
 }
 
 if {$matches != 2} {
-	fail "Problem with srun wait option matches was $matches"
+	fail "Problem with srun wait option (matches was $matches)"
 }

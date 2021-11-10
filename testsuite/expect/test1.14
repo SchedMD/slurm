@@ -174,9 +174,9 @@ proc test_gpus {node_name} {
 
 	dict for {gres_name gres_count} $gres_dict_node {
 		if {![dict exists $gres_dict_job $gres_name]} {
-			subfail "Gres $gres_name on node $node_name not allocated on job $job_id with --exclusive"
+			subfail "Gres ($gres_name) on node ($node_name) not allocated on job ($job_id) with --exclusive"
 		} else {
-			subpass "Gres $gres_name on node $node_name was allocated on job $job_id with --exclusive"
+			subpass "Gres ($gres_name) on node ($node_name) was allocated on job ($job_id) with --exclusive"
 
 			set gres_count_job [dict get $gres_dict_job $gres_name]
 			subtest { $gres_count_job == $gres_count } "Gres ($gres_name) on node ($node_name) fully allocated on job ($job_id) with --exclusive" "$gres_count_job != $gres_count"

@@ -69,7 +69,7 @@ if {$found == -1} {
 	fail "scontrol output format error"
 }
 if {$found == 1} {
-	fail "Partition $part_name already exists"
+	fail "Partition ($part_name) already exists"
 }
 
 #

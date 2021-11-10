@@ -53,7 +53,7 @@ proc inc21_30_4 {} {
 						log_debug "Job $inx $job_id($inx) was submitted"
 						incr jobmatch
 					} else {
-						error "Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num?"
+						error "Job $inx ($job_id($inx)) wasn't suppose to work but it did, limit was $check_num"
 					}
 				}
 				-re "error" {
@@ -61,7 +61,7 @@ proc inc21_30_4 {} {
 						log_debug "Job $inx didn't get submitted. This is expected"
 						incr jobmatch
 					} else {
-						error "Job $inx $job_id($inx) was suppose to work but it didn't, limit was $check_num?"
+						error "Job $inx ($job_id($inx)) was suppose to work but it didn't, limit was $check_num"
 					}
 				}
 				timeout {

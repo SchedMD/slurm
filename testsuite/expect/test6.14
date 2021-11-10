@@ -141,13 +141,13 @@ for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
 			exp_continue
 		}
 		timeout {
-			fail "scancel not responding while cancelling for node $node_name"
+			fail "scancel not responding while cancelling for node ($node_name)"
 		}
 		eof {
 			wait
 		}
 	}
 	if { [llength $job_list] != 0 } {
-		fail "scancel did not remove jobs $job_list from node $node_name"
+		fail "scancel did not remove jobs ($job_list) from node ($node_name)"
 	}
 }

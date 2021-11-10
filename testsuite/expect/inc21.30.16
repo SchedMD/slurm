@@ -27,7 +27,6 @@
 ############################################################################
 
 proc inc21_30_16 { wait_reason } {
-
 	global salloc srun acct number bin_sleep maxnodespu_num
 
 	log_info "Starting MaxNodesPerUser test"

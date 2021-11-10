@@ -54,7 +54,7 @@ proc run_spread_job { task_cnt } {
 		}
 	}
 	if {$job_id == 0} {
-		fail "Srun job ID not found"
+		fail "srun job ID not found"
 	}
 
 	wait_for_job -fail $job_id "DONE"
@@ -75,7 +75,7 @@ proc run_spread_job { task_cnt } {
 		}
 	}
 	if {$num_nodes != $task_cnt} {
-		fail "Invalid node count for job $job_id ($num_nodes != $task_cnt)"
+		fail "Invalid node count for job ($job_id) ($num_nodes != $task_cnt)"
 	}
 }
 

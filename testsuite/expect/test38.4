@@ -91,7 +91,7 @@ proc test_env {value} {
 	}
 	log_user 1
 	if {$matches != 1} {
-		fail "Output of env incorrect matches: $value ($matches != 1)"
+		fail "Output of env $value incorrect ($matches != 1)"
 	}
 }
 
@@ -109,7 +109,7 @@ log_info "\n################################################################\n"
 
 salloc
 if {$job_id == 0} {
-	fail "Error submitting job $job_id"
+	fail "Error submitting job ($job_id)"
 }
 
 #
@@ -122,7 +122,6 @@ set matches 0
 spawn $bin_grep "SLURM_HET_SIZE" $file_out
 expect {
 	-re "SLURM_HET_SIZE=3" {
-		#once
 		incr matches
 		exp_continue
 	}
@@ -131,7 +130,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	fail "Output of env incorrect matches: SLURM_HET_SIZE=3 ($matches != 1)"
+	fail "Output of env SLURM_HET_SIZE=3 incorrect ($matches != 1)"
 }
 
 set matches 0
@@ -139,7 +138,6 @@ log_user 0
 spawn $bin_grep "SLURM_JOB_PARTITION_HET_GROUP" $file_out
 expect {
 	-re "SLURM_JOB_PARTITION_HET_GROUP" {
-		#three
 		incr matches
 		exp_continue
 	}
@@ -149,7 +147,7 @@ expect {
 }
 log_user 1
 if {$matches != 3} {
-	fail "Output of env incorrect matches: SLURM_JOB_PARTITION_HET_GROUP ($matches != 3)"
+	fail "Output of env SLURM_JOB_PARTITION_HET_GROUP incorrect ($matches != 3)"
 }
 
 test_env "SLURM_CPUS_PER_TASK_HET_GROUP_0=4"

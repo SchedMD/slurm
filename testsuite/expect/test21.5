@@ -85,7 +85,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	fail "QOS $cluster(DefaultQos) was not created"
+	fail "QOS ($cluster(DefaultQos)) was not created"
 }
 
 #
@@ -103,7 +103,7 @@ if {$access_err != 0} {
 }
 
 if {![check_assoc_limit 1 cluster $tc1 [array get cluster]]} {
-	fail "The association limits for cluster $tc1 are incorrect"
+	fail "The association limits for cluster ($tc1) are incorrect"
 }
 
 if {![check_acct_associations]} {

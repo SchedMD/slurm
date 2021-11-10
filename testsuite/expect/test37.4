@@ -324,7 +324,7 @@ proc validate_cluster_features { cname job_id expected_features } {
 		}
 	}
 	if {$matches != 1} {
-		fail "$matches didn't find ClusterFeatures=$expected_features on job"
+		fail "Didn't find ClusterFeatures=$expected_features on job ($matches != 1)"
 	}
 }
 
@@ -370,16 +370,16 @@ incr job_counts($ret_sib)
 parray job_counts
 
 if {$job_counts($fedc1) != 2} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Cluster 1 ($fedc1) doesn't have 2 jobs running on it"
 }
 if {$job_counts($fedc2) != 2} {
-	fail "$fedc2 doesn't have 2 jobs running on it"
+	fail "Cluster 2 ($fedc2) doesn't have 2 jobs running on it"
 }
 if {$job_counts($fedc3) != 2} {
-	fail "$fedc3 doesn't have 2 jobs running on it"
+	fail "Cluster 3 ($fedc3) doesn't have 2 jobs running on it"
 }
 if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
-	fail "$fedc1,$fedc2,$fedc3 don't have a pending job on it"
+	fail "Clusters ($fedc1,$fedc2,$fedc3) don't have a pending job on them"
 }
 
 
@@ -399,16 +399,16 @@ incr job_counts($ret_sib)
 parray job_counts
 
 if {$job_counts($fedc1) != 2} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Cluster 1 ($fedc1) doesn't have 2 jobs running on it"
 }
 if {$job_counts($fedc2) != 2} {
-	fail "$fedc2 doesn't have 2 jobs running on it"
+	fail "Cluster 2 ($fedc2) doesn't have 2 jobs running on it"
 }
 if {$job_counts($fedc3) != 2} {
-	fail "$fedc3 doesn't have 2 jobs running on it"
+	fail "Cluster 3 ($fedc3) doesn't have 2 jobs running on it"
 }
 if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
-	fail "$fedc1,$fedc2,$fedc3 don't have a pending job on it"
+	fail "Clusters ($fedc1,$fedc2,$fedc3) don't have a pending job on them"
 }
 
 log_info "################################################################"
@@ -427,16 +427,16 @@ incr job_counts($ret_sib)
 parray job_counts
 
 if {$job_counts($fedc1) != 2} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Cluster 1 ($fedc1) doesn't have 2 jobs running on it"
 }
 if {$job_counts($fedc2) != 2} {
-	fail "$fedc2 doesn't have 2 jobs running on it"
+	fail "Cluster 2 ($fedc2) doesn't have 2 jobs running on it"
 }
 if {$job_counts($fedc3) != 2} {
-	fail "$fedc3 doesn't have 2 jobs running on it"
+	fail "Cluster 3 ($fedc3) doesn't have 2 jobs running on it"
 }
 if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
-	fail "$fedc1,$fedc2,$fedc3 don't have a pending job on it"
+	fail "Clusters ($fedc1,$fedc2,$fedc3) don't have a pending job on them"
 }
 
 log_info "################################################################"
@@ -474,23 +474,23 @@ incr job_counts($ret_sib)
 parray job_counts
 
 if {$job_counts($fedc1) != 3} {
-	fail "$fedc1 doesn't have 3 jobs running on it"
+	fail "Cluster 1 ($fedc1) doesn't have 3 jobs running on it"
 }
 
 if {$job_counts($fedc2) != 2} {
-	fail "$fedc2 doesn't have 2 jobs running on it"
+	fail "Cluster 2 ($fedc2) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc1,$fedc2) != 1} {
-	fail "$fedc1,$fedc2 doesn't have 1 jobs running on it"
+	fail "Clusters 1 and 2 ($fedc1,$fedc2) don't have 1 job running on them"
 }
 
 if {$job_counts($fedc3) != 2} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Cluster 3 ($fedc3) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc2,$fedc3) != 1} {
-	fail "$fedc2,$fedc3 doesn't have 1 jobs running on it"
+	fail "Clusters 2 and 3 ($fedc2,$fedc3) don't have 1 jobs running on them"
 }
 
 log_info "################################################################"
@@ -528,23 +528,23 @@ incr job_counts($ret_sib)
 parray job_counts
 
 if {$job_counts($fedc1) != 3} {
-	fail "$fedc1 doesn't have 3 jobs running on it"
+	fail "Cluster 1 ($fedc1) doesn't have 3 jobs running on it"
 }
 
 if {$job_counts($fedc2) != 2} {
-	fail "$fedc2 doesn't have 2 jobs running on it"
+	fail "Cluster 2 ($fedc2) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc1,$fedc2) != 1} {
-	fail "$fedc1,$fedc2 doesn't have 1 jobs running on it"
+	fail "Clusters 1 and 2 ($fedc1,$fedc2) don't have 1 job running on them"
 }
 
 if {$job_counts($fedc3) != 2} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Cluster 3 ($fedc3) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc2,$fedc3) != 1} {
-	fail "$fedc2,$fedc3 doesn't have 1 jobs running on it"
+	fail "Clusters 2 and 3 ($fedc2,$fedc3) don't have 1 job running on them"
 }
 
 
@@ -583,23 +583,23 @@ incr job_counts($ret_sib)
 parray job_counts
 
 if {$job_counts($fedc1) != 3} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Cluster 1 ($fedc1) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc2) != 2} {
-	fail "$fedc2 doesn't have 2 jobs running on it"
+	fail "Cluster 2 ($fedc2) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc1,$fedc2) != 1} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Clusters 1 and 2 ($fedc1,$fedc2) don't have 1 job running on them"
 }
 
 if {$job_counts($fedc3) != 2} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Cluster 3 ($fedc3) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc2,$fedc3) != 1} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Clusters 2 and 3 ($fedc2,$fedc3) don't have 1 job running on them"
 }
 
 
@@ -635,7 +635,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -665,7 +665,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -695,7 +695,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 log_info "################################################################"
@@ -721,19 +721,19 @@ incr job_counts($ret_sib)
 parray job_counts
 
 if {$job_counts($fedc1) != 2} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Cluster 1 ($fedc1) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc2) != 2} {
-	fail "$fedc2 doesn't have 2 jobs running on it"
+	fail "Cluster 2 ($fedc2) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc3) != 2} {
-	fail "$fedc3 doesn't have 2 jobs running on it"
+	fail "Cluster 3 ($fedc3) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
-	fail "$fedc1,$fedc2,$fedc3 doesn't have 2 jobs running on it"
+	fail "Clusters ($fedc1,$fedc2,$fedc3) don't have 1 job running on them"
 }
 
 log_info "################################################################"
@@ -760,19 +760,19 @@ incr job_counts($ret_sib)
 parray job_counts
 
 if {$job_counts($fedc1) != 2} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Cluster 1 ($fedc1) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc2) != 2} {
-	fail "$fedc2 doesn't have 2 jobs running on it"
+	fail "Cluster 2 ($fedc2) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc3) != 2} {
-	fail "$fedc3 doesn't have 2 jobs running on it"
+	fail "Cluster 3 ($fedc3) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
-	fail "$fedc1,$fedc2,$fedc3 doesn't have 2 jobs running on it"
+	fail "Clusters ($fedc1,$fedc2,$fedc3) don't have 1 job running on them"
 }
 
 log_info "################################################################"
@@ -799,19 +799,19 @@ incr job_counts($ret_sib)
 parray job_counts
 
 if {$job_counts($fedc1) != 2} {
-	fail "$fedc1 doesn't have 2 jobs running on it"
+	fail "Cluster 1 ($fedc1) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc2) != 2} {
-	fail "$fedc2 doesn't have 2 jobs running on it"
+	fail "Cluster 2 ($fedc2) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc3) != 2} {
-	fail "$fedc3 doesn't have 2 jobs running on it"
+	fail "Cluster 3 ($fedc3) doesn't have 2 jobs running on it"
 }
 
 if {$job_counts($fedc1,$fedc2,$fedc3) != 1} {
-	fail "$fedc1,$fedc2,$fedc3 doesn't have 2 jobs running on it"
+	fail "Clusters ($fedc1,$fedc2,$fedc3) don't have 1 job running on them"
 }
 
 log_info "################################################################"
@@ -832,5 +832,5 @@ expect {
 	}
 }
 if {$matches != 1} {
-	fail "Invalid cluster features sbatch didn't fail. Got $matches"
+	fail "Invalid cluster features sbatch didn't fail (got $matches)"
 }

@@ -197,7 +197,7 @@ if {$mismatches != 0} {
 	fail "sinfo node filtering error"
 }
 if {$allocated_cnt != 2} {
-	fail "allocated_cnt($allocated_cnt) != 2"
+	fail "Allocated count ($allocated_cnt) != 2"
 }
 
 cancel_job $tmp_id
@@ -253,10 +253,10 @@ if {$mismatches != 0} {
 	fail "sinfo node filtering error"
 }
 if {$idle_cnt != 4} {
-	fail "idle($idle_cnt) != 4"
+	fail "Idle count ($idle_cnt) != 4"
 }
 if {$idle_drain_cnt != 2} {
-	fail "idle_drain_cnt($idle_drain_cnt) != 2"
+	fail "Idle drain count ($idle_drain_cnt) != 2"
 }
 
 #
@@ -296,7 +296,7 @@ if {$mismatches != 0} {
 	fail "sinfo node filtering error"
 }
 if {$down_cnt != 2} {
-	fail "down_cnt($down_cnt) != 2"
+	fail "Down count ($down_cnt) != 2"
 }
 
 #
@@ -336,7 +336,7 @@ if {$mismatches != 0} {
 	fail "sinfo node filtering error"
 }
 if {$drain_cnt != 2} {
-	fail "drain_cnt($drain_cnt) != 2"
+	fail "Drain count ($drain_cnt) != 2"
 }
 
 #
@@ -381,10 +381,10 @@ if {$mismatches != 0} {
 	fail "sinfo node filtering error ($mismatches)"
 }
 if {$down_cnt != 2} {
-	fail "down_cnt($down_cnt) != 2"
+	fail "Down count ($down_cnt) != 2"
 }
 if {$drain_cnt != 2} {
-	fail "drain_cnt($drain_cnt) != 2"
+	fail "Drain count ($drain_cnt) != 2"
 }
 
 #
@@ -425,5 +425,5 @@ if {$mismatches != 0} {
 	fail "sinfo node filtering error ($mismatches)"
 }
 if {$drain_cnt != 2} {
-	fail "drain_cnt($drain_cnt) != 2"
+	fail "Drain count ($drain_cnt) != 2"
 }
