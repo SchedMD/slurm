@@ -7217,7 +7217,7 @@ proc _test_init {} {
 proc _test_fini { status } {
 	global testsuite_cleanup_on_failure _test_fini_called
 	global _subtest_fail_count _subtest_skip_count
-	global STATUS_FAIL STATUS_PASS STATUS_SKIP
+	global STATUS_FAIL STATUS_PASS STATUS_SKIP test_status
 
 	# Avoid potential infinite recursive calls.
 	# _test_fini should be called only once, but custom cleanup procs
