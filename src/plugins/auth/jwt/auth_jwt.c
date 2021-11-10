@@ -243,7 +243,7 @@ extern int init(void)
 extern int fini(void)
 {
 	FREE_NULL_DATA(jwks);
-	free_buf(key);
+	FREE_NULL_BUFFER(key);
 
 	return SLURM_SUCCESS;
 }
