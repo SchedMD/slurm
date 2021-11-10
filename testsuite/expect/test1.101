@@ -27,14 +27,20 @@ source ./globals
 
 set file_in     "$test_dir/input"
 set job_id      0
-set timeout $max_job_delay
+set timeout     $max_job_delay
 
 if {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test is incompatible with SlurmdUser != root"
 }
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 make_bash_script $file_in "echo \$0"
-set salloc_pid [spawn $salloc -N1-5 -t1 bash]
+spawn $salloc -N1-5 -t1 bash
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -49,8 +55,6 @@ expect {
 		#log_debug "Job initiated"
 	}
 	timeout {
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
 		fail "salloc not responding"
 	}
 }

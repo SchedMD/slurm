@@ -28,11 +28,17 @@
 ############################################################################
 source ./globals
 
-set file_in      "test$test_id.input"
+set file_in      "$test_dir/input"
 set job_id1      0
 set job_id2      0
-set job_name1    "test$test_id.job1"
-set job_name2    "test$test_id.job2"
+set job_name1    "$test_name.job1"
+set job_name2    "$test_name.job2"
+
+proc cleanup {} {
+	global job_id1 job_id2
+
+	cancel_job [list $job_id1 $job_id2]
+}
 
 #
 # Build input script file
@@ -75,10 +81,8 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	cancel_job $job_id1
 	fail "Job submit failure"
 }
-exec $bin_rm -f $file_in
 
 #
 # Test scancel with name filter for each job

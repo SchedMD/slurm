@@ -31,6 +31,12 @@ set file_in	"bash"
 # Increase timeout to account for sbatch --wait backoff
 set timeout 20
 
+proc cleanup {} {
+	global file_in
+
+	file delete $file_in
+}
+
 proc test_sbatch { local } {
 	global sbatch number file_in
 
@@ -181,35 +187,26 @@ make_bash_script $file_in $bin_true
 
 # Test tools expecting bash to be used instead of our local 'bash' script
 if { [test_sbatch 0] } {
-	exec $bin_rm $file_in
 	fail "Failed testing sbatch"
 }
 
 if { [test_salloc 0] } {
-	exec $bin_rm $file_in
 	fail "Failed testing salloc"
 }
 
 if { [test_srun 0] } {
-	exec $bin_rm $file_in
 	fail "Failed testing srun"
 }
 
 # Test tools expecting our local 'bash' script to override the system bash
 if { [test_sbatch 1] } {
-	exec $bin_rm $file_in
 	fail "Failed testing sbatch"
 }
 
 if { [test_salloc 1] } {
-	exec $bin_rm $file_in
 	fail "Failed testing salloc"
 }
 
 if { [test_srun 1] } {
-	exec $bin_rm $file_in
 	fail "Failed testing srun"
 }
-
-#cleanup
-exec $bin_rm $file_in

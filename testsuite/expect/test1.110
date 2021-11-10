@@ -28,11 +28,17 @@ source ./globals
 
 set job_id      0
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 #
 # Spawn a job with a deadline and no time
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -v --begin now+5 --deadline now+600 --time-min 1 $bin_sleep 1]
+spawn $srun -v --begin now+5 --deadline now+600 --time-min 1 $bin_sleep 1
 expect {
 	-re "Requested time limit is invalid" {
 		fail "Requested time limit is invalid"
@@ -59,5 +65,3 @@ expect {
 	}
 }
 subtest {$job_id != 0} "Job should be submitted with a deadline and a time-min OK"
-
-wait_for_job -fail $job_id "DONE"
