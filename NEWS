@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix SLURM_NODE_ALIASES in RPC Prolog for batch jobs.
  -- Fix regression in 21.08 where slurmd and slurmstepd were not constrained
     with CpuSpecList or CoreSpecCount.
+ -- Fix cloud jobs running without powering up nodes after a reconfig/restart.
 
 * Changes in Slurm 21.08.3
 ==========================
