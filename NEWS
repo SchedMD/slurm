@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 21.08.0rc1 that broke --gres=none.
  -- Fix srun --cpus-per-task and --threads-per-core not implicitly setting
     --exact. It was meant to work this way in 21.08.
+ -- Fix requeued cloud job getting BadConstraints.
 
 * Changes in Slurm 21.08.4
 ==========================

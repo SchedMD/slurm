@@ -5054,6 +5054,9 @@ void cleanup_completing(job_record_t *job_ptr)
 	if (IS_JOB_COMPLETED(job_ptr))
 		fed_mgr_job_complete(job_ptr, job_ptr->exit_code,
 				     job_ptr->start_time);
+
+	if (!job_ptr->node_cnt)
+		batch_requeue_fini(job_ptr);
 }
 
 /*
