@@ -8732,6 +8732,9 @@ extern void job_config_fini(job_record_t *job_ptr)
 		_het_job_time_limit_incr(job_ptr, 0);
 	}
 
+	if (job_ptr->alias_list && !xstrcmp(job_ptr->alias_list, "TBD"))
+		set_job_alias_list(job_ptr);
+
 	/*
 	 * Request asynchronous launch of a prolog for a non-batch job.
 	 * PROLOG_FLAG_CONTAIN also turns on PROLOG_FLAG_ALLOC.

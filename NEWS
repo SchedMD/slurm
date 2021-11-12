@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with select/cons_tres and the partition limit MaxCpusPerNode where
     the limit was enforced for one less CPU than the configured value.
  -- jobacct_gather/common - compare Pss to Rss after scaling Pss to Rss units.
+ -- Fix SLURM_NODE_ALIASES in RPC Prolog for batch jobs.
 
 * Changes in Slurm 21.08.3
 ==========================
