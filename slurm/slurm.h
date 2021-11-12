@@ -631,6 +631,16 @@ enum auth_plugin_type {
 	AUTH_PLUGIN_JWT		= 102,
 };
 
+/*
+ * Hash plugin (id) used for communication.
+ */
+enum hash_plugin_type {
+	HASH_PLUGIN_DEFAULT = 0,
+	HASH_PLUGIN_NONE,
+	HASH_PLUGIN_K12,
+	HASH_PLUGIN_CNT,
+};
+
 /* Select plugin (id) in use by cluster */
 enum select_plugin_type {
 	/* 100 unused (originally for BlueGene) */

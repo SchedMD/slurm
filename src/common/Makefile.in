@@ -159,13 +159,13 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	cbuf.lo cgroup.lo cli_filter.lo cpu_frequency.lo cron.lo \
 	daemonize.lo data.lo eio.lo env.lo fd.lo fetch_config.lo \
 	forward.lo gpu.lo global_defaults.lo gres.lo group_cache.lo \
-	half_duplex.lo hostlist.lo http.lo io_hdr.lo job_options.lo \
-	job_resources.lo list.lo log.lo net.lo node_conf.lo \
-	node_features.lo node_select.lo openapi.lo optz.lo pack.lo \
-	parse_config.lo parse_time.lo parse_value.lo plugin.lo \
-	plugrack.lo plugstack.lo power.lo prep.lo print_fields.lo \
-	proc_args.lo read_config.lo reverse_tree.lo run_command.lo \
-	run_in_daemon.lo setproctitle.lo site_factor.lo \
+	hash.lo half_duplex.lo hostlist.lo http.lo io_hdr.lo \
+	job_options.lo job_resources.lo list.lo log.lo net.lo \
+	node_conf.lo node_features.lo node_select.lo openapi.lo \
+	optz.lo pack.lo parse_config.lo parse_time.lo parse_value.lo \
+	plugin.lo plugrack.lo plugstack.lo power.lo prep.lo \
+	print_fields.lo proc_args.lo read_config.lo reverse_tree.lo \
+	run_command.lo run_in_daemon.lo setproctitle.lo site_factor.lo \
 	slurm_accounting_storage.lo slurm_acct_gather.lo \
 	slurm_acct_gather_energy.lo slurm_acct_gather_filesystem.lo \
 	slurm_acct_gather_interconnect.lo slurm_acct_gather_profile.lo \
@@ -220,10 +220,10 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/forward.Plo ./$(DEPDIR)/global_defaults.Plo \
 	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo \
 	./$(DEPDIR)/group_cache.Plo ./$(DEPDIR)/half_duplex.Plo \
-	./$(DEPDIR)/hostlist.Plo ./$(DEPDIR)/http.Plo \
-	./$(DEPDIR)/io_hdr.Plo ./$(DEPDIR)/job_options.Plo \
-	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/list.Plo \
-	./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
+	./$(DEPDIR)/hash.Plo ./$(DEPDIR)/hostlist.Plo \
+	./$(DEPDIR)/http.Plo ./$(DEPDIR)/io_hdr.Plo \
+	./$(DEPDIR)/job_options.Plo ./$(DEPDIR)/job_resources.Plo \
+	./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
 	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/node_features.Plo \
 	./$(DEPDIR)/node_select.Plo ./$(DEPDIR)/openapi.Plo \
 	./$(DEPDIR)/optz.Plo ./$(DEPDIR)/pack.Plo \
@@ -612,6 +612,8 @@ libcommon_la_SOURCES = \
 	gres.h					\
 	group_cache.c				\
 	group_cache.h				\
+	hash.c					\
+	hash.h					\
 	half_duplex.c				\
 	half_duplex.h				\
 	hostlist.c				\
@@ -876,6 +878,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/group_cache.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/half_duplex.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@ # am--include-marker
@@ -1105,6 +1108,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/gres.Plo
 	-rm -f ./$(DEPDIR)/group_cache.Plo
 	-rm -f ./$(DEPDIR)/half_duplex.Plo
+	-rm -f ./$(DEPDIR)/hash.Plo
 	-rm -f ./$(DEPDIR)/hostlist.Plo
 	-rm -f ./$(DEPDIR)/http.Plo
 	-rm -f ./$(DEPDIR)/io_hdr.Plo
@@ -1254,6 +1258,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/gres.Plo
 	-rm -f ./$(DEPDIR)/group_cache.Plo
 	-rm -f ./$(DEPDIR)/half_duplex.Plo
+	-rm -f ./$(DEPDIR)/hash.Plo
 	-rm -f ./$(DEPDIR)/hostlist.Plo
 	-rm -f ./$(DEPDIR)/http.Plo
 	-rm -f ./$(DEPDIR)/io_hdr.Plo

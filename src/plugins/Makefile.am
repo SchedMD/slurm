@@ -13,6 +13,7 @@ SUBDIRS = \
 	ext_sensors		\
 	gpu			\
 	gres			\
+	hash			\
 	jobacct_gather		\
 	jobcomp			\
 	job_container		\
