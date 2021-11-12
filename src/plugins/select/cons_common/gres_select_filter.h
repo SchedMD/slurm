@@ -64,7 +64,7 @@ extern void gres_select_filter_cons_res(List job_gres_list, List node_gres_list,
  *	Filter out unusable GRES.
  * IN sock_gres_list - list of sock_gres_t entries built by
  *                     gres_job_test2()
- * IN avail_mem - memory available for the job
+ * IN avail_mem - memory available for the job or NO_VAL64 (when no CR_MEMORY)
  * IN max_cpus - maximum CPUs available on this node (limited by specialized
  *               cores and partition CPUs-per-node)
  * IN enforce_binding - GRES must be co-allocated with cores

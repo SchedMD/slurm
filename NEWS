@@ -65,6 +65,7 @@ documents those changes that are of interest to users and administrators.
  -- Future and Cloud nodes are treated as "Planned Down" in usage reports.
  -- Add "condflags=open" to sacctmgr show events to return open/currently down
     events.
+ -- Skip --mem-per-gpu impact on GRES availability when CR_MEMORY not set.
 
 * Changes in Slurm 21.08.6
 ==========================
