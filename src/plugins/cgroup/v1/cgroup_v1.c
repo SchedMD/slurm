@@ -183,17 +183,27 @@ static int _cpuset_create(stepd_step_rec_t *job)
 		    != SLURM_SUCCESS) {
 			goto end;
 		}
-		if ((rc = common_cgroup_instantiate(&g_sys_cg[CG_CPUS]))
-		    != SLURM_SUCCESS)
-			goto end;
 
-		/* set notify on release flag */
-		common_cgroup_set_param(&g_sys_cg[CG_CPUS], "notify_on_release",
-					"0");
+		if (running_in_slurmd()) {
+			/*
+			 * The slurmd is the only place we need to set up the
+			 * system cgroup and the slurmstepd should not overwrite
+			 * these. If slurmstepd does overwrite these values
+			 * (such as cpuset.cpus) then slurmd will not be
+			 * properly constrained anymore.
+			 */
+			if ((rc = common_cgroup_instantiate(&g_sys_cg[CG_CPUS]))
+			    != SLURM_SUCCESS)
+				goto end;
 
-		if ((rc = xcgroup_cpuset_init(&g_sys_cg[CG_CPUS]))
-		    != SLURM_SUCCESS)
-			goto end;
+			/* set notify on release flag */
+			common_cgroup_set_param(&g_sys_cg[CG_CPUS],
+						"notify_on_release", "0");
+
+			if ((rc = xcgroup_cpuset_init(&g_sys_cg[CG_CPUS]))
+			    != SLURM_SUCCESS)
+				goto end;
+		}
 
 		log_flag(CGROUP,
 			 "system cgroup: system cpuset cgroup initialized");
