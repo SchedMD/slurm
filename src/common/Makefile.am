@@ -45,6 +45,8 @@ libcommon_la_SOURCES =				\
 	gres.h					\
 	group_cache.c				\
 	group_cache.h				\
+	hash.c					\
+	hash.h					\
 	half_duplex.c				\
 	half_duplex.h				\
 	hostlist.c				\
