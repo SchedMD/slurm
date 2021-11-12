@@ -361,6 +361,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			continue;
 		node_ptr = &node_record_table_ptr[i];
 		if (IS_NODE_DOWN(node_ptr) ||
+		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_UP(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
@@ -384,6 +385,12 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		node_count++;
 	}
 #endif
+	if ((node_count - down_node_cnt) == 0) {
+		/* Can not wait for epilog complete to release licenses and
+		 * update gang scheduling table */
+		cleanup_completing(job_ptr);
+	}
+
 	if (job_ptr->details->prolog_running) {
 		/* Job wasn't launched on nodes so don't run epilog on nodes. */
 		if (job_ptr->epilog_running) {
@@ -412,12 +419,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		}
 
 		return;
-	}
-
-	if ((node_count - down_node_cnt) == 0) {
-		/* Can not wait for epilog complete to release licenses and
-		 * update gang scheduling table */
-		cleanup_completing(job_ptr);
 	}
 
 	if (node_count == 0) {
