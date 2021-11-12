@@ -523,8 +523,10 @@ static void _build_bitmaps(void)
 		}
 		if (IS_NODE_POWERED_DOWN(node_ptr))
 			bit_set(power_node_bitmap, i);
-		if (IS_NODE_POWERING_DOWN(node_ptr))
+		if (IS_NODE_POWERING_DOWN(node_ptr)) {
+			bit_set(power_node_bitmap, i);
 			bit_clear(avail_node_bitmap, i);
+		}
 		if (IS_NODE_FUTURE(node_ptr))
 			bit_set(future_node_bitmap, i);
 
