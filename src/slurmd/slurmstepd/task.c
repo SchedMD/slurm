@@ -365,7 +365,7 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	int fd, j;
 	stepd_step_task_info_t *task = job->task[local_proc_id];
 	char **tmp_env;
-	int saved_errno;
+	int saved_errno, status;
 	uint32_t node_offset = 0, task_offset = 0;
 
 	if (job->het_job_node_offset != NO_VAL)
@@ -482,12 +482,21 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	}
 #endif
 
-	if (slurm_conf.task_prolog)
-		_run_script_and_set_env("slurm task_prolog",
-					slurm_conf.task_prolog, job);
+	if (slurm_conf.task_prolog) {
+		status = _run_script_and_set_env("slurm task_prolog",
+						 slurm_conf.task_prolog, job);
+		if (status) {
+			error("TaskProlog failed status=%d", status);
+			_exit(status);
+		}
+	}
 	if (job->task_prolog) {
-		_run_script_and_set_env("user task_prolog",
-					job->task_prolog, job);
+		status = _run_script_and_set_env("user task_prolog",
+						 job->task_prolog, job);
+		if (status) {
+			error("--task-prolog failed status=%d", status);
+			_exit(status);
+		}
 	}
 
 	/*
