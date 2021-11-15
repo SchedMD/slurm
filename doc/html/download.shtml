@@ -160,8 +160,8 @@ batch job scripts for Slurm which is available
 <li>A <b>Perl</b> interface is included in the Slurm distribution in the
 <i>contribs/perlapi</i> directory and packaged in the <i>perapi</i> RPM.</li>
 
-<li><a href="http://www.gingergeeks.co.uk/pyslurm/">PySlurm</a> is a
-Python/Pyrex module to interface with Slurm.
+<li><a href="https://github.com/pyslurm/">PySlurm</a> is a
+Python/Cython module to interface with Slurm.
 There is also a Python module to expand and collect hostlist expressions
 available <a href="http://www.nsc.liu.se/~kent/python-hostlist/">
 here</a>.</li>
