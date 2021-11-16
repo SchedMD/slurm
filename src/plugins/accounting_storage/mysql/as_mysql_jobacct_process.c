@@ -492,8 +492,13 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	/* This is here to make sure we are looking at only this user
 	 * if this flag is set.  We also include any accounts they may be
 	 * coordinator of.
+	 *
+	 * This clause must be kept in sync with the access check in
+	 * as_mysql_jobacct_process_get_jobs().
 	 */
-	if (!is_admin && (slurm_conf.private_data & PRIVATE_DATA_JOBS)) {
+	if (!is_admin && ((slurm_conf.private_data & PRIVATE_DATA_JOBS) ||
+			  (job_cond->flags & JOBCOND_FLAG_SCRIPT) ||
+			  (job_cond->flags & JOBCOND_FLAG_ENV))) {
 		query = xstrdup_printf("select lft from \"%s_%s\" "
 				       "where user='%s'",
 				       cluster_name, assoc_table, user->name);
@@ -1729,6 +1734,10 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
+	/*
+	 * This clause must be kept in sync with the access check in
+	 * _cluster_get_jobs().
+	 */
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) ||
 	    (job_cond->flags & JOBCOND_FLAG_SCRIPT) ||
 	    (job_cond->flags & JOBCOND_FLAG_ENV)) {
