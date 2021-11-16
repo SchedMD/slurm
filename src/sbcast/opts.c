@@ -279,8 +279,6 @@ static uint32_t _map_size( char *buf )
 /* print the parameters specified */
 static void _print_options( void )
 {
-	char job_id_str[64];
-
 	info("-----------------------------");
 	info("block_size = %u", params.block_size);
 	info("compress   = %u", params.compress);
@@ -288,9 +286,6 @@ static void _print_options( void )
 	info("force      = %s",
 	     (params.flags & BCAST_FLAG_FORCE) ? "true" : "false");
 	info("fanout     = %d", params.fanout);
-	info("jobid      = %s",
-	     slurm_get_selected_step_id(job_id_str, sizeof(job_id_str),
-					params.selected_step));
 	info("preserve   = %s",
 	     (params.flags & BCAST_FLAG_PRESERVE) ? "true" : "false");
 	info("send_libs  = %s",
