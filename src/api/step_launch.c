@@ -151,17 +151,6 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr)
 }
 
 /*
- * Specify the plugin name to be used. This may be needed to specify the
- * non-default MPI plugin when using Slurm API to launch tasks.
- * IN plugin name - "none", "pmi2", etc.
- * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
- */
-extern int slurm_mpi_plugin_init(char *plugin_name)
-{
-	return mpi_hook_client_init(plugin_name);
-}
-
-/*
  * For a hetjob step, rebuild the MPI data structure to show what is running
  * in a single MPI_COMM_WORLD
  */

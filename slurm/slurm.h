@@ -3651,14 +3651,6 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo);
  */
 extern void slurm_step_launch_fwd_wake(slurm_step_ctx_t *ctx);
 
-/*
- * Specify the plugin name to be used. This may be needed to specify the
- * non-default MPI plugin when using Slurm API to launch tasks.
- * IN plugin name - "none", "pmi2", etc.
- * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
- */
-extern int slurm_mpi_plugin_init(char *plugin_name);
-
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
