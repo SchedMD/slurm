@@ -68,10 +68,10 @@ typedef struct slurm_mpi_ops {
  * declared for slurm_mpi_ops_t.
  */
 static const char *syms[] = {
-	"p_mpi_hook_slurmstepd_prefork",
-	"p_mpi_hook_slurmstepd_task",
-	"p_mpi_hook_client_prelaunch",
-	"p_mpi_hook_client_fini"
+	"mpi_p_slurmstepd_prefork",
+	"mpi_p_slurmstepd_task",
+	"mpi_p_client_prelaunch",
+	"mpi_p_client_fini"
 };
 
 static slurm_mpi_ops_t ops;
@@ -215,7 +215,7 @@ done:
 	return retval;
 }
 
-int mpi_hook_slurmstepd_init (char ***env)
+extern int mpi_g_slurmstepd_init(char ***env)
 {
 	char *mpi_type = getenvp (*env, "SLURM_MPI_TYPE");
 
@@ -239,7 +239,7 @@ int mpi_hook_slurmstepd_init (char ***env)
 	return SLURM_SUCCESS;
 }
 
-int mpi_hook_slurmstepd_prefork (const stepd_step_rec_t *job, char ***env)
+extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 #if _DEBUG
 	info("IN %s", __func__);
@@ -247,13 +247,13 @@ int mpi_hook_slurmstepd_prefork (const stepd_step_rec_t *job, char ***env)
 	_log_step_rec(job);
 #endif
 
-	if (mpi_hook_slurmstepd_init(env) == SLURM_ERROR)
+	if (mpi_g_slurmstepd_init(env) == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	return (*(ops.slurmstepd_prefork))(job, env);
 }
 
-int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env)
+extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 {
 #if _DEBUG
 	info("IN %s", __func__);
@@ -261,13 +261,13 @@ int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env)
 	_log_env(*env);
 #endif
 
-	if (mpi_hook_slurmstepd_init(env) == SLURM_ERROR)
+	if (mpi_g_slurmstepd_init(env) == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	return (*(ops.slurmstepd_init))(job, env);
 }
 
-int mpi_hook_client_init (char *mpi_type)
+extern int mpi_g_client_init(char *mpi_type)
 {
 #if _DEBUG
 	info("IN %s mpi_type:%s", __func__, mpi_type);
@@ -281,8 +281,8 @@ int mpi_hook_client_init (char *mpi_type)
 	return SLURM_SUCCESS;
 }
 
-mpi_plugin_client_state_t *
-mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
+extern mpi_plugin_client_state_t *
+mpi_g_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 {
 	mpi_plugin_client_state_t *rc;
 #if _DEBUG
@@ -301,7 +301,7 @@ mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 	return rc;
 }
 
-int mpi_hook_client_fini (mpi_plugin_client_state_t *state)
+extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 {
 #if _DEBUG
 	info("IN %s", __func__);

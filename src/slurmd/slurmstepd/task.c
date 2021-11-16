@@ -354,7 +354,7 @@ _setup_mpi(stepd_step_rec_t *job, int ltaskid)
 		info->client  = job->envtp->cli;
 	}
 
-	return mpi_hook_slurmstepd_task(info, &job->env);
+	return mpi_g_slurmstepd_task(info, &job->env);
 }
 
 /*

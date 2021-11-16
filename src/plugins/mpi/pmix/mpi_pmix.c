@@ -150,8 +150,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int p_mpi_hook_slurmstepd_prefork(
-	const stepd_step_rec_t *job, char ***env)
+extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 	int ret;
 	pmixp_debug_hang(0);
@@ -176,8 +175,7 @@ err_ext:
 	return ret;
 }
 
-extern int p_mpi_hook_slurmstepd_task(
-	const mpi_plugin_task_info_t *job, char ***env)
+extern int mpi_p_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 {
 	char **tmp_env = NULL;
 	pmixp_debug_hang(0);
@@ -204,8 +202,8 @@ extern int p_mpi_hook_slurmstepd_task(
 	return SLURM_SUCCESS;
 }
 
-extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
-	const mpi_plugin_client_info_t *job, char ***env)
+extern mpi_plugin_client_state_t *
+mpi_p_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 {
 	static pthread_mutex_t setup_mutex = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_cond_t setup_cond  = PTHREAD_COND_INITIALIZER;
@@ -248,7 +246,7 @@ extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 	return (void *)0xdeadbeef;
 }
 
-extern int p_mpi_hook_client_fini(void)
+extern int mpi_p_client_fini(void)
 {
 	xfree(process_mapping);
 	return pmixp_abort_agent_stop();

@@ -228,8 +228,7 @@ static int _rmdir_recursive(char *path)
 	return SLURM_SUCCESS;
 }
 
-extern int p_mpi_hook_slurmstepd_prefork(
-	const stepd_step_rec_t *job, char ***env)
+extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 	/* do the node_name substitution once */
 	char *spool = xstrdup(slurm_conf.slurmd_spooldir);
@@ -249,8 +248,7 @@ extern int p_mpi_hook_slurmstepd_prefork(
 	return SLURM_SUCCESS;
 }
 
-extern int p_mpi_hook_slurmstepd_task(
-	const mpi_plugin_task_info_t *job, char ***env)
+extern int mpi_p_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 {
 	// Set environment variables
 	env_array_overwrite_fmt(env, PALS_APID_ENV, "%u.%u",
@@ -265,14 +263,14 @@ extern int p_mpi_hook_slurmstepd_task(
 	return SLURM_SUCCESS;
 }
 
-extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
-	const mpi_plugin_client_info_t *job, char ***env)
+extern mpi_plugin_client_state_t *
+mpi_p_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 {
 	/* only return NULL on error */
 	return (void *)0xdeadbeef;
 }
 
-extern int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
+extern int mpi_p_client_fini(mpi_plugin_client_state_t *state)
 {
 	return SLURM_SUCCESS;
 }

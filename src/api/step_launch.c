@@ -222,7 +222,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		       sizeof(slurm_step_launch_callbacks_t));
 	}
 
-	if (mpi_hook_client_init(params->mpi_plugin_name) == SLURM_ERROR) {
+	if (mpi_g_client_init(params->mpi_plugin_name) == SLURM_ERROR) {
 		slurm_seterrno(SLURM_MPI_PLUGIN_NAME_INVALID);
 		return SLURM_ERROR;
 	}
@@ -231,7 +231,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 
 	mpi_env = xmalloc(sizeof(char *));  /* Needed for setenvf used by MPI */
 	if ((ctx->launch_state->mpi_state =
-	     mpi_hook_client_prelaunch(ctx->launch_state->mpi_info, &mpi_env))
+	     mpi_g_client_prelaunch(ctx->launch_state->mpi_info, &mpi_env))
 	    == NULL) {
 		slurm_seterrno(SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED);
 		return SLURM_ERROR;
@@ -800,7 +800,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		sls->io.normal = NULL;
 	}
 
-	sls->mpi_rc = mpi_hook_client_fini(sls->mpi_state);
+	sls->mpi_rc = mpi_g_client_fini(sls->mpi_state);
 	slurm_mutex_unlock(&sls->lock);
 }
 

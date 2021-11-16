@@ -82,8 +82,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
  * The following is executed in slurmstepd.
  */
 
-int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job,
-				  char ***env)
+extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 	int rc;
 
@@ -104,8 +103,7 @@ int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job,
 	return SLURM_SUCCESS;
 }
 
-int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
-				char ***env)
+extern int mpi_p_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 {
 	int i;
 
@@ -133,13 +131,12 @@ int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
 	return SLURM_SUCCESS;
 }
 
-
 /*
  * The following is executed in srun.
  */
 
-mpi_plugin_client_state_t *
-p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
+extern mpi_plugin_client_state_t *
+mpi_p_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 {
 	int rc;
 
@@ -158,9 +155,8 @@ p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 	return (void *)0x12345678;
 }
 
-int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
+extern int mpi_p_client_fini(mpi_plugin_client_state_t *state)
 {
-
 	pmi2_stop_agent();
 
 	/* the job may be allocated by this srun.

@@ -781,7 +781,7 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	command_args = sropt.argc;
 
 	if (!xstrcmp(sropt.mpi_type, "list"))
-		(void) mpi_hook_client_init(sropt.mpi_type);
+		(void) mpi_g_client_init(sropt.mpi_type);
 	if (!rest && !sropt.test_only)
 		fatal("No command given to execute.");
 
@@ -1277,7 +1277,7 @@ static bool _opt_verify(void)
 
 	if (!sropt.mpi_type)
 		sropt.mpi_type = xstrdup(slurm_conf.mpi_default);
-	if (mpi_hook_client_init(sropt.mpi_type) == SLURM_ERROR) {
+	if (mpi_g_client_init(sropt.mpi_type) == SLURM_ERROR) {
 		error("invalid MPI type '%s', --mpi=list for acceptable types",
 		      sropt.mpi_type);
 		exit(error_exit);

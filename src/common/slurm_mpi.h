@@ -82,11 +82,11 @@ typedef struct {
  * This function will remove SLURM_MPI_TYPE from the environment variable
  * array "env", if it exists.
  */
-int mpi_hook_slurmstepd_init (char ***env);
+extern int mpi_g_slurmstepd_init(char ***env);
 
 /*
  * Load the plugin (if not already loaded) and call the plugin
- * p_mpi_hook_slurmstepd_task() function.
+ * mpi_p_slurmstepd_task() function.
  *
  * This function is called from within each process that will exec() a
  * task.  The process will be running as the user of the job step at that
@@ -100,10 +100,11 @@ int mpi_hook_slurmstepd_init (char ***env);
  * The returned "env" array may be manipulated (and freed) by using
  * the src/common/env.c:env_array_* functions.
  */
-int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env);
+extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job,
+				 char ***env);
 
 
-int mpi_hook_slurmstepd_prefork (const stepd_step_rec_t *job, char ***env);
+extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env);
 
 /**********************************************************************
  * Hooks called by client applications.
@@ -117,10 +118,10 @@ int mpi_hook_slurmstepd_prefork (const stepd_step_rec_t *job, char ***env);
  * If "mpi_type" is NULL, the system-default mpi plugin
  * is initialized.
  */
-int mpi_hook_client_init (char *mpi_type);
+extern int mpi_g_client_init(char *mpi_type);
 
 /*
- * Call the plugin p_mpi_hook_client_prelaunch() function.
+ * Call the plugin mpi_p_client_prelaunch() function.
  *
  * If the plugin requires that environment variables be set in the
  * environment of every task, it will add the necessary variables
@@ -132,13 +133,13 @@ int mpi_hook_client_init (char *mpi_type);
  *
  * Returns NULL on error.  On success returns an opaque pointer
  * to MPI state for this job step.  Free the state by calling
- * mpi_hook_client_fini().
+ * mpi_g_client_fini().
  */
-mpi_plugin_client_state_t *
-mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env);
+extern mpi_plugin_client_state_t *
+mpi_g_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env);
 
-/* Call the plugin p_mpi_hook_client_fini() function. */
-int mpi_hook_client_fini (mpi_plugin_client_state_t *state);
+/* Call the plugin mpi_p_client_fini() function. */
+extern int mpi_g_client_fini(mpi_plugin_client_state_t *state);
 
 /**********************************************************************
  * FIXME - Nobody calls the following function.  Perhaps someone should.

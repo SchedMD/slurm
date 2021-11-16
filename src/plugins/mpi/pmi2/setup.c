@@ -757,7 +757,7 @@ _task_launch_detection(void *unused)
 
 	/*
 	 * mpir_init() is called in plugins/launch/slurm/launch_slurm.c before
-	 * mpi_hook_client_prelaunch() is called in api/step_launch.c
+	 * mpi_g_client_prelaunch() is called in api/step_launch.c
 	 */
 	start = time(NULL);
 	while (_tasks_launched() == 0) {
