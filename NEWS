@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 21.08.5
+==========================
+
 * Changes in Slurm 21.08.4
 ==========================
  -- Fix potential deadlock when using PMI v1.
