@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where typeless GRES node updates were not immediately reflected.
  -- Fix setting the default scrontab job working directory so that it's the home
     of the different user (-u <user>) and not that of root or SlurmUser editor.
+ -- Fix stepd not respecting SlurmdSyslogDebug.
 
 * Changes in Slurm 21.08.4
 ==========================
