@@ -646,7 +646,7 @@ months. A list of most recent major Slurm releases is shown below.</p>
 <li>21.08.x (Released August 2021)</li>
 </ul>
 
-<p>Slurm's MPI libraries may also change if the major release number change,
+<p>Slurm's MPI libraries may also change if the major release number changes,
 requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
