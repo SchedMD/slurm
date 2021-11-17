@@ -66,6 +66,7 @@ Charge resources used by this job to specified account.
 The \fIaccount\fR is an arbitrary string. The account name may
 be changed after job submission using the \fBscontrol\fR
 command.
+.IP
 
 .TP
 \fB\-\-acctg\-freq\fR=<\fIdatatype\fR>=<\fIinterval\fR>[,<\fIdatatype\fR>=<\fIinterval\fR>...]
@@ -86,18 +87,25 @@ profiling by the acct_gather_profile plugin.
 \fBNOTE\fR: This frequency is used to monitor memory usage. If memory limits
 are enforced the highest frequency a user can request is what is configured in
 the slurm.conf file.  It can not be disabled.
+.IP
+
 .TP
 \fBenergy\fR
 Sampling interval for energy profiling using the
 acct_gather_energy plugin.
+.IP
+
 .TP
 \fBnetwork\fR
 Sampling interval for infiniband profiling using the
 acct_gather_interconnect plugin.
+.IP
+
 .TP
 \fBfilesystem\fR
 Sampling interval for filesystem profiling using the
 acct_gather_filesystem plugin.
+.IP
 
 .LP
 The default value for the task sampling interval is 30 seconds.
@@ -122,6 +130,7 @@ temporary burst buffer script file that is used internally by the burst buffer
 plugins. See Slurm's burst buffer guide for more information and examples:
 .br
 https://slurm.schedmd.com/burst_buffer.html
+.IP
 
 .TP
 \fB\-\-bbf\fR=<\fIfile_name\fR>
@@ -133,6 +142,7 @@ that salloc spawn a shell on one of its allocated compute nodes.
 See Slurm's burst buffer guide for more information and examples:
 .br
 https://slurm.schedmd.com/burst_buffer.html
+.IP
 
 .TP
 \fB\-\-begin\fR=<\fItime\fR>
@@ -184,18 +194,21 @@ Force salloc to ring the terminal bell when the job allocation is granted
 (and only if stdout is a tty).  By default, salloc only rings the bell
 if the allocation is pending for more than ten seconds (and only if stdout
 is a tty). Also see the option \fB\-\-no\-bell\fR.
+.IP
 
 .TP
 \fB\-D\fR, \fB\-\-chdir\fR=<\fIpath\fR>
 Change directory to \fIpath\fR before beginning execution. The path
 can be specified as full path or relative path to the directory where
 the command is executed.
+.IP
 
 .TP
 \fB\-\-cluster\-constraint\fR=<\fIlist\fR>
 Specifies features that a federated cluster must have to have a sibling job
 submitted to it. Slurm will attempt to submit a sibling job to a cluster if it
 has at least one of the specified features.
+.IP
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
@@ -204,10 +217,12 @@ The job will be submitted to the one cluster providing the earliest expected
 job initiation time. The default value is the current cluster. A value of
 \(aq\fIall\fR' will query to run on all clusters.
 Note that the SlurmDBD must be up for this option to work properly.
+.IP
 
 .TP
 \fB\-\-comment\fR=<\fIstring\fR>
 An arbitrary comment.
+.IP
 
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR=<\fIlist\fR>
@@ -219,12 +234,15 @@ satisfy the request.
 Multiple constraints may be specified with AND, OR, matching OR,
 resource counts, etc. (some operators are not supported on all system types).
 Supported \fbconstraint\fR options include:
+.IP
 .PD 1
 .RS
 .TP
 \fBSingle Name\fR
 Only nodes which have the specified feature will be used.
 For example, \fB\-\-constraint="intel"\fR
+.IP
+
 .TP
 \fBNode Count\fR
 A request can specify the number of nodes needed with some feature
@@ -232,16 +250,22 @@ by appending an asterisk and count after the feature name.
 For example, \fB\-\-nodes=16 \-\-constraint="graphics*4 ..."\fR
 indicates that the job requires 16 nodes and that at least four of those
 nodes must have the feature "graphics."
+.IP
+
 .TP
 \fBAND\fR
 If only nodes with all of specified features will be used.
 The ampersand is used for an AND operator.
 For example, \fB\-\-constraint="intel&gpu"\fR
+.IP
+
 .TP
 \fBOR\fR
 If only nodes with at least one of specified features will be used.
 The vertical bar is used for an OR operator.
 For example, \fB\-\-constraint="intel|amd"\fR
+.IP
+
 .TP
 \fBMatching OR\fR
 If only one of a set of possible options should be used for all allocated
@@ -249,6 +273,8 @@ nodes, then use the OR operator and enclose the options within square brackets.
 For example, \fB\-\-constraint="[rack1|rack2|rack3|rack4]"\fR might
 be used to specify that all nodes must be allocated on a single rack of
 the cluster, but any of those four racks can be used.
+.IP
+
 .TP
 \fBMultiple Counts\fR
 Specific counts of multiple resources may be specified by using the AND
@@ -262,6 +288,8 @@ of "rack1" and four nodes must be allocated from nodes with the feature
 modes. For example, while \fB\-\-constraint="[(knl&quad)*2&(knl&hemi)*4]"\fR is
 not supported, \fB\-\-constraint="[haswell*2&(knl&hemi)*4]"\fR is supported.
 Specification of multiple KNL modes requires the use of a heterogeneous job.
+.IP
+
 .TP
 \fBBrackets\fR
 Brackets can be used to indicate that you are looking for a set of nodes with
@@ -275,6 +303,8 @@ meets those requirements.
 \fBMatching OR\fR syntax.
 AND operators require a count for each feature inside square brackets
 (i.e. "[quad*2&hemi*1]").
+.IP
+
 .TP
 \fBParenthesis\fR
 Parenthesis can be used to group like node features together. For example,
@@ -283,10 +313,12 @@ that four nodes with the features "knl", "snc4" and "flat" plus one node with
 the feature "haswell" are required. All options within parenthesis should be
 grouped with AND (e.g. "&") operands.
 .RE
+.IP
 
 .TP
 \fB\-\-container\fR=<\fIpath_to_container\fR>
 Absolute path to OCI container bundle.
+.IP
 
 .TP
 \fB\-\-contiguous\fR
@@ -295,6 +327,7 @@ If set, then the allocated nodes must form a contiguous set.
 \fBNOTE\fR: If SelectPlugin=cons_res this option won't be honored
 with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
 plugins, both of which can modify the node ordering.
+.IP
 
 .TP
 \fB\-S\fR, \fB\-\-core\-spec\fR=<\fInum\fR>
@@ -306,6 +339,7 @@ If a value of zero is designated and the Slurm configuration option
 AllowSpecResourcesUsage is enabled, the job will be allowed to override
 CoreSpecCount and use the specialized resources on nodes it is allocated.
 This option can not be used with the \fB\-\-thread\-spec\fR option.
+.IP
 
 .TP
 \fB\-\-cores\-per\-socket\fR=<\fIcores\fR>
@@ -315,6 +349,7 @@ above when task/affinity plugin is enabled.
 .br
 \fBNOTE\fR: This option may implicitly set the number of tasks (if \fB\-n\fR
 was not specified) as one task per requested thread.
+.IP
 
 .TP
 \fB\-\-cpu\-freq\fR=<\fIp1\fR>[\-\fIp2\fR[:\fIp3\fR]]
@@ -353,33 +388,53 @@ Acceptable values at present include:
 .TP 14
 \fB####\fR
 frequency in kilohertz
+.IP
+
 .TP
 \fBLow\fR
 the lowest available frequency
+.IP
+
 .TP
 \fBHigh\fR
 the highest available frequency
+.IP
+
 .TP
 \fBHighM1\fR
 (high minus one) will select the next highest available frequency
+.IP
+
 .TP
 \fBMedium\fR
 attempts to set a frequency in the middle of the available range
+.IP
+
 .TP
 \fBConservative\fR
 attempts to use the Conservative CPU governor
+.IP
+
 .TP
 \fBOnDemand\fR
 attempts to use the OnDemand CPU governor (the default value)
+.IP
+
 .TP
 \fBPerformance\fR
 attempts to use the Performance CPU governor
+.IP
+
 .TP
 \fBPowerSave\fR
 attempts to use the PowerSave CPU governor
+.IP
+
 .TP
 \fBUserSpace\fR
 attempts to use the UserSpace CPU governor
+.IP
+
 .TP
 .RE
 
@@ -416,12 +471,14 @@ with linuxproc as the ProctrackType can cause jobs to run too quickly before
 Accounting is able to poll for job information. As a result not all of
 accounting information will be present.
 .RE
+.IP
 
 .TP
 \fB\-\-cpus\-per\-gpu\fR=<\fIncpus\fR>
 Advise Slurm that ensuing job steps will require \fIncpus\fR processors per
 allocated GPU.
 Not compatible with the \fB\-\-cpus\-per\-task\fR option.
+.IP
 
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
@@ -435,6 +492,7 @@ cluster is comprised of quad\-processors nodes and we simply ask for
 the \-\-cpus\-per\-task=3 options, the controller knows that each task requires
 3 processors on the same node, and the controller will grant an allocation
 of 4 nodes, one for each of the 4 tasks.
+.IP
 
 .TP
 \fB\-\-deadline\fR=<\fIOPT\fR>
@@ -451,6 +509,7 @@ MM/DD[/YY]\-HH:MM[:SS]
 YYYY\-MM\-DD[THH:MM[:SS]]]
 .br
 now[+\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.IP
 
 .TP
 \fB\-\-delay\-boot\fR=<\fIminutes\fR>
@@ -462,6 +521,7 @@ The argument is in units of minutes.
 A default value may be set by a system administrator using the \fBdelay_boot\fR
 option of the \fBSchedulerParameters\fR configuration parameter in the
 slurm.conf file, otherwise the default value is zero (no delay).
+.IP
 
 .TP
 \fB\-d\fR, \fB\-\-dependency\fR=<\fIdependency_list\fR>
@@ -480,6 +540,7 @@ Dependencies on remote jobs are allowed in a federation.
 Once a job dependency fails due to the termination state of a preceding job,
 the dependent job will never be run, even if the preceding job is requeued and
 has a different termination state in a subsequent execution.
+.IP
 .PD
 .RS
 .TP
@@ -488,26 +549,38 @@ After the specified jobs start or are cancelled and 'time' in minutes from job
 start or cancellation happens, this
 job can begin execution. If no 'time' is given then there is no delay after
 start or cancellation.
+.IP
+
 .TP
 \fBafterany:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated.
+.IP
+
 .TP
 \fBafterburstbuffer:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated and
 any associated burst buffer stage out operations have completed.
+.IP
+
 .TP
 \fBaftercorr:job_id[:jobid...]\fR
 A task of this job array can begin execution after the corresponding task ID
 in the specified job has completed successfully (ran to completion with an
 exit code of zero).
+.IP
+
 .TP
 \fBafternotok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated
 in some failed state (non\-zero exit code, node failure, timed out, etc).
+.IP
+
 .TP
 \fBafterok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have successfully
 executed (ran to completion with an exit code of zero).
+.IP
+
 .TP
 \fBsingleton\fR
 This job can begin execution after any previously launched jobs
@@ -517,6 +590,7 @@ or suspended at any point in time.
 In a federation, a singleton dependency must be fulfilled on all clusters
 unless DependencyParameters=disable_remote_singleton is used in slurm.conf.
 .RE
+.IP
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR={*|block|cyclic|arbitrary|plane=<\fIsize\fR>}[:{*|block|cyclic|fcyclic}[:{*|block|cyclic|fcyclic}]][,{Pack|NoPack}]
@@ -549,6 +623,8 @@ First distribution method (distribution of tasks across nodes):
 .TP
 .B *
 Use the default method for distributing tasks to nodes (block).
+.IP
+
 .TP
 .B block
 The block distribution method will distribute tasks to a node such
@@ -558,6 +634,8 @@ distribution request will distribute those tasks to the nodes with
 tasks one and two on the first node, task three on the second node,
 and task four on the third node.  Block distribution is the default
 behavior if the number of tasks exceeds the number of allocated nodes.
+.IP
+
 .TP
 .B cyclic
 The cyclic distribution method will distribute tasks to a node such
@@ -572,6 +650,8 @@ may not be allocated on each node. Task distribution will be
 round\-robin among all the nodes with CPUs yet to be assigned to tasks.
 Cyclic distribution is the default behavior if the number
 of tasks is no larger than the number of allocated nodes.
+.IP
+
 .TP
 .B plane
 The tasks are distributed in blocks of size <\fIsize\fR>. The size must be given
@@ -582,6 +662,8 @@ specifications cannot be combined with this option.
 For more details (including examples and diagrams), please see
 https://slurm.schedmd.com/mc_support.html and
 https://slurm.schedmd.com/dist_plane.html
+.IP
+
 .TP
 .B arbitrary
 The arbitrary method of distribution will allocate processes in\-order
@@ -602,18 +684,23 @@ task layout in an existing job allocation for the srun command.
 also given, the number of nodes used from that list will be reduced to match
 that of the number of tasks if the number of nodes in the list is greater than
 the number of tasks.
+.IP
 
-.TP
+.LP
 Second distribution method (distribution of CPUs across sockets for binding):
 
 .TP
 .B *
 Use the default method for distributing CPUs across sockets (cyclic).
+.IP
+
 .TP
 .B block
 The block distribution method will distribute allocated CPUs 
 consecutively from the same socket for binding to tasks, before using
 the next consecutive socket.
+.IP
+
 .TP
 .B cyclic
 The cyclic distribution method will distribute allocated CPUs for
@@ -622,6 +709,8 @@ from the next consecutive socket for the next task, in a
 round\-robin fashion across sockets. 
 Tasks requiring more than one CPU will have all of those CPUs allocated on a
 single socket if possible.
+.IP
+
 .TP
 .B fcyclic
 The fcyclic distribution method will distribute allocated CPUs 
@@ -629,33 +718,40 @@ for binding to tasks from consecutive sockets in a
 round\-robin fashion across the sockets.
 Tasks requiring more than one CPU will have each CPUs allocated in a cyclic
 fashion across sockets.
+.IP
 
-.TP
+.LP
 Third distribution method (distribution of CPUs across cores for binding):
 
 .TP
 .B *
 Use the default method for distributing CPUs across cores
 (inherited from second distribution method).
+.IP
+
 .TP
 .B block
 The block distribution method will distribute allocated CPUs 
 consecutively from the same core for binding to tasks, before using
 the next consecutive core.
+.IP
+
 .TP
 .B cyclic
 The cyclic distribution method will distribute allocated CPUs for
 binding to a given task consecutively from the same core, and
 from the next consecutive core for the next task, in a 
 round\-robin fashion across cores. 
+.IP
+
 .TP
 .B fcyclic
 The fcyclic distribution method will distribute allocated CPUs 
 for binding to tasks from consecutive cores in a
 round\-robin fashion across the cores.
+.IP
 
-
-.TP
+.LP
 Optional control for task distribution over nodes:
 
 .TP
@@ -663,6 +759,8 @@ Optional control for task distribution over nodes:
 Rather than evenly distributing a job step's tasks evenly across its allocated
 nodes, pack them as tightly as possible on the nodes.
 This only applies when the "block" task distribution method is used.
+.IP
+
 .TP
 .B NoPack
 Rather than packing a job step's tasks as tightly as possible on the nodes,
@@ -670,10 +768,12 @@ distribute them evenly.
 This user option will supersede the SelectTypeParameters CR_Pack_Nodes
 configuration parameter.
 .RE
+.IP
 
 .TP
 \fB\-x\fR, \fB\-\-exclude\fR=<\fInode_name_list\fR>
 Explicitly exclude certain nodes from the resources granted to the job.
+.IP
 
 .TP
 \fB\-\-exclusive\fR[={user|mcs}]
@@ -686,6 +786,7 @@ design to support gang scheduling, because suspended jobs still reside in
 memory. To request all the memory on a node, use \fB\-\-mem=0\fR.
 The default shared/exclusive behavior depends on system configuration and the
 partition's \fBOverSubscribe\fR option takes precedence over the job's option.
+.IP
 
 .TP
 \fB\-B\fR, \fB\-\-extra\-node\-info\fR=<\fIsockets\fR>[:\fIcores\fR[:\fIthreads\fR]]
@@ -718,6 +819,7 @@ option applies to job allocations.
 .br
 \fBNOTE\fR: This option may implicitly set the number of tasks (if \fB\-n\fR
 was not specified) as one task per requested thread.
+.IP
 
 .TP
 \fB\-\-get\-user\-env\fR[=\fItimeout\fR][\fImode\fR]
@@ -739,6 +841,7 @@ Example of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
 "\-\-get\-user\-env=10L", and "\-\-get\-user\-env=S".
 NOTE: This option only works if the caller has an
 effective uid of "root".
+.IP
 
 .TP
 \fB\-\-gid\fR=<\fIgroup\fR>
@@ -746,6 +849,7 @@ Submit the job with the specified \fIgroup\fR's group access permissions.
 \fIgroup\fR may be the group name or the numerical group ID.
 In the default Slurm configuration, this option is only valid when used
 by the user root.
+.IP
 
 .TP
 \fB\-\-gpu\-bind\fR=[verbose,]<\fItype\fR>
@@ -756,12 +860,15 @@ debug information to the stderr of the tasks. GPU binding is ignored if there is
 only one task.
 
 Supported \fItype\fR options:
+.IP
 .RS
 .TP 10
 \fBclosest\fR
 Bind each task to the GPU(s) which are closest.
 In a NUMA environment, each task may be bound to more than one GPU (i.e.
 all GPUs in that NUMA environment).
+.IP
+
 .TP
 \fBmap_gpu:<list>\fR
 Bind by setting GPU masks on tasks (or ranks) as specified where <list> is
@@ -777,6 +884,8 @@ then the GPU IDs are zero\-based indexes relative to the GPUs allocated to the
 job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
 IDs are global IDs, and all GPUs on each node in the job should be allocated for
 predictable binding results.
+.IP
+
 .TP
 \fBmask_gpu:<list>\fR
 Bind by setting GPU masks on tasks (or ranks) as specified where <list> is
@@ -792,15 +901,21 @@ then the GPU IDs are zero\-based indexes relative to the GPUs allocated to the
 job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
 IDs are global IDs, and all GPUs on each node in the job should be allocated for
 predictable binding results.
+.IP
+
 .TP
 \fBnone\fR
 Do not bind tasks to GPUs (turns off binding if \-\-gpus\-per\-task is
 requested).
+.IP
+
 .TP
 \fBper_task:<gpus_per_task>\fR
 Each task will be bound to the number of gpus specified in
 \fI<gpus_per_task>\fR. Gpus are assigned in order to tasks. The first task will
 be assigned the first x number of gpus on the node etc.
+.IP
+
 .TP
 \fBsingle:<tasks_per_gpu>\fR
 Like \fI\-\-gpu\-bind=closest\fR, except that each task can only be bound to a
@@ -812,6 +927,7 @@ This is basically a block distribution of tasks onto available GPUs, where the
 available GPUs are determined by the socket affinity of the task and the socket
 affinity of the GPUs as specified in gres.conf's \fICores\fR parameter.
 .RE
+.IP
 
 .TP
 \fB\-\-gpu\-freq\fR=[<\fItype\fR]=\fIvalue\fR>[,<\fItype\fR=\fIvalue\fR>][,verbose]
@@ -833,20 +949,28 @@ Examples of use include "\-\-gpu\-freq=medium,memory=high" and
 "\-\-gpu\-freq=450".
 
 Supported \fIvalue\fR definitions:
+.IP
 .RS
 .TP 10
 \fBlow\fR
 the lowest available frequency.
+.IP
+
 .TP
 \fBmedium\fR
 attempts to set a frequency in the middle of the available range.
+.IP
+
 .TP
 \fBhigh\fR
 the highest available frequency.
+.IP
+
 .TP
 \fBhighm1\fR
 (high minus one) will select the next highest available frequency.
 .RE
+.IP
 
 .TP
 \fB\-G\fR, \fB\-\-gpus\fR=[\fItype\fR:]<\fInumber\fR>
@@ -857,6 +981,7 @@ Multiple options can be requested in a comma separated list, for example:
 "\-\-gpus=volta:3,kepler:1".
 See also the \fB\-\-gpus\-per\-node\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
+.IP
 
 .TP
 \fB\-\-gpus\-per\-node\fR=[\fItype\fR:]<\fInumber\fR>
@@ -868,6 +993,7 @@ Multiple options can be requested in a comma separated list, for example:
 "\-\-gpus\-per\-node=volta:3,kepler:1".
 See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
+.IP
 
 .TP
 \fB\-\-gpus\-per\-socket\fR=[\fItype\fR:]<\fInumber\fR>
@@ -880,6 +1006,7 @@ Multiple options can be requested in a comma separated list, for example:
 Requires job to specify a sockets per node count ( \-\-sockets\-per\-node).
 See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-node\fR and
 \fB\-\-gpus\-per\-task\fR options.
+.IP
 
 .TP
 \fB\-\-gpus\-per\-task\fR=[\fItype\fR:]<\fInumber\fR>
@@ -895,6 +1022,7 @@ This option requires an explicit task count, e.g. \-n, \-\-ntasks or "\-\-gpus=X
 This option will implicitly set \-\-gpu\-bind=per_task:<gpus_per_task>, but that
 can be overridden with an explicit \-\-gpu\-bind specification.
 .br
+.IP
 
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
@@ -915,10 +1043,12 @@ A list of available generic consumable resources will be printed and the
 command will exit if the option argument is "help".
 Examples of use include "\-\-gres=gpu:2", "\-\-gres=gpu:kepler:2", and
 "\-\-gres=help".
+.IP
 
 .TP
 \fB\-\-gres\-flags\fR=<\fItype\fR>
 Specify generic resource task binding options.
+.IP
 .RS
 .TP
 .B disable\-binding
@@ -930,6 +1060,8 @@ This option may permit a job to be allocated resources sooner than otherwise
 possible, but may result in lower job performance.
 .br
 \fBNOTE\fR: This option is specific to \fBSelectType=cons_res\fR.
+.IP
+
 .TP
 .B enforce\-binding
 The only CPUs available to the job will be those bound to the selected
@@ -944,10 +1076,12 @@ filtering will be performed on a per\-socket basis.
 .br
 \fBNOTE\fR: This option is specific to \fBSelectType=cons_tres\fR.
 .RE
+.IP
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Display help information and exit.
+.IP
 
 .TP
 \fB\-\-hint\fR=<\fItype\fR>
@@ -957,30 +1091,39 @@ Bind tasks according to application hints.
 \fB\-\-ntasks\-per\-core\fR, \fB\-\-threads\-per\-core\fR or \fB\-B\fR. If
 \fB\-\-hint\fR is specified as a command line argument, it will take
 precedence over the environment.
+.IP
 .RS
 .TP
 .B compute_bound
 Select settings for compute bound applications:
 use all cores in each socket, one thread per core.
+.IP
+
 .TP
 .B memory_bound
 Select settings for memory bound applications:
 use only one core in each socket, one thread per core.
+.IP
+
 .TP
 .B [no]multithread
 [don't] use extra threads with in\-core multi\-threading
 which can benefit communication intensive applications.
 Only supported with the task/affinity plugin.
+.IP
+
 .TP
 .B help
 show this help message
 .RE
+.IP
 
 .TP
 \fB\-H, \-\-hold\fR
 Specify the job is to be submitted in a held state (priority of zero).
 A held job can now be released using scontrol to reset its priority
 (e.g. "\fIscontrol release <job_id>\fR").
+.IP
 
 .TP
 \fB\-I\fR, \fB\-\-immediate\fR[=<\fIseconds\fR>]
@@ -995,12 +1138,14 @@ will block until resources become available. Since this option's
 argument is optional, for proper parsing the single letter option must
 be followed immediately with the value and not include a space between
 them. For example "\-I60" and not "\-I 60".
+.IP
 
 .TP
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
 Specify a name for the job allocation. The specified name will appear along with
 the job id number when querying running jobs on the system.  The default job
 name is the name of the "command" specified on the command line.
+.IP
 
 .TP
 \fB\-K\fR, \fB\-\-kill\-command\fR[=\fIsignal\fR]
@@ -1017,6 +1162,7 @@ non\-interactive sessions. Since this option's argument is optional,
 for proper parsing the single letter option must be followed
 immediately with the value and not include a space between them. For
 example "\-K1" and not "\-K 1".
+.IP
 
 .TP
 \fB\-L\fR, \fB\-\-licenses\fR=<\fIlicense\fR>[@\fIdb\fR][:\fIcount\fR][,\fIlicense\fR[@\fIdb\fR][:\fIcount\fR]...]
@@ -1026,6 +1172,7 @@ License names can be followed by a colon and count
 (the default count is one).
 Multiple license names should be comma separated (e.g.
 "\-\-licenses=foo:4,bar").
+.IP
 
 .TP
 \fB\-\-mail\-type\fR=<\fItype\fR>
@@ -1038,18 +1185,21 @@ TIME_LIMIT_80 (reached 80 percent of time limit), and TIME_LIMIT_50 (reached 50
 percent of time limit).
 Multiple \fItype\fR values may be specified in a comma separated list.
 The user to be notified is indicated with \fB\-\-mail\-user\fR.
+.IP
 
 .TP
 \fB\-\-mail\-user\fR=<\fIuser\fR>
 User to receive email notification of state changes as defined by
 \fB\-\-mail\-type\fR.
 The default value is the submitting user.
+.IP
 
 .TP
 \fB\-\-mcs\-label\fR=<\fImcs\fR>
 Used only when the mcs/group plugin is enabled.
 This parameter is a group among the groups of the user.
 Default value is calculated by the Plugin mcs if it's enabled.
+.IP
 
 .TP
 \fB\-\-mem\fR=<\fIsize\fR>[\fIunits\fR]
@@ -1078,6 +1228,7 @@ or enabling of accounting, which samples memory use on a periodic basis (data
 need not be stored, just collected). In both cases memory use is based upon
 the job's Resident Set Size (RSS). A task may exceed the memory limit until
 the next periodic accounting sample.
+.IP
 
 .TP
 \fB\-\-mem\-bind\fR=[{quiet|verbose},]<\fItype\fR>
@@ -1112,13 +1263,18 @@ See the \fBENVIRONMENT VARIABLES\fR section for a more detailed description
 of the individual SLURM_MEM_BIND* variables.
 
 Supported options include:
+.IP
 .RS
 .TP
 .B help
 show this help message
+.IP
+
 .TP
 .B local
 Use memory local to the processor in use
+.IP
+
 .TP
 .B map_mem:<list>
 Bind by setting memory masks on tasks (or ranks) as specified where <list> is
@@ -1136,6 +1292,8 @@ asterisk and repetition count.
 For example "map_mem:0x0f*4,0xf0*4".
 For predictable binding results, all CPUs for each node in the job should be
 allocated to the job.
+.IP
+
 .TP
 .B mask_mem:<list>
 Bind by setting memory masks on tasks (or ranks) as specified where <list> is
@@ -1154,26 +1312,39 @@ asterisk and repetition count.
 For example "mask_mem:0*4,1*4".
 For predictable binding results, all CPUs for each node in the job should be
 allocated to the job.
+.IP
+
 .TP
 .B no[ne]
 don't bind tasks to memory (default)
+.IP
+
 .TP
 .B p[refer]
 Prefer use of first specified NUMA node, but permit
  use of other available NUMA nodes.
+.IP
+
 .TP
 .B q[uiet]
 quietly bind before task runs (default)
+.IP
+
 .TP
 .B rank
 bind by task rank (not recommended)
+.IP
+
 .TP
 .B sort
 sort free cache pages (run zonesort on Intel KNL nodes)
+.IP
+
 .TP
 .B v[erbose]
 verbosely report binding before task runs
 .RE
+.IP
 
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIsize\fR>[\fIunits\fR]
@@ -1206,6 +1377,7 @@ This could happen if \fB\-\-mem\-per\-cpu\fR is used with the
 \fB\-\-exclusive\fR option for a job allocation and \fB\-\-mem\-per\-cpu\fR
 times the number of CPUs on a node is greater than the total memory of that
 node.
+.IP
 
 .TP
 \fB\-\-mem\-per\-gpu\fR=<\fIsize\fR>[\fIunits\fR]
@@ -1219,10 +1391,12 @@ and \fBscontrol show partition\fR commands.
 Also see \fB\-\-mem\fR.
 The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR
 options are mutually exclusive.
+.IP
 
 .TP
 \fB\-\-mincpus\fR=<\fIn\fR>
 Specify a minimum number of logical cpus/processors per node.
+.IP
 
 .TP
 \fB\-\-network\fR=<\fItype\fR>
@@ -1233,6 +1407,7 @@ used to request using Network Performance Counters.
 Only one value per request is valid.
 All options are case in\-sensitive.
 In this configuration supported values include:
+.IP
 .RS
 .TP 6
 \fBsystem\fR
@@ -1241,6 +1416,8 @@ will be marked in use for the job allocation.  If the job does not
 fill up the entire system the rest of the nodes are not
 able to be used by other jobs using NPC, if idle their state will appear as
 PerfCnts.  These nodes are still available for other jobs not using NPC.
+.IP
+
 .TP
 \fBblade\fR
 Use the blade network performance counters. Only nodes requested
@@ -1248,28 +1425,23 @@ will be marked in use for the job allocation.  If the job does not
 fill up the entire blade(s) allocated to the job those blade(s) are not
 able to be used by other jobs using NPC, if idle their state will appear as
 PerfCnts.  These nodes are still available for other jobs not using NPC.
-.TP
 .RE
+.IP
 
-.br
-.br
 In all cases the job allocation request \fBmust specify the
 \-\-exclusive option\fR.  Otherwise the request will be denied.
 
-.br
-.br
 Also with any of these options steps are not allowed to share blades,
 so resources would remain idle inside an allocation if the step
 running on a blade does not take up all the nodes on the blade.
 
-.br
-.br
 The \fBnetwork\fR option is also supported on systems with IBM's Parallel Environment (PE).
 See IBM's LoadLeveler job command keyword documentation about the keyword
 "network" for more information.
 Multiple values may be specified in a comma separated list.
 All options are case in\-sensitive.
 Supported values include:
+.IP
 .RS
 .TP 12
 \fBBULK_XFER\fR[=<\fIresources\fR>]
@@ -1280,81 +1452,121 @@ gigabytes.
 NOTE: The \fIresources\fR specification is not supported by the underlying
 IBM infrastructure as of Parallel Environment version 2.2 and no value should
 be specified at this time.
+.IP
+
 .TP
 \fBCAU\fR=<\fIcount\fR>
 Number of Collectve Acceleration Units (CAU) required.
 Applies only to IBM Power7\-IH processors.
 Default value is zero.
 Independent CAU will be allocated for each programming interface (MPI, LAPI, etc.)
+.IP
+
 .TP
 \fBDEVNAME\fR=<\fIname\fR>
 Specify the device name to use for communications (e.g. "eth0" or "mlx4_0").
+.IP
+
 .TP
 \fBDEVTYPE\fR=<\fItype\fR>
 Specify the device type to use for communications.
 The supported values of \fItype\fR are:
 "IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
 "IPONLY" (IP\-Only interfaces), "HPCE" (HPC Ethernet), and
+
 "KMUX" (Kernel Emulation of HPCE).
 The devices allocated to a job must all be of the same type.
 The default value depends upon depends upon what hardware is available and in
 order of preferences is IPONLY (which is not considered in User Space mode),
 HFI, IB, HPCE, and KMUX.
+.IP
+
 .TP
 \fBIMMED\fR =<\fIcount\fR>
 Number of immediate send slots per window required.
 Applies only to IBM Power7\-IH processors.
 Default value is zero.
+.IP
+
 .TP
 \fBINSTANCES\fR =<\fIcount\fR>
 Specify number of network connections for each task on each network connection.
 The default instance count is 1.
+.IP
+
 .TP
 \fBIPV4\fR
 Use Internet Protocol (IP) version 4 communications (default).
+.IP
+
 .TP
 \fBIPV6\fR
 Use Internet Protocol (IP) version 6 communications.
+.IP
+
 .TP
 \fBLAPI\fR
 Use the LAPI programming interface.
+.IP
+
 .TP
 \fBMPI\fR
 Use the MPI programming interface.
 MPI is the default interface.
+.IP
+
 .TP
 \fBPAMI\fR
 Use the PAMI programming interface.
+.IP
+
 .TP
 \fBSHMEM\fR
 Use the OpenSHMEM programming interface.
+.IP
+
 .TP
 \fBSN_ALL\fR
 Use all available switch networks (default).
+.IP
+
 .TP
 \fBSN_SINGLE\fR
 Use one available switch network.
+.IP
+
 .TP
 \fBUPC\fR
 Use the UPC programming interface.
+.IP
+
 .TP
 \fBUS\fR
 Use User Space communications.
-.TP
+.IP
+.RE
 
 Some examples of network specifications:
+.IP
+.RS
 .TP
 \fBInstances=2,US,MPI,SN_ALL\fR
 Create two user space connections for MPI communications on every switch
 network for each task.
+.IP
+
 .TP
 \fBUS,MPI,Instances=3,Devtype=IB\fR
 Create three user space connections for MPI communications on every InfiniBand
 network for each task.
+.IP
+
 .TP
 \fBIPV4,LAPI,SN_Single\fR
 Create a IP version 4 connection for LAPI communications on one switch network
 for each task.
+.IP
+
 .TP
 \fBInstances=2,US,LAPI,MPI\fR
 Create two user space connections each for LAPI and MPI communications on every
@@ -1365,6 +1577,7 @@ If there are two networks and four tasks on the node then a total
 of 32 connections are established (2 instances x 2 protocols x 2 networks x
 4 tasks).
 .RE
+.IP
 
 .TP
 \fB\-\-nice\fR[=\fIadjustment\fR]
@@ -1372,10 +1585,12 @@ Run the job with an adjusted scheduling priority within Slurm. With no
 adjustment value the scheduling priority is decreased by 100. A negative nice
 value increases the priority, otherwise decreases it. The adjustment range is
 +/\- 2147483645. Only privileged users can specify a negative adjustment.
+.IP
 
 .TP
 \fB\-\-no\-bell\fR
 Silence salloc's use of the terminal bell. Also see the option \fB\-\-bell\fR.
+.IP
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR[=off]
@@ -1391,6 +1606,7 @@ Specify an optional argument of "off" disable the effect of the
 
 By default Slurm terminates the entire job allocation if any node fails in its
 range of allocated nodes.
+.IP
 
 .TP
 \fB\-\-no\-shell\fR
@@ -1406,6 +1622,7 @@ Slurm job is subject to the normal constraints on jobs, including time
 limits, so that eventually the job will terminate and the resources
 will be freed, or you can terminate the job manually using the
 \fBscancel\fR command.)
+.IP
 
 .TP
 \fB\-F\fR, \fB\-\-nodefile\fR=<\fInode_file\fR>
@@ -1414,6 +1631,7 @@ Much like \fB\-\-nodelist\fR, but the list is contained in a file of name
 in the file.    Duplicate node names in the file will be ignored.
 The order of the node names in the list is not important; the node names
 will be sorted by Slurm.
+.IP
 
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=<\fInode_name_list\fR>
@@ -1429,6 +1647,7 @@ nodes as needed.
 Duplicate node names in the list will be ignored.
 The order of the node names in the list is not important; the node names
 will be sorted by Slurm.
+.IP
 
 .TP
 \fB\-N\fR, \fB\-\-nodes\fR=<\fIminnodes\fR>[\-\fImaxnodes\fR]
@@ -1454,6 +1673,7 @@ and without delaying the initiation of the job.
 The node count specification may include a numeric value followed by a suffix
 of "k" (multiplies numeric value by 1,024) or "m" (multiplies numeric value by
 1,048,576).
+.IP
 
 .TP
 \fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>
@@ -1463,6 +1683,7 @@ steps run within this allocation will launch a maximum of \fInumber\fR
 tasks and sufficient resources are allocated to accomplish this.
 The default is one task per node, but note
 that the \fB\-\-cpus\-per\-task\fR option will change this default.
+.IP
 
 .TP
 \fB\-\-ntasks\-per\-core\fR=<\fIntasks\fR>
@@ -1472,6 +1693,7 @@ Related to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level.
 \fBNOTE\fR: This option is not supported when using
 \fISelectType=select/linear\fR.
+.IP
 
 .TP
 \fB\-\-ntasks\-per\-gpu\fR=<\fIntasks\fR>
@@ -1491,6 +1713,7 @@ This option is not compatible with \fB\-\-gpus\-per\-task\fR,
 \fB\-\-gpus\-per\-socket\fR, or \fB\-\-ntasks\-per\-node\fR.
 This option is not supported unless \fISelectType=cons_tres\fR is
 configured (either directly or indirectly on Cray systems).
+.IP
 
 .TP
 \fB\-\-ntasks\-per\-node\fR=<\fIntasks\fR>
@@ -1509,6 +1732,7 @@ assigned to each node while allowing the OpenMP portion to utilize
 all of the parallelism present in the node, or submitting a single
 setup/cleanup/monitoring job to each node of a pre\-existing
 allocation as one step in a larger job script.
+.IP
 
 .TP
 \fB\-\-ntasks\-per\-socket\fR=<\fIntasks\fR>
@@ -1518,6 +1742,7 @@ Related to \fB\-\-ntasks\-per\-node\fR except at the socket level
 instead of the node level.
 \fBNOTE\fR: This option is not supported when using
 \fISelectType=select/linear\fR.
+.IP
 
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR
@@ -1539,6 +1764,7 @@ process per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
 permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is
 defined in the file \fIslurm.h\fR and is not a variable, it is set at
 Slurm build time.
+.IP
 
 .TP
 \fB\-s\fR, \fB\-\-oversubscribe\fR
@@ -1551,6 +1777,7 @@ This option may result in the allocation being granted sooner than if the
 \fB\-\-oversubscribe\fR option was not set and allow higher system utilization,
 but application performance will likely suffer due to competition for resources.
 Also see the \fB\-\-exclusive\fR option.
+.IP
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
@@ -1562,6 +1789,7 @@ offering earliest initiation will be used with no regard given to the partition
 name ordering (although higher priority partitions will be considered first).
 When the job is initiated, the name of the partition used will be placed first
 in the job record partition string.
+.IP
 
 .TP
 \fB\-\-power\fR=<\fIflags\fR>
@@ -1569,6 +1797,7 @@ Comma separated list of power management plugin options.
 Currently available flags include:
 level (all nodes allocated to the job should have identical power caps,
 may be disabled by the Slurm configuration option PowerParameters=job_no_level).
+.IP
 
 .TP
 \fB\-\-priority\fR=<\fIvalue\fR>
@@ -1576,44 +1805,50 @@ Request a specific job priority.
 May be subject to configuration specific constraints.
 \fIvalue\fR should either be a numeric value or "TOP" (for highest possible value).
 Only Slurm operators and administrators can set the priority of a job.
+.IP
 
 .TP
 \fB\-\-profile\fR={all|none|<\fItype\fR>[,<\fItype\fR>...]}
 Enables detailed data collection by the acct_gather_profile plugin.
 Detailed data are typically time\-series that are stored in an HDF5 file for
 the job or an InfluxDB database depending on the configured plugin.
-
+.IP
 .RS
 .TP 10
 \fBAll\fR
 All data types are collected. (Cannot be combined with other values.)
+.IP
 
 .TP
 \fBNone\fR
 No data types are collected. This is the default.
  (Cannot be combined with other values.)
+.IP
+.RE
 
-.TP
 Valid \fItype\fR values are:
-
-.RS 4
+.IP
+.RS
 .TP
 \fBEnergy\fR
 Energy data is collected.
+.IP
 
 .TP
 \fBTask\fR
 Task (I/O, Memory, ...) data is collected.
+.IP
 
 .TP
 \fBLustre\fR
 Lustre data is collected.
+.IP
 
 .TP
 \fBNetwork\fR
 Network (InfiniBand) data is collected.
 .RE
-.RE
+.IP
 
 .TP
 \fB\-q\fR, \fB\-\-qos\fR=<\fIqos\fR>
@@ -1622,16 +1857,19 @@ for each user/cluster/account association in the Slurm database.
 Users will be limited to their association's defined set of qos's when
 the Slurm configuration parameter, AccountingStorageEnforce, includes
 "qos" in its definition.
+.IP
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
 Suppress informational messages from salloc. Errors will still be displayed.
+.IP
 
 .TP
 \fB\-\-reboot\fR
 Force the allocated nodes to reboot before starting the job.
 This is only supported with some system configurations and will otherwise be
 silently ignored. Only root, \fISlurmUser\fR or admins can reboot nodes.
+.IP
 
 .TP
 \fB\-\-reservation\fR=<\fIreservation_names\fR>
@@ -1642,6 +1880,7 @@ order it was requested.
 All reservations will be listed in scontrol/squeue through the life of the job.
 In accounting the first reservation will be seen and after the job starts the
 reservation used will replace it.
+.IP
 
 .TP
 \fB\-\-signal\fR=[R:]<\fIsig_num\fR>[@\fIsig_time\fR]
@@ -1658,6 +1897,7 @@ Use the "R:" option to allow this job to overlap with a reservation with
 MaxStartDelay set.
 To have the signal sent at preemption time see the
 \fBpreempt_send_user_signal\fR \fBSlurmctldParameter\fR.
+.IP
 
 .TP
 \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
@@ -1667,12 +1907,14 @@ task/affinity plugin is enabled.
 .br
 \fBNOTE\fR: This option may implicitly set the number of tasks (if \fB\-n\fR
 was not specified) as one task per requested thread.
+.IP
 
 .TP
 \fB\-\-spread\-job\fR
 Spread the job allocation over as many nodes as possible and attempt to
 evenly distribute tasks across the allocated nodes.
 This option disables the topology/tree plugin.
+.IP
 
 .TP
 \fB\-\-switches\fR=<\fIcount\fR>[@\fImax\-time\fR]
@@ -1692,6 +1934,7 @@ On a dragonfly network the only switch count supported is 1 since communication
 performance will be highest when a job is allocate resources on one leaf switch
 or more than 2 leaf switches.
 The default max\-time is the max_switch_wait SchedulerParameters.
+.IP
 
 .TP
 \fB\-\-thread\-spec\fR=<\fInum\fR>
@@ -1699,6 +1942,7 @@ Count of specialized threads per node reserved by the job for system operations
 and not used by the application. The application will not use these threads,
 but will be charged for their allocation.
 This option can not be used with the \fB\-\-core\-spec\fR option.
+.IP
 
 .TP
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
@@ -1711,6 +1955,7 @@ plugin is enabled.
 .br
 \fBNOTE\fR: This option may implicitly set the number of tasks (if \fB\-n\fR
 was not specified) as one task per requested thread.
+.IP
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR=<\fItime\fR>
@@ -1727,6 +1972,7 @@ and second values are rounded up to the next minute.
 A time limit of zero requests that no time limit be imposed.  Acceptable time
 formats include "minutes", "minutes:seconds", "hours:minutes:seconds",
 "days\-hours", "days\-hours:minutes" and "days\-hours:minutes:seconds".
+.IP
 
 .TP
 \fB\-\-time\-min\fR=<\fItime\fR>
@@ -1740,12 +1986,14 @@ otherwise reserved for higher priority jobs.
 Acceptable time formats include "minutes", "minutes:seconds",
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
 "days\-hours:minutes:seconds".
+.IP
 
 .TP
 \fB\-\-tmp\fR=<\fIsize\fR>[\fIunits\fR]
 Specify a minimum amount of temporary disk space per node.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
+.IP
 
 .TP
 \fB\-\-uid\fR=<\fIuser\fR>
@@ -1757,24 +2005,29 @@ may use this option to run jobs as a normal user in a RootOnly
 partition for example. If run as root, \fBsalloc\fR will drop
 its permissions to the uid specified after node allocation is
 successful. \fIuser\fR may be the user name or numerical user ID.
+.IP
 
 .TP
 \fB\-\-usage\fR
 Display brief help message and exit.
+.IP
 
 .TP
 \fB\-\-use\-min\-nodes\fR
 If a range of node counts is given, prefer the smaller count.
+.IP
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Increase the verbosity of salloc's informational messages.  Multiple
 \fB\-v\fR's will further increase salloc's verbosity.  By default only
 errors will be displayed.
+.IP
 
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Display version information and exit.
+.IP
 
 .TP
 \fB\-\-wait\-all\-nodes\fR=<\fIvalue\fR>
@@ -1783,26 +2036,32 @@ are ready for use (i.e. booted).
 By default, the salloc command will return as soon as the allocation is made.
 This default can be altered using the \fBsalloc_wait_nodes\fR option to the
 \fBSchedulerParameters\fR parameter in the slurm.conf file.
+.IP
 .RS
 .TP 5
 0
 Begin execution as soon as allocation can be made.
 Do not wait for all nodes to be ready for use (i.e. booted).
+.IP
+
 .TP
 1
 Do not begin execution until all nodes are ready for use.
 .RE
+.IP
 
 .TP
 \fB\-\-wckey\fR=<\fIwckey\fR>
 Specify wckey to be used with job.  If TrackWCKey=no (default) in the
 slurm.conf this value is ignored.
+.IP
 
 .TP
 \fB\-\-x11\fR[={all|first|last}]
 Sets up X11 forwarding on "all", "first" or "last" node(s) of the allocation.
 This option is only enabled if Slurm was compiled with X11 support and
 PrologFlags=x11 is defined in the slurm.conf. Default is "all".
+.IP
 
 .SH "PERFORMANCE"
 .PP
@@ -1833,145 +2092,237 @@ There are a couple exceptions to these rules that are noted below.
 .TP 22
 \fBSALLOC_ACCOUNT\fR
 Same as \fB\-A, \-\-account\fR
+.IP
+
 .TP
 \fBSALLOC_ACCTG_FREQ\fR
 Same as \fB\-\-acctg\-freq\fR
+.IP
+
 .TP
 \fBSALLOC_BELL\fR
 Same as \fB\-\-bell\fR
+.IP
+
 .TP
 \fBSALLOC_BURST_BUFFER\fR
 Same as \fB\-\-bb\fR
+.IP
+
 .TP
 \fBSALLOC_CLUSTERS\fR or \fBSLURM_CLUSTERS\fR
 Same as \fB\-\-clusters\fR
+.IP
+
 .TP
 \fBSALLOC_CONSTRAINT\fR
 Same as \fB\-C\fR, \fB\-\-constraint\fR
+.IP
+
 .TP
 \fBSALLOC_CONTAINER\fR
 Same as \-\-container\fR.
+.IP
+
 .TP
 \fBSALLOC_CORE_SPEC\fR
 Same as \fB\-\-core\-spec\fR
+.IP
+
 .TP
 \fBSALLOC_CPUS_PER_GPU\fR
 Same as \fB\-\-cpus\-per\-gpu\fR
+.IP
+
 .TP
 \fBSALLOC_DEBUG\fR
 Same as \fB\-v, \-\-verbose\fR. Must be set to 0 or 1 to disable or enable
 the option.
+.IP
+
 .TP
 \fBSALLOC_DELAY_BOOT\fR
 Same as \fB\-\-delay\-boot\fR
+.IP
+
 .TP
 \fBSALLOC_EXCLUSIVE\fR
 Same as \fB\-\-exclusive\fR
+.IP
+
 .TP
 \fBSALLOC_GPU_BIND\fR
 Same as \fB\-\-gpu\-bind\fR
+.IP
+
 .TP
 \fBSALLOC_GPU_FREQ\fR
 Same as \fB\-\-gpu\-freq\fR
+.IP
+
 .TP
 \fBSALLOC_GPUS\fR
 Same as \fB\-G, \-\-gpus\fR
+.IP
+
 .TP
 \fBSALLOC_GPUS_PER_NODE\fR
 Same as \fB\-\-gpus\-per\-node\fR
+.IP
+
 .TP
 \fBSALLOC_GPUS_PER_TASK\fR
 Same as \fB\-\-gpus\-per\-task\fR
+.IP
+
 .TP
 \fBSALLOC_GRES\fR
 Same as \fB\-\-gres\fR
+.IP
+
 .TP
 \fBSALLOC_GRES_FLAGS\fR
 Same as \fB\-\-gres\-flags\fR
+.IP
+
 .TP
 \fBSALLOC_HINT\fR or \fBSLURM_HINT\fR
 Same as \fB\-\-hint\fR
+.IP
+
 .TP
 \fBSALLOC_IMMEDIATE\fR
 Same as \fB\-I, \-\-immediate\fR
+.IP
+
 .TP
 \fBSALLOC_KILL_CMD\fR
 Same as \fB\-K\fR, \fB\-\-kill\-command\fR
+.IP
+
 .TP
 \fBSALLOC_MEM_BIND\fR
 Same as \fB\-\-mem\-bind\fR
+.IP
+
 .TP
 \fBSALLOC_MEM_PER_CPU\fR
 Same as \fB\-\-mem\-per\-cpu\fR
+.IP
+
 .TP
 \fBSALLOC_MEM_PER_GPU\fR
 Same as \fB\-\-mem\-per\-gpu\fR
+.IP
+
 .TP
 \fBSALLOC_MEM_PER_NODE\fR
 Same as \fB\-\-mem\fR
+.IP
+
 .TP
 \fBSALLOC_NETWORK\fR
 Same as \fB\-\-network\fR
+.IP
+
 .TP
 \fBSALLOC_NO_BELL\fR
 Same as \fB\-\-no\-bell\fR
+.IP
+
 .TP
 \fBSALLOC_NO_KILL\fR
 Same as \fB\-k\fR, \fB\-\-no\-kill\fR
+.IP
+
 .TP
 \fBSALLOC_OVERCOMMIT\fR
 Same as \fB\-O, \-\-overcommit\fR
+.IP
+
 .TP
 \fBSALLOC_PARTITION\fR
 Same as \fB\-p, \-\-partition\fR
+.IP
+
 .TP
 \fBSALLOC_POWER\fR
 Same as \fB\-\-power\fR
+.IP
+
 .TP
 \fBSALLOC_PROFILE\fR
 Same as \fB\-\-profile\fR
+.IP
+
 .TP
 \fBSALLOC_QOS\fR
 Same as \fB\-\-qos\fR
+.IP
+
 .TP
 \fBSALLOC_REQ_SWITCH\fR
 When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
 for that number of switches. See \fB\-\-switches\fR.
+.IP
+
 .TP
 \fBSALLOC_RESERVATION\fR
 Same as \fB\-\-reservation\fR
+.IP
+
 .TP
 \fBSALLOC_SIGNAL\fR
 Same as \fB\-\-signal\fR
+.IP
+
 .TP
 \fBSALLOC_SPREAD_JOB\fR
 Same as \fB\-\-spread\-job\fR
+.IP
+
 .TP
 \fBSALLOC_THREAD_SPEC\fR
 Same as \fB\-\-thread\-spec\fR
+.IP
+
 .TP
 \fBSALLOC_THREADS_PER_CORE\fR
 Same as \fB\-\-threads\-per\-core\fR
+.IP
+
 .TP
 \fBSALLOC_TIMELIMIT\fR
 Same as \fB\-t, \-\-time\fR
+.IP
+
 .TP
 \fBSALLOC_USE_MIN_NODES\fR
 Same as \fB\-\-use\-min\-nodes\fR
+.IP
+
 .TP
 \fBSALLOC_WAIT_ALL_NODES\fR
 Same as \fB\-\-wait\-all\-nodes\fR. Must be set to 0 or 1 to disable or enable
 the option.
+.IP
+
 .TP
 \fBSALLOC_WAIT4SWITCH\fR
 Max time waiting for requested switches. See \fB\-\-switches\fR
+.IP
+
 .TP
 \fBSALLOC_WCKEY\fR
 Same as \fB\-\-wckey\fR
+.IP
+
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
+
 .TP
 \fBSLURM_EXIT_ERROR\fR
 Specifies the exit code generated when a Slurm error occurs
@@ -1979,6 +2330,8 @@ Specifies the exit code generated when a Slurm error occurs
 This can be used by a script to distinguish application exit codes from
 various Slurm error conditions.
 Also see \fBSLURM_EXIT_IMMEDIATE\fR.
+.IP
+
 .TP
 \fBSLURM_EXIT_IMMEDIATE\fR
 Specifies the exit code generated when the \fB\-\-immediate\fR option
@@ -1986,6 +2339,7 @@ is used and resources are not currently available.
 This can be used by a script to distinguish application exit codes from
 various Slurm error conditions.
 Also see \fBSLURM_EXIT_ERROR\fR.
+.IP
 
 .SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP
@@ -1995,61 +2349,93 @@ the executed program:
 \fBSLURM_*_HET_GROUP_#\fR
 For a heterogeneous job allocation, the environment variables are set separately
 for each component.
+.IP
+
 .TP
 \fBSLURM_CLUSTER_NAME\fR
 Name of the cluster on which the job is executing.
+.IP
+
 .TP
 \fBSLURM_CONTAINER\fR
 OCI Bundle for job.
 Only set if \fB\-\-container\fR is specified.
+.IP
+
 .TP
 \fBSLURM_CPUS_PER_GPU\fR
 Number of CPUs requested per allocated GPU.
 Only set if the \fB\-\-cpus\-per\-gpu\fR option is specified.
+.IP
+
 .TP
 \fBSLURM_CPUS_PER_TASK\fR
 Number of CPUs requested per task.
 Only set if the \fB\-\-cpus\-per\-task\fR option is specified.
+.IP
+
 .TP
 \fBSLURM_DIST_PLANESIZE\fR
 Plane distribution size. Only set for plane distributions.
 See \fB\-m, \-\-distribution\fR.
+.IP
+
 .TP
 \fBSLURM_DISTRIBUTION\fR
 Only set if the \fB\-m, \-\-distribution\fR option is specified.
+.IP
+
 .TP
 \fBSLURM_GPU_BIND\fR
 Requested binding of tasks to GPU.
 Only set if the \fB\-\-gpu\-bind\fR option is specified.
+.IP
+
 .TP
 \fBSLURM_GPU_FREQ\fR
 Requested GPU frequency.
 Only set if the \fB\-\-gpu\-freq\fR option is specified.
+.IP
+
 .TP
 \fBSLURM_GPUS\fR
 Number of GPUs requested.
 Only set if the \fB\-G, \-\-gpus\fR option is specified.
+.IP
+
 .TP
 \fBSLURM_GPUS_PER_NODE\fR
 Requested GPU count per allocated node.
 Only set if the \fB\-\-gpus\-per\-node\fR option is specified.
+.IP
+
 .TP
 \fBSLURM_GPUS_PER_SOCKET\fR
 Requested GPU count per allocated socket.
 Only set if the \fB\-\-gpus\-per\-socket\fR option is specified.
+.IP
+
 .TP
 \fBSLURM_GPUS_PER_TASK\fR
 Requested GPU count per allocated task.
 Only set if the \fB\-\-gpus\-per\-task\fR option is specified.
+.IP
+
 .TP
 \fBSLURM_HET_SIZE\fR
 Set to count of components in heterogeneous job.
+.IP
+
 .TP
 \fBSLURM_JOB_ACCOUNT\fR
 Account name associated of the job allocation.
+.IP
+
 .TP
 \fBSLURM_JOB_ID\fR
 The ID of the job allocation.
+.IP
+
 .TP
 \fBSLURM_JOB_CPUS_PER_NODE\fR
 Count of CPUs available to the job on the nodes in the allocation, using the
@@ -2062,97 +2448,153 @@ has 72 CPUs, while the third node has 36 CPUs.
 the value indicates the total count of CPUs on allocated nodes. The
 \fBselect/cons_res\fR and \fBselect/cons_tres\fR plugins allocate individual
 CPUs to jobs, so this number indicates the number of CPUs allocated to the job.
+.IP
+
 .TP
 \fBSLURM_JOB_NODELIST\fR
 List of nodes allocated to the job.
+.IP
+
 .TP
 \fBSLURM_JOB_NUM_NODES\fR
 Total number of nodes in the job allocation.
+.IP
+
 .TP
 \fBSLURM_JOB_PARTITION\fR
 Name of the partition in which the job is running.
+.IP
+
 .TP
 \fBSLURM_JOB_QOS\fR
 Quality Of Service (QOS) of the job allocation.
+.IP
+
 .TP
 \fBSLURM_JOB_RESERVATION\fR
 Advanced reservation containing the job allocation, if any.
+.IP
+
 .TP
 \fBSLURM_JOBID\fR
 The ID of the job allocation. See \fBSLURM_JOB_ID\fR. Included for backwards
 compatibility.
+.IP
+
 .TP
 \fBSLURM_MEM_BIND\fR
 Set to value of the \fB\-\-mem\-bind\fR option.
+.IP
+
 .TP
 \fBSLURM_MEM_BIND_LIST\fR
 Set to bit mask used for memory binding.
+.IP
+
 .TP
 \fBSLURM_MEM_BIND_PREFER\fR
 Set to "prefer" if the \fB\-\-mem\-bind\fR option includes the prefer option.
+.IP
+
 .TP
 \fBSLURM_MEM_BIND_SORT\fR
 Sort free cache pages (run zonesort on Intel KNL nodes)
+.IP
+
 .TP
 \fBSLURM_MEM_BIND_TYPE\fR
 Set to the memory binding type specified with the \fB\-\-mem\-bind\fR option.
 Possible values are "none", "rank", "map_map", "mask_mem" and "local".
+.IP
+
 .TP
 \fBSLURM_MEM_BIND_VERBOSE\fR
 Set to "verbose" if the \fB\-\-mem\-bind\fR option includes the verbose option.
 Set to "quiet" otherwise.
+.IP
+
 .TP
 \fBSLURM_MEM_PER_CPU\fR
 Same as \fB\-\-mem\-per\-cpu\fR
+.IP
+
 .TP
 \fBSLURM_MEM_PER_GPU\fR
 Requested memory per allocated GPU.
 Only set if the \fB\-\-mem\-per\-gpu\fR option is specified.
+.IP
+
 .TP
 \fBSLURM_MEM_PER_NODE\fR
 Same as \fB\-\-mem\fR
+.IP
+
 .TP
 \fBSLURM_NNODES\fR
 Total number of nodes in the job allocation. See \fBSLURM_JOB_NUM_NODES\fR.
 Included for backwards compatibility.
+.IP
+
 .TP
 \fBSLURM_NODELIST\fR
 List of nodes allocated to the job. See \fBSLURM_JOB_NODELIST\fR. Included
 for backwards compabitility.
+.IP
+
 .TP
 \fBSLURM_NODE_ALIASES\fR
 Sets of node name, communication address and hostname for nodes allocated to
 the job from the cloud. Each element in the set if colon separated and each
 set is comma separated. For example:
 SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
+.IP
+
 .TP
 \fBSLURM_NTASKS\fR
 Same as \fB\-n\fR, \fB\-\-ntasks\fR
+.IP
+
 .TP
 \fBSLURM_NTASKS_PER_CORE\fR
 Set to value of the \fB\-\-ntasks\-per\-core\fR option, if specified.
+.IP
+
 .TP
 \fBSLURM_NTASKS_PER_GPU\fR
 Set to value of the \fB\-\-ntasks\-per\-gpu\fR option, if specified.
+.IP
+
 .TP
 \fBSLURM_NTASKS_PER_NODE\fR
 Set to value of the \fB\-\-ntasks\-per\-node\fR option, if specified.
+.IP
+
 .TP
 \fBSLURM_NTASKS_PER_SOCKET\fR
 Set to value of the \fB\-\-ntasks\-per\-socket\fR option, if specified.
+.IP
+
 .TP
 \fBSLURM_OVERCOMMIT\fR
 Set to \fB1\fR if \fB\-\-overcommit\fR was specified.
+.IP
+
 .TP
 \fBSLURM_PROFILE\fR
 Same as \fB\-\-profile\fR
+.IP
+
 .TP
 \fBSLURM_SUBMIT_DIR\fR
 The directory from which \fBsalloc\fR was invoked or, if applicable, the
 directory specified by the \fB\-D, \-\-chdir\fR option.
+.IP
+
 .TP
 \fBSLURM_SUBMIT_HOST\fR
 The hostname of the computer from which \fBsalloc\fR was invoked.
+.IP
+
 .TP
 \fBSLURM_TASKS_PER_NODE\fR
 Number of tasks to be initiated on each node. Values are
@@ -2162,6 +2604,8 @@ count, that count is followed by "(x#)" where "#" is the
 repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
 indicates that the first three nodes will each execute two
 tasks and the fourth node will execute one task.
+.IP
+
 .TP
 \fBSLURM_THREADS_PER_CORE\fR
 This is only set if \fB\-\-threads\-per\-core\fR or
@@ -2169,6 +2613,7 @@ This is only set if \fB\-\-threads\-per\-core\fR or
 value specified by \fB\-\-threads\-per\-core\fR or
 \fBSALLOC_THREADS_PER_CORE\fR. This is used by subsequent srun calls within the
 job allocation.
+.IP
 
 .SH "SIGNALS"
 .LP
@@ -2186,6 +2631,7 @@ Another exception is SIGTERM, which will be forwarded to the spawned process.
 .TP
 To get an allocation, and open a new xterm in which srun commands may be typed \
 interactively:
+.IP
 
 .nf
 $ salloc \-N16 xterm
@@ -2197,6 +2643,7 @@ salloc: Relinquishing job allocation 65537
 .TP
 To grab an allocation of nodes and launch a parallel application on one \
 command line:
+.IP
 
 .nf
 $ salloc \-N5 srun \-n10 myprogram
@@ -2205,7 +2652,7 @@ $ salloc \-N5 srun \-n10 myprogram
 .TP
 To create a heterogeneous job with 3 components, each allocating a unique set \
 of nodes:
-
+.IP
 .nf
 $ salloc \-w node[2\-3] : \-w node4 : \-w node[5\-7] bash
 salloc: job 32294 queued and waiting for resources
