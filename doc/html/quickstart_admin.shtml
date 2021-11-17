@@ -636,23 +636,23 @@ the year and month of that major release. The third number in the version
 designates a specific maintenance level:
 year.month.maintenance-release (e.g. 20.02.2 is major Slurm release 20.02, and
 maintenance version 2).
-Thus version 20.02.x was initially released in February 2020.
+Thus version 21.08.x was initially released in August 2021.
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major release number changes, which typically happens about every nine
 months. A list of most recent major Slurm releases is shown below.</p>
 <ul>
-<li>19.05.x (Released May 2019)</li>
 <li>20.02.x (Released February 2020)</li>
 <li>20.11.x (Released November 2020)</li>
+<li>21.08.x (Released August 2021)</li>
 </ul>
 
-<p>Slurm's MPI libraries may also change if the major release number change,
+<p>Slurm's MPI libraries may also change if the major release number changes,
 requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
 Slurm daemons will support RPCs and state files from the two previous major
-releases (e.g. a version 20.11.x SlurmDBD will support slurmctld daemons and
-commands with a version of 20.11.x, 20.02.x, or 19.05.x).
+releases (e.g. a version 21.08.x SlurmDBD will support slurmctld daemons and
+commands with a version of 21.08.x, 20.11.x, or 20.02.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the mainenance release number generally represent only bug fixes,
@@ -699,7 +699,7 @@ Also see the note above about reverse compatibility.</p>
 <p>Almost every new major release of Slurm (e.g. 20.02.x to 20.11.x)
 involves changes to the state files with new data structures, new options, etc.
 Slurm permits upgrades to a new major release from the past two major releases,
-which happen every nine months (e.g. 19.05.x or 20.02.x to 20.11.x) without loss of
+which happen every nine months (e.g. 20.02.x or 20.11.x to 21.08.x) without loss of
 jobs or other state information.
 State information from older versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
@@ -794,6 +794,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 18 October 2021</p>
+<p style="text-align:center;">Last modified 17 November 2021</p>
 
 <!--#include virtual="footer.txt"-->
