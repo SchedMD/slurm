@@ -337,8 +337,14 @@ static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
 			*pos = '\0';
 	}
 
-	if (!job->work_dir)
-		job->work_dir = xstrdup(getenv("HOME"));
+	if (!job->work_dir) {
+		struct passwd *pwd = NULL;
+
+		if (!(pwd = getpwuid(uid)))
+			fatal("getpwuid(%d) failed", uid);
+
+		job->work_dir = xstrdup(pwd->pw_dir);
+	}
 
 	return job;
 }
