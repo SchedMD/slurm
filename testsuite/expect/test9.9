@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Timing test for 5000 jobs.
+# Purpose: Timing test for 1000 jobs.
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC
 # Written by Danny Auble <da@schedmd.com>
@@ -25,50 +25,52 @@
 ############################################################################
 source ./globals
 
-set test_script "./test$test_id.bash"
-
-#   job_blocks  Submit jobs in blocks of this size (job count)
-set job_blocks  5000
-
-#   job_cnt     Number of batch jobs to be submitted
 set job_cnt     1000
+set fanout      10
+set test_script "$test_dir/test_script"
 
 if {[get_config_param "FrontendName"] ne "MISSING" || $enable_memory_leak_debug != 0} {
 	set job_cnt 2
 }
 
+proc cleanup {} {
+	global scancel test_name
+
+	run_command "$scancel -n $test_name"
+}
+
+make_bash_script $test_script "
+remaining=\$1
+while \[ \$remaining -gt 0 \]
+do
+	for i in \$(seq 1 $fanout); do
+		$sbatch -J $test_name -o /dev/null --wrap $bin_true &
+	done
+	wait
+	remaining=\$((\$remaining-$fanout))
+done
+"
+
 #
-# NOTE: test9.9.bash seems to have trouble running out of process IDs when
-# more than about 5000 jobs are submitted at one time, so we can execute the
-# script multiple times if necessary. A more reliable alternative would be
-# to catch the fork() failures and retry.
+# We use a bash script so we submit multiple jobs in parallel
+# by backgrounding them in $fanout sized chunks
 #
 # NOTE: The throughput rate is highly dependent upon configuration
 #
-proc _submit_jobs { job_name test_file } {
-	global job_blocks job_cnt sbatch test_script
+proc _submit_jobs {} {
+	global test_script job_cnt squeue test_name
 
-	log_user 0
-	for {set jobs_rem $job_cnt} {$jobs_rem > 0} { } {
-		if {$jobs_rem > $job_blocks} {
-			set submit_cnt $job_blocks
-		} else {
-			set submit_cnt $jobs_rem
+	run_command "$test_script $job_cnt"
+
+	wait_for -fail -timeout 600 {!$jobs_found} {
+		set output [run_command_output -fail -nolog "$squeue -o %j -n $test_name"]
+		set jobs_found [regexp -all $test_name $output]
+		if {$jobs_found} {
+			log_debug "Still $jobs_found jobs remaining"
 		}
-		spawn -nottyinit -nottycopy $test_script $sbatch "/bin/hostname" $job_name $submit_cnt
-		expect {
-			eof {
-				wait
-			}
-		}
-		set jobs_rem [expr $jobs_rem - $job_blocks]
-	}
-	log_user 1
-	if {[wait_for_all_jobs -timeout 600 $job_name] != 0} {
-		fail "Some submitted jobs failed to terminate"
 	}
 }
 
-set time_took [string trim [time {_submit_jobs "test$test_id" "/dev/null"}] " per iteration microseconds"]
+set time_took [string trim [time {_submit_jobs}] " per iteration microseconds"]
 set jobs_per_sec [expr $job_cnt * 1000000 / $time_took]
 log_debug "Ran $job_cnt jobs in $time_took microseconds or $jobs_per_sec jobs per second"
