@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     of the different user (-u <user>) and not that of root or SlurmUser editor.
  -- Fix stepd not respecting SlurmdSyslogDebug.
  -- Fix concurrency issue with squeue.
+ -- Fix job start time not being reset after launch when job is packed onto
+    already booting node.
 
 * Changes in Slurm 21.08.4
 ==========================

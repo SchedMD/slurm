@@ -662,6 +662,7 @@ extern int power_job_reboot(job_record_t *job_ptr)
 		    bit_overlap_any(booting_node_bitmap,
 				    job_ptr->node_bitmap)) {
 			job_ptr->job_state |= JOB_CONFIGURING;
+			job_ptr->job_state |= JOB_POWER_UP_NODE;
 			job_ptr->bit_flags |= NODE_REBOOT;
 		}
 		return SLURM_SUCCESS;
