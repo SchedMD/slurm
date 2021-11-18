@@ -1683,7 +1683,7 @@ static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	FREE_NULL_LIST(resp_msg.assoc_shares_list);
 	/* don't free the resp_msg.tres_names */
-	END_TIMER2("_slurm_rpc_get_share");
+	END_TIMER2(__func__);
 	debug2("_slurm_rpc_get_shares %s", TIME_STR);
 }
 
