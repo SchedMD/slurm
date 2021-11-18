@@ -28,14 +28,24 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.bash"
+set file_in     "$test_dir/job_script"
 set matches     0
+
+make_bash_script $file_in {
+if [[ -z "$SLURM_PROCID" ]]
+	then exit
+fi
+if [[ $SLURM_PROCID == 1 ]]
+	then exit
+fi
+sleep 300
+}
 
 #
 # Spawn tasks via srun and immediately exit task 1 only
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -n10 -N1 -O -W2 -t2 ./$file_in]
+spawn $srun -n10 -N1 -O -W2 -t2 $file_in
 expect {
 	-re "First task exited" {
 		log_debug "This error is expected, no worries"
@@ -47,7 +57,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

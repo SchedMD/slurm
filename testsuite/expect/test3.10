@@ -29,17 +29,16 @@
 ############################################################################
 source ./globals
 
-set file_err       "$test_name.error"
-set file_in        "$test_name.input"
-set file_out       "$test_name.output"
+set file_err       "$test_dir/error"
+set file_in        "$test_dir/input"
+set file_out       "$test_dir/output"
 set job_id         0
 set timeout        $max_job_delay
 
 proc cleanup {} {
-	global file_in file_out file_err job_id
+	global job_id
 
 	cancel_job $job_id
-	file delete $file_in $file_out $file_err
 }
 
 make_bash_script $file_in "
@@ -50,19 +49,8 @@ $bin_sleep 120
 #
 # Start and subtest a batch job
 #
-spawn $sbatch --output=$file_out --error=$file_err -t1 ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "--output=$file_out --error=$file_err -t1 $file_in"]
+
 # Wait for the job to start running.
 # If the slurmd gets the job notify request before the tasks have actually been
 # started, the asynchronous call can fail to write to the job's standard error.
@@ -97,14 +85,13 @@ cancel_job $job_id
 # Start and subtest srun
 #
 set job_id         0
-set srun_pid [spawn $srun -N1 -t1 -v $bin_sleep 10]
+spawn $srun -N1 -t1 -v $bin_sleep 10
 set srun_spawn_id $spawn_id
 expect {
 	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 }
@@ -127,7 +114,6 @@ expect {
 		set got_message 1
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -141,14 +127,13 @@ cancel_job $job_id
 # Start and subtest salloc
 #
 set job_id         0
-set salloc_pid [spawn $salloc -N1 -t1 $bin_sleep 10]
+spawn $salloc -N1 -t1 $bin_sleep 10
 set salloc_spawn_id $spawn_id
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "salloc not responding"
 	}
 }
@@ -172,7 +157,6 @@ expect {
 # 		exp_send "exit\n"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "salloc not responding"
 	}
 	eof {
@@ -180,4 +164,3 @@ expect {
 	}
 }
 subtest {$got_message} "Message TEST_NOTIFY should be received by salloc"
-cancel_job $job_id

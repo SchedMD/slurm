@@ -28,7 +28,7 @@
 ############################################################################
 source ./globals
 
-set file_out    "$test_name.output"
+set file_out    "$test_dir/output"
 set file_prog   "$test_name.prog"
 set hdf5_file   "$test_name.h5"
 set job_id      0
@@ -38,9 +38,9 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 }
 
 proc cleanup {} {
-	global file_prog file_out hdf5_file
+	global file_prog hdf5_file
 
-	file delete $file_prog $file_out $hdf5_file
+	file delete $file_prog $hdf5_file
 }
 
 # Check if acct_gather_profile/hdf5 is installed

@@ -27,18 +27,13 @@
 source ./globals
 
 set skipped        ""
-set file_in1       "test$test_id.input1"
-set file_in2       "test$test_id.input2"
+set file_in1       "$test_dir/input1"
+set file_in2       "$test_dir/input2"
 set number_commas  "\[0-9_,\]+"
 set one_task_pc    0
 
-proc cleanup {} {
-	global bin_rm file_in1 file_in2
-	exec $bin_rm -f $file_in1 $file_in2
-}
 
 proc _test_gpus_cnt {cmd expected_gpus_times_tasks expected_job_gpus} {
-	global file_in1 test_id srun
 	set match 0
 	set job_gpus 0
 	set output [run_command_output $cmd]
@@ -56,18 +51,18 @@ proc _test_gpus_cnt {cmd expected_gpus_times_tasks expected_job_gpus} {
 }
 
 proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
-	global file_in1 test_id srun number_commas bin_cat
+	global file_in1 srun number_commas bin_cat test_name
 	set expected_failure false
 	if {$expected_gpus_times_tasks == 0 && $expected_job_gpus == 0} {
 		set expected_failure true
 	}
 
-	_test_gpus_cnt "$srun $srun_opts -t1 -J test$test_id -l ./$file_in1" $expected_gpus_times_tasks $expected_job_gpus
+	_test_gpus_cnt "$srun $srun_opts -t1 -J $test_name -l $file_in1" $expected_gpus_times_tasks $expected_job_gpus
 
 	if {$expected_failure} {
-		set jobid [submit_job -xfail -subtest "$srun_opts -t1 -J test_sbatch_$test_id --wrap='$srun -l ./$file_in1'"]
+		set jobid [submit_job -xfail -subtest "$srun_opts -t1 -J sbatch_$test_name --wrap='$srun -l $file_in1'"]
 	} else {
-		set jobid [submit_job -subtest "$srun_opts -t1 -J test_sbatch_$test_id --wrap='$srun -l ./$file_in1'"]
+		set jobid [submit_job -subtest "$srun_opts -t1 -J sbatch_$test_name --wrap='$srun -l $file_in1'"]
 		if {$jobid != 0} {
 			if {[wait_for_job -pollinterval 0.1 $jobid "DONE"] != 0} {
 				fail "Job did not complete within timeout"
@@ -195,7 +190,7 @@ set node_list [get_nodes_by_request "--gpus-per-socket=1 --sockets-per-node=$soc
 if { [llength $node_list] != $nb_nodes } {
 	lappend skipped "This test need to be able to submit jobs with at least --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodes=$node_list"
 } else {
-	set srun_pid [spawn $srun --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --ntasks-per-socket=1 --exclusive --nodelist=[join $node_list ","] -t1 -J "test$test_id" -l ./$file_in1]
+	spawn $srun --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --ntasks-per-socket=1 --exclusive --nodelist=[join $node_list ","] -t1 -J "$test_name" -l $file_in1
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr match [cuda_count $expect_out(1,string)]

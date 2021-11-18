@@ -2,9 +2,6 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Test scancel signal to batch script (--batch option)
-#
-# Note:    This script generates and then deletes files in the working directory
-#          named test6.12.input, test6.12.output, and test6.12.error
 ############################################################################
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -31,23 +28,17 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
 set job_id      0
-set step_id	0
+set step_id     0
 
 proc cleanup {} {
-	global job_id bin_rm file_in file_out file_err
+	global job_id
 
 	cancel_job $job_id
-	exec $bin_rm -f $file_in $file_out $file_err
 }
-
-#
-# Delete left-over input script plus stdout/err files
-#
-file delete $file_out $file_err
 
 #
 # Build input script file
@@ -71,23 +62,7 @@ done
 # Spawn a sbatch job
 #
 set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "--output=$file_out --error=$file_err -t2 $file_in"]
 
 #
 # Wait for job to start running, then signal it
@@ -145,24 +120,7 @@ cancel_job $job_id
 file delete $file_out $file_err
 make_bash_script $file_in "$bin_sleep 500"
 
-set job_id 0
-set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "--output=$file_out --error=$file_err -t2 $file_in"]
 
 #
 # Wait for job to start running and
@@ -221,28 +179,10 @@ if {$found_job == 0} {
 #
 # Submit another job to be signaled with steps
 #
-set job_id      0
 file delete $file_out $file_err
 make_bash_script $file_in "$srun $bin_sleep 500"
 
-set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "--output=$file_out --error=$file_err -t2 $file_in"]
 
 #
 # Wait for job to start running

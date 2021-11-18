@@ -29,9 +29,8 @@
 ############################################################################
 source ./globals
 
-set file_bash   "test$test_id.bash"
+set file_bash   "$test_dir/script"
 set job_id      0
-set failure_addendum "This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
         skip "This test is incompatible with front-end systems"
@@ -44,10 +43,12 @@ if { $node_count < 2 } {
 }
 
 proc cleanup {} {
-	global file_bash
-	file delete $file_bash
-}
+	global test_status STATUS_FAIL
 
+	if {$test_status == $STATUS_FAIL} {
+		log_warn "This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration"
+	}
+}
 
 make_bash_script $file_bash {
 echo nodeid:$SLURM_NODEID taskid:$SLURM_PROCID localid:$SLURM_LOCALID
@@ -66,7 +67,6 @@ expect {
 		exp_continue
 	}
 	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
-		file delete $file_bash
 		skip "Can't test srun task distribution"
 	}
 	-re "\"$test_prompt\"" {
@@ -74,7 +74,7 @@ expect {
 		exp_continue
 	}
 	-re $test_prompt {
-		send "$srun -l -c1 ./$file_bash | $bin_sort -V\r"
+		send "$srun -l -c1 $file_bash | $bin_sort -V\r"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -130,7 +130,7 @@ if {$task_cnt < (2 * $node_cnt)} {
 set this_cnt  0
 set prev_node -1
 set this_node -1
-send "$srun -l -n $task_cnt -m block ./$file_bash | $bin_sort -V\r"
+send "$srun -l -n $task_cnt -m block $file_bash | $bin_sort -V\r"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -138,7 +138,7 @@ expect {
 		set this_lid  $expect_out(3,string)
 		incr this_cnt 1
 		if {$prev_node != $this_node} {
-			subtest {$prev_node <= $this_node} "Correct distribution for a job step with block distribution" "$prev_node > $this_node; $failure_addendum"
+			subtest {$prev_node <= $this_node} "Correct distribution for a job step with block distribution" "$prev_node > $this_node"
 			set prev_node $this_node
 			set prev_cnt 1
 		} else {
@@ -154,8 +154,8 @@ expect {
 	}
 	-re $test_prompt
 }
-subtest {$prev_node <= $this_node} "Correct final distribution or a job step with block distribution" "$prev_node > $this_node; $failure_addendum"
-subtest {$this_cnt == $task_cnt} "Task count is consistent or a job step with block distribution" "$this_cnt != $task_cnt; $failure_addendum; $failure_addendum"
+subtest {$prev_node <= $this_node} "Correct final distribution or a job step with block distribution" "$prev_node > $this_node"
+subtest {$this_cnt == $task_cnt} "Task count is consistent or a job step with block distribution" "$this_cnt != $task_cnt"
 
 #############################################################################
 #
@@ -166,7 +166,7 @@ set this_cnt  0
 set prev_node -1
 set this_node -1
 set prev_cnt  $block_size
-send "$srun -l -n $task_cnt -m cyclic ./$file_bash | $bin_sort -V\r"
+send "$srun -l -n $task_cnt -m cyclic $file_bash | $bin_sort -V\r"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -174,7 +174,7 @@ expect {
 		set this_lid  $expect_out(3,string)
 		incr this_cnt 1
 		if {$prev_node != $this_node} {
-			subtest {$prev_cnt == $block_size } "Correct distribution for a job step with cyclic distribution" "$prev_node != $this_node; $prev_cnt != $block_size; $failure_addendum"
+			subtest {$prev_cnt == $block_size } "Correct distribution for a job step with cyclic distribution" "$prev_node != $this_node; $prev_cnt != $block_size"
 			set prev_node $this_node
 			set prev_cnt 1
 		} else {
@@ -190,8 +190,8 @@ expect {
 	}
 	-re $test_prompt
 }
-subtest {$prev_cnt == $block_size} "Correct final distribution for a job step with cyclic distribution" "$prev_cnt != $block_size; $failure_addendum"
-subtest {$this_cnt == $task_cnt} "Task count is consistent for a job step with cyclic distribution" "$this_cnt != $task_cnt; $failure_addendum"
+subtest {$prev_cnt == $block_size} "Correct final distribution for a job step with cyclic distribution" "$prev_cnt != $block_size"
+subtest {$this_cnt == $task_cnt} "Task count is consistent for a job step with cyclic distribution" "$this_cnt != $task_cnt"
 
 #############################################################################
 #
@@ -202,7 +202,7 @@ set this_cnt  0
 set prev_node -1
 set this_node -1
 set prev_cnt  $block_size
-send "$srun -l -n $task_cnt -m plane=$block_size ./$file_bash | $bin_sort -V\r"
+send "$srun -l -n $task_cnt -m plane=$block_size $file_bash | $bin_sort -V\r"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -212,7 +212,7 @@ expect {
 		if {$prev_node == $this_node} {
 			incr prev_cnt 1
 		} else {
-			subtest {$prev_node != -1 || $prev_cnt <= $block_size } "Correct distribution for a job step with plane distribution" "nodeid:$prev_node task_cnt:$prev_cnt; $failure_addendum"
+			subtest {$prev_node != -1 || $prev_cnt <= $block_size } "Correct distribution for a job step with plane distribution" "nodeid:$prev_node task_cnt:$prev_cnt"
 			set prev_node $this_node
 			set prev_cnt 1
 		}
@@ -226,8 +226,8 @@ expect {
 	}
 	-re $test_prompt
 }
-subtest {$prev_cnt <= $block_size} "Correct final distribution for a job step with plane distribution" "nodeid:$prev_node task_cnt:$prev_cnt; $failure_addendum"
-subtest {$this_cnt == $task_cnt} "Task count is consistent for a job step with plane distribution" "$this_cnt != $task_cnt; $failure_addendum"
+subtest {$prev_cnt <= $block_size} "Correct final distribution for a job step with plane distribution" "nodeid:$prev_node task_cnt:$prev_cnt"
+subtest {$this_cnt == $task_cnt} "Task count is consistent for a job step with plane distribution" "$this_cnt != $task_cnt"
 
 #############################################################################
 #

@@ -28,8 +28,8 @@
 ############################################################################
 source ./globals
 
-set file_in          "test$test_id.input"
-set file_out         "test$test_id.output"
+set file_in          "$test_dir/input"
+set file_out         "$test_dir/output"
 set job_id           0
 set min_nodes        1
 set max_nodes        3
@@ -42,8 +42,8 @@ set num_procs_test2  ""
 set num_procs_test3  ""
 
 proc cleanup {} {
-	global bin_rm file_in file_out job_id
-	run_command "$bin_rm -f $file_in $file_out"
+	global job_id
+
 	cancel_job $job_id
 }
 
@@ -66,12 +66,8 @@ echo Result: \${result\[*\]}
 #
 set job_id [submit_job -fail "-N$min_nodes-$max_nodes -n$num_procs -O -t1 --output=$file_out $file_in"]
 
-if {[wait_for_job $job_id "DONE"]} {
-	fail "Job did not complete"
-}
-if {[wait_for_file $file_out]} {
-	fail "No output file"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 
 set output [run_command -fail "$bin_cat $file_out"]
 regexp 	"Result:.($number).($number).($number).($number).($number).($number)" \

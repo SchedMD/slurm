@@ -27,26 +27,24 @@
 ############################################################################
 source ./globals
 
-set file_in       "test$test_id\_sc"
+set file_in       "$test_dir/job_script"
 set job_id        0
 set nodes         ""
-set test_part_1   "test$test_id\_part1"
-set test_part_2   "test$test_id\_part2"
+set test_part_1   "${test_name}_part1"
+set test_part_2   "${test_name}_part2"
+
+if {![is_super_user]} {
+	skip "Can not test more unless SlurmUser"
+}
 
 proc cleanup {} {
-	global test_part_1 test_part_2 job_id bin_rm file_in
+	global test_part_1 test_part_2 job_id
 
 	# Delete test partitions
 	delete_part $test_part_1
 	delete_part $test_part_2
 
 	cancel_job $job_id
-
-	exec $bin_rm $file_in
-}
-
-if {![is_super_user]} {
-	skip "Can not test more unless SlurmUser"
 }
 
 proc create_part { name prio } {

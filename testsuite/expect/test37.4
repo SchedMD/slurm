@@ -42,7 +42,7 @@ source ./globals_accounting
 source ./globals_federation
 
 set fed_name    "feda"
-set file_in     "test$test_id.in"
+set file_in     "$test_dir/input"
 set user_name   ""
 set srun_job_cnt 0
 
@@ -72,12 +72,11 @@ proc cancel_federation_jobs { } {
 }
 
 proc cleanup { } {
-	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
-	global test_id bin_bash
+	global scancel fed_name user_name bin_rm fedc1 fedc2 fedc3
+	global test_name bin_bash
 
 	cancel_federation_jobs
-	exec $bin_rm -f $file_in
-	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
+	exec $bin_bash -c "$bin_rm -f $test_name*.out"
 
 	return [delete_federations $fed_name]
 }
@@ -93,7 +92,7 @@ proc submit_fed_batch_job { cname expected_origin expected_sib extra_args expect
 		append command " $extra_args"
 	}
 	append command " $file_in"
-	set sbatch_pid [spawn {*}$command]
+	spawn {*}$command
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -104,7 +103,6 @@ proc submit_fed_batch_job { cname expected_origin expected_sib extra_args expect
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			fail "sbatch not responding"
 		}
 		eof {
@@ -159,9 +157,7 @@ proc submit_fed_srun_job { cname expected_origin expected_sib extra_args check_e
 	}
 
 	if {$check_env} {
-		if {[wait_for_file $file_out]} {
-			fail "Failed waiting for file '$file_out'"
-		}
+		wait_for_file -fail $file_out
 
 		spawn grep SLURM_CLUSTER_NAME $file_out
 		expect {
@@ -222,9 +218,7 @@ proc submit_fed_salloc_job { cname expected_origin expected_sib extra_args check
 	}
 
 	if {$check_env} {
-		if {[wait_for_file $file_out]} {
-			fail "failed waiting for file '$file_out'"
-		}
+		wait_for_file -fail $file_out
 
 		spawn grep SLURM_CLUSTER_NAME $file_out
 		expect {
@@ -831,13 +825,12 @@ log_info "Test jobs with invalid cluster features"
 log_info "################################################################"
 set matches 0
 set my_sbatch "${fed_slurm_base}/$fedc1/bin/sbatch"
-set sbatch_pid [spawn $my_sbatch --output=/dev/null --error=/dev/null -n1 -t3 --cluster-constraint=invalid $file_in]
+spawn $my_sbatch --output=/dev/null --error=/dev/null -n1 -t3 --cluster-constraint=invalid $file_in
 expect {
 	"sbatch: error: Batch job submission failed: Invalid cluster feature specification" {
 		incr matches
 	}
 	timeout {
-		slow_kill $sbatch_pid
 		fail "sbatch not responding"
 	}
 	eof {

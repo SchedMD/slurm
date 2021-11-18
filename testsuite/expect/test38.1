@@ -30,12 +30,12 @@
 source ./globals
 source ./globals_het_jobs
 
+set file_in      "$test_dir/input"
+set job_id       0
+
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
 }
-
-set file_in      "test$test_id.in"
-set job_id       0
 
 proc sbatch {} {
 	global number sbatch file_in bin_sleep
@@ -76,16 +76,13 @@ proc cancel_job_id { } {
 }
 
 proc cleanup { } {
-	global scancel user_name bin_rm file_in
-	global test_id bin_bash
+	global bin_rm test_name
 
 	cancel_job_id
-
-	exec $bin_rm -f $file_in test$test_id*.out
-	return 0
+	exec $bin_rm -f $test_name*.out
 }
 
-#start test
+# Start test
 
 make_bash_script $file_in "#SBATCH --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1
 #SBATCH hetjob

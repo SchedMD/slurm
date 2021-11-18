@@ -28,18 +28,10 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
 set job_id      0
-
-
-proc cleanup {} {
-	global job_id bin_rm file_in file_out file_err
-
-	cancel_job $job_id
-	exec $bin_rm -f $file_in $file_out $file_err
-}
 
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
 if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
@@ -52,8 +44,11 @@ if {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test is incompatible with SlurmdUser != root"
 }
 
-# Delete left-over stdout/err files
-file delete $file_out $file_err
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Build input script file that broacasts a file
@@ -70,58 +65,17 @@ make_bash_script $file_in "
 # Spawn an sbatch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch -N1 --output=$file_out --error=$file_err -t1 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "-N1 --output=$file_out --error=$file_err -t1 $file_in"]
 
 #
 # Wait for job to complete and check output file
 #
 wait_for_job -fail $job_id "DONE"
 
-set matches 0
-if {[wait_for_file $file_err] == 0} {
-	spawn $bin_cat $file_err
-	expect {
-		-re "force *=" {
-			incr matches
-			exp_continue
-		}
-		-re "preserve *=" {
-			incr matches
-			exp_continue
-		}
-		-re "modes *=" {
-			incr matches
-			exp_continue
-		}
-		-re "jobid *=" {
-			incr matches
-			exp_continue
-		}
-		-re "error:" {
-			fail "Unexpected error"
-		}
-		eof {
-			wait
-		}
-	}
-}
-if {$matches != 4} {
-	fail "sbcast --verbose option did not produced expected logging ($matches != 4)"
-}
+wait_for_file -fail $file_err
+set output [run_command_output -fail "$bin_cat $file_err"]
+subtest [regexp -all "force *=" $output] "Verify that verbose includes the force message"
+subtest [regexp -all "preserve *=" $output] "Verify that verbose includes the preserve message"
+subtest [regexp -all "modes *=" $output] "Verify that verbose includes the modes message"
+subtest [regexp -all "jobid *=" $output] "Verify that verbose includes the jobid message"
+subtest {![regexp -all "error:" $output]} "Verify that verbose doesn't include any error message"

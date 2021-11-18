@@ -31,27 +31,24 @@ set job_id      0
 set number      "\[0-9\]+"
 set name        "banana"
 set my_cmd      ./mycmd
-set file_in     "test$test_id.in"
-set file_out    "test$test_id.out"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
 
 # Set env path to SLURM_JOB_NAME
 set env(SLURM_JOB_NAME) "zebra"
 
-make_bash_script $file_in "
-/usr/bin/env|grep SLURM_JOB_NAME
-"
+make_bash_script $file_in "$bin_env | grep SLURM_JOB_NAME"
 
 #
 # Tests -J by using srun
 #
 set found 0
-set srun_pid [spawn $srun -J $name -t1 ./$file_in]
+spawn $srun -J $name -t1 $file_in
 expect {
         "SLURM_JOB_NAME=$name" {
             set found 1
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -59,7 +56,7 @@ expect {
 	}
 }
 
-if  {$found != 1} {
+if {$found != 1} {
 	fail "Could not find SLURM_JOB_NAME=banana"
 }
 
@@ -67,21 +64,20 @@ if  {$found != 1} {
 # Tests -J using sbatch
 #
 set found 0
-set sbatch_pid [spawn $sbatch -J $name -t1 -o $file_out --wrap=env]
+spawn $sbatch -J $name -t1 -o $file_out --wrap=env
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $sbatch_pid
 		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
-set wait_file [wait_for_file $file_out]
+wait_for_file -fail $file_out
 spawn $bin_grep SLURM_JOB_NAME=banana $file_out
 expect {
 	-re "SLURM_JOB_NAME=($re_word_str)" {
@@ -97,20 +93,18 @@ expect {
 if {$found != 1} {
 	fail "Could not find SLURM_JOB_NAME=banana"
 }
-exec $bin_rm -f $file_out
 exec rm -f slurm-$job_id.out
 
 #
 # Tests -J using salloc
 #
 set found 0
-set salloc_pid [spawn $salloc -J $name -t1 ./$file_in]
+spawn $salloc -J $name -t1 $file_in
 expect {
         "SLURM_JOB_NAME=$name" {
 		set found 1
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "salloc not responding"
 	}
 	eof {
@@ -121,4 +115,3 @@ expect {
 if {$found != 1} {
 	fail "Could not find SLURM_JOB_NAME=banana"
 }
-exec rm -f $file_in

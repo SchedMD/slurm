@@ -28,25 +28,20 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set name_set    "my_name"
-set job_id	0
+set job_id      0
 
 proc cleanup {} {
-	global job_id bin_rm file_in
+	global job_id
 
 	cancel_job $job_id
-	exec $bin_rm -f $file_in
 }
 
 #
-# Delete left-over stdin/out/err files
 # Build stdin file
 #
-exec $bin_rm -f $file_in
-make_bash_script $file_in "
-  $bin_id
-"
+make_bash_script $file_in "$bin_id"
 
 #
 # Submit a slurm job that will execute 'sleep'

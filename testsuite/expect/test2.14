@@ -28,17 +28,11 @@
 ############################################################################
 source ./globals
 
-set file_in          "test$test_id.input"
-set file_out         "test$test_id.output"
-set file_out2        "test$test_id.output2"
+set file_in          "$test_dir/input"
+set file_out         "$test_dir/output"
+set file_out2        "$test_dir/output2"
 set job_id           0
 set node_cnt         2
-
-proc cleanup {} {
-	global bin_rm file_in file_out file_out2
-
-	exec $bin_rm -f $file_in $file_out $file_out2
-}
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
@@ -49,16 +43,21 @@ if {$available < $node_cnt} {
     skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 #
 # Build input script file
 #
-exec $bin_rm -f $file_in $file_out $file_out2
 make_bash_script $file_in "
 	$srun -l $bin_id
-	$scontrol show job \${SLURM_JOBID} >${file_out2}
+	$scontrol show job \${SLURM_JOBID} >$file_out2
 	$scontrol update JobId=\${SLURM_JOBID} NumNodes=1
 	. slurm_job_\${SLURM_JOBID}_resize.sh
-	$scontrol show job \${SLURM_JOBID} >>${file_out2}
+	$scontrol show job \${SLURM_JOBID} >>$file_out2
 	$srun -l $bin_id
 	echo SLURM_NNODES=\${SLURM_NNODES}
 	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.csh
@@ -67,29 +66,10 @@ make_bash_script $file_in "
 #
 # Run job to determine what nodes are available
 #
-spawn $sbatch -N$node_cnt -J "test$test_id" -t1 --output=$file_out $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Job not submitted"
-}
-if {[wait_for_job $job_id "DONE"] != 0} {
-	cancel_job $job_id
-	fail "Job did not complete"
-}
-if {[wait_for_file $file_out] != 0} {
-	fail "No output file"
-}
+set job_id [submit_job -fail "-N$node_cnt -J $test_name -t1 --output=$file_out $file_in"]
+
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 set task_count 0
 set node_count 0
 spawn $bin_cat $file_out
@@ -116,9 +96,7 @@ set task_target [expr $node_cnt + 1]
 subtest {$task_count == $task_target} "Verify original task count" "$task_count != $task_target"
 subtest {$node_count == 1} "Verify node count" "$node_count != 1"
 
-if {[wait_for_file $file_out2] != 0} {
-	fail "No output file2"
-}
+wait_for_file -fail $file_out2
 set node_count 0
 spawn $bin_cat $file_out2
 expect {

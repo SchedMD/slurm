@@ -28,17 +28,10 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
 set job_id      0
-
-proc cleanup {} {
-	global job_id bin_rm file_in file_out file_err
-
-	cancel_job $job_id
-	exec $bin_rm -f $file_in $file_out $file_err
-}
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -48,39 +41,25 @@ if {[get_my_uid] == 0} {
 	skip "This test can't be run as user root"
 }
 
-# Delete left-over stdout/err files
-file delete $file_out $file_err
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Build input script file that broacasts a file
 #
 make_bash_script $file_in "
   $sbcast $sbcast /test1.$test_id
-  $srun ls  /test1.$test_id
+  $srun ls /test1.$test_id
 "
 
 #
 # Spawn an sbatch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch -N1 --output=$file_out --error=$file_err -t1 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "-N1 --output=$file_out --error=$file_err -t1 $file_in"]
 
 #
 # Wait for job to complete and check output file
@@ -88,32 +67,31 @@ if {$job_id == 0} {
 wait_for_job -fail $job_id "DONE"
 
 set matches 0
-if {[wait_for_file $file_err] == 0} {
-	spawn $bin_cat $file_err
-	expect {
-		-re "error: REQUEST_FILE_BCAST" {
-			log_debug "These errors are expected, no worries"
-			incr matches
-			exp_continue
-		}
-		-re "ls.* No such file" {
-			log_debug "These errors are expected, no worries"
-			incr matches
-			exp_continue
-		}
-		-re "ls.* does not exist" {
-			log_debug "These errors are expected, no worries"
-			incr matches
-			exp_continue
-		}
-		-re "ls.* not found" {
-			log_debug "These errors are expected, no worries"
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_err
+spawn $bin_cat $file_err
+expect {
+	-re "error: REQUEST_FILE_BCAST" {
+		log_debug "These errors are expected, no worries"
+		incr matches
+		exp_continue
+	}
+	-re "ls.* No such file" {
+		log_debug "These errors are expected, no worries"
+		incr matches
+		exp_continue
+	}
+	-re "ls.* does not exist" {
+		log_debug "These errors are expected, no worries"
+		incr matches
+		exp_continue
+	}
+	-re "ls.* not found" {
+		log_debug "These errors are expected, no worries"
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 if {$matches != 2} {

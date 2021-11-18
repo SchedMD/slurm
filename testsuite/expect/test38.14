@@ -26,14 +26,7 @@
 ############################################################################
 source ./globals
 
-set file_out    test${test_id}.output
-set het_job_id	0
-
-proc cleanup {} {
-	global bin_rm file_out
-
-	exec $bin_rm -f $file_out
-}
+set file_out    "$test_dir/output"
 
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
@@ -44,37 +37,32 @@ if {$nb_nodes < 2} {
 	skip "Need 2 or more nodes in default partition"
 }
 
-exec $bin_rm -f $file_out
 set timeout $max_job_delay
-set srun_pid [spawn $srun -t1 -n1 -l -o $file_out --mpi=none $bin_echo one : -n1 $bin_echo two]
+spawn $srun -t1 -n1 -l -o $file_out --mpi=none $bin_echo one : -n1 $bin_echo two
 expect {
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {[wait_for_file $file_out] == 0} {
-	set matches 0
-	spawn $bin_sort $file_out
-	expect {
-		-re "0: one" {
-			incr matches
-			exp_continue
-		}
-		-re "1: two" {
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_out
+set matches 0
+spawn $bin_sort $file_out
+expect {
+	-re "0: one" {
+		incr matches
+		exp_continue
 	}
-	if {$matches != 2} {
-		fail "srun output file contents invalid"
+	-re "1: two" {
+		incr matches
+		exp_continue
 	}
-} else {
-	fail "File not found ($file_out)"
+	eof {
+		wait
+	}
+}
+if {$matches != 2} {
+	fail "srun output file contents invalid"
 }

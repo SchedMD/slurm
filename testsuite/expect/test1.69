@@ -27,16 +27,10 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.bash"
-set test_timer  "test$test_id.test_timer"
-set test_srun   "test$test_id.test_srun"
+set file_in     "$test_dir/script"
+set test_timer  "$test_dir/test_timer"
+set test_srun   "$test_dir/test_srun"
 set run_timer   2
-
-proc cleanup {} {
-	global bin_rm test_timer test_srun file_in
-
-	exec $bin_rm -f $test_timer $test_srun $file_in
-}
 
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 if {[check_config_select "linear"]} {
@@ -55,9 +49,6 @@ if {[param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 	set mem_opt "--comment=no_mem"
 }
 
-# remove any remaining files
-exec $bin_rm -f $test_timer $test_srun $file_in
-
 make_bash_script $test_timer "
 for i in \{1..10\}
 do
@@ -72,12 +63,12 @@ set -m
 for a in \{1..$run_timer\}
 do
   export a
-  $srun -v $mem_opt -t1 ./$test_timer &
+  $srun -v $mem_opt -t1 $test_timer &
 done
 "
 
 make_bash_script $file_in "
-bash -i ./$test_srun
+$bin_bash -i $test_srun
 "
 
 # We make sure that all timers run at the same time by making sure that

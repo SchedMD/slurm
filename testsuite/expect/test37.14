@@ -50,7 +50,7 @@ set my_squeue   "${fed_slurm_base}/$fedc1/bin/squeue"
 set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
 regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 set min_job_age [expr {$min_job_age + 65}]
-set file_in     "test$test_id.in"
+set file_in     "$test_dir/input"
 
 set jid(0) 0
 set jid(1) 0
@@ -202,14 +202,12 @@ proc cancel_federation_jobs { } {
 }
 
 proc cleanup { } {
-	global scancel fed_name user_name bin_rm file_in fedc1 fedc2 fedc3
-	global test_id bin_bash my_sacctmgr jid
+	global fed_name bin_bash bin_rm jid test_name
 
 	cancel_federation_jobs
-	exec $bin_rm -f $file_in slurm-$jid(0).out slurm-$jid(1).out slurm-$jid(2).out
-	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
-
-	return [delete_federations $fed_name]
+	exec $bin_rm -f slurm-$jid(0).out slurm-$jid(1).out slurm-$jid(2).out
+	exec $bin_bash -c "$bin_rm -f $test_name*.out"
+	delete_federations $fed_name
 }
 
 if {![check_federation_setup]} {
@@ -223,9 +221,7 @@ if {![check_federation_up]} {
 set user_name [get_my_user_name]
 
 # Remove existing setup
-if {[cleanup] != 0} {
-	fail "Failed to cleanup"
-}
+cleanup
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {

@@ -27,19 +27,10 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.bash"
-set test_timer  "test$test_id.test_timer"
-set test_srun   "test$test_id.test_srun"
+set file_in     "$test_dir/job_script"
+set test_timer  "$test_dir/test_timer"
+set test_srun   "$test_dir/test_srun"
 set job_id      0
-
-proc cleanup {} {
-	global bin_rm test_timer test_srun file_in
-
-	exec $bin_rm -f $test_timer $test_srun $file_in
-}
-
-# remove any remaining files
-exec $bin_rm -f $test_timer $test_srun $file_in
 
 make_bash_script $test_timer "
 for i in \{1..10\}
@@ -52,14 +43,14 @@ echo \"Test finished\"
 
 make_bash_script $test_srun "
 set -m
-$srun -t1 -v ./$test_timer &
+$srun -t1 -v $test_timer &
 $bin_sleep 15
 echo \"sending job to foreground\"
 fg
 "
 
 make_bash_script $file_in "
-bash -i ./$test_srun
+$bin_bash -i $test_srun
 "
 
 set timeout $max_job_delay
