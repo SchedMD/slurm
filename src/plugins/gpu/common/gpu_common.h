@@ -82,6 +82,23 @@ extern void gpu_common_parse_gpu_freq(char *gpu_freq,
 				      bool *verbose_flag);
 
 /*
+ * Print out an array of possible frequencies (in MHz).
+ *
+ * freqs	(IN) The array of frequencies to print, in MHz.
+ * size		(IN) The size of the freqs array.
+ * l		(IN) The log level to print the frequencies at.
+ * freq_type	(IN) (Optional) A short description of the frequencies to print.
+ * 		E.g., a value of "GPU Graphics" would print a header of
+ * 		"Possible GPU Graphics Frequencies". Set to "" or NULL to just
+ * 		print "Possible Frequencies".
+ * indent	(IN) (Optional) Whitespace to precede each print line. Set to
+ * 		0 for no additional indentation.
+ */
+extern void gpu_common_print_freqs(unsigned int freqs[], unsigned int size,
+				   log_level_t l, char *freq_type,
+				   int indent);
+
+/*
  * Replace all space characters in a string with underscores, and make all
  * characters lower case.
  */

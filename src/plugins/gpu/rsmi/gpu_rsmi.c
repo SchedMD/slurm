@@ -221,8 +221,6 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 	unsigned int mem_freqs[RSMI_MAX_NUM_FREQUENCIES] = {0};
 	unsigned int gfx_freqs[RSMI_MAX_NUM_FREQUENCIES] = {0};
 	unsigned int size = RSMI_MAX_NUM_FREQUENCIES;
-	bool concise = false;
-	unsigned int i;
 
 	if (!_rsmi_get_mem_freqs(dv_ind, &size, mem_freqs))
 		return;
@@ -235,27 +233,7 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 		return;
 	}
 
-	if (size > FREQS_CONCISE)
-		concise = true;
-
-	log_var(l, "        Possible GPU Memory Frequencies (%u):", size);
-	log_var(l, "        ---------------------------------");
-	if (!concise) {
-		for (i = 0; i < size; ++i)
-			log_var(l, "          *%u MHz [%u]", mem_freqs[i], i);
-	} else {
-		// first, next, ..., middle, ..., penultimate, last
-		log_var(l, "          *%u MHz [0]", mem_freqs[0]);
-		log_var(l, "          *%u MHz [1]", mem_freqs[1]);
-		log_var(l, "          ...");
-		log_var(l, "          *%u MHz [%u]", mem_freqs[(size - 1) / 2],
-			(size - 1) / 2);
-		log_var(l, "          ...");
-		log_var(l, "          *%u MHz [%u]",
-			mem_freqs[size - 2], size - 2);
-		log_var(l, "          *%u MHz [%u]",
-			mem_freqs[size - 1], size - 1);
-	}
+	gpu_common_print_freqs(mem_freqs, size, l, "GPU Memory", 0);
 
 	size = RSMI_MAX_NUM_FREQUENCIES;
 	if (!_rsmi_get_gfx_freqs(dv_ind, &size, gfx_freqs))
@@ -269,25 +247,7 @@ static void _rsmi_print_freqs(uint32_t dv_ind, log_level_t l)
 		return;
 	}
 
-	if (size > FREQS_CONCISE)
-		concise = true;
-
-	log_var(l, "        Possible GPU Graphics Frequencies (%u):", size);
-	log_var(l, "        ---------------------------------");
-	if (!concise) {
-		for (i = 0; i < size; ++i)
-			log_var(l, "          *%u MHz [%u]", gfx_freqs[i], i);
-		return;
-	}
-	// first, next, ..., middle, ..., penultimate, last
-	log_var(l, "          *%u MHz [0]", gfx_freqs[0]);
-	log_var(l, "          *%u MHz [1]", gfx_freqs[1]);
-	log_var(l, "          ...");
-	log_var(l, "          *%u MHz [%u]", gfx_freqs[(size - 1) / 2],
-		(size - 1) / 2);
-	log_var(l, "          ...");
-	log_var(l, "          *%u MHz [%u]", gfx_freqs[size - 2], size - 2);
-	log_var(l, "          *%u MHz [%u]", gfx_freqs[size - 1], size - 1);
+	gpu_common_print_freqs(gfx_freqs, size, l, "GPU Graphics", 0);
 }
 
 /*

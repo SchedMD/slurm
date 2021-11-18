@@ -231,6 +231,59 @@ extern void gpu_common_get_nearest_freq(unsigned int *freq,
 	      __func__, *freq);
 }
 
+/*
+ * Print out an array of possible frequencies (in MHz).
+ *
+ * freqs	(IN) The array of frequencies to print, in MHz.
+ * size		(IN) The size of the freqs array.
+ * l		(IN) The log level to print the frequencies at.
+ * freq_type	(IN) (Optional) A short description of the frequencies to print.
+ * 		E.g., a value of "GPU Graphics" would print a header of
+ * 		"Possible GPU Graphics Frequencies". Set to "" or NULL to just
+ * 		print "Possible Frequencies".
+ * indent	(IN) (Optional) Whitespace to precede each print line. Set to
+ * 		0 for no additional indentation.
+ */
+extern void gpu_common_print_freqs(unsigned int freqs[], unsigned int size,
+				   log_level_t l, char *freq_type,
+				   int indent)
+{
+	bool concise = false;
+	unsigned int middle;
+	unsigned int penult;
+	unsigned int last;
+
+	if (size > FREQS_CONCISE)
+		concise = true;
+
+	log_var(l, "%*sPossible %s%sFrequencies (%u):",
+		indent, "",
+		freq_type ? freq_type : "",
+		freq_type ? " ": "",
+		size);
+	log_var(l, "%*s---------------------------------", indent, "");
+
+	if (!concise) {
+		for (int i = 0; i < size; ++i)
+			log_var(l, "%*s  *%u MHz [%u]",
+				indent, "", freqs[i], i);
+		return;
+	}
+
+	penult = size - 2;
+	last = size - 1;
+	middle = last / 2;
+
+	/* First, next, ..., middle, ..., penultimate, last */
+	log_var(l, "%*s  *%u MHz [0]", indent, "", freqs[0]);
+	log_var(l, "%*s  *%u MHz [1]", indent, "", freqs[1]);
+	log_var(l, "%*s  ...", indent, "");
+	log_var(l, "%*s  *%u MHz [%u]", indent, "", freqs[middle], middle);
+	log_var(l, "%*s  ...", indent, "");
+	log_var(l, "%*s  *%u MHz [%u]", indent, "", freqs[penult], penult);
+	log_var(l, "%*s  *%u MHz [%u]", indent, "", freqs[last], last);
+}
+
 extern void gpu_common_underscorify_tolower(char *str)
 {
 	for (int i = 0; str[i]; i++) {

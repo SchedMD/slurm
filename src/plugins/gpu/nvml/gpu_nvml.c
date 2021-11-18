@@ -320,32 +320,11 @@ static void _nvml_print_gfx_freqs(nvmlDevice_t *device, unsigned int mem_freq,
 				  unsigned int *gfx_freqs, log_level_t l)
 {
 	unsigned int size = gfx_freqs_size;
-	bool concise = false;
-	unsigned int i;
 
 	if (!_nvml_get_gfx_freqs(device, mem_freq, &size, gfx_freqs))
 		return;
 
-	if (size > FREQS_CONCISE)
-		concise = true;
-
-	log_var(l, "        Possible GPU Graphics Frequencies (%u):", size);
-	log_var(l, "        ---------------------------------");
-	if (!concise) {
-		for (i = 0; i < size; ++i) {
-			log_var(l, "          *%u MHz [%u]", gfx_freqs[i], i);
-		}
-		return;
-	}
-	// first, next, ..., middle, ..., penultimate, last
-	log_var(l, "          *%u MHz [0]", gfx_freqs[0]);
-	log_var(l, "          *%u MHz [1]", gfx_freqs[1]);
-	log_var(l, "          ...");
-	log_var(l, "          *%u MHz [%u]", gfx_freqs[(size - 1) / 2],
-	     (size - 1) / 2);
-	log_var(l, "          ...");
-	log_var(l, "          *%u MHz [%u]", gfx_freqs[size - 2], size - 2);
-	log_var(l, "          *%u MHz [%u]", gfx_freqs[size - 1], size - 1);
+	gpu_common_print_freqs(gfx_freqs, size, l, "GPU Graphics", 8);
 }
 
 /*
