@@ -125,7 +125,7 @@ struct xlist {
 	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
 	ListDelF              fDel;         /* function to delete node data      */
 	int                   count;        /* number of nodes in list           */
-	pthread_mutex_t       mutex;        /* mutex to protect access to list   */
+	pthread_rwlock_t      mutex;        /* mutex to protect access to list   */
 };
 
 typedef struct listNode * ListNode;
@@ -141,7 +141,7 @@ static void *_list_pop_locked(List l);
 static void *_list_append_locked(List l, void *x);
 
 #ifndef NDEBUG
-static int _list_mutex_is_locked (pthread_mutex_t *mutex);
+static int _list_mutex_is_locked(pthread_rwlock_t *mutex);
 #endif
 
 /***************
@@ -162,7 +162,7 @@ list_create (ListDelF f)
 	l->iNext = NULL;
 	l->fDel = f;
 	l->count = 0;
-	slurm_mutex_init(&l->mutex);
+	slurm_rwlock_init(&l->mutex);
 
 	return l;
 }
@@ -177,7 +177,7 @@ list_destroy (List l)
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	i = l->iNext;
 	while (i) {
@@ -196,8 +196,8 @@ list_destroy (List l)
 		p = pTmp;
 	}
 	l->magic = ~LIST_MAGIC;
-	slurm_mutex_unlock(&l->mutex);
-	slurm_mutex_destroy(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
+	slurm_rwlock_destroy(&l->mutex);
 	list_free(l);
 }
 
@@ -210,9 +210,9 @@ list_is_empty (List l)
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 	n = l->count;
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return (n == 0);
 }
@@ -229,9 +229,9 @@ int list_count(List l)
 		return 0;
 
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 	n = l->count;
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return n;
 }
@@ -243,8 +243,8 @@ List list_shallow_copy(List l)
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
-	slurm_mutex_lock(&m->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
+	slurm_rwlock_wrlock(&m->mutex);
 
 	p = l->head;
 	while (p) {
@@ -252,8 +252,8 @@ List list_shallow_copy(List l)
 		p = p->next;
 	}
 
-	slurm_mutex_unlock(&m->mutex);
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&m->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 	return m;
 }
 
@@ -267,9 +267,9 @@ list_append (List l, void *x)
 	xassert(l != NULL);
 	xassert(x != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 	v = _list_append_locked(l, x);
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
 }
@@ -346,10 +346,10 @@ list_prepend (List l, void *x)
 	xassert(l != NULL);
 	xassert(x != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	v = _list_node_create(l, &l->head, x);
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
 }
@@ -365,7 +365,7 @@ list_find_first (List l, ListFindF f, void *key)
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	for (p = l->head; p; p = p->next) {
 		if (f(p->data, key)) {
@@ -373,7 +373,7 @@ list_find_first (List l, ListFindF f, void *key)
 			break;
 		}
 	}
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
 }
@@ -390,7 +390,7 @@ list_remove_first (List l, ListFindF f, void *key)
 	xassert(f != NULL);
 	xassert(key != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	pp = &l->head;
 	while (*pp) {
@@ -401,7 +401,7 @@ list_remove_first (List l, ListFindF f, void *key)
 			pp = &(*pp)->next;
 		}
 	}
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
 }
@@ -418,7 +418,7 @@ list_delete_all (List l, ListFindF f, void *key)
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	pp = &l->head;
 	while (*pp) {
@@ -433,7 +433,7 @@ list_delete_all (List l, ListFindF f, void *key)
 			pp = &(*pp)->next;
 		}
 	}
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return n;
 }
@@ -447,7 +447,7 @@ int list_delete_first(List l, ListFindF f, void *key)
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	pp = &l->head;
 	while (*pp) {
@@ -467,7 +467,7 @@ int list_delete_first(List l, ListFindF f, void *key)
 			pp = &(*pp)->next;
 		}
 	}
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return n;
 }
@@ -483,7 +483,7 @@ int list_delete_ptr(List l, void *key)
 	xassert(l);
 	xassert(key);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	pp = &l->head;
 	while (*pp) {
@@ -497,7 +497,7 @@ int list_delete_ptr(List l, void *key)
 		} else
 			pp = &(*pp)->next;
 	}
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return n;
 }
@@ -527,7 +527,7 @@ int list_for_each_max(List l, int *max, ListForF f, void *arg,
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	for (p = l->head; (*max == -1 || n < *max) && p; p = p->next) {
 		n++;
@@ -538,7 +538,7 @@ int list_for_each_max(List l, int *max, ListForF f, void *arg,
 		}
 	}
 	*max = l->count - n;
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	if (failed)
 		n = -n;
@@ -559,7 +559,7 @@ int list_flush_max(List l, int max)
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	pp = &l->head;
 	for (int i = 0; (max < 0 || i < max) && *pp; i++) {
@@ -569,7 +569,7 @@ int list_flush_max(List l, int max)
 			n++;
 		}
 	}
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return n;
 }
@@ -584,10 +584,10 @@ list_push (List l, void *x)
 	xassert(l != NULL);
 	xassert(x != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	v = _list_node_create(l, &l->head, x);
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
 }
@@ -616,10 +616,10 @@ list_sort(List l, ListCmpF f)
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	if (l->count <= 1) {
-		slurm_mutex_unlock(&l->mutex);
+		slurm_rwlock_unlock(&l->mutex);
 		return;
 	}
 
@@ -649,7 +649,7 @@ list_sort(List l, ListCmpF f)
 		i->prev = &i->list->head;
 	}
 
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 }
 
 /*
@@ -662,10 +662,10 @@ void list_flip(List l)
 
 	xassert(l);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	if (l->count <= 1) {
-		slurm_mutex_unlock(&l->mutex);
+		slurm_rwlock_unlock(&l->mutex);
 		return;
 	}
 
@@ -690,7 +690,7 @@ void list_flip(List l)
 		i->prev = &i->list->head;
 	}
 
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 }
 
 /* list_pop()
@@ -702,10 +702,10 @@ list_pop (List l)
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	v = _list_pop_locked(l);
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
 }
@@ -719,10 +719,10 @@ list_peek (List l)
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	v = (l->head) ? l->head->data : NULL;
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
 }
@@ -736,11 +736,11 @@ void *list_peek_last(List l)
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	v = l->tail_ptr ? l->tail_ptr->data : NULL;
 
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
 }
@@ -755,10 +755,10 @@ list_enqueue (List l, void *x)
 	xassert(l != NULL);
 	xassert(x != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	v = _list_node_create(l, l->tail, x);
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
 }
@@ -772,10 +772,10 @@ list_dequeue (List l)
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	v = _list_node_destroy(l, &l->head);
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
 }
@@ -793,14 +793,14 @@ list_iterator_create (List l)
 	i->magic = LIST_ITR_MAGIC;
 	i->list = l;
 	xassert(l->magic == LIST_MAGIC);
-	slurm_mutex_lock(&l->mutex);
+	slurm_rwlock_wrlock(&l->mutex);
 
 	i->pos = l->head;
 	i->prev = &l->head;
 	i->iNext = l->iNext;
 	l->iNext = i;
 
-	slurm_mutex_unlock(&l->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return i;
 }
@@ -813,12 +813,12 @@ list_iterator_reset (ListIterator i)
 	xassert(i != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
 	xassert(i->list->magic == LIST_MAGIC);
-	slurm_mutex_lock(&i->list->mutex);
+	slurm_rwlock_wrlock(&i->list->mutex);
 
 	i->pos = i->list->head;
 	i->prev = &i->list->head;
 
-	slurm_mutex_unlock(&i->list->mutex);
+	slurm_rwlock_unlock(&i->list->mutex);
 }
 
 /* list_iterator_destroy()
@@ -831,7 +831,7 @@ list_iterator_destroy (ListIterator i)
 	xassert(i != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
 	xassert(i->list->magic == LIST_MAGIC);
-	slurm_mutex_lock(&i->list->mutex);
+	slurm_rwlock_wrlock(&i->list->mutex);
 
 	for (pi = &i->list->iNext; *pi; pi = &(*pi)->iNext) {
 		xassert((*pi)->magic == LIST_ITR_MAGIC);
@@ -840,7 +840,7 @@ list_iterator_destroy (ListIterator i)
 			break;
 		}
 	}
-	slurm_mutex_unlock(&i->list->mutex);
+	slurm_rwlock_unlock(&i->list->mutex);
 
 	i->magic = ~LIST_ITR_MAGIC;
 	list_iterator_free(i);
@@ -867,11 +867,11 @@ void *list_next (ListIterator i)
 	xassert(i != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
 	xassert(i->list->magic == LIST_MAGIC);
-	slurm_mutex_lock(&i->list->mutex);
+	slurm_rwlock_wrlock(&i->list->mutex);
 
 	rc = _list_next_locked(i);
 
-	slurm_mutex_unlock(&i->list->mutex);
+	slurm_rwlock_unlock(&i->list->mutex);
 
 	return rc;
 }
@@ -886,11 +886,11 @@ list_peek_next (ListIterator i)
 	xassert(i != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
 	xassert(i->list->magic == LIST_MAGIC);
-	slurm_mutex_lock(&i->list->mutex);
+	slurm_rwlock_wrlock(&i->list->mutex);
 
 	p = i->pos;
 
-	slurm_mutex_unlock(&i->list->mutex);
+	slurm_rwlock_unlock(&i->list->mutex);
 
 	return (p ? p->data : NULL);
 }
@@ -906,10 +906,10 @@ list_insert (ListIterator i, void *x)
 	xassert(x != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
 	xassert(i->list->magic == LIST_MAGIC);
-	slurm_mutex_lock(&i->list->mutex);
+	slurm_rwlock_wrlock(&i->list->mutex);
 
 	v = _list_node_create(i->list, i->prev, x);
-	slurm_mutex_unlock(&i->list->mutex);
+	slurm_rwlock_unlock(&i->list->mutex);
 
 	return v;
 }
@@ -926,12 +926,12 @@ list_find (ListIterator i, ListFindF f, void *key)
 	xassert(key != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
 
-	slurm_mutex_lock(&i->list->mutex);
+	slurm_rwlock_wrlock(&i->list->mutex);
 	xassert(i->list->magic == LIST_MAGIC);
 
 	while ((v = _list_next_locked(i)) && !f(v, key)) {;}
 
-	slurm_mutex_unlock(&i->list->mutex);
+	slurm_rwlock_unlock(&i->list->mutex);
 
 	return v;
 }
@@ -946,11 +946,11 @@ list_remove (ListIterator i)
 	xassert(i != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
 	xassert(i->list->magic == LIST_MAGIC);
-	slurm_mutex_lock(&i->list->mutex);
+	slurm_rwlock_wrlock(&i->list->mutex);
 
 	if (*i->prev != i->pos)
 		v = _list_node_destroy(i->list, i->prev);
-	slurm_mutex_unlock(&i->list->mutex);
+	slurm_rwlock_unlock(&i->list->mutex);
 
 	return v;
 }
@@ -1058,15 +1058,14 @@ static void *_list_node_destroy(List l, ListNode *pp)
 }
 
 #ifndef NDEBUG
-static int
-_list_mutex_is_locked (pthread_mutex_t *mutex)
+static int _list_mutex_is_locked(pthread_rwlock_t *mutex)
 {
 /*  Returns true if the mutex is locked; o/w, returns false.
  */
 	int rc;
 
 	xassert(mutex != NULL);
-	rc = pthread_mutex_trylock(mutex);
+	rc = slurm_rwlock_trywrlock(mutex);
 	return(rc == EBUSY ? 1 : 0);
 }
 #endif /* !NDEBUG */
