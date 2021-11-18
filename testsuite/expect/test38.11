@@ -27,23 +27,15 @@
 ############################################################################
 source ./globals
 
-set script    "$test_dir/script.sh"
-set stdout    "$test_dir/out"
-set stderr    "$test_dir/err"
+set script    "$test_dir/job_script"
+set stdout    "$test_dir/output"
+set stderr    "$test_dir/error"
 set job_id     0
 set hostlist   ""
 set node1      ""
 set node2      ""
 set het_job_id 0
 set tmp_dir    "/tmp/${test_name}_[pid]"
-
-proc cleanup { } {
-	global bin_rm het_job_id scancel
-
-	if {$het_job_id > 0} {
-		cancel_job $het_job_id
-	}
-}
 
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
 if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
@@ -71,6 +63,12 @@ set node1 [lindex $nodes 0]
 set node2 [lindex $nodes 1]
 if {![string compare $node1 ""] || ![string compare $node2 ""]} {
 	skip "Did not find at least 2 idle nodes"
+}
+
+proc cleanup { } {
+	global het_job_id
+
+	cancel_job $het_job_id
 }
 
 set matches 0

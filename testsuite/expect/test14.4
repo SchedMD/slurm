@@ -28,17 +28,10 @@
 ############################################################################
 source ./globals
 
-set file_in     "$test_name.input"
-set file_out    "$test_name.output"
-set file_err    "$test_name.error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
 set job_id      0
-
-proc cleanup {} {
-	global job_id bin_rm file_in file_out file_err
-
-	cancel_job $job_id
-	exec $bin_rm -f $file_in $file_out $file_err
-}
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -47,15 +40,19 @@ if {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test is incompatible with SlurmdUser != root"
 }
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 #
-# Delete left-over stdout/err files
 # Build input script file that broacasts a file
 # NOTE: we broadcast the file "sbcast", just for convenience
 #
 set pid         [pid]
 set file1       "/tmp/$test_name.$pid.1"
 set file2       "/tmp/$test_name.$pid.2"
-exec $bin_rm -f $file_out $file_err
 make_bash_script $file_in "
   echo '+++ Test 1 +++'
   $srun rm -f $file1

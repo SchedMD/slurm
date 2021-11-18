@@ -32,16 +32,10 @@ set cputot       0
 set ntasks       0
 set ntaskpn      0
 set sys_homo     0
-set file_in      "test$test_id\_sc"
+set file_in      "$test_dir/job_script"
 set job_id       0
 array set nodes  {}
 array set tasks  {}
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
 
 # some systems take a while to run the | sort -V | uniq -c stuff
 set timeout 60

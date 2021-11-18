@@ -28,21 +28,13 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
+set file_in     "$test_dir/input"
 set job_id      0
 set task_cnt	10
-
-proc cleanup {} {
-	global file_in file_out
-
-	file delete $file_in $file_out
-}
 
 #
 # Submit a slurm job that will print slurm env vars and execute 'id'
 #
-file delete $file_in $file_out
 make_bash_script $file_in "
   $bin_env | grep SLURM | $bin_sort
   $srun $bin_id"
@@ -53,7 +45,7 @@ make_bash_script $file_in "
 set timeout     $max_job_delay
 set matches     0
 set tasks       0
-spawn $salloc --ntasks=$task_cnt --overcommit -N1 -t1 ./$file_in
+spawn $salloc --ntasks=$task_cnt --overcommit -N1 -t1 $file_in
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

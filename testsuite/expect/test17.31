@@ -28,8 +28,8 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
 set delay       1
 set node_cnt    3
 set ppn_cnt     2
@@ -39,15 +39,15 @@ global env
 set env_pbs_ignore "SBATCH_IGNORE_PBS"
 set env($env_pbs_ignore) 0
 
+set available [llength [get_nodes_by_state idle,alloc,comp]]
+if {$available < $node_cnt} {
+	skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
+}
+
 proc cleanup {} {
 	global job_id test_id
 
 	cancel_job $job_id
-}
-
-set available [llength [get_nodes_by_state idle,alloc,comp]]
-if {$available < $node_cnt} {
-	skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }
 
 log_user 0
@@ -78,72 +78,71 @@ log_debug "Actual configuration: min_cpus=$ppn_cnt  min_mem=$min_mem"
 append min_mem_mb $min_mem "mb"
 
 proc pbs_ignore_expects {} {
-        set whitespace "\\s+"
-        set number     "\\d+"
-        global job_id node_cnt ppn_cnt min_mem
-        set job_id     0
-        set matches    0
+	set whitespace "\\s+"
+	set number     "\\d+"
+	global job_id node_cnt ppn_cnt min_mem
+	set job_id     0
+	set matches    0
 
-        expect {
-                -re "mem$whitespace: ($number)G" {
-                        set mem $expect_out(1,string)
-                        if { $mem * 1024 != $min_mem } {
-                                fail "Min memory is different ($mem) than requested ($min_mem)"
-                        } else {
-                                incr matches
-                        }
-                        exp_continue
-                }
-                -re "mem$whitespace: ($number)" {
-                        set mem $expect_out(1,string)
-                        if { $mem != $min_mem } {
-                                fail "Min memory is different ($mem) than requested ($min_mem)"
-                        } else {
-                                incr matches
-                        }
-                        exp_continue
-                }
-                -re "nodes$whitespace: ($number)" {
-                        set nodes $expect_out(1,string)
-                        if { $nodes != $node_cnt } {
-                                fail "Bad node count allocated"
-                        } else {
-                                incr matches
-                        }
-                        exp_continue
-                }
-                -re "ntasks$whitespace: ($number)" {
-                        set cpu_count $expect_out(1,string)
-                        set cpus_per_node [expr $cpu_count / $node_cnt]
-                        if { $cpus_per_node != $ppn_cnt } {
-                                fail "PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node"
-                        } else {
-                                incr matches
-                        }
-                        exp_continue
-                }
-                -re "batch job ($number)" {
-                        set job_id $expect_out(1,string)
-                        exp_continue
-                }
-                "error: Batch job submission failed" {
-                        log_warn "this might be legitimate, depending upon configuration"
-                        exp_continue
-                }
+	expect {
+		-re "mem$whitespace: ($number)G" {
+			set mem $expect_out(1,string)
+			if { $mem * 1024 != $min_mem } {
+				fail "Min memory is different ($mem) than requested ($min_mem)"
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "mem$whitespace: ($number)" {
+			set mem $expect_out(1,string)
+			if { $mem != $min_mem } {
+				fail "Min memory is different ($mem) than requested ($min_mem)"
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "nodes$whitespace: ($number)" {
+			set nodes $expect_out(1,string)
+			if { $nodes != $node_cnt } {
+				fail "Bad node count allocated"
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "ntasks$whitespace: ($number)" {
+			set cpu_count $expect_out(1,string)
+			set cpus_per_node [expr $cpu_count / $node_cnt]
+			if { $cpus_per_node != $ppn_cnt } {
+				fail "PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node"
+			} else {
+				incr matches
+			}
+			exp_continue
+		}
+		-re "batch job ($number)" {
+			set job_id $expect_out(1,string)
+			exp_continue
+		}
+		"error: Batch job submission failed" {
+			log_warn "this might be legitimate, depending upon configuration"
+			exp_continue
+		}
 
-                timeout {
-                        slow_kill $sbatch_pid
-                        fail "sbatch not responding"
-                }
-                eof {
-                        wait
-                }
-        }
-        if {$job_id != 0} {
-                cancel_job $job_id
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id != 0} {
+		cancel_job $job_id
 		set job_id 0
-        }
-        return $matches
+	}
+	return $matches
 }
 
 #
@@ -157,10 +156,10 @@ make_bash_script $file_in "
 #PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
 $bin_sleep $delay
 "
-set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in]
+spawn $sbatch -vv -o $file_out $file_in
 set matches [pbs_ignore_expects]
 if {$matches != 3} {
-        fail "sbatch didn't read the correct options from batch file ($matches of 3)"
+	fail "sbatch didn't read the correct options from batch file ($matches of 3)"
 }
 log_info "#PBS batch command processed correctly"
 
@@ -171,10 +170,10 @@ make_bash_script $file_in "
 #PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
 $bin_sleep $delay
 "
-set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in]
+spawn $sbatch -vv -o $file_out $file_in
 set matches [pbs_ignore_expects]
 if {$matches != 0} {
-        fail "#SBATCH --ignore-pbs was not processed"
+	fail "#SBATCH --ignore-pbs was not processed"
 }
 log_info "#SBATCH --ignore-pbs processed correctly"
 
@@ -184,10 +183,10 @@ make_bash_script $file_in "
 #PBS -l nodes=$node_cnt+ppn=$ppn_cnt,mem=$min_mem_mb
 $bin_sleep $delay
 "
-set sbatch_pid [spawn $sbatch --ignore-pbs -vv -o $file_out $file_in]
+spawn $sbatch --ignore-pbs -vv -o $file_out $file_in
 set matches [pbs_ignore_expects]
 if {$matches != 0} {
-        fail "command line arg --ignore-pbs was not processed"
+	fail "command line arg --ignore-pbs was not processed"
 }
 log_info "command line arg --ignore-pbs processed correctly"
 
@@ -198,10 +197,10 @@ make_bash_script $file_in "
 $bin_sleep $delay
 "
 set env($env_pbs_ignore) 1
-set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in ]
+spawn $sbatch -vv -o $file_out $file_in
 set matches [pbs_ignore_expects]
 if {$matches != 0} {
-        fail "SBATCH_IGNORE_PBS=1 environment variable was not processed"
+	fail "SBATCH_IGNORE_PBS=1 environment variable was not processed"
 }
 set env($env_pbs_ignore) 0
 log_info "BATCH_IGNORE_PBS=1 environment variable processed correctly"

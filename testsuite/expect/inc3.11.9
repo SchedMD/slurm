@@ -29,7 +29,7 @@
 
 proc inc3_11_9 {} {
 	global user_name node_count
-	global bin_rm file_in bin_sleep sbatch number scontrol
+	global file_in bin_sleep sbatch number scontrol
 	global re_word_str scancel
 	global cluster_cpus cores_per_node def_partition
 	global def_node_name def_node_inx_min def_node_inx_max
@@ -51,7 +51,6 @@ proc inc3_11_9 {} {
 	}
 
 	# Make the job script
-	exec $bin_rm -f $file_in
 	make_bash_script $file_in "$bin_sleep 100"
 
 	# Make a reservation, just to get node size information

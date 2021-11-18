@@ -29,27 +29,22 @@
 ############################################################################
 source ./globals
 
-set file_in      "test$test_id.input"
+set file_in      "$test_dir/input"
 set job_id1      0
 set job_id2      0
 set step_id      0
-set job_name1    "test$test_id.job1"
-set job_name2    "test$test_id.job2"
+set job_name1    "$test_name.job1"
+set job_name2    "$test_name.job2"
 set node_cnt 1-1
-
-proc cleanup {} {
-	global job_id1 job_id2 bin_rm file_in
-
-	#
-	# Cancel jobs and remove files
-	#
-	cancel_job $job_id1
-	cancel_job $job_id2
-	exec $bin_rm -f $file_in
-}
 
 if {[param_contains [get_config_param "JobSubmitPlugins"] "all_partitions"]} {
 	skip "This test is incompatible with JobSubmitPlugins=all_partitions"
+}
+
+proc cleanup {} {
+	global job_id1 job_id2
+
+	cancel_job [list $job_id1 $job_id2]
 }
 
 #
@@ -58,45 +53,10 @@ if {[param_contains [get_config_param "JobSubmitPlugins"] "all_partitions"]} {
 make_bash_script $file_in "$srun $bin_sleep $max_job_delay"
 
 #
-# Submit a couple of job so we have something to look at
+# Submit a couple of jobs so we have something to look at
 #
-set sbatch_pid [spawn $sbatch -N$node_cnt -J$job_name1 --output=/dev/null --error=/dev/null -t5 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id1 == 0} {
-	fail "srun job submit failure"
-}
-
-set sbatch_pid [spawn $sbatch -N$node_cnt -J$job_name2 --output=/dev/null --error=/dev/null --hold -t5 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		cancel_job $job_id1
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id2 == 0} {
-	cancel_job $job_id1
-	fail "srun job submit failure"
-}
+set job_id1 [submit_job -fail "-N$node_cnt -J$job_name1 --output=/dev/null --error=/dev/null -t5 $file_in"]
+set job_id2 [submit_job -fail "-N$node_cnt -J$job_name2 --output=/dev/null --error=/dev/null --hold -t5 $file_in"]
 
 #
 # Check the squeue job filter option

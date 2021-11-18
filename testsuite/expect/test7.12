@@ -31,30 +31,27 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set job_id      0
 set step_id	0
 set pid_count	1
-set test_prog   "test$test_id.prog"
-
-proc cleanup {} {
-	global job_id file_in test_prog
-
-	cancel_job $job_id
-	file delete $file_in $test_prog
-}
+set test_prog   "$test_name.prog"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
 }
 
+proc cleanup {} {
+	global job_id test_prog
+
+	cancel_job $job_id
+	file delete $test_prog
+}
+
 #
-# Delete left-over program and rebuild it
+# Rebuild program
 #
-file delete $file_in $test_prog
-make_bash_script $file_in "
-  $srun $bin_sleep 120
-"
+make_bash_script $file_in "$srun $bin_sleep 120"
 if [compile_against_libslurm ${test_prog}] {
 	fail "Cannot compile test program"
 }

@@ -29,16 +29,10 @@
 ############################################################################
 source ./globals
 
-set file_in          "test$test_id.input"
-set file_out         "test$test_id.output"
-set file_prog        "test$test_id.prog"
+set file_in          "$test_dir/input"
+set file_out         "$test_dir/output"
+set file_prog        "$test_name.prog"
 set iterations       50
-
-proc cleanup {} {
-	global bin_rm file_in file_prog file_out
-
-	exec $bin_rm -f $file_in $file_prog $file_out
-}
 
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
 if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
@@ -55,12 +49,18 @@ if {[get_config_param "ProctrackType"] eq "proctrack/cray_aries"} {
 	skip "Test incompatible with proctrack/cray_aries"
 }
 
+proc cleanup {} {
+	global file_prog
+
+	file delete $file_prog
+}
+
 #
 # Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output
 # of the ulimit program is inconsistent across systems.
 #
-exec $bin_rm -f $file_prog $file_in $file_out
+exec $bin_rm -f $file_prog
 exec $bin_cc -O -o $file_prog ${file_prog}.c
 
 make_bash_script $file_in "
@@ -74,7 +74,7 @@ make_bash_script $file_in "
   $bin_echo 'fini'
 "
 
-set job_id [submit_job -fail "--output=$file_out -t1 ./$file_in"]
+set job_id [submit_job -fail "--output=$file_out -t1 $file_in"]
 
 #
 # Wait for job to complete

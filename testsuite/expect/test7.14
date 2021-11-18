@@ -28,25 +28,23 @@
 ############################################################################
 source ./globals
 
-set file_in          "test$test_id.input"
-set file_prog1       "test$test_id.prog1"
-set file_prog2       "test$test_id.prog2"
-
-proc cleanup {} {
-	global bin_rm file_in file_prog1 file_prog2
-
-	exec $bin_rm -f $file_in $file_prog1 $file_prog2
-}
+set file_in          "$test_dir/input"
+set file_prog1       "$test_name.prog1"
+set file_prog2       "$test_name.prog2"
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
+proc cleanup {} {
+	global file_prog1 file_prog2
+
+	file delete $file_prog1 $file_prog2
+}
+
 #
-# Delete left-over programs and rebuild them.
+# Build programs
 #
-exec $bin_rm -f $file_in
-exec $bin_rm -f $file_prog1 $file_prog2
 exec $bin_cc -O -o $file_prog1 ${file_prog1}.c
 exec $bin_cc -O -o $file_prog2 ${file_prog2}.c
 
@@ -68,20 +66,7 @@ make_bash_script $file_in "
   exit 0
 "
 
-set job_id 0
-spawn $sbatch --output=/dev/null -t1 ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "--output=/dev/null -t1 $file_in"]
 
 #
 # Wait for job to complete

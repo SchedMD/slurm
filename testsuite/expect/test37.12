@@ -41,15 +41,15 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set fed_name    "feda"
-set user_name   ""
-set srun_job_cnt 0
-set my_sbatch "${fed_slurm_base}/$fedc1/bin/sbatch"
-set my_srun "${fed_slurm_base}/$fedc1/bin/srun"
-set my_squeue "${fed_slurm_base}/$fedc1/bin/squeue"
+set fed_name        "feda"
+set user_name       ""
+set srun_job_cnt    0
+set my_sbatch       "${fed_slurm_base}/$fedc1/bin/sbatch"
+set my_srun         "${fed_slurm_base}/$fedc1/bin/srun"
+set my_squeue       "${fed_slurm_base}/$fedc1/bin/squeue"
 regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
-set min_job_age [expr {$min_job_age + 65}]
-set file_in2         "test$test_id.in2"
+set min_job_age     [expr {$min_job_age + 65}]
+set file_in2        "$test_dir/input2"
 
 #
 # Check accounting config and bail if not found.
@@ -145,14 +145,11 @@ proc cancel_federation_jobs { } {
 }
 
 proc cleanup { } {
-	global scancel fed_name user_name bin_rm file_in2 fedc1 fedc2 fedc3
-	global test_id bin_bash my_sacctmgr
+	global fed_name bin_bash bin_rm test_name
 
 	cancel_federation_jobs
-	exec $bin_rm -f $file_in2
-	exec $bin_bash -c "$bin_rm -f test$test_id*.out"
-
-	return [delete_federations $fed_name]
+	delete_federations $fed_name
+	exec $bin_bash -c "$bin_rm -f $test_name*.out"
 }
 
 #start test
@@ -168,9 +165,7 @@ if {![check_federation_up]} {
 set user_name [get_my_user_name]
 
 # Remove existing setup
-if {[cleanup] != 0} {
-	fail "Failed to cleanup"
-}
+cleanup
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
@@ -185,7 +180,7 @@ log_info "Setup cluster features"
 log_info "################################################################"
 
 set matches 0
-set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
+spawn $sacctmgr -i modify cluster $fedc1 set features=fa
 expect {
 	-re "Setting$eol" {
 		incr matches
@@ -204,7 +199,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr mod not responding"
 	}
 	eof {
@@ -216,7 +210,7 @@ if {$matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr -i modify cluster $fedc2 set features=fb]
+spawn $sacctmgr -i modify cluster $fedc2 set features=fb
 expect {
 	-re "Setting$eol" {
 		incr matches
@@ -235,7 +229,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr mod not responding"
 	}
 	eof {
@@ -247,7 +240,7 @@ if {$matches != 4} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features=fc]
+spawn $sacctmgr -i modify cluster $fedc3 set features=fc
 expect {
 	-re "Setting$eol" {
 		incr matches
@@ -266,7 +259,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr mod not responding"
 	}
 	eof {

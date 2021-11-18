@@ -27,27 +27,26 @@
 ############################################################################
 source ./globals
 
-set file_in1      "test$test_id.input1"
-set file_in2      "test$test_id.input2"
-set file_out      "test$test_id.output"
+set file_in1      "$test_dir/input1"
+set file_in2      "$test_dir/input2"
+set file_out      "$test_dir/output"
 set job_id        0
 set step_id       0
 set orig_time     0
 set new_time      0
 
 proc cleanup {} {
-	global bin_rm file_in1 file_in2 file_out
+	global job_id
 
-	exec $bin_rm -f $file_in1 $file_in2 $file_out
+	cancel_job $job_id
 }
 
 #
 # Build input batch file
 #
-exec $bin_rm -f $file_in1 $file_in2 $file_out
 make_bash_script $file_in1 "
   $bin_echo JOB_BEGIN
-  $srun -t5 ./$file_in2
+  $srun -t5 $file_in2
   $bin_echo JOB_FINISH
 "
 #
@@ -144,12 +143,8 @@ subtest {$orig_time == 1} "Validate the step's new time limit" "$orig_time != 1"
 # Look for message generated before and after srun (job step) time limit
 #
 sleep 60
-if {[wait_for_job $job_id "DONE"] != 0} {
-    fail "Waiting for job to terminate"
-}
-if {[wait_for_file $file_out] != 0} {
-	fail "Job output file not found"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 
 spawn $bin_cat $file_out
 expect {

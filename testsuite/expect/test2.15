@@ -28,14 +28,8 @@
 ############################################################################
 source ./globals
 
-set file_in          "test$test_id.bash"
+set file_in          "$test_dir/job_script"
 set job_id           0
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -49,6 +43,12 @@ set node_cnt 2
 set available [llength [get_nodes_by_state idle,alloc,comp]]
 if {$available < $node_cnt} {
 	skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
 }
 
 # NOTE: The second sleep command in task 1 is to deal with a possible race
@@ -77,7 +77,7 @@ fi
 set host ""
 set host_cnt 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N$node_cnt -t1 ./$file_in]
+spawn $srun -N$node_cnt -t1 $file_in
 set srun_id $spawn_id
 expect {
 	-re "JOBID=($number)" {
@@ -94,7 +94,6 @@ expect {
 		}
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -106,7 +105,6 @@ if {$job_id == 0} {
 }
 
 spawn $scontrol update jobid=$job_id nodelist=$host
-set scontrol_id $spawn_id
 expect {
 	timeout {
 		fail "scontrol not responding"
@@ -129,7 +127,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

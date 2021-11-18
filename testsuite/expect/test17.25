@@ -29,15 +29,15 @@
 ############################################################################
 source ./globals
 
-set file_in          "test$test_id.input"
+set file_in          "$test_dir/input"
 set job_id           0
 set timeout          $max_job_delay
-set account	     "dummy_acct"
+set account          "dummy_acct"
 
 proc cleanup {} {
-	global bin_rm file_in
+	global job_id
 
-	exec $bin_rm -f $file_in
+	cancel_job $job_id
 }
 
 if [param_contains [get_config_param "AccountingStorageEnforce"] "associations"] {
@@ -56,9 +56,7 @@ set env(SBATCH_TIMELIMIT)    3
 #
 # Build input script file
 #
-make_bash_script $file_in "
-  $bin_id
-"
+make_bash_script $file_in "$bin_id"
 
 #
 # Spawn a job via sbatch using these environment variables
@@ -96,4 +94,3 @@ if {$job_id == 0} {
 if {$matches != 3} {
 	fail "Processed $matches of 3 environment variables"
 }
-cancel_job $job_id

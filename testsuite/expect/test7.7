@@ -27,16 +27,15 @@
 ############################################################################
 source ./globals
 
-set file_in    "test$test_id.input"
-set file_out   "test$test_id.output"
-set job_name   "test$test_id"
-set job_id      0
+set file_in    "$test_dir/input"
+set file_out   "$test_dir/output"
+set job_name   $test_name
+set job_id     0
 
 proc cleanup {} {
-	global job_id bin_rm file_in file_out
+	global job_id
 
 	cancel_job $job_id
-	exec $bin_rm -f $file_in $file_out
 }
 
 proc test_alloc_size { task_cnt } {

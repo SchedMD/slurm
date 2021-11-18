@@ -29,9 +29,9 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
 
 set job_id               0
 set steps_started        30
@@ -39,14 +39,10 @@ set job_mem_opt          "--mem-per-cpu=256M"
 set step_mem_opt         "--mem-per-cpu=6M"
 
 proc cleanup {} {
-	global job_id bin_rm file_in file_out file_err
+	global job_id
 
 	cancel_job $job_id
-	exec $bin_rm -f $file_in $file_out $file_err
 }
-
-log_info "Initial cleanup/setup"
-cleanup
 
 # Build input script file
 #
@@ -89,9 +85,7 @@ if {$job_id == 0} {
 }
 
 # Wait for job to start
-if {[wait_for_job $job_id "RUNNING"]} {
-	fail "Job was not able to start running"
-}
+wait_for_job -fail $job_id "RUNNING"
 
 #
 # Check that all the steps in background are in squeue
@@ -116,9 +110,7 @@ subtest {$step_cnt == $steps_started} "All steps ($steps_started) should be repo
 # Check that the output of all srun was written to the sbatch output file
 #
 cancel_job $job_id
-if {[wait_for_file $file_out]} {
-	fail "Output file not present ($file_out)"
-}
+wait_for_file -fail $file_out
 
 set step_cnt 0
 spawn $bin_cat $file_out

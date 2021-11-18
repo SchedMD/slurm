@@ -30,7 +30,7 @@
 source ./globals
 
 set authorized    1
-set file_in       "test$test_id.input"
+set file_in       "$test_dir/input"
 set job_id        0
 set new_prio      1
 set read_priority -1
@@ -63,7 +63,6 @@ expect {
 		wait
 	}
 }
-exec $bin_rm -f $file_in
 if {$job_id == 0} {
 	fail "srun failed to initiate job"
 }
@@ -71,7 +70,7 @@ if {$job_id == 0} {
 #
 # Record that job's state
 #
-spawn  $scontrol show job $job_id
+spawn $scontrol show job $job_id
 expect {
 	-re "Priority=($number)" {
 		set read_priority $expect_out(1,string)
@@ -127,7 +126,7 @@ expect {
 #
 # Validate that job's new priority
 #
-spawn  $scontrol show job $job_id
+spawn $scontrol show job $job_id
 expect {
 	-re "Priority=($number)" {
 		set read_priority $expect_out(1,string)

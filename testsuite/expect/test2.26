@@ -26,8 +26,8 @@
 ############################################################################
 source ./globals
 
-set file_in		"test$test_id.input"
-set job_name		"test$test_id"
+set file_in     "$test_dir/input"
+set job_name    $test_name
 
 proc top_enabled { } {
 	global scontrol
@@ -99,24 +99,14 @@ proc load_job_prio { } {
 	}
 }
 
-proc cleanup { } {
-	global bin_rm file_in job_id scancel
-
-	if {$job_id(0) > 0} {
-		exec $scancel $job_id(0)
-	}
-	if {$job_id(1) > 0} {
-		exec $scancel $job_id(1)
-	}
-	if {$job_id(2) > 0} {
-		exec $scancel $job_id(2)
-	}
-
-	exec $bin_rm -f $file_in
-}
-
 if {![is_super_user] && [top_enabled] == 0} {
 	skip "Scontrol top operation disabled for this user"
+}
+
+proc cleanup { } {
+	global job_id scancel
+
+	cancel_job [list $job_id(0) $job_id(1) $job_id(2)]
 }
 
 #

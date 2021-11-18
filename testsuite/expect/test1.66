@@ -27,8 +27,8 @@
 ############################################################################
 source ./globals
 
-set script      "test$test_id.bash"
-set file_out    "test$test_id.out"
+set script      "$test_dir/job_script"
+set file_out    "$test_dir/output"
 set job_id      0
 
 set node_cnt [llength [get_nodes_by_state idle,alloc,comp]]
@@ -36,20 +36,18 @@ if {$node_cnt < 2} {
 	skip "Not enough nodes in partition ($node_cnt < 2)"
 }
 
-exec $bin_rm -f $script $file_out
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 make_bash_script $script "
   $scontrol show hostname \$SLURM_JOB_NODELIST
   TEST_NODE=`$scontrol show hostname \$SLURM_JOB_NODELIST | tail -1`
   echo SUBMIT_NODE=\$TEST_NODE
   $srun -w \$TEST_NODE -N1 env | grep SLURM_STEP
 "
-
-proc cleanup {} {
-	global job_id script file_out
-
-	cancel_job $job_id
-	file delete $script $file_out
-}
 
 spawn $sbatch -N2 --output=$file_out $script
 expect {
