@@ -6149,11 +6149,13 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 
 	new_gres_js = xmalloc(sizeof(gres_job_state_t));
 	new_gres_js->cpus_per_gres	= gres_js->cpus_per_gres;
+	new_gres_js->def_cpus_per_gres	= gres_js->def_cpus_per_gres;
 	new_gres_js->gres_per_job	= gres_js->gres_per_job;
 	new_gres_js->gres_per_node	= gres_js->gres_per_node;
 	new_gres_js->gres_per_socket	= gres_js->gres_per_socket;
 	new_gres_js->gres_per_task	= gres_js->gres_per_task;
 	new_gres_js->mem_per_gres	= gres_js->mem_per_gres;
+	new_gres_js->def_mem_per_gres	= gres_js->def_mem_per_gres;
 	new_gres_js->node_cnt		= gres_js->node_cnt;
 	new_gres_js->total_gres	= gres_js->total_gres;
 	new_gres_js->type_id		= gres_js->type_id;
@@ -6188,11 +6190,13 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
 
 	new_gres_js = xmalloc(sizeof(gres_job_state_t));
 	new_gres_js->cpus_per_gres	= gres_js->cpus_per_gres;
+	new_gres_js->def_cpus_per_gres	= gres_js->def_cpus_per_gres;
 	new_gres_js->gres_per_job	= gres_js->gres_per_job;
 	new_gres_js->gres_per_node	= gres_js->gres_per_node;
 	new_gres_js->gres_per_socket	= gres_js->gres_per_socket;
 	new_gres_js->gres_per_task	= gres_js->gres_per_task;
 	new_gres_js->mem_per_gres	= gres_js->mem_per_gres;
+	new_gres_js->def_mem_per_gres	= gres_js->def_mem_per_gres;
 	new_gres_js->node_cnt		= 1;
 	new_gres_js->total_gres	= gres_js->total_gres;
 	new_gres_js->type_id		= gres_js->type_id;
