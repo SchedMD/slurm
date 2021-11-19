@@ -199,7 +199,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked, log_level_t log_lvl);
 static void _dump_job_details(struct job_details *detail_ptr, buf_t *buffer);
-static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer);
+static int _dump_job_state(void *object, void *arg);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  buf_t *buffer);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
@@ -819,8 +819,6 @@ int dump_all_job_state(void)
 	/* Locks: Read config and job */
 	slurmctld_lock_t job_read_lock =
 		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	ListIterator job_iterator;
-	job_record_t *job_ptr;
 	buf_t *buffer = init_buf(high_buffer_size);
 	time_t now = time(NULL);
 	time_t last_state_file_time;
@@ -864,12 +862,8 @@ int dump_all_job_state(void)
 	/* write individual job records */
 	lock_slurmctld(job_read_lock);
 	pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		_dump_job_state(job_ptr, buffer);
-	}
-	list_iterator_destroy(job_iterator);
 
+	list_for_each_ro(job_list, _dump_job_state, buffer);
 
 	/* write the buffer to file */
 	old_file = xstrdup(slurm_conf.state_save_location);
@@ -1340,8 +1334,10 @@ unpack_error:
  * IN dump_job_ptr - pointer to job for which information is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
+static int _dump_job_state(void *object, void *arg)
 {
+	job_record_t *dump_job_ptr = object;
+	buf_t *buffer = arg;
 	struct job_details *detail_ptr;
 	uint32_t tmp_32;
 
@@ -1349,7 +1345,7 @@ static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
 
 	/* Don't pack "unlinked" job. */
 	if (dump_job_ptr->job_id == NO_VAL)
-		return;
+		return 0;
 
 	/* Dump basic job info */
 	pack32(dump_job_ptr->array_job_id, buffer);
@@ -1497,7 +1493,7 @@ static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
 		pack16((uint16_t) 0, buffer);	/* no details flag */
 
 	/* Dump job steps */
-	list_for_each(dump_job_ptr->step_list, dump_job_step_state, buffer);
+	list_for_each_ro(dump_job_ptr->step_list, dump_job_step_state, buffer);
 
 	pack16((uint16_t) 0, buffer);	/* no step flag */
 	pack64(dump_job_ptr->bit_flags, buffer);
@@ -1521,6 +1517,8 @@ static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
 	packstr(dump_job_ptr->tres_per_task, buffer);
 
 	packstr(dump_job_ptr->selinux_context, buffer);
+
+	return 0;
 }
 
 /* Unpack a job's state information from a buffer */
