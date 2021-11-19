@@ -33,6 +33,8 @@ Supported values are "lz4" (default) and "none".
 Some compression libraries may be unavailable on some systems.
 The default compression library (and enabling compression itself) may be
 set in the slurm.conf file using the BcastParameters option.
+.IP
+
 .TP
 \fB\-\-exclude\fR=<\fINONE\fR|\fIpath1\fR,\fI...\fR,\fIpathN\fR>
 Comma\-separated list of absolute directory paths to be excluded when
@@ -40,21 +42,31 @@ autodetecting and broadcasting executable shared object dependencies. If the
 keyword "\fINONE\fR" is configured, no directory paths will be excluded. The
 default value is that of slurm.conf \fBBcastExclude\fR and this option overrides
 it. See also \fB\-\-send\-libs\fR.
+.IP
+
 .TP
 \fB\-F\fR, \fB\-\-fanout\fR=<\fInumber\fR>
 Specify the fanout of messages used for file transfer.
 Maximum value is currently eight.
+.IP
+
 .TP
 \fB\-f\fR, \fB\-\-force\fR
 If the destination file already exists, replace it.
+.IP
+
 .TP
 \fB\-j\fR, \fB\-\-jobid\fR=<\fIjobID\fR[.\fIstepID\fR]>
 Specify the job ID to use with optional step ID.  If run inside an allocation
 this is unneeded as the job ID will read from the environment.
+.IP
+
 .TP
 \fB\-p\fR, \fB\-\-preserve\fR
 Preserves modification times, access times, and modes from the
 original file.
+.IP
+
 .TP
 \fB\-\-send\-libs\fR[=\fIyes\fR|\fIno\fR]
 If set to \fIyes\fR (or no argument), autodetect and broadcast the executable's
@@ -62,6 +74,8 @@ shared object dependencies to allocated compute nodes. The files are placed in
 a directory alongside the executable. This overrides the default behavior
 configured in slurm.conf \fBSbcastParameters send_libs\fR. See also
 \fB\-\-exclude\fR.
+.IP
+
 .TP
 \fB\-s\fR, \fB\-\-size\fR=<\fIsize\fR>
 Specify the block size used for file broadcast.
@@ -71,6 +85,8 @@ This size subject to rounding and range limits to maintain
 good performance.
 The default value is the file size or 8MB, whichever is smaller.
 This value may need to be set on systems with very limited memory.
+.IP
+
 .TP
 \fB\-t\fR, \fB\-\-timeout\fR=<\fIseconds\fR>
 Specify the message timeout in seconds.
@@ -78,12 +94,17 @@ The default value is \fIMessageTimeout\fR as reported by
 "scontrol show config".
 Setting a higher value may be necessitated by relatively slow
 I/O performance on the compute node disks.
+.IP
+
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Provide detailed event logging through program execution.
+.IP
+
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Print version information and exit.
+.IP
 
 .SH "PERFORMANCE"
 .PP
@@ -104,33 +125,51 @@ Some \fBsbcast\fR options may be set via environment variables.
 These environment variables, along with their corresponding options,
 are listed below. (Note: Command line options will always override
 these settings.)
+
 .TP 20
 \fBSBCAST_COMPRESS\fR
 \fB\-C, \-\-compress\fR
+.IP
+
 .TP
 \fBSBCAST_EXCLUDE\fR
 \fB\-\-exclude\fR=<\fINONE\fR|\fIpath1\fR,\fI...\fR,\fIpathN\fR>
+.IP
+
 .TP
 \fBSBCAST_FANOUT\fR
 \fB\-F\fB \fInumber\fR, \fB\-\-fanout\fR=\fInumber\fR
+.IP
+
 .TP
 \fBSBCAST_FORCE\fR
 \fB\-f, \-\-force\fR
+.IP
+
 .TP
 \fBSBCAST_SEND_LIBS\fR
 \fB\-\-send\-libs\fR[=\fIyes|no\fR]
+.IP
+
 .TP
 \fBSBCAST_PRESERVE\fR
 \fB\-p, \-\-preserve\fR
+.IP
+
 .TP
 \fBSBCAST_SIZE\fR
 \fB\-s\fR \fIsize\fR, \fB\-\-size\fR=\fIsize\fR
+.IP
+
 .TP
 \fBSBCAST_TIMEOUT\fR
 \fB\-t\fB \fIseconds\fR, \fB\-\-timeout\fR=\fIseconds\fR
+.IP
+
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
 
 .SH "AUTHORIZATION"
 
