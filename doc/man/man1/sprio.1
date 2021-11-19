@@ -21,114 +21,165 @@ jobs by job ID and user name.
 The cluster to issue commands to. Only one cluster name may be specified.
 Note that the SlurmDBD must be up for this option to work properly.
 This option implicitly sets the \fB\-\-local\fR option.
+.IP
 
 .TP
 \fB\-\-federation\fR
 Show jobs in federation if a member of one.
+.IP
 
 .TP
 \fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
 Specify the information to be displayed, its size and position (right
 or left justified).  The default formats when all factors have been
 assigned non\-zero weights are
-
+.IP
 .RS
 .TP 15
 \fIdefault\fR
 "%.15i %9r %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %20T"
+.IP
+
 .TP
 \fI\-l, \-\-long\fR
 "%.15i %9r %.8u %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T";
+.IP
 .RE
 
-.IP
 The format of each field is "%[.][size]type".
+.IP
 .RS
 .TP 8
 \fIsize\fR
 is the minimum field size.
 If no size is specified, whatever is needed to print the information will be used.
+.IP
+
 .TP
 \fI .\fR
 indicates the output should be left justified.
 By default, output is right justified.
+.IP
 .RE
 
-.IP
 Valid \fItype\fR specifications include:
-
+.IP
 .RS
 .TP 4
 \fB%a\fR
 Normalized age priority
+.IP
+
 .TP
 \fB%A\fR
 Weighted age priority
+.IP
+
 .TP
 \fB%b\fR
 Normalized association priority
+.IP
+
 .TP
 \fB%B\fR
 Weighted association priority
+.IP
+
 .TP
 \fB%c\fR
 Cluster name. Only applicable for federated clusters
+.IP
+
 .TP
 \fB%f\fR
 Normalized fair\-share priority
+.IP
+
 .TP
 \fB%F\fR
 Weighted fair\-share priority
+.IP
+
 .TP
 \fB%i\fR
 Job ID
+.IP
+
 .TP
 \fB%j\fR
 Normalized job size priority
+.IP
+
 .TP
 \fB%J\fR
 Weighted job size priority
+.IP
+
 .TP
 \fB%N\fR
 Nice adjustment
+.IP
+
 .TP
 \fB%p\fR
 Normalized partition priority
+.IP
+
 .TP
 \fB%P\fR
 Weighted partition priority
+.IP
+
 .TP
 \fB%q\fR
 Normalized quality of service priority
+.IP
+
 .TP
 \fB%Q\fR
 Weighted quality of service priority
+.IP
+
 .TP
 \fB%r\fR
 Partition name
+.IP
+
 .TP
 \fB%S\fR
 Weighted admin priority.
+.IP
+
 .TP
 \fB%t\fR
 Normalized TRES priorities
+.IP
+
 .TP
 \fB%T\fR
 Weighted TRES priorities
+.IP
+
 .TP
 \fB%u\fR
 User name for a job
+.IP
+
 .TP
 \fB%Y\fR
 Job priority
+.IP
+
 .TP
 \fB%y\fR
 Normalized job priority
 .RE
+.IP
 
 .TP
 \fB\-\-help\fR
 Print a help message describing all options \fBsprio\fR.
+.IP
 
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR=<\fIjob_id_list\fR>
@@ -137,28 +188,34 @@ all jobs. Since this option's argument is optional, for proper parsing
 the single letter option must be followed immediately with the value
 and not include a space between them. For example "\-j1008,1009" and
 not "\-j 1008,1009".
+.IP
 
 .TP
 \fB\-\-local\fR
 Show only jobs local to this cluster. Ignore other clusters in this federation
 (if any). Overrides \-\-federation.
+.IP
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
 Report more of the available information for the selected jobs.
+.IP
 
 .TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
+.IP
 
 .TP
 \fB\-n\fR, \fB\-\-norm\fR
 Display the normalized priority factors for the selected jobs.
+.IP
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_list\fR>
 Requests a comma separated list of partitions to display.  Defaults to
 all partitions.
+.IP
 
 .TP
 \fB\-\-sibling\fR
@@ -168,6 +225,7 @@ components reported for only one cluster. Each sibling job on the various
 clusters in the federation may have different priority, which will not be
 reported without using this option. Implicitly adds "%c" (cluster name) to the
 output format.
+.IP
 
 .TP
 \fB\-S\fR, \fB\-\-sort\fR=<\fIsort_list\fR>
@@ -178,28 +236,34 @@ be preceded by "+" or "\-" for ascending (default) or descending respectively.
 For example, a <sort_list> of "u,r,\-y" will sort the job priority reports by
 username, partition name, and descending job priority, in that order. The
 default <sort_list> is "i" (ascending job id).
+.IP
 
 .TP
 \fB\-\-usage\fR
 Print a brief help message listing the \fBsprio\fR options.
+.IP
 
 .TP
 \fB\-u\fR, \fB\-\-user\fR=<\fIuser_list\fR>
 Request jobs from a comma separated list of users.  The list can
 consist of user names or user id numbers.
+.IP
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Report details of sprios actions.
+.IP
 
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Print version information and exit.
+.IP
 
 .TP
 \fB\-w\fR, \fB\-\-weights\fR
 Display the configured weights for each factor.  This is for information
 purposes only.  Actual job data is suppressed.
+.IP
 
 .SH "PERFORMANCE"
 .PP
@@ -218,34 +282,42 @@ information you are trying to gather.
 .PP
 If no corresponding command line option is specified, \fBsprio\fR will use the
 value of the following environment variables.
+
 .TP 20
 \fBSLURM_CLUSTERS\fR
 Same as \fB\-\-clusters\fR
+.IP
 
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
 
 .TP
 \fBSPRIO_FEDERATION\fR
 Same as \fB\-\-federation\fR
+.IP
 
 .TP
 \fBSPRIO_FORMAT\fR
 Same as \fB\-o <output_format>, \-\-format=<output_format>\fR
+.IP
 
 .TP
 \fBSPRIO_LOCAL\fR
 Same as \fB\-\-local\fR
+.IP
 
 .TP
 \fBSPRIO_SIBLING\fR
 Same as \fB\-\-sibling\fR
+.IP
 
 .SH "EXAMPLES"
+
 .TP
 Print the list of all pending jobs with their weighted priorities
-
+.IP
 .nf
 $ sprio
   JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
@@ -256,7 +328,7 @@ $ sprio
 
 .TP
 Print the list of all pending jobs with their normalized priorities
-
+.IP
 .nf
 $ sprio \-n
   JOBID PRIORITY   AGE        FAIRSHARE  JOBSIZE    PARTITION  QOS
@@ -267,7 +339,7 @@ $ sprio \-n
 
 .TP
 Print the job priorities for specific jobs
-
+.IP
 .nf
 $ sprio \-\-jobs=65548,65547
   JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
@@ -277,7 +349,7 @@ $ sprio \-\-jobs=65548,65547
 
 .TP
 Print the job priorities for jobs of specific users
-
+.IP
 .nf
 $ sprio \-\-users=fred,sally
   JOBID     USER  PRIORITY       AGE  FAIRSHARE   JOBSIZE  PARTITION     QOS
@@ -287,7 +359,7 @@ $ sprio \-\-users=fred,sally
 
 .TP
 Print the configured weights for each priority component
-
+.IP
 .nf
 $ sprio \-w
   JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
