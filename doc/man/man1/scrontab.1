@@ -74,62 +74,77 @@ ignored.
 .SH "OPTIONS"
 The first form of this command is used to install a new crontab from some named
 file or standard input if the pseudo\-filename ``\-'' is given.
+
 .TP
 \fB\-e\fR
 Edit the crontab. If a crontab does not exist already, a default example
 (without any defined entries) will be provided in the editor.
+.IP
 
 .TP
 \fB\-l\fR
 List the crontab. (Prints directly to stdout.)
+.IP
 
 .TP
 \fB\-r\fR
 Remove the crontab. Any currently running crontab\-defined jobs will continue
 to run but will no longer recur. All other crontab\-defined jobs will be
 cancelled.
+.IP
 
 .TP
 \fB\-u\fR <\fIuser\fR>
 Edit or view a different user's crontab. Listing is permitted for Operators and
 Admins. Editing/removal is only permitted for root and the \fISlurmUser\fR
 account.
+.IP
 
 .SH "SCRONTAB OPTIONS"
 \fBscrontab\fR allows you to use shortcuts to specify some common time
 intervals for the specified script to run.  These include the following:
+
 .TP
 \fB@yearly\fR | \fB@annually\fR
 Job will become eligible at \fI00:00 Jan 01\fR each year.
+.IP
 
 .TP
 \fB@monthly\fR
 Job will become eligible at \fI00:00\fR on the first day of each month.
+.IP
 
 .TP
 \fB@weekly\fR
 Job will become eligible at \fI00:00 Sunday\fR of each week.
+.IP
 
 .TP
 \fB@daily\fR | \fB@midnight\fR
 Job will become eligible at \fI00:00\fR each day.
+.IP
 
 .TP
 \fB@hourly\fR
 Job will become eligible at the first minute of each hour.
+.IP
 
 .SH "ENVIRONMENT VARIABLES"
+
 .TP 20
 \fBVISUAL\fR
 Used as the interactive editor if set.
+.IP
 
 .TP
 \fBEDITOR\fR
 Used as the interfactive editor if set and \fBVISUAL\fR is not defined.
+.IP
 
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
 
 .SH "NOTES"
 \fBscrontab\fR is only available if the \fBScronParameters=enable\fR option has
