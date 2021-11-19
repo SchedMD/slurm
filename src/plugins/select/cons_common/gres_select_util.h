@@ -127,4 +127,12 @@ extern bool gres_select_util_job_tres_per_task(List job_gres_list);
  */
 extern uint32_t gres_select_util_get_task_limit(List sock_gres_list);
 
+/*
+ * Create a (partial) copy of a job's gres state accumlating the gres_per_*
+ * requirements to accuratly calculate cpus_per_gres
+ * IN gres_list - List of Gres records
+ * RET The copy of list or NULL on failure
+ */
+extern List gres_select_util_create_list_req_accum(List gres_list);
+
 #endif /* _GRES_SELECT_UTIL_H */

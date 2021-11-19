@@ -420,3 +420,67 @@ extern uint32_t gres_select_util_get_task_limit(List sock_gres_list)
 
 	return max_tasks;
 }
+
+static int _accumulate_gres_device_req(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x, *new_gres_state_job;
+	List new_gres_list = arg;
+
+	if ((new_gres_state_job = list_find_first(
+		     new_gres_list,
+		     gres_find_id,
+		     &gres_state_job->plugin_id))) {
+		gres_job_state_t *accum_gres_js =
+			new_gres_state_job->gres_data;
+		gres_job_state_t *gres_js = gres_state_job->gres_data;
+
+		/*
+		 * Add up gres counts but cpus_per_gres and mem_per_gres should
+		 * be same.
+		 */
+		accum_gres_js->gres_per_job += gres_js->gres_per_job;
+		accum_gres_js->gres_per_node += gres_js->gres_per_node;
+		accum_gres_js->gres_per_socket += gres_js->gres_per_socket;
+		accum_gres_js->gres_per_task += gres_js->gres_per_task;
+		accum_gres_js->total_gres += gres_js->total_gres;
+	} else {
+		gres_job_state_t *gres_js = gres_job_state_dup(
+			gres_state_job->gres_data);
+		/*
+		 * The type id or name should never be set here as we should
+		 * only have counters here for the gres_per_* counters based on
+		 * cpus/mem per_gres.
+		 */
+		xfree(gres_js->type_name);
+		gres_js->type_id = 0;
+
+		new_gres_state_job = gres_create_state(
+			gres_state_job, GRES_STATE_SRC_STATE_PTR,
+			GRES_STATE_TYPE_JOB, gres_js);
+		list_append(new_gres_list, new_gres_state_job);
+	}
+
+	return 0;
+}
+
+
+/*
+ * Create a (partial) copy of a job's gres state accumlating the gres_per_*
+ * requirements to accuratly calculate cpus_per_gres
+ * IN gres_list - List of Gres records
+ * RET The copy of list or NULL on failure
+ */
+extern List gres_select_util_create_list_req_accum(List gres_list)
+{
+	List new_gres_list;
+
+	if (!gres_list)
+		return NULL;
+
+	new_gres_list = list_create(gres_job_list_delete);
+
+	(void) list_for_each(gres_list, _accumulate_gres_device_req,
+			     new_gres_list);
+
+	return new_gres_list;
+}

@@ -889,15 +889,19 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			sockets_per_node =
 				details_ptr->mc_ptr->sockets_per_node;
 		_set_gpu_defaults(job_ptr);
+		if (!job_ptr->gres_list_req_accum)
+			job_ptr->gres_list_req_accum =
+				gres_select_util_create_list_req_accum(
+					job_ptr->gres_list_req);
 		details_ptr->min_gres_cpu = gres_select_util_job_min_cpu_node(
 			sockets_per_node,
 			details_ptr->ntasks_per_node,
-			job_ptr->gres_list_req);
+			job_ptr->gres_list_req_accum);
 		details_ptr->min_job_gres_cpu = gres_select_util_job_min_cpus(
 			details_ptr->min_nodes,
 			sockets_per_node,
 			ntasks_per_node * details_ptr->min_nodes,
-			job_ptr->gres_list_req);
+			job_ptr->gres_list_req_accum);
 	} else if (exc_cores && *exc_cores)
 		exc_core_bitmap = *exc_cores;
 
@@ -1410,9 +1414,13 @@ alloc_job:
 					 details_ptr->pn_min_cpus));
 	if (job_ptr->details->mc_ptr)
 		sockets_per_node = job_ptr->details->mc_ptr->sockets_per_node;
+	if (!job_ptr->gres_list_req_accum)
+		job_ptr->gres_list_req_accum =
+			gres_select_util_create_list_req_accum(
+				job_ptr->gres_list_req);
 	i = gres_select_util_job_min_cpus(job_res->nhosts, sockets_per_node,
 					  job_ptr->details->num_tasks,
-					  job_ptr->gres_list_req);
+					  job_ptr->gres_list_req_accum);
 	job_res->ncpus            = MAX(job_res->ncpus, i);
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;	/* Per node CPU counts */
