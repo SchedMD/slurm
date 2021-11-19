@@ -36,138 +36,172 @@ sample
 \fB\-E\fR, \fB\-\-extract\fR
 
 Extract data series from a merged job file.
-
+.IP
 .RS
 .TP 10
 Extract mode options
+.IP
 
 .TP
 \fB\-i\fR, \fB\-\-input\fR=\fIpath\fR
 merged file to extract from (default ./job_$jobid.h5)
+.IP
 
 .TP
 \fB\-N\fR, \fB\-\-node\fR=\fInodename\fR
 Node name to extract (default is all)
+.IP
 
 .TP
 \fB\-l\fR, \fB\-\-level\fR=[Node:Totals | Node:TimeSeries]
 Level to which series is attached. (default Node:Totals)
+.IP
 
 .TP
 \fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task | Task_#]
 \fBTask\fR is all tasks, \fBTask_#\fR (# is a task id) (default is everything)
 .RE
+.IP
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print this description of use.
+.IP
 
 .TP
 \fB\-I\fR, \fB\-\-item\-extract\fR
 
 Extract one data item from all samples of one data series from all nodes in a merged job file.
-
+.IP
 .RS
 .TP 10
 Item\-Extract mode options
+.IP
 
 .TP
 \fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task]\fR
+.IP
 
 .TP
 \fB\-d\fR, \fB\-\-data\fR
 Name of data item in series (See note below).
-
 .RE
+.IP
 
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR=<\fIjob\fR[.\fIstep\fR]>
 Format is <\fIjob\fR[.\fIstep\fR]>. Merge this job/step
 (or a comma\-separated list of job steps). This option is required.
 Not specifying a step will result in all steps found to be processed.
+.IP
 
 .TP
 \fB\-L\fR, \fB\-\-list\fR
 
 Print the items of a series contained in a job file.
+.IP
 .RS
 .TP 10
 List mode options
+.IP
 
 .TP
 \fB\-i\fR, \fB\-\-input\fR=\fIpath\fR
 Merged file to extract from (default ./job_$jobid.h5)
+.IP
 
 .TP
 \fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task]
 .RE
+.IP
 
 .TP
 \fB\-o\fR, \fB\-\-output\fR=<\fIpath\fR>
-.nf
 Path to a file into which to write.
 Default for merge is ./job_$jobid.h5
 Default for extract is ./extract_$jobid.csv
-.fi
+.IP
 
 .TP
 \fB\-p\fR, \fB\-\-profiledir\fR=<\fIdir\fR>
 Directory location where node\-step files exist default is set in
 acct_gather.conf.
+.IP
 
 .TP
 \fB\-S\fR, \fB\-\-savefiles\fR
 Instead of removing node\-step files after merging them into the job file,
 keep them around.
+.IP
 
 .TP
 \fB\-\-usage\fR
 Display brief usage message.
+.IP
 
 .TP
 \fB\-\-user\fR=<\fIuser\fR>
 User who profiled job.
 (Handy for root user, defaults to user running this command.)
+.IP
 
 .SH "Data Items per Series"
 
 .TP
 \fBEnergy\fR
-.nf
+.RS
 Power
+.br
 CPU_Frequency
-.fi
+.RE
+.IP
 
 .TP
 \fBFilesystem\fR
-.nf
+.RS
 Reads
+.br
 Megabytes_Read
+.br
 Writes
+.br
 Megabytes_Write
-.fi
+.RE
+.IP
 
 .TP
 \fBNetwork\fR
-.nf
+.RS
 Packets_In
+.br
 Megabytes_In
+.br
 Packets_Out
+.br
 Megabytes_Out
-.fi
+.RE
+.IP
 
 .TP
 \fBTask\fR
-.nf
+.RS
 CPU_Frequency
+.br
 CPU_Time
+.br
 CPU_Utilization
+.br
 RSS
+.br
 VM_Size
+.br
 Pages
+.br
 Read_Megabytes
+.br
 Write_Megabytes
-.fi
+.RE
+.IP
 
 .SH "PERFORMANCE"
 .PP
@@ -186,21 +220,21 @@ necessary for the information you are trying to gather.
 
 .TP
 Merge node\-step files (as part of a sbatch script):
-
+.IP
 .nf
 $ sbatch \-n1 \-d$SLURM_JOB_ID \-\-wrap="sh5util \-\-savefiles \-j $SLURM_JOB_ID"
 .fi
 
 .TP
 Extract all task data from a node:
-
+.IP
 .nf
 $ sh5util \-j 42 \-N snowflake01 \-\-level=Node:TimeSeries \-\-series=Tasks
 .fi
 
 .TP
 Extract all energy data:
-
+.IP
 .nf
 $ sh5util \-j 42 \-\-series=Energy \-\-data=power
 .fi
