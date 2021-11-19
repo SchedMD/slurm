@@ -39,7 +39,7 @@ proc cleanup {} {
 }
 
 set oversubscribe [partition_oversubscribe]
-if {[string compare $oversubscribe "FORCE"] == 0} {
+if {$oversubscribe eq "FORCE"} {
 	set force_part 1
 }
 

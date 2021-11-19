@@ -87,7 +87,7 @@ expect {
 	}
 }
 subtest {$got_job_grps != 0} "User and group ID should be seen in stdout"
-subtest {[string compare $login_grp_info $job_grp_info] == 0} "Login information should match that of the test user"
+subtest {$login_grp_info eq $job_grp_info} "Login information should match that of the test user"
 
 #
 # Check for sleep input specification error in stderr

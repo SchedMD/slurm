@@ -3510,12 +3510,12 @@ proc get_suffix { hostname } {
 		return "-1"
 	}
 
-#	Strip off leading zeros to avoid doing octal arithmetic
+	# Strip off leading zeros to avoid doing octal arithmetic
 	set suffix [string range $hostname $host_inx $host_len]
 	set suffix_len [string length $suffix]
 	for {set suffix_inx 0} {$suffix_inx < [expr $suffix_len - 1]} {incr suffix_inx} {
 		set suffix_char [string index $suffix $suffix_inx]
-		if {[string compare $suffix_char "0"] != 0} { break }
+		if {$suffix_char ne "0"} { break }
 	}
 
 	return [string range $suffix $suffix_inx $suffix_len]

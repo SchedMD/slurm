@@ -61,7 +61,7 @@ if { [llength $nodes] != 2 } {
 
 set node1 [lindex $nodes 0]
 set node2 [lindex $nodes 1]
-if {![string compare $node1 ""] || ![string compare $node2 ""]} {
+if {$node1 eq "" || $node2 eq ""} {
 	skip "Did not find at least 2 idle nodes"
 }
 

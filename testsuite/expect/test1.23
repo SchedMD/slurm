@@ -54,7 +54,7 @@ expect {
 	}
 }
 
-subtest {[string compare $this_date ""] == 0} "Job should not run with invalid mincpus option"
+subtest {$this_date eq ""} "Job should not run with invalid mincpus option"
 subtest {$err_msg == 1} "Job should report required error"
 
 #
@@ -81,7 +81,7 @@ expect {
 	}
 }
 
-subtest {[string compare $this_date ""] != 0} "Job should run with valid mincpus option"
+subtest {$this_date ne ""} "Job should run with valid mincpus option"
 
 #
 # Submit a job with invalid mem requirement
@@ -108,7 +108,7 @@ expect {
 	}
 }
 
-subtest {[string compare $this_date ""] == 0} "Job should not run with invalid mem option"
+subtest {$this_date eq ""} "Job should not run with invalid mem option"
 subtest {$err_msg == 1} "Job should report required error"
 
 #
@@ -145,7 +145,7 @@ expect {
 	}
 }
 
-subtest {$err_msg != 0 || [string compare $this_date ""] != 0} "Job should run with valid mem option"
+subtest {$err_msg != 0 || $this_date ne ""} "Job should run with valid mem option"
 
 #
 # Submit a job with invalid tmp requirement
@@ -172,7 +172,7 @@ expect {
 	}
 }
 
-subtest {[string compare $this_date ""] == 0} "Job should not run with invalid tmp option"
+subtest {$this_date eq ""} "Job should not run with invalid tmp option"
 subtest {$err_msg == 1} "Job should report required error"
 
 #
@@ -199,4 +199,4 @@ expect {
 	}
 }
 
-subtest {[string compare $this_date ""] != 0} "Job should run with valid tmp option"
+subtest {$this_date ne ""} "Job should run with valid tmp option"

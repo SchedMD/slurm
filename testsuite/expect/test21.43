@@ -50,7 +50,7 @@ if {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
 if {![param_contains [get_config_param "AccountingStorageEnforce"] "qos"]} {
 	skip "This test can't be run without AccountingStorageEnforce=qos"
 }
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator"
 }
 

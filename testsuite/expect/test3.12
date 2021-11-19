@@ -71,10 +71,10 @@ expect {
 		set access_err 0
 		set err_msg1 $expect_out(1,string)
 		set err_msg2 $expect_out(2,string)
-		if {[string compare $err_msg1 "Invalid"] == 0} {
+		if {$err_msg1 eq "Invalid"} {
 			set access_err 1
 		}
-		if {[string compare $err_msg2 "user"] == 0} {
+		if {$err_msg2 eq "user"} {
 			set access_err 1
 		}
 		if {$access_err == 1} {
@@ -118,7 +118,7 @@ if {$authorized == 1} {
 	subtest {$read_state == 1} "Validate the front-end's new state"
 
 	set reason_set 0
-	if {[string compare $reason_code "TESTING"] == 0} {
+	if {$reason_code eq "TESTING"} {
 		set reason_set 1
 	}
 

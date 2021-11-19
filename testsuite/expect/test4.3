@@ -72,7 +72,7 @@ expect {
 		exp_continue
 	}
 	-re "($eol)($re_word_str)(\\*) *up" {
-		if (![string compare $expect_out(3,string) "*"]) {
+		if {$expect_out(3,string) eq "*"} {
 			set def_part 1
 			set def_part_name $expect_out(2,string)
 		}

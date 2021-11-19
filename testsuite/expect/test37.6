@@ -52,7 +52,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
@@ -332,7 +332,7 @@ log_info "################################################################"
 modify $job_id fb "" "did not allow user to modify features of pending job"
 
 set run_cluster [wait_for_fed_job $job_id RUNNING ""]
-if {[string compare $run_cluster $fedc2]} {
+if {$run_cluster ne $fedc2} {
 	fail "Job not running on cluster 2 ($fedc2)"
 }
 verify $fedc1 $job_id "RV\\s+$fedc2\\s+$fedc2" "Job not revoked"
@@ -348,7 +348,7 @@ set job_id [sbatch $my_sbatch $script fa]
 modify $job_id "fb,fc" "" "did not allow user to modify features of pending job"
 
 set run_cluster [wait_for_fed_job $job_id RUNNING ""]
-if {[string compare $run_cluster $fedc3]} {
+if {$run_cluster ne $fedc3} {
 	fail "Job not running on cluster 3 ($fedc3)"
 }
 verify $fedc1 $job_id "RV\\s+$fedc2,$fedc3\\s+$fedc3" "Job not revoked"
@@ -433,7 +433,7 @@ exec $my_scontrol release $job_id
 sleep 3
 
 set run_cluster [wait_for_fed_job $job_id RUNNING ""]
-if {[string compare $run_cluster $fedc3]} {
+if {$run_cluster ne $fedc3} {
 	fail "Job not running on cluster 3 ($fedc3)"
 }
 verify $fedc1 $job_id "RV\\s+$fedc3\\s+$fedc3" "Job not running on designated cluster"

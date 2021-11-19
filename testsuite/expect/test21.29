@@ -63,7 +63,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
@@ -87,8 +87,7 @@ check_qos_limits $qos_name [array get qos]
 
 # Setup the qos array so that we clear all the limits
 foreach option [array name qos] {
-	if {[string compare $option "PreemptMode"] != 0 &&
-	    [string compare $option "Preempt"] != 0} {
+	if {$option ne "PreemptMode" && $option ne "Preempt"} {
 		set qos($option) -1
 	}
 }

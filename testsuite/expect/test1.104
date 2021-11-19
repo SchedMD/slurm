@@ -76,7 +76,7 @@ if {$found == 1} {
 # Identify usable nodes in default partition
 #
 set def_node [lindex [get_nodes_by_state] 0]
-if {[string compare $def_node ""] == 0} {
+if {$def_node eq ""} {
 	fail "Default partition seems to have no idle nodes"
 }
 
@@ -142,7 +142,7 @@ bash -i $test_srun
 
 set timeout $max_job_delay
 spawn bash -i $file_in
-if {[string compare $enforcepartlimits "NO"] == 0} {
+if {$enforcepartlimits eq "NO"} {
 
 	#
 	# Job is not rejected at submit time

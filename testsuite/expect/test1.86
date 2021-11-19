@@ -124,8 +124,8 @@ expect {
 #
 # Verify node count
 #
-subtest {[string compare $host_0 ""] != 0} "Should get hostname of task 0"
-subtest {[string compare $host_1 ""] != 0} "Should get hostname of task 1"
+subtest {$host_0 ne ""} "Should get hostname of task 0"
+subtest {$host_1 ne ""} "Should get hostname of task 1"
 
 #
 # Exclude specific node
@@ -134,7 +134,7 @@ set matches 0
 send "$srun -l -N1 -n1 --exclude=$host_0 $bin_printenv SLURMD_NODENAME\r"
 expect {
 	-re "0: *($re_word_str)" {
-		if {[string compare $expect_out(1,string) $host_1] == 0} {
+		if {$expect_out(1,string) eq $host_1} {
 			incr matches
 		} else {
 			fail "Wrong node responded"
@@ -164,7 +164,7 @@ set matches 0
 send "$srun -l -N1 -n1 --exclude=$host_1 $bin_printenv SLURMD_NODENAME\r"
 expect {
 	-re "0: *($re_word_str)" {
-		if {[string compare $expect_out(1,string) $host_0] == 0} {
+		if {$expect_out(1,string) eq $host_0} {
 			incr matches
 		} else {
 			fail "Wrong node responded"
@@ -198,7 +198,7 @@ expect {
 		skip "Appears you are using multiple slurmd testing. This test won't work in that fashion"
 	}
 	-re "0: *($re_word_str)" {
-		if {[string compare $expect_out(1,string) $host_0] == 0} {
+		if {$expect_out(1,string) eq $host_0} {
 			incr matches
 		} else {
 			fail "Wrong node responded"
@@ -228,7 +228,7 @@ set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_1 $bin_printenv SLURMD_NODENAME\r"
 expect {
 	-re "0: *($re_word_str)" {
-		if {[string compare $expect_out(1,string) $host_1] == 0} {
+		if {$expect_out(1,string) eq $host_1} {
 			incr matches
 		} else {
 			fail "Wrong node responded"
@@ -344,7 +344,7 @@ expect {
 	}
 }
 
-subtest {[string compare $test_0 $test_1] == 0} "Expecting only a single node to respond"
+subtest {$test_0 eq $test_1} "Expecting only a single node to respond"
 
 #
 # Error test: Exceed task count, first get the processor count then exceed it

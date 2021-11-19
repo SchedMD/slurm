@@ -80,10 +80,10 @@ proc check_part_down { part_name } {
 #
 # Validate current partition information
 #
-if {[string compare $part_name ""] == 0} {
+if {$part_name eq ""} {
 	fail "scontrol unable to identify any partition"
 }
-if {[string compare $part_old_state ""] == 0} {
+if {$part_old_state eq ""} {
 	fail "scontrol unable to identify state of partition ($part_name)"
 }
 
@@ -92,7 +92,7 @@ if {[string compare $part_old_state ""] == 0} {
 #
 run_command -fail "$scontrol update PartitionName=$part_name State=DOWN"
 set read_state [get_partition_param $part_name "State"]
-subtest {[string compare $read_state "DOWN"] == 0} "scontrol should be able to change the partition state"
+subtest {$read_state eq "DOWN"} "scontrol should be able to change the partition state"
 
 #
 # Confirm that a DOWN partition does not run any jobs

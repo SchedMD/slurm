@@ -149,8 +149,8 @@ foreach option $options {
 	set tasks_req [get_job_param $job_id "NtasksPerN:B:S:C"]
 	set threads_match "0:0:*:2"
 	set tasks_match "0:0:*:3"
-	subtest {[string compare $threads_match $threads_req] == 0} "ReqB:S:C:T should be $threads_match" "$threads_req != $threads_match"
-	subtest {[string compare $tasks_match $tasks_req] == 0} "NtasksPerN:B:S:C should be $tasks_match" "$tasks_req != $tasks_match"
+	subtest {$threads_match eq $threads_req} "ReqB:S:C:T should be $threads_match" "$threads_req != $threads_match"
+	subtest {$tasks_match eq $tasks_req} "NtasksPerN:B:S:C should be $tasks_match" "$tasks_req != $tasks_match"
 	cancel_job $job_id
 }
 

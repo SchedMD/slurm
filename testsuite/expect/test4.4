@@ -109,7 +109,7 @@ expect {
 		exp_continue
 	}
 	-re "($number)(.)" {
-		if (![string compare $expect_out(2,string) "+"]) {
+		if {$expect_out(2,string) eq "+"} {
 			set ranges 1
 		}
 		exp_continue

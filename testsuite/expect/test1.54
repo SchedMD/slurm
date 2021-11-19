@@ -115,10 +115,10 @@ expect {
 		exp_continue
 	}
 	-re "executable:($re_word_str)" {
-		if {[string compare $expect_out(1,string) "date"] != 0} {
+		if {$expect_out(1,string) ne "date"} {
 			incr matches
 		}
-		if {[string compare $expect_out(1,string) "hostname"] != 0} {
+		if {$expect_out(1,string) ne "hostname"} {
 			incr matches
 		}
 		if {$matches == 4} {

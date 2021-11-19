@@ -44,10 +44,7 @@ cset fedc3 		""
 proc check_federation_setup { } {
 	global fed_slurm_base fedc1 fedc2 fedc3
 	set rc true
-	if {![string compare $fed_slurm_base ""] ||
-	    ![string compare $fedc1 ""] ||
-	    ![string compare $fedc2 ""] ||
-	    ![string compare $fedc3 ""]} {
+	if {$fed_slurm_base eq "" || $fedc1 eq "" || $fedc2 eq "" || $fedc3 eq ""} {
 		set rc false
 	}
 
@@ -436,7 +433,7 @@ proc wait_for_fed_job args {
 	set my_delay    0
 
 	set spec_clusters [list $fedc1 $fedc2 $fedc3]
-	if {[string compare $clusters ""]} {
+	if {$clusters ne ""} {
 		set spec_clusters [split $clusters ","]
 	}
 	log_debug "Checking for job '$job_id' in state '$desired_state' on [join $spec_clusters ,]"
@@ -461,49 +458,49 @@ proc wait_for_fed_job args {
 				"NODE_FAIL" -
 				"PREEMPTED" -
 				"COMPLETED" {
-					if {[string compare $desired_state "DONE"] == 0} {
+					if {$desired_state eq "DONE"} {
 						log_debug "Job $job_id is DONE ($state) on $cluster"
 						sleep 2
 						return $cluster
 					}
-					if {[string compare $desired_state "RUNNING"] == 0} {
+					if {$desired_state eq "RUNNING"} {
 						log_warn "Job $job_id is $state but we wanted RUNNING"
 					}
-					if {[string compare $desired_state "SUSPENDED"] == 0} {
+					if {$desired_state eq "SUSPENDED"} {
 						log_warn "Job $job_id is $state but we wanted SUSPENDED"
 					}
 					return ""
 				}
 				"PENDING" {
-					if {[string compare $desired_state "PENDING"] == 0} {
+					if {$desired_state eq "PENDING"} {
 						log_debug "Job $job_id is PENDING on $cluster"
 						return $cluster
 					}
 					log_warn "Job $job_id is in state $state, but desired state $desired_state"
 				}
 				"REVOKED" {
-					if {[string compare $desired_state "REVOKED"] == 0} {
+					if {$desired_state eq "REVOKED"} {
 						log_debug "Job $job_id is REVOKED on $cluster"
 						return $cluster
 					}
 					log_warn "Job $job_id is in state $state, but desired state $desired_state"
 				}
 				"RUNNING" {
-					if {[string compare $desired_state "RUNNING"] == 0} {
+					if {$desired_state eq "RUNNING"} {
 						log_debug "Job $job_id is RUNNING on $cluster"
 						return $cluster
 					}
 					log_warn "Job $job_id is in state $state, but desired state $desired_state"
 				}
 				"SPECIAL_EXIT" {
-					if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
+					if {$desired_state eq "SPECIAL_EXIT"} {
 						log_debug "Job $job_id is SPECIAL_EXIT on $cluster"
 						return $cluster
 					}
 					log_warn "Job $job_id is in state $state, but desired state $desired_state"
 				}
 				"SUSPENDED" {
-					if {[string compare $desired_state "SUSPENDED"] == 0} {
+					if {$desired_state eq "SUSPENDED"} {
 						log_debug "Job $job_id is SUSPENDED on $cluster"
 						return $cluster
 					}

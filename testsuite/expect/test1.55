@@ -89,7 +89,7 @@ close $file
 #
 set running "seed"
 set i 0
-while {[string compare $running ""]} {
+while {$running ne ""} {
 	set running [exec $squeue --noheader --states=running --steps=$step_id]
 	sleep 1
 	if {$i == 30} {
