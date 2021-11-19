@@ -214,6 +214,7 @@
 #define	list_delete_first	slurm_list_delete_first
 #define	list_delete_ptr		slurm_list_delete_ptr
 #define	list_for_each		slurm_list_for_each
+#define	list_for_each_ro	slurm_list_for_each_ro
 #define	list_for_each_max	slurm_list_for_each_max
 #define	list_sort		slurm_list_sort
 #define	list_flip		slurm_list_flip

@@ -68,6 +68,7 @@ strong_alias(list_delete_all,	slurm_list_delete_all);
 strong_alias(list_delete_first,	slurm_list_delete_first);
 strong_alias(list_delete_ptr,	slurm_list_delete_ptr);
 strong_alias(list_for_each,	slurm_list_for_each);
+strong_alias(list_for_each_ro,	slurm_list_for_each_ro);
 strong_alias(list_for_each_max,	slurm_list_for_each_max);
 strong_alias(list_flush,	slurm_list_flush);
 strong_alias(list_flush_max,	slurm_list_flush_max);
@@ -508,17 +509,23 @@ int
 list_for_each (List l, ListForF f, void *arg)
 {
 	int max = -1;	/* all values */
-	return list_for_each_max(l, &max, f, arg, 1);
+	return list_for_each_max(l, &max, f, arg, 1, true);
+}
+
+int list_for_each_ro(List l, ListForF f, void *arg)
+{
+	int max = -1;	/* all values */
+	return list_for_each_max(l, &max, f, arg, 1, false);
 }
 
 int list_for_each_nobreak(List l, ListForF f, void *arg)
 {
 	int max = -1;	/* all values */
-	return list_for_each_max(l, &max, f, arg, 0);
+	return list_for_each_max(l, &max, f, arg, 0, true);
 }
 
 int list_for_each_max(List l, int *max, ListForF f, void *arg,
-		      int break_on_fail)
+		      int break_on_fail, int write_lock)
 {
 	ListNode p;
 	int n = 0;
@@ -527,7 +534,11 @@ int list_for_each_max(List l, int *max, ListForF f, void *arg,
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
+
+	if (write_lock)
+		slurm_rwlock_wrlock(&l->mutex);
+	else
+		slurm_rwlock_rdlock(&l->mutex);
 
 	for (p = l->head; (*max == -1 || n < *max) && p; p = p->next) {
 		n++;
