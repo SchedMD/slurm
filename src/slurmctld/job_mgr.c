@@ -9950,7 +9950,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
 			       accounting_enforce, NULL, true);
 	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
-	list_for_each(job_ids, _foreach_pack_jobid, &pack_info);
+	list_for_each_ro(job_ids, _foreach_pack_jobid, &pack_info);
 	assoc_mgr_unlock(&locks);
 
 	/* put the real record count in the message body header */
