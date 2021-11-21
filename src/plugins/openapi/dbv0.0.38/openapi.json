@@ -32,7 +32,9 @@
   ],
   "security": [
     {
-      "user": [],
+      "user": []
+    },
+    {
       "token": []
     }
   ],
@@ -77,6 +79,36 @@
           },
           "default": {
             "description": "Unable to find job"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -106,6 +138,36 @@
           },
           "default": {
             "description": "Unable to dump config"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         }
       },
@@ -133,6 +195,36 @@
           },
           "default": {
             "description": "Unable to set config"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -161,6 +253,36 @@
           },
           "default": {
             "description": "Unable to update TRES"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Set TRES info"
@@ -188,6 +310,36 @@
           },
           "default": {
             "description": "Unable to retrieve TRES"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get TRES info"
@@ -218,6 +370,36 @@
           },
           "default": {
             "description": "Unable to delete QOS"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -258,6 +440,36 @@
           },
           "default": {
             "description": "QOS not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -299,6 +511,36 @@
           },
           "default": {
             "description": "QOS not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get QOS list"
@@ -328,6 +570,36 @@
           },
           "default": {
             "description": "Unable to update associations"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Set associations info"
@@ -355,6 +627,36 @@
           },
           "default": {
             "description": "Association not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get association list"
@@ -430,6 +732,36 @@
           },
           "default": {
             "description": "Association not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get association info"
@@ -503,6 +835,36 @@
           },
           "default": {
             "description": "Association not found or unable to delete association"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Delete association"
@@ -533,6 +895,36 @@
           },
           "default": {
             "description": "User not found or unable to delete user"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -573,6 +965,36 @@
           },
           "default": {
             "description": "User not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -615,7 +1037,53 @@
           },
           "default": {
             "description": "User not found or not able to update user"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
+        },
+        "requestBody": {
+          "description": "update user",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_update_users"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_update_users"
+              }
+            }
+          },
+          "required": true
         }
       },
       "get": {
@@ -642,6 +1110,36 @@
           },
           "default": {
             "description": "User not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -671,6 +1169,36 @@
           },
           "default": {
             "description": "Cluster not found or unable to delete cluster"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -711,6 +1239,36 @@
           },
           "default": {
             "description": "Cluster not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -752,6 +1310,36 @@
           },
           "default": {
             "description": "Cluster not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get cluster list"
@@ -779,6 +1367,36 @@
           },
           "default": {
             "description": "Unable to add cluster"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Add clusters"
@@ -809,6 +1427,36 @@
           },
           "default": {
             "description": "wckey not found or unable to delete wckey"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -849,6 +1497,36 @@
           },
           "default": {
             "description": "wckey not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -890,6 +1568,36 @@
           },
           "default": {
             "description": "wckey not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "List of wckeys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_wckey_info"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_wckey_info"
+                }
+              }
+            }
           }
         },
         "summary": "Get wckey list"
@@ -917,6 +1625,36 @@
           },
           "default": {
             "description": "Unable to add wckey"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Add wckeys"
@@ -947,6 +1685,36 @@
           },
           "default": {
             "description": "Unable to delete account"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -987,6 +1755,36 @@
           },
           "default": {
             "description": "Account not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -1028,6 +1826,36 @@
           },
           "default": {
             "description": "Account not found"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get account list"
@@ -1055,9 +1883,55 @@
           },
           "default": {
             "description": "Unable to add or update accounts"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
-        "summary": "Update accounts"
+        "summary": "Update accounts",
+        "requestBody": {
+          "description": "update/create accounts",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_update_account"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_update_account"
+              }
+            }
+          },
+          "required": true
+        }
       }
     },
     "/jobs/": {
@@ -1361,6 +2235,36 @@
           },
           "default": {
             "description": "Unable to query jobs"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get job list"
@@ -1390,6 +2294,36 @@
           },
           "default": {
             "description": "Unable to query diagnostics"
+          },
+          "400": {
+            "description": "Invalid Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Dictionary of statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_diag"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_diag"
+                }
+              }
+            }
           }
         },
         "summary": "Get slurmdb diagnostics"
@@ -1493,102 +2427,114 @@
               "$ref": "#/components/schemas/dbv0.0.38_error"
             }
           },
-          "time_start": {
-            "type": "integer",
-            "description": "Unix timestamp of start time"
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
-          "rollups": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "Rollup statistics",
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "description": "Type of rollup"
-                },
-                "last_run": {
-                  "type": "integer",
-                  "description": "Timestamp of last rollup"
-                },
-                "last_cycle": {
-                  "type": "integer",
-                  "description": "Timestamp of last cycle"
-                },
-                "max_cycle": {
-                  "type": "integer",
-                  "description": "Max time of all cycles"
-                },
-                "total_time": {
-                  "type": "integer",
-                  "description": "Total time (s) spent doing rollup"
-                },
-                "mean_cycles": {
-                  "type": "integer",
-                  "description": "Average time (s) of cycle"
-                }
-              }
-            }
-          },
-          "RPCs": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "Statistics by RPC type",
-              "properties": {
-                "rpc": {
-                  "type": "string",
-                  "description": "RPC type"
-                },
-                "count": {
-                  "type": "integer",
-                  "description": "Number of RPCs"
-                },
-                "time": {
+          "statistics": {
+            "type": "object",
+            "properties": {
+              "users": {
+                "type": "array",
+                "items": {
                   "type": "object",
-                  "description": "Time values",
+                  "description": "Statistics by user RPCs",
                   "properties": {
-                    "average": {
-                      "type": "integer",
-                      "description": "Average time spent processing this RPC type"
+                    "user": {
+                      "type": "string",
+                      "description": "User name"
                     },
-                    "total": {
+                    "count": {
                       "type": "integer",
-                      "description": "Total time spent processing this RPC type"
+                      "description": "Number of RPCs"
+                    },
+                    "time": {
+                      "type": "object",
+                      "description": "Time values",
+                      "properties": {
+                        "average": {
+                          "type": "integer",
+                          "description": "Average time spent processing each user RPC"
+                        },
+                        "total": {
+                          "type": "integer",
+                          "description": "Total time spent processing each user RPC"
+                        }
+                      }
                     }
                   }
                 }
-              }
-            }
-          },
-          "users": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "Statistics by user RPCs",
-              "properties": {
-                "user": {
-                  "type": "string",
-                  "description": "User name"
-                },
-                "count": {
-                  "type": "integer",
-                  "description": "Number of RPCs"
-                },
-                "time": {
+              },
+              "RPCs": {
+                "type": "array",
+                "items": {
                   "type": "object",
-                  "description": "Time values",
+                  "description": "Statistics by RPC type",
                   "properties": {
-                    "average": {
-                      "type": "integer",
-                      "description": "Average time spent processing each user RPC"
+                    "rpc": {
+                      "type": "string",
+                      "description": "RPC type"
                     },
-                    "total": {
+                    "count": {
                       "type": "integer",
-                      "description": "Total time spent processing each user RPC"
+                      "description": "Number of RPCs"
+                    },
+                    "time": {
+                      "type": "object",
+                      "description": "Time values",
+                      "properties": {
+                        "average": {
+                          "type": "integer",
+                          "description": "Average time spent processing this RPC type"
+                        },
+                        "total": {
+                          "type": "integer",
+                          "description": "Total time spent processing this RPC type"
+                        }
+                      }
                     }
                   }
                 }
+              },
+              "rollups": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "Rollup statistics",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "Type of rollup"
+                    },
+                    "last_run": {
+                      "type": "integer",
+                      "description": "Timestamp of last rollup"
+                    },
+                    "last_cycle": {
+                      "type": "integer",
+                      "description": "Timestamp of last cycle"
+                    },
+                    "max_cycle": {
+                      "type": "integer",
+                      "description": "Max time of all cycles"
+                    },
+                    "total_time": {
+                      "type": "integer",
+                      "description": "Total time (s) spent doing rollup"
+                    },
+                    "mean_cycles": {
+                      "type": "integer",
+                      "description": "Average time (s) of cycle"
+                    },
+                    "total_cycles": {
+                      "type": "integer",
+                      "description": "magic value"
+                    }
+                  }
+                }
+              },
+              "time_start": {
+                "type": "integer",
+                "description": "Unix timestamp of start time"
               }
             }
           }
@@ -1650,6 +2596,9 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_account"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           }
         }
       },
@@ -1696,6 +2645,16 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_error"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
+          },
+          "removed_associations": {
+            "type": "array",
+            "description": "the associations",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -1727,6 +2686,9 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_wckey"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           }
         }
       },
@@ -1794,59 +2756,21 @@
       "dbv0.0.38_cluster_info": {
         "type": "object",
         "properties": {
-          "controller": {
-            "type": "object",
-            "description": "Information about controller",
-            "properties": {
-              "host": {
-                "type": "string",
-                "description": "Hostname"
-              },
-              "port": {
-                "type": "integer",
-                "description": "Port number"
-              }
-            }
-          },
-          "flags": {
+          "errors": {
             "type": "array",
-            "description": "List of properties of cluster",
+            "description": "Slurm errors",
             "items": {
-              "type": "string",
-              "description": "String of property name"
+              "$ref": "#/components/schemas/dbv0.0.38_error"
             }
           },
-          "name": {
-            "type": "string",
-            "description": "Cluster name"
-          },
-          "nodes": {
-            "type": "string",
-            "description": "Assigned nodes"
-          },
-          "select_plugin": {
-            "type": "string",
-            "description": "Configured select plugin"
-          },
-          "associations": {
-            "type": "object",
-            "description": "Information about associations",
-            "properties": {
-              "root": {
-                "$ref": "#/components/schemas/dbv0.0.38_association_short_info"
-              }
-            }
-          },
-          "rpc_version": {
-            "type": "integer",
-            "description": "Number rpc version"
-          },
-          "tres": {
+          "clusters": {
             "type": "array",
-            "description": "List of TRES in cluster",
             "items": {
-              "$ref": "#/components/schemas/dbv0.0.38_response_tres"
+              "$ref": "#/components/schemas/dbv0.0.38_cluster"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           }
         }
       },
@@ -1871,6 +2795,9 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_error"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           }
         }
       },
@@ -1883,12 +2810,10 @@
             "description": "Description of administrator level"
           },
           "associations": {
-            "type": "object",
-            "description": "Assigned associations",
-            "properties": {
-              "root": {
-                "$ref": "#/components/schemas/dbv0.0.38_association_short_info"
-              }
+            "type": "array",
+            "description": "the associations",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_association_short_info"
             }
           },
           "coordinators": {
@@ -1934,6 +2859,9 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_user"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           }
         }
       },
@@ -2006,6 +2934,15 @@
                       "wall_clock": {
                         "type": "integer",
                         "description": "Max wallclock per job"
+                      },
+                      "accruing": {
+                        "type": "string"
+                      },
+                      "count": {
+                        "type": "integer"
+                      },
+                      "submitted": {
+                        "type": "string"
                       }
                     }
                   }
@@ -2103,50 +3040,57 @@
             "description": "Raw fairshare shares"
           },
           "usage": {
-            "type": "object",
-            "description": "Association usage",
-            "properties": {
-              "accrue_job_count": {
-                "type": "integer",
-                "description": "Jobs accuring priority"
+            "oneOf": [
+              {
+                "type": "object",
+                "description": "Association usage",
+                "properties": {
+                  "accrue_job_count": {
+                    "type": "integer",
+                    "description": "Jobs accuring priority"
+                  },
+                  "group_used_wallclock": {
+                    "type": "number",
+                    "description": "Group used wallclock time (s)"
+                  },
+                  "fairshare_factor": {
+                    "type": "number",
+                    "description": "Fairshare factor"
+                  },
+                  "fairshare_shares": {
+                    "type": "integer",
+                    "description": "Fairshare shares"
+                  },
+                  "normalized_priority": {
+                    "type": "integer",
+                    "description": "Currently active jobs"
+                  },
+                  "normalized_shares": {
+                    "type": "number",
+                    "description": "Normalized shares"
+                  },
+                  "effective_normalized_usage": {
+                    "type": "number",
+                    "description": "Effective normalized usage"
+                  },
+                  "raw_usage": {
+                    "type": "integer",
+                    "description": "Raw usage"
+                  },
+                  "job_count": {
+                    "type": "integer",
+                    "description": "Total jobs submitted"
+                  },
+                  "fairshare_level": {
+                    "type": "number",
+                    "description": "Fairshare level"
+                  }
+                }
               },
-              "group_used_wallclock": {
-                "type": "number",
-                "description": "Group used wallclock time (s)"
-              },
-              "fairshare_factor": {
-                "type": "number",
-                "description": "Fairshare factor"
-              },
-              "fairshare_shares": {
-                "type": "integer",
-                "description": "Fairshare shares"
-              },
-              "normalized_priority": {
-                "type": "integer",
-                "description": "Currently active jobs"
-              },
-              "normalized_shares": {
-                "type": "number",
-                "description": "Normalized shares"
-              },
-              "effective_normalized_usage": {
-                "type": "number",
-                "description": "Effective normalized usage"
-              },
-              "raw_usage": {
-                "type": "integer",
-                "description": "Raw usage"
-              },
-              "job_count": {
-                "type": "integer",
-                "description": "Total jobs submitted"
-              },
-              "fairshare_level": {
-                "type": "number",
-                "description": "Fairshare level"
+              {
+                "type": "null"
               }
-            }
+            ]
           },
           "user": {
             "type": "string",
@@ -2170,6 +3114,9 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_association"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           }
         }
       },
@@ -2281,6 +3228,9 @@
                               },
                               "user": {
                                 "$ref": "#/components/schemas/dbv0.0.38_tres_list"
+                              },
+                              "qos": {
+                                "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                               }
                             }
                           }
@@ -2303,8 +3253,14 @@
                             "$ref": "#/components/schemas/dbv0.0.38_tres_list"
                           }
                         }
+                      },
+                      "total": {
+                        "type": "integer"
                       }
                     }
+                  },
+                  "active_jobs": {
+                    "type": "integer"
                   }
                 }
               },
@@ -2332,6 +3288,9 @@
                     }
                   }
                 }
+              },
+              "grace_time": {
+                "type": "integer"
               }
             }
           },
@@ -2372,6 +3331,9 @@
           "usage_threshold": {
             "type": "number",
             "description": "Usage threshold"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },
@@ -2385,7 +3347,10 @@
               "$ref": "#/components/schemas/dbv0.0.38_error"
             }
           },
-          "qos": {
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
+          },
+          "QOS": {
             "type": "array",
             "description": "Array of QOS",
             "items": {
@@ -2440,12 +3405,11 @@
               "$ref": "#/components/schemas/dbv0.0.38_error"
             }
           },
-          "tres": {
-            "type": "array",
-            "description": "Array of tres",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.38_tres_list"
-            }
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
+          },
+          "TRES": {
+            "$ref": "#/components/schemas/dbv0.0.36_tres_list"
           }
         }
       },
@@ -2490,6 +3454,9 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_job"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           }
         }
       },
@@ -2673,11 +3640,11 @@
             "description": "Heterogeneous Job details (optional)",
             "properties": {
               "job_id": {
-                "type": "object",
+                "type": "integer",
                 "description": "Parent HetJob id"
               },
               "job_offset": {
-                "type": "object",
+                "type": "integer",
                 "description": "Offset of this job to parent"
               }
             }
@@ -3025,14 +3992,7 @@
             }
           },
           "task": {
-            "type": "object",
-            "description": "Task properties",
-            "properties": {
-              "distribution": {
-                "type": "string",
-                "description": "Task distribution type"
-              }
-            }
+            "type": "string"
           },
           "tres": {
             "type": "object",
@@ -3078,6 +4038,9 @@
                 "$ref": "#/components/schemas/dbv0.0.38_tres_list"
               }
             }
+          },
+          "distribution": {
+            "type": "string"
           }
         }
       },
@@ -3089,13 +4052,6 @@
             "description": "Slurm errors",
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_error"
-            }
-          },
-          "tres": {
-            "type": "array",
-            "description": "Array of TRES",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.38_tres_list"
             }
           },
           "accounts": {
@@ -3119,18 +4075,41 @@
               "$ref": "#/components/schemas/dbv0.0.38_user"
             }
           },
-          "qos": {
-            "type": "array",
-            "description": "Array of qos",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.38_qos"
-            }
-          },
           "wckeys": {
             "type": "array",
             "description": "Array of wckeys",
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_wckey"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
+          },
+          "clusters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_cluster"
+            }
+          },
+          "TRES": {
+            "oneOf": [
+              {
+                "type": "array",
+                "description": "Array of TRES",
+                "items": {
+                  "$ref": "#/components/schemas/dbv0.0.38_tres_list"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "QOS": {
+            "type": "array",
+            "description": "Array of qos",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_qos"
             }
           }
         }
@@ -3144,6 +4123,9 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_error"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           }
         }
       },
@@ -3168,9 +4150,162 @@
           "error": {
             "description": "Error message",
             "type": "string"
+          },
+          "error_number": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          },
+          "error_code": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
           }
         },
         "type": "object"
+      },
+      "dbv0.0.38_meta": {
+        "type": "object",
+        "properties": {
+          "plugin": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": ""
+              },
+              "name": {
+                "type": "string",
+                "description": ""
+              }
+            }
+          },
+          "Slurm": {
+            "type": "object",
+            "description": "Slurm information",
+            "properties": {
+              "version": {
+                "type": "object",
+                "properties": {
+                  "major": {
+                    "type": "string",
+                    "description": ""
+                  },
+                  "micro": {
+                    "type": "string",
+                    "description": ""
+                  },
+                  "minor": {
+                    "type": "string",
+                    "description": ""
+                  }
+                }
+              },
+              "release": {
+                "type": "string",
+                "description": "version specifier"
+              }
+            }
+          }
+        }
+      },
+      "dbv0.0.38_errors": {
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
+          },
+          "errors": {
+            "type": "array",
+            "description": "Slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_error"
+            }
+          }
+        }
+      },
+      "dbv0.0.38_update_users": {
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_user"
+            }
+          }
+        }
+      },
+      "dbv0.0.38_update_account": {
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_account"
+            }
+          }
+        }
+      },
+      "dbv0.0.38_cluster": {
+        "type": "object",
+        "properties": {
+          "controller": {
+            "type": "object",
+            "description": "Information about controller",
+            "properties": {
+              "host": {
+                "type": "string",
+                "description": "Hostname"
+              },
+              "port": {
+                "type": "integer",
+                "description": "Port number"
+              }
+            }
+          },
+          "flags": {
+            "type": "array",
+            "description": "List of properties of cluster",
+            "items": {
+              "type": "string",
+              "description": "String of property name"
+            }
+          },
+          "name": {
+            "type": "string",
+            "description": "Cluster name"
+          },
+          "nodes": {
+            "type": "string",
+            "description": "Assigned nodes"
+          },
+          "select_plugin": {
+            "type": "string",
+            "description": "Configured select plugin"
+          },
+          "associations": {
+            "type": "object",
+            "description": "Information about associations",
+            "properties": {
+              "root": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/dbv0.0.38_association_short_info"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "rpc_version": {
+            "type": "integer",
+            "description": "Number rpc version"
+          },
+          "tres": {
+            "$ref": "#/components/schemas/dbv0.0.36_tres_list"
+          }
+        }
       }
     }
   }

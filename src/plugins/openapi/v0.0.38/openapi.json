@@ -32,7 +32,9 @@
   ],
   "security": [
     {
-      "user": [],
+      "user": []
+    },
+    {
       "token": []
     }
   ],
@@ -847,6 +849,9 @@
                 "description": "Backfill Schedule currently active"
               }
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
           }
         }
       },
@@ -866,6 +871,9 @@
             "items": {
               "$ref": "#/components/schemas/v0.0.38_ping"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
           }
         }
       },
@@ -1038,6 +1046,9 @@
             "items": {
               "$ref": "#/components/schemas/v0.0.38_partition"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
           }
         }
       },
@@ -1160,6 +1171,9 @@
           "errno": {
             "type": "integer",
             "description": "error number"
+          },
+          "error_code": {
+            "type": "integer"
           }
         }
       },
@@ -1206,6 +1220,9 @@
           "job_submit_user_msg": {
             "description": "Message to user from job_submit plugin",
             "type": "string"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
           }
         }
       },
@@ -1219,7 +1236,6 @@
             "description": "Executable script (full contents) to run in batch step"
           },
           "job": {
-            "description": "Properties of an array job or non-HetJob",
             "$ref": "#/components/schemas/v0.0.38_job_properties"
           },
           "jobs": {
@@ -1228,6 +1244,9 @@
             "items": {
               "$ref": "#/components/schemas/v0.0.38_job_properties"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
           }
         }
       },
@@ -1247,6 +1266,9 @@
             "items": {
               "$ref": "#/components/schemas/v0.0.38_job_response_properties"
             }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
           }
         }
       },
@@ -1725,7 +1747,9 @@
             "type": "object",
             "description": "node allocations",
             "properties": {
-              "$ref": "#/components/schemas/v0.0.38_node_allocation"
+              "0": {
+                "$ref": "#/components/schemas/v0.0.38_node_allocation"
+              }
             }
           }
         }
@@ -1743,11 +1767,21 @@
           },
           "sockets": {
             "type": "object",
-            "description": "assignment status of each socket by socket id"
+            "description": "FIXME",
+            "properties": {
+              "0": {
+                "type": "string"
+              }
+            }
           },
           "cores": {
             "type": "object",
-            "description": "assignment status of each core by core id"
+            "description": "FIXME",
+            "properties": {
+              "0": {
+                "type": "string"
+              }
+            }
           }
         }
       },
@@ -2272,6 +2306,54 @@
             "description": "nodes info",
             "items": {
               "$ref": "#/components/schemas/v0.0.38_node"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          }
+        }
+      },
+      "v0.0.38_meta": {
+        "type": "object",
+        "properties": {
+          "plugin": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": ""
+              },
+              "name": {
+                "type": "string",
+                "description": ""
+              }
+            }
+          },
+          "Slurm": {
+            "type": "object",
+            "description": "Slurm information",
+            "properties": {
+              "version": {
+                "type": "object",
+                "properties": {
+                  "major": {
+                    "type": "string",
+                    "description": ""
+                  },
+                  "micro": {
+                    "type": "string",
+                    "description": ""
+                  },
+                  "minor": {
+                    "type": "string",
+                    "description": ""
+                  }
+                }
+              },
+              "release": {
+                "type": "string",
+                "description": "version specifier"
+              }
             }
           }
         }
