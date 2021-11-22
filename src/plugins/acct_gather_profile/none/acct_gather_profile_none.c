@@ -80,7 +80,7 @@
  * (major.minor.micro combined into a single number).
  */
 const char plugin_name[] = "AcctGatherProfile NONE plugin";
-const char plugin_type[] = "acct_gather_Profile/none";
+const char plugin_type[] = "acct_gather_profile/none";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /*
