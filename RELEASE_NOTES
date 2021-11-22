@@ -38,6 +38,7 @@ HIGHLIGHTS
     be moved and indexed automatically.
  -- Run MailProg through slurmscriptd instead of directly fork+exec()'ing
     from slurmctld.
+ -- Add acct_gather_interconnect/sysfs plugin.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

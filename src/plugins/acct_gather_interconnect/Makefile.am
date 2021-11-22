@@ -1,3 +1,3 @@
 # Makefile for accounting gather interconnect plugins
 
-SUBDIRS = ofed none
+SUBDIRS = none ofed sysfs

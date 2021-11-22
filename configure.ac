@@ -471,8 +471,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/acct_gather_energy/gpu/Makefile
 		 src/plugins/acct_gather_energy/xcc/Makefile
 		 src/plugins/acct_gather_interconnect/Makefile
-		 src/plugins/acct_gather_interconnect/ofed/Makefile
 		 src/plugins/acct_gather_interconnect/none/Makefile
+		 src/plugins/acct_gather_interconnect/ofed/Makefile
+		 src/plugins/acct_gather_interconnect/sysfs/Makefile
 		 src/plugins/acct_gather_filesystem/Makefile
 		 src/plugins/acct_gather_filesystem/lustre/Makefile
 		 src/plugins/acct_gather_filesystem/none/Makefile

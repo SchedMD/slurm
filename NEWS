@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
     be moved and indexed automatically.
  -- Run MailProg through slurmscriptd instead of directly fork+exec()'ing
     from slurmctld.
+ -- Add acct_gather_interconnect/sysfs plugin.
 
 * Changes in Slurm 21.08.5
 ==========================

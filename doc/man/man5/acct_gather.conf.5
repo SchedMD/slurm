@@ -1,4 +1,4 @@
-.TH "acct_gather.conf" "5" "Slurm Configuration File" "June 2021" "Slurm Configuration File"
+.TH "acct_gather.conf" "5" "Slurm Configuration File" "December 2021" "Slurm Configuration File"
 
 .SH "NAME"
 \fBacct_gather.conf\fR \- Slurm configuration file for the acct_gather plugins
@@ -329,6 +329,25 @@ Options used for acct_gather_interconnect/ofed are as follows:
 \fBInfinibandOFEDPort\fR=<number>
 This parameter represents the port number of the local Infiniband card that we are willing to monitor.
 The default port is 1.
+.RE
+.RE
+
+.SH acct_gather_interconnect/sysfs
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherInterconnectType=acct_gather_interconnect/sysfs
+.fi
+.RE
+
+Options used for acct_gather_interconnect/sysfs are as follows:
+
+.RS
+.TP 10
+\fBSysfsInterfaces\fR=<interfaces>
+Comma\-separated list of interface names to collect statistics from. Usage
+from all listed interfaces will be summed together, and is not broken down
+individually.
 .RE
 .RE
 

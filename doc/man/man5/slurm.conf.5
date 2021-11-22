@@ -332,6 +332,15 @@ Infiniband network traffic data are collected from the hardware monitoring
 counters of Infiniband devices through the OFED library.
 In order to account for per job network traffic, add the "ic/ofed" TRES to
 \fIAccountingStorageTRES\fR.
+.IP
+
+.TP
+\fBacct_gather_interconnect/sysfs\fR
+Network traffic statistics are collected from the Linux sysfs
+pseudo\-filesystem for specific interfaces defined in
+\fBacct_gather_interconnect.conf\fR(5).
+In order to account for per job network traffic, add the "ic/sysfs" TRES to
+\fIAccountingStorageTRES\fR.
 .RE
 .IP
 
