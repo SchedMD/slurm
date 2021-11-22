@@ -143,7 +143,7 @@ typedef struct {
 	buf_t *buffer;
 	uint32_t  filter_uid;
 	bool has_qos_lock;
-	uint32_t *jobs_packed;
+	uint32_t  jobs_packed;
 	uint16_t  protocol_version;
 	uint16_t  show_flags;
 	uid_t     uid;
@@ -9777,7 +9777,7 @@ static int _pack_job(void *object, void *arg)
 		 pack_info->protocol_version, pack_info->uid,
 		 pack_info->has_qos_lock);
 
-	(*pack_info->jobs_packed)++;
+	pack_info->jobs_packed++;
 
 	return SLURM_SUCCESS;
 }
@@ -9866,7 +9866,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 			  uint16_t show_flags, uid_t uid, uint32_t filter_uid,
 			  uint16_t protocol_version)
 {
-	uint32_t jobs_packed = 0, tmp_offset;
+	uint32_t tmp_offset;
 	_foreach_pack_job_info_t pack_info = {0};
 	buf_t *buffer;
 	assoc_mgr_lock_t locks = { .user = READ_LOCK, .qos = READ_LOCK };
@@ -9879,7 +9879,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	/* write individual job records */
 	pack_info.buffer           = buffer;
 	pack_info.filter_uid       = filter_uid;
-	pack_info.jobs_packed      = &jobs_packed;
+	pack_info.jobs_packed      = 0;
 	pack_info.protocol_version = protocol_version;
 	pack_info.show_flags       = show_flags;
 	pack_info.uid              = uid;
@@ -9898,7 +9898,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
-	pack32(jobs_packed, buffer);
+	pack32(pack_info.jobs_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
 	*buffer_size = get_buf_offset(buffer);
@@ -9922,7 +9922,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 			   uint16_t show_flags, uid_t uid, uint32_t filter_uid,
 			   uint16_t protocol_version)
 {
-	uint32_t jobs_packed = 0, tmp_offset;
+	uint32_t tmp_offset;
 	_foreach_pack_job_info_t pack_info = {0};
 	buf_t *buffer;
 	assoc_mgr_lock_t locks = { .user = READ_LOCK, .qos = READ_LOCK };
@@ -9937,7 +9937,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	/* write individual job records */
 	pack_info.buffer           = buffer;
 	pack_info.filter_uid       = filter_uid;
-	pack_info.jobs_packed      = &jobs_packed;
+	pack_info.jobs_packed      = 0;
 	pack_info.protocol_version = protocol_version;
 	pack_info.show_flags       = show_flags;
 	pack_info.uid              = uid;
@@ -9956,7 +9956,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
-	pack32(jobs_packed, buffer);
+	pack32(pack_info.jobs_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
 	*buffer_size = get_buf_offset(buffer);
