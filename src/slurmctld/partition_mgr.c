@@ -410,7 +410,7 @@ int dump_all_part_state(void)
 
 	/* write partition records to buffer */
 	lock_slurmctld(part_read_lock);
-	list_for_each(part_list, _dump_part_state, buffer);
+	list_for_each_ro(part_list, _dump_part_state, buffer);
 
 	old_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(old_file, "/part_state.old");
