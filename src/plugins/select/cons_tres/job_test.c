@@ -2107,7 +2107,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			    avail_res_t **avail_res_array, uint16_t cr_type,
 			    bool prefer_alloc_nodes, bool first_pass)
 {
-	int       *switch_cpu_cnt = NULL;	/* total CPUs on switch */
+	uint32_t *switch_cpu_cnt = NULL;	/* total CPUs on switch */
 	List      *switch_gres = NULL;		/* available GRES on switch */
 	bitstr_t **switch_node_bitmap = NULL;	/* nodes on this switch */
 	bitstr_t **start_switch_node_bitmap = NULL;
@@ -2250,7 +2250,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	 * Identify the highest level switch to be used.
 	 * Note that nodes can be on multiple non-overlapping switches.
 	 */
-	switch_cpu_cnt     = xcalloc(switch_record_cnt, sizeof(int));
+	switch_cpu_cnt = xcalloc(switch_record_cnt, sizeof(uint32_t));
 	switch_gres        = xcalloc(switch_record_cnt, sizeof(List));
 	switch_node_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
 	start_switch_node_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
@@ -2260,9 +2260,21 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 
 	for (i = 0, switch_ptr = switch_record_table; i < switch_record_cnt;
 	     i++, switch_ptr++) {
+		uint32_t switch_cpus = 0;
 		switch_node_bitmap[i] = bit_copy(switch_ptr->node_bitmap);
 		bit_and(switch_node_bitmap[i], node_map);
 		switch_node_cnt[i] = bit_set_count(switch_node_bitmap[i]);
+		/*
+		 * Count total CPUs of the intersection of node_map and
+		 * switch_node_bitmap.
+		 */
+		i_first = bit_ffs(switch_node_bitmap[i]);
+		i_last = bit_fls(switch_node_bitmap[i]);
+		for (int j = i_first; j <= i_last; j++) {
+			node_ptr = node_record_table_ptr[j];
+			switch_cpus += node_ptr->cpus;
+		}
+		switch_cpu_cnt[i] = switch_cpus;
 		if (req_nodes_bitmap &&
 		    bit_overlap_any(req_nodes_bitmap, switch_node_bitmap[i])) {
 			switch_required[i] = 1;
@@ -2273,7 +2285,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			}
 		}
 		if (!_enough_nodes(switch_node_cnt[i], rem_nodes,
-				   min_nodes, req_nodes))
+				   min_nodes, req_nodes) ||
+		    !(rem_cpus <= switch_cpu_cnt[i]))
 			continue;
 		if (!req_nodes_bitmap &&
 		    (nw = list_find_first(node_weight_list, _topo_node_find,
