@@ -193,7 +193,8 @@ extern void allocate_nodes(job_record_t *job_ptr)
 
 		if (IS_NODE_CLOUD(node_ptr)) {
 			has_cloud = true;
-			if (IS_NODE_POWERED_DOWN(node_ptr))
+			if (IS_NODE_POWERED_DOWN(node_ptr) ||
+			    IS_NODE_POWERING_UP(node_ptr))
 				has_cloud_power_save = true;
 		}
 		make_node_alloc(node_ptr, job_ptr);
@@ -228,7 +229,8 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 			continue;
 
 		if (IS_NODE_DYNAMIC(node_ptr) || IS_NODE_CLOUD(node_ptr)) {
-			if (IS_NODE_POWERED_DOWN(node_ptr)) {
+			if (IS_NODE_POWERED_DOWN(node_ptr) ||
+			    IS_NODE_POWERING_UP(node_ptr)) {
 				xfree(job_ptr->alias_list);
 				job_ptr->alias_list = xstrdup("TBD");
 				break;
