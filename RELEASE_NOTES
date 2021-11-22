@@ -28,6 +28,8 @@ HIGHLIGHTS
     the munge unit is no longer a dependency by default.
  -- Add extra 'EnvironmentFile=-/etc/default/$service' setting to service files.
  -- Allow jobs to pack onto nodes already rebooting with the desired features.
+ -- Reset job start time after nodes are rebooted, previously only done for
+    cloud/power save boots.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

@@ -4313,12 +4313,16 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		if (boot_node_bitmap == NULL) {
 			if (bit_overlap_any(job_ptr->node_bitmap,
 					    booting_node_bitmap))
+				/* Reset job start time when nodes are booted */
+				job_ptr->job_state |= JOB_POWER_UP_NODE;
 				/* launch_job() when all nodes have booted */
 				job_ptr->bit_flags |= NODE_REBOOT;
 			return SLURM_SUCCESS;
 		}
 	}
 
+	/* Reset job start time when nodes are booted */
+	job_ptr->job_state |= JOB_POWER_UP_NODE;
 	/* launch_job() when all nodes have booted */
 	job_ptr->bit_flags |= NODE_REBOOT;
 
