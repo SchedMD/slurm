@@ -75,6 +75,14 @@
 /* No need to change we always pack SLURM_PROTOCOL_VERSION */
 #define PART_STATE_VERSION        "PROTOCOL_VERSION"
 
+typedef struct {
+	buf_t *buffer;
+	uint32_t parts_packed;
+	uint16_t protocol_version;
+	uint16_t show_flags;
+	uid_t uid;
+} _foreach_pack_part_info_t;
+
 /* Global variables */
 part_record_t default_part;		/* default configuration values */
 List part_list = NULL;			/* partition list */
@@ -1045,6 +1053,23 @@ extern bool part_is_visible_user_rec(part_record_t *part_ptr,
 	return true;
 }
 
+static int _pack_part(void *object, void *arg)
+{
+	part_record_t *part_ptr = object;
+	_foreach_pack_part_info_t *pack_info = arg;
+
+	xassert(part_ptr->magic == PART_MAGIC);
+
+	if (!(pack_info->show_flags & SHOW_ALL) &&
+	    !part_is_visible(part_ptr, pack_info->uid))
+		return SLURM_SUCCESS;
+
+	pack_part(part_ptr, pack_info->buffer, pack_info->protocol_version);
+	pack_info->parts_packed++;
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * pack_all_part - dump all partition information for all partitions in
  *	machine independent form (for network transmission)
@@ -1060,43 +1085,33 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 			  uint16_t show_flags, uid_t uid,
 			  uint16_t protocol_version)
 {
-	ListIterator part_iterator;
-	part_record_t *part_ptr;
-	uint32_t parts_packed;
 	int tmp_offset;
-	buf_t *buffer;
 	time_t now = time(NULL);
+	_foreach_pack_part_info_t pack_info = {
+		.buffer = init_buf(BUF_SIZE),
+		.parts_packed = 0,
+		.protocol_version = protocol_version,
+		.show_flags = show_flags,
+		.uid = uid,
+	};
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = init_buf(BUF_SIZE);
-
 	/* write header: version and time */
-	parts_packed = 0;
-	pack32(parts_packed, buffer);
-	pack_time(now, buffer);
+	pack32(0, pack_info.buffer);
+	pack_time(now, pack_info.buffer);
 
-	/* write individual partition records */
-	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = list_next(part_iterator))) {
-		xassert (part_ptr->magic == PART_MAGIC);
-		if (((show_flags & SHOW_ALL) == 0) &&
-		    !part_is_visible(part_ptr, uid))
-			continue;
-		pack_part(part_ptr, buffer, protocol_version);
-		parts_packed++;
-	}
-	list_iterator_destroy(part_iterator);
+	list_for_each_ro(part_list, _pack_part, &pack_info);
 
 	/* put the real record count in the message body header */
-	tmp_offset = get_buf_offset(buffer);
-	set_buf_offset(buffer, 0);
-	pack32(parts_packed, buffer);
-	set_buf_offset(buffer, tmp_offset);
+	tmp_offset = get_buf_offset(pack_info.buffer);
+	set_buf_offset(pack_info.buffer, 0);
+	pack32(pack_info.parts_packed, pack_info.buffer);
+	set_buf_offset(pack_info.buffer, tmp_offset);
 
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
+	*buffer_size = get_buf_offset(pack_info.buffer);
+	buffer_ptr[0] = xfer_buf_data(pack_info.buffer);
 }
 
 
