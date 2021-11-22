@@ -9867,24 +9867,21 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 			  uint16_t protocol_version)
 {
 	uint32_t tmp_offset;
-	_foreach_pack_job_info_t pack_info = {0};
-	buf_t *buffer;
+	_foreach_pack_job_info_t pack_info = {
+		.buffer = _pack_init_job_info(protocol_version),
+		.filter_uid = filter_uid,
+		.jobs_packed = 0,
+		.protocol_version = protocol_version,
+		.show_flags = show_flags,
+		.uid = uid,
+		.has_qos_lock = true,
+		.user_rec.uid = uid,
+	};
 	assoc_mgr_lock_t locks = { .user = READ_LOCK, .qos = READ_LOCK };
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = _pack_init_job_info(protocol_version);
-
-	/* write individual job records */
-	pack_info.buffer           = buffer;
-	pack_info.filter_uid       = filter_uid;
-	pack_info.jobs_packed      = 0;
-	pack_info.protocol_version = protocol_version;
-	pack_info.show_flags       = show_flags;
-	pack_info.uid              = uid;
-	pack_info.has_qos_lock = true;
-	pack_info.user_rec.uid = uid;
 	if (!(pack_info.show_flags & SHOW_ALL))
 		_build_allowed_parts(&pack_info);
 
@@ -9896,13 +9893,13 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	assoc_mgr_unlock(&locks);
 
 	/* put the real record count in the message body header */
-	tmp_offset = get_buf_offset(buffer);
-	set_buf_offset(buffer, 0);
-	pack32(pack_info.jobs_packed, buffer);
-	set_buf_offset(buffer, tmp_offset);
+	tmp_offset = get_buf_offset(pack_info.buffer);
+	set_buf_offset(pack_info.buffer, 0);
+	pack32(pack_info.jobs_packed, pack_info.buffer);
+	set_buf_offset(pack_info.buffer, tmp_offset);
 
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
+	*buffer_size = get_buf_offset(pack_info.buffer);
+	buffer_ptr[0] = xfer_buf_data(pack_info.buffer);
 	xfree(pack_info.allowed_parts);
 }
 
@@ -9923,8 +9920,16 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 			   uint16_t protocol_version)
 {
 	uint32_t tmp_offset;
-	_foreach_pack_job_info_t pack_info = {0};
-	buf_t *buffer;
+	_foreach_pack_job_info_t pack_info = {
+		.buffer = _pack_init_job_info(protocol_version),
+		.filter_uid = filter_uid,
+		.jobs_packed = 0,
+		.protocol_version = protocol_version,
+		.show_flags = show_flags,
+		.uid = uid,
+		.has_qos_lock = true,
+		.user_rec.uid = uid,
+	};
 	assoc_mgr_lock_t locks = { .user = READ_LOCK, .qos = READ_LOCK };
 
 	xassert(job_ids);
@@ -9932,17 +9937,6 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = _pack_init_job_info(protocol_version);
-
-	/* write individual job records */
-	pack_info.buffer           = buffer;
-	pack_info.filter_uid       = filter_uid;
-	pack_info.jobs_packed      = 0;
-	pack_info.protocol_version = protocol_version;
-	pack_info.show_flags       = show_flags;
-	pack_info.uid              = uid;
-	pack_info.has_qos_lock = true;
-	pack_info.user_rec.uid = uid;
 	if (!(pack_info.show_flags & SHOW_ALL))
 		_build_allowed_parts(&pack_info);
 
@@ -9954,13 +9948,13 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	assoc_mgr_unlock(&locks);
 
 	/* put the real record count in the message body header */
-	tmp_offset = get_buf_offset(buffer);
-	set_buf_offset(buffer, 0);
-	pack32(pack_info.jobs_packed, buffer);
-	set_buf_offset(buffer, tmp_offset);
+	tmp_offset = get_buf_offset(pack_info.buffer);
+	set_buf_offset(pack_info.buffer, 0);
+	pack32(pack_info.jobs_packed, pack_info.buffer);
+	set_buf_offset(pack_info.buffer, tmp_offset);
 
-	*buffer_size = get_buf_offset(buffer);
-	buffer_ptr[0] = xfer_buf_data(buffer);
+	*buffer_size = get_buf_offset(pack_info.buffer);
+	buffer_ptr[0] = xfer_buf_data(pack_info.buffer);
 	xfree(pack_info.allowed_parts);
 }
 
