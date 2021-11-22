@@ -3485,7 +3485,7 @@ static void _update_diag_job_state_counts(void)
 	slurmctld_diag_stats.jobs_running = 0;
 	slurmctld_diag_stats.jobs_pending = 0;
 	slurmctld_diag_stats.job_states_ts = time(NULL);
-	list_for_each(job_list, _foreach_job_running, NULL);
+	list_for_each_ro(job_list, _foreach_job_running, NULL);
 }
 
 static void *_wait_primary_prog(void *arg)
