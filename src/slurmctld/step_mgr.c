@@ -3588,7 +3588,7 @@ extern int pack_ctld_job_step_info_response_msg(
 	pack_time(now, buffer);
 	pack32(args.steps_packed, buffer);	/* steps_packed placeholder */
 
-	list_for_each(job_list, _pack_job_steps, &args);
+	list_for_each_ro(job_list, _pack_job_steps, &args);
 
 	if (list_count(job_list) && !args.valid_job && !args.steps_packed)
 		error_code = ESLURM_INVALID_JOB_ID;
