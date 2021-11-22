@@ -3585,8 +3585,10 @@ extern int pack_ctld_job_step_info_response_msg(
 		.valid_job = false,
 	};
 
-	pack_time(now, buffer);
-	pack32(args.steps_packed, buffer);	/* steps_packed placeholder */
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_time(now, buffer);
+		pack32(args.steps_packed, buffer);/* steps_packed placeholder */
+	}
 
 	list_for_each_ro(job_list, _pack_job_steps, &args);
 
@@ -3596,8 +3598,10 @@ extern int pack_ctld_job_step_info_response_msg(
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
-	pack_time(now, buffer);
-	pack32(args.steps_packed, buffer);
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_time(now, buffer);
+		pack32(args.steps_packed, buffer);
+	}
 	set_buf_offset(buffer, tmp_offset);
 
 	return error_code;
