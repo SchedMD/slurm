@@ -4,49 +4,38 @@
 sstat \- Display the status information of a running job/step.
 
 .SH "SYNOPSIS"
-.BR "sstat "
-[\fIOPTIONS\fR...]
+\fBsstat\fR [\fIOPTIONS\fR...]
 
 .SH "DESCRIPTION"
 .PP
 Status information for running jobs invoked with Slurm.
 .PP
-The
-.BR "sstat "
-command displays job status information for your analysis.
-The
-.BR "sstat "
-command displays information pertaining to CPU, Task, Node, Resident
-Set Size (RSS) and Virtual Memory (VM).
-You can tailor the output with the use of the
-\f3\-\-fields=\fP
+The \fBsstat\fR command displays job status information for your analysis.
+The \fBsstat\fR command displays information pertaining to CPU, Task, Node,
+Resident Set Size (RSS) and Virtual Memory (VM).
+You can tailor the output with the use of the \fB\-\-fields=\fR
 option to specify the fields to be shown.
 .PP
-For the root user, the
-.BR "sstat "
-command displays job status data for any job running on the system.
+For the root user, the \fBsstat\fR command displays job status data for any
+job running on the system.
 .PP
-For the non\-root user, the
-.BR "sstat "
-output is limited to the user's jobs.
+For the non\-root user, the \fBsstat\fR output is limited to the user's jobs.
 
 .PP
-NOTE:  The
-.BR "sstat "
-command requires that the \f3jobacct_gather\fP plugin be installed and
-operational.
+\fBNOTE\fR: The \fBsstat\fR command requires that the \fBjobacct_gather\fP
+plugin be installed and operational.
 .PP
-NOTE:  The
-.BR "sstat "
-command is not supported on Cray ALPS.
+\fBNOTE\fR: The \fBsstat\fR command is not supported on Cray ALPS.
+
+.SH "OPTIONS"
 
 .TP
-\f3\-a\fP\f3,\fP \f3\-\-allsteps\fP
+\fB\-a\fR, \fB\-\-allsteps\fR
 Print all steps for the given job(s) when no step is specified.
 .IP
 
 .TP
-\f3\-o\fP\f3,\fP \f3\-\-format\fP,\fP \f3\-\-fields\fP
+\fB\-o\fR, \fB\-\-format\fR, \fB\-\-fields\fR
 Comma separated list of fields.
 (use '\-\-helpformat' for a list of available fields).
 
@@ -58,17 +47,17 @@ justified.  A \-30 will print 30 characters left justified.
 .IP
 
 .TP
-\f3\-h\fP\f3,\fP \f3\-\-help\fP
+\fB\-h\fR, \fB\-\-help\fR
 Displays a general help message.
 .IP
 
 .TP
-\f3\-e\fP\f3,\fP \f3\-\-helpformat\fP
+\fB\-e\fR, \fB\-\-helpformat\fR
 Print a list of fields that can be specified with the '\-\-format' option.
 .IP
 
 .TP
-\f3\-j\fP\f3,\fP \f3\-\-jobs\fP
+\fB\-j\fR, \fB\-\-jobs\fR
 Format is <job(.step)>. Stat this job step or comma\-separated list of
 job steps. This option is required.  The step portion will default to
 the lowest numbered (not batch, extern, etc) step running if not specified,
@@ -80,46 +69,46 @@ extern step.  This step is only available when using PrologFlags=contain
 .IP
 
 .TP
-\f3\-\-noconvert\fP
+\fB\-\-noconvert\fR
 Don't convert units from their original type (e.g. 2048M won't be converted to
 2G).
 .IP
 
 .TP
-\f3\-n\fP\f3,\fP \f3\-\-noheader\fP
+\fB\-n\fR, \fB\-\-noheader\fR
 No heading will be added to the output. The default action is to
 display a header.
 .IP
 
 .TP
-\f3\-p\fP\f3,\fP \f3\-\-parsable\fP
+\fB\-p\fR, \fB\-\-parsable\fR
 output will be '|' delimited with a '|' at the end
 .IP
 
 .TP
-\f3\-P\fP\f3,\fP \f3\-\-parsable2\fP
+\fB\-P\fR, \fB\-\-parsable2\fR
 output will be '|' delimited without a '|' at the end
 .IP
 
 .TP
-\f3\-i\fP\f3,\fP \f3\-\-pidformat\fP
+\fB\-i\fR, \fB\-\-pidformat\fR
 Predefined format to list the pids running for each job step.
 (JobId,Nodes,Pids)
 .IP
 
 .TP
-\f3\-\-usage\fP
+\fB\-\-usage\fR
 Display a command usage summary.
 .IP
 
 .TP
-\f3\-v\fP\f3,\fP \f3\-\-verbose\fP
+\fB\-v\fR, \fB\-\-verbose\fR
 Primarily for debugging purposes, report the state of various
 variables during processing.
 .IP
 
 .TP
-\f3\-V\fP\f3,\fP \f3\-\-version\fP
+\fB\-V\fR, \fB\-\-version\fR
 Print version.
 .IP
 
@@ -174,7 +163,6 @@ reflects the jobs' real energy consumption.
 The number of the job or job step.
 It is in the form:
 \f2job.jobstep\fP
-\&.
 .IP
 
 .TP
