@@ -317,13 +317,6 @@ static void *_set_db_inx_thread(void *no_data)
 		 * data isn't that sensitive and will only be updated
 		 * later in this function. */
 		lock_slurmctld(job_read_lock);	/* USE READ LOCK, SEE ABOVE */
-		if (!job_list) {
-			unlock_slurmctld(job_read_lock);
-			slurm_mutex_unlock(&db_inx_lock);
-			error("_set_db_inx_thread: No job list, waiting");
-			sleep(1);
-			continue;
-		}
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
 			dbd_job_start_msg_t *req;
@@ -404,12 +397,6 @@ static void *_set_db_inx_thread(void *no_data)
 				got_msg = (dbd_list_msg_t *) resp.data;
 
 				lock_slurmctld(job_write_lock);
-				if (!job_list) {
-					error("_set_db_inx_thread: "
-					      "No job list, must be "
-					      "shutting down");
-					goto end_it;
-				}
 				itr = list_iterator_create(got_msg->my_list);
 				while ((id_ptr = list_next(itr))) {
 					if ((job_ptr = find_job_record(
@@ -453,12 +440,6 @@ static void *_set_db_inx_thread(void *no_data)
 				/* USE READ LOCK, SEE ABOVE on first
 				 * read lock */
 				itr = list_iterator_create(job_list);
-				if (!job_list) {
-					error("_set_db_inx_thread: "
-					      "No job list, must be "
-					      "shutting down");
-					goto end_it;
-				}
 				while ((job_ptr = list_next(itr))) {
 					if (job_ptr->db_index == NO_VAL64)
 						job_ptr->db_index = 0;
@@ -467,7 +448,6 @@ static void *_set_db_inx_thread(void *no_data)
 				unlock_slurmctld(job_read_lock);
 			}
 		}
-	end_it:
 		running_db_inx = 0;
 
 		/* END_TIMER; */
