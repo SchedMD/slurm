@@ -64,6 +64,7 @@ strong_alias(list_transfer,	slurm_list_transfer);
 strong_alias(list_transfer_max,	slurm_list_transfer_max);
 strong_alias(list_prepend,	slurm_list_prepend);
 strong_alias(list_find_first,	slurm_list_find_first);
+strong_alias(list_find_first_ro, slurm_list_find_first_ro);
 strong_alias(list_delete_all,	slurm_list_delete_all);
 strong_alias(list_delete_first,	slurm_list_delete_first);
 strong_alias(list_delete_ptr,	slurm_list_delete_ptr);
@@ -355,10 +356,7 @@ list_prepend (List l, void *x)
 	return v;
 }
 
-/* list_find_first()
- */
-void *
-list_find_first (List l, ListFindF f, void *key)
+static void *list_find_first_lock(List l, ListFindF f, void *key, bool write_lock)
 {
 	ListNode p;
 	void *v = NULL;
@@ -366,7 +364,10 @@ list_find_first (List l, ListFindF f, void *key)
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
+	if (write_lock)
+		slurm_rwlock_wrlock(&l->mutex);
+	else
+		slurm_rwlock_rdlock(&l->mutex);
 
 	for (p = l->head; p; p = p->next) {
 		if (f(p->data, key)) {
@@ -377,6 +378,23 @@ list_find_first (List l, ListFindF f, void *key)
 	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
+}
+
+/*
+ * list_find_first()
+ */
+void *list_find_first(List l, ListFindF f, void *key)
+{
+	return list_find_first_lock(l, f, key, true);
+}
+
+/*
+ * list_find_first_ro()
+ * Same as list_find_first, but use a rdlock instead of wrlock
+ */
+void *list_find_first_ro(List l, ListFindF f, void *key)
+{
+	return list_find_first_lock(l, f, key, false);
 }
 
 /* list_remove_first()

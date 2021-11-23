@@ -210,6 +210,7 @@
 #define	list_transfer_max	slurm_list_transfer_max
 #define	list_prepend		slurm_list_prepend
 #define	list_find_first		slurm_list_find_first
+#define	list_find_first_ro	slurm_list_find_first_ro
 #define	list_delete_all		slurm_list_delete_all
 #define	list_delete_first	slurm_list_delete_first
 #define	list_delete_ptr		slurm_list_delete_ptr

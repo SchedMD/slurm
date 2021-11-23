@@ -182,6 +182,12 @@ void *list_prepend(List l, void *x);
 void *list_find_first(List l, ListFindF f, void *key);
 
 /*
+ * Same as list_find_first, but use rdlock instead of wrlock
+ */
+void *list_find_first_ro(List l, ListFindF f, void *key);
+
+
+/*
  *  Traverses list [l] using [f] to match each item with [key].
  *  Returns a ptr to the first item for which the function [f]
  *    returns non-zero and removes it from the list, or NULL if no such item is
