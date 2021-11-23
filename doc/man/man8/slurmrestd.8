@@ -7,11 +7,11 @@ slurmrestd \- Interface to Slurm via REST API.
 .SH "DESCRIPTION"
 \fBslurmrestd\fR is REST API interface for Slurm. It can be used in two modes:
 
-.TP
+.PP
 Inetd Mode: slurmrestd will read and write to STDIN and STDOUT. It can detect if
 it is connected to a socket or a local TTY (interactive mode).
 
-.TP
+.PP
 Listen Mode: slurmrestd will open a listening socket on each requested
 host:port pair or UNIX socket.
 
