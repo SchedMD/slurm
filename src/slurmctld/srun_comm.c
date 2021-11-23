@@ -317,7 +317,7 @@ extern void srun_ping (void)
 	if (slurm_conf.inactive_limit == 0)
 		return;		/* No limit, don't bother pinging */
 
-	list_for_each(job_list, _srun_ping, &old);
+	list_for_each_ro(job_list, _srun_ping, &old);
 }
 
 static int _srun_step_timeout(void *x, void *arg)
