@@ -2930,6 +2930,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		job_record_t *het_job_ptr;
 		step_record_t *het_step_ptr;
 		bitstr_t *het_grp_bits = NULL;
+		uint32_t tmp_job_id = step_ptr->step_id.job_id;
 
 		/*
 		 * Het job compontents are sent across on the network
@@ -2937,6 +2938,13 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		 */
 		if (!step_specs->step_het_grps) {
 			het_job_ptr = find_job_record(job_ptr->het_job_id);
+			/*
+			 * Temporarily set the job_id to that of the het_job_ptr
+			 * or find_step_record will not work correctly.  This is
+			 * only needed for a regular het job not for the
+			 * het step code on the else below here.
+			 */
+			step_ptr->step_id.job_id = het_job_ptr->job_id;
 		} else {
 			int first_bit = 0;
 			het_grp_bits = bit_alloc(128);
@@ -2962,6 +2970,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		het_step_ptr = find_step_record(het_job_ptr,
 						&step_ptr->step_id);
 
+		step_ptr->step_id.job_id = tmp_job_id;
 		jobid = job_ptr->het_job_id;
 		if (!het_step_ptr || !het_step_ptr->switch_job) {
 			job_record_t *het_job_comp_ptr;

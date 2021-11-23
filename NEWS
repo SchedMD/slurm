@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix job start time not being reset after launch when job is packed onto
     already booting node.
  -- Fix updating SLURM_NODE_ALIASES for jobs packed onto powering up nodes.
+ -- Cray - Fix issues with starting hetjobs.
 
 * Changes in Slurm 21.08.4
 ==========================
