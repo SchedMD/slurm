@@ -28,69 +28,74 @@ If a parameter is omitted, data collection of the omitted type is disabled.
 .TP
 \fBJobData\fR=\fBenergy\fR
 Specify the data types to be collected by the plugin for jobs/steps.
+.IP
 
 .TP
 \fBNodeData\fR=\fB[energy|temp][,temp|energy]\fR
 Specify the data types to be collected by the plugin for nodes.
+.IP
 
 .TP
 \fBSwitchData\fR=\fBenergy\fR
 Specify the data types to be collected by the plugin for switches.
+.IP
 
 .TP
 \fBColdDoorData\fR=\fBtemp\fR
 Specify the data types to be collected by the plugin for cold doors.
+.IP
 
 .TP
 \fBMinWatt\fR=\fB<number>\fR
 Minimum recorded power consumption, in watts.
+.IP
 
 .TP
 \fBMaxWatt\fR=\fB<number>\fR
 Maximum recorded power consumption, in watts.
+.IP
 
 .TP
 \fBMinTemp\fR=\fB<number>\fR
 Minimum recorded temperature, in Celsius.
+.IP
 
 .TP
 \fBMaxTemp\fR=\fB<number>\fR
 Maximum recorded temperature, in Celsius.
+.IP
 
 .TP
 \fBEnergyRRA\fR=\fB<name>\fR
 Energy RRA name.
+.IP
 
 .TP
 \fBTempRRA\fR=\fB<name>\fR
 Temperature RRA name.
+.IP
 
 .TP
 \fBEnergyPathRRD\fR=\fB<path>\fR
 Pathname of energy RRD file.
+.IP
 
 .TP
 \fBTempPathRRD\fR=\fB<patch>\fR
 Pathname of temperature RRD file.
+.IP
 
 .SH "EXAMPLE"
-.LP
-.br
+.nf
 ###
-.br
 # Slurm external sensors plugin configuration file
-.br
 ###
-.br
 JobData=energy
-.br
 NodeData=energy,temp
-.br
 SwitchData=energy
-.br
 ColdDoorData=temp
-.br
 #
+.fi
 
 .SH "COPYING"
 Copyright (C) 2013 Bull
