@@ -28,12 +28,20 @@
 
 # Test GrpNode limit
 proc inc21_30_1 { wait_reason } {
-
 	global srun salloc acct bin_sleep number grn_num check_reason
 
 	log_info "Starting GrpNode limit test"
 	set job_id1  0
 	set job_id2  0
+
+	# TODO Temporarily increase logging to debug bug 12658 (remove once fixed)
+	global bin_echo
+	set config_dir [get_conf_path]
+	set config_file $config_dir/slurm.conf
+	save_conf $config_file
+	run_command -none "$bin_echo SlurmctldDebug=debug3 >> $config_file"
+	run_command -none "$bin_echo DebugFlags=TraceJobs >> $config_file"
+	reconfigure -fail
 
 	# Raise an error to abort the catch block
 	set exception_code [catch {
@@ -46,6 +54,13 @@ proc inc21_30_1 { wait_reason } {
 				}
 				-re "Pending job allocation ($number)" {
 					set job_id1 $expect_out(1,string)
+
+					# TODO Temporary debug for bug 12658 (remove once fixed)
+					run_command "scontrol show jobs"
+					run_command "scontrol show nodes"
+					run_command "scontrol show reservations"
+					run_command "sacctmgr show assoc"
+
 					error "Job should be running, but is not"
 				}
 				-re "error" {
@@ -90,6 +105,10 @@ proc inc21_30_1 { wait_reason } {
 	# Cancels remaining jobs
 	cancel_job $job_id1
 	cancel_job $job_id2
+
+	# TODO Temporarily restore logging to debug bug 12658 (remove once fixed)
+	restore_conf $config_file
+	reconfigure
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only
