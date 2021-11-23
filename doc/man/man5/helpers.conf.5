@@ -25,16 +25,19 @@ of the command "scontrol reconfigure" unless otherwise noted.
 \fBAllowUserBoot\fR=<\fIuser1\fR>[,<\fIuser2\fR>...]
 Controls which users are allowed to change the features with this plugin.
 Default is to allow ALL users.
+.IP
 
 .TP
 \fBBootTime\fR=<\fItime\fR>
 Controls how much time a node has to reboot before a timeout occurs and a
 failure is assumed. Default value is 300 seconds.
+.IP
 
 .TP
 \fBExecTime\fR=<\fItime\fR>
 Controls how much time the Helper program can run before a timeout occurs
 and a failure is assumed. Default value is 10 seconds.
+.IP
 
 .TP
 \fBFeature\fR=<\fIstring\fR> \fBHelper\fR=<\fIfile\fR>
@@ -49,6 +52,7 @@ the node using the \fBRebootProgram\fR.
 The \fBHelper\fR program/script must be executable by the \fBSlurmdUser\fR.
 The same program/script can be used to control multiple features. slurmd will
 execute the \fBHelper\fR in one of two ways:
+.IP
 .RS
 .LP
 1. Execute with no arguments to query the status of node features.
@@ -61,6 +65,7 @@ execute the \fBHelper\fR in one of two ways:
 complex specification language. If any more complex specifications are
 specified by a job using constraints with "[]()!*", the job will be rejected.
 .RE
+.IP
 
 .TP
 \fBMutuallyExclusive\fR=<\fIfeature_list\fR>
@@ -69,19 +74,23 @@ multiple \fBMutuallyExclusive\fR entries, each with their own list of features
 that are mutually exclusive among themselves (i.e. features on one line are
 only mutually exclusive with other features on the same line, but not mutually
 exclusive with features on other lines).
-
+.IP
 .ig
 #### The NodeRebootWeight looks like a placeholder. Commenting out for now.
+.IP
+
 .TP
 \fBNodeRebootWeight\fR=<\fIweight\fR>
 Default value is infinite.
 ..
 
 .SH "EXAMPLE"
+
 .TP
 \fB/etc/slurm/slurm.conf\fR:
 To enable the helpers plugin, the \fBslurm.conf\fR needs to have the following
 entry:
+.IP
 .nf
 NodeFeaturesPlugins=node_features/helpers
 .fi
@@ -94,6 +103,7 @@ features that are mutually exclusive. For example, with the following
 configuration a job cannot request both "nps1" and "nps2", nor can it request
 both "mig=on" and "mig=off". However, it could request "nps1" and "mig=on" at
 the same time.
+.IP
 .nf
 # helpers.conf
 Feature=nps1 Helper=/usr/local/bin/nps
@@ -117,6 +127,7 @@ to be enabled for the node, it should configure the node in a way that the
 specified feature will be enabled when the node reboots. This example script
 just writes the active feature name to a file but production scripts will
 probably be more complex.
+.IP
 .nf
 #!/bin/bash
 
