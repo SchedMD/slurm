@@ -195,8 +195,8 @@ static int _list_part_node_lists(void *x, void *arg)
 {
 	exc_node_partital_t *ext_part_struct = (exc_node_partital_t *) x;
 	char *tmp = bitmap2node_name(ext_part_struct->exc_node_cnt_bitmap);
-	info("power_save module, exclude %d nodes from %s",
-	     ext_part_struct->exc_node_cnt, tmp);
+	log_flag(POWER, "exclude %d nodes from %s",
+		 ext_part_struct->exc_node_cnt, tmp);
 	xfree(tmp);
 	return 0;
 
@@ -258,7 +258,7 @@ static int _pick_exc_nodes(void *x, void *arg)
 
 	if (power_save_debug) {
 		char *tmp = bitmap2node_name(*orig_exc_nodes);
-		info("power_save module, excluded nodes %s", tmp);
+		log_flag(POWER, "excluded nodes %s", tmp);
 		xfree(tmp);
 	}
 
@@ -309,7 +309,7 @@ static void _do_power_work(time_t now)
 
 		if (exc_node_bitmap && power_save_debug) {
 			char *tmp = bitmap2node_name(exc_node_bitmap);
-			info("power_save module, excluded nodes %s", tmp);
+			log_flag(POWER, "excluded nodes %s", tmp);
 			xfree(tmp);
 		}
 		if (partial_node_list && power_save_debug) {
@@ -578,7 +578,7 @@ static void _do_power_work(time_t now)
 	}
 	FREE_NULL_BITMAP(avoid_node_bitmap);
 	if (power_save_debug && ((now - last_log) > 600) && (susp_total > 0)) {
-		info("Power save mode: %d nodes", susp_total);
+		log_flag(POWER, "Power save mode: %d nodes", susp_total);
 		last_log = now;
 	}
 
@@ -641,9 +641,8 @@ extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
 	if (nodes) {
 		pid_t pid = _run_prog(resume_prog, nodes, features,
 				      job_ptr->job_id, NULL);
-		if (power_save_debug)
-			info("%s: pid %d reboot nodes %s features %s",
-			     __func__, (int) pid, nodes, features);
+		log_flag(POWER, "%s: pid %d reboot nodes %s features %s",
+			 __func__, (int) pid, nodes, features);
 	} else {
 		error("%s: bitmap2nodename", __func__);
 		rc = SLURM_ERROR;
@@ -656,25 +655,22 @@ extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
 static void _do_failed_nodes(char *hosts)
 {
 	pid_t pid = _run_prog(resume_fail_prog, hosts, NULL, 0, NULL);
-	if (power_save_debug)
-		info("power_save: pid %d handle failed nodes %s",
-		     (int)pid, hosts);
+	log_flag(POWER, "power_save: pid %d handle failed nodes %s",
+		 (int)pid, hosts);
 }
 
 static void _do_resume(char *host, char *json)
 {
 	pid_t pid = _run_prog(resume_prog, host, NULL, 0, json);
-	if (power_save_debug)
-		info("power_save: pid %d waking nodes %s",
-		     (int) pid, host);
+	log_flag(POWER, "power_save: pid %d waking nodes %s",
+		 (int) pid, host);
 }
 
 static void _do_suspend(char *host)
 {
 	pid_t pid = _run_prog(suspend_prog, host, NULL, 0, NULL);
-	if (power_save_debug)
-		info("power_save: pid %d suspending nodes %s",
-		     (int) pid, host);
+	log_flag(POWER, "power_save: pid %d suspending nodes %s",
+		 (int) pid, host);
 }
 
 /* run a suspend or resume program
@@ -754,8 +750,8 @@ static void _reap_procs(void)
 
 		delay = difftime(time(NULL), proc_track->child_time);
 		if (power_save_debug && (delay > max_timeout)) {
-			info("power_save: program %d ran for %d sec",
-			     (int) proc_track->child_pid, delay);
+			log_flag(POWER, "program %d ran for %d sec",
+				 (int) proc_track->child_pid, delay);
 		}
 
 		if (WIFEXITED(status)) {
