@@ -56,6 +56,7 @@ Options used for acct_gather_energy/ipmi are as follows:
 .TP 10
 \fBEnergyIPMIFrequency\fR=<number>
 This parameter is the number of seconds between BMC access samples.
+.IP
 
 .TP
 \fBEnergyIPMICalcAdjustment\fR=<yes|no>
@@ -65,6 +66,7 @@ The adjustment is made at the step start and each time the
 consumption is updated, including the step end. The approximations are not
 accumulated, only the first and last adjustments are used to calculated the
 consumption. The default is "no".
+.IP
 
 .TP
 \fBEnergyIPMIPowerSensors\fR=<key=values>\fR
@@ -97,11 +99,13 @@ IPMI config default values for libipmiconsole.
 .TP 10
 \fBEnergyIPMIUsername\fR=\fIUSERNAME\fR
 Specify BMC Username.
+.IP
 
 .TP
 \fBEnergyIPMIPassword\fR=\fIPASSWORD\fR
 Specify BMC Password.
 .RE
+.IP
 
 .SH acct_gather_energy/XCC
 Required entry in slurm.conf:
@@ -119,12 +123,14 @@ with XClarity Controller, thus a reduced set of configurations is supported:
 \fBEnergyIPMIFrequency\fR=<number>
 This parameter is the number of seconds between XCC access samples.
 Default is 30 seconds.
+.IP
 
 .TP
 \fBEnergyIPMITimeout\fR=<number>
 Timeout, in seconds, for initializing the IPMI XCC context for a new gathering
 thread. Default is 10 seconds.
 .RE
+.IP
 
 .SH acct_gather_profile/HDF5
 Required entry in slurm.conf:
@@ -143,37 +149,43 @@ This parameter is the path to the shared folder into which the
 acct_gather_profile plugin will write detailed data (usually as an HDF5 file).
 The directory is assumed to be on a file system shared by the controller and
 all compute nodes. This is a required parameter.
+.IP
 
 .TP
 \fBProfileHDF5Default\fR
 A comma\-delimited list of data types to be collected for each job submission.
 Allowed values are:
-
 .RS
 .TP 8
 \fBAll\fR
 All data types are collected. (Cannot be combined with other values.)
+.IP
 
 .TP
 \fBNone\fR
 No data types are collected. This is the default.
 (Cannot be combined with other values.)
+.IP
 
 .TP
 \fBEnergy\fR
 Energy data is collected.
+.IP
 
 .TP
 \fBFilesystem\fR
 File system (Lustre) data is collected.
+.IP
 
 .TP
 \fBNetwork\fR
 Network (InfiniBand) data is collected.
+.IP
 
 .TP
 \fBTask\fR
 Task (I/O, Memory, ...) data is collected.
+.IP
 
 .SH acct_gather_profile/InfluxDB
 Required entry in slurm.conf:
@@ -196,38 +208,45 @@ Options:
 \fBProfileInfluxDBDatabase\fR
 InfluxDB v1.x database name where profiling information is to be written.
 InfluxDB v2.x bucket name where profiling information is to be written.
+.IP
 
 .TP
 \fBProfileInfluxDBDefault\fR
 A comma\-delimited list of data types to be collected for each job submission.
 Allowed values are:
-
+.IP
 .RS
 .TP 10
 \fBAll\fR
 All data types are collected. Cannot be combined with other values.
+.IP
 
 .TP
 \fBNone\fR
 No data types are collected. This is the default.
 Cannot be combined with other values.
+.IP
 
 .TP
 \fBEnergy\fR
 Energy data is collected.
+.IP
 
 .TP
 \fBFilesystem\fR
 File system (Lustre) data is collected.
+.IP
 
 .TP
 \fBNetwork\fR
 Network (InfiniBand) data is collected.
+.IP
 
 .TP
 \fBTask\fR
 Task (I/O, Memory, ...) data is collected.
 .RE
+.IP
 
 .TP
 \fBProfileInfluxDBHost\fR=<hostname>:<port>
@@ -240,16 +259,20 @@ Example:
 ProfileInfluxDBHost=myinfluxhost:8086
 .fi
 .in -2
+.IP
+
 .TP
 \fBProfileInfluxDBPass\fR
 Password for username configured in ProfileInfluxDBUser. Required in v2.x and
 optional in v1.x InfluxDB.
+.IP
 
 .TP
 \fBProfileInfluxDBRTPolicy\fR
 The InfluxDB v1.x retention policy name for the database configured in
 ProfileInfluxDBDatabase option. The InfluxDB v2.x retention policy bucket name
 for the database configured in ProfileInfluxDBDatabase option.
+.IP
 
 .TP
 \fBProfileInfluxDBUser\fR
@@ -258,6 +281,8 @@ in ProfileInfluxDBDatabase. Required in v2.x and optional in v1.x InfluxDB.
 This is only needed if InfluxDB v1.x is configured with authentication enabled
 in the [http] config section and a user has been granted at least WRITE access
 to the database. See also \fBProfileInfluxDBPass\fR.
+.IP
+
 .SS
 NOTES:
 .LP
@@ -289,7 +314,6 @@ Grafana can be used to create charts based on the data held by InfluxDB.
 This kind of tool permits one to create dashboards, tables and other graphics
 using the stored time series.
 
-.RS
 .SH acct_gather_interconnect/OFED
 Required entry in slurm.conf:
 .RS
@@ -307,6 +331,7 @@ This parameter represents the port number of the local Infiniband card that we a
 The default port is 1.
 .RE
 .RE
+
 .SH "EXAMPLE"
 .nf
 ###
