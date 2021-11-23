@@ -52,18 +52,23 @@ The overall configuration parameters available include:
 \fBAutoDetect\fR
 The hardware detection mechanisms to enable for automatic GRES configuration.
 Currently, the options are:
+.IP
 .RS
 .TP
 \fBnvml\fR
 Automatically detect NVIDIA GPUs
+.IP
+
 .TP
 \fBoff\fR
 Do not automatically detect any GPUs. Used to override other options.
+.IP
+
 .TP
 \fBrsmi\fR
 Automatically detect AMD GPUs
 .RE
-
+.IP
 \fIAutoDetect\fR can be on a line by itself, in which case it will globally
 apply to all lines in gres.conf by default. In addition, \fIAutoDetect\fR can be
 combined with \fBNodeName\fR to only apply to certain nodes. Node\-specific
@@ -81,6 +86,7 @@ The default value is set to the number of \fBFile\fR values specified (if any),
 otherwise the default value is one. A suffix of "K", "M", "G", "T" or "P" may be
 used to multiply the number by 1024, 1048576, 1073741824, etc. respectively.
 For example: "Count=10G".
+.IP
 
 .TP
 \fBCores\fR
@@ -124,6 +130,7 @@ Core 0 will be the first core on the first socket, while core 1 will be the
 second core on the first socket.
 This numbering coincides with the logical core number (Core L#) seen
 in "lstopo \-l" command output.
+.IP
 
 .TP
 \fBFile\fR
@@ -158,36 +165,46 @@ file.
 NOTE: Drain a node before changing the count of records with \fBFile\fR
 parameters (i.e. if you want to add or remove GPUs from a node's configuration).
 Failure to do so will result in any job using those GRES being aborted.
+.IP
 
 .TP
 \fBFlags\fR
 Optional flags that can be specified to change configured behavior of the GRES.
 
 Allowed values at present are:
+.IP
 .RS
 .TP 20
 \fBCountOnly\fR
 Do not attempt to load plugin as this GRES will only be used to track counts of
 GRES used. This avoids attempting to load non\-existent plugin which can
 affect filesystems with high latency metadata operations for non\-existent files.
+.IP
+
 .TP
 \fBnvidia_gpu_env\fR
 Set environment variable \fICUDA_VISIBLE_DEVICES\fR for all GPUs on the
 specified node(s).
+.IP
+
 .TP
 \fBamd_gpu_env\fR
 Set environment variable \fIROCR_VISIBLE_DEVICES\fR for all GPUs on the
 specified node(s).
+.IP
+
 .TP
 \fBopencl_env\fR
 Set environment variable \fIGPU_DEVICE_ORDINAL\fR for all GPUs on the
 specified node(s).
+.IP
+
 .TP
 \fBno_gpu_env\fR
 Set no GPU\-specific environment variables. This is mutually exclusive to all
 other environment\-related flags.
 .RE
-
+.IP
 If no environment\-related flags are specified, then \fInvidia_gpu_env\fR,
 \fIamd_gpu_env\fR, and \fIopencl_env\fR will be implicitly set by default. If
 \fBAutoDetect\fR is used and environment\-related flags are not specified, then
@@ -204,7 +221,7 @@ Note that there is a known issue with the AMD ROCm runtime where
 \fIROCR_VISIBLE_DEVICES\fR is processed first, and then
 \fICUDA_VISIBLE_DEVICES\fR is processed. To avoid the issues caused by this, set
 \fIFlags=amd_gpu_env\fR for AMD GPUs so only \fIROCR_VISIBLE_DEVICES\fR is set.
-
+.IP
 
 .TP
 \fBLinks\fR
@@ -227,6 +244,7 @@ file (i.e. the X in \fI/dev/nvidiaX\fR) is not necessarily the same as the
 device number/index. The device number is created by sorting the GPUs by PCI bus
 ID and then numbering them starting from the smallest bus ID.
 See \fIhttps://slurm.schedmd.com/gres.html#GPU_Management\fR
+.IP
 
 .TP
 \fBName\fR
@@ -235,17 +253,23 @@ The name must match a value in \fBGresTypes\fR in \fIslurm.conf\fR.
 Each generic resource has an optional plugin which can provide
 resource\-specific functionality.
 Generic resources that currently include an optional plugin are:
+.IP
 .RS
 .TP
 \fBgpu\fR
 Graphics Processing Unit
+.IP
+
 .TP
 \fBmps\fR
 CUDA Multi\-Process Service (MPS)
+.IP
+
 .TP
 \fBnic\fR
 Network Interface Card
 .RE
+.IP
 
 .TP
 \fBNodeName\fR
@@ -254,6 +278,7 @@ be used for all compute nodes in a cluster by specifying the node(s) that each
 line should apply to.
 The NodeName specification can use a Slurm hostlist specification as shown in
 the example below.
+.IP
 
 .TP
 \fBType\fR
@@ -263,116 +288,73 @@ can then specify in a job request.
 If \fBType\fR is specified, then \fBCount\fR is limited in size (currently 1024).
 A restart of the \fBslurmctld\fR and \fBslurmd\fR daemons is required for changes
 to the \fBType\fR option to take effect.
+.IP
 
 .SH "EXAMPLES"
-.LP
-.br
+.nf
 ##################################################################
-.br
 # Slurm's Generic Resource (GRES) configuration file
-.br
 # Define GPU devices with MPS support, with AutoDetect sanity checking
-.br
 ##################################################################
-.br
 AutoDetect=nvml
-.br
 Name=gpu Type=gtx560 File=/dev/nvidia0 COREs=0,1
-.br
 Name=gpu Type=tesla  File=/dev/nvidia1 COREs=2,3
-.br
 Name=mps Count=100 File=/dev/nvidia0 COREs=0,1
-.br
 Name=mps Count=100  File=/dev/nvidia1 COREs=2,3
+.fi
 
-.LP
-.br
+.nf
 ##################################################################
-.br
 # Slurm's Generic Resource (GRES) configuration file
-.br
 # Overwrite system defaults and explicitly configure three GPUs
-.br
 ##################################################################
-.br
 Name=gpu Type=tesla File=/dev/nvidia[0\-1] COREs=0,1
-.br
 # Name=gpu Type=tesla  File=/dev/nvidia[2\-3] COREs=2,3
-.br
 # NOTE: nvidia2 device is out of service
-.br
 Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
-.br
+.fi
 
-.LP
-.br
+.nf
 ##################################################################
-.br
 # Slurm's Generic Resource (GRES) configuration file
-.br
 # Use a single gres.conf file for all compute nodes \- positive method
-.br
 ##################################################################
-.br
 ## Explicitly specify devices on nodes tux0\-tux15
-.br
 # NodeName=tux[0\-15]  Name=gpu File=/dev/nvidia[0\-3]
-.br
 # NOTE: tux3 nvidia1 device is out of service
-.br
 NodeName=tux[0\-2]  Name=gpu File=/dev/nvidia[0\-3]
-.br
 NodeName=tux3  Name=gpu File=/dev/nvidia[0,2\-3]
-.br
 NodeName=tux[4\-15]  Name=gpu File=/dev/nvidia[0\-3]
-.br
+.fi
 
-.LP
-.br
+.nf
 ##################################################################
-.br
 # Slurm's Generic Resource (GRES) configuration file
-.br
 # Use NVML to gather GPU configuration information
-.br
 # for all nodes except one
-.br
 ##################################################################
-.br
 AutoDetect=nvml
-.br
 NodeName=tux3 AutoDetect=off Name=gpu File=/dev/nvidia[0\-3]
-.br
+.fi
 
+.nf
 ##################################################################
-.br
 # Slurm's Generic Resource (GRES) configuration file
-.br
 # Specify some nodes with NVML, some with RSMI, and some with no AutoDetect
-.br
 ##################################################################
-.br
 NodeName=tux[0\-7] AutoDetect=nvml
-.br
 NodeName=tux[8\-11] AutoDetect=rsmi
-.br
 NodeName=tux[12\-15] Name=gpu File=/dev/nvidia[0\-3]
-.br
+.fi
 
-.LP
-.br
+.nf
 ##################################################################
-.br
 # Slurm's Generic Resource (GRES) configuration file
-.br
 # Define 'bandwidth' GRES to use as a way to limit the
-.br
 # resource use on these nodes for workflow purposes
-.br
 ##################################################################
-.br
 NodeName=tux[0\-7] Name=bandwidth Type=lustre Count=4G Flags=CountOnly
-.br
+.nf
 
 .SH "COPYING"
 Copyright (C) 2010 The Regents of the University of California.
