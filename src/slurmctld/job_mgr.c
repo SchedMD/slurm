@@ -9812,7 +9812,7 @@ static int _build_allowed_parts(_foreach_pack_job_info_t *pack_info)
 	pack_info->allowed_parts = xcalloc(list_count(part_list) + 1,
 					   sizeof(part_ptr));
 	part_record_t **part_ptr_save = pack_info->allowed_parts;
-	list_for_each(part_list, _foreach_add_visible_part, pack_info);
+	list_for_each_ro(part_list, _foreach_add_visible_part, pack_info);
 	pack_info->allowed_parts = part_ptr_save;
 	if (get_log_level() >= LOG_LEVEL_DEBUG3) {
 		char *tmp_str = NULL;
