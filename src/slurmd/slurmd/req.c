@@ -4017,6 +4017,43 @@ static void _file_bcast_cleanup(void)
 	_fb_wrunlock();
 }
 
+static int _bcast_find_by_job(void *x, void *y)
+{
+	file_bcast_info_t *f = x;
+	uint32_t *job_id = y;
+
+	if (f->job_id == *job_id) {
+		debug("Removing file_bcast transfer from JobId=%u to file `%s`",
+		       f->job_id, f->fname);
+		return 1;
+	}
+
+	return 0;
+}
+
+static int _libdir_find_by_job(void *x, void *y)
+{
+	libdir_rec_t *l = x;
+	uint32_t *job_id = y;
+
+	if (l->job_id == *job_id) {
+		debug("Removing library directory reference for JobId=%u for `%s`",
+		      l->job_id, l->directory);
+		return 1;
+	}
+
+	return 0;
+
+}
+
+static void _file_bcast_job_cleanup(uint32_t job_id)
+{
+	_fb_wrlock();
+	list_delete_all(file_bcast_list, _bcast_find_by_job, &job_id);
+	list_delete_all(bcast_libdir_list, _libdir_find_by_job, &job_id);
+	_fb_wrunlock();
+}
+
 void file_bcast_init(void)
 {
 	/* skip locks during slurmd init */
@@ -5052,6 +5089,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	save_cred_state(conf->vctx);
 
+	_file_bcast_job_cleanup(req->step_id.job_id);
+
 #ifndef HAVE_FRONT_END
 	/* It is always 0 for front end systems */
 	node_id = nodelist_find(req->nodes, conf->node_name);
@@ -5300,6 +5339,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	}
 
 	save_cred_state(conf->vctx);
+
+	_file_bcast_job_cleanup(req->step_id.job_id);
 
 #ifndef HAVE_FRONT_END
 	/* It is always 0 for front end systems */
