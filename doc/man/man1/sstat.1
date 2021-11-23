@@ -43,6 +43,7 @@ command is not supported on Cray ALPS.
 .TP
 \f3\-a\fP\f3,\fP \f3\-\-allsteps\fP
 Print all steps for the given job(s) when no step is specified.
+.IP
 
 .TP
 \f3\-o\fP\f3,\fP \f3\-\-format\fP,\fP \f3\-\-fields\fP
@@ -54,14 +55,17 @@ NOTE: When using the format option for listing various fields you can put a
 
 i.e. format=name%30 will print 30 characters of field name right
 justified.  A \-30 will print 30 characters left justified.
+.IP
 
 .TP
 \f3\-h\fP\f3,\fP \f3\-\-help\fP
 Displays a general help message.
+.IP
 
 .TP
 \f3\-e\fP\f3,\fP \f3\-\-helpformat\fP
 Print a list of fields that can be specified with the '\-\-format' option.
+.IP
 
 .TP
 \f3\-j\fP\f3,\fP \f3\-\-jobs\fP
@@ -73,80 +77,97 @@ all running steps to be displayed.
 NOTE: A step id of 'batch' will display the information about the batch step.
 NOTE: A step id of 'extern' will display the information about the
 extern step.  This step is only available when using PrologFlags=contain
+.IP
 
 .TP
 \f3\-\-noconvert\fP
 Don't convert units from their original type (e.g. 2048M won't be converted to
 2G).
+.IP
 
 .TP
 \f3\-n\fP\f3,\fP \f3\-\-noheader\fP
 No heading will be added to the output. The default action is to
 display a header.
+.IP
 
 .TP
 \f3\-p\fP\f3,\fP \f3\-\-parsable\fP
 output will be '|' delimited with a '|' at the end
+.IP
 
 .TP
 \f3\-P\fP\f3,\fP \f3\-\-parsable2\fP
 output will be '|' delimited without a '|' at the end
+.IP
 
 .TP
 \f3\-i\fP\f3,\fP \f3\-\-pidformat\fP
 Predefined format to list the pids running for each job step.
 (JobId,Nodes,Pids)
+.IP
 
 .TP
 \f3\-\-usage\fP
 Display a command usage summary.
+.IP
 
 .TP
 \f3\-v\fP\f3,\fP \f3\-\-verbose\fP
 Primarily for debugging purposes, report the state of various
 variables during processing.
+.IP
 
 .TP
 \f3\-V\fP\f3,\fP \f3\-\-version\fP
 Print version.
-
+.IP
 
 .SS "Job Status Fields"
 The following are the field options:
 .RS
+
 .TP
 \f3AveCPU\fP
 Average (system + user) CPU time of all tasks in job.
+.IP
 
 .TP
 \f3AveCPUFreq\fP
 Average weighted CPU frequency of all tasks in job, in kHz.
+.IP
 
 .TP
 \f3AveDiskRead\fP
 Average number of bytes read by all tasks in job.
+.IP
 
 .TP
 \f3AveDiskWrite\fP
 Average number of bytes written by all tasks in job.
+.IP
 
 .TP
 \f3AvePages\fP
 Average number of page faults of all tasks in job.
+.IP
 
 .TP
 \f3AveRSS\fP
 Average resident set size of all tasks in job.
+.IP
 
 .TP
 \f3AveVMSize\fP
 Average Virtual Memory size of all tasks in job.
+.IP
 
 .TP
 \f3ConsumedEnergy\fP
 Total energy consumed by all tasks in job, in joules.
 Note: Only in case of exclusive job allocation this value 
 reflects the jobs' real energy consumption. 
+.IP
 
 .TP
 \f3JobID\fP
@@ -154,126 +175,155 @@ The number of the job or job step.
 It is in the form:
 \f2job.jobstep\fP
 \&.
+.IP
 
 .TP
 \f3MaxDiskRead\fP
 Maximum number of bytes read by all tasks in job.
+.IP
 
 .TP
 \f3MaxDiskReadNode\fP
 The node on which the maxdiskread occurred.
+.IP
 
 .TP
 \f3MaxDiskReadTask\fP
 The task ID where the maxdiskread occurred.
+.IP
 
 .TP
 \f3MaxDiskWrite\fP
 Maximum number of bytes written by all tasks in job.
+.IP
 
 .TP
 \f3MaxDiskWriteNode\fP
 The node on which the maxdiskwrite occurred.
+.IP
 
 .TP
 \f3MaxDiskWriteTask\fP
 The task ID where the maxdiskwrite occurred.
+.IP
 
 .TP
 \f3MaxPages\fP
 Maximum number of page faults of all tasks in job.
+.IP
 
 .TP
 \f3MaxPagesNode\fP
 The node on which the maxpages occurred.
+.IP
 
 .TP
 \f3MaxPagesTask\fP
 The task ID where the maxpages occurred.
+.IP
 
 .TP
 \f3MaxRSS\fP
 Maximum resident set size of all tasks in job.
+.IP
 
 .TP
 \f3MaxRSSNode\fP
 The node on which the maxrss occurred.
+.IP
 
 .TP
 \f3MaxRSSTask\fP
 The task ID where the maxrss occurred.
+.IP
 
 .TP
 \f3MaxVMSize\fP
 Maximum Virtual Memory size of all tasks in job.
+.IP
 
 .TP
 \f3MaxVMSizeNode\fP
 The node on which the maxvsize occurred.
+.IP
 
 .TP
 \f3MaxVMSizeTask\fP
 The task ID where the maxvsize occurred.
+.IP
 
 .TP
 \f3MinCPU\fP
 Minimum (system + user) CPU time of all tasks in job.
+.IP
 
 .TP
 \f3MinCPUNode\fP
 The node on which the mincpu occurred.
+.IP
 
 .TP
 \f3MinCPUTask\fP
 The task ID where the mincpu occurred.
+.IP
 
 .TP
 \f3NTasks\fP
 Total number of tasks in a job or step.
+.IP
 
 .TP
 \f3ReqCPUFreq\fP
 Requested CPU frequency for the step, in kHz.
+.IP
 
 .TP
 \f3TresUsageInAve\fP
 Tres average usage in by all tasks in job.
 NOTE: If corresponding TresUsageInMaxTask is \-1 the metric is node centric
 instead of task.
+.IP
 
 .TP
 \f3TresUsageInMax\fP
 Tres maximum usage in by all tasks in job.
 NOTE: If corresponding TresUsageInMaxTask is \-1 the metric is node centric
 instead of task.
+.IP
 
 .TP
 \f3TresUsageInMaxNode\fP
 Node for which each maximum TRES usage out occurred.
+.IP
 
 .TP
 \f3TresUsageInMaxTask\fP
 Task for which each maximum TRES usage out occurred.
+.IP
 
 .TP
 \f3TresUsageOutAve\fP
 Tres average usage out by all tasks in job.
 NOTE: If corresponding TresUsageOutMaxTask is \-1 the metric is node centric
 instead of task.
+.IP
 
 .TP
 \f3TresUsageOutMax\fP
 Tres maximum usage out by all tasks in job.
 NOTE: If corresponding TresUsageOutMaxTask is \-1 the metric is node centric
 instead of task.
+.IP
 
 .TP
 \f3TresUsageOutMaxNode\fP
 Node for which each maximum TRES usage out occurred.
+.IP
 
 .TP
 \f3TresUsageOutMaxTask\fP
 Task for which each maximum TRES usage out occurred.
+.IP
 
 .SH "PERFORMANCE"
 .PP
@@ -293,14 +343,17 @@ information you are trying to gather.
 Some \fBsstat\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed below.
 (Note: Command line options will always override these settings.)
+
 .TP 20
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
 
 .SH "EXAMPLES"
+
 .TP
 Display job step information for job 11 with the specified fields:
-
+.IP
 .nf
 $ sstat \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11
 25:02.000  0K         1.37M      5.93M      9.0
@@ -309,7 +362,7 @@ $ sstat \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11
 .TP
 Display job step information for job 11 with the specified fields in a \
 parsable format:
-
+.IP
 .nf
 $ sstat \-p \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11
 25:02.000|0K|1.37M|5.93M|9.0|
