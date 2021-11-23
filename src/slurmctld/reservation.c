@@ -3266,9 +3266,9 @@ update_failure:
 /* Determine if a running or pending job is using a reservation */
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr)
 {
-	if (list_find_first(job_list,
-			    _find_running_job_with_resv_ptr,
-			    resv_ptr))
+	if (list_find_first_ro(job_list,
+			       _find_running_job_with_resv_ptr,
+			       resv_ptr))
 		return true;
 
 	return false;
