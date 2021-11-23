@@ -30,17 +30,23 @@ This may be a subset of MCDRAM modes supported by the node.
 If not specified, all MCDRAM modes supported by the node are available for use.
 The comma separated list of allowed MCDRAM modes may include any of the modes
 listed below.
+.IP
 .RS
 .TP 17
 \fBcache\fR
 All of MCDRAM to be used as cache.
+.IP
+
 .TP
 \fBequal\fR
 MCDRAM to be used partly as cache and partly combined with primary memory.
+.IP
+
 .TP
 \fBflat\fR
 MCDRAM to be combined with primary memory into a "flat" memory space.
 .RE
+.IP
 
 .TP
 \fBAllowNUMA\fR
@@ -56,28 +62,39 @@ either 16 or 18 cores.
 This will result in Slurm using the lower core count and finding a total of
 256 threads rather than 272 threads and setting the node to a DOWN state.
 Therefore it is recommended that snc4 and quad mode not be allowed at this time.
+.IP
 .RS
 .TP 17
 \fBa2a\fR
 All to all
+.IP
+
 .TP
 \fBsnc2\fR
 Sub\-NUMA cluster 2
+.IP
+
 .TP
 \fBsnc4\fR
 Sub\-NUMA cluster 4
+.IP
+
 .TP
 \fBhemi\fR
 Hemisphere
+.IP
+
 .TP
 \fBquad\fR
 Quadrant
 .RE
+.IP
 
 .TP
 \fBAllowUserBoot\fR
 A comma\-delimited list of users allowed to modify a node's MCDRAM or NUMA state.
 If not specified then any user can change a node's state and reboot it.
+.IP
 
 .TP
 \fBBootTime\fR
@@ -85,12 +102,14 @@ Estimated time to reboot a node in seconds.
 Used as a basis for optimizing scheduling decisions.
 The default value is 300 seconds (5 minutes) for the "knl_generic" plugin
 and 2700 seconds (45 minutes) for the "knl_cray" plugin.
+.IP
 
 .TP
 \fBCapmcPath\fR
 Fully qualified path to the \fBcapmc\fR program.
 The default value is "/opt/cray/capmc/default/bin/capmc".
 This parameter is used only by the "knl_cray" plugin.
+.IP
 
 .TP
 \fBCapmcPollFreq\fR
@@ -98,11 +117,13 @@ Time interval between when the \fBcapmc\fR program should poll for node state
 changes, in seconds.
 The default value is 45 seconds.
 This parameter is used only by the "knl_cray" plugin.
+.IP
 
 .TP
 \fBCapmcRetries\fR
 Number of times to retry failed operations of the \fBcapmc\fR program.
 Default value is 4.
+.IP
 
 .TP
 \fBCapmcTimeout\fR
@@ -110,12 +131,14 @@ Time limit for the \fBcapmc\fR program to return status information milliseconds
 The default value is 60000 milliseconds and the minimum value is 1000 milliseconds.
 This parameter is used by the "knl_cray" plugin, plus the capmc_suspend and
 capmc_resume programs used for suspending and resuming nodes.
+.IP
 
 .TP
 \fBCnselectPath\fR
 Fully qualified path to the \fBcnselect\fR program.
 The default value is "/opt/cray/sdb/default/bin/cnselect".
 This parameter is used only by the "knl_cray" plugin.
+.IP
 
 .TP
 \fBDefaultMCDRAM\fR
@@ -125,6 +148,7 @@ the node does not specify a desired MCDRAM mode.
 The value can include one of the possible values identified with the
 \fBAllowMCDRAM\fR configuration parameter above.
 The default value is "cache".
+.IP
 
 .TP
 \fBDefaultNUMA\fR
@@ -134,12 +158,14 @@ the node does not specify a desired NUMA mode.
 The value can include one of the possible values identified with the
 \fBAllowNUMA\fR configuration parameter above.
 The default value is "a2a".
+.IP
 
 .TP
 \fBForce\fR
 If set to a non\-zero value then load the node_features/generic plugin even
 on non\-KNL nodes.
 Used primarily for testing purposes.
+.IP
 
 .TP
 \fBLogFile\fR
@@ -147,6 +173,7 @@ Fully qualified path to a log file.
 The default value is SlurmctldLogFile from the slurm.conf configuration file.
 This is option is used only by the campc_suspend and campc_resume programs
 (which power down and reboot nodes in the appropriate configuration).
+.IP
 
 .TP
 \fBMcPath\fR
@@ -158,6 +185,7 @@ If such errors are detected, the node will be set to a DOWN state and the
 slurmd daemon will shutdown.
 The default value is "/sys/devices/system/edac/mc".
 See also \fBUmeCheckInterval\fR.
+.IP
 
 .TP
 \fBNodeRebootWeight\fR
@@ -165,6 +193,7 @@ If a compute node requires a reboot to be usable for a pending job, then reset
 the node's weight to the specified value.
 The default value is 4,294,967,294 (0xfffffffe).
 See also "Weight" in the node configuration specification of slurm.conf.
+.IP
 
 .TP
 \fBNumaCpuBind\fR
@@ -177,6 +206,7 @@ separated list.
 By default changes to a node's NUMA mode will not effect that node's CpuBind
 mode.
 See the example below.
+.IP
 
 .TP
 \fBSyscfgPath\fR
@@ -185,6 +215,7 @@ KNL configuration by viewing BIOS settings.
 If not defined, the current BIOS setting will not be available.
 The default value is "/usr/bin/syscfg".
 This parameter is used only by the "knl_generic" plugin.
+.IP
 
 .TP
 \fBSyscfgTimeout\fR
@@ -192,6 +223,7 @@ Timeout for \fBsyscfg\fR program in milliseconds.
 Default value is 1000 milliseconds.
 For Dell KNL systems, experience has shown that a higher value of 10000
 milliseconds is more appropriate.
+.IP
 
 .TP
 \fBSystemType\fR
@@ -199,6 +231,7 @@ Used to distinguish the flavor of knl we are dealing with.
 Possible options are "Dell" and "Intel".
 The default value is "Intel".
 This parameter is used only by the "knl_generic" plugin.
+.IP
 
 .TP
 \fBUmeCheckInterval\fR
@@ -207,6 +240,7 @@ If such errors are detected, the node will be set to a DOWN state and the
 slurmd daemon will shutdown.
 The default value is 0 (disabled).
 See also \fBMcPath\fR.
+.IP
 
 .TP
 \fBValidateMode\fR
@@ -215,31 +249,22 @@ NUMA modes from the slurm.conf file. If the actual modes do not match configured
 values the node will be set to a DOWN state. Every KNL nodes MCDRAM and NUMA
 states must both be listed in the slurm.conf file.
 This parameter is used only by the "knl_cray" plugin.
+.IP
 
 .SH "EXAMPLE"
-.LP
-.br
+.nf
 ###################################################################
-.br
 # knl_cray.conf
-.br
 # Slurm configuration file for Intel Knights Landing on Cray system
-.br
 ###################################################################
-.br
 CapmcPath=/opt/cray/capmc/default/bin/capmc
-.br
 CapmcTimeout=6000
-.br
 DefaultMCDRAM=flat
-.br
 DefaultNUMA=a2a
-.br
 NumaCpuBind=a2a=core;snc2=thread;snc4=thread
-.br
 LogFile=/var/tmp/slurm_node_feature.log
-.br
 SyscfgPath=/usr/sbin/syscfg
+.fi
 
 .SH "COPYING"
 Copyright (C) 2015\-2021 SchedMD LLC.
