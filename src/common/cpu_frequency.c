@@ -706,11 +706,21 @@ _cpu_freq_set_gov(stepd_step_rec_t *job, int cpuidx, char* gov )
 	char path[PATH_MAX];
 	FILE *fp;
 	int fd, rc;
+	uint32_t jobid;
+
+#ifdef HAVE_NATIVE_CRAY
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
+	else
+		jobid = job->step_id.job_id;
+#else
+	jobid = job->step_id.job_id;
+#endif
 
 	rc = SLURM_SUCCESS;
 	snprintf(path, sizeof(path), PATH_TO_CPU
 		 "cpu%u/cpufreq/scaling_governor", cpuidx);
-	fd = _set_cpu_owner_lock(cpuidx, job->step_id.job_id);
+	fd = _set_cpu_owner_lock(cpuidx, jobid);
 	if ((fp = fopen(path, "w"))) {
 		fputs(gov, fp);
 		fputc('\n', fp);
@@ -785,11 +795,21 @@ _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
 	FILE *fp;
 	int fd, rc;
 	uint32_t newfreq;
+	uint32_t jobid;
+
+#ifdef HAVE_NATIVE_CRAY
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
+	else
+		jobid = job->step_id.job_id;
+#else
+	jobid = job->step_id.job_id;
+#endif
 
 	rc = SLURM_SUCCESS;
 	snprintf(path, sizeof(path), PATH_TO_CPU
 		 "cpu%u/cpufreq/%s", cpx, option);
-	fd = _set_cpu_owner_lock(cpx, job->step_id.job_id);
+	fd = _set_cpu_owner_lock(cpx, jobid);
 	if ((fp = fopen(path, "w"))) {
 		fprintf(fp, "%u\n", freq);
 		fclose(fp);
