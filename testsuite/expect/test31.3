@@ -116,12 +116,10 @@ if {[llength $test_node] != 1} {
 	check_epilog "CUDA_VISIBLE_DEVICES="
 	check_prolog "GPU_DEVICE_ORDINAL="
 	check_epilog "GPU_DEVICE_ORDINAL="
-	# TODO: Check for SLURM_JOB_GPUS once patch 8596 19.05 v1 lands
-	# check_prolog "SLURM_JOB_GPUS="
-	# check_epilog "SLURM_JOB_GPUS="
-	# TODO: Check for ROCR_VISIBLE_DEVICES once patch 8596 20.11 v1 lands
-	# check_prolog "ROCR_VISIBLE_DEVICES="
-	# check_epilog "ROCR_VISIBLE_DEVICES="
+	check_prolog "SLURM_JOB_GPUS="
+	check_epilog "SLURM_JOB_GPUS="
+	check_prolog "ROCR_VISIBLE_DEVICES="
+	check_epilog "ROCR_VISIBLE_DEVICES="
 }
 
 set test_node [get_nodes_by_request "--gres=mps:1 -t1"]
