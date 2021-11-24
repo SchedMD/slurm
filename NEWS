@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     already booting node.
  -- Fix updating SLURM_NODE_ALIASES for jobs packed onto powering up nodes.
  -- Cray - Fix issues with starting hetjobs.
+ -- auth/jwks - Print fatal() message when jwks is configured but file could
+    not be opened.
 
 * Changes in Slurm 21.08.4
 ==========================
