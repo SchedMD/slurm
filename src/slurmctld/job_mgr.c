@@ -9358,6 +9358,9 @@ void job_time_limit(void)
 		    (job_ptr->resv_ptr->end_time + resv_over_run) < time(NULL)){
 			last_job_update = now;
 			info("Reservation ended for %pJ", job_ptr);
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc, "Reservation %s, which this job was running under, has ended",
+				   job_ptr->resv_ptr->name);
 			_job_timed_out(job_ptr, false);
 			job_ptr->state_reason = FAIL_TIMEOUT;
 			xfree(job_ptr->state_desc);

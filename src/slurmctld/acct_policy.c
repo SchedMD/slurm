@@ -2571,6 +2571,11 @@ static int _qos_job_time_out(job_record_t *job_ptr,
 		     qos_ptr->grp_tres_mins_ctld[tres_pos],
 		     tres_usage_mins[tres_pos]);
 		job_ptr->state_reason = FAIL_TIMEOUT;
+		xfree(job_ptr->state_desc);
+		xstrfmtcat(job_ptr->state_desc, "Job is at or exceeds QOS %s's group max TRES(%s) minutes of %"PRIu64" with %"PRIu64,
+			   qos_ptr->name, assoc_mgr_tres_name_array[tres_pos],
+			   qos_ptr->grp_tres_mins_ctld[tres_pos],
+			   tres_usage_mins[tres_pos]);
 		rc = false;
 		goto end_it;
 		break;
@@ -2594,6 +2599,9 @@ static int _qos_job_time_out(job_record_t *job_ptr,
 			     job_ptr, qos_ptr->name,
 			     qos_ptr->grp_wall, wall_mins);
 			job_ptr->state_reason = FAIL_TIMEOUT;
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc, "Job is at or exceeds QOS %s's group wall limit of %u with %u",
+				   qos_ptr->name, qos_ptr->grp_wall, wall_mins);
 			rc = false;
 			goto end_it;
 		}
@@ -2615,6 +2623,11 @@ static int _qos_job_time_out(job_record_t *job_ptr,
 		     qos_ptr->max_tres_mins_pj_ctld[tres_pos],
 		     job_tres_usage_mins[tres_pos]);
 		job_ptr->state_reason = FAIL_TIMEOUT;
+		xfree(job_ptr->state_desc);
+		xstrfmtcat(job_ptr->state_desc, "Job is at or exceeds QOS %s's max TRES(%s) minutes of %"PRIu64" with %"PRIu64,
+			   qos_ptr->name, assoc_mgr_tres_name_array[tres_pos],
+			   qos_ptr->max_tres_mins_pj_ctld[tres_pos],
+			   job_tres_usage_mins[tres_pos]);
 		rc = false;
 		goto end_it;
 		break;
@@ -4353,6 +4366,12 @@ extern bool acct_policy_job_time_out(job_record_t *job_ptr)
 			     assoc->grp_tres_mins_ctld[tres_pos],
 			     tres_usage_mins[tres_pos]);
 			job_ptr->state_reason = FAIL_TIMEOUT;
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc, "Job is at or exceeds association (acc=%s/user=%s/part=%s) group max TRES(%s) minutes of %"PRIu64" with %"PRIu64,
+				   assoc->acct, assoc->user, assoc->partition,
+				   assoc_mgr_tres_name_array[tres_pos],
+				   assoc->grp_tres_mins_ctld[tres_pos],
+				   tres_usage_mins[tres_pos]);
 			goto job_failed;
 			break;
 		case TRES_USAGE_REQ_EXCEEDS_LIMIT:
@@ -4371,6 +4390,10 @@ extern bool acct_policy_job_time_out(job_record_t *job_ptr)
 			     job_ptr, assoc->id, assoc->grp_wall,
 			     wall_mins, assoc->acct);
 			job_ptr->state_reason = FAIL_TIMEOUT;
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc, "Job is at or exceeds association (acc=%s/user=%s/part=%s) group wall limit %u with %u",
+				   assoc->acct, assoc->user, assoc->partition,
+				   assoc->grp_wall, wall_mins);
 			break;
 		}
 
@@ -4394,6 +4417,12 @@ extern bool acct_policy_job_time_out(job_record_t *job_ptr)
 			     assoc->max_tres_mins_ctld[tres_pos],
 			     job_tres_usage_mins[tres_pos]);
 			job_ptr->state_reason = FAIL_TIMEOUT;
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc, "Job is at or exceeds association (acc=%s/user=%s/part=%s) max TRES(%s) minutes of %"PRIu64" with %"PRIu64,
+				   assoc->acct, assoc->user, assoc->partition,
+				   assoc_mgr_tres_name_array[tres_pos],
+				   assoc->max_tres_mins_ctld[tres_pos],
+				   job_tres_usage_mins[tres_pos]);
 			goto job_failed;
 			break;
 		case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
