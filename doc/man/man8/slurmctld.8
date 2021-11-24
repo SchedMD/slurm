@@ -10,8 +10,8 @@ all other Slurm daemons and resources, accepts work (jobs), and allocates
 resources to those jobs. Given the critical functionality of \fBslurmctld\fR,
 there may be a backup server to assume these functions in the event that
 the primary server fails.
-.TP
-OPTIONS
+
+.SH "OPTIONS"
 
 .TP
 \fB\-c\fR
@@ -22,37 +22,51 @@ jobs will be preserved along with node \fIState\fR of DOWN, DRAINED
 and DRAINING nodes and the associated \fIReason\fR field for those nodes.
 NOTE: It is rare you would ever want to use this in production as all
 jobs will be killed.
+.IP
 
 .TP
 \fB\-d\fR
 Run \fBslurmctld\fR in the background.
+.IP
+
 .TP
 \fB\-D\fR
 Run \fBslurmctld\fR in the foreground with logging copied to stdout.
+.IP
+
 .TP
 \fB\-f <file>\fR
 Read configuration from the specified file. See \fBNOTES\fR below.
+.IP
+
 .TP
 \fB\-h\fR
 Help; print a brief summary of command options.
+.IP
+
 .TP
 \fB\-i\fR
 Ignore errors found while reading in state files on startup.
 Warning: Use of this option will mean losing the data that wasn't recovered
 from the state files.
+.IP
+
 .TP
 \fB\-L <file>\fR
 Write log messages to the specified file.
+.IP
 
 .TP
 \fB\-n <value>\fR
 Set the daemon's nice value to the specified value, typically a negative number.
+.IP
 
 .TP
 \fB\-r\fR
 Recover partial state from last checkpoint: jobs and node DOWN/DRAIN
 state and reason information state.  No partition state is recovered.
 This is the default action.
+.IP
 
 .TP
 \fB\-R\fR
@@ -61,27 +75,34 @@ Without this option, previously running jobs will be preserved along
 with node \fIState\fR of DOWN, DRAINED and DRAINING nodes and the associated
 \fIReason\fR field for those nodes. No other node or partition state will
 be preserved.
+.IP
 
 .TP
 \fB\-s\fR
 Change working directory of slurmctld to SlurmctldLogFile path if possible, or
 to SlurmStateSaveLocation otherwise. If both of them fail it will fallback to
 /var/tmp.
+.IP
 
 .TP
 \fB\-v\fR
 Verbose operation. Multiple \fB\-v\fR's increase verbosity.
+.IP
+
 .TP
 \fB\-V\fR
 Print version information and exit.
+.IP
 
 .SH "ENVIRONMENT VARIABLES"
 The following environment variables can be used to override settings
 compiled into slurmctld.
+
 .TP 20
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file. This is overridden by
 explicitly naming a configuration file on the command line.
+.IP
 
 .SH "CORE FILE LOCATION"
 If slurmctld is started with the \fB\-D\fR option then the core file will be
@@ -96,24 +117,34 @@ The command "scontrol abort" can be used to abort the slurmctld daemon and
 generate a core file.
 
 .SH "SIGNALS"
+
 .TP
 \fBSIGTERM SIGINT\fR
 \fBslurmctld\fR will shutdown cleanly, saving its current state to the state
 save directory.
+.IP
+
 .TP
 \fBSIGABRT\fR
 \fBslurmctld\fR will shutdown cleanly, saving its current state, and perform a
 core dump.
+.IP
+
 .TP
 \fBSIGHUP\fR
 Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
+.IP
+
 .TP
 \fBSIGUSR2\fR
 Reread the log level from the configs, and then reopen the log file.  This
 should be used when setting up \fBlogrotate\fR(8).
+.IP
+
 .TP
 \fBSIGCHLD SIGUSR1 SIGTSTP SIGXCPU SIGQUIT SIGPIPE SIGALRM\fR
 These signals are explicitly ignored.
+.IP
 
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmctld\fR specific
