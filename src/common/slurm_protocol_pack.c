@@ -2399,6 +2399,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, buf_t *buffer, uint16_t protocol_versio
 	xassert(msg);
 
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		packstr(msg->details, buffer);
 		gres_job_alloc_pack(msg->job_gres_info, buffer,
 				    protocol_version);
 		pack_step_id(&msg->step_id, buffer, protocol_version);
@@ -2461,6 +2462,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, buf_t *buffer,
 	*msg = tmp_ptr;
 
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&tmp_ptr->details, &uint32_tmp, buffer);
 		if (gres_job_alloc_unpack(&tmp_ptr->job_gres_info,
 					  buffer, protocol_version))
 			goto unpack_error;
