@@ -163,7 +163,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		}
 	}
 	slurm_mutex_unlock(&route_lock);
-	*sp_hl = (hostlist_t*) xmalloc(switch_record_cnt * sizeof(hostlist_t));
+	*sp_hl = xcalloc(switch_record_cnt, sizeof(hostlist_t));
 	/* Only acquire the slurmctld lock if running as the slurmctld. */
 	if (run_in_slurmctld)
 		lock_slurmctld(node_read_lock);
