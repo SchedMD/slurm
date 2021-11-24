@@ -182,8 +182,6 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		step_req->flags |= SSF_EXCLUSIVE;
 	if (opt_local->overcommit)
 		step_req->flags |= SSF_OVERCOMMIT;
-	if (!srun_opt->exact)
-		step_req->flags |= SSF_WHOLE;
 	if (opt_local->no_kill)
 		step_req->flags |= SSF_NO_KILL;
 	if (srun_opt->interactive) {
@@ -404,6 +402,13 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->user_id = opt_local->uid;
 
 	step_req->container = xstrdup(opt_local->container);
+
+	/*
+	 * This must be handled *after* we potentially set srun_opt->exact
+	 * above.
+	 */
+	if (!srun_opt->exact)
+		step_req->flags |= SSF_WHOLE;
 
 	return step_req;
 }

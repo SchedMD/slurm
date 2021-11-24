@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix writing to Xauthority files on root_squash NFS exports, which was
     preventing X11 forwarding from completing setup.
  -- Fix regression in 21.08.0rc1 that broke --gres=none.
+ -- Fix srun --cpus-per-task and --threads-per-core not implicitly setting
+    --exact. It was meant to work this way in 21.08.
 
 * Changes in Slurm 21.08.4
 ==========================
