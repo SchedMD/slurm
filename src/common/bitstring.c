@@ -1365,6 +1365,9 @@ static char *_bit_fmt_hexmask(bitstr_t *bitmap, bool trim_output)
 	else
 		bitsize = bit_size(bitmap);
 
+	if (!bitsize)
+		return xstrdup("0x0");
+
 	/* 4 bits per ASCII '0'-'F' */
 	bitoff_t charsize = (bitsize + 3) / 4;
 
