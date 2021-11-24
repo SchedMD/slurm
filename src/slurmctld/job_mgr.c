@@ -14925,6 +14925,7 @@ static void _send_job_kill(job_record_t *job_ptr)
 	kill_job->nodes     = xstrdup(job_ptr->nodes);
 	kill_job->time      = time(NULL);
 	kill_job->start_time = job_ptr->start_time;
+	kill_job->details = xstrdup(job_ptr->state_desc);
 	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
 		job_ptr->select_jobinfo);
 	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
@@ -15331,6 +15332,7 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 						job_ptr->nodes);
 		kill_req->het_job_id	= job_ptr->het_job_id;
 		kill_req->start_time = job_ptr->start_time;
+		kill_req->details = xstrdup(job_ptr->state_desc);
 		kill_req->select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 		kill_req->spank_job_env = xduparray(job_ptr->spank_job_env_size,
@@ -15423,6 +15425,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 		kill_req->nodes		= bitmap2node_name(tmp_node_bitmap);
 		kill_req->het_job_id	= job_ptr->het_job_id;
 		kill_req->start_time	= job_ptr->start_time;
+		kill_req->details = xstrdup(job_ptr->state_desc);
 		kill_req->select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 		kill_req->spank_job_env = xduparray(job_ptr->spank_job_env_size,
@@ -15462,6 +15465,7 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	kill_req->step_id.step_het_comp = NO_VAL;
 	kill_req->time          = time(NULL);
 	kill_req->start_time	= job_ptr->start_time;
+	kill_req->details = xstrdup(job_ptr->state_desc);
 	kill_req->nodes		= xstrdup(node_ptr->name);
 	kill_req->select_jobinfo =
 		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);

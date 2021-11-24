@@ -4960,6 +4960,7 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 	kill_step->nodes     = xstrdup(job_ptr->nodes);
 	kill_step->time      = now;
 	kill_step->start_time = job_ptr->start_time;
+	kill_step->details = xstrdup(job_ptr->state_desc);
 	kill_step->select_jobinfo = select_g_select_jobinfo_copy(
 		job_ptr->select_jobinfo);
 
