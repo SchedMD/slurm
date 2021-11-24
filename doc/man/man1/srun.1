@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "November 2021" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "December 2021" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1115,8 +1115,12 @@ available to initiate the job step, it will be deferred. This can
 be thought of as providing a mechanism for resource management to the job
 within its allocation (\fB\-\-exact\fR implied).
 
-The exclusive allocation of CPUs applies to job steps by default. In order to
-share the resources use the \fB\-\-overlap\fR option.
+The exclusive allocation of CPUs applies to job steps by default, but \-\-exact
+is \fBNOT\fR the default. In other words, the default behavior is this: job
+steps will not share CPUs, but job steps will be allocated all CPUs available
+to the job on all nodes allocated to the steps.
+
+In order to share the resources use the \fB\-\-overlap\fR option.
 
 See \fBEXAMPLE\fR below.
 .IP
