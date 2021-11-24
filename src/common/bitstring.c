@@ -1372,6 +1372,7 @@ static char *_bit_fmt_hexmask(bitstr_t *bitmap, bool trim_output)
 
 	retstr[0] = '0';
 	retstr[1] = 'x';
+	retstr[2] = '0';	/* ensure 0x0 is printed if bitsize is 0 */
 	retstr[charsize + 2] = '\0';
 	ptr = &retstr[charsize + 1];
 	for (i=0; i < bitsize;) {
