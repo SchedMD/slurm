@@ -190,72 +190,72 @@ The v0.0.35 plugin has now been deprecated.
 <h4>Mark job environment as required</h4>
 <table class="tchange">
 <tr class="trchange">
-       <td class="tdfield">new path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_job_properties".required</td>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_properties".required</td>
 </tr>
 </table>
 
 <h4>Correct preemption_mode type to list of strings</h4>
 <table class="tchange">
 <tr class="trchange">
-       <td class="tdfield">modify path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_partition".properties.preemption_mode</td>
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_partition".properties.preemption_mode</td>
 </tr>
 </table>
 
 <h4>Set UNIX timestamps to int64 instead of string</h4>
 <table class="tchange">
 <tr class="trchange">
-       <td class="tdfield">modify path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.accrue_time</td>
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.accrue_time</td>
 </tr>
 <tr class="trchange">
-       <td class="tdfield">modify path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.eligible_time</td>
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.eligible_time</td>
 </tr>
 <tr class="trchange">
-       <td class="tdfield">modify path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.end_time</td>
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.end_time</td>
 </tr>
 <tr class="trchange">
-       <td class="tdfield">modify path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.preempt_time</td>
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.preempt_time</td>
 </tr>
 <tr class="trchange">
-       <td class="tdfield">modify path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.pre_sus_time</td>
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.pre_sus_time</td>
 </tr>
 <tr class="trchange">
-       <td class="tdfield">modify path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.resize_time</td>
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.resize_time</td>
 </tr>
 </table>
 
 <h4>Add new fields to node properties</h4>
 <table class="tchange">
 <tr class="trchange">
-       <td class="tdfield">add path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_node".properties.tres_used</td>
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.tres_used</td>
 </tr>
 <tr class="trchange">
-       <td class="tdfield">add path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_node".properties.tres_weighted</td>
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.tres_weighted</td>
 </tr>
 <tr class="trchange">
-       <td class="tdfield">add path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_node".properties.alloc_cpus</td>
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.alloc_cpus</td>
 </tr>
 <tr class="trchange">
-       <td class="tdfield">add path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_node".properties.idle_cpus</td>
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.idle_cpus</td>
 </tr>
 <tr class="trchange">
-       <td class="tdfield">add path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_node".properties.alloc_memory</td>
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.alloc_memory</td>
 </tr>
 <tr class="trchange">
-       <td class="tdfield">add path</td>
-       <td class="tdchange">.components.schemas."v0.0.37_node".properties.partitions</td>
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.partitions</td>
 </tr>
 </table>
 
