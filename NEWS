@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill - fix job_queue_rec_t memory leak.
  -- Fix magnetic reservation logic in both main and backfill schedulers.
  -- job_container/tmpfs - fix memory leak when using InitScript.
+ -- slurmrestd / openapi - fix memory leaks.
 
 * Changes in Slurm 21.08.5
 ==========================

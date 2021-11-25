@@ -574,6 +574,7 @@ static int _send_reject(const http_parser *parser,
 
 	/* Ignore response since this connection is already dead */
 	(void) send_http_response(&args);
+	FREE_NULL_LIST(args.headers);
 
 	if (request->connection_close ||
 	    ((parser->http_major == 1) && (parser->http_minor >= 1)) ||

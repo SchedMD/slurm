@@ -411,6 +411,7 @@ static int _dump_jobs(const char *context_id, http_request_method_t method,
 
 	FREE_NULL_LIST(args.tres_list);
 	FREE_NULL_LIST(args.qos_list);
+	FREE_NULL_LIST(args.assoc_list);
 	FREE_NULL_LIST(jobs);
 
 	return rc;
@@ -469,9 +470,10 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 		rc = ESLURM_REST_INVALID_QUERY;
 
 	if (!rc)
-		return _dump_jobs(context_id, method, parameters, query, tag,
-				  resp, auth, errors, &job_cond);
+		rc = _dump_jobs(context_id, method, parameters, query, tag,
+				resp, auth, errors, &job_cond);
 
+	FREE_NULL_LIST(job_cond.step_list);
 	return rc;
 }
 
