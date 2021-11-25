@@ -311,7 +311,7 @@ The v0.0.35 plugin has now been removed.
 </tr>
 </table>
 
-<h2>Slurm 21.08.0pre1</h2>
+<h2>Slurm 21.08.0</h2>
 
 <p>All of the OpenAPI plugins have moved from "src/slurmrestd/plugins/openapi/"
 to "src/plugins/openapi/".</p>
