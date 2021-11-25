@@ -56,6 +56,18 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h4>Add POST method for /associations<h4>
+<table class="tchange">
+<tr>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/associations/".post</td>
+</tr>
+<tr>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_response_associations"</td>
+</tr>
+</table>
+
 <h4>Correct placement of step TRES</h4>
 
 <table class="tchange">
@@ -71,52 +83,6 @@ paths in a single quote string to avoid shell replacements.</p>
 
 <h3>openapi/v0.0.38 (src/plugins/openapi/v0.0.38/openapi.json)</h3>
 
-<h4>Allow strings for JobIds instead of only numerical JobIds.</h4>
-<table class="tchange">
-<tr class="trchange">
-	<td class="tdfield">Change job_id parameter to string</td>
-	<td class="tdchange">
-		<ul>
-			<li>.paths."/job/{job_id}".get.parameters[].schema</li>
-			<li>.paths."/job/{job_id}".post.parameters[].schema</li>
-			<li>.paths."/job/{job_id}".delete.parameters[].schema</li>
-		</ul>
-	</td>
-</tr>
-</table>
-
-<h2>Slurm 21.08.3</h2>
-
-<h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>
-
-<h4>Allow strings for JobIds instead of only numerical JobIds.</h4>
-<table class="tchange">
-<tr class="trchange">
-	<td class="tdfield">Change job_id parameter to string</td>
-	<td class="tdchange">
-		<ul>
-			<li>.paths."/job/{job_id}".get.parameters[].schema</li>
-			<li>.paths."/job/{job_id}".post.parameters[].schema</li>
-			<li>.paths."/job/{job_id}".delete.parameters[].schema</li>
-		</ul>
-	</td>
-</tr>
-</table>
-
-<h4>Add POST method for /associations<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">new path</td>
-	<td class="tdchange">.paths."/associations/".post</td>
-</tr>
-<tr>
-	<td class="tdfield">new path</td>
-	<td class="tdchange">.components.schemas."dbv0.0.38_response_associations"</td>
-</tr>
-</table>
-
-<h3>openapi/v0.0.38 (src/plugins/openapi/v0.0.38/openapi.json)</h3>
-
 <h4>add plugin</h4>
 <table class="tchange">
 <tr class="trchange">
@@ -125,6 +91,20 @@ paths in a single quote string to avoid shell replacements.</p>
 		<ul>
 			<li>clone of existing v0.0.37 openapi plugin</li>
 			<li>all paths renamed from v0.0.37 to v0.0.38</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Allow strings for JobIds instead of only numerical JobIds.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Change job_id parameter to string</td>
+	<td class="tdchange">
+		<ul>
+			<li>.paths."/job/{job_id}".get.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".post.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".delete.parameters[].schema</li>
 		</ul>
 	</td>
 </tr>
@@ -283,9 +263,54 @@ paths in a single quote string to avoid shell replacements.</p>
 <h4>Removal notice</h4>
 The v0.0.35 plugin has now been removed.
 
+<h2>Slurm 21.08.3</h2>
 
-=======
->>>>>>> origin/slurm-21.08
+<h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>
+
+<h4>Allow strings for JobIds instead of only numerical JobIds.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Change job_id parameter to string</td>
+	<td class="tdchange">
+		<ul>
+			<li>.paths."/job/{job_id}".get.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".post.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".delete.parameters[].schema</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
+
+<h4>Correct placement of step TRES</h4>
+
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_job_step".properties.step.properties.tres</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_job_step".properties.tres</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.36 (src/plugins/openapi/dbv0.0.36/openapi.json)</h3>
+
+<h4>Correct placement of step TRES</h4>
+
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.36_job_step".properties.step.properties.tres</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.36_job_step".properties.tres</td>
+</tr>
+</table>
+
 <h2>Slurm 21.08.0pre1</h2>
 
 <p>All of the OpenAPI plugins have moved from "src/slurmrestd/plugins/openapi/"
@@ -802,6 +827,6 @@ The v0.0.35 plugin has now been deprecated.
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 2 March 2021</p>
+<p style="text-align:center;">Last modified 25 November 2021</p>
 
 <!--#include virtual="footer.txt"-->
