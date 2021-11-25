@@ -39,7 +39,7 @@ guide to where changes have taken place in the OpenAPI specifications.</p>
 href="https://stedolan.github.io/jq/">jq</a>. Make sure to always place the
 paths in a single quote string to avoid shell replacements.</p>
 
-<h2>Slurm 21.05.0pre1</h2>
+<h2>Slurm 22.05.0</h2>
 
 <h3>openapi/dbv0.0.38 (src/plugins/openapi/dbv0.0.38/openapi.json)</h3>
 
