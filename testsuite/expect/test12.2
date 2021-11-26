@@ -106,12 +106,12 @@ proc _get_mem {prog} {
 	set mem_used [scale_to_ks $mem_used ""]
 	set ave_used [scale_to_ks $ave_used ""]
 
-	dict set subtest cond [tolerance $mem_size $mem_used "+$max_mem_error"]
+	dict set subtest cond [tolerance $mem_size $mem_used $max_mem_error]
 	dict set subtest desc "$prog_base should provide MaxRSS close and bigger than $mem_size"
 	dict set subtest diag "$mem_used not in tolerance values of $mem_size"
 	lappend result $subtest
 
-	dict set subtest cond [expr {$mem_used <= ($ave_used * $num_tasks)}]
+	dict set subtest cond [tolerance $mem_used [expr $ave_used * $num_tasks] $max_mem_error]
 	dict set subtest desc "$prog_base should provide MaxrRSS <= AveRSS * num_tasks"
 	dict set subtest diag "$mem_used > $ave_used * $num_tasks"
 	lappend result $subtest
