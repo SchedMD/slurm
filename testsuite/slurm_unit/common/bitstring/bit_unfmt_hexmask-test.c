@@ -82,6 +82,37 @@ START_TEST(good_test)
 	ck_assert(!xstrcmp(out_str, "0x000000000000ABCD"));
 	xfree(out_str);
 
+	bit_clear_all(bit_str);
+	rc = bit_unfmt_hexmask(bit_str, "0x1248AbCd");
+	ck_assert(rc == 0);
+	out_str = bit_fmt_hexmask(bit_str);
+	ck_assert(!xstrcmp(out_str, "0x000000001248ABCD"));
+	xfree(out_str);
+
+	bit_clear_all(bit_str);
+	rc = bit_unfmt_hexmask(bit_str, "0x123AbCd");
+	ck_assert(rc == 0);
+	out_str = bit_fmt_hexmask(bit_str);
+	ck_assert(!xstrcmp(out_str, "0x000000000123ABCD"));
+	xfree(out_str);
+
+	bit_clear_all(bit_str);
+	rc = bit_unfmt_hexmask(bit_str, "0x5555555555155");
+	ck_assert(rc == 0);
+	out_str = bit_fmt_hexmask(bit_str);
+	ck_assert(!xstrcmp(out_str, "0x0005555555555155"));
+	xfree(out_str);
+
+	bit_free(bit_str);
+	bit_str = bit_alloc(65);
+
+	bit_clear_all(bit_str);
+	rc = bit_unfmt_hexmask(bit_str, "0x10000000000000002");
+	ck_assert(rc == 0);
+	out_str = bit_fmt_hexmask(bit_str);
+	ck_assert(!xstrcmp(out_str, "0x10000000000000002"));
+	xfree(out_str);
+
 	bit_free(bit_str);
 }
 END_TEST
