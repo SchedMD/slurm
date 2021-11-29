@@ -1600,7 +1600,7 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 			}
 		}
 		curpos--;
-		bit_index+=4;
+		bit_index += 4;
 	}
 	return rc;
 }
