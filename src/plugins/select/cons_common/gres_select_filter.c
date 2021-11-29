@@ -646,7 +646,11 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		}
 
 		if (cpus_per_gres) {
-			max_gres = *avail_cpus / cpus_per_gres;
+			if (max_gres)
+				max_gres = MIN((*avail_cpus / cpus_per_gres),
+					       max_gres);
+			else
+				max_gres = *avail_cpus / cpus_per_gres;
 			cnt_avail_total = MIN(cnt_avail_total, max_gres);
 		}
 		if ((cnt_avail_total == 0) ||
