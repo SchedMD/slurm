@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Cray - Fix issues with starting hetjobs.
  -- auth/jwks - Print fatal() message when jwks is configured but file could
     not be opened.
+ -- If sacctmgr has an association with an unknown qos as the default qos
+    print 'UNKN-###' instead of leaving a blank name.
 
 * Changes in Slurm 21.08.4
 ==========================
