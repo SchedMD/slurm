@@ -1115,7 +1115,8 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
  */
 char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 {
-	int32_t count = 0, word;
+	int32_t word;
+	char *comma = "";
 	bitoff_t bit;
 
 	_assert_bitstr_valid(b);
@@ -1132,20 +1133,19 @@ char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 			int32_t ret, size;
 			bitoff_t start = bit;
 
-			count++;
 			while (bit+1 < _bitstr_bits(b) && bit_test(b, bit+1)) {
 				bit++;
-				count++;
 			}
 			size = strlen(str);
 			if (bit == start) {	/* add single bit position */
 				ret = snprintf(str + size, len - size,
-				               "%"BITSTR_FMT",", start);
+				               "%s%"BITSTR_FMT"", comma, start);
 			} else { 		/* add bit position range */
 				ret = snprintf(str + size, len - size,
-				               "%"BITSTR_FMT"-%"BITSTR_FMT",",
-					       start, bit);
+				               "%s%"BITSTR_FMT"-%"BITSTR_FMT"",
+					       comma, start, bit);
 			}
+			comma = ",";
 
 			xassert(ret != -1);
 			if (ret == -1)
@@ -1153,8 +1153,6 @@ char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 		}
 		bit++;
 	}
-	if (count > 0)
-		str[strlen(str) - 1] = '\0'; 	/* zap trailing comma */
 	return str;
 }
 
