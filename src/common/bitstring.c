@@ -1519,7 +1519,7 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 	int32_t bit_index = 0, len;
 	int rc = 0;
 	const char *curpos;
-	int32_t current;
+	bitstr_t current;
 	bitoff_t bitsize;
 
 	if (!bitmap || !str)
@@ -1535,7 +1535,7 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 	}
 
 	while (curpos >= str) {
-		current = (int32_t) *curpos;
+		current = (bitoff_t) *curpos;
 		if (isxdigit(current)) {	/* valid hex digit */
 			if (isdigit(current)) {
 				current -= '0';
@@ -1549,6 +1549,24 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 			break;
 		}
 
+		if (bit_index + 3 < bitsize && !(bit_index % 4)) {
+#ifdef SLURM_BIGENDIAN
+			current = (((current & 1) << 3) |
+				   ((current & 2) << 1) |
+				   ((current & 4) >> 1) |
+				   ((current & 8) >> 3));
+			current = (current << ((BITSTR_MAXPOS -
+					        (bit_index & BITSTR_MAXPOS)) -
+					       3));
+			bitmap[_bit_word(bit_index)] |= current;
+#else
+			bitmap[_bit_word(bit_index)] |=
+				(current & 0xf) << (bit_index & BITSTR_MAXPOS);
+#endif
+			curpos--;
+			bit_index += 4;
+			continue;
+		}
 		if (current & 1) {
 			if (bit_index < bitsize)
 				bit_set(bitmap, bit_index);
