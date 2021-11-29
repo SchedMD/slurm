@@ -26,8 +26,8 @@
 source ./globals
 
 proc dist_good {opt regex match} {
-	global test_id srun number
-	set cmd "$srun -Jtest$test_id -t1 -n1 -m$opt env"
+	global test_name srun number
+	set cmd "$srun -J$test_name -t1 -n1 -m$opt env"
 
 	set matches 0
 	log_user 0
@@ -50,8 +50,8 @@ proc dist_good {opt regex match} {
 
 
 proc dist_bad {opt} {
-	global test_id srun number
-	set cmd "$srun -Jtest$test_id -t1 -n1 -m$opt env"
+	global test_name srun number
+	set cmd "$srun -J$test_name -t1 -n1 -m$opt env"
 
 	set matches 0
 	log_user 1

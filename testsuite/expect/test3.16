@@ -26,9 +26,9 @@
 ############################################################################
 source ./globals
 
-set lic_a           "lic_a_test$test_id"
-set lic_b           "lic_b_test$test_id"
-set lic_c           "lic_c_test$test_id"
+set lic_a           "lic_a_$test_name"
+set lic_b           "lic_b_$test_name"
+set lic_c           "lic_c_$test_name"
 
 set cluster [get_config_param "ClusterName"]
 

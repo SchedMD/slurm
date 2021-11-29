@@ -60,7 +60,7 @@ if {$craynetwork_count > 1} {
 } else {
 	set gres_target $craynetwork_count
 }
-set srun_pid [spawn $srun --gres=craynetwork:$gres_target -t1 -J "test$test_id" -l $file_in]
+set srun_pid [spawn $srun --gres=craynetwork:$gres_target -t1 -J $test_name -l $file_in]
 expect {
 	-re "craynetwork.CNT:($number)" {
 		incr match $expect_out(1,string)
@@ -94,7 +94,7 @@ if {0} {
 		set gres_target $craynetwork_count
 		set node_target 1
 	}
-	set srun_pid [spawn $srun --tres-per-job=craynetwork:$gres_target -N $node_target -t1 -J "test$test_id" -l $file_in]
+	set srun_pid [spawn $srun --tres-per-job=craynetwork:$gres_target -N $node_target -t1 -J $test_name -l $file_in]
 	expect {
 		-re "NumNodes=($number)" {
 			set node_cnt $expect_out(1,string)

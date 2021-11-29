@@ -31,17 +31,16 @@ set number_commas  "\[0-9_,\]+"
 set timeout $max_job_delay
 
 proc run_gpu_per_job { cpus_per_gpu } {
-	global file_in number srun test_id timeout
+	global file_in number srun test_name timeout
 
 	set cpu_count 0
-	set srun_pid [spawn $srun --gpus=1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 $file_in]
+	spawn $srun --gpus=1 --cpus-per-gpu=$cpus_per_gpu -J $test_name -t1 $file_in
 	expect {
 		-re "NumCPUs=($number)" {
 			set cpu_count $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {
@@ -55,17 +54,16 @@ proc run_gpu_per_job { cpus_per_gpu } {
 }
 
 proc run_gpu_per_node { cpus_per_gpu } {
-	global file_in number srun test_id timeout
+	global file_in number srun test_name timeout
 
 	set cpu_count 0
-	set srun_pid [spawn $srun --gpus-per-node=1 -N1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 $file_in]
+	spawn $srun --gpus-per-node=1 -N1 --cpus-per-gpu=$cpus_per_gpu -J $test_name -t1 $file_in
 	expect {
 		-re "NumCPUs=($number)" {
 			set cpu_count $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {
@@ -79,17 +77,16 @@ proc run_gpu_per_node { cpus_per_gpu } {
 }
 
 proc run_gpu_per_task { cpus_per_gpu } {
-	global file_in number srun test_id timeout
+	global file_in number srun test_name timeout
 
 	set cpu_count 0
-	set srun_pid [spawn $srun --gpus-per-task=1 -n1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 $file_in]
+	spawn $srun --gpus-per-task=1 -n1 --cpus-per-gpu=$cpus_per_gpu -J $test_name -t1 $file_in
 	expect {
 		-re "NumCPUs=($number)" {
 			set cpu_count $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {
@@ -167,7 +164,7 @@ for {set inx 1} {$inx <= $cpus_per_node} {set inx [expr $inx * 2]} {
 if {$gpu_cnt > 1 && $nb_nodes > 1} {
 	set cpu_count 0
 	set node_count 0
-	set srun_pid [spawn $srun --gpus=2 --cpus-per-gpu=$cpus_per_node -J "test$test_id" -t1 $file_in]
+	spawn $srun --gpus=2 --cpus-per-gpu=$cpus_per_node -J $test_name -t1 $file_in
 	expect {
 		-re "NumNodes=($number)" {
 			set node_count $expect_out(1,string)
@@ -178,7 +175,6 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {

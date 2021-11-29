@@ -28,11 +28,11 @@ source ./globals_accounting
 
 set timeout	60
 
-set ta1         "test$test_id-account.1"
-set tq1         "test$test_id-qos.1"
+set ta1         "$test_name-account.1"
+set tq1         "$test_name-qos.1"
 
-set p1          "test$test_id-part.1"
-set p2          "test$test_id-part.2"
+set p1          "$test_name-part.1"
+set p2          "$test_name-part.2"
 
 set jobid1 0
 set jobid2 0
@@ -71,10 +71,7 @@ proc clean_assocs {} {
 proc cleanup {} {
 	global jobid1 jobid2 jobid3 jobid4 config_file
 
-	cancel_job $jobid1
-	cancel_job $jobid2
-	cancel_job $jobid3
-	cancel_job $jobid4
+	cancel_job [list $jobid1 $jobid2 $jobid3 $jobid4]
 
 	clean_assocs
 

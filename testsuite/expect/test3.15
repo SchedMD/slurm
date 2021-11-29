@@ -26,9 +26,9 @@
 ############################################################################
 source ./globals
 
-set license_name        "test$test_id"
+set license_name        $test_name
 set resv_name           "resv$test_id"
-set user_name		""
+set user_name           ""
 set job_id1             0
 set job_id2             0
 
@@ -165,14 +165,13 @@ set cwd "[$bin_pwd]"
 save_conf $config_file
 
 proc cleanup {} {
-	global job_id1 job_id2
+	global job_id1 job_id2 config_file
 
 	#
 	# Cancel the jobs and
 	# Restore the configuration
 	#
-	cancel_job $job_id1
-	cancel_job $job_id2
+	cancel_job [list $job_id1 $job_id2]
 
 	restore_conf $config_file
 	reconfigure

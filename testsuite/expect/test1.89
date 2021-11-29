@@ -28,9 +28,8 @@
 ############################################################################
 source ./globals
 
-set file_prog   "test$test_id.prog"
+set file_prog   "$test_name.prog"
 set job_id      0
-set failure_addendum "This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration for the default partition"
 
 #
 # Test if CPU affinity support is supported.
@@ -57,10 +56,14 @@ if {[get_node_param $node_name "CPUSpecList"] != "MISSING"} {
 }
 
 proc cleanup {} {
-	global bin_rm file_prog job_id
+	global job_id file_prog test_status STATUS_FAIL
 
 	cancel_job $job_id
-	exec $bin_rm -f $file_prog
+	file delete $file_prog
+
+	if {$test_status == $STATUS_FAIL} {
+		log_warn "This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration for the default partition"
+	}
 }
 
 #
@@ -166,7 +169,7 @@ expect {
 	-re $test_prompt {
 	}
 }
-subtest {$task_mask == $expected_mask} "Affinity mask should be consistent for a job step with affinity" "$task_mask != $expected_mask; $failure_addendum"
+subtest {$task_mask == $expected_mask} "Affinity mask should be consistent for a job step with affinity" "$task_mask != $expected_mask"
 
 #
 # Run a job step with verbosity and all tasks on CPU 0
@@ -188,7 +191,7 @@ expect {
 	-re $test_prompt {
 	}
 }
-subtest {$task_mask == $task_cnt} "Affinity mask should be consistent for a job step with verbosity and all tasks on CPU 0" "$task_mask != $task_cnt; $failure_addendum"
+subtest {$task_mask == $task_cnt} "Affinity mask should be consistent for a job step with verbosity and all tasks on CPU 0" "$task_mask != $task_cnt"
 
 set verbose_cnt 0
 send "$srun -c1 --cpu-bind=verbose,map_cpu:0 ./$file_prog\r"
@@ -208,7 +211,7 @@ expect {
 }
 # Both task/affinity and task/cpu will generate verbose message,
 # so check for double messages in case both plugins are configured.
-subtest {$verbose_cnt == $task_cnt || $verbose_cnt == [expr $task_cnt * 2]} "Verbose messages count should be consistent" "$verbose_cnt != $task_cnt; $failure_addendum"
+subtest {$verbose_cnt == $task_cnt || $verbose_cnt == [expr $task_cnt * 2]} "Verbose messages count should be consistent" "$verbose_cnt != $task_cnt"
 
 #
 # Run all tasks all bound to the same CPU by specifying a map (for each CPU)
@@ -232,7 +235,7 @@ while {$cpu_cnt < $task_cnt} {
 		-re $test_prompt {
 		}
 	}
-	subtest {$mask_sum == $task_cnt * $mask} "Affinity mask should be consistent for all tasks bound to the same CPU by specifying a map" "$mask_sum != $task_cnt * $mask; $failure_addendum"
+	subtest {$mask_sum == $task_cnt * $mask} "Affinity mask should be consistent for all tasks bound to the same CPU by specifying a map" "$mask_sum != $task_cnt * $mask"
 	incr cpu_cnt 1
 }
 
@@ -259,7 +262,7 @@ while {$cpu_cnt < $task_cnt} {
 		-re $test_prompt {
 		}
 	}
-	subtest {$mask_sum == $task_cnt * $mask} "Affinity mask should be consistent for all tasks bound to the same CPU by specifying a mask" "$mask_sum != $task_cnt * $mask; $failure_addendum"
+	subtest {$mask_sum == $task_cnt * $mask} "Affinity mask should be consistent for all tasks bound to the same CPU by specifying a mask" "$mask_sum != $task_cnt * $mask"
 	incr cpu_cnt 1
 }
 
@@ -327,7 +330,7 @@ expect {
 	-re $test_prompt {
 	}
 }
-subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying a forward map" "$task_mask != $full_mask; $failure_addendum"
+subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying a forward map" "$task_mask != $full_mask"
 
 #
 # Run all tasks bound to a different CPU by specifying a reverse map
@@ -348,7 +351,7 @@ expect {
 	-re $test_prompt {
 	}
 }
-subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying a reverse map" "$task_mask != $full_mask; $failure_addendum"
+subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying a reverse map" "$task_mask != $full_mask"
 
 #
 # Run all tasks bound to a different CPU by specifying an alternating map
@@ -369,7 +372,7 @@ expect {
 	-re $test_prompt {
 	}
 }
-subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying an alternating map" "$task_mask != $full_mask; $failure_addendum"
+subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying an alternating map" "$task_mask != $full_mask"
 
 #
 # Run all tasks bound to a different CPU by specifying a forward mask
@@ -390,7 +393,7 @@ expect {
 	-re $test_prompt {
 	}
 }
-subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying a forward mask" "$task_mask != $full_mask; $failure_addendum"
+subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying a forward mask" "$task_mask != $full_mask"
 
 #
 # Run all tasks bound to a different CPU by specifying a reverse mask
@@ -411,7 +414,7 @@ expect {
 	-re $test_prompt {
 	}
 }
-subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying a reverse mask" "$task_mask != $full_mask; $failure_addendum"
+subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying a reverse mask" "$task_mask != $full_mask"
 
 #
 # Run all tasks bound to a different CPU by specifying an alternating mask
@@ -432,7 +435,7 @@ expect {
 	-re $test_prompt {
 	}
 }
-subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying an alternating mask" "$task_mask != $full_mask; $failure_addendum"
+subtest {$task_mask == $full_mask} "Affinity mask should be consistent for all tasks bound to a different CPU by specifying an alternating mask" "$task_mask != $full_mask"
 
 #
 # Terminate the job, free the allocation

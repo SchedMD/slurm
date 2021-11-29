@@ -23,11 +23,11 @@
 # You should have received a copy of the GNU General Public License along
 # with Slurm; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
-############################################################################
+
 source ./globals
 
-set file_in     "$test_dir/input"
-set number_commas  "\[0-9_,\]+"
+set file_in         "$test_dir/input"
+set number_commas   "\[0-9_,\]+"
 
 if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
@@ -73,10 +73,9 @@ if {$sockets_per_node < 2} {
 	log_warn "Tests ${test_id}.0 and ${test_id}.1 require 2 or more sockets per node in the default partition"
 } else {
 	log_info "TEST ${test_id}.0"
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --accel-bind=g -J "test$test_id" -t1 $file_in]
+	spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --accel-bind=g -J $test_name -t1 $file_in
 	expect {
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {
@@ -88,10 +87,9 @@ if {$sockets_per_node < 2} {
 	# Test of --gpu-bind=closest
 	#
 	log_info "TEST ${test_id}.1"
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J "test$test_id" -t1 $file_in]
+	spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J $test_name -t1 $file_in
 	expect {
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {
@@ -120,9 +118,9 @@ if {$gpu_cnt < 4} {
 #
 set matches 0
 if {$gpu_cnt > $cpus_per_node} {
-	set srun_pid [spawn $srun --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J "test$test_id" -l -t1 $file_in]
+	spawn $srun --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J $test_name -l -t1 $file_in
 } else {
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J "test$test_id" -l -t1 $file_in]
+	spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J $test_name -l -t1 $file_in
 }
 expect {
 	-re "($number): HOST:($re_word_str) CUDA_VISIBLE_DEVICES:($number)" {
@@ -138,7 +136,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -163,9 +160,9 @@ set matches 0
 # If $gpu_cnt > $cpus_per_node then assume there is no DefCpusPerGpu configured
 #
 if {$gpu_cnt > $cpus_per_node} {
-	set srun_pid [spawn $srun --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J "test$test_id" -l -t1 $file_in]
+	spawn $srun --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J $test_name -l -t1 $file_in
 } else {
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J "test$test_id" -l -t1 $file_in]
+	spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J $test_name -l -t1 $file_in
 }
 expect {
 	-re "($number): HOST:($re_word_str) CUDA_VISIBLE_DEVICES:($number_commas)" {
@@ -181,7 +178,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

@@ -62,7 +62,7 @@ if {$job_id == 0} {
 	fail "Did not get job_id"
 }
 
-send "$srun rm -f /tmp/test$test_id\r"
+send "$srun rm -f /tmp/$test_name\r"
 expect {
 	-re "$test_prompt" {
 		#break
@@ -90,12 +90,12 @@ expect {
 }
 
 set exec_cnt 0
-send "$srun -l --bcast=/tmp/test$test_id $file_in\r"
+send "$srun -l --bcast=/tmp/$test_name $file_in\r"
 expect {
 	-re "not supported" {
 		skip "srun --bcast option not supported on this system type (e.g. front-end)"
 	}
-	-re "($number): /tmp/test$test_id" {
+	-re "($number): /tmp/$test_name" {
 		incr exec_cnt
 		exp_continue
 	}
@@ -107,7 +107,7 @@ expect {
 	}
 }
 
-send "$srun -l rm -v /tmp/test$test_id\r"
+send "$srun -l rm -v /tmp/$test_name\r"
 expect {
 	-re "$test_prompt" {
 		#break

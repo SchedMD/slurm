@@ -31,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set file_prog   "test$test_id.prog"
+set file_prog   "$test_name.prog"
 set matches     0
 set fini_cnt    0
 set usr1cnt     0
@@ -46,7 +46,6 @@ proc cleanup {} {
 #
 # Delete left-over program and rebuild it
 #
-exec $bin_rm -f $file_prog
 exec $bin_cc -O ${file_prog}.c -o $file_prog
 exec $bin_chmod 700 $file_prog
 
@@ -94,7 +93,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -139,7 +137,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

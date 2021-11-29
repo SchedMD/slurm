@@ -31,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set test_prog   "test$test_id.prog"
+set test_prog   "$test_name.prog"
 set matches     0
 
 proc cleanup {} {
@@ -120,7 +120,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		cancel_job $job_id
 		fail "spawn IO not responding"
 	}
 	eof {

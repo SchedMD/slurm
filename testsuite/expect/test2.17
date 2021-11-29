@@ -26,8 +26,8 @@
 ############################################################################
 source ./globals
 
-set qos_name       "test$test_id\_qos"
-set part_name      "test$test_id\_part"
+set qos_name       "${test_name}_qos"
+set part_name      "${test_name}_part"
 
 #
 # Check accounting config and bail if not found.

@@ -27,7 +27,7 @@
 ############################################################################
 source ./globals
 
-set test_acct    "test$test_id\_acct"
+set test_acct    "${test_name}_acct"
 set test_user    ""
 
 if {![is_super_user]} {

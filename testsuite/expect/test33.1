@@ -39,7 +39,7 @@ source ./globals
 # -- The first line in the testcase is the node list expression to be split
 #    The following lines in the testcase are the expected resulting node lists.
 
-set test_prog   "test$test_id.prog"
+set test_prog   "$test_name.prog"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "Test incompatible with front-end systems"

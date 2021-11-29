@@ -27,8 +27,8 @@
 ############################################################################
 source ./globals
 
-set test_part_1    "test$test_id\_partition_1"
-set test_part_2    "test$test_id\_partition_2"
+set test_part_1    "${test_name}_partition_1"
+set test_part_2    "${test_name}_partition_2"
 set test_node      ""
 
 if {![is_super_user]} {

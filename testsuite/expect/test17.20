@@ -59,7 +59,7 @@ make_bash_script $file_in "$bin_id -un"
 #
 # Submit a slurm job that will execute 'id'
 #
-spawn $sbatch -N1 -t1 --job-name=test$test_id --output=$file_out --mail-type=all --mail-user=$login_grp_info $file_in
+spawn $sbatch -N1 -t1 --job-name=$test_name --output=$file_out --mail-type=all --mail-user=$login_grp_info $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)

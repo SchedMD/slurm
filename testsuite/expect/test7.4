@@ -41,13 +41,7 @@
 ############################################################################
 source ./globals
 
-set test_prog     "test$test_id.prog"
-
-proc cleanup {} {
-	global bin_rm test_prog
-
-	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.v3breakpoints ${test_prog}.TVD.v3breakpoints~
-}
+set test_prog     "$test_name.prog"
 
 # Note this appears as a single argv value to totalviewcli
 set bulk "dset TV::bulk_launch_enabled true; dset TV::bulk_launch_tmpfile1_host_lines %R; dset TV::bulk_launch_string {$srun --jobid=%J -N%N -n%N -w`awk -F. \'BEGIN {ORS=\",\"} {if (NR==%N) ORS=\"\"; print \$1}\' %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
@@ -77,6 +71,12 @@ if {[file executable $totalviewcli] == 0} {
 }
 if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
+}
+
+proc cleanup {} {
+	global bin_rm test_prog
+
+	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.v3breakpoints ${test_prog}.TVD.v3breakpoints~
 }
 
 #

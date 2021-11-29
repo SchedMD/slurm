@@ -35,18 +35,18 @@
 ############################################################################
 source ./globals
 
-set test_prog   "test$test_id.prog"
+set test_prog   "$test_name.prog"
 set matches     0
+
+set damp [get_config_param "FairShareDampeningFactor"]
+if {$damp != 1} {
+	skip "Unable to run with FairShareDampeningFactor=$damp (must be 1)"
+}
 
 proc cleanup {} {
 	global test_prog
 
 	file delete $test_prog
-}
-
-set damp [get_config_param "FairShareDampeningFactor"]
-if {$damp != 1} {
-	skip "Unable to run with FairShareDampeningFactor=$damp (must be 1)"
 }
 
 #
@@ -162,7 +162,6 @@ expect {
 	}
 
 	timeout {
-		cancel_job $job_id
 		fail "spawn IO not responding"
 	}
 	eof {

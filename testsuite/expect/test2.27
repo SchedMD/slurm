@@ -30,8 +30,6 @@ set job_id           0
 set node_cnt         1
 set user             [get_my_user_name]
 
-set cwd "[$bin_pwd]"
-
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
@@ -42,7 +40,8 @@ if {$available < $node_cnt} {
 }
 
 proc cleanup { } {
-	global test_id job_id config_path cwd bin_cp
+	global job_id config_path bin_cp
+
 	cancel_job $job_id
 
 	log_info "Changing slurm.conf back"
@@ -139,7 +138,7 @@ set config_path [get_conf_path]
 save_conf $config_path/slurm.conf
 
 proc test_it {} {
-	global test_id sbatch job_id number user domain
+	global test_name sbatch job_id number user domain
 
 	set domain_str ""
 	if {$domain != ""} {
@@ -150,7 +149,7 @@ proc test_it {} {
 	submit "-H --mail-type=begin,end" "MailUser=$user$domain_str MailType=BEGIN,END"
 	submit "-H --mail-user=blah" "MailUser=blah MailType=NONE" 1
 
-	spawn $sbatch -J "test$test_id" --wrap=hostname -H
+	spawn $sbatch -J $test_name --wrap=hostname -H
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)

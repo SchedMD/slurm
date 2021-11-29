@@ -39,7 +39,7 @@ set mismatches   0
 # used for allocated state since scontrol cannot change node state to allocated
 set node_pos     2
 set tmp_id       0
-set tmp_sc       "test$test_id\_tmp_sc"
+set tmp_sc       "${test_name}_tmp_sc"
 array set node_list {}
 
 proc change_state { state nodes } {

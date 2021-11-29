@@ -97,13 +97,13 @@ make_bash_script $file_in2 "
 	echo 'STEP_ID:'\$SLURM_STEP_ID 'CUDA_VISIBLE_DEVICES:'\$CUDA_VISIBLE_DEVICES
 	sleep 3
 	if \[ \$SLURM_STEP_ID -eq 2 \]; then
-		$squeue -s --name=test$test_id
+		$squeue -s --name=$test_name
 	fi
 	exit 0"
 
 exec $bin_rm -f $file_out
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n3 -t1 -o $file_out -J "test$test_id" $file_in1
+spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n3 -t1 -o $file_out -J $test_name $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -179,7 +179,7 @@ make_bash_script $file_in2 "
 exec $bin_rm -f $file_out
 set job_id 0
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n2 -t1 -o $file_out -J "test$test_id" $file_in1
+spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n2 -t1 -o $file_out -J $test_name $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -258,7 +258,7 @@ make_bash_script $file_in2 "
 exec $bin_rm -f $file_out
 set job_id 0
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n2 -t1 -o $file_out -J "test$test_id" $file_in1
+spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n2 -t1 -o $file_out -J $test_name $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -338,7 +338,7 @@ if {$gpu_cnt > 2} {
 	exec $bin_rm -f $file_out
 	set job_id 0
 	set timeout $max_job_delay
-	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=3 -N1 -n3 -t1 -o $file_out -J "test$test_id" $file_in1
+	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=3 -N1 -n3 -t1 -o $file_out -J $test_name $file_in1
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -437,7 +437,7 @@ if {$gpu_cnt > 2} {
 	exec $bin_rm -f $file_out
 	set job_id 0
 	set timeout $max_job_delay
-	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N1 -n3 -t1 -o $file_out -J "test$test_id" $file_in1
+	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N1 -n3 -t1 -o $file_out -J $test_name $file_in1
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -541,7 +541,7 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 	exec $bin_rm -f $file_out
 	set job_id 0
 	set timeout $max_job_delay
-	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n6 -t1 -o $file_out -J "test$test_id" $file_in1
+	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n6 -t1 -o $file_out -J $test_name $file_in1
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -646,7 +646,7 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 	exec $bin_rm -f $file_out
 	set job_id 0
 	set timeout $max_job_delay
-	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n6 -t1 -o $file_out -J "test$test_id" $file_in1
+	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n6 -t1 -o $file_out -J $test_name $file_in1
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -728,7 +728,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 	exec $bin_rm -f $file_out
 	set job_id 0
 	set timeout $max_job_delay
-	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n4 -t1 -o $file_out -J "test$test_id" $file_in1
+	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n4 -t1 -o $file_out -J $test_name $file_in1
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -841,7 +841,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 	exec $bin_rm -f $file_out
 	set job_id 0
 	set timeout $max_job_delay
-	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n5 -t1 -o $file_out -J "test$test_id" $file_in1
+	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n5 -t1 -o $file_out -J $test_name $file_in1
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -932,7 +932,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 	exec $bin_rm -f $file_out
 	set job_id 0
 	set timeout $max_job_delay
-	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n5 -t1 -o $file_out -J "test$test_id" $file_in1
+	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n5 -t1 -o $file_out -J $test_name $file_in1
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
