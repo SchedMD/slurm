@@ -100,11 +100,6 @@
 #define BUILD_TIMEOUT 2000000	/* Max build_job_queue() run time in usec */
 #define MAX_FAILED_RESV 10
 
-typedef struct wait_boot_arg {
-	uint32_t job_id;
-	bitstr_t *node_bitmap;
-} wait_boot_arg_t;
-
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static void	_job_queue_append(List job_queue, job_record_t *job_ptr,
@@ -118,9 +113,6 @@ static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
 static int	_valid_feature_list(job_record_t *job_ptr, List feature_list,
 				    bool can_reboot);
 static int	_valid_node_feature(char *feature, bool can_reboot);
-#ifndef HAVE_FRONT_END
-static void *	_wait_boot(void *arg);
-#endif
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
 static int	save_last_part_update = 0;
@@ -4282,20 +4274,62 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 #else
-/* NOTE: See power_job_reboot() in power_save.c for similar logic */
-extern int reboot_job_nodes(job_record_t *job_ptr)
+static void _send_reboot_msg(bitstr_t *node_bitmap, char *features,
+			     uint16_t protocol_version)
 {
-	int rc = SLURM_SUCCESS;
-	int i, i_first, i_last;
 	agent_arg_t *reboot_agent_args = NULL;
 	reboot_msg_t *reboot_msg;
+	hostlist_t hostlist;
+
+	reboot_agent_args = xmalloc(sizeof(agent_arg_t));
+	reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
+	reboot_agent_args->retry = 0;
+	reboot_agent_args->node_count = 0;
+	reboot_agent_args->protocol_version = protocol_version;
+
+	if ((hostlist = bitmap2hostlist(node_bitmap))) {
+		reboot_agent_args->hostlist = hostlist;
+		reboot_agent_args->node_count = hostlist_count(hostlist);
+	}
+
+	reboot_msg = xmalloc(sizeof(reboot_msg_t));
+	slurm_init_reboot_msg(reboot_msg, false);
+	reboot_agent_args->msg_args = reboot_msg;
+	reboot_msg->features = xstrdup(features);
+
+	agent_queue_request(reboot_agent_args);
+}
+
+static void _do_reboot(bool power_save_on, bitstr_t *node_bitmap,
+		       job_record_t *job_ptr, char *reboot_features,
+		       uint16_t protocol_version)
+{
+	if (power_save_on)
+		power_job_reboot(node_bitmap, job_ptr, reboot_features);
+	else
+		_send_reboot_msg(node_bitmap, reboot_features,
+				 protocol_version);
+	if (get_log_level() >= LOG_LEVEL_DEBUG) {
+		char *nodes = bitmap2node_name(node_bitmap);
+		if (nodes) {
+			debug("%s: reboot nodes %s features %s",
+			      __func__, nodes,
+			      reboot_features ? "reboot_features" : "N/A");
+		} else {
+			error("%s: bitmap2nodename", __func__);
+		}
+		xfree(nodes);
+	}
+}
+
+extern void reboot_job_nodes(job_record_t *job_ptr)
+{
+	int i, i_first, i_last;
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	bitstr_t *boot_node_bitmap = NULL, *feature_node_bitmap = NULL;
-	char *nodes, *reboot_features = NULL;
+	char *reboot_features = NULL;
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
-	wait_boot_arg_t *wait_boot_arg;
-	pthread_t tid;
 	static bool power_save_on = false;
 	static time_t sched_update = 0;
 
@@ -4305,28 +4339,36 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 	}
 
 	if ((job_ptr->details == NULL) || (job_ptr->node_bitmap == NULL))
-		return SLURM_SUCCESS;
-	if (power_save_on)
-		return power_job_reboot(job_ptr);
-	if ((slurm_conf.reboot_program == NULL) ||
-	    (slurm_conf.reboot_program[0] == '\0'))
-		return SLURM_SUCCESS;
+		return;
+	if (!power_save_on &&
+	    ((slurm_conf.reboot_program == NULL) ||
+	     (slurm_conf.reboot_program[0] == '\0')))
+		return;
 
-/*
- *	See power_job_reboot() in power_save.c for similar logic used by
- *	node_features/knl_cray plugin.
- */
-	if (job_ptr->reboot) {
+	if (job_ptr->reboot)
 		boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
-	} else {
+	else
 		boot_node_bitmap = node_features_reboot(job_ptr);
-		if (boot_node_bitmap == NULL)
-			return SLURM_SUCCESS;
+	if (boot_node_bitmap == NULL) {
+		/* launch_job() when all nodes have booted */
+		if (bit_overlap_any(power_node_bitmap, job_ptr->node_bitmap) ||
+		    bit_overlap_any(booting_node_bitmap,
+				    job_ptr->node_bitmap)) {
+			job_ptr->job_state |= JOB_CONFIGURING;
+			/* Reset job start time when nodes are booted */
+			job_ptr->job_state |= JOB_POWER_UP_NODE;
+			job_ptr->bit_flags |= NODE_REBOOT;
+			job_ptr->wait_all_nodes = 1;
+		}
+		return;
 	}
 
-	wait_boot_arg = xmalloc(sizeof(wait_boot_arg_t));
-	wait_boot_arg->job_id = job_ptr->job_id;
-	wait_boot_arg->node_bitmap = bit_alloc(node_record_count);
+	job_ptr->job_state |= JOB_CONFIGURING;
+	/* Reset job start time when nodes are booted */
+	job_ptr->job_state |= JOB_POWER_UP_NODE;
+	/* launch_job() when all nodes have booted */
+	job_ptr->bit_flags |= NODE_REBOOT;
+	job_ptr->wait_all_nodes = 1;
 
 	/* Modify state information for all nodes, KNL and others */
 	i_first = bit_ffs(boot_node_bitmap);
@@ -4340,11 +4382,12 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		node_ptr = node_record_table_ptr + i;
 		if (protocol_version > node_ptr->protocol_version)
 			protocol_version = node_ptr->protocol_version;
+		node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWERING_UP;
 		bit_clear(avail_node_bitmap, i);
+		bit_clear(power_node_bitmap, i);
 		bit_set(booting_node_bitmap, i);
-		bit_set(wait_boot_arg->node_bitmap, i);
 		node_ptr->boot_req_time = now;
 	}
 
@@ -4371,156 +4414,55 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 
 	if (feature_node_bitmap) {
 		/* Reboot nodes to change KNL NUMA and/or MCDRAM mode */
-		reboot_agent_args = xmalloc(sizeof(agent_arg_t));
-		reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
-		reboot_agent_args->retry = 0;
-		reboot_agent_args->node_count = 0;
-		reboot_agent_args->protocol_version = protocol_version;
-		reboot_agent_args->hostlist = hostlist_create(NULL);
-		reboot_msg = xmalloc(sizeof(reboot_msg_t));
-		slurm_init_reboot_msg(reboot_msg, false);
-		reboot_agent_args->msg_args = reboot_msg;
-		reboot_msg->features = reboot_features;	/* Move, not copy */
+		_do_reboot(power_save_on, feature_node_bitmap, job_ptr,
+			   reboot_features, protocol_version);
 		for (i = i_first; i <= i_last; i++) {
+			int node_inx;
+			char *tmp_feature, *orig_features_act;
+
 			if (!bit_test(feature_node_bitmap, i))
 				continue;
-			node_ptr = node_record_table_ptr + i;
-			hostlist_push_host(reboot_agent_args->hostlist,
-					   node_ptr->name);
-			reboot_agent_args->node_count++;
+
+			/*
+			 * Update node features now to avoid a race where a
+			 * second job may request that this node gets rebooted
+			 * (in order to get a new active feature) *after* the
+			 * first reboot request but *before* slurmd actually
+			 * starts up. If that would happen then the second job
+			 * would stay configuring forever, waiting for the node
+			 * to reboot even though the node already rebooted.
+			 *
+			 * By setting the node's active features right now, any
+			 * other job that wants that active feature can be
+			 * scheduled onto this node, which will also already be
+			 * rebooting, so those other jobs won't send additional
+			 * reboot requests to change the feature.
+			 */
+			node_inx = node_ptr - node_record_table_ptr;
+			/* Point to node features, don't copy */
+			orig_features_act =
+				node_ptr->features_act ?
+				node_ptr->features_act : node_ptr->features;
+			tmp_feature = node_features_g_node_xlate(
+				reboot_features, orig_features_act,
+				node_ptr->features, node_inx);
+			xfree(node_ptr->features_act);
+			node_ptr->features_act = tmp_feature;
+			(void) update_node_active_features(
+				node_ptr->name, node_ptr->features_act,
+				FEATURE_MODE_IND);
 		}
-		nodes = bitmap2node_name(feature_node_bitmap);
-		if (nodes) {
-			info("%s: reboot nodes %s features %s",
-			     __func__, nodes, reboot_features);
-		} else {
-			error("%s: bitmap2nodename", __func__);
-			rc = SLURM_ERROR;
-		}
-		xfree(nodes);
-		agent_queue_request(reboot_agent_args);
 	}
 
 	if (boot_node_bitmap) {
 		/* Reboot nodes with no feature changes */
-		reboot_agent_args = xmalloc(sizeof(agent_arg_t));
-		reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
-		reboot_agent_args->retry = 0;
-		reboot_agent_args->node_count = 0;
-		reboot_agent_args->protocol_version = protocol_version;
-		reboot_agent_args->hostlist = hostlist_create(NULL);
-		reboot_msg = xmalloc(sizeof(reboot_msg_t));
-		slurm_init_reboot_msg(reboot_msg, false);
-		reboot_agent_args->msg_args = reboot_msg;
-		/* reboot_msg->features = NULL; */
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(boot_node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr + i;
-			hostlist_push_host(reboot_agent_args->hostlist,
-					   node_ptr->name);
-			reboot_agent_args->node_count++;
-		}
-		nodes = bitmap2node_name(boot_node_bitmap);
-		if (nodes) {
-			info("%s: reboot nodes %s", __func__, nodes);
-		} else {
-			error("%s: bitmap2nodename", __func__);
-			rc = SLURM_ERROR;
-		}
-		xfree(nodes);
-		agent_queue_request(reboot_agent_args);
+		_do_reboot(power_save_on, boot_node_bitmap, job_ptr, NULL,
+			   protocol_version);
 	}
 
-	job_ptr->details->prolog_running++;
-	slurm_thread_create(&tid, _wait_boot, wait_boot_arg);
+	xfree(reboot_features);
 	FREE_NULL_BITMAP(boot_node_bitmap);
 	FREE_NULL_BITMAP(feature_node_bitmap);
-
-	return rc;
-}
-
-static void *_wait_boot(void *arg)
-{
-	wait_boot_arg_t *wait_boot_arg = (wait_boot_arg_t *) arg;
-	job_record_t *job_ptr;
-	bitstr_t *boot_node_bitmap = wait_boot_arg->node_bitmap;
-	/* Locks: Write jobs; read nodes */
-	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-	/* Locks: Write jobs; write nodes */
-	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
-	node_record_t *node_ptr;
-	time_t start_time = time(NULL);
-	int i, total_node_cnt, wait_node_cnt;
-	bool job_timeout = false;
-
-	/*
-	 * This adds the process to the list, we don't need the return pointer
-	 */
-	(void)track_script_rec_add(wait_boot_arg->job_id, 0, pthread_self());
-
-	do {
-		sleep(5);
-		total_node_cnt = wait_node_cnt = 0;
-		lock_slurmctld(job_write_lock);
-		if (!(job_ptr = find_job_record(wait_boot_arg->job_id))) {
-			error("%s: JobId=%u vanished while waiting for node boot",
-			      __func__, wait_boot_arg->job_id);
-			unlock_slurmctld(job_write_lock);
-			track_script_remove(pthread_self());
-			return NULL;
-		}
-		if (IS_JOB_PENDING(job_ptr) ||	/* Job requeued or killed */
-		    IS_JOB_FINISHED(job_ptr) ||
-		    !job_ptr->node_bitmap) {
-			verbose("%pJ no longer waiting for node boot",
-				job_ptr);
-			unlock_slurmctld(job_write_lock);
-			track_script_remove(pthread_self());
-			return NULL;
-		}
-		for (i = 0, node_ptr = node_record_table_ptr;
-		     i < node_record_count; i++, node_ptr++) {
-			if (!bit_test(boot_node_bitmap, i))
-				continue;
-			total_node_cnt++;
-			if (node_ptr->boot_time < start_time)
-				wait_node_cnt++;
-		}
-		if (wait_node_cnt) {
-			debug("%pJ still waiting for %d of %d nodes to boot",
-			      job_ptr, wait_node_cnt, total_node_cnt);
-		} else {
-			info("%pJ boot complete for all %d nodes",
-			     job_ptr, total_node_cnt);
-		}
-		i = (int) difftime(time(NULL), start_time);
-		if (i >= slurm_conf.resume_timeout) {
-			error("%pJ timeout waiting for node %d of %d boots",
-			      job_ptr, wait_node_cnt, total_node_cnt);
-			wait_node_cnt = 0;
-			job_timeout = true;
-		}
-		unlock_slurmctld(job_write_lock);
-	} while (wait_node_cnt);
-
-	lock_slurmctld(node_write_lock);
-	if (!(job_ptr = find_job_record(wait_boot_arg->job_id))) {
-		error("%s: missing JobId=%u after node_write_lock acquired",
-		      __func__, wait_boot_arg->job_id);
-	} else {
-		if (job_timeout)
-			(void) job_requeue(getuid(), job_ptr->job_id, NULL, false, 0);
-		prolog_running_decr(job_ptr);
-	}
-	unlock_slurmctld(node_write_lock);
-
-	FREE_NULL_BITMAP(wait_boot_arg->node_bitmap);
-	xfree(arg);
-	track_script_remove(pthread_self());
-	return NULL;
 }
 #endif
 

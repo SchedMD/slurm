@@ -61,8 +61,15 @@ extern void start_power_mgr(pthread_t *thread_id);
 /* Report if node power saving is enabled */
 extern bool power_save_test(void);
 
-/* power_job_reboot - Reboot compute nodes for a job from the head node */
-extern int power_job_reboot(job_record_t *job_ptr);
+/*
+ * Reboot compute nodes for a job from the head node using ResumeProgram.
+ *
+ * IN node_bitmap - bitmap of nodes to reboot
+ * IN job_ptr - job requesting reboot
+ * IN features - optional features that the nodes need to be rebooted with
+ */
+extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
+			    char *features);
 
 /* Free module's allocated memory */
 extern void power_save_fini(void);

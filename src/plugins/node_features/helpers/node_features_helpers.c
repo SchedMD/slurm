@@ -574,8 +574,8 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	if (!avail_modes || !current_mode)
 		return;
 
-	verbose("original: avail=%s current=%s",
-		*avail_modes, *current_mode);
+	log_flag(NODE_FEATURES, "original: avail=%s current=%s",
+		 *avail_modes, *current_mode);
 
 	all_current = list_create(xfree_ptr);
 
@@ -597,7 +597,8 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 	list_destroy(all_current);
 	list_destroy(filtered_modes);
 
-	verbose("new: avail=%s current=%s", *avail_modes, *current_mode);
+	log_flag(NODE_FEATURES, "new: avail=%s current=%s",
+		 *avail_modes, *current_mode);
 }
 
 extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
@@ -609,9 +610,9 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
 	char *tmp = NULL;
 	char *merged = NULL;
 
-	verbose("new_features: %s", new_features);
-	verbose("orig_features: %s", orig_features);
-	verbose("avail_features: %s", avail_features);
+	log_flag(NODE_FEATURES, "new_features: %s", new_features);
+	log_flag(NODE_FEATURES, "orig_features: %s", orig_features);
+	log_flag(NODE_FEATURES, "avail_features: %s", avail_features);
 
 	if (!new_features || new_features[0] == '\0')
 		return xstrdup(orig_features);
@@ -645,7 +646,7 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
 	list_for_each(features, _list_make_str, &merged);
 
 	list_destroy(features);
-	verbose("merged features: %s", merged);
+	log_flag(NODE_FEATURES, "merged features: %s", merged);
 
 	return merged;
 }

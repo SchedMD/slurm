@@ -2281,9 +2281,10 @@ extern int retry_list_size(void)
 
 static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 {
-	char *argv[3], *pname;
+	char *argv[4], *pname;
 	pid_t child;
 	int rc, status = 0;
+	reboot_msg_t *reboot_msg = agent_arg_ptr->msg_args;
 
 	if (!agent_arg_ptr->hostlist) {
 		error("%s: hostlist is NULL", __func__);
@@ -2300,7 +2301,11 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 	else
 		argv[0] = slurm_conf.reboot_program;
 	argv[1] = hostlist_deranged_string_xmalloc(agent_arg_ptr->hostlist);
-	argv[2] = NULL;
+	if (reboot_msg->features) {
+		argv[2] = reboot_msg->features;
+		argv[3] = NULL;
+	} else
+		argv[2] = NULL;
 
 	child = fork();
 	if (child == 0) {

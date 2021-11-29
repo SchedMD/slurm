@@ -93,12 +93,6 @@
 #define DEFAULT_NODE_REG_MEM_PERCENT 100.0
 #define DEFAULT_CLOUD_REG_MEM_PERCENT 90.0
 
-typedef enum {
-	FEATURE_MODE_IND,  /* Print each node change indivually */
-	FEATURE_MODE_COMB, /* Try to combine like changes */
-	FEATURE_MODE_PEND, /* Print any pending change message */
-} feature_mode_t;
-
 /* Global variables */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
 bitstr_t *bf_ignore_node_bitmap = NULL; /* bitmap of nodes to ignore during a
@@ -127,8 +121,6 @@ static void 	_pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 static void	_sync_bitmaps(node_record_t *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				   config_record_t *config_ptr);
-static int	_update_node_active_features(char *node_names,
-				char *active_features, int mode);
 static int	_update_node_avail_features(char *node_names,
 				char *avail_features, int mode);
 static int	_update_node_gres(char *node_names, char *gres);
@@ -1359,7 +1351,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					node_inx);
 			xfree(node_ptr->features_act);
 			node_ptr->features_act = tmp_feature;
-			error_code = _update_node_active_features(
+			error_code = update_node_active_features(
 						node_ptr->name,
 						node_ptr->features_act,
 						FEATURE_MODE_COMB);
@@ -1708,7 +1700,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	}
 
 	/* Write/clear log */
-	(void)_update_node_active_features(NULL, NULL, FEATURE_MODE_PEND);
+	(void)update_node_active_features(NULL, NULL, FEATURE_MODE_PEND);
 
 	FREE_NULL_HOSTLIST(host_list);
 	FREE_NULL_HOSTLIST(hostaddr_list);
@@ -1924,19 +1916,8 @@ static inline void _update_node_features_post(
 	}
 }
 
-/*
- * _update_node_active_features - Update active features associated with nodes
- * IN node_names - List of nodes to update
- * IN active_features - New active features value
- * IN mode - FEATURE_MODE_IND : Print each node change indivually
- *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)
- *           FEATURE_MODE_PEND: Print any pending change message
- * RET: SLURM_SUCCESS or error code
- * NOTE: Use mode=FEATURE_MODE_IND in a loop with node write lock set,
- *	 then call with mode=FEATURE_MODE_PEND at the end of the loop
- */
-static int _update_node_active_features(char *node_names, char *active_features,
-					int mode)
+extern int update_node_active_features(char *node_names, char *active_features,
+				       int mode)
 {
 	static char *last_active_features = NULL;
 	static bitstr_t *last_node_bitmap = NULL;
@@ -2574,9 +2555,9 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 						node_inx);
 		xfree(node_ptr->features_act);
 		node_ptr->features_act = tmp_feature;
-		(void) _update_node_active_features(node_ptr->name,
-						    node_ptr->features_act,
-						    FEATURE_MODE_IND);
+		(void) update_node_active_features(node_ptr->name,
+						   node_ptr->features_act,
+						   FEATURE_MODE_IND);
 	}
 	xfree(orig_features);
 	xfree(orig_features_act);
@@ -4271,11 +4252,19 @@ extern void check_reboot_nodes()
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_conf.resume_timeout;
+	static bool power_save_on = false;
+	static time_t sched_update = 0;
+
+	if (sched_update != slurm_conf.last_update) {
+		power_save_on = power_save_test();
+		sched_update = slurm_conf.last_update;
+	}
 
 	for (i = 0; i < node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
 
-		if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
+		if ((IS_NODE_REBOOT_ISSUED(node_ptr) ||
+		     (!power_save_on && IS_NODE_POWERING_UP(node_ptr))) &&
 		    node_ptr->boot_req_time &&
 		    (node_ptr->boot_req_time + resume_timeout < now)) {
 			char *timeout_msg = "reboot timed out";
@@ -4294,6 +4283,7 @@ extern void check_reboot_nodes()
 			/*
 			 * Remove states now so that event state shows as DOWN.
 			 */
+			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			node_ptr->node_state &= (~NODE_STATE_REBOOT_ISSUED);
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->boot_req_time = 0;
