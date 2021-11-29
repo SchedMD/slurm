@@ -1164,7 +1164,7 @@ char *bit_fmt(char *str, int32_t len, bitstr_t *b)
  */
 char *bit_fmt_full(bitstr_t *b)
 {
-	int32_t count = 0, word;
+	int32_t word;
 	bitoff_t start, bit;
 	char *str = NULL, *comma = "";
 	_assert_bitstr_valid(b);
@@ -1177,11 +1177,9 @@ char *bit_fmt_full(bitstr_t *b)
 		}
 
 		if (bit_test(b, bit)) {
-			count++;
 			start = bit;
 			while (bit+1 < _bitstr_bits(b) && bit_test(b, bit+1)) {
 				bit++;
-				count++;
 			}
 			if (bit == start)	/* add single bit position */
 				xstrfmtcat(str, "%s%"BITSTR_FMT"",
@@ -1205,7 +1203,7 @@ char *bit_fmt_full(bitstr_t *b)
  */
 char *bit_fmt_range(bitstr_t *b, int offset, int len)
 {
-	int32_t count = 0, word;
+	int32_t word;
 	bitoff_t start, fini_bit, bit;
 	char *str = NULL, *comma = "";
 	_assert_bitstr_valid(b);
@@ -1219,11 +1217,9 @@ char *bit_fmt_range(bitstr_t *b, int offset, int len)
 		}
 
 		if (bit_test(b, bit)) {
-			count++;
 			start = bit;
 			while ((bit + 1 < fini_bit) && bit_test(b, bit + 1)) {
 				bit++;
-				count++;
 			}
 			if (bit == start) {	/* add single bit position */
 				xstrfmtcat(str, "%s%"BITSTR_FMT"",
