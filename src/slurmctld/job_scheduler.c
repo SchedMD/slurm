@@ -110,7 +110,8 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 static void	_job_queue_append(List job_queue, job_record_t *job_ptr,
 				  part_record_t *part_ptr, uint32_t priority);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
-static bool	_job_runnable_test2(job_record_t *job_ptr, bool check_min_time);
+static bool	_job_runnable_test2(job_record_t *job_ptr, time_t now,
+				    bool check_min_time);
 static bool	_scan_depend(List dependency_list, job_record_t *job_ptr);
 static void *	_sched_agent(void *args);
 static int	_schedule(bool full_queue);
@@ -356,10 +357,12 @@ static bool _job_runnable_test1(job_record_t *job_ptr, bool sched_plugin)
 /*
  * Job and partition tests for ability to run now
  * IN job_ptr - job to test
+ * IN now - update time
  * IN check_min_time - If set, test job's minimum time limit
  *		otherwise test maximum time limit
  */
-static bool _job_runnable_test2(job_record_t *job_ptr, bool check_min_time)
+static bool _job_runnable_test2(job_record_t *job_ptr, time_t now,
+				bool check_min_time)
 {
 	int reason;
 
@@ -369,6 +372,7 @@ static bool _job_runnable_test2(job_record_t *job_ptr, bool check_min_time)
 	     (!part_policy_job_runnable_state(job_ptr)))) {
 		job_ptr->state_reason = reason;
 		xfree(job_ptr->state_desc);
+		last_job_update = now;
 	}
 	if (reason != WAIT_NO_REASON)
 		return false;
@@ -644,7 +648,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 				job_ptr->bit_flags |= JOB_PART_ASSIGNED;
 
 			}
-			if (!_job_runnable_test2(job_ptr, backfill))
+			if (!_job_runnable_test2(job_ptr, now, backfill))
 				continue;
 			job_part_pairs++;
 			_job_queue_append(job_queue, job_ptr,
@@ -1397,7 +1401,7 @@ next_part:
 					continue;
 				}
 			} else {
-				if (!_job_runnable_test2(job_ptr, false))
+				if (!_job_runnable_test2(job_ptr, now, false))
 					continue;
 			}
 		} else {
