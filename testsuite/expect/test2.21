@@ -26,27 +26,22 @@
 ############################################################################
 source ./globals
 
-set complete_script    "test$test_id\.bash"
-set fail_script        "test$test_id\.fail"
+set complete_script    "$test_dir/complete_script"
+set fail_script        "$test_dir/fail_script"
 set job_id             0
-
-proc cleanup {} {
-	global bin_rm complete_script fail_script job_id
-
-	cancel_job $job_id
-	exec $bin_rm -f $complete_script $fail_script
-}
 
 regexp "($number)" [get_config_param "MinJobAge"] {} min_age
 if {$min_age < 10} {
 	skip "MinJobAge too low for this test ($min_age < 10)"
 }
 
-# Remove any vestigial scripts
-exec $bin_rm -f $complete_script $fail_script
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 make_bash_script $complete_script "$bin_sleep 20"
-
 make_bash_script $fail_script "BadCommand"
 
 proc requeue_job { id } {

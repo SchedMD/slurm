@@ -128,7 +128,7 @@ if {$nb_nodes == 1} {
 } else {
 	set mps_fail_cnt [expr $mps_good_cnt + 1]
 }
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gres=mps:$mps_fail_cnt -N$nb_nodes -t1 -o $file_out1 -J "test$test_id" $file_in
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gres=mps:$mps_fail_cnt -N$nb_nodes -t1 -o $file_out1 -J $test_name $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -145,7 +145,7 @@ if {$job_id1 == 0} {
 	fail "Job not submitted"
 }
 
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gres=mps:$mps_good_cnt -N$nb_nodes -t1 -o $file_out2 -J "test$test_id" $file_in
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gres=mps:$mps_good_cnt -N$nb_nodes -t1 -o $file_out2 -J $test_name $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)

@@ -189,7 +189,7 @@ sleep 2
 # Test job will depend on it to test non-eligible
 #
 set def_node [lindex [get_nodes_by_state] 0]
-set jobid_dependent [submit_job -fail "-t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap '$bin_sleep 300'"]
+set jobid_dependent [submit_job -fail "-t5 -w $def_node --exclusive -J queue-$test_name --output=/dev/null --error=/dev/null --wrap '$bin_sleep 300'"]
 wait_for_job -fail $jobid_dependent "RUNNING"
 
 #
@@ -197,12 +197,12 @@ wait_for_job -fail $jobid_dependent "RUNNING"
 # Test job will wait until this job, to test eligible
 #
 set def_node [lindex [get_nodes_by_state] 0]
-set jobid_queue [submit_job -fail "-t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap '$bin_sleep 300'"]
+set jobid_queue [submit_job -fail "-t5 -w $def_node --exclusive -J queue-$test_name --output=/dev/null --error=/dev/null --wrap '$bin_sleep 300'"]
 
 #
 # Start main job used for testing
 #
-set jobid [submit_job -fail "-t5 --dependency=afterany:$jobid_dependent -w $def_node -J $jobname-test$test_id --output=/dev/null --error=/dev/null --wrap '$bin_sleep 300'"]
+set jobid [submit_job -fail "-t5 --dependency=afterany:$jobid_dependent -w $def_node -J $jobname-$test_name --output=/dev/null --error=/dev/null --wrap '$bin_sleep 300'"]
 
 # ensure that job is actually pending (non-elegible)
 wait_for_job $jobid "PENDING"

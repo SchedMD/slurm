@@ -73,7 +73,7 @@ log_info "TEST: One GPU per task with node count (without range)"
 set timeout $max_job_delay
 set match 0
 set node_cnt -1
-set srun_pid [spawn $srun --nodes=$nb_nodes --gpus-per-task=1 -t1 -J "test$test_id" -l $file_in1]
+set srun_pid [spawn $srun --nodes=$nb_nodes --gpus-per-task=1 -t1 -J $test_name -l $file_in1]
 expect {
 	-re "NODE_CNT:($number_commas) CUDA_VISIBLE_DEVICES:($number_commas)" {
 		set node_cnt $expect_out(1,string)
@@ -104,7 +104,7 @@ if {$gpu_cnt > 1} {
 		set min_nodes 1
 	}
 	set node_cnt -1
-	set srun_pid [spawn $srun --nodes=$nb_nodes --gpus-per-task=2 -t1 -J "test$test_id" -l $file_in1]
+	set srun_pid [spawn $srun --nodes=$nb_nodes --gpus-per-task=2 -t1 -J $test_name -l $file_in1]
 	expect {
 		-re "NODE_CNT:($number_commas) CUDA_VISIBLE_DEVICES:($number_commas)" {
 			set node_cnt $expect_out(1,string)
@@ -133,7 +133,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 	set match 0
 	set node_cnt -1
 	set task_cnt [expr $nb_nodes + 1]
-	set srun_pid [spawn $srun --nodes=2-$nb_nodes --ntasks=$task_cnt --gpus-per-task=1 -t1 -J "test$test_id" -l $file_in1]
+	set srun_pid [spawn $srun --nodes=2-$nb_nodes --ntasks=$task_cnt --gpus-per-task=1 -t1 -J $test_name -l $file_in1]
 	expect {
 		-re "NODE_CNT:($number_commas) CUDA_VISIBLE_DEVICES:($number_commas)" {
 			set node_cnt $expect_out(1,string)
@@ -161,7 +161,7 @@ if {$gpu_cnt > 1} {
 	set match 0
 	set task_cnt 0
 # FIXME: RANGE CHECK CPU/GPU COUNT
-	set salloc_pid [spawn $salloc -N1 --gpus=$gpu_cnt -t1 -J "test$test_id" $srun -n $gpu_cnt -O --gpus-per-task=1 $file_in2]
+	set salloc_pid [spawn $salloc -N1 --gpus=$gpu_cnt -t1 -J $test_name $srun -n $gpu_cnt -O --gpus-per-task=1 $file_in2]
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr task_cnt
@@ -194,7 +194,7 @@ if {$gpu_cnt > 1} {
 	set num_cpus 0
 	set task_cnt 0
 	set tasks_spawned [expr $gpu_cnt / 2]
-	set salloc_pid [spawn $salloc -N1 --exclusive --gpus=$gpu_cnt -t1 -J "test$test_id" $srun -n $tasks_spawned -O --gpus-per-task=2 $file_in2]
+	set salloc_pid [spawn $salloc -N1 --exclusive --gpus=$gpu_cnt -t1 -J $test_name $srun -n $tasks_spawned -O --gpus-per-task=2 $file_in2]
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr task_cnt
@@ -239,7 +239,7 @@ if {$gpu_cnt > 1 && $num_cpus > 0} {
 		set cpus_per_task $num_cpus
 		set gpus_per_task 1
 	}
-	set salloc_pid [spawn $salloc -N1 --exclusive -w $hostname --gpus=$gpu_cnt -t1 -J "test$test_id" $srun -c $cpus_per_task --gpus-per-task=$gpus_per_task $file_in2]
+	set salloc_pid [spawn $salloc -N1 --exclusive -w $hostname --gpus=$gpu_cnt -t1 -J $test_name $srun -c $cpus_per_task --gpus-per-task=$gpus_per_task $file_in2]
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr task_cnt

@@ -196,7 +196,7 @@ set req_mps 49
 set target [expr $nb_nodes * $req_mps]
 exec $bin_rm -f $file_out
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --gres=mps:$req_mps -N$nb_nodes -t1 -o $file_out -J "test$test_id" $file_in1
+spawn $sbatch --gres=craynetwork:0 --gres=mps:$req_mps -N$nb_nodes -t1 -o $file_out -J $test_name $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -260,7 +260,7 @@ set target [expr $nb_nodes * $req_mps]
 exec $bin_rm -f $file_out
 set job_id 0
 set timeout $max_job_delay
-spawn $sbatch --gres=craynetwork:0 --gres=mps:$req_mps -N$nb_nodes -t1 -o $file_out -J "test$test_id" $file_in1
+spawn $sbatch --gres=craynetwork:0 --gres=mps:$req_mps -N$nb_nodes -t1 -o $file_out -J $test_name $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)

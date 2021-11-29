@@ -31,7 +31,7 @@ source ./globals_accounting
 
 set dmatches    0
 # Test Clusters
-set tc1		"test$test_id-cluster.1"
+set tc1		"$test_name-cluster.1"
 # Cluster Limits
 array set cluster {}
 set cluster(Fairshare)     2500
@@ -46,7 +46,7 @@ set cluster(MaxJobs)       500
 set cluster(MaxSubmitJobs) 500
 set cluster(MaxNodes)      300
 set cluster(MaxWall)       01:00:00
-set cluster(DefaultQos)    "test$test_id\_qos"
+set cluster(DefaultQos)    "${test_name}_qos"
 set access_err  0
 
 #

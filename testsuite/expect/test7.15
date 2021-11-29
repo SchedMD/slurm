@@ -26,18 +26,17 @@
 ############################################################################
 source ./globals
 
-set file_prog       "test$test_id.prog"
+set file_prog       "$test_name.prog"
 
 proc cleanup {} {
-	global bin_rm file_prog
+	global file_prog
 
-	exec $bin_rm -f $file_prog
+	file delete $file_prog
 }
 
 #
-# Delete left-over programs and rebuild them.
+# Build program
 #
-exec $bin_rm -f $file_prog
 exec $bin_cc -O -o $file_prog ${file_prog}.c
 
 #

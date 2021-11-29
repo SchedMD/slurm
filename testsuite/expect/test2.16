@@ -26,8 +26,8 @@
 ############################################################################
 source ./globals
 
-set part_name      "test$test_id\_part"
-set acct_name      "test$test_id\_acct"
+set part_name      "${test_name}_part"
+set acct_name      "${test_name}_acct"
 
 #
 # Check accounting config and bail if not found.

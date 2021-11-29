@@ -26,16 +26,16 @@
 source ./globals
 source ./globals_accounting
 
-set test_lua_reject	"test$test_id\_scripts/reject.lua"
-set test_lua_pass	"test$test_id\_scripts/pass.lua"
-set cwd			"[$bin_pwd]"
-set job_name		"test$test_id"
-set is_skip              0
+set test_lua_reject "${test_name}_scripts/reject.lua"
+set test_lua_pass   "${test_name}_scripts/pass.lua"
+set cwd             "[$bin_pwd]"
+set job_name        $test_name
+set is_skip         0
 
-set ta1	    "test$test_id-account.1"
+set ta1     "$test_name-account.1"
 set tu1     [get_my_user_name]
-set tq1     "test$test_id-qos.1"
-set tq2     "test$test_id-qos.2"
+set tq1     "$test_name-qos.1"
+set tq2     "$test_name-qos.2"
 
 # account options
 array set acct_1 {}
@@ -51,7 +51,7 @@ set user_req_1(Qos) "$tq1,$tq2"
 
 # qos options
 array set qos_1 {}
-set qos_1(Description)	  "test_qos_1"
+set qos_1(Description)    "test_qos_1"
 set qos_1(flags)          "denyonlimit"
 set qos_1(maxtresperuser) "cpu=1"
 array set qos_2 {}

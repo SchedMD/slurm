@@ -53,7 +53,7 @@ set my_scancel "${fed_slurm_base}/$c1/bin/scancel"
 set my_scontrol "${fed_slurm_base}/$c1/bin/scontrol"
 set reason ""
 set dependency ""
-set fed_name "fed_test$test_id"
+set fed_name "fed_$test_name"
 set all_clusters "$c1,$c2,$c3"
 
 ###############################################################################
@@ -85,14 +85,14 @@ proc cancel_job { job_id clusters } {
 }
 
 proc submit_job { options cdir file_in } {
-	global bin_sleep sbatch number fed_slurm_base slow_kill test_id
+	global bin_sleep sbatch number fed_slurm_base slow_kill test_name
 
 	set job_id 0
 	set my_sbatch "${fed_slurm_base}/$cdir/bin/sbatch"
 	if {![check_federation_setup]} {
 		set my_sbatch $sbatch
 	}
-	set command "$my_sbatch --job-name=test$test_id\_job -t1 \
+	set command "$my_sbatch --job-name=${test_name}_job -t1 \
 		$options --output=/dev/null $file_in"
 	set sbatch_pid [spawn {*}$command]
 	expect {

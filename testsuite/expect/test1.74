@@ -33,10 +33,10 @@ set node_cnt    0
 set cluster     [get_config_param "ClusterName"]
 set node_name   ""
 set user        ""
-set acct        "test$test_id\_acct"
-set acct_c1     "test$test_id\_acct_c_1"
-set acct_c2     "test$test_id\_acct_c_2"
-set qos         "test$test_id\_qos"
+set acct        "${test_name}_acct"
+set acct_c1     "${test_name}_acct_c_1"
+set acct_c2     "${test_name}_acct_c_2"
+set qos         "${test_name}_qos"
 set access_err  0
 array set mod_qos_vals {}
 array set mod_acct_desc_vals {}
@@ -59,6 +59,7 @@ set user [get_my_user_name]
 
 proc cleanup { } {
 	global acct acct_c1 acct_c2 qos
+
 	remove_acct "" "$acct,$acct_c1,$acct_c2"
 	if {[remove_qos "$qos"] != 0} {
 		log_warn "Unable to remove QOS (are you authorized)?"

@@ -115,7 +115,7 @@ if {$tot_gpus > 1} {
 } else {
 	set use_gpus_per_job $tot_gpus
 }
-set srun_pid [spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l $file_in]
+spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J $test_name -l $file_in
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match_gpu [cuda_count $expect_out(1,string)]
@@ -130,7 +130,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -146,7 +145,7 @@ if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
 	set match_craynetwork 0
 	set match_gpu 0
 	incr use_gpus_per_job -2
-	set srun_pid [spawn $srun --gres=craynetwork:1 --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l $file_in]
+	spawn $srun --gres=craynetwork:1 --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J $test_name -l $file_in
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr match_gpu [cuda_count $expect_out(1,string)]
@@ -161,7 +160,6 @@ if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {
@@ -184,7 +182,7 @@ if {$gpus_per_node > 1} {
 } else {
 	set use_gpus_per_node $gpus_per_node
 }
-set srun_pid [spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -J "test$test_id" -l $file_in]
+spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -J $test_name -l $file_in
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match_gpu [cuda_count $expect_out(1,string)]
@@ -199,7 +197,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -237,7 +234,7 @@ if { [llength $node_list] != $nb_nodes } {
 	} else {
 		set cpus_per_task 1
 	}
-	set srun_pid [spawn $srun --gres=craynetwork --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodelist=[join $node_list ","] --ntasks=$nb_nodes --cpus-per-task=$cpus_per_task -t1 -J "test$test_id" -l $file_in]
+	spawn $srun --gres=craynetwork --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodelist=[join $node_list ","] --ntasks=$nb_nodes --cpus-per-task=$cpus_per_task -t1 -J $test_name -l $file_in
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr match_gpu [cuda_count $expect_out(1,string)]
@@ -252,7 +249,6 @@ if { [llength $node_list] != $nb_nodes } {
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {
@@ -274,7 +270,7 @@ if {$gpu_cnt > 1} {
 } else {
 	set use_gpus_per_node $gpu_cnt
 }
-set srun_pid [spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -J "test$test_id" -l $file_in]
+spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -J $test_name -l $file_in
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match_gpu [cuda_count $expect_out(1,string)]
@@ -289,7 +285,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

@@ -29,11 +29,7 @@
 ############################################################################
 source ./globals
 
-set file_prog   "test$test_id.prog"
-set failure_addendum ""
-if [param_contains [get_config_param "SlurmdParameters"] "config_overrides"] {
-	set failure_addendum "; This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration or if using task/cgroup without task/affinity"
-}
+set file_prog   "$test_name.prog"
 
 if {[param_contains [get_config_param "SelectTypeParameters"] "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
@@ -117,14 +113,13 @@ if {$force == 1} {
 # Identify a usable node
 set timeout $max_job_delay
 set node_name ""
-set srun_pid [spawn $srun -N1 --exclusive --verbose $bin_printenv SLURMD_NODENAME]
+spawn $srun -N1 --exclusive --verbose $bin_printenv SLURMD_NODENAME
 expect {
 	-re "on host ($re_word_str)" {
 		set node_name $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -180,15 +175,21 @@ if {$num_cputot < $total_thread_count} {
 }
 
 proc cleanup {} {
-	global bin_rm file_prog
+	global file_prog test_status STATUS_FAIL
 
-	exec $bin_rm -f $file_prog
+	file delete $file_prog
+
+	if {$test_status == $STATUS_FAIL} {
+		if [param_contains [get_config_param "SlurmdParameters"] "config_overrides"] {
+			log_warn "This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration or if using task/cgroup without task/affinity"
+		}
+	}
+
 }
 
 #
 # Build a test program to report affinity by task
 #
-exec $bin_rm -f $file_prog
 exec $bin_cc -I$build_dir $file_prog.c -o $file_prog
 exec $bin_chmod 700 $file_prog
 
@@ -197,7 +198,7 @@ exec $bin_chmod 700 $file_prog
 #
 global env
 set env(SLURM_CPU_BIND) "verbose"
-set salloc_pid [spawn $salloc -w $node_name -N1 --exclusive --verbose -t2 $bin_bash]
+spawn $salloc -w $node_name -N1 --exclusive --verbose -t2 $bin_bash
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -211,7 +212,6 @@ expect {
 	-re $test_prompt {
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "salloc not responding or failure to recognize prompt"
 	}
 }
@@ -244,7 +244,6 @@ expect {
 		fail "Some error occurred"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re "$srun" {
@@ -277,7 +276,7 @@ expect {
 	}
 	-re $test_prompt
 }
-subtest {$task_mask == $expected_mask} "Affinity mask is consistent for a job step with affinity to verify unique masks" "$task_mask != $expected_mask$failure_addendum"
+subtest {$task_mask == $expected_mask} "Affinity mask is consistent for a job step with affinity to verify unique masks" "$task_mask != $expected_mask"
 
 #############################################################################
 #
@@ -312,7 +311,7 @@ expect {
 	}
 	-re $test_prompt
 }
-subtest {$task_mask == $expected_mask} "Affinity mask is consistent for a job step with affinity to verify unique masks with min -B 1:1:1" "task_mask != $expected_mask$failure_addendum"
+subtest {$task_mask == $expected_mask} "Affinity mask is consistent for a job step with affinity to verify unique masks with min -B 1:1:1" "task_mask != $expected_mask"
 
 #############################################################################
 #
@@ -352,8 +351,8 @@ while {$this_cnt <= $num_sockets} {
 		-re $test_prompt
 	}
 
-	subtest {$num_tasks == $expected_tasks} "Number of tasks is consistent for $this_cnt sockets" "$num_tasks != $expected_tasks$failure_addendum"
-	subtest {$num_bits == $expected_tasks} "Number of set bits is consistent for $this_cnt sockets" "$num_bits != $expected_tasks$failure_addendum"
+	subtest {$num_tasks == $expected_tasks} "Number of tasks is consistent for $this_cnt sockets" "$num_tasks != $expected_tasks"
+	subtest {$num_bits == $expected_tasks} "Number of set bits is consistent for $this_cnt sockets" "$num_bits != $expected_tasks"
 	incr this_cnt 1
 }
 
@@ -396,8 +395,8 @@ while {$this_cnt <= $num_cores} {
 		-re $test_prompt
 	}
 
-	subtest {$num_tasks == $expected_tasks} "Number of tasks is consistent for $this_cnt cores" "$num_tasks != $expected_tasks$failure_addendum"
-	subtest {$num_bits == $expected_tasks} "Number of set bits is consistent for $this_cnt cores" "$num_bits != $expected_tasks$failure_addendum"
+	subtest {$num_tasks == $expected_tasks} "Number of tasks is consistent for $this_cnt cores" "$num_tasks != $expected_tasks"
+	subtest {$num_bits == $expected_tasks} "Number of set bits is consistent for $this_cnt cores" "$num_bits != $expected_tasks"
 	incr this_cnt 1
 }
 
@@ -440,8 +439,8 @@ while {$this_cnt <= $num_threads} {
 		-re $test_prompt
 	}
 
-	subtest {$num_tasks == $expected_tasks} "Number of tasks is consistent for $this_cnt threads" "$num_tasks != $expected_tasks$failure_addendum"
-	subtest {$num_bits == $expected_tasks} "Number of set bits is consistent for $this_cnt threads" "$num_bits != $expected_tasks$failure_addendum"
+	subtest {$num_tasks == $expected_tasks} "Number of tasks is consistent for $this_cnt threads" "$num_tasks != $expected_tasks"
+	subtest {$num_bits == $expected_tasks} "Number of set bits is consistent for $this_cnt threads" "$num_bits != $expected_tasks"
 	incr this_cnt 1
 }
 
@@ -483,8 +482,8 @@ while {$this_cnt <= $core_task_cnt} {
 		-re $test_prompt
 	}
 
-	subtest {$num_tasks == $expected_tasks} "Number of tasks is consistent for $this_cnt cpus per task" "$num_tasks != $expected_tasks$failure_addendum"
-	subtest {$num_bits == $this_cnt} "Number of set bits is consistent for $this_cnt cpus per task" "$num_bits != $this_cnt$failure_addendum"
+	subtest {$num_tasks == $expected_tasks} "Number of tasks is consistent for $this_cnt cpus per task" "$num_tasks != $expected_tasks"
+	subtest {$num_bits == $this_cnt} "Number of set bits is consistent for $this_cnt cpus per task" "$num_bits != $this_cnt"
 	incr this_cnt 1
 }
 
@@ -514,7 +513,7 @@ expect {
 	-re $test_prompt
 }
 
-subtest {$task_mask == $expected_mask} "Affinity mask is consistent for a job step with plane distribution" "$task_mask != $expected_mask$failure_addendum"
+subtest {$task_mask == $expected_mask} "Affinity mask is consistent for a job step with plane distribution" "$task_mask != $expected_mask"
 
 #############################################################################
 #
@@ -526,7 +525,6 @@ expect {
 		fail "Some error occurred"
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	eof {

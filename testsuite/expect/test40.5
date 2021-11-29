@@ -111,7 +111,7 @@ echo 'HOST:'\$SLURMD_NODENAME 'CUDA_VISIBLE_DEVICES:'\$CUDA_VISIBLE_DEVICES 'CUD
 #
 # Submit job to expand: uses 10 gres/mps on one node
 #
-spawn $sbatch -N1 --exclusive -J "test$test_id" -t2 --gres=mps:10 --output=$file_out1 $file_in1
+spawn $sbatch -N1 --exclusive -J $test_name -t2 --gres=mps:10 --output=$file_out1 $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
