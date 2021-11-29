@@ -650,8 +650,24 @@ bit_super_set(bitstr_t *b1, bitstr_t *b2)
 
 	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8) {
 		if (b1[_bit_word(bit)] != (b1[_bit_word(bit)] &
-		                           b2[_bit_word(bit)]))
-			return 0;
+		                           b2[_bit_word(bit)])) {
+			bitstr_t mask;
+			if ((bit + sizeof(bitstr_t) * 8) <= _bitstr_bits(b1))
+				return 0;
+#ifdef SLURM_BIGENDIAN
+			mask = ((~((bitstr_t) 0)) <<
+				((BITSTR_MAXPOS + 1) -
+				 (_bitstr_bits(b1) & BITSTR_MAXPOS)));
+#else
+			mask = (((bitstr_t) 1 <<
+				(_bitstr_bits(b1) & BITSTR_MAXPOS)) - 1);
+#endif
+			if ((b1[_bit_word(bit)] & mask) != (b1[_bit_word(bit)] &
+							    b2[_bit_word(bit)] &
+							    mask))
+				return 0;
+		}
+
 	}
 
 	return 1;
