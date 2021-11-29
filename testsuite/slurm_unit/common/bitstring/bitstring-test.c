@@ -62,6 +62,7 @@ main(int argc, char *argv[])
 		TEST(bit_ffc(bs) == 15, "ffc");
 
 		bit_free(bs);
+		bit_free(bs2);
 		/*bit_set(bs,9); */	/* triggers TEST in bit_set - OK */
 	}
 	note("Testing and/or/not");
