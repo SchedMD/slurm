@@ -43,6 +43,7 @@ if {$nodes_avail < $nodes_min} {
 
 proc cleanup {} {
 	global resv_name1 resv_name2 resv_name3 user_name job_list scontrol
+
 	run_command "$scontrol delete reservation=$resv_name3"
 	run_command "$scontrol delete reservation=$resv_name2"
 	run_command "$scontrol delete reservation=$resv_name1"
@@ -99,9 +100,7 @@ foreach job_id $job_list {
 	}
 
 	# Wait for job to run to get the actual Nodes allocated
-	if {[wait_for_job $job_id "DONE"]} {
-		fail "Job $job_id failed to run"
-	}
+	wait_for_job -fail $job_id "DONE"
 
 	set job_nodes [get_job_param $job_id  "Nodes"]
 	subtest {$job_nodes == $res2_nodes || $job_nodes == $res1_nodes || $job_nodes == $res3_nodes} "Verify JobId=$job_id landed on a reservation's node" "$job_nodes not a resv node"

@@ -91,27 +91,20 @@ if {$node_count == 0} {
 set file_cnt 0
 for {set task_id 0} {$task_id < $node_count} {incr task_id} {
 	set file_out_t_glob  "$test_dir/t.$task_id.output"
-	if {[wait_for_file $file_out_t_glob] != 0} {
-		fail "Output file $file_out_t_glob did not get created"
-	} else {
-		set test_task_id -1
-		spawn $bin_cat $file_out_t_glob
-		expect {
-			-re "($number): *hello" {
-				set test_task_id $expect_out(1,string)
-				exp_continue
-			}
-			eof {
-				wait
-			}
+	wait_for_file -fail $file_out_t_glob
+	set test_task_id -1
+	spawn $bin_cat $file_out_t_glob
+	expect {
+		-re "($number): *hello" {
+			set test_task_id $expect_out(1,string)
+			exp_continue
 		}
-		if {$task_id != $test_task_id} {
-			fail "File $file_out_t_glob was not labelled ($task_id != $test_task_id)"
-		} else {
-			exec $bin_rm -f $file_out_t_glob
+		eof {
+			wait
 		}
-		incr file_cnt
 	}
+	subtest {$task_id == $test_task_id} "Verify file ($file_out_t_glob) was labelled" "$task_id != $test_task_id"
+	incr file_cnt
 }
 
 subtest {$file_cnt == $node_count} "Stdout file names should be generated with task id (%t) in them"

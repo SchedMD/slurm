@@ -64,10 +64,7 @@ if {$job_id == 0} {
 	fail "sbatch did not submit jobs"
 }
 
-if {[wait_for_job ${job_id}_0 "RUNNING"] != 0} {
-	cancel_job $job_id
-	fail "Waiting for job to start"
-}
+wait_for_job -fail ${job_id}_0 "RUNNING"
 
 set inx 0
 while { $inx < 10 } {

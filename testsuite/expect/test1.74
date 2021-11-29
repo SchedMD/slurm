@@ -103,9 +103,7 @@ proc srun_test {exp_cnt account} {
 			fail "Did not get job id"
 		}
 	} else {
-		if {[wait_for_job $job_id DONE] != 0} {
-			fail "Timed out waiting for job $job_id to complete"
-		}
+		wait_for_job -fail $job_id DONE
 	}
 
 	subtest {$count == $exp_cnt} "Correct number of tasks should be run" "$count != $exp_cnt"

@@ -79,9 +79,7 @@ set job_id [submit_job -fail "--output=$file_out -t1 $file_in"]
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Waiting for job to complete"
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Inspect the job's output file

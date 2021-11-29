@@ -190,9 +190,7 @@ if {$job_id == 0} {
 	fail "sbatch did not submit job"
 }
 
-if {[wait_for_file $file_out] != 0} {
-	fail "Output file was not created"
-}
+wait_for_file -fail $file_out
 
 set first_node ""
 set core_cnt   0

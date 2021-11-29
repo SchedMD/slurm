@@ -64,44 +64,36 @@ if {$job_id == 0} {
 # Wait for job completion
 #
 sleep 60
-if {[wait_for_job $job_id DONE] != 0} {
-	fail "Job timed out waiting for completion"
+wait_for_job -fail $job_id DONE
+
+wait_for_file -fail $file_out
+set timed_out 0
+spawn cat $file_out
+expect {
+	-re " TimeLimit=00:01:00" {
+		set timed_out 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$timed_out == 0} {
+	fail "srun time limit not found"
 }
 
-if {[wait_for_file $file_out] == 0} {
-	set timed_out 0
-	spawn cat $file_out
-	expect {
-		-re " TimeLimit=00:01:00" {
-			set timed_out 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_err
+set timed_out 0
+spawn cat $file_err
+expect {
+	-re " STEP $job_id\\.1 ON .* CANCELLED AT.*DUE TO TIME LIMIT " {
+		set timed_out 1
+		exp_continue
 	}
-	if {$timed_out == 0} {
-		fail "srun time limit not found"
+	eof {
+		wait
 	}
-} else {
-	fail "Job output file missing"
 }
-
-if {[wait_for_file $file_err] == 0} {
-	set timed_out 0
-	spawn cat $file_err
-	expect {
-		-re " STEP $job_id\\.1 ON .* CANCELLED AT.*DUE TO TIME LIMIT " {
-			set timed_out 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$timed_out == 0} {
-		fail "srun time limit not enforced"
-	}
-} else {
-	fail "Job error file missing"
+if {$timed_out == 0} {
+	fail "srun time limit not enforced"
 }

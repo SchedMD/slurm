@@ -221,9 +221,7 @@ set job_id [submit_job -fail "-n$num_tasks --mem-per-cpu=$job_mem_limit --output
 #
 # Wait for job to run
 #
-if {[wait_for_job $job_id "RUNNING"]} {
-	fail "job never run"
-}
+wait_for_job -fail $job_id "RUNNING"
 
 wait_and_subtest _get_mem       $sstat
 wait_and_subtest _get_file_size $sstat
@@ -231,9 +229,7 @@ wait_and_subtest _get_file_size $sstat
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "job never end"
-}
+wait_for_job -fail $job_id "DONE"
 
 wait_and_subtest _get_mem       $sacct
 wait_and_subtest _get_file_size $sacct
