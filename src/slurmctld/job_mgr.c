@@ -7697,6 +7697,7 @@ static bool _dup_job_file_test(uint32_t job_id)
 		      job_id);
 		return true;
 	}
+	errno = 0; /* don't care about errno */
 	return false;
 }
 
