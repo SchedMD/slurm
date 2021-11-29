@@ -305,6 +305,7 @@ static bool _job_runnable_test1(job_record_t *job_ptr, bool sched_plugin)
 		 * previous run hasn't finished yet */
 		job_ptr->state_reason = WAIT_CLEANING;
 		xfree(job_ptr->state_desc);
+		last_job_update = now;
 		sched_debug3("%pJ. State=PENDING. Reason=Cleaning.", job_ptr);
 		return false;
 	}
@@ -346,6 +347,7 @@ static bool _job_runnable_test1(job_record_t *job_ptr, bool sched_plugin)
 		/* released behind active dependency? */
 		job_ptr->state_reason = WAIT_DEPENDENCY;
 		xfree(job_ptr->state_desc);
+		last_job_update = now;
 	}
 
 	if (!job_indepen)	/* can not run now */
@@ -958,6 +960,7 @@ extern void fill_array_reasons(job_record_t *job_ptr,
 		/* Set the reason for the subsequent array task */
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = reject_array_job->state_reason;
+		last_job_update = time(NULL);
 		debug3("%s: Setting reason of array task %pJ to %s",
 		       __func__, job_ptr,
 		       job_reason_string(job_ptr->state_reason));
@@ -1262,6 +1265,7 @@ static int _schedule(bool full_queue)
 				continue;
 			job_ptr->state_reason = WAIT_FRONT_END;
 			xfree(job_ptr->state_desc);
+			last_job_update = now;
 		}
 		list_iterator_destroy(job_iterator);
 
@@ -1493,6 +1497,7 @@ next_task:
 				if (job_ptr->state_reason == WAIT_NO_REASON) {
 					xfree(job_ptr->state_desc);
 					job_ptr->state_reason = WAIT_PRIORITY;
+					last_job_update = now;
 				}
 				if (job_ptr->part_ptr == skip_part_ptr)
 					continue;
@@ -1545,6 +1550,7 @@ next_task:
 			if (found_resv) {
 				job_ptr->state_reason = WAIT_PRIORITY;
 				xfree(job_ptr->state_desc);
+				last_job_update = now;
 				sched_debug3("%pJ. State=PENDING. Reason=Priority. Priority=%u. Resv=%s.",
 					     job_ptr,
 					     job_ptr->priority,
@@ -1564,6 +1570,7 @@ next_task:
 					    job_ptr->priority);
 				job_ptr->state_reason = WAIT_PRIORITY;
 				xfree(job_ptr->state_desc);
+				last_job_update = now;
 			} else {
 				/*
 				 * Log job can not run even though we are not
@@ -2252,6 +2259,7 @@ job_failed:
 	xfree(job_ptr->state_desc);
 	job_ptr->state_desc = xstrdup(fail_why);
 	job_ptr->state_reason = FAIL_SYSTEM;
+	last_job_update = time(NULL);
 	slurm_free_job_launch_msg(launch_msg_ptr);
 	/* ignore the return as job is in an unknown state anyway */
 	job_complete(job_ptr->job_id, slurm_conf.slurm_user_id, false, false,
@@ -3049,6 +3057,7 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 	if (or_satisfied && (job_ptr->state_reason == WAIT_DEP_INVALID)) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
+		last_job_update = time(NULL);
 	}
 
 	if (or_satisfied || (!or_flag && !and_failed && !has_unfulfilled)) {
@@ -3603,6 +3612,7 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 	ListIterator itr;
 	bool or_satisfied = false, and_failed = false, or_flag = false,
 	     has_unfulfilled = false;
+	time_t now = time(NULL);
 
 	xassert(job_ptr->details);
 	xassert(job_ptr->details->depend_list);
@@ -3636,6 +3646,7 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 		    (job_ptr->state_reason == WAIT_DEPENDENCY)) {
 			job_ptr->state_reason = WAIT_NO_REASON;
 			xfree(job_ptr->state_desc);
+			last_job_update = now;
 		}
 		_depend_list2str(job_ptr, false);
 		fed_mgr_job_requeue(job_ptr);
@@ -3650,6 +3661,7 @@ extern int handle_job_dependency_updates(void *object, void *arg)
 			/* Still dependent */
 			job_ptr->state_reason = WAIT_DEPENDENCY;
 			xfree(job_ptr->state_desc);
+			last_job_update = now;
 		}
 	}
 	if (slurm_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)

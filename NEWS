@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     print 'UNKN-###' instead of leaving a blank name.
  -- Correctly determine task count when giving --cpus-per-gpu, --gpus and
     --ntasks-per-node without task count.
+ -- slurmctld - Fix places where the global last_job_update was not being set
+    to the time of update when a job's reason and description were updated.
 
 * Changes in Slurm 21.08.4
 ==========================
