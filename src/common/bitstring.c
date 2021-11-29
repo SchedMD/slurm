@@ -1532,7 +1532,6 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 	bit_nclear(bitmap, 0, bitsize - 1);
 	if (xstrncmp(str, "0x", 2) == 0) {	/* Bypass 0x */
 		str += 2;
-		len -= 2;
 	}
 
 	while (curpos >= str) {
@@ -1582,7 +1581,6 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 				break;
 			}
 		}
-		len--;
 		curpos--;
 		bit_index+=4;
 	}
@@ -1645,7 +1643,6 @@ void bit_unfmt_binmask(bitstr_t * bitmap, const char* str)
 		current -= '0';
 		if ((current & 1) && (bit_index   < bitsize))
 			bit_set(bitmap, bit_index);
-		len--;
 		curpos--;
 		bit_index++;
 	}
