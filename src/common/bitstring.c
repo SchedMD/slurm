@@ -648,7 +648,7 @@ bit_super_set(bitstr_t *b1, bitstr_t *b2)
 	_assert_bitstr_valid(b2);
 	xassert(_bitstr_bits(b1) == _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8) {
+	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t) * 8) {
 		if (b1[_bit_word(bit)] != (b1[_bit_word(bit)] &
 		                           b2[_bit_word(bit)])) {
 			bitstr_t mask;
