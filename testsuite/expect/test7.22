@@ -53,6 +53,7 @@ if {[get_partition_param [default_partition] "OverSubscribe"] != "NO"} {
 
 proc cleanup { } {
 	global job_id job_pd job_bf
+
 	cancel_job [list $job_id $job_pd $job_bf]
 }
 
@@ -65,9 +66,7 @@ proc test_bf {job_pd_args job_bf_args bf_expected} {
 	set job_id [submit_job -fail "--exclusive --nice=0   -o /dev/null -J $test_name --time=$bf_interval3 --wrap '$bin_sleep $bf_interval3' -N$nodes_except_one"]
 
 	# Wait to avoid job2 to be scheduled
-	if {[wait_for_job $job_id "RUNNING"]} {
-		fail "First job $job_id not started"
-	}
+	wait_for_job -fail $job_id "RUNNING"
 
 	# Submit the job_pd with higher prio, and later the job_bf with less prio
 	set job_pd [submit_job -fail "--exclusive --nice=0   -o /dev/null -J $test_name $job_pd_args"]

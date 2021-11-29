@@ -79,10 +79,7 @@ if { $job_id == 0 } {
 #
 # Wait for job to start
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	cancel_job $job_id
-	fail "Waiting for job to start"
-}
+wait_for_job -fail $job_id "RUNNING"
 # wait for job step to start
 sleep 5
 set debug 0

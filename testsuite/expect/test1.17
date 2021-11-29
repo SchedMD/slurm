@@ -38,10 +38,8 @@ set got_login_grps       0
 set got_sleep_err        0
 
 #
-# Delete left-over stdin/out/err files
 # Build stdin file
 #
-exec $bin_rm -f $file_in $file_out $file_err
 make_bash_script $file_in "
   $bin_id
   $bin_sleep aaa
@@ -60,13 +58,12 @@ set login_grp_info "uid=[get_my_uid]"
 # and confirm their contents
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --input=$file_in --output=$file_out --error=$file_err --open-mode=t -t1 $bin_bash]
+spawn $srun --input=$file_in --output=$file_out --error=$file_err --open-mode=t -t1 $bin_bash
 expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -74,19 +71,18 @@ expect {
 	}
 }
 
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "INITIAL_VALUE" {
-			fail "Stdout file not truncated"
-		}
-		-re "$login_grp_info" {
-			incr got_job_grps
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_out
+spawn $bin_cat $file_out
+expect {
+	-re "INITIAL_VALUE" {
+		fail "Stdout file not truncated"
+	}
+	-re "$login_grp_info" {
+		incr got_job_grps
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 
@@ -95,24 +91,23 @@ subtest {$got_job_grps == 1} "Confirm user and group ID info seen on stdout in t
 #
 # Check for sleep input specification error in stderr
 #
-if {[wait_for_file $file_err] == 0} {
-	spawn $bin_cat $file_err
-	expect {
-		-re "INITIAL_VALUE" {
-			fail "stderr file not truncated"
-		}
-		-re "$sleep_error_message" {
-			log_debug "No worries, this error is expected"
-			incr got_sleep_err
-			exp_continue
-		}
-		-re "Specify time as a positive integer.*\n" {
-			incr got_sleep_err
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_err
+spawn $bin_cat $file_err
+expect {
+	-re "INITIAL_VALUE" {
+		fail "stderr file not truncated"
+	}
+	-re "$sleep_error_message" {
+		log_debug "No worries, this error is expected"
+		incr got_sleep_err
+		exp_continue
+	}
+	-re "Specify time as a positive integer.*\n" {
+		incr got_sleep_err
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 
@@ -123,13 +118,12 @@ subtest {$got_sleep_err == 1} "Check for sleep input specification error in stde
 # and confirm their contents
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --input=$file_in --output=$file_out --error=$file_err --open-mode=a -t1 $bin_bash]
+spawn $srun --input=$file_in --output=$file_out --error=$file_err --open-mode=a -t1 $bin_bash
 expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -137,17 +131,16 @@ expect {
 	}
 }
 
+wait_for_file -fail $file_out
 set got_job_grps 0
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "$login_grp_info" {
-			incr got_job_grps
-			exp_continue
-		}
-		eof {
-			wait
-		}
+spawn $bin_cat $file_out
+expect {
+	-re "$login_grp_info" {
+		incr got_job_grps
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 
@@ -156,22 +149,21 @@ subtest {$got_job_grps == 2} "Confirm user and group ID seen on stdout in append
 #
 # Check for sleep input specification error in stderr
 #
+wait_for_file -fail $file_err
 set got_sleep_err 0
-if {[wait_for_file $file_err] == 0} {
-	spawn $bin_cat $file_err
-	expect {
-		-re "$sleep_error_message" {
-			log_debug "No worries, this error is expected"
-			incr got_sleep_err
-			exp_continue
-		}
-		-re "Specify time as a positive integer.*\n" {
-			incr got_sleep_err
-			exp_continue
-		}
-		eof {
-			wait
-		}
+spawn $bin_cat $file_err
+expect {
+	-re "$sleep_error_message" {
+		log_debug "No worries, this error is expected"
+		incr got_sleep_err
+		exp_continue
+	}
+	-re "Specify time as a positive integer.*\n" {
+		incr got_sleep_err
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 

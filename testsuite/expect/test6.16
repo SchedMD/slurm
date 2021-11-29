@@ -52,9 +52,7 @@ make_bash_script $file_in "
 #
 set job_id [submit_job -fail "-n3 --mem=30 --output=/dev/null --error=/dev/null --job-name=job.$test_id -t5 $file_in"]
 
-if {[wait_for_job $job_id RUNNING] != 0} {
-	fail "Error starting job $job_id"
-}
+wait_for_job -fail $job_id RUNNING
 # Wait for job steps to begin
 exec $bin_sleep 3
 

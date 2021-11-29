@@ -56,7 +56,6 @@ proc cleanup {} {
 #
 # Build input script file
 #
-exec $bin_rm -f $file_in
 make_bash_script $file_in "$bin_sleep 5"
 
 #
@@ -88,7 +87,6 @@ if {$job_id == 0} {
 # verify time limit
 #
 if {[wait_for_job $job_id DONE] != 0} {
-	cancel_job $job_id
 	fail "Job failed to run to completion. This can be due to QOS or account time limit <120 minutes"
 }
 spawn $scontrol show job $job_id

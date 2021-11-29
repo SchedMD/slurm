@@ -67,9 +67,7 @@ proc run_job_test { } {
 	set job_id1 [submit_job -fail "-p $test_part --account=$test_acct --qos=$job_qos -t1 --mem=10 -o /dev/null -N1 $file_in"]
 
 	# Wait for job to start and get its info
-	if {[wait_for_job $job_id1 "RUNNING"] != 0} {
-		fail "Error waiting for job $job_id1 to run"
-	}
+	wait_for_job -fail $job_id1 "RUNNING"
 
 	set hostname [get_job_param $job_id1 "NodeList"]
 

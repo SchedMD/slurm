@@ -84,15 +84,13 @@ if {$job_id == 0} {
 #
 # Wait for job _and_ step to start running
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-    fail "Waiting for job to start running"
-}
+wait_for_job -fail $job_id "RUNNING"
 sleep 5
 
 #
 # Validate that step's original time limit
 #
-spawn  $scontrol show step $job_id.$step_id
+spawn $scontrol show step $job_id.$step_id
 expect {
 	-re "TimeLimit=00:($number):00" {
 		set orig_time $expect_out(1,string)

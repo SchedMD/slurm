@@ -66,32 +66,27 @@ if {$job_id == 0} {
 	fail "sbatch did not submit the job"
 }
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Timed out waiting for job to complete"
-}
+wait_for_job -fail $job_id "DONE"
 
-if {[wait_for_file $file_out] == 0} {
-	set node_name "UNSET"
-	set matches  0
-	spawn $bin_cat $file_out
-	expect {
-		-re "SUBMIT_NODE=($re_word_str)" {
-			set node_name $expect_out(1,string)
+wait_for_file -fail $file_out
+set node_name "UNSET"
+set matches  0
+spawn $bin_cat $file_out
+expect {
+	-re "SUBMIT_NODE=($re_word_str)" {
+		set node_name $expect_out(1,string)
+		exp_continue
+	}
+	-re "SLURM_STEP_NODELIST=($re_word_str)" {
+		if {![string compare $expect_out(1,string) $node_name]} {
+			incr matches
 			exp_continue
 		}
-		-re "SLURM_STEP_NODELIST=($re_word_str)" {
-			if {![string compare $expect_out(1,string) $node_name]} {
-				incr matches
-				exp_continue
-			}
-		}
-		eof {
-			wait
-		}
 	}
-	if {$matches != 1} {
-		fail "Unexpected output ($matches != 1)"
+	eof {
+		wait
 	}
-} else {
-	fail "Output file missing"
+}
+if {$matches != 1} {
+	fail "Unexpected output ($matches != 1)"
 }

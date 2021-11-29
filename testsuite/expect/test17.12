@@ -96,9 +96,7 @@ proc test_constrain {nnode constrain mandatory_nodes {posible_nodes ""} {exclude
 		subtest {[regexp "Requested node configuration is not available" $output]} "Job should be rejected due configuration not available"
 	} else {
 		if {[subtest {$test_job != 0} "Job should be submitted"]} {
-			if {[wait_for_job $test_job "RUNNING"]} {
-				fail "Error waiting for job $test_job to start"
-			}
+			wait_for_job -fail $test_job "RUNNING"
 
 			# Check that job that the job used the correct nodes
 			set hostslist [get_job_param $test_job "NodeList"]
@@ -128,9 +126,7 @@ proc test_constrain_batch {nnode constrain constrain_batch expected_batch_node} 
 	regexp {Submitted batch job (\d+)} $output - test_job
 
 	if {[subtest {$test_job != 0} "Job should be submitted"]} {
-		if {[wait_for_job $test_job "RUNNING"] != 0} {
-			fail "Error waiting for job $test_job to start"
-		}
+		wait_for_job -fail $test_job "RUNNING"
 		# Check that job that the job used the correct nodes
 		set batch_host [get_job_param $test_job "BatchHost"]
 		subtest {$batch_host == $expected_batch_node} "Job's batch node should be $expected_batch_node" "was $batch_host"

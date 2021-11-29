@@ -76,9 +76,8 @@ proc inc21_21_good { test_type limit } {
 			wait
 		}
 	}
-
-	if {$job_id != 0 && [wait_for_job $job_id "DONE"] != 0} {
-		fail "Job $job_id did not complete"
+	if {$job_id == 0} {
+		wait_for_job -fail $job_id "DONE"
 	}
 
 	subtest -fail { $matches == 1 } "Job launches with correct limit"
@@ -122,9 +121,8 @@ proc inc21_21_bad { test_type limit } {
 			wait
 		}
 	}
-
-	if {$job_id != 0 && [wait_for_job $job_id "DONE"] != 0} {
-		fail "Job $job_id did not complete"
+	if {$job_id != 0} {
+		wait_for_job -fail $job_id "DONE"
 	}
 }
 

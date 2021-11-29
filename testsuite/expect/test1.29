@@ -169,9 +169,7 @@ if {[dict get $result exit_code]} {
 if {![regexp {Submitted \S+ job (\d+)} $output - job_id]} {
 	fail "Unable to submit batch script"
 }
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Waiting for job to complete"
-}
+wait_for_job -fail $job_id "DONE"
 test_limit_propagation
 
 
@@ -193,9 +191,7 @@ if {[dict get $result exit_code]} {
 if {![regexp {Submitted \S+ job (\d+)} $output - job_id]} {
 	fail "Unable to submit batch script"
 }
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Waiting for job to complete"
-}
+wait_for_job -fail $job_id "DONE"
 test_limit_propagation
 
 
@@ -211,7 +207,5 @@ make_bash_script $file_in "
 "
 set job_id [submit_job -fail "-n1 --output=$file_out --error=$file_err -t1 $file_in"]
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Waiting for job to complete"
-}
+wait_for_job -fail $job_id "DONE"
 test_limit_propagation

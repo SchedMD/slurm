@@ -108,16 +108,12 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 }
 
 foreach job_id $job_list {
-	if {[wait_for_job $job_id "DONE"]} {
-		fail "Job $job_id not end"
-	}
+	wait_for_job -fail $job_id "DONE"
 }
 
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set ofile ${file_out}.${inx}
-	if {[wait_for_file -timeout 20 $ofile] != 0} {
-		fail "Output file $ofile not found"
-	}
+	wait_for_file -fail -timeout 20 $ofile
 	set output [run_command_output "$bin_cat $ofile"]
 	set matches_list [regexp -inline -all "CUDA_VISIBLE_DEVICES:($number_commas)" $output]
 	set match 0

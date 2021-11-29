@@ -162,7 +162,10 @@ static void _init_jwks(void)
 		key_file = xstrdup(start);
 
 	debug("loading jwks file `%s`", key_file);
-	buf = create_mmap_buf(key_file);
+	if (!(buf = create_mmap_buf(key_file))) {
+		fatal("%s: Could not load key file (%s)",
+		      plugin_type, key_file);
+	}
 
 	if (data_g_deserialize(&jwks, buf->head, buf->size, MIME_TYPE_JSON))
 		fatal("%s: failed to deserialize jwks file `%s`",

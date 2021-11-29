@@ -154,9 +154,7 @@ proc test_usage_factor { qos usage_factor } {
 	#
 	# Wait for job to enter running state
 	#
-	if {[wait_for_job -pollinterval .1 $job_id "RUNNING"] != 0} {
-		fail "Error waiting for job $job_id to be RUNNING"
-	}
+	wait_for_job -fail -pollinterval .1 $job_id "RUNNING"
 
 	#
 	# Get the number of allocated CPUs of the job to compute the

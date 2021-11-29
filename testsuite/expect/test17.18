@@ -128,9 +128,7 @@ cancel_job $job_id1
 #
 # Inspect the job's output file
 #
-if {[wait_for_file $file_out] != 0} {
-	fail "Failed waiting for file ($file_out)"
-}
+wait_for_file -fail $file_out
 
 spawn $bin_cat $file_out
 expect {

@@ -326,9 +326,7 @@ if {![regexp -line "^\\S+\\|$ta1\\|$tu1\\|normal,$tq1" [run_command_output "$sac
 regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta1 --wrap \"$srun sleep 10\" -o none -e none"] {} job_id_1
 
 # The first job should get queued
-if {[wait_for_job $job_id_1 "PENDING"] != 0} {
-	fail "Job $job_id_1 did not enter the pending state"
-}
+wait_for_job -fail $job_id_1 "PENDING"
 
 # Remove the test qos out from under the job
 run_command "$sacctmgr -vi modify account name=$ta1 user=$tu1 set qos=normal"
@@ -355,9 +353,7 @@ subtest {$condition_matched} "Job $job_id_1 should be PD with Reason=InvalidQOS"
 run_command -fail "$sacctmgr -vi modify account name=$ta1 user=$tu1 set qos=normal,$tq1"
 
 # Wait for the first job to begin running
-if {[wait_for_job $job_id_1 "RUNNING"] != 0} {
-	fail "Job $job_id_1 did not run after adding back the qos"
-}
+wait_for_job -fail $job_id_1 "RUNNING"
 
 log_info "Testing that PD jobs that lost their Account will not resume until restored"
 
@@ -392,9 +388,7 @@ wait_for -fail {$delete_account_status == 0} {
 	regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"$srun sleep 10\" -o none -e none"] {} job_id_1
 
 	# The first job should get queued
-	if [wait_for_job $job_id_1 "PENDING"] {
-		fail "Job $job_id_1 did not enter the pending state"
-	}
+	wait_for_job -fail $job_id_1 "PENDING"
 
 	# Remove the test account out from under the job
 	set delete_account_results [run_command "$sacctmgr -vi delete account name=$ta2"]
@@ -434,6 +428,4 @@ run_command -fail "$sacctmgr -vi add account name=$ta2 set qos=normal,$tq1"
 run_command -fail "$sacctmgr -vi add user name=$tu1 account=$ta2"
 
 # Wait for the first job to begin running
-if {[wait_for_job $job_id_1 "RUNNING"] != 0} {
-	fail "Job $job_id_1 did not run after adding back the qos"
-}
+wait_for_job -fail $job_id_1 "RUNNING"

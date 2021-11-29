@@ -67,9 +67,7 @@ set job_id [submit_job -fail "--output=$file_out --error=$file_err -t2 $file_in"
 #
 # Wait for job to start running, then signal it
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	fail "Waiting for job to start running"
-}
+wait_for_job -fail $job_id "RUNNING"
 exec $bin_sleep 5
 spawn $squeue --steps=$job_id.$step_id
 expect {
@@ -126,9 +124,7 @@ set job_id [submit_job -fail "--output=$file_out --error=$file_err -t2 $file_in"
 # Wait for job to start running and
 # send SIGHUP and confirm that job gets cancelled
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	fail "Waiting for job to start running"
-}
+wait_for_job -fail $job_id "RUNNING"
 exec $bin_sleep 5
 spawn $squeue --jobs=$job_id
 expect {
@@ -187,9 +183,7 @@ set job_id [submit_job -fail "--output=$file_out --error=$file_err -t2 $file_in"
 #
 # Wait for job to start running
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	fail "Waiting for job to start running"
-}
+wait_for_job -fail $job_id "RUNNING"
 exec $bin_sleep 5
 spawn $squeue --steps=$job_id.$step_id
 expect {

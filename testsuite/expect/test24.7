@@ -134,9 +134,7 @@ proc sub_job { args state } {
 		fail "Did not get sbatch jobid"
 	}
 
-	if {[wait_for_job $jobid $state] != 0} {
-		fail "Error starting job $jobid"
-	}
+	wait_for_job -fail $jobid $state
 
 	lappend jobid_list $jobid
 	return $jobid

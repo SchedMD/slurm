@@ -74,9 +74,7 @@ expect {
 if {$job_id == 0} {
 	fail "sbatch job submit failed"
 }
-if {[wait_for_job $job_id RUNNING] != 0} {
-	fail "Waiting for job $job_id to start"
-}
+wait_for_job -fail $job_id RUNNING
 
 #
 # Issue scontrol reconfigure
