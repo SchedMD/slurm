@@ -450,7 +450,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	job_record_t *job_ptr = NULL, *new_job_ptr;
 	part_record_t *part_ptr;
 	depend_spec_t *dep_ptr;
-	int i, pend_cnt, reason, dep_corr;
+	int i, pend_cnt, dep_corr;
 	struct timeval start_tv = {0, 0};
 	int tested_jobs = 0;
 	int job_part_pairs = 0;
@@ -611,18 +611,15 @@ extern List build_job_queue(bool clear_start, bool backfill)
 				job_ptr->part_ptr_list);
 			while ((part_ptr = list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
-				reason = job_limits_check(&job_ptr, backfill);
-				if ((reason != WAIT_NO_REASON) &&
-				    (reason != job_ptr->state_reason)) {
-					job_ptr->state_reason = reason;
-					xfree(job_ptr->state_desc);
-					last_job_update = now;
-				}
+
 				/* priority_array index matches part_ptr_list
 				 * position: increment inx */
 				inx++;
-				if (reason != WAIT_NO_REASON)
+
+				if (!_job_runnable_test2(
+					    job_ptr, now, backfill))
 					continue;
+
 				job_part_pairs++;
 				if (job_ptr->priority_array) {
 					_job_queue_append(job_queue, job_ptr,

@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
     --ntasks-per-node without task count.
  -- slurmctld - Fix places where the global last_job_update was not being set
     to the time of update when a job's reason and description were updated.
+ -- slurmctld - Fix case where a job submitted with more than one partition
+    would not have its reason updated while waiting to start.
 
 * Changes in Slurm 21.08.4
 ==========================
