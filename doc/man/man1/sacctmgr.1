@@ -95,7 +95,7 @@ Identical to the \fBcreate\fR command.
 .IP
 
 .TP
-\fBarchive\fR {\fBdump\fR|\fBload\fR} <\fISPECS\fR>
+\fBarchive\fR {dump|load} <\fISPECS\fR>
 Write database information to a flat file or load information that has
 previously been written to a file.
 .IP
@@ -118,7 +118,7 @@ Identical to the \fBremove\fR command.
 .IP
 
 .TP
-\fBdump\fR <\fIENTITY\fR> [\fBFile\fR=\fIFILENAME\fR]
+\fBdump\fR <\fIENTITY\fR> [File=<\fIFILENAME\fR>]
 Dump cluster data to the specified file. If the filename is not specified
 it uses clustername.cfg filename by default.
 .IP
@@ -342,14 +342,14 @@ other jobs which would release sufficient group resources for the pending
 job to be initiated.
 
 .TP
-\fIDefaultQOS\fP=<default qos>
+\fBDefaultQOS\fR=<\fIdefault_qos\fR>
 The default QOS this association and its children should have.
 This is overridden if set directly on a user.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIFairshare\fP=<fairshare number | parent>
+\fBFairshare\fR={<\fIfairshare_number\fR>|parent}
 Number used in conjunction with other accounts to determine job
 priority. Can also be the string \fIparent\fR, when used on a user
 this means that the parent association is used for fairshare.  If
@@ -361,7 +361,7 @@ value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIGrpTRESMins\fP=<TRES=max TRES minutes,...>
+\fBGrpTRESMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
 The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
 To clear a previously set value use the modify command with a new
@@ -380,7 +380,7 @@ they are able to run inside the limit.
 .IP
 
 .TP
-\fIGrpTRESRunMins\fP=<TRES=max TRES run minutes,...>
+\fBGrpTRESRunMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
 Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
@@ -389,7 +389,7 @@ time to free up.
 .IP
 
 .TP
-\fIGrpTRES\fP=<TRES=max TRES,...>
+\fBGrpTRES\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
 Maximum number of TRES running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new
@@ -400,21 +400,21 @@ Resource plugin.
 .IP
 
 .TP
-\fIGrpJobs\fP=<max jobs>
+\fBGrpJobs\fR=<\fImax_jobs\fR>
 Maximum number of running jobs in aggregate for
 this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIGrpJobsAccrue\fP=<max jobs>
+\fBGrpJobsAccrue\fR=<\fImax_jobs\fR>
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIGrpSubmitJobs\fP=<max jobs>
+\fBGrpSubmitJobs\fR=<\fImax_jobs\fR>
 Maximum number of jobs which can be in a pending or running state at any time
 in aggregate for this association and all associations which are children of
 this association.
@@ -424,7 +424,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIGrpWall\fP=<max wall>
+\fBGrpWall\fR=<\fImax_wall\fR>
 Maximum wall clock time running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -442,7 +442,7 @@ they are able to run inside the limit.
 .IP
 
 .TP
-\fIMaxTRESMinsPerJob\fP=<max TRES minutes>
+\fBMaxTRESMinsPerJob\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
 Maximum number of TRES minutes each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
@@ -453,7 +453,7 @@ value of \-1 for each TRES id.
 .IP
 
 .TP
-\fIMaxTRESPerJob\fP=<max TRES>
+\fBMaxTRESPerJob\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
 Maximum number of TRES each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
@@ -467,7 +467,7 @@ value of \-1 for each TRES id.
 .IP
 
 .TP
-\fIMaxJobs\fP=<max jobs>
+\fBMaxJobs\fR=<\fImax_jobs\fR>
 Maximum number of jobs each user is allowed to run at one time in this
 association.
 This is overridden if set directly on a user.
@@ -476,7 +476,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIMaxJobsAccrue\fP=<max jobs>
+\fBMaxJobsAccrue\fR=<\fImax_jobs\fR>
 Maximum number of pending jobs able to accrue age priority at any given time for
 the given association.
 This is overridden if set directly on a user.
@@ -485,7 +485,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIMaxSubmitJobs\fP=<max jobs>
+\fBMaxSubmitJobs\fR=<\fImax_jobs\fR>
 Maximum number of jobs which can this association can have in a
 pending or running state at any time.
 Default is the cluster's limit.
@@ -495,7 +495,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIMaxWallDurationPerJob\fP=<max wall>
+\fBMaxWallDurationPerJob\fR=<\fImax_wall\fR>
 Maximum wall clock time each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
@@ -511,7 +511,7 @@ pending job.
 .IP
 
 .TP
-\fIPriority\fP
+\fBPriority\fR
 What priority will be added to a job's priority when using this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
@@ -519,7 +519,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIQosLevel\fP<operator><comma separated list of qos names>
+\fBQosLevel\fR<\fIoperator\fR><\fIcomma_separated_list_of_qos_names\fR>
 Specify the default Quality of Service's that jobs are able to run at
 for this association.  To get a list of valid QOS's use 'sacctmgr list qos'.
 This value will override its parents value and push down to its
@@ -556,35 +556,35 @@ See the \fBEXAMPLES\fR section below.
 .SH "SPECIFICATIONS FOR ACCOUNTS"
 
 .TP
-\fICluster\fP=<cluster>
+\fBCluster\fR=<\fIcluster\fR>
 Specific cluster to add account to.  Default is all in system.
 .IP
 
 .TP
-\fIDescription\fP=<description>
+\fBDescription\fR=<\fIdescription\fR>
 An arbitrary string describing an account.
 .IP
 
 .TP
-\fIName\fP=<name>
+\fBName\fR=<\fIname\fR>
 The name of a bank account.
 Note the name must be unique and can not be represent different bank
 accounts at different points in the account hierarchy.
 .IP
 
 .TP
-\fIOrganization\fP=<org>
+\fBOrganization\fR=<\fIorg\fR>
 Organization to which the account belongs.
 .IP
 
 .TP
-\fIParent\fP=<parent>
+\fBParent\fR=<\fIparent\fR>
 Parent account of this account. Default is the root account, a top
 level account.
 .IP
 
 .TP
-\fIRawUsage\fP=<value>
+\fBRawUsage\fR=<\fIvalue\fR>
 This allows an administrator to reset the raw usage accrued to an
 account.  The only value currently supported is 0 (zero).  This is a
 settable specification only \- it cannot be used as a filter to list
@@ -592,17 +592,17 @@ accounts.
 .IP
 
 .TP
-\fIWithAssoc\fP
+\fBWithAssoc\fR
 Display all associations for this account.
 .IP
 
 .TP
-\fIWithCoord\fP
+\fBWithCoord\fR
 Display all coordinators for this account.
 .IP
 
 .TP
-\fIWithDeleted\fP
+\fBWithDeleted\fR
 Display information with previously deleted data.
 .P
 NOTE: If using the WithAssoc option you can also query against
@@ -616,22 +616,22 @@ ASSOCIATION BASED ENTITIES\fP section.
 .SH "LIST/SHOW ACCOUNT FORMAT OPTIONS"
 
 .TP
-\fIAccount\fP
+\fBAccount\fR
 The name of a bank account.
 .IP
 
 .TP
-\fIDescription\fP
+\fBDescription\fR
 An arbitrary string describing an account.
 .IP
 
 .TP
-\fIOrganization\fP
+\fBOrganization\fR
 Organization to which the account belongs.
 .IP
 
 .TP
-\fICoordinators\fP
+\fBCoordinators\fR
 List of users that are a coordinator of the account. (Only filled in
 when using the WithCoordinator option.)
 .P
@@ -647,22 +647,22 @@ described in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .SH "SPECIFICATIONS FOR ASSOCIATIONS"
 
 .TP
-\fIClusters\fP=<comma separated list of cluster names>
+\fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
 List the associations of the cluster(s).
 .IP
 
 .TP
-\fIAccounts\fP=<comma separated list of account names>
+\fBAccounts\fR=<\fIaccount_name\fR>[,<\fIaccount_name\fR>,...]
 List the associations of the account(s).
 .IP
 
 .TP
-\fIUsers\fP=<comma separated list of user names>
+\fBUsers\fR=<\fIuser_name\fR>[,<\fIuser_name\fR>,...]
 List the associations of the user(s).
 .IP
 
 .TP
-\fIPartition\fP=<comma separated list of partition names>
+\fBPartition\fR=<\fIpartition_name\fR>[,<\fIpartition_name\fR>,...]
 List the associations of the partition(s).
 .P
 NOTE: You can also use the general specifications list above in the
@@ -672,42 +672,42 @@ NOTE: You can also use the general specifications list above in the
 .IP
 
 .TP
-\fIOnlyDefaults\fP
+\fBOnlyDefaults\fR
 Display only associations that are default associations
 .IP
 
 .TP
-\fITree\fP
+\fBTree\fR
 Display account names in a hierarchical fashion.
 .IP
 
 .TP
-\fIWithDeleted\fP
+\fBWithDeleted\fR
 Display information with previously deleted data.
 .IP
 
 .TP
-\fIWithSubAccounts\fP
+\fBWithSubAccounts\fR
 Display information with subaccounts.  Only really valuable when used
 with the account= option.  This will display all the subaccount
 associations along with the accounts listed in the option.
 .IP
 
 .TP
-\fIWOLimits\fP
+\fBWOLimits\fR
 Display information without limit information. This is for a smaller
 default format of "Cluster,Account,User,Partition".
 .IP
 
 .TP
-\fIWOPInfo\fP
+\fBWOPInfo\fR
 Display information without parent information (i.e. parent id, and
 parent account name). This option also implicitly sets the WOPLimits
 option.
 .IP
 
 .TP
-\fIWOPLimits\fP
+\fBWOPLimits\fR
 Display information without hierarchical parent limits (i.e. will
 only display limits where they are set instead of propagating them
 from the parent).
@@ -717,23 +717,23 @@ from the parent).
 .SH "LIST/SHOW ASSOCIATION FORMAT OPTIONS"
 
 .TP
-\fIAccount\fP
+\fBAccount\fR
 The name of a bank account in the association.
 .IP
 
 .TP
-\fICluster\fP
+\fBCluster\fR
 The name of a cluster in the association.
 .IP
 
 .TP
-\fIDefaultQOS\fP
+\fBDefaultQOS\fR
 The QOS the association will use by default if it as access to it in
 the QOS list mentioned below.
 .IP
 
 .TP
-\fIFairshare\fP
+\fBFairshare\fR
 Number used in conjunction with other accounts to determine job
 priority. Can also be the string \fIparent\fR, when used on a user
 this means that the parent association is used for fairshare.  If
@@ -744,13 +744,13 @@ only its fairshare value is affected.
 .IP
 
 .TP
-\fIGrpTRESMins\fP
+\fBGrpTRESMins\fR
 The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
 .IP
 
 .TP
-\fIGrpTRESRunMins\fP
+\fBGrpTRESRunMins\fR
 Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
@@ -759,25 +759,25 @@ time to free up.
 .IP
 
 .TP
-\fIGrpTRES\fP
+\fBGrpTRES\fR
 Maximum number of TRES running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 .IP
 
 .TP
-\fIGrpJobs\fP
+\fBGrpJobs\fR
 Maximum number of running jobs in aggregate for
 this association and all associations which are children of this association.
 .IP
 
 .TP
-\fIGrpJobsAccrue\fP
+\fBGrpJobsAccrue\fR
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 .IP
 
 .TP
-\fIGrpSubmitJobs\fP
+\fBGrpSubmitJobs\fR
 Maximum number of jobs which can be in a pending or running state at any time
 in aggregate for this association and all associations which are children of
 this association.
@@ -786,18 +786,18 @@ this association.
 .IP
 
 .TP
-\fIGrpWall\fP
+\fBGrpWall\fR
 Maximum wall clock time running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 .IP
 
 .TP
-\fIID\fP
+\fBID\fR
 The id of the association.
 .IP
 
 .TP
-\fILFT\fP
+\fBLFT\fR
 Associations are kept in a hierarchy: this is the left most
 spot in the hierarchy.  When used with the RGT variable, all
 associations with a LFT inside this LFT and before the RGT are
@@ -805,81 +805,81 @@ children of this association.
 .IP
 
 .TP
-\fIMaxTRESPerJob\fP
+\fBMaxTRESPerJob\fR
 Maximum number of TRES each job is able to use.
 
 \fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRES\fR.
 .IP
 
 .TP
-\fIMaxTRESMinsPerJob\fP
+\fBMaxTRESMinsPerJob\fR
 Maximum number of TRES minutes each job is able to use.
 
 \fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRESMins\fR.
 .IP
 
 .TP
-\fIMaxTRESPerNode\fP
+\fBMaxTRESPerNode\fR
 Maximum number of TRES each node in a job allocation can use.
 .IP
 
 .TP
-\fIMaxJobs\fP
+\fBMaxJobs\fR
 Maximum number of jobs each user is allowed to run at one time.
 .IP
 
 .TP
-\fIMaxJobsAccrue\fP
+\fBMaxJobsAccrue\fR
 Maximum number of pending jobs able to accrue age priority at any given time.
 This limit only applies to the job's QOS and not the partition's QOS.
 .IP
 
 .TP
-\fIMaxSubmitJobs\fP
+\fBMaxSubmitJobs\fR
 Maximum number of jobs pending or running state at any time.
 
 \fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxSubmit\fR.
 .IP
 
 .TP
-\fIMaxWallDurationPerJob\fP
+\fBMaxWallDurationPerJob\fR
 Maximum wall clock time each job is able to use.
 
 \fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxWall\fR.
 .IP
 
 .TP
-\fIQos\fP
+\fBQos\fR
 Valid QOS' for this association.
 .IP
 
 .TP
-\fIQosRaw\fP
+\fBQosRaw\fR
 QOS' ID.
 .IP
 
 .TP
-\fIParentID\fP
+\fBParentID\fR
 The association id of the parent of this association.
 .IP
 
 .TP
-\fIParentName\fP
+\fBParentName\fR
 The account name of the parent of this association.
 .IP
 
 .TP
-\fIPartition\fP
+\fBPartition\fR
 The name of a partition in the association.
 .IP
 
 .TP
-\fIPriority\fP
+\fBPriority\fR
 What priority will be added to a job's priority when using this association.
 .IP
 
 .TP
-\fIWithRawQOSLevel\fP
+\fBWithRawQOSLevel\fR
 Display QosLevel in an unevaluated raw format, consisting of a comma
 separated list of QOS names prepended with '' (nothing), '+' or '\-' for
 the association. QOS names without +/\- prepended were assigned (ie,
@@ -892,7 +892,7 @@ was assigned, added or filtered in the hierarchy.
 .IP
 
 .TP
-\fIRGT\fP
+\fBRGT\fR
 Associations are kept in a hierarchy: this is the right most
 spot in the hierarchy.  When used with the LFT variable, all
 associations with a LFT inside this RGT and after the LFT are
@@ -900,54 +900,54 @@ children of this association.
 .IP
 
 .TP
-\fIUser\fP
+\fBUser\fR
 The name of a user in the association.
 .IP
 
 .SH "SPECIFICATIONS FOR CLUSTERS"
 
 .TP
-\fIClassification\fP=<classification>
+\fBClassification\fR=<\fIclassification\fR>
 Type of machine, current classifications are capability, capacity and
 capapacity.
 .IP
 
 .TP
-\fIFeatures\fP=<comma separated list of feature names>
+\fBFeatures\fR=<\fIcomma_separated_list_of_feature_names\fR>
 Features that are specific to the cluster. Federated jobs can be directed to
 clusters that contain the job requested features.
 .IP
 
 .TP
-\fIFederation\fP=<federation>
+\fBFederation\fR=<\fIfederation\fR>
 The federation that this cluster should be a member of. A cluster can only be a
 member of one federation at a time.
 .IP
 
 .TP
-\fIFedState\fP=<state>
+\fBFedState\fR=<\fIstate\fR>
 The state of the cluster in the federation.
 .br
 Valid states are:
 .RS
 .TP
-\fIACTIVE\fP
+\fBACTIVE\fR
 Cluster will actively accept and schedule federated jobs.
 .IP
 
 .TP
-\fIINACTIVE\fP
+\fBINACTIVE\fR
 Cluster will not schedule or accept any jobs.
 .IP
 
 .TP
-\fIDRAIN\fP
+\fBDRAIN\fR
 Cluster will not accept any new jobs and will let existing federated jobs
 complete.
 .IP
 
 .TP
-\fIDRAIN+REMOVE\fP
+\fBDRAIN+REMOVE\fR
 Cluster will not accept any new jobs and will remove itself from the federation
 once all federated jobs have completed. When removed from the federation, the
 cluster will accept jobs as a non\-federated cluster.
@@ -955,25 +955,25 @@ cluster will accept jobs as a non\-federated cluster.
 .IP
 
 .TP
-\fIName\fP=<name>
+\fBName\fR=<\fIname\fR>
 The name of a cluster.
 This should be equal to the \fIClusterName\fR parameter in the \fIslurm.conf\fR
 configuration file for some Slurm\-managed cluster.
 .IP
 
 .TP
-\fIRPC\fP=<rpc list>
+\fBRPC\fR=<\fIrpc_list\fR>
 Comma separated list of numeric RPC values.
 .IP
 
 .TP
-\fIWithFed\fP
+\fBWithFed\fR
 Appends federation related columns to default format options
 (e.g. Federation,ID,Features,FedState).
 .IP
 
 .TP
-\fIWOLimits\fP
+\fBWOLimits\fR
 Display information without limit information. This is for a smaller
 default format of Cluster,ControlHost,ControlPort,RPC
 .P
@@ -985,49 +985,49 @@ NOTE: You can also use the general specifications list above in the
 .SH "LIST/SHOW CLUSTER FORMAT OPTIONS"
 
 .TP
-\fIClassification\fP
+\fBClassification\fR
 Type of machine, i.e. capability, capacity or capapacity.
 .IP
 
 .TP
-\fICluster\fP
+\fBCluster\fR
 The name of the cluster.
 .IP
 
 .TP
-\fIControlHost\fP
+\fBControlHost\fR
 When a slurmctld registers with the database the ip address of the
 controller is placed here.
 .IP
 
 .TP
-\fIControlPort\fP
+\fBControlPort\fR
 When a slurmctld registers with the database the port the controller
 is listening on is placed here.
 .IP
 
 .TP
-\fIFeatures\fP
+\fBFeatures\fR
 The list of features on the cluster (if any).
 .IP
 
 .TP
-\fIFederation\fP
+\fBFederation\fR
 The name of the federation this cluster is a member of (if any).
 .IP
 
 .TP
-\fIFedState\fP
+\fBFedState\fR
 The state of the cluster in the federation (if a member of one).
 .IP
 
 .TP
-\fIFedStateRaw\fP
+\fBFedStateRaw\fR
 Numeric value of the name of the FedState.
 .IP
 
 .TP
-\fIFlags\fP
+\fBFlags\fR
 Attributes possessed by the cluster. Current flags include Cray, External and
 MultipleSlurmd.
 
@@ -1039,34 +1039,34 @@ cluster with Slurm commands.
 .IP
 
 .TP
-\fIID\fP
+\fBID\fR
 The ID assigned to the cluster when a member of a federation. This ID uniquely
 identifies the cluster and its jobs in the federation.
 .IP
 
 .TP
-\fINodeCount\fP
+\fBNodeCount\fR
 The current count of nodes associated with the cluster.
 .IP
 
 .TP
-\fINodeNames\fP
+\fBNodeNames\fR
 The current Nodes associated with the cluster.
 .IP
 
 .TP
-\fIPluginIDSelect\fP
+\fBPluginIDSelect\fR
 The numeric value of the select plugin the cluster is using.
 .IP
 
 .TP
-\fIRPC\fP
+\fBRPC\fR
 When a slurmctld registers with the database the rpc version the controller
 is running is placed here.
 .IP
 
 .TP
-\fITRES\fP
+\fBTRES\fR
 Trackable RESources (Billing, BB (Burst buffer), CPU, Energy, GRES, License,
 Memory, and Node) this cluster is accounting for.
 
@@ -1080,12 +1080,12 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .SH "SPECIFICATIONS FOR COORDINATOR"
 
 .TP
-\fIAccount\fP=<comma separated list of account names>
+\fBAccount\fR=<\fIaccount_name\fR>[,<\fIaccount_name\fR>,...]
 Account name to add this user as a coordinator to.
 .IP
 
 .TP
-\fINames\fP=<comma separated list of user names>
+\fBNames\fR=<\fIuser_name\fR>[,<\fIuser_name\fR>,...]
 Names of coordinators.
 .P
 NOTE: To list coordinators use the WithCoordinator options with list
@@ -1096,23 +1096,23 @@ account or list user.
 .SH "SPECIFICATIONS FOR EVENTS"
 
 .TP
-\fIAll_Clusters\fP
+\fBAll_Clusters\fR
 Get information on all cluster shortcut.
 .IP
 
 .TP
-\fIAll_Time\fP
+\fBAll_Time\fR
 Get time period for all time shortcut.
 .IP
 
 .TP
-\fIClusters\fP=<comma separated list of cluster names>
+\fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
 List the events of the cluster(s).  Default is the cluster where the
 command was run.
 .IP
 
 .TP
-\fIEnd\fP=<OPT>
+\fBEnd\fR=<\fIOPT\fR>
 Period ending of events. Default is now.
 
 Valid time formats are...
@@ -1129,33 +1129,33 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 .IP
 
 .TP
-\fIEvent\fP=<OPT>
+\fBEvent\fR=<\fIOPT\fR>
 Specific events to look for, valid options are Cluster or Node,
 default is both.
 .IP
 
 .TP
-\fIMaxTRES\fP=<OPT>
+\fBMaxTRES\fR=<\fIOPT\fR>
 Max number of TRES affected by an event.
 .IP
 
 .TP
-\fIMinTRES\fP=<OPT>
+\fBMinTRES\fR=<\fIOPT\fR>
 Min number of TRES affected by an event.
 .IP
 
 .TP
-\fINodes\fP=<comma separated list of node names>
+\fBNodes\fR=<\fInode_name\fR>[,<\fInode_name\fR>,...]
 Node names affected by an event.
 .IP
 
 .TP
-\fIReason\fP=<comma separated list of reasons>
+\fBReason\fR=<\fIreason\fR>[,<\fIreason\fR>,...]
 Reason an event happened.
 .IP
 
 .TP
-\fIStart\fP=<OPT>
+\fBStart\fR=<\fIOPT\fR>
 Period start of events.  Default is 00:00:00 of previous day, unless
 states are given with the States= spec events.  If this is the case
 the default behavior is to return events currently in
@@ -1175,13 +1175,13 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 .IP
 
 .TP
-\fIStates\fP=<comma separated list of states>
+\fBStates\fR=<\fIstate\fR>[,<\fIstate\fR>,...]
 State of a node in a node event.  If this is set, the event type is
 set automatically to Node.
 .IP
 
 .TP
-\fIUser\fP=<comma separated list of users>
+\fBUser\fR=<\fIuser_name\fR>[,<\fIuser_name\fR>,...]
 Query against users who set the event.  If this is set, the event type is
 set automatically to Node since only user slurm can perform a cluster event.
 .IP
@@ -1190,68 +1190,68 @@ set automatically to Node since only user slurm can perform a cluster event.
 .SH "LIST/SHOW EVENT FORMAT OPTIONS"
 
 .TP
-\fICluster\fP
+\fBCluster\fR
 The name of the cluster event happened on.
 .IP
 
 .TP
-\fIClusterNodes\fP
+\fBClusterNodes\fR
 The hostlist of nodes on a cluster in a cluster event.
 .IP
 
 .TP
-\fIDuration\fP
+\fBDuration\fR
 Time period the event was around for.
 .IP
 
 .TP
-\fIEnd\fP
+\fBEnd\fR
 Period when event ended.
 .IP
 
 .TP
-\fIEvent\fP
+\fBEvent\fR
 Name of the event.
 .IP
 
 .TP
-\fIEventRaw\fP
+\fBEventRaw\fR
 Numeric value of the name of the event.
 .IP
 
 .TP
-\fINodeName\fP
+\fBNodeName\fR
 The node affected by the event.  In a cluster event, this is blank.
 .IP
 
 .TP
-\fIReason\fP
+\fBReason\fR
 The reason an event happened.
 .IP
 
 .TP
-\fIStart\fP
+\fBStart\fR
 Period when event started.
 .IP
 
 .TP
-\fIState\fP
+\fBState\fR
 On a node event this is the formatted state of the node during the event.
 .IP
 
 .TP
-\fIStateRaw\fP
+\fBStateRaw\fR
 On a node event this is the numeric value of the state of the node
 during the event.
 .IP
 
 .TP
-\fITRES\fP
+\fBTRES\fR
 Number of TRES involved with the event.
 .IP
 
 .TP
-\fIUser\fP
+\fBUser\fR
 On a node event this is the user who caused the event to happen.
 .IP
 
@@ -1259,51 +1259,51 @@ On a node event this is the user who caused the event to happen.
 .SH "SPECIFICATIONS FOR FEDERATION"
 
 .TP
-\fIClusters\fP[+|\-]=<comma separated list of cluster names>
+\fBClusters\fR[+|\-]=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
 List of clusters to add/remove to a federation. A blank value (e.g. clusters=)
 will remove all federations for the federation. NOTE: a cluster can only be a
 member of one federation.
 .IP
 
 .TP
-\fIName\fP=<name>
+\fBName\fR=<\fIname\fR>
 The name of the federation.
 .IP
 
 .TP
-\fITree\fP
+\fBTree\fR
 Display federations in a hierarchical fashion.
 .IP
 
 .SH "LIST/SHOW FEDERATION FORMAT OPTIONS"
 
 .TP
-\fIFeatures\fP
+\fBFeatures\fR
 The list of features on the cluster.
 .IP
 
 .TP
-\fIFederation\fP
+\fBFederation\fR
 The name of the federation.
 .IP
 
 .TP
-\fICluster\fP
+\fBCluster\fR
 Name of the cluster that is a member of the federation.
 .IP
 
 .TP
-\fIFedState\fP
+\fBFedState\fR
 The state of the cluster in the federation.
 .IP
 
 .TP
-\fIFedStateRaw\fP
+\fBFedStateRaw\fR
 Numeric value of the name of the FedState.
 .IP
 
 .TP
-\fIIndex\fP
+\fBIndex\fR
 The index of the cluster in the federation.
 .IP
 
@@ -1311,55 +1311,55 @@ The index of the cluster in the federation.
 .SH "SPECIFICATIONS FOR JOB"
 
 .TP
-\fIComment\fP=<comment>
+\fBComment\fR=<\fIcomment\fR>
 The job's comment string when the AccountingStoreFlags parameter
 in the slurm.conf file contains 'job_comment'.  The user can only
 modify the comment string of their own job.
 .IP
 
 .TP
-\fICluster\fP=<cluster_list>
+\fBCluster\fR=<\fIcluster_list\fR>
 List of clusters to alter jobs on, defaults to local cluster.
 .IP
 
 .TP
-\fIDerivedExitCode\fP=<derived_exit_code>
+\fBDerivedExitCode\fR=<\fIderived_exit_code\fR>
 The derived exit code can be modified after a job completes based on
 the user's judgment of whether the job succeeded or failed. The user
 can only modify the derived exit code of their own job.
 .IP
 
 .TP
-\fIEndTime\fP
+\fBEndTime\fR
 Jobs must end before this time to be modified. Format output is,
 YYYY\-MM\-DDTHH:MM:SS, unless changed through the SLURM_TIME_FORMAT environment
 variable.
 .IP
 
 .TP
-\fIJobID\fP=<jobid_list>
+\fBJobID\fR=<\fIjobid_list\fR>
 The id of the job to change.  Not needed if altering multiple jobs using wckey
 specification.
 .IP
 
 .TP
-\fINewWCKey\fP=<newwckey>
+\fBNewWCKey\fR=<\fInew_wckey\fR>
 Use to rename a wckey on job(s) in the accounting database
 .IP
 
 .TP
-\fIStartTime\fP
+\fBStartTime\fR
 Jobs must start at or after this time to be modified in the same format as
 \f3EndTime\fP.
 .IP
 
 .TP
-\fIUser\fP=<user_list>
+\fBUser\fR=<\fIuser_list\fR>
 Used to specify the jobs of users jobs to alter.
 .IP
 
 .TP
-\fIWCKey\fP=<wckey_list>
+\fBWCKey\fR=<\fIwckey_list\fR>
 Used to specify the wckeys to alter.
 .IP
 
@@ -1382,13 +1382,13 @@ other jobs which would release sufficient group resources for the pending
 job to be initiated.
 
 .TP
-\fIFlags\fP
+\fBFlags\fR
 Used by the slurmctld to override or enforce certain characteristics.
 .br
 Valid options are
 .RS
 .TP
-\fIDenyOnLimit\fP
+\fBDenyOnLimit\fR
 If set, jobs using this QOS will be rejected at submission time if they do
 not conform to the QOS 'Max' limits as stand\-alone jobs.
 Jobs that go over these limits when other jobs are considered, but conform
@@ -1401,14 +1401,14 @@ This currently only applies to QOS and Association limits.
 .IP
 
 .TP
-\fIEnforceUsageThreshold\fP
+\fBEnforceUsageThreshold\fR
 If set, and the QOS also has a UsageThreshold,
 any jobs submitted with this QOS that fall below the UsageThreshold
 will be held until their Fairshare Usage goes above the Threshold.
 .IP
 
 .TP
-\fINoDecay\fP
+\fBNoDecay\fR
 If set, this QOS will not have its GrpTRESMins,
 GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife or
 PriorityUsageResetPeriod settings.  This allows a QOS to provide aggregate
@@ -1423,7 +1423,7 @@ or QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
 .IP
 
 .TP
-\fINoReserve\fP
+\fBNoReserve\fR
 If this flag is set and backfill scheduling is used, jobs using this QOS will
 not reserve resources in the backfill schedule's map of resources allocated
 through time. This flag is intended for use with a QOS that may be preempted
@@ -1433,31 +1433,31 @@ result in starvation of larger jobs.
 .IP
 
 .TP
-\fIPartitionMaxNodes\fP
+\fBPartitionMaxNodes\fR
 If set jobs using this QOS will be able to
 override the requested partition's MaxNodes limit.
 .IP
 
 .TP
-\fIPartitionMinNodes\fP
+\fBPartitionMinNodes\fR
 If set jobs using this QOS will be able to
 override the requested partition's MinNodes limit.
 .IP
 
 .TP
-\fIOverPartQOS\fP
+\fBOverPartQOS\fR
 If set jobs using this QOS will be able to
 override any limits used by the requested partition's QOS limits.
 .IP
 
 .TP
-\fIPartitionTimeLimit\fP
+\fBPartitionTimeLimit\fR
 If set jobs using this QOS will be able to
 override the requested partition's TimeLimit.
 .IP
 
 .TP
-\fIRequiresReservation\fP
+\fBRequiresReservation\fR
 If set jobs using this QOS must designate a reservation when submitting a job.
 This option can be useful in restricting usage of a QOS that may have greater
 preemptive capability or additional resources to be allowed only within a
@@ -1465,7 +1465,7 @@ reservation.
 .IP
 
 .TP
-\fIUsageFactorSafe\fP
+\fBUsageFactorSafe\fR
 If set, and \fIAccountingStorageEnforce\fR includes \fISafe\fR, jobs will only
 be able to run if the job can run to completion with the \fIUsageFactor\fR
 applied.
@@ -1473,19 +1473,19 @@ applied.
 .IP
 
 .TP
-\fIGraceTime\fP
+\fBGraceTime\fR
 Preemption grace time, in seconds, to be extended to a job which has been
 selected for preemption.
 .IP
 
 .TP
-\fIGrpTRESMins\fP
+\fBGrpTRESMins\fR
 The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this QOS.
 .IP
 
 .TP
-\fIGrpTRESRunMins\fP
+\fBGrpTRESRunMins\fR
 Used to limit the combined total number of TRES
 minutes used by all jobs running with this QOS.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
@@ -1494,25 +1494,25 @@ time to free up.
 .IP
 
 .TP
-\fIGrpTRES\fP
+\fBGrpTRES\fR
 Maximum number of TRES running jobs are able to be allocated in aggregate for
 this QOS.
 .IP
 
 .TP
-\fIGrpJobs\fP
+\fBGrpJobs\fR
 Maximum number of running jobs in aggregate for this QOS.
 .IP
 
 .TP
-\fIGrpJobsAccrue\fP
+\fBGrpJobsAccrue\fR
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 QOS.
 This limit only applies to the job's QOS and not the partition's QOS.
 .IP
 
 .TP
-\fIGrpSubmitJobs\fP
+\fBGrpSubmitJobs\fR
 Maximum number of jobs which can be in a pending or running state at any time
 in aggregate for this QOS.
 
@@ -1520,94 +1520,94 @@ in aggregate for this QOS.
 .IP
 
 .TP
-\fIGrpWall\fP
+\fBGrpWall\fR
 Maximum wall clock time running jobs are able to be allocated in aggregate for
 this QOS. If this limit is reached submission requests will be denied and the
 running jobs will be killed.
 .IP
 
 .TP
-\fIID\fP
+\fBID\fR
 The id of the QOS.
 .IP
 
 .TP
-\fIMaxJobsAccruePerAccount\fP
+\fBMaxJobsAccruePerAccount\fR
 Maximum number of pending jobs an account (or subacct) can have accruing age
 priority at any given time.
 This limit only applies to the job's QOS and not the partition's QOS.
 .IP
 
 .TP
-\fIMaxJobsAccruePerUser\fP
+\fBMaxJobsAccruePerUser\fR
 Maximum number of pending jobs a user can have accruing age priority at any
 given time.
 This limit only applies to the job's QOS and not the partition's QOS.
 .IP
 
 .TP
-\fIMaxJobsPerAccount\fP
+\fBMaxJobsPerAccount\fR
 Maximum number of jobs each account is allowed to run at one time.
 .IP
 
 .TP
-\fIMaxJobsPerUser\fP
+\fBMaxJobsPerUser\fR
 Maximum number of jobs each user is allowed to run at one time.
 .IP
 
 .TP
-\fIMaxSubmitJobsPerAccount\fP
+\fBMaxSubmitJobsPerAccount\fR
 Maximum number of jobs pending or running state at any time per account.
 .IP
 
 .TP
-\fIMaxSubmitJobsPerUser\fP
+\fBMaxSubmitJobsPerUser\fR
 Maximum number of jobs pending or running state at any time per user.
 .IP
 
 .TP
-\fIMaxTRESMinsPerJob\fP
+\fBMaxTRESMinsPerJob\fR
 Maximum number of TRES minutes each job is able to use.
 
 \fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRESMins\fR.
 .IP
 
 .TP
-\fIMaxTRESPerAccount\fP
+\fBMaxTRESPerAccount\fR
 Maximum number of TRES each account is able to use.
 .IP
 
 .TP
-\fIMaxTRESPerJob\fP
+\fBMaxTRESPerJob\fR
 Maximum number of TRES each job is able to use.
 
 \fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRES\fR.
 .IP
 
 .TP
-\fIMaxTRESPerNode\fP
+\fBMaxTRESPerNode\fR
 Maximum number of TRES each node in a job allocation can use.
 .IP
 
 .TP
-\fIMaxTRESPerUser\fP
+\fBMaxTRESPerUser\fR
 Maximum number of TRES each user is able to use.
 .IP
 
 .TP
-\fIMaxWallDurationPerJob\fP
+\fBMaxWallDurationPerJob\fR
 Maximum wall clock time each job is able to use.
 
 \fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxWall\fR.
 .IP
 
 .TP
-\fIMinPrioThreshold\fP
+\fBMinPrioThreshold\fR
 Minimum priority required to reserve resources when scheduling.
 .IP
 
 .TP
-\fIMinTRESPerJob\fP
+\fBMinTRESPerJob\fR
 Minimum number of TRES each job running under this QOS must request.
 Otherwise the job will pend until modified.
 
@@ -1615,12 +1615,12 @@ Otherwise the job will pend until modified.
 .IP
 
 .TP
-\fIName\fP
+\fBName\fR
 Name of the QOS.
 .IP
 
 .TP
-\fIPreempt\fP
+\fBPreempt\fR
 Other QOS' this QOS can preempt.
 
 \fBNOTE\fP: The \fIPriority\fP of a QOS is NOT related to QOS preemption, only
@@ -1628,7 +1628,7 @@ Other QOS' this QOS can preempt.
 .IP
 
 .TP
-\fIPreemptExemptTime\fP
+\fBPreemptExemptTime\fR
 Specifies a minimum run time for jobs of this QOS before they are considered for
 preemption. This QOS option takes precedence over the global
 \fIPreemptExemptTime\fP. Setting to \-1 disables the option, allowing another
@@ -1638,7 +1638,7 @@ global option in slurm.conf.
 .IP
 
 .TP
-\fIPreemptMode\fP
+\fBPreemptMode\fR
 Mechanism used to preempt jobs or enable gang scheduling for this QOS
 when the cluster \fIPreemptType\fR is set to \fIpreempt/qos\fR.
 This QOS\-specific \fBPreemptMode\fR will override the cluster\-wide
@@ -1651,7 +1651,7 @@ for further details of the available modes.
 .IP
 
 .TP
-\fIPriority\fP
+\fBPriority\fR
 What priority will be added to a job's priority when using this QOS.
 
 \fBNOTE\fP: The \fIPriority\fP of a QOS is NOT related to QOS preemption, see
@@ -1659,7 +1659,7 @@ What priority will be added to a job's priority when using this QOS.
 .IP
 
 .TP
-\fIRawUsage\fP=<value>
+\fBRawUsage\fR=<\fIvalue\fR>
 This allows an administrator to reset the raw usage accrued to a
 QOS.  The only value currently supported is 0 (zero).  This is a
 settable specification only \- it cannot be used as a filter to list
@@ -1667,18 +1667,18 @@ accounts.
 .IP
 
 .TP
-\fIUsageFactor\fP
+\fBUsageFactor\fR
 Usage factor when running with this QOS. See below for more details.
 .IP
 
 .TP
-\fILimitFactor\fP
+\fBLimitFactor\fR
 Factor to scale TRES count limits when running with this QOS. See below for more
 details.
 .IP
 
 .TP
-\fIUsageThreshold\fP
+\fBUsageThreshold\fR
 A float representing the lowest fairshare of an association allowable
 to run a job.  If an association falls below this threshold and has
 pending jobs or submits new jobs those jobs will be held until the
@@ -1687,7 +1687,7 @@ shares on the system.
 .IP
 
 .TP
-\fIWithDeleted\fP
+\fBWithDeleted\fR
 Display information with previously deleted data.
 .IP
 
@@ -1695,12 +1695,12 @@ Display information with previously deleted data.
 .SH "LIST/SHOW QOS FORMAT OPTIONS"
 
 .TP
-\fIDescription\fP
+\fBDescription\fR
 An arbitrary string describing a QOS.
 .IP
 
 .TP
-\fIGraceTime\fP
+\fBGraceTime\fR
 Preemption grace time to be extended to a job which has been
 selected for preemption in the format of hh:mm:ss.  The default
 value is zero, no preemption grace time is allowed on this partition.
@@ -1708,7 +1708,7 @@ NOTE: This value is only meaningful for QOS PreemptMode=CANCEL.
 .IP
 
 .TP
-\fIGrpTRESMins\fP
+\fBGrpTRESMins\fR
 The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this QOS.
 To clear a previously set value use the modify command with a new
@@ -1722,7 +1722,7 @@ inside the limit.
 .IP
 
 .TP
-\fIGrpTRES\fP
+\fBGrpTRES\fR
 Maximum number of TRES running jobs are able to be allocated in aggregate for
 this QOS.
 To clear a previously set value use the modify command with a new
@@ -1730,13 +1730,13 @@ value of \-1 for each TRES id.
 .IP
 
 .TP
-\fIGrpJobs\fP
+\fBGrpJobs\fR
 Maximum number of running jobs in aggregate for this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIGrpJobsAccrue\fP
+\fBGrpJobsAccrue\fR
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 QOS.
 This limit only applies to the job's QOS and not the partition's QOS.
@@ -1744,7 +1744,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIGrpSubmitJobs\fP
+\fBGrpSubmitJobs\fR
 Maximum number of jobs which can be in a pending or running state at any time
 in aggregate for this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -1753,7 +1753,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIGrpWall\fP
+\fBGrpWall\fR
 Maximum wall clock time running jobs are able to be allocated in aggregate for
 this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -1766,7 +1766,7 @@ inside the limit.
 .IP
 
 .TP
-\fIMaxTRESMinsPerJob\fP
+\fBMaxTRESMinsPerJob\fR
 Maximum number of TRES minutes each job is able to use.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
@@ -1775,14 +1775,14 @@ value of \-1 for each TRES id.
 .IP
 
 .TP
-\fIMaxTRESPerAccount\fP
+\fBMaxTRESPerAccount\fR
 Maximum number of TRES each account is able to use.
 To clear a previously set value use the modify command with a new value of \-1
 for each TRES id.
 .IP
 
 .TP
-\fIMaxTRESPerJob\fP
+\fBMaxTRESPerJob\fR
 Maximum number of TRES each job is able to use.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
@@ -1791,45 +1791,45 @@ value of \-1 for each TRES id.
 .IP
 
 .TP
-\fIMaxTRESPerNode\fP
+\fBMaxTRESPerNode\fR
 Maximum number of TRES each node in a job allocation can use.
 To clear a previously set value use the modify command with a new value of \-1
 for each TRES id.
 .IP
 
 .TP
-\fIMaxTRESPerUser\fP
+\fBMaxTRESPerUser\fR
 Maximum number of TRES each user is able to use.
 To clear a previously set value use the modify command with a new value of \-1
 for each TRES id.
 .IP
 
 .TP
-\fIMaxJobsPerAccount\fP
+\fBMaxJobsPerAccount\fR
 Maximum number of jobs each account is allowed to run at one time.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIMaxJobsPerUser\fP
+\fBMaxJobsPerUser\fR
 Maximum number of jobs each user is allowed to run at one time.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIMaxSubmitJobsPerAccount\fP
+\fBMaxSubmitJobsPerAccount\fR
 Maximum number of jobs pending or running state at any time per account.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIMaxSubmitJobsPerUser\fP
+\fBMaxSubmitJobsPerUser\fR
 Maximum number of jobs pending or running state at any time per user.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIMaxWallDurationPerJob\fP
+\fBMaxWallDurationPerJob\fR
 Maximum wall clock time each job is able to use.
 <max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
@@ -1840,13 +1840,13 @@ To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIMinPrioThreshold\fP
+\fBMinPrioThreshold\fR
 Minimum priority required to reserve resources when scheduling.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIMinTRES\fP
+\fBMinTRES\fR
 Minimum number of TRES each job running under this QOS must request.
 Otherwise the job will pend until modified.
 To clear a previously set value use the modify command with a new
@@ -1854,12 +1854,12 @@ value of \-1 for each TRES id.
 .IP
 
 .TP
-\fIName\fP
+\fBName\fR
 Name of the QOS.  Needed for creation.
 .IP
 
 .TP
-\fIPreempt\fP
+\fBPreempt\fR
 Other QOS' this QOS can preempt.
 Setting a Preempt to '' (two single
 quotes with nothing between them) restores its default setting.  You
@@ -1868,7 +1868,7 @@ from a QOS list.
 .IP
 
 .TP
-\fIPreemptMode\fP
+\fBPreemptMode\fR
 Mechanism used to preempt jobs of this QOS if the clusters \fIPreemptType\fP
 is configured to \fIpreempt/qos\fP.  The default preemption mechanism
 is specified by the cluster\-wide \fIPreemptMode\fP configuration parameter.
@@ -1878,13 +1878,13 @@ PreemptMode=SUSPEND (i.e. preempted jobs must be removed from the resources).
 .IP
 
 .TP
-\fIPriority\fP
+\fBPriority\fR
 What priority will be added to a job's priority when using this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .TP
-\fIUsageFactor\fP
+\fBUsageFactor\fR
 A float that is factored into a job’s TRES usage (e.g. RawUsage, TRESMins,
 TRESRunMins). For example, if the usagefactor was 2, for every TRESBillingUnit
 second a job ran it would count for 2. If the usagefactor was .5, every second
@@ -1915,7 +1915,7 @@ value of \-1.
 .IP
 
 .TP
-\fILimitFactor\fP
+\fBLimitFactor\fR
 A float that is factored into an associations [Grp|Max]TRES limits.  For
 example, if the LimitFactor is 2, then an association with a GrpTRES of 30 CPUs,
 would be allowed to allocate 60 CPUs when running under this QOS.
@@ -1929,13 +1929,13 @@ To clear a previously set value use the modify command with a new value of \-1.
 .SH "SPECIFICATIONS FOR RESERVATIONS"
 
 .TP
-\fIClusters\fP=<comma separated list of cluster names>
+\fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
 List the reservations of the cluster(s).  Default is the cluster where the
 command was run.
 .IP
 
 .TP
-\fIEnd\fP=<OPT>
+\fBEnd\fR=<\fIOPT\fR>
 Period ending of reservations. Default is now.
 
 Valid time formats are...
@@ -1952,22 +1952,22 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 .IP
 
 .TP
-\fIID\fP=<OPT>
+\fBID\fR=<\fIOPT\fR>
 Comma separated list of reservation ids.
 .IP
 
 .TP
-\fINames\fP=<OPT>
+\fBNames\fR=<\fIOPT\fR>
 Comma separated list of reservation names.
 .IP
 
 .TP
-\fINodes\fP=<comma separated list of node names>
+\fBNodes\fR=<\fInode_name\fR>[,<\fInode_name\fR>,...]
 Node names where reservation ran.
 .IP
 
 .TP
-\fIStart\fP=<OPT>
+\fBStart\fR=<\fIOPT\fR>
 Period start of reservations.  Default is 00:00:00 of current day.
 
 Valid time formats are...
@@ -1986,52 +1986,52 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 .SH "LIST/SHOW RESERVATION FORMAT OPTIONS"
 
 .TP
-\fIAssociations\fP
+\fBAssociations\fR
 The id's of the associations able to run in the reservation.
 .IP
 
 .TP
-\fICluster\fP
+\fBCluster\fR
 Name of cluster reservation was on.
 .IP
 
 .TP
-\fIEnd\fP
+\fBEnd\fR
 End time of reservation.
 .IP
 
 .TP
-\fIFlags\fP
+\fBFlags\fR
 Flags on the reservation.
 .IP
 
 .TP
-\fIID\fP
+\fBID\fR
 Reservation ID.
 .IP
 
 .TP
-\fIName\fP
+\fBName\fR
 Name of this reservation.
 .IP
 
 .TP
-\fINodeNames\fP
+\fBNodeNames\fR
 List of nodes in the reservation.
 .IP
 
 .TP
-\fIStart\fP
+\fBStart\fR
 Start time of reservation.
 .IP
 
 .TP
-\fITRES\fP
+\fBTRES\fR
 List of TRES in the reservation.
 .IP
 
 .TP
-\fIUnusedWall\fP
+\fBUnusedWall\fR
 Wall clock time in seconds unused by any job. A job's allocated usage is its
 run time multiplied by the ratio of its CPUs to the total number of CPUs in the
 reservation. For example, a job using all the CPUs in the reservation running
@@ -2042,37 +2042,37 @@ for 1 minute would reduce unused_wall by 1 minute.
 .SH "SPECIFICATIONS FOR RESOURCE"
 
 .TP
-\fIClusters\fP=<name list>
+\fBClusters\fR=<\fIname_list\fR>
 Comma separated list of cluster names on which specified resources are to be
 available.  If no names are designated then the clusters already
 allowed to use this resource will be altered.
 .IP
 
 .TP
-\fICount\fP=<OPT>
+\fBCount\fR=<\fIOPT\fR>
 Number of software resources of a specific name configured on the system being
 controlled by a resource manager.
 .IP
 
 .TP
-\fIDescriptions=\fP
+\fBDescriptions=\fR
 A brief description of the resource.
 .IP
 
 .TP
-\fIFlags\fP=<OPT>
+\fBFlags\fR=<\fIOPT\fR>
 Flags that identify specific attributes of the system resource.  At this time
 no flags have been defined.
 .IP
 
 .TP
-\fIServerType\fP=<OPT>
+\fBServerType\fR=<\fIOPT\fR>
 The type of a software resource manager providing the licenses. For example
 FlexNext Publisher Flexlm license server or Reprise License Manager RLM.
 .IP
 
 .TP
-\fINames\fP=<OPT>
+\fBNames\fR=<\fIOPT\fR>
 Comma separated list of the name of a resource configured on the
 system being controlled by a resource manager.  If this resource is
 seen on the slurmctld its name will be name@server to distinguish it
@@ -2080,24 +2080,24 @@ from local resources defined in a slurm.conf.
 .IP
 
 .TP
-\fIPercentAllowed\fP=<percent allowed>
+\fBPercentAllowed\fR=<\fIpercent_allowed\fR>
 Percentage of a specific resource that can be used on specified cluster.
 .IP
 
 .TP
-\fIServer\fP=<OPT>
+\fBServer\fR=<\fIOPT\fR>
 The name of the server serving up the resource.  Default is 'slurmdb' indicating
 the licenses are being served by the database.
 .IP
 
 .TP
-\fIType\fP=<OPT>
+\fBType\fR=<\fIOPT\fR>
 The type of the resource represented by this record.  Currently the only valid
 type is License.
 .IP
 
 .TP
-\fIWithClusters\fP
+\fBWithClusters\fR
 Display the clusters percentage of resources.  If a resource hasn't
 been given to a cluster the resource will not be displayed with this flag.
 .IP
@@ -2110,111 +2110,111 @@ available for usage by Slurm clusters.
 .SH "LIST/SHOW RESOURCE FORMAT OPTIONS"
 
 .TP
-\fICluster\fP
+\fBCluster\fR
 Name of cluster resource is given to.
 .IP
 
 .TP
-\fICount\fP
+\fBCount\fR
 The count of a specific resource configured on the system globally.
 .IP
 
 .TP
-\fIAllocated\fP
+\fBAllocated\fR
 The percent of licenses allocated to a cluster.
 .IP
 
 .TP
-\fIDescription\fP
+\fBDescription\fR
 Description of the resource.
 .IP
 
 .TP
-\fIServerType\fP
+\fBServerType\fR
 The type of the server controlling the licenses.
 .IP
 
 .TP
-\fIName\fP
+\fBName\fR
 Name of this resource.
 .IP
 
 .TP
-\fIServer\fP
+\fBServer\fR
 Server serving up the resource.
 .IP
 
 .TP
-\fIType\fP
+\fBType\fR
 Type of resource this record represents.
 .IP
 
 .SH "LIST/SHOW RUNAWAYJOB FORMAT OPTIONS"
 
 .TP
-\fICluster\fP
+\fBCluster\fR
 Name of cluster job ran on.
 .IP
 
 .TP
-\fIID\fP
+\fBID\fR
 Id of the job.
 .IP
 
 .TP
-\fIName\fP
+\fBName\fR
 Name of the job.
 .IP
 
 .TP
-\fIPartition\fP
+\fBPartition\fR
 Partition job ran on.
 .IP
 
 .TP
-\fIState\fP
+\fBState\fR
 Current State of the job in the database.
 .IP
 
 .TP
-\fITimeStart\fP
+\fBTimeStart\fR
 Time job started running.
 .IP
 
 .TP
-\fITimeEnd\fP
+\fBTimeEnd\fR
 Current recorded time of the end of the job.
 .IP
 
 .SH "SPECIFICATIONS FOR TRANSACTIONS"
 
 .TP
-\fIAccounts\fP=<comma separated list of account names>
+\fBAccounts\fR=<\fIaccount_name\fR>[,<\fIaccount_name\fR>,...]
 Only print out the transactions affecting specified accounts.
 .IP
 
 .TP
-\fIAction\fP=<Specific action the list will display>
+\fBAction\fR=<\fISpecific_action_the_list_will_display\fR>
 Only display transactions of the specified action type.
 .IP
 
 .TP
-\fIActor\fP=<Specific name the list will display>
+\fBActor\fR=<\fISpecific_name_the_list_will_display\fR>
 Only display transactions done by a certain person.
 .IP
 
 .TP
-\fIClusters\fP=<comma separated list of cluster names>
+\fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
 Only print out the transactions affecting specified clusters.
 .IP
 
 .TP
-\fIEnd\fP=<Date and time of last transaction to return>
+\fBEnd\fR=<\fIDate_and_time_of_last_transaction_to_return\fR>
 Return all transactions before this Date and time.  Default is now.
 .IP
 
 .TP
-\fIStart\fP=<Date and time of first transaction to return>
+\fBStart\fR=<\fIDate_and_time_of_first_transaction_to_return\fR>
 Return all transactions after this Date and time.  Default is epoch.
 
 Valid time formats for End and Start are...
@@ -2231,12 +2231,12 @@ now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 .IP
 
 .TP
-\fIUsers\fP=<comma separated list of user names>
+\fBUsers\fR=<\fIuser_name\fR>[,<\fIuser_name\fR>,...]
 Only print out the transactions affecting specified users.
 .IP
 
 .TP
-\fIWithAssoc\fP
+\fBWithAssoc\fR
 Get information about which associations were affected by the transactions.
 .IP
 
@@ -2244,27 +2244,27 @@ Get information about which associations were affected by the transactions.
 .SH "LIST/SHOW TRANSACTIONS FORMAT OPTIONS"
 
 .TP
-\fIAction\fP
+\fBAction\fR
 Displays the type of Action that took place.
 .IP
 
 .TP
-\fIActor\fP
+\fBActor\fR
 Displays the Actor to generate a transaction.
 .IP
 
 .TP
-\fIInfo\fP
+\fBInfo\fR
 Displays details of the transaction.
 .IP
 
 .TP
-\fITimeStamp\fP
+\fBTimeStamp\fR
 Displays when the transaction occurred.
 .IP
 
 .TP
-\fIWhere\fP
+\fBWhere\fR
 Displays details of the constraints for the transaction.
 .P
 NOTE: If using the WithAssoc option you can also view the information
@@ -2277,70 +2277,70 @@ in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .SH "SPECIFICATIONS FOR USERS"
 
 .TP
-\fIAccount\fP=<account>
+\fBAccount\fR=<\fIaccount\fR>
 Account name to add this user to.
 .IP
 
 .TP
-\fIAdminLevel\fP=<level>
+\fBAdminLevel\fR=<\fIlevel\fR>
 Admin level of user.  Valid levels are None, Operator, and Admin.
 .IP
 
 .TP
-\fICluster\fP=<cluster>
+\fBCluster\fR=<\fIcluster\fR>
 Specific cluster to add user to the account on.  Default is all in system.
 .IP
 
 .TP
-\fIDefaultAccount\fP=<account>
+\fBDefaultAccount\fR=<\fIaccount\fR>
 Identify the default bank account name to be used for a job if none is
 specified at submission time.
 .IP
 
 .TP
-\fIDefaultWCKey\fP=<defaultwckey>
+\fBDefaultWCKey\fR=<\fIdefaultwckey\fR>
 Identify the default Workload Characterization Key.
 .IP
 
 .TP
-\fIName\fP=<name>
+\fBName\fR=<\fIname\fR>
 Name of user.
 .IP
 
 .TP
-\fINewName\fP=<newname>
+\fBNewName\fR=<\fInewname\fR>
 Use to rename a user in the accounting database
 .IP
 
 .TP
-\fIPartition\fP=<name>
+\fBPartition\fR=<\fIname\fR>
 Partition name.
 .IP
 
 .TP
-\fIRawUsage\fP=<value>
+\fBRawUsage\fR=<\fIvalue\fR>
 This allows an administrator to reset the raw usage accrued to a user.
 The only value currently supported is 0 (zero).  This is a settable
 specification only \- it cannot be used as a filter to list users.
 .IP
 
 .TP
-\fIWCKeys\fP=<wckeys>
+\fBWCKeys\fR=<\fIwckeys\fR>
 Workload Characterization Key values.
 .IP
 
 .TP
-\fIWithAssoc\fP
+\fBWithAssoc\fR
 Display all associations for this user.
 .IP
 
 .TP
-\fIWithCoord\fP
+\fBWithCoord\fR
 Display all accounts a user is coordinator for.
 .IP
 
 .TP
-\fIWithDeleted\fP
+\fBWithDeleted\fR
 Display information with previously deleted data.
 .P
 NOTE: If using the WithAssoc option you can also query against
@@ -2355,28 +2355,28 @@ ASSOCIATION BASED ENTITIES\fP section.
 .SH "LIST/SHOW USER FORMAT OPTIONS"
 
 .TP
-\fIAdminLevel\fP
+\fBAdminLevel\fR
 Admin level of user.
 .IP
 
 .TP
-\fICoordinators\fP
+\fBCoordinators\fR
 List of users that are a coordinator of the account. (Only filled in
 when using the WithCoordinator option.)
 .IP
 
 .TP
-\fIDefaultAccount\fP
+\fBDefaultAccount\fR
 The user's default account.
 .IP
 
 .TP
-\fIDefaultWCKey\fP
+\fBDefaultWCKey\fR
 The user's default wckey.
 .IP
 
 .TP
-\fIUser\fP
+\fBUser\fR
 The name of a user.
 .P
 NOTE: If using the WithAssoc option you can also view the information
@@ -2391,29 +2391,29 @@ described in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .SH "LIST/SHOW WCKey"
 
 .TP
-\fICluster\fP
+\fBCluster\fR
 Specific cluster for the WCKey.
 .IP
 
 .TP
-\fIID\fP
+\fBID\fR
 The ID of the WCKey.
 .IP
 
 .TP
-\fIUser\fP
+\fBUser\fR
 The name of a user for the WCKey.
 .IP
 
 .TP
-\fIWCKey\fP
+\fBWCKey\fR
 Workload Characterization Key.
 .IP
 
 .SH "LIST/SHOW TRES"
 
 .TP
-\fIName\fP
+\fBName\fR
 The name of the trackable resource.  This option is required for
 TRES types BB (Burst buffer), GRES, and License.  Types CPU, Energy,
 Memory, and Node do not have Names.  For example if GRES is the
@@ -2421,13 +2421,13 @@ type then name is the denomination of the GRES itself e.g. GPU.
 .IP
 
 .TP
-\fIID\fP
+\fBID\fR
 The identification number of the trackable resource as it appears
 in the database.
 .IP
 
 .TP
-\fIType\fP
+\fBType\fR
 The type of the trackable resource. Current types are BB (Burst
 buffer), CPU, Energy, GRES, License, Memory, and Node.
 .IP
@@ -2507,13 +2507,13 @@ associations on this cluster.  The options for the cluster are:
 .RS
 
 .TP
-\fBGrpTRESMins=\fP
+\fBGrpTRESMins=\fR
 The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this association and its children.
 .IP
 
 .TP
-\fBGrpTRESRunMins=\fP
+\fBGrpTRESRunMins=\fR
 Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
@@ -2522,68 +2522,68 @@ time to free up.
 .IP
 
 .TP
-\fBGrpTRES=\fP
+\fBGrpTRES=\fR
 Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBGrpJobs=\fP
+\fBGrpJobs=\fR
 Maximum number of running jobs in aggregate for this
 association and all associations which are children of this association.
 .IP
 
 .TP
-\fBGrpJobsAccrue=\fP
+\fBGrpJobsAccrue=\fR
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 .IP
 
 .TP
-\fBGrpNodes=\fP
+\fBGrpNodes=\fR
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBGrpSubmitJobs=\fP
+\fBGrpSubmitJobs=\fR
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
 associations which are children of this association.
 .IP
 
 .TP
-\fBGrpWall=\fP
+\fBGrpWall=\fR
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBFairShare=\fP
+\fBFairShare=\fR
 Number used in conjunction with other associations to determine job priority.
 .IP
 
 .TP
-\fBMaxJobs=\fP
+\fBMaxJobs=\fR
 Maximum number of jobs the children of this association can run.
 .IP
 
 .TP
-\fBMaxTRESPerJob=\fP
+\fBMaxTRESPerJob=\fR
 Maximum number of trackable resources per job the children of this association
 can run.
 .IP
 
 .TP
-\fBMaxWallDurationPerJob=\fP
+\fBMaxWallDurationPerJob=\fR
 Maximum time (not related to job size) children of this accounts jobs can run.
 .IP
 
 .TP
-\fBQOS=\fP
+\fBQOS=\fR
 Comma separated list of Quality of Service names (Defined in sacctmgr).
 .IP
 .RE
@@ -2605,12 +2605,12 @@ BEEN CREATED before the account you are adding.
 Account options are:
 .RS
 .TP
-\fBDescription=\fP
+\fBDescription=\fR
 A brief description of the account.
 .IP
 
 .TP
-\fBGrpTRESMins=\fP
+\fBGrpTRESMins=\fR
 Maximum number of TRES hours running jobs are able to
 be allocated in aggregate for this association and all associations
 which are children of this association.
@@ -2623,72 +2623,72 @@ time to free up.
 .IP
 
 .TP
-\fBGrpTRES=\fP
+\fBGrpTRES=\fR
 Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBGrpJobs=\fP
+\fBGrpJobs=\fR
 Maximum number of running jobs in aggregate for this
 association and all associations which are children of this association.
 .IP
 
 .TP
-\fBGrpJobsAccrue\fP
+\fBGrpJobsAccrue\fR
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 association and all associations which are children of this association.
 .IP
 
 .TP
-\fBGrpNodes=\fP
+\fBGrpNodes=\fR
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBGrpSubmitJobs=\fP
+\fBGrpSubmitJobs=\fR
 Maximum number of jobs which can be in a pending or
 running state at any time in aggregate for this association and all
 associations which are children of this association.
 .IP
 
 .TP
-\fBGrpWall=\fP
+\fBGrpWall=\fR
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBFairShare=\fP
+\fBFairShare=\fR
 Number used in conjunction with other associations to determine job priority.
 .IP
 
 .TP
-\fBMaxJobs=\fP
+\fBMaxJobs=\fR
 Maximum number of jobs the children of this association can run.
 .IP
 
 .TP
-\fBMaxNodesPerJob=\fP
+\fBMaxNodesPerJob=\fR
 Maximum number of nodes per job the children of this association can run.
 .IP
 
 .TP
-\fBMaxWallDurationPerJob=\fP
+\fBMaxWallDurationPerJob=\fR
 Maximum time (not related to job size) children of this accounts jobs can run.
 .IP
 
 .TP
-\fBOrganization=\fP
+\fBOrganization=\fR
 Name of organization that owns this account.
 .IP
 
 .TP
-\fBQOS(=,+=,\-=)\fP
+\fBQOS(=,+=,\-=)\fR
 Comma separated list of Quality of Service names (Defined in sacctmgr).
 .RE
 
@@ -2767,24 +2767,24 @@ once executed. If one of the following options is not specified when sacctmgr
 is called, the value configured in slurmdbd.conf is used.
 
 .TP
-\fIDirectory=\fP
+\fBDirectory=\fR
 Directory to store the archive data.
 .IP
 
 .TP
-\fIEvents\fP
+\fBEvents\fR
 Archive Events.  If not specified and PurgeEventAfter is set
 all event data removed will be lost permanently.
 .IP
 
 .TP
-\fIJobs\fP
+\fBJobs\fR
 Archive Jobs.  If not specified and PurgeJobAfter is set
 all job data removed will be lost permanently.
 .IP
 
 .TP
-\fIPurgeEventAfter=\fP
+\fBPurgeEventAfter=\fR
 Purge cluster event records older than time stated in months.  If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
@@ -2792,7 +2792,7 @@ value of '12hours' would purge everything older than 12 hours.)
 .IP
 
 .TP
-\fIPurgeJobAfter=\fP
+\fBPurgeJobAfter=\fR
 Purge job records older than time stated in months.  If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
@@ -2800,7 +2800,7 @@ value of '12hours' would purge everything older than 12 hours.)
 .IP
 
 .TP
-\fIPurgeStepAfter=\fP
+\fBPurgeStepAfter=\fR
 Purge step records older than time stated in months.  If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
@@ -2808,7 +2808,7 @@ value of '12hours' would purge everything older than 12 hours.)
 .IP
 
 .TP
-\fIPurgeSuspendAfter=\fP
+\fBPurgeSuspendAfter=\fR
 Purge job suspend records older than time stated in months.  If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
@@ -2816,18 +2816,18 @@ value of '12hours' would purge everything older than 12 hours.)
 .IP
 
 .TP
-\fIScript=\fP
+\fBScript=\fR
 Run this script instead of the generic form of archive to flat files.
 .IP
 
 .TP
-\fISteps\fP
+\fBSteps\fR
 Archive Steps.  If not specified and PurgeStepAfter is set
 all step data removed will be lost permanently.
 .IP
 
 .TP
-\fISuspend\fP
+\fBSuspend\fR
 Archive Suspend Data.  If not specified and PurgeSuspendAfter is set
 all suspend data removed will be lost permanently.
 
@@ -2841,13 +2841,13 @@ slurmdbd.conf man page), so the old file will not be overwritten and these files
 will have duplicate records.
 
 .TP
-\fIFile=\fP
+\fBFile=\fR
 File to load into database. The specified file must exist on the slurmdbd host,
 which is not necessarily the machine running the command.
 .IP
 
 .TP
-\fIInsert=\fP
+\fBInsert=\fR
 SQL to insert directly into the database.  This should be used very
 cautiously since this is writing your sql into the database.
 .IP
