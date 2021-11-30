@@ -4322,6 +4322,40 @@ static void _do_reboot(bool power_save_on, bitstr_t *node_bitmap,
 	}
 }
 
+static void _set_reboot_features_active(bitstr_t *node_bitmap,
+					char *reboot_features)
+{
+	int i, i_first, i_last;
+	node_record_t *node_ptr;
+
+	i_first = bit_ffs(node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(node_bitmap);
+	else
+		i_last = i_first - 1;
+
+	for (i = i_first; i <= i_last; i++) {
+		char *tmp_feature, *orig_features_act;
+
+		if (!bit_test(node_bitmap, i))
+			continue;
+
+		node_ptr = node_record_table_ptr + i;
+		/* Point to node features, don't copy */
+		orig_features_act =
+			node_ptr->features_act ?
+			node_ptr->features_act : node_ptr->features;
+		tmp_feature = node_features_g_node_xlate(reboot_features,
+							 orig_features_act,
+							 node_ptr->features, i);
+		xfree(node_ptr->features_act);
+		node_ptr->features_act = tmp_feature;
+		(void) update_node_active_features(node_ptr->name,
+						   node_ptr->features_act,
+						   FEATURE_MODE_IND);
+	}
+}
+
 extern void reboot_job_nodes(job_record_t *job_ptr)
 {
 	int i, i_first, i_last;
@@ -4416,41 +4450,24 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 		/* Reboot nodes to change KNL NUMA and/or MCDRAM mode */
 		_do_reboot(power_save_on, feature_node_bitmap, job_ptr,
 			   reboot_features, protocol_version);
-		for (i = i_first; i <= i_last; i++) {
-			char *tmp_feature, *orig_features_act;
 
-			if (!bit_test(feature_node_bitmap, i))
-				continue;
-
-			/*
-			 * Update node features now to avoid a race where a
-			 * second job may request that this node gets rebooted
-			 * (in order to get a new active feature) *after* the
-			 * first reboot request but *before* slurmd actually
-			 * starts up. If that would happen then the second job
-			 * would stay configuring forever, waiting for the node
-			 * to reboot even though the node already rebooted.
-			 *
-			 * By setting the node's active features right now, any
-			 * other job that wants that active feature can be
-			 * scheduled onto this node, which will also already be
-			 * rebooting, so those other jobs won't send additional
-			 * reboot requests to change the feature.
-			 */
-			node_ptr = node_record_table_ptr + i;
-			/* Point to node features, don't copy */
-			orig_features_act =
-				node_ptr->features_act ?
-				node_ptr->features_act : node_ptr->features;
-			tmp_feature = node_features_g_node_xlate(
-				reboot_features, orig_features_act,
-				node_ptr->features, i);
-			xfree(node_ptr->features_act);
-			node_ptr->features_act = tmp_feature;
-			(void) update_node_active_features(
-				node_ptr->name, node_ptr->features_act,
-				FEATURE_MODE_IND);
-		}
+		/*
+		 * Update node features now to avoid a race where a
+		 * second job may request that this node gets rebooted
+		 * (in order to get a new active feature) *after* the
+		 * first reboot request but *before* slurmd actually
+		 * starts up. If that would happen then the second job
+		 * would stay configuring forever, waiting for the node
+		 * to reboot even though the node already rebooted.
+		 *
+		 * By setting the node's active features right now, any
+		 * other job that wants that active feature can be
+		 * scheduled onto this node, which will also already be
+		 * rebooting, so those other jobs won't send additional
+		 * reboot requests to change the feature.
+		 */
+		_set_reboot_features_active(feature_node_bitmap,
+					    reboot_features);
 	}
 
 	if (boot_node_bitmap) {
