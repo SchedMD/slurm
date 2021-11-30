@@ -4365,7 +4365,7 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		reboot_msg = xmalloc(sizeof(reboot_msg_t));
 		slurm_init_reboot_msg(reboot_msg, false);
 		reboot_agent_args->msg_args = reboot_msg;
-		reboot_msg->features = reboot_features;	/* Move, not copy */
+		reboot_msg->features = xstrdup(reboot_features);
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(feature_node_bitmap, i))
 				continue;
@@ -4421,6 +4421,7 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 	slurm_thread_create(&tid, _wait_boot, wait_boot_arg);
 	FREE_NULL_BITMAP(boot_node_bitmap);
 	FREE_NULL_BITMAP(feature_node_bitmap);
+	xfree(reboot_features);
 
 	return rc;
 }
