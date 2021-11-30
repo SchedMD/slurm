@@ -31,6 +31,8 @@ HIGHLIGHTS
  -- Reset job start time after nodes are rebooted, previously only done for
     cloud/power save boots.
  -- Node features (if any) are passed to RebootProgram if run from slurmctld.
+ -- Fail srun when using invalid --cpu-bind options (e.g. --cpu-bind=map_cpu:99
+    when only 10 cpus are allocated).
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

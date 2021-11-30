@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Node features (if any) are passed to RebootProgram if run from slurmctld.
  -- Fix sending multiple features to RebootProgram.
  -- If a task/srun prolog fails don't allow the step to continue running.
+ -- Fail srun when using invalid --cpu-bind options.
 
 * Changes in Slurm 21.08.5
 ==========================
