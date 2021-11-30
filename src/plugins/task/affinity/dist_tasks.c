@@ -302,6 +302,9 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 	if (!superset) {
 		error("CPU binding outside of job step allocation, allocated CPUs are: %s.",
 		      avail_mask);
+		if (err_msg)
+			xstrfmtcat(*err_msg, "CPU binding outside of job step allocation, allocated CPUs are: %s.",
+			      avail_mask);
 		req->cpu_bind_type &= (~CPU_BIND_MAP);
 		req->cpu_bind_type |=   CPU_BIND_MASK;
 		xfree(req->cpu_bind);
@@ -355,6 +358,9 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 	if (!superset) {
 		error("CPU binding outside of job step allocation, allocated CPUs are: %s.",
 		      avail_mask);
+		if (err_msg)
+			xstrfmtcat(*err_msg, "CPU binding outside of job step allocation, allocated CPUs are: %s.",
+			      avail_mask);
 		rc = SLURM_ERROR;
 	}
 
@@ -421,6 +427,8 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 					       &part_sockets, &part_cores);
 		if (!avail_mask) {
 			error("Could not determine allocated CPUs");
+			if (err_msg)
+				xstrfmtcat(*err_msg, "Could not determine allocated CPUs");
 			rc = SLURM_ERROR;
 		} else if ((whole_nodes == 0) &&
 			   (req->job_core_spec == NO_VAL16) &&
@@ -433,6 +441,9 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 							   req->cpu_bind_type);
 				error("Entire node must be allocated for %s",
 				      buf_type);
+				if (err_msg)
+					xstrfmtcat(*err_msg, "Entire node must be allocated for %s",
+						   buf_type);
 			}
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
