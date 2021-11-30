@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- srun - use maximum number of open files while handling job I/O.
  -- Fix writing to Xauthority files on root_squash NFS exports, which was
     preventing X11 forwarding from completing setup.
+ -- Fix regression in 21.08.0rc1 that broke --gres=none.
 
 * Changes in Slurm 21.08.4
 ==========================

@@ -2072,7 +2072,15 @@ static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 	}
 
 	xfree(opt->gres);
-	opt->gres = gres_prepend_tres_type(arg);
+	/*
+	 * Do not prepend "gres:" to none; none is handled specially by
+	 * slurmctld to mean "do not copy the job's GRES to the step" -
+	 * see _copy_job_tres_to_step()
+	 */
+	if (!xstrcasecmp(arg, "none"))
+		opt->gres = xstrdup(arg);
+	else
+		opt->gres = gres_prepend_tres_type(arg);
 
 	return SLURM_SUCCESS;
 }
@@ -2089,7 +2097,16 @@ static int arg_set_data_gres(slurm_opt_t *opt, const data_t *arg,
 		ADD_DATA_ERROR("GRES \"help\" not supported", rc);
 	} else {
 		xfree(opt->gres);
-		opt->gres = gres_prepend_tres_type(str);
+		/*
+		 * Do not prepend "gres:" to none; none is handled specially by
+		 * slurmctld to mean "do not copy the job's GRES to the step" -
+		 * see _copy_job_tres_to_step()
+		 */
+		if (!xstrcasecmp(str, "none")) {
+			opt->gres = str;
+			str = NULL;
+		} else
+			opt->gres = gres_prepend_tres_type(str);
 	}
 
 	xfree(str);
@@ -6122,6 +6139,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	xfmt_tres(&job_desc->tres_per_job, "gres:gpu", opt_local->gpus);
 	xfmt_tres(&job_desc->tres_per_node, "gres:gpu",
 		  opt_local->gpus_per_node);
+	/* --gres=none for jobs means no GRES, so don't send it to slurmctld */
 	if (opt_local->gres && xstrcasecmp(opt_local->gres, "NONE")) {
 		if (job_desc->tres_per_node)
 			xstrfmtcat(job_desc->tres_per_node, ",%s",
