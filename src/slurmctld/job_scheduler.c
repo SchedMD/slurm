@@ -4417,7 +4417,6 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 		_do_reboot(power_save_on, feature_node_bitmap, job_ptr,
 			   reboot_features, protocol_version);
 		for (i = i_first; i <= i_last; i++) {
-			int node_inx;
 			char *tmp_feature, *orig_features_act;
 
 			if (!bit_test(feature_node_bitmap, i))
@@ -4438,14 +4437,14 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 			 * rebooting, so those other jobs won't send additional
 			 * reboot requests to change the feature.
 			 */
-			node_inx = node_ptr - node_record_table_ptr;
+			node_ptr = node_record_table_ptr + i;
 			/* Point to node features, don't copy */
 			orig_features_act =
 				node_ptr->features_act ?
 				node_ptr->features_act : node_ptr->features;
 			tmp_feature = node_features_g_node_xlate(
 				reboot_features, orig_features_act,
-				node_ptr->features, node_inx);
+				node_ptr->features, i);
 			xfree(node_ptr->features_act);
 			node_ptr->features_act = tmp_feature;
 			(void) update_node_active_features(
