@@ -72,7 +72,7 @@ set timeout [expr $max_job_delay + 30]
 set tasks   4
 set node_cnt 1-1
 
-set srun_pid [spawn $srun -N$node_cnt -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in]
+spawn $srun -N$node_cnt -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in
 expect {
 	-re "(HEADER|TEST==prolog_qa|DISPLAY==X)" {
 		incr matches
@@ -82,7 +82,6 @@ expect {
 		fail "Unexpected error running srun"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

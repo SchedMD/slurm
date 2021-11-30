@@ -43,7 +43,7 @@ set host_0      ""
 set task_cnt    0
 set timeout $max_job_delay
 
-set srun_pid [spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "(Task count specification invalid|configuration is not available)" {
 		if {[get_config_param "FrontendName"] ne "MISSING"} {
@@ -59,7 +59,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -71,7 +70,7 @@ subtest {[string compare $host_0 ""] != 0} "Should get SLURM_NODEID of task 0"
 
 set alloc_fail 0
 set task_cnt2  0
-set srun_pid [spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "($number):" {
 		incr task_cnt2
@@ -82,7 +81,6 @@ expect {
 		set alloc_fail 1
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -98,7 +96,7 @@ subtest { $task_cnt2 == 0 } "Should allocate more tasks than processors"
 set host_0      ""
 set host_1      ""
 
-set srun_pid [spawn $srun -N1-1 -l -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -N1-1 -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
@@ -110,7 +108,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -136,7 +133,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1-3 -l -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -N1-3 -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
@@ -154,7 +151,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -187,7 +183,7 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N2-3 -l -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -N2-3 -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "srun: error" {
 		skip "Can't test srun task distribution"
@@ -208,7 +204,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

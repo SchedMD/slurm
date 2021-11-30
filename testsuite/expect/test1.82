@@ -37,21 +37,20 @@ set host_0      ""
 set host_1      ""
 set host_2      ""
 set host_3      ""
-set node_cnt 3
-set timeout $max_job_delay
+set node_cnt    3
+set timeout     $max_job_delay
 
 set available [llength [get_nodes_by_state]]
 if {$available < $node_cnt} {
     skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }
 
-set srun_pid [spawn $srun -N$node_cnt -l -t1 $bin_printenv SLURMD_NODENAME]
+spawn $srun -N$node_cnt -l -t1 $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Node count specification invalid" {
 		skip "Can't test srun task distribution"
 	}
 	-re "configuration not available" {
-		slow_kill $srun_pid
 		skip "Partition too small for test"
 	}
 	-re "($number): *($re_word_str)" {
@@ -70,7 +69,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -107,7 +105,7 @@ set host_0      ""
 set host_1      ""
 set host_2      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N2 -l --exclude=$exclude_node -t1 $bin_printenv SLURMD_NODENAME]
+spawn $srun -N2 -l --exclude=$exclude_node -t1 $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Invalid node name specified" {
 		skip "Appears you are using multiple slurmd testing. This test won't work in that fashion"
@@ -126,7 +124,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -155,7 +152,7 @@ subtest {$dup_hostname != 1} "Should not allocate an excluded node"
 set host_0      ""
 set host_1      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --nodelist=$include_node -t1 $bin_printenv SLURMD_NODENAME]
+spawn $srun -N1 -l --nodelist=$include_node -t1 $bin_printenv SLURMD_NODENAME
 expect {
 	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
@@ -167,7 +164,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

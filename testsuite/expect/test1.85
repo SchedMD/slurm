@@ -31,11 +31,11 @@
 
 source ./globals
 
-# spawn an allocation to run on 2
+# Spawn an allocation to run on 2
 # hosts with 4 tasks.
 #
 set job_id 0
-set salloc_id [spawn $salloc --gres=craynetwork:0 -N 2 -n 4 -t 1 $bin_bash]
+spawn $salloc --gres=craynetwork:0 -N 2 -n 4 -t 1 $bin_bash
 expect {
 	-re "Node count specification invalid|More processors requested|not available" {
 		skip "Can't test srun task distribution"
@@ -56,7 +56,6 @@ expect {
 	-re "$test_prompt" {
 	}
 	timeout {
-		slow_kill $salloc_id
 		fail "salloc not responding"
 	}
 }
@@ -80,7 +79,7 @@ expect {
 	}
 }
 
-# convert the nodelist into a list of hostnames.
+# Convert the nodelist into a list of hostnames.
 set count 0
 set host1 ""
 set host2 ""
@@ -106,7 +105,7 @@ expect {
 }
 log_debug "Got exec hosts $host1 $host2"
 
-# reset the spawn process to be initial allocation
+# Reset the spawn process to be initial allocation
 # then srun a first task.
 set hostname ""
 send "$srun -l -n 1 -N 1 $bin_printenv SLURM_STEP_NODELIST\r"
@@ -126,7 +125,7 @@ expect {
 
 }
 
-# force the second task on the second node, at the end
+# Force the second task on the second node, at the end
 # make sure the task ran on the specified node.
 set hostname ""
 send "$srun -l -n 1 -N 1 -w $host2 $bin_printenv SLURM_STEP_NODELIST\r"
@@ -146,6 +145,6 @@ expect {
 	}
 }
 
-if {[ string compare $host2 $hostname] != 0} {
+if {$host2 ne $hostname} {
 	fail "The execution hostname $hostname != $host2 requested hostname."
 }

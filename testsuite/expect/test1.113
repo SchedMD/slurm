@@ -61,7 +61,7 @@ if {$matches < $needed_nodes} {
 
 set nodes 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -t1 -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
+spawn $srun -t1 -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES
 expect {
 	-re "srun: job $number queued and waiting for resources" {
 		exp_continue
@@ -77,7 +77,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $sun_pid
 		fail "srun not responding"
 	}
 	eof {

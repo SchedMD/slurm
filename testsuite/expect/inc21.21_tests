@@ -127,9 +127,9 @@ proc inc21_21_bad { test_type limit } {
 }
 
 proc inc21_21_grp_test { test_type limit } {
-
 	global number bin_id ta srun sbatch test_node selectparam nthreads is_skip
 	global file_in squeue scancel bin_bash bin_chmod
+
 	set job_id 0
 	set val 0
 	set exclusive ""
@@ -208,7 +208,6 @@ sleep 10"
 			exp_continue
 		}
 		timeout {
-			slow_kill $mypid
 			fail "squeue not responding"
 		}
 		eof {
@@ -292,8 +291,7 @@ proc inc21_21_submit_test { limit } {
 
 	# then submit one more over the limit and it should fail
 	set matches 0
-	set mypid [spawn $sbatch -N1 -n1 --account=$ta --output=/dev/null \
-		       --error=/dev/null -t5 $file_in]
+	spawn $sbatch -N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in
 	expect {
 		-re "Job violates accounting/QOS policy" {
 			incr matches
@@ -307,7 +305,6 @@ proc inc21_21_submit_test { limit } {
 			fail "Slurm appears to be down"
 		}
 		timeout {
-			slow_kill $mypid
 			fail "sbatch not responding"
 		}
 		eof {
@@ -317,7 +314,7 @@ proc inc21_21_submit_test { limit } {
 	subtest -fail { $matches == 1 } "Policy violation error detected"
 
 	set matches 0
-	set mypid [spawn $squeue -A$ta -h -o "\%i \%t \%r"]
+	spawn $squeue -A$ta -h -o "\%i \%t \%r"
 	expect {
 		-re "($job_id(2)|$job_id(3)).PD.AssocMaxJobsLimit" {
 			incr matches
@@ -332,7 +329,6 @@ proc inc21_21_submit_test { limit } {
 			exp_continue
 		}
 		timeout {
-			slow_kill $mypid
 			fail "squeue not responding"
 		}
 		eof {
@@ -374,8 +370,7 @@ proc inc21_21_submit_test { limit } {
 	    }
 
 	# then submit one more over the limit and it should fail
-	set mypid [spawn $sbatch -N1 -a0 --account=$ta --output=/dev/null \
-		       --error=/dev/null -t5 $file_in]
+	spawn $sbatch -N1 -a0 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in
 	expect {
 		-re "Job violates accounting/QOS policy" {
 			log_info "\[Job array test\] This error is expected, not a problem"
@@ -388,7 +383,6 @@ proc inc21_21_submit_test { limit } {
 			fail "\[Job array test\] slurm appears to be down"
 		}
 		timeout {
-			slow_kill $mypid
 			fail "\[Job array test\] sbatch not responding"
 		}
 		eof {
@@ -397,7 +391,7 @@ proc inc21_21_submit_test { limit } {
 	}
 
 	set matches 0
-	set mypid [spawn $squeue -A$ta -h -o "\%i \%t \%r"]
+	spawn $squeue -A$ta -h -o "\%i \%t \%r"
 	expect {
 		-re "($job_id(2)|$job_id(3))_\\\[0\\\].PD.AssocMaxJobsLimit" {
 			incr matches
@@ -412,7 +406,6 @@ proc inc21_21_submit_test { limit } {
 			exp_continue
 		}
 		timeout {
-			slow_kill $mypid
 			fail "squeue not responding"
 		}
 		eof {

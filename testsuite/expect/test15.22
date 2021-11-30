@@ -46,7 +46,7 @@ proc cleanup {} {
 #
 set job_id  0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc --partition=$def_part_name -t1 $bin_sleep 1]
+spawn $salloc --partition=$def_part_name -t1 $bin_sleep 1
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -78,7 +78,7 @@ run_command -fail "$scontrol create partition=$other_part_name nodes=[get_nodes_
 # Submit job explicitly to a non-default partition
 #
 set job_id          0
-set salloc_pid [spawn $salloc --partition=$other_part_name -t1 $bin_sleep 1]
+spawn $salloc --partition=$other_part_name -t1 $bin_sleep 1
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

@@ -76,7 +76,7 @@ exec $bin_chmod 700 $file_prog
 
 set timeout [expr $max_job_delay + 200]
 
-set srun_pid [spawn $srun --acctg-freq=$task_freq --profile=task -t5 ./$file_prog]
+spawn $srun --acctg-freq=$task_freq --profile=task -t5 ./$file_prog
 expect {
 	-re "SLURM_JobId=($number)" {
 		set job_id $expect_out(1,string)
@@ -90,7 +90,6 @@ expect {
 		fail "Something happened on start of job"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "Srun not responding"
 	}
 	eof {
@@ -99,14 +98,12 @@ expect {
 }
 
 set timeout 10
-set srun_pid [spawn $sh5util -j $job_id]
+spawn $sh5util -j $job_id
 expect {
 	"Output file generated is empty" {
-		slow_kill $srun_pid
 		fail "Sh5util merge didn't make anything"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "Sh5util merge not responding"
 	}
 	eof {
@@ -114,15 +111,13 @@ expect {
 	}
 }
 
-set srun_pid [spawn $sh5util -j $job_id -E -l Node:TimeSeries -s Tasks -o $file_out]
+spawn $sh5util -j $job_id -E -l Node:TimeSeries -s Tasks -o $file_out
 expect {
 	"Output file generated is empty" {
-		slow_kill $srun_pid
 		fail "Sh5util extract didn't make anything"
 	}
 	timeout {
 		fail "Sh5util extract not responding"
-		slow_kill $srun_pid
 	}
 	eof {
 		wait

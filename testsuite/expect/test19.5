@@ -84,7 +84,7 @@ make_bash_script $file_in_fini "
 
 set disabled 0
 set matches  0
-set strigger_pid [spawn $strigger --set -v --time --jobid=$job_id --offset=-90 --program=$file_in_time]
+spawn $strigger --set -v --time --jobid=$job_id --offset=-90 --program=$file_in_time
 expect {
 	-re "permission denied" {
 		set disabled 1
@@ -109,7 +109,7 @@ if {$matches == 0} {
 }
 
 set matches 0
-set strigger_pid [spawn $strigger --set -v --fini --jobid=$job_id --program=$file_in_fini]
+spawn $strigger --set -v --fini --jobid=$job_id --program=$file_in_fini
 expect {
 	-re "trigger set" {
 		incr matches
@@ -127,7 +127,7 @@ if {$matches == 0} {
 }
 
 set matches 0
-set strigger_pid [spawn $strigger --get -v --jobid=$job_id]
+spawn $strigger --get -v --jobid=$job_id
 expect {
 	-re "$job_id" {
 		incr matches

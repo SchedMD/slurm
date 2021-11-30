@@ -63,10 +63,9 @@ set start_begin  $jobs_started
 # Submit a slurm job to increment job counters
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 $bin_id]
+spawn $srun -N1 -t1 $bin_id
 expect {	exp_continue
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

@@ -41,11 +41,9 @@ if {$nb_nodes < 3} {
 }
 
 proc cleanup {} {
-	global het_job_id scancel
+	global het_job_id
 
-	if {$het_job_id > 0} {
-		exec $scancel $het_job_id
-	}
+	cancel_job $het_job_id
 }
 
 set het_job_id 0
@@ -53,7 +51,7 @@ set matches 0
 set index 0
 set component(0) 0
 set timeout $max_job_delay
-set sid [spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash]
+spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash
 expect {
 	-re "Granted job allocation ($number)" {
 		set het_job_id $expect_out(1,string)

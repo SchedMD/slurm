@@ -130,7 +130,7 @@ if [add_user "$tu1,$tu2,$tu3" [array get user_req1]] {
 # Use sacctmgr to list the test user additions
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$tu1,$tu2,$tu3 withassoc]
+spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw"  names=$tu1,$tu2,$tu3 withassoc
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"

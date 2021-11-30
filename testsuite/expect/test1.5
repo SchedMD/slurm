@@ -33,7 +33,7 @@ set matches     0
 #
 # Report the srun help message
 #
-set srun_pid [spawn $srun --help]
+spawn $srun --help
 expect {
 	-re "Usage:" {
 		incr matches
@@ -48,7 +48,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

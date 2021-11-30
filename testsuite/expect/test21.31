@@ -145,7 +145,7 @@ if {[check_resource_limits $sr1 [array get resource1_chck]] == 1} {
 # use scontrol show license to verify the cluster license was created
 #
 set matches 0
-set my_pid [eval spawn $scontrol show license]
+spawn $scontrol show license
 expect {
 	-re "LicenseName=($sr1@$resource1(Server))" {
 		incr matches
@@ -187,7 +187,7 @@ if {[check_resource_limits $sr1 [array get resource1_chck]] == 1} {
 # use scontrol to verify the modified cluster license
 #
 set matches 0
-set my_pid [eval spawn $scontrol show license $sr1@$resource1(Server)]
+eval spawn $scontrol show license $sr1@$resource1(Server)
 expect {
 	-re "LicenseName=$sr1@$resource1(Server)" {
 		incr matches
@@ -219,7 +219,7 @@ if [remove_res $sr1] {
 # use scontrol to verify cluster license was removed
 #
 set matches 0
-set my_pid [eval spawn $scontrol show license]
+spawn $scontrol show license
 expect {
 	-re "LicenseName=$sr1@$resource1(Server)" {
 		incr matches

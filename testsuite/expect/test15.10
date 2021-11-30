@@ -40,7 +40,7 @@ for {set inx 1} {$inx < 4} {set inx [expr $inx * 2]} {
 	set tasks_set $inx
 	set tasks_get 0
 	set timeout $max_job_delay
-	set salloc_pid [spawn $salloc -n$tasks_set -t1 $bin_bash]
+	spawn $salloc -n$tasks_set -t1 $bin_bash
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)

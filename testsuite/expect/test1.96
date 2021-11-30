@@ -70,7 +70,7 @@ make_bash_script $file_in "
 #
 set timeout $max_job_delay
 set no_start 0
-set sbatch_pid [spawn $sbatch -N 1-$task_cnt -n $task_cnt --output=$file_out --error=$file_err -t1 $file_in]
+spawn $sbatch -N 1-$task_cnt -n $task_cnt --output=$file_out --error=$file_err -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -84,7 +84,6 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		slow_kill $sbatch_pid
 		fail "srun not responding"
 	}
 	eof {

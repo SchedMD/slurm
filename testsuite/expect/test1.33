@@ -58,7 +58,7 @@ make_bash_script $test_script "
 set sum 0
 set myexit 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -n $task_cnt -O -t1 $exit_script]
+spawn $srun -N1 -n $task_cnt -O -t1 $exit_script
 expect {
 	-re "exit code ($number)" {
 		log_debug "This error is expected, no worries"
@@ -66,7 +66,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

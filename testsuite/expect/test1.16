@@ -42,7 +42,7 @@ exec $bin_touch $scratch_file
 # The --unbuffered option will send the message which lacks a '\n'
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --unbuffered --verbose -t1 $bin_rm -f -i $scratch_file]
+spawn $srun --unbuffered --verbose -t1 $bin_rm -f -i $scratch_file
 expect {
 	-re "launching StepId=($number)\\.0 on host" {
 		set job_id $expect_out(1,string)
@@ -54,7 +54,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

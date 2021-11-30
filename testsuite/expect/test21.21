@@ -243,7 +243,7 @@ expect {
 # Use sacctmgr to add an account
 #
 set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $ta]
+spawn $sacctmgr -i add account $ta
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -255,7 +255,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -269,10 +268,9 @@ if {$aamatches != 1} {
 #
 # Add self to this new account
 #
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$ta]
+spawn $sacctmgr -i create user name=$user_name account=$ta
 expect {
 	timeout {
-		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {

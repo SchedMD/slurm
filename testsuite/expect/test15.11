@@ -48,7 +48,7 @@ proc cleanup {} {
 set priority1  0
 set matches    0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -t1 --job-name=$job_name $bin_bash]
+spawn $salloc -t1 --job-name=$job_name $bin_bash
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -81,7 +81,7 @@ subtest {$matches != 0} "Verify that the job set the job name"
 #
 set job_id     0
 set priority2  0
-set salloc_pid [spawn $salloc -t1 --nice=1000 $bin_bash]
+spawn $salloc -t1 --nice=1000 $bin_bash
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

@@ -43,7 +43,7 @@ proc cleanup {} {
 # Run trivial test with SALLOC_BELL env var
 #
 set env("SALLOC_BELL") 1
-set salloc_pid [spawn $salloc -N1 -t1 $bin_id]
+spawn $salloc -N1 -t1 $bin_id
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -67,7 +67,7 @@ subtest {$job_id != 0} "Ensure that job with SALLOC_BELL environment variable is
 #
 set job_id      0
 set env("SALLOC_NO_BELL") 1
-set salloc_pid [spawn $salloc -N1 -t1 $bin_id]
+spawn $salloc -N1 -t1 $bin_id
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

@@ -302,7 +302,7 @@ if [add_user $tu1 [array get user_req3]] {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr -i dump $clu=$tc3 file=$file_out4]
+spawn $sacctmgr -i dump $clu=$tc3 file=$file_out4
 expect {
 	-re "(Cluster .* returned nothing)" {
 		fail "There was a problem with the dump"

@@ -32,14 +32,13 @@ proc run_gpu_per_job { mem_per_gpu } {
 	global file_in number srun test_name
 
 	set mem_size 0
-	set srun_pid [spawn $srun --gpus=1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in]
+	spawn $srun --gpus=1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in
 	expect {
 		-re "TRES=cpu=($number),mem=($number)M" {
 			set mem_size $expect_out(2,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {
@@ -55,14 +54,13 @@ proc run_gpu_per_node { mem_per_gpu } {
 	global file_in number srun test_name
 
 	set mem_size 0
-	set srun_pid [spawn $srun --gpus-per-node=1 -N1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in]
+	spawn $srun --gpus-per-node=1 -N1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in
 	expect {
 		-re "TRES=cpu=($number),mem=($number)M" {
 			set mem_size $expect_out(2,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {
@@ -78,14 +76,13 @@ proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
 	global file_in number srun test_name
 
 	set mem_size 0
-	set srun_pid [spawn $srun --gpus-per-task=$gpu_cnt -n1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in]
+	spawn $srun --gpus-per-task=$gpu_cnt -n1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in
 	expect {
 		-re "TRES=cpu=($number),mem=($number)M" {
 			set mem_size $expect_out(2,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $srun_pid
 			fail "srun not responding"
 		}
 		eof {

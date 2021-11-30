@@ -62,7 +62,7 @@ make_bash_script $file_in "
 # Spawn a batch job with multiple steps in background
 #
 log_info "Start main test"
-set sbatch_pid [eval spawn $sbatch $job_mem_opt -n$steps_started -t1 --output=$file_out --error=$file_err -J$test_name $file_in]
+eval spawn $sbatch $job_mem_opt -n$steps_started -t1 --output=$file_out --error=$file_err -J$test_name $file_in
 expect {
 	-re "Requested node configuration is not available" {
 		skip "This test needs to be able to run a batch job with \"$job_mem_opt -n$steps_started -t1\""
@@ -72,7 +72,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $sbatch_pid
 		fail "sbatch not responding"
 	}
 	eof {

@@ -53,7 +53,7 @@ set expected_layout2 [list 0 0 1 1]
 set expected_layout3 [list 0 1 1 1]
 set tested_layout [list -1 -1 -1 -1]
 set timeout $max_job_delay
-set srun_pid [spawn $srun -O -N2 --ntasks-per-node=2 -l --distribution=block -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -O -N2 --ntasks-per-node=2 -l --distribution=block -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "srun: error" {
 		skip "Can't test srun task distribution"
@@ -77,7 +77,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -113,7 +112,7 @@ set expected_layout1 [list 0 1 1 1]
 set expected_layout2 [list 0 1 0 1]
 set expected_layout3 [list 0 1 0 0]
 set tested_layout [list -1 -1 -1 -1]
-set srun_pid [spawn $srun -O -N2 --ntasks-per-node=2 -l --distribution=cyclic -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -O -N2 --ntasks-per-node=2 -l --distribution=cyclic -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "More processors requested than permitted" {
 		skip "Can't test srun task distribution"
@@ -140,7 +139,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

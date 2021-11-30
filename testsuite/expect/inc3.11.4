@@ -56,7 +56,7 @@ proc inc3_11_4 {} {
 	# Submit the batch job
 	set denied 0
 	set job_id 0
-	set sbatch_pid [spawn $sbatch -N1 --reservation=$res_name $file_in]
+	spawn $sbatch -N1 --reservation=$res_name $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -70,7 +70,6 @@ proc inc3_11_4 {} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			cancel_job $job_id
 			delete_res $res_name
 			fail "sbatch not responding"

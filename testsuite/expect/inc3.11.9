@@ -81,14 +81,13 @@ proc inc3_11_9 {} {
 	set job_id 0
 
 	# Submit a batch job using half the threads on the nodes
-	set sbatch_pid [spawn $sbatch -w[node_list_to_range $nodes] --time=10:00 --ntasks-per-node=$thread_res_num --output=/dev/null $file_in]
+	spawn $sbatch -w[node_list_to_range $nodes] --time=10:00 --ntasks-per-node=$thread_res_num --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			cancel_job $job_id
 			fail "sbatch not responding"
 		}
@@ -232,14 +231,13 @@ proc inc3_11_9 {} {
 	set core_res_num   [ expr $core_res_num - 1 ]
 	set thread_res_num [ expr $core_res_num * $threadcnt ]
 
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
+	spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			delete_res $res_name_test
 			fail "sbatch not responding"
@@ -289,14 +287,13 @@ proc inc3_11_9 {} {
 	# Submit a batch job: a job using more cores than available in first 5 nodes
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set thread_res_num [ expr $core_res_num * $threadcnt ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
+	spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			delete_res $res_name_test
 			fail "sbatch not responding"
@@ -348,14 +345,13 @@ proc inc3_11_9 {} {
 	# Submit a batch job: a job using cores reserved in first reservation
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set thread_res_num [ expr $core_res_num * $threadcnt ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name --output=/dev/null $file_in]
+	spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			delete_res $res_name_test
 			fail "sbatch not responding"
@@ -409,14 +405,13 @@ proc inc3_11_9 {} {
 	set core_res_num   [ expr $core_res_num * 5 ]
 	set core_res_num   [ expr $core_res_num + 1 ]
 	set thread_res_num [ expr $core_res_num * $threadcnt ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name --output=/dev/null $file_in]
+	spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			delete_res $res_name_test
 			fail "sbatch not responding"
@@ -467,14 +462,13 @@ proc inc3_11_9 {} {
 
 	# Submit a batch job: a job using cores reserved in second reservation
 	set thread_res_num [ expr 1 * $threadcnt ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name_test --output=/dev/null $file_in]
+	spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name_test --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			delete_res $res_name_test
 			fail "sbatch not responding"
@@ -525,14 +519,13 @@ proc inc3_11_9 {} {
 
 	# Submit a batch job: a job using more cores than reserved in second reservation
 	set thread_res_num [ expr 2 * $threadcnt ]
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name_test --output=/dev/null $file_in]
+	spawn $sbatch --ntasks-per-node=$thread_res_num --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --reservation=$res_name_test --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			delete_res $res_name_test
 			fail "sbatch not responding (within: inc3.11.9)"
@@ -593,14 +586,13 @@ proc inc3_11_9 {} {
 
 	# Create a job that uses all cores in the node range and is not
 	# part of a reservation.
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=$cores_per_node --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
+	spawn $sbatch --ntasks-per-node=$cores_per_node --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			fail "sbatch not responding (within: inc3.11.9)"
 		}
 		eof {
@@ -716,14 +708,13 @@ proc inc3_11_9 {} {
 
 	# Create a job that runs on a single core on all nodes in the reservation.
 
-	set sbatch_pid [spawn $sbatch --ntasks-per-node=1 --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in]
+	spawn $sbatch --ntasks-per-node=1 --nodelist=$def_node_name\[$min_node_inx\-$max_node_inx\] --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			fail "sbatch not responding (within: inc3.11.9)"
 		}
 		eof {

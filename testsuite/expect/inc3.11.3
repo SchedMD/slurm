@@ -52,14 +52,13 @@ proc inc3_11_3 {} {
 
 	# Submit the batch job
 	set job_id 0
-	set sbatch_pid [spawn $sbatch -N1 --reservation=$res_name $file_in]
+	spawn $sbatch -N1 --reservation=$res_name $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			delete_res $res_name
 			cancel_job $job_id
 			fail "sbatch not responding"

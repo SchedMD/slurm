@@ -3566,7 +3566,7 @@ proc check_acct_associations { } {
 	#
 	# Use sacctmgr to check associations
 	#
-	set s_pid [spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt,cluster]
+	spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt,cluster
 	expect {
 	       -re "($number)\\|($number)\\|($re_word_str)\\|" {
 		      # Here we are checking if we have duplicates and
@@ -3604,7 +3604,6 @@ proc check_acct_associations { } {
 		      exp_continue
 	       }
 	       timeout {
-			slow_kill $s_pid
 			fail "sacctmgr add not responding"
 	       }
 	       eof {
@@ -3703,14 +3702,13 @@ proc get_admin_level {{user_name ""}} {
 	# Use sacctmgr to check admin_level
 	#
 	log_user 0
-	set s_pid [spawn $sacctmgr -n -P list user $user_name format=admin]
+	spawn $sacctmgr -n -P list user $user_name format=admin
 	expect {
 		-re "($re_word_str)" {
 		      set admin_level $expect_out(1,string)
 		      exp_continue
 	       }
 	       timeout {
-		      slow_kill $s_pid
 		      fail "sacctmgr add not responding"
 	       }
 	       eof {
@@ -4244,7 +4242,7 @@ proc get_partition_maximum_time_limit {partition} {
 
 	set secs 0
 	log_user 0
-	set sinfo_pid [spawn -noecho $sinfo -h -p $partition -O time -e]
+	spawn -noecho $sinfo -h -p $partition -O time -e
 	expect {
 		-re "infinite" {
 			set secs -1
@@ -4277,7 +4275,6 @@ proc get_partition_maximum_time_limit {partition} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $sinfo_pid
 			fail "sinfo not responding"
 		}
 		eof {
@@ -4316,7 +4313,7 @@ proc get_partition_default_time_limit { {partition ""} } {
 
 	set secs 0
 	log_user 0
-	set sinfo_pid [spawn -noecho $sinfo -h -p $partition -O defaulttime -e]
+	spawn -noecho $sinfo -h -p $partition -O defaulttime -e
 	expect {
 		-re "infinite" {
 			set secs -1
@@ -4349,7 +4346,6 @@ proc get_partition_default_time_limit { {partition ""} } {
 			exp_continue
 		}
 		timeout {
-			slow_kill $sinfo_pid
 			fail "sinfo not responding"
 		}
 		eof {
@@ -4380,8 +4376,8 @@ proc get_partition_default_time_limit { {partition ""} } {
 #####################################################################
 
 proc get_node_cores {node} {
-
 	global sinfo number
+
 	set cores -1
 	set sockets_per_node 0
 	set cores_per_socket 0
@@ -4391,8 +4387,7 @@ proc get_node_cores {node} {
 	}
 
 	log_user 0
-	set sinfo_pid [spawn -noecho $sinfo -o "%X %Y" -h -n $node]
-
+	spawn -noecho $sinfo -o "%X %Y" -h -n $node
 	expect {
 		-re "($number)" {
 			if {$sockets_per_node == 0} {
@@ -4403,14 +4398,12 @@ proc get_node_cores {node} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $sinfo_pid
 			fail "sinfo not responding"
 		}
 		eof {
 			wait
 		}
 	}
-
 	log_user 1
 
 	set cores [expr $sockets_per_node * $cores_per_socket]
@@ -4451,7 +4444,7 @@ proc get_node_cpus {node} {
 	}
 
 	# Get the number of CPUs on a node
-	set scontrol_pid [spawn $scontrol show node $node]
+	spawn $scontrol show node $node
 	expect {
 		-re "CoresPerSocket=($number)" {
 			set ncores $expect_out(1,string)
@@ -4470,7 +4463,6 @@ proc get_node_cpus {node} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $scontrol_pid
 			fail "scontrol is not responding"
 		}
 		eof {
@@ -4513,7 +4505,7 @@ proc get_node_cpus {node} {
 
 proc get_part_total_cores {part states} {
 	global sinfo number
-	log_user 0
+
 	set cores 0
 	set tmp 0
 	set i 0
@@ -4522,12 +4514,12 @@ proc get_part_total_cores {part states} {
 		set part [default_partition]
 	}
 
+	log_user 0
 	if {[string length $states] == 0} {
-		set sinfo_pid [spawn -noecho $sinfo -h -N -p $part -o "%X %Y"]
+		spawn -noecho $sinfo -h -N -p $part -o "%X %Y"
 	} else {
-		set sinfo_pid [spawn -noecho $sinfo -h -N -p $part -t $states -o "%X %Y"]
+		spawn -noecho $sinfo -h -N -p $part -t $states -o "%X %Y"
 	}
-
 	expect {
 		-re "($number)" {
 			set is_even [expr {($i % 2) == 0}]
@@ -4541,15 +4533,14 @@ proc get_part_total_cores {part states} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $sinfo_pid
 			fail "sinfo not responding"
 		}
 		eof {
 			wait
 		}
 	}
-
 	log_user 1
+
 	return $cores
 }
 
@@ -4574,7 +4565,6 @@ proc get_part_total_cores {part states} {
 #####################################################################
 
 proc check_hosts_contiguous { check_hosts_list {partition ""} } {
-
 	global sinfo re_word_str
 
 	if {[string length $partition] == 0} {
@@ -4584,19 +4574,16 @@ proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 	set part_hosts_list {}
 
 	log_user 0
-	set sinfo_pid [spawn $sinfo --noheader -p $partition -N -o %N]
+	spawn $sinfo --noheader -p $partition -N -o %N
 	expect {
 		-re "($re_word_str)" {
 			lappend part_hosts_list $expect_out(1,string)
 			exp_continue
 		}
 		-re "Unable to contact" {
-			log_user 1
 			fail "Slurm appears to be down"
 		}
 		timeout {
-			log_user 1
-			slow_kill $sinfo_pid
 			fail "sinfo not responding"
 		}
 		eof {

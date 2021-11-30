@@ -58,6 +58,7 @@ if {[string compare [get_admin_level] "Administrator"]} {
 
 proc cleanup { } {
 	global fed_name
+
 	return [delete_federations $fed_name]
 }
 
@@ -74,7 +75,7 @@ proc test_fed_job_id { cname cid} {
 	set max_local_id [expr 0x3FFFFFF]
 
 	set my_sbatch "${fed_slurm_base}/$cname/bin/sbatch"
-	set sbatch_pid [spawn $my_sbatch --wrap="hostname" -o/dev/null]
+	spawn $my_sbatch --wrap="hostname" -o/dev/null
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -121,7 +122,7 @@ proc test_loc_job_id { cname } {
 	set max_local_id [expr 0x3FFFFFF]
 
 	set my_sbatch "${fed_slurm_base}/$cname/bin/sbatch"
-	set sbatch_pid [spawn $my_sbatch --wrap="hostname" -o/dev/null]
+	spawn $my_sbatch --wrap="hostname" -o/dev/null
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)

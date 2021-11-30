@@ -58,7 +58,7 @@ exec $bin_chmod 700 $file_in
 #
 set matches 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog $file_in]
+spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog $file_in
 expect {
 	-re "($number): *task:($number):offset:($number)" {
 		set label       $expect_out(1,string)
@@ -144,7 +144,7 @@ subtest {$matches == 4} "Expecting to generate full list of executables" "$match
 # configuration file
 #
 set matches   0
-set srun_pid [spawn $srun -N1 -n5 --overcommit -l -t1 --multi-prog $file_in]
+spawn $srun -N1 -n5 --overcommit -l -t1 --multi-prog $file_in
 expect {
 	-re "Configuration file .* invalid" {
 		log_debug "No worries. This error is expected"
@@ -173,7 +173,7 @@ close $file
 exec $bin_chmod 700 $file_in
 
 set matches   0
-set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog $file_in]
+spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog $file_in
 expect {
 	-re "($number): aaaa task:($number):offset:($number) bbbb" {
 		if {$expect_out(1,string) == 0 && $expect_out(2,string) == 0 && $expect_out(3,string) == 0} {

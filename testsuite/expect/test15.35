@@ -59,7 +59,7 @@ if [set_partition_maximum_time_limit "" -1] {
 # Spawn a batch job with a deadline and no time
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 --deadline now+1hour --begin=now+1 --time-min 20 -t120 $bin_sleep 1]
+spawn $salloc -N1 --deadline now+1hour --begin=now+1 --time-min 20 -t120 $bin_sleep 1
 expect {
 	-re "Requested time limit is invalid" {
 		fail "Unexpected time limit error"

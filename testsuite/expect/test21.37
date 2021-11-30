@@ -40,7 +40,7 @@ if {[string compare [get_admin_level] "Administrator"]} {
 #
 set matches 0
 set rpc_rec_cnt 0
-set as_pid [spawn $sacctmgr show stats]
+spawn $sacctmgr show stats
 expect {
 	-re "sacctmgr show stats" {
 		incr matches
@@ -63,7 +63,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $as_pid
 		fail "sacctmgr show stats not responding"
 	}
 	eof {

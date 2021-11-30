@@ -61,7 +61,7 @@ if {$matches < $needed_nodes} {
 
 set job_id 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -t1 -N1-2 --use-min-nodes -n$ncpus $bin_printenv]
+spawn $salloc -t1 -N1-2 --use-min-nodes -n$ncpus $bin_printenv
 expect {
 	-re "salloc: Pending job allocation $number" {
 		exp_continue
