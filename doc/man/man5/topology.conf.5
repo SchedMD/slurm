@@ -43,38 +43,38 @@ The overall configuration parameters available include:
 The name of a switch. This name is internal to Slurm and arbitrary.
 Each switch should have a unique name.
 This field must be specified.
+.IP
+
 .TP
 \fBSwitches\fR
 Child switches of the named switch.
 Either this option or the \fBNodes\fR option must be specified.
+.IP
+
 .TP
 \fBNodes\fR
 Child Nodes of the named leaf switch.
 Either this option or the \fBSwitches\fR option must be specified.
+.IP
+
 .TP
 \fBLinkSpeed\fR
 An optional value specifying the performance of this communication link.
 The units used are arbitrary and this information is currently not used.
 It may be used in the future to optimize resource allocations.
+.IP
 
 .SH "EXAMPLE"
-.LP
-.br
+.nf
 ##################################################################
-.br
 # Slurm's network topology configuration file for use with the
-.br
 # topology/tree plugin
-.br
 ##################################################################
-.br
 SwitchName=s0 Nodes=dev[0\-5]
-.br
 SwitchName=s1 Nodes=dev[6\-11]
-.br
 SwitchName=s2 Nodes=dev[12\-17]
-.br
 SwitchName=s3 Switches=s[0\-2]
+.fi
 
 .SH "COPYING"
 Copyright (C) 2009 Lawrence Livermore National Security.

@@ -16,6 +16,7 @@ system running Slurm.
 Display information about all partitions. This causes information to be
 displayed about partitions that are configured as hidden and partitions that
 are unavailable to the user's group.
+.IP
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
@@ -23,10 +24,12 @@ Clusters to issue commands to.  Multiple cluster names may be comma separated.
 A value of '\fBall\fR' will query all clusters. Note that the
 \fBSlurmDBD\fR must be up for this option to work properly.
 This option implicitly sets the \fB\-\-local\fR option.
+.IP
 
 .TP
 \fB\-d\fR, \fB\-\-dead\fR
 If set, only report state information for non\-responding (dead) nodes.
+.IP
 
 .TP
 \fB\-e\fR, \fB\-\-exact\fR
@@ -35,10 +38,12 @@ their configurations to be reported are identical. Otherwise
 cpu count, memory size, and disk space for nodes will be listed
 with the minimum value followed by a "+" for nodes with the
 same partition and state (e.g. "250+").
+.IP
 
 .TP
 \fB\-\-federation\fR
 Show all partitions from the federation if a member of one.
+.IP
 
 .TP
 \fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
@@ -50,31 +55,44 @@ option is used, then the cluster name will be displayed before the default
 output formats shown below.
 Format strings transparently used by \fBsinfo\fR when running with various
 options are:
+.IP
 .RS
 .TP 15
 .I "default"
 "%#P %.5a %.10l %.6D %.6t %N"
+.IP
+
 .TP
 .I "\-\-summarize"
 "%#P %.5a %.10l %.16F  %N"
+.IP
+
 .TP
 .I "\-\-long"
 "%#P %.5a %.10l %.10s %.4r %.8h %.10g %.6D %.11T %N"
+.IP
+
 .TP
 .I "\-\-Node"
 "%#N %.6D %#P %6t"
+.IP
+
 .TP
 .I "\-\-long \-\-Node"
 "%#N %.6D %#P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20E"
+.IP
+
 .TP
 .I "\-\-list\-reasons"
 "%20E %9u %19H %N"
+.IP
+
 .TP
 .I "\-\-long \-\-list\-reasons"
 "%20E %12U %19H %6t %N"
 .RE
-
 .IP
+
 In the above format strings, the use of "#" represents the
 maximum length of any partition name or node list to be printed.
 A pass is made over the records to be printed to establish the size in order
@@ -83,164 +101,254 @@ print them.
 Note that the literal character "#" itself is not a valid field length
 specification, but is only used to document this behaviour.
 
-.IP
 The format of each field is "%[[.]size]type[suffix]"
+.IP
 .RS 10
 .TP
 \fIsize\fR
 Minimum field size. If no size is specified, whatever is needed to print the
 information will be used.
+.IP
+
 .TP
 \fI.\fR
 Indicates the output should be right justified and size must be specified.
 By default output is left justified.
+.IP
+
 .TP
 \fIsuffix\fR
 Arbitrary string to append to the end of the field.
+.IP
 .RE
 
-.IP
 Valid \fItype\fR specifications include:
+.IP
 .RS
 .TP 6
 \fB%all\fR
 Print all fields available for this data type with a vertical bar separating
 each field.
+.IP
+
 .TP
 \fB%a\fR
 State/availability of a partition.
+.IP
+
 .TP
 \fB%A\fR
 Number of nodes by state in the format "allocated/idle".
 Do not use this with a node state option ("%t" or "%T") or
 the different node states will be placed on separate lines.
+.IP
+
 .TP
 \fB%b\fR
 Features currently active on the nodes, also see \fB%f\fR.
+.IP
+
 .TP
 \fB%B\fR
 The max number of CPUs per node available to jobs in the partition.
+.IP
+
 .TP
 \fB%c\fR
 Number of CPUs per node.
+.IP
+
 .TP
 \fB%C\fR
 Number of CPUs by state in the format
 "allocated/idle/other/total". Do not use this with a node
 state option ("%t" or "%T") or the different node states will
 be placed on separate lines.
+.IP
+
 .TP
 \fB%d\fR
 Size of temporary disk space per node in megabytes.
+.IP
+
 .TP
 \fB%D\fR
 Number of nodes.
+.IP
+
 .TP
 \fB%e\fR
 Free memory of a node.
+.IP
+
 .TP
 \fB%E\fR
 The reason a node is unavailable (down, drained, or draining states).
+.IP
+
 .TP
 \fB%f\fR
 Features available the nodes, also see \fB%b\fR.
+.IP
+
 .TP
 \fB%F\fR
 Number of nodes by state in the format
 "allocated/idle/other/total".  Note the use of this format option with a node
 state format option ("%t" or "%T") will result in the different node states
 being be reported on separate lines.
+.IP
+
 .TP
 \fB%g\fR
 Groups which may use the nodes.
+.IP
+
 .TP
 \fB%G\fR
 Generic resources (gres) associated with the nodes.
+.IP
+
 .TP
 \fB%h\fR
 Print the OverSubscribe setting for the partition.
+.IP
+
 .TP
 \fB%H\fR
 Print the timestamp of the reason a node is unavailable.
+.IP
+
 .TP
 \fB%I\fR
 Partition job priority weighting factor.
+.IP
+
 .TP
 \fB%l\fR
 Maximum time for any job in the format "days\-hours:minutes:seconds"
+.IP
+
 .TP
 \fB%L\fR
 Default time for any job in the format "days\-hours:minutes:seconds"
+.IP
+
 .TP
 \fB%m\fR
 Size of memory per node in megabytes.
+.IP
+
 .TP
 \fB%M\fR
 PreemptionMode.
+.IP
+
 .TP
 \fB%n\fR
 List of node hostnames.
+.IP
+
 .TP
 \fB%N\fR
 List of node names.
+.IP
+
 .TP
 \fB%o\fR
 List of node communication addresses.
+.IP
+
 .TP
 \fB%O\fR
 CPU load of a node.
+.IP
+
 .TP
 \fB%p\fR
 Partition scheduling tier priority.
+.IP
+
 .TP
 \fB%P\fR
 Partition name followed by "*" for the default partition, also see \fB%R\fR.
+.IP
+
 .TP
 \fB%r\fR
 Only user root may initiate jobs, "yes" or "no".
+.IP
+
 .TP
 \fB%R\fR
 Partition name, also see \fB%P\fR.
+.IP
+
 .TP
 \fB%s\fR
 Maximum job size in nodes.
+.IP
+
 .TP
 \fB%S\fR
 Allowed allocating nodes.
+.IP
+
 .TP
 \fB%t\fR
 State of nodes, compact form.
+.IP
+
 .TP
 \fB%T\fR
 State of nodes, extended form.
+.IP
+
 .TP
 \fB%u\fR
 Print the user name of who set the reason a node is unavailable.
+.IP
+
 .TP
 \fB%U\fR
 Print the user name and uid of who set the reason a node is unavailable.
+.IP
+
 .TP
 \fB%v\fR
 Print the version of the running slurmd daemon.
+.IP
+
 .TP
 \fB%V\fR
 Print the cluster name if running in a federation.
+.IP
+
 .TP
 \fB%w\fR
 Scheduling weight of the nodes.
+.IP
+
 .TP
 \fB%X\fR
 Number of sockets per node.
+.IP
+
 .TP
 \fB%Y\fR
 Number of cores per socket.
+.IP
+
 .TP
 \fB%Z\fR
 Number of threads per core.
+.IP
+
 .TP
 \fB%z\fR
 Extended processor information: number of sockets, cores, threads (S:C:T) per node.
 .RE
+.IP
 
 .TP
 \fB\-O\fR, \fB\-\-Format\fR=<\fIoutput_format\fR>
@@ -250,203 +358,309 @@ option (which supports greater flexibility in formatting, but
 does not support access to all fields because we ran out of letters).
 Requests a comma separated list of job information to be displayed.
 
-.IP
 The format of each field is "type[:[.][size][suffix]]"
+.IP
 .RS 10
 .TP
 \fIsize\fR
 The minimum field size.
 If no size is specified, 20 characters will be allocated to print the information.
+.IP
+
 .TP
 \fI.\fR
 Indicates the output should be right justified and size must be specified.
 By default, output is left justified.
+.IP
+
 .TP
 \fIsuffix\fR
 Arbitrary string to append to the end of the field.
+.IP
 .RE
 
-.IP
 Valid \fItype\fR specifications include:
+.IP
 .RS
 .TP 7
 \fBAll\fR
 Print all fields available in the \-o format for this data type with a
 vertical bar separating each field.
+.IP
+
 .TP
 \fBAllocMem\fR
 Prints the amount of allocated memory on a node.
+.IP
+
 .TP
 \fBAllocNodes\fR
 Allowed allocating nodes.
+.IP
+
 .TP
 \fBAvailable\fR
 State/availability of a partition.
+.IP
+
 .TP
 \fBCluster\fR
 Print the cluster name if running in a federation.
+.IP
+
 .TP
 \fBComment\fR
 Comment. (Arbitrary descriptive string)
+.IP
+
 .TP
 \fBCores\fR
 Number of cores per socket.
+.IP
+
 .TP
 \fBCPUs\fR
 Number of CPUs per node.
+.IP
+
 .TP
 \fBCPUsLoad\fR
 CPU load of a node.
+.IP
+
 .TP
 \fBCPUsState\fR
 Number of CPUs by state in the format
 "allocated/idle/other/total". Do not use this with a node
 state option ("%t" or "%T") or the different node states will
 be placed on separate lines.
+.IP
+
 .TP
 \fBDefaultTime\fR
 Default time for any job in the format "days\-hours:minutes:seconds".
+.IP
+
 .TP
 \fBDisk\fR
 Size of temporary disk space per node in megabytes.
+.IP
+
 .TP
 \fBExtra\fR
 Arbitray string on the node.
+.IP
+
 .TP
 \fBFeatures\fR
 Features available on the nodes. Also see \fBfeatures_act\fR.
+.IP
+
 .TP
 \fBfeatures_act\fR
 Features currently active on the nodes. Also see \fBfeatures\fR.
+.IP
+
 .TP
 \fBFreeMem\fR
 Free memory of a node.
+.IP
+
 .TP
 \fBGres\fR
 Generic resources (gres) associated with the nodes.
+.IP
+
 .TP
 \fBGresUsed\fR
 Generic resources (gres) currently in use on the nodes.
+.IP
+
 .TP
 \fBGroups\fR
 Groups which may use the nodes.
+.IP
+
 .TP
 \fBMaxCPUsPerNode\fR
 The max number of CPUs per node available to jobs in the partition.
+.IP
+
 .TP
 \fBMemory\fR
 Size of memory per node in megabytes.
+.IP
+
 .TP
 \fBNodeAddr\fR
 List of node communication addresses.
+.IP
+
 .TP
 \fBNodeAI\fR
 Number of nodes by state in the format "allocated/idle".
 Do not use this with a node state option ("%t" or "%T") or
 the different node states will be placed on separate lines.
+.IP
+
 .TP
 \fBNodeAIOT\fR
 Number of nodes by state in the format
 "allocated/idle/other/total".  Do not use this with a node
 state option ("%t" or "%T") or the different node states will
 be placed on separate lines.
+.IP
+
 .TP
 \fBNodeHost\fR
 List of node hostnames.
+.IP
+
 .TP
 \fBNodeList\fR
 List of node names.
+.IP
+
 .TP
 \fBNodes\fR
 Number of nodes.
+.IP
+
 .TP
 \fBOverSubscribe\fR
 Whether jobs may oversubscribe compute resources (e.g. CPUs).
+.IP
+
 .TP
 \fBPartition\fR
 Partition name followed by "*" for the default partition, also see \fB%R\fR.
+.IP
+
 .TP
 \fBPartitionName\fR
 Partition name, also see \fB%P\fR.
+.IP
+
 .TP
 \fBPort\fR
 Node TCP port.
+.IP
+
 .TP
 \fBPreemptMode\fR
 Preemption mode.
+.IP
+
 .TP
 \fBPriorityJobFactor\fR
 Partition factor used by priority/multifactor plugin in calculating job priority.
+.IP
+
 .TP
 \fBPriorityTier\fR or \fBPriority\fR
 Partition scheduling tier priority.
+.IP
+
 .TP
 \fBReason\fR
 The reason a node is unavailable (down, drained, or draining states).
+.IP
+
 .TP
 \fBRoot\fR
 Only user root may initiate jobs, "yes" or "no".
+.IP
+
 .TP
 \fBSize\fR
 Maximum job size in nodes.
+.IP
+
 .TP
 \fBSocketCoreThread\fR
 Extended processor information: number of sockets, cores, threads (S:C:T) per node.
+.IP
+
 .TP
 \fBSockets\fR
 Number of sockets per node.
+.IP
+
 .TP
 \fBStateCompact\fR
 State of nodes, compact form.
+.IP
+
 .TP
 \fBStateLong\fR
 State of nodes, extended form.
+.IP
+
 .TP
 \fBStateComplete\fR
 State of nodes, including all node state flags. eg. "idle+cloud+power"
+.IP
+
 .TP
 \fBThreads\fR
 Number of threads per core.
+.IP
+
 .TP
 \fBTime\fR
 Maximum time for any job in the format "days\-hours:minutes:seconds".
+.IP
+
 .TP
 \fBTimeStamp\fR
 Print the timestamp of the reason a node is unavailable.
+.IP
+
 .TP
 \fBUser\fR
 Print the user name of who set the reason a node is unavailable.
+.IP
+
 .TP
 \fBUserLong\fR
 Print the user name and uid of who set the reason a node is unavailable.
+.IP
+
 .TP
 \fBVersion\fR
 Print the version of the running slurmd daemon.
+.IP
+
 .TP
 \fBWeight\fR
 Scheduling weight of the nodes.
 .RE
+.IP
 
 .TP
 \fB\-\-help\fR
 Print a message describing all \fBsinfo\fR options.
+.IP
 
 .TP
 \fB\-\-hide\fR
 Do not display information about hidden partitions. Partitions
 that are configured as hidden or are not available to the user's group
 will not be displayed. This is the default behavior.
+.IP
 
 .TP
 \fB\-i\fR, \fB\-\-iterate\fR=<\fIseconds\fR>
 Print the state on a periodic basis.
 Sleep for the indicated number of seconds between reports.
 By default prints a time stamp with the header.
+.IP
 
 .TP
 \f3\-\-json\fP
 Dump node information as JSON. All other formating and filtering arugments will
 be ignored.
+.IP
 
 .TP
 \fB\-R\fR, \fB\-\-list\-reasons\fR
@@ -463,21 +677,25 @@ list of nodes that are not down or drained or failing will
 not produce any output.
 When used with \fB\-l\fR the output additionally includes
 the current node state.
+.IP
 
 .TP
 \fB\-\-local\fR
 Show only jobs local to this cluster. Ignore other clusters in this federation
 (if any). Overrides \fB\-\-federation\fR.
+.IP
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
 Print more detailed information.
 This is ignored if the \fB\-\-format\fR option is specified.
+.IP
 
 .TP
 \fB\-\-noconvert\fR
 Don't convert units from their original type (e.g. 2048M won't be converted to
 2G).
+.IP
 
 .TP
 \fB\-N\fR, \fB\-\-Node\fR
@@ -488,6 +706,7 @@ If \fB\-\-partition\fR is also specified, then only one line per node in this
 partition is shown.
 The default is to print information in a partition\-oriented format.
 This is ignored if the \fB\-\-format\fR option is specified.
+.IP
 
 .TP
 \fB\-n\fR, \fB\-\-nodes\fR=<\fInodes\fR>
@@ -496,15 +715,18 @@ Multiple nodes may be comma separated or expressed using a
 node range expression (e.g. "linux[00\-17]")
 Limiting the query to just the relevant nodes can measurably improve the
 performance of the command for large clusters.
+.IP
 
 .TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
+.IP
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition\fR>
 Print information only about the specified partition(s). Multiple partitions
 are separated by commas.
+.IP
 
 .TP
 \fB\-T\fR, \fB\-\-reservation\fR
@@ -512,10 +734,12 @@ Only display information about Slurm reservations.
 
 \fBNOTE\fR: This option causes \fBsinfo\fR to ignore most other options,
 which are focused on partition and node information.
+.IP
 
 .TP
 \fB\-r\fR, \fB\-\-responding\fR
 If set only report state information for responding nodes.
+.IP
 
 .TP
 \fB\-S\fR, \fB\-\-sort\fR=<\fIsort_list\fR>
@@ -533,6 +757,7 @@ partition by decreasing memory size.  The default value of sort
 is "#P,\-t" (partitions ordered as configured then decreasing
 node state).  If the \fB\-\-Node\fR option is selected, the
 default sort value is "N" (increasing node name).
+.IP
 
 .TP
 \fB\-t\fR, \fB\-\-states\fR=<\fIstates\fR>
@@ -549,94 +774,135 @@ By default nodes in the specified state are reported whether
 they are responding or not.
 The \fB\-\-dead\fR and \fB\-\-responding\fR options may be
 used to filter nodes by the corresponding flag.
+.IP
 
 .TP
 \fB\-s\fR, \fB\-\-summarize\fR
 List only a partition state summary with no node state details.
 This is ignored if the \fB\-\-format\fR option is specified.
+.IP
 
 .TP
 \fB\-\-usage\fR
 Print a brief message listing the \fBsinfo\fR options.
+.IP
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Provide detailed event logging through program execution.
+.IP
 
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Print version information and exit.
+.IP
 
 .TP
 \f3\-\-yaml\fP
 Dump node information as YAML. All other formating and filtering arugments will
 be ignored.
+.IP
 
 .SH "OUTPUT FIELD DESCRIPTIONS"
+
 .TP
 \fBAVAIL\fR
 Partition state. Can be either \fBup\fR, \fBdown\fR, \fBdrain\fR, or \fBinact\fR
 (for INACTIVE). See the partition definition's \fBState\fR parameter in the
 \fBslurm.conf\fR(5) man page for more information.
+.IP
+
 .TP
 \fBCPUS\fR
 Count of CPUs (processors) on these nodes.
+.IP
+
 .TP
 \fBS:C:T\fR
 Count of sockets (S), cores (C), and threads (T) on these nodes.
+.IP
+
 .TP
 \fBSOCKETS\fR
 Count of sockets on these nodes.
+.IP
+
 .TP
 \fBCORES\fR
 Count of cores on these nodes.
+.IP
+
 .TP
 \fBTHREADS\fR
 Count of threads on these nodes.
+.IP
+
 .TP
 \fBGROUPS\fR
 Resource allocations in this partition are restricted to the
 named groups.  \fBall\fR indicates that all groups may use
 this partition.
+.IP
+
 .TP
 \fBJOB_SIZE\fR
 Minimum and maximum node count that can be allocated to any
 user job.  A single number indicates the minimum and maximum
 node count are the same.  \fBinfinite\fR is used to identify
 partitions without a maximum node count.
+.IP
+
 .TP
 \fBTIMELIMIT\fR
 Maximum time limit for any user job in
 days\-hours:minutes:seconds.  \fBinfinite\fR is used to identify
 partitions without a job time limit.
+.IP
+
 .TP
 \fBMEMORY\fR
 Size of real memory in megabytes on these nodes.
+.IP
+
 .TP
 \fBNODELIST\fR
 Names of nodes associated with this particular configuration.
+.IP
+
 .TP
 \fBNODES\fR
 Count of nodes with this particular configuration.
+.IP
+
 .TP
 \fBNODES(A/I)\fR
 Count of nodes with this particular configuration by node
 state in the form "allocated/idle".
+.IP
+
 .TP
 \fBNODES(A/I/O/T)\fR
 Count of nodes with this particular configuration by node
 state in the form "allocated/idle/other/total".
+.IP
+
 .TP
 \fBPARTITION\fR
 Name of a partition.  Note that the suffix "*" identifies the
 default partition.
+.IP
+
 .TP
 \fBPORT\fR
 Local TCP port used by slurmd on the node.
+.IP
+
 .TP
 \fBROOT\fR
 Is the ability to allocate resources in this partition
 restricted to user root, \fByes\fR or \fBno\fR.
+.IP
+
 .TP
 \fBOVERSUBSCRIBE\fR
 Whether jobs allocated resources in this partition can/will oversubscribe
@@ -651,6 +917,8 @@ resource allocation.
 
 \fBNOTE\fR: If OverSubscribe is set to FORCE or YES,
 the OversubScribe value will be appended to the output.
+.IP
+
 .TP
 \fBSTATE\fR
 State of the nodes.
@@ -663,9 +931,12 @@ and unk respectively.
 
 \fBNOTE\fR: The suffix "*" identifies nodes that are presently
 not responding.
+.IP
+
 .TP
 \fBTMP_DISK\fR
 Size of temporary disk space in megabytes on these nodes.
+.IP
 
 .SH "NODE STATE CODES"
 .PP
@@ -673,6 +944,7 @@ Node state codes are shortened as required for the field size.
 These node states may be followed by a special character to identify
 state flags associated with the node.
 The following node suffixes and states are used:
+
 .TP 4
 \fB*\fR
 The node is presently not responding and will not be allocated
@@ -680,37 +952,59 @@ any new work.  If the node remains non\-responsive, it will
 be placed in the \fBDOWN\fR state (except in the case of
 \fBCOMPLETING\fR, \fBDRAINED\fR, \fBDRAINING\fR,
 \fBFAIL\fR, \fBFAILING\fR nodes).
+.IP
+
 .TP
 \fB~\fR
 The node is presently in powered off.
+.IP
+
 .TP
 \fB#\fR
 The node is presently being powered up or configured.
+.IP
+
 .TP
 \fB!\fR
 The node is pending power down.
+.IP
+
 .TP
 \fB%\fR
 The node is presently being powered down.
+.IP
+
 .TP
 \fB$\fR
 The node is currently in a reservation with a flag value of "maintenance".
+.IP
+
 .TP
 \fB@\fR
 The node is pending reboot.
+.IP
+
 .TP
 \fB^\fR
 The node reboot was issued.
+.IP
+
 .TP
 \fB\-\fR
 The node is planned by the backfill scheduler for a higher priority job.
+.IP
+
 .TP 12
 \fBALLOCATED\fR
 The node has been allocated to one or more jobs.
+.IP
+
 .TP
 \fBALLOCATED+\fR
 The node is allocated to one or more active jobs plus
 one or more jobs are in the process of COMPLETING.
+.IP
+
 .TP
 \fBCOMPLETING\fR
 All jobs associated with this node are in the process of
@@ -719,6 +1013,8 @@ all of the job's processes have terminated and the Slurm
 epilog program (if any) has terminated. See the \fBEpilog\fR
 parameter description in the \fBslurm.conf\fR(5) man page for
 more information.
+.IP
+
 .TP
 \fBDOWN\fR
 The node is unavailable for use. Slurm can automatically
@@ -728,12 +1024,16 @@ a node resumes normal operation, Slurm can automatically
 return it to service. See the \fBReturnToService\fR
 and \fBSlurmdTimeout\fR parameter descriptions in the
 \fBslurm.conf\fR(5) man page for more information.
+.IP
+
 .TP
 \fBDRAINED\fR
 The node is unavailable for use per system administrator
 request.  See the \fBupdate node\fR command in the
 \fBscontrol\fR(1) man page or the \fBslurm.conf\fR(5) man page
 for more information.
+.IP
+
 .TP
 \fBDRAINING\fR
 The node is currently executing a job, but will not be allocated
@@ -742,67 +1042,102 @@ additional jobs. The node state will be changed to state
 this state per system administrator request. See the \fBupdate
 node\fR command in the \fBscontrol\fR(1) man page or the
 \fBslurm.conf\fR(5) man page for more information.
+.IP
+
 .TP
 \fBFAIL\fR
 The node is expected to fail soon and is unavailable for
 use per system administrator request.
 See the \fBupdate node\fR command in the \fBscontrol\fR(1)
 man page or the \fBslurm.conf\fR(5) man page for more information.
+.IP
+
 .TP
 \fBFAILING\fR
 The node is currently executing a job, but is expected to fail
 soon and is unavailable for use per system administrator request.
 See the \fBupdate node\fR command in the \fBscontrol\fR(1)
 man page or the \fBslurm.conf\fR(5) man page for more information.
+.IP
+
 .TP
 \fBFUTURE\fR
 The node is currently not fully configured, but expected to be available at
 some point in the indefinite future for use.
+.IP
+
 .TP
 \fBIDLE\fR
 The node is not allocated to any jobs and is available for use.
+.IP
+
 .TP
 \fBINVAL\fR
 The node registered with an invalid configuration. The node will clear from
 this state with a valid registration (ie. a slurmd restart is required).
+.IP
+
 .TP
 \fBMAINT\fR
 The node is currently in a reservation with a flag value of "maintenance".
+.IP
+
 .TP
 \fBREBOOT_ISSUED\fR
 A reboot request has been sent to the agent configured to handle this request.
+.IP
+
 .TP
 \fBREBOOT_REQUESTED\fR
 A request to reboot this node has been made, but hasn't been handled yet.
+.IP
+
 .TP
 \fBMIXED\fR
 The node has some of its CPUs \fBALLOCATED\fR while others are \fBIDLE\fR.
+.IP
+
 .TP
 \fBPERFCTRS (NPC)\fR
 Network Performance Counters associated with this node are in use, rendering
 this node as not usable for any other jobs
+.IP
+
 .TP
 \fBPLANNED\fR
 The node is planned by the backfill scheduler for a higher priority job.
+.IP
+
 .TP
 \fBPOWER_DOWN\fR
 The node is pending power down.
+.IP
+
 .TP
 \fBPOWERED_DOWN\fR
 The node is currently powered down and not capable of running any jobs.
+.IP
+
 .TP
 \fBPOWERING_DOWN\fR
 The node is in the process of powering down and not capable of running any jobs.
+.IP
+
 .TP
 \fBPOWERING_UP\fR
 The node is in the process of being powered up.
+.IP
+
 .TP
 \fBRESERVED\fR
 The node is in an advanced reservation and not generally available.
+.IP
+
 .TP
 \fBUNKNOWN\fR
 The Slurm controller has just started and the node's state
 has not yet been determined.
+.IP
 
 .SH "PERFORMANCE"
 .PP
@@ -823,30 +1158,47 @@ Some \fBsinfo\fR options may
 be set via environment variables. These environment variables,
 along with their corresponding options, are listed below.
 \fBNOTE\fR: Command line options will always override these settings.
+
 .TP 20
 \fBSINFO_ALL\fR
 Same as \fB\-a, \-\-all\fR
+.IP
+
 .TP
 \fBSINFO_FEDERATION\fR
 Same as \fB\-\-federation\fR
+.IP
+
 .TP
 \fBSINFO_FORMAT\fR
 Same as \fB\-o <output_format>, \-\-format=<output_format>\fR
+.IP
+
 .TP
 \fBSINFO_LOCAL\fR
 Same as \fB\-\-local\fR
+.IP
+
 .TP
 \fBSINFO_PARTITION\fR
 Same as \fB\-p <partition>, \-\-partition=<partition>\fR
+.IP
+
 .TP
 \fBSINFO_SORT\fR
 Same as \fB\-S <sort>, \-\-sort=<sort>\fR
+.IP
+
 .TP
 \fBSLURM_CLUSTERS\fR
 Same as \fB\-\-clusters\fR
+.IP
+
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
+
 .TP
 \fBSLURM_TIME_FORMAT\fR
 Specify the format used to report time stamps. A value of \fIstandard\fR, the
@@ -860,11 +1212,13 @@ For other years it returns a date month and year without a time (e.g.
 
 A valid strftime() format can also be specified. For example, a value of
 "%a %T" will report the day of the week and a time stamp (e.g. "Mon 12:34:56").
+.IP
 
 .SH "EXAMPLES"
+
 .TP
 Report basic node and partition configurations:
-
+.IP
 .nf
 $ sinfo
 PARTITION AVAIL TIMELIMIT NODES STATE  NODELIST
@@ -875,7 +1229,7 @@ debug*    up        30:00     8 idle   adev[0\-7]
 
 .TP
 Report partition summary information:
-
+.IP
 .nf
 $ sinfo \-s
 PARTITION AVAIL TIMELIMIT NODES(A/I/O/T) NODELIST
@@ -885,7 +1239,7 @@ debug*    up        30:00 0/8/0/8        adev[0\-7]
 
 .TP
 Report more complete information about the partition debug:
-
+.IP
 .nf
 $ sinfo \-\-long \-\-partition=debug
 PARTITION AVAIL TIMELIMIT JOB_SIZE ROOT OVERSUBS GROUPS NODES STATE NODELIST
@@ -894,7 +1248,7 @@ debug*    up        30:00        8 no   no       all        8 idle  dev[0\-7]
 
 .TP
 Report only those nodes that are in state DRAINED:
-
+.IP
 .nf
 $ sinfo \-\-states=drained
 PARTITION AVAIL NODES TIMELIMIT STATE  NODELIST
@@ -903,7 +1257,7 @@ debug*    up        2     30:00 drain  adev[6\-7]
 
 .TP
 Report node\-oriented information with details and exact matches:
-
+.IP
 .nf
 $ sinfo \-Nel
 NODELIST    NODES PARTITION STATE  CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
@@ -916,7 +1270,7 @@ adev[10\-15]     6 batch     idle      2    246    82306     16 (null)   (null)
 
 .TP
 Report only down, drained and draining nodes and their reason field:
-
+.IP
 .nf
 $ sinfo \-R
 REASON                              NODELIST

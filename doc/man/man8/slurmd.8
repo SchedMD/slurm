@@ -10,53 +10,72 @@ slurmd \- The compute node daemon for Slurm.
 \fBslurmd\fR is the compute node daemon of Slurm. It monitors all tasks
 running on the compute node , accepts work (tasks), launches tasks, and kills
 running tasks upon request.
-.TP
-OPTIONS
+
+.SH "OPTIONS"
+
 .TP
 \fB\-b\fR
 Report node rebooted when daemon restarted. Used for testing purposes.
+.IP
 
 .TP
 \fB\-c\fR
 Clear system locks as needed. This may be required if \fBslurmd\fR terminated
 abnormally.
+.IP
 
 .TP
 \fB\-C\fR
 Print actual hardware configuration and exit. The format of output is the same
 as used in \fBslurm.conf\fR to describe a node's configuration plus its uptime.
+.IP
 
 .TP
 \fB\-\-conf\-server <host>[:<port>]\fR
 Comma\-separated list of controllers, the first being the primary slurmctld. A
 port can (optionally) be specified for each controller. These hosts are where
 the slurmd will fetch the configuration from when running in "configless" mode.
+.IP
 
 .TP
 \fB\-d <file>\fR
 Specify the fully qualified pathname to the \fBslurmstepd\fR program to be used
 for shepherding user job steps. This can be useful for testing purposes.
+.IP
+
 .TP
 \fB\-D\fR
 Run slurmd in the foreground. Error and debug messages will be copied to stderr.
+.IP
+
 .TP
 \fB\-f <file>\fR
 Read configuration from the specified file. See \fBNOTES\fR below.
+.IP
+
 .TP
 \fB\-F[feature]\fR
 Start this node as a Dynamic Future node. It will try to match a node
 definition with a state of \fBFUTURE\fR, optionally using the specified
 feature to match the node definition.
+.IP
+
 .TP
 \fB\-G\fR
 Print Generic RESource (GRES) configuration (based upon slurm.conf GRES merged
 with gres.conf contents for this node) and exit.
+.IP
+
 .TP
 \fB\-h\fR
 Help; print a brief summary of command options.
+.IP
+
 .TP
 \fB\-L <file>\fR
 Write log messages to the specified file.
+.IP
+
 .TP
 \fB\-M\fR
 Lock slurmd pages into system memory using mlockall (2) to disable
@@ -67,52 +86,69 @@ and slurmd will continue as normal.
 
 It is suggested to set \fBLaunchParameters=slurmstepd_memlock\fR in
 \fBslurm.conf\fR(5) when setting \fB\-M\fR.
+.IP
 
 .TP
 \fB\-n <value>\fR
 Set the daemon's nice value to the specified value, typically a negative number.
 Also note the \fBPropagatePrioProcess\fR configuration parameter.
+.IP
 
 .TP
 \fB\-N <nodename>\fR
 Run the daemon with the given nodename. Used to emulate a larger system
 with more than one slurmd daemon per node. Requires that Slurm be built using
 the \-\-enable\-multiple\-slurmd configure option.
+.IP
 
 .TP
 \fB\-s\fR
 Change working directory of slurmd to SlurmdLogFile path if possible, or to
 SlurmdSpoolDir otherwise. If both of them fail it will fallback to /var/tmp.
+.IP
 
 .TP
 \fB\-v\fR
 Verbose operation. Multiple \-v's increase verbosity.
+.IP
+
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Print version information and exit.
+.IP
 
 .SH "ENVIRONMENT VARIABLES"
 The following environment variables can be used to override settings
 compiled into slurmd.
+
 .TP 20
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.  This is overridden by
 explicitly naming a configuration file on the command line.
+.IP
 
 .SH "SIGNALS"
+
 .TP
 \fBSIGTERM SIGINT\fR
 \fBslurmd\fR will shutdown cleanly, waiting for in\-progress rollups to finish.
+.IP
+
 .TP
 \fBSIGHUP\fR
 Reloads the slurm configuration files, similar to 'scontrol reconfigure'.
+.IP
+
 .TP
 \fBSIGUSR2\fR
 Reread the log level from the configs, and then reopen the log file.  This
 should be used when setting up \fBlogrotate\fR(8).
+.IP
+
 .TP
 \fBSIGPIPE\fR
 This signal is explicitly ignored.
+.IP
 
 .SH "CORE FILE LOCATION"
 If slurmd is started with the \fB\-D\fR option then the core file will be

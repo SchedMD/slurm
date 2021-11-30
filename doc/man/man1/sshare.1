@@ -23,118 +23,143 @@ Partitions and accumulated currently running TRES\-minutes for each association.
 .TP
 \fB\-A\fR, \fB\-\-accounts\fR=<\fIaccount\fR>
 Display information for specific accounts (comma separated list).
+.IP
 
 .TP
 \fB\-a\fR, \fB\-\-all\fR
 Display information for all users.
+.IP
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Clusters to issue commands to.
 Note that the SlurmDBD must be up for this option to work properly.
+.IP
 
 .TP
 \fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
 Comma separated list of fields (use
 "\-\-helpformat" for a list of available fields).
+.IP
 
 .TP
 \fB\-\-help\fR
 Display a description of sshare options and commands.
+.IP
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
 Long listing \- includes the normalized usage information.
+.IP
 
 .TP
 \fB\-n\fR, \fB\-\-noheader\fR
 No header will be added to the beginning of the output.
+.IP
 
 .TP
 \fB\-p\fR, \fB\-\-parsable\fR
 Output will be '|' delimited with a '|' at the end.
+.IP
 
 .TP
 \fB\-P\fR, \fB\-\-parsable2\fR
 Output will be '|' delimited without a '|' at the end.
+.IP
 
 .TP
 \fB\-m\fR, \fB\-\-partition\fR
 If there are association based partitions in the system
 print their names.
+.IP
 
 .TP
 \fB\-\-usage\fR
 Display a description of sshare options and commands.
+.IP
 
 .TP
 \fB\-u\fR, \fB\-\-users\fR=<\fIuser_list\fR>
 Display information for specific users (comma separated list).
+.IP
 
 .TP
 \fB\-U\fR, \fB\-\-Users\fR
 If specified only the users information are printed, the parent
 and ancestors are not displayed.
+.IP
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Display more information about the specified options.
+.IP
 
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Display the version number of sshare.
+.IP
 
 .SH "SSHARE OUTPUT FIELDS"
 
 .TP
 \f3Account\fP
 The Account.
+.IP
 
 .TP
 \f3User\fP
 The User.
+.IP
 
 .TP
 \f3Raw Shares\fP
 The raw shares assigned to the user or account.
+.IP
 
 .TP
 \f3Norm Shares\fP
 The shares assigned to the user or account normalized to the total
 number of assigned shares.
+.IP
 
 .TP
 \f3Raw Usage\fP
 The number of tres\-seconds (cpu\-seconds if TRESBillingWeights is not defined)
 of all the jobs charged to the account or user. This number will decay over
 time when PriorityDecayHalfLife is defined.
+.IP
 
 .TP
 \f3Norm Usage\fP (only appears with \fBsshare \-l\fR option)
 The Raw Usage normalized to the total number of tres\-seconds of all
 jobs run on the cluster, subject to the PriorityDecayHalfLife decay
 when defined.
+.IP
 
 .TP
 \f3Effectv Usage\fP
 The Effective Usage augments the normalized usage to account for usage
 from sibling accounts.
+.IP
 
 .TP
 \f3FairShare\fP
 The Fair\-Share factor, based on a user or account's assigned shares and
 the effective usage charged to them or their accounts.
+.IP
 
 .TP
 \f3GrpTRESMins\fP
 The TRES\-minutes limit set on the account. The total number of cpu
 minutes that can possibly be used by past, present and future jobs
 running from this account and its children.
+.IP
 
 .TP
 \f3GrpTRESRaw\fP
 The raw TRES usage that has been used by jobs running from
 this account and its children.
+.IP
 
 .TP
 \f3TRESRunMins\fP
@@ -144,6 +169,7 @@ used by all jobs running with this account and its children.
 This takes into consideration time limit of running jobs and consumes it,
 if the limit is reached no new jobs are started until other jobs finish
 to allow time to free up.
+.IP
 
 .SH "FAIR_TREE MODIFICATIONS"
 When PriorityFlags=FAIR_TREE is set (the default, unless NO_FAIR_TREE is set),
@@ -154,10 +180,12 @@ As a result, the following fields are added or modified:
 \f3Norm Shares\fP
 The shares assigned to the user or account normalized to the total
 number of assigned shares within the level.
+.IP
 
 .TP
 \f3Effectv Usage\fP
 Effectv Usage is the association's usage normalized with its parent.
+.IP
 
 .TP
 \f3Level FS\fP (only appears with \fBsshare \-l\fR option)
@@ -165,8 +193,9 @@ This is the association's fairshare value compared to its siblings, calculated
 as Norm Shares / Effectv Usage. If an association is over\-served, the value is
 between 0 and 1. If an association is under\-served, the value is greater than 1.
 Associations with no usage receive the highest possible value, infinity.
+.IP
 
-.TP
+.LP
 More information about Fair Tree can be found in doc/html/fair_tree.html or
 at https://slurm.schedmd.com/fair_tree.html
 
@@ -188,21 +217,24 @@ necessary for the information you are trying to gather.
 Some \fBsshare\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed below.
 (Note: Command line options will always override these settings.)
+
 .TP 20
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
 
 .SH "EXAMPLES"
+
 .TP
 Display information about users in a particular account:
-
+.IP
 .nf
 $ sshare \-A <Account>
 .fi
 
 .TP
 Display information about a specific user in a parsable format:
-
+.IP
 .nf
 $ sshare \-\-parsable \-\-users=<User>
 .fi

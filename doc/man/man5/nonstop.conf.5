@@ -29,6 +29,7 @@ Communications address used for the slurmctld daemon.
 This can either be a hostname or IP address.
 This value would typically be the same as the secondary \fBSlurmctldHost\fR
 in the slurm.conf file, when applicable.
+.IP
 
 .TP
 \fBControlAddr\fR
@@ -36,11 +37,13 @@ Communications address used for the slurmctld daemon.
 This can either be a hostname or IP address.
 This value would typically be the same as the \fBSlurmctldHost\fR
 in the slurm.conf file.
+.IP
 
 .TP
 \fBDebug\fR
 A number indicating the level of additional logging desired for the plugin.
 The default value is zero, which generates no additional logging.
+.IP
 
 .TP
 \fBHotSpareCount\fR
@@ -50,6 +53,7 @@ When a job fails, this pool of resources will be depleted and then replenished
 when possible using idle resources.
 The value should be a comma\-delimited list of
 partition and node count pairs separated by a colon.
+.IP
 
 .TP
 \fBMaxSpareNodeCount\fR
@@ -58,11 +62,13 @@ the job's entire lifetime.
 This could prevent a single job from causing all of the nodes in a cluster to
 fail.
 By default, there is no maximum node count.
+.IP
 
 .TP
 \fBPort\fR
 Port used for communications.
 The default value is 6820.
+.IP
 
 .TP
 \fBTimeLimitDelay\fR
@@ -76,6 +82,7 @@ This time limit extension is in addition to the value calculated using the
 \fBTimeLimitExtend\fR.
 The default value is zero (no time limit extension).
 The value may not exceed 65533 seconds.
+.IP
 
 .TP
 \fBTimeLimitDrop\fR
@@ -83,6 +90,7 @@ Specifies the number of minutes that a job can extend its time limit for
 each failed or failing node removed from the job's allocation.
 The default value is zero (no time limit extension).
 The value may not exceed 65533 seconds.
+.IP
 
 .TP
 \fBTimeLimitExtend\fR
@@ -90,6 +98,7 @@ Specifies the number of minutes that a job can extend its time limit for
 each replaced node.
 The default value is zero (no time limit extension).
 The value may not exceed 65533 seconds.
+.IP
 
 .TP
 \fBUserDrainAllow\fR
@@ -97,6 +106,7 @@ This identifies a comma\-delimited list of user names or user IDs of users who
 are authorized to drain nodes they believe are failing.
 Specify a value of "ALL" to permit any user to drain nodes.
 By default, no users may drain nodes using this interface.
+.IP
 
 .TP
 \fBUserDrainDeny\fR
@@ -104,36 +114,25 @@ This identifies a comma\-delimited list of user names or user IDs of users who
 are NOT authorized to drain nodes they believe are failing.
 Specifying a value for \fBUserDrainDeny\fR implicitly allows all other users
 to drain nodes (sets the value of UserDrainAllow to "ALL").
+.IP
 
 .SH "EXAMPLE"
-.LP
+.nf
 #
-.br
 # Sample nonstop.conf file
-.br
 # Date: 12 Feb 2013
-.br
 #
-.br
 ControlAddr=12.34.56.78
-.br
 BackupAddr=12.34.56.79
-.br
 Port=1234
-.br
 #
-.br
 HotSpareCount=batch:6,interactive:0
-.br
 MaxSpareNodesCount=4
-.br
 TimeLimitDelay=30
-.br
 TimeLimitExtend=20
-.br
 TimeLimitExtend=10
-.br
 UserDrainAllow=adam,brenda
+.fi
 
 .SH "COPYING"
 Copyright (C) 2013\-2021 SchedMD LLC. All rights reserved.

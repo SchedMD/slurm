@@ -41,25 +41,32 @@ user and group IDs for the executed program.
 Also note that the trigger program is executed on the same node that the
 \fIslurmctld\fR daemon uses rather than some allocated compute node.
 To check the value of \fISlurmUser\fR, run the command:
-
-\fIscontrol show config | grep SlurmUser\fR
+.IP
+.nf
+scontrol show config | grep SlurmUser
+.fi
 
 .SH "ARGUMENTS"
+
 .TP
 \fB\-C\fR, \fB\-\-backup_slurmctld_assumed_control\fR
 Trigger event when backup slurmctld assumes control.
+.IP
 
 .TP
 \fB\-B\fR, \fB\-\-backup_slurmctld_failure\fR
 Trigger an event when the backup slurmctld fails.
+.IP
 
 .TP
 \fB\-c\fR, \fB\-\-backup_slurmctld_resumed_operation\fR
 Trigger an event when the backup slurmctld resumes operation after failure.
+.IP
 
 .TP
 \fB\-\-burst_buffer\fR
 Trigger event when burst buffer error occurs.
+.IP
 
 .TP
 \fB\-\-clear\fP
@@ -68,37 +75,45 @@ The \fB\-\-id\fR, \fB\-\-jobid\fR or \fB\-\-user\fR
 option must be specified to identify the trigger(s) to
 be cleared.
 Only user root or the trigger's creator can delete a trigger.
+.IP
 
 .TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Clusters to issue commands to.
 Note that the SlurmDBD must be up for this option to work properly.
+.IP
 
 .TP
 \fB\-d\fR, \fB\-\-down\fR
 Trigger an event if the specified node goes into a DOWN state.
+.IP
 
 .TP
 \fB\-D\fR, \fB\-\-drained\fR
 Trigger an event if the specified node goes into a DRAINED state.
+.IP
 
 .TP
 \fB\-F\fR, \fB\-\-fail\fR
 Trigger an event if the specified node goes into a FAILING state.
+.IP
 
 .TP
 \fB\-f\fR, \fB\-\-fini\fR
 Trigger an event when the specified job completes execution.
+.IP
 
 .TP
 \fB\-\-flags\fR=<\fIflag\fR>
 Associate flags with the reservation. Multiple flags should be comma separated.
 Valid flags include:
+.IP
 .RS
 .TP
 \fBPERM\fR
 Make the trigger permanent. Do not purge it after the event occurs.
 .RE
+.IP
 
 .TP
 \fB\-\-front_end\fR
@@ -106,15 +121,18 @@ Trigger events based upon changes in state of front end nodes rather than
 compute nodes. Applies to Cray ALPS architectures only, where the
 slurmd daemon executes on front end nodes rather than the compute nodes.
 Use this option with either the \fB\-\-up\fR or \fB\-\-down\fR option.
+.IP
 
 .TP
 \fB\-\-get\fP
 Show registered event triggers.
 Options can be used for filtering purposes.
+.IP
 
 .TP
 \fB\-i\fR, \fB\-\-id\fR=<\fIid\fR>
 Trigger ID number.
+.IP
 
 .TP
 \fB\-I\fR, \fB\-\-idle\fR
@@ -122,6 +140,7 @@ Trigger an event if the specified node remains in an IDLE state
 for at least the time period specified by the \fB\-\-offset\fR
 option. This can be useful to hibernate a node that remains idle,
 thus reducing power consumption.
+.IP
 
 .TP
 \fB\-j\fR, \fB\-\-jobid\fR=<\fIid\fR>
@@ -131,6 +150,7 @@ with the \fB\-\-node\fR option. When the \fB\-\-jobid\fR option is
 used in conjunction with the \fB\-\-up\fR or \fB\-\-down\fR option,
 all nodes allocated to that job will considered the nodes used as a
 trigger event.
+.IP
 
 .TP
 \fB\-n\fR, \fB\-\-node\fR[=\fIhost\fR]
@@ -146,10 +166,12 @@ trigger event. Since this option's argument is optional, for proper
 parsing the single letter option must be followed immediately with
 the value and not include a space between them. For example "\-ntux"
 and not "\-n tux".
+.IP
 
 .TP
 \fB\-N\fR, \fB\-\-noheader\fR
 Do not print the header when displaying a list of triggers.
+.IP
 
 .TP
 \fB\-o\fR, \fB\-\-offset\fR=<\fIseconds\fR>
@@ -159,23 +181,27 @@ The default value is zero if no \fB\-\-offset\fR option is specified.
 The resolution of this time is about 20 seconds, so to execute
 a script not less than five minutes prior to a job reaching its
 time limit, specify \fB\-\-offset=320\fR (5 minutes plus 20 seconds).
+.IP
 
 .TP
 \fB\-h\fR, \fB\-\-primary_database_failure\fR
 Trigger an event when the primary database fails. This event is triggered when
 the accounting plugin tries to open a connection with mysql and it fails and
 the slurmctld needs the database for some operations.
+.IP
 
 .TP
 \fB\-H\fR, \fB\-\-primary_database_resumed_operation\fR
 Trigger an event when the primary database resumes operation after failure.
 It happens when the connection to mysql from the accounting plugin is restored.
+.IP
 
 .TP
 \fB\-g\fR, \fB\-\-primary_slurmdbd_failure\fR
 Trigger an event when the primary slurmdbd fails. The trigger is launched by
 slurmctld in the occasions it tries to connect to slurmdbd, but receives no
 response on the socket.
+.IP
 
 .TP
 \fB\-G\fR, \fB\-\-primary_slurmdbd_resumed_operation\fR
@@ -184,22 +210,27 @@ This event is triggered when opening the connection from slurmctld to slurmdbd
 results in a response. It can happen also in different situations, periodically
 every 15 seconds when checking the connection status, when saving state,
 when agent queue is filling, and so on.
+.IP
 
 .TP
 \fB\-e\fR, \fB\-\-primary_slurmctld_acct_buffer_full\fR
 Trigger an event when primary slurmctld accounting buffer is full.
+.IP
 
 .TP
 \fB\-a\fR, \fB\-\-primary_slurmctld_failure\fR
 Trigger an event when the primary slurmctld fails.
+.IP
 
 .TP
 \fB\-b\fR, \fB\-\-primary_slurmctld_resumed_control\fR
 Trigger an event when primary slurmctld resumes control.
+.IP
 
 .TP
 \fB\-A\fR, \fB\-\-primary_slurmctld_resumed_operation\fR
 Trigger an event when the primary slurmctld resuming operation after failure.
+.IP
 
 .TP
 \fB\-p\fR, \fB\-\-program\fR=<\fIpath\fR>
@@ -209,17 +240,20 @@ You may quote the path and include extra program arguments if desired.
 The program will be executed as the user who sets the trigger.
 If the program fails to terminate within 5 minutes, it will
 be killed along with any spawned processes.
+.IP
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
 Do not report non\-fatal errors.
 This can be useful to clear triggers which may have already been purged.
+.IP
 
 .TP
 \fB\-r\fR, \fB\-\-reconfig\fR
 Trigger an event when the system configuration changes.
 This is triggered when the slurmctld daemon reads its configuration file or
 when a node state changes.
+.IP
 
 .TP
 \fB\-\-set\fP
@@ -229,16 +263,19 @@ must be set established for future events of the same type
 to be processed.
 Triggers can only be set if the command is run by the user
 \fISlurmUser\fR unless \fISlurmUser\fR is configured as user root.
+.IP
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR
 Trigger an event when the specified job's time limit is reached.
 This must be used in conjunction with the \fB\-\-jobid\fR option.
+.IP
 
 .TP
 \fB\-u\fR, \fB\-\-up\fR
 Trigger an event if the specified node is returned to service
 from a DOWN state.
+.IP
 
 .TP
 \fB\-\-user\fR=<\fIuser_name_or_id\fR>
@@ -246,47 +283,58 @@ Clear or get triggers created by the specified user.
 For example, a trigger created by user \fIroot\fR for a job created by user
 \fIadam\fR could be cleared with an option \fI\-\-user=root\fR.
 Specify either a user name or user ID.
+.IP
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Print detailed event logging. This includes time\-stamps on data structures,
 record counts, etc.
+.IP
 
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
+.IP
 
 .SH "OUTPUT FIELD DESCRIPTIONS"
+
 .TP
 \fBTRIG_ID\fP
 Trigger ID number.
+.IP
 
 .TP
 \fBRES_TYPE\fP
 Resource type: \fIjob\fR or \fInode\fR
+.IP
 
 .TP
 \fBRES_ID\fP
 Resource ID: job ID or host names or "*" for any host
+.IP
 
 .TP
 \fBTYPE\fP
 Trigger type: \fItime\fR or \fIfini\fR (for jobs only),
 \fIdown\fR or \fIup\fR (for jobs or nodes), or
 \fIdrained\fR, \fIidle\fR or \fIreconfig\fR (for nodes only)
+.IP
 
 .TP
 \fBOFFSET\fP
 Time offset in seconds. Negative numbers indicated the action should
 occur before the event (if possible)
+.IP
 
 .TP
 \fBUSER\fP
 Name of the user requesting the action
+.IP
 
 .TP
 \fBPROGRAM\fP
 Pathname of the program to execute when the event occurs
+.IP
 
 .SH "PERFORMANCE"
 .PP
@@ -306,15 +354,18 @@ necessary for the information you are trying to gather.
 Some \fBstrigger\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed below.
 (Note: Command line options will always override these settings.)
+
 .TP 20
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
 
 .SH "EXAMPLES"
+
 .TP
 Execute the program "/usr/sbin/primary_slurmctld_failure" whenever the \
 primary slurmctld fails.
-
+.IP
 .nf
 $ cat /usr/sbin/primary_slurmctld_failure
 #!/bin/bash
@@ -333,7 +384,7 @@ Execute the program "/usr/sbin/slurm_admin_notify" whenever \
 any node in the cluster goes down. The subject line will include \
 the node names which have entered the down state (passed as an \
 argument to the script by Slurm).
-
+.IP
 .nf
 $ cat /usr/sbin/slurm_admin_notify
 #!/bin/bash
@@ -351,7 +402,7 @@ $ strigger \-\-set \-\-node \-\-down \\
 Execute the program "/usr/sbin/slurm_suspend_node" whenever \
 any node in the cluster remains in the idle state for at least \
 600 seconds.
-
+.IP
 .nf
 $ strigger \-\-set \-\-node \-\-idle \-\-offset=600 \\
            \-\-program=/usr/sbin/slurm_suspend_node
@@ -360,7 +411,7 @@ $ strigger \-\-set \-\-node \-\-idle \-\-offset=600 \\
 .TP
 Execute the program "/home/joe/clean_up" when job 1234 is within \
 10 minutes of reaching its time limit.
-
+.IP
 .nf
 $ strigger \-\-set \-\-jobid=1234 \-\-time \-\-offset=\-600 \\
            \-\-program=/home/joe/clean_up
@@ -369,7 +420,7 @@ $ strigger \-\-set \-\-jobid=1234 \-\-time \-\-offset=\-600 \\
 .TP
 Execute the program "/home/joe/node_died" when any node allocated to \
 job 1234 enters the DOWN state.
-
+.IP
 .nf
 $ strigger \-\-set \-\-jobid=1234 \-\-down \\
            \-\-program=/home/joe/node_died
@@ -377,7 +428,7 @@ $ strigger \-\-set \-\-jobid=1234 \-\-down \\
 
 .TP
 Show all triggers associated with job 1235.
-
+.IP
 .nf
 $ strigger \-\-get \-\-jobid=1235
 TRIG_ID RES_TYPE RES_ID TYPE OFFSET USER PROGRAM
@@ -387,14 +438,14 @@ TRIG_ID RES_TYPE RES_ID TYPE OFFSET USER PROGRAM
 
 .TP
 Delete event trigger 125.
-
+.IP
 .nf
 $ strigger \-\-clear \-\-id=125
 .fi
 
 .TP
 Execute /home/joe/job_fini upon completion of job 1237.
-
+.IP
 .nf
 $ strigger \-\-set \-\-jobid=1237 \-\-fini \-\-program=/home/joe/job_fini
 .fi

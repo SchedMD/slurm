@@ -19,12 +19,14 @@ and statistics explained later, and there is another execution option
 Values are reset at midnight UTC time by default.
 .LP
 The first block of information is related to global slurmctld execution:
+
 .TP
 \fBServer thread count\fR
 The number of current active slurmctld threads. A high number would mean a high
 load processing events like job submissions, jobs dispatching, jobs completing,
 etc. If this is often close to MAX_SERVER_THREADS it could point to a potential
 bottleneck.
+.IP
 
 .TP
 \fBAgent queue size\fR
@@ -32,15 +34,18 @@ Slurm design has scalability in mind and sending messages to thousands of nodes
 is not a trivial task. The agent mechanism helps to control communication
 between slurmctld and the slurmd daemons for a best effort. This value denotes
 the count of enqueued outgoing RPC requests in an internal retry list.
+.IP
 
 .TP
 \fBAgent count\fR
 Number of agent threads. Each of these agent threads can create in turn a group
 of up to 2 + AGENT_THREAD_COUNT active threads at a time.
+.IP
 
 .TP
 \fBAgent thread count\fR
 Total count of active threads created by all the agent threads.
+.IP
 
 .TP
 \fBDBD Agent queue size\fR
@@ -50,42 +55,52 @@ increase.
 
 The max queue size is configured in the slurm.conf with MaxDBDMsgs. If this number begins to grow more than half of the max queue size, the slurmdbd
 and the database should be investigated immediately.
+.IP
 
 .TP
 \fBJobs submitted\fR
 Number of jobs submitted since last reset
+.IP
 
 .TP
 \fBJobs started\fR
 Number of jobs started since last reset. This includes backfilled jobs.
+.IP
 
 .TP
 \fBJobs completed\fR
 Number of jobs completed since last reset.
+.IP
 
 .TP
 \fBJobs canceled\fR
 Number of jobs canceled since last reset.
+.IP
 
 .TP
 \fBJobs failed\fR
 Number of jobs failed due to slurmd or other internal issues since last reset.
+.IP
 
 .TP
 \fBJob states ts:\fR
 Lists the timestamp of when the following job state counts were gathered.
+.IP
 
 .TP
 \fBJobs pending:\fR
 Number of jobs pending at the given time of the time stamp above.
+.IP
 
 .TP
 \fBJobs running:\fR
 Number of jobs running at the given time of the time stamp above.
+.IP
 
 .TP
 \fBJobs running ts:\fR
 Time stamp of when the running job count was taken.
+.IP
 
 .LP
 The next block of information is related to main scheduling algorithm based
@@ -98,32 +113,39 @@ dependencies or affected  by accounts limits are not processed.
 .TP
 \fBLast cycle\fR
 Time in microseconds for last scheduling cycle. 
+.IP
 
 .TP
 \fBMax cycle\fR
 Maximum time in microseconds for any scheduling cycle since last reset.
+.IP
 
 .TP
 \fBTotal cycles\fR
 Total run time in microseconds for all scheduling cycles since last reset.
 Scheduling is performed periodically and (depending upon configuration)
 when a job is submitted or a job is completed.
+.IP
 
 .TP
 \fBMean cycle\fR
 Mean time in microseconds for all scheduling cycles since last reset.
+.IP
 
 .TP
 \fBMean depth cycle\fR
 Mean of cycle depth. Depth means number of jobs processed in a scheduling cycle.
+.IP
 
 .TP
 \fBCycles per minute\fR
 Counter of scheduling executions per minute.
+.IP
 
 .TP
 \fBLast queue length\fR
 Length of jobs pending queue.
+.IP
 
 .LP
 The next block of information is related to backfilling scheduling algorithm.
@@ -141,25 +163,30 @@ execution cycle and for taking all the locks for too long.
 .TP
 \fBTotal backfilled jobs (since last slurm start)\fR
 Number of jobs started thanks to backfilling since last slurm start.
+.IP
 
 .TP
 \fBTotal backfilled jobs (since last stats cycle start)\fR
 Number of jobs started thanks to backfilling since last time stats where reset.
 By default these values are reset at midnight UTC time.
+.IP
 
 .TP
 \fBTotal backfilled heterogeneous job components\fR
 Number of heterogeneous job components started thanks to backfilling since
 last Slurm start.
+.IP
 
 .TP
 \fBTotal cycles\fR
 Number of backfill scheduling cycles since last reset
+.IP
 
 .TP
 \fBLast cycle when\fR
 Time when last backfill scheduling cycle happened in the format
 "weekday Month MonthDay hour:minute.seconds year"
+.IP
 
 .TP
 \fBLast cycle\fR
@@ -168,6 +195,7 @@ It counts only execution time, removing sleep time inside a scheduling cycle
 when it executes for an extended period time.
 Note that locks are released during the sleep time so that other work can
 proceed.
+.IP
 
 .TP
 \fBMax cycle\fR
@@ -176,15 +204,18 @@ It counts only execution time, removing sleep time inside a scheduling cycle
 when it executes for an extended period time.
 Note that locks are released during the sleep time so that other work can
 proceed.
+.IP
 
 .TP
 \fBMean cycle\fR
 Mean time in microseconds of backfilling scheduling cycles since last reset.
+.IP
 
 .TP
 \fBLast depth cycle\fR
 Number of processed jobs during last backfilling scheduling cycle. It counts
 every job even if that job can not be started due to dependencies or limits.
+.IP
 
 .TP
 \fBLast depth cycle (try sched)\fR
@@ -192,6 +223,7 @@ Number of processed jobs during last backfilling scheduling cycle. It counts
 only jobs with a chance to start using available resources. These
 jobs consume more scheduling time than jobs which are found can not be started
 due to dependencies or limits.
+.IP
 
 .TP
 \fBDepth Mean\fR
@@ -201,10 +233,12 @@ Jobs which are found to be ineligible to run when examined by the backfill
 scheduler are not counted (e.g. jobs submitted to multiple partitions and
 already started, jobs which have reached a QOS or account limit such as
 maximum running jobs for an account, etc).
+.IP
 
 .TP
 \fBDepth Mean (try sched)\fR
 The subset of Depth Mean that the backfill scheduler attempted to schedule.
+.IP
 
 .TP
 \fBLast queue length\fR
@@ -213,6 +247,7 @@ A job is counted once for each partition it is queued to use.
 A pending job array will normally be counted as one job (tasks of a job array
 which have already been started/requeued or individually modified will already
 have individual job records and are each counted as a separate job).
+.IP
 
 .TP
 \fBQueue length Mean\fR
@@ -221,11 +256,13 @@ A job is counted once for each partition it requested.
 A pending job array will normally be counted as one job (tasks of a job array
 which have already been started/requeued or individually modified will already
 have individual job records and are each counted as a separate job).
+.IP
 
 .TP
 \fBLast table size\fR
 Count of different time slots tested by the backfill scheduler in its last
 iteration.
+.IP
 
 .TP
 \fBMean table size\fR
@@ -233,11 +270,13 @@ Mean count of different time slots tested by the backfill scheduler.
 Larger counts increase the time required for the backfill operation.
 The table size is influenced by many schuling parameters, including:
 bf_min_age_reserve, bf_min_prio_reserve, bf_resolution, and bf_window.
+.IP
 
 .TP
 \fBLatency for 1000 calls to gettimeofday()\fR
 Latency of 1000 calls to the gettimeofday() syscall in microseconds,
 as measured at controller startup.
+.IP
 
 .LP
 The next blocks of information report the most frequently issued
@@ -268,40 +307,49 @@ This information is cached and only refreshed on 30 second intervals.
 .TP
 \fB\-a\fR, \fB\-\-all\fR
 Get and report information. This is the default mode of operation.
+.IP
 
 .TP
 \fB\-M\fR, \fB\-\-cluster\fR=<\fIstring\fR>
 The cluster to issue commands to. Only one cluster name may be specified.
 Note that the SlurmDBD must be up for this option to work properly.
+.IP
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print description of options and exit.
+.IP
 
 .TP
 \fB\-r\fR, \fB\-\-reset\fR
 Reset scheduler and RPC counters to 0. Only supported for Slurm operators and
 administrators.
+.IP
 
 .TP
 \fB\-i\fR, \fB\-\-sort\-by\-id\fR
 Sort Remote Procedure Call (RPC) data by message type ID and user ID.
+.IP
 
 .TP
 \fB\-t\fR, \fB\-\-sort\-by\-time\fR
 Sort Remote Procedure Call (RPC) data by total run time.
+.IP
 
 .TP
 \fB\-T\fR, \fB\-\-sort\-by\-time2\fR
 Sort Remote Procedure Call (RPC) data by average run time.
+.IP
 
 .TP
 \fB\-\-usage\fR
 Print list of options and exit.
+.IP
 
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Print current version number and exit.
+.IP
 
 .SH "PERFORMANCE"
 .PP
@@ -321,9 +369,11 @@ information you are trying to gather.
 Some \fBsdiag\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed below.
 (Note: Command line options will always override these settings.)
+
 .TP 20
 \fBSLURM_CLUSTERS\fR
 Same as \fB\-\-cluster\fR
+.IP
 
 .TP 20
 \fBSLURM_CONF\fR

@@ -17,6 +17,8 @@ utilization for Slurm jobs saved to the Slurm Database,
 \fB\-a\fR, \fB\-\-all_clusters\fR
 Use all clusters instead of only the cluster from which the command was
 executed.
+.IP
+
 .TP
 \fB\-M\fR, \fB\-\-cluster\fR
 The cluster(s) to generate reports for. Default is local cluster, unless the
@@ -24,34 +26,52 @@ local cluster is currently part of a federation and in that case generate a
 report for all clusters in the current federation. If the clusters included
 in a federation vary through time, use this option to identify the clusters
 to be included in report. Implies \-\-local.
+.IP
+
 .TP
 \fB\-\-federation\fR
 Generate a report for the federation if a member of one.
+.IP
+
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of \fBsreport\fR.
+.IP
+
 .TP
 \fB\-\-local\fR
 Generate a report for the local cluster, even if part of a federation.
 Overrides \fB\-\-federation\fR.
+.IP
+
 .TP
 \fB\-n\fR, \fB\-\-noheader\fR
 Don't display header when listing results.
+.IP
+
 .TP
 \fB\-p\fR, \fB\-\-parsable\fR
 Output will be '|' delimited with a '|' at the end.
+.IP
+
 .TP
 \fB\-P\fR, \fB\-\-parsable2\fR
 Output will be '|' delimited without a '|' at the end.
+.IP
+
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
 Print no warning or informational messages, only error messages.
+.IP
+
 .TP
 \fB\-t\fR <\fItime_format\fR>
 Specify the output time format. Time format options are case
 insensitive and may be abbreviated. The default format is Minutes.
 Supported time format options are listed in the \fBtime\fP command
 section below.
+.IP
+
 .TP
 \fB\-T\fR, \fB\-\-tres\fR=<\fItres_names\fR>
 Trackable resource (TRES) to report values for.
@@ -75,17 +95,21 @@ The main issue with using node is in most configurations multiple jobs are able
 to run on the same node.  This makes TRES node accounting count the same node
 multiple times in the same period.  In exclusive node configurations, CPU
 accounting returns the same usage node accounting would.
+.IP
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Print detailed event logging.
+.IP
+
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
+.IP
 
 .SH "COMMANDS"
 
-.TP
+.LP
 \<keyword\> may be omitted from the execute line and sreport will
 execute in interactive mode. sreport will process commands as entered until
 explicitly terminated.
@@ -94,100 +118,141 @@ explicitly terminated.
 \fBexit\fP
 Terminate the execution of sreport.
 Identical to the \fBquit\fR command.
+.IP
 
 .TP
 \fBhelp\fP
 Display a description of sreport options and commands.
+.IP
 
 .TP
 \fBnonparsable\fP
 Return output to normal after parsable or parsable2 has been set.
+.IP
 
 .TP
 \fBparsable\fP
 Output will be | delimited with an ending '|'.
+.IP
 
 .TP
 \fBparsable2\fP
 Output will be | delimited without an ending '|'.
+.IP
 
 .TP
 \fBquiet\fP
 Print no warning or informational messages, only fatal error messages.
+.IP
 
 .TP
 \fBquit\fP
 Terminate the execution of sreport.
 Identical to the \fBexit\fR command.
+.IP
 
 .TP
 \fBtime <time_format>\fP
 Specify the output time format. Time format options are case
 insensitive and may be abbreviated. The default format is Minutes.
 Supported time format options include:
-
+.IP
 .RS
 .TP 10
 \fBSecPer\fR
 Seconds/Percentage of Total
+.IP
+
 .TP
 \fBMinPer\fR
 Minutes/Percentage of Total
+.IP
+
 .TP
 \fBHourPer\fR
 Hours/Percentage of Total
+.IP
+
 .TP
 \fBSeconds\fR
 Seconds
+.IP
+
 .TP
 \fBMinutes\fR
 Minutes
+.IP
+
 .TP
 \fBHours\fR
 Hours
+.IP
+
 .TP
 \fBPercent\fR
 Percentage of Total
 .RE
+.IP
 
 .TP
 \fBverbose\fP
 Enable detailed event logging.
+.IP
 
 .TP
 \fBversion\fP
 Display the sreport version number.
+.IP
 
 .TP
 \fB!!\fP
 Repeat the last command executed.
+.IP
 
 .SH "REPORT TYPES"
-.TP
+
 Valid report types are:
+.RS
+.TP
 \fBcluster\fP \<REPORT\> \<OPTIONS\>
-
-\fBjob\fP \<REPORT\> \<OPTIONS\>
-
-\fBreservation\fP \<REPORT\> \<OPTIONS\>
-
-\fBuser\fP \<REPORT\> \<OPTIONS\>
+.IP
 
 .TP
+\fBjob\fP \<REPORT\> \<OPTIONS\>
+.IP
+
+.TP
+\fBreservation\fP \<REPORT\> \<OPTIONS\>
+.IP
+
+.TP
+\fBuser\fP \<REPORT\> \<OPTIONS\>
+.IP
+.RE
+
 \<REPORT\> options for each type include:
-
-.B cluster
-\- AccountUtilizationByUser, UserUtilizationByAccount,
+.RS
+.TP
+\fBcluster\fR
+AccountUtilizationByUser, UserUtilizationByAccount,
 UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
+.IP
 
-.B job
-\- SizesByAccount, SizesByAccountAndWcKey, SizesByWckey
+.TP
+\fBjob\fR
+SizesByAccount, SizesByAccountAndWcKey, SizesByWckey
+.IP
 
-.B reservation
-\- Utilization
+.TP
+\fBreservation\fR
+Utilization
+.IP
 
-.B user
-\- TopUsage
+.TP
+\fBuser\fR
+TopUsage
+.IP
+.RE
 
 .LP
 \fBNOTE\fR: If \fBOverSubscribe\fR is configured to \fBFORCE\fR or \fBYES\fR
@@ -211,43 +276,56 @@ given access to it. When a reservation is assigned to whole accounts, the
 time will be counted in the association for the accounts, not the user
 associations in the accounts. In this case, the usage of a parent account can
 be larger than the sum of its children.
+.IP
+
 .TP
 .B cluster UserUtilizationByAccount
 This report will display users by account in order of utilization without
 grouping multiple accounts by user into one, but displaying them
 on separate lines.
+.IP
+
 .TP
 .B cluster UserUtilizationByWCKey
 This report will display users by wckey in order of utilization without
 grouping multiple wckey by user into one, but displaying them
 on separate lines.
+.IP
+
 .TP
 .B cluster Utilization
 This report will display total usage divided amongst Allocated, Down,
 Planned Down, Idle, and Reserved time for selected clusters.
 .RS
 .IP Allocated 14
+
 Time that nodes were in use with active jobs or an active reservation.
 This does not include reservations created with the MAINT or IGNORE_JOBS
 flags.
 .IP Down
+
 Time that nodes were marked as Down or time that slurmctld was not
 responding (assuming TrackSlurmctldDown is set in slurmdbd.conf).
 .IP Idle
+
 Time where nodes had no active jobs or reservations.
 .IP OverCommitted
+
 Time of eligible jobs waiting in the queue over the Reserved time. Unlike
 Reserved, this has no limit. It is typically useful to determine whether your
 system is overloaded and by how much.
 .IP PlannedDown
+
 Time that nodes were in use by a reservation created with the MAINT flag
 but not the IGNORE_JOBS flag.
 .IP Reserved
+
 Time that a node spent idle with eligible jobs in the queue that were
 unable to start due to time or size constraints. The maximum time is limited
 to the amount of time possible on the system. If this value is
 not of importance for you then the number can be grouped with idle time.
 .IP TresCount
+
 Configured number of TRES' on the reported nodes. See also the
 \fBTresName\fP field.
 .RE
@@ -266,10 +344,13 @@ Reported. You can include additional fields like OverCommitted and TresCount
 fields with the \fBFormat\fP option. The TresName will also be included if
 using the \fB\-T,  \-\-tres <tres_names>\fR option.
 .RE
+.IP
+
 .TP
 .B cluster WCKeyUtilizationByUser
 This report will display wckey utilization sorted by WCKey name for
 each user on each cluster.
+.IP
 
 .TP
 .B job SizesByAccount
@@ -279,22 +360,28 @@ is displayed defaulting to the root dir.  If you specify other
 accounts with the 'account=' option sreport will use those accounts as
 the root account and you will receive the aggregated totals of each listed
 account plus their sub accounts.
+.IP
+
 .TP
 .B job SizesByAccountAndWckey
 This report is very similar to SizesByAccount with the difference being
 each account is pair with wckeys so the identifier is account:wckey
 instead of just account so there will most likely be multiple accounts
 listed depending on the number of wckeys used.
+.IP
+
 .TP
 .B job SizesByWckey
 This report will display the amount of time for each wckey for job ranges
 specified by the 'grouping=' option.
+.IP
 
 .TP
 .B reservation Utilization
 This report will display total usage for reservations on the systems.
 Note: Time requests on this report will not truncate the time the reservation
 used, only the reservations that ran at any time during the period requested.
+.IP
 
 .TP
 .B user TopUsage
@@ -304,19 +391,24 @@ sort users by the first TRES specified.
 
 Use the group option to group accounts together.
 The default is to have a different line for each user account combination.
+.IP
 
-.TP
+.LP
 Each report type has various options...
 
-.TP
+.LP
 .B OPTIONS FOR ALL REPORT TYPES
 
+.RS
 .TP
 .B All_Clusters
 Use all monitored clusters. Default is local cluster.
+.IP
+
 .TP
 .B Clusters=<OPT>
 List of clusters to include in report.  Default is local cluster.
+.IP
 
 .TP
 .B End=<OPT>
@@ -332,6 +424,7 @@ MM/DD[/YY]\-HH:MM[:SS]
 YYYY\-MM\-DD[THH:MM[:SS]]
 .br
 now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.IP
 
 .TP
 .B Format=<OPT>
@@ -342,6 +435,7 @@ When using the format option for listing various fields you can put a
 
 e.g. format=name%30 will print 30 characters of field name right
 justified.  A \-30 will print 30 characters left justified.
+.IP
 
 .TP
 .B Start=<OPT>
@@ -358,155 +452,227 @@ YYYY\-MM\-DD[THH:MM[:SS]]
 .br
 now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 .ad
-.TP
+.RE
+.IP
+
+.LP
 .B OPTIONS SPECIFICALLY FOR CLUSTER REPORTS
 
+.RS
 .TP
 .B Accounts=<OPT>
 When used with the UserUtilizationByAccount, or
 AccountUtilizationByUser, List of accounts to include in report.
 Default is all.
+.IP
+
 .TP
 .B Tree
 When used with the AccountUtilizationByUser report will span the
 accounts as they are in the hierarchy.
+.IP
+
 .TP
 .B Users=<OPT>
 When used with any report other than Utilization, List of users to
 include in report.  Default is all.
+.IP
+
 .TP
 .B Wckeys=<OPT>
 When used with the UserUtilizationByWckey or WCKeyUtilizationByUser,
 List of wckeys to include in report. Default is all.
+.RE
+.IP
 
-.TP
+.LP
 .B OPTIONS SPECIFICALLY FOR JOB REPORTS
 
+.RS
 .TP
 .B Accounts=<OPT>
 List of accounts to use for the report. Default is all which will show only
 one line corresponding to the totals of all accounts in the hierarchy.
 This explanation does not apply when ran with the FlatView or AcctAsParent
 options.
+.IP
+
 .TP
 .B AcctAsParent
 When used with the SizesbyAccount(*) will take specified accounts
 as parents and the next layer of accounts under those specified
 will be displayed. Default is root if no specific Accounts are requested.
 When FlatView is used, this option is ignored.
+.IP
+
 .TP
 .B FlatView
 When used with the SizesbyAccount(*) will not group accounts in a
 hierarchical level, but print each account where jobs ran on a
 separate line without any hierarchy.
+.IP
+
 .TP
 .B GID=<OPT>
 List of group ids to include in report.  Default is all.
+.IP
+
 .TP
 .B Grouping=<OPT>
 Comma separated list of size groupings.   (e.g. 50,100,150 would group
 job cpu count 1\-49, 50\-99, 100\-149, > 150).  grouping=individual will
 result in a single column for each job size found.
+.IP
+
 .TP
 .B Jobs=<OPT>
 List of jobs/steps to include in report.  Default is all.
+.IP
+
 .TP
 .B Nodes=<OPT>
 Only show jobs that ran on these nodes. Default is all.
+.IP
+
 .TP
 .B Partitions=<OPT>
 List of partitions jobs ran on to include in report.  Default is all.
+.IP
+
 .TP
 .B PrintJobCount
 When used with the Sizes report will print number of jobs ran instead
 of time used.
+.IP
+
 .TP
 .B Users=<OPT>
 List of users jobs to include in report.  Default is all.
+.IP
+
 .TP
 .B Wckeys=<OPT>
 List of wckeys to use for the report.  Default is all.  The
 SizesbyWckey report all users summed together.  If you want only
 certain users specify them with the Users= option.
+.RE
+.IP
 
-.TP
+.LP
 .B OPTIONS SPECIFICALLY FOR RESERVATION REPORTS
+
+.RS
 .TP
 .B Names=<OPT>
 List of reservations to use for the report. Default is all.
+.IP
+
 .TP
 .B Nodes=<OPT>
 Only show reservations that used these nodes. Default is all.
+.RE
+.IP
 
-
-.TP
+.LP
 .B OPTIONS SPECIFICALLY FOR USER REPORTS
 
+.RS
 .TP
 .B Accounts=<OPT>
 List of accounts to use for the report. Default is all.
+.IP
+
 .TP
 .B Group
 Group all accounts together for each user.  Default is a separate
 entry for each user and account reference.
+.IP
+
 .TP
 .B TopCount=<OPT>
 Used in the TopUsage report.  Change the number of users displayed.
 Default is 10.
+.IP
+
 .TP
 .B Users=<OPT>
 List of users jobs to include in report.  Default is all.
+.RE
+.IP
 
 .SH "FORMAT OPTIONS FOR EACH REPORT"
 
+.LP
 \fBFORMAT OPTIONS FOR CLUSTER REPORTS\fP
-.in 10
-AccountUtilizationByUser:
-.br
-UserUtilizationByAccount:
-.in 14
+.RS
+.TP
+\fBAccountUtilizationByUser\fR
 Accounts, Cluster, Login, Proper, TresCount, Used
+.IP
 
-.in 10
-UserUtilizationByWckey:
-.br
-WCKeyUtilizationByUser:
-.in 14
+.TP
+\fBUserUtilizationByAccount\fR
+Accounts, Cluster, Login, Proper, TresCount, Used
+.IP
+
+.TP
+\fBUserUtilizationByWckey\fR
 Cluster, Login, Proper, TresCount, Used, Wckey
+.IP
 
-.in 10
-Utilization:
-.in 14
+.TP
+\fBUtilization\fR
 Allocated, Cluster, Down, Idle, OverCommitted, PlannedDown, Reported, Reserved,
 TresCount, TresName
+.IP
 
 .TP
+\fBWCKeyUtilizationByUser\fR
+Cluster, Login, Proper, TresCount, Used, Wckey
+.IP
+.RE
+
+.LP
 \fBFORMAT OPTIONS FOR JOB REPORTS\fP
-.in 10
-SizesByAccount, SizesByAccountAndWckey:
-.in 14
+
+.RS
+.TP
+\fBSizesByAccount\fR
 Account, Cluster
+.IP
 
-.in 10
-SizesByWckey:
-.in 14
+.TP
+\fBSizesByAccountAndWckey\fR
+Account, Cluster
+.IP
+
+.TP
+\fBSizesByWckey\fR
 Wckey, Cluster
+.IP
+.RE
 
-.TP
+.LP
 \fBFORMAT OPTIONS FOR RESERVATION REPORTS\fP
-.in 10
-Utilization:
-.in 14
+
+.RS
+.TP
+\fBUtilization\fR
 Allocated, Associations, Cluster, End, Flags, Idle, Name, Nodes, ReservationId, Start, TotalTime, TresCount, TresName, TresTime
+.IP
+.RE
 
-.TP
+.LP
 \fBFORMAT OPTIONS FOR USER REPORTS\fP
-.in 10
-TopUsage:
-.in 14
-Account, Cluster, Login, Proper, Used
 
+.RS
 .TP
+\fBTopUsage\fR
+Account, Cluster, Login, Proper, Used
+.IP
+.RE
+
+.LP
 All commands and options are case\-insensitive.
 
 .SH "PERFORMANCE"
@@ -527,18 +693,28 @@ the information you are trying to gather.
 Some \fBsreport\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed below.
 (Note: Command line options will always override these settings.)
+.IP
+
 .TP 20
 \fBSREPORT_CLUSTER\fR
 Same as \fB\-M\fR, \fB\-\-cluster\fR
+.IP
+
 .TP
 \fBSREPORT_FEDERATION\fR
 Same as \-\-federation\fR
+.IP
+
 .TP
 \fBSREPORT_LOCAL\fR
 Same as \-\-local\fR
+.IP
+
 .TP
 \fBSREPORT_TRES\fR
 Same as \fB\-t, \-\-tres\fR
+.IP
+
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
@@ -548,28 +724,28 @@ The location of the Slurm configuration file.
 
 .TP
 Report number of jobs per account according to different job size bins:
-
+.IP
 .nf
 $ sreport job sizesbyaccount
 .fi
 
 .TP
 Report cluster utilization:
-
+.IP
 .nf
 $ sreport cluster utilization
 .fi
 
 .TP
 Report top usage:
-
+.IP
 .nf
 $ sreport user top
 .fi
 
 .TP
 Report number of jobs by user gore1 within the environ account:
-
+.IP
 .nf
 $ sreport job sizesbyaccount All_Clusters users=gore1 account=environ PrintJobCount
 .fi
@@ -577,7 +753,7 @@ $ sreport job sizesbyaccount All_Clusters users=gore1 account=environ PrintJobCo
 .TP
 Report cluster account utilization with the specified fields during the \
 specified 24 hour day of February 23, 2009, by user gore1:
-
+.IP
 .nf
 $ sreport cluster AccountUtilizationByUser cluster=zeus user=gore1 \
 start=2/23/09 end=2/24/09 format=Accounts,Cluster,TresCount,Login,Proper,Used
@@ -585,7 +761,7 @@ start=2/23/09 end=2/24/09 format=Accounts,Cluster,TresCount,Login,Proper,Used
 
 .TP
 Report cluster account utilization by user in the LC account on cluster zeus:
-
+.IP
 .nf
 $ sreport cluster AccountUtilizationByUser cluster=zeus accounts=lc \
 start=2/23/09 end=2/24/09
@@ -593,7 +769,7 @@ start=2/23/09 end=2/24/09
 
 .TP
 Report top usage in percent of the lc account during the specified week:
-
+.IP
 .nf
 $ sreport user topusage start=2/16/09 end=2/23/09 \-t percent account=lc
 .fi

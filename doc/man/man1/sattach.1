@@ -21,10 +21,12 @@ suitable for use with a parallel debugger like TotalView.
 Only transmit standard input to a single task, or print the standard output
 or standard error from a single task.  The filtering is performed locally in
 sattach.
+.IP
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Display help information and exit.
+.IP
 
 .TP
 \fB\-\-input\-filter\fR[=]<\fItask number\fR>
@@ -32,17 +34,20 @@ Display help information and exit.
 Only transmit standard input to a single task, or print the standard output
 or standard error from a single task.  The filtering is performed locally in
 sattach.
+.IP
 
 .TP
 \fB\-l\fR, \fB\-\-label\fR
 Prepend each line of task standard output or standard error with the task
 number of its origin.
+.IP
 
 .TP
 \fB\-\-layout\fR
 Contacts the slurmctld to obtain the task layout information for the job step,
 prints the task layout information, and then exits without attaching to the
 job step.
+.IP
 
 .TP
 \fB\-\-output\-filter\fR[=]<\fItask number\fR>
@@ -50,6 +55,7 @@ job step.
 Only transmit standard input to a single task, or print the standard output
 or standard error from a single task.  The filtering is performed locally in
 sattach.
+.IP
 
 .TP
 \fB\-\-pty\fR
@@ -59,23 +65,28 @@ Not compatible with the \fB\-\-input\-filter\fR, \fB\-\-output\-filter\fR, or
 Notes: The terminal size and resize events are ignored by sattach.
 Proper operation requires that the job step be initiated by srun using the
 \-\-pty option.
+.IP
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR
 Suppress informational messages from sattach. Errors will still be displayed.
+.IP
 
 .TP
 \fB\-u\fR, \fB\-\-usage\fR
 Display brief usage message and exit.
+.IP
 
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Display Slurm version number and exit.
+.IP
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Increase the verbosity of sattach's informational messages.  Multiple \fB\-v\fR's
 will further increase sattach's verbosity.
+.IP
 
 .SH "PERFORMANCE"
 .PP
@@ -99,25 +110,28 @@ variables settings.
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
+
 .TP
 \fBSLURM_EXIT_ERROR\fR
 Specifies the exit code generated when a Slurm error occurs
 (e.g. invalid options).
 This can be used by a script to distinguish application exit codes from
 various Slurm error conditions.
-
+.IP
 
 .SH "EXAMPLES"
+
 .TP
 Attach to job 15, step 0:
-
+.IP
 .nf
 $ sattach 15.0
 .fi
 
 .TP
 Limit the output to the 5th task of job 65386, step 15:
-
+.IP
 .nf
 $ sattach \-\-output\-filter 5 65386.15
 .fi

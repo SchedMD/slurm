@@ -15,7 +15,6 @@ it is connected to a socket or a local TTY (interactive mode).
 Listen Mode: slurmrestd will open a listening socket on each requested
 host:port pair or UNIX socket.
 
-.TP
 .SH "OPTIONS"
 
 .TP
@@ -24,86 +23,129 @@ Hostname and port to listen against. \fIhost\fR may be an IPv4/IPv6 IP or a
 resolvable hostname. Hostnames are only looked up at startup and do not change
 for the life of the process. \fIhost\fR is optional; if not provided, slurmrestd
 will listen on all network interfaces.
+.IP
+
 .TP
 \fBunix:/path/to/socket\fR
 Listen on local UNIX socket. Must have permission to create socket in
 filesystem.
+.IP
+
 .TP
 \fB\-a <authentication plugins>\fR
 Comma\-delimited list of authentication plugins to load.
 Set to "list" to dump a list of the possible plugins to load.
 Defaults: all builtin supported REST authentication plugins.
+.IP
+
 .TP
 \fB\-f <file>\fR
 Read Slurm configuration from the specified file. See \fBNOTES\fR below.
+.IP
+
 .TP
 \fB\-g <group id>\fR
 Change group id (and drop supplemental groups) before processing client
 request. This should be a unique group with no write access or special
 permissions. Do not set this user to SlurmUser or root.
+.IP
+
 .TP
 \fB\-h\fR
 Help; print a brief summary of command options.
+.IP
+
 .TP
 \fB\-s <OpenAPI plugins to load>\fR
 Comma\-delimited list of OpenAPI plugins.
 Set to "list" to dump a list of the possible plugins to load.
 Defaults: all builtin supported OpenAPI plugins.
+.IP
+
 .TP
 \fB\-t <THREAD COUNT>\fR
 Specify number of threads to use to process client connections.
 Ignored in inetd mode. Default: 20
+.IP
+
 .TP
 \fB\-u <user id>\fR
 Change user id before processing client request. This should be a unique group
 with no write access or special permissions. Do not set this user to SlurmUser
 or root.
+.IP
+
 .TP
 \fB\-v\fR
 Verbose operation. Multiple \fB\-v\fR's increase verbosity.
 Higher verbosity levels will have significant performance impact.
+.IP
+
 .TP
 \fB\-V\fR
 Print version information and exit.
+.IP
 
 .SH "ENVIRONMENT VARIABLES"
 The following environment variables can be used to override settings
 compiled into slurmctld.
+
+.TP
+\fBDISABLE_UNSHARE_SYSV\fR
+Disables unsharing the SYSV namespace.
+.IP
+
+.TP
+\fBDISABLE_USER_CHECK\fR
+Disables check that slurmrestd is not running as root or SlurmUser.
+.IP
+
 .TP 20
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
+
 .TP
 \fBSLURM_JWT\fR
 This variable must be set to use JWT token authentication.
+.IP
+
 .TP
 \fBSLURMRESTD_AUTH_TYPES\fR
 Set allowed authentication types. See \fB\-a\fR
+.IP
+
 .TP
 \fBSLURMRESTD_DEBUG\fR
 Set debug level explicitly. Valid values are 1\-10. See \fB\-v\fR
+.IP
+
+.TP
+\fBSLURMRESTD_LISTEN\fR
+Comma\-delimited list of host:port pairs or unix sockets to listen on.
+.IP
+
+.TP
+\fBSLURMRESTD_OPENAPI_PLUGINS\fR
+Comma\-delimited list of OpenAPI plugins to load. See \fB\-s\fR
+.IP
+
 .TP
 \fBSLURMRESTD_SECURITY\fR
 Control slurmrestd security functionality.
 .IP
-\fBdisable_unshare_sysv\fR
-Disables unsharing the SYSV namespace.
-.IP
-\fBdisable_user_check\fR
-Disables check that slurmrestd is not running as root or SlurmUser.
-.TP
-\fBSLURMRESTD_LISTEN\fR
-Comma\-delimited list of host:port pairs or unix sockets to listen on.
-.TP
-\fBSLURMRESTD_OPENAPI_PLUGINS\fR
-Comma\-delimited list of OpenAPI plugins to load. See \fB\-s\fR
 
 .SH "SIGNALS"
+
 .TP
 \fBSIGINT\fR
 \fBslurmrestd\fR will shutdown cleanly.
+.IP
+
 .TP
 \fBSIGPIPE\fR
 This signal is explicitly ignored.
+.IP
 
 .SH "NOTES"
 slurmrestd is designed to run with AuthAltTypes outside of the Munge cluster

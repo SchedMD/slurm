@@ -34,12 +34,14 @@ under /sys/fs/cgroup/<subsystem_name>.
 When launched, plugins check their subsystem availability. If not available,
 the plugin launch fails unless CgroupAutomount is set to yes. In that case, the
 plugin will first try to mount the required subsystems.
+.IP
 
 .TP
 \fBCgroupMountpoint\fR=\fIPATH\fR
 Specify the \fIPATH\fR under which cgroups should be mounted. This
 should be a writable directory which will contain cgroups mounted
 one per subsystem. The default \fIPATH\fR is /sys/fs/cgroup.
+.IP
 
 .TP
 \fBCgroupPlugin\fR=\fI<cgroup/v1|autodetect>\fR
@@ -48,6 +50,7 @@ Supported values at the moment are only "cgroup/v1" which supports the legacy
 interface of cgroup v1, or "autodetect" which tries to determine which
 cgroup version does your system provide. This is useful if nodes have support
 for different cgroup versions. The default value is "autodetect".
+.IP
 
 .SH "TASK/CGROUP PLUGIN"
 
@@ -62,6 +65,7 @@ specified in bytes. The \fBAllowedKmemSpace\fR must be between the upper and
 lower memory limits, specified by \fBMaxKmemPercent\fR and \fBMinKmemSpace\fR,
 respectively. If \fBAllowedKmemSpace\fR goes beyond the upper or lower limit,
 it will be reset to that upper or lower limit, whichever has been exceeded.
+.IP
 
 .TP
 \fBAllowedRAMSpace\fR=<number>
@@ -79,6 +83,7 @@ in jobs receiving less memory than allocated and soft memory limit will set to
 the same value as the hard limit.
 Also see \fBConstrainRAMSpace\fR.
 The default value is 100.
+.IP
 
 .TP
 \fBAllowedSwapSpace\fR=<number>
@@ -91,6 +96,7 @@ Also see \fBConstrainSwapSpace\fR.
 NOTE: Setting AllowedSwapSpace to 0 does not restrict the Linux kernel from
 using swap space. To control how the kernel uses swap space, see
 \fBMemorySwappiness\fR.
+.IP
 
 .TP
 \fBConstrainCores\fR=<yes|no>
@@ -99,12 +105,14 @@ allocated resources. This functionality makes use of the cpuset subsystem.
 Due to a bug fixed in version 1.11.5 of HWLOC, the task/affinity plugin may be
 required in addition to task/cgroup for this to function properly.
 The default value is "no".
+.IP
 
 .TP
 \fBConstrainDevices\fR=<yes|no>
 If configured to "yes" then constrain the job's allowed devices based on GRES
 allocated resources. It uses the devices subsystem for that.
 The default value is "no".
+.IP
 
 .TP
 \fBConstrainKmemSpace\fR=<yes|no>
@@ -114,6 +122,7 @@ enabled, the job's Kmem limit will be assigned the value of
 \fBAllowedKmemSpace\fR or the value coming from \fBMaxKmemPercent\fR.
 The default value is "no" which will leave Kmem setting untouched by Slurm.
 Also see \fBAllowedKmemSpace\fR, \fBMaxKmemPercent\fR.
+.IP
 
 .TP
 \fBConstrainRAMSpace\fR=<yes|no>
@@ -139,6 +148,7 @@ per\-node job throughout. Sites with high\-throughput requirements should
 carefully weigh the tradeoff between per\-node throughput, versus potential
 problems that can arise from unconstrained memory usage on the node. See
 <https://slurm.schedmd.com/high_throughput.html> for further discussion.
+.IP
 
 .TP
 \fBConstrainSwapSpace\fR=<yes|no>
@@ -151,6 +161,7 @@ RAM and RAM+Swap limits. This means that in that particular case,
 ConstrainRAMSpace is automatically enabled with the same limit as the one
 used to constrain swap space.
 Also see \fBAllowedSwapSpace\fR.
+.IP
 
 .TP
 \fBMaxRAMPercent\fR=\fIPERCENT\fR
@@ -159,6 +170,7 @@ This will be the memory constraint applied to jobs that are not explicitly
 allocated memory by Slurm (i.e. Slurm's select plugin is not configured to manage
 memory allocations). The \fIPERCENT\fR may be an arbitrary floating
 point number. The default value is 100.
+.IP
 
 .TP
 \fBMaxSwapPercent\fR=\fIPERCENT\fR
@@ -167,6 +179,7 @@ that may be used for a job. This will be the swap limit applied to jobs
 on systems where memory is not being explicitly allocated to job. The
 \fIPERCENT\fR may be an arbitrary floating point number between 0 and 100.
 The default value is 100.
+.IP
 
 .TP
 \fBMaxKmemPercent\fR=\fIPERCENT\fR
@@ -175,6 +188,7 @@ Set an upper bound in percent of total RAM as the maximum Kmem for a job. The
 of \fBMaxKmemPercent\fR and job requested memory has to fall between
 \fBMinKmemSpace\fR and job requested memory, otherwise the boundary value is
 used. The default value is 100.
+.IP
 
 .TP
 \fBMemorySwappiness\fR=<number>
@@ -185,11 +199,13 @@ out program data. A value of 100 gives equal priority to swapping out file
 cache or anonymous pages. If not set, then the kernel's default swappiness
 value will be used. \fBConstrainSwapSpace\fR
 must be set to \fByes\fR in order for this parameter to be applied.
+.IP
 
 .TP
 \fBMinKmemSpace\fR=<number>
 Set a lower bound (in MB) on the memory limits defined by
 \fBAllowedKmemSpace\fR. The default limit is 30M.
+.IP
 
 .TP
 \fBMinRAMSpace\fR=<number>
@@ -197,6 +213,7 @@ Set a lower bound (in MB) on the memory limits defined by
 \fBAllowedRAMSpace\fR and \fBAllowedSwapSpace\fR. This prevents
 accidentally creating a memory cgroup with such a low limit that slurmstepd
 is immediately killed due to lack of RAM. The default limit is 30M.
+.IP
 
 .SH "DISTRIBUTION\-SPECIFIC NOTES"
 
@@ -210,11 +227,12 @@ This can usually be placed in /etc/default/grub inside the
 after updating the file.
 
 .SH "EXAMPLE"
+
 .TP
 \fB/etc/slurm/cgroup.conf\fR:
 This example cgroup.conf file shows a configuration that enables the more
 commonly used cgroup enforcement mechanisms.
-
+.IP
 .nf
 ###
 # Slurm cgroup support configuration file.
@@ -227,6 +245,7 @@ ConstrainKmemSpace=no        #avoid known Kernel issues
 ConstrainRAMSpace=yes
 ConstrainSwapSpace=yes
 .fi
+
 .TP
 \fB/etc/slurm/slurm.conf\fR:
 These are the entries required in \fBslurm.conf\fR to activate the cgroup
@@ -236,7 +255,7 @@ Either MemSpecLimit should be set or RealMemory should be defined with less
 than the actual amount of memory for a node to ensure that all system/non\-job
 processes will have sufficient memory at all times. Sites should also configure
 \fBpam_slurm_adopt\fR to ensure users can not escape the cgroups via \fBssh\fR.
-
+.IP
 .nf
 ###
 # Slurm configuration entries for cgroups

@@ -24,6 +24,7 @@ directory. See the section \fBOCI Pattern\fR for details on pattern
 replacement.
 .sp
 Default is unique directory generated in \fBSlurmdSpoolDir\fR.
+.IP
 
 .TP
 \fBCreateEnvFile=(true|false)\fR
@@ -31,6 +32,7 @@ Create environment file for container. File will have one environment variable
 per line.
 .sp
 Default is false.
+.IP
 
 .TP
 \fBRunTimeCreate\fR
@@ -38,6 +40,7 @@ Pattern for OCI runtime create operation.  See the section \fBOCI Pattern\fR
 for details on pattern replacement.
 .sp
 Default: (disabled)
+.IP
 
 .TP
 \fBRunTimeDelete\fR
@@ -45,6 +48,7 @@ Pattern for OCI runtime delete operation.  See the section \fBOCI Pattern\fR
 for details on pattern replacement.
 .sp
 Default: (disabled)
+.IP
 
 .TP
 \fBRunTimeKill\fR
@@ -52,6 +56,7 @@ Pattern for OCI runtime kill operation.  See the section \fBOCI Pattern\fR
 for details on pattern replacement.
 .sp
 Default: (disabled)
+.IP
 
 .TP
 \fBRunTimeQuery\fR
@@ -59,6 +64,7 @@ Pattern for OCI runtime query operation (also known as state).  See the section
 \fBOCI Pattern\fR for details on pattern replacement.
 .sp
 Default: (disabled)
+.IP
 
 .TP
 \fBRunTimeRun\fR
@@ -70,6 +76,7 @@ resulting in less monitoring overhead. See the section \fBOCI Pattern\fR for
 details on pattern replacement.
 .sp
 Default: (disabled)
+.IP
 
 .TP
 \fBRunTimeStart\fR
@@ -77,6 +84,7 @@ Pattern for OCI runtime statrt operation.  See the section \fBOCI Pattern\fR
 for details on pattern replacement.
 .sp
 Default: (disabled)
+.IP
 
 .SH "NOTES"
 .LP
@@ -86,29 +94,60 @@ user passing \fB\-\-container\fR will be doing so in a purely advisor manner.
 .SH "OCI Pattern"
 
 All of the OCI patterns will replace the following characters:
-.sp
-replacements:
-.IP \(bu 10
-%% \- replace as "%"
-.IP \(bu
-%@ \- replace as the command and arguments. Each argument will be
-     enclosed with single quotes and escaped.
-.IP \(bu
-%b \- replace as OCI Bundle Path
-.IP \(bu
-%e \- replace as path to file containing environment if \fBCreateEnvFile=true\fR.
-.IP \(bu
-%j \- replace as numeric job id
-.IP \(bu
-%n \- replace as nodename
-.IP \(bu
-%r \- replace as original path to rootfs
-.IP \(bu
-%s \- replace as numeric step id
-.IP \(bu
-%t \- replace as numeric step task id
-.IP \(bu
-%u \- replace as user name
+.LP
+\fBReplacements\fR:
+
+.TP
+\fB%%\fR
+Replace as "%".
+.IP
+
+.TP
+\fB%@\fR
+Replace as the command and arguments. Each argument will be
+enclosed with single quotes and escaped.
+.IP
+
+.TP
+\fB%b\fR
+Replace as OCI Bundle Path.
+.IP
+
+.TP
+\fB%e\fR
+Replace as path to file containing environment if
+\fBCreateEnvFile=true\fR.
+.IP
+
+.TP
+\fB%j\fR
+Replace as numeric job id.
+.IP
+
+.TP
+\fB%n\fR
+Replace as nodename.
+.IP
+
+.TP
+\fB%r\fR
+Replace as original path to rootfs.
+.IP
+
+.TP
+\fB%s\fR
+Replace as numeric step id.
+.IP
+
+.TP
+\fB%t\fR
+Replace as numeric step task id.
+.IP
+
+.TP
+\fB%u\fR
+Replace as user name.
+.IP
 
 .SH "COPYING"
 Copyright (C) 2021 SchedMD LLC.

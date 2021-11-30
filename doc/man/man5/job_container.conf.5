@@ -43,6 +43,7 @@ the directory is created with permission 0755. Directory is not deleted during
 slurm shutdown. If set to 'false' or not specified, plugin would expect
 directory to exist. This option can be used on a global or per\-line basis.
 This parameter is optional.
+.IP
 
 .TP
 \fBBasePath\fR
@@ -55,6 +56,7 @@ and remains mounted until shutdown.
 \fBNOTE\fR: The \fBBasePath\fR parameter should not be configured to use
 /tmp or /dev/shm. Using these directories will cause conflicts when trying
 to mount and unmount the private directories for the job.
+.IP
 
 .TP
 \fBInitScript\fR
@@ -63,6 +65,7 @@ script is run before the namespace construction of a job. It can be used to
 make the job join additional namespaces prior to the construction of /tmp
 namespace or it can be used for any site\-specific setup. This parameter is
 optional.
+.IP
 
 .TP
 \fBNodeName\fR
@@ -71,11 +74,12 @@ file to be used for all compute nodes in a cluster by specifying the node(s)
 that each line should apply to.
 The NodeName specification can use a Slurm hostlist specification as shown in
 the example below. This parameter is optional.
+.IP
 
 .SH "EXAMPLE"
 .TP
 \fB/etc/slurm/job_container.conf\fR:
-
+.IP
 .nf
 ###
 # Sample job_container.conf file 1
@@ -95,13 +99,13 @@ NodeName=gpu[1\-10] BasePath=/var/nvme/storage InitScript=/etc/slurm/init.sh
 ###
 AutoBasePath=true
 BasePath=/var/nvme/storage
-
 .fi
+
 .TP
 \fB/etc/slurm/slurm.conf\fR:
 These are the entries required in \fBslurm.conf\fR to activate the
 job_container/tmpfs plugin.
-
+.IP
 .nf
 ###
 # Slurm configuration need to use job_container/tmpfs plugin

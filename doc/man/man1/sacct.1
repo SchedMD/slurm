@@ -65,6 +65,7 @@ argument.
 \fB\-L\fR, \fB\-\-allclusters\fR
 Display jobs ran on all clusters. By default, only jobs ran on the
 cluster from where \fBsacct\fR is called are displayed.
+.IP
 
 .TP
 \fB\-X\fR, \fB\-\-allocations\fR
@@ -73,6 +74,7 @@ into consideration.
 
 \fBNOTE\fR: Without including steps, utilization statistics for job
 allocation(s) will be reported as zero.
+.IP
 
 .TP
 \fB\-a\fR, \fB\-\-allusers\fR
@@ -87,6 +89,7 @@ Displays the statistics only for the jobs running under the
 association ids specified by the \fBassoc_list\fR operand, which is a
 comma\-separated list of association ids.  Space characters are not
 allowed in the \fBassoc_list\fR. Default is all associations\&.
+.IP
 
 .TP
 \fB\-B\fR, \fB\-\-batch\-script\fR
@@ -113,6 +116,7 @@ A value of '\fIall\fR' will query to run on all clusters.
 The default is current cluster you are executing the \fBsacct\fR command on or
 all clusters in the federation when executed on a federated cluster.
 This option implicitly sets the \fB\-\-local\fR option.
+.IP
 
 .TP
 \fB\-c\fR, \fB\-\-completion\fR
@@ -126,6 +130,7 @@ Does not support federated cluster information (local data only).
 Comma separated list to filter jobs based on what constraints/features the job
 requested.  Multiple options will be treated as 'and' not 'or', so the job would
 need all constraints specified to be returned not one or the other.
+.IP
 
 .TP
 \fB\-\-delimiter\fR=<\fIcharacters\fR>
@@ -133,6 +138,7 @@ ASCII characters used to separate the fields when specifying
 the \fB\-p\fR or \fB\-P\fR options. The default delimiter
 is a '|'. This option is ignored if \fB\-p\fR or \fB\-P\fR options
 are not specified.
+.IP
 
 .TP
 \fB\-D\fR, \fB\-\-duplicates\fR
@@ -140,20 +146,20 @@ If Slurm job ids are reset, some job numbers will probably appear more
 than once in the accounting log file but refer to different jobs.
 Such jobs can be distinguished by the "submit" time stamp in the data
 records.
-
 .IP
+
 When data for specific jobs are requested with the \-\-jobs option,
 \fBsacct\fR returns the most recent job with that number. This
 behavior can be overridden by specifying \-\-duplicates, in which case
 all records that match the selection criteria will be returned.
-
 .IP
+
 \fBNOTE\fR: Revoked federated sibling jobs are hidden unless the
 \fB\-\-duplicates\fR option is specified.
+.IP
 
 .TP
 \fB\-E\fR, \fB\-\-endtime\fR=<\fIend_time\fR>
-.IP
 Select jobs in any state before the specified time.  If states are
 given with the \-s option return jobs in this state before this period.
 See the \fBDEFAULT TIME WINDOW\fR for more details.
@@ -188,18 +194,21 @@ is output.
 .TP
 \fB\-\-federation\fR
 Show jobs from the federation if a member of one.
+.IP
 
 .TP
 \fB\-f\fR, \fB\-\-file\fR=<\fIfile\fR>
 Causes the \f3sacct\fP command to read job accounting data from the
 named \f2file\fP instead of the current Slurm job accounting log
 file. Only applicable when running the jobcomp/filetxt plugin.
+.IP
 
 .TP
 \fB\-F\fR, \fB\-\-flags\fR=<\fIflag_list\fR>
 Comma separated list to filter jobs based on what various ways the jobs were
 handled.  Current flags are SchedSubmit, SchedMain, SchedBackfill.  These
 particular options describe the scheduler that started the job.
+.IP
 
 .TP
 \fB\-o\fR, \fB\-\-format\fR
@@ -216,6 +225,7 @@ When set, the SACCT_FORMAT environment variable will override the
 default format.  For example:
 
 SACCT_FORMAT="jobid,user,account,cluster"
+.IP
 
 .TP
 \fB\-g\fR, \fB\-\-gid\fR=, \fB\-\-group\fR=<\fIgid_or_group_list\fR>
@@ -223,17 +233,18 @@ Displays the statistics only for the jobs started with the GID
 or the GROUP specified by the \fIgid_list\fR or the \fIgroup_list\fR operand,
 which is a comma\-separated list.  Space characters are not allowed.
 Default is no restrictions.
+.IP
 
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Displays a general help message.
+.IP
 
 .TP
 \fB\-e\fR, \fB\-\-helpformat\fR
-.IP
 Print a list of fields that can be specified with the \fB\-\-format\fR option.
-
 .IP
+
 .RS
 .PP
 .nf
@@ -271,30 +282,30 @@ WorkDir
 .ft 1
 .fi
 .RE
-.IP
 
 \fBNOTE\fR: When using with Ave[RSS|VM]Size or their values in
 TRESUsageIn[Ave|Tot].  They represent the average/total of the highest
 watermarks over all ranks in the step.  When using sstat they represent the
 average/total at the moment the command was run.
-.IP
+
 \fBNOTE\fR: TRESUsage*Min* values represent the lowest highwater mark in the
 step.
-.IP
+
 The section titled "Job Accounting Fields" describes these fields.
+.IP
 
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR=<\fIjob\fR[.\fIstep\fR]>
 Displays information about the specified \fIjob\fR[.\fIstep\fR] or list of
 \fIjob\fR[.\fIstep\fR]s.
-.IP
+
 The \fIjob\fR[.\fIstep\fR]
 parameter is a comma\-separated list of jobs.
 Space characters are not permitted in this list.
 .br
 \fBNOTE\fR: A step id of 'batch' will display the information about the
 batch step.
-.IP
+.br
 By default sacct shows only jobs with Eligible time, but with this
 option the non\-eligible will be also shown.
 .br
@@ -302,20 +313,23 @@ option the non\-eligible will be also shown.
 then non\-eligible jobs will not be displayed.
 See the \fBDEFAULT TIME WINDOW\fR for details about how this option
 changes the default \-S and \-E options.
+.IP
 
 .TP
 \fB\-\-json\fR
 Dump job information as JSON. All other formating arugments will be ignored.
+.IP
 
 .TP
 \fB\-\-local\fR
 Show only jobs local to this cluster. Ignore other clusters in this federation
 (if any). Overrides \-\-federation.
+.IP
 
 .TP
 \fB\-l\fR, \fB\-\-long\fR
 Equivalent to specifying:
-.IP
+
 .na
 \-\-format=jobid,jodidraw,jobname,partition,maxvmsize,maxvmsizenode,
 maxvmsizetask,avevmsize,maxrss,maxrssnode,maxrsstask,averss,maxpages,
@@ -328,6 +342,7 @@ tresusageinmaxn,tresusageinmaxt,tresusageinmin,tresusageinminn,tresusageinmint,
 tresusageintot,tresusageoutmax,tresusageoutmaxn,
 tresusageoutmaxt,tresusageoutave,tresusageouttot
 .ad
+.IP
 
 .TP
 \fB\-\-name\fR=<\fIjobname_list\fR>
@@ -337,6 +352,7 @@ Display jobs that have any of these name(s).
 .TP
 \fB\-i\fR, \fB\-\-nnodes\fR=<\fImin\fR[-\fImax\fR]>
 Return jobs that ran on the specified number of nodes.
+.IP
 
 .TP
 \fB\-\-noconvert\fR
@@ -360,25 +376,30 @@ display a header.
 \fB\-p\fR, \fB\-\-parsable\fR
 Output will be '|' delimited with a '|' at the end. See also the
 \fB\-\-delimiter\fR option.
+.IP
 
 .TP
 \fB\-P\fR, \fB\-\-parsable2\fR
 Output will be '|' delimited without a '|' at the end. See also the
 \fB\-\-delimiter\fR option.
+.IP
 
 .TP
 \fB\-r\fR, \fB\-\-partition\fR
 Comma separated list of partitions to select jobs and job steps
 from. The default is all partitions.
+.IP
 
 .TP
 \fB\-q\fR, \fB\-\-qos\fR
 Only send data about jobs using these qos.  Default is all.
+.IP
 
 .TP
 \fB\-R\fR, \fB\-\-reason\fR=<\fIreason_list\fR>
 Comma separated list to filter jobs based on what reason the job wasn't
 scheduled outside resources/priority.
+.IP
 
 .TP
 \fB\-S\fR, \fB\-\-starttime\fR
@@ -405,6 +426,7 @@ YYYY\-MM\-DD[THH:MM[:SS]]
 today, midnight, noon, fika (3 PM), teatime (4 PM)
 .br
 now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.IP
 
 .TP
 \fB\-s\fR, \fB\-\-state\fR=<\fIstate_list\fR>
@@ -429,36 +451,43 @@ they are pending indefinitely.
 start time is 'now'.  This is only when \-j is not used.  If \-j is used the
 start time will default to 'Epoch'.  In both cases if no end time is given it
 will default to 'now'. See the \fBDEFAULT TIME WINDOW\fR for more details.
+.IP
 
 .TP
 \fB\-K\fR, \fB\-\-timelimit\-max\fR
 Ignored by itself, but if timelimit_min is set this will be the
 maximum timelimit of the range.  Default is no restriction.
+.IP
 
 .TP
 \fB\-k\fR, \fB\-\-timelimit\-min\fR
 Only send data about jobs with this timelimit.  If used with
 timelimit_max this will be the minimum timelimit of the range.
 Default is no restriction.
+.IP
 
 .TP
 \fB\-T\fR, \fB\-\-truncate\fR
 Truncate time.  So if a job started before \-\-starttime the start time
 would be truncated to \-\-starttime.  The same for end time and \-\-endtime.
+.IP
 
 .TP
 \fB\-u\fB, \fB\-\-uid\fR=, \fB\-\-user\fR=<\fIuid_or_user_list\fR>
 Use this comma separated list of UIDs or user names to select jobs to
 display.  By default, the running user's UID is used.
+.IP
 
 .TP
 \fB\-\-units\fR=[\fBKMGTP\fR]
 Display values in specified unit type. Takes precedence over \fB\-\-noconvert\fR
 option.
+.IP
 
 .TP
 \fB\-\-usage\fR
 Display a command usage summary.
+.IP
 
 .TP
 \fB\-\-use\-local\-uid\fR
@@ -466,15 +495,18 @@ When displaying UID, sacct uses the UID stored in Slurm's accounting database
 by default. Use this command to make Slurm use a system call to get the UID
 from the username. This option may be useful in an environment with multiple
 clusters and one database where the UID's aren't the same on all clusters.
+.IP
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Primarily for debugging purposes, report the state of various
 variables during processing.
+.IP
 
 .TP
 \fB\-V\fB, \fB\-\-version\fR
 Print version.
+.IP
 
 .TP
 \fB\-W\fR, \fB\-\-wckeys\fR=<\fIwckey_list\fR>
@@ -482,6 +514,7 @@ Displays the statistics only for the jobs started on the wckeys
 specified by the \f2wckey_list\fP operand, which is a comma\-separated
 list of wckey names.  Space characters are not allowed in the
 \f2wckey_list\fP. Default is all wckeys\&.
+.IP
 
 .TP
 \fB\-\-whole\-hetjob\fR[=yes|no]
@@ -494,10 +527,12 @@ information about all the components will be retrieved no matter which component
 is selected in the job filter. If set to 'no' then only the selected
 heterogeneous job component(s) will be retrieved, even when selecting the
 leader.
+.IP
 
 .TP
 \fB\-\-yaml\fR
 Dump job information as YAML. All other formating arugments will be ignored.
+.IP
 
 .SS "Job Accounting Fields"
 The following describes each job accounting field:
@@ -505,14 +540,17 @@ The following describes each job accounting field:
 .TP "10"
 \f3ALL\fP
 Print all fields listed below.
+.IP
 
 .TP
 \f3AllocCPUs\fP
 Count of allocated CPUs. Equivalent to \f3NCPUS\fP.
+.IP
 
 .TP
 \f3AllocNodes\fP
 Number of nodes allocated to the job/step.  0 if the job is pending.
+.IP
 
 .TP
 \f3AllocTres\fP
@@ -522,46 +560,57 @@ For more details see AccountingStorageTRES in slurm.conf.
 
 NOTE: When a generic resource is configured with the no_consume flag,
 the allocation will be printed with a zero.
+.IP
 
 .TP
 \f3Account\fP
 Account the job ran under.
+.IP
 
 .TP
 \f3AssocID\fP
 Reference to the association of user, account and cluster.
+.IP
 
 .TP
 \f3AveCPU\fP
 Average (system + user) CPU time of all tasks in job.
+.IP
 
 .TP
 \f3AveCPUFreq\fP
 Average weighted CPU frequency of all tasks in job, in kHz.
+.IP
 
 .TP
 \f3AveDiskRead\fP
 Average number of bytes read by all tasks in job.
+.IP
 
 .TP
 \f3AveDiskWrite\fP
 Average number of bytes written by all tasks in job.
+.IP
 
 .TP
 \f3AvePages\fP
 Average number of page faults of all tasks in job.
+.IP
 
 .TP
 \f3AveRSS\fP
 Average resident set size of all tasks in job.
+.IP
 
 .TP
 \f3AveVMSize\fP
 Average Virtual Memory size of all tasks in job.
+.IP
 
 .TP
 \f3Cluster\fP
 Cluster name.
+.IP
 
 .TP
 \f3Comment\fP
@@ -569,24 +618,29 @@ The job's comment string when the AccountingStoreFlags parameter
 in the slurm.conf file contains 'job_comment'.  The Comment
 string can be modified by invoking \f3sacctmgr modify job\fP or the
 specialized \f3sjobexitmod\fP command.
+.IP
 
 .TP
 \f3ConsumedEnergy\fP
 Total energy consumed by all tasks in job, in joules.
 Note: Only in case of exclusive job allocation this value
 reflects the jobs' real energy consumption.
+.IP
 
 .TP
 \f3Container\fP
 Path to OCI Container Bundle requested.
+.IP
 
 .TP
 \f3CPUTime\fP
 Time used (Elapsed time * CPU count) by a job or step in HH:MM:SS format.
+.IP
 
 .TP
 \f3CPUTimeRAW\fP
 Time used (Elapsed time * CPU count) by a job or step in cpu\-seconds.
+.IP
 
 .TP
 \f3DerivedExitCode\fP
@@ -595,12 +649,14 @@ invocations).  Following the colon is the signal that caused the
 process to terminate if it was terminated by a signal.  The
 DerivedExitCode can be modified by invoking \f3sacctmgr modify job\fP
 or the specialized \f3sjobexitmod\fP command.
+.IP
 
 .TP
 \f3Elapsed\fP
 The job's elapsed time.
-.IP
+
 The format of this field's output is as follows:
+.IP
 .RS
 .PD "0"
 .HP
@@ -613,65 +669,83 @@ as defined by the following:
 .TP "10"
 \f2DD\fP
 days
+.IP
+
 .TP
 \f2hh\fP
 hours
+.IP
+
 .TP
 \f2mm\fP
 minutes
+.IP
+
 .TP
 \f2ss\fP
 seconds
 .RE
+.IP
 
 .TP
 \f3Eligible\fP
 When the job became eligible to run in the same format as \f3End\fP.
+.IP
 
 .TP
 \f3End\fP
 Termination time of the job. Format output is, YYYY\-MM\-DDTHH:MM:SS, unless
 changed through the SLURM_TIME_FORMAT environment variable.
+.IP
 
 .TP
 \f3ExitCode\fP
 The exit code returned by the job script or salloc, typically as set
 by the exit() function.  Following the colon is the signal that caused
 the process to terminate if it was terminated by a signal.
+.IP
 
 .TP
 \f3GID\fP
 The group identifier of the user who ran the job.
+.IP
 
 .TP
 \f3Group\fP
 The group name of the user who ran the job.
+.IP
 
 .TP
 \f3JobID\fP
 The identification number of the job or job step.
 .IP
+
 Regular jobs are in the form:
 .IP
+
 \f2JobID[.JobStep]\fP
-.IP
+
 Array jobs are in the form:
 .IP
+
 \f2ArrayJobID_ArrayTaskID\fP
-.IP
+
 Heterogeneous jobs are in the form:
 .IP
+
 \f2HetJobID+HetJobOffset\fP
 
 When printing job arrays, performance of the command can be measurably improved
 for systems with large numbers of jobs when a single job ID is specified. By
 default, this field size will be limited to 64 bytes. Use the environment
 variable SLURM_BITSTR_LEN to specify larger field sizes.
+.IP
 
 .TP
 \f3JobIDRaw\fP
 The identification number of the job or job step.  Prints the JobID in the
 form \f2JobID[.JobStep]\fP for regular, heterogeneous and array jobs.
+.IP
 
 .TP
 \f3JobName\fP
@@ -681,184 +755,226 @@ jobname an underscore is substituted for the space before the record
 is written to the accounting file. So when the jobname is displayed
 by \f3sacct\fP the jobname that had a space in it will now have an underscore
 in place of the space.
+.IP
 
 .TP
 \f3Layout\fP
 What the layout of a step was when it was running.  This can be used
 to give you an idea of which node ran which rank in your job.
+.IP
 
 .TP
 \f3MaxDiskRead\fP
 Maximum number of bytes read by all tasks in job.
+.IP
 
 .TP
 \f3MaxDiskReadNode\fP
 The node on which the maxdiskread occurred.
+.IP
 
 .TP
 \f3MaxDiskReadTask\fP
 The task ID where the maxdiskread occurred.
+.IP
 
 .TP
 \f3MaxDiskWrite\fP
 Maximum number of bytes written by all tasks in job.
+.IP
 
 .TP
 \f3MaxDiskWriteNode\fP
 The node on which the maxdiskwrite occurred.
+.IP
 
 .TP
 \f3MaxDiskWriteTask\fP
 The task ID where the maxdiskwrite occurred.
+.IP
 
 .TP
 \f3MaxPages\fP
 Maximum number of page faults of all tasks in job.
+.IP
 
 .TP
 \f3MaxPagesNode\fP
 The node on which the maxpages occurred.
+.IP
 
 .TP
 \f3MaxPagesTask\fP
 The task ID where the maxpages occurred.
+.IP
 
 .TP
 \f3MaxRSS\fP
 Maximum resident set size of all tasks in job.
+.IP
 
 .TP
 \f3MaxRSSNode\fP
 The node on which the maxrss occurred.
+.IP
 
 .TP
 \f3MaxRSSTask\fP
 The task ID where the maxrss occurred.
+.IP
 
 .TP
 \f3MaxVMSize\fP
 Maximum Virtual Memory size of all tasks in job.
+.IP
 
 .TP
 \f3MaxVMSizeNode\fP
 The node on which the maxvmsize occurred.
+.IP
 
 .TP
 \f3MaxVMSizeTask\fP
 The task ID where the maxvmsize occurred.
+.IP
 
 .TP
 \f3MinCPU\fP
 Minimum (system + user) CPU time of all tasks in job.
+.IP
 
 .TP
 \f3MinCPUNode\fP
 The node on which the mincpu occurred.
+.IP
 
 .TP
 \f3MinCPUTask\fP
 The task ID where the mincpu occurred.
+.IP
 
 .TP
 \f3NCPUS\fP
 Total number of CPUs allocated to the job.  Equivalent to \f3AllocCPUS\fP.
+.IP
 
 .TP
 \f3NodeList\fP
 List of nodes in job/step.
+.IP
 
 .TP
 \f3NNodes\fP
 Number of nodes in a job or step.  If the job is running, or ran, this count
 will be the number allocated, else the number will be the number requested.
+.IP
 
 .TP
 \f3NTasks\fP
 Total number of tasks in a job or step.
+.IP
 
 .TP
 \f3Priority\fP
 Slurm priority.
+.IP
 
 .TP
 \f3Partition\fP
 Identifies the partition on which the job ran.
+.IP
 
 .TP
 \f3QOS\fP
 Name of Quality of Service.
+.IP
 
 .TP
 \f3QOSRAW\fP
 Numeric id of Quality of Service.
+.IP
 
 .TP
 \f3ReqCPUFreq\fP
 Requested CPU frequency for the step, in kHz.
 Note: This value applies only to a job step. No value is reported for the job.
+.IP
 
 .TP
 \f3ReqCPUFreqGov\fP
 Requested CPU frequency governor for the step, in kHz.
 Note: This value applies only to a job step. No value is reported for the job.
+.IP
 
 .TP
 \f3ReqCPUFreqMax\fP
 Maximum requested CPU frequency for the step, in kHz.
 Note: This value applies only to a job step. No value is reported for the job.
+.IP
 
 .TP
 \f3ReqCPUFreqMin\fP
 Minimum requested CPU frequency for the step, in kHz.
 Note: This value applies only to a job step. No value is reported for the job.
+.IP
 
 .TP
 \f3ReqCPUS\fP
 Number of requested CPUs.
+.IP
 
 .TP
 \f3ReqMem\fP
 Minimum required memory for the job. It may have a letter appended to it
 indicating units (M for megabytes, G for gigabytes, etc.).
 Note: This value is only from the job allocation, not the step.
+.IP
 
 .TP
 \f3ReqNodes\fP
 Requested minimum Node count for the job/step.
+.IP
 
 .TP
 \f3ReqTres\fP
 Trackable resources. These are the minimum resource counts requested by the
 job/step at submission time.
 For more details see AccountingStorageTRES in slurm.conf.
+.IP
 
 .TP
 \f3Reservation\fP
 Reservation Name.
+.IP
 
 .TP
 \f3ReservationId\fP
 Reservation Id.
+.IP
 
 .TP
 \f3Reserved\fP
 How much wall clock time was used as reserved time for this job.  This is
 derived from how long a job was waiting from eligible time to when it
 actually started.  Format is the same as \f3Elapsed\fP.
+.IP
 
 .TP
 \f3ResvCPU\fP
 How many CPU seconds were used as reserved time for this job.  Format is
 the same as \f3Elapsed\fP.
+.IP
 
 .TP
 \f3ResvCPURAW\fP
 How many CPU seconds were used as reserved time for this job.  Format is
 in processor seconds.
+.IP
 
 .TP
 \f3Start\fP
 Initiation time of the job in the same format as \f3End\fP.
+.IP
 
 .TP
 \f3State\fP
@@ -878,6 +994,7 @@ NOTE: The RUNNING state will return any jobs completed (cancelled or otherwise)
 in the time period requested as the job was also RUNNING during that time.  If
 you are only looking for jobs that finished, please choose the appropriate
 state(s) without the RUNNING state.
+.IP
 
 .TP
 \f3Submit\fP
@@ -886,15 +1003,18 @@ The time the job was submitted in the same format as \f3End\fP.
 NOTE: If a job is requeued, the submit time is reset.  To obtain the
 original submit time it is necessary to use the \-D or \-\-duplicate option
 to display all duplicate entries for a job.
+.IP
 
 .TP
 \f3SubmitLine\fP
 The full command issued to submit the job.
+.IP
 
 .TP
 \f3Suspended\fP
 The amount of time a job or job step was suspended. Format is the same
 as \f2Elapsed\fP.
+.IP
 
 .TP
 \f3SystemCPU\fP
@@ -903,14 +1023,17 @@ is the same as \f3Elapsed\fP.
 
 NOTE: SystemCPU provides a measure of the task's parent process and
 does not include CPU time of child processes.
+.IP
 
 .TP
 \f3Timelimit\fP
 What the timelimit was/is for the job. Format is the same as \f3Elapsed\fP.
+.IP
 
 .TP
 \f3TimelimitRaw\fP
 What the timelimit was/is for the job. Format is in number of minutes.
+.IP
 
 .TP
 \f3TotalCPU\fP
@@ -920,76 +1043,92 @@ jobs that include multiple job steps. Format is the same as \f3Elapsed\fP.
 
 NOTE: TotalCPU provides a measure of the task's parent process and
 does not include CPU time of child processes.
+.IP
 
 .TP
 \f3TresUsageInAve\fP
 Tres average usage in by all tasks in job.
 NOTE: If corresponding TresUsageInMaxTask is \-1 the metric is node centric
 instead of task.
+.IP
 
 .TP
 \f3TresUsageInMax\fP
 Tres maximum usage in by all tasks in job.
 NOTE: If corresponding TresUsageInMaxTask is \-1 the metric is node centric
 instead of task.
+.IP
 
 .TP
 \f3TresUsageInMaxNode\fP
 Node for which each maximum TRES usage out occurred.
+.IP
 
 .TP
 \f3TresUsageInMaxTask\fP
 Task for which each maximum TRES usage out occurred.
+.IP
 
 .TP
 \f3TresUsageInMin\fP
 Tres minimum usage in by all tasks in job.
 NOTE: If corresponding TresUsageInMinTask is \-1 the metric is node centric
 instead of task.
+.IP
 
 .TP
 \f3TresUsageInMinNode\fP
 Node for which each minimum TRES usage out occurred.
+.IP
 
 .TP
 \f3TresUsageInMinTask\fP
 Task for which each minimum TRES usage out occurred.
+.IP
 
 .TP
 \f3TresUsageInTot\fP
 Tres total usage in by all tasks in job.
+.IP
 
 .TP
 \f3TresUsageOutAve\fP
 Tres average usage out by all tasks in job.
 NOTE: If corresponding TresUsageOutMaxTask is \-1 the metric is node centric
 instead of task.
+.IP
 
 .TP
 \f3TresUsageOutMax\fP
 Tres maximum usage out by all tasks in job.
 NOTE: If corresponding TresUsageOutMaxTask is \-1 the metric is node centric
 instead of task.
+.IP
 
 .TP
 \f3TresUsageOutMaxNode\fP
 Node for which each maximum TRES usage out occurred.
+.IP
 
 .TP
 \f3TresUsageOutMaxTask\fP
 Task for which each maximum TRES usage out occurred.
+.IP
 
 .TP
 \f3TresUsageOutTot\fP
 Tres total usage out by all tasks in job.
+.IP
 
 .TP
 \f3UID\fP
 The user identifier of the user who ran the job.
+.IP
 
 .TP
 \f3User\fP
 The user name of the user who ran the job.
+.IP
 
 .TP
 \f3UserCPU\fP
@@ -998,14 +1137,17 @@ The amount of user CPU time used by the job or job step. Format is the same as
 
 NOTE: UserCPU provides a measure of the task's parent process and does
 not include CPU time of child processes.
+.IP
 
 .TP
 \f3WCKey\fP
 Workload  Characterization  Key.   Arbitrary  string for grouping orthogonal accounts together.
+.IP
 
 .TP
 \f3WCKeyID\fP
 Reference to the wckey.
+.IP
 
 
 .SH "JOB STATE CODES"
@@ -1014,50 +1156,79 @@ Reference to the wckey.
 \f3BF  BOOT_FAIL\fR
 Job terminated due to launch failure, typically due to a hardware failure
 (e.g. unable to boot the node or block and the job can not be requeued).
+.IP
+
 .TP
 \f3CA  CANCELLED\fP
 Job was explicitly cancelled by the user or system administrator.
 The job may or may not have been initiated.
+.IP
+
 .TP
 \f3CD  COMPLETED\fP
 Job has terminated all processes on all nodes with an exit code of zero.
+.IP
+
 .TP
 \f3DL  DEADLINE\fP
 Job terminated on deadline.
+.IP
+
 .TP
 \f3F   FAILED\fP
 Job terminated with non\-zero exit code or other failure condition.
+.IP
+
 .TP
 \f3NF  NODE_FAIL\fP
 Job terminated due to failure of one or more allocated nodes.
+.IP
+
 .TP
 \f3OOM OUT_OF_MEMORY\fP
 Job experienced out of memory error.
+.IP
+
 .TP
 \f3PD  PENDING\fP
 Job is awaiting resource allocation.
+.IP
+
 .TP
 \f3PR  PREEMPTED\fP
 Job terminated due to preemption.
+.IP
+
 .TP
 \f3R   RUNNING\fP
 Job currently has an allocation.
+.IP
+
 .TP
 \f3RQ  REQUEUED\fP
 Job was requeued.
+.IP
+
 .TP
 \f3RS  RESIZING\fP
 Job is about to change size.
+.IP
+
 .TP
 \f3RV  REVOKED\fP
 Sibling was removed from cluster due to other cluster starting the job.
+.IP
+
 .TP
 \f3S   SUSPENDED\fP
 Job has an allocation, but execution has been suspended and CPUs have been
 released for other jobs.
+.IP
+
 .TP
 \f3TO  TIMEOUT\fP
 Job terminated upon reaching its time limit.
+.IP
 
 .SH "DEFAULT TIME WINDOW"
 .PP
@@ -1069,32 +1240,30 @@ depends on other options: \-\-jobs and \-\-state.
 Depending on if \-\-jobs and/or \-\-state are specified, the default
 values of \fB\-\-starttime\fR  and \fB\-\-endtime\fR options are:
 
-.TP
-\f3WITHOUT EITHER \fB\-\-jobs\fR NOR \fB\-\-state\fR\fP specified:
+.LP
+WITHOUT EITHER \fB\-\-jobs\fR NOR \fB\-\-state\fR\fP specified:
+.br
 \fB\-\-starttime\fR defaults to Midnight.
 .br
 \fB\-\-endtime\fR defaults to Now.
-.br
-.br
 
-.TP
-\f3WITH \fB\-\-jobs\fR AND WITHOUT \fB\-\-state\fR\fP specified:
+.LP
+WITH \fB\-\-jobs\fR AND WITHOUT \fB\-\-state\fR\fP specified:
+.br
 \fB\-\-starttime\fR defaults to Epoch 0.
 .br
 \fB\-\-endtime\fR defaults to Now.
-.br
-.br
 
-.TP
-\f3WITHOUT \fB\-\-jobs\fR AND WITH \fB\-\-state\fR\fP specified:
+.LP
+WITHOUT \fB\-\-jobs\fR AND WITH \fB\-\-state\fR\fP specified:
+.br
 \fB\-\-starttime\fR defaults to Now.
 .br
 \fB\-\-endtime\fR defaults to \-\-starttime and to Now if \-\-starttime is not specified.
-.br
-.br
 
-.TP
-\f3WITH BOTH \fB\-\-jobs\fR AND \fB\-\-state\fR\fP specified:
+.LP
+WITH BOTH \fB\-\-jobs\fR AND \fB\-\-state\fR\fP specified:
+.br
 \fB\-\-starttime\fR defaults to Epoch 0.
 .br
 \fB\-\-endtime\fR defaults to \-\-starttime or to Now if \-\-starttime is not specified.
@@ -1122,12 +1291,16 @@ Some \fBsacct\fR options may
 be set via environment variables. These environment variables,
 along with their corresponding options, are listed below. (Note:
 Command line options will always override these settings.)
+
 .TP 20
 \fBSACCT_FEDERATION\fR
 Same as \fB\-\-federation\fR
+.IP
+
 .TP
 \fBSACCT_LOCAL\fR
 Same as \fB\-\-local\fR
+.IP
 
 .TP
 \fBSLURM_BITSTR_LEN\fR
@@ -1135,10 +1308,13 @@ Specifies the string length to be used for holding a job array's task ID
 expression. The default value is 64 bytes. A value of 0 will print the full
 expression with any length required. Larger values may adversely impact the
 application performance.
+.IP
 
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
+
 .TP
 \fBSLURM_TIME_FORMAT\fR
 Specify the format used to report time stamps. A value of \fIstandard\fR, the
@@ -1152,6 +1328,7 @@ For other years it returns a date month and year without a time (e.g.
 
 A valid strftime() format can also be specified. For example, a value of
 "%a %T" will report the day of the week and a time stamp (e.g. "Mon 12:34:56").
+.IP
 
 .SH "EXAMPLES"
 This example illustrates the default invocation of the \f3sacct\fP
@@ -1311,6 +1488,7 @@ State shows as COMPLETED because that is the current State of the job.
 .ft 1
 .fi
 .RE
+
 .SH "COPYING"
 Copyright (C) 2005\-2007 Copyright Hewlett\-Packard Development Company L.P.
 .br
@@ -1331,15 +1509,19 @@ Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
+
 .SH "FILES"
 .TP "10"
 \f3/etc/slurm.conf\fP
 Entries to this file enable job accounting and
 designate the job accounting log file that collects system job accounting.
+.IP
+
 .TP
 \f3/var/log/slurm_accounting.log\fP
 The default job accounting log file.
 By default, this file is set to read and write permission for root only.
+
 .SH "SEE ALSO"
 \fBsstat\fR(1), \fBps\fR (1), \fBsrun\fR(1), \fBsqueue\fR(1),
 \fBgetrusage\fR (2), \fBtime\fR (2)
