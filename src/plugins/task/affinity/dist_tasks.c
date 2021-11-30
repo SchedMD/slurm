@@ -275,7 +275,8 @@ void batch_bind(batch_job_launch_msg_t *req)
 	slurm_cred_free_args(&arg);
 }
 
-static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask)
+static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
+			 char **err_msg)
 {
 	char *tmp_map, *save_ptr = NULL, *tok;
 	cpu_set_t avail_cpus;
@@ -310,7 +311,8 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask)
 	return rc;
 }
 
-static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
+static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
+			  char **err_msg)
 {
 	char *new_mask = NULL, *save_ptr = NULL, *tok;
 	cpu_set_t avail_cpus, task_cpus;
@@ -376,8 +378,10 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
  *
  * IN/OUT req - job launch request (cpu_bind_type and cpu_bind updated)
  * IN node_id - global task id array
+ * OUT err_msg - optional string to pass out error message.
  */
-extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
+extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
+			     char **err_msg)
 {
 	int rc = SLURM_SUCCESS;
 	bitstr_t **masks = NULL;
@@ -437,9 +441,11 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		} else {
 			if (req->job_core_spec == NO_VAL16) {
 				if (req->cpu_bind_type & CPU_BIND_MASK)
-					rc = _validate_mask(req, avail_mask);
+					rc = _validate_mask(req, avail_mask,
+							    err_msg);
 				else if (req->cpu_bind_type & CPU_BIND_MAP)
-					rc = _validate_map(req, avail_mask);
+					rc = _validate_map(req, avail_mask,
+							   err_msg);
 			}
 			xfree(avail_mask);
 		}

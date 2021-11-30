@@ -130,7 +130,7 @@ extern int task_p_slurmd_batch_request(batch_job_launch_msg_t *req)
 }
 
 extern int task_p_slurmd_launch_request(launch_tasks_request_msg_t *req,
-					uint32_t node_id)
+					uint32_t node_id, char **err_msg)
 {
 	return SLURM_SUCCESS;
 }

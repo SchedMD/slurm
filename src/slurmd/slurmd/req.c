@@ -1472,9 +1472,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 	/* Must follow _check_job_credential(), which sets some req fields */
-	if ((errnum = task_g_slurmd_launch_request(req, node_id))) {
-		xstrfmtcat(errmsg, "Failed to apply binding on %s, slurmd log may contain more details",
-			   conf->node_name);
+	if ((errnum = task_g_slurmd_launch_request(req, node_id, &errmsg))) {
 		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
 	}

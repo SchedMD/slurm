@@ -81,7 +81,7 @@ extern int task_g_slurmd_batch_request(batch_job_launch_msg_t *req);
  * RET - slurm error code
  */
 extern int task_g_slurmd_launch_request(launch_tasks_request_msg_t *req,
-					uint32_t node_id);
+					uint32_t node_id, char **err_msg);
 
 /*
  * Slurmd is suspending a job.

@@ -122,7 +122,7 @@ extern int task_p_slurmd_batch_request (batch_job_launch_msg_t *req)
  * task_p_slurmd_launch_request()
  */
 extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
-					 uint32_t node_id)
+					 uint32_t node_id, char **err_msg)
 {
 	char buf_type[100];
 	bool have_debug_flag = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
@@ -134,7 +134,7 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 			 buf_type, req->cpu_bind);
 	}
 
-	rc = lllp_distribution(req, node_id);
+	rc = lllp_distribution(req, node_id, err_msg);
 
 	if (have_debug_flag) {
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);

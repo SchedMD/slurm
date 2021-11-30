@@ -45,3 +45,5 @@ COMMAND CHANGES (see man pages for details)
 API CHANGES
 ===========
  -- openapi/v0.0.35 - Plugin has been removed.
+ -- task/slurmd_launch_request() now takes an optional error message
+    string to pass out error messages.
