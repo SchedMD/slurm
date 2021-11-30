@@ -47,7 +47,7 @@ proc cleanup {} {
 # 3: debug2   (-vvv)
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -vv -N1 -t1 $bin_id]
+spawn $salloc -vv -N1 -t1 $bin_id
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

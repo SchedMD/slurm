@@ -38,12 +38,12 @@ if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 }
 
 proc sbatch {} {
-	global number sbatch file_in bin_sleep
+	global number sbatch file_in
 
 	set matches 0
 	set job_id 0
 
-	set sbatch_pid [spawn $sbatch -t1 -o /dev/null $file_in]
+	spawn $sbatch -t1 -o /dev/null $file_in
 	expect {
 		-re "Batch job submission failed" {
 			skip "Unable to execute test due to system configuration"
@@ -53,7 +53,6 @@ proc sbatch {} {
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			fail "sbatch not responding"
 		}
 		eof {

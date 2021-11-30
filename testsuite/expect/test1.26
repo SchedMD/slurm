@@ -90,15 +90,14 @@ set successes 0
 for {set inx 0} {$inx < $iterations} {incr inx} {
 	exec $bin_sleep 0.25
 
-	set failures 0
-	set srun_pid [spawn $srun -N1 --nodelist=$nodelist_name -t1 -l $bin_printenv SLURMD_NODENAME]
-	set   alloc $spawn_id
+	spawn $srun -N1 --nodelist=$nodelist_name -t1 -l $bin_printenv SLURMD_NODENAME
+	set alloc $spawn_id
 
-	set srun_pid1 [spawn $srun -N1 --nodelist=$include_node -t1 -Z $bin_sleep 0.5]
-	set   noalloc1 $spawn_id
+	spawn $srun -N1 --nodelist=$include_node -t1 -Z $bin_sleep 0.5
+	set noalloc1 $spawn_id
 
-	set srun_pid2 [spawn $srun -N1 --nodelist=$include_node -t1 -Z $bin_sleep 0.25]
-	set   noalloc2 $spawn_id
+	spawn $srun -N1 --nodelist=$include_node -t1 -Z $bin_sleep 0.25
+	set noalloc2 $spawn_id
 
 	set timeout 20
 	set spawn_id $noalloc2
@@ -109,14 +108,10 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 			exp_continue
 		}
 		-re "error:" {
-			log_error "Some error happened"
-			set failures 1
-			exp_continue
+			fail "Some error happened"
 		}
 		timeout {
-			log_error "srun not responding"
-			slow_kill $srun_pid2
-			set failures 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -131,14 +126,10 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 			exp_continue
 		}
 		-re "error:" {
-			log_error "Some error happened"
-			set failures 1
-			exp_continue
+			fail "Some error happened"
 		}
 		timeout {
-			log_error "srun not responding"
-			slow_kill $srun_pid1
-			set failures 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -150,35 +141,27 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 	expect {
 		-i $alloc
 		-re "Invalid node name specified" {
-			log_error "Some error happened"
-			set failures 1
-			exp_continue
+			fail "Invalid node name specified"
 		}
 		-re "error:.*configuring interconnect" {
 			log_debug "Can't avoid this possible error"
 			exp_continue
 		}
 		-re "error:" {
-			log_error "Some error happened"
-			set failures 1
-			exp_continue
+			fail "Some error happened"
 		}
 		-re "0: ($re_word_str)" {
 			set host_0 $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
-			slow_kill $srun_pid
-			set failures 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
 		}
 	}
 
-	if {$failures == 0} {
-		incr successes
-	}
+	incr successes
 }
 subtest {$successes == $iterations} "Race condition check" "[expr $iterations - $successes] out of $iterations iterations failed"

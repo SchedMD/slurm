@@ -42,7 +42,7 @@ proc cleanup {} {
 # Run trivial test --bell option
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 -t1 --bell $bin_id]
+spawn $salloc -N1 -t1 --bell $bin_id
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -64,7 +64,7 @@ subtest {$job_id != 0} "Job with --bell option should be allocated"
 # Run trivial test --no-bell option
 #
 set job_id      0
-set salloc_pid [spawn $salloc -N1 -t1 --no-bell $bin_id]
+spawn $salloc -N1 -t1 --no-bell $bin_id
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

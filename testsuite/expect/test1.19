@@ -59,14 +59,13 @@ proc cleanup {} {
 # and confirm they are created
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --output=$file_out_t -N1 -n$task_cnt -O -v -t1 $bin_id]
+spawn $srun --output=$file_out_t -N1 -n$task_cnt -O -v -t1 $bin_id
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -94,7 +93,7 @@ subtest {$file_cnt == $task_cnt} "Spawn a program that generates task id (%t) in
 #
 set job_id   0
 set srun_exit 0
-set srun_pid [spawn $srun --error=$file_err_j --output=/dev/null -N1 -n$task_cnt -O -v -t1 $bin_sleep aaa]
+spawn $srun --error=$file_err_j --output=/dev/null -N1 -n$task_cnt -O -v -t1 $bin_sleep aaa
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
@@ -106,7 +105,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -129,14 +127,13 @@ file delete $file_err_j_glob
 #  file name and confirm it is created
 #
 set job_id   0
-set srun_pid [spawn $srun --output=$file_out_perc -N1 -v -t1 $bin_printenv SLURMD_NODENAME]
+spawn $srun --output=$file_out_perc -N1 -v -t1 $bin_printenv SLURMD_NODENAME
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -155,14 +152,13 @@ file delete $file_out_perc_result
 #  file name and confirm it is created
 #
 set job_id   0
-set srun_pid [spawn $srun --output=$file_out_J -N1 -v -t1 $bin_printenv SLURMD_NODENAME]
+spawn $srun --output=$file_out_J -N1 -v -t1 $bin_printenv SLURMD_NODENAME
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -183,14 +179,13 @@ file delete $file_out_J_glob
 # it is created
 #
 set job_id 0
-set srun_pid [spawn $srun --output=$file_out_u -v -t1 sleep 10]
+spawn $srun --output=$file_out_u -v -t1 sleep 10
 expect {
 	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun is not responding"
 	}
 	eof {
@@ -214,7 +209,7 @@ file delete $file_out_u_glob
 # it is created
 #
 set job_id 0
-set srun_pid [spawn $srun --error=$file_err_u --output=/dev/null -v -t1 sleep aaa]
+spawn $srun --error=$file_err_u --output=/dev/null -v -t1 sleep aaa
 expect {
 	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
@@ -226,7 +221,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun is not responding"
 	}
 	eof {
@@ -254,14 +248,13 @@ set file_out_n_glob  "$test_dir/n.$node_id.output"
 file delete $file_out_n_glob
 
 set job_id   0
-set srun_pid [spawn $srun --output=$file_out_n -N1 -n$task_cnt -O -v -t1 $bin_printenv SLURMD_NODENAME]
+spawn $srun --output=$file_out_n -N1 -n$task_cnt -O -v -t1 $bin_printenv SLURMD_NODENAME
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -308,14 +301,13 @@ set task_cnt 4
 # Note: Task count is in the script for each srun
 #	There is not oversubscribe option for sbatch.
 set job_id   0
-set srun_pid [spawn $sbatch --output=/dev/null -N$node_cnt -t1 $file_in]
+spawn $sbatch --output=/dev/null -N$node_cnt -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

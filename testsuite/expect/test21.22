@@ -261,7 +261,7 @@ proc _remove_cluster {name} {
 		fail "We need a name to remove"
 	}
 
-	set my_pid [spawn $sacctmgr -i delete cluster $name]
+	spawn $sacctmgr -i delete cluster $name
 	expect {
 		-re "privilege to perform this action" {
 			set access_err 1
@@ -329,7 +329,7 @@ proc _remove_acct { cluster name } {
 		set check "Deleting account associations"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i delete account $command]
+	eval spawn $sacctmgr -i delete account $command
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			fail "There was a problem with the sacctmgr command"
@@ -392,7 +392,7 @@ proc _remove_user { acct user } {
 		set check "Deleting user associations"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i delete user $command]
+	eval spawn $sacctmgr -i delete user $command
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			fail "There was a problem with the sacctmgr command"
@@ -454,7 +454,7 @@ if {$access_err != 0} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr -i load $file_in]
+spawn $sacctmgr -i load $file_in
 expect {
 	-re "(Unable to read *.* * No such file or directory)" {
 	        fail "There was a problem with the file"
@@ -489,7 +489,7 @@ if {$matches != 2} {
 # Use sacctmgr to list the test original association additions
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p $lis $as $clu=$tc1 $fmt=$clu,$acc,$usr,$pts,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs]
+spawn $sacctmgr -n -p $lis $as $clu=$tc1 $fmt=$clu,$acc,$usr,$pts,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs
 expect {
 	-re "There was a problem" {
 	        fail "There was a problem with the sacctmgr command"
@@ -523,7 +523,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr list associations not responding 2"
 	}
 	eof {
@@ -539,7 +538,7 @@ if {$matches != 7} {
 # Use sacctmgr to list the test original Admin Levels and Account Coordinators
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco]
+spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco
 expect {
 	-re "There was a problem" {
 	    fail "There was a problem with the sacctmgr command"
@@ -553,7 +552,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr list associations not responding 3"
 	}
 	eof {
@@ -566,7 +564,7 @@ if {$matches != 2} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr -i load $file_in2]
+spawn $sacctmgr -i load $file_in2
 expect {
 	-re "(Unable to read *.* * No such file or directory)" {
 	    fail "There was a problem with the file"
@@ -587,7 +585,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr load not responding 4"
 	}
 	eof {
@@ -604,7 +601,7 @@ if {$matches != 2} {
 #
 set matches 0
 
-set my_pid [spawn $sacctmgr -n -P $lis $as $clu=$tc1 $fmt=$clu,$acc,$usr,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs]
+spawn $sacctmgr -n -P $lis $as $clu=$tc1 $fmt=$clu,$acc,$usr,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs
 expect {
 	-re "There was a problem" {
 	    fail "there was a problem with the sacctmgr command"
@@ -659,7 +656,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr list associations not responding 5"
 	}
 	eof {
@@ -675,7 +671,7 @@ if {$matches != 10} {
 # Use sacctmgr to list the test modification Admin Levels and Account Coordinators
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco]
+spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco
 expect {
 	-re "There was a problem" {
 	    fail "There was a problem with the sacctmgr command"
@@ -693,7 +689,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr list associations not responding 6"
 	}
 	eof {
@@ -706,7 +701,7 @@ if {$matches != 3} {
 }
 
 set matches 0
-set my_pid [spawn $sacctmgr -i load  $file_in3 clean]
+spawn $sacctmgr -i load $file_in3 clean
 expect {
 	-re "(Unable to read *.* * No such file or directory)" {
 	    fail "There was a problem with the file"
@@ -726,7 +721,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr list associations not responding 7"
 	}
 	eof {
@@ -742,7 +736,7 @@ if {$matches != 2} {
 # Use sacctmgr to list the test modifications to the original association
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p $lis $as $clu=$tc1 $fmt=$clu,$acc,$usr,$pts,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs]
+spawn $sacctmgr -n -p $lis $as $clu=$tc1 $fmt=$clu,$acc,$usr,$pts,$fs,$gm,$gc,$gj,$gn,$gs,$gw,$mc,$mm,$mj,$mn,$ms,$mw,$qs
 expect {
 	-re "There was a problem" {
 	    fail "there was a problem with the sacctmgr command"
@@ -788,7 +782,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr list associations not responding 8"
 	}
 	eof {
@@ -804,7 +797,7 @@ if {$matches != 10} {
 # Use sacctmgr to list the test modification Admin Levels and Account Coordinators
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco]
+spawn $sacctmgr -n -p $lis $usr $fmt=$usr,$col,$al $wco
 expect {
 	-re "There was a problem" {
 	    fail "There was a problem with the sacctmgr command"

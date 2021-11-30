@@ -54,7 +54,7 @@ make_bash_script $file_in "
 # Submit a 4 node job
 #
 set timeout $max_job_delay
-set srun_pid [spawn $salloc -N4 $file_in]
+spawn $salloc -N4 $file_in
 expect {
 	-re "More processors requested than permitted" {
 		skip "Can't test srun task distribution"
@@ -63,7 +63,6 @@ expect {
 		skip "Can't test srun task distribution"
 	}
 	-re "configuration is not available" {
-		slow_kill $srun_pid
 		skip "Partition too small for test"
 	}
 	-re "Required node not available" {
@@ -77,7 +76,6 @@ expect {
 #		log_debug "Job initiated"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -118,7 +116,6 @@ expect {
 #		log_debug "Srun completed"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -171,7 +168,6 @@ expect {
 #		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -215,7 +211,6 @@ expect {
 #		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -247,7 +242,6 @@ expect {
 #		log_debug "srun completed"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -262,7 +256,6 @@ subtest {$error != 0} "Error expected for inconsistent node count"
 send "exit\r"
 expect {
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

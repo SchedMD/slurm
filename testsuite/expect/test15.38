@@ -34,6 +34,7 @@ set job_id      0
 run_command -fail "$scontrol update partitionname=[default_partition] DefaultTime=10"
 
 proc cleanup {} {
+
 	# Restore DefaultTime
 	reconfigure
 }
@@ -42,7 +43,7 @@ proc cleanup {} {
 # Spawn a batch job with a deadline and no time
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc --begin now+1 --deadline now+600 --time-min 5 $bin_sleep 1 ]
+spawn $salloc --begin now+1 --deadline now+600 --time-min 5 $bin_sleep 1
 expect {
 	-re "Requested time limit is invalid" {
 		fail "Requested time limit is invalid"

@@ -109,7 +109,6 @@ proc sacctmgr_mod { state } {
 			exp_continue
 		}
 		timeout {
-			slow_kill $my_pid
 			fail "sacctmgr mod not responding"
 		}
 		eof {
@@ -287,7 +286,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr mod not responding"
 	}
 	eof {
@@ -307,7 +305,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr mod not responding"
 	}
 	eof {
@@ -384,7 +381,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr mod not responding"
 	}
 	eof {
@@ -441,7 +437,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr mod not responding"
 	}
 	eof {
@@ -476,7 +471,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr mod not responding"
 	}
 	eof {

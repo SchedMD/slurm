@@ -80,7 +80,7 @@ if {$job_id == 0} {
 #
 set disabled 0
 set matches  0
-set strigger_pid [spawn $strigger --set -v --idle --offset=1 --program=$file_in_idle]
+spawn $strigger --set -v --idle --offset=1 --program=$file_in_idle
 expect {
 	-re "permission denied" {
 		set disabled 1
@@ -108,7 +108,7 @@ if {$matches == 0} {
 # Look for the trigger
 #
 set idle_matches 0
-set strigger_pid [spawn $strigger --get -v --user=$uid]
+spawn $strigger --get -v --user=$uid
 expect {
 	-re "idle" {
 		incr idle_matches
@@ -140,7 +140,7 @@ run_command "$bin_cat $file_out"
 # Check that this trigger is purged
 #
 set idle_matches 0
-set strigger_pid [spawn $strigger --get -v --user=$uid]
+spawn $strigger --get -v --user=$uid
 expect {
 	-re "idle" {
 		incr idle_matches

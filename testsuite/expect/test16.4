@@ -33,15 +33,15 @@ set file_prog   "$test_name.prog"
 set job_id      0
 set matches     0
 
+if {[get_config_param "LaunchType"] ne "launch/slurm"} {
+	skip "This test is only compatible with systems using launch/slurm"
+}
+
 proc cleanup {} {
 	global job_id file_prog
 
 	cancel_job $job_id
 	file delete $file_prog
-}
-
-if {[get_config_param "LaunchType"] ne "launch/slurm"} {
-	skip "This test is only compatible with systems using launch/slurm"
 }
 
 set node_cnt 1-4
@@ -50,7 +50,6 @@ set task_cnt 4
 #
 # Delete left-over program and rebuild it
 #
-exec $bin_rm -f $file_prog
 exec $bin_cc -O -o $file_prog ${file_prog}.c
 exec $bin_chmod 700 $file_prog
 
@@ -58,7 +57,7 @@ exec $bin_chmod 700 $file_prog
 # Spawn initial program via srun
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N $node_cnt -t2 $srun -n $task_cnt --overcommit ./$file_prog]
+spawn $salloc -N $node_cnt -t2 $srun -n $task_cnt --overcommit ./$file_prog
 set init_id $spawn_id
 expect {
         -i $init_id

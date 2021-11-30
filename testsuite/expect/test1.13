@@ -35,7 +35,7 @@ set matches     0
 # The job can't run immediately with a priority of zero
 #
 set timeout 10
-set srun_pid [spawn $srun --immediate --hold -t1 $bin_pwd]
+spawn $srun --immediate --hold -t1 $bin_pwd
 expect {
 	-re "Unable to allocate resources" {
 		log_debug "This error is expected, no worries"
@@ -43,7 +43,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -59,7 +58,7 @@ subtest {$matches == 1} "Job should be held as requested"
 #
 set matches 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun --immediate -v -t1 $bin_pwd]
+spawn $srun --immediate -v -t1 $bin_pwd
 expect {
 	-re "error" {
 		log_debug "This error is not unexpected, no worries"
@@ -71,7 +70,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

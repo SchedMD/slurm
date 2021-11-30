@@ -33,14 +33,13 @@ set version     0
 #
 # Report the srun version number
 #
-set srun_pid [spawn $srun -V]
+spawn $srun -V
 expect {
 	-re "(slurm ($number)\\.($number)\\.($number).*\n)" {
 		incr version
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

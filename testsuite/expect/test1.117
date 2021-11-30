@@ -35,13 +35,12 @@ set job_min_memory_cpu 	0
 #
 # submit srun job with a specific mem-per-cpu request
 #
-set srun_pid [spawn $srun --mem-per-cpu=$mem_spec $bin_bash -c "echo SLURM_JOB_ID=\$SLURM_JOB_ID"]
+spawn $srun --mem-per-cpu=$mem_spec $bin_bash -c "echo SLURM_JOB_ID=\$SLURM_JOB_ID"
 expect {
 	-re {SLURM_JOB_ID=([0-9]+)} {
 		set job_id $expect_out(1,string)
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

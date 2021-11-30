@@ -38,13 +38,12 @@ set host_0      ""
 set node_cnt 1-64
 set timeout [expr $max_job_delay + $sleep_time]
 
-set srun_pid [spawn $srun -N$node_cnt --no-kill -t1 $bin_sleep $sleep_time]
+spawn $srun -N$node_cnt --no-kill -t1 $bin_sleep $sleep_time
 expect {
 	-re "error" {
 		fail "Some error occurred"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

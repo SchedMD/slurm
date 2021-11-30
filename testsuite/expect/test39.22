@@ -61,7 +61,7 @@ make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$C
 
 set timeout $max_job_delay
 set match   0
-set salloc_pid [spawn $salloc --gpus=$gpu_cnt --nodes=1 -t1 -J $test_name : --gpus=1 --nodes=1 $file_in1]
+spawn $salloc --gpus=$gpu_cnt --nodes=1 -t1 -J $test_name : --gpus=1 --nodes=1 $file_in1
 expect {
 	-re "($number): HOST:($re_word_str) CUDA_VISIBLE_DEVICES:($number_commas)" {
 		set gpu_alloc [cuda_count $expect_out(3,string)]
@@ -74,7 +74,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "salloc not responding"
 	}
 	eof {

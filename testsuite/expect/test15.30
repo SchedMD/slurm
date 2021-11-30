@@ -30,8 +30,7 @@ source ./globals
 # Spawn a job that deadline is too late
 #
 set timeout $max_job_delay
-set salloc_pid 0
-set salloc_pid [spawn $salloc -N1 --deadline 2015-03-27T04:30:00 -t1 $bin_sleep 1]
+spawn $salloc -N1 --deadline 2015-03-27T04:30:00 -t1 $bin_sleep 1
 expect {
 	-re "Requested time limit is invalid" {
 		exp_continue

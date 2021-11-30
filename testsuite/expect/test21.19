@@ -144,7 +144,7 @@ if [add_coor $nm1 $us1] {
 # Use sacctmgr to list the test user modification
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,DefaultAccount,Admin,Coord cluster=$tc1]
+spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,DefaultAccount,Admin,Coord cluster=$tc1
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -174,7 +174,7 @@ if [add_coor "$nm1,$nm3" "$us2,$us3"] {
 # Use sacctmgr to list the test coordinator additions
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,DefaultAccount,Admin,Coord cluster=$tc1]
+spawn $sacctmgr -n -p list user names=$us1,$us2,$us3 withcoor format=user,DefaultAccount,Admin,Coord cluster=$tc1
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"

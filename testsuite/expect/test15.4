@@ -54,7 +54,7 @@ set login_grp_info [get_my_id]
 # Submit a slurm job that will execute 'id'
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 -t1 $srun $bin_id]
+spawn $salloc -N1 -t1 $srun $bin_id
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

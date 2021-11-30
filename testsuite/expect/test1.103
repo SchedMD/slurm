@@ -59,7 +59,7 @@ if [set_partition_maximum_time_limit "" -1] {
 # Spawn a job that deadline is too short
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -v -N1 --deadline now+1hour -t120 --time-min=1 $bin_sleep 1]
+spawn $srun -v -N1 --deadline now+1hour -t120 --time-min=1 $bin_sleep 1
 expect {
 	-re "Requested time limit is invalid" {
 		fail "Requested time limit is invalid"

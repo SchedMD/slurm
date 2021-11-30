@@ -55,10 +55,9 @@ set host_1_num       0
 set host_2_num       0
 set job_id 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N3-3 --contiguous -t1 $srun -l $bin_printenv SLURMD_NODENAME]
+spawn $salloc -N3-3 --contiguous -t1 $srun -l $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Required node not available|Node count specification invalid|configuration not available" {
-		slow_kill $salloc_pid
 		skip "Can't test --contiguous distribution"
 	}
 	-re "Granted job allocation ($number)" {
@@ -79,7 +78,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $salloc_pid
 		fail "salloc not responding. This may not be a real failure if the system lacks three _contiguous_ nodes"
 	}
 	eof {

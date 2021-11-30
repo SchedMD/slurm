@@ -105,14 +105,13 @@ proc inc3_11_8 {} {
 
 	# (First test) Submit the batch job: a simple job using half the CPUs on the selected node
 	set job_id 0
-	set sbatch_pid [spawn $sbatch -w $host_name --time=10:00 --ntasks-per-node=$cpu_res_num --output=/dev/null $file_in]
+	spawn $sbatch -w $host_name --time=10:00 --ntasks-per-node=$cpu_res_num --output=/dev/null $file_in
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
-			slow_kill $sbatch_pid
 			cancel_job $job_id
 			fail "sbatch not responding"
 		}

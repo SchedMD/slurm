@@ -46,7 +46,7 @@ set got_login_grps       0
 #
 set job_name      "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHHIIIIIJJJJJKKKKKLLLLLMMMMM"
 set timeout        $max_job_delay
-set srun_pid [spawn $srun --verbose --job-name=$job_name -t1 $bin_id]
+spawn $srun --verbose --job-name=$job_name -t1 $bin_id
 expect {
 	# needed for cray systems
 	-re "Granted job allocation ($number)" {
@@ -58,7 +58,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

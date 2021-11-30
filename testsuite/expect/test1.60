@@ -55,14 +55,13 @@ proc cleanup {} {
 # and confirm they are created
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -l --output=$file_out_t -N 1-10 -v -t1 $bin_echo hello]
+spawn $srun -l --output=$file_out_t -N 1-10 -v -t1 $bin_echo hello
 expect {
 	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -121,14 +120,13 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 #
 set task_count [expr $node_count * 2]
 set timeout $max_job_delay
-set srun_pid [spawn $srun -l --output=$file_out_n -N $node_count -n $task_count -O -v -t1 $bin_echo hello]
+spawn $srun -l --output=$file_out_n -N $node_count -n $task_count -O -v -t1 $bin_echo hello
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "Srun not responding"
 	}
 	eof {

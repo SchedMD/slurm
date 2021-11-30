@@ -137,7 +137,7 @@ if [mod_acct "$ta1" [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] 
 
 # Check the changes
 set matches 0
-set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
+spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -164,7 +164,7 @@ if [mod_acct "$ta2" [array get acct_mod_desc3] [array get acct_mod_assoc_vals3] 
 
 # Check the changes
 set matches 0
-set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
+spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr list assoc command"
@@ -191,7 +191,7 @@ if [mod_acct "$ta2,$ta3" [array get acct_mod_desc4] [array get acct_mod_assoc_va
 
 # Check the changes
 set matches 0
-set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres"]
+spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr list assoc command"
@@ -223,7 +223,7 @@ if [mod_user "$tu1" [array get user_mod_desc] [array get user_mod_assoc_vals] [a
 
 # Check the changes
 set matches 0
-set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
+spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr list assoc command"
@@ -253,7 +253,7 @@ if [mod_user "$tu1" [array get user_mod_desc] [array get user_mod_assoc_vals] [a
 
 # Check the changes
 set matches 0
-set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
+spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr list assoc command"

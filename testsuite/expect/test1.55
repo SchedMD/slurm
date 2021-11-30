@@ -28,13 +28,12 @@
 ############################################################################
 source ./globals
 
-set test_script "$test_name.sh"
+set test_script "$test_dir/job_script"
 set job_id      0
 
 #
 # Create a test script to be launch by srun
 #
-exec $bin_rm -f $test_script
 make_bash_script $test_script {
 	echo "Running"
 
@@ -46,10 +45,9 @@ make_bash_script $test_script {
 }
 
 proc cleanup {} {
-	global test_script job_id
+	global job_id
 
 	cancel_job $job_id
-	file delete $test_script
 }
 
 #
@@ -58,7 +56,7 @@ proc cleanup {} {
 set timeout $max_job_delay
 set step_id 0
 set job_running 0
-set srun_pid [spawn $srun --unbuffered -v -n1 -t1 ./$test_script]
+spawn $srun --unbuffered -v -n1 -t1 $test_script
 expect {
 	-re "launching StepId=(($number)\\.$re_word_str)" {
 		set step_id $expect_out(1,string)
@@ -69,7 +67,6 @@ expect {
 		set job_running 1
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "Failed to launch test program through srun"
 	}
 	eof {

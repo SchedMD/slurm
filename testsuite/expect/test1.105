@@ -37,7 +37,7 @@ if { $default_time != -1} {
 # Spawn a job with a deadline and no time
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --verbose -N1 --deadline now+600 $bin_sleep 1]
+spawn $srun --verbose -N1 --deadline now+600 $bin_sleep 1
 expect {
 	-re "Requested time limit is invalid (missing or exceeds some limit)" {
 		fail "Requested time limit is invalid (missing or exceeds some limit)"
@@ -55,23 +55,22 @@ expect {
 }
 if {$job_id == 0} {
 	fail "Job not submitted"
-} else {
-	spawn $scontrol show job $job_id
-	expect {
-		-re "TimeLimit=00:10:" {
-			log_debug "Timelimit OK"
-		}
-		-re "TimeLimit=00:09:" {
-			log_debug "Timelimit OK"
-		}
-		-re "TimeLimit=" {
-			fail "Timelimit not OK with deadline"
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
+}
+spawn $scontrol show job $job_id
+expect {
+	-re "TimeLimit=00:10:" {
+		log_debug "Timelimit OK"
+	}
+	-re "TimeLimit=00:09:" {
+		log_debug "Timelimit OK"
+	}
+	-re "TimeLimit=" {
+		fail "Timelimit not OK with deadline"
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
 	}
 }

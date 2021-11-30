@@ -50,7 +50,7 @@ exec $bin_cc -o $file_prog $file_prog.c
 set began_flag 0
 set run_time   0
 set timeout [expr $max_job_delay + 120]
-set srun_pid [spawn $srun -t4 --signal=2@120 ./$file_prog]
+spawn $srun -t4 --signal=2@120 ./$file_prog
 expect {
 	-re "Begin test" {
 		set began_flag 1
@@ -61,7 +61,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

@@ -78,14 +78,13 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 # Spawn a job via srun to print environment variables
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -n1 --cpus-per-task=1 -t1 $bin_env]
+spawn $srun -N1 -n1 --cpus-per-task=1 -t1 $bin_env
 expect {
 	-re "(SLURM_$re_word_str)=($re_word_str)" {
 		set found_vars($expect_out(1,string)) "$expect_out(2,string)"
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

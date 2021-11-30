@@ -47,7 +47,7 @@ make_bash_script $file_in "$bin_echo DOWN >$file_out"
 
 set disabled 0
 set matches  0
-set strigger_pid [spawn $strigger --set -v --down --program=$file_in]
+spawn $strigger --set -v --down --program=$file_in
 expect {
 	-re "permission denied" {
 		set disabled 1
@@ -72,7 +72,7 @@ if {$matches == 0} {
 }
 
 set matches 0
-set strigger_pid [spawn $strigger --get -v --down --user=$uid]
+spawn $strigger --get -v --down --user=$uid
 expect {
 	-re "$file_in" {
 		incr matches
@@ -89,7 +89,7 @@ if {$matches != 1} {
 	fail "Trigger set or get failure"
 }
 
-set strigger_pid [spawn $strigger --clear -v --user=$uid]
+spawn $strigger --clear -v --user=$uid
 expect {
 	timeout {
 		fail "strigger not responding"

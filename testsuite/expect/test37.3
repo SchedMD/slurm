@@ -69,7 +69,7 @@ proc test_fed_status {cname fed_flags cluster_list} {
 	set matches 0
 	set lines 0
 	set my_scontrol "${fed_slurm_base}/$cname/bin/scontrol"
-	set my_pid [spawn $my_scontrol show federation]
+	spawn $my_scontrol show federation
 	set expected_matches [array size clusters]
 	if {$expected_matches} {
 		# Match the fedname line
@@ -114,7 +114,6 @@ proc test_fed_status {cname fed_flags cluster_list} {
 			exp_continue
 		}
 		timeout {
-			slow_kill $my_pid
 			fail "scontrol not responding"
 		}
 		eof {
@@ -232,7 +231,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 
 #log_info "Test federation flags (LLC)"
 #set matches 0
-#set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags+=LLC]
+#spawn $sacctmgr -i modify federation $fed_name set flags+=LLC
 #expect {
 #	-re "Setting$eol" {
 #		incr matches
@@ -251,7 +250,6 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #		exp_continue
 #	}
 #	timeout {
-#		slow_kill $my_pid
 #		fail "sacctmgr add not responding"
 #	}
 #	eof {
@@ -272,7 +270,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #
 #log_info "Test removal of federation flags (LLC)"
 #set matches 0
-#set my_pid [spawn $sacctmgr -i modify federation $fed_name set flags-=LLC]
+#spawn $sacctmgr -i modify federation $fed_name set flags-=LLC
 #expect {
 #	-re "Setting$eol" {
 #		incr matches
@@ -291,7 +289,6 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #		exp_continue
 #	}
 #	timeout {
-#		slow_kill $my_pid
 #		fail "sacctmgr add not responding"
 #	}
 #	eof {
@@ -312,7 +309,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 
 log_info "Test setting of cluster features"
 set matches 0
-set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features=fb,fa]
+spawn $sacctmgr -i modify cluster $fedc3 set features=fb,fa
 expect {
 	-re "Setting$eol" {
 		incr matches
@@ -335,7 +332,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -354,7 +350,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 
 log_info "Test modifying/add of cluster features"
 set matches 0
-set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features+=fc]
+spawn $sacctmgr -i modify cluster $fedc3 set features+=fc
 expect {
 	-re "Setting$eol" {
 		incr matches
@@ -373,7 +369,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -392,7 +387,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 
 log_info "Test modifying/remove of cluster features"
 set matches 0
-set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features-=fb]
+spawn $sacctmgr -i modify cluster $fedc3 set features-=fb
 expect {
 	-re "Setting$eol" {
 		incr matches
@@ -411,7 +406,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -431,7 +425,7 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 
 log_info "Test clearing of cluster features"
 set matches 0
-set my_pid [spawn $sacctmgr -i modify cluster $fedc3 set features=]
+spawn $sacctmgr -i modify cluster $fedc3 set features=
 expect {
 	-re "Setting$eol" {
 		incr matches
@@ -450,7 +444,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $my_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {

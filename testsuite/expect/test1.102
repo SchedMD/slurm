@@ -32,8 +32,7 @@ set job_id      0
 # Spawn a job that deadline is too late
 #
 set timeout $max_job_delay
-set srun_pid 0
-set srun_pid [spawn $srun -v --deadline 2015-03-27T04:30:00 -t1 $bin_sleep 1]
+spawn $srun -v --deadline 2015-03-27T04:30:00 -t1 $bin_sleep 1
 expect {
 	-re "Requested time limit is invalid (missing or exceeds some limit)" {
 		exp_continue

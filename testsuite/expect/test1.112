@@ -32,7 +32,7 @@ set job_id      0
 # Spawn a job with a deadline and no time-min
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -v --begin now+10 --deadline now+1hour -t 10 $bin_sleep 1 ]
+spawn $srun -v --begin now+10 --deadline now+1hour -t 10 $bin_sleep 1
 expect {
 	-re "Requested time limit is invalid" {
 		fail "Requested time limit is invalid"

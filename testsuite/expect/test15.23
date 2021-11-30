@@ -49,7 +49,7 @@ set env(SALLOC_TIMELIMIT)     2
 #
 set matches 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 $bin_bash]
+spawn $salloc -N1 $bin_bash
 expect {
 	-re "debug:  Entering _msg_thr_internal" {
 		incr matches

@@ -33,7 +33,7 @@ source ./globals
 #
 set match   0
 set timeout $max_job_delay
-set srun_pid [spawn $srun --licenses=DUMMY_FOR_TESTING $bin_printenv SLURMD_NODENAME]
+spawn $srun --licenses=DUMMY_FOR_TESTING $bin_printenv SLURMD_NODENAME
 expect {
 	-re "Invalid license" {
 		set match 1
@@ -41,7 +41,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "Srun not responding"
 	}
 	eof {
@@ -69,7 +68,7 @@ expect {
 log_user 1
 
 if {[string compare $licenses ""] != 0} {
-	set srun_pid [spawn $srun --licenses=$licenses $bin_printenv SLURMD_NODENAME]
+	spawn $srun --licenses=$licenses $bin_printenv SLURMD_NODENAME
 	expect {
 		-re "invalid license" {
 			fail "Error getting license"

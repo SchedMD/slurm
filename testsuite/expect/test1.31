@@ -65,7 +65,7 @@ make_bash_script $file_in "env | $bin_grep MP_; env | $bin_grep SLURM_"
 #
 # Spawn a job via srun using these environment variables
 #
-set srun_pid [spawn $srun -t1 $file_in]
+spawn $srun -t1 $file_in
 expect {
 	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
@@ -73,7 +73,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

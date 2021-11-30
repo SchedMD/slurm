@@ -34,7 +34,7 @@ source ./globals
 # Spawn a program via srun with stdout forwarding disabled
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --output=none -t1 $bin_id]
+spawn $srun --output=none -t1 $bin_id
 expect {
 	-re "uid=" {
 		fail "srun improperly forwarded stdout"
@@ -43,7 +43,6 @@ expect {
 		fail "srun improperly forwarded stdout"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -55,7 +54,7 @@ expect {
 # Spawn a program via srun with stderr forwarding disabled
 #
 set matches 0
-set srun_pid [spawn $srun --error=none -t1 $bin_sleep aaa]
+spawn $srun --error=none -t1 $bin_sleep aaa
 expect {
 	-re "invalid" {
 		fail "srun improperly forwarded stderr"
@@ -66,7 +65,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

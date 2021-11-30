@@ -100,7 +100,7 @@ add_acct "$ta1,$ta2" [array get acct]
 #
 # Use sacctmgr to list the test associations
 #
-set as_list_pid [spawn $sacctmgr -p list associations cluster=$tc1,$tc2]
+spawn $sacctmgr -p list associations cluster=$tc1,$tc2
 expect {
 	-re "$tc1.$ta1" {
 		incr almatches
@@ -117,7 +117,6 @@ expect {
 		fail "$ta2 account erroneously added to $tc2"
 	}
 	timeout {
-		slow_kill $as_list_pid
 		fail "sacctmgr list associations not responding"
 	}
 	eof {
@@ -136,7 +135,7 @@ if {![check_acct_associations]} {
 #
 # Use sacctmgr to list the test accounts
 #
-set ac_list_pid [spawn $sacctmgr -p -n list account]
+spawn $sacctmgr -p -n list account
 expect {
 	-nocase -re "$ta1.$acct(Description).$acct(Organization)" {
 		incr aclmatches
@@ -147,7 +146,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $ac_list_pid
 		fail "sacctmgr list associations not responding"
 	}
 	eof {

@@ -44,7 +44,7 @@ if { $node_count < 2 } {
 #
 set timeout $max_job_delay
 set min_cpu_cnt 4
-set srun_pid [spawn $srun -O -N2 -n4 --exclusive -l -t1 $bin_printenv SLURM_CPUS_ON_NODE]
+spawn $srun -O -N2 -n4 --exclusive -l -t1 $bin_printenv SLURM_CPUS_ON_NODE
 expect {
 	-re "($number): ($number)" {
 		if {$expect_out(2,string) < $min_cpu_cnt} {
@@ -53,7 +53,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -69,7 +68,7 @@ if {$min_cpu_cnt < 3} {
 #
 set expected_layout [list 0 0 0 1]
 set tested_layout [list -1 -1 -1 -1]
-set srun_pid [spawn $srun -O -N2 -n4 --exclusive -l --distribution=pack -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -O -N2 -n4 --exclusive -l --distribution=pack -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "srun: error" {
 		skip "Can't test srun task distribution"
@@ -93,7 +92,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -114,7 +112,7 @@ subtest {$tested_layout eq $expected_layout} "Tasks distributed in pack fashion"
 set expected_layout [list 0 0 1 1]
 set tested_layout [list -1 -1 -1 -1]
 set timeout $max_job_delay
-set srun_pid [spawn $srun -O -N2 -n4 --exclusive -l --distribution=nopack -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -O -N2 -n4 --exclusive -l --distribution=nopack -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "More processors requested than permitted" {
 		skip "Can't test srun task distribution"
@@ -141,7 +139,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

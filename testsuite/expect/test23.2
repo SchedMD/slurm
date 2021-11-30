@@ -80,14 +80,13 @@ proc cleanup {} {
 set acct_name ""
 set user_name [get_my_user_name]
 
-set s_pid [spawn $sacctmgr show user $user_name]
+spawn $sacctmgr show user $user_name
 expect {
 	-re "$user_name *($re_word_str)" {
 		set acct_name $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $s_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -99,7 +98,7 @@ expect {
 # Use sacctmgr to add an account
 #
 set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $test_acct]
+spawn $sacctmgr -i add account $test_acct
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -111,8 +110,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $sadd_pid
-		log_error "sacctmgr add not responding"
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -125,10 +123,9 @@ if {$aamatches != 1} {
 #
 # Add self to this new account
 #
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct]
+spawn $sacctmgr -i create user name=$user_name account=$test_acct
 expect {
 	 timeout {
-		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {

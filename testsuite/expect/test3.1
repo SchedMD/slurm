@@ -57,14 +57,13 @@ make_bash_script $file_in "
   #$srun $bin_sleep 60
 "
 # TODO Temporarily saving output to troubleshoot bug 9647 (revert once fixed)
-set sbatch_pid [spawn $sbatch -N1 --output=$file_out -t2 $file_in]
+spawn $sbatch -N1 --output=$file_out -t2 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		catch {exec $bin_kill -KILL $sbatch_pid}
 		fail "sbatch not responding"
 	}
 	eof {

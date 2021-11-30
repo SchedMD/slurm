@@ -33,14 +33,13 @@ set matches     0
 #
 # Report the srun usage format
 #
-set srun_pid [spawn $srun --usage]
+spawn $srun --usage
 expect {
 	-re "srun .* executable .*" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

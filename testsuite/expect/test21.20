@@ -135,7 +135,7 @@ if [add_user "$tu1,$tu2,$tu3" [array get user_req]] {
 # Use sacctmgr to list the test qos additions
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
+spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -170,7 +170,7 @@ if [mod_user $tu1 [array get user_mod_info] [array get user_mod_acct] [array get
 # Use sacctmgr to list the test qos modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
+spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -209,7 +209,7 @@ if [mod_user $tu2 [array get user_mod_info2] [array get user_mod_acct2] [array g
 # Use sacctmgr to list the test qos modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
+spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc
 expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
@@ -253,7 +253,7 @@ if [mod_user $tu3 [array get user_mod_info3] [array get user_mod_acct3] [array g
 # Use sacctmgr to list the test qos modifications
 #
 set matches 0
-set my_pid [spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc]
+spawn $sacctmgr -n -p list user format="User,QosLevel" names=$tu1,$tu2,$tu3 withassoc
 expect {
 	-re "There was a problem" {
 	    fail "There was a problem with the sacctmgr command"

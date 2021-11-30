@@ -38,7 +38,7 @@ set tmp_dir	"/tmp"
 # Change working directory on execute line and then print where jobs runs
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --chdir=$tmp_dir -t1 $bin_pwd]
+spawn $srun --chdir=$tmp_dir -t1 $bin_pwd
 expect {
 	-re "$tmp_dir$eol" {
 		set matches 1
@@ -48,7 +48,6 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

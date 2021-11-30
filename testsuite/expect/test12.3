@@ -81,14 +81,13 @@ proc cleanup {} {
 #
 set acct_name ""
 set user_name [get_my_user_name]
-set s_pid [spawn $sacctmgr show user $user_name]
+spawn $sacctmgr show user $user_name
 expect {
 	-re "$user_name *($re_word_str)" {
 		set acct_name $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		slow_kill $s_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -100,7 +99,7 @@ expect {
 # Use sacctmgr to add a test account
 #
 set aamatches 0
-set sadd_pid [spawn $sacctmgr -i add account $test_acct]
+spawn $sacctmgr -i add account $test_acct
 expect {
 	-re "Adding Account" {
 		incr aamatches
@@ -112,7 +111,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -126,10 +124,9 @@ if {$aamatches != 1} {
 #
 # Add self to this new account
 #
-set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct]
+spawn $sacctmgr -i create user name=$user_name account=$test_acct
 expect {
 	 timeout {
-		slow_kill $sadd_pid
 		fail "sacctmgr add not responding"
 	}
 	eof {
@@ -142,7 +139,7 @@ expect {
 #
 set job_1_node_inx 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N2 -w$node1,$node2 -t1 -A $test_acct -J $job_name_1 -v $bin_id]
+spawn $srun -N2 -w$node1,$node2 -t1 -A $test_acct -J $job_name_1 -v $bin_id
 expect {
 	-re "launching StepId=($number)\\.$re_word_str on host ($re_word_str)," {
 		set job_id_1 $expect_out(1,string)
@@ -150,7 +147,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
@@ -163,7 +159,7 @@ subtest {$job_1_node_inx == 2} "Verify host count for job 1" "srun host count ba
 # Second job includes one node from the first job and another different node
 #
 set job_2_node_inx 0
-set srun_pid [spawn $srun -N2 -w$node2,$node3 -t1 -A $test_acct -J $job_name_2 -v $bin_id]
+spawn $srun -N2 -w$node2,$node3 -t1 -A $test_acct -J $job_name_2 -v $bin_id
 expect {
 
 	-re "launching StepId=($number)\\.$re_word_str on host ($re_word_str)," {
@@ -172,7 +168,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {

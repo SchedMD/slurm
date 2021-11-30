@@ -139,7 +139,6 @@ proc test_bin_pass { num bin args het_job count } {
 			exp_continue
 		}
 		timeout {
-			slow_kill [expr 0 - $pid]
 			fail "$bin not responding"
 		}
 		eof {
@@ -203,7 +202,6 @@ proc test_bin_fail { num bin args het_job count } {
 			exp_continue
 		}
 		timeout {
-			slow_kill [expr 0 - $pid]
 			fail "$bin not responding"
 		}
 		eof {

@@ -36,7 +36,7 @@ set verbosity   0
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -n$task_cnt -O -v -t1 $bin_id]
+spawn $srun -N1 -n$task_cnt -O -v -t1 $bin_id
 expect {
 	-re "jobid" {
 		set verbosity 1
@@ -50,7 +50,6 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		slow_kill $srun_pid
 		fail "srun not responding"
 	}
 	eof {
