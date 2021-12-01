@@ -374,8 +374,8 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
  * generate the appropriate cpu_bind type and string which results in
  * the specified lllp distribution.
  *
- * IN/OUT- job launch request (cpu_bind_type and cpu_bind updated)
- * IN- global task id array
+ * IN/OUT req - job launch request (cpu_bind_type and cpu_bind updated)
+ * IN node_id - global task id array
  */
 extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 {
