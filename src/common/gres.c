@@ -8744,7 +8744,8 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 		if (*num_tasks < tmp) {
 			*num_tasks = tmp;
 		}
-		if (*cpu_count < tmp) {
+		if (*cpu_count && (*cpu_count < tmp)) {
+			/* step_spec->cpu_count == 0 means SSF_OVERSUBSCRIBE */
 			*cpu_count = tmp;
 		}
 	} else {
