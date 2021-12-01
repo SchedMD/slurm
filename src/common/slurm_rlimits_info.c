@@ -211,3 +211,18 @@ extern void rlimits_adjust_nofile(void)
 	if (setrlimit(RLIMIT_NOFILE, &rlim) < 0)
 		error("Unable to adjust maximum number of open files: %m");
 }
+
+extern void rlimits_use_max_nofile(void)
+{
+	struct rlimit rlim;
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
+		error("getrlimit(RLIMIT_NOFILE): %m");
+		return;
+	}
+
+	rlim.rlim_cur = rlim.rlim_max;
+
+	if (setrlimit(RLIMIT_NOFILE, &rlim) < 0)
+		error("Unable to adjust maximum number of open files: %m");
+}

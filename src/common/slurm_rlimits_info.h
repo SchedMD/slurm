@@ -68,4 +68,9 @@ extern void print_rlimits( void );
  */
 extern void rlimits_adjust_nofile(void);
 
+/*
+ * Adjust the RLIMIT_NOFILE setting to max possible.
+ */
+extern void rlimits_use_max_nofile(void);
+
 #endif /*__SLURM_RLIMITS_INFO_H__*/
