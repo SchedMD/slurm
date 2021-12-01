@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "November 2021" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "December 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -3195,7 +3195,7 @@ By default no program is run.
 \fBResumeRate\fR
 The rate at which nodes in power save mode are returned to normal
 operation by \fBResumeProgram\fR.
-The value is number of nodes per minute and it can be used to prevent
+The value is a number of nodes per minute and it can be used to prevent
 power surges if a large number of nodes in power save mode are
 assigned work at the same time (e.g. a large job starts).
 A value of zero results in no limits being imposed.
