@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- Handle oversubscription request correctly when also requesting
     --ntasks-per-tres.
  -- Correctly detect when a step requests bad gres inside an allocation.
+ -- slurmstepd - Correct possible deadlock when UnkillableStepTimeout triggers.
 
 * Changes in Slurm 21.08.4
 ==========================
