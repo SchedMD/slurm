@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Reset job start time after nodes are rebooted.
  -- Node features (if any) are passed to RebootProgram if run from slurmctld.
  -- Fix sending multiple features to RebootProgram.
+ -- If a task/srun prolog fails don't allow the step to continue running.
 
 * Changes in Slurm 21.08.5
 ==========================
