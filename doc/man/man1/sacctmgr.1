@@ -1390,8 +1390,8 @@ Valid options are
 .TP
 \fBDenyOnLimit\fR
 If set, jobs using this QOS will be rejected at submission time if they do
-not conform to the QOS 'Max' limits as stand\-alone jobs.
-Jobs that go over these limits when other jobs are considered, but conform
+not conform to the QOS 'Max' or 'Min' limits as stand\-alone jobs.
+Jobs that exceed these limits when other jobs are considered, but conform
 to the limits when considered individually will not be rejected. Instead
 they will pend until resources are available.
 Group limits (e.g. \fBGrpTRES\fR) will also be treated like 'Max' limits
