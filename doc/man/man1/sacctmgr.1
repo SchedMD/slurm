@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "October 2021" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "December 2021" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -2839,6 +2839,10 @@ archived and purged from the database, if the old archive file is still in the
 directory ArchiveDir, a new archive file will be created (see ArchiveDir in the
 slurmdbd.conf man page), so the old file will not be overwritten and these files
 will have duplicate records.
+
+.P
+Archive files from the current or any prior Slurm release may be loaded
+through \fBarchive load\fR.
 
 .TP
 \fBFile=\fR
