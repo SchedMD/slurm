@@ -143,6 +143,8 @@ documents those changes that are of interest to users and administrators.
  -- Do not run the job if PrologSlurmctld times out.
  -- Fix SPANK plugin calls slurm_spank_job_prolog and slurm_spank_job_epilog
     not properly respecting PrologEpilogTimeout.
+ -- Add support for 'scontrol delete <ENTITY> <ID>' format alongside the already
+    expected 'scontrol delete <ENTITY>=<ID>'.
 
 * Changes in Slurm 21.08.7
 ==========================

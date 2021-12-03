@@ -1613,20 +1613,24 @@ static void _delete_it(int argc, char **argv)
 	char *tag = NULL, *val = NULL;
 	int tag_len = 0;
 
-	if (argc != 1) {
-		error("Only one option follows delete.  %d given.", argc);
-		exit_code = 1;
-		return;
-	}
 
-	tag = argv[0];
-	val = strchr(argv[0], '=');
-	if (val) {
-		tag_len = val - argv[0];
-		val++;
+	if (argc == 1) {
+		tag = argv[0];
+		val = strchr(argv[0], '=');
+		if (val) {
+			tag_len = val - argv[0];
+			val++;
+		} else {
+			error("Proper format is 'delete <ENTITY>=<ID>' or 'delete <ENTITY> <ID>'");
+			exit_code = 1;
+			return;
+		}
+	} else if (argc == 2) {
+		tag = argv[0];
+		tag_len = strlen(argv[0]);
+		val = argv[1];
 	} else {
-		error("Proper format is 'delete Partition=p'"
-		      " or 'delete Reservation=r'");
+		error("Proper format is 'delete <ENTITY>=<ID>' or 'delete <ENTITY> <ID>'");
 		exit_code = 1;
 		return;
 	}
