@@ -474,6 +474,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Unix socket name exceeded maximum length"		},
 	{ ESLURMD_CONTAINER_RUNTIME_INVALID,
 	  "Container runtime not configured or invalid"		},
+	{ ESLURMD_CPU_BIND_ERROR,
+	  "Unable to satisfy cpu bind request"			},
 
 	/* slurmd errors in user batch job */
 	{ ESCRIPT_CHDIR_FAILED,

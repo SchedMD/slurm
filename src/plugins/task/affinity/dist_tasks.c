@@ -275,11 +275,13 @@ void batch_bind(batch_job_launch_msg_t *req)
 	slurm_cred_free_args(&arg);
 }
 
-static void _validate_map(launch_tasks_request_msg_t *req, char *avail_mask)
+static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
+			 char **err_msg)
 {
 	char *tmp_map, *save_ptr = NULL, *tok;
 	cpu_set_t avail_cpus;
 	bool superset = true;
+	int rc = SLURM_SUCCESS;
 
 	CPU_ZERO(&avail_cpus);
 	(void) task_str_to_cpuset(&avail_cpus, avail_mask);
@@ -298,20 +300,27 @@ static void _validate_map(launch_tasks_request_msg_t *req, char *avail_mask)
 	xfree(tmp_map);
 
 	if (!superset) {
-		info("Ignoring user CPU binding outside of job step allocation, allocated CPUs are: %s.",
-		     avail_mask);
+		error("CPU binding outside of job step allocation, allocated CPUs are: %s.",
+		      avail_mask);
+		if (err_msg)
+			xstrfmtcat(*err_msg, "CPU binding outside of job step allocation, allocated CPUs are: %s.",
+			      avail_mask);
 		req->cpu_bind_type &= (~CPU_BIND_MAP);
 		req->cpu_bind_type |=   CPU_BIND_MASK;
 		xfree(req->cpu_bind);
 		req->cpu_bind = xstrdup(avail_mask);
+		rc = ESLURMD_CPU_BIND_ERROR;
 	}
+	return rc;
 }
 
-static void _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
+static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
+			  char **err_msg)
 {
 	char *new_mask = NULL, *save_ptr = NULL, *tok;
 	cpu_set_t avail_cpus, task_cpus;
 	bool superset = true;
+	int rc = SLURM_SUCCESS;
 
 	CPU_ZERO(&avail_cpus);
 	(void) task_str_to_cpuset(&avail_cpus, avail_mask);
@@ -347,12 +356,17 @@ static void _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
 	}
 
 	if (!superset) {
-		info("Ignoring user CPU binding outside of job step allocation, allocated CPUs are: %s.",
-		     avail_mask);
+		error("CPU binding outside of job step allocation, allocated CPUs are: %s.",
+		      avail_mask);
+		if (err_msg)
+			xstrfmtcat(*err_msg, "CPU binding outside of job step allocation, allocated CPUs are: %s.",
+			      avail_mask);
+		rc = ESLURMD_CPU_BIND_ERROR;
 	}
 
 	xfree(req->cpu_bind);
 	req->cpu_bind = new_mask;
+	return rc;
 }
 
 /*
@@ -368,10 +382,12 @@ static void _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
  * generate the appropriate cpu_bind type and string which results in
  * the specified lllp distribution.
  *
- * IN/OUT- job launch request (cpu_bind_type and cpu_bind updated)
- * IN- global task id array
+ * IN/OUT req - job launch request (cpu_bind_type and cpu_bind updated)
+ * IN node_id - global task id array
+ * OUT err_msg - optional string to pass out error message.
  */
-void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
+extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
+			     char **err_msg)
 {
 	int rc = SLURM_SUCCESS;
 	bitstr_t **masks = NULL;
@@ -411,12 +427,24 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 					       &part_sockets, &part_cores);
 		if (!avail_mask) {
 			error("Could not determine allocated CPUs");
+			if (err_msg)
+				xstrfmtcat(*err_msg, "Could not determine allocated CPUs");
+			rc = ESLURMD_CPU_BIND_ERROR;
 		} else if ((whole_nodes == 0) &&
 			   (req->job_core_spec == NO_VAL16) &&
 			   (!(req->cpu_bind_type & CPU_BIND_MAP)) &&
 			   (!(req->cpu_bind_type & CPU_BIND_MASK))) {
-			info("entire node must be allocated, "
-			     "disabling affinity");
+
+			if (!(req->cpu_bind_type & CPU_BIND_NONE)) {
+				rc = ESLURMD_CPU_BIND_ERROR;
+				slurm_sprint_cpu_bind_type(buf_type,
+							   req->cpu_bind_type);
+				error("Entire node must be allocated for %s",
+				      buf_type);
+				if (err_msg)
+					xstrfmtcat(*err_msg, "Entire node must be allocated for %s",
+						   buf_type);
+			}
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
 			req->cpu_bind_type &= (~bind_mode);
@@ -424,16 +452,18 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		} else {
 			if (req->job_core_spec == NO_VAL16) {
 				if (req->cpu_bind_type & CPU_BIND_MASK)
-					_validate_mask(req, avail_mask);
+					rc = _validate_mask(req, avail_mask,
+							    err_msg);
 				else if (req->cpu_bind_type & CPU_BIND_MAP)
-					_validate_map(req, avail_mask);
+					rc = _validate_map(req, avail_mask,
+							   err_msg);
 			}
 			xfree(avail_mask);
 		}
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("JobId=%u manual binding: %s",
 		     req->step_id.job_id, buf_type);
-		return;
+		return rc;
 	}
 
 	if (!(req->cpu_bind_type & bind_entity)) {
@@ -500,7 +530,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		info("JobId=%u auto binding off: %s",
 		     req->step_id.job_id, buf_type);
-		return;
+		return rc;
 
   make_auto:	xfree(avail_mask);
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
@@ -582,6 +612,7 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	}
 	if (masks)
 		_lllp_free_masks(maxtasks, masks);
+	return rc;
 }
 
 

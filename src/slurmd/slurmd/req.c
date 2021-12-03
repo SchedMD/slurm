@@ -1395,6 +1395,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #ifndef HAVE_FRONT_END
 	bool     first_job_run;
 #endif
+	char *errmsg = NULL;
+
 	slurm_addr_t self;
 	slurm_addr_t *cli = &msg->orig_addr;
 	hostset_t step_hset = NULL;
@@ -1470,7 +1472,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 	/* Must follow _check_job_credential(), which sets some req fields */
-	task_g_slurmd_launch_request(req, node_id);
+	if ((errnum = task_g_slurmd_launch_request(req, node_id, &errmsg))) {
+		slurm_mutex_unlock(&prolog_mutex);
+		goto done;
+	}
 
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {
@@ -1607,7 +1612,7 @@ done:
 	if (step_hset)
 		hostset_destroy(step_hset);
 
-	if (slurm_send_rc_msg(msg, errnum) < 0) {
+	if (slurm_send_rc_err_msg(msg, errnum, errmsg) < 0) {
 		error("%s: unable to send return code to address:port=%pA msg_type=%u: %m",
 		      __func__, &msg->address, msg->msg_type);
 

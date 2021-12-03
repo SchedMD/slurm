@@ -31,6 +31,8 @@ HIGHLIGHTS
  -- Reset job start time after nodes are rebooted, previously only done for
     cloud/power save boots.
  -- Node features (if any) are passed to RebootProgram if run from slurmctld.
+ -- Fail srun when using invalid --cpu-bind options (e.g. --cpu-bind=map_cpu:99
+    when only 10 cpus are allocated).
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
@@ -45,3 +47,5 @@ COMMAND CHANGES (see man pages for details)
 API CHANGES
 ===========
  -- openapi/v0.0.35 - Plugin has been removed.
+ -- task/slurmd_launch_request() now takes an optional error message
+    string to pass out error messages.
