@@ -346,9 +346,10 @@ array will be quickly skipped.</p>
 Additional job records are only created as needed, typically when a task
 of a job array is started, which provides a very scalable mechanism to
 manage large job counts.
-Each task of the job array will have a unique Slurm "job_id", but
-all will have the same "array_job_id" value.</p>
+Each task of the job array will share the same ArrayJobId but will have their
+own unique ArrayTaskId. In addition to the ArrayJobId, each job will have a
+unique JobId that gets assigned as the tasks are started.</p>
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 3 December 2021</p>
 
 <!--#include virtual="footer.txt"-->
