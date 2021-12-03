@@ -112,6 +112,7 @@ static void	_drain_node(node_record_t *node_ptr, char *reason,
 static front_end_record_t * _front_end_reg(
 				slurm_node_registration_status_msg_t *reg_msg);
 static bool	_is_cloud_hidden(node_record_t *node_ptr);
+static void    _make_node_unavail(node_record_t *node_ptr);
 static void 	_make_node_down(node_record_t *node_ptr,
 				time_t event_time);
 static bool	_node_is_hidden(node_record_t *node_ptr, uid_t uid);
@@ -1612,9 +1613,15 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 				if (state_val & NODE_STATE_POWERED_DOWN) {
 					/* Force power down */
-					_make_node_down(node_ptr, now);
+					_make_node_unavail(node_ptr);
+					/*
+					 * Kill any running jobs and requeue if
+					 * possible.
+					 */
 					kill_running_job_by_node_name(
 						this_node_name);
+					node_ptr->node_state &=
+						(~NODE_STATE_POWERING_UP);
 				} else if (state_val & NODE_STATE_POWER_DRAIN) {
 					/* power down asap -- drain */
 					_drain_node(node_ptr, "POWER_DOWN_ASAP",
@@ -3997,23 +4004,36 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 	last_node_update = now;
 }
 
+/*
+ * Subset of _make_node_down() except for marking node down, trigger and
+ * accounting update.
+ */
+static void _make_node_unavail(node_record_t *node_ptr)
+{
+	int inx = node_ptr - node_record_table_ptr;
+
+	xassert(node_ptr);
+
+	node_ptr->node_state &= (~NODE_STATE_COMPLETING);
+	bit_clear(avail_node_bitmap, inx);
+	bit_clear(cg_node_bitmap, inx);
+	bit_set(idle_node_bitmap, inx);
+	bit_set(share_node_bitmap, inx);
+	bit_clear(up_node_bitmap, inx);
+}
+
 /* _make_node_down - flag specified node as down */
 static void _make_node_down(node_record_t *node_ptr, time_t event_time)
 {
-	int inx = node_ptr - node_record_table_ptr;
 	uint32_t node_flags;
 
 	xassert(node_ptr);
+
+	_make_node_unavail(node_ptr);
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-	node_flags &= (~NODE_STATE_COMPLETING);
 	node_ptr->node_state = NODE_STATE_DOWN | node_flags;
 	node_ptr->owner = NO_VAL;
 	xfree(node_ptr->mcs_label);
-	bit_clear (avail_node_bitmap, inx);
-	bit_clear (cg_node_bitmap,    inx);
-	bit_set   (idle_node_bitmap,  inx);
-	bit_set   (share_node_bitmap, inx);
-	bit_clear (up_node_bitmap,    inx);
 	trigger_node_down(node_ptr);
 	last_node_update = time (NULL);
 	clusteracct_storage_g_node_down(acct_db_conn,
