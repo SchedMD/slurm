@@ -99,6 +99,7 @@ documents those changes that are of interest to users and administrators.
     diag query.
  -- Handle scontrol setdebug[flags] and scontrol reconfigure in slurmscriptd.
  -- openapi/v0.0.38 - add /licenses endpoint.
+ -- slurmrestd - only compile JWT authentication plugin if libjwt is present.
 
 * Changes in Slurm 21.08.7
 ==========================
