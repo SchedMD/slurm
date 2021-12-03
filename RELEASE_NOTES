@@ -39,6 +39,7 @@ HIGHLIGHTS
  -- Run MailProg through slurmscriptd instead of directly fork+exec()'ing
     from slurmctld.
  -- Add acct_gather_interconnect/sysfs plugin.
+ -- Future and Cloud nodes are treated as "Planned Down" in usage reports.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

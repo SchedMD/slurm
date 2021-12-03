@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
     denied due to AllowUsers or DenyUsers in burst_buffer.conf.
  -- Fatal if the mutually-exclusive JobAcctGatherParams options of UsePss and
     NoShared are both defined.
+ -- Future and Cloud nodes are treated as "Planned Down" in usage reports.
 
 * Changes in Slurm 21.08.6
 ==========================
