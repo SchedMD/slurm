@@ -106,7 +106,6 @@
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/task_plugin.h"
 

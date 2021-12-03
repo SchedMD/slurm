@@ -88,6 +88,7 @@
 #include "src/common/prep.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/run_command.h"
 #include "src/common/select.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
@@ -110,7 +111,6 @@
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
 #include "src/slurmd/common/slurmstepd_init.h"
@@ -369,6 +369,7 @@ main (int argc, char **argv)
 	if (conf->cleanstart && switch_g_clear_node_state())
 		fatal("Unable to clear interconnect state.");
 	file_bcast_init();
+	run_command_init();
 
 	_create_msg_socket();
 
@@ -397,6 +398,7 @@ main (int argc, char **argv)
 		error("Unable to remove pidfile `%s': %m",
 		      slurm_conf.slurmd_pidfile);
 
+	run_command_shutdown();
 	_wait_for_all_threads(120);
 	_slurmd_fini();
 	_destroy_conf();
@@ -2599,12 +2601,34 @@ extern int run_script_health_check(void)
 	if (slurm_conf.health_check_program &&
 	    slurm_conf.health_check_interval) {
 		char **env = env_array_create();
+		char *cmd_argv[2];
+		char *resp = NULL;
+
+		cmd_argv[0] = slurm_conf.health_check_program;
+		cmd_argv[1] = NULL;
+
 		setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
 
-		rc = run_script("health_check", slurm_conf.health_check_program,
-				0, 60, env, 0);
+		resp = run_command("health_check", cmd_argv[0], cmd_argv, env,
+				   60 * 1000, 0, &rc);
+
+		if (rc) {
+			if (WIFEXITED(rc))
+				error("health_check failed: rc:%u output:%s",
+				      WEXITSTATUS(rc), resp);
+			else if (WIFSIGNALED(rc))
+				error("health_check killed by signal %u output:%s",
+				      WTERMSIG(rc), resp);
+			else
+				error("health_check didn't run: status:%d reason:%s",
+				      rc, resp);
+			rc = SLURM_ERROR;
+		} else
+			debug2("health_check success rc:%d output:%s",
+			       rc, resp);
 
 		env_array_free(env);
+		xfree(resp);
 	}
 
 	return rc;
