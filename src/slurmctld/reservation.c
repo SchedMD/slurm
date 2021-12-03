@@ -6146,8 +6146,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 
 		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = bitmap2node_name(*node_bitmap);
-			info("%s: %pJ reservation:%s nodes:%s",
-			     __func__, job_ptr, job_ptr->resv_name, nodes);
+			verbose("%s: %pJ reservation:%s nodes:%s",
+				__func__, job_ptr, job_ptr->resv_name, nodes);
 			xfree(nodes);
 		}
 
