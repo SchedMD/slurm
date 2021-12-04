@@ -8803,7 +8803,7 @@ extern bool valid_tres_cnt(char *tres)
 		}
 
 		/* gres doesn't have to be a TRES to be valid */
-		if (!xstrcmp(tok, "gres")) {
+		if (sep && !xstrcmp(tok, "gres")) {
 			/* We only want the first part of a gres for this */
 			if ((tok = strchr(sep, ':')))
 				tok[0] = '\0';

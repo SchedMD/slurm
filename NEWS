@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
     SLURM_NTASKS_PER_GPU are set.
  -- Handle oversubscription request correctly when also requesting
     --ntasks-per-tres.
+ -- Correctly detect when a step requests bad gres inside an allocation.
 
 * Changes in Slurm 21.08.4
 ==========================
