@@ -64,7 +64,7 @@ typedef struct {
 /*
  * Local data
  */
-typedef struct slurm_select_ops {
+typedef struct {
 	uint32_t	(*plugin_id);
 	int		(*state_save)		(char *dir_name);
 	int		(*state_restore)	(char *dir_name);
