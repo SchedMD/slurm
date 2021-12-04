@@ -46,10 +46,6 @@
 #include "src/common/plugrack.h"
 #include "src/slurmctld/slurmctld.h"
 
-/* NO_JOB_RUNNING is used by select/blugene, select/bgq, smap and sview */
-#define NO_JOB_RUNNING -1
-#define NOT_FROM_CONTROLLER -2
-
 typedef struct {
 	bitstr_t *avail_nodes;      /* usable nodes are set on input, nodes
 				     * not required to satisfy the request
