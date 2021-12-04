@@ -80,16 +80,16 @@
 
 #include "src/common/cbuf.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/fd.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
-#include "src/common/node_select.h"
-#include "src/common/fd.h"
+#include "src/common/select.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/switch.h"
+#include "src/common/util-net.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/util-net.h"
-#include "src/common/slurm_resource_info.h"
 
 #ifndef CPUSET_DIR
 #define CPUSET_DIR "/dev/cpuset"

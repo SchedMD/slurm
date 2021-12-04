@@ -53,7 +53,7 @@
 #include "src/common/daemonize.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/node_select.h"
+#include "src/common/select.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/switch.h"

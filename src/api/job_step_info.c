@@ -44,8 +44,8 @@
 #include "slurm/slurm.h"
 
 #include "src/common/cpu_frequency.h"
-#include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

@@ -43,7 +43,7 @@
 
 #include "src/common/plugin.h"
 #include "src/common/log.h"
-#include "src/common/node_select.h"
+#include "src/common/select.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"

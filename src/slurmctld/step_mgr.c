@@ -57,7 +57,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
-#include "src/common/node_select.h"
+#include "src/common/select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_jobacct_gather.h"

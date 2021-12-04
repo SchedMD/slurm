@@ -33,12 +33,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "src/common/uid.h"
-#include "src/common/node_select.h"
-#include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
+#include "src/common/select.h"
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
+
+#include "src/sview/sview.h"
 
 #define _DEBUG 0
 #define MAX_CANCEL_RETRY 10

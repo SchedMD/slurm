@@ -49,8 +49,8 @@
 
 #include "slurm/slurm.h"
 
-#include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/select.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_ext_sensors.h"

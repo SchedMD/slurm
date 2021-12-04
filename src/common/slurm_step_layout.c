@@ -35,8 +35,8 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
-#include "src/common/node_select.h"
 #include "src/common/read_config.h"
+#include "src/common/select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"

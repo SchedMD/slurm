@@ -42,7 +42,8 @@
 #include "as_mysql_federation.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_wckey.h"
-#include "src/common/node_select.h"
+
+#include "src/common/select.h"
 
 extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 				       const char *cluster,

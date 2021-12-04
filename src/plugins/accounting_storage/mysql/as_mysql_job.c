@@ -43,8 +43,8 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/gres.h"
-#include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/select.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_time.h"
 

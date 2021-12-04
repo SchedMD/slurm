@@ -46,7 +46,7 @@
 
 #include <sys/stat.h>
 
-#include "src/common/node_select.h"
+#include "src/common/select.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"

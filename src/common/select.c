@@ -1,13 +1,5 @@
 /*****************************************************************************\
- *  node_select.c - node selection plugin wrapper.
- *
- *  NOTE: The node selection plugin itself is intimately tied to slurmctld
- *  functions and data structures. Some related functions (e.g. data structure
- *  un/packing, environment variable setting) are required by most SLURM
- *  commands. Since some of these commands must be executed on the BlueGene
- *  front-end nodes, the functions they require are here rather than within
- *  the plugin. This is because functions required by the plugin can not be
- *  resolved on the front-end nodes, so we can't load the plugins there.
+ *  select.c - resource selection plugin wrapper.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
@@ -51,14 +43,14 @@
 #include <pthread.h>
 
 #include "src/common/list.h"
-#include "src/common/node_select.h"
+#include "src/common/select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_selecttype_info.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
- * Must be synchronized with slurm_select_ops_t in node_select.h.
+ * Must be synchronized with slurm_select_ops_t in select.h.
  * Also must be synchronized with the other_select.c in
  * the select/other lib. (We tried to make it so we only had to
  * define it once, but it didn't seem to work.)

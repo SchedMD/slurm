@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  node_select.h - Define node selection plugin functions.
+ *  select.h - resource selection plugin wrapper.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _NODE_SELECT_H
-#define _NODE_SELECT_H
+#ifndef _COMMON_SELECT_H_
+#define _COMMON_SELECT_H_
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -593,4 +593,4 @@ extern bitstr_t * select_g_resv_test(resv_desc_msg_t *resv_desc_ptr,
 extern int select_g_get_info_from_plugin(enum select_plugindata_info dinfo,
 					 job_record_t *job_ptr, void *data);
 
-#endif /*__SELECT_PLUGIN_API_H__*/
+#endif

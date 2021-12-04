@@ -39,12 +39,12 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/select.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_priority.h"
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/acct_policy.h"
-#include "src/common/node_select.h"
-#include "src/common/slurm_priority.h"
 
 #define _DEBUG 0
 

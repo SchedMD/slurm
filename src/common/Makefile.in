@@ -161,11 +161,11 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	forward.lo gpu.lo global_defaults.lo gres.lo group_cache.lo \
 	half_duplex.lo hostlist.lo http.lo io_hdr.lo job_options.lo \
 	job_resources.lo list.lo log.lo net.lo node_conf.lo \
-	node_features.lo node_select.lo openapi.lo optz.lo pack.lo \
-	parse_config.lo parse_time.lo parse_value.lo plugin.lo \
-	plugrack.lo plugstack.lo power.lo prep.lo print_fields.lo \
-	proc_args.lo read_config.lo reverse_tree.lo run_command.lo \
-	run_in_daemon.lo setproctitle.lo site_factor.lo \
+	node_features.lo openapi.lo optz.lo pack.lo parse_config.lo \
+	parse_time.lo parse_value.lo plugin.lo plugrack.lo \
+	plugstack.lo power.lo prep.lo print_fields.lo proc_args.lo \
+	read_config.lo reverse_tree.lo run_command.lo run_in_daemon.lo \
+	select.lo setproctitle.lo site_factor.lo \
 	slurm_accounting_storage.lo slurm_acct_gather.lo \
 	slurm_acct_gather_energy.lo slurm_acct_gather_filesystem.lo \
 	slurm_acct_gather_interconnect.lo slurm_acct_gather_profile.lo \
@@ -225,15 +225,15 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/list.Plo \
 	./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
 	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/node_features.Plo \
-	./$(DEPDIR)/node_select.Plo ./$(DEPDIR)/openapi.Plo \
-	./$(DEPDIR)/optz.Plo ./$(DEPDIR)/pack.Plo \
-	./$(DEPDIR)/parse_config.Plo ./$(DEPDIR)/parse_time.Plo \
-	./$(DEPDIR)/parse_value.Plo ./$(DEPDIR)/plugin.Plo \
-	./$(DEPDIR)/plugrack.Plo ./$(DEPDIR)/plugstack.Plo \
-	./$(DEPDIR)/power.Plo ./$(DEPDIR)/prep.Plo \
-	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/proc_args.Plo \
-	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/reverse_tree.Plo \
-	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
+	./$(DEPDIR)/openapi.Plo ./$(DEPDIR)/optz.Plo \
+	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/parse_config.Plo \
+	./$(DEPDIR)/parse_time.Plo ./$(DEPDIR)/parse_value.Plo \
+	./$(DEPDIR)/plugin.Plo ./$(DEPDIR)/plugrack.Plo \
+	./$(DEPDIR)/plugstack.Plo ./$(DEPDIR)/power.Plo \
+	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/print_fields.Plo \
+	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
+	./$(DEPDIR)/reverse_tree.Plo ./$(DEPDIR)/run_command.Plo \
+	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/select.Plo \
 	./$(DEPDIR)/setproctitle.Plo ./$(DEPDIR)/site_factor.Plo \
 	./$(DEPDIR)/slurm_accounting_storage.Plo \
 	./$(DEPDIR)/slurm_acct_gather.Plo \
@@ -633,8 +633,6 @@ libcommon_la_SOURCES = \
 	node_conf.h				\
 	node_features.c				\
 	node_features.h				\
-	node_select.c				\
-	node_select.h				\
 	openapi.c				\
 	openapi.h				\
 	optz.c					\
@@ -670,6 +668,8 @@ libcommon_la_SOURCES = \
 	run_command.h				\
 	run_in_daemon.c				\
 	run_in_daemon.h				\
+	select.c				\
+	select.h				\
 	setproctitle.c				\
 	setproctitle.h				\
 	site_factor.c				\
@@ -884,7 +884,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_conf.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_features.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_select.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openapi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optz.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack.Plo@am__quote@ # am--include-marker
@@ -902,6 +901,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_command.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_in_daemon.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/site_factor.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_accounting_storage.Plo@am__quote@ # am--include-marker
@@ -1113,7 +1113,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/net.Plo
 	-rm -f ./$(DEPDIR)/node_conf.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
-	-rm -f ./$(DEPDIR)/node_select.Plo
 	-rm -f ./$(DEPDIR)/openapi.Plo
 	-rm -f ./$(DEPDIR)/optz.Plo
 	-rm -f ./$(DEPDIR)/pack.Plo
@@ -1131,6 +1130,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/reverse_tree.Plo
 	-rm -f ./$(DEPDIR)/run_command.Plo
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
+	-rm -f ./$(DEPDIR)/select.Plo
 	-rm -f ./$(DEPDIR)/setproctitle.Plo
 	-rm -f ./$(DEPDIR)/site_factor.Plo
 	-rm -f ./$(DEPDIR)/slurm_accounting_storage.Plo
@@ -1262,7 +1262,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/net.Plo
 	-rm -f ./$(DEPDIR)/node_conf.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
-	-rm -f ./$(DEPDIR)/node_select.Plo
 	-rm -f ./$(DEPDIR)/openapi.Plo
 	-rm -f ./$(DEPDIR)/optz.Plo
 	-rm -f ./$(DEPDIR)/pack.Plo
@@ -1280,6 +1279,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/reverse_tree.Plo
 	-rm -f ./$(DEPDIR)/run_command.Plo
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
+	-rm -f ./$(DEPDIR)/select.Plo
 	-rm -f ./$(DEPDIR)/setproctitle.Plo
 	-rm -f ./$(DEPDIR)/site_factor.Plo
 	-rm -f ./$(DEPDIR)/slurm_accounting_storage.Plo

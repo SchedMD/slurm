@@ -51,14 +51,14 @@
 #include "other_select.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
-#include "src/common/node_select.h"
 
 uint16_t other_select_type_param = 0;
 
 /*
- * Must be synchronized with slurm_select_ops_t in node_select.h.
+ * Must be synchronized with slurm_select_ops_t in select.h.
  */
 const char *node_select_syms[] = {
 	"plugin_id",
@@ -137,7 +137,7 @@ extern int other_select_init(void)
 	if (n_syms != sizeof(ops))
 		fatal("For some reason node_select_syms in "
 		      "src/plugins/select/other/other_select.c differs from "
-		      "slurm_select_ops_t found in src/common/node_select.h.  "
+		      "slurm_select_ops_t found in src/common/select.h.  "
 		      "node_select_syms should match what is in "
 		      "src/common/node_select.c");
 
