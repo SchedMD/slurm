@@ -178,12 +178,12 @@ extern int select_string_to_plugin_id(const char *plugin);
 /*
  * Initialize context for node selection plugin
  */
-extern int slurm_select_init(bool only_default);
+extern int select_g_init(bool only_default);
 
 /*
  * Terminate plugin and free all associated memory
  */
-extern int slurm_select_fini(void);
+extern int select_g_fini(void);
 
 /* Get this plugin's sequence number in Slurm's internal tables */
 extern int select_get_plugin_id_pos(uint32_t plugin_id);

@@ -694,7 +694,7 @@ relinquish:
 	}
 
 #ifdef MEMORY_LEAK_DEBUG
-	slurm_select_fini();
+	select_g_fini();
 	slurm_reset_all_options(&opt, false);
 	slurm_auth_fini();
 	slurm_conf_destroy();

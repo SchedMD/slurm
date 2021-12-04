@@ -176,7 +176,7 @@ int srun(int ac, char **av)
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 	_set_exit_code();
 
-	if (slurm_select_init(0) != SLURM_SUCCESS)
+	if (select_g_init(0) != SLURM_SUCCESS)
 		fatal( "failed to initialize node selection plugin" );
 
 	if (switch_init(0) != SLURM_SUCCESS )
@@ -228,7 +228,7 @@ int srun(int ac, char **av)
 
 
 #ifdef MEMORY_LEAK_DEBUG
-	slurm_select_fini();
+	select_g_fini();
 	switch_fini();
 	slurm_reset_all_options(&opt, false);
 	slurm_auth_fini();

@@ -507,7 +507,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize authentication plugin");
 		}
 	}
-	if (slurm_select_init(0) != SLURM_SUCCESS) {
+	if (select_g_init(0) != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize node selection plugin");
 			test_config_rc = 1;
@@ -515,7 +515,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize node selection plugin");
 		}
 	}
-	/* gres_init() must follow slurm_select_init() */
+	/* gres_init() must follow select_g_init() */
 	if (gres_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize gres plugin");
@@ -883,7 +883,7 @@ int main(int argc, char **argv)
 	slurm_preempt_fini();
 	jobacct_gather_fini();
 	acct_gather_conf_destroy();
-	slurm_select_fini();
+	select_g_fini();
 	slurm_topo_fini();
 	slurm_auth_fini();
 	switch_fini();

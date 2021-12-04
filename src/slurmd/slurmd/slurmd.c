@@ -1699,7 +1699,7 @@ _slurmd_init(void)
 	slurm_conf_init(conf->conffile);
 	init_node_conf();
 
-	if (slurm_select_init(1) != SLURM_SUCCESS)
+	if (select_g_init(1) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (conf->print_gres)
 		slurm_conf.debug_flags = DEBUG_FLAG_GRES;
@@ -1911,7 +1911,7 @@ _slurmd_fini(void)
 	prep_g_fini();
 	slurm_topo_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
-	slurm_select_fini();
+	select_g_fini();
 	spank_slurmd_exit();
 	cpu_freq_fini();
 	_resource_spec_fini();

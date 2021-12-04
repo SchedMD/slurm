@@ -129,7 +129,7 @@ main (int argc, char **argv)
 
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
-	if (slurm_select_init(1) != SLURM_SUCCESS )
+	if (select_g_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
 		fatal( "failed to initialize authentication plugin" );

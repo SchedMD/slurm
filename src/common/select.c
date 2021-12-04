@@ -178,7 +178,7 @@ extern int select_char2coord(char coord)
 /*
  * Initialize context for node selection plugin
  */
-extern int slurm_select_init(bool only_default)
+extern int select_g_init(bool only_default)
 {
 	int retval = SLURM_SUCCESS;
 	char *select_type = NULL;
@@ -272,7 +272,7 @@ done:
 	return retval;
 }
 
-extern int slurm_select_fini(void)
+extern int select_g_fini(void)
 {
 	int rc = SLURM_SUCCESS, i, j;
 
@@ -300,7 +300,7 @@ extern int select_get_plugin_id_pos(uint32_t plugin_id)
 	int i;
 	static bool cray_other_cons_res = false;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 again:
 	for (i = 0; i < select_context_cnt; i++) {
@@ -376,7 +376,7 @@ extern int select_get_plugin_id(void)
 {
 	int plugin_pos;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	plugin_pos = working_cluster_rec ?
@@ -391,7 +391,7 @@ extern int select_running_linear_based(void)
 {
 	int rc = 0;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return 0;
 
 	switch (*(ops[select_context_default].plugin_id)) {
@@ -415,7 +415,7 @@ extern int select_g_state_save(char *dir_name)
 	DEF_TIMERS;
 	int rc;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	START_TIMER;
@@ -433,7 +433,7 @@ extern int select_g_state_save(char *dir_name)
  */
 extern int select_g_state_restore(char *dir_name)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].state_restore))
@@ -446,7 +446,7 @@ extern int select_g_state_restore(char *dir_name)
  */
 extern int select_g_job_init(List job_list)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].job_init))
@@ -460,7 +460,7 @@ extern int select_g_job_init(List job_list)
  */
 extern int select_g_node_init(node_record_t *node_ptr, int node_cnt)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].node_init))
@@ -494,7 +494,7 @@ extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     List *preemptee_job_list,
 			     bitstr_t *exc_core_bitmap)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].job_test))
@@ -512,7 +512,7 @@ extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
  */
 extern int select_g_job_begin(job_record_t *job_ptr)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].job_begin))
@@ -527,7 +527,7 @@ extern int select_g_job_begin(job_record_t *job_ptr)
  */
 extern int select_g_job_ready(job_record_t *job_ptr)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return -1;
 
 	return (*(ops[select_context_default].job_ready))
@@ -543,7 +543,7 @@ extern int select_g_job_ready(job_record_t *job_ptr)
 extern int select_g_job_expand(job_record_t *from_job_ptr,
 			       job_record_t *to_job_ptr)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return -1;
 
 	return (*(ops[select_context_default].job_expand))
@@ -557,7 +557,7 @@ extern int select_g_job_expand(job_record_t *from_job_ptr,
  */
 extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return -1;
 
 	return (*(ops[select_context_default].job_resized))
@@ -572,7 +572,7 @@ extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
  */
 extern int select_g_job_signal(job_record_t *job_ptr, int signal)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].job_signal))
@@ -585,7 +585,7 @@ extern int select_g_job_signal(job_record_t *job_ptr, int signal)
  */
 extern int select_g_job_fini(job_record_t *job_ptr)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].job_fini))
@@ -601,7 +601,7 @@ extern int select_g_job_fini(job_record_t *job_ptr)
  */
 extern int select_g_job_suspend(job_record_t *job_ptr, bool indf_susp)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].job_suspend))
@@ -617,7 +617,7 @@ extern int select_g_job_suspend(job_record_t *job_ptr, bool indf_susp)
  */
 extern int select_g_job_resume(job_record_t *job_ptr, bool indf_susp)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].job_resume))
@@ -643,7 +643,7 @@ extern bitstr_t *select_g_step_pick_nodes(job_record_t *job_ptr,
 					  uint32_t node_count,
 					  bitstr_t **avail_nodes)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return NULL;
 
 	xassert(step_jobinfo);
@@ -658,7 +658,7 @@ extern bitstr_t *select_g_step_pick_nodes(job_record_t *job_ptr,
  */
 extern int select_g_step_start(step_record_t *step_ptr)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].step_start))
@@ -673,7 +673,7 @@ extern int select_g_step_start(step_record_t *step_ptr)
  */
 extern int select_g_step_finish(step_record_t *step_ptr, bool killing_step)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].step_finish))
@@ -687,7 +687,7 @@ extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
 	void *data = NULL;
 	uint32_t plugin_id;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	if (nodeinfo) {
@@ -714,7 +714,7 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 {
 	dynamic_plugin_data_t *nodeinfo_ptr = NULL;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	nodeinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
@@ -767,7 +767,7 @@ extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void)
 	dynamic_plugin_data_t *nodeinfo_ptr = NULL;
 	uint32_t plugin_id;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return NULL;
 
 	plugin_id = working_cluster_rec ?
@@ -784,7 +784,7 @@ extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	if (nodeinfo) {
@@ -798,7 +798,7 @@ extern int select_g_select_nodeinfo_free(dynamic_plugin_data_t *nodeinfo)
 
 extern int select_g_select_nodeinfo_set_all(void)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].nodeinfo_set_all))
@@ -807,7 +807,7 @@ extern int select_g_select_nodeinfo_set_all(void)
 
 extern int select_g_select_nodeinfo_set(job_record_t *job_ptr)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].nodeinfo_set))
@@ -822,7 +822,7 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 	void *nodedata = NULL;
 	uint32_t plugin_id;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	if (nodeinfo) {
@@ -840,7 +840,7 @@ extern dynamic_plugin_data_t *select_g_select_jobinfo_alloc(void)
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;
 	uint32_t plugin_id;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return NULL;
 
 	plugin_id = working_cluster_rec ?
@@ -860,7 +860,7 @@ extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 	if (jobinfo) {
 		if (jobinfo->data) {
@@ -879,7 +879,7 @@ extern int select_g_select_jobinfo_set(dynamic_plugin_data_t *jobinfo,
 	void *jobdata = NULL;
 	uint32_t plugin_id;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	if (jobinfo) {
@@ -904,7 +904,7 @@ extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
 	void *jobdata = NULL;
 	uint32_t plugin_id;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	if (jobinfo) {
@@ -926,7 +926,7 @@ extern dynamic_plugin_data_t *select_g_select_jobinfo_copy(
 	dynamic_plugin_data_t *jobinfo)
 {
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return NULL;
 
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
@@ -952,7 +952,7 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 	void *data = NULL;
 	uint32_t plugin_id;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	if (jobinfo) {
@@ -983,7 +983,7 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 {
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
@@ -1043,7 +1043,7 @@ extern char *select_g_select_jobinfo_sprint(dynamic_plugin_data_t *jobinfo,
 	void *data = NULL;
 	uint32_t plugin_id;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return NULL;
 	if (jobinfo) {
 		data = jobinfo->data;
@@ -1066,7 +1066,7 @@ extern char *select_g_select_jobinfo_xstrdup(
 	void *data = NULL;
 	uint32_t plugin_id;
 
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return NULL;
 
 	if (jobinfo) {
@@ -1088,7 +1088,7 @@ extern char *select_g_select_jobinfo_xstrdup(
 extern int select_g_get_info_from_plugin(enum select_plugindata_info dinfo,
 					 job_record_t *job_ptr, void *data)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].
@@ -1103,7 +1103,7 @@ extern int select_g_get_info_from_plugin(enum select_plugindata_info dinfo,
  */
 extern int select_g_update_node_config (int index)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].
@@ -1115,7 +1115,7 @@ extern int select_g_update_node_config (int index)
  */
 extern int select_g_reconfigure (void)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return SLURM_ERROR;
 
 	return (*(ops[select_context_default].reconfigure))();
@@ -1140,7 +1140,7 @@ extern bitstr_t * select_g_resv_test(resv_desc_msg_t *resv_desc_ptr,
 				     bitstr_t *avail_bitmap,
 				     bitstr_t **core_bitmap)
 {
-	if (slurm_select_init(0) < 0)
+	if (select_g_init(0) < 0)
 		return NULL;
 
 	return (*(ops[select_context_default].resv_test))

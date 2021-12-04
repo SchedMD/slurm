@@ -523,7 +523,7 @@ int main(int argc, char **argv)
 	auth_rack = NULL;
 
 	xfree(auth_plugin_handles);
-	slurm_select_fini();
+	select_g_fini();
 	slurm_auth_fini();
 	slurm_conf_destroy();
 	log_fini();

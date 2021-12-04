@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 	// Clean up for valgrind
 	slurm_conf_destroy();
 	gres_fini();
-	slurm_select_fini();
+	select_g_fini();
 	log_fini();
 	xfree(slurm_conf);
 	xfree(gres_conf);
