@@ -77,7 +77,6 @@ static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 
 static int _range_to_map(char* range, uint16_t *map, uint16_t map_size,
 			 int add_threads);
-static int _map_to_range(uint16_t *map, uint16_t map_size, char** prange);
 
 bool     initialized = false;
 uint16_t procs, boards, sockets, cores, threads=1;
@@ -1154,57 +1153,6 @@ xcpuinfo_abs_to_map(char* lrange,uint16_t **map,uint16_t *map_size)
 	return _range_to_map(lrange,*map,*map_size,1);
 }
 
-int
-xcpuinfo_map_to_mac(uint16_t *map,uint16_t map_size,char** range)
-{
-	return _map_to_range(map,map_size,range);
-}
-
-int
-xcpuinfo_mac_to_map(char* lrange,uint16_t **map,uint16_t *map_size)
-{
-	*map_size = block_map_size;
-	*map = (uint16_t*) xmalloc(block_map_size*sizeof(uint16_t));
-	/* machine range already includes the hyperthreads */
-	return _range_to_map(lrange,*map,*map_size,0);
-}
-
-int
-xcpuinfo_absmap_to_macmap(uint16_t *amap,uint16_t amap_size,
-			  uint16_t **bmap,uint16_t *bmap_size)
-{
-	/* int i; */
-
-	/* abstract to machine conversion using block map */
-	uint16_t *map_out;
-
-	*bmap_size = amap_size;
-	map_out = (uint16_t*) xmalloc(amap_size*sizeof(uint16_t));
-	*bmap = map_out;
-
-	return SLURM_SUCCESS;
-}
-
-int
-xcpuinfo_macmap_to_absmap(uint16_t *amap,uint16_t amap_size,
-			  uint16_t **bmap,uint16_t *bmap_size)
-{
-	int i;
-
-	/* machine to abstract conversion using inverted block map */
-	uint16_t *cmap;
-	cmap = block_map_inv;
-	*bmap_size = amap_size;
-	*bmap = (uint16_t*) xmalloc(amap_size*sizeof(uint16_t));
-	for( i = 0 ; i < amap_size ; i++) {
-		if ( amap[i] )
-			(*bmap)[cmap[i]]=1;
-		else
-			(*bmap)[cmap[i]]=0;
-	}
-	return SLURM_SUCCESS;
-}
-
 /*
  * set to 1 each element of already allocated map of size
  * map_size if they are present in the input range
@@ -1281,69 +1229,6 @@ _range_to_map(char* range,uint16_t *map,uint16_t map_size,int add_threads)
 		/* bad format for input range */
 		return SLURM_ERROR;
 	}
-
-	return SLURM_SUCCESS;
-}
-
-
-/*
- * allocate and build a range of ids using an input map
- * having printable element set to 1
- */
-static int
-_map_to_range(uint16_t *map,uint16_t map_size,char** prange)
-{
-	size_t len;
-	int num_fl=0;
-	int con_fl=0;
-
-	char *str;
-
-	uint16_t start=0,end=0,i;
-
-	str = xstrdup("");
-	for ( i = 0 ; i < map_size ; i++ ) {
-
-		if ( map[i] ) {
-			num_fl=1;
-			end=i;
-			if ( !con_fl ) {
-				start=end;
-				con_fl=1;
-			}
-		}
-		else if ( num_fl ) {
-			if ( start < end ) {
-				xstrfmtcat(str, "%u-%u,", start, end);
-			}
-			else {
-				xstrfmtcat(str, "%u,", start);
-			}
-			con_fl = num_fl = 0;
-		}
-	}
-	if ( num_fl ) {
-		if ( start < end ) {
-			xstrfmtcat(str, "%u-%u,", start, end);
-		}
-		else {
-			xstrfmtcat(str, "%u,", start);
-		}
-	}
-
-	len = strlen(str);
-	if ( len > 0 ) {
-		str[len-1]='\0';
-	}
-	else {
-		xfree(str);
-		return SLURM_ERROR;
-	}
-
-	if ( prange != NULL )
-		*prange = str;
-	else
-		xfree(str);
 
 	return SLURM_SUCCESS;
 }
