@@ -1382,12 +1382,12 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	stats->total_pgmajfault = NO_VAL64;
 
 	if (cpu_time != NULL)
-		sscanf(cpu_time, "%*s %lu %*s %lu", &stats->usec, &stats->ssec);
+		sscanf(cpu_time, "%*s %"PRIu64" %*s %"PRIu64, &stats->usec, &stats->ssec);
 
 	if ((ptr = xstrstr(memory_stat, "total_rss")))
-		sscanf(ptr, "total_rss %lu", &stats->total_rss);
+		sscanf(ptr, "total_rss %"PRIu64, &stats->total_rss);
 	if ((ptr = xstrstr(memory_stat, "total_pgmajfault")))
-		sscanf(ptr, "total_pgmajfault %lu", &stats->total_pgmajfault);
+		sscanf(ptr, "total_pgmajfault %"PRIu64, &stats->total_pgmajfault);
 
 	xfree(cpu_time);
 	xfree(memory_stat);

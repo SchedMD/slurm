@@ -1750,7 +1750,7 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *job, uid_t uid)
 				jobacctinfo_aggregate(jobacct, temp_jobacct);
 				jobacctinfo_destroy(temp_jobacct);
 			}
-			log_flag(JAG, "%s: step_extern cont_id=%lu includes pid=%lu",
+			log_flag(JAG, "%s: step_extern cont_id=%"PRIu64" includes pid=%"PRIu64,
 				 __func__, job->cont_id, (uint64_t) pids[i]);
 		}
 

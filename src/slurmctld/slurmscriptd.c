@@ -172,7 +172,7 @@ static script_response_t *_script_resp_map_add(void)
 	 * calling _wait_for_script_resp() which will block until the response
 	 * RPC is received.
 	 */
-	script_resp->key = xstrdup_printf("%lu", (uint64_t) pthread_self());
+	script_resp->key = xstrdup_printf("%"PRIu64, (uint64_t) pthread_self());
 	slurm_mutex_init(&script_resp->mutex);
 	script_resp->resp_msg = NULL;
 

@@ -8524,7 +8524,7 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 			 */
 			if (step_min_nodes &&
 			    (step_gres_data->gres_per_step < step_min_nodes)) {
-				xstrfmtcat(msg, "Step requested gres=%s:%lu is less than the requested min nodes=%u",
+				xstrfmtcat(msg, "Step requested gres=%s:%"PRIu64" is less than the requested min nodes=%u",
 					   step_gres_ptr->gres_name,
 					   step_gres_data->gres_per_step,
 					   step_min_nodes);
@@ -8534,7 +8534,7 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 			if (job_gres_data->gres_per_job &&
 			    (job_gres_data->gres_per_job <
 			     step_gres_data->gres_per_step)) {
-				xstrfmtcat(msg, "Step requested gres=%s:%lu is more than the job's gres=%s:%lu",
+				xstrfmtcat(msg, "Step requested gres=%s:%"PRIu64" is more than the job's gres=%s:%"PRIu64,
 					   step_gres_ptr->gres_name,
 					   step_gres_data->gres_per_step,
 					   job_gres_ptr->gres_name,
@@ -8547,7 +8547,7 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 		    step_gres_data->gres_per_node &&
 		    (job_gres_data->gres_per_node <
 		     step_gres_data->gres_per_node)) {
-			xstrfmtcat(msg, "Step requested gres_per_node=%s:%lu is more than the job's gres_per_node=%s:%lu",
+			xstrfmtcat(msg, "Step requested gres_per_node=%s:%"PRIu64" is more than the job's gres_per_node=%s:%"PRIu64,
 				   step_gres_ptr->gres_name,
 				   step_gres_data->gres_per_node,
 				   job_gres_ptr->gres_name,
@@ -8559,7 +8559,7 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 		    step_gres_data->gres_per_socket &&
 		    (job_gres_data->gres_per_socket <
 		     step_gres_data->gres_per_socket)) {
-			xstrfmtcat(msg, "Step requested gres_per_socket=%s:%lu is more than the job's gres_per_socket=%s:%lu",
+			xstrfmtcat(msg, "Step requested gres_per_socket=%s:%"PRIu64" is more than the job's gres_per_socket=%s:%"PRIu64,
 				   step_gres_ptr->gres_name,
 				   step_gres_data->gres_per_socket,
 				   job_gres_ptr->gres_name,
@@ -8571,7 +8571,7 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 		    step_gres_data->gres_per_task &&
 		    (job_gres_data->gres_per_task <
 		     step_gres_data->gres_per_task)) {
-			xstrfmtcat(msg, "Step requested gres_per_task=%s:%lu is more than the job's gres_per_task=%s:%lu",
+			xstrfmtcat(msg, "Step requested gres_per_task=%s:%"PRIu64" is more than the job's gres_per_task=%s:%"PRIu64,
 				   step_gres_ptr->gres_name,
 				   step_gres_data->gres_per_task,
 				   job_gres_ptr->gres_name,

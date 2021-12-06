@@ -3810,7 +3810,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 
 			bit_and_not(rem_bitmap, preserve_bitmap);
 			rem = bitmap2node_name(rem_bitmap);
-			log_flag(RESERVATION, "%s: reservation %s replacing %d/%d nodes unavailable[%d/%zd]:%s preserving[%d]:%s",
+			log_flag(RESERVATION, "%s: reservation %s replacing %d/%d nodes unavailable[%d/%"PRId64"]:%s preserving[%d]:%s",
 				 __func__, resv_ptr->name, add_nodes,
 				 resv_ptr->node_cnt, bit_set_count(rem_bitmap),
 				 bit_size(rem_bitmap), rem, preserve_nodes,
@@ -3879,7 +3879,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 				added = bitmap2node_name(new_nodes);
 				kept = bitmap2node_name(kept_nodes);
 
-				verbose("%s: modified reservation %s with added[%d/%zd]:%s kept[%d/%zd]:%s",
+				verbose("%s: modified reservation %s with added[%d/%"PRId64"]:%s kept[%d/%"PRId64"]:%s",
 					__func__, resv_ptr->name,
 					bit_set_count(new_nodes),
 					bit_size(new_nodes), added,

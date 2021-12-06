@@ -688,7 +688,7 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 		 * not a real error, so we only print out debug2.
 		 */
 		if (rc == SLURM_SUCCESS)
-			log_flag(ENERGY, "usable_gpus = %d of %ld",
+			log_flag(ENERGY, "usable_gpus = %d of %"PRId64,
 				 bit_set_count(saved_usable_gpus),
 				 bit_size(saved_usable_gpus));
 		else if (rc == ESLURM_INVALID_GRES)

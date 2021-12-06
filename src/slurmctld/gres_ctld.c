@@ -2272,7 +2272,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 
 		if (args.gres_needed && args.gres_needed != INFINITE64 &&
 		    rc == SLURM_SUCCESS) {
-			error("gres/%s: %s for %ps, step's > job's for node %d (gres still needed: %ld)",
+			error("gres/%s: %s for %ps, step's > job's for node %d (gres still needed: %"PRIu64")",
 			      step_gres_ptr->gres_name, __func__, &tmp_step_id,
 			      node_offset, args.gres_needed);
 			rc = SLURM_ERROR;
