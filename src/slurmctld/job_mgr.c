@@ -11410,6 +11410,13 @@ void reset_job_bitmaps(void)
 		if (_reset_detail_bitmaps(job_ptr))
 			job_fail = true;
 
+		/*
+		 * If the job is finished there is no reason to do anything
+		 * below this.
+		 */
+		if (IS_JOB_FINISHED(job_ptr))
+			continue;
+
 		if (job_ptr->partition == NULL) {
 			error("No partition for %pJ", job_ptr);
 			part_ptr = NULL;
@@ -11459,7 +11466,7 @@ void reset_job_bitmaps(void)
 		}
 		if (reset_node_bitmap(job_ptr))
 			job_fail = true;
-		if (!job_fail && !IS_JOB_FINISHED(job_ptr) &&
+		if (!job_fail &&
 		    job_ptr->job_resrcs && (cr_flag || gang_flag) &&
 		    valid_job_resources(job_ptr->job_resrcs,
 					node_record_table_ptr)) {
@@ -11467,7 +11474,7 @@ void reset_job_bitmaps(void)
 			      job_ptr);
 			job_fail = true;
 		}
-		if (!job_fail && !IS_JOB_FINISHED(job_ptr) &&
+		if (!job_fail &&
 		    gres_job_revalidate(job_ptr->gres_list_req)) {
 			error("Aborting %pJ due to use of unsupported GRES options",
 			      job_ptr);
