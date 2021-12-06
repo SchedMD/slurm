@@ -5836,9 +5836,13 @@ static void _validate_ntasks_per_gpu(slurm_opt_t *opt)
 			      opt->ntasks_per_gpu,
 			      opt->ntasks_per_tres);
 	} else if (gpu && tres_env) {
-		fatal("--ntasks-per-gpu and SLURM_NTASKS_PER_TRES are mutually exclusive");
+		if (opt->verbose)
+			info("Ignoring SLURM_NTASKS_PER_TRES since --ntasks-per-gpu given as command line option");
+		slurm_option_reset(opt, "ntasks-per-tres");
 	} else if (tres && gpu_env) {
-		fatal("--ntasks-per-tres and SLURM_NTASKS_PER_GPU are mutually exclusive");
+		if (opt->verbose)
+			info("Ignoring SLURM_NTASKS_PER_GPU since --ntasks-per-tres given as command line option");
+		slurm_option_reset(opt, "ntasks-per-gpu");
 	} else if (gpu_env && tres_env) {
 		if (opt->ntasks_per_gpu != opt->ntasks_per_tres)
 			fatal("Inconsistent values set by environment variables SLURM_NTASKS_PER_GPU=%d and SLURM_NTASKS_PER_TRES=%d ",
