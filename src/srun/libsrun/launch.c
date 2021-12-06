@@ -50,6 +50,7 @@
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xsignal.h"
+#include "src/common/gres.h"
 
 typedef struct {
 	int (*setup_srun_opt)      (char **rest, slurm_opt_t *opt_local);
@@ -162,6 +163,8 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	char *add_tres = NULL;
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	job_step_create_request_msg_t *step_req = xmalloc(sizeof(*step_req));
+	List tmp_gres_list = NULL;
+	int rc;
 
 	xassert(srun_opt);
 
@@ -404,6 +407,24 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->user_id = opt_local->uid;
 
 	step_req->container = xstrdup(opt_local->container);
+
+	rc = gres_step_state_validate(step_req->cpus_per_tres,
+				     step_req->tres_per_step,
+				     step_req->tres_per_node,
+				     step_req->tres_per_socket,
+				     step_req->tres_per_task,
+				     step_req->mem_per_tres,
+				     step_req->ntasks_per_tres,
+				     step_req->min_nodes,
+				     &tmp_gres_list,
+				     NULL, job->step_id.job_id,
+				     NO_VAL, &step_req->num_tasks,
+				     &step_req->cpu_count, NULL);
+	FREE_NULL_LIST(tmp_gres_list);
+	if (rc) {
+		error("%s", slurm_strerror(rc));
+		return NULL;
+	}
 
 	return step_req;
 }

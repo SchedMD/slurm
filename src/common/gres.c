@@ -8444,7 +8444,7 @@ fini:	xfree(name);
 	xfree(type);
 	if (my_rc != SLURM_SUCCESS) {
 		prev_save_ptr = NULL;
-		if (my_rc == ESLURM_INVALID_GRES)
+		if (my_rc == ESLURM_INVALID_GRES && running_in_slurmctld())
 			info("Invalid GRES job specification %s", in_val);
 		*rc = my_rc;
 	}
@@ -8760,7 +8760,11 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	if (list_count(new_step_list) == 0) {
 		FREE_NULL_LIST(new_step_list);
 	} else {
-		if (rc == SLURM_SUCCESS)
+		/*
+		 * If called from a client we don't have a job_gres_list_req so
+		 * don't check against that.
+		 */
+		if (rc == SLURM_SUCCESS && running_in_slurmctld())
 			_validate_step_counts(new_step_list, job_gres_list_req,
 					      step_min_nodes, &rc, err_msg);
 		if (rc == SLURM_SUCCESS) {
