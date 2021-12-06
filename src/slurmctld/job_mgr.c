@@ -11402,6 +11402,14 @@ void reset_job_bitmaps(void)
 		xassert (job_ptr->magic == JOB_MAGIC);
 		job_fail = false;
 
+		/*
+		 * This resets the req/exc node bitmaps, so even if the job is
+		 * finished it still needs to happen just in case the job is
+		 * requeued.
+		 */
+		if (_reset_detail_bitmaps(job_ptr))
+			job_fail = true;
+
 		if (job_ptr->partition == NULL) {
 			error("No partition for %pJ", job_ptr);
 			part_ptr = NULL;
@@ -11486,9 +11494,6 @@ void reset_job_bitmaps(void)
 		/* Do not increase the job->node_cnt for completed jobs */
 		if (! IS_JOB_COMPLETED(job_ptr))
 			build_node_details(job_ptr, false); /* set node_addr */
-
-		if (_reset_detail_bitmaps(job_ptr))
-			job_fail = true;
 
 		if (job_fail) {
 			if (IS_JOB_PENDING(job_ptr)) {
