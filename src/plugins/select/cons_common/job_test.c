@@ -2318,14 +2318,14 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			alloc_mode = "Test_Only";
 		else if (mode == SELECT_MODE_RUN_NOW)
 			alloc_mode = "Run_Now";
-		info("%pJ node_mode:%s alloc_mode:%s",
-		     job_ptr, node_mode, alloc_mode);
+		verbose("%pJ node_mode:%s alloc_mode:%s",
+			job_ptr, node_mode, alloc_mode);
 
 		core_array_log("node_list & exc_cores", node_bitmap, exc_cores);
 
-		info("nodes: min:%u max:%u requested:%u avail:%u",
-		     min_nodes, max_nodes, req_nodes,
-		     bit_set_count(node_bitmap));
+		verbose("nodes: min:%u max:%u requested:%u avail:%u",
+			min_nodes, max_nodes, req_nodes,
+			bit_set_count(node_bitmap));
 		node_data_dump();
 	}
 
@@ -2355,16 +2355,16 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	    (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
 		if (job_ptr->job_resrcs) {
 			if (rc != SLURM_SUCCESS) {
-				info("error:%s",
-				     slurm_strerror(rc));
+				verbose("error:%s",
+					slurm_strerror(rc));
 			}
 			log_job_resources(job_ptr);
 			if (is_cons_tres)
 				gres_job_state_log(job_ptr->gres_list_req,
 						   job_ptr->job_id);
 		} else {
-			info("no job_resources info for %pJ rc=%d",
-			     job_ptr, rc);
+			verbose("no job_resources info for %pJ rc=%d",
+				job_ptr, rc);
 		}
 	}
 

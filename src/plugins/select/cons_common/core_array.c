@@ -177,11 +177,11 @@ extern void core_array_log(char *loc, bitstr_t *node_map, bitstr_t **core_map)
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE))
 		return;
 
-	info("%s", loc);
+	verbose("%s", loc);
 
 	if (node_map) {
 		char *node_list = bitmap2node_name(node_map);
-		info("node_list:%s", node_list);
+		verbose("node_list:%s", node_list);
 		xfree(node_list);
 	}
 
@@ -196,7 +196,7 @@ extern void core_array_log(char *loc, bitstr_t *node_map, bitstr_t **core_map)
 			xstrfmtcat(core_list, "%snode[%d]:%s", sep, i, tmp);
 			sep = ",";
 		}
-		info("core_list:%s", core_list);
+		verbose("core_list:%s", core_list);
 		xfree(core_list);
 	}
 }
