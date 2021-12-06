@@ -2354,10 +2354,7 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) ||
 	    (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
 		if (job_ptr->job_resrcs) {
-			if (rc != SLURM_SUCCESS) {
-				verbose("error:%s",
-					slurm_strerror(rc));
-			}
+			verbose("Test returned:%s", slurm_strerror(rc));
 			log_job_resources(job_ptr);
 			if (is_cons_tres)
 				gres_job_state_log(job_ptr->gres_list_req,
