@@ -290,6 +290,9 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
 {
 	int rc = 0; // Return number of pending jobs held
 
+	if (IS_JOB_FINISHED(job_ptr))
+		return rc;
+
 	if (IS_JOB_PENDING(job_ptr)) {
 		info("%s: %pJ ineligible due to invalid association",
 		     func_name, job_ptr);
@@ -2319,8 +2322,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    &job_ptr->assoc_ptr, true) &&
-	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-	    && (!IS_JOB_FINISHED(job_ptr))) {
+	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		_job_fail_account(job_ptr, __func__);
 	} else {
 		job_ptr->assoc_id = assoc_rec.id;
@@ -17953,8 +17955,7 @@ extern int send_jobs_to_accounting(void)
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    &job_ptr->assoc_ptr, false) &&
-			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
-			    && (!IS_JOB_FINISHED(job_ptr))) {
+			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 				_job_fail_account(job_ptr, __func__);
 				continue;
 			} else
