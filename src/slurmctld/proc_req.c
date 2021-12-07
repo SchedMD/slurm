@@ -2993,8 +2993,8 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t * msg)
 		return;
 	}
 
-	debug("%s: JobId=%u NodeList=%s %s", __func__,
-	      job_info_msg->job_id, job_ptr->nodes, TIME_STR);
+	debug2("%s: JobId=%u NodeList=%s %s", __func__,
+	       job_info_msg->job_id, job_ptr->nodes, TIME_STR);
 
 	if (!job_ptr->het_job_list) {
 		resp = list_create(_het_job_alloc_list_del);
