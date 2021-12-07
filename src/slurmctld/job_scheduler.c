@@ -4282,9 +4282,9 @@ extern bool node_features_reboot_test(job_record_t *job_ptr,
  * RET SLURM_SUCCESS(0) or error code
  */
 #ifdef HAVE_FRONT_END
-extern int reboot_job_nodes(job_record_t *job_ptr)
+extern void reboot_job_nodes(job_record_t *job_ptr)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 #else
 static void _send_reboot_msg(bitstr_t *node_bitmap, char *features,
