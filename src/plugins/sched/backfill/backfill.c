@@ -1640,7 +1640,7 @@ static int _attempt_backfill(void)
 	part_record_t *part_ptr;
 	uint32_t end_time, end_reserve, deadline_time_limit, boot_time;
 	uint32_t orig_end_time;
-	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
+	uint32_t time_limit, comp_time_limit, orig_time_limit = 0, part_time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL, *resv_bitmap = NULL;
@@ -1777,7 +1777,7 @@ static int _attempt_backfill(void)
 			 * through array tasks.
 			*/
 			if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
-			    slurm_conf.preempt_mode &&
+			    slurm_conf.preempt_mode && orig_time_limit &&
 			    (orig_time_limit != job_ptr->time_limit))
 				job_ptr->time_limit = orig_time_limit;
 		}
