@@ -245,6 +245,7 @@ static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _restore_job_dependencies(void);
 static void         _run_primary_prog(bool primary_on);
+static void         _send_future_cloud_to_db();
 static void *       _service_connection(void *arg);
 static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(void);
@@ -693,6 +694,7 @@ int main(int argc, char **argv)
 		}
 
 		_accounting_cluster_ready();
+		_send_future_cloud_to_db();
 
 		/*
 		 * call after registering so that the current cluster's
@@ -932,6 +934,82 @@ int main(int argc, char **argv)
 		abort();
 	else
 		exit(0);
+}
+
+static int _find_node_event(void *x, void *key)
+{
+	slurmdb_event_rec_t *event = x;
+	char *node_name = key;
+
+	return !xstrcmp(event->node_name, node_name);
+}
+
+/*
+ * Create db down events for FUTURE and CLOUD+POWERED_DOWN nodes
+ */
+static void _send_future_cloud_to_db()
+{
+	time_t now = time(NULL);
+	slurmdb_event_rec_t *event = NULL;
+	List event_list = NULL;
+	bool check_db = !running_cache;
+
+	for (int i = 0; i < node_record_count; i++) {
+		node_record_t *node_ptr = node_record_table_ptr + i;
+		if (!IS_NODE_FUTURE(node_ptr) &&
+		    !(IS_NODE_CLOUD(node_ptr) &&
+		      IS_NODE_POWERED_DOWN(node_ptr)))
+			continue;
+
+		/*
+		 * If the DBD is up, then try to avoid making duplicate
+		 * g_node_down() calls by reconciling with the db. If it's not
+		 * up, just send the down events to preserve the startup time
+		 * stamps.
+		 */
+		if (check_db && !event_list) {
+			slurmdb_event_cond_t event_cond = {0};
+			event_cond.event_type = SLURMDB_EVENT_NODE;
+			event_cond.cond_flags = SLURMDB_EVENT_COND_OPEN;
+
+			event_cond.cluster_list = list_create(xfree_ptr);
+			list_append(event_cond.cluster_list,
+				    xstrdup(slurm_conf.cluster_name));
+
+			event_cond.format_list = list_create(NULL);
+			list_append(event_cond.format_list, "node_name");
+
+			event_cond.state_list = list_create(xfree_ptr);
+			list_append(event_cond.state_list,
+				    xstrdup_printf("%u", NODE_STATE_FUTURE));
+			list_append(event_cond.state_list,
+				    xstrdup_printf("%lu",
+						   NODE_STATE_CLOUD |
+						   NODE_STATE_POWERED_DOWN));
+
+			event_list = acct_storage_g_get_events(acct_db_conn,
+							       getuid(),
+							       &event_cond);
+			if (!event_list)
+				check_db = false;
+
+			FREE_NULL_LIST(event_cond.cluster_list);
+			FREE_NULL_LIST(event_cond.format_list);
+			FREE_NULL_LIST(event_cond.state_list);
+		}
+
+		if (event_list &&
+		    (event = list_find_first(event_list, _find_node_event,
+					     node_ptr->name))) {
+			/* Open event record already exists, don't send again */
+			continue;
+		}
+
+		clusteracct_storage_g_node_down(
+			acct_db_conn, node_ptr, now,
+			IS_NODE_FUTURE(node_ptr) ? "Future" : "Powered down",
+			slurm_conf.slurm_user_id);
+	}
 }
 
 /* initialization of common slurmctld configuration */
