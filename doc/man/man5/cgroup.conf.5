@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "October 2021" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "December 2021" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -140,8 +140,7 @@ trigger an OOM event, killing one or more of the processes in the step. The
 step state will be marked as OOM, but the step itself will keep running and
 other processes in the step may continue to run as well.
 This differs from the behavior of \fBOverMemoryKill\fR, where the whole step
-will be killed/cancelled. It also differs in that the memory usage is
-checked on a per-process basis by the JobAcctGather polling system.
+will be killed/cancelled.
 
 \fBNOTE\fR: When enabled, ConstrainRAMSpace can lead to a noticeable decline in
 per\-node job throughout. Sites with high\-throughput requirements should
