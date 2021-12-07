@@ -122,25 +122,13 @@ if [add_user "$tu1,$tu2,$tu3" [array get user_req]] {
 proc list_test_users { } {
 	global sacctmgr
 	global tu1 tu2 tu3 ta1 ta2 ta3 tc1 tc2 tc3 user_req
-	set matches 0
-	spawn $sacctmgr -n -p list user format="User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw" names=$tu1,$tu2,$tu3 withassoc
-	expect {
-		-re "There was a problem" {
-			log_error "There was a problem with the sacctmgr command"
-		}
-		-re "(($tu1|$tu2|$tu3).$ta2.$user_req(adminlevel).($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$user_req(fairshare).$user_req(maxcpumins).$user_req(maxjobs).$user_req(maxnodes).$user_req(maxwall).)" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr list associations not responding"
-		}
-		eof {
-			wait
-		}
+
+	set output [run_command_output -fail "$sacctmgr -n -p list user format='User,DefaultA,Admin,clus,acc,fair,maxcpum,maxj,maxn,maxw' names=$tu1,$tu2,$tu3 withassoc"]
+	if {[regexp "There was a problem" $output]} {
+		fail "There was a problem with the sacctmgr command"
 	}
 
-	return $matches
+	return [regexp -all "(($tu1|$tu2|$tu3).$ta2.$user_req(adminlevel).($tc1|$tc2|$tc3).($ta1|$ta2|$ta3).$user_req(fairshare).$user_req(maxcpumins).$user_req(maxjobs).$user_req(maxnodes).$user_req(maxwall).)" $output]
 }
 ################################################################
 #
@@ -198,7 +186,6 @@ if { $count != 27 } {
 	fail "This $test_name concludes that sacctmgr did not abort delete of accounts $count"
 }
 
-#
 foreach ctest $listc {
 	spawn $sacctmgr del cluster $ctest
 	expect {

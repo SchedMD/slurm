@@ -116,6 +116,7 @@ proc cleanup { } {
 	global job_id_1 config_file part_name
 
 	cancel_job $job_id_1
+	wait_for_part_done $part_name
 
 	cleanup_accounts
 
@@ -215,7 +216,7 @@ proc run_test { run_qos } {
 	set job_id_1 [test_salloc $qos $acct 1]
 	set job_id_2 [test_salloc $qos $acct 1]
 	# TODO Temporary debug to troubleshoot bug 10604 (revert once fixed)
-	#check_rc [wait_for_job $job_id_1 "RUNNING"]
+	# check_rc [wait_for_job $job_id_1 "RUNNING"]
 	set rc [wait_for_job $job_id_1 "RUNNING"]
 	if {$rc} {
 		log_warn "Job never started, extra debug information for bug10604 below before the actual fail:"
@@ -229,15 +230,15 @@ proc run_test { run_qos } {
 	}
 
 	if { $run_qos } {
-		# remove test qos
-		if { [remove_qos $qos] } {
+		# Remove test qos
+		if [remove_qos $qos] {
 			log_debug "We hit the race trying to get the job running before it hits the database before we removed the qos.  This can be expected, trying again."
 			wait_for_part_done $part_name
 			return 1
 		}
 	} else {
-		#remove test acct
-		if { [remove_acct "" $acct] } {
+		# Remove test acct
+		if [remove_acct "" $acct] {
 			log_debug "We hit the race trying to get the job running before it hits the database before we removed the account.  This can be expected, trying again."
 			wait_for_part_done $part_name
 			return 1
@@ -258,7 +259,7 @@ proc run_test { run_qos } {
 	check_job_reason $job_id_1 "RUNNING" [list "None"]
 	check_job_reason $job_id_2 "PENDING" [list "Resources" "None"]
 
-	#cleanup jobs
+	# Cleanup jobs
 	wait_for_part_done $part_name
 
 	return 0
@@ -283,7 +284,7 @@ reconfigure -fail
 
 delete_part $part_name
 
-if { [create_part $part_name 1] } {
+if [create_part $part_name 1] {
 	fail "Unable to create partition $part_name"
 }
 

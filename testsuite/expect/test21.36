@@ -97,7 +97,6 @@ close $file
 
 # Load a job to the database that has no end time.
 if {[archive_load $sql_query]} {
-	archive_load $sql_query_rem
 	fail "Unable to load job to database"
 }
 

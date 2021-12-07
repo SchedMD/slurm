@@ -165,65 +165,29 @@ proc test_job_update {sacctmgr_args expected_jobs} {
 
 	set matches_right 0
 	set matches_wrong 0
-	set rc 0
-
-	set cmd_str "$sacctmgr -i update job set newwckey=$wckey_new where $sacctmgr_args"
-	set my_pid [eval spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]]
-	expect {
-		-re "($number) submitted at" {
-			set jobid $expect_out(1,string)
-			if {"$jobid" in $expected_jobs} {
-				incr matches_right
-			} else {
-				incr matches_wrong
-			}
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr update job not responding"
-			slow_kill $my_pid
-			incr rc
-			return $rc
-		}
-		eof {
-			wait
+	set output [run_command_output -fail "$sacctmgr -i update job set newwckey=$wckey_new where $sacctmgr_args"]
+	set jobs_list [regexp -all -inline "($number) submitted at" $output]
+	foreach {match job_id} $jobs_list {
+		if {$job_id in $expected_jobs} {
+			incr matches_right
+		} else {
+			incr matches_wrong
 		}
 	}
-	if {$matches_right != [llength $expected_jobs] || $matches_wrong != 0} {
-		log_error "Expected job updates wrong $matches_right $matches_wrong"
-		incr rc
-		return $rc
-	}
+	subtest {$matches_right == [llength $expected_jobs] && $matches_wrong == 0} "Verify expected job updates in sacctmgr update for $sacctmgr_args" "($matches_right,$matches_wrong) != ([llength $expected_jobs],0)"
 
 	set matches_right 0
 	set matches_wrong 0
-	set my_pid [eval spawn $sacct -a -n --cluster=$clusters --wckey=$wckey_new --start=2000-01-01 --end=now --format=jobid]
-	expect {
-		-re "($number)" {
-			set jobid $expect_out(1,string)
-			if {"$jobid" in $expected_jobs} {
-				incr matches_right
-			} else {
-				incr matches_wrong
-			}
-			exp_continue
-		}
-		timeout {
-			log_error "sacct not responding"
-			slow_kill $my_pid
-			incr rc
-			return $rc
-		}
-		eof {
-			wait
+	set output [run_command_output -fail "$sacct -a -n --cluster=$clusters --wckey=$wckey_new --start=2000-01-01 --end=now --format=jobid"]
+	set jobs_list [regexp -all -inline "($number)" $output]
+	foreach {match job_id} $jobs_list {
+		if {$job_id in $expected_jobs} {
+			incr matches_right
+		} else {
+			incr matches_wrong
 		}
 	}
-	if {$matches_right != [llength $expected_jobs] || $matches_wrong != 0} {
-		log_error "Expected job updates wrong $matches_right $matches_wrong"
-		incr rc
-		return $rc
-	}
-	return $rc
+	subtest {$matches_right == [llength $expected_jobs] && $matches_wrong == 0} "Verify expected job updates in sacct for $sacctmgr_args" "($matches_right,$matches_wrong) != ([llength $expected_jobs],0)"
 }
 
 proc _run_test { update_str expected_jobs } {
@@ -238,9 +202,7 @@ proc _run_test { update_str expected_jobs } {
 		fail "Unable to load archive"
 	}
 
-	if [test_job_update $update_str $expected_jobs] {
-		fail "Update failed with: $update_str"
-	}
+	test_job_update $update_str $expected_jobs
 }
 
 #
