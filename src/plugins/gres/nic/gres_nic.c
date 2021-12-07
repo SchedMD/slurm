@@ -117,9 +117,17 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 			    &local_list, &global_list, is_task, is_job, NULL,
 			    flags, true);
 
+	/*
+	 * Set environment variables if GRES is found. Otherwise, unset
+	 * environment variables, since this means GRES is not allocated.
+	 * This is useful for jobs and steps that request --gres=none within an
+	 * existing job allocation with GRES.
+	 */
 	if (global_list) {
 		env_array_overwrite(env_ptr, slurm_env_var, global_list);
 		xfree(global_list);
+	} else {
+		unsetenvp(*env_ptr, slurm_env_var);
 	}
 
 	if (local_list) {
@@ -127,6 +135,8 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 			env_ptr, "OMPI_MCA_btl_openib_if_include", local_list);
 		xfree(local_list);
 		*already_seen = true;
+	} else {
+		unsetenvp(*env_ptr, "OMPI_MCA_btl_openib_if_include");
 	}
 }
 

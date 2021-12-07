@@ -177,6 +177,12 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 			    &local_list, &global_list,
 			    is_task, is_job, &global_id, flags, true);
 
+	/*
+	 * Set environment variables if GRES is found. Otherwise, unset
+	 * environment variables, since this means GRES is not allocated.
+	 * This is useful for jobs and steps that request --gres=none within an
+	 * existing job allocation with GRES.
+	 */
 	if (perc_env) {
 		env_array_overwrite(env_ptr,
 				    "CUDA_MPS_ACTIVE_THREAD_perc_str",
@@ -199,6 +205,9 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 		env_array_overwrite(env_ptr,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
 				    perc_str);
+	} else {
+		unsetenvp(*env_ptr, "CUDA_MPS_ACTIVE_THREAD_perc_str");
+		unsetenvp(*env_ptr, "CUDA_MPS_ACTIVE_THREADS_PERCENTAGE");
 	}
 }
 

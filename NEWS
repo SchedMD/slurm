@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
  -- sacct -f flag implies -c flag.
  -- Node state flags (DRAIN, FAILED, POWERING UP, etc.) will be cleared now if
     node state is updated to FUTURE.
+ -- Clear GRES environment variables for jobs or steps that request --gres=none.
 
 * Changes in Slurm 21.08.6
 ==========================

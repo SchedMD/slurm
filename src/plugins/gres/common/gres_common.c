@@ -509,16 +509,26 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 			    &local_list, &global_list, is_task, is_job, NULL,
 			    flags, false);
 
+	/*
+	 * Set environment variables if GRES is found. Otherwise, unset
+	 * environment variables, since this means GRES is not allocated.
+	 * This is useful for jobs and steps that request --gres=none within an
+	 * existing job allocation with GRES.
+	 */
 	if (gres_cnt) {
 		char *gpus_on_node = xstrdup_printf("%"PRIu64, gres_cnt);
 		env_array_overwrite(env_ptr, "SLURM_GPUS_ON_NODE",
 				    gpus_on_node);
 		xfree(gpus_on_node);
+	} else {
+		unsetenvp(*env_ptr, "SLURM_GPUS_ON_NODE");
 	}
 
 	if (global_list) {
 		env_array_overwrite(env_ptr, slurm_env_var, global_list);
 		xfree(global_list);
+	} else {
+		unsetenvp(*env_ptr, slurm_env_var);
 	}
 
 	if (local_list) {
@@ -533,6 +543,13 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 					    local_list);
 		xfree(local_list);
 		*already_seen = true;
+	} else {
+		if (gres_conf_flags & GRES_CONF_ENV_NVML)
+			unsetenvp(*env_ptr, "CUDA_VISIBLE_DEVICES");
+		if (gres_conf_flags & GRES_CONF_ENV_RSMI)
+			unsetenvp(*env_ptr, "ROCR_VISIBLE_DEVICES");
+		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
+			unsetenvp(*env_ptr, "GPU_DEVICE_ORDINAL");
 	}
 }
 
