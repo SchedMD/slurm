@@ -1707,24 +1707,8 @@ proc mod_resource {name mod_limits} {
 		set commands "$commands$option=$res_mod_req($option) "
 	}
 
-	log_user 0
-	set match 0
-	eval spawn $sacctmgr -i mod resource where name=$name set $commands
-	expect {
-		-re "Modified server resources ..." {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$match == 1} {
+	set output [run_command_output -fail -nolog "$sacctmgr -i mod resource where name=$name set $commands"]
+	if {![regexp "Modified server resource ..." $output]} {
 		set rc $::RETURN_ERROR
 	}
 
