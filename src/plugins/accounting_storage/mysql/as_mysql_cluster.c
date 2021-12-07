@@ -1224,10 +1224,24 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		else
 			xstrcat(extra, " where (");
 
-		xstrfmtcat(extra,
-			   "(time_start < %ld) "
-			   "&& (time_end >= %ld || time_end = 0))",
-			   event_cond->period_end, event_cond->period_start);
+		if (event_cond->cond_flags & SLURMDB_EVENT_COND_OPEN)
+			xstrfmtcat(extra,
+				   "(time_start >= %ld) && (time_end = 0))",
+				   event_cond->period_start);
+		else
+			xstrfmtcat(extra,
+				   "(time_start < %ld) "
+				   "&& (time_end >= %ld || time_end = 0))",
+				   event_cond->period_end,
+				   event_cond->period_start);
+
+	} else if (event_cond->cond_flags & SLURMDB_EVENT_COND_OPEN) {
+		if (extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+
+		xstrfmtcat(extra, "time_end = 0)");
 	}
 
 	if (event_cond->reason_list

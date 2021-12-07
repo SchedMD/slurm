@@ -3196,6 +3196,7 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		_pack_list_of_str(object->cluster_list, buffer);
 
+		pack32(object->cond_flags, buffer);
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
 		pack16(object->event_type, buffer);
@@ -3254,6 +3255,7 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 				list_append(object_ptr->cluster_list, tmp_info);
 			}
 		}
+		safe_unpack32(&object_ptr->cond_flags, buffer);
 		safe_unpack32(&object_ptr->cpus_max, buffer);
 		safe_unpack32(&object_ptr->cpus_min, buffer);
 		safe_unpack16(&object_ptr->event_type, buffer);
