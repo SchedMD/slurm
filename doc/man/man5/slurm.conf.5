@@ -1490,14 +1490,12 @@ cgroup.conf instead of using this JobAcctGather mechanism for memory
 enforcement. Using JobAcctGather is polling based and there is a
 delay before a job is killed, which could lead to system Out of Memory events.
 
-\fBNOTE\fR: When using \fBOverMemoryKill\fR, if the memory usage of one of the
-processes in a step exceeds the memory limit, the entire step will be
+\fBNOTE\fR: When using \fBOverMemoryKill\fR, if the combined memory used by
+all the processes in a step exceeds the memory limit, the entire step will be
 killed/cancelled by the JobAcctGather plugin.
 This differs from the behavior when using \fBConstrainRAMSpace\fR, where
 processes in the step will be killed, but the step will be left active,
-possibly with other processes left running. It also differs in that the
-combined memory usage of all the processes in the step are considered when
-evaluating against the memory limit.
+possibly with other processes left running.
 .RE
 .IP
 
