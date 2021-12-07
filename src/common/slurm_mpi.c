@@ -109,9 +109,9 @@ static void _log_step_rec(const stepd_step_rec_t *job)
 		info("task_cnts[%d]:%u", i, job->task_cnts[i]);
 
 	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL))
-		info("het_job_id:%u", job->het_jobid);
+		info("het_job_id:%u", job->het_job_id);
 
-	if (job->het_job_offset != NO_VAL);
+	if (job->het_job_offset != NO_VAL) {
 		info("het_job_ntasks:%u het_job_nnodes:%u", job->het_job_ntasks,
 		     job->het_job_nnodes);
 		info("het_job_node_offset:%u het_job_task_offset:%u",
