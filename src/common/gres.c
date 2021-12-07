@@ -8445,7 +8445,7 @@ fini:	xfree(name);
 	if (my_rc != SLURM_SUCCESS) {
 		prev_save_ptr = NULL;
 		if (my_rc == ESLURM_INVALID_GRES && running_in_slurmctld())
-			info("Invalid GRES job specification %s", in_val);
+			info("Invalid GRES step specification %s", in_val);
 		*rc = my_rc;
 	}
 	*save_ptr = prev_save_ptr;
