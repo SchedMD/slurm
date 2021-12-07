@@ -159,7 +159,7 @@ static void _log_task_rec(const mpi_plugin_task_info_t *job)
 }
 #endif
 
-int _mpi_init (char *mpi_type)
+int _mpi_init(char *mpi_type)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "mpi";
@@ -168,7 +168,7 @@ int _mpi_init (char *mpi_type)
 	if (init_run && g_context)
 		return retval;
 
-	slurm_mutex_lock( &context_lock );
+	slurm_mutex_lock(&context_lock);
 
 	if ( g_context )
 		goto done;
@@ -211,7 +211,7 @@ int _mpi_init (char *mpi_type)
 
 done:
 	xfree(type);
-	slurm_mutex_unlock( &context_lock );
+	slurm_mutex_unlock(&context_lock);
 	return retval;
 }
 
@@ -234,7 +234,7 @@ extern int mpi_g_slurmstepd_init(char ***env)
 	 * still keep it in srun if not none.
 	 */
 	if (!xstrcmp(mpi_type, "none"))
-		unsetenvp (*env, "SLURM_MPI_TYPE");
+		unsetenvp(*env, "SLURM_MPI_TYPE");
 
 	return SLURM_SUCCESS;
 }
@@ -313,7 +313,7 @@ extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 	return (*(ops.client_fini))(state);
 }
 
-int mpi_fini (void)
+int mpi_fini(void)
 {
 	int rc;
 
