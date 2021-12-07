@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix time limit permanetly set to 1 minute by backfill for job array tasks
     higher than the first with QOS NoReserve flag and PreemptMode configured.
  -- Fix sacct -N to show jobs that started in the current second
+ -- Fix issue on running steps where both SLURM_NTASKS_PER_TRES and
+    SLURM_NTASKS_PER_GPU are set.
 
 * Changes in Slurm 21.08.4
 ==========================
