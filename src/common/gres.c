@@ -9161,8 +9161,12 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 		slurm_gres_context_t *gres_ctx = &gres_context[i];
 		if (!gres_ctx->ops.step_set_env)
 			continue;	/* No plugin to call */
-		if (!step_gres_list)
+		if (!step_gres_list) {
+			/* Clear GRES environment variables */
+			(*(gres_ctx->ops.step_set_env))(
+				job_env_ptr, NULL, 0, GRES_INTERNAL_FLAG_NONE);
 			continue;
+		}
 		gres_iter = list_iterator_create(step_gres_list);
 		while ((gres_state_step = list_next(gres_iter))) {
 			if (gres_state_step->plugin_id != gres_ctx->plugin_id)
@@ -9210,8 +9214,13 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 		slurm_gres_context_t *gres_ctx = &gres_context[i];
 		if (!gres_ctx->ops.task_set_env)
 			continue;	/* No plugin to call */
-		if (!step_gres_list)
+		if (!step_gres_list) {
+			/* Clear GRES environment variables */
+			(*(gres_ctx->ops.task_set_env))(
+				job_env_ptr, NULL, 0, NULL,
+				GRES_INTERNAL_FLAG_NONE);
 			continue;
+		}
 
 
 		gres_iter = list_iterator_create(step_gres_list);
