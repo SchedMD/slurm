@@ -57,9 +57,10 @@ proc check_federation_setup { } {
 
 proc setup_federation { fed_name } {
 	global sacctmgr fedc1 fedc2 fedc3 eol
+
 	set rc $::RETURN_SUCCESS
 
-	set my_pid [spawn $sacctmgr -i add federation $fed_name]
+	spawn $sacctmgr -i add federation $fed_name
 	set matches 0
 	expect {
 		-re "Adding Federation\\(s\\)$eol" {
@@ -71,9 +72,7 @@ proc setup_federation { fed_name } {
 				exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -87,7 +86,7 @@ proc setup_federation { fed_name } {
 	set count 0
 	foreach cluster [list $fedc1 $fedc2 $fedc3] {
 		incr count
-		set my_pid [spawn $sacctmgr -i mod cluster $cluster set federation=$fed_name features=]
+		spawn $sacctmgr -i mod cluster $cluster set federation=$fed_name features=
 		set matches 0
 		expect {
 			-re "Setting$eol" {
@@ -111,9 +110,7 @@ proc setup_federation { fed_name } {
 				exp_continue
 			}
 			timeout {
-				log_error "sacctmgr add not responding"
-				slow_kill $my_pid
-				set rc $::RETURN_TIMEOUT
+				fail "sacctmgr add not responding"
 			}
 			eof {
 				wait
@@ -184,7 +181,7 @@ proc delete_federations { names } {
 	set matches 0
 	set rc $::RETURN_SUCCESS
 	set object "federation"
-	set my_pid [spawn $sacctmgr -i delete $object $names]
+	spawn $sacctmgr -i delete $object $names
 	expect {
 		-re "privilege to perform this action" {
 			log_error "Don't have privileges"
@@ -215,9 +212,7 @@ proc delete_federations { names } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr delete not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -279,7 +274,7 @@ proc add_cluster_to_fed {cname fed_name} {
 
 	set rc $::RETURN_SUCCESS
 	set matches 0
-	set my_pid [spawn $sacctmgr -i modify federation $fed_name set clusters+=$cname]
+	spawn $sacctmgr -i modify federation $fed_name set clusters+=$cname
 	expect {
 		-re "Setting$eol" {
 			incr matches
@@ -298,9 +293,7 @@ proc add_cluster_to_fed {cname fed_name} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -326,7 +319,7 @@ proc remove_cluster_from_fed {cname fed_name} {
 
 	set rc $::RETURN_SUCCESS
 	set matches 0
-	set my_pid [spawn $sacctmgr -i modify federation $fed_name set clusters-=$cname]
+	spawn $sacctmgr -i modify federation $fed_name set clusters-=$cname
 	expect {
 		-re "Setting$eol" {
 			incr matches
@@ -345,9 +338,7 @@ proc remove_cluster_from_fed {cname fed_name} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
