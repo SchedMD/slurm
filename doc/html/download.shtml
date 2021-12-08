@@ -342,8 +342,9 @@ easy and elegantly manner.
 	build are as follows:</p>
 	<pre>
 git clone --depth 1 --single-branch -b json-c-0.15-20200726 https://github.com/json-c/json-c.git json-c
-cd json-c
-cmake .
+mkdir json-c-build
+cd json-c-build
+cmake ../json-c
 make
 sudo make install
 	</pre>
@@ -409,6 +410,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 13 August 2021</p>
+<p style="text-align:center;">Last modified 9 December 2021</p>
 
 <!--#include virtual="footer.txt"-->
