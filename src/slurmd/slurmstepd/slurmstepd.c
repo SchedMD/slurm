@@ -206,7 +206,8 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 			batch_finish(job, rc); /* sends batch complete message */
 
 		/* signal the message thread to shutdown, and wait for it */
-		eio_signal_shutdown(job->msg_handle);
+		if (job->msg_handle)
+			eio_signal_shutdown(job->msg_handle);
 		pthread_join(job->msgid, NULL);
 	}
 

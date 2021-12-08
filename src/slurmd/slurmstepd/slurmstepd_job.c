@@ -658,8 +658,10 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	job->argv = NULL;
 
 	_task_info_array_destroy(job);
-	if (job->eio)
+	if (job->eio) {
 		eio_handle_destroy(job->eio);
+		job->eio = NULL;
+	}
 	FREE_NULL_LIST(job->sruns);
 	FREE_NULL_LIST(job->clients);
 	FREE_NULL_LIST(job->stdout_eio_objs);
@@ -678,8 +680,10 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job->pw_shell);
 	xfree(job->gids);
 	xfree(job->mem_bind);
-	if (job->msg_handle)
+	if (job->msg_handle) {
 		eio_handle_destroy(job->msg_handle);
+		job->msg_handle = NULL;
+	}
 	xfree(job->node_name);
 	mpmd_free(job);
 	xfree(job->het_job_task_cnts);
