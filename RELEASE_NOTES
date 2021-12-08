@@ -52,6 +52,8 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Remove support for (non-functional) --cpu-bind=boards.
  -- Added --prefer option at job submission to allow for 'soft' constraints.
+ -- Add "condflags=open" to sacctmgr show events to return open/currently down
+    events.
 
 API CHANGES
 ===========

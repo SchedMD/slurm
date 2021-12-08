@@ -63,6 +63,8 @@ documents those changes that are of interest to users and administrators.
  -- Fatal if the mutually-exclusive JobAcctGatherParams options of UsePss and
     NoShared are both defined.
  -- Future and Cloud nodes are treated as "Planned Down" in usage reports.
+ -- Add "condflags=open" to sacctmgr show events to return open/currently down
+    events.
 
 * Changes in Slurm 21.08.6
 ==========================
