@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition where a cgroup was being deleted while another step
     was creating it.
  -- Set the slurmd port correctly if multi-slurmd
+ -- openapi/v0.0.37 - Fix misspelling of account_gather_frequency in spec.
 
 * Changes in Slurm 21.08.6
 ==========================

@@ -39,6 +39,24 @@ guide to where changes have taken place in the OpenAPI specifications.</p>
 href="https://stedolan.github.io/jq/">jq</a>. Make sure to always place the
 paths in a single quote string to avoid shell replacements.</p>
 
+<h2>Slurm 21.08.7</h2>
+
+<h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>
+
+<h4>Fix misspelling: change account_gather_freqency to account_gather_frequency
+(only the spec was wrong; the underlying code already worked with the correct spelling).</h4>
+
+<table class="tchange">
+<tr class="trchange">
+        <td class="tdfield">previous path</td>
+        <td class="tdchange">.components.schemas."v0.0.37_job_properties".properties.account_gather_freqency</td>
+</tr>
+<tr class="trchange">
+        <td class="tdfield">new path</td>
+        <td class="tdchange">.components.schemas."v0.0.37_job_properties".properties.account_gather_frequency</td>
+</tr>
+</table>
+
 <h2>Slurm 21.08.6</h2>
 
 <h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
@@ -663,6 +681,6 @@ The v0.0.35 plugin has now been deprecated.
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 2 March 2021</p>
+<p style="text-align:center;">Last modified 18 March 2022</p>
 
 <!--#include virtual="footer.txt"-->

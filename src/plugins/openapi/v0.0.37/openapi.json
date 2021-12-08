@@ -1758,7 +1758,7 @@
             "type": "string",
             "description": "Charge resources used by this job to specified account."
           },
-          "account_gather_freqency": {
+          "account_gather_frequency": {
             "type": "string",
             "description": "Define the job accounting and profiling sampling intervals."
           },
