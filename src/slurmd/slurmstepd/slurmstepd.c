@@ -92,6 +92,9 @@ static void _step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc);
 #endif
 static int _process_cmdline (int argc, char **argv);
 
+static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool cleanup = false;
+
 /*
  *  List of signals to block in this process
  */
@@ -192,6 +195,11 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 			 slurm_addr_t *cli, slurm_addr_t *self,
 			 int rc, bool only_mem)
 {
+	slurm_mutex_lock(&cleanup_mutex);
+
+	if (cleanup)
+		goto done;
+
 	if (!only_mem) {
 		if (job->batch)
 			batch_finish(job, rc); /* sends batch complete message */
@@ -248,6 +256,9 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	xfree(conf->cpu_spec_list);
 	xfree(conf);
 #endif
+	cleanup = true;
+done:
+	slurm_mutex_unlock(&cleanup_mutex);
 	info("done with job");
 	return rc;
 }

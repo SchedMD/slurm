@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill - restore resv_ptr after yielding locks.
  -- acct_gather_energy/xcc - appropriately close and destroy the IPMI context.
  -- common/slurm_mpi - fix mpi_fini() to be thread-safe.
+ -- Protect slurmstepd from making multiple calls to the cleanup logic.
 
 * Changes in Slurm 21.08.5
 ==========================
