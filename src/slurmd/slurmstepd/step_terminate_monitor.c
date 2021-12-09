@@ -189,6 +189,7 @@ static void *_monitor(void *arg)
 		 */
 		retval = xmalloc(sizeof(*retval));
 		*retval = stepd_cleanup(NULL, job, NULL, NULL, rc, 0);
+		slurm_mutex_unlock(&lock);
 	        pthread_exit((void *) retval);
 
 	} else if (rc != 0) {
