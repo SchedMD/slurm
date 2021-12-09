@@ -111,7 +111,7 @@ static char *_to_hex(char *base64url)
 	bin = xmalloc(strlen(base64));
 	binlen = jwt_Base64decode(bin, base64);
 
-	hex = bytes_to_hex(bin, binlen, NULL);
+	hex = xstring_bytes2hex(bin, binlen, NULL);
 
 	/* Deal with DER formatting requirements */
 	_handle_prepend(&hex);

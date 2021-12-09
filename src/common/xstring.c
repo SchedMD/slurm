@@ -788,7 +788,8 @@ extern void xstrtrim(char *string)
 		memmove(string, start, (ptr - start + 1));
 }
 
-extern char *bytes_to_hex(const char *string, int len, const char *delimiter)
+extern char *xstring_bytes2hex(const char *string, int len,
+			       const char *delimiter)
 {
 	char *hex = NULL, *pos = NULL;
 
@@ -806,7 +807,8 @@ extern char *bytes_to_hex(const char *string, int len, const char *delimiter)
 	return hex;
 }
 
-extern char *bytes_to_printable(const char *string, int len, const char replace)
+extern char *xstring_bytes2printable(const char *string, int len,
+				     const char replace)
 {
 	char *str = NULL, *pos = NULL;
 

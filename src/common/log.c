@@ -1561,8 +1561,8 @@ extern void _log_flag_hex(const void *data, size_t len, const char *fmt, ...)
 	for (int i = 0; (i < len) && (i < (hex_cols * hex_rows)); ) {
 		int remain = len - i;
 		int print = (remain < hex_cols) ? remain : hex_cols;
-		char *phex = bytes_to_hex((data + i), print, " ");
-		char *pstr = bytes_to_printable((data + i), print, '.');
+		char *phex = xstring_bytes2hex((data + i), print, " ");
+		char *pstr = xstring_bytes2printable((data + i), print, '.');
 
 		format_print(LOG_LEVEL_VERBOSE, "%s [%04d/%04zu] 0x%s \"%s\"",
 			     prepend, i, len, phex, pstr);
