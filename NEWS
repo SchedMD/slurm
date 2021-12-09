@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun --cpus-per-task and --threads-per-core not implicitly setting
     --exact. It was meant to work this way in 21.08.
  -- Fix requeued cloud job getting BadConstraints.
+ -- Fix regression in 21.08.0 that broke dynamic future nodes.
 
 * Changes in Slurm 21.08.4
 ==========================
