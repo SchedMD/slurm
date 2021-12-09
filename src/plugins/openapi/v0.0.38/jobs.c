@@ -616,7 +616,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 	if (job->bitflags & HET_JOB_FLAG)
 		data_set_string(data_list_append(bitflags), "HET_JOB_FLAG");
 	if (job->bitflags & JOB_CPUS_SET)
-		data_set_string(data_list_append(bitflags), "JOB_CPUS_SET ");
+		data_set_string(data_list_append(bitflags), "JOB_CPUS_SET");
 	if (job->bitflags & TOP_PRIO_TMP)
 		data_set_string(data_list_append(bitflags), "TOP_PRIO_TMP");
 	if (job->bitflags & JOB_ACCRUE_OVER)

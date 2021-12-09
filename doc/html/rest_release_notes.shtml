@@ -258,6 +258,18 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h4>Fix errant space after JOB_CPUS_SET flag.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Fix response.</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.37_job_response_properties".properties.flags</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h3>openapi/v0.0.35 (src/plugins/openapi/v0.0.35/openapi.json)</h3>
 
 <h4>Removal notice</h4>

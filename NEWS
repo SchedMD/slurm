@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- cgroup/v1 - Set swappiness at job level instead of at root level.
  -- Fix issues where a step's GRES request could never be satisfied but the step
     remained pending forever instead of being rejected.
+ -- openapi/v0.0.38 - Remove errant extra space after JOB_CPUS_SET flag.
 
 * Changes in Slurm 21.08.5
 ==========================
