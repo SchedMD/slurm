@@ -87,8 +87,6 @@ void step_terminate_monitor_start(stepd_step_rec_t *job)
 
 void step_terminate_monitor_stop(void)
 {
-	int *retval = NULL;
-
 	slurm_mutex_lock(&lock);
 
 	if (!running_flag) {
@@ -102,14 +100,10 @@ void step_terminate_monitor_stop(void)
 	slurm_cond_signal(&cond);
 	slurm_mutex_unlock(&lock);
 
-	if (pthread_join(tid, (void **) &retval) != 0)
+	if (pthread_join(tid, NULL) != 0)
 		error("%s pthread_join: %m", __func__);
 
-	debug2("_monitor exit code: %d", retval ? *retval : 0);
-
-	xfree(retval);
 	xfree(program_name);
-	return;
 }
 
 
@@ -131,7 +125,6 @@ static void *_monitor(void *arg)
 	if (rc == ETIMEDOUT) {
 		char entity[45], time_str[24];
 		time_t now = time(NULL);
-		int rc, *retval;
 
 		_call_external_program(job);
 
@@ -181,24 +174,15 @@ static void *_monitor(void *arg)
 			stepd_send_step_complete_msgs(job);
 		}
 
-		/*
-		 * See man pthread_exit,
-		 * The value pointed to by retval should not be located on the
-		 * calling thread's stack, since the contents of that stack are
-		 * undefined after the thread terminates.
-		 */
-		retval = xmalloc(sizeof(*retval));
-		*retval = stepd_cleanup(NULL, job, NULL, NULL, rc, 0);
-		slurm_mutex_unlock(&lock);
-	        pthread_exit((void *) retval);
-
+		/* stepd_cleanup always returns rc as a pass-through */
+		(void) stepd_cleanup(NULL, job, NULL, NULL, rc, 0);
 	} else if (rc != 0) {
 		error("Error waiting on condition in _monitor: %m");
 	}
-done:
-	slurm_mutex_unlock(&lock);
 
+done:
 	debug2("step_terminate_monitor is stopping");
+	slurm_mutex_unlock(&lock);
 	return NULL;
 }
 
