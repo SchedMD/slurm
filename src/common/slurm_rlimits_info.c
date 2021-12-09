@@ -203,8 +203,10 @@ extern void rlimits_adjust_nofile(void)
 {
 	struct rlimit rlim;
 
-	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0)
+	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
 		error("getrlimit(RLIMIT_NOFILE): %m");
+		return;
+	}
 
 	rlim.rlim_cur = MIN(4096, rlim.rlim_max);
 
