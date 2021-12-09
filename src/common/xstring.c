@@ -788,7 +788,7 @@ extern void xstrtrim(char *string)
 		memmove(string, start, (ptr - start + 1));
 }
 
-extern char *xstring_bytes2hex(const char *string, int len,
+extern char *xstring_bytes2hex(const unsigned char *string, int len,
 			       const char *delimiter)
 {
 	char *hex = NULL, *pos = NULL;
@@ -801,13 +801,13 @@ extern char *xstring_bytes2hex(const char *string, int len,
 			xstrfmtcatat(hex, &pos, "%s", delimiter);
 
 		/* convert each char into equiv hex */
-		xstrfmtcatat(hex, &pos, "%02x", (unsigned char) string[i]);
+		xstrfmtcatat(hex, &pos, "%02x", string[i]);
 	}
 
 	return hex;
 }
 
-extern char *xstring_bytes2printable(const char *string, int len,
+extern char *xstring_bytes2printable(const unsigned char *string, int len,
 				     const char replace)
 {
 	char *str = NULL, *pos = NULL;

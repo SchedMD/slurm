@@ -229,7 +229,7 @@ void xstrtrim(char *string);
  * IN delimiter - delimiter between each hex byte (may be NULL)
  * RET hex string (must xfree()) or NULL on error
  */
-extern char *xstring_bytes2hex(const char *string, int len,
+extern char *xstring_bytes2hex(const unsigned char *string, int len,
 			       const char *delimiter);
 
 /*
@@ -239,7 +239,7 @@ extern char *xstring_bytes2hex(const char *string, int len,
  * IN replace - character to replace printable characters
  * RET loggable string (must xfree()) or NULL on error
  */
-extern char *xstring_bytes2printable(const char *string, int len,
+extern char *xstring_bytes2printable(const unsigned char *string, int len,
 				     const char replace);
 
 #endif /* !_XSTRING_H */

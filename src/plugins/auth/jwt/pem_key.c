@@ -44,7 +44,7 @@
  * (the implementation they use is originally from Apache and is BSD licensed)
  * into Slurm rather than pick up another external dependency.
  */
-extern int jwt_Base64decode(char *bufplain, const char *bufcoded);
+extern int jwt_Base64decode(unsigned char *bufplain, const char *bufcoded);
 extern int jwt_Base64encode(char *encoded, const char *string, int len);
 
 /*
@@ -99,7 +99,8 @@ static char *_to_base64_from_base64url(char *in)
  */
 static char *_to_hex(char *base64url)
 {
-	char *base64, *bin, *hex;
+	char *base64, *hex;
+	unsigned char *bin;
 	int binlen;
 
 	base64 = _to_base64_from_base64url(base64url);
