@@ -2166,7 +2166,10 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 
 	/* This isn't the gres we are looking for */
 	if ((!args->gres_needed && !args->max_gres) ||
-	    !gres_find_job_by_key_with_cnt(gres_state_job, args->job_search_key))
+	    !gres_find_job_by_key_with_cnt(gres_state_job,
+					   args->job_search_key) ||
+	    (gres_js->gres_cnt_step_alloc[args->node_offset] ==
+	     gres_js->gres_cnt_node_alloc[args->node_offset]))
 		return 0;
 
 	gres_ss_alloc = _step_get_alloc_gres_ptr(
