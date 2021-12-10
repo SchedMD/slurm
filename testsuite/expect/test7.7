@@ -118,13 +118,13 @@ proc test_alloc_size { task_cnt } {
 
 	set max_alloc [expr $task_cnt + (($alloc_unit - 1) * $num_nodes)]
 	if {$num_cpus > $max_alloc} {
-		log_error "TASKS:$task_cnt"
-		log_error "CPUS:$num_cpus"
-		log_error "NODES:$num_nodes"
-		log_error "MAX_THREADS_PER_CORE:$threads_per_core"
-		log_error "MAX_CORES_PER_SOCKET:$cores_per_socket"
-		log_error "MAX_SOCKETS_PER_NODE:$sockets_per_node"
-		log_error "ALLOCATION_UNIT:$alloc_unit"
+		log_debug "TASKS:$task_cnt"
+		log_debug "CPUS:$num_cpus"
+		log_debug "NODES:$num_nodes"
+		log_debug "MAX_THREADS_PER_CORE:$threads_per_core"
+		log_debug "MAX_CORES_PER_SOCKET:$cores_per_socket"
+		log_debug "MAX_SOCKETS_PER_NODE:$sockets_per_node"
+		log_debug "ALLOCATION_UNIT:$alloc_unit"
 		fail "Job with $task_cnt tasks allocated too many CPUs ($num_cpus > $max_alloc)"
 	}
 }

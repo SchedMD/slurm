@@ -2259,8 +2259,7 @@ proc wait_for_account_done args {
 	}
 
 	if { $accounts == "" } {
-		log_error "No account given"
-		return $::RETURN_ERROR
+		fail "An account must be specified"
 	}
 
 	log_user 0
@@ -2363,20 +2362,10 @@ proc wait_for_part_done args {
 	}
 
 	if { $partition == "" } {
-		log_error "No partition given"
-		return $::RETURN_ERROR
+		fail "A partition must be specified"
 	}
 
-	log_user 0
-	spawn $scancel -p $partition
-	expect {
-		timeout {
-			log_error "No response from scancel"
-		}
-		eof {
-			wait
-		}
-	}
+	run_command -fail -nolog "$scancel -p $partition"
 
 	set my_delay    0
 	while 1 {
@@ -2399,14 +2388,12 @@ proc wait_for_part_done args {
 
 		if { $my_delay > $timeout } {
 			log_error "Timeout waiting for partition '$partition' to be finished"
-			log_user 1
 			return $::RETURN_TIMEOUT
 		}
 
 		exec sleep $poll_interval
 		set my_delay [expr $my_delay + $poll_interval]
 	}
-	log_user 1
 	return $::RETURN_SUCCESS
 }
 
@@ -3721,82 +3708,6 @@ proc get_admin_level {{user_name ""}} {
 }
 
 
-###############################################################
-#
-# NAME
-#	change_subbp_state - sets sub mid plane state
-#
-# SYNOPSIS
-#	change_subbp_state node ionodes state
-#
-# RETURN VALUE
-#	Returns SUCCESS if state of mid plane is changed
-#
-###############################################################
-
-proc change_subbp_state { node ionodes state } {
-	global scontrol smap
-
-	set return_code 0
-
-	set my_pid [spawn $scontrol update subbpname=$node\[$ionodes\] state=$state]
-	expect {
-		-re "slurm_update error:" {
-			set return_code 1
-			exp_continue
-		}
-		-re "Unable to contact" {
-			log_error "Slurm appears to be down"
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			slow_kill $my_pid
-			set return_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if { $return_code } {
-		return $return_code
-	}
-
-	set match 0
-	set my_pid [spawn $smap -Db -c -h -n $node -I $ionodes]
-	expect {
-		-nocase -re "$state" {
-			incr match
-			exp_continue
-		}
-		-re "$node" {
-			incr match
-			exp_continue
-		}
-		-re "Unable to contact" {
-			log_error "Slurm appears to be down"
-			exp_continue
-		}
-		timeout {
-			log_error "smap not responding"
-			slow_kill $my_pid
-			set return_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$match != 2} {
-		log_error "Subbp did not go into $state state. $match"
-		set return_code 1
-	}
-
-	return $return_code
-}
-
-
 #################################################
 #
 # NAME
@@ -3966,23 +3877,8 @@ proc wait_for_node args {
 	}
 
 	while {$done != 1 && $wait_time < $timeout} {
-
-		log_user 0
-		spawn $sinfo --noheader --partition $partition --state $state --format %D
-		expect {
-			-re "($number)" {
-				set cnt $expect_out(1,string)
-				exp_continue
-			}
-			timeout {
-				log_error "sinfo is not responding"
-				set rt $::RETURN_TIMEOUT
-			}
-			eof {
-				wait
-			}
-		}
-		log_user 1
+		set output [run_command_output -fail "$sinfo --noheader --partition $partition --state $state --format %D"]
+		regexp "$number" $output cnt
 
 		if {$num_nodes <= $cnt} {
 			set done 1
@@ -4187,8 +4083,7 @@ proc set_partition_maximum_time_limit {partition limit} {
 	}
 
 	if { $limit < -1 } {
-		log_error "Trying to set invalid partition time limit of $limit"
-		return $::RETURN_ERROR
+		fail "Trying to set invalid partition time limit of $limit"
 	}
 	if { $limit == -1 } {
 		set expected_lim "UNLIMITED"
@@ -4196,16 +4091,7 @@ proc set_partition_maximum_time_limit {partition limit} {
 		set expected_lim limit
 	}
 
-	spawn $scontrol update partitionname=$partition MaxTime=-1
-	expect {
-		timeout {
-			log_error "scontrol not responding"
-			return $::RETURN_TIMEOUT
-		}
-		eof {
-			wait
-		}
-	}
+	run_command -fail "$scontrol update partitionname=$partition MaxTime=-1"
 
 	set maxtime [get_partition_maximum_time_limit $partition]
 	if { $maxtime != $limit } {
@@ -4652,8 +4538,7 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set id_list ""
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -4918,18 +4803,11 @@ proc log_trace {message} {
 proc in_fed {} {
 	global scontrol
 
-	spawn $scontrol show fed
-	expect {
-		-re "Federation" {
-			return true
-		}
-		timeout {
-			log_error "scontrol not responding"
-		}
-		eof {
-			wait
-		}
+	set output [run_command_output -fail -nolog "$scontrol show fed"]
+	if {[regexp "Federation" $output]} {
+		return true
 	}
+
 	return false
 }
 
@@ -5829,8 +5707,7 @@ proc create_part { part_name num_nodes_in } {
 			exp_continue
 		}
 		timeout {
-			log_error "srun is not responding getting number of nodes creating part"
-			return $::RETURN_TIMEOUT
+			fail "srun is not responding getting number of nodes creating part"
 		}
 		eof {
 			wait
@@ -5848,8 +5725,7 @@ proc create_part { part_name num_nodes_in } {
 	spawn $scontrol create partitionname=$part_name nodes=$nodes
 	expect {
 		timeout {
-			log_error "scontrol is not responding creating partition"
-			return $::RETURN_ERROR
+			fail "scontrol is not responding creating partition"
 		}
 		eof {
 			wait

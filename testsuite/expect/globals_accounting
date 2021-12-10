@@ -53,8 +53,7 @@ proc add_cluster { name clus_req_in } {
 	set matches 0
 	array set clus_req $clus_req_in
 	if { ![string length $name] } {
-		log_error "We need a name to add"
-		return $::RETURN_ERROR
+		fail "A cluster name must be specified"
 	}
 
 	set command "$name"
@@ -68,7 +67,7 @@ proc add_cluster { name clus_req_in } {
 		}
 		set command "$command $option=$clus_req($option)"
 	}
-	set my_pid [eval spawn $sacctmgr -i add cluster $command]
+	eval spawn $sacctmgr -i add cluster $command
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -95,9 +94,7 @@ proc add_cluster { name clus_req_in } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -129,11 +126,10 @@ proc remove_cluster {name} {
 	set nothing 0
 
 	if { ![string length $name] } {
-		log_error "we need a name to remove"
-		return $::RETURN_ERROR
+		fail "A cluster name must be specified"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i delete cluster $name]
+	eval spawn $sacctmgr -i delete cluster $name
 	expect {
 		-re "privilege to perform this action" {
 			set access_err 1
@@ -169,9 +165,7 @@ proc remove_cluster {name} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr delete not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -202,8 +196,7 @@ proc mod_cluster { name clus_req_in } {
 	set matches 0
 	array set clus_req $clus_req_in
 	if { ![string length $name] } {
-		log_error "We need a name to add"
-		return $::RETURN_ERROR
+		fail "A cluster name must be specified"
 	}
 
 	set command ""
@@ -219,7 +212,7 @@ proc mod_cluster { name clus_req_in } {
 	}
 	set command "$command where name=$name"
 
-	set my_pid [eval spawn $sacctmgr -i mod cluster set $command]
+	eval spawn $sacctmgr -i mod cluster set $command
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -246,9 +239,7 @@ proc mod_cluster { name clus_req_in } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -279,8 +270,7 @@ proc add_acct { name acct_req_in } {
 	set matches 0
 	array set acct_req $acct_req_in
 	if { ![string length $name] } {
-		log_error "We need a name to add"
-		return $::RETURN_ERROR
+		fail "An account must be specified"
 	}
 
 	set command "name=$name"
@@ -296,7 +286,7 @@ proc add_acct { name acct_req_in } {
 		set command "$command $option=$acct_req($option)"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i add account $command]
+	eval spawn $sacctmgr -i add account $command
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -327,9 +317,7 @@ proc add_acct { name acct_req_in } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -345,6 +333,7 @@ proc add_acct { name acct_req_in } {
 		log_error "Our associations don't line up"
 		set rc $::RETURN_ERROR
 	}
+
 	return $rc
 }
 
@@ -361,8 +350,7 @@ proc remove_acct { cluster name } {
 	set check "Deleting account"
 
 	if { ![string length $name] } {
-		log_error "We need a name to remove"
-		return $::RETURN_ERROR
+		fail "An account must be specified"
 	}
 
 	set command "name=$name"
@@ -372,7 +360,7 @@ proc remove_acct { cluster name } {
 		set check "Deleting account associations"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i delete account $command]
+	eval spawn $sacctmgr -i delete account $command
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -404,9 +392,7 @@ proc remove_acct { cluster name } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -451,7 +437,6 @@ proc remove_acct { cluster name } {
 ########################################################################
 
 proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_in } {
-
 	global sacctmgr timeout
 
 	set rc $::RETURN_SUCCESS
@@ -465,11 +450,10 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 	array set acct_mod_acct_vals $acct_mod_acct_vals_in
 
 	if { ![string length $name] } {
-		log_error "We need a name to modify"
-		return $::RETURN_ERROR
+		fail "An account must be specified"
 	}
 
-	#set up the where
+	# Set up the where
 	set wcommand "where name=$name"
 
 	foreach desc [array names acct_mod_desc] {
@@ -482,7 +466,7 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 		set wcommand "$wcommand $desc=$acct_mod_desc($desc)"
 	}
 
-	#set up the set
+	# Set up the set
 	set scommand "set"
 
 	foreach acct_val [array names acct_mod_acct_vals] {
@@ -513,7 +497,7 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 	incr expected $acct_stuff
 	incr expected $assoc_stuff
 
-	set my_pid [eval spawn $sacctmgr -i modify account $scommand $wcommand ]
+	eval spawn $sacctmgr -i modify account $scommand $wcommand
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -544,9 +528,7 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -562,6 +544,7 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 		log_error "Our associations don't line up"
 		set rc $::RETURN_ERROR
 	}
+
 	return $rc
 }
 
@@ -576,12 +559,10 @@ proc add_user { name user_req_in } {
 	set matches 0
 	array set user_req $user_req_in
 	if { ![string length $name] } {
-		log_error "We need a name to add"
-		return $::RETURN_ERROR
+		fail "A user must be specified"
 	}
 
 	set command "user=$name"
-
 
 	foreach option [array names user_req] {
 
@@ -593,7 +574,7 @@ proc add_user { name user_req_in } {
 		set command "$command $option=$user_req($option)"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i add user $command]
+	eval spawn $sacctmgr -i add user $command
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -628,9 +609,7 @@ proc add_user { name user_req_in } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -646,13 +625,13 @@ proc add_user { name user_req_in } {
 		log_error "Our associations don't line up"
 		set rc $::RETURN_ERROR
 	}
-	return $rc
 
+	return $rc
 }
 
 
 #
-# Use sacctmgr to remove an user
+# Use sacctmgr to remove a user
 #
 proc remove_user { cluster acct user } {
 	global sacctmgr timeout
@@ -663,8 +642,7 @@ proc remove_user { cluster acct user } {
 	set check "Deleting user"
 
 	if { ![string length $user] } {
-		log_error "We need a name to remove"
-		return $::RETURN_ERROR
+		fail "A user must be specified"
 	}
 
 	set command "$user"
@@ -679,7 +657,7 @@ proc remove_user { cluster acct user } {
 		set check "Deleting user associations"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i delete user $command]
+	eval spawn $sacctmgr -i delete user $command
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -711,9 +689,7 @@ proc remove_user { cluster acct user } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr delete not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -771,11 +747,10 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 	array set user_mod_assoc $user_mod_assoc_req
 
 	if { ![string length $name] } {
-		log_error "We need a name to modify"
-		return $::RETURN_ERROR
+		fail "A user must be specified"
 	}
 
-	#set up the where
+	# Set up the where
 	set wcommand "where name=$name"
 	foreach desc [array names user_mod_info] {
 
@@ -788,7 +763,7 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 		set wcommand "$wcommand $desc=$user_mod_info($desc)"
 	}
 
-	#set up the set
+	# Set up the set
 	set scommand "set"
 
 	# Account Values
@@ -821,7 +796,7 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 	incr expected $acct_stuff
 	incr expected $assoc_stuff
 
-	set my_pid [eval spawn $sacctmgr -i modify user $scommand $wcommand ]
+	eval spawn $sacctmgr -i modify user $scommand $wcommand
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -852,9 +827,7 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr modify not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr modify not responding"
 		}
 		eof {
 			wait
@@ -870,6 +843,7 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 		log_error "Our associations don't line up"
 		set rc $::RETURN_ERROR
 	}
+
 	return $rc
 }
 
@@ -885,8 +859,7 @@ proc add_qos {name qos_req_in} {
 	array set qos_req $qos_req_in
 
 	if { ![string length $name] } {
-		log_error "Need name of qos to add"
-		return $::RETURN_ERROR
+		fail "A qos must be specified"
 	}
 
 	set command "$name"
@@ -898,7 +871,7 @@ proc add_qos {name qos_req_in} {
 		set command "$command $option=$qos_req($option)"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i add qos $command]
+	eval spawn $sacctmgr -i add qos $command
 	expect {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -925,9 +898,7 @@ proc add_qos {name qos_req_in} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -952,7 +923,6 @@ proc add_qos {name qos_req_in} {
 # Modify QoS
 #
 proc mod_qos { qos_name qos_mod_val_in} {
-
 	global sacctmgr timeout
 
 	set rc $::RETURN_SUCCESS
@@ -963,8 +933,7 @@ proc mod_qos { qos_name qos_mod_val_in} {
 	array set qos_mod_vals $qos_mod_val_in
 
 	if { ![string length $qos_name] } {
-		log_error "We need a name to modify"
-		return $::RETURN_ERROR
+		fail "A qos must be specified"
 	}
 
 	foreach desc [array names qos_mod_vals] {
@@ -976,26 +945,12 @@ proc mod_qos { qos_name qos_mod_val_in} {
 		set scommand "$scommand $desc=$qos_mod_vals($desc)"
 	}
 
-	set change_cnt 0
-	set my_pid [eval spawn $sacctmgr -i modify qos $wcommand $scommand]
-	expect {
-		-re "Modified qos" {
-			incr change_cnt
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
-		}
-		eof {
-			wait
-		}
-	}
-	if {$change_cnt==0} {
+	set output [run_command_output -fail "$sacctmgr -i modify qos $wcommand $scommand"]
+	if {![regexp "Modified qos" $output]} {
 		log_error "sacctmgr did not change qos $qos_name"
 		set rc $::RETURN_ERROR
 	}
+
 	return $rc
 }
 
@@ -1011,11 +966,10 @@ proc remove_qos {name} {
 	set nothing 0
 
 	if { ![string length $name] } {
-		log_error "We need a name to remove"
-		return $::RETURN_ERROR
+		fail "A qos must be specified"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i delete qos $name]
+	spawn $sacctmgr -i delete qos $name
 	expect {
 		-re "privilege to perform this action" {
 			set access_err 1
@@ -1051,9 +1005,7 @@ proc remove_qos {name} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr delete not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -1087,8 +1039,7 @@ proc add_coor { accounts names } {
 	set matches 0
 
 	if { ![string length $names] } {
-		log_error "We need a name to add"
-		return $::RETURN_ERROR
+		fail "At least one coordinator name must be specified"
 	}
 
 	set command "$names"
@@ -1101,7 +1052,7 @@ proc add_coor { accounts names } {
 #		set command "$command names=$names"
 #	}
 
-	set my_pid [eval spawn $sacctmgr -i add coordinator $command]
+	eval spawn $sacctmgr -i add coordinator $command
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -1132,9 +1083,7 @@ proc add_coor { accounts names } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -1150,6 +1099,7 @@ proc add_coor { accounts names } {
 		log_error "Our associations don't line up"
 		set rc $::RETURN_ERROR
 	}
+
 	return $rc
 }
 
@@ -1165,9 +1115,8 @@ proc remove_coor { accounts names } {
 	set nothing 1
 	set check "Deleting coordinator"
 
-	if { ![string length $name] } {
-		log_error "We need a name to remove"
-		return $::RETURN_ERROR
+	if { ![string length $names] } {
+		fail "At least one coordinator name must be specified"
 	}
 
 	set command "$names"
@@ -1176,7 +1125,7 @@ proc remove_coor { accounts names } {
 		set command "$command accounts=$accounts"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i delete coordinator $command]
+	eval spawn $sacctmgr -i delete coordinator $command
 	expect {
 		-re "(There was a problem|Unknown condition|Bad format on|Bad MaxWall|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -1208,9 +1157,7 @@ proc remove_coor { accounts names } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr delete not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -1235,12 +1182,13 @@ proc remove_coor { accounts names } {
 
 proc archive_load { file } {
 	global sacctmgr timeout
+
 	#
 	# Use sacctmgr to load info
 	#
 	set matches 0
 	set rc $::RETURN_SUCCESS
-	set my_pid [spawn $sacctmgr -i -n archive load $file]
+	spawn $sacctmgr -i -n archive load $file
 	expect {
 		-re "There was a problem" {
 			log_error "There was a problem with the sacctmgr command"
@@ -1252,9 +1200,7 @@ proc archive_load { file } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr archive load not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr archive load not responding"
 		}
 		eof {
 			wait
@@ -1265,6 +1211,7 @@ proc archive_load { file } {
 		log_error "sacctmgr didn't load archive correctly"
 		set rc $::RETURN_ERROR
 	}
+
 	return $rc
 }
 
@@ -1281,8 +1228,7 @@ proc add_resource {name res_limits} {
 	array set res_req $res_limits
 
 	if { ![string length $name] } {
-		log_error "Need name of res to add"
-		return $::RETURN_ERROR
+		fail "A resource name must be specified"
 	}
 
 	foreach option [array names res_req] {
@@ -1292,7 +1238,7 @@ proc add_resource {name res_limits} {
 		set command "$command $option=$res_req($option)"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i add resource $command]
+	eval spawn $sacctmgr -i add resource $command
 	expect {
 		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
 			log_error "There was a problem with the sacctmgr command"
@@ -1314,9 +1260,7 @@ proc add_resource {name res_limits} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -1325,65 +1269,6 @@ proc add_resource {name res_limits} {
 
 	if {$matches != 1} {
 		log_error "sacctmgr had a problem adding system resource. Got $matches"
-		set rc $::RETURN_ERROR
-	}
-
-	return $rc
-}
-
-
-#
-# Use sacctmgr to create a clus_res
-#
-proc add_clus_res {name allowed} {
-	global sacctmgr timeout
-
-	set rc $::RETURN_SUCCESS
-	set matches 0
-
-	if { ![string length $name] } {
-		log_error "Need name of clus_res to add"
-		return $::RETURN_ERROR
-	}
-	set command "name=$name"
-
-	if { [string length $allowed] } {
-		set command "$command allowed=$allowed"
-	}
-
-	set my_pid [eval spawn $sacctmgr -i add clus_res $command]
-	expect {
-		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
-			log_error "There was a problem with the sacctmgr command"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Problem getting" {
-			log_error "There was a problem getting cluster resources from the database"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Problem adding" {
-			log_error "There was an unknown problem"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Adding cluster resource(s)" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr add not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 1} {
-		log_error "sacctmgr had a problem adding cluster resource got $matches"
 		set rc $::RETURN_ERROR
 	}
 
@@ -1402,11 +1287,10 @@ proc remove_res {name} {
 	set nothing 0
 
 	if { ![string length $name] } {
-		log_error "We need a name to remove"
-		return $::RETURN_ERROR
+		fail "A resource name must be specified"
 	}
 
-	set my_pid [eval spawn $sacctmgr -i delete res $name]
+	spawn $sacctmgr -i delete res $name
 	expect {
 		-re "privilege to perform this action" {
 			set access_err 1
@@ -1436,9 +1320,7 @@ proc remove_res {name} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr delete not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -1449,72 +1331,6 @@ proc remove_res {name} {
 	}
 	if {$access_err != 0} {
 		return $::RETURN_ERROR
-	}
-
-	return $rc
-}
-
-
-#
-# Use sacctmgr to remove the test clus_res
-#
-proc remove_clus_res {name} {
-	global access_err sacctmgr timeout
-
-	set rc $::RETURN_SUCCESS
-	set matches 0
-	set nothing 0
-
-	if { ![string length $name] } {
-		log_error "We need a name to remove"
-		return $::RETURN_ERROR
-	}
-
-	set my_pid [eval spawn $sacctmgr -i delete clus_res $name]
-	expect {
-		-re "privilege to perform this action" {
-			set access_err 1
-			exp_continue
-		}
-		-re "(There was a problem|Unknown condition|Unknown field|Unknown option)" {
-			log_error "There was a problem with the sacctmgr command"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Problem getting" {
-			log_error "There was a problem getting information from the database"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Problem adding" {
-			log_error "There was an unknown problem"
-			set rc $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Deleting cluster resource" {
-			incr matches
-			exp_continue
-		}
-		-re " Nothing deleted" {
-			incr matches
-			set nothing 1
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr delete not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
-		}
-		eof {
-			wait
-		}
-	}
-	if {$access_err != 0} {
-		return $::RETURN_ERROR
-	}
-	if {$matches != 1} {
-		log_error "sacctmgr had a problem deleting cluster resource. Got $matches"
-		set rc $::RETURN_ERROR
 	}
 
 	return $rc
@@ -1564,14 +1380,13 @@ proc check_assoc_limit { assoc type name assoc_val } {
 	log_user 0
 	set check_val 0
 	if {$assoc == 1} {
-		set my_pid [eval spawn $sacctmgr list cluster $type=$name -p -n format=Cluster,$format_str]
+		spawn $sacctmgr list cluster $type=$name -p -n format=Cluster,$format_str
 		expect {
 			-re "$exp" {
 				set check_val 1
 				exp_continue
 			}
 			timeout {
-				slow_kill $my_pid
 				fail "sacctmgr is not responding"
 			}
 			eof {
@@ -1585,14 +1400,13 @@ proc check_assoc_limit { assoc type name assoc_val } {
 		}
 
 	} elseif {$assoc == 2} {
-		set my_pid [eval spawn $sacctmgr list assoc $type=$name -p -n format=account,$format_str]
+		spawn $sacctmgr list assoc $type=$name -p -n format=account,$format_str
 		expect {
 			-re "$exp" {
 				set check_val 1
 				exp_continue
 			}
 			timeout {
-				slow_kill $my_pid
 				fail "sacctmgr is not responding"
 			}
 			eof {
@@ -1605,14 +1419,13 @@ proc check_assoc_limit { assoc type name assoc_val } {
 			set return_value false
 		}
 	} elseif {$assoc == 3} {
-		set my_pid [eval spawn $sacctmgr list assoc $type=$name -p -n format=user,$format_str]
+		spawn $sacctmgr list assoc $type=$name -p -n format=user,$format_str
 		expect {
 			-re "$exp" {
 				set check_val 1
 				exp_continue
 			}
 			timeout {
-				slow_kill $my_pid
 				fail "sacctmgr is not responding"
 			}
 			eof {
@@ -1625,6 +1438,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 		}
 	}
 	log_user 1
+
 	return $return_value
 }
 
@@ -1650,7 +1464,7 @@ proc reset_account_usage { cluster acct } {
 		set cluster [get_config_param "ClusterName"]
 	}
 
-	set my_pid [eval spawn $sacctmgr -i mod account $acct cluster=$cluster set RawUsage=0]
+	spawn $sacctmgr -i mod account $acct cluster=$cluster set RawUsage=0
 	expect {
 		-re "error:" {
 			log_error "Something went wrong with sacctmgr command"
@@ -1658,14 +1472,13 @@ proc reset_account_usage { cluster acct } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr not responding"
 		}
 		eof {
 			wait
 		}
 	}
+
 	return $rc
 }
 
@@ -1691,7 +1504,7 @@ proc reset_qos_usage { cluster qos } {
 		set cluster [get_config_param "ClusterName"]
 	}
 
-	set my_pid [eval spawn $sacctmgr -i mod qos $qos cluster=$cluster set RawUsage=0]
+	spawn $sacctmgr -i mod qos $qos cluster=$cluster set RawUsage=0
 	expect {
 		-re "error:" {
 			log_error "Something went wrong with sacctmgr command"
@@ -1699,14 +1512,13 @@ proc reset_qos_usage { cluster qos } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr not responding"
 		}
 		eof {
 			wait
 		}
 	}
+
 	return $rc
 }
 
@@ -1733,7 +1545,7 @@ proc check_wckey_tracking_slurmdbd { } {
 	log_user 0
 	set wckey 0
 	set slurmdbd_config 0
-	set my_pid [eval spawn $sacctmgr show config]
+	spawn $sacctmgr show config
 	expect {
 		-re "SlurmDBD configuration" {
 			set slurmdbd_config 1
@@ -1746,14 +1558,14 @@ proc check_wckey_tracking_slurmdbd { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr not responding"
-			slow_kill $my_pid
+			fail "sacctmgr not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	log_user 1
+
 	return $wckey
 }
 
@@ -1780,8 +1592,7 @@ proc check_qos_limits { name qos_req } {
 	array set qos_limits $qos_req
 
 	if { ![string length $name] } {
-		log_error "We need a name to check"
-		return 1
+		fail "A qos name must be specified"
 	}
 
 	foreach option [array names qos_limits] {
@@ -1799,16 +1610,14 @@ proc check_qos_limits { name qos_req } {
 
 	log_user 0
 	set match 0
-	set my_pid [eval spawn $sacctmgr -n -p show qos $name "$command"]
+	eval spawn $sacctmgr -n -p show qos $name "$command"
 	expect {
 		-re "($values)" {
 			set match 1
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -1828,7 +1637,7 @@ proc check_qos_limits { name qos_req } {
 ###############################################################
 #
 # NAME
-#	check_resource_limits - verifies that the reservation limits are correct
+#	check_resource_limits - verifies that the resource limits are correct
 #
 # SYNOPSIS
 #	check_resource_limits name res_limits
@@ -1847,8 +1656,7 @@ proc check_resource_limits { name res_limits } {
 	array set res_req $res_limits
 
 	if { ![string length $name] } {
-		log_error "We need a name to check"
-		return $::RETURN_ERROR
+		fail "A resource name must be specified"
 	}
 
 	foreach option [array names res_req] {
@@ -1859,27 +1667,8 @@ proc check_resource_limits { name res_limits } {
 		set values "$values.$res_req($option)"
 	}
 
-	log_user 0
-	set match 0
-	set my_pid [eval spawn $sacctmgr -p -n list resource $name $command]
-	expect {
-		-nocase -re "$values" {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr is not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
-		}
-		eof {
-			wait
-		}
-
-	}
-	log_user 1
-
-	if {$match == 0} {
+	set output [run_command -fail -nolog "$sacctmgr -p -n list resource $name $command"]
+	if {![regexp -nocase "$values" $output]} {
 		set rc $::RETURN_ERROR
 	}
 
@@ -1908,8 +1697,7 @@ proc mod_resource {name mod_limits} {
 	array set res_mod_req $mod_limits
 
 	if { ![string length $name] } {
-		log_error "We need a name to check"
-		return $::RETURN_ERROR
+		fail "A resource name must be specified"
 	}
 
 	foreach option [array names res_mod_req] {
@@ -1919,26 +1707,8 @@ proc mod_resource {name mod_limits} {
 		set commands "$commands$option=$res_mod_req($option) "
 	}
 
-	log_user 0
-	set match 0
-	set my_pid [eval spawn $sacctmgr -i mod resource where name=$name set $commands]
-	expect {
-		-re "Modified server resources ..." {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr is not responding"
-			slow_kill $my_pid
-			set rc $::RETURN_TIMEOUT
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$match == 1} {
+	set output [run_command_output -fail -nolog "$sacctmgr -i mod resource where name=$name set $commands"]
+	if {![regexp "Modified server resource ..." $output]} {
 		set rc $::RETURN_ERROR
 	}
 
@@ -1963,23 +1733,20 @@ proc get_assoc_id {user acct cluster} {
 	global sacctmgr number
 
 	if { ![string length $user] } {
-		log_error "We need a user to check"
-		return -1
+		fail "A user must be specified"
 	}
 
 	if { ![string length $acct] } {
-		log_error "We need a account to check"
-		return -1
+		fail "An account must be specified"
 	}
 
 	if { ![string length $cluster] } {
-		log_error "We need a cluster to check"
-		return -1
+		fail "A cluster name must be specified"
 	}
 
 	log_user 0
 	set id -1
-	set my_pid [eval spawn $sacctmgr -p -n list assoc format=id where user=$user acct=$acct cluster=$cluster]
+	eval spawn $sacctmgr -p -n list assoc format=id where user=$user acct=$acct cluster=$cluster
 	expect {
 		-re "($number)\\|" {
 			if { $id != -1 } {
@@ -1992,8 +1759,7 @@ proc get_assoc_id {user acct cluster} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			slow_kill $my_pid
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait

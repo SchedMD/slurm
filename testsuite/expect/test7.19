@@ -61,8 +61,7 @@ proc test_sbatch { local } {
 			return 1
 		}
 		timeout {
-			log_error "sbatch not responding"
-			return 1
+			fail "sbatch not responding"
 		}
 		eof {
 			lassign [wait] pid spawnid os_error_flag rc
@@ -70,7 +69,7 @@ proc test_sbatch { local } {
 	}
 
 	if { $job_id == 0 } {
-		log_error "batch submit failure"
+		log_debug "batch submit failure"
 		return 1
 	}
 
@@ -79,7 +78,7 @@ proc test_sbatch { local } {
 	}
 
 	if { $rc != $exp_rc } {
-		log_error "sbatch error submitting job $job_id rc: $rc instead of $exp_rc"
+		log_debug "sbatch error submitting job $job_id rc: $rc instead of $exp_rc"
 		return 1
 	}
 
@@ -106,12 +105,10 @@ proc test_salloc { local } {
 			exp_continue
 		}
 		-re "error" {
-			log_error "Job was not submitted"
-			return 1
+			fail "Job was not submitted"
 		}
 		timeout {
-			log_error "salloc not responding"
-			return 1
+			fail "salloc not responding"
 		}
 		eof {
 			lassign [wait] pid spawnid os_error_flag rc
@@ -119,7 +116,7 @@ proc test_salloc { local } {
 	}
 
 	if { $job_id == 0 } {
-		log_error "salloc submit failure"
+		log_debug "salloc submit failure"
 		return 1
 	}
 
@@ -128,7 +125,7 @@ proc test_salloc { local } {
 	}
 
 	if { $rc != $exp_rc } {
-		log_error "salloc error submitting job $job_id rc: $rc instead of $exp_rc"
+		log_debug "salloc error submitting job $job_id rc: $rc instead of $exp_rc"
 		return 1
 	}
 
@@ -155,8 +152,7 @@ proc test_srun { local } {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
-			return 1
+			fail "srun not responding"
 		}
 		eof {
 			lassign [wait] pid spawnid os_error_flag rc
@@ -165,7 +161,7 @@ proc test_srun { local } {
 
 
 	if { $job_id == 0 } {
-		log_error "srun submit failure"
+		log_debug "srun submit failure"
 		return 1
 	}
 
@@ -174,7 +170,7 @@ proc test_srun { local } {
 	}
 
 	if { $rc != $exp_rc } {
-		log_error "srun error submitting job $job_id rc: $rc instead of $exp_rc"
+		log_debug "srun error submitting job $job_id rc: $rc instead of $exp_rc"
 		return 1
 	}
 
@@ -186,27 +182,11 @@ set ::env(PATH) "/bin:/usr/bin"
 make_bash_script $file_in $bin_true
 
 # Test tools expecting bash to be used instead of our local 'bash' script
-if { [test_sbatch 0] } {
-	fail "Failed testing sbatch"
-}
-
-if { [test_salloc 0] } {
-	fail "Failed testing salloc"
-}
-
-if { [test_srun 0] } {
-	fail "Failed testing srun"
-}
+subtest {[test_sbatch 0] == 0} "Verify that the sbatch executable will be resolved from the search path if it does not contain a /"
+subtest {[test_salloc 0] == 0} "Verify that the salloc executable will be resolved from the search path if it does not contain a /"
+subtest {[test_srun 0] == 0} "Verify that the srun executable will be resolved from the search path if it does not contain a /"
 
 # Test tools expecting our local 'bash' script to override the system bash
-if { [test_sbatch 1] } {
-	fail "Failed testing sbatch"
-}
-
-if { [test_salloc 1] } {
-	fail "Failed testing salloc"
-}
-
-if { [test_srun 1] } {
-	fail "Failed testing srun"
-}
+subtest {[test_sbatch 1] == 0} "Verify that the sbatch executable will be resolved relative to the current working directory if it starts with ./"
+subtest {[test_salloc 1] == 0} "Verify that the salloc executable will be resolved relative to the current working directory if it starts with ./"
+subtest {[test_srun 1] == 0} "Verify that the srun executable will be resolved relative to the current working directory if it starts with ./"

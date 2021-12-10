@@ -105,50 +105,10 @@ proc cleanup {} {
 }
 
 # Run a job to get a usable node to test
-set tmp_sc  "tmp_sc"
-
-make_bash_script $tmp_sc "sleep 2"
-
-spawn $sbatch -o/dev/null -N1 --exclusive $tmp_sc
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	fail "Job was not submitted"
-}
+set job_id [submit_job -fail "-o/dev/null -N1 --exclusive --wrap 'sleep 2'"]
 
 wait_for_job -fail $job_id "RUNNING"
-
-set got_node 0
-spawn $scontrol show job $job_id
-expect {
-	-re "NodeList=($re_word_str)" {
-		set test_node $expect_out(1,string)
-		set got_node 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$got_node != 1} {
-	fail "Was not able to get usable node"
-}
-
+set test_node [get_job_param $job_id "NodeList"]
 lassign [get_node_cpus $test_node] cpu_tot sq_format(cpuspertask)
 
 set socket_cnt 1
@@ -163,8 +123,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		exp_continue
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -181,7 +140,6 @@ if {$sq_format(ntpersocket) == 0 || $sq_format(cpuspertask) == 0} {
 }
 
 # Remove the tmp script and cancel tmp job
-exec $bin_rm $tmp_sc
 cancel_job $job_id
 
 set sq_format(username) [get_my_user_name]

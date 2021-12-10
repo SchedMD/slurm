@@ -59,7 +59,7 @@ if {[string compare [get_admin_level] "Administrator"]} {
 proc cleanup { } {
 	global fed_name
 
-	return [delete_federations $fed_name]
+	delete_federations $fed_name
 }
 
 # submit jobs to each cluster and ensure that they return a unique job id
@@ -159,12 +159,10 @@ if {![check_federation_up]} {
 }
 
 # Remove existing setup
-if {[cleanup] != 0} {
-	fail "Failed to cleanup"
-}
+cleanup
 
 # add clusters to federation
-if {[setup_federation $fed_name]} {
+if [setup_federation $fed_name] {
 	fail "Failed to setup federation"
 }
 
