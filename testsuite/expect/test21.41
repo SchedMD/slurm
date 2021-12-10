@@ -163,70 +163,6 @@ proc test_job_update {sacctmgr_args expected_jobs} {
 	global sacct sacctmgr number
 	global clusters wckey_new
 
-	set matches_right 0
-	set matches_wrong 0
-	set rc 0
-
-	set cmd_str "$sacctmgr -i update job set newwckey=$wckey_new where $sacctmgr_args"
-	set my_pid [eval spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]]
-	expect {
-		-re "($number) submitted at" {
-			set jobid $expect_out(1,string)
-			if {"$jobid" in $expected_jobs} {
-				incr matches_right
-			} else {
-				incr matches_wrong
-			}
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr update job not responding"
-			slow_kill $my_pid
-			incr rc
-			return $rc
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches_right != [llength $expected_jobs] || $matches_wrong != 0} {
-		log_error "Expected job updates wrong $matches_right $matches_wrong"
-		incr rc
-		return $rc
-	}
-
-	set matches_right 0
-	set matches_wrong 0
-	set my_pid [eval spawn $sacct -a -n --cluster=$clusters --wckey=$wckey_new --start=2000-01-01 --end=now --format=jobid]
-	expect {
-		-re "($number)" {
-			set jobid $expect_out(1,string)
-			if {"$jobid" in $expected_jobs} {
-				incr matches_right
-			} else {
-				incr matches_wrong
-			}
-			exp_continue
-		}
-		timeout {
-			log_error "sacct not responding"
-			slow_kill $my_pid
-			incr rc
-			return $rc
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches_right != [llength $expected_jobs] || $matches_wrong != 0} {
-		log_error "Expected job updates wrong $matches_right $matches_wrong"
-		incr rc
-		return $rc
-	}
-	return $rc
-}
-
-proc _run_test { update_str expected_jobs } {
 	global sql_rem_clus1 sql_rem_clus2 sql_in_clus1 sql_in_clus2
 
 	set rc 0
@@ -238,9 +174,31 @@ proc _run_test { update_str expected_jobs } {
 		fail "Unable to load archive"
 	}
 
-	if [test_job_update $update_str $expected_jobs] {
-		fail "Update failed with: $update_str"
+	set matches_right 0
+	set matches_wrong 0
+	set output [run_command_output -fail "$sacctmgr -i update job set newwckey=$wckey_new where $sacctmgr_args"]
+	set jobs_list [regexp -all -inline "($number) submitted at" $output]
+	foreach {match job_id} $jobs_list {
+		if {$job_id in $expected_jobs} {
+			incr matches_right
+		} else {
+			incr matches_wrong
+		}
 	}
+	subtest {$matches_right == [llength $expected_jobs] && $matches_wrong == 0} "Verify expected job updates in sacctmgr update for $sacctmgr_args" "($matches_right,$matches_wrong) != ([llength $expected_jobs],0)"
+
+	set matches_right 0
+	set matches_wrong 0
+	set output [run_command_output -fail "$sacct -a -n --cluster=$clusters --wckey=$wckey_new --start=2000-01-01 --end=now --format=jobid"]
+	set jobs_list [regexp -all -inline "($number)" $output]
+	foreach {match job_id} $jobs_list {
+		if {$job_id in $expected_jobs} {
+			incr matches_right
+		} else {
+			incr matches_wrong
+		}
+	}
+	subtest {$matches_right == [llength $expected_jobs] && $matches_wrong == 0} "Verify expected job updates in sacct for $sacctmgr_args" "($matches_right,$matches_wrong) != ([llength $expected_jobs],0)"
 }
 
 #
@@ -454,243 +412,243 @@ create_sql $cluster2 $sql_in_clus2 $sql_rem_clus2
 #
 
 # 1 cluster1, 1 user1
-_run_test "cluster=$cluster1 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
+testproc test_job_update "cluster=$cluster1 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
 
 # 1 cluster1, 1 user2
-_run_test "cluster=$cluster1 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
 
 # 1 cluster1, 2 users
-_run_test "cluster=$cluster1 user=$user1,$user2" [list $jobid01 $jobid02 $jobid05 $jobid06 $jobid03 $jobid04 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 user=$user1,$user2" [list $jobid01 $jobid02 $jobid05 $jobid06 $jobid03 $jobid04 $jobid07 $jobid08]
 
 # 1 cluster2, 1 user1
-_run_test "cluster=$cluster2 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
+testproc test_job_update "cluster=$cluster2 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
 
 # 1 cluster2, 1 user2
-_run_test "cluster=$cluster2 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster2 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
 
 # 1 cluster2, 2 users
-_run_test "cluster=$cluster2 user=$user1,$user2" [list $jobid01 $jobid02 $jobid05 $jobid06 $jobid03 $jobid04 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster2 user=$user1,$user2" [list $jobid01 $jobid02 $jobid05 $jobid06 $jobid03 $jobid04 $jobid07 $jobid08]
 
 
 # 1 cluster1, 1 account1, 1 user1
-_run_test "cluster=$cluster1 account=$account1 user=$user1" [list $jobid01 $jobid02]
+testproc test_job_update "cluster=$cluster1 account=$account1 user=$user1" [list $jobid01 $jobid02]
 
 # 1 cluster1, 1 account1, 1 user2
-_run_test "cluster=$cluster1 account=$account1 user=$user2" [list $jobid03 $jobid04]
+testproc test_job_update "cluster=$cluster1 account=$account1 user=$user2" [list $jobid03 $jobid04]
 
 # 1 cluster1, 1 account1, 2 users
-_run_test "cluster=$cluster1 account=$account1 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04]
+testproc test_job_update "cluster=$cluster1 account=$account1 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04]
 
 # 1 cluster1, 1 account2, 1 user1
-_run_test "cluster=$cluster1 account=$account2 user=$user1" [list $jobid05 $jobid06]
+testproc test_job_update "cluster=$cluster1 account=$account2 user=$user1" [list $jobid05 $jobid06]
 
 # 1 cluster1, 1 account2, 1 user2
-_run_test "cluster=$cluster1 account=$account2 user=$user2" [list $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 account=$account2 user=$user2" [list $jobid07 $jobid08]
 
 # 1 cluster1, 1 account2, 2 users
-_run_test "cluster=$cluster1 account=$account2 user=$user1,$user2" [list $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 account=$account2 user=$user1,$user2" [list $jobid05 $jobid06 $jobid07 $jobid08]
 
 # 1 cluster1, 2 accounts, 1 user1
-_run_test "cluster=$cluster1 account=$account1,$account2 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
+testproc test_job_update "cluster=$cluster1 account=$account1,$account2 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
 
 # 1 cluster1, 2 accounts, 1 user2
-_run_test "cluster=$cluster1 account=$account1,$account2 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 account=$account1,$account2 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
 
 # 1 cluster1, 2 accounts, 2 users
-_run_test "cluster=$cluster1 account=$account1,$account2 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 account=$account1,$account2 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
 
 
 # 1 cluster1, 1 wckey1, 1 user1
-_run_test "cluster=$cluster1 wckey=$wckey1 user=$user1" [list $jobid01 $jobid05]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1 user=$user1" [list $jobid01 $jobid05]
 
 # 1 cluster1, 1 wckey1, 1 user2
-_run_test "cluster=$cluster1 wckey=$wckey1 user=$user2" [list $jobid03 $jobid07]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1 user=$user2" [list $jobid03 $jobid07]
 
 # 1 cluster1, 1 wckey1, 2 users
-_run_test "cluster=$cluster1 wckey=$wckey1 user=$user1,$user2" [list $jobid01 $jobid05 $jobid03 $jobid07]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1 user=$user1,$user2" [list $jobid01 $jobid05 $jobid03 $jobid07]
 
 # 1 cluster1, 1 wckey2, 1 user1
-_run_test "cluster=$cluster1 wckey=$wckey2 user=$user1" [list $jobid02 $jobid06]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey2 user=$user1" [list $jobid02 $jobid06]
 
 # 1 cluster1, 1 wckey2, 1 user2
-_run_test "cluster=$cluster1 wckey=$wckey2 user=$user2" [list $jobid04 $jobid08]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey2 user=$user2" [list $jobid04 $jobid08]
 
 # 1 cluster1, 1 wckey2, 2 users
-_run_test "cluster=$cluster1 wckey=$wckey2 user=$user1,$user2" [list $jobid02 $jobid06 $jobid04 $jobid08]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey2 user=$user1,$user2" [list $jobid02 $jobid06 $jobid04 $jobid08]
 
 # 1 cluster1, 2 wckeys, 1 user1
-_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1,$wckey2 user=$user1" [list $jobid01 $jobid02 $jobid05 $jobid06]
 
 # 1 cluster1, 2 wckeys, 1 user2
-_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1,$wckey2 user=$user2" [list $jobid03 $jobid04 $jobid07 $jobid08]
 
 # 1 cluster1, 2 wckeys, 2 users
-_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1,$wckey2 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
 
 
 # 1 cluster1, 1account1, 1 wckey1, 1 user1
-_run_test "cluster=$cluster1 wckey=$wckey1 account=$account1 user=$user1" [list $jobid01]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1 account=$account1 user=$user1" [list $jobid01]
 
 # 1 cluster1, 1account1, 1 wckey1, 1 user2
-_run_test "cluster=$cluster1 wckey=$wckey1 account=$account1 user=$user2" [list $jobid03]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1 account=$account1 user=$user2" [list $jobid03]
 
 # 1 cluster1, 1account1, 1 wckey1, 2 users
-_run_test "cluster=$cluster1 wckey=$wckey1 account=$account1 user=$user1,$user2" [list $jobid01 $jobid03]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1 account=$account1 user=$user1,$user2" [list $jobid01 $jobid03]
 
 # 1 cluster1, 1account1, 1 wckey2, 1 user1
-_run_test "cluster=$cluster1 wckey=$wckey2 account=$account1 user=$user1" [list $jobid02]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey2 account=$account1 user=$user1" [list $jobid02]
 
 # 1 cluster1, 1account1, 1 wckey2, 1 user2
-_run_test "cluster=$cluster1 wckey=$wckey2 account=$account1 user=$user2" [list $jobid04]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey2 account=$account1 user=$user2" [list $jobid04]
 
 # 1 cluster1, 1account1, 1 wckey2, 2 users
-_run_test "cluster=$cluster1 wckey=$wckey2 account=$account1 user=$user1,$user2" [list $jobid02 $jobid04]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey2 account=$account1 user=$user1,$user2" [list $jobid02 $jobid04]
 
 # 1 cluster1, 1account1, 2 wckeys, 1 user1
-_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 account=$account1 user=$user1" [list $jobid01 $jobid02]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1,$wckey2 account=$account1 user=$user1" [list $jobid01 $jobid02]
 
 # 1 cluster1, 1account1, 2 wckeys, 1 user2
-_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 account=$account1 user=$user2" [list $jobid03 $jobid04]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1,$wckey2 account=$account1 user=$user2" [list $jobid03 $jobid04]
 
 # 1 cluster1, 1account1, 2 wckeys, 2 users
-_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2 account=$account1 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1,$wckey2 account=$account1 user=$user1,$user2" [list $jobid01 $jobid02 $jobid03 $jobid04]
 
 
 # 1 cluster1, 1 account1
-_run_test "cluster=$cluster1 account=$account1" [list $jobid01 $jobid02 $jobid03 $jobid04]
+testproc test_job_update "cluster=$cluster1 account=$account1" [list $jobid01 $jobid02 $jobid03 $jobid04]
 
 # 1 cluster1, 1 account2
-_run_test "cluster=$cluster1 account=$account2" [list $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 account=$account2" [list $jobid05 $jobid06 $jobid07 $jobid08]
 
 # 1 cluster1, 2 accounts
-_run_test "cluster=$cluster1 account=$account1,$account2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 account=$account1,$account2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
 
 # 1 cluster2, 1 account1
-_run_test "cluster=$cluster2 account=$account1" [list $jobid01 $jobid02 $jobid03 $jobid04]
+testproc test_job_update "cluster=$cluster2 account=$account1" [list $jobid01 $jobid02 $jobid03 $jobid04]
 
 # 1 cluster2, 1 account2
-_run_test "cluster=$cluster2 account=$account2" [list $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster2 account=$account2" [list $jobid05 $jobid06 $jobid07 $jobid08]
 
 # 1 cluster2, 2 accounts
-_run_test "cluster=$cluster2 account=$account1,$account2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster2 account=$account1,$account2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
 
 
 # 1 cluster1, 1 wckey1
-_run_test "cluster=$cluster1 wckey=$wckey1" [list $jobid01 $jobid03 $jobid05 $jobid07]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1" [list $jobid01 $jobid03 $jobid05 $jobid07]
 
 # 1 cluster1, 1 wckey2
-_run_test "cluster=$cluster1 wckey=$wckey2" [list $jobid02 $jobid04 $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey2" [list $jobid02 $jobid04 $jobid06 $jobid08]
 
 # 1 cluster1, 2 wckeys
-_run_test "cluster=$cluster1 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
 
 # 1 cluster2, 1 wckey1
-_run_test "cluster=$cluster2 wckey=$wckey1" [list $jobid01 $jobid03 $jobid05 $jobid07]
+testproc test_job_update "cluster=$cluster2 wckey=$wckey1" [list $jobid01 $jobid03 $jobid05 $jobid07]
 
 # 1 cluster2, 1 wckey2
-_run_test "cluster=$cluster2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid06 $jobid08]
 
 # 1 cluster2, 2 wckeys
-_run_test "cluster=$cluster2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
 
 
 # 1 cluster1, 1 account1, 1 wckey1
-_run_test "cluster=$cluster1 account=$account1 wckey=$wckey1" [list $jobid01 $jobid03]
+testproc test_job_update "cluster=$cluster1 account=$account1 wckey=$wckey1" [list $jobid01 $jobid03]
 
 # 1 cluster1, 1 account1, 1 wckey2
-_run_test "cluster=$cluster1 account=$account1 wckey=$wckey2" [list $jobid02 $jobid04]
+testproc test_job_update "cluster=$cluster1 account=$account1 wckey=$wckey2" [list $jobid02 $jobid04]
 
 # 1 cluster1, 1 account1, 2 wckeys
-_run_test "cluster=$cluster1 account=$account1 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04]
+testproc test_job_update "cluster=$cluster1 account=$account1 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04]
 
 # 1 cluster1, 1 account2, 1 wckey1
-_run_test "cluster=$cluster1 account=$account2 wckey=$wckey1" [list $jobid05 $jobid07]
+testproc test_job_update "cluster=$cluster1 account=$account2 wckey=$wckey1" [list $jobid05 $jobid07]
 
 # 1 cluster1, 1 account2, 1 wckey2
-_run_test "cluster=$cluster1 account=$account2 wckey=$wckey2" [list $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster1 account=$account2 wckey=$wckey2" [list $jobid06 $jobid08]
 
 # 1 cluster1, 1 account2, 2 wckeys
-_run_test "cluster=$cluster1 account=$account2 wckey=$wckey1,$wckey2" [list $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 account=$account2 wckey=$wckey1,$wckey2" [list $jobid05 $jobid06 $jobid07 $jobid08]
 
 # 1 cluster1, 2 accounts, 1 wckey1
-_run_test "cluster=$cluster1 account=$account1,$account2 wckey=$wckey1" [list  $jobid01 $jobid03 $jobid05 $jobid07]
+testproc test_job_update "cluster=$cluster1 account=$account1,$account2 wckey=$wckey1" [list  $jobid01 $jobid03 $jobid05 $jobid07]
 
 # 1 cluster1, 2 accounts, 1 wckey2
-_run_test "cluster=$cluster1 account=$account1,$account2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster1 account=$account1,$account2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid06 $jobid08]
 
 # 1 cluster1, 2 accounts, 2 wckeys
-_run_test "cluster=$cluster1 account=$account1,$account2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1 account=$account1,$account2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
 
 
 # 1 cluster2, 1 account1, 1 wckey1
-_run_test "cluster=$cluster2 account=$account1 wckey=$wckey1" [list $jobid01 $jobid03]
+testproc test_job_update "cluster=$cluster2 account=$account1 wckey=$wckey1" [list $jobid01 $jobid03]
 
 # 1 cluster2, 1 account1, 1 wckey2
-_run_test "cluster=$cluster2 account=$account1 wckey=$wckey2" [list $jobid02 $jobid04]
+testproc test_job_update "cluster=$cluster2 account=$account1 wckey=$wckey2" [list $jobid02 $jobid04]
 
 # 1 cluster2, 1 account1, 2 wckeys
-_run_test "cluster=$cluster2 account=$account1 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04]
+testproc test_job_update "cluster=$cluster2 account=$account1 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04]
 
 # 1 cluster2, 1 account2, 1 wckey1
-_run_test "cluster=$cluster2 account=$account2 wckey=$wckey1" [list $jobid05 $jobid07]
+testproc test_job_update "cluster=$cluster2 account=$account2 wckey=$wckey1" [list $jobid05 $jobid07]
 
 # 1 cluster2, 1 account2, 1 wckey2
-_run_test "cluster=$cluster2 account=$account2 wckey=$wckey2" [list $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster2 account=$account2 wckey=$wckey2" [list $jobid06 $jobid08]
 
 # 1 cluster2, 1 account2, 2 wckeys
-_run_test "cluster=$cluster2 account=$account2 wckey=$wckey1,$wckey2" [list $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster2 account=$account2 wckey=$wckey1,$wckey2" [list $jobid05 $jobid06 $jobid07 $jobid08]
 
 # 1 cluster2, 2 accounts, 1 wckey1
-_run_test "cluster=$cluster2 account=$account1,$account2 wckey=$wckey1" [list  $jobid01 $jobid03 $jobid05 $jobid07]
+testproc test_job_update "cluster=$cluster2 account=$account1,$account2 wckey=$wckey1" [list  $jobid01 $jobid03 $jobid05 $jobid07]
 
 # 1 cluster2, 2 accounts, 1 wckey2
-_run_test "cluster=$cluster2 account=$account1,$account2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster2 account=$account1,$account2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid06 $jobid08]
 
 # 1 cluster2, 2 accounts, 2 wckeys
-_run_test "cluster=$cluster2 account=$account1,$account2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster2 account=$account1,$account2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
 
 
 # 2 clusters, 1 account1
-_run_test "cluster=$cluster1,$cluster2 account=$account1" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid01 $jobid02 $jobid03 $jobid04]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account1" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid01 $jobid02 $jobid03 $jobid04]
 
 # 2 clusters, 1 account2
-_run_test "cluster=$cluster1,$cluster2 account=$account2" [list $jobid05 $jobid06 $jobid07 $jobid08 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account2" [list $jobid05 $jobid06 $jobid07 $jobid08 $jobid05 $jobid06 $jobid07 $jobid08]
 
 # 2 clusters, 2 accounts
-_run_test "cluster=$cluster1,$cluster2 account=$account1,$account2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08 $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account1,$account2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08 $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
 
 # 2 clusters, 1 wckey1
-_run_test "cluster=$cluster1,$cluster2 wckey=$wckey1" [list $jobid01 $jobid03 $jobid05 $jobid07 $jobid01 $jobid03 $jobid05 $jobid07]
+testproc test_job_update "cluster=$cluster1,$cluster2 wckey=$wckey1" [list $jobid01 $jobid03 $jobid05 $jobid07 $jobid01 $jobid03 $jobid05 $jobid07]
 
 # 2 clusters, 1 wckey2
-_run_test "cluster=$cluster1,$cluster2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid06 $jobid08 $jobid02 $jobid04 $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster1,$cluster2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid06 $jobid08 $jobid02 $jobid04 $jobid06 $jobid08]
 
 # 2 clusters, 2 wckeys
-_run_test "cluster=$cluster1,$cluster2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08 $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
+testproc test_job_update "cluster=$cluster1,$cluster2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08 $jobid01 $jobid02 $jobid03 $jobid04 $jobid05 $jobid06 $jobid07 $jobid08]
 
 # 2 clusters, 1 account1, 1 wckey1
-_run_test "cluster=$cluster1,$cluster2 account=$account1 wckey=$wckey1" [list $jobid01 $jobid03 $jobid01 $jobid03]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account1 wckey=$wckey1" [list $jobid01 $jobid03 $jobid01 $jobid03]
 
 # 2 clusters, 1 account1, 1 wckey2
-_run_test "cluster=$cluster1,$cluster2 account=$account1 wckey=$wckey2" [list $jobid02 $jobid04 $jobid02 $jobid04]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account1 wckey=$wckey2" [list $jobid02 $jobid04 $jobid02 $jobid04]
 
 # 2 clusters, 1 account1, 2 wckeys
-_run_test "cluster=$cluster1,$cluster2 account=$account1 wckey=$wckey1,$wckey2" [list $jobid01 $jobid03 $jobid01 $jobid03 $jobid02 $jobid04 $jobid02 $jobid04]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account1 wckey=$wckey1,$wckey2" [list $jobid01 $jobid03 $jobid01 $jobid03 $jobid02 $jobid04 $jobid02 $jobid04]
 
 # 2 clusters, 1 account2, 1 wckey1
-_run_test "cluster=$cluster1,$cluster2 account=$account2 wckey=$wckey1" [list $jobid05 $jobid07 $jobid05 $jobid07]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account2 wckey=$wckey1" [list $jobid05 $jobid07 $jobid05 $jobid07]
 
 # 2 clusters, 1 account2, 1 wckey2
-_run_test "cluster=$cluster1,$cluster2 account=$account2 wckey=$wckey2" [list $jobid06 $jobid08 $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account2 wckey=$wckey2" [list $jobid06 $jobid08 $jobid06 $jobid08]
 
 # 2 clusters, 1 account2, 2 wckeys
-_run_test "cluster=$cluster1,$cluster2 account=$account2 wckey=$wckey1,$wckey2" [list $jobid05 $jobid07 $jobid05 $jobid07 $jobid06 $jobid08 $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account2 wckey=$wckey1,$wckey2" [list $jobid05 $jobid07 $jobid05 $jobid07 $jobid06 $jobid08 $jobid06 $jobid08]
 
 # 2 clusters, 2 accounts, 1 wckey1
-_run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey1" [list $jobid01 $jobid03 $jobid01 $jobid03 $jobid05 $jobid07 $jobid05 $jobid07]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey1" [list $jobid01 $jobid03 $jobid01 $jobid03 $jobid05 $jobid07 $jobid05 $jobid07]
 
 # 2 clusters, 2 accounts, 1 wckey2
-_run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid02 $jobid04 $jobid06 $jobid08 $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey2" [list $jobid02 $jobid04 $jobid02 $jobid04 $jobid06 $jobid08 $jobid06 $jobid08]
 
 # 2 clusters, 2 accounts, 2 wckeys
-_run_test "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid03 $jobid01 $jobid03 $jobid05 $jobid07 $jobid05 $jobid07 $jobid02 $jobid04 $jobid02 $jobid04 $jobid06 $jobid08 $jobid06 $jobid08]
+testproc test_job_update "cluster=$cluster1,$cluster2 account=$account1,$account2 wckey=$wckey1,$wckey2" [list $jobid01 $jobid03 $jobid01 $jobid03 $jobid05 $jobid07 $jobid05 $jobid07 $jobid02 $jobid04 $jobid02 $jobid04 $jobid06 $jobid08 $jobid06 $jobid08]

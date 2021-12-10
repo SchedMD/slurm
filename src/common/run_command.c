@@ -171,6 +171,18 @@ extern char *run_command(const char *script_type, const char *script_path,
 				_exit(0);
 		}
 		setpgid(0, 0);
+		/*
+		 * sync euid -> ruid, egid -> rgid to avoid issues with fork'd
+		 * processes using access() or similar calls.
+		 */
+		if (setresgid(getegid(), getegid(), -1)) {
+			error("%s: Unable to setresgid()", __func__);
+			_exit(127);
+		}
+		if (setresuid(geteuid(), geteuid(), -1)) {
+			error("%s: Unable to setresuid()", __func__);
+			_exit(127);
+		}
 		if (!env)
 			execv(script_path, script_argv);
 		else

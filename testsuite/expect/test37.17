@@ -755,7 +755,7 @@ proc test_add_remove_clusters { } {
 	wait_for_depend $job_id5 "Dependency" "singleton(unfulfilled)"
 
 	log_info "Test that removing cluster $c3 from fed $fed_name makes dependencies on jobs on $c3 fail"
-	if { [remove_cluster_from_fed $c3 $fed_name] } {
+	if [remove_cluster_from_fed $c3 $fed_name] {
 		fail "Unable to remove cluster $c3 from federation $fed_name"
 	}
 	wait_for_depend $job_id4 "DependencyNeverSatisfied" \
@@ -773,7 +773,7 @@ proc test_add_remove_clusters { } {
 	}
 
 	log_info "Test that the singleton dependency was resent back to cluster $c3 when it was added back to the federation."
-	if { [add_cluster_to_fed $c3 $fed_name] } {
+	if [add_cluster_to_fed $c3 $fed_name] {
 		fail "Unable to add cluster $c3 to federation $fed_name"
 	}
 	cancel_job $job_id1 $c1
@@ -1022,7 +1022,7 @@ if {[check_federation_setup]} {
 	}
 
 	delete_federations $fed_name
-	if { [setup_federation $fed_name] } {
+	if [setup_federation $fed_name] {
 		fail "Unable to set up federation $fed_name"
 	}
 } else {

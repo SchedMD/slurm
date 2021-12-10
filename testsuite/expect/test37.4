@@ -78,7 +78,7 @@ proc cleanup { } {
 	cancel_federation_jobs
 	exec $bin_bash -c "$bin_rm -f $test_name*.out"
 
-	return [delete_federations $fed_name]
+	delete_federations $fed_name
 }
 
 proc submit_fed_batch_job { cname expected_origin expected_sib extra_args expected_state } {
@@ -339,12 +339,10 @@ if {![check_federation_up]} {
 set user_name [get_my_user_name]
 
 # Remove existing setup
-if {[cleanup] != 0} {
-	fail "Failed to cleanup"
-}
+cleanup
 
 # add clusters to federation
-if {[setup_federation $fed_name]} {
+if [setup_federation $fed_name] {
 	fail "Failed to setup federation"
 }
 

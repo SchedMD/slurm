@@ -286,7 +286,7 @@ proc cleanup { } {
 	cancel_federation_jobs
 	exec $bin_bash -c "$bin_rm -f $test_name*.out"
 
-	return [delete_federations $fed_name]
+	delete_federations $fed_name
 }
 
 # Start test
@@ -302,9 +302,7 @@ if {![check_federation_up]} {
 set user_name [get_my_user_name]
 
 # Remove existing setup
-if {[cleanup] != 0} {
-	fail "Failed to cleanup"
-}
+cleanup
 
 # Add clusters to federation
 if {[setup_federation $fed_name]} {

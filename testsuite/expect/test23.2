@@ -117,7 +117,7 @@ expect {
 	}
 }
 if {$aamatches != 1} {
-	log_error "sacctmgr had a problem adding account"
+	fail "sacctmgr had a problem adding account"
 }
 
 #

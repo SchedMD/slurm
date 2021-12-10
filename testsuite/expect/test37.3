@@ -59,7 +59,8 @@ if {[string compare [get_admin_level] "Administrator"]} {
 
 proc cleanup { } {
 	global fed_name
-	return [delete_federations $fed_name]
+
+	delete_federations $fed_name
 }
 
 proc test_fed_status {cname fed_flags cluster_list} {
@@ -139,12 +140,10 @@ if {![check_federation_up]} {
 }
 
 # Remove existing setup
-if {[cleanup] != 0} {
-	fail "Failed to cleanup"
-}
+cleanup
 
 # add clusters to federation
-if {[setup_federation $fed_name]} {
+if [setup_federation $fed_name] {
 	fail "Failed to setup federation"
 }
 
@@ -172,7 +171,7 @@ dict set clusters($fedc3) conn Self
 test_fed_status $fedc3 $fed_flags [array get clusters]
 
 log_info "Remove $fedc3 and test from $fedc1 and $fedc2"
-if {[remove_cluster_from_fed $fedc3 $fed_name]} {
+if [remove_cluster_from_fed $fedc3 $fed_name] {
 	fail "Unable to remove cluster $fedc3 from federation $fed_name"
 }
 array unset clusters $fedc3
@@ -185,7 +184,7 @@ dict set clusters($fedc2) conn Self
 test_fed_status $fedc2 $fed_flags [array get clusters]
 
 log_info "Remove $fedc1 and test from $fedc2"
-if {[remove_cluster_from_fed $fedc1 $fed_name]} {
+if [remove_cluster_from_fed $fedc1 $fed_name] {
 	fail "Unable to remove cluster $fedc1 from federation $fed_name"
 }
 array unset clusters $fedc1
@@ -194,13 +193,13 @@ test_fed_status $fedc2 $fed_flags [array get clusters]
 
 log_info "Remove $fedc2 and test from $fedc2"
 array unset clusters
-if {[remove_cluster_from_fed $fedc2 $fed_name]} {
+if [remove_cluster_from_fed $fedc2 $fed_name] {
 	fail "Unable to remove cluster $fedc2 from federation $fed_name"
 }
 test_fed_status $fedc2 $fed_flags [array get clusters]
 
 log_info "Add $fedc1 and test from $fedc1"
-if {[add_cluster_to_fed $fedc1 $fed_name]} {
+if [add_cluster_to_fed $fedc1 $fed_name] {
 	fail "Unable to add cluster $fedc1 to federation $fed_name"
 }
 array set clusters [get_clusterfed_info $fed_name]
@@ -208,7 +207,7 @@ dict set clusters($fedc1) conn Self
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
 log_info "Add $fedc2 and test from $fedc1"
-if {[add_cluster_to_fed $fedc2 $fed_name]} {
+if [add_cluster_to_fed $fedc2 $fed_name] {
 	fail "Unable to add cluster $fedc2 to federation $fed_name"
 }
 sleep 5
@@ -218,7 +217,7 @@ dict set clusters($fedc2) conn "Yes/Yes"
 test_fed_status $fedc1 $fed_flags [array get clusters]
 
 log_info "Add $fedc3 and test from $fedc1"
-if {[add_cluster_to_fed $fedc3 $fed_name]} {
+if [add_cluster_to_fed $fedc3 $fed_name] {
 	fail "Unable to add cluster $fedc3 to federation $fed_name"
 }
 sleep 5

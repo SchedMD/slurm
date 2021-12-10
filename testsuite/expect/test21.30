@@ -249,88 +249,21 @@ proc cleanup {} {
 	global scontrol save_billing_weights partition
 
 	# delete qos
-	spawn $sacctmgr -i delete qos $qostest
-	expect {
-		-re "Deleting QOS(s)" {
-			exp_continue
-		}
-		-re "Error" {
-			log_error "QOS was not deleted"
-		}
-		timeout {
-			log_error "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	run_command -none "$sacctmgr -i delete qos $qostest"
 
 	# delete account
-	spawn $sacctmgr -i  delete account $acct
-	expect {
-		-re "Deleting accounts" {
-			exp_continue
-		}
-		-re "Error" {
-			log_error "account was not deleted"
-		}
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	run_command -none "$sacctmgr -i  delete account $acct"
 
 	if {$save_billing_weights ne ""} {
-		spawn $scontrol update partitionname=$partition TRESBillingWeights=$save_billing_weights
-		expect {
-			-re "error" {
-				log_error "Failed to reset TRESBillingWeights"
-			}
-			timeout {
-				fail "scontrol is not responding"
-			}
-			eof {
-				wait
-			}
-		}
+		run_command "$scontrol update partitionname=$partition TRESBillingWeights=$save_billing_weights"
 	}
 }
 
 # Remove any vestigial accounts or qos
-spawn $sacctmgr -i delete qos $qostest
-expect {
-	-re "Deleting QOS(s)" {
-		exp_continue
-	}
-	-re "Error" {
-		log_error "QOS was not deleted"
-	}
-	timeout {
-		log_error "sacctmgr is not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -none "$sacctmgr -i delete qos $qostest"
 
 # Delete account
-spawn $sacctmgr -i  delete account $acct
-expect {
-	-re "Deleting accounts" {
-		exp_continue
-	}
-	-re "Error" {
-		fail "Account was not deleted"
-	}
-	timeout {
-		fail "sacctmgr is not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -none "$sacctmgr -i  delete account $acct"
 
 # Gets user
 set user_name [get_my_user_name]
@@ -373,15 +306,7 @@ if {$acctmatch != 1} {
 }
 
 # Add user to account
-spawn $sacctmgr -i create user name=$user_name account=$acct
-expect {
-	timeout {
-		log_error "sacctmgr not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$sacctmgr -i create user name=$user_name account=$acct"
 
 #
 # Test GrpNode limit

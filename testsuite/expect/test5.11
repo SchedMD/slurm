@@ -53,27 +53,10 @@ proc cleanup {} {
 	run_command "$scontrol delete partition=$test_part"
 }
 
-proc sub_job { cpu_cnt part } {
-	global sbatch script job_id number
+proc sub_job {cpu_cnt part} {
+	global script job_id
 
-	set job_id 0
-	spawn $sbatch -t1 -H -p$part -n$cpu_cnt -o/dev/null $script
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sbatch is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {!$job_id} {
-		log_error "Job was not submitted"
-	}
+	set job_id [submit_job -fail "-t1 -H -p$part -n$cpu_cnt -o/dev/null $script"]
 }
 
 proc check_node_cnt { exp_nodes } {

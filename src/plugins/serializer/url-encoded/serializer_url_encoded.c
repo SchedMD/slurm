@@ -240,7 +240,7 @@ extern int serializer_p_deserialize(data_t **dest, const char *src,
 				       __func__);
 			} else if (key != NULL && buffer != NULL) {
 				/* example: test=value=testv */
-				error("%s: invalid url characer = before new key name",
+				error("%s: invalid url character = before new key name",
 				      __func__);
 				rc = SLURM_ERROR;
 			}

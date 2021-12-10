@@ -341,7 +341,7 @@ proc get_slurm_conf { cluster } {
 cleanup
 
 # Add clusters to federation
-if {[setup_federation $fed_name]} {
+if [setup_federation $fed_name] {
 	fail "Failed to setup federation"
 }
 
@@ -928,7 +928,7 @@ if {[string compare $run_cluster ""] == 0} {
 }
 
 if {[string compare $run_cluster $origin_cluster] == 0} {
-	log_error "requeued job ran on origin cluster -- expected to run on a different cluster"
+	fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
 }
 
 check_restart_cnt $file_out 1
@@ -1021,7 +1021,7 @@ if {[string compare $run_cluster ""] == 0} {
 }
 
 if {[string compare $run_cluster $origin_cluster] == 0} {
-	log_error "requeued job ran on origin cluster -- expected to run on a different cluster"
+	fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
 }
 
 check_restart_cnt $file_out 1
@@ -1080,7 +1080,7 @@ if {[string compare $run_cluster ""] == 0} {
 }
 
 if {[string compare $run_cluster $origin_cluster] == 0} {
-	log_error "requeued job ran on origin cluster -- expected to run on a different cluster"
+	fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
 }
 
 check_restart_cnt $file_out 2
