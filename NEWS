@@ -50,6 +50,9 @@ documents those changes that are of interest to users and administrators.
     remained pending forever instead of being rejected.
  -- openapi/v0.0.38 - Remove errant extra space after JOB_CPUS_SET flag.
  -- slurmrestd - refuse to run with gid 0, or under SlurmUser's gid.
+ -- Storing batch scripts and env vars are now in indexed tables using
+    substantially less disk space.  Those storing scripts in 21.08 will all
+    be moved and indexed automatically.
 
 * Changes in Slurm 21.08.5
 ==========================
