@@ -5847,7 +5847,12 @@ of higher weight nodes allocated to a job (at a cost of higher
 scheduling overhead), give each node a distinct \fBWeight\fR
 value and they will be added to the pool of nodes being
 considered for scheduling individually.
+
 The default value is 1.
+
+\fBNOTE\fR: Node weights are first considered among currently available
+nodes. For example, a POWERED_DOWN node with a lower weight will not be
+evaluated before an IDLE node.
 .IP
 
 .SH "DOWN NODE CONFIGURATION"
