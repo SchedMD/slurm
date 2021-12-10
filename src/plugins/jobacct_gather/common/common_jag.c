@@ -500,6 +500,27 @@ static int _init_tres(jag_prec_t *prec, void *empty)
 	return SLURM_SUCCESS;
 }
 
+void _set_smaps_file(char *proc_smaps_file, uint32_t size, pid_t pid)
+{
+	static int use_smaps_rollup = -1;
+
+	if (use_smaps_rollup == -1) {
+		snprintf(proc_smaps_file, size, "/proc/%d/smaps_rollup", pid);
+		FILE *fd = fopen(proc_smaps_file, "r");
+		if (fd) {
+			fclose(fd);
+			use_smaps_rollup = 1;
+			return;
+		}
+		use_smaps_rollup = 0;
+	}
+
+	if (use_smaps_rollup)
+		snprintf(proc_smaps_file, size, "/proc/%d/smaps_rollup", pid);
+	else
+		snprintf(proc_smaps_file, size, "/proc/%d/smaps", pid);
+}
+
 static void _handle_stats(char *proc_stat_file, char *proc_io_file,
 			  char *proc_smaps_file, jag_callbacks_t *callbacks,
 			  int tres_count)
@@ -643,7 +664,8 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		for (i = 0; i < npids; i++) {
 			snprintf(proc_stat_file, 256, "/proc/%d/stat", pids[i]);
 			snprintf(proc_io_file, 256, "/proc/%d/io", pids[i]);
-			snprintf(proc_smaps_file, 256, "/proc/%d/smaps", pids[i]);
+			_set_smaps_file(proc_smaps_file,
+					sizeof(proc_smaps_file), pids[i]);
 			_handle_stats(proc_stat_file, proc_io_file,
 				      proc_smaps_file, callbacks,
 				      jobacct ? jobacct->tres_count : 0);
@@ -676,8 +698,8 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 				 "/proc/%ld/stat", pid);
 			snprintf(proc_io_file, sizeof(proc_io_file),
 				 "/proc/%ld/io", pid);
-			snprintf(proc_smaps_file, sizeof(proc_smaps_file),
-				 "/proc/%ld/smaps", pid);
+			_set_smaps_file(proc_smaps_file, sizeof(proc_smaps_file),
+					(pid_t) pid);
 
 			_handle_stats(proc_stat_file, proc_io_file,
 				      proc_smaps_file, callbacks,
