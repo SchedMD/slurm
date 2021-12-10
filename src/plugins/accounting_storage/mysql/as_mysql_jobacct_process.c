@@ -581,12 +581,12 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	if (job_cond->flags & JOBCOND_FLAG_SCRIPT)
 		xstrfmtcat(query,
 			   " left join \"%s_%s\" as t4 "
-			   "on t1.script_hash=t4.script_hash",
+			   "on t1.script_hash_inx=t4.hash_inx",
 			   cluster_name, job_script_table);
 	else if (job_cond->flags & JOBCOND_FLAG_ENV)
 		xstrfmtcat(query,
 			   " left join \"%s_%s\" as t4 "
-			   "on t1.env_hash=t4.env_hash",
+			   "on t1.env_hash_inx=t4.hash_inx",
 			   cluster_name, job_env_table);
 
 	if (job_cond->flags & JOBCOND_FLAG_RUNAWAY) {

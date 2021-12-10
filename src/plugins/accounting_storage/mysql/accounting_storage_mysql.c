@@ -1267,7 +1267,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "cpus_req", "int unsigned not null" },
 		{ "derived_ec", "int unsigned default 0 not null" },
 		{ "derived_es", "text" },
-		{ "env_hash", "text" },
+		{ "env_hash_inx", "bigint unsigned default 0 not null" },
 		{ "exit_code", "int unsigned default 0 not null" },
 		{ "flags", "int unsigned default 0 not null" },
 		{ "job_name", "tinytext not null" },
@@ -1292,7 +1292,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "node_inx", "text" },
 		{ "partition", "tinytext not null" },
 		{ "priority", "int unsigned not null" },
-		{ "script_hash", "text" },
+		{ "script_hash_inx", "bigint unsigned default 0 not null" },
 		{ "state", "int unsigned not null" },
 		{ "timelimit", "int unsigned default 0 not null" },
 		{ "time_submit", "bigint unsigned default 0 not null" },
@@ -1312,6 +1312,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t job_env_table_fields[] = {
+		{ "hash_inx", "bigint unsigned not null auto_increment" },
 		{ "last_used", "timestamp DEFAULT CURRENT_TIMESTAMP not null" },
 		{ "env_hash", "text not null" },
 		{ "env_vars", "longtext" },
@@ -1319,6 +1320,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t job_script_table_fields[] = {
+		{ "hash_inx", "bigint unsigned not null auto_increment" },
 		{ "last_used", "timestamp DEFAULT CURRENT_TIMESTAMP not null" },
 		{ "script_hash", "text not null" },
 		{ "batch_script", "longtext" },
@@ -1509,8 +1511,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "time_end), "
 				  "key sacct_def2 (id_user, time_end, "
 				  "time_eligible), "
-				  "key env_hash_inx (env_hash(66)), "
-				  "key script_hash_inx (script_hash(66)))")
+				  "key env_hash_inx (env_hash_inx), "
+				  "key script_hash_inx (script_hash_inx))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1518,9 +1520,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		 cluster_name, job_env_table);
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  job_env_table_fields,
-				  ", primary key (env_hash(66)), "
-				  "unique index hash_inx "
-				  "(env_hash(66), env_vars(66)))")
+				  ", primary key (hash_inx), "
+				  "unique index env_hash_inx "
+				  "(env_hash(66)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1528,9 +1530,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		 cluster_name, job_script_table);
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  job_script_table_fields,
-				  ", primary key (script_hash(66)), "
-				  "unique index hash_inx "
-				  "(script_hash(66), batch_script(66)))")
+				  ", primary key (hash_inx), "
+				  "unique index script_hash_inx "
+				  "(script_hash(66)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 

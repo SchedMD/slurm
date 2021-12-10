@@ -147,18 +147,20 @@ static int _convert_usage_table_pre(mysql_conn_t *mysql_conn,
 static int _insert_into_hash_table(mysql_conn_t *mysql_conn, char *cluster_name,
 				   move_large_type_t type)
 {
-	char *query;
+	char *query, *hash_inx_col;
 	char *hash_col = NULL, *type_col = NULL, *type_table = NULL;
 	int rc;
 
 	switch (type) {
 	case MOVE_ENV:
 		hash_col = "env_hash";
+		hash_inx_col = "env_hash_inx";
 		type_col = "env_vars";
 		type_table = job_env_table;
 		break;
 	case MOVE_BATCH:
 		hash_col = "script_hash";
+		hash_inx_col = "script_hash_inx";
 		type_col = "batch_script";
 		type_table = job_script_table;
 		break;
@@ -186,6 +188,21 @@ static int _insert_into_hash_table(mysql_conn_t *mysql_conn, char *cluster_name,
 	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
+
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	query = xstrdup_printf(
+		"update \"%s_%s\" as jobs inner join \"%s_%s\" as hash "
+		"on jobs.%s = hash.%s set jobs.%s = hash.hash_inx;",
+		cluster_name, job_table,
+		cluster_name, type_table,
+		hash_col, hash_col,
+		hash_inx_col);
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+
 	info("Done");
 	return rc;
 }
@@ -211,6 +228,7 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "derived_es", "text" },
 		{ "env_vars", "longtext" },
 		{ "env_hash", "text" },
+		{ "env_hash_inx", "bigint unsigned default 0 not null" },
 		{ "exit_code", "int unsigned default 0 not null" },
 		{ "flags", "int unsigned default 0 not null" },
 		{ "job_name", "tinytext not null" },
@@ -236,6 +254,7 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "partition", "tinytext not null" },
 		{ "priority", "int unsigned not null" },
 		{ "script_hash", "text" },
+		{ "script_hash_inx", "bigint unsigned default 0 not null" },
 		{ "state", "int unsigned not null" },
 		{ "timelimit", "int unsigned default 0 not null" },
 		{ "time_submit", "bigint unsigned default 0 not null" },
@@ -255,6 +274,7 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t job_env_table_fields[] = {
+		{ "hash_inx", "bigint unsigned not null auto_increment" },
 		{ "last_used", "timestamp DEFAULT CURRENT_TIMESTAMP not null" },
 		{ "env_hash", "text not null" },
 		{ "env_vars", "longtext" },
@@ -262,6 +282,7 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 	};
 
 	storage_field_t job_script_table_fields[] = {
+		{ "hash_inx", "bigint unsigned not null auto_increment" },
 		{ "last_used", "timestamp DEFAULT CURRENT_TIMESTAMP not null" },
 		{ "script_hash", "text not null" },
 		{ "batch_script", "longtext" },
@@ -295,8 +316,8 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 			    "time_end), "
 			    "key sacct_def2 (id_user, time_end, "
 			    "time_eligible), "
-			    "key env_hash_inx (env_hash(66)), "
-			    "key script_hash_inx (script_hash(66)))")
+			    "key env_hash_inx (env_hash_inx), "
+			    "key script_hash_inx (script_hash_inx))")
 		    == SLURM_ERROR)
 			return SLURM_ERROR;
 
@@ -305,9 +326,9 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 			 cluster_name, job_env_table);
 		if (mysql_db_create_table(mysql_conn, table_name,
 					  job_env_table_fields,
-					  ", primary key (env_hash(66)), "
-					  "unique index hash_inx "
-					  "(env_hash(66), env_vars(66)))")
+					  ", primary key (hash_inx), "
+					  "unique index env_hash_inx "
+					  "(env_hash(66)))")
 		    == SLURM_ERROR)
 			return SLURM_ERROR;
 
@@ -315,10 +336,9 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 			 cluster_name, job_script_table);
 		if (mysql_db_create_table(mysql_conn, table_name,
 					  job_script_table_fields,
-					  ", primary key (script_hash(66)), "
-					  "unique index hash_inx "
-					  "(script_hash(66), "
-					  "batch_script(66)))")
+					  ", primary key (hash_inx), "
+					  "unique index script_hash_inx "
+					  "(script_hash(66)))")
 		    == SLURM_ERROR)
 			return SLURM_ERROR;
 

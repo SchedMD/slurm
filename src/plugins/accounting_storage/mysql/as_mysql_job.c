@@ -278,6 +278,76 @@ no_wckeyid:
 	return wckeyid;
 }
 
+
+static uint64_t _get_hash_inx(mysql_conn_t *mysql_conn,
+			      job_record_t *job_ptr,
+			      uint64_t flag)
+{
+	char *query, *hash;
+	char *hash_col = NULL, *type_col = NULL, *type_table = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	uint64_t hash_inx = 0;
+
+	switch (flag) {
+	case JOB_SEND_ENV:
+		hash_col = "env_hash";
+		type_col = "env_vars";
+		type_table = job_env_table;
+		hash = job_ptr->details->env_hash;
+		break;
+	case JOB_SEND_SCRIPT:
+		hash_col = "script_hash";
+		type_col = "batch_script";
+		type_table = job_script_table;
+		hash = job_ptr->details->script_hash;
+		break;
+	default:
+		error("unknown hash type bit %"PRIu64, flag);
+		return NO_VAL64;
+		break;
+	}
+
+	if (!hash)
+		return 0;
+
+	query = xstrdup_printf(
+		"select hash_inx from \"%s_%s\" where %s = '%s';",
+		mysql_conn->cluster_name, type_table,
+		hash_col, hash);
+
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		return NO_VAL64;
+	}
+
+	xfree(query);
+
+	if ((row = mysql_fetch_row(result))) {
+		debug3("%u has an %s we have already seen, no need to add again",
+		       job_ptr->job_id, type_col);
+		hash_inx = slurm_atoull(row[0]);
+	} else {
+		query = xstrdup_printf(
+			"insert into \"%s_%s\" (%s) values ('%s') "
+			"on duplicate key update last_used=VALUES(last_used), "
+			"hash_inx=LAST_INSERT_ID(hash_inx);",
+			mysql_conn->cluster_name, type_table,
+			hash_col, hash);
+
+		hash_inx = mysql_db_insert_ret_id(mysql_conn, query);
+		if (!hash_inx)
+			hash_inx = NO_VAL64;
+		else
+			job_ptr->bit_flags |= flag;
+		xfree(query);
+	}
+	mysql_free_result(result);
+
+	return hash_inx;
+
+}
+
 /* extern functions */
 
 extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
@@ -464,6 +534,35 @@ no_rollup_change:
 		partition = job_ptr->partition;
 
 	if (!job_ptr->db_index) {
+		uint64_t env_hash_inx = 0, script_hash_inx = 0;
+		/*
+		 * Here we check to see if the env has been added to the
+		 * database or not to inform the slurmctld to send it.
+		 * This only happens if !db_index no need to do this on an
+		 * update.
+		 */
+		if (job_ptr->details->env_hash) {
+			env_hash_inx = _get_hash_inx(
+				mysql_conn, job_ptr, JOB_SEND_ENV);
+
+			if (env_hash_inx == NO_VAL64)
+				return SLURM_ERROR;
+		}
+
+		/*
+		 * Here we check to see if the script has been added to the
+		 * database or not to inform the slurmctld to send it.
+		 * This only happens if !db_index no need to do this on an
+		 * update.
+		 */
+		if (job_ptr->details->script_hash) {
+			script_hash_inx = _get_hash_inx(
+				mysql_conn, job_ptr, JOB_SEND_SCRIPT);
+
+			if (script_hash_inx == NO_VAL64)
+				return SLURM_ERROR;
+		}
+
 		query = xstrdup_printf(
 			"insert into \"%s_%s\" "
 			"(id_job, mod_time, id_array_job, id_array_task, "
@@ -472,7 +571,8 @@ no_rollup_change:
 			"id_group, nodelist, id_resv, timelimit, "
 			"time_eligible, time_submit, time_start, "
 			"job_name, track_steps, state, priority, cpus_req, "
-			"nodes_alloc, mem_req, flags, state_reason_prev",
+			"nodes_alloc, mem_req, flags, state_reason_prev, "
+			"env_hash_inx, script_hash_inx",
 			mysql_conn->cluster_name, job_table);
 
 		if (wckeyid)
@@ -505,16 +605,13 @@ no_rollup_change:
 			xstrcat(query, ", submit_line");
 		if (job_ptr->container)
 			xstrcat(query, ", container");
-		if (job_ptr->details->env_hash)
-			xstrcat(query, ", env_hash");
-		if (job_ptr->details->script_hash)
-			xstrcat(query, ", script_hash");
 
 		xstrfmtcat(query,
 			   ") values (%u, UNIX_TIMESTAMP(), "
 			   "%u, %u, %u, %u, %u, %u, %u, %u, "
 			   "'%s', %u, %u, %ld, %ld, %ld, "
-			   "'%s', %u, %u, %u, %u, %u, %"PRIu64", %u, %u",
+			   "'%s', %u, %u, %u, %u, %u, %"PRIu64", %u, %u, "
+			   "%"PRIu64", %"PRIu64,
 			   job_ptr->job_id,
 			   job_ptr->array_job_id, array_task_id,
 			   job_ptr->het_job_id, het_job_offset,
@@ -527,7 +624,8 @@ no_rollup_change:
 			   job_ptr->total_nodes,
 			   job_ptr->details->pn_min_memory,
 			   job_ptr->db_flags,
-			   job_ptr->state_reason_prev_db);
+			   job_ptr->state_reason_prev_db,
+			   env_hash_inx, script_hash_inx);
 
 		if (wckeyid)
 			xstrfmtcat(query, ", %u", wckeyid);
@@ -565,12 +663,6 @@ no_rollup_change:
 		if (job_ptr->container)
 			xstrfmtcat(query, ", '%s'",
 				   job_ptr->container);
-		if (job_ptr->details->env_hash)
-			xstrfmtcat(query, ", '%s'",
-				   job_ptr->details->env_hash);
-		if (job_ptr->details->script_hash)
-			xstrfmtcat(query, ", '%s'",
-				   job_ptr->details->script_hash);
 
 		xstrfmtcat(query,
 			   ") on duplicate key update "
@@ -584,7 +676,8 @@ no_rollup_change:
 			   "cpus_req=%u, nodes_alloc=%u, "
 			   "mem_req=%"PRIu64", id_array_job=%u, id_array_task=%u, "
 			   "het_job_id=%u, het_job_offset=%u, flags=%u, "
-			   "state_reason_prev=%u",
+			   "state_reason_prev=%u, env_hash_inx=%"PRIu64
+			   ", script_hash_inx=%"PRIu64,
 			   job_ptr->assoc_id, job_ptr->user_id,
 			   job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
@@ -596,7 +689,8 @@ no_rollup_change:
 			   job_ptr->array_job_id, array_task_id,
 			   job_ptr->het_job_id, het_job_offset,
 			   job_ptr->db_flags,
-			   job_ptr->state_reason_prev_db);
+			   job_ptr->state_reason_prev_db,
+			   env_hash_inx, script_hash_inx);
 
 		if (wckeyid)
 			xstrfmtcat(query, ", id_wckey=%u", wckeyid);
@@ -640,12 +734,6 @@ no_rollup_change:
 		if (job_ptr->container)
 			xstrfmtcat(query, ", container='%s'",
 				   job_ptr->container);
-		if (job_ptr->details->env_hash)
-			xstrfmtcat(query, ", env_hash='%s'",
-				   job_ptr->details->env_hash);
-		if (job_ptr->details->script_hash)
-			xstrfmtcat(query, ", script_hash='%s'",
-				   job_ptr->details->script_hash);
 
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 	try_again:
@@ -709,12 +797,6 @@ no_rollup_change:
 		if (job_ptr->container)
 			xstrfmtcat(query, "container='%s', ",
 				   job_ptr->container);
-		if (job_ptr->details->env_hash)
-			xstrfmtcat(query, "env_hash='%s', ",
-				   job_ptr->details->env_hash);
-		if (job_ptr->details->script_hash)
-			xstrfmtcat(query, "script_hash='%s', ",
-				   job_ptr->details->script_hash);
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', "
 			   "state=greatest(state, %u), "
@@ -744,56 +826,6 @@ no_rollup_change:
 
 	if (rc != SLURM_SUCCESS)
 		return rc;
-
-	/*
-	 * Here we check to see if the env has been added to the database or
-	 * not to inform the slurmctld to send it.
-	 */
-	if (job_ptr->details->env_hash) {
-		query = xstrdup_printf("select env_hash from \"%s_%s\" "
-				       "where env_hash = '%s';",
-				       mysql_conn->cluster_name, job_env_table,
-				       job_ptr->details->env_hash);
-		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-			xfree(query);
-			return SLURM_ERROR;
-		}
-
-		xfree(query);
-
-		if (mysql_fetch_row(result)) {
-			debug3("%u has an env_hash we have already seen, no need to add again",
-			      job_ptr->job_id);
-		} else
-			job_ptr->bit_flags |= JOB_SEND_ENV;
-		mysql_free_result(result);
-	}
-
-	/*
-	 * Here we check to see if the script has been added to the database or
-	 * not to inform the slurmctld to send it.
-	 */
-	if (job_ptr->details->script_hash) {
-		query = xstrdup_printf("select script_hash from \"%s_%s\" "
-				       "where script_hash = '%s';",
-				       mysql_conn->cluster_name,
-				       job_script_table,
-				       job_ptr->details->script_hash);
-		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-			xfree(query);
-			return SLURM_ERROR;
-		}
-
-		xfree(query);
-
-		if (mysql_fetch_row(result)) {
-			debug3("%u has a script_hash we have already seen, no need to add again",
-			      job_ptr->job_id);
-		} else
-			job_ptr->bit_flags |= JOB_SEND_SCRIPT;
-
-		mysql_free_result(result);
-	}
 
 	/* now we will reset all the steps */
 	if (IS_JOB_RESIZING(job_ptr)) {
@@ -826,21 +858,17 @@ extern int as_mysql_job_heavy(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	if (details->env_hash && details->env_sup && details->env_sup[0])
 		xstrfmtcatat(
 			query, &pos,
-			"insert into \"%s_%s\" "
-			"(last_used, env_hash, env_vars) values "
-			"(UNIX_TIMESTAMP(), '%s', '%s') "
-			"on duplicate key update last_used=UNIX_TIMESTAMP();",
+			"update \"%s_%s\" set env_vars = '%s' "
+			"where env_hash='%s';",
 			mysql_conn->cluster_name, job_env_table,
-			details->env_hash, details->env_sup[0]);
+			details->env_sup[0], details->env_hash);
 	if (details->script_hash && details->script)
 		xstrfmtcatat(
 			query, &pos,
-			"insert into \"%s_%s\" "
-			"(last_used, script_hash, batch_script) values "
-			"(UNIX_TIMESTAMP(), '%s', '%s') "
-			"on duplicate key update last_used=UNIX_TIMESTAMP();",
+			"update \"%s_%s\" set batch_script = '%s' "
+			"where script_hash='%s';",
 			mysql_conn->cluster_name, job_script_table,
-			details->script_hash, details->script);
+			details->script, details->script_hash);
 
 	if (!query)
 		return rc;
