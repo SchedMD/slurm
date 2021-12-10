@@ -5843,7 +5843,7 @@ static void _validate_ntasks_per_gpu(slurm_opt_t *opt)
 	if (!any)
 		return;
 
-	/* Validate --ntasks-per-gpu and --ntasks-per-gpu */
+	/* Validate --ntasks-per-gpu and --ntasks-per-tres */
 	if (gpu && tres) {
 		if (opt->ntasks_per_gpu != opt->ntasks_per_tres)
 			fatal("Inconsistent values set to --ntasks-per-gpu=%d and --ntasks-per-tres=%d ",
