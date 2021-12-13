@@ -57,11 +57,7 @@ expect {
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "$reset_bash_prompt\r"
-		exp_continue
-	}
-	-re "\"$test_prompt\"" {
-		# skip this, just echo of setting test_prompt
+		reset_bash_prompt
 		exp_continue
 	}
 	-re $test_prompt {
