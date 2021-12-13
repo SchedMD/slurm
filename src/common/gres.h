@@ -331,7 +331,7 @@ typedef struct sock_gres {	/* GRES availability by socket */
 	char *gres_name;	/* GRES name */
 	gres_job_state_t *job_specs;	/* Pointer to job info, for limits */
 	uint64_t max_node_gres;	/* Maximum GRES permitted on this node */
-	gres_node_state_t *node_specs;	/* Pointer to node info, for state */
+	gres_node_state_t *gres_ns;	/* Pointer to node info, for state */
 	uint32_t plugin_id;	/* Plugin ID (for quick search) */
 	int sock_cnt;		/* Socket count, size of bits_by_sock and
 				 * cnt_by_sock arrays */
@@ -1124,10 +1124,10 @@ extern bool gres_id_shared(uint32_t plugin_id);
  */
 extern bool gres_id_sharing(uint32_t plugin_id);
 
-extern void gres_add_type(char *type, gres_node_state_t *gres_data,
+extern void gres_add_type(char *type, gres_node_state_t *gres_ns,
 			  uint64_t tmp_gres_cnt);
 
-extern void gres_validate_node_cores(gres_node_state_t *node_gres_ptr,
+extern void gres_validate_node_cores(gres_node_state_t *gres_ns,
 				     int cores_ctld, char *node_name);
 
 /*

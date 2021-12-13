@@ -261,17 +261,17 @@ extern bool gres_select_util_job_mem_set(List job_gres_list,
 				continue;
 			node_off++;
 			if (job_res->whole_node == 1) {
-				gres_state_t *node_gres_ptr;
-				gres_node_state_t *node_state_ptr;
+				gres_state_t *gres_state_node;
+				gres_node_state_t *gres_ns;
 
-				node_gres_ptr = list_find_first(
+				gres_state_node = list_find_first(
 					node_record_table_ptr[i].gres_list,
 					gres_find_id,
 					&job_gres_ptr->plugin_id);
-				if (!node_gres_ptr)
+				if (!gres_state_node)
 					continue;
-				node_state_ptr = node_gres_ptr->gres_data;
-				gres_cnt = node_state_ptr->gres_cnt_avail;
+				gres_ns = gres_state_node->gres_data;
+				gres_cnt = gres_ns->gres_cnt_avail;
 			} else
 				gres_cnt =
 					job_data_ptr->gres_cnt_node_select[i];
