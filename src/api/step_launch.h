@@ -52,11 +52,6 @@
 
 #include "src/api/step_io.h"
 
-typedef struct {
-	int connected;
-	int *sockets; /* array of socket file descriptors */
-} user_managed_io_t;
-
 struct step_launch_state {
 	/* This lock protects tasks_started, tasks_exited, node_io_error,
 	   io_deadline, abort, and abort_action_taken.  The main thread
@@ -90,11 +85,7 @@ struct step_launch_state {
 	uint16_t *resp_port; /* array of message response ports */
 
 	/* io variables */
-	bool user_managed_io;
-	union {
-		client_io_t *normal;
-		user_managed_io_t *user;
-	} io;
+	client_io_t *io;
 
 	slurm_step_layout_t *layout; /* a pointer into the ctx
 					step_resp, do not free */

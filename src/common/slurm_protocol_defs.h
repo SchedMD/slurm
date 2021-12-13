@@ -890,7 +890,6 @@ typedef struct launch_tasks_request_msg {
 	uint16_t job_core_spec;	/* Count of specialized cores */
 
 	/********** START "normal" IO only options **********/
-	/* These options are ignored if user_managed_io is 1 */
 	char     *ofname; /* stdout filename pattern */
 	char     *efname; /* stderr filename pattern */
 	char     *ifname; /* stdin filename pattern */
