@@ -1503,44 +1503,6 @@ _step_step_signal(struct step_launch_state *sls, slurm_msg_t *signal_msg)
 }
 
 /*
- * The TCP connection that was used to send the task_spawn_io_msg_t message
- * will be used as the user managed IO stream.  The remote end of the TCP stream
- * will be connected to the stdin, stdout, and stderr of the task.  The
- * local end of the stream is stored in the user_managed_io_t structure.
- *
- * To allow the message TCP stream to be reused for spawn IO traffic we
- * set the slurm_msg_t's conn_fd to -1 to avoid having the caller close the
- * TCP stream.
- */
-static void
-_task_user_managed_io_handler(struct step_launch_state *sls,
-			      slurm_msg_t *user_io_msg)
-{
-	task_user_managed_io_msg_t *msg =
-		(task_user_managed_io_msg_t *) user_io_msg->data;
-
-	slurm_mutex_lock(&sls->lock);
-
-	debug("task %d user managed io stream established", msg->task_id);
-	/* sanity check */
-	if (msg->task_id >= sls->tasks_requested) {
-		error("_task_user_managed_io_handler:"
-		      " bad task ID %u (of %d tasks)",
-		      msg->task_id, sls->tasks_requested);
-	}
-
-	sls->io.user->connected++;
-	fd_set_blocking(user_io_msg->conn_fd);
-	sls->io.user->sockets[msg->task_id] = user_io_msg->conn_fd;
-
-	/* prevent the caller from closing the user managed IO stream */
-	user_io_msg->conn_fd = -1;
-
-	slurm_cond_broadcast(&sls->cond);
-	slurm_mutex_unlock(&sls->lock);
-}
-
-/*
  * Identify the incoming message and call the appropriate handler function.
  */
 static void
@@ -1612,10 +1574,6 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		debug2("PMI_KVS_GET_REQ received");
 		rc = pmi_kvs_get((kvs_get_msg_t *) msg->data);
 		slurm_send_rc_msg(msg, rc);
-		break;
-	case TASK_USER_MANAGED_IO_STREAM:
-		debug2("TASK_USER_MANAGED_IO_STREAM");
-		_task_user_managed_io_handler(sls, msg);
 		break;
 	default:
 		error("%s: received spurious message type: %u",

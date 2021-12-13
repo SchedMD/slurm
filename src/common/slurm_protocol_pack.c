@@ -7638,36 +7638,6 @@ unpack_error:
 }
 
 static void
-_pack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t * msg,
-				      buf_t *buffer,
-				      uint16_t protocol_version)
-{
-	xassert(msg);
-	pack32(msg->task_id, buffer);
-}
-
-static int
-_unpack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t **msg_ptr,
-					buf_t *buffer,
-					uint16_t protocol_version)
-{
-	task_user_managed_io_msg_t *msg;
-
-	xassert(msg_ptr);
-	msg = xmalloc(sizeof(task_user_managed_io_msg_t));
-	*msg_ptr = msg;
-
-	safe_unpack32(&msg->task_id, buffer);
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_task_user_managed_io_stream_msg(msg);
-	*msg_ptr = NULL;
-	return SLURM_ERROR;
-}
-
-static void
 _pack_cancel_tasks_msg(signal_tasks_msg_t *msg, buf_t *buffer,
 		       uint16_t protocol_version)
 {
@@ -11762,11 +11732,6 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 						 *) msg->data, buffer,
 						msg->protocol_version);
 		break;
-	case TASK_USER_MANAGED_IO_STREAM:
-		_pack_task_user_managed_io_stream_msg(
-			(task_user_managed_io_msg_t *) msg->data, buffer,
-			msg->protocol_version);
-		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
 		_pack_cancel_tasks_msg((signal_tasks_msg_t *) msg->data,
@@ -12403,11 +12368,6 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_launch_tasks_response_msg(
 			(launch_tasks_response_msg_t **)
 			& (msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case TASK_USER_MANAGED_IO_STREAM:
-		rc = _unpack_task_user_managed_io_stream_msg(
-			(task_user_managed_io_msg_t **) &msg->data, buffer,
 			msg->protocol_version);
 		break;
 	case REQUEST_REATTACH_TASKS:

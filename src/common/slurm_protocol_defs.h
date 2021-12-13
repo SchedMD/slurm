@@ -416,7 +416,7 @@ typedef enum {
 	REQUEST_ABORT_JOB,	/* job shouldn't be running, kill it without
 				 * job/step/task complete responses */
 	REQUEST_FILE_BCAST,
-	TASK_USER_MANAGED_IO_STREAM,
+	DEFUNCT_RPC_6015,
 	REQUEST_KILL_PREEMPTED,
 
 	REQUEST_LAUNCH_PROLOG,
@@ -922,10 +922,6 @@ typedef struct launch_tasks_request_msg {
 	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
 } launch_tasks_request_msg_t;
-
-typedef struct task_user_managed_io_msg {
-	uint32_t task_id;
-} task_user_managed_io_msg_t;
 
 typedef struct partition_info partition_desc_msg_t;
 
@@ -1517,8 +1513,6 @@ extern void slurm_free_launch_tasks_request_msg(
 		launch_tasks_request_msg_t * msg);
 extern void slurm_free_launch_tasks_response_msg(
 		launch_tasks_response_msg_t * msg);
-extern void slurm_free_task_user_managed_io_stream_msg(
-		task_user_managed_io_msg_t *msg);
 extern void slurm_free_task_exit_msg(task_exit_msg_t * msg);
 extern void slurm_free_signal_tasks_msg(signal_tasks_msg_t * msg);
 extern void slurm_free_reattach_tasks_request_msg(

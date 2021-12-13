@@ -1916,63 +1916,6 @@ _outgoing_buf_free(stepd_step_rec_t *job)
 	return false;
 }
 
-/**********************************************************************
- * Functions specific to "user managed" IO
- **********************************************************************/
-static int
-_user_managed_io_connect(srun_info_t *srun, uint32_t gtid)
-{
-	int fd;
-	task_user_managed_io_msg_t user_io_msg;
-	slurm_msg_t msg;
-
-	slurm_msg_t_init(&msg);
-	msg.protocol_version = srun->protocol_version;
-	msg.msg_type = TASK_USER_MANAGED_IO_STREAM;
-	msg.data = &user_io_msg;
-	user_io_msg.task_id = gtid;
-
-	fd = slurm_open_msg_conn(&srun->resp_addr);
-	if (fd == -1)
-		return -1;
-
-	net_set_keep_alive(fd);
-	if (slurm_send_node_msg(fd, &msg) == -1) {
-		close(fd);
-		return -1;
-	}
-	return fd;
-}
-
-/*
- * This function sets the close-on-exec flag on the socket descriptor.
- * io_dup_stdio will will remove the close-on-exec flag for just one task's
- * file descriptors.
- */
-int
-user_managed_io_client_connect(int node_tasks, srun_info_t *srun,
-			       stepd_step_task_info_t **tasks)
-{
-	int fd;
-	int i;
-
-	for (i = 0; i < node_tasks; i++) {
-		fd = _user_managed_io_connect(srun, tasks[i]->gtid);
-		if (fd == -1)
-			return SLURM_ERROR;
-		fd_set_close_on_exec(fd);
-		tasks[i]->stdin_fd = fd;
-		tasks[i]->to_stdin = -1;
-		tasks[i]->stdout_fd = fd;
-		tasks[i]->from_stdout = -1;
-		tasks[i]->stderr_fd = fd;
-		tasks[i]->from_stderr = -1;
-	}
-
-	return SLURM_SUCCESS;
-}
-
-
 void
 io_find_filename_pattern( stepd_step_rec_t *job,
 			  slurmd_filename_pattern_t *outpattern,

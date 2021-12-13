@@ -1635,12 +1635,6 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg);
 }
 
-extern void slurm_free_task_user_managed_io_stream_msg(
-		task_user_managed_io_msg_t *msg)
-{
-	xfree(msg);
-}
-
 extern void slurm_free_reattach_tasks_request_msg(
 		reattach_tasks_request_msg_t *msg)
 {
@@ -5281,9 +5275,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_LAUNCH_TASKS:
 		slurm_free_launch_tasks_request_msg(data);
 		break;
-	case TASK_USER_MANAGED_IO_STREAM:
-		slurm_free_task_user_managed_io_stream_msg(data);
-		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
 		slurm_free_signal_tasks_msg(data);
@@ -5908,9 +5899,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_ABORT_JOB";
 	case REQUEST_FILE_BCAST:
 		return "REQUEST_FILE_BCAST";
-	case TASK_USER_MANAGED_IO_STREAM:
-		return "TASK_USER_MANAGED_IO_STREAM";
-	case REQUEST_KILL_PREEMPTED:
+
+	case REQUEST_KILL_PREEMPTED:				/* 6016 */
 		return "REQUEST_KILL_PREEMPTED";
 	case REQUEST_LAUNCH_PROLOG:
 		return "REQUEST_LAUNCH_PROLOG";

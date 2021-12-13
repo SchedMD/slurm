@@ -583,19 +583,6 @@ claim:
 	return rc;
 }
 
-static int
-_setup_user_managed_io(stepd_step_rec_t *job)
-{
-	srun_info_t *srun;
-
-	if ((srun = list_peek(job->sruns)) == NULL) {
-		error("_setup_user_managed_io: no clients!");
-		return SLURM_ERROR;
-	}
-
-	return user_managed_io_client_connect(job->node_tasks, srun, job->task);
-}
-
 static void
 _random_sleep(stepd_step_rec_t *job)
 {
@@ -1710,10 +1697,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		goto fail1; /* pam_setup error */
 
 	set_umask(job);		/* set umask for stdout/err files */
-	if (job->flags & LAUNCH_USER_MANAGED_IO)
-		rc = _setup_user_managed_io(job);
-	else
-		rc = _setup_normal_io(job);
+	rc = _setup_normal_io(job);
 	/*
 	 * Initialize log facility to copy errors back to srun
 	 */
