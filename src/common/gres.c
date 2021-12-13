@@ -9334,7 +9334,6 @@ extern void gres_g_step_hardware_init(List step_gres_list,
 				      uint32_t node_id, char *settings)
 {
 	int i;
-	ListIterator iter;
 	gres_state_t *gres_state_step;
 	gres_step_state_t *gres_ss;
 	bitstr_t *devices;
@@ -9348,13 +9347,8 @@ extern void gres_g_step_hardware_init(List step_gres_list,
 		if (gres_context[i].ops.step_hardware_init == NULL)
 			continue;
 
-		iter = list_iterator_create(step_gres_list);
-		while ((gres_state_step = list_next(iter))) {
-			if (gres_state_step->plugin_id ==
-			    gres_context[i].plugin_id)
-				break;
-		}
-		list_iterator_destroy(iter);
+		gres_state_step = list_find_first(step_gres_list, gres_find_id,
+						  &gres_context[i].plugin_id);
 		if (!gres_state_step || !gres_state_step->gres_data)
 			continue;
 		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
