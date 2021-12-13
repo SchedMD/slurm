@@ -788,7 +788,7 @@ extern int gres_p_get_job_info(gres_job_state_t *gres_js,
 
 /*
  * get data from a step's GRES data structure
- * IN step_gres_data  - step's GRES data structure
+ * IN gres_ss  - step's GRES data structure
  * IN node_inx - zero-origin index of the node within the job's allocation
  *	for which data is desired. Note this can differ from the step's
  *	node allocation index.
@@ -797,7 +797,7 @@ extern int gres_p_get_job_info(gres_job_state_t *gres_js,
  *            DO NOT FREE: This is a pointer into the step's data structure
  * RET - SLURM_SUCCESS or error code
  */
-extern int gres_p_get_step_info(gres_step_state_t *step_gres_data,
+extern int gres_p_get_step_info(gres_step_state_t *gres_ss,
 				uint32_t node_inx,
 				enum gres_step_data_type data_type, void *data)
 {

@@ -131,7 +131,7 @@ typedef struct slurm_gres_ops {
 						  uint32_t node_inx,
 						  enum gres_job_data_type data_type,
 						  void *data);
-	int		(*step_info)		( gres_step_state_t *step_gres_data,
+	int		(*step_info)		( gres_step_state_t *gres_ss,
 						  uint32_t node_inx,
 						  enum gres_step_data_type data_type,
 						  void *data);
@@ -283,9 +283,10 @@ static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 static int	_parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 					const char *key, const char *value,
 					const char *line, char **leftover);
-static void *	_step_state_dup(void *gres_data);
-static void *	_step_state_dup2(void *gres_data, int node_index);
-static void	_step_state_log(void *gres_data, slurm_step_id_t *step_id,
+static void *	_step_state_dup(gres_step_state_t *gres_ss);
+static void *	_step_state_dup2(gres_step_state_t *gres_ss, int node_index);
+static void	_step_state_log(gres_step_state_t *gres_ss,
+				slurm_step_id_t *step_id,
 				char *gres_name);
 static void	_sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 				      gres_state_t *gpu_gres_ptr);
@@ -381,11 +382,10 @@ extern int gres_find_step_by_key(void *x, void *key)
 {
 	gres_state_t *state_ptr = (gres_state_t *) x;
 	gres_key_t *step_key = (gres_key_t *) key;
-	gres_step_state_t *gres_data_ptr;
-	gres_data_ptr = (gres_step_state_t *)state_ptr->gres_data;
+	gres_step_state_t *gres_ss = (gres_step_state_t *)state_ptr->gres_data;
 
 	if ((state_ptr->plugin_id == step_key->plugin_id) &&
-	    (gres_data_ptr->type_id == step_key->type_id))
+	    (gres_ss->type_id == step_key->type_id))
 		return 1;
 	return 0;
 }
@@ -5338,11 +5338,11 @@ static bool _generic_state(void *gres_data, bool is_job)
 		    gres_js->gres_per_task)
 			return false;
 	} else {
-		gres_step_state_t *step_gres_data = gres_data;
-		if (step_gres_data->gres_per_step ||
-		    step_gres_data->gres_per_node ||
-		    step_gres_data->gres_per_socket ||
-		    step_gres_data->gres_per_task)
+		gres_step_state_t *gres_ss = gres_data;
+		if (gres_ss->gres_per_step ||
+		    gres_ss->gres_per_node ||
+		    gres_ss->gres_per_socket ||
+		    gres_ss->gres_per_task)
 			return false;
 	}
 
@@ -5403,7 +5403,7 @@ static int _merge_generic_data(
 	uint64_t mem_per_gres;
 	gres_state_t *gres_state;
 	gres_job_state_t *gres_js;
-	gres_step_state_t *step_gres_data;
+	gres_step_state_t *gres_ss;
 	void *generic_gres_data;
 	ListIterator iter = list_iterator_create(gres_list);
 
@@ -5422,10 +5422,10 @@ static int _merge_generic_data(
 			cpus_per_gres =	gres_js->cpus_per_gres;
 			mem_per_gres = gres_js->mem_per_gres;
 		} else {
-			generic_gres_data = step_gres_data =
+			generic_gres_data = gres_ss =
 				over_list[i].without_type_state;
-			cpus_per_gres =	step_gres_data->cpus_per_gres;
-			mem_per_gres = step_gres_data->mem_per_gres;
+			cpus_per_gres =	gres_ss->cpus_per_gres;
+			mem_per_gres = gres_ss->mem_per_gres;
 		}
 
 		while ((gres_state = list_next(iter))) {
@@ -5447,13 +5447,13 @@ static int _merge_generic_data(
 						mem_per_gres;
 				}
 			} else {
-				step_gres_data = gres_state->gres_data;
-				if (!step_gres_data->cpus_per_gres) {
-					step_gres_data->cpus_per_gres =
+				gres_ss = gres_state->gres_data;
+				if (!gres_ss->cpus_per_gres) {
+					gres_ss->cpus_per_gres =
 						cpus_per_gres;
 				}
-				if (!step_gres_data->mem_per_gres) {
-					step_gres_data->mem_per_gres =
+				if (!gres_ss->mem_per_gres) {
+					gres_ss->mem_per_gres =
 						mem_per_gres;
 				}
 			}
@@ -7993,10 +7993,10 @@ static uint64_t _get_gres_list_cnt(List gres_list, char *gres_name,
 			type_name = gres_js->type_name;
 			total_gres = gres_js->total_gres;
 		} else {
-			gres_step_state_t *gres =
+			gres_step_state_t *gres_ss =
 				(gres_step_state_t *)gres_ptr->gres_data;
-			type_name = gres->type_name;
-			total_gres = gres->total_gres;
+			type_name = gres_ss->type_name;
+			total_gres = gres_ss->total_gres;
 		}
 
 		/* If we are filtering on GRES type, ignore other types */
@@ -8198,29 +8198,29 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 static void _step_state_delete(void *gres_data)
 {
 	int i;
-	gres_step_state_t *gres_ptr = (gres_step_state_t *) gres_data;
+	gres_step_state_t *gres_ss = (gres_step_state_t *) gres_data;
 
-	if (gres_ptr == NULL)
+	if (gres_ss == NULL)
 		return;
 
-	FREE_NULL_BITMAP(gres_ptr->node_in_use);
-	if (gres_ptr->gres_bit_alloc) {
-		for (i = 0; i < gres_ptr->node_cnt; i++)
-			FREE_NULL_BITMAP(gres_ptr->gres_bit_alloc[i]);
-		xfree(gres_ptr->gres_bit_alloc);
+	FREE_NULL_BITMAP(gres_ss->node_in_use);
+	if (gres_ss->gres_bit_alloc) {
+		for (i = 0; i < gres_ss->node_cnt; i++)
+			FREE_NULL_BITMAP(gres_ss->gres_bit_alloc[i]);
+		xfree(gres_ss->gres_bit_alloc);
 	}
-	xfree(gres_ptr->gres_cnt_node_alloc);
-	xfree(gres_ptr->type_name);
-	xfree(gres_ptr);
+	xfree(gres_ss->gres_cnt_node_alloc);
+	xfree(gres_ss->type_name);
+	xfree(gres_ss);
 }
 
 extern void gres_step_list_delete(void *list_element)
 {
-	gres_state_t *gres_ptr = (gres_state_t *) list_element;
+	gres_state_t *gres_state_step = (gres_state_t *) list_element;
 
-	_step_state_delete(gres_ptr->gres_data);
-	gres_ptr->gres_data = NULL;
-	_gres_state_delete_members(gres_ptr);
+	_step_state_delete(gres_state_step->gres_data);
+	gres_state_step->gres_data = NULL;
+	_gres_state_delete_members(gres_state_step);
 }
 
 
@@ -8282,47 +8282,46 @@ static int _step_get_gres_cnt(void *x, void *arg)
 	return 0;
 }
 
-static uint64_t _step_test(void *step_gres_data, bool first_step_node,
+static uint64_t _step_test(gres_step_state_t *gres_ss, bool first_step_node,
 			   uint16_t cpus_per_task, int max_rem_nodes,
 			   bool ignore_alloc, uint64_t gres_cnt, bool test_mem,
 			   int node_offset, slurm_step_id_t *step_id,
 			   job_resources_t *job_resrcs_ptr, int *err_code)
 {
-	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
 	uint64_t core_cnt, min_gres = 1, task_cnt;
 
-	xassert(step_gres_ptr);
+	xassert(gres_ss);
 
 	if (!gres_cnt)
 		return 0;
 
 	if (first_step_node) {
-		step_gres_ptr->gross_gres = 0;
-		step_gres_ptr->total_gres = 0;
+		gres_ss->gross_gres = 0;
+		gres_ss->total_gres = 0;
 	}
-	if (step_gres_ptr->gres_per_node)
-		min_gres = step_gres_ptr-> gres_per_node;
-	if (step_gres_ptr->gres_per_socket)
-		min_gres = MAX(min_gres, step_gres_ptr->gres_per_socket);
-	if (step_gres_ptr->gres_per_task)
-		min_gres = MAX(min_gres, step_gres_ptr->gres_per_task);
-	if (step_gres_ptr->gres_per_step &&
-	    (step_gres_ptr->gres_per_step > step_gres_ptr->total_gres) &&
+	if (gres_ss->gres_per_node)
+		min_gres = gres_ss-> gres_per_node;
+	if (gres_ss->gres_per_socket)
+		min_gres = MAX(min_gres, gres_ss->gres_per_socket);
+	if (gres_ss->gres_per_task)
+		min_gres = MAX(min_gres, gres_ss->gres_per_task);
+	if (gres_ss->gres_per_step &&
+	    (gres_ss->gres_per_step > gres_ss->total_gres) &&
 	    (max_rem_nodes == 1)) {
-		uint64_t gres_per_step = step_gres_ptr->gres_per_step;
+		uint64_t gres_per_step = gres_ss->gres_per_step;
 		if (ignore_alloc)
-			gres_per_step -= step_gres_ptr->gross_gres;
+			gres_per_step -= gres_ss->gross_gres;
 		else
-			gres_per_step -= step_gres_ptr->total_gres;
+			gres_per_step -= gres_ss->total_gres;
 		min_gres = MAX(min_gres, gres_per_step);
 	}
 
 	if (gres_cnt != NO_VAL64) {
 		if (min_gres > gres_cnt) {
 			core_cnt = 0;
-		} else if (step_gres_ptr->gres_per_task) {
-			task_cnt = (gres_cnt + step_gres_ptr->gres_per_task - 1)
-				/ step_gres_ptr->gres_per_task;
+		} else if (gres_ss->gres_per_task) {
+			task_cnt = (gres_cnt + gres_ss->gres_per_task - 1)
+				/ gres_ss->gres_per_task;
 			core_cnt = task_cnt * cpus_per_task;
 		} else
 			core_cnt = NO_VAL64;
@@ -8332,11 +8331,11 @@ static uint64_t _step_test(void *step_gres_data, bool first_step_node,
 	}
 
 	/* Test if there is enough memory available to run the step. */
-	if (test_mem && core_cnt && gres_cnt && step_gres_ptr->mem_per_gres &&
-	    (step_gres_ptr->mem_per_gres != NO_VAL64)) {
+	if (test_mem && core_cnt && gres_cnt && gres_ss->mem_per_gres &&
+	    (gres_ss->mem_per_gres != NO_VAL64)) {
 		uint64_t mem_per_gres, mem_req, mem_avail;
 
-		mem_per_gres = step_gres_ptr->mem_per_gres;
+		mem_per_gres = gres_ss->mem_per_gres;
 		mem_req = min_gres * mem_per_gres;
 		mem_avail = job_resrcs_ptr->memory_allocated[node_offset];
 		if (!ignore_alloc)
@@ -8353,9 +8352,9 @@ static uint64_t _step_test(void *step_gres_data, bool first_step_node,
 
 	if (core_cnt != 0) {
 		if (ignore_alloc)
-			step_gres_ptr->gross_gres += gres_cnt;
+			gres_ss->gross_gres += gres_cnt;
 		else
-			step_gres_ptr->total_gres += gres_cnt;
+			gres_ss->total_gres += gres_cnt;
 	}
 
 	return core_cnt;
@@ -8376,8 +8375,8 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 {
 	static char *prev_save_ptr = NULL;
 	int context_inx = NO_VAL, my_rc = SLURM_SUCCESS;
-	gres_step_state_t *step_gres_data = NULL;
-	gres_state_t *gres_ptr;
+	gres_step_state_t *gres_ss = NULL;
+	gres_state_t *gres_state_step;
 	gres_key_t step_search_key;
 	char *type = NULL, *name = NULL;
 	uint16_t flags = 0;
@@ -8410,25 +8409,26 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 	/* Find the step GRES record */
 	step_search_key.plugin_id = gres_context[context_inx].plugin_id;
 	step_search_key.type_id = gres_build_id(type);
-	gres_ptr = list_find_first(gres_list, gres_find_step_by_key,
+	gres_state_step = list_find_first(gres_list, gres_find_step_by_key,
 				   &step_search_key);
 
-	if (gres_ptr) {
-		step_gres_data = gres_ptr->gres_data;
+	if (gres_state_step) {
+		gres_ss = gres_state_step->gres_data;
 	} else {
-		step_gres_data = xmalloc(sizeof(gres_step_state_t));
-		step_gres_data->type_id = gres_build_id(type);
-		step_gres_data->type_name = type;
+		gres_ss = xmalloc(sizeof(gres_step_state_t));
+		gres_ss->type_id = gres_build_id(type);
+		gres_ss->type_name = type;
 		type = NULL;	/* String moved above */
-		gres_ptr = xmalloc(sizeof(gres_state_t));
-		gres_ptr->plugin_id = gres_context[context_inx].plugin_id;
-		gres_ptr->gres_data = step_gres_data;
-		gres_ptr->gres_name =
+		gres_state_step = xmalloc(sizeof(gres_state_t));
+		gres_state_step->plugin_id =
+			gres_context[context_inx].plugin_id;
+		gres_state_step->gres_data = gres_ss;
+		gres_state_step->gres_name =
 			xstrdup(gres_context[context_inx].gres_name);
-		gres_ptr->state_type = GRES_STATE_TYPE_STEP;
-		list_append(gres_list, gres_ptr);
+		gres_state_step->state_type = GRES_STATE_TYPE_STEP;
+		list_append(gres_list, gres_state_step);
 	}
-	step_gres_data->flags = flags;
+	gres_ss->flags = flags;
 
 fini:	xfree(name);
 	xfree(type);
@@ -8439,7 +8439,7 @@ fini:	xfree(name);
 		*rc = my_rc;
 	}
 	*save_ptr = prev_save_ptr;
-	return step_gres_data;
+	return gres_ss;
 }
 
 /*
@@ -8455,9 +8455,9 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 				  char **err_msg)
 {
 	ListIterator iter;
-	gres_state_t *gres_state_job, *step_gres_ptr;
+	gres_state_t *gres_state_job, *gres_state_step;
 	gres_job_state_t *gres_js;
-	gres_step_state_t *step_gres_data;
+	gres_step_state_t *gres_ss;
 	gres_key_t job_search_key;
 	uint16_t cpus_per_gres;
 	char *msg = NULL;
@@ -8474,20 +8474,20 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 	}
 
 	iter = list_iterator_create(step_gres_list);
-	while ((step_gres_ptr = (gres_state_t *) list_next(iter))) {
-		step_gres_data = (gres_step_state_t *) step_gres_ptr->gres_data;
-		job_search_key.plugin_id = step_gres_ptr->plugin_id;
-		if (step_gres_data->type_id == 0)
+	while ((gres_state_step = (gres_state_t *) list_next(iter))) {
+		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
+		job_search_key.plugin_id = gres_state_step->plugin_id;
+		if (gres_ss->type_id == 0)
 			job_search_key.type_id = NO_VAL;
 		else
-			job_search_key.type_id = step_gres_data->type_id;
+			job_search_key.type_id = gres_ss->type_id;
 		gres_state_job = list_find_first(job_gres_list_req,
 					       gres_find_job_by_key,
 					       &job_search_key);
 		if (!gres_state_job || !gres_state_job->gres_data) {
 			xstrfmtcat(msg, "Step requested GRES (%s:%s) not found in the job",
-				   step_gres_ptr->gres_name,
-				   step_gres_data->type_name);
+				   gres_state_step->gres_name,
+				   gres_ss->type_name);
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
@@ -8496,15 +8496,15 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 			cpus_per_gres = gres_js->cpus_per_gres;
 		else
 			cpus_per_gres = gres_js->def_cpus_per_gres;
-		if (cpus_per_gres && step_gres_data->cpus_per_gres &&
-		    (cpus_per_gres < step_gres_data->cpus_per_gres)) {
+		if (cpus_per_gres && gres_ss->cpus_per_gres &&
+		    (cpus_per_gres < gres_ss->cpus_per_gres)) {
 			xstrfmtcat(msg, "Step requested cpus_per_gres=%u is more than the job's cpu_per_gres=%u",
-				   step_gres_data->cpus_per_gres,
+				   gres_ss->cpus_per_gres,
 				   cpus_per_gres);
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
-		if (step_gres_data->gres_per_step) {
+		if (gres_ss->gres_per_step) {
 			/*
 			 * This isn't a perfect check because step_min_nodes
 			 * isn't always set by this point, but if it is set
@@ -8513,20 +8513,20 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 			 * the step.
 			 */
 			if (step_min_nodes &&
-			    (step_gres_data->gres_per_step < step_min_nodes)) {
+			    (gres_ss->gres_per_step < step_min_nodes)) {
 				xstrfmtcat(msg, "Step requested gres=%s:%"PRIu64" is less than the requested min nodes=%u",
-					   step_gres_ptr->gres_name,
-					   step_gres_data->gres_per_step,
+					   gres_state_step->gres_name,
+					   gres_ss->gres_per_step,
 					   step_min_nodes);
 				*rc = ESLURM_INVALID_GRES;
 				break;
 			}
 			if (gres_js->gres_per_job &&
 			    (gres_js->gres_per_job <
-			     step_gres_data->gres_per_step)) {
+			     gres_ss->gres_per_step)) {
 				xstrfmtcat(msg, "Step requested gres=%s:%"PRIu64" is more than the job's gres=%s:%"PRIu64,
-					   step_gres_ptr->gres_name,
-					   step_gres_data->gres_per_step,
+					   gres_state_step->gres_name,
+					   gres_ss->gres_per_step,
 					   gres_state_job->gres_name,
 					   gres_js->gres_per_job);
 				*rc = ESLURM_INVALID_GRES;
@@ -8534,36 +8534,36 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 			}
 		}
 		if (gres_js->gres_per_node &&
-		    step_gres_data->gres_per_node &&
+		    gres_ss->gres_per_node &&
 		    (gres_js->gres_per_node <
-		     step_gres_data->gres_per_node)) {
+		     gres_ss->gres_per_node)) {
 			xstrfmtcat(msg, "Step requested gres_per_node=%s:%"PRIu64" is more than the job's gres_per_node=%s:%"PRIu64,
-				   step_gres_ptr->gres_name,
-				   step_gres_data->gres_per_node,
+				   gres_state_step->gres_name,
+				   gres_ss->gres_per_node,
 				   gres_state_job->gres_name,
 				   gres_js->gres_per_node);
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
 		if (gres_js->gres_per_socket &&
-		    step_gres_data->gres_per_socket &&
+		    gres_ss->gres_per_socket &&
 		    (gres_js->gres_per_socket <
-		     step_gres_data->gres_per_socket)) {
+		     gres_ss->gres_per_socket)) {
 			xstrfmtcat(msg, "Step requested gres_per_socket=%s:%"PRIu64" is more than the job's gres_per_socket=%s:%"PRIu64,
-				   step_gres_ptr->gres_name,
-				   step_gres_data->gres_per_socket,
+				   gres_state_step->gres_name,
+				   gres_ss->gres_per_socket,
 				   gres_state_job->gres_name,
 				   gres_js->gres_per_socket);
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
 		if (gres_js->gres_per_task &&
-		    step_gres_data->gres_per_task &&
+		    gres_ss->gres_per_task &&
 		    (gres_js->gres_per_task <
-		     step_gres_data->gres_per_task)) {
+		     gres_ss->gres_per_task)) {
 			xstrfmtcat(msg, "Step requested gres_per_task=%s:%"PRIu64" is more than the job's gres_per_task=%s:%"PRIu64,
-				   step_gres_ptr->gres_name,
-				   step_gres_data->gres_per_task,
+				   gres_state_step->gres_name,
+				   gres_ss->gres_per_task,
 				   gres_state_job->gres_name,
 				   gres_js->gres_per_task);
 			*rc = ESLURM_INVALID_GRES;
@@ -8590,7 +8590,7 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 					uint32_t *num_tasks,
 					uint32_t *cpu_count)
 {
-	gres_step_state_t *step_gres_data;
+	gres_step_state_t *gres_ss;
 	uint64_t cnt = 0;
 	int rc = SLURM_SUCCESS;
 
@@ -8610,15 +8610,15 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 				 __func__, *num_tasks, ntasks_per_tres);
 			return ESLURM_INVALID_GRES;
 		}
-		while ((step_gres_data =
+		while ((gres_ss =
 			_get_next_step_gres(in_val, &cnt,
 					    new_step_list,
 					    &save_ptr, &rc))) {
 			/* Simulate a tres_per_job specification */
-			step_gres_data->gres_per_step = cnt;
-			step_gres_data->ntasks_per_gres = ntasks_per_tres;
-			step_gres_data->total_gres =
-				MAX(step_gres_data->total_gres, cnt);
+			gres_ss->gres_per_step = cnt;
+			gres_ss->ntasks_per_gres = ntasks_per_tres;
+			gres_ss->total_gres =
+				MAX(gres_ss->total_gres, cnt);
 			in_val = NULL;
 		}
 		xfree(gres);
@@ -8656,7 +8656,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 				    uint32_t *cpu_count, char **err_msg)
 {
 	int rc;
-	gres_step_state_t *step_gres_data;
+	gres_step_state_t *gres_ss;
 	List new_step_list;
 	uint64_t cnt = 0;
 
@@ -8668,42 +8668,42 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	new_step_list = list_create(gres_step_list_delete);
 	if (cpus_per_tres) {
 		char *in_val = cpus_per_tres, *save_ptr = NULL;
-		while ((step_gres_data = _get_next_step_gres(in_val, &cnt,
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
 							     new_step_list,
 							     &save_ptr, &rc))) {
-			step_gres_data->cpus_per_gres = cnt;
+			gres_ss->cpus_per_gres = cnt;
 			in_val = NULL;
 		}
 	}
 	if (tres_per_step) {
 		char *in_val = tres_per_step, *save_ptr = NULL;
-		while ((step_gres_data = _get_next_step_gres(in_val, &cnt,
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
 							     new_step_list,
 							     &save_ptr, &rc))) {
-			step_gres_data->gres_per_step = cnt;
+			gres_ss->gres_per_step = cnt;
 			in_val = NULL;
-			step_gres_data->total_gres =
-				MAX(step_gres_data->total_gres, cnt);
+			gres_ss->total_gres =
+				MAX(gres_ss->total_gres, cnt);
 		}
 	}
 	if (tres_per_node) {
 		char *in_val = tres_per_node, *save_ptr = NULL;
-		while ((step_gres_data = _get_next_step_gres(in_val, &cnt,
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
 							     new_step_list,
 							     &save_ptr, &rc))) {
-			step_gres_data->gres_per_node = cnt;
+			gres_ss->gres_per_node = cnt;
 			in_val = NULL;
 			/* Step only has 1 node, always */
-			step_gres_data->total_gres =
-				MAX(step_gres_data->total_gres, cnt);
+			gres_ss->total_gres =
+				MAX(gres_ss->total_gres, cnt);
 		}
 	}
 	if (tres_per_socket) {
 		char *in_val = tres_per_socket, *save_ptr = NULL;
-		while ((step_gres_data = _get_next_step_gres(in_val, &cnt,
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
 							     new_step_list,
 							     &save_ptr, &rc))) {
-			step_gres_data->gres_per_socket = cnt;
+			gres_ss->gres_per_socket = cnt;
 			in_val = NULL;
 			// TODO: What is sockets_per_node and ntasks_per_socket?
 			// if (*sockets_per_node != NO_VAL16) {
@@ -8713,29 +8713,29 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 			//	cnt *= ((*num_tasks + *ntasks_per_socket - 1) /
 			//		*ntasks_per_socket);
 			// }
-			// step_gres_data->total_gres =
-			//	MAX(step_gres_data->total_gres, cnt);
+			// gres_ss->total_gres =
+			//	MAX(gres_ss->total_gres, cnt);
 		}
 	}
 	if (tres_per_task) {
 		char *in_val = tres_per_task, *save_ptr = NULL;
-		while ((step_gres_data = _get_next_step_gres(in_val, &cnt,
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
 							     new_step_list,
 							     &save_ptr, &rc))) {
-			step_gres_data->gres_per_task = cnt;
+			gres_ss->gres_per_task = cnt;
 			in_val = NULL;
 			if (*num_tasks != NO_VAL)
 				cnt *= *num_tasks;
-			step_gres_data->total_gres =
-				MAX(step_gres_data->total_gres, cnt);
+			gres_ss->total_gres =
+				MAX(gres_ss->total_gres, cnt);
 		}
 	}
 	if (mem_per_tres) {
 		char *in_val = mem_per_tres, *save_ptr = NULL;
-		while ((step_gres_data = _get_next_step_gres(in_val, &cnt,
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
 							     new_step_list,
 							     &save_ptr, &rc))) {
-			step_gres_data->mem_per_gres = cnt;
+			gres_ss->mem_per_gres = cnt;
 			in_val = NULL;
 		}
 	}
@@ -8788,79 +8788,76 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	return rc;
 }
 
-static void *_step_state_dup(void *gres_data)
+static void *_step_state_dup(gres_step_state_t *gres_ss)
 {
 
 	int i;
-	gres_step_state_t *gres_ptr = (gres_step_state_t *) gres_data;
-	gres_step_state_t *new_gres_ptr;
+	gres_step_state_t *new_gres_ss;
 
-	xassert(gres_ptr);
-	new_gres_ptr = xmalloc(sizeof(gres_step_state_t));
-	new_gres_ptr->cpus_per_gres	= gres_ptr->cpus_per_gres;
-	new_gres_ptr->gres_per_step	= gres_ptr->gres_per_step;
-	new_gres_ptr->gres_per_node	= gres_ptr->gres_per_node;
-	new_gres_ptr->gres_per_socket	= gres_ptr->gres_per_socket;
-	new_gres_ptr->gres_per_task	= gres_ptr->gres_per_task;
-	new_gres_ptr->mem_per_gres	= gres_ptr->mem_per_gres;
-	new_gres_ptr->node_cnt		= gres_ptr->node_cnt;
-	new_gres_ptr->total_gres	= gres_ptr->total_gres;
+	xassert(gres_ss);
+	new_gres_ss = xmalloc(sizeof(gres_step_state_t));
+	new_gres_ss->cpus_per_gres	= gres_ss->cpus_per_gres;
+	new_gres_ss->gres_per_step	= gres_ss->gres_per_step;
+	new_gres_ss->gres_per_node	= gres_ss->gres_per_node;
+	new_gres_ss->gres_per_socket	= gres_ss->gres_per_socket;
+	new_gres_ss->gres_per_task	= gres_ss->gres_per_task;
+	new_gres_ss->mem_per_gres	= gres_ss->mem_per_gres;
+	new_gres_ss->node_cnt		= gres_ss->node_cnt;
+	new_gres_ss->total_gres	= gres_ss->total_gres;
 
-	if (gres_ptr->node_in_use)
-		new_gres_ptr->node_in_use = bit_copy(gres_ptr->node_in_use);
+	if (gres_ss->node_in_use)
+		new_gres_ss->node_in_use = bit_copy(gres_ss->node_in_use);
 
-	if (gres_ptr->gres_cnt_node_alloc) {
-		i = sizeof(uint64_t) * gres_ptr->node_cnt;
-		new_gres_ptr->gres_cnt_node_alloc = xmalloc(i);
-		memcpy(new_gres_ptr->gres_cnt_node_alloc,
-		       gres_ptr->gres_cnt_node_alloc, i);
+	if (gres_ss->gres_cnt_node_alloc) {
+		i = sizeof(uint64_t) * gres_ss->node_cnt;
+		new_gres_ss->gres_cnt_node_alloc = xmalloc(i);
+		memcpy(new_gres_ss->gres_cnt_node_alloc,
+		       gres_ss->gres_cnt_node_alloc, i);
 	}
-	if (gres_ptr->gres_bit_alloc) {
-		new_gres_ptr->gres_bit_alloc = xcalloc(gres_ptr->node_cnt,
+	if (gres_ss->gres_bit_alloc) {
+		new_gres_ss->gres_bit_alloc = xcalloc(gres_ss->node_cnt,
 						       sizeof(bitstr_t *));
-		for (i = 0; i < gres_ptr->node_cnt; i++) {
-			if (gres_ptr->gres_bit_alloc[i] == NULL)
+		for (i = 0; i < gres_ss->node_cnt; i++) {
+			if (gres_ss->gres_bit_alloc[i] == NULL)
 				continue;
-			new_gres_ptr->gres_bit_alloc[i] =
-				bit_copy(gres_ptr->gres_bit_alloc[i]);
+			new_gres_ss->gres_bit_alloc[i] =
+				bit_copy(gres_ss->gres_bit_alloc[i]);
 		}
 	}
-	return new_gres_ptr;
+	return new_gres_ss;
 }
 
-static void *_step_state_dup2(void *gres_data, int node_index)
+static void *_step_state_dup2(gres_step_state_t *gres_ss, int node_index)
 {
+	gres_step_state_t *new_gres_ss;
 
-	gres_step_state_t *gres_ptr = (gres_step_state_t *) gres_data;
-	gres_step_state_t *new_gres_ptr;
+	xassert(gres_ss);
+	new_gres_ss = xmalloc(sizeof(gres_step_state_t));
+	new_gres_ss->cpus_per_gres	= gres_ss->cpus_per_gres;
+	new_gres_ss->gres_per_step	= gres_ss->gres_per_step;
+	new_gres_ss->gres_per_node	= gres_ss->gres_per_node;
+	new_gres_ss->gres_per_socket	= gres_ss->gres_per_socket;
+	new_gres_ss->gres_per_task	= gres_ss->gres_per_task;
+	new_gres_ss->mem_per_gres	= gres_ss->mem_per_gres;
+	new_gres_ss->node_cnt		= 1;
+	new_gres_ss->total_gres	= gres_ss->total_gres;
 
-	xassert(gres_ptr);
-	new_gres_ptr = xmalloc(sizeof(gres_step_state_t));
-	new_gres_ptr->cpus_per_gres	= gres_ptr->cpus_per_gres;
-	new_gres_ptr->gres_per_step	= gres_ptr->gres_per_step;
-	new_gres_ptr->gres_per_node	= gres_ptr->gres_per_node;
-	new_gres_ptr->gres_per_socket	= gres_ptr->gres_per_socket;
-	new_gres_ptr->gres_per_task	= gres_ptr->gres_per_task;
-	new_gres_ptr->mem_per_gres	= gres_ptr->mem_per_gres;
-	new_gres_ptr->node_cnt		= 1;
-	new_gres_ptr->total_gres	= gres_ptr->total_gres;
+	if (gres_ss->node_in_use)
+		new_gres_ss->node_in_use = bit_copy(gres_ss->node_in_use);
 
-	if (gres_ptr->node_in_use)
-		new_gres_ptr->node_in_use = bit_copy(gres_ptr->node_in_use);
-
-	if (gres_ptr->gres_cnt_node_alloc) {
-		new_gres_ptr->gres_cnt_node_alloc = xmalloc(sizeof(uint64_t));
-		new_gres_ptr->gres_cnt_node_alloc[0] =
-			gres_ptr->gres_cnt_node_alloc[node_index];
+	if (gres_ss->gres_cnt_node_alloc) {
+		new_gres_ss->gres_cnt_node_alloc = xmalloc(sizeof(uint64_t));
+		new_gres_ss->gres_cnt_node_alloc[0] =
+			gres_ss->gres_cnt_node_alloc[node_index];
 	}
 
-	if ((node_index < gres_ptr->node_cnt) && gres_ptr->gres_bit_alloc &&
-	    gres_ptr->gres_bit_alloc[node_index]) {
-		new_gres_ptr->gres_bit_alloc = xmalloc(sizeof(bitstr_t *));
-		new_gres_ptr->gres_bit_alloc[0] =
-			bit_copy(gres_ptr->gres_bit_alloc[node_index]);
+	if ((node_index < gres_ss->node_cnt) && gres_ss->gres_bit_alloc &&
+	    gres_ss->gres_bit_alloc[node_index]) {
+		new_gres_ss->gres_bit_alloc = xmalloc(sizeof(bitstr_t *));
+		new_gres_ss->gres_bit_alloc[0] =
+			bit_copy(gres_ss->gres_bit_alloc[node_index]);
 	}
-	return new_gres_ptr;
+	return new_gres_ss;
 }
 
 /*
@@ -8882,7 +8879,7 @@ List gres_step_state_dup(List gres_list)
 List gres_step_state_extract(List gres_list, int node_index)
 {
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr, *new_gres_state;
+	gres_state_t *gres_state_step, *new_gres_state_step;
 	List new_gres_list = NULL;
 	void *new_gres_data;
 
@@ -8893,22 +8890,24 @@ List gres_step_state_extract(List gres_list, int node_index)
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+	while ((gres_state_step = (gres_state_t *) list_next(gres_iter))) {
 		if (node_index == -1)
-			new_gres_data = _step_state_dup(gres_ptr->gres_data);
+			new_gres_data = _step_state_dup(
+				gres_state_step->gres_data);
 		else {
-			new_gres_data = _step_state_dup2(gres_ptr->gres_data,
-							 node_index);
+			new_gres_data = _step_state_dup2(
+				gres_state_step->gres_data, node_index);
 		}
 		if (new_gres_list == NULL) {
 			new_gres_list = list_create(gres_step_list_delete);
 		}
-		new_gres_state = xmalloc(sizeof(gres_state_t));
-		new_gres_state->plugin_id = gres_ptr->plugin_id;
-		new_gres_state->gres_data = new_gres_data;
-		new_gres_state->gres_name = xstrdup(gres_ptr->gres_name);
-		new_gres_state->state_type = GRES_STATE_TYPE_STEP;
-		list_append(new_gres_list, new_gres_state);
+		new_gres_state_step = xmalloc(sizeof(gres_state_t));
+		new_gres_state_step->plugin_id = gres_state_step->plugin_id;
+		new_gres_state_step->gres_data = new_gres_data;
+		new_gres_state_step->gres_name =
+			xstrdup(gres_state_step->gres_name);
+		new_gres_state_step->state_type = GRES_STATE_TYPE_STEP;
+		list_append(new_gres_list, new_gres_state_step);
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -8930,8 +8929,8 @@ extern int gres_step_state_pack(List gres_list, buf_t *buffer,
 	uint32_t top_offset, tail_offset, magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0;
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr;
-	gres_step_state_t *gres_step_ptr;
+	gres_state_t *gres_state_step;
+	gres_step_state_t *gres_ss;
 
 	top_offset = get_buf_offset(buffer);
 	pack16(rec_cnt, buffer);	/* placeholder if data */
@@ -8943,33 +8942,33 @@ extern int gres_step_state_pack(List gres_list, buf_t *buffer,
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
+	while ((gres_state_step = (gres_state_t *) list_next(gres_iter))) {
+		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
 
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
-			pack32(gres_ptr->plugin_id, buffer);
-			pack16(gres_step_ptr->cpus_per_gres, buffer);
-			pack16(gres_step_ptr->flags, buffer);
-			pack64(gres_step_ptr->gres_per_step, buffer);
-			pack64(gres_step_ptr->gres_per_node, buffer);
-			pack64(gres_step_ptr->gres_per_socket, buffer);
-			pack64(gres_step_ptr->gres_per_task, buffer);
-			pack64(gres_step_ptr->mem_per_gres, buffer);
-			pack64(gres_step_ptr->total_gres, buffer);
-			pack32(gres_step_ptr->node_cnt, buffer);
-			pack_bit_str_hex(gres_step_ptr->node_in_use, buffer);
-			if (gres_step_ptr->gres_cnt_node_alloc) {
+			pack32(gres_state_step->plugin_id, buffer);
+			pack16(gres_ss->cpus_per_gres, buffer);
+			pack16(gres_ss->flags, buffer);
+			pack64(gres_ss->gres_per_step, buffer);
+			pack64(gres_ss->gres_per_node, buffer);
+			pack64(gres_ss->gres_per_socket, buffer);
+			pack64(gres_ss->gres_per_task, buffer);
+			pack64(gres_ss->mem_per_gres, buffer);
+			pack64(gres_ss->total_gres, buffer);
+			pack32(gres_ss->node_cnt, buffer);
+			pack_bit_str_hex(gres_ss->node_in_use, buffer);
+			if (gres_ss->gres_cnt_node_alloc) {
 				pack8((uint8_t) 1, buffer);
-				pack64_array(gres_step_ptr->gres_cnt_node_alloc,
-					     gres_step_ptr->node_cnt, buffer);
+				pack64_array(gres_ss->gres_cnt_node_alloc,
+					     gres_ss->node_cnt, buffer);
 			} else {
 				pack8((uint8_t) 0, buffer);
 			}
-			if (gres_step_ptr->gres_bit_alloc) {
+			if (gres_ss->gres_bit_alloc) {
 				pack8((uint8_t) 1, buffer);
-				for (i = 0; i < gres_step_ptr->node_cnt; i++)
-					pack_bit_str_hex(gres_step_ptr->
+				for (i = 0; i < gres_ss->node_cnt; i++)
+					pack_bit_str_hex(gres_ss->
 							 gres_bit_alloc[i],
 							 buffer);
 			} else {
@@ -9007,8 +9006,8 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 	uint32_t magic = 0, plugin_id = 0, uint32_tmp = 0;
 	uint16_t rec_cnt = 0;
 	uint8_t data_flag = 0;
-	gres_state_t *gres_ptr;
-	gres_step_state_t *gres_step_ptr = NULL;
+	gres_state_t *gres_state_step;
+	gres_step_state_t *gres_ss = NULL;
 	bool locked = false;
 
 	safe_unpack16(&rec_cnt, buffer);
@@ -9032,32 +9031,32 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
 			safe_unpack32(&plugin_id, buffer);
-			gres_step_ptr = xmalloc(sizeof(gres_step_state_t));
-			safe_unpack16(&gres_step_ptr->cpus_per_gres, buffer);
-			safe_unpack16(&gres_step_ptr->flags, buffer);
-			safe_unpack64(&gres_step_ptr->gres_per_step, buffer);
-			safe_unpack64(&gres_step_ptr->gres_per_node, buffer);
-			safe_unpack64(&gres_step_ptr->gres_per_socket, buffer);
-			safe_unpack64(&gres_step_ptr->gres_per_task, buffer);
-			safe_unpack64(&gres_step_ptr->mem_per_gres, buffer);
-			safe_unpack64(&gres_step_ptr->total_gres, buffer);
-			safe_unpack32(&gres_step_ptr->node_cnt, buffer);
-			if (gres_step_ptr->node_cnt > NO_VAL)
+			gres_ss = xmalloc(sizeof(gres_step_state_t));
+			safe_unpack16(&gres_ss->cpus_per_gres, buffer);
+			safe_unpack16(&gres_ss->flags, buffer);
+			safe_unpack64(&gres_ss->gres_per_step, buffer);
+			safe_unpack64(&gres_ss->gres_per_node, buffer);
+			safe_unpack64(&gres_ss->gres_per_socket, buffer);
+			safe_unpack64(&gres_ss->gres_per_task, buffer);
+			safe_unpack64(&gres_ss->mem_per_gres, buffer);
+			safe_unpack64(&gres_ss->total_gres, buffer);
+			safe_unpack32(&gres_ss->node_cnt, buffer);
+			if (gres_ss->node_cnt > NO_VAL)
 				goto unpack_error;
-			unpack_bit_str_hex(&gres_step_ptr->node_in_use, buffer);
+			unpack_bit_str_hex(&gres_ss->node_in_use, buffer);
 			safe_unpack8(&data_flag, buffer);
 			if (data_flag) {
 				safe_unpack64_array(
-					&gres_step_ptr->gres_cnt_node_alloc,
+					&gres_ss->gres_cnt_node_alloc,
 					&uint32_tmp, buffer);
 			}
 			safe_unpack8(&data_flag, buffer);
 			if (data_flag) {
-				gres_step_ptr->gres_bit_alloc =
-					xcalloc(gres_step_ptr->node_cnt,
+				gres_ss->gres_bit_alloc =
+					xcalloc(gres_ss->node_cnt,
 						sizeof(bitstr_t *));
-				for (i = 0; i < gres_step_ptr->node_cnt; i++) {
-					unpack_bit_str_hex(&gres_step_ptr->
+				for (i = 0; i < gres_ss->node_cnt; i++) {
+					unpack_bit_str_hex(&gres_ss->
 							   gres_bit_alloc[i],
 							   buffer);
 				}
@@ -9079,25 +9078,25 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 			 */
 			info("%s: no plugin configured to unpack data type %u from %ps",
 			     __func__, plugin_id, step_id);
-			_step_state_delete(gres_step_ptr);
-			gres_step_ptr = NULL;
+			_step_state_delete(gres_ss);
+			gres_ss = NULL;
 			continue;
 		}
-		gres_ptr = xmalloc(sizeof(gres_state_t));
-		gres_ptr->plugin_id = gres_context[i].plugin_id;
-		gres_ptr->gres_data = gres_step_ptr;
-		gres_ptr->gres_name = xstrdup(gres_context[i].gres_name);
-		gres_ptr->state_type = GRES_STATE_TYPE_STEP;
-		gres_step_ptr = NULL;
-		list_append(*gres_list, gres_ptr);
+		gres_state_step = xmalloc(sizeof(gres_state_t));
+		gres_state_step->plugin_id = gres_context[i].plugin_id;
+		gres_state_step->gres_data = gres_ss;
+		gres_state_step->gres_name = xstrdup(gres_context[i].gres_name);
+		gres_state_step->state_type = GRES_STATE_TYPE_STEP;
+		gres_ss = NULL;
+		list_append(*gres_list, gres_state_step);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
 
 unpack_error:
 	error("%s: unpack error from %ps", __func__, step_id);
-	if (gres_step_ptr)
-		_step_state_delete(gres_step_ptr);
+	if (gres_ss)
+		_step_state_delete(gres_ss);
 	if (locked)
 		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
@@ -9111,8 +9110,8 @@ unpack_error:
 extern uint64_t gres_step_count(List step_gres_list, char *gres_name)
 {
 	uint64_t gres_cnt = NO_VAL64;
-	gres_state_t *gres_ptr = NULL;
-	gres_step_state_t *gres_step_ptr = NULL;
+	gres_state_t *gres_state_step = NULL;
+	gres_step_state_t *gres_ss = NULL;
 	ListIterator gres_iter;
 	int i;
 
@@ -9124,17 +9123,19 @@ extern uint64_t gres_step_count(List step_gres_list, char *gres_name)
 		if (xstrcmp(gres_context[i].gres_name, gres_name))
 			continue;
 		gres_iter = list_iterator_create(step_gres_list);
-		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
-			if (gres_ptr->plugin_id != gres_context[i].plugin_id)
+		while ((gres_state_step = list_next(gres_iter))) {
+			if (gres_state_step->plugin_id !=
+			    gres_context[i].plugin_id)
 				continue;
-			gres_step_ptr = (gres_step_state_t*)gres_ptr->gres_data;
+			gres_ss =
+				(gres_step_state_t*) gres_state_step->gres_data;
 			/* gres_cnt_node_alloc has one element in slurmstepd */
 			if (gres_cnt == NO_VAL64)
 				gres_cnt =
-					gres_step_ptr->gres_cnt_node_alloc[0];
+					gres_ss->gres_cnt_node_alloc[0];
 			else
 				gres_cnt +=
-					gres_step_ptr->gres_cnt_node_alloc[0];
+					gres_ss->gres_cnt_node_alloc[0];
 		}
 		list_iterator_destroy(gres_iter);
 		break;
@@ -9334,8 +9335,8 @@ extern void gres_g_step_hardware_init(List step_gres_list,
 {
 	int i;
 	ListIterator iter;
-	gres_state_t *gres_ptr;
-	gres_step_state_t *gres_step_ptr;
+	gres_state_t *gres_state_step;
+	gres_step_state_t *gres_ss;
 	bitstr_t *devices;
 
 	if (!step_gres_list)
@@ -9348,20 +9349,21 @@ extern void gres_g_step_hardware_init(List step_gres_list,
 			continue;
 
 		iter = list_iterator_create(step_gres_list);
-		while ((gres_ptr = list_next(iter))) {
-			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
+		while ((gres_state_step = list_next(iter))) {
+			if (gres_state_step->plugin_id ==
+			    gres_context[i].plugin_id)
 				break;
 		}
 		list_iterator_destroy(iter);
-		if (!gres_ptr || !gres_ptr->gres_data)
+		if (!gres_state_step || !gres_state_step->gres_data)
 			continue;
-		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
-		if ((gres_step_ptr->node_cnt != 1) ||
-		    !gres_step_ptr->gres_bit_alloc ||
-		    !gres_step_ptr->gres_bit_alloc[0])
+		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
+		if ((gres_ss->node_cnt != 1) ||
+		    !gres_ss->gres_bit_alloc ||
+		    !gres_ss->gres_bit_alloc[0])
 			continue;
 
-		devices = gres_step_ptr->gres_bit_alloc[0];
+		devices = gres_ss->gres_bit_alloc[0];
 		if (settings)
 			debug2("settings: %s", settings);
 		if (devices) {
@@ -9476,29 +9478,29 @@ end:
 	return usable_gres;
 }
 
-static void _accumulate_step_gres_alloc(gres_state_t *gres_ptr,
+static void _accumulate_step_gres_alloc(gres_state_t *gres_state_step,
 				        bitstr_t **gres_bit_alloc,
 				        uint64_t *gres_cnt)
 {
-	gres_step_state_t *gres_step_ptr =
-		(gres_step_state_t *)gres_ptr->gres_data;
+	gres_step_state_t *gres_ss =
+		(gres_step_state_t *)gres_state_step->gres_data;
 
 	/* Since this should only run on the node node_cnt should always be 1 */
-	if (gres_step_ptr->node_cnt != 1) {
+	if (gres_ss->node_cnt != 1) {
 		error("gres_step_state_t node count not 1 while on node. This should never happen");
 		return;
 	}
 
-	if (gres_step_ptr->gres_bit_alloc &&
-	    gres_step_ptr->gres_bit_alloc[0]) {
+	if (gres_ss->gres_bit_alloc &&
+	    gres_ss->gres_bit_alloc[0]) {
 		if (!*gres_bit_alloc) {
 			*gres_bit_alloc = bit_alloc(
-				bit_size(gres_step_ptr->gres_bit_alloc[0]));
+				bit_size(gres_ss->gres_bit_alloc[0]));
 		}
-		bit_or(*gres_bit_alloc, gres_step_ptr->gres_bit_alloc[0]);
+		bit_or(*gres_bit_alloc, gres_ss->gres_bit_alloc[0]);
 	}
-	if (gres_cnt && gres_step_ptr->gres_cnt_node_alloc)
-		*gres_cnt += gres_step_ptr->gres_cnt_node_alloc[0];
+	if (gres_cnt && gres_ss->gres_cnt_node_alloc)
+		*gres_cnt += gres_ss->gres_cnt_node_alloc[0];
 }
 
 /*
@@ -9665,7 +9667,7 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 {
 	int i;
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr = NULL;
+	gres_state_t *gres_state_step = NULL;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
 
@@ -9678,11 +9680,11 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 		if (!step_gres_list)
 			continue;
 		gres_iter = list_iterator_create(step_gres_list);
-		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
-			if (gres_ptr->plugin_id != gres_ctx.plugin_id)
+		while ((gres_state_step = list_next(gres_iter))) {
+			if (gres_state_step->plugin_id != gres_ctx.plugin_id)
 				continue;
 			_accumulate_step_gres_alloc(
-				gres_ptr, &gres_bit_alloc, &gres_cnt);
+				gres_state_step, &gres_bit_alloc, &gres_cnt);
 		}
 		list_iterator_destroy(gres_iter);
 		(*(gres_ctx.ops.step_set_env))(job_env_ptr, gres_bit_alloc,
@@ -9710,7 +9712,7 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 {
 	int i;
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr = NULL;
+	gres_state_t *gres_state_step = NULL;
 	bitstr_t *usable_gres = NULL;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
@@ -9729,11 +9731,11 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 
 
 		gres_iter = list_iterator_create(step_gres_list);
-		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
-			if (gres_ptr->plugin_id != gres_ctx.plugin_id)
+		while ((gres_state_step = list_next(gres_iter))) {
+			if (gres_state_step->plugin_id != gres_ctx.plugin_id)
 				continue;
 			_accumulate_step_gres_alloc(
-				gres_ptr, &gres_bit_alloc, &gres_cnt);
+				gres_state_step, &gres_bit_alloc, &gres_cnt);
 		}
 		if (_get_usable_gres(gres_ctx.gres_name, i, local_proc_id, 0,
 				     &tres_bind, &usable_gres, gres_bit_alloc,
@@ -9751,46 +9753,46 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-static void _step_state_log(void *gres_data, slurm_step_id_t *step_id,
+static void _step_state_log(gres_step_state_t *gres_ss,
+			    slurm_step_id_t *step_id,
 			    char *gres_name)
 {
-	gres_step_state_t *gres_ptr = (gres_step_state_t *) gres_data;
 	char tmp_str[128];
 	int i;
 
-	xassert(gres_ptr);
+	xassert(gres_ss);
 	info("gres:%s type:%s(%u) %ps flags:%s state", gres_name,
-	     gres_ptr->type_name, gres_ptr->type_id, step_id,
-	     _gres_flags_str(gres_ptr->flags));
-	if (gres_ptr->cpus_per_gres)
-		info("  cpus_per_gres:%u", gres_ptr->cpus_per_gres);
-	if (gres_ptr->gres_per_step)
-		info("  gres_per_step:%"PRIu64, gres_ptr->gres_per_step);
-	if (gres_ptr->gres_per_node) {
+	     gres_ss->type_name, gres_ss->type_id, step_id,
+	     _gres_flags_str(gres_ss->flags));
+	if (gres_ss->cpus_per_gres)
+		info("  cpus_per_gres:%u", gres_ss->cpus_per_gres);
+	if (gres_ss->gres_per_step)
+		info("  gres_per_step:%"PRIu64, gres_ss->gres_per_step);
+	if (gres_ss->gres_per_node) {
 		info("  gres_per_node:%"PRIu64" node_cnt:%u",
-		     gres_ptr->gres_per_node, gres_ptr->node_cnt);
+		     gres_ss->gres_per_node, gres_ss->node_cnt);
 	}
-	if (gres_ptr->gres_per_socket)
-		info("  gres_per_socket:%"PRIu64, gres_ptr->gres_per_socket);
-	if (gres_ptr->gres_per_task)
-		info("  gres_per_task:%"PRIu64, gres_ptr->gres_per_task);
-	if (gres_ptr->mem_per_gres)
-		info("  mem_per_gres:%"PRIu64, gres_ptr->mem_per_gres);
+	if (gres_ss->gres_per_socket)
+		info("  gres_per_socket:%"PRIu64, gres_ss->gres_per_socket);
+	if (gres_ss->gres_per_task)
+		info("  gres_per_task:%"PRIu64, gres_ss->gres_per_task);
+	if (gres_ss->mem_per_gres)
+		info("  mem_per_gres:%"PRIu64, gres_ss->mem_per_gres);
 
-	if (gres_ptr->node_in_use == NULL)
+	if (gres_ss->node_in_use == NULL)
 		info("  node_in_use:NULL");
-	else if (gres_ptr->gres_bit_alloc == NULL)
+	else if (gres_ss->gres_bit_alloc == NULL)
 		info("  gres_bit_alloc:NULL");
 	else {
-		for (i = 0; i < gres_ptr->node_cnt; i++) {
-			if (!bit_test(gres_ptr->node_in_use, i))
+		for (i = 0; i < gres_ss->node_cnt; i++) {
+			if (!bit_test(gres_ss->node_in_use, i))
 				continue;
-			if (gres_ptr->gres_bit_alloc[i]) {
+			if (gres_ss->gres_bit_alloc[i]) {
 				bit_fmt(tmp_str, sizeof(tmp_str),
-					gres_ptr->gres_bit_alloc[i]);
+					gres_ss->gres_bit_alloc[i]);
 				info("  gres_bit_alloc[%d]:%s of %d", i,
 				     tmp_str,
-				     (int)bit_size(gres_ptr->gres_bit_alloc[i]));
+				     (int)bit_size(gres_ss->gres_bit_alloc[i]));
 			} else
 				info("  gres_bit_alloc[%d]:NULL", i);
 		}
@@ -9807,7 +9809,7 @@ extern void gres_step_state_log(List gres_list, uint32_t job_id,
 				uint32_t step_id)
 {
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr;
+	gres_state_t *gres_state_step;
 	slurm_step_id_t tmp_step_id;
 
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
@@ -9820,9 +9822,9 @@ extern void gres_step_state_log(List gres_list, uint32_t job_id,
 	tmp_step_id.step_id = step_id;
 
 	gres_iter = list_iterator_create(gres_list);
-	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		_step_state_log(gres_ptr->gres_data, &tmp_step_id,
-				gres_ptr->gres_name);
+	while ((gres_state_step = (gres_state_t *) list_next(gres_iter))) {
+		_step_state_log(gres_state_step->gres_data, &tmp_step_id,
+				gres_state_step->gres_name);
 	}
 	list_iterator_destroy(gres_iter);
 }
@@ -9856,8 +9858,8 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 {
 	uint64_t core_cnt, tmp_cnt;
 	ListIterator step_gres_iter;
-	gres_state_t *step_gres_ptr;
-	gres_step_state_t *step_data_ptr = NULL;
+	gres_state_t *gres_state_step;
+	gres_step_state_t *gres_ss = NULL;
 	slurm_step_id_t tmp_step_id;
 	foreach_gres_cnt_t foreach_gres_cnt;
 
@@ -9882,13 +9884,13 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 
 	slurm_mutex_lock(&gres_context_lock);
 	step_gres_iter = list_iterator_create(step_gres_list);
-	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
+	while ((gres_state_step = (gres_state_t *) list_next(step_gres_iter))) {
 		gres_key_t job_search_key;
 
-		step_data_ptr = (gres_step_state_t *)step_gres_ptr->gres_data;
-		job_search_key.plugin_id = step_gres_ptr->plugin_id;
-		if (step_data_ptr->type_name)
-			job_search_key.type_id = step_data_ptr->type_id;
+		gres_ss = (gres_step_state_t *)gres_state_step->gres_data;
+		job_search_key.plugin_id = gres_state_step->plugin_id;
+		if (gres_ss->type_name)
+			job_search_key.type_id = gres_ss->type_id;
 		else
 			job_search_key.type_id = NO_VAL;
 
@@ -9902,12 +9904,12 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 
 		if (foreach_gres_cnt.gres_cnt == INFINITE64) {
 			log_flag(GRES, "%s: Job lacks GRES (%s:%s) required by the step",
-				 __func__, step_gres_ptr->gres_name,
-				 step_data_ptr->type_name);
+				 __func__, gres_state_step->gres_name,
+				 gres_ss->type_name);
 			core_cnt = 0;
 			break;
 		}
-		tmp_cnt = _step_test(step_data_ptr, first_step_node,
+		tmp_cnt = _step_test(gres_ss, first_step_node,
 				     cpus_per_task, max_rem_nodes,
 				     ignore_alloc, foreach_gres_cnt.gres_cnt,
 				     test_mem, node_offset,
@@ -10217,7 +10219,7 @@ extern int gres_get_job_info(List job_gres_list, char *gres_name,
 }
 
 /* Get generic GRES data types here. Call the plugin for others */
-static int _get_step_info(int gres_inx, gres_step_state_t *step_gres_data,
+static int _get_step_info(int gres_inx, gres_step_state_t *gres_ss,
 			  uint32_t node_inx, enum gres_step_data_type data_type,
 			  void *data)
 {
@@ -10225,21 +10227,21 @@ static int _get_step_info(int gres_inx, gres_step_state_t *step_gres_data,
 	bitstr_t **bit_data = (bitstr_t **) data;
 	int rc = SLURM_SUCCESS;
 
-	if (!step_gres_data || !data)
+	if (!gres_ss || !data)
 		return EINVAL;
-	if (node_inx >= step_gres_data->node_cnt)
+	if (node_inx >= gres_ss->node_cnt)
 		return ESLURM_INVALID_NODE_COUNT;
 	if (data_type == GRES_STEP_DATA_COUNT) {
-		*u64_data = step_gres_data->gres_per_node;
+		*u64_data = gres_ss->gres_per_node;
 	} else if (data_type == GRES_STEP_DATA_BITMAP) {
-		if (step_gres_data->gres_bit_alloc)
-			*bit_data = step_gres_data->gres_bit_alloc[node_inx];
+		if (gres_ss->gres_bit_alloc)
+			*bit_data = gres_ss->gres_bit_alloc[node_inx];
 		else
 			*bit_data = NULL;
 	} else {
 		/* Support here for plugin-specific data types */
 		rc = (*(gres_context[gres_inx].ops.step_info))
-			(step_gres_data, node_inx, data_type, data);
+			(gres_ss, node_inx, data_type, data);
 	}
 
 	return rc;
@@ -10264,8 +10266,8 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 	int i, rc = ESLURM_INVALID_GRES;
 	uint32_t plugin_id;
 	ListIterator step_gres_iter;
-	gres_state_t *step_gres_ptr;
-	gres_step_state_t *step_gres_data;
+	gres_state_t *gres_state_step;
+	gres_step_state_t *gres_ss;
 
 	if (data == NULL)
 		return EINVAL;
@@ -10277,13 +10279,13 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 
 	slurm_mutex_lock(&gres_context_lock);
 	step_gres_iter = list_iterator_create(step_gres_list);
-	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
+	while ((gres_state_step = (gres_state_t *) list_next(step_gres_iter))) {
 		for (i = 0; i < gres_context_cnt; i++) {
-			if (step_gres_ptr->plugin_id != plugin_id)
+			if (gres_state_step->plugin_id != plugin_id)
 				continue;
-			step_gres_data = (gres_step_state_t *)
-				step_gres_ptr->gres_data;
-			rc = _get_step_info(i, step_gres_data, node_inx,
+			gres_ss = (gres_step_state_t *)
+				gres_state_step->gres_data;
+			rc = _get_step_info(i, gres_ss, node_inx,
 					    data_type, data);
 			break;
 		}
