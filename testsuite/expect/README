@@ -669,6 +669,7 @@ test21.40  Test association plus partition/job QoS unique node limits enforced
 test21.41  sacctmgr update job set newwckey=
 test21.42  Test if headers returned by sacctmgr show can be used as format= specifiers
 test21.43  Test usagefactor
+test21.44  Test sacctmgr show assoc where qos=
 
 test22.#   Testing of sreport commands and options.
 	   These also test the sacctmgr archive dump/load functions.

@@ -1,0 +1,518 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+# 	   sacctmgr filter where qos=
+############################################################################
+# Copyright (C) 2021 SchedMD LLC.
+# Written by Albert Gil <albert.gil@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals_accounting
+
+set prefix_qos  "${test_name}_qos"
+set prefix_acct "${test_name}_acct"
+set prefix_user "${test_name}_user"
+
+set qos_1 "${prefix_qos}_1"
+set qos_2 "${prefix_qos}_2"
+set qos_3 "${prefix_qos}_3"
+
+
+set acct   "${prefix_acct}"
+set acct_a "${prefix_acct}_a"
+set acct_b "${prefix_acct}_b"
+set acct_c "${prefix_acct}_c"
+set acct_cc "${prefix_acct}_cc"
+set acct_d "${prefix_acct}_d"
+
+set user_w "${prefix_user}_w"
+set user_x "${prefix_user}_x"
+set user_y "${prefix_user}_y"
+set user_z "${prefix_user}_z"
+
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without AccountStorageType=slurmdbd"
+}
+if {[string compare [get_admin_level] "Administrator"]} {
+	skip "This test can't be run without being an Accounting administrator"
+}
+
+proc cleanup {} {
+	global sacctmgr acct
+	global qos_1 qos_2 qos_3
+	global user_w user_x user_y user_z
+
+	run_command -nolog "$sacctmgr -i delete user ${user_w},${user_x},${user_y},${user_z}"
+	run_command -nolog "$sacctmgr -i delete account ${acct}"
+	run_command -nolog "$sacctmgr -i delete qos ${qos_1},${qos_2},${qos_3}"
+}
+
+#
+# Setup
+#
+# acct_a and users_w: don't set any qos (inherit same from parent)
+# acct_b and users_x: remove -qos from parent
+# acct_c and users_y: add +qos_2 or +qos_3 to parent's
+# acct_cc and users_y: add +qos_3 to parent's
+# acct_d and users_z: set qos=qos_2 or qos=qos_3 (overwrite parent's)
+#
+# Acct      User     QoS-Own  QoS-Incr   QoSes
+# --------------------------------------------
+# acct               qos_1               qos_1
+#   acct    user_w                       qos_1
+#   acct    user_x            =-qos_1
+#   acct    user_y            =+qos_2    qos_1,2
+#   acct    user_z   qos_2               qos_2
+#
+#   acct_a                               qos_1
+#   acct_a  user_wa                      qos_1
+#   acct_a  user_xa           =-qos_1
+#   acct_a  user_ya           =+qos_3    qos_1,3
+#   acct_a  user_za  qos_3               qos_3
+#
+#   acct_b                    =-qos_1
+#   acct_b  user_wb
+#   acct_b  user_xb           =-qos_1
+#   acct_b  user_yb           =+qos_3    qos_3
+#   acct_b  user_zb  qos_3               qos_3
+#
+#   acct_c                    =+qos_2    qos_1,2
+#   acct_c  user_wc                      qos_1,2
+#   acct_c  user_xc           =-qos_2    qos_1
+#   acct_c  user_yc           =+qos_3    qos_1,2,3
+#   acct_c  user_zc  qos_3               qos_3
+#
+#    acct_cc                             qos_1,2
+#    acct_cc user_wcc                    qos_1,2
+#    acct_cc user_xcc         =-qos_2    qos_1
+#    acct_cc user_ycc         =+qos_3    qos_1,2,3
+#    acct_cc user_zcc qos_3              qos_3
+#
+#   acct_d           qos_2               qos_2
+#   acct_d  user_wd                      qos_2
+#   acct_d  user_xd           =-qos_2
+#   acct_d  user_yd           =+qos_3    qos_2,3
+#   acct_d  user_zd  qos_3               qos_3
+#
+#
+cleanup
+run_command -fail "$sacctmgr -i create qos ${qos_1},${qos_2},${qos_3}"
+
+run_command -fail "$sacctmgr -i create account ${acct}                qos=${qos_1}"
+run_command -fail "$sacctmgr -i create user ${user_w} account=${acct}"
+run_command -fail "$sacctmgr -i create user ${user_x} account=${acct} qos=-${qos_1}"
+run_command -fail "$sacctmgr -i create user ${user_y} account=${acct} qos=+${qos_2}"
+run_command -fail "$sacctmgr -i create user ${user_z} account=${acct} qos=${qos_2}"
+
+run_command -fail "$sacctmgr -i create account ${acct_a} parent=${acct}"
+run_command -fail "$sacctmgr -i create user ${user_w} account=${acct_a}"
+run_command -fail "$sacctmgr -i create user ${user_x} account=${acct_a} qos=-${qos_1}"
+run_command -fail "$sacctmgr -i create user ${user_y} account=${acct_a} qos=+${qos_3}"
+run_command -fail "$sacctmgr -i create user ${user_z} account=${acct_a} qos=${qos_3}"
+
+run_command -fail "$sacctmgr -i create account ${acct_b} parent=${acct} qos=-${qos_1}"
+run_command -fail "$sacctmgr -i create user ${user_w} account=${acct_b}"
+run_command -fail "$sacctmgr -i create user ${user_x} account=${acct_b} qos=-${qos_1}"
+run_command -fail "$sacctmgr -i create user ${user_y} account=${acct_b} qos=+${qos_3}"
+run_command -fail "$sacctmgr -i create user ${user_z} account=${acct_b} qos=${qos_3}"
+
+run_command -fail "$sacctmgr -i create account ${acct_c} parent=${acct} qos=+${qos_2}"
+run_command -fail "$sacctmgr -i create user ${user_w} account=${acct_c}"
+run_command -fail "$sacctmgr -i create user ${user_x} account=${acct_c} qos=-${qos_2}"
+run_command -fail "$sacctmgr -i create user ${user_y} account=${acct_c} qos=+${qos_3}"
+run_command -fail "$sacctmgr -i create user ${user_z} account=${acct_c} qos=${qos_3}"
+
+run_command -fail "$sacctmgr -i create account ${acct_cc} parent=${acct_c}"
+run_command -fail "$sacctmgr -i create user ${user_w} account=${acct_cc}"
+run_command -fail "$sacctmgr -i create user ${user_x} account=${acct_cc} qos=-${qos_2}"
+run_command -fail "$sacctmgr -i create user ${user_y} account=${acct_cc} qos=+${qos_3}"
+run_command -fail "$sacctmgr -i create user ${user_z} account=${acct_cc} qos=${qos_3}"
+
+run_command -fail "$sacctmgr -i create account ${acct_d} parent=${acct} qos=${qos_2}"
+run_command -fail "$sacctmgr -i create user ${user_w} account=${acct_d}"
+run_command -fail "$sacctmgr -i create user ${user_x} account=${acct_d} qos=-${qos_2}"
+run_command -fail "$sacctmgr -i create user ${user_y} account=${acct_d} qos=+${qos_3}"
+run_command -fail "$sacctmgr -i create user ${user_z} account=${acct_d} qos=${qos_3}"
+
+#
+# Verify Setup
+#
+set output [run_command_output -fail "$sacctmgr -p show assoc tree format=account,user,qos,parentname"]
+
+# Verify accounts
+subtest {[regexp "${acct}\\|\\|${qos_1}\\|"            $output]} "Verify QOS of {${acct}}"
+subtest {[regexp "${acct_a}\\|\\|${qos_1}\\|"          $output]} "Verify QOS of {${acct_a}}"
+subtest {[regexp "${acct_b}\\|\\|\\|"                  $output]} "Verify QOS of {${acct_b}}"
+subtest {[regexp "${acct_c}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify QOS of {${acct_c}}"
+subtest {[regexp "${acct_cc}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify QOS of {${acct_cc}}"
+subtest {[regexp "${acct_d}\\|\\|${qos_2}\\|"          $output]} "Verify QOS of {${acct_d}}"
+# Verify users in main acct
+subtest {[regexp "${acct}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify QOS of {${user_w}} in account {${acct}}"
+subtest {[regexp "${acct}\\|${user_x}\\|\\|"                  $output]} "Verify QOS of {${user_x}} in account {${acct}}"
+subtest {[regexp "${acct}\\|${user_y}\\|${qos_1},${qos_2}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct}}"
+subtest {[regexp "${acct}\\|${user_z}\\|${qos_2}\\|"          $output]} "Verify QOS of {${user_z}} in account {${acct}}"
+# Verify users in acct_a
+subtest {[regexp "${acct_a}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify QOS of {${user_w}} in account {${acct_a}}"
+subtest {[regexp "${acct_a}\\|${user_x}\\|\\|"                  $output]} "Verify QOS of {${user_x}} in account {${acct_a}}"
+subtest {[regexp "${acct_a}\\|${user_y}\\|${qos_1},${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_a}}"
+subtest {[regexp "${acct_a}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify QOS of {${user_z}} in account {${acct_a}}"
+# Verify users in acct_b
+subtest {[regexp "${acct_b}\\|${user_w}\\|\\|"         $output]} "Verify QOS of {${user_w}} in account {${acct_b}}"
+subtest {[regexp "${acct_b}\\|${user_x}\\|\\|"         $output]} "Verify QOS of {${user_x}} in account {${acct_b}}"
+subtest {[regexp "${acct_b}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_b}}"
+subtest {[regexp "${acct_b}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_z}} in account {${acct_b}}"
+# Verify users in acct_c
+subtest {[regexp "${acct_c}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify QOS of {${user_w}} in account {${acct_c}}"
+subtest {[regexp "${acct_c}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify QOS of {${user_x}} in account {${acct_c}}"
+subtest {[regexp "${acct_c}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_c}}"
+subtest {[regexp "${acct_c}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify QOS of {${user_z}} in account {${acct_c}}"
+# Verify users in acct_cc
+subtest {[regexp "${acct_cc}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify QOS of {${user_w}} in account {${acct_cc}}"
+subtest {[regexp "${acct_cc}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify QOS of {${user_x}} in account {${acct_cc}}"
+subtest {[regexp "${acct_cc}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_cc}}"
+subtest {[regexp "${acct_cc}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify QOS of {${user_z}} in account {${acct_cc}}"
+# Verify users in acct_d
+subtest {[regexp "${acct_d}\\|${user_w}\\|${qos_2}\\|"          $output]} "Verify QOS of {${user_w}} in account {${acct_d}}"
+subtest {[regexp "${acct_d}\\|${user_x}\\|\\|"                  $output]} "Verify QOS of {${user_x}} in account {${acct_d}}"
+subtest {[regexp "${acct_d}\\|${user_y}\\|${qos_2},${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_d}}"
+subtest {[regexp "${acct_d}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify QOS of {${user_z}} in account {${acct_d}}"
+
+log_info "Setup:\n${output}"
+
+#
+# Verify WOPL
+#
+set output [run_command_output -fail "$sacctmgr -p show assoc tree format=account,user,qos,parentname wopl"]
+
+# Verify accounts
+subtest {[regexp "${acct}\\|\\|${qos_1}\\|"   $output]} "Verify QOS of {${acct}}   WOPL"
+subtest {[regexp "${acct_a}\\|\\|\\|"         $output]} "Verify QOS of {${acct_a}} WOPL"
+subtest {[regexp "${acct_b}\\|\\|\\|"         $output]} "Verify QOS of {${acct_b}} WOPL"
+subtest {[regexp "${acct_c}\\|\\|${qos_2}\\|" $output]} "Verify QOS of {${acct_c}} WOPL"
+subtest {[regexp "${acct_cc}\\|\\|\\|" $output]} "Verify QOS of {${acct_cc}} WOPL"
+subtest {[regexp "${acct_d}\\|\\|${qos_2}\\|" $output]} "Verify QOS of {${acct_d}} WOPL"
+# Verify users in main acct
+subtest {[regexp "${acct}\\|${user_w}\\|\\|"         $output]} "Verify QOS of {${user_w}} in account {${acct}} WOPL"
+subtest {[regexp "${acct}\\|${user_x}\\|\\|"         $output]} "Verify QOS of {${user_x}} in account {${acct}} WOPL"
+subtest {[regexp "${acct}\\|${user_y}\\|${qos_2}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct}} WOPL"
+subtest {[regexp "${acct}\\|${user_z}\\|${qos_2}\\|" $output]} "Verify QOS of {${user_z}} in account {${acct}} WOPL"
+# Verify users in acct_a
+subtest {[regexp "${acct_a}\\|${user_w}\\|\\|"         $output]} "Verify QOS of {${user_w}} in account {${acct_a}} WOPL"
+subtest {[regexp "${acct_a}\\|${user_x}\\|\\|"         $output]} "Verify QOS of {${user_x}} in account {${acct_a}} WOPL"
+subtest {[regexp "${acct_a}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_a}} WOPL"
+subtest {[regexp "${acct_a}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_z}} in account {${acct_a}} WOPL"
+# Verify users in acct_b
+subtest {[regexp "${acct_b}\\|${user_w}\\|\\|"         $output]} "Verify QOS of {${user_w}} in account {${acct_b}} WOPL"
+subtest {[regexp "${acct_b}\\|${user_x}\\|\\|"         $output]} "Verify QOS of {${user_x}} in account {${acct_b}} WOPL"
+subtest {[regexp "${acct_b}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_b}} WOPL"
+subtest {[regexp "${acct_b}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_z}} in account {${acct_b}} WOPL"
+# Verify users in acct_c
+subtest {[regexp "${acct_c}\\|${user_w}\\|\\|"         $output]} "Verify QOS of {${user_w}} in account {${acct_c}} WOPL"
+subtest {[regexp "${acct_c}\\|${user_x}\\|\\|"         $output]} "Verify QOS of {${user_x}} in account {${acct_c}} WOPL"
+subtest {[regexp "${acct_c}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_c}} WOPL"
+subtest {[regexp "${acct_c}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_z}} in account {${acct_c}} WOPL"
+# Verify users in acct_cc
+subtest {[regexp "${acct_cc}\\|${user_w}\\|\\|"         $output]} "Verify QOS of {${user_w}} in account {${acct_cc}} WOPL"
+subtest {[regexp "${acct_cc}\\|${user_x}\\|\\|"         $output]} "Verify QOS of {${user_x}} in account {${acct_cc}} WOPL"
+subtest {[regexp "${acct_cc}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_cc}} WOPL"
+subtest {[regexp "${acct_cc}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_z}} in account {${acct_cc}} WOPL"
+# Verify users in acct_d
+subtest {[regexp "${acct_d}\\|${user_w}\\|\\|"         $output]} "Verify QOS of {${user_w}} in account {${acct_d}} WOPL"
+subtest {[regexp "${acct_d}\\|${user_x}\\|\\|"         $output]} "Verify QOS of {${user_x}} in account {${acct_d}} WOPL"
+subtest {[regexp "${acct_d}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_d}} WOPL"
+subtest {[regexp "${acct_d}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_z}} in account {${acct_d}} WOPL"
+
+log_info "Setup WOPL:\n${output}"
+
+#
+# Verify fitering accounts
+#
+set output [run_command_output -fail "$sacctmgr -p show assoc tree format=account,user,qos,parentname where user=''"]
+
+# Verify accounts
+subtest {[regexp "${acct}\\|\\|${qos_1}\\|"            $output]} "Verify {${acct}}   is shown with {user=''}"
+subtest {[regexp "${acct_a}\\|\\|${qos_1}\\|"          $output]} "Verify {${acct_a}} is shown with {user=''}"
+subtest {[regexp "${acct_b}\\|\\|\\|"                  $output]} "Verify {${acct_b}} is shown with {user=''}"
+subtest {[regexp "${acct_c}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_c}} is shown with {user=''}"
+subtest {[regexp "${acct_cc}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_cc}} is shown with {user=''}"
+subtest {[regexp "${acct_d}\\|\\|${qos_2}\\|"          $output]} "Verify {${acct_d}} is shown with {user=''}"
+# Verify users in main acct
+subtest {![regexp "${acct}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in account {${acct}} is NOT shown with {user=''}"
+subtest {![regexp "${acct}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct}} is NOT shown with {user=''}"
+subtest {![regexp "${acct}\\|${user_y}\\|${qos_1},${qos_2}\\|" $output]} "Verify {${user_y}} in account {${acct}} is NOT shown with {user=''}"
+subtest {![regexp "${acct}\\|${user_z}\\|${qos_2}\\|"          $output]} "Verify {${user_z}} in account {${acct}} is NOT shown with {user=''}"
+# Verify users in acct_a
+subtest {![regexp "${acct_a}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify QOS of {${user_w}} in account {${acct_a}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_a}\\|${user_x}\\|\\|"                  $output]} "Verify QOS of {${user_x}} in account {${acct_a}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_a}\\|${user_y}\\|${qos_1},${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_a}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_a}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify QOS of {${user_z}} in account {${acct_a}} is NOT shown with {user=''}"
+# Verify users in acct_b
+subtest {![regexp "${acct_b}\\|${user_w}\\|\\|"         $output]} "Verify QOS of {${user_w}} in account {${acct_b}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_b}\\|${user_x}\\|\\|"         $output]} "Verify QOS of {${user_x}} in account {${acct_b}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_b}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_b}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_b}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify QOS of {${user_z}} in account {${acct_b}} is NOT shown with {user=''}"
+# Verify users in acct_c
+subtest {![regexp "${acct_c}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify QOS of {${user_w}} in account {${acct_c}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_c}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify QOS of {${user_x}} in account {${acct_c}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_c}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_c}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_c}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify QOS of {${user_z}} in account {${acct_c}} is NOT shown with {user=''}"
+# Verify users in acct_cc
+subtest {![regexp "${acct_cc}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify QOS of {${user_w}} in account {${acct_cc}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_cc}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify QOS of {${user_x}} in account {${acct_cc}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_cc}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_cc}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_cc}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify QOS of {${user_z}} in account {${acct_cc}} is NOT shown with {user=''}"
+# Verify users in acct_d
+subtest {![regexp "${acct_d}\\|${user_w}\\|${qos_2}\\|"          $output]} "Verify QOS of {${user_w}} in account {${acct_d}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_d}\\|${user_x}\\|\\|"                  $output]} "Verify QOS of {${user_x}} in account {${acct_d}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_d}\\|${user_y}\\|${qos_2},${qos_3}\\|" $output]} "Verify QOS of {${user_y}} in account {${acct_d}} is NOT shown with {user=''}"
+subtest {![regexp "${acct_d}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify QOS of {${user_z}} in account {${acct_d}} is NOT shown with {user=''}"
+
+log_info "Only Accounts:\n${output}"
+
+#
+# Verify filtering users
+#
+set output [run_command_output -fail "$sacctmgr -p show assoc tree format=account,user,qos,parentname where parent=''"]
+
+# Verify accounts
+subtest {![regexp "${acct}\\|\\|${qos_1}\\|"            $output]} "Verify {${acct}}   is NOT shown with {parent=''}"
+subtest {![regexp "${acct_a}\\|\\|${qos_1}\\|"          $output]} "Verify {${acct_a}} is NOT shown with {parent=''}"
+subtest {![regexp "${acct_b}\\|\\|\\|"                  $output]} "Verify {${acct_b}} is NOT shown with {parent=''}"
+subtest {![regexp "${acct_c}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_c}} is NOT shown with {parent=''}"
+subtest {![regexp "${acct_cc}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_cc}} is NOT shown with {parent=''}"
+subtest {![regexp "${acct_d}\\|\\|${qos_2}\\|"          $output]} "Verify {${acct_d}} is NOT shown with {parent=''}"
+# Verify users in main acct
+subtest {[regexp "${acct}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in {${acct}} is shown with {parent=''}"
+subtest {[regexp "${acct}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in {${acct}} is shown with {parent=''}"
+subtest {[regexp "${acct}\\|${user_y}\\|${qos_1},${qos_2}\\|" $output]} "Verify {${user_y}} in {${acct}} is shown with {parent=''}"
+subtest {[regexp "${acct}\\|${user_z}\\|${qos_2}\\|"          $output]} "Verify {${user_z}} in {${acct}} is shown with {parent=''}"
+# Verify users in acct_a
+subtest {[regexp "${acct_a}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in account {${acct_a}} is shown with {parent=''}"
+subtest {[regexp "${acct_a}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct_a}} is shown with {parent=''}"
+subtest {[regexp "${acct_a}\\|${user_y}\\|${qos_1},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_a}} is shown with {parent=''}"
+subtest {[regexp "${acct_a}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify {${user_z}} in account {${acct_a}} is shown with {parent=''}"
+# Verify users in acct_b
+subtest {[regexp "${acct_b}\\|${user_w}\\|\\|"         $output]} "Verify {${user_w}} in account {${acct_b}} is shown with {parent=''}"
+subtest {[regexp "${acct_b}\\|${user_x}\\|\\|"         $output]} "Verify {${user_x}} in account {${acct_b}} is shown with {parent=''}"
+subtest {[regexp "${acct_b}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_b}} is shown with {parent=''}"
+subtest {[regexp "${acct_b}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify {${user_z}} in account {${acct_b}} is shown with {parent=''}"
+# Verify users in acct_c
+subtest {[regexp "${acct_c}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_c}} is shown with {parent=''}"
+subtest {[regexp "${acct_c}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify {${user_x}} in account {${acct_c}} is shown with {parent=''}"
+subtest {[regexp "${acct_c}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_c}} is shown with {parent=''}"
+subtest {[regexp "${acct_c}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify {${user_z}} in account {${acct_c}} is shown with {parent=''}"
+# Verify users in acct_cc
+subtest {[regexp "${acct_cc}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_cc}} is shown with {parent=''}"
+subtest {[regexp "${acct_cc}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify {${user_x}} in account {${acct_cc}} is shown with {parent=''}"
+subtest {[regexp "${acct_cc}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_cc}} is shown with {parent=''}"
+subtest {[regexp "${acct_cc}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify {${user_z}} in account {${acct_cc}} is shown with {parent=''}"
+# Verify users in acct_d
+subtest {[regexp "${acct_d}\\|${user_w}\\|${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_d}} is shown with {parent=''}"
+subtest {[regexp "${acct_d}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct_d}} is shown with {parent=''}"
+subtest {[regexp "${acct_d}\\|${user_y}\\|${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_d}} is shown with {parent=''}"
+subtest {[regexp "${acct_d}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify {${user_z}} in account {${acct_d}} is shown with {parent=''}"
+
+log_info "Only users:\n${output}"
+
+#
+# Verify qos filter alone
+# TODO: Some are currently failing
+#
+set output [run_command_output -fail "$sacctmgr -p show assoc tree format=account,user,qos,parentname where qos=${qos_1}"]
+
+# Verify accounts
+subtest { [regexp "${acct}\\|\\|${qos_1}\\|"            $output]} "Verify {${acct}}   is shown with {qos=${qos_1}}"
+subtest { [regexp "${acct_a}\\|\\|${qos_1}\\|"          $output]} "Verify {${acct_a}} is shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_b}\\|\\|\\|"                  $output]} "Verify {${acct_b}} is NOT shown with {qos=${qos_1}}"
+subtest { [regexp "${acct_c}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_c}} is shown with {qos=${qos_1}}"
+subtest { [regexp "${acct_cc}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_cc}} is shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_d}\\|\\|${qos_2}\\|"          $output]} "Verify {${acct_d}} is NOT shown with {qos=${qos_1}}"
+# Verify users in main acct
+subtest { [regexp "${acct}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in account {${acct}} is shown with {qos=${qos_1}}"
+subtest {![regexp "${acct}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct}} is NOT shown with {qos=${qos_1}}"
+subtest { [regexp "${acct}\\|${user_y}\\|${qos_1},${qos_2}\\|" $output]} "Verify {${user_y}} in account {${acct}} is shown with {qos=${qos_1}}"
+subtest {![regexp "${acct}\\|${user_z}\\|${qos_2}\\|"          $output]} "Verify {${user_z}} in account {${acct}} is NOT shown with {qos=${qos_1}}"
+# Verify users in acct_a
+subtest { [regexp "${acct_a}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in account {${acct_a}} is shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_a}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct_a}} is NOT shown with {qos=${qos_1}}"
+subtest { [regexp "${acct_a}\\|${user_y}\\|${qos_1},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_a}} is shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_a}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify {${user_z}} in account {${acct_a}} is NOT shown with {qos=${qos_1}}"
+# Verify users in acct_b
+subtest {![regexp "${acct_b}\\|${user_w}\\|\\|"         $output]} "Verify {${user_w}} in account {${acct_b}} is NOT shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_b}\\|${user_x}\\|\\|"         $output]} "Verify {${user_x}} in account {${acct_b}} is NOT shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_b}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_b}} is NOT shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_b}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify {${user_z}} in account {${acct_b}} is NOT shown with {qos=${qos_1}}"
+# Verify users in acct_c
+subtest { [regexp "${acct_c}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_c}} is shown with {qos=${qos_1}}"
+subtest { [regexp "${acct_c}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify {${user_x}} in account {${acct_c}} is shown with {qos=${qos_1}}"
+subtest { [regexp "${acct_c}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_c}} is shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_c}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify {${user_z}} in account {${acct_c}} is NOT shown with {qos=${qos_1}}"
+# Verify users in acct_cc
+subtest { [regexp "${acct_cc}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_cc}} is shown with {qos=${qos_1}}"
+subtest { [regexp "${acct_cc}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify {${user_x}} in account {${acct_cc}} is shown with {qos=${qos_1}}"
+subtest { [regexp "${acct_cc}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_cc}} is shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_cc}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify {${user_z}} in account {${acct_cc}} is NOT shown with {qos=${qos_1}}"
+# Verify users in acct_d
+subtest {![regexp "${acct_d}\\|${user_w}\\|${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_d}} is NOT shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_d}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct_d}} is NOT shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_d}\\|${user_y}\\|${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_d}} is NOT shown with {qos=${qos_1}}"
+subtest {![regexp "${acct_d}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify {${user_z}} in account {${acct_d}} is NOT shown with {qos=${qos_1}}"
+
+log_info "Filter {qos=${qos_1}}:\n${output}"
+
+#
+# Verify qos filter with filtering for accounts
+# TODO: Some are currently failing
+#
+set output [run_command_output -fail "$sacctmgr -p show assoc tree format=account,user,qos,parentname where qos=${qos_1} user=''"]
+
+# Verify accounts
+subtest { [regexp "${acct}\\|\\|${qos_1}\\|"            $output]} "Verify {${acct}}   is shown with {qos=${qos_1} user=''}"
+subtest { [regexp "${acct_a}\\|\\|${qos_1}\\|"          $output]} "Verify {${acct_a}} is shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_b}\\|\\|\\|"                  $output]} "Verify {${acct_b}} is NOT shown with {qos=${qos_1} user=''}"
+subtest { [regexp "${acct_c}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_c}} is shown with {qos=${qos_1} user=''}"
+subtest { [regexp "${acct_cc}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_cc}} is shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_d}\\|\\|${qos_2}\\|"          $output]} "Verify {${acct_d}} is NOT shown with {qos=${qos_1} user=''}"
+# Verify users in main acct
+subtest {![regexp "${acct}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in account {${acct}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct}\\|${user_y}\\|${qos_1},${qos_2}\\|" $output]} "Verify {${user_y}} in account {${acct}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct}\\|${user_z}\\|${qos_2}\\|"          $output]} "Verify {${user_z}} in account {${acct}} is NOT shown with {qos=${qos_1} user=''}"
+# Verify users in acct_a
+subtest {![regexp "${acct_a}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in account {${acct_a}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_a}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct_a}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_a}\\|${user_y}\\|${qos_1},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_a}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_a}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify {${user_z}} in account {${acct_a}} is NOT shown with {qos=${qos_1} user=''}"
+# Verify users in acct_b
+subtest {![regexp "${acct_b}\\|${user_w}\\|\\|"         $output]} "Verify {${user_w}} in account {${acct_b}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_b}\\|${user_x}\\|\\|"         $output]} "Verify {${user_x}} in account {${acct_b}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_b}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_b}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_b}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify {${user_z}} in account {${acct_b}} is NOT shown with {qos=${qos_1} user=''}"
+# Verify users in acct_c
+subtest {![regexp "${acct_c}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_c}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_c}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify {${user_x}} in account {${acct_c}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_c}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_c}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_c}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify {${user_z}} in account {${acct_c}} is NOT shown with {qos=${qos_1} user=''}"
+# Verify users in acct_cc
+subtest {![regexp "${acct_cc}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_cc}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_cc}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify {${user_x}} in account {${acct_cc}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_cc}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_cc}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_cc}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify {${user_z}} in account {${acct_cc}} is NOT shown with {qos=${qos_1} user=''}"
+# Verify users in acct_d
+subtest {![regexp "${acct_d}\\|${user_w}\\|${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_d}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_d}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct_d}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_d}\\|${user_y}\\|${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_d}} is NOT shown with {qos=${qos_1} user=''}"
+subtest {![regexp "${acct_d}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify {${user_z}} in account {${acct_d}} is NOT shown with {qos=${qos_1} user=''}"
+
+log_info "Filter {qos=${qos_1} user=''}:\n${output}"
+
+#
+# Verify qos filter with filtering for accounts
+# TODO: Some are currently failing
+#
+set output [run_command_output -fail "$sacctmgr -p show assoc tree format=account,user,qos,parentname where qos=${qos_1} parent=''"]
+
+# Verify accounts
+subtest {![regexp "${acct}\\|\\|${qos_1}\\|"            $output]} "Verify {${acct}}   is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_a}\\|\\|${qos_1}\\|"          $output]} "Verify {${acct_a}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_b}\\|\\|\\|"                  $output]} "Verify {${acct_b}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_c}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_c}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_cc}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_cc}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_d}\\|\\|${qos_2}\\|"          $output]} "Verify {${acct_d}} is NOT shown with {qos=${qos_1} parent=''}"
+# Verify users in main acct
+subtest { [regexp "${acct}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in account {${acct}} is shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest { [regexp "${acct}\\|${user_y}\\|${qos_1},${qos_2}\\|" $output]} "Verify {${user_y}} in account {${acct}} is shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct}\\|${user_z}\\|${qos_2}\\|"          $output]} "Verify {${user_z}} in account {${acct}} is NOT shown with {qos=${qos_1} parent=''}"
+# Verify users in acct_a
+subtest { [regexp "${acct_a}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in account {${acct_a}} is shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_a}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct_a}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest { [regexp "${acct_a}\\|${user_y}\\|${qos_1},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_a}} is shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_a}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify {${user_z}} in account {${acct_a}} is NOT shown with {qos=${qos_1} parent=''}"
+# Verify users in acct_b
+subtest {![regexp "${acct_b}\\|${user_w}\\|\\|"         $output]} "Verify {${user_w}} in account {${acct_b}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_b}\\|${user_x}\\|\\|"         $output]} "Verify {${user_x}} in account {${acct_b}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_b}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_b}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_b}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify {${user_z}} in account {${acct_b}} is NOT shown with {qos=${qos_1} parent=''}"
+# Verify users in acct_c
+subtest { [regexp "${acct_c}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_c}} is shown with {qos=${qos_1} parent=''}"
+subtest { [regexp "${acct_c}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify {${user_x}} in account {${acct_c}} is shown with {qos=${qos_1} parent=''}"
+subtest { [regexp "${acct_c}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_c}} is shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_c}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify {${user_z}} in account {${acct_c}} is NOT shown with {qos=${qos_1} parent=''}"
+# Verify users in acct_cc
+subtest { [regexp "${acct_cc}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_cc}} is shown with {qos=${qos_1} parent=''}"
+subtest { [regexp "${acct_cc}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify {${user_x}} in account {${acct_cc}} is shown with {qos=${qos_1} parent=''}"
+subtest { [regexp "${acct_cc}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_cc}} is shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_cc}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify {${user_z}} in account {${acct_cc}} is NOT shown with {qos=${qos_1} parent=''}"
+# Verify users in acct_d
+subtest {![regexp "${acct_d}\\|${user_w}\\|${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_d}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_d}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct_d}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_d}\\|${user_y}\\|${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_d}} is NOT shown with {qos=${qos_1} parent=''}"
+subtest {![regexp "${acct_d}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify {${user_z}} in account {${acct_d}} is NOT shown with {qos=${qos_1} parent=''}"
+
+log_info "Filter {qos=${qos_1} parent=''}:\n${output}"
+
+
+
+#
+# Verify qos filter with filtering for by user and account
+# TODO: Some are currently failing
+#
+set output [run_command_output -fail "$sacctmgr -p show assoc tree format=account,user,qos,parentname where qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}"]
+
+# Verify accounts
+subtest {![regexp "${acct}\\|\\|${qos_1}\\|"            $output]} "Verify {${acct}}   is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_a}\\|\\|${qos_1}\\|"          $output]} "Verify {${acct_a}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_b}\\|\\|\\|"                  $output]} "Verify {${acct_b}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_c}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_c}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_cc}\\|\\|${qos_1},${qos_2}\\|" $output]} "Verify {${acct_cc}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_d}\\|\\|${qos_2}\\|"          $output]} "Verify {${acct_d}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+# Verify users in main acct
+subtest {![regexp "${acct}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in account {${acct}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct}\\|${user_y}\\|${qos_1},${qos_2}\\|" $output]} "Verify {${user_y}} in account {${acct}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct}\\|${user_z}\\|${qos_2}\\|"          $output]} "Verify {${user_z}} in account {${acct}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+# Verify users in acct_a
+subtest { [regexp "${acct_a}\\|${user_w}\\|${qos_1}\\|"          $output]} "Verify {${user_w}} in account {${acct_a}} is shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_a}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct_a}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_a}\\|${user_y}\\|${qos_1},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_a}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_a}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify {${user_z}} in account {${acct_a}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+# Verify users in acct_b
+subtest {![regexp "${acct_b}\\|${user_w}\\|\\|"         $output]} "Verify {${user_w}} in account {${acct_b}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_b}\\|${user_x}\\|\\|"         $output]} "Verify {${user_x}} in account {${acct_b}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_b}\\|${user_y}\\|${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_b}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_b}\\|${user_z}\\|${qos_3}\\|" $output]} "Verify {${user_z}} in account {${acct_b}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+# Verify users in acct_c
+subtest {![regexp "${acct_c}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_c}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_c}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify {${user_x}} in account {${acct_c}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_c}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_c}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_c}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify {${user_z}} in account {${acct_c}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+# Verify users in acct_cc
+subtest {![regexp "${acct_cc}\\|${user_w}\\|${qos_1},${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_cc}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_cc}\\|${user_x}\\|${qos_1}\\|"                   $output]} "Verify {${user_x}} in account {${acct_cc}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_cc}\\|${user_y}\\|${qos_1},${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_cc}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_cc}\\|${user_z}\\|${qos_3}\\|"                   $output]} "Verify {${user_z}} in account {${acct_cc}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+# Verify users in acct_d
+subtest {![regexp "${acct_d}\\|${user_w}\\|${qos_2}\\|"          $output]} "Verify {${user_w}} in account {${acct_d}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_d}\\|${user_x}\\|\\|"                  $output]} "Verify {${user_x}} in account {${acct_d}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_d}\\|${user_y}\\|${qos_2},${qos_3}\\|" $output]} "Verify {${user_y}} in account {${acct_d}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+subtest {![regexp "${acct_d}\\|${user_z}\\|${qos_3}\\|"          $output]} "Verify {${user_z}} in account {${acct_d}} is NOT shown with {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}"
+
+log_info "Filter {qos=${qos_1} account=${acct_a},${acct_b} user=${user_w},${user_x}}:\n${output}"
