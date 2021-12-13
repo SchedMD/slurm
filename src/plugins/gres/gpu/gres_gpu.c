@@ -187,21 +187,21 @@ static int _sort_string_null_last(char *x, char *y)
  */
 static int _sort_gpu_by_type_name(void *x, void *y)
 {
-	gres_slurmd_conf_t *gres_record1 = *(gres_slurmd_conf_t **)x;
-	gres_slurmd_conf_t *gres_record2 = *(gres_slurmd_conf_t **)y;
+	gres_slurmd_conf_t *gres_slurmd_conf1 = *(gres_slurmd_conf_t **)x;
+	gres_slurmd_conf_t *gres_slurmd_conf2 = *(gres_slurmd_conf_t **)y;
 	int val1, val2, ret;
 
-	if (!gres_record1->type_name && !gres_record2->type_name)
+	if (!gres_slurmd_conf1->type_name && !gres_slurmd_conf2->type_name)
 		return 0;
 
-	if (gres_record1->type_name && !gres_record2->type_name)
+	if (gres_slurmd_conf1->type_name && !gres_slurmd_conf2->type_name)
 		return 1;
 
-	if (!gres_record1->type_name && gres_record2->type_name)
+	if (!gres_slurmd_conf1->type_name && gres_slurmd_conf2->type_name)
 		return -1;
 
-	val1 = strlen(gres_record1->type_name);
-	val2 = strlen(gres_record2->type_name);
+	val1 = strlen(gres_slurmd_conf1->type_name);
+	val2 = strlen(gres_slurmd_conf2->type_name);
 	/*
 	 * By default, qsort orders in ascending order (smallest first). We want
 	 * descending order (longest first), so invert order by negating.
@@ -210,12 +210,13 @@ static int _sort_gpu_by_type_name(void *x, void *y)
 
 	/* Sort by type name value if type name length is equal */
 	if (ret == 0)
-		ret = xstrcmp(gres_record1->type_name, gres_record2->type_name);
+		ret = xstrcmp(gres_slurmd_conf1->type_name,
+			      gres_slurmd_conf2->type_name);
 
 	/* Sort by file name if type name value is equal */
 	if (ret == 0)
-		ret = _sort_string_null_last(gres_record1->file,
-					     gres_record2->file);
+		ret = _sort_string_null_last(gres_slurmd_conf1->file,
+					     gres_slurmd_conf2->file);
 
 	return ret;
 }
@@ -226,19 +227,19 @@ static int _sort_gpu_by_type_name(void *x, void *y)
  */
 static int _find_type_in_gres_list(void *x, void *key)
 {
-	gres_slurmd_conf_t *conf_gres = (gres_slurmd_conf_t *)x;
+	gres_slurmd_conf_t *gres_slurmd_conf = (gres_slurmd_conf_t *)x;
 	char *sys_gres_type = (char *)key;
 
-	if (!conf_gres)
+	if (!gres_slurmd_conf)
 		return 0;
 
 	/* If count is 0, then we already accounted for it */
-	if (conf_gres->count == 0)
+	if (gres_slurmd_conf->count == 0)
 		return 0;
 
-	xassert(conf_gres->count == 1);
+	xassert(gres_slurmd_conf->count == 1);
 
-	if (xstrcasestr(sys_gres_type, conf_gres->type_name))
+	if (xstrcasestr(sys_gres_type, gres_slurmd_conf->type_name))
 		return 1;
 	else
 		return 0;
@@ -246,12 +247,12 @@ static int _find_type_in_gres_list(void *x, void *key)
 
 static int _find_nonnull_type_in_gres_list(void *x, void *key)
 {
-	gres_slurmd_conf_t *conf_gres = (gres_slurmd_conf_t *) x;
+	gres_slurmd_conf_t *gres_slurmd_conf = (gres_slurmd_conf_t *) x;
 
-	if (!conf_gres)
+	if (!gres_slurmd_conf)
 		return 0;
 
-	if (conf_gres->type_name && conf_gres->type_name[0])
+	if (gres_slurmd_conf->type_name && gres_slurmd_conf->type_name[0])
 		return 1;
 
 	return 0;
@@ -391,10 +392,11 @@ static int _validate_cpus_links(gres_slurmd_conf_t *conf_gres,
 /* Sort gres/gpu records by "File" value in ascending order, with nulls last */
 static int _sort_gpu_by_file(void *x, void *y)
 {
-	gres_slurmd_conf_t *gres_record1 = *(gres_slurmd_conf_t **) x;
-	gres_slurmd_conf_t *gres_record2 = *(gres_slurmd_conf_t **) y;
+	gres_slurmd_conf_t *gres_slurmd_conf1 = *(gres_slurmd_conf_t **) x;
+	gres_slurmd_conf_t *gres_slurmd_conf2 = *(gres_slurmd_conf_t **) y;
 
-	return _sort_string_null_last(gres_record1->file, gres_record2->file);
+	return _sort_string_null_last(gres_slurmd_conf1->file,
+				      gres_slurmd_conf2->file);
 }
 
 /*
@@ -414,18 +416,18 @@ static int _sort_gpu_by_file(void *x, void *y)
  */
 static int _sort_gpu_by_links_order(void *x, void *y)
 {
-	gres_slurmd_conf_t *gres_record_x = *(gres_slurmd_conf_t **)x;
-	gres_slurmd_conf_t *gres_record_y = *(gres_slurmd_conf_t **)y;
+	gres_slurmd_conf_t *gres_slurmd_conf_x = *(gres_slurmd_conf_t **)x;
+	gres_slurmd_conf_t *gres_slurmd_conf_y = *(gres_slurmd_conf_t **)y;
 	int index_x, index_y;
 
 	/* Make null links appear last in sort */
-	if (!gres_record_x->links && gres_record_y->links)
+	if (!gres_slurmd_conf_x->links && gres_slurmd_conf_y->links)
 		return 1;
-	if (gres_record_x->links && !gres_record_y->links)
+	if (gres_slurmd_conf_x->links && !gres_slurmd_conf_y->links)
 		return -1;
 
-	index_x = gres_links_validate(gres_record_x->links);
-	index_y = gres_links_validate(gres_record_y->links);
+	index_x = gres_links_validate(gres_slurmd_conf_x->links);
+	index_y = gres_links_validate(gres_slurmd_conf_y->links);
 
 	if (index_x < -1 || index_y < -1)
 		error("%s: invalid links value found", __func__);
@@ -461,7 +463,7 @@ static int _sort_gpu_by_links_order(void *x, void *y)
 static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 {
 	ListIterator itr, itr2;
-	gres_slurmd_conf_t *gres_record, *sys_record;
+	gres_slurmd_conf_t *gres_slurmd_conf, *gres_slurmd_conf_sys;
 	List gres_list_conf_single, gres_list_gpu = NULL, gres_list_non_gpu;
 
 	if (gres_list_conf == NULL) {
@@ -478,44 +480,44 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 
 	// Break down gres_list_conf into 1 device per record
 	itr = list_iterator_create(gres_list_conf);
-	while ((gres_record = list_next(itr))) {
+	while ((gres_slurmd_conf = list_next(itr))) {
 		int i;
 		hostlist_t hl;
 		char *hl_name;
 
-		if (!gres_record->count)
+		if (!gres_slurmd_conf->count)
 			continue;
 
-		if (xstrcasecmp(gres_record->name, "gpu")) {
+		if (xstrcasecmp(gres_slurmd_conf->name, "gpu")) {
 			/* Move record into non-GPU GRES list */
-			gres_record = list_remove(itr);
+			gres_slurmd_conf = list_remove(itr);
 			debug2("preserving original `%s` GRES record",
-			       gres_record->name);
-			list_append(gres_list_non_gpu, gres_record);
+			       gres_slurmd_conf->name);
+			list_append(gres_list_non_gpu, gres_slurmd_conf);
 			continue;
 		}
 
-		if (gres_record->count == 1) {
+		if (gres_slurmd_conf->count == 1) {
 			/* Already count of 1; move into single-GPU GRES list */
-			gres_record = list_remove(itr);
-			list_append(gres_list_conf_single, gres_record);
+			gres_slurmd_conf = list_remove(itr);
+			list_append(gres_list_conf_single, gres_slurmd_conf);
 			continue;
-		} else if (!gres_record->file) {
+		} else if (!gres_slurmd_conf->file) {
 			/*
 			 * Split this record into multiple single-GPU records
 			 * and add them to the single-GPU GRES list
 			 */
-			for (i = 0; i < gres_record->count; i++)
+			for (i = 0; i < gres_slurmd_conf->count; i++)
 				add_gres_to_list(gres_list_conf_single,
-						 gres_record->name, 1,
-						 gres_record->cpu_cnt,
-						 gres_record->cpus,
-						 gres_record->cpus_bitmap,
-						 gres_record->file,
-						 gres_record->type_name,
-						 gres_record->links,
-						 gres_record->unique_id,
-						 gres_record->config_flags);
+						 gres_slurmd_conf->name, 1,
+						 gres_slurmd_conf->cpu_cnt,
+						 gres_slurmd_conf->cpus,
+						 gres_slurmd_conf->cpus_bitmap,
+						 gres_slurmd_conf->file,
+						 gres_slurmd_conf->type_name,
+						 gres_slurmd_conf->links,
+						 gres_slurmd_conf->unique_id,
+						 gres_slurmd_conf->config_flags);
 			continue;
 		}
 
@@ -523,21 +525,21 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 		 * count > 1 and we have devices;
 		 * Break down record into individual devices.
 		 */
-		hl = hostlist_create(gres_record->file);
+		hl = hostlist_create(gres_slurmd_conf->file);
 		while ((hl_name = hostlist_shift(hl))) {
 			/*
 			 * Split this record into multiple single-GPU,
 			 * single-file records and add to single-GPU GRES list
 			 */
 			add_gres_to_list(gres_list_conf_single,
-					 gres_record->name, 1,
-					 gres_record->cpu_cnt,
-					 gres_record->cpus,
-					 gres_record->cpus_bitmap, hl_name,
-					 gres_record->type_name,
-					 gres_record->links,
-					 gres_record->unique_id,
-					 gres_record->config_flags);
+					 gres_slurmd_conf->name, 1,
+					 gres_slurmd_conf->cpu_cnt,
+					 gres_slurmd_conf->cpus,
+					 gres_slurmd_conf->cpus_bitmap, hl_name,
+					 gres_slurmd_conf->type_name,
+					 gres_slurmd_conf->links,
+					 gres_slurmd_conf->unique_id,
+					 gres_slurmd_conf->config_flags);
 			free(hl_name);
 		}
 		hostlist_destroy(hl);
@@ -560,10 +562,11 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 
 	itr = list_iterator_create(gres_list_conf_single);
 	itr2 = list_iterator_create(gres_list_system);
-	while ((gres_record = list_next(itr))) {
+	while ((gres_slurmd_conf = list_next(itr))) {
 		list_iterator_reset(itr2);
-		while ((sys_record = list_next(itr2))) {
-			if (!_match_gres(gres_record, sys_record)) {
+		while ((gres_slurmd_conf_sys = list_next(itr2))) {
+			if (!_match_gres(gres_slurmd_conf,
+					 gres_slurmd_conf_sys)) {
 				continue;
 			}
 
@@ -573,21 +576,24 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 			 * does not match the system, emit error. If null, just
 			 * use the system-detected value.
 			 */
-			if (!_validate_cpus_links(gres_record, sys_record)) {
+			if (!_validate_cpus_links(gres_slurmd_conf,
+						  gres_slurmd_conf_sys)) {
 				/* What was specified differs from system */
 				error("This GPU specified in [slurm|gres].conf has mismatching Cores or Links from the device found on the system. Ignoring it.");
 				error("[slurm|gres].conf:");
-				print_gres_conf(gres_record, LOG_LEVEL_ERROR);
+				print_gres_conf(gres_slurmd_conf,
+						LOG_LEVEL_ERROR);
 				error("system:");
-				print_gres_conf(sys_record, LOG_LEVEL_ERROR);
+				print_gres_conf(gres_slurmd_conf_sys,
+						LOG_LEVEL_ERROR);
 
-				xassert(sys_record->count == 1);
+				xassert(gres_slurmd_conf_sys->count == 1);
 
 				/*
 				 * Temporarily set the sys record count to 0 to
 				 * mark it as already "used up"
 				 */
-				sys_record->count = 0;
+				gres_slurmd_conf_sys->count = 0;
 				break;
 			}
 
@@ -595,12 +601,12 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 			break;
 		}
 
-		if (sys_record) {
+		if (gres_slurmd_conf_sys) {
 			/*
 			 * Completely ignore this conf record if Cores and/or
 			 * Links do not match the corresponding system GPU
 			 */
-			if (sys_record->count == 0)
+			if (gres_slurmd_conf_sys->count == 0)
 				continue;
 
 			/*
@@ -608,7 +614,7 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 			 * configured GPU, add the system GPU to the final list
 			 */
 			debug("Including the following GPU matched between system and configuration:");
-			print_gres_conf(sys_record, LOG_LEVEL_DEBUG);
+			print_gres_conf(gres_slurmd_conf_sys, LOG_LEVEL_DEBUG);
 
 			/*
 			 * If the conf record did not fall back to default env
@@ -616,28 +622,30 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 			 * the conf's env flags. Otherwise, use the AutoDetected
 			 * env flags.
 			 */
-			if (!(gres_record->config_flags & GRES_CONF_ENV_DEF)) {
-				sys_record->config_flags &= ~GRES_CONF_ENV_SET;
-				sys_record->config_flags |=
-					gres_record->config_flags &
+			if (!(gres_slurmd_conf->config_flags &
+			      GRES_CONF_ENV_DEF)) {
+				gres_slurmd_conf_sys->config_flags &=
+					~GRES_CONF_ENV_SET;
+				gres_slurmd_conf_sys->config_flags |=
+					gres_slurmd_conf->config_flags &
 					GRES_CONF_ENV_SET;
 			}
 
 			list_remove(itr2);
-			list_append(gres_list_gpu, sys_record);
+			list_append(gres_list_gpu, gres_slurmd_conf_sys);
 			continue;
 		}
 
 		/* Else, config-only GPU */
-		if (gres_record->file) {
+		if (gres_slurmd_conf->file) {
 			/*
 			 * Add the "extra" configured GPU to the final list, but
 			 * only if file is specified
 			 */
 			debug("Including the following config-only GPU:");
-			print_gres_conf(gres_record, LOG_LEVEL_DEBUG);
+			print_gres_conf(gres_slurmd_conf, LOG_LEVEL_DEBUG);
 			list_remove(itr);
-			list_append(gres_list_gpu, gres_record);
+			list_append(gres_list_gpu, gres_slurmd_conf);
 		} else {
 			/*
 			 * Either the conf GPU was specified in slurm.conf only,
@@ -645,7 +653,7 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 			 * specified in gres.conf. Either way, ignore it.
 			 */
 			error("Discarding the following config-only GPU due to lack of File specification:");
-			print_gres_conf(gres_record, LOG_LEVEL_ERROR);
+			print_gres_conf(gres_slurmd_conf, LOG_LEVEL_ERROR);
 		}
 
 	}
@@ -653,9 +661,9 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 
 	/* Reset the system GPU counts, in case system list is used after */
 	list_iterator_reset(itr2);
-	while ((sys_record = list_next(itr2)))
-		if (sys_record->count == 0)
-			sys_record->count = 1;
+	while ((gres_slurmd_conf_sys = list_next(itr2)))
+		if (gres_slurmd_conf_sys->count == 0)
+			gres_slurmd_conf_sys->count = 1;
 	list_iterator_destroy(itr2);
 
 	/* Print out all the leftover system GPUs that are not being used */

@@ -833,12 +833,13 @@ extern int gres_reconfig(void)
 /* Return 1 if a gres_conf record is the correct plugin_id and has no file */
 static int _find_fileless_gres(void *x, void *arg)
 {
-	gres_slurmd_conf_t *gres_conf = (gres_slurmd_conf_t *)x;
+	gres_slurmd_conf_t *gres_slurmd_conf = (gres_slurmd_conf_t *)x;
 	uint32_t plugin_id = *(uint32_t *)arg;
 
-	if ((gres_conf->plugin_id == plugin_id) && !gres_conf->file) {
+	if ((gres_slurmd_conf->plugin_id == plugin_id) &&
+	    !gres_slurmd_conf->file) {
 		debug("Removing file-less GPU %s:%s from final GRES list",
-		      gres_conf->name, gres_conf->type_name);
+		      gres_slurmd_conf->name, gres_slurmd_conf->type_name);
 		return 1;
 	}
 	return 0;
@@ -1591,22 +1592,22 @@ static void _validate_gres_conf(List gres_conf_list,
 static void _compare_conf_counts(List gres_conf_list_tmp, uint64_t count,
 				 char *type_name)
 {
-	gres_slurmd_conf_t *gres_conf;
+	gres_slurmd_conf_t *gres_slurmd_conf;
 	ListIterator iter = list_iterator_create(gres_conf_list_tmp);
-	while ((gres_conf = list_next(iter))) {
+	while ((gres_slurmd_conf = list_next(iter))) {
 		/* Note: plugin type filter already applied */
 		/* Check that type is the same */
-		if (xstrcasecmp(gres_conf->type_name, type_name))
+		if (xstrcasecmp(gres_slurmd_conf->type_name, type_name))
 			continue;
 		/* Keep track of counts */
-		if (gres_conf->count > count) {
-			gres_conf->count -= count;
+		if (gres_slurmd_conf->count > count) {
+			gres_slurmd_conf->count -= count;
 			/* This slurm.conf GRES specification is now used up */
 			list_iterator_destroy(iter);
 			return;
 		} else {
-			count -= gres_conf->count;
-			gres_conf->count = 0;
+			count -= gres_slurmd_conf->count;
+			gres_slurmd_conf->count = 0;
 		}
 	}
 	list_iterator_destroy(iter);
@@ -1625,7 +1626,7 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 				 slurm_gres_context_t *context_ptr)
 {
 	ListIterator iter;
-	gres_slurmd_conf_t *gres_conf;
+	gres_slurmd_conf_t *gres_slurmd_conf;
 	gres_state_t *gres_state_node;
 	List gres_conf_list_tmp;
 
@@ -1640,16 +1641,17 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 	 */
 	gres_conf_list_tmp = list_create(destroy_gres_slurmd_conf);
 	iter = list_iterator_create(gres_conf_list);
-	while ((gres_conf = list_next(iter))) {
-		gres_slurmd_conf_t *gres_conf_tmp;
-		if (gres_conf->plugin_id != context_ptr->plugin_id)
+	while ((gres_slurmd_conf = list_next(iter))) {
+		gres_slurmd_conf_t *gres_slurmd_conf_tmp;
+		if (gres_slurmd_conf->plugin_id != context_ptr->plugin_id)
 			continue;
 
-		gres_conf_tmp = xmalloc(sizeof(*gres_conf_tmp));
-		gres_conf_tmp->name = xstrdup(gres_conf->name);
-		gres_conf_tmp->type_name = xstrdup(gres_conf->type_name);
-		gres_conf_tmp->count = gres_conf->count;
-		list_append(gres_conf_list_tmp, gres_conf_tmp);
+		gres_slurmd_conf_tmp = xmalloc(sizeof(*gres_slurmd_conf_tmp));
+		gres_slurmd_conf_tmp->name = xstrdup(gres_slurmd_conf->name);
+		gres_slurmd_conf_tmp->type_name =
+			xstrdup(gres_slurmd_conf->type_name);
+		gres_slurmd_conf_tmp->count = gres_slurmd_conf->count;
+		list_append(gres_conf_list_tmp, gres_slurmd_conf_tmp);
 	}
 	list_iterator_destroy(iter);
 
@@ -1685,13 +1687,14 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 	 * records that were not completely accounted for in slurm.conf.
 	 */
 	iter = list_iterator_create(gres_conf_list_tmp);
-	while ((gres_conf = list_next(iter)))
-		if (gres_conf->count > 0)
+	while ((gres_slurmd_conf = list_next(iter)))
+		if (gres_slurmd_conf->count > 0)
 			info("WARNING: A line in gres.conf for GRES %s%s%s has %"PRIu64" more configured than expected in slurm.conf. Ignoring extra GRES.",
-			     gres_conf->name,
-			     (gres_conf->type_name) ? ":" : "",
-			     (gres_conf->type_name) ? gres_conf->type_name : "",
-			     gres_conf->count);
+			     gres_slurmd_conf->name,
+			     (gres_slurmd_conf->type_name) ? ":" : "",
+			     (gres_slurmd_conf->type_name) ?
+			     gres_slurmd_conf->type_name : "",
+			     gres_slurmd_conf->count);
 	list_iterator_destroy(iter);
 
 	FREE_NULL_LIST(gres_conf_list_tmp);
@@ -1714,22 +1717,23 @@ static gres_slurmd_conf_t *_match_type(List gres_conf_list,
 				       char *type_name)
 {
 	ListIterator gres_conf_itr;
-	gres_slurmd_conf_t *gres_conf = NULL;
+	gres_slurmd_conf_t *gres_slurmd_conf = NULL;
 
 	gres_conf_itr = list_iterator_create(gres_conf_list);
-	while ((gres_conf = list_next(gres_conf_itr))) {
-		if (gres_conf->plugin_id != gres_context->plugin_id)
+	while ((gres_slurmd_conf = list_next(gres_conf_itr))) {
+		if (gres_slurmd_conf->plugin_id != gres_context->plugin_id)
 			continue;
 
 		/*
 		 * If type_name is NULL we will take the first matching
-		 * gres_conf that we find.  This means we also will remove the
-		 * type from the gres_conf to match 18.08 stylings.
+		 * gres_slurmd_conf that we find.  This means we also will
+		 * remove the type from the gres_slurmd_conf to match 18.08
+		 * stylings.
 		 */
 		if (!type_name) {
-			xfree(gres_conf->type_name);
-			gres_conf->config_flags &= ~GRES_CONF_HAS_TYPE;
-		} else if (xstrcasecmp(gres_conf->type_name, type_name))
+			xfree(gres_slurmd_conf->type_name);
+			gres_slurmd_conf->config_flags &= ~GRES_CONF_HAS_TYPE;
+		} else if (xstrcasecmp(gres_slurmd_conf->type_name, type_name))
 			continue;
 
 		/* We found a match, so remove from gres_conf_list and break */
@@ -1738,7 +1742,7 @@ static gres_slurmd_conf_t *_match_type(List gres_conf_list,
 	}
 	list_iterator_destroy(gres_conf_itr);
 
-	return gres_conf;
+	return gres_slurmd_conf;
 }
 
 /*
@@ -1752,24 +1756,26 @@ static void _add_gres_config_empty(List gres_list,
 				   slurm_gres_context_t *gres_context,
 				   uint32_t cpu_cnt)
 {
-	gres_slurmd_conf_t *gres_conf = xmalloc(sizeof(*gres_conf));
-	gres_conf->cpu_cnt = cpu_cnt;
-	gres_conf->name = xstrdup(gres_context->gres_name);
-	gres_conf->plugin_id = gres_context->plugin_id;
-	list_append(gres_list, gres_conf);
+	gres_slurmd_conf_t *gres_slurmd_conf =
+		xmalloc(sizeof(*gres_slurmd_conf));
+	gres_slurmd_conf->cpu_cnt = cpu_cnt;
+	gres_slurmd_conf->name = xstrdup(gres_context->gres_name);
+	gres_slurmd_conf->plugin_id = gres_context->plugin_id;
+	list_append(gres_list, gres_slurmd_conf);
 }
 
 /*
  * Truncate the File hostrange string of a GRES record to be at most
  * new_count entries. The extra entries will be removed.
  *
- * gres_conf - (in/out) The GRES record to modify.
+ * gres_slurmd_conf - (in/out) The GRES record to modify.
  * count     - (in) The new number of entries in File
  */
-static void _set_file_subset(gres_slurmd_conf_t *gres_conf, uint64_t new_count)
+static void _set_file_subset(gres_slurmd_conf_t *gres_slurmd_conf,
+			     uint64_t new_count)
 {
 	/* Convert file to hostrange */
-	hostlist_t hl = hostlist_create(gres_conf->file);
+	hostlist_t hl = hostlist_create(gres_slurmd_conf->file);
 	unsigned long old_count = hostlist_count(hl);
 
 	if (new_count >= old_count) {
@@ -1784,14 +1790,15 @@ static void _set_file_subset(gres_slurmd_conf_t *gres_conf, uint64_t new_count)
 	}
 
 	debug3("%s: Truncating %s:%s File from (%ld) %s", __func__,
-	       gres_conf->name, gres_conf->type_name, old_count,
-	       gres_conf->file);
+	       gres_slurmd_conf->name, gres_slurmd_conf->type_name, old_count,
+	       gres_slurmd_conf->file);
 
 	/* Set file to the new subset */
-	xfree(gres_conf->file);
-	gres_conf->file = hostlist_ranged_string_xmalloc(hl);
+	xfree(gres_slurmd_conf->file);
+	gres_slurmd_conf->file = hostlist_ranged_string_xmalloc(hl);
 
-	debug3("%s: to (%"PRIu64") %s", __func__, new_count, gres_conf->file);
+	debug3("%s: to (%"PRIu64") %s", __func__, new_count,
+	       gres_slurmd_conf->file);
 	hostlist_destroy(hl);
 }
 
@@ -2003,7 +2010,7 @@ unpack_error:
 static void _pack_gres_slurmd_conf(void *in, uint16_t protocol_version,
 				   buf_t *buffer)
 {
-	gres_slurmd_conf_t *gres_conf = (gres_slurmd_conf_t *)in;
+	gres_slurmd_conf_t *gres_slurmd_conf = (gres_slurmd_conf_t *)in;
 
 	/*
 	 * Ignore protocol_version at the time of writing this only deals with
@@ -2013,24 +2020,25 @@ static void _pack_gres_slurmd_conf(void *in, uint16_t protocol_version,
 	 */
 
 	/* Pack gres_slurmd_conf_t */
-	pack32(gres_conf->config_flags, buffer);
-	pack64(gres_conf->count, buffer);
-	pack32(gres_conf->cpu_cnt, buffer);
-	packstr(gres_conf->cpus, buffer);
-	pack_bit_str_hex(gres_conf->cpus_bitmap, buffer);
-	packstr(gres_conf->file, buffer);
-	packstr(gres_conf->links, buffer);
-	packstr(gres_conf->name, buffer);
-	packstr(gres_conf->type_name, buffer);
-	packstr(gres_conf->unique_id, buffer);
-	pack32(gres_conf->plugin_id, buffer);
+	pack32(gres_slurmd_conf->config_flags, buffer);
+	pack64(gres_slurmd_conf->count, buffer);
+	pack32(gres_slurmd_conf->cpu_cnt, buffer);
+	packstr(gres_slurmd_conf->cpus, buffer);
+	pack_bit_str_hex(gres_slurmd_conf->cpus_bitmap, buffer);
+	packstr(gres_slurmd_conf->file, buffer);
+	packstr(gres_slurmd_conf->links, buffer);
+	packstr(gres_slurmd_conf->name, buffer);
+	packstr(gres_slurmd_conf->type_name, buffer);
+	packstr(gres_slurmd_conf->unique_id, buffer);
+	pack32(gres_slurmd_conf->plugin_id, buffer);
 }
 
 static int _unpack_gres_slurmd_conf(void **object, uint16_t protocol_version,
 				    buf_t *buffer)
 {
 	uint32_t uint32_tmp;
-	gres_slurmd_conf_t *gres_conf = xmalloc(sizeof(*gres_conf));
+	gres_slurmd_conf_t *gres_slurmd_conf =
+		xmalloc(sizeof(*gres_slurmd_conf));
 
 	/*
 	 * Ignore protocol_version at the time of writing this only deals with
@@ -2040,23 +2048,25 @@ static int _unpack_gres_slurmd_conf(void **object, uint16_t protocol_version,
 	 */
 
 	/* Unpack gres_slurmd_conf_t */
-	safe_unpack32(&gres_conf->config_flags, buffer);
-	safe_unpack64(&gres_conf->count, buffer);
-	safe_unpack32(&gres_conf->cpu_cnt, buffer);
-	safe_unpackstr_xmalloc(&gres_conf->cpus, &uint32_tmp, buffer);
-	unpack_bit_str_hex(&gres_conf->cpus_bitmap, buffer);
-	safe_unpackstr_xmalloc(&gres_conf->file, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&gres_conf->links, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&gres_conf->name, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&gres_conf->type_name, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&gres_conf->unique_id, &uint32_tmp, buffer);
-	safe_unpack32(&gres_conf->plugin_id, buffer);
+	safe_unpack32(&gres_slurmd_conf->config_flags, buffer);
+	safe_unpack64(&gres_slurmd_conf->count, buffer);
+	safe_unpack32(&gres_slurmd_conf->cpu_cnt, buffer);
+	safe_unpackstr_xmalloc(&gres_slurmd_conf->cpus, &uint32_tmp, buffer);
+	unpack_bit_str_hex(&gres_slurmd_conf->cpus_bitmap, buffer);
+	safe_unpackstr_xmalloc(&gres_slurmd_conf->file, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&gres_slurmd_conf->links, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&gres_slurmd_conf->name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&gres_slurmd_conf->type_name,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&gres_slurmd_conf->unique_id,
+			       &uint32_tmp, buffer);
+	safe_unpack32(&gres_slurmd_conf->plugin_id, buffer);
 
-	*object = gres_conf;
+	*object = gres_slurmd_conf;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	destroy_gres_slurmd_conf(gres_conf);
+	destroy_gres_slurmd_conf(gres_slurmd_conf);
 	*object = NULL;
 	return SLURM_ERROR;
 }
@@ -10457,7 +10467,7 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 			     char *type, char *links, char *unique_id,
 			     uint32_t flags)
 {
-	gres_slurmd_conf_t *gpu_record;
+	gres_slurmd_conf_t *gres_slurmd_conf;
 	bool use_empty_first_record = false;
 	ListIterator itr = list_iterator_create(gres_list);
 
@@ -10466,15 +10476,15 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 	 * overwrite it.
 	 * This is a placeholder record created in _merge_config()
 	 */
-	gpu_record = list_next(itr);
-	if (gpu_record && (gpu_record->count == 0))
+	gres_slurmd_conf = list_next(itr);
+	if (gres_slurmd_conf && (gres_slurmd_conf->count == 0))
 		use_empty_first_record = true;
 	else
-		gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
-	gpu_record->cpu_cnt = cpu_cnt;
+		gres_slurmd_conf = xmalloc(sizeof(gres_slurmd_conf_t));
+	gres_slurmd_conf->cpu_cnt = cpu_cnt;
 	if (cpu_aff_mac_bitstr)
-		gpu_record->cpus_bitmap = bit_copy(cpu_aff_mac_bitstr);
-	gpu_record->config_flags = flags;
+		gres_slurmd_conf->cpus_bitmap = bit_copy(cpu_aff_mac_bitstr);
+	gres_slurmd_conf->config_flags = flags;
 
 	/* Set default env flags, if necessary */
 	if ((flags & GRES_CONF_ENV_DEF) &&
@@ -10483,23 +10493,23 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 
 	if (device_file) {
 		hostlist_t hl = hostlist_create(device_file);
-		gpu_record->config_flags |= GRES_CONF_HAS_FILE;
+		gres_slurmd_conf->config_flags |= GRES_CONF_HAS_FILE;
 		if (hostlist_count(hl) > 1)
-			gpu_record->config_flags |= GRES_CONF_HAS_MULT;
+			gres_slurmd_conf->config_flags |= GRES_CONF_HAS_MULT;
 		hostlist_destroy(hl);
 	}
 	if (type)
-		gpu_record->config_flags |= GRES_CONF_HAS_TYPE;
-	gpu_record->cpus = xstrdup(cpu_aff_abs_range);
-	gpu_record->type_name = xstrdup(type);
-	gpu_record->name = xstrdup(name);
-	gpu_record->file = xstrdup(device_file);
-	gpu_record->links = xstrdup(links);
-	gpu_record->unique_id = xstrdup(unique_id);
-	gpu_record->count = device_cnt;
-	gpu_record->plugin_id = gres_build_id(name);
+		gres_slurmd_conf->config_flags |= GRES_CONF_HAS_TYPE;
+	gres_slurmd_conf->cpus = xstrdup(cpu_aff_abs_range);
+	gres_slurmd_conf->type_name = xstrdup(type);
+	gres_slurmd_conf->name = xstrdup(name);
+	gres_slurmd_conf->file = xstrdup(device_file);
+	gres_slurmd_conf->links = xstrdup(links);
+	gres_slurmd_conf->unique_id = xstrdup(unique_id);
+	gres_slurmd_conf->count = device_cnt;
+	gres_slurmd_conf->plugin_id = gres_build_id(name);
 	if (!use_empty_first_record)
-		list_append(gres_list, gpu_record);
+		list_append(gres_list, gres_slurmd_conf);
 	list_iterator_destroy(itr);
 }
 

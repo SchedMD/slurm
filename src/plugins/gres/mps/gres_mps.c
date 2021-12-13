@@ -119,7 +119,7 @@ static void _delete_gres_list(void *x)
 static List _build_gpu_list(List gres_list)
 {
 	ListIterator itr;
-	gres_slurmd_conf_t *gres_record, *gpu_record;
+	gres_slurmd_conf_t *gres_slurmd_conf, *gpu_record;
 	List gpu_list;
 	hostlist_t hl;
 	char *f_name;
@@ -130,10 +130,10 @@ static List _build_gpu_list(List gres_list)
 
 	gpu_list = list_create(_delete_gres_list);
 	itr = list_iterator_create(gres_list);
-	while ((gres_record = list_next(itr))) {
-		if (xstrcmp(gres_record->name, "gpu"))
+	while ((gres_slurmd_conf = list_next(itr))) {
+		if (xstrcmp(gres_slurmd_conf->name, "gpu"))
 			continue;
-		if (!gres_record->file) {
+		if (!gres_slurmd_conf->file) {
 			if (log_fname) {
 				error("%s: GPU configuration lacks \"File\" specification",
 				      plugin_name);
@@ -141,27 +141,30 @@ static List _build_gpu_list(List gres_list)
 			}
 			continue;
 		}
-		hl = hostlist_create(gres_record->file);
+		hl = hostlist_create(gres_slurmd_conf->file);
 		while ((f_name = hostlist_shift(hl))) {
 			gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
-			gpu_record->config_flags = gres_record->config_flags;
-			if (gres_record->type_name) {
+			gpu_record->config_flags =
+				gres_slurmd_conf->config_flags;
+			if (gres_slurmd_conf->type_name) {
 				gpu_record->config_flags |=
 					GRES_CONF_HAS_TYPE;
 			}
 			gpu_record->count = 1;
-			gpu_record->cpu_cnt = gres_record->cpu_cnt;
-			gpu_record->cpus = xstrdup(gres_record->cpus);
-			if (gres_record->cpus_bitmap) {
+			gpu_record->cpu_cnt = gres_slurmd_conf->cpu_cnt;
+			gpu_record->cpus = xstrdup(gres_slurmd_conf->cpus);
+			if (gres_slurmd_conf->cpus_bitmap) {
 				gpu_record->cpus_bitmap =
-					bit_copy(gres_record->cpus_bitmap);
+					bit_copy(gres_slurmd_conf->cpus_bitmap);
 			}
 			gpu_record->file = xstrdup(f_name);
-			gpu_record->links = xstrdup(gres_record->links);
-			gpu_record->name = xstrdup(gres_record->name);
-			gpu_record->plugin_id = gres_record->plugin_id;
-			gpu_record->type_name = xstrdup(gres_record->type_name);
-			gpu_record->unique_id = xstrdup(gres_record->unique_id);
+			gpu_record->links = xstrdup(gres_slurmd_conf->links);
+			gpu_record->name = xstrdup(gres_slurmd_conf->name);
+			gpu_record->plugin_id = gres_slurmd_conf->plugin_id;
+			gpu_record->type_name =
+				xstrdup(gres_slurmd_conf->type_name);
+			gpu_record->unique_id =
+				xstrdup(gres_slurmd_conf->unique_id);
 			list_append(gpu_list, gpu_record);
 			free(f_name);
 		}
@@ -182,7 +185,7 @@ static List _build_gpu_list(List gres_list)
 static List _build_mps_list(List gres_list)
 {
 	ListIterator itr;
-	gres_slurmd_conf_t *gres_record, *mps_record;
+	gres_slurmd_conf_t *gres_slurmd_conf, *mps_record;
 	List mps_list;
 	hostlist_t hl;
 	char *f_name;
@@ -194,59 +197,67 @@ static List _build_mps_list(List gres_list)
 
 	mps_list = list_create(_delete_gres_list);
 	itr = list_iterator_create(gres_list);
-	while ((gres_record = list_next(itr))) {
-		if (xstrcmp(gres_record->name, "mps"))
+	while ((gres_slurmd_conf = list_next(itr))) {
+		if (xstrcmp(gres_slurmd_conf->name, "mps"))
 			continue;
-		if (!gres_record->file) {
+		if (!gres_slurmd_conf->file) {
 			if (mps_no_file_recs)
 				fatal("gres/mps: bad configuration, multiple configurations without \"File\"");
 			if (mps_file_recs)
 				fatal("gres/mps: multiple configurations with and without \"File\"");
 			mps_no_file_recs++;
 			mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
-			mps_record->config_flags = gres_record->config_flags;
-			if (gres_record->type_name)
+			mps_record->config_flags =
+				gres_slurmd_conf->config_flags;
+			if (gres_slurmd_conf->type_name)
 				mps_record->config_flags |= GRES_CONF_HAS_TYPE;
-			mps_record->count = gres_record->count;
-			mps_record->cpu_cnt = gres_record->cpu_cnt;
-			mps_record->cpus = xstrdup(gres_record->cpus);
-			if (gres_record->cpus_bitmap) {
+			mps_record->count = gres_slurmd_conf->count;
+			mps_record->cpu_cnt = gres_slurmd_conf->cpu_cnt;
+			mps_record->cpus = xstrdup(gres_slurmd_conf->cpus);
+			if (gres_slurmd_conf->cpus_bitmap) {
 				mps_record->cpus_bitmap =
-					bit_copy(gres_record->cpus_bitmap);
+					bit_copy(gres_slurmd_conf->cpus_bitmap);
 			}
-			mps_record->name = xstrdup(gres_record->name);
-			mps_record->plugin_id = gres_record->plugin_id;
-			mps_record->type_name = xstrdup(gres_record->type_name);
-			mps_record->unique_id = xstrdup(gres_record->unique_id);
+			mps_record->name = xstrdup(gres_slurmd_conf->name);
+			mps_record->plugin_id = gres_slurmd_conf->plugin_id;
+			mps_record->type_name =
+				xstrdup(gres_slurmd_conf->type_name);
+			mps_record->unique_id =
+				xstrdup(gres_slurmd_conf->unique_id);
 			list_append(mps_list, mps_record);
 		} else {
 			mps_file_recs++;
 			if (mps_no_file_recs)
 				fatal("gres/mps: multiple configurations with and without \"File\"");
-			hl = hostlist_create(gres_record->file);
-			count_per_file = gres_record->count/hostlist_count(hl);
+			hl = hostlist_create(gres_slurmd_conf->file);
+			count_per_file =
+				gres_slurmd_conf->count / hostlist_count(hl);
 			while ((f_name = hostlist_shift(hl))) {
 				mps_record =xmalloc(sizeof(gres_slurmd_conf_t));
 				mps_record->config_flags =
-					gres_record->config_flags;
-				if (gres_record->type_name) {
+					gres_slurmd_conf->config_flags;
+				if (gres_slurmd_conf->type_name) {
 					mps_record->config_flags |=
 						GRES_CONF_HAS_TYPE;
 				}
 				mps_record->count = count_per_file;
-				mps_record->cpu_cnt = gres_record->cpu_cnt;
-				mps_record->cpus = xstrdup(gres_record->cpus);
-				if (gres_record->cpus_bitmap) {
+				mps_record->cpu_cnt = gres_slurmd_conf->cpu_cnt;
+				mps_record->cpus = xstrdup(
+					gres_slurmd_conf->cpus);
+				if (gres_slurmd_conf->cpus_bitmap) {
 					mps_record->cpus_bitmap =
-					     bit_copy(gres_record->cpus_bitmap);
+					     bit_copy(gres_slurmd_conf->
+						      cpus_bitmap);
 				}
 				mps_record->file = xstrdup(f_name);
-				mps_record->name = xstrdup(gres_record->name);
-				mps_record->plugin_id = gres_record->plugin_id;
+				mps_record->name = xstrdup(
+					gres_slurmd_conf->name);
+				mps_record->plugin_id =
+					gres_slurmd_conf->plugin_id;
 				mps_record->type_name =
-					xstrdup(gres_record->type_name);
+					xstrdup(gres_slurmd_conf->type_name);
 				mps_record->unique_id =
-					xstrdup(gres_record->unique_id);
+					xstrdup(gres_slurmd_conf->unique_id);
 				list_append(mps_list, mps_record);
 				free(f_name);
 			}
@@ -266,14 +277,14 @@ static List _build_mps_list(List gres_list)
 static void _remove_mps_recs(List gres_list)
 {
 	ListIterator itr;
-	gres_slurmd_conf_t *gres_record;
+	gres_slurmd_conf_t *gres_slurmd_conf;
 
 	if (gres_list == NULL)
 		return;
 
 	itr = list_iterator_create(gres_list);
-	while ((gres_record = list_next(itr))) {
-		if (!xstrcmp(gres_record->name, "mps")) {
+	while ((gres_slurmd_conf = list_next(itr))) {
+		if (!xstrcmp(gres_slurmd_conf->name, "mps")) {
 			(void) list_delete_item(itr);
 		}
 	}
@@ -465,20 +476,20 @@ static int _compute_local_id(char *dev_file_name)
 static uint64_t _build_mps_dev_info(List gres_conf_list)
 {
 	uint64_t mps_count = 0;
-	gres_slurmd_conf_t *gres_conf;
+	gres_slurmd_conf_t *gres_slurmd_conf;
 	mps_dev_info_t *mps_conf;
 	ListIterator iter;
 
 	mps_info = list_create(xfree_ptr);
 	iter = list_iterator_create(gres_conf_list);
-	while ((gres_conf = list_next(iter))) {
-		if (!gres_id_shared(gres_conf->plugin_id))
+	while ((gres_slurmd_conf = list_next(iter))) {
+		if (!gres_id_shared(gres_slurmd_conf->plugin_id))
 			continue;
 		mps_conf = xmalloc(sizeof(mps_dev_info_t));
-		mps_conf->count = gres_conf->count;
-		mps_conf->id = _compute_local_id(gres_conf->file);
+		mps_conf->count = gres_slurmd_conf->count;
+		mps_conf->id = _compute_local_id(gres_slurmd_conf->file);
 		list_append(mps_info, mps_conf);
-		mps_count += gres_conf->count;
+		mps_count += gres_slurmd_conf->count;
 	}
 	list_iterator_destroy(iter);
 	return mps_count;

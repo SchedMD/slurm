@@ -427,16 +427,16 @@ static void _print_gres_list_helper(List gres_list, log_level_t log_lvl,
 				    bool parsable)
 {
 	ListIterator itr;
-	gres_slurmd_conf_t *gres_record;
+	gres_slurmd_conf_t *gres_slurmd_conf;
 
 	if (gres_list == NULL)
 		return;
 	itr = list_iterator_create(gres_list);
-	while ((gres_record = list_next(itr))) {
+	while ((gres_slurmd_conf = list_next(itr))) {
 		if (parsable)
-			_print_gres_conf_parsable(gres_record, log_lvl);
+			_print_gres_conf_parsable(gres_slurmd_conf, log_lvl);
 		else
-			print_gres_conf(gres_record, log_lvl);
+			print_gres_conf(gres_slurmd_conf, log_lvl);
 	}
 	list_iterator_destroy(itr);
 }
