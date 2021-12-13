@@ -81,7 +81,8 @@ extern char *gres_sched_str(List sock_gres_list, List job_gres_list)
 	iter = list_iterator_create(sock_gres_list);
 	while ((sock_data = (sock_gres_t *) list_next(iter))) {
 		job_gres_state = list_find_first(job_gres_list,
-					   _find_job_by_sock_gres, sock_data);
+						 _find_job_by_sock_gres,
+						 sock_data);
 		if (!job_gres_state) {	/* Should never happen */
 			error("%s: Could not find job GRES for type %u:%u",
 			      __func__, sock_data->plugin_id,

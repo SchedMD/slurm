@@ -141,10 +141,10 @@ extern int gres_select_util_job_min_cpu_node(uint32_t sockets_per_node,
 			total_gres = job_data_ptr->gres_per_node;
 		} else if (job_data_ptr->gres_per_socket) {
 			total_gres = job_data_ptr->gres_per_socket *
-				     sockets_per_node;
+				sockets_per_node;
 		} else if (job_data_ptr->gres_per_task) {
 			total_gres = job_data_ptr->gres_per_task *
-				     tasks_per_node;
+				tasks_per_node;
 		} else
 			total_gres = 1;
 		tmp = cpus_per_gres * total_gres;
@@ -325,10 +325,10 @@ extern int gres_select_util_job_min_cpus(uint32_t node_count,
 			total_gres = job_data_ptr->gres_per_job;
 		} else if (job_data_ptr->gres_per_node) {
 			total_gres = job_data_ptr->gres_per_node *
-				     node_count;
+				node_count;
 		} else if (job_data_ptr->gres_per_socket) {
 			total_gres = job_data_ptr->gres_per_socket *
-				     node_count * sockets_per_node;
+				node_count * sockets_per_node;
 		} else if (job_data_ptr->gres_per_task) {
 			total_gres = job_data_ptr->gres_per_task * task_count;
 		} else
@@ -412,7 +412,7 @@ extern uint32_t gres_select_util_get_task_limit(List sock_gres_list)
 		if (sock_gres->job_specs->gres_per_task == 0)
 			continue;
 		task_limit = sock_gres->total_cnt /
-			     sock_gres->job_specs->gres_per_task;
+			sock_gres->job_specs->gres_per_task;
 		max_tasks = MIN(max_tasks, task_limit);
 	}
 	list_iterator_destroy(sock_gres_iter);

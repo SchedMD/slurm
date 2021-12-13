@@ -638,7 +638,7 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 			node_gres_ptr->type_id[j], gres_name,
 			node_gres_ptr->type_name[j], node_cnt);
 		gres_cnt = node_gres_ptr->type_cnt_alloc[j] -
-			   pre_alloc_type_cnt[j];
+			pre_alloc_type_cnt[j];
 		if (node_gres_ptr->no_consume) {
 			node_gres_ptr->type_cnt_alloc[j] =
 				pre_alloc_type_cnt[j];
@@ -675,7 +675,7 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 			if (gres_cnt)
 				last_gres_bit = bit_fls(
 					job_alloc_gres_ptr->
-						gres_bit_alloc[node_offset]);
+					gres_bit_alloc[node_offset]);
 		}
 	}
 	/* Also track non typed node gres */
@@ -708,7 +708,7 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 		    job_gres_ptr->gres_bit_alloc[node_offset])
 			job_alloc_gres_ptr
 				->gres_bit_alloc[node_offset] = bit_copy(
-				job_gres_ptr->gres_bit_alloc[node_offset]);
+					job_gres_ptr->gres_bit_alloc[node_offset]);
 	}
 
 already_alloced:
@@ -1099,7 +1099,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		if (i != len) {
 			error("gres/%s: job %u and node %s bitmap sizes differ "
 			      "(%d != %d)", gres_name, job_id, node_name, len,
-			       i);
+			      i);
 			len = MIN(len, i);
 			/* proceed with request, make best effort */
 		}
@@ -1203,7 +1203,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			if (node_gres_ptr->topo_gres_cnt_alloc[i] >=
 			    gres_per_bit) {
 				node_gres_ptr->topo_gres_cnt_alloc[i] -=
-								gres_per_bit;
+					gres_per_bit;
 			} else {
 				error("gres/%s: job %u dealloc node %s "
 				      "topo_gres_cnt_alloc[%d] count underflow "
@@ -1225,7 +1225,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 				if (node_gres_ptr->type_cnt_alloc[j] >=
 				    gres_per_bit) {
 					node_gres_ptr->type_cnt_alloc[j] -=
-								gres_per_bit;
+						gres_per_bit;
 				} else {
 					error("gres/%s: job %u dealloc node %s "
 					      "type %s type_cnt_alloc count underflow "
@@ -1426,8 +1426,8 @@ extern void gres_ctld_job_merge(List from_job_gres_list,
 	}
 
 	new_node_cnt = bit_set_count(from_job_node_bitmap) +
-		       bit_set_count(to_job_node_bitmap) -
-		       bit_overlap(from_job_node_bitmap, to_job_node_bitmap);
+		bit_set_count(to_job_node_bitmap) -
+		bit_overlap(from_job_node_bitmap, to_job_node_bitmap);
 	i_first = MIN(bit_ffs(from_job_node_bitmap),
 		      bit_ffs(to_job_node_bitmap));
 	i_first = MAX(i_first, 0);
@@ -1525,21 +1525,21 @@ step2:	if (!from_job_gres_list)
 			gres_ptr2->gres_name = xstrdup(gres_job_ptr->gres_name);
 			gres_ptr2->state_type = gres_ptr->state_type;
 			gres_job_ptr2->gres_name =
-					xstrdup(gres_job_ptr->gres_name);
+				xstrdup(gres_job_ptr->gres_name);
 			gres_job_ptr2->cpus_per_gres =
-					gres_job_ptr->cpus_per_gres;
+				gres_job_ptr->cpus_per_gres;
 			gres_job_ptr2->gres_per_job =
-					gres_job_ptr->gres_per_job;
+				gres_job_ptr->gres_per_job;
 			gres_job_ptr2->gres_per_job =
-					gres_job_ptr->gres_per_job;
+				gres_job_ptr->gres_per_job;
 			gres_job_ptr2->gres_per_socket =
-					gres_job_ptr->gres_per_socket;
+				gres_job_ptr->gres_per_socket;
 			gres_job_ptr2->gres_per_task =
-					gres_job_ptr->gres_per_task;
+				gres_job_ptr->gres_per_task;
 			gres_job_ptr2->mem_per_gres =
-					gres_job_ptr->mem_per_gres;
+				gres_job_ptr->mem_per_gres;
 			gres_job_ptr2->ntasks_per_gres =
-					gres_job_ptr->ntasks_per_gres;
+				gres_job_ptr->ntasks_per_gres;
 			gres_job_ptr2->node_cnt = new_node_cnt;
 			gres_job_ptr2->gres_bit_alloc =
 				xcalloc(new_node_cnt, sizeof(bitstr_t *));
@@ -1877,14 +1877,14 @@ static void _set_type_tres_cnt(List gres_list,
 					continue;
 
 				tres_rec.name = xstrdup_printf(
-						"%s:%s",
-						gres_state_ptr->gres_name,
-						col_name);
+					"%s:%s",
+					gres_state_ptr->gres_name,
+					col_name);
 
 				count = gres_data_ptr->type_cnt_alloc[type];
 
 				if ((tres_pos = assoc_mgr_find_tres_pos(
-							&tres_rec, true)) != -1)
+					     &tres_rec, true)) != -1)
 					tres_cnt[tres_pos] = count;
 				xfree(tres_rec.name);
 			}
@@ -1940,11 +1940,11 @@ static uint64_t _step_get_gres_needed(void *step_gres_data,
 		gres_needed = tasks_on_node / step_gres_ptr->ntasks_per_gres;
 	} else if (step_gres_ptr->gres_per_step && (rem_nodes == 1)) {
 		gres_needed = step_gres_ptr->gres_per_step -
-			      step_gres_ptr->total_gres;
+			step_gres_ptr->total_gres;
 	} else if (step_gres_ptr->gres_per_step) {
 		/* Leave at least one GRES per remaining node */
 		*max_gres = step_gres_ptr->gres_per_step -
-			    step_gres_ptr->total_gres - (rem_nodes - 1);
+			step_gres_ptr->total_gres - (rem_nodes - 1);
 		gres_needed = 1;
 	} else {
 		/*
@@ -2081,7 +2081,7 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 		if (job_gres_ptr->gres_bit_step_alloc &&
 		    job_gres_ptr->gres_bit_step_alloc[node_offset]) {
 			bit_and_not(gres_bit_alloc,
-				job_gres_ptr->gres_bit_step_alloc[node_offset]);
+				    job_gres_ptr->gres_bit_step_alloc[node_offset]);
 		}
 		for (i = 0; i < len; i++) {
 			if (gres_alloc > 0) {

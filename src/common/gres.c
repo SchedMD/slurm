@@ -7802,8 +7802,9 @@ static void _accumulate_job_gres_alloc(gres_state_t *gres_ptr,
 	    gres_job_ptr->gres_bit_alloc &&
 	    gres_job_ptr->gres_bit_alloc[node_inx]) {
 		if (!*gres_bit_alloc) {
-			*gres_bit_alloc = bit_alloc(bit_size(
-				gres_job_ptr->gres_bit_alloc[node_inx]));
+			*gres_bit_alloc = bit_alloc(
+				bit_size(gres_job_ptr->
+					 gres_bit_alloc[node_inx]));
 		}
 		bit_or(*gres_bit_alloc, gres_job_ptr->gres_bit_alloc[node_inx]);
 	}
@@ -8149,7 +8150,7 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 			.gres_bit_alloc = &gres_bit_alloc,
 			.is_job = is_job,
 			.plugin_id = gres_context[j].plugin_id,
-			};
+		};
 		(void) list_for_each(gres_list, _accumulate_gres_device, &args);
 
 		if (!gres_bit_alloc ||
@@ -8594,9 +8595,9 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 
 
 static int _handle_ntasks_per_tres_step(List new_step_list,
-					 uint16_t ntasks_per_tres,
-					 uint32_t *num_tasks,
-					 uint32_t *cpu_count)
+					uint16_t ntasks_per_tres,
+					uint32_t *num_tasks,
+					uint32_t *cpu_count)
 {
 	gres_step_state_t *step_gres_data;
 	uint64_t cnt = 0;
@@ -9161,7 +9162,7 @@ extern uint64_t gres_step_count(List step_gres_list, char *gres_name)
  * IN - gres_bit_alloc
  */
 static void _translate_step_to_global_device_index(bitstr_t **usable_gres,
-						    bitstr_t *gres_bit_alloc)
+						   bitstr_t *gres_bit_alloc)
 {
 	bitstr_t *tmp = bit_alloc(bit_size(gres_bit_alloc));
 	int i_last, bit, bit2 = 0;
@@ -9500,8 +9501,8 @@ static void _accumulate_step_gres_alloc(gres_state_t *gres_ptr,
 	if (gres_step_ptr->gres_bit_alloc &&
 	    gres_step_ptr->gres_bit_alloc[0]) {
 		if (!*gres_bit_alloc) {
-			*gres_bit_alloc = bit_alloc(bit_size(
-				gres_step_ptr->gres_bit_alloc[0]));
+			*gres_bit_alloc = bit_alloc(
+				bit_size(gres_step_ptr->gres_bit_alloc[0]));
 		}
 		bit_or(*gres_bit_alloc, gres_step_ptr->gres_bit_alloc[0]);
 	}
