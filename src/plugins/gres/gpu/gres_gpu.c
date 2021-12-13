@@ -1067,21 +1067,21 @@ extern gres_epilog_info_t *gres_p_epilog_build_env(
 	gres_job_state_t *gres_js)
 {
 	int i;
-	gres_epilog_info_t *epilog_info;
+	gres_epilog_info_t *gres_ei;
 
-	epilog_info = xmalloc(sizeof(gres_epilog_info_t));
-	epilog_info->node_cnt = gres_js->node_cnt;
-	epilog_info->gres_bit_alloc = xcalloc(epilog_info->node_cnt,
-					      sizeof(bitstr_t *));
-	for (i = 0; i < epilog_info->node_cnt; i++) {
+	gres_ei = xmalloc(sizeof(gres_epilog_info_t));
+	gres_ei->node_cnt = gres_js->node_cnt;
+	gres_ei->gres_bit_alloc = xcalloc(gres_ei->node_cnt,
+					  sizeof(bitstr_t *));
+	for (i = 0; i < gres_ei->node_cnt; i++) {
 		if (gres_js->gres_bit_alloc &&
 		    gres_js->gres_bit_alloc[i]) {
-			epilog_info->gres_bit_alloc[i] =
+			gres_ei->gres_bit_alloc[i] =
 				bit_copy(gres_js->gres_bit_alloc[i]);
 		}
 	}
 
-	return epilog_info;
+	return gres_ei;
 }
 
 /*
@@ -1089,7 +1089,7 @@ extern gres_epilog_info_t *gres_p_epilog_build_env(
  * GRES allocated to the job.
  */
 extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
-				  gres_epilog_info_t *epilog_info, int node_inx)
+				  gres_epilog_info_t *gres_ei, int node_inx)
 {
 	int dev_inx_first = -1, dev_inx_last, dev_inx;
 	int env_inx = 0;
@@ -1101,18 +1101,18 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 
 	xassert(epilog_env_ptr);
 
-	if (!epilog_info)
+	if (!gres_ei)
 		return;
 
 	if (!gres_devices)
 		return;
 
-	if (epilog_info->node_cnt == 0)	/* no_consume */
+	if (gres_ei->node_cnt == 0)	/* no_consume */
 		return;
 
-	if (node_inx > epilog_info->node_cnt) {
+	if (node_inx > gres_ei->node_cnt) {
 		error("bad node index (%d > %u)",
-		      node_inx, epilog_info->node_cnt);
+		      node_inx, gres_ei->node_cnt);
 		return;
 	}
 
@@ -1124,16 +1124,16 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 		*epilog_env_ptr = xcalloc(5, sizeof(char *));
 	}
 
-	if (epilog_info->gres_bit_alloc &&
-	    epilog_info->gres_bit_alloc[node_inx]) {
-		dev_inx_first = bit_ffs(epilog_info->gres_bit_alloc[node_inx]);
+	if (gres_ei->gres_bit_alloc &&
+	    gres_ei->gres_bit_alloc[node_inx]) {
+		dev_inx_first = bit_ffs(gres_ei->gres_bit_alloc[node_inx]);
 	}
 	if (dev_inx_first >= 0)
-		dev_inx_last = bit_fls(epilog_info->gres_bit_alloc[node_inx]);
+		dev_inx_last = bit_fls(gres_ei->gres_bit_alloc[node_inx]);
 	else
 		dev_inx_last = -2;
 	for (dev_inx = dev_inx_first; dev_inx <= dev_inx_last; dev_inx++) {
-		if (!bit_test(epilog_info->gres_bit_alloc[node_inx], dev_inx))
+		if (!bit_test(gres_ei->gres_bit_alloc[node_inx], dev_inx))
 			continue;
 		iter = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(iter))) {

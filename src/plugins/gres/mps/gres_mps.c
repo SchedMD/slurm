@@ -831,28 +831,28 @@ extern gres_epilog_info_t *gres_p_epilog_build_env(
 	gres_job_state_t *gres_js)
 {
 	int i;
-	gres_epilog_info_t *epilog_info;
+	gres_epilog_info_t *gres_ei;
 
-	epilog_info = xmalloc(sizeof(gres_epilog_info_t));
-	epilog_info->node_cnt = gres_js->node_cnt;
-	epilog_info->gres_bit_alloc = xcalloc(epilog_info->node_cnt,
-					      sizeof(bitstr_t *));
-	epilog_info->gres_cnt_node_alloc = xcalloc(epilog_info->node_cnt,
-					      sizeof(uint64_t));
-	for (i = 0; i < epilog_info->node_cnt; i++) {
+	gres_ei = xmalloc(sizeof(gres_epilog_info_t));
+	gres_ei->node_cnt = gres_js->node_cnt;
+	gres_ei->gres_bit_alloc = xcalloc(gres_ei->node_cnt,
+					  sizeof(bitstr_t *));
+	gres_ei->gres_cnt_node_alloc = xcalloc(gres_ei->node_cnt,
+					       sizeof(uint64_t));
+	for (i = 0; i < gres_ei->node_cnt; i++) {
 		if (gres_js->gres_bit_alloc &&
 		    gres_js->gres_bit_alloc[i]) {
-			epilog_info->gres_bit_alloc[i] =
+			gres_ei->gres_bit_alloc[i] =
 				bit_copy(gres_js->gres_bit_alloc[i]);
 		}
 		if (gres_js->gres_bit_alloc &&
 		    gres_js->gres_bit_alloc[i]) {
-			epilog_info->gres_cnt_node_alloc[i] =
+			gres_ei->gres_cnt_node_alloc[i] =
 				gres_js->gres_cnt_node_alloc[i];
 		}
 	}
 
-	return epilog_info;
+	return gres_ei;
 }
 
 /*
@@ -860,7 +860,7 @@ extern gres_epilog_info_t *gres_p_epilog_build_env(
  * GRES allocated to the job.
  */
 extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
-				  gres_epilog_info_t *epilog_info, int node_inx)
+				  gres_epilog_info_t *gres_ei, int node_inx)
 {
 	int dev_inx = -1, env_inx = 0, global_id = -1, i;
 	uint64_t count_on_dev, gres_per_node = 0, percentage;
@@ -869,18 +869,18 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 
 	xassert(epilog_env_ptr);
 
-	if (!epilog_info)
+	if (!gres_ei)
 		return;
 
 	if (!gres_devices)
 		return;
 
-	if (epilog_info->node_cnt == 0)	/* no_consume */
+	if (gres_ei->node_cnt == 0)	/* no_consume */
 		return;
 
-	if (node_inx > epilog_info->node_cnt) {
+	if (node_inx > gres_ei->node_cnt) {
 		error("bad node index (%d > %u)",
-		      node_inx, epilog_info->node_cnt);
+		      node_inx, gres_ei->node_cnt);
 		return;
 	}
 
@@ -892,9 +892,9 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 		*epilog_env_ptr = xcalloc(3, sizeof(char *));
 	}
 
-	if (epilog_info->gres_bit_alloc &&
-	    epilog_info->gres_bit_alloc[node_inx])
-		dev_inx = bit_ffs(epilog_info->gres_bit_alloc[node_inx]);
+	if (gres_ei->gres_bit_alloc &&
+	    gres_ei->gres_bit_alloc[node_inx])
+		dev_inx = bit_ffs(gres_ei->gres_bit_alloc[node_inx]);
 	if (dev_inx >= 0) {
 		/* Translate bit to device number, may differ */
 		i = -1;
@@ -913,9 +913,9 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 			   "CUDA_VISIBLE_DEVICES=%d", global_id);
 	}
 	if ((global_id >= 0) &&
-	    epilog_info->gres_cnt_node_alloc &&
-	    epilog_info->gres_cnt_node_alloc[node_inx]) {
-		gres_per_node = epilog_info->gres_cnt_node_alloc[node_inx];
+	    gres_ei->gres_cnt_node_alloc &&
+	    gres_ei->gres_cnt_node_alloc[node_inx]) {
+		gres_per_node = gres_ei->gres_cnt_node_alloc[node_inx];
 		count_on_dev = _get_dev_count(global_id);
 		if (count_on_dev > 0) {
 			percentage = (gres_per_node * 100) / count_on_dev;

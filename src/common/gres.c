@@ -140,7 +140,7 @@ typedef struct slurm_gres_ops {
 	void            (*step_hardware_fini)	( void );
 	gres_epilog_info_t *(*epilog_build_env)(gres_job_state_t *gres_js);
 	void            (*epilog_set_env)	( char ***epilog_env_ptr,
-						  gres_epilog_info_t *epilog_info,
+						  gres_epilog_info_t *gres_ei,
 						  int node_inx );
 } slurm_gres_ops_t;
 
@@ -6411,7 +6411,7 @@ extern int gres_job_alloc_pack(List gres_list, buf_t *buffer,
 	uint32_t magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0;
 	ListIterator gres_iter;
-	gres_epilog_info_t *gres_job_ptr;
+	gres_epilog_info_t *gres_ei;
 
 	top_offset = get_buf_offset(buffer);
 	pack16(rec_cnt, buffer);	/* placeholder if data */
@@ -6423,22 +6423,22 @@ extern int gres_job_alloc_pack(List gres_list, buf_t *buffer,
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
-	while ((gres_job_ptr = (gres_epilog_info_t *) list_next(gres_iter))) {
+	while ((gres_ei = list_next(gres_iter))) {
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
-			pack32(gres_job_ptr->plugin_id, buffer);
-			pack32(gres_job_ptr->node_cnt, buffer);
-			if (gres_job_ptr->gres_cnt_node_alloc) {
+			pack32(gres_ei->plugin_id, buffer);
+			pack32(gres_ei->node_cnt, buffer);
+			if (gres_ei->gres_cnt_node_alloc) {
 				pack8((uint8_t) 1, buffer);
-				pack64_array(gres_job_ptr->gres_cnt_node_alloc,
-					     gres_job_ptr->node_cnt, buffer);
+				pack64_array(gres_ei->gres_cnt_node_alloc,
+					     gres_ei->node_cnt, buffer);
 			} else {
 				pack8((uint8_t) 0, buffer);
 			}
-			if (gres_job_ptr->gres_bit_alloc) {
+			if (gres_ei->gres_bit_alloc) {
 				pack8((uint8_t) 1, buffer);
-				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
-					pack_bit_str_hex(gres_job_ptr->
+				for (i = 0; i < gres_ei->node_cnt; i++) {
+					pack_bit_str_hex(gres_ei->
 							 gres_bit_alloc[i],
 							 buffer);
 				}
@@ -6465,20 +6465,20 @@ extern int gres_job_alloc_pack(List gres_list, buf_t *buffer,
 
 static void _epilog_list_del(void *x)
 {
-	gres_epilog_info_t *epilog_info = (gres_epilog_info_t *) x;
+	gres_epilog_info_t *gres_ei = (gres_epilog_info_t *) x;
 	int i;
 
-	if (!epilog_info)
+	if (!gres_ei)
 		return;
 
-	if (epilog_info->gres_bit_alloc) {
-		for (i = 0; i < epilog_info->node_cnt; i++)
-			FREE_NULL_BITMAP(epilog_info->gres_bit_alloc[i]);
-		xfree(epilog_info->gres_bit_alloc);
+	if (gres_ei->gres_bit_alloc) {
+		for (i = 0; i < gres_ei->node_cnt; i++)
+			FREE_NULL_BITMAP(gres_ei->gres_bit_alloc[i]);
+		xfree(gres_ei->gres_bit_alloc);
 	}
-	xfree(epilog_info->gres_cnt_node_alloc);
-	xfree(epilog_info->node_list);
-	xfree(epilog_info);
+	xfree(gres_ei->gres_cnt_node_alloc);
+	xfree(gres_ei->node_list);
+	xfree(gres_ei);
 }
 
 /*
@@ -6493,7 +6493,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 	uint32_t magic = 0, utmp32 = 0;
 	uint16_t rec_cnt = 0;
 	uint8_t filled = 0;
-	gres_epilog_info_t *gres_job_ptr = NULL;
+	gres_epilog_info_t *gres_ei = NULL;
 	bool locked = false;
 
 	safe_unpack16(&rec_cnt, buffer);
@@ -6517,24 +6517,24 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
-			gres_job_ptr = xmalloc(sizeof(gres_epilog_info_t));
-			safe_unpack32(&gres_job_ptr->plugin_id, buffer);
-			safe_unpack32(&gres_job_ptr->node_cnt, buffer);
-			if (gres_job_ptr->node_cnt > NO_VAL)
+			gres_ei = xmalloc(sizeof(gres_epilog_info_t));
+			safe_unpack32(&gres_ei->plugin_id, buffer);
+			safe_unpack32(&gres_ei->node_cnt, buffer);
+			if (gres_ei->node_cnt > NO_VAL)
 				goto unpack_error;
 			safe_unpack8(&filled, buffer);
 			if (filled) {
 				safe_unpack64_array(
-					&gres_job_ptr->gres_cnt_node_alloc,
+					&gres_ei->gres_cnt_node_alloc,
 					&utmp32, buffer);
 			}
 			safe_unpack8(&filled, buffer);
 			if (filled) {
-				safe_xcalloc(gres_job_ptr->gres_bit_alloc,
-					     gres_job_ptr->node_cnt,
+				safe_xcalloc(gres_ei->gres_bit_alloc,
+					     gres_ei->node_cnt,
 					     sizeof(bitstr_t *));
-				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
-					unpack_bit_str_hex(&gres_job_ptr->
+				for (i = 0; i < gres_ei->node_cnt; i++) {
+					unpack_bit_str_hex(&gres_ei->
 							   gres_bit_alloc[i],
 							   buffer);
 				}
@@ -6547,7 +6547,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 
 		for (i = 0; i < gres_context_cnt; i++) {
 			if (gres_context[i].plugin_id ==
-			    gres_job_ptr->plugin_id)
+			    gres_ei->plugin_id)
 				break;
 		}
 		if (i >= gres_context_cnt) {
@@ -6556,20 +6556,20 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 			 * Not a fatal error, skip over the data.
 			 */
 			error("%s: no plugin configured to unpack data type %u",
-			      __func__, gres_job_ptr->plugin_id);
-			_epilog_list_del(gres_job_ptr);
+			      __func__, gres_ei->plugin_id);
+			_epilog_list_del(gres_ei);
 			continue;
 		}
-		list_append(*gres_list, gres_job_ptr);
-		gres_job_ptr = NULL;
+		list_append(*gres_list, gres_ei);
+		gres_ei = NULL;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
 
 unpack_error:
 	error("%s: unpack error", __func__);
-	if (gres_job_ptr)
-		_epilog_list_del(gres_job_ptr);
+	if (gres_ei)
+		_epilog_list_del(gres_ei);
 	if (locked)
 		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
@@ -6588,7 +6588,7 @@ extern List gres_g_epilog_build_env(List job_gres_list, char *node_list)
 	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
-	gres_epilog_info_t *epilog_info;
+	gres_epilog_info_t *gres_ei;
 	List epilog_gres_list = NULL;
 
 	if (!job_gres_list)
@@ -6611,15 +6611,15 @@ extern List gres_g_epilog_build_env(List job_gres_list, char *node_list)
 
 		if (!gres_context[i].ops.epilog_build_env)
 			continue;	/* No plugin to call */
-		epilog_info = (*(gres_context[i].ops.epilog_build_env))
+		gres_ei = (*(gres_context[i].ops.epilog_build_env))
 			(gres_ptr->gres_data);
-		if (!epilog_info)
+		if (!gres_ei)
 			continue;	/* No info to add for this plugin */
 		if (!epilog_gres_list)
 			epilog_gres_list = list_create(_epilog_list_del);
-		epilog_info->plugin_id = gres_context[i].plugin_id;
-		epilog_info->node_list = xstrdup(node_list);
-		list_append(epilog_gres_list, epilog_info);
+		gres_ei->plugin_id = gres_context[i].plugin_id;
+		gres_ei->node_list = xstrdup(node_list);
+		list_append(epilog_gres_list, gres_ei);
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -6640,7 +6640,7 @@ extern void gres_g_epilog_set_env(char ***epilog_env_ptr,
 {
 	int i;
 	ListIterator epilog_iter;
-	gres_epilog_info_t *epilog_info;
+	gres_epilog_info_t *gres_ei;
 
 	*epilog_env_ptr = NULL;
 	if (!epilog_gres_list)
@@ -6650,21 +6650,21 @@ extern void gres_g_epilog_set_env(char ***epilog_env_ptr,
 
 	slurm_mutex_lock(&gres_context_lock);
 	epilog_iter = list_iterator_create(epilog_gres_list);
-	while ((epilog_info = list_next(epilog_iter))) {
+	while ((gres_ei = list_next(epilog_iter))) {
 		for (i = 0; i < gres_context_cnt; i++) {
-			if (epilog_info->plugin_id == gres_context[i].plugin_id)
+			if (gres_ei->plugin_id == gres_context[i].plugin_id)
 				break;
 		}
 		if (i >= gres_context_cnt) {
 			error("%s: GRES ID %u not found in context",
-			      __func__, epilog_info->plugin_id);
+			      __func__, gres_ei->plugin_id);
 			continue;
 		}
 
 		if (!gres_context[i].ops.epilog_set_env)
 			continue;	/* No plugin to call */
 		(*(gres_context[i].ops.epilog_set_env))
-			(epilog_env_ptr, epilog_info, node_inx);
+			(epilog_env_ptr, gres_ei, node_inx);
 	}
 	list_iterator_destroy(epilog_iter);
 	slurm_mutex_unlock(&gres_context_lock);

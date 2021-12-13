@@ -304,7 +304,7 @@ extern gres_epilog_info_t *gres_p_epilog_build_env(
  * GRES allocated to the job.
  */
 extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
-				  gres_epilog_info_t *epilog_info, int node_inx)
+				  gres_epilog_info_t *gres_ei, int node_inx)
 {
 	return;
 }
