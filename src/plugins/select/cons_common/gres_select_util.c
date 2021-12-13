@@ -62,8 +62,8 @@ extern void gres_select_util_job_set_defs(List job_gres_list,
 {
 	uint32_t plugin_id;
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr = NULL;
-	gres_job_state_t *job_gres_data;
+	gres_state_t *gres_state_job = NULL;
+	gres_job_state_t *gres_js;
 
 	/*
 	 * Currently only GPU supported, check how cpus_per_tres/mem_per_tres
@@ -77,29 +77,29 @@ extern void gres_select_util_job_set_defs(List job_gres_list,
 
 	plugin_id = gres_build_id(gres_name);
 	gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		if (gres_ptr->plugin_id != plugin_id)
+	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
+		if (gres_state_job->plugin_id != plugin_id)
 			continue;
-		job_gres_data = (gres_job_state_t *) gres_ptr->gres_data;
-		if (!job_gres_data)
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (!gres_js)
 			continue;
-		job_gres_data->def_cpus_per_gres = cpu_per_gpu;
-		job_gres_data->def_mem_per_gres = mem_per_gpu;
-		if (!job_gres_data->cpus_per_gres) {
+		gres_js->def_cpus_per_gres = cpu_per_gpu;
+		gres_js->def_mem_per_gres = mem_per_gpu;
+		if (!gres_js->cpus_per_gres) {
 			xfree(*cpus_per_tres);
 			if (cpu_per_gpu)
 				xstrfmtcat(*cpus_per_tres, "gpu:%"PRIu64,
 					   cpu_per_gpu);
 		}
-		if (!job_gres_data->mem_per_gres) {
+		if (!gres_js->mem_per_gres) {
 			xfree(*mem_per_tres);
 			if (mem_per_gpu)
 				xstrfmtcat(*mem_per_tres, "gpu:%"PRIu64,
 					   mem_per_gpu);
 		}
-		if (cpu_per_gpu && job_gres_data->gres_per_task) {
+		if (cpu_per_gpu && gres_js->gres_per_task) {
 			*cpus_per_task = MAX(*cpus_per_task,
-					     (job_gres_data->gres_per_task *
+					     (gres_js->gres_per_task *
 					      cpu_per_gpu));
 		}
 	}
@@ -119,8 +119,8 @@ extern int gres_select_util_job_min_cpu_node(uint32_t sockets_per_node,
 					     List job_gres_list)
 {
 	ListIterator job_gres_iter;
-	gres_state_t *job_gres_ptr;
-	gres_job_state_t  *job_data_ptr;
+	gres_state_t *gres_state_job;
+	gres_job_state_t  *gres_js;
 	int tmp, min_cpus = 0;
 	uint16_t cpus_per_gres;
 
@@ -128,22 +128,22 @@ extern int gres_select_util_job_min_cpu_node(uint32_t sockets_per_node,
 		return 0;
 
 	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
 		uint64_t total_gres = 0;
-		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
-		if (job_data_ptr->cpus_per_gres)
-			cpus_per_gres = job_data_ptr->cpus_per_gres;
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (gres_js->cpus_per_gres)
+			cpus_per_gres = gres_js->cpus_per_gres;
 		else
-			cpus_per_gres = job_data_ptr->def_cpus_per_gres;
+			cpus_per_gres = gres_js->def_cpus_per_gres;
 		if (cpus_per_gres == 0)
 			continue;
-		if (job_data_ptr->gres_per_node) {
-			total_gres = job_data_ptr->gres_per_node;
-		} else if (job_data_ptr->gres_per_socket) {
-			total_gres = job_data_ptr->gres_per_socket *
+		if (gres_js->gres_per_node) {
+			total_gres = gres_js->gres_per_node;
+		} else if (gres_js->gres_per_socket) {
+			total_gres = gres_js->gres_per_socket *
 				sockets_per_node;
-		} else if (job_data_ptr->gres_per_task) {
-			total_gres = job_data_ptr->gres_per_task *
+		} else if (gres_js->gres_per_task) {
+			total_gres = gres_js->gres_per_task *
 				tasks_per_node;
 		} else
 			total_gres = 1;
@@ -172,8 +172,8 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 					  List job_gres_list)
 {
 	ListIterator job_gres_iter;
-	gres_state_t *gres_ptr;
-	gres_job_state_t *gres_data;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
 	int tmp, min_tasks = 0;
 	uint32_t plugin_id = 0;
 
@@ -187,22 +187,22 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 		plugin_id = gres_build_id(gres_name);
 
 	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_ptr = list_next(job_gres_iter))) {
+	while ((gres_state_job = list_next(job_gres_iter))) {
 		uint64_t total_gres = 0;
 		/* Filter on GRES name, if specified */
-		if (plugin_id && (plugin_id != gres_ptr->plugin_id))
+		if (plugin_id && (plugin_id != gres_state_job->plugin_id))
 			continue;
 
-		gres_data = (gres_job_state_t *)gres_ptr->gres_data;
+		gres_js = (gres_job_state_t *)gres_state_job->gres_data;
 
-		if (gres_data->gres_per_job) {
-			total_gres = gres_data->gres_per_job;
-		} else if (gres_data->gres_per_node) {
-			total_gres = gres_data->gres_per_node * node_count;
-		} else if (gres_data->gres_per_socket) {
-			total_gres = gres_data->gres_per_socket * node_count *
+		if (gres_js->gres_per_job) {
+			total_gres = gres_js->gres_per_job;
+		} else if (gres_js->gres_per_node) {
+			total_gres = gres_js->gres_per_node * node_count;
+		} else if (gres_js->gres_per_socket) {
+			total_gres = gres_js->gres_per_socket * node_count *
 				sockets_per_node;
-		} else if (gres_data->gres_per_task) {
+		} else if (gres_js->gres_per_task) {
 			error("%s: gres_per_task and ntasks_per_tres conflict",
 			      __func__);
 		} else
@@ -223,8 +223,8 @@ extern bool gres_select_util_job_mem_set(List job_gres_list,
 					 job_resources_t *job_res)
 {
 	ListIterator job_gres_iter;
-	gres_state_t *job_gres_ptr;
-	gres_job_state_t *job_data_ptr;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
 	bool rc = false, first_set = true;
 	uint64_t gres_cnt, mem_size, mem_per_gres;
 	int i, i_first, i_last, node_off;
@@ -238,12 +238,12 @@ extern bool gres_select_util_job_mem_set(List job_gres_list,
 	i_last = bit_fls(job_res->node_bitmap);
 
 	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((job_gres_ptr = list_next(job_gres_iter))) {
-		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
-		if (job_data_ptr->mem_per_gres)
-			mem_per_gres = job_data_ptr->mem_per_gres;
+	while ((gres_state_job = list_next(job_gres_iter))) {
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (gres_js->mem_per_gres)
+			mem_per_gres = gres_js->mem_per_gres;
 		else
-			mem_per_gres = job_data_ptr->def_mem_per_gres;
+			mem_per_gres = gres_js->def_mem_per_gres;
 		/*
 		 * The logic below is correct because the only mem_per_gres
 		 * is --mem-per-gpu adding another option will require change
@@ -252,7 +252,7 @@ extern bool gres_select_util_job_mem_set(List job_gres_list,
 		 * gres_ctld_step_alloc()), which would also need to be changed
 		 * if another mem_per_gres option was added.
 		 */
-		if ((mem_per_gres == 0) || !job_data_ptr->gres_cnt_node_select)
+		if ((mem_per_gres == 0) || !gres_js->gres_cnt_node_select)
 			continue;
 		rc = true;
 		node_off = -1;
@@ -267,14 +267,14 @@ extern bool gres_select_util_job_mem_set(List job_gres_list,
 				gres_state_node = list_find_first(
 					node_record_table_ptr[i].gres_list,
 					gres_find_id,
-					&job_gres_ptr->plugin_id);
+					&gres_state_job->plugin_id);
 				if (!gres_state_node)
 					continue;
 				gres_ns = gres_state_node->gres_data;
 				gres_cnt = gres_ns->gres_cnt_avail;
 			} else
 				gres_cnt =
-					job_data_ptr->gres_cnt_node_select[i];
+					gres_js->gres_cnt_node_select[i];
 			mem_size = mem_per_gres * gres_cnt;
 			if (first_set)
 				job_res->memory_allocated[node_off] = mem_size;
@@ -303,8 +303,8 @@ extern int gres_select_util_job_min_cpus(uint32_t node_count,
 					 List job_gres_list)
 {
 	ListIterator job_gres_iter;
-	gres_state_t *job_gres_ptr;
-	gres_job_state_t  *job_data_ptr;
+	gres_state_t *gres_state_job;
+	gres_job_state_t  *gres_js;
 	int tmp, min_cpus = 0;
 	uint16_t cpus_per_gres;
 
@@ -312,25 +312,25 @@ extern int gres_select_util_job_min_cpus(uint32_t node_count,
 		return 0;
 
 	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
 		uint64_t total_gres = 0;
-		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
-		if (job_data_ptr->cpus_per_gres)
-			cpus_per_gres = job_data_ptr->cpus_per_gres;
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (gres_js->cpus_per_gres)
+			cpus_per_gres = gres_js->cpus_per_gres;
 		else
-			cpus_per_gres = job_data_ptr->def_cpus_per_gres;
+			cpus_per_gres = gres_js->def_cpus_per_gres;
 		if (cpus_per_gres == 0)
 			continue;
-		if (job_data_ptr->gres_per_job) {
-			total_gres = job_data_ptr->gres_per_job;
-		} else if (job_data_ptr->gres_per_node) {
-			total_gres = job_data_ptr->gres_per_node *
+		if (gres_js->gres_per_job) {
+			total_gres = gres_js->gres_per_job;
+		} else if (gres_js->gres_per_node) {
+			total_gres = gres_js->gres_per_node *
 				node_count;
-		} else if (job_data_ptr->gres_per_socket) {
-			total_gres = job_data_ptr->gres_per_socket *
+		} else if (gres_js->gres_per_socket) {
+			total_gres = gres_js->gres_per_socket *
 				node_count * sockets_per_node;
-		} else if (job_data_ptr->gres_per_task) {
-			total_gres = job_data_ptr->gres_per_task * task_count;
+		} else if (gres_js->gres_per_task) {
+			total_gres = gres_js->gres_per_task * task_count;
 		} else
 			continue;
 		tmp = cpus_per_gres * total_gres;
@@ -347,20 +347,20 @@ extern int gres_select_util_job_min_cpus(uint32_t node_count,
 extern uint64_t gres_select_util_job_mem_max(List job_gres_list)
 {
 	ListIterator job_gres_iter;
-	gres_state_t *job_gres_ptr;
-	gres_job_state_t *job_data_ptr;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
 	uint64_t mem_max = 0, mem_per_gres;
 
 	if (!job_gres_list)
 		return 0;
 
 	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
-		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
-		if (job_data_ptr->mem_per_gres)
-			mem_per_gres = job_data_ptr->mem_per_gres;
+	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (gres_js->mem_per_gres)
+			mem_per_gres = gres_js->mem_per_gres;
 		else
-			mem_per_gres = job_data_ptr->def_mem_per_gres;
+			mem_per_gres = gres_js->def_mem_per_gres;
 		mem_max = MAX(mem_max, mem_per_gres);
 	}
 	list_iterator_destroy(job_gres_iter);
@@ -375,17 +375,17 @@ extern uint64_t gres_select_util_job_mem_max(List job_gres_list)
 extern bool gres_select_util_job_tres_per_task(List job_gres_list)
 {
 	ListIterator job_gres_iter;
-	gres_state_t *job_gres_ptr;
-	gres_job_state_t *job_data_ptr;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
 	bool have_gres_per_task = false;
 
 	if (!job_gres_list)
 		return false;
 
 	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((job_gres_ptr = list_next(job_gres_iter))) {
-		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
-		if (job_data_ptr->gres_per_task) {
+	while ((gres_state_job = list_next(job_gres_iter))) {
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (gres_js->gres_per_task) {
 			have_gres_per_task = true;
 			break;
 		}
@@ -408,11 +408,11 @@ extern uint32_t gres_select_util_get_task_limit(List sock_gres_list)
 
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = list_next(sock_gres_iter))) {
-		xassert(sock_gres->job_specs);
-		if (sock_gres->job_specs->gres_per_task == 0)
+		xassert(sock_gres->gres_js);
+		if (sock_gres->gres_js->gres_per_task == 0)
 			continue;
 		task_limit = sock_gres->total_cnt /
-			sock_gres->job_specs->gres_per_task;
+			sock_gres->gres_js->gres_per_task;
 		max_tasks = MIN(max_tasks, task_limit);
 	}
 	list_iterator_destroy(sock_gres_iter);

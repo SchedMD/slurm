@@ -245,7 +245,7 @@ extern void gres_p_recv_stepd(buf_t *buffer)
  *            DO NOT FREE: This is a pointer into the job's data structure
  * RET - SLURM_SUCCESS or error code
  */
-extern int gres_p_get_job_info(gres_job_state_t *job_gres_data,
+extern int gres_p_get_job_info(gres_job_state_t *gres_js,
 			       uint32_t node_inx,
 			       enum gres_job_data_type data_type, void *data)
 {
@@ -294,7 +294,7 @@ extern void gres_p_step_hardware_fini(void)
  * prolog or epilog based GRES allocated to the job.
  */
 extern gres_epilog_info_t *gres_p_epilog_build_env(
-	gres_job_state_t *gres_job_ptr)
+	gres_job_state_t *gres_js)
 {
 	return NULL;
 }

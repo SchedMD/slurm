@@ -49,13 +49,13 @@
  */
 static int _find_job_by_sock_gres(void *x, void *key)
 {
-	gres_state_t *job_gres_state = (gres_state_t *) x;
-	gres_job_state_t *job_data;
+	gres_state_t *gres_state_job = (gres_state_t *) x;
+	gres_job_state_t *gres_js;
 	sock_gres_t *sock_data = (sock_gres_t *) key;
 
-	job_data = (gres_job_state_t *) job_gres_state->gres_data;
-	if ((sock_data->plugin_id == job_gres_state->plugin_id) &&
-	    (sock_data->type_id  == job_data->type_id))
+	gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+	if ((sock_data->plugin_id == gres_state_job->plugin_id) &&
+	    (sock_data->type_id  == gres_js->type_id))
 		return 1;
 	return 0;
 }
@@ -71,8 +71,8 @@ extern char *gres_sched_str(List sock_gres_list, List job_gres_list)
 {
 	ListIterator iter;
 	sock_gres_t *sock_data;
-	gres_state_t *job_gres_state;
-	gres_job_state_t *job_data;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
 	char *out_str = NULL, *sep;
 
 	if (!sock_gres_list)
@@ -80,27 +80,27 @@ extern char *gres_sched_str(List sock_gres_list, List job_gres_list)
 
 	iter = list_iterator_create(sock_gres_list);
 	while ((sock_data = (sock_gres_t *) list_next(iter))) {
-		job_gres_state = list_find_first(job_gres_list,
+		gres_state_job = list_find_first(job_gres_list,
 						 _find_job_by_sock_gres,
 						 sock_data);
-		if (!job_gres_state) {	/* Should never happen */
+		if (!gres_state_job) {	/* Should never happen */
 			error("%s: Could not find job GRES for type %u:%u",
 			      __func__, sock_data->plugin_id,
 			      sock_data->type_id);
 			continue;
 		}
-		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
 		if (out_str)
 			sep = ",";
 		else
 			sep = "GRES:";
-		if (job_data->type_name) {
+		if (gres_js->type_name) {
 			xstrfmtcat(out_str, "%s%s:%s:%"PRIu64, sep,
-				   job_data->gres_name, job_data->type_name,
+				   gres_js->gres_name, gres_js->type_name,
 				   sock_data->total_cnt);
 		} else {
 			xstrfmtcat(out_str, "%s%s:%"PRIu64, sep,
-				   job_data->gres_name, sock_data->total_cnt);
+				   gres_js->gres_name, sock_data->total_cnt);
 		}
 	}
 	list_iterator_destroy(iter);
@@ -115,19 +115,19 @@ extern char *gres_sched_str(List sock_gres_list, List job_gres_list)
 extern bool gres_sched_init(List job_gres_list)
 {
 	ListIterator iter;
-	gres_state_t *job_gres_state;
-	gres_job_state_t *job_data;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
 	bool rc = false;
 
 	if (!job_gres_list)
 		return rc;
 
 	iter = list_iterator_create(job_gres_list);
-	while ((job_gres_state = list_next(iter))) {
-		job_data = (gres_job_state_t *) job_gres_state->gres_data;
-		if (!job_data->gres_per_job)
+	while ((gres_state_job = list_next(iter))) {
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (!gres_js->gres_per_job)
 			continue;
-		job_data->total_gres = 0;
+		gres_js->total_gres = 0;
 		rc = true;
 	}
 	list_iterator_destroy(iter);
@@ -141,18 +141,18 @@ extern bool gres_sched_init(List job_gres_list)
 extern bool gres_sched_test(List job_gres_list, uint32_t job_id)
 {
 	ListIterator iter;
-	gres_state_t *job_gres_state;
-	gres_job_state_t *job_data;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
 	bool rc = true;
 
 	if (!job_gres_list)
 		return rc;
 
 	iter = list_iterator_create(job_gres_list);
-	while ((job_gres_state = list_next(iter))) {
-		job_data = (gres_job_state_t *) job_gres_state->gres_data;
-		if (job_data->gres_per_job &&
-		    (job_data->gres_per_job > job_data->total_gres)) {
+	while ((gres_state_job = list_next(iter))) {
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (gres_js->gres_per_job &&
+		    (gres_js->gres_per_job > gres_js->total_gres)) {
 			rc = false;
 			break;
 		}
@@ -164,7 +164,7 @@ extern bool gres_sched_test(List job_gres_list, uint32_t job_id)
 
 /*
  * Update a job's total_gres counter as we add a node to potential allocation
- * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
+ * IN job_gres_list - List of job's GRES requirements (gres_state_job_t)
  * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
  * IN/OUT avail_cpus - CPUs currently available on this node
  */
@@ -172,8 +172,8 @@ extern void gres_sched_add(List job_gres_list, List sock_gres_list,
 			   uint16_t *avail_cpus)
 {
 	ListIterator iter;
-	gres_state_t *job_gres_state;
-	gres_job_state_t *job_data;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
 	sock_gres_t *sock_data;
 	uint64_t gres_limit;
 	uint16_t gres_cpus = 0;
@@ -182,23 +182,23 @@ extern void gres_sched_add(List job_gres_list, List sock_gres_list,
 		return;
 
 	iter = list_iterator_create(job_gres_list);
-	while ((job_gres_state = list_next(iter))) {
-		job_data = (gres_job_state_t *) job_gres_state->gres_data;
-		if (!job_data->gres_per_job)	/* Don't care about totals */
+	while ((gres_state_job = list_next(iter))) {
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (!gres_js->gres_per_job)	/* Don't care about totals */
 			continue;
 		sock_data = list_find_first(sock_gres_list,
 					    gres_find_sock_by_job_state,
-					    job_gres_state);
+					    gres_state_job);
 		if (!sock_data)		/* None of this GRES available */
 			continue;
-		if (job_data->cpus_per_gres) {
-			gres_limit = *avail_cpus / job_data->cpus_per_gres;
+		if (gres_js->cpus_per_gres) {
+			gres_limit = *avail_cpus / gres_js->cpus_per_gres;
 			gres_limit = MIN(gres_limit, sock_data->total_cnt);
 			gres_cpus = MAX(gres_cpus,
-					gres_limit * job_data->cpus_per_gres);
+					gres_limit * gres_js->cpus_per_gres);
 		} else
 			gres_limit = sock_data->total_cnt;
-		job_data->total_gres += gres_limit;
+		gres_js->total_gres += gres_limit;
 	}
 	list_iterator_destroy(iter);
 	if (gres_cpus)
@@ -216,28 +216,28 @@ extern void gres_sched_consec(List *consec_gres, List job_gres_list,
 			      List sock_gres_list)
 {
 	ListIterator iter;
-	gres_state_t *job_gres_state;
-	gres_job_state_t *job_data;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
 	sock_gres_t *sock_data, *consec_data;
 
 	if (!job_gres_list)
 		return;
 
 	iter = list_iterator_create(job_gres_list);
-	while ((job_gres_state = list_next(iter))) {
-		job_data = (gres_job_state_t *) job_gres_state->gres_data;
-		if (!job_data->gres_per_job)	/* Don't care about totals */
+	while ((gres_state_job = list_next(iter))) {
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (!gres_js->gres_per_job)	/* Don't care about totals */
 			continue;
 		sock_data = list_find_first(sock_gres_list,
 					    gres_find_sock_by_job_state,
-					    job_gres_state);
+					    gres_state_job);
 		if (!sock_data)		/* None of this GRES available */
 			continue;
 		if (*consec_gres == NULL)
 			*consec_gres = list_create(gres_sock_delete);
 		consec_data = list_find_first(*consec_gres,
 					      gres_find_sock_by_job_state,
-					      job_gres_state);
+					      gres_state_job);
 		if (!consec_data) {
 			consec_data = xmalloc(sizeof(sock_gres_t));
 			consec_data->plugin_id = sock_data->plugin_id;
@@ -259,8 +259,8 @@ extern void gres_sched_consec(List *consec_gres, List job_gres_list,
 extern bool gres_sched_sufficient(List job_gres_list, List sock_gres_list)
 {
 	ListIterator iter;
-	gres_state_t *job_gres_state;
-	gres_job_state_t *job_data;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
 	sock_gres_t *sock_data;
 	bool rc = true;
 
@@ -270,21 +270,21 @@ extern bool gres_sched_sufficient(List job_gres_list, List sock_gres_list)
 		return false;
 
 	iter = list_iterator_create(job_gres_list);
-	while ((job_gres_state = list_next(iter))) {
-		job_data = (gres_job_state_t *) job_gres_state->gres_data;
-		if (!job_data->gres_per_job)	/* Don't care about totals */
+	while ((gres_state_job = list_next(iter))) {
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		if (!gres_js->gres_per_job)	/* Don't care about totals */
 			continue;
-		if (job_data->total_gres >= job_data->gres_per_job)
+		if (gres_js->total_gres >= gres_js->gres_per_job)
 			continue;
 		sock_data = list_find_first(sock_gres_list,
 					    gres_find_sock_by_job_state,
-					    job_gres_state);
+					    gres_state_job);
 		if (!sock_data)	{	/* None of this GRES available */
 			rc = false;
 			break;
 		}
-		if ((job_data->total_gres + sock_data->total_cnt) <
-		    job_data->gres_per_job) {
+		if ((gres_js->total_gres + sock_data->total_cnt) <
+		    gres_js->gres_per_job) {
 			rc = false;
 			break;
 		}

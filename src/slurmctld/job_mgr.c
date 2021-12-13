@@ -15692,9 +15692,9 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 /* Get requested gres but only if mem_per_gres was set for that gres */
 static int _get_req_gres(void *x, void *arg)
 {
-	gres_state_t *job_gres_ptr = x;
-	gres_job_state_t *gres_data_out = arg;
-	gres_job_state_t *gres_job_state = job_gres_ptr->gres_data;
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js_out = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
 
 	/*
 	 * This assumes that only one gres name has mem_per_gres in the job.
@@ -15702,7 +15702,7 @@ static int _get_req_gres(void *x, void *arg)
 	 * "license") both have mem_per_gres. Right now we only allow
 	 * mem_per_gres for GPU so this works.
 	 */
-	if (!gres_job_state->mem_per_gres)
+	if (!gres_js->mem_per_gres)
 		return SLURM_SUCCESS;
 
 	/*
@@ -15710,13 +15710,13 @@ static int _get_req_gres(void *x, void *arg)
 	 * allow one gres name to have mem_per_gres and it should be the same
 	 * for all types (e.g., gpu:k80 vs gpu:tesla) of that same gres (gpu).
 	 */
-	gres_data_out->mem_per_gres = MAX(gres_data_out->mem_per_gres,
-					  gres_job_state->mem_per_gres);
+	gres_js_out->mem_per_gres = MAX(gres_js_out->mem_per_gres,
+					gres_js->mem_per_gres);
 
-	gres_data_out->gres_per_job += gres_job_state->gres_per_job;
-	gres_data_out->gres_per_node += gres_job_state->gres_per_node;
-	gres_data_out->gres_per_socket += gres_job_state->gres_per_socket;
-	gres_data_out->gres_per_task += gres_job_state->gres_per_task;
+	gres_js_out->gres_per_job += gres_js->gres_per_job;
+	gres_js_out->gres_per_node += gres_js->gres_per_node;
+	gres_js_out->gres_per_socket += gres_js->gres_per_socket;
+	gres_js_out->gres_per_task += gres_js->gres_per_task;
 
 	return SLURM_SUCCESS;
 }
@@ -15768,40 +15768,40 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 
 	if (!user_set_mem && is_cons_tres && gres_list) {
 		/* mem_per_[cpu|node] not set, check if mem_per_gres was set */
-		gres_job_state_t gres_job_state;
-		memset(&gres_job_state, 0, sizeof(gres_job_state));
-		list_for_each(gres_list, _get_req_gres, &gres_job_state);
-		if (gres_job_state.mem_per_gres) {
+		gres_job_state_t gres_js;
+		memset(&gres_js, 0, sizeof(gres_js));
+		list_for_each(gres_list, _get_req_gres, &gres_js);
+		if (gres_js.mem_per_gres) {
 			/* Requested node_cnt == 1 if not given */
 			if (node_cnt == NO_VAL)
 				node_cnt = 1;
 
 			/* Estimate requested gres per job */
-			if (gres_job_state.gres_per_job)
-				return gres_job_state.mem_per_gres *
-					gres_job_state.gres_per_job;
-			if (gres_job_state.gres_per_node)
-				return gres_job_state.mem_per_gres *
-					gres_job_state.gres_per_node * node_cnt;
-			if (gres_job_state.gres_per_socket) {
+			if (gres_js.gres_per_job)
+				return gres_js.mem_per_gres *
+					gres_js.gres_per_job;
+			if (gres_js.gres_per_node)
+				return gres_js.mem_per_gres *
+					gres_js.gres_per_node * node_cnt;
+			if (gres_js.gres_per_socket) {
 				if (min_sockets_per_node &&
 				    (min_sockets_per_node != NO_VAL16))
-					return gres_job_state.mem_per_gres *
-						gres_job_state.gres_per_socket *
+					return gres_js.mem_per_gres *
+						gres_js.gres_per_socket *
 						node_cnt * min_sockets_per_node;
 				else
-					return gres_job_state.mem_per_gres *
-						gres_job_state.gres_per_socket *
+					return gres_js.mem_per_gres *
+						gres_js.gres_per_socket *
 						node_cnt;
 			}
-			if (gres_job_state.gres_per_task) {
+			if (gres_js.gres_per_task) {
 				if (num_tasks && (num_tasks != NO_VAL))
-					return gres_job_state.mem_per_gres *
-						gres_job_state.gres_per_task *
+					return gres_js.mem_per_gres *
+						gres_js.gres_per_task *
 						num_tasks;
 				else
-					return gres_job_state.mem_per_gres *
-						gres_job_state.gres_per_task;
+					return gres_js.mem_per_gres *
+						gres_js.gres_per_task;
 			}
 			/*
 			 * mem_per_gres set but no gres requested.

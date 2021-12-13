@@ -1025,7 +1025,7 @@ unpack_error:
  *            DO NOT FREE: This is a pointer into the job's data structure
  * RET - SLURM_SUCCESS or error code
  */
-extern int gres_p_get_job_info(gres_job_state_t *job_gres_data,
+extern int gres_p_get_job_info(gres_job_state_t *gres_js,
 			       uint32_t node_inx,
 			       enum gres_job_data_type data_type, void *data)
 {
@@ -1064,20 +1064,20 @@ extern List gres_p_get_devices(void)
  * prolog or epilog based GRES allocated to the job.
  */
 extern gres_epilog_info_t *gres_p_epilog_build_env(
-	gres_job_state_t *gres_job_ptr)
+	gres_job_state_t *gres_js)
 {
 	int i;
 	gres_epilog_info_t *epilog_info;
 
 	epilog_info = xmalloc(sizeof(gres_epilog_info_t));
-	epilog_info->node_cnt = gres_job_ptr->node_cnt;
+	epilog_info->node_cnt = gres_js->node_cnt;
 	epilog_info->gres_bit_alloc = xcalloc(epilog_info->node_cnt,
 					      sizeof(bitstr_t *));
 	for (i = 0; i < epilog_info->node_cnt; i++) {
-		if (gres_job_ptr->gres_bit_alloc &&
-		    gres_job_ptr->gres_bit_alloc[i]) {
+		if (gres_js->gres_bit_alloc &&
+		    gres_js->gres_bit_alloc[i]) {
 			epilog_info->gres_bit_alloc[i] =
-				bit_copy(gres_job_ptr->gres_bit_alloc[i]);
+				bit_copy(gres_js->gres_bit_alloc[i]);
 		}
 	}
 
