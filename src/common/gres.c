@@ -1892,11 +1892,10 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
  * gres_context   - (in) Which GRES plugin we are working in.
  * cpu_cnt        - (in) A count of CPUs on the node.
  */
-static void _merge_gres(List gres_conf_list, List new_list, gres_state_t *ptr,
+static void _merge_gres(List gres_conf_list, List new_list,
+			gres_node_state_t *gres_ns,
 			slurm_gres_context_t *gres_context, uint32_t cpu_cnt)
 {
-	gres_node_state_t *gres_ns = (gres_node_state_t *)ptr->gres_data;
-
 	/* If this GRES has no types, merge in the single untyped GRES */
 	if (gres_ns->type_cnt == 0) {
 		_merge_gres2(gres_conf_list, new_list,
@@ -1929,7 +1928,7 @@ static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 			  List slurm_conf_list)
 {
 	int i;
-	gres_state_t *gres_ptr;
+	gres_state_t *gres_state_node;
 	ListIterator iter;
 	bool found;
 
@@ -1940,13 +1939,14 @@ static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 		if (slurm_conf_list) {
 			found = false;
 			iter = list_iterator_create(slurm_conf_list);
-			while ((gres_ptr = (gres_state_t *) list_next(iter))) {
-				if (gres_ptr->plugin_id !=
+			while ((gres_state_node = list_next(iter))) {
+				if (gres_state_node->plugin_id !=
 				    gres_context[i].plugin_id)
 					continue;
 				found = true;
 				_merge_gres(gres_conf_list, new_gres_list,
-					    gres_ptr, &gres_context[i],
+					    gres_state_node->gres_data,
+					    &gres_context[i],
 					    node_conf->cpu_cnt);
 			}
 			list_iterator_destroy(iter);
