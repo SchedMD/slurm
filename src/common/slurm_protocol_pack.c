@@ -7163,14 +7163,12 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->mem_bind, buffer);
 		packstr_array(msg->argv, msg->argc, buffer);
 		pack32(msg->flags, buffer);
-		if ((msg->flags & LAUNCH_USER_MANAGED_IO) == 0) {
-			packstr(msg->ofname, buffer);
-			packstr(msg->efname, buffer);
-			packstr(msg->ifname, buffer);
-			pack16(msg->num_io_port, buffer);
-			for (i = 0; i < msg->num_io_port; i++)
-				pack16(msg->io_port[i], buffer);
-		}
+		packstr(msg->ofname, buffer);
+		packstr(msg->efname, buffer);
+		packstr(msg->ifname, buffer);
+		pack16(msg->num_io_port, buffer);
+		for (i = 0; i < msg->num_io_port; i++)
+			pack16(msg->io_port[i], buffer);
 		pack32(msg->profile, buffer);
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
@@ -7262,14 +7260,12 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->mem_bind, buffer);
 		packstr_array(msg->argv, msg->argc, buffer);
 		pack32(msg->flags, buffer);
-		if ((msg->flags & LAUNCH_USER_MANAGED_IO) == 0) {
-			packstr(msg->ofname, buffer);
-			packstr(msg->efname, buffer);
-			packstr(msg->ifname, buffer);
-			pack16(msg->num_io_port, buffer);
-			for (i = 0; i < msg->num_io_port; i++)
-				pack16(msg->io_port[i], buffer);
-		}
+		packstr(msg->ofname, buffer);
+		packstr(msg->efname, buffer);
+		packstr(msg->ifname, buffer);
+		pack16(msg->num_io_port, buffer);
+		for (i = 0; i < msg->num_io_port; i++)
+			pack16(msg->io_port[i], buffer);
 		pack32(msg->profile, buffer);
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
@@ -7409,23 +7405,17 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr_xmalloc(&msg->mem_bind, &uint32_tmp, buffer);
 		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
 		safe_unpack32(&msg->flags, buffer);
-		if ((msg->flags & LAUNCH_USER_MANAGED_IO) == 0) {
-			safe_unpackstr_xmalloc(&msg->ofname, &uint32_tmp,
-					       buffer);
-			safe_unpackstr_xmalloc(&msg->efname, &uint32_tmp,
-					       buffer);
-			safe_unpackstr_xmalloc(&msg->ifname, &uint32_tmp,
-					       buffer);
-			safe_unpack16(&msg->num_io_port, buffer);
-			if (msg->num_io_port >= NO_VAL16)
-				goto unpack_error;
-			if (msg->num_io_port > 0) {
-				safe_xcalloc(msg->io_port, msg->num_io_port,
-				             sizeof(uint16_t));
-				for (i = 0; i < msg->num_io_port; i++)
-					safe_unpack16(&msg->io_port[i],
-						      buffer);
-			}
+		safe_unpackstr_xmalloc(&msg->ofname, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->efname, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->ifname, &uint32_tmp, buffer);
+		safe_unpack16(&msg->num_io_port, buffer);
+		if (msg->num_io_port >= NO_VAL16)
+			goto unpack_error;
+		if (msg->num_io_port > 0) {
+			safe_xcalloc(msg->io_port, msg->num_io_port,
+			             sizeof(uint16_t));
+			for (i = 0; i < msg->num_io_port; i++)
+				safe_unpack16(&msg->io_port[i], buffer);
 		}
 		safe_unpack32(&msg->profile, buffer);
 		safe_unpackstr_xmalloc(&msg->task_prolog, &uint32_tmp, buffer);
@@ -7562,23 +7552,17 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr_xmalloc(&msg->mem_bind, &uint32_tmp, buffer);
 		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
 		safe_unpack32(&msg->flags, buffer);
-		if ((msg->flags & LAUNCH_USER_MANAGED_IO) == 0) {
-			safe_unpackstr_xmalloc(&msg->ofname, &uint32_tmp,
-					       buffer);
-			safe_unpackstr_xmalloc(&msg->efname, &uint32_tmp,
-					       buffer);
-			safe_unpackstr_xmalloc(&msg->ifname, &uint32_tmp,
-					       buffer);
-			safe_unpack16(&msg->num_io_port, buffer);
-			if (msg->num_io_port >= NO_VAL16)
-				goto unpack_error;
-			if (msg->num_io_port > 0) {
-				safe_xcalloc(msg->io_port, msg->num_io_port,
-				             sizeof(uint16_t));
-				for (i = 0; i < msg->num_io_port; i++)
-					safe_unpack16(&msg->io_port[i],
-						      buffer);
-			}
+		safe_unpackstr_xmalloc(&msg->ofname, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->efname, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->ifname, &uint32_tmp, buffer);
+		safe_unpack16(&msg->num_io_port, buffer);
+		if (msg->num_io_port >= NO_VAL16)
+			goto unpack_error;
+		if (msg->num_io_port > 0) {
+			safe_xcalloc(msg->io_port, msg->num_io_port,
+			             sizeof(uint16_t));
+			for (i = 0; i < msg->num_io_port; i++)
+				safe_unpack16(&msg->io_port[i], buffer);
 		}
 		safe_unpack32(&msg->profile, buffer);
 		safe_unpackstr_xmalloc(&msg->task_prolog, &uint32_tmp, buffer);

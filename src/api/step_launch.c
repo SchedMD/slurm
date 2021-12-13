@@ -338,8 +338,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 
 	launch.select_jobinfo  = ctx->step_resp->select_jobinfo;
 
-	if (params->user_managed_io)
-		launch.flags	|= LAUNCH_USER_MANAGED_IO;
 	ctx->launch_state->user_managed_io = params->user_managed_io;
 
 	if (!ctx->launch_state->user_managed_io) {
@@ -527,9 +525,6 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
 	launch.select_jobinfo  = ctx->step_resp->select_jobinfo;
-
-	if (params->user_managed_io)
-		launch.flags |= LAUNCH_USER_MANAGED_IO;
 
 	/* user_managed_io is true */
 	if (!ctx->launch_state->io.user) {

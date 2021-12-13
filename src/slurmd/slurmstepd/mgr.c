@@ -1330,8 +1330,7 @@ fail2:
 	/*
 	 * Wait for io thread to complete (if there is one)
 	 */
-	if (!job->batch && io_initialized &&
-	    ((job->flags & LAUNCH_USER_MANAGED_IO) == 0))
+	if (!job->batch && io_initialized)
 		_wait_for_io(job);
 
 	/*
@@ -2650,7 +2649,7 @@ _slurmd_job_log_init(stepd_step_rec_t *job)
 	/*
 	 *  Connect slurmd stderr to stderr of job
 	 */
-	if ((job->flags & LAUNCH_USER_MANAGED_IO) || (job->flags & LAUNCH_PTY))
+	if (job->flags & LAUNCH_PTY)
 		fd_set_nonblocking(STDERR_FILENO);
 	if (job->task != NULL) {
 		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
