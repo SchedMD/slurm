@@ -6876,12 +6876,12 @@ _pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
 	xassert(msg);
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
-		pack16((uint16_t)msg->num_resp_port, buffer);
+		pack16(msg->num_resp_port, buffer);
 		for (i = 0; i < msg->num_resp_port; i++)
-			pack16((uint16_t)msg->resp_port[i], buffer);
-		pack16((uint16_t)msg->num_io_port, buffer);
+			pack16(msg->resp_port[i], buffer);
+		pack16(msg->num_io_port, buffer);
 		for (i = 0; i < msg->num_io_port; i++)
-			pack16((uint16_t)msg->io_port[i], buffer);
+			pack16(msg->io_port[i], buffer);
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
 	}
 }
