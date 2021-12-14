@@ -7214,17 +7214,21 @@ extern char *gres_sock_str(List sock_gres_list, int sock_inx)
  * so we need to OR the core_bitmap over all of them.
  */
 static sock_gres_t *_build_sock_gres_by_topo(
-	gres_job_state_t *gres_js,
-	gres_node_state_t *gres_ns,
+	gres_state_t *gres_state_job,
+	gres_state_t *gres_state_node,
+	gres_state_t *gres_state_node_alt,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
 	uint32_t job_id, char *node_name,
 	bool enforce_binding, uint32_t s_p_n,
 	bitstr_t **req_sock_map,
-	uint32_t main_plugin_id, uint32_t alt_plugin_id,
-	gres_node_state_t *alt_gres_ns,
 	uint32_t user_id, const uint32_t node_inx)
 {
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	gres_node_state_t *alt_gres_ns = NULL;
+	uint32_t alt_plugin_id = 0;
+	uint32_t main_plugin_id = gres_state_job->plugin_id;
 	int i, j, s, c;
 	uint32_t tot_cores;
 	sock_gres_t *sock_gres;
@@ -7235,6 +7239,11 @@ static sock_gres_t *_build_sock_gres_by_topo(
 
 	if (gres_ns->gres_cnt_avail == 0)
 		return NULL;
+
+	if (gres_state_node_alt) {
+		alt_gres_ns = gres_state_node_alt->gres_data;
+		alt_plugin_id = gres_state_node_alt->plugin_id;
+	}
 
 	if (!use_total_gres &&
 	    gres_id_shared(main_plugin_id) &&
@@ -7733,7 +7742,7 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 			sock_gres = NULL;	/* No cores available */
 		} else if (gres_ns->topo_cnt) {
 			uint32_t alt_plugin_id = 0;
-			gres_node_state_t *alt_gres_ns = NULL;
+			gres_state_t *gres_state_node_alt = NULL;
 			if (!use_total_gres && have_gpu && have_mps) {
 				if (gres_state_job->plugin_id == gpu_plugin_id)
 					alt_plugin_id = mps_plugin_id;
@@ -7741,26 +7750,18 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 					alt_plugin_id = gpu_plugin_id;
 			}
 			if (alt_plugin_id) {
-				gres_state_node = list_find_first(
+				gres_state_node_alt = list_find_first(
 					node_gres_list,
 					gres_find_id,
 					&alt_plugin_id);
 			}
-			if (alt_plugin_id && gres_state_node) {
-				alt_gres_ns = (gres_node_state_t *)
-					gres_state_node->gres_data;
-			} else {
-				/* GRES of interest not on this node */
-				alt_plugin_id = 0;
-			}
 			sock_gres = _build_sock_gres_by_topo(
-				gres_js,
-				gres_ns, use_total_gres,
+				gres_state_job, gres_state_node,
+				gres_state_node_alt,
+				use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
 				job_id, node_name, enforce_binding,
 				local_s_p_n, req_sock_map,
-				gres_state_job->plugin_id,
-				alt_plugin_id, alt_gres_ns,
 				user_id, node_inx);
 		} else if (gres_ns->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(
