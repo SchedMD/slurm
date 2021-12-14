@@ -97,7 +97,7 @@ wait_for_file -fail $file_flag_1
 wait_for_file -fail $file_flag_2
 wait_for_file -fail $file_flag_3
 if {[wait_for_file -timeout 5 $file_flag_4] == $::RETURN_SUCCESS} {
-	fail "File $file_flag_4 is found"
+	fail "File flag 4 ($file_flag_4) is found"
 }
 
 #
@@ -139,5 +139,5 @@ subtest {$disabled != 0} "Verify --no-requeue option"
 wait_for_job -fail $job_id "DONE"
 wait_for_file -fail $file_flag_1
 if {[wait_for_file -timeout 5 $file_flag_2] == $::RETURN_SUCCESS} {
-	fail "File $file_flag_2 is found"
+	fail "File flag 2 ($file_flag_2) is found"
 }

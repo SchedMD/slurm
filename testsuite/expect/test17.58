@@ -87,7 +87,7 @@ if {$job_id == 0} {
 # verify time limit
 #
 if {[wait_for_job $job_id DONE] != 0} {
-	fail "Job failed to run to completion. This can be due to QOS or account time limit <120 minutes"
+	fail "Job failed to run to completion. This can be due to QOS or account time limit < 120 minutes"
 }
 spawn $scontrol show job $job_id
 expect {

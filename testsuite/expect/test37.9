@@ -112,7 +112,7 @@ proc squeue { options regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Unexpected error in squeue. expected $regex"
+		fail "Unexpected error in squeue (expected $regex)"
 	}
 }
 
@@ -150,7 +150,7 @@ proc sinfo { options regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Unexpected error in sinfo. expected $regex"
+		fail "Unexpected error in sinfo (expected $regex)"
 	}
 }
 
@@ -171,7 +171,7 @@ proc sprio { options regex {match_cnt 1} } {
 		}
 	}
 	if {$matches != $match_cnt} {
-		fail "Unexpected error in sprio. expected $regex ($matches != $match_cnt)"
+		fail "Unexpected error in sprio (expected $regex: $matches != $match_cnt)"
 	}
 }
 
@@ -194,7 +194,7 @@ proc scontrol_show { category tasks regex option } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Unexpected error in scontrol_show. Expected $regex $matches matches"
+		fail "Unexpected error in scontrol_show (expected $regex $matches matches)"
 	}
 }
 
@@ -272,7 +272,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -302,7 +302,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -332,7 +332,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 make_bash_script $file_in "env; $my_srun sleep 900 & $my_srun sleep 900"

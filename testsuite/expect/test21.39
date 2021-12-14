@@ -177,7 +177,7 @@ proc check_job_reason { job_id state why } {
 
 	log_user 1
 	if { $state_found != $state } {
-		fail "Job $job_id state found was $state_found, expected $state"
+		fail "Job ($job_id) state found was $state_found, expected $state"
 	}
 
 	set found_reason 0
@@ -189,7 +189,7 @@ proc check_job_reason { job_id state why } {
 	}
 
 	if { !$found_reason } {
-		fail "Job $job_id scontrol returned Reason=$found_why instead of Reason='$why'"
+		fail "Job ($job_id) scontrol returned Reason=$found_why instead of Reason='$why'"
 	}
 
 	log_debug "Found jobid $job_id with correct state '$state' and reason '$found_why'"
@@ -285,7 +285,7 @@ reconfigure -fail
 delete_part $part_name
 
 if [create_part $part_name 1] {
-	fail "Unable to create partition $part_name"
+	fail "Unable to create partition ($part_name)"
 }
 
 for {set i 0} {$i < 2} {incr i} {
@@ -348,7 +348,7 @@ wait_for {$condition_matched} {
 		set condition_matched true
 	}
 }
-subtest {$condition_matched} "Job $job_id_1 should be PD with Reason=InvalidQOS" "(JobState=$job_state, Reason=$reason)"
+subtest {$condition_matched} "Job ($job_id_1) should be PD with Reason=InvalidQOS" "JobState=$job_state, Reason=$reason"
 
 # Add back the test qos
 run_command -fail "$sacctmgr -vi modify account name=$ta1 user=$tu1 set qos=normal,$tq1"
@@ -374,10 +374,10 @@ run_command -fail "$sacctmgr -vi add user name=$tu1 account=$ta2"
 
 # Check what we just added to make sure it is there
 if {![regexp -line "^\\S+\\|$ta1\\|$tu1\\|normal,$tq1" [run_command_output "$sacctmgr -n -P show assoc format=cluster,account,user,qos"]]} {
-	fail "Test qos $tq1 has not been added to test account $ta1"
+	fail "QOS ($tq1) has not been added to account ($ta1)"
 }
 if {![regexp -line "^\\S+\\|$ta2\\|$tu1\\|normal,$tq1" [run_command_output "$sacctmgr -n -P show assoc format=cluster,account,user,qos"]]} {
-	fail "Test qos $tq1 has not been added to test account $ta2"
+	fail "QOS ($tq1) has not been added to account ($ta2)"
 }
 
 # We may have to try this multiple times since we are relying on a race
@@ -422,7 +422,7 @@ wait_for {$condition_matched} {
 		set condition_matched true
 	}
 }
-subtest {$condition_matched} "Job $job_id_1 should be PD with Reason=InvalidAccount" "(JobState=$job_state, Reason=$reason)"
+subtest {$condition_matched} "Job ($job_id_1) should be PD with Reason=InvalidAccount" "JobState=$job_state, Reason=$reason"
 
 # Add back the test account
 run_command -fail "$sacctmgr -vi add account name=$ta2 set qos=normal,$tq1"

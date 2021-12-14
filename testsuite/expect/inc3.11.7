@@ -64,7 +64,7 @@ proc inc3_11_7 {} {
 	set res_info [get_reservations $res_name]
 	if { ![dict exists $res_info $res_name] } {
 		delete_res $res_name
-		fail "Unable to get info about reservation $res_name"
+		fail "Unable to get info about reservation ($res_name)"
 	}
 	lassign [get_node_cpus [dict get $res_info $res_name "Nodes"]] cputot threadcnt
 	set thread_res_num [ expr $corecnt * $threadcnt ]
@@ -94,7 +94,7 @@ proc inc3_11_7 {} {
 	}
 	if {$job_id == 0} {
 		delete_res $res_name
-		fail "batch submit failure"
+		fail "Batch submit failure"
 	}
 
 	subtest {[wait_for_job $job_id RUNNING] == 0} "A simple job using just 1 core should run inside the reservation"
@@ -120,7 +120,7 @@ proc inc3_11_7 {} {
 	}
 	if {$job_id == 0} {
 		delete_res $res_name
-		fail "batch submit failure"
+		fail "Batch submit failure"
 	}
 
 	# Show the job, make sure reservation tag is right
@@ -147,7 +147,7 @@ proc inc3_11_7 {} {
 	}
 	if {$job_id == 0} {
 		delete_res $res_name
-		fail "batch submit failure"
+		fail "Batch submit failure"
 	}
 
 	# Show the job, make sure reservation tag is right
@@ -174,7 +174,7 @@ proc inc3_11_7 {} {
 	}
 	if {$job_id == 0} {
 		delete_res $res_name
-		fail "batch submit failure"
+		fail "Batch submit failure"
 	}
 
 	sleep 10
@@ -185,7 +185,7 @@ proc inc3_11_7 {} {
 		-re "Invalid job id specified" {
 			delete_res $res_name
 			cancel_job $job_id
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=PENDING" {
 			log_info "Job $job_id is PENDING as expected"
@@ -194,7 +194,7 @@ proc inc3_11_7 {} {
 		-re "JobState=RUNNING" {
 			delete_res $res_name
 			cancel_job $job_id
-			fail "Job $job_id is RUNNING but it should not"
+			fail "Job ($job_id) is RUNNING but it should not be"
 		}
 		timeout {
 			delete_res $res_name
@@ -227,7 +227,7 @@ proc inc3_11_7 {} {
 	}
 	if {$job_id == 0} {
 		delete_res $res_name
-		fail "batch submit failure"
+		fail "Batch submit failure"
 	}
 
 	sleep 10
@@ -238,7 +238,7 @@ proc inc3_11_7 {} {
 		-re "Invalid job id specified" {
 			delete_res $res_name
 			cancel_job $job_id
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=PENDING" {
 			log_info "Job $job_id is PENDING as expected"
@@ -247,7 +247,7 @@ proc inc3_11_7 {} {
 		-re "JobState=RUNNING" {
 			delete_res $res_name
 			cancel_job $job_id
-			fail "Job $job_id is RUNNING but it should not"
+			fail "Job ($job_id) is RUNNING but it should not be"
 		}
 		timeout {
 			delete_res $res_name
@@ -274,11 +274,11 @@ proc inc3_11_7 {} {
 	spawn $scontrol show job $job_id
 	expect {
 		-re "Invalid job id specified" {
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=PENDING" {
 			cancel_job $job_id
-			fail "Job $job_id is PENDING but it should not"
+			fail "Job ($job_id) is PENDING but it should not be"
 		}
 		-re "JobState=RUNNING" {
 			log_info "Job $job_id is RUNNING as expected"

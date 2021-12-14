@@ -104,11 +104,11 @@ proc test_constrain {nnode constrain mandatory_nodes {posible_nodes ""} {exclude
 			# TODO: make nodeslist an actual list
 			subtest {[llength $nodeslist] == $nnode} "Job's NodeList should contain $nnode nodes" "[llength $nodeslist]"
 			foreach node $nodeslist {
-				subtest {[lsearch $posible_nodes $node] != -1 || [lsearch $mandatory_nodes $node] != -1} "Job's node $node should be in the expected list: $posible_nodes $mandatory_nodes"
-				subtest {[lsearch $excluded_nodes $node] == -1 } "Job's node $node should NOT be in the excluded list: $excluded_nodes"
+				subtest {[lsearch $posible_nodes $node] != -1 || [lsearch $mandatory_nodes $node] != -1} "Job's node ($node) should be in the expected list" "$posible_nodes $mandatory_nodes"
+				subtest {[lsearch $excluded_nodes $node] == -1 } "Job's node ($node) should NOT be in the excluded list" "$excluded_nodes"
 			}
 			foreach node $mandatory_nodes {
-				subtest {[lsearch $nodeslist $node] != -1} "Node $node should be in the jobs NodeList ($nodeslist)"
+				subtest {[lsearch $nodeslist $node] != -1} "Node ($node) should be in the jobs NodeList" "$nodeslist"
 			}
 		}
 	}
@@ -129,7 +129,7 @@ proc test_constrain_batch {nnode constrain constrain_batch expected_batch_node} 
 		wait_for_job -fail $test_job "RUNNING"
 		# Check that job that the job used the correct nodes
 		set batch_host [get_job_param $test_job "BatchHost"]
-		subtest {$batch_host == $expected_batch_node} "Job's batch node should be $expected_batch_node" "was $batch_host"
+		subtest {$batch_host == $expected_batch_node} "Verify job's expected batch node" "$batch_host != $expected_batch_node"
 	}
 	cancel_job $test_job
 }
@@ -140,40 +140,40 @@ proc test_constrain_9546 {} {
 	set job_id_1 [submit_job -fail  "--exclusive  -J $test_name -C $feat0 -p $test_part -o /dev/null --wrap '$bin_sleep 1000'" ]
 	set job_id_2 [submit_job -fail  "--exclusive  -J $test_name -C $feat0 -p $test_part -o /dev/null --wrap '$bin_sleep 1000'" ]
 
-	subtest {![wait_for_job $job_id_1 RUNNING]} "Job1 $job_id_1 with \"-C $feat0\" should be started"
-	subtest {![wait_for_job $job_id_2 RUNNING]} "Job2 $job_id_2 with \"-C $feat0\" should be started"
+	subtest {![wait_for_job $job_id_1 RUNNING]} "Job1 ($job_id_1) with \"-C $feat0\" should be started"
+	subtest {![wait_for_job $job_id_2 RUNNING]} "Job2 ($job_id_2) with \"-C $feat0\" should be started"
 
 	set job_id_3 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat1|$feat0\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
 	set job_id_4 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat1|$feat0\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
 
-	subtest {![wait_for_job $job_id_3 DONE]} "Job3 $job_id_3 with \"-C '\[$feat1|$feat0\]'\" should be completed"
-	subtest {![wait_for_job $job_id_4 DONE]} "Job4 $job_id_4 with \"-C '\[$feat1|$feat0\]'\" should be completed"
+	subtest {![wait_for_job $job_id_3 DONE]} "Job3 ($job_id_3) with \"-C '\[$feat1|$feat0\]'\" should be completed"
+	subtest {![wait_for_job $job_id_4 DONE]} "Job4 ($job_id_4) with \"-C '\[$feat1|$feat0\]'\" should be completed"
 
 	set job_id_3 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat0|$feat1\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
 	set job_id_4 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat0|$feat1\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
 
-	subtest {![wait_for_job $job_id_3 DONE]} "Job3 $job_id_3 with \"-C '\[$feat0|$feat1\]'\" should be completed"
-	subtest {![wait_for_job $job_id_4 DONE]} "Job4 $job_id_4 with \"-C '\[$feat0|$feat1\]'\" should be completed"
+	subtest {![wait_for_job $job_id_3 DONE]} "Job3 ($job_id_3) with \"-C '\[$feat0|$feat1\]'\" should be completed"
+	subtest {![wait_for_job $job_id_4 DONE]} "Job4 ($job_id_4) with \"-C '\[$feat0|$feat1\]'\" should be completed"
 
 	cancel_job [list $job_id_1 $job_id_2]
 
 	set job_id_1 [submit_job -fail  "--exclusive  -J $test_name -C $feat1 -p $test_part -o /dev/null --wrap '$bin_sleep 1000'" ]
 	set job_id_2 [submit_job -fail  "--exclusive  -J $test_name -C $feat1 -p $test_part -o /dev/null --wrap '$bin_sleep 1000'" ]
 
-	subtest {![wait_for_job $job_id_1 RUNNING]} "Job1 $job_id_1 with \"-C $feat1\" should be started"
-	subtest {![wait_for_job $job_id_2 RUNNING]} "Job2 $job_id_2 with \"-C $feat1\" should be started"
+	subtest {![wait_for_job $job_id_1 RUNNING]} "Job1 ($job_id_1) with \"-C $feat1\" should be started"
+	subtest {![wait_for_job $job_id_2 RUNNING]} "Job2 ($job_id_2) with \"-C $feat1\" should be started"
 
 	set job_id_3 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat1|$feat0\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
 	set job_id_4 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat1|$feat0\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
 
-	subtest {![wait_for_job $job_id_3 DONE]} "Job3 $job_id_3 with \"-C '\[$feat1|$feat0\]'\" should be completed"
-	subtest {![wait_for_job $job_id_4 DONE]} "Job4 $job_id_4 with \"-C '\[$feat1|$feat0\]'\" should be completed"
+	subtest {![wait_for_job $job_id_3 DONE]} "Job3 ($job_id_3) with \"-C '\[$feat1|$feat0\]'\" should be completed"
+	subtest {![wait_for_job $job_id_4 DONE]} "Job4 ($job_id_4) with \"-C '\[$feat1|$feat0\]'\" should be completed"
 
 	set job_id_3 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat0|$feat1\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
 	set job_id_4 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat0|$feat1\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
 
-	subtest {![wait_for_job $job_id_3 DONE]} "Job3 $job_id_3 with \"-C '\[$feat0|$feat1\]'\" should be completed"
-	subtest {![wait_for_job $job_id_4 DONE]} "Job4 $job_id_4 with \"-C '\[$feat0|$feat1\]'\" should be completed"
+	subtest {![wait_for_job $job_id_3 DONE]} "Job3 ($job_id_3) with \"-C '\[$feat0|$feat1\]'\" should be completed"
+	subtest {![wait_for_job $job_id_4 DONE]} "Job4 ($job_id_4) with \"-C '\[$feat0|$feat1\]'\" should be completed"
 }
 
 proc set_node_feature {node_name new_feature} {

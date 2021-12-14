@@ -30,8 +30,8 @@
 # resources within the allowed limit in the association
 #
 proc inc21_21_good { test_type limit } {
-
 	global number bin_id ta srun test_node selectparam nthreads is_skip re_word_str
+
 	set job_id 0
 	set val 0
 	set add ""
@@ -88,8 +88,8 @@ proc inc21_21_good { test_type limit } {
 # resources larger than allowed limit in the association
 #
 proc inc21_21_bad { test_type limit } {
-
 	global number bin_id ta srun test_node nthreads selectparam re_word_str
+
 	set job_id 0
 	set over_lim [expr [lindex $limit 1] + 1]
 	set add ""
@@ -233,7 +233,6 @@ sleep 10"
 # submit and jobs
 #
 proc inc21_21_submit_test { limit } {
-
 	global file_in srun sbatch squeue scancel bin_id number bin_sleep is_skip
 	global bin_rm ta maxjob_lim maxsub_lim
 	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals
@@ -266,7 +265,7 @@ proc inc21_21_submit_test { limit } {
 	if [mod_acct $ta [array get acct_mod_desc] \
 				 [array get acct_mod_assoc_test_vals] \
 				 [array get acct_mod_acct_vals]] {
-		fail "Unable to modify account $ta"
+		fail "Unable to modify account ($ta)"
 	}
 
 	make_bash_script $file_in "
@@ -377,10 +376,10 @@ proc inc21_21_submit_test { limit } {
 			exp_continue
 		}
 		-re "Submitted batch job ($number)" {
-			fail "\[Job array test\] this job should not have run"
+			fail "\[Job array test\] This job should not have run"
 		}
 		-re "Unable to contact" {
-			fail "\[Job array test\] slurm appears to be down"
+			fail "\[Job array test\] Slurm appears to be down"
 		}
 		timeout {
 			fail "\[Job array test\] sbatch not responding"
@@ -463,7 +462,7 @@ proc inc21_21_grpwall { test_type limit } {
 
 	foreach job_id $job_id_list {
 		if {[wait_job_reason $job_id COMPLETED] != $::RETURN_SUCCESS} {
-			fail "Job $job_id did not complete"
+			fail "Job ($job_id) did not complete"
 		}
 	}
 

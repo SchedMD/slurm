@@ -108,7 +108,7 @@ proc check_ctl_state { job_id state cluster } {
 	}
 
 	if {$job_state != 1} {
-		fail "Job $job_id state was not $state on $cluster"
+		fail "Job ($job_id) state was not $state on cluster ($cluster)"
 	}
 }
 
@@ -131,7 +131,7 @@ proc check_missing_job { job_id cluster } {
 	}
 
 	if {$matched != 1} {
-		fail "Found an actual job $job_id on $cluster, not supposed to happen"
+		fail "Found an actual job ($job_id) on cluster ($cluster). This is not supposed to happen"
 	}
 }
 
@@ -158,9 +158,7 @@ proc check_dbd_states { job_id states cluster min_cnt } {
 	}
 
 	if {$state_num < $min_cnt} {
-		fail "didn't find expected count $min_cnt\
-			(>$state_num) for state '$states' for job_id '$job_id'\
-			on cluster '$cluster'"
+		fail "Didn't find expected count $min_cnt (>$state_num) with state '$states' for job ($job_id) on cluster ($cluster)"
 	}
 
 	return 0
@@ -292,7 +290,7 @@ proc check_restart_cnt { file cnt } {
 			exp_continue
 		}
 		timeout {
-			fail "grep $file not responding"
+			fail "grep ($file) not responding"
 		}
 		eof {
 			wait
@@ -581,13 +579,13 @@ check_ctl_state $job_id PENDING $fedc2
 check_ctl_state $job_id PENDING $fedc3
 
 if {[cancel_job $job_id]} {
-	fail "Unable to cancel_job ($job_id)"
+	fail "Unable to cancel job ($job_id)"
 }
 if {[cancel_job $long_running_job_id]} {
-	fail "Unable to cancel_job ($long_running_job_id)"
+	fail "Unable to cancel job ($long_running_job_id)"
 }
 if {[cancel_job $long_running_job_id2]} {
-	fail "Unable to cancel_job ($long_running_job_id2)"
+	fail "Unable to cancel job ($long_running_job_id2)"
 }
 
 log_info "################################################################"
@@ -824,7 +822,7 @@ if {[string compare $run_cluster ""] == 0} {
 }
 
 if {[string compare $run_cluster $origin_cluster] == 0} {
-	fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
+	fail "Requeued job ran on origin cluster. Expected to run on a different cluster"
 }
 
 check_restart_cnt $file_out 1
@@ -928,7 +926,7 @@ if {[string compare $run_cluster ""] == 0} {
 }
 
 if {[string compare $run_cluster $origin_cluster] == 0} {
-	fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
+	fail "Requeued job ran on origin cluster. Expected to run on a different cluster"
 }
 
 check_restart_cnt $file_out 1
@@ -1021,7 +1019,7 @@ if {[string compare $run_cluster ""] == 0} {
 }
 
 if {[string compare $run_cluster $origin_cluster] == 0} {
-	fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
+	fail "Requeued job ran on origin cluster. Expected to run on a different cluster"
 }
 
 check_restart_cnt $file_out 1
@@ -1080,7 +1078,7 @@ if {[string compare $run_cluster ""] == 0} {
 }
 
 if {[string compare $run_cluster $origin_cluster] == 0} {
-	fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
+	fail "Requeued job ran on origin cluster. Expected to run on a different cluster"
 }
 
 check_restart_cnt $file_out 2
@@ -1170,7 +1168,7 @@ if {[string compare $run_cluster ""] == 0} {
 }
 
 if {[string compare $run_cluster $origin_cluster] == 0} {
-	fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
+	fail "Requeued job ran on origin cluster. Expected to run on a different cluster"
 }
 
 check_restart_cnt $file_out 1
@@ -1229,7 +1227,7 @@ if {[string compare $run_cluster ""] == 0} {
 }
 
 if {[string compare $run_cluster $origin_cluster] == 0} {
-	fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
+	fail "Requeued job ran on origin cluster. Expected to run on a different cluster"
 }
 
 check_restart_cnt $file_out 2
@@ -1266,7 +1264,7 @@ if {$requeue_exit_num ne "(null)"} {
 	}
 
 	if {[string compare $run_cluster $origin_cluster] == 0} {
-		fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
+		fail "Requeued job ran on origin cluster. Expected to run on a different cluster"
 	}
 
 	log_info "$run_cluster is running job"
@@ -1333,7 +1331,7 @@ if {$requeue_exit_num ne "(null)"} {
 	}
 
 	if {[string compare $run_cluster $origin_cluster] == 0} {
-		fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
+		fail "Requeued job ran on origin cluster. Expected to run on a different cluster"
 	}
 
 	log_info "$run_cluster is running job"
@@ -1377,7 +1375,7 @@ if {$requeue_exit_num ne "(null)"} {
 	}
 
 	if {[string compare $run_cluster $origin_cluster] == 0} {
-		fail "Requeued job ran on origin cluster -- expected to run on a different cluster"
+		fail "Requeued job ran on origin cluster. Expected to run on a different cluster"
 	}
 
 	check_restart_cnt $file_out 1

@@ -75,7 +75,7 @@ proc modify {job_id constraint reg_ex error_message} {
 		}
 	}
 	if {![string match "" $reg_ex] && $matches != 1} {
-		fail "Didn't match regex $reg_ex: $matches"
+		fail "Didn't match regex ($reg_ex: $matches)"
 	}
 
 	$bin_sleep 3
@@ -100,7 +100,7 @@ proc modify_with_clusters {job_id constraint reg_ex error_message} {
 		}
 	}
 	if {![string match "" $reg_ex] && $matches != 1} {
-		fail "Didn't match regex $reg_ex: $matches"
+		fail "Didn't match regex ($reg_ex: $matches)"
 	}
 
 	$bin_sleep 3
@@ -231,7 +231,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -261,7 +261,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -291,7 +291,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
@@ -333,7 +333,7 @@ modify $job_id fb "" "did not allow user to modify features of pending job"
 
 set run_cluster [wait_for_fed_job $job_id RUNNING ""]
 if {[string compare $run_cluster $fedc2]} {
-	fail "Job not running on $fedc2"
+	fail "Job not running on cluster 2 ($fedc2)"
 }
 verify $fedc1 $job_id "RV\\s+$fedc2\\s+$fedc2" "Job not revoked"
 verify $fedc2 $job_id "R\\s+$fedc2\\s+$fedc2" "Job not running on designated cluster"
@@ -349,7 +349,7 @@ modify $job_id "fb,fc" "" "did not allow user to modify features of pending job"
 
 set run_cluster [wait_for_fed_job $job_id RUNNING ""]
 if {[string compare $run_cluster $fedc3]} {
-	fail "Job not running on $fedc3"
+	fail "Job not running on cluster 3 ($fedc3)"
 }
 verify $fedc1 $job_id "RV\\s+$fedc2,$fedc3\\s+$fedc3" "Job not revoked"
 verify $fedc3 $job_id "R\\s+$fedc2,$fedc3\\s+$fedc3" "Job not running on designated cluster"
@@ -434,7 +434,7 @@ sleep 3
 
 set run_cluster [wait_for_fed_job $job_id RUNNING ""]
 if {[string compare $run_cluster $fedc3]} {
-	fail "Job not running on $fedc3"
+	fail "Job not running on cluster 3 ($fedc3)"
 }
 verify $fedc1 $job_id "RV\\s+$fedc3\\s+$fedc3" "Job not running on designated cluster"
 verify $fedc2 $job_id ".+Invalid.+" "Job found on wrong cluster"

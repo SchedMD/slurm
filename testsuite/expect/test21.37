@@ -85,4 +85,4 @@ run_command -subtest "$sacctmgr clear stats"
 set output [run_command_output -fail "$sacctmgr show stats"]
 regexp -line "Data since +(\\S+) (\\S+) (\\S+) (\\S+) (\\d+) \\((\\d+)\\)" $output - - - - - - time_stamp_after
 
-subtest {$time_stamp_before <= $time_stamp_after} "timestamp in show stats should be newer than before running clear stats" "$time_stamp_before > $time_stamp_after"
+subtest {$time_stamp_before <= $time_stamp_after} "Timestamp in show stats should be newer than before running clear stats" "$time_stamp_before > $time_stamp_after"

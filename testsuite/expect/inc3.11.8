@@ -120,12 +120,12 @@ proc inc3_11_8 {} {
 		}
 	}
 	if {$job_id == 0} {
-		fail "batch submit failure"
+		fail "Batch submit failure"
 	}
 
 	if {[wait_for_job $job_id "RUNNING"] != 0} {
 		cancel_job $job_id
-		fail "job failed to start"
+		fail "Job failed to start"
 	}
 	log_debug "Job is running as expected"
 

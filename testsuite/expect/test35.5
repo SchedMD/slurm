@@ -71,12 +71,12 @@ if {$fail == 1} {
 		}
 	}
 	if {$default_state_loc == 0 && $default_status_loc == 1} {
-		skip "'dwstat' is not configured properly"
+		skip "dwstat is not configured properly"
 	}
-	fail "'dwstat' is not configured properly"
+	fail "dwstat is not configured properly"
 }
 if {$matches == 0} {
-	fail "'dwstat' output does not match expected form"
+	fail "dwstat output does not match expected form"
 }
 
 set matches 0

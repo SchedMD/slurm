@@ -77,4 +77,4 @@ if {$timed_out == 1} {
 	log_debug "Early termination is expected, no worries"
 }
 
-subtest {$task_cnt == $resp_cnt} "Srun got proper number of tasks" "$task_cnt != $resp_cnt"
+subtest {$task_cnt == $resp_cnt} "srun got proper number of tasks" "$task_cnt != $resp_cnt"

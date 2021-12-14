@@ -66,7 +66,7 @@ proc check_step { num } {
 	set output [run_command_output -fail "$sacct --job=$job_id\.batch -D --start=today --noheader --format=jobid -P"]
 	set steps [regexp -all "batch" $output]
 
-	subtest {$num == $steps} "Chech number of steps" "$steps != $num"
+	subtest {$num == $steps} "Check number of steps" "$steps != $num"
 }
 
 # Count the number of jobs and steps with a specific job ID and state

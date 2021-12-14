@@ -40,10 +40,10 @@ if { [llength [get_nodes_by_request "--gres=mps:100 -t1"]] == 0} {
 }
 
 proc cleanup {} {
-	global job_id bin_rm file_prog
+	global job_id file_prog
 
 	cancel_job $job_id
-	exec $bin_rm -f $file_prog
+	file delete $file_prog
 }
 
 #

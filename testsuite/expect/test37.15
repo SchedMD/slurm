@@ -83,7 +83,7 @@ proc sbatch { options } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Batch submit failure: expected $regex"
+		fail "Batch submit failure (expected $regex)"
 	}
 
 	return $job_id
@@ -104,7 +104,7 @@ proc squeue { fed regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Unexpected error in squeue. expected $regex"
+		fail "Unexpected error in squeue (expected $regex)"
 	}
 }
 
@@ -123,7 +123,7 @@ proc scontrol { command job_id option regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Unexpected error in scontrol. expected $regex"
+		fail "Unexpected error in scontrol (expected $regex)"
 	}
 
 	sleep 2
@@ -200,7 +200,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -230,7 +230,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -260,7 +260,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 log_info "################################################################"
@@ -323,7 +323,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	fail "Batch submit failure: expected $regex"
+	fail "Batch submit failure (expected $regex)"
 }
 
 wait_for_fed_job $jid(1)_1 RUNNING $job2_cluster

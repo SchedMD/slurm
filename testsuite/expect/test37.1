@@ -103,7 +103,7 @@ proc delete_object { object names } {
 	}
 
 	if {$matches != 1} {
-		log_error "sacctmgr had a problem deleting $object got $matches"
+		log_error "sacctmgr had a problem deleting $object (got $matches)"
 		incr rc
 	}
 
@@ -249,7 +249,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Adding federation failed unexpectedly. Got $matches"
+	fail "Adding federation failed unexpectedly (got $matches)"
 }
 
 #####################################
@@ -1259,7 +1259,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1281,7 +1281,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 #####################################
@@ -1310,7 +1310,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 
@@ -1337,7 +1337,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 # New clusters should have fed_id=0, federation="", fed_state=NA
@@ -1360,7 +1360,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 # Test adding cluster to federation sets state to ACTIVE
@@ -1391,7 +1391,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1413,7 +1413,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 
@@ -1448,7 +1448,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1470,7 +1470,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 #same thing for modifying the federaiton.
@@ -1493,7 +1493,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1515,7 +1515,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 # changing from one federation to another should set the state to active
@@ -1550,7 +1550,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1572,7 +1572,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 
@@ -1618,7 +1618,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1640,7 +1640,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 # Test setting state to INACTIVE
@@ -1671,7 +1671,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1693,7 +1693,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 # Test invalid state
@@ -1712,7 +1712,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 #####################################
@@ -1764,7 +1764,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1790,7 +1790,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1828,7 +1828,7 @@ expect {
 	}
 }
 if {$matches != 6} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1854,7 +1854,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1884,7 +1884,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1911,7 +1911,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1945,7 +1945,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -1970,7 +1970,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2004,7 +2004,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2026,7 +2026,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 #####################################
@@ -2107,7 +2107,7 @@ expect {
 	}
 }
 if {$matches != 6} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2145,7 +2145,7 @@ expect {
 	}
 }
 if {$matches != 6} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2167,7 +2167,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 # Verify clusters fed_id=0, federation="", fed_state=NA after being removed from
@@ -2191,7 +2191,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 
@@ -2239,7 +2239,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Adding federation with clusters failed. Got $matches"
+	fail "Adding federation with clusters failed (got $matches)"
 }
 
 # add second cluster to make sure selectin only on federation
@@ -2274,7 +2274,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Adding federation with clusters failed. Got $matches"
+	fail "Adding federation with clusters failed (got $matches)"
 }
 
 set matches 0
@@ -2300,7 +2300,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	fail "Deleting clusters with federation=. Got $matches"
+	fail "Deleting clusters with federation= (got $matches)"
 }
 
 # add back clusters back to federation to verify both federation clusters are
@@ -2336,7 +2336,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2370,7 +2370,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Deleting clusters with federation=. Got $matches"
+	fail "Deleting clusters with federation= (got $matches)"
 }
 
 
@@ -2423,7 +2423,7 @@ expect {
 	}
 }
 if {$matches != 66} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2458,7 +2458,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2484,7 +2484,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2510,7 +2510,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2532,7 +2532,7 @@ expect {
 	}
 }
 if {$matches != $max_federations} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 #####################################
@@ -2555,7 +2555,7 @@ expect {
 	}
 }
 if {$matches } {
-	fail "Found cluster still on federation when it should have been deleted. Got $matches"
+	fail "Found cluster still on federation when it should have been deleted (got $matches)"
 }
 
 
@@ -2579,7 +2579,7 @@ expect {
 	}
 }
 if {$matches } {
-	fail "Found federation when it should have been deleted. Got $matches"
+	fail "Found federation when it should have been deleted (got $matches)"
 }
 
 set matches 0
@@ -2597,7 +2597,7 @@ expect {
 	}
 }
 if {$matches } {
-	fail "Found federation on cluster when it was deleted. Got $mattches"
+	fail "Found federation on cluster when it was deleted (got $mattches)"
 }
 
 
@@ -2626,7 +2626,7 @@ expect {
 	}
 }
 if {$matches != $max_federations} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 
@@ -2664,7 +2664,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2686,7 +2686,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2720,7 +2720,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2742,7 +2742,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2772,7 +2772,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2794,7 +2794,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2824,7 +2824,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2846,7 +2846,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2880,7 +2880,7 @@ expect {
 	}
 }
 if {$matches != 5} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -2902,5 +2902,5 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }

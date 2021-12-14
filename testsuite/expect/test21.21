@@ -186,7 +186,7 @@ proc _test_limits { } {
 		if { [string compare $option "maxjobsub"] &&
 		     [string compare $option "grpjobsub"] } {
 			if [assoc_setup $option $acct_mod_assoc_vals($option)] {
-				fail "Unable to modify account $ta"
+				fail "Unable to modify account ($ta)"
 			}
 
 			if { ![string compare $option "maxcpumins"] && $one_task_pc } {
@@ -296,7 +296,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	fail "$test_qos was not created"
+	fail "QOS ($test_qos) was not created"
 }
 
 spawn $sacctmgr -i mod account $ta set qos=$test_qos
@@ -381,7 +381,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	fail "did not get srun job_id"
+	fail "Did not get srun job_id"
 } else {
 	set matches 0
 	spawn $scontrol show job $job_id

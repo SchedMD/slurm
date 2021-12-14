@@ -73,7 +73,7 @@ proc sub_job { cpu_cnt state } {
 	}
 
 	if {$jobid == 0} {
-		fail "did not get sbatch jobid"
+		fail "Did not get sbatch jobid"
 	}
 
 	wait_for_job -fail $jobid $state
@@ -113,7 +113,7 @@ proc update_job { jobid prio {error ""} } {
 	}
 
 	if {($error != "") && !$matches} {
-		fail "didn't get expected error '$error'"
+		fail "Didn't get expected error '$error'"
 	}
 }
 

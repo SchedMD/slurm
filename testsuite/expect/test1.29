@@ -116,7 +116,7 @@ proc test_limit_propagation {} {
 			exp_continue
 		}
 		timeout {
-			fail "$bin_sort not responding"
+			fail "sort not responding"
 		}
 		eof {
 			wait

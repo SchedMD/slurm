@@ -32,16 +32,16 @@ proc inc12_3_2 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct node_1 node_2 
 
 	log_info "Search for job $job_id_1 on node $node_1"
 	set output [run_command_output -fail "$sacct -A '$test_acct' -N$node_1 -X -P -o jobid,jobname"]
-	subtest [regexp -line "^$job_id_1\\|" $output] "sacct should show job $job_id_1 as having run on node $node_1"
-	subtest {![regexp -line "^$job_id_2\\|" $output]} "sacct should not show job $job_id_2 as having run on node $node_1"
+	subtest [regexp -line "^$job_id_1\\|" $output] "sacct should show job 1 ($job_id_1) as having run on node 1 ($node_1)"
+	subtest {![regexp -line "^$job_id_2\\|" $output]} "sacct should not show job 2 ($job_id_2) as having run on node 1 ($node_1)"
 
 	log_info "Search for jobs $job_id_1 and $job_id_2 on node $node_2"
 	set output [run_command_output -fail "$sacct -A '$test_acct' -N$node_2 -X -P -o jobid,jobname"]
-	subtest [regexp -line "^$job_id_1\\|" $output] "sacct should show job $job_id_1 as having run on node $node_2"
-	subtest [regexp -line "^$job_id_2\\|" $output] "sacct should show job $job_id_2 as having run on node $node_2"
+	subtest [regexp -line "^$job_id_1\\|" $output] "sacct should show job 1 ($job_id_1) as having run on node 2 ($node_2)"
+	subtest [regexp -line "^$job_id_2\\|" $output] "sacct should show job 2 ($job_id_2) as having run on node 2 ($node_2)"
 
 	log_info "Search for job $job_id_2 on node $node_3"
 	set output [run_command_output -fail "$sacct -A '$test_acct' -N$node_3 -X -P -o jobid,jobname"]
-	subtest {![regexp -line "$job_id_1\\|" $output]} "sacct should not show job $job_id_1 as having run on node $node_3"
-	subtest [regexp -line "$job_id_2\\|" $output] "sacct should show job $job_id_2 as having run on node $node_3"
+	subtest {![regexp -line "$job_id_1\\|" $output]} "sacct should not show job 1 ($job_id_1) as having run on node 3 ($node_3)"
+	subtest [regexp -line "$job_id_2\\|" $output] "sacct should show job 2 ($job_id_2) as having run on node 3 ($node_3)"
 }

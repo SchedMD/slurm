@@ -79,8 +79,8 @@ for {set cnt 1} {$cnt<=$array_end} {incr cnt} {
 	wait_for_file -fail -timeout 660 $output_file
 
 	set output [run_command_output -fail "$bin_cat $output_file"]
-	subtest {[regexp "JobID=$job_array_id" $output]} "Verify burst buffer is found for $job_array_id"
-	subtest {[regexp "$data_in" $output]} "Verify burst buffer input is found for $job_array_id"
+	subtest {[regexp "JobID=$job_array_id" $output]} "Verify burst buffer is found" "for $job_array_id"
+	subtest {[regexp "$data_in" $output]} "Verify burst buffer input is found" "for $job_array_id"
 }
 
 set output [run_command_output -fail "$bin_cat $output_data"]

@@ -268,10 +268,10 @@ expect {
 	}
 }
 if {$job_matches != 0} {
-	fail "Trigger get failure, job triggers not cleared"
+	fail "Trigger get failure: job triggers not cleared"
 }
 if {$node_matches != 3} {
-	fail "Trigger get failure, node triggers cleared"
+	fail "Trigger get failure: node triggers cleared"
 }
 
 #
@@ -316,7 +316,7 @@ expect {
 	}
 }
 if {$node_matches != 2} {
-	fail "Trigger get failure, node triggers cleared"
+	fail "Trigger get failure: node triggers cleared"
 }
 
 #
@@ -357,5 +357,5 @@ expect {
 	}
 }
 if {$node_matches != 0} {
-	fail "Trigger get failure, node triggers remain"
+	fail "Trigger get failure: node triggers remain"
 }

@@ -94,6 +94,6 @@ if {[string length $job_id] > 7} {
 if [wait_for -pollinterval .1 -timeout 2 {$matches == 1} {
 	set matches [regexp $job_id [run_command_output "$bjobs $job_id"]]
 }] {
-	fail "bjobs $job_id does not work"
+	fail "bjobs ($job_id) does not work"
 }
 

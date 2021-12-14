@@ -64,7 +64,7 @@ expect {
 		set job_min_memory_cpu $expect_out(1,string)
 	}
 	timeout {
-		fail "Scontrol not responding"
+		fail "scontrol not responding"
 	}
 	eof {
 		wait

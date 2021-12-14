@@ -373,10 +373,10 @@ expect {
 }
 
 if {$matches_spank_exit != $expected_spank_exit} {
-	fail "Remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != $expected_spank_exit)"
+	fail "Remote (slurmd) spank_exit spank plugin failure ($matches_spank_exit != $expected_spank_exit)"
 }
 if {$matches_spank_init != $expected_spank_init} {
-	fail "Remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != $expected_spank_init)"
+	fail "Remote (slurmd) spank_init spank plugin failure ($matches_spank_init != $expected_spank_init)"
 }
 if {$matches_sbatch != $expected_sbatch} {
 	fail "Remote (slurmd) sbatch spank plugin failure ($matches_sbatch != $expected_sbatch)"

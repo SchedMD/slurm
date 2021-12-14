@@ -61,13 +61,13 @@ set status [dict get $result "exit_code"]
 set output [dict get $result "output"]
 set job_id [string trimright $output "\n"]
 lappend job_list $job_id
-subtest {$status == 0} "Verify srun --reservation succeeds for job $job_id"
+subtest {$status == 0} "Verify srun --reservation succeeds for job ($job_id)"
 subtest {[get_job_param $job_id "Reservation"] eq "$resv_name1,$resv_name2,$resv_name3"} "Verify srun job got reservation" "Reservation = $resv_name1,$resv_name2,$resv_name3"
 
 # Test sbatch got all 3 reservations
 set job_id [submit_job "--reservation=$resv_name1,$resv_name2,$resv_name3 --wrap=\"sleep 1\""]
 lappend job_list $job_id
-subtest {$job_id != 0} "Verify sbatch --reservation succeeds for job $job_id"
+subtest {$job_id != 0} "Verify sbatch --reservation succeeds for job ($job_id)"
 subtest {[get_job_param $job_id "Reservation"] eq "$resv_name1,$resv_name2,$resv_name3"} "Verify sbatch job got reservation" "Reservation = $resv_name1,$resv_name2,$resv_name3"
 
 # Test salloc got all 3 reservations
@@ -76,13 +76,13 @@ set status [dict get $result "exit_code"]
 set output [dict get $result "output"]
 regexp {\S+ job (\d+)} $output - job_id
 lappend job_list $job_id
-subtest {$status == 0} "Verify salloc --reservation succeeds for job $job_id"
+subtest {$status == 0} "Verify salloc --reservation succeeds for job ($job_id)"
 subtest {[get_job_param $job_id "Reservation"] eq "$resv_name1,$resv_name2,$resv_name3"} "Verify salloc job got reservation" "Reservation = $resv_name1,$resv_name2,$resv_name3"
 
 # Test reservation order is consistant
 set job_id [submit_job "--reservation=$resv_name2,$resv_name3,$resv_name1 --wrap=\"sleep 1\""]
 lappend job_list $job_id
-subtest {$job_id != 0} "Verify sbatch --reservation succeeds for job $job_id"
+subtest {$job_id != 0} "Verify sbatch --reservation succeeds for job ($job_id)"
 subtest {[get_job_param $job_id "Reservation"] eq "$resv_name2,$resv_name3,$resv_name1"} "Verify reservation order is consistant" "Reservation = $resv_name2,$resv_name3,$resv_name1"
 
 # Test job fails when atleast 1 reservation is wrong
@@ -103,5 +103,5 @@ foreach job_id $job_list {
 	wait_for_job -fail $job_id "DONE"
 
 	set job_nodes [get_job_param $job_id  "Nodes"]
-	subtest {$job_nodes == $res2_nodes || $job_nodes == $res1_nodes || $job_nodes == $res3_nodes} "Verify JobId=$job_id landed on a reservation's node" "$job_nodes not a resv node"
+	subtest {$job_nodes == $res2_nodes || $job_nodes == $res1_nodes || $job_nodes == $res3_nodes} "Verify job ($job_id) landed on a reservation's node" "$job_nodes not a resv node"
 }

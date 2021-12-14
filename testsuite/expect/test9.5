@@ -112,9 +112,9 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	}
 	if {$stdout_lines != $stdout_target} {
 		if {$stdout_lines == 0} {
-			fail "Stdout is empty, is current working directory writable from compute nodes?"
+			fail "stdout is empty. Is current working directory writable from compute nodes?"
 		} else {
-			fail "Stdout is incomplete"
+			fail "stdout is incomplete"
 		}
 	} else {
 		incr success_cnt

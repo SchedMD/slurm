@@ -144,7 +144,7 @@ for {set index 0} {$index < $array_end} {incr index} {
 		}
 	}
 	if {$env_cnt != 6} {
-		fail "Missing environment variables in file $test_dir/${job_id}_${index}.output ($env_cnt != 6)"
+		fail "Missing environment variables in the job output file ($test_dir/${job_id}_${index}.output) ($env_cnt != 6)"
 	}
 }
 
@@ -162,6 +162,6 @@ for {set index 0} {$index < $array_end} {incr index} {
 		}
 	}
 	if {$err_match != 1} {
-		fail "Bad contents in the error file $test_dir/${job_id}_${index}.error"
+		fail "Bad contents in the job error file ($test_dir/${job_id}_${index}.error)"
 	}
 }

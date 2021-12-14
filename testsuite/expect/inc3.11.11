@@ -53,7 +53,6 @@ proc inc3_11_11_resv_create { res_name args } {
 }
 
 proc inc3_11_11_resv_fail { res_name args } {
-
 	global user_name
 
 	set cmd "StartTime=now+60minutes Duration=1 User=$user_name $args"
@@ -70,7 +69,8 @@ proc inc3_11_11_resv_update_s { res_name args } {
 
 	set ret_code [update_res $res_name $args]
 	if {$ret_code != 0} {
-		inc3_11_11_fini $res_name "Reservation should have succeeded update with $args" 1
+		regsub {nodes=(?!ALL)\S+} $args nodes=<one_node> invariant_args
+		inc3_11_11_fini $res_name "Reservation should have succeeded update with $invariant_args" 1
 	}
 }
 
@@ -89,7 +89,7 @@ proc inc3_11_11_resv_test { res_name part flags nodes } {
 	set res_info [get_reservations $res_name]
 	if { ![dict exists $res_info $res_name] } {
 		delete_res $res_name
-		fail "Unable to get info about reservation $res_name"
+		fail "Unable to get info about reservation ($res_name)"
 	}
 	set res_flags     [dict get $res_info $res_name "Flags"]
 	set res_partition [dict get $res_info $res_name "PartitionName"]
@@ -112,10 +112,10 @@ proc inc3_11_11_resv_test { res_name part flags nodes } {
 
 proc inc3_11_11 {} {
 	global def_partition
+
 	set res_name "resv3.11.11"
 
 	log_info "+++++ STARTING TEST 11 +++++"
-
 
 	set part_nodes [get_partition_param $def_partition "Nodes"]
 	set one_node [lindex [get_nodes_by_state] 0]

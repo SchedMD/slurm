@@ -127,7 +127,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		fail "Srun not responding"
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -146,7 +146,7 @@ for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 		if {$node_id == 1} {
 			log_debug "This failure is expected on front-end configurations"
 		}
-		fail "Output file $file_out_n_glob did not get created"
+		fail "Output file ($file_out_n_glob) did not get created"
 	} else {
 		set task_found false
 
@@ -161,7 +161,7 @@ for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 			}
 		}
 		if {!$task_found} {
-			fail "File $file_out_n_glob was not labelled correctly"
+			fail "File ($file_out_n_glob) was not labelled correctly"
 		} else {
 			exec $bin_rm -f $file_out_n_glob
 		}

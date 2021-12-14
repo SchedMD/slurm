@@ -81,7 +81,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	fail "Something seems to be wrong with the state of node $host_name"
+	fail "Something seems to be wrong with the state of node ($host_name)"
 }
 
 #
@@ -104,5 +104,5 @@ expect {
 	}
 }
 if {$matches != 1} {
-	fail "Node GRES change request not rejected. Configuration of node $host_name is likely left in a bad state"
+	fail "Node GRES change request not rejected. Configuration of node ($host_name) is likely left in a bad state"
 }

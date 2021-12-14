@@ -28,7 +28,6 @@
 
 # Test GrpCpus
 proc inc21_30_2 { wait_reason } {
-
 	global srun salloc acct bin_sleep jobmatch job_id1 job_id2 number
 	global grcpu_num test_node
 
@@ -87,7 +86,6 @@ proc inc21_30_2 { wait_reason } {
 
 		# Checks the state of the job
 		subtest [check_job_state $job_id2 PENDING] "Job should be in the PENDING state"
-
 		subtest [check_reason $job_id2 $wait_reason] "Job should have wait reason $wait_reason"
 
 	} message] ; # Store the error message in $message

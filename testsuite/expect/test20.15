@@ -61,4 +61,4 @@ set cpu_s [expr $cpu_s - ($cpu_d*24*60) ]
 set cpu_h [expr int(floor($cpu_s / 60)) ]
 set cpu_s [expr $cpu_s - ($cpu_h*60) ]
 set cpu_time_str [format "%02d:%02d:%02d" $cpu_d $cpu_h $cpu_s]
-subtest {[regexp -line "CPU Efficiency: 0.00% of $cpu_time_str core-walltime" $out]} "Job efficiency should be 0.00% of $cpu_time_str core-walltime"
+subtest {[regexp -line "CPU Efficiency: 0.00% of $cpu_time_str core-walltime" $out]} "Job efficiency should be 0.00% of core-walltime" "$cpu_time_str|$out"

@@ -188,11 +188,11 @@ set gres_dict_node [count_gres [get_node_param $node_name "Gres"]]
 
 dict for {gres_name gres_count} $gres_dict_node {
 	if {![dict exists $gres_dict_job $gres_name]} {
-		fail "Gres $gres_name on node $node_name not allocated on job $job_id with --exclusive"
+		fail "Gres ($gres_name) on node ($node_name) not allocated on job ($job_id) with --exclusive"
 	} else {
 		set gres_count_job [dict get $gres_dict_job $gres_name]
 		if { $gres_count_job != $gres_count } {
-			fail "Gres $gres_name on node $node_name not fully allocated on job $job_id with --exclusive ($gres_count_job != $gres_count)"
+			fail "Gres ($gres_name) on node ($node_name) not fully allocated on job ($job_id) with --exclusive ($gres_count_job != $gres_count)"
 		}
 	}
 }

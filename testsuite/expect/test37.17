@@ -108,7 +108,7 @@ proc submit_job { options cdir file_in } {
 		}
 	}
 	if { $job_id == 0 } {
-		fail "Failed to submit job\n"
+		fail "Failed to submit job"
 	}
 
 	return $job_id
@@ -218,7 +218,7 @@ proc wait_for_depend { job_id expected_reason expected_dependency } {
 		}
 
 		if { $error } {
-			fail "Job $job_id actual: reason=\"$reason\"; dependency=\"$dependency\"; expected: reason=\"$expected_reason\"; dependency=\"expected_dependency\""
+			fail "Job ($job_id) actual (reason=\"$reason\"; dependency=\"$dependency\") != expected (reason=\"$expected_reason\"; dependency=\"expected_dependency\")"
 		}
 
 		exec sleep $poll_interval
@@ -229,7 +229,7 @@ proc wait_for_depend { job_id expected_reason expected_dependency } {
 proc my_wait_for_fed_job { job_id state cluster } {
 	set ret_cluster [wait_for_fed_job $job_id $state $cluster]
 	if { [string compare $cluster $ret_cluster] } {
-		fail "Job $job_id did not reach state $state on cluster $cluster"
+		fail "Job ($job_id) did not reach state $state on cluster ($cluster)"
 	}
 }
 
@@ -756,7 +756,7 @@ proc test_add_remove_clusters { } {
 
 	log_info "Test that removing cluster $c3 from fed $fed_name makes dependencies on jobs on $c3 fail"
 	if [remove_cluster_from_fed $c3 $fed_name] {
-		fail "Unable to remove cluster $c3 from federation $fed_name"
+		fail "Unable to remove cluster ($c3) from federation ($fed_name)"
 	}
 	wait_for_depend $job_id4 "DependencyNeverSatisfied" \
 		"afterok:$job_id3\(failed\)"
@@ -774,7 +774,7 @@ proc test_add_remove_clusters { } {
 
 	log_info "Test that the singleton dependency was resent back to cluster $c3 when it was added back to the federation."
 	if [add_cluster_to_fed $c3 $fed_name] {
-		fail "Unable to add cluster $c3 to federation $fed_name"
+		fail "Unable to add cluster ($c3) to federation ($fed_name)"
 	}
 	cancel_job $job_id1 $c1
 	cancel_job $job_id2 $c2
@@ -804,7 +804,7 @@ proc test_submit_to_all_clusters { } {
 	log_info "Test that job $job_id2 is not on clusters $c2 or $c3."
 	if { [is_job_on_cluster $job_id2 $c2] || \
 		[is_job_on_cluster $job_id2 $c3] } {
-			fail "Job $job_id2 is in cluster $c2 and/or $c3 when it shouldn't be."
+			fail "Job ($job_id2) is in cluster ($c2 and/or $c3) when it shouldn't be."
 	}
 
 	log_info "Test that job $job_id2 is submitted to all sibling clusters $c2 and $c3 when its dependency is fulfilled."
@@ -1023,7 +1023,7 @@ if {[check_federation_setup]} {
 
 	delete_federations $fed_name
 	if [setup_federation $fed_name] {
-		fail "Unable to set up federation $fed_name"
+		fail "Unable to set up federation ($fed_name)"
 	}
 } else {
 	log_warn "Not running remote dependency tests"

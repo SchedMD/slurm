@@ -59,7 +59,7 @@ proc inc3_11_2 {} {
 	}
 
 	foreach test $goodupdates {
-		subtest {[update_res $res_name $test] == 0} "Reservation update $test should succeed"
+		subtest {[update_res $res_name $test] == 0} "Reservation update {$test} should succeed"
 	}
 
 	set ret_code [delete_res $res_name]

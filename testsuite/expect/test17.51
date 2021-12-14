@@ -218,7 +218,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 		}
 	}
 	if {$found == 0} {
-		fail "sacct get a bad mcs-label"
+		fail "sacct got a bad mcs-label"
 	}
 }
 
@@ -357,7 +357,7 @@ set found 0
 spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
 expect {
 	-re "MCS_label=$user_name" {
-		fail "A mcs_label is found for this job. It was not expected"
+		fail "An mcs_label is found for this job. It was not expected"
 	}
 	-re "MCS_label=N/A" {
 		log_debug "No mcs_label for this node. It was expected"
@@ -460,7 +460,7 @@ set found 0
 spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
 expect {
 	-re "MCS_label=$user_name" {
-		fail "A mcs_label is found for this job. It was not expected"
+		fail "An mcs_label is found for this job. It was not expected"
 	}
 	 -re "MCS_label=N/A" {
 		log_debug "No mcs_label for this node. It was expected"

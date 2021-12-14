@@ -81,7 +81,7 @@ proc inc3_11_3 {} {
 		}
 		-re "Invalid job id specified" {
 			delete_res $res_name
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		timeout {
 			delete_res $res_name
@@ -100,7 +100,7 @@ proc inc3_11_3 {} {
 	expect {
 		-re "Invalid job_id" {
 			delete_res $res_name
-			fail "Error cancelling the job submitted to the reservation.  Job $job_id not found"
+			fail "Error cancelling the job submitted to the reservation. Job ($job_id) not found"
 		}
 		timeout {
 			delete_res $res_name

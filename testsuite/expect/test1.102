@@ -38,7 +38,7 @@ expect {
 		exp_continue
 	}
 	-re "unrecognized option '--deadline'" {
-		fail "Unrecognized option --deadline'
+		fail "Unrecognized option '--deadline'"
 	}
 	-re "Completed" {
 		fail "srun is OK with a deadline too old"

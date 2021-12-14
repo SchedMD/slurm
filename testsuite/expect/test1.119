@@ -162,7 +162,7 @@ proc test_invalid {cmd args {env ""}} {
 		}
 		subtest {$rc == 1} "srun should have failed due to invalid argument combination: $args$env_str" "$job_id != 0"
 	} else {
-		fail "`$cmd` is invalid"
+		fail "Command '$cmd' is invalid"
 	}
 }
 

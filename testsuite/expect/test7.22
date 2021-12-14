@@ -95,35 +95,35 @@ proc test_bf {job_pd_args job_bf_args bf_expected} {
 
 		# Sanity checks
 		if {!$pd_found || !$bf_found} {
-			fail "Could not find jobs."
+			fail "Could not find jobs"
 		}
 		if {$job_bf_prio > $job_pd_prio} {
-			fail "Job to be backfilled has higher priority ($job_bf_prio > $job_pd_prio)."
+			fail "Job to be backfilled has higher priority ($job_bf_prio > $job_pd_prio)"
 		}
 
 		# Backfill subtest
 		if {"$job_bf_state" ne "PD"} {
 			if {"$job_pd_state" eq "PD"} {
 				if {$bf_expected} {
-					subpass "Job $job_bf should be backfilled before job $job_pd."
+					subpass "Job 2 ($job_bf) should be backfilled before job 1 ($job_pd)"
 				} else {
-					subfail "Job $job_bf should NOT be backfilled before job $job_pd ($job_bf is not PD and $job_pd is still PD)"
+					subfail "Job 2 ($job_bf) should NOT be backfilled before job 1 ($job_pd)" "$job_bf is not PD and $job_pd is still PD"
 				}
 				set end true
 			} else {
 				if {$bf_expected} {
-					subtest {$job_bf_time < $job_pd_time} "Job $job_bf should be backfilled before job $job_pd." "$job_bf_time > $job_pd_time"
+					subtest {$job_bf_time < $job_pd_time} "Job 2 ($job_bf) should be backfilled before job 1 ($job_pd)" "$job_bf_time > $job_pd_time"
 				} else {
-					subtest {$job_bf_time > $job_pd_time} "Job $job_bf should NOT be backfilled before job $job_pd." "$job_bf_time < $job_pd_time"
+					subtest {$job_bf_time > $job_pd_time} "Job 2 ($job_bf) should NOT be backfilled before job 1 ($job_pd)" "$job_bf_time < $job_pd_time"
 				}
 				set end true
 			}
 		} else {
 			if {"$job_pd_state" ne "PD"} {
 				if {$bf_expected} {
-					subfail "Job $job_bf should be backfilled before job $job_pd ($job_pd is not PD and $job_bf is still PD)"
+					subfail "Job 2 ($job_bf) should be backfilled before job 1 ($job_pd)" "$job_pd is not PD and $job_bf is still PD"
 				} else {
-					subpass "Job $job_bf should NOT be backfilled before job $job_pd."
+					subpass "Job 2 ($job_bf) should NOT be backfilled before job 1 ($job_pd)"
 				}
 				set end true
 			}
@@ -131,9 +131,9 @@ proc test_bf {job_pd_args job_bf_args bf_expected} {
 	}
 	if {!$end} {
 		if {$bf_expected} {
-			subfail "Job $job_bf should be backfilled before job $job_pd (condition not reached after $bf_interval3)"
+			subfail "Job ($job_bf) should be backfilled before job ($job_pd) (condition not reached after $bf_interval3)"
 		} else {
-			subfail "Job $job_bf should NOT be backfilled before job $job_pd (condition not reached after $bf_interval5)"
+			subfail "Job ($job_bf) should NOT be backfilled before job ($job_pd) (condition not reached after $bf_interval5)"
 		}
 	}
 	cleanup

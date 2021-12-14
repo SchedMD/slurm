@@ -50,7 +50,7 @@ proc sdiag_all { } {
 		}
 	}
 
-	subtest {$matches == 2} "Verify sdiag --all option" "$matches"
+	subtest {$matches == 2} "Verify sdiag --all option" "$matches != 2"
 }
 
 sdiag_all

@@ -109,7 +109,7 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-#make sure we have a clean system and permission to do this work
+# Make sure we have a clean system and permission to do this work
 remove_cluster "$tc1,$tc2"
 if {$access_err != 0} {
 	skip "Not authorized to perform this test"
@@ -125,17 +125,17 @@ proc cleanup {} {
 
 # Add cluster
 if [add_cluster "$tc1,$tc2" ""] {
-	fail "Unable to add cluster ($tc1,$tc2)"
+	fail "Unable to add clusters ($tc1,$tc2)"
 }
 
 # Add accounts
 if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
-	fail "Unable to add account ($ta1,$ta2,$ta3)"
+	fail "Unable to add accounts ($ta1,$ta2,$ta3)"
 }
 
 # OK This is the real test. First test change the desc and org of the accounts
 if [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc1] [array get acct_mod_acct_vals1] [array get acct_mod_assoc_vals1]] {
-	fail "Unable to modify account ($ta1,$ta2,$ta3)"
+	fail "Unable to modify accounts ($ta1,$ta2,$ta3)"
 }
 
 #
@@ -159,12 +159,12 @@ expect {
 	}
 }
 if {$matches != 3} {
-	fail "Account modification 1 incorrect with only $matches"
+	fail "Account modification 1 incorrect ($matches != 3)"
 }
 
 # Next, test change the limits of the accounts
 if [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [array get acct_mod_acct_vals2]] {
-	fail "Unable to modify account ($ta1,$ta2,$ta3)"
+	fail "Unable to modify accounts ($ta1,$ta2,$ta3)"
 }
 
 #
@@ -188,12 +188,12 @@ expect {
 	}
 }
 if {$matches != 6} {
-	fail "Account modification 2 incorrect with only $matches"
+	fail "Account modification 2 incorrect ($matches != 6)"
 }
 
 # Next, test change the desc and limits of the accounts
 if [mod_acct "$ta1,$ta3" [array get acct_mod_desc3] [array get acct_mod_acct_vals3] [array get acct_mod_assoc_vals3]] {
-	fail "Unable to modify account ($ta1,$ta2,$ta3)"
+	fail "Unable to modify accounts ($ta1,$ta2,$ta3)"
 }
 
 #
@@ -220,7 +220,7 @@ expect {
 }
 
 if {$matches != 6} {
-	fail "Account modification 6 incorrect with $matches"
+	fail "Account modification 6 incorrect (matches" != 6)
 }
 
 # Next, test change the parent of ta3 to be $ta2 on $tc1 sibling to be a child
@@ -253,7 +253,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "Account modification 2 incorrect with $matches"
+	fail "Account modification 2 incorrect ($matches != 2)"
 }
 
 # Next, test change the parent of $ta2 to be $ta3 on $tc1
@@ -283,7 +283,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Account modification 4 incorrect with $matches"
+	fail "Account modification 4 incorrect ($matches != 4)"
 }
 
 # Next, test change the parent of $ta3 to be $ta2 on $tc1 again
@@ -313,5 +313,5 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Account modification 4 incorrect with $matches"
+	fail "Account modification 4 incorrect ($matches != 4)"
 }
