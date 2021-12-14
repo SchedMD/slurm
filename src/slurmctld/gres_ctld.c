@@ -104,9 +104,9 @@ static bool _cores_on_gres(bitstr_t *core_bitmap, bitstr_t *alloc_core_bitmap,
 }
 
 static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
+						 gres_state_t *gres_state_in,
 						 uint32_t plugin_id,
 						 uint32_t type_id,
-						 char *gres_name,
 						 char *type_name,
 						 uint32_t node_cnt)
 {
@@ -121,7 +121,7 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 					     gres_find_job_by_key_exact_type,
 					     &job_search_key))) {
 		gres_js = xmalloc(sizeof(*gres_js));
-		gres_js->gres_name = xstrdup(gres_name);
+		gres_js->gres_name = xstrdup(gres_state_in->gres_name);
 		gres_js->type_id = type_id;
 		gres_js->type_name = xstrdup(type_name);
 		gres_js->node_cnt = node_cnt;
@@ -142,7 +142,7 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 		gres_state_job = xmalloc(sizeof(*gres_state_job));
 		gres_state_job->plugin_id = plugin_id;
 		gres_state_job->gres_data = gres_js;
-		gres_state_job->gres_name = xstrdup(gres_name);
+		gres_state_job->gres_name = xstrdup(gres_state_in->gres_name);
 		gres_state_job->state_type = GRES_STATE_TYPE_JOB;
 
 		list_append(job_gres_list_alloc, gres_state_job);
@@ -632,9 +632,8 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		    gres_js->type_id != gres_ns->type_id[j])
 			continue;
 		gres_js_alloc = _get_job_alloc_gres_ptr(
-			job_gres_list_alloc, plugin_id,
-			gres_ns->type_id[j], gres_name,
-			gres_ns->type_name[j], node_cnt);
+			job_gres_list_alloc, gres_state_job, plugin_id,
+			gres_ns->type_id[j], gres_ns->type_name[j], node_cnt);
 		gres_cnt = gres_ns->type_cnt_alloc[j] -
 			pre_alloc_type_cnt[j];
 		if (gres_ns->no_consume) {
@@ -680,8 +679,8 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	/* Also track non typed node gres */
 	if (gres_ns->type_cnt == 0) {
 		gres_js_alloc = _get_job_alloc_gres_ptr(
-			job_gres_list_alloc, plugin_id, NO_VAL,
-			gres_name, NULL, node_cnt);
+			job_gres_list_alloc, gres_state_job, plugin_id,
+			NO_VAL, NULL, node_cnt);
 		gres_cnt = gres_ns->gres_cnt_alloc - pre_alloc_gres_cnt;
 		if (gres_ns->no_consume) {
 			gres_ns->gres_cnt_alloc = pre_alloc_gres_cnt;
