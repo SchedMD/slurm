@@ -7092,7 +7092,6 @@ extern uint32_t gres_job_test(List job_gres_list, List node_gres_list,
 			      uint32_t job_id, char *node_name,
 			      bool disable_binding)
 {
-	int i;
 	uint32_t core_cnt, tmp_cnt;
 	ListIterator job_gres_iter;
 	gres_state_t *gres_state_job, *gres_state_node;
@@ -7106,7 +7105,6 @@ extern uint32_t gres_job_test(List job_gres_list, List node_gres_list,
 	core_cnt = NO_VAL;
 	(void) gres_init();
 
-	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
 		gres_state_node = list_find_first(node_gres_list, gres_find_id,
@@ -7117,28 +7115,22 @@ extern uint32_t gres_job_test(List job_gres_list, List node_gres_list,
 			break;
 		}
 
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_state_job->plugin_id !=
-			    gres_context[i].plugin_id)
-				continue;
-			tmp_cnt = _job_test(gres_state_job, gres_state_node,
-					    use_total_gres, core_bitmap,
-					    core_start_bit, core_end_bit,
-					    &topo_set, job_id, node_name,
-					    disable_binding);
-			if (tmp_cnt != NO_VAL) {
-				if (core_cnt == NO_VAL)
-					core_cnt = tmp_cnt;
-				else
-					core_cnt = MIN(tmp_cnt, core_cnt);
-			}
-			break;
+		tmp_cnt = _job_test(gres_state_job, gres_state_node,
+				    use_total_gres, core_bitmap,
+				    core_start_bit, core_end_bit,
+				    &topo_set, job_id, node_name,
+				    disable_binding);
+		if (tmp_cnt != NO_VAL) {
+			if (core_cnt == NO_VAL)
+				core_cnt = tmp_cnt;
+			else
+				core_cnt = MIN(tmp_cnt, core_cnt);
 		}
+
 		if (core_cnt == 0)
 			break;
 	}
 	list_iterator_destroy(job_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return core_cnt;
 }
