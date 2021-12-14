@@ -2121,29 +2121,29 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 }
 
 static gres_step_state_t *_step_get_alloc_gres_ptr(List step_gres_list_alloc,
-						   uint32_t plugin_id,
-						   char *gres_name,
-						   uint32_t type_id,
-						   char *type_name)
+						   gres_state_t *gres_state_job)
 {
 	gres_key_t step_search_key;
 	gres_step_state_t *gres_ss;
 	gres_state_t *gres_state_step;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+
 	/* Find in job_gres_list_alloc if it exists */
-	step_search_key.plugin_id = plugin_id;
-	step_search_key.type_id = type_id;
+	step_search_key.plugin_id = gres_state_job->plugin_id;
+	step_search_key.type_id = gres_js->type_id;
 
 	if (!(gres_state_step = list_find_first(step_gres_list_alloc,
 					      gres_find_step_by_key,
 					      &step_search_key))) {
 		gres_ss = xmalloc(sizeof(*gres_ss));
-		gres_ss->type_id = type_id;
-		gres_ss->type_name = xstrdup(type_name);
+		gres_ss->type_id = gres_js->type_id;
+		gres_ss->type_name = xstrdup(gres_js->type_name);
 
 		gres_state_step = xmalloc(sizeof(*gres_state_step));
-		gres_state_step->plugin_id = plugin_id;
+		gres_state_step->config_flags = step_search_key.config_flags;
+		gres_state_step->plugin_id = step_search_key.plugin_id;
 		gres_state_step->gres_data = gres_ss;
-		gres_state_step->gres_name = xstrdup(gres_name);
+		gres_state_step->gres_name = xstrdup(gres_state_job->gres_name);
 		gres_state_step->state_type = GRES_STATE_TYPE_STEP;
 
 		list_append(step_gres_list_alloc, gres_state_step);
@@ -2168,11 +2168,7 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 		return 0;
 
 	gres_ss_alloc = _step_get_alloc_gres_ptr(
-		args->step_gres_list_alloc,
-		args->gres_state_step->plugin_id,
-		args->gres_state_step->gres_name,
-		gres_js->type_id,
-		gres_js->type_name);
+		args->step_gres_list_alloc, gres_state_job);
 
 	args->rc = _step_alloc(gres_ss_alloc, args->gres_state_step, gres_js,
 			       args->node_offset, &args->tmp_step_id,
