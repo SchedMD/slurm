@@ -511,6 +511,12 @@ static int _unload_plugin(slurm_gres_context_t *plugin_context)
 	return rc;
 }
 
+static void _set_shared_flag(char *name, uint32_t *config_flags)
+{
+	if (!xstrcmp(name, "mps"))
+		*config_flags |= GRES_CONF_SHARED;
+}
+
 /*
  * Add new gres context to gres_context array and load the plugin.
  * Must hold gres_context_lock before calling.
@@ -526,6 +532,7 @@ static void _add_gres_context(char *gres_name)
 		  sizeof(slurm_gres_context_t));
 
 	plugin_context = &gres_context[gres_context_cnt];
+	_set_shared_flag(gres_name, &plugin_context->config_flags);
 	plugin_context->gres_name = xstrdup(gres_name);
 	plugin_context->plugin_id = gres_build_id(gres_name);
 	plugin_context->gres_type = xstrdup_printf("gres/%s", gres_name);
@@ -1356,6 +1363,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		}
 
 	}
+
+	_set_shared_flag(p->name, &p->config_flags);
 
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
 		tmp_uint64 = strtoll(tmp_str, &last, 10);
@@ -10452,6 +10461,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 	if (config_flags & GRES_CONF_ENV_DEF) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "ENV_DEFAULT");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_SHARED) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "SHARED");
 		sep = ",";
 	}
 

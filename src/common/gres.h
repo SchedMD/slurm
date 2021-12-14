@@ -81,6 +81,8 @@ typedef struct {
 #define GRES_CONF_ENV_OPENCL SLURM_BIT(7) /* Set GPU_DEVICE_ORDINAL */
 #define GRES_CONF_ENV_DEF    SLURM_BIT(8) /* Env flags were set to defaults */
 
+#define GRES_CONF_SHARED     SLURM_BIT(9) /* Treat this as a shared GRES */
+
 #define GRES_CONF_ENV_SET    0x000000E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */
 
