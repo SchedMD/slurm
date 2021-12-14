@@ -7078,7 +7078,7 @@ extern uint32_t gres_job_test(List job_gres_list, List node_gres_list,
 	int i;
 	uint32_t core_cnt, tmp_cnt;
 	ListIterator job_gres_iter;
-	gres_state_t *gres_state_job, *node_gres_ptr;
+	gres_state_t *gres_state_job, *gres_state_node;
 	bool topo_set = false;
 
 	if (job_gres_list == NULL)
@@ -7092,9 +7092,9 @@ extern uint32_t gres_job_test(List job_gres_list, List node_gres_list,
 	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		node_gres_ptr = list_find_first(node_gres_list, gres_find_id,
-						&gres_state_job->plugin_id);
-		if (node_gres_ptr == NULL) {
+		gres_state_node = list_find_first(node_gres_list, gres_find_id,
+						  &gres_state_job->plugin_id);
+		if (gres_state_node == NULL) {
 			/* node lack resources required by the job */
 			core_cnt = 0;
 			break;
@@ -7105,7 +7105,7 @@ extern uint32_t gres_job_test(List job_gres_list, List node_gres_list,
 			    gres_context[i].plugin_id)
 				continue;
 			tmp_cnt = _job_test(gres_state_job->gres_data,
-					    node_gres_ptr->gres_data,
+					    gres_state_node->gres_data,
 					    use_total_gres, core_bitmap,
 					    core_start_bit, core_end_bit,
 					    &topo_set, job_id, node_name,
@@ -7692,7 +7692,7 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 {
 	List sock_gres_list = NULL;
 	ListIterator job_gres_iter;
-	gres_state_t *gres_state_job, *node_gres_ptr;
+	gres_state_t *gres_state_job, *gres_state_node;
 	gres_job_state_t  *gres_js;
 	gres_node_state_t *gres_ns;
 	uint32_t local_s_p_n;
@@ -7708,15 +7708,15 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
 		sock_gres_t *sock_gres = NULL;
-		node_gres_ptr = list_find_first(node_gres_list, gres_find_id,
-						&gres_state_job->plugin_id);
-		if (node_gres_ptr == NULL) {
+		gres_state_node = list_find_first(node_gres_list, gres_find_id,
+						  &gres_state_job->plugin_id);
+		if (gres_state_node == NULL) {
 			/* node lack GRES of type required by the job */
 			FREE_NULL_LIST(sock_gres_list);
 			break;
 		}
 		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		gres_ns = (gres_node_state_t *) node_gres_ptr->gres_data;
+		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
 
 		if (gres_js->gres_per_job &&
 		    !gres_js->gres_per_socket)
@@ -7735,13 +7735,14 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 					alt_plugin_id = gpu_plugin_id;
 			}
 			if (alt_plugin_id) {
-				node_gres_ptr = list_find_first(node_gres_list,
-								gres_find_id,
-								&alt_plugin_id);
+				gres_state_node = list_find_first(
+					node_gres_list,
+					gres_find_id,
+					&alt_plugin_id);
 			}
-			if (alt_plugin_id && node_gres_ptr) {
+			if (alt_plugin_id && gres_state_node) {
 				alt_gres_ns = (gres_node_state_t *)
-					node_gres_ptr->gres_data;
+					gres_state_node->gres_data;
 			} else {
 				/* GRES of interest not on this node */
 				alt_plugin_id = 0;
