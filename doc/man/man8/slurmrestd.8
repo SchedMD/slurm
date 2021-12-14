@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "June 2021" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "December 2021" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -47,7 +47,8 @@ Read Slurm configuration from the specified file. See \fBNOTES\fR below.
 \fB\-g <group id>\fR
 Change group id (and drop supplemental groups) before processing client
 request. This should be a unique group with no write access or special
-permissions. Do not set this user to SlurmUser or root.
+permissions. Do not set this to the group belonging to to SlurmUser or
+root or the daemon won't start with the default settings.
 .IP
 
 .TP
@@ -72,7 +73,7 @@ Ignored in inetd mode. Default: 20
 \fB\-u <user id>\fR
 Change user id before processing client request. This should be a unique group
 with no write access or special permissions. Do not set this user to SlurmUser
-or root.
+or root or the daemon won't start with the default settings.
 .IP
 
 .TP
@@ -97,7 +98,8 @@ Disables unsharing the SYSV namespace.
 
 .TP
 \fBDISABLE_USER_CHECK\fR
-Disables check that slurmrestd is not running as root or SlurmUser.
+Disables check that slurmrestd is not running as root or SlurmUser, or with the
+root or SlurmUser's primary group.
 .IP
 
 .TP 20
