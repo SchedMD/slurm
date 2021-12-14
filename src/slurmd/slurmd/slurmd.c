@@ -1673,7 +1673,7 @@ _slurmd_init(void)
 	struct rlimit rlim;
 	struct stat stat_buf;
 	uint32_t cpu_cnt;
-	node_record_t *node_rec;
+	node_record_t *node_rec = NULL;
 	List gres_list = NULL;
 	int rc;
 
@@ -1723,7 +1723,9 @@ _slurmd_init(void)
 	 */
 	_read_config();
 
-	if (!(node_rec = find_node_record(conf->node_name)))
+	/* Dynamic nodes won't be found at this point */
+	if (!conf->dynamic &&
+	    !(node_rec = find_node_record(conf->node_name)))
 		return SLURM_ERROR;
 
 	/*
@@ -1755,7 +1757,8 @@ _slurmd_init(void)
 
 	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
-	if (node_rec->config_ptr) {
+	/* node_rec==NULL is expected for dynamic nodes */
+	if (node_rec && node_rec->config_ptr) {
 		(void) gres_init_node_config(conf->node_name,
 					     node_rec->config_ptr->gres,
 					     &gres_list);

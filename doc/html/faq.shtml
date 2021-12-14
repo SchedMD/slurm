@@ -1756,7 +1756,7 @@ The plugin will be installed in<br>
 See the SPANK man page for configuration details.</p>
 
 <p><a id="sssd"><b>How can I get SSSD to work with Slurm?</b></a><br>
-SSSD or System Security Services Deamon does not allow enumeration of
+SSSD or System Security Services Daemon does not allow enumeration of
 group members by default. Note that enabling enumeration in large
 environments might not be feasible. However, Slurm does not need enumeration
 except for some specific quirky configurations (multiple groups with the same

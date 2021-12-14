@@ -457,7 +457,12 @@ extern int load_all_node_state ( bool state_only )
 				comm_name = NULL;
 				node_hostname = NULL;
 			}
-			if (IS_NODE_CLOUD(node_ptr)) {
+			if (IS_NODE_FUTURE(node_ptr) &&
+			    (node_state & NODE_STATE_DYNAMIC)) {
+				/* Preserve active dynamic future node state */
+				node_ptr->node_state    = node_state;
+
+			} else if (IS_NODE_CLOUD(node_ptr)) {
 				if ((!power_save_mode) &&
 				    ((node_state & NODE_STATE_POWERED_DOWN) ||
 				     (node_state & NODE_STATE_POWERING_DOWN) ||
@@ -3943,7 +3948,9 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 		}
 	}
 
-	if (!IS_NODE_DOWN(node_ptr) && !IS_NODE_POWERING_UP(node_ptr)) {
+	if (!IS_NODE_DOWN(node_ptr) &&
+	    !IS_NODE_POWERED_DOWN(node_ptr) &&
+	    !IS_NODE_POWERING_UP(node_ptr)) {
 		/* Don't verify RPC if node in DOWN or POWER_UP state */
 		(node_ptr->comp_job_cnt)++;
 		node_ptr->node_state |= NODE_STATE_COMPLETING;
