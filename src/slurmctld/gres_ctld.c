@@ -140,7 +140,8 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 			sizeof(*gres_js->gres_cnt_step_alloc));
 
 		gres_state_job = xmalloc(sizeof(*gres_state_job));
-		gres_state_job->plugin_id = plugin_id;
+		/* Use gres_state_node here as plugin_id might be NO_VAL */
+		gres_state_job->plugin_id = gres_state_in->plugin_id;
 		gres_state_job->gres_data = gres_js;
 		gres_state_job->gres_name = xstrdup(gres_state_in->gres_name);
 		gres_state_job->state_type = GRES_STATE_TYPE_JOB;
