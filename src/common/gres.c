@@ -254,11 +254,6 @@ static void *	_job_state_dup(gres_job_state_t *gres_js);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int node_index);
 static void	_job_state_log(gres_job_state_t *gres_js, uint32_t job_id,
 			       uint32_t plugin_id);
-static uint32_t _job_test(gres_job_state_t *gres_js, gres_node_state_t *gres_ns,
-			  bool use_total_gres, bitstr_t *core_bitmap,
-			  int core_start_bit, int core_end_bit, bool *topo_set,
-			  uint32_t job_id, char *node_name, char *gres_name,
-			  uint32_t plugin_id, bool disable_binding);
 static int	_load_plugin(slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
 static void	_my_stat(char *file_name);
@@ -6768,13 +6763,17 @@ extern void gres_validate_node_cores(gres_node_state_t *gres_ns,
 	}
 }
 
-static uint32_t _job_test(gres_job_state_t *gres_js,
-			  gres_node_state_t *gres_ns,
+static uint32_t _job_test(gres_state_t *gres_state_job,
+			  gres_state_t *gres_state_node,
 			  bool use_total_gres, bitstr_t *core_bitmap,
 			  int core_start_bit, int core_end_bit, bool *topo_set,
-			  uint32_t job_id, char *node_name, char *gres_name,
-			  uint32_t plugin_id, bool disable_binding)
+			  uint32_t job_id, char *node_name,
+			  bool disable_binding)
 {
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	char *gres_name = gres_state_job->gres_name;
+	uint32_t plugin_id = gres_state_job->plugin_id;
 	int i, j, core_size, core_ctld, top_inx = -1;
 	uint64_t gres_avail = 0, gres_max = 0, gres_total, gres_tmp;
 	uint64_t min_gres_node = 0;
@@ -7122,13 +7121,10 @@ extern uint32_t gres_job_test(List job_gres_list, List node_gres_list,
 			if (gres_state_job->plugin_id !=
 			    gres_context[i].plugin_id)
 				continue;
-			tmp_cnt = _job_test(gres_state_job->gres_data,
-					    gres_state_node->gres_data,
+			tmp_cnt = _job_test(gres_state_job, gres_state_node,
 					    use_total_gres, core_bitmap,
 					    core_start_bit, core_end_bit,
 					    &topo_set, job_id, node_name,
-					    gres_context[i].gres_name,
-					    gres_context[i].plugin_id,
 					    disable_binding);
 			if (tmp_cnt != NO_VAL) {
 				if (core_cnt == NO_VAL)
