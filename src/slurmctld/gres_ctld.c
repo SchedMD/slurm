@@ -1513,6 +1513,8 @@ step2:	if (!from_job_gres_list)
 		} else {
 			gres_ptr2 = xmalloc(sizeof(gres_state_t));
 			gres_js2 = xmalloc(sizeof(gres_job_state_t));
+			gres_ptr2->config_flags =
+				gres_ptr->config_flags;
 			gres_ptr2->plugin_id = gres_ptr->plugin_id;
 			gres_ptr2->gres_data = gres_js2;
 			gres_ptr2->gres_name = xstrdup(gres_js->gres_name);

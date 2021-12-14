@@ -2852,6 +2852,7 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
 		list_iterator_destroy(gres_iter);
 		if (gres_ptr == NULL) {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
+			gres_ptr->config_flags = gres_context[i].config_flags;
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_name =
 				xstrdup(gres_context[i].gres_name);
@@ -3437,6 +3438,7 @@ extern int gres_node_config_validate(char *node_name,
 					   &gres_context[i].plugin_id);
 		if (gres_ptr == NULL) {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
+			gres_ptr->config_flags = gres_context[i].config_flags;
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_name =
 				xstrdup(gres_context[i].gres_name);
@@ -3538,6 +3540,8 @@ extern void gres_node_feature(char *node_name,
 					   &plugin_id);
 		if (gres_ptr == NULL) {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
+			/* FIXME: no config_flags known at this moment */
+			/* gres_ptr->config_flags = ; */
 			gres_ptr->plugin_id = plugin_id;
 			gres_ptr->gres_data = _build_gres_node_state();
 			gres_ptr->gres_name = xstrdup(gres_name);
@@ -4149,6 +4153,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 				bit_alloc(gres_bitmap_size);
 		}
 		gres_ptr = xmalloc(sizeof(gres_state_t));
+		gres_ptr->config_flags = gres_context[i].config_flags;
 		gres_ptr->plugin_id = gres_context[i].plugin_id;
 		gres_ptr->gres_data = gres_ns;
 		gres_ptr->gres_name = xstrdup(gres_context[i].gres_name);
@@ -4279,6 +4284,7 @@ extern List gres_node_state_dup(List gres_list)
 			gres_ns = _node_state_dup(gres_ptr->gres_data);
 			if (gres_ns) {
 				new_gres = xmalloc(sizeof(gres_state_t));
+				gres_ptr->config_flags = gres_ptr->config_flags;
 				new_gres->plugin_id = gres_ptr->plugin_id;
 				new_gres->gres_data = gres_ns;
 				new_gres->gres_name =
@@ -5321,6 +5327,7 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 		gres_js->type_name = type;
 		type = NULL;	/* String moved above */
 		gres_ptr = xmalloc(sizeof(gres_state_t));
+		gres_ptr->config_flags = gres_context[context_inx].config_flags;
 		gres_ptr->plugin_id = gres_context[context_inx].plugin_id;
 		gres_ptr->gres_data = gres_js;
 		gres_ptr->gres_name =
@@ -6158,6 +6165,7 @@ extern List gres_job_state_extract(List gres_list, int node_index)
 			new_gres_list = list_create(gres_job_list_delete);
 		}
 		new_gres_state = xmalloc(sizeof(gres_state_t));
+		new_gres_state->config_flags = gres_state_job->config_flags;
 		new_gres_state->plugin_id = gres_state_job->plugin_id;
 		new_gres_state->gres_data = new_gres_data;
 		new_gres_state->gres_name = xstrdup(gres_state_job->gres_name);
@@ -6398,6 +6406,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 		}
 		gres_js->gres_name = xstrdup(gres_context[i].gres_name);
 		gres_state_job = xmalloc(sizeof(gres_state_t));
+		gres_state_job->config_flags = gres_context[i].config_flags;
 		gres_state_job->plugin_id = gres_context[i].plugin_id;
 		gres_state_job->gres_data = gres_js;
 		gres_state_job->gres_name = xstrdup(gres_context[i].gres_name);
@@ -8440,6 +8449,8 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 		gres_ss->type_name = type;
 		type = NULL;	/* String moved above */
 		gres_state_step = xmalloc(sizeof(gres_state_t));
+		gres_state_step->config_flags =
+			gres_context[context_inx].config_flags;
 		gres_state_step->plugin_id =
 			gres_context[context_inx].plugin_id;
 		gres_state_step->gres_data = gres_ss;
@@ -8922,6 +8933,8 @@ List gres_step_state_extract(List gres_list, int node_index)
 			new_gres_list = list_create(gres_step_list_delete);
 		}
 		new_gres_state_step = xmalloc(sizeof(gres_state_t));
+		new_gres_state_step->config_flags =
+			gres_state_step->config_flags;
 		new_gres_state_step->plugin_id = gres_state_step->plugin_id;
 		new_gres_state_step->gres_data = new_gres_data;
 		new_gres_state_step->gres_name =
@@ -9103,6 +9116,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 			continue;
 		}
 		gres_state_step = xmalloc(sizeof(gres_state_t));
+		gres_state_step->config_flags = gres_context[i].config_flags;
 		gres_state_step->plugin_id = gres_context[i].plugin_id;
 		gres_state_step->gres_data = gres_ss;
 		gres_state_step->gres_name = xstrdup(gres_context[i].gres_name);
