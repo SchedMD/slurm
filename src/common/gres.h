@@ -98,6 +98,7 @@ typedef struct {
 					      * flags */
 
 typedef struct gres_search_key {
+	uint32_t config_flags;	/* See GRES_CONF_* values above */
 	int node_offset;
 	uint32_t plugin_id;
 	uint32_t type_id;

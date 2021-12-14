@@ -5307,6 +5307,7 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 	}
 
 	/* Find the job GRES record */
+	job_search_key.config_flags = gres_context[context_inx].config_flags;
 	job_search_key.plugin_id = gres_context[context_inx].plugin_id;
 	job_search_key.type_id = gres_build_id(type);
 	gres_ptr = list_find_first(gres_list, gres_find_job_by_key,
@@ -8425,6 +8426,7 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 	}
 
 	/* Find the step GRES record */
+	step_search_key.config_flags = gres_context[context_inx].config_flags;
 	step_search_key.plugin_id = gres_context[context_inx].plugin_id;
 	step_search_key.type_id = gres_build_id(type);
 	gres_state_step = list_find_first(gres_list, gres_find_step_by_key,
@@ -8496,6 +8498,7 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 	iter = list_iterator_create(step_gres_list);
 	while ((gres_state_step = (gres_state_t *) list_next(iter))) {
 		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
+		job_search_key.config_flags = gres_state_step->config_flags;
 		job_search_key.plugin_id = gres_state_step->plugin_id;
 		if (gres_ss->type_id == 0)
 			job_search_key.type_id = NO_VAL;
@@ -9905,6 +9908,7 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 		gres_key_t job_search_key;
 
 		gres_ss = (gres_step_state_t *)gres_state_step->gres_data;
+		job_search_key.config_flags = gres_state_step->config_flags;
 		job_search_key.plugin_id = gres_state_step->plugin_id;
 		if (gres_ss->type_name)
 			job_search_key.type_id = gres_ss->type_id;

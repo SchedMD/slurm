@@ -113,7 +113,9 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 	gres_key_t job_search_key;
 	gres_job_state_t *gres_js;
 	gres_state_t *gres_state_job;
+
 	/* Find in job_gres_list_alloc if it exists */
+	job_search_key.config_flags = gres_state_in->config_flags;
 	job_search_key.plugin_id = plugin_id;
 	job_search_key.type_id = type_id;
 
@@ -140,6 +142,7 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 			sizeof(*gres_js->gres_cnt_step_alloc));
 
 		gres_state_job = xmalloc(sizeof(*gres_state_job));
+		gres_state_job->config_flags = gres_state_in->config_flags;
 		/* Use gres_state_node here as plugin_id might be NO_VAL */
 		gres_state_job->plugin_id = gres_state_in->plugin_id;
 		gres_state_job->gres_data = gres_js;
@@ -771,6 +774,7 @@ static void _job_select_whole_node_internal(
 		gres_js = xmalloc(sizeof(gres_job_state_t));
 
 		gres_state_job = xmalloc(sizeof(gres_state_t));
+		gres_state_job->config_flags = job_search_key->config_flags;
 		gres_state_job->plugin_id = job_search_key->plugin_id;
 		gres_state_job->gres_data = gres_js;
 		gres_state_job->gres_name = xstrdup(gres_name);
@@ -839,6 +843,7 @@ extern int gres_ctld_job_select_whole_node(
 		if (!gres_ns->gres_cnt_config)
 			continue;
 
+		job_search_key.config_flags = gres_state_node->config_flags;
 		job_search_key.plugin_id = gres_state_node->plugin_id;
 
 		if (!gres_ns->type_cnt) {
@@ -1018,6 +1023,7 @@ extern int gres_ctld_job_alloc_whole_node(
 		if (!gres_ns->gres_cnt_config)
 			continue;
 
+		job_search_key.config_flags = gres_state_node->config_flags;
 		job_search_key.plugin_id = gres_state_node->plugin_id;
 
 		if (!gres_ns->type_cnt) {
@@ -2129,6 +2135,7 @@ static gres_step_state_t *_step_get_alloc_gres_ptr(List step_gres_list_alloc,
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 
 	/* Find in job_gres_list_alloc if it exists */
+	step_search_key.config_flags = gres_state_job->config_flags;
 	step_search_key.plugin_id = gres_state_job->plugin_id;
 	step_search_key.type_id = gres_js->type_id;
 
@@ -2235,6 +2242,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 			(gres_step_state_t *) gres_state_step->gres_data;
 		gres_key_t job_search_key;
 		foreach_step_alloc_t args;
+		job_search_key.config_flags = gres_state_step->config_flags;
 		job_search_key.plugin_id = gres_state_step->plugin_id;
 		if (gres_ss->type_name)
 			job_search_key.type_id = gres_ss->type_id;
@@ -2288,6 +2296,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 	xassert(job_gres_list);
 	xassert(gres_ss);
 
+	job_search_key.config_flags = gres_state_step->config_flags;
 	job_search_key.plugin_id = gres_state_step->plugin_id;
 	if (gres_ss->type_name)
 		job_search_key.type_id = gres_ss->type_id;
