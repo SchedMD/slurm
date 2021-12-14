@@ -152,12 +152,15 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 	return gres_js;
 }
 
-static int _job_alloc(gres_job_state_t *gres_js, List job_gres_list_alloc,
+static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		      gres_node_state_t *gres_ns, int node_cnt, int node_index,
-		      int node_offset, char *gres_name, uint32_t job_id,
+		      int node_offset, uint32_t job_id,
 		      char *node_name, bitstr_t *core_bitmap,
-		      uint32_t plugin_id, bool new_alloc)
+		      bool new_alloc)
 {
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	char *gres_name = gres_state_job->gres_name;
+	uint32_t plugin_id = gres_state_job->plugin_id;
 	int j, sz1, sz2;
 	int64_t gres_cnt, i;
 	gres_job_state_t  *gres_js_alloc;
@@ -750,11 +753,9 @@ static int _job_alloc_whole_node_internal(
 	else
 		gres_js->gres_per_node = gres_ns->gres_cnt_avail;
 
-	return _job_alloc(gres_js, *job_gres_list_alloc, gres_ns,
+	return _job_alloc(gres_state_job, *job_gres_list_alloc, gres_ns,
 			  node_cnt, node_index, node_offset,
-			  gres_js->gres_name,
-			  job_id, node_name, core_bitmap,
-			  gres_state_job->plugin_id, new_alloc);
+			  job_id, node_name, core_bitmap, new_alloc);
 }
 
 static void _job_select_whole_node_internal(
@@ -950,11 +951,10 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 			continue;
 		}
 
-		rc2 = _job_alloc(gres_state_job->gres_data, *job_gres_list_alloc,
+		rc2 = _job_alloc(gres_state_job, *job_gres_list_alloc,
 				 gres_state_node->gres_data, node_cnt, node_index,
-				 node_offset, gres_js->gres_name,
-				 job_id, node_name, core_bitmap,
-				 gres_state_job->plugin_id, new_alloc);
+				 node_offset, job_id, node_name, core_bitmap,
+				 new_alloc);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
