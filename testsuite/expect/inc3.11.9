@@ -63,7 +63,7 @@ proc inc3_11_9 {} {
 	set res_info [get_reservations $res_name]
 	if { ![dict exists $res_info $res_name] } {
 		delete_res $res_name
-		fail "Unable to get info about reservation $res_name"
+		fail "Unable to get info about reservation ($res_name)"
 	}
 	lassign [get_node_cpus [dict get $res_info $res_name "Nodes"]] cputot threadcnt
 
@@ -130,7 +130,7 @@ proc inc3_11_9 {} {
 	if { ![dict exists $res_info $res_name] } {
 		delete_res $res_name
 		cancel_job $job_id
-		fail "Unable to get info about reservation $res_name"
+		fail "Unable to get info about reservation ($res_name)"
 	}
 	lassign [get_node_cpus [dict get $res_info $res_name "Nodes"]] cputot threadcnt
 
@@ -222,7 +222,7 @@ proc inc3_11_9 {} {
 	if { ![dict exists $res_info $res_name] } {
 		delete_res $res_name
 		delete_res $res_name_test
-		fail "Unable to get info about reservation $res_name"
+		fail "Unable to get info about reservation ($res_name)"
 	}
 	lassign [get_node_cpus [dict get $res_info $res_name "Nodes"]] cputot threadcnt
 
@@ -261,13 +261,13 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=PENDING" {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id is PENDING"
+			fail "Job ($job_id) is PENDING"
 		}
 		timeout {
 			delete_res $res_name
@@ -317,7 +317,7 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=PENDING" {
 			log_debug "Job is PENDING as expected"
@@ -327,7 +327,7 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id is RUNNING"
+			fail "Job ($job_id) is RUNNING"
 		}
 		timeout {
 			delete_res $res_name
@@ -375,7 +375,7 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=RUNNING" {
 			log_debug "Job is RUNNING as expected"
@@ -385,7 +385,7 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id is PENDING"
+			fail "Job ($job_id) is PENDING"
 		}
 		timeout {
 			delete_res $res_name
@@ -435,7 +435,7 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=PENDING" {
 			log_debug "Job is PENDING as expected"
@@ -445,7 +445,7 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id is RUNNING"
+			fail "Job ($job_id) is RUNNING"
 		}
 		timeout {
 			delete_res $res_name
@@ -492,7 +492,7 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=RUNNING" {
 			log_debug "Job is RUNNING as expected"
@@ -502,7 +502,7 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id is PENDING"
+			fail "Job ($job_id) is PENDING"
 		}
 		timeout {
 			delete_res $res_name
@@ -528,7 +528,7 @@ proc inc3_11_9 {} {
 		timeout {
 			delete_res $res_name
 			delete_res $res_name_test
-			fail "sbatch not responding (within: inc3.11.9)"
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -549,7 +549,7 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=PENDING" {
 			log_debug "Job is PENDING as expected"
@@ -559,7 +559,7 @@ proc inc3_11_9 {} {
 			delete_res $res_name
 			delete_res $res_name_test
 			cancel_job $job_id
-			fail "Job $job_id is RUNNING"
+			fail "Job ($job_id) is RUNNING"
 		}
 		timeout {
 			delete_res $res_name
@@ -577,11 +577,11 @@ proc inc3_11_9 {} {
 	set ret_code1 [delete_res $res_name]
 	if { $ret_code1 != 0 } {
 		delete_res $res_name_test
-		fail "Failed to delete reservation $res_name."
+		fail "Failed to delete reservation ($res_name)"
 	}
 	set ret_code [delete_res $res_name_test]
 	if { $ret_code != 0 } {
-		fail "Failed to delete reservation $res_name_test."
+		fail "Failed to delete reservation ($res_name_test)"
 	}
 
 	# Create a job that uses all cores in the node range and is not
@@ -593,7 +593,7 @@ proc inc3_11_9 {} {
 			exp_continue
 		}
 		timeout {
-			fail "sbatch not responding (within: inc3.11.9)"
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -611,7 +611,7 @@ proc inc3_11_9 {} {
 	expect {
 		-re "Invalid job id specified" {
 			cancel_job $job_id
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=RUNNING" {
 			set job_is_running true
@@ -698,7 +698,7 @@ proc inc3_11_9 {} {
 	cancel_job $job_id
 	set ret_code [delete_res $res_name]
 	if { $ret_code != 0 } {
-		fail "Error $ret_code deleting reservation."
+		fail "Error $ret_code deleting reservation"
 	}
 
 	subtest {$hosts_correct == 1} "Reservation should have correct node list"
@@ -715,7 +715,7 @@ proc inc3_11_9 {} {
 			exp_continue
 		}
 		timeout {
-			fail "sbatch not responding (within: inc3.11.9)"
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -731,7 +731,7 @@ proc inc3_11_9 {} {
 	expect {
 		-re "Invalid job id specified" {
 			cancel_job $job_id
-			fail "Job $job_id not found"
+			fail "Job ($job_id) not found"
 		}
 		-re "JobState=RUNNING" {
 			log_debug "Job is RUNNING as expected"

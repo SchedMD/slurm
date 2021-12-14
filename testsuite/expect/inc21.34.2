@@ -80,7 +80,7 @@ proc inc21_34_2 { qostest } {
 			}
 			-re "Granted job allocation ($number)" {
 				set job_id2 $expect_out(1,string)
-				error "Job $job_id2 should be waiting for resources, but is not"
+				error "Job ($job_id2) should be waiting for resources, but is not"
 			}
 			timeout {
 				error "salloc is not responding"

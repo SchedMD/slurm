@@ -27,7 +27,6 @@
 ############################################################################
 
 proc inc21_30_10 { wait_reason } {
-
 	global salloc srun acct bin_sleep grpcpurunmin_num number
 
 	log_info "Starting GrpCpuRunMins test"

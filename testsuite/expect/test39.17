@@ -152,7 +152,7 @@ expect {
 }
 log_user 1
 if {$match != 1} {
-	fail "Did not delay step for available GPU $match"
+	fail "Did not delay step for available GPU ($match != 1)"
 }
 
 #

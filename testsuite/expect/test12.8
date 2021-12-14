@@ -71,7 +71,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 	run_command "$scontrol show job"
 	run_command "$scontrol show node"
 
-	fail "Error waiting for job $job_id to complete"
+	fail "Error waiting for job ($job_id) to complete"
 }
 
 set failed_cnt 0
@@ -102,5 +102,5 @@ if {$failed_cnt != 2 || $timeout_cnt != 1} {
 			wait
 		}
 	}
-	fail "Batch job $job_id did not FAIL and/or the step did not TIMEOUT.  Count for FAILED was $failed_cnt (not 2) and TIMEOUT was $timeout_cnt (not 1)"
+	fail "Batch job ($job_id) did not FAIL and/or the step did not time out (Count for FAILED was $failed_cnt instead of 2 and TIMEOUT was $timeout_cnt instead of 1)"
 }

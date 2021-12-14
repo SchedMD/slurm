@@ -95,17 +95,17 @@ proc cleanup {} {
 
 # Add cluster
 if [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]] {
-	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
+	fail "Unable to add clusters ($tc1,$tc2,$tc3)"
 }
 
 # Add accounts
 if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
-	fail "Unable to add account ($ta1,$ta2,$ta3)"
+	fail "Unable to add accounts ($ta1,$ta2,$ta3)"
 }
 
 # Add users
 if [add_user "$tu1,$tu2,$tu3" [array get user_req]] {
-	fail "Unable to add user ($tu1,$tu2,$tu3)"
+	fail "Unable to add users ($tu1,$tu2,$tu3)"
 }
 
 ################################################################
@@ -174,7 +174,7 @@ foreach atest $lista {
 			send "N"
 			exp_continue
 			timeout {
-				fail "sacctmgr list account timing out"
+				fail "sacctmgr del account timing out"
 			}
 		}
 	}
@@ -183,7 +183,7 @@ foreach atest $lista {
 
 set count [list_test_users]
 if { $count != 27 } {
-	fail "This $test_name concludes that sacctmgr did not abort delete of accounts $count"
+	fail "sacctmgr did not abort delete of accounts ($count)"
 }
 
 foreach ctest $listc {
@@ -193,7 +193,7 @@ foreach ctest $listc {
 			send "N"
 			exp_continue
 			timeout {
-				fail "sacctmgr list cluster timing out"
+				fail "sacctmgr del cluster timing out"
 			}
 		}
 	}
@@ -202,18 +202,18 @@ foreach ctest $listc {
 
 set count [list_test_users]
 if { $count != 27 } {
-	fail "This $test_name concludes that sacctmgr did not abort delete of $clu $count"
+	fail "sacctmgr did not abort delete of cluster ($clu) ($count)"
 }
 
 #
 foreach utest $listu {
-	spawn $sacctmgr del user $atest
+	spawn $sacctmgr del user $utest
 	expect {
 		"(N/y):" {
 			send "N"
 			exp_continue
 			timeout {
-				fail "sacctmgr list $usr timing out"
+				fail "sacctmgr del user ($utest) timing out"
 			}
 		}
 	}
@@ -221,7 +221,7 @@ foreach utest $listu {
 
 set count [list_test_users]
 if { $count != 27 } {
-	fail "This $test_name concludes that sacctmgr did not abort delete of users $count"
+	fail "sacctmgr did not abort delete of users ($count)"
 }
 
 ################################################################
@@ -236,14 +236,14 @@ foreach udtest $listu {
 			send "y"
 			exp_continue
 			timeout {
-				fail "sacctmgr list $usr timing out"
+				fail "sacctmgr del user ($udtest) timing out"
 			}
 		}
 	}
 }
 
 if { [list_test_object $tu1 $tu2 $tu3 user] != 0 } {
-	fail "This $test_name concludes that sacctmgr did not delete users"
+	fail "sacctmgr did not delete users"
 }
 
 #
@@ -255,7 +255,7 @@ foreach adtest $lista {
 			send "y"
 			exp_continue
 			timeout {
-				fail "sacctmgr list account timing out"
+				fail "sacctmgr del account timing out"
 			}
 		}
 	}
@@ -263,7 +263,7 @@ foreach adtest $lista {
 
 
 if { [list_test_object $ta1 $ta2 $ta3 account] != 0 } {
-	fail "This $test_name concludes that sacctmgr did not delete accounts"
+	fail "sacctmgr did not delete accounts"
 }
 
 #
@@ -274,7 +274,7 @@ foreach cdtest $listc {
 			send "y"
 			exp_continue
 			timeout {
-				fail "sacctmgr list cluster timing out"
+				fail "sacctmgr del cluster timing out"
 			}
 		}
 	}
@@ -282,5 +282,5 @@ foreach cdtest $listc {
 
 
 if { [list_test_object $tc1 $tc2 $tc3 cluster] != 0 } {
-	fail "This $test_name concludes that sacctmgr did not delete $clu"
+	fail "sacctmgr did not delete cluster ($clu)"
 }

@@ -163,7 +163,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes"
+	fail "License output is incorrect ($matches != 2. Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes)"
 }
 
 #
@@ -205,7 +205,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	fail "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes"
+	fail "License output is incorrect ($matches != 2. Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes)"
 }
 
 #
@@ -233,7 +233,7 @@ expect {
 	}
 }
 if {$matches != 0} {
-	fail "scontrol failed to remove license $sr1@$resource1(Server)"
+	fail "scontrol failed to remove license ($sr1@$resource1(Server))"
 }
 
 #

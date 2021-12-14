@@ -89,7 +89,7 @@ expect {
 		#log_debug "Job initiated"
 	}
 	timeout {
-		fail "salloc : allocation not granted in $timeout seconds"
+		fail "salloc: allocation not granted in $timeout seconds"
 	}
 	eof {
 		wait

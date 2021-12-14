@@ -73,5 +73,5 @@ run_command -fail "$scontrol create partitionname=$part2 nodes=$test_node"
 #
 set job_id  [submit_job -fail "-N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part1,$part2 $file_in"]
 set partitions [get_job_param $job_id "Partition"]
-subtest {[param_contains $partitions $part1]} "Verify $part1 is one of the job $job_id partitions" "$partitions doesn't contain $part1"
-subtest {[param_contains $partitions $part2]} "Verify $part2 is one of the job $job_id partitions" "$partitions doesn't contain $part2"
+subtest {[param_contains $partitions $part1]} "Verify $part1 is one of the job ($job_id) partitions" "$partitions doesn't contain $part1"
+subtest {[param_contains $partitions $part2]} "Verify $part2 is one of the job ($job_id) partitions" "$partitions doesn't contain $part2"

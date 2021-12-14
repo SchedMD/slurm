@@ -269,7 +269,7 @@ for {set node_id 0} {$node_id < 2} {incr node_id} {
 	set file_out_n_glob  "$test_dir/n.$node_id.output"
 
 	if {($node_id == 0) && ([wait_for_file $file_out_n_glob] != 0)} {
-		fail "Missing file $file_out_n_glob"
+		fail "Missing file ($file_out_n_glob)"
 	} else {
 		exec $bin_sleep 1
 	}
@@ -325,7 +325,7 @@ for {set step_id 0} {$step_id < 3} {incr step_id} {
 	set file_out_s_glob  "$test_dir/s.$step_id.output"
 
 	if {($step_id < 2) && ([wait_for_file $file_out_s_glob] != 0)} {
-		fail "Missing file $file_out_s_glob"
+		fail "Missing file ($file_out_s_glob)"
 	} else {
 		exec $bin_sleep 1
 	}

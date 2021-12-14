@@ -75,13 +75,13 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 }
 
 #
-# Verify if Administrator privileges
+# Verify if have administrator privileges
 #
 if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-#make sure we have a clean system and permission to do this work
+# Make sure we have a clean system and permission to do this work
 remove_acct "" "$ta1,$ta2"
 remove_cluster "$tc1,$tc2"
 if {$access_err != 0} {
@@ -127,7 +127,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	fail "QOS $acct(DefaultQos) was not created"
+	fail "QOS ($acct(DefaultQos)) was not created"
 }
 
 #
@@ -149,10 +149,10 @@ expect {
 		exp_continue
 	}
 	-re "$tc2.$ta1" {
-		fail "$ta1 account erroneously added to $tc2"
+		fail "Account 1 ($ta1) erroneously added to cluster 2 ($tc2)"
 	}
 	-re "$tc2.$ta2" {
-		fail "$ta2 account erroneously added to $tc2"
+		fail "Account 2 ($ta2) erroneously added to cluster 2 ($tc2)"
 	}
 	timeout {
 		fail "sacctmgr list associations not responding"
@@ -163,14 +163,14 @@ expect {
 }
 
 if {$almatches != 2} {
-	fail "Added associations not found. Need 2 matches and got $almatches instead"
+	fail "Added associations not found (Need 2 matches and got $almatches instead)"
 }
 # Check that the Association was set correctly
 if {![check_assoc_limit 2 account $ta1 [array get acct]]} {
-	fail "The association limits for account $ta1 were not set correctly"
+	fail "The association limits for account 1 ($ta1) were not set correctly"
 }
 if {![check_assoc_limit 2 account $ta2 [array get acct]]} {
-	fail "The association limits for account $ta2 were not set correctly"
+	fail "The association limits for account 2 ($ta2) were not set correctly"
 }
 
 if {![check_acct_associations]} {

@@ -146,5 +146,5 @@ expect {
 }
 
 if {$host2 ne $hostname} {
-	fail "The execution hostname $hostname != $host2 requested hostname."
+	fail "The execution hostname ($hostname) != requested hostname ($host2)"
 }

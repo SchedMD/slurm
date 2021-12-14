@@ -179,7 +179,7 @@ if {$matches != [expr $task_cnt + 1]} {
 set spawn_id $init_id
 expect {
 	timeout {
-		fail "srun (terminate) not responding"
+		fail "srun not terminating"
 	}
 	eof {
 		wait

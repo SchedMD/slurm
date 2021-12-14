@@ -56,5 +56,4 @@ expect {
 }
 
 subtest {$cluster_name eq $lsid_cluster_name} "Verify lsid's cluster name matches the configured ClusterName" "$cluster_name != $lsid_cluster_name"
-
 subtest {$control_machine eq $lsid_control_machine} "Verify lsid's master name matches the configured SlurmctldHost\[0\]" "$control_machine != $lsid_control_machine"

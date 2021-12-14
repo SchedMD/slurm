@@ -89,7 +89,7 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
 			send "$srun -N1 -O -n$windows_used true\r"
 		}
 		timeout {
-			fail "Salloc not responding"
+			fail "salloc not responding"
 		}
 		eof {
 			fail "srun aborted"
@@ -105,7 +105,7 @@ send "exit\r"
 
 expect {
 	-re "error" {
-		fail "some error occurred"
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding"

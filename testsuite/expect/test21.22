@@ -299,7 +299,7 @@ proc _remove_cluster {name} {
 		return 1
 	}
 	if {$matches != 1} {
-		fail "sacctmgr had a problem deleting cluster got $matches"
+		fail "sacctmgr had a problem deleting cluster ($matches != 1)"
 	}
 	if { !$nothing } {
 		if {![check_acct_associations]} {
@@ -361,7 +361,7 @@ proc _remove_acct { cluster name } {
 	}
 
 	if {$matches != 1} {
-		fail "sacctmgr had a problem deleting account. Got $matches"
+		fail "sacctmgr had a problem deleting account ($matches != 1)"
 	}
 
 	if { !$nothing } {
@@ -424,7 +424,7 @@ proc _remove_user { acct user } {
 	}
 
 	if {$matches != 1} {
-		fail "sacctmgr had a problem deleting user. Got $matches"
+		fail "sacctmgr had a problem deleting user ($matches != 1)"
 	}
 
 	if { !$nothing } {
@@ -482,7 +482,7 @@ expect {
 }
 
 if {$matches != 2} {
-	fail "File load 1 incorrect with only $matches"
+	fail "File load 1 incorrect ($matches != 2)"
 }
 
 #
@@ -531,7 +531,7 @@ expect {
 }
 
 if {$matches != 7} {
-	fail "Associations addition 7 incorrect with only $matches"
+	fail "Associations addition 7 incorrect ($matches != 7)"
 }
 
 #
@@ -560,7 +560,7 @@ expect {
 }
 
 if {$matches != 2} {
-	fail "Adminstrator and coordinator 2 incorrect with only $matches"
+	fail "Adminstrator and coordinator 2 incorrect ($matches != 2)"
 }
 
 set matches 0
@@ -593,7 +593,7 @@ expect {
 }
 
 if {$matches != 2} {
-	fail "File load 2 incorrect with only $matches"
+	fail "File load 2 incorrect ($matches != 2)"
 }
 
 #
@@ -664,7 +664,7 @@ expect {
 }
 
 if {$matches != 10} {
-	fail "Association modification 10 incorrect with only $matches"
+	fail "Association modification 10 incorrect ($matches != 10)"
 }
 
 #
@@ -697,7 +697,7 @@ expect {
 }
 
 if {$matches != 3} {
-	fail "Adminstrator and coordinator 3 incorrect with only $matches"
+	fail "Adminstrator and coordinator 3 incorrect ($matches != 3)"
 }
 
 set matches 0
@@ -729,7 +729,7 @@ expect {
 }
 
 if {$matches != 2} {
-	fail "File load 2 incorrect with only $matches"
+	fail "File load 2 incorrect ($matches != 2)"
 }
 
 #
@@ -790,7 +790,7 @@ expect {
 }
 
 if {$matches != 10} {
-	fail "Clean association addition 10 incorrect with only $matches"
+	fail "Clean association addition 10 incorrect ($matches != 10)"
 }
 
 #
@@ -823,5 +823,5 @@ expect {
 }
 
 if {$matches != 3} {
-	fail "Adminstrator and coordinator 3 incorrect with only $matches"
+	fail "Adminstrator and coordinator 3 incorrect ($matches != 3)"
 }

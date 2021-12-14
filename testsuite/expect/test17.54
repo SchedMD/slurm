@@ -83,4 +83,4 @@ wait_for_job -fail $job_id DONE
 #
 set timelimit [get_job_param $job_id "TimeLimit"]
 subtest {[regexp "00:59:" $timelimit] ||
-         [regexp "01:00:00" $timelimit]} "Verify that TimeLimit of the job $job_id is 1h"
+         [regexp "01:00:00" $timelimit]} "Verify that TimeLimit of the job ($job_id) is 1h"

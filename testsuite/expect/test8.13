@@ -71,7 +71,7 @@ proc set_user_resv_delete {} {
 		reconfigure -fail
 
 		if {![param_contains [get_config_param "SlurmctldParameters"] "user_resv_delete"]} {
-			fail "could not set user_resv_delete as a SlurmctldParameter"
+			fail "Could not set user_resv_delete as a SlurmctldParameter"
 		}
 	}
 	log_info "user_resv_delete set in SlurmctldParameters"
@@ -86,7 +86,7 @@ proc unset_user_resv_delete {} {
 		reconfigure -fail
 
 		if {[param_contains [get_config_param "SlurmctldParameters"] "user_resv_delete"]} {
-			fail "could not unset user_resv_delete as a SlurmctldParameter"
+			fail "Could not unset user_resv_delete as a SlurmctldParameter"
 		}
 	}
 	log_info "user_resv_delete unset in SlurmctldParameters"

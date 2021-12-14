@@ -185,7 +185,7 @@ $bin_sleep $delay
 spawn $sbatch --ignore-pbs -vv -o $file_out $file_in
 set matches [pbs_ignore_expects]
 if {$matches != 0} {
-	fail "command line arg --ignore-pbs was not processed"
+	fail "Command line arg --ignore-pbs was not processed"
 }
 log_info "command line arg --ignore-pbs processed correctly"
 

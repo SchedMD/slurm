@@ -119,7 +119,7 @@ expect {
 }
 
 if {$step_matches != 1} {
-	fail "Error running slurm_job_step_stat() program ($step_matches != 1)"
+	fail "Error running slurm_job_step_stat program ($step_matches != 1)"
 }
 if {$pid_matches != $pid_count} {
 	log_warn "Failed to load PIDs associated with job step ($pid_matches != $pid_count). This is dependent upon the ProctrackType configured. proctrack/pgid does NOT support this functionality"

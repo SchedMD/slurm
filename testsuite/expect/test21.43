@@ -85,7 +85,7 @@ cleanup
 #
 log_debug "Adding account $test_acct"
 if [add_acct $test_acct [list cluster $cluster]] {
-	fail "Unable to create account $test_acct"
+	fail "Unable to create account ($test_acct)"
 }
 
 #
@@ -93,7 +93,7 @@ if [add_acct $test_acct [list cluster $cluster]] {
 #
 log_debug "Adding user $test_user to account $test_acct"
 if [add_user $test_user [list cluster $cluster account $test_acct]] {
-	fail "Unable to add user $test_user to account $test_acct"
+	fail "Unable to add user ($test_user) to account ($test_acct)"
 }
 
 #
@@ -104,12 +104,12 @@ dict for {key qos_spec} $qoses {
 
 	log_debug "Adding qos $test_qos"
 	if [add_qos $test_qos $qos_spec] {
-		fail "Unable to create qos $test_qos"
+		fail "Unable to create qos ($test_qos)"
 	}
 
 	log_debug "Adding qos $test_qos to user $test_user"
 	if [mod_user $test_user [list cluster $cluster] [list qos +$test_qos] {}] {
-		fail "Unable to add qos $test_qos to user $test_user"
+		fail "Unable to add qos ($test_qos) to user ($test_user)"
 	}
 }
 
@@ -195,7 +195,7 @@ proc test_usage_factor { qos usage_factor } {
 
 	# A tolerance of -1 (sec) must be permitted because usage can be accrued
 	# one second before the usage value can be returned.
-	subtest [tolerance $expected_usage $observed_usage -1] "Check that usage for qos $qos is within tolerance (-1 sec)" "$observed_usage not in \[$expected_usage-1, $expected_usage\]"
+	subtest [tolerance $expected_usage $observed_usage -1] "Check that usage for qos ($qos) is within tolerance (-1 sec)" "$observed_usage not in \[$expected_usage-1, $expected_usage\]"
 
 	#
 	# Cancel the job

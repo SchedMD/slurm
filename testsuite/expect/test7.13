@@ -139,7 +139,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 		wait_for -timeout 60 -pollinterval 5 {false} {
 			run_command "$sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode,Comment"
 		}
-		fail "sacct of $job_id failed ($matches != 4)"
+		fail "sacct (of $job_id) failed ($matches != 4)"
 	}
 }
 
@@ -226,6 +226,6 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 		}
 	}
 	if {$matches != 4} {
-		fail "sacct of $job_id failed ($matches != 4)"
+		fail "sacct (of $job_id) failed ($matches != 4)"
 	}
 }

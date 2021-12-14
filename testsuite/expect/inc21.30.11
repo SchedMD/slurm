@@ -27,7 +27,6 @@
 ############################################################################
 
 proc inc21_30_11 { wait_reason } {
-
 	global salloc srun acct bin_sleep grpmem_num number
 	global test_select_type_params
 

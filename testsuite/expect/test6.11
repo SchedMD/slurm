@@ -40,7 +40,7 @@ set output [run_command_output -fail "$scancel -v $job_id"]
 subtest {![regexp "error" $output]} "Verify that basic scancel doesn't print an error"
 
 wait_for_job -fail -timeout 10 $job_id "DONE"
-subtest {[get_job_param $job_id "JobState"] eq "CANCELLED"} "Verify job $job_id was CANCELLED" "[get_job_param $job_id "JobState"] != CANCELLED"
+subtest {[get_job_param $job_id "JobState"] eq "CANCELLED"} "Verify job ($job_id) was CANCELLED" "[get_job_param $job_id "JobState"] != CANCELLED"
 
 #
 # Test basic scancel with job already killed

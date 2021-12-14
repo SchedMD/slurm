@@ -59,7 +59,7 @@ expect {
 		set stepid $expect_out(2,string)
 	}
 	timeout {
-		fail "Srun launch failed"
+		fail "srun launch failed"
     }
 	eof {
 		wait
@@ -70,5 +70,5 @@ expect {
 # Make sure that the contents of the input and output files are the same
 #
 if {[catch {exec diff $file_in $file_out}]} {
-	fail "File $file_out does not match file $file_in"
+	fail "Output file ($file_out) does not match input file ($file_in)"
 }

@@ -92,7 +92,7 @@ proc sbatch { args } {
 		}
 	}
 	if {$matches != 1} {
-		fail "batch submit failure"
+		fail "Batch submit failure"
 	}
 	return $job_id
 }
@@ -117,7 +117,7 @@ proc sacct { options regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Unexpected error in squeue. Expected $regex"
+		fail "Unexpected error in squeue (expected $regex)"
 	}
 }
 
@@ -159,7 +159,7 @@ cleanup
 
 # Add clusters to federation
 if {[setup_federation $fed_name]} {
-	fail "failed to setup federation"
+	fail "Failed to setup federation"
 }
 
 # Get number of nodes per cluster
@@ -196,7 +196,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -226,7 +226,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -257,7 +257,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 make_bash_script $file_in "sleep 15"

@@ -68,16 +68,16 @@ proc create_accounts {} {
 
 	# Create test assoc and accounts
 	if [add_qos $tq1 [array get qos_1]] {
-		fail "Unable to add qos $tq1"
+		fail "Unable to add qos ($tq1)"
 	}
 	if [add_qos $tq2 [array get qos_2]] {
-		fail "Unable to add qos $tq2"
+		fail "Unable to add qos ($tq2)"
 	}
 	if [add_acct $ta1 [array get acct_1]] {
-		fail "Unable to add account $ta1"
+		fail "Unable to add account ($ta1)"
 	}
 	if [add_user $tu1 [array get user_req_1]] {
-		fail "Unable to add user $tu1"
+		fail "Unable to add user ($tu1)"
 	}
 }
 
@@ -139,7 +139,7 @@ proc test_bin_pass { num bin args het_job count } {
 			exp_continue
 		}
 		timeout {
-			fail "$bin not responding"
+			fail "[file tail $bin] not responding"
 		}
 		eof {
 			lassign [wait] pid spawnid os_error_flag rc
@@ -152,7 +152,7 @@ proc test_bin_pass { num bin args het_job count } {
 	    ($got_sub1 != $count) ||
 	    ($got_sub2 != $count) ||
 	    ($got_sub3 != $count)} {
-			fail "Invalid $bin response"
+			fail "Invalid response from [file tail $bin]"
 	}
 }
 
@@ -202,7 +202,7 @@ proc test_bin_fail { num bin args het_job count } {
 			exp_continue
 		}
 		timeout {
-			fail "$bin not responding"
+			fail "[file tail $bin] not responding"
 		}
 		eof {
 			lassign [wait] pid spawnid os_error_flag rc
@@ -215,7 +215,7 @@ proc test_bin_fail { num bin args het_job count } {
 	    ($got_sub1 != $count) ||
 	    ($got_sub2 != $count) ||
 	    ($got_sub3 != $count)} {
-		fail "Invalid $bin response"
+		fail "Invalid response from [file tail $bin]"
 	}
 }
 

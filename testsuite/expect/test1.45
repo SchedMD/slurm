@@ -74,8 +74,8 @@ regexp 	"Result:.($number).($number).($number).($number).($number).($number)" \
 	$output - num_nodes_test1 num_nodes_test2 num_procs_test1 \
 	          num_procs_test2 num_nodes_test3 num_procs_test3
 
-subtest {$num_nodes_test1 == $num_nodes_test2} "SLURM_NNODES should be preserved" "($num_nodes_test1 != $num_nodes_test2)"
-subtest {$num_procs_test1 == $num_procs_test2} "SLURM_NTASKS should be preserved" "($num_procs_test1 != $num_procs_test2)"
+subtest {$num_nodes_test1 == $num_nodes_test2} "SLURM_NNODES should be preserved" "$num_nodes_test1 != $num_nodes_test2"
+subtest {$num_procs_test1 == $num_procs_test2} "SLURM_NTASKS should be preserved" "$num_procs_test1 != $num_procs_test2"
 
-subtest {$num_nodes_test3 == 1} "SLURM_NNODES should be 1" "($num_nodes_test3 != 1)"
-subtest {$num_procs_test3 == 1} "SLURM_NTASKS should be 1" "($num_procs_test3 != 1)"
+subtest {$num_nodes_test3 == 1} "SLURM_NNODES should be 1" "$num_nodes_test3 != 1"
+subtest {$num_procs_test3 == 1} "SLURM_NTASKS should be 1" "$num_procs_test3 != 1"

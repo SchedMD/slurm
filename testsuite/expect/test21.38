@@ -154,7 +154,7 @@ expect {
 	}
 }
 if {$matches != 9} {
-	fail "Account modification 1 incorrect (with only $matches out of 9)"
+	fail "Account modification 1 incorrect ($matches != 9)"
 }
 
 # Modify the child account (give it TRESlimit=cpu)
@@ -181,7 +181,7 @@ expect {
 	}
 }
 if {$matches != 9} {
-	fail "Account modification 2 incorrect (with only $matches out of 9)"
+	fail "Account modification 2 incorrect ($matches != 9)"
 }
 
 # Modify the child accounts (give them TRESlimit=node_limit)
@@ -208,7 +208,7 @@ expect {
 	}
 }
 if {$matches != 9} {
-	fail "Account modification 3 incorrect (with only $matches out of 9)"
+	fail "Account modification 3 incorrect ($matches != 9)"
 }
 
 # Modify a child user
@@ -240,7 +240,7 @@ expect {
 	}
 }
 if {$matches != 9} {
-	fail "Account modification 4 incorrect (with only $matches out of 9)"
+	fail "Account modification 4 incorrect ($matches != 9)"
 }
 
 
@@ -270,5 +270,5 @@ expect {
 	}
 }
 if {$matches != 9} {
-	fail "Account modification 5 incorrect with only $matches out of 9"
+	fail "Account modification 5 incorrect ($matches != 9)"
 }

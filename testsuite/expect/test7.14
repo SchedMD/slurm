@@ -143,5 +143,5 @@ expect {
 }
 
 if {$matches != 1} {
-	fail "sacct of $job_id failed ($matches)"
+	fail "sacct (of $job_id) failed ($matches)"
 }

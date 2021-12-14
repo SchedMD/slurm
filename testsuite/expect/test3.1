@@ -84,5 +84,5 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 	# TODO Temporary debug to troubleshoot bug 9647 (revert once fixed)
 	run_command "$bin_cat $file_out"
 
-	fail "Job $job_id not running after reconfiguration"
+	fail "Job ($job_id) not running after reconfiguration"
 }

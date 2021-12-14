@@ -87,7 +87,7 @@ proc srun { regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "srun failure: expected $regex"
+		fail "srun failure (expected $regex)"
 	}
 	return $job_id
 }
@@ -115,7 +115,7 @@ proc sbatch { options } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Batch submit failure: expected $regex"
+		fail "Batch submit failure (expected $regex)"
 	}
 
 	sleep 2
@@ -138,7 +138,7 @@ proc squeue { regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Unexpected error in squeue. expected $regex"
+		fail "Unexpected error in squeue (expected $regex)"
 	}
 }
 
@@ -164,7 +164,7 @@ proc scontrol { fed id regex } {
 			}
 		}
 		if {$matches != 1} {
-			fail "scontrol failure: expected $regex"
+			fail "scontrol failure (expected $regex)"
 		}
 	}
 }
@@ -185,7 +185,7 @@ proc my_cat { id } {
 		}
 	}
 	if {$matches != 3} {
-		fail "cat failure: expected .+error: from ($fedc1|$fedc2|$fedc3). matches=$matches"
+		fail "cat failure (expected .+error from $fedc1|$fedc2|$fedc3. matches=$matches)"
 	}
 }
 
@@ -262,7 +262,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -292,7 +292,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -322,7 +322,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 make_bash_script $file_in "sleep 300"

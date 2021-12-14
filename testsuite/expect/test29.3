@@ -128,7 +128,7 @@ expect {
 }
 
 if {$sub_match != 1} {
-	fail "Job $job_id should not be failing"
+	fail "Job ($job_id) should not be failing"
 }
 
 #
@@ -172,5 +172,5 @@ expect {
 }
 
 if {$sub_match != 1} {
-	fail "Job $job_id should have failed or failing hosts"
+	fail "Job ($job_id) should have failed or failing hosts"
 }

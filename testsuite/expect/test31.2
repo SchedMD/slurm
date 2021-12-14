@@ -95,7 +95,7 @@ if {$job_id == 0} {
 
 # Check that job starts running correctly
 if {[wait_job_reason $job_id "RUNNING" "None"] != 0} {
-	fail "Job $job_id should be Running and have reason: None"
+	fail "Job ($job_id) should be Running and have reason: None"
 }
 
 exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_file
@@ -127,7 +127,7 @@ if {$job_id == 0} {
 # Either state is possible due to race conditions
 if {[wait_job_reason $job_id "PENDING" {"launch_failed_requeued_held" \
                                         "JobHeldAdmin"}]} {
-	fail "Job $job_id is not in the correct state or reason."
+	fail "Job ($job_id) is not in the correct state or reason."
 }
 
 # Check that the node that the job ran on is in fact drained
@@ -146,7 +146,7 @@ expect {
 	}
 }
 if {$match == 0} {
-	fail "Node $test_node was not drained when it should be"
+	fail "Node ($test_node) was not drained when it should be"
 }
 
 log_info "RESUMING NODE"
@@ -178,7 +178,7 @@ if {$job_id == 0} {
 
 # Wait a bit for the pending reason to be set
 if {[wait_job_reason $job_id] != 0} {
-	fail "Error waiting for job $job_id to start"
+	fail "Error waiting for job ($job_id) to start"
 }
 
 # Check that the job doesn't have priority 0

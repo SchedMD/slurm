@@ -270,7 +270,7 @@ rm -rf $file_out"
 
 	#  Check for expected errors, if applicable
 	if {$err_msgs != ""} {
-		subtest {$errs_actual == $errs_expected} "Verify expected output errors" "$errs_actual != $errs_expected (regexp='$err_msgs')"
+		subtest {$errs_actual == $errs_expected} "Verify expected errors" "$errs_actual != $errs_expected (regexp='$err_msgs')"
 	}
 }
 

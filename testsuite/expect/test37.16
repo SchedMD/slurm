@@ -93,7 +93,7 @@ proc setup_cluster_features {} {
 		}
 	}
 	if {$matches != 4} {
-		fail "Unexpected error. Got $matches"
+		fail "Unexpected error (got $matches)"
 	}
 
 	set matches 0
@@ -123,7 +123,7 @@ proc setup_cluster_features {} {
 		}
 	}
 	if {$matches != 4} {
-		fail "Unexpected error. Got $matches"
+		fail "Unexpected error (got $matches)"
 	}
 
 	set matches 0
@@ -153,7 +153,7 @@ proc setup_cluster_features {} {
 		}
 	}
 	if {$matches != 4} {
-		fail "Unexpected error. Got $matches"
+		fail "Unexpected error (got $matches)"
 	}
 }
 
@@ -178,7 +178,7 @@ proc scontrol { fed job_id index regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "srun failure: expected $regex"
+		fail "srun failure (expected $regex)"
 	}
 }
 
@@ -205,7 +205,7 @@ proc sbatch { options } {
 		}
 	}
 	if {$matches != 1} {
-		fail "batch submit failure: expected $regex"
+		fail "Batch submit failure (expected $regex)"
 	}
 
 	return $job_id
@@ -235,7 +235,7 @@ proc srun { options index } {
 		}
 	}
 	if {$matches != 1} {
-		fail "srun failure: expected $regex"
+		fail "srun failure (expected $regex)"
 	}
 
 	return $job_id
@@ -254,7 +254,7 @@ proc squeue { fed m regex } {
 		}
 	}
 	if {$matches != $m} {
-		fail "Unexpected error in squeue. expected $regex.  Matched $matches/$m times."
+		fail "Unexpected error in squeue (expected $regex: Matched $matches/$m times)"
 	}
 }
 
@@ -453,7 +453,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	fail "Unexpected error in sacct. $matches/3"
+	fail "Unexpected error in sacct ($matches != 3)"
 }
 
 # Test that job3 is marked REVOKED on the siblings clusters (fed2,fed3) and
@@ -472,7 +472,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	fail "Unexpected error in sacct."
+	fail "Unexpected error in sacct"
 }
 
 
@@ -521,7 +521,7 @@ expect {
 	eof {}
 }
 if {$matches != 0} {
-	fail "srun got signaled when it shouldn't have."
+	fail "srun got signaled when it shouldn't have"
 }
 set timeout $old_timeout
 

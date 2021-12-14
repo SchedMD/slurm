@@ -75,7 +75,7 @@ wait_for_file -fail $file_out
 spawn $bin_cat $file_out
 expect {
 	-re "INITIAL_VALUE" {
-		fail "Stdout file not truncated"
+		fail "stdout file not truncated"
 	}
 	-re "$login_grp_info" {
 		incr got_job_grps

@@ -332,7 +332,7 @@ expect {
 }
 
 if {$matches != 1} {
-	fail "File load 1 incorrect with only $matches"
+	fail "File load 1 incorrect ($matches != 1)"
 }
 
 set matches 0
@@ -384,5 +384,5 @@ while {[gets $tfile line] != -1} {
 
 
 if {$matches != 14} {
-	fail "Parse of file for 14 entries incorrect with only $matches"
+	fail "Parse of file for 14 entries incorrect ($matches != 14)"
 }

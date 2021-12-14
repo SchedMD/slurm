@@ -285,7 +285,7 @@ if {$threads_per_core == 4} {
 	log_info "Testing high thread count ThreadsPerCore = 4"
 	test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 --threads-per-core=2 -c [expr $cpus_per_node / 2]" $sockets_per_node $sockets_per_node
 }
-#Negative tests - srun is expected to fail
+# Negative tests - srun is expected to fail
 log_info "Negative tests - srun is expected to fail here"
 test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c [expr $cpus_per_node * 2]" 0 0
 test_gpus_cnt "--gres=gpu:1 -c [expr $cpus_per_node * 2]" 0 0
@@ -296,7 +296,7 @@ if {$threads_per_core > 1} {
 } else {
 	test_gpus_cnt "--gpus=1 --threads-per-core=1 -c [expr $cpus_per_node]" 1 1
 }
-##End of tests from Bug 9937
+# End of tests from Bug 9937
 
 test_gpus_cnt "--gres=gpu:1 --ntasks-per-node=1 -c $cpus_per_node" 1 1
 test_gpus_cnt "--gres=gpu:1 --ntasks-per-node=1 -c $cpus_per_socket" 1 1

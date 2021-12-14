@@ -88,7 +88,7 @@ proc submit { args regex {negate_match 0} } {
 
 	if {$negate_match} {
 		if {$matches} {
-			fail "scontrol show job $jobid matched '$regex' and it shouldn't have"
+			fail "scontrol show job ($jobid) matched '$regex' and it shouldn't have"
 		}
 	} elseif {!$matches} {
 		fail "scontrol show job $jobid failed to match '$regex'"

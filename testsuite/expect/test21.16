@@ -112,18 +112,18 @@ proc cleanup {} {
 
 # Add cluster
 if [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]] {
-	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
+	fail "Unable to add clusters ($tc1,$tc2,$tc3)"
 }
 
 # Add accounts
 if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
-	fail "Unable to add account ($ta1,$ta2,$ta3)"
+	fail "Unable to add accounts ($ta1,$ta2,$ta3)"
 }
 
 # Add users
 # account adminlevel cluster defaultaccount fs maxcpu maxjob maxnodes maxwall name
 if [add_user "$tu1,$tu2,$tu3" [array get user_req1]] {
-	fail "Unable to add user ($tu1,$tu2,$tu3)"
+	fail "Unable to add users ($tu1,$tu2,$tu3)"
 }
 
 #
@@ -148,7 +148,7 @@ expect {
 }
 
 if {$matches != 27} {
-	fail "Account addition 27 incorrect with only $matches"
+	fail "Account addition 27 incorrect ($matches != 27)"
 }
 
 if [remove_user "" "" "$tu1,$tu2,$tu3"] {
@@ -166,13 +166,13 @@ if [add_qos "$dqos1" ""] {
 # Add user with all limits set
 #
 if [add_user "$tu4,$tu5" [array get user_req2]] {
-	fail "Unable to add user ($tu4,$tu5)"
+	fail "Unable to add users ($tu4,$tu5)"
 }
 
 # Check Limits of both users
 if {![check_assoc_limit 3 user $tu4 [array get user_req2]]} {
-	fail "The association limits for user $tu4 are incorrect"
+	fail "The association limits for user 4 ($tu4) are incorrect"
 }
 if {![check_assoc_limit 3 user $tu5 [array get user_req2]]} {
-	fail "The association limits for user $tu5 are incorrect"
+	fail "The association limits for user 5 ($tu5) are incorrect"
 }

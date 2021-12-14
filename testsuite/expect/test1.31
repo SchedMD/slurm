@@ -125,7 +125,7 @@ expect {
 	}
 
 	timeout {
-		fail "$bin_sort not responding"
+		fail "sort not responding"
 	}
 	eof {
 		wait

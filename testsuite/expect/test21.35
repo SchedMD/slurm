@@ -230,7 +230,7 @@ expect {
 }
 
 if {$added != 1} {
-	fail "Test QoS $test_qos was not created"
+	fail "Test QoS ($test_qos) was not created"
 }
 
 set match 0
@@ -249,7 +249,7 @@ expect {
 }
 
 if {$match != 1} {
-	fail "Test account $test_acct was not created"
+	fail "Test account ($test_acct) was not created"
 }
 
 spawn $sacctmgr -i create user name=[get_my_user_name] account=$test_acct

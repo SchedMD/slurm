@@ -70,7 +70,7 @@ proc check_update { job job_time } {
 		fail "Failed to get new job id"
 	}
 	if {$time_match != 1} {
-		fail "Job $job was never updated"
+		fail "Job ($job) was never updated"
 	}
 	return $new_job_id
 }

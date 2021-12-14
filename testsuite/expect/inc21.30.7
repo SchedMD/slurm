@@ -28,7 +28,6 @@
 
 # Test MaxJobs limit
 proc inc21_30_7 { wait_reason } {
-
 	global salloc scontrol srun acct re_word_str bin_sleep jobmatch job_id1 job_id2 job_id3 number maxjobs_num
 
 	log_info "Starting MaxJob limit test"
@@ -49,7 +48,7 @@ proc inc21_30_7 { wait_reason } {
 						log_debug "Job $inx $job_id($inx) was submitted. (inc21.30.7)"
 						incr jobmatch
 					} else {
-						error "Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num?"
+						error "Job $inx ($job_id($inx)) wasn't suppose to work but it did, limit was $check_num"
 					}
 				}
 				-re "job ($number) queued and waiting for resources" {
@@ -78,7 +77,7 @@ proc inc21_30_7 { wait_reason } {
 				expect {
 					-re "Reason=($re_word_str)" {
 						if {[string compare $expect_out(1,string) $wait_reason]} {
-							error "Job $inx $job_id($inx) was suppose to start but it didn't, limit was $check_num?"
+							error "Job $inx ($job_id($inx)) was suppose to start but it didn't, limit was $check_num"
 						} else {
 							incr jobmatch
 						}

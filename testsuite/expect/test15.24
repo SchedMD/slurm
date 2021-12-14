@@ -74,5 +74,5 @@ if {$matches != 2} {
 	fail "Did not set desired allocation env vars"
 }
 if {$task_cnt != $tasks} {
-	fail "Did not get proper number of tasks: $task_cnt, $tasks"
+	fail "Did not get proper number of tasks ($task_cnt != $tasks)"
 }

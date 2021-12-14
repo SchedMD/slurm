@@ -232,10 +232,10 @@ expect {
 
 set failure_addendum "Check for matching checksums on the plugstack.conf file. Different checksums could indicate file system delays"
 if {$matches_spank_exit != 3} {
-	fail "Remote (slurmd - spank_exit) spank plugin failure ($matches_spank_exit != 3). $failure_addendum"
+	fail "Remote (slurmd ) spank_exit spank plugin failure ($matches_spank_exit != 3). $failure_addendum"
 }
 if {$matches_spank_init != 3} {
-	fail "Remote (slurmd - spank_init) spank plugin failure ($matches_spank_init != 3). $failure_addendum"
+	fail "Remote (slurmd) spank_init spank plugin failure ($matches_spank_init != 3). $failure_addendum"
 }
 if {$matches_sbatch != 2} {
 	fail "Remote (slurmd) sbatch spank plugin failure ($matches_sbatch != 2). $failure_addendum"

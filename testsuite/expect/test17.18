@@ -187,7 +187,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	fail "Unexpected JobState or StartTime $match"
+	fail "Unexpected JobState or StartTime ($match != 2)"
 }
 
 # Reset start time and test for completion
@@ -236,6 +236,6 @@ if {$purged_job == 1} {
 	if {$min_job_age < 60} {
 		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
 	} else {
-		fail "Could not find job $job_id1"
+		fail "Could not find job ($job_id1)"
 	}
 }

@@ -104,7 +104,7 @@ proc check_pre { preempt_qos } {
 		}
 	}
 
-	subtest {$match == 1} "Verify preempted QOS" "!= $preempt_qos"
+	subtest {$match == 1} "Verify preempted QOS" "Preempted QOS do not match what is expected: $preempt_qos"
 }
 
 ######################### Test Begins #########################

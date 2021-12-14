@@ -75,11 +75,11 @@ wait_for_job -fail $job_id DONE
 #
 # test job status in scontrol and sacct
 #
-subtest {[get_job_param $job_id "JobState"] == "COMPLETED"} "Verify job $job_id is COMPLETED"
+subtest {[get_job_param $job_id "JobState"] == "COMPLETED"} "Verify job ($job_id) is COMPLETED"
 
 if {[param_contains [get_config_param "AccountingStorageType"] "*/slurmdbd"]} {
 	set output [run_command_output -fail "$sacct -n -P -X -j $job_id -o State"]
-	subtest {![regexp "DEADLINE" $output]} "Verify job $job_id is not in State DEADLINE in ssact"
+	subtest {![regexp "DEADLINE" $output]} "Verify job ($job_id) is not in State DEADLINE in sacct"
 } else {
 	subskip "Can not subtest without accounting enabled"
 }

@@ -104,17 +104,17 @@ proc cleanup {} {
 
 # Add cluster
 if [add_cluster "$tc1,$tc2" ""] {
-	fail "Unable to add cluster ($tc1,$tc2)"
+	fail "Unable to add clusters ($tc1,$tc2)"
 }
 
 # Add accounts
 if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
-	fail "Unable to add account ($ta1,$ta2,$ta3)"
+	fail "Unable to add accounts ($ta1,$ta2,$ta3)"
 }
 
 # OK This is the real test. First test change the desc and org of the accounts
 if [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]] {
-	fail "Unable to modify account ($ta1,$ta2,$ta3)"
+	fail "Unable to modify accounts ($ta1,$ta2,$ta3)"
 }
 
 #
@@ -138,7 +138,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	fail "Account modification 1 incorrect with only $matches"
+	fail "Account modification 1 incorrect ($matches != 3)"
 }
 
 # Next, test change the limits of the accounts
@@ -168,7 +168,7 @@ expect {
 }
 
 if {$matches != 6} {
-	fail "Account modification 2 incorrect with only $matches"
+	fail "Account modification 2 incorrect ($matches != 6)"
 }
 
 # Next, test change the desc and limits of the accounts
@@ -200,5 +200,5 @@ expect {
 }
 
 if {$matches != 6} {
-	fail "Account modification 6 incorrect with $matches"
+	fail "Account modification 6 incorrect ($matches != 6)"
 }

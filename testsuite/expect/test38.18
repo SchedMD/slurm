@@ -43,7 +43,7 @@ proc submit_job_error {cmd expected_error} {
 			exp_continue
 		}
 		timeout {
-			fail "command not responding"
+			fail "Command ($cmd) not responding"
 		}
 		eof {
 			wait
@@ -64,14 +64,14 @@ proc submit_job {cmd} {
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			fail "command not responding"
+			fail "Command ($cmd) not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {!$job_id} {
-		fail "didn't get a job_id"
+		fail "Didn't get a job_id"
 	}
 
 	return $job_id

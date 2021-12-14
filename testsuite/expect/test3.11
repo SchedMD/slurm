@@ -180,17 +180,17 @@ set states "idle"
 set node_list [get_nodes_by_state $states $def_partition]
 set part_node_cnt [llength $node_list]
 if {$part_node_cnt == 0} {
-	fail "Unable to get $states nodes in partition $def_partition"
+	fail "Unable to get $states nodes in default partition ($def_partition)"
 }
 
 set part_node [lindex $node_list 0]
 set part_node_cores [get_node_cores $part_node]
 if {$part_node_cores == -1} {
-	fail "Unable to get cores from $part_node"
+	fail "Unable to get cores from node ($part_node)"
 }
 set part_cores [get_part_total_cores $def_partition $states]
 if {$part_cores == 0} {
-	fail "Unable to get cores from $states nodes in $def_partition"
+	fail "Unable to get cores from $states nodes in default partition ($def_partition"
 }
 
 #

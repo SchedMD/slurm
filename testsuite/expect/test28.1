@@ -79,7 +79,7 @@ proc multi_squeue_check {job_id} {
 		-re "$job_id\_($number\)" {
 			set array_id $expect_out(1,string)
 			if {$array_id != $array_in} {
-				fail "Array IDs do not match $array_id != $array_in"
+				fail "Array IDs do not match ($array_id != $array_in)"
 			}
 			incr array_in
 			exp_continue

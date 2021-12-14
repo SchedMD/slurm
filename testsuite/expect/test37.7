@@ -81,7 +81,7 @@ proc sacctmgr_show { regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Didn't match regex $regex: $matches"
+		fail "Didn't match regex ($regex: $matches)"
 	}
 }
 
@@ -116,7 +116,7 @@ proc sacctmgr_mod { state } {
 		}
 	}
 	if {$matches != 4} {
-		fail "Unexpected error. Got $matches"
+		fail "Unexpected error (got $matches)"
 	}
 
 }
@@ -139,7 +139,7 @@ proc scontrol { category regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Didn't match regex $regex: $matches"
+		fail "Didn't match regex ($regex: $matches)"
 	}
 
 }
@@ -202,7 +202,7 @@ proc squeue { regex } {
 		}
 	}
 	if {$matches != 1} {
-		fail "Unexpected error in squeue. expected $regex"
+		fail "Unexpected error in squeue (expected $regex)"
 	}
 }
 
@@ -293,7 +293,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 set matches 0
@@ -312,7 +312,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 sacctmgr_mod ACTIVE
@@ -388,7 +388,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 sbatch  1 1
@@ -444,7 +444,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 
@@ -478,7 +478,7 @@ expect {
 	}
 }
 if {$matches != 4} {
-	fail "Unexpected error. Got $matches"
+	fail "Unexpected error (got $matches)"
 }
 
 sacctmgr_show "\\s+ACTIVE.+DRAIN\\s+"

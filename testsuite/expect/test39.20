@@ -169,7 +169,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	fail "Job $job_id1 state is bad"
+	fail "Job ($job_id1) state is bad"
 }
 cancel_job $job_id1
 
@@ -210,7 +210,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	fail "Job $job_id1 state is bad"
+	fail "Job ($job_id1) state is bad"
 }
 cancel_job $job_id1
 
@@ -255,5 +255,5 @@ expect {
 	}
 }
 if {$match != 2} {
-	fail "Job $job_id1 state is bad"
+	fail "Job ($job_id1) state is bad"
 }

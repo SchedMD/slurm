@@ -58,7 +58,7 @@ expect {
 }
 
 if {$task_cnt != $tasks} {
-	fail "Did not get proper number of tasks: $task_cnt, $tasks"
+	fail "Did not get proper number of tasks ($task_cnt != $tasks)"
 }
 if {$verbosity != 1} {
 	fail "Did not report job id with verbosity on"

@@ -230,7 +230,7 @@ proc create_part { name nodes prio } {
 	}
 
 	if {$found == 0} {
-		fail "scontrol did not create partition $name"
+		fail "scontrol did not create partition ($name)"
 	}
 }
 
@@ -304,28 +304,28 @@ clean_assocs
 array set qos_req {}
 set qos_req(priority) $weight
 if {[add_qos $tq1 [array get qos_req]]} {
-	fail "Unable to create qos $tq1"
+	fail "Unable to create qos ($tq1)"
 }
 set qos_req(priority) $weight_half
 if {[add_qos $tq2 [array get qos_req]]} {
-	fail "Unable to create qos $tq2"
+	fail "Unable to create qos ($tq2)"
 }
 
 array set acct_req {}
 set acct_req(qos) "$tq1,$tq2"
 set acct_req(priority) $weight
 if {[add_acct $ta1 [array get acct_req]]} {
-	fail "Unable to create account $ta1"
+	fail "Unable to create account ($ta1)"
 }
 set acct_req(priority) $weight_half
 if {[add_acct $ta2 [array get acct_req]]} {
-	fail "Unable to create account $ta2"
+	fail "Unable to create account ($ta2)"
 }
 
 array set user_req {}
 set user_req(account) "$ta1,$ta2"
 if {[add_user $user [array get user_req]]} {
-	fail "Unable to add user $user"
+	fail "Unable to add user ($user)"
 }
 
 log_info "test1"
@@ -352,10 +352,10 @@ array set acct_mod_acct_vals {}
 array set acct_mod_assoc_vals {}
 set acct_mod_assoc_vals(priority) $weight_half
 if {[mod_acct $ta1 [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]] } {
-	fail "Unable to modify account $ta1"
+	fail "Unable to modify account ($ta1)"
 }
 if {[mod_qos $tq1 [array get acct_mod_assoc_vals]] } {
-	fail "Unable to modify qos $tq1"
+	fail "Unable to modify qos ($tq1)"
 }
 
 scontrol "show assoc account=$ta1 flags=assoc" "(Account=$ta1 UserName= Partition= Priority=$weight_half)|(Account=$ta1 UserName=$user\\S+ Partition= Priority=$weight_half)" 2
@@ -375,10 +375,10 @@ array set acct_mod_acct_vals {}
 array set acct_mod_assoc_vals {}
 set acct_mod_assoc_vals(priority) $weight
 if {[mod_acct $ta1 [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]] } {
-	fail "Unable to modify account $ta1"
+	fail "Unable to modify account ($ta1)"
 }
 if {[mod_qos $tq1 [array get acct_mod_assoc_vals]] } {
-	fail "Unable to modify qos $tq1"
+	fail "Unable to modify qos ($tq1)"
 }
 
 scontrol "show assoc account=$ta1 flags=assoc" "(Account=$ta1 UserName= Partition= Priority=$weight)|(Account=$ta1 UserName=$user\\S+ Partition= Priority=$weight)" 2

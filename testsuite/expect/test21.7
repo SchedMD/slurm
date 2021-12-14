@@ -85,11 +85,11 @@ if {$access_err != 0} {
 # Check cluster limits
 #
 if {![check_assoc_limit 1 cluster $tc1 [array get cluster]]} {
-	fail "The association limits for cluster $tc1 are incorrect"
+	fail "The association limits for cluster 1 ($tc1) are incorrect"
 }
 if {![check_assoc_limit 1 cluster $tc2 [array get cluster]]} {
-	fail "The association limits for cluster $tc2 are incorrect"
+	fail "The association limits for cluster 2 ($tc2) are incorrect"
 }
 if {![check_assoc_limit 1 cluster $tc3 [array get cluster]]} {
-	fail "The association limits for cluster $tc3 are incorrect"
+	fail "The association limits for cluster 3 ($tc3) are incorrect"
 }

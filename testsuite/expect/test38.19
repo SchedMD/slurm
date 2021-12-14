@@ -173,7 +173,7 @@ expect {
 		incr matches
 	}
 	timeout {
-		fail "not responding"
+		fail "srun not responding"
 	}
 }
 send "exit\r"

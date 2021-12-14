@@ -180,7 +180,7 @@ if {[test_fed_job_id $fedc1 [dict get $clusters($fedc1) id]] ||
 # Verify that after clusters are removed from federation that they give normal
 # job ids again.
 if {[delete_federations $fed_name]} {
-	fail "Failed delete federation $fed_name"
+	fail "Failed delete federation ($fed_name)"
 }
 
 sleep 2

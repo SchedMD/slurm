@@ -112,23 +112,23 @@ proc cleanup {} {
 
 # Add cluster
 if [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]] {
-	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
+	fail "Unable to add clusters ($tc1,$tc2,$tc3)"
 }
 
 # Add qos
 if [add_qos "$qs1,$qs2,$qs3" ""] {
-	fail "Unable to add qos ($qs1,$qs2,$qs3)"
+	fail "Unable to add qoses ($qs1,$qs2,$qs3)"
 }
 
 # Add accounts
 if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
-	fail "Unable to add account ($ta1,$ta2,$ta3)"
+	fail "Unable to add accounts ($ta1,$ta2,$ta3)"
 }
 
 # Add users
 # cluster account name part admin dacct dwckey wckey qos fairshare grpcpumin grpcpu grpjob grpnode grpsubmit grpwall maxcpumin maxcpu maxjob maxnode maxsubmit maxwall
 if [add_user "$tu1,$tu2,$tu3" [array get user_req]] {
-	fail "Unable to add user ($tu1,$tu2,$tu3)"
+	fail "Unable to add users ($tu1,$tu2,$tu3)"
 }
 
 #
@@ -153,7 +153,7 @@ expect {
 }
 
 if {$matches != 27} {
-	fail "Account addition 27 incorrect with only $matches"
+	fail "Account addition 27 incorrect ($matches != 27)"
 }
 
 #modify user1 QoS
@@ -163,7 +163,7 @@ if {$matches != 27} {
 # Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
 
 if [mod_user $tu1 [array get user_mod_info] [array get user_mod_acct] [array get user_mod_assoc]] {
-	fail "Unable to modify user ($tu1)"
+	fail "Unable to modify user 1 ($tu1)"
 }
 
 #
@@ -192,7 +192,7 @@ expect {
 }
 
 if {$matches != 21} {
-	fail "Account addition 21 incorrect with only $matches"
+	fail "Account addition 21 incorrect ($matches != 21)"
 }
 
 #modify user2 QoS
@@ -202,7 +202,7 @@ if {$matches != 21} {
 # Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
 
 if [mod_user $tu2 [array get user_mod_info2] [array get user_mod_acct2] [array get user_mod_assoc2]] {
-	fail "Unable to modify user ($tu2)"
+	fail "Unable to modify user 2 ($tu2)"
 }
 
 #
@@ -235,7 +235,7 @@ expect {
 }
 
 if {$matches != 15} {
-	fail "Account addition 15 incorrect with only $matches"
+	fail "Account addition 15 incorrect ($matches != 15)"
 }
 
 
@@ -246,7 +246,7 @@ if {$matches != 15} {
 # Third array: association information about user (ie. fairshare, grpcpumins, grpcpu...)
 
 if [mod_user $tu3 [array get user_mod_info3] [array get user_mod_acct3] [array get user_mod_assoc3]] {
-	fail "Unable to modify user ($tu3)"
+	fail "Unable to modify user 3 ($tu3)"
 }
 
 #
@@ -279,5 +279,5 @@ expect {
 }
 
 if {$matches != 9} {
-	fail "Account addition 9 incorrect with only $matches"
+	fail "Account addition 9 incorrect ($matches != 9)"
 }

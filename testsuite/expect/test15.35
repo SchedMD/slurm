@@ -69,7 +69,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		fail "salloc not responding. This can be due to QOS or account time limit <120 minutes"
+		fail "salloc not responding. This can be due to QOS or account time limit < 120 minutes"
 	}
 	eof {
 		wait

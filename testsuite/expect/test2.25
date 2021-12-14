@@ -128,7 +128,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 	}
 
 	if {!$acct_added} {
-		fail "Could not add test account $test_acct"
+		fail "Could not add test account ($test_acct)"
 	}
 
 	# Add user to test account

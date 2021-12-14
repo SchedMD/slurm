@@ -91,7 +91,7 @@ for {set i 0} {$i<4} {incr i} {
 
 	if { $i==1 } {
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
-			fail "node names not set from previous srun"
+			fail "Node names not set from previous srun"
 		}
 		send "export SLURM_HOSTFILE=$hostfile\r"
 		expect {
@@ -110,7 +110,7 @@ for {set i 0} {$i<4} {incr i} {
 			skip "System must have at least 3 nodes to finish this test.  This system only has $node_count"
 		}
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
-			fail "node names not set from previous srun"
+			fail "Node names not set from previous srun"
 		}
 		set 2node0 $node1
 		set 2node1 $node0
@@ -123,7 +123,7 @@ for {set i 0} {$i<4} {incr i} {
 		set extra "-n5"
 	} elseif { $i==3 } {
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
-			fail "node names not set from previous srun"
+			fail "Node names not set from previous srun"
 		}
 		set 3node0 $node1
 		set 3node1 $node0
@@ -234,7 +234,7 @@ for {set i 0} {$i<5} {incr i} {
 			skip "System must have at least 3 nodes to finish this test. This system only has $node_count"
 		}
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
-			fail "node names not set from previous srun"
+			fail "Node names not set from previous srun"
 		}
 		set 2node0 $node1
 		set 2node1 $node0
@@ -244,13 +244,13 @@ for {set i 0} {$i<5} {incr i} {
 		set extra " -m arbitrary -w $node1,$node0,$node0,$node0,$node0"
 	} elseif { $i==3 } {
 		if { $node1 == 0 } {
-			fail "node names not set from previous srun"
+			fail "Node names not set from previous srun"
 		}
 		set 4node0 $node1
 		set extra " -w $node1"
 	} elseif { $i==4 } {
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
-			fail "node names not set from previous srun"
+			fail "Node names not set from previous srun"
 		}
 		set 4node0 $node1
 		set 4node1 $node0

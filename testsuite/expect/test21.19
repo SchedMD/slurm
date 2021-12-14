@@ -121,17 +121,17 @@ proc cleanup {} {
 
 # Add cluster
 if [add_cluster "$tc1,$tc2,$tc3" [array get clus_req]] {
-	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
+	fail "Unable to add clusters ($tc1,$tc2,$tc3)"
 }
 
 # Add accounts
 if [add_acct "$nm1,$nm2,$nm3" [array get acct_req]] {
-	fail "Unable to add account ($nm1,$nm2,$nm3)"
+	fail "Unable to add accounts ($nm1,$nm2,$nm3)"
 }
 
 # Add users
 if [add_user "$us1,$us2,$us3" [array get user_req]] {
-	fail "Unable to add user ($us1,$us2,$us3)"
+	fail "Unable to add users ($us1,$us2,$us3)"
 }
 
 # Add a coordinator
@@ -162,7 +162,7 @@ expect {
 }
 
 if {$matches != 3} {
-	fail "Coordinator add 3 incorrect with only $matches"
+	fail "Coordinator add 3 incorrect ($matches != 3)"
 }
 
 # Next, add coordinator to two users
@@ -192,5 +192,5 @@ expect {
 }
 
 if {$matches != 3} {
-	fail "User modification 3 incorrect with only $matches"
+	fail "User modification 3 incorrect ($matches != 3)"
 }

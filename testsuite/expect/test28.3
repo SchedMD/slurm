@@ -46,8 +46,8 @@ proc check_ids { job } {
 
 	for {set index 0} {$index<$array_size} {incr index} {
 		set job_dict [dict get [get_jobs $job\_$index] $job]
-		subtest {[dict get $job_dict "ArrayJobId"] == $job} "Check ArrayJobId=$job"
-		subtest {[dict get $job_dict "ArrayTaskId"] == $index} "Check ArrayTaskId=$index"
+		subtest {[dict get $job_dict "ArrayJobId"] == $job} "Check ArrayJobId (=$job)"
+		subtest {[dict get $job_dict "ArrayTaskId"] == $index} "Check ArrayTaskId (=$index)"
 	}
 }
 

@@ -76,7 +76,7 @@ proc create_part { name prio } {
 	}
 
 	if {$found == 0} {
-		fail "scontrol did not create partition $name"
+		fail "scontrol did not create partition ($name)"
 	}
 }
 

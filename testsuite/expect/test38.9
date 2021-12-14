@@ -127,7 +127,7 @@ expect {
 	}
 }
 if { $matches != 1} {
-	fail "srun failure $matches $expect_out(buffer)"
+	fail "srun failure ($matches != 1: $expect_out(buffer))"
 }
 
 set matches 0
@@ -146,7 +146,7 @@ expect {
 	}
 }
 if { $matches != 1} {
-	fail "srun failure $matches $expect_out(buffer)"
+	fail "srun failure ($matches != 1: $expect_out(buffer))"
 }
 
 set matches 0
@@ -165,7 +165,7 @@ expect {
 	}
 }
 if { $matches != 1} {
-	fail "srun failure $matches $expect_out(buffer)"
+	fail "srun failure ($matches != 1: $expect_out(buffer))"
 }
 
 set matches 0
@@ -184,7 +184,7 @@ expect {
 	}
 }
 if { $matches != 3} {
-	fail "srun failure $matches $expect_out(buffer)"
+	fail "srun failure ($matches != 1: $expect_out(buffer))"
 }
 
 set matches 0
@@ -203,7 +203,7 @@ expect {
 	}
 }
 if { $matches != 2} {
-	fail "srun failure $matches $expect_out(buffer)"
+	fail "srun failure ($matches != 1: $expect_out(buffer))"
 }
 
 log_info "Testing Error Messages"
@@ -225,7 +225,7 @@ expect {
 	}
 }
 if { $matches != 1} {
-	fail "srun failure $matches $expect_out(buffer)"
+	fail "srun failure ($matches != 1: $expect_out(buffer))"
 }
 
 set matches 0
@@ -244,7 +244,7 @@ expect {
 	}
 }
 if { $matches != 1} {
-	fail "srun failure $matches $expect_out(buffer)"
+	fail "srun failure ($matches != 1: $expect_out(buffer))"
 }
 
 set matches 0
@@ -263,7 +263,7 @@ expect {
 	}
 }
 if { $matches != 1} {
-	fail "srun failure $matches $expect_out(buffer)"
+	fail "srun failure ($matches != 1: $expect_out(buffer))"
 }
 
 send "exit\r"

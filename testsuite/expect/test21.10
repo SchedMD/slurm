@@ -105,7 +105,7 @@ if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
 if {$acmatches != 1} {
-	fail "sacctmgr had a problem adding clusters. Got $acmatches"
+	fail "sacctmgr had a problem adding clusters ($acmatches != 1)"
 }
 
 if {![check_acct_associations]} {
@@ -130,7 +130,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	fail "QOS $dqos1 was not created"
+	fail "QOS ($dqos1) was not created"
 }
 
 #
@@ -143,7 +143,7 @@ add_acct $ta1 [array get acct]
 # Use sacctmgr to list and check the test associations
 #
 if {![check_assoc_limit 2 account $ta1 [array get acct]]} {
-	fail "The association limits for account $ta1 are incorrect"
+	fail "The association limits for account ($ta1) are incorrect"
 }
 
 if {![check_acct_associations]} {

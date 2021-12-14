@@ -67,7 +67,7 @@ proc inc21_30_14 { wait_reason } {
 			}
 			-re "Granted job allocation ($number)" {
 				set job_id $expect_out(1,string)
-				error "Job $job_id should be pending for resources, but is not"
+				error "Job ($job_id) should be pending for resources, but is not"
 			}
 			timeout {
 				error "salloc is not responding"

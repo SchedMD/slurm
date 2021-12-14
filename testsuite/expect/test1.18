@@ -41,7 +41,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		fail "Srun not responding"
+		fail "srun not responding"
 	}
 	eof {
 		wait

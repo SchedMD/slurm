@@ -116,12 +116,12 @@ if {$access_err != 0} {
 
 # Add cluster
 if [add_cluster "$tc1,$tc2,$tc3" ""] {
-	fail "Unable to add cluster ($tc1,$tc2,$tc3)"
+	fail "Unable to add clusters ($tc1,$tc2,$tc3)"
 }
 
 # Add accounts
 if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
-	fail "Unable to add account ($ta1,$ta2,$ta3)"
+	fail "Unable to add accounts ($ta1,$ta2,$ta3)"
 }
 
 # Add users
@@ -152,7 +152,7 @@ expect {
 }
 
 if {$matches != 9} {
-	fail "Account addition 9 incorrect with only $matches"
+	fail "Account addition 9 incorrect ($matches != 9)"
 }
 
 #
@@ -172,5 +172,5 @@ if [add_user $tu2 [array get user_req2]] {
 }
 
 if {![check_assoc_limit 3 user $tu2 [array get user_req2]]} {
-	fail "The association limits for user $tu2 are incorrect"
+	fail "The association limits for user ($tu2) are incorrect"
 }

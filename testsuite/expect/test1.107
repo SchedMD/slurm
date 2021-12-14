@@ -76,7 +76,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	fail "Job not submitted. This can be due to QOS or account time limit <120 minutes"
+	fail "Job not submitted. This can be due to QOS or account time limit < 120 minutes"
 }
 
 #

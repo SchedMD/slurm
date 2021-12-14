@@ -106,7 +106,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	fail "QOS $dqos was not created"
+	fail "QOS ($dqos) was not created"
 }
 
 #
@@ -120,17 +120,17 @@ if {$access_err != 0} {
 
 # Check Cluster 1
 if {![check_assoc_limit 1 cluster $tc1 [array get cluster]]} {
-	fail "The association limits for cluster $tc1 are incorrect"
+	fail "The association limits for cluster 1 ($tc1) are incorrect"
 }
 
 # Check Cluster 2
 if {![check_assoc_limit 1 cluster $tc2 [array get cluster]]} {
-	fail "The association limits for cluster $tc2 are incorrect"
+	fail "The association limits for cluster 2 ($tc2) are incorrect"
 }
 
 # Check Cluster 3
 if {![check_assoc_limit 1 cluster $tc3 [array get cluster]]} {
-	fail "The association limits for cluster $tc3 are incorrect"
+	fail "The association limits for cluster 3 ($tc3) are incorrect"
 }
 
 if {![check_acct_associations]} {
@@ -145,17 +145,17 @@ mod_cluster "$tc1,$tc2,$tc3" [array get mod_cluster]
 log_info "Checking modifed cluster limits:"
 # Check Cluster 1
 if {![check_assoc_limit 1 cluster $tc1 [array get mod_cluster]]} {
-	fail "The association limits for cluster $tc1 are incorrect"
+	fail "The association limits for cluster 1 ($tc1) are incorrect"
 }
 
 # Check Cluster 2
 if {![check_assoc_limit 1 cluster $tc2 [array get mod_cluster]]} {
-	fail "The association limits for cluster $tc2 are incorrect"
+	fail "The association limits for cluster 2 ($tc2) are incorrect"
 }
 
 # Check Cluster 3
 if {![check_assoc_limit 1 cluster $tc3 [array get mod_cluster]]} {
-	fail "The association limits for cluster $tc3 are incorrect"
+	fail "The association limits for cluster 3 ($tc3) are incorrect"
 }
 
 if {![check_acct_associations]} {

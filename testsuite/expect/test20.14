@@ -76,7 +76,7 @@ proc test_job {} {
 	}
 
 	if {!$job_id} {
-		fail "failed to submit job"
+		fail "Failed to submit job"
 	}
 
 
@@ -103,7 +103,7 @@ proc test_job {} {
 		}
 	}
 	if {$matches != 3} {
-		fail "Didn't match $matches != 3"
+		fail "Didn't match ($matches != 3)"
 	}
 
 	cancel_job $job_id

@@ -84,7 +84,7 @@ if {[string compare $part_name ""] == 0} {
 	fail "scontrol unable to identify any partition"
 }
 if {[string compare $part_old_state ""] == 0} {
-	fail "scontrol unable to identify state of partition $part_name"
+	fail "scontrol unable to identify state of partition ($part_name)"
 }
 
 #

@@ -120,7 +120,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	fail "Could not determine current features for node $node_name"
+	fail "Could not determine current features for node ($node_name)"
 }
 
 # Set new feature names to use

@@ -267,10 +267,10 @@ remove_cluster $clusters
 
 # Add cluster
 if [add_cluster $cluster1 [array get clus_req]] {
-	fail "Unable to add cluster1"
+	fail "Unable to add cluster 1"
 }
 if [add_cluster $cluster2 [array get clus_req]] {
-	fail "Unable to add cluster2"
+	fail "Unable to add cluster 2"
 }
 
 # Add accounts
@@ -294,7 +294,7 @@ set user2acct2 0
 eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
 expect {
 	-re "There was a problem" {
-		fail "there was a problem with the sacctmgr command"
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "$user1.$account1.($number)." {
 		set user1acct1 $expect_out(1,string)
@@ -310,7 +310,7 @@ expect {
 eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
 expect {
 	-re "There was a problem" {
-		fail "there was a problem with the sacctmgr command"
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "$user1.$account2.($number)." {
 		set user1acct2 $expect_out(1,string)
@@ -326,7 +326,7 @@ expect {
 eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
 expect {
 	-re "There was a problem" {
-		fail "there was a problem with the sacctmgr command"
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "$user2.$account1.($number)." {
 		set user2acct1 $expect_out(1,string)
@@ -342,7 +342,7 @@ expect {
 eval spawn $sacctmgr -n -p list assoc users=$users account=$accounts cluster=$cluster1 format="User,account,id"
 expect {
 	-re "There was a problem" {
-		fail "there was a problem with the sacctmgr command"
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "$user2.$account2.($number)." {
 		set user2acct2 $expect_out(1,string)
@@ -357,7 +357,7 @@ expect {
 }
 
 if {!$user1acct1 || !$user1acct2 || !$user2acct1 || !$user2acct2} {
-	fail "Didn't get one of the user associations $user1acct1 $user1acct2 $user2acct1 $user2acct2."
+	fail "Didn't get one of the user associations ($user1acct1,$user1acct2,$user2acct1,$user2acct2)"
 }
 
 #
@@ -398,7 +398,7 @@ expect {
 }
 
 if {!$user1wckey1 || !$user2wckey1 || !$user1wckey2 || !$user2wckey2} {
-	fail "Didn't get one of the user wckeys $user1wckey1 $user2wckey1 $user1wckey2 $user2wckey2."
+	fail "Didn't get one of the user wckeys ($user1wckey1,$user2wckey1,$user1wckey2,$user2wckey2)"
 }
 
 #

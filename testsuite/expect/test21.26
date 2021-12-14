@@ -126,10 +126,10 @@ set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=q
 subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
 subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
 subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
-subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
-subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
-subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
-subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
 
 # Modify accounts to add test QoS
 if [mod_acct $ta1 [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]] {
@@ -141,10 +141,10 @@ set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=q
 subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
 subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
 subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
-subtest {[regexp "\n$qos1\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
-subtest {[regexp "\n$qos1\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
-subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
-subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
+subtest {[regexp "\n$qos1\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n$qos1\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
 
 # Modify test2 account to remove test QoS
 if [mod_acct $ta2 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]] {
@@ -156,10 +156,10 @@ set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=q
 subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
 subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
 subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
-subtest {[regexp "\n$qos1\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
-subtest {[regexp "\n$qos1\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
-subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
-subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
+subtest {[regexp "\n$qos1\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n$qos1\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
 
 # Modify test1 account to remove test QoS
 if [mod_acct $ta1 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]] {
@@ -171,10 +171,10 @@ set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=q
 subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
 subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
 subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
-subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
-subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
-subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
-subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
 
 # Modify test2 account to add test QoS
 if [mod_acct $ta2 [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]] {
@@ -186,10 +186,10 @@ set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=q
 subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
 subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
 subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
-subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
-subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
-subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
-subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
 
 # Modify root account to add test QoS
 if [mod_acct "root" [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]] {
@@ -201,10 +201,10 @@ set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=q
 subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
 subtest {[regexp "\n$qos1\\|root\\|\\|" $output]} "Verify root account line"
 subtest {[regexp "\n$qos1\\|root\\|root\\|" $output]} "Verify root user line"
-subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
-subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
-subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
-subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
 
 # Delete $qos1 from $account2
 if [mod_acct $ta2 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]] {
@@ -216,7 +216,7 @@ set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=q
 subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
 subtest {[regexp "\n$qos1\\|root\\|\\|" $output]} "Verify root account line"
 subtest {[regexp "\n$qos1\\|root\\|root\\|" $output]} "Verify root user line"
-subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
-subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
-subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
-subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify user ($tu1) in account 1 ($ta1) line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify account 2 ($ta2) line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify user ($tu1) in account 2 ($ta2) line"
