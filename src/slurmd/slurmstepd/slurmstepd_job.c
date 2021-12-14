@@ -439,8 +439,13 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		memset(&resp_addr, 0, sizeof(slurm_addr_t));
 	}
 
-	memcpy(&io_addr, &msg->orig_addr, sizeof(slurm_addr_t));
-	slurm_set_port(&io_addr, msg->io_port[nodeid % msg->num_io_port]);
+	if (msg->num_io_port) {
+		memcpy(&io_addr, &msg->orig_addr, sizeof(slurm_addr_t));
+		slurm_set_port(&io_addr,
+			       msg->io_port[nodeid % msg->num_io_port]);
+	} else {
+		memset(&io_addr, 0, sizeof(slurm_addr_t));
+	}
 
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr,
 				protocol_version);
