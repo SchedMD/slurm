@@ -1050,11 +1050,14 @@ extern int gres_ctld_job_alloc_whole_node(
 	return rc;
 }
 
-static int _job_dealloc(gres_job_state_t *gres_js, gres_node_state_t *gres_ns,
-			int node_offset, char *gres_name, uint32_t job_id,
-			char *node_name, bool old_job, uint32_t plugin_id,
-			bool resize)
+static int _job_dealloc(gres_state_t *gres_state_job,
+			gres_node_state_t *gres_ns,
+			int node_offset, uint32_t job_id,
+			char *node_name, bool old_job, bool resize)
 {
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	char *gres_name = gres_state_job->gres_name;
+	uint32_t plugin_id = gres_state_job->plugin_id;
 	int i, j, len, sz1, sz2;
 	uint64_t gres_cnt = 0, k;
 	uint64_t gres_per_bit = 1;
@@ -1361,11 +1364,9 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 			continue;
 		}
 
-		rc2 = _job_dealloc(gres_state_job->gres_data,
+		rc2 = _job_dealloc(gres_state_job,
 				   gres_state_node->gres_data, node_offset,
-				   gres_state_job->gres_name, job_id,
-				   node_name, old_job,
-				   gres_state_job->plugin_id, resize);
+				   job_id, node_name, old_job, resize);
 		if (rc2 == ESLURM_UNSUPPORTED_GRES) {
 			list_delete_item(job_gres_iter);
 		} else if (rc2 != SLURM_SUCCESS)
