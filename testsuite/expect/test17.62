@@ -92,7 +92,7 @@ wait_for_job -fail $job_id "DONE"
 
 foreach option [array names check_list] {
 	#log_debug "$option=$check_list($option)"
-	if {[string compare $option "BatchHost"] == 0 && [get_config_param "FrontendName"] ne "MISSING"} {
+	if {$option eq "BatchHost" && [get_config_param "FrontendName"] ne "MISSING"} {
 		continue
 	}
 

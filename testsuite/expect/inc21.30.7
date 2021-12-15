@@ -76,7 +76,7 @@ proc inc21_30_7 { wait_reason } {
 				spawn $scontrol show job $job_id($inx)
 				expect {
 					-re "Reason=($re_word_str)" {
-						if {[string compare $expect_out(1,string) $wait_reason]} {
+						if {$expect_out(1,string) ne $wait_reason} {
 							error "Job $inx ($job_id($inx)) was suppose to start but it didn't, limit was $check_num"
 						} else {
 							incr jobmatch

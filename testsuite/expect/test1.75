@@ -124,7 +124,7 @@ proc sub_job { freq } {
 			-re "($float)($re_word_str)" {
 				set this_freq($option) $expect_out(1,string)
 				set tmp $expect_out(2,string)
-				if {[string compare $tmp "M"] == 0} {
+				if {$tmp eq "M"} {
 					set this_freq($option) [expr $this_freq($option) / 1000.0]
 				}
 				exp_continue

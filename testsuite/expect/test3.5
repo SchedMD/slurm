@@ -94,7 +94,7 @@ expect {
 		wait
 	}
 }
-if {[string compare $def_name ""] == 0} {
+if {$def_name eq ""} {
 	fail "Failed to find default partition"
 }
 spawn $sinfo -h -o "=%N=" -p $def_name
@@ -107,7 +107,7 @@ expect {
 		wait
 	}
 }
-if {[string compare $def_node ""] == 0} {
+if {$def_node eq ""} {
 	fail "Default partition seems to have no nodes"
 }
 

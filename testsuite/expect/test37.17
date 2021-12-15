@@ -170,10 +170,10 @@ proc check_depend { job_id expected_reason expected_dependency } {
 	global reason dependency
 
 	get_job_dependency $job_id
-	if { [string compare "$reason" "$expected_reason"] } {
+	if {"$reason" ne "$expected_reason"} {
 		return 1
 	}
-	if { [string compare "$dependency" "$expected_dependency"] } {
+	if {"$dependency" ne "$expected_dependency"} {
 		return 1
 	}
 	return 0
@@ -191,7 +191,7 @@ proc wait_for_depend { job_id expected_reason expected_dependency } {
 	set max_delay 120
 	set poll_interval 3
 
-	if { [string compare $expected_reason "DependencyNeverSatisfied"] } {
+	if {$expected_reason ne "DependencyNeverSatisfied"} {
 		set want_never_satisfied 0
 	} else {
 		set want_never_satisfied 1
@@ -200,24 +200,21 @@ proc wait_for_depend { job_id expected_reason expected_dependency } {
 	log_info "job $job_id; expected reason: \"$expected_reason\"; dependency: \"$expected_dependency\""
 
 	while 1 {
-		if { ![check_depend $job_id $expected_reason \
-			$expected_dependency] } {
+		if {![check_depend $job_id $expected_reason $expected_dependency]} {
 			return 0
 		}
 
-		if { (!$want_never_satisfied) && \
-			!([string compare $reason \
-			  "DependencyNeverSatisfied"]) } {
+		if {(!$want_never_satisfied) && $reason eq "DependencyNeverSatisfied"} {
 			log_error "Job dependency failed, but it shouldn't have."
 			set error 1
 		}
-		if { $my_delay >= $max_delay } {
+		if {$my_delay >= $max_delay} {
 			log_info "delay $my_delay max $max_delay"
 			log_error "Timeout waiting for dependency to change."
 			set error 1
 		}
 
-		if { $error } {
+		if {$error} {
 			fail "Job ($job_id) actual (reason=\"$reason\"; dependency=\"$dependency\") != expected (reason=\"$expected_reason\"; dependency=\"expected_dependency\")"
 		}
 
@@ -228,7 +225,7 @@ proc wait_for_depend { job_id expected_reason expected_dependency } {
 
 proc my_wait_for_fed_job { job_id state cluster } {
 	set ret_cluster [wait_for_fed_job $job_id $state $cluster]
-	if { [string compare $cluster $ret_cluster] } {
+	if {$cluster ne $ret_cluster} {
 		fail "Job ($job_id) did not reach state $state on cluster ($cluster)"
 	}
 }

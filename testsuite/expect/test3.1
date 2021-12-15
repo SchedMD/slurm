@@ -38,7 +38,7 @@ set file_out    "$test_dir/output"
 # This test must be run as a Slurm administrator, root, or SlurmUser in order to
 # issue scontrol reconfigure.
 #
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can be run only for Administrators"
 }
 

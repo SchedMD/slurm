@@ -99,13 +99,13 @@ proc inc3_11_11_resv_test { res_name part flags nodes } {
 	set res_nodes     [node_list_to_range [lsort -dictionary [node_range_to_list $res_nodes]]]
 	set nodes         [node_list_to_range [lsort -dictionary [node_range_to_list $nodes]]]
 
-	if {[string compare $flags $res_flags] == -1} {
+	if {$flags ne $res_flags} {
 		inc3_11_11_fini $res_name "failed to get reservation flags $flags!=$res_flags" 1
 	}
-	if {[string compare $part $res_partition]} {
+	if {$part ne $res_partition} {
 		inc3_11_11_fini $res_name "failed to get partition $part!=$res_partition" 1
 	}
-	if {[string compare $nodes $res_nodes]} {
+	if {$nodes ne $res_nodes} {
 		inc3_11_11_fini $res_name "failed to get partition nodes $nodes!=$res_nodes" 1
 	}
 }

@@ -106,7 +106,7 @@ expect {
 	}
 }
 
-if {[string compare $show_config_range $slurm_conf_range]} {
+if {$show_config_range ne $slurm_conf_range} {
 	fail "SrunPortRange from scontrol show config does not match what is in slurm.conf"
 }
 

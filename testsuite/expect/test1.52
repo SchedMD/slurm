@@ -136,19 +136,19 @@ for {set i 0} {$i<3} {incr i} {
 	if { $task_cnt != 3 } {
 		log_warn "No worries, test just can not run here"
 	} elseif { $i == 1 } {
-		if { [string compare $node0 $1node0] } {
+		if {$node0 ne $1node0} {
 			fail "Task 0 not distributed by hostfile ($node0 != $1node0)"
-		} elseif { [string compare $node1 $1node1] } {
+		} elseif {$node1 ne $1node1} {
 			fail "Task 1 not distributed by hostfile ($node1 != $1node1)"
-		} elseif { [string compare $node2 $1node2] } {
+		} elseif {$node2 ne $1node2} {
 			fail "Task 2 not distributed by hostfile ($node2 != $1node2)"
 		}
 	} elseif { $i == 2 } {
-		if { [string compare $node0 $2node0] } {
+		if {$node0 ne $2node0} {
 			fail "Task 0 not distributed by hostfile ($node0 != $2node0)"
-		} elseif { [string compare $node1 $2node1] } {
+		} elseif {$node1 ne $2node1} {
 			fail "Task 1 not distributed by hostfile ($node1 != $2node1)"
-		} elseif { [string compare $node2 $2node2] } {
+		} elseif {$node2 ne $2node2} {
 			fail "Task 2 not distributed by hostfile ($node2 != $2node2)"
 		}
 	}

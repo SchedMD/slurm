@@ -90,9 +90,9 @@ expect {
 
 log_debug "Optimal task layout was: $expected_layout2"
 log_debug "Actual task layout was : $tested_layout"
-if {[string compare $tested_layout $expected_layout1] &&
-    [string compare $tested_layout $expected_layout2] &&
-    [string compare $tested_layout $expected_layout3]} {
+if {$tested_layout ne $expected_layout1 &&
+	$tested_layout ne $expected_layout2 &&
+	$tested_layout ne $expected_layout3} {
 	fail "Failed to distribute tasks in block fashion"
 }
 
@@ -151,8 +151,8 @@ expect {
 #
 log_debug "Optimal task layout was: $expected_layout2"
 log_debug "Actual task layout was : $tested_layout"
-if {[string compare $tested_layout $expected_layout1] &&
-    [string compare $tested_layout $expected_layout2] &&
-    [string compare $tested_layout $expected_layout3]} {
+if {$tested_layout ne $expected_layout1 &&
+	$tested_layout ne $expected_layout2 &&
+	$tested_layout ne $expected_layout3} {
 	fail "Failed to distribute tasks in cyclic fashion"
 }

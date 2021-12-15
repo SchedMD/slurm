@@ -58,7 +58,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
@@ -318,7 +318,7 @@ sbatch_to "--test-only -M$f2,$f3" [build_regex $f2]
 
 set pend_job [sbatch_to "-M$f1 -t50" $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f1]
-if {[string compare $pend_cluster ""] == 0} {
+if {$pend_cluster eq ""} {
 	fail "Didn't find cluster with pending job"
 }
 
@@ -330,7 +330,7 @@ sbatch_to "--test-only -M$f2,$f3" [build_regex $f2]
 
 set pend_job [sbatch_to "-M$f2 -t50" $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f2]
-if {[string compare $pend_cluster ""] == 0} {
+if {$pend_cluster eq ""} {
 	fail "Didn't find cluster with pending job"
 }
 
@@ -343,7 +343,7 @@ sbatch_to "--test-only -M$f2,$f3" [build_regex $f3]
 
 set pend_job [sbatch_to "-M$f3 -t50" $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f3]
-if {[string compare $pend_cluster ""] == 0} {
+if {$pend_cluster eq ""} {
 	fail "Didn't find cluster with pending job"
 }
 
@@ -419,7 +419,7 @@ srun "--test-only -M$f2,$f3" [build_regex $f2]
 
 set pend_job [srun "-M$f1 -t50"  $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f1]
-if {[string compare $pend_cluster ""] == 0} {
+if {$pend_cluster eq ""} {
 	fail "Didn't find cluster with pending job"
 }
 
@@ -431,7 +431,7 @@ srun "--test-only -M$f2,$f3" [build_regex $f2]
 
 set pend_job [srun "-M$f2 -t50"  $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f2]
-if {[string compare $pend_cluster ""] == 0} {
+if {$pend_cluster eq ""} {
 	fail "Didn't find cluster with pending job"
 }
 
@@ -444,7 +444,7 @@ srun "--test-only -M$f2,$f3" [build_regex $f3]
 
 set pend_job [srun "-M$f3 -t50"  $reg_default]
 set pend_cluster [wait_for_fed_job $pend_job PENDING $f3]
-if {[string compare $pend_cluster ""] == 0} {
+if {$pend_cluster eq ""} {
 	fail "Didn't find cluster with pending job"
 }
 

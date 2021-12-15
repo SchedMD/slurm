@@ -54,7 +54,7 @@ expect {
 #
 # Verify node registration
 #
-subtest {[string compare $host_0 ""] != 0} "Verify node registration" "Did not get hostname of task 0"
+subtest {$host_0 ne ""} "Verify node registration" "Did not get hostname of task 0"
 
 #
 # Submit a job with up to 32 thread fanout (Slurm limit is 60)
@@ -86,4 +86,4 @@ expect {
 #
 # Verify node registration
 #
-subtest {[string compare $host_0 ""] != 0} "Verify node registration" "Did not get hostname of task 0"
+subtest {$host_0 ne ""} "Verify node registration" "Did not get hostname of task 0"

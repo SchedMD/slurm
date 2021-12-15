@@ -49,7 +49,7 @@ cleanup
 # Identify usable nodes in default partition
 #
 set def_node [lindex [get_nodes_by_state] 0]
-if {[string compare $def_node ""] == 0} {
+if {$def_node eq ""} {
 	fail "Default partition seems to have no nodes"
 }
 
@@ -68,7 +68,7 @@ log_debug "EnforcePartLimits=$enforcepartlimits"
 #
 # Run a job in this new partition and validate the time limit
 #
-if {[string compare $enforcepartlimits "NO"] == 0} {
+if {$enforcepartlimits eq "NO"} {
 	#
 	# Verify time limit
 	#

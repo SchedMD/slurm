@@ -60,8 +60,8 @@ proc add_cluster { name clus_req_in } {
 
 	foreach option [array names clus_req] {
 
-		if { ![string compare $option "qos"] } {
-			if { ![string compare $clus_req($option) " "] } {
+		if {$option eq "qos"} {
+			if {$clus_req($option) eq " "} {
 				set $clus_req($option) "''"
 			}
 		}
@@ -203,8 +203,8 @@ proc mod_cluster { name clus_req_in } {
 
 	foreach option [array names clus_req] {
 
-		if { ![string compare $option "qos"] } {
-			if { ![string compare $clus_req($option) " "] } {
+		if {$option eq "qos"} {
+			if {$clus_req($option) eq " "} {
 				set $clus_req($option) "''"
 			}
 		}
@@ -277,8 +277,8 @@ proc add_acct { name acct_req_in } {
 
 	foreach option [array names acct_req] {
 
-		if { ![string compare $option "qos"] } {
-			if { ![string compare $acct_req($option) " "] } {
+		if {$option eq "qos"} {
+			if {$acct_req($option) eq " "} {
 				set $acct_req($option) "''"
 			}
 		}
@@ -458,8 +458,8 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 
 	foreach desc [array names acct_mod_desc] {
 
-		if { ![string compare $desc "qos"] } {
-			if { ![string compare $acct_mod_desc($desc) " "] } {
+		if {$desc eq "qos"} {
+			if {$acct_mod_desc($desc) eq " "} {
 				set $acct_mod_desc($desc) "''"
 			}
 		}
@@ -471,8 +471,8 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 
 	foreach acct_val [array names acct_mod_acct_vals] {
 
-		if { ![string compare $acct_val "qos"] } {
-			if { ![string compare $acct_mod_acct_vals($acct_val) " "] } {
+		if {$acct_val eq "qos"} {
+			if {$acct_mod_acct_vals($acct_val) eq " "} {
 				set $acct_mod_acct_vals($acct_val) "''"
 			}
 		}
@@ -484,8 +484,8 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 
 	foreach assoc_val [array names acct_mod_assoc_vals] {
 
-		if { ![string compare $assoc_val "qos"] } {
-			if { ![string compare $acct_mod_assoc_vals($assoc_val) " "] } {
+		if {$assoc_val eq "qos"} {
+			if {$acct_mod_assoc_vals($assoc_val) eq " "} {
 				set $acct_mod_assoc_vals($assoc_val) "''"
 			}
 		}
@@ -566,8 +566,8 @@ proc add_user { name user_req_in } {
 
 	foreach option [array names user_req] {
 
-		if { ![string compare $option "qos"] } {
-			if { ![string compare  $user_req($option) " "] } {
+		if {$option eq "qos"} {
+			if {$user_req($option) eq " "} {
 				set $user_req($option)  "''"
 			}
 		}
@@ -754,8 +754,8 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 	set wcommand "where name=$name"
 	foreach desc [array names user_mod_info] {
 
-		if { ![string compare $desc "qos"] } {
-			if { ![string compare $user_mod_info($desc) " "] } {
+		if {$desc eq "qos"} {
+			if {$user_mod_info($desc) eq " "} {
 				set $user_mod_info($desc) "''"
 			}
 		}
@@ -769,8 +769,8 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 	# Account Values
 	foreach desc [array names user_mod_acct] {
 
-		if { ![string compare $desc "qos"] } {
-			if { ![string compare $user_mod_acct($desc) " "] } {
+		if {$desc eq "qos"} {
+			if {$user_mod_acct($desc) eq " "} {
 				set $user_mod_acct($desc) "''"
 			}
 		}
@@ -783,8 +783,8 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 	# Association Values
 	foreach desc [array names user_mod_assoc] {
 
-		if { ![string compare $desc "qos"] } {
-			if { ![string compare $user_mod_assoc($desc) " "] } {
+		if {$desc eq "qos"} {
+			if {$user_mod_assoc($desc) eq " "} {
 				set $user_mod_assoc($desc) "''"
 			}
 		}
@@ -865,7 +865,7 @@ proc add_qos {name qos_req_in} {
 	set command "$name"
 
 	foreach option [array names qos_req] {
-		if { ![string compare $qos_req($option) " "] } {
+		if {$qos_req($option) eq " "} {
 			set $qos_req($option) "''"
 		}
 		set command "$command $option=$qos_req($option)"
@@ -938,7 +938,7 @@ proc mod_qos { qos_name qos_mod_val_in} {
 
 	foreach desc [array names qos_mod_vals] {
 
-		if { ![string compare $qos_mod_vals($desc) " "] } {
+		if {$qos_mod_vals($desc) eq " "} {
 			set $qos_mod_vals($desc) "''"
 		}
 
@@ -1232,7 +1232,7 @@ proc add_resource {name res_limits} {
 	}
 
 	foreach option [array names res_req] {
-		if { ![string compare $res_req($option) " "] } {
+		if {$res_req($option) eq " "} {
 			set $res_req($option) "''"
 		}
 		set command "$command $option=$res_req($option)"
@@ -1460,7 +1460,7 @@ proc reset_account_usage { cluster acct } {
 	global sacctmgr
 
 	set rc $::RETURN_SUCCESS
-	if { ![string compare $cluster ""] } {
+	if {$cluster eq ""} {
 		set cluster [get_config_param "ClusterName"]
 	}
 
@@ -1500,7 +1500,7 @@ proc reset_qos_usage { cluster qos } {
 	global sacctmgr
 
 	set rc $::RETURN_SUCCESS
-	if { ![string compare $cluster ""] } {
+	if {$cluster eq ""} {
 		set cluster [get_config_param "ClusterName"]
 	}
 
@@ -1596,12 +1596,12 @@ proc check_qos_limits { name qos_req } {
 	}
 
 	foreach option [array names qos_limits] {
-		if { ![string compare $qos_limits($option) " "] } {
+		if {$qos_limits($option) eq " "} {
 			set $qos_limits($option) "''"
 		}
 
 		set command "$command$option\,"
-		if { ![string compare $qos_limits($option) "-1"] } {
+		if {$qos_limits($option) eq "-1"} {
 			set values "$values."
 		} else {
 			set values "$values$qos_limits($option)."
@@ -1660,7 +1660,7 @@ proc check_resource_limits { name res_limits } {
 	}
 
 	foreach option [array names res_req] {
-		if { ![string compare $res_req($option) " "] } {
+		if {$res_req($option) eq " "} {
 			set $res_req($option) "''"
 		}
 		set command "$command,$option"
@@ -1701,7 +1701,7 @@ proc mod_resource {name mod_limits} {
 	}
 
 	foreach option [array names res_mod_req] {
-		if { ![string compare $res_mod_req($option) " "] } {
+		if {$res_mod_req($option) eq " "} {
 			set $res_mod_req($option) "''"
 		}
 		set commands "$commands$option=$res_mod_req($option) "

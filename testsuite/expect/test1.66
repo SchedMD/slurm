@@ -78,7 +78,7 @@ expect {
 		exp_continue
 	}
 	-re "SLURM_STEP_NODELIST=($re_word_str)" {
-		if {![string compare $expect_out(1,string) $node_name]} {
+		if {$expect_out(1,string) eq $node_name} {
 			incr matches
 			exp_continue
 		}

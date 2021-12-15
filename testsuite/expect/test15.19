@@ -73,7 +73,7 @@ expect {
 	}
 }
 
-if {[string compare $host_0 ""] == 0} {
+if {$host_0 eq ""} {
 	fail "Did not get SLURMD_NODENAME of task 0"
 }
 
@@ -189,13 +189,13 @@ subtest {$host_0 ne ""} "A task should run on the first host"
 subtest {$host_3 eq ""} "Only three tasks should run" "A task was found running on the fourth host $host_3"
 
 set dup_host 0
-if {[string compare $host_0 $host_1] == 0} {
+if {$host_0 eq $host_1} {
 	set dup_host 1
 }
-if {[string compare $host_0 $host_2] == 0} {
+if {$host_0 eq $host_2} {
 	set dup_host 1
 }
-if {[string compare $host_0 $host_3] == 0} {
+if {$host_0 eq $host_3} {
 	set dup_host 1
 }
 if {$dup_host == 1} {
@@ -258,13 +258,13 @@ subtest {$host_1 ne ""} "A task should run on the second host"
 subtest {$host_3 eq ""} "Only three tasks should run" "A task was found running on the fourth host $host_3"
 
 set dup_host 0
-if {[string compare $host_0 $host_1] == 0} {
+if {$host_0 eq $host_1} {
 	set dup_host 1
 }
-if {[string compare $host_0 $host_2] == 0} {
+if {$host_0 eq $host_2} {
 	set dup_host 1
 }
-if {[string compare $host_0 $host_3] == 0} {
+if {$host_0 eq $host_3} {
 	set dup_host 1
 }
 if {$dup_host == 1} {

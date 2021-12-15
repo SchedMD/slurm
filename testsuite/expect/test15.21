@@ -89,13 +89,13 @@ if {$job_id == 0} {
 	fail "Couldn't get an allocation"
 }
 
-if {[string compare $host_0_name ""] == 0} {
+if {$host_0_name eq ""} {
 	fail "Did not get hostname of task 0"
 }
-if {[string compare $host_1_name ""] == 0} {
+if {$host_1_name eq ""} {
 	fail "Did not get hostname of task 1"
 }
-if {[string compare $host_2_name ""] == 0} {
+if {$host_2_name eq ""} {
 	fail "Did not get hostname of task 2"
 }
 

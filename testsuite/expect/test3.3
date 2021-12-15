@@ -39,13 +39,13 @@ set read_state     ""
 spawn $sinfo --noheader -o  "NodeName=%N State=%t "
 expect {
         -re "NodeName=($re_word_str) State=idle " {
-                if {[string compare $node_list ""] == 0} {
+                if {$node_list eq ""} {
                         set node_list $expect_out(1,string)
                 }
                 exp_continue
         }
         -re "NodeName=($re_word_str) State=allocated " {
-                if {[string compare $node_list ""] == 0} {
+                if {$node_list eq ""} {
                         set node_list $expect_out(1,string)
                 }
                 exp_continue
@@ -57,7 +57,7 @@ expect {
 		wait
 	}
 }
-if {[string compare $node_list ""] == 0} {
+if {$node_list eq ""} {
 	skip "No nodes in usable state for this test"
 }
 
@@ -78,7 +78,7 @@ expect {
 	}
 }
 log_user 1
-if {[string compare $node_name ""] == 0} {
+if {$node_name eq ""} {
 	skip "No nodes in usable state for this test"
 }
 
@@ -91,10 +91,10 @@ expect {
 		set access_err 0
 		set err_msg1 $expect_out(1,string)
 		set err_msg2 $expect_out(2,string)
-		if {[string compare $err_msg1 "Invalid"] == 0} {
+		if {$err_msg1 eq "Invalid"} {
 			set access_err 1
 		}
-		if {[string compare $err_msg2 "user"] == 0} {
+		if {$err_msg2 eq "user"} {
 			set access_err 1
 		}
 		if {$access_err == 1} {
@@ -142,7 +142,7 @@ if {$authorized == 1} {
 	subtest {$read_state == 1} "Validate that the node's new state has been set"
 
 	set reason_set 0
-	if {[string compare $reason_code "TESTING"] == 0} {
+	if {$reason_code eq "TESTING"} {
 		set reason_set 1
 	}
 

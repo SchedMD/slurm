@@ -59,7 +59,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
@@ -481,7 +481,7 @@ if {$matches != 3} {
 cancel_job $j(1) "-M$fedc2"
 
 set run_cluster [wait_for_fed_job $j(6) RUNNING $fedc2]
-if {[string compare $run_cluster ""] == 0} {
+if {$run_cluster eq ""} {
 	fail "Didn't find running job on cluster"
 }
 
@@ -539,7 +539,7 @@ squeue "$fedc3" "4" $r3
 cancel_job $j(2) "-M$fedc3"
 
 set run_cluster [wait_for_fed_job $j(7) RUNNING $fedc3]
-if {[string compare $run_cluster ""] == 0} {
+if {$run_cluster eq ""} {
 	fail "Didn't find running job on cluster"
 }
 

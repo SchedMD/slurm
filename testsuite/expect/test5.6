@@ -201,11 +201,11 @@ set partition2 ""
 spawn $squeue --format=%P --noheader
 expect {
 	-re "($re_word_str)" {
-		if {![string compare $partition1 ""]} {
+		if {$partition1 eq ""} {
 			set partition1 $expect_out(1,string)
 			exp_continue
 		}
-		if {![string compare $expect_out(1,string) $partition1]} {
+		if {$expect_out(1,string) eq $partition1} {
 			set partition2 $expect_out(1,string)
 		}
 		exp_continue
@@ -217,7 +217,7 @@ expect {
 		wait
 	}
 }
-if {[string compare partition2 ""] == 0} {
+if {$partition2 eq ""} {
 	set partition2 $partition1
 }
 spawn $squeue --format=%P --noheader --partitions=$partition1

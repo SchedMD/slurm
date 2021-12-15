@@ -89,7 +89,7 @@ set match 0
 spawn $scontrol show node $node_name
 expect {
 	-re "AvailableFeatures=($re_word_str)" {
-		if [string compare $expect_out(1,string) "(null)"] {
+		if {$expect_out(1,string) ne "(null)"} {
 			set orig_avail_node_feat $expect_out(1,string)
 		}
 		incr match
@@ -101,7 +101,7 @@ expect {
 		exp_continue
 	}
 	-re "ActiveFeatures=($re_word_str)" {
-		if [string compare $expect_out(1,string) "(null)"] {
+		if {$expect_out(1,string) ne "(null)"} {
 			set orig_active_node_feat $expect_out(1,string)
 		}
 		incr match

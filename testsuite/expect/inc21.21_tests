@@ -41,9 +41,7 @@ proc inc21_21_good { test_type limit } {
 
 	log_info "====== Test $test_type ======"
 
-	if { ([string compare $test_type "maxcpus"] == 0 ||
-	     [string compare $test_type "maxcpumins"] == 0) &&
-             [default_part_exclusive] != 0} {
+	if {($test_type eq "maxcpus" || $test_type eq "maxcpumins") && [default_part_exclusive] != 0} {
 		log_warn "Unable to perform test with exclusive node allocations"
 		set is_skip 1
 		return
@@ -54,7 +52,7 @@ proc inc21_21_good { test_type limit } {
 		set is_skip 1
 		return
 	}
-	if { [string compare $test_type "maxnode"] == 0 } {
+	if {$test_type eq "maxnode"} {
 		set add "--exclusive"
 	} else {
 		set add "-w$test_node"
@@ -96,7 +94,7 @@ proc inc21_21_bad { test_type limit } {
 
 	log_info "====== Test $test_type ======"
 
-	if { [string compare $test_type "maxnode"] == 0 } {
+	if {$test_type eq "maxnode"} {
 		set add "--exclusive"
 	} else {
 		set add "-w$test_node"
@@ -136,7 +134,7 @@ proc inc21_21_grp_test { test_type limit } {
 
 	log_info "===== Test $test_type ====="
 
-	if  { ![string compare $test_type "grpcpumins"] &&
+	if  { $test_type eq "grpcpumins" &&
 	      ![param_contains [get_config_param "AccountingStorageEnforce"] "safe"] } {
 		log_warn "This test can't be run without AccountingStorageEnforce having \"safe\" in it"
 		set is_skip 1
@@ -157,9 +155,7 @@ proc inc21_21_grp_test { test_type limit } {
 	}
 
 	# Check and see if it is a CPU test
-	if { [string compare $test_type "grpcpus"] == 0 ||
-	     [string compare $test_type "grpcpumins"] == 0 ||
-	     [string compare $test_type "grpcpurunmins"] == 0 } {
+	if {$test_type eq "grpcpus" || $test_type eq "grpcpumins" || $test_type eq "grpcpurunmins"} {
 		if {$selectparam} {
 			set val [expr [lindex $limit 1] / $nthreads]
 		} else {
@@ -241,14 +237,13 @@ proc inc21_21_submit_test { limit } {
 	set limit_job ""
 	set limit_sub ""
 
-	if { [string compare $limit "grpjobsub"] == 0 &&
-	     [default_part_exclusive] != 0} {
+	if {$limit eq "grpjobsub" && [default_part_exclusive] != 0} {
 		log_warn "Unable to perform test with exclusive node allocations"
 		set is_skip 1
 		return
 	}
 
-	if { ![string compare $limit "maxjobsub"] } {
+	if {$limit eq "maxjobsub"} {
 		set limit_job "maxjob"
 		set limit_sub "maxsubmit"
 
@@ -342,9 +337,7 @@ proc inc21_21_submit_test { limit } {
 		}
 	}
 
-	if { [string compare $limit "maxjobsub"] == 0 &&
-             $matches > 0 && $matches < 4 &&
-	     [default_part_exclusive] != 0} {
+	if {$limit eq "maxjobsub" && $matches > 0 && $matches < 4 && [default_part_exclusive] != 0} {
 		log_warn "Only started $matches of 4 possible jobs"
 	} elseif { $matches != 4 } {
 		fail "Jobs are not in the expected state (expected $matches != 4)"
@@ -419,9 +412,7 @@ proc inc21_21_submit_test { limit } {
 		}
 	}
 
-	if { [string compare $limit "maxjobsub"] == 0 &&
-             $matches > 0 && $matches < 4 &&
-	     [default_part_exclusive] != 0} {
+	if {$limit eq "maxjobsub" && $matches > 0 && $matches < 4 && [default_part_exclusive] != 0} {
 		log_warn "Only started $matches of 4 possible jobs"
 	} elseif { $matches != 4 } {
 		fail "Jobs are not in the expected state (expected $matches != 4)"

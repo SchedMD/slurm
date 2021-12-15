@@ -89,7 +89,7 @@ proc check_limit { type name } {
 	set flag ""
 	set modified 0
 	set type_value $max_tres_type($option)
-	if { ![string compare $option "billing"] } {
+	if {$option eq "billing"} {
 		set type_value [expr $type_value * $tres_cpu_mult]
 	}
 	spawn $sacctmgr -i mod $type $name set $lim_type_type($i)=$option=$type_value
@@ -111,7 +111,7 @@ proc check_limit { type name } {
 	}
 
 	set tmp [expr  $max_tres_type($option) + 1]
-	if { ![string compare $option "node"] } {
+	if {$option eq "node"} {
 		set flag "-N$tmp"
 	} else {
 		set flag "-n$tmp"

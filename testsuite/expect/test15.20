@@ -102,10 +102,10 @@ subtest {$host_2 ne ""} "A task should run on the third host"
 subtest {$host_3 eq ""} "Only three tasks should run" "A task was found running on the fourth host $host_3"
 
 set dup_hostname 0
-if {[string compare $host_0 $host_1] == 0} {
+if {$host_0 eq $host_1} {
 	incr dup_hostname
 }
-if {[string compare $host_0 $host_2] == 0} {
+if {$host_0 eq $host_2} {
 	incr dup_hostname 1
 }
 if {$dup_hostname == 1} {
@@ -165,10 +165,10 @@ subtest {$host_1 ne ""} "A task should run on the second host"
 subtest {$host_2 eq ""} "Only two tasks should run" "A task was found running on the third host $host_2"
 
 set dup_hostname 0
-if {[string compare $host_0 $exclude_node] == 0} {
+if {$host_0 eq $exclude_node} {
 	set dup_hostname 1
 }
-if {[string compare $host_1 $exclude_node] == 0} {
+if {$host_1 eq $exclude_node} {
 	set dup_hostname 1
 }
 if {$dup_hostname == 1} {
@@ -212,7 +212,7 @@ subtest {$host_0 ne ""} "A task should run on the first host"
 subtest {$host_1 eq ""} "Only one task should run" "A task was found running on the second host $host_1"
 
 set dup_hostname 0
-if {[string compare $host_0 $include_node] == 0} {
+if {$host_0 eq $include_node} {
 	set dup_hostname 1
 }
 if {$dup_hostname == 0} {

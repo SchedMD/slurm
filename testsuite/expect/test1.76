@@ -99,7 +99,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 			break
 		} 
 	}
-	if {[string compare $start_value ""] == 0} {
+	if {$start_value eq ""} {
 		log_error "--cpu-freq=$opt -- can't find starting values"
 		close $fd
 		log_user 1
@@ -115,7 +115,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 			break
 		} 
 	}
-	if {[string compare $test_value ""] == 0} {
+	if {$test_value eq ""} {
 		log_error "--cpu-freq=$opt -- can't find test values"
 		close $fd
 		log_user 1
@@ -131,7 +131,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 			break
 		} 
 	}
-	if {[string compare $end_value ""] == 0} {
+	if {$end_value eq ""} {
 		log_error "--cpu-freq=$opt -- can't find ending values"
 		close $fd
 		log_user 1
@@ -162,14 +162,12 @@ proc test_freq {opt expmin expcur expmax expgov} {
 	set ecur [string range [lindex $end_vals 2] 4 end]
 	set emax [string range [lindex $end_vals 3] 4 end]
 
-	if {[string compare $expgov 0] != 0 
-	    && [string compare $tgov $expgov] != 0} {
+	if {$expgov != 0 && $tgov ne $expgov} {
 		log_error "--cpu-freq=$opt -- test governor $tgov not expected ($expgov)"
 		log_user 1
 		return 1
 	}
-	if {[string compare $expmin 0] != 0 
-	    && [string compare $tmin $expmin] != 0} {
+	if {$expmin != 0 && $tmin ne $expmin} {
 		log_error "--cpu-freq=$opt -- test min $tmin not expected ($expmin)"
 		log_user 1
 		return 1
@@ -182,7 +180,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 	}
 	if {$percent_error > 10} {
 		set real_error 1
-		if {![string compare $opt "High"]} {
+		if {$opt eq "High"} {
 			if {$tcur > $expcur} {
 				log_warn "--cpu-freq=$opt -- test cur $tcur higher than ($expcur).  This is expected on overclocked systems"
 				set real_error 0
@@ -197,23 +195,22 @@ proc test_freq {opt expmin expcur expmax expgov} {
 	} elseif {$expcur != 0} {
 		log_debug "Difference between requested and actual frequency is $percent_error percent ($tcur vs. $expcur)"
 	}
-	if {[string compare $expmax 0] !=0 
-	    && [string compare $tmax $expmax] != 0} {
+	if {$expmax != 0 && $tmax ne $expmax} {
 		log_error "--cpu-freq=$opt -- test max $tmax not expected ($expmax)"
 		log_user 1
 		return 1
 	}
-	if {[string compare $sgov $egov] != 0} {
+	if {$sgov ne $egov} {
 		log_error "--cpu-freq=$opt -- starting governor $sgov not reset ($egov)"
 		log_user 1
 		return 1
 	}
-	if {[string compare $smin $emin] != 0} {
+	if {$smin ne $emin} {
 		log_error "--cpu-freq=$opt -- starting min $smin not reset ($emin)"
 		log_user 1
 		return 1
 	}
-	if {[string compare $smax $emax] != 0} {
+	if {$smax ne $emax} {
 		log_error "--cpu-freq=$opt -- starting max $smax not reset ($emax)"
 		log_user 1
 		return 1

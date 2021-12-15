@@ -31,7 +31,7 @@ source ./globals
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 

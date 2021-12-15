@@ -92,7 +92,7 @@ proc part_cpu_cnt { partition } {
 	expect {
 		-re "($number)(K?)\/($number)(K?)" {
 			set cpu_cnt $expect_out(3,string)
-			if {[string compare $expect_out(4,string) ""]} {
+			if {$expect_out(4,string) ne ""} {
 				set cpu_cnt [expr $cpu_cnt * 1024]
 			}
 

@@ -53,7 +53,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
@@ -89,12 +89,12 @@ proc test_fed_status {cname fed_flags cluster_list} {
 					  $line match name host port id state features]} {
 				log_debug "Matched: $match"
 				if {$expected_matches &&
-				    ![string compare [dict get $clusters($name) host]     $host]  &&
-				    ![string compare [dict get $clusters($name) state]    $state] &&
-				    ![string compare [dict get $clusters($name) features] $features]  &&
-				    ![string compare [dict get $clusters($name) conn]     Self]  &&
-				    [dict get $clusters($name) port]   == $port &&
-				    [dict get $clusters($name) id]     == $id} {
+				    [dict get $clusters($name) host]     eq $host &&
+				    [dict get $clusters($name) state]    eq $state &&
+				    [dict get $clusters($name) features] eq $features] &&
+				    [dict get $clusters($name) conn]     eq Self &&
+				    [dict get $clusters($name) port]     == $port &&
+				    [dict get $clusters($name) id]       == $id} {
 					log_debug "Matched self: $name"
 					incr matches
 				}
@@ -102,12 +102,12 @@ proc test_fed_status {cname fed_flags cluster_list} {
 					  $line match name host port id state features conn]} {
 				log_debug "Matched: $match"
 				if {$expected_matches &&
-				    ![string compare [dict get $clusters($name) host]     $host]  &&
-				    ![string compare [dict get $clusters($name) state]    $state] &&
-				    ![string compare [dict get $clusters($name) features] $features] &&
-				    ![string compare [dict get $clusters($name) conn]     $conn]  &&
-				    [dict get $clusters($name) port]   == $port &&
-				    [dict get $clusters($name) id]     == $id} {
+				    [dict get $clusters($name) host]     eq $host &&
+				    [dict get $clusters($name) state]    eq $state &&
+				    [dict get $clusters($name) features] eq $features &&
+				    [dict get $clusters($name) conn]     eq $conn &&
+				    [dict get $clusters($name) port]     == $port &&
+				    [dict get $clusters($name) id]       == $id} {
 					log_debug "Matched sibling: $name"
 					incr matches
 				}

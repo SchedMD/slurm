@@ -133,8 +133,7 @@ spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P"
 expect {
 	-re "($re_word_str)" {
 		set str $expect_out(1,string)
-		if {![string compare $str $test_part_1] || \
-		    ![string compare $str $test_part_2] } {
+		if {$str eq $test_part_1 || $str eq $test_part_2} {
 			incr match
 		}
 		incr found
@@ -156,10 +155,10 @@ spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -p$
 expect {
 	-re "($re_word_str)" {
 		set str $expect_out(1,string)
-		if {![string compare $str $test_part_1] } {
+		if {$str eq $test_part_1} {
 			set match -99
 		}
-		if {![string compare $str $test_part_2] } {
+		if {$str eq $test_part_2} {
 			incr match
 		}
 		incr found
@@ -181,8 +180,7 @@ spawn $bin_bash -c "SINFO_ALL=1 $sinfo -h -o%P -p$test_part_1,$test_part_2"
 expect {
 	-re "($re_word_str)" {
 		set str $expect_out(1,string)
-		if {![string compare $str $test_part_1] || \
-		    ![string compare $str $test_part_2]} {
+		if {$str eq $test_part_1 || $str eq $test_part_2} {
 			incr match
 		}
 		incr found
@@ -203,8 +201,7 @@ spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -a"
 expect {
 	-re "($re_word_str)" {
 		set str $expect_out(1,string)
-		if {![string compare $str $test_part_1] || \
-		    ![string compare $str $test_part_2]} {
+		if {$str eq $test_part_1 || $str eq $test_part_2} {
 			incr match
 		}
 		exp_continue

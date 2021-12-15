@@ -88,7 +88,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin."
 }
 
@@ -183,19 +183,18 @@ proc _test_limits { } {
 	# Test jobs within the association limits
 	foreach option [array names acct_mod_assoc_vals] {
 		log_info "Setting up association limit $option..."
-		if { [string compare $option "maxjobsub"] &&
-		     [string compare $option "grpjobsub"] } {
+		if {$option ne "maxjobsub" && $option ne "grpjobsub"} {
 			if [assoc_setup $option $acct_mod_assoc_vals($option)] {
 				fail "Unable to modify account ($ta)"
 			}
 
-			if { ![string compare $option "maxcpumins"] && $one_task_pc } {
+			if {$option eq "maxcpumins" && $one_task_pc} {
 				set acct_mod_assoc_vals(maxcpumins) "-n [expr [lindex $acct_mod_assoc_vals(maxcpumins) 1] / $nthreads]"
 			}
 
-			if { ![string compare $option "grpwall"] } {
+			if {$option eq "grpwall"} {
 				inc21_21_grpwall $option $acct_mod_assoc_vals($option)
-			} elseif { ![string compare -length 3 $option "grp"] } {
+			} elseif {![string compare -length 3 $option "grp"]} {
 				inc21_21_grp_test $option $acct_mod_assoc_vals($option)
 			} else {
 				#

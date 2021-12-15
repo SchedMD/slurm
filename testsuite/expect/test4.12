@@ -84,19 +84,19 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 		-re "($float)(K?)($slash)($float)(K?)($slash)($float)(K?)($slash)($float)(K?) ($number)($slash)($number) $node" {
 			set found 1
 			set num_alloc $expect_out(1,string)
-			if {[string compare $expect_out(2,string) ""]} {
+			if {$expect_out(2,string) ne ""} {
 				set num_alloc [expr $num_alloc * 1024]
 			}
 			set num_idle $expect_out(4,string)
-			if {[string compare $expect_out(5,string) ""]} {
+			if {$expect_out(5,string) ne ""} {
 				set num_idle [expr $num_idle * 1024]
 			}
 			set num_other $expect_out(7,string)
-			if {[string compare $expect_out(8,string) ""]} {
+			if {$expect_out(8,string) ne ""} {
 				set num_other [expr $num_other * 1024]
 			}
 			set num_total $expect_out(10,string)
-			if {[string compare $expect_out(11,string) ""]} {
+			if {$expect_out(11,string) ne ""} {
 				set num_total [expr $num_total * 1024]
 			}
 
@@ -134,21 +134,21 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 	expect {
 		-re "alloc ($number)(K?) $node" {
 			set num_alloc $expect_out(1,string)
-			if {[string compare $expect_out(2,string) ""]} {
+			if {$expect_out(2,string) ne ""} {
 				set num_alloc [expr $inode_procs * 1024]
 			}
 			exp_continue
 		}
 		-re "idle ($number)(K?) $node" {
 			set num_idle $expect_out(1,string)
-			if {[string compare $expect_out(2,string) ""]} {
+			if {$expect_out(2,string) ne ""} {
 				set num_idle [expr $num_idle * 1024]
 			}
 			exp_continue
 		}
 		-re "mix ($number)(K?) $node" {
 			set num_alloc $expect_out(1,string)
-			if {[string compare $expect_out(2,string) ""]} {
+			if {$expect_out(2,string) ne ""} {
 				set num_alloc [expr $inode_procs * 1024]
 			}
 			exp_continue
@@ -240,7 +240,7 @@ expect {
 		wait
 	}
 }
-if {[string compare $def_node_name ""] == 0} {
+if {$def_node_name eq ""} {
 	skip "Node name format not supported for this test"
 }
 
@@ -308,7 +308,7 @@ while {[gets $fd line] != -1} {
 	}
 }
 exp_internal 0
-if {[string compare $units ""]} {
+if {$units ne ""} {
 	set inode_procs [expr $inode_procs * 1024]
 }
 catch {close $fd}

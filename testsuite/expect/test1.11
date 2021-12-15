@@ -98,4 +98,4 @@ if {$size2 == 0} {
 }
 set short1 [ string range $job_name  0 $size2 ]
 set short2 [ string range $name_read 0 $size2 ]
-subtest {[ string compare $short1 $short2 ] == 0} "Requested and actual job names should match" "Strings are:$short1:$short2:$size2"
+subtest {$short1 eq $short2 } "Requested and actual job names should match" "Strings are:$short1:$short2:$size2"

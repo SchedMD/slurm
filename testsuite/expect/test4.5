@@ -170,9 +170,9 @@ expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		set node $expect_out(2,string)
 		set state $expect_out(5,string)
-		if {(![string compare $expect_out(5,string) "allocated"]) &&
-		    ((![string compare $node $node_list(0)]) ||
-		     (![string compare $node $node_list(1)]))} {
+		if {$expect_out(5,string) eq "allocated" &&
+		    ($node eq $node_list(0) ||
+		     $node eq $node_list(1))} {
 			incr allocated_cnt
 		} else {
 			log_debug "$node:$state"
@@ -219,16 +219,16 @@ expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		set node $expect_out(2,string)
 		set state $expect_out(5,string)
-		if {(![string compare $expect_out(5,string) "idle"]) &&
-		    ((![string compare $node $node_list(0)]) ||
-		     (![string compare $node $node_list(1)]) ||
-		     (![string compare $node $node_list(2)]) ||
-		     (![string compare $node $node_list(3)]))} {
+		if {$expect_out(5,string) eq "idle" &&
+		    ($node eq $node_list(0) ||
+		     $node eq $node_list(1) ||
+		     $node eq $node_list(2) ||
+		     $node eq $node_list(3))} {
 			incr idle_cnt
 		# NOTE: drained nodes can be idle as well.
-		} elseif {(![string compare $expect_out(5,string) "drained"]) &&
-			  ((![string compare $node $node_list(6)]) ||
-			   (![string compare $node $node_list(7)]))} {
+		} elseif {$expect_out(5,string) eq "drained" &&
+			  ($node eq $node_list(6) ||
+			   $node eq $node_list(7))} {
 			incr idle_drain_cnt
 		} else {
 			log_debug "$node:$state"
@@ -269,9 +269,9 @@ expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		set node $expect_out(2,string)
 		set state $expect_out(5,string)
-		if {(![string compare $expect_out(5,string) "down"]) &&
-		    ((![string compare $node $node_list(4)]) ||
-		     (![string compare $node $node_list(5)]))} {
+		if {$expect_out(5,string) eq "down" &&
+		    ($node eq $node_list(4) ||
+		     $node eq $node_list(5))} {
 			incr down_cnt
 		} else {
 			log_debug "$node:$state"
@@ -309,9 +309,9 @@ expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		set node $expect_out(2,string)
 		set state $expect_out(5,string)
-		if {(![string compare $expect_out(5,string) "drained"]) &&
-		    ((![string compare $node $node_list(6)]) ||
-		     (![string compare $node $node_list(7)]))} {
+		if {$expect_out(5,string) eq "drained" &&
+		    ($node eq $node_list(6) ||
+		     $node eq $node_list(7))} {
 			incr drain_cnt
 		} else {
 			log_debug "$node:$state"
@@ -350,13 +350,13 @@ expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		set node $expect_out(2,string)
 		set state $expect_out(5,string)
-		if {(![string compare $expect_out(5,string) "down"]) &&
-		    ((![string compare $node $node_list(4)]) ||
-		     (![string compare $node $node_list(5)]))} {
+		if {$expect_out(5,string) eq "down" &&
+		    ($node eq $node_list(4) ||
+		     $node eq $node_list(5))} {
 			incr down_cnt
-		} elseif {(![string compare $expect_out(5,string) "drained"]) &&
-			  ((![string compare $node $node_list(6)]) ||
-			   (![string compare $node $node_list(7)]))} {
+		} elseif {$expect_out(5,string) eq "drained" &&
+			  ($node eq $node_list(6) ||
+			   $node eq $node_list(7))} {
 			incr drain_cnt
 		} else {
 			log_debug "$node:$state"
@@ -398,9 +398,9 @@ expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		set node $expect_out(2,string)
 		set state $expect_out(5,string)
-		if {(![string compare $expect_out(5,string) "drained"]) &&
-		    ((![string compare $node $node_list(4)]) ||
-		     (![string compare $node $node_list(5)]))} {
+		if {$expect_out(5,string) eq "drained" &&
+		    ($node eq $node_list(4) ||
+		     $node eq $node_list(5))} {
 			incr drain_cnt
 		} else {
 			log_debug "$node:$state"

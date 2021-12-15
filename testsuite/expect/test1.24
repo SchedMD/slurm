@@ -53,7 +53,7 @@ expect {
 	}
 }
 
-if {[string compare $host_0 ""] != 0} {
+if {$host_0 ne ""} {
 	fail "Job ran with invalid constraint option"
 }
 if {$err_msg != 1} {
