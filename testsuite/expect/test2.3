@@ -33,13 +33,13 @@ set matches     0
 
 #
 # Report the slurm daemon status
-#		if {![string compare $status "DOWN"] || ![string compare $status "UP"]} {
+#		if {$status eq "DOWN" || $status eq "UP"} {
 
 spawn $scontrol ping
 expect {
 	-re "Slurmctld.primary. at $re_word_str is ($re_word_str)" {
 		set status $expect_out(1,string)
-		if {![string compare $status "DOWN"] || ![string compare $status "UP"]} {
+		if {$status eq "DOWN" || $status eq "UP"} {
 			incr matches
 			exp_continue
 		}

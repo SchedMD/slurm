@@ -126,7 +126,7 @@ expect {
 		wait
 	}
 }
-if {[string compare $node_name ""] == 0} {
+if {$node_name eq ""} {
 	fail "Failed to get a usable node name"
 }
 

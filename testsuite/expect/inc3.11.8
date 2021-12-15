@@ -69,7 +69,7 @@ proc inc3_11_8 {} {
 	if {$ret_code != 0} {
 		fail "Unable to delete reservation ($res_name)"
 	}
-	if {[string compare $host_name ""] == 0} {
+	if {$host_name eq ""} {
 		fail "Failed to get host name"
 	}
 

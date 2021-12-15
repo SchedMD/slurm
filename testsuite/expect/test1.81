@@ -66,7 +66,7 @@ expect {
 	}
 }
 
-subtest {[string compare $host_0 ""] != 0} "Should get SLURM_NODEID of task 0"
+subtest {$host_0 ne ""} "Should get SLURM_NODEID of task 0"
 
 set alloc_fail 0
 set task_cnt2  0
@@ -118,8 +118,8 @@ expect {
 #
 # Verify node count
 #
-subtest {[string compare $host_0 ""] != 0} "Should get SLURM_NODEID of task 0"
-subtest {[string compare $host_1 ""] == 0} "Should start just one task"
+subtest {$host_0 ne ""} "Should get SLURM_NODEID of task 0"
+subtest {$host_1 eq ""} "Should start just one task"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "Additional testing is incompatible with front-end systems"
@@ -161,16 +161,16 @@ expect {
 #
 # Verify node count
 #
-subtest {[string compare $host_0 ""] != 0} "Should get SLURM_NODEID of task 0"
-subtest {[string compare $host_3 ""] == 0} "Should start no more than three tasks"
+subtest {$host_0 ne ""} "Should get SLURM_NODEID of task 0"
+subtest {$host_3 eq ""} "Should start no more than three tasks"
 set dup_host 0
-if {[string compare $host_0 $host_1] == 0} {
+if {$host_0 eq $host_1} {
 	set dup_host 1
 }
-if {[string compare $host_0 $host_2] == 0} {
+if {$host_0 eq $host_2} {
 	set dup_host 1
 }
-if {[string compare $host_0 $host_3] == 0} {
+if {$host_0 eq $host_3} {
 	set dup_host 1
 }
 subtest {$dup_host != 1} "Should not reuse a node in the allocation"
@@ -214,17 +214,17 @@ expect {
 #
 # Verify node count
 #
-subtest {[string compare $host_0 ""] != 0} "Should get SLURM_NODEID of task 0"
-subtest {[string compare $host_1 ""] != 0} "Should get SLURM_NODEID of task 1"
-subtest {[string compare $host_3 ""] == 0} "Should start no more that three tasks"
+subtest {$host_0 ne ""} "Should get SLURM_NODEID of task 0"
+subtest {$host_1 ne ""} "Should get SLURM_NODEID of task 1"
+subtest {$host_3 eq ""} "Should start no more that three tasks"
 set dup_host 0
-if {[string compare $host_0 $host_1] == 0} {
+if {$host_0 eq $host_1} {
 	set dup_host 1
 }
-if {[string compare $host_0 $host_2] == 0} {
+if {$host_0 eq $host_2} {
 	set dup_host 1
 }
-if {[string compare $host_0 $host_3] == 0} {
+if {$host_0 eq $host_3} {
 	set dup_host 1
 }
 subtest {$dup_host != 1} "Should not reuse a node in the allocation"

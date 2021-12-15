@@ -177,35 +177,35 @@ for {set i 0} {$i<4} {incr i} {
 		}
 	}
 	if { $i == 1 } {
-		if { [string compare $node0 $1node2] } {
+		if {$node0 ne $1node2} {
 			fail "Tasks not distributed by hostfile"
-		} elseif { [string compare $node1 $1node0] } {
+		} elseif {$node1 ne $1node0} {
 			fail "Tasks not distributed by hostfile"
-		} elseif { [string compare $node2 $1node1] } {
+		} elseif {$node2 ne $1node1} {
 			fail "Tasks not distributed by hostfile"
 		}
 	} elseif { $i == 2 } {
-		if { [string compare $node0 $2node0] } {
+		if {$node0 ne $2node0} {
 			fail "Tasks not distributed by hostfile"
-		} elseif { [string compare $node1 $2node1] } {
+		} elseif {$node1 ne $2node1} {
 			fail "Tasks not distributed by hostfile"
-		} elseif { [string compare $node2 $2node2] } {
+		} elseif {$node2 ne $2node2} {
 			fail "Tasks not distributed by hostfile"
-		} elseif { [string compare $node3 $2node3] } {
+		} elseif {$node3 ne $2node3} {
 			fail "Tasks not distributed by hostfile"
-		} elseif { [string compare $node4 $2node4] } {
+		} elseif {$node4 ne $2node4} {
 			fail "Tasks not distributed by hostfile"
 		}
 	} elseif { $i==3 } {
-		if { [string compare $node0 $3node0] } {
+		if {$node0 ne $3node0} {
 			fail "Tasks not distributed by hostfile"
-		} elseif { [string compare $node1 $3node1] } {
+		} elseif {$node1 ne $3node1} {
 			fail "Tasks not distributed by hostfile"
-		} elseif { [string compare $node2 $3node2] } {
+		} elseif {$node2 ne $3node2} {
 			fail "Tasks not distributed by hostfile"
-		} elseif { [string compare $node3 $3node3] } {
+		} elseif {$node3 ne $3node3} {
 			fail "Tasks not distributed by hostfile"
-		} elseif { [string compare $node4 $3node4] } {
+		} elseif {$node4 ne $3node4} {
 			fail "Tasks not distributed by hostfile"
 		}
 	}
@@ -312,27 +312,27 @@ for {set i 0} {$i<5} {incr i} {
 		}
 	}
 	if { $i == 1 } {
-		if { [string compare $node0 $1node2] } {
+		if {$node0 ne $1node2} {
 			fail "Tasks not distributed by -w"
-		} elseif { [string compare $node1 $1node0] } {
+		} elseif {$node1 ne $1node0} {
 			fail "Tasks not distributed by -w"
-		} elseif { [string compare $node2 $1node1] } {
+		} elseif {$node2 ne $1node1} {
 			fail "Tasks not distributed by -w"
 		}
 	} elseif { $i == 2 } {
-		if { [string compare $node0 $2node0] } {
+		if {$node0 ne $2node0} {
 			fail "Tasks not distributed by -w"
-		} elseif { [string compare $node1 $2node1] } {
+		} elseif {$node1 ne $2node1} {
 			fail "Tasks not distributed by -w"
-		} elseif { [string compare $node2 $2node2] } {
+		} elseif {$node2 ne $2node2} {
 			fail "Tasks not distributed by -w"
-		} elseif { [string compare $node3 $2node3] } {
+		} elseif {$node3 ne $2node3} {
 			fail "Tasks not distributed by -w"
-		} elseif { [string compare $node4 $2node4] } {
+		} elseif {$node4 ne $2node4} {
 			fail "Tasks not distributed by -w"
 		}
 	} elseif { $i == 3 } {
-		if { [string compare $node2 $4node0] } {
+		if {$node2 ne $4node0} {
 			fail "We only asked for 1 node in the allocation and we were unable to get it"
 		}
 	}

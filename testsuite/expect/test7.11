@@ -49,7 +49,7 @@ set spank_conf_file ${config_dir}/plugstack.conf
 
 regexp {^(\d+\.\d+)} [get_config_param SLURM_VERSION] - ctld_slurm_ver
 regexp {slurm (\d+\.\d+)} [run_command_output -fail "$scontrol -V"] - loc_slurm_ver
-if {[string compare $ctld_slurm_ver $loc_slurm_ver]} {
+if {$ctld_slurm_ver ne $loc_slurm_ver} {
 	skip "Slurmctld ($ctld_slurm_ver) and local Slurm ($loc_slurm_ver) versions are not the same, can not continue"
 }
 

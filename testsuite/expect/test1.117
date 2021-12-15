@@ -74,6 +74,6 @@ expect {
 #
 # check that the memory reported matches the requested value
 #
-if {[string compare $job_min_memory_cpu $mem_spec] != 0} {
+if {$job_min_memory_cpu ne $mem_spec} {
 	fail "Job MinMemoryCPU $job_min_memory_cpu != $mem_spec"
 }

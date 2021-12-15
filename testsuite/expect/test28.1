@@ -56,7 +56,7 @@ proc scontrol_check { job_id } {
 	expect {
 		-re "JobState=($re_word_str)" {
 			set tmp $expect_out(1,string)
-			if {[string compare $tmp "CANCELLED"]} {
+			if {$tmp ne "CANCELLED"} {
 				fail "Job was not cancelled"
 			}
 			exp_continue

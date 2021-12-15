@@ -67,7 +67,7 @@ expect {
 }
 log_user 1
 
-if {[string compare $licenses ""] != 0} {
+if {$licenses ne ""} {
 	spawn $srun --licenses=$licenses $bin_printenv SLURMD_NODENAME
 	expect {
 		-re "invalid license" {

@@ -183,7 +183,7 @@ if { $wc_key_track == 0 } {
 	skip "Portions of this test will not work without TrackWCKey set in slurmdbd.conf"
 }
 
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 

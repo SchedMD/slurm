@@ -245,7 +245,7 @@ set timeout 60
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
-if {[string compare [get_admin_level] "Administrator"]} {
+if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
@@ -339,43 +339,43 @@ set matches 0
 set tfile [open "$file_out4" r]
 while {[gets $tfile line] != -1} {
 
-	if {![string compare $line "No such file or directory"]} {
+	if {$line eq "No such file or directory"} {
 		fail "There was a problem with the sacctmgr command"
-	} elseif {![string compare $line "$clu - '$tc3':$fs=$clus_req(fairshare):$gc=$clus_req(grptres):$gj=$clus_req(grpjob):$gs=$clus_req(grpsubmit):$mp=$clus_req(maxtresmin):$mu=$clus_req(maxtres):$mj=$clus_req(maxjobs):$ms=$clus_req(maxsubmit):$md=$clus_req(maxwall):$qs='$clus_req(qos)'"]} {
+	} elseif {$line eq "$clu - '$tc3':$fs=$clus_req(fairshare):$gc=$clus_req(grptres):$gj=$clus_req(grpjob):$gs=$clus_req(grpsubmit):$mp=$clus_req(maxtresmin):$mu=$clus_req(maxtres):$mj=$clus_req(maxjobs):$ms=$clus_req(maxsubmit):$md=$clus_req(maxwall):$qs='$clus_req(qos)'"} {
 		log_debug "Match 1"
 		incr matches
-	} elseif {![string compare $line "$par - '$roo'"]} {
+	} elseif {$line eq "$par - '$roo'"} {
 		log_debug "Match 2"
 		incr matches
-	} elseif {![string compare $line "$usr - '$roo':$dac='$roo':$al='$ala':$fs=1"]} {
+	} elseif {$line eq "$usr - '$roo':$dac='$roo':$al='$ala':$fs=1"} {
 		log_debug "Match 3"
 		incr matches
-	} elseif {![string compare $line "$acc - '$ta4':$dsc='$acct_req(description)':$org='$acct_req(organization)':$fs=$acct_req(fairshare):$gm=$acct_req(grptresmins):$gc=$acct_req(grptres):$gj=$acct_req(grpjobs):$gs=$acct_req(grpsubmitjobs):$gw=$acct_req(grpwall):$mp=$acct_req(maxtresmins):$mu=$acct_req(maxtres):$mj=$acct_req(maxjobs):$ms=$acct_req(maxsubmitjobs):$md=$acct_req(maxwall):$qs='$acct_req(qos)'"]} {
+	} elseif {$line eq "$acc - '$ta4':$dsc='$acct_req(description)':$org='$acct_req(organization)':$fs=$acct_req(fairshare):$gm=$acct_req(grptresmins):$gc=$acct_req(grptres):$gj=$acct_req(grpjobs):$gs=$acct_req(grpsubmitjobs):$gw=$acct_req(grpwall):$mp=$acct_req(maxtresmins):$mu=$acct_req(maxtres):$mj=$acct_req(maxjobs):$ms=$acct_req(maxsubmitjobs):$md=$acct_req(maxwall):$qs='$acct_req(qos)'"} {
 		log_debug "Match 4"
 		incr matches
-	} elseif {![string compare $line "$par - '$ta4'"]} {
+	} elseif {$line eq "$par - '$ta4'"} {
 		log_debug "Match 5"
 		incr matches
-	} elseif {![string compare $line "$usr - '$tu3':$dac='$user_req(defaultaccount)':$dw='$user_req(defaultwckey)':$al='$user_req(adminlevel)':$wk='$wckey_check':$fs=$user_req(fairshare):$gm=$user_req(grptresmins):$gc=$user_req(grptres):$gj=$user_req(grpjobs):$gs=$user_req(grpsubmitjobs):$gw=$user_req(grpwall):$mp=$user_req(maxtresmins):$mu=$user_req(maxtres):$mj=$user_req(maxjobs):$ms=$user_req(maxsubmitjobs):$md=$user_req(maxwall):$qs='$user_req(qos)'"]} {
+	} elseif {$line eq "$usr - '$tu3':$dac='$user_req(defaultaccount)':$dw='$user_req(defaultwckey)':$al='$user_req(adminlevel)':$wk='$wckey_check':$fs=$user_req(fairshare):$gm=$user_req(grptresmins):$gc=$user_req(grptres):$gj=$user_req(grpjobs):$gs=$user_req(grpsubmitjobs):$gw=$user_req(grpwall):$mp=$user_req(maxtresmins):$mu=$user_req(maxtres):$mj=$user_req(maxjobs):$ms=$user_req(maxsubmitjobs):$md=$user_req(maxwall):$qs='$user_req(qos)'"} {
 		# should come through 2 times
 		log_debug "Match 6"
 		incr matches
-	} elseif {![string compare $line "$acc - '$ta3':$dsc='$acct_req2(description)':$org='$acct_req2(organization)':$fs=$acct_req2(fairshare):$gm=$acct_req2(grptresmins):$gc=$acct_req2(grptres):$gj=$acct_req2(grpjobs):$gs=$acct_req2(grpsubmitjobs):$gw=$acct_req2(grpwall):$mp=$acct_req2(maxtresmins):$mu=$acct_req2(maxtres):$mj=$acct_req2(maxjobs):$ms=$acct_req2(maxsubmitjobs):$md=$acct_req2(maxwall):$qs='$acct_req2(qos)'"]} {
+	} elseif {$line eq "$acc - '$ta3':$dsc='$acct_req2(description)':$org='$acct_req2(organization)':$fs=$acct_req2(fairshare):$gm=$acct_req2(grptresmins):$gc=$acct_req2(grptres):$gj=$acct_req2(grpjobs):$gs=$acct_req2(grpsubmitjobs):$gw=$acct_req2(grpwall):$mp=$acct_req2(maxtresmins):$mu=$acct_req2(maxtres):$mj=$acct_req2(maxjobs):$ms=$acct_req2(maxsubmitjobs):$md=$acct_req2(maxwall):$qs='$acct_req2(qos)'"} {
 		log_debug "Match 7"
 		incr matches
-	} elseif {![string compare $line "$par - '$ta3'"]} {
+	} elseif {$line eq "$par - '$ta3'"} {
 		log_debug "Match 8"
 		incr matches
-	} elseif {![string compare $line "$acc - '$ta2':$dsc='$acct_req3(description)':$org='$acct_req3(organization)':$fs=$acct_req3(fairshare):$gm=$acct_req3(grptresmins):$gc=$acct_req3(grptres):$gj=$acct_req3(grpjobs):$gs=$acct_req3(grpsubmitjobs):$gw=$acct_req3(grpwall):$mp=$acct_req3(maxtresmins):$mu=$acct_req3(maxtres):$mj=$acct_req3(maxjobs):$ms=$acct_req3(maxsubmitjobs):$md=$acct_req3(maxwall):$qs='$acct_req3(qos)'"]} {
+	} elseif {$line eq "$acc - '$ta2':$dsc='$acct_req3(description)':$org='$acct_req3(organization)':$fs=$acct_req3(fairshare):$gm=$acct_req3(grptresmins):$gc=$acct_req3(grptres):$gj=$acct_req3(grpjobs):$gs=$acct_req3(grpsubmitjobs):$gw=$acct_req3(grpwall):$mp=$acct_req3(maxtresmins):$mu=$acct_req3(maxtres):$mj=$acct_req3(maxjobs):$ms=$acct_req3(maxsubmitjobs):$md=$acct_req3(maxwall):$qs='$acct_req3(qos)'"} {
 		log_debug "Match 9"
 		incr matches
-	} elseif {![string compare $line "$par - '$ta2'"]} {
+	} elseif {$line eq "$par - '$ta2'"} {
 		log_debug "Match 10"
 		incr matches
-	} elseif {![string compare $line "$usr - '$tu1':$dac='$user_req3(defaultaccount)':$dw='$user_req3(defaultwckey)':$wk='$wckey_check':$fs=$user_req3(fairshare):$gm=$user_req3(grptresmins):$gc=$user_req3(grptres):$gj=$user_req3(grpjobs):$gs=$user_req3(grpsubmitjobs):$gw=$user_req3(grpwall):$mp=$user_req3(maxtresmins):$mu=$user_req3(maxtres):$mj=$user_req3(maxjobs):$ms=$user_req3(maxsubmitjobs):$md=$user_req3(maxwall):$qs='$user_req3(qos)'"]} {
+	} elseif {$line eq "$usr - '$tu1':$dac='$user_req3(defaultaccount)':$dw='$user_req3(defaultwckey)':$wk='$wckey_check':$fs=$user_req3(fairshare):$gm=$user_req3(grptresmins):$gc=$user_req3(grptres):$gj=$user_req3(grpjobs):$gs=$user_req3(grpsubmitjobs):$gw=$user_req3(grpwall):$mp=$user_req3(maxtresmins):$mu=$user_req3(maxtres):$mj=$user_req3(maxjobs):$ms=$user_req3(maxsubmitjobs):$md=$user_req3(maxwall):$qs='$user_req3(qos)'"} {
 		log_debug "Match 11"
 		incr matches
-	} elseif {![string compare $line "$usr - '$tu2':$dac='$user_req2(defaultaccount)':$dw='$user_req2(defaultwckey)':$al='$user_req2(adminlevel)':$wk='$wckey_check':$fs=$user_req2(fairshare):$gm=$user_req2(grptresmins):$gc=$user_req2(grptres):$gj=$user_req2(grpjobs):$gs=$user_req2(grpsubmitjobs):$gw=$user_req2(grpwall):$mp=$user_req2(maxtresmins):$mu=$user_req2(maxtres):$mj=$user_req2(maxjobs):$ms=$user_req2(maxsubmitjobs):$md=$user_req2(maxwall):$qs='$user_req2(qos)'"]} {
+	} elseif {$line eq "$usr - '$tu2':$dac='$user_req2(defaultaccount)':$dw='$user_req2(defaultwckey)':$al='$user_req2(adminlevel)':$wk='$wckey_check':$fs=$user_req2(fairshare):$gm=$user_req2(grptresmins):$gc=$user_req2(grptres):$gj=$user_req2(grpjobs):$gs=$user_req2(grpsubmitjobs):$gw=$user_req2(grpwall):$mp=$user_req2(maxtresmins):$mu=$user_req2(maxtres):$mj=$user_req2(maxjobs):$ms=$user_req2(maxsubmitjobs):$md=$user_req2(maxwall):$qs='$user_req2(qos)'"} {
 		# should come through 2 times
 		log_debug "Match 12"
 		incr matches

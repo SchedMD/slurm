@@ -59,13 +59,13 @@ if {![regexp -line {^0: (\S+)} $output - host_0]} {
 #
 # Verify node count
 #
-if {[string compare $host_0 ""] == 0} {
+if {$host_0 eq ""} {
 	fail "Did not get hostname of task 0"
 }
-if {[string compare $nodelist_name ""] == 0} {
+if {$nodelist_name eq ""} {
 	fail "Did not get nodelist_name of task 0"
 }
-if {[string compare $host_0 $nodelist_name] != 0} {
+if {$host_0 ne $nodelist_name} {
 	log_warn "Hostname inconsistency"
 }
 set include_node $host_0

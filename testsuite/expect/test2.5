@@ -89,7 +89,7 @@ set matches     0
 spawn $scontrol show partition $part_name
 expect {
 	-re "PartitionName=($re_word_str)" {
-		if {[string compare $expect_out(1,string) $part_name] == 0} {
+		if {$expect_out(1,string) eq $part_name} {
 			incr matches
 		}
 		exp_continue
@@ -132,7 +132,7 @@ if {$matches < 1} {
 	spawn $scontrol show frontend $node_name
 	expect {
 		-re "FrontendName=($re_word_str)" {
-			if {[string compare $expect_out(1,string) $node_name] == 0} {
+			if {$expect_out(1,string) eq $node_name} {
 				incr matches
 			}
 			exp_continue
@@ -175,7 +175,7 @@ set matches     0
 spawn $scontrol show node $node_name
 expect {
 	-re "NodeName=($re_word_str)" {
-		if {[string compare $expect_out(1,string) $node_name] == 0} {
+		if {$expect_out(1,string) eq $node_name} {
 			incr matches
 		}
 		exp_continue
