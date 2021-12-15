@@ -4331,7 +4331,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_array(&build_ptr->control_addr,
 		                     &build_ptr->control_cnt, buffer);
 		safe_unpackstr_array(&build_ptr->control_machine,
-		                     &build_ptr->control_cnt, buffer);
+		                     &uint32_tmp, buffer);
+		if (build_ptr->control_cnt != uint32_tmp)
+			goto unpack_error;
 		safe_unpackstr_xmalloc(&build_ptr->core_spec_plugin,
 		                       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
@@ -4729,7 +4731,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_array(&build_ptr->control_addr,
 		                     &build_ptr->control_cnt, buffer);
 		safe_unpackstr_array(&build_ptr->control_machine,
-		                     &build_ptr->control_cnt, buffer);
+		                     &uint32_tmp, buffer);
+		if (build_ptr->control_cnt != uint32_tmp)
+			goto unpack_error;
 		safe_unpackstr_xmalloc(&build_ptr->core_spec_plugin,
 		                       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
