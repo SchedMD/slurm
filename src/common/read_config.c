@@ -1723,8 +1723,8 @@ static int _load_slurmctld_host(slurm_conf_t *conf)
 		/*
 		 * Using new-style SlurmctldHost entries.
 		 */
-		conf->control_machine = xcalloc(count, sizeof(char *));
-		conf->control_addr = xcalloc(count, sizeof(char *));
+		conf->control_machine = xcalloc(count + 1, sizeof(char *));
+		conf->control_addr = xcalloc(count + 1, sizeof(char *));
 		conf->control_cnt = count;
 
 		for (i = 0; i < count; i++) {
@@ -1756,11 +1756,12 @@ static int _load_slurmctld_host(slurm_conf_t *conf)
 		/*
 		 * Using old-style ControlMachine/BackupController entries.
 		 *
-		 * Allocate two entries, one for primary and one for backup.
+		 * Allocate two entries, one for primary and one for backup,
+		 * plus space for NULL-termination.
 		 */
 		char *tmp = NULL;
-		conf->control_machine = xmalloc(sizeof(char *));
-		conf->control_addr = xmalloc(sizeof(char *));
+		conf->control_machine = xcalloc(3, sizeof(char *));
+		conf->control_addr = xcalloc(3, sizeof(char *));
 		conf->control_cnt = 1;
 
 		if (!s_p_get_string(&conf->control_machine[0],
@@ -1781,8 +1782,6 @@ static int _load_slurmctld_host(slurm_conf_t *conf)
 		}
 
 		if (s_p_get_string(&tmp, "BackupController", conf_hashtbl)) {
-			xrealloc(conf->control_machine, (sizeof(char *) * 2));
-			xrealloc(conf->control_addr, (sizeof(char *) * 2));
 			conf->control_cnt = 2;
 			conf->control_machine[1] = tmp;
 			tmp = NULL;
@@ -2771,8 +2770,6 @@ int gethostname_short(char *name, size_t len)
  */
 extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 {
-	int i;
-
 	xfree (ctl_conf_ptr->accounting_storage_backup_host);
 	xfree (ctl_conf_ptr->accounting_storage_ext_host);
 	xfree (ctl_conf_ptr->accounting_storage_host);
@@ -2796,10 +2793,8 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	FREE_NULL_LIST(ctl_conf_ptr->cgroup_conf);
 	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->cluster_name);
-	for (i = 0; i < ctl_conf_ptr->control_cnt; i++) {
-		xfree(ctl_conf_ptr->control_addr[i]);
-		xfree(ctl_conf_ptr->control_machine[i]);
-	}
+	xfree_array(ctl_conf_ptr->control_addr);
+	xfree_array(ctl_conf_ptr->control_machine);
 	ctl_conf_ptr->control_cnt = 0;
 
 	xfree (ctl_conf_ptr->comm_params);
@@ -2920,8 +2915,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
  */
 void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 {
-	int i;
-
 	ctl_conf_ptr->last_update		= time(NULL);
 	xfree (ctl_conf_ptr->accounting_storage_backup_host);
 	ctl_conf_ptr->accounting_storage_enforce          = 0;
@@ -2946,10 +2939,8 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->comm_params);
 	ctl_conf_ptr->complete_wait		= NO_VAL16;
 	ctl_conf_ptr->conf_flags                = 0;
-	for (i = 0; i < ctl_conf_ptr->control_cnt; i++) {
-		xfree(ctl_conf_ptr->control_addr[i]);
-		xfree(ctl_conf_ptr->control_machine[i]);
-	}
+	xfree_array(ctl_conf_ptr->control_addr);
+	xfree_array(ctl_conf_ptr->control_machine);
 	ctl_conf_ptr->control_cnt = 0;
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
@@ -3442,8 +3433,6 @@ slurm_conf_destroy(void)
 
 extern slurm_conf_t *slurm_conf_lock(void)
 {
-	int i;
-
 	slurm_mutex_lock(&conf_lock);
 	if (!conf_initialized) {
 		if (_init_slurm_conf(NULL) != SLURM_SUCCESS) {
@@ -3454,9 +3443,8 @@ extern slurm_conf_t *slurm_conf_lock(void)
 			 * should call slurm_conf_init() to get a fatal
 			 * error instead.
 			 */
-			for (i = 0; i < conf_ptr->control_cnt; i++)
-				xfree(conf_ptr->control_addr[i]);
-			xfree(conf_ptr->control_addr);
+			// FIXME: clear control_machine array as well?
+			xfree_array(conf_ptr->control_addr);
 			conf_ptr->control_cnt = 0;
 		}
 	}

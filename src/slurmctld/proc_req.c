@@ -316,8 +316,9 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->complete_wait       = conf->complete_wait;
 	conf_ptr->conf_flags          = conf->conf_flags;
 	conf_ptr->control_cnt         = conf->control_cnt;
-	conf_ptr->control_addr    = xmalloc(sizeof(char *) * conf->control_cnt);
-	conf_ptr->control_machine = xmalloc(sizeof(char *) * conf->control_cnt);
+	conf_ptr->control_addr = xcalloc(conf->control_cnt + 1, sizeof(char *));
+	conf_ptr->control_machine = xcalloc(conf->control_cnt + 1,
+					    sizeof(char *));
 	for (i = 0; i < conf_ptr->control_cnt; i++) {
 		conf_ptr->control_addr[i] = xstrdup(conf->control_addr[i]);
 		conf_ptr->control_machine[i] =
