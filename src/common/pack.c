@@ -1028,12 +1028,12 @@ void packstr_array(char **valp, uint32_t size_val, buf_t *buffer)
 }
 
 /*
- * Given 'buffer' pointing to a network byte order 16-bit integer
- * (size) and a array of strings  store the number of strings in
- * 'size_valp' and the array of strings in valp
- * NOTE: valp is set to point into a newly created buffer,
- *	the caller is responsible for calling xfree on *valp
- *	if non-NULL (set to NULL on zero size buffer value)
+ * Unpack a NULL-terminated array of strings from buffer.
+ * These are stored as a 32-bit (network-byte order) number of elements,
+ * followed by the individual strings (packed with packstr()).
+ * OUT: valp - xmalloc()'d array or NULL. Free with xfree_array().
+ * OUT: size_valp - number of elements, not including the NULL-termination.
+ * IN/OUT: buffer
  */
 int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 {
@@ -1054,15 +1054,14 @@ int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 		return SLURM_ERROR;
 	}
 	else if (*size_valp > 0) {
-		*valp = xmalloc_nz(sizeof(char *) * (*size_valp + 1));
+		*valp = xcalloc(*size_valp + 1, sizeof(char *));
 		for (i = 0; i < *size_valp; i++) {
-			if (unpackmem_xmalloc(&(*valp)[i], &uint32_tmp, buffer))
+			if (unpackmem_xmalloc(&(*valp)[i], &uint32_tmp, buffer)) {
+				*size_valp = 0;
+				xfree_array(*valp);
 				return SLURM_ERROR;
+			}
 		}
-		/*
-		 * NULL terminate array so execle() can detect end of array
-		 */
-		(*valp)[i] = NULL;
 	} else
 		*valp = NULL;
 	return SLURM_SUCCESS;
