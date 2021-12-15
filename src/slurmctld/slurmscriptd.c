@@ -622,6 +622,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 					&signalled);
 		break;
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
+	case SLURMSCRIPTD_MAIL:
 	case SLURMSCRIPTD_PROLOG:
 		if (script_msg->job_id)
 			log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
@@ -694,6 +695,7 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 
 	switch (script_complete->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
+	case SLURMSCRIPTD_MAIL:
 		if (script_complete->job_id)
 			log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
 				 rpc_num2string(msg->msg_type),
@@ -918,6 +920,31 @@ extern void slurmscriptd_flush_job(uint32_t job_id)
 
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH_JOB, &msg, false,
 			      NULL, NULL);
+}
+
+extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
+				 char **env, uint32_t timeout, char **resp)
+{
+	int status;
+	run_script_msg_t run_script_msg;
+
+	memset(&run_script_msg, 0, sizeof(run_script_msg));
+
+	/* Init run_script_msg */
+	run_script_msg.argc = argc;
+	run_script_msg.argv = argv;
+	run_script_msg.env = NULL;
+	run_script_msg.script_name = "MailProg";
+	run_script_msg.script_path = script_path;
+	run_script_msg.script_type = SLURMSCRIPTD_MAIL;
+	run_script_msg.timeout = timeout;
+
+	/* Send message; wait for response */
+	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
+				       &run_script_msg, true, resp, NULL);
+
+	/* Cleanup */
+	return status;
 }
 
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,

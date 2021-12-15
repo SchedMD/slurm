@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
  -- Storing batch scripts and env vars are now in indexed tables using
     substantially less disk space.  Those storing scripts in 21.08 will all
     be moved and indexed automatically.
+ -- Run MailProg through slurmscriptd instead of directly fork+exec()'ing
+    from slurmctld.
 
 * Changes in Slurm 21.08.5
 ==========================

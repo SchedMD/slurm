@@ -49,6 +49,7 @@ typedef enum {
 				* from RPC's that weren't running a script. */
 	SLURMSCRIPTD_BB_LUA,
 	SLURMSCRIPTD_EPILOG,
+	SLURMSCRIPTD_MAIL,
 	SLURMSCRIPTD_PROLOG,
 } script_type_t;
 

@@ -71,6 +71,9 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				   uint32_t argc, char **argv, uint32_t timeout,
 				   char **resp, bool *track_script_signalled);
 
+extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
+				 char **env, uint32_t timeout, char **resp);
+
 /*
  * slurmscriptd_run_prepilog
  * Tell slurmscriptd to run PrologSlurmctld or EpilogSlurmctld for the job

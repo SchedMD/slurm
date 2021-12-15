@@ -100,6 +100,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/srun_comm.h"
 
@@ -108,7 +109,7 @@
 #define RPC_PACK_MAX_AGE	30	/* Rebuild data over 30 seconds old */
 #define DUMP_RPC_COUNT 		25
 #define HOSTLIST_MAX_SIZE 	80
-#define MAIL_PROG_TIMEOUT 120*1000
+#define MAIL_PROG_TIMEOUT 120 /* Timeout in seconds */
 
 typedef enum {
 	DSH_NEW,        /* Request not yet started */
@@ -1888,8 +1889,9 @@ static void *_mail_proc(void *arg)
 	char *argv[5] = {
 		slurm_conf.mail_prog, "-s", mi->message, mi->user_name, NULL};
 
-	result = run_command("MailProg", slurm_conf.mail_prog, argv,
-			     mi->environment, MAIL_PROG_TIMEOUT, 0, &status);
+	status = slurmscriptd_run_mail(slurm_conf.mail_prog, 5, argv,
+				       mi->environment, MAIL_PROG_TIMEOUT,
+				       &result);
 	if (status)
 		error("MailProg returned error, it's output was '%s'", result);
 	else if (result && (strlen(result) > 0))
