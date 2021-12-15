@@ -274,12 +274,3 @@ extern char *run_command(const char *script_type, const char *script_path,
 
 	return resp;
 }
-
-extern void free_command_argv(char **script_argv)
-{
-	int i;
-
-	for (i = 0; script_argv[i]; i++)
-	        xfree(script_argv[i]);
-	xfree(script_argv);
-}

@@ -449,7 +449,7 @@ static int _get_lib_paths(char *filename, List lib_paths)
 	 * doing something similar to the search order of the dynamic linker.
 	 */
 	result = run_command("ldd", LDD_PATH, ldd_argv, NULL, 5000, 0, &status);
-	free_command_argv(ldd_argv);
+	xfree_array(ldd_argv);
 
 	if (status) {
 		error("Cannot autodetect libraries for '%s' with ldd command",

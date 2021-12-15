@@ -184,7 +184,7 @@ extern char *x11_get_xauth(void)
 	result = run_command("xauth", XAUTH_PATH, xauth_argv, NULL, 10000, 0,
 			     &status);
 
-	free_command_argv(xauth_argv);
+	xfree_array(xauth_argv);
 
 	if (status) {
 		error("Problem running xauth command. "
@@ -274,7 +274,7 @@ extern int x11_delete_xauth(char *xauthority, char *host, uint16_t display)
 	result = run_command("xauth", XAUTH_PATH, xauth_argv, NULL, 10000, 0,
 			     &status);
 
-	free_command_argv(xauth_argv);
+	xfree_array(xauth_argv);
 
 	debug2("%s: result from xauth: %s", __func__, result);
 	xfree(result);

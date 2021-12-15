@@ -169,7 +169,7 @@ static int _feature_set_state(const plugin_feature_t *feature)
 		error("failed to set new value for feature: %s", feature->name);
 	}
 
-	free_command_argv(argv);
+	xfree_array(argv);
 	xfree(output);
 	return rc;
 }

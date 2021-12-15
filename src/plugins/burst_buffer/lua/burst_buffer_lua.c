@@ -1083,7 +1083,7 @@ fini:
 	xfree(resp_msg);
 	xfree(stage_out_args->job_script);
 	xfree(stage_out_args);
-	free_command_argv(argv);
+	xfree_array(argv);
 
 	return NULL;
 }
@@ -2424,7 +2424,7 @@ fini:
 	xfree(resp_msg);
 	xfree(teardown_args->job_script);
 	xfree(teardown_args);
-	free_command_argv(argv);
+	xfree_array(argv);
 
 	return NULL;
 }
@@ -2520,7 +2520,7 @@ static void *_start_stage_in(void *x)
 
 	if (rc == SLURM_SUCCESS) {
 		xfree(resp_msg);
-		free_command_argv(argv);
+		xfree_array(argv);
 		argc = 2;
 		argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
 		argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
@@ -2566,7 +2566,7 @@ static void *_start_stage_in(void *x)
 
 	if (get_real_size) {
 		xfree(resp_msg);
-		free_command_argv(argv);
+		xfree_array(argv);
 		argc = 1;
 		argv = xcalloc(argc + 1, sizeof(char *)); /* NULL terminated */
 		argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
@@ -2676,7 +2676,7 @@ fini:
 	xfree(stage_in_args->job_script);
 	xfree(stage_in_args->pool);
 	xfree(stage_in_args);
-	free_command_argv(argv);
+	xfree_array(argv);
 
 	return NULL;
 }
@@ -3068,7 +3068,7 @@ fini:
 	xfree(resp_msg);
 	xfree(pre_run_args->job_script);
 	xfree(pre_run_args);
-	free_command_argv(argv);
+	xfree_array(argv);
 
 	return NULL;
 }
@@ -3147,7 +3147,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 
 	/* resp_msg already logged by _run_lua_script. */
 	xfree(resp_msg);
-	free_command_argv(argv);
+	xfree_array(argv);
 
 	if (rc != SLURM_SUCCESS) {
 		error("paths for %pJ failed", job_ptr);

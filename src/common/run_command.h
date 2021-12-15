@@ -67,7 +67,4 @@ extern char *run_command(const char *script_type, const char *script_path,
 			 pthread_t tid,
 			 int *status);
 
-/* Free an array of xmalloced records. The array must be NULL terminated. */
-extern void free_command_argv(char **script_argv);
-
 #endif	/* __RUN_COMMAND_H__ */
