@@ -91,6 +91,8 @@
 
 #define xfree(__p) slurm_xfree((void **)&(__p))
 
+#define xfree_array(__p) slurm_xfree_array((void ***)&(__p))
+
 #define xrecalloc(__p, __cnt, __sz) \
         slurm_xrecalloc((void **)&(__p), __cnt, __sz, true, false, __FILE__, __LINE__, __func__)
 
@@ -105,6 +107,7 @@
 
 void *slurm_xcalloc(size_t, size_t, bool, bool, const char *, int, const char *);
 void slurm_xfree(void **);
+void slurm_xfree_array(void ***);
 void *slurm_xrecalloc(void **, size_t, size_t, bool, bool, const char *, int, const char *);
 
 size_t xsize(void *item);

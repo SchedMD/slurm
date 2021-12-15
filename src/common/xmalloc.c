@@ -216,6 +216,20 @@ void slurm_xfree(void **item)
 }
 
 /*
+ * Free a NULL-terminated xmalloc()'d array of pointers to further xmalloc()'d
+ * elements, and NULL the original pointer to prevent accidental re-use.
+ */
+void slurm_xfree_array(void ***array)
+{
+	if (!**array || !*array)
+		return;
+
+        for (int i = 0; (*array)[i]; i++)
+		xfree((*array)[i]);
+	xfree(*array);
+}
+
+/*
  * Since xfree() is a macro it cannot be used for the ListDelF in list_create()
  * and a number of locations where handling it as a function-pointer is
  * desired. Use this wrapper to get around that problem.
