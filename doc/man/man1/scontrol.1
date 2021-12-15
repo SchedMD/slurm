@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "September 2021" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "January 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -498,6 +498,12 @@ specified, details for just that job will be displayed.
 If the job does not specify socket\-per\-node, cores\-per\-socket or
 threads\-per\-core then it will display '*' in the ReqS:C:T=*:*:* field.
 .IP
+
+.TP
+\fBlicenses\fR
+Displays statistics about all configured licenses (local and remote) by
+default. If an optional license name is specified, details for just that
+license will be displayed.
 
 .TP
 \fBnode\fR

@@ -1952,12 +1952,13 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 									   \n\
   <ENTITY> may be \"aliases\", \"assoc_mgr\", \"bbstat\", \"burstBuffer\", \n\
        \"config\", \"daemons\", \"dwstat\", \"federation\", \"frontend\",  \n\
-       \"hostlist\", \"hostlistsorted\", \"hostnames\", \"job\", \"node\", \n\
-       \"partition\", \"reservation\", \"slurmd\", \"step\", or \"topology\"\n\
+       \"hostlist\", \"hostlistsorted\", \"hostnames\", \"job\",           \n\
+       \"licenses\", \"node\", \"partition\", \"reservation\", \"slurmd\", \n\
+       \"step\", or \"topology\"                                           \n\
 									   \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
-       name, reservation name, job step id, or hostlist or pathname to a   \n\
-       list of host names.                                                 \n\
+       name, reservation name, job step id, license name or hostlist or    \n\
+       pathname to a list of host names.                                   \n\
 									   \n\
   <HOSTLIST> may either be a comma separated list of host names or the     \n\
        absolute pathname of a file (with leading '/' containing host names \n\
