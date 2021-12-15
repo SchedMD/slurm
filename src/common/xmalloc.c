@@ -221,7 +221,7 @@ void slurm_xfree(void **item)
  */
 void slurm_xfree_array(void ***array)
 {
-	if (!**array || !*array)
+	if (!*array || !**array)
 		return;
 
         for (int i = 0; (*array)[i]; i++)
