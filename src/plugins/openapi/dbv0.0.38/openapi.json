@@ -388,6 +388,61 @@
           }
         },
         "summary": "Get QOS list"
+      },
+      "post": {
+        "tags": [
+          "slurm"
+        ],
+        "operationId": "update_qos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_response_qos"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_response_qos"
+                }
+              }
+            },
+            "description": "QOS update response"
+          },
+          "default": {
+            "description": "Unable to update QOSs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "Add or update QOSs",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_update_qos"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_update_qos"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "Set QOS info"
       }
     },
     "/associations/": {
@@ -2856,6 +2911,21 @@
           }
         }
       },
+      "dbv0.0.38_response_qos": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
+          "errors": {
+            "type": "array",
+            "description": "Slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_error"
+            }
+          }
+        }
+      },
       "dbv0.0.38_response_qos_delete": {
         "type": "object",
         "properties": {
@@ -3714,6 +3784,16 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_user"
+            }
+          }
+        }
+      },
+      "dbv0.0.38_update_qos": {
+        "properties": {
+          "qos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_qos"
             }
           }
         }
