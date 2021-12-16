@@ -1,0 +1,31 @@
+<h2>Slurm 20.11.5<h2>
+
+<h3>openapi/dbv0.0.36 (src/slurmrestd/plugins/openapi/dbv0.0.36/openapi.json)</h3>
+
+<h4>Mark job environment as required</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_job_properties".required</td>
+</tr>
+</table>
+
+<h4>Add state flags</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.state_flags</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.next_state_after_reboot_flags</td>
+</tr>
+</table>
+
+<h4>Correct description for previous state</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.36_job".properties.state.properties.previous</td>
+</tr>
+</table>
