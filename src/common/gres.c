@@ -2828,7 +2828,6 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
 				 List *gres_list)
 {
 	int i, rc, rc2;
-	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 
 	rc = gres_init();
@@ -2839,12 +2838,8 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
 	}
 	for (i = 0; i < gres_context_cnt; i++) {
 		/* Find or create gres_state entry on the list */
-		gres_iter = list_iterator_create(*gres_list);
-		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
-				break;
-		}
-		list_iterator_destroy(gres_iter);
+		gres_ptr = list_find_first(*gres_list, gres_find_id,
+					   &gres_context[i].plugin_id);
 		if (gres_ptr == NULL) {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->config_flags = gres_context[i].config_flags;
