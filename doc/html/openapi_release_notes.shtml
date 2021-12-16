@@ -48,12 +48,7 @@ paths in a single quote string to avoid shell replacements.</p>
 <!--#include virtual="openapi_release_notes/slurm-20.11.3.html"-->
 <!--#include virtual="openapi_release_notes/slurm-20.11.1.html"-->
 <!--#include virtual="openapi_release_notes/slurm-20.11.0.html"-->
-
-<h2>Slurm 20.02</h2>
-
-<h3>v0.0.35 (src/slurmrestd/ops/openapi.json)</h3>
-
-<h4>Inital Implementation of Slurm REST API.</h4>
+<!--#include virtual="openapi_release_notes/slurm-20.02.0.html"-->
 
 <hr size=4 width="100%">
 
