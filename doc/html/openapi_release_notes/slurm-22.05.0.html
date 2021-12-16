@@ -1,0 +1,235 @@
+<h2>Slurm 22.05.0</h2>
+
+<h3>openapi/dbv0.0.38 (src/plugins/openapi/dbv0.0.38/openapi.json)</h3>
+
+<h4>add plugin</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new dbv0.0.38 openapi plugin</td>
+	<td class="tdchange">
+		<ul>
+			<li>clone of existing dbv0.0.37 openapi plugin</li>
+			<li>all paths renamed from dbv0.0.37 to dbv0.0.38</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add POST method for /associations<h4>
+<table class="tchange">
+<tr>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/associations/".post</td>
+</tr>
+<tr>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_response_associations"</td>
+</tr>
+</table>
+
+<h4>Correct placement of step TRES</h4>
+
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_job_step".properties.step.properties.tres</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_job_step".properties.tres</td>
+</tr>
+</table>
+
+<h3>openapi/v0.0.38 (src/plugins/openapi/v0.0.38/openapi.json)</h3>
+
+<h4>add plugin</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new v0.0.38 openapi plugin</td>
+	<td class="tdchange">
+		<ul>
+			<li>clone of existing v0.0.37 openapi plugin</li>
+			<li>all paths renamed from v0.0.37 to v0.0.38</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Allow strings for JobIds instead of only numerical JobIds.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Change job_id parameter to string</td>
+	<td class="tdchange">
+		<ul>
+			<li>.paths."/job/{job_id}".get.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".post.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".delete.parameters[].schema</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Correct multiple type mistakes<h4>
+<table class="tchange">
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.array_job_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.array_task_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.array_max_tasks</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.association_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.billable_tres</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.deadline</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.delay_boot</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.derived_exit_code</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.group_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.job_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.last_sched_evaluation</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.max_cpus</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.max_nodes</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.nice</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks_per_core</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks_per_socket</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks_per_board</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.cpus</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.node_count</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.tasks</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.het_job_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.het_job_offset</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.memory_per_node</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.memory_per_cpu</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.minimum_cpus_per_node</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.minimum_tmp_disk_per_node</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.priority</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.restart_cnt</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.sockets_per_board</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.sockets_per_node</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.time_limit</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.time_minimum</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.threads_per_core</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.user_id</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.allocated_nodes</td>
+</tr>
+<tr>
+	<td class="tdfield">modified entry</td>
+	<td class="tdchange">.components.schemas."v0.0.38_job_response_properties".properties.cpus</td>
+</tr>
+</table>
+
+<h4>Fix errant space after JOB_CPUS_SET flag.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Fix response.</td>
+	<td class="tdchange">
+		<ul>
+			<li>.components.schemas."v0.0.37_job_response_properties".properties.flags</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h3>openapi/v0.0.35 (src/plugins/openapi/v0.0.35/openapi.json)</h3>
+
+<h4>Removal notice</h4>
+The v0.0.35 plugin has now been removed.
