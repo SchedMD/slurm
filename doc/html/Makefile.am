@@ -50,6 +50,7 @@ generated_html = \
 	network.html \
 	news.html \
 	nss_slurm.html \
+	openapi_release_notes.html \
 	overview.html \
 	pam_slurm_adopt.html \
 	platforms.html \
@@ -71,7 +72,6 @@ generated_html = \
 	resource_limits.html \
 	rest.html \
 	rest_api.html \
-	rest_release_notes.html \
 	rosetta.html \
 	sched_config.html \
 	select_design.html \

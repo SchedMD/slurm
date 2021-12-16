@@ -32,11 +32,13 @@ h4 {
 </style>
 
 
-<h1>Slurm OpenAPI Release Notes</h1>
-<p>These Release Notes are maintained to provide OpenAPI client programmers a
-guide to where changes have taken place in the OpenAPI specifications.</p>
-<p>All paths given are formatted for use with <a
-href="https://stedolan.github.io/jq/">jq</a>. Make sure to always place the
+<h1>Slurm OpenAPI Plugin Release Notes</h1>
+<p>These release notes are maintained to provide OpenAPI client programmers a
+guide to where changes have taken place in the OpenAPI specifications from the
+OpenAPI plugins which are mainly used by <a href="rest.html">slurmrestd</a>
+but are also used to generate JSON or YAML output for multiple CLI commands.</p>
+<p>All paths given are formatted for use with
+<a href="https://stedolan.github.io/jq/">jq</a>. Make sure to always place the
 paths in a single quote string to avoid shell replacements.</p>
 
 <h2>Slurm 22.05.0</h2>

@@ -9,8 +9,8 @@
 	communicate with Slurm via a REST API (in addition to the command line
 	interface (CLI) or C API).
 </p>
-<p>Please see <a href="rest_release_notes.html">REST API Release Notes</a> for
-changes between release versions.</p>
+<p>Please see <a href="openapi_release_notes.html">
+	OpenAPI Plugin Release Notes</a> for changes between release versions.</p>
 <p>
 	To view the currently generated API reference:
 	<a href="rest_api.html">Slurm REST API Reference</a>
