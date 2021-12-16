@@ -1053,6 +1053,242 @@ static void _test_cgroup_plugin_use(void)
 		error("proctrack/cgroup plugin will not work unless SlurmdUser is root");
 }
 
+
+static void _sync_steps_to_conf(job_record_t *job_ptr)
+{
+	ListIterator step_iterator;
+	step_record_t *step_ptr;
+
+	step_iterator = list_iterator_create (job_ptr->step_list);
+	while ((step_ptr = list_next(step_iterator))) {
+		if (step_ptr->state < JOB_RUNNING)
+			continue;
+		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
+		if (step_ptr->step_layout &&
+		    step_ptr->step_layout->node_list &&
+		    (node_name2bitmap(step_ptr->step_layout->node_list, false,
+				      &step_ptr->step_node_bitmap))) {
+			error("Invalid step_node_list (%s) for %pS",
+			      step_ptr->step_layout->node_list, step_ptr);
+			delete_step_record(job_ptr, step_ptr);
+		} else if (step_ptr->step_node_bitmap == NULL) {
+			error("Missing node_list for %pS", step_ptr);
+			delete_step_record(job_ptr, step_ptr);
+		}
+	}
+
+	list_iterator_destroy (step_iterator);
+	return;
+}
+
+static int _sync_detail_bitmaps(job_record_t *job_ptr)
+{
+	if (job_ptr->details == NULL)
+		return SLURM_SUCCESS;
+
+	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
+
+	if ((job_ptr->details->req_nodes) &&
+	    (node_name2bitmap(job_ptr->details->req_nodes, false,
+			      &job_ptr->details->req_node_bitmap))) {
+		error("Invalid req_nodes (%s) for %pJ",
+		      job_ptr->details->req_nodes, job_ptr);
+		return SLURM_ERROR;
+	}
+
+	FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
+	if ((job_ptr->details->exc_nodes) &&
+	    (node_name2bitmap(job_ptr->details->exc_nodes, true,
+			      &job_ptr->details->exc_node_bitmap))) {
+		error("Invalid exc_nodes (%s) for %pJ",
+		      job_ptr->details->exc_nodes, job_ptr);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * _sync_jobs_to_conf - Sync current slurm.conf configuration for existing jobs.
+ *	This should be called after rebuilding node, part, and gres information,
+ *	but before using any job entries.
+ * global: last_job_update - time of last job table update
+ *	job_list - pointer to global job list
+ */
+void _sync_jobs_to_conf(void)
+{
+	ListIterator job_iterator;
+	job_record_t *job_ptr;
+	part_record_t *part_ptr;
+	List part_ptr_list = NULL;
+	bool job_fail = false;
+	time_t now = time(NULL);
+	bool gang_flag = false;
+	static uint32_t cr_flag = NO_VAL;
+
+	xassert(job_list);
+
+	if (cr_flag == NO_VAL) {
+		cr_flag = 0;  /* call is no-op for select/linear and others */
+		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+						  NULL, &cr_flag)) {
+			cr_flag = NO_VAL;	/* error */
+		}
+
+	}
+	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
+		gang_flag = true;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		xassert (job_ptr->magic == JOB_MAGIC);
+		job_fail = false;
+
+		/*
+		 * This resets the req/exc node bitmaps, so even if the job is
+		 * finished it still needs to happen just in case the job is
+		 * requeued.
+		 */
+		if (_sync_detail_bitmaps(job_ptr))
+			job_fail = true;
+
+		/*
+		 * If the job is finished there is no reason to do anything
+		 * below this.
+		 */
+		if (IS_JOB_FINISHED(job_ptr))
+			continue;
+
+		if (job_ptr->partition == NULL) {
+			error("No partition for %pJ", job_ptr);
+			part_ptr = NULL;
+			job_fail = true;
+		} else {
+			char *err_part = NULL;
+			part_ptr = find_part_record(job_ptr->partition);
+			if (part_ptr == NULL) {
+				part_ptr_list = get_part_list(
+					job_ptr->partition,
+					&err_part);
+				if (part_ptr_list) {
+					part_ptr = list_peek(part_ptr_list);
+					if (list_count(part_ptr_list) == 1)
+						FREE_NULL_LIST(part_ptr_list);
+				}
+			}
+			if (part_ptr == NULL) {
+				error("Invalid partition (%s) for %pJ",
+				      err_part, job_ptr);
+				xfree(err_part);
+				job_fail = true;
+			}
+		}
+		job_ptr->part_ptr = part_ptr;
+		FREE_NULL_LIST(job_ptr->part_ptr_list);
+		if (part_ptr_list) {
+			job_ptr->part_ptr_list = part_ptr_list;
+			part_ptr_list = NULL;	/* clear for next job */
+		}
+
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+		if (job_ptr->nodes_completing &&
+		    node_name2bitmap(job_ptr->nodes_completing,
+				     false,  &job_ptr->node_bitmap_cg)) {
+			error("Invalid nodes (%s) for %pJ",
+			      job_ptr->nodes_completing, job_ptr);
+			job_fail = true;
+		}
+		FREE_NULL_BITMAP(job_ptr->node_bitmap);
+		if (job_ptr->nodes &&
+		    node_name2bitmap(job_ptr->nodes, false,
+				     &job_ptr->node_bitmap) && !job_fail) {
+			error("Invalid nodes (%s) for %pJ",
+			      job_ptr->nodes, job_ptr);
+			job_fail = true;
+		}
+		if (reset_node_bitmap(job_ptr))
+			job_fail = true;
+		if (!job_fail &&
+		    job_ptr->job_resrcs && (cr_flag || gang_flag) &&
+		    valid_job_resources(job_ptr->job_resrcs,
+					node_record_table_ptr)) {
+			error("Aborting %pJ due to change in socket/core configuration of allocated nodes",
+			      job_ptr);
+			job_fail = true;
+		}
+		if (!job_fail &&
+		    gres_job_revalidate(job_ptr->gres_list_req)) {
+			error("Aborting %pJ due to use of unsupported GRES options",
+			      job_ptr);
+			job_fail = true;
+		}
+
+		if (!job_fail && job_ptr->job_resrcs &&
+		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
+		    gres_job_revalidate2(job_ptr->job_id,
+					 job_ptr->gres_list_alloc,
+					 job_ptr->job_resrcs->node_bitmap)) {
+			/*
+			 * This can be due to the job being allocated GRES
+			 * which no longer exist (i.e. the GRES count on some
+			 * allocated node changed since when the job started).
+			 */
+			error("Aborting %pJ due to use of invalid GRES configuration",
+			      job_ptr);
+			job_fail = true;
+		}
+
+		_sync_steps_to_conf(job_ptr);
+
+		/* Do not increase the job->node_cnt for completed jobs */
+		if (! IS_JOB_COMPLETED(job_ptr))
+			build_node_details(job_ptr, false); /* set node_addr */
+
+		if (job_fail) {
+			if (IS_JOB_PENDING(job_ptr)) {
+				job_ptr->start_time =
+					job_ptr->end_time = time(NULL);
+				job_ptr->job_state = JOB_NODE_FAIL;
+			} else if (IS_JOB_RUNNING(job_ptr)) {
+				job_ptr->end_time = time(NULL);
+				job_ptr->job_state =
+					JOB_NODE_FAIL | JOB_COMPLETING;
+				build_cg_bitmap(job_ptr);
+			} else if (IS_JOB_SUSPENDED(job_ptr)) {
+				job_ptr->end_time = job_ptr->suspend_time;
+				job_ptr->job_state =
+					JOB_NODE_FAIL | JOB_COMPLETING;
+				build_cg_bitmap(job_ptr);
+				job_ptr->tot_sus_time +=
+					difftime(now, job_ptr->suspend_time);
+				jobacct_storage_g_job_suspend(acct_db_conn,
+							      job_ptr);
+			}
+			job_ptr->state_reason = FAIL_DOWN_NODE;
+			xfree(job_ptr->state_desc);
+			job_completion_logger(job_ptr, false);
+			if (job_ptr->job_state == JOB_NODE_FAIL) {
+				/* build_cg_bitmap() may clear JOB_COMPLETING */
+				epilog_slurmctld(job_ptr);
+			}
+		}
+	}
+
+	list_iterator_reset(job_iterator);
+	/* This will reinitialize the select plugin database, which
+	 * we can only do after ALL job's states and bitmaps are set
+	 * (i.e. it needs to be in this second loop) */
+	while ((job_ptr = list_next(job_iterator))) {
+		if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
+			error("select_g_select_nodeinfo_set(%pJ): %m",
+			      job_ptr);
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	last_job_update = now;
+}
+
 /*
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
@@ -1306,7 +1542,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 
 	_gres_reconfig(reconfig);
-	reset_job_bitmaps();		/* must follow select_g_job_init() */
+	_sync_jobs_to_conf();		/* must follow select_g_job_init() */
 
 	/*
 	 * The burst buffer plugin must be initialized and state loaded before

@@ -2227,15 +2227,6 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in);
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);
 
-/*
- * reset_job_bitmaps - reestablish bitmaps for existing jobs.
- *	this should be called after rebuilding node information,
- *	but before using any job entries.
- * global: last_job_update - time of last job table update
- *	job_list - pointer to global job list
- */
-extern void reset_job_bitmaps (void);
-
 /* Reset a node's CPU load value */
 extern void reset_node_load(char *node_name, uint32_t cpu_load);
 
