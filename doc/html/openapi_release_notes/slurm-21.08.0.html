@@ -1,0 +1,195 @@
+<h2>Slurm 21.08.0</h2>
+
+<p>All of the OpenAPI plugins have moved from "src/slurmrestd/plugins/openapi/"
+to "src/plugins/openapi/".</p>
+
+<h3>openapi/v0.0.35 (src/plugins/openapi/v0.0.35/openapi.json)</h3>
+
+<h4>Deprecation notice</h4>
+The v0.0.35 plugin has now been deprecated.
+
+<h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
+
+<h4>add plugin</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new dbv0.0.37 openapi plugin</td>
+	<td class="tdchange">
+		<ul>
+			<li>clone of existing dbv0.0.36 openapi plugin</li>
+			<li>all paths renamed from v0.0.36 to v0.0.37</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>rename previous -> reason</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_job".properties.state.previous</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_job".properties.state.reason</td>
+</tr>
+</table>
+
+<h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>
+
+<h4>add plugin</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new v0.0.37 openapi plugin</td>
+	<td class="tdchange">
+		<ul>
+			<li>clone of existing v0.0.36 openapi plugin</li>
+			<li>all paths renamed from v0.0.36 to v0.0.37</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>rename standard_in -> standard_input</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.standard_in</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.standard_input</td>
+</tr>
+</table>
+
+<h4>rename standard_out -> standard_output</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.standard_out</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.standard_output</td>
+</tr>
+</table>
+
+<h4>Add update_time field to Jobs query to allow clients to only get jobs list based on change timestamp.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/jobs/".get.parameters[0]</td>
+</tr>
+</table>
+
+<h4>add api to fetch reservation(s) info</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">added path</td>
+	<td class="tdchange">.paths."/reservations/"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">added path</td>
+	<td class="tdchange">.paths."/reservation/{reservation_name}"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">added path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_reservation"</td>
+</tr>
+</table>
+
+<h4>Mark job environment as required</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_properties".required</td>
+</tr>
+</table>
+
+<h4>Correct preemption_mode type to list of strings</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_partition".properties.preemption_mode</td>
+</tr>
+</table>
+
+<h4>Set UNIX timestamps to int64 instead of string</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.accrue_time</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.eligible_time</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.end_time</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.preempt_time</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.pre_sus_time</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">modify path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_job_response_properties".properties.resize_time</td>
+</tr>
+</table>
+
+<h4>Add new fields to node properties</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.tres_used</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.tres_weighted</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.alloc_cpus</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.idle_cpus</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.alloc_memory</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">add path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.partitions</td>
+</tr>
+</table>
+
+<h4>replace nodes_online with state in /partitions endpoint<h4>
+<table class="tchange">
+<tr>
+	<td class="tdfield">removed path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_partitions_response".nodes_online</td>
+</tr>
+<tr>
+	<td class="tdfield">added path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_partitions_response".state</td>
+</tr>
+</table>
+
+<h4>Add POST method for /associations<h4>
+<table class="tchange">
+<tr>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/associations/".post</td>
+</tr>
+<tr>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_response_associations"</td>
+</tr>
+</table>
