@@ -42,14 +42,16 @@
 
 #include "gres_select_filter.h"
 
-static void _job_core_filter(void *job_gres_data, gres_node_state_t *gres_ns,
+static void _job_core_filter(gres_state_t *gres_state_job,
+			     gres_state_t *gres_state_node,
 			     bool use_total_gres, bitstr_t *core_bitmap,
 			     int core_start_bit, int core_end_bit,
-			     char *node_name,
-			     uint32_t plugin_id)
+			     char *node_name)
 {
 	int i, j, core_ctld;
-	gres_job_state_t  *gres_js  = (gres_job_state_t *) job_gres_data;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+	uint32_t plugin_id = gres_state_job->plugin_id;
 	bitstr_t *avail_core_bitmap = NULL;
 	bool use_busy_dev = false;
 
@@ -137,12 +139,11 @@ extern void gres_select_filter_cons_res(List job_gres_list, List node_gres_list,
 			break;
 		}
 
-		_job_core_filter(gres_state_job->gres_data,
-				 gres_state_node->gres_data,
+		_job_core_filter(gres_state_job,
+				 gres_state_node,
 				 use_total_gres, core_bitmap,
 				 core_start_bit, core_end_bit,
-				 node_name,
-				 gres_state_job->plugin_id);
+				 node_name);
 	}
 	list_iterator_destroy(job_gres_iter);
 
