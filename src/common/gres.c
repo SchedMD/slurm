@@ -4844,7 +4844,7 @@ static int _clear_total_gres(void *x, void *arg)
  * Modify task and node count as needed for consistentcy with GRES options
  * RET -1 on failure, 0 on success
  */
-static int _test_gres_cnt(gres_job_state_t *gres_js,
+static int _test_gres_cnt(gres_state_t *gres_state_job,
 			  uint32_t *num_tasks,
 			  uint32_t *min_nodes, uint32_t *max_nodes,
 			  uint16_t *ntasks_per_node,
@@ -4852,6 +4852,7 @@ static int _test_gres_cnt(gres_job_state_t *gres_js,
 			  uint16_t *sockets_per_node,
 			  uint16_t *cpus_per_task)
 {
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	int req_nodes, req_tasks, req_tasks_per_node, req_tasks_per_socket;
 	int req_sockets, req_cpus_per_task;
 	uint16_t cpus_per_gres;
@@ -5773,7 +5774,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	iter = list_iterator_create(*gres_list);
 	while ((gres_state = (gres_state_t *) list_next(iter))) {
 		gres_js = (gres_job_state_t *) gres_state->gres_data;
-		if (_test_gres_cnt(gres_js, num_tasks, min_nodes,
+		if (_test_gres_cnt(gres_state, num_tasks, min_nodes,
 				   max_nodes, ntasks_per_node,
 				   ntasks_per_socket, sockets_per_node,
 				   cpus_per_task) != 0) {
