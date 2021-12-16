@@ -6030,11 +6030,14 @@ extern int gres_find_sock_by_job_state(void *x, void *key)
 {
 	sock_gres_t *sock_data = (sock_gres_t *) x;
 	gres_state_t *job_gres_state = (gres_state_t *) key;
-	gres_job_state_t *gres_js;
+	gres_job_state_t *sock_gres_js, *gres_js;
 
 	gres_js = (gres_job_state_t *) job_gres_state->gres_data;
-	if ((sock_data->plugin_id == job_gres_state->plugin_id) &&
-	    (sock_data->type_id   == gres_js->type_id))
+	sock_gres_js = sock_data->gres_state_job->gres_data;
+
+	if ((sock_data->gres_state_job->plugin_id ==
+	     job_gres_state->plugin_id) &&
+	    (sock_gres_js->type_id == gres_js->type_id))
 		return 1;
 	return 0;
 }
@@ -7149,9 +7152,7 @@ extern void gres_sock_delete(void *x)
 			xfree(sock_gres->bits_by_sock);
 		}
 		xfree(sock_gres->cnt_by_sock);
-		xfree(sock_gres->gres_name);
 		/* NOTE: sock_gres->job_specs is just a pointer, do not free */
-		xfree(sock_gres->type_name);
 		xfree(sock_gres);
 	}
 }
@@ -7174,16 +7175,22 @@ extern char *gres_sock_str(List sock_gres_list, int sock_inx)
 
 	iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(iter))) {
+		char *gres_name = sock_gres->gres_state_job->gres_name;
+		gres_job_state_t *gres_js =
+			sock_gres->gres_state_job->gres_data;
+		char *type_name = gres_js->type_name;
+
 		if (sock_inx < 0) {
 			if (sock_gres->cnt_any_sock) {
-				if (sock_gres->type_name) {
+				if (type_name) {
 					xstrfmtcat(gres_str, "%s%s:%s:%"PRIu64,
-						   sep, sock_gres->gres_name,
-						   sock_gres->type_name,
+						   sep,
+						   gres_name,
+						   type_name,
 						   sock_gres->cnt_any_sock);
 				} else {
 					xstrfmtcat(gres_str, "%s%s:%"PRIu64,
-						   sep, sock_gres->gres_name,
+						   sep, gres_name,
 						   sock_gres->cnt_any_sock);
 				}
 				sep = " ";
@@ -7193,13 +7200,13 @@ extern char *gres_sock_str(List sock_gres_list, int sock_inx)
 		if (!sock_gres->cnt_by_sock ||
 		    (sock_gres->cnt_by_sock[sock_inx] == 0))
 			continue;
-		if (sock_gres->type_name) {
+		if (type_name) {
 			xstrfmtcat(gres_str, "%s%s:%s:%"PRIu64, sep,
-				   sock_gres->gres_name, sock_gres->type_name,
+				   gres_name, type_name,
 				   sock_gres->cnt_by_sock[sock_inx]);
 		} else {
 			xstrfmtcat(gres_str, "%s%s:%"PRIu64, sep,
-				   sock_gres->gres_name,
+				   gres_name,
 				   sock_gres->cnt_by_sock[sock_inx]);
 		}
 		sep = " ";
@@ -7531,10 +7538,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		xfree(avail_sock_flag);
 	}
 
-	if (match) {
-		sock_gres->type_id = gres_js->type_id;
-		sock_gres->type_name = xstrdup(gres_js->type_name);
-	} else {
+	if (!match) {
 		gres_sock_delete(sock_gres);
 		sock_gres = NULL;
 	}
@@ -7588,10 +7592,7 @@ static sock_gres_t *_build_sock_gres_by_type(gres_job_state_t *gres_js,
 		sock_gres->total_cnt += avail_gres;
 		match = true;
 	}
-	if (match) {
-		sock_gres->type_id = gres_js->type_id;
-		sock_gres->type_name = xstrdup(gres_js->type_name);
-	} else
+	if (!match)
 		xfree(sock_gres);
 
 	return sock_gres;
@@ -7650,8 +7651,10 @@ static void _sock_gres_log(List sock_gres_list, char *node_name)
 	info("Sock_gres state for %s", node_name);
 	iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(iter))) {
+		gres_job_state_t *gres_js =
+			sock_gres->gres_state_job->gres_data;
 		info("Gres:%s Type:%s TotalCnt:%"PRIu64" MaxNodeGres:%"PRIu64,
-		     sock_gres->gres_name, sock_gres->type_name,
+		     sock_gres->gres_state_job->gres_name, gres_js->type_name,
 		     sock_gres->total_cnt, sock_gres->max_node_gres);
 		if (sock_gres->bits_any_sock) {
 			bit_fmt(tmp, sizeof(tmp), sock_gres->bits_any_sock);
@@ -7783,10 +7786,8 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 			FREE_NULL_LIST(sock_gres_list);
 			break;
 		}
-		sock_gres->gres_js = gres_js;
-		sock_gres->gres_name  = xstrdup(gres_js->gres_name);
-		sock_gres->gres_ns = gres_ns;
-		sock_gres->plugin_id  = gres_state_job->plugin_id;
+		sock_gres->gres_state_job = gres_state_job;
+		sock_gres->gres_state_node = gres_state_node;
 		list_append(sock_gres_list, sock_gres);
 	}
 	list_iterator_destroy(job_gres_iter);

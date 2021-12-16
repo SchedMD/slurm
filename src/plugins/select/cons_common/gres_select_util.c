@@ -408,11 +408,12 @@ extern uint32_t gres_select_util_get_task_limit(List sock_gres_list)
 
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = list_next(sock_gres_iter))) {
-		xassert(sock_gres->gres_js);
-		if (sock_gres->gres_js->gres_per_task == 0)
+		gres_job_state_t *gres_js;
+		xassert(sock_gres->gres_state_job);
+		gres_js = sock_gres->gres_state_job->gres_data;
+		if (gres_js->gres_per_task == 0)
 			continue;
-		task_limit = sock_gres->total_cnt /
-			sock_gres->gres_js->gres_per_task;
+		task_limit = sock_gres->total_cnt / gres_js->gres_per_task;
 		max_tasks = MIN(max_tasks, task_limit);
 	}
 	list_iterator_destroy(sock_gres_iter);

@@ -58,12 +58,12 @@ extern char *gres_sched_str(List sock_gres_list)
 
 	iter = list_iterator_create(sock_gres_list);
 	while ((sock_data = (sock_gres_t *) list_next(iter))) {
-		if (!sock_data->gres_js) {	/* Should never happen */
+		if (!sock_data->gres_state_job)	{ /* Should never happen */
 			error("%s: sock_data has no gres_state_job. This should never happen.",
 			      __func__);
 			continue;
 		}
-		gres_js = sock_data->gres_js;
+		gres_js = sock_data->gres_state_job->gres_data;
 		if (out_str)
 			sep = ",";
 		else
@@ -214,7 +214,7 @@ extern void gres_sched_consec(List *consec_gres, List job_gres_list,
 					      gres_state_job);
 		if (!consec_data) {
 			consec_data = xmalloc(sizeof(sock_gres_t));
-			consec_data->gres_js = gres_js;
+			consec_data->gres_state_job = gres_state_job;
 			list_append(*consec_gres, consec_data);
 		}
 		consec_data->total_cnt += sock_data->total_cnt;

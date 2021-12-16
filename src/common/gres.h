@@ -332,16 +332,12 @@ typedef struct sock_gres {	/* GRES availability by socket */
 	bitstr_t **bits_by_sock;/* Per-socket GRES bitmap of this name & type */
 	uint64_t cnt_any_sock;	/* GRES count unconstrained by cores */
 	uint64_t *cnt_by_sock;	/* Per-socket GRES count of this name & type */
-	char *gres_name;	/* GRES name */
-	gres_job_state_t *gres_js;	/* Pointer to job info, for limits */
+	gres_state_t *gres_state_job; /* Pointer to job info, for limits */
+	gres_state_t *gres_state_node; /* Pointer to node info, for state */
 	uint64_t max_node_gres;	/* Maximum GRES permitted on this node */
-	gres_node_state_t *gres_ns;	/* Pointer to node info, for state */
-	uint32_t plugin_id;	/* Plugin ID (for quick search) */
 	int sock_cnt;		/* Socket count, size of bits_by_sock and
 				 * cnt_by_sock arrays */
 	uint64_t total_cnt;	/* Total GRES count of this name & type */
-	uint32_t type_id;	/* GRES type (e.g. model ID) */
-	char *type_name;	/* GRES type (e.g. model name) */
 } sock_gres_t;
 
 /* Similar to multi_core_data_t in slurm_protocol_defs.h */
