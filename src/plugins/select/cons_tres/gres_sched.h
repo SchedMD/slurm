@@ -43,10 +43,9 @@
  * Given a List of sock_gres_t entries, return a string identifying the
  * count of each GRES available on this set of nodes
  * IN sock_gres_list - count of GRES available in this group of nodes
- * IN job_gres_list - job GRES specification, used only to get GRES name/type
  * RET xfree the returned string
  */
-extern char *gres_sched_str(List sock_gres_list, List job_gres_list);
+extern char *gres_sched_str(List sock_gres_list);
 
 /*
  * Clear GRES allocation info for all job GRES at start of scheduling cycle

@@ -41,37 +41,15 @@
 #include "src/common/xstring.h"
 
 /*
- * Find a gres_state_t job record in a list by matching the plugin_id and
- *	type_id from a sock_gres_t record
- * IN x - a gres_state_t record (from a job) to test
- * IN key - the sock_gres_t record we want to match
- * RET 1 on match, otherwise 0
- */
-static int _find_job_by_sock_gres(void *x, void *key)
-{
-	gres_state_t *gres_state_job = (gres_state_t *) x;
-	gres_job_state_t *gres_js;
-	sock_gres_t *sock_data = (sock_gres_t *) key;
-
-	gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-	if ((sock_data->plugin_id == gres_state_job->plugin_id) &&
-	    (sock_data->type_id  == gres_js->type_id))
-		return 1;
-	return 0;
-}
-
-/*
  * Given a List of sock_gres_t entries, return a string identifying the
  * count of each GRES available on this set of nodes
  * IN sock_gres_list - count of GRES available in this group of nodes
- * IN job_gres_list - job GRES specification, used only to get GRES name/type
  * RET xfree the returned string
  */
-extern char *gres_sched_str(List sock_gres_list, List job_gres_list)
+extern char *gres_sched_str(List sock_gres_list)
 {
 	ListIterator iter;
 	sock_gres_t *sock_data;
-	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
 	char *out_str = NULL, *sep;
 
@@ -80,16 +58,12 @@ extern char *gres_sched_str(List sock_gres_list, List job_gres_list)
 
 	iter = list_iterator_create(sock_gres_list);
 	while ((sock_data = (sock_gres_t *) list_next(iter))) {
-		gres_state_job = list_find_first(job_gres_list,
-						 _find_job_by_sock_gres,
-						 sock_data);
-		if (!gres_state_job) {	/* Should never happen */
-			error("%s: Could not find job GRES for type %u:%u",
-			      __func__, sock_data->plugin_id,
-			      sock_data->type_id);
+		if (!sock_data->gres_js) {	/* Should never happen */
+			error("%s: sock_data has no gres_state_job. This should never happen.",
+			      __func__);
 			continue;
 		}
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		gres_js = sock_data->gres_js;
 		if (out_str)
 			sep = ",";
 		else
@@ -240,8 +214,7 @@ extern void gres_sched_consec(List *consec_gres, List job_gres_list,
 					      gres_state_job);
 		if (!consec_data) {
 			consec_data = xmalloc(sizeof(sock_gres_t));
-			consec_data->plugin_id = sock_data->plugin_id;
-			consec_data->type_id   = sock_data->type_id;
+			consec_data->gres_js = gres_js;
 			list_append(*consec_gres, consec_data);
 		}
 		consec_data->total_cnt += sock_data->total_cnt;

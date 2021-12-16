@@ -697,9 +697,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			bitstr_t *host_bitmap;
 			char *host_list;
 			if (gres_per_job) {
-				gres_str = gres_sched_str(
-					consec_gres[i],
-					job_ptr->gres_list_req);
+				gres_str = gres_sched_str(consec_gres[i]);
 				if (gres_str) {
 					xstrcat(gres_str, " ");
 					gres_print = gres_str;
@@ -1818,8 +1816,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		}
 		node_names = bitmap2node_name(best_nodes_bitmap);
 		if (gres_per_job) {
-			gres_str = gres_sched_str(
-				best_gres, job_ptr->gres_list_req);
+			gres_str = gres_sched_str(best_gres);
 			if (gres_str)
 				gres_print = gres_str;
 		}
@@ -2469,8 +2466,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		}
 		node_names = bitmap2node_name(best_nodes_bitmap);
 		if (gres_per_job) {
-			gres_str = gres_sched_str(
-				best_gres, job_ptr->gres_list_req);
+			gres_str = gres_sched_str(best_gres);
 			if (gres_str)
 				gres_print = gres_str;
 		}
