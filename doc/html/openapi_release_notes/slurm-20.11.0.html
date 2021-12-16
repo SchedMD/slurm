@@ -1,0 +1,236 @@
+<h2>Slurm 20.11.0</h2>
+
+<h3>openapi/dbv0.0.36 (src/slurmrestd/plugins/openapi/dbv0.0.36/openapi.json)</h3>
+
+<h4>Inital Implementation of database queries.</h4>
+
+<h3>openapi/v0.0.36 (src/slurmrestd/plugins/openapi/v0.0.36/openapi.json)</h3>
+
+<h4>add plugin</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new v0.0.36 openapi plugin</td>
+	<td class="tdchange">
+		<ul>
+			<li>clone of existing v0.0.35 openapi plugin.</li>
+			<li>all paths renamed from v0.0.35 to v0.0.36.</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add error schema</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_error"</td>
+</tr>
+</table>
+
+<h4>return array of nodes instead of dictionary</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_nodes_response"</td>
+</tr>
+</table>
+
+<h4>return array of partitions instead of dictionary</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_partitions_response"</td>
+</tr>
+</table>
+
+<h4>return array of pings instead of dictionary</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_ping"</td>
+</tr>
+</table>
+
+<h4>Simplify possible signals for canceling jobs</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.paths."/job/{job_id}".delete.parameters[1]</td>
+</tr>
+</table>
+
+<h4>Simplify exclusive for jobs submissions</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_job_properties".properties.exclusive</td>
+</tr>
+</table>
+
+<h4>Simplify nodes for jobs submissions</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."v0.0.36_job_properties".properties.nodes</td>
+</tr>
+</table>
+
+<h4>Change server URL</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous</td>
+	<td class="tdchange">.servers[0].url=/</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new</td>
+	<td class="tdchange">.servers[0].url=/slurm/v0.0.36/</td>
+</tr>
+</table>
+
+<h4>Add operationId tag</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">parent path</td>
+	<td class="tdchange">.paths</td>
+</tr>
+</table>
+
+<h4>prepend every schema with v0.0.36_</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">parent path</td>
+	<td class="tdchange">.components.schemas</td>
+</tr>
+</table>
+
+<h4>add tags openapi and slurm</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.tags</td>
+</tr>
+</table>
+
+<h4>add support contact</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.info.contact</td>
+</tr>
+</table>
+
+<h4>populate response from partitions query</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas.partitions_response</td>
+</tr>
+</table>
+
+<h4>rename "node_info" to "nodes_response"</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">removed path</td>
+	<td class="tdchange">.components.schemas.node_info</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas.nodes_response</td>
+</tr>
+</table>
+
+<h4>add jobs query response properties</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas.diag</td>
+</tr>
+</table>
+
+<h4>define response to diag</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas.diag</td>
+</tr>
+</table>
+
+<h4>add job query response properties</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas.job_response_properties</td>
+</tr>
+</table>
+
+<h4>remove "requested_node_by_index"</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">removed path</td>
+	<td class="tdchange">.components.schemas.job_response_properties.properties.requested_node_by_index</td>
+</tr>
+</table>
+
+<h4>rename "pn_min_tmp_disk" to "minimum_tmp_disk_per_node"</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">removed path</td>
+	<td class="tdchange">.components.schemas.job_response_properties.properties.pn_min_tmp_disk</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas.job_response_properties.properties.minimum_tmp_disk_per_node</td>
+</tr>
+</table>
+
+<h4>renamed "nodes" to "node_count"</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">removed path</td>
+	<td class="tdchange">.components.schemas.job_response_properties.properties.nodes</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas.job_response_properties.properties.node_count</td>
+</tr>
+</table>
+
+<h4>add get job responses schema</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas.job_submission_response</td>
+</tr>
+</table>
+
+<h4>use job_submission for job_submit instead of job_properties</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">changed field</td>
+	<td class="tdchange">.paths."/job/submit".requestBody.content."application/json"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">changed field</td>
+	<td class="tdchange">.paths."/job/submit".requestBody.content."application/x-yaml"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas.job_submission</td>
+</tr>
+</table>
+
+<h4>Set type for "job_properties" schema</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas.v0.0.36_job_properties.properties.type</td>
+</tr>
+</table>
+
+<h4>add security bearer</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.security</td>
+</tr>
+</table>
