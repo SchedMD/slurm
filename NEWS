@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
     with WekaIO).
  -- Fix OverTimeLimit not being reset on scontrol reconfigure when it is
     removed from slurm.conf.
+ -- serializer/yaml - use dynamic buffer to allow creation of YAML outputs
+    larger than 1MiB.
 
 * Changes in Slurm 21.08.5
 ==========================
