@@ -1153,11 +1153,12 @@ void _sync_jobs_to_conf(void)
 			job_fail = true;
 
 		/*
-		 * If the job is finished there is no reason to do anything
-		 * below this.
+		 * While the job is completed at this point there is code in
+		 * _job_requeue_op() that requires the part_ptr to be set in
+		 * order to requeue a job.  We also need to set it to NULL if
+		 * the partition was removed or we will be pointing at bad
+		 * data.  This is the safest/easiest place to do it.
 		 */
-		if (IS_JOB_FINISHED(job_ptr))
-			continue;
 
 		if (job_ptr->partition == NULL) {
 			error("No partition for %pJ", job_ptr);
@@ -1189,6 +1190,13 @@ void _sync_jobs_to_conf(void)
 			job_ptr->part_ptr_list = part_ptr_list;
 			part_ptr_list = NULL;	/* clear for next job */
 		}
+
+		/*
+		 * If the job is finished there is no reason to do anything
+		 * below this.
+		 */
+		if (IS_JOB_FINISHED(job_ptr))
+			continue;
 
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 		if (job_ptr->nodes_completing &&
