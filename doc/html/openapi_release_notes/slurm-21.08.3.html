@@ -1,0 +1,47 @@
+<h2>Slurm 21.08.3</h2>
+
+<h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>
+
+<h4>Allow strings for JobIds instead of only numerical JobIds.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Change job_id parameter to string</td>
+	<td class="tdchange">
+		<ul>
+			<li>.paths."/job/{job_id}".get.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".post.parameters[].schema</li>
+			<li>.paths."/job/{job_id}".delete.parameters[].schema</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
+
+<h4>Correct placement of step TRES</h4>
+
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_job_step".properties.step.properties.tres</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_job_step".properties.tres</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.36 (src/plugins/openapi/dbv0.0.36/openapi.json)</h3>
+
+<h4>Correct placement of step TRES</h4>
+
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.36_job_step".properties.step.properties.tres</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.36_job_step".properties.tres</td>
+</tr>
+</table>
