@@ -87,7 +87,15 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	slurm_msg_t msg;
 	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
-	char *name = nodelist_nth_host(allocation->node_list, 0);
+	bool free_name = false;
+	char *name = allocation->batch_host;
+
+	/* This check can be removed 2 versions after 22.05 */
+	if (!name) {
+		name = nodelist_nth_host(allocation->node_list, 0);
+		free_name = true;
+	}
+
 	if (!name) {
 		error("_signal_batch_script_step: "
 		      "can't get the first name out of %s",
@@ -109,10 +117,12 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 		error("_signal_batch_script_step: "
 		      "can't find address for host %s, check slurm.conf",
 		      name);
-		free(name);
+		if (free_name)
+			free(name);
 		return -1;
 	}
-	free(name);
+	if (free_name)
+		free(name);
 	if (slurm_send_recv_rc_msg_only_one(&msg, &rc, 0) < 0) {
 		error("_signal_batch_script_step: %m");
 		rc = -1;
@@ -144,7 +154,14 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
 	int i;
-	char *name = nodelist_nth_host(allocation->node_list, 0);
+	bool free_name = false;
+	char *name = allocation->batch_host;
+
+	/* This check can be removed 2 versions after 22.05 */
+	if (!name) {
+		name = nodelist_nth_host(allocation->node_list, 0);
+		free_name = true;
+	}
 	if (!name) {
 		error("_terminate_batch_script_step: "
 		      "can't get the first name out of %s",
@@ -167,10 +184,12 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 		error("_terminate_batch_script_step: "
 		      "can't find address for host %s, check slurm.conf",
 		      name);
-		free(name);
+		if (free_name)
+			free(name);
 		return -1;
 	}
-	free(name);
+	if (free_name)
+		free(name);
 	i = slurm_send_recv_rc_msg_only_one(&msg, &rc, 0);
 	if (i != 0)
 		rc = i;
