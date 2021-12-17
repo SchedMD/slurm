@@ -957,7 +957,8 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 		}
 
 		rc2 = _job_alloc(gres_state_job, *job_gres_list_alloc,
-				 gres_state_node->gres_data, node_cnt, node_index,
+				 gres_state_node->gres_data, node_cnt,
+				 node_index,
 				 node_offset, job_id, node_name, core_bitmap,
 				 new_alloc);
 		if (rc2 != SLURM_SUCCESS)

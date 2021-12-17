@@ -3430,7 +3430,8 @@ extern int gres_node_config_validate(char *node_name,
 						  &gres_context[i].plugin_id);
 		if (gres_state_node == NULL) {
 			gres_state_node = xmalloc(sizeof(gres_state_t));
-			gres_state_node->config_flags = gres_context[i].config_flags;
+			gres_state_node->config_flags =
+				gres_context[i].config_flags;
 			gres_state_node->plugin_id = gres_context[i].plugin_id;
 			gres_state_node->gres_name =
 				xstrdup(gres_context[i].gres_name);
@@ -8437,7 +8438,7 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 	step_search_key.plugin_id = gres_context[context_inx].plugin_id;
 	step_search_key.type_id = gres_build_id(type);
 	gres_state_step = list_find_first(gres_list, gres_find_step_by_key,
-				   &step_search_key);
+					  &step_search_key);
 
 	if (gres_state_step) {
 		gres_ss = gres_state_step->gres_data;
@@ -8512,8 +8513,8 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 		else
 			job_search_key.type_id = gres_ss->type_id;
 		gres_state_job = list_find_first(job_gres_list_req,
-					       gres_find_job_by_key,
-					       &job_search_key);
+						 gres_find_job_by_key,
+						 &job_search_key);
 		if (!gres_state_job || !gres_state_job->gres_data) {
 			xstrfmtcat(msg, "Step requested GRES (%s:%s) not found in the job",
 				   gres_state_step->gres_name,
@@ -8699,8 +8700,8 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	if (cpus_per_tres) {
 		char *in_val = cpus_per_tres, *save_ptr = NULL;
 		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-							     new_step_list,
-							     &save_ptr, &rc))) {
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->cpus_per_gres = cnt;
 			in_val = NULL;
 		}
@@ -8708,8 +8709,8 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	if (tres_per_step) {
 		char *in_val = tres_per_step, *save_ptr = NULL;
 		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-							     new_step_list,
-							     &save_ptr, &rc))) {
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->gres_per_step = cnt;
 			in_val = NULL;
 			gres_ss->total_gres =
@@ -8719,8 +8720,8 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	if (tres_per_node) {
 		char *in_val = tres_per_node, *save_ptr = NULL;
 		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-							     new_step_list,
-							     &save_ptr, &rc))) {
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->gres_per_node = cnt;
 			in_val = NULL;
 			/* Step only has 1 node, always */
@@ -8731,8 +8732,8 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	if (tres_per_socket) {
 		char *in_val = tres_per_socket, *save_ptr = NULL;
 		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-							     new_step_list,
-							     &save_ptr, &rc))) {
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->gres_per_socket = cnt;
 			in_val = NULL;
 			// TODO: What is sockets_per_node and ntasks_per_socket?
@@ -8750,8 +8751,8 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	if (tres_per_task) {
 		char *in_val = tres_per_task, *save_ptr = NULL;
 		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-							     new_step_list,
-							     &save_ptr, &rc))) {
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->gres_per_task = cnt;
 			in_val = NULL;
 			if (*num_tasks != NO_VAL)
@@ -8763,8 +8764,8 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	if (mem_per_tres) {
 		char *in_val = mem_per_tres, *save_ptr = NULL;
 		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-							     new_step_list,
-							     &save_ptr, &rc))) {
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->mem_per_gres = cnt;
 			in_val = NULL;
 		}
@@ -8846,7 +8847,7 @@ static void *_step_state_dup(gres_step_state_t *gres_ss)
 	}
 	if (gres_ss->gres_bit_alloc) {
 		new_gres_ss->gres_bit_alloc = xcalloc(gres_ss->node_cnt,
-						       sizeof(bitstr_t *));
+						      sizeof(bitstr_t *));
 		for (i = 0; i < gres_ss->node_cnt; i++) {
 			if (gres_ss->gres_bit_alloc[i] == NULL)
 				continue;
