@@ -1400,7 +1400,7 @@ extern void gres_ctld_job_merge(List from_job_gres_list,
 {
 	static int select_hetero = -1;
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr, *gres_ptr2;
+	gres_state_t *gres_state_job, *gres_state_job2;
 	gres_job_state_t *gres_js, *gres_js2;
 	int new_node_cnt;
 	int i_first, i_last, i;
@@ -1442,8 +1442,8 @@ extern void gres_ctld_job_merge(List from_job_gres_list,
 	if (!to_job_gres_list)
 		goto step2;
 	gres_iter = list_iterator_create(to_job_gres_list);
-	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		gres_js = (gres_job_state_t *) gres_ptr->gres_data;
+	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
 		new_gres_bit_alloc = xcalloc(new_node_cnt, sizeof(bitstr_t *));
 		new_gres_cnt_node_alloc = xcalloc(new_node_cnt,
 						  sizeof(uint64_t));
@@ -1511,21 +1511,24 @@ step2:	if (!from_job_gres_list)
 		free_to_job_gres_list = true;
 	}
 	gres_iter = list_iterator_create(from_job_gres_list);
-	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		gres_js = (gres_job_state_t *) gres_ptr->gres_data;
-		gres_ptr2 = list_find_first(to_job_gres_list, gres_find_id,
-					    &gres_ptr->plugin_id);
-		if (gres_ptr2) {
-			gres_js2 = gres_ptr2->gres_data;
+	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
+		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
+		gres_state_job2 = list_find_first(to_job_gres_list,
+						  gres_find_id,
+						  &gres_state_job->plugin_id);
+		if (gres_state_job2) {
+			gres_js2 = gres_state_job2->gres_data;
 		} else {
-			gres_ptr2 = xmalloc(sizeof(gres_state_t));
+			gres_state_job2 = xmalloc(sizeof(gres_state_t));
 			gres_js2 = xmalloc(sizeof(gres_job_state_t));
-			gres_ptr2->config_flags =
-				gres_ptr->config_flags;
-			gres_ptr2->plugin_id = gres_ptr->plugin_id;
-			gres_ptr2->gres_data = gres_js2;
-			gres_ptr2->gres_name = xstrdup(gres_js->gres_name);
-			gres_ptr2->state_type = gres_ptr->state_type;
+			gres_state_job2->config_flags =
+				gres_state_job->config_flags;
+			gres_state_job2->plugin_id = gres_state_job->plugin_id;
+			gres_state_job2->gres_data = gres_js2;
+			gres_state_job2->gres_name =
+				xstrdup(gres_js->gres_name);
+			gres_state_job2->state_type =
+				gres_state_job->state_type;
 			gres_js2->gres_name =
 				xstrdup(gres_js->gres_name);
 			gres_js2->cpus_per_gres =
@@ -1551,7 +1554,7 @@ step2:	if (!from_job_gres_list)
 				xcalloc(new_node_cnt, sizeof(bitstr_t *));
 			gres_js2->gres_cnt_step_alloc =
 				xcalloc(new_node_cnt, sizeof(uint64_t));
-			list_append(to_job_gres_list, gres_ptr2);
+			list_append(to_job_gres_list, gres_state_job2);
 		}
 		from_inx = to_inx = new_inx = -1;
 		for (i = i_first; i <= i_last; i++) {
