@@ -2664,7 +2664,7 @@ typedef struct reservation_name_msg {
 						    * plugin */
 /* #define 		 	SLURM_BIT(23) /\* UNUSED *\/ */
 #define DEBUG_FLAG_JOB_CONT 	SLURM_BIT(24) /* JobContainer plugin */
-#define DEBUG_FLAG_TASK 	SLURM_BIT(25) /* TaskType plugin */
+/* #define			SLURM_BIT(25) /\* UNUSED *\/ */
 #define DEBUG_FLAG_PROTOCOL	SLURM_BIT(26) /* Communication protocol */
 #define DEBUG_FLAG_BACKFILL_MAP	SLURM_BIT(27) /* Backfill scheduler node
 						    * map */

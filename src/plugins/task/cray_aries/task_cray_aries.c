@@ -582,7 +582,7 @@ static void _alpsc_debug(const char *file, int line, const char *func,
 	} else if (err_msg) {
 		info("%s: %s", alpsc_func, err_msg);
 	} else
-		log_flag(TASK, "Called %s", alpsc_func);
+		debug2("Called %s", alpsc_func);
 
 	free(err_msg);
 }
@@ -811,7 +811,7 @@ again:
 		return -1;
 	}
 
-	log_flag(TASK, "Bitmask %#lx size: %lu sizeof(*(bm->maskp)): %zu weight: %u",
+	log_flag(CPU_BIND, "Bitmask %#lx size: %lu sizeof(*(bm->maskp)): %zu weight: %u",
 		 *(bm->maskp), bm->size, sizeof(*(bm->maskp)), *cnt);
 
 	*numa_array = xmalloc(*cnt * sizeof(int32_t));
@@ -819,7 +819,7 @@ again:
 	index = 0;
 	for (i = 0; i < bm->size; i++) {
 		if (*(bm->maskp) & ((long unsigned) 1 << i)) {
-			log_flag(TASK, "(%s: %d: %s) NUMA Node %d is present",
+			log_flag(CPU_BIND, "(%s: %d: %s) NUMA Node %d is present",
 				 THIS_FILE, __LINE__, __func__, i);
 			(*numa_array)[index++] = i;
 		}
@@ -923,7 +923,7 @@ static int _get_cpu_masks(int num_numa_nodes, int32_t *numa_array,
 		}
 	}
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_TASK) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) {
 		bitmask_str = NULL;
 		for (i = 0; i < num_numa_nodes; i++) {
 			for (j = 0; j < NUM_INTS_TO_HOLD_ALL_CPUS; j++) {
@@ -969,7 +969,7 @@ static int _get_cpu_masks(int num_numa_nodes, int32_t *numa_array,
 				CPU_SET(j, &cpusetptr[i]);
 			}
 		}
-		log_flag(TASK, "CPU_COUNT() of set: %d",
+		log_flag(CPU_BIND, "CPU_COUNT() of set: %d",
 			 CPU_COUNT(&cpusetptr[i]));
 	}
 
@@ -1058,7 +1058,7 @@ static int _update_num_steps(int val)
 		TEMP_FAILURE_RETRY(close(fd));
 		return -1;
 	}
-	log_flag(TASK, "Wrote %d steps to %s", num_steps, NUM_STEPS_FILE);
+	debug2("Wrote %d steps to %s", num_steps, NUM_STEPS_FILE);
 
 	TEMP_FAILURE_RETRY(close(fd));
 	return num_steps;
@@ -1110,8 +1110,7 @@ static int _step_epilogue(void)
 			return SLURM_ERROR;
 		}
 	} else
-		log_flag(TASK, "Skipping epilogue, %d other steps running",
-			 num_steps);
+		debug2("Skipping epilogue, %d other steps running", num_steps);
 
 	return SLURM_SUCCESS;
 }

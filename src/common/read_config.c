@@ -5443,11 +5443,6 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Switch");
 	}
-	if (debug_flags & DEBUG_FLAG_TASK) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "Task");
-	}
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5590,7 +5585,7 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 		else if (xstrcasecmp(tok, "Switch") == 0)
 			(*flags_out) |= DEBUG_FLAG_SWITCH;
 		else if (xstrcasecmp(tok, "Task") == 0)
-			(*flags_out) |= DEBUG_FLAG_TASK;
+			error("DebugFlag Task is deprecated, please use CPU_Bind");
 		else if (xstrcasecmp(tok, "TraceJobs") == 0)
 			(*flags_out) |= DEBUG_FLAG_TRACE_JOBS;
 		else if (xstrcasecmp(tok, "Trigger") == 0)
