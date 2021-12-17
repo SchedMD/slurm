@@ -50,22 +50,8 @@ proc cleanup {} {
 #
 make_bash_script $file_in "$srun $bin_sleep 60"
 
-spawn $sbatch -N1 --output=/dev/null -t2 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "sbatch job submit failed"
-}
+set job_id [submit_job -fail "-N1 --output=/dev/null -t2 $file_in"]
+
 wait_for_job -fail $job_id RUNNING
 
 #
@@ -73,6 +59,4 @@ wait_for_job -fail $job_id RUNNING
 #
 reconfigure -fail
 
-if {[wait_for_job $job_id RUNNING] != 0} {
-	fail "Job ($job_id) not running after reconfiguration (It may fail due Bug 12952)"
-}
+subtest {![wait_for_job $job_id RUNNING]} "Verify job is running after reconfiguration" "It may fail due Bug 12952"
