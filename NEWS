@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix nodes getting powered down when creating new partitions.
  -- Fix bad bit_realloc which potentially could lead to bad memory access.
  -- slurmctld - remove limit on the number of open files.
+ -- Fix bug where job_state file of size above 2GB wasn't saved without any
+    error message.
 
 * Changes in Slurm 21.08.5
 ==========================

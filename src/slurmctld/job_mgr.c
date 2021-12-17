@@ -900,10 +900,10 @@ int dump_all_job_state(void)
 		      new_file);
 		error_code = errno;
 	} else {
-		int pos = 0, nwrite, amount, rc;
+		int pos = 0, amount, rc;
 		char *data;
+		uint32_t nwrite = get_buf_offset(buffer);
 
-		nwrite = get_buf_offset(buffer);
 		data = (char *)get_buf_data(buffer);
 		high_buffer_size = MAX(nwrite, high_buffer_size);
 		while (nwrite > 0) {
