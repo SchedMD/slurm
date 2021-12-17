@@ -2427,6 +2427,7 @@ typedef struct resource_allocation_response_msg {
 	char *account;          /* allocation account */
 	uint32_t job_id;	/* assigned job id */
 	char *alias_list;	/* node name/address/hostname aliases */
+	char *batch_host;	/* host executing batch script */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */

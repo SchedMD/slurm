@@ -873,6 +873,7 @@ slurm_copy_resource_allocation_response_msg(
 	memcpy(new, msg, sizeof(*msg));
 	new->account = xstrdup(msg->account);
 	new->alias_list = xstrdup(msg->alias_list);
+	new->batch_host = xstrdup(msg->batch_host);
 
 	if (msg->cpus_per_node) {
 		new->cpus_per_node = xcalloc(new->num_cpu_groups,
@@ -4315,6 +4316,7 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		msg->select_jobinfo = NULL;
 		xfree(msg->account);
 		xfree(msg->alias_list);
+		xfree(msg->batch_host);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
 		env_array_free(msg->environment);

@@ -18754,6 +18754,7 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 	}
 	job_info_resp_msg->account        = xstrdup(job_ptr->account);
 	job_info_resp_msg->alias_list     = xstrdup(job_ptr->alias_list);
+	job_info_resp_msg->batch_host = xstrdup(job_ptr->batch_host);
 	job_info_resp_msg->job_id         = job_ptr->job_id;
 	job_info_resp_msg->node_cnt       = job_ptr->node_cnt;
 	job_info_resp_msg->node_list      = xstrdup(job_ptr->nodes);

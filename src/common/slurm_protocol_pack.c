@@ -1160,6 +1160,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		packstr(msg->alias_list, buffer);
+		packstr(msg->batch_host, buffer);
 		packstr_array(msg->environment, msg->env_size, buffer);
 		pack32(msg->error_code, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
@@ -1269,6 +1270,7 @@ _unpack_resource_allocation_response_msg(
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->account, buffer);
 		safe_unpackstr(&tmp_ptr->alias_list, buffer);
+		safe_unpackstr(&tmp_ptr->batch_host, buffer);
 		safe_unpackstr_array(&tmp_ptr->environment,
 				     &tmp_ptr->env_size, buffer);
 		safe_unpack32(&tmp_ptr->error_code, buffer);

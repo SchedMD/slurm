@@ -908,6 +908,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	alloc_msg->node_list      = xstrdup(job_ptr->nodes);
 	alloc_msg->partition      = xstrdup(job_ptr->partition);
 	alloc_msg->alias_list     = xstrdup(job_ptr->alias_list);
+	alloc_msg->batch_host = xstrdup(job_ptr->batch_host);
 	alloc_msg->select_jobinfo =
 		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	if (job_ptr->details) {
