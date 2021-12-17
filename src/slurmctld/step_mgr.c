@@ -995,7 +995,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	int cpu_cnt, i, max_rem_nodes;
 	int mem_blocked_nodes = 0, mem_blocked_cpus = 0;
 	int job_blocked_nodes = 0, job_blocked_cpus = 0;
-	int gres_invalid_nodes = 0;
+	int gres_valid_nodes = 0;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
 	uint64_t gres_cpus;
@@ -1197,6 +1197,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			continue;
 		}
 
+		gres_valid_nodes++;
 		if ((step_spec->pn_min_memory && _is_mem_resv()) ||
 		    step_gres_list) {
 			int fail_mode = ESLURM_NODES_BUSY;
@@ -1307,7 +1308,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					 * run this step on this node due to
 					 * GRES.
 					 */
-					gres_invalid_nodes++;
+					gres_valid_nodes--;
 				}
 			}
 
@@ -1350,7 +1351,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 	}
 
-	if (gres_invalid_nodes >= step_spec->min_nodes) {
+	if (gres_valid_nodes < step_spec->min_nodes) {
 		*return_code = ESLURM_INVALID_GRES;
 		log_flag(STEPS, "%s: Never able to satisfy the GRES request for this step",
 			 __func__);
