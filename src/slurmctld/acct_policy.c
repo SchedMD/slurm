@@ -1383,29 +1383,27 @@ static bool _validate_tres_time_limits(
  *                                 has been changed since initially being set
  *                                 to INFINITE64
  *                              3) tres_limit_array is INFINITE64
- * IN - tres_req_cnt - must be set when safe_limits is true; the following
- *                     is checked with tres_req_cnt:
- *                     1) tres_req_cnt > tres_limit_array,
+ * IN - tres_req_cnt - must be set; the following is checked with tres_req_cnt:
+ *                     1) safe_limits && tres_req_cnt > tres_limit_array,
  *                        return TRES_USAGE_REQ_EXCEEDS_LIMIT
- *                     2) when tres_usage is set:
+ *                     2) when safe_limits and tres_usage are set:
  *                        (tres_req_cnt + tres_usage) >
  *                        (tres_limit_array - curr_usage),
  *                        return TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE
  *                        curr_usage will be 0 when not passed
  * IN - tres_usage - TRES (currently running if curr_usage is set, already used
- *                   otherwise) optional; This value is used primarily only if
+ *                   otherwise) optional; This value is used only if
  *                   safe_limits is true.  It will be added to tres_req_cnt to
  *                   count as extra time to observe, see tres_req_cnt section
  *                   above for tres_usage interaction
  * IN - curr_usage - TRES (already used) optional; when set, check if:
- *                   1) curr_usage > tres_limit_array
+ *                   1) curr_usage > tres_limit_array && tres_req_cnt
  *                      return TRES_USAGE_CUR_EXCEEDS_LIMIT
  *                   2) when safe_limits is true, see tres_req_cnt section
  *                      above for curr_usage interaction
  * IN - admin_limit_set - limits that have been overridden by an admin, see
  *                        out_tres_limit_array section above for interaction
- * IN - safe_limits - requires tres_req_cnt when true; see tres_req_cnt
- *                    section above for interaction
+ * IN - safe_limits - see tres_req_cnt section above for interaction
  * IN - out_tres_limit_set - out_tres_limit_array is set as described above
  *      when true; out_tres_limit_array is not modified when false
  * RET - TRES_USAGE_OKAY if no limit is violated, otherwise one of the other
@@ -1427,6 +1425,7 @@ static acct_policy_tres_usage_t _validate_tres_usage_limits(
 	uint64_t usage = 0;
 
 	xassert(tres_limit_array);
+	xassert(tres_req_cnt);
 
 	for (i = 0; i < g_tres_count; i++) {
 		(*tres_pos) = i;
@@ -1441,11 +1440,11 @@ static acct_policy_tres_usage_t _validate_tres_usage_limits(
 		if (out_tres_limit_set && out_tres_limit_array)
 			out_tres_limit_array[i] = tres_limit_array[i];
 
-		if (curr_usage && (curr_usage[i] >= tres_limit_array[i]))
+		if (curr_usage && tres_req_cnt[i] &&
+		    (curr_usage[i] >= tres_limit_array[i]))
 			return TRES_USAGE_CUR_EXCEEDS_LIMIT;
 
 		if (safe_limits) {
-			xassert(tres_req_cnt);
 			if (tres_req_cnt[i] > tres_limit_array[i])
 				return TRES_USAGE_REQ_EXCEEDS_LIMIT;
 
@@ -2561,7 +2560,7 @@ static int _qos_job_time_out(job_record_t *job_ptr,
 
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
-		qos_out_ptr->grp_tres_mins_ctld, NULL,
+		qos_out_ptr->grp_tres_mins_ctld, job_tres_usage_mins,
 		NULL, tres_usage_mins, NULL, false);
 	switch (tres_usage) {
 	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
@@ -4342,7 +4341,7 @@ extern bool acct_policy_job_time_out(job_record_t *job_ptr)
 
 		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc->grp_tres_mins_ctld,
-			qos_rec.grp_tres_mins_ctld, NULL,
+			qos_rec.grp_tres_mins_ctld, job_tres_usage_mins,
 			NULL, tres_usage_mins, NULL, false);
 		switch (tres_usage) {
 		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
