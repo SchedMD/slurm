@@ -5274,14 +5274,14 @@ fini:	if (rc != SLURM_SUCCESS) {
  * rc OUT - unchanged or an error code
  * RET gres - job record to set value in, found or created by this function
  */
-static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
-					    List gres_list, char **save_ptr,
-					    int *rc)
+static gres_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
+					List gres_list, char **save_ptr,
+					int *rc)
 {
 	static char *prev_save_ptr = NULL;
 	int context_inx = NO_VAL, my_rc = SLURM_SUCCESS;
 	gres_job_state_t *gres_js = NULL;
-	gres_state_t *gres_state_job;
+	gres_state_t *gres_state_job = NULL;
 	gres_key_t job_search_key;
 	char *type = NULL, *name = NULL;
 	uint16_t flags = 0;
@@ -5350,7 +5350,7 @@ fini:	xfree(name);
 		*rc = my_rc;
 	}
 	*save_ptr = prev_save_ptr;
-	return gres_js;
+	return gres_state_job;
 }
 
 /* Return true if job specification only includes cpus_per_gres or mem_per_gres
@@ -5608,9 +5608,10 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	slurm_mutex_lock(&gres_context_lock);
 	if (cpus_per_tres) {
 		char *in_val = cpus_per_tres, *save_ptr = NULL;
-		while ((gres_js = _get_next_job_gres(in_val, &cnt,
-						     *gres_list,
-						     &save_ptr, &rc))) {
+		while ((gres_state_job = _get_next_job_gres(in_val, &cnt,
+							    *gres_list,
+							    &save_ptr, &rc))) {
+			gres_js = gres_state_job->gres_data;
 			gres_js->cpus_per_gres = cnt;
 			in_val = NULL;
 			gres_js->ntasks_per_gres = *ntasks_per_tres;
@@ -5618,12 +5619,13 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	}
 	if (tres_per_job) {
 		char *in_val = tres_per_job, *save_ptr = NULL;
-		while ((gres_js = _get_next_job_gres(in_val, &cnt,
-						     *gres_list,
-						     &save_ptr, &rc))) {
+		while ((gres_state_job = _get_next_job_gres(in_val, &cnt,
+							    *gres_list,
+							    &save_ptr, &rc))) {
 			if (!requested_gpu &&
-			    (!xstrcmp(gres_js->gres_name, "gpu")))
+			    (!xstrcmp(gres_state_job->gres_name, "gpu")))
 				requested_gpu = true;
+			gres_js = gres_state_job->gres_data;
 			gres_js->gres_per_job = cnt;
 			in_val = NULL;
 			gres_js->total_gres =
@@ -5633,12 +5635,13 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	}
 	if (tres_per_node) {
 		char *in_val = tres_per_node, *save_ptr = NULL;
-		while ((gres_js = _get_next_job_gres(in_val, &cnt,
-						     *gres_list,
-						     &save_ptr, &rc))) {
+		while ((gres_state_job = _get_next_job_gres(in_val, &cnt,
+							    *gres_list,
+							    &save_ptr, &rc))) {
 			if (!requested_gpu &&
-			    (!xstrcmp(gres_js->gres_name, "gpu")))
+			    (!xstrcmp(gres_state_job->gres_name, "gpu")))
 				requested_gpu = true;
+			gres_js = gres_state_job->gres_data;
 			gres_js->gres_per_node = cnt;
 			in_val = NULL;
 			if (*min_nodes != NO_VAL)
@@ -5650,12 +5653,13 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	}
 	if (tres_per_socket) {
 		char *in_val = tres_per_socket, *save_ptr = NULL;
-		while ((gres_js = _get_next_job_gres(in_val, &cnt,
-							   *gres_list,
-							   &save_ptr, &rc))) {
+		while ((gres_state_job = _get_next_job_gres(in_val, &cnt,
+							    *gres_list,
+							    &save_ptr, &rc))) {
 			if (!requested_gpu &&
-			    (!xstrcmp(gres_js->gres_name, "gpu")))
+			    (!xstrcmp(gres_state_job->gres_name, "gpu")))
 				requested_gpu = true;
+			gres_js = gres_state_job->gres_data;
 			gres_js->gres_per_socket = cnt;
 			in_val = NULL;
 			if ((*min_nodes != NO_VAL) &&
@@ -5673,12 +5677,13 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	}
 	if (tres_per_task) {
 		char *in_val = tres_per_task, *save_ptr = NULL;
-		while ((gres_js = _get_next_job_gres(in_val, &cnt,
-							   *gres_list,
-							   &save_ptr, &rc))) {
+		while ((gres_state_job = _get_next_job_gres(in_val, &cnt,
+						     *gres_list,
+						     &save_ptr, &rc))) {
 			if (!requested_gpu &&
-			    (!xstrcmp(gres_js->gres_name, "gpu")))
+			    (!xstrcmp(gres_state_job->gres_name, "gpu")))
 				requested_gpu = true;
+			gres_js = gres_state_job->gres_data;
 			gres_js->gres_per_task = cnt;
 			in_val = NULL;
 			if (*num_tasks != NO_VAL)
@@ -5690,9 +5695,10 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	}
 	if (mem_per_tres) {
 		char *in_val = mem_per_tres, *save_ptr = NULL;
-		while ((gres_js = _get_next_job_gres(in_val, &cnt,
-							   *gres_list,
-							   &save_ptr, &rc))) {
+		while ((gres_state_job = _get_next_job_gres(in_val, &cnt,
+							    *gres_list,
+							    &save_ptr, &rc))) {
+			gres_js = gres_state_job->gres_data;
 			gres_js->mem_per_gres = cnt;
 			in_val = NULL;
 			gres_js->ntasks_per_gres = *ntasks_per_tres;
@@ -5724,9 +5730,10 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		char *save_ptr = NULL, *gres = NULL, *in_val;
 		xstrfmtcat(gres, "gres:gpu:%u", gpus);
 		in_val = gres;
-		while ((gres_js = _get_next_job_gres(in_val, &cnt,
-							   *gres_list,
-							   &save_ptr, &rc))) {
+		while ((gres_state_job = _get_next_job_gres(in_val, &cnt,
+							    *gres_list,
+							    &save_ptr, &rc))) {
+			gres_js = gres_state_job->gres_data;
 			gres_js->ntasks_per_gres = *ntasks_per_tres;
 			/* Simulate a tres_per_job specification */
 			gres_js->gres_per_job = cnt;
