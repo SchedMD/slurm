@@ -360,7 +360,9 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		if (!bit_test(job_ptr->node_bitmap_cg, i))
 			continue;
 		node_ptr = &node_record_table_ptr[i];
+		/* Sync up conditionals with make_node_comp() */
 		if (IS_NODE_DOWN(node_ptr) ||
+		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_UP(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
