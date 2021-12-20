@@ -9,13 +9,14 @@
 <a href="#GPU_Management">GPU Management</a><br>
 <a href="#MPS_Management">MPS Management</a><br>
 <a href="#MIG_Management">MIG Management</a><br>
+<a href="#Sharding">Sharding</a><br>
 
 <!-------------------------------------------------------------------------->
 <h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
 <p>Slurm supports the ability to define and schedule arbitrary Generic RESources
 (GRES). Additional built-in features are enabled for specific GRES types,
-including Graphics Processing Units (GPUs) and CUDA Multi-Process Service (MPS)
-devices, through an extensible plugin mechanism.</p>
+including Graphics Processing Units (GPUs), CUDA Multi-Process Service (MPS)
+devices, and Sharding through an extensible plugin mechanism.</p>
 
 <!-------------------------------------------------------------------------->
 <h2 id="Configuration">Configuration
@@ -469,6 +470,99 @@ dynamic MIG partitioning.</p>
 <a href="https://docs.nvidia.com/datacenter/tesla/mig-user-guide/index.html">
 the MIG user guide</a>.</p>
 
-<p style="text-align: center;">Last modified 23 June 2021</p>
+<!-------------------------------------------------------------------------->
+<h2 id="Sharding">Sharding
+<a class="slurm_link" href="#Sharding"></a>
+</h2>
+
+<p>
+Sharding provides a generic mechanism where GPUs can be
+shared by multiple jobs, where each job is allocated some percentage of the
+GPU's resources. While it does permit multiple jobs to run on a given GPU it
+does not fence the processes running on the GPU, it only allows the GPU to be
+shared.
+The total count of shards available on a node should be configured in
+the <I>slurm.conf</I> file (e.g. "NodeName=tux[1-16] Gres=gpu:2,shard:200").
+Several options are available for configuring shards in the <I>gres.conf</I> file
+as listed below with examples following that:</p>
+
+<ol>
+<li>No Shard configuration: The count of gres/shard elements defined in the
+<I>slurm.conf</I> will be evenly distributed across all GPUs configured on the
+node. For the example, "NodeName=tux[1-16] Gres=gpu:2,shard:200" will configure
+a count of 100 gres/shard resources on each of the two GPUs.</li>
+<li>Shard configuration includes only the <I>Name</I> and <I>Count</I> parameters:
+The count of gres/shard elements will be evenly distributed across all GPUs
+configured on the node. This is similar to case 1, but places duplicate
+configuration in the gres.conf file.</li>
+<li>Shard configuration includes the <I>Name</I>, <I>File</I> and <I>Count</I>
+parameters: Each <I>File</I> parameter should identify the device file path of a
+GPU and the <I>Count</I> should identify the number of gres/shard resources
+available for that specific GPU device.
+This may be useful in a heterogeneous environment.
+For example, some GPUs on a node may be more powerful than others and thus be
+associated with a higher gres/shard count.
+Another use case would be to prevent some GPUs from being used for sharding (i.e.
+they would have a shard count of zero).</li>
+</ol>
+
+<p>Note that <I>Type</I> and <I>Cores</I> parameters for gres/shard are ignored.
+That information is copied from the gres/gpu configuration.</p>
+
+<p>Note that if NVIDIA's NVML library is installed, the GPU configuration
+(i.e. <I>Type</I>, <I>File</I>, <I>Cores</I> and <I>Links</I> data) will be
+automatically gathered from the library and need not be recorded in the
+<I>gres.conf</I> file.</p>
+
+<p>Note the same GPU can be allocated either as a GPU type of GRES or as
+a shard type of GRES, but not both.
+In other words, once a GPU has been allocated as a gres/gpu resource it will
+not be available as a gres/shard.
+Likewise, once a GPU has been allocated as a gres/shard resource it will
+not be available as a gres/gpu.
+However the same GPU can be allocated as shard generic resources to multiple jobs
+belonging to multiple users, so long as the total count of SHARD allocated to
+jobs does not exceed the configured count.
+Some example configurations for Slurm's gres.conf file are shown below.</p>
+
+<PRE>
+# Example 1 of gres.conf
+# Configure four GPUs (with Sharding)
+AutoDetect=nvml
+Name=gpu Type=gp100 File=/dev/nvidia0 Cores=0,1
+Name=gpu Type=gp100 File=/dev/nvidia1 Cores=0,1
+Name=gpu Type=p6000 File=/dev/nvidia2 Cores=2,3
+Name=gpu Type=p6000 File=/dev/nvidia3 Cores=2,3
+# Set gres/shard Count value to 100 on each of the 4 available GPUs
+Name=shard Count=400
+</PRE>
+
+<a id="Shard_config_example_2"></a>
+<PRE>
+# Example 2 of gres.conf
+# Configure four different GPU types (with Sharding)
+AutoDetect=nvml
+Name=gpu Type=gtx1080 File=/dev/nvidia0 Cores=0,1
+Name=gpu Type=gtx1070 File=/dev/nvidia1 Cores=0,1
+Name=gpu Type=gtx1060 File=/dev/nvidia2 Cores=2,3
+Name=gpu Type=gtx1050 File=/dev/nvidia3 Cores=2,3
+Name=shard Count=1300   File=/dev/nvidia0
+Name=shard Count=1200   File=/dev/nvidia1
+Name=shard Count=1100   File=/dev/nvidia2
+Name=shard Count=1000   File=/dev/nvidia3
+</PRE>
+
+<p><b>NOTE:</b> <i>gres/shard</i> requires the use of the <i>select/cons_tres</i>
+plugin.</p>
+
+<p>Job requests for shards can not specify a GPU frequency.</p>
+
+<p>Jobs requesting shards resources will have the
+<code class="commandline">CUDA_VISIBLE_DEVICES</code>, <code class="commandline">ROCR_VISIBLE_DEVICES</code>,
+or <code class="commandline">GPU_DEVICE_ORDINAL</code> environment variable set
+which would be the same as if it were a GPU.
+</p>
+
+<p style="text-align: center;">Last modified 19 Jan 2022</p>
 
 <!--#include virtual="footer.txt"-->

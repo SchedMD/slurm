@@ -40,6 +40,7 @@ HIGHLIGHTS
     from slurmctld.
  -- Add acct_gather_interconnect/sysfs plugin.
  -- Future and Cloud nodes are treated as "Planned Down" in usage reports.
+ -- Add new shard plugin for sharing gpus but not with mps.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

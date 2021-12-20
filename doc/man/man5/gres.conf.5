@@ -37,9 +37,11 @@ Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 
 .LP
-\fBNOTE:\fP Slurm support for gres/mps requires the use of the select/cons_tres
+\fBNOTE:\fP Slurm support for gres/[mps|shard] requires the use of the select/cons_tres
 plugin. For more information on how to configure MPS, see
 \fIhttps://slurm.schedmd.com/gres.html#MPS_Management\fR.
+For more information on how to configure Sharding, see
+\fIhttps://slurm.schedmd.com/gres.html#Sharding\fR.
 
 .LP
 For more information on GRES scheduling in general, see
@@ -152,9 +154,9 @@ information: \fIhttps://slurm.schedmd.com/cgroups.html\fR.
 If \fBFile\fR is specified then \fBCount\fR must be either set to the number
 of file names specified or not set (the default value is the number of files
 specified).
-The exception to this is MPS. For MPS, each GPU would be identified by device
+The exception to this is MPS/Sharding. For either of these GRES, each GPU would be identified by device
 file using the \fBFile\fR parameter and \fBCount\fR would specify the number of
-MPS entries that would correspond to that GPU (typically 100 or some multiple of
+entries that would correspond to that GPU (typically 100 or some multiple of
 100).
 
 NOTE: If you specify the \fBFile\fR parameter for a resource on some node,
@@ -290,8 +292,13 @@ CUDA Multi\-Process Service (MPS)
 .TP
 \fBnic\fR
 Network Interface Card
-.RE
 .IP
+
+.TP
+\fBshard\fR
+Shards of a gpu
+.IP
+.RE
 
 .TP
 \fBNodeName\fR
