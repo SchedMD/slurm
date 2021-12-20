@@ -5522,7 +5522,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 {
 	overlap_check_t *over_list;
 	int over_count = 0, rc = SLURM_SUCCESS, size;
-	bool have_gres_gpu = false, have_gres_mps = false;
+	bool have_gres_sharing = false, have_gres_shared = false;
 	bool requested_gpu = false;
 	bool overlap_merge = false;
 	gres_state_t *gres_state_job;
@@ -5778,13 +5778,14 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 			rc = ESLURM_INVALID_GRES;
 			break;
 		}
-		if (!have_gres_gpu &&
-		    !xstrcmp(gres_state_job->gres_name, "gpu"))
-			have_gres_gpu = true;
-		if (!xstrcmp(gres_state_job->gres_name, "mps")) {
-			have_gres_mps = true;
+		if (!have_gres_sharing &&
+		    gres_id_sharing(gres_state_job->plugin_id))
+			have_gres_sharing = true;
+		if (gres_id_shared(gres_state_job->config_flags)) {
+			have_gres_shared = true;
 			/*
-			 * gres/mps only supports a per-node count,
+			 * Shared gres (e.g. gres/mps) only supports a per-node
+			 * count,
 			 * set either explicitly or implicitly.
 			 */
 			if (gres_js->gres_per_job &&
@@ -5802,7 +5803,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 				break;
 			}
 		}
-		if (have_gres_gpu && have_gres_mps) {
+		if (have_gres_sharing && have_gres_shared) {
 			rc = ESLURM_INVALID_GRES;
 			break;
 		}
@@ -5812,7 +5813,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	}
 	list_iterator_destroy(iter);
 
-	if (have_gres_mps && (rc == SLURM_SUCCESS) && tres_freq &&
+	if (have_gres_shared && (rc == SLURM_SUCCESS) && tres_freq &&
 	    strstr(tres_freq, "gpu")) {
 		rc = ESLURM_INVALID_GRES;
 	}
