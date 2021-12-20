@@ -925,7 +925,7 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 			       bitstr_t *core_bitmap, bool new_alloc)
 {
 	int rc = SLURM_ERROR, rc2;
-	ListIterator job_gres_iter,  node_gres_iter;
+	ListIterator job_gres_iter;
 	gres_state_t *gres_state_job, *gres_state_node;
 
 	if (job_gres_list == NULL)
@@ -941,12 +941,8 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		node_gres_iter = list_iterator_create(node_gres_list);
-		while ((gres_state_node = list_next(node_gres_iter))) {
-			if (gres_state_job->plugin_id == gres_state_node->plugin_id)
-				break;
-		}
-		list_iterator_destroy(node_gres_iter);
+		gres_state_node = list_find_first(node_gres_list, gres_find_id,
+						  &gres_state_job->plugin_id);
 		if (gres_state_node == NULL) {
 			error("%s: job %u allocated gres/%s on node %s lacking that gres",
 			      __func__, job_id, gres_state_job->gres_name,
