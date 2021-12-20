@@ -1954,16 +1954,17 @@ static uint64_t _step_get_gres_needed(gres_step_state_t *gres_ss,
 	return gres_needed;
 }
 
-static uint64_t _step_get_gres_avail(gres_job_state_t *gres_js,
+static uint64_t _step_get_gres_avail(gres_state_t *gres_state_job,
 				     int node_offset)
 {
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	uint64_t gres_avail;
 
 	if (gres_js->gres_cnt_node_alloc)
 		gres_avail = gres_js->gres_cnt_node_alloc[node_offset];
 	else {
 		error("gres/%s: %s gres_cnt_node_alloc is not allocated",
-		      gres_js->gres_name, __func__);
+		      gres_state_job->gres_name, __func__);
 		return SLURM_ERROR;
 	}
 
@@ -1975,12 +1976,13 @@ static uint64_t _step_get_gres_avail(gres_job_state_t *gres_js,
 
 static int _step_alloc(gres_step_state_t *gres_ss,
 		       gres_state_t *gres_state_step_req,
-		       gres_job_state_t *gres_js,
+		       gres_state_t *gres_state_job,
 		       int node_offset,
 		       slurm_step_id_t *step_id,
 		       uint64_t *gres_needed, uint64_t *max_gres,
 		       uint64_t *step_node_mem_alloc)
 {
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_step_state_t *gres_ss_req = gres_state_step_req->gres_data;
 	uint32_t plugin_id = gres_state_step_req->plugin_id;
 	uint64_t gres_alloc;
@@ -1996,7 +1998,7 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 
 	if (node_offset >= gres_js->node_cnt) {
 		error("gres/%s: %s for %ps, node offset invalid (%d >= %u)",
-		      gres_js->gres_name, __func__, step_id, node_offset,
+		      gres_state_job->gres_name, __func__, step_id, node_offset,
 		      gres_js->node_cnt);
 		return SLURM_ERROR;
 	}
@@ -2013,7 +2015,7 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 			gres_js->node_cnt, sizeof(uint64_t));
 	}
 
-	gres_alloc = _step_get_gres_avail(gres_js, node_offset);
+	gres_alloc = _step_get_gres_avail(gres_state_job, node_offset);
 	if (gres_alloc == NO_CONSUME_VAL64) {
 		if (*gres_needed != INFINITE64)
 			*gres_needed = 0;
@@ -2175,7 +2177,8 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 	gres_ss_alloc = _step_get_alloc_gres_ptr(
 		args->step_gres_list_alloc, gres_state_job);
 
-	args->rc = _step_alloc(gres_ss_alloc, args->gres_state_step, gres_js,
+	args->rc = _step_alloc(gres_ss_alloc, args->gres_state_step,
+			       gres_state_job,
 			       args->node_offset, &args->tmp_step_id,
 			       &args->gres_needed, &args->max_gres,
 			       args->step_node_mem_alloc);
