@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Keep node in Future state if epilog completes while in Future state.
  -- Fix erroneous --constraint behavior by preventing multiple sets of brackets.
  -- Make ResetAccrueTime update the job's accrue_time to now.
+ -- Fix sattach initialization with configless mode.
 
 * Changes in Slurm 21.08.5
 ==========================
