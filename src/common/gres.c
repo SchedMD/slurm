@@ -252,8 +252,7 @@ static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
 static void	_job_state_delete(gres_job_state_t *gres_js);
 static void *	_job_state_dup(gres_job_state_t *gres_js);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int node_index);
-static void	_job_state_log(gres_job_state_t *gres_js, uint32_t job_id,
-			       uint32_t plugin_id);
+static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
 static int	_load_plugin(slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
 static void	_my_stat(char *file_name);
@@ -7891,15 +7890,16 @@ static char *_gres_flags_str(uint16_t flags)
 	return "";
 }
 
-static void _job_state_log(gres_job_state_t *gres_js,
-			   uint32_t job_id, uint32_t plugin_id)
+static void _job_state_log(gres_state_t *gres_state_job, uint32_t job_id)
 {
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	char *sparse_msg = "", tmp_str[128];
 	int i;
 
 	xassert(gres_js);
 	info("gres_job_state gres:%s(%u) type:%s(%u) job:%u flags:%s",
-	     gres_js->gres_name, plugin_id, gres_js->type_name,
+	     gres_state_job->gres_name, gres_state_job->plugin_id,
+	     gres_js->type_name,
 	     gres_js->type_id, job_id, _gres_flags_str(gres_js->flags));
 	if (gres_js->cpus_per_gres)
 		info("  cpus_per_gres:%u", gres_js->cpus_per_gres);
@@ -8081,8 +8081,7 @@ extern void gres_job_state_log(List gres_list, uint32_t job_id)
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
-		_job_state_log(gres_state_job->gres_data, job_id,
-			       gres_state_job->plugin_id);
+		_job_state_log(gres_state_job, job_id);
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
