@@ -933,7 +933,7 @@ extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
 	/* Init run_script_msg */
 	run_script_msg.argc = argc;
 	run_script_msg.argv = argv;
-	run_script_msg.env = NULL;
+	run_script_msg.env = env;
 	run_script_msg.script_name = "MailProg";
 	run_script_msg.script_path = script_path;
 	run_script_msg.script_type = SLURMSCRIPTD_MAIL;
