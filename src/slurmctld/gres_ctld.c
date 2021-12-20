@@ -105,7 +105,6 @@ static bool _cores_on_gres(bitstr_t *core_bitmap, bitstr_t *alloc_core_bitmap,
 
 static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 						 gres_state_t *gres_state_in,
-						 uint32_t plugin_id,
 						 uint32_t type_id,
 						 char *type_name,
 						 uint32_t node_cnt)
@@ -116,7 +115,7 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 
 	/* Find in job_gres_list_alloc if it exists */
 	job_search_key.config_flags = gres_state_in->config_flags;
-	job_search_key.plugin_id = plugin_id;
+	job_search_key.plugin_id = gres_state_in->plugin_id;
 	job_search_key.type_id = type_id;
 
 	if (!(gres_state_job = list_find_first(job_gres_list_alloc,
@@ -635,7 +634,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		    gres_js->type_id != gres_ns->type_id[j])
 			continue;
 		gres_js_alloc = _get_job_alloc_gres_ptr(
-			job_gres_list_alloc, gres_state_job, plugin_id,
+			job_gres_list_alloc, gres_state_job,
 			gres_ns->type_id[j], gres_ns->type_name[j], node_cnt);
 		gres_cnt = gres_ns->type_cnt_alloc[j] -
 			pre_alloc_type_cnt[j];
@@ -682,7 +681,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	/* Also track non typed node gres */
 	if (gres_ns->type_cnt == 0) {
 		gres_js_alloc = _get_job_alloc_gres_ptr(
-			job_gres_list_alloc, gres_state_job, plugin_id,
+			job_gres_list_alloc, gres_state_job,
 			NO_VAL, NULL, node_cnt);
 		gres_cnt = gres_ns->gres_cnt_alloc - pre_alloc_gres_cnt;
 		if (gres_ns->no_consume) {
