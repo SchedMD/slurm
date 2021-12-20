@@ -5792,9 +5792,10 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 			rc = ESLURM_INVALID_GRES;
 			break;
 		}
-		if (!have_gres_gpu && !xstrcmp(gres_js->gres_name, "gpu"))
+		if (!have_gres_gpu &&
+		    !xstrcmp(gres_state_job->gres_name, "gpu"))
 			have_gres_gpu = true;
-		if (!xstrcmp(gres_js->gres_name, "mps")) {
+		if (!xstrcmp(gres_state_job->gres_name, "mps")) {
 			have_gres_mps = true;
 			/*
 			 * gres/mps only supports a per-node count,
@@ -5976,7 +5977,7 @@ static bool _validate_node_gres_cnt(uint32_t job_id, List job_gres_list,
 		if (job_gres_cnt != node_gres_cnt) {
 			error("%s: Killing job %u: gres/%s count mismatch on node "
 			      "%s (%d != %d)",
-			      __func__, job_id, gres_js->gres_name,
+			      __func__, job_id, gres_state_job->gres_name,
 			      node_name, job_gres_cnt, node_gres_cnt);
 			rc = false;
 			break;
@@ -8280,7 +8281,7 @@ static int _step_get_gres_cnt(void *x, void *arg)
 	if ((node_offset >= gres_js->node_cnt) &&
 	    (gres_js->node_cnt != 0)) { /* GRES is type no_consume */
 		error("gres/%s: %s %ps node offset invalid (%d >= %u)",
-		      gres_js->gres_name, __func__, step_id,
+		      gres_state_job->gres_name, __func__, step_id,
 		      node_offset, gres_js->node_cnt);
 		foreach_gres_cnt->gres_cnt = 0;
 		return -1;
@@ -8307,7 +8308,7 @@ static int _step_get_gres_cnt(void *x, void *arg)
 		}
 	} else {
 		debug3("gres/%s:%s: %s %ps gres_bit_alloc and gres_cnt_node_alloc are NULL",
-		       gres_js->gres_name, gres_js->type_name,
+		       gres_state_job->gres_name, gres_js->type_name,
 		       __func__, step_id);
 		foreach_gres_cnt->gres_cnt = NO_VAL64;
 		return -1;

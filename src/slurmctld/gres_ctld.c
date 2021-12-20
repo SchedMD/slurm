@@ -941,8 +941,6 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		gres_job_state_t *gres_js =
-			(gres_job_state_t *) gres_state_job->gres_data;
 		node_gres_iter = list_iterator_create(node_gres_list);
 		while ((gres_state_node = list_next(node_gres_iter))) {
 			if (gres_state_job->plugin_id == gres_state_node->plugin_id)
@@ -951,7 +949,7 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 		list_iterator_destroy(node_gres_iter);
 		if (gres_state_node == NULL) {
 			error("%s: job %u allocated gres/%s on node %s lacking that gres",
-			      __func__, job_id, gres_js->gres_name,
+			      __func__, job_id, gres_state_job->gres_name,
 			      node_name);
 			continue;
 		}
@@ -1527,7 +1525,7 @@ step2:	if (!from_job_gres_list)
 			gres_state_job2->plugin_id = gres_state_job->plugin_id;
 			gres_state_job2->gres_data = gres_js2;
 			gres_state_job2->gres_name =
-				xstrdup(gres_js->gres_name);
+				xstrdup(gres_state_job->gres_name);
 			gres_state_job2->state_type =
 				gres_state_job->state_type;
 			gres_js2->gres_name =
@@ -1720,7 +1718,7 @@ extern void gres_ctld_job_build_details(List job_gres_list,
 
 		gres_name = xstrdup_printf(
 			"%s%s%s",
-			gres_js->gres_name, sep2, type);
+			gres_state_job->gres_name, sep2, type);
 		gres_cnt = 0;
 
 		for (j = 0; j < my_gres_cnt; j++) {

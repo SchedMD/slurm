@@ -70,11 +70,13 @@ extern char *gres_sched_str(List sock_gres_list)
 			sep = "GRES:";
 		if (gres_js->type_name) {
 			xstrfmtcat(out_str, "%s%s:%s:%"PRIu64, sep,
-				   gres_js->gres_name, gres_js->type_name,
+				   sock_data->gres_state_job->gres_name,
+				   gres_js->type_name,
 				   sock_data->total_cnt);
 		} else {
 			xstrfmtcat(out_str, "%s%s:%"PRIu64, sep,
-				   gres_js->gres_name, sock_data->total_cnt);
+				   sock_data->gres_state_job->gres_name,
+				   sock_data->total_cnt);
 		}
 	}
 	list_iterator_destroy(iter);
