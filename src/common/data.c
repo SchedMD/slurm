@@ -992,6 +992,16 @@ data_t *data_key_get(data_t *data, const char *key)
 		return NULL;
 }
 
+extern data_t *data_key_get_int(data_t *data, int64_t key)
+{
+	char *key_str = xstrdup_printf("%"PRId64, key);
+	data_t *node = data_key_get(data, key_str);
+
+	xfree(key_str);
+
+	return node;
+}
+
 data_t *data_key_set(data_t *data, const char *key)
 {
 	data_t *d;

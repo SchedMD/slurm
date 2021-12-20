@@ -513,6 +513,14 @@ extern const data_t *data_key_get_const(const data_t *data, const char *key);
 extern data_t *data_key_get(data_t *data, const char *key);
 
 /*
+ * Get data entry with given integer key
+ * IN data data object to find entity with given key string
+ * IN key string of key to find
+ * RET ptr to data or NULL if it doesn't exist.
+ */
+extern data_t *data_key_get_int(data_t *data, int64_t key);
+
+/*
  * Create data entry with given key.
  * Use this as a quick way to add or update a given key.
  *
