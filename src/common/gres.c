@@ -1047,17 +1047,6 @@ extern int gres_links_validate(char *links)
 	return rc;
 }
 
-/*
- * Return true if count can be greater than 1 for a given file.
- * For example, each GPU can have arbitrary count of MPS elements.
- */
-static bool _multi_count_per_file(gres_slurmd_conf_t *gres_slurmd_conf)
-{
-	if (!xstrcmp(gres_slurmd_conf->name, "mps"))
-		return true;
-	return false;
-}
-
 static char *_get_autodetect_flags_str(void)
 {
 	char *flags = NULL;
@@ -1378,7 +1367,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		 * each GPU can have arbitrary count of MPS elements.
 		 */
 		if (p->count && (p->count != tmp_uint64) &&
-		    !_multi_count_per_file(p)) {
+		    !gres_id_shared(p->config_flags)) {
 			fatal("Invalid GRES record for %s, count does not match File value",
 			      p->name);
 		}
