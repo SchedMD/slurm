@@ -8,6 +8,12 @@ ConditionPathExists=@sysconfdir@/slurm.conf
 Type=simple
 EnvironmentFile=-/etc/sysconfig/slurmrestd
 EnvironmentFile=-/etc/default/slurmrestd
+# slurmrestd should not run as root or the slurm user.
+# Please either use the -u and -g options in /etc/sysconfig/slurmrestd or
+# /etc/default/slurmrestd, or explicitly set the User and Group in this file
+# an unpriviledged user to run as.
+# User=
+# Group=
 # Default to listen on both socket and slurmrestd port
 ExecStart=@sbindir@/slurmrestd $SLURMRESTD_OPTIONS unix:@sharedstatedir@/slurmrestd.socket 0.0.0.0:@SLURMRESTD_PORT@
 # Enable auth/jwt be default, comment out the line to disable it for slurmrestd
