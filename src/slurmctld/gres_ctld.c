@@ -123,7 +123,6 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 					     gres_find_job_by_key_exact_type,
 					     &job_search_key))) {
 		gres_js = xmalloc(sizeof(*gres_js));
-		gres_js->gres_name = xstrdup(gres_state_in->gres_name);
 		gres_js->type_id = type_id;
 		gres_js->type_name = xstrdup(type_name);
 		gres_js->node_cnt = node_cnt;
@@ -779,7 +778,6 @@ static void _job_select_whole_node_internal(
 		gres_state_job->gres_data = gres_js;
 		gres_state_job->gres_name = xstrdup(gres_name);
 		gres_state_job->state_type = GRES_STATE_TYPE_JOB;
-		gres_js->gres_name = xstrdup(gres_name);
 		if (type_inx != -1)
 			gres_js->type_name =
 				xstrdup(gres_ns->type_name[type_inx]);
@@ -1524,8 +1522,6 @@ step2:	if (!from_job_gres_list)
 				xstrdup(gres_state_job->gres_name);
 			gres_state_job2->state_type =
 				gres_state_job->state_type;
-			gres_js2->gres_name =
-				xstrdup(gres_js->gres_name);
 			gres_js2->cpus_per_gres =
 				gres_js->cpus_per_gres;
 			gres_js2->gres_per_job =
@@ -2063,7 +2059,7 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 	if ((gres_js->gres_bit_alloc == NULL) ||
 	    (gres_js->gres_bit_alloc[node_offset] == NULL)) {
 		debug3("gres/%s: %s gres_bit_alloc for %ps is NULL",
-		       gres_js->gres_name, __func__, step_id);
+		       gres_state_job->gres_name, __func__, step_id);
 		return SLURM_SUCCESS;
 	}
 
@@ -2095,7 +2091,8 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 	}
 	if (gres_alloc) {
 		error("gres/%s: %s %ps oversubscribed resources on node %d",
-		      gres_js->gres_name, __func__, step_id, node_offset);
+		      gres_state_job->gres_name,
+		      __func__, step_id, node_offset);
 	}
 
 	if (gres_js->gres_bit_step_alloc == NULL) {
@@ -2115,7 +2112,7 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 	}
 	if (gres_ss->gres_bit_alloc[node_offset]) {
 		error("gres/%s: %s %ps bit_alloc already exists",
-		      gres_js->gres_name, __func__, step_id);
+		      gres_state_job->gres_name, __func__, step_id);
 		bit_or(gres_ss->gres_bit_alloc[node_offset],
 		       gres_bit_alloc);
 		FREE_NULL_BITMAP(gres_bit_alloc);
@@ -2321,7 +2318,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 
 		if (!gres_ss->node_in_use) {
 			error("gres/%s: %s %ps dealloc, node_in_use is NULL",
-			      gres_js->gres_name, __func__, step_id);
+			      gres_state_job->gres_name, __func__, step_id);
 			return SLURM_ERROR;
 		}
 
@@ -2332,7 +2329,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 			gres_cnt = gres_ss->gres_cnt_node_alloc[i];
 		else {
 			error("gres/%s: %s %ps dealloc, gres_cnt_node_alloc is NULL",
-			      gres_js->gres_name, __func__, step_id);
+			      gres_state_job->gres_name, __func__, step_id);
 			return SLURM_ERROR;
 		}
 
@@ -2343,7 +2340,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 					gres_cnt;
 			} else {
 				error("gres/%s: %s %ps dealloc count underflow",
-				      gres_js->gres_name, __func__,
+				      gres_state_job->gres_name, __func__,
 				      step_id);
 				gres_js->gres_cnt_step_alloc[i] = 0;
 			}
@@ -2353,7 +2350,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 			continue;
 		if (gres_js->gres_bit_alloc[i] == NULL) {
 			error("gres/%s: %s job %u gres_bit_alloc[%d] is NULL",
-			      gres_js->gres_name, __func__,
+			      gres_state_job->gres_name, __func__,
 			      step_id->job_id, i);
 			continue;
 		}
@@ -2361,7 +2358,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 		len_s = bit_size(gres_ss->gres_bit_alloc[i]);
 		if (len_j != len_s) {
 			error("gres/%s: %s %ps dealloc, bit_alloc[%d] size mis-match (%d != %d)",
-			      gres_js->gres_name, __func__,
+			      gres_state_job->gres_name, __func__,
 			      step_id, i, len_j, len_s);
 			len_j = MIN(len_j, len_s);
 		}
@@ -2611,7 +2608,7 @@ extern char *gres_ctld_gres_on_node_as_tres(List job_gres_list,
 		if (node_inx > gres_js->node_cnt)
 			break;
 
-		if (!gres_js->gres_name) {
+		if (!gres_state_job->gres_name) {
 			debug("%s: couldn't find name", __func__);
 			continue;
 		}
@@ -2624,7 +2621,7 @@ extern char *gres_ctld_gres_on_node_as_tres(List job_gres_list,
 		else /* If this gres isn't on the node skip it */
 			continue;
 		_gres_2_tres_str_internal(&tres_str,
-					  gres_js->gres_name,
+					  gres_state_job->gres_name,
 					  gres_js->type_name,
 					  count);
 	}

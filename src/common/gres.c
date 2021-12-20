@@ -4765,7 +4765,6 @@ static void _job_state_delete(gres_job_state_t *gres_js)
 	}
 	xfree(gres_js->gres_cnt_node_alloc);
 	xfree(gres_js->gres_cnt_node_select);
-	xfree(gres_js->gres_name);
 	xfree(gres_js->type_name);
 	xfree(gres_js);
 }
@@ -5321,8 +5320,6 @@ static gres_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 		gres_js = gres_state_job->gres_data;
 	} else {
 		gres_js = xmalloc(sizeof(gres_job_state_t));
-		gres_js->gres_name =
-			xstrdup(gres_context[context_inx].gres_name);
 		gres_js->type_id = gres_build_id(type);
 		gres_js->type_name = type;
 		type = NULL;	/* String moved above */
@@ -6078,7 +6075,6 @@ static void *_job_state_dup(gres_job_state_t *gres_js)
 
 	new_gres_js = xmalloc(sizeof(gres_job_state_t));
 	new_gres_js->cpus_per_gres	= gres_js->cpus_per_gres;
-	new_gres_js->gres_name		= xstrdup(gres_js->gres_name);
 	new_gres_js->gres_per_job	= gres_js->gres_per_job;
 	new_gres_js->gres_per_node	= gres_js->gres_per_node;
 	new_gres_js->gres_per_socket	= gres_js->gres_per_socket;
@@ -6118,7 +6114,6 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
 
 	new_gres_js = xmalloc(sizeof(gres_job_state_t));
 	new_gres_js->cpus_per_gres	= gres_js->cpus_per_gres;
-	new_gres_js->gres_name		= xstrdup(gres_js->gres_name);
 	new_gres_js->gres_per_job	= gres_js->gres_per_job;
 	new_gres_js->gres_per_node	= gres_js->gres_per_node;
 	new_gres_js->gres_per_socket	= gres_js->gres_per_socket;
@@ -6416,7 +6411,6 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 			_job_state_delete(gres_js);
 			continue;
 		}
-		gres_js->gres_name = xstrdup(gres_context[i].gres_name);
 		gres_state_job = xmalloc(sizeof(gres_state_t));
 		gres_state_job->config_flags = gres_context[i].config_flags;
 		gres_state_job->plugin_id = gres_context[i].plugin_id;
