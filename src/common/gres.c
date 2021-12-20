@@ -5901,7 +5901,6 @@ static bool _job_has_gres_bits(List job_gres_list)
  */
 static int _get_node_gres_cnt(List node_gres_list, gres_state_t *gres_state_job)
 {
-	ListIterator node_gres_iter;
 	gres_node_state_t *gres_ns;
 	gres_state_t *gres_state_node;
 	int gres_cnt = 0;
@@ -5915,15 +5914,11 @@ static int _get_node_gres_cnt(List node_gres_list, gres_state_t *gres_state_job)
 	else
 		plugin_id = gres_state_job->plugin_id;
 
-	node_gres_iter = list_iterator_create(node_gres_list);
-	while ((gres_state_node = list_next(node_gres_iter))) {
-		if (gres_state_node->plugin_id != plugin_id)
-			continue;
-		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
+	if ((gres_state_node = list_find_first(node_gres_list, gres_find_id,
+					       &plugin_id))) {
+		gres_ns = gres_state_node->gres_data;
 		gres_cnt = (int) gres_ns->gres_cnt_config;
-		break;
 	}
-	list_iterator_destroy(node_gres_iter);
 
 	return gres_cnt;
 }
