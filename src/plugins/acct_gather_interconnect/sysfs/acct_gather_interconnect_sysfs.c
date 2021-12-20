@@ -97,6 +97,8 @@ static List interfaces = NULL;
 
 static char *sysfs_interfaces = NULL;
 
+static acct_gather_data_t *last_update = NULL;
+
 static void _destroy_interface_stats_t(void *x)
 {
 	interface_stats_t *interface = x;
@@ -179,13 +181,73 @@ extern int fini(void)
 {
 	FREE_NULL_LIST(interfaces);
 	xfree(sysfs_interfaces);
+	xfree(last_update);
 
 	return SLURM_SUCCESS;
 }
 
+static int _update(void)
+{
+	static int dataset_id = -1;
+	acct_gather_data_t *current = NULL, *last = last_update;
+
+	union {
+		double d;
+		uint64_t u64;
+	} data[4];
+
+	acct_gather_profile_dataset_t dataset[] = {
+		{ "PacketsIn", PROFILE_FIELD_UINT64 },
+		{ "PacketsOut", PROFILE_FIELD_UINT64 },
+		{ "InMB", PROFILE_FIELD_DOUBLE },
+		{ "OutMB", PROFILE_FIELD_DOUBLE },
+		{ NULL, PROFILE_FIELD_NOT_SET }
+	};
+
+	if (dataset_id < 0) {
+		dataset_id = acct_gather_profile_g_create_dataset("Network",
+			NO_PARENT, dataset);
+		log_flag(INTERCONNECT, "Dataset created (id = %d)",
+			 dataset_id);
+		if (dataset_id == SLURM_ERROR) {
+			error("Failed to create the dataset for sysfs");
+			return SLURM_ERROR;
+		}
+	}
+
+	current = xmalloc(sizeof(*current));
+	list_for_each(interfaces, _get_data, current);
+	if (!last)
+		last = current;
+
+	data[0].u64 = current->num_reads - last->num_reads;
+	data[1].u64 = current->num_writes - last->num_writes;
+	data[2].d = (double)(current->size_read - last->size_read) / (1 << 16);
+	data[3].d = (double)(current->size_write - last->size_write) / (1 << 16);
+
+	xfree(last_update);
+	last_update = current;
+
+	return acct_gather_profile_g_add_sample_data(dataset_id, (void *) data,
+						     time(NULL));
+
+}
+
 extern int acct_gather_interconnect_p_node_update(void)
 {
-	return SLURM_SUCCESS;
+	static int run = -1;
+
+	if (run == -1) {
+		uint32_t profile;
+		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
+					  &profile);
+		run = (profile & ACCT_GATHER_PROFILE_NETWORK) ? 1 : 0;
+	}
+
+	if (!run)
+		return SLURM_SUCCESS;
+
+	return _update();
 }
 
 extern void acct_gather_interconnect_p_conf_set(s_p_hashtbl_t *tbl)
