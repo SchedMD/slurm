@@ -159,6 +159,8 @@ documents those changes that are of interest to users and administrators.
  -- srun --overlap now allows the step to share all resources (CPUs, memory, and
     GRES), where previously --overlap only allowed the step to share CPUs with
     other steps.
+ -- openapi/v0.0.38 - new format for how core and socket allocations are dumped
+    for jobs.
 
 * Changes in Slurm 21.08.7
 ==========================

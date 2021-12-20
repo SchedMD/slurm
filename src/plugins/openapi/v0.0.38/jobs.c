@@ -564,6 +564,109 @@ static job_parse_list_t _parse_job_list(const data_t *jobs, char *script,
 	return rc;
 }
 
+static void _dump_node_res(data_t *dnodes, job_resources_t *j,
+			   const size_t node_inx, const char *nodename,
+			   const size_t sock_inx, size_t *bit_inx,
+			   const size_t array_size)
+{
+	size_t bit_reps;
+	data_t *dnode = data_set_dict(data_list_append(dnodes));
+	data_t *dsockets = data_set_dict(data_key_set(dnode, "sockets"));
+	data_t **sockets;
+
+	sockets = xcalloc(j->sockets_per_node[sock_inx], sizeof(*sockets));
+
+	/* per node */
+
+	data_set_string(data_key_set(dnode, "nodename"), nodename);
+
+	data_set_int(data_key_set(dnode, "cpus_used"), j->cpus_used[node_inx]);
+	data_set_int(data_key_set(dnode, "memory_used"),
+		     j->memory_used[node_inx]);
+	data_set_int(data_key_set(dnode, "memory_allocated"),
+		     j->memory_allocated[node_inx]);
+
+	/* set the used cores as found */
+
+	bit_reps = j->sockets_per_node[sock_inx] *
+		   j->cores_per_socket[sock_inx];
+	for (size_t i = 0; i < bit_reps; i++) {
+		size_t socket_inx = i / j->cores_per_socket[sock_inx];
+		size_t core_inx = i % j->cores_per_socket[sock_inx];
+
+		xassert(*bit_inx < array_size);
+
+		if (*bit_inx >= array_size) {
+			error("%s: unexpected invalid bit index:%" PRId64
+			      "/%" PRId64,
+			      __func__, *bit_inx, array_size);
+			break;
+		}
+
+		if (bit_test(j->core_bitmap, *bit_inx)) {
+			data_t *dcores;
+
+			if (!sockets[socket_inx]) {
+				sockets[socket_inx] = data_set_dict(
+					data_key_set_int(dsockets, socket_inx));
+				dcores = data_set_dict(data_key_set(
+					sockets[socket_inx], "cores"));
+			} else {
+				dcores = data_key_get(sockets[socket_inx],
+						      "cores");
+			}
+
+			if (bit_test(j->core_bitmap_used, *bit_inx)) {
+				data_set_string(data_key_set_int(dcores,
+								 core_inx),
+						"allocated_and_in_use");
+			} else {
+				data_set_string(data_key_set_int(dcores,
+								 core_inx),
+						"allocated");
+			}
+		}
+
+		(*bit_inx)++;
+	}
+
+	xfree(sockets);
+}
+
+/* log_job_resources() used as an example */
+static void _dump_nodes_res(data_t *dnodes, job_resources_t *j)
+{
+	hostlist_t hl = NULL;
+	size_t bit_inx = 0;
+	size_t array_size;
+	size_t sock_inx = 0, sock_reps = 0;
+
+	if (!j->cores_per_socket || !j->nhosts) {
+		/* not enough info present */
+		return;
+	}
+
+	hl = hostlist_create(j->nodes);
+	array_size = bit_size(j->core_bitmap);
+
+	for (size_t node_inx = 0; node_inx < j->nhosts; node_inx++) {
+		char *nodename = hostlist_nth(hl, node_inx);
+
+		if (sock_reps >= j->sock_core_rep_count[sock_inx]) {
+			sock_inx++;
+			sock_reps = 0;
+		}
+		sock_reps++;
+
+		_dump_node_res(dnodes, j, node_inx, nodename, sock_inx,
+			       &bit_inx, array_size);
+
+		free(nodename);
+	}
+
+	FREE_NULL_HOSTLIST(hl);
+}
+
 static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 {
 	xassert(data_get_type(jd) == DATA_TYPE_NULL);
@@ -720,14 +823,12 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 		data_set_null(data_key_set(jd, "job_id"));
 	else
 		data_set_int(data_key_set(jd, "job_id"), job->job_id);
-	data_t *jrsc = data_key_set(jd, "job_resources");
-	data_set_dict(jrsc);
+
 	if (job->job_resrcs) {
 		/* based on log_job_resources() */
+		data_t *jrsc = data_set_dict(data_key_set(jd, "job_resources"));
 		job_resources_t *j = job->job_resrcs;
 		data_set_string(data_key_set(jrsc, "nodes"), j->nodes);
-		const size_t array_size = bit_size(j->core_bitmap);
-		size_t sock_inx = 0, sock_reps = 0, bit_inx = 0;
 
 		if (slurm_conf.select_type_param & (CR_CORE|CR_SOCKET))
 			data_set_int(data_key_set(jrsc, "allocated_cores"),
@@ -738,65 +839,9 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 
 		data_set_int(data_key_set(jrsc, "allocated_hosts"), j->nhosts);
 
-		data_t *nodes = data_key_set(jrsc, "allocated_nodes");
-		data_set_dict(nodes);
-		for (size_t node_inx = 0; node_inx < j->nhosts; node_inx++) {
-			data_t *node = data_key_set_int(nodes, node_inx);
-			data_set_dict(node);
-			data_t *sockets = data_key_set(node, "sockets");
-			data_t *cores = data_key_set(node, "cores");
-			data_set_dict(sockets);
-			data_set_dict(cores);
-			const size_t bit_reps =
-				((size_t) j->sockets_per_node[sock_inx]) *
-				((size_t) j->cores_per_socket[sock_inx]);
-
-			if (sock_reps >= j->sock_core_rep_count[sock_inx]) {
-				sock_inx++;
-				sock_reps = 0;
-			}
-			sock_reps++;
-
-			if (j->memory_allocated)
-				data_set_int(data_key_set(node,
-							  "memory"),
-					     j->memory_allocated[node_inx]);
-
-			data_set_int(data_key_set(node, "cpus"),
-				     j->cpus[node_inx]);
-
-			for (size_t i = 0; i < bit_reps; i++) {
-				if (bit_inx >= array_size) {
-					error("%s: array size wrong", __func__);
-					xassert(false);
-					break;
-				}
-				if (bit_test(j->core_bitmap, bit_inx)) {
-					data_t *socket = data_key_set_int(
-						sockets,
-						(i /
-						 j->cores_per_socket[sock_inx]));
-					data_t *core = data_key_set_int(
-						cores,
-						(i %
-						 j->cores_per_socket[sock_inx]));
-
-					if (bit_test(j->core_bitmap_used,
-						     bit_inx)) {
-						data_set_string(socket,
-								"assigned");
-						data_set_string(core,
-								"assigned");
-					} else {
-						data_set_string(socket,
-								"unassigned");
-						data_set_string(core,
-								"unassigned");
-					}
-				}
-				bit_inx++;
-			}
-		}
+		_dump_nodes_res(
+			data_set_list(data_key_set(jrsc, "allocated_nodes")),
+			j);
 	}
 	data_set_string(data_key_set(jd, "job_state"),
 			job_state_string(job->job_state));

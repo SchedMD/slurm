@@ -1951,7 +1951,11 @@
             "description": "number of assigned job hosts"
           },
           "allocated_nodes": {
-            "$ref": "#/components/schemas/v0.0.38_node_allocation"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/v0.0.38_node_allocation"
+            },
+            "description": "array of allocated nodes"
           }
         }
       },
@@ -1964,15 +1968,21 @@
           },
           "cpus": {
             "type": "integer",
-            "description": "amount of assigned job CPUs"
+            "description": "number of assigned job CPUs"
           },
           "sockets": {
             "type": "object",
-            "description": "assignment status of each socket by socket id"
+            "description": "assignment status of each socket by numeric socket id",
+            "properties": {
+              "cores": {
+                "type": "object",
+                "description": "assignment status of each core by core id in each socket"
+              }
+            }
           },
-          "cores": {
-            "type": "object",
-            "description": "assignment status of each core by core id"
+          "nodename": {
+            "type": "string",
+            "description": "node name"
           }
         }
       },
