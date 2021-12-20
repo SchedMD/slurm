@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
     --exact. It was meant to work this way in 21.08.
  -- Fix regression in 21.08.0 that broke dynamic future nodes.
  -- Fix dynamic future nodes remembering active state on restart.
+ -- Fix powered down nodes getting stuck in COMPLETING+POWERED_DOWN when job is
+    cancelled before nodes are powering up.
 
 * Changes in Slurm 21.08.4
 ==========================
