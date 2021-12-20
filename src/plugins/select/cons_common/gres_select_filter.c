@@ -51,7 +51,6 @@ static void _job_core_filter(gres_state_t *gres_state_job,
 	int i, j, core_ctld;
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_node_state_t *gres_ns = gres_state_node->gres_data;
-	uint32_t plugin_id = gres_state_job->plugin_id;
 	bitstr_t *avail_core_bitmap = NULL;
 	bool use_busy_dev = false;
 
@@ -60,7 +59,7 @@ static void _job_core_filter(gres_state_t *gres_state_job,
 		return;
 
 	if (!use_total_gres &&
-	    gres_id_shared(plugin_id) &&
+	    gres_id_shared(gres_state_job->config_flags) &&
 	    (gres_ns->gres_cnt_alloc != 0)) {
 		/* We must use the ONE already active GRES of this type */
 		use_busy_dev = true;
@@ -952,7 +951,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 		}
 	}
 
-	if (gres_id_shared(sock_gres->gres_state_job->plugin_id) &&
+	if (gres_id_shared(sock_gres->gres_state_job->config_flags) &&
 	    (gres_ns->gres_cnt_alloc != 0)) {
 		/* We must use the ONE already active GRES of this type */
 		use_busy_dev = true;
@@ -2228,7 +2227,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 
 			if (gres_js->gres_per_node &&
 			    gres_id_shared(
-				    sock_gres->gres_state_job->plugin_id)) {
+				    sock_gres->gres_state_job->config_flags)) {
 				/* gres/mps: select specific topo bit for job */
 				_pick_specific_topo(job_res, i, node_inx,
 						    sock_gres, job_id,

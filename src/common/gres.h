@@ -1115,7 +1115,7 @@ extern void gres_clear_tres_cnt(uint64_t *tres_cnt, bool locked);
  * Return TRUE if this plugin ID consumes GRES count > 1 for a single device
  * file (e.g. MPS)
  */
-extern bool gres_id_shared(uint32_t plugin_id);
+extern bool gres_id_shared(uint32_t config_flags);
 
 /*
  * Return TRUE if this plugin ID shares resources with another GRES that

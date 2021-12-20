@@ -162,7 +162,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	char *gres_name = gres_state_job->gres_name;
-	uint32_t plugin_id = gres_state_job->plugin_id;
+	uint32_t config_flags = gres_state_job->config_flags;
 	int j, sz1, sz2;
 	int64_t gres_cnt, i;
 	gres_job_state_t  *gres_js_alloc;
@@ -184,7 +184,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	xassert(gres_js);
 	xassert(gres_ns);
 
-	if (gres_id_shared(plugin_id)) {
+	if (gres_id_shared(config_flags)) {
 		shared_gres = true;
 		gres_per_bit = gres_js->gres_per_node;
 	}
@@ -1055,7 +1055,7 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	char *gres_name = gres_state_job->gres_name;
-	uint32_t plugin_id = gres_state_job->plugin_id;
+	uint32_t config_flags = gres_state_job->config_flags;
 	int i, j, len, sz1, sz2;
 	uint64_t gres_cnt = 0, k;
 	uint64_t gres_per_bit = 1;
@@ -1078,7 +1078,7 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 		return SLURM_ERROR;
 	}
 
-	if (gres_id_shared(plugin_id)) {
+	if (gres_id_shared(config_flags)) {
 		gres_per_bit = gres_js->gres_per_node;
 		xassert(gres_per_bit);
 	}
@@ -1979,7 +1979,6 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_step_state_t *gres_ss_req = gres_state_step_req->gres_data;
-	uint32_t plugin_id = gres_state_step_req->plugin_id;
 	uint64_t gres_alloc;
 	bitstr_t *gres_bit_alloc;
 	int i, len;
@@ -2064,7 +2063,7 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 
 	gres_bit_alloc = bit_copy(gres_js->gres_bit_alloc[node_offset]);
 	len = bit_size(gres_bit_alloc);
-	if (gres_id_shared(plugin_id)) {
+	if (gres_id_shared(gres_state_job->config_flags)) {
 		for (i = 0; i < len; i++) {
 			if (gres_alloc > 0) {
 				if (bit_test(gres_bit_alloc, i))
