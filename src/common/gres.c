@@ -5899,18 +5899,22 @@ static bool _job_has_gres_bits(List job_gres_list)
  * Return count of configured GRES.
  * NOTE: For gres/mps return count of gres/gpu
  */
-static int _get_node_gres_cnt(List node_gres_list, uint32_t plugin_id)
+static int _get_node_gres_cnt(List node_gres_list, gres_state_t *gres_state_job)
 {
 	ListIterator node_gres_iter;
 	gres_node_state_t *gres_ns;
 	gres_state_t *gres_state_node;
 	int gres_cnt = 0;
+	uint32_t plugin_id;
 
 	if (!node_gres_list)
 		return 0;
 
-	if (plugin_id == mps_plugin_id)
+	if (gres_id_shared(gres_state_job->config_flags))
 		plugin_id = gpu_plugin_id;
+	else
+		plugin_id = gres_state_job->plugin_id;
+
 	node_gres_iter = list_iterator_create(node_gres_list);
 	while ((gres_state_node = list_next(node_gres_iter))) {
 		if (gres_state_node->plugin_id != plugin_id)
@@ -5959,7 +5963,7 @@ static bool _validate_node_gres_cnt(uint32_t job_id, List job_gres_list,
 			continue;
 		job_gres_cnt = bit_size(gres_js->gres_bit_alloc[node_inx]);
 		node_gres_cnt = _get_node_gres_cnt(node_gres_list,
-						   gres_state_job->plugin_id);
+						   gres_state_job);
 		if (job_gres_cnt != node_gres_cnt) {
 			error("%s: Killing job %u: gres/%s count mismatch on node "
 			      "%s (%d != %d)",
