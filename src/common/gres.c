@@ -108,6 +108,23 @@ strong_alias(gres_sock_delete, slurm_gres_sock_delete);
 strong_alias(destroy_gres_device, slurm_destroy_gres_device);
 strong_alias(destroy_gres_slurmd_conf, slurm_destroy_gres_slurmd_conf);
 
+static s_p_options_t _gres_options[] = {
+	{"AutoDetect", S_P_STRING},
+	{"Count", S_P_STRING},	/* Number of Gres available */
+	{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource
+				 * (deprecated, use Cores) */
+	{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
+	{"File",  S_P_STRING},	/* Path to Gres device */
+	{"Files", S_P_STRING},	/* Path to Gres device */
+	{"Flags", S_P_STRING},	/* GRES Flags */
+	{"Link",  S_P_STRING},	/* Communication link IDs */
+	{"Links", S_P_STRING},	/* Communication link IDs */
+	{"MultipleFiles", S_P_STRING}, /* list of GRES device files */
+	{"Name",  S_P_STRING},	/* Gres name */
+	{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
+	{NULL}
+};
+
 /* Gres symbols provided by the plugin */
 typedef struct slurm_gres_ops {
 	int		(*node_config_load)	( List gres_conf_list,
@@ -1171,22 +1188,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			      const char *key, const char *value,
 			      const char *line, char **leftover)
 {
-	static s_p_options_t _gres_options[] = {
-		{"AutoDetect", S_P_STRING},
-		{"Count", S_P_STRING},	/* Number of Gres available */
-		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource
-					 * (deprecated, use Cores) */
-		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
-		{"File",  S_P_STRING},	/* Path to Gres device */
-		{"Files", S_P_STRING},	/* Path to Gres device */
-		{"Flags", S_P_STRING},	/* GRES Flags */
-		{"Link",  S_P_STRING},	/* Communication link IDs */
-		{"Links", S_P_STRING},	/* Communication link IDs */
-		{"MultipleFiles", S_P_STRING}, /* list of GRES device files */
-		{"Name",  S_P_STRING},	/* Gres name */
-		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
-		{NULL}
-	};
 	int i;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t *p;
@@ -1399,21 +1400,6 @@ static int _parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 				   const char *key, const char *value,
 				   const char *line, char **leftover)
 {
-	static s_p_options_t _gres_options[] = {
-		{"AutoDetect", S_P_STRING},
-		{"Count", S_P_STRING},	/* Number of Gres available */
-		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
-		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
-		{"File",  S_P_STRING},	/* Path to Gres device */
-		{"Files",  S_P_STRING},	/* Path to Gres device */
-		{"Flags", S_P_STRING},	/* GRES Flags */
-		{"Link",  S_P_STRING},	/* Communication link IDs */
-		{"Links", S_P_STRING},	/* Communication link IDs */
-		{"MultipleFiles", S_P_STRING}, /* list of GRES device files */
-		{"Name",  S_P_STRING},	/* Gres name */
-		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
-		{NULL}
-	};
 	s_p_hashtbl_t *tbl;
 
 	if (gres_node_name && value) {
