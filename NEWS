@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 21.08.6
+==========================
+
 * Changes in Slurm 21.08.5
 ==========================
  -- Fix issue where typeless GRES node updates were not immediately reflected.
