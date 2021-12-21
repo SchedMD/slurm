@@ -457,3 +457,69 @@ extern void print_gres_list_parsable(List gres_list)
 {
 	_print_gres_list_helper(gres_list, LOG_LEVEL_INFO, true);
 }
+
+extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
+				    bitstr_t *usable_gres, uint64_t gres_cnt,
+				    bool *already_seen, int *local_inx,
+				    bool is_task, bool is_job,
+				    gres_internal_flags_t flags,
+				    uint32_t gres_conf_flags,
+				    List gres_devices)
+{
+	char *global_list = NULL, *local_list = NULL, *slurm_env_var = NULL;
+
+	if (is_job)
+		slurm_env_var = "SLURM_JOB_GPUS";
+	else
+		slurm_env_var = "SLURM_STEP_GPUS";
+
+	if (*already_seen) {
+		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
+
+		/*
+		 * Determine which existing env to check for local list.  We
+		 * only need one since they are all the same and this is only
+		 * for printing an error later.
+		 */
+		if (gres_conf_flags & GRES_CONF_ENV_NVML)
+			local_list = xstrdup(getenvp(*env_ptr,
+						     "CUDA_VISIBLE_DEVICES"));
+		else if (gres_conf_flags & GRES_CONF_ENV_RSMI)
+			local_list = xstrdup(getenvp(*env_ptr,
+						     "ROCR_VISIBLE_DEVICES"));
+		else if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
+			local_list = xstrdup(getenvp(*env_ptr,
+						     "GPU_DEVICE_ORDINAL"));
+	}
+
+	common_gres_set_env(gres_devices, env_ptr,
+			    usable_gres, "", local_inx,  gres_bit_alloc,
+			    &local_list, &global_list, is_task, is_job, NULL,
+			    flags, false);
+
+	if (gres_cnt) {
+		char *gpus_on_node = xstrdup_printf("%"PRIu64, gres_cnt);
+		env_array_overwrite(env_ptr, "SLURM_GPUS_ON_NODE",
+				    gpus_on_node);
+		xfree(gpus_on_node);
+	}
+
+	if (global_list) {
+		env_array_overwrite(env_ptr, slurm_env_var, global_list);
+		xfree(global_list);
+	}
+
+	if (local_list) {
+		if (gres_conf_flags & GRES_CONF_ENV_NVML)
+			env_array_overwrite(env_ptr, "CUDA_VISIBLE_DEVICES",
+					    local_list);
+		if (gres_conf_flags & GRES_CONF_ENV_RSMI)
+			env_array_overwrite(env_ptr, "ROCR_VISIBLE_DEVICES",
+					    local_list);
+		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
+			env_array_overwrite(env_ptr, "GPU_DEVICE_ORDINAL",
+					    local_list);
+		xfree(local_list);
+		*already_seen = true;
+	}
+}

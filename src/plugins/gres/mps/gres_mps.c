@@ -155,22 +155,22 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 		     bool is_task, bool is_job, gres_internal_flags_t flags)
 {
 	char *global_list = NULL, *local_list = NULL, *perc_env = NULL;
-	char perc_str[64], *slurm_env_var = NULL;
+	char perc_str[64];
 	uint64_t count_on_dev, percentage;
 	int global_id = -1;
 
-	if (is_job)
-		slurm_env_var = "SLURM_JOB_GPUS";
-	else
-		slurm_env_var = "SLURM_STEP_GPUS";
 
 	if (*already_seen) {
-		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
-		local_list = xstrdup(getenvp(*env_ptr,
-					     "CUDA_VISIBLE_DEVICES"));
 		perc_env = xstrdup(getenvp(*env_ptr,
 					  "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"));
 	}
+
+	gres_common_gpu_set_env(env_ptr, gres_bit_alloc,
+				usable_gres, gres_per_node,
+				already_seen, local_inx,
+				is_task, is_job, flags, GRES_CONF_ENV_NVML,
+				gres_devices);
+
 
 	common_gres_set_env(gres_devices, env_ptr,
 			    usable_gres, "", local_inx, gres_bit_alloc,
@@ -199,23 +199,6 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 		env_array_overwrite(env_ptr,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
 				    perc_str);
-	}
-
-	if (global_list) {
-		env_array_overwrite(env_ptr, slurm_env_var, global_list);
-		xfree(global_list);
-	}
-
-	if (local_list) {
-		/*
-		 * CUDA_VISIBLE_DEVICES is relative to the MPS server.
-		 * With only one GPU under the control of MPS, the device
-		 * number will always be "0".
-		 */
-		env_array_overwrite(env_ptr, "CUDA_VISIBLE_DEVICES", "0");
-		env_array_overwrite(env_ptr, "GPU_DEVICE_ORDINAL", "0");
-		xfree(local_list);
-		*already_seen = true;
 	}
 }
 

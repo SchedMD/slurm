@@ -104,69 +104,6 @@ extern void gres_p_step_hardware_fini(void)
 	gpu_g_step_hardware_fini();
 }
 
-static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
-		     bitstr_t *usable_gres, uint64_t gres_cnt,
-		     bool *already_seen, int *local_inx,
-		     bool is_task, bool is_job, gres_internal_flags_t flags)
-{
-	char *global_list = NULL, *local_list = NULL, *slurm_env_var = NULL;
-
-	if (is_job)
-		slurm_env_var = "SLURM_JOB_GPUS";
-	else
-		slurm_env_var = "SLURM_STEP_GPUS";
-
-	if (*already_seen) {
-		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
-
-		/*
-		 * Determine which existing env to check for local list.  We
-		 * only need one since they are all the same and this is only
-		 * for printing an error later.
-		 */
-		if (node_flags & GRES_CONF_ENV_NVML)
-			local_list = xstrdup(getenvp(*env_ptr,
-						     "CUDA_VISIBLE_DEVICES"));
-		else if (node_flags & GRES_CONF_ENV_RSMI)
-			local_list = xstrdup(getenvp(*env_ptr,
-						     "ROCR_VISIBLE_DEVICES"));
-		else if (node_flags & GRES_CONF_ENV_OPENCL)
-			local_list = xstrdup(getenvp(*env_ptr,
-						     "GPU_DEVICE_ORDINAL"));
-	}
-
-	common_gres_set_env(gres_devices, env_ptr,
-			    usable_gres, "", local_inx,  gres_bit_alloc,
-			    &local_list, &global_list, is_task, is_job, NULL,
-			    flags, false);
-
-	if (gres_cnt) {
-		char *gpus_on_node = xstrdup_printf("%"PRIu64, gres_cnt);
-		env_array_overwrite(env_ptr, "SLURM_GPUS_ON_NODE",
-				    gpus_on_node);
-		xfree(gpus_on_node);
-	}
-
-	if (global_list) {
-		env_array_overwrite(env_ptr, slurm_env_var, global_list);
-		xfree(global_list);
-	}
-
-	if (local_list) {
-		if (node_flags & GRES_CONF_ENV_NVML)
-			env_array_overwrite(env_ptr, "CUDA_VISIBLE_DEVICES",
-					    local_list);
-		if (node_flags & GRES_CONF_ENV_RSMI)
-			env_array_overwrite(env_ptr, "ROCR_VISIBLE_DEVICES",
-					    local_list);
-		if (node_flags & GRES_CONF_ENV_OPENCL)
-			env_array_overwrite(env_ptr, "GPU_DEVICE_ORDINAL",
-					    local_list);
-		xfree(local_list);
-		*already_seen = true;
-	}
-}
-
 /* Sort strings in natural sort ascending order, except sort nulls last */
 static int _sort_string_null_last(char *x, char *y)
 {
@@ -965,8 +902,9 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 	int local_inx = 0;
 	bool already_seen = false;
 
-	_set_env(job_env_ptr, gres_bit_alloc, NULL, gres_cnt,
-		 &already_seen, &local_inx, false, true, flags);
+	gres_common_gpu_set_env(job_env_ptr, gres_bit_alloc, NULL, gres_cnt,
+				&already_seen, &local_inx, false, true, flags,
+				node_flags, gres_devices);
 }
 
 /*
@@ -981,8 +919,9 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 	static int local_inx = 0;
 	static bool already_seen = false;
 
-	_set_env(step_env_ptr, gres_bit_alloc, NULL, gres_cnt,
-		 &already_seen, &local_inx, false, false, flags);
+	gres_common_gpu_set_env(step_env_ptr, gres_bit_alloc, NULL, gres_cnt,
+				&already_seen, &local_inx, false, false, flags,
+				node_flags, gres_devices);
 }
 
 /*
@@ -998,8 +937,10 @@ extern void gres_p_task_set_env(char ***step_env_ptr,
 	static int local_inx = 0;
 	static bool already_seen = false;
 
-	_set_env(step_env_ptr, gres_bit_alloc, usable_gres, gres_cnt,
-		 &already_seen, &local_inx, true, false, flags);
+	gres_common_gpu_set_env(
+		step_env_ptr, gres_bit_alloc, usable_gres, gres_cnt,
+		&already_seen, &local_inx, true, false, flags,
+		node_flags, gres_devices);
 }
 
 /* Send GPU-specific GRES information to slurmstepd via a buffer */
