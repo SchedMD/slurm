@@ -504,3 +504,52 @@ extern int gres_c_s_init_share_devices(List gres_conf_list,
 	return rc;
 }
 
+extern void gres_c_s_send_stepd(buf_t *buffer)
+{
+	uint32_t shared_cnt;
+	shared_dev_info_t *shared_ptr;
+	ListIterator itr;
+
+	if (!shared_info) {
+		shared_cnt = 0;
+		pack32(shared_cnt, buffer);
+	} else {
+		shared_cnt = list_count(shared_info);
+		pack32(shared_cnt, buffer);
+		itr = list_iterator_create(shared_info);
+		while ((shared_ptr = list_next(itr))) {
+			pack64(shared_ptr->count, buffer);
+			pack64(shared_ptr->id, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	return;
+}
+
+/* Receive GRES information from slurmd on the specified file descriptor */
+extern void gres_c_s_recv_stepd(buf_t *buffer)
+{
+	shared_dev_info_t *shared_ptr = NULL;
+	uint64_t uint64_tmp;
+	uint32_t shared_cnt;
+
+	safe_unpack32(&shared_cnt, buffer);
+	if (!shared_cnt)
+		return;
+
+	shared_info = list_create(xfree_ptr);
+	for (uint32_t i = 0; i < shared_cnt; i++) {
+		shared_ptr = xmalloc(sizeof(shared_dev_info_t));
+		safe_unpack64(&uint64_tmp, buffer);
+		shared_ptr->count = uint64_tmp;
+		safe_unpack64(&uint64_tmp, buffer);
+		shared_ptr->id = uint64_tmp;
+		list_append(shared_info, shared_ptr);
+	}
+	return;
+
+unpack_error:
+	error("failed");
+	xfree(shared_ptr);
+	return;
+}

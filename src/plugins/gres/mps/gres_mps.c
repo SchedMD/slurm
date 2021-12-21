@@ -279,57 +279,20 @@ extern void gres_p_task_set_env(char ***step_env_ptr,
 /* Send GRES information to slurmstepd on the specified file descriptor */
 extern void gres_p_send_stepd(buf_t *buffer)
 {
-	int mps_cnt;
-	shared_dev_info_t *mps_ptr;
-	ListIterator itr;
-
 	common_send_stepd(buffer, gres_devices);
 
-	if (!shared_info) {
-		mps_cnt = 0;
-		pack32(mps_cnt, buffer);
-	} else {
-		mps_cnt = list_count(shared_info);
-		pack32(mps_cnt, buffer);
-		itr = list_iterator_create(shared_info);
-		while ((mps_ptr = list_next(itr))) {
-			pack64(mps_ptr->count, buffer);
-			pack64(mps_ptr->id, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
+	gres_c_s_send_stepd(buffer);
+
 	return;
 }
 
 /* Receive GRES information from slurmd on the specified file descriptor */
 extern void gres_p_recv_stepd(buf_t *buffer)
 {
-	int i, mps_cnt;
-	shared_dev_info_t *mps_ptr = NULL;
-	uint64_t uint64_tmp;
-	uint32_t cnt;
-
 	common_recv_stepd(buffer, &gres_devices);
 
-	safe_unpack32(&cnt, buffer);
-	mps_cnt = cnt;
-	if (!mps_cnt)
-		return;
+	gres_c_s_recv_stepd(buffer);
 
-	shared_info = list_create(xfree_ptr);
-	for (i = 0; i < mps_cnt; i++) {
-		mps_ptr = xmalloc(sizeof(shared_dev_info_t));
-		safe_unpack64(&uint64_tmp, buffer);
-		mps_ptr->count = uint64_tmp;
-		safe_unpack64(&uint64_tmp, buffer);
-		mps_ptr->id = uint64_tmp;
-		list_append(shared_info, mps_ptr);
-	}
-	return;
-
-unpack_error:
-	error("failed");
-	xfree(mps_ptr);
 	return;
 }
 

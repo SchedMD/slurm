@@ -58,4 +58,16 @@ extern int gres_c_s_init_share_devices(List gres_conf_list,
 				       node_config_load_t *config,
 				       char *sharing_name,
 				       char *shared_name);
+
+/*
+ * Send shared_info over to the stepd from the slurmd.
+ */
+extern void gres_c_s_send_stepd(buf_t *buffer);
+
+/*
+ * Fill in shared_info with GRES information from slurmd on the specified file
+ * descriptor
+ */
+extern void gres_c_s_recv_stepd(buf_t *buffer);
+
 #endif
