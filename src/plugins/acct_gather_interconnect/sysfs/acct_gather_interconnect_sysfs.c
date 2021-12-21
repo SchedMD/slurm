@@ -123,6 +123,7 @@ static long unsigned _load(const char *file, unsigned long start)
 
 	if (fscanf(fp, "%lu", &new) != 1) {
 		debug("Failed to read value from `%s`", file);
+		fclose(fp);
 		return 0;
 	}
 
