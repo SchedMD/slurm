@@ -103,6 +103,8 @@ typedef struct {
 	bool track_script_signalled;
 } script_response_t;
 
+static void _incr_script_cnt(void);
+
 static int slurmctld_readfd = -1;
 static int slurmctld_writefd = -1;
 static pid_t slurmscriptd_pid;
@@ -288,6 +290,8 @@ static int _send_to_slurmscriptd(uint32_t msg_type, void *msg_data, bool wait,
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
+	if (msg_type == SLURMSCRIPTD_REQUEST_RUN_SCRIPT)
+		_incr_script_cnt();
 	_write_msg(slurmctld_writefd, msg.msg_type, buffer);
 
 	if (wait) {
@@ -967,7 +971,6 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 	run_script_msg.timeout = timeout;
 
 	/* Send message; wait for response */
-	_incr_script_cnt();
 	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
 				       &run_script_msg, true, resp,
 				       track_script_signalled);
@@ -1004,7 +1007,6 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 	run_script_msg.script_path = script;
 	run_script_msg.timeout = (uint32_t) slurm_conf.prolog_epilog_timeout;
 
-	_incr_script_cnt();
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT, &run_script_msg,
 			      false, NULL, NULL);
 
