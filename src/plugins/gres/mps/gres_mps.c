@@ -377,30 +377,8 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 	gres_device_t *gres_device;
 	ListIterator iter;
 
-	xassert(epilog_env_ptr);
-
-	if (!gres_ei)
-		return;
-
-	if (!gres_devices)
-		return;
-
-	if (gres_ei->node_cnt == 0)	/* no_consume */
-		return;
-
-	if (node_inx > gres_ei->node_cnt) {
-		error("bad node index (%d > %u)",
-		      node_inx, gres_ei->node_cnt);
-		return;
-	}
-
-	if (*epilog_env_ptr) {
-		for (env_inx = 0; (*epilog_env_ptr)[env_inx]; env_inx++)
-			;
-		xrealloc(*epilog_env_ptr, sizeof(char *) * (env_inx + 3));
-	} else {
-		*epilog_env_ptr = xcalloc(3, sizeof(char *));
-	}
+	gres_common_epilog_set_env(epilog_env_ptr, gres_ei, node_inx,
+				   GRES_CONF_ENV_NVML, gres_devices);
 
 	if (gres_ei->gres_bit_alloc &&
 	    gres_ei->gres_bit_alloc[node_inx])
@@ -417,10 +395,6 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 			}
 		}
 		list_iterator_destroy(iter);
-	}
-	if (global_id >= 0) {
-		xstrfmtcat((*epilog_env_ptr)[env_inx++],
-			   "CUDA_VISIBLE_DEVICES=%d", global_id);
 	}
 	if ((global_id >= 0) &&
 	    gres_ei->gres_cnt_node_alloc &&

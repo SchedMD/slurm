@@ -523,3 +523,95 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 		*already_seen = true;
 	}
 }
+
+/*
+ * Set environment variables as appropriate for a job's prolog or epilog based
+ * GRES allocated to the job.
+ */
+extern void gres_common_epilog_set_env(char ***epilog_env_ptr,
+				       gres_epilog_info_t *gres_ei,
+				       int node_inx, uint32_t gres_conf_flags,
+				       List gres_devices)
+{
+	int dev_inx_first = -1, dev_inx_last, dev_inx;
+	int env_inx = 0;
+	gres_device_t *gres_device;
+	char *vendor_gpu_str = NULL;
+	char *slurm_gpu_str = NULL;
+	char *sep = "";
+	ListIterator iter;
+
+	xassert(epilog_env_ptr);
+
+	if (!gres_ei)
+		return;
+
+	if (!gres_devices)
+		return;
+
+	if (gres_ei->node_cnt == 0)	/* no_consume */
+		return;
+
+	if (node_inx > gres_ei->node_cnt) {
+		error("bad node index (%d > %u)",
+		      node_inx, gres_ei->node_cnt);
+		return;
+	}
+
+	if (*epilog_env_ptr) {
+		for (env_inx = 0; (*epilog_env_ptr)[env_inx]; env_inx++)
+			;
+		xrealloc(*epilog_env_ptr, sizeof(char *) * (env_inx + 5));
+	} else {
+		*epilog_env_ptr = xcalloc(5, sizeof(char *));
+	}
+
+	if (gres_ei->gres_bit_alloc &&
+	    gres_ei->gres_bit_alloc[node_inx]) {
+		dev_inx_first = bit_ffs(gres_ei->gres_bit_alloc[node_inx]);
+	}
+	if (dev_inx_first >= 0)
+		dev_inx_last = bit_fls(gres_ei->gres_bit_alloc[node_inx]);
+	else
+		dev_inx_last = -2;
+	for (dev_inx = dev_inx_first; dev_inx <= dev_inx_last; dev_inx++) {
+		if (!bit_test(gres_ei->gres_bit_alloc[node_inx], dev_inx))
+			continue;
+		iter = list_iterator_create(gres_devices);
+		while ((gres_device = list_next(iter))) {
+			if (gres_device->index != dev_inx)
+				continue;
+
+			if (gres_device->unique_id)
+				xstrfmtcat(vendor_gpu_str, "%s%s", sep,
+					   gres_device->unique_id);
+			else
+				xstrfmtcat(vendor_gpu_str, "%s%d", sep,
+					   gres_device->index);
+			xstrfmtcat(slurm_gpu_str, "%s%d", sep,
+				   gres_device->index);
+			sep = ",";
+			break;
+		}
+		list_iterator_destroy(iter);
+	}
+	if (vendor_gpu_str) {
+		if (gres_conf_flags & GRES_CONF_ENV_NVML)
+			xstrfmtcat((*epilog_env_ptr)[env_inx++],
+				   "CUDA_VISIBLE_DEVICES=%s", vendor_gpu_str);
+		if (gres_conf_flags & GRES_CONF_ENV_RSMI)
+			xstrfmtcat((*epilog_env_ptr)[env_inx++],
+				   "ROCR_VISIBLE_DEVICES=%s", vendor_gpu_str);
+		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
+			xstrfmtcat((*epilog_env_ptr)[env_inx++],
+				   "GPU_DEVICE_ORDINAL=%s", vendor_gpu_str);
+		xfree(vendor_gpu_str);
+	}
+	if (slurm_gpu_str) {
+		xstrfmtcat((*epilog_env_ptr)[env_inx++], "SLURM_JOB_GPUS=%s",
+			   slurm_gpu_str);
+		xfree(slurm_gpu_str);
+	}
+
+	return;
+}
