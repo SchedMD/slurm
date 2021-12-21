@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 21.08.6
 ==========================
+ -- Handle typed shared GRES better in accounting.
 
 * Changes in Slurm 21.08.5
 ==========================

@@ -627,9 +627,6 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 	 * one entry for each type of gres separately
 	 */
 	for (j = 0; j < node_gres_ptr->type_cnt; j++) {
-		if (shared_gres) {
-			error("Shared gres shouldn't have types");
-		}
 		if (job_gres_ptr->type_id &&
 		    job_gres_ptr->type_id != node_gres_ptr->type_id[j])
 			continue;
@@ -670,7 +667,8 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 				bit_nclear(left_over_bits, (bitoff_t)0,
 					   last_gres_bit);
 			job_alloc_gres_ptr->gres_bit_alloc[node_offset] =
-				bit_pick_cnt(left_over_bits, gres_cnt);
+				bit_pick_cnt(left_over_bits,
+					     gres_cnt / gres_per_bit);
 			FREE_NULL_BITMAP(left_over_bits);
 			if (gres_cnt)
 				last_gres_bit = bit_fls(
