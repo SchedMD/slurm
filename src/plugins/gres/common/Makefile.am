@@ -9,4 +9,4 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 
 noinst_LTLIBRARIES = libgres_common.la
 libgres_common_la_SOURCES =    \
-	gres_common.c gres_common.h
+	gres_common.c gres_common.h gres_c_s.c gres_c_s.h

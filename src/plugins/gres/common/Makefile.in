@@ -150,7 +150,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libgres_common_la_LIBADD =
-am_libgres_common_la_OBJECTS = gres_common.lo
+am_libgres_common_la_OBJECTS = gres_common.lo gres_c_s.lo
 libgres_common_la_OBJECTS = $(am_libgres_common_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -171,7 +171,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/gres_common.Plo
+am__depfiles_remade = ./$(DEPDIR)/gres_c_s.Plo \
+	./$(DEPDIR)/gres_common.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -477,7 +478,7 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 # making a .la
 noinst_LTLIBRARIES = libgres_common.la
 libgres_common_la_SOURCES = \
-	gres_common.c gres_common.h
+	gres_common.c gres_common.h gres_c_s.c gres_c_s.h
 
 all: all-am
 
@@ -533,6 +534,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_c_s.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_common.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -660,7 +662,8 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/gres_common.Plo
+		-rm -f ./$(DEPDIR)/gres_c_s.Plo
+	-rm -f ./$(DEPDIR)/gres_common.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -706,7 +709,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/gres_common.Plo
+		-rm -f ./$(DEPDIR)/gres_c_s.Plo
+	-rm -f ./$(DEPDIR)/gres_common.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

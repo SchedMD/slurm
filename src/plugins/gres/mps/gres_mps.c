@@ -60,6 +60,7 @@
 #include "src/common/xstring.h"
 
 #include "../common/gres_common.h"
+#include "../common/gres_c_s.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -92,333 +93,6 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
 static char	*gres_name		= "mps";
 static List	gres_devices		= NULL;
-static List	mps_info		= NULL;
-
-typedef struct mps_dev_info {
-	uint64_t count;
-	int id;
-} mps_dev_info_t;
-
-static void _delete_gres_list(void *x)
-{
-	gres_slurmd_conf_t *p = (gres_slurmd_conf_t *) x;
-	xfree(p->cpus);
-	FREE_NULL_BITMAP(p->cpus_bitmap);
-	xfree(p->file);
-	xfree(p->links);
-	xfree(p->name);
-	xfree(p->type_name);
-	xfree(p);
-}
-
-/*
- * Convert all GPU records to a new entries in a list where each File is a
- * unique device (i.e. convert a record with "File=nvidia[0-3]" into 4 separate
- * records).
- */
-static List _build_gpu_list(List gres_list)
-{
-	ListIterator itr;
-	gres_slurmd_conf_t *gres_slurmd_conf, *gpu_record;
-	List gpu_list;
-	hostlist_t hl;
-	char *f_name;
-	bool log_fname = true;
-
-	if (gres_list == NULL)
-		return NULL;
-
-	gpu_list = list_create(_delete_gres_list);
-	itr = list_iterator_create(gres_list);
-	while ((gres_slurmd_conf = list_next(itr))) {
-		if (xstrcmp(gres_slurmd_conf->name, "gpu"))
-			continue;
-		if (!gres_slurmd_conf->file) {
-			if (log_fname) {
-				error("%s: GPU configuration lacks \"File\" specification",
-				      plugin_name);
-				log_fname = false;
-			}
-			continue;
-		}
-		hl = hostlist_create(gres_slurmd_conf->file);
-		while ((f_name = hostlist_shift(hl))) {
-			gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
-			gpu_record->config_flags =
-				gres_slurmd_conf->config_flags;
-			if (gres_slurmd_conf->type_name) {
-				gpu_record->config_flags |=
-					GRES_CONF_HAS_TYPE;
-			}
-			gpu_record->count = 1;
-			gpu_record->cpu_cnt = gres_slurmd_conf->cpu_cnt;
-			gpu_record->cpus = xstrdup(gres_slurmd_conf->cpus);
-			if (gres_slurmd_conf->cpus_bitmap) {
-				gpu_record->cpus_bitmap =
-					bit_copy(gres_slurmd_conf->cpus_bitmap);
-			}
-			gpu_record->file = xstrdup(f_name);
-			gpu_record->links = xstrdup(gres_slurmd_conf->links);
-			gpu_record->name = xstrdup(gres_slurmd_conf->name);
-			gpu_record->plugin_id = gres_slurmd_conf->plugin_id;
-			gpu_record->type_name =
-				xstrdup(gres_slurmd_conf->type_name);
-			gpu_record->unique_id =
-				xstrdup(gres_slurmd_conf->unique_id);
-			list_append(gpu_list, gpu_record);
-			free(f_name);
-		}
-		hostlist_destroy(hl);
-		(void) list_delete_item(itr);
-	}
-	list_iterator_destroy(itr);
-
-	return gpu_list;
-}
-
-/*
- * Convert all MPS records to a new entries in a list where each File is a
- * unique device (i.e. convert a record with "File=nvidia[0-3]" into 4 separate
- * records). Similar to _build_gpu_list(), but we copy more fields, divide the
- * "Count" across all MPS records and remove from the original list.
- */
-static List _build_mps_list(List gres_list)
-{
-	ListIterator itr;
-	gres_slurmd_conf_t *gres_slurmd_conf, *mps_record;
-	List mps_list;
-	hostlist_t hl;
-	char *f_name;
-	uint64_t count_per_file;
-	int mps_no_file_recs = 0, mps_file_recs = 0;
-
-	if (gres_list == NULL)
-		return NULL;
-
-	mps_list = list_create(_delete_gres_list);
-	itr = list_iterator_create(gres_list);
-	while ((gres_slurmd_conf = list_next(itr))) {
-		if (xstrcmp(gres_slurmd_conf->name, "mps"))
-			continue;
-		if (!gres_slurmd_conf->file) {
-			if (mps_no_file_recs)
-				fatal("gres/mps: bad configuration, multiple configurations without \"File\"");
-			if (mps_file_recs)
-				fatal("gres/mps: multiple configurations with and without \"File\"");
-			mps_no_file_recs++;
-			mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
-			mps_record->config_flags =
-				gres_slurmd_conf->config_flags;
-			if (gres_slurmd_conf->type_name)
-				mps_record->config_flags |= GRES_CONF_HAS_TYPE;
-			mps_record->count = gres_slurmd_conf->count;
-			mps_record->cpu_cnt = gres_slurmd_conf->cpu_cnt;
-			mps_record->cpus = xstrdup(gres_slurmd_conf->cpus);
-			if (gres_slurmd_conf->cpus_bitmap) {
-				mps_record->cpus_bitmap =
-					bit_copy(gres_slurmd_conf->cpus_bitmap);
-			}
-			mps_record->name = xstrdup(gres_slurmd_conf->name);
-			mps_record->plugin_id = gres_slurmd_conf->plugin_id;
-			mps_record->type_name =
-				xstrdup(gres_slurmd_conf->type_name);
-			mps_record->unique_id =
-				xstrdup(gres_slurmd_conf->unique_id);
-			list_append(mps_list, mps_record);
-		} else {
-			mps_file_recs++;
-			if (mps_no_file_recs)
-				fatal("gres/mps: multiple configurations with and without \"File\"");
-			hl = hostlist_create(gres_slurmd_conf->file);
-			count_per_file =
-				gres_slurmd_conf->count / hostlist_count(hl);
-			while ((f_name = hostlist_shift(hl))) {
-				mps_record =xmalloc(sizeof(gres_slurmd_conf_t));
-				mps_record->config_flags =
-					gres_slurmd_conf->config_flags;
-				if (gres_slurmd_conf->type_name) {
-					mps_record->config_flags |=
-						GRES_CONF_HAS_TYPE;
-				}
-				mps_record->count = count_per_file;
-				mps_record->cpu_cnt = gres_slurmd_conf->cpu_cnt;
-				mps_record->cpus = xstrdup(
-					gres_slurmd_conf->cpus);
-				if (gres_slurmd_conf->cpus_bitmap) {
-					mps_record->cpus_bitmap =
-					     bit_copy(gres_slurmd_conf->
-						      cpus_bitmap);
-				}
-				mps_record->file = xstrdup(f_name);
-				mps_record->name = xstrdup(
-					gres_slurmd_conf->name);
-				mps_record->plugin_id =
-					gres_slurmd_conf->plugin_id;
-				mps_record->type_name =
-					xstrdup(gres_slurmd_conf->type_name);
-				mps_record->unique_id =
-					xstrdup(gres_slurmd_conf->unique_id);
-				list_append(mps_list, mps_record);
-				free(f_name);
-			}
-			hostlist_destroy(hl);
-		}
-		(void) list_delete_item(itr);
-	}
-	list_iterator_destroy(itr);
-
-	return mps_list;
-}
-
-/*
- * Count of gres/mps records is zero, remove them from GRES list sent to
- * slurmctld daemon.
- */
-static void _remove_mps_recs(List gres_list)
-{
-	ListIterator itr;
-	gres_slurmd_conf_t *gres_slurmd_conf;
-
-	if (gres_list == NULL)
-		return;
-
-	itr = list_iterator_create(gres_list);
-	while ((gres_slurmd_conf = list_next(itr))) {
-		if (!xstrcmp(gres_slurmd_conf->name, "mps")) {
-			(void) list_delete_item(itr);
-		}
-	}
-	list_iterator_destroy(itr);
-}
-
-/* Distribute MPS Count to records on original list */
-static void _distribute_count(List gres_conf_list, List gpu_conf_list,
-			      uint64_t count)
-{
-	ListIterator gpu_itr;
-	gres_slurmd_conf_t *gpu_record, *mps_record;
-	int rem_gpus = list_count(gpu_conf_list);
-
-	gpu_itr = list_iterator_create(gpu_conf_list);
-	while ((gpu_record = list_next(gpu_itr))) {
-		mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
-		mps_record->config_flags = gpu_record->config_flags;
-		mps_record->count = count / rem_gpus;
-		count -= mps_record->count;
-		rem_gpus--;
-		mps_record->cpu_cnt = gpu_record->cpu_cnt;
-		mps_record->cpus = xstrdup(gpu_record->cpus);
-		if (gpu_record->cpus_bitmap) {
-			mps_record->cpus_bitmap =
-				bit_copy(gpu_record->cpus_bitmap);
-		}
-		mps_record->file = xstrdup(gpu_record->file);
-		mps_record->name = xstrdup("mps");
-		mps_record->plugin_id = gres_build_id("mps");
-		mps_record->type_name = xstrdup(gpu_record->type_name);
-		list_append(gres_conf_list, mps_record);
-
-		list_append(gres_conf_list, gpu_record);
-		(void) list_remove(gpu_itr);
-	}
-	list_iterator_destroy(gpu_itr);
-}
-
-/* Merge MPS records back to original list, updating and reordering as needed */
-static int _merge_lists(List gres_conf_list, List gpu_conf_list,
-			List mps_conf_list)
-{
-	ListIterator gpu_itr, mps_itr;
-	gres_slurmd_conf_t *gpu_record, *mps_record;
-
-	if (!list_count(gpu_conf_list) && list_count(mps_conf_list)) {
-		error("%s: MPS specified without any GPU found", plugin_name);
-		return SLURM_ERROR;
-	}
-
-	/*
-	 * If gres/mps has Count, but no File specification, then evenly
-	 * distribute gres/mps Count over all gres/gpu file records
-	 */
-	if (list_count(mps_conf_list) == 1) {
-		mps_record = list_peek(mps_conf_list);
-		if (!mps_record->file) {
-			_distribute_count(gres_conf_list, gpu_conf_list,
-					  mps_record->count);
-			list_flush(mps_conf_list);
-			return SLURM_SUCCESS;
-		}
-	}
-
-	/* Add MPS records, matching File ordering to that of GPU records */
-	gpu_itr = list_iterator_create(gpu_conf_list);
-	while ((gpu_record = list_next(gpu_itr))) {
-		mps_itr = list_iterator_create(mps_conf_list);
-		while ((mps_record = list_next(mps_itr))) {
-			if (!xstrcmp(gpu_record->file, mps_record->file)) {
-				/* Copy gres/gpu Type & CPU info to gres/mps */
-				if (gpu_record->type_name) {
-					mps_record->config_flags |=
-						GRES_CONF_HAS_TYPE;
-				}
-				if (gpu_record->cpus) {
-					xfree(mps_record->cpus);
-					mps_record->cpus =
-						xstrdup(gpu_record->cpus);
-				}
-				if (gpu_record->cpus_bitmap) {
-					mps_record->cpu_cnt =
-						gpu_record->cpu_cnt;
-					FREE_NULL_BITMAP(
-						mps_record->cpus_bitmap);
-					mps_record->cpus_bitmap =
-					      bit_copy(gpu_record->cpus_bitmap);
-				}
-				xfree(mps_record->type_name);
-				mps_record->type_name =
-					xstrdup(gpu_record->type_name);
-				xfree(mps_record->unique_id);
-				mps_record->unique_id =
-					xstrdup(gpu_record->unique_id);
-				list_append(gres_conf_list, mps_record);
-				(void) list_remove(mps_itr);
-				break;
-			}
-		}
-		list_iterator_destroy(mps_itr);
-		if (!mps_record) {
-			/* Add gres/mps record to match gres/gps record */
-			mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
-			mps_record->config_flags = gpu_record->config_flags;
-			mps_record->count = 0;
-			mps_record->cpu_cnt = gpu_record->cpu_cnt;
-			mps_record->cpus = xstrdup(gpu_record->cpus);
-			if (gpu_record->cpus_bitmap) {
-				mps_record->cpus_bitmap =
-					bit_copy(gpu_record->cpus_bitmap);
-			}
-			mps_record->file = xstrdup(gpu_record->file);
-			mps_record->name = xstrdup("mps");
-			mps_record->plugin_id = gres_build_id("mps");
-			mps_record->type_name = xstrdup(gpu_record->type_name);
-			mps_record->unique_id = xstrdup(gpu_record->unique_id);
-			list_append(gres_conf_list, mps_record);
-		}
-		list_append(gres_conf_list, gpu_record);
-		(void) list_remove(gpu_itr);
-	}
-	list_iterator_destroy(gpu_itr);
-
-	/* Remove any remaining MPS records (no matching File) */
-	mps_itr = list_iterator_create(mps_conf_list);
-	while ((mps_record = list_next(mps_itr))) {
-		error("%s: Discarding gres/mps configuration (File=%s) without matching gres/gpu record",
-		      plugin_name, mps_record->file);
-		(void) list_delete_item(mps_itr);
-	}
-	list_iterator_destroy(mps_itr);
-	return SLURM_SUCCESS;
-}
 
 extern int init(void)
 {
@@ -430,69 +104,9 @@ extern int fini(void)
 {
 	debug("unloading");
 	FREE_NULL_LIST(gres_devices);
-	FREE_NULL_LIST(mps_info);
+	gres_c_s_fini();
 
 	return SLURM_SUCCESS;
-}
-
-
-/*
- * Return true if fake_gpus.conf does exist. Used for testing
- */
-static bool _test_gpu_list_fake(void)
-{
-	struct stat config_stat;
-	char *fake_gpus_file = NULL;
-	bool have_fake_gpus = false;
-
-	fake_gpus_file = get_extra_conf_path("fake_gpus.conf");
-	if (stat(fake_gpus_file, &config_stat) >= 0) {
-		have_fake_gpus = true;
-	}
-	xfree(fake_gpus_file);
-	return have_fake_gpus;
-}
-
-/* Translate device file name to numeric index "/dev/nvidia2" -> 2 */
-static int _compute_local_id(char *dev_file_name)
-{
-	int i, local_id = -1, mult = 1;
-
-	if (!dev_file_name)
-		return -1;
-
-	for (i = strlen(dev_file_name) - 1; i >= 0; i--) {
-		if ((dev_file_name[i] < '0') || (dev_file_name[i] > '9'))
-			break;
-		if (local_id == -1)
-			local_id = 0;
-		local_id += (dev_file_name[i] - '0') * mult;
-		mult *= 10;
-	}
-
-	return local_id;
-}
-
-static uint64_t _build_mps_dev_info(List gres_conf_list)
-{
-	uint64_t mps_count = 0;
-	gres_slurmd_conf_t *gres_slurmd_conf;
-	mps_dev_info_t *mps_conf;
-	ListIterator iter;
-
-	mps_info = list_create(xfree_ptr);
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = list_next(iter))) {
-		if (!gres_id_shared(gres_slurmd_conf->config_flags))
-			continue;
-		mps_conf = xmalloc(sizeof(mps_dev_info_t));
-		mps_conf->count = gres_slurmd_conf->count;
-		mps_conf->id = _compute_local_id(gres_slurmd_conf->file);
-		list_append(mps_info, mps_conf);
-		mps_count += gres_slurmd_conf->count;
-	}
-	list_iterator_destroy(iter);
-	return mps_count;
 }
 
 /*
@@ -503,84 +117,23 @@ static uint64_t _build_mps_dev_info(List gres_conf_list)
 extern int gres_p_node_config_load(List gres_conf_list,
 				   node_config_load_t *config)
 {
-	int rc = SLURM_SUCCESS;
-	log_level_t log_lvl;
-	List gpu_conf_list, mps_conf_list;
-	bool have_fake_gpus = _test_gpu_list_fake();
-
-	/* Assume this state is caused by an scontrol reconfigure */
-	if (gres_devices) {
-		debug("Resetting gres_devices");
-		FREE_NULL_LIST(gres_devices);
-	}
-	FREE_NULL_LIST(mps_info);
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES)
-		log_lvl = LOG_LEVEL_VERBOSE;
-	else
-		log_lvl = LOG_LEVEL_DEBUG;
-
-	log_var(log_lvl, "%s: Initalized gres.conf list:", plugin_name);
-	print_gres_list(gres_conf_list, log_lvl);
-
-	/*
-	 * Ensure that every GPU device file is listed as a MPS file.
-	 * Any MPS entry that we need to add will have a "Count" of zero.
-	 * Every MPS "Type" will be made to match the GPU "Type". The order
-	 * of MPS records (by "File") must match the order in which GPUs are
-	 * defined for the GRES bitmaps in slurmctld to line up.
-	 *
-	 * First, convert all GPU records to a new entries in a list where
-	 * each File is a unique device (i.e. convert a record with
-	 * "File=nvidia[0-3]" into 4 separate records).
-	 */
-	gpu_conf_list = _build_gpu_list(gres_conf_list);
-
-	/* Now move MPS records to new List, each with unique device file */
-	mps_conf_list = _build_mps_list(gres_conf_list);
-
-	/*
-	 * Merge MPS records back to original list, updating and reordering
-	 * as needed.
-	 */
-	rc = _merge_lists(gres_conf_list, gpu_conf_list, mps_conf_list);
-	FREE_NULL_LIST(gpu_conf_list);
-	FREE_NULL_LIST(mps_conf_list);
-	if (rc != SLURM_SUCCESS)
-		fatal("%s: failed to merge MPS and GPU configuration", plugin_name);
-
-	rc = common_node_config_load(gres_conf_list, gres_name, config,
-				     &gres_devices);
-	if (rc != SLURM_SUCCESS)
-		fatal("%s: failed to load configuration", plugin_name);
-	if (_build_mps_dev_info(gres_conf_list) == 0)
-		_remove_mps_recs(gres_conf_list);
-
-	log_var(log_lvl, "%s: Final gres.conf list:", plugin_name);
-	print_gres_list(gres_conf_list, log_lvl);
-
-	// Print in parsable format for tests if fake system is in use
-	if (have_fake_gpus) {
-		info("Final normalized gres.conf list (parsable):");
-		print_gres_list_parsable(gres_conf_list);
-	}
-
-	return rc;
+	return gres_c_s_init_share_devices(
+		gres_conf_list, &gres_devices, config, "gpu", gres_name);
 }
 
 /* Given a global device ID, return its gres/mps count */
 static uint64_t _get_dev_count(int global_id)
 {
 	ListIterator itr;
-	mps_dev_info_t *mps_ptr;
+	shared_dev_info_t *mps_ptr;
 	uint64_t count = NO_VAL64;
 
-	if (!mps_info) {
-		error("mps_info is NULL");
+	if (!shared_info) {
+		error("shared_info is NULL");
 		return 100;
 	}
-	itr = list_iterator_create(mps_info);
-	while ((mps_ptr = (mps_dev_info_t *) list_next(itr))) {
+	itr = list_iterator_create(shared_info);
+	while ((mps_ptr = list_next(itr))) {
 		if (mps_ptr->id == global_id) {
 			count = mps_ptr->count;
 			break;
@@ -629,7 +182,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 				    "CUDA_MPS_ACTIVE_THREAD_perc_str",
 				    perc_env);
 		xfree(perc_env);
-	} else if (gres_per_node && mps_info) {
+	} else if (gres_per_node && shared_info) {
 		count_on_dev = _get_dev_count(global_id);
 		if (count_on_dev > 0) {
 			percentage = (gres_per_node * 100) / count_on_dev;
@@ -641,7 +194,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
 				    perc_str);
 	} else if (gres_per_node) {
-		error("mps_info list is NULL");
+		error("shared_info list is NULL");
 		snprintf(perc_str, sizeof(perc_str), "%"PRIu64, gres_per_node);
 		env_array_overwrite(env_ptr,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
@@ -727,19 +280,19 @@ extern void gres_p_task_set_env(char ***step_env_ptr,
 extern void gres_p_send_stepd(buf_t *buffer)
 {
 	int mps_cnt;
-	mps_dev_info_t *mps_ptr;
+	shared_dev_info_t *mps_ptr;
 	ListIterator itr;
 
 	common_send_stepd(buffer, gres_devices);
 
-	if (!mps_info) {
+	if (!shared_info) {
 		mps_cnt = 0;
 		pack32(mps_cnt, buffer);
 	} else {
-		mps_cnt = list_count(mps_info);
+		mps_cnt = list_count(shared_info);
 		pack32(mps_cnt, buffer);
-		itr = list_iterator_create(mps_info);
-		while ((mps_ptr = (mps_dev_info_t *) list_next(itr))) {
+		itr = list_iterator_create(shared_info);
+		while ((mps_ptr = list_next(itr))) {
 			pack64(mps_ptr->count, buffer);
 			pack64(mps_ptr->id, buffer);
 		}
@@ -752,7 +305,7 @@ extern void gres_p_send_stepd(buf_t *buffer)
 extern void gres_p_recv_stepd(buf_t *buffer)
 {
 	int i, mps_cnt;
-	mps_dev_info_t *mps_ptr = NULL;
+	shared_dev_info_t *mps_ptr = NULL;
 	uint64_t uint64_tmp;
 	uint32_t cnt;
 
@@ -763,14 +316,14 @@ extern void gres_p_recv_stepd(buf_t *buffer)
 	if (!mps_cnt)
 		return;
 
-	mps_info = list_create(xfree_ptr);
+	shared_info = list_create(xfree_ptr);
 	for (i = 0; i < mps_cnt; i++) {
-		mps_ptr = xmalloc(sizeof(mps_dev_info_t));
+		mps_ptr = xmalloc(sizeof(shared_dev_info_t));
 		safe_unpack64(&uint64_tmp, buffer);
 		mps_ptr->count = uint64_tmp;
 		safe_unpack64(&uint64_tmp, buffer);
 		mps_ptr->id = uint64_tmp;
-		list_append(mps_info, mps_ptr);
+		list_append(shared_info, mps_ptr);
 	}
 	return;
 
