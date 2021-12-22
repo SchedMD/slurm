@@ -8956,11 +8956,10 @@ void job_time_limit(void)
 			info("%s: Configuration for %pJ complete",
 			     __func__, job_ptr);
 			job_config_fini(job_ptr);
-			if (job_ptr->bit_flags & NODE_REBOOT) {
+			if (job_ptr->bit_flags & NODE_REBOOT)
 				job_ptr->bit_flags &= (~NODE_REBOOT);
-				if (job_ptr->batch_flag)
-					launch_job(job_ptr);
-			}
+			if (job_ptr->batch_flag)
+				launch_job(job_ptr);
 		}
 
 		/*
