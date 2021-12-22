@@ -379,9 +379,15 @@ static int _run_script(char *script, char **argv, char **env, uint32_t job_id,
 		       bool *signalled)
 {
 	int status = SLURM_ERROR;
-	int ms_timeout = timeout * 1000;
+	int ms_timeout;
 	char *resp = NULL;
 	bool bcast;
+
+	if ((timeout <= 0) || (timeout == NO_VAL16))
+		ms_timeout = -1; /* wait indefinitely in run_command() */
+	else
+		ms_timeout = timeout * 1000;
+
 
 	track_script_rec_add(job_id, 0, pthread_self());
 	resp = run_command(script_name, script, argv, env, ms_timeout,
