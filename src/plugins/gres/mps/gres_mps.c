@@ -86,7 +86,7 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char	*plugin_name		= "Gres MPS plugin";
+const char plugin_name[] = "Gres MPS plugin";
 const char	plugin_type[]		= "gres/mps";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
