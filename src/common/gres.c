@@ -4252,14 +4252,14 @@ extern List gres_node_state_dup(List gres_list)
 			gres_ns = _node_state_dup(gres_state_node->gres_data);
 			if (gres_ns) {
 				new_gres = xmalloc(sizeof(gres_state_t));
-				gres_state_node->config_flags =
+				new_gres->config_flags =
 					gres_state_node->config_flags;
 				new_gres->plugin_id =
 					gres_state_node->plugin_id;
 				new_gres->gres_data = gres_ns;
 				new_gres->gres_name =
 					xstrdup(gres_state_node->gres_name);
-				gres_state_node->state_type =
+				new_gres->state_type =
 					GRES_STATE_TYPE_NODE;
 				list_append(new_list, new_gres);
 			}
