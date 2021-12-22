@@ -74,7 +74,8 @@ set node_cnt 1-1
 set output [run_command_output -fail "$srun -N$node_cnt -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in"]
 
 subtest {[regexp -all "(HEADER|TEST==prolog_qa|DISPLAY==X)" $output] == [expr $tasks * 3]} "Prolog should export env vars"
-subtest {![regexp "error:" $output]} "No errors should be reported"
+subtest {[regexp -all "error: TaskEpilog failed status=9" $output] == $tasks} "srun should report epilog killed by slurmd"
+subtest {[regexp -all "error:" $output] == $tasks} "No more error should be reported"
 
 #
 # Get my id to compare with output
