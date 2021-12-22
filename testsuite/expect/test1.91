@@ -294,7 +294,7 @@ expect {
 	}
 	-re $test_prompt
 }
-subtest {$task_mask == $expected_mask} "Affinity mask is consistent for a job step with affinity to verify unique masks with min -B 1:1:1" "task_mask != $expected_mask"
+subtest {$task_mask == $expected_mask} "Affinity mask is consistent for a job step with affinity to verify unique masks with min -B 1:1:1" "$task_mask != $expected_mask"
 
 #############################################################################
 #
