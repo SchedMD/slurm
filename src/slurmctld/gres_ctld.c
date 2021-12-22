@@ -625,9 +625,6 @@ static int _job_alloc(gres_job_state_t *gres_js, List job_gres_list_alloc,
 	 * one entry for each type of gres separately
 	 */
 	for (j = 0; j < gres_ns->type_cnt; j++) {
-		if (shared_gres) {
-			error("Shared gres shouldn't have types");
-		}
 		if (gres_js->type_id &&
 		    gres_js->type_id != gres_ns->type_id[j])
 			continue;
@@ -668,7 +665,8 @@ static int _job_alloc(gres_job_state_t *gres_js, List job_gres_list_alloc,
 				bit_nclear(left_over_bits, (bitoff_t)0,
 					   last_gres_bit);
 			gres_js_alloc->gres_bit_alloc[node_offset] =
-				bit_pick_cnt(left_over_bits, gres_cnt);
+				bit_pick_cnt(left_over_bits,
+					     gres_cnt / gres_per_bit);
 			FREE_NULL_BITMAP(left_over_bits);
 			if (gres_cnt)
 				last_gres_bit = bit_fls(
