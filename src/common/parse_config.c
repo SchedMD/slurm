@@ -1169,9 +1169,8 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 
 	for (i = 0; ; i++) {
 		if (i == 1) {	/* Long once, on first retry */
-			error("s_p_parse_file: unable to status file %s: %m, "
-			      "retrying in 1sec up to 60sec",
-			      filename);
+			error("%s: cannot stat file %s: %m, retrying in 1sec up to 60sec",
+			      __func__, filename);
 		}
 		if (i >= 60)	/* Give up after 60 seconds */
 			return SLURM_ERROR;
