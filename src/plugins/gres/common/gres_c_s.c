@@ -67,11 +67,30 @@ static void _distribute_count(List gres_conf_list, List sharing_conf_list,
 	}
 }
 
+static int _find_matching_file_gres(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf1 = x;
+	gres_slurmd_conf_t *gres_slurmd_conf2 = arg;
+
+	if (!xstrcmp(gres_slurmd_conf1->file, gres_slurmd_conf2->file))
+		return 1;
+	return 0;
+}
+
+static int _delete_leftovers(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+
+	error("Discarding gres/'shared' configuration (File=%s) without matching gres/'sharing' record",
+	      gres_slurmd_conf->file);
+	return 1;
+}
+
 /* Merge SHARED records back to original list, updating and reordering as needed */
 static int _merge_lists(List gres_conf_list, List sharing_conf_list,
 			List shared_conf_list, char *shared_name)
 {
-	ListIterator sharing_itr, shared_itr;
+	ListIterator sharing_itr;
 	gres_slurmd_conf_t *sharing_record, *shared_record;
 
 	if (!list_count(sharing_conf_list) && list_count(shared_conf_list)) {
@@ -99,45 +118,40 @@ static int _merge_lists(List gres_conf_list, List sharing_conf_list,
 	 */
 	sharing_itr = list_iterator_create(sharing_conf_list);
 	while ((sharing_record = list_next(sharing_itr))) {
-		shared_itr = list_iterator_create(shared_conf_list);
-		while ((shared_record = list_next(shared_itr))) {
-			if (!xstrcmp(sharing_record->file,
-				     shared_record->file)) {
-				/*
-				 * Copy gres/sharing Type & CPU info to
-				 * gres/shared
-				 */
-				if (sharing_record->type_name) {
-					shared_record->config_flags |=
-						GRES_CONF_HAS_TYPE;
-				}
-				if (sharing_record->cpus) {
-					xfree(shared_record->cpus);
-					shared_record->cpus =
-						xstrdup(sharing_record->cpus);
-				}
-				if (sharing_record->cpus_bitmap) {
-					shared_record->cpu_cnt =
-						sharing_record->cpu_cnt;
-					FREE_NULL_BITMAP(
-						shared_record->cpus_bitmap);
-					shared_record->cpus_bitmap =
-					      bit_copy(sharing_record->
-						       cpus_bitmap);
-				}
-				xfree(shared_record->type_name);
-				shared_record->type_name =
-					xstrdup(sharing_record->type_name);
-				xfree(shared_record->unique_id);
-				shared_record->unique_id =
-					xstrdup(sharing_record->unique_id);
-				list_append(gres_conf_list, shared_record);
-				(void) list_remove(shared_itr);
-				break;
+		shared_record = list_remove_first(shared_conf_list,
+						  _find_matching_file_gres,
+						  sharing_record);
+		if (shared_record) {
+			/*
+			 * Copy gres/sharing Type & CPU info to
+			 * gres/shared
+			 */
+			if (sharing_record->type_name) {
+				shared_record->config_flags |=
+					GRES_CONF_HAS_TYPE;
 			}
-		}
-		list_iterator_destroy(shared_itr);
-		if (!shared_record) {
+			if (sharing_record->cpus) {
+				xfree(shared_record->cpus);
+				shared_record->cpus =
+					xstrdup(sharing_record->cpus);
+			}
+			if (sharing_record->cpus_bitmap) {
+				shared_record->cpu_cnt =
+					sharing_record->cpu_cnt;
+				FREE_NULL_BITMAP(
+					shared_record->cpus_bitmap);
+				shared_record->cpus_bitmap =
+					bit_copy(sharing_record->
+						 cpus_bitmap);
+			}
+			xfree(shared_record->type_name);
+			shared_record->type_name =
+				xstrdup(sharing_record->type_name);
+			xfree(shared_record->unique_id);
+			shared_record->unique_id =
+				xstrdup(sharing_record->unique_id);
+			list_append(gres_conf_list, shared_record);
+		} else {
 			/* Add gres/shared record to match gres/gps record */
 			shared_record = xmalloc(sizeof(gres_slurmd_conf_t));
 			shared_record->config_flags =
@@ -164,13 +178,8 @@ static int _merge_lists(List gres_conf_list, List sharing_conf_list,
 	list_iterator_destroy(sharing_itr);
 
 	/* Remove any remaining SHARED records (no matching File) */
-	shared_itr = list_iterator_create(shared_conf_list);
-	while ((shared_record = list_next(shared_itr))) {
-		error("Discarding gres/'shared' configuration (File=%s) without matching gres/'sharing' record",
-		      shared_record->file);
-		(void) list_delete_item(shared_itr);
-	}
-	list_iterator_destroy(shared_itr);
+	(void) list_delete_all(shared_conf_list, _delete_leftovers, NULL);
+
 	return SLURM_SUCCESS;
 }
 
