@@ -90,7 +90,6 @@ static int _delete_leftovers(void *x, void *arg)
 static int _merge_lists(List gres_conf_list, List sharing_conf_list,
 			List shared_conf_list, char *shared_name)
 {
-	ListIterator sharing_itr;
 	gres_slurmd_conf_t *sharing_record, *shared_record;
 
 	if (!list_count(sharing_conf_list) && list_count(shared_conf_list)) {
@@ -116,8 +115,7 @@ static int _merge_lists(List gres_conf_list, List sharing_conf_list,
 	 * Add SHARED records, matching File ordering to that of SHARING
 	 * records
 	 */
-	sharing_itr = list_iterator_create(sharing_conf_list);
-	while ((sharing_record = list_next(sharing_itr))) {
+	while ((sharing_record = list_pop(sharing_conf_list))) {
 		shared_record = list_remove_first(shared_conf_list,
 						  _find_matching_file_gres,
 						  sharing_record);
@@ -173,9 +171,7 @@ static int _merge_lists(List gres_conf_list, List sharing_conf_list,
 			list_append(gres_conf_list, shared_record);
 		}
 		list_append(gres_conf_list, sharing_record);
-		(void) list_remove(sharing_itr);
 	}
-	list_iterator_destroy(sharing_itr);
 
 	/* Remove any remaining SHARED records (no matching File) */
 	(void) list_delete_all(shared_conf_list, _delete_leftovers, NULL);
