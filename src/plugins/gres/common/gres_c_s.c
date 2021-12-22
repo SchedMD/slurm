@@ -42,12 +42,10 @@ List shared_info = NULL;
 static void _distribute_count(List gres_conf_list, List sharing_conf_list,
 			      uint64_t count, char *shared_name)
 {
-	ListIterator sharing_itr;
 	gres_slurmd_conf_t *sharing_record, *shared_record;
 	int rem_sharings = list_count(sharing_conf_list);
 
-	sharing_itr = list_iterator_create(sharing_conf_list);
-	while ((sharing_record = list_next(sharing_itr))) {
+	while ((sharing_record = list_pop(sharing_conf_list))) {
 		shared_record = xmalloc(sizeof(gres_slurmd_conf_t));
 		shared_record->config_flags = sharing_record->config_flags;
 		shared_record->count = count / rem_sharings;
@@ -66,9 +64,7 @@ static void _distribute_count(List gres_conf_list, List sharing_conf_list,
 		list_append(gres_conf_list, shared_record);
 
 		list_append(gres_conf_list, sharing_record);
-		(void) list_remove(sharing_itr);
 	}
-	list_iterator_destroy(sharing_itr);
 }
 
 /* Merge SHARED records back to original list, updating and reordering as needed */
