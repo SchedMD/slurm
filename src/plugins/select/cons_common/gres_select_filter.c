@@ -238,28 +238,27 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
 		uint64_t min_gres = 1, tmp_u64;
 		gres_job_state_t *gres_js = NULL;
-		if (sock_gres->gres_state_job) {
-			gres_js = sock_gres->gres_state_job->gres_data;
-			if (whole_node)
-				min_gres = sock_gres->total_cnt;
-			else if (gres_js->gres_per_node)
-				min_gres = gres_js-> gres_per_node;
-			if (gres_js->gres_per_socket) {
-				tmp_u64 = gres_js->gres_per_socket;
-				if (sock_per_node != NO_VAL)
-					tmp_u64 *= sock_per_node;
-				min_gres = MAX(min_gres, tmp_u64);
-			}
-			if (gres_js->gres_per_task) {
-				tmp_u64 = gres_js->gres_per_task;
-				if (task_per_node != NO_VAL16)
-					tmp_u64 *= task_per_node;
-				min_gres = MAX(min_gres, tmp_u64);
-			}
+		xassert(sock_gres->gres_state_job);
+
+		gres_js = sock_gres->gres_state_job->gres_data;
+		if (whole_node)
+			min_gres = sock_gres->total_cnt;
+		else if (gres_js->gres_per_node)
+			min_gres = gres_js-> gres_per_node;
+		if (gres_js->gres_per_socket) {
+			tmp_u64 = gres_js->gres_per_socket;
+			if (sock_per_node != NO_VAL)
+				tmp_u64 *= sock_per_node;
+			min_gres = MAX(min_gres, tmp_u64);
 		}
-		if (!gres_js)
-			cpus_per_gres = 0;
-		else if (gres_js->cpus_per_gres)
+		if (gres_js->gres_per_task) {
+			tmp_u64 = gres_js->gres_per_task;
+			if (task_per_node != NO_VAL16)
+				tmp_u64 *= task_per_node;
+			min_gres = MAX(min_gres, tmp_u64);
+		}
+
+		if (gres_js->cpus_per_gres)
 			cpus_per_gres = gres_js->cpus_per_gres;
 		else if (gres_js->ntasks_per_gres &&
 			 (gres_js->ntasks_per_gres != NO_VAL16))
@@ -279,9 +278,8 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 				break;
 			}
 		}
-		if (!gres_js)
-			mem_per_gres = 0;
-		else if (gres_js->mem_per_gres)
+
+		if (gres_js->mem_per_gres)
 			mem_per_gres = gres_js->mem_per_gres;
 		else
 			mem_per_gres = gres_js->def_mem_per_gres;
@@ -326,7 +324,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 			near_gres_cnt = sock_gres->total_cnt;
 		}
 
-		if (gres_js && !whole_node) {
+		if (!whole_node) {
 			/* If gres_per_node isn't set, try gres_per_job */
 			if (!_set_max_node_gres(
 				    sock_gres,
