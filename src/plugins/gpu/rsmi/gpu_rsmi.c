@@ -111,7 +111,7 @@ typedef struct rsmiPciInfo_st {
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char	*plugin_name		= "GPU RSMI plugin";
+const char plugin_name[] = "GPU RSMI plugin";
 const char	plugin_type[]		= "gpu/rsmi";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
