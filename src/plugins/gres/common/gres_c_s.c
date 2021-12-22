@@ -242,21 +242,14 @@ static uint64_t _build_shared_dev_info(List gres_conf_list)
  * Count of gres/shared records is zero, remove them from GRES list sent to
  * slurmctld daemon.
  */
-static void _remove_shared_recs(List gres_list, char *shared_name)
+static int _remove_shared_recs(void *x, void *arg)
 {
-	ListIterator itr;
-	gres_slurmd_conf_t *gres_slurmd_conf;
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	char *shared_name = arg;
 
-	if (gres_list == NULL)
-		return;
-
-	itr = list_iterator_create(gres_list);
-	while ((gres_slurmd_conf = list_next(itr))) {
-		if (!xstrcmp(gres_slurmd_conf->name, shared_name)) {
-			(void) list_delete_item(itr);
-		}
-	}
-	list_iterator_destroy(itr);
+	if (!xstrcmp(gres_slurmd_conf->name, shared_name))
+		return 1;
+	return 0;
 }
 
 /*
@@ -490,8 +483,9 @@ extern int gres_c_s_init_share_devices(List gres_conf_list,
 				     share_devices);
 	if (rc != SLURM_SUCCESS)
 		fatal("failed to load configuration");
-	if (!_build_shared_dev_info(gres_conf_list))
-		_remove_shared_recs(gres_conf_list, shared_name);
+	if (!_build_shared_dev_info(gres_conf_list) && gres_conf_list)
+		(void) list_delete_all(gres_conf_list, _remove_shared_recs,
+				       shared_name);
 
 	log_var(log_lvl, "Final gres.conf list:");
 	print_gres_list(gres_conf_list, log_lvl);
