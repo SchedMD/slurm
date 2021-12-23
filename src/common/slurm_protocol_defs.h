@@ -983,7 +983,7 @@ typedef struct control_status_msg {
  */
 
 #define SIG_OOM		253	/* Dummy signal value for out of memory
-				 * (OOM) notification. Exist status reported as
+				 * (OOM) notification. Exit status reported as
 				 * 0:125 (0x80 is the signal flag and
 				 * 253 - 128 = 125) */
 #define SIG_TERM_KILL	991	/* Send SIGCONT + SIGTERM + SIGKILL */
