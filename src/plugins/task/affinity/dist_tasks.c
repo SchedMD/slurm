@@ -389,10 +389,10 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 	int rc = SLURM_SUCCESS;
 	bitstr_t **masks = NULL;
 	char buf_type[100];
-	int maxtasks = req->tasks_to_launch[(int)node_id];
+	int maxtasks = req->tasks_to_launch[node_id];
 	int whole_nodes, whole_sockets, whole_cores, whole_threads;
 	int part_sockets, part_cores;
-	const uint32_t *gtid = req->global_task_ids[(int)node_id];
+	const uint32_t *gtid = req->global_task_ids[node_id];
 	static uint16_t bind_entity = CPU_BIND_TO_THREADS | CPU_BIND_TO_CORES |
 				      CPU_BIND_TO_SOCKETS | CPU_BIND_TO_LDOMS;
 	static uint16_t bind_mode = CPU_BIND_NONE   | CPU_BIND_MASK   |
@@ -470,7 +470,7 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 		 */
 		bool auto_def_set = false;
 		int spec_thread_cnt = 0;
-		int max_tasks = req->tasks_to_launch[(int)node_id] *
+		int max_tasks = req->tasks_to_launch[node_id] *
 			req->cpus_per_task;
 		char *avail_mask = _alloc_mask(req,
 					       &whole_nodes,  &whole_sockets,
@@ -981,7 +981,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	int last_taskcount = -1, taskcount = 0;
 	uint16_t i, s, hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	uint16_t offset = 0, p = 0;
-	int size, max_tasks = req->tasks_to_launch[(int)node_id];
+	int size, max_tasks = req->tasks_to_launch[node_id];
 	int max_cpus = max_tasks * req->cpus_per_task;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
@@ -1188,7 +1188,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 {
 	int c, i, size, last_taskcount = -1, taskcount = 0;
 	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
-	int max_tasks = req->tasks_to_launch[(int)node_id];
+	int max_tasks = req->tasks_to_launch[node_id];
 	int max_cpus = max_tasks * req->cpus_per_task;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
