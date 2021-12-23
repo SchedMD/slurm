@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent slurmstepd segfault at cleanup time in mpi_fini().
  -- Fix slurmctld sometimes hanging if shutdown while PrologSlurmctld or
     EpilogSlurmctld were running and PrologEpilogTimeout is set in slurm.conf.
+ -- Fix affinity of the batch step if batch host is different than the first
+    node in the allocation.
 
 * Changes in Slurm 21.08.5
 ==========================

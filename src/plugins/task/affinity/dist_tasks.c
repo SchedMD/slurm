@@ -172,6 +172,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	uint16_t sockets = 0, cores = 0, num_cpus;
 	int task_cnt = 0;
 	int job_node_id;
+	int start;
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS) {
 		error("job lacks a credential");
@@ -185,11 +186,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 		return;
 	}
 
-	/*
-	 * We have already checked the job_node_id above, no need to check the
-	 * return code here.
-	 */
-	(void) _get_local_node_info(&arg, job_node_id, &sockets, &cores);
+	start = _get_local_node_info(&arg, job_node_id, &sockets, &cores);
 	if ((sockets * cores) == 0) {
 		error("%s: socket and core count both zero", __func__);
 		slurm_cred_free_args(&arg);
@@ -219,7 +216,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	 * physically exist than are configured (slurmd is out of
 	 * sync with the slurmctld daemon). */
 	for (p = 0; p < (sockets * cores); p++) {
-		if (bit_test(arg.job_core_bitmap, p))
+		if (bit_test(arg.job_core_bitmap, start + p))
 			bit_set(req_map, (p % num_cpus));
 	}
 
