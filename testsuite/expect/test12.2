@@ -106,12 +106,12 @@ proc _get_mem {prog} {
 	set mem_used [scale_to_ks $mem_used ""]
 	set ave_used [scale_to_ks $ave_used ""]
 
-	dict set subtest cond [tolerance $mem_size $mem_used "+$max_mem_error"]
+	dict set subtest cond [tolerance $mem_size $mem_used $max_mem_error]
 	dict set subtest desc "$prog_base should provide MaxRSS close and bigger than $mem_size"
 	dict set subtest diag "$mem_used not in tolerance values of $mem_size"
 	lappend result $subtest
 
-	dict set subtest cond [expr {$mem_used <= ($ave_used * $num_tasks)}]
+	dict set subtest cond [tolerance $mem_used [expr $ave_used * $num_tasks] $max_mem_error]
 	dict set subtest desc "$prog_base should provide MaxrRSS <= AveRSS * num_tasks"
 	dict set subtest diag "$mem_used > $ave_used * $num_tasks"
 	lappend result $subtest
@@ -244,31 +244,34 @@ wait_for -fail {![regexp "COMPLETING" $output]} {
 subtest {[regexp "$job_id\\.$step_id.$file_prog.$expected_state.$expected_ret_code" $output]} "sacct should report $job_id\\.$step_id.$file_prog.$expected_state.$expected_ret_code" "$output"
 
 #
-# Report the sacct accounting info
+# Report the sacct accounting info: Elapsed
 #
-set hours 0
 set mins 0
 set secs 0
 set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format elapsed --starttime=00:00"]
-set matches [scan $output "%d:%d:%d" hours mins secs]
-set value  [expr ($hours * 3600) + ($mins * 60) + $secs]
-subtest {$matches == 3} "sacct should report the elapsed time in the format HH:MM:SS" "$output"
+subtest {[regexp {(?:(\d+):)?(\d+):(\d+)(?:\.(\d+))?} $output - hours mins secs msecs]} "sacct should report the elapsed time in the format \[HH:\]MM:SS\[.sss\]" "$output"
+# Use scan to avoid TCL octals
+set value  [expr ([scan $mins "%d"] * 60) + [scan $secs "%d"]]
 subtest {[tolerance $sleep_time $value +$max_time_error]} "Elapsed time reported by sacct should be close to $sleep_time" "$value too different from $sleep_time"
 
-set hours 0
+#
+# Report the sacct accounting info: TotalCPU
+#
 set mins 0
 set secs 0
 set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format totalcpu --starttime=00:00"]
-set matches [scan $output "%d:%d.%d" mins secs msecs]
-set value  [expr ($mins * 60) + $secs]
-subtest {$matches == 3} "sacct should report the TotalCPU time in the format MM:SS.sss" "$output"
+subtest {[regexp {(?:(\d+):)?(\d+):(\d+)(?:\.(\d+))?} $output - hours mins secs msecs]} "sacct should report the TotalCPU time in the format \[HH:\]MM:SS\[.sss\]" "$output"
+# Use scan to avoid TCL octals
+set value  [expr ([scan $mins "%d"] * 60) + [scan $secs "%d"]]
 subtest {$value <= $sleep_time} "TotalCPU reported by sacct should be less than $sleep_time secs" "$value > $sleep_time"
 
-set hours 0
+#
+# Report the sacct accounting info: MinCPU
+#
 set mins 0
 set secs 0
 set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format mincpu --starttime=00:00"]
-set matches [scan $output "%d:%d:%d" hours mins secs]
-set value  [expr ($hours * 3600) + ($mins * 60) + $secs]
-subtest {$matches == 3} "sacct should report the MinCPU time in the format HH:MM:SS" "$output"
+subtest {[regexp {(?:(\d+):)?(\d+):(\d+)(?:\.(\d+))?} $output - hours mins secs msecs]} "sacct should report the MinCPU time in the format \[HH:\]MM:SS\[.sss\]" "$output"
+# Use scan to avoid TCL octals
+set value  [expr ([scan $mins "%d"] * 60) + [scan $secs "%d"]]
 subtest {$value <= $sleep_time} "MinCPU reported by sacct should be less than $sleep_time secs" "$value > $sleep_time"
