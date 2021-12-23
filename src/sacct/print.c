@@ -853,7 +853,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_time = parse_time(job_comp->end_time, 1);
 				break;
 			default:
-				tmp_time = NO_VAL;
 				break;
 			}
 			field->print_routine(field,
