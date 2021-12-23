@@ -180,8 +180,6 @@ cset enable_memory_leak_debug 0
 
 # test_prompt: to be used as prompt for interactive shells (see proc reset_bash_prompt)
 set test_prompt  "TEST_PROMPT: "
-# reset_bash_prompt: to be used as command in scripts
-set reset_bash_prompt "unset PROMPT_COMMAND; unset PS0; export PS1=\"$test_prompt\""
 
 #
 # Specify locations of other executable files used
@@ -674,9 +672,9 @@ proc get_subtest_fail_count {} {
 ################################################################
 
 proc reset_bash_prompt {} {
-	global reset_bash_prompt test_prompt
+	global test_prompt
 
-	send "$reset_bash_prompt\r"
+	send "unset PROMPT_COMMAND; unset PS0; export PS1=\"$test_prompt\"\r"
 	expect {
 		"\"$test_prompt\"" {}
 		timeout {
