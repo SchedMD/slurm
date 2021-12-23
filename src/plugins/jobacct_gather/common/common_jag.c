@@ -41,6 +41,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
 
@@ -650,7 +651,8 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		xfree(pids);
 	} else {
 		struct dirent *slash_proc_entry;
-		char  *iptr = NULL, *optr = NULL, *optr2 = NULL;
+		char *iptr = NULL;
+		long pid;
 
 		if (slash_proc_open) {
 			rewinddir(slash_proc);
@@ -662,76 +664,20 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 			}
 			slash_proc_open=1;
 		}
-		strcpy(proc_stat_file, "/proc/");
-		strcpy(proc_io_file, "/proc/");
-		strcpy(proc_smaps_file, "/proc/");
 
 		while ((slash_proc_entry = readdir(slash_proc))) {
-
-			/* Save a few cyles by simulating
-			 * strcat(statFileName, slash_proc_entry->d_name);
-			 * strcat(statFileName, "/stat");
-			 * while checking for a numeric filename (which really
-			 * should be a pid). Then do the same for the
-			 * /proc/<pid>/io file name.
-			 */
-			optr = proc_stat_file + sizeof("/proc");
-			iptr = slash_proc_entry->d_name;
-			i = 0;
-			do {
-				if ((*iptr < '0') ||
-				    ((*optr++ = *iptr++) > '9')) {
-					i = -1;
-					break;
-				}
-			} while (*iptr);
-
-			if (i == -1)
+			/* is this a number? (if yes, it should be a pid) */
+			pid = strtol(slash_proc_entry->d_name, &iptr, 10);
+			if ((iptr == slash_proc_entry->d_name) ||
+			     (pid == LONG_MAX) || (pid == LONG_MIN))
 				continue;
-			iptr = (char*)"/stat";
 
-			do {
-				*optr++ = *iptr++;
-			} while (*iptr);
-			*optr = 0;
-
-			optr2 = proc_io_file + sizeof("/proc");
-			iptr = slash_proc_entry->d_name;
-			i = 0;
-			do {
-				if ((*iptr < '0') ||
-				    ((*optr2++ = *iptr++) > '9')) {
-					i = -1;
-					break;
-				}
-			} while (*iptr);
-			if (i == -1)
-				continue;
-			iptr = (char*)"/io";
-
-			do {
-				*optr2++ = *iptr++;
-			} while (*iptr);
-			*optr2 = 0;
-
-			optr2 = proc_smaps_file + sizeof("/proc");
-			iptr = slash_proc_entry->d_name;
-			i = 0;
-			do {
-				if ((*iptr < '0') ||
-				    ((*optr2++ = *iptr++) > '9')) {
-					i = -1;
-					break;
-				}
-			} while (*iptr);
-			if (i == -1)
-				continue;
-			iptr = (char*)"/smaps";
-
-			do {
-				*optr2++ = *iptr++;
-			} while (*iptr);
-			*optr2 = 0;
+			snprintf(proc_stat_file, sizeof(proc_stat_file),
+				 "/proc/%ld/stat", pid);
+			snprintf(proc_io_file, sizeof(proc_io_file),
+				 "/proc/%ld/io", pid);
+			snprintf(proc_smaps_file, sizeof(proc_smaps_file),
+				 "/proc/%ld/smaps", pid);
 
 			_handle_stats(proc_stat_file, proc_io_file,
 				      proc_smaps_file, callbacks,
