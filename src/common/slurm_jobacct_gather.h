@@ -124,13 +124,6 @@ struct jobacctinfo {
    typedef struct jobacctinfo jobacctinfo_t;     /* opaque data type */
 #endif
 
-/*
- * FIXME: hopefully this will not exist and we can use
- * slurmdb_make_tres_string_from_arrays instead.  Not sure why this is here in
- * the first place as tres_usage_types_t is defined in slurmdb_defs.h.
- */
-extern char *make_tres_usage_str_from_array(uint64_t *tres_cnt);
-
 extern int jobacct_gather_init(void); /* load the plugin */
 extern int jobacct_gather_fini(void); /* unload the plugin */
 
