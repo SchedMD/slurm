@@ -51,8 +51,6 @@ static List task_list;
 static uint16_t step_active_cnt;
 static xcgroup_ns_t int_cg_ns;
 static xcgroup_t int_cg[CG_LEVEL_CNT];
-static bitstr_t *avail_controllers = NULL;
-static bitstr_t *enabled_controllers = NULL;
 static char *ctl_names[] = {
 	[CG_TRACK] = "freezer",
 	[CG_CPUS] = "cpuset",
@@ -162,7 +160,7 @@ static int _enable_subtree_control(xcgroup_t *cg)
 	char *param = NULL;
 
 	for (i = 0; i < CG_CTL_CNT; i++) {
-		if (bit_test(avail_controllers, i)) {
+		if (bit_test(int_cg_ns.avail_controllers, i)) {
 			xstrfmtcat(param, "+%s", ctl_names[i]);
 			rc = common_cgroup_set_param(cg,
 						     "cgroup.subtree_control",
@@ -171,12 +169,12 @@ static int _enable_subtree_control(xcgroup_t *cg)
 			if (rc != SLURM_SUCCESS) {
 				error("Cannot enable %s in %s/cgroup.subtree_control",
 				      ctl_names[i], cg->path);
-				bit_clear(avail_controllers, i);
+				bit_clear(int_cg_ns.avail_controllers, i);
 				rc = SLURM_ERROR;
 			} else {
 				log_flag(CGROUP, "Enabled %s controller in %s",
 					 ctl_names[i], cg->path);
-				bit_set(enabled_controllers, i);
+				bit_set(int_cg_ns.enabled_controllers, i);
 			}
 		}
 	}
@@ -208,7 +206,7 @@ static int _check_avail_controllers()
 			if (!xstrcmp(ctl_names[i], ""))
 				continue;
 			if (!xstrcasecmp(ctl_names[i], ptr))
-				bit_set(avail_controllers, i);
+				bit_set(int_cg_ns.avail_controllers, i);
 		}
 		ptr = strtok_r(NULL, " ", &save_ptr);
 	}
@@ -386,8 +384,8 @@ static int _move_pid_to_scope(const char *slice, const char *scope,
  */
 extern int init(void)
 {
-	avail_controllers = bit_alloc(CG_CTL_CNT);
-	enabled_controllers = bit_alloc(CG_CTL_CNT);
+	int_cg_ns.avail_controllers = bit_alloc(CG_CTL_CNT);
+	int_cg_ns.enabled_controllers = bit_alloc(CG_CTL_CNT);
 	step_active_cnt = 0;
 	FREE_NULL_LIST(task_list);
 	task_list = list_create(_free_task_cg_info);
@@ -453,8 +451,8 @@ extern int fini(void)
 	 * we may not be stopping yet. When the process terminates systemd will
 	 * remove the remaining directories.
 	 */
-	FREE_NULL_BITMAP(avail_controllers);
-	FREE_NULL_BITMAP(enabled_controllers);
+	FREE_NULL_BITMAP(int_cg_ns.avail_controllers);
+	FREE_NULL_BITMAP(int_cg_ns.enabled_controllers);
 	common_cgroup_destroy(&int_cg[CG_LEVEL_SYSTEM]);
 	common_cgroup_destroy(&int_cg[CG_LEVEL_ROOT]);
 	common_cgroup_ns_destroy(&int_cg_ns);
@@ -1065,7 +1063,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 	size_t sz;
 	uint64_t job_kills, step_kills, job_swkills, step_swkills;
 
-	if (!bit_test(avail_controllers, CG_MEMORY))
+	if (!bit_test(int_cg_ns.avail_controllers, CG_MEMORY))
 		return NULL;
 
 	/*
