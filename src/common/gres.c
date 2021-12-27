@@ -2812,7 +2812,8 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
 				 List *gres_list)
 {
 	int i, rc, rc2;
-	gres_state_t *gres_state_node;
+	gres_state_t *gres_state_node, *gres_state_node_sharing = NULL,
+		*gres_state_node_shared = NULL;
 
 	rc = gres_init();
 
@@ -2835,12 +2836,32 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
 			list_append(*gres_list, gres_state_node);
 		}
 
+		if (gres_id_sharing(gres_state_node->plugin_id))
+			gres_state_node_sharing = gres_state_node;
+		else if (gres_id_shared(gres_state_node->config_flags))
+			gres_state_node_shared = gres_state_node;
+
 		rc2 = _node_config_init(node_name, orig_config,
 					&gres_context[i], gres_state_node);
 		if (rc == SLURM_SUCCESS)
 			rc = rc2;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
+
+	/* Set up the shared/sharing pointers for easy look up later */
+	if (gres_state_node_shared) {
+		if (!gres_state_node_sharing) {
+			error("we have a shared gres of '%s' but no gres that is sharing",
+			      gres_state_node_shared->gres_name);
+		} else {
+			gres_node_state_t *gres_ns_shared =
+				gres_state_node_shared->gres_data;
+			gres_node_state_t *gres_ns_sharing =
+				gres_state_node_sharing->gres_data;
+			gres_ns_shared->alt_gres_ns = gres_ns_sharing;
+			gres_ns_sharing->alt_gres_ns = gres_ns_shared;
+		}
+	}
 
 	return rc;
 }
@@ -7210,7 +7231,6 @@ extern char *gres_sock_str(List sock_gres_list, int sock_inx)
 static sock_gres_t *_build_sock_gres_by_topo(
 	gres_state_t *gres_state_job,
 	gres_state_t *gres_state_node,
-	gres_state_t *gres_state_node_alt,
 	bool use_total_gres, bitstr_t *core_bitmap,
 	uint16_t sockets, uint16_t cores_per_sock,
 	uint32_t job_id, char *node_name,
@@ -7221,8 +7241,6 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_node_state_t *gres_ns = gres_state_node->gres_data;
 	gres_node_state_t *alt_gres_ns = NULL;
-	uint32_t alt_plugin_id = 0;
-	uint32_t main_plugin_id = gres_state_job->plugin_id;
 	int i, j, s, c;
 	uint32_t tot_cores;
 	sock_gres_t *sock_gres;
@@ -7234,10 +7252,8 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	if (gres_ns->gres_cnt_avail == 0)
 		return NULL;
 
-	if (gres_state_node_alt) {
-		alt_gres_ns = gres_state_node_alt->gres_data;
-		alt_plugin_id = gres_state_node_alt->plugin_id;
-	}
+	if (!use_total_gres)
+		alt_gres_ns = gres_ns->alt_gres_ns;
 
 	if (!use_total_gres &&
 	    gres_id_shared(gres_state_job->config_flags) &&
@@ -7274,24 +7290,33 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			continue;
 
 		/*
-		 * Job requested GPUs or MPS. Filter out resources already
+		 * Job requested SHARING or SHARED. Filter out resources already
 		 * allocated to the other GRES type.
 		 */
 		if (alt_gres_ns && alt_gres_ns->gres_bit_alloc &&
 		    gres_ns->topo_gres_bitmap[i]) {
 			c = bit_overlap(gres_ns->topo_gres_bitmap[i],
 					alt_gres_ns->gres_bit_alloc);
-			if ((alt_plugin_id == gpu_plugin_id) && (c > 0))
-				continue;
-			if ((alt_plugin_id == mps_plugin_id) && (c > 0)) {
-				avail_gres -= c;
-				if (avail_gres == 0)
+			if (c > 0) {
+				/*
+				 * Here we are using the main one to determine
+				 * if the alt is shared or not. If it main one
+				 * is shared then we just continue here
+				 * otherwise we know the alt is shared.
+				 */
+				if (gres_id_shared(
+					    gres_state_node->config_flags))
 					continue;
+				else {
+					avail_gres -= c;
+					if (avail_gres == 0)
+						continue;
+				}
 			}
 		}
 
-		/* gres/mps can only use one GPU per node */
-		if ((main_plugin_id == mps_plugin_id) &&
+		/* gres/'shared' can only use one GPU per node */
+		if (gres_id_shared(gres_state_node->config_flags) &&
 		    (avail_gres > sock_gres->max_node_gres))
 			sock_gres->max_node_gres = avail_gres;
 
@@ -7731,23 +7756,8 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 		if (core_bitmap && (bit_ffs(core_bitmap) == -1)) {
 			sock_gres = NULL;	/* No cores available */
 		} else if (gres_ns->topo_cnt) {
-			uint32_t alt_plugin_id = 0;
-			gres_state_t *gres_state_node_alt = NULL;
-			if (!use_total_gres && have_gpu && have_mps) {
-				if (gres_state_job->plugin_id == gpu_plugin_id)
-					alt_plugin_id = mps_plugin_id;
-				if (gres_state_job->plugin_id == mps_plugin_id)
-					alt_plugin_id = gpu_plugin_id;
-			}
-			if (alt_plugin_id) {
-				gres_state_node_alt = list_find_first(
-					node_gres_list,
-					gres_find_id,
-					&alt_plugin_id);
-			}
 			sock_gres = _build_sock_gres_by_topo(
 				gres_state_job, gres_state_node,
-				gres_state_node_alt,
 				use_total_gres,
 				core_bitmap, sockets, cores_per_sock,
 				job_id, node_name, enforce_binding,
