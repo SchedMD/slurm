@@ -5792,8 +5792,8 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		if (gres_id_shared(gres_state_job->config_flags)) {
 			have_gres_shared = true;
 			/*
-			 * Shared gres (e.g. gres/mps) only supports a per-node
-			 * count,
+			 * Shared gres (e.g. gres/'shared') only supports a
+			 * per-node count,
 			 * set either explicitly or implicitly.
 			 */
 			if (gres_js->gres_per_job &&
@@ -5906,7 +5906,7 @@ static bool _job_has_gres_bits(List job_gres_list)
 
 /*
  * Return count of configured GRES.
- * NOTE: For gres/mps return count of gres/gpu
+ * NOTE: For gres/'shared' return count of gres/gpu
  */
 static int _get_node_gres_cnt(List node_gres_list, gres_state_t *gres_state_job)
 {
