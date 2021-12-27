@@ -43,6 +43,7 @@ static gres_slurmd_conf_t *_create_shared_rec(
 {
 	gres_slurmd_conf_t *shared_record = xmalloc(sizeof(gres_slurmd_conf_t));
 	shared_record->config_flags = sharing_record->config_flags;
+	shared_record->config_flags |= GRES_CONF_SHARED;
 	shared_record->cpu_cnt = sharing_record->cpu_cnt;
 	shared_record->cpus = xstrdup(sharing_record->cpus);
 	if (sharing_record->cpus_bitmap) {
