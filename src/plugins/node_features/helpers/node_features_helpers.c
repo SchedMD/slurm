@@ -655,8 +655,11 @@ extern char *node_features_p_job_xlate(char *job_features)
 	if (strpbrk(job_features, "[]()|*") != NULL) {
 		info("an unsupported constraint operator was used in \"%s\", clearing job constraint",
 		     job_features);
-		return xstrdup("");
+		return NULL;
 	}
+
+	if (!job_features || (job_features[0] == '\0'))
+		return NULL;
 
 	return xstrdup(job_features);
 }
