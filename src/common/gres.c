@@ -239,7 +239,7 @@ static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static List gres_conf_list = NULL;
 static bool init_run = false;
 static bool have_gpu = false, have_mps = false;
-static uint32_t gpu_plugin_id = NO_VAL, mps_plugin_id = NO_VAL;
+static uint32_t gpu_plugin_id = NO_VAL;
 static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
 static uint32_t select_plugin_type = NO_VAL;
 static buf_t *gres_context_buf = NULL;
@@ -599,7 +599,6 @@ extern int gres_init(void)
 				append_mps = true; /* "mps" must follow "gpu" */
 				skip_name = true;
 			}
-			mps_plugin_id = gres_build_id("mps");
 		} else if (!xstrcmp(one_name, "gpu")) {
 			have_gpu = true;
 			gpu_plugin_id = gres_build_id("gpu");
