@@ -1781,6 +1781,7 @@ static int _attempt_backfill(void)
 			    (orig_time_limit != job_ptr->time_limit))
 				job_ptr->time_limit = orig_time_limit;
 		}
+		xfree(job_queue_rec);
 		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
 		if (!job_queue_rec) {
 			log_flag(BACKFILL, "reached end of job queue");
@@ -1804,11 +1805,6 @@ static int _attempt_backfill(void)
 		else
 			is_job_array_head = false;
 
-		if (job_ptr->resv_list)
-			job_queue_rec_resv_list(job_queue_rec);
-		else
-			job_queue_rec_magnetic_resv(job_queue_rec);
-		xfree(job_queue_rec);
 		if (slurmctld_config.shutdown_time ||
 		    (difftime(time(NULL),orig_sched_start) >= bf_max_time)){
 			break;
@@ -1857,6 +1853,7 @@ static int _attempt_backfill(void)
 			job_ptr = find_job_record(job_ptr->array_job_id);
 			if (!job_ptr)	/* All task array elements started */
 				continue;
+			job_queue_rec->job_ptr = job_ptr;
 		}
 
 		/*
@@ -1875,6 +1872,12 @@ static int _attempt_backfill(void)
 			continue;
 		if (!part_ptr)
 			continue;
+
+		if (job_ptr->resv_list)
+			job_queue_rec_resv_list(job_queue_rec);
+		else
+			job_queue_rec_magnetic_resv(job_queue_rec);
+		xfree(job_queue_rec);
 
 		job_ptr->bit_flags |= BACKFILL_SCHED;
 		job_ptr->last_sched_eval = now;
