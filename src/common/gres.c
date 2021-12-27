@@ -530,9 +530,16 @@ static int _unload_plugin(slurm_gres_context_t *plugin_context)
 	return rc;
 }
 
-static void _set_shared_flag(char *name, uint32_t *config_flags)
+static bool _is_shared_name(char *name)
 {
 	if (!xstrcmp(name, "mps"))
+		return true;
+	return false;
+}
+
+static void _set_shared_flag(char *name, uint32_t *config_flags)
+{
+	if (_is_shared_name(name))
 		*config_flags |= GRES_CONF_SHARED;
 }
 
