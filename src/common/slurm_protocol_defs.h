@@ -1406,7 +1406,6 @@ extern char *slurm_add_slash_to_quotes(char *str);
 extern List slurm_copy_char_list(List char_list);
 extern int slurm_parse_char_list(List char_list, char *names, void *args,
 				 int (*func_ptr)(List char_list, char *name,
-						int start, int end,
 						void *args));
 extern int slurm_addto_char_list(List char_list, char *names);
 extern int slurm_addto_char_list_with_case(List char_list, char *names,

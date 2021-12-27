@@ -41,93 +41,35 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 
-static uint16_t _parse_preempt_modes(char *names)
+static int _parse_preempt_modes_internal(List null, char *name, void *x)
 {
-	int i=0, start=0;
-	char *name = NULL;
-	char quote_c = '\0';
-	int quote = 0;
-	int count = 0;
-	uint16_t preempt_mode = 0;
+	uint16_t *preempt_mode = x;
 	uint16_t ret_mode = 0;
 
-	if (names) {
-		if (names[i] == '\"' || names[i] == '\'') {
-			quote_c = names[i];
-			quote = 1;
-			i++;
-		}
-		start = i;
-		while(names[i]) {
-			//info("got %d - %d = %d", i, start, i-start);
-			if (quote && names[i] == quote_c)
-				break;
-			else if (names[i] == '\"' || names[i] == '\'')
-				names[i] = '`';
-			else if (names[i] == ',') {
-				name = xmalloc((i-start+1));
-				memcpy(name, names+start, (i-start));
-				//info("got %s %d", name, i-start);
-
-				ret_mode = preempt_mode_num(name);
-				if (ret_mode == NO_VAL16) {
-					error("Unknown preempt_mode given '%s'",
-					      name);
-					xfree(name);
-					preempt_mode = NO_VAL16;
-					break;
-				}
-
-				/*
-				 * Since we can't really add 0 to a bitstring
-				 * put on one that we can track.
-				 */
-				if (ret_mode == PREEMPT_MODE_OFF)
-					ret_mode = PREEMPT_MODE_COND_OFF;
-
-				preempt_mode |= ret_mode;
-
-				count++;
-				xfree(name);
-
-				i++;
-				start = i;
-				if (names[i] == ' ') {
-					info("There is a problem with "
-					     "your request.  It appears you "
-					     "have spaces inside your list.");
-					break;
-				}
-			}
-			i++;
-		}
-
-		name = xmalloc((i-start+1));
-		memcpy(name, names+start, (i-start));
-		//info("got %s %d", name, i-start);
-
-		ret_mode = preempt_mode_num(name);
-		if (ret_mode == NO_VAL16) {
-			error("Unknown preempt_mode given '%s'",
-			      name);
-			xfree(name);
-			preempt_mode = NO_VAL16;
-			return preempt_mode;
-		}
-
-		/*
-		 * Since we can't really add 0 to a bitstring
-		 * put on one that we can track.
-		 */
-		if (ret_mode == PREEMPT_MODE_OFF)
-			ret_mode = PREEMPT_MODE_COND_OFF;
-
-		preempt_mode |= ret_mode;
-
-		count++;
-		xfree(name);
+	ret_mode = preempt_mode_num(name);
+	if (ret_mode == NO_VAL16) {
+		error("Unknown preempt_mode given '%s'", name);
+		*preempt_mode = NO_VAL16;
+		return SLURM_ERROR;
 	}
-	return preempt_mode;
+
+	/*
+	 * Since we can't really add 0 to a bitstring
+	 * put on one that we can track.
+	 */
+	if (ret_mode == PREEMPT_MODE_OFF)
+		ret_mode = PREEMPT_MODE_COND_OFF;
+
+	*preempt_mode |= ret_mode;
+	return 1;
+}
+
+static uint16_t _parse_preempt_modes(char *names)
+{
+	uint16_t preempt_mode = 0;
+	slurm_parse_char_list(NULL, names, &preempt_mode,
+			      _parse_preempt_modes_internal);
+ 	return preempt_mode;
 }
 
 static int _set_cond(int *start, int argc, char **argv,

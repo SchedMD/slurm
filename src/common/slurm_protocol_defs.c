@@ -141,24 +141,23 @@ static void _free_all_step_info (job_step_info_response_msg_t *msg);
 
 static char *_convert_to_id(char *name, bool gid)
 {
+	char *tmp_name;
 	if (gid) {
 		gid_t gid;
 		if (gid_from_string( name, &gid )) {
 			error("Invalid group id: %s", name);
 			return NULL;
 		}
-		xfree(name);
-		name = xstrdup_printf( "%d", (int) gid );
+		tmp_name = xstrdup_printf( "%d", (int) gid );
 	} else {
 		uid_t uid;
 		if (uid_from_string( name, &uid )) {
 			error("Invalid user id: %s", name);
 			return NULL;
 		}
-		xfree(name);
-		name = xstrdup_printf( "%d", (int) uid );
+		tmp_name = xstrdup_printf( "%d", (int) uid );
 	}
-	return name;
+	return tmp_name;
 }
 
 /*
@@ -540,85 +539,80 @@ endit:
 }
 
 /* Parses string and converts names to either uid or gid list */
+static int _slurm_addto_id_char_list_internal(List char_list, char *name,
+					      void *x)
+{
+	bool gid = *(bool *)x;
+	char *tmp_name = _convert_to_id(name, gid);
+	if (!tmp_name) {
+		list_flush(char_list);
+		return SLURM_ERROR;
+	}
+
+	if (!list_find_first(char_list, slurm_find_char_in_list, tmp_name)) {
+		list_append(char_list, tmp_name);
+		return 1;
+	} else {
+		xfree(tmp_name);
+		return 0;
+	}
+}
+
+/* Parses string and converts names to either uid or gid list */
 extern int slurm_addto_id_char_list(List char_list, char *names, bool gid)
 {
-	int i=0, start=0;
-	char *name = NULL, *tmp_char = NULL;
-	ListIterator itr = NULL;
-	char quote_c = '\0';
-	int quote = 0;
-	int count = 0;
-
 	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
-	itr = list_iterator_create(char_list);
-	if (names) {
-		if (names[i] == '\"' || names[i] == '\'') {
-			quote_c = names[i];
-			quote = 1;
-			i++;
-		}
-		start = i;
-		while (names[i]) {
-			//info("got %d - %d = %d", i, start, i-start);
-			if (quote && names[i] == quote_c)
-				break;
-			else if (names[i] == '\"' || names[i] == '\'')
-				names[i] = '`';
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-					//info("got %s %d", name, i-start);
-					name = _convert_to_id(name, gid);
-					if (!name)
-						return 0;
-					while ((tmp_char = list_next(itr))) {
-						if (!xstrcasecmp(tmp_char,
-								 name))
-							break;
-					}
+	return slurm_parse_char_list(char_list, names, &gid,
+				     _slurm_addto_id_char_list_internal);
+}
 
-					if (!tmp_char) {
-						list_append(char_list, name);
-						count++;
-					} else
-						xfree(name);
-					list_iterator_reset(itr);
-				}
-				i++;
-				start = i;
-				if (!names[i]) {
-					info("There is a problem with your request.  It appears you have spaces inside your list.");
-					break;
-				}
-			}
-			i++;
-		}
-		if ((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-			name = _convert_to_id(name, gid);
-			if (!name)
-				return 0;
+typedef struct {
+	bool add_set;
+	bool equal_set;
+	int mode;
+} char_list_internal_args_t;
 
-			while ((tmp_char = list_next(itr))) {
-				if (!xstrcasecmp(tmp_char, name))
-					break;
-			}
+static int _slurm_addto_mode_char_list_internal(List char_list, char *name,
+						void *args_in)
+{
+	char *tmp_name = NULL;
+	char_list_internal_args_t *args = args_in;
+	char *err_msg = "You can't use '=' and '+' or '-' in the same line";
 
-			if (!tmp_char) {
-				list_append(char_list, name);
-				count++;
-			} else
-				xfree(name);
-		}
+	int tmp_mode = args->mode;
+	if ((name[0] == '+') || (name[0] == '-')) {
+		tmp_mode = name[0];
+		name++;
 	}
-	list_iterator_destroy(itr);
-	return count;
+	if (tmp_mode) {
+		if (args->equal_set) {
+			error("%s", err_msg);
+			list_flush(char_list);
+			return SLURM_ERROR;
+		}
+		args->add_set = 1;
+		tmp_name = xstrdup_printf("%c%s", tmp_mode, name);
+	} else {
+		if (args->add_set) {
+			error("%s", err_msg);
+			list_flush(char_list);
+			return SLURM_ERROR;
+		}
+		args->equal_set = 1;
+		tmp_name = xstrdup_printf("%s", name);
+	}
+
+	if (!list_find_first(char_list, slurm_find_char_in_list, tmp_name)) {
+		list_append(char_list, tmp_name);
+		return 1;
+	} else {
+		xfree(tmp_name);
+		return 0;
+	}
 }
 
 /* Parses strings such as stra,+strb,-strc and appends the default mode to each
@@ -626,206 +620,50 @@ extern int slurm_addto_id_char_list(List char_list, char *names, bool gid)
  * RET: returns the number of items added to the list. -1 on error. */
 extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 {
-	int i=0, start=0;
-	char *m_name = NULL, *name = NULL, *tmp_char = NULL;
-	ListIterator itr = NULL;
-	char quote_c = '\0';
-	int quote = 0;
-	int count = 0;
-	int equal_set = 0;
-	int add_set = 0;
-	char *err_msg = "You can't use '=' and '+' or '-' in the same line";
+	char_list_internal_args_t args = {0};
+
+	args.mode = mode;
 
 	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
-	if (!names) {
-		error("You gave me an empty name list");
-		return 0;
-	}
-
-	itr = list_iterator_create(char_list);
-	if (names[i] == '\"' || names[i] == '\'') {
-		quote_c = names[i];
-		quote = 1;
-		i++;
-	}
-	start = i;
-	while(names[i]) {
-		if (quote && names[i] == quote_c)
-			break;
-		else if (names[i] == '\"' || names[i] == '\'')
-			names[i] = '`';
-		else if (names[i] == ',') {
-			if ((i-start) > 0) {
-				int tmp_mode = mode;
-				if (names[start] == '+' ||
-				    names[start] == '-') {
-					tmp_mode = names[start];
-					start++;
-				}
-				name = xstrndup(names+start, (i-start));
-				if (tmp_mode) {
-					if (equal_set) {
-						count = -1;
-						error("%s", err_msg);
-						goto end_it;
-					}
-					add_set = 1;
-					m_name = xstrdup_printf(
-						  "%c%s", tmp_mode, name);
-				} else {
-					if (add_set) {
-						count = -1;
-						error("%s", err_msg);
-						goto end_it;
-					}
-					equal_set = 1;
-					m_name = xstrdup_printf("%s", name);
-				}
-				while((tmp_char = list_next(itr))) {
-					if (!strcasecmp(tmp_char, m_name))
-						break;
-				}
-				list_iterator_reset(itr);
-
-				if (!tmp_char) {
-					list_append(char_list, m_name);
-					count++;
-				} else
-					xfree(m_name);
-				xfree(name);
-			}
-
-			i++;
-			start = i;
-			if (!names[i]) {
-				error("There is a problem with "
-				      "your request.  It appears you "
-				      "have spaces inside your list.");
-				break;
-			}
-		}
-		i++;
-	}
-
-	list_iterator_reset(itr);
-	if ((i-start) > 0) {
-		int tmp_mode = mode;
-		if (names[start] == '+' ||
-		    names[start] == '-') {
-			tmp_mode = names[start];
-			start++;
-		}
-		name = xstrndup(names+start, (i-start));
-		if (tmp_mode) {
-			if (equal_set) {
-				count = -1;
-				error("%s", err_msg);
-				goto end_it;
-			}
-			m_name = xstrdup_printf(
-				  "%c%s", tmp_mode, name);
-		} else {
-			if (add_set) {
-				count = -1;
-				error("%s", err_msg);
-				goto end_it;
-			}
-			m_name = xstrdup_printf("%s", name);
-		}
-		while((tmp_char = list_next(itr))) {
-			if (!strcasecmp(tmp_char, m_name))
-				break;
-		}
-		list_iterator_reset(itr);
-
-		if (!tmp_char) {
-			list_append(char_list, m_name);
-			count++;
-		} else
-			xfree(m_name);
-		xfree(name);
-	}
-
-end_it:
-	xfree(name);
-	list_iterator_destroy(itr);
-	return count;
+	return slurm_parse_char_list(char_list, names, &args,
+			      	     _slurm_addto_mode_char_list_internal);
 }
 
-static int _addto_step_list_internal(List step_list, char *names,
-				     int start, int end)
+static int _addto_step_list_internal(List step_list, char *name, void *x)
 {
-	int count = 0;
-	char *name;
 	slurm_selected_step_t *selected_step = NULL;
-
-	if ((end-start) <= 0)
-		return 0;
-
-	name = xmalloc((end-start+1));
-	memcpy(name, names+start, (end-start));
 
 	if (!isdigit(*name)) {
 		fatal("Bad job/step specified: %s", name);
-		xfree(name);
-		return 0;
+		return SLURM_ERROR;
 	}
 
 	selected_step = slurm_parse_step_str(name);
-	xfree(name);
 
-	if (!list_find_first(step_list,
-			     slurmdb_find_selected_step_in_list,
+	if (!list_find_first(step_list, slurmdb_find_selected_step_in_list,
 			     selected_step)) {
 		list_append(step_list, selected_step);
-		count++;
-	} else
+		return 1;
+	} else {
 		slurm_destroy_selected_step(selected_step);
-
-	return count;
+		return 0;
+	}
 }
 
 /* returns number of objects added to list */
 extern int slurm_addto_step_list(List step_list, char *names)
 {
-	int i = 0, start = 0;
-	char quote_c = '\0';
-	int quote = 0;
-	int count = 0;
-
 	if (!step_list) {
 		error("No list was given to fill in");
 		return 0;
-	} else if (!names)
-		return 0;
-
-	if (names[i] == '\"' || names[i] == '\'') {
-		quote_c = names[i];
-		quote = 1;
-		i++;
-	}
-	start = i;
-	while (names[i]) {
-		//info("got %d - %d = %d", i, start, i-start);
-		if (quote && names[i] == quote_c)
-			break;
-		else if (names[i] == '\"' || names[i] == '\'')
-			names[i] = '`';
-		else if (names[i] == ',') {
-			count += _addto_step_list_internal(
-				step_list, names, start, i);
-			start = i + 1;
-		}
-		i++;
 	}
 
-	count += _addto_step_list_internal(step_list, names, start, i);
-
-	return count;
+	return slurm_parse_char_list(step_list, names, NULL,
+			      	     _addto_step_list_internal);
 }
 
 extern int slurm_sort_char_list_asc(void *v1, void *v2)
