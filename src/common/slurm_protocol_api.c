@@ -2328,14 +2328,18 @@ again:
 
 	if (pfd.revents & POLLERR) {
 		int value = -1;
+		int rc;
 		int err = SLURM_SUCCESS;
 
 		if (ioctl(fd, TIOCOUTQ, &value))
 			log_flag(NET, "%s: TIOCOUTQ ioctl failed",
 				 __func__);
-		fd_get_socket_error(fd, &err);
-		log_flag(NET, "%s: poll error with %d outstanding: %s",
-			 __func__, value, slurm_strerror(err));
+		if ((rc = fd_get_socket_error(fd, &err)))
+			log_flag(NET, "%s fd_get_socket_error failed with %s",
+				 __func__, slurm_strerror(rc));
+		else
+			log_flag(NET, "%s: poll error with %d outstanding: %s",
+				 __func__, value, slurm_strerror(err));
 
 		(void) close(fd);
 		return SLURM_ERROR;

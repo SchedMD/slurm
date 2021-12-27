@@ -1004,13 +1004,19 @@ static inline void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 	}
 	if (revents & POLLERR) {
 		int err = SLURM_ERROR;
+		int rc;
 
-		if (con->is_socket)
+		if (con->is_socket) {
 			/* connection may have got RST */
-			fd_get_socket_error(con->input_fd, &err);
+			if ((rc = fd_get_socket_error(con->input_fd, &err))) {
+				error("%s: [%s] poll error: fd_get_socket_error failed %s",
+				      __func__, con->name, slurm_strerror(rc));
+			} else {
+				error("%s: [%s] poll error: %s",
+				      __func__, con->name, slurm_strerror(err));
+			}
+		}
 
-		error("%s: [%s] poll error: %s",
-		      __func__, con->name, slurm_strerror(err));
 
 		_close_con(true, con);
 		return;
@@ -1225,9 +1231,14 @@ static inline void _handle_listen_event(con_mgr_t *mgr, int fd,
 		      __func__, con->name);
 	} else if (revents & POLLERR) {
 		int err = SLURM_ERROR;
-		fd_get_socket_error(con->input_fd, &err);
-		error("%s: [%s] listen poll error: %s",
-		      __func__, con->name, slurm_strerror(err));
+		int rc;
+		if ((rc = fd_get_socket_error(con->input_fd, &err))) {
+			error("%s: [%s] listen poll error: %s fd_get_socket_error failed:",
+			      __func__, con->name, slurm_strerror(rc));
+		} else {
+			error("%s: [%s] listen poll error: %s",
+			      __func__, con->name, slurm_strerror(err));
+		}
 	} else if (revents & POLLIN) {
 		log_flag(NET, "%s: [%s] listen has incoming connection",
 			 __func__, con->name);

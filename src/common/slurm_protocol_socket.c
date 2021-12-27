@@ -242,11 +242,14 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 		 * nonblocking read means just that.
 		 */
 		if (ufds.revents & POLLERR) {
-			int e;
+			int e, rc;
 
-			fd_get_socket_error(fd, &e);
-			debug("%s: Socket POLLERR: %s",
-			      __func__, slurm_strerror(e));
+			if ((rc = fd_get_socket_error(fd, &e)))
+				debug("%s: Socket POLLERR, fd_get_socket_error failed: %s",
+				      __func__, slurm_strerror(rc));
+			else
+				debug("%s: Socket POLLERR: %s",
+				      __func__, slurm_strerror(e));
 
 			slurm_seterrno(e);
 			sent = SLURM_ERROR;
@@ -254,10 +257,13 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 		}
 		if ((ufds.revents & POLLHUP) || (ufds.revents & POLLNVAL) ||
 		    (recv(fd, &temp, 1, flags) == 0)) {
-			int so_err;
-			fd_get_socket_error(fd, &so_err);
-			debug2("%s: Socket no longer there: %s",
-			       __func__, slurm_strerror(so_err));
+			int so_err, rc;
+			if ((rc = fd_get_socket_error(fd, &so_err)))
+				debug2("%s: Socket no longer there, fd_get_socket_error failed: %s",
+				       __func__, slurm_strerror(rc));
+			else
+				debug2("%s: Socket no longer there: %s",
+				       __func__, slurm_strerror(so_err));
 			slurm_seterrno(so_err);
 			sent = SLURM_ERROR;
 			goto done;
@@ -352,11 +358,14 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 		}
 
 		if (ufds.revents & POLLERR) {
-			int e;
+			int e, rc;
 
-			fd_get_socket_error(fd, &e);
-			debug("%s: Socket POLLERR: %s",
-			      __func__, slurm_strerror(e));
+			if ((rc = fd_get_socket_error(fd, &e)))
+				debug("%s: Socket POLLERR: fd_get_socket_error failed: %s",
+				      __func__, slurm_strerror(rc));
+			else
+				debug("%s: Socket POLLERR: %s",
+				      __func__, slurm_strerror(e));
 
 			slurm_seterrno(e);
 			recvlen = SLURM_ERROR;
@@ -365,11 +374,16 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 		if ((ufds.revents & POLLNVAL) ||
 		    ((ufds.revents & POLLHUP) &&
 		     ((ufds.revents & POLLIN) == 0))) {
-			int so_err;
-			fd_get_socket_error(fd, &so_err);
-			debug2("%s: Socket no longer there: %s",
-			       __func__, slurm_strerror(so_err));
-			slurm_seterrno(so_err);
+			int so_err, rc;
+			if ((rc = fd_get_socket_error(fd, &so_err))) {
+				debug2("%s: Socket no longer there: fd_get_socket_error failed: %s",
+				       __func__, slurm_strerror(rc));
+				slurm_seterrno(rc);
+			} else {
+				debug2("%s: Socket no longer there: %s",
+				       __func__, slurm_strerror(so_err));
+				slurm_seterrno(so_err);
+			}
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
