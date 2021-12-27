@@ -50,9 +50,11 @@ set flags_no_gpu_err	"fatal: Invalid GRES record name=${re_word_str} type=${re_w
 set key_parse_err	"error: _parse_next_key: Parsing error at unrecognized key"
 set flags_default	"HAS_FILE,ENV_NVML,ENV_RSMI,ENV_OPENCL,ENV_DEFAULT"
 set flags_default_type	"HAS_FILE,HAS_TYPE,ENV_NVML,ENV_RSMI,ENV_OPENCL,ENV_DEFAULT"
+set flags_default_type_shared "HAS_FILE,HAS_TYPE,ENV_NVML,ENV_RSMI,ENV_OPENCL,ENV_DEFAULT,SHARED"
 set flags_type		"HAS_TYPE"
 set flags_file		"HAS_FILE"
 set flags_file_type	"HAS_FILE,HAS_TYPE"
+set flags_file_type_shared "HAS_FILE,HAS_TYPE,SHARED"
 
 set debug_mode 0
 
@@ -1068,11 +1070,11 @@ tesla|4|0-1|(null)|${dev}1
 gtx560|4|0-1|(null)|${dev}0
 "
 set expected_output "
-GRES_PARSABLE\[mps\](100):gtx560|4|0-1|(null)|${dev}0|$flags_file_type
+GRES_PARSABLE\[mps\](100):gtx560|4|0-1|(null)|${dev}0|$flags_file_type_shared
 GRES_PARSABLE\[gpu\](1):gtx560|4|0-1|(null)|${dev}0|$flags_file_type
-GRES_PARSABLE\[mps\](100):tesla|4|0-1|(null)|${dev}1|$flags_file_type
+GRES_PARSABLE\[mps\](100):tesla|4|0-1|(null)|${dev}1|$flags_file_type_shared
 GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}1|$flags_file_type
-GRES_PARSABLE\[mps\](100):1080|4|0-1|(null)|${dev}2|$flags_file_type
+GRES_PARSABLE\[mps\](100):1080|4|0-1|(null)|${dev}2|$flags_file_type_shared
 GRES_PARSABLE\[gpu\](1):1080|4|0-1|(null)|${dev}2|$flags_file_type
 "
 
@@ -1318,9 +1320,9 @@ Name=mps Count=100 File=${dev}0
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[mps\](100):gtx560|4|0,1|(null)|${dev}0|$flags_file_type
+GRES_PARSABLE\[mps\](100):gtx560|4|0,1|(null)|${dev}0|$flags_file_type_shared
 GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|$flags_default_type
-GRES_PARSABLE\[mps\](100):tesla|4|2,3|(null)|${dev}1|$flags_file_type
+GRES_PARSABLE\[mps\](100):tesla|4|2,3|(null)|${dev}1|$flags_file_type_shared
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|$flags_default_type
 "
 testproc_alias "c2" test_cfg "c2" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
@@ -1339,9 +1341,9 @@ Name=mps Count=210
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[mps\](105):gtx560|4|0,1|(null)|${dev}0|$flags_default_type
+GRES_PARSABLE\[mps\](105):gtx560|4|0,1|(null)|${dev}0|$flags_default_type_shared
 GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|$flags_default_type
-GRES_PARSABLE\[mps\](105):tesla|4|2,3|(null)|${dev}1|$flags_default_type
+GRES_PARSABLE\[mps\](105):tesla|4|2,3|(null)|${dev}1|$flags_default_type_shared
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|$flags_default_type
 "
 testproc_alias "c4" test_cfg "c4" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
@@ -1813,9 +1815,9 @@ Name=mps Count=100 File=${dev}1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[mps\](100):gtx560|4|0,1|(null)|${dev}0|$flags_file_type
+GRES_PARSABLE\[mps\](100):gtx560|4|0,1|(null)|${dev}0|$flags_file_type_shared
 GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|$flags_default_type
-GRES_PARSABLE\[mps\](100):tesla|4|2,3|(null)|${dev}1|$flags_file_type
+GRES_PARSABLE\[mps\](100):tesla|4|2,3|(null)|${dev}1|$flags_file_type_shared
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|$flags_default_type
 "
 testproc_alias "c50" test_cfg "c50" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
@@ -1883,11 +1885,11 @@ Name=mps Count=400 File=${dev}8
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[mps\](0):gtx560|4|0,1|(null)|${dev}0|$flags_default_type
+GRES_PARSABLE\[mps\](0):gtx560|4|0,1|(null)|${dev}0|$flags_default_type_shared
 GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|$flags_default_type
-GRES_PARSABLE\[mps\](200):tesla|4|2,3|(null)|${dev}1|$flags_file_type
+GRES_PARSABLE\[mps\](200):tesla|4|2,3|(null)|${dev}1|$flags_file_type_shared
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|$flags_default_type
-GRES_PARSABLE\[mps\](300):tesla|4|2,3|(null)|${dev}3|$flags_file_type
+GRES_PARSABLE\[mps\](300):tesla|4|2,3|(null)|${dev}3|$flags_file_type_shared
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}3|$flags_default_type
 "
 testproc_alias "c56" test_cfg "c56" $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
