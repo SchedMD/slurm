@@ -1633,7 +1633,7 @@ static int _attempt_backfill(void)
 {
 	DEF_TIMERS;
 	List job_queue;
-	job_queue_rec_t *job_queue_rec;
+	job_queue_rec_t *job_queue_rec = NULL;
 	int bb, i, j, node_space_recs, mcs_select = 0;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 	job_record_t *job_ptr = NULL;
@@ -2896,6 +2896,8 @@ skip_start:
 	}
 
 	_handle_planned(true);
+
+	xfree(job_queue_rec);
 
 	if (job_ptr) {
 		/* Restore preemption state if needed. */
