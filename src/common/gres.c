@@ -576,8 +576,9 @@ extern int gres_init(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
 	char *last = NULL, *names, *one_name, *full_name;
-	char *sorted_names = NULL, *sep = "", *shared_name = NULL;
-	bool have_gpu = false, have_shared = false, append_shared = false;
+	char *sorted_names = NULL, *sep = "", *shared_names = NULL;
+	bool have_gpu = false, have_shared = false;
+	char *shared_sep = "";
 
 	if (init_run && (gres_context_cnt >= 0))
 		return rc;
@@ -600,11 +601,13 @@ extern int gres_init(void)
 	while (one_name) {
 		bool skip_name = false;
 		if (_is_shared_name(one_name)) {
-			shared_name = one_name;
 			have_shared = true;
 			if (!have_gpu) {
-				append_shared = true; /* "shared" must follow "gpu" */
+				/* "shared" must follow "gpu" */
 				skip_name = true;
+				xstrfmtcat(shared_names, "%s%s",
+					   shared_sep, one_name);
+				shared_sep = ",";
 			}
 		} else if (!xstrcmp(one_name, "gpu")) {
 			have_gpu = true;
@@ -616,10 +619,11 @@ extern int gres_init(void)
 		}
 		one_name = strtok_r(NULL, ",", &last);
 	}
-	if (append_shared) {
+	if (shared_names) {
 		if (!have_gpu)
 			fatal("GresTypes: gres/'shared' requires that gres/gpu also be configured");
-		xstrfmtcat(sorted_names, "%s%s", sep, shared_name);
+		xstrfmtcat(sorted_names, "%s%s", sep, shared_names);
+		xfree(shared_names);
 	}
 	xfree(names);
 
