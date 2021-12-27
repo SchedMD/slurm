@@ -496,7 +496,7 @@ extern int node_features_p_node_set(char *active_features)
 
 	input = xstrdup(active_features);
 	tmp = input;
-	while ((kv = strsep(&tmp, "&"))) {
+	while ((kv = strsep(&tmp, ","))) {
 
 		feature = list_find_first(helper_features, _cmp_features, kv);
 		if (!feature) {
@@ -652,6 +652,8 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
 
 extern char *node_features_p_job_xlate(char *job_features)
 {
+	char *node_features = NULL;
+
 	if (strpbrk(job_features, "[]()|*") != NULL) {
 		info("an unsupported constraint operator was used in \"%s\", clearing job constraint",
 		     job_features);
@@ -661,7 +663,16 @@ extern char *node_features_p_job_xlate(char *job_features)
 	if (!job_features || (job_features[0] == '\0'))
 		return NULL;
 
-	return xstrdup(job_features);
+	/*
+	 * The only special character allowed in this plugin is the
+	 * ampersand '&' character. Substitute all '&' for commas.
+	 * If we allow other special characters then more parsing may be
+	 * needed, similar to the knl_cray or knl_generic node_features plugins.
+	 */
+	node_features = xstrdup(job_features);
+	xstrsubstituteall(node_features, "&", ",");
+
+	return node_features;
 }
 
 /* Return true if the plugin requires PowerSave mode for booting nodes */
