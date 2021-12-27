@@ -3392,18 +3392,20 @@ static int _node_config_validate(char *node_name, char *orig_config,
 }
 
 /* The GPU count on a node changed. Update SHARED data structures to match */
-static void _sync_node_shared_to_sharing(gres_state_t *shared_gres_state_node,
-					 gres_state_t *sharing_gres_state_node)
+static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 {
 	gres_node_state_t *sharing_gres_ns, *shared_gres_ns;
 	uint64_t sharing_cnt, shared_alloc = 0, shared_rem;
 	int i;
 
-	if (!sharing_gres_state_node || !shared_gres_state_node)
+	if (!sharing_gres_state_node)
 		return;
 
 	sharing_gres_ns = sharing_gres_state_node->gres_data;
-	shared_gres_ns = shared_gres_state_node->gres_data;
+	shared_gres_ns = sharing_gres_ns->alt_gres_ns;
+
+	if (!shared_gres_ns)
+		return;
 
 	sharing_cnt = sharing_gres_ns->gres_cnt_avail;
 	if (shared_gres_ns->gres_bit_alloc) {
@@ -3529,7 +3531,7 @@ extern int gres_node_config_validate(char *node_name,
 				     char **reason_down)
 {
 	int i, rc, rc2;
-	gres_state_t *gres_state_node, *gres_gpu_ptr = NULL, *gres_mps_ptr = NULL;
+	gres_state_t *gres_state_node, *gres_gpu_ptr = NULL;
 	int core_cnt = sock_cnt * cores_per_sock;
 	int cpu_cnt  = core_cnt * threads_per_core;
 
@@ -3557,12 +3559,10 @@ extern int gres_node_config_validate(char *node_name,
 					    sock_cnt, config_overrides,
 					    reason_down, &gres_context[i]);
 		rc = MAX(rc, rc2);
-		if (gres_state_node->plugin_id == gpu_plugin_id)
+		if (gres_id_sharing(gres_state_node->plugin_id))
 			gres_gpu_ptr = gres_state_node;
-		else if (gres_state_node->plugin_id == mps_plugin_id)
-			gres_mps_ptr = gres_state_node;
 	}
-	_sync_node_shared_to_sharing(gres_mps_ptr, gres_gpu_ptr);
+	_sync_node_shared_to_sharing(gres_gpu_ptr);
 	_build_node_gres_str(gres_list, new_config, cores_per_sock, sock_cnt);
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -3975,7 +3975,7 @@ extern int gres_node_reconfig(char *node_name,
 {
 	int i, rc;
 	gres_state_t *gres_state_node = NULL, **gres_state_node_array;
-	gres_state_t *gpu_gres_state_node = NULL, *mps_gres_state_node;
+	gres_state_t *gpu_gres_state_node = NULL;
 
 	rc = gres_init();
 	slurm_mutex_lock(&gres_context_lock);
@@ -4008,14 +4008,10 @@ extern int gres_node_reconfig(char *node_name,
 			gpu_gres_state_node = gres_state_node;
 	}
 
-	/* Now synchronize gres/gpu and gres/mps state */
-	if (gpu_gres_state_node && have_mps) {
-		/* Update gres/mps counts and bitmaps to match gres/gpu */
-		uint32_t flags = GRES_CONF_SHARED;
-		mps_gres_state_node = list_find_first(
-			*gres_list, gres_find_flags, &flags);
-		_sync_node_shared_to_sharing(
-			mps_gres_state_node, gpu_gres_state_node);
+	/* Now synchronize gres/gpu and gres/'shared' state */
+	if (gpu_gres_state_node) {
+		/* Update gres/'shared' counts and bitmaps to match gres/gpu */
+		_sync_node_shared_to_sharing(gpu_gres_state_node);
 	}
 
 	/* Build new per-node gres_str */
