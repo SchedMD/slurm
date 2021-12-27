@@ -600,7 +600,7 @@ extern int gres_init(void)
 	one_name = strtok_r(names, ",", &last);
 	while (one_name) {
 		bool skip_name = false;
-		if (!xstrcmp(one_name, "mps")) {
+		if (_is_shared_name(one_name)) {
 			have_mps = true;
 			if (!have_gpu) {
 				append_mps = true; /* "mps" must follow "gpu" */
