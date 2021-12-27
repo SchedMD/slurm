@@ -300,8 +300,6 @@ static void *	_step_state_dup2(gres_step_state_t *gres_ss, int node_index);
 static void	_step_state_log(gres_step_state_t *gres_ss,
 				slurm_step_id_t *step_id,
 				char *gres_name);
-static void	_sync_node_mps_to_gpu(gres_state_t *mps_gres_state_node,
-				      gres_state_t *gpu_gres_state_node);
 static int	_unload_plugin(slurm_gres_context_t *plugin_context);
 static void	_validate_slurm_conf(List slurm_conf_list,
 				     slurm_gres_context_t *context_ptr);
@@ -3393,6 +3391,118 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	return rc;
 }
 
+/* The GPU count on a node changed. Update SHARED data structures to match */
+static void _sync_node_shared_to_sharing(gres_state_t *shared_gres_state_node,
+					 gres_state_t *sharing_gres_state_node)
+{
+	gres_node_state_t *sharing_gres_ns, *shared_gres_ns;
+	uint64_t sharing_cnt, shared_alloc = 0, shared_rem;
+	int i;
+
+	if (!sharing_gres_state_node || !shared_gres_state_node)
+		return;
+
+	sharing_gres_ns = sharing_gres_state_node->gres_data;
+	shared_gres_ns = shared_gres_state_node->gres_data;
+
+	sharing_cnt = sharing_gres_ns->gres_cnt_avail;
+	if (shared_gres_ns->gres_bit_alloc) {
+		if (sharing_cnt == bit_size(shared_gres_ns->gres_bit_alloc))
+			return;		/* No change for gres/'shared' */
+	}
+
+	if (sharing_cnt == 0)
+		return;			/* Still no SHARINGs */
+
+	/* Free any excess gres/'shared' topo records */
+	for (i = sharing_cnt; i < shared_gres_ns->topo_cnt; i++) {
+		if (shared_gres_ns->topo_core_bitmap)
+			FREE_NULL_BITMAP(shared_gres_ns->topo_core_bitmap[i]);
+		if (shared_gres_ns->topo_gres_bitmap)
+			FREE_NULL_BITMAP(shared_gres_ns->topo_gres_bitmap[i]);
+		xfree(shared_gres_ns->topo_type_name[i]);
+	}
+
+	if (shared_gres_ns->gres_cnt_avail == 0) {
+		/* No gres/'shared' on this node */
+		shared_gres_ns->topo_cnt = 0;
+		return;
+	}
+
+	if (!shared_gres_ns->gres_bit_alloc) {
+		shared_gres_ns->gres_bit_alloc = bit_alloc(sharing_cnt);
+	} else {
+		shared_gres_ns->gres_bit_alloc =
+			bit_realloc(shared_gres_ns->gres_bit_alloc,
+				    sharing_cnt);
+	}
+
+	/* Add any additional required gres/'shared' topo records */
+	if (shared_gres_ns->topo_cnt) {
+		shared_gres_ns->topo_core_bitmap =
+			xrealloc(shared_gres_ns->topo_core_bitmap,
+				 sizeof(bitstr_t *) * sharing_cnt);
+		shared_gres_ns->topo_gres_bitmap =
+			xrealloc(shared_gres_ns->topo_gres_bitmap,
+				 sizeof(bitstr_t *) * sharing_cnt);
+		shared_gres_ns->topo_gres_cnt_alloc =
+			xrealloc(shared_gres_ns->topo_gres_cnt_alloc,
+				 sizeof(uint64_t) * sharing_cnt);
+		shared_gres_ns->topo_gres_cnt_avail =
+			xrealloc(shared_gres_ns->topo_gres_cnt_avail,
+				 sizeof(uint64_t) * sharing_cnt);
+		shared_gres_ns->topo_type_id =
+			xrealloc(shared_gres_ns->topo_type_id,
+				 sizeof(uint32_t) * sharing_cnt);
+		shared_gres_ns->topo_type_name =
+			xrealloc(shared_gres_ns->topo_type_name,
+				 sizeof(char *) * sharing_cnt);
+	} else {
+		shared_gres_ns->topo_core_bitmap =
+			xcalloc(sharing_cnt, sizeof(bitstr_t *));
+		shared_gres_ns->topo_gres_bitmap =
+			xcalloc(sharing_cnt, sizeof(bitstr_t *));
+		shared_gres_ns->topo_gres_cnt_alloc =
+			xcalloc(sharing_cnt, sizeof(uint64_t));
+		shared_gres_ns->topo_gres_cnt_avail =
+			xcalloc(sharing_cnt, sizeof(uint64_t));
+		shared_gres_ns->topo_type_id =
+			xcalloc(sharing_cnt, sizeof(uint32_t));
+		shared_gres_ns->topo_type_name =
+			xcalloc(sharing_cnt, sizeof(char *));
+	}
+
+	/*
+	 * Evenly distribute any remaining SHARED counts.
+	 * Counts get reset as needed when the node registers.
+	 */
+	for (i = 0; i < shared_gres_ns->topo_cnt; i++)
+		shared_alloc += shared_gres_ns->topo_gres_cnt_avail[i];
+	if (shared_alloc >= shared_gres_ns->gres_cnt_avail)
+		shared_rem = 0;
+	else
+		shared_rem = shared_gres_ns->gres_cnt_avail - shared_alloc;
+	for (i = shared_gres_ns->topo_cnt; i < sharing_cnt; i++) {
+		shared_gres_ns->topo_gres_bitmap[i] = bit_alloc(sharing_cnt);
+		bit_set(shared_gres_ns->topo_gres_bitmap[i], i);
+		shared_alloc = shared_rem / (sharing_cnt - i);
+		shared_gres_ns->topo_gres_cnt_avail[i] = shared_alloc;
+		shared_rem -= shared_alloc;
+	}
+	shared_gres_ns->topo_cnt = sharing_cnt;
+
+	for (i = 0; i < shared_gres_ns->topo_cnt; i++) {
+		if (shared_gres_ns->topo_gres_bitmap &&
+		    shared_gres_ns->topo_gres_bitmap[i] &&
+		    (sharing_cnt !=
+		     bit_size(shared_gres_ns->topo_gres_bitmap[i]))) {
+			shared_gres_ns->topo_gres_bitmap[i] =
+				bit_realloc(shared_gres_ns->topo_gres_bitmap[i],
+					    sharing_cnt);
+		}
+	}
+}
+
 /*
  * Validate a node's configuration and put a gres record onto a list
  * Called immediately after gres_node_config_unpack().
@@ -3452,7 +3562,7 @@ extern int gres_node_config_validate(char *node_name,
 		else if (gres_state_node->plugin_id == mps_plugin_id)
 			gres_mps_ptr = gres_state_node;
 	}
-	_sync_node_mps_to_gpu(gres_mps_ptr, gres_gpu_ptr);
+	_sync_node_shared_to_sharing(gres_mps_ptr, gres_gpu_ptr);
 	_build_node_gres_str(gres_list, new_config, cores_per_sock, sock_cnt);
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -3669,117 +3779,6 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 	}
 
 	return SLURM_SUCCESS;
-}
-
-/* The GPU count on a node changed. Update MPS data structures to match */
-static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_state_node,
-				  gres_state_t *gpu_gres_state_node)
-{
-	gres_node_state_t *gpu_gres_ns, *mps_gres_ns;
-	uint64_t gpu_cnt, mps_alloc = 0, mps_rem;
-	int i;
-
-	if (!gpu_gres_state_node || !mps_gres_state_node)
-		return;
-
-	gpu_gres_ns = gpu_gres_state_node->gres_data;
-	mps_gres_ns = mps_gres_state_node->gres_data;
-
-	gpu_cnt = gpu_gres_ns->gres_cnt_avail;
-	if (mps_gres_ns->gres_bit_alloc) {
-		if (gpu_cnt == bit_size(mps_gres_ns->gres_bit_alloc))
-			return;		/* No change for gres/mps */
-	}
-
-	if (gpu_cnt == 0)
-		return;			/* Still no GPUs */
-
-	/* Free any excess gres/mps topo records */
-	for (i = gpu_cnt; i < mps_gres_ns->topo_cnt; i++) {
-		if (mps_gres_ns->topo_core_bitmap)
-			FREE_NULL_BITMAP(mps_gres_ns->topo_core_bitmap[i]);
-		if (mps_gres_ns->topo_gres_bitmap)
-			FREE_NULL_BITMAP(mps_gres_ns->topo_gres_bitmap[i]);
-		xfree(mps_gres_ns->topo_type_name[i]);
-	}
-
-	if (mps_gres_ns->gres_cnt_avail == 0) {
-		/* No gres/mps on this node */
-		mps_gres_ns->topo_cnt = 0;
-		return;
-	}
-
-	if (!mps_gres_ns->gres_bit_alloc) {
-		mps_gres_ns->gres_bit_alloc = bit_alloc(gpu_cnt);
-	} else {
-		mps_gres_ns->gres_bit_alloc =
-			bit_realloc(mps_gres_ns->gres_bit_alloc,
-				    gpu_cnt);
-	}
-
-	/* Add any additional required gres/mps topo records */
-	if (mps_gres_ns->topo_cnt) {
-		mps_gres_ns->topo_core_bitmap =
-			xrealloc(mps_gres_ns->topo_core_bitmap,
-				 sizeof(bitstr_t *) * gpu_cnt);
-		mps_gres_ns->topo_gres_bitmap =
-			xrealloc(mps_gres_ns->topo_gres_bitmap,
-				 sizeof(bitstr_t *) * gpu_cnt);
-		mps_gres_ns->topo_gres_cnt_alloc =
-			xrealloc(mps_gres_ns->topo_gres_cnt_alloc,
-				 sizeof(uint64_t) * gpu_cnt);
-		mps_gres_ns->topo_gres_cnt_avail =
-			xrealloc(mps_gres_ns->topo_gres_cnt_avail,
-				 sizeof(uint64_t) * gpu_cnt);
-		mps_gres_ns->topo_type_id =
-			xrealloc(mps_gres_ns->topo_type_id,
-				 sizeof(uint32_t) * gpu_cnt);
-		mps_gres_ns->topo_type_name =
-			xrealloc(mps_gres_ns->topo_type_name,
-				 sizeof(char *) * gpu_cnt);
-	} else {
-		mps_gres_ns->topo_core_bitmap =
-			xcalloc(gpu_cnt, sizeof(bitstr_t *));
-		mps_gres_ns->topo_gres_bitmap =
-			xcalloc(gpu_cnt, sizeof(bitstr_t *));
-		mps_gres_ns->topo_gres_cnt_alloc =
-			xcalloc(gpu_cnt, sizeof(uint64_t));
-		mps_gres_ns->topo_gres_cnt_avail =
-			xcalloc(gpu_cnt, sizeof(uint64_t));
-		mps_gres_ns->topo_type_id =
-			xcalloc(gpu_cnt, sizeof(uint32_t));
-		mps_gres_ns->topo_type_name =
-			xcalloc(gpu_cnt, sizeof(char *));
-	}
-
-	/*
-	 * Evenly distribute any remaining MPS counts.
-	 * Counts get reset as needed when the node registers.
-	 */
-	for (i = 0; i < mps_gres_ns->topo_cnt; i++)
-		mps_alloc += mps_gres_ns->topo_gres_cnt_avail[i];
-	if (mps_alloc >= mps_gres_ns->gres_cnt_avail)
-		mps_rem = 0;
-	else
-		mps_rem = mps_gres_ns->gres_cnt_avail - mps_alloc;
-	for (i = mps_gres_ns->topo_cnt; i < gpu_cnt; i++) {
-		mps_gres_ns->topo_gres_bitmap[i] = bit_alloc(gpu_cnt);
-		bit_set(mps_gres_ns->topo_gres_bitmap[i], i);
-		mps_alloc = mps_rem / (gpu_cnt - i);
-		mps_gres_ns->topo_gres_cnt_avail[i] = mps_alloc;
-		mps_rem -= mps_alloc;
-	}
-	mps_gres_ns->topo_cnt = gpu_cnt;
-
-	for (i = 0; i < mps_gres_ns->topo_cnt; i++) {
-		if (mps_gres_ns->topo_gres_bitmap &&
-		    mps_gres_ns->topo_gres_bitmap[i] &&
-		    (gpu_cnt != bit_size(mps_gres_ns->topo_gres_bitmap[i]))) {
-			mps_gres_ns->topo_gres_bitmap[i] =
-				bit_realloc(mps_gres_ns->topo_gres_bitmap[i],
-					    gpu_cnt);
-		}
-	}
 }
 
 /* Convert core bitmap into socket string, xfree return value */
@@ -4015,7 +4014,8 @@ extern int gres_node_reconfig(char *node_name,
 		uint32_t flags = GRES_CONF_SHARED;
 		mps_gres_state_node = list_find_first(
 			*gres_list, gres_find_flags, &flags);
-		_sync_node_mps_to_gpu(mps_gres_state_node, gpu_gres_state_node);
+		_sync_node_shared_to_sharing(
+			mps_gres_state_node, gpu_gres_state_node);
 	}
 
 	/* Build new per-node gres_str */
