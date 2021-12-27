@@ -3954,7 +3954,6 @@ extern int gres_node_reconfig(char *node_name,
 			      int sock_per_node)
 {
 	int i, rc;
-	ListIterator gres_iter;
 	gres_state_t *gres_state_node = NULL, **gres_state_node_array;
 	gres_state_t *gpu_gres_state_node = NULL, *mps_gres_state_node;
 
@@ -3992,12 +3991,9 @@ extern int gres_node_reconfig(char *node_name,
 	/* Now synchronize gres/gpu and gres/mps state */
 	if (gpu_gres_state_node && have_mps) {
 		/* Update gres/mps counts and bitmaps to match gres/gpu */
-		gres_iter = list_iterator_create(*gres_list);
-		while ((mps_gres_state_node = list_next(gres_iter))) {
-			if (gres_id_shared(mps_gres_state_node->config_flags))
-				break;
-		}
-		list_iterator_destroy(gres_iter);
+		uint32_t flags = GRES_CONF_SHARED;
+		mps_gres_state_node = list_find_first(
+			*gres_list, gres_find_flags, &flags);
 		_sync_node_mps_to_gpu(mps_gres_state_node, gpu_gres_state_node);
 	}
 
