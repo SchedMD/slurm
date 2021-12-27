@@ -238,7 +238,6 @@ static char *local_plugins_str = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static List gres_conf_list = NULL;
 static bool init_run = false;
-static bool have_gpu = false, have_mps = false;
 static uint32_t gpu_plugin_id = NO_VAL;
 static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
 static uint32_t select_plugin_type = NO_VAL;
@@ -577,8 +576,8 @@ extern int gres_init(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
 	char *last = NULL, *names, *one_name, *full_name;
-	char *sorted_names = NULL, *sep = "";
-	bool append_mps = false;
+	char *sorted_names = NULL, *sep = "", *shared_name = NULL;
+	bool have_gpu = false, have_shared = false, append_shared = false;
 
 	if (init_run && (gres_context_cnt >= 0))
 		return rc;
@@ -593,17 +592,18 @@ extern int gres_init(void)
 	if ((local_plugins_str == NULL) || (local_plugins_str[0] == '\0'))
 		goto fini;
 
-	/* Ensure that "gres/mps" follows "gres/gpu" */
+	/* Ensure that "gres/'shared'" follows "gres/gpu" */
 	have_gpu = false;
-	have_mps = false;
+	have_shared = false;
 	names = xstrdup(local_plugins_str);
 	one_name = strtok_r(names, ",", &last);
 	while (one_name) {
 		bool skip_name = false;
 		if (_is_shared_name(one_name)) {
-			have_mps = true;
+			shared_name = one_name;
+			have_shared = true;
 			if (!have_gpu) {
-				append_mps = true; /* "mps" must follow "gpu" */
+				append_shared = true; /* "shared" must follow "gpu" */
 				skip_name = true;
 			}
 		} else if (!xstrcmp(one_name, "gpu")) {
@@ -616,10 +616,10 @@ extern int gres_init(void)
 		}
 		one_name = strtok_r(NULL, ",", &last);
 	}
-	if (append_mps) {
+	if (append_shared) {
 		if (!have_gpu)
-			fatal("GresTypes: gres/mps requires that gres/gpu also be configured");
-		xstrfmtcat(sorted_names, "%s%s", sep, "mps");
+			fatal("GresTypes: gres/'shared' requires that gres/gpu also be configured");
+		xstrfmtcat(sorted_names, "%s%s", sep, shared_name);
 	}
 	xfree(names);
 
@@ -669,7 +669,7 @@ fini:
 					   &select_plugin_type) != SLURM_SUCCESS)) {
 		select_plugin_type = NO_VAL;	/* error */
 	}
-	if (have_mps && running_in_slurmctld() &&
+	if (have_shared && running_in_slurmctld() &&
 	    (select_plugin_type != SELECT_TYPE_CONS_TRES)) {
 		fatal("Use of gres/mps requires the use of select/cons_tres");
 	}
