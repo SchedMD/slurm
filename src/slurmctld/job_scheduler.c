@@ -1414,16 +1414,11 @@ next_part:
 			part_ptr = job_queue_rec->part_ptr;
 			job_ptr->priority = job_queue_rec->priority;
 
-			if (job_ptr->resv_list)
-				job_queue_rec_resv_list(job_queue_rec);
-			else
-				job_queue_rec_magnetic_resv(job_queue_rec);
-			xfree(job_queue_rec);
-
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
 				xfree(job_ptr->state_desc);
 				last_job_update = now;
+				xfree(job_queue_rec);
 				continue;
 			}
 			if ((job_ptr->array_task_id != array_task_id) &&
@@ -1431,9 +1426,18 @@ next_part:
 				/* Job array element started in other partition,
 				 * reset pointer to "master" job array record */
 				job_ptr = find_job_record(job_ptr->array_job_id);
+				job_queue_rec->job_ptr = job_ptr;
 			}
-			if (!job_ptr || !IS_JOB_PENDING(job_ptr))
+			if (!job_ptr || !IS_JOB_PENDING(job_ptr)) {
+				xfree(job_queue_rec);
 				continue;	/* started in other partition */
+			}
+
+			if (job_ptr->resv_list)
+				job_queue_rec_resv_list(job_queue_rec);
+			else
+				job_queue_rec_magnetic_resv(job_queue_rec);
+			xfree(job_queue_rec);
 
 			if (!_job_runnable_test3(job_ptr, part_ptr))
 				continue;
