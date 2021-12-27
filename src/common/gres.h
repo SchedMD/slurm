@@ -1069,6 +1069,8 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 
 extern int gres_find_id(void *x, void *key);
 
+extern int gres_find_flags(void *x, void *key);
+
 /* Find job record with matching name and type */
 extern int gres_find_job_by_key_exact_type(void *x, void *key);
 

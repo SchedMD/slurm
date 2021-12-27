@@ -342,6 +342,15 @@ extern int gres_find_id(void *x, void *key)
 	return 0;
 }
 
+extern int gres_find_flags(void *x, void *key)
+{
+	gres_state_t *state_ptr = x;
+	uint32_t flags = *(uint32_t *)key;
+	if (state_ptr->config_flags & flags)
+		return 1;
+	return 0;
+}
+
 /* Find job record with matching name and type */
 extern int gres_find_job_by_key_exact_type(void *x, void *key)
 {
