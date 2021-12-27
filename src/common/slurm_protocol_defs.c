@@ -304,6 +304,63 @@ extern int slurm_char_list_copy(List dst, List src)
 	return SLURM_SUCCESS;
 }
 
+extern int slurm_parse_char_list(List char_list, char *names, void *args,
+				 int (*func_ptr)(List char_list, char *name,
+						 void *args))
+{
+	int i = 0, start = 0, count = 0, result = 0;
+	char quote_c = '\0';
+	int quote = 0;
+	char *tmp_names;
+
+	if (!names)
+		return 0;
+
+	tmp_names = xstrdup(names);
+
+	if ((tmp_names[i] == '\"') || (tmp_names[i] == '\'')) {
+		quote_c = tmp_names[i];
+		quote = 1;
+		i++;
+	}
+	start = i;
+	while (tmp_names[i]) {
+		if (quote && (tmp_names[i] == quote_c)){
+			tmp_names[i] = '\0';
+			break;
+		} else if ((tmp_names[i] == '\"') || (tmp_names[i] == '\''))
+			tmp_names[i] = '`';
+		else if ((tmp_names[i] == ',')) {
+			if (i != start) {
+				tmp_names[i] = '\0';
+				result = (*func_ptr)(char_list,
+						     tmp_names + start, args);
+				tmp_names[i] = ',';
+
+				if (result == SLURM_ERROR) {
+					xfree(tmp_names);
+					return SLURM_ERROR;
+				} else
+					count += result;
+			}
+			start = i + 1;
+		}
+		i++;
+	}
+
+	if (tmp_names[start]) {
+		result = (*func_ptr)(char_list, tmp_names + start, args);
+		if (result == SLURM_ERROR) {
+			xfree(tmp_names);
+			return SLURM_ERROR;
+		} else
+			count += result;
+	}
+	xfree(tmp_names);
+
+	return count;
+}
+
 extern int slurm_addto_char_list(List char_list, char *names)
 {
 	return slurm_addto_char_list_with_case(char_list, names, true);
