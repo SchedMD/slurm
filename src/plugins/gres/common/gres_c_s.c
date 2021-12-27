@@ -38,6 +38,24 @@
 
 List shared_info = NULL;
 
+static gres_slurmd_conf_t *_create_shared_rec(
+	gres_slurmd_conf_t *sharing_record, char *shared_name)
+{
+	gres_slurmd_conf_t *shared_record = xmalloc(sizeof(gres_slurmd_conf_t));
+	shared_record->config_flags = sharing_record->config_flags;
+	shared_record->cpu_cnt = sharing_record->cpu_cnt;
+	shared_record->cpus = xstrdup(sharing_record->cpus);
+	if (sharing_record->cpus_bitmap) {
+		shared_record->cpus_bitmap =
+			bit_copy(sharing_record->cpus_bitmap);
+	}
+	shared_record->file = xstrdup(sharing_record->file);
+	shared_record->name = xstrdup(shared_name);
+	shared_record->plugin_id = gres_build_id(shared_name);
+	shared_record->type_name = xstrdup(sharing_record->type_name);
+	return shared_record;
+}
+
 /* Distribute MPS Count to records on original list */
 static void _distribute_count(List gres_conf_list, List sharing_conf_list,
 			      uint64_t count, char *shared_name)
@@ -46,21 +64,10 @@ static void _distribute_count(List gres_conf_list, List sharing_conf_list,
 	int rem_sharings = list_count(sharing_conf_list);
 
 	while ((sharing_record = list_pop(sharing_conf_list))) {
-		shared_record = xmalloc(sizeof(gres_slurmd_conf_t));
-		shared_record->config_flags = sharing_record->config_flags;
+		shared_record = _create_shared_rec(sharing_record, shared_name);
 		shared_record->count = count / rem_sharings;
 		count -= shared_record->count;
 		rem_sharings--;
-		shared_record->cpu_cnt = sharing_record->cpu_cnt;
-		shared_record->cpus = xstrdup(sharing_record->cpus);
-		if (sharing_record->cpus_bitmap) {
-			shared_record->cpus_bitmap =
-				bit_copy(sharing_record->cpus_bitmap);
-		}
-		shared_record->file = xstrdup(sharing_record->file);
-		shared_record->name = xstrdup(shared_name);
-		shared_record->plugin_id = gres_build_id(shared_name);
-		shared_record->type_name = xstrdup(sharing_record->type_name);
 		list_append(gres_conf_list, shared_record);
 
 		list_append(gres_conf_list, sharing_record);
@@ -151,23 +158,9 @@ static int _merge_lists(List gres_conf_list, List sharing_conf_list,
 			list_append(gres_conf_list, shared_record);
 		} else {
 			/* Add gres/shared record to match gres/gps record */
-			shared_record = xmalloc(sizeof(gres_slurmd_conf_t));
-			shared_record->config_flags =
-				sharing_record->config_flags;
+			shared_record = _create_shared_rec(
+				sharing_record, shared_name);
 			shared_record->count = 0;
-			shared_record->cpu_cnt = sharing_record->cpu_cnt;
-			shared_record->cpus = xstrdup(sharing_record->cpus);
-			if (sharing_record->cpus_bitmap) {
-				shared_record->cpus_bitmap =
-					bit_copy(sharing_record->cpus_bitmap);
-			}
-			shared_record->file = xstrdup(sharing_record->file);
-			shared_record->name = xstrdup(shared_name);
-			shared_record->plugin_id = gres_build_id(shared_name);
-			shared_record->type_name =
-				xstrdup(sharing_record->type_name);
-			shared_record->unique_id =
-				xstrdup(sharing_record->unique_id);
 			list_append(gres_conf_list, shared_record);
 		}
 		list_append(gres_conf_list, sharing_record);
