@@ -66,6 +66,8 @@ documents those changes that are of interest to users and administrators.
  -- Add "condflags=open" to sacctmgr show events to return open/currently down
     events.
  -- Skip --mem-per-gpu impact on GRES availability when CR_MEMORY not set.
+ -- Add reservation start time as a new schedulers sorting factor for magnetic
+    or multi-reservation job queue records.
 
 * Changes in Slurm 21.08.6
 ==========================

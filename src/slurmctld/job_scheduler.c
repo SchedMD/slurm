@@ -2147,6 +2147,11 @@ extern int sort_job_queue2(void *x, void *y)
 	if (job_rec1->array_task_id > job_rec2->array_task_id)
 		return 1;
 
+	/* Magnetic or multi-reservation. */
+	if (job_rec1->resv_ptr && job_rec2->resv_ptr &&
+	    (job_rec1->resv_ptr->start_time > job_rec2->resv_ptr->start_time))
+		return 1;
+
 	return -1;
 }
 
