@@ -5604,9 +5604,9 @@ The default value is 1.
 Number of cores reserved for system use.
 These cores will not be available for allocation to user jobs.
 Depending upon the \fBTaskPluginParam\fR option of \fBSlurmdOffSpec\fR,
-Slurm daemons (i.e. slurmd and slurmstepd) may either be confined to these
+the Slurm daemon slurmd may either be confined to these
 resources (the default) or prevented from using these resources.
-Isolation of the Slurm daemons from user jobs may improve application performance.
+Isolation of slurmd from user jobs may improve application performance.
 If this option and \fBCpuSpecList\fR are both designated for a
 node, an error is generated.  For information on the algorithm used by Slurm
 to select the cores refer to the core specialization documentation
@@ -5648,9 +5648,9 @@ A comma\-delimited list of Slurm abstract CPU IDs reserved for system use.
 The list will be expanded to include all other CPUs, if any, on the same cores.
 These cores will not be available for allocation to user jobs.
 Depending upon the \fBTaskPluginParam\fR option of \fBSlurmdOffSpec\fR,
-Slurm daemons (i.e. slurmd and slurmstepd) may either be confined to these
+the Slurm daemon slurmd may either be confined to these
 resources (the default) or prevented from using these resources.
-Isolation of the Slurm daemons from user jobs may improve application performance.
+Isolation of slurmd from user jobs may improve application performance.
 If this option and \fBCoreSpecCount\fR are both designated for a node,
 an error is generated.
 This option has no effect unless cgroup job confinement is also configured
