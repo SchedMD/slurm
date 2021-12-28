@@ -3311,6 +3311,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		unlock_slurmctld(config_write_lock);
 		cgroup_conf_reinit();
 		assoc_mgr_set_missing_uids();
+		slurmscriptd_reconfig();
 		start_power_mgr(&slurmctld_config.thread_id_power);
 		trigger_reconfig();
 	}

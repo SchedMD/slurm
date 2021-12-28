@@ -150,6 +150,36 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_reconfig(reconfig_msg_t *msg, buf_t *buffer)
+{
+	pack64(msg->debug_flags, buffer);
+	packstr(msg->logfile, buffer);
+	pack16(msg->log_fmt, buffer);
+	pack16(msg->slurmctld_debug, buffer);
+	pack16(msg->syslog_debug, buffer);
+}
+
+static int _unpack_reconfig(reconfig_msg_t **msg, buf_t *buffer)
+{
+	uint32_t tmp32;
+	reconfig_msg_t *data = xmalloc(sizeof *data);
+	*msg = data;
+
+	safe_unpack64(&data->debug_flags, buffer);
+	safe_unpackstr_xmalloc(&data->logfile, &tmp32, buffer);
+	safe_unpack16(&data->log_fmt, buffer);
+	safe_unpack16(&data->slurmctld_debug, buffer);
+	safe_unpack16(&data->syslog_debug, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+	slurmscriptd_free_reconfig(data);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
 static void _pack_debug_flags(debug_flags_msg_t *msg, buf_t *buffer)
 {
 	pack64(msg->debug_flags, buffer);
@@ -207,6 +237,9 @@ extern int slurmscriptd_pack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 	case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
 		_pack_flush_job(msg->msg_data, buffer);
 		break;
+	case SLURMSCRIPTD_REQUEST_RECONFIG:
+		_pack_reconfig(msg->msg_data, buffer);
+		break;
 	case SLURMSCRIPTD_REQUEST_RUN_SCRIPT:
 		_pack_run_script(msg->msg_data, buffer);
 		break;
@@ -245,6 +278,10 @@ extern int slurmscriptd_unpack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 	case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
 		rc = _unpack_flush_job((flush_job_msg_t **)(&msg->msg_data),
 				       buffer);
+		break;
+	case SLURMSCRIPTD_REQUEST_RECONFIG:
+		rc = _unpack_reconfig((reconfig_msg_t **)(&msg->msg_data),
+				      buffer);
 		break;
 	case SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE:
 		rc = _unpack_script_complete(

@@ -92,7 +92,16 @@ typedef struct {
 	bool log_rotate;
 } log_msg_t;
 
+typedef struct {
+	uint64_t debug_flags;
+	char *logfile;
+	uint16_t log_fmt;
+	uint16_t slurmctld_debug;
+	uint16_t syslog_debug;
+} reconfig_msg_t;
+
 /* Free message functions */
+extern void slurmscriptd_free_reconfig(reconfig_msg_t *msg);
 extern void slurmscriptd_free_run_script_msg(run_script_msg_t *msg);
 extern void slurmscriptd_free_script_complete(script_complete_t *msg);
 

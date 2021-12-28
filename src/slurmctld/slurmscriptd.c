@@ -452,6 +452,27 @@ static int _handle_flush_job(slurmscriptd_msg_t *recv_msg)
 	return SLURM_SUCCESS;
 }
 
+static int _handle_reconfig(slurmscriptd_msg_t *recv_msg)
+{
+	slurmctld_lock_t config_write_lock =
+		{ .conf = WRITE_LOCK };
+	reconfig_msg_t *reconfig_msg = recv_msg->msg_data;
+
+	log_flag(SCRIPT, "Handling %s", rpc_num2string(recv_msg->msg_type));
+
+	lock_slurmctld(config_write_lock);
+	slurm_conf.debug_flags = reconfig_msg->debug_flags;
+	xfree(slurm_conf.slurmctld_logfile);
+	slurm_conf.slurmctld_logfile = xstrdup(reconfig_msg->logfile);
+	slurm_conf.log_fmt = reconfig_msg->log_fmt;
+	slurm_conf.slurmctld_debug = reconfig_msg->slurmctld_debug;
+	slurm_conf.slurmctld_syslog_debug = reconfig_msg->syslog_debug;
+	update_logging();
+	unlock_slurmctld(config_write_lock);
+
+	return SLURM_SUCCESS;
+}
+
 static void _run_bb_script_child(int fd, char *script_func, uint32_t job_id,
 				 uint32_t argc, char **argv)
 {
@@ -822,6 +843,9 @@ static int _handle_request(int req, buf_t *buffer)
 		case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
 			rc = _handle_flush_job(&recv_msg);
 			break;
+		case SLURMSCRIPTD_REQUEST_RECONFIG:
+			rc = _handle_reconfig(&recv_msg);
+			break;
 		case SLURMSCRIPTD_REQUEST_RUN_SCRIPT:
 			rc = _handle_run_script(&recv_msg);
 			break;
@@ -983,6 +1007,36 @@ extern void slurmscriptd_flush_job(uint32_t job_id)
 	msg.job_id = job_id;
 
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH_JOB, &msg, false,
+			      NULL, NULL);
+}
+
+extern void slurmscriptd_reconfig(void)
+{
+	reconfig_msg_t msg;
+	slurmctld_lock_t config_read_lock =
+		{ .conf = READ_LOCK };
+
+	memset(&msg, 0, sizeof(msg));
+
+	/*
+	 * slurmscriptd only needs a minimal configuration, so only send what
+	 * needs to be updated rather than sending the entire slurm_conf
+	 * or having slurmscriptd read/parse the slurm.conf file.
+	 */
+	lock_slurmctld(config_read_lock);
+	msg.debug_flags = slurm_conf.debug_flags;
+	msg.logfile = slurm_conf.slurmctld_logfile;
+	msg.log_fmt = slurm_conf.log_fmt;
+	msg.slurmctld_debug = slurm_conf.slurmctld_debug;
+	msg.syslog_debug = slurm_conf.slurmctld_syslog_debug;
+	/*
+	 * If we ever allow switching plugins on reconfig, then we will need to
+	 * pass slurm_conf.bb_type to slurmscriptd, since a child/fork() of
+	 * slurmscriptd calls bb_g_run_script().
+	 */
+	unlock_slurmctld(config_read_lock);
+
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RECONFIG, &msg, false,
 			      NULL, NULL);
 }
 

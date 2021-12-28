@@ -54,6 +54,14 @@ extern void slurmscriptd_flush(void);
 extern void slurmscriptd_flush_job(uint32_t job_id);
 
 /*
+ * slurmscriptd_reconfig - re-initialize slurmscriptd configuration
+ *
+ * This function acquires locks in slurmctld_lock_t, so none of those should be
+ * locked upon calling this function.
+ */
+extern void slurmscriptd_reconfig(void);
+
+/*
  * slurmscriptd_run_bb_lua
  * Tell slurmscriptd to run a specific function in the script in the
  * burst_buffer/lua plugin

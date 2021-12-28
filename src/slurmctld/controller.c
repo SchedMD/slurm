@@ -1085,6 +1085,7 @@ static void _reconfigure_slurm(void)
 	unlock_slurmctld(config_write_lock);
 	cgroup_conf_reinit();
 	assoc_mgr_set_missing_uids();
+	slurmscriptd_reconfig();
 	start_power_mgr(&slurmctld_config.thread_id_power);
 	trigger_reconfig();
 	priority_g_reconfig(true);	/* notify priority plugin too */
