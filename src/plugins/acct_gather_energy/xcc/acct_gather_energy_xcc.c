@@ -467,6 +467,11 @@ static xcc_raw_single_data_t *_read_ipmi_values(void)
 		xcc_reading->s = time(NULL); //Fake metric timestamp
 		xcc_reading->ms = 0;
 	} else {
+		/*
+		 * Ignore response header first 2 bytes:
+		 * Byte 0: command number, cmd_rq[2]. Set by freeipmi.
+		 * Byte 1: command completion code. Set by XCC IPMI.
+		 */
 		memcpy(&xcc_reading->fifo_inx, buf_rs + 2, 2);
 		memcpy(&xcc_reading->j, buf_rs + 4, 4);
 		memcpy(&xcc_reading->mj, buf_rs + 8, 2);
