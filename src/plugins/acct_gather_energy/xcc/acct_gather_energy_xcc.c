@@ -211,11 +211,11 @@ typedef struct slurm_ipmi_conf {
 
 /* Struct to store the raw single data command reading */
 typedef struct xcc_raw_single_data {
-	uint16_t fifo_inx;
-	uint32_t j;
-	uint16_t mj;
-	uint16_t ms;
-	uint32_t s;
+	uint16_t fifo_inx;	/* Not used. */
+	uint32_t j;		/* Joules. */
+	uint16_t mj;		/* Millijoules. */
+	uint16_t ms;		/* Milliseconds. */
+	uint32_t s;		/* Seconds. */
 } xcc_raw_single_data_t;
 
 static acct_gather_energy_t xcc_energy;
