@@ -503,6 +503,11 @@ extern int cgroup_p_system_create(cgroup_ctl_type_t sub)
 			goto end;
 		}
 		break;
+	case CG_TRACK:
+	case CG_DEVICES:
+	case CG_CPUACCT:
+		error("This operation is not supported for %s", g_cg_name[sub]);
+		return SLURM_ERROR;
 	default:
 		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
@@ -528,14 +533,14 @@ extern int cgroup_p_system_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 	case CG_DEVICES:
 		break;
 	case CG_CPUACCT:
-		error("This operation is not supported for %s", g_cg_name[sub]);
-		return SLURM_ERROR;
+		break;
 	default:
 		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
 	}
 
-	return common_cgroup_add_pids(&int_cg[sub][CG_LEVEL_STEP], pids, npids);
+	error("This operation is not supported for %s", g_cg_name[sub]);
+	return SLURM_ERROR;
 }
 
 extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
@@ -553,16 +558,14 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 
 	/* Custom actions for every cgroup subsystem */
 	switch (sub) {
-	case CG_TRACK:
-		break;
 	case CG_CPUS:
-		break;
 	case CG_MEMORY:
 		break;
+	case CG_TRACK:
 	case CG_DEVICES:
-		break;
 	case CG_CPUACCT:
-		break;
+		error("This operation is not supported for %s", g_cg_name[sub]);
+		return SLURM_SUCCESS;
 	default:
 		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
