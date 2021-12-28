@@ -76,7 +76,7 @@ slurmd_conf_t *conf = NULL;
 
 #define IPMI_VERSION 2		/* Data structure version number */
 #define MAX_LOG_ERRORS 5	/* Max sensor reading errors log messages */
-#define XCC_MIN_RES 50        /* Minimum resolution for XCC readings, in ms */
+#define XCC_MIN_RES 50		/* Minimum resolution for XCC readings, in ms */
 #define IPMI_RAW_MAX_ARGS 256 /* Max XCC response length in bytes*/
 /*FIXME: Investigate which is the OVERFLOW limit for XCC*/
 #define IPMI_XCC_OVERFLOW INFINITE /* XCC overflows at X */
@@ -293,7 +293,7 @@ static int _running_profile(void)
 /*
  * _init_ipmi_config initializes parameters for freeipmi library
  */
-static int _init_ipmi_config (void)
+static int _init_ipmi_config(void)
 {
 	int ret = 0;
 	unsigned int workaround_flags_mask =
@@ -311,8 +311,8 @@ static int _init_ipmi_config (void)
 	}
 
 	if (getuid() != 0) {
-		error ("%s: error : must be root to open ipmi devices\n",
-		       __func__);
+		error("%s: error : must be root to open ipmi devices\n",
+		      __func__);
 		goto cleanup;
 	}
 
@@ -325,8 +325,8 @@ static int _init_ipmi_config (void)
 	     (slurm_ipmi_conf.driver_type != IPMI_DEVICE_SUNBMC))
 	    || (slurm_ipmi_conf.workaround_flags & ~workaround_flags_mask)) {
 		/* IPMI ERROR PARAMETERS */
-		error ("%s: error: XCC Lenovo plugin only supports in-band communication, incorrect driver type or workaround flags",
-		       __func__);
+		error("%s: error: XCC Lenovo plugin only supports in-band communication, incorrect driver type or workaround flags",
+		      __func__);
 
 		debug("slurm_ipmi_conf.driver_type=%u slurm_ipmi_conf.workaround_flags=%u",
 		      slurm_ipmi_conf.driver_type,
@@ -374,8 +374,8 @@ static int _init_ipmi_config (void)
 					  slurm_ipmi_conf.driver_device,
 					  slurm_ipmi_conf.workaround_flags,
 					  slurm_ipmi_conf.ipmi_flags) < 0)) {
-			error ("%s: error on ipmi_ctx_open_inband: %s",
-			       __func__, ipmi_ctx_errormsg (ipmi_ctx));
+			error("%s: error on ipmi_ctx_open_inband: %s",
+			      __func__, ipmi_ctx_errormsg (ipmi_ctx));
 
 			debug("slurm_ipmi_conf.driver_type=%u\n"
 			      "slurm_ipmi_conf.disable_auto_probe=%u\n"
@@ -403,8 +403,8 @@ static int _init_ipmi_config (void)
 			    &slurm_ipmi_conf.target_channel_number : NULL,
 			    slurm_ipmi_conf.target_address_is_set ?
 			    &slurm_ipmi_conf.target_address : NULL) < 0) {
-			error ("%s: error on ipmi_ctx_set_target: %s",
-			       __func__, ipmi_ctx_errormsg (ipmi_ctx));
+			error("%s: error on ipmi_ctx_set_target: %s",
+			      __func__, ipmi_ctx_errormsg (ipmi_ctx));
 			goto cleanup;
 		}
 	}
@@ -427,22 +427,22 @@ static xcc_raw_single_data_t *_read_ipmi_values(void)
 	int rs_len = 0;
 
 	if (!IPMI_NET_FN_RQ_VALID(cmd_rq[1])) {
-                error("Invalid netfn value\n");
+		error("Invalid netfn value\n");
 		return NULL;
 	}
 
-        rs_len = ipmi_cmd_raw(ipmi_ctx,
-                              cmd_rq[0], // Lun (logical unit number)
-                              cmd_rq[1], // Net Function
-                              &cmd_rq[2], // Command number + request data
-                              cmd_rq_len - 2, // Length (in bytes)
-                              &buf_rs, // response buffer
-                              IPMI_RAW_MAX_ARGS // max response length
-                );
+	rs_len = ipmi_cmd_raw(ipmi_ctx,
+			      cmd_rq[0], // Lun (logical unit number)
+			      cmd_rq[1], // Net Function
+			      &cmd_rq[2], // Command number + request data
+			      cmd_rq_len - 2, // Length (in bytes)
+			      &buf_rs, // response buffer
+			      IPMI_RAW_MAX_ARGS // max response length
+		);
 
-        debug3("ipmi_cmd_raw: %s", ipmi_ctx_errormsg(ipmi_ctx));
+	debug3("ipmi_cmd_raw: %s", ipmi_ctx_errormsg(ipmi_ctx));
 
-        if (rs_len != XCC_EXPECTED_RSPLEN) {
+	if (rs_len != XCC_EXPECTED_RSPLEN) {
 		error("Invalid ipmi response length for XCC raw command: "
 		      "%d bytes, expected %d", rs_len, XCC_EXPECTED_RSPLEN);
 		return NULL;
@@ -485,7 +485,7 @@ static int _thread_update_node_energy(void)
 {
 	xcc_raw_single_data_t *xcc_raw;
 	static uint16_t overflows = 0; /* Number of overflows of the counter */
-        int elapsed = 0;
+	int elapsed = 0;
 	static uint64_t first_consumed_energy = 0;
 
 	xcc_raw = _read_ipmi_values();
@@ -512,8 +512,8 @@ static int _thread_update_node_energy(void)
 		/* Detect first overflow */
 		if (!overflows && xcc_raw->j < xcc_energy.consumed_energy) {
 			xcc_energy.consumed_energy = IPMI_XCC_OVERFLOW -
-				                     first_consumed_energy +
-				                     xcc_raw->j;
+						first_consumed_energy +
+						xcc_raw->j;
 			overflows++;
 		} else if (!overflows &&
 			   (xcc_raw->j >= xcc_energy.consumed_energy)) {
@@ -584,10 +584,7 @@ static int _ipmi_send_profile(void)
 		XCC_LABEL_CNT
 	};
 
-	static char *xcc_labels[] = { "Energy",
-				      "CurrPower",
-				      NULL };
-
+	static char *xcc_labels[] = { "Energy", "CurrPower", NULL };
 	uint16_t i;
 	uint64_t data[XCC_LABEL_CNT];
 
@@ -731,7 +728,7 @@ static int _get_joules_task(uint16_t delta)
 
 	xassert(context_id != -1);
 
-        /*
+	/*
 	 * 'delta' parameter means "use cache" if data is newer than delta
 	 * seconds ago, otherwise just inquiry ipmi again.
 	 */
@@ -932,8 +929,7 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 	transfer_s_p_options(full_options, options, full_options_cnt);
 }
 
-extern void acct_gather_energy_p_conf_set(int context_id_in,
-					  s_p_hashtbl_t *tbl)
+extern void acct_gather_energy_p_conf_set(int context_id_in, s_p_hashtbl_t *tbl)
 {
 	bool tmp_bool;
 
@@ -1025,8 +1021,7 @@ extern void acct_gather_energy_p_conf_values(List *data)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("EnergyIPMICalcAdjustment");
-	key_pair->value = xstrdup(slurm_ipmi_conf.adjustment
-				  ? "Yes" : "No");
+	key_pair->value = xstrdup(slurm_ipmi_conf.adjustment ? "Yes" : "No");
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -1064,7 +1059,7 @@ extern void acct_gather_energy_p_conf_values(List *data)
 	 * Don't give out the password
 	 * key_pair = xmalloc(sizeof(config_key_pair_t));
 	 * key_pair->name = xstrdup("EnergyIPMIPassword");
-         * key_pair->value = xstrdup(slurm_ipmi_conf.password);
+	 * key_pair->value = xstrdup(slurm_ipmi_conf.password);
 	 * list_append(*data, key_pair);
 	 */
 
