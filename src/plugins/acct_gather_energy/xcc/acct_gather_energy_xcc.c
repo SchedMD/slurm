@@ -467,11 +467,11 @@ static xcc_raw_single_data_t *_read_ipmi_values(void)
 		xcc_reading->s = time(NULL); //Fake metric timestamp
 		xcc_reading->ms = 0;
 	} else {
-		memcpy(&xcc_reading->fifo_inx, buf_rs+2, 2);
-		memcpy(&xcc_reading->j, buf_rs+4, 4);
-		memcpy(&xcc_reading->mj, buf_rs+8, 2);
-		memcpy(&xcc_reading->s, buf_rs+10, 4);
-		memcpy(&xcc_reading->ms, buf_rs+14, 2);
+		memcpy(&xcc_reading->fifo_inx, buf_rs + 2, 2);
+		memcpy(&xcc_reading->j, buf_rs + 4, 4);
+		memcpy(&xcc_reading->mj, buf_rs + 8, 2);
+		memcpy(&xcc_reading->s, buf_rs + 10, 4);
+		memcpy(&xcc_reading->ms, buf_rs + 14, 2);
 	}
 
 	return xcc_reading;
@@ -528,7 +528,7 @@ static int _thread_update_node_energy(void)
 			 */
 			uint64_t offset = IPMI_XCC_OVERFLOW -
 				first_consumed_energy +
-				(IPMI_XCC_OVERFLOW * (overflows-1));
+				(IPMI_XCC_OVERFLOW * (overflows - 1));
 
 			if ((offset + xcc_raw->j) <
 			    xcc_energy.consumed_energy) {
