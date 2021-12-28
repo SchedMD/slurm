@@ -125,9 +125,7 @@ plugin for the collection of accounting statistics for jobs, steps and tasks.
 jobacct_gather/cgroup uses the cpuacct, memory and blkio subsystems. Note: the
 cpu and memory statistics collected by this plugin do not represent the same
 resources as the cpu and memory statistics collected by the
-jobacct_gather/linux plugin (sourced from /proc stat). While originally
-thought to be faster, in practice it has been proven to be slower than the
-jobacct_gather/linux plugin.
+jobacct_gather/linux plugin (sourced from /proc stat).
 <p>To enable this plugin, configure the following option in slurm.conf:
 <pre>JobacctGatherType=jobacct_gather/cgroup</pre>
 </p>
@@ -172,6 +170,6 @@ hierarchies:</p>
 use more than one node will have a cgroup structure on each node.</p>
 
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 28 December 2021</p>
 
 <!--#include virtual="footer.txt"-->

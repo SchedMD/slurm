@@ -44,7 +44,7 @@ step information is recorded. You can store this information in a
 text file or into SlurmDBD.</li>
 <li><b>JobAcctGatherType</b> is operating system dependent and
 controls what mechanism is used to collect accounting information.
-Supported values are <i>jobacct_gather/linux</i> (recommended),
+Supported values are <i>jobacct_gather/linux</i>,
 <i>jobacct_gather/cgroup</i> and <i>jobacct_gather/none</i>
 (no information collected).</li>
 <li><b>JobCompType</b> controls how job completion information is
@@ -836,7 +836,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 14 July 2021</p>
+<p style="text-align:center;">Last modified 28 December 2021</p>
 
 <!--#include virtual="footer.txt"-->
 
