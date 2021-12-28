@@ -430,14 +430,11 @@ static int _get_process_memory_line(int in, jag_prec_t *prec)
 	return 1;
 }
 
-static int _remove_share_data(char *proc_stat_file, jag_prec_t *prec)
+static int _remove_share_data(char *proc_statm_file, jag_prec_t *prec)
 {
 	FILE *statm_fp = NULL;
-	char proc_statm_file[256];	/* Allow ~20x extra length */
 	int rc = 0, fd;
 
-	snprintf(proc_statm_file, sizeof(proc_statm_file), "%sm",
-		 proc_stat_file);
 	if (!(statm_fp = fopen(proc_statm_file, "r")))
 		return rc;  /* Assume the process went away */
 	fd = fileno(statm_fp);
@@ -521,12 +518,11 @@ void _set_smaps_file(char *proc_smaps_file, uint32_t size, pid_t pid)
 		snprintf(proc_smaps_file, size, "/proc/%d/smaps", pid);
 }
 
-static void _handle_stats(char *proc_stat_file, char *proc_io_file,
-			  char *proc_smaps_file, jag_callbacks_t *callbacks,
-			  int tres_count)
+static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 {
 	static int no_share_data = -1;
 	static int use_pss = -1;
+	char proc_file[256];	/* oversized for all proc/[pid]/ stats files */
 	FILE *stat_fp = NULL;
 	FILE *io_fp = NULL;
 	int fd, fd2;
@@ -544,7 +540,8 @@ static void _handle_stats(char *proc_stat_file, char *proc_io_file,
 			use_pss = 0;
 	}
 
-	if (!(stat_fp = fopen(proc_stat_file, "r")))
+	snprintf(proc_file, sizeof(proc_file), "/proc/%d/stat", pid);
+	if (!(stat_fp = fopen(proc_file, "r")))
 		return;  /* Assume the process went away */
 	/*
 	 * Close the file on exec() of user tasks.
@@ -558,9 +555,9 @@ static void _handle_stats(char *proc_stat_file, char *proc_io_file,
 	 */
 	fd = fileno(stat_fp);
 	if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
-		error("%s: fcntl(%s): %m", __func__, proc_stat_file);
+		error("%s: fcntl(%s): %m", __func__, proc_file);
 
-	prec = xmalloc(sizeof(jag_prec_t));
+	prec = xmalloc(sizeof(*prec));
 
 	if (!tres_count) {
 		assoc_mgr_lock_t locks = {
@@ -572,7 +569,7 @@ static void _handle_stats(char *proc_stat_file, char *proc_io_file,
 	}
 
 	prec->tres_count = tres_count;
-	prec->tres_data = xmalloc(prec->tres_count *
+	prec->tres_data = xcalloc(prec->tres_count,
 				  sizeof(acct_gather_data_t));
 
 	(void)_init_tres(prec, NULL);
@@ -593,14 +590,21 @@ static void _handle_stats(char *proc_stat_file, char *proc_io_file,
 	}
 
 	/* Remove shared data from rss */
-	if (no_share_data && !_remove_share_data(proc_stat_file, prec))
-		goto bail_out;
+	if (no_share_data) {
+		snprintf(proc_file, sizeof(proc_file), "/proc/%d/statm", pid);
+		if (!_remove_share_data(proc_file, prec))
+			goto bail_out;
+	}
 
 	/* Use PSS instead if RSS */
-	if (use_pss && _get_pss(proc_smaps_file, prec) == -1)
-		goto bail_out;
+	if (use_pss) {
+		_set_smaps_file(proc_file, sizeof(proc_file), pid);
+		if (_get_pss(proc_file, prec) == -1)
+			goto bail_out;
+	}
 
-	if ((io_fp = fopen(proc_io_file, "r"))) {
+	snprintf(proc_file, sizeof(proc_file), "/proc/%d/io", pid);
+	if ((io_fp = fopen(proc_file, "r"))) {
 		fd2 = fileno(io_fp);
 		if (fcntl(fd2, F_SETFD, FD_CLOEXEC) == -1)
 			error("%s: fcntl: %m", __func__);
@@ -624,9 +628,6 @@ bail_out:
 static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		       jag_callbacks_t *callbacks)
 {
-	char	proc_stat_file[256];	/* Allow ~20x extra length */
-	char	proc_io_file[256];	/* Allow ~20x extra length */
-	char	proc_smaps_file[256];	/* Allow ~20x extra length */
 	static	int	slash_proc_open = 0;
 	int i;
 	struct jobacctinfo *jobacct = NULL;
@@ -662,12 +663,7 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 			goto finished;
 		}
 		for (i = 0; i < npids; i++) {
-			snprintf(proc_stat_file, 256, "/proc/%d/stat", pids[i]);
-			snprintf(proc_io_file, 256, "/proc/%d/io", pids[i]);
-			_set_smaps_file(proc_smaps_file,
-					sizeof(proc_smaps_file), pids[i]);
-			_handle_stats(proc_stat_file, proc_io_file,
-				      proc_smaps_file, callbacks,
+			_handle_stats(pids[i], callbacks,
 				      jobacct ? jobacct->tres_count : 0);
 		}
 		xfree(pids);
@@ -694,15 +690,7 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 			     (pid == LONG_MAX) || (pid == LONG_MIN))
 				continue;
 
-			snprintf(proc_stat_file, sizeof(proc_stat_file),
-				 "/proc/%ld/stat", pid);
-			snprintf(proc_io_file, sizeof(proc_io_file),
-				 "/proc/%ld/io", pid);
-			_set_smaps_file(proc_smaps_file, sizeof(proc_smaps_file),
-					(pid_t) pid);
-
-			_handle_stats(proc_stat_file, proc_io_file,
-				      proc_smaps_file, callbacks,
+			_handle_stats(pid, callbacks,
 				      jobacct ? jobacct->tres_count : 0);
 		}
 	}
