@@ -1906,6 +1906,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpack32(&site_factor, buffer);
 		safe_unpack16(&direct_set_prio, buffer);
 		safe_unpack32(&job_state, buffer);
+		job_state &= ~SLURM_BIT(7); /* Deprecated in 22.05 */
 		safe_unpack16(&kill_on_node_fail, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
@@ -2138,6 +2139,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpack32(&site_factor, buffer);
 		safe_unpack16(&direct_set_prio, buffer);
 		safe_unpack32(&job_state, buffer);
+		job_state &= ~SLURM_BIT(7); /* Deprecated in 22.05 */
 		safe_unpack16(&kill_on_node_fail, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
@@ -9188,8 +9190,6 @@ void job_time_limit(void)
 			info("%s: Configuration for %pJ complete",
 			     __func__, job_ptr);
 			job_config_fini(job_ptr);
-			if (job_ptr->bit_flags & NODE_REBOOT)
-				job_ptr->bit_flags &= (~NODE_REBOOT);
 			if (job_ptr->batch_flag)
 				launch_job(job_ptr);
 		}

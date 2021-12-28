@@ -1093,7 +1093,10 @@ enum node_states {
 #define GRES_ENFORCE_BIND  SLURM_BIT(4) /* Enforce CPU/GRES binding */
 #define TEST_NOW_ONLY      SLURM_BIT(5) /* Test for immediately start only */
 #define JOB_SEND_ENV       SLURM_BIT(6) /* Send env to the dbd */
-#define NODE_REBOOT        SLURM_BIT(7) /* Waiting for node reboot */
+/*
+ * #define NODE_REBOOT     SLURM_BIT(7)    DEPRECATED in 22.05, can be used in
+ *                                         23.11.
+ */
 #define SPREAD_JOB         SLURM_BIT(8) /* Spread job across max node count */
 #define USE_MIN_NODES      SLURM_BIT(9) /* Prefer minimum node count */
 #define JOB_KILL_HURRY     SLURM_BIT(10) /* Avoid burst buffer stage out */

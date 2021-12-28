@@ -4404,7 +4404,6 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 			job_ptr->job_state |= JOB_CONFIGURING;
 			/* Reset job start time when nodes are booted */
 			job_ptr->job_state |= JOB_POWER_UP_NODE;
-			job_ptr->bit_flags |= NODE_REBOOT;
 			job_ptr->wait_all_nodes = 1;
 		}
 		return;
@@ -4414,7 +4413,6 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	/* Reset job start time when nodes are booted */
 	job_ptr->job_state |= JOB_POWER_UP_NODE;
 	/* launch_job() when all nodes have booted */
-	job_ptr->bit_flags |= NODE_REBOOT;
 	job_ptr->wait_all_nodes = 1;
 
 	/* Modify state information for all nodes, KNL and others */
