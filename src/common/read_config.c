@@ -3948,6 +3948,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(tmp);
+
+		if ((!xstrcmp(conf->job_acct_gather_params, "UsePSS") &&
+		     !xstrcmp(conf->job_acct_gather_params, "NoShared")))
+			fatal("JobAcctGatherParams options UsePSS and NoShared are mutually exclusive.");
 	}
 
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl))

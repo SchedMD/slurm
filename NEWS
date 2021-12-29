@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer plugins - err_msg added to bb_p_job_validate().
  -- burst_buffer plugins - Send user specific error message if permission
     denied due to AllowUsers or DenyUsers in burst_buffer.conf.
+ -- Fatal if the mutually-exclusive JobAcctGatherParams options of UsePss and
+    NoShared are both defined.
 
 * Changes in Slurm 21.08.6
 ==========================

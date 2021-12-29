@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "December 2021" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1504,13 +1504,13 @@ Acceptable values at present include:
 .RS
 .TP 20
 \fBNoShared\fR
-Exclude shared memory from accounting.
+Exclude shared memory from RSS. This option cannot be used with UsePSS.
 .IP
 
 .TP
 \fBUsePss\fR
-Use PSS value instead of RSS to calculate real usage of memory.
-The PSS value will be saved as RSS.
+Use PSS value instead of RSS to calculate real usage of memory. The PSS value
+will be saved as RSS. This option cannot be used with NoShared.
 .IP
 
 .TP

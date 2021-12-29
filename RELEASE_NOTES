@@ -44,6 +44,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
  -- AcctGatherEnergyType 'rsmi' is now 'gpu'.
  -- TaskAffinity parameter was removed from cgroup.conf.
+ -- Fatal if the mutually-exclusive JobAcctGatherParams options of UsePss and
+    NoShared are both defined.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
