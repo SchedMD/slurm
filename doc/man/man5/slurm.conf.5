@@ -595,9 +595,36 @@ plugin was developed to provide system administrators with a way to do any task
 \fBCliFilterPlugins\fR
 A comma\-delimited list of command line interface option filter/modification
 plugins. The specified plugins will be executed in the order listed.
-These are intended to be site\-specific plugins which can be used to set
-default job parameters and/or logging events.
-No cli_filter plugins are used by default.
+No cli_filter plugins are used by default. Acceptable values at present are:
+.IP
+.RS
+.TP
+\fBcli_filter/lua\fR
+This plugin allows you to write your own implementation of a cli_filter
+using lua.
+.IP
+
+.TP
+\fBcli_filter/syslog\fR
+This plugin enables logging of job submission activities performed. All the
+salloc/sbatch/srun options are logged to syslog together with environment
+variables in JSON format. If the plugin is not the last one in the list it may
+log values different than what was actually sent to slurmctld.
+.IP
+
+.TP
+\fBcli_filter/user_defaults\fR
+This plugin looks for the file $HOME/.slurm/defaults and reads every line of it
+as a \fIkey\fR=\fIvalue\fR pair, where \fIkey\fR is any of the job submission
+options available to salloc/sbatch/srun and \fIvalue\fR is a default value
+defined by the user. For instance:
+.nf
+time=1:30
+mem=2048
+.fi
+The above will result in a user defined default for each of their jobs of
+"\-t 1:30" and "\-\-mem=2048".
+.RE
 .IP
 
 .TP
