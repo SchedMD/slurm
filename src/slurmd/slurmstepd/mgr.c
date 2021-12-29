@@ -1703,7 +1703,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		rc = _slurmd_job_log_init(job);
 
 	if (rc) {
-		error("IO setup failed: %m");
+		error("%s: IO setup failed: %s", __func__, slurm_strerror(rc));
 
 		job->task[0]->estatus = rc;
 		slurm_mutex_lock(&step_complete.lock);
