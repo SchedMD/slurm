@@ -1704,8 +1704,12 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 
 	if (rc) {
 		error("IO setup failed: %m");
+
 		job->task[0]->estatus = 0x0100;
+		slurm_mutex_lock(&step_complete.lock);
 		step_complete.step_rc = 0x0100;
+		slurm_mutex_unlock(&step_complete.lock);
+
 		if (job->batch)
 			rc = SLURM_SUCCESS;	/* drains node otherwise */
 		goto fail1;
