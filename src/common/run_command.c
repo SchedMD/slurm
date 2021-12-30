@@ -252,7 +252,7 @@ extern char *run_command(run_command_args_t *args)
 			}
 
 			if (args->tid &&
-			    track_script_broadcast(args->tid, *(args->status)))
+			    track_script_killed(args->tid, *status))
 				break;
 
 			fds.fd = pfd[0];

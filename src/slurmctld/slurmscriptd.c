@@ -382,7 +382,7 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	int status = SLURM_ERROR;
 	int ms_timeout;
 	char *resp = NULL;
-	bool bcast;
+	bool killed;
 
 	if ((timeout <= 0) || (timeout == NO_VAL16))
 		ms_timeout = -1; /* wait indefinitely in run_command() */
@@ -394,7 +394,7 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 
 	track_script_rec_add(job_id, 0, pthread_self());
 	resp = run_command(run_command_args);
-	if ((bcast = track_script_broadcast(pthread_self(), status))) {
+	if ((killed = track_script_killed(pthread_self(), status))) {
 		info("%s: JobId=%u %s killed by signal %u",
 		     __func__, job_id, run_command_args->script_type,
 		     WTERMSIG(status));
@@ -424,7 +424,7 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	else
 		xfree(resp);
 	if (signalled)
-		*signalled = bcast;
+		*signalled = killed;
 
 	return status;
 }
@@ -613,7 +613,7 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 
 		/* If we were killed by track_script, let the caller know. */
 		*track_script_signalled =
-			track_script_broadcast(pthread_self(), status);
+			track_script_killed(pthread_self(), status);
 
 		track_script_remove(pthread_self());
 	}

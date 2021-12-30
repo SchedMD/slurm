@@ -282,7 +282,7 @@ static int _script_broadcast(void *object, void *key)
 	return -1;
 }
 
-extern bool track_script_broadcast(pthread_t tid, int status)
+extern bool track_script_killed(pthread_t tid, int status)
 {
 	foreach_broadcast_rec_t tmp_rec;
 

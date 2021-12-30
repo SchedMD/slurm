@@ -63,9 +63,10 @@ extern void track_script_flush_job(uint32_t job_id);
 extern void track_script_rec_add(uint32_t job_id, pid_t cpid, pthread_t tid);
 
 /*
- * Signal script thread to end
+ * Return true if the script was SIGKILL'd (usually by track_script_flush() or
+ * track_script_flush_job())
  */
-extern bool track_script_broadcast(pthread_t tid, int status);
+extern bool track_script_killed(pthread_t tid, int status);
 
 /* Remove this thread from the track_script system */
 extern void track_script_remove(pthread_t tid);
