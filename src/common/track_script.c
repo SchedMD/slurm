@@ -46,6 +46,7 @@
 #include "src/common/track_script.h"
 
 static List track_script_thd_list = NULL;
+static List flush_script_thd_list = NULL;
 static pthread_mutex_t flush_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t flush_cond = PTHREAD_COND_INITIALIZER;
 static int flush_cnt = 0;
@@ -58,6 +59,7 @@ typedef struct {
 	pthread_t tid;
 	pthread_mutex_t timer_mutex;
 	pthread_cond_t timer_cond;
+	bool wait_finished;
 } track_script_rec_t;
 
 typedef struct {
@@ -123,13 +125,19 @@ static void *_track_script_rec_cleanup(void *arg)
 	 */
 	if (r->cpid != 0) {
 		slurm_mutex_lock(&r->timer_mutex);
-		rc = pthread_cond_timedwait(&r->timer_cond, &r->timer_mutex,
-					    &abs);
+		/*
+		 * This avoids a race condition where we could have been
+		 * signalled before waiting - in that case, don't wait.
+		 */
+		if (!r->wait_finished)
+			rc = pthread_cond_timedwait(&r->timer_cond,
+						    &r->timer_mutex,
+						    &abs);
 		slurm_mutex_unlock(&r->timer_mutex);
+		if (rc)
+			error("Timed out waiting for PID=%d (run by thread=%lu) to cleanup, this may indicate an unkillable process!",
+			      save_cpid, (unsigned long)r->tid);
 	}
-	if (rc)
-		error("Timed out waiting for PID=%d (run by thread=%lu) to cleanup, this may indicate an unkillable process!",
-		      save_cpid, (unsigned long)r->tid);
 
 	slurm_mutex_lock(&flush_mutex);
 	flush_cnt++;
@@ -196,7 +204,6 @@ extern void track_script_init(void)
 extern void track_script_flush(void)
 {
 	int count;
-	List tmp_list = list_create(_track_script_rec_destroy);
 
 	/*
 	 * Transfer list within mutex and work off of copy to prevent race
@@ -205,19 +212,26 @@ extern void track_script_flush(void)
 	 */
 	slurm_mutex_lock(&flush_mutex);
 
-	list_transfer(tmp_list, track_script_thd_list);
+	if (flush_called) {
+		/* Already called this function, do not call again */
+		goto fini;
+	}
+
+	flush_script_thd_list = list_create(_track_script_rec_destroy);
+
+	list_transfer(flush_script_thd_list, track_script_thd_list);
 	flush_called = true;
 
-	count = list_count(tmp_list);
+	count = list_count(flush_script_thd_list);
 	if (!count) {
-		FREE_NULL_LIST(tmp_list);
+		FREE_NULL_LIST(flush_script_thd_list);
 		slurm_mutex_unlock(&flush_mutex);
 		return;
 	}
 
 	flush_cnt = 0;
 	/* kill all scripts we are tracking */
-	(void) list_for_each(tmp_list,
+	(void) list_for_each(flush_script_thd_list,
 			     (ListForF)_make_cleanup_thread, NULL);
 
 	while (flush_cnt < count) {
@@ -226,7 +240,8 @@ extern void track_script_flush(void)
 		      __func__, flush_cnt, count);
 	}
 
-	FREE_NULL_LIST(tmp_list);
+fini:
+	FREE_NULL_LIST(flush_script_thd_list);
 	slurm_mutex_unlock(&flush_mutex);
 
 }
@@ -250,13 +265,14 @@ extern void track_script_rec_add(uint32_t job_id, pid_t cpid, pthread_t tid)
 
 	track_script_rec->job_id = job_id;
 	track_script_rec->cpid = cpid;
+	track_script_rec->wait_finished = false;
 	track_script_rec->tid = tid;
 	slurm_mutex_init(&track_script_rec->timer_mutex);
 	slurm_cond_init(&track_script_rec->timer_cond, NULL);
 	list_append(track_script_thd_list, track_script_rec);
 }
 
-static int _script_broadcast(void *object, void *key)
+static int _script_killed(void *object, void *key)
 {
 	track_script_rec_t *track_script_rec = (track_script_rec_t *)object;
 	foreach_broadcast_rec_t *tmp_rec = (foreach_broadcast_rec_t *)key;
@@ -271,12 +287,28 @@ static int _script_broadcast(void *object, void *key)
 	if (WIFSIGNALED(tmp_rec->status) &&
 	    (WTERMSIG(tmp_rec->status) == SIGKILL) &&
 	    (track_script_rec->cpid == -1)) {
-		slurm_cond_broadcast(&track_script_rec->timer_cond);
 		rc = true;
 	}
 	slurm_mutex_unlock(&track_script_rec->timer_mutex);
 
 	tmp_rec->rc = rc;
+
+	/* Exit for_each after we found the one we care about. */
+	return -1;
+}
+
+static int _signal_wait_thd(void *object, void *key)
+{
+	track_script_rec_t *track_script_rec = object;
+	foreach_broadcast_rec_t *tmp_rec = key;
+
+	if (!_match_tid(object, &tmp_rec->tid))
+		return 0;
+
+	slurm_mutex_lock(&track_script_rec->timer_mutex);
+	track_script_rec->wait_finished = true;
+	slurm_cond_broadcast(&track_script_rec->timer_cond);
+	slurm_mutex_unlock(&track_script_rec->timer_mutex);
 
 	/* Exit for_each after we found the one we care about. */
 	return -1;
@@ -290,7 +322,21 @@ extern bool track_script_killed(pthread_t tid, int status)
 	tmp_rec.tid = tid;
 	tmp_rec.status = status;
 
-	if (list_for_each(track_script_thd_list, _script_broadcast, &tmp_rec))
+	slurm_mutex_lock(&flush_mutex);
+	if (flush_called) {
+		if (!flush_script_thd_list) {
+			slurm_mutex_unlock(&flush_mutex);
+			return true;
+		}
+		slurm_mutex_unlock(&flush_mutex);
+		/* Signal flush thread that it doesn't need to wait anymore */
+		list_for_each(flush_script_thd_list, _signal_wait_thd,
+			      &tmp_rec);
+		return true;
+	}
+	slurm_mutex_unlock(&flush_mutex);
+
+	if (list_for_each(track_script_thd_list, _script_killed, &tmp_rec))
 		return tmp_rec.rc;
 
 	debug("%s: didn't find track_script for tid %lu",
