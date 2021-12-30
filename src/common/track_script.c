@@ -49,6 +49,8 @@ static List track_script_thd_list = NULL;
 static pthread_mutex_t flush_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t flush_cond = PTHREAD_COND_INITIALIZER;
 static int flush_cnt = 0;
+static bool flush_called = false; /* only for track_script_flush(),
+				     not track_script_flush_job() */
 
 typedef struct {
 	uint32_t job_id;
@@ -188,6 +190,7 @@ extern void track_script_init(void)
 {
 	FREE_NULL_LIST(track_script_thd_list);
 	track_script_thd_list = list_create(_track_script_rec_destroy);
+	flush_called = false;
 }
 
 extern void track_script_flush(void)
@@ -203,6 +206,7 @@ extern void track_script_flush(void)
 	slurm_mutex_lock(&flush_mutex);
 
 	list_transfer(tmp_list, track_script_thd_list);
+	flush_called = true;
 
 	count = list_count(tmp_list);
 	if (!count) {
