@@ -195,6 +195,8 @@ static data_for_each_cmd_t _foreach_update_cluster(data_t *data, void *arg)
 	}
 
 	cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
+	slurmdb_init_cluster_rec(cluster, false);
+
 	cluster->accounting_list = list_create(
 		slurmdb_destroy_cluster_accounting_rec);
 	(void)list_append(args->cluster_list, cluster);
