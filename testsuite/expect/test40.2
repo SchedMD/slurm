@@ -390,7 +390,7 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 			incr match
 			exp_continue
 		}
-		-re "gpu:$number\\(IDX:($number)\\)" {
+		-re "GRES=gpu:.*\\(IDX:($number)\\)" {
 			set dev1 $expect_out(1,string)
 			exp_continue
 		}
@@ -425,7 +425,7 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 			incr match
 			exp_continue
 		}
-		-re "mps:$number\\(IDX:($number)\\)" {
+		-re "GRES=mps:.*\\(IDX:($number)\\)" {
 			set dev1 $expect_out(1,string)} {
 			exp_continue
 		}
