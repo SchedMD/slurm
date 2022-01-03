@@ -293,7 +293,7 @@ sub _parse_node_list {
 	my ($node_string) = @_;
 	my $hostlist = "";
 
-	# Create the hostlist for formating
+	# Create the hostlist for formatting
 	my $hl = Slurm::Hostlist::create("");
 
 	my @sub_parts = split(/ /, $node_string);
