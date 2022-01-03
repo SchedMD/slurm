@@ -183,6 +183,8 @@ static data_for_each_cmd_t _foreach_update_wckey(data_t *data, void *arg)
 	}
 
 	wckey = xmalloc(sizeof(slurmdb_wckey_rec_t));
+	slurmdb_init_wckey_rec(wckey, false);
+
 	wckey->accounting_list = list_create(slurmdb_destroy_account_rec);
 	(void)list_append(args->wckey_list, wckey);
 
