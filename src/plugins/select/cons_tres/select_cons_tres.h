@@ -64,6 +64,5 @@
 #include "../cons_common/cons_common.h"
 
 /* Global variables */
-extern bitstr_t **spec_core_res;
 
 #endif /* !_CONS_TRES_H */

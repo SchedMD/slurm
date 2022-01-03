@@ -86,7 +86,6 @@ const uint32_t pstate_version = 7;	/* version control on saved state */
 const uint16_t nodeinfo_magic = 0x8a5d;
 
 /* Global variables */
-bitstr_t **spec_core_res	= NULL;
 
 /* Clear from avail_cores all specialized cores */
 static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **avail_cores)
@@ -431,8 +430,6 @@ extern int init(void)
 extern int fini(void)
 {
 	common_fini();
-
-	free_core_array(&spec_core_res);
 
 	return SLURM_SUCCESS;
 }
