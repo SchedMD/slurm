@@ -96,6 +96,20 @@ extern int count_core_array_set(bitstr_t **core_array)
 }
 
 /*
+ * Set core_array to ~core_array
+ */
+extern void core_array_not(bitstr_t **core_array)
+{
+	if (!core_array)
+		return;
+	for (int n = 0; n < core_array_size; n++) {
+		if (core_array[n])
+			bit_not(core_array[n]);
+	}
+	return;
+}
+
+/*
  * Set row_bitmap1 to core_array1 & core_array2
  */
 extern void core_array_and(bitstr_t **core_array1, bitstr_t **core_array2)

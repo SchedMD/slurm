@@ -70,6 +70,11 @@ extern void core_array_and(bitstr_t **core_array1, bitstr_t **core_array2);
 extern void core_array_and_not(bitstr_t **core_array1, bitstr_t **core_array2);
 
 /*
+ * Set core_array to ~core_array
+ */
+extern void core_array_not(bitstr_t **core_array);
+
+/*
  * Set row_bitmap1 to core_array1 | core_array2
  */
 extern void core_array_or(bitstr_t **core_array1, bitstr_t **core_array2);
