@@ -2217,11 +2217,6 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 		 */
 		if (!exc_core_bitmap)
 			exc_core_bitmap = build_core_array();
-		/*
-		 * FIXME: spec_core_filter for cons_res is really checking if
-		 * CPUs are not in use by running jobs. Neither cons_res nor
-		 * cons_tres checks spec cores today.
-		 */
 		(*cons_common_callbacks.spec_core_filter)(
 			avail_node_bitmap, exc_core_bitmap);
 	}
