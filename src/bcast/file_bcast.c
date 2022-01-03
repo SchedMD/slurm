@@ -565,7 +565,7 @@ static List _fill_in_excluded_paths(struct bcast_parameters *params)
 	tok = strtok_r(tmp_str, ",", &saveptr);
 	while (tok) {
 		if (tok[0] != '/')
-			error("Ignorning non-absolute excluded path: '%s'",
+			error("Ignoring non-absolute excluded path: '%s'",
 			      tok);
 		else
 			list_append(excl_paths, xstrdup(tok));

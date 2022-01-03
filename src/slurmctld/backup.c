@@ -445,7 +445,7 @@ static int _background_process_msg(slurm_msg_t *msg)
 			 * to the correct controller.  This usually indicates a
 			 * configuration issue.
 			 */
-			error("REQUEST_CONFIG recieved while in standby.");
+			error("REQUEST_CONFIG received while in standby.");
 			error_code = ESLURM_IN_STANDBY_USE_BACKUP;
 		} else {
 			error("Invalid RPC received %s while in standby mode",
