@@ -91,11 +91,14 @@ bitstr_t **spec_core_res	= NULL;
 /* Clear from avail_cores all specialized cores */
 static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **avail_cores)
 {
-	if (!spec_core_res)
-		return;	/* No specialized cores */
+	bitstr_t **avail_core_map =
+		common_mark_avail_cores(node_bitmap, NO_VAL16);
 
 	xassert(avail_cores);
-	core_array_and_not(avail_cores, spec_core_res);
+
+	core_array_not(avail_core_map);
+	core_array_or(avail_cores, avail_core_map);
+	free_core_array(&avail_core_map);
 }
 
 /*
