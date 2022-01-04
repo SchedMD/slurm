@@ -3949,8 +3949,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		}
 		xfree(tmp);
 
-		if ((!xstrcmp(conf->job_acct_gather_params, "UsePSS") &&
-		     !xstrcmp(conf->job_acct_gather_params, "NoShared")))
+		if (xstrcasestr(conf->job_acct_gather_params, "UsePSS") &&
+		    xstrcasestr(conf->job_acct_gather_params, "NoShared"))
 			fatal("JobAcctGatherParams options UsePSS and NoShared are mutually exclusive.");
 	}
 
