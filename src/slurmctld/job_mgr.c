@@ -4672,6 +4672,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 		job_ptr_pend->array_task_id = NO_VAL;
 	}
 
+	job_ptr_pend->batch_features = xstrdup(job_ptr->batch_features);
 	job_ptr_pend->batch_host = NULL;
 	job_ptr_pend->burst_buffer = xstrdup(job_ptr->burst_buffer);
 	job_ptr_pend->burst_buffer_state = xstrdup(job_ptr->burst_buffer_state);

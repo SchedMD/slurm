@@ -518,6 +518,7 @@ documents those changes that are of interest to users and administrators.
  -- PMIx v1.1.4 and below are no longer supported.
  -- Fix shutdown of slurmdbd plugin to correctly notice when the agent thread
     finishes.
+ -- Fix slurmctld segfault due to job array --batch features double free.
 
 * Changes in Slurm 20.11.8
 ==========================
