@@ -413,6 +413,12 @@ extern int init(void)
 
 extern int fini(void)
 {
+	for (int sub = 0; sub < CG_CTL_CNT; sub++) {
+		FREE_NULL_LIST(g_task_list[sub]);
+		common_cgroup_ns_destroy(&g_cg_ns[sub]);
+		common_cgroup_destroy(&int_cg[sub][CG_LEVEL_ROOT]);
+	}
+
 	debug("unloading %s", plugin_name);
 	return SLURM_SUCCESS;
 }
