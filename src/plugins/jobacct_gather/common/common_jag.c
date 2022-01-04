@@ -497,13 +497,13 @@ static int _init_tres(jag_prec_t *prec, void *empty)
 	return SLURM_SUCCESS;
 }
 
-void _set_smaps_file(char *proc_smaps_file, uint32_t size, pid_t pid)
+void _set_smaps_file(char **proc_smaps_file, pid_t pid)
 {
 	static int use_smaps_rollup = -1;
 
 	if (use_smaps_rollup == -1) {
-		snprintf(proc_smaps_file, size, "/proc/%d/smaps_rollup", pid);
-		FILE *fd = fopen(proc_smaps_file, "r");
+		xstrfmtcat(*proc_smaps_file, "/proc/%d/smaps_rollup", pid);
+		FILE *fd = fopen(*proc_smaps_file, "r");
 		if (fd) {
 			fclose(fd);
 			use_smaps_rollup = 1;
@@ -513,16 +513,16 @@ void _set_smaps_file(char *proc_smaps_file, uint32_t size, pid_t pid)
 	}
 
 	if (use_smaps_rollup)
-		snprintf(proc_smaps_file, size, "/proc/%d/smaps_rollup", pid);
+		xstrfmtcat(*proc_smaps_file, "/proc/%d/smaps_rollup", pid);
 	else
-		snprintf(proc_smaps_file, size, "/proc/%d/smaps", pid);
+		xstrfmtcat(*proc_smaps_file, "/proc/%d/smaps", pid);
 }
 
 static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 {
 	static int no_share_data = -1;
 	static int use_pss = -1;
-	char proc_file[256];	/* oversized for all proc/[pid]/ stats files */
+	char *proc_file = NULL;
 	FILE *stat_fp = NULL;
 	FILE *io_fp = NULL;
 	int fd, fd2;
@@ -540,7 +540,7 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 			use_pss = 0;
 	}
 
-	snprintf(proc_file, sizeof(proc_file), "/proc/%d/stat", pid);
+	xstrfmtcat(proc_file, "/proc/%u/stat", pid);
 	if (!(stat_fp = fopen(proc_file, "r")))
 		return;  /* Assume the process went away */
 	/*
@@ -591,19 +591,22 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 
 	/* Remove shared data from rss */
 	if (no_share_data) {
-		snprintf(proc_file, sizeof(proc_file), "/proc/%d/statm", pid);
+		xfree(proc_file);
+		xstrfmtcat(proc_file, "/proc/%u/statm", pid);
 		if (!_remove_share_data(proc_file, prec))
 			goto bail_out;
 	}
 
 	/* Use PSS instead if RSS */
 	if (use_pss) {
-		_set_smaps_file(proc_file, sizeof(proc_file), pid);
+		xfree(proc_file);
+		_set_smaps_file(&proc_file, pid);
 		if (_get_pss(proc_file, prec) == -1)
 			goto bail_out;
 	}
 
-	snprintf(proc_file, sizeof(proc_file), "/proc/%d/io", pid);
+	xfree(proc_file);
+	xstrfmtcat(proc_file, "/proc/%u/io", pid);
 	if ((io_fp = fopen(proc_file, "r"))) {
 		fd2 = fileno(io_fp);
 		if (fcntl(fd2, F_SETFD, FD_CLOEXEC) == -1)
@@ -617,6 +620,7 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 
 	destroy_jag_prec(list_remove_first(prec_list, _find_prec, &prec->pid));
 	list_append(prec_list, prec);
+	xfree(proc_file);
 	return;
 
 bail_out:
