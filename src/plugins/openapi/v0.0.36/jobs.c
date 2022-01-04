@@ -626,8 +626,6 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 				"GRES_ENFORCE_BIND");
 	if (job->bitflags & TEST_NOW_ONLY)
 		data_set_string(data_list_append(bitflags), "TEST_NOW_ONLY");
-	if (job->bitflags & NODE_REBOOT)
-		data_set_string(data_list_append(bitflags), "NODE_REBOOT");
 	if (job->bitflags & SPREAD_JOB)
 		data_set_string(data_list_append(bitflags), "SPREAD_JOB");
 	if (job->bitflags & USE_MIN_NODES)
