@@ -60,16 +60,24 @@ List setup_qos_list(){
 	return qos_list;
 }
 
-// debug_print(List char_list, int expected_count, char **expected_strings){
+// void debug_print(char *names, List char_list, int expected_count,
+// 		 char **expected_strings)
+// {
 // 	char *string = NULL;
 // 	ListIterator itr = list_iterator_create(char_list);
+// 	info("names: %s", names);
+
 // 	while((string = (char*)list_next(itr))){
-// 		info("string %s", string);
+// 		info("%s", string);
 // 	}
+// 	info("============");
 // 	for (int i = 0; i < expected_count; i++){
-// 		info("string2 %s", expected_strings[i]);
+// 		info("%s", expected_strings[i]);
 // 	}
+// 	info(" ");
+// 	info(" ");
 // }
+
 
 void test(List qos_list, char *names, int option, int expected_count,
 	  char **expected_strings)
@@ -83,9 +91,12 @@ void test(List qos_list, char *names, int option, int expected_count,
 
 	count = slurmdb_addto_qos_char_list(char_list, qos_list, names, option);
 
-	// debug_print(char_list, expected_count, expected_strings);
+	// debug_print(names, char_list, expected_count, expected_strings);
 
-	ck_assert_int_eq(count, list_count(char_list));
+	if (count == SLURM_ERROR)
+		ck_assert_int_eq(0, list_count(char_list));
+	else
+		ck_assert_int_eq(count, list_count(char_list));
 	ck_assert_int_eq(count, expected_count);
 
 	itr = list_iterator_create(char_list);
@@ -137,8 +148,8 @@ END_TEST
 
 START_TEST(quotes)
 {
-	test(NULL, "\"normal,subpar,great\"", 0, 3,
-	     (char *[]){"1000", "1001", "1002"});
+	test(NULL, "\"normal,subpar\",great", 0, 2,
+	     (char *[]){"1000", "1001"});
 }
 END_TEST
 
@@ -211,59 +222,6 @@ START_TEST(apostrophe)
 }
 END_TEST
 
-/*****************************************************************************
- * UNIT TESTS with error messages                                            *
- ****************************************************************************/
-
-START_TEST(insert_and_set)
-{
-	test(NULL, "+normal,subpar,great", 0, 1, (char *[]){"+1000"});
-}
-END_TEST
-
-START_TEST(insert_and_set2)
-{
-	test(NULL, "+normal,subpar", 0, 1, (char *[]){"+1000"});
-}
-END_TEST
-
-START_TEST(set_and_insert)
-{
-	test(NULL, "normal,+subpar,+great", 0, 1, (char *[]){"1000"});
-}
-END_TEST
-
-START_TEST(set_and_insert2)
-{
-	test(NULL, "normal,+subpar", 0, 1, (char *[]){"1000"});
-}
-END_TEST
-
-START_TEST(wrong_qos)
-{
-	test(NULL, "nonexistent,bad,odd", 0, 0, NULL);
-}
-END_TEST
-
-START_TEST(wrong_qos_at_end)
-{
-	test(NULL, "normal,subpar,nonexistent", 0, 2,
-	     (char *[]){ "1000", "1001" });
-}
-END_TEST
-
-START_TEST(wrong_qos_between)
-{
-	test(NULL, "normal,nonexistent,subpar", 0, 1, (char *[]){"1000"});
-}
-END_TEST
-
-START_TEST(wrong_qos_at_start)
-{
-	test(NULL, "nonexistent,normal,subpar", 0, 0, NULL);
-}
-END_TEST
-
 START_TEST(commas_at_end)
 {
 	test(NULL, "normal,subpar,great,,,,,,", 0, 3,
@@ -273,20 +231,15 @@ END_TEST
 
 START_TEST(commas_between)
 {
-	test(NULL, "normal,,,,,,subpar,,,,,,great", 0, 1, (char *[]){"1000"});
-}
-END_TEST
-
-START_TEST(spaces_between)
-{
-	test(NULL, "normal, subpar, great", 0, 1,
+	test(NULL, "normal,,,,,,subpar,,,,,great", 0, 3,
 	     (char *[]){ "1000", "1001", "1002" });
 }
 END_TEST
 
 START_TEST(commas_at_start)
 {
-	test(NULL, ",,,,,,normal,subpar,great", 0, 0, NULL);
+	test(NULL, ",,,,,,normal,subpar,great", 0, 3,
+	     (char *[]){ "1000", "1001", "1002" });
 }
 END_TEST
 
@@ -296,10 +249,77 @@ START_TEST(comma_at_end) /* if there is a space after comma */
 }
 END_TEST
 
+/*****************************************************************************
+ * UNIT TESTS with error messages                                            *
+ ****************************************************************************/
+
+START_TEST(insert_and_set)
+{
+	test(NULL, "+normal,subpar,great", 0, SLURM_ERROR, (char *[]){});
+}
+END_TEST
+
+START_TEST(insert_and_set2)
+{
+	test(NULL, "+normal,subpar", 0, SLURM_ERROR, (char *[]){});
+}
+END_TEST
+
+START_TEST(set_and_insert)
+{
+	test(NULL, "normal,+subpar,+great", 0, SLURM_ERROR, (char *[]){});
+}
+END_TEST
+
+START_TEST(set_and_insert2)
+{
+	test(NULL, "normal,+subpar", 0, SLURM_ERROR, (char *[]){});
+}
+END_TEST
+
+START_TEST(wrong_qos)
+{
+	test(NULL, "nonexistent,bad,odd", 0, SLURM_ERROR, NULL);
+}
+END_TEST
+
+START_TEST(wrong_qos_at_end)
+{
+	test(NULL, "normal,subpar,nonexistent", 0, SLURM_ERROR,
+	     (char *[]){});
+}
+END_TEST
+
+START_TEST(wrong_qos_between)
+{
+	test(NULL, "normal,nonexistent,subpar", 0, SLURM_ERROR, (char *[]){});
+}
+END_TEST
+
+START_TEST(wrong_qos_at_start)
+{
+	test(NULL, "nonexistent,normal,subpar", 0, SLURM_ERROR, NULL);
+}
+END_TEST
+
+START_TEST(spaces_between)
+{
+	test(NULL, "normal, subpar, great", 0, SLURM_ERROR,
+	     (char *[]){});
+}
+END_TEST
+
+START_TEST(quotes2)
+{
+	test(NULL, "\"normal,subpar,\"great", 0, 2,
+	     (char *[]){"1000", "1001"});
+}
+END_TEST
+
 START_TEST(null_char_list)
 {
 	List qos_list = setup_qos_list();
-	int count = slurmdb_addto_qos_char_list(NULL, qos_list, "", 0);
+	int count = slurmdb_addto_qos_char_list(NULL, qos_list, "normal", 0);
 	ck_assert_int_eq(count, 0);
 	FREE_NULL_LIST(qos_list);
 }
@@ -308,8 +328,9 @@ END_TEST
 START_TEST(null_qos_list)
 {
 	List char_list = list_create(NULL);
-	int count = slurmdb_addto_qos_char_list(char_list, NULL, "", 0);
-	ck_assert_int_eq(count, 0);
+	int count = slurmdb_addto_qos_char_list(char_list, NULL, "normal", 0);
+	ck_assert_int_eq(count, SLURM_ERROR);
+	ck_assert_int_eq(0, list_count(char_list));
 	FREE_NULL_LIST(char_list);
 }
 END_TEST
@@ -320,6 +341,7 @@ START_TEST(null_names)
 	List qos_list = setup_qos_list();
 	int count = slurmdb_addto_qos_char_list(char_list, qos_list, NULL, 0);
 	ck_assert_int_eq(count, 0);
+	ck_assert_int_eq(count, list_count(char_list));
 	FREE_NULL_LIST(char_list);
 	FREE_NULL_LIST(qos_list);
 }
@@ -350,6 +372,11 @@ Suite *suite(SRunner *sr)
 	tcase_add_test(tc_core, double_insertion2);
 	tcase_add_test(tc_core, duplicates);
 	tcase_add_test(tc_core, apostrophe);
+	tcase_add_test(tc_core, commas_at_end);
+	tcase_add_test(tc_core, commas_between);
+	tcase_add_test(tc_core, commas_at_start);
+	tcase_add_test(tc_core, comma_at_end);
+
 
 	TCase *tc_error = tcase_create("error_tests");
 	tcase_add_test(tc_error, insert_and_set);
@@ -364,7 +391,7 @@ Suite *suite(SRunner *sr)
 	tcase_add_test(tc_error, commas_between);
 	tcase_add_test(tc_error, commas_at_start);
 	tcase_add_test(tc_error, spaces_between);
-	tcase_add_test(tc_error, comma_at_end);
+	tcase_add_test(tc_error, quotes2);
 	tcase_add_test(tc_error, null_char_list);
 	tcase_add_test(tc_error, null_qos_list);
 	tcase_add_test(tc_error, null_names);
