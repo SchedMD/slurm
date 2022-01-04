@@ -799,7 +799,7 @@ static bool _node_is_hidden(node_record_t *node_ptr,
 	return true;
 }
 
-static int _build_visible_parts(void *elem, void *arg)
+static int _build_visible_parts_foreach(void *elem, void *arg)
 {
 	part_record_t *part_ptr = elem;
 	pack_node_info_t *pack_info = arg;
@@ -819,6 +819,32 @@ static int _build_visible_parts(void *elem, void *arg)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static void _build_visible_parts(pack_node_info_t *pack_info)
+{
+	part_record_t **visible_parts_save;
+
+	pack_info->visible_parts = xcalloc(list_count(part_list) + 1,
+					   sizeof(part_record_t *));
+	/*
+	 * Save start pointer to start of the list so can point to start
+	 * after appending to the list.
+	 */
+	visible_parts_save = pack_info->visible_parts;
+	list_for_each(part_list, _build_visible_parts_foreach, pack_info);
+	pack_info->visible_parts = visible_parts_save;
+}
+
+static void _build_pack_node_info(pack_node_info_t *pack_info, uid_t uid)
+{
+	pack_info->uid = uid;
+	_build_visible_parts(pack_info);
+}
+
+static void _free_pack_node_info_members(pack_node_info_t *pack_info)
+{
+	xfree(pack_info->visible_parts);
 }
 
 /*
@@ -854,19 +880,8 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE*16);
 	nodes_packed = 0;
 
-	if (!privileged) {
-		part_record_t **visible_parts_save;
-		pack_info.uid = uid;
-		/*
-		 * Save start pointer to start of the list so can point to start
-		 * after appending to the list.
-		 */
-		pack_info.visible_parts = xcalloc(list_count(part_list) + 1,
-						  sizeof(part_record_t *));
-		visible_parts_save = pack_info.visible_parts;
-		list_for_each(part_list, _build_visible_parts, &pack_info);
-		pack_info.visible_parts = visible_parts_save;
-	}
+	if (!privileged)
+		_build_pack_node_info(&pack_info, uid);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
@@ -921,7 +936,7 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 
 	*buffer_size = get_buf_offset (buffer);
 	buffer_ptr[0] = xfer_buf_data (buffer);
-	xfree(pack_info.visible_parts);
+	_free_pack_node_info_members(&pack_info);
 }
 
 /*
@@ -958,19 +973,8 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE);
 	nodes_packed = 0;
 
-	if (!privileged) {
-		part_record_t **visible_parts_save;
-		pack_info.uid = uid;
-		/*
-		 * Save start pointer to start of the list so can point to start
-		 * after appending to the list.
-		 */
-		pack_info.visible_parts = xcalloc(list_count(part_list) + 1,
-						  sizeof(part_record_t *));
-		visible_parts_save = pack_info.visible_parts;
-		list_for_each(part_list, _build_visible_parts, &pack_info);
-		pack_info.visible_parts = visible_parts_save;
-	}
+	if (!privileged)
+		_build_pack_node_info(&pack_info, uid);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
@@ -1016,7 +1020,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 
 	*buffer_size = get_buf_offset (buffer);
 	buffer_ptr[0] = xfer_buf_data (buffer);
-	xfree(pack_info.visible_parts);
+	_free_pack_node_info_members(&pack_info);
 }
 
 /*
