@@ -481,7 +481,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		uint64_t cnt_avail_total, max_tasks;
 		uint64_t max_gres = 0, rem_gres = 0;
 		uint16_t avail_cores_tot = 0, cpus_per_gres;
-		int min_core_cnt, req_cores, rem_sockets, sock_cnt = 0;
+		int min_core_cnt, req_cpus, rem_sockets, sock_cnt = 0;
 
 		if (!sock_gres->gres_state_job)
 			continue;
@@ -719,7 +719,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * Consider rounding errors if cpus_per_task not divisible
 		 * by cpus_per_core
 		 */
-		req_cores = *max_tasks_this_node;
+		req_cpus = *max_tasks_this_node;
 		if (mc_ptr->cpus_per_task) {
 			int threads_per_core, removed_tasks = 0;
 			int efctv_cpt = mc_ptr->cpus_per_task;
@@ -738,16 +738,16 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				efctv_cpt *= threads_per_core;
 			}
 
-			req_cores *= efctv_cpt;
+			req_cpus *= efctv_cpt;
 
 			while (*max_tasks_this_node >= *min_tasks_this_node) {
 				/* round up by full threads per core */
-				req_cores += threads_per_core - 1;
-				req_cores /= threads_per_core;
-				if (req_cores <= avail_cores_tot) {
+				req_cpus += threads_per_core - 1;
+				req_cpus /= threads_per_core;
+				if (req_cpus <= avail_cores_tot) {
 					if (removed_tasks)
 						log_flag(SELECT_TYPE, "settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
-							 req_cores,
+							 req_cpus,
 							 *max_tasks_this_node,
 							 removed_tasks,
 							 mc_ptr->cpus_per_task,
@@ -758,45 +758,45 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				}
 				removed_tasks++;
 				(*max_tasks_this_node)--;
-				req_cores = *max_tasks_this_node;
-				req_cores *= efctv_cpt;
+				req_cpus = *max_tasks_this_node;
+				req_cpus *= efctv_cpt;
 			}
 		}
 		if (cpus_per_gres) {
 			int i;
 			if (gres_js->gres_per_node) {
 				i = gres_js->gres_per_node;
-				log_flag(SELECT_TYPE, "estimating req_cores gres_per_node=%"PRIu64,
+				log_flag(SELECT_TYPE, "estimating required CPUs gres_per_node=%"PRIu64,
 					 gres_js->gres_per_node);
 			} else if (gres_js->gres_per_socket) {
 				i = gres_js->gres_per_socket * sock_cnt;
-				log_flag(SELECT_TYPE, "estimating req_cores gres_per_socket=%"PRIu64,
+				log_flag(SELECT_TYPE, "estimating required CPUs gres_per_socket=%"PRIu64,
 					 gres_js->gres_per_socket);
 			} else if (gres_js->gres_per_task) {
 				i = gres_js->gres_per_task *
 					*max_tasks_this_node;
-				log_flag(SELECT_TYPE, "estimating req_cores max_tasks_this_node=%u gres_per_task=%"PRIu64,
+				log_flag(SELECT_TYPE, "estimating required CPUs max_tasks_this_node=%u gres_per_task=%"PRIu64,
 					 *max_tasks_this_node,
 					 gres_js->gres_per_task);
 			} else if (cnt_avail_total) {
 				i = cnt_avail_total;
-				log_flag(SELECT_TYPE, "estimating req_cores cnt_avail_total=%"PRIu64,
+				log_flag(SELECT_TYPE, "estimating required CPUs cnt_avail_total=%"PRIu64,
 					 cnt_avail_total);
 			} else {
 				i = 1;
-				log_flag(SELECT_TYPE, "estimating req_cores default to 1 task");
+				log_flag(SELECT_TYPE, "estimating required CPUs default to 1 task");
 			}
 			i *= cpus_per_gres;
 			i = (i + cpus_per_core - 1) / cpus_per_core;
-			if (req_cores < i)
-				log_flag(SELECT_TYPE, "Increasing req_cores=%d from cpus_per_gres=%d cpus_per_core=%u",
+			if (req_cpus < i)
+				log_flag(SELECT_TYPE, "Increasing req_cpus=%d from cpus_per_gres=%d cpus_per_core=%u",
 					 i, cpus_per_gres, cpus_per_core);
-			req_cores = MAX(req_cores, i);
+			req_cpus = MAX(req_cpus, i);
 		}
 
-		if (req_cores > avail_cores_tot) {
-			log_flag(SELECT_TYPE, "Job cannot run on node req_cores:%d > aval_cores_tot:%d",
-				 req_cores, avail_cores_tot);
+		if (req_cpus > avail_cores_tot) {
+			log_flag(SELECT_TYPE, "Job cannot run on node required CPUs:%d > aval_cores_tot:%d",
+				 req_cpus, avail_cores_tot);
 			*max_tasks_this_node = 0;
 			break;
 		}
@@ -806,10 +806,10 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * up to required number of cores based on max_tasks_this_node.
 		 * In case of enforce-binding those are already cleared.
 		 */
-		if ((avail_cores_tot > req_cores) &&
+		if ((avail_cores_tot > req_cpus) &&
 		    !enforce_binding && !first_pass) {
 			for (int s = 0; s < sockets; s++) {
-				if (avail_cores_tot == req_cores)
+				if (avail_cores_tot == req_cpus)
 					break;
 				if (req_sock[s])
 					continue;
@@ -824,7 +824,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					}
 					avail_cores_tot--;
 					avail_cores_per_sock[s]--;
-					if (avail_cores_tot == req_cores)
+					if (avail_cores_tot == req_cpus)
 						break;
 				}
 			}
@@ -835,10 +835,10 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * spread them out so that every socket has some cores
 		 * available to use with the nearby GRES that we do need.
 		 */
-		while (avail_cores_tot > req_cores) {
+		while (avail_cores_tot > req_cpus) {
 			int full_socket = -1;
 			for (int s = 0; s < sockets; s++) {
-				if (avail_cores_tot == req_cores)
+				if (avail_cores_tot == req_cpus)
 					break;
 				if (!req_sock[s] ||
 				    (avail_cores_per_sock[s] == 0))
