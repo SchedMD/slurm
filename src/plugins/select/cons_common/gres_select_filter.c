@@ -368,8 +368,10 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 			if (sock_gres->max_node_gres &&
 			    (sock_gres->max_node_gres < near_gres_cnt))
 				near_gres_cnt = sock_gres->max_node_gres;
-			if (*near_gpus < 0xff)	/* avoid overflow */
+			if (*near_gpus + near_gres_cnt < 0xff)
 				*near_gpus += near_gres_cnt;
+			else /* overflow */
+				*near_gpus = 0xff;
 		}
 	}
 	list_iterator_destroy(sock_gres_iter);
