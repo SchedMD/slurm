@@ -3343,7 +3343,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 					select_node_record[node_i].tot_cores);
 			bit_set_all(core_map[node_i]);
 		}
-		sock_gres_list = gres_job_test2(
+		sock_gres_list = gres_sched_create_sock_gres_list(
 					job_ptr->gres_list_req, node_gres_list,
 					test_only, core_map[node_i],
 					select_node_record[node_i].tot_sockets,
@@ -3352,7 +3352,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 					enforce_binding, s_p_n, &req_sock_map,
 					job_ptr->user_id, node_i);
 		if (!sock_gres_list) {	/* GRES requirement fail */
-			log_flag(SELECT_TYPE, "Test fail on node %d: gres_job_test2",
+			log_flag(SELECT_TYPE, "Test fail on node %d: gres_sched_create_sock_gres_list",
 			     node_i);
 			return NULL;
 		}
