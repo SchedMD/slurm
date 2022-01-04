@@ -155,17 +155,20 @@ int fd_get_socket_error(int fd, int *err)
 
 	xassert(fd >= 0);
 
-	/*
-	 * SOL_SOCKET/SO_ERROR may not find an error and will not set err.
-	 * This may happen if on duplicate calls or if something else has
-	 * cleared the error.
-	 */
-	*err = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+	*err = SLURM_SUCCESS;
 
 	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)err, &errlen))
 		return errno;
-	else
+	else {
+		/*
+		 * SOL_SOCKET/SO_ERROR may not find an error and will not set
+		 * errno. This may happen if on duplicate calls or if something
+		 * else has cleared the error.
+		 */
+		if (!(*err))
+			*err = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
 		return SLURM_SUCCESS;
+	}
 }
 
 static int fd_get_lock(int fd, int cmd, int type)
