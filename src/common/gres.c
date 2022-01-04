@@ -2830,6 +2830,7 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
 		*gres_list = list_create(_gres_node_list_delete);
 	}
 	for (i = 0; i < gres_context_cnt; i++) {
+		gres_node_state_t *gres_ns;
 		/* Find or create gres_state entry on the list */
 		gres_state_node = list_find_first(*gres_list, gres_find_id,
 						  &gres_context[i].plugin_id);
@@ -2844,15 +2845,17 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
 			list_append(*gres_list, gres_state_node);
 		}
 
-		if (gres_id_sharing(gres_state_node->plugin_id))
-			gres_state_node_sharing = gres_state_node;
-		else if (gres_id_shared(gres_state_node->config_flags))
-			gres_state_node_shared = gres_state_node;
-
 		rc2 = _node_config_init(node_name, orig_config,
 					&gres_context[i], gres_state_node);
 		if (rc == SLURM_SUCCESS)
 			rc = rc2;
+		gres_ns = gres_state_node->gres_data;
+		if (gres_ns && gres_ns->gres_cnt_config) {
+			if (gres_id_sharing(gres_state_node->plugin_id))
+				gres_state_node_sharing = gres_state_node;
+			else if (gres_id_shared(gres_state_node->config_flags))
+				gres_state_node_shared = gres_state_node;
+		}
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
