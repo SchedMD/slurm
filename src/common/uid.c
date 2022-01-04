@@ -141,7 +141,8 @@ int uid_from_string(const char *name, uid_t *uidp)
 	/*
 	 *  Now ensure the supplied uid is in the user database
 	 */
-	if (slurm_getpwuid_r(l, &pwd, buffer, PW_BUF_SIZE, &result) != 0)
+	if ((slurm_getpwuid_r(l, &pwd, buffer, PW_BUF_SIZE, &result) != 0) ||
+	    (result == NULL))
 		return -1;
 
 	*uidp = (uid_t) l;
