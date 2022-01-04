@@ -137,6 +137,13 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
  */
 extern int init (void)
 {
+	if (running_in_slurmd() &&
+	    ((cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS) ||
+	     (cgroup_g_initialize(CG_CPUACCT) != SLURM_SUCCESS))) {
+		error("There's an issue initializing memory or cpu controller");
+		return SLURM_ERROR;
+	}
+
 	if (running_in_slurmstepd()) {
 		jag_common_init(0);
 
