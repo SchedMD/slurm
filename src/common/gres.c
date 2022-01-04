@@ -7740,7 +7740,6 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 	(void) gres_init();
 
 	sock_gres_list = list_create(gres_sock_delete);
-	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
 		sock_gres_t *sock_gres = NULL;
@@ -7793,7 +7792,6 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 		list_append(sock_gres_list, sock_gres);
 	}
 	list_iterator_destroy(job_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES)
 		_sock_gres_log(sock_gres_list, node_name);
