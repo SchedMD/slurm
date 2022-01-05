@@ -1028,7 +1028,7 @@ static int _match_part_ptr(void *part_ptr, void *key)
 }
 
 /* partition is visible to the user */
-extern bool part_is_visible(part_record_t *part_ptr, uid_t uid)
+static bool _part_is_visible(part_record_t *part_ptr, uid_t uid)
 {
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 	xassert(uid != 0);
@@ -1051,7 +1051,7 @@ static int _build_visible_parts_foreach(void *elem, void *x)
 	part_record_t *part_ptr = elem;
 	build_visible_parts_arg_t *arg = x;
 
-	if (part_is_visible(part_ptr, arg->uid)) {
+	if (_part_is_visible(part_ptr, arg->uid)) {
 		*(arg->visible_parts) = part_ptr;
 		arg->visible_parts++;
 		if (get_log_level() >= LOG_LEVEL_DEBUG3) {

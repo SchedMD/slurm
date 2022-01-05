@@ -2103,8 +2103,6 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t show_flags, uid_t uid, char *node_name,
 			   uint16_t protocol_version);
 
-/* part_is_visible - should user be able to see this partition */
-extern bool part_is_visible(part_record_t *part_ptr, uid_t uid);
 
 /* part_not_on_list - helper function to check if array parts contains x */
 extern int part_not_on_list(part_record_t **parts, part_record_t *x);
