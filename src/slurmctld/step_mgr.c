@@ -3379,6 +3379,7 @@ typedef struct {
 	uid_t uid;
 	uint32_t steps_packed;
 	buf_t *buffer;
+	bool privileged;
 	uint16_t proto_version;
 	bool valid_job;
 } pack_step_args_t;
@@ -3554,13 +3555,13 @@ static int _pack_job_steps(void *x, void *arg)
 
 	args->valid_job = 1;
 
-	if (((args->show_flags & SHOW_ALL) == 0) && (args->uid != 0) &&
+	if (((args->show_flags & SHOW_ALL) == 0) && !args->privileged &&
 	    (job_ptr->part_ptr) &&
 	    !part_is_visible(job_ptr->part_ptr, args->uid))
 		return 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != args->uid) && !validate_operator(args->uid)) {
+	    (job_ptr->user_id != args->uid) && !args->privileged) {
 		if (slurm_mcs_get_privatedata()) {
 			if (mcs_g_check_mcs_label(args->uid,
 						  job_ptr->mcs_label))
@@ -3612,6 +3613,7 @@ extern int pack_ctld_job_step_info_response_msg(
 		.uid = uid,
 		.steps_packed = 0,
 		.buffer = buffer,
+		.privileged = validate_operator(uid),
 		.proto_version = protocol_version,
 		.valid_job = false,
 	};
