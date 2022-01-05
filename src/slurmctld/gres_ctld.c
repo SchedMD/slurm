@@ -172,7 +172,8 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	uint64_t gres_per_bit = 1;
 	bool log_cnt_err = true;
 	char *log_type;
-	bool shared_gres = false, use_busy_dev = false;
+	bool shared_gres = false;
+	bool use_busy_dev = gres_use_busy_dev(gres_state_node, 0);
 	uint64_t pre_alloc_gres_cnt;
 	uint64_t *pre_alloc_type_cnt = NULL;
 	bitoff_t last_gres_bit = -1;
@@ -189,10 +190,6 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	if (gres_id_shared(config_flags)) {
 		shared_gres = true;
 		gres_per_bit = gres_js->gres_per_node;
-	}
-	if (shared_gres && (gres_ns->gres_cnt_alloc != 0)) {
-		/* We must use the ONE already active GRES of this type */
-		use_busy_dev = true;
 	}
 
 	if (gres_js->type_name && !gres_js->type_name[0])

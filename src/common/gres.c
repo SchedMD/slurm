@@ -6804,17 +6804,12 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 	bitstr_t *alloc_core_bitmap = NULL;
 	bitstr_t *avail_core_bitmap = NULL;
 	bool shared_gres = gres_id_shared(gres_state_job->config_flags);
-	bool use_busy_dev = false;
+	bool use_busy_dev;
 
 	if (gres_ns->no_consume)
 		use_total_gres = true;
 
-	if (!use_total_gres &&
-	    shared_gres &&
-	    (gres_ns->gres_cnt_alloc != 0)) {
-		/* We must use the ONE already active GRES of this type */
-		use_busy_dev = true;
-	}
+	use_busy_dev = gres_use_busy_dev(gres_state_node, use_total_gres);
 
 	/* Determine minimum GRES count needed on this node */
 	if (gres_js->gres_per_job)
@@ -9980,4 +9975,19 @@ extern char *gres_prepend_tres_type(const char *gres_str)
 		xstrsubstituteall(output, ",", ",gres:");
 	}
 	return output;
+}
+
+extern bool gres_use_busy_dev(gres_state_t *gres_state_node,
+			      bool use_total_gres)
+{
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
+
+	if (!use_total_gres &&
+	    gres_id_shared(gres_state_node->config_flags) &&
+	    (gres_ns->gres_cnt_alloc != 0)) {
+		/* We must use the ONE already active GRES of this type */
+		return true;
+	}
+
+	return false;
 }

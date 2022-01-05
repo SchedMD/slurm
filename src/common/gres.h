@@ -1143,4 +1143,8 @@ extern char *gres_links_create_empty(unsigned int index,
  */
 extern int gres_links_validate(char *links);
 
+/* Determine if the gres should only allow allocation on the busy one */
+extern bool gres_use_busy_dev(gres_state_t *gres_state_node,
+			      bool use_total_gres);
+
 #endif /* !_GRES_H */

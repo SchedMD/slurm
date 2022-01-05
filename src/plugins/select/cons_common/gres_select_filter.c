@@ -52,18 +52,11 @@ static void _job_core_filter(gres_state_t *gres_state_job,
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_node_state_t *gres_ns = gres_state_node->gres_data;
 	bitstr_t *avail_core_bitmap = NULL;
-	bool use_busy_dev = false;
+	bool use_busy_dev = gres_use_busy_dev(gres_state_node, use_total_gres);
 
 	if (!gres_ns->topo_cnt || !core_bitmap ||	/* No topology info */
 	    !gres_js->gres_per_node)		/* No job GRES */
 		return;
-
-	if (!use_total_gres &&
-	    gres_id_shared(gres_state_job->config_flags) &&
-	    (gres_ns->gres_cnt_alloc != 0)) {
-		/* We must use the ONE already active GRES of this type */
-		use_busy_dev = true;
-	}
 
 	/* Determine which specific cores can be used */
 	avail_core_bitmap = bit_copy(core_bitmap);
@@ -921,7 +914,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	gres_node_state_t *gres_ns;
 	int *used_sock = NULL, alloc_gres_cnt = 0;
 	uint64_t gres_per_bit;
-	bool use_busy_dev = false;
+	bool use_busy_dev = gres_use_busy_dev(sock_gres->gres_state_node, 0);
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_per_bit = gres_js->gres_per_node;
@@ -956,12 +949,6 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 				break;
 			}
 		}
-	}
-
-	if (gres_id_shared(sock_gres->gres_state_job->config_flags) &&
-	    (gres_ns->gres_cnt_alloc != 0)) {
-		/* We must use the ONE already active GRES of this type */
-		use_busy_dev = true;
 	}
 
 	/*

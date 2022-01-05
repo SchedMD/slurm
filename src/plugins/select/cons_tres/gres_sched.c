@@ -65,20 +65,13 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	int64_t add_gres;
 	uint64_t avail_gres, min_gres = 0;
 	bool match = false;
-	bool use_busy_dev = false;
+	bool use_busy_dev = gres_use_busy_dev(gres_state_node, use_total_gres);
 
 	if (gres_ns->gres_cnt_avail == 0)
 		return NULL;
 
 	if (!use_total_gres)
 		alt_gres_ns = gres_ns->alt_gres_ns;
-
-	if (!use_total_gres &&
-	    gres_id_shared(gres_state_job->config_flags) &&
-	    (gres_ns->gres_cnt_alloc != 0)) {
-		/* We must use the ONE already active GRES of this type */
-		use_busy_dev = true;
-	}
 
 	sock_gres = xmalloc(sizeof(sock_gres_t));
 	sock_gres->sock_cnt = sockets;
