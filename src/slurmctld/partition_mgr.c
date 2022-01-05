@@ -1030,9 +1030,8 @@ static int _match_part_ptr(void *part_ptr, void *key)
 extern bool part_is_visible(part_record_t *part_ptr, uid_t uid)
 {
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
+	xassert(uid != 0);
 
-	if (validate_operator(uid))
-		return true;
 	if (part_ptr->flags & PART_FLAG_HIDDEN)
 		return false;
 	if (validate_group(part_ptr, uid) == 0)

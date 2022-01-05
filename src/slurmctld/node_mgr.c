@@ -836,7 +836,11 @@ static part_record_t **_build_visible_parts(uid_t uid, bool privileged)
 		.visible_parts = visible_parts
 	};
 
-	/* The structure won't be used for privileged users */
+	/*
+	 * The array of visible parts can't be used for privileged users.
+	 * It doesn't check if the user is privileged, so if won't return all
+	 * partitions for operator.
+	 */
 	if(privileged)
 		return NULL;
 	/*
