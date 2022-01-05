@@ -83,6 +83,7 @@ typedef struct {
 	uint16_t protocol_version;
 	uint16_t show_flags;
 	uid_t uid;
+	part_record_t **visible_parts;
 } _foreach_pack_part_info_t;
 
 /* Global variables */
@@ -1095,6 +1096,19 @@ extern part_record_t **build_visible_parts(uid_t uid, bool skip)
 	return visible_parts_save;
 }
 
+extern int part_not_on_list(part_record_t **parts, part_record_t *x)
+{
+	for (int i = 0; parts[i]; i++) {
+		if (parts[i] == x) {
+			debug3("%s: partition: %s on visible part list",
+			       __func__, x->name);
+			return false;
+		} else
+			debug3("%s: partition: %s not on visible part list",
+			       __func__, x->name);
+	}
+	return true;
+}
 
 static int _pack_part(void *object, void *arg)
 {
@@ -1105,7 +1119,7 @@ static int _pack_part(void *object, void *arg)
 
 	if (!(pack_info->show_flags & SHOW_ALL) &&
 	    !pack_info->privileged &&
-	    !part_is_visible(part_ptr, pack_info->uid))
+	    part_not_on_list(pack_info->visible_parts, part_ptr))
 		return SLURM_SUCCESS;
 
 	pack_part(part_ptr, pack_info->buffer, pack_info->protocol_version);
@@ -1131,13 +1145,15 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 {
 	int tmp_offset;
 	time_t now = time(NULL);
+	bool privileged = validate_operator(uid);
 	_foreach_pack_part_info_t pack_info = {
 		.buffer = init_buf(BUF_SIZE),
 		.parts_packed = 0,
-		.privileged = validate_operator(uid),
+		.privileged = privileged,
 		.protocol_version = protocol_version,
 		.show_flags = show_flags,
 		.uid = uid,
+		.visible_parts = build_visible_parts(uid, privileged),
 	};
 
 	buffer_ptr[0] = NULL;
@@ -1157,6 +1173,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 
 	*buffer_size = get_buf_offset(pack_info.buffer);
 	buffer_ptr[0] = xfer_buf_data(pack_info.buffer);
+	xfree(pack_info.visible_parts);
 }
 
 

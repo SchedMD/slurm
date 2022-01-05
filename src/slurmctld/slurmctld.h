@@ -2106,6 +2106,9 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 /* part_is_visible - should user be able to see this partition */
 extern bool part_is_visible(part_record_t *part_ptr, uid_t uid);
 
+/* part_not_on_list - helper function to check if array parts contains x */
+extern int part_not_on_list(part_record_t **parts, part_record_t *x);
+
 /*
  * build_visible_parts - returns an array with pointers to partitions visible
  * to user based on partition Hidden and AllowedGroups properties.

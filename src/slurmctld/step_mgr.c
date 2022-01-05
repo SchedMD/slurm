@@ -3544,20 +3544,6 @@ static int _pack_ctld_job_step_info(void *x, void *arg)
 	return 0;
 }
 
-static int _part_not_on_list(part_record_t **parts, part_record_t *x)
-{
-	for (int i = 0; parts[i]; i++) {
-		if (parts[i] == x) {
-			debug3("%s: partition: %s on visible part list",
-			       __func__, x->name);
-			return false;
-		} else
-			debug3("%s: partition: %s not on visible part list",
-			       __func__, x->name);
-	}
-	return true;
-}
-
 static int _pack_job_steps(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
@@ -3572,7 +3558,7 @@ static int _pack_job_steps(void *x, void *arg)
 
 	if (((args->show_flags & SHOW_ALL) == 0) && !args->privileged &&
 	    (job_ptr->part_ptr) &&
-	    _part_not_on_list(args->visible_parts, job_ptr->part_ptr))
+	    part_not_on_list(args->visible_parts, job_ptr->part_ptr))
 		return 0;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
