@@ -155,7 +155,8 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 }
 
 static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
-		      gres_node_state_t *gres_ns, int node_cnt, int node_index,
+		      gres_state_t *gres_state_node,
+		      int node_cnt, int node_index,
 		      int node_offset, uint32_t job_id,
 		      char *node_name, bitstr_t *core_bitmap,
 		      bool new_alloc)
@@ -163,6 +164,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	char *gres_name = gres_state_job->gres_name;
 	uint32_t config_flags = gres_state_job->config_flags;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
 	int j, sz1, sz2;
 	int64_t gres_cnt, i;
 	gres_job_state_t  *gres_js_alloc;
@@ -718,13 +720,14 @@ already_alloced:
 }
 
 static int _job_alloc_whole_node_internal(
-	gres_key_t *job_search_key, gres_node_state_t *gres_ns,
+	gres_key_t *job_search_key, gres_state_t *gres_state_node,
 	List job_gres_list, List *job_gres_list_alloc, int node_cnt,
 	int node_index, int node_offset, int type_index, uint32_t job_id,
 	char *node_name, bitstr_t *core_bitmap, bool new_alloc)
 {
 	gres_state_t *gres_state_job;
 	gres_job_state_t *gres_js;
+	gres_node_state_t *gres_ns = gres_state_node->gres_data;
 
 	if (*job_gres_list_alloc == NULL) {
 		*job_gres_list_alloc = list_create(gres_job_list_delete);
@@ -754,7 +757,7 @@ static int _job_alloc_whole_node_internal(
 	else
 		gres_js->gres_per_node = gres_ns->gres_cnt_avail;
 
-	return _job_alloc(gres_state_job, *job_gres_list_alloc, gres_ns,
+	return _job_alloc(gres_state_job, *job_gres_list_alloc, gres_state_node,
 			  node_cnt, node_index, node_offset,
 			  job_id, node_name, core_bitmap, new_alloc);
 }
@@ -948,7 +951,7 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 		}
 
 		rc2 = _job_alloc(gres_state_job, *job_gres_list_alloc,
-				 gres_state_node->gres_data, node_cnt,
+				 gres_state_node, node_cnt,
 				 node_index,
 				 node_offset, job_id, node_name, core_bitmap,
 				 new_alloc);
@@ -1021,7 +1024,7 @@ extern int gres_ctld_job_alloc_whole_node(
 		if (!gres_ns->type_cnt) {
 			job_search_key.type_id = 0;
 			rc2 = _job_alloc_whole_node_internal(
-				&job_search_key, gres_ns,
+				&job_search_key, gres_state_node,
 				job_gres_list, job_gres_list_alloc,
 				node_cnt, node_index,
 				node_offset, -1, job_id, node_name,
@@ -1033,7 +1036,7 @@ extern int gres_ctld_job_alloc_whole_node(
 				job_search_key.type_id = gres_build_id(
 					gres_ns->type_name[j]);
 				rc2 = _job_alloc_whole_node_internal(
-					&job_search_key, gres_ns,
+					&job_search_key, gres_state_node,
 					job_gres_list, job_gres_list_alloc,
 					node_cnt, node_index,
 					node_offset, j, job_id, node_name,
