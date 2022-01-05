@@ -79,6 +79,7 @@
 typedef struct {
 	buf_t *buffer;
 	uint32_t parts_packed;
+	bool privileged;
 	uint16_t protocol_version;
 	uint16_t show_flags;
 	uid_t uid;
@@ -1062,6 +1063,7 @@ static int _pack_part(void *object, void *arg)
 	xassert(part_ptr->magic == PART_MAGIC);
 
 	if (!(pack_info->show_flags & SHOW_ALL) &&
+	    !pack_info->privileged &&
 	    !part_is_visible(part_ptr, pack_info->uid))
 		return SLURM_SUCCESS;
 
@@ -1091,6 +1093,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	_foreach_pack_part_info_t pack_info = {
 		.buffer = init_buf(BUF_SIZE),
 		.parts_packed = 0,
+		.privileged = validate_operator(uid),
 		.protocol_version = protocol_version,
 		.show_flags = show_flags,
 		.uid = uid,
