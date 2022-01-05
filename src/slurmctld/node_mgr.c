@@ -1631,10 +1631,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 					/* Abort any power up request */
 					node_ptr->node_state &=
 						(~NODE_STATE_POWERING_UP);
-					node_ptr->node_state =
-						NODE_STATE_IDLE |
-						(node_ptr->node_state &
-						 NODE_STATE_FLAGS);
 				}
 
 				node_ptr->node_state |=
