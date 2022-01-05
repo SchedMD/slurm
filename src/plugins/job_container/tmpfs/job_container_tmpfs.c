@@ -475,10 +475,12 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 		if (rc) {
 			error("%s: init script: %s failed",
 			      __func__, jc_conf->initscript);
+			xfree(result);
 			goto exit2;
 		} else {
 			debug3("initscript stdout: %s", result);
 		}
+		xfree(result);
 	}
 
 	rc = mkdir(src_bind, 0700);
