@@ -2106,9 +2106,11 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 /* part_is_visible - should user be able to see this partition */
 extern bool part_is_visible(part_record_t *part_ptr, uid_t uid);
 
-/* part_is_visible_user_rec - should user be able to see this partition */
-extern bool part_is_visible_user_rec(part_record_t *part_ptr,
-				     slurmdb_user_rec_t *user);
+/*
+ * build_visible_parts - returns an array with pointers to partitions visible
+ * to user based on partition Hidden and AllowedGroups properties.
+ */
+extern part_record_t **build_visible_parts(uid_t uid, bool privileged);
 
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);

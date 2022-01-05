@@ -799,60 +799,6 @@ static bool _node_is_hidden(node_record_t *node_ptr,
 	return true;
 }
 
-typedef struct {
-	uid_t uid;
-	part_record_t **visible_parts;
-} build_visible_parts_arg_t;
-
-static int _build_visible_parts_foreach(void *elem, void *x)
-{
-	part_record_t *part_ptr = elem;
-	build_visible_parts_arg_t *arg = x;
-
-	if (part_is_visible(part_ptr, arg->uid)) {
-		*(arg->visible_parts) = part_ptr;
-		arg->visible_parts++;
-		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
-			char *tmp_str = NULL;
-			for (int i = 0; arg->visible_parts[i]; i++)
-				xstrfmtcat(tmp_str, "%s%s", tmp_str ? "," : "",
-					   arg->visible_parts[i]->name);
-			debug3("%s: uid:%d visible_parts:%s",
-			       __func__, arg->uid, tmp_str);
-			xfree(tmp_str);
-		}
-	}
-
-	return SLURM_SUCCESS;
-}
-
-static part_record_t **_build_visible_parts(uid_t uid, bool privileged)
-{
-	part_record_t **visible_parts_save;
-	part_record_t **visible_parts = xcalloc(list_count(part_list) + 1,
-						sizeof(part_record_t *));
-	build_visible_parts_arg_t args = {
-		.uid = uid,
-		.visible_parts = visible_parts
-	};
-
-	/*
-	 * The array of visible parts can't be used for privileged users.
-	 * It doesn't check if the user is privileged, so if won't return all
-	 * partitions for operator.
-	 */
-	if(privileged)
-		return NULL;
-	/*
-	 * Save start pointer to start of the list so can point to start
-	 * after appending to the list.
-	 */
-	visible_parts_save = visible_parts;
-	list_for_each(part_list, _build_visible_parts_foreach, &args);
-
-	return visible_parts_save;
-}
-
 static void _free_pack_node_info_members(pack_node_info_t *pack_info)
 {
 	xfree(pack_info->visible_parts);
@@ -882,7 +828,7 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 	bool hidden, privileged = validate_operator(uid);
 	pack_node_info_t pack_info = {
 		.uid = uid,
-		.visible_parts = _build_visible_parts(uid, privileged)
+		.visible_parts = build_visible_parts(uid, privileged)
 	};
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -975,7 +921,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	bool hidden, privileged = validate_operator(uid);
 	pack_node_info_t pack_info = {
 		.uid = uid,
-		.visible_parts = _build_visible_parts(uid, privileged)
+		.visible_parts = build_visible_parts(uid, privileged)
 	};
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
