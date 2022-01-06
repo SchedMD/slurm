@@ -64,6 +64,7 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
+#include "src/common/job_options.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/plugstack.h"

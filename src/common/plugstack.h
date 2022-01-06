@@ -44,7 +44,6 @@
 
 #include <getopt.h>
 
-#include "src/common/job_options.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define SPANK_OPTION_ENV_PREFIX "_SLURM_SPANK_OPTION_"
@@ -151,7 +150,7 @@ int spank_print_options(FILE *fp, int left_pad, int width);
 /*  Set all registered remote options (i.e. those passed to
  *   spank_process_option) in the job options `options'.
  */
-int spank_set_remote_options (job_options_t options);
+int spank_set_remote_options(List options);
 
 /*  Clear any spank remote options encoded in environment.
  */

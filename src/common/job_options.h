@@ -39,9 +39,7 @@
 #ifndef _JOB_OPTIONS_H
 #define _JOB_OPTIONS_H
 
-#include "src/common/pack.h"
-
-typedef struct job_options * job_options_t;	/* opaque data type */
+#include "src/common/list.h"
 
 struct job_option_info {
 	int type;
@@ -52,37 +50,26 @@ struct job_option_info {
 /*
  *  Create generic job options container.
  */
-job_options_t job_options_create (void);
+List job_options_create(void);
 
 /*
  *  Destroy container, freeing all data associated with options.
  */
-void job_options_destroy (job_options_t opts);
+void job_options_destroy(List opts);
 
 /*
  *  Append option of type `type' and its argument to job options
  */
-int job_options_append (job_options_t opts, int type, const char *opt,
-		        const char *optarg);
+int job_options_append(List opts, int type, const char *opt, const char *optarg);
 
 /*
  *  Pack all accumulated options into buf
  */
-int job_options_pack(job_options_t opts, buf_t *buf);
+int job_options_pack(List opts, buf_t *buf);
 
 /*
  *  Unpack options from buf into options container opts.
  */
-int job_options_unpack(job_options_t opts, buf_t *buf);
-
-/*
- *  Reset internal options list iterator
- */
-void job_options_iterator_reset (job_options_t opts);
-
-/*
- *  Iterate over all job options
- */
-const struct job_option_info * job_options_next (job_options_t opts);
+int job_options_unpack(List opts, buf_t *buf);
 
 #endif /* !_JOB_OPTIONS_H */

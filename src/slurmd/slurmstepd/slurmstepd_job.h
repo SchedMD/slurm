@@ -51,7 +51,6 @@
 #include "src/common/eio.h"
 #include "src/common/env.h"
 #include "src/common/io_hdr.h"
-#include "src/common/job_options.h"
 #include "src/common/stepd_api.h"
 
 typedef struct {
@@ -222,7 +221,7 @@ typedef struct {
 	char          *batchdir;
 	jobacctinfo_t *jobacct;
 	uint8_t        open_mode;	/* stdout/err append or truncate */
-	job_options_t  options;
+	List options;
 	uint16_t       restart_cnt;	/* batch job restart count	*/
 	char	      *job_alloc_cores;	/* needed by the SPANK cpuset plugin */
 	char	      *step_alloc_cores;/* needed by the SPANK cpuset plugin */

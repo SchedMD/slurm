@@ -200,7 +200,7 @@ static int _spank_plugin_options_cache(struct spank_plugin *p);
 static int _spank_stack_load (struct spank_stack *stack, const char *file);
 static void _spank_plugin_destroy (struct spank_plugin *);
 static void _spank_plugin_opt_destroy (struct spank_plugin_opt *);
-static int spank_stack_get_remote_options(struct spank_stack *, job_options_t);
+static int spank_stack_get_remote_options(struct spank_stack *, List);
 static int spank_stack_get_remote_options_env (struct spank_stack *, char **);
 static int spank_stack_set_remote_options_env (struct spank_stack * stack);
 static int dyn_spank_set_job_env (const char *var, const char *val, int ovwt);
@@ -1494,7 +1494,7 @@ static int spank_stack_set_remote_options_env (struct spank_stack *stack)
 	return (0);
 }
 
-int spank_set_remote_options(job_options_t opts)
+int spank_set_remote_options(List opts)
 {
 	struct spank_plugin_opt *p;
 	ListIterator i;
@@ -1695,13 +1695,14 @@ spank_stack_get_remote_options_env (struct spank_stack *stack, char **env)
 	return (0);
 }
 
-static int
-spank_stack_get_remote_options(struct spank_stack *stack, job_options_t opts)
+static int spank_stack_get_remote_options(struct spank_stack *stack,
+					  List opts)
 {
 	const struct job_option_info *j;
+	ListIterator li;
 
-	job_options_iterator_reset(opts);
-	while ((j = job_options_next(opts))) {
+	li = list_iterator_create(opts);
+	while ((j = list_next(li))) {
 		struct spank_plugin_opt *opt;
 
 		if (j->type != OPT_TYPE_SPANK)
@@ -1715,6 +1716,7 @@ spank_stack_get_remote_options(struct spank_stack *stack, job_options_t opts)
 			      opt->opt->name, j->optarg);
 		}
 	}
+	list_iterator_destroy(li);
 
 	return (0);
 }

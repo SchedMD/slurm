@@ -56,7 +56,6 @@
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 #include "src/common/bitstring.h"
-#include "src/common/job_options.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_cred.h"
@@ -911,7 +910,7 @@ typedef struct launch_tasks_request_msg {
 
 	slurm_cred_t *cred;	/* job credential            */
 	dynamic_plugin_data_t *switch_job; /* switch credential for the job */
-	job_options_t options;  /* Arbitrary job options */
+	List options;  /* Arbitrary job options */
 	char *complete_nodelist;
 	char **spank_job_env;
 	uint32_t spank_job_env_size;

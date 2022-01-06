@@ -107,44 +107,25 @@ static struct job_option_info *job_option_info_unpack(buf_t *buf)
 /*
  *  Create generic job options container.
  */
-job_options_t job_options_create (void)
+List job_options_create(void)
 {
-	job_options_t j = xmalloc (sizeof (*j));
-
-	j->magic = JOB_OPTIONS_MAGIC;
-
-	j->options = list_create ((ListDelF) job_option_info_destroy);
-	j->iterator = list_iterator_create (j->options);
-
-	return (j);
+	return list_create((ListDelF) job_option_info_destroy);
 }
 
 /*
  *  Destroy container, freeing all data associated with options.
  */
-void job_options_destroy (job_options_t opts)
+void job_options_destroy(List opts)
 {
-	xassert (opts != NULL);
-	xassert (opts->magic == JOB_OPTIONS_MAGIC);
-
-	FREE_NULL_LIST (opts->options);
-
-	opts->magic = ~JOB_OPTIONS_MAGIC;
-	xfree (opts);
-	return;
+	list_destroy(opts);
 }
 
 /*
  *  Append option of type `type' and its argument to job options
  */
-int job_options_append (job_options_t opts, int type, const char *opt,
-		        const char *optarg)
+int job_options_append(List opts, int type, const char *opt, const char *optarg)
 {
-	xassert (opts != NULL);
-	xassert (opts->magic == JOB_OPTIONS_MAGIC);
-	xassert (opts->options != NULL);
-
-	list_append (opts->options, job_option_info_create (type, opt, optarg));
+	list_append(opts, job_option_info_create(type, opt, optarg));
 
 	return (0);
 }
@@ -152,7 +133,7 @@ int job_options_append (job_options_t opts, int type, const char *opt,
 /*
  *  Pack all accumulated options into buf
  */
-int job_options_pack(job_options_t opts, buf_t *buf)
+int job_options_pack(List opts, buf_t *buf)
 {
 	uint32_t count = 0;
 	ListIterator i;
@@ -165,14 +146,10 @@ int job_options_pack(job_options_t opts, buf_t *buf)
 		return (0);
 	}
 
-	xassert (opts->magic == JOB_OPTIONS_MAGIC);
-	xassert (opts->options != NULL);
-	xassert (opts->iterator != NULL);
-
-	count = list_count (opts->options);
+	count = list_count(opts);
 	pack32  (count, buf);
 
-	i = list_iterator_create (opts->options);
+	i = list_iterator_create (opts);
 
 	while ((opt = list_next (i)))
 		job_option_info_pack (opt, buf);
@@ -184,7 +161,7 @@ int job_options_pack(job_options_t opts, buf_t *buf)
 /*
  *  Unpack options from buffer "buf" into options container opts.
  */
-int job_options_unpack(job_options_t opts, buf_t *buf)
+int job_options_unpack(List opts, buf_t *buf)
 {
 	uint32_t count;
 	uint32_t len;
@@ -204,7 +181,7 @@ int job_options_unpack(job_options_t opts, buf_t *buf)
 		struct job_option_info *ji;
 		if ((ji = job_option_info_unpack (buf)) == NULL)
 			return (SLURM_ERROR);
-		list_append (opts->options, ji);
+		list_append(opts, ji);
 	}
 
 	return (0);
@@ -212,31 +189,4 @@ int job_options_unpack(job_options_t opts, buf_t *buf)
   unpack_error:
 	xfree(tag);
 	return SLURM_ERROR;
-}
-
-/*
- *  Iterate over all job options
- */
-const struct job_option_info * job_options_next (job_options_t opts)
-{
-	if (opts == NULL)
-		return NULL;
-
-	xassert (opts->magic == JOB_OPTIONS_MAGIC);
-	xassert (opts->options != NULL);
-	xassert (opts->iterator != NULL);
-
-	return (list_next (opts->iterator));
-}
-
-void job_options_iterator_reset (job_options_t opts)
-{
-	if (opts == NULL)
-		return;
-
-	xassert (opts->magic == JOB_OPTIONS_MAGIC);
-	xassert (opts->options != NULL);
-	xassert (opts->iterator != NULL);
-
-	list_iterator_reset (opts->iterator);
 }
