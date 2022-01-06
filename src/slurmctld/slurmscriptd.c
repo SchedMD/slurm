@@ -73,6 +73,7 @@ enum {
 	SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE,
 	SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE,
 	SLURMSCRIPTD_REQUEST_FLUSH,
+	SLURMSCRIPTD_REQUEST_FLUSH_COMPLETE,
 	SLURMSCRIPTD_REQUEST_FLUSH_JOB,
 	SLURMSCRIPTD_REQUEST_RUN_BB_LUA,
 	SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE,
@@ -418,13 +419,67 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int _handle_flush(void)
+static int _handle_flush_complete(buf_t *buffer)
 {
+	script_response_t *script_resp;
+	char *key = NULL;
+	uint32_t tmp32;
+	int rc = SLURM_SUCCESS;
+
+	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH_COMPLETE");
+	safe_unpackstr_xmalloc(&key, &tmp32, buffer);
+
+	slurm_mutex_lock(&script_resp_map_mutex);
+	script_resp = xhash_get(script_resp_map, key, strlen(key));
+	if (!script_resp) {
+		/*
+		 * This should never happen. We don't know how to notify
+		 * whoever started this script that it is done.
+		 */
+		error("%s: Unable to notify thread waiting for SLURMSCRIPTD_FLUSH to complete, may have to SIGKILL slurmctld. (key=%s)",
+		      __func__, key);
+		rc = SLURM_ERROR;
+	} else {
+		script_resp->rc = SLURM_SUCCESS;
+		slurm_mutex_lock(&script_resp->mutex);
+		slurm_cond_signal(&script_resp->cond);
+		slurm_mutex_unlock(&script_resp->mutex);
+	}
+	slurm_mutex_unlock(&script_resp_map_mutex);
+
+	xfree(key);
+
+	return rc;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+	return SLURM_ERROR;
+}
+
+static int _handle_flush(buf_t *buffer)
+{
+	buf_t *resp_buf;
+	char *key = NULL;
+	uint32_t tmp32;
+
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH");
+	safe_unpackstr_xmalloc(&key, &tmp32, buffer);
+
 	/* Kill all running scripts */
 	track_script_flush();
 
+	resp_buf = init_buf(0);
+	packstr(key, resp_buf);
+	_write_msg(slurmscriptd_writefd, SLURMSCRIPTD_REQUEST_FLUSH_COMPLETE,
+		   resp_buf);
+	FREE_NULL_BUFFER(resp_buf);
+	xfree(key);
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+	return SLURM_ERROR;
 }
 
 static int _handle_flush_job(buf_t *buffer)
@@ -735,7 +790,10 @@ static int _handle_request(int req, buf_t *buffer)
 			rc = _handle_prepilog_complete(buffer, true);
 			break;
 		case SLURMSCRIPTD_REQUEST_FLUSH:
-			rc = _handle_flush();
+			rc = _handle_flush(buffer);
+			break;
+		case SLURMSCRIPTD_REQUEST_FLUSH_COMPLETE:
+			rc = _handle_flush_complete(buffer);
 			break;
 		case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
 			rc = _handle_flush_job(buffer);
@@ -881,7 +939,18 @@ static void _kill_slurmscriptd(void)
 
 extern void slurmscriptd_flush(void)
 {
-	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH, NULL);
+	int tmp;
+	buf_t *buffer;
+	script_response_t *script_resp;
+
+	script_resp = _script_resp_map_add();
+	buffer = init_buf(0);
+	packstr(script_resp->key, buffer);
+	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH, buffer);
+	FREE_NULL_BUFFER(buffer);
+
+	_wait_for_script_resp(script_resp, &tmp, NULL, NULL);
+	_script_resp_map_remove(script_resp->key);
 }
 
 extern void slurmscriptd_flush_job(uint32_t job_id)

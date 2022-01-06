@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
  -- acct_gather_energy/xcc - appropriately close and destroy the IPMI context.
  -- Protect slurmstepd from making multiple calls to the cleanup logic.
  -- Prevent slurmstepd segfault at cleanup time in mpi_fini().
+ -- Fix slurmctld sometimes hanging if shutdown while PrologSlurmctld or
+    EpilogSlurmctld were running and PrologEpilogTimeout is set in slurm.conf.
 
 * Changes in Slurm 21.08.5
 ==========================
