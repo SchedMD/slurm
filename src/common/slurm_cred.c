@@ -59,6 +59,7 @@
 #include "src/common/plugrack.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"

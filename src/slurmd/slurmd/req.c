@@ -89,6 +89,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
 #include "src/common/uid.h"

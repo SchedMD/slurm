@@ -95,6 +95,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_mcs.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_route.h"
 #include "src/common/slurm_topology.h"

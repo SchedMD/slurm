@@ -52,6 +52,7 @@
 #include "src/common/slurm_route.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 

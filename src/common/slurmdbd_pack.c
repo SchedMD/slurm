@@ -39,6 +39,7 @@
 
 #include "src/common/hash.h"
 #include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdb_pack.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"

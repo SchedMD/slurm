@@ -78,6 +78,7 @@
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/switch.h"
 #include "src/common/uid.h"

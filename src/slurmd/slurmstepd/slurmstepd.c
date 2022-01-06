@@ -57,6 +57,7 @@
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_mpi.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
