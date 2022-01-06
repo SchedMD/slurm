@@ -552,6 +552,13 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 
 		while (1) {
 			int i;
+			/*
+			 * Pass zero as the status to just see if this script
+			 * exists in track_script - if not, then we need to bail
+			 * since this script was killed.
+			 */
+			if (track_script_killed(pthread_self(), 0))
+				break;
 
 			fds.fd = pfd[0];
 			fds.events = POLLIN | POLLHUP | POLLRDHUP;
