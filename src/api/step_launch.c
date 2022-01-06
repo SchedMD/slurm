@@ -395,7 +395,7 @@ fail1:
 	xfree(launch.complete_nodelist);
 	xfree(launch.cwd);
 	env_array_free(env);
-	job_options_destroy(launch.options);
+	FREE_NULL_LIST(launch.options);
 	return rc;
 }
 
@@ -574,7 +574,7 @@ fail1:
 
 	xfree(launch.cwd);
 	env_array_free(env);
-	job_options_destroy(launch.options);
+	FREE_NULL_LIST(launch.options);
 
 	return rc;
 }

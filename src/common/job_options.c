@@ -113,14 +113,6 @@ List job_options_create(void)
 }
 
 /*
- *  Destroy container, freeing all data associated with options.
- */
-void job_options_destroy(List opts)
-{
-	list_destroy(opts);
-}
-
-/*
  *  Append option of type `type' and its argument to job options
  */
 int job_options_append(List opts, int type, const char *opt, const char *optarg)
