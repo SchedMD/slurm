@@ -56,16 +56,6 @@ struct hostent * get_host_by_name(const char *name,
  *    (h_err) variable reference (if not NULL) to indicate the h_error.
  */
 
-struct hostent * get_host_by_addr(const char *addr, int len, int type,
-    void *buf, int buflen, int *h_err);
-/*
- *  A portable thread-safe alternative to be used in place of gethostbyaddr().
- *  The result is stored in the buffer (buf) of length (buflen); if the buffer
- *    is too small to hold the result, NULL is returned with errno = ERANGE.
- *  Returns a ptr into (buf) on success; returns NULL on error, setting the
- *    (h_err) variable reference (if not NULL) to indicate the h_error.
- */
-
 /* is_full_path()
  *
  * Test if the given path is a full or relative one.

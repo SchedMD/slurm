@@ -98,32 +98,6 @@ struct hostent * get_host_by_name(const char *name,
 	return(hptr ? (struct hostent *) buf : NULL);
 }
 
-
-struct hostent * get_host_by_addr(const char *addr, int len, int type,
-				  void *buf, int buflen, int *h_err)
-{
-/*  gethostbyaddr() is not thread-safe, and there is no frelling standard
- *    for gethostbyaddr_r() -- the arg list varies from system to system!
- */
-	struct hostent *hptr;
-	int n = 0;
-
-	xassert(addr && buf);
-
-	slurm_mutex_lock(&hostentLock);
-	if ((hptr = gethostbyaddr(addr, len, type)))
-		n = copy_hostent(hptr, buf, buflen);
-	if (h_err)
-		*h_err = h_errno;
-	slurm_mutex_unlock(&hostentLock);
-
-	if (n < 0) {
-		errno = ERANGE;
-		return(NULL);
-	}
-	return(hptr ? (struct hostent *) buf : NULL);
-}
-
 static int copy_hostent(const struct hostent *src, char *buf, int len)
 {
 /*  Copies the (src) hostent struct (and all of its associated data)
