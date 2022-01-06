@@ -38,12 +38,14 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
-#include "slurmdb_pack.h"
-#include "slurmdbd_defs.h"
-#include "slurm_protocol_defs.h"
-#include "slurm_jobacct_gather.h"
-#include "list.h"
-#include "pack.h"
+
+#include "src/common/list.h"
+#include "src/common/pack.h"
+#include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_pack.h"
+#include "src/common/slurmdb_pack.h"
+#include "src/common/slurmdbd_defs.h"
 
 #define KB_ADJ 1024
 #define MB_ADJ 1048576
