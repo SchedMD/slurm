@@ -156,43 +156,6 @@ void update_header(header_t * header, uint32_t msg_length)
 	header->body_length = msg_length;
 }
 
-
-/* log the supplied slurm task launch message as debug3() level */
-void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
-{
-	int i;
-	int node_id = nodelist_find(msg->complete_nodelist, name);
-
-	debug3("job_id: %u", msg->step_id.job_id);
-	debug3("job_step_id: %u", msg->step_id.step_id);
-	if (msg->het_job_step_cnt != NO_VAL)
-		debug3("het_job_step_cnt: %u", msg->het_job_step_cnt);
-	if (msg->het_job_id != NO_VAL)
-		debug3("het_job_id: %u", msg->het_job_id);
-	if (msg->het_job_offset != NO_VAL)
-		debug3("het_job_offset: %u", msg->het_job_offset);
-	debug3("uid: %u", msg->uid);
-	debug3("gid: %u", msg->gid);
-	debug3("tasks_to_launch: %u", *(msg->tasks_to_launch));
-	debug3("envc: %u", msg->envc);
-	for (i = 0; i < msg->envc; i++) {
-		debug3("env[%d]: %s", i, msg->env[i]);
-	}
-	debug3("cwd: %s", msg->cwd);
-	debug3("argc: %u", msg->argc);
-	for (i = 0; i < msg->argc; i++) {
-		debug3("argv[%d]: %s", i, msg->argv[i]);
-	}
-	debug3("msg -> resp_port  = %u", *(msg->resp_port));
-	debug3("msg -> io_port    = %u", *(msg->io_port));
-	debug3("msg -> flags      = %x", msg->flags);
-
-	for (i = 0; i < msg->tasks_to_launch[node_id]; i++) {
-		debug3("global_task_id[%d]: %u ", i,
-		       msg->global_task_ids[node_id][i]);
-	}
-}
-
 /* Get the port number from a slurm_addr_t */
 uint16_t slurm_get_port(slurm_addr_t *addr)
 {
