@@ -66,12 +66,6 @@ struct hostent * get_host_by_addr(const char *addr, int len, int type,
  *    (h_err) variable reference (if not NULL) to indicate the h_error.
  */
 
-const char * host_strerror(int h_err);
-/*
- *  Returns a string describing the error code (h_err) returned by
- *    get_host_by_name() or get_host_by_addr().
- */
-
 /* is_full_path()
  *
  * Test if the given path is a full or relative one.

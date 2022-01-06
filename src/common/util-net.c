@@ -124,21 +124,6 @@ struct hostent * get_host_by_addr(const char *addr, int len, int type,
 	return(hptr ? (struct hostent *) buf : NULL);
 }
 
-
-const char * host_strerror(int h_err)
-{
-	if (h_err == HOST_NOT_FOUND)
-		return("Unknown host");
-	else if (h_err == TRY_AGAIN)
-		return("Transient host name lookup failure");
-	else if (h_err == NO_RECOVERY)
-		return("Unknown server error");
-	else if ((h_err == NO_ADDRESS) || (h_err == NO_DATA))
-		return("No address associated with name");
-	return("Unknown error");
-}
-
-
 static int copy_hostent(const struct hostent *src, char *buf, int len)
 {
 /*  Copies the (src) hostent struct (and all of its associated data)
