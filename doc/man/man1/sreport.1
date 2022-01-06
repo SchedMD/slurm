@@ -1,4 +1,4 @@
-.TH sreport "1" "Slurm Commands" "July 2021" "Slurm Commands"
+.TH sreport "1" "Slurm Commands" "October 2021" "Slurm Commands"
 
 .SH "NAME"
 sreport \- Generate reports from the slurm accounting data.
@@ -317,7 +317,8 @@ system is overloaded and by how much.
 .IP PlannedDown
 
 Time that nodes were in use by a reservation created with the MAINT flag
-but not the IGNORE_JOBS flag.
+but not the IGNORE_JOBS flag. Also, time that nodes were in the FUTURE state or
+CLOUD nodes that were POWERED_DOWN.
 .IP Reserved
 
 Time that a node spent idle with eligible jobs in the queue that were

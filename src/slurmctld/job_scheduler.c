@@ -4427,7 +4427,12 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 		node_ptr = node_record_table_ptr + i;
 		if (protocol_version > node_ptr->protocol_version)
 			protocol_version = node_ptr->protocol_version;
-		node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
+
+		if (IS_NODE_POWERED_DOWN(node_ptr)) {
+			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
+			clusteracct_storage_g_node_up(acct_db_conn, node_ptr,
+						      now);
+		}
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWERING_UP;
 		bit_clear(avail_node_bitmap, i);

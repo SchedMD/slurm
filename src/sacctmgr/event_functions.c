@@ -173,6 +173,30 @@ static int _addto_state_char_list(List char_list, char *names)
 	return count;
 }
 
+static uint32_t _parse_cond_flags(const char *flags_str)
+{
+	uint32_t flags = 0;
+	char *tmp_flags, *flag, *save_ptr = NULL;
+
+	tmp_flags = xstrdup(flags_str);
+
+	flag = strtok_r(tmp_flags, ",", &save_ptr);
+	while (flag) {
+		if (!xstrcasecmp(flag, "OPEN")) {
+			flags |= SLURMDB_EVENT_COND_OPEN;
+		} else {
+			error("Unknown condition flag %s", flag);
+			exit_code = 1;
+		}
+
+		flag = strtok_r(NULL, ",", &save_ptr);
+	}
+
+	xfree(tmp_flags);
+
+	return flags;
+}
+
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_event_cond_t *event_cond,
 		     List format_list)
@@ -247,13 +271,17 @@ static int _set_cond(int *start, int argc, char **argv,
 			list_iterator_destroy(itr);
 			FREE_NULL_LIST(tmp_list);
 		} else if (!xstrncasecmp(argv[i], "Clusters",
-					 MAX(command_len, 1))) {
+					 MAX(command_len, 2))) {
 			if (!event_cond->cluster_list)
 				event_cond->cluster_list =
 					list_create(xfree_ptr);
 			if (slurm_addto_char_list(event_cond->cluster_list,
 						 argv[i]+end))
 				set = 1;
+		} else if (!xstrncasecmp(argv[i], "CondFlags",
+					 MAX(command_len, 2))) {
+			event_cond->cond_flags = _parse_cond_flags(argv[i]+end);
+			set = 1;
 		} else if (!xstrncasecmp(argv[i], "End", MAX(command_len, 1))) {
 			event_cond->period_end = parse_time(argv[i]+end, 1);
 			set = 1;

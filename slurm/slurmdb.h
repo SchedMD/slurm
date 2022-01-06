@@ -238,6 +238,10 @@ enum cluster_fed_states {
 
 /* Assoc flags */
 #define ASSOC_FLAG_DELETED  0x0001
+
+/* Event condition flags */
+#define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */
+
 /********************************************/
 
 /* Association conditions used for queries of the database */
@@ -727,6 +731,7 @@ typedef struct {
 
 typedef struct {
 	List cluster_list;	/* list of char * */
+	uint32_t cond_flags;    /* condition flags */
 	uint32_t cpus_max;      /* number of cpus high range */
 	uint32_t cpus_min;      /* number of cpus low range */
 	uint16_t event_type;    /* type of events (slurmdb_event_type_t),

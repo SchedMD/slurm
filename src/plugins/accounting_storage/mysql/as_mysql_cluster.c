@@ -1224,10 +1224,24 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		else
 			xstrcat(extra, " where (");
 
-		xstrfmtcat(extra,
-			   "(time_start < %ld) "
-			   "&& (time_end >= %ld || time_end = 0))",
-			   event_cond->period_end, event_cond->period_start);
+		if (event_cond->cond_flags & SLURMDB_EVENT_COND_OPEN)
+			xstrfmtcat(extra,
+				   "(time_start >= %ld) && (time_end = 0))",
+				   event_cond->period_start);
+		else
+			xstrfmtcat(extra,
+				   "(time_start < %ld) "
+				   "&& (time_end >= %ld || time_end = 0))",
+				   event_cond->period_end,
+				   event_cond->period_start);
+
+	} else if (event_cond->cond_flags & SLURMDB_EVENT_COND_OPEN) {
+		if (extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+
+		xstrfmtcat(extra, "time_end = 0)");
 	}
 
 	if (event_cond->reason_list
@@ -1294,7 +1308,13 @@ empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", event_req_inx[0]);
 	for(i=1; i<EVENT_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", event_req_inx[i]);
+		bool include = true;
+		if (event_cond->format_list)
+			include = list_find_first(event_cond->format_list,
+						  slurm_find_char_in_list,
+						  event_req_inx[i]);
+		xstrfmtcat(tmp, ", %s%s",
+			   include ? "" : "'' as ", event_req_inx[i]);
 	}
 
 	if (event_cond && event_cond->cluster_list &&

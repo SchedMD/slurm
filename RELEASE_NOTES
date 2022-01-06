@@ -39,6 +39,7 @@ HIGHLIGHTS
  -- Run MailProg through slurmscriptd instead of directly fork+exec()'ing
     from slurmctld.
  -- Add acct_gather_interconnect/sysfs plugin.
+ -- Future and Cloud nodes are treated as "Planned Down" in usage reports.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
@@ -51,6 +52,8 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Remove support for (non-functional) --cpu-bind=boards.
  -- Added --prefer option at job submission to allow for 'soft' constraints.
+ -- Add "condflags=open" to sacctmgr show events to return open/currently down
+    events.
 
 API CHANGES
 ===========

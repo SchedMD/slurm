@@ -112,6 +112,7 @@ static void	_drain_node(node_record_t *node_ptr, char *reason,
 static front_end_record_t * _front_end_reg(
 				slurm_node_registration_status_msg_t *reg_msg);
 static bool	_is_cloud_hidden(node_record_t *node_ptr);
+static void    _make_node_unavail(node_record_t *node_ptr);
 static void 	_make_node_down(node_record_t *node_ptr,
 				time_t event_time);
 static bool	_node_is_hidden(node_record_t *node_ptr, uid_t uid);
@@ -1449,6 +1450,12 @@ int update_node ( update_node_msg_t * update_node_msg )
 							xstrdup(node_ptr->name));
 
 					node_ptr->power_save_req_time = 0;
+
+					clusteracct_storage_g_node_down(
+						acct_db_conn,
+						node_ptr, now,
+						"Powered down after resume",
+						node_ptr->reason_uid);
 				}
 
 				if (IS_NODE_DOWN(node_ptr)) {
@@ -1514,6 +1521,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 							xstrdup(node_ptr->name));
 					}
 					bit_set(future_node_bitmap, node_inx);
+					clusteracct_storage_g_node_down(
+						acct_db_conn,
+						node_ptr, now,
+						"Set to State=FUTURE",
+						node_ptr->reason_uid);
 				}
 			} else if (state_val == NODE_STATE_IDLE) {
 				/* assume they want to clear DRAIN and
@@ -1601,9 +1613,15 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 				if (state_val & NODE_STATE_POWERED_DOWN) {
 					/* Force power down */
-					_make_node_down(node_ptr, now);
+					_make_node_unavail(node_ptr);
+					/*
+					 * Kill any running jobs and requeue if
+					 * possible.
+					 */
 					kill_running_job_by_node_name(
 						this_node_name);
+					node_ptr->node_state &=
+						(~NODE_STATE_POWERING_UP);
 				} else if (state_val & NODE_STATE_POWER_DRAIN) {
 					/* power down asap -- drain */
 					_drain_node(node_ptr, "POWER_DOWN_ASAP",
@@ -1613,10 +1631,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 					/* Abort any power up request */
 					node_ptr->node_state &=
 						(~NODE_STATE_POWERING_UP);
-					node_ptr->node_state =
-						NODE_STATE_IDLE |
-						(node_ptr->node_state &
-						 NODE_STATE_FLAGS);
 				}
 
 				node_ptr->node_state |=
@@ -2728,6 +2742,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	    IS_NODE_POWERING_UP(node_ptr) ||
 	    IS_NODE_POWERING_DOWN(node_ptr) ||
 	    IS_NODE_POWERED_DOWN(node_ptr)) {
+		bool was_powered_down = IS_NODE_POWERED_DOWN(node_ptr);
+
 		info("Node %s now responding", node_ptr->name);
 
 		/*
@@ -2758,6 +2774,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		bit_clear(power_node_bitmap, node_inx);
 
 		last_node_update = now;
+
+		if (was_powered_down)
+			clusteracct_storage_g_node_up(acct_db_conn, node_ptr,
+						      now);
 	}
 
 	node_ptr->node_state &= ~NODE_STATE_INVALID_REG;
@@ -2791,11 +2811,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 	} else {
 		if (IS_NODE_UNKNOWN(node_ptr) || IS_NODE_FUTURE(node_ptr)) {
-			bool unknown = 0;
-
-			if (IS_NODE_UNKNOWN(node_ptr))
-				unknown = 1;
-
+			bool was_future = IS_NODE_FUTURE(node_ptr);
 			debug("validate_node_specs: node %s registered with "
 			      "%u jobs",
 			      reg_msg->node_name,reg_msg->job_count);
@@ -2817,9 +2833,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			last_node_update = now;
 
 			/* don't send this on a slurmctld unless needed */
-			if (unknown && slurmctld_init_db
-			    && !IS_NODE_DRAIN(node_ptr)
-			    && !IS_NODE_FAIL(node_ptr)) {
+			if (was_future || /* always send FUTURE checkins */
+			    (slurmctld_init_db &&
+			     !IS_NODE_DRAIN(node_ptr) &&
+			     !IS_NODE_FAIL(node_ptr))) {
 				/* reason information is handled in
 				   clusteracct_storage_g_node_up()
 				*/
@@ -3983,23 +4000,36 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 	last_node_update = now;
 }
 
+/*
+ * Subset of _make_node_down() except for marking node down, trigger and
+ * accounting update.
+ */
+static void _make_node_unavail(node_record_t *node_ptr)
+{
+	int inx = node_ptr - node_record_table_ptr;
+
+	xassert(node_ptr);
+
+	node_ptr->node_state &= (~NODE_STATE_COMPLETING);
+	bit_clear(avail_node_bitmap, inx);
+	bit_clear(cg_node_bitmap, inx);
+	bit_set(idle_node_bitmap, inx);
+	bit_set(share_node_bitmap, inx);
+	bit_clear(up_node_bitmap, inx);
+}
+
 /* _make_node_down - flag specified node as down */
 static void _make_node_down(node_record_t *node_ptr, time_t event_time)
 {
-	int inx = node_ptr - node_record_table_ptr;
 	uint32_t node_flags;
 
 	xassert(node_ptr);
+
+	_make_node_unavail(node_ptr);
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-	node_flags &= (~NODE_STATE_COMPLETING);
 	node_ptr->node_state = NODE_STATE_DOWN | node_flags;
 	node_ptr->owner = NO_VAL;
 	xfree(node_ptr->mcs_label);
-	bit_clear (avail_node_bitmap, inx);
-	bit_clear (cg_node_bitmap,    inx);
-	bit_set   (idle_node_bitmap,  inx);
-	bit_set   (share_node_bitmap, inx);
-	bit_clear (up_node_bitmap,    inx);
 	trigger_node_down(node_ptr);
 	last_node_update = time (NULL);
 	clusteracct_storage_g_node_down(acct_db_conn,
@@ -4179,7 +4209,10 @@ extern int send_nodes_to_accounting(time_t event_time)
 			reason = "First Registration";
 		if (IS_NODE_DRAIN(node_ptr) ||
 		    IS_NODE_FAIL(node_ptr) ||
-		    IS_NODE_DOWN(node_ptr))
+		    IS_NODE_DOWN(node_ptr) ||
+		    IS_NODE_FUTURE(node_ptr) ||
+		    (IS_NODE_CLOUD(node_ptr) &&
+		     IS_NODE_POWERED_DOWN(node_ptr)))
 			rc = clusteracct_storage_g_node_down(
 				acct_db_conn,
 				node_ptr, event_time,

@@ -993,9 +993,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        add coordinator    - Accounts=, and Names=                          \n\
        delete coordinator - Accounts=, and Names=                          \n\
                                                                            \n\
-       list events        - All_Clusters, All_Time, Clusters=, End=, Events=,\n\
-                            Format=, MaxCPUs=, MinCPUs=, Nodes=, Reason=,  \n\
-                            Start=, States=, and User=                     \n\
+       list events        - All_Clusters, All_Time, Clusters=, CondFlags=, \n\
+                            End=, Events=, Format=, MaxCPUs=, MinCPUs=,    \n\
+                            Nodes=, Reason=, Start=, States=, and User=    \n\
                                                                            \n\
        list federation    - Names=, Format= and Tree                       \n\
        add federation     - Flags=, Clusters= and Name=                    \n\
