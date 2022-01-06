@@ -53,8 +53,6 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/switch.h"
-
 /* Type for error string table entries */
 typedef struct {
 	int xe_number;
