@@ -43,8 +43,6 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include "src/common/macros.h"
-#include "src/common/xmalloc.h"
 
 struct hostent * get_host_by_name(const char *name,
     void *buf, int buflen, int *h_err);
