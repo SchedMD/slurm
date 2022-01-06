@@ -212,6 +212,12 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 				  cgroup_limits_t *limits);
 
 /*
+ * This function is only needed in v2, in v1 will always return SLURM_SUCCESS
+ */
+extern int cgroup_p_constrain_apply(cgroup_ctl_type_t sub,
+                                    cgroup_level_t level, uint32_t task_id);
+
+/*
  * Cgroup v1 function to detect OOM conditions.
  *
  * Do use memory.oom_control and cgroup.event_control, see:

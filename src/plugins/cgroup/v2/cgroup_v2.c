@@ -940,6 +940,20 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 	return rc;
 }
 
+/*
+ * Apply the constrain limits, this is only used with cgroupv2 device constrain
+ * as there is the need of loading and attaching the eBPF program to the cgroup
+ */
+extern int cgroup_p_constrain_apply(cgroup_ctl_type_t ctl, cgroup_level_t level,
+                                    uint32_t task_id)
+{
+    int rc = SLURM_SUCCESS;
+    if (ctl == CG_DEVICES) {
+        /* Not implemented. */
+    }
+    return rc;
+}
+
 extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t ctl,
 					       cgroup_level_t level)
 {

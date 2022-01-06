@@ -1050,6 +1050,11 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 	return rc;
 }
 
+extern int cgroup_p_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
+                                    uint32_t task_id)
+{
+    return SLURM_SUCCESS;
+}
 
 /*
  * Code based on linux tools/cgroup/cgroup_event_listener.c with adapted

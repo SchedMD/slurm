@@ -209,6 +209,8 @@ extern cgroup_limits_t *cgroup_g_constrain_get(cgroup_ctl_type_t sub,
 					       cgroup_level_t type);
 extern int cgroup_g_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 				  cgroup_limits_t *limits);
+extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
+                                    uint32_t task_id);
 extern int cgroup_g_step_start_oom_mgr(void);
 extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *job);
 extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
