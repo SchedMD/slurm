@@ -251,8 +251,12 @@ extern char *run_command(run_command_args_t *args)
 				break;
 			}
 
-			if (args->tid &&
-			    track_script_killed(args->tid, *status))
+			/*
+			 * Pass zero as the status to just see if this script
+			 * exists in track_script - if not, then we need to bail
+			 * since this script was killed.
+			 */
+			if (args->tid && track_script_killed(args->tid, 0))
 				break;
 
 			fds.fd = pfd[0];
