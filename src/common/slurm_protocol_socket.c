@@ -704,39 +704,6 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	freeaddrinfo(ai_start);
 }
 
-extern void slurm_pack_slurm_addr(slurm_addr_t *addr, buf_t *buffer)
-{
-	if (addr->ss_family == AF_INET6) {
-		error("%s: cannot pack IPv6 addresses", __func__);
-	} else {
-		struct sockaddr_in *in = (struct sockaddr_in *) addr;
-		pack32(ntohl(in->sin_addr.s_addr), buffer);
-		pack16(ntohs(in->sin_port), buffer);
-	}
-}
-
-extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *addr, buf_t *buffer)
-{
-	addr->ss_family = AF_INET;
-	struct sockaddr_in *in = (struct sockaddr_in *) addr;
-	safe_unpack32(&in->sin_addr.s_addr, buffer);
-	safe_unpack16(&in->sin_port, buffer);
-
-	in->sin_addr.s_addr = htonl(in->sin_addr.s_addr);
-	in->sin_port = htons(in->sin_port);
-	/*
-	 * This is to accomodate updated logic that checks for a valid address
-	 * family instead of an address and port that are 0.
-	 */
-	if ((in->sin_addr.s_addr == 0) && (in->sin_port == 0))
-		addr->ss_family = AF_UNSPEC;
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	return SLURM_ERROR;
-}
-
 extern void slurm_pack_addr(slurm_addr_t *addr, buf_t *buffer)
 {
 	pack16(addr->ss_family, buffer);
