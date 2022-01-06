@@ -40,11 +40,8 @@
 #define _SLURM_PROTOCOL_UTIL_H
 
 #include <inttypes.h>
-#include <stdio.h>
 
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_protocol_pack.h"
-#include "src/common/slurm_protocol_common.h"
 
 /*
  * check_header_version checks to see that the specified header was sent
