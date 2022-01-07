@@ -71,6 +71,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define _pack_license_info_msg(msg, buf)	_pack_buffer_msg(msg,buf)
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 #define _pack_burst_buffer_info_resp_msg(msg,buf) _pack_buffer_msg(msg,buf)
@@ -10699,14 +10700,6 @@ unpack_error:
 	slurm_free_license_info_request_msg(*msg);
 	*msg = NULL;
 	return SLURM_ERROR;
-}
-
-/* _pack_license_info_msg()
- */
-static inline void
-_pack_license_info_msg(slurm_msg_t *msg, buf_t *buffer)
-{
-	_pack_buffer_msg(msg, buffer);
 }
 
 /*
