@@ -6426,7 +6426,7 @@ proc testproc_alias {alias args} {
 	global _subtest_fail_count
 
 	# Avoid integer alias to avoid confusions with testproc_id
-	if {[llength $alias] && [string is entier $alias]} {
+	if {[llength $alias] && [string is integer -strict $alias]} {
 		fail "testproc_alias doesn't support integer alias, use alphanumeric"
 	}
 
