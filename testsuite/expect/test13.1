@@ -71,8 +71,7 @@ set matches 0
 spawn $salloc -N1 --verbose -t2 $bin_bash
 expect -re "Granted job allocation ($number)"
 set job_id $expect_out(1,string)
-send "$reset_bash_prompt\r"
-expect -re "\"$test_prompt\""
+reset_bash_prompt
 
 # start initial job step to claim some switch windows
 expect -re $test_prompt

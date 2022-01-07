@@ -81,11 +81,7 @@ spawn $salloc -N1 --exclusive -t5 -w $node_name $bin_bash
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "$reset_bash_prompt\r"
-		exp_continue
-	}
-	-re "\"$test_prompt\"" {
-		# skip this, just echo of setting test_prompt
+		reset_bash_prompt
 		exp_continue
 	}
 	-re $test_prompt {
@@ -94,19 +90,6 @@ expect {
 		fail "salloc not responding or failure to recognize prompt"
 	}
 }
-
-#
-# Reading a second prompt is required by some versions of Expect
-#
-set timeout 1
-expect {
-	-re $test_prompt {
-		exp_continue
-	}
-	timeout {
-	}
-}
-set timeout 30
 
 #
 # Run a job step to get allocated processor count and affinity
