@@ -359,7 +359,6 @@ static int _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	info("%s: error", __func__);
 	*msg_ptr = NULL;
 	xfree(charptr_tmp);
 	slurm_free_network_callerid_msg(msg);
@@ -398,7 +397,6 @@ static int _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	info("%s: error", __func__);
 	*msg_ptr = NULL;
 	slurm_free_network_callerid_resp(msg);
 	return SLURM_ERROR;
@@ -10574,7 +10572,6 @@ static int  _unpack_stats_request_msg(stats_info_request_msg_t **msg_ptr,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	info("SIM: unpack_stats_request_msg error");
 	*msg_ptr = NULL;
 	slurm_free_stats_info_request_msg(msg);
 	return SLURM_ERROR;
@@ -10670,7 +10667,6 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	info("%s: unpack error", __func__);
 	*msg_ptr = NULL;
 	slurm_free_stats_response_msg(msg);
 	return SLURM_ERROR;
