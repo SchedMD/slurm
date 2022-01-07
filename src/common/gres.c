@@ -435,6 +435,19 @@ extern bool gres_use_local_device_index(void)
 	return use_local_index;
 }
 
+/*
+ * Find a gres_context by plugin_id
+ * Must hold gres_context_lock before calling.
+ */
+static slurm_gres_context_t *_find_context_by_id(uint32_t plugin_id)
+{
+	for (int j = 0; j < gres_context_cnt; j++)
+		if (gres_context[j].plugin_id == plugin_id)
+			return &gres_context[j];
+	return NULL;
+}
+
+
 static int _load_plugin(slurm_gres_context_t *plugin_context)
 {
 	/*
@@ -2354,7 +2367,7 @@ extern int gres_node_config_pack(buf_t *buffer)
  */
 extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 {
-	int i, j, rc;
+	int i, rc;
 	uint32_t cpu_cnt = 0, magic = 0, plugin_id = 0, utmp32 = 0;
 	uint64_t count64 = 0;
 	uint16_t rec_cnt = 0, protocol_version = 0;
@@ -2364,6 +2377,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 	char *tmp_unique_id = NULL;
 	gres_slurmd_conf_t *p;
 	bool locked = false;
+	slurm_gres_context_t *context_ptr;
 
 	rc = gres_init();
 
@@ -2386,6 +2400,8 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		goto unpack_error;
 	}
 	for (i = 0; i < rec_cnt; i++) {
+		bool new_has_file;
+		bool orig_has_file;
 		if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
@@ -2425,59 +2441,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			 gres_flags2str(config_flags), tmp_cpus, cpu_cnt,
 			 count64, tmp_links);
 
-		for (j = 0; j < gres_context_cnt; j++) {
-			bool new_has_file;
-			bool orig_has_file;
-			if (gres_context[j].plugin_id != plugin_id)
-				continue;
-			if (xstrcmp(gres_context[j].gres_name, tmp_name)) {
-				/*
-				 * Should have been caught in
-				 * gres_init()
-				 */
-				error("%s: gres/%s duplicate plugin ID with %s, unable to process",
-				      __func__, tmp_name,
-				      gres_context[j].gres_name);
-				continue;
-			}
-			new_has_file  = config_flags & GRES_CONF_HAS_FILE;
-			orig_has_file = gres_context[j].config_flags &
-				GRES_CONF_HAS_FILE;
-			if (orig_has_file && !new_has_file && count64) {
-				error("%s: gres/%s lacks \"File=\" parameter for node %s",
-				      __func__, tmp_name, node_name);
-				config_flags |= GRES_CONF_HAS_FILE;
-			}
-			if (new_has_file && (count64 > MAX_GRES_BITMAP)) {
-				/*
-				 * Avoid over-subscribing memory with
-				 * huge bitmaps
-				 */
-				error("%s: gres/%s has \"File=\" plus very large "
-				      "\"Count\" (%"PRIu64") for node %s, "
-				      "resetting value to %d",
-				      __func__, tmp_name, count64,
-				      node_name, MAX_GRES_BITMAP);
-				count64 = MAX_GRES_BITMAP;
-			}
-			gres_context[j].config_flags |= config_flags;
-
-			/*
-			 * On the slurmctld we need to load the plugins to
-			 * correctly set env vars.  We want to call this only
-			 * after we have the config_flags so we can tell if we
-			 * are CountOnly or not.
-			 */
-			if (!(gres_context[j].config_flags &
-			      GRES_CONF_LOADED)) {
-				(void)_load_plugin(&gres_context[j]);
-				gres_context[j].config_flags |=
-					GRES_CONF_LOADED;
-			}
-
-			break;
-		}
-		if (j >= gres_context_cnt) {
+		if (!(context_ptr = _find_context_by_id(plugin_id))) {
 			/*
 			 * GresPlugins is inconsistently configured.
 			 * Not a fatal error, but skip this data.
@@ -2493,6 +2457,51 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			continue;
 		}
 
+		if (xstrcmp(context_ptr->gres_name, tmp_name)) {
+			/*
+			 * Should have been caught in
+			 * gres_init()
+			 */
+			error("%s: gres/%s duplicate plugin ID with %s, unable to process",
+			      __func__, tmp_name,
+			      context_ptr->gres_name);
+			continue;
+		}
+		new_has_file = config_flags & GRES_CONF_HAS_FILE;
+		orig_has_file = context_ptr->config_flags &
+			GRES_CONF_HAS_FILE;
+		if (orig_has_file && !new_has_file && count64) {
+			error("%s: gres/%s lacks \"File=\" parameter for node %s",
+			      __func__, tmp_name, node_name);
+			config_flags |= GRES_CONF_HAS_FILE;
+		}
+		if (new_has_file && (count64 > MAX_GRES_BITMAP)) {
+			/*
+			 * Avoid over-subscribing memory with
+			 * huge bitmaps
+			 */
+			error("%s: gres/%s has \"File=\" plus very large "
+			      "\"Count\" (%"PRIu64") for node %s, "
+			      "resetting value to %d",
+			      __func__, tmp_name, count64,
+			      node_name, MAX_GRES_BITMAP);
+			count64 = MAX_GRES_BITMAP;
+		}
+
+		context_ptr->config_flags |= config_flags;
+
+		/*
+		 * On the slurmctld we need to load the plugins to
+		 * correctly set env vars.  We want to call this only
+		 * after we have the config_flags so we can tell if we
+		 * are CountOnly or not.
+		 */
+		if (!(context_ptr->config_flags &
+		      GRES_CONF_LOADED)) {
+			(void)_load_plugin(context_ptr);
+			context_ptr->config_flags |=
+				GRES_CONF_LOADED;
+		}
 	empty:
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
 		p->config_flags = config_flags;
