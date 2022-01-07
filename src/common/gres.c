@@ -3044,6 +3044,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	if (gres_ns->node_feature)
 		return rc;
 
+	/* Make sure these are insync after we get it from the slurmd */
+	gres_state_node->config_flags = context_ptr->config_flags;
+
 	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &topo_cnt,
 				     &config_type_cnt);
 	if ((gres_ns->gres_cnt_config > gres_cnt) && !config_overrides) {
