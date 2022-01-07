@@ -2417,6 +2417,9 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
 		}
 
+		if (!count64)
+			goto empty;
+
 		log_flag(GRES, "Node:%s Gres:%s Type:%s UniqueId:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
 			 node_name, tmp_name, tmp_type, tmp_unique_id,
 			 gres_flags2str(config_flags), tmp_cpus, cpu_cnt,
@@ -2489,6 +2492,8 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			xfree(tmp_unique_id);
 			continue;
 		}
+
+	empty:
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
 		p->config_flags = config_flags;
 		p->count = count64;
