@@ -204,7 +204,7 @@ unpack_error:
 static void _pack_assoc_shares_object(void *in, uint32_t tres_cnt,
 				      buf_t *buffer, uint16_t protocol_version)
 {
-	assoc_shares_object_t *object = (assoc_shares_object_t *)in;
+	assoc_shares_object_t *object = in;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -556,7 +556,7 @@ unpack_error:
 static void _pack_priority_factors_object(void *in, buf_t *buffer,
 					  uint16_t protocol_version)
 {
-	priority_factors_object_t *object = (priority_factors_object_t *)in;
+	priority_factors_object_t *object = in;
 
 	xassert(object);
 
@@ -748,7 +748,7 @@ _pack_priority_factors_response_msg(priority_factors_response_msg_t * msg,
 
 static void _priority_factors_resp_list_del(void *x)
 {
-	priority_factors_object_t *tmp_info = (priority_factors_object_t *) x;
+	priority_factors_object_t *tmp_info = x;
 	int i;
 
 	if (tmp_info) {
@@ -3540,12 +3540,11 @@ unpack_error:
 
 static int _list_find_conf_entry(void *entry, void *key)
 {
-	config_key_pair_t *entry_ptr = NULL;
+	config_key_pair_t *entry_ptr = entry;
 
 	if (key == NULL)
 		return 1;
 
-	entry_ptr = (config_key_pair_t *) entry;
 	if (xstrcasecmp(entry_ptr->name, (char *) key) == 0)
 		return 1;
 	return 0;
@@ -6372,7 +6371,7 @@ _pack_job_desc_list_msg(List job_req_list, buf_t *buffer,
 		return;
 
 	iter = list_iterator_create(job_req_list);
-	while ((req = (job_desc_msg_t *) list_next(iter))) {
+	while ((req = list_next(iter))) {
 		_pack_job_desc_msg(req, buffer, protocol_version);
 	}
 	list_iterator_destroy(iter);
@@ -6380,7 +6379,7 @@ _pack_job_desc_list_msg(List job_req_list, buf_t *buffer,
 
 static void _free_job_desc_list(void *x)
 {
-	job_desc_msg_t *job_desc_ptr = (job_desc_msg_t *) x;
+	job_desc_msg_t *job_desc_ptr = x;
 	slurm_free_job_desc_msg(job_desc_ptr);
 }
 
@@ -6476,7 +6475,7 @@ _pack_job_info_list_msg(List job_resp_list, buf_t *buffer,
 		return;
 
 	iter = list_iterator_create(job_resp_list);
-	while ((resp = (resource_allocation_response_msg_t *) list_next(iter))){
+	while ((resp = list_next(iter))){
 		_pack_resource_allocation_response_msg(resp, buffer,
 						       protocol_version);
 	}
@@ -6485,8 +6484,7 @@ _pack_job_info_list_msg(List job_resp_list, buf_t *buffer,
 
 void _free_job_info_list(void *x)
 {
-	resource_allocation_response_msg_t *job_info_ptr;
-	job_info_ptr = (resource_allocation_response_msg_t *) x;
+	resource_allocation_response_msg_t *job_info_ptr = x;
 	slurm_free_resource_allocation_response_msg(job_info_ptr);
 }
 
@@ -9153,7 +9151,7 @@ unpack_error:
 extern void pack_config_file(void *in, uint16_t protocol_version,
 			     buf_t *buffer)
 {
-	config_file_t *object = (config_file_t *) in;
+	config_file_t *object = in;
 
 	if (!object) {
 		packbool(0, buffer);
@@ -11090,7 +11088,7 @@ unpack_error:
 
 static void _pack_crontab_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	crontab_request_msg_t *msg = (crontab_request_msg_t *) smsg->data;
+	crontab_request_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->uid, buffer);
@@ -11116,7 +11114,7 @@ unpack_error:
 
 static void _pack_crontab_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	crontab_response_msg_t *msg = (crontab_response_msg_t *) smsg->data;
+	crontab_response_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->crontab, buffer);
@@ -11147,8 +11145,7 @@ unpack_error:
 static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
 					     buf_t *buffer)
 {
-	crontab_update_request_msg_t *msg =
-		(crontab_update_request_msg_t *) smsg->data;
+	crontab_update_request_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->crontab, buffer);
@@ -11185,8 +11182,7 @@ unpack_error:
 static void _pack_crontab_update_response_msg(const slurm_msg_t *smsg,
 					      buf_t *buffer)
 {
-	crontab_update_response_msg_t *msg =
-		(crontab_update_response_msg_t *) smsg->data;
+	crontab_update_response_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->err_msg, buffer);
@@ -12595,7 +12591,7 @@ extern int unpack_step_id(slurm_step_id_t **msg_ptr, buf_t *buffer,
 extern void slurm_pack_selected_step(void *in, uint16_t protocol_version,
 				     buf_t *buffer)
 {
-	slurm_selected_step_t *step = (slurm_selected_step_t *) in;
+	slurm_selected_step_t *step = in;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&step->step_id, buffer, protocol_version);
