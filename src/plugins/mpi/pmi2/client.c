@@ -539,7 +539,9 @@ client_resp_send(client_resp_t *resp, int fd)
 	len = strlen(resp->buf);
 
 	if ( is_pmi20() ) {
-		snprintf(len_buf, 7, "%-6d", len);
+		/* catch truncation if response is too long */
+		if (snprintf(len_buf, 7, "%-6d", len) > 6)
+			goto rwfail;
 		debug2("mpi/pmi2: client_resp_send: %s%s", len_buf, resp->buf);
 		safe_write(fd, len_buf, 6);
 	} else if ( is_pmi11() ) {
