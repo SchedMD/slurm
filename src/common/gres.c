@@ -4164,7 +4164,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 				  char *node_name,
 				  uint16_t protocol_version)
 {
-	int i, rc;
+	int rc;
 	uint32_t magic = 0, plugin_id = 0;
 	uint64_t gres_cnt_avail = 0;
 	uint16_t gres_bitmap_size = 0, rec_cnt = 0;
@@ -4184,6 +4184,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 		*gres_list = list_create(_gres_node_list_delete);
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
+		slurm_gres_context_t *context_ptr;
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
@@ -4199,11 +4200,8 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 			      __func__, protocol_version);
 			goto unpack_error;
 		}
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_context[i].plugin_id == plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
+
+		if (!(context_ptr = _find_context_by_id(plugin_id))) {
 			error("%s: no plugin configured to unpack data type %u from node %s",
 			      __func__, plugin_id, node_name);
 			/*
@@ -4219,10 +4217,10 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 				bit_alloc(gres_bitmap_size);
 		}
 		gres_state_node = xmalloc(sizeof(gres_state_t));
-		gres_state_node->config_flags = gres_context[i].config_flags;
-		gres_state_node->plugin_id = gres_context[i].plugin_id;
+		gres_state_node->config_flags = context_ptr->config_flags;
+		gres_state_node->plugin_id = context_ptr->plugin_id;
 		gres_state_node->gres_data = gres_ns;
-		gres_state_node->gres_name = xstrdup(gres_context[i].gres_name);
+		gres_state_node->gres_name = xstrdup(context_ptr->gres_name);
 		gres_state_node->state_type = GRES_STATE_TYPE_NODE;
 		list_append(*gres_list, gres_state_node);
 	}
@@ -4327,7 +4325,6 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
  */
 extern List gres_node_state_dup(List gres_list)
 {
-	int i;
 	List new_list = NULL;
 	ListIterator gres_iter;
 	gres_state_t *gres_state_node, *new_gres;
@@ -4344,28 +4341,22 @@ extern List gres_node_state_dup(List gres_list)
 	}
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
-		for (i=0; i<gres_context_cnt; i++) {
-			if (gres_state_node->plugin_id != gres_context[i].plugin_id)
-				continue;
-			gres_ns = _node_state_dup(gres_state_node->gres_data);
-			if (gres_ns) {
-				new_gres = xmalloc(sizeof(gres_state_t));
-				new_gres->config_flags =
-					gres_state_node->config_flags;
-				new_gres->plugin_id =
-					gres_state_node->plugin_id;
-				new_gres->gres_data = gres_ns;
-				new_gres->gres_name =
-					xstrdup(gres_state_node->gres_name);
-				new_gres->state_type =
-					GRES_STATE_TYPE_NODE;
-				list_append(new_list, new_gres);
-			}
-			break;
-		}
-		if (i >= gres_context_cnt) {
+		if (!_find_context_by_id(gres_state_node->plugin_id)) {
 			error("Could not find plugin id %u to dup node record",
 			      gres_state_node->plugin_id);
+			continue;
+		}
+
+		gres_ns = _node_state_dup(gres_state_node->gres_data);
+		if (gres_ns) {
+			new_gres = xmalloc(sizeof(gres_state_t));
+			new_gres->config_flags = gres_state_node->config_flags;
+			new_gres->plugin_id = gres_state_node->plugin_id;
+			new_gres->gres_data = gres_ns;
+			new_gres->gres_name =
+				xstrdup(gres_state_node->gres_name);
+			new_gres->state_type = GRES_STATE_TYPE_NODE;
+			list_append(new_list, new_gres);
 		}
 	}
 	list_iterator_destroy(gres_iter);
@@ -6379,6 +6370,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
+		slurm_gres_context_t *context_ptr;
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
@@ -6452,11 +6444,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 			goto unpack_error;
 		}
 
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_context[i].plugin_id == plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
+		if (!(context_ptr = _find_context_by_id(plugin_id))) {
 			/*
 			 * A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data.
@@ -6467,10 +6455,10 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 			continue;
 		}
 		gres_state_job = xmalloc(sizeof(gres_state_t));
-		gres_state_job->config_flags = gres_context[i].config_flags;
-		gres_state_job->plugin_id = gres_context[i].plugin_id;
+		gres_state_job->config_flags = context_ptr->config_flags;
+		gres_state_job->plugin_id = context_ptr->plugin_id;
 		gres_state_job->gres_data = gres_js;
-		gres_state_job->gres_name = xstrdup(gres_context[i].gres_name);
+		gres_state_job->gres_name = xstrdup(context_ptr->gres_name);
 		gres_state_job->state_type = GRES_STATE_TYPE_JOB;
 		gres_js = NULL;	/* nothing left to free on error */
 		list_append(*gres_list, gres_state_job);
@@ -6598,6 +6586,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
+		slurm_gres_context_t *context_ptr;
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
@@ -6634,12 +6623,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 			goto unpack_error;
 		}
 
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_context[i].plugin_id ==
-			    gres_ei->plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
+		if (!(context_ptr = _find_context_by_id(gres_ei->plugin_id))) {
 			/*
 			 * A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data.
@@ -6674,7 +6658,6 @@ unpack_error:
  */
 extern List gres_g_epilog_build_env(List job_gres_list, char *node_list)
 {
-	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
 	gres_epilog_info_t *gres_ei;
@@ -6688,25 +6671,22 @@ extern List gres_g_epilog_build_env(List job_gres_list, char *node_list)
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_ptr = list_next(gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
+		slurm_gres_context_t *context_ptr;
+		if (!(context_ptr = _find_context_by_id(gres_ptr->plugin_id))) {
 			error("%s: gres not found in context.  This should never happen",
 			      __func__);
 			continue;
 		}
 
-		if (!gres_context[i].ops.epilog_build_env)
+		if (!context_ptr->ops.epilog_build_env)
 			continue;	/* No plugin to call */
-		gres_ei = (*(gres_context[i].ops.epilog_build_env))
+		gres_ei = (*(context_ptr->ops.epilog_build_env))
 			(gres_ptr->gres_data);
 		if (!gres_ei)
 			continue;	/* No info to add for this plugin */
 		if (!epilog_gres_list)
 			epilog_gres_list = list_create(_epilog_list_del);
-		gres_ei->plugin_id = gres_context[i].plugin_id;
+		gres_ei->plugin_id = context_ptr->plugin_id;
 		gres_ei->node_list = xstrdup(node_list);
 		list_append(epilog_gres_list, gres_ei);
 	}
@@ -6727,7 +6707,6 @@ extern List gres_g_epilog_build_env(List job_gres_list, char *node_list)
 extern void gres_g_epilog_set_env(char ***epilog_env_ptr,
 				  List epilog_gres_list, int node_inx)
 {
-	int i;
 	ListIterator epilog_iter;
 	gres_epilog_info_t *gres_ei;
 
@@ -6740,19 +6719,16 @@ extern void gres_g_epilog_set_env(char ***epilog_env_ptr,
 	slurm_mutex_lock(&gres_context_lock);
 	epilog_iter = list_iterator_create(epilog_gres_list);
 	while ((gres_ei = list_next(epilog_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_ei->plugin_id == gres_context[i].plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
+		slurm_gres_context_t *context_ptr;
+		if (!(context_ptr = _find_context_by_id(gres_ei->plugin_id))) {
 			error("%s: GRES ID %u not found in context",
 			      __func__, gres_ei->plugin_id);
 			continue;
 		}
 
-		if (!gres_context[i].ops.epilog_set_env)
+		if (!context_ptr->ops.epilog_set_env)
 			continue;	/* No plugin to call */
-		(*(gres_context[i].ops.epilog_set_env))
+		(*(context_ptr->ops.epilog_set_env))
 			(epilog_env_ptr, gres_ei, node_inx);
 	}
 	list_iterator_destroy(epilog_iter);
@@ -8522,6 +8498,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
+		slurm_gres_context_t *context_ptr;
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
@@ -8566,11 +8543,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 			goto unpack_error;
 		}
 
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_context[i].plugin_id == plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
+		if (!(context_ptr = _find_context_by_id(plugin_id))) {
 			/*
 			 * A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data.
@@ -8582,10 +8555,10 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 			continue;
 		}
 		gres_state_step = xmalloc(sizeof(gres_state_t));
-		gres_state_step->config_flags = gres_context[i].config_flags;
-		gres_state_step->plugin_id = gres_context[i].plugin_id;
+		gres_state_step->config_flags = context_ptr->config_flags;
+		gres_state_step->plugin_id = context_ptr->plugin_id;
 		gres_state_step->gres_data = gres_ss;
-		gres_state_step->gres_name = xstrdup(gres_context[i].gres_name);
+		gres_state_step->gres_name = xstrdup(context_ptr->gres_name);
 		gres_state_step->state_type = GRES_STATE_TYPE_STEP;
 		gres_ss = NULL;
 		list_append(*gres_list, gres_state_step);
