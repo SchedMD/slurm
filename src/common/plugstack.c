@@ -1701,6 +1701,9 @@ static int spank_stack_get_remote_options(struct spank_stack *stack,
 	const struct job_option_info *j;
 	ListIterator li;
 
+	if (!opts)
+		return 0;
+
 	li = list_iterator_create(opts);
 	while ((j = list_next(li))) {
 		struct spank_plugin_opt *opt;
