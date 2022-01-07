@@ -4627,7 +4627,6 @@ static void _node_state_log(gres_node_state_t *gres_ns,
  */
 extern void gres_node_state_log(List gres_list, char *node_name)
 {
-	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_state_node;
 
@@ -4636,20 +4635,12 @@ extern void gres_node_state_log(List gres_list, char *node_name)
 
 	(void) gres_init();
 
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_state_node->plugin_id !=
-			    gres_context[i].plugin_id)
-				continue;
-			_node_state_log(gres_state_node->gres_data, node_name,
-					gres_context[i].gres_name);
-			break;
-		}
+		_node_state_log(gres_state_node->gres_data, node_name,
+				gres_state_node->gres_name);
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 }
 
 /* Find node_state_t gres record with any allocated gres (key is unused) */
@@ -4691,7 +4682,6 @@ extern char *gres_get_node_drain(List gres_list)
  */
 extern char *gres_get_node_used(List gres_list)
 {
-	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_state_node;
 	char *gres_used = NULL, *tmp;
@@ -4701,25 +4691,17 @@ extern char *gres_get_node_used(List gres_list)
 
 	(void) gres_init();
 
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_state_node->plugin_id !=
-			    gres_context[i].plugin_id)
-				continue;
-			tmp = _node_gres_used(gres_state_node->gres_data,
-					      gres_context[i].gres_name);
-			if (!tmp)
-				continue;
-			if (gres_used)
-				xstrcat(gres_used, ",");
-			xstrcat(gres_used, tmp);
-			break;
-		}
+		tmp = _node_gres_used(gres_state_node->gres_data,
+				      gres_state_node->gres_name);
+		if (!tmp)
+			continue;
+		if (gres_used)
+			xstrcat(gres_used, ",");
+		xstrcat(gres_used, tmp);
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return gres_used;
 }
