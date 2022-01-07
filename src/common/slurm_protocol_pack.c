@@ -71,17 +71,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#define _pack_license_info_msg(msg, buf)	_pack_buffer_msg(msg,buf)
-#define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
-#define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
-#define _pack_burst_buffer_info_resp_msg(msg,buf) _pack_buffer_msg(msg,buf)
-#define _pack_front_end_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
-#define _pack_node_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
-#define _pack_partition_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
-#define _pack_stats_response_msg(msg,buf)	_pack_buffer_msg(msg,buf)
-#define _pack_reserve_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
-#define _pack_assoc_mgr_info_msg(msg,buf)      _pack_buffer_msg(msg,buf)
-
 static int _unpack_node_info_members(node_info_t *node, buf_t *buffer,
 				     uint16_t protocol_version);
 
@@ -11223,6 +11212,18 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	}
 
 	switch (msg->msg_type) {
+	case RESPONSE_JOB_INFO:
+	case RESPONSE_JOB_STEP_INFO:
+	case RESPONSE_BURST_BUFFER_INFO:
+	case RESPONSE_FRONT_END_INFO:
+	case RESPONSE_NODE_INFO:
+	case RESPONSE_PARTITION_INFO:
+	case RESPONSE_STATS_INFO:
+	case RESPONSE_RESERVATION_INFO:
+	case RESPONSE_ASSOC_MGR_INFO:
+	case RESPONSE_LICENSE_INFO:
+		_pack_buffer_msg((slurm_msg_t *) msg, buffer);
+		break;
 	case REQUEST_NODE_INFO:
 		_pack_node_info_request_msg((node_info_request_msg_t *)
 					    msg->data, buffer,
@@ -11253,18 +11254,9 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 					 msg->data, buffer,
 					 msg->protocol_version);
 		break;
-	case RESPONSE_JOB_INFO:
-		_pack_job_info_msg((slurm_msg_t *) msg, buffer);
-		break;
 	case RESPONSE_BATCH_SCRIPT:
 		_pack_job_script_msg((buf_t *) msg->data, buffer,
 				     msg->protocol_version);
-		break;
-	case RESPONSE_PARTITION_INFO:
-		_pack_partition_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case RESPONSE_NODE_INFO:
-		_pack_node_info_msg((slurm_msg_t *) msg, buffer);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		_pack_node_registration_status_msg(
@@ -11412,9 +11404,6 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 				      data, buffer,
 				      msg->protocol_version);
 		break;
-	case RESPONSE_RESERVATION_INFO:
-		_pack_reserve_info_msg((slurm_msg_t *) msg, buffer);
-		break;
 	case REQUEST_DELETE_RESERVATION:
 	case RESPONSE_CREATE_RESERVATION:
 		_pack_resv_name_msg((reservation_name_msg_t *) msg->
@@ -11519,9 +11508,6 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_epilog_comp_msg((epilog_complete_msg_t *) msg->data,
 				      buffer,
 				      msg->protocol_version);
-		break;
-	case RESPONSE_JOB_STEP_INFO:
-		_pack_job_step_info_msg((slurm_msg_t *) msg, buffer);
 		break;
 	case MESSAGE_TASK_EXIT:
 		_pack_task_exit_msg((task_exit_msg_t *) msg->data, buffer,
@@ -11673,9 +11659,6 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 			buffer,
 			msg->protocol_version);
 		break;
-	case RESPONSE_BURST_BUFFER_INFO:
-		_pack_burst_buffer_info_resp_msg((slurm_msg_t *) msg, buffer);
-		break;
 	case REQUEST_FILE_BCAST:
 		_pack_file_bcast((file_bcast_msg_t *) msg->data, buffer,
 				 msg->protocol_version);
@@ -11744,18 +11727,10 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 			(slurmdb_federation_rec_t *)msg->data,
 			msg->protocol_version, buffer);
 		break;
-	case RESPONSE_FRONT_END_INFO:
-		_pack_front_end_info_msg((slurm_msg_t *) msg, buffer);
-		break;
 	case REQUEST_STATS_INFO:
 		_pack_stats_request_msg((stats_info_request_msg_t *)msg->data,
 					buffer, msg->protocol_version);
 		break;
-
-	case RESPONSE_STATS_INFO:
-		_pack_stats_response_msg((slurm_msg_t *)msg, buffer);
-		break;
-
 	case REQUEST_FORWARD_DATA:
 		_pack_forward_data_msg((forward_data_msg_t *)msg->data,
 				       buffer, msg->protocol_version);
@@ -11771,9 +11746,6 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 					       buffer,
 					       msg->protocol_version);
 		break;
-	case RESPONSE_LICENSE_INFO:
-		_pack_license_info_msg((slurm_msg_t *) msg, buffer);
-		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
 					 buffer, msg->protocol_version);
@@ -11782,9 +11754,6 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_assoc_mgr_info_request_msg(
 			(assoc_mgr_info_request_msg_t *)msg->data,
 			buffer, msg->protocol_version);
-		break;
-	case RESPONSE_ASSOC_MGR_INFO:
-		_pack_assoc_mgr_info_msg((slurm_msg_t *) msg, buffer);
 		break;
 	case REQUEST_NETWORK_CALLERID:
 		_pack_network_callerid_msg((network_callerid_msg_t *)
