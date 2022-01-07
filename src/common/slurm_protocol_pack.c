@@ -11820,6 +11820,12 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	int rc = SLURM_SUCCESS;
 	msg->data = NULL;	/* Initialize to no data for now */
 
+	if (msg->protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
+		error("%s: Invalid message version=%hu, type:%hu",
+		      __func__, msg->protocol_version, msg->msg_type);
+		return SLURM_ERROR;
+	}
+
 	switch (msg->msg_type) {
 	case REQUEST_NODE_INFO:
 		rc = _unpack_node_info_request_msg((node_info_request_msg_t **)
