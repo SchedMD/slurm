@@ -188,6 +188,7 @@ extern List cgroup_get_conf_list(void);
 extern int cgroup_write_conf(int fd);
 extern int cgroup_read_conf(int fd);
 extern bool cgroup_memcg_job_confinement(void);
+extern char *autodetect_cgroup_version(void);
 
 /* global plugin functions */
 extern int cgroup_g_init(void);

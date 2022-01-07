@@ -39,6 +39,7 @@
 /* Define slurm-specific aliases for use by plugins, see slurm_xlator.h. */
 strong_alias(cgroup_conf_init, slurm_cgroup_conf_init);
 strong_alias(cgroup_conf_destroy, slurm_cgroup_conf_destroy);
+strong_alias(autodetect_cgroup_version, slurm_autodetect_cgroup_version);
 
 #define DEFAULT_CGROUP_BASEDIR "/sys/fs/cgroup"
 
@@ -114,7 +115,6 @@ static void _clear_slurm_cgroup_conf();
 static void _pack_cgroup_conf(buf_t *buffer);
 static int _unpack_cgroup_conf(buf_t *buffer);
 static void _read_slurm_cgroup_conf(void);
-static char *_autodetect_cgroup_version(void);
 
 /* Local functions */
 static void _cgroup_conf_fini()
@@ -398,7 +398,7 @@ static void _read_slurm_cgroup_conf(void)
 }
 
 /* Autodetect logic inspired from systemd source code */
-static char *_autodetect_cgroup_version(void)
+extern char *autodetect_cgroup_version(void)
 {
 	struct statfs fs;
 	int cgroup_ver = -1;
@@ -738,7 +738,7 @@ extern int cgroup_g_init(void)
 		type = "autodetect";
 
 	if (!xstrcmp(type, "autodetect")) {
-		if (!(type = _autodetect_cgroup_version())) {
+		if (!(type = autodetect_cgroup_version())) {
 			rc = SLURM_ERROR;
 			goto done;
 		}

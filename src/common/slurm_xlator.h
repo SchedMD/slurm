@@ -527,7 +527,7 @@
 /* cgroup.[ch] functions */
 #define cgroup_conf_init		slurm_cgroup_conf_init
 #define cgroup_conf_destroy		slurm_cgroup_conf_destroy
-
+#define autodetect_cgroup_version       slurm_autodetect_cgroup_version
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
