@@ -438,6 +438,17 @@ CVE-2018-6260</a> and in the
 <a href="https://nvidia.custhelp.com/app/answers/detail/a_id/4772">
 Security Bulletin: NVIDIA GPU Display Driver - February 2019</a>.</p>
 
+<p>NVIDIA MPS has a built-in limitation regarding GPU sharing among different
+users. Only one user on a system may have an active MPS server, and the MPS
+control daemon will queue MPS server activation requests from separate users,
+leading to serialized exclusive access of the GPU between users (see
+<a href="https://docs.nvidia.com/deploy/mps/index.html#topic_3_3_1_1">
+Section 2.3.1.1 - Limitations</a> in the MPS docs). So different users cannot
+truly run concurrently on the GPU with MPS; rather, the GPU will be time-sliced
+between the users (for a diagram depicting this process, see
+<a href="https://docs.nvidia.com/deploy/mps/index.html#topic_4_3">
+Section 3.3 - Provisioning Sequence</a> in the MPS docs).</p>
+
 <h2 id="MIG_Management">MIG Management
 <a class="slurm_link" href="#MIG_Management"></a>
 </h2>
@@ -469,6 +480,6 @@ dynamic MIG partitioning.</p>
 <a href="https://docs.nvidia.com/datacenter/tesla/mig-user-guide/index.html">
 the MIG user guide</a>.</p>
 
-<p style="text-align: center;">Last modified 23 June 2021</p>
+<p style="text-align: center;">Last modified 26 January 2022</p>
 
 <!--#include virtual="footer.txt"-->
