@@ -41,8 +41,11 @@
 #include <dlfcn.h>
 #include <rocm_smi/rocm_smi.h>
 
-
 #include "../common/gpu_common.h"
+
+#ifdef HAVE_NUMA
+#  include <numa.h>
+#endif
 
 /*
  * #defines needed to test rsmi.
@@ -760,6 +763,56 @@ static void _rsmi_get_device_unique_id(uint32_t dv_ind, uint64_t *id)
 	}
 }
 
+static bitstr_t *_rsmi_get_device_cpu_mask(uint32_t dv_ind)
+{
+	bitstr_t *cpu_aff_mac_bitstr = NULL;
+#ifdef HAVE_NUMA
+	uint32_t nnid = 1;
+	uint16_t maxcpus = conf->sockets * conf->cores * conf->threads;
+	struct bitmask *collective;
+	rsmi_status_t rsmi_rc =	rsmi_topo_get_numa_node_number(dv_ind, &nnid);
+
+	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
+		const char *status_string;
+		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
+		error("RSMI: Failed to get numa affinity of the GPU: %s",
+		      status_string);
+		return NULL;
+	}
+
+	collective = numa_allocate_cpumask();
+	if (maxcpus > collective->size) {
+		error("Size mismatch!!!! %d %lu", maxcpus, collective->size);
+		numa_free_cpumask(collective);
+		return NULL;
+	}
+
+	/*
+	 * FIXME: This is a hack (copied from task/affinity/numa.c to make it
+	 * work like NUMA v2, but for the time being we are stuck on
+	 * v1. (numa_node_to_cpus will multiple the size by 8 and the collective
+	 * is already at the correct size)
+	 */
+	if (numa_node_to_cpus(nnid, collective->maskp, collective->size / 8)) {
+		error("numa_node_to_cpus: %m");
+		numa_free_cpumask(collective);
+		return NULL;
+	}
+
+	/* Convert the collective to a slurm bitstr_t */
+	cpu_aff_mac_bitstr = bit_alloc(maxcpus);
+	for (int i = 0; i < maxcpus; i++) {
+		if (!numa_bitmask_isbitset(collective, i))
+			continue;
+
+		bit_set(cpu_aff_mac_bitstr, i);
+	}
+
+	numa_free_cpumask(collective);
+#endif
+	return cpu_aff_mac_bitstr;
+}
+
 /*
  * Creates and returns a gres conf list of detected AMD gpus on the node.
  * If an error occurs, return NULL
@@ -794,6 +847,25 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		char device_brand[RSMI_STRING_BUFFER_SIZE] = {0};
 		rsmiPciInfo_t pci_info;
 		uint64_t uuid = 0;
+		bitstr_t *cpu_aff_mac_bitstr = _rsmi_get_device_cpu_mask(i);
+		char *cpu_aff_mac_range = NULL;
+		char *cpu_aff_abs_range = NULL;
+
+		if (cpu_aff_mac_bitstr) {
+			cpu_aff_mac_range = bit_fmt_full(cpu_aff_mac_bitstr);
+
+			/*
+			 * Convert cpu range str from machine to abstract(slurm)
+			 * format
+			 */
+			if (node_config->xcpuinfo_mac_to_abs(
+				    cpu_aff_mac_range, &cpu_aff_abs_range)) {
+				error("Conversion from machine to abstract failed");
+				FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
+				xfree(cpu_aff_mac_range);
+				continue;
+			}
+		}
 
 		_rsmi_get_device_name(i, device_name, RSMI_STRING_BUFFER_SIZE);
 		_rsmi_get_device_brand(i, device_brand,
@@ -820,15 +892,24 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		if (minor_number != i+128)
 			debug("Note: GPU index %u is different from minor # %u",
 			      i, minor_number);
+		debug2("    CPU Affinity Range - Machine: %s",
+		       cpu_aff_mac_range);
+		debug2("    Core Affinity Range - Abstract: %s",
+		       cpu_aff_abs_range);
 
 		// Print out possible memory frequencies for this device
 		_rsmi_print_freqs(i, LOG_LEVEL_DEBUG2);
 
 		add_gres_to_list(gres_list_system, "gpu", 1,
-				 node_config->cpu_cnt, NULL, NULL,
+				 node_config->cpu_cnt,
+				 cpu_aff_abs_range,
+				 cpu_aff_mac_bitstr,
 				 device_file, device_brand, links, NULL,
 				 GRES_CONF_ENV_RSMI);
 
+		FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
+		xfree(cpu_aff_mac_range);
+		xfree(cpu_aff_abs_range);
 		xfree(device_file);
 		xfree(links);
 	}
