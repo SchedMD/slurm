@@ -82,6 +82,8 @@ typedef struct {
 #define GRES_CONF_ENV_DEF    SLURM_BIT(8) /* Env flags were set to defaults */
 
 #define GRES_CONF_SHARED     SLURM_BIT(9) /* Treat this as a shared GRES */
+#define GRES_CONF_ONE_SHARING SLURM_BIT(10) /* Only allow use of a shared GRES
+					     * on one of the sharing GRES */
 
 #define GRES_CONF_ENV_SET    0x000000E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */
@@ -1028,7 +1030,8 @@ extern char *gres_flags2str(uint32_t config_flags);
 /*
  * Parse a gres.conf Flags string
  */
-extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env);
+extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env,
+				 bool *sharing_mentioned);
 
 /*
  * Creates a gres_slurmd_conf_t record to add to a list of gres_slurmd_conf_t

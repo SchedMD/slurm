@@ -736,7 +736,7 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 			fatal("bit_unfmt() failed for CPU range: %s",
 			      cpu_range);
 
-		flags = gres_flags_parse(flags_str, NULL);
+		flags = gres_flags_parse(flags_str, NULL, NULL);
 
 		// Add the GPU specified by the parsed line
 		add_gres_to_list(gres_list_system, "gpu", 1, cpu_count,

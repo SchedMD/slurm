@@ -50,6 +50,9 @@ static gres_slurmd_conf_t *_create_shared_rec(
 		shared_record->config_flags |= shared_record_in->config_flags;
 	} else {
 		shared_record->config_flags |= GRES_CONF_SHARED;
+		/* The default for MPS is to have only one gpu sharing */
+		if (!xstrcasecmp(shared_name, "mps"))
+			shared_record->config_flags |= GRES_CONF_ONE_SHARING;
 	}
 
 	shared_record->cpu_cnt = sharing_record->cpu_cnt;

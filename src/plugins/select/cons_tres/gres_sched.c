@@ -128,6 +128,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 
 		/* gres/'shared' can only use one GPU per node */
 		if (gres_id_shared(gres_state_node->config_flags) &&
+		    (gres_state_node->config_flags & GRES_CONF_ONE_SHARING) &&
 		    (avail_gres > sock_gres->max_node_gres))
 			sock_gres->max_node_gres = avail_gres;
 

@@ -1195,7 +1195,8 @@ static void _set_prev_env_flags(prev_env_flags_t *prev_env,
 /*
  * Parse a gres.conf Flags string
  */
-extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env)
+extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env,
+				 bool *sharing_mentioned)
 {
 	uint32_t flags = 0;
 	if (xstrcasestr(input, "CountOnly"))
@@ -1206,9 +1207,16 @@ extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env)
 		flags |= GRES_CONF_ENV_RSMI;
 	if (xstrcasestr(input, "opencl_env"))
 		flags |= GRES_CONF_ENV_OPENCL;
+	if (xstrcasestr(input, "one_sharing"))
+		flags |= GRES_CONF_ONE_SHARING;
 	/* String 'no_gpu_env' will clear all GPU env vars */
 	if (no_gpu_env)
 		*no_gpu_env = xstrcasestr(input, "no_gpu_env");
+	if (sharing_mentioned) {
+		if ((flags & GRES_CONF_ONE_SHARING) ||
+		    xstrcasestr(input, "all_sharing"))
+			*sharing_mentioned = true;
+	}
 	return flags;
 }
 
@@ -1328,7 +1336,14 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&tmp_str, "Flags", tbl)) {
 		uint32_t env_flags = 0;
 		bool no_gpu_env = false;
-		uint32_t flags = gres_flags_parse(tmp_str, &no_gpu_env);
+		bool sharing_mentioned = false;
+		uint32_t flags = gres_flags_parse(tmp_str, &no_gpu_env,
+						  &sharing_mentioned);
+
+		/* The default for MPS is to have only one gpu sharing */
+		if (!sharing_mentioned && !xstrcasecmp(p->name, "mps"))
+			flags |= GRES_CONF_ONE_SHARING;
+
 		/* Break out flags into env flags and non-env flags */
 		env_flags = flags & GRES_CONF_ENV_SET;
 		p->config_flags |= flags & ~GRES_CONF_ENV_SET;
@@ -1361,6 +1376,9 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		set_default_envs = false;
 		if (!prev_env.no_gpu_env)
 			p->config_flags |= prev_env.flags;
+	} else {
+		if (!xstrcasecmp(p->name, "mps"))
+			p->config_flags |= GRES_CONF_ONE_SHARING;
 	}
 
 	/* Flags not set. By default, all env vars are set for GPUs */
@@ -1510,6 +1528,8 @@ static int _foreach_gres_conf(void *x, void *arg)
 	if (gres_slurmd_conf->config_flags & GRES_CONF_COUNT_ONLY)
 		context_ptr->config_flags |= GRES_CONF_COUNT_ONLY;
 
+	if (gres_slurmd_conf->config_flags & GRES_CONF_ONE_SHARING)
+		context_ptr->config_flags |= GRES_CONF_ONE_SHARING;
 	/*
 	 * Since there could be multiple types of the same plugin we
 	 * need to only make sure we load it once.
@@ -2486,6 +2506,31 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			      __func__, tmp_name, count64,
 			      node_name, MAX_GRES_BITMAP);
 			count64 = MAX_GRES_BITMAP;
+		}
+
+		/*
+		 * If one node in the bunch said a gres has removed
+		 * GRES_CONF_ONE_SHARING then remove it from the
+		 * context.
+		 */
+		if ((context_ptr->config_flags & GRES_CONF_LOADED) &&
+		    gres_id_shared(config_flags))  {
+			bool gc_one_sharing =
+				context_ptr->config_flags &
+				GRES_CONF_ONE_SHARING;
+			bool got_one_sharing =
+				config_flags & GRES_CONF_ONE_SHARING;
+			if (gc_one_sharing == got_one_sharing) {
+			} else if (!gc_one_sharing && got_one_sharing) {
+				log_flag(GRES, "gres/%s was already set up to share all ignoring one_sharing from %s",
+					 tmp_name, node_name);
+				config_flags &= ~GRES_CONF_ONE_SHARING;
+			} else if (!got_one_sharing) {
+				log_flag(GRES, "gres/%s was already set up to only share one, but we just found the opposite from %s. Removing flag.",
+					 tmp_name, node_name);
+				context_ptr->config_flags &=
+					~GRES_CONF_ONE_SHARING;
+			}
 		}
 
 		context_ptr->config_flags |= config_flags;
@@ -9924,6 +9969,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 		sep = ",";
 	}
 
+	if (config_flags & GRES_CONF_ONE_SHARING) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "ONE_SHARING");
+		sep = ",";
+	}
+
 	return flag_str;
 }
 
@@ -10001,6 +10052,7 @@ extern bool gres_use_busy_dev(gres_state_t *gres_state_node,
 
 	if (!use_total_gres &&
 	    gres_id_shared(gres_state_node->config_flags) &&
+	    (gres_state_node->config_flags & GRES_CONF_ONE_SHARING) &&
 	    (gres_ns->gres_cnt_alloc != 0)) {
 		/* We must use the ONE already active GRES of this type */
 		return true;

@@ -183,6 +183,27 @@ affect filesystems with high latency metadata operations for non\-existent files
 .IP
 
 .TP
+\fBone_sharing\fR
+To be used on a shared gres. If using a shared gres (mps) on top of a sharing
+gres (gpu) only allow one of the sharing gres to be used by the shared gres.
+This is the default for MPS.
+
+NOTE: If a gres has this flag configured it is global, so all other nodes with
+that gres will have this flag implied.  This flag is not combatible with
+all_sharing for a specific gres.
+.IP
+
+.TP
+\fBall_sharing\fR
+To be used on a shared gres. This is the opposite of one_sharing and can be
+used to allow all sharing gres (gpu) on a node to be used for shared gres (mps).
+
+NOTE: If a gres has this flag configured it is global, so all other nodes with
+that gres will have this flag implied.  This flag is not combatible with
+one_sharing for a specific gres.
+.IP
+
+.TP
 \fBnvidia_gpu_env\fR
 Set environment variable \fICUDA_VISIBLE_DEVICES\fR for all GPUs on the
 specified node(s).
