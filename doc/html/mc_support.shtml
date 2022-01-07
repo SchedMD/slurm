@@ -193,7 +193,6 @@ See the "Task Launch" section if generating slurm.conf via
     mask_ldom:<i>&lt;list&gt;</i> specify a NUMA locality domain ID mask
                     for each task where <i>&lt;list&gt;</i> is
                     <i>&lt;ldom1&gt;,&lt;ldom2&gt;,...&lt;ldomN&gt;</i>
-    boards          auto-generated masks bind to boards
     ldoms           auto-generated masks bind to NUMA locality
                     domains
     sockets         auto-generated masks bind to sockets
