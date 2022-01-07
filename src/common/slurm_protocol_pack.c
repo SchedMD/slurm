@@ -9521,40 +9521,6 @@ unpack_error:
 }
 
 static void
-_pack_srun_ping_msg(srun_ping_msg_t * msg, buf_t *buffer,
-		    uint16_t protocol_version)
-{
-	xassert(msg);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		/* empty, nothing needs to be sent */
-	}
-}
-
-static int
-_unpack_srun_ping_msg(srun_ping_msg_t ** msg_ptr, buf_t *buffer,
-		      uint16_t protocol_version)
-{
-	xassert(msg_ptr);
-
-	*msg_ptr = NULL;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		/* empty, nothing is sent */
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-		goto unpack_error;
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	*msg_ptr = NULL;
-	return SLURM_ERROR;
-}
-
-static void
 _pack_srun_node_fail_msg(srun_node_fail_msg_t * msg, buf_t *buffer,
 			 uint16_t protocol_version)
 {
@@ -11627,6 +11593,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_FED_INFO:
+	case SRUN_PING:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -11870,10 +11837,6 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		break;
 	case SRUN_EXEC:
 		_pack_srun_exec_msg((srun_exec_msg_t *)msg->data, buffer,
-				    msg->protocol_version);
-		break;
-	case SRUN_PING:
-		_pack_srun_ping_msg((srun_ping_msg_t *)msg->data, buffer,
 				    msg->protocol_version);
 		break;
 	case SRUN_NODE_FAIL:
@@ -12269,6 +12232,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_TOPO_INFO:
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_FED_INFO:
+	case SRUN_PING:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -12531,11 +12495,6 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case SRUN_EXEC:
 		rc = _unpack_srun_exec_msg((srun_exec_msg_t **) & msg->data,
-					   buffer,
-					   msg->protocol_version);
-		break;
-	case SRUN_PING:
-		rc = _unpack_srun_ping_msg((srun_ping_msg_t **) & msg->data,
 					   buffer,
 					   msg->protocol_version);
 		break;
