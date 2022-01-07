@@ -7352,8 +7352,6 @@ StateSaveLocation=/var/spool/slurm.state
 SwitchType=switch/none
 TmpFS=/tmp
 WaitTime=30
-JobCredentialPrivateKey=/usr/local/slurm/private.key
-JobCredentialPublicCertificate=/usr/local/slurm/public.cert
 #
 # Node Configurations
 #
@@ -7428,18 +7426,6 @@ The file must exist on every compute node.
 \fBJobCompLoc\fR
 If this specifies a file, it must be writable by user \fBSlurmUser\fR.
 The file must be accessible by the primary and backup control machines.
-.IP
-
-.TP
-\fBJobCredentialPrivateKey\fR
-Must be readable only by user \fBSlurmUser\fR and writable by no other users.
-The file must be accessible by the primary and backup control machines.
-.IP
-
-.TP
-\fBJobCredentialPublicCertificate\fR
-Readable to all users on all nodes.
-Must not be writable by regular users.
 .IP
 
 .TP
