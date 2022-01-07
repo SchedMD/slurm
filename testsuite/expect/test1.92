@@ -62,16 +62,12 @@ set timeout $max_job_delay
 spawn $salloc -N2 --ntasks-per-node=2 --verbose -t2 $bin_bash
 expect {
 	-re "salloc: Granted job allocation ($number)" {
-		send "$reset_bash_prompt\r"
+		reset_bash_prompt
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	-re "(configuration is not available|Unable to submit batch job|Node count specification invalid|More processors requested than permitted)" {
 		skip "Can't test srun task distribution"
-	}
-	-re "\"$test_prompt\"" {
-		# skip this, just echo of setting test_prompt
-		exp_continue
 	}
 	-re $test_prompt {
 		send "$srun -l -c1 $file_bash | $bin_sort -V\r"

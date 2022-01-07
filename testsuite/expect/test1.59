@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set file_in     "$test_dir/input"
 set hostfile    "$test_dir/hostfile"
 set job_id      0
 set node_count  0
@@ -57,19 +56,12 @@ set node2 0
 set node3 0
 set node4 0
 
-#
-# Build input script file
-#
-make_bash_script $file_in "
-  $reset_bash_prompt
-  $bin_bash --norc
-"
-
 set timeout $max_job_delay
-spawn $salloc -N$num_nodes -v -t2 $file_in
+spawn $salloc -N$num_nodes -v -t2 $bin_bash
 expect {
 	-re "salloc: Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
+		reset_bash_prompt
 		exp_continue
 	}
 	-re $test_prompt {
