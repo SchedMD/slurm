@@ -196,7 +196,8 @@ static struct spank_stack *global_spank_stack = NULL;
 /*
  *  Forward declarations
  */
-static int _spank_plugin_options_cache(struct spank_plugin *p);
+static int _spank_option_register(struct spank_plugin *p,
+				  struct spank_option *opt);
 static int _spank_stack_load (struct spank_stack *stack, const char *file);
 static void _spank_plugin_destroy (struct spank_plugin *);
 static void _spank_plugin_opt_destroy (struct spank_plugin_opt *);
@@ -543,7 +544,8 @@ _spank_stack_process_line(struct spank_stack *stack,
 			file, line, xbasename (p->fq_path));
 
 	list_append (stack->plugin_list, p);
-	_spank_plugin_options_cache(p);
+	for (struct spank_option *opt = p->opts; opt && opt->name; opt++)
+		_spank_option_register(p, opt);
 
 	return (0);
 }
@@ -1065,19 +1067,6 @@ spank_err_t spank_option_register(spank_t sp, struct spank_option *opt)
 		return (ESPANK_BAD_ARG);
 
 	return (_spank_option_register(sp->plugin, opt));
-}
-
-static int _spank_plugin_options_cache(struct spank_plugin *p)
-{
-	struct spank_option *opt = p->opts;
-
-	if ((opt == NULL) || opt->name == NULL)
-		return (0);
-
-	for (; opt && opt->name != NULL; opt++)
-		_spank_option_register(p, opt);
-
-	return (0);
 }
 
 static int _add_one_option(struct option **optz,
