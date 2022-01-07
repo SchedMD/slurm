@@ -553,7 +553,6 @@ unpack_error:
 	slurm_free_shares_response_msg(object_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
-
 }
 
 static void _pack_priority_factors_object(void *in, buf_t *buffer,
@@ -803,7 +802,6 @@ unpack_error:
 	slurm_free_priority_factors_response_msg(object_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
-
 }
 
 static void
@@ -1022,7 +1020,6 @@ unpack_error:
 	slurm_free_acct_gather_energy_req_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
-
 }
 
 static void
@@ -10062,6 +10059,7 @@ static int  _unpack_kvs_rec(struct kvs_comm **msg_ptr, buf_t *buffer,
 unpack_error:
 	return SLURM_ERROR;
 }
+
 static void _pack_kvs_data(kvs_comm_set_t *msg_ptr, buf_t *buffer,
 			   uint16_t protocol_version)
 {
