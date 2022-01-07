@@ -202,7 +202,7 @@ static void _spank_plugin_destroy (struct spank_plugin *);
 static void _spank_plugin_opt_destroy (struct spank_plugin_opt *);
 static void _spank_stack_get_remote_options(struct spank_stack *, List);
 static void _spank_stack_get_remote_options_env(struct spank_stack *, char **);
-static int spank_stack_set_remote_options_env (struct spank_stack * stack);
+static void _spank_stack_set_remote_options_env(struct spank_stack *stack);
 static int dyn_spank_set_job_env (const char *var, const char *val, int ovwt);
 static char *_opt_env_name(struct spank_plugin_opt *p, char *buf, size_t siz);
 
@@ -853,7 +853,7 @@ int spank_init_post_opt (void)
 	 *   spank_job_env so that we can always pull them out
 	 *   on the remote side and/or job prolog epilog.
 	 */
-	spank_stack_set_remote_options_env (stack);
+	_spank_stack_set_remote_options_env(stack);
 
 	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, NULL, -1));
 }
@@ -1466,18 +1466,19 @@ static int _option_setenv (struct spank_plugin_opt *option)
 	return (0);
 }
 
-static int spank_stack_set_remote_options_env (struct spank_stack *stack)
+static void _spank_stack_set_remote_options_env(struct spank_stack *stack)
 {
 	struct spank_plugin_opt *p;
 	ListIterator i;
 	List option_cache;
 
 	if (stack == NULL)
-		return (0);
+		return;
+
 	option_cache = stack->option_cache;
 
 	if ((option_cache == NULL) || (list_count(option_cache) == 0))
-		return (0);
+		return;
 
 	i = list_iterator_create(option_cache);
 	while ((p = list_next(i))) {
@@ -1485,7 +1486,6 @@ static int spank_stack_set_remote_options_env (struct spank_stack *stack)
 			_option_setenv (p);
 	}
 	list_iterator_destroy(i);
-	return (0);
 }
 
 int spank_set_remote_options(List opts)
