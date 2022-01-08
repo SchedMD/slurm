@@ -125,7 +125,6 @@
 
 /* No need to change we always pack SLURM_PROTOCOL_VERSION */
 #define JOB_STATE_VERSION     "PROTOCOL_VERSION"
-#define JOB_CKPT_VERSION      "PROTOCOL_VERSION"
 
 typedef enum {
 	JOB_HASH_JOB,

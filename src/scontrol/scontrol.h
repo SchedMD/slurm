@@ -71,7 +71,6 @@
 #include "src/common/xstring.h"
 #include "src/common/slurmdb_defs.h"
 
-#define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
 extern char *command_name;

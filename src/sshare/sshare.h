@@ -65,7 +65,6 @@
 #include "src/common/print_fields.h"
 #include "src/common/slurmdb_defs.h"
 
-#define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
 /* Print only the users and not the hierarchy.
