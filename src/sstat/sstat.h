@@ -142,9 +142,6 @@ extern int field_count;
 
 extern List jobs;
 
-/* process.c */
-void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);
-
 /* print.c */
 void print_fields(slurmdb_step_rec_t *step);
 
