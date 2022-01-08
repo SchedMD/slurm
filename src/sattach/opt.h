@@ -40,7 +40,6 @@
 
 
 /* global variables relating to user options */
-extern int _verbose;
 
 typedef struct sbatch_options {
 	char *progname;		/* argv[0] of this program or
