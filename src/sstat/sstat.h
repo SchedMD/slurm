@@ -68,8 +68,6 @@
 
 #define STAT_FIELDS_PID "jobid,nodelist,pids"
 
-#define MAX_PRINTFIELDS 100
-
 /* On output, use fields 12-37 from JOB_STEP */
 
 typedef enum {
@@ -145,9 +143,6 @@ extern sstat_parameters_t params;
 extern int field_count;
 
 extern List jobs;
-
-extern int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
-	nprintfields;
 
 /* process.c */
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);
