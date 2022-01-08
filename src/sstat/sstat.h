@@ -70,10 +70,6 @@
 
 #define MAX_PRINTFIELDS 100
 
-#define SECONDS_IN_MINUTE 60
-#define SECONDS_IN_HOUR (60*SECONDS_IN_MINUTE)
-#define SECONDS_IN_DAY (24*SECONDS_IN_HOUR)
-
 /* On output, use fields 12-37 from JOB_STEP */
 
 typedef enum {
