@@ -74,6 +74,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     jobs within the same qos.
  -- Fatal error if CgroupReleaseAgentDir is configured in cgroup.conf. The
     option has long been obsolete.
+ -- Fatal if more than one burst buffer plugin is configured.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

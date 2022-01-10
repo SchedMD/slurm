@@ -166,6 +166,17 @@ extern int bb_g_init(void)
 	}
 	init_run = true;
 
+	/*
+	 * Although the burst buffer plugin interface was designed to support
+	 * multiple burst buffer plugins, this currently does not work. For
+	 * now, do not allow multiple burst buffer plugins to be configured.
+	 */
+	if (g_context_cnt > 1) {
+		error("%d burst buffer plugins configured; can not run with more than one burst buffer plugin",
+		      g_context_cnt);
+		rc = SLURM_ERROR;
+	}
+
 fini:
 	slurm_mutex_unlock(&g_context_lock);
 
