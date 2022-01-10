@@ -832,6 +832,11 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->licenses);
 		if (strlen(value_str))
 			job_desc->licenses = xstrdup(value_str);
+	} else if (!xstrcmp(name, "mail_user")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->mail_user);
+		if (strlen(value_str))
+			job_desc->mail_user = xstrdup(value_str);
 	} else if (!xstrcmp(name, "max_cpus")) {
 		job_desc->max_cpus = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "max_nodes")) {
