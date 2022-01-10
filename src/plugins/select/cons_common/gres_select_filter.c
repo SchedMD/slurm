@@ -283,7 +283,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 			mem_per_gres = gres_js->mem_per_gres;
 		else
 			mem_per_gres = gres_js->def_mem_per_gres;
-		if (mem_per_gres && avail_mem) {
+		if (mem_per_gres) {
 			if (mem_per_gres <= avail_mem) {
 				sock_gres->max_node_gres = avail_mem /
 					mem_per_gres;
