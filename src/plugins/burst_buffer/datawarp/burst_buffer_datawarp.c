@@ -1239,7 +1239,6 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	stage_args_t *stage_args;
 	int hash_inx = job_ptr->job_id % 10;
 	int rc = SLURM_SUCCESS;
-	pthread_t tid;
 	bb_alloc_t *bb_alloc = NULL;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d",
@@ -1314,7 +1313,7 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	stage_args->args1   = setup_argv;
 	stage_args->args2   = data_in_argv;
 
-	slurm_thread_create(&tid, _start_stage_in, stage_args);
+	slurm_thread_create_detached(NULL, _start_stage_in, stage_args);
 
 	xfree(hash_dir);
 	xfree(job_dir);
@@ -1608,7 +1607,6 @@ static int _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 	char **post_run_argv, **data_out_argv;
 	stage_args_t *stage_args;
 	int hash_inx = bb_job->job_id % 10, rc = SLURM_SUCCESS;
-	pthread_t tid;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d",
 		   slurm_conf.state_save_location, hash_inx);
@@ -1638,7 +1636,7 @@ static int _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 	stage_args->job_id  = bb_job->job_id;
 	stage_args->user_id = bb_job->user_id;
 
-	slurm_thread_create(&tid, _start_stage_out, stage_args);
+	slurm_thread_create_detached(NULL, _start_stage_out, stage_args);
 
 	xfree(hash_dir);
 	xfree(job_dir);
@@ -1850,7 +1848,6 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	char **teardown_argv;
 	stage_args_t *teardown_args;
 	int fd, hash_inx = job_id % 10;
-	pthread_t tid;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d",
 		   slurm_conf.state_save_location, hash_inx);
@@ -1890,7 +1887,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	teardown_args->user_id = user_id;
 	teardown_args->args1   = teardown_argv;
 
-	slurm_thread_create(&tid, _start_teardown, teardown_args);
+	slurm_thread_create_detached(NULL, _start_teardown, teardown_args);
 
 	xfree(hash_dir);
 	xfree(job_script);
@@ -3478,7 +3475,6 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	uint32_t timeout;
 	bool do_pre_run;
 	DEF_TIMERS;
-	pthread_t tid;
 	run_command_args_t run_command_args = {
 		.script_path = bb_state.bb_config.get_sys_state,
 		.script_type = "paths",
@@ -3621,7 +3617,8 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 			job_ptr->job_state |= JOB_CONFIGURING;
 		}
 
-		slurm_thread_create(&tid, _start_pre_run, pre_run_args);
+		slurm_thread_create_detached(NULL, _start_pre_run,
+					     pre_run_args);
 	}
 
 fini:
@@ -4008,7 +4005,6 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 	bb_buf_t *buf_ptr;
 	bb_alloc_t *bb_alloc;
 	int i, hash_inx, rc = 0;
-	pthread_t tid;
 
 	xassert(bb_job);
 	for (i = 0, buf_ptr = bb_job->buf_ptr; i < bb_job->buf_cnt;
@@ -4072,8 +4068,8 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 			create_args->type = xstrdup(buf_ptr->type);
 			create_args->user_id = job_ptr->user_id;
 
-			slurm_thread_create(&tid, _create_persistent,
-					    create_args);
+			slurm_thread_create_detached(NULL, _create_persistent,
+						     create_args);
 		} else if ((buf_ptr->flags == BB_FLAG_BB_OP) &&
 			   buf_ptr->destroy && job_ready) {
 			/* Delete the buffer */
@@ -4114,8 +4110,8 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 			create_args->name = xstrdup(buf_ptr->name);
 			create_args->user_id = job_ptr->user_id;
 
-			slurm_thread_create(&tid, _destroy_persistent,
-					    create_args);
+			slurm_thread_create_detached(NULL, _destroy_persistent,
+						     create_args);
 		} else if ((buf_ptr->flags == BB_FLAG_BB_OP) &&
 			   buf_ptr->destroy) {
 			rc++;
