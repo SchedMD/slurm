@@ -1309,7 +1309,7 @@ empty:
 	xstrfmtcat(tmp, "%s", event_req_inx[0]);
 	for(i=1; i<EVENT_REQ_COUNT; i++) {
 		bool include = true;
-		if (event_cond->format_list)
+		if (event_cond && event_cond->format_list)
 			include = list_find_first(event_cond->format_list,
 						  slurm_find_char_in_list,
 						  event_req_inx[i]);
