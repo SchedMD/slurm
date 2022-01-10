@@ -95,14 +95,17 @@ static void _kill_script(track_script_rec_t *r)
  */
 static void *_track_script_rec_cleanup(void *arg)
 {
-	int rc = 1;
+	int rc = 0;
 	struct timeval tvnow;
 	struct timespec abs;
+	pid_t save_cpid;
 	track_script_rec_t *r = (track_script_rec_t *)arg;
 
 	info("Script for jobid=%u found running, tid=%lu, force ending. Ignore errors about not finding this thread id after this.",
 	      r->job_id, (unsigned long)r->tid);
 
+	/* _kill_script() sets r->cpid to -1 */
+	save_cpid = r->cpid;
 	_kill_script(r);
 
 	/* setup timer */
@@ -111,10 +114,10 @@ static void *_track_script_rec_cleanup(void *arg)
 	abs.tv_nsec = tvnow.tv_usec * 1000;
 
 	/*
-	 * This wait covers the case where we try to kill an unkillable process.
-	 * In such situation the pthread_join would cause us to wait here
-	 * indefinitely. So we do a pthread_cancel after some time (5 sec)
-	 * in the case the process isn't gone yet.
+	 * Wait to be signalled that the script has cleaned up. Don't wait
+	 * forever, since a process could be unkillable.
+	 * We do not call pthread_join() here - if a thread is joinable, this
+	 * should be handled outside of track_script.
 	 */
 	if (r->cpid != 0) {
 		slurm_mutex_lock(&r->timer_mutex);
@@ -122,11 +125,9 @@ static void *_track_script_rec_cleanup(void *arg)
 					    &abs);
 		slurm_mutex_unlock(&r->timer_mutex);
 	}
-
 	if (rc)
-		pthread_cancel(r->tid);
-
-	pthread_join(r->tid, NULL);
+		error("Timed out waiting for PID=%d (run by thread=%lu) to cleanup, this may indicate an unkillable process!",
+		      save_cpid, (unsigned long)r->tid);
 
 	slurm_mutex_lock(&flush_mutex);
 	flush_cnt++;
