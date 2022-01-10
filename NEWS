@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Handle typed shared GRES better in accounting.
  -- Fix plugin_name definitions in a number of plugins to improve logging.
  -- Close sbcast file transfers when job is cancelled.
+ -- job_submit/lua - allow mail_type and mail_user fields to be modified.
 
 * Changes in Slurm 21.08.5
 ==========================

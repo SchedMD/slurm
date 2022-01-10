@@ -832,6 +832,11 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->licenses);
 		if (strlen(value_str))
 			job_desc->licenses = xstrdup(value_str);
+	} else if (!xstrcmp(name, "mail_type")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->mail_type);
+		if (strlen(value_str))
+			job_desc->mail_type = xstrdup(value_str);
 	} else if (!xstrcmp(name, "mail_user")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->mail_user);
