@@ -9837,6 +9837,7 @@ static void _list_delete_job(void *job_entry)
 	_clear_job_gres_details(job_ptr);
 	xfree(job_ptr->gres_used);
 	FREE_NULL_LIST(job_ptr->gres_list_req);
+	FREE_NULL_LIST(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	xfree(job_ptr->licenses);
 	FREE_NULL_LIST(job_ptr->license_list);

@@ -2183,6 +2183,7 @@ static void _end_null_job(job_record_t *job_ptr)
 
 	job_ptr->exit_code = 0;
 	gres_ctld_job_clear(job_ptr->gres_list_req);
+	gres_ctld_job_clear(job_ptr->gres_list_req_accum);
 	gres_ctld_job_clear(job_ptr->gres_list_alloc);
 	job_ptr->job_state = JOB_RUNNING;
 	job_ptr->bit_flags |= JOB_WAS_RUNNING;
@@ -2609,6 +2610,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	xfree(job_ptr->sched_nodes);
 	job_ptr->exit_code = 0;
 	gres_ctld_job_clear(job_ptr->gres_list_req);
+	gres_ctld_job_clear(job_ptr->gres_list_req_accum);
 	gres_ctld_job_clear(job_ptr->gres_list_alloc);
 	if (!job_ptr->step_list)
 		job_ptr->step_list = list_create(free_step_record);

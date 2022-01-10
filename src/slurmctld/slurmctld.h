@@ -749,6 +749,11 @@ struct job_record {
 					 * this job */
 	List gres_list_req;		/* Requested generic resource allocation
 					   detail */
+	List gres_list_req_accum;	/* Requested generic resource allocation
+					   detail with accumulated subtypes (DO
+					   NOT SAVE OR PACK). Only needed during
+					   allocation selection time and will
+					   be rebuilt there if needed. */
 	List gres_list_alloc;		/* Allocated generic resource allocation
 					 * detail */
 	uint32_t gres_detail_cnt;	/* Count of gres_detail_str records,
