@@ -173,7 +173,8 @@ extern void fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->tres_freq = xstrdup(opt.tres_freq);
 	xfmt_tres(&desc->tres_per_job, "gpu", opt.gpus);
 	xfmt_tres(&desc->tres_per_node, "gpu", opt.gpus_per_node);
-	if (opt.gres) {
+	/* --gres=none for jobs means no GRES, so don't send it to slurmctld */
+	if (opt.gres && xstrcasecmp(opt.gres, "NONE")) {
 		if (desc->tres_per_node)
 			xstrfmtcat(desc->tres_per_node, ",%s", opt.gres);
 		else
