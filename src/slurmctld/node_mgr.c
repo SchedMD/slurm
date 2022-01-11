@@ -824,9 +824,9 @@ static int _build_visible_parts(void *elem, void *arg)
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  */
-extern void pack_all_node (char **buffer_ptr, int *buffer_size,
-			   uint16_t show_flags, uid_t uid,
-			   uint16_t protocol_version)
+extern void pack_all_node(char **buffer_ptr, int *buffer_size,
+			  uint16_t show_flags, uid_t uid,
+			  uint16_t protocol_version)
 {
 	int inx;
 	uint32_t nodes_packed, tmp_offset;
