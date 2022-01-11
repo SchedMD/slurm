@@ -178,6 +178,7 @@ documents those changes that are of interest to users and administrators.
  -- Correctly failover to backup slurmdbd if the primary slurmdbd node crashes.
  -- Add support to ship Include configuration files with configless.
  -- Fix issues with track_script cleanup.
+ -- Add new max_token_lifespan limit to AuthAltParameters.
 
 * Changes in Slurm 21.08.7
 ==========================

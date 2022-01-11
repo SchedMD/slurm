@@ -4892,6 +4892,7 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 	token_response_msg_t *resp_data;
 	char *username = NULL;
 	int lifespan = 0;
+	static int max_lifespan = -1;
 
 	START_TIMER;
 	if (xstrstr(slurm_conf.authalt_params, "disable_token_creation") &&
@@ -4900,6 +4901,20 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 		      __func__, msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
+	}
+
+	if (max_lifespan == -1) {
+		char *tmp_ptr;
+
+		max_lifespan = 0;
+		if ((tmp_ptr = xstrcasestr(slurm_conf.authalt_params,
+					   "max_token_lifespan="))) {
+			max_lifespan = atoi(tmp_ptr + 19);
+			if (max_lifespan < 1) {
+				error("Invalid AuthAltParameters max_token_lifespan option, no limit enforced");
+				max_lifespan = 0;
+			}
+		}
 	}
 
 	if (request_msg->username) {
@@ -4922,8 +4937,20 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 
 	if (request_msg->lifespan)
 		lifespan = request_msg->lifespan;
+	else if (max_lifespan)
+		lifespan = MIN(DEFAULT_AUTH_TOKEN_LIFESPAN, max_lifespan);
 	else
 		lifespan = DEFAULT_AUTH_TOKEN_LIFESPAN;
+
+	if (!validate_slurm_user(msg->auth_uid)) {
+		if ((max_lifespan > 0) && (lifespan > max_lifespan)) {
+			error("%s: rejecting token lifespan %d for user:%s[%d] requested, exceeds limit of %d",
+			      __func__, request_msg->lifespan, username,
+			      msg->auth_uid, max_lifespan);
+			slurm_send_rc_msg(msg, ESLURM_INVALID_TIME_LIMIT);
+			return;
+		}
+	}
 
 	resp_data = xmalloc(sizeof(*resp_data));
 	resp_data->token = auth_g_token_generate(AUTH_PLUGIN_JWT, username,

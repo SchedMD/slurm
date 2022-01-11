@@ -78,6 +78,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     option has long been obsolete.
  -- Fatal if more than one burst buffer plugin is configured.
  -- Added keepaliveinterval and keepaliveprobes to CommunicationParameters.
+ -- Added new max_token_lifespan=<seconds> to AuthAltParameters to allow sites
+    to restrict the lifespan of any requested ticket by an unprivileged user.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
