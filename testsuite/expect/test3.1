@@ -31,9 +31,6 @@ source ./globals
 set file_in     "$test_dir/input"
 set job_id      0
 
-# TODO Temporary variables to troubleshoot bug 9647 (remove once fixed)
-set file_out    "$test_dir/output"
-
 #
 # This test must be run as a Slurm administrator, root, or SlurmUser in order to
 # issue scontrol reconfigure.
@@ -51,28 +48,10 @@ proc cleanup {} {
 #
 # Have a job running when the reconfigure happens
 #
-# TODO Temporarily adding verbosity to troubleshoot bug 9647 (revert once fixed)
-make_bash_script $file_in "
-  $srun -v -v -v $bin_sleep 60
-  #$srun $bin_sleep 60
-"
-# TODO Temporarily saving output to troubleshoot bug 9647 (revert once fixed)
-spawn $sbatch -N1 --output=$file_out -t2 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "sbatch job submit failed"
-}
+make_bash_script $file_in "$srun $bin_sleep 60"
+
+set job_id [submit_job -fail "-N1 --output=/dev/null -t2 $file_in"]
+
 wait_for_job -fail $job_id RUNNING
 
 #
@@ -80,9 +59,4 @@ wait_for_job -fail $job_id RUNNING
 #
 reconfigure -fail
 
-if {[wait_for_job $job_id RUNNING] != 0} {
-	# TODO Temporary debug to troubleshoot bug 9647 (revert once fixed)
-	run_command "$bin_cat $file_out"
-
-	fail "Job ($job_id) not running after reconfiguration"
-}
+subtest {![wait_for_job $job_id RUNNING]} "Verify job is running after reconfiguration" "It may fail due Bug 12952"
