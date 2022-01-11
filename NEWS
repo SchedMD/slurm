@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix plugin_name definitions in a number of plugins to improve logging.
  -- Close sbcast file transfers when job is cancelled.
  -- job_submit/lua - allow mail_type and mail_user fields to be modified.
+ -- scrontab - fix handling of --gpus and --ntasks-per-gpu options.
 
 * Changes in Slurm 21.08.5
 ==========================
