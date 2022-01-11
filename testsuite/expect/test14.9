@@ -26,19 +26,8 @@
 ############################################################################
 source ./globals
 
-set file_in     "$test_dir/input"
-set file_out    "$test_dir/output"
-set file_err    "$test_dir/error"
+set bcast_file  "/tmp/${test_name}_sbcast"
 set job_id      0
-
-proc cleanup {} {
-	global job_id bin_rm file_in file_out file_err
-	global sacctmgr testsuite_user test_name
-
-	cancel_job $job_id
-	run_command -none "$sacctmgr -vi delete user name=$testsuite_user"
-	run_command -none "$sacctmgr -vi delete account name=$test_name"
-}
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -47,63 +36,32 @@ if {![check_run_as_user $testsuite_user]} {
 	skip "This test needs testsuite_user configured in globals.local"
 }
 
-# Delete left-over stdout/err files
-cleanup
+proc cleanup {} {
+	global job_id sacctmgr testsuite_user test_name
+
+	cancel_job $job_id
+	run_command -none "$sacctmgr -vi delete user name=$testsuite_user"
+	run_command -none "$sacctmgr -vi delete account name=$test_name"
+}
 
 # Setup the test user
 run_command -fail "$sacctmgr -vi add account name=$test_name"
 run_command -fail "$sacctmgr -vi add user name=$testsuite_user account=$test_name"
 run_command -fail "$sacctmgr -vi update user $testsuite_user set adminlevel=None"
 
-#
-# Build input script file that broacasts a file
-#
-make_bash_script $file_in "
-  export SLURM_SBCAST_AUTH_FAIL_TEST=1
-  $srun $bin_rm -f /tmp/$test_name
-  $sbcast $sbcast /tmp/$test_name
-  $srun ls /tmp/$test_name
-  $srun $bin_rm -f /tmp/$test_name
-"
-
-#
-# Spawn an sbatch job that uses stdout/err and confirm their contents
-#
-set job_id [submit_job -fail -user $testsuite_user "-N1 --output=$file_out --error=$file_err -t1 $file_in"]
-
-#
-# Wait for job to complete and check output file
-#
-wait_for_job -fail $job_id "DONE"
-
-wait_for_file -fail $file_err
-set matches 0
-spawn $bin_cat $file_err
-expect {
-	-re "error: REQUEST_FILE_BCAST" {
-		log_debug "These errors are expected, no worries"
-		incr matches
-		exp_continue
-	}
-	-re "ls.* No such file" {
-		log_debug "These errors are expected, no worries"
-		incr matches
-		exp_continue
-	}
-	-re "ls.* does not exist" {
-		log_debug "These errors are expected, no worries"
-		incr matches
-		exp_continue
-	}
-	-re "ls.* not found" {
-		log_debug "These errors are expected, no worries"
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
+# Spawn an salloc job and obtain the job id
+set salloc_output [run_command_output -fail "$salloc -v -N1 -t2 --no-shell"]
+if {![regexp {Granted job allocation (\d+)} $salloc_output - job_id]} {
+    fail "Allocation not granted ($output)"
 }
-if {$matches != 2} {
-	fail "sbcast moved file with invalid credential ($matches)"
-}
+
+# Clear out the broadcast file
+run_command -fail "$srun --jobid $job_id $bin_rm -f $bcast_file"
+
+# Attempt to broadcast the file as a different (and unauthorized) user
+set sbcast_output [run_command_output -user $testsuite_user -subtest -xfail "$sbcast --jobid $job_id $sbcast $bcast_file"]
+subtest [regexp -line {error:.*Invalid user id} $sbcast_output] "sbcast should generate an error"
+
+# Verify the file was not broadcast
+set ls_output [run_command_output -subtest -xfail "$srun --jobid $job_id ls $bcast_file"]
+subtest [regexp -line {ls.* (?:No such file|does not exist|not found)} $ls_output] "The file should not have been broadcast"
