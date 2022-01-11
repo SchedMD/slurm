@@ -1010,6 +1010,8 @@ static void _send_future_cloud_to_db()
 			IS_NODE_FUTURE(node_ptr) ? "Future" : "Powered down",
 			slurm_conf.slurm_user_id);
 	}
+
+	FREE_NULL_LIST(event_list);
 }
 
 /* initialization of common slurmctld configuration */
