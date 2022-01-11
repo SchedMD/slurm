@@ -844,6 +844,7 @@ static void _clear_power_config(void)
 {
 	xfree(suspend_prog);
 	xfree(resume_prog);
+	xfree(resume_fail_prog);
 	xfree(exc_nodes);
 	xfree(exc_parts);
 	FREE_NULL_BITMAP(exc_node_bitmap);
