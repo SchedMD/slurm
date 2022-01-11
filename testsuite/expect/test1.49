@@ -67,30 +67,14 @@ make_bash_script $file_in "
 #    NFS file, overwritting of data has been observed, this
 #    causes the test to fail
 #
-set matches 0
 set timeout [expr $max_job_delay + 30]
 set tasks   4
 set node_cnt 1-1
 
-spawn $srun -N$node_cnt -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in
-expect {
-	-re "(HEADER|TEST==prolog_qa|DISPLAY==X)" {
-		incr matches
-		exp_continue
-	}
-	-re "error" {
-		fail "Unexpected error running srun"
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
+set output [run_command_output -fail "$srun -N$node_cnt -n$tasks -O -t1 --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in"]
 
-set exp_matches [expr $tasks * 3]
-subtest {$matches == $exp_matches} "Prolog should export env vars" "$matches != $exp_matches"
+subtest {[regexp -all "(HEADER|TEST==prolog_qa|DISPLAY==X)" $output] == [expr $tasks * 3]} "Prolog should export env vars"
+subtest {![regexp "error:" $output]} "No errors should be reported"
 
 #
 # Get my id to compare with output
