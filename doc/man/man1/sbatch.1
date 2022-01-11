@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "November 2021" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "January 2022" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -342,7 +342,8 @@ meets those requirements.
 \fBNOTE:\fR Brackets are only reserved for \fBMultiple Counts\fR and
 \fBMatching OR\fR syntax.
 AND operators require a count for each feature inside square brackets
-(i.e. "[quad*2&hemi*1]").
+(i.e. "[quad*2&hemi*1]"). Slurm will only allow a single set of bracketed
+constraints per job.
 .IP
 
 .TP
