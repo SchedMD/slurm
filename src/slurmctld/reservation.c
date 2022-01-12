@@ -5525,8 +5525,7 @@ extern int job_test_resv_now(job_record_t *job_ptr)
 
 	if (!job_ptr->resv_ptr) {
 		rc = validate_job_resv(job_ptr);
-		if (rc != SLURM_SUCCESS)
-			return rc;
+		return rc;
 	}
 	resv_ptr = job_ptr->resv_ptr;
 

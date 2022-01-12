@@ -602,6 +602,8 @@ extern List build_job_queue(bool clear_start, bool backfill)
 					job_ptr->state_reason;
 			last_job_update = now;
 		}
+		if (job_ptr->resv_list)
+			job_ptr->resv_ptr = NULL;
 		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
 
