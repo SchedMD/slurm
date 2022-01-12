@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/lua - allow mail_type and mail_user fields to be modified.
  -- scrontab - fix handling of --gpus and --ntasks-per-gpu options.
  -- sched/backfill - fix job_queue_rec_t memory leak.
+ -- Fix magnetic reservation logic in both main and backfill schedulers.
 
 * Changes in Slurm 21.08.5
 ==========================
