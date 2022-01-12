@@ -3154,7 +3154,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 
 	gres_cnt = _get_tot_gres_cnt(gres_ctx->plugin_id, &topo_cnt,
 				     &config_type_cnt);
-	if ((gres_ns->gres_cnt_config > gres_cnt) && !config_overrides) {
+	if (gres_ns->gres_cnt_config > gres_cnt) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
 				   "%s count reported lower than configured "
