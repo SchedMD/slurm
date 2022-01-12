@@ -49,6 +49,37 @@ run_command -fail "$sacctmgr -vi add account name=$test_name"
 run_command -fail "$sacctmgr -vi add user name=$testsuite_user account=$test_name"
 run_command -fail "$sacctmgr -vi update user $testsuite_user set adminlevel=None"
 
+#
+# Test that testsuite_user can sbcast to own jobs
+#
+log_info "Test that a user can sbcast to its own jobs"
+
+# Spawn an salloc job and obtain the job id
+set salloc_output [run_command_output -fail -user $testsuite_user "$salloc -v -N1 -t2 --no-shell"]
+if {![regexp {Granted job allocation (\d+)} $salloc_output - job_id]} {
+	fail "Allocation not granted ($output)"
+}
+
+# Clear out the broadcast file
+run_command -fail -user $testsuite_user "$srun --jobid $job_id $bin_rm -f $bcast_file"
+
+# Attempt to broadcast the file
+set sbcast_output [run_command_output -user $testsuite_user -subtest "$sbcast --jobid $job_id $sbcast $bcast_file"]
+subtest {![regexp -line {error:.*Invalid user id} $sbcast_output]} "sbcast should NOT generate an error"
+
+# Verify the file was broadcasted
+set ls_output [run_command_output -user $testsuite_user -subtest "$srun --jobid $job_id ls $bcast_file"]
+subtest [regexp $bcast_file $ls_output] "The file should have been broadcasted"
+
+# Clear out the broadcast file
+run_command -fail -user $testsuite_user "$srun --jobid $job_id $bin_rm -f $bcast_file"
+run_command -fail -user $testsuite_user "$scancel $job_id"
+
+#
+# Test that testsuite_user cannot sbcast to jobs from other users
+#
+log_info "Test that unauthorized users cannot sbcast to a job"
+
 # Spawn an salloc job and obtain the job id
 set salloc_output [run_command_output -fail "$salloc -v -N1 -t2 --no-shell"]
 if {![regexp {Granted job allocation (\d+)} $salloc_output - job_id]} {
