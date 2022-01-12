@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "August 2021" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -8,10 +8,7 @@ gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
 of Generic RESource (GRES) on each compute node.
 If the GRES information in the slurm.conf file does not fully describe those
 resources, then a gres.conf file should be included on each compute node.
-The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
-environment variable. The file will always be located in the
-same directory as the \fBslurm.conf\fP file.
+The file will always be located in the same directory as the \fBslurm.conf\fR.
 
 .LP
 If the GRES information in the slurm.conf file fully describes those resources

@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "December 2021" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -7,10 +7,7 @@ cgroup.conf \- Slurm configuration file for the cgroup support
 
 \fBcgroup.conf\fP is an ASCII file which defines parameters used by
 Slurm's Linux cgroup related plugins.
-The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
-environment variable. The file will always be located in the
-same directory as the \fBslurm.conf\fP file.
+The file will always be located in the same directory as the \fBslurm.conf\fR.
 .LP
 Parameter names are case insensitive.
 Any text following a "#" in the configuration file is treated
