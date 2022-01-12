@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- Keep job completing until EpilogSlurmctld is completed even when "downing"
     a node.
  -- Fix handling reboot with multiple job features.
+ -- Fix nodes getting powered down when creating new partitions.
 
 * Changes in Slurm 21.08.5
 ==========================
