@@ -246,7 +246,7 @@ foreach preempt_mode $preempt_mode_list {
 
 			# Make job eligible to run now to avoid delay
 			run_command "$scontrol update job $qos_2_id $eligible_now_job_directive"
-			ait_for_job -fail $qos_2_id $done_state
+			wait_for_job -fail $qos_2_id $done_state
 			# Wait for requeued job to restart
 
 			# Make job eligible to run now to avoid delay
