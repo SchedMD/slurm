@@ -629,7 +629,7 @@ bail_out:
 	return;
 }
 
-static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
+static List _get_precs(List task_list, uint64_t cont_id,
 		       jag_callbacks_t *callbacks)
 {
 	int npids = 0;
@@ -859,9 +859,8 @@ static void _print_jag_prec(jag_prec_t *prec)
 	log_flag(JAG, "usec \t%f", prec->usec);
 }
 
-extern void jag_common_poll_data(
-	List task_list, bool pgid_plugin, uint64_t cont_id,
-	jag_callbacks_t *callbacks, bool profile)
+extern void jag_common_poll_data(List task_list, uint64_t cont_id,
+				 jag_callbacks_t *callbacks, bool profile)
 {
 	/* Update the data */
 	uint64_t total_job_mem = 0, total_job_vsize = 0;
@@ -894,7 +893,7 @@ extern void jag_common_poll_data(
 	ct = time(NULL);
 
 	(void)list_for_each(prec_list, (ListForF)_init_tres, NULL);
-	(*(callbacks->get_precs))(task_list, pgid_plugin, cont_id, callbacks);
+	(*(callbacks->get_precs))(task_list, cont_id, callbacks);
 
 	if (!list_count(prec_list) || !task_list || !list_count(task_list))
 		goto finished;	/* We have no business being here! */

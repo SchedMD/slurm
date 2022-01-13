@@ -242,7 +242,6 @@ extern int fini (void)
  * jobacct_gather_p_poll_data() - Build a table of all current processes
  *
  * IN/OUT: task_list - list containing current processes.
- * IN: pgid_plugin - if we are running with the pgid plugin.
  * IN: cont_id - container id of processes if not running with pgid.
  *
  * OUT:	none
@@ -256,7 +255,7 @@ extern int fini (void)
  *    wrong.
  */
 extern void jobacct_gather_p_poll_data(
-	List task_list, bool pgid_plugin, uint64_t cont_id, bool profile)
+	List task_list, int64_t cont_id, bool profile)
 {
 	static jag_callbacks_t callbacks;
 	static bool first = 1;
@@ -269,8 +268,7 @@ extern void jobacct_gather_p_poll_data(
 		callbacks.get_offspring_data = _get_offspring_data;
 	}
 
-	jag_common_poll_data(task_list, pgid_plugin, cont_id, &callbacks,
-			     profile);
+	jag_common_poll_data(task_list, cont_id, &callbacks, profile);
 	return;
 }
 

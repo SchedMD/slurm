@@ -380,8 +380,6 @@ extern int proctrack_g_signal(uint64_t cont_id, int signal)
 		char *stat_fname = NULL;
 		if (proctrack_g_get_pids(cont_id, &pids, &npids) ==
 		    SLURM_SUCCESS) {
-			/* NOTE: proctrack_g_get_pids() is not supported
-			 * by the proctrack/pgid plugin */
 			for (j = 0; j < 2; j++) {
 				if (j)
 					sleep(2);

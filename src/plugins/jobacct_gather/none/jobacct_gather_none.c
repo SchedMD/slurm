@@ -86,8 +86,7 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void jobacct_gather_p_poll_data(List task_list, bool pgid_plugin,
-				       uint64_t cont_id)
+extern void jobacct_gather_p_poll_data(List task_list, uint64_t cont_id)
 {
 	return;
 }
