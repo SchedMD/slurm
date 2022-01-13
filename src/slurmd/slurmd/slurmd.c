@@ -604,8 +604,7 @@ static int _load_gres()
 	if (node_rec && node_rec->config_ptr) {
 		uint32_t cpu_cnt;
 		List gres_list = NULL;
-		(void) gres_init_node_config(conf->node_name,
-					     node_rec->config_ptr->gres,
+		(void) gres_init_node_config(node_rec->config_ptr->gres,
 					     &gres_list);
 
 		cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);

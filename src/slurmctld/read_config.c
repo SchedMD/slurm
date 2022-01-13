@@ -1989,8 +1989,7 @@ static void _gres_reconfig(bool reconfig)
 			gres_name = node_ptr->gres;
 		else
 			gres_name = node_ptr->config_ptr->gres;
-		gres_init_node_config(node_ptr->name, gres_name,
-				      &node_ptr->gres_list);
+		gres_init_node_config(gres_name, &node_ptr->gres_list);
 		if (!IS_NODE_CLOUD(node_ptr))
 			continue;
 

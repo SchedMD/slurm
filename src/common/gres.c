@@ -2918,12 +2918,10 @@ static int _node_config_init(char *orig_config,
 
 /*
  * Build a node's gres record based only upon the slurm.conf contents
- * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT gres_list - List of Gres records for this node to track usage
  */
-extern int gres_init_node_config(char *node_name, char *orig_config,
-				 List *gres_list)
+extern int gres_init_node_config(char *orig_config, List *gres_list)
 {
 	int i, rc, rc2;
 	gres_state_t *gres_state_node, *gres_state_node_sharing = NULL,

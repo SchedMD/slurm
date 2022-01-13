@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	 * Logic normally executed by slurmctld daemon
 	 */
 	orig_config = "gpu:8";
-	rc = gres_init_node_config(node_name, orig_config, &node_gres_list);
+	rc = gres_init_node_config(orig_config, &node_gres_list);
 	if (rc)
 		fatal("failure: gres_init_node_config: %s",
 		      slurm_strerror(rc));
