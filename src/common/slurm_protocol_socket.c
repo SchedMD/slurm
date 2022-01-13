@@ -721,7 +721,11 @@ extern void slurm_pack_addr(slurm_addr_t *addr, buf_t *buffer)
 
 extern int slurm_unpack_addr_no_alloc(slurm_addr_t *addr, buf_t *buffer)
 {
-	safe_unpack16(&addr->ss_family, buffer);
+	uint16_t tmp_uint16 = 0;
+
+	/* ss_family is only uint8_t on BSD. */
+	safe_unpack16(&tmp_uint16, buffer);
+	addr->ss_family = tmp_uint16;
 
 	if (addr->ss_family == AF_INET6) {
 		uint32_t size;
