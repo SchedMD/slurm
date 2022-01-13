@@ -2253,17 +2253,23 @@
                     "type": "object",
                     "description": "Limits on jobs settings",
                     "properties": {
-                      "per": {
+                      "active_jobs": {
                         "type": "object",
-                        "description": "Limits on jobs per settings",
+                        "description": "Limits on active jobs settings",
                         "properties": {
-                          "account": {
-                            "type": "integer",
-                            "description": "Max jobs per account"
-                          },
-                          "user": {
-                            "type": "integer",
-                            "description": "Max jobs per user"
+                          "per": {
+                            "type": "object",
+                            "description": "Limits on active jobs per settings",
+                            "properties": {
+                              "account": {
+                                "type": "integer",
+                                "description": "Max jobs per account"
+                              },
+                              "user": {
+                                "type": "integer",
+                                "description": "Max jobs per user"
+                              }
+                            }
                           }
                         }
                       }

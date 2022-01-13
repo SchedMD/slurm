@@ -61,6 +61,30 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h4>Move incorrectly named field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">old path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.max.jobs.per.account</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.max.jobs.active_jobs.per.account</td>
+</tr>
+</table>
+
+<h4>Move incorrectly named field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">old path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.jobs.properties.per.properties.user</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.jobs.properties.active_jobs.properties.per.properties.user</td>
+</tr>
+</table>
+
 <h2>Slurm 21.08.3</h2>
 
 <h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>

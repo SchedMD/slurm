@@ -242,7 +242,6 @@ static const parser_t parse_assoc[] = {
 	_add_parse(UINT32, max_jobs, "max/jobs/active"),
 	_add_parse(UINT32, max_jobs_accrue, "max/jobs/accruing"),
 	_add_parse(UINT32, max_submit_jobs, "max/jobs/total"),
-	_add_parse(TRES_LIST, max_tres_mins_pj, "max/tres/minutes/per/job"),
 	/* skipping max_tres_mins_ctld (not packed) */
 	_add_parse(TRES_LIST, max_tres_run_mins, "max/tres/minutes/total"),
 	/* skipping grp_tres_run_mins_ctld (not packed) */
@@ -495,8 +494,9 @@ static const parser_t parse_qos[] = {
 	/* skipping grp_tres_run_mins_ctld (not packed) */
 	_add_parse_req(STRING, name, "name"),
 	_add_parse(UINT32, grp_wall, "limits/max/wall_clock/per/qos"),
-	_add_parse(UINT32, max_jobs_pa, "limits/max/jobs/per/account"),
-	_add_parse(UINT32, max_jobs_pu, "limits/max/jobs/per/user"),
+	_add_parse(UINT32, max_jobs_pa,
+		   "limits/max/jobs/active_jobs/per/account"),
+	_add_parse(UINT32, max_jobs_pu, "limits/max/jobs/active_jobs/per/user"),
 	_add_parse(UINT32, max_jobs_accrue_pa,
 		   "limits/max/accruing/per/account"),
 	_add_parse(UINT32, max_jobs_accrue_pu, "limits/max/accruing/per/user"),
