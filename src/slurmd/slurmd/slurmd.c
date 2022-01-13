@@ -595,6 +595,35 @@ cleanup:
 	return NULL;
 }
 
+static int _load_gres()
+{
+	int rc;
+	node_record_t *node_rec;
+
+	node_rec = find_node_record(conf->node_name);
+	if (node_rec && node_rec->config_ptr) {
+		uint32_t cpu_cnt;
+		List gres_list = NULL;
+		(void) gres_init_node_config(conf->node_name,
+					     node_rec->config_ptr->gres,
+					     &gres_list);
+		/* Send the slurm.conf GRES to the stepd */
+		conf->gres = xstrdup(node_rec->config_ptr->gres);
+
+		cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
+		rc = gres_g_node_config_load(cpu_cnt, conf->node_name, gres_list,
+					     (void *)&xcpuinfo_abs_to_mac,
+					     (void *)&xcpuinfo_mac_to_abs);
+		FREE_NULL_LIST(gres_list);
+	} else {
+		rc = SLURM_ERROR;
+		error("Unable to find node record for node:%s",
+		      conf->node_name);
+	}
+
+	return rc;
+}
+
 static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 {
 	int rc;
@@ -1105,10 +1134,6 @@ static void _build_conf_buf(void)
 static void
 _reconfigure(void)
 {
-	uint32_t cpu_cnt;
-	node_record_t *node_rec;
-	List gres_list = NULL;
-
 	_reconfig = 0;
 	slurm_conf_reinit(conf->conffile);
 	cgroup_conf_reinit();
@@ -1148,24 +1173,11 @@ _reconfigure(void)
 	(void) switch_g_reconfig();
 	container_g_reconfig();
 	prep_g_reconfig();
-	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 
 	init_node_conf();
 	build_all_nodeline_info(true, 0);
 	build_all_frontend_info(true);
-	node_rec = find_node_record2(conf->node_name);
-	if (node_rec && node_rec->config_ptr) {
-		(void) gres_init_node_config(conf->node_name,
-					     node_rec->config_ptr->gres,
-					     &gres_list);
-
-		/* Send the slurm.conf GRES to the stepd */
-		conf->gres = xstrdup(node_rec->config_ptr->gres);
-	}
-	(void) gres_g_node_config_load(cpu_cnt, conf->node_name, gres_list,
-				       (void *)&xcpuinfo_abs_to_mac,
-				       (void *)&xcpuinfo_mac_to_abs);
-	FREE_NULL_LIST(gres_list);
+	_load_gres();
 
 	_build_conf_buf();
 
@@ -1363,8 +1375,6 @@ _print_config(void)
 
 static void _print_gres(void)
 {
-	List gres_list = NULL;
-	struct node_record *node_rec = NULL;
 	log_options_t *o = &conf->log_opts;
 
 	o->logfile_level = LOG_LEVEL_QUIET;
@@ -1372,22 +1382,8 @@ static void _print_gres(void)
 	o->syslog_level = LOG_LEVEL_INFO;
 	o->prefix_level = false;
 	log_alter(conf->log_opts, SYSLOG_FACILITY_USER, NULL);
-	node_rec = find_node_record(conf->node_name);
 
-	if (node_rec && node_rec->config_ptr) {
-		gres_init_node_config(conf->node_name,
-				      node_rec->config_ptr->gres,
-				      &gres_list);
-
-		gres_g_node_config_load(1024, /*Do not need real #CPU*/
-					conf->node_name, gres_list,
-					(void *)&xcpuinfo_abs_to_mac,
-					(void *)&xcpuinfo_mac_to_abs);
-		FREE_NULL_LIST(gres_list);
-	} else {
-		fatal("Unable to find node record for node:%s",
-		      conf->node_name);
-	}
+	_load_gres();
 
 	exit(0);
 }
@@ -1675,10 +1671,7 @@ _slurmd_init(void)
 {
 	struct rlimit rlim;
 	struct stat stat_buf;
-	uint32_t cpu_cnt;
-	node_record_t *node_rec = NULL;
-	List gres_list = NULL;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	/*
 	 * Process commandline arguments first, since one option may be
@@ -1728,7 +1721,7 @@ _slurmd_init(void)
 
 	/* Dynamic nodes won't be found at this point */
 	if (!conf->dynamic &&
-	    !(node_rec = find_node_record(conf->node_name)))
+	    !find_node_record(conf->node_name))
 		return SLURM_ERROR;
 
 	/*
@@ -1758,20 +1751,9 @@ _slurmd_init(void)
 	if (xcpuinfo_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
+	fini_job_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
-	/* node_rec==NULL is expected for dynamic nodes */
-	if (node_rec && node_rec->config_ptr) {
-		(void) gres_init_node_config(conf->node_name,
-					     node_rec->config_ptr->gres,
-					     &gres_list);
-		/* Send the slurm.conf GRES to the stepd */
-		conf->gres = xstrdup(node_rec->config_ptr->gres);
-	}
-	rc = gres_g_node_config_load(cpu_cnt, conf->node_name, gres_list,
-				     (void *)&xcpuinfo_abs_to_mac,
-				     (void *)&xcpuinfo_mac_to_abs);
-	FREE_NULL_LIST(gres_list);
+	rc = _load_gres();
 	if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (slurm_topo_init() != SLURM_SUCCESS)
