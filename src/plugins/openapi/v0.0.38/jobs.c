@@ -39,6 +39,7 @@
 #define _GNU_SOURCE
 
 #include <search.h>
+#include <signal.h>
 #include <stdint.h>
 #include <unistd.h>
 
