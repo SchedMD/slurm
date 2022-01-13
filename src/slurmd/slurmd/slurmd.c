@@ -920,12 +920,6 @@ _read_config(void)
 	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_nodename(conf->hostname);
 
-	if ((conf->node_name == NULL) && conf->dynamic) {
-		char hostname[HOST_NAME_MAX];
-		if (!gethostname(hostname, HOST_NAME_MAX))
-			conf->node_name = xstrdup(hostname);
-	}
-
 	/*
 	 * If we didn't match the form of the hostname already stored in
 	 * conf->hostname, check to see if we match any valid aliases
@@ -947,10 +941,7 @@ _read_config(void)
 
 	_massage_pathname(&conf->logfile);
 
-	if (conf->dynamic)
-		conf->port = cf->slurmd_port;
-	else
-		conf->port = slurm_conf_get_port(conf->node_name);
+	conf->port = slurm_conf_get_port(conf->node_name);
 	slurm_conf.slurmd_port = conf->port;
 	slurm_conf_get_cpus_bsct(conf->node_name,
 				 &conf->conf_cpus, &conf->conf_boards,
@@ -1023,11 +1014,7 @@ _read_config(void)
 	 */
 	config_overrides = cf->conf_flags & CTL_CONF_OR;
 	if (conf->dynamic) {
-		conf->cpus    = conf->actual_cpus;
-		conf->boards  = conf->actual_boards;
-		conf->sockets = conf->actual_sockets;
-		conf->cores   = conf->actual_cores;
-		conf->threads = conf->actual_threads;
+		/* Already set to actual config earlier in _slurmd_init() */
 	} else if (!config_overrides && (conf->actual_cpus < conf->conf_cpus)) {
 		conf->cpus    = conf->actual_cpus;
 		conf->boards  = conf->actual_boards;
@@ -1707,15 +1694,43 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	}
 
+	if (conf->dynamic) {
+		/*
+		 * dynamic future nodes need to be mapped to a slurm.conf node
+		 * in order to load in correct configs (e.g. gres, etc.). First
+		 * get the mapped node_name from the slurmctld.
+		 */
+		char hostname[HOST_NAME_MAX];
+		if (!gethostname(hostname, HOST_NAME_MAX))
+			conf->node_name = xstrdup(hostname);
+
+		xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
+					&conf->actual_boards,
+					&conf->actual_sockets,
+					&conf->actual_cores,
+					&conf->actual_threads,
+					&conf->block_map_size,
+					&conf->block_map, &conf->block_map_inv);
+
+		conf->cpus    = conf->actual_cpus;
+		conf->boards  = conf->actual_boards;
+		conf->sockets = conf->actual_sockets;
+		conf->cores   = conf->actual_cores;
+		conf->threads = conf->actual_threads;
+
+		send_registration_msg(SLURM_SUCCESS, false);
+
+		/* send registration again after loading everything in */
+		sent_reg_time = 0;
+	}
+
 	/*
 	 * Read global slurm config file, override necessary values from
 	 * defaults and command line.
 	 */
 	_read_config();
 
-	/* Dynamic nodes won't be found at this point */
-	if (!conf->dynamic &&
-	    !find_node_record(conf->node_name))
+	if (!find_node_record(conf->node_name))
 		return SLURM_ERROR;
 
 	/*
