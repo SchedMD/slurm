@@ -672,7 +672,7 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 		/* assoc_mgr_post_tres_list will destroy the list */
 		resp->tres_list = NULL;
 
-		if (resp->node_name) {
+		if (conf->dynamic && resp->node_name) {
 			xfree(conf->node_name);
 			conf->node_name = resp->node_name;
 		}
