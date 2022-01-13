@@ -782,7 +782,7 @@ error:
 
 extern int jobacct_gather_set_proctrack_container_id(uint64_t id)
 {
-	if (!plugin_polling || pgid_plugin)
+	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
 	if (cont_id != NO_VAL64)

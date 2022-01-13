@@ -632,74 +632,37 @@ bail_out:
 static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 		       jag_callbacks_t *callbacks)
 {
-	static	int	slash_proc_open = 0;
-	int i;
+	int npids = 0;
 	struct jobacctinfo *jobacct = NULL;
+	pid_t *pids = NULL;
 
 	xassert(task_list);
 
 	jobacct = list_peek(task_list);
 
-	if (!pgid_plugin) {
-		pid_t *pids = NULL;
-		int npids = 0;
-		/* get only the processes in the proctrack container */
-		proctrack_g_get_pids(cont_id, &pids, &npids);
-		if (!npids) {
-			/* update consumed energy even if pids do not exist */
-			if (jobacct) {
-				acct_gather_energy_g_get_sum(
-					energy_profile,
-					&jobacct->energy);
-				jobacct->tres_usage_in_tot[TRES_ARRAY_ENERGY] =
-					jobacct->energy.consumed_energy;
-				jobacct->tres_usage_out_tot[TRES_ARRAY_ENERGY] =
-					jobacct->energy.current_watts;
-				log_flag(JAG, "energy = %"PRIu64" watts = %"PRIu64,
-					 jobacct->tres_usage_in_tot[
-						TRES_ARRAY_ENERGY],
-					 jobacct->tres_usage_out_tot[
-						TRES_ARRAY_ENERGY]);
-			}
-
-			log_flag(JAG, "no pids in this container %"PRIu64"",
-				 cont_id);
-			goto finished;
-		}
-		for (i = 0; i < npids; i++) {
+	/* get only the processes in the proctrack container */
+	proctrack_g_get_pids(cont_id, &pids, &npids);
+	if (npids) {
+		for (int i = 0; i < npids; i++) {
 			_handle_stats(pids[i], callbacks,
 				      jobacct ? jobacct->tres_count : 0);
 		}
 		xfree(pids);
 	} else {
-		struct dirent *slash_proc_entry;
-		char *iptr = NULL;
-		long pid;
-
-		if (slash_proc_open) {
-			rewinddir(slash_proc);
-		} else {
-			slash_proc=opendir("/proc");
-			if (slash_proc == NULL) {
-				perror("opening /proc");
-				goto finished;
-			}
-			slash_proc_open=1;
+		/* update consumed energy even if pids do not exist */
+		if (jobacct) {
+			acct_gather_energy_g_get_sum(energy_profile,
+						     &jobacct->energy);
+			jobacct->tres_usage_in_tot[TRES_ARRAY_ENERGY] =
+				jobacct->energy.consumed_energy;
+			jobacct->tres_usage_out_tot[TRES_ARRAY_ENERGY] =
+				jobacct->energy.current_watts;
+			log_flag(JAG, "energy = %"PRIu64" watts = %u",
+				 jobacct->energy.consumed_energy,
+				 jobacct->energy.current_watts);
 		}
-
-		while ((slash_proc_entry = readdir(slash_proc))) {
-			/* is this a number? (if yes, it should be a pid) */
-			pid = strtol(slash_proc_entry->d_name, &iptr, 10);
-			if ((iptr == slash_proc_entry->d_name) ||
-			     (pid == LONG_MAX) || (pid == LONG_MIN))
-				continue;
-
-			_handle_stats(pid, callbacks,
-				      jobacct ? jobacct->tres_count : 0);
-		}
+		log_flag(JAG, "no pids in this container %"PRIu64, cont_id);
 	}
-
-finished:
 
 	return prec_list;
 }
@@ -914,7 +877,7 @@ extern void jag_common_poll_data(
 
 	xassert(callbacks);
 
-	if (!pgid_plugin && (cont_id == NO_VAL64)) {
+	if (cont_id == NO_VAL64) {
 		log_flag(JAG, "cont_id hasn't been set yet not running poll");
 		return;
 	}
