@@ -36,6 +36,7 @@
 
 #include <fcntl.h>
 #include <grp.h>
+#include <limits.h>
 #include <nss.h>
 #include <pwd.h>
 #include <stdio.h>
