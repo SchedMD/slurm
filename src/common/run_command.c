@@ -256,7 +256,8 @@ extern char *run_command(run_command_args_t *args)
 			 * exists in track_script - if not, then we need to bail
 			 * since this script was killed.
 			 */
-			if (args->tid && track_script_killed(args->tid, 0))
+			if (args->tid &&
+			    track_script_killed(args->tid, 0, false))
 				break;
 
 			fds.fd = pfd[0];

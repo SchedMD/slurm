@@ -66,7 +66,7 @@ extern void track_script_rec_add(uint32_t job_id, pid_t cpid, pthread_t tid);
  * Return true if the script was SIGKILL'd (usually by track_script_flush() or
  * track_script_flush_job())
  */
-extern bool track_script_killed(pthread_t tid, int status);
+extern bool track_script_killed(pthread_t tid, int status, bool waitpid_called);
 
 /* Remove this thread from the track_script system */
 extern void track_script_remove(pthread_t tid);

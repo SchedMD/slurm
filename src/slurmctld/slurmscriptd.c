@@ -394,7 +394,7 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 
 	track_script_rec_add(job_id, 0, pthread_self());
 	resp = run_command(run_command_args);
-	if ((killed = track_script_killed(pthread_self(), status))) {
+	if ((killed = track_script_killed(pthread_self(), status, true))) {
 		info("%s: JobId=%u %s killed by signal %u",
 		     __func__, job_id, run_command_args->script_type,
 		     WTERMSIG(status));
@@ -557,7 +557,7 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 			 * exists in track_script - if not, then we need to bail
 			 * since this script was killed.
 			 */
-			if (track_script_killed(pthread_self(), 0))
+			if (track_script_killed(pthread_self(), 0, false))
 				break;
 
 			fds.fd = pfd[0];
@@ -620,7 +620,7 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 
 		/* If we were killed by track_script, let the caller know. */
 		*track_script_signalled =
-			track_script_killed(pthread_self(), status);
+			track_script_killed(pthread_self(), status, true);
 
 		track_script_remove(pthread_self());
 	}

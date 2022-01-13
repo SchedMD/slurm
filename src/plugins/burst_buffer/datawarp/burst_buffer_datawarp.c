@@ -1357,7 +1357,7 @@ static void *_start_stage_in(void *x)
 	info("setup for job JobId=%u ran for %s",
 	     stage_args->job_id, TIME_STR);
 
-	if (track_script_killed(pthread_self(), status)) {
+	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("setup for JobId=%u terminated by slurmctld",
 		     stage_args->job_id);
@@ -1425,7 +1425,7 @@ static void *_start_stage_in(void *x)
 		END_TIMER;
 		info("dws_data_in for JobId=%u ran for %s",
 		     stage_args->job_id, TIME_STR);
-		if (track_script_killed(pthread_self(), status)) {
+		if (track_script_killed(pthread_self(), status, true)) {
 			/* I was killed by slurmtrack, bail out right now */
 			info("dws_data_in for JobId=%u terminated by slurmctld",
 			     stage_args->job_id);
@@ -1485,7 +1485,7 @@ static void *_start_stage_in(void *x)
 			info("real_size ran for %s",
 			     TIME_STR);
 
-		if (track_script_killed(pthread_self(), status)) {
+		if (track_script_killed(pthread_self(), status, true)) {
 			/* I was killed by slurmtrack, bail out right now */
 			info("real_size for JobId=%u terminated by slurmctld",
 			     stage_args->job_id);
@@ -1679,7 +1679,7 @@ static void *_start_stage_out(void *x)
 		     stage_args->job_id, TIME_STR);
 	}
 
-	if (track_script_killed(pthread_self(), status)) {
+	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("dws_post_run for JobId=%u terminated by slurmctld",
 		     stage_args->job_id);
@@ -1741,7 +1741,7 @@ static void *_start_stage_out(void *x)
 			     TIME_STR);
 		}
 
-		if (track_script_killed(pthread_self(), status)) {
+		if (track_script_killed(pthread_self(), status, true)) {
 			/* I was killed by slurmtrack, bail out right now */
 			info("dws_data_out for JobId=%u terminated by slurmctld",
 			     stage_args->job_id);
@@ -1931,7 +1931,7 @@ static void *_start_teardown(void *x)
 	info("teardown for JobId=%u ran for %s",
 	     teardown_args->job_id, TIME_STR);
 
-	if (track_script_killed(pthread_self(), status)) {
+	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("teardown for JobId=%u terminated by slurmctld",
 		     teardown_args->job_id);
@@ -3695,7 +3695,7 @@ static void *_start_pre_run(void *x)
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 
-	if (track_script_killed(pthread_self(), status)) {
+	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("dws_pre_run for JobId=%u terminated by slurmctld",
 		     pre_run_args->job_id);
@@ -4300,7 +4300,7 @@ static void *_create_persistent(void *x)
 	info("create_persistent of %s ran for %s",
 	     create_args->name, TIME_STR);
 
-	if (track_script_killed(pthread_self(), status)) {
+	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("create_persistent for JobId=%u terminated by slurmctld",
 		     create_args->job_id);
@@ -4462,7 +4462,7 @@ static void *_destroy_persistent(void *x)
 	info("destroy_persistent of %s ran for %s",
 	     destroy_args->name, TIME_STR);
 
-	if (track_script_killed(pthread_self(), status)) {
+	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("destroy_persistent for JobId=%u terminated by slurmctld",
 		     destroy_args->job_id);
