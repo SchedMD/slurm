@@ -85,6 +85,20 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h4>Add QOS fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.37_qos".properties.limits.properties.factor</li>
+			<li>.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.accruing.properties.per.properties.account</li>
+			<li>.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.accruing.properties.per.properties.user</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h2>Slurm 21.08.3</h2>
 
 <h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>

@@ -2225,6 +2225,10 @@
             "type": "object",
             "description": "Assigned limits",
             "properties": {
+              "factor": {
+                "type": "number",
+                "description": "factor to apply to TRES count for associations using this QOS"
+              },
               "max": {
                 "type": "object",
                 "description": "Limits on max settings",
