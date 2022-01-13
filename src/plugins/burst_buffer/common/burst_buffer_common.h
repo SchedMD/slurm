@@ -227,10 +227,6 @@ enum {
 	BB_NOT_ENOUGH_RESOURCES,
 };
 
-/* Insert the contents of "burst_buffer_file" into "script_body" */
-extern void  bb_add_bb_to_script(char **script_body,
-				 const char *burst_buffer_file);
-
 /* Allocate burst buffer hash tables */
 extern void bb_alloc_cache(bb_state_t *state_ptr);
 

@@ -58,6 +58,7 @@
 #include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/run_command.h"
 #include "src/common/select.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -69,7 +70,6 @@
 #define MAX_RETRIES 15
 #define MAX_WAIT_SLEEP_TIME 32
 
-static void  _add_bb_to_script(char **script_body, char *burst_buffer_file);
 static int   _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *_get_script_buffer(const char *filename, int *size);
 static int   _job_wait(uint32_t job_id);
@@ -169,7 +169,8 @@ int main(int argc, char **argv)
 				error("Invalid --bbf specification");
 				exit(error_exit);
 			}
-			_add_bb_to_script(&script_body, get_buf_data(buf));
+			run_command_add_to_script(&script_body,
+						  get_buf_data(buf));
 			free_buf(buf);
 		}
 
@@ -352,55 +353,6 @@ int main(int argc, char **argv)
 	xfree(script_body);
 
 	return rc;
-}
-
-/* Insert the contents of "burst_buffer_file" into "script_body" */
-static void  _add_bb_to_script(char **script_body, char *burst_buffer_file)
-{
-	char *orig_script = *script_body;
-	char *new_script, *sep, save_char;
-	int i;
-	char *bbf = NULL;
-
-	if (!burst_buffer_file || (burst_buffer_file[0] == '\0'))
-		return;	/* No burst buffer file or empty file */
-
-	if (!orig_script) {
-		*script_body = xstrdup(burst_buffer_file);
-		return;
-	}
-	bbf = xstrdup(burst_buffer_file);
-	i = strlen(bbf) - 1;
-	if (bbf[i] != '\n')	/* Append new line as needed */
-		xstrcat(bbf, "\n");
-
-	if (orig_script[0] != '#') {
-		/* Prepend burst buffer file */
-		new_script = bbf;
-		xstrcat(new_script, orig_script);
-		*script_body = new_script;
-		return;
-	}
-
-	sep = strchr(orig_script, '\n');
-	if (sep) {
-		save_char = sep[1];
-		sep[1] = '\0';
-		new_script = xstrdup(orig_script);
-		xstrcat(new_script, bbf);
-		sep[1] = save_char;
-		xstrcat(new_script, sep + 1);
-		*script_body = new_script;
-		xfree(bbf);
-		return;
-	} else {
-		new_script = xstrdup(orig_script);
-		xstrcat(new_script, "\n");
-		xstrcat(new_script, bbf);
-		*script_body = new_script;
-		xfree(bbf);
-		return;
-	}
 }
 
 /* Wait for specified job ID to terminate, return it's exit code */

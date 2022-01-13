@@ -40,6 +40,22 @@
 #include "src/common/track_script.h"
 
 /*
+ * run_command_add_to_script
+ *
+ * Insert contents of "new_str" into "script_body"
+ *
+ * If new_str is NULL or empty, then this does nothing.
+ * If *script_body is NULL, then this sets *script_body to new_str.
+ * If *script_body begins with a '#' character (presumably the shebang line),
+ * then this adds new_str to the line below.
+ * Otherwise, this prepends *script_body with new_str.
+ *
+ * IN/OUT script_body - pointer to the string that represents the script.
+ * IN new_str - the string to insert into *script_body
+ */
+extern void run_command_add_to_script(char **script_body, char *new_str);
+
+/*
  * Used to initialize this run_command module.
  * Needed in cases of high-availability when the backup controllers are
  * returning to function and must recover from a previously issued shutdown.

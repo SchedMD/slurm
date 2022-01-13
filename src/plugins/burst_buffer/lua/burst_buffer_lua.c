@@ -1170,7 +1170,8 @@ static int _xlate_batch(job_desc_msg_t *job_desc)
 	 * Any command line --bb options get added to the script
 	 */
 	if (job_desc->burst_buffer) {
-		bb_add_bb_to_script(&job_desc->script, job_desc->burst_buffer);
+		run_command_add_to_script(&job_desc->script,
+					  job_desc->burst_buffer);
 		xfree(job_desc->burst_buffer);
 	}
 

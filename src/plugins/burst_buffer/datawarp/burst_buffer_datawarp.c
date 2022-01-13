@@ -2296,7 +2296,8 @@ static int _xlate_batch(job_desc_msg_t *job_desc)
 		rc = _xlate_interactive(job_desc);
 		if (rc != SLURM_SUCCESS)
 			return rc;
-		bb_add_bb_to_script(&job_desc->script, job_desc->burst_buffer);
+		run_command_add_to_script(&job_desc->script,
+					  job_desc->burst_buffer);
 		xfree(job_desc->burst_buffer);
 	}
 

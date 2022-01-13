@@ -65,6 +65,59 @@ static pthread_mutex_t proc_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define MAX_POLL_WAIT 500
 
+extern void run_command_add_to_script(char **script_body, char *new_str)
+{
+	char *orig_script = *script_body;
+	char *new_script, *sep, save_char;
+	char *tmp_str = NULL;
+	int i;
+
+	if (!new_str || (new_str[0] == '\0'))
+		return;	/* Nothing to prepend */
+
+	if (!orig_script) {
+		*script_body = xstrdup(new_str);
+		return;
+	}
+
+	tmp_str = xstrdup(new_str);
+	i = strlen(tmp_str) - 1;
+	if (tmp_str[i] != '\n')	/* Append new line as needed */
+		xstrcat(tmp_str, "\n");
+
+	if (orig_script[0] != '#') {
+		/* Prepend new lines */
+		new_script = xstrdup(tmp_str);
+		xstrcat(new_script, orig_script);
+		xfree(*script_body);
+		*script_body = new_script;
+		xfree(tmp_str);
+		return;
+	}
+
+	sep = strchr(orig_script, '\n');
+	if (sep) {
+		save_char = sep[1];
+		sep[1] = '\0';
+		new_script = xstrdup(orig_script);
+		xstrcat(new_script, tmp_str);
+		sep[1] = save_char;
+		xstrcat(new_script, sep + 1);
+		xfree(*script_body);
+		*script_body = new_script;
+		xfree(tmp_str);
+		return;
+	} else {
+		new_script = xstrdup(orig_script);
+		xstrcat(new_script, "\n");
+		xstrcat(new_script, tmp_str);
+		xfree(*script_body);
+		*script_body = new_script;
+		xfree(tmp_str);
+		return;
+	}
+}
+
 /* used to initialize run_command module */
 extern void run_command_init(void)
 {
