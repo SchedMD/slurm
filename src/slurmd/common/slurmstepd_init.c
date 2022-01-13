@@ -72,7 +72,6 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, buf_t *buffer)
 	packstr(conf->node_topo_addr, buffer);
 	packstr(conf->node_topo_pattern, buffer);
 	pack16(conf->port, buffer);
-	packstr(conf->gres, buffer);
 }
 
 extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, buf_t *buffer)
@@ -114,7 +113,6 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, buf_t *buffer)
 		safe_unpackstr_xmalloc(&conf->node_topo_addr, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&conf->node_topo_pattern, &uint32_tmp, buffer);
 		safe_unpack16(&conf->port, buffer);
-		safe_unpackstr_xmalloc(&conf->gres, &uint32_tmp, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -128,6 +126,5 @@ unpack_error:
 	xfree(conf->logfile);
 	xfree(conf->node_topo_addr);
 	xfree(conf->node_topo_pattern);
-	xfree(conf->gres);
 	return SLURM_ERROR;
 }

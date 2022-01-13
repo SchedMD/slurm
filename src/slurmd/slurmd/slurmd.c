@@ -607,8 +607,6 @@ static int _load_gres()
 		(void) gres_init_node_config(conf->node_name,
 					     node_rec->config_ptr->gres,
 					     &gres_list);
-		/* Send the slurm.conf GRES to the stepd */
-		conf->gres = xstrdup(node_rec->config_ptr->gres);
 
 		cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 		rc = gres_g_node_config_load(cpu_cnt, conf->node_name, gres_list,
@@ -899,8 +897,6 @@ _read_config(void)
 
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(cf->slurm_conf);
-
-	xfree(conf->gres);
 
 	path_pubkey = xstrdup(cf->job_credential_public_certificate);
 
@@ -1328,7 +1324,6 @@ _destroy_conf(void)
 		xfree(conf->pubkey);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
-		xfree(conf->gres);
 		slurm_mutex_destroy(&conf->config_mutex);
 		FREE_NULL_LIST(conf->starting_steps);
 		slurm_cond_destroy(&conf->starting_steps_cond);
