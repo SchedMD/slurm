@@ -86,7 +86,12 @@ static int _handle_device_access(void *x, void *arg)
 	limits.device_major = gres_device->major;
 	limits.taskid = handle_args->taskid;
 
-	cgroup_g_constrain_set(CG_DEVICES, handle_args->cgroup_type, &limits);
+	if (cgroup_g_constrain_set(CG_DEVICES, handle_args->cgroup_type,
+				   &limits) != SLURM_SUCCESS) {
+		error("Unable to set access constraint for device %s(%s)",
+		      gres_device->major, gres_device->path);
+		return SLURM_ERROR; /* Quit for-each */
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -128,6 +133,7 @@ extern int task_cgroup_devices_fini(void)
 
 extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 {
+	int rc = SLURM_SUCCESS;
 	List job_gres_list = job->job_gres_list;
 	List step_gres_list = job->step_gres_list;
 	List device_list = NULL;
@@ -144,11 +150,17 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	device_list = gres_g_get_devices(job_gres_list, true, 0, NULL, 0, 0);
 
 	if (device_list) {
+		int tmp;
+
 		handle_args.cgroup_type = CG_LEVEL_JOB;
 		handle_args.job = job;
-		list_for_each(device_list, _handle_device_access,
-			      &handle_args);
+		tmp = list_for_each(device_list, _handle_device_access,
+				    &handle_args);
 		FREE_NULL_LIST(device_list);
+		if (tmp < 0) {
+			rc = SLURM_ERROR;
+			goto fini;
+		}
 	}
 
 	if ((job->step_id.step_id != SLURM_BATCH_SCRIPT) &&
@@ -162,15 +174,22 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 						 0, 0);
 
 		if (device_list) {
+			int tmp;
+
 			handle_args.cgroup_type = CG_LEVEL_STEP;
 			handle_args.job = job;
-			list_for_each(device_list, _handle_device_access,
-				      &handle_args);
+			tmp = list_for_each(device_list, _handle_device_access,
+					    &handle_args);
 			FREE_NULL_LIST(device_list);
+			if (tmp < 0) {
+				rc = SLURM_ERROR;
+				goto fini;
+			}
 		}
 	}
 
-	return SLURM_SUCCESS;
+fini:
+	return rc;
 }
 
 extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
@@ -202,12 +221,16 @@ extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
 					 job->accel_bind_type, job->tres_bind,
 					 taskid, pid);
 	if (device_list) {
+		int tmp;
+
 		handle_args.cgroup_type = CG_LEVEL_TASK;
 		handle_args.job = job;
 		handle_args.taskid = taskid;
-		list_for_each(device_list, _handle_device_access,
-			      &handle_args);
+		tmp = list_for_each(device_list, _handle_device_access,
+				    &handle_args);
 		FREE_NULL_LIST(device_list);
+		if (tmp < 0)
+			return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
