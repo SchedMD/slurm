@@ -317,7 +317,6 @@ static data_for_each_cmd_t _per_job_param(const char *key, const data_t *data,
 static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 {
 	const sbatch_opt_t *sbopt = opt->sbatch_opt;
-	extern char **environ;
 
 	if (!desc)
 		return -1;
