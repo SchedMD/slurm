@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd / openapi - fix memory leaks.
  -- Fix slurmctld segfault due to job array resv_list double free.
  -- Fix multi-reservation job testing logic.
+ -- Fix slurmctld segfault due to insufficient job reservation parse validation.
 
 * Changes in Slurm 21.08.5
 ==========================

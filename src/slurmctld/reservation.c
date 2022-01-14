@@ -4307,6 +4307,12 @@ static int _get_resv_list(job_record_t *job_ptr, char **err_resv)
 
 	tmp_name = xstrdup(job_ptr->resv_name);
 	token = strtok_r(tmp_name, ",", &last);
+	if (!token) {
+		rc = ESLURM_RESERVATION_INVALID;
+		FREE_NULL_LIST(job_ptr->resv_list);
+		xfree(*err_resv);
+		*err_resv = xstrdup(job_ptr->resv_name);
+	}
 	while (token) {
 		resv_ptr = find_resv_name(token);
 		if (resv_ptr) {
