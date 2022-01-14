@@ -1,0 +1,59 @@
+<h2>Slurm 21.08.6</h2>
+
+<h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
+
+<h4>Add association fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.37_association".properties.is_default</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.tres.group.minutes</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.tres.group.active</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.jobs.active</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.jobs.accruing</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.jobs.total</li>
+			<li>.components.schemas."dbv0.0.37_association".properties.max.tres.minutes.per.job</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Move incorrectly named field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">old path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.max.jobs.per.account</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.max.jobs.active_jobs.per.account</td>
+</tr>
+</table>
+
+<h4>Move incorrectly named field</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">old path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.jobs.properties.per.properties.user</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.jobs.properties.active_jobs.properties.per.properties.user</td>
+</tr>
+</table>
+
+<h4>Add QOS fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.37_qos".properties.limits.properties.factor</li>
+			<li>.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.accruing.properties.per.properties.account</li>
+			<li>.components.schemas."dbv0.0.37_qos".properties.limits.properties.max.properties.accruing.properties.per.properties.user</li>
+		</ul>
+	</td>
+</tr>
+</table>

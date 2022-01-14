@@ -231,12 +231,24 @@ static const parser_t parse_assoc[] = {
 	_add_parse(TRES_LIST, grp_tres, "max/tres/total"),
 	/* skipping gres_tres_ctld  (not packed) */
 	_add_parse(TRES_LIST, max_tres_mins_pj, "max/tres/minutes/per/job"),
+	_add_parse(TRES_LIST, grp_tres_mins, "max/tres/group/minutes"),
+	/* skipping grp_tres_mins_ctld (not packed) */
+	_add_parse(TRES_LIST, grp_tres_run_mins, "max/tres/group/active"),
+	/* skipping grp_tres_run_mins_ctld (not packed) */
 	/* skipping max_tres_mins_ctld */
+	/* skipping id */
+	_add_parse(UINT16, is_def, "is_default"),
+	/* skipping lft */
+	_add_parse(UINT32, max_jobs, "max/jobs/active"),
+	_add_parse(UINT32, max_jobs_accrue, "max/jobs/accruing"),
+	_add_parse(UINT32, max_submit_jobs, "max/jobs/total"),
+	/* skipping max_tres_mins_ctld (not packed) */
 	_add_parse(TRES_LIST, max_tres_run_mins, "max/tres/minutes/total"),
 	/* skipping grp_tres_run_mins_ctld (not packed) */
 	_add_parse(UINT32, grp_wall, "max/per/account/wall_clock"),
+	/* skipping max_tres_mins_ctld (not packed) */
 	_add_parse(TRES_LIST, max_tres_pj, "max/tres/per/job"),
-	/* skipping max_tres_ctld */
+	/* skipping max_tres_ctld (not packed) */
 	_add_parse(TRES_LIST, max_tres_pn, "max/tres/per/node"),
 	/* skipping max_tres_pn_ctld */
 	_add_parse(UINT32, max_wall_pj, "max/jobs/per/wall_clock"),
@@ -482,11 +494,15 @@ static const parser_t parse_qos[] = {
 	/* skipping grp_tres_run_mins_ctld (not packed) */
 	_add_parse_req(STRING, name, "name"),
 	_add_parse(UINT32, grp_wall, "limits/max/wall_clock/per/qos"),
-	_add_parse(UINT32, max_jobs_pa, "limits/max/jobs/per/account"),
-	_add_parse(UINT32, max_jobs_pu, "limits/max/jobs/per/user"),
+	_add_parse(FLOAT64, limit_factor, "limits/factor"),
+	_add_parse(UINT32, max_jobs_pa,
+		   "limits/max/jobs/active_jobs/per/account"),
+	_add_parse(UINT32, max_jobs_pu, "limits/max/jobs/active_jobs/per/user"),
 	_add_parse(UINT32, max_jobs_accrue_pa,
 		   "limits/max/accruing/per/account"),
 	_add_parse(UINT32, max_jobs_accrue_pu, "limits/max/accruing/per/user"),
+	_add_parse(UINT32, max_submit_jobs_pa, "limits/max/jobs/per/account"),
+	_add_parse(UINT32, max_submit_jobs_pu, "limits/max/jobs/per/user"),
 	_add_parse(TRES_LIST, max_tres_mins_pj,
 		   "limits/max/tres/minutes/per/job"),
 	/* skipping max_tres_mins_pj_ctld (not packed) */
