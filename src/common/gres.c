@@ -9155,20 +9155,20 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 	(void) gres_init();
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
-		slurm_gres_context_t gres_ctx = gres_context[i];
-		if (!gres_ctx.ops.step_set_env)
+		slurm_gres_context_t *gres_ctx = &gres_context[i];
+		if (!gres_ctx->ops.step_set_env)
 			continue;	/* No plugin to call */
 		if (!step_gres_list)
 			continue;
 		gres_iter = list_iterator_create(step_gres_list);
 		while ((gres_state_step = list_next(gres_iter))) {
-			if (gres_state_step->plugin_id != gres_ctx.plugin_id)
+			if (gres_state_step->plugin_id != gres_ctx->plugin_id)
 				continue;
 			_accumulate_step_gres_alloc(
 				gres_state_step, &gres_bit_alloc, &gres_cnt);
 		}
 		list_iterator_destroy(gres_iter);
-		(*(gres_ctx.ops.step_set_env))(job_env_ptr, gres_bit_alloc,
+		(*(gres_ctx->ops.step_set_env))(job_env_ptr, gres_bit_alloc,
 					       gres_cnt,
 					       GRES_INTERNAL_FLAG_NONE);
 		gres_cnt = 0;
@@ -9204,8 +9204,8 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 	(void) gres_init();
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
-		slurm_gres_context_t gres_ctx = gres_context[i];
-		if (!gres_ctx.ops.task_set_env)
+		slurm_gres_context_t *gres_ctx = &gres_context[i];
+		if (!gres_ctx->ops.task_set_env)
 			continue;	/* No plugin to call */
 		if (!step_gres_list)
 			continue;
@@ -9213,18 +9213,18 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 
 		gres_iter = list_iterator_create(step_gres_list);
 		while ((gres_state_step = list_next(gres_iter))) {
-			if (gres_state_step->plugin_id != gres_ctx.plugin_id)
+			if (gres_state_step->plugin_id != gres_ctx->plugin_id)
 				continue;
 			_accumulate_step_gres_alloc(
 				gres_state_step, &gres_bit_alloc, &gres_cnt);
 		}
-		if (_get_usable_gres(gres_ctx.gres_name, i, local_proc_id, 0,
+		if (_get_usable_gres(gres_ctx->gres_name, i, local_proc_id, 0,
 				     &tres_bind, &usable_gres, gres_bit_alloc,
 				     false) == SLURM_ERROR)
 			continue;
 
 		list_iterator_destroy(gres_iter);
-		(*(gres_ctx.ops.task_set_env))(job_env_ptr, gres_bit_alloc,
+		(*(gres_ctx->ops.task_set_env))(job_env_ptr, gres_bit_alloc,
 					       gres_cnt, usable_gres,
 					       tres_bind.gres_internal_flags);
 		gres_cnt = 0;
