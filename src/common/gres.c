@@ -1170,6 +1170,8 @@ static uint32_t _handle_autodetect_flags(char *str)
 		flags |= GRES_AUTODETECT_GPU_RSMI;
 	else if (!xstrcasecmp(str, "off"))
 		flags |= GRES_AUTODETECT_GPU_OFF;
+	else
+		error("unknown autodetect flag '%s'", str);
 
 	return flags;
 }
