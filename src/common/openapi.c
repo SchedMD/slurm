@@ -330,6 +330,9 @@ again:
 	return entries;
 
 fail:
+	for (entry = entries; entry <= entries + count; entry++)
+		xfree(entry->entry);
+
 	xfree(entries);
 	xfree(buffer);
 	return NULL;
