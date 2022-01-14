@@ -1777,6 +1777,69 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 	return sum;
 }
 
+/* Return true if a core was picked, false if not */
+static bool _pick_step_core(step_record_t *step_ptr,
+			    job_resources_t *job_resrcs_ptr, int job_node_inx,
+			    int sock_inx, int core_inx, bool use_all_cores,
+			    bool oversubscribing_cpus)
+{
+	int bit_offset;
+
+	bit_offset = get_job_resources_offset(job_resrcs_ptr,
+					      job_node_inx,
+					      sock_inx,
+					      core_inx);
+	if (bit_offset < 0)
+		fatal("get_job_resources_offset");
+
+	if (!bit_test(job_resrcs_ptr->core_bitmap, bit_offset))
+		return false;
+
+	if (oversubscribing_cpus) {
+		/* Already allocated CPUs, now we are oversubscribing CPUs */
+		if (bit_test(step_ptr->core_bitmap_job, bit_offset))
+			return false; /* already taken by this step */
+
+		log_flag(STEPS, "%s: over-subscribe alloc Node:%d Socket:%d Core:%d",
+			 __func__, job_node_inx, sock_inx, core_inx);
+	} else {
+		/* Check and set the job's used cores. */
+		if ((use_all_cores == false) &&
+		    bit_test(job_resrcs_ptr->core_bitmap_used, bit_offset))
+			return false;
+
+		bit_set(job_resrcs_ptr->core_bitmap_used, bit_offset);
+
+		log_flag(STEPS, "%s: alloc Node:%d Socket:%d Core:%d",
+			 __func__, job_node_inx, sock_inx, core_inx);
+	}
+
+	bit_set(step_ptr->core_bitmap_job, bit_offset);
+
+	return true;
+}
+
+static bool _handle_core_select(step_record_t *step_ptr,
+			       job_resources_t *job_resrcs_ptr,
+			       int job_node_inx,
+			       int sock_inx, int core_inx, bool use_all_cores,
+			       bool oversubscribing_cpus, int *cpu_cnt)
+{
+	xassert(cpu_cnt);
+
+	if (!_pick_step_core(step_ptr,
+			     job_resrcs_ptr,
+			     job_node_inx, sock_inx,
+			     core_inx, use_all_cores,
+			     oversubscribing_cpus))
+		return false;
+
+	if (--(*cpu_cnt) == 0)
+		return true;
+
+	return false;
+}
+
 /* Update the step's core bitmaps, create as needed.
  *	Add the specified task count for a specific node in the job's
  *	and step's allocation */
@@ -1784,7 +1847,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 			    job_resources_t *job_resrcs_ptr, int job_node_inx,
 			    uint16_t task_cnt, uint16_t cpus_per_core)
 {
-	int bit_offset, core_inx, i, sock_inx;
+	int core_inx, i, sock_inx;
 	uint16_t sockets, cores;
 	int cpu_cnt = (int) task_cnt;
 	bool use_all_cores;
@@ -1824,29 +1887,16 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	/* select idle cores first */
 	for (sock_inx=0; sock_inx<sockets; sock_inx++) {
 		for (core_inx=0; core_inx<cores; core_inx++) {
-			bit_offset = get_job_resources_offset(job_resrcs_ptr,
-							       job_node_inx,
-							       sock_inx,
-							       core_inx);
-			if (bit_offset < 0)
-				fatal("get_job_resources_offset");
-			if (!bit_test(job_resrcs_ptr->core_bitmap, bit_offset))
-				continue;
-			if ((use_all_cores == false) &&
-			    bit_test(job_resrcs_ptr->core_bitmap_used,
-				     bit_offset)) {
-				continue;
-			}
-			bit_set(job_resrcs_ptr->core_bitmap_used, bit_offset);
-			bit_set(step_ptr->core_bitmap_job, bit_offset);
-
-			log_flag(STEPS, "%s: alloc Node:%d Socket:%d Core:%d",
-				 __func__, job_node_inx, sock_inx, core_inx);
-
-			if (--cpu_cnt == 0)
+			if (_handle_core_select(step_ptr,
+						job_resrcs_ptr,
+						job_node_inx, sock_inx,
+						core_inx,
+						use_all_cores,
+						false, &cpu_cnt))
 				return SLURM_SUCCESS;
 		}
 	}
+
 	/* The test for cores==0 is just to avoid CLANG errors.
 	 * It should never happen */
 	if (use_all_cores || (cores == 0))
@@ -1868,22 +1918,12 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	for (i=0; i<cores; i++) {
 		core_inx = (last_core_inx + i) % cores;
 		for (sock_inx=0; sock_inx<sockets; sock_inx++) {
-			bit_offset = get_job_resources_offset(job_resrcs_ptr,
-							       job_node_inx,
-							       sock_inx,
-							       core_inx);
-			if (bit_offset < 0)
-				fatal("get_job_resources_offset");
-			if (!bit_test(job_resrcs_ptr->core_bitmap, bit_offset))
-				continue;
-			if (bit_test(step_ptr->core_bitmap_job, bit_offset))
-				continue;   /* already taken by this step */
-			bit_set(step_ptr->core_bitmap_job, bit_offset);
-
-			log_flag(STEPS, "%s: over-subscribe alloc Node:%d Socket:%d Core:%d",
-				 __func__, job_node_inx, sock_inx, core_inx);
-
-			if (--cpu_cnt == 0)
+			if (_handle_core_select(step_ptr,
+						job_resrcs_ptr,
+						job_node_inx, sock_inx,
+						core_inx,
+						use_all_cores,
+						true, &cpu_cnt))
 				return SLURM_SUCCESS;
 		}
 	}
