@@ -408,6 +408,15 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 			percentage = MAX(percentage, 1);
 		} else
 			percentage = 0;
+
+		/*
+		 * Make space for CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
+		 * *epilog_env_ptr and env_inx are
+		 * alreay set from gres_common_epilog_set_env()
+		 */
+		xassert(*epilog_env_ptr);
+		xrecalloc(*epilog_env_ptr, env_inx + 2, sizeof(char *));
+
 		xstrfmtcat((*epilog_env_ptr)[env_inx++],
 			   "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE=%"PRIu64,
 			   percentage);
