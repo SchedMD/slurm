@@ -435,6 +435,53 @@ extern bool gres_use_local_device_index(void)
 	return use_local_index;
 }
 
+extern gres_state_t *gres_create_state(void *src_ptr,
+				       gres_state_src_t state_src,
+				       gres_state_type_enum_t state_type,
+				       void *gres_data)
+{
+	gres_state_t *new_gres_state = xmalloc(sizeof(gres_state_t));
+
+	new_gres_state->gres_data = gres_data;
+	new_gres_state->state_type = state_type;
+
+	switch (state_src) {
+	case GRES_STATE_SRC_STATE_PTR:
+	{
+		gres_state_t *gres_state = src_ptr;
+		new_gres_state->config_flags = gres_state->config_flags;
+		new_gres_state->plugin_id = gres_state->plugin_id;
+		new_gres_state->gres_name = xstrdup(gres_state->gres_name);
+		break;
+	}
+	case GRES_STATE_SRC_CONTEXT_PTR:
+	{
+		slurm_gres_context_t *context_ptr = src_ptr;
+		new_gres_state->config_flags = context_ptr->config_flags;
+		new_gres_state->plugin_id = context_ptr->plugin_id;
+		new_gres_state->gres_name = xstrdup(context_ptr->gres_name);
+		break;
+	}
+	case GRES_STATE_SRC_KEY_PTR:
+	{
+		gres_key_t *search_key = src_ptr;
+		new_gres_state->config_flags = search_key->config_flags;
+		new_gres_state->plugin_id = search_key->plugin_id;
+		/*
+		 * gres_name should be handled after this since search_key
+		 * doesn't have that
+		 */
+		break;
+	}
+	default:
+		error("%s: No way to create gres_state given", __func__);
+		xfree(new_gres_state);
+		break;
+	}
+
+	return new_gres_state;
+}
+
 /*
  * Find a gres_context by plugin_id
  * Must hold gres_context_lock before calling.
@@ -2895,13 +2942,9 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
 		gres_state_node = list_find_first(*gres_list, gres_find_id,
 						  &gres_context[i].plugin_id);
 		if (gres_state_node == NULL) {
-			gres_state_node = xmalloc(sizeof(gres_state_t));
-			gres_state_node->config_flags =
-				gres_context[i].config_flags;
-			gres_state_node->plugin_id = gres_context[i].plugin_id;
-			gres_state_node->gres_name =
-				xstrdup(gres_context[i].gres_name);
-			gres_state_node->state_type = GRES_STATE_TYPE_NODE;
+			gres_state_node = gres_create_state(
+				&gres_context[i], GRES_STATE_SRC_CONTEXT_PTR,
+				GRES_STATE_TYPE_NODE, _build_gres_node_state());
 			list_append(*gres_list, gres_state_node);
 		}
 
@@ -3621,13 +3664,9 @@ extern int gres_node_config_validate(char *node_name,
 		gres_state_node = list_find_first(*gres_list, gres_find_id,
 						  &gres_context[i].plugin_id);
 		if (gres_state_node == NULL) {
-			gres_state_node = xmalloc(sizeof(gres_state_t));
-			gres_state_node->config_flags =
-				gres_context[i].config_flags;
-			gres_state_node->plugin_id = gres_context[i].plugin_id;
-			gres_state_node->gres_name =
-				xstrdup(gres_context[i].gres_name);
-			gres_state_node->state_type = GRES_STATE_TYPE_NODE;
+			gres_state_node = gres_create_state(
+				&gres_context[i], GRES_STATE_SRC_CONTEXT_PTR,
+				GRES_STATE_TYPE_NODE, _build_gres_node_state());
 			list_append(*gres_list, gres_state_node);
 		}
 		rc2 = _node_config_validate(node_name, orig_config,
@@ -4216,12 +4255,10 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 			gres_ns->gres_bit_alloc =
 				bit_alloc(gres_bitmap_size);
 		}
-		gres_state_node = xmalloc(sizeof(gres_state_t));
-		gres_state_node->config_flags = context_ptr->config_flags;
-		gres_state_node->plugin_id = context_ptr->plugin_id;
-		gres_state_node->gres_data = gres_ns;
-		gres_state_node->gres_name = xstrdup(context_ptr->gres_name);
-		gres_state_node->state_type = GRES_STATE_TYPE_NODE;
+
+		gres_state_node = gres_create_state(
+			context_ptr, GRES_STATE_SRC_CONTEXT_PTR,
+			GRES_STATE_TYPE_NODE, gres_ns);
 		list_append(*gres_list, gres_state_node);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
@@ -4349,13 +4386,9 @@ extern List gres_node_state_dup(List gres_list)
 
 		gres_ns = _node_state_dup(gres_state_node->gres_data);
 		if (gres_ns) {
-			new_gres = xmalloc(sizeof(gres_state_t));
-			new_gres->config_flags = gres_state_node->config_flags;
-			new_gres->plugin_id = gres_state_node->plugin_id;
-			new_gres->gres_data = gres_ns;
-			new_gres->gres_name =
-				xstrdup(gres_state_node->gres_name);
-			new_gres->state_type = GRES_STATE_TYPE_NODE;
+			new_gres = gres_create_state(
+				gres_state_node, GRES_STATE_SRC_STATE_PTR,
+				GRES_STATE_TYPE_NODE, gres_ns);
 			list_append(new_list, new_gres);
 		}
 	}
@@ -5369,14 +5402,10 @@ static gres_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 		gres_js->type_id = gres_build_id(type);
 		gres_js->type_name = type;
 		type = NULL;	/* String moved above */
-		gres_state_job = xmalloc(sizeof(gres_state_t));
-		gres_state_job->config_flags =
-			gres_context[context_inx].config_flags;
-		gres_state_job->plugin_id = gres_context[context_inx].plugin_id;
-		gres_state_job->gres_data = gres_js;
-		gres_state_job->gres_name =
-			xstrdup(gres_context[context_inx].gres_name);
-		gres_state_job->state_type = GRES_STATE_TYPE_JOB;
+
+		gres_state_job = gres_create_state(
+			&gres_context[context_inx], GRES_STATE_SRC_CONTEXT_PTR,
+			GRES_STATE_TYPE_JOB, gres_js);
 		list_append(gres_list, gres_state_job);
 	}
 	gres_js->flags = flags;
@@ -6217,12 +6246,9 @@ extern List gres_job_state_extract(List gres_list, int node_index)
 		if (new_gres_list == NULL) {
 			new_gres_list = list_create(gres_job_list_delete);
 		}
-		new_gres_state = xmalloc(sizeof(gres_state_t));
-		new_gres_state->config_flags = gres_state_job->config_flags;
-		new_gres_state->plugin_id = gres_state_job->plugin_id;
-		new_gres_state->gres_data = new_gres_data;
-		new_gres_state->gres_name = xstrdup(gres_state_job->gres_name);
-		new_gres_state->state_type = GRES_STATE_TYPE_JOB;
+		new_gres_state = gres_create_state(
+			gres_state_job, GRES_STATE_SRC_STATE_PTR,
+			GRES_STATE_TYPE_JOB, new_gres_data);
 		list_append(new_gres_list, new_gres_state);
 	}
 	list_iterator_destroy(gres_iter);
@@ -6454,12 +6480,10 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 			_job_state_delete(gres_js);
 			continue;
 		}
-		gres_state_job = xmalloc(sizeof(gres_state_t));
-		gres_state_job->config_flags = context_ptr->config_flags;
-		gres_state_job->plugin_id = context_ptr->plugin_id;
-		gres_state_job->gres_data = gres_js;
-		gres_state_job->gres_name = xstrdup(context_ptr->gres_name);
-		gres_state_job->state_type = GRES_STATE_TYPE_JOB;
+
+		gres_state_job = gres_create_state(
+			context_ptr, GRES_STATE_SRC_CONTEXT_PTR,
+			GRES_STATE_TYPE_JOB, gres_js);
 		gres_js = NULL;	/* nothing left to free on error */
 		list_append(*gres_list, gres_state_job);
 	}
@@ -7889,15 +7913,9 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 		gres_ss->type_id = gres_build_id(type);
 		gres_ss->type_name = type;
 		type = NULL;	/* String moved above */
-		gres_state_step = xmalloc(sizeof(gres_state_t));
-		gres_state_step->config_flags =
-			gres_context[context_inx].config_flags;
-		gres_state_step->plugin_id =
-			gres_context[context_inx].plugin_id;
-		gres_state_step->gres_data = gres_ss;
-		gres_state_step->gres_name =
-			xstrdup(gres_context[context_inx].gres_name);
-		gres_state_step->state_type = GRES_STATE_TYPE_STEP;
+		gres_state_step = gres_create_state(
+			&gres_context[context_inx], GRES_STATE_SRC_CONTEXT_PTR,
+			GRES_STATE_TYPE_STEP, gres_ss);
 		list_append(gres_list, gres_state_step);
 	}
 	gres_ss->flags = flags;
@@ -8374,14 +8392,9 @@ List gres_step_state_extract(List gres_list, int node_index)
 		if (new_gres_list == NULL) {
 			new_gres_list = list_create(gres_step_list_delete);
 		}
-		new_gres_state_step = xmalloc(sizeof(gres_state_t));
-		new_gres_state_step->config_flags =
-			gres_state_step->config_flags;
-		new_gres_state_step->plugin_id = gres_state_step->plugin_id;
-		new_gres_state_step->gres_data = new_gres_data;
-		new_gres_state_step->gres_name =
-			xstrdup(gres_state_step->gres_name);
-		new_gres_state_step->state_type = GRES_STATE_TYPE_STEP;
+		new_gres_state_step = gres_create_state(
+			gres_state_step, GRES_STATE_SRC_STATE_PTR,
+			GRES_STATE_TYPE_STEP, new_gres_data);
 		list_append(new_gres_list, new_gres_state_step);
 	}
 	list_iterator_destroy(gres_iter);
@@ -8554,12 +8567,9 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 			gres_ss = NULL;
 			continue;
 		}
-		gres_state_step = xmalloc(sizeof(gres_state_t));
-		gres_state_step->config_flags = context_ptr->config_flags;
-		gres_state_step->plugin_id = context_ptr->plugin_id;
-		gres_state_step->gres_data = gres_ss;
-		gres_state_step->gres_name = xstrdup(context_ptr->gres_name);
-		gres_state_step->state_type = GRES_STATE_TYPE_STEP;
+		gres_state_step = gres_create_state(
+			context_ptr, GRES_STATE_SRC_CONTEXT_PTR,
+			GRES_STATE_TYPE_STEP, gres_ss);
 		gres_ss = NULL;
 		list_append(*gres_list, gres_state_step);
 	}

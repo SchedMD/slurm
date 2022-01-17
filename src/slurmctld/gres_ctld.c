@@ -770,13 +770,11 @@ static void _job_select_whole_node_internal(
 					     gres_find_job_by_key,
 					     job_search_key))) {
 		gres_js = xmalloc(sizeof(gres_job_state_t));
-
-		gres_state_job = xmalloc(sizeof(gres_state_t));
-		gres_state_job->config_flags = job_search_key->config_flags;
-		gres_state_job->plugin_id = job_search_key->plugin_id;
-		gres_state_job->gres_data = gres_js;
+		gres_state_job = gres_create_state(job_search_key,
+						   GRES_STATE_SRC_KEY_PTR,
+						   GRES_STATE_TYPE_JOB,
+						   gres_js);
 		gres_state_job->gres_name = xstrdup(gres_name);
-		gres_state_job->state_type = GRES_STATE_TYPE_JOB;
 		if (type_inx != -1)
 			gres_js->type_name =
 				xstrdup(gres_ns->type_name[type_inx]);
@@ -1511,16 +1509,7 @@ step2:	if (!from_job_gres_list)
 		if (gres_state_job2) {
 			gres_js2 = gres_state_job2->gres_data;
 		} else {
-			gres_state_job2 = xmalloc(sizeof(gres_state_t));
 			gres_js2 = xmalloc(sizeof(gres_job_state_t));
-			gres_state_job2->config_flags =
-				gres_state_job->config_flags;
-			gres_state_job2->plugin_id = gres_state_job->plugin_id;
-			gres_state_job2->gres_data = gres_js2;
-			gres_state_job2->gres_name =
-				xstrdup(gres_state_job->gres_name);
-			gres_state_job2->state_type =
-				gres_state_job->state_type;
 			gres_js2->cpus_per_gres =
 				gres_js->cpus_per_gres;
 			gres_js2->gres_per_job =
@@ -1544,6 +1533,11 @@ step2:	if (!from_job_gres_list)
 				xcalloc(new_node_cnt, sizeof(bitstr_t *));
 			gres_js2->gres_cnt_step_alloc =
 				xcalloc(new_node_cnt, sizeof(uint64_t));
+
+			gres_state_job2 = gres_create_state(
+				gres_state_job, GRES_STATE_SRC_STATE_PTR,
+				GRES_STATE_TYPE_JOB, gres_js2);
+
 			list_append(to_job_gres_list, gres_state_job2);
 		}
 		from_inx = to_inx = new_inx = -1;

@@ -99,6 +99,12 @@ typedef struct {
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */
 
+typedef enum {
+	GRES_STATE_SRC_STATE_PTR,
+	GRES_STATE_SRC_CONTEXT_PTR,
+	GRES_STATE_SRC_KEY_PTR,
+} gres_state_src_t;
+
 typedef struct gres_search_key {
 	uint32_t config_flags;	/* See GRES_CONF_* values above */
 	int node_offset;
@@ -1074,6 +1080,12 @@ extern int gres_find_sock_by_job_state(void *x, void *key);
  * RET true if TaskPlugin=task/cgroup AND ConstrainDevices=yes (in cgroup.conf).
  */
 extern bool gres_use_local_device_index(void);
+
+/* create a gres_state_t */
+extern gres_state_t *gres_create_state(void *src_ptr,
+				       gres_state_src_t state_src,
+				       gres_state_type_enum_t state_type,
+				       void *gres_data);
 
 extern void gres_job_list_delete(void *list_element);
 
