@@ -3586,7 +3586,7 @@ The backfill and main scheduling logic will not reserve resources for pending
 jobs unless they have a priority equal to or higher than the specified value.
 In addition, jobs with a lower priority will not prevent a newly submitted job
 from starting immediately, even if the newly submitted job has a lower priority.
-This can be valuable if one wished to maximum system utilization without regard
+This can be valuable if one wished to maximize system utilization without regard
 for job priority below a certain threshold.
 The default value is zero, which will reserve resources for any pending job
 and delay initiation of lower priority jobs.
