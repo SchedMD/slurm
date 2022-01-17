@@ -1141,7 +1141,7 @@ static int _yield_locks(int64_t usec)
 	if ((last_job_update  == job_update)  &&
 	    (last_node_update == node_update) &&
 	    (last_part_update == part_update) &&
-	    (! stop_backfill) && (! load_config))
+	    (!stop_backfill) && (!load_config))
 		return 0;
 	else
 		return 1;
@@ -3114,17 +3114,17 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 }
 
 /* Report if any changes occurred to job, node or partition information */
-static bool _more_work (time_t last_backfill_time)
+static bool _more_work(time_t last_backfill_time)
 {
 	bool rc = false;
 
-	slurm_mutex_lock( &thread_flag_mutex );
-	if ( (last_job_update  >= last_backfill_time ) ||
-	     (last_node_update >= last_backfill_time ) ||
-	     (last_part_update >= last_backfill_time ) ) {
+	slurm_mutex_lock(&thread_flag_mutex);
+	if ((last_job_update  >= last_backfill_time) ||
+	    (last_node_update >= last_backfill_time) ||
+	    (last_part_update >= last_backfill_time)) {
 		rc = true;
 	}
-	slurm_mutex_unlock( &thread_flag_mutex );
+	slurm_mutex_unlock(&thread_flag_mutex);
 
 	return rc;
 }
