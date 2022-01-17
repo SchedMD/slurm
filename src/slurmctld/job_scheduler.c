@@ -116,7 +116,6 @@ static int	_valid_feature_list(job_record_t *job_ptr, List feature_list,
 static int	_valid_node_feature(char *feature, bool can_reboot);
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
-static int	save_last_part_update = 0;
 
 static pthread_mutex_t sched_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  sched_cond = PTHREAD_COND_INITIALIZER;
@@ -1958,7 +1957,6 @@ fail_this_part:	if (fail_by_part) {
 
 	if (job_ptr)
 		job_resv_clear_magnetic_flag(job_ptr);
-	save_last_part_update = last_part_update;
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
 	xfree(failed_parts);
