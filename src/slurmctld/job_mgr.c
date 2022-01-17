@@ -149,7 +149,7 @@ typedef struct {
 	uid_t     uid;
 	slurmdb_user_rec_t user_rec;
 	bool privileged;
-	part_record_t **allowed_parts;
+	part_record_t **visible_parts;
 } _foreach_pack_job_info_t;
 
 typedef struct {
@@ -10019,7 +10019,7 @@ end_it:
 
 /* Determine if ALL partitions associated with a job are hidden */
 static bool _all_parts_hidden(job_record_t *job_ptr,
-			      part_record_t **allowed_parts)
+			      part_record_t **visible_parts)
 {
 	bool rc;
 	ListIterator part_iterator;
@@ -10029,8 +10029,8 @@ static bool _all_parts_hidden(job_record_t *job_ptr,
 		rc = true;
 		part_iterator = list_iterator_create(part_list);
 		while (rc && (part_ptr = list_next(part_iterator))) {
-			for (int i = 0; allowed_parts[i]; i++) {
-				if (allowed_parts[i] == part_ptr) {
+			for (int i = 0; visible_parts[i]; i++) {
+				if (visible_parts[i] == part_ptr) {
 					rc = false;
 					break;
 				}
@@ -10041,8 +10041,8 @@ static bool _all_parts_hidden(job_record_t *job_ptr,
 	}
 
 	if (job_ptr->part_ptr) {
-		for (int i = 0; allowed_parts[i]; i++) {
-			if (allowed_parts[i] == job_ptr->part_ptr)
+		for (int i = 0; visible_parts[i]; i++) {
+			if (visible_parts[i] == job_ptr->part_ptr)
 				return false;
 		}
 	}
@@ -10081,7 +10081,7 @@ static int _pack_job(void *object, void *arg)
 
 	if (!pack_info->privileged) {
 		if (((pack_info->show_flags & SHOW_ALL) == 0) &&
-		    _all_parts_hidden(job_ptr, pack_info->allowed_parts))
+		    _all_parts_hidden(job_ptr, pack_info->visible_parts))
 			return SLURM_SUCCESS;
 
 		if (_hide_job_user_rec(job_ptr, &pack_info->user_rec,
@@ -10108,39 +10108,6 @@ static int _foreach_pack_jobid(void *object, void *arg)
 		return SLURM_SUCCESS;
 
 	return _pack_job(job_ptr, info);
-}
-
-static int _foreach_add_visible_part(void *object, void *arg)
-{
-	_foreach_pack_job_info_t *pack_info = (_foreach_pack_job_info_t *)arg;
-	part_record_t *part_ptr = (part_record_t *)object;
-
-	if (part_is_visible_user_rec(part_ptr, &pack_info->user_rec)) {
-		*(pack_info->allowed_parts) = part_ptr;
-		pack_info->allowed_parts++;
-	}
-	return SLURM_SUCCESS;
-}
-
-static int _build_allowed_parts(_foreach_pack_job_info_t *pack_info)
-{
-	part_record_t *part_ptr;
-	pack_info->allowed_parts = xcalloc(list_count(part_list) + 1,
-					   sizeof(part_ptr));
-	part_record_t **part_ptr_save = pack_info->allowed_parts;
-	list_for_each_ro(part_list, _foreach_add_visible_part, pack_info);
-	pack_info->allowed_parts = part_ptr_save;
-	if (get_log_level() >= LOG_LEVEL_DEBUG3) {
-		char *tmp_str = NULL;
-		for (int i = 0; pack_info->allowed_parts[i]; i++)
-			xstrfmtcat(tmp_str, "%s%s", tmp_str ? "," : "",
-				   pack_info->allowed_parts[i]->name);
-		debug3("%s: uid:%d allowed_parts:%s", __func__, pack_info->uid,
-		       tmp_str);
-		xfree(tmp_str);
-	}
-
-	return SLURM_SUCCESS;
 }
 
 /*
@@ -10198,13 +10165,12 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	if (!(pack_info.show_flags & SHOW_ALL))
-		_build_allowed_parts(&pack_info);
-
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
 			       accounting_enforce, NULL, true);
 	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
+	pack_info.visible_parts = build_visible_parts(
+		uid, (pack_info.privileged || (show_flags & SHOW_ALL)));
 	list_for_each_ro(job_list, _pack_job, &pack_info);
 	assoc_mgr_unlock(&locks);
 
@@ -10216,7 +10182,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 
 	*buffer_size = get_buf_offset(pack_info.buffer);
 	buffer_ptr[0] = xfer_buf_data(pack_info.buffer);
-	xfree(pack_info.allowed_parts);
+	xfree(pack_info.visible_parts);
 }
 
 /*
@@ -10253,13 +10219,12 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	if (!(pack_info.show_flags & SHOW_ALL))
-		_build_allowed_parts(&pack_info);
-
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
 			       accounting_enforce, NULL, true);
 	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
+	pack_info.visible_parts = build_visible_parts(
+		uid, (pack_info.privileged || (show_flags & SHOW_ALL)));
 	list_for_each_ro(job_ids, _foreach_pack_jobid, &pack_info);
 	assoc_mgr_unlock(&locks);
 
@@ -10271,7 +10236,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 
 	*buffer_size = get_buf_offset(pack_info.buffer);
 	buffer_ptr[0] = xfer_buf_data(pack_info.buffer);
-	xfree(pack_info.allowed_parts);
+	xfree(pack_info.visible_parts);
 }
 
 static int _pack_het_job(job_record_t *job_ptr, uint16_t show_flags,
