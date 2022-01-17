@@ -326,7 +326,7 @@ int main(void)
 {
 	int number_failed;
 	SRunner *sr = srunner_create(NULL);
-	srunner_set_fork_status(sr, CK_NOFORK);
+	//srunner_set_fork_status(sr, CK_NOFORK);
 	srunner_add_suite(sr, suite(sr));
 
 	srunner_run(sr, "slurm_addto_mode_char_list", "right_tests",
