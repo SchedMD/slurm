@@ -471,12 +471,10 @@ extern int gres_node_config_pack(buf_t *buffer);
 */
 /*
  * Build a node's gres record based only upon the slurm.conf contents
- * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT gres_list - List of Gres records for this node to track usage
  */
-extern int gres_init_node_config(char *node_name, char *orig_config,
-				 List *gres_list);
+extern int gres_init_node_config(char *orig_config, List *gres_list);
 
 /*
  * Return how many gres Names are on the system.

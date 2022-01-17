@@ -623,14 +623,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	/* Send GRES information to slurmstepd */
 	gres_g_send_stepd(fd, &msg);
 
-	/*
-	 * Send configured node name - may be dictated by slurmctld due to
-	 * Dynamic Future node mapping.
-	 */
-	len = strlen(conf->node_name) + 1;
-	safe_write(fd, &len, sizeof(int));
-	safe_write(fd, conf->node_name, len);
-
 	return 0;
 
 rwfail:

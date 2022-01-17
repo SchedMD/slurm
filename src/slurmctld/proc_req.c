@@ -2826,13 +2826,26 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			lock_slurmctld(job_write_lock);
 
-		/*
-		 * We only send back the node's name back when it wants a resp.
-		 * Subsequent slurmd registrations will have the new node_name.
-		 */
 		if (node_reg_stat_msg->dynamic &&
-		    (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP))
+		    (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP)) {
+			/*
+			 * dynamic future nodes doen't know what node it's
+			 * mapped to to be able to load all configs in.
+			 * slurmctld will tell the slurmd what node it's mapped
+			 * to and then the slurmd will then load in
+			 * configuration based off of the mapped name and send
+			 * another registration.
+			 *
+			 * Subsequent slurmd registrations will have the mapped
+			 * node_name.
+			 */
 			_find_avail_future_node(msg);
+
+			if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+				unlock_slurmctld(job_write_lock);
+
+			goto send_resp;
+		}
 
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */
 		error_code = validate_nodes_via_front_end(node_reg_stat_msg,
@@ -2849,6 +2862,9 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 			queue_job_scheduler();
 		}
 	}
+
+
+send_resp:
 
 	/* return result */
 	if (error_code) {

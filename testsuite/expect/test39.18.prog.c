@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 	slurm_init(NULL);
 
 	// Initialize GRES info (from slurm.conf)
-	rc = gres_init_node_config(node_name, slurm_conf_gres_str, &gres_list);
+	rc = gres_init_node_config(slurm_conf_gres_str, &gres_list);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("FAILURE: gres_init_node_config");
 		exit(1);

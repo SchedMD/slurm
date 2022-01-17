@@ -272,7 +272,7 @@ static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
 static int	_load_plugin(slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
 static void	_my_stat(char *file_name);
-static int	_node_config_init(char *node_name, char *orig_config,
+static int	_node_config_init(char *orig_config,
 				  slurm_gres_context_t *context_ptr,
 				  gres_state_t *gres_state_node);
 static char *	_node_gres_used(gres_node_state_t *gres_ns, char *gres_name);
@@ -1170,6 +1170,8 @@ static uint32_t _handle_autodetect_flags(char *str)
 		flags |= GRES_AUTODETECT_GPU_RSMI;
 	else if (!xstrcasecmp(str, "off"))
 		flags |= GRES_AUTODETECT_GPU_OFF;
+	else
+		error("unknown autodetect flag '%s'", str);
 
 	return flags;
 }
@@ -2877,7 +2879,7 @@ static gres_node_state_t *_build_gres_node_state(void)
 /*
  * Build a node's gres record based only upon the slurm.conf contents
  */
-static int _node_config_init(char *node_name, char *orig_config,
+static int _node_config_init(char *orig_config,
 			     slurm_gres_context_t *context_ptr,
 			     gres_state_t *gres_state_node)
 {
@@ -2918,12 +2920,10 @@ static int _node_config_init(char *node_name, char *orig_config,
 
 /*
  * Build a node's gres record based only upon the slurm.conf contents
- * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT gres_list - List of Gres records for this node to track usage
  */
-extern int gres_init_node_config(char *node_name, char *orig_config,
-				 List *gres_list)
+extern int gres_init_node_config(char *orig_config, List *gres_list)
 {
 	int i, rc, rc2;
 	gres_state_t *gres_state_node, *gres_state_node_sharing = NULL,
@@ -2947,7 +2947,7 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
 			list_append(*gres_list, gres_state_node);
 		}
 
-		rc2 = _node_config_init(node_name, orig_config,
+		rc2 = _node_config_init(orig_config,
 					&gres_context[i], gres_state_node);
 		if (rc == SLURM_SUCCESS)
 			rc = rc2;

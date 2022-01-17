@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
  -- Skip --mem-per-gpu impact on GRES availability when CR_MEMORY not set.
  -- Add reservation start time as a new schedulers sorting factor for magnetic
     or multi-reservation job queue records.
+ -- Improve Dynamic Future node startup to load in config with mapped nodename.
 
 * Changes in Slurm 21.08.6
 ==========================
