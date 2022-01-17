@@ -1040,6 +1040,7 @@ extern gres_epilog_info_t *gres_p_epilog_build_env(
 extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 				  gres_epilog_info_t *gres_ei, int node_inx)
 {
-	(void) gres_common_epilog_set_env(epilog_env_ptr, gres_ei,
+	int env_inx = 0;
+	(void) gres_common_epilog_set_env(epilog_env_ptr, &env_inx, gres_ei,
 					  node_inx, node_flags, gres_devices);
 }
