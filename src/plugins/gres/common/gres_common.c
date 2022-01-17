@@ -574,7 +574,7 @@ extern bool gres_common_epilog_set_env(char ***epilog_env_ptr,
 	if (*epilog_env_ptr) {
 		while ((*epilog_env_ptr)[env_inx])
 			env_inx++;
-		xrealloc(*epilog_env_ptr, sizeof(char *) * (env_inx + 5));
+		xrecalloc(*epilog_env_ptr, env_inx + 5, sizeof(char *));
 	} else {
 		*epilog_env_ptr = xcalloc(5, sizeof(char *));
 	}
