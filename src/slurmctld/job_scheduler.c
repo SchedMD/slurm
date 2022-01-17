@@ -595,6 +595,8 @@ extern List build_job_queue(bool clear_start, bool backfill)
 					job_ptr->state_reason;
 			last_job_update = now;
 		}
+		if (job_ptr->resv_list)
+			job_ptr->resv_ptr = NULL;
 		if (!_job_runnable_test1(job_ptr, clear_start))
 			continue;
 
@@ -1025,6 +1027,7 @@ static int _schedule(bool full_queue)
 	time_t now, last_job_sched_start, sched_start;
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
+	slurmctld_resv_t *reject_array_resv = NULL;
 	bool fail_by_part, wait_on_resv;
 	uint32_t deadline_time_limit, save_time_limit = 0;
 	uint32_t prio_reserve;
@@ -1496,12 +1499,14 @@ next_task:
 			if (reject_array_job &&
 			    (reject_array_job->array_job_id ==
 				job_ptr->array_job_id) &&
-			    (reject_array_part == part_ptr))
+			    (reject_array_part == part_ptr) &&
+			    (reject_array_resv == job_ptr->resv_ptr))
 				continue;  /* already rejected array element */
 
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job = job_ptr;
 			reject_array_part = part_ptr;
+			reject_array_resv = job_ptr->resv_ptr;
 
 			if (!job_array_start_test(job_ptr))
 				continue;
@@ -1787,6 +1792,7 @@ skip_start:
 				 */
 				reject_array_job = NULL;
 				reject_array_part = NULL;
+				reject_array_resv = NULL;
 			}
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 				     job_ptr,
@@ -1835,6 +1841,7 @@ skip_start:
 			/* Clear assumed rejected array status */
 			reject_array_job = NULL;
 			reject_array_part = NULL;
+			reject_array_resv = NULL;
 
 			sched_info("Allocate %pJ NodeList=%s #CPUs=%u Partition=%s",
 				   job_ptr, job_ptr->nodes,

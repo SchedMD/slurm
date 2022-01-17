@@ -80,6 +80,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix magnetic reservation logic in both main and backfill schedulers.
  -- job_container/tmpfs - fix memory leak when using InitScript.
  -- slurmrestd / openapi - fix memory leaks.
+ -- Fix slurmctld segfault due to job array resv_list double free.
+ -- Fix multi-reservation job testing logic.
+ -- Fix slurmctld segfault due to insufficient job reservation parse validation.
+ -- Fix main and backfill schedulers handling for already rejected job array.
+ -- sched/backfill - restore resv_ptr after yielding locks.
 
 * Changes in Slurm 21.08.5
 ==========================
