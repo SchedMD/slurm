@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld segfault due to job array resv_list double free.
  -- Fix multi-reservation job testing logic.
  -- Fix slurmctld segfault due to insufficient job reservation parse validation.
+ -- Fix main and backfill schedulers handling for already rejected job array.
 
 * Changes in Slurm 21.08.5
 ==========================

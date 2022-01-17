@@ -1653,6 +1653,7 @@ static int _attempt_backfill(void)
 	bool already_counted, many_rpcs = false;
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
+	slurmctld_resv_t *reject_array_resv = NULL;
 	uint32_t start_time;
 	time_t config_update = slurm_conf.last_update;
 	time_t part_update = last_part_update;
@@ -2025,12 +2026,14 @@ next_task:
 			if (reject_array_job &&
 			    (reject_array_job->array_job_id ==
 				job_ptr->array_job_id) &&
-			    (reject_array_part == part_ptr))
+			    (reject_array_part == part_ptr) &&
+			    (reject_array_resv == job_ptr->resv_ptr))
 				continue;  /* already rejected array element */
 
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job = job_ptr;
 			reject_array_part = part_ptr;
+			reject_array_resv = job_ptr->resv_ptr;
 
 			if (!job_array_start_test(job_ptr))
 				continue;
@@ -2500,6 +2503,7 @@ next_task:
 					bb_g_job_get_est_start(job_ptr);
 				reject_array_job = NULL;
 				reject_array_part = NULL;
+				reject_array_resv = NULL;
 				continue;
 			}
 		} else if ((job_ptr->het_job_id == 0) &&
@@ -2634,6 +2638,7 @@ skip_start:
 				/* Clear assumed rejected array status */
 				reject_array_job = NULL;
 				reject_array_part = NULL;
+				reject_array_resv = NULL;
 
 				/* Update the database if job time limit
 				 * changed and move to next job */
@@ -2823,6 +2828,7 @@ skip_start:
 		/* Clear assumed rejected array status */
 		reject_array_job = NULL;
 		reject_array_part = NULL;
+		reject_array_resv = NULL;
 
 		if ((orig_start_time == 0) ||
 		    (job_ptr->start_time < orig_start_time)) {
