@@ -4360,7 +4360,7 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
  * IN gres_list - node gres state information
  * RET a copy of gres_list or NULL on failure
  */
-extern List gres_node_state_dup(List gres_list)
+extern List gres_node_state_list_dup(List gres_list)
 {
 	List new_list = NULL;
 	ListIterator gres_iter;
@@ -6133,7 +6133,7 @@ extern int gres_find_sock_by_job_state(void *x, void *key)
  * RET The copy or NULL on failure
  * NOTE: Only job details are copied, NOT the job step details
  */
-extern List gres_job_state_dup(List gres_list)
+extern List gres_job_state_list_dup(List gres_list)
 {
 	return gres_job_state_extract(gres_list, -1);
 }
@@ -8356,7 +8356,7 @@ static void *_step_state_dup2(gres_step_state_t *gres_ss, int node_index)
  * IN gres_list - List of Gres records for this step to track usage
  * RET The copy or NULL on failure
  */
-List gres_step_state_dup(List gres_list)
+List gres_step_state_list_dup(List gres_list)
 {
 	return gres_step_state_extract(gres_list, -1);
 }

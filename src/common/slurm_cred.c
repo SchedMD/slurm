@@ -599,8 +599,8 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->gids = copy_gids(arg->ngids, arg->gids);
 	cred->gr_names = copy_gr_names(arg->ngids, arg->gr_names);
 	cred->job_core_spec   = arg->job_core_spec;
-	cred->job_gres_list   = gres_job_state_dup(arg->job_gres_list);
-	cred->step_gres_list  = gres_step_state_dup(arg->step_gres_list);
+	cred->job_gres_list   = gres_job_state_list_dup(arg->job_gres_list);
+	cred->step_gres_list  = gres_step_state_list_dup(arg->step_gres_list);
 	cred->job_mem_limit   = arg->job_mem_limit;
 	if (arg->job_mem_alloc_size) {
 		cred->job_mem_alloc_size = arg->job_mem_alloc_size;
@@ -724,8 +724,8 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->gids = copy_gids(cred->ngids, cred->gids);
 	rcred->gr_names = copy_gr_names(cred->ngids, cred->gr_names);
 	rcred->job_core_spec  = cred->job_core_spec;
-	rcred->job_gres_list  = gres_job_state_dup(cred->job_gres_list);
-	rcred->step_gres_list = gres_step_state_dup(cred->step_gres_list);
+	rcred->job_gres_list  = gres_job_state_list_dup(cred->job_gres_list);
+	rcred->step_gres_list = gres_step_state_list_dup(cred->step_gres_list);
 	rcred->job_mem_limit  = cred->job_mem_limit;
 	if (cred->job_mem_alloc_size) {
 		rcred->job_mem_alloc_size = cred->job_mem_alloc_size;
@@ -936,8 +936,8 @@ static void _copy_cred_to_arg(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->ngids = cred->ngids;
 	arg->gids = copy_gids(cred->ngids, cred->gids);
 	arg->gr_names = copy_gr_names(cred->ngids, cred->gr_names);
-	arg->job_gres_list  = gres_job_state_dup(cred->job_gres_list);
-	arg->step_gres_list = gres_step_state_dup(cred->step_gres_list);
+	arg->job_gres_list  = gres_job_state_list_dup(cred->job_gres_list);
+	arg->step_gres_list = gres_step_state_list_dup(cred->step_gres_list);
 	arg->job_core_spec  = cred->job_core_spec;
 	arg->job_mem_limit  = cred->job_mem_limit;
 	if (cred->job_mem_alloc_size) {

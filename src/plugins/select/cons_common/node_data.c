@@ -124,7 +124,7 @@ extern node_use_record_t *node_data_dup_use(
 			gres_list = orig_ptr[i].gres_list;
 		else
 			gres_list = node_record_table_ptr[i].gres_list;
-		new_ptr[i].gres_list = gres_node_state_dup(gres_list);
+		new_ptr[i].gres_list = gres_node_state_list_dup(gres_list);
 	}
 	return new_use_ptr;
 }

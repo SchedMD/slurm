@@ -576,7 +576,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
  * IN gres_list - node gres state information
  * RET a copy of gres_list or NULL on failure
  */
-extern List gres_node_state_dup(List gres_list);
+extern List gres_node_state_list_dup(List gres_list);
 
 /*
  * Deallocate all resources on this node previous allocated to any jobs.
@@ -749,7 +749,7 @@ extern int gres_job_revalidate2(uint32_t job_id, List job_gres_list,
  * NOTE: Only gres_cnt_alloc, node_cnt and gres_bit_alloc are copied
  *	 Job step details are NOT copied.
  */
-extern List gres_job_state_dup(List gres_list);
+extern List gres_job_state_list_dup(List gres_list);
 
 /*
  * Create a (partial) copy of a job's gres state for a particular node index
@@ -849,7 +849,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
  * IN gres_list - List of Gres records for this step to track usage
  * RET The copy or NULL on failure
  */
-List gres_step_state_dup(List gres_list);
+List gres_step_state_list_dup(List gres_list);
 
 /*
  * Create a copy of a step's gres state for a particular node index

@@ -2989,7 +2989,7 @@ static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
 		else
 			gres_list = node_ptr->gres_list;
 		new_cr_ptr->nodes[i].gres_list =
-			gres_node_state_dup(gres_list);
+			gres_node_state_list_dup(gres_list);
 	}
 	return new_cr_ptr;
 }
