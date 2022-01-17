@@ -2156,6 +2156,7 @@ next_task:
 
 		if (many_rpcs || (slurm_delta_tv(&start_tv) >= yield_interval)) {
 			uint32_t save_time_limit = job_ptr->time_limit;
+			slurmctld_resv_t *save_resv_ptr = job_ptr->resv_ptr;
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
@@ -2209,6 +2210,7 @@ next_task:
 					 job_ptr);
 				continue;	/* No available frontend */
 			}
+			job_ptr->resv_ptr = save_resv_ptr;
 			if (!job_independent(job_ptr)) {
 				log_flag(BACKFILL, "%pJ no longer independent after bf yield",
 					 job_ptr);
