@@ -178,7 +178,6 @@ typedef struct {
 
 /*********************** local variables *********************/
 static bool stop_backfill = false;
-static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t term_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  term_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -3118,13 +3117,11 @@ static bool _more_work(time_t last_backfill_time)
 {
 	bool rc = false;
 
-	slurm_mutex_lock(&thread_flag_mutex);
 	if ((last_job_update  >= last_backfill_time) ||
 	    (last_node_update >= last_backfill_time) ||
 	    (last_part_update >= last_backfill_time)) {
 		rc = true;
 	}
-	slurm_mutex_unlock(&thread_flag_mutex);
 
 	return rc;
 }
