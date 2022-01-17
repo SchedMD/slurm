@@ -377,8 +377,9 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 	gres_device_t *gres_device;
 	ListIterator iter;
 
-	gres_common_epilog_set_env(epilog_env_ptr, gres_ei, node_inx,
-				   GRES_CONF_ENV_NVML, gres_devices);
+	if (gres_common_epilog_set_env(epilog_env_ptr, gres_ei, node_inx,
+				       GRES_CONF_ENV_NVML, gres_devices))
+		return;
 
 	if (gres_ei->gres_bit_alloc &&
 	    gres_ei->gres_bit_alloc[node_inx])

@@ -101,8 +101,10 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 /*
  * Set environment variables as appropriate for a job's prolog or epilog based
  * GRES allocated to the job.
+ *
+ * RETURN: 1 if nothing was done, 0 otherwise.
  */
-extern void gres_common_epilog_set_env(char ***epilog_env_ptr,
+extern bool gres_common_epilog_set_env(char ***epilog_env_ptr,
 				       gres_epilog_info_t *gres_ei,
 				       int node_inx, uint32_t gres_conf_flags,
 				       List gres_devices);

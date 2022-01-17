@@ -539,8 +539,10 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 /*
  * Set environment variables as appropriate for a job's prolog or epilog based
  * GRES allocated to the job.
+ *
+ * RETURN: 1 if nothing was done, 0 otherwise.
  */
-extern void gres_common_epilog_set_env(char ***epilog_env_ptr,
+extern bool gres_common_epilog_set_env(char ***epilog_env_ptr,
 				       gres_epilog_info_t *gres_ei,
 				       int node_inx, uint32_t gres_conf_flags,
 				       List gres_devices)
@@ -555,18 +557,18 @@ extern void gres_common_epilog_set_env(char ***epilog_env_ptr,
 	xassert(epilog_env_ptr);
 
 	if (!gres_ei)
-		return;
+		return 1;
 
 	if (!gres_devices)
-		return;
+		return 1;
 
 	if (gres_ei->node_cnt == 0)	/* no_consume */
-		return;
+		return 1;
 
 	if (node_inx > gres_ei->node_cnt) {
 		error("bad node index (%d > %u)",
 		      node_inx, gres_ei->node_cnt);
-		return;
+		return 1;
 	}
 
 	if (*epilog_env_ptr) {
@@ -619,5 +621,5 @@ extern void gres_common_epilog_set_env(char ***epilog_env_ptr,
 		xfree(slurm_gpu_str);
 	}
 
-	return;
+	return 0;
 }
