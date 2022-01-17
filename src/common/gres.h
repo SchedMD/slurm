@@ -578,6 +578,9 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
  */
 extern List gres_node_state_list_dup(List gres_list);
 
+/* Copy gres_job_state_t record for ALL nodes */
+extern void *gres_job_state_dup(gres_job_state_t *gres_js);
+
 /*
  * Deallocate all resources on this node previous allocated to any jobs.
  *	This function isused to synchronize state after slurmctld restarts or

@@ -267,7 +267,6 @@ static uint64_t _get_job_gres_list_cnt(List gres_list, char *gres_name,
 static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
 				  int *config_type_cnt);
 static void	_job_state_delete(gres_job_state_t *gres_js);
-static void *	_job_state_dup(gres_job_state_t *gres_js);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int node_index);
 static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
 static int	_load_plugin(slurm_gres_context_t *plugin_context);
@@ -6139,7 +6138,7 @@ extern List gres_job_state_list_dup(List gres_list)
 }
 
 /* Copy gres_job_state_t record for ALL nodes */
-static void *_job_state_dup(gres_job_state_t *gres_js)
+extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 {
 
 	int i;
@@ -6234,7 +6233,7 @@ extern List gres_job_state_extract(List gres_list, int node_index)
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
 		if (node_index == -1)
-			new_gres_data = _job_state_dup(
+			new_gres_data = gres_job_state_dup(
 				gres_state_job->gres_data);
 		else {
 			new_gres_data = _job_state_dup2(
