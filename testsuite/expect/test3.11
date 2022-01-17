@@ -214,6 +214,8 @@ if {$def_oversubscribe_force == 0} {
 set exclusive [default_part_exclusive]
 if {$cons_res_actived == 1} {
 	inc3_11_1
+} else {
+	subskip "TEST 3.11.1 skipped because it needs cons_res"
 }
 inc3_11_2
 inc3_11_3
@@ -223,9 +225,15 @@ inc3_11_6
 if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0} {
 	inc3_11_7
 	inc3_11_8
+} else {
+	subskip "TEST 3.11.7 skipped because it needs cons_res and other conditions ($cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0)"
+	subskip "TEST 3.11.8 skipped because it needs cons_res and other conditions ($cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0)"
+
 }
 if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0} {
 	inc3_11_9
+} else {
+	subskip "TEST 3.11.9 skipped because it needs cons_res and other conditions ($cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0)"
 }
 inc3_11_10
 inc3_11_11
