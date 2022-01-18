@@ -195,6 +195,7 @@
 #define gres_get_step_info	slurm_gres_get_step_info
 #define gres_device_major	slurm_gres_device_major
 #define gres_sock_delete	slurm_gres_sock_delete
+#define gres_job_list_delete	slurm_gres_job_list_delete
 #define destroy_gres_device	slurm_destroy_gres_device
 #define destroy_gres_slurmd_conf slurm_destroy_gres_slurmd_conf
 

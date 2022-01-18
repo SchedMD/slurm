@@ -106,6 +106,7 @@ strong_alias(gres_get_job_info, slurm_gres_get_job_info);
 strong_alias(gres_get_step_info, slurm_gres_get_step_info);
 strong_alias(gres_device_major, slurm_gres_device_major);
 strong_alias(gres_sock_delete, slurm_gres_sock_delete);
+strong_alias(gres_job_list_delete, slurm_gres_job_list_delete);
 strong_alias(destroy_gres_device, slurm_destroy_gres_device);
 strong_alias(destroy_gres_slurmd_conf, slurm_destroy_gres_slurmd_conf);
 
