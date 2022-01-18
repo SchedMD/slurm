@@ -44,6 +44,18 @@ static void _free_name_list(void *x)
 {
 	free(x);
 }
+
+static int _match_dev_inx(void *x, void *key)
+{
+	gres_device_t *gres_device = x;
+	int dev_inx = *(int *)key;
+
+	if (gres_device->index == dev_inx)
+		return 1;
+
+	return 0;
+}
+
 static int _match_name_list(void *x, void *key)
 {
 	if (!xstrcmp(x, key))
@@ -539,7 +551,6 @@ extern void gres_common_epilog_set_env(char ***epilog_env_ptr,
 	char *vendor_gpu_str = NULL;
 	char *slurm_gpu_str = NULL;
 	char *sep = "";
-	ListIterator iter;
 
 	xassert(epilog_env_ptr);
 
@@ -577,11 +588,8 @@ extern void gres_common_epilog_set_env(char ***epilog_env_ptr,
 	for (dev_inx = dev_inx_first; dev_inx <= dev_inx_last; dev_inx++) {
 		if (!bit_test(gres_ei->gres_bit_alloc[node_inx], dev_inx))
 			continue;
-		iter = list_iterator_create(gres_devices);
-		while ((gres_device = list_next(iter))) {
-			if (gres_device->index != dev_inx)
-				continue;
-
+		if ((gres_device =
+		     list_find_first(gres_devices, _match_dev_inx, &dev_inx))) {
 			if (gres_device->unique_id)
 				xstrfmtcat(vendor_gpu_str, "%s%s", sep,
 					   gres_device->unique_id);
@@ -591,9 +599,7 @@ extern void gres_common_epilog_set_env(char ***epilog_env_ptr,
 			xstrfmtcat(slurm_gpu_str, "%s%d", sep,
 				   gres_device->index);
 			sep = ",";
-			break;
 		}
-		list_iterator_destroy(iter);
 	}
 	if (vendor_gpu_str) {
 		if (gres_conf_flags & GRES_CONF_ENV_NVML)
