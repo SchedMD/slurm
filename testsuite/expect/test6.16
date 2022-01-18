@@ -54,7 +54,7 @@ set job_id [submit_job -fail "-n3 --mem=30 --output=/dev/null --error=/dev/null 
 
 wait_for_job -fail $job_id RUNNING
 # Wait for job steps to begin
-exec $bin_sleep 3
+wait_for_command_match -fail -pollinterval .1 "$sstat --allsteps --format JobID --noheader $job_id" "$job_id\.2"
 
 #
 # Kill single job steps individually
