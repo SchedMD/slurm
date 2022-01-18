@@ -845,8 +845,21 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_JOULES_TASK:
 		slurm_mutex_lock(&ipmi_mutex);
 		if (running_in_slurmd()) {
-			if (_init_ipmi_config() == SLURM_SUCCESS)
+			/*
+			 * ipmi_ctx is a thread-local variable. If a new context
+			 * is created in _init_ipmi_config() to respond to
+			 * REQUEST_ACCT_GATHER_ENERGY RPC in a separate thread,
+			 * this context needs to be destroyed at the end.
+			 * Otherwise, the fd linked to IPMI device is left open.
+			 */
+			bool destroy_ctx = (ipmi_ctx ? false : true);
+			if (_init_ipmi_config() == SLURM_SUCCESS) {
 				_thread_update_node_energy();
+				if (destroy_ctx) {
+					ipmi_ctx_close(ipmi_ctx);
+					ipmi_ctx_destroy(ipmi_ctx);
+				}
+			}
 		} else {
 			_get_joules_task(10);
 		}
