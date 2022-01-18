@@ -107,13 +107,15 @@ proc _get_mem {prog} {
 	set ave_used [scale_to_ks $ave_used ""]
 
 	dict set subtest cond [tolerance $mem_size $mem_used $max_mem_error]
-	dict set subtest desc "$prog_base should provide MaxRSS close and bigger than $mem_size"
-	dict set subtest diag "$mem_used not in tolerance values of $mem_size"
+	dict set subtest desc "MaxRSS is within expected tolerance for $prog_base"
+	dict set subtest diag "Observed MaxRSS ($mem_used) is not within tolerance $max_mem_error of expected value ($mem_size)"
 	lappend result $subtest
 
-	dict set subtest cond [tolerance $mem_used [expr $ave_used * $num_tasks] $max_mem_error]
-	dict set subtest desc "$prog_base should provide MaxrRSS <= AveRSS * num_tasks"
-	dict set subtest diag "$mem_used > $ave_used * $num_tasks"
+	# Add 1 to account for the potential truncation error (of AveRSS = TotRSS / tasks).
+	# We are assuming that the two non-memory tasks will not climb above a total of 10MB.
+	dict set subtest cond [tolerance $mem_used [expr ($ave_used + 1) * $num_tasks] "+10240"]
+	dict set subtest desc "AveRSS is within expected tolerance for $prog_base"
+	dict set subtest diag "Observed AveRSS ($ave_used) is not within tolerance of expected value ([expr $mem_size / 3])"
 	lappend result $subtest
 
 	return $result
