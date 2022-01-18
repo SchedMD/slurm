@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set file_in     "$test_dir/input"
 set timeout     60
 set jobid1      0
 set jobid2      0
@@ -59,500 +58,17 @@ proc cleanup {} {
 }
 
 #
-# Build input script file
-#
-make_bash_script $file_in "$bin_sleep 600"
-
-################################################################
-#
-# Proc: sub_job
-#
-# Purpose:  Submit a job
-#
-# Returns: Job ID
-#
-################################################################
-
-proc sub_job { cpu_cnt } {
-	global file_in number sbatch test_id
-
-	set job_id	0
-	spawn $sbatch --output=/dev/null --error=/dev/null -n $cpu_cnt --exclusive $file_in
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sbatch not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$job_id == 0} {
-		fail "Did not get sbatch job_id"
-	}
-	return $job_id
-}
-
-################################################################
-#
-# Proc: sprio_opt
-#
-# Purpose:  Pass sprio options and test
-#
-# Returns: Number of matches.
-#
-# Input: Switch options not requiring arguments
-#
-################################################################
-
-proc sprio_opt { soption } {
-	global number eol sprio
-	set debug       0
-	set matches     0
-	set not_support 0
-	log_debug "$sprio $soption"
-
-############# sprio help option
-	if { $soption == "--help" } {
-
-		spawn $sprio $soption
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "noheader.*jobs.*long.*norm.*format.*user.*verbose.*version.*weights" {
-				if {$debug} {log_debug "Match1"}
-				incr matches
-				exp_continue
-			}
-			-re "Help options:" {
-				if {$debug} {log_debug "Match2"}
-				incr matches
-				exp_continue
-			}
-			-re "help *show this help message" {
-				if {$debug} {log_debug "Match3"}
-				incr matches
-				exp_continue
-			}
-			-re "usage *display a brief summary of sprio options" {
-				if {$debug} {log_debug "Match4"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-
-		subtest {$matches == 4} "Verify sprio $soption option" "$matches != 4"
-	}
-
-############# sprio usage option
-	if { $soption == "--usage" } {
-
-		spawn $sprio $soption job sizes
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .-p partitions.$eol   .--federation. .--local. .--sibling. .--usage. .-hlnvVw." {
-				if {$debug} {log_debug "Match5"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-		subtest {$matches == 1} "Verify sprio $soption option" "$matches != 1"
-	}
-
-############# sprio version options
-	if { $soption == "--version" || $soption == "-V" } {
-
-		spawn $sprio $soption
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "slurm $number.$number.$number" {
-				if {$debug} {log_debug "Match6"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-
-		subtest {$matches == 1} "Verify sprio $soption option" "$matches != 1"
-	}
-
-############# sprio weights options
-	if { $soption == "--weights" || $soption == "-w" } {
-
-		spawn $sprio $soption
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
-				if {$debug} {log_debug "Match7"}
-				incr matches
-				exp_continue
-			}
-			-re "Weights" {
-				if {$debug} {log_debug "Match8"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-
-		subtest {$matches == 2} "Verify sprio $soption option" "$matches != 2"
-	}
-}
-
-################################################################
-#
-# Proc: sprio_args
-#
-# Purpose:  Pass sprio options, arguments and test
-#
-# Returns: Number of matches.
-#
-# Input: Switch options requiring arguments
-#
-################################################################
-
-proc sprio_args { soption sargs jobid} {
-	global number float sprio
-	set debug       0
-	set matches     0
-	set not_support 0
-	log_debug "$sprio $soption $sargs $jobid"
-
-############# sprio noheader options
-	if { $soption == "--noheader" || $soption == "-h" } {
-
-		spawn $sprio $soption $sargs $jobid
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JOBID|PARTITION|PRIORITY|ADMIN|AGE|ASSOC|FAIRSHARE|JOBSIZE|PARTITION|QOS" {
-				if {$debug} {log_debug "Match9"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-		subtest {$matches == 0} "Verify sprio $soption option" "$matches != 0"
-	}
-
-############# sprio jobs options
-	if { $soption == "--jobs" || $soption == "-j" } {
-
-		spawn $sprio $soption $jobid
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
-				if {$debug} {log_debug "Match10"}
-				incr matches
-				exp_continue
-			}
-			-re "$jobid\\s+\\S+\\s+$number" {
-				if {$debug} {log_debug "Match11"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-		subtest {$matches == 2} "Verify sprio $soption option" "$matches != 2"
-	}
-
-############# sprio long options
-	if { $soption == "--long" || $soption == "-l" } {
-
-		spawn $sprio $soption $sargs $jobid
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JOBID PARTITION     USER   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE                 TRES" {
-				if {$debug} {log_debug "Match12"}
-				incr matches
-				exp_continue
-			}
-			-re "$jobid.*$number *$number *$number *$number *$number *$number *$number" {
-				if {$debug} {log_debug "Match13"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-		subtest {$matches == 2} "Verify sprio $soption option" "$matches != 2"
-	}
-
-############# sprio norm options
-	if { $soption == "--norm" || $soption == "-n" } {
-
-		spawn $sprio $soption $sargs $jobid
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
-				if {$debug} {log_debug "Match14"}
-				incr matches
-				exp_continue
-			}
-			-re "$jobid\\s+\\S+\\s+$float" {
-				if {$debug} {log_debug "Match15"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-		subtest {$matches == 2} "Verify sprio $soption option" "$matches != 2"
-	}
-
-############# sprio format options
-	if { $soption == "--format" || $soption == "-o" } {
-
-		spawn $sprio $soption "%.15i %.8u %.10y %.10Y %.10S %.10a %.10A %.10b %.10B %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N" $sargs $jobid
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JOBID     USER   PRIORITY   PRIORITY       SITE        AGE        AGE      ASSOC      ASSOC " {
-				if {$debug} {log_debug "Match16"}
-				incr matches
-				exp_continue
-			}
-			-re "FAIRSHARE  FAIRSHARE    JOBSIZE    JOBSIZE  PARTITION  PARTITION        QOS        QOS   NICE" {
-				if {$debug} {log_debug "Match17"}
-				incr matches
-				exp_continue
-			}
-			-re "$jobid *.* *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$number" {
-				if {$debug} {log_debug "Match18"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-		subtest {$matches == 3} "Verify sprio $soption option" "$matches != 3"
-	}
-
-############# sprio u option
-	if { $soption == "-u" } {
-
-		spawn $sprio $soption $sargs
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JOBID\\s+PARTITION\\s+USER" {
-				if {$debug} {log_debug "Match19"}
-				incr matches
-				exp_continue
-			}
-			-re "$jobid\\s+\\S+\\s+[string range $sargs 0 7]" {
-				if {$debug} {log_debug "Match20"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-		subtest {$matches == 2} "Verify sprio $soption option" "$matches != 2"
-	}
-
-############# sprio usage option
-	if { $soption == "--user=" } {
-
-		spawn $sprio $soption$sargs
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "JOBID\\s+PARTITION\\s+USER" {
-				if {$debug} {log_debug "Match21"}
-				incr matches
-				exp_continue
-			}
-			-re "$jobid\\s+\\S+\\s+[string range $sargs 0 7]" {
-				if {$debug} {log_debug "Match22"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-		subtest {$matches == 2} "Verify sprio $soption option" "$matches != 2"
-	}
-
-############# sprio verbose options
-	if { $soption == "--verbose" || $soption == "-v" } {
-
-		spawn $sprio $soption $sargs $jobid
-		expect {
-			-re "Slurm accounting storage is disabled" {
-				set not_support 1
-				exp_continue
-			}
-			-re "format.*job_flag.*jobs.*$jobid.*verbose" {
-				if {$debug} {log_debug "Match23"}
-				incr matches
-				exp_continue
-			}
-			-re "JOBID\\s+PARTITION\\s+PRIORITY" {
-				if {$debug} {log_debug "Match24"}
-				incr matches
-				exp_continue
-			}
-			-re "$jobid\\s+\\S+\\s+$number" {
-				if {$debug} {log_debug "Match25"}
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sprio not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if {$not_support == 1} {
-			skip "Can not test without accounting enabled"
-		}
-		subtest {$matches == 3} "Verify sprio $soption option" "$matches != 3"
-	}
-
-}
-
-#
 # Start a group of jobs
 #
 set cpu_cnt [get_total_cpus]
-set jobid1 [sub_job $cpu_cnt]
-set jobid2 [sub_job $cpu_cnt]
+set jobid1 [submit_job "--output=/dev/null --error=/dev/null -n $cpu_cnt --exclusive --wrap '$bin_sleep 600'"]
+set jobid2 [submit_job "--output=/dev/null --error=/dev/null -n $cpu_cnt --exclusive --wrap '$bin_sleep 600'"]
 
 #
 # Collect uid
 #
 set user_name [get_my_user_name]
+set username_clip [string range $user_name 0 7]
 
 #
 # Remove the sprio format variable if found
@@ -564,23 +80,105 @@ if {[info exists env(SPRIO_FORMAT)]} {
 #
 # Start testing sprio options and arguments
 #
-sprio_args -h -j $jobid2
-sprio_args --noheader -j $jobid2
-sprio_args -j -j $jobid2
-sprio_args --jobs -j $jobid2
-sprio_args -l -j $jobid2
-sprio_args --long -j $jobid2
-sprio_args -n -j $jobid2
-sprio_args --norm -j $jobid2
-sprio_args -o -j $jobid2
-sprio_args --format -j $jobid2
-sprio_args -u $user_name $jobid2
-sprio_args --user= $user_name $jobid2
-sprio_args -v -j $jobid2
-sprio_args -verbose -j $jobid2
-sprio_opt -V
-sprio_opt --version
-sprio_opt -w
-sprio_opt --weights
-sprio_opt --help
-sprio_opt --usage
+set soption "--noheader"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {![regexp "JOBID|PARTITION|PRIORITY|ADMIN|AGE|ASSOC|FAIRSHARE|JOBSIZE|PARTITION|QOS" $output]} "Verify $soption option hides the header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "-h"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {![regexp "JOBID|PARTITION|PRIORITY|ADMIN|AGE|ASSOC|FAIRSHARE|JOBSIZE|PARTITION|QOS" $output]} "Verify $soption option hides the header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "--jobs"
+set output [run_command_output -fail "$sprio $soption $jobid2"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "-j"
+set output [run_command_output -fail "$sprio $soption $jobid2"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "--long"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {[regexp "JOBID PARTITION     USER   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE                 TRES" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2.*$number *$number *$number *$number *$number *$number *$number" $output]} "Verify $soption option shows the right values"
+
+set soption "-l"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {[regexp "JOBID PARTITION     USER   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE                 TRES" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2.*$number *$number *$number *$number *$number *$number *$number" $output]} "Verify $soption option shows the right values"
+
+set soption "--norm"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$float" $output]} "Verify $soption option shows the right values"
+
+set soption "-n"
+set output [run_command_output -fail "$sprio $soption -j $jobid2"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$float" $output]} "Verify $soption option shows the right values"
+
+set soption "--format"
+set output [run_command_output -fail "$sprio $soption \"%.15i %.8u %.10y %.10Y %.10S %.10a %.10A %.10b %.10B %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N\" -j $jobid2"]
+subtest {[regexp "JOBID     USER   PRIORITY   PRIORITY       SITE        AGE        AGE      ASSOC      ASSOC" $output]} "Verify $soption option shows the right header part 1"
+subtest {[regexp "FAIRSHARE  FAIRSHARE    JOBSIZE    JOBSIZE  PARTITION  PARTITION        QOS        QOS   NICE" $output]} "Verify $soption option shows the right header part 2"
+subtest {[regexp "$jobid2 *.* *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$number" $output]} "Verify $soption option shows the right values"
+
+set soption "-o"
+set output [run_command_output -fail "$sprio $soption \"%.15i %.8u %.10y %.10Y %.10S %.10a %.10A %.10b %.10B %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N\" -j $jobid2"]
+subtest {[regexp "JOBID     USER   PRIORITY   PRIORITY       SITE        AGE        AGE      ASSOC      ASSOC" $output]} "Verify $soption option shows the right header part 1"
+subtest {[regexp "FAIRSHARE  FAIRSHARE    JOBSIZE    JOBSIZE  PARTITION  PARTITION        QOS        QOS   NICE" $output]} "Verify $soption option shows the right header part 2"
+subtest {[regexp "$jobid2 *.* *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$number" $output]} "Verify $soption option shows the right values"
+
+set soption "-u"
+set output [run_command_output -fail "$sprio $soption $user_name"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+USER" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$username_clip" $output]} "Verify $soption option shows the right value"
+
+set soption "--user"
+set output [run_command_output -fail "$sprio $soption $user_name"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+USER" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$username_clip" $output]} "Verify $soption option shows the right value"
+
+set soption "--verbose"
+set output [run_command_output "$sprio $soption -j $jobid2"]
+subtest {[regexp "format.*job_flag.*jobs.*$jobid2.*verbose" $output]} "Verify $soption option shows initial verbose"
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "-v"
+set output [run_command_output "$sprio $soption -j $jobid2"]
+subtest {[regexp "format.*job_flag.*jobs.*$jobid2.*verbose" $output]} "Verify $soption option shows initial verbose"
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option shows the right values"
+
+set soption "--help"
+set output [run_command_output -fail "$sprio $soption"]
+subtest {[regexp "noheader.*jobs.*long.*norm.*format.*user.*verbose.*version.*weights" $output]} "Verify $soption option shows the several options"
+subtest {[regexp "Help options:" $output]} "Verify $soption option shows the Help options"
+subtest {[regexp "help *show this help message" $output]} "Verify $soption option shows the help option"
+subtest {[regexp "usage *display a brief summary of sprio options" $output]} "Verify $soption option shows the usage help"
+
+set soption "--usage"
+set output [run_command_output -fail "$sprio $soption job sizes"]
+subtest {[regexp "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .-p partitions.$eol   .--federation. .--local. .--sibling. .--usage. .-hlnvVw." $output]} "Verify $soption option shows the usage info"
+
+set soption "--version"
+set output [run_command_output -fail "$sprio $soption"]
+subtest {[regexp "slurm $number.$number.$number" $output]} "Verify $soption option shows the right version format"
+
+set soption "-V"
+set output [run_command_output -fail "$sprio $soption"]
+subtest {[regexp "slurm $number.$number.$number" $output]} "Verify $soption option shows the right version format"
+
+set soption "--weights"
+set output [run_command_output -fail "$sprio $soption"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "Weights" $output]} "Verify $soption option shows the right value"
+
+set soption "-w"
+set output [run_command_output -fail "$sprio $soption"]
+subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "Weights" $output]} "Verify $soption option shows the right value"
