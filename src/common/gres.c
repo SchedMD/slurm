@@ -200,7 +200,7 @@ typedef struct {
 } tres_bind_t;
 
 typedef struct {
-	slurm_gres_context_t *context_ptr;
+	slurm_gres_context_t *gres_ctx;
 	int new_has_file;
 	int new_has_type;
 	int rec_count;
@@ -270,21 +270,21 @@ static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
 static void	_job_state_delete(gres_job_state_t *gres_js);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int node_index);
 static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
-static int	_load_plugin(slurm_gres_context_t *plugin_context);
+static int	_load_plugin(slurm_gres_context_t *gres_ctx);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
 static void	_my_stat(char *file_name);
 static int	_node_config_init(char *orig_config,
-				  slurm_gres_context_t *context_ptr,
+				  slurm_gres_context_t *gres_ctx,
 				  gres_state_t *gres_state_node);
 static char *	_node_gres_used(gres_node_state_t *gres_ns, char *gres_name);
 static int	_node_reconfig(char *node_name, char *new_gres, char **gres_str,
 			       gres_state_t *gres_state_node,
 			       bool config_overrides,
-			       slurm_gres_context_t *context_ptr,
+			       slurm_gres_context_t *gres_ctx,
 			       bool *updated_gpu_cnt);
 static int	_node_reconfig_test(char *node_name, char *new_gres,
 				    gres_state_t *gres_state_node,
-				    slurm_gres_context_t *context_ptr);
+				    slurm_gres_context_t *gres_ctx);
 static void	_node_state_dealloc(gres_state_t *gres_state_node);
 static void *	_node_state_dup(gres_node_state_t *gres_ns);
 static void	_node_state_log(gres_node_state_t *gres_ns, char *node_name,
@@ -300,11 +300,11 @@ static void *	_step_state_dup2(gres_step_state_t *gres_ss, int node_index);
 static void	_step_state_log(gres_step_state_t *gres_ss,
 				slurm_step_id_t *step_id,
 				char *gres_name);
-static int	_unload_plugin(slurm_gres_context_t *plugin_context);
+static int	_unload_plugin(slurm_gres_context_t *gres_ctx);
 static void	_validate_slurm_conf(List slurm_conf_list,
-				     slurm_gres_context_t *context_ptr);
+				     slurm_gres_context_t *gres_ctx);
 static void	_validate_gres_conf(List gres_conf_list,
-				    slurm_gres_context_t *context_ptr);
+				    slurm_gres_context_t *gres_ctx);
 static int	_validate_file(char *path_name, char *gres_name);
 static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_ns,
 				 bool config_overrides, char **reason_down);
@@ -456,10 +456,10 @@ extern gres_state_t *gres_create_state(void *src_ptr,
 	}
 	case GRES_STATE_SRC_CONTEXT_PTR:
 	{
-		slurm_gres_context_t *context_ptr = src_ptr;
-		new_gres_state->config_flags = context_ptr->config_flags;
-		new_gres_state->plugin_id = context_ptr->plugin_id;
-		new_gres_state->gres_name = xstrdup(context_ptr->gres_name);
+		slurm_gres_context_t *gres_ctx = src_ptr;
+		new_gres_state->config_flags = gres_ctx->config_flags;
+		new_gres_state->plugin_id = gres_ctx->plugin_id;
+		new_gres_state->gres_name = xstrdup(gres_ctx->gres_name);
 		break;
 	}
 	case GRES_STATE_SRC_KEY_PTR:
@@ -495,7 +495,7 @@ static slurm_gres_context_t *_find_context_by_id(uint32_t plugin_id)
 }
 
 
-static int _load_plugin(slurm_gres_context_t *plugin_context)
+static int _load_plugin(slurm_gres_context_t *gres_ctx)
 {
 	/*
 	 * Must be synchronized with slurm_gres_ops_t above.
@@ -518,58 +518,58 @@ static int _load_plugin(slurm_gres_context_t *plugin_context)
 	int n_syms = sizeof(syms) / sizeof(char *);
 
 	/* Find the correct plugin */
-	if (plugin_context->config_flags & GRES_CONF_COUNT_ONLY) {
+	if (gres_ctx->config_flags & GRES_CONF_COUNT_ONLY) {
 		debug("Plugin of type %s only tracks gres counts",
-		      plugin_context->gres_type);
+		      gres_ctx->gres_type);
 		return SLURM_SUCCESS;
 	}
 
-	plugin_context->cur_plugin = plugin_load_and_link(
-		plugin_context->gres_type,
+	gres_ctx->cur_plugin = plugin_load_and_link(
+		gres_ctx->gres_type,
 		n_syms, syms,
-		(void **) &plugin_context->ops);
-	if (plugin_context->cur_plugin != PLUGIN_INVALID_HANDLE)
+		(void **) &gres_ctx->ops);
+	if (gres_ctx->cur_plugin != PLUGIN_INVALID_HANDLE)
 		return SLURM_SUCCESS;
 
 	if (errno != EPLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
-		      plugin_context->gres_type, plugin_strerror(errno));
+		      gres_ctx->gres_type, plugin_strerror(errno));
 		return SLURM_ERROR;
 	}
 
 	debug("gres: Couldn't find the specified plugin name for %s looking "
-	      "at all files", plugin_context->gres_type);
+	      "at all files", gres_ctx->gres_type);
 
 	/* Get plugin list */
-	if (plugin_context->plugin_list == NULL) {
-		plugin_context->plugin_list = plugrack_create("gres");
-		plugrack_read_dir(plugin_context->plugin_list,
+	if (gres_ctx->plugin_list == NULL) {
+		gres_ctx->plugin_list = plugrack_create("gres");
+		plugrack_read_dir(gres_ctx->plugin_list,
 				  slurm_conf.plugindir);
 	}
 
-	plugin_context->cur_plugin = plugrack_use_by_type(
-		plugin_context->plugin_list,
-		plugin_context->gres_type );
-	if (plugin_context->cur_plugin == PLUGIN_INVALID_HANDLE) {
+	gres_ctx->cur_plugin = plugrack_use_by_type(
+		gres_ctx->plugin_list,
+		gres_ctx->gres_type );
+	if (gres_ctx->cur_plugin == PLUGIN_INVALID_HANDLE) {
 		debug("Cannot find plugin of type %s, just track gres counts",
-		      plugin_context->gres_type);
-		plugin_context->config_flags |= GRES_CONF_COUNT_ONLY;
+		      gres_ctx->gres_type);
+		gres_ctx->config_flags |= GRES_CONF_COUNT_ONLY;
 		return SLURM_ERROR;
 	}
 
 	/* Dereference the API. */
-	if (plugin_get_syms(plugin_context->cur_plugin,
+	if (plugin_get_syms(gres_ctx->cur_plugin,
 			    n_syms, syms,
-			    (void **) &plugin_context->ops ) < n_syms ) {
+			    (void **) &gres_ctx->ops ) < n_syms ) {
 		error("Incomplete %s plugin detected",
-		      plugin_context->gres_type);
+		      gres_ctx->gres_type);
 		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
 }
 
-static int _unload_plugin(slurm_gres_context_t *plugin_context)
+static int _unload_plugin(slurm_gres_context_t *gres_ctx)
 {
 	int rc;
 
@@ -577,15 +577,15 @@ static int _unload_plugin(slurm_gres_context_t *plugin_context)
 	 * Must check return code here because plugins might still
 	 * be loaded and active.
 	 */
-	if (plugin_context->plugin_list)
-		rc = plugrack_destroy(plugin_context->plugin_list);
+	if (gres_ctx->plugin_list)
+		rc = plugrack_destroy(gres_ctx->plugin_list);
 	else {
 		rc = SLURM_SUCCESS;
-		plugin_unload(plugin_context->cur_plugin);
+		plugin_unload(gres_ctx->cur_plugin);
 	}
-	xfree(plugin_context->gres_name);
-	xfree(plugin_context->gres_name_colon);
-	xfree(plugin_context->gres_type);
+	xfree(gres_ctx->gres_name);
+	xfree(gres_ctx->gres_name_colon);
+	xfree(gres_ctx->gres_type);
 
 	return rc;
 }
@@ -609,7 +609,7 @@ static void _set_shared_flag(char *name, uint32_t *config_flags)
  */
 static void _add_gres_context(char *gres_name)
 {
-	slurm_gres_context_t *plugin_context;
+	slurm_gres_context_t *gres_ctx;
 
 	if (!gres_name || !gres_name[0])
 		fatal("%s: invalid empty gres_name", __func__);
@@ -617,13 +617,13 @@ static void _add_gres_context(char *gres_name)
 	xrecalloc(gres_context, (gres_context_cnt + 1),
 		  sizeof(slurm_gres_context_t));
 
-	plugin_context = &gres_context[gres_context_cnt];
-	_set_shared_flag(gres_name, &plugin_context->config_flags);
-	plugin_context->gres_name = xstrdup(gres_name);
-	plugin_context->plugin_id = gres_build_id(gres_name);
-	plugin_context->gres_type = xstrdup_printf("gres/%s", gres_name);
-	plugin_context->plugin_list = NULL;
-	plugin_context->cur_plugin = PLUGIN_INVALID_HANDLE;
+	gres_ctx = &gres_context[gres_context_cnt];
+	_set_shared_flag(gres_name, &gres_ctx->config_flags);
+	gres_ctx->gres_name = xstrdup(gres_name);
+	gres_ctx->plugin_id = gres_build_id(gres_name);
+	gres_ctx->gres_type = xstrdup_printf("gres/%s", gres_name);
+	gres_ctx->plugin_list = NULL;
+	gres_ctx->cur_plugin = PLUGIN_INVALID_HANDLE;
 
 	gres_context_cnt++;
 }
@@ -1522,12 +1522,12 @@ static int _parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 static int _foreach_slurm_conf(void *x, void *arg)
 {
 	gres_state_t *gres_state_node = (gres_state_t *)x;
-	slurm_gres_context_t *context_ptr = (slurm_gres_context_t *)arg;
+	slurm_gres_context_t *gres_ctx = (slurm_gres_context_t *)arg;
 	gres_node_state_t *gres_ns;
 	uint64_t tmp_count = 0;
 
 	/* Only look at the GRES under the current plugin (same name) */
-	if (gres_state_node->plugin_id != context_ptr->plugin_id)
+	if (gres_state_node->plugin_id != gres_ctx->plugin_id)
 		return 0;
 
 	gres_ns = (gres_node_state_t *)gres_state_node->gres_data;
@@ -1543,53 +1543,53 @@ static int _foreach_slurm_conf(void *x, void *arg)
 	if (gres_ns->type_cnt &&
 	    gres_ns->gres_cnt_config > tmp_count)
 		fatal("%s: Some %s GRES in slurm.conf have a type while others do not (gres_ns->gres_cnt_config (%"PRIu64") > tmp_count (%"PRIu64"))",
-		      __func__, context_ptr->gres_name,
+		      __func__, gres_ctx->gres_name,
 		      gres_ns->gres_cnt_config, tmp_count);
 	return 1;
 }
 
 static void _validate_slurm_conf(List slurm_conf_list,
-				 slurm_gres_context_t *context_ptr)
+				 slurm_gres_context_t *gres_ctx)
 {
 	if (!slurm_conf_list)
 		return;
 
 	(void)list_for_each_nobreak(slurm_conf_list, _foreach_slurm_conf,
-				    context_ptr);
+				    gres_ctx);
 }
 
 static int _foreach_gres_conf(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = (gres_slurmd_conf_t *)x;
 	foreach_gres_conf_t *foreach_gres_conf = (foreach_gres_conf_t *)arg;
-	slurm_gres_context_t *context_ptr = foreach_gres_conf->context_ptr;
+	slurm_gres_context_t *gres_ctx = foreach_gres_conf->gres_ctx;
 	bool orig_has_file, orig_has_type;
 
 	/* Only look at the GRES under the current plugin (same name) */
-	if (gres_slurmd_conf->plugin_id != context_ptr->plugin_id)
+	if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
 		return 0;
 
 	/*
 	 * If any plugin of this type has this set it will virally set
-	 * any other to be the same as we use the context_ptr from here
+	 * any other to be the same as we use the gres_ctx from here
 	 * on out.
 	 */
 	if (gres_slurmd_conf->config_flags & GRES_CONF_COUNT_ONLY)
-		context_ptr->config_flags |= GRES_CONF_COUNT_ONLY;
+		gres_ctx->config_flags |= GRES_CONF_COUNT_ONLY;
 
 	if (gres_slurmd_conf->config_flags & GRES_CONF_ONE_SHARING)
-		context_ptr->config_flags |= GRES_CONF_ONE_SHARING;
+		gres_ctx->config_flags |= GRES_CONF_ONE_SHARING;
 	/*
 	 * Since there could be multiple types of the same plugin we
 	 * need to only make sure we load it once.
 	 */
-	if (!(context_ptr->config_flags & GRES_CONF_LOADED)) {
+	if (!(gres_ctx->config_flags & GRES_CONF_LOADED)) {
 		/*
 		 * Ignore return code, as we will still support the gres
 		 * with or without the plugin.
 		 */
-		if (_load_plugin(context_ptr) == SLURM_SUCCESS)
-			context_ptr->config_flags |= GRES_CONF_LOADED;
+		if (_load_plugin(gres_ctx) == SLURM_SUCCESS)
+			gres_ctx->config_flags |= GRES_CONF_LOADED;
 	}
 
 	foreach_gres_conf->rec_count++;
@@ -1602,7 +1602,7 @@ static int _foreach_gres_conf(void *x, void *arg)
 	} else if ((foreach_gres_conf->new_has_file && !orig_has_file) ||
 		   (!foreach_gres_conf->new_has_file && orig_has_file)) {
 		fatal("gres.conf for %s, some records have \"File\" specification while others do not",
-		      context_ptr->gres_name);
+		      gres_ctx->gres_name);
 	}
 	orig_has_type = gres_slurmd_conf->config_flags &
 		GRES_CONF_HAS_TYPE;
@@ -1615,27 +1615,27 @@ static int _foreach_gres_conf(void *x, void *arg)
 	} else if ((foreach_gres_conf->new_has_type && !orig_has_type) ||
 		   (!foreach_gres_conf->new_has_type && orig_has_type)) {
 		fatal("gres.conf for %s, some records have \"Type=\" specification while others do not",
-		      context_ptr->gres_name);
+		      gres_ctx->gres_name);
 	}
 
 	if (!foreach_gres_conf->new_has_file &&
 	    !foreach_gres_conf->new_has_type &&
 	    (foreach_gres_conf->rec_count > 1)) {
 		fatal("gres.conf duplicate records for %s",
-		      context_ptr->gres_name);
+		      gres_ctx->gres_name);
 	}
 
 	if (foreach_gres_conf->new_has_file)
-		context_ptr->config_flags |= GRES_CONF_HAS_FILE;
+		gres_ctx->config_flags |= GRES_CONF_HAS_FILE;
 
 	return 0;
 }
 
 static void _validate_gres_conf(List gres_conf_list,
-				slurm_gres_context_t *context_ptr)
+				slurm_gres_context_t *gres_ctx)
 {
 	foreach_gres_conf_t gres_conf = {
-		.context_ptr = context_ptr,
+		.gres_ctx = gres_ctx,
 		.new_has_file = -1,
 		.new_has_type = -1,
 		.rec_count = 0,
@@ -1644,18 +1644,18 @@ static void _validate_gres_conf(List gres_conf_list,
 	(void)list_for_each_nobreak(gres_conf_list, _foreach_gres_conf,
 				    &gres_conf);
 
-	if (!(context_ptr->config_flags & GRES_CONF_LOADED)) {
+	if (!(gres_ctx->config_flags & GRES_CONF_LOADED)) {
 		/*
 		 * This means there was no gre.conf line for this gres found.
 		 * We still need to try to load it for AutoDetect's sake.
 		 * If we fail loading we will treat it as a count
 		 * only GRES since the stepd will try to load it elsewise.
 		 */
-		if (_load_plugin(context_ptr) != SLURM_SUCCESS)
-			context_ptr->config_flags |= GRES_CONF_COUNT_ONLY;
+		if (_load_plugin(gres_ctx) != SLURM_SUCCESS)
+			gres_ctx->config_flags |= GRES_CONF_COUNT_ONLY;
 	} else
 		/* Remove as this is only really used locally */
-		context_ptr->config_flags &= (~GRES_CONF_LOADED);
+		gres_ctx->config_flags &= (~GRES_CONF_LOADED);
 }
 
 /*
@@ -1699,10 +1699,10 @@ static void _compare_conf_counts(List gres_conf_list_tmp, uint64_t count,
  *
  * slurm_conf_list - (in) The slurm.conf GRES list.
  * gres_conf_list  - (in) The gres.conf GRES list.
- * context_ptr     - (in) Which GRES plugin we are currently working in.
+ * gres_ctx     - (in) Which GRES plugin we are currently working in.
  */
 static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
-				 slurm_gres_context_t *context_ptr)
+				 slurm_gres_context_t *gres_ctx)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
@@ -1722,7 +1722,7 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
 		gres_slurmd_conf_t *gres_slurmd_conf_tmp;
-		if (gres_slurmd_conf->plugin_id != context_ptr->plugin_id)
+		if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
 			continue;
 
 		gres_slurmd_conf_tmp = xmalloc(sizeof(*gres_slurmd_conf_tmp));
@@ -1742,7 +1742,7 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 	while ((gres_state_node = list_next(iter))) {
 		gres_node_state_t *gres_ns;
 
-		if (gres_state_node->plugin_id != context_ptr->plugin_id)
+		if (gres_state_node->plugin_id != gres_ctx->plugin_id)
 			continue;
 
 		/* Determine if typed or untyped, and act accordingly */
@@ -1792,7 +1792,7 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
  * name as the slurm.conf record.
  */
 static gres_slurmd_conf_t *_match_type(List gres_conf_list,
-				       slurm_gres_context_t *gres_context,
+				       slurm_gres_context_t *gres_ctx,
 				       char *type_name)
 {
 	ListIterator gres_conf_itr;
@@ -1800,7 +1800,7 @@ static gres_slurmd_conf_t *_match_type(List gres_conf_list,
 
 	gres_conf_itr = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(gres_conf_itr))) {
-		if (gres_slurmd_conf->plugin_id != gres_context->plugin_id)
+		if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
 			continue;
 
 		/*
@@ -1832,14 +1832,14 @@ static gres_slurmd_conf_t *_match_type(List gres_conf_list,
  * cpu_cnt      - (in) The cpu count configured for the node.
  */
 static void _add_gres_config_empty(List gres_list,
-				   slurm_gres_context_t *gres_context,
+				   slurm_gres_context_t *gres_ctx,
 				   uint32_t cpu_cnt)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf =
 		xmalloc(sizeof(*gres_slurmd_conf));
 	gres_slurmd_conf->cpu_cnt = cpu_cnt;
-	gres_slurmd_conf->name = xstrdup(gres_context->gres_name);
-	gres_slurmd_conf->plugin_id = gres_context->plugin_id;
+	gres_slurmd_conf->name = xstrdup(gres_ctx->gres_name);
+	gres_slurmd_conf->plugin_id = gres_ctx->plugin_id;
 	list_append(gres_list, gres_slurmd_conf);
 }
 
@@ -1893,7 +1893,7 @@ static void _set_file_subset(gres_slurmd_conf_t *gres_slurmd_conf,
  * cpu_cnt        - (in) A count of CPUs on the node.
  */
 static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
-			 char *type_name, slurm_gres_context_t *gres_context,
+			 char *type_name, slurm_gres_context_t *gres_ctx,
 			 uint32_t cpu_count)
 {
 	gres_slurmd_conf_t *match;
@@ -1908,7 +1908,7 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
 	 * single slurm.conf GRES line, due to different values of Cores
 	 * and Links. Append them to the list where possible.
 	 */
-	while ((match = _match_type(gres_conf_list, gres_context, type_name))) {
+	while ((match = _match_type(gres_conf_list, gres_ctx, type_name))) {
 		list_append(new_list, match);
 
 		debug3("%s: From gres.conf, using %s:%s:%"PRIu64":%s", __func__,
@@ -1959,12 +1959,12 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
 
 	/* Set default env flags, and allow AutoDetect to override */
 	flags = 0;
-	if (!xstrcasecmp(gres_context->gres_name, "gpu"))
+	if (!xstrcasecmp(gres_ctx->gres_name, "gpu"))
 		flags |= (GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF);
-	if (gres_context->config_flags & GRES_CONF_COUNT_ONLY)
+	if (gres_ctx->config_flags & GRES_CONF_COUNT_ONLY)
 		flags |= GRES_CONF_COUNT_ONLY;
 
-	add_gres_to_list(new_list, gres_context->gres_name, count, cpu_count,
+	add_gres_to_list(new_list, gres_ctx->gres_name, count, cpu_count,
 			 NULL, NULL, NULL, type_name, NULL, NULL, flags);
 }
 
@@ -1975,17 +1975,17 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
  * gres_conf_list - (in) The gres.conf list.
  * new_list       - (out) The new merged [slurm|gres].conf list.
  * ptr            - (in) A slurm.conf GRES record.
- * gres_context   - (in) Which GRES plugin we are working in.
+ * gres_ctx   - (in) Which GRES plugin we are working in.
  * cpu_cnt        - (in) A count of CPUs on the node.
  */
 static void _merge_gres(List gres_conf_list, List new_list,
 			gres_node_state_t *gres_ns,
-			slurm_gres_context_t *gres_context, uint32_t cpu_cnt)
+			slurm_gres_context_t *gres_ctx, uint32_t cpu_cnt)
 {
 	/* If this GRES has no types, merge in the single untyped GRES */
 	if (gres_ns->type_cnt == 0) {
 		_merge_gres2(gres_conf_list, new_list,
-			     gres_ns->gres_cnt_config, NULL, gres_context,
+			     gres_ns->gres_cnt_config, NULL, gres_ctx,
 			     cpu_cnt);
 		return;
 	}
@@ -1994,7 +1994,7 @@ static void _merge_gres(List gres_conf_list, List new_list,
 	for (int i = 0; i < gres_ns->type_cnt; i++) {
 		_merge_gres2(gres_conf_list, new_list,
 			     gres_ns->type_cnt_avail[i],
-			     gres_ns->type_name[i], gres_context, cpu_cnt);
+			     gres_ns->type_name[i], gres_ctx, cpu_cnt);
 	}
 }
 
@@ -2050,35 +2050,37 @@ static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 	FREE_NULL_LIST(new_gres_list);
 }
 
-static void _pack_gres_context(slurm_gres_context_t *ctx, buf_t *buffer)
+static void _pack_gres_context(slurm_gres_context_t *gres_ctx, buf_t *buffer)
 {
-	/* ctx->cur_plugin: DON'T PACK will be filled in on the other side */
-	pack32(ctx->config_flags, buffer);
-	packstr(ctx->gres_name, buffer);
-	packstr(ctx->gres_name_colon, buffer);
-	pack32((uint32_t)ctx->gres_name_colon_len, buffer);
-	packstr(ctx->gres_type, buffer);
-	/* ctx->ops: DON'T PACK will be filled in on the other side */
-	pack32(ctx->plugin_id, buffer);
-	/* ctx->plugin_list: DON'T PACK will be filled in on the other side */
-	pack64(ctx->total_cnt, buffer);
+	/* gres_ctx->cur_plugin: DON'T PACK will be filled in on the other
+	 * side */
+	pack32(gres_ctx->config_flags, buffer);
+	packstr(gres_ctx->gres_name, buffer);
+	packstr(gres_ctx->gres_name_colon, buffer);
+	pack32((uint32_t)gres_ctx->gres_name_colon_len, buffer);
+	packstr(gres_ctx->gres_type, buffer);
+	/* gres_ctx->ops: DON'T PACK will be filled in on the other side */
+	pack32(gres_ctx->plugin_id, buffer);
+	/* gres_ctx->plugin_list: DON'T PACK will be filled in on the other
+	 * side */
+	pack64(gres_ctx->total_cnt, buffer);
 }
 
-static int _unpack_gres_context(slurm_gres_context_t* ctx, buf_t *buffer)
+static int _unpack_gres_context(slurm_gres_context_t *gres_ctx, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 
-	/* ctx->cur_plugin: filled in later with _load_plugin() */
-	safe_unpack32(&ctx->config_flags, buffer);
-	safe_unpackstr_xmalloc(&ctx->gres_name, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&ctx->gres_name_colon, &uint32_tmp, buffer);
+	/* gres_ctx->cur_plugin: filled in later with _load_plugin() */
+	safe_unpack32(&gres_ctx->config_flags, buffer);
+	safe_unpackstr_xmalloc(&gres_ctx->gres_name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&gres_ctx->gres_name_colon, &uint32_tmp, buffer);
 	safe_unpack32(&uint32_tmp, buffer);
-	ctx->gres_name_colon_len = (int)uint32_tmp;
-	safe_unpackstr_xmalloc(&ctx->gres_type, &uint32_tmp, buffer);
-	/* ctx->ops: filled in later with _load_plugin() */
-	safe_unpack32(&ctx->plugin_id, buffer);
-	/* ctx->plugin_list: filled in later with _load_plugin() */
-	safe_unpack64(&ctx->total_cnt, buffer);
+	gres_ctx->gres_name_colon_len = (int)uint32_tmp;
+	safe_unpackstr_xmalloc(&gres_ctx->gres_type, &uint32_tmp, buffer);
+	/* gres_ctx->ops: filled in later with _load_plugin() */
+	safe_unpack32(&gres_ctx->plugin_id, buffer);
+	/* gres_ctx->plugin_list: filled in later with _load_plugin() */
+	safe_unpack64(&gres_ctx->total_cnt, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2163,10 +2165,10 @@ static void _pack_context_buf(void)
 	}
 
 	for (int i = 0; i < gres_context_cnt; i++) {
-		slurm_gres_context_t *ctx = &gres_context[i];
-		_pack_gres_context(ctx, gres_context_buf);
-		if (ctx->ops.send_stepd)
-			(*(ctx->ops.send_stepd))(gres_context_buf);
+		slurm_gres_context_t *gres_ctx = &gres_context[i];
+		_pack_gres_context(gres_ctx, gres_context_buf);
+		if (gres_ctx->ops.send_stepd)
+			(*(gres_ctx->ops.send_stepd))(gres_context_buf);
 	}
 }
 
@@ -2182,12 +2184,12 @@ static int _unpack_context_buf(buf_t *buffer)
 
 	xrecalloc(gres_context, gres_context_cnt, sizeof(slurm_gres_context_t));
 	for (int i = 0; i < gres_context_cnt; i++) {
-		slurm_gres_context_t *ctx = &gres_context[i];
-		if (_unpack_gres_context(ctx, buffer) != SLURM_SUCCESS)
+		slurm_gres_context_t *gres_ctx = &gres_context[i];
+		if (_unpack_gres_context(gres_ctx, buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		(void)_load_plugin(ctx);
-		if (ctx->ops.recv_stepd)
-			(*(ctx->ops.recv_stepd))(buffer);
+		(void)_load_plugin(gres_ctx);
+		if (gres_ctx->ops.recv_stepd)
+			(*(gres_ctx->ops.recv_stepd))(buffer);
 	}
 	return SLURM_SUCCESS;
 
@@ -2446,7 +2448,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 	char *tmp_unique_id = NULL;
 	gres_slurmd_conf_t *p;
 	bool locked = false;
-	slurm_gres_context_t *context_ptr;
+	slurm_gres_context_t *gres_ctx;
 
 	rc = gres_init();
 
@@ -2510,7 +2512,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			 gres_flags2str(config_flags), tmp_cpus, cpu_cnt,
 			 count64, tmp_links);
 
-		if (!(context_ptr = _find_context_by_id(plugin_id))) {
+		if (!(gres_ctx = _find_context_by_id(plugin_id))) {
 			/*
 			 * GresPlugins is inconsistently configured.
 			 * Not a fatal error, but skip this data.
@@ -2526,18 +2528,18 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			continue;
 		}
 
-		if (xstrcmp(context_ptr->gres_name, tmp_name)) {
+		if (xstrcmp(gres_ctx->gres_name, tmp_name)) {
 			/*
 			 * Should have been caught in
 			 * gres_init()
 			 */
 			error("%s: gres/%s duplicate plugin ID with %s, unable to process",
 			      __func__, tmp_name,
-			      context_ptr->gres_name);
+			      gres_ctx->gres_name);
 			continue;
 		}
 		new_has_file = config_flags & GRES_CONF_HAS_FILE;
-		orig_has_file = context_ptr->config_flags &
+		orig_has_file = gres_ctx->config_flags &
 			GRES_CONF_HAS_FILE;
 		if (orig_has_file && !new_has_file && count64) {
 			error("%s: gres/%s lacks \"File=\" parameter for node %s",
@@ -2562,10 +2564,10 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		 * GRES_CONF_ONE_SHARING then remove it from the
 		 * context.
 		 */
-		if ((context_ptr->config_flags & GRES_CONF_LOADED) &&
+		if ((gres_ctx->config_flags & GRES_CONF_LOADED) &&
 		    gres_id_shared(config_flags))  {
 			bool gc_one_sharing =
-				context_ptr->config_flags &
+				gres_ctx->config_flags &
 				GRES_CONF_ONE_SHARING;
 			bool got_one_sharing =
 				config_flags & GRES_CONF_ONE_SHARING;
@@ -2577,12 +2579,12 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			} else if (!got_one_sharing) {
 				log_flag(GRES, "gres/%s was already set up to only share one, but we just found the opposite from %s. Removing flag.",
 					 tmp_name, node_name);
-				context_ptr->config_flags &=
+				gres_ctx->config_flags &=
 					~GRES_CONF_ONE_SHARING;
 			}
 		}
 
-		context_ptr->config_flags |= config_flags;
+		gres_ctx->config_flags |= config_flags;
 
 		/*
 		 * On the slurmctld we need to load the plugins to
@@ -2590,10 +2592,10 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		 * after we have the config_flags so we can tell if we
 		 * are CountOnly or not.
 		 */
-		if (!(context_ptr->config_flags &
+		if (!(gres_ctx->config_flags &
 		      GRES_CONF_LOADED)) {
-			(void)_load_plugin(context_ptr);
-			context_ptr->config_flags |=
+			(void)_load_plugin(gres_ctx);
+			gres_ctx->config_flags |=
 				GRES_CONF_LOADED;
 		}
 	empty:
@@ -2881,7 +2883,7 @@ static gres_node_state_t *_build_gres_node_state(void)
  * Build a node's gres record based only upon the slurm.conf contents
  */
 static int _node_config_init(char *orig_config,
-			     slurm_gres_context_t *context_ptr,
+			     slurm_gres_context_t *gres_ctx,
 			     gres_state_t *gres_state_node)
 {
 	int rc = SLURM_SUCCESS;
@@ -2898,11 +2900,11 @@ static int _node_config_init(char *orig_config,
 	}
 
 	_get_gres_cnt(gres_ns, orig_config,
-		      context_ptr->gres_name,
-		      context_ptr->gres_name_colon,
-		      context_ptr->gres_name_colon_len);
+		      gres_ctx->gres_name,
+		      gres_ctx->gres_name_colon,
+		      gres_ctx->gres_name_colon_len);
 
-	context_ptr->total_cnt += gres_ns->gres_cnt_config;
+	gres_ctx->total_cnt += gres_ns->gres_cnt_config;
 
 	/* Use count from recovered state, if higher */
 	gres_ns->gres_cnt_avail = MAX(gres_ns->gres_cnt_avail,
@@ -2910,7 +2912,7 @@ static int _node_config_init(char *orig_config,
 	if ((gres_ns->gres_bit_alloc != NULL) &&
 	    (gres_ns->gres_cnt_avail >
 	     bit_size(gres_ns->gres_bit_alloc)) &&
-	    !gres_id_shared(context_ptr->config_flags)) {
+	    !gres_id_shared(gres_ctx->config_flags)) {
 		gres_ns->gres_bit_alloc =
 			bit_realloc(gres_ns->gres_bit_alloc,
 				    gres_ns->gres_cnt_avail);
@@ -3127,7 +3129,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				 gres_state_t *gres_state_node,
 				 int cpu_cnt, int core_cnt, int sock_cnt,
 				 bool config_overrides, char **reason_down,
-				 slurm_gres_context_t *context_ptr)
+				 slurm_gres_context_t *gres_ctx)
 {
 	int cpus_config = 0, i, j, gres_inx, rc = SLURM_SUCCESS;
 	int config_type_cnt = 0;
@@ -3147,16 +3149,16 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		return rc;
 
 	/* Make sure these are insync after we get it from the slurmd */
-	gres_state_node->config_flags = context_ptr->config_flags;
+	gres_state_node->config_flags = gres_ctx->config_flags;
 
-	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &topo_cnt,
+	gres_cnt = _get_tot_gres_cnt(gres_ctx->plugin_id, &topo_cnt,
 				     &config_type_cnt);
 	if ((gres_ns->gres_cnt_config > gres_cnt) && !config_overrides) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
 				   "%s count reported lower than configured "
 				   "(%"PRIu64" < %"PRIu64")",
-				   context_ptr->gres_type,
+				   gres_ctx->gres_type,
 				   gres_cnt, gres_ns->gres_cnt_config);
 		}
 		rc = EINVAL;
@@ -3164,14 +3166,14 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	if ((gres_cnt > gres_ns->gres_cnt_config)) {
 		debug("%s: %s: Ignoring excess count on node %s (%"
 		      PRIu64" > %"PRIu64")",
-		      __func__, context_ptr->gres_type, node_name, gres_cnt,
+		      __func__, gres_ctx->gres_type, node_name, gres_cnt,
 		      gres_ns->gres_cnt_config);
 		gres_cnt = gres_ns->gres_cnt_config;
 	}
 	if (gres_ns->gres_cnt_found != gres_cnt) {
 		if (gres_ns->gres_cnt_found != NO_VAL64) {
 			info("%s: %s: Count changed on node %s (%"PRIu64" != %"PRIu64")",
-			     __func__, context_ptr->gres_type, node_name,
+			     __func__, gres_ctx->gres_type, node_name,
 			     gres_ns->gres_cnt_found, gres_cnt);
 		}
 		if ((gres_ns->gres_cnt_found != NO_VAL64) &&
@@ -3180,7 +3182,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				xstrfmtcat(*reason_down,
 					   "%s count changed and jobs are using them "
 					   "(%"PRIu64" != %"PRIu64")",
-					   context_ptr->gres_type,
+					   gres_ctx->gres_type,
 					   gres_ns->gres_cnt_found, gres_cnt);
 			}
 			rc = EINVAL;
@@ -3206,7 +3208,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		return rc;
 	if ((gres_cnt > gres_ns->gres_cnt_config) && config_overrides) {
 		info("%s: %s: count on node %s inconsistent with slurmctld count (%"PRIu64" != %"PRIu64")",
-		     __func__, context_ptr->gres_type, node_name,
+		     __func__, gres_ctx->gres_type, node_name,
 		     gres_cnt, gres_ns->gres_cnt_config);
 		gres_cnt = gres_ns->gres_cnt_config;	/* Ignore excess GRES */
 	}
@@ -3217,9 +3219,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		gres_ns->topo_cnt = topo_cnt;
 	}
 
-	has_file = context_ptr->config_flags & GRES_CONF_HAS_FILE;
-	has_type = context_ptr->config_flags & GRES_CONF_HAS_TYPE;
-	if (gres_id_shared(context_ptr->config_flags))
+	has_file = gres_ctx->config_flags & GRES_CONF_HAS_FILE;
+	has_type = gres_ctx->config_flags & GRES_CONF_HAS_TYPE;
+	if (gres_id_shared(gres_ctx->config_flags))
 		dev_cnt = topo_cnt;
 	else
 		dev_cnt = gres_cnt;
@@ -3269,7 +3271,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			gres_ns->gres_bit_alloc = bit_realloc(
 				gres_ns->gres_bit_alloc, dev_cnt);
 		gres_ns->topo_cnt = topo_cnt;
-	} else if (gres_id_shared(context_ptr->config_flags) &&
+	} else if (gres_id_shared(gres_ctx->config_flags) &&
 		   gres_ns->topo_cnt) {
 		/*
 		 * Need to rebuild topology info to recover state after
@@ -3284,10 +3286,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		while ((gres_slurmd_conf = (gres_slurmd_conf_t *)
 			list_next(iter))) {
 			if (gres_slurmd_conf->plugin_id !=
-			    context_ptr->plugin_id)
+			    gres_ctx->plugin_id)
 				continue;
 			if ((gres_ns->gres_bit_alloc) &&
-			    !gres_id_shared(context_ptr->config_flags))
+			    !gres_id_shared(gres_ctx->config_flags))
 				gres_ns->topo_gres_cnt_alloc[i] = 0;
 			gres_ns->topo_gres_cnt_avail[i] =
 				gres_slurmd_conf->count;
@@ -3298,7 +3300,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 						    gres_slurmd_conf->cpus);
 				if (ret != SLURM_SUCCESS) {
 					error("%s: %s: invalid GRES core specification (%s) on node %s",
-					      __func__, context_ptr->gres_type,
+					      __func__, gres_ctx->gres_type,
 					      gres_slurmd_conf->cpus,
 					      node_name);
 					FREE_NULL_BITMAP(tmp_bitmap);
@@ -3309,7 +3311,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			} else if (cpus_config && !cpu_config_err) {
 				cpu_config_err = true;
 				error("%s: %s: has CPUs configured for only some of the records on node %s",
-				      __func__, context_ptr->gres_type,
+				      __func__, gres_ctx->gres_type,
 				      node_name);
 			}
 
@@ -3390,7 +3392,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			while ((gres_slurmd_conf = (gres_slurmd_conf_t *)
 				list_next(iter))) {
 				if (gres_slurmd_conf->plugin_id !=
-				    context_ptr->plugin_id)
+				    gres_ctx->plugin_id)
 					continue;
 				for (j = 0; j < i; j++) {
 					if (gres_ns->topo_core_bitmap[j])
@@ -3409,7 +3411,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		while ((gres_slurmd_conf = (gres_slurmd_conf_t *)
 			list_next(iter))) {
 			if (gres_slurmd_conf->plugin_id !=
-			    context_ptr->plugin_id)
+			    gres_ctx->plugin_id)
 				continue;
 			type_id = gres_build_id(
 				gres_slurmd_conf->type_name);
@@ -3436,22 +3438,22 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	else if (gres_ns->gres_cnt_config == NO_VAL64) {
 		/* This should have been filled in by _node_config_init() */
 		_get_gres_cnt(gres_ns, orig_config,
-			      context_ptr->gres_name,
-			      context_ptr->gres_name_colon,
-			      context_ptr->gres_name_colon_len);
+			      gres_ctx->gres_name,
+			      gres_ctx->gres_name_colon,
+			      gres_ctx->gres_name_colon_len);
 	}
 
 	gres_ns->gres_cnt_avail = gres_ns->gres_cnt_config;
 
 	if (has_file) {
 		uint64_t gres_bits;
-		if (gres_id_shared(context_ptr->config_flags)) {
+		if (gres_id_shared(gres_ctx->config_flags)) {
 			gres_bits = topo_cnt;
 		} else {
 			if (gres_ns->gres_cnt_avail > MAX_GRES_BITMAP) {
 				error("%s: %s has \"File\" plus very large \"Count\" "
 				      "(%"PRIu64") for node %s, resetting value to %u",
-				      __func__, context_ptr->gres_type,
+				      __func__, gres_ctx->gres_type,
 				      gres_ns->gres_cnt_avail, node_name,
 				      MAX_GRES_BITMAP);
 				gres_ns->gres_cnt_avail = MAX_GRES_BITMAP;
@@ -3464,26 +3466,26 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 
 	if ((config_type_cnt > 1) &&
-	    !_valid_gres_types(context_ptr->gres_type, gres_ns, reason_down)){
+	    !_valid_gres_types(gres_ctx->gres_type, gres_ns, reason_down)){
 		rc = EINVAL;
 	} else if (!config_overrides &&
 		   (gres_ns->gres_cnt_found < gres_ns->gres_cnt_config)) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
 				   "%s count too low (%"PRIu64" < %"PRIu64")",
-				   context_ptr->gres_type,
+				   gres_ctx->gres_type,
 				   gres_ns->gres_cnt_found,
 				   gres_ns->gres_cnt_config);
 		}
 		rc = EINVAL;
-	} else if (_valid_gres_type(context_ptr->gres_type, gres_ns,
+	} else if (_valid_gres_type(gres_ctx->gres_type, gres_ns,
 				    config_overrides, reason_down)) {
 		rc = EINVAL;
 	} else if (config_overrides && gres_ns->topo_cnt &&
 		   (gres_ns->gres_cnt_found != gres_ns->gres_cnt_config)) {
 		error("%s on node %s configured for %"PRIu64" resources but "
 		      "%"PRIu64" found, ignoring topology support",
-		      context_ptr->gres_type, node_name,
+		      gres_ctx->gres_type, node_name,
 		      gres_ns->gres_cnt_config, gres_ns->gres_cnt_found);
 		if (gres_ns->topo_core_bitmap) {
 			for (i = 0; i < gres_ns->topo_cnt; i++) {
@@ -3796,27 +3798,27 @@ extern void gres_node_feature(char *node_name,
  */
 static int _node_reconfig_test(char *node_name, char *new_gres,
 			       gres_state_t *gres_state_node,
-			       slurm_gres_context_t *context_ptr)
+			       slurm_gres_context_t *gres_ctx)
 {
 	gres_node_state_t *orig_gres_ns, *new_gres_ns;
 	int rc = SLURM_SUCCESS;
 
 	xassert(gres_state_node);
-	if (!(context_ptr->config_flags & GRES_CONF_HAS_FILE))
+	if (!(gres_ctx->config_flags & GRES_CONF_HAS_FILE))
 		return SLURM_SUCCESS;
 
 	orig_gres_ns = gres_state_node->gres_data;
 	new_gres_ns = _build_gres_node_state();
 	_get_gres_cnt(new_gres_ns, new_gres,
-		      context_ptr->gres_name,
-		      context_ptr->gres_name_colon,
-		      context_ptr->gres_name_colon_len);
+		      gres_ctx->gres_name,
+		      gres_ctx->gres_name_colon,
+		      gres_ctx->gres_name_colon_len);
 	if ((new_gres_ns->gres_cnt_config != 0) &&
 	    (new_gres_ns->gres_cnt_config !=
 	     orig_gres_ns->gres_cnt_config)) {
 		error("Attempt to change gres/%s Count on node %s from %"
 		      PRIu64" to %"PRIu64" invalid with File configuration",
-		      context_ptr->gres_name, node_name,
+		      gres_ctx->gres_name, node_name,
 		      orig_gres_ns->gres_cnt_config,
 		      new_gres_ns->gres_cnt_config);
 		rc = ESLURM_INVALID_GRES;
@@ -3828,7 +3830,7 @@ static int _node_reconfig_test(char *node_name, char *new_gres,
 
 static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 			  gres_state_t *gres_state_node, bool config_overrides,
-			  slurm_gres_context_t *context_ptr,
+			  slurm_gres_context_t *gres_ctx,
 			  bool *updated_gpu_cnt)
 {
 	int i;
@@ -3844,28 +3846,28 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 	orig_cnt = gres_ns->gres_cnt_config;
 
 	_get_gres_cnt(gres_ns, new_gres,
-		      context_ptr->gres_name,
-		      context_ptr->gres_name_colon,
-		      context_ptr->gres_name_colon_len);
+		      gres_ctx->gres_name,
+		      gres_ctx->gres_name_colon,
+		      gres_ctx->gres_name_colon_len);
 
 	if (gres_ns->gres_cnt_config == orig_cnt)
 		return SLURM_SUCCESS;	/* No change in count */
 
 	/* Update count */
-	context_ptr->total_cnt -= orig_cnt;
-	context_ptr->total_cnt += gres_ns->gres_cnt_config;
+	gres_ctx->total_cnt -= orig_cnt;
+	gres_ctx->total_cnt += gres_ns->gres_cnt_config;
 
 	gres_ns->gres_cnt_avail = gres_ns->gres_cnt_config;
 
-	if (context_ptr->config_flags & GRES_CONF_HAS_FILE) {
-		if (gres_id_shared(context_ptr->config_flags))
+	if (gres_ctx->config_flags & GRES_CONF_HAS_FILE) {
+		if (gres_id_shared(gres_ctx->config_flags))
 			gres_bits = gres_ns->topo_cnt;
 		else
 			gres_bits = gres_ns->gres_cnt_avail;
 
 		_gres_bit_alloc_resize(gres_ns, gres_bits);
 	} else if (gres_ns->gres_bit_alloc &&
-		   !gres_id_shared(context_ptr->config_flags)) {
+		   !gres_id_shared(gres_ctx->config_flags)) {
 		/*
 		 * If GRES count changed in configuration between reboots,
 		 * update bitmap sizes as needed.
@@ -3873,8 +3875,8 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 		gres_bits = gres_ns->gres_cnt_avail;
 		if (gres_bits != bit_size(gres_ns->gres_bit_alloc)) {
 			info("gres/%s count changed on node %s to %"PRIu64,
-			     context_ptr->gres_name, node_name, gres_bits);
-			if (gres_id_sharing(context_ptr->plugin_id))
+			     gres_ctx->gres_name, node_name, gres_bits);
+			if (gres_id_sharing(gres_ctx->plugin_id))
 				*updated_gpu_cnt = true;
 			gres_ns->gres_bit_alloc =
 				bit_realloc(gres_ns->gres_bit_alloc,
@@ -4223,7 +4225,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 		*gres_list = list_create(_gres_node_list_delete);
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
-		slurm_gres_context_t *context_ptr;
+		slurm_gres_context_t *gres_ctx;
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
@@ -4240,7 +4242,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 			goto unpack_error;
 		}
 
-		if (!(context_ptr = _find_context_by_id(plugin_id))) {
+		if (!(gres_ctx = _find_context_by_id(plugin_id))) {
 			error("%s: no plugin configured to unpack data type %u from node %s",
 			      __func__, plugin_id, node_name);
 			/*
@@ -4257,7 +4259,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 		}
 
 		gres_state_node = gres_create_state(
-			context_ptr, GRES_STATE_SRC_CONTEXT_PTR,
+			gres_ctx, GRES_STATE_SRC_CONTEXT_PTR,
 			GRES_STATE_TYPE_NODE, gres_ns);
 		list_append(*gres_list, gres_state_node);
 	}
@@ -6400,7 +6402,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
-		slurm_gres_context_t *context_ptr;
+		slurm_gres_context_t *gres_ctx;
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
@@ -6474,7 +6476,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 			goto unpack_error;
 		}
 
-		if (!(context_ptr = _find_context_by_id(plugin_id))) {
+		if (!(gres_ctx = _find_context_by_id(plugin_id))) {
 			/*
 			 * A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data.
@@ -6486,7 +6488,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 		}
 
 		gres_state_job = gres_create_state(
-			context_ptr, GRES_STATE_SRC_CONTEXT_PTR,
+			gres_ctx, GRES_STATE_SRC_CONTEXT_PTR,
 			GRES_STATE_TYPE_JOB, gres_js);
 		gres_js = NULL;	/* nothing left to free on error */
 		list_append(*gres_list, gres_state_job);
@@ -6614,7 +6616,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
-		slurm_gres_context_t *context_ptr;
+		slurm_gres_context_t *gres_ctx;
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
@@ -6651,7 +6653,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 			goto unpack_error;
 		}
 
-		if (!(context_ptr = _find_context_by_id(gres_ei->plugin_id))) {
+		if (!(gres_ctx = _find_context_by_id(gres_ei->plugin_id))) {
 			/*
 			 * A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data.
@@ -6699,22 +6701,22 @@ extern List gres_g_epilog_build_env(List job_gres_list, char *node_list)
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_ptr = list_next(gres_iter))) {
-		slurm_gres_context_t *context_ptr;
-		if (!(context_ptr = _find_context_by_id(gres_ptr->plugin_id))) {
+		slurm_gres_context_t *gres_ctx;
+		if (!(gres_ctx = _find_context_by_id(gres_ptr->plugin_id))) {
 			error("%s: gres not found in context.  This should never happen",
 			      __func__);
 			continue;
 		}
 
-		if (!context_ptr->ops.epilog_build_env)
+		if (!gres_ctx->ops.epilog_build_env)
 			continue;	/* No plugin to call */
-		gres_ei = (*(context_ptr->ops.epilog_build_env))
+		gres_ei = (*(gres_ctx->ops.epilog_build_env))
 			(gres_ptr->gres_data);
 		if (!gres_ei)
 			continue;	/* No info to add for this plugin */
 		if (!epilog_gres_list)
 			epilog_gres_list = list_create(_epilog_list_del);
-		gres_ei->plugin_id = context_ptr->plugin_id;
+		gres_ei->plugin_id = gres_ctx->plugin_id;
 		gres_ei->node_list = xstrdup(node_list);
 		list_append(epilog_gres_list, gres_ei);
 	}
@@ -6747,16 +6749,16 @@ extern void gres_g_epilog_set_env(char ***epilog_env_ptr,
 	slurm_mutex_lock(&gres_context_lock);
 	epilog_iter = list_iterator_create(epilog_gres_list);
 	while ((gres_ei = list_next(epilog_iter))) {
-		slurm_gres_context_t *context_ptr;
-		if (!(context_ptr = _find_context_by_id(gres_ei->plugin_id))) {
+		slurm_gres_context_t *gres_ctx;
+		if (!(gres_ctx = _find_context_by_id(gres_ei->plugin_id))) {
 			error("%s: GRES ID %u not found in context",
 			      __func__, gres_ei->plugin_id);
 			continue;
 		}
 
-		if (!context_ptr->ops.epilog_set_env)
+		if (!gres_ctx->ops.epilog_set_env)
 			continue;	/* No plugin to call */
-		(*(context_ptr->ops.epilog_set_env))
+		(*(gres_ctx->ops.epilog_set_env))
 			(epilog_env_ptr, gres_ei, node_inx);
 	}
 	list_iterator_destroy(epilog_iter);
@@ -8515,7 +8517,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
-		slurm_gres_context_t *context_ptr;
+		slurm_gres_context_t *gres_ctx;
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
@@ -8560,7 +8562,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 			goto unpack_error;
 		}
 
-		if (!(context_ptr = _find_context_by_id(plugin_id))) {
+		if (!(gres_ctx = _find_context_by_id(plugin_id))) {
 			/*
 			 * A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data.
@@ -8572,7 +8574,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 			continue;
 		}
 		gres_state_step = gres_create_state(
-			context_ptr, GRES_STATE_SRC_CONTEXT_PTR,
+			gres_ctx, GRES_STATE_SRC_CONTEXT_PTR,
 			GRES_STATE_TYPE_STEP, gres_ss);
 		gres_ss = NULL;
 		list_append(*gres_list, gres_state_step);
