@@ -808,8 +808,10 @@ extern int fini(void)
 
 	slurm_mutex_lock(&ipmi_mutex);
 
-	if (ipmi_ctx)
+	if (ipmi_ctx) {
+		ipmi_ctx_close(ipmi_ctx);
 		ipmi_ctx_destroy(ipmi_ctx);
+	}
 	_reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 
 	slurm_mutex_unlock(&ipmi_mutex);
