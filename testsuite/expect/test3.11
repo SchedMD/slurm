@@ -53,8 +53,10 @@ set def_oversubscribe_force 0
 set def_partition   ""
 set def_node        ""
 set def_node_name   ""
-set def_node_inx_min -1
-set def_node_inx_max -1
+set def_node_inx_min_int -1
+set def_node_inx_max_int -1
+set def_node_inx_min ""
+set def_node_inx_max ""
 set ii              0
 set log_cpu_cnt     0
 
@@ -117,9 +119,13 @@ if {$def_node eq ""} {
 set irregular_node_name 0
 set nodes_list [run_command_output -fail "$sinfo -h -o '%N' -tIDLE -p $def_partition"]
 set first_nodes [lindex [split $nodes_list ","] 0]
-if {![regexp "($re_word_str).($number)-($number)" $first_nodes - def_node_name def_node_inx_min def_node_inx_max]} {
+if {![regexp "($re_word_str)\\\[($number)-($number)\\\]" $first_nodes - def_node_name def_node_inx_min def_node_inx_max]} {
 	log_warn "Node name format not supported for all test"
 	set irregular_node_name 1
+} else {
+	# Avoid Octals
+	set def_node_inx_min_int [scan $def_node_inx_min "%d"]
+	set def_node_inx_max_int [scan $def_node_inx_max "%d"]
 }
 
 #
@@ -208,6 +214,8 @@ if {$def_oversubscribe_force == 0} {
 set exclusive [default_part_exclusive]
 if {$cons_res_actived == 1} {
 	inc3_11_1
+} else {
+	subskip "TEST 3.11.1 skipped because it needs cons_res"
 }
 inc3_11_2
 inc3_11_3
@@ -217,9 +225,15 @@ inc3_11_6
 if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0} {
 	inc3_11_7
 	inc3_11_8
+} else {
+	subskip "TEST 3.11.7 skipped because it needs cons_res and other conditions ($cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0)"
+	subskip "TEST 3.11.8 skipped because it needs cons_res and other conditions ($cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0)"
+
 }
 if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0} {
 	inc3_11_9
+} else {
+	subskip "TEST 3.11.9 skipped because it needs cons_res and other conditions ($cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0)"
 }
 inc3_11_10
 inc3_11_11
