@@ -558,6 +558,9 @@ static int _find_job_with_resv_ptr(void *x, void *key)
 
 	if (job_ptr->resv_ptr == resv_ptr)
 		return 1;
+	if (job_ptr->resv_list &&
+	    list_find_first(job_ptr->resv_list, _find_resv_ptr, resv_ptr))
+		return 1;
 	return 0;
 }
 
