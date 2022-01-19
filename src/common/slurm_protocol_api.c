@@ -555,25 +555,6 @@ char *slurm_get_gpu_freq_def(void)
 	return gpu_freq_def;
 }
 
-/* slurm_get_keep_alive_time
- * returns keep_alive_time slurm_conf object
- * RET uint16_t	- keep_alive_time
- */
-uint16_t slurm_get_keep_alive_time(void)
-{
-	uint16_t keep_alive_time = NO_VAL16;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		keep_alive_time = conf->keep_alive_time;
-		slurm_conf_unlock();
-	}
-	return keep_alive_time;
-}
-
-
 /* slurm_get_preempt_type
  * get PreemptType from slurm_conf object
  * RET char *   - preempt type, MUST be xfreed by caller

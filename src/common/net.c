@@ -53,6 +53,8 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "src/common/read_config.h"
+
 #if defined(__FreeBSD__) || defined(__NetBSD__)
 #define	SOL_TCP		IPPROTO_TCP
 #endif
@@ -120,20 +122,13 @@ extern int net_set_keep_alive(int sock)
 	int opt_int;
 	socklen_t opt_len;
 	struct linger opt_linger;
-	static bool keep_alive_set  = false;
-	static int  keep_alive_time = NO_VAL16;
 
-	if (!keep_alive_set) {
-		keep_alive_time = slurm_get_keep_alive_time();
-		keep_alive_set = true;
-	}
-
-	if (keep_alive_time == NO_VAL16)
+	if (slurm_conf.keep_alive_time == NO_VAL16)
 		return 0;
 
 	opt_len = sizeof(struct linger);
 	opt_linger.l_onoff = 1;
-	opt_linger.l_linger = keep_alive_time;
+	opt_linger.l_linger = slurm_conf.keep_alive_time;
 	if (setsockopt(sock, SOL_SOCKET, SO_LINGER, &opt_linger, opt_len) < 0)
 		error("Unable to set linger socket option: %m");
 
@@ -152,7 +147,7 @@ extern int net_set_keep_alive(int sock)
  * but will probably have no noticable effect.
  */
 #if !defined (__APPLE__) && (! defined(__FreeBSD__) || (__FreeBSD_version > 900000))
-	opt_int = keep_alive_time;
+	opt_int = slurm_conf.keep_alive_time;
 	if (setsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, opt_len) < 0) {
 		error("Unable to set keep alive socket time: %m");
 		return -1;

@@ -123,12 +123,6 @@ extern uint16_t slurm_get_track_wckey(void);
  */
 bool slurm_with_slurmdbd(void);
 
-/* slurm_get_keep_alive_time
- * returns keep_alive_time slurm_conf object
- * RET uint16_t        - keep_alive_time
- */
-uint16_t slurm_get_keep_alive_time(void);
-
 /* slurm_get_preempt_type
  * get PreemptType from slurm_conf object
  * RET char *   - preempt type, MUST be xfreed by caller
