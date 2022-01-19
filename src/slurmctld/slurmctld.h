@@ -430,7 +430,7 @@ extern uint16_t part_max_priority;      /* max priority_job_factor in all parts 
 #define RESV_CTLD_EPILOG         0x00000010
 #define RESV_CTLD_PROLOG         0x00000020
 
-typedef struct slurmctld_resv {
+typedef struct {
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
 				/* DO NOT ALPHABETIZE			*/
 	char *accounts;		/* names of accounts permitted to use	*/
@@ -483,7 +483,7 @@ typedef struct slurmctld_resv {
 	uid_t *user_list;	/* array of users permitted to use	*/
 } slurmctld_resv_t;
 
-extern List resv_list;		/* list of slurmctld_resv entries */
+extern List resv_list;		/* list of slurmctld_resv_t entries */
 extern time_t last_resv_update;	/* time of last resv_list update */
 
 /*****************************************************************************\
@@ -849,7 +849,7 @@ struct job_record {
 					 * more than one reservation,
 					 * DON'T PACK. */
 	char *resv_name;		/* reservation name */
-	struct slurmctld_resv *resv_ptr;/* reservation structure pointer */
+	slurmctld_resv_t *resv_ptr;	/* reservation structure pointer */
 	uint32_t requid;	    	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	char *sched_nodes;		/* list of nodes scheduled for job */

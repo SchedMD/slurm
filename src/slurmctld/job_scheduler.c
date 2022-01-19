@@ -1004,7 +1004,7 @@ static int _schedule(bool full_queue)
 	job_queue_rec_t *job_queue_rec;
 	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr, **failed_parts = NULL, *skip_part_ptr = NULL;
-	struct slurmctld_resv **failed_resv = NULL;
+	slurmctld_resv_t **failed_resv = NULL;
 	bitstr_t *save_avail_node_bitmap;
 	part_record_t **sched_part_ptr = NULL;
 	int *sched_part_jobs = NULL, bb_wait_cnt = 0;
@@ -1291,7 +1291,7 @@ static int _schedule(bool full_queue)
 
 	part_cnt = list_count(part_list);
 	failed_parts = xcalloc(part_cnt, sizeof(part_record_t *));
-	failed_resv = xmalloc(sizeof(struct slurmctld_resv*) * MAX_FAILED_RESV);
+	failed_resv = xcalloc(MAX_FAILED_RESV, sizeof(slurmctld_resv_t *));
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 	bit_or(avail_node_bitmap, rs_node_bitmap);
 
