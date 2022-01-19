@@ -794,24 +794,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-static int _set_env_types_on_node_flags(void *x, void *arg)
-{
-	gres_slurmd_conf_t *gres_slurmd_conf = (gres_slurmd_conf_t *)x;
-
-	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_NVML)
-		node_flags |= GRES_CONF_ENV_NVML;
-	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_RSMI)
-		node_flags |= GRES_CONF_ENV_RSMI;
-	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_OPENCL)
-		node_flags |= GRES_CONF_ENV_OPENCL;
-
-	/* No need to continue if all are set */
-	if ((node_flags & GRES_CONF_ENV_SET) == GRES_CONF_ENV_SET)
-		return -1;
-
-	return 0;
-}
-
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf or
@@ -873,8 +855,8 @@ extern int gres_p_node_config_load(List gres_conf_list,
 	 */
 	node_flags = 0;
 	(void) list_for_each(gres_conf_list,
-			     _set_env_types_on_node_flags,
-			     NULL);
+			     gres_common_set_env_types_on_node_flags,
+			     &node_flags);
 
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);

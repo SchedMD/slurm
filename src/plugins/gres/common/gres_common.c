@@ -626,3 +626,22 @@ extern bool gres_common_epilog_set_env(char ***epilog_env_ptr,
 
 	return 0;
 }
+
+extern int gres_common_set_env_types_on_node_flags(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = (gres_slurmd_conf_t *)x;
+	uint32_t *node_flags = arg;
+
+	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_NVML)
+		*node_flags |= GRES_CONF_ENV_NVML;
+	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_RSMI)
+		*node_flags |= GRES_CONF_ENV_RSMI;
+	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_OPENCL)
+		*node_flags |= GRES_CONF_ENV_OPENCL;
+
+	/* No need to continue if all are set */
+	if ((*node_flags & GRES_CONF_ENV_SET) == GRES_CONF_ENV_SET)
+		return -1;
+
+	return 0;
+}

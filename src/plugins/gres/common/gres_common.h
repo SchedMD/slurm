@@ -110,4 +110,6 @@ extern bool gres_common_epilog_set_env(char ***epilog_env_ptr,
 				       int node_inx, uint32_t gres_conf_flags,
 				       List gres_devices);
 
+extern int gres_common_set_env_types_on_node_flags(void *x, void *arg);
+
 #endif
