@@ -4226,7 +4226,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 	node_ptr = find_node_record(node_name);
 	if (node_ptr == NULL)	/* No such node */
 		return 0;
-	node_inx = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr->index;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
@@ -6354,9 +6354,7 @@ extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
 
 		node_ptr = find_node_record(node_name);
 		if (node_ptr) {
-			int node_inx;
-			node_inx = node_ptr - node_record_table_ptr;
-			bit_clear(job_ptr->node_bitmap_pr, node_inx);
+			bit_clear(job_ptr->node_bitmap_pr, node_ptr->index);
 		} else {
 			error("%s: can't find node:%s", __func__, node_name);
 			bit_clear_all(job_ptr->node_bitmap_pr);
@@ -15112,7 +15110,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	    waiting_for_node_power_down(node_ptr))
 		return;
 
-	node_inx = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr->index;
 
 	/* Check that jobs running are really supposed to be there */
 	for (i = 0; i < reg_msg->job_count; i++) {

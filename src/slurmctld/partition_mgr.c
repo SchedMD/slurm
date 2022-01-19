@@ -240,11 +240,9 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 			node_ptr->part_pptr[node_ptr->part_cnt-1] = part_ptr;
 		}
 		if (old_bitmap)
-			bit_clear(old_bitmap,
-				  (int) (node_ptr -
-					 node_record_table_ptr));
-		bit_set(part_ptr->node_bitmap,
-			(int) (node_ptr - node_record_table_ptr));
+			bit_clear(old_bitmap, node_ptr->index);
+
+		bit_set(part_ptr->node_bitmap, node_ptr->index);
 		free(this_node_name);
 	}
 	hostlist_destroy(host_list);

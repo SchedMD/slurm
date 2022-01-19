@@ -120,6 +120,7 @@ struct node_record {
 					 * use for scheduling purposes */
 	List gres_list;			/* list of gres state info managed by
 					 * plugins */
+	uint32_t index;			/* Index into node_record_table_ptr */
 	time_t last_busy;		/* time node was last busy (no jobs) */
 	time_t last_response;		/* last response from the node */
 	uint32_t magic;			/* magic cookie for data integrity */

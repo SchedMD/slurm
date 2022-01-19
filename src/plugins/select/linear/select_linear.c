@@ -2707,7 +2707,7 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 		return SLURM_ERROR;
 	}
 	job_resrcs_ptr = job_ptr->job_resrcs;
-	node_inx = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr->index;
 	if (!bit_test(job_resrcs_ptr->node_bitmap, node_inx)) {
 		error("%pJ allocated nodes (%s) which have been removed from slurm.conf",
 		      job_ptr, node_ptr->name);

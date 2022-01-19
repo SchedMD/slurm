@@ -1510,7 +1510,7 @@ static void _update_all_node_features(
 				 "%s%.*d", prefix, width, mcdram_cap[i].nid);
 			node_ptr = find_node_record(node_name);
 			if (node_ptr) {
-				node_inx = node_ptr - node_record_table_ptr;
+				node_inx = node_ptr->index;
 				bit_set(knl_node_bitmap, node_inx);
 				if (validate_mode == 0) {
 					_merge_strings(&node_ptr->features,
@@ -1526,7 +1526,7 @@ static void _update_all_node_features(
 				 "%s%.*d", prefix, width, mcdram_cfg[i].nid);
 			if (!(node_ptr = find_node_record(node_name)))
 				continue;
-			mcdram_per_node[node_ptr - node_record_table_ptr] =
+			mcdram_per_node[node_ptr->index] =
 				mcdram_cfg[i].mcdram_size;
 			_merge_strings(&node_ptr->features_act,
 				       mcdram_cfg[i].mcdram_cfg,
@@ -1643,7 +1643,7 @@ static void _update_node_features(node_record_t *node_ptr,
 			_merge_strings(&node_ptr->features_act,
 				       mcdram_cfg[i].mcdram_cfg, allow_mcdram);
 
-			mcdram_per_node[node_ptr - node_record_table_ptr] =
+			mcdram_per_node[node_ptr->index] =
 				mcdram_cfg[i].mcdram_size;
 			mcdram_size = mcdram_cfg[i].mcdram_size *
 				      (100 - mcdram_cfg[i].mcdram_pct) / 100;
@@ -1707,7 +1707,7 @@ static void _update_node_features(node_record_t *node_ptr,
 
 	/* Update bitmaps and lists used by slurmctld for scheduling */
 	node_bitmap = bit_alloc(node_record_count);
-	bit_set(node_bitmap, (node_ptr - node_record_table_ptr));
+	bit_set(node_bitmap, node_ptr->index);
 	update_feature_list(active_feature_list, node_ptr->features_act,
 			    node_bitmap);
 	(void) node_features_p_node_update(node_ptr->features_act, node_bitmap);

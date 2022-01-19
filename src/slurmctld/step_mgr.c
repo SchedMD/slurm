@@ -3898,7 +3898,7 @@ static int _kill_step_on_node(void *x, void *arg)
 	step_record_t *step_ptr = (step_record_t *) x;
 	kill_step_on_node_args_t *args = (kill_step_on_node_args_t *) arg;
 	int step_node_inx = 0;
-	int bit_position = args->node_ptr - node_record_table_ptr;
+	int bit_position = args->node_ptr->index;
 	int i_first, i_last, rem = 0;
 	uint32_t step_rc = 0;
 	step_complete_msg_t req;

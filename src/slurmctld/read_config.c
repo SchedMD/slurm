@@ -234,6 +234,9 @@ static void _reorder_nodes_by_name(void)
 		}
 	}
 
+	for (i = 0; i < node_record_count; i++)
+		node_record_table_ptr[i].index = i;
+
 #if _DEBUG
 	/* Log the results */
 	for (i=0, node_ptr = node_record_table_ptr; i < node_record_count;
@@ -276,6 +279,9 @@ static void _reorder_nodes_by_rank(void)
 			memcpy(node_ptr2, &node_record_tmp, j);
 		}
 	}
+
+	for (i = 0; i < node_record_count; i++)
+		node_record_table_ptr[i].index = i;
 
 #if _DEBUG
 	/* Log the results */

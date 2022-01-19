@@ -489,7 +489,7 @@ static void _failing_node(node_record_t *node_ptr)
 		event_flag |= SMD_EVENT_NODE_FAILED;
 	if (IS_NODE_FAIL(node_ptr))
 		event_flag |= SMD_EVENT_NODE_FAILING;
-	node_inx = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr->index;
 	slurm_mutex_lock(&job_fail_mutex);
 	job_iterator = list_iterator_create(job_fail_list);
 	while ((job_fail_ptr = (job_failures_t *) list_next(job_iterator))) {
@@ -538,7 +538,7 @@ extern void node_fail_callback(job_record_t *job_ptr, node_record_t *node_ptr)
 	job_fail_ptr->fail_node_cnt++;
 	xrealloc(job_fail_ptr->fail_node_cpus,
 		 (sizeof(uint32_t) * job_fail_ptr->fail_node_cnt));
-	node_inx = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr->index;
 	job_fail_ptr->fail_node_cpus[job_fail_ptr->fail_node_cnt - 1] =
 		_get_job_cpus(job_ptr, node_inx);
 	xrealloc(job_fail_ptr->fail_node_names,
@@ -850,7 +850,7 @@ static char *_job_node_features(job_record_t *job_ptr, node_record_t *node_ptr)
 	    !job_ptr->details->feature_list)
 		return req_feat;
 
-	node_inx = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr->index;
 	job_iter = list_iterator_create(job_ptr->details->feature_list);
 	while ((job_feat_ptr = (job_feature_t *) list_next(job_iter))) {
 		node_iter = list_iterator_create(active_feature_list);
@@ -954,7 +954,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid,
 			goto fini;
 		}
 		if (IS_NODE_FAIL(node_ptr)) {
-			node_inx = node_ptr - node_record_table_ptr;
+			node_inx = node_ptr->index;
 			cpu_cnt = _get_job_cpus(job_ptr, node_inx);
 		} else {
 			node_ptr = NULL;
@@ -1151,7 +1151,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 			goto fini;
 		}
 		if (IS_NODE_FAIL(node_ptr)) {
-			node_inx = node_ptr - node_record_table_ptr;
+			node_inx = node_ptr->index;
 			cpu_cnt = _get_job_cpus(job_ptr, node_inx);
 		} else {
 			node_ptr = NULL;

@@ -2711,7 +2711,7 @@ static bool _node_has_feature(node_record_t *node_ptr, char *feature)
 
 	if ((node_feature = list_find_first(active_feature_list,
 					    list_find_feature, feature))) {
-		int node_inx = node_ptr - node_record_table_ptr;
+		int node_inx = node_ptr->index;
 		if (bit_test(node_feature->node_bitmap, node_inx))
 		    return true;
 	}
@@ -2771,8 +2771,7 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 
 			node_ptr->node_state |= NODE_STATE_DYNAMIC;
 
-			bit_clear(future_node_bitmap,
-				  node_ptr - node_record_table_ptr);
+			bit_clear(future_node_bitmap, node_ptr->index);
 
 			break;
 		}

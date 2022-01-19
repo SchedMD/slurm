@@ -770,7 +770,8 @@ extern node_record_t *create_node_record(config_record_t *config_ptr,
 		 */
 		rehash_node();
 	}
-	node_ptr = node_record_table_ptr + (node_record_count++);
+	node_ptr = node_record_table_ptr + node_record_count;
+	node_ptr->index = node_record_count++;
 	node_ptr->name = xstrdup(node_name);
 	if (!node_hash_table)
 		node_hash_table = xhash_init(_node_record_hash_identity, NULL);
@@ -926,7 +927,7 @@ extern int node_name_get_inx(char *node_name)
 	if (!node_ptr)
 		return -1;
 
-	return (node_ptr - node_record_table_ptr);
+	return node_ptr->index;
 }
 
 /*
@@ -966,8 +967,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 		node_record_t *node_ptr;
 		node_ptr = _find_node_record(this_node_name, best_effort, true);
 		if (node_ptr) {
-			bit_set (my_bitmap, (bitoff_t) (node_ptr -
-							node_record_table_ptr));
+			bit_set(my_bitmap, node_ptr->index);
 		} else {
 			error("%s: invalid node specified: \"%s\"", __func__,
 			      this_node_name);
@@ -1004,8 +1004,7 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 		node_record_t *node_ptr;
 		node_ptr = _find_node_record(name, best_effort, true);
 		if (node_ptr) {
-			bit_set (my_bitmap, (bitoff_t) (node_ptr -
-							node_record_table_ptr));
+			bit_set(my_bitmap, node_ptr->index);
 		} else {
 			error ("hostlist2bitmap: invalid node specified %s",
 			       name);

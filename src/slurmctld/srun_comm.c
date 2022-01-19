@@ -260,7 +260,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 #else
 	if (!node_name || (node_ptr = find_node_record(node_name)) == NULL)
 		return;
-	args.bit_position = node_ptr - node_record_table_ptr;
+	args.bit_position = node_ptr->index;
 #endif
 
 	list_for_each(job_ptr->step_list, _srun_node_fail, &args);

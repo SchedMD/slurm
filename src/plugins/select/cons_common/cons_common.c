@@ -1523,7 +1523,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		_dump_job_res(job);
 
 	/* subtract memory */
-	node_inx  = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr->index;
 	i_first = bit_ffs(job->node_bitmap);
 	if (i_first != -1)
 		i_last  = bit_fls(job->node_bitmap);
