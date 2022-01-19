@@ -260,8 +260,8 @@ void ping_nodes (void)
 		ping_agent_args->node_count++;
 	}
 #else
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
@@ -452,9 +452,9 @@ extern void run_health_check(void)
 				base_node_loc = -1;
 				break;
 			}
-			node_ptr = node_record_table_ptr + base_node_loc;
+			node_ptr = node_record_table_ptr[base_node_loc];
 		} else {
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 		}
 		if (IS_NODE_NO_RESPOND(node_ptr) ||
 		    IS_NODE_FUTURE(node_ptr) ||
@@ -550,8 +550,8 @@ extern void update_nodes_acct_gather_data(void)
 		agent_args->node_count++;
 	}
 #else
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (IS_NODE_NO_RESPOND(node_ptr) ||
 		    IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||

@@ -52,7 +52,7 @@
  */
 #if defined (__APPLE__)
 extern slurm_conf_t slurm_conf __attribute__((weak_import));
-extern node_record_t *node_record_table_ptr __attribute__((weak_import));
+extern node_record_t **node_record_table_ptr __attribute__((weak_import));
 extern List part_list __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
@@ -67,7 +67,7 @@ extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
 #else
 slurm_conf_t slurm_conf;
-node_record_t *node_record_table_ptr;
+node_record_t **node_record_table_ptr;
 List part_list;
 List job_list;
 int node_record_count;
@@ -1084,7 +1084,7 @@ extern int select_p_job_init(List job_list)
  *                                       job data to the 'select_part_record'
  *                                       global array
  */
-extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
+extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 {
 	char *preempt_type, *tmp_ptr;
 	uint32_t cume_cores = 0;
@@ -1176,11 +1176,11 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 
 	for (i = 0; i < select_node_cnt; i++) {
 		config_record_t *config_ptr;
-		select_node_record[i].node_ptr = &node_ptr[i];
+		select_node_record[i].node_ptr = node_ptr[i];
 		select_node_record[i].mem_spec_limit =
-			node_ptr[i].mem_spec_limit;
+			node_ptr[i]->mem_spec_limit;
 
-		config_ptr = node_ptr[i].config_ptr;
+		config_ptr = node_ptr[i]->config_ptr;
 		select_node_record[i].cpus    = config_ptr->cpus;
 		select_node_record[i].boards  = config_ptr->boards;
 		select_node_record[i].tot_sockets = config_ptr->tot_sockets;
@@ -1207,7 +1207,7 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 		     select_node_record[i].tot_cores *
 		     select_node_record[i].threads))
 			fatal("NodeName=%s CPUs=%u doesn't match neither Sockets(%u)*CoresPerSocket(%u)=(%u) nor Sockets(%u)*CoresPerSocket(%u)*ThreadsPerCore(%u)=(%u).  Please fix your slurm.conf.",
-			      node_ptr[i].name,
+			      node_ptr[i]->name,
 			      select_node_record[i].cpus,
 			      select_node_record[i].tot_sockets,
 			      select_node_record[i].cores,
@@ -1254,7 +1254,7 @@ extern int select_p_job_ready(job_record_t *job_ptr)
 	for (i = i_first; i <= i_last; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		if (IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_UP(node_ptr))
 			return 0;
@@ -1372,7 +1372,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 		if (!from_node_used && !to_node_used)
 			continue;
 		new_node_offset++;
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		memcpy(&to_job_ptr->node_addr[new_node_offset],
 		       &node_ptr->slurm_addr, sizeof(slurm_addr_t));
 		if (from_node_used) {
@@ -1832,8 +1832,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 		}
 	}
 
-	for (n = 0, node_ptr = node_record_table_ptr;
-	     n < select_node_cnt; n++, node_ptr++) {
+	for (n = 0; n < select_node_cnt; n++) {
+		node_ptr = node_record_table_ptr[n];
 		select_nodeinfo_t *nodeinfo = NULL;
 		/*
 		 * We have to use the '_g_' here to make sure we get the

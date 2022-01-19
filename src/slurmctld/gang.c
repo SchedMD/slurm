@@ -259,8 +259,8 @@ static void _load_phys_res_cnt(void)
 
 	gs_bits_per_node = xmalloc(node_record_count * sizeof(uint16_t));
 
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (gr_type == GS_CPU) {
 			bit = node_ptr->config_ptr->cpus;
 		} else {
@@ -281,7 +281,7 @@ static void _load_phys_res_cnt(void)
 
 static uint16_t _get_phys_bit_cnt(int node_index)
 {
-	node_record_t *node_ptr = node_record_table_ptr + node_index;
+	node_record_t *node_ptr = node_record_table_ptr[node_index];
 
 	if (gr_type == GS_CPU)
 		return node_ptr->config_ptr->cpus;
@@ -291,7 +291,7 @@ static uint16_t _get_phys_bit_cnt(int node_index)
 
 static uint16_t _get_socket_cnt(int node_index)
 {
-	node_record_t *node_ptr = node_record_table_ptr + node_index;
+	node_record_t *node_ptr = node_record_table_ptr[node_index];
 
 	return node_ptr->config_ptr->tot_sockets;
 }

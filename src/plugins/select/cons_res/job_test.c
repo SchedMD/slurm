@@ -2077,7 +2077,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	uint32_t gres_cores, gres_cpus, cpus_per_core;
 	int core_start_bit, core_end_bit, cpu_alloc_size, i;
 	bool disable_binding;
-	node_record_t *node_ptr = node_record_table_ptr + node_i;
+	node_record_t *node_ptr = node_record_table_ptr[node_i];
 	List gres_list;
 	bitstr_t *core_map = NULL;
 	bitstr_t *part_core_map = NULL;

@@ -141,6 +141,6 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list, uint32_t job_
 					     struct job_resources *job_res,
 					     uint8_t overcommit,
 					     gres_mc_data_t *tres_mc_ptr,
-					     node_record_t *node_table_ptr);
+					     node_record_t **node_table_ptr);
 
 #endif /* _GRES_SELECT_FILTER_H */

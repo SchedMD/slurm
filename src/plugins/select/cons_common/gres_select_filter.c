@@ -1889,7 +1889,7 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 					     uint8_t overcommit,
 					     gres_mc_data_t *tres_mc_ptr,
-					     node_record_t *node_table_ptr)
+					     node_record_t **node_table_ptr)
 {
 	uint32_t **tasks_per_node_socket;
 	int i, i_first, i_last, j, node_cnt, job_node_inx = 0;
@@ -1955,9 +1955,9 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 		}
 		core_offset = get_job_resources_offset(job_res, job_node_inx++,
 						       0, 0);
-		if (node_table_ptr[i].cores) {
-			cpus_per_core = node_table_ptr[i].cpus /
-				node_table_ptr[i].cores;
+		if (node_table_ptr[i]->cores) {
+			cpus_per_core = node_table_ptr[i]->cpus /
+				node_table_ptr[i]->cores;
 		} else
 			cpus_per_core = 1;
 		for (s = 0; s < sock_cnt; s++) {
@@ -2126,7 +2126,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 					     struct job_resources *job_res,
 					     uint8_t overcommit,
 					     gres_mc_data_t *tres_mc_ptr,
-					     node_record_t *node_table_ptr)
+					     node_record_t **node_table_ptr)
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
@@ -2196,7 +2196,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 						_get_task_cnt_node(
 							tasks_per_node_socket,
 							i,
-							node_table_ptr[i].
+							node_table_ptr[i]->
 							tot_sockets);
 				} else if (gres_js->gres_per_job) {
 					gres_js->gres_cnt_node_select[i] =
@@ -2238,9 +2238,9 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 					       tasks_per_node_socket);
 			} else if (gres_js->gres_per_job) {
 				uint16_t cpus_per_core;
-				cpus_per_core = node_table_ptr[i].cpus /
-					node_table_ptr[i].tot_sockets /
-					node_table_ptr[i].cores;
+				cpus_per_core = node_table_ptr[i]->cpus /
+					node_table_ptr[i]->tot_sockets /
+					node_table_ptr[i]->cores;
 				job_fini = _set_job_bits1(
 					job_res, i, node_inx,
 					rem_node_cnt, sock_gres,

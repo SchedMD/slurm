@@ -453,7 +453,7 @@ static uint32_t _get_job_cpus(job_record_t *job_ptr, int node_inx)
 	uint32_t cpus_alloc;
 	int i, j;
 
-	node_ptr = node_record_table_ptr + node_inx;
+	node_ptr = node_record_table_ptr[node_inx];
 	cpus_alloc =  node_ptr->cpus;
 	if (job_ptr->job_resrcs &&
 	    job_ptr->job_resrcs->cpus &&
@@ -731,7 +731,7 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 			if (!IS_NODE_FAIL(node_ptr))
 				continue;
 			fail_cnt++;
@@ -1571,7 +1571,7 @@ extern char *show_job(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];;
 		if (!IS_NODE_FAIL(node_ptr))
 			continue;
 		failing_cnt++;

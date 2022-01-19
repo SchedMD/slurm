@@ -6106,7 +6106,7 @@ extern int gres_job_revalidate2(uint32_t job_id, List job_gres_list,
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(node_bitmap, i))
 			continue;
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		node_inx++;
 		if (!_validate_node_gres_cnt(job_id, job_gres_list, node_inx,
 					     node_ptr->gres_list,

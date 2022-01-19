@@ -83,8 +83,9 @@ strong_alias(hostlist2bitmap, slurm_hostlist2bitmap);
 List config_list  = NULL;	/* list of config_record entries */
 List front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
-node_record_t *node_record_table_ptr = NULL;	/* node records */
+node_record_t **node_record_table_ptr = NULL;	/* node records */
 xhash_t* node_hash_table = NULL;
+int node_record_table_size = 0;		/* size of node_record_table_ptr */
 int node_record_count = 0;		/* count in node_record_table_ptr */
 uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
@@ -196,7 +197,7 @@ hostlist_t bitmap2hostlist (bitstr_t *bitmap)
 	for (i = first; i <= last; i++) {
 		if (bit_test(bitmap, i) == 0)
 			continue;
-		hostlist_push_host(hl, node_record_table_ptr[i].name);
+		hostlist_push_host(hl, node_record_table_ptr[i]->name);
 	}
 	return hl;
 
@@ -734,6 +735,18 @@ static void _init_node_record(node_record_t *node_ptr,
 		(node_ptr->core_spec_cnt * node_ptr->vpus);
 }
 
+extern void grow_node_record_table_ptr(void)
+{
+	node_record_table_size = node_record_count + 100;
+	xrealloc(node_record_table_ptr,
+		 node_record_table_size * sizeof(node_record_t *));
+	/*
+	 * You need to rehash the hash after we realloc or we will have
+	 * only bad memory references in the hash.
+	 */
+	rehash_node();
+}
+
 /*
  * create_node_record - create a node record and set its values to defaults
  * IN config_ptr - pointer to node's configuration information
@@ -746,31 +759,16 @@ extern node_record_t *create_node_record(config_record_t *config_ptr,
 					 char *node_name)
 {
 	node_record_t *node_ptr;
-	int old_buffer_size, new_buffer_size;
 
 	last_node_update = time (NULL);
 	xassert(config_ptr);
 	xassert(node_name);
 
-	/* round up the buffer size to reduce overhead of xrealloc */
-	old_buffer_size = (node_record_count) * sizeof(node_record_t);
-	old_buffer_size =
-		((int) ((old_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
-	new_buffer_size =
-		(node_record_count + 1) * sizeof(node_record_t);
-	new_buffer_size =
-		((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
-	if (!node_record_table_ptr) {
-		node_record_table_ptr = xmalloc(new_buffer_size);
-	} else if (old_buffer_size != new_buffer_size) {
-		xrealloc (node_record_table_ptr, new_buffer_size);
-		/*
-		 * You need to rehash the hash after we realloc or we will have
-		 * only bad memory references in the hash.
-		 */
-		rehash_node();
-	}
-	node_ptr = node_record_table_ptr + node_record_count;
+	if (node_record_count >= node_record_table_size)
+		grow_node_record_table_ptr();
+
+	node_record_table_ptr[node_record_count] = xmalloc(sizeof(*node_ptr));
+	node_ptr = node_record_table_ptr[node_record_count];
 	node_ptr->index = node_record_count++;
 	node_ptr->name = xstrdup(node_name);
 	if (!node_hash_table)
@@ -844,8 +842,8 @@ static node_record_t *_find_node_record(char *name, bool test_alias,
 	}
 
 	if ((node_record_count == 1) &&
-	    (xstrcmp(node_record_table_ptr[0].name, "localhost") == 0))
-		return (&node_record_table_ptr[0]);
+	    (xstrcmp(node_record_table_ptr[0]->name, "localhost") == 0))
+		return (node_record_table_ptr[0]);
 
 	if (log_missing)
 		error("%s: lookup failure for node \"%s\"",
@@ -880,9 +878,10 @@ extern void init_node_conf(void)
 	int i;
 	node_record_t *node_ptr;
 
-	node_ptr = node_record_table_ptr;
-	for (i = 0; i < node_record_count; i++, node_ptr++)
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		purge_node_rec(node_ptr);
+	}
 
 	node_record_count = 0;
 	xfree(node_record_table_ptr);
@@ -909,9 +908,10 @@ extern void node_fini2 (void)
 	}
 
 	xhash_free(node_hash_table);
-	node_ptr = node_record_table_ptr;
-	for (i = 0; i < node_record_count; i++, node_ptr++)
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		purge_node_rec(node_ptr);
+	}
 
 	xfree(node_record_table_ptr);
 	node_record_count = 0;
@@ -1054,11 +1054,12 @@ extern void purge_node_rec(node_record_t *node_ptr)
 extern void rehash_node (void)
 {
 	int i;
-	node_record_t *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr;
 
 	xhash_free (node_hash_table);
 	node_hash_table = xhash_init(_node_record_hash_identity, NULL);
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
 			continue;	/* vestigial record */
@@ -1102,7 +1103,7 @@ extern int state_str2int(const char *state_str, char *node_name)
 }
 
 /* (re)set cr_node_num_cores arrays */
-extern void cr_init_global_core_data(node_record_t *node_ptr, int node_cnt)
+extern void cr_init_global_core_data(node_record_t **node_ptr, int node_cnt)
 {
 	uint32_t n;
 
@@ -1112,8 +1113,8 @@ extern void cr_init_global_core_data(node_record_t *node_ptr, int node_cnt)
 	cr_node_cores_offset = xmalloc((node_cnt+1) * sizeof(uint32_t));
 
 	for (n = 0; n < node_cnt; n++) {
-		uint16_t cores = node_ptr[n].config_ptr->cores;
-		cores *= node_ptr[n].config_ptr->tot_sockets;
+		uint16_t cores = node_ptr[n]->config_ptr->cores;
+		cores *= node_ptr[n]->config_ptr->tot_sockets;
 
 		cr_node_num_cores[n] = cores;
 		if (n > 0) {

@@ -156,8 +156,8 @@ int dump_all_node_state ( void )
 
 	/* write node records to buffer */
 	lock_slurmctld (node_read_lock);
-	for (inx = 0, node_ptr = node_record_table_ptr; inx < node_record_count;
-	     inx++, node_ptr++) {
+	for (inx = 0; inx < node_record_count; inx++) {
+		node_ptr = node_record_table_ptr[inx];
 		xassert (node_ptr->magic == NODE_MAGIC);
 		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
 		_dump_node_state (node_ptr, buffer);
@@ -824,7 +824,7 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 	uint32_t nodes_packed, tmp_offset;
 	buf_t *buffer;
 	time_t now = time(NULL);
-	node_record_t *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr;
 	bool hidden, privileged = validate_operator(uid);
 	pack_node_info_t pack_info = {
 		.uid = uid,
@@ -846,7 +846,8 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 		pack_time(now, buffer);
 
 		/* write node records */
-		for (inx = 0; inx < node_record_count; inx++, node_ptr++) {
+		for (inx = 0; inx < node_record_count; inx++) {
+			node_ptr = node_record_table_ptr[inx];
 			xassert(node_ptr->magic == NODE_MAGIC);
 			xassert(node_ptr->config_ptr->magic == CONFIG_MAGIC);
 
@@ -942,7 +943,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 		if (node_name)
 			node_ptr = find_node_record(node_name);
 		else
-			node_ptr = node_record_table_ptr;
+			node_ptr = node_record_table_ptr[0];
 		if (node_ptr) {
 			hidden = false;
 			if (((show_flags & SHOW_ALL) == 0) &&
@@ -1860,8 +1861,8 @@ extern void restore_node_features(int recover)
 	node_record_t *node_ptr;
 
 	node_features_plugin_cnt = node_features_g_count();
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (node_ptr->weight != node_ptr->config_ptr->weight) {
 			error("Node %s Weight(%u) differ from slurm.conf",
 			      node_ptr->name, node_ptr->weight);
@@ -2197,7 +2198,7 @@ static int _update_node_gres(char *node_names, char *gres)
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(tmp_bitmap, i))
 				continue;	/* Not this node */
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 			rc2 = gres_node_reconfig(
 				node_ptr->name,
 				gres, &node_ptr->gres,
@@ -2282,7 +2283,7 @@ static void _update_config_ptr(bitstr_t *bitmap, config_record_t *config_ptr)
 	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
-		node_record_table_ptr[i].config_ptr = config_ptr;
+		node_record_table_ptr[i]->config_ptr = config_ptr;
 	}
 }
 
@@ -3128,7 +3129,7 @@ extern int validate_nodes_via_front_end(
 	bool update_node_state = false;
 	job_record_t *job_ptr;
 	config_record_t *config_ptr;
-	node_record_t *node_ptr;
+	node_record_t *node_ptr = NULL;
 	time_t now = time(NULL);
 	ListIterator job_iterator;
 	hostlist_t reg_hostlist = NULL;
@@ -3174,10 +3175,9 @@ extern int validate_nodes_via_front_end(
 		}
 
 		job_ptr = find_job_record(reg_msg->step_id[i].job_id);
-		node_ptr = node_record_table_ptr;
 		if (job_ptr && job_ptr->node_bitmap &&
 		    ((j = bit_ffs(job_ptr->node_bitmap)) >= 0))
-			node_ptr += j;
+			node_ptr = node_record_table_ptr[j];
 
 		if (job_ptr == NULL) {
 			error("Orphan %ps reported on node %s",
@@ -3259,11 +3259,11 @@ extern int validate_nodes_via_front_end(
 	list_iterator_destroy(job_iterator);
 
 	(void) gres_node_config_unpack(reg_msg->gres_info,
-				       node_record_table_ptr->name);
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
+				       node_record_table_ptr[i]->name);
+	for (i = 0; i < node_record_count; i++) {
 		bool acct_updated = false;
 
+		node_ptr = node_record_table_ptr[i];
 		config_ptr = node_ptr->config_ptr;
 		node_ptr->last_response = now;
 
@@ -3644,7 +3644,7 @@ extern void node_no_resp_msg(void)
 	hostlist_t no_resp_hostlist = NULL;
 
 	for (i = 0; i < node_record_count; i++) {
-		node_ptr = &node_record_table_ptr[i];
+		node_ptr = node_record_table_ptr[i];
 		if (!node_ptr->not_responding ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
@@ -3778,7 +3778,7 @@ node_record_t *find_first_node_record(bitstr_t *node_bitmap)
 	if (inx < 0)
 		return NULL;
 	else
-		return &node_record_table_ptr[inx];
+		return node_record_table_ptr[inx];
 }
 
 /*
@@ -3821,8 +3821,8 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		kill_agent_args->node_count++;
 	}
 #else
-	node_ptr = node_record_table_ptr;
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&
@@ -3830,9 +3830,9 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		     IS_NODE_POWERING_DOWN(node_ptr)))
 			continue;
 		if (kill_agent_args->protocol_version >
-		    node_record_table_ptr[i].protocol_version)
+		    node_record_table_ptr[i]->protocol_version)
 			kill_agent_args->protocol_version =
-				node_record_table_ptr[i].protocol_version;
+				node_record_table_ptr[i]->protocol_version;
 		hostlist_push_host(kill_agent_args->hostlist, node_ptr->name);
 		kill_agent_args->node_count++;
 	}
@@ -3899,8 +3899,8 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 	load_config_response_msg(old_config, CONFIG_REQUEST_SLURMD);
 	old_args->msg_args = old_config;
 
-	node_ptr = node_record_table_ptr;
-	for (int i = 0; i < node_record_count; i++, node_ptr++) {
+	for (int i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&
@@ -4282,8 +4282,8 @@ extern int send_nodes_to_accounting(time_t event_time)
 
  	lock_slurmctld(node_read_lock);
 	/* send nodes not in 'up' state */
-	node_ptr = node_record_table_ptr;
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (!node_ptr->name)
 			continue;
 		if (node_ptr->reason)
@@ -4385,7 +4385,7 @@ extern void check_reboot_nodes()
 	}
 
 	for (i = 0; i < node_record_count; i++) {
-		node_ptr = &node_record_table_ptr[i];
+		node_ptr = node_record_table_ptr[i];
 
 		if ((IS_NODE_REBOOT_ISSUED(node_ptr) ||
 		     (!power_save_on && IS_NODE_POWERING_UP(node_ptr))) &&

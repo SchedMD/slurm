@@ -418,7 +418,7 @@ extern void part_data_dump_res(part_res_record_t *p_ptr)
 			if (!p_ptr->row[r].row_bitmap[n] ||
 			    !bit_set_count(p_ptr->row[r].row_bitmap[n]))
 				continue;
-			node_ptr = node_record_table_ptr + n;
+			node_ptr = node_record_table_ptr[n];
 			bit_fmt(str, sizeof(str), p_ptr->row[r].row_bitmap[n]);
 			xstrfmtcat(tmp, "%salloc_cores[%s]:%s",
 				   sep, node_ptr->name, str);

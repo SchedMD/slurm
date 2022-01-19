@@ -69,8 +69,8 @@ extern void nodes_to_hilbert_curve(void)
 
 	/* Get the coordinates for each node based upon its numeric suffix */
 	coords = xmalloc(sizeof(int) * node_record_count * dims);
-	for (i=0, coord_inx=0, node_ptr=node_record_table_ptr;
-	     i<node_record_count; i++, node_ptr++) {
+	for (i = 0, coord_inx = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		j = strlen(node_ptr->name);
 		if (j < dims) {
 			fatal("hostname %s lacks numeric %d dimension suffix",
@@ -93,8 +93,8 @@ extern void nodes_to_hilbert_curve(void)
 	}
 
 	/* Generate each node's Hilbert integer */
-	for (i=0, coord_inx=0, node_ptr=node_record_table_ptr;
-	     i<node_record_count; i++, node_ptr++) {
+	for (i = 0, coord_inx = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		for (j=0; j<dims; j++)
 			hilbert[j] = coords[coord_inx++];
 		AxestoTranspose(hilbert, 5, dims);

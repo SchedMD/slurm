@@ -159,7 +159,7 @@ static List _build_node_weight_list(bitstr_t *node_bitmap)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(node_bitmap, i))
 			continue;
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		nwt = list_find_first(node_list, _node_weight_find, node_ptr);
 		if (!nwt) {
 			nwt = xmalloc(sizeof(node_weight_type));
@@ -561,7 +561,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		for (i = i_first; ((i <= i_last) && (max_nodes > 0)); i++) {
 			if (!bit_test(req_map, i))
 				continue;
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
@@ -620,9 +620,9 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		if (!bit_test(node_map, i)) {
 			node_ptr = NULL;    /* Use as flag, avoid second test */
 		} else if (required_node) {
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 		} else {
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
@@ -1066,7 +1066,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 				bit_clear(node_map, i);
 				continue;
 			}
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus) {
 				debug("%pJ required node %s lacks available resources",
@@ -1241,7 +1241,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 				bit_clear(node_map, i);
 				continue;
 			}
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus) {
 				debug("%pJ required node %s lacks available resources",
@@ -1641,7 +1641,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			rem_max_cpus -= avail_cpus;
 		}
 
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		nw_static.weight = node_ptr->sched_weight;
 		nw = list_find_first(node_weight_list, _topo_weight_find,
 				     &nw_static);
@@ -2286,7 +2286,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			rem_max_cpus -= avail_cpus;
 		}
 
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		nw_static.weight = node_ptr->sched_weight;
 		nw = list_find_first(node_weight_list, _topo_weight_find,
 				     &nw_static);
@@ -2800,7 +2800,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				bit_clear(node_map, i);
 				continue;
 			}
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus) {
 				debug("%pJ required node %s lacks available resources",
@@ -3000,7 +3000,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 				bit_clear(node_map, i);
 				continue;
 			}
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus) {
 				debug("%pJ required node %s lacks available resources",
@@ -3312,7 +3312,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	uint16_t cpus = 0;
 	uint64_t avail_mem = NO_VAL64, req_mem;
 	int cpu_alloc_size, i, rc;
-	node_record_t *node_ptr = node_record_table_ptr + node_i;
+	node_record_t *node_ptr = node_record_table_ptr[node_i];
 	List node_gres_list;
 	bitstr_t *part_core_map_ptr = NULL, *req_sock_map = NULL;
 	avail_res_t *avail_res = NULL;

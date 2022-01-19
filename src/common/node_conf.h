@@ -187,7 +187,7 @@ struct node_record {
 					 * save/restore, DO NOT use for
 					 * scheduling purposes. */
 };
-extern node_record_t *node_record_table_ptr;  /* ptr to node records */
+extern node_record_t **node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */
 extern xhash_t* node_hash_table;	/* hash table for node records */
 extern time_t last_node_update;		/* time of last node record update */
@@ -266,6 +266,11 @@ extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
  *	_delete_config_record() is called to delete all configuration records
  */
 extern config_record_t *create_config_record(void);
+
+/*
+ * Grow the node_record_table_ptr.
+ */
+extern void grow_node_record_table_ptr();
 
 /*
  * create_node_record - create a node record and set its values to defaults
@@ -352,7 +357,7 @@ extern void rehash_node (void);
 extern int state_str2int(const char *state_str, char *node_name);
 
 /* (re)set cr_node_num_cores arrays */
-extern void cr_init_global_core_data(node_record_t *node_ptr, int node_cnt);
+extern void cr_init_global_core_data(node_record_t **node_ptr, int node_cnt);
 
 extern void cr_fini_global_core_data(void);
 

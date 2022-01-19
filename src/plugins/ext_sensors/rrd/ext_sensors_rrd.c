@@ -440,7 +440,7 @@ static int _update_node_data(void)
 
 	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_NODE_ENERGY) {
 		for (i=0; i < node_record_count; i++) {
-			ext_sensors = node_record_table_ptr[i].ext_sensors;
+			ext_sensors = node_record_table_ptr[i]->ext_sensors;
 			if (ext_sensors->energy_update_time == 0) {
 				ext_sensors->energy_update_time = now;
 				ext_sensors->consumed_energy = 0;
@@ -448,7 +448,7 @@ static int _update_node_data(void)
 				continue;
 			}
 			if (!(path = _get_node_rrd_path(
-				      node_record_table_ptr[i].name,
+				      node_record_table_ptr[i]->name,
 				      EXT_SENSORS_VALUE_ENERGY))) {
 				ext_sensors->consumed_energy = NO_VAL64;
 				ext_sensors->current_watts = NO_VAL;
@@ -480,9 +480,9 @@ static int _update_node_data(void)
 
 	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_NODE_TEMP) {
 		for (i=0; i < node_record_count; i++) {
-			ext_sensors = node_record_table_ptr[i].ext_sensors;
+			ext_sensors = node_record_table_ptr[i]->ext_sensors;
 			if (!(path = _get_node_rrd_path(
-				      node_record_table_ptr[i].name,
+				      node_record_table_ptr[i]->name,
 				      EXT_SENSORS_VALUE_TEMPERATURE))) {
 				ext_sensors->temperature = NO_VAL;
 				continue;

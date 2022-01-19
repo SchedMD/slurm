@@ -1487,11 +1487,12 @@ static void _update_all_node_features(
 	int i, node_inx, numa_inx, width = 5;
 	uint64_t mcdram_size;
 
-	if ((node_record_table_ptr == NULL) ||
-	    (node_record_table_ptr->name == NULL)) {
+	if (!node_record_table_ptr ||
+	    !node_record_table_ptr[0] ||
+	    !node_record_table_ptr[0]->name) {
 		prefix = xstrdup("nid");
 	} else {
-		prefix = xstrdup(node_record_table_ptr->name);
+		prefix = xstrdup(node_record_table_ptr[0]->name);
 		for (i = 0; prefix[i]; i++) {
 			if ((prefix[i] >= '0') && (prefix[i] <= '9')) {
 				prefix[i] = '\0';
@@ -1574,8 +1575,8 @@ static void _update_all_node_features(
 	 * Make sure that only nodes reported by "capmc get_mcdram_capabilities"
 	 * contain KNL features
 	 */
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (knl_node_bitmap && bit_test(knl_node_bitmap, i)) {
 			if (validate_mode)
 				_validate_node_features(node_ptr);
@@ -2101,8 +2102,8 @@ static void _check_node_status(void)
 	}
 	json_object_put(j_obj);	/* Frees json memory */
 
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = node_record_table_ptr[i];
 		nid = atoi(node_ptr->name + 3);	/* Skip "nid" */
 		if ((nid < 0) || (nid >= 100000) ||
 		    bit_test(capmc_node_bitmap, nid))
@@ -2549,8 +2550,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 			unlock_slurmctld(write_nodes_lock);
 		hostlist_destroy(host_list);
 	} else {
-		for (i = 0, node_ptr = node_record_table_ptr;
-		     i < node_record_count; i++, node_ptr++) {
+		for (i = 0; i < node_record_count; i++) {
+			node_ptr = node_record_table_ptr[i];
 			if (waiting_for_node_boot(node_ptr)) {
 				/*
 				 * Reboot likely in progress.
@@ -2801,7 +2802,7 @@ extern int node_features_p_node_update(char *active_features,
 			rc = SLURM_ERROR;
 			break;
 		}
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		if ((numa_inx >= 0) && cpu_bind[numa_inx])
 			node_ptr->cpu_bind = cpu_bind[numa_inx];
 		if (mcdram_per_node && (mcdram_inx >= 0)) {
