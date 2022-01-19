@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix main and backfill schedulers handling for already rejected job array.
  -- sched/backfill - restore resv_ptr after yielding locks.
  -- acct_gather_energy/xcc - appropriately close and destroy the IPMI context.
+ -- common/slurm_mpi - fix mpi_fini() to be thread-safe.
 
 * Changes in Slurm 21.08.5
 ==========================

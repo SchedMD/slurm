@@ -317,10 +317,13 @@ int mpi_fini (void)
 {
 	int rc;
 
+	slurm_mutex_lock(&context_lock);
 	if (!g_context)
 		return SLURM_SUCCESS;
 
 	init_run = false;
 	rc = plugin_context_destroy(g_context);
+	g_context = NULL;
+	slurm_mutex_unlock(&context_lock);
 	return rc;
 }
