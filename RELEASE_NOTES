@@ -54,6 +54,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- TaskAffinity parameter was removed from cgroup.conf.
  -- Fatal if the mutually-exclusive JobAcctGatherParams options of UsePss and
     NoShared are both defined.
+ -- KeepAliveTime has been moved into CommunicationParameters. The standalone
+    option will be removed in a future version.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

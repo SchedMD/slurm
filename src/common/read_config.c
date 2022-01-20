@@ -4005,8 +4005,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->health_check_program, "HealthCheckProgram",
 			      hashtbl);
 
-	if (!s_p_get_uint16(&conf->keep_alive_time, "KeepAliveTime", hashtbl))
+	if (!s_p_get_uint16(&conf->keep_alive_time, "KeepAliveTime", hashtbl)) {
 		conf->keep_alive_time = DEFAULT_KEEP_ALIVE_TIME;
+	} else if (running_in_slurmctld())
+		error("KeepAliveTime parameter has moved to CommunicationParameters. Please update your config.");
 
 	if (!s_p_get_uint16(&conf->kill_on_bad_exit, "KillOnBadExit", hashtbl))
 		conf->kill_on_bad_exit = DEFAULT_KILL_ON_BAD_EXIT;

@@ -671,6 +671,13 @@ using both IPv4 and IPv6, address family preferences will be based on your
 .IP
 
 .TP
+\fBKeepAliveTime=#\fR
+Specifies how long sockets communications used between the srun command and its
+slurmstepd process are kept alive after disconnect. Longer values can be used
+to improve reliability of communications in the event of network failures.
+.IP
+
+.TP
 \fBNoAddrCache\fR
 By default, Slurm will cache a node's network address after successfully
 establishing the node's network address. This option disables the cache and
@@ -1691,16 +1698,6 @@ however the lua plugin will only execute one lua script named "job_submit.lua"
 located in the default script directory (typically the subdirectory "etc" of
 the installation directory).
 No job submission plugins are used by default.
-.IP
-
-.TP
-\fBKeepAliveTime\fR
-Specifies how long sockets communications used between the srun command and its
-slurmstepd process are kept alive after disconnect.
-Longer values can be used to improve reliability of communications in the
-event of network failures.
-The default value leaves the system default value.
-The value may not exceed 65533.
 .IP
 
 .TP

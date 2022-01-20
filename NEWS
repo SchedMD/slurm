@@ -78,6 +78,7 @@ documents those changes that are of interest to users and administrators.
  -- Clear GRES environment variables for jobs or steps that request --gres=none.
  -- slurmctld - Avoid requiring environment to be set when container job is
     specified.
+ -- Move the KeepAliveTime option into CommunicationParameters.
 
 * Changes in Slurm 21.08.6
 ==========================
