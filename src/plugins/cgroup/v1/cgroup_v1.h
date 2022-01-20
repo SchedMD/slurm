@@ -47,6 +47,7 @@
 #include "src/common/cgroup.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -256,5 +257,13 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
  * RET cgroup_acct_t - struct containing the required data.
  */
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid);
+
+/*
+ * Return conversion units used for stats gathered from cpuacct.
+ * Dividing the provided data by this number will give seconds.
+ *
+ * RET hertz - USER_HZ of the system.
+ */
+extern long int cgroup_p_get_acct_units();
 
 #endif /* !_CGROUP_V1_H */

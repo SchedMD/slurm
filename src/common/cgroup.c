@@ -70,6 +70,7 @@ typedef struct {
 					 stepd_step_rec_t *job, pid_t pid,
 					 uint32_t task_id);
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
+	long int (*get_acct_units)	(void);
 } slurm_ops_t;
 
 /*
@@ -94,6 +95,7 @@ static const char *syms[] = {
 	"cgroup_p_step_stop_oom_mgr",
 	"cgroup_p_task_addto",
 	"cgroup_p_task_get_acct_data",
+	"cgroup_p_get_acct_units",
 };
 
 /* Local variables */
@@ -915,4 +917,12 @@ extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid)
 		return false;
 
 	return (*(ops.task_get_acct_data))(taskid);
+}
+
+extern long int cgroup_g_get_acct_units()
+{
+	if (cgroup_g_init() < 0)
+		return false;
+
+	return (*(ops.get_acct_units))();
 }

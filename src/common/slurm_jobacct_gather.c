@@ -1307,3 +1307,16 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 
 	_jobacctinfo_2_stats_tres_usage(stats, jobacct);
 }
+
+extern long jobacct_gather_get_clk_tck()
+{
+	long hertz = sysconf(_SC_CLK_TCK);
+
+	if (hertz < 1) {
+		error("unable to get clock rate");
+		/* 100 is default on many systems. */
+		hertz = 100;
+	}
+
+	return hertz;
+}

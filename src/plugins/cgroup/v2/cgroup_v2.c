@@ -1329,3 +1329,13 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 
 	return stats;
 }
+
+/*
+ * Return conversion units used for stats gathered from cpuacct.
+ * Dividing the provided data by this number will give seconds.
+ */
+extern long int cgroup_p_get_acct_units()
+{
+	/* usec and ssec from cpuacct.stat are provided in micro-seconds. */
+	return (long int)USEC_IN_SEC;
+}

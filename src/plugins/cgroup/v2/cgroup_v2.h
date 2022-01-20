@@ -81,4 +81,5 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job);
 extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
 			       pid_t pid, uint32_t task_id);
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id);
+extern long int cgroup_p_get_acct_units();
 #endif /* !_CGROUP_V2_H */
