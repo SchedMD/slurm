@@ -432,15 +432,14 @@ static void _do_power_work(time_t now)
 	}
 
 	/* Build bitmaps identifying each node which should change state */
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node(&i));) {
 		susp_state = IS_NODE_POWERED_DOWN(node_ptr);
 
 		if (susp_state)
 			susp_total++;
 
 		/* Resume nodes as appropriate */
-		if ((bit_test(job_power_node_bitmap, i)) ||
+		if ((bit_test(job_power_node_bitmap, node_ptr->index)) ||
 		    (susp_state &&
 		    ((resume_rate == 0) || (resume_cnt < resume_rate))	&&
 		    !IS_NODE_POWERING_DOWN(node_ptr) &&
@@ -449,7 +448,8 @@ static void _do_power_work(time_t now)
 				wake_node_bitmap =
 					bit_alloc(node_record_count);
 			}
-			if (!(bit_test(job_power_node_bitmap, i))) {
+			if (!(bit_test(job_power_node_bitmap,
+				       node_ptr->index))) {
 				resume_cnt++;
 				resume_cnt_f++;
 			}
@@ -457,12 +457,12 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state |=   NODE_STATE_POWERING_UP;
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
-			bit_clear(power_node_bitmap, i);
+			bit_clear(power_node_bitmap, node_ptr->index);
 			node_ptr->boot_req_time = now;
-			bit_set(booting_node_bitmap, i);
-			bit_set(wake_node_bitmap,    i);
+			bit_set(booting_node_bitmap, node_ptr->index);
+			bit_set(wake_node_bitmap,    node_ptr->index);
 
-			bit_clear(job_power_node_bitmap, i);
+			bit_clear(job_power_node_bitmap, node_ptr->index);
 
 			clusteracct_storage_g_node_up(acct_db_conn, node_ptr,
 						      now);
@@ -480,7 +480,7 @@ static void _do_power_work(time_t now)
 		     ((node_ptr->last_busy != 0) &&
 		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
 		      ((avoid_node_bitmap == NULL) ||
-		       (bit_test(avoid_node_bitmap, i) == 0))))) {
+		       (bit_test(avoid_node_bitmap, node_ptr->index) == 0))))) {
 			if (sleep_node_bitmap == NULL) {
 				sleep_node_bitmap =
 					bit_alloc(node_record_count);
@@ -497,11 +497,11 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state |= NODE_STATE_POWERING_DOWN;
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
-			bit_set(power_node_bitmap,   i);
-			bit_set(sleep_node_bitmap,   i);
+			bit_set(power_node_bitmap,   node_ptr->index);
+			bit_set(sleep_node_bitmap,   node_ptr->index);
 
 			/* Don't allocate until after SuspendTimeout */
-			bit_clear(avail_node_bitmap, i);
+			bit_clear(avail_node_bitmap, node_ptr->index);
 			node_ptr->power_save_req_time = now;
 
 			if (idle_on_node_suspend) {
@@ -533,7 +533,7 @@ static void _do_power_work(time_t now)
 			if (!IS_NODE_DOWN(node_ptr) &&
 			    !IS_NODE_DRAIN(node_ptr) &&
 			    !IS_NODE_FAIL(node_ptr))
-				make_node_avail(i);
+				make_node_avail(node_ptr->index);
 
 			node_ptr->last_busy = 0;
 			node_ptr->power_save_req_time = 0;
@@ -547,7 +547,7 @@ static void _do_power_work(time_t now)
 		/*
 		 * Down nodes as if not resumed by ResumeTimeout
 		 */
-		if (bit_test(booting_node_bitmap, i) &&
+		if (bit_test(booting_node_bitmap, node_ptr->index) &&
 		    (now >
 		     (node_ptr->boot_req_time + node_ptr->resume_timeout)) &&
 		    IS_NODE_POWERING_UP(node_ptr) &&
@@ -567,8 +567,8 @@ static void _do_power_work(time_t now)
 			 * clusteracct_storage_g_node_down().
 			 */
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
-			bit_set(power_node_bitmap, i);
-			bit_clear(booting_node_bitmap, i);
+			bit_set(power_node_bitmap, node_ptr->index);
+			bit_clear(booting_node_bitmap, node_ptr->index);
 			node_ptr->last_busy = 0;
 			node_ptr->boot_req_time = 0;
 
@@ -577,7 +577,7 @@ static void _do_power_work(time_t now)
 					failed_node_bitmap =
 						bit_alloc(node_record_count);
 				}
-				bit_set(failed_node_bitmap, i);
+				bit_set(failed_node_bitmap, node_ptr->index);
 			}
 		}
 	}
@@ -868,9 +868,8 @@ static int _set_partition_options(void *x, void *arg)
 	if (part_ptr->suspend_timeout != NO_VAL16)
 		max_timeout = MAX(max_timeout, part_ptr->resume_timeout);
 
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
-		if (!bit_test(part_ptr->node_bitmap, i))
+	for (i = 0; (node_ptr = next_node(&i));) {
+		if (!bit_test(part_ptr->node_bitmap, node_ptr->index))
 			continue;
 
 		if (node_ptr->suspend_time == NO_VAL)
@@ -955,8 +954,7 @@ static int _init_power_config(void)
 		      &partition_suspend_time_set);
 
 	/* Apply global options to node level if not set at partition level. */
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node(&i));) {
 		node_ptr->suspend_time =
 			((node_ptr->suspend_time == NO_VAL) ?
 				slurm_conf.suspend_time :

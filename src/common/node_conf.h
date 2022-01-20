@@ -389,4 +389,15 @@ extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, int cpus_per_task,
  */
 extern char *find_hostname(uint32_t pos, char *hosts);
 
+/*
+ * Return the next non-null node_record_t * in the node_record_table_ptr.
+ *
+ * IN/OUT index - index to start iterating node_record_table_ptr from. Set to
+ *                the index to start at for subsequent call. index should not
+ *                be used for mapping nodes in bitmaps as it is +1 of the
+ *                returned node_record_t * -- use node_ptr->index instead.
+ * RET - next non-null node_record_t * or NULL if finished iterating.
+ */
+extern node_record_t * next_node(int *index);
+
 #endif /* !_HAVE_NODE_CONF_H */

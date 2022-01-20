@@ -183,9 +183,8 @@ extern void allocate_nodes(job_record_t *job_ptr)
 		sched_update = slurm_conf.last_update;
 	}
 
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
-		if (!bit_test(job_ptr->node_bitmap, i))
+	for (i = 0; (node_ptr = next_node(&i));) {
+		if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
 			continue;
 
 		if (IS_NODE_DYNAMIC(node_ptr))
@@ -223,9 +222,8 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 	node_record_t *node_ptr;
 
 	xfree(job_ptr->alias_list);
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
-		if (!bit_test(job_ptr->node_bitmap, i))
+	for (i = 0; (node_ptr = next_node(&i));) {
+		if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
 			continue;
 
 		if (IS_NODE_DYNAMIC(node_ptr) || IS_NODE_CLOUD(node_ptr)) {
@@ -328,10 +326,12 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 				front_end_ptr->node_state = NODE_STATE_IDLE |
 							    state_flags;
 			}
-			for (i = 0; i < node_record_count; i++) {
-				node_ptr = node_record_table_ptr[i];
-				if (!bit_test(job_ptr->node_bitmap, i))
+			for (i = 0; (node_ptr = next_node(&i));) {
+				if (!bit_test(job_ptr->node_bitmap,
+					      node_ptr->index))
 					continue;
+				node_ptr =
+					node_record_table_ptr[node_ptr->index];
 				make_node_comp(node_ptr, job_ptr, suspended);
 				set_fe_comp = true;
 			}
@@ -843,11 +843,10 @@ extern void filter_by_node_owner(job_record_t *job_ptr,
 	}
 
 	/* Need to filter out any nodes exclusively allocated to other users */
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node(&i));) {
 		if ((node_ptr->owner != NO_VAL) &&
 		    (node_ptr->owner != job_ptr->user_id))
-			bit_clear(usable_node_mask, i);
+			bit_clear(usable_node_mask, node_ptr->index);
 	}
 }
 
@@ -865,24 +864,22 @@ extern void filter_by_node_mcs(job_record_t *job_ptr, int mcs_select,
 
 	/* Need to filter out any nodes allocated with other mcs */
 	if (job_ptr->mcs_label && (mcs_select == 1)) {
-		for (i = 0; i < node_record_count; i++) {
-			node_ptr = node_record_table_ptr[i];
+		for (i = 0; (node_ptr = next_node(&i));) {
 			/* if there is a mcs_label -> OK if it's the same */
 			if ((node_ptr->mcs_label != NULL) &&
 			     xstrcmp(node_ptr->mcs_label,job_ptr->mcs_label)) {
-				bit_clear(usable_node_mask, i);
+				bit_clear(usable_node_mask, node_ptr->index);
 			}
 			/* if no mcs_label -> OK if no jobs running */
 			if ((node_ptr->mcs_label == NULL) &&
 			    (node_ptr->run_job_cnt != 0)) {
-				bit_clear(usable_node_mask, i);
+				bit_clear(usable_node_mask, node_ptr->index);
 			}
 		}
 	} else {
-		for (i = 0; i < node_record_count; i++) {
-			node_ptr = node_record_table_ptr[i];
+		for (i = 0; (node_ptr = next_node(&i));) {
 			 if (node_ptr->mcs_label != NULL) {
-				bit_clear(usable_node_mask, i);
+				bit_clear(usable_node_mask, node_ptr->index);
 			}
 		}
 	}
@@ -4319,13 +4316,14 @@ extern void re_kill_job(job_record_t *job_ptr)
 	    (front_end_ptr = find_front_end_record(job_ptr->batch_host))) {
 		agent_args->protocol_version = front_end_ptr->protocol_version;
 		if (IS_NODE_DOWN(front_end_ptr)) {
-			for (i = 0; i < node_record_count; i++) {
-				node_ptr = node_record_table_ptr[i];
+			for (i = 0; (node_ptr = next_node(&i));) {
 				if ((job_ptr->node_bitmap_cg == NULL) ||
-				    (!bit_test(job_ptr->node_bitmap_cg, i)))
+				    (!bit_test(job_ptr->node_bitmap_cg,
+					       node_ptr->index)))
 					continue;
-				bit_clear(job_ptr->node_bitmap_cg, i);
-				job_update_tres_cnt(job_ptr, i);
+				bit_clear(job_ptr->node_bitmap_cg,
+					  node_ptr->index);
+				job_update_tres_cnt(job_ptr, node_ptr->index);
 				if (node_ptr->comp_job_cnt)
 					(node_ptr->comp_job_cnt)--;
 				if ((job_ptr->node_cnt > 0) &&
@@ -4345,15 +4343,14 @@ extern void re_kill_job(job_record_t *job_ptr)
 		}
 	}
 #else
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node(&i));) {
 		if ((job_ptr->node_bitmap_cg == NULL) ||
-		    (bit_test(job_ptr->node_bitmap_cg, i) == 0)) {
+		    (bit_test(job_ptr->node_bitmap_cg, node_ptr->index) == 0)) {
 			continue;
 		} else if (IS_NODE_DOWN(node_ptr)) {
 			/* Consider job already completed */
-			bit_clear(job_ptr->node_bitmap_cg, i);
-			job_update_tres_cnt(job_ptr, i);
+			bit_clear(job_ptr->node_bitmap_cg, node_ptr->index);
+			job_update_tres_cnt(job_ptr, node_ptr->index);
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			if ((job_ptr->node_cnt > 0) &&

@@ -2737,8 +2737,7 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 	if (node_ptr == NULL) {
 		int i;
 
-		for (i = 0; i < node_record_count; i++) {
-			node_ptr = node_record_table_ptr[i];
+		for (i = 0; (node_ptr = next_node(&i));) {
 			slurm_addr_t addr;
 			char *comm_name = NULL;
 
@@ -5295,9 +5294,8 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	}
 
 	lock_slurmctld(node_write_lock);
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
-		if (!bit_test(bitmap, i))
+	for (i = 0; (node_ptr = next_node(&i));) {
+		if (!bit_test(bitmap, node_ptr->index))
 			continue;
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_REBOOT_REQUESTED(node_ptr) ||
@@ -5305,7 +5303,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		    (IS_NODE_CLOUD(node_ptr) &&
 		     (IS_NODE_POWERED_DOWN(node_ptr) ||
 		      IS_NODE_POWERING_DOWN(node_ptr)))) {
-			bit_clear(bitmap, i);
+			bit_clear(bitmap, node_ptr->index);
 			continue;
 		}
 		node_ptr->node_state |= NODE_STATE_REBOOT_REQUESTED;
@@ -5313,7 +5311,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		if (reboot_msg) {
 			node_ptr->next_state = reboot_msg->next_state;
 			if (node_ptr->next_state == NODE_RESUME)
-				bit_set(rs_node_bitmap, i);
+				bit_set(rs_node_bitmap, node_ptr->index);
 
 			if (reboot_msg->reason) {
 				xfree(node_ptr->reason);
@@ -5329,7 +5327,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 						NODE_STATE_UNDRAIN;
 
 				node_ptr->node_state |= NODE_STATE_DRAIN;
-				bit_clear(avail_node_bitmap, i);
+				bit_clear(avail_node_bitmap, node_ptr->index);
 
 				if (node_ptr->reason == NULL) {
 					node_ptr->reason =

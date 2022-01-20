@@ -65,6 +65,8 @@ extern void node_data_dump(void)
 		return;
 
 	for (i = 0; i < select_node_cnt; i++) {
+		if (!select_node_record[i].node_ptr)
+			continue;
 		node_ptr = select_node_record[i].node_ptr;
 		info("Node:%s Boards:%u SocketsPerBoard:%u CoresPerSocket:%u ThreadsPerCore:%u TotalCores:%u CumeCores:%u TotalCPUs:%u PUsPerCore:%u AvailMem:%"PRIu64" AllocMem:%"PRIu64" State:%s(%d)",
 		     node_ptr->name,

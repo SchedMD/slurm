@@ -197,6 +197,8 @@ hostlist_t bitmap2hostlist (bitstr_t *bitmap)
 	for (i = first; i <= last; i++) {
 		if (bit_test(bitmap, i) == 0)
 			continue;
+		if (!node_record_table_ptr[i])
+			continue;
 		hostlist_push_host(hl, node_record_table_ptr[i]->name);
 	}
 	return hl;
@@ -879,10 +881,8 @@ extern void init_node_conf(void)
 	int i;
 	node_record_t *node_ptr;
 
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node(&i));)
 		purge_node_rec(node_ptr);
-	}
 
 	node_record_count = 0;
 	xfree(node_record_table_ptr);
@@ -909,10 +909,8 @@ extern void node_fini2 (void)
 	}
 
 	xhash_free(node_hash_table);
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node(&i));)
 		purge_node_rec(node_ptr);
-	}
 
 	xfree(node_record_table_ptr);
 	node_record_count = 0;
@@ -1059,8 +1057,7 @@ extern void rehash_node (void)
 
 	xhash_free (node_hash_table);
 	node_hash_table = xhash_init(_node_record_hash_identity, NULL);
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node(&i));) {
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
 			continue;	/* vestigial record */
@@ -1114,7 +1111,12 @@ extern void cr_init_global_core_data(node_record_t **node_ptr, int node_cnt)
 	cr_node_cores_offset = xmalloc((node_cnt+1) * sizeof(uint32_t));
 
 	for (n = 0; n < node_cnt; n++) {
-		uint16_t cores = node_ptr[n]->config_ptr->cores;
+		uint16_t cores;
+
+		if (!node_ptr[n])
+			continue;
+
+		cores = node_ptr[n]->config_ptr->cores;
 		cores *= node_ptr[n]->config_ptr->tot_sockets;
 
 		cr_node_num_cores[n] = cores;
@@ -1207,4 +1209,20 @@ extern char *find_hostname(uint32_t pos, char *hosts)
 	}
 	hostlist_destroy(hostlist);
 	return host;
+}
+
+extern node_record_t * next_node(int *index)
+{
+	xassert(index);
+
+	if (*index >= node_record_count)
+		return NULL;
+
+	while (!node_record_table_ptr[*index]) {
+		(*index)++;
+		if (*index >= node_record_count)
+			return NULL;
+	}
+
+	return node_record_table_ptr[(*index)++];
 }

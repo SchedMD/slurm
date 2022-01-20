@@ -600,6 +600,8 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	}
 
 	for (i = 0; i < select_node_cnt; i++) {		/* For each node */
+		if (!node_record_table_ptr[i])
+			continue;
 		if ((consec_index + 1) >= consec_size) {
 			consec_size *= 2;
 			xrecalloc(consec_cpus, consec_size, sizeof(int));

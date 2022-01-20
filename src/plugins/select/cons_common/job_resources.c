@@ -52,6 +52,9 @@ static bitstr_t *_create_core_bitmap(int node_inx)
 {
 	xassert(node_inx < select_node_cnt);
 
+	if (!select_node_record[node_inx].node_ptr)
+		return NULL;
+
 	if (is_cons_tres)
 		return bit_alloc(select_node_record[node_inx].tot_cores);
 	else {
@@ -167,6 +170,8 @@ static void _log_tres_state(node_use_record_t *node_usage,
 	int i;
 
 	for (i = 0; i < select_node_cnt; i++) {
+		if (!node_record_table_ptr[i])
+			continue;;
 		info("Node:%s State:%s AllocMem:%"PRIu64" of %"PRIu64,
 		     node_record_table_ptr[i]->name,
 		     _node_state_str(node_usage[i].node_state),

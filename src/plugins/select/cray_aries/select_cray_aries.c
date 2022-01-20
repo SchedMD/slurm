@@ -1817,6 +1817,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 {
 	int i;
 	static time_t last_set_all = 0;
+	node_record_t *node_ptr;
 
 	if (scheduling_disabled)
 		return other_select_nodeinfo_set_all();
@@ -1836,9 +1837,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 	slurm_mutex_lock(&blade_mutex);
 	/* clear all marks */
-	for (i=0; i<node_record_count; i++) {
-		node_record_t *node_ptr = node_record_table_ptr[i];
-		if (bit_test(blade_nodes_running_npc, i))
+	for (i = 0; (node_ptr = next_node(&i));) {
+		if (bit_test(blade_nodes_running_npc, node_ptr->index))
 			node_ptr->node_state |= NODE_STATE_NET;
 		else
 			node_ptr->node_state &= (~NODE_STATE_NET);

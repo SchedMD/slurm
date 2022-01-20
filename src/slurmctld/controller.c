@@ -949,9 +949,9 @@ static void _send_future_cloud_to_db()
 	slurmdb_event_rec_t *event = NULL;
 	List event_list = NULL;
 	bool check_db = !running_cache;
+	node_record_t *node_ptr;
 
-	for (int i = 0; i < node_record_count; i++) {
-		node_record_t *node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node(&i));) {
 		if (!IS_NODE_FUTURE(node_ptr) &&
 		    !(IS_NODE_CLOUD(node_ptr) &&
 		      IS_NODE_POWERED_DOWN(node_ptr)))
@@ -1490,8 +1490,7 @@ static int _accounting_mark_all_nodes_down(char *reason)
 	   == SLURM_ERROR)
 		return rc;
 
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node(&i));) {
 		if (!node_ptr->name)
 			continue;
 		if ((rc = clusteracct_storage_g_node_down(
@@ -1834,8 +1833,7 @@ static void _queue_reboot_msg(void)
 	bool want_reboot;
 
 	want_nodes_reboot = false;
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node(&i));) {
 		/* Allow nodes in maintenance reservations to reboot
 		 * (they previously could not).
 		 */
@@ -1895,8 +1893,8 @@ static void _queue_reboot_msg(void)
 		node_ptr->node_state &= ~NODE_STATE_REBOOT_REQUESTED;
 		node_ptr->node_state |= NODE_STATE_REBOOT_ISSUED;
 
-		bit_clear(avail_node_bitmap, i);
-		bit_clear(idle_node_bitmap, i);
+		bit_clear(avail_node_bitmap, node_ptr->index);
+		bit_clear(idle_node_bitmap, node_ptr->index);
 
 		node_ptr->boot_req_time = now;
 
@@ -2575,8 +2573,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 
 	cluster_cpus = 0;
 
-	for (i = 0; i < node_record_count; i++) {
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node(&i));) {
 		uint64_t cpu_count = 0, mem_count = 0;
 		if (!node_ptr->name)
 			continue;
