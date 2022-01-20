@@ -35,6 +35,18 @@ int main(int argc, char *argv[])
 	signal(SIGUSR1, sig_handler);
 
 	pid = fork();
+
+	if (pid)
+		if (step)
+			printf("Started: parent_step\n");
+		else
+			printf("Started: parent_command\n");
+	else
+		if (step)
+			printf("Started: child_step\n");
+		else
+			printf("Started: child_command\n");
+
 	while (!finish && i<10) {
 		fflush(stdout);
 		sleep(1);

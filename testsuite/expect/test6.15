@@ -85,7 +85,7 @@ proc test_signaling { batch full } {
 	global max_job_delay proctracktype
 	global bin_sleep bin_cat job_id
 	global sbatch scancel file_out file_in
-	global number re_word_str
+	global number re_word_str bin_grep
 
 	# Cleanup result from previous call
 	file delete $file_out
@@ -105,7 +105,7 @@ proc test_signaling { batch full } {
 	# for evidence that the job has started and has written to its output file.
 	wait_for_job -fail $job_id "RUNNING"
 	wait_for_file -fail $file_out
-	wait_for_command_match -fail "$bin_cat $file_out" "is running"
+	wait_for_command_match -fail -pollinterval .1 "$bin_grep -c Started $file_out" 4
 
 	#
 	# Signal the job
