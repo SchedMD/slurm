@@ -70,6 +70,7 @@ documents those changes that are of interest to users and administrators.
     or multi-reservation job queue records.
  -- Improve Dynamic Future node startup to load in config with mapped nodename.
  -- Add new shard plugin for sharing gpus but not with mps.
+ -- acct_gather_energy/xcc - add support for Lenovo SD650 V2.
 
 * Changes in Slurm 21.08.6
 ==========================
