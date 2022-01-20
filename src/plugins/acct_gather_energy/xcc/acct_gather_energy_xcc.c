@@ -218,14 +218,14 @@ typedef enum xcc_version {
 
 /* Struct to store the raw single data command reading */
 typedef struct xcc_raw_single_data {
-	xcc_version_t version;	/* Version. */
 	uint16_t fifo_inx;	/* Not used. */
 	uint32_t j;		/* Joules. */
 	uint16_t mj;		/* Millijoules. */
-	uint32_t w;		/* Watts. */
-	uint16_t mw;		/* Milliwatts. */
 	uint16_t ms;		/* Milliseconds. */
+	uint16_t mw;		/* Milliwatts. */
 	uint32_t s;		/* Seconds. */
+	xcc_version_t version;	/* Version. */
+	uint32_t w;		/* Watts. */
 } xcc_raw_single_data_t;
 
 static acct_gather_energy_t xcc_energy;
