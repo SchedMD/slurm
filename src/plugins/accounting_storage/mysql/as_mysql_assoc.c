@@ -2761,7 +2761,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				   object->cluster, assoc_table, cols,
 				   vals, my_left+(incr-1), my_left+incr);
 
-			/* definantly works but slow */
+			/* definitely works but slow */
 /* 			xstrfmtcat(query, */
 /* 				   "SELECT @myLeft := lft FROM %s WHERE " */
 /* 				   "acct = '%s' " */
