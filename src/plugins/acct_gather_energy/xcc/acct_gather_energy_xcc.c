@@ -301,18 +301,17 @@ static int _init_ipmi_config(void)
 		 | IPMI_WORKAROUND_FLAGS_INBAND_SPIN_POLL);
 
 	if (ipmi_ctx) {
-		debug("ipmi_ctx already initialized\n");
+		debug("ipmi_ctx already initialized");
 		return SLURM_SUCCESS;
 	}
 
 	if (!(ipmi_ctx = ipmi_ctx_create())) {
-		error("ipmi_ctx_create: %s\n", strerror(errno));
+		error("ipmi_ctx_create: %s", strerror(errno));
 		goto cleanup;
 	}
 
 	if (getuid() != 0) {
-		error("%s: error : must be root to open ipmi devices\n",
-		      __func__);
+		error("%s: must be root to open IPMI devices", __func__);
 		goto cleanup;
 	}
 
@@ -325,7 +324,7 @@ static int _init_ipmi_config(void)
 	     (slurm_ipmi_conf.driver_type != IPMI_DEVICE_SUNBMC))
 	    || (slurm_ipmi_conf.workaround_flags & ~workaround_flags_mask)) {
 		/* IPMI ERROR PARAMETERS */
-		error("%s: error: XCC Lenovo plugin only supports in-band communication, incorrect driver type or workaround flags",
+		error("%s: XCC Lenovo plugin only supports in-band communication, incorrect driver type or workaround flags",
 		      __func__);
 
 		debug("slurm_ipmi_conf.driver_type=%u slurm_ipmi_conf.workaround_flags=%u",
@@ -375,7 +374,7 @@ static int _init_ipmi_config(void)
 					  slurm_ipmi_conf.workaround_flags,
 					  slurm_ipmi_conf.ipmi_flags) < 0)) {
 			error("%s: error on ipmi_ctx_open_inband: %s",
-			      __func__, ipmi_ctx_errormsg (ipmi_ctx));
+			      __func__, ipmi_ctx_errormsg(ipmi_ctx));
 
 			debug("slurm_ipmi_conf.driver_type=%u\n"
 			      "slurm_ipmi_conf.disable_auto_probe=%u\n"
@@ -404,7 +403,7 @@ static int _init_ipmi_config(void)
 			    slurm_ipmi_conf.target_address_is_set ?
 			    &slurm_ipmi_conf.target_address : NULL) < 0) {
 			error("%s: error on ipmi_ctx_set_target: %s",
-			      __func__, ipmi_ctx_errormsg (ipmi_ctx));
+			      __func__, ipmi_ctx_errormsg(ipmi_ctx));
 			goto cleanup;
 		}
 	}
@@ -427,7 +426,7 @@ static xcc_raw_single_data_t *_read_ipmi_values(void)
 	int rs_len = 0;
 
 	if (!IPMI_NET_FN_RQ_VALID(cmd_rq[1])) {
-		error("Invalid netfn value\n");
+		error("Invalid netfn value");
 		return NULL;
 	}
 
@@ -443,8 +442,8 @@ static xcc_raw_single_data_t *_read_ipmi_values(void)
 	debug3("ipmi_cmd_raw: %s", ipmi_ctx_errormsg(ipmi_ctx));
 
 	if (rs_len != XCC_EXPECTED_RSPLEN) {
-		error("Invalid ipmi response length for XCC raw command: "
-		      "%d bytes, expected %d", rs_len, XCC_EXPECTED_RSPLEN);
+		error("Invalid ipmi response length for XCC raw command: %d bytes, expected %d",
+		      rs_len, XCC_EXPECTED_RSPLEN);
 		return NULL;
 	}
 
@@ -570,10 +569,10 @@ static int _thread_update_node_energy(void)
 		readings++;
 	}
 
-	log_flag(ENERGY, "%s: XCC current_watts: %u consumed energy last interval: %"PRIu64"(current reading %"PRIu64") Joules, elapsed time: %u Seconds, first read energy counter val: %"PRIu64" ave watts: %u",
-		 __func__, xcc_energy.current_watts,
-		 xcc_energy.base_consumed_energy, xcc_energy.consumed_energy,
-		 elapsed, first_consumed_energy, xcc_energy.ave_watts);
+	log_flag(ENERGY, "current_watts: %u consumed energy last interval: %"PRIu64"(current reading %"PRIu64") Joules, elapsed time: %u seconds, first read energy counter val: %"PRIu64" ave watts: %u",
+		 xcc_energy.current_watts, xcc_energy.base_consumed_energy,
+		 xcc_energy.consumed_energy, elapsed, first_consumed_energy,
+		 xcc_energy.ave_watts);
 	return SLURM_SUCCESS;
 }
 
@@ -743,7 +742,7 @@ static int _get_joules_task(uint16_t delta)
 	}
 
 	if (sensor_cnt != 1) {
-		error("%s: received %u xcc sensors expected 1",
+		error("%s: received %u XCC sensors expected 1",
 		      __func__, sensor_cnt);
 		acct_gather_energy_destroy(new);
 		return SLURM_ERROR;
@@ -770,9 +769,9 @@ static int _get_joules_task(uint16_t delta)
 
 	memcpy(&xcc_energy, new, sizeof(acct_gather_energy_t));
 
-	log_flag(ENERGY, "%s: consumed %"PRIu64" Joules (received %"PRIu64"(%u watts) from slurmd)",
-		 __func__, xcc_energy.consumed_energy,
-		 xcc_energy.base_consumed_energy, xcc_energy.current_watts);
+	log_flag(ENERGY, "consumed %"PRIu64" Joules (received %"PRIu64"(%u watts) from slurmd)",
+		 xcc_energy.consumed_energy, xcc_energy.base_consumed_energy,
+		 xcc_energy.current_watts);
 
 //	new->previous_consumed_energy = xcc_energy.consumed_energy;
 end_it:
@@ -1019,7 +1018,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in, s_p_hashtbl_t *tbl)
 		if (running_in_slurmd()) {
 			slurm_thread_create(&thread_ipmi_id_launcher,
 					    _thread_launcher, NULL);
-			log_flag(ENERGY, "%s thread launched", plugin_name);
+			log_flag(ENERGY, "thread launched");
 		} else
 			_get_joules_task(0);
 	}
