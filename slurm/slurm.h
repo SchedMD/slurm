@@ -1126,6 +1126,8 @@ typedef enum {
 				  * to a node than available processors. */
 	SSF_WHOLE = 1 << 3, /* Use whole nodes in step allocation */
 	SSF_INTERACTIVE = 1 << 4, /* Request interactive step allocation */
+	SSF_MEM_ZERO = 1 << 5, /* Requested --mem=0; use all memory but do not
+				* count against the job's memory allocation */
 } step_spec_flags_t;
 
 /*****************************************************************************\

@@ -2140,6 +2140,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			/* If we aren't requesting memory get it from the job */
 			step_ptr->pn_min_memory =
 				job_ptr->details->pn_min_memory;
+			step_ptr->flags |= SSF_MEM_ZERO;
 		}
 
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
@@ -2152,7 +2153,13 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 				mem_use = step_ptr->pn_min_memory;
 			}
 			step_ptr->memory_allocated[step_node_inx] = mem_use;
-			job_resrcs_ptr->memory_used[job_node_inx] += mem_use;
+			/*
+			 * Do not count against the job's memory allocation if
+			 * --mem=0 was requested.
+			 */
+			if (!(step_ptr->flags & SSF_MEM_ZERO))
+				job_resrcs_ptr->memory_used[job_node_inx] +=
+					mem_use;
 		} else if (_is_mem_resv()) {
 			step_ptr->memory_allocated[step_node_inx] =
 				gres_step_node_mem_alloc;
@@ -2345,7 +2352,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			      cpus_alloc, job_node_inx);
 			job_resrcs_ptr->cpus_used[job_node_inx] = 0;
 		}
-		if (step_ptr->memory_allocated && _is_mem_resv()) {
+		if (step_ptr->memory_allocated && _is_mem_resv() &&
+		    !(step_ptr->flags & SSF_MEM_ZERO)) {
 			uint64_t mem_use =
 				step_ptr->memory_allocated[step_node_inx];
 			if (job_resrcs_ptr->memory_used[job_node_inx] >=
