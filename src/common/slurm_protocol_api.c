@@ -2080,10 +2080,9 @@ int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address)
 {
 	slurm_addr_t name;
 	socklen_t namelen = (socklen_t) sizeof(name);
-	int rc;
 
-	if ((rc = getpeername((int) fd, (struct sockaddr *) &name, &namelen)))
-		return rc;
+	if (getpeername((int) fd, (struct sockaddr *) &name, &namelen))
+		return errno;
 	memcpy(slurm_address, &name, sizeof(slurm_addr_t));
 	return 0;
 }
