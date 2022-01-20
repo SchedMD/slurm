@@ -765,7 +765,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, select_node_cnt-1); /* Clear Map. */
+		bit_nclear(node_map, 0, select_node_cnt); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -868,7 +868,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, select_node_cnt-1); /* Clear Map. */
+		bit_nclear(node_map, 0, select_node_cnt); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -965,7 +965,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, select_node_cnt-1); /* Clear Map. */
+		bit_nclear(node_map, 0, select_node_cnt); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -1054,7 +1054,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, select_node_cnt-1); /* Clear Map. */
+		bit_nclear(node_map, 0, select_node_cnt); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;

@@ -1170,7 +1170,7 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 		core_array_size = select_node_cnt;
 
 	select_node_record = xcalloc(select_node_cnt,
-				     sizeof(node_res_record_t));
+				     sizeof(node_res_record_t) + 1);
 	select_node_usage  = xcalloc(select_node_cnt,
 				     sizeof(node_use_record_t));
 
@@ -1228,6 +1228,12 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 		gres_node_state_dealloc_all(
 			select_node_record[i].node_ptr->gres_list);
 	}
+	/*
+	 * Since there can be holes in the node table and the last node could be
+	 * a hole, keep track of total cores in extra slot.
+	 * cr_init_global_core_data() does a similar thing.
+	 */
+	select_node_record[select_node_cnt].cume_cores = cume_cores;
 	part_data_create_array();
 	node_data_dump();
 

@@ -1104,6 +1104,7 @@ extern int state_str2int(const char *state_str, char *node_name)
 extern void cr_init_global_core_data(node_record_t **node_ptr, int node_cnt)
 {
 	uint32_t n;
+	int prev_index = 0;
 
 	cr_fini_global_core_data();
 
@@ -1121,8 +1122,10 @@ extern void cr_init_global_core_data(node_record_t **node_ptr, int node_cnt)
 
 		cr_node_num_cores[n] = cores;
 		if (n > 0) {
-			cr_node_cores_offset[n] = cr_node_cores_offset[n-1] +
-						  cr_node_num_cores[n-1] ;
+			cr_node_cores_offset[n] =
+				cr_node_cores_offset[prev_index] +
+				cr_node_num_cores[prev_index] ;
+			prev_index = n;
 		} else
 			cr_node_cores_offset[0] = 0;
 	}
@@ -1130,8 +1133,8 @@ extern void cr_init_global_core_data(node_record_t **node_ptr, int node_cnt)
 	/* an extra value is added to get the total number of cores */
 	/* as cr_get_coremap_offset is sometimes used to get the total */
 	/* number of cores in the cluster */
-	cr_node_cores_offset[node_cnt] = cr_node_cores_offset[node_cnt-1] +
-					 cr_node_num_cores[node_cnt-1] ;
+	cr_node_cores_offset[node_cnt] = cr_node_cores_offset[prev_index] +
+					 cr_node_num_cores[prev_index] ;
 
 }
 
