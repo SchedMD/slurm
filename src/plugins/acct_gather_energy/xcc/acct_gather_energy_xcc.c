@@ -1126,7 +1126,4 @@ extern void acct_gather_energy_p_conf_values(List *data)
 	key_pair->value = xstrdup_printf(
 		"%u", slurm_ipmi_conf.workaround_flags);
 	list_append(*data, key_pair);
-
-	return;
-
 }
