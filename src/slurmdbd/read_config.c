@@ -748,8 +748,10 @@ extern void log_config(void)
 	debug2("TrackSlurmctldDown= %u", slurmdbd_conf->track_ctld);
 }
 
-/* Dump the configuration in name,value pairs for output to
- *	"statsmgr show config", caller must call list_destroy() */
+/*
+ * Dump the configuration in name,value pairs for output to
+ * "sacctmgr show config", caller must call list_destroy()
+ */
 extern List dump_config(void)
 {
 	config_key_pair_t *key_pair;
