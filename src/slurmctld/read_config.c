@@ -1372,6 +1372,15 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* Build node and partition information based upon slurm.conf file */
 	build_all_nodeline_info(false, slurmctld_tres_cnt);
+	/* Increase node table to handle dyanmic nodes. */
+	if (node_record_count < slurm_conf.max_node_cnt) {
+		node_record_count = slurm_conf.max_node_cnt;
+		grow_node_record_table_ptr();
+	} else {
+		/* Lock node_record_table_ptr from growing */
+		slurm_conf.max_node_cnt = node_record_count;
+	}
+
 	(void)acct_storage_g_reconfig(acct_db_conn, 0);
 	build_all_frontend_info(false);
 	if (reconfig) {

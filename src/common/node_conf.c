@@ -737,7 +737,8 @@ static void _init_node_record(node_record_t *node_ptr,
 
 extern void grow_node_record_table_ptr(void)
 {
-	node_record_table_size = node_record_count + 100;
+	node_record_table_size = MAX(node_record_count + 100,
+				     slurm_conf.max_node_cnt);
 	xrealloc(node_record_table_ptr,
 		 node_record_table_size * sizeof(node_record_t *));
 	/*
