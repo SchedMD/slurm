@@ -1,4 +1,4 @@
-.TH "knl.conf" "5" "Slurm Configuration File" "June 2021" "Slurm Configuration File"
+.TH "knl.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
 
 .SH "NAME"
 knl.conf \- Slurm configuration file for Intel Knights Landing processor.
@@ -8,10 +8,7 @@ This ASCII file which describes configuration information for Intel Knights
 Landing processors and its name may depend upon the NodeFeatures plugin
 configured in Slurm. For example, on Cray systems NodeFeatures should be configured
 to "knl_cray" and its configuration file will be read from "knl_cray.conf".
-The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
-environment variable. The file will always be located in the
-same directory as the \fBslurm.conf\fP file.
+The file will always be located in the same directory as the \fBslurm.conf\fR.
 This file is optional.
 .LP
 Parameter names are case insensitive.

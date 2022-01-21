@@ -1,4 +1,4 @@
-.TH "job_container.conf" "5" "Slurm Configuration File" "May 2021" "Slurm Configuration File"
+.TH "job_container.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
 
 .SH "NAME"
 job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
@@ -14,10 +14,7 @@ constructs a private mount namespace for the job and mounts /tmp and
 job_container.conf file. To make use of this plugin, 'PrologFlags=Contain' must
 be present in your \fBslurm.conf\fP file.
 
-The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
-environment variable. The file will always be located in the
-same directory as the \fBslurm.conf\fP file.
+The file will always be located in the same directory as the \fBslurm.conf\fR.
 
 .LP
 If using the \fBjob_container.conf\fR file to define a namespace available to

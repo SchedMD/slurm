@@ -10,8 +10,7 @@ how those nodes are grouped into partitions, and various scheduling
 parameters associated with those partitions. This file should be
 consistent across all nodes in the cluster.
 .LP
-The file location can be modified at system build time using the
-DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
+The file location can be modified at execution time by setting the SLURM_CONF
 environment variable. The Slurm daemons also allow you to override
 both the built\-in and environment\-provided location using the "\-f"
 option on the command line.
@@ -1668,9 +1667,9 @@ By default, any existing file is truncated.
 This option controls the default ability for batch jobs to be requeued.
 Jobs may be requeued explicitly by a system administrator, after node
 failure, or upon preemption by a higher priority job.
-If \fBJobRequeue\fR is set to a value of 1, then batch job may be requeued
+If \fBJobRequeue\fR is set to a value of 1, then batch jobs may be requeued
 unless explicitly disabled by the user.
-If \fBJobRequeue\fR is set to a value of 0, then batch job will not be requeued
+If \fBJobRequeue\fR is set to a value of 0, then batch jobs will not be requeued
 unless explicitly enabled by the user.
 Use the \fBsbatch\fR \fI\-\-no\-requeue\fR or \fI\-\-requeue\fR
 option to change the default behavior for individual jobs.
@@ -3595,7 +3594,7 @@ The backfill and main scheduling logic will not reserve resources for pending
 jobs unless they have a priority equal to or higher than the specified value.
 In addition, jobs with a lower priority will not prevent a newly submitted job
 from starting immediately, even if the newly submitted job has a lower priority.
-This can be valuable if one wished to maximum system utilization without regard
+This can be valuable if one wished to maximize system utilization without regard
 for job priority below a certain threshold.
 The default value is zero, which will reserve resources for any pending job
 and delay initiation of lower priority jobs.
