@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
     EpilogSlurmctld finished.
  -- Keep job completing until EpilogSlurmctld is completed even when "downing"
     a node.
+ -- Fix handling reboot with multiple job features.
 
 * Changes in Slurm 21.08.5
 ==========================
