@@ -804,6 +804,35 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 	return node_ptr;
 }
 
+extern void delete_node_record(char *name)
+{
+	int node_index;
+	node_record_t *node_ptr;
+
+	node_ptr = find_node_record(name);
+	if (!node_ptr) {
+		error("Unable to find node %s to delete record", name);
+		return;
+	}
+
+	node_index = node_ptr->index;
+	purge_node_rec(node_ptr);
+	xfree(node_record_table_ptr[node_index]);
+	node_record_table_ptr[node_index] = NULL;
+
+	if (node_index == last_node_index) {
+		int i = 0;
+		for (i = last_node_index - 1; i >=0; i--) {
+			if (node_record_table_ptr[i]) {
+				last_node_index = i;
+				break;
+			}
+		}
+		if (i < 0)
+			last_node_index = -1;
+	}
+}
+
 /*
  * find_node_record - find a record for node with specified name
  * IN: name - name of the desired node

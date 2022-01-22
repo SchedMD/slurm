@@ -2525,6 +2525,13 @@ extern int update_node_record_acct_gather_data(
 	acct_gather_node_resp_msg_t *msg);
 
 /*
+ * Delete node names from system from a slurmctld perspective.
+ *
+ * e.g. remove node from partitions, reconfig cons_tres, etc.
+ */
+extern int delete_nodes(char *names);
+
+/*
  * Process string and set partition fields to appropriate values if valid
  *
  * IN billing_weights_str - suggested billing weights

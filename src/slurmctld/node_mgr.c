@@ -4463,3 +4463,76 @@ extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
 			  node_ptr->comm_name,
 			  node_ptr->node_hostname);
 }
+
+static void _remove_node_from_features(node_record_t *node_ptr)
+{
+	bitstr_t *node_bitmap = bit_alloc(node_record_count);
+	bit_set(node_bitmap, node_ptr->index);
+	update_feature_list(avail_feature_list, NULL, node_bitmap);
+	update_feature_list(active_feature_list, NULL, node_bitmap);
+	bit_free(node_bitmap);
+}
+
+/*
+ * Has to be in slurmctld code for locking.
+ */
+static int _delete_node(char *name)
+{
+	node_record_t *node_ptr;
+
+	node_ptr = find_node_record(name);
+	if (!node_ptr) {
+		error("Unable to find node %s to delete", name);
+		return SLURM_ERROR;
+	}
+
+	bit_clear(idle_node_bitmap, node_ptr->index);
+	bit_clear(avail_node_bitmap, node_ptr->index);
+
+	_remove_node_from_features(node_ptr);
+
+	delete_node_record(name);
+	slurm_conf_remove_node(name);
+
+	return SLURM_SUCCESS;
+}
+
+extern int delete_nodes(char *names)
+{
+	char *node_name;
+	hostset_t to_delete;
+	hostlist_iterator_t to_delete_itr;
+	bool one_success;
+	int ret_rc = SLURM_SUCCESS;
+
+	slurmctld_lock_t write_lock = {
+		.job = WRITE_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK};
+
+	lock_slurmctld(write_lock);
+
+	to_delete = hostset_create(names);
+	to_delete_itr = hostset_iterator_create(to_delete);
+	while ((node_name = hostlist_next(to_delete_itr))) {
+		int rc;
+		if ((rc = _delete_node(node_name)))
+			error("failed to delete node '%s'", node_name);
+		else
+			one_success = true;
+		ret_rc |= rc;
+		free(node_name);
+	}
+
+	if (one_success) {
+		set_partition_tres();
+		rehash_node();
+		select_g_reconfigure();
+	}
+
+	unlock_slurmctld(write_lock);
+
+	hostlist_iterator_destroy(to_delete_itr);
+	hostset_destroy(to_delete);
+
+	return ret_rc;
+}
+

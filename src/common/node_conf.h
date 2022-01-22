@@ -298,6 +298,13 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 					    config_record_t *config_ptr);
 
 /*
+ * Delete node from node_record_table_ptr.
+ *
+ * IN name - name of node_record_t to delete
+ */
+extern void delete_node_record(char *name);
+
+/*
  * find_node_record - find a record for node with specified name
  * IN: name - name of the desired node
  * RET: pointer to node record or NULL if not found
