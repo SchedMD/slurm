@@ -817,7 +817,6 @@ extern void delete_node_record(char *name)
 
 	node_index = node_ptr->index;
 	purge_node_rec(node_ptr);
-	xfree(node_record_table_ptr[node_index]);
 	node_record_table_ptr[node_index] = NULL;
 
 	if (node_index == last_node_index) {
@@ -953,14 +952,18 @@ extern void node_fini2 (void)
 	int i;
 	node_record_t *node_ptr;
 
-	if (config_list) {
-		FREE_NULL_LIST(config_list);
-		FREE_NULL_LIST(front_end_list);
-	}
-
 	xhash_free(node_hash_table);
 	for (i = 0; (node_ptr = next_node(&i));)
 		purge_node_rec(node_ptr);
+
+	if (config_list) {
+		/*
+		 * Must free after purge_node_rec as purge_node_rec will remove
+		 * node config_ptr's.
+		 */
+		FREE_NULL_LIST(config_list);
+		FREE_NULL_LIST(front_end_list);
+	}
 
 	xfree(node_record_table_ptr);
 	node_record_count = 0;
@@ -1068,6 +1071,33 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 
 }
 
+/* Only delete config_ptr if isn't referenced by another node. */
+static void _delete_node_config_ptr(node_record_t *node_ptr)
+{
+	bool delete = true;
+	node_record_t *tmp_ptr;
+	config_record_t *this_config_ptr;
+
+	if (!node_ptr->config_ptr)
+		return;
+
+	/* clear in case config_ptr is still referenced by other nodes */
+	if (node_ptr->config_ptr->node_bitmap)
+		bit_clear(node_ptr->config_ptr->node_bitmap, node_ptr->index);
+
+	this_config_ptr = node_ptr->config_ptr;
+	node_ptr->config_ptr = NULL;
+
+	for (int i = 0; (tmp_ptr = next_node(&i));) {
+		if (tmp_ptr->config_ptr == this_config_ptr) {
+			delete = false;
+			break;
+		}
+	}
+	if (delete)
+		list_delete_ptr(config_list, this_config_ptr);
+}
+
 /* Purge the contents of a node record */
 extern void purge_node_rec(node_record_t *node_ptr)
 {
@@ -1094,6 +1124,10 @@ extern void purge_node_rec(node_record_t *node_ptr)
 	xfree(node_ptr->tres_str);
 	xfree(node_ptr->tres_fmt_str);
 	xfree(node_ptr->tres_cnt);
+
+	_delete_node_config_ptr(node_ptr);
+
+	xfree(node_ptr);
 }
 
 /*
