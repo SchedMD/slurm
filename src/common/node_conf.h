@@ -277,11 +277,25 @@ extern void grow_node_record_table_ptr();
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
  * RET pointer to the record or NULL if error
- * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
- *	the global node table is no longer required
+ * NOTE: grows node_record_table_ptr if needed and appends a new node_record_t *
+ *       to node_record_table_ptr and increases node_record_count.
  */
 extern node_record_t *create_node_record(config_record_t *config_ptr,
 					 char *node_name);
+
+/*
+ * Create a new node_record_t * at the specified index.
+ *
+ * IN index - index in node_record_table_ptr where to create new
+ *            node_record_t *. node_record_table_ptr[index] should be null and
+ *            less than node_record_count.
+ * IN node_name - name of node to create
+ * IN config_ptr - pointer to node's configuration information
+ * RET new node_record_t * on sucess, NULL otherwise.
+ * NOTE: node_record_count isn't changed.
+ */
+extern node_record_t *create_node_record_at(int index, char *node_name,
+					    config_record_t *config_ptr);
 
 /*
  * find_node_record - find a record for node with specified name

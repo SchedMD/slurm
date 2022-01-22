@@ -762,20 +762,37 @@ extern node_record_t *create_node_record(config_record_t *config_ptr,
 					 char *node_name)
 {
 	node_record_t *node_ptr;
-
-	last_node_update = time (NULL);
 	xassert(config_ptr);
 	xassert(node_name);
 
 	if (node_record_count >= node_record_table_size)
 		grow_node_record_table_ptr();
 
-	node_record_table_ptr[node_record_count] = xmalloc(sizeof(*node_ptr));
-	node_ptr = node_record_table_ptr[node_record_count];
-	node_ptr->index = node_record_count++;
+	node_ptr = create_node_record_at(node_record_count, node_name,
+					 config_ptr);
+	node_record_count++;
+
+	return node_ptr;
+}
+
+extern node_record_t *create_node_record_at(int index, char *node_name,
+					    config_record_t *config_ptr)
+{
+	node_record_t *node_ptr;
+	last_node_update = time(NULL);
+
+	xassert(index <= node_record_count);
+	xassert(!node_record_table_ptr[index]);
+
+	if (slurm_conf.max_node_cnt && (index >= slurm_conf.max_node_cnt)) {
+		error("Attempting to create node record past MaxNodeCount:%d",
+		      slurm_conf.max_node_cnt);
+		return NULL;
+	}
+
+	node_ptr = node_record_table_ptr[index] = xmalloc(sizeof(*node_ptr));
+	node_ptr->index = index;
 	node_ptr->name = xstrdup(node_name);
-	if (!node_hash_table)
-		node_hash_table = xhash_init(_node_record_hash_identity, NULL);
 	xhash_add(node_hash_table, node_ptr);
 
 	_init_node_record(node_ptr, config_ptr);
