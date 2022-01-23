@@ -96,6 +96,23 @@ void *libpmix_plug = NULL;
 
 char *process_mapping = NULL;
 
+s_p_options_t pmix_options[] = {
+	{"PMIxCliTmpDirBase", S_P_STRING},
+	{"PMIxCollFence", S_P_STRING},
+	{"PMIxDebug", S_P_UINT32},
+	{"PMIxDirectConn", S_P_BOOLEAN},
+	{"PMIxDirectConnEarly", S_P_BOOLEAN},
+	{"PMIxDirectConnUCX", S_P_BOOLEAN},
+	{"PMIxDirectSameArch", S_P_BOOLEAN},
+	{"PMIxEnv", S_P_STRING},
+	{"PMIxFenceBarrier", S_P_BOOLEAN},
+	{"PMIxNetDevicesUCX", S_P_STRING},
+	{"PMIxTimeout", S_P_UINT32},
+	{"PMIxTlsUCX", S_P_STRING},
+	{NULL}
+};
+slurm_pmix_conf_t slurm_pmix_conf;
+
 static void _libpmix_close(void *lib_plug)
 {
 	xassert(lib_plug);
@@ -131,6 +148,38 @@ static void *_libpmix_open(void)
 	return lib_plug;
 }
 
+static void _init_pmix_conf(void)
+{
+	slurm_pmix_conf.cli_tmpdir_base = NULL;
+	slurm_pmix_conf.coll_fence = NULL;
+	slurm_pmix_conf.debug = 0;
+	slurm_pmix_conf.direct_conn = true;
+	slurm_pmix_conf.direct_conn_early = false;
+	slurm_pmix_conf.direct_conn_ucx = false;
+	slurm_pmix_conf.direct_samearch = false;
+	slurm_pmix_conf.env = NULL;
+	slurm_pmix_conf.fence_barrier = false;
+	slurm_pmix_conf.timeout = PMIXP_TIMEOUT_DEFAULT;
+	slurm_pmix_conf.ucx_netdevices = NULL;
+	slurm_pmix_conf.ucx_tls = NULL;
+}
+
+static void _reset_pmix_conf(void)
+{
+	xfree(slurm_pmix_conf.cli_tmpdir_base);
+	xfree(slurm_pmix_conf.coll_fence);
+	slurm_pmix_conf.debug = 0;
+	slurm_pmix_conf.direct_conn = true;
+	slurm_pmix_conf.direct_conn_early = false;
+	slurm_pmix_conf.direct_conn_ucx = false;
+	slurm_pmix_conf.direct_samearch = false;
+	xfree(slurm_pmix_conf.env);
+	slurm_pmix_conf.fence_barrier = false;
+	slurm_pmix_conf.timeout = PMIXP_TIMEOUT_DEFAULT;
+	xfree(slurm_pmix_conf.ucx_netdevices);
+	xfree(slurm_pmix_conf.ucx_tls);
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -142,6 +191,7 @@ extern int init(void)
 		PMIXP_ERROR("pmi/pmix: can not load PMIx library");
 		return SLURM_ERROR;
 	}
+	_init_pmix_conf();
 	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -152,6 +202,8 @@ extern int fini(void)
 	pmixp_agent_stop();
 	pmixp_stepd_finalize();
 	_libpmix_close(libpmix_plug);
+	_reset_pmix_conf();
+
 	return SLURM_SUCCESS;
 }
 
@@ -259,18 +311,153 @@ extern int mpi_p_client_fini(void)
 
 extern void mpi_p_conf_options(s_p_options_t **full_options, int *full_opt_cnt)
 {
+	transfer_s_p_options(full_options, pmix_options, full_opt_cnt);
 }
 
 extern void mpi_p_conf_set(s_p_hashtbl_t *tbl)
 {
+	_reset_pmix_conf();
+
+	if (tbl) {
+		s_p_get_string(&slurm_pmix_conf.cli_tmpdir_base,
+			       "PMIxCliTmpDirBase", tbl);
+		s_p_get_string(
+			&slurm_pmix_conf.coll_fence, "PMIxCollFence", tbl);
+		s_p_get_uint32(&slurm_pmix_conf.debug, "PMIxDebug", tbl);
+		s_p_get_boolean(
+			&slurm_pmix_conf.direct_conn,"PMIxDirectConn", tbl);
+		s_p_get_boolean(&slurm_pmix_conf.direct_conn_early,
+				"PMIxDirectConnEarly", tbl);
+		s_p_get_boolean(&slurm_pmix_conf.direct_conn_ucx,
+				"PMIxDirectConnUCX", tbl);
+		s_p_get_boolean(&slurm_pmix_conf.direct_samearch,
+				"PMIxDirectSameArch", tbl);
+		s_p_get_string(&slurm_pmix_conf.env, "PMIxEnv", tbl);
+		s_p_get_boolean(&slurm_pmix_conf.fence_barrier,
+				"PMIxFenceBarrier", tbl);
+		s_p_get_string(&slurm_pmix_conf.ucx_netdevices,
+			       "PMIxNetDevicesUCX", tbl);
+		s_p_get_uint32(&slurm_pmix_conf.timeout, "PMIxTimeout", tbl);
+		s_p_get_string(&slurm_pmix_conf.ucx_tls, "PMIxTlsUCX", tbl);
+	}
 }
 
 extern s_p_hashtbl_t *mpi_p_conf_get(void)
 {
-	return NULL;
+	s_p_hashtbl_t *tbl = s_p_hashtbl_create(pmix_options);
+	char *value;
+
+	if (slurm_pmix_conf.cli_tmpdir_base)
+		s_p_parse_pair(tbl, "PMIxCliTmpDirBase",
+			       slurm_pmix_conf.cli_tmpdir_base);
+
+	if (slurm_pmix_conf.coll_fence)
+		s_p_parse_pair(tbl, "PMIxCollFence",
+			       slurm_pmix_conf.coll_fence);
+
+	value = xstrdup_printf("%u", slurm_pmix_conf.debug);
+	s_p_parse_pair(tbl, "PMIxDebug", value);
+	xfree(value);
+
+	s_p_parse_pair(tbl, "PMIxDirectConn",
+		       (slurm_pmix_conf.direct_conn ? "yes" : "no"));
+
+	s_p_parse_pair(tbl, "PMIxDirectConnEarly",
+		       (slurm_pmix_conf.direct_conn_early ? "yes" : "no"));
+
+	s_p_parse_pair(tbl, "PMIxDirectConnUCX",
+		       (slurm_pmix_conf.direct_conn_ucx ? "yes" : "no"));
+
+	s_p_parse_pair(tbl, "PMIxDirectSameArch",
+		       (slurm_pmix_conf.direct_samearch ? "yes" : "no"));
+
+	if(slurm_pmix_conf.env)
+		s_p_parse_pair(tbl, "PMIxEnv", slurm_pmix_conf.env);
+
+	s_p_parse_pair(tbl, "PMIxFenceBarrier",
+		       (slurm_pmix_conf.fence_barrier ? "yes" : "no"));
+
+	if (slurm_pmix_conf.ucx_netdevices)
+		s_p_parse_pair(tbl, "PMIxNetDevicesUCX",
+			       slurm_pmix_conf.ucx_netdevices);
+
+	value = xstrdup_printf("%u", slurm_pmix_conf.timeout);
+	s_p_parse_pair(tbl, "PMIxTimeout", value);
+	xfree(value);
+
+	if (slurm_pmix_conf.ucx_tls)
+		s_p_parse_pair(tbl, "PMIxTlsUCX", slurm_pmix_conf.ucx_tls);
+
+	return tbl;
 }
 
 extern List mpi_p_conf_get_printable(void)
 {
-	return NULL;
+	config_key_pair_t *key_pair;
+	List data = list_create(destroy_config_key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxCliTmpDirBase");
+	key_pair->value = xstrdup(slurm_pmix_conf.cli_tmpdir_base);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxCollFence");
+	key_pair->value = xstrdup(slurm_pmix_conf.coll_fence);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxDebug");
+	key_pair->value = xstrdup_printf("%u", slurm_pmix_conf.debug);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxDirectConn");
+	key_pair->value = xstrdup(slurm_pmix_conf.direct_conn ? "yes" : "no");
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxDirectConnEarly");
+	key_pair->value = xstrdup(slurm_pmix_conf.direct_conn_early ?
+				  "yes" : "no");
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxDirectConnUCX");
+	key_pair->value = xstrdup(slurm_pmix_conf.direct_conn_ucx ?
+				  "yes" : "no");
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxDirectSameArch");
+	key_pair->value = xstrdup(slurm_pmix_conf.direct_samearch ?
+				  "yes" : "no");
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxEnv");
+	key_pair->value = xstrdup(slurm_pmix_conf.env);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxFenceBarrier");
+	key_pair->value = xstrdup(slurm_pmix_conf.fence_barrier ? "yes" : "no");
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxNetDevicesUCX");
+	key_pair->value = xstrdup(slurm_pmix_conf.ucx_netdevices);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxTimeout");
+	key_pair->value = xstrdup_printf("%u", slurm_pmix_conf.timeout);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PMIxTlsUCX");
+	key_pair->value = xstrdup(slurm_pmix_conf.ucx_tls);
+	list_append(data, key_pair);
+
+	return data;
 }

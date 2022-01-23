@@ -202,4 +202,22 @@ typedef struct {
 typedef char pmix_nspace_t[PMIX_MAX_NSLEN+1];
 #endif
 
+/* Slurm PMIx conf parameters for mpi.conf. */
+typedef struct {
+	char *cli_tmpdir_base;
+	char *coll_fence;
+	uint32_t debug;
+	bool direct_conn;
+	bool direct_conn_early;
+	bool direct_conn_ucx;
+	bool direct_samearch;
+	char *env;
+	bool fence_barrier;
+	uint32_t timeout;
+	char *ucx_netdevices;
+	char *ucx_tls;
+} slurm_pmix_conf_t;
+
+extern slurm_pmix_conf_t slurm_pmix_conf;
+
 #endif /* PMIXP_COMMON_H */
