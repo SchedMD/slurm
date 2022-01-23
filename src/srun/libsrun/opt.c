@@ -743,6 +743,14 @@ static void _set_options(const int argc, char **argv)
 	xfree(opt_string);
 }
 
+static void _mpi_print_list(void)
+{
+	plugrack_t *mpi_rack = plugrack_create("mpi");
+	plugrack_read_dir(mpi_rack, slurm_conf.plugindir);
+	plugrack_print_mpi_plugins(mpi_rack);
+	plugrack_destroy(mpi_rack);
+}
+
 /*
  * _opt_args() : set options via commandline args and popt
  */
@@ -780,8 +788,10 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 
 	command_args = sropt.argc;
 
-	if (!xstrcmp(sropt.mpi_type, "list"))
-		(void) mpi_g_client_init(sropt.mpi_type);
+	if (!xstrcmp(sropt.mpi_type, "list")) {
+		_mpi_print_list();
+		exit(0);
+	}
 	if (!rest && !sropt.test_only)
 		fatal("No command given to execute.");
 
