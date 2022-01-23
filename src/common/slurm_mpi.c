@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_mpi.c - Generic mpi selector for slurm
+ *  slurm_mpi.c - Generic MPI selector for Slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -53,14 +53,11 @@
 #define _DEBUG 0
 
 typedef struct slurm_mpi_ops {
-	int          (*slurmstepd_prefork)(const stepd_step_rec_t *job,
-					   char ***env);
-	int          (*slurmstepd_task)   (const mpi_plugin_task_info_t *job,
-					   char ***env);
-	mpi_plugin_client_state_t *
-	             (*client_prelaunch)  (const mpi_plugin_client_info_t *job,
-					   char ***env);
-	int          (*client_fini)       (mpi_plugin_client_state_t *);
+	int (*client_fini)(mpi_plugin_client_state_t *state);
+	mpi_plugin_client_state_t *(*client_prelaunch)(
+		const mpi_plugin_client_info_t *job, char ***env);
+	int (*slurmstepd_prefork)(const stepd_step_rec_t *job, char ***env);
+	int (*slurmstepd_task)(const mpi_plugin_task_info_t *job, char ***env);
 } slurm_mpi_ops_t;
 
 /*
@@ -68,15 +65,15 @@ typedef struct slurm_mpi_ops {
  * declared for slurm_mpi_ops_t.
  */
 static const char *syms[] = {
-	"mpi_p_slurmstepd_prefork",
-	"mpi_p_slurmstepd_task",
+	"mpi_p_client_fini",
 	"mpi_p_client_prelaunch",
-	"mpi_p_client_fini"
+	"mpi_p_slurmstepd_prefork",
+	"mpi_p_slurmstepd_task"
 };
 
 static slurm_mpi_ops_t ops;
 static plugin_context_t *g_context = NULL;
-static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
 #if _DEBUG
@@ -103,7 +100,7 @@ static void _log_step_rec(const stepd_step_rec_t *job)
 	info("ntasks:%u nnodes:%u node_id:%u", job->ntasks, job->nnodes,
 	     job->nodeid);
 	info("node_tasks:%u", job->node_tasks);
-	for (i = 0; i < job->node_tasks; i ++)
+	for (i = 0; i < job->node_tasks; i++)
 		info("gtid[%d]:%u", i, job->task[i]->gtid);
 	for (i = 0; i < job->nnodes; i++)
 		info("task_cnts[%d]:%u", i, job->task_cnts[i]);
@@ -159,30 +156,29 @@ static void _log_task_rec(const mpi_plugin_task_info_t *job)
 }
 #endif
 
-int _mpi_init(char *mpi_type)
+static int _mpi_init(char *mpi_type)
 {
 	int retval = SLURM_SUCCESS;
-	char *plugin_type = "mpi";
-	char *type = NULL;
+	char *plugin_type = "mpi", *type = NULL;
 
 	if (init_run && g_context)
 		return retval;
 
 	slurm_mutex_lock(&context_lock);
 
-	if ( g_context )
+	if (g_context)
 		goto done;
 
-	if (mpi_type == NULL) {
+	if (!mpi_type)
 		mpi_type = slurm_conf.mpi_default;
-	} else if (!xstrcmp(mpi_type, "openmpi")) {
+	else if (!xstrcmp(mpi_type, "openmpi")) {
 		/*
 		 * The openmpi plugin has been equivalent to none for a while.
 		 * Translate so we can discard that duplicated no-op plugin.
 		 */
 		mpi_type = "none";
 	}
-	if (mpi_type == NULL) {
+	if (!mpi_type) {
 		error("No MPI default set.");
 		retval = SLURM_ERROR;
 		goto done;
@@ -198,9 +194,8 @@ int _mpi_init(char *mpi_type)
 	if (!g_context) {
 		error("cannot create %s context for %s", plugin_type, type);
 		retval = SLURM_ERROR;
-		goto done;
-	}
-	init_run = true;
+	} else
+		init_run = true;
 
 done:
 	xfree(type);
@@ -210,7 +205,7 @@ done:
 
 extern int mpi_g_slurmstepd_init(char ***env)
 {
-	char *mpi_type = getenvp (*env, "SLURM_MPI_TYPE");
+	char *mpi_type = getenvp(*env, "SLURM_MPI_TYPE");
 
 #if _DEBUG
 	info("IN %s mpi_type:%s", __func__, mpi_type);
@@ -274,8 +269,8 @@ extern int mpi_g_client_init(char *mpi_type)
 	return SLURM_SUCCESS;
 }
 
-extern mpi_plugin_client_state_t *
-mpi_g_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
+extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
+	const mpi_plugin_client_info_t *job, char ***env)
 {
 	mpi_plugin_client_state_t *rc;
 #if _DEBUG
@@ -306,7 +301,7 @@ extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 	return (*(ops.client_fini))(state);
 }
 
-int mpi_fini(void)
+extern int mpi_fini(void)
 {
 	int rc;
 

@@ -211,7 +211,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 		pthread_join(job->msgid, NULL);
 	}
 
-	mpi_fini();	/* Remove stale PMI2 sockets */
+	mpi_fini();
 
 	if (conf->hwloc_xml)
 		(void)remove(conf->hwloc_xml);

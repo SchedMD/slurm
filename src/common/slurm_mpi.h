@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/common/slurm_mpi.h - Generic mpi selector for slurm
+ *  slurm_mpi.h - Generic MPI selector for Slurm
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SRUN_MPI_H
-#define _SRUN_MPI_H
+#ifndef _SLURM_MPI_H
+#define _SLURM_MPI_H
 
 #include <stdbool.h>
 
@@ -49,24 +49,22 @@ typedef struct slurm_mpi_context *slurm_mpi_context_t;
 typedef void mpi_plugin_client_state_t;
 
 typedef struct {
-	uint32_t het_job_id;		/* Hetjob leader id or NO_VAL */
-	uint32_t het_job_task_offset;	/* Hetjob task offset or NO_VAL */
-	slurm_step_id_t step_id; /* Current step id (or NO_VAL)               */
+	uint32_t het_job_id; /* Hetjob leader id or NO_VAL */
+	uint32_t het_job_task_offset; /* Hetjob task offset or NO_VAL */
+	slurm_step_id_t step_id; /* Current step id (or NO_VAL) */
 	slurm_step_layout_t *step_layout;
 } mpi_plugin_client_info_t;
 
 typedef struct {
-	slurm_step_id_t step_id; /* Current step id (or NO_VAL)               */
-	uint32_t nnodes; /* number of nodes in current job step       */
-	uint32_t nodeid; /* relative position of this node in job     */
-	uint32_t ntasks; /* total number of tasks in current job      */
-	uint32_t ltasks; /* number of tasks on *this* (local) node    */
-
-	uint32_t gtaskid;/* global task rank within the job step      */
-	int      ltaskid;/* task rank within the local node           */
-
-	slurm_addr_t *self;
 	slurm_addr_t *client;
+	uint32_t gtaskid;/* global task rank within the job step */
+	int ltaskid; /* task rank within the local node */
+	uint32_t ltasks; /* number of tasks on *this* (local) node */
+	uint32_t nnodes; /* number of nodes in current job step */
+	uint32_t nodeid; /* relative position of this node in job */
+	uint32_t ntasks; /* total number of tasks in current job */
+	slurm_addr_t *self;
+	slurm_step_id_t step_id; /* Current step id (or NO_VAL) */
 } mpi_plugin_task_info_t;
 
 /**********************************************************************
@@ -135,15 +133,13 @@ extern int mpi_g_client_init(char *mpi_type);
  * to MPI state for this job step.  Free the state by calling
  * mpi_g_client_fini().
  */
-extern mpi_plugin_client_state_t *
-mpi_g_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env);
+extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
+	const mpi_plugin_client_info_t *job, char ***env);
 
 /* Call the plugin mpi_p_client_fini() function. */
 extern int mpi_g_client_fini(mpi_plugin_client_state_t *state);
 
-/**********************************************************************
- * FIXME - Nobody calls the following function.  Perhaps someone should.
- **********************************************************************/
-int mpi_fini (void);
+/* Tear down things in the MPI plugin */
+extern int mpi_fini(void);
 
-#endif /* !_SRUN_MPI_H */
+#endif /* !_SLURM_MPI_H */
