@@ -172,9 +172,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	uint16_t sockets = 0, cores = 0, num_cpus;
 	int task_cnt = 0;
 	int job_node_id;
-#ifndef HAVE_FRONT_END
 	int start;
-#endif
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS) {
 		error("job lacks a credential");
@@ -207,6 +205,12 @@ void batch_bind(batch_job_launch_msg_t *req)
 	static int last_id = 0;
 	bit_set(hw_map, ((last_id++) % conf->block_map_size));
 	task_cnt = 1;
+
+	/*
+	 * This is here to make sure we use the 'start' variable to avoid
+	 * compiling issues.
+	 */
+	debug5("Start is %d", start);
 }
 #else
 {
