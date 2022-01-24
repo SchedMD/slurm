@@ -12546,8 +12546,25 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		if (!IS_JOB_PENDING(job_ptr) || !detail_ptr) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
-		} else
+		} else if (details_ptr->accrue_time) {
+			uint64_t bit_flags = job_ptr->bit_flags;
 			acct_policy_remove_accrue_time(job_ptr, false);
+			/*
+			 * Set the accrue_time to 'now' since we are not
+			 * removing this job, but resetting the time
+			 * instead. Since acct_policy_remove_accrue_time()
+			 * will set this to 0 which will cause the next time
+			 * through acct_policy_handle_accrue_time() to set
+			 * things back to the original time thus making it as if
+			 * nothing happened here.
+			 *
+			 * We also reset the bit_flags to be the same as it was
+			 * before so we don't loose JOB_ACCRUE_OVER if set
+			 * beforehand.
+			 */
+			job_ptr->bit_flags = bit_flags;
+			detail_ptr->accrue_time = now;
+		}
 	}
 
 	/*
