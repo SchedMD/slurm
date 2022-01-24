@@ -80,17 +80,9 @@ if { $job_id == 0 } {
 # Wait for job to start
 #
 wait_for_job -fail $job_id "RUNNING"
+
 # wait for job step to start
-sleep 5
-set debug 0
-if {$debug} {
-	spawn $sstat -j $job_id
-	expect {
-		eof {
-			wait
-		}
-	}
-}
+wait_for_command_match -fail -pollinterval .1 "$sstat --allsteps --format JobID --noheader $job_id" "$job_id\.0"
 
 set job_matches  0
 set pid_matches  0
