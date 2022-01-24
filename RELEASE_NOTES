@@ -45,6 +45,8 @@ HIGHLIGHTS
  -- Remove cgroup_allowed_devices_file.conf, since the default policy in modern
     kernels is to whitelist by default. Denying specific devices must be done
     through gres.conf.
+ -- Node state flags (DRAIN, FAILED, POWERING UP, etc.) will be cleared now if
+    node state is updated to FUTURE.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

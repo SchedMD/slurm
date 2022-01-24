@@ -73,6 +73,8 @@ documents those changes that are of interest to users and administrators.
  -- acct_gather_energy/xcc - add support for Lenovo SD650 V2.
  -- Remove cgroup_allowed_devices_file.conf support.
  -- sacct -f flag implies -c flag.
+ -- Node state flags (DRAIN, FAILED, POWERING UP, etc.) will be cleared now if
+    node state is updated to FUTURE.
 
 * Changes in Slurm 21.08.6
 ==========================

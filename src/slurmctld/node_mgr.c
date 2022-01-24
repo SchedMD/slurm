@@ -1532,18 +1532,15 @@ int update_node ( update_node_msg_t * update_node_msg )
 				_make_node_down(node_ptr, now);
 				kill_running_job_by_node_name (this_node_name);
 				if (state_val == NODE_STATE_FUTURE) {
-					node_ptr->node_state = NODE_STATE_FUTURE
-							       | node_flags;
 					if (IS_NODE_DYNAMIC(node_ptr)) {
-						node_ptr->node_state &=
-							(~NODE_STATE_DYNAMIC);
-
 						/* Reset comm and hostname */
 						set_node_comm_name(
 							node_ptr,
 							xstrdup(node_ptr->name),
 							xstrdup(node_ptr->name));
 					}
+					node_ptr->node_state =
+						NODE_STATE_FUTURE;
 					bit_set(future_node_bitmap, node_inx);
 					clusteracct_storage_g_node_down(
 						acct_db_conn,
