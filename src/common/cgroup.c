@@ -147,7 +147,6 @@ static void _clear_slurm_cgroup_conf()
 	slurm_cgroup_conf.max_swap_percent = 100;
 	slurm_cgroup_conf.constrain_devices = false;
 	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
-	xfree(slurm_cgroup_conf.allowed_devices_file);
 	xfree(slurm_cgroup_conf.cgroup_plugin);
 }
 
@@ -187,7 +186,6 @@ static void _pack_cgroup_conf(buf_t *buffer)
 	pack64(slurm_cgroup_conf.memory_swappiness, buffer);
 
 	packbool(slurm_cgroup_conf.constrain_devices, buffer);
-	packstr(slurm_cgroup_conf.allowed_devices_file, buffer);
 	packstr(slurm_cgroup_conf.cgroup_plugin, buffer);
 }
 
@@ -231,8 +229,6 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpack64(&slurm_cgroup_conf.memory_swappiness, buffer);
 
 	safe_unpackbool(&slurm_cgroup_conf.constrain_devices, buffer);
-	safe_unpackstr_xmalloc(&slurm_cgroup_conf.allowed_devices_file,
-			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&slurm_cgroup_conf.cgroup_plugin,
 			       &uint32_tmp, buffer);
 	return SLURM_SUCCESS;
@@ -376,11 +372,10 @@ static void _read_slurm_cgroup_conf(void)
 				     "ConstrainDevices", tbl))
 			slurm_cgroup_conf.constrain_devices = false;
 
-		if (!s_p_get_string(&slurm_cgroup_conf.allowed_devices_file,
-				    "AllowedDevicesFile", tbl))
-			slurm_cgroup_conf.allowed_devices_file =
-				get_extra_conf_path(
-					"cgroup_allowed_devices_file.conf");
+		if (s_p_get_string(&tmp_str, "AllowedDevicesFile", tbl)) {
+			xfree(tmp_str);
+			info("WARNING: AllowedDevicesFile option is obsolete, please remove it from your configuration.");
+		}
 
 		(void) s_p_get_string(&slurm_cgroup_conf.cgroup_plugin,
 				      "CgroupPlugin", tbl);
@@ -603,11 +598,6 @@ extern List cgroup_get_conf_list(void)
 	key_pair->name = xstrdup("ConstrainDevices");
 	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_devices ?
 					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("AllowedDevicesFile");
-	key_pair->value = xstrdup(cg_conf->allowed_devices_file);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

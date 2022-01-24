@@ -169,7 +169,6 @@ typedef struct {
 	uint64_t memory_swappiness;
 
 	bool constrain_devices;
-	char *allowed_devices_file;
 	char *cgroup_plugin;
 } cgroup_conf_t;
 

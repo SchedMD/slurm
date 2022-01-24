@@ -419,8 +419,6 @@ extern void load_config_response_msg(config_response_msg_t *msg, int flags)
 
 	_load_conf(dir, "acct_gather.conf", &msg->acct_gather_config);
 	_load_conf(dir, "cgroup.conf", &msg->cgroup_config);
-	_load_conf(dir, "cgroup_allowed_devices_file.conf",
-		   &msg->cgroup_allowed_devices_file_config);
 	_load_conf(dir, "ext_sensors.conf", &msg->ext_sensors_config);
 	_load_conf(dir, "gres.conf", &msg->gres_config);
 	_load_conf(dir, "job_container.conf", &msg->job_container_config);

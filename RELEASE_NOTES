@@ -42,6 +42,9 @@ HIGHLIGHTS
  -- Future and Cloud nodes are treated as "Planned Down" in usage reports.
  -- Add new shard plugin for sharing gpus but not with mps.
  -- Add support for Lenovo SD650 V2 in acct_gather_energy/xcc plugin.
+ -- Remove cgroup_allowed_devices_file.conf, since the default policy in modern
+    kernels is to whitelist by default. Denying specific devices must be done
+    through gres.conf.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

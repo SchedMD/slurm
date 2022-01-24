@@ -114,7 +114,6 @@ is as follows:
 <li>slurm.conf</li>
 <li>acct_gather.conf</li>
 <li>cgroup.conf</li>
-<li>cgroup_allowed_devices_file.conf</li>
 <li>cli_filter.lua</li>
 <li>ext_sensors.conf</li>
 <li>gres.conf</li>
