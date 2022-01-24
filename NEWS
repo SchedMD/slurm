@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
     node in the allocation.
  -- slurmdbd - fix segfault after multiple failover/failback operations.
  -- Fix jobcomp filetxt job selection condition.
+ -- Fix -f flag of sacct not being used.
 
 * Changes in Slurm 21.08.5
 ==========================
