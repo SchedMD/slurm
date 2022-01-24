@@ -4220,9 +4220,10 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 	}
 
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-	if (IS_NODE_DOWN(node_ptr)) {
-		debug3("%s: %pJ node %s being left DOWN",
-		       __func__, job_ptr, node_ptr->name);
+	if (IS_NODE_DOWN(node_ptr) || IS_NODE_FUTURE(node_ptr)) {
+		debug3("%s: %pJ node %s being left %s",
+		       __func__, job_ptr, node_ptr->name,
+		       node_state_base_string(node_ptr->node_state));
 		goto fini;
 	}
 	bit_set(up_node_bitmap, inx);

@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix -f flag of sacct not being used.
  -- Select cores for job steps according to the socket distribution. Previously,
     sockets were always filled before selecting cores from the next socket.
+ -- Keep node in Future state if epilog completes while in Future state.
 
 * Changes in Slurm 21.08.5
 ==========================
