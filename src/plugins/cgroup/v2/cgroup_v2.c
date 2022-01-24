@@ -122,7 +122,8 @@ static void _set_int_cg_ns()
 
 	/*
 	 * In Unified mode there will be just one line containing the path
-	 * of the cgroup, so get it as our root and replace the \n:
+	 * of the cgroup and starting by 0, so get it as our root and replace
+	 * the \n:
 	 * "0::/system.slice/slurmd<nodename>.service\n"
 	 *
 	 * The final path will look like this:
@@ -132,6 +133,10 @@ static void _set_int_cg_ns()
 	 * node, and the path takes the name of the service file, e.g:
 	 * /sys/fs/cgroup/system.slice/slurmd-<nodename>.service/
 	 */
+	if (buf && (buf[0] != '0'))
+		fatal("Hybrid mode is not supported. Mounted cgroups are: %s",
+		      buf);
+
 	if ((p = xstrchr(buf, ':')) != NULL) {
 		if ((p + 2) < (buf + sz - 1))
 			start = p + 2;
