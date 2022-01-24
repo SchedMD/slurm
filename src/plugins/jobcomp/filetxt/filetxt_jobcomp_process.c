@@ -237,7 +237,7 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 				continue;
 			itr = list_iterator_create(job_cond->step_list);
 			while ((selected_step = list_next(itr))) {
-				if (selected_step->step_id.job_id == jobid)
+				if (selected_step->step_id.job_id != jobid)
 					continue;
 				/* job matches */
 				list_iterator_destroy(itr);
