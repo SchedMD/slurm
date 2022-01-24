@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "September 2021" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "January 2022" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -200,7 +200,8 @@ Show jobs from the federation if a member of one.
 \fB\-f\fR, \fB\-\-file\fR=<\fIfile\fR>
 Causes the \f3sacct\fP command to read job accounting data from the
 named \f2file\fP instead of the current Slurm job accounting log
-file. Only applicable when running the jobcomp/filetxt plugin.
+file. Only applicable when running the jobcomp/filetxt plugin. Setting this flag
+implicitly enables the \-c flag.
 .IP
 
 .TP

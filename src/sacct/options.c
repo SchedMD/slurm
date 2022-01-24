@@ -856,6 +856,7 @@ extern void parse_command_line(int argc, char **argv)
 				exit(1);
 			}
 			slurm_conf.job_comp_loc = xstrdup(optarg);
+			params.opt_completion = 1;
 			break;
 		case 'F':
 			job_cond->db_flags = str_2_job_flags(optarg);

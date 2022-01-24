@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
  -- Add new shard plugin for sharing gpus but not with mps.
  -- acct_gather_energy/xcc - add support for Lenovo SD650 V2.
  -- Remove cgroup_allowed_devices_file.conf support.
+ -- sacct -f flag implies -c flag.
 
 * Changes in Slurm 21.08.6
 ==========================
