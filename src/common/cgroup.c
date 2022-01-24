@@ -438,7 +438,6 @@ static char *_autodetect_cgroup_version(void)
 
 	log_flag(CGROUP, "%s: using cgroup version %d", __func__, cgroup_ver);
 
-
 	switch (cgroup_ver) {
 	case 1:
 		return "cgroup/v1";
