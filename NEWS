@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
     EpilogSlurmctld were running and PrologEpilogTimeout is set in slurm.conf.
  -- Fix affinity of the batch step if batch host is different than the first
     node in the allocation.
+ -- slurmdbd - fix segfault after multiple failover/failback operations.
 
 * Changes in Slurm 21.08.5
 ==========================
