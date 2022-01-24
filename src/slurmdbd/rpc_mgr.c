@@ -135,13 +135,11 @@ extern void rpc_mgr_wake(void)
 static void _connection_fini_callback(void *arg)
 {
 	slurmdbd_conn_t *conn = (slurmdbd_conn_t *) arg;
-	bool locked = false;
+	bool stay_locked = false;
 
 	if (conn->conn->rem_port) {
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
-			ListIterator itr;
-			slurmdbd_conn_t *slurmdbd_conn;
 			memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
 			cluster_rec.name = conn->conn->cluster_name;
 			cluster_rec.control_host = conn->conn->rem_host;
@@ -155,28 +153,27 @@ static void _connection_fini_callback(void *arg)
 
 			clusteracct_storage_g_fini_ctld(
 				conn->db_conn, &cluster_rec);
+		} else if (slurmdbd_conf->commit_delay)
+			stay_locked = true;
 
-			slurm_mutex_lock(&registered_lock);
-			itr = list_iterator_create(registered_clusters);
-			while ((slurmdbd_conn = list_next(itr))) {
-				if (conn == slurmdbd_conn) {
-					list_delete_item(itr);
-					break;
-				}
-			}
-			list_iterator_destroy(itr);
+		/*
+		 * On connection close, remove from the list of registered
+		 * clusters. The List ensures acct_storage_g_commit() is run
+		 * every CommitDelay interval, but the final commit is handled
+		 * below.
+		 */
+		slurm_mutex_lock(&registered_lock);
+		list_delete_ptr(registered_clusters, conn);
+		if (!stay_locked)
 			slurm_mutex_unlock(&registered_lock);
-		} else if (slurmdbd_conf->commit_delay) {
-			slurm_mutex_lock(&registered_lock);
-			locked = true;
-		}
+
 		/* needs to be the last thing done */
 		acct_storage_g_commit(conn->db_conn, 1);
 	}
 
 	acct_storage_g_close_connection(&conn->db_conn);
 
-	if (locked)
+	if (stay_locked)
 		slurm_mutex_unlock(&registered_lock);
 	/* handled directly in the internal persist_conn code */
 	//slurm_persist_conn_members_destroy(&conn->conn);
