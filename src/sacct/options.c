@@ -848,8 +848,14 @@ extern void parse_command_line(int argc, char **argv)
 			job_cond->flags |= JOBCOND_FLAG_NO_STEP;
 			break;
 		case 'f':
-			xfree(params.opt_filein);
-			params.opt_filein = xstrdup(optarg);
+			xfree(slurm_conf.job_comp_loc);
+			if ((stat(optarg, &stat_buf) != 0) ||
+			    (!S_ISREG(stat_buf.st_mode))) {
+				fprintf(stderr, "%s is not a valid file\n",
+					optarg);
+				exit(1);
+			}
+			slurm_conf.job_comp_loc = xstrdup(optarg);
 			break;
 		case 'F':
 			job_cond->db_flags = str_2_job_flags(optarg);
@@ -1157,10 +1163,9 @@ extern void parse_command_line(int argc, char **argv)
 	      (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB ? "no" : 0));
 
 	if (params.opt_completion) {
-		slurmdb_jobcomp_init(params.opt_filein);
+		slurmdb_jobcomp_init(slurm_conf.job_comp_loc);
 
-		if (!xstrcmp(slurm_conf.job_comp_type, "jobcomp/none")
-		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
+		if (!xstrcmp(slurm_conf.job_comp_type, "jobcomp/none")) {
 			fprintf(stderr, "Slurm job completion is disabled\n");
 			exit(1);
 		}
@@ -1601,6 +1606,5 @@ extern void sacct_fini(void)
 		slurm_acct_storage_fini();
 	}
 	xfree(params.opt_field_list);
-	xfree(params.opt_filein);
 	slurmdb_destroy_job_cond(params.job_cond);
 }

@@ -203,7 +203,6 @@ typedef struct {
 	int opt_completion;	/* --completion */
 	bool opt_federation;	/* --federation */
 	char *opt_field_list;	/* --fields= */
-	char *opt_filein;	/* --file */
 	int opt_gid;		/* running persons gid */
 	int opt_help;		/* --help */
 	bool opt_local;		/* --local */
