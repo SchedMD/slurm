@@ -57,6 +57,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/plugins/cgroup/common/cgroup_common.h"
+#include "src/plugins/cgroup/v2/ebpf.h"
 
 /* Functions */
 extern int init(void);

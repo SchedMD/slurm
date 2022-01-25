@@ -178,6 +178,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 			rc = SLURM_ERROR;
 			goto fini;
 		}
+		cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_JOB, NO_VAL);
 	}
 
 	if ((job->step_id.step_id != SLURM_BATCH_SCRIPT) &&
@@ -202,6 +203,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 				rc = SLURM_ERROR;
 				goto fini;
 			}
+			cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_STEP,
+						 NO_VAL);
 		}
 	}
 
@@ -255,6 +258,8 @@ extern int task_cgroup_devices_constrain(stepd_step_rec_t *job, pid_t pid,
 		FREE_NULL_LIST(device_list);
 		if (tmp < 0)
 			return SLURM_ERROR;
+
+                cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_TASK, taskid);
 	}
 
 	return SLURM_SUCCESS;

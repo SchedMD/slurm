@@ -51,16 +51,19 @@ static List task_list;
 static uint16_t step_active_cnt;
 static xcgroup_ns_t int_cg_ns;
 static xcgroup_t int_cg[CG_LEVEL_CNT];
+static bpf_program_t p[CG_LEVEL_CNT];
 static char *ctl_names[] = {
 	[CG_TRACK] = "freezer",
 	[CG_CPUS] = "cpuset",
 	[CG_MEMORY] = "memory",
 	[CG_CPUACCT] = "cpu",
+	[CG_DEVICES] = "devices",
 };
 
 typedef struct {
 	xcgroup_t task_cg;
 	uint32_t taskid;
+	bpf_program_t p;
 } task_cg_info_t;
 
 typedef struct {
@@ -253,6 +256,7 @@ static void _free_task_cg_info(void *x)
 
 	if (task_cg) {
 		common_cgroup_destroy(&task_cg->task_cg);
+		free_ebpf_prog(&task_cg->p);
 		xfree(task_cg);
 	}
 }
@@ -465,6 +469,8 @@ extern int fini(void)
 	common_cgroup_destroy(&int_cg[CG_LEVEL_ROOT]);
 	common_cgroup_ns_destroy(&int_cg_ns);
 	FREE_NULL_LIST(task_list);
+	free_ebpf_prog(&p[CG_LEVEL_JOB]);
+	free_ebpf_prog(&p[CG_LEVEL_STEP_USER]);
 
 	debug("unloading %s", plugin_name);
 	return SLURM_SUCCESS;
@@ -482,7 +488,8 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t ctl)
 {
 	switch (ctl) {
 	case CG_DEVICES:
-		/* initialize_and_set_ebpf_program() */
+		init_ebpf_prog(&p[CG_LEVEL_JOB]);
+		init_ebpf_prog(&p[CG_LEVEL_STEP_USER]);
 		break;
 	default:
 		break;
@@ -859,6 +866,10 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 				  cgroup_limits_t *limits)
 {
 	int rc = SLURM_SUCCESS;
+	bpf_program_t *program = NULL;
+	task_cg_info_t *task_cg_info;
+	char *dev_id_str = gres_device_id2str(&limits->device);
+	uint32_t bpf_dev_type = NO_VAL;
 
 	/*
 	 * cgroup/v1 compatibility: We have no such level in cgroup/v2 hierarchy
@@ -929,7 +940,53 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 		}
 		break;
 	case CG_DEVICES:
-		/* Not implemented. */
+		/*
+		 * Set program to point to the needed bpf_program_t depending on
+		 * the hierarchy level.
+		 */
+		switch (level) {
+		case CG_LEVEL_JOB:
+		case CG_LEVEL_STEP_USER:
+			program = &(p[level]);
+			break;
+		case CG_LEVEL_TASK:
+			if (!(task_cg_info = list_find_first(
+				      task_list,
+				      _find_task_cg_info,
+				      &limits->taskid))) {
+				error("No task found with id %u, this should never happen",
+				      limits->taskid);
+				return SLURM_ERROR;
+			}
+			program = &(task_cg_info->p);
+			break;
+		default:
+			error("unknown hierarchy level %d", level);
+			break;
+		}
+		if (!program) {
+			error("Could not find a bpf program to use at level %d",
+			      level);
+			return SLURM_ERROR;
+		}
+
+		if (limits->allow_device)
+			log_flag(CGROUP, "Allowing access to device (%s)",
+				 dev_id_str);
+		else
+			log_flag(CGROUP, "Denying access to device (%s)",
+				 dev_id_str);
+
+		/* Determine the correct BPF device type. */
+		if (limits->device.type == DEV_TYPE_BLOCK)
+			bpf_dev_type = BPF_DEVCG_DEV_BLOCK;
+		else if (limits->device.type == DEV_TYPE_CHAR)
+			bpf_dev_type = BPF_DEVCG_DEV_CHAR;
+
+		rc = add_device_ebpf_prog(program, bpf_dev_type,
+					  limits->device.major,
+					  limits->device.minor,
+					  limits->allow_device);
 		break;
 	default:
 		error("cgroup controller %u not supported", ctl);
@@ -937,21 +994,88 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 		break;
 	}
 
+	xfree(dev_id_str);
 	return rc;
 }
 
 /*
- * Apply the constrain limits, this is only used with cgroupv2 device constrain
- * as there is the need of loading and attaching the eBPF program to the cgroup
+ * Apply the device constrain limits, this is only used with cgroupv2 as there
+ * is the need of loading and attaching the eBPF program to the cgroup.
+ * It closes, loads and attach the bpf_program to the corresponding cgroup using
+ * level and task_id, task_id is only used in CG_LEVEL_TASK level.
  */
 extern int cgroup_p_constrain_apply(cgroup_ctl_type_t ctl, cgroup_level_t level,
                                     uint32_t task_id)
 {
-    int rc = SLURM_SUCCESS;
-    if (ctl == CG_DEVICES) {
-        /* Not implemented. */
-    }
-    return rc;
+	bpf_program_t *program = NULL;
+	task_cg_info_t *task_cg_info;
+	char *cgroup_path = NULL;
+
+	/*
+	 * cgroup/v1 compatibility: We have no such level in cgroup/v2 hierarchy
+	 * but we may still get calls for this cgroup level. Ignore it.
+	 */
+	if (level == CG_LEVEL_STEP)
+		level = CG_LEVEL_STEP_USER;
+
+	/* Only used in devices cgroup restriction */
+	switch (ctl) {
+	case CG_DEVICES:
+		/*
+		 * Set program to point to the needed bpf_program_t depending on
+		 * the level and the task_id.
+		 */
+		if (level == CG_LEVEL_STEP_USER || level == CG_LEVEL_JOB) {
+			program = &(p[level]);
+			cgroup_path = int_cg[level].path;
+		}
+
+		if (level == CG_LEVEL_TASK) {
+			if (!(task_cg_info = list_find_first(task_list,
+							     _find_task_cg_info,
+							     &task_id))) {
+				error("No task found with id %u, this should never happen",
+				      task_id);
+				return SLURM_ERROR;
+			}
+			program = &(task_cg_info->p);
+			cgroup_path = task_cg_info->task_cg.path;
+		}
+
+		if (!program) {
+			error("EBPF program with task_id %u does not exist",
+			      task_id);
+			return SLURM_ERROR;
+		}
+
+		/*
+		 * Only load the program if it has more instructions that the
+		 * initial ones.
+		 */
+		if (program->n_inst > INIT_INST) {
+			log_flag(CGROUP,"EBPF Closing and loading bpf program into %s",
+				 cgroup_path);
+			/* Set the default action*/
+			close_ebpf_prog(program, EBPF_ACCEPT);
+			/*
+			 * Load the ebpf program into the cgroup without the
+			 * override flag if we are at TASK level, as this is the
+			 * last cgroup in the hierarchy.
+			 */
+			return load_ebpf_prog(program, cgroup_path,
+					      (level != CG_LEVEL_TASK));
+		} else {
+			log_flag(CGROUP, "EBPF Not loading the program into %s because it is a noop",
+				 cgroup_path);
+		}
+		break;
+	default:
+		error("cgroup controller %u not supported", ctl);
+		return SLURM_ERROR;
+		break;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t ctl,
@@ -1228,6 +1352,8 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
 			xfree(task_cg_info);
 			return SLURM_ERROR;
 		}
+                /* Inititalize the bpf_program before appending to the list. */
+		init_ebpf_prog(&task_cg_info->p);
 
 		/* Add the cgroup to the list now that it is initialized. */
 		list_append(task_list, task_cg_info);
