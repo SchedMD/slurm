@@ -948,7 +948,7 @@ static void  _init_config(void)
 {
 	struct rlimit rlim;
 
-	rlimits_adjust_nofile();
+	rlimits_use_max_nofile();
 	if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
 		(void) setrlimit(RLIMIT_CORE, &rlim);

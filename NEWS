@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix handling reboot with multiple job features.
  -- Fix nodes getting powered down when creating new partitions.
  -- Fix bad bit_realloc which potentially could lead to bad memory access.
+ -- slurmctld - remove limit on the number of open files.
 
 * Changes in Slurm 21.08.5
 ==========================
