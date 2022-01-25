@@ -25,12 +25,12 @@
 ############################################################################
 source ./globals
 
-set file_in         "${test_dir}/${test_name}.in"
-set file_out        "${test_dir}/${test_name}.out"
+set file_in         "${test_dir}/input"
+set file_out        "${test_dir}/output"
 set file_prog       "[$bin_pwd]/${test_name}.prog"
 set shared_lib      "${file_prog}.so"
-set new_spank_conf  "${test_dir}/${test_name}.new_conf"
-set spank_out       "${test_dir}/${test_name}.spank.out"
+set new_spank_conf  "${test_dir}/new_spank_conf"
+set spank_out       "${test_dir}/spank.out"
 set spank_conf_file "[get_conf_path]/plugstack.conf"
 
 set pgid     [param_contains [get_config_param -slurm "ProctrackType"] "*pgid"]
@@ -160,7 +160,7 @@ proc test_interactive {command function context expected_rc reports drains fails
 	# Invoke command
 	set env(TEST_FUNC) "$function"
 	set env(TEST_CTXT) "$context"
-	set result [run_command -timeout 15 -none "$command"]
+	set result [run_command -none "$command"]
 	set rc [dict get $result exit_code]
 	set output [dict get $result output]
 
@@ -183,7 +183,7 @@ proc test_batch {function context expected_rc sbatch_rc sbatch_reports reports d
 	# Execute command
 	set env(TEST_FUNC) "$function"
 	set env(TEST_CTXT) "$context"
-	set result [run_command -timeout 15 -none "$sbatch_test"]
+	set result [run_command -none "$sbatch_test"]
 	set rc [dict get $result exit_code]
 	set output [dict get $result output]
 	set job_id 0
