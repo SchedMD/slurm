@@ -175,6 +175,7 @@ documents those changes that are of interest to users and administrators.
  -- Fatal if more than one burst buffer plugin is configured.
  -- Added keepaliveinterval and keepaliveprobes options to
     CommunicationParameters.
+ -- Correctly failover to backup slurmdbd if the primary slurmdbd node crashes.
 
 * Changes in Slurm 21.08.7
 ==========================
