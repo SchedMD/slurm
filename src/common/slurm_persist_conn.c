@@ -84,7 +84,7 @@ static int _tot_wait (struct timeval *start_time)
 	return msec_delay;
 }
 
-/* close and fd and replace it with a -1 */
+/* close an fd and replace it with a -1 */
 static void _close_fd(int *fd)
 {
 	if (*fd && *fd >= 0) {
