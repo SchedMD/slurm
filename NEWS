@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Make ResetAccrueTime update the job's accrue_time to now.
  -- Fix sattach initialization with configless mode.
  -- Revert packing limit checks affecting pmi2.
+ -- sacct - fixed assertion failure when using -c option and a federation
+    display
 
 * Changes in Slurm 21.08.5
 ==========================

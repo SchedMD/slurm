@@ -1209,7 +1209,7 @@ extern void parse_command_line(int argc, char **argv)
 
 	/* specific clusters requested? */
 	if (params.opt_federation && !all_clusters && !job_cond->cluster_list &&
-	    !params.opt_local) {
+	    !params.opt_local && !params.opt_completion) {
 		/* Test if in federated cluster and if so, get information from
 		 * all clusters in that federation */
 		slurmdb_federation_rec_t *fed = NULL;
