@@ -34,18 +34,19 @@ set file_err    "$test_dir/error"
 set file_prog   "$test_name.prog"
 set file_stem   $test_name
 set job_id      0
+set step_id     0
 set matches     0
 
 # job parameters
-set mem_size    102400
+set mem_size    102400; # 100 MiB
+set file_size   10485760
 set sleep_time  32
 set ret_code    42
-set file_size   10485760
 set num_tasks   3
+set max_rss_tolerance 4300; # 4.2 MiB
+set ave_rss_tolerance 10240; # 10 MiB
 set max_time_error 10
-set max_mem_error 4300
-set step_id	0
-set job_mem_limit [expr ($mem_size + $max_mem_error)  / 1024 + 10]
+set job_mem_limit [expr ($mem_size + $max_rss_tolerance) / 1024 + 10]
 
 # Expected values in sacct
 set expected_state    "FAILED"
@@ -85,17 +86,17 @@ proc cleanup {} {
 }
 
 proc _get_mem {prog} {
-	global float number mem_size job_id step_id max_mem_error num_tasks
+	global float number mem_size job_id step_id max_rss_tolerance ave_rss_tolerance num_tasks
 
 	set result   [list]
-	set mem_used -1
+	set max_rss -1
 	set mem_task -1
-	set ave_used -1
+	set ave_rss -1
 	set prog_base [file rootname [file tail $prog]]
 
 	set output [run_command_output -fail "$prog --noheader -p --job=$job_id.$step_id --format maxrss,maxrsstask,averss --noconvert"]
 
-	dict set subtest cond [regexp "($number)\\D($number)\\D($number)" $output - mem_used mem_task ave_used]
+	dict set subtest cond [regexp "($number)\\D($number)\\D($number)" $output - max_rss mem_task ave_rss]
 	dict set subtest desc "$prog_base should provide the right output format"
 	dict set subtest diag "$output"
 	lappend result $subtest
@@ -103,19 +104,22 @@ proc _get_mem {prog} {
 		return $result
 	}
 
-	set mem_used [scale_to_ks $mem_used ""]
-	set ave_used [scale_to_ks $ave_used ""]
+	set max_rss [scale_to_ks $max_rss ""]
+	# Since we will be multiplying ave_rss by num_tasks below and expecting it to be greater than
+	# max_rss, we must add 1 to ave_rss to compensate for the small potential truncation loss that
+	# can occur in the slurm code when calculating AveRSS (effectively int(TotRSS / tasks)).
+	set ave_rss [scale_to_ks [expr $ave_rss + 1] ""]
 
-	dict set subtest cond [tolerance $mem_size $mem_used $max_mem_error]
+	dict set subtest cond [tolerance $mem_size $max_rss $max_rss_tolerance]
 	dict set subtest desc "MaxRSS is within expected tolerance for $prog_base"
-	dict set subtest diag "Observed MaxRSS ($mem_used) is not within tolerance $max_mem_error of expected value ($mem_size)"
+	dict set subtest diag "Observed MaxRSS ($max_rss) is not within tolerance $max_rss_tolerance of expected value ($mem_size)"
 	lappend result $subtest
 
-	# Add 1 to account for the potential truncation error (of AveRSS = TotRSS / tasks).
-	# We are assuming that the two non-memory tasks will not climb above a total of 10MB.
-	dict set subtest cond [tolerance $mem_used [expr ($ave_used + 1) * $num_tasks] "+10240"]
+	# We expect ave_rss to be greater than or equal to max_rss / num_tasks.
+	# We are assuming that the two non-memory tasks will not climb above a total of 10 MiB.
+	dict set subtest cond [tolerance $max_rss [expr $ave_rss * $num_tasks] "+$ave_rss_tolerance"]
 	dict set subtest desc "AveRSS is within expected tolerance for $prog_base"
-	dict set subtest diag "Observed AveRSS ($ave_used) is not within tolerance of expected value ([expr $mem_size / 3])"
+	dict set subtest diag "Observed AveRSS ($ave_rss) is not within tolerance +$ave_rss_tolerance of expected value ([expr $max_rss / 3])"
 	lappend result $subtest
 
 	return $result
