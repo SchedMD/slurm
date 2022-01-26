@@ -669,7 +669,6 @@ extern int container_p_create(uint32_t job_id, uid_t uid)
 	return SLURM_SUCCESS;
 }
 
-/* Add a process to a job container, create the proctrack container to add */
 extern int container_p_join_external(uint32_t job_id)
 {
 	char job_mount[PATH_MAX];
@@ -689,14 +688,11 @@ extern int container_p_join_external(uint32_t job_id)
 	return step_ns_fd;
 }
 
-/* Add proctrack container (PAGG) to a job container */
 extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 {
 	return SLURM_SUCCESS;
 }
 
-/* Call getpid() inside it */
-/* Add a process to a job container, create the proctrack container to add */
 extern int container_p_join(uint32_t job_id, uid_t uid)
 {
 	char job_mount[PATH_MAX];
