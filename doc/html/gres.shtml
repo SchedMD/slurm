@@ -146,10 +146,10 @@ wait
 <a class="slurm_link" href="#AutoDetect"></a>
 </h2>
 
-<P>If <i>AutoDetect=nvml</i> is set in <I>gres.conf</I>,
-and the <i>NVIDIA Management Library</i> (NVML) is installed on the node and was
-found during Slurm configuration, configuration details will automatically be
-filled in for any system-detected NVIDIA GPU. This removes the need to
+<p>If <i>AutoDetect=nvml</i> or <i>AutoDetect=rsmi</i> are set in
+<i>gres.conf</i>, and their corresponding GPU management libraries are installed
+on the node and found during Slurm configuration, configuration details will
+automatically be filled in for any system-detected GPU. This removes the need to
 explicitly configure GPUs in gres.conf, though the <i>Gres=</i> line in
 slurm.conf is still required in order to tell slurmctld how many GRES to expect.
 </P>

@@ -53,7 +53,7 @@ Currently, the options are:
 .RS
 .TP
 \fBnvml\fR
-Automatically detect NVIDIA GPUs
+Automatically detect NVIDIA GPUs. Requires the NVIDIA Management Library (NVML).
 .IP
 
 .TP
@@ -63,7 +63,8 @@ Do not automatically detect any GPUs. Used to override other options.
 
 .TP
 \fBrsmi\fR
-Automatically detect AMD GPUs
+Automatically detect AMD GPUs. Requires the ROCm System Management Interface
+(ROCm SMI) Library.
 .RE
 .IP
 \fIAutoDetect\fR can be on a line by itself, in which case it will globally
