@@ -5,6 +5,7 @@
 <h2>Contents</h2>
 <a href="#Overview">Overview</a><br>
 <a href="#Configuration">Configuration</a><br>
+<a href="#AutoDetect">AutoDetect</a><br>
 <a href="#Running_Jobs">Running Jobs</a><br>
 <a href="#GPU_Management">GPU Management</a><br>
 <a href="#MPS_Management">MPS Management</a><br>
@@ -53,6 +54,15 @@ of a node doesn't decrease in value as jobs run on that node.
 You can use the <b>no_consume</b> flag to allow users to request a GRES
 without having a defined count that gets used as it is requested.</p>
 
+<P>
+To view available <I>gres.conf</I> configuration parameters, see the
+<a href="gres.conf.html">gres.conf man page</a>.</P>
+
+
+<h2 id="AutoDetect">AutoDetect
+<a class="slurm_link" href="#AutoDetect"></a>
+</h2>
+
 <P>If <i>AutoDetect=nvml</i> is set in <I>gres.conf</I>,
 and the <i>NVIDIA Management Library</i> (NVML) is installed on the node and was
 found during Slurm configuration, configuration details will automatically be
@@ -69,10 +79,6 @@ If the system-detected GPU differs from its matching GPU configuration, then the
 GPU is omitted from the node with an error.
 This allows <i>gres.conf</i> to serve as an optional sanity check and notifies
 administrators of any unexpected changes in GPU properties.
-</P>
-
-<P>
-To view available <I>gres.conf</I> configuration parameters, see the <a href="gres.conf.html">gres.conf man page</a>.
 </P>
 
 
