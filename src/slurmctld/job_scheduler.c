@@ -1203,7 +1203,15 @@ static int _schedule(bool full_queue)
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 		                           "sched_interval="))) {
 			sched_interval = atoi(tmp_ptr + 15);
-			if (sched_interval < 0) {
+			if (sched_interval == -1) {
+				sched_debug("schedule() returning, sched_interval=-1");
+				/*
+				 * Exit without setting sched_update.  This gets
+				 * verbose, but makes this setting easy to
+				 * happen.
+				 */
+				goto out;
+			} else if (sched_interval < 0) {
 				error("Invalid sched_interval: %d",
 				      sched_interval);
 				sched_interval = 60;
