@@ -680,7 +680,7 @@ static void _load_config(void)
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_interval="))) {
 		backfill_interval = atoi(tmp_ptr + 12);
-		if (backfill_interval < 1 ||
+		if (((backfill_interval != -1) && (backfill_interval < 1)) ||
 		    backfill_interval > MAX_BACKFILL_INTERVAL) {
 			error("Invalid SchedulerParameters bf_interval: %d",
 			      backfill_interval);
@@ -1029,6 +1029,8 @@ extern void *backfill_agent(void *args)
 	while (!stop_backfill) {
 		if (short_sleep)
 			_my_sleep(USEC_IN_SEC);
+		else if (backfill_interval == -1)
+			_my_sleep(BACKFILL_INTERVAL * USEC_IN_SEC);
 		else
 			_my_sleep((int64_t) backfill_interval * USEC_IN_SEC);
 		if (stop_backfill)
@@ -1048,6 +1050,11 @@ extern void *backfill_agent(void *args)
 		slurm_mutex_unlock(&config_lock);
 		if (load_config)
 			_load_config();
+		if (backfill_interval == -1) {
+			log_flag(BACKFILL, "skipping backfill cycle for %ds",
+				 BACKFILL_INTERVAL);
+			continue;
+		}
 		now = time(NULL);
 		wait_time = difftime(now, last_backfill_time);
 		if ((wait_time < backfill_interval) ||
