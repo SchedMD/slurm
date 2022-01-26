@@ -11,14 +11,12 @@
 <a href="#MPS_Management">MPS Management</a><br>
 <a href="#MIG_Management">MIG Management</a><br>
 
-<!-------------------------------------------------------------------------->
 <h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
 <p>Slurm supports the ability to define and schedule arbitrary Generic RESources
 (GRES). Additional built-in features are enabled for specific GRES types,
 including Graphics Processing Units (GPUs) and CUDA Multi-Process Service (MPS)
 devices, through an extensible plugin mechanism.</p>
 
-<!-------------------------------------------------------------------------->
 <h2 id="Configuration">Configuration
 <a class="slurm_link" href="#Configuration"></a>
 </h2>
@@ -58,7 +56,6 @@ without having a defined count that gets used as it is requested.</p>
 To view available <I>gres.conf</I> configuration parameters, see the
 <a href="gres.conf.html">gres.conf man page</a>.</P>
 
-<!-------------------------------------------------------------------------->
 <h2 id="Running_Jobs">Running Jobs
 <a class="slurm_link" href="#Running_Jobs"></a>
 </h2>
@@ -221,7 +218,6 @@ geforce</code>, <code class="commandline">rtx</code>, <code class="commandline">
 substring, and <b>slurmd</b> should be able to match it to the system-detected
 device <code class="commandline">geforce_rtx_2060</code>.
 
-<!-------------------------------------------------------------------------->
 <h2 id="GPU_Management">GPU Management
 <a class="slurm_link" href="#GPU_Management"></a>
 </h2>
@@ -288,7 +284,6 @@ NVIDIA CUDA documentation</a> for more information about the
 <code class="commandline">CUDA_VISIBLE_DEVICES</code> and
 <code class="commandline">CUDA_DEVICE_ORDER</code> environmental variables.</p>
 
-<!-------------------------------------------------------------------------->
 <h2 id="MPS_Management">MPS Management
 <a class="slurm_link" href="#MPS_Management"></a>
 </h2>
