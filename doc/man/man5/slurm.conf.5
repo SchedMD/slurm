@@ -2548,8 +2548,8 @@ running and suspended jobs.
 .TP
 \fBDEPTH_OBLIVIOUS\fR
 If set, priority will be calculated based similar to the normal multifactor
-calculation, but depth of the associations in the tree do not adversely effect
-their priority. This option automatically enables NO_FAIR_TREE.
+calculation, but depth of the associations in the tree does not adversely
+affect their priority. This option automatically enables NO_FAIR_TREE.
 .IP
 
 .TP
@@ -5110,7 +5110,7 @@ TaskPlugin=task/affinity,task/cray_aries,task/cgroup
 \fBTaskPluginParam\fR
 Optional parameters for the task plugin.
 Multiple options should be comma separated.
-\fBNone\fR, \fBBoards\fR, \fBSockets\fR, \fBCores\fR and \fBThreads\fR are mutually
+\fBNone\fR, \fBSockets\fR, \fBCores\fR and \fBThreads\fR are mutually
 exclusive and treated as a last possible source of \-\-cpu\-bind default. See also
 Node and Partition CpuBind options.
 .IP
@@ -5595,7 +5595,7 @@ If a job step request does not specify an option to control how tasks are bound
 to allocated CPUs (\-\-cpu\-bind) and all nodes allocated to the job have the same
 \fBCpuBind\fR option the node \fBCpuBind\fR option will control how tasks are
 bound to allocated resources. Supported values for \fBCpuBind\fR are "none",
-"board", "socket", "ldom" (NUMA), "core" and "thread".
+"socket", "ldom" (NUMA), "core" and "thread".
 .IP
 
 .TP
@@ -6169,7 +6169,7 @@ If a job step request does not specify an option to control how tasks are bound
 to allocated CPUs (\-\-cpu\-bind) and all nodes allocated to the job do not have
 the same \fBCpuBind\fR option the node. Then the partition's \fBCpuBind\fR
 option will control how tasks are bound to allocated resources.
-Supported values for\fBCpuBind\fR are "none", "board", "socket", "ldom" (NUMA),
+Supported values for\fBCpuBind\fR are "none", "socket", "ldom" (NUMA),
 "core" and "thread".
 .IP
 

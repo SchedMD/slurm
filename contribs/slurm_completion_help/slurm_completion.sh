@@ -233,7 +233,7 @@ function _acct_desc() {
 echo $(sacctmgr show account format=desc -nP | sort | uniq) ;
 }
 function _licenses() {
-echo $(scontrol show config| grep Licenses | sed 's/Licenses *=//'| paste -s -d' ') ;
+echo $(scontrol show license | grep LicenseName | sed 's/LicenseName=//') ;
 }
 function _nodes() {
 echo $(scontrol show nodes | grep NodeName | cut -c 10- | cut -f 1 -d' ' | paste -s -d ' ') ;
@@ -913,7 +913,7 @@ _scontrol()
     show) # scontrol show object [id]
 	objects="aliases assoc_mgr bbstat burstbuffer config daemons dwstat\
 		 federation frontend hostlist hostlistsorted hostnames job\
-		 nodes partitions reservations slurmd steps topology"
+		 licenses nodes partitions reservations slurmd steps topology"
 
 	# Search for the current object in the argument list
 	object=$(find_first_occurence "${COMP_WORDS[*]}" "$objects")
@@ -924,6 +924,7 @@ _scontrol()
 	# Otherwise, offer the ids depending on the object
 	if param "job"          ; then offer  "$(_jobs)"         ; fi
 	if param "nodes"        ; then offer_list "$(_nodes)"        ; fi
+	if param "licenses"      ; then offer_list "$(_licenses)" ; fi
 	if param "partitions"   ; then offer "$(_partitions)"   ; fi
 	if param "reservations" ; then offer "$(_reservations)"  ; fi
 	if param "steps"        ; then offer "$(_step)" ; fi
