@@ -12546,7 +12546,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		if (!IS_JOB_PENDING(job_ptr) || !detail_ptr) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
-		} else if (details_ptr->accrue_time) {
+		} else if (detail_ptr->accrue_time) {
 			uint64_t bit_flags = job_ptr->bit_flags;
 			acct_policy_remove_accrue_time(job_ptr, false);
 			/*
