@@ -1035,12 +1035,7 @@ int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
-	if (*size_valp > MAX_PACK_ARRAY_LEN) {
-		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_ARRAY_LEN);
-		return SLURM_ERROR;
-	}
-	else if (*size_valp > 0) {
+	if (*size_valp > 0) {
 		*valp = xcalloc(*size_valp + 1, sizeof(char *));
 		for (i = 0; i < *size_valp; i++) {
 			if (unpackmem_xmalloc(&(*valp)[i], &uint32_tmp, buffer)) {
