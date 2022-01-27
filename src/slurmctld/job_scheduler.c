@@ -4648,6 +4648,7 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 	List *feature_list;
 	int feature_err;
 	int bracket = 0, count = 0, i, paren = 0, rc;
+	int brack_set_count = 0;
 	bool fail = false;
 	job_feature_t *feat;
 	bool can_reboot;
@@ -4753,6 +4754,9 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 				break;
 			}
 			bracket++;
+			brack_set_count++;
+			if (brack_set_count > 1)
+				break;
 		} else if (tmp_requested[i] == ']') {
 			tmp_requested[i] = '\0';
 			if ((feature == NULL) || (bracket == 0)) {
@@ -4805,6 +4809,16 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 		} else {
 			verbose("Reservation invalid constraint %s",
 				features);
+		}
+		return ESLURM_INVALID_FEATURE;
+	}
+	if (brack_set_count > 1) {
+		if (job_ptr->job_id) {
+			verbose("%pJ constraint has more than one set of brackets: %s",
+				job_ptr, detail_ptr->features);
+		} else {
+			verbose("Reservation constraint has more than one set of brackets: %s",
+				detail_ptr->features);
 		}
 		return ESLURM_INVALID_FEATURE;
 	}
