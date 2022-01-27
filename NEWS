@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Job should be in a completing state if EpilogSlurmctld when being requeued.
  -- Fix job not being requeued properly if all node epilog's completed before
     EpilogSlurmctld finished.
+ -- Keep job completing until EpilogSlurmctld is completed even when "downing"
+    a node.
 
 * Changes in Slurm 21.08.5
 ==========================

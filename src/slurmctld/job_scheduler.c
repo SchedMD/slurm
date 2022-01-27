@@ -5053,6 +5053,9 @@ void cleanup_completing(job_record_t *job_ptr)
 {
 	time_t delay;
 
+	if (job_ptr->epilog_running)
+		return;
+
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
 	delay = last_job_update - job_ptr->end_time;
