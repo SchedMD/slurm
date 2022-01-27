@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
     display
  -- Fix issue that allowed steps to overallocate the job's memory.
  -- Fix the sanity check mode of AutoDetect so that it actually works.
+ -- Fix deallocated nodes that didn't actually launch a job from waiting for
+    Epilogslurmctld to complete before clearing completing node's state.
 
 * Changes in Slurm 21.08.5
 ==========================

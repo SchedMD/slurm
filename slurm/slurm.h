@@ -1110,7 +1110,7 @@ enum node_states {
 					  * last_eval_time */
 #define BACKFILL_LAST      SLURM_BIT(33) /* Job was considered in last
 					  * schedule attempt */
-#define NOT_LAUNCHED       SLURM_BIT(34) /* Job was alloc'ed but not launched */
+/*                         SLURM_BIT(34)    Available after 23.02 */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
