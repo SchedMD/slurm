@@ -544,8 +544,21 @@ Likewise, once a GPU has been allocated as a gres/shard resource it will
 not be available as a gres/gpu.
 However the same GPU can be allocated as shard generic resources to multiple jobs
 belonging to multiple users, so long as the total count of SHARD allocated to
-jobs does not exceed the configured count.
-Some example configurations for Slurm's gres.conf file are shown below.</p>
+jobs does not exceed the configured count.</p>
+
+<p>In order for this to be correctly configured, the appropriate nodes need
+to have the <i>shard</i> keyword added as a GRES for the relevant nodes as
+well as being added to the <i>GresTypes</i> parameter. If you want the shards
+to be tracked in accounting then <i>shard</i> also needs to be added to
+<i>AccountingStorageTRES</i>.
+See the relevant settings in an example slurm.conf:
+<pre>
+AccountingStorageTRES=gres/gpu,gres/shard
+GresTypes=gpu,shard
+NodeName=tux[1-16] Gres=gpu:2,shard:64
+</pre>
+
+<p>Some example configurations for Slurm's gres.conf file are shown below.</p>
 
 <PRE>
 # Example 1 of gres.conf
@@ -585,6 +598,6 @@ or <code class="commandline">GPU_DEVICE_ORDINAL</code> environment variable set
 which would be the same as if it were a GPU.
 </p>
 
-<p style="text-align: center;">Last modified 8 March 2022</p>
+<p style="text-align: center;">Last modified 10 August 2022</p>
 
 <!--#include virtual="footer.txt"-->
