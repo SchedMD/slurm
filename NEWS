@@ -52,6 +52,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix bug where job_state file of size above 2GB wasn't saved without any
     error message.
  -- Fix various issues with no_consume gres.
+ -- Fix regression in 21.08.0rc1 where job steps failed to launch on systems
+    that reserved a CPU in a cgroup outside of Slurm (for example, on systems
+    with WekaIO).
 
 * Changes in Slurm 21.08.5
 ==========================
