@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- sacct - fixed assertion failure when using -c option and a federation
     display
  -- Fix issue that allowed steps to overallocate the job's memory.
+ -- Fix the sanity check mode of AutoDetect so that it actually works.
 
 * Changes in Slurm 21.08.5
 ==========================
