@@ -168,9 +168,10 @@ extern int xcgroup_cpuset_init(xcgroup_t *cg);
  * ownership and so on.
  *
  * IN ns - Namespace where the cgroup will reside.
- * RET char * - String containing the name of the slurm's root of the cgroup.
+ * OUT slurm_cg - The created slurm/ cgroup.
+ * RET rc - If operation has suceeded.
  */
-extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);
+extern int xcgroup_create_slurm_cg(xcgroup_ns_t *ns, xcgroup_t *slurm_cg);
 
 /*
  * Create a cgroup hierarchy in the cgroupfs.
@@ -181,6 +182,7 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);
  * OUT job_cg - Up to the job level directory cgroup.
  * OUT step_cg - Up to the step level directory cgroup. Typically the inner one.
  * OUT user_cg - Up to the user step level directory cgroup.
+ * OUT slurm_cg - Up to the slurm level directory cgroup.
  * OUT job_cgroup_path - Path to job level directory.
  * OUT step_cgroup_path - Path to step level directory.
  * OUT user_cgroup_path - Path to user level directory.
@@ -193,6 +195,7 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 				    xcgroup_t *job_cg,
 				    xcgroup_t *step_cg,
 				    xcgroup_t *user_cg,
+				    xcgroup_t *slurm_cg,
 				    char job_cgroup_path[],
 				    char step_cgroup_path[],
 				    char user_cgroup_path[]);

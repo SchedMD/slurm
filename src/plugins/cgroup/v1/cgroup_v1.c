@@ -79,6 +79,7 @@ static xcgroup_t g_user_cg[CG_CTL_CNT];
 static xcgroup_t g_job_cg[CG_CTL_CNT];
 static xcgroup_t g_step_cg[CG_CTL_CNT];
 static xcgroup_t g_sys_cg[CG_CTL_CNT];
+static xcgroup_t g_slurm_cg[CG_CTL_CNT];
 
 const char *g_cg_name[CG_CTL_CNT] = {
 	"freezer",
@@ -133,48 +134,41 @@ static int _cgroup_init(cgroup_ctl_type_t sub)
 		return SLURM_ERROR;
 	}
 
+	if (xcgroup_create_slurm_cg(&g_cg_ns[sub], &g_slurm_cg[sub]) !=
+	    SLURM_SUCCESS) {
+		error("unable to create slurm %s xcgroup", g_cg_name[sub]);
+		common_cgroup_ns_destroy(&g_cg_ns[sub]);
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 
 static int _cpuset_create(stepd_step_rec_t *job)
 {
 	int rc;
-	char *slurm_cgpath, *sys_cgpath = NULL;
-	xcgroup_t slurm_cg;
+	char *sys_cgpath = NULL;
 	char *value;
 	size_t cpus_size;
 
-	/* create slurm root cg in this cg namespace */
-	slurm_cgpath = xcgroup_create_slurm_cg(&g_cg_ns[CG_CPUS]);
-	if (slurm_cgpath == NULL)
-		return SLURM_ERROR;
-
-	/* check that this cgroup has cpus allowed or initialize them */
-	if (xcgroup_load(&g_cg_ns[CG_CPUS], &slurm_cg, slurm_cgpath) !=
-	    SLURM_SUCCESS){
-		error("unable to load slurm cpuset xcgroup");
-		xfree(slurm_cgpath);
-		return SLURM_ERROR;
-	}
-
-	rc = common_cgroup_get_param(&slurm_cg, "cpuset.cpus", &value,
-				     &cpus_size);
+	rc = common_cgroup_get_param(&g_slurm_cg[CG_CPUS], "cpuset.cpus",
+				     &value, &cpus_size);
 
 	if ((rc != SLURM_SUCCESS) || (cpus_size == 1)) {
 		/* initialize the cpusets as it was non-existent */
-		if (xcgroup_cpuset_init(&slurm_cg) != SLURM_SUCCESS) {
-			xfree(slurm_cgpath);
-			common_cgroup_destroy(&slurm_cg);
+		if (xcgroup_cpuset_init(&g_slurm_cg[CG_CPUS]) !=
+		    SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
 	}
 
 	/* Do not inherit this setting in children, let plugins set it. */
-	common_cgroup_set_param(&slurm_cg, "cgroup.clone_children", "0");
+	common_cgroup_set_param(&g_slurm_cg[CG_CPUS],
+				"cgroup.clone_children", "0");
 
 	if (job == NULL) {
 		/* This is a request to create a cpuset for slurmd daemon */
-		xstrfmtcat(sys_cgpath, "%s/system", slurm_cgpath);
+		xstrfmtcat(sys_cgpath, "%s/system", g_slurm_cg[CG_CPUS].name);
 
 		/* create system cgroup in the cpuset ns */
 		if ((rc = common_cgroup_create(&g_cg_ns[CG_CPUS],
@@ -214,6 +208,7 @@ static int _cpuset_create(stepd_step_rec_t *job)
 					      &g_job_cg[CG_CPUS],
 					      &g_step_cg[CG_CPUS],
 					      &g_user_cg[CG_CPUS],
+					      &g_slurm_cg[CG_CPUS],
 					      g_job_cgpath[CG_CPUS],
 					      g_step_cgpath[CG_CPUS],
 					      g_user_cgpath[CG_CPUS]);
@@ -222,15 +217,12 @@ static int _cpuset_create(stepd_step_rec_t *job)
 end:
 	xfree(value);
 	xfree(sys_cgpath);
-	xfree(slurm_cgpath);
-	common_cgroup_destroy(&slurm_cg);
-
 	return rc;
 }
 
 static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
 				xcgroup_t *job_cg, xcgroup_t *user_cg,
-				const char *log_str)
+				xcgroup_t *slurm_cg, const char *log_str)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -284,6 +276,7 @@ static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
 	common_cgroup_destroy(user_cg);
 	common_cgroup_destroy(job_cg);
 	common_cgroup_destroy(step_cg);
+	common_cgroup_destroy(slurm_cg);
 
 end:
 	xcgroup_unlock(root_cg);
@@ -451,7 +444,7 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 
 extern int cgroup_p_system_create(cgroup_ctl_type_t sub)
 {
-	char *slurm_cgpath, *sys_cgpath = NULL;
+	char *sys_cgpath = NULL;
 	int rc = SLURM_SUCCESS;
 
 	switch (sub) {
@@ -459,13 +452,7 @@ extern int cgroup_p_system_create(cgroup_ctl_type_t sub)
 		rc = _cpuset_create(NULL);
 		break;
 	case CG_MEMORY:
-		/* create slurm root cg in this cg namespace */
-		slurm_cgpath = xcgroup_create_slurm_cg(&g_cg_ns[sub]);
-		if (!slurm_cgpath)
-			return SLURM_ERROR;
-
-		xstrfmtcat(sys_cgpath, "%s/system", slurm_cgpath);
-		xfree(slurm_cgpath);
+		xstrfmtcat(sys_cgpath, "%s/system", g_slurm_cg[sub].name);
 
 		if ((rc = common_cgroup_create(&g_cg_ns[sub], &g_sys_cg[sub],
 					       sys_cgpath, getuid(), getgid()))
@@ -571,6 +558,7 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 	common_cgroup_destroy(&g_sys_cg[sub]);
 end:
 	if (rc == SLURM_SUCCESS) {
+		common_cgroup_destroy(&g_slurm_cg[sub]);
 		common_cgroup_destroy(&g_root_cg[sub]);
 		common_cgroup_ns_destroy(&g_cg_ns[sub]);
 	}
@@ -598,6 +586,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						   &g_job_cg[sub],
 						   &g_step_cg[sub],
 						   &g_user_cg[sub],
+						   &g_slurm_cg[sub],
 						   g_job_cgpath[sub],
 						   g_step_cgpath[sub],
 						   g_user_cgpath[sub]))
@@ -618,6 +607,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						   &g_job_cg[sub],
 						   &g_step_cg[sub],
 						   &g_user_cg[sub],
+						   &g_slurm_cg[sub],
 						   g_job_cgpath[sub],
 						   g_step_cgpath[sub],
 						   g_user_cgpath[sub]))
@@ -657,6 +647,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						   &g_job_cg[sub],
 						   &g_step_cg[sub],
 						   &g_user_cg[sub],
+						   &g_slurm_cg[sub],
 						   g_job_cgpath[sub],
 						   g_step_cgpath[sub],
 						   g_user_cgpath[sub]))
@@ -670,6 +661,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						   &g_job_cg[sub],
 						   &g_step_cg[sub],
 						   &g_user_cg[sub],
+						   &g_slurm_cg[sub],
 						   g_job_cgpath[sub],
 						   g_step_cgpath[sub],
 						   g_user_cgpath[sub]))
@@ -783,6 +775,7 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 				  &g_step_cg[sub],
 				  &g_job_cg[sub],
 				  &g_user_cg[sub],
+				  &g_slurm_cg[sub],
 				  g_cg_name[sub]);
 
 	if (rc == SLURM_SUCCESS) {
