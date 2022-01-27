@@ -811,19 +811,25 @@ extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;
 	cgroup_limits_t *limits = xmalloc(sizeof(*limits));
-
+	/*
+	 * Currently, cgroup_g_root_constrain_get is only called by
+	 * task_cgroup_cpuset_create(). That function actually needs the
+	 * slurm cgroup limits, not the root cgroup limits. To fix this
+	 * properly we would need to modify the cgroup plugin ABI to add a new
+	 * function to get the slurm cgroup limits, but for 21.08 we just change
+	 * this function to get the slurm cgroup limits instead.
+	 */
 	switch (sub) {
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		if (common_cgroup_get_param(&g_root_cg[CG_CPUS], "cpuset.cpus",
+		if (common_cgroup_get_param(&g_slurm_cg[CG_CPUS], "cpuset.cpus",
 					    &limits->allow_cores,
 					    &limits->cores_size)
 		    != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 
-		if (common_cgroup_get_param(&g_root_cg[CG_CPUS],
-					    "cpuset.mems",
+		if (common_cgroup_get_param(&g_slurm_cg[CG_CPUS], "cpuset.mems",
 					    &limits->allow_mems,
 					    &limits->mems_size)
 		    != SLURM_SUCCESS)
