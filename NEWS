@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix deallocated nodes that didn't actually launch a job from waiting for
     Epilogslurmctld to complete before clearing completing node's state.
  -- Job should be in a completing state if EpilogSlurmctld when being requeued.
+ -- Fix job not being requeued properly if all node epilog's completed before
+    EpilogSlurmctld finished.
 
 * Changes in Slurm 21.08.5
 ==========================
