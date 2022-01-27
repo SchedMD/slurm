@@ -6,19 +6,18 @@
 <a href="#Overview">Overview</a><br>
 <a href="#Configuration">Configuration</a><br>
 <a href="#Running_Jobs">Running Jobs</a><br>
+<a href="#AutoDetect">AutoDetect</a><br>
 <a href="#GPU_Management">GPU Management</a><br>
 <a href="#MPS_Management">MPS Management</a><br>
 <a href="#MIG_Management">MIG Management</a><br>
 <a href="#Sharding">Sharding</a><br>
 
-<!-------------------------------------------------------------------------->
 <h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
 <p>Slurm supports the ability to define and schedule arbitrary Generic RESources
 (GRES). Additional built-in features are enabled for specific GRES types,
 including Graphics Processing Units (GPUs), CUDA Multi-Process Service (MPS)
 devices, and Sharding through an extensible plugin mechanism.</p>
 
-<!-------------------------------------------------------------------------->
 <h2 id="Configuration">Configuration
 <a class="slurm_link" href="#Configuration"></a>
 </h2>
@@ -54,87 +53,10 @@ of a node doesn't decrease in value as jobs run on that node.
 You can use the <b>no_consume</b> flag to allow users to request a GRES
 without having a defined count that gets used as it is requested.</p>
 
-<P>If <i>AutoDetect=nvml</i> is set in <I>gres.conf</I>,
-and the <i>NVIDIA Management Library</i> (NVML) is installed on the node and was
-found during Slurm configuration, configuration details will automatically be
-filled in for any system-detected NVIDIA GPU. This removes the need to
-explicitly configure GPUs in gres.conf, though the <i>Gres=</i> line in
-slurm.conf is still required in order to tell slurmctld how many GRES to expect.
-</P>
-
-<P>By default, all system-detected devices are added to the node.
-However, if <i>Type</i> and <i>File</i> in gres.conf match a GPU on
-the system, any other properties explicitly specified (e.g.
-<i>Cores</i> or <i>Links</i>) can be double-checked against it.
-If the system-detected GPU differs from its matching GPU configuration, then the
-GPU is omitted from the node with an error.
-This allows <i>gres.conf</i> to serve as an optional sanity check and notifies
-administrators of any unexpected changes in GPU properties.
-</P>
-
 <P>
-To view available <I>gres.conf</I> configuration parameters, see the <a href="gres.conf.html">gres.conf man page</a>.
-</P>
+To view available <I>gres.conf</I> configuration parameters, see the
+<a href="gres.conf.html">gres.conf man page</a>.</P>
 
-
-<P>Example <I>gres.conf</I> file:</P>
-<PRE>
-# Configure four GPUs (with MPS), plus bandwidth
-AutoDetect=nvml
-Name=gpu Type=gp100  File=/dev/nvidia0 Cores=0,1
-Name=gpu Type=gp100  File=/dev/nvidia1 Cores=0,1
-Name=gpu Type=p6000  File=/dev/nvidia2 Cores=2,3
-Name=gpu Type=p6000  File=/dev/nvidia3 Cores=2,3
-Name=mps Count=200  File=/dev/nvidia0
-Name=mps Count=200  File=/dev/nvidia1
-Name=mps Count=100  File=/dev/nvidia2
-Name=mps Count=100  File=/dev/nvidia3
-Name=bandwidth Type=lustre Count=4G Flags=CountOnly
-</PRE>
-
-<p> In this example, since <i>AutoDetect=nvml</i> is specified, <i>Cores</i>
-for each GPU will be checked against a corresponding GPU found on the system
-matching the <i>Type</i> and <i>File</i> specified.
-Since <i>Links</i> is not specified, it will be automatically filled in
-according to what is found on the system.
-If a matching system GPU is not found, no validation takes place and the GPU is
-assumed to be as the configuration says.
-</p>
-
-<P>For <i>Type</i> to match a system-detected device, it must either exactly
-match or be a substring of the GPU name reported by slurmd via the AutoDetect
-mechanism. This GPU name will have all spaces replaced with underscores. To see
-the GPU name, set <i>SlurmdDebug=debug2</i> in your slurm.conf and either
-restart or reconfigure <b>slurmd</b> and check the slurmd log. For example,
-with <i>AutoDetect=nvml</i>:</P>
-
-<PRE>
-debug:  gpu/nvml: init: init: GPU NVML plugin loaded
-debug2: gpu/nvml: _nvml_init: Successfully initialized NVML
-debug:  gpu/nvml: _get_system_gpu_list_nvml: Systems Graphics Driver Version: 450.36.06
-debug:  gpu/nvml: _get_system_gpu_list_nvml: NVML Library Version: 11.450.36.06
-debug2: gpu/nvml: _get_system_gpu_list_nvml: Total CPU count: 6
-debug2: gpu/nvml: _get_system_gpu_list_nvml: Device count: 1
-debug2: gpu/nvml: _get_system_gpu_list_nvml: GPU index 0:
-debug2: gpu/nvml: _get_system_gpu_list_nvml:     Name: geforce_rtx_2060
-debug2: gpu/nvml: _get_system_gpu_list_nvml:     UUID: GPU-g44ef22a-d954-c552-b5c4-7371354534b2
-debug2: gpu/nvml: _get_system_gpu_list_nvml:     PCI Domain/Bus/Device: 0:1:0
-debug2: gpu/nvml: _get_system_gpu_list_nvml:     PCI Bus ID: 00000000:01:00.0
-debug2: gpu/nvml: _get_system_gpu_list_nvml:     NVLinks: -1
-debug2: gpu/nvml: _get_system_gpu_list_nvml:     Device File (minor number): /dev/nvidia0
-debug2: gpu/nvml: _get_system_gpu_list_nvml:     CPU Affinity Range - Machine: 0-5
-debug2: gpu/nvml: _get_system_gpu_list_nvml:     Core Affinity Range - Abstract: 0-5
-</PRE>
-
-<P>In this example, the GPU's name is reported as
-<code class="commandline">geforce_rtx_2060</code>. So in your slurm.conf and
-gres.conf, the GPU <i>Type</i> can be set to <code class="commandline">
-geforce</code>, <code class="commandline">rtx</code>, <code class="commandline">
-2060</code>, <code class="commandline">geforce_rtx_2060</code>, or any other
-substring, and <b>slurmd</b> should be able to match it to the system-detected
-device <code class="commandline">geforce_rtx_2060</code>.
-
-<!-------------------------------------------------------------------------->
 <h2 id="Running_Jobs">Running Jobs
 <a class="slurm_link" href="#Running_Jobs"></a>
 </h2>
@@ -218,7 +140,85 @@ srun --gres=gpu:1 -n1 --exclusive show_device.sh &
 wait
 </PRE>
 
-<!-------------------------------------------------------------------------->
+<h2 id="AutoDetect">AutoDetect
+<a class="slurm_link" href="#AutoDetect"></a>
+</h2>
+
+<p>If <i>AutoDetect=nvml</i> or <i>AutoDetect=rsmi</i> are set in
+<i>gres.conf</i>, and their corresponding GPU management libraries are installed
+on the node and found during Slurm configuration, configuration details will
+automatically be filled in for any system-detected GPU. This removes the need to
+explicitly configure GPUs in gres.conf, though the <i>Gres=</i> line in
+slurm.conf is still required in order to tell slurmctld how many GRES to expect.
+</P>
+
+<P>By default, all system-detected devices are added to the node.
+However, if <i>Type</i> and <i>File</i> in gres.conf match a GPU on
+the system, any other properties explicitly specified (e.g.
+<i>Cores</i> or <i>Links</i>) can be double-checked against it.
+If the system-detected GPU differs from its matching GPU configuration, then the
+GPU is omitted from the node with an error.
+This allows <i>gres.conf</i> to serve as an optional sanity check and notifies
+administrators of any unexpected changes in GPU properties.
+</P>
+
+<P>Example <I>gres.conf</I> file:</P>
+<PRE>
+# Configure four GPUs (with MPS), plus bandwidth
+AutoDetect=nvml
+Name=gpu Type=gp100  File=/dev/nvidia0 Cores=0,1
+Name=gpu Type=gp100  File=/dev/nvidia1 Cores=0,1
+Name=gpu Type=p6000  File=/dev/nvidia2 Cores=2,3
+Name=gpu Type=p6000  File=/dev/nvidia3 Cores=2,3
+Name=mps Count=200  File=/dev/nvidia0
+Name=mps Count=200  File=/dev/nvidia1
+Name=mps Count=100  File=/dev/nvidia2
+Name=mps Count=100  File=/dev/nvidia3
+Name=bandwidth Type=lustre Count=4G Flags=CountOnly
+</PRE>
+
+<p> In this example, since <i>AutoDetect=nvml</i> is specified, <i>Cores</i>
+for each GPU will be checked against a corresponding GPU found on the system
+matching the <i>Type</i> and <i>File</i> specified.
+Since <i>Links</i> is not specified, it will be automatically filled in
+according to what is found on the system.
+If a matching system GPU is not found, no validation takes place and the GPU is
+assumed to be as the configuration says.
+</p>
+
+<P>For <i>Type</i> to match a system-detected device, it must either exactly
+match or be a substring of the GPU name reported by slurmd via the AutoDetect
+mechanism. This GPU name will have all spaces replaced with underscores. To see
+the GPU name, set <i>SlurmdDebug=debug2</i> in your slurm.conf and either
+restart or reconfigure <b>slurmd</b> and check the slurmd log. For example,
+with <i>AutoDetect=nvml</i>:</P>
+
+<PRE>
+debug:  gpu/nvml: init: init: GPU NVML plugin loaded
+debug2: gpu/nvml: _nvml_init: Successfully initialized NVML
+debug:  gpu/nvml: _get_system_gpu_list_nvml: Systems Graphics Driver Version: 450.36.06
+debug:  gpu/nvml: _get_system_gpu_list_nvml: NVML Library Version: 11.450.36.06
+debug2: gpu/nvml: _get_system_gpu_list_nvml: Total CPU count: 6
+debug2: gpu/nvml: _get_system_gpu_list_nvml: Device count: 1
+debug2: gpu/nvml: _get_system_gpu_list_nvml: GPU index 0:
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     Name: geforce_rtx_2060
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     UUID: GPU-g44ef22a-d954-c552-b5c4-7371354534b2
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     PCI Domain/Bus/Device: 0:1:0
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     PCI Bus ID: 00000000:01:00.0
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     NVLinks: -1
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     Device File (minor number): /dev/nvidia0
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     CPU Affinity Range - Machine: 0-5
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     Core Affinity Range - Abstract: 0-5
+</PRE>
+
+<P>In this example, the GPU's name is reported as
+<code class="commandline">geforce_rtx_2060</code>. So in your slurm.conf and
+gres.conf, the GPU <i>Type</i> can be set to <code class="commandline">
+geforce</code>, <code class="commandline">rtx</code>, <code class="commandline">
+2060</code>, <code class="commandline">geforce_rtx_2060</code>, or any other
+substring, and <b>slurmd</b> should be able to match it to the system-detected
+device <code class="commandline">geforce_rtx_2060</code>.
+
 <h2 id="GPU_Management">GPU Management
 <a class="slurm_link" href="#GPU_Management"></a>
 </h2>
@@ -285,7 +285,6 @@ NVIDIA CUDA documentation</a> for more information about the
 <code class="commandline">CUDA_VISIBLE_DEVICES</code> and
 <code class="commandline">CUDA_DEVICE_ORDER</code> environmental variables.</p>
 
-<!-------------------------------------------------------------------------->
 <h2 id="MPS_Management">MPS Management
 <a class="slurm_link" href="#MPS_Management"></a>
 </h2>
@@ -439,6 +438,17 @@ CVE-2018-6260</a> and in the
 <a href="https://nvidia.custhelp.com/app/answers/detail/a_id/4772">
 Security Bulletin: NVIDIA GPU Display Driver - February 2019</a>.</p>
 
+<p>NVIDIA MPS has a built-in limitation regarding GPU sharing among different
+users. Only one user on a system may have an active MPS server, and the MPS
+control daemon will queue MPS server activation requests from separate users,
+leading to serialized exclusive access of the GPU between users (see
+<a href="https://docs.nvidia.com/deploy/mps/index.html#topic_3_3_1_1">
+Section 2.3.1.1 - Limitations</a> in the MPS docs). So different users cannot
+truly run concurrently on the GPU with MPS; rather, the GPU will be time-sliced
+between the users (for a diagram depicting this process, see
+<a href="https://docs.nvidia.com/deploy/mps/index.html#topic_4_3">
+Section 3.3 - Provisioning Sequence</a> in the MPS docs).</p>
+
 <h2 id="MIG_Management">MIG Management
 <a class="slurm_link" href="#MIG_Management"></a>
 </h2>
@@ -470,7 +480,6 @@ dynamic MIG partitioning.</p>
 <a href="https://docs.nvidia.com/datacenter/tesla/mig-user-guide/index.html">
 the MIG user guide</a>.</p>
 
-<!-------------------------------------------------------------------------->
 <h2 id="Sharding">Sharding
 <a class="slurm_link" href="#Sharding"></a>
 </h2>
@@ -563,6 +572,6 @@ or <code class="commandline">GPU_DEVICE_ORDINAL</code> environment variable set
 which would be the same as if it were a GPU.
 </p>
 
-<p style="text-align: center;">Last modified 19 Jan 2022</p>
+<p style="text-align: center;">Last modified 26 January 2022</p>
 
 <!--#include virtual="footer.txt"-->
