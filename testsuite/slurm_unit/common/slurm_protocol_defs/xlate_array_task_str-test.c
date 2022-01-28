@@ -42,7 +42,7 @@
 
 START_TEST(null_test)
 {
-	void *array_bitmap = NULL;
+	bitstr_t *array_bitmap = NULL;
 	char *array_task_str = NULL;
 
 	xlate_array_task_str(&array_task_str, 0, &array_bitmap);
@@ -70,7 +70,7 @@ END_TEST
 
 START_TEST(good_test)
 {
-	void *array_bitmap = NULL;
+	bitstr_t *array_bitmap = NULL;
 	char *array_task_str = NULL;
 
 	array_task_str = xstrdup("0x7");
@@ -116,7 +116,7 @@ END_TEST
 
 START_TEST(BITSTR_LEN_no_max_test)
 {
-	void *array_bitmap = NULL;
+	bitstr_t *array_bitmap = NULL;
 	char *array_task_str = NULL;
 
 	/* SLURM_BITSTR_LEN */
@@ -130,7 +130,7 @@ END_TEST
 
 START_TEST(BITSTR_LEN_with_max_test)
 {
-	void *array_bitmap = NULL;
+	bitstr_t *array_bitmap = NULL;
 	char *array_task_str = NULL;
 
 	/* SLURM_BITSTR_LEN */
@@ -144,7 +144,7 @@ END_TEST
 
 START_TEST(BITSTR_LEN_negative_test)
 {
-	void *array_bitmap = NULL;
+	bitstr_t *array_bitmap = NULL;
 	char *array_task_str = NULL;
 
 	setenv("SLURM_BITSTR_LEN", "-1", 1);
@@ -157,7 +157,7 @@ END_TEST
 
 START_TEST(BITSTR_LEN_negative_max_test)
 {
-	void *array_bitmap = NULL;
+	bitstr_t *array_bitmap = NULL;
 	char *array_task_str = NULL;
 
 	setenv("SLURM_BITSTR_LEN", "-1", 1);
@@ -170,7 +170,7 @@ END_TEST
 
 START_TEST(BITSTR_LEN_65_test)
 {
-	void *array_bitmap = NULL;
+	bitstr_t *array_bitmap = NULL;
 	char *array_task_str = NULL;
 
 	setenv("SLURM_BITSTR_LEN", "65", 1);
@@ -183,7 +183,7 @@ END_TEST
 
 START_TEST(BITSTR_LEN_0_test)
 {
-	void *array_bitmap = NULL;
+	bitstr_t *array_bitmap = NULL;
 	char *array_task_str = NULL;
 
 	setenv("SLURM_BITSTR_LEN", "0", 1);
