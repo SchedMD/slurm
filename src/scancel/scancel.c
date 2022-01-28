@@ -200,10 +200,10 @@ static bool _is_task_in_job(job_info_t *job_ptr, int array_id)
 
 	if (!job_ptr->array_bitmap)
 		return false;
-	len = bit_size((bitstr_t *)job_ptr->array_bitmap);
+	len = bit_size(job_ptr->array_bitmap);
 	if (len <= array_id)
 		return false;
-	return (bit_test((bitstr_t *)job_ptr->array_bitmap, array_id));
+	return bit_test(job_ptr->array_bitmap, array_id);
 }
 
 static int _verify_job_ids(void)

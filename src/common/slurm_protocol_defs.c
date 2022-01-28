@@ -1270,8 +1270,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 	if (job) {
 		xfree(job->account);
 		xfree(job->alloc_node);
-		if (job->array_bitmap)
-			bit_free((bitstr_t *) job->array_bitmap);
+		FREE_NULL_BITMAP(job->array_bitmap);
 		xfree(job->array_task_str);
 		xfree(job->batch_features);
 		xfree(job->batch_host);
@@ -6313,7 +6312,7 @@ extern void xlate_array_task_str(char **array_task_str,
 		      *array_task_str);
 
 	if (array_bitmap)
-		*array_bitmap = (void *)task_bitmap;
+		*array_bitmap = task_bitmap;
 
 	/* Check first for a step function */
 	i_first = bit_ffs(task_bitmap);

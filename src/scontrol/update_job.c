@@ -1433,8 +1433,7 @@ static uint32_t _get_job_time(const char *job_id_str)
 			}
 			if (resp->job_array[i].array_job_id != job_id)
 				continue;
-			array_bitmap = (bitstr_t *)
-				       resp->job_array[i].array_bitmap;
+			array_bitmap = resp->job_array[i].array_bitmap;
 			if ((task_id == NO_VAL) ||
 			    (resp->job_array[i].array_task_id == task_id) ||
 			    (array_bitmap &&

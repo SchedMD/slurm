@@ -289,20 +289,18 @@ static bool _het_job_offset_match(job_info_t *job_ptr, uint32_t het_job_offset)
 
 static bool _task_id_in_job(job_info_t *job_ptr, uint32_t array_id)
 {
-	bitstr_t *array_bitmap;
 	uint32_t array_len;
 
 	if ((array_id == NO_VAL) ||
 	    (array_id == job_ptr->array_task_id))
 		return true;
 
-	array_bitmap = (bitstr_t *) job_ptr->array_bitmap;
-	if (array_bitmap == NULL)
+	if (!job_ptr->array_bitmap)
 		return false;
-	array_len = bit_size(array_bitmap);
+	array_len = bit_size(job_ptr->array_bitmap);
 	if (array_id >= array_len)
 		return false;
-	if (bit_test(array_bitmap, array_id))
+	if (bit_test(job_ptr->array_bitmap, array_id))
 		return true;
 	return false;
 }

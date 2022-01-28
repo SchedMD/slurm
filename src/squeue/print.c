@@ -207,7 +207,7 @@ static void _combine_pending_array_tasks(List job_list)
 		    !job_rec_ptr->job_ptr->array_bitmap)
 			continue;
 		update_cnt = 0;
-		task_bitmap = (bitstr_t *) job_rec_ptr->job_ptr->array_bitmap;
+		task_bitmap = job_rec_ptr->job_ptr->array_bitmap;
 		bitmap_size = bit_size(task_bitmap);
 		task_iterator = list_iterator_create(job_list);
 		while ((task_rec_ptr = list_next(task_iterator))) {
@@ -2862,7 +2862,7 @@ static int _filter_job(job_info_t * job)
 			    (job_step_id->step_id.job_id ==
 			     job->array_job_id) &&
 			    (job->array_bitmap &&
-			     bit_test((bitstr_t *)job->array_bitmap,
+			     bit_test(job->array_bitmap,
 				      job_step_id->array_id))) {
 				filter = 0;
 				partial_array = true;
@@ -3014,7 +3014,7 @@ static int _filter_job(job_info_t * job)
 	if (partial_array) {
 		/* Print this record, but perhaps only some job array records */
 		bitstr_t *new_array_bitmap;
-		int array_len = bit_size((bitstr_t *)job->array_bitmap);
+		int array_len = bit_size(job->array_bitmap);
 		new_array_bitmap = bit_alloc(array_len);
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
@@ -3025,19 +3025,18 @@ static int _filter_job(job_info_t * job)
 			}
 		}
 		list_iterator_destroy(iterator);
-		bit_and((bitstr_t *)job->array_bitmap, new_array_bitmap);
+		bit_and(job->array_bitmap, new_array_bitmap);
 		bit_free(new_array_bitmap);
 		xfree(job->array_task_str);
-		i = bit_set_count((bitstr_t *)job->array_bitmap);
+		i = bit_set_count(job->array_bitmap);
 		if (i == 1) {
-			job->array_task_id =
-				bit_ffs((bitstr_t *)job->array_bitmap);
-			bit_free((bitstr_t *)job->array_bitmap);
+			job->array_task_id = bit_ffs(job->array_bitmap);
+			bit_free(job->array_bitmap);
 		} else {
 			i = i * 16 + 10;
 			job->array_task_str = xmalloc(i);
 			(void) bit_fmt(job->array_task_str, i,
-				       (bitstr_t *)job->array_bitmap);
+				       job->array_bitmap);
 		}
 	}
 
