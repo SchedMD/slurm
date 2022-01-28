@@ -6283,7 +6283,8 @@ endit:
 }
 
 extern void xlate_array_task_str(char **array_task_str,
-				 uint32_t array_max_tasks, void **array_bitmap)
+				 uint32_t array_max_tasks,
+				 bitstr_t **array_bitmap)
 {
 	static int bitstr_len = -1;
 	int buf_size, len;

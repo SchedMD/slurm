@@ -1736,7 +1736,8 @@ extern char *slurm_get_selected_step_id(
  * OUT array_bitmap - job's array_bitmap
  */
 extern void xlate_array_task_str(char **array_task_str,
-				 uint32_t array_max_tasks, void **array_bitmap);
+				 uint32_t array_max_tasks,
+				 bitstr_t **array_bitmap);
 
 /*
  * slurm_array64_to_value_reps - Compress array into an array that represents
