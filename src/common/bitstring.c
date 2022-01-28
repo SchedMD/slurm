@@ -110,8 +110,6 @@ strong_alias(bit_set_all,	slurm_bit_set_all);
 strong_alias(bit_clear_all,	slurm_bit_clear_all);
 strong_alias(bit_ffc,		slurm_bit_ffc);
 strong_alias(bit_ffs,		slurm_bit_ffs);
-strong_alias(bit_free,		slurm_bit_free);
-strong_alias(bit_realloc,	slurm_bit_realloc);
 strong_alias(bit_size,		slurm_bit_size);
 strong_alias(bit_and,		slurm_bit_and);
 strong_alias(bit_not,		slurm_bit_not);
@@ -242,31 +240,29 @@ bitstr_t *bit_alloc(bitoff_t nbits)
  *   nbits (IN)		valid bits in new bitstr
  *   RETURN		new bitstring
  */
-bitstr_t *bit_realloc(bitstr_t *b, bitoff_t nbits)
+bitstr_t *slurm_bit_realloc(bitstr_t **b, bitoff_t nbits)
 {
-	bitstr_t *new = NULL;
-
-	_assert_bitstr_valid(b);
+	_assert_bitstr_valid(*b);
 	_assert_valid_size(nbits);
-	new = xrealloc(b, _bitstr_words(nbits) * sizeof(bitstr_t));
 
-	_assert_bitstr_valid(new);
-	_bitstr_bits(new) = nbits;
+	xrecalloc(*b, _bitstr_words(nbits), sizeof(bitstr_t));
 
-	return new;
+	_assert_bitstr_valid(*b);
+	_bitstr_bits(*b) = nbits;
+
+	return *b;
 }
 
 /*
  * Free a bitstr.
  *   b (IN/OUT)	bitstr to be freed
  */
-void
-bit_free(bitstr_t *b)
+void slurm_bit_free(bitstr_t **b)
 {
-	xassert(b);
-	xassert(_bitstr_magic(b) == BITSTR_MAGIC);
-	_bitstr_magic(b) = 0;
-	xfree(b);
+	xassert(*b);
+	xassert(_bitstr_magic(*b) == BITSTR_MAGIC);
+	_bitstr_magic(*b) = 0;
+	xfree(*b);
 }
 
 /*

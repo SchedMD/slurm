@@ -81,8 +81,6 @@
 #define	bit_clear_all		slurm_bit_clear_all
 #define	bit_ffc			slurm_bit_ffc
 #define	bit_ffs			slurm_bit_ffs
-#define	bit_free		slurm_bit_free
-#define	bit_realloc		slurm_bit_realloc
 #define	bit_size		slurm_bit_size
 #define	bit_and			slurm_bit_and
 #define	bit_not			slurm_bit_not

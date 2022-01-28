@@ -104,12 +104,22 @@ void bit_clear_all(bitstr_t *b);
 bitoff_t bit_ffc(bitstr_t *b);
 bitoff_t bit_ffs(bitstr_t *b);
 
+/*
+ * bit_free() and bit_realloc() are rigged up as macros to be able to
+ * manipulate the underlying variable in the same manner as xfree() and
+ * xrealloc(). The actual function is implemented as slurm_bit_free() and
+ * slurm_bit_realloc(), which also avoids needing to have them exported
+ * through slurm_xlator.h.
+ */
+#define bit_free(__b) slurm_bit_free((bitstr_t **)&(__b))
+void slurm_bit_free(bitstr_t **b);
+#define bit_realloc(__b, __n) slurm_bit_realloc((bitstr_t **)&(__b), __n)
+bitstr_t *slurm_bit_realloc(bitstr_t **b, bitoff_t nbits);
+
 /* new */
 bitoff_t bit_nffs(bitstr_t *b, int32_t n);
 bitoff_t bit_nffc(bitstr_t *b, int32_t n);
 bitoff_t bit_noc(bitstr_t *b, int32_t n, int32_t seed);
-void	bit_free(bitstr_t *b);
-bitstr_t *bit_realloc(bitstr_t *b, bitoff_t nbits);
 bitoff_t bit_size(bitstr_t *b);
 void	bit_and(bitstr_t *b1, bitstr_t *b2);
 void	bit_and_not(bitstr_t *b1, bitstr_t *b2);
