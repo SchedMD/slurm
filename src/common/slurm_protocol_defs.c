@@ -1683,20 +1683,6 @@ extern void slurm_free_srun_job_complete_msg(
 	xfree(msg);
 }
 
-extern void slurm_free_srun_exec_msg(srun_exec_msg_t *msg)
-{
-	int i;
-
-	if (msg) {
-		if (msg->argv) {
-			for (i = 0; i < msg->argc; i++)
-				xfree(msg->argv[i]);
-			xfree(msg->argv);
-		}
-		xfree(msg);
-	}
-}
-
 extern void slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
 {
 	xfree(msg);
@@ -5395,9 +5381,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case SRUN_PING:
 		slurm_free_srun_ping_msg(data);
 		break;
-	case SRUN_EXEC:
-		slurm_free_srun_exec_msg(data);
-		break;
 	case SRUN_TIMEOUT:
 		slurm_free_srun_timeout_msg(data);
 		break;
@@ -5919,9 +5902,8 @@ rpc_num2string(uint16_t opcode)
 		return "SRUN_JOB_COMPLETE";
 	case SRUN_USER_MSG:
 		return "SRUN_USER_MSG";
-	case SRUN_EXEC:
-		return "SRUN_EXEC";
-	case SRUN_STEP_MISSING:
+
+	case SRUN_STEP_MISSING:					/* 7007 */
 		return "SRUN_STEP_MISSING";
 	case SRUN_REQUEST_SUSPEND:
 		return "SRUN_REQUEST_SUSPEND";

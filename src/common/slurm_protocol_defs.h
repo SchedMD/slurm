@@ -429,7 +429,7 @@ typedef enum {
 	SRUN_NODE_FAIL,
 	SRUN_JOB_COMPLETE,
 	SRUN_USER_MSG,
-	SRUN_EXEC,
+	DEFUNCT_RPC_7006,
 	SRUN_STEP_MISSING,
 	SRUN_REQUEST_SUSPEND,
 	SRUN_STEP_SIGNAL,	/* for launch plugins aprun and poe,
@@ -1171,12 +1171,6 @@ typedef struct {
 	char *slurmd_spooldir;
 } config_response_msg_t;
 
-typedef struct srun_exec_msg {
-	uint32_t argc;		/* argument count */
-	char **  argv;		/* program arguments */
-	slurm_step_id_t step_id;
-} srun_exec_msg_t;
-
 typedef struct kvs_get_msg {
 	uint32_t task_id;	/* job step's task id */
 	uint32_t size;		/* count of tasks in job */
@@ -1527,7 +1521,6 @@ extern void slurm_free_kill_job_msg(kill_job_msg_t * msg);
 extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);
 extern void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg);
 extern void slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg);
-extern void slurm_free_srun_exec_msg(srun_exec_msg_t *msg);
 extern void slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
 extern void slurm_free_net_forward_msg(net_forward_msg_t *msg);
 extern void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);

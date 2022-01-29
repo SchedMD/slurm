@@ -58,14 +58,6 @@ extern void srun_allocate(job_record_t *job_ptr);
 extern void srun_allocate_abort(job_record_t *job_ptr);
 
 /*
- * srun_exec - request that srun execute a specific command
- *	and route it's output to stdout
- * IN step_ptr - pointer to the slurmctld job step record
- * IN argv - command and arguments to execute
- */
-extern void srun_exec(step_record_t *step_ptr, char **argv);
-
-/*
  * srun_job_complete - notify srun of a job's termination
  * IN job_ptr - pointer to the slurmctld job record
  */

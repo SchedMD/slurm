@@ -10048,43 +10048,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_srun_exec_msg(srun_exec_msg_t * msg, buf_t *buffer,
-		    uint16_t protocol_version)
-{
-	xassert(msg);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
-		packstr_array(msg->argv, msg->argc, buffer);
-	}
-}
-
-static int
-_unpack_srun_exec_msg(srun_exec_msg_t ** msg_ptr, buf_t *buffer,
-		      uint16_t protocol_version)
-{
-	srun_exec_msg_t * msg;
-	xassert(msg_ptr);
-
-	msg = xmalloc ( sizeof (srun_exec_msg_t) ) ;
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
-		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_srun_exec_msg(msg);
-	*msg_ptr = NULL;
-	return SLURM_ERROR;
-}
-
 static void _pack_net_forward_msg(net_forward_msg_t *msg,
 				  buf_t *buffer,
 				  uint16_t protocol_version)
@@ -12373,10 +12336,6 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		pack_config_response_msg((config_response_msg_t *) msg->data,
 					 buffer, msg->protocol_version);
 		break;
-	case SRUN_EXEC:
-		_pack_srun_exec_msg((srun_exec_msg_t *)msg->data, buffer,
-				    msg->protocol_version);
-		break;
 	case SRUN_NODE_FAIL:
 		_pack_srun_node_fail_msg((srun_node_fail_msg_t *)msg->data,
 					 buffer,
@@ -13019,11 +12978,6 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		unpack_config_response_msg(
 			(config_response_msg_t **) &msg->data,
 			buffer, msg->protocol_version);
-		break;
-	case SRUN_EXEC:
-		rc = _unpack_srun_exec_msg((srun_exec_msg_t **) & msg->data,
-					   buffer,
-					   msg->protocol_version);
 		break;
 	case SRUN_NET_FORWARD:
 		rc = _unpack_net_forward_msg((net_forward_msg_t **) &msg->data,

@@ -105,7 +105,6 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 static bool   force_terminated_job = false;
 static int    task_exit_signal = 0;
 
-static void _exec_prog(slurm_msg_t *msg);
 static int  _msg_thr_create(struct step_launch_state *sls, int num_nodes);
 static void _handle_msg(void *arg, slurm_msg_t *msg);
 static int  _cr_notify_step_launch(slurm_step_ctx_t *ctx);
@@ -1474,9 +1473,6 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		debug3("slurmctld ping received");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		break;
-	case SRUN_EXEC:
-		_exec_prog(msg);
-		break;
 	case SRUN_JOB_COMPLETE:
 		debug2("received job step complete message");
 		_job_complete_handler(sls, msg);
@@ -1695,65 +1691,6 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 	debug3("uid:%ld gid:%ld cwd:%s %d", (long) msg->uid,
 		(long) msg->gid, msg->cwd, nodeid);
 }
-
-/* This is used to initiate an OpenMPI checkpoint program,
- * but is written to be general purpose */
-static void
-_exec_prog(slurm_msg_t *msg)
-{
-	pid_t child;
-	int pfd[2], status;
-	ssize_t len;
-	char buf[256] = "";
-	srun_exec_msg_t *exec_msg = msg->data;
-
-	if ((exec_msg->argc < 1) || (exec_msg->argv == NULL) ||
-	    (exec_msg->argv[0] == NULL)) {
-		error("%s: called with no command to execute", __func__);
-		return;
-	} else if (exec_msg->argc > 2) {
-		verbose("Exec '%s %s' for %ps",
-			exec_msg->argv[0], exec_msg->argv[1],
-			&exec_msg->step_id);
-	} else {
-		verbose("Exec '%s' for %ps",
-			exec_msg->argv[0], &exec_msg->step_id);
-	}
-
-	if (pipe(pfd) == -1) {
-		snprintf(buf, sizeof(buf), "pipe: %s", strerror(errno));
-		error("%s", buf);
-		return;
-	}
-
-	child = fork();
-	if (child == 0) {
-		int fd = open("/dev/null", O_RDONLY);
-		if (fd < 0) {
-			error("%s: can not open /dev/null", __func__);
-			exit(1);
-		}
-		dup2(fd, STDIN_FILENO);		/* stdin from /dev/null */
-		dup2(pfd[1], STDOUT_FILENO);	/* stdout to pipe */
-		dup2(pfd[1], STDERR_FILENO);	/* stderr to pipe */
-		close(pfd[0]);
-		close(pfd[1]);
-		execvp(exec_msg->argv[0], exec_msg->argv);
-		error("execvp(%s): %m", exec_msg->argv[0]);
-		_exit(127);
-	} else if (child < 0) {
-		snprintf(buf, sizeof(buf), "fork: %s", strerror(errno));
-		error("%s", buf);
-		return;
-	} else {
-		close(pfd[1]);
-		len = read(pfd[0], buf, sizeof(buf));
-		if (len >= 1)
-			close(pfd[0]);
-		waitpid(child, &status, 0);
-	}
-}
-
 
 /*
  * Notify the step_launch_state that an I/O connection went bad.

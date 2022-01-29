@@ -576,40 +576,6 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
 }
 
 /*
- * srun_exec - request that srun execute a specific command
- *	and route it's output to stdout
- * IN step_ptr - pointer to the slurmctld job step record
- * IN argv - command and arguments to execute
- */
-extern void srun_exec(step_record_t *step_ptr, char **argv)
-{
-	slurm_addr_t * addr;
-	srun_exec_msg_t *msg_arg;
-	int cnt = 1, i;
-
-	xassert(step_ptr);
-
-	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
-		for (i=0; argv[i]; i++)
-			cnt++;	/* start at 1 to include trailing NULL */
-		addr = xmalloc(sizeof(slurm_addr_t));
-		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
-		msg_arg = xmalloc(sizeof(srun_exec_msg_t));
-		memcpy(&msg_arg->step_id, &step_ptr->step_id,
-		       sizeof(msg_arg->step_id));
-		msg_arg->argc    = cnt;
-		msg_arg->argv    = xmalloc(sizeof(char *) * cnt);
-		for (i=0; i<cnt ; i++)
-			msg_arg->argv[i] = xstrdup(argv[i]);
-		_srun_agent_launch(addr, step_ptr->host, SRUN_EXEC,
-				   msg_arg, step_ptr->start_protocol_ver);
-	} else {
-		error("srun_exec %pS lacks communication channel",
-		      step_ptr);
-	}
-}
-
-/*
  * srun_response - note that srun has responded
  * IN step_id - id of step responding or NO_VAL if not a step
  */
