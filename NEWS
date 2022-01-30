@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix erroneous --constraint behavior by preventing multiple sets of brackets.
  -- Make ResetAccrueTime update the job's accrue_time to now.
  -- Fix sattach initialization with configless mode.
+ -- Revert packing limit checks affecting pmi2.
 
 * Changes in Slurm 21.08.5
 ==========================
