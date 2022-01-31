@@ -54,8 +54,6 @@ void slurmd_req(slurm_msg_t *msg);
  */
 extern int send_slurmd_conf_lite(int fd, slurmd_conf_t *cf);
 
-void gids_cache_purge(void);
-
 /* Add record for every launched job so we know they are ready for suspend */
 extern void record_launched_jobs(void);
 
