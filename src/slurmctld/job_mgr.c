@@ -3589,7 +3589,7 @@ static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
 	//job_ptr->details->submit_time = now;
 
 	job_ptr->job_state = JOB_PENDING;
-	if (job_ptr->node_cnt)
+	if (job_ptr->node_cnt || job_ptr->epilog_running)
 		job_ptr->job_state |= JOB_COMPLETING;
 }
 
