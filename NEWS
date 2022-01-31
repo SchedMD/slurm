@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
     a node.
  -- Fix handling reboot with multiple job features.
  -- Fix nodes getting powered down when creating new partitions.
+ -- Fix bad bit_realloc which potentially could lead to bad memory access.
 
 * Changes in Slurm 21.08.5
 ==========================
