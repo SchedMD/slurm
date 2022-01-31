@@ -387,15 +387,12 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	}
 #endif
 	if (job_ptr->details->prolog_running) {
-		/* Job wasn't launched on nodes so don't run epilog on nodes. */
-		if (job_ptr->epilog_running) {
-			/*
-			 * Cleanup completing nodes after EpilogSlurmctld is
-			 * completed in prep_epilog_slurmctld_callback().
-			 */
-			job_ptr->bit_flags |= NOT_LAUNCHED;
-		} else if (job_ptr->node_bitmap_cg) {
-			/* No async epilog running so cleanup now. */
+		/*
+		 * Job was configuring when it was cancelled and epilog wasn't
+		 * run on the nodes, so cleanup the nodes now. Final cleanup
+		 * will happen after EpilogSlurmctld is done.
+		 */
+		if (job_ptr->node_bitmap_cg) {
 			i_first = bit_ffs(job_ptr->node_bitmap_cg);
 			if (i_first >= 0)
 				i_last = bit_fls(job_ptr->node_bitmap_cg);

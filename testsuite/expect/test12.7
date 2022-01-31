@@ -109,7 +109,7 @@ log_info "Test 2"
 wait_for_job -fail $job_id "PENDING"
 
 # Wait for the state changes to propagate to the database for sacct
-sleep 3
+sleep 5
 # The job state should be NODE_FAIL
 set fail_count [check_sacct_states "NODE_FAIL"]
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"
@@ -147,7 +147,7 @@ sleep 8
 wait_for_job -fail $job_id "PENDING"
 
 # Wait for the state changes to propagate to the database for sacct
-sleep 3
+sleep 5
 log_info "Test 4"
 set fail_count [check_sacct_states "NODE_FAIL"]
 subtest {$fail_count == 1} "Test NODE_FAIL count" "$fail_count != 1"

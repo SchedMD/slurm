@@ -3670,6 +3670,21 @@ static void _rebuild_part_name_list(job_record_t *job_ptr)
 }
 
 /*
+ * Set a requeued job to PENDING and COMPLETING if all the nodes are completed
+ * and the EpilogSlurmctld is not running
+ */
+static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
+{
+	/* do this after the epilog complete, setting it here is too early */
+	//job_ptr->db_index = 0;
+	//job_ptr->details->submit_time = now;
+
+	job_ptr->job_state = JOB_PENDING;
+	if (job_ptr->node_cnt || job_ptr->epilog_running)
+		job_ptr->job_state |= JOB_COMPLETING;
+}
+
+/*
  * Kill job or job step
  *
  * IN job_step_kill_msg - msg with specs on which job/step to cancel.
@@ -4009,14 +4024,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
 
-				/* do this after the epilog complete,
-				 * setting it here is too early */
-				//job_ptr->db_index = 0;
-				//job_ptr->details->submit_time = now;
-
-				job_ptr->job_state = JOB_PENDING;
-				if (job_ptr->node_cnt)
-					job_ptr->job_state |= JOB_COMPLETING;
+				_set_requeued_job_pending_completing(job_ptr);
 
 				job_ptr->restart_cnt++;
 
@@ -4271,14 +4279,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				deallocate_nodes(job_ptr, false, suspended,
 						 false);
 
-				/* do this after the epilog complete,
-				 * setting it here is too early */
-				//job_ptr->db_index = 0;
-				//job_ptr->details->submit_time = now;
-
-				job_ptr->job_state = JOB_PENDING;
-				if (job_ptr->node_cnt)
-					job_ptr->job_state |= JOB_COMPLETING;
+				_set_requeued_job_pending_completing(job_ptr);
 
 				job_ptr->restart_cnt++;
 
@@ -17267,13 +17268,7 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 		job_ptr->job_state &= (~JOB_COMPLETING);
 	}
 
-	/* do this after the epilog complete, setting it here is too early */
-	//job_ptr->db_index = 0;
-	//job_ptr->details->submit_time = now;
-
-	job_ptr->job_state = JOB_PENDING;
-	if (job_ptr->node_cnt)
-		job_ptr->job_state |= JOB_COMPLETING;
+	_set_requeued_job_pending_completing(job_ptr);
 
 	/*
 	 * Mark the origin job as requeuing. Will finish requeuing fed job
