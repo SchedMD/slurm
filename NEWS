@@ -66,6 +66,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.37 - Correct conditional that caused the diag output to
     give an internal server error status on success.
  -- Make --mem-bind=sort work with task_affinity
+ -- Fix sacctmgr to set MaxJobsAccruePer{User|Account} and MinPrioThres in
+    sacctmgr add qos, modify already worked correctly.
 
 * Changes in Slurm 21.08.5
 ==========================
