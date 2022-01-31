@@ -2039,11 +2039,6 @@ static void _free_name_hashtbl(void)
 	nodehash_initialized = false;
 }
 
-static void _init_name_hashtbl(void)
-{
-	return;
-}
-
 static int _get_hash_idx(const char *name)
 {
 	int index = 0;
@@ -3100,7 +3095,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->prolog_epilog_timeout = NO_VAL16;
 
 	_free_name_hashtbl();
-	_init_name_hashtbl();
 
 	return;
 }
