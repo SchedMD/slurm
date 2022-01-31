@@ -155,6 +155,9 @@ static int _feature_set_state(const plugin_feature_t *feature)
 {
 	char *output, **argv = NULL;
 	int rc = 0;
+	run_command_args_t run_command_args = {
+		.max_wait = (exec_time * 1000),
+		.status = &rc };
 
 	if (!feature->helper)
 		return SLURM_ERROR;
@@ -162,8 +165,10 @@ static int _feature_set_state(const plugin_feature_t *feature)
 	argv = xcalloc(3, sizeof(char *));	/* NULL terminated */
 	argv[0] = xstrdup(feature->helper);
 	argv[1] = xstrdup(feature->name);
-	output = run_command("set_state", feature->helper,
-			     argv, NULL, (exec_time * 1000), 0, &rc);
+	run_command_args.script_argv = argv;
+	run_command_args.script_path = feature->helper;
+	run_command_args.script_type = "set_state";
+	output = run_command(&run_command_args);
 
 	if (rc != SLURM_SUCCESS) {
 		error("failed to set new value for feature: %s", feature->name);
@@ -180,9 +185,13 @@ static List _feature_get_state(const plugin_feature_t *feature)
 	char *output = NULL;
 	int rc = 0;
 	List result = list_create(xfree_ptr);
+	run_command_args_t run_command_args = {
+		.max_wait = (exec_time * 1000),
+		.script_path = feature->helper,
+		.script_type = "get_state",
+		.status = &rc };
 
-	output = run_command("get_state", feature->helper,
-			     NULL, NULL, (exec_time * 1000), 0, &rc);
+	output = run_command(&run_command_args);
 
 	if (rc != SLURM_SUCCESS) {
 		goto cleanup;

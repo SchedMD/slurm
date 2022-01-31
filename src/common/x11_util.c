@@ -159,6 +159,13 @@ extern char *x11_get_xauth(void)
 	regex_t reg;
 	regmatch_t regmatch[2];
 	char *result, *cookie;
+	run_command_args_t run_command_args = {
+		.max_wait = 10000,
+		.script_path = XAUTH_PATH,
+		.script_type = "xauth",
+		.status = &status,
+	};
+
 	/*
 	 * Two real-world examples:
 	 * "zoidberg/unix:10  MIT-MAGIC-COOKIE-1  abcdef0123456789"
@@ -181,8 +188,8 @@ extern char *x11_get_xauth(void)
 	xauth_argv[1] = xstrdup("list");
 	xauth_argv[2] = xstrdup(getenv("DISPLAY"));
 
-	result = run_command("xauth", XAUTH_PATH, xauth_argv, NULL, 10000, 0,
-			     &status);
+	run_command_args.script_argv = xauth_argv;
+	result = run_command(&run_command_args);
 
 	xfree_array(xauth_argv);
 
@@ -217,6 +224,12 @@ extern int x11_set_xauth(char *xauthority, char *cookie,
 	char template[] = "/tmp/xauth-source-XXXXXX";
 	char *contents = NULL;
 	int fd;
+	run_command_args_t run_command_args = {
+		.max_wait = 10000,
+		.script_path = XAUTH_PATH,
+		.script_type = "xauth",
+		.status = &status,
+	};
 
 	/* protect against weak file permissions in old glibc */
 	umask(0077);
@@ -239,8 +252,8 @@ extern int x11_set_xauth(char *xauthority, char *cookie,
 	xauth_argv[i++] = NULL;
 	xassert(i < 10);
 
-	result = run_command("xauth", XAUTH_PATH, xauth_argv, NULL, 10000, 0,
-			     &status);
+	run_command_args.script_argv = xauth_argv;
+	result = run_command(&run_command_args);
 
 	(void) unlink(template);
 	xfree(xauth_argv);
@@ -260,6 +273,12 @@ extern int x11_delete_xauth(char *xauthority, char *host, uint16_t display)
 	int i=0, status;
 	char *result;
 	char **xauth_argv;
+	run_command_args_t run_command_args = {
+		.max_wait = 10000,
+		.script_path = XAUTH_PATH,
+		.script_type = "xauth",
+		.status = &status,
+	};
 
 	xauth_argv = xmalloc(sizeof(char *) * 10);
 	xauth_argv[i++] = xstrdup("xauth");
@@ -271,8 +290,8 @@ extern int x11_delete_xauth(char *xauthority, char *host, uint16_t display)
 	xauth_argv[i++] = NULL;
 	xassert(i < 10);
 
-	result = run_command("xauth", XAUTH_PATH, xauth_argv, NULL, 10000, 0,
-			     &status);
+	run_command_args.script_argv = xauth_argv;
+	result = run_command(&run_command_args);
 
 	xfree_array(xauth_argv);
 

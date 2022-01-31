@@ -470,17 +470,26 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 
 	/* run any initialization script- if any*/
 	if (jc_conf->initscript) {
-		char **env = env_array_create();
-		env_array_overwrite_fmt(&env, "SLURM_JOB_ID", "%u", job_id);
-		env_array_overwrite_fmt(&env, "SLURM_JOB_MOUNTPOINT_SRC", "%s",
+		run_command_args_t run_command_args = {
+			.max_wait = 10000,
+			.script_path = jc_conf->initscript,
+			.script_type = "initscript",
+			.status = &rc,
+		};
+		run_command_args.env = env_array_create();
+		env_array_overwrite_fmt(&run_command_args.env,
+					"SLURM_JOB_ID", "%u", job_id);
+		env_array_overwrite_fmt(&run_command_args.env,
+					"SLURM_JOB_MOUNTPOINT_SRC", "%s",
 					src_bind);
-		env_array_overwrite_fmt(&env, "SLURM_CONF", "%s",
+		env_array_overwrite_fmt(&run_command_args.env,
+					"SLURM_CONF", "%s",
 					slurm_conf.slurm_conf);
-		env_array_overwrite_fmt(&env, "SLURMD_NODENAME", "%s",
+		env_array_overwrite_fmt(&run_command_args.env,
+					"SLURMD_NODENAME", "%s",
 					conf->node_name);
-		result = run_command("initscript", jc_conf->initscript, NULL,
-				     env, 10000, 0, &rc);
-		env_array_free(env);
+		result = run_command(&run_command_args);
+		env_array_free(run_command_args.env);
 		if (rc) {
 			error("%s: init script: %s failed",
 			      __func__, jc_conf->initscript);

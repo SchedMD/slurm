@@ -580,10 +580,16 @@ static data_t *_get_container_state()
 	int rc = SLURM_ERROR;
 	data_t *state = NULL;
 	char *out;
+	run_command_args_t run_command_args = {
+		.max_wait = -1,
+		.script_argv = query_argv,
+		.script_path = query_argv[0],
+		.script_type = "RunTimeQuery",
+		.status = &rc,
+	};
 
 	/* request container get deleted if known at all any more */
-	out = run_command("RunTimeQuery", query_argv[0], query_argv, NULL, -1,
-			  0, &rc);
+	out = run_command(&run_command_args);
 	debug("%s: RunTimeQuery rc:%u output:%s", __func__, rc, out);
 
 	if (!out || !out[0]) {
@@ -619,13 +625,21 @@ static void _kill_container()
 {
 	int stime = 2500;
 	char *status = _get_container_status();
+	run_command_args_t run_command_args = {
+		.max_wait = -1,
+	};
 
 	if (!status) {
 		debug("container already dead");
 	} else if (!xstrcasecmp(status, "running")) {
+		run_command_args.script_argv = kill_argv;
+		run_command_args.script_path = kill_argv[0];
+		run_command_args.script_type = "RunTimeKill";
+
 		for (int t = 0; t < 10; t++) {
 			char *out;
 			int kill_status = SLURM_ERROR;
+			run_command_args.status = &kill_status;
 
 			xfree(status);
 			status = _get_container_status();
@@ -633,8 +647,7 @@ static void _kill_container()
 			if (!status || !xstrcasecmp(status, "stopped"))
 				break;
 
-			out = run_command("RunTimeKill", kill_argv[0],
-					  kill_argv, NULL, -1, 0, &kill_status);
+			out = run_command(&run_command_args);
 			debug("%s: RunTimeKill rc:%u output:%s",
 			      __func__, kill_status, out);
 			xfree(out);
@@ -662,8 +675,11 @@ static void _kill_container()
 		char *out;
 
 		/* request container get deleted if known at all any more */
-		out = run_command("RunTimeDelete", delete_argv[0],
-				  delete_argv, NULL, -1, 0, &delete_status);
+		run_command_args.script_argv = delete_argv;
+		run_command_args.script_path = delete_argv[0];
+		run_command_args.script_type = "RunTimeDelete";
+		run_command_args.status = &delete_status;
+		out = run_command(&run_command_args);
 		debug("%s: RunTimeDelete rc:%u output:%s",
 		      __func__, delete_status, out);
 		xfree(out);
@@ -682,9 +698,15 @@ static void _create_start(stepd_step_rec_t *job,
 {
 	int stime = 250, rc = SLURM_ERROR;
 	char *out;
+	run_command_args_t run_command_args = {
+		.max_wait = -1,
+		.status = &rc,
+	};
 
-	out = run_command("RunTimeCreate", create_argv[0],
-			  create_argv, NULL, -1, 0, &rc);
+	run_command_args.script_argv = create_argv;
+	run_command_args.script_path = create_argv[0];
+	run_command_args.script_type = "RunTimeCreate";
+	out = run_command(&run_command_args);
 	debug("%s: RunTimeCreate rc:%u output:%s", __func__, rc, out);
 	xfree(out);
 
@@ -721,8 +743,10 @@ static void _create_start(stepd_step_rec_t *job,
 		}
 	}
 
-	out = run_command("RunTimeStart", start_argv[0], start_argv, NULL, -1,
-			  0, &rc);
+	run_command_args.script_argv = start_argv;
+	run_command_args.script_path = start_argv[0];
+	run_command_args.script_type = "RunTimeStart";
+	out = run_command(&run_command_args);
 	debug("%s: RunTimeStart rc:%u output:%s", __func__, rc, out);
 	xfree(out);
 

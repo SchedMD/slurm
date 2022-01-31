@@ -1336,7 +1336,13 @@ static void *_start_stage_in(void *x)
 	bb_job_t *bb_job;
 	bool get_real_size = false;
 	DEF_TIMERS;
+	pthread_t tid = pthread_self();
 	track_script_rec_add(stage_args->job_id, 0, pthread_self());
+	run_command_args_t run_command_args = {
+		.script_path = bb_state.bb_config.get_sys_state,
+		.status = &status,
+		.tid = tid,
+	};
 
 	setup_argv   = stage_args->args1;
 	data_in_argv = stage_args->args2;
@@ -1344,10 +1350,10 @@ static void *_start_stage_in(void *x)
 	timeout = bb_state.bb_config.other_timeout * 1000;
 	op = "setup";
 	START_TIMER;
-	resp_msg = run_command("setup",
-			       bb_state.bb_config.get_sys_state,
-			       setup_argv, NULL, timeout, pthread_self(),
-			       &status);
+	run_command_args.max_wait = timeout;
+	run_command_args.script_argv = setup_argv;
+	run_command_args.script_type = "setup";
+	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	info("setup for job JobId=%u ran for %s",
 	     stage_args->job_id, TIME_STR);
@@ -1412,11 +1418,11 @@ static void *_start_stage_in(void *x)
 
 		op = "dws_data_in";
 		START_TIMER;
-		resp_msg = run_command("dws_data_in",
-				       bb_state.bb_config.get_sys_state,
-				       data_in_argv, NULL,
-				       timeout, pthread_self(),
-				       &status);
+		/* Overwrite changed parameters */
+		run_command_args.max_wait = timeout;
+		run_command_args.script_argv = data_in_argv;
+		run_command_args.script_type = "dws_data_in";
+		resp_msg = run_command(&run_command_args);
 		END_TIMER;
 		info("dws_data_in for JobId=%u ran for %s",
 		     stage_args->job_id, TIME_STR);
@@ -1470,11 +1476,10 @@ static void *_start_stage_in(void *x)
 		size_argv[3] = xstrdup("--token");
 		xstrfmtcat(size_argv[4], "%u", stage_args->job_id);
 		START_TIMER;
-		resp_msg2 = run_command("real_size",
-				        bb_state.bb_config.get_sys_state,
-				        size_argv, NULL,
-					timeout, pthread_self(),
-					&status);
+		run_command_args.max_wait = timeout;
+		run_command_args.script_argv = size_argv;
+		run_command_args.script_type = "real_size";
+		resp_msg2 = run_command(&run_command_args);
 		END_TIMER;
 		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
@@ -1592,7 +1597,7 @@ static void *_start_stage_in(void *x)
 	xfree(stage_args->pool);
 	xfree(stage_args);
 
-	track_script_remove(pthread_self());
+	track_script_remove(tid);
 
 	return NULL;
 }
@@ -1651,7 +1656,13 @@ static void *_start_stage_out(void *x)
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job = NULL;
 	DEF_TIMERS
+	pthread_t tid = pthread_self();
 	track_script_rec_add(stage_args->job_id, 0, pthread_self());
+	run_command_args_t run_command_args = {
+		.script_path = bb_state.bb_config.get_sys_state,
+		.status = &status,
+		.tid = tid,
+	};
 
 	data_out_argv = stage_args->args1;
 	post_run_argv = stage_args->args2;
@@ -1659,10 +1670,10 @@ static void *_start_stage_out(void *x)
 	timeout = bb_state.bb_config.other_timeout * 1000;
 	op = "dws_post_run";
 	START_TIMER;
-	resp_msg = run_command("dws_post_run",
-			       bb_state.bb_config.get_sys_state,
-			       post_run_argv, NULL, timeout, pthread_self(),
-			       &status);
+	run_command_args.max_wait = timeout;
+	run_command_args.script_argv = post_run_argv;
+	run_command_args.script_type = "dws_post_run";
+	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
@@ -1720,11 +1731,10 @@ static void *_start_stage_out(void *x)
 		op = "dws_data_out";
 		START_TIMER;
 		xfree(resp_msg);
-		resp_msg = run_command("dws_data_out",
-				       bb_state.bb_config.get_sys_state,
-				       data_out_argv, NULL,
-				       timeout, pthread_self(),
-				       &status);
+		run_command_args.max_wait = timeout;
+		run_command_args.script_argv = data_out_argv;
+		run_command_args.script_type = "dws_data_out";
+		resp_msg = run_command(&run_command_args);
 		END_TIMER;
 		if ((DELTA_TIMER > 1000000) ||	/* 10 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
@@ -1900,7 +1910,13 @@ static void *_start_teardown(void *x)
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
 	bool hurry;
+	pthread_t tid = pthread_self();
 	track_script_rec_add(teardown_args->job_id, 0, pthread_self());
+	run_command_args_t run_command_args = {
+		.script_path = bb_state.bb_config.get_sys_state,
+		.status = &status,
+		.tid = tid,
+	};
 
 	teardown_argv = teardown_args->args1;
 
@@ -1910,10 +1926,10 @@ static void *_start_teardown(void *x)
 
 	START_TIMER;
 	timeout = bb_state.bb_config.other_timeout * 1000;
-	resp_msg = run_command("teardown",
-			       bb_state.bb_config.get_sys_state,
-			       teardown_argv, NULL, timeout, pthread_self(),
-			       &status);
+	run_command_args.max_wait = timeout;
+	run_command_args.script_argv = teardown_argv;
+	run_command_args.script_type = "teardown";
+	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	info("teardown for JobId=%u ran for %s",
 	     teardown_args->job_id, TIME_STR);
@@ -2777,13 +2793,19 @@ extern char *bb_p_get_status(uint32_t argc, char **argv)
 {
 	char *status_resp, **script_argv;
 	int i, status = 0;
+	run_command_args_t run_command_args = {
+		.max_wait = 2000,
+		.script_path = bb_state.bb_config.get_sys_status,
+		.script_type = "dwstat",
+		.status = &status,
+	};
 
 	script_argv = xcalloc((argc + 2), sizeof(char *));
 	script_argv[0] = "dwstat";
 	for (i = 0; i < argc; i++)
 		script_argv[i + 1] = argv[i];
-	status_resp = run_command("dwstat", bb_state.bb_config.get_sys_status,
-				  script_argv, NULL, 2000, 0, &status);
+	run_command_args.script_argv = script_argv;
+	status_resp = run_command(&run_command_args);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		xfree(status_resp);
 		status_resp = xstrdup("Error running dwstat\n");
@@ -3051,6 +3073,11 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	uint32_t timeout;
 	bool using_master_script = false;
 	DEF_TIMERS;
+	run_command_args_t run_command_args = {
+		.script_path = bb_state.bb_config.get_sys_state,
+		.script_type = "job_process",
+		.status = &status,
+	};
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0')) {
@@ -3129,9 +3156,9 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	script_argv[3] = xstrdup("--job");
 	xstrfmtcat(script_argv[4], "%s", script_file);
 	START_TIMER;
-	resp_msg = run_command("job_process",
-			       bb_state.bb_config.get_sys_state,
-			       script_argv, NULL, timeout, 0, &status);
+	run_command_args.max_wait = timeout;
+	run_command_args.script_argv = script_argv;
+	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
@@ -3452,6 +3479,11 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	bool do_pre_run;
 	DEF_TIMERS;
 	pthread_t tid;
+	run_command_args_t run_command_args = {
+		.script_path = bb_state.bb_config.get_sys_state,
+		.script_type = "paths",
+		.status = &status,
+	};
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
@@ -3531,10 +3563,9 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 		xstrfmtcat(script_argv[8], "%s/path", job_dir);
 		path_file = script_argv[8];
 		START_TIMER;
-		resp_msg = run_command("paths",
-				       bb_state.bb_config.get_sys_state,
-				       script_argv, NULL, timeout, 0,
-				       &status);
+		run_command_args.max_wait = timeout;
+		run_command_args.script_argv = script_argv;
+		resp_msg = run_command(&run_command_args);
 		END_TIMER;
 		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
@@ -3633,10 +3664,18 @@ static void *_start_pre_run(void *x)
 	int status = 0;
 	job_record_t *job_ptr;
 	bool run_kill_job = false;
-	uint32_t timeout;
 	bool hold_job = false, nodes_ready = false;
 	DEF_TIMERS;
+	pthread_t tid = pthread_self();
 	track_script_rec_add(pre_run_args->job_id, 0, pthread_self());
+	run_command_args_t run_command_args = {
+		.max_wait = pre_run_args->timeout * 1000,
+		.script_argv = pre_run_args->args,
+		.script_path = bb_state.bb_config.get_sys_state,
+		.script_type = "dws_pre_run",
+		.status = &status,
+		.tid = tid,
+	};
 
 	/* Wait for node boot to complete */
 	while (!nodes_ready) {
@@ -3654,14 +3693,9 @@ static void *_start_pre_run(void *x)
 			sleep(60);
 	}
 
-	timeout = pre_run_args->timeout * 1000;
 
 	START_TIMER;
-	resp_msg = run_command("dws_pre_run",
-			       bb_state.bb_config.get_sys_state,
-			       pre_run_args->args, NULL,
-			       timeout, pthread_self(),
-			       &status);
+	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 
 	if (track_script_broadcast(pthread_self(), status)) {
@@ -4223,7 +4257,14 @@ static void *_create_persistent(void *x)
 	int i, status = 0;
 	uint32_t timeout;
 	DEF_TIMERS;
+	pthread_t tid = pthread_self();
 	track_script_rec_add(create_args->job_id, 0, pthread_self());
+	run_command_args_t run_command_args = {
+		.script_path = bb_state.bb_config.get_sys_state,
+		.script_type = "create_persistent",
+		.status = &status,
+		.tid = tid,
+	};
 
 	script_argv = xcalloc(20, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -4254,10 +4295,9 @@ static void *_create_persistent(void *x)
 	 * currently not used by Slurm */
 
 	START_TIMER;
-	resp_msg = run_command("create_persistent",
-			       bb_state.bb_config.get_sys_state,
-			       script_argv, NULL, timeout, pthread_self(),
-			       &status);
+	run_command_args.max_wait = timeout;
+	run_command_args.script_argv = script_argv;
+	resp_msg = run_command(&run_command_args);
 	_log_script_argv(script_argv, resp_msg);
 	xfree_array(script_argv);
 	END_TIMER;
@@ -4386,7 +4426,14 @@ static void *_destroy_persistent(void *x)
 	int status = 0;
 	uint32_t timeout;
 	DEF_TIMERS;
+	pthread_t tid = pthread_self();
 	track_script_rec_add(destroy_args->job_id, 0, pthread_self());
+	run_command_args_t run_command_args = {
+		.script_path = bb_state.bb_config.get_sys_state,
+		.script_type = "destroy_persistent",
+		.status = &status,
+		.tid = tid,
+	};
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_alloc = bb_find_name_rec(destroy_args->name, destroy_args->user_id,
@@ -4410,10 +4457,9 @@ static void *_destroy_persistent(void *x)
 		script_argv[7] = xstrdup("--hurry");
 
 	START_TIMER;
-	resp_msg = run_command("destroy_persistent",
-			       bb_state.bb_config.get_sys_state,
-			       script_argv, NULL, timeout, pthread_self(),
-			       &status);
+	run_command_args.max_wait = timeout;
+	run_command_args.script_argv = script_argv;
+	resp_msg = run_command(&run_command_args);
 	_log_script_argv(script_argv, resp_msg);
 	xfree_array(script_argv);
 	END_TIMER;
@@ -4512,6 +4558,12 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	DEF_TIMERS;
 	char *resp_msg;
 	char **script_argv;
+	run_command_args_t run_command_args = {
+		.max_wait = timeout,
+		.script_path = state_ptr->bb_config.get_sys_state,
+		.script_type = "show_configurations",
+		.status = &status,
+	};
 
 	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -4519,9 +4571,8 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	script_argv[2] = xstrdup("show_configurations");
 
 	START_TIMER;
-	resp_msg = run_command("show_configurations",
-			       state_ptr->bb_config.get_sys_state,
-			       script_argv, NULL, timeout, 0, &status);
+	run_command_args.script_argv = script_argv;
+	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	log_flag(BURST_BUF, "show_configurations ran for %s",
 		 TIME_STR);
@@ -4581,6 +4632,12 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	DEF_TIMERS;
 	char *resp_msg;
 	char **script_argv;
+	run_command_args_t run_command_args = {
+		.max_wait = timeout,
+		.script_path = state_ptr->bb_config.get_sys_state,
+		.script_type = "show_instances",
+		.status = &status,
+	};
 
 	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -4588,9 +4645,8 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	script_argv[2] = xstrdup("show_instances");
 
 	START_TIMER;
-	resp_msg = run_command("show_instances",
-			       state_ptr->bb_config.get_sys_state,
-			       script_argv, NULL, timeout, 0, &status);
+	run_command_args.script_argv = script_argv;
+	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	log_flag(BURST_BUF, "show_instances ran for %s",
 		 TIME_STR);
@@ -4649,6 +4705,12 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	DEF_TIMERS;
 	char *resp_msg;
 	char **script_argv;
+	run_command_args_t run_command_args = {
+		.max_wait = timeout,
+		.script_path = state_ptr->bb_config.get_sys_state,
+		.script_type = "pools",
+		.status = &status,
+	};
 
 	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -4656,9 +4718,8 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	script_argv[2] = xstrdup("pools");
 
 	START_TIMER;
-	resp_msg = run_command("pools",
-			       state_ptr->bb_config.get_sys_state,
-			       script_argv, NULL, timeout, 0, &status);
+	run_command_args.script_argv = script_argv;
+	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	if (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF) {
 		/* Only log pools data if different to limit volume of logs */
@@ -4716,6 +4777,12 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	DEF_TIMERS;
 	char *resp_msg;
 	char **script_argv;
+	run_command_args_t run_command_args = {
+		.max_wait = timeout,
+		.script_path = state_ptr->bb_config.get_sys_state,
+		.script_type = "show_sessions",
+		.status = &status,
+	};
 
 	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -4723,9 +4790,8 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	script_argv[2] = xstrdup("show_sessions");
 
 	START_TIMER;
-	resp_msg = run_command("show_sessions",
-			       state_ptr->bb_config.get_sys_state,
-			       script_argv, NULL, timeout, 0, &status);
+	run_command_args.script_argv = script_argv;
+	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	log_flag(BURST_BUF, "show_sessions ran for %s",
 		 TIME_STR);

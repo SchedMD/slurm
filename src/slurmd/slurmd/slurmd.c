@@ -2628,14 +2628,26 @@ extern int run_script_health_check(void)
 		char **env = env_array_create();
 		char *cmd_argv[2];
 		char *resp = NULL;
+		/*
+		 * We can point script_argv to cmd_argv now (before setting
+		 * values inside cmd_argv) since cmd_argv is on the stack
+		 * (not on the heap).
+		 */
+		run_command_args_t run_command_args = {
+			.env = env,
+			.max_wait = 60 * 1000,
+			.script_argv = cmd_argv,
+			.script_path = slurm_conf.health_check_program,
+			.script_type = "health_check",
+			.status = &rc,
+		};
 
 		cmd_argv[0] = slurm_conf.health_check_program;
 		cmd_argv[1] = NULL;
 
 		setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
 
-		resp = run_command("health_check", cmd_argv[0], cmd_argv, env,
-				   60 * 1000, 0, &rc);
+		resp = run_command(&run_command_args);
 
 		if (rc) {
 			if (WIFEXITED(rc))

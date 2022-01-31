@@ -39,6 +39,16 @@
 
 #include "src/common/track_script.h"
 
+typedef struct {
+	char **env;
+	int max_wait;
+	char **script_argv;
+	const char *script_path;
+	const char *script_type;
+	int *status;
+	pthread_t tid;
+} run_command_args_t;
+
 /*
  * run_command_add_to_script
  *
@@ -68,19 +78,22 @@ extern void run_command_shutdown(void);
 /* Return count of child processes */
 extern int run_command_count(void);
 
-/* Execute a command, wait for termination and return its stdout.
- * script_type IN - Type of program being run (e.g. "StartStageIn")
- * script_path IN - Fully qualified pathname of the program to execute
- * script_args IN - Arguments to the script
+/*
+ * Execute a command, wait for termination and return its stdout.
+ *
+ * The following describes the variables in run_command_args_t:
+ *
+ * env IN - environment for the command, if NULL execv is used
  * max_wait IN - Maximum time to wait in milliseconds,
  *		 -1 for no limit (asynchronous)
- * tid IN - Thread we are calling from.
+ * script_argv IN - Arguments to the script
+ * script_path IN - Fully qualified pathname of the program to execute
+ * script_type IN - Type of program being run (e.g. "StartStageIn")
  * status OUT - Job exit code
- * env - environment for the command, if NULL execv is used
- * Return stdout+stderr of spawned program, value must be xfreed. */
-extern char *run_command(const char *script_type, const char *script_path,
-			 char **script_argv, char **env, int max_wait,
-			 pthread_t tid,
-			 int *status);
+ * tid IN - Thread we are calling from; zero if not using track_script.
+ *
+ * Return stdout+stderr of spawned program, value must be xfreed.
+ */
+extern char *run_command(run_command_args_t *run_command_args);
 
 #endif	/* __RUN_COMMAND_H__ */

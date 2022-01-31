@@ -375,9 +375,8 @@ static int _tot_wait (struct timeval *start_time)
  * Run a script with a given timeout (in seconds).
  * Return the status or SLURM_ERROR if fork() fails.
  */
-static int _run_script(char *script, char **argv, char **env, uint32_t job_id,
-		       char *script_name, int timeout, char **resp_msg,
-		       bool *signalled)
+static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
+		       int timeout, char **resp_msg, bool *signalled)
 {
 	int status = SLURM_ERROR;
 	int ms_timeout;
@@ -389,24 +388,28 @@ static int _run_script(char *script, char **argv, char **env, uint32_t job_id,
 	else
 		ms_timeout = timeout * 1000;
 
+	run_command_args->max_wait = ms_timeout;
+	run_command_args->status = &status;
 
 	track_script_rec_add(job_id, 0, pthread_self());
-	resp = run_command(script_name, script, argv, env, ms_timeout,
-			       pthread_self(), &status);
+	resp = run_command(run_command_args);
 	if ((bcast = track_script_broadcast(pthread_self(), status))) {
 		info("%s: JobId=%u %s killed by signal %u",
-		     __func__, job_id, script_name, WTERMSIG(status));
+		     __func__, job_id, run_command_args->script_type,
+		     WTERMSIG(status));
 	} else if (status != 0) {
 		error("%s: JobId=%u %s exit status %u:%u",
-		      __func__, job_id, script_name, WEXITSTATUS(status),
+		      __func__, job_id, run_command_args->script_type,
+		      WEXITSTATUS(status),
 		      WTERMSIG(status));
 	} else {
 		if (job_id)
 			log_flag(SCRIPT, "%s JobId=%u %s completed",
-				 __func__, job_id, script_name);
+				 __func__, job_id,
+				 run_command_args->script_type);
 		else
 			log_flag(SCRIPT, "%s %s completed",
-				 __func__, script_name);
+				 __func__, run_command_args->script_type);
 	}
 
 	/*
@@ -640,6 +643,14 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 	int rc, status = 0;
 	char *resp_msg = NULL;
 	bool signalled = false;
+	pthread_t tid = pthread_self();
+	run_command_args_t run_command_args = {
+		.env = script_msg->env,
+		.script_argv = script_msg->argv,
+		.script_path = script_msg->script_path,
+		.script_type = script_msg->script_name,
+		.tid = tid,
+	};
 
 	switch (script_msg->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
@@ -664,9 +675,13 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 			log_flag(SCRIPT, "Handling %s (%s)",
 				 rpc_num2string(recv_msg->msg_type),
 				 script_msg->script_name);
-		status = _run_script(script_msg->script_path, script_msg->argv,
-				     script_msg->env, script_msg->job_id,
-				     script_msg->script_name,
+		/*
+		 * script_msg->timeout is in seconds but
+		 * run_command_args.max_wait expects milliseconds.
+		 * script_msg->timeout may also not be set (NO_VAL16).
+		 * Let _run_script handle the conversion.
+		 */
+		status = _run_script(&run_command_args, script_msg->job_id,
 				     script_msg->timeout,
 				     &resp_msg, &signalled);
 		break;

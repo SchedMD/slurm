@@ -154,20 +154,15 @@ static int _tot_wait (struct timeval *start_time)
 	return msec_delay;
 }
 
-/* Execute a script, wait for termination and return its stdout.
- * script_type IN - Type of program being run (e.g. "StartStageIn")
- * script_path IN - Fully qualified pathname of the program to execute
- * script_args IN - Arguments to the script
- * max_wait IN - Maximum time to wait in milliseconds,
- *		 -1 for no limit (asynchronous)
- * tid IN - thread we are called from
- * status OUT - Job exit code
- * env - environment for the command, if NULL execv is used
- * Return stdout+stderr of spawned program, value must be xfreed. */
-extern char *run_command(const char *script_type, const char *script_path,
-			 char **script_argv, char **env, int max_wait,
-			 pthread_t tid, int *status)
+extern char *run_command(run_command_args_t *args)
 {
+	char **env = args->env;
+	int max_wait = args->max_wait;
+	char **script_argv = args->script_argv;
+	const char *script_type = args->script_type;
+	const char *script_path = args->script_path;
+	int *status = args->status;
+	pthread_t tid = args->tid;
 	int i, new_wait, resp_size = 0, resp_offset = 0;
 	pid_t cpid;
 	char *resp = NULL;
