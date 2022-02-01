@@ -3026,19 +3026,20 @@ static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
 }
 
 /* Convert comma-delimited array of link counts to an integer array */
-static void _links_str2array(char *links, char *node_name,
-			     gres_node_state_t *gres_ns,
-			     int gres_inx, int gres_cnt)
+static int _links_str2array(char *links, char *node_name,
+			    gres_node_state_t *gres_ns,
+			    int gres_inx, int gres_cnt)
 {
 	char *start_ptr, *end_ptr = NULL;
-	int i = 0;
+	int i = 0, rc = SLURM_SUCCESS;
 
 	if (!links)	/* No "Links=" data */
-		return;
+		return SLURM_SUCCESS;
 	if (gres_inx >= gres_ns->link_len) {
 		error("%s: Invalid GRES index (%d >= %d)", __func__, gres_inx,
 		      gres_cnt);
-		return;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
 	start_ptr = links;
@@ -3050,24 +3051,31 @@ static void _links_str2array(char *links, char *node_name,
 			      "Link value '%d' < -2", __func__, links,
 			      node_name, gres_ns->links_cnt[gres_inx][i]);
 			gres_ns->links_cnt[gres_inx][i] = 0;
-			return;
+			rc = SLURM_ERROR;
+			goto end_it;
 		}
 		if (end_ptr[0] == '\0')
-			return;
+			return SLURM_SUCCESS;
 		if (end_ptr[0] != ',') {
 			error("%s: Invalid GRES Links value (%s) on node %s:"
 			      "end_ptr[0]='%c' != ','", __func__, links,
 			      node_name, end_ptr[0]);
-			return;
+			rc = SLURM_ERROR;
+			goto end_it;
 		}
 		if (++i >= gres_ns->link_len) {
 			error("%s: Invalid GRES Links value (%s) on node %s:"
 			      "i=%d >= link_len=%d", __func__, links, node_name,
 			      i, gres_ns->link_len);
-			return;
+			rc = SLURM_ERROR;
+			goto end_it;
 		}
 		start_ptr = end_ptr + 1;
 	}
+
+end_it:
+
+	return rc;
 }
 
 static bool _valid_gres_types(char *gres_name, gres_node_state_t *gres_ns,
@@ -3367,10 +3375,13 @@ static int _node_config_validate(char *node_name, char *orig_config,
 						/* Set by recovered job */
 						gres_ns->topo_gres_cnt_alloc[i]++;
 					}
-					_links_str2array(
-						gres_slurmd_conf->links,
-						node_name, gres_ns,
-						gres_inx, gres_cnt);
+					if (_links_str2array(
+						    gres_slurmd_conf->links,
+						    node_name, gres_ns,
+						    gres_inx, gres_cnt) !=
+					    SLURM_SUCCESS)
+						return EINVAL;
+
 					gres_inx++;
 				}
 			}
