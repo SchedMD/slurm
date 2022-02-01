@@ -235,12 +235,10 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 		error ("Failed to send slurmd conf to slurmstepd\n");
 	close(pfds[1]);
 
-	/*
-	 * Likely bug: prolog_epilog_timeout is NO_VAL16 if not configured,
-	 * leading to this timeout being huge. I suspect a 120-second cap is
-	 * meant here, but I'm leaving this behavior in place for the moment.
-	 */
-	timeout = MAX(slurm_conf.prolog_epilog_timeout, 120);
+	if (slurm_conf.prolog_epilog_timeout == NO_VAL16)
+		timeout = -1;
+	else
+		timeout = slurm_conf.prolog_epilog_timeout;
 	if (waitpid_timeout(mode, cpid, &status, timeout) < 0) {
 		error("spank/%s timed out after %u secs", mode, timeout);
 		return SLURM_ERROR;

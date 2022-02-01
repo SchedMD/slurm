@@ -141,6 +141,8 @@ documents those changes that are of interest to users and administrators.
     all other running steps on all resources (CPUs, memory, and GRES), even
     those steps that did not specify --overlap.
  -- Do not run the job if PrologSlurmctld times out.
+ -- Fix SPANK plugin calls slurm_spank_job_prolog and slurm_spank_job_epilog
+    not properly respecting PrologEpilogTimeout.
 
 * Changes in Slurm 21.08.7
 ==========================
