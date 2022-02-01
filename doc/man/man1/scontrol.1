@@ -258,16 +258,15 @@ A node will be marked "DOWN" if it doesn't reboot within \fBResumeTimeout\fR.
 \fBreconfigure\fR
 Instruct all Slurm daemons to re\-read the configuration file.
 This command does not restart the daemons.
-This mechanism would be used to modify configuration parameters (Epilog,
-Prolog, SlurmctldLogFile, SlurmdLogFile, etc.).
+This mechanism can be used to modify configuration parameters set in
+slurm.conf.
 The Slurm controller (slurmctld) forwards the request to all other daemons
 (slurmd daemon on each compute node). Running jobs continue execution.
-Most configuration parameters can be changed by just running this command,
-however, Slurm daemons should be shutdown and restarted if any of these
-parameters are to be changed: AuthType, ControlMach, PluginDir,
-StateSaveLocation, SlurmctldHost, SlurmctldPort,
-or SlurmdPort. The slurmctld daemon and all slurmd daemons must be
-restarted if nodes are added to or removed from the cluster.
+Most configuration parameters can be changed by just running this command;
+however, there are parameters that require a restart of the relevant Slurm
+daemons. Parameters requiring a restart will be noted in the
+\fBslurm.conf\fR(5) man page. The slurmctld daemon and all slurmd daemons
+must also be restarted if nodes are added to or removed from the cluster.
 .IP
 
 .TP
