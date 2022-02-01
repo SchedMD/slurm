@@ -2917,7 +2917,13 @@ The interval in seconds Slurms waits for Prolog and Epilog before terminating
 them. The default behavior is to wait indefinitely. This interval applies to
 the Prolog and Epilog run by slurmd daemon before and after the job, the
 PrologSlurmctld and EpilogSlurmctld run by slurmctld daemon, and the SPANK
-plugins run by the slurmstepd daemon.
+plugin prolog/epilog calls: slurm_spank_job_prolog and slurm_spank_job_epilog.
+.br
+If the PrologSlurmctld times out, the job is requeued if possible.
+If the Prolog or slurm_spank_job_prolog time out, the job is requeued if
+possible and the node is drained.
+If the Epilog or slurm_spank_job_epilog time out, the node is drained.
+In all cases, errors are logged.
 .IP
 
 .TP
