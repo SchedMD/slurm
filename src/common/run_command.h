@@ -47,6 +47,7 @@ typedef struct {
 	const char *script_type;
 	int *status;
 	pthread_t tid;
+	bool *timed_out;
 } run_command_args_t;
 
 /*
@@ -91,6 +92,7 @@ extern int run_command_count(void);
  * script_type IN - Type of program being run (e.g. "StartStageIn")
  * status OUT - Job exit code
  * tid IN - Thread we are calling from; zero if not using track_script.
+ * timed_out OUT - If not NULL, then set to true if the command timed out.
  *
  * Return stdout+stderr of spawned program, value must be xfreed.
  */

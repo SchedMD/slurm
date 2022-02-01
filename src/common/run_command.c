@@ -270,6 +270,8 @@ extern char *run_command(run_command_args_t *args)
 					error("%s: %s poll timeout @ %d msec",
 					      __func__, args->script_type,
 					      args->max_wait);
+					if (args->timed_out)
+						*(args->timed_out) = true;
 					break;
 				}
 				new_wait = MIN(new_wait, MAX_POLL_WAIT);
