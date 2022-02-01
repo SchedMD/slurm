@@ -3028,16 +3028,17 @@ static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
 /* Convert comma-delimited array of link counts to an integer array */
 static int _links_str2array(char *links, char *node_name,
 			    gres_node_state_t *gres_ns,
-			    int gres_inx, int gres_cnt)
+			    int gres_inx, int gres_cnt,
+			    char **reason_down)
 {
-	char *start_ptr, *end_ptr = NULL;
+	char *start_ptr, *end_ptr = NULL, *tmp = NULL;
 	int i = 0, rc = SLURM_SUCCESS;
 
 	if (!links)	/* No "Links=" data */
 		return SLURM_SUCCESS;
 	if (gres_inx >= gres_ns->link_len) {
-		error("%s: Invalid GRES index (%d >= %d)", __func__, gres_inx,
-		      gres_cnt);
+		tmp = xstrdup_printf("Invalid GRES index (%d >= %d)",
+				     gres_inx, gres_cnt);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -3047,9 +3048,10 @@ static int _links_str2array(char *links, char *node_name,
 		gres_ns->links_cnt[gres_inx][i] =
 			strtol(start_ptr, &end_ptr, 10);
 		if (gres_ns->links_cnt[gres_inx][i] < -2) {
-			error("%s: Invalid GRES Links value (%s) on node %s:"
-			      "Link value '%d' < -2", __func__, links,
-			      node_name, gres_ns->links_cnt[gres_inx][i]);
+			tmp = xstrdup_printf("Invalid GRES Links value (%s) on node %s: Link value '%d' < -2",
+					     links, node_name,
+					     gres_ns->links_cnt[gres_inx][i]);
+
 			gres_ns->links_cnt[gres_inx][i] = 0;
 			rc = SLURM_ERROR;
 			goto end_it;
@@ -3057,16 +3059,15 @@ static int _links_str2array(char *links, char *node_name,
 		if (end_ptr[0] == '\0')
 			return SLURM_SUCCESS;
 		if (end_ptr[0] != ',') {
-			error("%s: Invalid GRES Links value (%s) on node %s:"
-			      "end_ptr[0]='%c' != ','", __func__, links,
-			      node_name, end_ptr[0]);
+			tmp = xstrdup_printf("Invalid GRES Links value (%s) on node %s: end_ptr[0]='%c' != ','",
+					     links, node_name, end_ptr[0]);
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
 		if (++i >= gres_ns->link_len) {
-			error("%s: Invalid GRES Links value (%s) on node %s:"
-			      "i=%d >= link_len=%d", __func__, links, node_name,
-			      i, gres_ns->link_len);
+			tmp = xstrdup_printf("Invalid GRES Links value (%s) on node %s: i=%d >= link_len=%d.",
+					     links, node_name,
+					     i, gres_ns->link_len);
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
@@ -3074,6 +3075,15 @@ static int _links_str2array(char *links, char *node_name,
 	}
 
 end_it:
+	if (tmp) {
+		error("%s: %s If using AutoDetect the amount of GPUs configured in slurm.conf does not match what was detected. If this is intentional, please turn off AutoDetect and manually specify them in gres.conf.",
+		      __func__, tmp);
+		if (reason_down && !(*reason_down)) {
+			*reason_down = tmp;
+			tmp = NULL;
+		} else
+			xfree(tmp);
+	}
 
 	return rc;
 }
@@ -3378,7 +3388,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					if (_links_str2array(
 						    gres_slurmd_conf->links,
 						    node_name, gres_ns,
-						    gres_inx, gres_cnt) !=
+						    gres_inx, gres_cnt,
+						    reason_down) !=
 					    SLURM_SUCCESS)
 						return EINVAL;
 
