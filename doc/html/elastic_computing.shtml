@@ -376,7 +376,7 @@ work.</p>
 PARTITION AVAIL TIMELIMIT NODES STATE  NODELIST
 debug*     up   infinite  100   idle~  c1-compute-0-[0-99]
 </pre>
-<p>When Slurms schedules a job to a node in this state, the node will move to
+<p>When Slurm schedules a job to a node in this state, the node will move to
 <i>ALLOCATED</i> or <i>MIXED</i> (based on whether all the CPUs are allocated)
 and <i>POWERING_UP</i> (#).</p>
 <pre>
