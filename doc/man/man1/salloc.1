@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "January 2022" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "February2022" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -1173,6 +1173,10 @@ License names can be followed by a colon and count
 (the default count is one).
 Multiple license names should be comma separated (e.g.
 "\-\-licenses=foo:4,bar").
+
+\fBNOTE\fR: When submitting heterogeneous jobs, license requests only work
+correctly when made on the first component job.
+For example "salloc \-L ansys:2 :".
 .IP
 
 .TP
