@@ -87,8 +87,7 @@ launched but then killed when the limit is reached.
 With \fIqos\fR and/or \fIwckeys\fR enforced jobs will not be scheduled unless
 a valid qos and/or workload characterization key is specified.
 
-When \fBAccountingStorageEnforce\fR is changed, a restart of the slurmctld
-daemon is required (not just a "scontrol reconfig").
+A restart of slurmctld is required for changes to this parameter to take effect.
 .IP
 
 .TP
@@ -719,7 +718,7 @@ Deprecated option, see \fBSlurmctldHost\fR.
 .TP
 \fBCoreSpecPlugin\fR
 Identifies the plugins to be used for enforcement of core specialization.
-The slurmd daemon must be restarted for a change in CoreSpecPlugin
+A restart of the slurmd daemons is required for changes to this parameter
 to take effect.
 Acceptable values at present include:
 .IP
@@ -809,8 +808,7 @@ The default is OnDemand, Performance and UserSpace.
 \fBCredType\fR
 The cryptographic signature tool to be used in the creation of
 job step credentials.
-The slurmctld daemon must be restarted for a change in \fBCredType\fR
-to take effect.
+A restart of slurmctld is required for changes to this parameter to take effect.
 The default (and recommended) value is "cred/munge".
 .IP
 
@@ -1245,8 +1243,8 @@ additional functionality.
 No generic resources are managed by default.
 Ensure this parameter is consistent across all nodes in the cluster for
 proper operation.
-The \fBslurmctld\fR and \fBslurmd\fR daemons must be restarted for changes to
-this parameter to take effect.
+A restart of slurmctld and the slurmd daemons is required for this to take
+effect.
 .IP
 
 .TP
@@ -1622,8 +1620,7 @@ Only used for database type storage plugins, ignored otherwise.
 .TP
 \fBJobContainerType\fR
 Identifies the plugin to be used for job tracking.
-The slurmd daemon must be restarted for a change in JobContainerType
-to take effect.
+A restart of slurmctld is required for changes to this parameter to take effect.
 \fBNOTE\fR: The \fBJobContainerType\fR applies to a job allocation, while
 \fBProctrackType\fR applies to job steps.
 Acceptable values at present include:
@@ -2003,8 +2000,7 @@ Setting per MaxSubmitJobs per user is generally valuable to prevent a single
 user from filling the system with jobs.
 This is accomplished using Slurm's database and configuring enforcement of
 resource limits.
-This value may not be reset via "scontrol reconfig".
-It only takes effect upon restart of the slurmctld daemon.
+A restart of slurmctld is required for changes to this parameter to take effect.
 .IP
 
 .TP
@@ -2175,6 +2171,8 @@ Identifies the places in which to look for Slurm plugins.
 This is a colon\-separated list of directories, like the PATH
 environment variable.
 The default value is the prefix given at configure time + "/lib/slurm".
+A restart of slurmctld and the slurmd daemons is required for changes to
+this parameter to take effect.
 .IP
 
 .TP
@@ -2321,7 +2319,7 @@ Identifies the plugin used for system power management.
 Currently supported plugins include:
 \fBcray_aries\fR and
 \fBnone\fR.
-Changes to this value require restarting Slurm daemons to take effect.
+A restart of slurmctld is required for changes to this parameter to take effect.
 More information about system power management is available here
 <https://slurm.schedmd.com/power_mgmt.html>.
 By default, no power plugin is loaded.
@@ -2851,8 +2849,7 @@ coordinator of, but can only see themselves when listing users.
 Identifies the plugin to be used for process tracking on a job step basis.
 The slurmd daemon uses this mechanism to identify all processes
 which are children of processes it spawns for a user job step.
-The slurmd daemon must be restarted for a change in ProctrackType
-to take effect.
+A restart of slurmctld is required for changes to this parameter to take effect.
 NOTE: "proctrack/linuxproc" and "proctrack/pgid" can fail to
 identify all processes associated with a job since processes
 can become a child of the init process (when the parent process
@@ -3854,8 +3851,8 @@ specified desired switch count. The default value is 300 seconds.
 If used, the backup controller will not schedule jobs when it takes over. The
 backup controller will allow jobs to be submitted, modified and cancelled but
 won't schedule new jobs. This is useful in Cray environments when the backup
-controller resides on an external Cray node.  A restart is required to alter
-this option.
+controller resides on an external Cray node.
+A restart of slurmctld is required for changes to this parameter to take effect.
 .IP
 
 .TP
@@ -4034,9 +4031,7 @@ The default value is 30 seconds.
 .TP
 \fBSchedulerType\fR
 Identifies the type of scheduler to be used.
-Note the \fBslurmctld\fR daemon must be restarted for a change in
-scheduler type to become effective (reconfiguring a running daemon has
-no effect for this parameter).
+A restart of slurmctld is required for changes to this parameter to take effect.
 The \fBscontrol\fR command can be used to manually change job priorities
 if desired.
 Acceptable values include:
@@ -4081,7 +4076,7 @@ Enable the use of scrontab to submit and manage periodic repeating jobs.
 .TP
 \fBSelectType\fR
 Identifies the type of resource selection algorithm to be used.
-Changing this value can only be done by restarting the slurmctld daemon.
+A restart of slurmctld is required for changes to this parameter to take effect.
 When changed, all job information (running and pending) will be lost,
 since the job state save format used by each plugin is different.
 The only exception to this is when changing from cons_res to cons_tres or from
@@ -4144,6 +4139,8 @@ By default \fBSelectType=select/cons_res\fR, \fBSelectType=select/cray_aries\fR,
 and \fBSelectType=select/cons_tres\fR, use
 \fBCR_Core_Memory\fR, which allocates Core
 to jobs with considering their memory consumption.
+
+A restart of slurmctld is required for changes to this parameter to take effect.
 
 The following options are supported for \fBSelectType=select/cray_aries\fR:
 .IP
@@ -4375,6 +4372,7 @@ where the daemon runs.
 If the first specified host fails, the daemon will execute on the second host.
 If both the first and second specified host fails, the daemon will execute on
 the third host.
+A restart of slurmctld is required for changes to this parameter to take effect.
 .IP
 
 .TP
@@ -4423,7 +4421,7 @@ When enabled the slurmd will be permitted to retrieve config files from the
 slurmctld, and on any 'scontrol reconfigure' command new configs will
 be automatically pushed out and applied to nodes that are running in this
 "configless" mode.
-NOTE: a restart of the slurmctld is required for this to take effect.
+A restart of slurmctld is required for changes to this parameter to take effect.
 .IP
 
 .TP
@@ -4518,6 +4516,7 @@ build time. If none is explicitly specified, it will be set to 6817.
 \fBSlurmctldPort\fR may also be configured to support a range of port
 numbers in order to accept larger bursts of incoming messages by specifying
 two numbers separated by a dash (e.g. \fBSlurmctldPort=6817\-6818\fR).
+A restart of slurmctld is required for changes to this parameter to take effect.
 NOTE: Either \fBslurmctld\fR and \fBslurmd\fR daemons must not
 execute on the same nodes or the values of \fBSlurmctldPort\fR and
 \fBSlurmdPort\fR must be different.
@@ -4737,6 +4736,7 @@ The default value is "/var/run/slurmd.pid".
 The port number that the Slurm compute node daemon, \fBslurmd\fR, listens
 to for work. The default value is SLURMD_PORT as established at system
 build time. If none is explicitly specified, its value will be 6818.
+A restart of slurmctld is required for changes to this parameter to take effect.
 NOTE: Either slurmctld and slurmd daemons must not execute
 on the same nodes or the values of \fBSlurmctldPort\fR and \fBSlurmdPort\fR
 must be different.
@@ -4948,6 +4948,7 @@ readable and writable by both systems.
 Since all running and pending job information is stored here, the use of
 a reliable file system (e.g. RAID) is recommended.
 The default value is "/var/spool".
+A restart of slurmctld is required for changes to this parameter to take effect.
 If any slurm daemons terminate abnormally, their core files will also be written
 into this directory.
 .IP
