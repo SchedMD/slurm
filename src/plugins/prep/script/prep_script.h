@@ -41,8 +41,10 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
-extern void (*prolog_slurmctld_callback)(int rc, uint32_t job_id);
-extern void (*epilog_slurmctld_callback)(int rc, uint32_t job_id);
+extern void (*prolog_slurmctld_callback)(int rc, uint32_t job_id,
+					 bool timed_out);
+extern void (*epilog_slurmctld_callback)(int rc, uint32_t job_id,
+					 bool timed_out);
 
 extern void slurmctld_script(job_record_t *job_ptr, bool is_epilog);
 extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,

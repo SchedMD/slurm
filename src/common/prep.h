@@ -41,8 +41,8 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 typedef struct {
-	void (*prolog_slurmctld)(int rc, uint32_t job_id);
-	void (*epilog_slurmctld)(int rc, uint32_t job_id);
+	void (*prolog_slurmctld)(int rc, uint32_t job_id, bool timed_out);
+	void (*epilog_slurmctld)(int rc, uint32_t job_id, bool timed_out);
 } prep_callbacks_t;
 
 typedef enum {

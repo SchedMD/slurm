@@ -75,8 +75,10 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 static bool have_prolog_slurmctld = false;
 static bool have_epilog_slurmctld = false;
 
-void (*prolog_slurmctld_callback)(int rc, uint32_t job_id) = NULL;
-void (*epilog_slurmctld_callback)(int rc, uint32_t job_id) = NULL;
+void (*prolog_slurmctld_callback)(int rc, uint32_t job_id,
+				  bool timed_out) = NULL;
+void (*epilog_slurmctld_callback)(int rc, uint32_t job_id,
+				  bool timed_out) = NULL;
 
 extern int init(void)
 {

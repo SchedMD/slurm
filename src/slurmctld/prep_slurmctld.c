@@ -43,7 +43,8 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
-extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id)
+extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id,
+					   bool timed_out)
 {
 	slurmctld_lock_t job_write_lock =
 		{ .job = WRITE_LOCK, .node = WRITE_LOCK, .fed = READ_LOCK };
@@ -55,7 +56,18 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id)
 		unlock_slurmctld(job_write_lock);
 		return;
 	}
-	if (WEXITSTATUS(rc)) {
+	if (WIFSIGNALED(rc) && timed_out) {
+		/*
+		 * If the script was signaled due to the job being cancelled or
+		 * slurmctld shutting down, we don't consider that a failure.
+		 * However, if the script timed out, then it is considered a
+		 * failure. In both of these cases, the script was signaled with
+		 * SIGKILL, so we use the timed_out to distinguish between them.
+		 */
+		error("prolog_slurmctld JobId=%u failed due to timing out",
+		      job_id);
+		job_ptr->prep_prolog_failed = true;
+	} else if (WEXITSTATUS(rc)) {
 		error("prolog_slurmctld JobId=%u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(rc), WTERMSIG(rc));
 		job_ptr->prep_prolog_failed = true;
@@ -97,7 +109,8 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id)
 	unlock_slurmctld(job_write_lock);
 }
 
-extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id)
+extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id,
+					   bool timed_out)
 {
 	slurmctld_lock_t job_write_lock = {
 		.job = WRITE_LOCK, .node = WRITE_LOCK};
@@ -109,6 +122,10 @@ extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id)
 		error("%s: missing JobId=%u", __func__, job_id);
 		unlock_slurmctld(job_write_lock);
 		return;
+	}
+	if (timed_out) {
+		/* Log an error but still continue cleaning up the job */
+		error("epilog_slurmctld JobId=%u timed out", job_id);
 	}
 
 	/* prevent underflow */

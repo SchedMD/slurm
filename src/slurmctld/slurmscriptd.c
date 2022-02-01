@@ -762,14 +762,16 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 			 rpc_num2string(msg->msg_type),
 			 script_complete->script_name, script_complete->job_id);
 		prep_epilog_slurmctld_callback(script_complete->status,
-					       script_complete->job_id);
+					       script_complete->job_id,
+					       script_complete->timed_out);
 		break;
 	case SLURMSCRIPTD_PROLOG:
 		log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
 			 rpc_num2string(msg->msg_type),
 			 script_complete->script_name, script_complete->job_id);
 		prep_prolog_slurmctld_callback(script_complete->status,
-					       script_complete->job_id);
+					       script_complete->job_id,
+					       script_complete->timed_out);
 		break;
 	case SLURMSCRIPTD_NONE:
 		/*

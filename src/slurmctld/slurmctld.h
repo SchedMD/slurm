@@ -2814,8 +2814,10 @@ extern void slurm_rpc_control_status(slurm_msg_t *msg);
 /*
  * Callbacks to let the PrEp plugins signal completion if running async.
  */
-extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id);
-extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id);
+extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id,
+					   bool timed_out);
+extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id,
+					   bool timed_out);
 
 /*
  * Set node's comm_name and hostname.
