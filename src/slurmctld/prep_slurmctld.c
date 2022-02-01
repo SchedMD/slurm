@@ -67,7 +67,7 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id,
 		error("prolog_slurmctld JobId=%u failed due to timing out",
 		      job_id);
 		job_ptr->prep_prolog_failed = true;
-	} else if (WEXITSTATUS(rc)) {
+	} else if (WIFEXITED(rc) && WEXITSTATUS(rc)) {
 		error("prolog_slurmctld JobId=%u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(rc), WTERMSIG(rc));
 		job_ptr->prep_prolog_failed = true;
