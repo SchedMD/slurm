@@ -66,6 +66,7 @@ typedef struct {
 	script_type_t script_type;
 	bool signalled;
 	int status;
+	bool timed_out;
 } script_complete_t;
 
 typedef struct {

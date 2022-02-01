@@ -311,7 +311,7 @@ cleanup:
  */
 static int _respond_to_slurmctld(char *key, uint32_t job_id, char *resp_msg,
 				 char *script_name, script_type_t script_type,
-				 bool signalled, int status)
+				 bool signalled, int status, bool timed_out)
 {
 	int rc = SLURM_SUCCESS;
 	slurmscriptd_msg_t msg;
@@ -329,6 +329,7 @@ static int _respond_to_slurmctld(char *key, uint32_t job_id, char *resp_msg,
 	script_complete.script_type = script_type;
 	script_complete.signalled = signalled;
 	script_complete.status = status;
+	script_complete.timed_out = timed_out;
 
 	memset(&msg, 0, sizeof(msg));
 	msg.key = key;
@@ -438,7 +439,7 @@ static int _handle_flush(slurmscriptd_msg_t *recv_msg)
 	/* We need to respond to slurmctld that we are done */
 	_respond_to_slurmctld(recv_msg->key, 0, NULL,
 			      "SLURMSCRIPTD_REQUEST_FLUSH", SLURMSCRIPTD_NONE,
-			      false, SLURM_SUCCESS);
+			      false, SLURM_SUCCESS, false);
 
 	return SLURM_SUCCESS;
 }
@@ -643,6 +644,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 	int rc, status = 0;
 	char *resp_msg = NULL;
 	bool signalled = false;
+	bool timed_out = false;
 	pthread_t tid = pthread_self();
 	run_command_args_t run_command_args = {
 		.env = script_msg->env,
@@ -650,6 +652,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		.script_path = script_msg->script_path,
 		.script_type = script_msg->script_name,
 		.tid = tid,
+		.timed_out = &timed_out,
 	};
 
 	switch (script_msg->script_type) {
@@ -695,7 +698,8 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 	/* Send response */
 	rc = _respond_to_slurmctld(recv_msg->key, script_msg->job_id,
 				   resp_msg, script_msg->script_name,
-				   script_msg->script_type, signalled, status);
+				   script_msg->script_type, signalled, status,
+				   timed_out);
 
 	return rc;
 }

@@ -103,6 +103,7 @@ static void _pack_script_complete(script_complete_t *resp_msg, buf_t *buffer)
 	pack32(resp_msg->script_type, buffer);
 	packbool(resp_msg->signalled, buffer);
 	pack32(resp_msg->status, buffer);
+	packbool(resp_msg->timed_out, buffer);
 }
 
 static int _unpack_script_complete(script_complete_t **resp_msg,
@@ -119,6 +120,7 @@ static int _unpack_script_complete(script_complete_t **resp_msg,
 	safe_unpackbool(&data->signalled, buffer);
 	safe_unpack32(&tmp32, buffer);
 	data->status = (int)tmp32;
+	safe_unpackbool(&data->timed_out, buffer);
 
 	return SLURM_SUCCESS;
 
