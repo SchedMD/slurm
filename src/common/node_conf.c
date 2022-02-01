@@ -87,6 +87,7 @@ node_record_t **node_record_table_ptr = NULL;	/* node records */
 xhash_t* node_hash_table = NULL;
 int node_record_table_size = 0;		/* size of node_record_table_ptr */
 int node_record_count = 0;		/* count in node_record_table_ptr */
+int last_node_index = -1;		/* index of last node in tabe */
 uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
 
@@ -790,6 +791,9 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 		return NULL;
 	}
 
+	if (index > last_node_index)
+		last_node_index = index;
+
 	node_ptr = node_record_table_ptr[index] = xmalloc(sizeof(*node_ptr));
 	node_ptr->index = index;
 	node_ptr->name = xstrdup(node_name);
@@ -1241,6 +1245,8 @@ extern node_record_t * next_node(int *index)
 	while (!node_record_table_ptr[*index]) {
 		(*index)++;
 		if (*index >= node_record_count)
+			return NULL;
+		if (*index > last_node_index)
 			return NULL;
 	}
 
