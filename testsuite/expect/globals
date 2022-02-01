@@ -657,9 +657,7 @@ proc get_subtest_fail_count {} {
 #
 # DESCRIPTION
 #	The procedure will normally be called within an expect body to
-#	reset the bash prompt to the $test_prompt. It sends commands
-#	to reset the prompt and then reads off the quoted test prompts
-#	so they don't interfere with subsequent checks for the prompt.
+#	reset the bash prompt to the $test_prompt.
 #
 # EXAMPLE
 #	spawn $salloc $bin_bash
@@ -678,20 +676,22 @@ proc get_subtest_fail_count {} {
 ################################################################
 
 proc reset_bash_prompt {} {
-	global test_prompt
+	global eol test_prompt
 
 	send "unset PROMPT_COMMAND; unset PS0; export PS1=\"$test_prompt\"\r"
 	expect {
-		"\"$test_prompt\"" {}
-		timeout {
-			fail "Did not see quoted prompt in sent prompt reset command"
-		}
-	}
-	expect {
-		"\"$test_prompt\"" {}
-		timeout {
-			fail "Did not see quoted prompt in echoed prompt reset command"
-		}
+		# Some callers may expect/wait for an initial $test_prompt
+		# after this proc, but undesired $test_prompt strings surrounded
+		# by quotes may be echoed back once or twice depending on
+		# whether the original bash prompt returns before or after the
+		# send command above.
+		# So, we wait for the $test_prompt without quotes to skip the
+		# undesired quoted echoes from the caller, but also using a
+		# positive lookahead match to avoid consuming it from the
+		# expect buffer leaving it there for the caller in case they
+		# need it.
+		-re "${eol}(?=$test_prompt)" {}
+		timeout { fail "Failed to reset bash prompt" }
 	}
 }
 
