@@ -178,14 +178,16 @@ subtest {$job_2_node_inx == 2} "Verify host count for job 2" "srun host count ba
 
 #
 # Wait for accounting data to be propagated to slurmdbd
-# Using sacct -N <node_superset>, we force a time comparison that will not show
-# the accounting record until the start time is stored in the accounting
-# database, which is needed for subsequent sacct -N queries to be displayed.
+# NOTE: Sometimes the complete RPC reaches the DB before the start RPC.
+#       We use sacct -S to ensure that the start time is stored in the DB.
+#       Note that subsequent sacct -N queries will need start time stored to
+#       work properly because they need that to search for active node indexes
+#       along with the events table.
 #
-if [wait_for_command_match "$sacct -A ${test_name}-account.1 --name=$job_name_1 -X -n -P -j $job_id_1 -N $node1,$node2,$node3 -o jobid,jobname" "$job_id_1.$job_name_1"] {
+if [wait_for_command_match "$sacct -A ${test_name}-account.1 --name=$job_name_1 -X -n -P -j $job_id_1 -S now-60 -o jobid,jobname" "$job_id_1.$job_name_1"] {
 	fail "Accounting data for job 1 ($job_id_1) not propogated to slurmdbd"
 }
-if [wait_for_command_match "$sacct -A ${test_name}-account.1 --name=$job_name_2 -X -n -P -j $job_id_2 -N $node1,$node2,$node3 -o jobid,jobname" "$job_id_2.$job_name_2"] {
+if [wait_for_command_match "$sacct -A ${test_name}-account.1 --name=$job_name_2 -X -n -P -j $job_id_2 -S now-60 -o jobid,jobname" "$job_id_2.$job_name_2"] {
 	fail "Accounting data for job 2 ($job_id_2) not propogated to slurmdbd"
 }
 
