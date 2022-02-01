@@ -56,6 +56,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+#include "src/common/gres.h"
 #include "src/common/log.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -122,7 +123,7 @@ typedef struct {
 	size_t mems_size;
 	/* task devices */
 	bool allow_device;
-	char *device_major;
+	gres_device_id_t device;
 	/* jobacct memory */
 	uint64_t limit_in_bytes;
 	uint64_t soft_limit_in_bytes;

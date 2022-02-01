@@ -69,31 +69,47 @@ static int _handle_device_access(void *x, void *arg)
 	gres_device_t *gres_device = (gres_device_t *)x;
 	handle_dev_args_t *handle_args = (handle_dev_args_t *)arg;
 	cgroup_limits_t limits;
-	char *t_str = NULL;
+	char *dev_id_str;
+	int rc = SLURM_SUCCESS;
 
-	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
-	    (handle_args->cgroup_type == CG_LEVEL_TASK))
-		xstrfmtcat(t_str, "task_%d", handle_args->taskid);
-	log_flag(GRES, "%s %s: adding %s(%s)",
-		 handle_args->cgroup_type == CG_LEVEL_JOB ? "job" :
-		 handle_args->cgroup_type == CG_LEVEL_STEP ? "step" : t_str,
-		 gres_device->alloc ? "devices.allow" : "devices.deny",
-		 gres_device->major, gres_device->path);
-	xfree(t_str);
+	dev_id_str = gres_device_id2str(&gres_device->dev_desc);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
+		char *t_str = NULL;
+		switch (handle_args->cgroup_type) {
+		case CG_LEVEL_TASK:
+			t_str = xstrdup_printf("task_%d", handle_args->taskid);
+			break;
+		case CG_LEVEL_JOB:
+			t_str = xstrdup("job");
+			break;
+		case CG_LEVEL_STEP:
+			t_str = xstrdup("step");
+			break;
+		default:
+			t_str = xstrdup("unknown");
+			break;
+		}
+		log_flag(GRES, "%s %s: adding %s(%s)",
+			 t_str,
+			 gres_device->alloc ? "devices.allow" : "devices.deny",
+			 dev_id_str, gres_device->path);
+		xfree(t_str);
+	}
 
 	cgroup_init_limits(&limits);
 	limits.allow_device = gres_device->alloc;
-	limits.device_major = gres_device->major;
+	limits.device = gres_device->dev_desc;
 	limits.taskid = handle_args->taskid;
 
 	if (cgroup_g_constrain_set(CG_DEVICES, handle_args->cgroup_type,
 				   &limits) != SLURM_SUCCESS) {
 		error("Unable to set access constraint for device %s(%s)",
-		      gres_device->major, gres_device->path);
-		return SLURM_ERROR; /* Quit for-each */
+		      dev_id_str, gres_device->path);
+		rc = SLURM_ERROR;
 	}
 
-	return SLURM_SUCCESS;
+	xfree(dev_id_str);
+	return rc;
 }
 
 extern int task_cgroup_devices_init(void)

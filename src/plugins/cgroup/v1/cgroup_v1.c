@@ -899,6 +899,7 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 {
 	int rc = SLURM_SUCCESS;
 	task_cg_info_t *task_cg_info;
+	char *dev_str = NULL;
 #ifdef HAVE_NATIVE_CRAY
 	char expected_usage[32];
 	uint64_t exp;
@@ -995,20 +996,21 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 		}
 		break;
 	case CG_DEVICES:
+		dev_str = gres_device_id2str(&limits->device);
 		if (level == CG_LEVEL_STEP ||
 		    level == CG_LEVEL_JOB) {
 			if (limits->allow_device) {
 				if (common_cgroup_set_param(
 					    &int_cg[sub][level],
 					    "devices.allow",
-					    limits->device_major)
+					    dev_str)
 				    != SLURM_SUCCESS)
 					rc = SLURM_ERROR;
 			} else {
 				if (common_cgroup_set_param(
 					    &int_cg[sub][level],
 					    "devices.deny",
-					    limits->device_major)
+					    dev_str)
 				    != SLURM_SUCCESS)
 					rc = SLURM_ERROR;
 			}
@@ -1029,12 +1031,12 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 				rc = common_cgroup_set_param(
 					&task_cg_info->task_cg,
 					"devices.allow",
-					limits->device_major);
+					dev_str);
 			} else {
 				rc = common_cgroup_set_param(
 					&task_cg_info->task_cg,
 					"devices.deny",
-					limits->device_major);
+					dev_str);
 			}
 		}
 		break;
@@ -1044,6 +1046,7 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 		break;
 	}
 
+	xfree(dev_str);
 	return rc;
 }
 

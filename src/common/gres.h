@@ -66,11 +66,23 @@ typedef enum {
 	GRES_INTERNAL_FLAG_PROTECT_ENV = 2 << 0,
 } gres_internal_flags_t;
 
+typedef enum {
+	DEV_TYPE_NONE,
+	DEV_TYPE_BLOCK,
+	DEV_TYPE_CHAR,
+} gres_device_type_t;
+
+typedef struct {
+	uint32_t major;
+	uint32_t minor;
+	gres_device_type_t type;
+} gres_device_id_t;
+
 typedef struct {
 	int index; /* GRES bitmap index */
 	int alloc;
+	gres_device_id_t dev_desc;
 	int dev_num; /* Number at the end of the device filename */
-	char *major;
 	char *path;
 	char *unique_id; /* Used for GPU binding with MIGs */
 } gres_device_t;
@@ -1024,8 +1036,8 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 
 extern uint32_t gres_get_autodetect_flags(void);
 
-/* return the major info from a given path of a device */
-extern char *gres_device_major(char *dev_path);
+/* Convert the major/minor info to a string */
+extern char *gres_device_id2str(gres_device_id_t *gres_dev);
 
 /* Free memory for gres_device_t record */
 extern void destroy_gres_device(void *gres_device_ptr);

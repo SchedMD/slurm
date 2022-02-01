@@ -503,7 +503,6 @@ extern void cgroup_free_limits(cgroup_limits_t *limits)
 
 	xfree(limits->allow_cores);
 	xfree(limits->allow_mems);
-	xfree(limits->device_major);
 	xfree(limits);
 }
 
@@ -515,6 +514,9 @@ extern void cgroup_init_limits(cgroup_limits_t *limits)
 	memset(limits, 0, sizeof(*limits));
 
 	limits->taskid = NO_VAL;
+	limits->device.type = DEV_TYPE_NONE;
+	limits->device.major = NO_VAL;
+	limits->device.minor = NO_VAL;
 	limits->limit_in_bytes = NO_VAL64;
 	limits->soft_limit_in_bytes = NO_VAL64;
 	limits->kmem_limit_in_bytes = NO_VAL64;

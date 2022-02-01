@@ -54,16 +54,6 @@ typedef cpuset_t cpu_set_t;
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#ifdef MAJOR_IN_MKDEV
-#  include <sys/mkdev.h>
-#endif
-#ifdef MAJOR_IN_SYSMACROS
-#  include <sys/sysmacros.h>
-#endif
-
 #include <math.h>
 
 #ifdef __NetBSD__
@@ -104,7 +94,6 @@ strong_alias(gres_get_system_cnt, slurm_gres_get_system_cnt);
 strong_alias(gres_get_value_by_type, slurm_gres_get_value_by_type);
 strong_alias(gres_get_job_info, slurm_gres_get_job_info);
 strong_alias(gres_get_step_info, slurm_gres_get_step_info);
-strong_alias(gres_device_major, slurm_gres_device_major);
 strong_alias(gres_sock_delete, slurm_gres_sock_delete);
 strong_alias(gres_job_list_delete, slurm_gres_job_list_delete);
 strong_alias(destroy_gres_device, slurm_destroy_gres_device);
@@ -9904,32 +9893,17 @@ extern void gres_clear_tres_cnt(uint64_t *tres_cnt, bool locked)
 		assoc_mgr_unlock(&locks);
 }
 
-extern char *gres_device_major(char *dev_path)
+extern char *gres_device_id2str(gres_device_id_t *gres_dev)
 {
-	int loc_major, loc_minor;
-	char *ret_major = NULL;
-	struct stat fs;
+	char *res = NULL;
 
-	if (stat(dev_path, &fs) < 0) {
-		error("%s: stat(%s): %m", __func__, dev_path);
-		return NULL;
-	}
-	loc_major = (int)major(fs.st_rdev);
-	loc_minor = (int)minor(fs.st_rdev);
-	debug3("%s : %s major %d, minor %d",
-	       __func__, dev_path, loc_major, loc_minor);
-	if (S_ISBLK(fs.st_mode)) {
-		xstrfmtcat(ret_major, "b %d:", loc_major);
-		//info("device is block ");
-	}
-	if (S_ISCHR(fs.st_mode)) {
-		xstrfmtcat(ret_major, "c %d:", loc_major);
-		//info("device is character ");
-	}
-	xstrfmtcat(ret_major, "%d rwm", loc_minor);
+	xstrfmtcat(res, "%c %u:%u rwm",
+		   gres_dev->type == DEV_TYPE_BLOCK ? 'b' : 'c',
+		   gres_dev->major, gres_dev->minor);
 
-	return ret_major;
+	return res;
 }
+
 
 /* Free memory for gres_device_t record */
 extern void destroy_gres_device(void *gres_device_ptr)
@@ -9939,7 +9913,6 @@ extern void destroy_gres_device(void *gres_device_ptr)
 	if (!gres_device)
 		return;
 	xfree(gres_device->path);
-	xfree(gres_device->major);
 	xfree(gres_device->unique_id);
 	xfree(gres_device);
 }
