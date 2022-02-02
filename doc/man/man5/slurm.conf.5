@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "February 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4061,12 +4061,6 @@ An exception is made for jobs that can not run due to partition constraints
 (e.g. the time limit) or down/drained nodes.
 In that case, lower priority jobs can be initiated and not impact the higher
 priority job.
-.IP
-
-.TP
-\fBsched/hold\fR
-To hold all newly arriving jobs if a file "/etc/slurm.hold"
-exists otherwise use the built\-in FIFO scheduler
 .RE
 .IP
 
