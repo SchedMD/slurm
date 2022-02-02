@@ -76,7 +76,6 @@ static long hertz = 0;
 List prec_list = NULL;
 
 static int my_pagesize = 0;
-static DIR  *slash_proc = NULL;
 static int energy_profile = ENERGY_DATA_NODE_ENERGY_UP;
 
 static int _find_prec(void *x, void *key)
@@ -814,9 +813,6 @@ extern void jag_common_init(long in_hertz)
 extern void jag_common_fini(void)
 {
 	FREE_NULL_LIST(prec_list);
-
-	if (slash_proc)
-		(void) closedir(slash_proc);
 }
 
 extern void destroy_jag_prec(void *object)
