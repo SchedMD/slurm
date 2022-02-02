@@ -76,6 +76,11 @@ typedef List (*db_list_query_func_t)(void *db_conn, void *cond);
  * rc if the query was successful.
  */
 typedef int (*db_rc_query_func_t)(void *db_conn, List list);
+/*
+ * Generic typedef for the DB modify functions that takes an object record and
+ * returns an List if the query was successful or NULL on error
+ */
+typedef List (*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
 
 /* ------------ handlers for slurmdbd queries --------------- */
 
@@ -122,6 +127,29 @@ extern int db_query_rc_funcname(data_t *errors,
 				rest_auth_context_t *auth, List list,
 				db_rc_query_func_t func,
 				const char *func_name);
+
+/*
+ * Macro helper for modify database API for List output.
+ * Converts the function name to string.
+ */
+#define db_modify_rc(errors, auth, cond, obj, func)                  \
+	db_modify_rc_funcname(errors, auth, cond, obj,               \
+			      (db_rc_modify_func_t)func, #func)
+
+/*
+ * Modify object in database API
+ * IN errors - data list to append a new error
+ * IN auth - connection authentication attr
+ * IN cond - ptr to filter conditional to pass to func
+ * IN obj - ptr to obj to pass to func
+ * IN func - function ptr to call
+ * IN func_name - string of func name (for errors)
+ * RET SLURM_SUCCESS or error
+ */
+extern int db_modify_rc_funcname(data_t *errors, rest_auth_context_t *auth,
+				 void *cond, void *obj,
+				 db_rc_modify_func_t func,
+				 const char *func_name);
 
 /*
  * Request database API to commit connection
