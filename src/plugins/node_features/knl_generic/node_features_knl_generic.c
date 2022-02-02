@@ -1324,7 +1324,8 @@ extern int node_features_p_job_valid(char *job_features)
  * Translate a job's feature request to the node features needed at boot time.
  *	If multiple MCDRAM or NUMA values are ORed, pick the first ones.
  * IN job_features - job's --constraint specification
- * RET features required on node reboot. Must xfree to release memory
+ * RET comma-delimited features required on node reboot. Must xfree to release
+ *     memory
  */
 extern char *node_features_p_job_xlate(char *job_features)
 {

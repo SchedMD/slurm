@@ -674,7 +674,8 @@ extern void build_active_feature_bitmap(job_record_t *job_ptr,
 /* Return bitmap of nodes with all specified features currently active */
 extern bitstr_t *build_active_feature_bitmap2(char *reboot_features)
 {
-	char *tmp, *sep;
+	const char *delim = ",";
+	char *tmp, *tok, *save_ptr = NULL;
 	bitstr_t *active_node_bitmap = NULL;
 	node_feature_t *node_feat_ptr;
 
@@ -685,34 +686,38 @@ extern bitstr_t *build_active_feature_bitmap2(char *reboot_features)
 	}
 
 	tmp = xstrdup(reboot_features);
-	sep = strchr(tmp, ',');
-	if (sep) {
-		sep[0] = '\0';
+	tok = strtok_r(tmp, delim, &save_ptr);
+
+	while (tok) {
 		node_feat_ptr = list_find_first(active_feature_list,
-						list_find_feature, sep + 1);
+						list_find_feature, tok);
 		if (node_feat_ptr && node_feat_ptr->node_bitmap) {
-			active_node_bitmap =
-				bit_copy(node_feat_ptr->node_bitmap);
+			/*
+			 * Found feature, add nodes with this feature and
+			 * remove nodes without this feature (bit_and)
+			 */
+			if (!active_node_bitmap)
+				active_node_bitmap =
+					bit_copy(node_feat_ptr->node_bitmap);
+			else
+				bit_and(active_node_bitmap,
+					node_feat_ptr->node_bitmap);
 		} else {
-			active_node_bitmap = bit_alloc(node_record_count);
+			/*
+			 * Feature not found in any nodes, so we definitely
+			 * need to reboot all of the nodes
+			 */
+			if (!active_node_bitmap)
+				active_node_bitmap =
+					bit_alloc(node_record_count);
+			else
+				bit_clear_all(active_node_bitmap);
+			break;
 		}
+
+		tok = strtok_r(NULL, delim, &save_ptr);
 	}
-	node_feat_ptr = list_find_first(active_feature_list, list_find_feature,
-					tmp);
-	if (node_feat_ptr && node_feat_ptr->node_bitmap) {
-		if (active_node_bitmap) {
-			bit_and(active_node_bitmap, node_feat_ptr->node_bitmap);
-		} else {
-			active_node_bitmap =
-				bit_copy(node_feat_ptr->node_bitmap);
-		}
-	} else {
-		if (active_node_bitmap) {
-			bit_clear_all(active_node_bitmap);
-		} else {
-			active_node_bitmap = bit_alloc(node_record_count);
-		}
-	}
+
 	xfree(tmp);
 
 	return active_node_bitmap;
