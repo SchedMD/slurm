@@ -253,9 +253,13 @@ MySQL test program built properly.
 <p><b>NOTE:</b> Before running the slurmdbd for the first time, review the
 current setting for MySQL's <i>innodb_buffer_pool_size</i>.
 Consider setting this
-value large enough to handle the size of the database. This helps when
-converting large tables over to the new database schema and when purging
-old records. Setting <i>innodb_lock_wait_timeout</i> and
+value large enough to handle the size of the database. Having this value
+too small can be problematic when converting large tables over to the new
+database schema or when purging old records. We recommend assigning a
+significant portion of the system memory to this, keeping in mind the other
+resource requirements on the machine running MySQL/MariaDB, somewhere between
+5 and 50 percent of the available memory.
+Setting <i>innodb_lock_wait_timeout</i> and
 <i>innodb_log_file_size</i> to
 larger values than the default is also recommended.</p>
 
@@ -263,17 +267,18 @@ larger values than the default is also recommended.</p>
 See the following example:
 <pre>
 mysql> SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
-+-------------------------+-----------+
-| Variable_name           | Value     |
-+-------------------------+-----------+
-| innodb_buffer_pool_size | 134217728 |
-+-------------------------+-----------+
-1 row in set (0.00 sec)
++-------------------------+------------+
+| Variable_name           | Value      |
++-------------------------+------------+
+| innodb_buffer_pool_size | 4294967296 |
++-------------------------+------------+
+1 row in set (0.001 sec)
+
 
 $cat my.cnf
 ...
 [mysqld]
-<i>innodb_buffer_pool_size=1024M</i>
+<i>innodb_buffer_pool_size=4096M</i>
 <i>innodb_log_file_size=64M</i>
 <i>innodb_lock_wait_timeout=900</i>
 ...
@@ -836,7 +841,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 28 December 2021</p>
+<p style="text-align:center;">Last modified 2 February 2022</p>
 
 <!--#include virtual="footer.txt"-->
 

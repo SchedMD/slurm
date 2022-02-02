@@ -754,7 +754,10 @@ The recommended upgrade order is as follows:</p>
 <li>Backup the Slurm database using mysqldump (or similar tool), e.g. <span
     class="commandline">mysqldump --databases slurm_acct_db > backup.sql</span>.
     You may also want to take this opportunity to verify that
-    the innodb_buffer_pool_size in my.cnf is at least 128M.</li>
+    the innodb_buffer_pool_size in my.cnf is greater than the default.
+    See the recommendation in the
+    <a href="accounting.html#slurm-accounting-configuration-before-build">
+    accounting page</a>.</li>
 <li>Upgrade the slurmdbd daemon.</li>
 <li>Restart the slurmdbd daemon.</li>
 <ul>
@@ -805,6 +808,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 7 December 2021</p>
+<p style="text-align:center;">Last modified 2 February 2022</p>
 
 <!--#include virtual="footer.txt"-->

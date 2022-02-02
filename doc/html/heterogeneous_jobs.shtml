@@ -641,6 +641,10 @@ single srun command (e.g.
 <p>The sattach command can only be used to attach to a single component of
 a heterogeneous job at a time.</p>
 
+<p>License requests only work correctly when made on the first component
+job (e.g.
+"sbatch -L ansys:2 : script.sh").<p>
+
 <p>Heterogeneous jobs are only scheduled by the backfill scheduler plugin.
 The more frequently executed scheduling logic only starts jobs on a first-in
 first-out (FIFO) basis and lacks logic for concurrently scheduling all
@@ -776,6 +780,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 29 September 2021</p>
+<p style="text-align:center;">Last modified 2 February 2022</p>
 
 <!--#include virtual="footer.txt"-->
