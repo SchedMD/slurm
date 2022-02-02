@@ -2874,6 +2874,7 @@ typedef struct {
 	uint32_t max_job_cnt;	/* maximum number of active jobs */
 	uint32_t max_job_id;	/* maximum job id before using first_job_id */
 	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
+	uint32_t max_node_cnt;  /* max number of static + dynamic nodes */
 	uint32_t max_step_cnt;	/* maximum number of steps per job */
 	uint16_t max_tasks_per_node; /* maximum tasks per node */
 	char *mcs_plugin; /* mcs plugin type */

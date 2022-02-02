@@ -297,6 +297,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxArraySize", S_P_UINT32},
 	{"MaxDBDMsgs", S_P_UINT32},
 	{"MaxJobCount", S_P_UINT32},
+	{"MaxNodeCount", S_P_UINT32},
 	{"MaxJobId", S_P_UINT32},
 	{"MaxMemPerCPU", S_P_UINT64},
 	{"MaxMemPerNode", S_P_UINT64},
@@ -4135,6 +4136,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else if (s_p_get_uint64(&uint64_tmp, "MaxMemPerCPU", hashtbl)) {
 		   error("MaxMemPerCPU ignored, since it's mutually exclusive with MaxMemPerNode");
 	}
+
+	s_p_get_uint32(&conf->max_node_cnt, "MaxNodeCount", hashtbl);
 
 	if (!s_p_get_uint32(&conf->max_step_cnt, "MaxStepCount", hashtbl))
 		conf->max_step_cnt = DEFAULT_MAX_STEP_COUNT;
