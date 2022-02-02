@@ -203,7 +203,6 @@ static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
 #define MAGIC_FOREACH_UP_ASSOC 0xbaed2a12
 typedef struct {
 	int magic;
-	List assoc_list;
 	List tres_list;
 	List qos_list;
 	data_t *errors;
@@ -220,6 +219,10 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 		.g_qos_list = args->qos_list,
 		.auth = args->auth,
 	};
+	int rc;
+	List assoc_list = NULL;
+	slurmdb_assoc_cond_t cond = {0};
+	data_t *query_errors = data_new();
 
 	xassert(args->magic == MAGIC_FOREACH_UP_ASSOC);
 
@@ -232,12 +235,54 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 	assoc = xmalloc(sizeof(*assoc));
 	slurmdb_init_assoc_rec(assoc, false);
 
-	list_append(args->assoc_list, assoc);
-
 	if (parse(PARSE_ASSOC, assoc, data, args->errors, &penv))
 		return DATA_FOR_EACH_FAIL;
 
-	return DATA_FOR_EACH_CONT;
+	if (assoc->acct) {
+		cond.acct_list = list_create(NULL);
+		list_append(cond.acct_list, assoc->acct);
+	}
+	if (assoc->cluster) {
+		cond.cluster_list = list_create(NULL);
+		list_append(cond.cluster_list, assoc->cluster);
+	}
+	if (assoc->partition) {
+		cond.partition_list = list_create(NULL);
+		list_append(cond.partition_list, assoc->partition);
+	}
+	if (assoc->user) {
+		cond.user_list = list_create(NULL);
+		list_append(cond.user_list, assoc->user);
+	}
+
+	if ((rc = db_query_list(query_errors, args->auth, &assoc_list,
+				 slurmdb_associations_get, &cond)) ||
+	    list_is_empty(assoc_list)) {
+		FREE_NULL_LIST(assoc_list);
+		assoc_list = list_create(slurmdb_destroy_assoc_rec);
+		list_append(assoc_list, assoc);
+
+		debug("%s: adding association request: acct=%s cluster=%s partition=%s user=%s",
+		      __func__, assoc->acct, assoc->cluster, assoc->partition, assoc->user);
+
+		rc = db_query_rc(errors, args->auth, assoc_list, slurmdb_associations_add);
+	} else if (list_count(assoc_list) > 1) {
+		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY, "ambiguous modify request", "slurmdb_associations_get");
+	} else {
+		debug("%s: modifying association request: acct=%s cluster=%s partition=%s user=%s",
+		      __func__, assoc->acct, assoc->cluster, assoc->partition, assoc->user);
+
+		rc = db_modify_rc(errors, args->auth, &cond, assoc, slurmdb_associations_modify);
+	}
+
+	FREE_NULL_LIST(assoc_list);
+	FREE_NULL_LIST(cond.acct_list);
+	FREE_NULL_LIST(cond.cluster_list);
+	FREE_NULL_LIST(cond.partition_list);
+	FREE_NULL_LIST(cond.user_list);
+	FREE_NULL_DATA(query_errors);
+
+	return rc ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
 }
 
 static int _update_assocations(data_t *query, data_t *resp,
@@ -255,7 +300,6 @@ static int _update_assocations(data_t *query, data_t *resp,
 		.magic = MAGIC_FOREACH_UP_ASSOC,
 		.auth = auth,
 		.errors = errors,
-		.assoc_list = list_create(slurmdb_destroy_assoc_rec),
 	};
 	data_t *dassoc = get_query_key_list("associations", errors, query);
 
@@ -267,13 +311,9 @@ static int _update_assocations(data_t *query, data_t *resp,
 	    (data_list_for_each(dassoc, _foreach_update_assoc, &args) < 0))
 		rc = ESLURM_REST_INVALID_QUERY;
 
-	if (!rc &&
-	    !(rc = db_query_rc(errors, auth, args.assoc_list,
-			       slurmdb_associations_add)) &&
-	    commit)
+	if (!rc && commit)
 		rc = db_query_commit(errors, auth);
 
-	FREE_NULL_LIST(args.assoc_list);
 	FREE_NULL_LIST(args.tres_list);
 
 	return rc;
