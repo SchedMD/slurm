@@ -315,6 +315,90 @@ static int _find_pid_task(void *x, void *key)
 	return found;
 }
 
+static void _wait_cgroup_empty(xcgroup_t *cg, int timeout_ms)
+{
+	char *cgroup_events = NULL, *events_content = NULL, *ptr;
+	int rc, fd, wd, populated = -1;
+	size_t sz;
+	struct pollfd pfd[1];
+
+	/* Check if cgroup is empty in the first place. */
+	if (common_cgroup_get_param(
+		    cg, "cgroup.events", &events_content, &sz) != SLURM_SUCCESS)
+		error("Cannot read %s/cgroup.events", cg->path);
+
+	if (events_content) {
+		if ((ptr = xstrstr(events_content, "populated"))) {
+			if (sscanf(ptr, "populated %u", &populated) != 1)
+				error("Cannot read populated counter from cgroup.events file.");
+		}
+		xfree(events_content);
+	}
+
+	if (populated < 0) {
+		error("Cannot determine if %s is empty.", cg->path);
+		return;
+	} else if (populated == 0) //We're done
+		return;
+
+	/*
+	 * Cgroup is not empty, so wait for a while just monitoring any change
+	 * on cgroup.events. Changing populate from 1 to 0 is what we expect.
+	 */
+
+	xstrfmtcat(cgroup_events, "%s/cgroup.events", cg->path);
+
+	/* Initialize an inotify monitor */
+	fd = inotify_init();
+	if (fd < 0) {
+		error("Cannot initialize inotify for checking cgroup events: %m");
+		return;
+	}
+
+	/* Set the file and events we want to monitor. */
+	wd = inotify_add_watch(fd, cgroup_events, IN_MODIFY);
+	if (wd < 0) {
+		error("Cannot add watch events to %s: %m", cgroup_events);
+		goto end_inotify;
+	}
+
+	/* Wait for new events. */
+	pfd[0].fd = fd;
+	pfd[0].events = POLLIN;
+	rc = poll(pfd, 1, timeout_ms);
+
+	/*
+	 * We don't really care about the event details, just check now if the
+	 * cg event file contains what we're looking for.
+	 */
+	if (rc < 0)
+		error("Error polling for event in %s: %m", cgroup_events);
+	else if (rc == 0)
+		error("Timeout waiting for %s to become empty.", cgroup_events);
+
+	/* Check if cgroup is empty again. */
+	if (common_cgroup_get_param(cg, "cgroup.events",
+				    &events_content, &sz) != SLURM_SUCCESS)
+		error("Cannot read %s/cgroup.events", cg->path);
+
+	if (events_content) {
+		if ((ptr = xstrstr(events_content, "populated"))) {
+			if (sscanf(ptr, "populated %u", &populated) != 1)
+				error("Cannot read populated counter from cgroup.events file.");
+		}
+		xfree(events_content);
+	}
+
+	if (populated < 0)
+		error("Cannot determine if %s is empty.", cg->path);
+	else if (populated == 1)
+		log_flag(CGROUP, "Cgroup %s is not empty.", cg->path);
+
+end_inotify:
+	close(fd);
+	xfree(cgroup_events);
+}
+
 /*
  * Talk with systemd through dbus to create a new scope where we will put all
  * the slurmstepds and user processes. This way we can safely restart slurmd
@@ -783,6 +867,8 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t ctl)
 		      init_root.path);
 		goto end;
 	}
+	/* Wait for this cgroup to be empty, 1 second */
+	_wait_cgroup_empty(&int_cg[CG_LEVEL_STEP_SLURM], 1000);
 
 	/* Remove any possible task directories first */
 	_all_tasks_destroy();

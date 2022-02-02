@@ -42,6 +42,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/inotify.h>
+#include <poll.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
