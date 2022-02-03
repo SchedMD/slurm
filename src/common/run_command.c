@@ -156,42 +156,35 @@ static int _tot_wait (struct timeval *start_time)
 
 extern char *run_command(run_command_args_t *args)
 {
-	char **env = args->env;
-	int max_wait = args->max_wait;
-	char **script_argv = args->script_argv;
-	const char *script_type = args->script_type;
-	const char *script_path = args->script_path;
-	int *status = args->status;
-	pthread_t tid = args->tid;
 	int i, new_wait, resp_size = 0, resp_offset = 0;
 	pid_t cpid;
 	char *resp = NULL;
 	int pfd[2] = { -1, -1 };
 
-	if ((script_path == NULL) || (script_path[0] == '\0')) {
+	if ((args->script_path == NULL) || (args->script_path[0] == '\0')) {
 		error("%s: no script specified", __func__);
-		*status = 127;
+		*(args->status) = 127;
 		resp = xstrdup("Run command failed - configuration error");
 		return resp;
 	}
-	if (script_path[0] != '/') {
+	if (args->script_path[0] != '/') {
 		error("%s: %s is not fully qualified pathname (%s)",
-		      __func__, script_type, script_path);
-		*status = 127;
+		      __func__, args->script_type, args->script_path);
+		*(args->status) = 127;
 		resp = xstrdup("Run command failed - configuration error");
 		return resp;
 	}
-	if (access(script_path, R_OK | X_OK) < 0) {
+	if (access(args->script_path, R_OK | X_OK) < 0) {
 		error("%s: %s can not be executed (%s) %m",
-		      __func__, script_type, script_path);
-		*status = 127;
+		      __func__, args->script_type, args->script_path);
+		*(args->status) = 127;
 		resp = xstrdup("Run command failed - configuration error");
 		return resp;
 	}
-	if (max_wait != -1) {
+	if (args->max_wait != -1) {
 		if (pipe(pfd) != 0) {
 			error("%s: pipe(): %m", __func__);
-			*status = 127;
+			*(args->status) = 127;
 			resp = xstrdup("System error");
 			return resp;
 		}
@@ -200,7 +193,7 @@ extern char *run_command(run_command_args_t *args)
 	child_proc_count++;
 	slurm_mutex_unlock(&proc_count_mutex);
 	if ((cpid = fork()) == 0) {
-		if (max_wait != -1) {
+		if (args->max_wait != -1) {
 			int devnull;
 			if ((devnull = open("/dev/null", O_RDWR)) < 0) {
 				error("%s: Unable to open /dev/null: %m",
@@ -231,14 +224,14 @@ extern char *run_command(run_command_args_t *args)
 			error("%s: Unable to setresuid()", __func__);
 			_exit(127);
 		}
-		if (!env)
-			execv(script_path, script_argv);
+		if (!args->env)
+			execv(args->script_path, args->script_argv);
 		else
-			execve(script_path, script_argv, env);
-		error("%s: execv(%s): %m", __func__, script_path);
+			execve(args->script_path, args->script_argv, args->env);
+		error("%s: execv(%s): %m", __func__, args->script_path);
 		_exit(127);
 	} else if (cpid < 0) {
-		if (max_wait != -1) {
+		if (args->max_wait != -1) {
 			close(pfd[0]);
 			close(pfd[1]);
 		}
@@ -246,35 +239,37 @@ extern char *run_command(run_command_args_t *args)
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
-	} else if (max_wait != -1) {
+	} else if (args->max_wait != -1) {
 		struct pollfd fds;
 		struct timeval tstart;
 		resp_size = 1024;
 		resp = xmalloc(resp_size);
 		close(pfd[1]);
 		gettimeofday(&tstart, NULL);
-		if (tid)
-			track_script_reset_cpid(tid, cpid);
+		if (args->tid)
+			track_script_reset_cpid(args->tid, cpid);
 		while (1) {
 			if (command_shutdown) {
 				error("%s: killing %s operation on shutdown",
-				      __func__, script_type);
+				      __func__, args->script_type);
 				break;
 			}
 
-			if (tid && track_script_broadcast(tid, *status))
+			if (args->tid &&
+			    track_script_broadcast(args->tid, *(args->status)))
 				break;
 
 			fds.fd = pfd[0];
 			fds.events = POLLIN | POLLHUP | POLLRDHUP;
 			fds.revents = 0;
-			if (max_wait <= 0) {
+			if (args->max_wait <= 0) {
 				new_wait = MAX_POLL_WAIT;
 			} else {
-				new_wait = max_wait - _tot_wait(&tstart);
+				new_wait = args->max_wait - _tot_wait(&tstart);
 				if (new_wait <= 0) {
 					error("%s: %s poll timeout @ %d msec",
-					      __func__, script_type, max_wait);
+					      __func__, args->script_type,
+					      args->max_wait);
 					break;
 				}
 				new_wait = MIN(new_wait, MAX_POLL_WAIT);
@@ -283,7 +278,8 @@ extern char *run_command(run_command_args_t *args)
 			if (i == 0) {
 				continue;
 			} else if (i < 0) {
-				error("%s: %s poll:%m", __func__, script_type);
+				error("%s: %s poll:%m",
+				      __func__, args->script_type);
 				break;
 			}
 			if ((fds.revents & POLLIN) == 0)
@@ -296,7 +292,7 @@ extern char *run_command(run_command_args_t *args)
 				if (errno == EAGAIN)
 					continue;
 				error("%s: read(%s): %m", __func__,
-				      script_path);
+				      args->script_path);
 				break;
 			} else {
 				resp_offset += i;
@@ -309,15 +305,15 @@ extern char *run_command(run_command_args_t *args)
 		killpg(cpid, SIGTERM);
 		usleep(10000);
 		killpg(cpid, SIGKILL);
-		waitpid(cpid, status, 0);
+		waitpid(cpid, args->status, 0);
 		close(pfd[0]);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
 	} else {
-		if (tid)
-			track_script_reset_cpid(tid, cpid);
-		waitpid(cpid, status, 0);
+		if (args->tid)
+			track_script_reset_cpid(args->tid, cpid);
+		waitpid(cpid, args->status, 0);
 	}
 
 	return resp;
