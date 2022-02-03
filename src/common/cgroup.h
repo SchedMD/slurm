@@ -99,6 +99,7 @@ typedef enum {
 
 typedef enum {
 	CG_LEVEL_ROOT,
+	CG_LEVEL_SLURM,
 	CG_LEVEL_USER,
 	CG_LEVEL_JOB,
 	CG_LEVEL_STEP,

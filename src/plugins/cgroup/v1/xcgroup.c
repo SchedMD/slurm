@@ -449,9 +449,9 @@ extern int xcgroup_cpuset_init(xcgroup_t *cg)
 	return SLURM_SUCCESS;
 }
 
-extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns)
+extern int xcgroup_create_slurm_cg(xcgroup_ns_t *ns, xcgroup_t *slurm_cg)
 {
-	xcgroup_t slurm_cg;
+	int rc = SLURM_SUCCESS;
 	char *pre;
 
 	pre = xstrdup(slurm_cgroup_conf.cgroup_prepend);
@@ -466,19 +466,23 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns)
 #endif
 
 	/* create slurm cgroup in the ns (it could already exist) */
-	if (common_cgroup_create(ns, &slurm_cg, pre, getuid(), getgid())
-	    != SLURM_SUCCESS)
-		return pre;
+	if (common_cgroup_create(ns, slurm_cg, pre, getuid(), getgid())
+	    != SLURM_SUCCESS) {
+		xfree(pre);
+		return SLURM_ERROR;
+	}
 
-	if (common_cgroup_instantiate(&slurm_cg) != SLURM_SUCCESS)
+	if (common_cgroup_instantiate(slurm_cg) != SLURM_SUCCESS) {
 		error("unable to build slurm cgroup for ns %s: %m",
 		      ns->subsystems);
-	else
+		rc = SLURM_ERROR;
+	} else
 		debug3("slurm cgroup %s successfully created for ns %s",
 		       pre, ns->subsystems);
 
-	common_cgroup_destroy(&slurm_cg);
-	return pre;
+	xfree(pre);
+
+	return rc;
 }
 
 extern int xcgroup_create_hierarchy(const char *calling_func,
@@ -489,24 +493,21 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 				    char step_cgroup_path[],
 				    char user_cgroup_path[])
 {
-	xcgroup_t root_cg;
 	xcgroup_t *job_cg = &int_cg[CG_LEVEL_JOB];
 	xcgroup_t *step_cg = &int_cg[CG_LEVEL_STEP];
 	xcgroup_t *user_cg = &int_cg[CG_LEVEL_USER];
+	xcgroup_t *slurm_cg = &int_cg[CG_LEVEL_SLURM];
 	int rc = SLURM_SUCCESS;
-	char *slurm_cgpath = xcgroup_create_slurm_cg(ns);
 
 	/* build user cgroup relative path if not set (should not be) */
 	if (*user_cgroup_path == '\0') {
 		if (snprintf(user_cgroup_path, PATH_MAX, "%s/uid_%u",
-			     slurm_cgpath, job->uid) >= PATH_MAX) {
+			     slurm_cg->name, job->uid) >= PATH_MAX) {
 			error("%s: unable to build uid %u cgroup relative path : %m",
 			      calling_func, job->uid);
-			xfree(slurm_cgpath);
 			return SLURM_ERROR;
 		}
 	}
-	xfree(slurm_cgpath);
 
 	/* build job cgroup relative path if not set (may not be) */
 	if (*job_cgroup_path == '\0') {
@@ -537,11 +538,6 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 			      calling_func, &job->step_id);
 			return SLURM_ERROR;
 		}
-	}
-
-	if (common_cgroup_create(ns, &root_cg, "", 0, 0) != SLURM_SUCCESS) {
-		error("%s: unable to create root cgroup", calling_func);
-		return SLURM_ERROR;
 	}
 
 	/*
@@ -613,7 +609,5 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 	}
 
 endit:
-	common_cgroup_destroy(&root_cg);
-
 	return rc;
 }

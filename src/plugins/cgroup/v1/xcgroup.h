@@ -168,9 +168,11 @@ extern int xcgroup_cpuset_init(xcgroup_t *cg);
  * ownership and so on.
  *
  * IN ns - Namespace where the cgroup will reside.
- * RET char * - String containing the name of the slurm's root of the cgroup.
+ * OUT slurm_cg - Object where that will be created
+ * RET SLURM_ERROR typically indicates the directory could not be created.
+ *     SLURM_SUCCESS when the object is filled in and the directory created.
  */
-extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);
+extern int xcgroup_create_slurm_cg(xcgroup_ns_t *ns, xcgroup_t *slurm_cg);
 
 /*
  * Create a cgroup hierarchy in the cgroupfs.
