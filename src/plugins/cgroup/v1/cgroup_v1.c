@@ -220,10 +220,13 @@ end:
 	return rc;
 }
 
-static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
-				xcgroup_t *job_cg, xcgroup_t *user_cg,
-				xcgroup_t *slurm_cg, const char *log_str)
+static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str)
 {
+	xcgroup_t *root_cg = &int_cg[CG_LEVEL_ROOT];
+	xcgroup_t *job_cg = &int_cg[CG_LEVEL_JOB];
+	xcgroup_t *step_cg = &int_cg[CG_LEVEL_STEP];
+	xcgroup_t *user_cg = &int_cg[CG_LEVEL_USER];
+	xcgroup_t *slurm_cg = &int_cg[CG_LEVEL_SLURM];
 	int rc = SLURM_SUCCESS;
 
 	/*
@@ -772,12 +775,7 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 		break;
 	}
 
-	rc = _remove_cg_subsystem(&int_cg[sub][CG_LEVEL_ROOT],
-				  &int_cg[sub][CG_LEVEL_STEP],
-				  &int_cg[sub][CG_LEVEL_JOB],
-				  &int_cg[sub][CG_LEVEL_USER],
-				  &int_cg[sub][CG_LEVEL_SLURM],
-				  g_cg_name[sub]);
+	rc = _remove_cg_subsystem(int_cg[sub], g_cg_name[sub]);
 
 	if (rc == SLURM_SUCCESS) {
 		g_step_active_cnt[sub] = 0;
