@@ -1993,8 +1993,12 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 	xassert(step_gres_ptr);
 	xassert(step_req_gres_ptr);
 
-	if (job_gres_ptr->node_cnt == 0)	/* no_consume */
+	if (job_gres_ptr->total_gres == NO_CONSUME_VAL64) {
+		if (*gres_needed != INFINITE64)
+			*gres_needed = 0;
+		step_gres_ptr->total_gres = NO_CONSUME_VAL64;
 		return SLURM_SUCCESS;
+	}
 
 	if (node_offset >= job_gres_ptr->node_cnt) {
 		error("gres/%s: %s for %ps, node offset invalid (%d >= %u)",
