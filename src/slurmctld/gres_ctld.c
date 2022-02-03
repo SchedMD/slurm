@@ -2313,7 +2313,7 @@ static int _step_dealloc(gres_state_t *step_gres_ptr, List job_gres_list,
 			continue;
 
 		job_data_ptr = (gres_job_state_t *)job_gres_ptr->gres_data;
-		if (job_data_ptr->node_cnt == 0) {	/* no_consume */
+		if (job_data_ptr->total_gres == NO_CONSUME_VAL64) {
 			xassert(!step_data_ptr->node_in_use);
 			xassert(!step_data_ptr->gres_bit_alloc);
 			return SLURM_SUCCESS;
