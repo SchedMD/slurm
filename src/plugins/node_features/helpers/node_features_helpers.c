@@ -654,14 +654,14 @@ extern char *node_features_p_job_xlate(char *job_features)
 {
 	char *node_features = NULL;
 
+	if (!job_features || (job_features[0] == '\0'))
+		return NULL;
+
 	if (strpbrk(job_features, "[]()|*") != NULL) {
 		info("an unsupported constraint operator was used in \"%s\", clearing job constraint",
 		     job_features);
 		return NULL;
 	}
-
-	if (!job_features || (job_features[0] == '\0'))
-		return NULL;
 
 	/*
 	 * The only special character allowed in this plugin is the
