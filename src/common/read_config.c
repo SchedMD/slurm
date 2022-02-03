@@ -159,6 +159,8 @@ typedef struct slurm_conf_server {
 	char *addr;
 } slurm_conf_server_t;
 
+static slurm_conf_node_t *_create_conf_node(void);
+static void _init_conf_node(slurm_conf_node_t *conf_node);
 static void _destroy_nodename(void *ptr);
 static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
@@ -684,7 +686,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		uint16_t sockets_per_board = 0;
 		char *cpu_bind = NULL;
 
-		n = xmalloc(sizeof(slurm_conf_node_t));
+		n = _create_conf_node();
 		dflt = default_nodename_tbl;
 
 		n->nodenames = xstrdup(value);
@@ -698,9 +700,8 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			n->addresses = xstrdup(n->hostnames);
 		s_p_get_string(&n->bcast_addresses, "BcastAddr", tbl);
 
-		if (!s_p_get_uint16(&n->boards, "Boards", tbl)
-		    && !s_p_get_uint16(&n->boards, "Boards", dflt))
-			n->boards = 1;
+		if (!s_p_get_uint16(&n->boards, "Boards", tbl))
+			s_p_get_uint16(&n->boards, "Boards", dflt);
 
 		if (s_p_get_string(&cpu_bind, "CpuBind", tbl) ||
 		    s_p_get_string(&cpu_bind, "CpuBind", dflt)) {
@@ -713,16 +714,12 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			xfree(cpu_bind);
 		}
 
-		if (!s_p_get_uint16(&n->core_spec_cnt, "CoreSpecCount", tbl)
-		    && !s_p_get_uint16(&n->core_spec_cnt,
-				       "CoreSpecCount", dflt))
-			n->core_spec_cnt = 0;
+		if (!s_p_get_uint16(&n->core_spec_cnt, "CoreSpecCount", tbl))
+			s_p_get_uint16(&n->core_spec_cnt, "CoreSpecCount",
+				       dflt);
 
-
-		if (!s_p_get_uint16(&n->cores, "CoresPerSocket", tbl)
-		    && !s_p_get_uint16(&n->cores, "CoresPerSocket", dflt)) {
-			n->cores = 1;
-		}
+		if (!s_p_get_uint16(&n->cores, "CoresPerSocket", tbl))
+			s_p_get_uint16(&n->cores, "CoresPerSocket", dflt);
 
 		if (!s_p_get_string(&n->cpu_spec_list, "CPUSpecList", tbl))
 			s_p_get_string(&n->cpu_spec_list, "CPUSpecList", dflt);
@@ -735,10 +732,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&n->gres, "Gres", tbl))
 			s_p_get_string(&n->gres, "Gres", dflt);
 
-		if (!s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit", tbl)
-		    && !s_p_get_uint64(&n->mem_spec_limit,
-				       "MemSpecLimit", dflt))
-			n->mem_spec_limit = 0;
+		if (!s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit", tbl))
+			s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit",
+				       dflt);
 
 		if (!s_p_get_string(&n->port_str, "Port", tbl) &&
 		    !s_p_get_string(&n->port_str, "Port", dflt)) {
@@ -751,20 +747,17 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		    !s_p_get_uint16(&n->cpus, "CPUs",  dflt) &&
 		    !s_p_get_uint16(&n->cpus, "Procs", tbl)  &&
 		    !s_p_get_uint16(&n->cpus, "Procs", dflt)) {
-			n->cpus = 1;
 			no_cpus = true;
 		}
 
-		if (!s_p_get_uint64(&n->real_memory, "RealMemory", tbl)
-		    && !s_p_get_uint64(&n->real_memory, "RealMemory", dflt))
-			n->real_memory = 1;
+		if (!s_p_get_uint64(&n->real_memory, "RealMemory", tbl))
+			s_p_get_uint64(&n->real_memory, "RealMemory", dflt);
 
 		if (!s_p_get_string(&n->reason, "Reason", tbl))
 			s_p_get_string(&n->reason, "Reason", dflt);
 
 		if (!s_p_get_uint16(&n->tot_sockets, "Sockets", tbl) &&
 		    !s_p_get_uint16(&n->tot_sockets, "Sockets", dflt)) {
-			n->tot_sockets = 1;
 			no_sockets = true;
 		}
 
@@ -775,27 +768,22 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			no_sockets_per_board = true;
 		}
 
-		if (!s_p_get_string(&n->state, "State", tbl)
-		    && !s_p_get_string(&n->state, "State", dflt))
-			n->state = NULL;
+		if (!s_p_get_string(&n->state, "State", tbl))
+			s_p_get_string(&n->state, "State", dflt);
 
-		if (!s_p_get_uint16(&n->threads, "ThreadsPerCore", tbl)
-		    && !s_p_get_uint16(&n->threads, "ThreadsPerCore", dflt)) {
-			n->threads = 1;
-		}
+		if (!s_p_get_uint16(&n->threads, "ThreadsPerCore", tbl))
+			s_p_get_uint16(&n->threads, "ThreadsPerCore", dflt);
 
-		if (!s_p_get_uint32(&n->tmp_disk, "TmpDisk", tbl)
-		    && !s_p_get_uint32(&n->tmp_disk, "TmpDisk", dflt))
-			n->tmp_disk = 0;
+		if (!s_p_get_uint32(&n->tmp_disk, "TmpDisk", tbl))
+			s_p_get_uint32(&n->tmp_disk, "TmpDisk", dflt);
 
-		if (!s_p_get_string(&n->tres_weights_str, "TRESWeights", tbl) &&
-		    !s_p_get_string(&n->tres_weights_str, "TRESWeights", dflt))
-			xfree(n->tres_weights_str);
+		if (!s_p_get_string(&n->tres_weights_str, "TRESWeights", tbl))
+			s_p_get_string(&n->tres_weights_str, "TRESWeights",
+				       dflt);
 
-		if (!s_p_get_uint32(&n->weight, "Weight", tbl)
-		    && !s_p_get_uint32(&n->weight, "Weight", dflt))
-			n->weight = 1;
-		else if (n->weight == INFINITE)
+		if ((s_p_get_uint32(&n->weight, "Weight", tbl) ||
+		     s_p_get_uint32(&n->weight, "Weight", dflt)) &&
+		     (n->weight == INFINITE))
 			n->weight -= 1;
 
 		s_p_hashtbl_destroy(tbl);
@@ -922,6 +910,25 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	}
 
 	/* should not get here */
+}
+
+static void _init_conf_node(slurm_conf_node_t *conf_node)
+{
+	conf_node->boards = 1;
+	conf_node->cores = 1;
+	conf_node->cpus = 1;
+	conf_node->real_memory = 1;
+	conf_node->threads = 1;
+	conf_node->tot_sockets = 1;
+	conf_node->weight = 1;
+}
+
+static slurm_conf_node_t *_create_conf_node(void)
+{
+	slurm_conf_node_t *n = xmalloc(sizeof(slurm_conf_node_t));
+	_init_conf_node(n);
+
+	return n;
 }
 
 /* Destroy a front_end record built by slurm_conf_frontend_array() */
