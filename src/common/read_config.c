@@ -170,6 +170,8 @@ static bool _is_valid_path(char *path, char *msg);
 static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				const char *key, const char *value,
 				const char *line, char **leftover);
+static slurm_conf_partition_t *_create_conf_part(void);
+static void _init_conf_part(slurm_conf_partition_t *conf_part);
 static void _destroy_partitionname(void *ptr);
 static int _parse_downnodes(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
@@ -1312,7 +1314,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		return 0;
 	} else {
-		slurm_conf_partition_t *p = xmalloc(sizeof(*p));
+		slurm_conf_partition_t *p = _create_conf_part();
 		dflt = default_partition_tbl;
 
 		p->name = xstrdup(value);
@@ -1386,21 +1388,17 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		}
 
 		if (!s_p_get_string(&p->billing_weights_str,
-				    "TRESBillingWeights", tbl) &&
-		    !s_p_get_string(&p->billing_weights_str,
-				    "TRESBillingWeights", dflt))
-			xfree(p->billing_weights_str);
+				    "TRESBillingWeights", tbl))
+			s_p_get_string(&p->billing_weights_str,
+				       "TRESBillingWeights", dflt);
 
-		if (!s_p_get_boolean(&p->default_flag, "Default", tbl)
-		    && !s_p_get_boolean(&p->default_flag, "Default", dflt))
-			p->default_flag = false;
+		if (!s_p_get_boolean(&p->default_flag, "Default", tbl))
+			s_p_get_boolean(&p->default_flag, "Default", dflt);
 
 		if (!s_p_get_uint32(&p->max_cpus_per_node, "MaxCPUsPerNode",
-				    tbl) &&
-		    !s_p_get_uint32(&p->max_cpus_per_node, "MaxCPUsPerNode",
-				    dflt))
-			p->max_cpus_per_node = INFINITE;
-
+				    tbl))
+			s_p_get_uint32(&p->max_cpus_per_node, "MaxCPUsPerNode",
+				       dflt);
 
 		if (s_p_get_uint64(&def_cpu_per_gpu, "DefCPUPerGPU", tbl) ||
 		    s_p_get_uint64(&def_cpu_per_gpu, "DefCPUPerGPU", dflt)) {
@@ -1432,8 +1430,6 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			    s_p_get_uint64(&p->def_mem_per_cpu,
 					   "DefMemPerCPU", dflt)) {
 				p->def_mem_per_cpu |= MEM_PER_CPU;
-			} else {
-				p->def_mem_per_cpu = 0;
 			}
 		} else if (s_p_get_uint64(&tmp_64, "DefMemPerCPU", tbl) ||
 		           s_p_get_uint64(&tmp_64, "DefMemPerCPU", dflt)) {
@@ -1449,30 +1445,23 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			    s_p_get_uint64(&p->max_mem_per_cpu,
 					   "MaxMemPerCPU", dflt)) {
 				p->max_mem_per_cpu |= MEM_PER_CPU;
-			} else {
-				p->max_mem_per_cpu = 0;
 			}
 		} else if (s_p_get_uint64(&tmp_64, "MaxMemPerCPU", tbl) ||
 		           s_p_get_uint64(&tmp_64, "MaxMemPerCPU", dflt)) {
 			error("MaxMemPerCPU ignored, since it's mutually exclusive with MaxMemPerNode");
 		}
 
-		if (!s_p_get_boolean((bool *)&p->disable_root_jobs,
-				     "DisableRootJobs", tbl))
-			p->disable_root_jobs = NO_VAL16;
+		s_p_get_boolean((bool *)&p->disable_root_jobs,
+				"DisableRootJobs", tbl);
 
-		if (!s_p_get_boolean((bool *)&p->exclusive_user,
-				     "ExclusiveUser", tbl))
-			p->exclusive_user = 0;
+		s_p_get_boolean((bool *)&p->exclusive_user, "ExclusiveUser",
+				tbl);
 
-		if (!s_p_get_boolean(&p->hidden_flag, "Hidden", tbl) &&
-		    !s_p_get_boolean(&p->hidden_flag, "Hidden", dflt))
-			p->hidden_flag = false;
+		if (!s_p_get_boolean(&p->hidden_flag, "Hidden", tbl))
+			s_p_get_boolean(&p->hidden_flag, "Hidden", dflt);
 
-		if (!s_p_get_string(&tmp, "MaxTime", tbl) &&
-		    !s_p_get_string(&tmp, "MaxTime", dflt))
-			p->max_time = INFINITE;
-		else {
+		if (s_p_get_string(&tmp, "MaxTime", tbl) ||
+		    s_p_get_string(&tmp, "MaxTime", dflt)) {
 			int max_time = time_str2mins(tmp);
 			if ((max_time < 0) && (max_time != INFINITE)) {
 				error("Bad value \"%s\" for MaxTime", tmp);
@@ -1485,14 +1474,11 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			xfree(tmp);
 		}
 
-		if (!s_p_get_uint32(&p->grace_time, "GraceTime", tbl) &&
-		    !s_p_get_uint32(&p->grace_time, "GraceTime", dflt))
-			p->grace_time = 0;
+		if (!s_p_get_uint32(&p->grace_time, "GraceTime", tbl))
+			s_p_get_uint32(&p->grace_time, "GraceTime", dflt);
 
-		if (!s_p_get_string(&tmp, "DefaultTime", tbl) &&
-		    !s_p_get_string(&tmp, "DefaultTime", dflt))
-			p->default_time = NO_VAL;
-		else {
+		if (s_p_get_string(&tmp, "DefaultTime", tbl) ||
+		    s_p_get_string(&tmp, "DefaultTime", dflt)) {
 			int default_time = time_str2mins(tmp);
 			if ((default_time < 0) && (default_time != INFINITE)) {
 				error("Bad value \"%s\" for DefaultTime", tmp);
@@ -1505,18 +1491,14 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			xfree(tmp);
 		}
 
-		if (!s_p_get_uint32(&p->max_nodes, "MaxNodes", tbl)
-		    && !s_p_get_uint32(&p->max_nodes, "MaxNodes", dflt))
-			p->max_nodes = INFINITE;
+		if (!s_p_get_uint32(&p->max_nodes, "MaxNodes", tbl))
+			s_p_get_uint32(&p->max_nodes, "MaxNodes", dflt);
 
-		if (!s_p_get_uint32(&p->min_nodes, "MinNodes", tbl)
-		    && !s_p_get_uint32(&p->min_nodes, "MinNodes", dflt))
-			p->min_nodes = 0;
+		if (!s_p_get_uint32(&p->min_nodes, "MinNodes", tbl))
+			s_p_get_uint32(&p->min_nodes, "MinNodes", dflt);
 
-		if (!s_p_get_string(&p->nodes, "Nodes", tbl)
-		    && !s_p_get_string(&p->nodes, "Nodes", dflt))
-			p->nodes = NULL;
-		else {
+		if (s_p_get_string(&p->nodes, "Nodes", tbl) ||
+		    s_p_get_string(&p->nodes, "Nodes", dflt)) {
 			int i;
 			for (i=0; p->nodes[i]; i++) {
 				if (isspace((int)p->nodes[i]))
@@ -1524,17 +1506,14 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			}
 		}
 
-		if (!s_p_get_boolean(&p->root_only_flag, "RootOnly", tbl)
-		    && !s_p_get_boolean(&p->root_only_flag, "RootOnly", dflt))
-			p->root_only_flag = false;
+		if (!s_p_get_boolean(&p->root_only_flag, "RootOnly", tbl))
+			s_p_get_boolean(&p->root_only_flag, "RootOnly", dflt);
 
-		if (!s_p_get_boolean(&p->req_resv_flag, "ReqResv", tbl)
-		    && !s_p_get_boolean(&p->req_resv_flag, "ReqResv", dflt))
-			p->req_resv_flag = false;
+		if (!s_p_get_boolean(&p->req_resv_flag, "ReqResv", tbl))
+			s_p_get_boolean(&p->req_resv_flag, "ReqResv", dflt);
 
-		if (!s_p_get_boolean(&p->lln_flag, "LLN", tbl) &&
-		    !s_p_get_boolean(&p->lln_flag, "LLN", dflt))
-			p->lln_flag = false;
+		if (!s_p_get_boolean(&p->lln_flag, "LLN", tbl))
+			s_p_get_boolean(&p->lln_flag, "LLN", dflt);
 
 		if (s_p_get_string(&tmp, "OverTimeLimit", tbl) ||
 		    s_p_get_string(&tmp, "OverTimeLimit", dflt)) {
@@ -1552,8 +1531,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 					p->over_time_limit = i;
 			}
 			xfree(tmp);
-		} else
-			p->over_time_limit = NO_VAL16;
+		}
 
 		if (s_p_get_string(&tmp, "PreemptMode", tbl) ||
 		    s_p_get_string(&tmp, "PreemptMode", dflt)) {
@@ -1564,33 +1542,27 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				return -1;
 			}
 			xfree(tmp);
-		} else
-			p->preempt_mode = NO_VAL16;
+		}
 
 		if (!s_p_get_uint16(&p->priority_job_factor,
-				    "PriorityJobFactor", tbl) &&
-		    !s_p_get_uint16(&p->priority_job_factor,
-				    "PriorityJobFactor", dflt)) {
-			p->priority_job_factor = 1;
-		}
+				    "PriorityJobFactor", tbl))
+			s_p_get_uint16(&p->priority_job_factor,
+				       "PriorityJobFactor", dflt);
 
-		if (!s_p_get_uint16(&p->priority_tier, "PriorityTier", tbl) &&
-		    !s_p_get_uint16(&p->priority_tier, "PriorityTier", dflt)) {
-			p->priority_tier = 1;
-		}
+		if (!s_p_get_uint16(&p->priority_tier, "PriorityTier", tbl))
+			s_p_get_uint16(&p->priority_tier, "PriorityTier", dflt);
 		if (s_p_get_uint16(&tmp_16, "Priority", tbl) ||
 		    s_p_get_uint16(&tmp_16, "Priority", dflt)) {
 			p->priority_job_factor = tmp_16;
 			p->priority_tier = tmp_16;
 		}
 
-		if (!s_p_get_string(&p->qos_char, "QOS", tbl)
-		    && !s_p_get_string(&p->qos_char, "QOS", dflt))
-			p->qos_char = NULL;
+		if (!s_p_get_string(&p->qos_char, "QOS", tbl))
+			s_p_get_string(&p->qos_char, "QOS", dflt);
 
-		if (!s_p_get_uint16(&p->resume_timeout, "ResumeTimeout", tbl) &&
-		    !s_p_get_uint16(&p->resume_timeout, "ResumeTimeout", dflt))
-			p->resume_timeout = NO_VAL16;
+		if (!s_p_get_uint16(&p->resume_timeout, "ResumeTimeout", tbl))
+			s_p_get_uint16(&p->resume_timeout, "ResumeTimeout",
+				       dflt);
 
 		if (s_p_get_string(&tmp, "SelectTypeParameters", tbl)) {
 			if (xstrncasecmp(tmp, "CR_Core_Memory", 14) == 0)
@@ -1610,8 +1582,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				return -1;
 			}
 			xfree(tmp);
-		} else
-			p->cr_type = 0;
+		}
 
 		if (s_p_get_string(&tmp, "OverSubscribe", tbl) ||
 		    s_p_get_string(&tmp, "OverSubscribe", dflt) ||
@@ -1650,18 +1621,14 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				return -1;
 			}
 			xfree(tmp);
-		} else
-			p->max_share = 1;
+		}
 
-		if (!s_p_get_uint32(&p->suspend_time, "SuspendTime", tbl) &&
-		    !s_p_get_uint32(&p->suspend_time, "SuspendTime", dflt))
-			p->suspend_time = NO_VAL;
+		if (!s_p_get_uint32(&p->suspend_time, "SuspendTime", tbl))
+			s_p_get_uint32(&p->suspend_time, "SuspendTime", dflt);
 
-		if (!s_p_get_uint16(&p->suspend_timeout, "SuspendTimeout",
-				    tbl) &&
-		    !s_p_get_uint16(&p->suspend_timeout, "SuspendTimeout",
-				    dflt))
-			p->suspend_timeout = NO_VAL16;
+		if (!s_p_get_uint16(&p->suspend_timeout, "SuspendTimeout", tbl))
+			s_p_get_uint16(&p->suspend_timeout, "SuspendTimeout",
+				       dflt);
 
 		if (s_p_get_string(&tmp, "State", tbl) ||
 		    s_p_get_string(&tmp, "State", dflt)) {
@@ -1681,8 +1648,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				return -1;
 			}
 			xfree(tmp);
-		} else
-			p->state_up = PARTITION_UP;
+		}
 
 		s_p_hashtbl_destroy(tbl);
 
@@ -1692,6 +1658,43 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 	}
 
 	/* should not get here */
+}
+
+/*
+ * Sync with _init_part_record().
+ *
+ * _init_conf_part() initializes default values from slurm.conf parameters.
+ * After parsing slurm.conf, _build_single_partitionline_info() copies
+ * slurm_conf_partition_t to part_record_t. Default values between
+ * slurm_conf_partition_t and part_record_t should stay in sync in case a
+ * part_record_t is created outside of slurm.conf parsing.
+ */
+static void _init_conf_part(slurm_conf_partition_t *conf_part)
+{
+	conf_part->disable_root_jobs = NO_VAL16;
+
+	/* sync with part_record_t */
+	conf_part->default_time = NO_VAL;
+	conf_part->max_cpus_per_node = INFINITE;
+	conf_part->max_nodes = INFINITE;
+	conf_part->max_share = 1;
+	conf_part->max_time = INFINITE;
+	conf_part->over_time_limit = NO_VAL16;
+	conf_part->preempt_mode = NO_VAL16;
+	conf_part->priority_job_factor = 1;
+	conf_part->priority_tier = 1;
+	conf_part->resume_timeout = NO_VAL16;
+	conf_part->state_up = PARTITION_UP;
+	conf_part->suspend_time = NO_VAL;
+	conf_part->suspend_timeout = NO_VAL16;
+}
+
+static slurm_conf_partition_t *_create_conf_part(void)
+{
+	slurm_conf_partition_t *p = xmalloc(sizeof(*p));
+	_init_conf_part(p);
+
+	return p;
 }
 
 static void _destroy_partitionname(void *ptr)

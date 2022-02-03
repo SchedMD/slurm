@@ -285,6 +285,15 @@ static void _unlink_free_nodes(bitstr_t *old_bitmap, part_record_t *part_ptr)
 		last_node_update = time(NULL);
 }
 
+/*
+ * Sync with _init_conf_part().
+ *
+ * _init_conf_part() initializes default values from slurm.conf parameters.
+ * After parsing slurm.conf, _build_single_partitionline_info() copies
+ * slurm_conf_partition_t to part_record_t. Default values between
+ * slurm_conf_partition_t and part_record_t should stay in sync in case a
+ * part_record_t is created outside of slurm.conf parsing.
+ */
 static void _init_part_record(part_record_t *part_ptr)
 {
 	part_ptr->magic = PART_MAGIC;
@@ -294,6 +303,7 @@ static void _init_part_record(part_record_t *part_ptr)
 	part_ptr->min_nodes = 1;
 	part_ptr->min_nodes_orig = 1;
 
+	/* sync with slurm_conf_partition_t */
 	part_ptr->default_time = NO_VAL;
 	part_ptr->max_cpus_per_node = INFINITE;
 	part_ptr->max_nodes = INFINITE;
