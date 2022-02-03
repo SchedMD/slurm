@@ -44,40 +44,42 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 		return
 	}
 
-	sleep 2
-	log_debug "Job $job_id Expected job GPUs:$job_gpus  Step GPUs:$step_gpus"
-	exec $bin_rm -f $file_out
-	exec >$file_out $sacct --job=$job_id --parsable2 --start=today -o JobID,ReqTRES,AllocTRES
+	log_debug "Job $job_id Expecting job GPUs:$job_gpus  Step GPUs:$step_gpus"
 
-	spawn $bin_cat $file_out
-	expect {
-		eof {
-			wait
-		}
+	# Wait for ReqTRES to be populated for the job. Job completion records are
+	# sent immediately to the database, but job start records get queued and
+	# can take longer.
+	wait_for_command_match -fail "$sacct -X -n -o ReqTRES --parsable2 -j $job_id" "gres/gpu"
+
+	set output [run_command_output -fail "$sacct --job=$job_id --parsable2 --start=today --format JobID,ReqTRES,AllocTRES --noheader"]
+	set job_tres_dict [dict create]
+	foreach line [split $output "\n"] {
+		lassign [split $line "|"] JobID ReqTRES AllocTRES
+		dict set job_tres_dict $JobID ReqTRES $ReqTRES
+		dict set job_tres_dict $JobID AllocTRES $AllocTRES
 	}
 
-	log_user 0
+	# Check and count reported gpus on the step
 	if {$step_gpus != -1} {
-		set match 0
-		spawn $bin_grep $job_id.0 $file_out
-		expect {
-			-re "gres/gpu=($number)" {
-				incr match
-					subtest {$expect_out(1,string) == $step_gpus} "Step GPUs reported by sacct should be $step_gpus" "$expect_out(1,string) != $step_gpus"
-					exp_continue
-			}
-			-re "gres/gpu:($re_word_str)=($number)" {
-				if {$have_gpu_types != 0} {
-					incr match
-					subtest {$expect_out(2,string) == $step_gpus} "Step GPUs reported by sacct should be $step_gpus" "$expect_out(2,string) != $step_gpus"
+		set gpus_reported_count 0
+		if ![dict exists $job_tres_dict "$job_id.0"] {
+			fail "sacct did not report a record for step $job_id.0"
+		}
+		set tres_dict [dict get $job_tres_dict "$job_id.0"]
+		foreach tres_value [dict values $tres_dict] {
+			if {$have_gpu_types} {
+				foreach {{} gpu_count} [regexp -all -inline {gres/gpu:[^=]+=(\d+)} $tres_value] {
+					subtest {$gpu_count == $step_gpus} "Step GPUs reported by sacct should be $step_gpus" "$gpu_count != $step_gpus"
+					incr gpus_reported_count
 				}
-				exp_continue
-			}
-			eof {
-				wait
+			} else {
+				foreach {{} gpu_count} [regexp -all -inline {gres/gpu=(\d+)} $tres_value] {
+					subtest {$gpu_count == $step_gpus} "Step GPUs reported by sacct should be $step_gpus" "$gpu_count != $step_gpus"
+					incr gpus_reported_count
+				}
 			}
 		}
-		subtest {$match == 1} "sacct should report GPUs 1 times" "found $match times"
+		subtest {$gpus_reported_count == 1} "sacct should report step GPUs 1 time" "found $gpus_reported_count times"
 	}
 
 	# set match 0
@@ -101,28 +103,26 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 	# }
 	# subtest {$match == 2} "sacct should report GPUs 2 times" "found $match times"
 
-	set match 0
-	spawn $bin_grep $job_id| $file_out
-	expect {
-		-re "gres/gpu=($number)" {
-			incr match
-			subtest {$expect_out(1,string) == $job_gpus} "Step GPUs reported by sacct should be $job_gpus" "$expect_out(1,string) != $job_gpus"
-			exp_continue
-		}
-		-re "gres/gpu:($re_word_str)=($number)" {
-			if {$have_gpu_types != 0} {
-				incr match
-				subtest {$expect_out(2,string) == $job_gpus} "Step GPUs reported by sacct should be $job_gpus" "$expect_out(1,string) != $job_gpus"
+	# Check and count reported gpus on the job
+	set gpus_reported_count 0
+	if ![dict exists $job_tres_dict $job_id] {
+		fail "sacct did not report a record for job $job_id"
+	}
+	set tres_dict [dict get $job_tres_dict $job_id]
+	foreach tres_value [dict values $tres_dict] {
+		if {$have_gpu_types} {
+			foreach {{} gpu_count} [regexp -all -inline {gres/gpu:[^=]+=(\d+)} $tres_value] {
+				subtest {$gpu_count == $job_gpus} "Job GPUs reported by sacct should be $job_gpus" "$gpu_count != $job_gpus"
+				incr gpus_reported_count
 			}
-			exp_continue
-		}
-		eof {
-			wait
+		} else {
+			foreach {{} gpu_count} [regexp -all -inline {gres/gpu=(\d+)} $tres_value] {
+				subtest {$gpu_count == $job_gpus} "Job GPUs reported by sacct should be $job_gpus" "$gpu_count != $job_gpus"
+				incr gpus_reported_count
+			}
 		}
 	}
-	subtest {$match == 2} "sacct should report GPUs 2 times" "found $match times"
-	exec $bin_rm -f $file_out
-	log_user 1
+	subtest {$gpus_reported_count == 2} "sacct should report job GPUs 2 times" "found $gpus_reported_count times"
 }
 
 #
