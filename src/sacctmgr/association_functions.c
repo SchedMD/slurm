@@ -654,10 +654,15 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (!g_qos_list)
 			g_qos_list = slurmdb_qos_get(
 				db_conn, NULL);
-		tmp_char = slurmdb_qos_str(g_qos_list, assoc->def_qos_id);
-		if (!tmp_char)
-			tmp_char = print_acct =
-				xstrdup_printf("UNKN-%u", assoc->def_qos_id);
+		if (assoc->def_qos_id != NO_VAL) {
+			tmp_char = slurmdb_qos_str(g_qos_list,
+						   assoc->def_qos_id);
+			if (!tmp_char)
+				tmp_char = print_acct =
+					xstrdup_printf("UNKN-%u",
+						       assoc->def_qos_id);
+		} else
+			tmp_char = print_acct = xstrdup("");
 		field->print_routine(field, tmp_char, last);
 		xfree(print_acct);
 		break;

@@ -81,6 +81,7 @@ documents those changes that are of interest to users and administrators.
  -- Move the KeepAliveTime option into CommunicationParameters.
  -- slurm.spec - stop explicitly packaging pkgconfig directory to avoid a
     conflict with the pkgconfig package.
+ -- Fix sacctmgr load dump printing incorrect default QOS when no value is set.
 
 * Changes in Slurm 21.08.6
 ==========================
