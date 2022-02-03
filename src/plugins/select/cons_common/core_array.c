@@ -120,7 +120,7 @@ extern void core_array_and(bitstr_t **core_array1, bitstr_t **core_array2)
 			s1 = bit_size(core_array1[n]);
 			s2 = bit_size(core_array2[n]);
 			if (s1 > s2)
-				core_array2[n] = bit_realloc(core_array1[n],s1);
+				core_array2[n] = bit_realloc(core_array2[n],s1);
 			else if (s1 < s2)
 				core_array1[n] = bit_realloc(core_array1[n],s2);
 			bit_and(core_array1[n], core_array2[n]);
@@ -141,7 +141,7 @@ extern void core_array_and_not(bitstr_t **core_array1, bitstr_t **core_array2)
 			s1 = bit_size(core_array1[n]);
 			s2 = bit_size(core_array2[n]);
 			if (s1 > s2)
-				core_array2[n] = bit_realloc(core_array1[n],s1);
+				core_array2[n] = bit_realloc(core_array2[n],s1);
 			else if (s1 < s2)
 				core_array1[n] = bit_realloc(core_array1[n],s2);
 			bit_and_not(core_array1[n], core_array2[n]);
@@ -160,7 +160,7 @@ extern void core_array_or(bitstr_t **core_array1, bitstr_t **core_array2)
 			s1 = bit_size(core_array1[n]);
 			s2 = bit_size(core_array2[n]);
 			if (s1 > s2)
-				core_array2[n] = bit_realloc(core_array1[n],s1);
+				core_array2[n] = bit_realloc(core_array2[n],s1);
 			else if (s1 < s2)
 				core_array1[n] = bit_realloc(core_array1[n],s2);
 			bit_or(core_array1[n], core_array2[n]);
