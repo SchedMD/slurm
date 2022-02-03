@@ -186,6 +186,7 @@ documents those changes that are of interest to users and administrators.
  -- Pass and use alias_list through credential instead of environment variable.
  -- Add ability to get host addresses from nss_slurm.
  -- Enable reverse fanout for cloud+alias_list jobs.
+ -- Disallow slurm.conf node configurations with NodeName=ALL.
 
 * Changes in Slurm 21.08.8
 ==========================

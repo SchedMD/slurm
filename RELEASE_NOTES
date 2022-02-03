@@ -85,6 +85,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Added keepaliveinterval and keepaliveprobes to CommunicationParameters.
  -- Added new max_token_lifespan=<seconds> to AuthAltParameters to allow sites
     to restrict the lifespan of any requested ticket by an unprivileged user.
+ -- Disallow slurm.conf node configurations with NodeName=ALL.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
