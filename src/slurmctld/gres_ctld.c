@@ -891,7 +891,8 @@ static int _set_node_type_cnt(gres_state_t *job_gres_ptr, List node_gres_list)
 		 * Not the right type
 		 */
 		if (node_state_ptr->type_cnt_alloc[j] ||
-		    (node_state_ptr->type_id[j] != job_state_ptr->type_id))
+		    (node_state_ptr->type_id[j] != job_state_ptr->type_id) ||
+		    (job_state_ptr->total_gres == NO_CONSUME_VAL64))
 			continue;
 		node_state_ptr->type_cnt_alloc[j] = job_state_ptr->total_gres;
 		break;
