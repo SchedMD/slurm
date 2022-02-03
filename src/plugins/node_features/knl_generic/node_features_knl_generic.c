@@ -1333,7 +1333,7 @@ extern char *node_features_p_job_xlate(char *job_features)
 	char *tmp, *save_ptr = NULL, *mult, *sep = "", *tok;
 	bool has_numa = false, has_mcdram = false;
 
-	if ((job_features == NULL) || (job_features[0] ==  '\0'))
+	if (!job_features)
 		return node_features;
 
 	tmp = xstrdup(job_features);

@@ -655,7 +655,7 @@ extern char *node_features_p_job_xlate(char *job_features)
 {
 	char *node_features = NULL;
 
-	if (!job_features || (job_features[0] == '\0'))
+	if (!job_features)
 		return NULL;
 
 	if (strpbrk(job_features, "[]()|*") != NULL) {

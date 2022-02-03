@@ -2673,8 +2673,8 @@ extern char *node_features_p_job_xlate(char *job_features)
 	char *tmp, *save_ptr = NULL, *mult, *sep = "", *tok;
 	bool has_numa = false, has_mcdram = false;
 
-	if ((job_features == NULL) || (job_features[0] ==  '\0'))
-		return node_features;
+	if (!job_features)
+		return NULL;
 
 	tmp = xstrdup(job_features);
 	tok = strtok_r(tmp, "[]()|&", &save_ptr);
