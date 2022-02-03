@@ -87,7 +87,6 @@ typedef struct {
 } _foreach_pack_part_info_t;
 
 /* Global variables */
-part_record_t default_part;		/* default configuration values */
 List part_list = NULL;			/* partition list */
 char *default_part_name = NULL;		/* name of default partition */
 part_record_t *default_part_loc = NULL;	/* default partition location */
@@ -286,6 +285,29 @@ static void _unlink_free_nodes(bitstr_t *old_bitmap, part_record_t *part_ptr)
 		last_node_update = time(NULL);
 }
 
+static void _init_part_record(part_record_t *part_ptr)
+{
+	part_ptr->magic = PART_MAGIC;
+	if (slurm_conf.conf_flags & CTL_CONF_DRJ)
+		part_ptr->flags |= PART_FLAG_NO_ROOT;
+	part_ptr->max_nodes_orig = INFINITE;
+	part_ptr->min_nodes = 1;
+	part_ptr->min_nodes_orig = 1;
+
+	part_ptr->default_time = NO_VAL;
+	part_ptr->max_cpus_per_node = INFINITE;
+	part_ptr->max_nodes = INFINITE;
+	part_ptr->max_share = 1;
+	part_ptr->max_time = INFINITE;
+	part_ptr->over_time_limit = NO_VAL16;
+	part_ptr->preempt_mode = NO_VAL16;
+	part_ptr->priority_job_factor = 1;
+	part_ptr->priority_tier = 1;
+	part_ptr->resume_timeout = NO_VAL16;
+	part_ptr->state_up = PARTITION_UP;
+	part_ptr->suspend_time = NO_VAL;
+	part_ptr->suspend_timeout = NO_VAL16;
+}
 
 /*
  * create_part_record - create a partition record
@@ -298,97 +320,8 @@ part_record_t *create_part_record(const char *name)
 
 	last_part_update = time(NULL);
 
-	part_ptr->magic = PART_MAGIC;
-	part_ptr->name              = xstrdup(name);
-	part_ptr->alternate         = xstrdup(default_part.alternate);
-	part_ptr->cr_type	    = default_part.cr_type;
-	part_ptr->job_defaults_list =
-			job_defaults_copy(default_part.job_defaults_list);
-	part_ptr->flags             = default_part.flags;
-	part_ptr->grace_time 	    = default_part.grace_time;
-	part_ptr->max_share         = default_part.max_share;
-	part_ptr->max_time          = default_part.max_time;
-	part_ptr->default_time      = default_part.default_time;
-	part_ptr->max_cpus_per_node = default_part.max_cpus_per_node;
-	part_ptr->max_nodes         = default_part.max_nodes;
-	part_ptr->max_nodes_orig    = default_part.max_nodes;
-	part_ptr->min_nodes         = default_part.min_nodes;
-	part_ptr->min_nodes_orig    = default_part.min_nodes;
-	part_ptr->over_time_limit   = default_part.over_time_limit;
-	part_ptr->preempt_mode      = default_part.preempt_mode;
-	part_ptr->priority_job_factor = default_part.priority_job_factor;
-	part_ptr->priority_tier     = default_part.priority_tier;
-	part_ptr->resume_timeout    = default_part.resume_timeout;
-	part_ptr->state_up          = default_part.state_up;
-	part_ptr->suspend_time      = default_part.suspend_time;
-	part_ptr->suspend_timeout   = default_part.suspend_timeout;
-
-	if (part_max_priority) {
-		part_ptr->norm_priority =
-			(double)default_part.priority_job_factor /
-			(double)part_max_priority;
-	}
-	part_ptr->node_bitmap       = NULL;
-
-	if (default_part.allow_accounts) {
-		part_ptr->allow_accounts = xstrdup(default_part.allow_accounts);
-		accounts_list_build(part_ptr->allow_accounts,
-				    &part_ptr->allow_account_array);
-	} else
-		part_ptr->allow_accounts = NULL;
-
-	if (default_part.allow_groups)
-		part_ptr->allow_groups = xstrdup(default_part.allow_groups);
-	else
-		part_ptr->allow_groups = NULL;
-
-	if (default_part.allow_qos) {
-		part_ptr->allow_qos = xstrdup(default_part.allow_qos);
-		qos_list_build(part_ptr->allow_qos,
-			       &part_ptr->allow_qos_bitstr);
-	} else
-		part_ptr->allow_qos = NULL;
-
-	if (default_part.deny_accounts) {
-		part_ptr->deny_accounts = xstrdup(default_part.deny_accounts);
-		accounts_list_build(part_ptr->deny_accounts,
-				    &part_ptr->deny_account_array);
-	} else
-		part_ptr->deny_accounts = NULL;
-
-	if (default_part.deny_qos) {
-		part_ptr->deny_qos = xstrdup(default_part.deny_qos);
-		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
-	} else
-		part_ptr->deny_qos = NULL;
-
-	if (default_part.qos_char) {
-		slurmdb_qos_rec_t qos_rec;
-		xfree(part_ptr->qos_char);
-		part_ptr->qos_char = xstrdup(default_part.qos_char);
-
-		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
-		qos_rec.name = part_ptr->qos_char;
-		if (assoc_mgr_fill_in_qos(
-			    acct_db_conn, &qos_rec, accounting_enforce,
-			    (slurmdb_qos_rec_t **)&part_ptr->qos_ptr, 0)
-		    != SLURM_SUCCESS) {
-			fatal("Partition %s has an invalid qos (%s), "
-			      "please check your configuration",
-			      part_ptr->name, qos_rec.name);
-		}
-	}
-
-	if (default_part.allow_alloc_nodes) {
-		part_ptr->allow_alloc_nodes =
-			xstrdup(default_part.allow_alloc_nodes);
-	}
-
-	if (default_part.nodes)
-		part_ptr->nodes = xstrdup(default_part.nodes);
-	else
-		part_ptr->nodes = NULL;
-	part_ptr->bf_data = NULL;
+	_init_part_record(part_ptr);
+	part_ptr->name = xstrdup(name);
 
 	(void) list_append(part_list, part_ptr);
 
@@ -866,60 +799,13 @@ extern List get_part_list(char *name, char **err_part)
 }
 
 /*
- * init_part_conf - initialize the default partition configuration values
- *	and create a (global) partition list.
- * this should be called before creating any partition entries.
- * global: default_part - default partition values
- *         part_list - global partition list
+ * Create a global partition list.
+ *
+ * This should be called before creating any partition entries.
  */
 void init_part_conf(void)
 {
 	last_part_update = time(NULL);
-
-	xfree(default_part.name);	/* needed for reconfig */
-	default_part.name           = xstrdup("DEFAULT");
-	default_part.flags          = 0;
-	if (slurm_conf.conf_flags & CTL_CONF_DRJ)
-		default_part.flags |= PART_FLAG_NO_ROOT;
-	default_part.max_time       = INFINITE;
-	default_part.default_time   = NO_VAL;
-	FREE_NULL_LIST(default_part.job_defaults_list);
-	default_part.max_cpus_per_node = INFINITE;
-	default_part.max_nodes      = INFINITE;
-	default_part.max_nodes_orig = INFINITE;
-	default_part.min_nodes      = 1;
-	default_part.min_nodes_orig = 1;
-	default_part.state_up       = PARTITION_UP;
-	default_part.max_share      = 1;
-	default_part.over_time_limit = NO_VAL16;
-	default_part.preempt_mode   = NO_VAL16;
-	default_part.priority_tier  = 1;
-	default_part.priority_job_factor = 1;
-	default_part.norm_priority  = 0;
-	default_part.total_nodes    = 0;
-	default_part.total_cpus     = 0;
-	default_part.grace_time     = 0;
-	default_part.cr_type	    = 0;
-	xfree(default_part.nodes);
-	xfree(default_part.allow_accounts);
-	accounts_list_free(&default_part.allow_account_array);
-	xfree(default_part.allow_groups);
-	xfree(default_part.allow_qos);
-	xfree(default_part.qos_char);
-	default_part.qos_ptr = NULL;
-	FREE_NULL_BITMAP(default_part.allow_qos_bitstr);
-	xfree(default_part.allow_uids);
-	xfree(default_part.allow_alloc_nodes);
-	xfree(default_part.alternate);
-	xfree(default_part.deny_accounts);
-	accounts_list_free(&default_part.deny_account_array);
-	xfree(default_part.deny_qos);
-	FREE_NULL_BITMAP(default_part.deny_qos_bitstr);
-	FREE_NULL_LIST(default_part.job_defaults_list);
-	FREE_NULL_BITMAP(default_part.node_bitmap);
-	default_part.resume_timeout = NO_VAL16;
-	default_part.suspend_time = NO_VAL;
-	default_part.suspend_timeout = NO_VAL16;
 
 	if (part_list)		/* delete defunct partitions */
 		list_flush(part_list);
@@ -2084,8 +1970,6 @@ void load_part_uid_allow_list(int force)
 void part_fini (void)
 {
 	FREE_NULL_LIST(part_list);
-	xfree(default_part_name);
-	xfree(default_part.name);
 	default_part_loc = NULL;
 }
 
