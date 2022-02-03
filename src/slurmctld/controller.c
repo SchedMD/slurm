@@ -346,10 +346,6 @@ int main(int argc, char **argv)
 		slurmctld_config.daemonize = 1;
 		if (xdaemon())
 			error("daemon(): %m");
-		log_set_timefmt(slurm_conf.log_fmt);
-		log_alter(log_opts, LOG_DAEMON, slurm_conf.slurmctld_logfile);
-		sched_log_alter(sched_log_opts, LOG_DAEMON,
-		                slurm_conf.sched_logfile);
 		sched_debug("slurmctld starting");
 	} else {
 		slurmctld_config.daemonize = 0;
