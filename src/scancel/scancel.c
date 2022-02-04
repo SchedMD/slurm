@@ -784,9 +784,7 @@ _cancel_job_id (void *ci)
 		error_code = slurm_get_errno();
 		if ((opt.verbose > 0) ||
 		    ((error_code != ESLURM_ALREADY_DONE) &&
-		     (error_code != ESLURM_INVALID_JOB_ID) &&
-		     ((error_code != ESLURM_NOT_WHOLE_HET_JOB) ||
-		      (opt.job_cnt != 0)))) {
+		     (error_code != ESLURM_INVALID_JOB_ID))) {
 			error("Kill job error on job id %s: %s",
 			      cancel_info->job_id_str,
 			      slurm_strerror(slurm_get_errno()));
