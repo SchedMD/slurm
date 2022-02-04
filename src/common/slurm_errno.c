@@ -587,6 +587,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "MIME type is unknown to any loaded plugins"},
 	{ ESLURM_DATA_TOO_LARGE,
 	  "DATA too large to handle"},
+
+	/* container  errors */
+	{ ESLURM_CONTAINER_NOT_CONFIGURED,
+	  "Container support is not configured"},
 };
 
 /*

@@ -328,6 +328,9 @@ typedef enum {
 	ESLURM_DATA_REGEX_COMPILE,
 	ESLURM_DATA_UNKNOWN_MIME_TYPE,
 	ESLURM_DATA_TOO_LARGE,
+
+	/* container errors */
+	ESLURM_CONTAINER_NOT_CONFIGURED = 10000,
 } slurm_err_t;
 
 /* look up an errno value */
