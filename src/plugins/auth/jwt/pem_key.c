@@ -203,6 +203,10 @@ extern char *pem_from_mod_exp(char *mod, char *exp)
 	char *layer1lender, *layer2lender;
 	char *binkey, *base64key, *pem = NULL;
 
+	if (!mod || !exp)
+		fatal("%s: invalid JWKS file, missing mod and/or exp values",
+		      __func__);
+
 	modhex = _to_hex(mod);
 	exphex = _to_hex(exp);
 
