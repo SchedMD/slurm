@@ -640,6 +640,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->free_mem = NO_VAL64;
 	node_ptr->next_state = NO_VAL;
 	node_ptr->owner = NO_VAL;
+	node_ptr->port = slurm_conf.slurmd_port;
 	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	node_ptr->resume_timeout = NO_VAL16;
 	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
