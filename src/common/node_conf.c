@@ -584,6 +584,27 @@ extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
 }
 
 /*
+ * Sync with _init_conf_node().
+ *
+ * _init_conf_node() initializes default values from slurm.conf parameters.
+ * After parsing slurm.conf, build_all_nodeline_info() copies slurm_conf_node_t
+ * to config_record_t. Defaults values between slurm_conf_node_t and
+ * config_record_t should stay in sync in case a config_record is created
+ * outside of slurm.conf parsing.
+ */
+static void _init_config_record(config_record_t *config_ptr)
+{
+	config_ptr->magic = CONFIG_MAGIC;
+	config_ptr->boards = 1;
+	config_ptr->cores = 1;
+	config_ptr->cpus = 1;
+	config_ptr->real_memory = 1;
+	config_ptr->threads = 1;
+	config_ptr->tot_sockets = 1;
+	config_ptr->weight = 1;
+}
+
+/*
  * create_config_record - create a config_record entry and set is values to
  *	the defaults. each config record corresponds to a line in the
  *	slurm.conf file and typically describes the configuration of a
@@ -595,14 +616,10 @@ extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
 extern config_record_t *create_config_record(void)
 {
 	config_record_t *config_ptr = xmalloc(sizeof(*config_ptr));
+	_init_config_record(config_ptr);
+	list_append(config_list, config_ptr);
 
 	last_node_update = time (NULL);
-
-	config_ptr->magic = CONFIG_MAGIC;
-	config_ptr->nodes = NULL;
-	config_ptr->node_bitmap = NULL;
-
-	list_append(config_list, config_ptr);
 
 	return config_ptr;
 }
