@@ -489,7 +489,7 @@ static void _generate_bundle_path(stepd_step_rec_t *job, char *rootfs_path)
 	job->cwd = path;
 }
 
-extern void setup_container(stepd_step_rec_t *job)
+extern int setup_container(stepd_step_rec_t *job)
 {
 	int rc;
 	char *jconfig = NULL;
@@ -497,13 +497,16 @@ extern void setup_container(stepd_step_rec_t *job)
 	char *out = NULL;
 	char *rootfs_path = NULL;
 
-	if ((rc = get_oci_conf(&oci_conf)) && (rc != ENOENT))
-		fatal("Error loading oci.conf: %s", slurm_strerror(rc));
+	if ((rc = get_oci_conf(&oci_conf)) && (rc != ENOENT)) {
+		error("%s: error loading oci.conf: %s",
+		      __func__, slurm_strerror(rc));
+		return rc;
+	}
 
 	if (!oci_conf) {
 		debug("%s: OCI Container not configured. Ignoring %pS requested container: %s",
 		      __func__, job, job->container);
-		return;
+		return ESLURM_CONTAINER_NOT_CONFIGURED;
 	}
 
 	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
@@ -568,6 +571,8 @@ error:
 	xfree(jconfig);
 	FREE_NULL_DATA(config);
 	xfree(jconfig);
+
+	return rc;
 }
 
 static data_t *_get_container_state()

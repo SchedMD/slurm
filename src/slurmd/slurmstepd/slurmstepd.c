@@ -723,8 +723,21 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		return NULL;
 	}
 
-	if (job->container)
-		setup_container(job);
+	if (job->container) {
+		int rc = setup_container(job);
+
+		if (rc == ESLURM_CONTAINER_NOT_CONFIGURED) {
+			debug2("%s: container %s requested but containers are not configured on this node",
+			       __func__, job->container);
+		} else if (rc) {
+			error("%s: container setup failed: %s",
+			      __func__, slurm_strerror(rc));
+			return NULL;
+		} else {
+			debug2("%s: container %s successfully setup",
+			       __func__, job->container);
+		}
+	}
 
 	job->jmgr_pid = getpid();
 	job->jobacct = jobacctinfo_create(NULL);
