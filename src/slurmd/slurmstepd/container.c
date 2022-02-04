@@ -180,18 +180,21 @@ static int _mkpath(const char *path, uid_t uid, gid_t gid)
 	return SLURM_SUCCESS;
 }
 
-static data_t *_read_config(const char *jconfig)
+static int _read_config(const char *jconfig, data_t **config)
 {
 	int rc;
 	buf_t *buffer = NULL;
-	data_t *config = NULL;
 
+	xassert(config && !*config);
+
+	errno = SLURM_SUCCESS;
 	if (!(buffer = create_mmap_buf(jconfig))) {
+		rc = errno;
 		error("%s: unable to open: %s", __func__, jconfig);
 		goto cleanup;
 	}
 
-	if ((rc = data_g_deserialize(&config, get_buf_data(buffer),
+	if ((rc = data_g_deserialize(config, get_buf_data(buffer),
 				     remaining_buf(buffer), MIME_TYPE_JSON))) {
 		error("%s: unable to parse config.json: %s",
 		      __func__, slurm_strerror(rc));
@@ -201,7 +204,7 @@ cleanup:
 	free_buf(buffer);
 	buffer = NULL;
 
-	return config;
+	return rc;
 }
 
 static int _write_config(const stepd_step_rec_t *job, const char *jconfig,
@@ -512,9 +515,10 @@ extern void setup_container(stepd_step_rec_t *job)
 	/* OCI runtime spec reqires config.json to be in root of bundle */
 	xstrfmtcat(jconfig, "%s/config.json", job->container);
 
-	config = _read_config(jconfig);
-	if (!config)
+	if ((rc = _read_config(jconfig, &config))) {
 		goto error;
+	}
+	xassert(config);
 
 	xfree(jconfig);
 
