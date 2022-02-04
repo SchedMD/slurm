@@ -4,6 +4,18 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from NHR Container Workshop, December 2021</h2>
+<ul>
+<li><a href="NHR21/containers.pdf">Containers and Slurm</a>,
+Nathan Rini, SchedMD</li>
+</ul>
+
+<h2>Presentations from SC21, November 2021</h2>
+<ul>
+<li>BOF: <a href="SC21/BoF.pdf">Slurm Birds of a Feather</a>,
+Tim Wickberg, SchedMD</li>
+</ul>
+
 <h2>Presentations from Slurm User Group Meeting, September 2021</h2>
 <ul>
 <li><a href="SLUG21/Field_Notes_5.pdf">Field Notes 5: From The Frontlines of Slurm Support</a>,
