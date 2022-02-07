@@ -2612,6 +2612,11 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 		}
 		p = p->next_alias;
 	}
+	if (!p) {
+		_push_to_hashtbls(node_name, node_hostname, node_addr,
+				  NULL, 0, 0, 0, 0, 0, 0, false, NULL, 0, 0,
+				  NULL, false);
+	}
 	slurm_conf_unlock();
 
 	return;
