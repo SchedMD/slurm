@@ -605,6 +605,12 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 		else
 			pack16_array(job_resrcs_ptr->cpus, 0, buffer);
 
+		if (job_resrcs_ptr->cpus_overlap)
+			pack16_array(job_resrcs_ptr->cpus_overlap,
+				     job_resrcs_ptr->nhosts, buffer);
+		else
+			pack16_array(job_resrcs_ptr->cpus_overlap, 0, buffer);
+
 		if (job_resrcs_ptr->cpus_used)
 			pack16_array(job_resrcs_ptr->cpus_used,
 				     job_resrcs_ptr->nhosts, buffer);
@@ -855,6 +861,9 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 			xfree(job_resrcs->cpus);
 		if (tmp32 != job_resrcs->nhosts)
 			goto unpack_error;
+		safe_unpack16_array(&job_resrcs->cpus_overlap, &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->cpus_overlap);
 		safe_unpack16_array(&job_resrcs->cpus_used, &tmp32, buffer);
 		if (tmp32 == 0)
 			xfree(job_resrcs->cpus_used);
