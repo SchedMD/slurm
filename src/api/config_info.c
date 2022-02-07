@@ -2090,7 +2090,6 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !xstrcasecmp(key_pair->value, "(null type)") ||
 		    !xstrcasecmp(key_pair->value, "(null)") ||
 		    !xstrcasecmp(key_pair->value, "N/A") ||
-		    !xstrcasecmp(key_pair->name, "DynAllocPort") ||
 		    (!xstrcasecmp(key_pair->name, "DefMemPerNode") &&
 		     !xstrcasecmp(key_pair->value, "UNLIMITED")) ||
 		    ((!xstrcasecmp(key_pair->name, "SlurmctldSyslogDebug") ||
