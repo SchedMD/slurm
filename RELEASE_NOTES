@@ -70,6 +70,7 @@ COMMAND CHANGES (see man pages for details)
  -- Add "condflags=open" to sacctmgr show events to return open/currently down
     events.
  -- sacct -f flag implies -c flag.
+ -- Steps may only overlap with steps that also used --overlap.
 
 API CHANGES
 ===========

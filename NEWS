@@ -136,6 +136,7 @@ documents those changes that are of interest to users and administrators.
     during job startup.
  -- slurmstepd - report and log I/O setup failure using corresponding error
     code during job start.
+ -- Steps may only overlap with steps that also used --overlap.
 
 * Changes in Slurm 21.08.7
 ==========================

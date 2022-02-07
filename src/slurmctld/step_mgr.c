@@ -1150,32 +1150,39 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			 job_resrcs_ptr->cpus_used[node_inx],
 			 usable_cpu_cnt[i], node_record_table_ptr[i].name);
 
-		if (step_spec->flags & SSF_EXCLUSIVE) {
-			/*
-			 * If whole is given and
-			 * job_resrcs_ptr->cpus_used[node_inx]
-			 * we can't use this node.
-			 */
-			if ((step_spec->flags & SSF_WHOLE) &&
-			    job_resrcs_ptr->cpus_used[node_inx]) {
-				log_flag(STEPS, "%s: %pJ Node requested --whole node while other step running here.",
-					 __func__, job_ptr);
+		/*
+		 * If whole is given and
+		 * job_resrcs_ptr->cpus_used[node_inx]
+		 * we can't use this node.
+		 */
+		if ((step_spec->flags & SSF_WHOLE) &&
+		    job_resrcs_ptr->cpus_used[node_inx]) {
+			log_flag(STEPS, "%s: %pJ Node requested --whole node while other step running here.",
+				 __func__, job_ptr);
+			job_blocked_cpus +=
+				job_resrcs_ptr->cpus_used[node_inx];
+			if (step_spec->flags & SSF_EXCLUSIVE)
 				job_blocked_cpus +=
-					job_resrcs_ptr->cpus_used[node_inx];
-				job_blocked_nodes++;
-				usable_cpu_cnt[i] = 0;
-			} else {
+					job_resrcs_ptr->cpus_overlap[node_inx];
+			job_blocked_nodes++;
+			usable_cpu_cnt[i] = 0;
+		} else {
+			usable_cpu_cnt[i] -=
+				job_resrcs_ptr->cpus_used[node_inx];
+			job_blocked_cpus +=
+				job_resrcs_ptr->cpus_used[node_inx];
+			if (step_spec->flags & SSF_EXCLUSIVE) {
 				usable_cpu_cnt[i] -=
-					job_resrcs_ptr->cpus_used[node_inx];
+					job_resrcs_ptr->cpus_overlap[node_inx];
 				job_blocked_cpus +=
-					job_resrcs_ptr->cpus_used[node_inx];
-				if (!usable_cpu_cnt[i]) {
-					job_blocked_nodes++;
-					log_flag(STEPS, "%s: %pJ Skipping node %s. Not enough CPUs to run step here.",
-						 __func__,
-						 job_ptr,
-						 node_record_table_ptr[i].name);
-				}
+					job_resrcs_ptr->cpus_overlap[node_inx];
+			}
+			if (!usable_cpu_cnt[i]) {
+				job_blocked_nodes++;
+				log_flag(STEPS, "%s: %pJ Skipping node %s. Not enough CPUs to run step here.",
+					 __func__,
+					 job_ptr,
+					 node_record_table_ptr[i].name);
 			}
 		}
 
@@ -2032,10 +2039,12 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	uint32_t rem_nodes;
 	int rc = SLURM_SUCCESS;
 	uint16_t req_tpc = NO_VAL16;
+	uint16_t *cpus_used;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
+	xassert(job_resrcs_ptr->cpus_overlap);
 
 	if (step_ptr->step_layout == NULL)	/* batch step */
 		return rc;
@@ -2078,6 +2087,11 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 
 	if (!step_ptr->pn_min_memory)
 		all_job_mem = true;
+
+	if (step_ptr->flags & SSF_EXCLUSIVE)
+		cpus_used = job_resrcs_ptr->cpus_used;
+	else
+		cpus_used = job_resrcs_ptr->cpus_overlap;
 
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
@@ -2172,7 +2186,8 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		}
 		step_ptr->cpu_count += cpus_alloc;
 
-		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
+		cpus_used[job_node_inx] += cpus_alloc;
+
 		gres_ctld_step_alloc(step_ptr->gres_list_req,
 				     &step_ptr->gres_list_alloc,
 				     job_ptr->gres_list_alloc,
@@ -2256,7 +2271,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			_dump_step_layout(step_ptr);
 		log_flag(STEPS, "step alloc on job node %d (%s) used %u of %u CPUs",
 			 job_node_inx, node_record_table_ptr[i_node].name,
-			 job_resrcs_ptr->cpus_used[job_node_inx],
+			 cpus_used[job_node_inx],
 			 job_resrcs_ptr->cpus[job_node_inx]);
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
@@ -2323,6 +2338,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 	uint16_t req_tpc = NO_VAL16;
+	uint16_t *cpus_used;
 
 	xassert(job_resrcs_ptr);
 	if (!job_resrcs_ptr) {
@@ -2333,6 +2349,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
+	xassert(job_resrcs_ptr->cpus_overlap);
 
 	if (step_ptr->step_layout == NULL)	/* batch step */
 		return;
@@ -2355,6 +2372,11 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	else if (job_ptr->details->mc_ptr->threads_per_core &&
 		 (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16))
 		req_tpc = job_ptr->details->mc_ptr->threads_per_core;
+
+	if (step_ptr->flags & SSF_EXCLUSIVE)
+		cpus_used = job_resrcs_ptr->cpus_used;
+	else
+		cpus_used = job_resrcs_ptr->cpus_overlap;
 
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
@@ -2391,14 +2413,15 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			 * more decisions on allocation cores.
 			 */
 		}
-		if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc) {
-			job_resrcs_ptr->cpus_used[job_node_inx] -= cpus_alloc;
+
+		if (cpus_used[job_node_inx] >= cpus_alloc) {
+			cpus_used[job_node_inx] -= cpus_alloc;
 		} else {
 			error("%s: CPU underflow for %pS (%u<%u on job node %d)",
 			      __func__, step_ptr,
-			      job_resrcs_ptr->cpus_used[job_node_inx],
+			      cpus_used[job_node_inx],
 			      cpus_alloc, job_node_inx);
-			job_resrcs_ptr->cpus_used[job_node_inx] = 0;
+			cpus_used[job_node_inx] = 0;
 		}
 		if (step_ptr->memory_allocated && _is_mem_resv() &&
 		    !(step_ptr->flags & SSF_MEM_ZERO)) {
@@ -2424,7 +2447,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		}
 		log_flag(STEPS, "step dealloc on job node %d (%s) used: %u of %u CPUs",
 			 job_node_inx, node_record_table_ptr[i_node].name,
-			 job_resrcs_ptr->cpus_used[job_node_inx],
+			 cpus_used[job_node_inx],
 			 job_resrcs_ptr->cpus[job_node_inx]);
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
@@ -3414,10 +3437,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 					cpus_task_reps[cpus_task_inx]++;
 			}
 
-			if (step_ptr->flags & SSF_EXCLUSIVE) {
-				usable_cpus = cpus - cpus_used;
-			} else
-				usable_cpus = cpus;
+			usable_cpus = cpus - cpus_used;
 
 			if (usable_cpus <= 0)
 				continue;
