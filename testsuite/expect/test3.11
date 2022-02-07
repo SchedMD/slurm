@@ -115,11 +115,12 @@ if {$def_node eq ""} {
 	fail "Default partition seems to have no nodes"
 }
 
-# Some tests do not support names of this form "rack[0-3]_blade[0-63]"
+# Some tests need nodenames in the regular form of node[min-max]
+# Note that the regular form needs to end with the number range
 set irregular_node_name 0
 set nodes_list [run_command_output -fail "$sinfo -h -o '%N' -tIDLE -p $def_partition"]
 set first_nodes [lindex [split $nodes_list ","] 0]
-if {![regexp "($re_word_str)\\\[($number)-($number)\\\]" $first_nodes - def_node_name def_node_inx_min def_node_inx_max]} {
+if {![regexp -line {^([^[]+)\[(\d+)-(\d+)\]$} $first_nodes - def_node_name def_node_inx_min def_node_inx_max]} {
 	log_warn "Node name format not supported for all test"
 	set irregular_node_name 1
 } else {
