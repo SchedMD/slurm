@@ -84,7 +84,7 @@ extern void free_slurmdbd_conf(void)
 
 static void _clear_slurmdbd_conf(void)
 {
-	free_slurm_conf(&slurm_conf, 0);
+	init_slurm_conf(&slurm_conf);
 
 	if (slurmdbd_conf) {
 		xfree(slurmdbd_conf->archive_dir);
