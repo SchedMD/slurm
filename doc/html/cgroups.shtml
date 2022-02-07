@@ -111,11 +111,15 @@ binding.</li>
 (gres devices).</li>
 </ul>
 <p>The task/cgroup plugin uses the cpuset, memory and devices subsystems.</p>
-<p>To enable this plugin, configure the following option in slurm.conf:
-<pre>TaskPlugin=task/cgroup</pre></p>
+<p>To enable this plugin, add <i>task/cgroup</i> to the TaskPlugin configuration
+parameter in slurm.conf:</p>
+<pre>TaskPlugin=task/cgroup</pre>
 <p>There are many specific options for this plugin in cgroup.conf.  The general
 options also apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page
 for details.</p>
+<p>Note that task/cgroup and task/affinity are not mutually exclusive and can
+work side by side:</p>
+<pre>TaskPlugin=task/cgroup,task/affinity</pre>
 
 <h3 id="jobacct_gather">jobacct_gather/cgroup plugin
 <a class="slurm_link" href="#jobacct_gather"></a>
@@ -171,6 +175,6 @@ hierarchies:</p>
 use more than one node will have a cgroup structure on each node.</p>
 
 
-<p style="text-align:center;">Last modified 7 February 2022</p>
+<p style="text-align:center;">Last modified 18 March 2022</p>
 
 <!--#include virtual="footer.txt"-->
