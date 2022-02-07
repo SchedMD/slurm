@@ -39,6 +39,7 @@
 #include "src/common/xstring.h"
 
 typedef struct {
+	bool decr_job_alloc;
 	uint64_t gres_needed;
 	gres_key_t *job_search_key;
 	uint64_t max_gres;
@@ -1947,7 +1948,7 @@ static uint64_t _step_get_gres_needed(gres_step_state_t *gres_ss,
 }
 
 static uint64_t _step_get_gres_avail(gres_state_t *gres_state_job,
-				     int node_offset)
+				     int node_offset, bool decr_job_alloc)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	uint64_t gres_avail;
@@ -1960,7 +1961,7 @@ static uint64_t _step_get_gres_avail(gres_state_t *gres_state_job,
 		return SLURM_ERROR;
 	}
 
-	if (gres_avail != NO_CONSUME_VAL64)
+	if ((gres_avail != NO_CONSUME_VAL64) && decr_job_alloc)
 		gres_avail -= gres_js->gres_cnt_step_alloc[node_offset];
 
 	return gres_avail;
@@ -1972,6 +1973,7 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 		       int node_offset,
 		       slurm_step_id_t *step_id,
 		       uint64_t *gres_needed, uint64_t *max_gres,
+		       bool decr_job_alloc,
 		       uint64_t *step_node_mem_alloc)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
@@ -2010,14 +2012,15 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 			gres_js->node_cnt, sizeof(uint64_t));
 	}
 
-	gres_alloc = _step_get_gres_avail(gres_state_job, node_offset);
+	gres_alloc = _step_get_gres_avail(gres_state_job, node_offset,
+					  decr_job_alloc);
 	if (gres_alloc == NO_CONSUME_VAL64) {
 		if (*gres_needed != INFINITE64)
 			*gres_needed = 0;
 		gres_ss->total_gres = NO_CONSUME_VAL64;
 		return SLURM_SUCCESS;
 	} else if (*gres_needed != INFINITE64) {
-		if (*max_gres) {
+		if (*max_gres && decr_job_alloc) {
 			gres_alloc = MIN(gres_alloc, *max_gres);
 			*max_gres -= gres_alloc;
 		} else
@@ -2053,7 +2056,8 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 		gres_ss->node_in_use = bit_alloc(gres_js->node_cnt);
 	}
 	bit_set(gres_ss->node_in_use, node_offset);
-	gres_js->gres_cnt_step_alloc[node_offset] += gres_alloc;
+	if (decr_job_alloc)
+		gres_js->gres_cnt_step_alloc[node_offset] += gres_alloc;
 
 	if ((gres_js->gres_bit_alloc == NULL) ||
 	    (gres_js->gres_bit_alloc[node_offset] == NULL)) {
@@ -2074,7 +2078,8 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 			}
 		}
 	} else {
-		if (gres_js->gres_bit_step_alloc &&
+		if (decr_job_alloc &&
+		    gres_js->gres_bit_step_alloc &&
 		    gres_js->gres_bit_step_alloc[node_offset]) {
 			bit_and_not(gres_bit_alloc,
 				    gres_js->gres_bit_step_alloc[node_offset]);
@@ -2094,20 +2099,23 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 		      __func__, step_id, node_offset);
 	}
 
-	if (gres_js->gres_bit_step_alloc == NULL) {
-		gres_js->gres_bit_step_alloc =
-			xcalloc(gres_js->node_cnt, sizeof(bitstr_t *));
-	}
-	if (gres_js->gres_bit_step_alloc[node_offset]) {
-		bit_or(gres_js->gres_bit_step_alloc[node_offset],
-		       gres_bit_alloc);
-	} else {
-		gres_js->gres_bit_step_alloc[node_offset] =
-			bit_copy(gres_bit_alloc);
+	if (decr_job_alloc) {
+		if (gres_js->gres_bit_step_alloc == NULL) {
+			gres_js->gres_bit_step_alloc =
+				xcalloc(gres_js->node_cnt,
+					sizeof(bitstr_t *));
+		}
+		if (gres_js->gres_bit_step_alloc[node_offset]) {
+			bit_or(gres_js->gres_bit_step_alloc[node_offset],
+			       gres_bit_alloc);
+		} else {
+			gres_js->gres_bit_step_alloc[node_offset] =
+				bit_copy(gres_bit_alloc);
+		}
 	}
 	if (gres_ss->gres_bit_alloc == NULL) {
-		gres_ss->gres_bit_alloc = xcalloc(gres_js->node_cnt,
-							sizeof(bitstr_t *));
+		gres_ss->gres_bit_alloc =
+			xcalloc(gres_js->node_cnt, sizeof(bitstr_t *));
 	}
 	if (gres_ss->gres_bit_alloc[node_offset]) {
 		error("gres/%s: %s %ps bit_alloc already exists",
@@ -2180,6 +2188,7 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 			       gres_state_job,
 			       args->node_offset, &args->tmp_step_id,
 			       &args->gres_needed, &args->max_gres,
+			       args->decr_job_alloc,
 			       args->step_node_mem_alloc);
 
 	if (args->rc != SLURM_SUCCESS) {
@@ -2211,6 +2220,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 				int node_offset, bool first_step_node,
 				uint16_t tasks_on_node, uint32_t rem_nodes,
 				uint32_t job_id, uint32_t step_id,
+				bool decr_job_alloc,
 				uint64_t *step_node_mem_alloc)
 {
 	int rc = SLURM_SUCCESS;
@@ -2250,6 +2260,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 			job_search_key.type_id = NO_VAL;
 
 		job_search_key.node_offset = node_offset;
+		args.decr_job_alloc = decr_job_alloc;
 		args.gres_needed = _step_get_gres_needed(
 			gres_ss, first_step_node, tasks_on_node,
 			rem_nodes, &args.max_gres);
@@ -2282,7 +2293,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 }
 
 static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
-			 slurm_step_id_t *step_id)
+			 slurm_step_id_t *step_id, bool decr_job_alloc)
 {
 	gres_state_t *gres_state_job;
 	gres_step_state_t *gres_ss =
@@ -2326,6 +2337,12 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 
 		if (!bit_test(gres_ss->node_in_use, i))
 			continue;
+
+		if (!decr_job_alloc) {
+			/* This step was not counted against job allocation */
+			FREE_NULL_BITMAP(gres_ss->gres_bit_alloc[i]);
+			continue;
+		}
 
 		if (gres_ss->gres_cnt_node_alloc)
 			gres_cnt = gres_ss->gres_cnt_node_alloc[i];
@@ -2387,7 +2404,8 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_step_dealloc(List step_gres_list, List job_gres_list,
-				  uint32_t job_id, uint32_t step_id)
+				  uint32_t job_id, uint32_t step_id,
+				  bool decr_job_alloc)
 {
 	int rc = SLURM_SUCCESS, rc2;
 	ListIterator step_gres_iter;
@@ -2410,7 +2428,7 @@ extern int gres_ctld_step_dealloc(List step_gres_list, List job_gres_list,
 	while ((gres_state_step = list_next(step_gres_iter))) {
 		rc2 = _step_dealloc(gres_state_step,
 				    job_gres_list,
-				    &tmp_step_id);
+				    &tmp_step_id, decr_job_alloc);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}

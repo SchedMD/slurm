@@ -186,6 +186,8 @@ extern void gres_ctld_set_node_tres_cnt(List gres_list,
  * IN tasks_on_node - number of tasks to be launched on this node
  * IN rem_nodes - desired additional node count to allocate, including this node
  * IN job_id, step_id - ID of the step being allocated.
+ * IN decr_job_alloc - whether or not to decrement the step allocation from the
+ *                     job allocation.
  * OUT step_node_mem_alloc - the amount of memory allocated to the step on this
  * 		node based on mem_per_gres requirements.
  * RET SLURM_SUCCESS or error code
@@ -196,6 +198,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 				int node_offset, bool first_step_node,
 				uint16_t tasks_on_node, uint32_t rem_nodes,
 				uint32_t job_id, uint32_t step_id,
+				bool decr_job_alloc,
 				uint64_t *step_node_mem_alloc);
 
 /*
@@ -203,11 +206,14 @@ extern int gres_ctld_step_alloc(List step_gres_list,
  * IN step_gres_list_alloc - step's list of allocated gres
  * IN job_gres_list - job's allocated gres_list built by gres_ctld_job_alloc()
  * IN job_id, step_id - ID of the step being allocated.
+ * IN decr_job_alloc - whether or not to decrement the step allocation from the
+ *                     job allocation.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_step_dealloc(List step_gres_list_alloc,
 				  List job_gres_list,
-				  uint32_t job_id, uint32_t step_id);
+				  uint32_t job_id, uint32_t step_id,
+				  bool decr_job_alloc);
 
 /*
  * A job allocation size has changed. Update the job step gres information

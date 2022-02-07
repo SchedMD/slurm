@@ -183,6 +183,8 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 
 	if (srun_opt->exclusive)
 		step_req->flags |= SSF_EXCLUSIVE;
+	if (srun_opt->overlap_force)
+		step_req->flags |= SSF_OVERLAP_FORCE;
 	if (opt_local->overcommit)
 		step_req->flags |= SSF_OVERCOMMIT;
 	if (opt_local->no_kill)

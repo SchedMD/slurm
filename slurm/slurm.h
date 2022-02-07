@@ -1151,6 +1151,10 @@ typedef enum {
 	SSF_INTERACTIVE = 1 << 4, /* Request interactive step allocation */
 	SSF_MEM_ZERO = 1 << 5, /* Requested --mem=0; use all memory but do not
 				* count against the job's memory allocation */
+	SSF_OVERLAP_FORCE = 1 << 6, /* Force this to overlap with all other
+				     * steps; resources allocated to this step
+				     * are not decremented from the job's
+				     * allocation */
 } step_spec_flags_t;
 
 /*****************************************************************************\

@@ -1150,39 +1150,45 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			 job_resrcs_ptr->cpus_used[node_inx],
 			 usable_cpu_cnt[i], node_record_table_ptr[i].name);
 
-		/*
-		 * If whole is given and
-		 * job_resrcs_ptr->cpus_used[node_inx]
-		 * we can't use this node.
-		 */
-		if ((step_spec->flags & SSF_WHOLE) &&
-		    job_resrcs_ptr->cpus_used[node_inx]) {
-			log_flag(STEPS, "%s: %pJ Node requested --whole node while other step running here.",
-				 __func__, job_ptr);
-			job_blocked_cpus +=
-				job_resrcs_ptr->cpus_used[node_inx];
-			if (step_spec->flags & SSF_EXCLUSIVE)
+		/* Don't do this test if --overlap=force */
+		if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
+			/*
+			 * If whole is given and
+			 * job_resrcs_ptr->cpus_used[node_inx]
+			 * we can't use this node.
+			 */
+			if ((step_spec->flags & SSF_WHOLE) &&
+			    job_resrcs_ptr->cpus_used[node_inx]) {
+				log_flag(STEPS, "%s: %pJ Node requested --whole node while other step running here.",
+					 __func__, job_ptr);
 				job_blocked_cpus +=
-					job_resrcs_ptr->cpus_overlap[node_inx];
-			job_blocked_nodes++;
-			usable_cpu_cnt[i] = 0;
-		} else {
-			usable_cpu_cnt[i] -=
-				job_resrcs_ptr->cpus_used[node_inx];
-			job_blocked_cpus +=
-				job_resrcs_ptr->cpus_used[node_inx];
-			if (step_spec->flags & SSF_EXCLUSIVE) {
-				usable_cpu_cnt[i] -=
-					job_resrcs_ptr->cpus_overlap[node_inx];
-				job_blocked_cpus +=
-					job_resrcs_ptr->cpus_overlap[node_inx];
-			}
-			if (!usable_cpu_cnt[i]) {
+					job_resrcs_ptr->cpus_used[node_inx];
+				if (step_spec->flags & SSF_EXCLUSIVE)
+					job_blocked_cpus +=
+						job_resrcs_ptr->
+						cpus_overlap[node_inx];
 				job_blocked_nodes++;
-				log_flag(STEPS, "%s: %pJ Skipping node %s. Not enough CPUs to run step here.",
-					 __func__,
-					 job_ptr,
-					 node_record_table_ptr[i].name);
+				usable_cpu_cnt[i] = 0;
+			} else {
+				usable_cpu_cnt[i] -=
+					job_resrcs_ptr->cpus_used[node_inx];
+				job_blocked_cpus +=
+					job_resrcs_ptr->cpus_used[node_inx];
+				if (step_spec->flags & SSF_EXCLUSIVE) {
+					usable_cpu_cnt[i] -=
+						job_resrcs_ptr->
+						cpus_overlap[node_inx];
+					job_blocked_cpus +=
+						job_resrcs_ptr->
+						cpus_overlap[node_inx];
+				}
+				if (!usable_cpu_cnt[i]) {
+					job_blocked_nodes++;
+					log_flag(STEPS, "%s: %pJ Skipping node %s. Not enough CPUs to run step here.",
+						 __func__,
+						 job_ptr,
+						 node_record_table_ptr[i].name);
+				}
 			}
 		}
 
@@ -1210,10 +1216,15 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					     memory_allocated[node_inx];
 				tmp_cpus   = tmp_mem / mem_use;
 				total_cpus = MIN(total_cpus, tmp_cpus);
-				/* consider current step allocations */
-				tmp_mem   -= job_resrcs_ptr->
-					     memory_used[node_inx];
-				tmp_cpus   = tmp_mem / mem_use;
+				/*
+				 * consider current step allocations if
+				 * not --overlap=force
+				 */
+				if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
+					tmp_mem   -= job_resrcs_ptr->
+						     memory_used[node_inx];
+					tmp_cpus   = tmp_mem / mem_use;
+				}
 				if (tmp_cpus < avail_cpus) {
 					avail_cpus = tmp_cpus;
 					usable_cpu_cnt[i] = avail_cpus;
@@ -1229,9 +1240,14 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					     memory_allocated[node_inx];
 				if (tmp_mem < mem_use)
 					total_cpus = 0;
-				/* consider current step allocations */
-				tmp_mem   -= job_resrcs_ptr->
-					     memory_used[node_inx];
+				/*
+				 * consider current step allocations if
+				 * not --overlap=force
+				 */
+				if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
+					tmp_mem   -= job_resrcs_ptr->
+						     memory_used[node_inx];
+				}
 				if ((tmp_mem < mem_use) && (avail_cpus > 0)) {
 					log_flag(STEPS, "%s: %pJ Usable memory on node: %"PRIu64" is less than requested %"PRIu64" skipping the node",
 						 __func__, job_ptr, tmp_mem,
@@ -1254,17 +1270,24 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						   test_mem_per_gres,
 						   job_resrcs_ptr, &err_code);
 			total_cpus = MIN(total_cpus, gres_cpus);
-			/* consider current step allocations */
-			gres_cpus = gres_step_test(step_gres_list,
-						   job_ptr->gres_list_alloc,
-						   node_inx,
-						   first_step_node,
-						   cpus_per_task,
-						   max_rem_nodes, false,
-						   job_ptr->job_id, NO_VAL,
-						   test_mem_per_gres,
-						   job_resrcs_ptr,
-						   &err_code);
+
+			/*
+			 * consider current step allocations if
+			 * not --overlap=force
+			 */
+			if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
+				gres_cpus =
+					gres_step_test(step_gres_list,
+						       job_ptr->gres_list_alloc,
+						       node_inx,
+						       first_step_node,
+						       cpus_per_task,
+						       max_rem_nodes, false,
+						       job_ptr->job_id, NO_VAL,
+						       test_mem_per_gres,
+						       job_resrcs_ptr,
+						       &err_code);
+			}
 			if (gres_cpus < avail_cpus) {
 				log_flag(STEPS, "%s: %pJ Usable CPUs for GRES %"PRIu64" from %d previously available",
 					 __func__, job_ptr, gres_cpus,
@@ -1846,7 +1869,8 @@ static bool _pick_step_core(step_record_t *step_ptr,
 		    bit_test(job_resrcs_ptr->core_bitmap_used, bit_offset))
 			return false;
 
-		bit_set(job_resrcs_ptr->core_bitmap_used, bit_offset);
+		if (!(step_ptr->flags & SSF_OVERLAP_FORCE))
+			bit_set(job_resrcs_ptr->core_bitmap_used, bit_offset);
 
 		log_flag(STEPS, "%s: alloc Node:%d Socket:%d Core:%d",
 			 __func__, job_node_inx, sock_inx, core_inx);
@@ -2186,7 +2210,12 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		}
 		step_ptr->cpu_count += cpus_alloc;
 
-		cpus_used[job_node_inx] += cpus_alloc;
+		/*
+		 * Don't count this step against the allocation if
+		 * --overlap=force
+		 */
+		if (!(step_ptr->flags & SSF_OVERLAP_FORCE))
+			cpus_used[job_node_inx] += cpus_alloc;
 
 		gres_ctld_step_alloc(step_ptr->gres_list_req,
 				     &step_ptr->gres_list_alloc,
@@ -2196,6 +2225,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 				     tasks[step_node_inx],
 				     rem_nodes, job_ptr->job_id,
 				     step_ptr->step_id.step_id,
+				     !(step_ptr->flags & SSF_OVERLAP_FORCE),
 				     &gres_step_node_mem_alloc);
 		first_step_node = false;
 		rem_nodes--;
@@ -2218,16 +2248,22 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			step_ptr->memory_allocated[step_node_inx] = mem_use;
 			/*
 			 * Do not count against the job's memory allocation if
-			 * --mem=0 was requested.
+			 * --mem=0 or --overlap=force were requested.
 			 */
-			if (!(step_ptr->flags & SSF_MEM_ZERO))
+			if (!(step_ptr->flags & SSF_MEM_ZERO) &&
+			    !(step_ptr->flags & SSF_OVERLAP_FORCE))
 				job_resrcs_ptr->memory_used[job_node_inx] +=
 					mem_use;
 		} else if (_is_mem_resv()) {
 			step_ptr->memory_allocated[step_node_inx] =
 				gres_step_node_mem_alloc;
-			job_resrcs_ptr->memory_used[job_node_inx] +=
-				gres_step_node_mem_alloc;
+			/*
+			 * Don't count this step against the allocation if
+			 * --overlap=force
+			 */
+			if (!(step_ptr->flags & SSF_OVERLAP_FORCE))
+				job_resrcs_ptr->memory_used[job_node_inx] +=
+					gres_step_node_mem_alloc;
 		}
 		if (pick_step_cores) {
 			uint16_t cpus_per_core = 1;
@@ -2269,10 +2305,19 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND)
 			_dump_step_layout(step_ptr);
-		log_flag(STEPS, "step alloc on job node %d (%s) used %u of %u CPUs",
-			 job_node_inx, node_record_table_ptr[i_node].name,
-			 cpus_used[job_node_inx],
-			 job_resrcs_ptr->cpus[job_node_inx]);
+
+		if (step_ptr->flags & SSF_OVERLAP_FORCE)
+			log_flag(STEPS, "step alloc on job node %d (%s); does not count against job allocation",
+				 job_node_inx,
+				 node_record_table_ptr[i_node].name);
+
+		else
+			log_flag(STEPS, "step alloc on job node %d (%s) used %u of %u CPUs",
+				 job_node_inx,
+				 node_record_table_ptr[i_node].name,
+				 cpus_used[job_node_inx],
+				 job_resrcs_ptr->cpus[job_node_inx]);
+
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
@@ -2387,6 +2432,14 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
+
+		if (step_ptr->flags & SSF_OVERLAP_FORCE) {
+			log_flag(STEPS, "step dealloc on job node %d (%s); did not count against job allocation",
+				 job_node_inx,
+				 node_record_table_ptr[i_node].name);
+			continue; /* Next node */
+		}
+
 		if (step_ptr->flags & SSF_WHOLE)
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
 		else {
@@ -2460,9 +2513,14 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		int job_core_size, step_core_size;
 		job_core_size  = bit_size(job_resrcs_ptr->core_bitmap_used);
 		step_core_size = bit_size(step_ptr->core_bitmap_job);
+		/*
+		 * Don't remove step's used cores from job core_bitmap_used if
+		 * SSF_OVERLAP_FORCE
+		 */
 		if (job_core_size == step_core_size) {
-			bit_and_not(job_resrcs_ptr->core_bitmap_used,
-				    step_ptr->core_bitmap_job);
+			if (!(step_ptr->flags & SSF_OVERLAP_FORCE))
+				bit_and_not(job_resrcs_ptr->core_bitmap_used,
+					    step_ptr->core_bitmap_job);
 		} else if (job_ptr->bit_flags & JOB_RESIZED) {
 			/*
 			 * If a job is resized, the core bitmap will differ in
@@ -2481,7 +2539,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 
 	gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
 			       job_ptr->gres_list_alloc, job_ptr->job_id,
-			       step_ptr->step_id.step_id);
+			       step_ptr->step_id.step_id,
+			       !(step_ptr->flags & SSF_OVERLAP_FORCE));
 }
 
 static int _test_strlen(char *test_str, char *str_name, int max_str_len)
@@ -3347,6 +3406,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	for (i = first_bit; i <= last_bit; i++) {
 		uint16_t cpus, cpus_used;
 		bool test_mem_per_gres = false;
+		bool ignore_alloc;
 		int err_code = SLURM_SUCCESS;
 
 		if (!bit_test(job_ptr->node_bitmap, i))
@@ -3437,7 +3497,10 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 					cpus_task_reps[cpus_task_inx]++;
 			}
 
-			usable_cpus = cpus - cpus_used;
+			if (step_ptr->flags & SSF_OVERLAP_FORCE)
+				usable_cpus = cpus;
+			else
+				usable_cpus = cpus - cpus_used;
 
 			if (usable_cpus <= 0)
 				continue;
@@ -3456,12 +3519,17 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				test_mem_per_gres = true;
 			}
 
+			if (step_ptr->flags & SSF_OVERLAP_FORCE)
+				ignore_alloc = true;
+			else
+				ignore_alloc = false;
+
 			gres_cpus = gres_step_test(step_ptr->gres_list_req,
 						   job_ptr->gres_list_alloc,
 						   job_node_offset,
 						   first_step_node,
 						   step_ptr->cpus_per_task,
-						   rem_nodes, false,
+						   rem_nodes, ignore_alloc,
 						   job_ptr->job_id,
 						   step_ptr->step_id.step_id,
 						   test_mem_per_gres,

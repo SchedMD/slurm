@@ -2335,9 +2335,17 @@ Slurm build time.
 .IP
 
 .TP
-\fB\-\-overlap\fR
-Allow steps to overlap each other on the CPUs.
-By default steps do not share CPUs with other parallel steps.
+\fB\-\-overlap\fR[=force]
+Specifying \-\-overlap allows steps to overlap each other on the CPUs.
+Steps that specify \-\-overlap may only overlap with other steps that also
+specified \-\-overlap.
+
+Specify an optional argument of "force" to make the step overlap all other
+steps on all resources (CPUs, memory, and GRES). A step using this option will
+overlap all other steps, even those that did not specify \-\-overlap, and does
+not count against the job's resource allocation.
+
+By default steps do not share resources with other parallel steps.
 .IP
 
 .TP

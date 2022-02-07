@@ -71,6 +71,9 @@ COMMAND CHANGES (see man pages for details)
     events.
  -- sacct -f flag implies -c flag.
  -- Steps may only overlap with steps that also used --overlap.
+ -- Add --overlap=force option for srun. This option allows a step to overlap
+    all other running steps on all resources (CPUs, memory, and GRES), even
+    those steps that did not specify --overlap.
 
 API CHANGES
 ===========

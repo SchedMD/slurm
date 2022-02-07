@@ -3439,8 +3439,21 @@ static slurm_cli_opt_t slurm_opt_overcommit = {
 
 static int arg_set_overlap(slurm_opt_t *opt, const char *arg)
 {
-	if (opt->srun_opt)
-		opt->srun_opt->exclusive = false;
+	/* --overlap is only valid for srun */
+	if (!opt->srun_opt)
+		return SLURM_SUCCESS;
+
+	opt->srun_opt->overlap_force = false;
+	if (arg) {
+		if (!xstrcmp(arg, "force")) {
+			opt->srun_opt->overlap_force = true;
+		} else {
+			error("Invalid argument \"%s\" to --overlap", arg);
+			return SLURM_ERROR;
+		}
+	}
+
+	opt->srun_opt->exclusive = false;
 
 	return SLURM_SUCCESS;
 }
@@ -3459,7 +3472,7 @@ static void arg_reset_overlap(slurm_opt_t *opt)
 
 static slurm_cli_opt_t slurm_opt_overlap = {
 	.name = "overlap",
-	.has_arg = no_argument,
+	.has_arg = optional_argument,
 	.val = LONG_OPT_OVERLAP,
 	.set_func_srun = arg_set_overlap,
 	.get_func = arg_get_overlap,
