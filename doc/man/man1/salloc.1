@@ -460,8 +460,8 @@ error is logged, but the job step is allowed to continue.
 
 \fBNOTE\fR: Setting the frequency for just the CPUs of the job step
 implies that the tasks are confined to those CPUs.  If task
-confinement (i.e., TaskPlugin=task/affinity or
-TaskPlugin=task/cgroup with the "ConstrainCores" option) is not
+confinement (i.e. the task/affinity TaskPlugin is enabled, or the task/cgroup
+TaskPlugin is enabled with "ConstrainCores=yes" set in cgroup.conf) is not
 configured, this parameter is ignored.
 
 \fBNOTE\fR: When the step completes, the frequency and governor of each
