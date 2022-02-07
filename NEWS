@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - remove limit on the number of open files.
  -- Fix bug where job_state file of size above 2GB wasn't saved without any
     error message.
+ -- Fix various issues with no_consume gres.
 
 * Changes in Slurm 21.08.5
 ==========================
