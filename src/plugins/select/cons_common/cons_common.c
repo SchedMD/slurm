@@ -108,6 +108,7 @@ static job_resources_t *_create_job_resources(int node_cnt)
 	job_resrcs_ptr->cpu_array_value = xcalloc(node_cnt, sizeof(uint16_t));
 	job_resrcs_ptr->cpus = xcalloc(node_cnt, sizeof(uint16_t));
 	job_resrcs_ptr->cpus_used = xcalloc(node_cnt, sizeof(uint16_t));
+	job_resrcs_ptr->cpus_overlap = xcalloc(node_cnt, sizeof(uint16_t));
 	job_resrcs_ptr->memory_allocated = xcalloc(node_cnt, sizeof(uint64_t));
 	job_resrcs_ptr->memory_used = xcalloc(node_cnt, sizeof(uint64_t));
 	job_resrcs_ptr->nhosts = node_cnt;
@@ -1381,6 +1382,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 			 *
 			 * The following fields should be zero:
 			 * from_job_resrcs_ptr->cpus_used[from_node_offset]
+			 * from_job_resrcs_ptr->cpus_overlap[from_node_offset]
 			 * from_job_resrcs_ptr->memory_used[from_node_offset];
 			 */
 			new_job_resrcs_ptr->cpus[new_node_offset] =
@@ -1405,6 +1407,8 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 				to_job_resrcs_ptr->cpus[to_node_offset];
 			new_job_resrcs_ptr->cpus_used[new_node_offset] +=
 				to_job_resrcs_ptr->cpus_used[to_node_offset];
+			new_job_resrcs_ptr->cpus_overlap[new_node_offset] +=
+				to_job_resrcs_ptr->cpus_overlap[to_node_offset];
 			new_job_resrcs_ptr->memory_allocated[new_node_offset]+=
 				to_job_resrcs_ptr->
 				memory_allocated[to_node_offset];
