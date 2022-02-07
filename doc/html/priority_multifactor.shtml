@@ -383,7 +383,7 @@ PriorityType=priority/multifactor.
 	highest partition PriorityJobFactor.</li>
 <li>NO_NORMAL_QOS: If set, the QOS factor is not normalized against the
 	highest qos priority.</li>
-<li>NO_NORMAL_TRES: If set, the QOS factor is not normalized against the job's
+<li>NO_NORMAL_TRES: If set, the TRES factor is not normalized against the job's
 	partition TRES counts.</li>
 <li>SMALL_RELATIVE_TO_TIME: If set, the job's size component will be based
 	upon not the job size alone, but the job's size divided by its time
