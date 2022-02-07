@@ -1086,7 +1086,8 @@ extern int gres_find_sock_by_job_state(void *x, void *key);
 /*
  * Test if GRES env variables should be set to global device ID or a device
  * ID that always starts at zero (based upon what the application can see).
- * RET true if TaskPlugin=task/cgroup AND ConstrainDevices=yes (in cgroup.conf).
+ * RET true if TaskPlugin in slurm.conf contains `cgroup` (task/cgroup) AND
+ * ConstrainDevices=yes in cgroup.conf.
  */
 extern bool gres_use_local_device_index(void);
 
