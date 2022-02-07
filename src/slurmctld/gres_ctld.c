@@ -889,7 +889,8 @@ static int _set_node_type_cnt(gres_state_t *gres_state_job, List node_gres_list)
 		 * Not the right type
 		 */
 		if (gres_ns->type_cnt_alloc[j] ||
-		    (gres_ns->type_id[j] != gres_js->type_id))
+		    (gres_ns->type_id[j] != gres_js->type_id) ||
+		    (gres_js->total_gres == NO_CONSUME_VAL64))
 			continue;
 		gres_ns->type_cnt_alloc[j] = gres_js->total_gres;
 		break;
@@ -1981,8 +1982,12 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 	xassert(gres_ss);
 	xassert(gres_ss_req);
 
-	if (gres_js->node_cnt == 0)	/* no_consume */
+	if (gres_js->total_gres == NO_CONSUME_VAL64) {
+		if (*gres_needed != INFINITE64)
+			*gres_needed = 0;
+		gres_ss->total_gres = NO_CONSUME_VAL64;
 		return SLURM_SUCCESS;
+	}
 
 	if (node_offset >= gres_js->node_cnt) {
 		error("gres/%s: %s for %ps, node offset invalid (%d >= %u)",
@@ -2304,7 +2309,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 			continue;
 
 		gres_js = (gres_job_state_t *)gres_state_job->gres_data;
-		if (gres_js->node_cnt == 0) {	/* no_consume */
+		if (gres_js->node_cnt == NO_CONSUME_VAL64) {	/* no_consume */
 			xassert(!gres_ss->node_in_use);
 			xassert(!gres_ss->gres_bit_alloc);
 			return SLURM_SUCCESS;

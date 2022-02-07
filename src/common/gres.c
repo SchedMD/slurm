@@ -7766,8 +7766,12 @@ static int _step_get_gres_cnt(void *x, void *arg)
 
 	gres_js = gres_state_job->gres_data;
 
-	if ((node_offset >= gres_js->node_cnt) &&
-	    (gres_js->node_cnt != 0)) { /* GRES is type no_consume */
+	if (gres_js->total_gres == NO_CONSUME_VAL64) {
+		foreach_gres_cnt->gres_cnt = NO_CONSUME_VAL64;
+		return -1;
+	}
+
+	if ((node_offset >= gres_js->node_cnt)) {
 		error("gres/%s: %s %ps node offset invalid (%d >= %u)",
 		      gres_state_job->gres_name, __func__, step_id,
 		      node_offset, gres_js->node_cnt);
@@ -9425,6 +9429,12 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 			core_cnt = 0;
 			break;
 		}
+
+		if (foreach_gres_cnt.gres_cnt == NO_CONSUME_VAL64) {
+			core_cnt = NO_VAL64;
+			break;
+		}
+
 		tmp_cnt = _step_test(gres_ss, first_step_node,
 				     cpus_per_task, max_rem_nodes,
 				     ignore_alloc, foreach_gres_cnt.gres_cnt,
