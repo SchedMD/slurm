@@ -5652,11 +5652,11 @@ Also see \fBFeatures\fR for Boolean flags to filter nodes using job constraints.
 Amount of memory, in megabytes, reserved for system use and not available
 for user allocations.
 If the task/cgroup plugin is configured and that plugin constrains memory
-allocations (i.e. \fBTaskPlugin=task/cgroup\fR in slurm.conf, plus
-\fBConstrainRAMSpace=yes\fR in cgroup.conf), then Slurm compute node daemons
-(slurmd plus slurmstepd) will be allocated the specified memory limit. Note that
-having the Memory set in \fBSelectTypeParameters\fR as any of the options that
-has it as a consumable resource is needed for this option to work.
+allocations (i.e. the \fItask/cgroup\fR \fBTaskPlugin\fR is enabled and
+\fBConstrainRAMSpace=yes\fR is set in cgroup.conf), then Slurm compute node
+daemons (slurmd plus slurmstepd) will be allocated the specified memory limit.
+Note that having the Memory set in \fBSelectTypeParameters\fR as any of the
+options that has it as a consumable resource is needed for this option to work.
 The daemons will not be killed if they exhaust the memory allocation
 (ie. the Out\-Of\-Memory Killer is disabled for the daemon's memory cgroup).
 If the task/cgroup plugin is not configured, the specified memory will only be
