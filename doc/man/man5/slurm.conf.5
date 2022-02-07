@@ -5604,7 +5604,8 @@ Isolation of the Slurm daemons from user jobs may improve application performanc
 If this option and \fBCoreSpecCount\fR are both designated for a node,
 an error is generated.
 This option has no effect unless cgroup job confinement is also configured
-(\fBTaskPlugin=task/cgroup\fR with \fBConstrainCores=yes\fR in cgroup.conf).
+(i.e. the \fItask/cgroup\fR \fBTaskPlugin\fR is enabled and
+\fBConstrainCores=yes\fR is set in cgroup.conf).
 .IP
 
 .TP
