@@ -41,8 +41,8 @@ application defined action.
 Most shells cannot handle signals while a command is running (i.e. is a child
 process of the batch step), so the shell needs to wait until the command ends to
 then handle the signal.
-Children of the batch step are not signaled with this
-option, use \fB\-f\fR, \fB\-\-full\fR instead.
+Children of the batch step are not signaled with this option. If this is
+desired, use \fB\-f\fR, \fB\-\-full\fR instead.
 NOTE: If used with \fB\-f\fR, \fB\-\-full\fR, this option ignored.
 NOTE: This option is not applicable if \fIstep_id\fR is specified.
 NOTE: The shell itself may exit upon receipt of many signals.
