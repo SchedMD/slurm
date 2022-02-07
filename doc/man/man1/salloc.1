@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "February2022" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "February 2022" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -826,7 +826,7 @@ was not specified) as one task per requested thread.
 \fB\-\-get\-user\-env\fR[=\fItimeout\fR][\fImode\fR]
 This option will load login environment variables for the user specified
 in the \fB\-\-uid\fR option.
-The environment variables are retrieved by running something of this sort
+The environment variables are retrieved by running something along the lines of
 "su \- <username> \-c /usr/bin/env" and parsing the output.
 Be aware that any environment variables already set in salloc's environment
 will take precedence over any environment variables in the user's
