@@ -2037,6 +2037,15 @@ extern int slurm_conf_nodeset_array(slurm_conf_nodeset_t **ptr_array[])
 	}
 }
 
+static void _free_single_names_ll_t(names_ll_t *p)
+{
+	xfree(p->address);
+	xfree(p->alias);
+	xfree(p->cpu_spec_list);
+	xfree(p->hostname);
+	xfree(p);
+}
+
 static void _free_name_hashtbl(void)
 {
 	int i;
@@ -2045,12 +2054,8 @@ static void _free_name_hashtbl(void)
 	for (i=0; i<NAME_HASH_LEN; i++) {
 		p = node_to_host_hashtbl[i];
 		while (p) {
-			xfree(p->address);
-			xfree(p->alias);
-			xfree(p->cpu_spec_list);
-			xfree(p->hostname);
 			q = p->next_alias;
-			xfree(p);
+			_free_single_names_ll_t(p);
 			p = q;
 		}
 		node_to_host_hashtbl[i] = NULL;
