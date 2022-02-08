@@ -6014,3 +6014,30 @@ extern void config_test_start(void)
 	lvl = LOG_LEVEL_ERROR;
 	local_test_config_rc = 0;
 }
+
+extern void slurm_conf_remove_node(char *node_name)
+{
+	int alias_idx;
+	names_ll_t *p_prev = NULL, *p_curr;
+
+	alias_idx = _get_hash_idx(node_name);
+
+	p_curr = node_to_host_hashtbl[alias_idx];
+	while (p_curr) {
+		if (!xstrcmp(p_curr->alias, node_name)) {
+			if (p_prev)
+				p_prev->next_alias = p_curr->next_alias;
+			else
+				node_to_host_hashtbl[alias_idx] =
+					p_curr->next_alias;
+			break;
+		}
+
+		p_prev = p_curr;
+		p_curr = p_curr->next_alias;
+	}
+
+	_remove_host_to_node_link(p_curr);
+
+	_free_single_names_ll_t(p_curr);
+}

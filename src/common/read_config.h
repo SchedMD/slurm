@@ -671,4 +671,9 @@ extern char *xlate_features(char *job_features);
 extern int add_remote_nodes_to_conf_tbls(char *node_list,
 					 slurm_addr_t *node_addrs);
 
+/*
+ * Remove node from node conf hash tables.
+ */
+extern void slurm_conf_remove_node(char *node_name);
+
 #endif /* !_READ_CONFIG_H */
