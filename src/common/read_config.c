@@ -294,7 +294,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobFileAppend", S_P_UINT16},
 	{"JobRequeue", S_P_UINT16},
 	{"JobSubmitPlugins", S_P_STRING},
-	{"KeepAliveTime", S_P_UINT16},
+	{"KeepAliveTime", S_P_UINT32},
 	{"KillOnBadExit", S_P_UINT16},
 	{"KillWait", S_P_UINT16},
 	{"LaunchParameters", S_P_STRING},
@@ -3033,7 +3033,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->job_file_append		= NO_VAL16;
 	ctl_conf_ptr->job_requeue		= NO_VAL16;
 	xfree(ctl_conf_ptr->job_submit_plugins);
-	ctl_conf_ptr->keepalive_time = NO_VAL16;
+	ctl_conf_ptr->keepalive_time = NO_VAL;
 	ctl_conf_ptr->kill_on_bad_exit		= 0;
 	ctl_conf_ptr->kill_wait			= NO_VAL16;
 	xfree (ctl_conf_ptr->launch_params);
@@ -4097,10 +4097,17 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->health_check_program, "HealthCheckProgram",
 			      hashtbl);
 
-	if (!s_p_get_uint16(&conf->keepalive_time, "KeepAliveTime", hashtbl)) {
+	if (!s_p_get_uint32(&conf->keepalive_time, "KeepAliveTime", hashtbl)) {
 		conf->keepalive_time = DEFAULT_KEEPALIVE_TIME;
 	} else if (running_in_slurmctld())
 		error("KeepAliveTime parameter has moved to CommunicationParameters. Please update your config.");
+	/* keepalive_time needs to eventually fit inside an int */
+	if ((conf->keepalive_time != DEFAULT_KEEPALIVE_TIME) &&
+	    (conf->keepalive_time > INT_MAX)) {
+		error("KeepAliveTime %u invalid, ignoring it.",
+		      conf->keepalive_time);
+		conf->keepalive_time = DEFAULT_KEEPALIVE_TIME;
+	}
 
 	if (!s_p_get_uint16(&conf->kill_on_bad_exit, "KillOnBadExit", hashtbl))
 		conf->kill_on_bad_exit = DEFAULT_KILL_ON_BAD_EXIT;

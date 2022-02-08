@@ -3900,6 +3900,7 @@ static void
 _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 			 uint16_t protocol_version)
 {
+	uint16_t uint16_tmp;
 	uint32_t count = NO_VAL;
 
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
@@ -4331,7 +4332,11 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->job_requeue, buffer);
 		packstr(build_ptr->job_submit_plugins, buffer);
 
-		pack16(build_ptr->keepalive_time, buffer);
+		if (build_ptr->keepalive_time < NO_VAL16)
+			uint16_tmp = build_ptr->keepalive_time;
+		else
+			uint16_tmp = NO_VAL16;
+		pack16(uint16_tmp, buffer);
 		pack16(build_ptr->kill_on_bad_exit, buffer);
 		pack16(build_ptr->kill_wait, buffer);
 
@@ -4625,7 +4630,11 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->job_requeue, buffer);
 		packstr(build_ptr->job_submit_plugins, buffer);
 
-		pack16(build_ptr->keepalive_time, buffer);
+		if (build_ptr->keepalive_time < NO_VAL16)
+			uint16_tmp = build_ptr->keepalive_time;
+		else
+			uint16_tmp = NO_VAL16;
+		pack16(uint16_tmp, buffer);
 		pack16(build_ptr->kill_on_bad_exit, buffer);
 		pack16(build_ptr->kill_wait, buffer);
 
@@ -4795,6 +4804,7 @@ static int
 _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 			   buf_t *buffer, uint16_t protocol_version)
 {
+	uint16_t uint16_tmp = 0;
 	uint32_t uint32_tmp = 0;
 	slurm_ctl_conf_info_msg_t *build_ptr = xmalloc(sizeof(*build_ptr));
 	*build_buffer_ptr = build_ptr;
@@ -5368,7 +5378,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->job_submit_plugins,
 		                       &uint32_tmp, buffer);
 
-		safe_unpack16(&build_ptr->keepalive_time, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		build_ptr->keepalive_time = uint16_tmp;
 		safe_unpack16(&build_ptr->kill_on_bad_exit, buffer);
 		safe_unpack16(&build_ptr->kill_wait, buffer);
 
@@ -5768,7 +5779,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->job_submit_plugins,
 		                       &uint32_tmp, buffer);
 
-		safe_unpack16(&build_ptr->keepalive_time, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		build_ptr->keepalive_time = uint16_tmp;
 		safe_unpack16(&build_ptr->kill_on_bad_exit, buffer);
 		safe_unpack16(&build_ptr->kill_wait, buffer);
 
