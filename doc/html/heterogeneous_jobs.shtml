@@ -74,6 +74,7 @@ A list of propagated options follows.</p>
 <li>--kill-on-bad-exit  (option available only in srun)</li>
 <li>--label             (option available only in srun)</li>
 <li>--mcs-label</li>
+<li>--mem</li>
 <li>--msg-timeout       (option available only in srun)</li>
 <li>--no-allocate       (option available only in srun)</li>
 <li>--no-requeue</li>
