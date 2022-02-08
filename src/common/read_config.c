@@ -4283,7 +4283,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->accounting_storage_user = xstrdup("N/A");
 	}
 
-	(void) s_p_get_uint16(&conf->over_time_limit, "OverTimeLimit", hashtbl);
+	if (!s_p_get_uint16(&conf->over_time_limit, "OverTimeLimit", hashtbl))
+		conf->over_time_limit = 0;
 
 	if (!s_p_get_string(&conf->plugindir, "PluginDir", hashtbl))
 		conf->plugindir = xstrdup(default_plugin_path);

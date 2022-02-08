@@ -55,6 +55,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 21.08.0rc1 where job steps failed to launch on systems
     that reserved a CPU in a cgroup outside of Slurm (for example, on systems
     with WekaIO).
+ -- Fix OverTimeLimit not being reset on scontrol reconfigure when it is
+    removed from slurm.conf.
 
 * Changes in Slurm 21.08.5
 ==========================
