@@ -60,6 +60,7 @@ documents those changes that are of interest to users and administrators.
  -- serializer/yaml - use dynamic buffer to allow creation of YAML outputs
     larger than 1MiB.
  -- Fix minor memory leak affecting openapi users at process termination.
+ -- Fix batch jobs not resolving the username when nss_slurm is enabled.
 
 * Changes in Slurm 21.08.5
 ==========================

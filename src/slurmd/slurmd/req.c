@@ -2258,6 +2258,7 @@ notify_result:
 
 static void _rpc_batch_job(slurm_msg_t *msg)
 {
+	slurm_cred_arg_t cred_arg;
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 	bool     first_job_run;
 	int      rc = SLURM_SUCCESS, node_id = 0;
@@ -2287,14 +2288,23 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	/* lookup user_name if not provided by slurmctld */
-	if (!req->user_name)
+	slurm_cred_get_args(req->cred, &cred_arg);
+	xfree(req->user_name); /* Never sent by slurmctld */
+	/* If available, use the cred to fill in username. */
+	if (cred_arg.pw_name)
+		req->user_name = xstrdup(cred_arg.pw_name);
+	else
 		req->user_name = uid_to_string(req->uid);
 
-	/* lookup gids if they weren't sent by slurmctld */
-	if (!req->ngids)
+	xfree(req->gids); /* Never sent by slurmctld */
+	/* If available, use the cred to fill in groups */
+	if (cred_arg.ngids) {
+		req->ngids = cred_arg.ngids;
+		req->gids = copy_gids(cred_arg.ngids, cred_arg.gids);
+	} else
 		req->ngids = group_cache_lookup(req->uid, req->gid,
 						req->user_name, &req->gids);
+	slurm_cred_free_args(&cred_arg);
 
 	task_g_slurmd_batch_request(req);	/* determine task affinity */
 
