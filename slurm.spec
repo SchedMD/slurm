@@ -561,7 +561,6 @@ rm -rf %{buildroot}
 %dir %attr(0755,root,root)
 %dir %{_prefix}/include/slurm
 %{_prefix}/include/slurm/*
-%dir %{_libdir}/pkgconfig
 %{_libdir}/pkgconfig/slurm.pc
 #############################################################################
 

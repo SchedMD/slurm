@@ -79,6 +79,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Avoid requiring environment to be set when container job is
     specified.
  -- Move the KeepAliveTime option into CommunicationParameters.
+ -- slurm.spec - stop explicitly packaging pkgconfig directory to avoid a
+    conflict with the pkgconfig package.
 
 * Changes in Slurm 21.08.6
 ==========================
