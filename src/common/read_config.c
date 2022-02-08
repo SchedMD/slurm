@@ -2546,12 +2546,37 @@ extern uint16_t slurm_conf_get_port(const char *node_name)
 }
 
 /*
+ * Unlink names_ll_t from host_to_node_hashtbl without free'ing.
+ */
+static void _remove_host_to_node_link(names_ll_t *p)
+{
+	int hostname_idx;
+	names_ll_t *p_curr, *p_prev = NULL;
+
+	hostname_idx = _get_hash_idx(p->hostname);
+
+	p_curr = host_to_node_hashtbl[hostname_idx];
+	while (p_curr) {
+		if (p_curr == p) {
+			if (p_prev)
+				p_prev->next_hostname = p_curr->next_hostname;
+			else
+				host_to_node_hashtbl[hostname_idx] =
+					p_curr->next_hostname;
+			break;
+		}
+		p_prev = p_curr;
+		p_curr = p_curr->next_hostname;
+	}
+}
+
+/*
  * Update p's hostname and update host_to_node_hashtbl.
  */
 static void _reset_hostname(names_ll_t *p, char *node_hostname)
 {
 	int old_hostname_idx, new_hostname_idx;
-	names_ll_t *p_curr, *p_prev = NULL;
+	names_ll_t *p_curr;
 
 	old_hostname_idx = _get_hash_idx(p->hostname);
 	new_hostname_idx = _get_hash_idx(node_hostname);
@@ -2564,19 +2589,7 @@ static void _reset_hostname(names_ll_t *p, char *node_hostname)
 		return;
 
 	/* remove old link */
-	p_curr = host_to_node_hashtbl[old_hostname_idx];
-	while (p_curr) {
-		if (p_curr == p) {
-			if (p_prev)
-				p_prev->next_hostname = p_curr->next_hostname;
-			else
-				host_to_node_hashtbl[old_hostname_idx] =
-					p_curr->next_hostname;
-			break;
-		}
-		p_prev = p_curr;
-		p_curr = p_curr->next_hostname;
-	}
+	_remove_host_to_node_link(p);
 
 	/* add new link */
 	p->next_hostname = NULL;
