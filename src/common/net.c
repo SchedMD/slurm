@@ -131,7 +131,7 @@ static int _get_keep_alive_param(char *param)
 	return -1;
 }
 
-/* set keep alive time on socket */
+/* set keepalive time on socket */
 extern int net_set_keep_alive(int sock)
 {
 	int opt_int, keepalive_time;
@@ -140,8 +140,8 @@ extern int net_set_keep_alive(int sock)
 
 	keepalive_time = _get_keep_alive_param("KeepAliveTime=");
 	/* FIXME: remove in 23.02 */
-	if ((keepalive_time < 0) && (slurm_conf.keep_alive_time != NO_VAL16))
-		keepalive_time = slurm_conf.keep_alive_time;
+	if ((keepalive_time < 0) && (slurm_conf.keepalive_time != NO_VAL16))
+		keepalive_time = slurm_conf.keepalive_time;
 
 	if (keepalive_time < 0)
 		return 0;
@@ -155,7 +155,7 @@ extern int net_set_keep_alive(int sock)
 	opt_len = sizeof(opt_int);
 	opt_int = 1;
 	if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &opt_int, opt_len) < 0) {
-		error("Unable to set keep alive socket option: %m");
+		error("Unable to set keepalive socket option: %m");
 		return -1;
 	}
 
@@ -169,7 +169,7 @@ extern int net_set_keep_alive(int sock)
 #if !defined (__APPLE__) && (! defined(__FreeBSD__) || (__FreeBSD_version > 900000))
 	opt_int = keepalive_time;
 	if (setsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, opt_len) < 0) {
-		error("Unable to set keep alive socket time: %m");
+		error("Unable to set keepalive socket time: %m");
 		return -1;
 	}
 #endif

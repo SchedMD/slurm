@@ -3033,7 +3033,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->job_file_append		= NO_VAL16;
 	ctl_conf_ptr->job_requeue		= NO_VAL16;
 	xfree(ctl_conf_ptr->job_submit_plugins);
-	ctl_conf_ptr->keep_alive_time		= NO_VAL16;
+	ctl_conf_ptr->keepalive_time = NO_VAL16;
 	ctl_conf_ptr->kill_on_bad_exit		= 0;
 	ctl_conf_ptr->kill_wait			= NO_VAL16;
 	xfree (ctl_conf_ptr->launch_params);
@@ -4097,8 +4097,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->health_check_program, "HealthCheckProgram",
 			      hashtbl);
 
-	if (!s_p_get_uint16(&conf->keep_alive_time, "KeepAliveTime", hashtbl)) {
-		conf->keep_alive_time = DEFAULT_KEEP_ALIVE_TIME;
+	if (!s_p_get_uint16(&conf->keepalive_time, "KeepAliveTime", hashtbl)) {
+		conf->keepalive_time = DEFAULT_KEEPALIVE_TIME;
 	} else if (running_in_slurmctld())
 		error("KeepAliveTime parameter has moved to CommunicationParameters. Please update your config.");
 

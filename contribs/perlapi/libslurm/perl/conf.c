@@ -163,7 +163,7 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 	if (conf->job_submit_plugins)
 		STORE_FIELD(hv, conf, job_submit_plugins, charp);
 
-	STORE_FIELD(hv, conf, keep_alive_time, uint16_t);
+	STORE_FIELD(hv, conf, keepalive_time, uint16_t);
 
 	STORE_FIELD(hv, conf, kill_on_bad_exit, uint16_t);
 
@@ -493,7 +493,7 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, job_requeue, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, job_submit_plugins, charp, FALSE);
 
-	FETCH_FIELD(hv, conf, keep_alive_time, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, keepalive_time, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, kill_on_bad_exit, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, kill_wait, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, launch_type, charp, FALSE);

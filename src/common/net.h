@@ -56,7 +56,7 @@
  */
 extern int net_stream_listen(int *fd, uint16_t *port);
 
-/* set keep alive time on socket */
+/* set keepalive time on socket */
 extern int net_set_keep_alive(int sock);
 
 extern int net_stream_listen_ports(int *, uint16_t *, uint16_t *, bool);
