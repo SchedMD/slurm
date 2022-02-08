@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
     removed from slurm.conf.
  -- serializer/yaml - use dynamic buffer to allow creation of YAML outputs
     larger than 1MiB.
+ -- Fix minor memory leak affecting openapi users at process termination.
 
 * Changes in Slurm 21.08.5
 ==========================
