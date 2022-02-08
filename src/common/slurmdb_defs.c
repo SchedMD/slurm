@@ -1591,6 +1591,8 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 	qos->grp_submit_jobs = init_val;
 	qos->grp_wall = init_val;
 
+	qos->limit_factor = (double)init_val;
+
 	/* qos->max_tres_mins_pj = NULL; */
 	/* qos->max_tres_run_mins_pa = NULL; */
 	/* qos->max_tres_run_mins_pu = NULL; */
@@ -1610,7 +1612,6 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 
 	qos->usage_factor = (double)init_val;
 	qos->usage_thres = (double)init_val;
-	qos->limit_factor = (double)init_val;
 }
 
 extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
@@ -3471,6 +3472,8 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 	out->grp_tres_run_mins = xstrdup(in->grp_tres_run_mins);
 	out->grp_wall = in->grp_wall;
 
+	out->limit_factor = in->limit_factor;
+
 	out->max_jobs_pa = in->max_jobs_pa;
 	out->max_jobs_pu = in->max_jobs_pu;
 	out->max_submit_jobs_pa = in->max_submit_jobs_pa;
@@ -3503,8 +3506,6 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 
 	out->usage_factor = in->usage_factor;
 	out->usage_thres = in->usage_thres;
-	out->limit_factor = in->limit_factor;
-
 }
 
 extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres)
