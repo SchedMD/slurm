@@ -4109,6 +4109,20 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->keepalive_time = DEFAULT_KEEPALIVE_TIME;
 	}
 
+	/*
+	 * Parse keepalivetime option here so CommunicationParameters takes
+	 * precidence over the deprecated KeepAliveTime standalone option.
+	 */
+	if ((temp_str = xstrcasestr(slurm_conf.comm_params,
+				    "keepalivetime="))) {
+		long tmp_val = strtol(temp_str + 14, NULL, 10);
+		if ((tmp_val >= 0) && (tmp_val <= INT_MAX))
+			slurm_conf.keepalive_time = tmp_val;
+		else
+			error("CommunicationParameters option keepalivetime=%ld is invalid, ignored",
+			      tmp_val);
+	}
+
 	if (!s_p_get_uint16(&conf->kill_on_bad_exit, "KillOnBadExit", hashtbl))
 		conf->kill_on_bad_exit = DEFAULT_KILL_ON_BAD_EXIT;
 
