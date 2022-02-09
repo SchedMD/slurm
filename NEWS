@@ -142,6 +142,10 @@ documents those changes that are of interest to users and administrators.
     larger than 1MiB.
  -- Fix minor memory leak affecting openapi users at process termination.
  -- Fix batch jobs not resolving the username when nss_slurm is enabled.
+ -- slurmrestd - Avoid slurmrestd ignoring invalid HTTP method if the response
+    serialized without error.
+ -- openapi/dbv0.0.37 - Correct conditional that caused the diag output to
+    give an internal server error status on success.
 
 * Changes in Slurm 21.08.5
 ==========================
