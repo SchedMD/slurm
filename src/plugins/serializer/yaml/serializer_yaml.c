@@ -824,10 +824,42 @@ yaml_fail:
 	return SLURM_ERROR;
 }
 
-static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter,
-		      yaml_char_t *buffer, const size_t buffer_len)
+static int _yaml_write_handler(void *data, unsigned char *buffer, size_t size)
 {
-	size_t written = 0;
+	buf_t *buf = data;
+	xassert(buf->magic == BUF_MAGIC);
+
+	/*
+	 * If the remaining buffer size equals the required argument size, we
+	 * still want to grow to allocate space for an extra '\0'. That's why in
+	 * this case we compare with '<=' instead of '<'.
+	 */
+	if (remaining_buf(buf) <= size) {
+		if ((size + size_buf(buf)) >= MAX_BUF_SIZE) {
+			error("%s: attempting to write too large of YAML output",
+			      __func__);
+			return 0;
+		}
+
+		grow_buf(buf, size);
+	}
+
+	memcpy(buf->head + buf->processed, buffer, size);
+
+	buf->processed += size;
+	/*
+	 * buf->processed points to one position after the memcpy'd payload,
+	 * so we can set the '\0' there. This position will be overridden by
+	 * the first character of the next chunk except for the last handler
+	 * call, effectively resulting in a NULL-terminated buffer.
+	 */
+	buf->head[buf->processed] = '\0';
+
+	return 1;
+}
+
+static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter, buf_t *buf)
+{
 	yaml_event_t event;
 
 	//TODO: only version 1.1 is currently supported by libyaml
@@ -839,7 +871,7 @@ static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter,
 	if (!yaml_emitter_initialize(emitter))
 		_yaml_emitter_error;
 
-	yaml_emitter_set_output_string(emitter, buffer, buffer_len, &written);
+	yaml_emitter_set_output(emitter, _yaml_write_handler, buf);
 
 	//TODO defaulted to UTF8 but maybe this should be a flag?
 	if (!yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING))
@@ -855,7 +887,7 @@ static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter,
 		_yaml_emitter_error;
 
 	if (_data_to_yaml(data, emitter))
-		return SLURM_ERROR;
+		goto yaml_fail;
 
 	if (!yaml_document_end_event_initialize(&event, 0))
 		_yaml_emitter_error;
@@ -881,20 +913,24 @@ extern int serializer_p_serialize(char **dest, const data_t *data,
 				  data_serializer_flags_t flags)
 {
 	yaml_emitter_t emitter;
-	yaml_char_t *buffer = xmalloc(yaml_buffer_size);
+	buf_t *buf = init_buf(yaml_buffer_size);
 
-	if (_dump_yaml(data, &emitter, buffer, yaml_buffer_size)) {
+	if (_dump_yaml(data, &emitter, buf)) {
 		error("%s: dump yaml failed", __func__);
 
-		xfree(buffer);
+		FREE_NULL_BUFFER(buf);
 		return ESLURM_DATA_CONV_FAILED;
 	}
 
 	yaml_emitter_delete(&emitter);
 
-	/* recast as signed as that is the Slurm default */
-	*dest = (char *)buffer;
-	return SLURM_SUCCESS;
+	*dest = xfer_buf_data(buf);
+	buf = NULL;
+
+	if (*dest)
+		return SLURM_SUCCESS;
+	else
+		return SLURM_ERROR;
 }
 
 extern int serializer_p_deserialize(data_t **dest, const char *src,
