@@ -4117,8 +4117,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		uint32_t tmp32 = conf->max_job_id - conf->first_job_id + 1;
 		if (conf->max_job_cnt > tmp32) {
 			/* Needed for job array support */
-			info("Resetting MaxJobCount from %u to %u (MaxJobId - FirstJobId + 1)",
-			     conf->max_job_cnt, tmp32);
+			if (running_in_slurmctld()) {
+				info("Resetting MaxJobCount from %u to %u (MaxJobId - FirstJobId + 1)",
+				     conf->max_job_cnt, tmp32);
+			}
 			conf->max_job_cnt = tmp32;
 		}
 	}
