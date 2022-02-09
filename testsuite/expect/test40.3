@@ -46,40 +46,43 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 		return
 	}
 
-	sleep 2
-	log_debug "Job $job_id Expected job MPS:$job_mps  Step MPS:$step_mps"
-	exec $bin_rm -f $file_out
-	exec >$file_out $sacct --job=$job_id --parsable2 --start=today -o JobID,ReqTRES,AllocTRES
+	log_debug "Job $job_id Expecting job MPS:$job_mps  Step MPS:$step_mps"
 
-	spawn $bin_cat $file_out
-	expect {
-		eof {
-			wait
-		}
+	# Wait for ReqTRES to be populated for the job. Job completion records are
+	# sent immediately to the database, but job start records get queued and
+	# can take longer.
+	wait_for_command_match -fail "$sacct -X -n -o ReqTRES --parsable2 -j $job_id" "gres/mps"
+
+	set output [run_command_output -fail "$sacct --job=$job_id --parsable2 --start=today --format JobID,ReqTRES,AllocTRES --noheader"]
+	set job_tres_dict [dict create]
+	foreach line [split $output "\n"] {
+		lassign [split $line "|"] JobID ReqTRES AllocTRES
+		dict set job_tres_dict $JobID ReqTRES $ReqTRES
+		dict set job_tres_dict $JobID AllocTRES $AllocTRES
 	}
 
-	log_user 0
+	# Check and count reported mps on the step
 	if {$step_mps != -1} {
-		set match 0
-		spawn $bin_grep $job_id.0 $file_out
-		expect {
-			-re "gres/mps=($number)" {
-				incr match
-				subtest {$expect_out(1,string) == $step_mps} "Verify step MPS count reported by sacct" "$expect_out(1,string) != $step_mps"
-				exp_continue
-			}
-			-re "gres/mps:($re_word_str)=($number)" {
-				if {$have_mps_types != 0} {
-					incr match
-					subtest {$expect_out(2,string) == $step_mps} "Verify step MPS count reported by sacct" "$expect_out(2,string) != $step_mps"
+		set mps_reported_count 0
+		if ![dict exists $job_tres_dict "$job_id.0"] {
+			fail "sacct did not report a record for step $job_id.0"
+		}
+		set tres_dict [dict get $job_tres_dict "$job_id.0"]
+		foreach tres_value [dict values $tres_dict] {
+			if {$have_mps_types} {
+				foreach {{} mps_count} [regexp -all -inline {gres/mps:[^=]+=(\d+)} $tres_value] {
+					subtest {$mps_count == $step_mps} "Verify step MPS count reported by sacct" "$mps_count != $step_mps"
+					incr mps_reported_count
 				}
-				exp_continue
-			}
-			eof {
-				wait
+			} else {
+				foreach {{} mps_count} [regexp -all -inline {gres/mps=(\d+)} $tres_value] {
+					subtest {$mps_count == $step_mps} "Verify step MPS count reported by sacct" "$mps_count != $step_mps"
+					incr mps_reported_count
+				}
 			}
 		}
-		subtest {$match == 1} "Verify step MPS count is reported from sacct" "$match != 1"
+
+		subtest {$mps_reported_count == 1} "sacct should report step MPS 1 time" "$mps_reported_count != 1"
 	}
 
 	# set match 0
@@ -101,28 +104,27 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 	# }
 	# subtest {$match == 2} "Verify batch MPS count is report from sacct" "$match != 2"
 
-	set match 0
-	spawn $bin_grep $job_id| $file_out
-	expect {
-		-re "gres/mps=($number)" {
-			incr match
-			subtest {$expect_out(1,string) == $job_mps} "Verify job MPS count reported by sacct" "$expect_out(1,string) != $job_mps"
-			exp_continue
-		}
-		-re "gres/mps:($re_word_str)=($number)" {
-			if {$have_mps_types != 0} {
-				incr match
-				subtest {$expect_out(2,string) == $job_mps} "Verify job MPS count reported by sacct" "$expect_out(2,string) != $job_mps"
+	# Check and count reported mps on the job
+	set mps_reported_count 0
+	if ![dict exists $job_tres_dict $job_id] {
+		fail "sacct did not report a record for job $job_id"
+	}
+	set tres_dict [dict get $job_tres_dict $job_id]
+	foreach tres_value [dict values $tres_dict] {
+		if {$have_mps_types} {
+			foreach {{} mps_count} [regexp -all -inline {gres/mps:[^=]+=(\d+)} $tres_value] {
+				subtest {$mps_count == $job_mps} "Verify job MPS count reported by sacct" "$mps_count != $job_mps"
+				incr mps_reported_count
 			}
-			exp_continue
-		}
-		eof {
-			wait
+		} else {
+			foreach {{} mps_count} [regexp -all -inline {gres/mps=(\d+)} $tres_value] {
+				subtest {$mps_count == $job_mps} "Verify job MPS count reported by sacct" "$mps_count != $job_mps"
+				incr mps_reported_count
+			}
 		}
 	}
-	subtest {$match == 2} "Verify job MPS count is reported by sacct" "$match != 2"
-	exec $bin_rm -f $file_out
-	log_user 1
+
+	subtest {$mps_reported_count == 2} "sacct should report job MPS 2 times" "found $mps_reported_count times"
 }
 
 #
