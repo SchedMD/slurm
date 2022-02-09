@@ -5097,6 +5097,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_update_front_end_msg(data);
 		break;
 	case REQUEST_UPDATE_NODE:
+	case REQUEST_DELETE_NODE:
 		slurm_free_update_node_msg(data);
 		break;
 	case REQUEST_CREATE_PARTITION:
@@ -5655,6 +5656,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_UPDATE_RESERVATION";
 	case REQUEST_UPDATE_FRONT_END:				/* 3011 */
 		return "REQUEST_UPDATE_FRONT_END";
+	case REQUEST_DELETE_NODE:
+		return "REQUEST_DELETE_NODE";
 
 	case REQUEST_RESOURCE_ALLOCATION:			/* 4001 */
 		return "REQUEST_RESOURCE_ALLOCATION";

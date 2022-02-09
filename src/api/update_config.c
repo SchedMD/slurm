@@ -151,6 +151,16 @@ slurm_update_node ( update_node_msg_t * node_msg)
 }
 
 /*
+ * slurm_delete_node - issue RPC to delete a node, only usable by user root
+ * IN node_msg - use to pass nodelist of names to delete
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+int slurm_delete_node(update_node_msg_t *node_msg)
+{
+	return _slurm_update(node_msg, REQUEST_DELETE_NODE);
+}
+
+/*
  * slurm_create_partition - create a new partition, only usable by user root
  * IN part_msg - description of partition configuration
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set

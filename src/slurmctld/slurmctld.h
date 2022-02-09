@@ -2528,8 +2528,12 @@ extern int update_node_record_acct_gather_data(
  * Delete node names from system from a slurmctld perspective.
  *
  * e.g. remove node from partitions, reconfig cons_tres, etc.
+ *
+ * IN names - node names to delete.
+ * OUT err_msg - pass error messages out.
+ * RET SLURM_SUCCESS on success, error code otherwise.
  */
-extern int delete_nodes(char *names);
+extern int delete_nodes(char *names, char **err_msg);
 
 /*
  * Process string and set partition fields to appropriate values if valid

@@ -4270,6 +4270,12 @@ void slurm_init_update_node_msg(update_node_msg_t *update_node_msg);
  */
 extern int slurm_update_node(update_node_msg_t *node_msg);
 
+/*
+ * slurm_delete_node - issue RPC to delete a node, only usable by user root
+ * IN node_msg - use to pass nodelist of names to delete
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+int slurm_delete_node(update_node_msg_t *node_msg);
 
 /*****************************************************************************\
  *	SLURM FRONT_END CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

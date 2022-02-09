@@ -12251,6 +12251,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 					   buffer, msg->protocol_version);
 		break;
 	case REQUEST_UPDATE_NODE:
+	case REQUEST_DELETE_NODE:
 		_pack_update_node_msg((update_node_msg_t *) msg->data,
 				      buffer,
 				      msg->protocol_version);
@@ -12872,6 +12873,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 						  msg->protocol_version);
 		break;
 	case REQUEST_UPDATE_NODE:
+	case REQUEST_DELETE_NODE:
 		rc = _unpack_update_node_msg((update_node_msg_t **) &
 					     (msg->data), buffer,
 					     msg->protocol_version);

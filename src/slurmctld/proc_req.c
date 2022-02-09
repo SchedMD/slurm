@@ -4275,6 +4275,51 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	trigger_reconfig();
 }
 
+/*
+ * _slurm_rpc_delete_node - process RPC to delete node.
+ */
+static void _slurm_rpc_delete_node(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	update_node_msg_t *node_msg = msg->data;
+	char *err_msg = NULL;
+	DEF_TIMERS;
+
+	START_TIMER;
+	if (!validate_super_user(msg->auth_uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error("Security violation, DELETE_NODE RPC from uid=%u",
+		      msg->auth_uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		error_code = delete_nodes(node_msg->node_names, &err_msg);
+		END_TIMER2("_slurm_rpc_delete_node");
+	}
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_delete_node for %s: %s",
+		     node_msg->node_names,
+		     slurm_strerror(error_code));
+		if (err_msg)
+			slurm_send_rc_err_msg(msg, error_code, err_msg);
+		else
+			slurm_send_rc_msg(msg, error_code);
+	} else {
+		debug2("_slurm_rpc_delete_node complete for %s %s",
+		       node_msg->node_names, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
+	xfree(err_msg);
+
+	/* Below functions provide their own locks */
+	schedule_node_save();
+	validate_all_reservations(false);
+	queue_job_scheduler();
+	trigger_reconfig();
+}
+
 /* _slurm_rpc_update_partition - process RPC to update the configuration
  *	of a partition (e.g. UP/DOWN) */
 static void _slurm_rpc_update_partition(slurm_msg_t * msg)
@@ -6343,6 +6388,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_UPDATE_NODE,
 		.func = _slurm_rpc_update_node,
+	},{
+		.msg_type = REQUEST_DELETE_NODE,
+		.func = _slurm_rpc_delete_node,
 	},{
 		.msg_type = REQUEST_CREATE_PARTITION,
 		.func = _slurm_rpc_update_partition,

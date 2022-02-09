@@ -4483,7 +4483,18 @@ static int _delete_node(char *name)
 	node_ptr = find_node_record(name);
 	if (!node_ptr) {
 		error("Unable to find node %s to delete", name);
-		return SLURM_ERROR;
+		return ESLURM_INVALID_NODE_NAME;
+	}
+	if (IS_NODE_ALLOCATED(node_ptr) ||
+	    IS_NODE_COMPLETING(node_ptr)) {
+		error("Node '%s' can't be delete because it's still in use.",
+		      name);
+		return ESLURM_NODES_BUSY;
+	}
+	if (node_ptr->node_state & NODE_STATE_RES) {
+		error("Node '%s' can't be delete because it's in a reservation.",
+		      name);
+		return ESLURM_NODES_BUSY;
 	}
 
 	bit_clear(idle_node_bitmap, node_ptr->index);
@@ -4497,13 +4508,16 @@ static int _delete_node(char *name)
 	return SLURM_SUCCESS;
 }
 
-extern int delete_nodes(char *names)
+extern int delete_nodes(char *names, char **err_msg)
 {
 	char *node_name;
 	hostset_t to_delete;
 	hostlist_iterator_t to_delete_itr;
 	bool one_success;
 	int ret_rc = SLURM_SUCCESS;
+	hostlist_t error_hostlist = NULL;
+
+	xassert(err_msg);
 
 	slurmctld_lock_t write_lock = {
 		.job = WRITE_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK};
@@ -4514,9 +4528,13 @@ extern int delete_nodes(char *names)
 	to_delete_itr = hostset_iterator_create(to_delete);
 	while ((node_name = hostlist_next(to_delete_itr))) {
 		int rc;
-		if ((rc = _delete_node(node_name)))
+		if ((rc = _delete_node(node_name))) {
 			error("failed to delete node '%s'", node_name);
-		else
+			if (!error_hostlist)
+				error_hostlist = hostlist_create(node_name);
+			else
+				hostlist_push_host(error_hostlist, node_name);
+		} else
 			one_success = true;
 		ret_rc |= rc;
 		free(node_name);
@@ -4526,6 +4544,10 @@ extern int delete_nodes(char *names)
 		set_partition_tres();
 		rehash_node();
 		select_g_reconfigure();
+	} else {
+		char *nodes = hostlist_ranged_string_xmalloc(error_hostlist);
+		*err_msg = xstrdup_printf("failed to delete nodes %s", nodes);
+		xfree(nodes);
 	}
 
 	unlock_slurmctld(write_lock);
