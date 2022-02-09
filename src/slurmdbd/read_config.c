@@ -39,6 +39,7 @@
 
 #include "config.h"
 
+#include <limits.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -194,6 +195,11 @@ extern int read_slurmdbd_conf(void)
 	}
 	_clear_slurmdbd_conf();
 
+	/* set slurmdbd specific defaults */
+	slurm_conf.keepalive_interval = DEFAULT_SLURMDBD_KEEPALIVE_INTERVAL;
+	slurm_conf.keepalive_probes = DEFAULT_SLURMDBD_KEEPALIVE_PROBES;
+	slurm_conf.keepalive_time = DEFAULT_SLURMDBD_KEEPALIVE_TIME;
+
 	/* Get the slurmdbd.conf path and validate the file */
 	conf_path = get_extra_conf_path("slurmdbd.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
@@ -257,6 +263,36 @@ extern int read_slurmdbd_conf(void)
 		if (!(slurm_conf.conf_flags & CTL_CONF_IPV4_ENABLED) &&
 		    !(slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED))
 			fatal("Both IPv4 and IPv6 support disabled, cannot communicate");
+
+		if ((temp_str = xstrcasestr(slurm_conf.comm_params,
+					    "keepaliveinterval="))) {
+			long tmp_val = strtol(temp_str + 18, NULL, 10);
+			if (tmp_val >= 0 && tmp_val <= INT_MAX)
+				slurm_conf.keepalive_interval = tmp_val;
+			else
+				error("CommunicationParameters option keepaliveinterval=%ld is invalid, ignored",
+				      tmp_val);
+		}
+
+		if ((temp_str = xstrcasestr(slurm_conf.comm_params,
+					    "keepaliveprobes="))) {
+			long tmp_val = strtol(temp_str + 16, NULL, 10);
+			if (tmp_val >= 0 && tmp_val <= INT_MAX)
+				slurm_conf.keepalive_probes = tmp_val;
+			else
+				error("CommunicationParameters option keepaliveprobes=%ld is invalid, ignored",
+				      tmp_val);
+		}
+
+		if ((temp_str = xstrcasestr(slurm_conf.comm_params,
+					    "keepalivetime="))) {
+			long tmp_val = strtol(temp_str + 14, NULL, 10);
+			if (tmp_val >= 0 && tmp_val <= INT_MAX)
+				slurm_conf.keepalive_time = tmp_val;
+			else
+				error("CommunicationParameters option keepalivetime=%ld is invalid, ignored",
+				      tmp_val);
+		}
 
 		s_p_get_string(&slurmdbd_conf->dbd_backup,
 			       "DbdBackupHost", tbl);
