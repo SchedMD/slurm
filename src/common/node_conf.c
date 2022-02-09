@@ -584,6 +584,27 @@ extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
 }
 
 /*
+ * Sync with _init_conf_node().
+ *
+ * _init_conf_node() initializes default values from slurm.conf parameters.
+ * After parsing slurm.conf, build_all_nodeline_info() copies slurm_conf_node_t
+ * to config_record_t. Defaults values between slurm_conf_node_t and
+ * config_record_t should stay in sync in case a config_record is created
+ * outside of slurm.conf parsing.
+ */
+static void _init_config_record(config_record_t *config_ptr)
+{
+	config_ptr->magic = CONFIG_MAGIC;
+	config_ptr->boards = 1;
+	config_ptr->cores = 1;
+	config_ptr->cpus = 1;
+	config_ptr->real_memory = 1;
+	config_ptr->threads = 1;
+	config_ptr->tot_sockets = 1;
+	config_ptr->weight = 1;
+}
+
+/*
  * create_config_record - create a config_record entry and set is values to
  *	the defaults. each config record corresponds to a line in the
  *	slurm.conf file and typically describes the configuration of a
@@ -595,16 +616,58 @@ extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
 extern config_record_t *create_config_record(void)
 {
 	config_record_t *config_ptr = xmalloc(sizeof(*config_ptr));
+	_init_config_record(config_ptr);
+	list_append(config_list, config_ptr);
 
 	last_node_update = time (NULL);
 
-	config_ptr->magic = CONFIG_MAGIC;
-	config_ptr->nodes = NULL;
-	config_ptr->node_bitmap = NULL;
-
-	list_append(config_list, config_ptr);
-
 	return config_ptr;
+}
+
+static void _init_node_record(node_record_t *node_ptr,
+			      config_record_t *config_ptr)
+{
+	uint32_t tot_cores;
+
+	/*
+	 * Some of these vars will be overwritten when the node actually
+	 * registers.
+	 */
+	node_ptr->magic = NODE_MAGIC;
+	node_ptr->cpu_load = NO_VAL;
+	node_ptr->energy = acct_gather_energy_alloc(1);
+	node_ptr->ext_sensors = ext_sensors_alloc();
+	node_ptr->free_mem = NO_VAL64;
+	node_ptr->next_state = NO_VAL;
+	node_ptr->owner = NO_VAL;
+	node_ptr->port = slurm_conf.slurmd_port;
+	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
+	node_ptr->resume_timeout = NO_VAL16;
+	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
+	node_ptr->suspend_time = NO_VAL;
+	node_ptr->suspend_timeout = NO_VAL16;
+
+	node_ptr->config_ptr = config_ptr;
+	node_ptr->boards = config_ptr->boards;
+	node_ptr->core_spec_cnt = config_ptr->core_spec_cnt;
+	node_ptr->cores = config_ptr->cores;
+	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
+	node_ptr->cpus = config_ptr->cpus;
+	node_ptr->mem_spec_limit = config_ptr->mem_spec_limit;
+	node_ptr->real_memory = config_ptr->real_memory;
+	node_ptr->threads = config_ptr->threads;
+	node_ptr->tmp_disk = config_ptr->tmp_disk;
+	node_ptr->tot_sockets = config_ptr->tot_sockets;
+
+	/*
+	 * Here we determine if this node is scheduling threads or not.
+	 * We will set vpus to be the number of schedulable threads.
+	 */
+	tot_cores = config_ptr->tot_sockets * config_ptr->cores;
+	if (tot_cores >= config_ptr->cpus)
+		node_ptr->vpus = 1;
+	else
+		node_ptr->vpus = config_ptr->threads;
 }
 
 /*
@@ -620,7 +683,6 @@ extern node_record_t *create_node_record(config_record_t *config_ptr,
 {
 	node_record_t *node_ptr;
 	int old_buffer_size, new_buffer_size;
-	uint32_t tot_cores;
 
 	last_node_update = time (NULL);
 	xassert(config_ptr);
@@ -650,42 +712,7 @@ extern node_record_t *create_node_record(config_record_t *config_ptr,
 		node_hash_table = xhash_init(_node_record_hash_identity, NULL);
 	xhash_add(node_hash_table, node_ptr);
 
-	node_ptr->config_ptr = config_ptr;
-	/* these values will be overwritten when the node actually registers */
-	node_ptr->cpus = config_ptr->cpus;
-	node_ptr->cpu_load = NO_VAL;
-	node_ptr->free_mem = NO_VAL64;
-	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
-	node_ptr->boards = config_ptr->boards;
-	node_ptr->tot_sockets = config_ptr->tot_sockets;
-	node_ptr->cores = config_ptr->cores;
-	node_ptr->core_spec_cnt = config_ptr->core_spec_cnt;
-	node_ptr->threads = config_ptr->threads;
-	node_ptr->mem_spec_limit = config_ptr->mem_spec_limit;
-	node_ptr->real_memory = config_ptr->real_memory;
-	node_ptr->node_spec_bitmap = NULL;
-	node_ptr->tmp_disk = config_ptr->tmp_disk;
-	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
-	node_ptr->energy = acct_gather_energy_alloc(1);
-	node_ptr->ext_sensors = ext_sensors_alloc();
-	node_ptr->owner = NO_VAL;
-	node_ptr->mcs_label = NULL;
-	node_ptr->next_state = NO_VAL;
-	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
-	node_ptr->magic = NODE_MAGIC;
-	node_ptr->resume_timeout = NO_VAL16;
-	node_ptr->suspend_time = NO_VAL;
-	node_ptr->suspend_timeout = NO_VAL16;
-
-	/*
-	 * Here we determine if this node is scheduling threads or not.
-	 * We will set vpus to be the number of schedulable threads.
-	 */
-	tot_cores = config_ptr->tot_sockets * config_ptr->cores;
-	if (tot_cores >= config_ptr->cpus)
-		node_ptr->vpus = 1;
-	else
-		node_ptr->vpus = config_ptr->threads;
+	_init_node_record(node_ptr, config_ptr);
 
 	return node_ptr;
 }
