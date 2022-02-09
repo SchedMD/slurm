@@ -75,6 +75,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Fatal error if CgroupReleaseAgentDir is configured in cgroup.conf. The
     option has long been obsolete.
  -- Fatal if more than one burst buffer plugin is configured.
+ -- Added keepaliveinterval and keepaliveprobes to CommunicationParameters.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

@@ -3033,6 +3033,8 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->job_file_append		= NO_VAL16;
 	ctl_conf_ptr->job_requeue		= NO_VAL16;
 	xfree(ctl_conf_ptr->job_submit_plugins);
+	ctl_conf_ptr->keepalive_interval = NO_VAL;
+	ctl_conf_ptr->keepalive_probes = NO_VAL;
 	ctl_conf_ptr->keepalive_time = NO_VAL;
 	ctl_conf_ptr->kill_on_bad_exit		= 0;
 	ctl_conf_ptr->kill_wait			= NO_VAL16;
@@ -4113,6 +4115,24 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	 * Parse keepalivetime option here so CommunicationParameters takes
 	 * precidence over the deprecated KeepAliveTime standalone option.
 	 */
+	if ((temp_str = xstrcasestr(slurm_conf.comm_params,
+				    "keepaliveinterval="))) {
+		long tmp_val = strtol(temp_str + 18, NULL, 10);
+		if (tmp_val >= 0 && tmp_val <= INT_MAX)
+			slurm_conf.keepalive_interval = tmp_val;
+		else
+			error("CommunicationParameters option keepaliveinterval=%ld is invalid, ignored",
+			      tmp_val);
+	}
+	if ((temp_str = xstrcasestr(slurm_conf.comm_params,
+				    "keepaliveprobes="))) {
+		long tmp_val = strtol(temp_str + 16, NULL, 10);
+		if (tmp_val >= 0 && tmp_val <= INT_MAX)
+			slurm_conf.keepalive_probes = tmp_val;
+		else
+			error("CommunicationParameters option keepaliveprobes=%ld is invalid, ignored",
+			      tmp_val);
+	}
 	if ((temp_str = xstrcasestr(slurm_conf.comm_params,
 				    "keepalivetime="))) {
 		long tmp_val = strtol(temp_str + 14, NULL, 10);

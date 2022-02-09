@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "March 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "April 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -671,7 +671,20 @@ using both IPv4 and IPv6, address family preferences will be based on your
 .IP
 
 .TP
-\fBKeepAliveTime=#\fR
+\fBkeepaliveinterval=#\fR
+Specifies the interval between keepalive probes on the socket communications
+between srun and its slurmstepd process.
+.IP
+
+.TP
+\fBkeepaliveprobes=#\fR
+Specifies the number of keepalive probes sent on the socket communications
+between srun command and its slurmstepd process before the connection is
+considered broken.
+.IP
+
+.TP
+\fBkeepalivetime=#\fR
 Specifies how long sockets communications used between the srun command and its
 slurmstepd process are kept alive after disconnect. Longer values can be used
 to improve reliability of communications in the event of network failures.

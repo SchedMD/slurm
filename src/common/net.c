@@ -148,6 +148,22 @@ extern int net_set_keep_alive(int sock)
  * but will probably have no noticable effect.
  */
 #if !defined (__APPLE__) && (! defined(__FreeBSD__) || (__FreeBSD_version > 900000))
+	if (slurm_conf.keepalive_interval != NO_VAL) {
+		opt_int = slurm_conf.keepalive_interval;
+		if (setsockopt(sock, SOL_TCP, TCP_KEEPINTVL,
+			       &opt_int, opt_len) < 0) {
+			error("Unable to set keepalive interval: %m");
+			return -1;
+		}
+	}
+	if (slurm_conf.keepalive_interval != NO_VAL) {
+		opt_int = (int) slurm_conf.keepalive_probes;
+		if (setsockopt(sock, SOL_TCP, TCP_KEEPCNT,
+			       &opt_int, opt_len) < 0) {
+			error("Unable to set keepalive probes: %m");
+			return -1;
+		}
+	}
 	opt_int = slurm_conf.keepalive_time;
 	if (setsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, opt_len) < 0) {
 		error("Unable to set keepalive socket time: %m");
@@ -165,6 +181,10 @@ extern int net_set_keep_alive(int sock)
 	     opt_linger.l_linger, sock);
 
 	opt_len = sizeof(opt_len);
+	getsockopt(sock, SOL_TCP, TCP_KEEPINTVL, &opt_int, &opt_len);
+	info("got keepalive_interval is %d on fd %d", opt_int, sock);
+	getsockopt(sock, SOL_TCP, TCP_KEEPCNT, &opt_int, &opt_len);
+	info("got keepalive_probes is %d on fd %d", opt_int, sock);
 	getsockopt(sock, SOL_TCP, TCP_KEEPIDLE, &opt_int, &opt_len);
 	info("got keepalive_time is %d on fd %d", opt_int, sock);
 #endif

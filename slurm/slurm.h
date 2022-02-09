@@ -2858,6 +2858,8 @@ typedef struct {
 	uint16_t job_file_append; /* if set, append to stdout/err file */
 	uint16_t job_requeue;	/* If set, jobs get requeued on node failre */
 	char *job_submit_plugins;  /* List of job_submit plugins to use */
+	uint32_t keepalive_interval;  /* Interval between keepalive probes */
+	uint32_t keepalive_probes;  /* Number of keepalive probe attempts */
 	uint32_t keepalive_time;  /* Keep alive time for srun I/O sockets */
 	uint16_t kill_on_bad_exit; /* If set, the job will be
 				    * terminated immediately when one of

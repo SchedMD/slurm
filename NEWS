@@ -173,6 +173,8 @@ documents those changes that are of interest to users and administrators.
  -- cons_tres - change definition of the "least loaded node" (LLN) to the
     node with the greatest ratio of available cpus to total cpus.
  -- Fatal if more than one burst buffer plugin is configured.
+ -- Added keepaliveinterval and keepaliveprobes options to
+    CommunicationParameters.
 
 * Changes in Slurm 21.08.7
 ==========================
