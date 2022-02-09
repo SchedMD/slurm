@@ -970,7 +970,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	}
 	debug2("%s: After call to spank_init()", __func__);
 
-	set_oom_adj(0);	/* the tasks may be killed by OOM */
 	if (task_g_pre_setuid(job)) {
 		error("%s: Failed to invoke task plugins: one of "
 		      "task_p_pre_setuid functions returned error", __func__);
@@ -1009,6 +1008,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	if (pid == 0) {
 		setpgid(0, 0);
 		setsid();
+		set_oom_adj(0);	/* the tasks may be killed by OOM */
 		acct_gather_profile_g_child_forked();
 		_unblock_signals();
 		/*
@@ -1142,6 +1142,7 @@ job_manager(stepd_step_rec_t *job)
 {
 	int  rc = SLURM_SUCCESS;
 	bool io_initialized = false;
+	char *oom_val_str;
 
 	debug3("Entered job_manager for %ps pid=%d",
 	       &job->step_id, job->jmgr_pid);
@@ -1150,6 +1151,15 @@ job_manager(stepd_step_rec_t *job)
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
 		debug ("Unable to set dumpable to 1");
 #endif /* PR_SET_DUMPABLE */
+
+	/*
+	 * Set oom_score_adj of this slurmstepd to -1000 to avoid OOM killing
+	 * us. If we were killed at this pont due to other steps OOMing, no
+	 * cleanup would happen, leaving for example cgroup stray directories if
+	 * cgroup plugins were initialized.
+	 */
+	set_oom_adj(-1000);
+	debug("Setting slurmstepd(%d) oom_score_adj to -1000", getpid());
 
 	/*
 	 * Run acct_gather_conf_init() now so we don't drop permissions on any
@@ -1170,6 +1180,23 @@ job_manager(stepd_step_rec_t *job)
 		rc = SLURM_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}
+
+	/*
+	 * Readjust this slurmstepd oom_score_adj now that we've loaded the
+	 * task plugin. If the environment variable SLURMSTEPD_OOM_ADJ is set
+	 * and is a valid number (from -1000 to 1000) set the score to that
+	 * value. Note that if the value is -1000 we will do nothing as that was
+	 * already done before.
+	 */
+	if ((oom_val_str = getenv("SLURMSTEPD_OOM_ADJ"))) {
+		int oom_val = atoi(oom_val_str);
+		if ((oom_val > -1000) && (oom_val <= 1000)) {
+			debug("Setting slurmstepd oom_score_adj from env to %d",
+			      oom_val);
+			set_oom_adj(oom_val);
+		}
+	}
+
 	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT) &&
 	    (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
 	    (mpi_g_slurmstepd_init(&job->env) != SLURM_SUCCESS)) {
@@ -1414,6 +1441,8 @@ static int _pre_task_child_privileged(
 	if (_reclaim_privileges(sp) < 0)
 		return SLURM_ERROR;
 
+	set_oom_adj(0); /* the tasks may be killed by OOM */
+
 #ifndef HAVE_NATIVE_CRAY
 	/* Add job's pid to job container */
 
@@ -1648,7 +1677,6 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	int i;
 	struct priv_state sprivs;
 	jobacct_id_t jobacct_id;
-	char *oom_value;
 	List exec_wait_list = NULL;
 	uint32_t jobid;
 	uint32_t node_offset = 0, task_offset = 0;
@@ -1663,7 +1691,6 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 
 	xassert(job != NULL);
 
-	set_oom_adj(0);	/* the tasks may be killed by OOM */
 	if (task_g_pre_setuid(job)) {
 		error("Failed to invoke task plugins: one of task_p_pre_setuid functions returned error");
 		return SLURM_ERROR;
@@ -1865,12 +1892,6 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	if (_reclaim_privileges(&sprivs) < 0) {
 		error ("Unable to reclaim privileges");
 		/* Don't bother erroring out here */
-	}
-
-	if ((oom_value = getenv("SLURMSTEPD_OOM_ADJ"))) {
-		int i = atoi(oom_value);
-		debug("Setting slurmstepd oom_adj to %d", i);
-		set_oom_adj(i);
 	}
 
 	if (chdir(sprivs.saved_cwd) < 0) {
