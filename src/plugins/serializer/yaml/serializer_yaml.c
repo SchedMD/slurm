@@ -84,9 +84,6 @@ const char *mime_types[] = {
 	NULL
 };
 
-/* Default to about 1MB */
-static const size_t yaml_buffer_size = 4096 * 256;
-
 /* YAML parser doesn't give constants for the well defined scalars */
 #define YAML_NULL "null"
 #define YAML_TRUE "true"
@@ -913,7 +910,7 @@ extern int serializer_p_serialize(char **dest, const data_t *data,
 				  data_serializer_flags_t flags)
 {
 	yaml_emitter_t emitter;
-	buf_t *buf = init_buf(yaml_buffer_size);
+	buf_t *buf = init_buf(0);
 
 	if (_dump_yaml(data, &emitter, buf)) {
 		error("%s: dump yaml failed", __func__);
