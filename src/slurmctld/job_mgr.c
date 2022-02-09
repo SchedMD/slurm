@@ -825,6 +825,8 @@ int dump_all_job_state(void)
 	buf_t *buffer = init_buf(high_buffer_size);
 	time_t now = time(NULL);
 	time_t last_state_file_time;
+	static time_t last_job_state_size_check = 0;
+	uint32_t jobs_start, jobs_end, jobs_count;
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -866,7 +868,30 @@ int dump_all_job_state(void)
 	lock_slurmctld(job_read_lock);
 	pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
 
+	jobs_start = get_buf_offset(buffer);
 	list_for_each_ro(job_list, _dump_job_state, buffer);
+	jobs_end = get_buf_offset(buffer);
+	if ((difftime(now, last_job_state_size_check) > 60) &&
+	    (get_log_level() >= LOG_LEVEL_INFO) &&
+	    (jobs_count = list_count(job_list))) {
+		uint64_t ave_job_size = jobs_end - jobs_start;
+		uint64_t estimated_job_state_size = ave_job_size *
+			slurm_conf.max_job_cnt;
+		last_job_state_size_check = time(NULL);
+		/*
+		 * We assume all jobs were written to buffer, which may not
+		 * be true, but in that case we'd already flood the log with
+		 * errors.
+		 */
+		estimated_job_state_size /= jobs_count;
+		estimated_job_state_size += jobs_start;
+		ave_job_size /= jobs_count;
+		if (estimated_job_state_size > MAX_BUF_SIZE)
+			error("Configured MaxJobCount may lead to job_state being larger then maximum buffer size and not saved, based on the average job state size(%.2f KiB) we can save state of %"PRIu64" jobs.",
+			      (float)ave_job_size / 1024,
+			      ((uint64_t)(MAX_BUF_SIZE - jobs_start)) /
+			      ave_job_size);
+	}
 
 	/* write the buffer to file */
 	old_file = xstrdup(slurm_conf.state_save_location);
