@@ -36,9 +36,9 @@ set job_id         0
 # No step to test if step_gpus == -1
 #
 #
-proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
+proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types batch_gpus } {
 	global re_word_str number
-	global bin_cat bin_rm bin_grep file_out sacct
+	global bin_cat bin_rm file_out sacct
 
 	if {$job_id == 0} {
 		return
@@ -82,26 +82,26 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 		subtest {$gpus_reported_count == 1} "sacct should report step GPUs 1 time" "found $gpus_reported_count times"
 	}
 
-	# set match 0
-	# spawn $bin_grep $job_id.batch $file_out
-	# expect {
-	# 	-re "gres/gpu=($number)" {
-	# 		incr match
-	# 		subtest {$expect_out(1,string) == $batch_gpus} "Batch GPUs reported by sacct should be $job_gpus" "$expect_out(1,string) != $batch_gpus"
-	# 		exp_continue
-	# 	}
-	# 	-re "gres/gpu:($re_word_str)=($number)" {
-	# 		if {$have_gpu_types != 0} {
-	# 			incr match
-	#			subtest {$expect_out(2,string) == $batch_gpus} "Batch GPUs reported by sacct should be $job_gpus" "$expect_out(2,string) != $batch_gpus"
-	# 		}
-	# 		exp_continue
-	# 	}
-	# 	eof {
-	# 		wait
-	# 	}
-	# }
-	# subtest {$match == 2} "sacct should report GPUs 2 times" "found $match times"
+	# Check and count reported batch gpus on the job
+	set gpus_reported_count 0
+	if ![dict exists $job_tres_dict "$job_id.batch"] {
+		fail "sacct did not report a record for job $job_id.batch"
+	}
+	set tres_dict [dict get $job_tres_dict "$job_id.batch"]
+	foreach tres_value [dict values $tres_dict] {
+		if {$have_gpu_types} {
+			foreach {{} gpu_count} [regexp -all -inline {gres/gpu:[^=]+=(\d+)} $tres_value] {
+				subtest {$gpu_count == $batch_gpus} "Batch GPUs reported by sacct should be $batch_gpus" "$gpu_count != $batch_gpus"
+				incr gpus_reported_count
+			}
+		} else {
+			foreach {{} gpu_count} [regexp -all -inline {gres/gpu=(\d+)} $tres_value] {
+				subtest {$gpu_count == $batch_gpus} "Batch GPUs reported by sacct should be $batch_gpus" "$gpu_count != $batch_gpus"
+				incr gpus_reported_count
+			}
+		}
+	}
+	subtest {$gpus_reported_count == 1} "sacct should report batch GPUs 1 time" "found $gpus_reported_count times"
 
 	# Check and count reported gpus on the job
 	set gpus_reported_count 0
@@ -151,6 +151,37 @@ proc test_out_file { file_out target } {
 		}
 	}
 	subtest {$match == $target} "GPUs accounted should be $target" "$match != $target"
+}
+
+#
+# Helper function to find $batch_gpus from different outputs
+#
+proc get_batch_gpus { file_out } {
+	global bin_cat
+
+	set batch_host "unknown"
+	set batch_gpus "unknown"
+
+	set output [run_command_output -fail "$bin_cat $file_out"]
+	set nodes [regexp -all -line -inline {    Nodes=+.*} $output]
+	set node_line [lindex $nodes 0]
+
+	if {[llength $nodes] > 1} {
+		# Output type where nodes are split on 2 lines, set $node_line to grab the BatchHost node
+		#  BatchHost=74dc179a_n1
+		#  ...
+		# >Nodes=74dc179a_n1 CPU_IDs=0-1 Mem=150 GRES=[[gpu:2]](IDX:0-1)<
+		#  Nodes=74dc179a_n2 CPU_IDs=0-1 Mem=150 GRES=gpu:1(IDX:0)
+
+		regexp -all -line {BatchHost=(.*)} $output - batch_host
+		set node_line [lindex [lsearch -all -inline $nodes *$batch_host*] 0]
+	}
+
+	if {![regexp {gpu:(?:[^:( ]+:)?(\d+)} $node_line - batch_gpus]} {
+		fail "Unable to get batch_mps"
+	}
+
+	return $batch_gpus
 }
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
@@ -208,7 +239,7 @@ proc cleanup {} {
 # Test --gpus-per-node option by job
 #
 make_bash_script $file_in1 "
-	$scontrol -dd show job \${SLURM_JOBID} | grep gpu
+	$scontrol -dd show job \${SLURM_JOBID}
 	exit 0"
 
 log_info "TEST 1: --gpus-per-node option by job"
@@ -220,8 +251,9 @@ set timeout $max_job_delay
 set job_id [submit_job -fail "--gres=craynetwork:0 --gpus-per-node=$req_gpus -N$nb_nodes -t1 -o $file_out -J $test_name $file_in1"]
 
 wait_for_job -fail $job_id "DONE"
-
 wait_for_file -fail $file_out
+
+set batch_gpus [get_batch_gpus $file_out]
 set have_gpu_types 0
 set match 0
 spawn $bin_cat $file_out
@@ -242,7 +274,7 @@ expect {
 	}
 }
 subtest {$match == $target} "GPUs accounted should be $target" "$match != $target"
-test_acct $job_id $target -1 $req_gpus $have_gpu_types
+test_acct $job_id $target -1 $req_gpus $have_gpu_types $batch_gpus
 
 #
 # Test --gpus option by job
@@ -258,9 +290,10 @@ if {$nb_nodes >= 2 || $gpu_cnt >= 3} {
 set job_id [submit_job -fail "--gres=craynetwork:0 --gpus=$target -N$nb_nodes -t1 -o $file_out -J $test_name $file_in1"]
 
 wait_for_job -fail $job_id "DONE"
+set batch_gpus [get_batch_gpus $file_out]
 
 test_out_file $file_out $target
-test_acct $job_id $target -1 $target $have_gpu_types
+test_acct $job_id $target -1 $target $have_gpu_types $batch_gpus
 
 #
 # Test --gpus-per-task option by job
@@ -279,9 +312,10 @@ set req_gpus 1
 set job_id [submit_job -fail "--gres=craynetwork:0 --gpus-per-task=$req_gpus -N$nb_nodes -n$nb_tasks -t1 -o $file_out -J $test_name $file_in1"]
 
 wait_for_job -fail $job_id "DONE"
+set batch_gpus [get_batch_gpus $file_out]
 
 test_out_file $file_out $nb_tasks
-test_acct $job_id $nb_tasks -1 $req_gpus $have_gpu_types
+test_acct $job_id $nb_tasks -1 $req_gpus $have_gpu_types $batch_gpus
 
 #
 # Test --gpus-per-socket option by job
@@ -301,10 +335,11 @@ set req_gpus 1
 set job_id [submit_job -fail "--gres=craynetwork:0 --gpus-per-socket=$req_gpus -N$nb_nodes  --ntasks=$nb_nodes --sockets-per-node=$nb_sockets --cpus-per-task=$cpus_per_task -t1 -o $file_out -J $test_name $file_in1"]
 
 wait_for_job -fail $job_id "DONE"
-
+set batch_gpus [get_batch_gpus $file_out]
 set target [expr $nb_nodes * $nb_sockets]
+
 test_out_file $file_out $target
-test_acct $job_id $target -1 $req_gpus $have_gpu_types
+test_acct $job_id $target -1 $req_gpus $have_gpu_types $batch_gpus
 
 #
 # Test --gpus-per-node option by step
@@ -315,6 +350,7 @@ make_bash_script $file_in1 "
 
 make_bash_script $file_in2 "
 	if \[ \$SLURM_PROCID -eq 0 \]; then
+		$scontrol -dd show job \${SLURM_JOBID}
 		$scontrol show step \${SLURM_JOBID}.\${SLURM_STEPID}
 	fi
 	exit 0"
@@ -328,9 +364,10 @@ set timeout $max_job_delay
 set job_id [submit_job -fail "--gres=craynetwork:0 --gpus-per-node=$req_gpus -N$nb_nodes -t1 -o $file_out -J $test_name $file_in1"]
 
 wait_for_job -fail $job_id "DONE"
+set batch_gpus [get_batch_gpus $file_out]
 
 test_out_file $file_out $target
-test_acct $job_id $target $target $req_gpus $have_gpu_types
+test_acct $job_id $target $target $req_gpus $have_gpu_types $batch_gpus
 
 #
 # Test --gpus option by step
@@ -346,9 +383,10 @@ if {$nb_nodes >= 2 || $gpu_cnt >= 3} {
 set job_id [submit_job -fail "--gres=craynetwork:0 --gpus=$target -N$nb_nodes -t1 -o $file_out -J $test_name $file_in1"]
 
 wait_for_job -fail $job_id "DONE"
+set batch_gpus [get_batch_gpus $file_out]
 
 test_out_file $file_out $target
-test_acct $job_id $target $target $target $have_gpu_types
+test_acct $job_id $target $target $target $have_gpu_types $batch_gpus
 
 #
 # Test --gpus-per-task option by step
@@ -367,9 +405,10 @@ set req_gpus 1
 set job_id [submit_job -fail "--gres=craynetwork:0 --gpus-per-task=$req_gpus -N$nb_nodes -n$nb_tasks -t1 -o $file_out -J $test_name $file_in1"]
 
 wait_for_job -fail $job_id "DONE"
+set batch_gpus [get_batch_gpus $file_out]
 
 test_out_file $file_out $nb_tasks
-test_acct $job_id $nb_tasks $nb_tasks $req_gpus $have_gpu_types
+test_acct $job_id $nb_tasks $nb_tasks $req_gpus $have_gpu_types $batch_gpus
 
 #
 # Test --gpus-per-socket option by step
@@ -389,10 +428,11 @@ set req_gpus 1
 set job_id [submit_job -fail "--gres=craynetwork:0 --gpus-per-socket=$req_gpus -N$nb_nodes  --ntasks=$nb_nodes --sockets-per-node=$nb_sockets --cpus-per-task=$cpus_per_task -t1 -o $file_out -J $test_name $file_in1"]
 
 wait_for_job -fail $job_id "DONE"
-
+set batch_gpus [get_batch_gpus $file_out]
 set target [expr $nb_nodes * $nb_sockets]
+
 test_out_file $file_out $target
-test_acct $job_id $target $target $req_gpus $have_gpu_types
+test_acct $job_id $target $target $req_gpus $have_gpu_types $batch_gpus
 
 #
 # Test --gpus-per-task option by step
@@ -421,8 +461,8 @@ make_bash_script $file_in1 "
 
 set req_gpus 1
 set job_id [submit_job -fail "--gres=craynetwork:0 --gpus-per-task=$req_gpus -N$nb_nodes -n$job_tasks -t1 -o $file_out -J $test_name $file_in1"]
-
 wait_for_job -fail $job_id "DONE"
+set batch_gpus [get_batch_gpus $file_out]
 
 test_out_file $file_out $step_tasks
-test_acct $job_id $job_tasks $step_tasks $req_gpus $have_gpu_types
+test_acct $job_id $job_tasks $step_tasks $req_gpus $have_gpu_types $batch_gpus
