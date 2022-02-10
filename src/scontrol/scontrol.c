@@ -1584,11 +1584,13 @@ static void _create_it(int argc, char **argv)
 		} else {
 			tag_len = strlen(tag);
 		}
-		if (!xstrncasecmp(tag, "ReservationName", MAX(tag_len, 3))) {
-			error_code = scontrol_create_res(argc, argv);
-			break;
-		} else if (!xstrncasecmp(tag, "PartitionName", MAX(tag_len, 3))) {
+		if (!xstrncasecmp(tag, "PartitionName",
+				  MAX(tag_len, 3))) {
 			error_code = scontrol_create_part(argc, argv);
+			break;
+		} else if (!xstrncasecmp(tag, "ReservationName",
+					 MAX(tag_len, 3))) {
+			error_code = scontrol_create_res(argc, argv);
 			break;
 		}
 	}
