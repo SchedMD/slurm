@@ -222,6 +222,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
 static int _update_group_uid_list(slurmctld_resv_t *resv_ptr, char *groups);
 static int _update_job_resv_list_str(void *x, void *arg);
+static int _update_resv_pend_cnt(void *x, void *arg);
 static void _validate_all_reservations(void);
 static int  _valid_job_access_resv(job_record_t *job_ptr,
 				   slurmctld_resv_t *resv_ptr);
@@ -691,6 +692,15 @@ static int _update_job_resv_list_str(void *x, void *arg)
 	slurmctld_resv_t *resv_ptr = x;
 	char **resv_name = arg;
 	xstrfmtcat(*resv_name, "%s%s", *resv_name ? "," : "", resv_ptr->name);
+
+	return 0;
+}
+
+static int _update_resv_pend_cnt(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	xassert(resv_ptr->magic == RESV_MAGIC);
+	resv_ptr->job_pend_cnt++;
 
 	return 0;
 }
@@ -6431,15 +6441,21 @@ static int _job_resv_check(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
 
-	if (!job_ptr->resv_ptr)
+	if (!job_ptr->resv_ptr && !job_ptr->resv_list)
 		return SLURM_SUCCESS;
 
-	xassert(job_ptr->resv_ptr->magic == RESV_MAGIC);
-
-	if (IS_JOB_PENDING(job_ptr))
-		job_ptr->resv_ptr->job_pend_cnt++;
-	else if (!IS_JOB_FINISHED(job_ptr))
+	if (IS_JOB_PENDING(job_ptr)) {
+		if (job_ptr->resv_list) {
+			list_for_each(job_ptr->resv_list, _update_resv_pend_cnt,
+				      NULL);
+		} else {
+			xassert(job_ptr->resv_ptr->magic == RESV_MAGIC);
+			job_ptr->resv_ptr->job_pend_cnt++;
+		}
+	} else if (!IS_JOB_FINISHED(job_ptr) && job_ptr->resv_ptr) {
+		xassert(job_ptr->resv_ptr->magic == RESV_MAGIC);
 		job_ptr->resv_ptr->job_run_cnt++;
+	}
 
 	return SLURM_SUCCESS;
 }
