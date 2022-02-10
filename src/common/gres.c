@@ -2914,9 +2914,8 @@ static int _node_config_init(char *orig_config,
 	    (gres_ns->gres_cnt_avail >
 	     bit_size(gres_ns->gres_bit_alloc)) &&
 	    !gres_id_shared(gres_ctx->config_flags)) {
-		gres_ns->gres_bit_alloc =
-			bit_realloc(gres_ns->gres_bit_alloc,
-				    gres_ns->gres_cnt_avail);
+		bit_realloc(gres_ns->gres_bit_alloc,
+			    gres_ns->gres_cnt_avail);
 	}
 
 	return rc;
@@ -3140,8 +3139,7 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_ns,
 	if (!gres_ns->gres_bit_alloc)
 		gres_ns->gres_bit_alloc = bit_alloc(gres_bits);
 	else if (gres_bits != bit_size(gres_ns->gres_bit_alloc))
-		gres_ns->gres_bit_alloc =
-			bit_realloc(gres_ns->gres_bit_alloc, gres_bits);
+		bit_realloc(gres_ns->gres_bit_alloc, gres_bits);
 }
 
 static int _node_config_validate(char *node_name, char *orig_config,
@@ -3287,8 +3285,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		gres_ns->topo_type_name = xrealloc(gres_ns->topo_type_name,
 						   topo_cnt * sizeof(char *));
 		if (gres_ns->gres_bit_alloc)
-			gres_ns->gres_bit_alloc = bit_realloc(
-				gres_ns->gres_bit_alloc, dev_cnt);
+			bit_realloc(gres_ns->gres_bit_alloc, dev_cnt);
 		gres_ns->topo_cnt = topo_cnt;
 	} else if (gres_id_shared(gres_ctx->config_flags) &&
 		   gres_ns->topo_cnt) {
@@ -3578,9 +3575,7 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 	if (!shared_gres_ns->gres_bit_alloc) {
 		shared_gres_ns->gres_bit_alloc = bit_alloc(sharing_cnt);
 	} else {
-		shared_gres_ns->gres_bit_alloc =
-			bit_realloc(shared_gres_ns->gres_bit_alloc,
-				    sharing_cnt);
+		bit_realloc(shared_gres_ns->gres_bit_alloc, sharing_cnt);
 	}
 
 	/* Add any additional required gres/'shared' topo records */
@@ -3642,9 +3637,8 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 		    shared_gres_ns->topo_gres_bitmap[i] &&
 		    (sharing_cnt !=
 		     bit_size(shared_gres_ns->topo_gres_bitmap[i]))) {
-			shared_gres_ns->topo_gres_bitmap[i] =
-				bit_realloc(shared_gres_ns->topo_gres_bitmap[i],
-					    sharing_cnt);
+			bit_realloc(shared_gres_ns->topo_gres_bitmap[i],
+				    sharing_cnt);
 		}
 	}
 }
@@ -3901,18 +3895,14 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 			     gres_ctx->gres_name, node_name, gres_bits);
 			if (gres_id_sharing(gres_ctx->plugin_id))
 				*updated_gpu_cnt = true;
-			gres_ns->gres_bit_alloc =
-				bit_realloc(gres_ns->gres_bit_alloc,
-					    gres_bits);
+			bit_realloc(gres_ns->gres_bit_alloc, gres_bits);
 			for (i = 0; i < gres_ns->topo_cnt; i++) {
 				if (gres_ns->topo_gres_bitmap &&
 				    gres_ns->topo_gres_bitmap[i] &&
 				    (gres_bits !=
 				     bit_size(gres_ns->topo_gres_bitmap[i]))){
-					gres_ns->topo_gres_bitmap[i] =
-						bit_realloc(gres_ns->
-							    topo_gres_bitmap[i],
-							    gres_bits);
+					bit_realloc(gres_ns->topo_gres_bitmap[i],
+						    gres_bits);
 				}
 			}
 		}
@@ -10033,7 +10023,7 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 				      cpu_str, cpu_cnt);
 				xfree(cpu_str);
 			}
-			cpu_aff = bit_realloc(cpu_aff, cpu_cnt);
+			bit_realloc(cpu_aff, cpu_cnt);
 		}
 		gres_slurmd_conf->cpus_bitmap = cpu_aff;
 	}

@@ -468,9 +468,8 @@ static void _resp_array_add(resp_array_struct_t **resp, job_record_t *job_ptr,
 					      task_id_bitmap);
 			if (bit_size(loc_resp->resp_array_task_id[i]) !=
 			    array_size) {
-				loc_resp->resp_array_task_id[i] = bit_realloc(
-					loc_resp->resp_array_task_id[i],
-					array_size);
+				bit_realloc(loc_resp->resp_array_task_id[i],
+					    array_size);
 			}
 			bit_or(loc_resp->resp_array_task_id[i],
 			       job_ptr->array_recs->task_id_bitmap);
@@ -4982,7 +4981,7 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_specs)
 	max_task_id = bit_fls(job_specs->array_bitmap);
 	task_cnt = bit_set_count(job_specs->array_bitmap);
 	i_cnt = max_task_id + 1;
-	job_specs->array_bitmap = bit_realloc(job_specs->array_bitmap, i_cnt);
+	bit_realloc(job_specs->array_bitmap, i_cnt);
 	job_ptr->array_recs->task_id_bitmap = job_specs->array_bitmap;
 	job_specs->array_bitmap = NULL;
 	job_ptr->array_recs->task_cnt =
@@ -6113,11 +6112,11 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		len = bit_size(job_ptr->array_recs->task_id_bitmap);
 		i_last++;
 		if (i_last < len) {
-			array_bitmap = bit_realloc(array_bitmap, len);
+			bit_realloc(array_bitmap, len);
 		} else {
-			array_bitmap = bit_realloc(array_bitmap, i_last);
-			job_ptr->array_recs->task_id_bitmap = bit_realloc(
-				job_ptr->array_recs->task_id_bitmap, i_last);
+			bit_realloc(array_bitmap, i_last);
+			bit_realloc(job_ptr->array_recs->task_id_bitmap,
+				    i_last);
 		}
 		if (signal == SIGKILL) {
 			uint32_t orig_task_cnt, new_task_count;
@@ -14727,11 +14726,11 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		len = bit_size(job_ptr->array_recs->task_id_bitmap);
 		i_last++;
 		if (i_last < len) {
-			array_bitmap = bit_realloc(array_bitmap, len);
+			bit_realloc(array_bitmap, len);
 		} else {
-			array_bitmap = bit_realloc(array_bitmap, i_last);
-			job_ptr->array_recs->task_id_bitmap = bit_realloc(
-				job_ptr->array_recs->task_id_bitmap, i_last);
+			bit_realloc(array_bitmap, i_last);
+			bit_realloc(job_ptr->array_recs->task_id_bitmap,
+				    i_last);
 		}
 		if (!bit_overlap_any(job_ptr->array_recs->task_id_bitmap,
 				     array_bitmap)) {

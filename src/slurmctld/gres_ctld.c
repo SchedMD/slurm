@@ -345,16 +345,12 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		if (sz1 > sz2) {
 			error("gres/%s: job %u node %s gres bitmap size bad (%d > %d)",
 			      gres_name, job_id, node_name, sz1, sz2);
-			gres_js->gres_bit_select[node_index] =
-				bit_realloc(gres_js->
-					    gres_bit_select[node_index], sz2);
+			bit_realloc(gres_js->gres_bit_select[node_index], sz2);
 			job_mod = true;
 		} else if (sz1 < sz2) {
 			error("gres/%s: job %u node %s gres bitmap size bad (%d < %d)",
 			      gres_name, job_id, node_name, sz1, sz2);
-			gres_js->gres_bit_select[node_index] =
-				bit_realloc(gres_js->
-					    gres_bit_select[node_index], sz2);
+			bit_realloc(gres_js->gres_bit_select[node_index], sz2);
 		}
 
 		if (!shared_gres &&
@@ -394,9 +390,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 			error("gres/%s: node %s gres bitmap size bad (%"PRIi64" < %"PRIi64")",
 			      gres_name, node_name,
 			      i, gres_avail);
-			gres_ns->gres_bit_alloc =
-				bit_realloc(gres_ns->gres_bit_alloc,
-					    gres_avail);
+			bit_realloc(gres_ns->gres_bit_alloc, gres_avail);
 		}
 
 		gres_js->gres_bit_alloc[node_offset] =

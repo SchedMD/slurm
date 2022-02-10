@@ -939,9 +939,9 @@ void step_launch_state_alter(slurm_step_ctx_t *ctx)
 
 	xassert(sls);
 	sls->tasks_requested = layout->task_cnt;
-	sls->tasks_started = bit_realloc(sls->tasks_started, layout->task_cnt);
-	sls->tasks_exited = bit_realloc(sls->tasks_exited, layout->task_cnt);
-	sls->node_io_error = bit_realloc(sls->node_io_error, layout->node_cnt);
+	bit_realloc(sls->tasks_started, layout->task_cnt);
+	bit_realloc(sls->tasks_exited, layout->task_cnt);
+	bit_realloc(sls->node_io_error, layout->node_cnt);
 	xrealloc(sls->io_deadline, sizeof(time_t) * layout->node_cnt);
 	sls->layout = sls->mpi_info->step_layout = layout;
 

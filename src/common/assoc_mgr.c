@@ -4789,9 +4789,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 			if (!object->preempt_bitstr)
 				continue;
 
-			object->preempt_bitstr =
-				bit_realloc(object->preempt_bitstr,
-					    g_qos_count);
+			bit_realloc(object->preempt_bitstr, g_qos_count);
 		}
 		if (assoc_mgr_assoc_list) {
 			assoc_itr = list_iterator_create(
@@ -4799,9 +4797,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 			while ((assoc = list_next(assoc_itr))) {
 				if (!assoc->usage->valid_qos)
 					continue;
-				assoc->usage->valid_qos =
-					bit_realloc(assoc->usage->valid_qos,
-						    g_qos_count);
+				bit_realloc(assoc->usage->valid_qos,
+					    g_qos_count);
 			}
 			list_iterator_destroy(assoc_itr);
 		}

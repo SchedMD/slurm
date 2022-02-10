@@ -1625,11 +1625,9 @@ extern int extract_job_resources_node(job_resources_t *job, uint32_t node_id)
 		else
 			bit_clear(job->core_bitmap_used, i);
 	}
-	job->core_bitmap = bit_realloc(job->core_bitmap, len - core_cnt);
-	if (job->core_bitmap_used) {
-		job->core_bitmap_used = bit_realloc(job->core_bitmap_used,
-						    len - core_cnt);
-	}
+	bit_realloc(job->core_bitmap, len - core_cnt);
+	if (job->core_bitmap_used)
+		bit_realloc(job->core_bitmap_used, len - core_cnt);
 
 	/* Shift cpus, cpus_used, memory_allocated, and memory_used arrays */
 	i_first = bit_ffs(job->node_bitmap);

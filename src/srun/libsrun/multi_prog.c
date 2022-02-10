@@ -264,8 +264,7 @@ _update_task_mask(int low_num, int high_num, slurm_opt_t *opt_local,
 			opt_local->ntasks = high_num + 1;
 			opt_local->ntasks_set = true;
 			i_set_ntasks = true;
-			(*task_mask) = bit_realloc((*task_mask),
-						   opt_local->ntasks);
+			bit_realloc((*task_mask), opt_local->ntasks);
 		}
 	}
 	for (i=low_num; i<=high_num; i++) {
