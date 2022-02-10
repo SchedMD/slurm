@@ -1102,14 +1102,14 @@ static int _clear_job_estimates(void *x, void *arg)
 }
 
 /*
- * Return non-zero to break the backfill loop if change in job, node or
- * partition state or the backfill scheduler needs to be stopped.
+ * Return non-zero to break the backfill loop if change in job, node,
+ * reservation or partition state or the backfill scheduler needs to be stopped.
  */
 static int _yield_locks(int64_t usec)
 {
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	time_t job_update, node_update, part_update, config_update;
+	time_t job_update, node_update, part_update, config_update, resv_update;
 	bool load_config = false;
 	int yield_rpc_cnt;
 
@@ -1118,6 +1118,7 @@ static int _yield_locks(int64_t usec)
 	node_update = last_node_update;
 	part_update = last_part_update;
 	config_update = slurm_conf.last_update;
+	resv_update = last_resv_update;
 
 	unlock_slurmctld(all_locks);
 	while (!stop_backfill) {
@@ -1142,6 +1143,7 @@ static int _yield_locks(int64_t usec)
 	     (last_node_update != node_update))) ||
 	    (last_part_update != part_update) ||
 	    (slurm_conf.last_update != config_update) ||
+	    (last_resv_update != resv_update) ||
 	    stop_backfill || load_config)
 		return 1;
 	else
