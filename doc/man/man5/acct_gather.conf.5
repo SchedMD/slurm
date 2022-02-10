@@ -103,6 +103,19 @@ Specify BMC Username.
 Specify BMC Password.
 .RE
 .IP
+Datasets provided by the plugin have name: <IPMI_SENSOR_LABEL>Power.
+
+.SH acct_gather_energy/rapl
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherEnergyType=acct_gather_energy/rapl
+.fi
+.RE
+This plugin doesn't read any options from \fBacct_gather.conf\fR.
+.br
+Dataset provided by the plugin is: Power.
+.IP
 
 .SH acct_gather_energy/XCC
 Required entry in slurm.conf:
@@ -128,6 +141,7 @@ Timeout, in seconds, for initializing the IPMI XCC context for a new gathering
 thread. Default is 10 seconds.
 .RE
 .IP
+Datasets provided by the plugin are: Energy, CurrPower.
 
 .SH acct_gather_filesystem/lustre
 Required entry in slurm.conf:
