@@ -87,6 +87,8 @@ documents those changes that are of interest to users and administrators.
     non-leader het job is given to job_str_signal() make behavior consistent
     when either a numeric or a base + offset job id is given--both will
     cause the whole het job to be killed.
+ -- Fix possibility of primary group going missing when running jobs submitted
+    after a user has switched primary groups (eg: with sg).
 
 * Changes in Slurm 21.08.6
 ==========================

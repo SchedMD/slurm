@@ -71,9 +71,8 @@ typedef struct gids_cache {
 
 typedef struct gids_cache_needle {
 	uid_t uid;		/* required */
-	gid_t gid;		/* required */
+	gid_t gid;		/* fallback if lookup fails */
 	char *username;		/* optional, will be looked up if needed */
-	time_t now;		/* automatically filled in */
 } gids_cache_needle_t;
 
 static pthread_mutex_t gids_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -106,6 +105,85 @@ static int _find_entry(void *x, void *key)
 }
 
 /*
+ * This populates a new entry (or re-populates an old entry) using getpwuid_r()
+ * to determine the primary group. getpwuid_r() should be used here instead of
+ * the job's group to handle when the job was submited with a secondary group.
+ *
+ * On failure of getpwuid_r(), we will fallback to the job's group since it is
+ * the only "safe" group we can determine.
+ */
+static void _init_or_reinit_entry(gids_cache_t **in,
+				  gids_cache_needle_t *needle)
+{
+	char buffer[PW_BUF_SIZE];
+	gids_cache_t *entry;
+	struct passwd pwd, *result;
+	int rc;
+
+	xassert(needle);
+
+	rc = slurm_getpwuid_r(needle->uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	if (!result || !result->pw_name) {
+		error("slurm_getpwuid_r() failed: %s", strerror(rc));
+
+		if (*in) {
+			/* discard this now-invalid cache entry */
+			list_delete_ptr(gids_cache_list, *in);
+			*in = NULL;
+		}
+
+		return;
+	}
+
+	if (*in) {
+		/*
+		 * Reusing the existing cache record. Reset ngids to the
+		 * current buffer size to avoid needing to loop around
+		 * on getgrouplist() to determine the correct size.
+		 */
+		entry = *in;
+		entry->ngids = xsize(entry->gids) / sizeof(gid_t);
+
+		if (xstrcmp(entry->username, result->pw_name)) {
+			error("Cached username %s did not match queried username %s?",
+			      entry->username, result->pw_name);
+			xfree(entry->username);
+		}
+
+		if (entry->gid != result->pw_gid)
+			debug("Cached user=%s changed primary gid from %u to %u?",
+			      result->pw_name, entry->gid, result->pw_gid);
+	} else {
+		/* Brand new entry */
+		entry = xmalloc(sizeof(*entry));
+		entry->uid = needle->uid;
+		entry->ngids = NGROUPS_START;
+		entry->gids = xcalloc(NGROUPS_START, sizeof(gid_t));
+	}
+
+	/*
+	 * Always use the primary gid as reported by getpwuid_r(). This may
+	 * not match the credential gid in cases where the user has switched
+	 * their primary to launch a job, but this will ensure the primary gid
+	 * is always listed as part of the extended gids list, even on systems
+	 * where the extended group membership does not explicitly include the
+	 * primary gid.
+	 */
+	entry->gid = result->pw_gid;
+
+	/* Reuse cached value if possible to skip an xstrdup() */
+	if (!entry->username)
+		entry->username = xstrdup(result->pw_name);
+
+	entry->expiration = time(NULL) + slurm_conf.group_time;
+
+	if (!*in) {
+		*in = entry;
+		list_prepend(gids_cache_list, entry);
+	}
+}
+
+/*
  * OUT: ngids as return value
  * IN: populated needle structure
  * IN: primary group id (will always exist first in gids list)
@@ -122,45 +200,42 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 	if (!gids_cache_list)
 		gids_cache_list = list_create(_group_cache_list_delete);
 
-	needle->now = time(NULL);
 	entry = list_find_first(gids_cache_list, _find_entry, needle);
 
-	if (entry && (entry->expiration > needle->now)) {
-		debug2("%s: found valid entry for %s",
+	if (entry && (entry->expiration > time(NULL))) {
+		debug2("%s: found valid entry for user=%s",
 		       __func__, entry->username);
 		goto out;
 	}
 
 	if (entry) {
-		debug2("%s: found old entry for %s, looking up again",
-		       __func__, entry->username);
-		/*
-		 * The timestamp is too old, need to replace the values.
-		 * Reuse the same gids_cache_t entry, just reset the
-		 * ngids to the largest the gids field can store.
-		 */
-		entry->ngids = xsize(entry->gids) / sizeof(gid_t);
+		/* The timestamp is too old, need to replace the values. */
+		debug2("%s: found old entry for uid=%u, refreshing",
+		       __func__, entry->uid);
 	} else {
-		/* no result, allocate and add to list */
-		entry = xmalloc(sizeof(gids_cache_t));
-		if (!needle->username)
-			entry->username = uid_to_string(needle->uid);
-		else
-			entry->username = xstrdup(needle->username);
-		entry->uid = needle->uid;
-		entry->gid = needle->gid;
-		entry->ngids = NGROUPS_START;
-		entry->gids = xmalloc(sizeof(gid_t) * entry->ngids);
-		list_prepend(gids_cache_list, entry);
-
-		debug2("%s: no entry found for %s",
-		       __func__, entry->username);
+		debug2("%s: no entry found for uid=%u", __func__, needle->uid);
 	}
 
-	entry->expiration = needle->now + slurm_conf.group_time;
+	_init_or_reinit_entry(&entry, needle);
 
-	/* Cache lookup failed or entry value was too old, fetch new
-	 * value and insert it into cache.  */
+	if (!entry) {
+		error("failed to init group cache entry for uid=%u",
+		      needle->uid);
+
+		/*
+		 * getgrouplist() does not have a way to signal failure, so
+		 * return the primary group as the single member of the
+		 * extended group list.
+		 */
+		*gids = xmalloc(sizeof(gid_t));
+		*gids[0] = needle->gid;
+		return 1;
+	}
+
+	/*
+	 * Cache lookup failed or entry value was too old, fetch new value and
+	 * insert it into cache.
+	 */
 #if defined(__APPLE__)
 	/*
 	 * macOS has (int *) for the third argument instead
@@ -169,12 +244,16 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 	while (getgrouplist(entry->username, entry->gid,
 			    (int *)entry->gids, &entry->ngids) == -1) {
 #else
+	/*
+	 * entry->gid will be in the result. This is the users primary
+	 * group as determined from passwd.
+	 */
 	while (getgrouplist(entry->username, entry->gid,
 			    entry->gids, &entry->ngids) == -1) {
 #endif
 		/* group list larger than array, resize array to fit */
-		entry->gids = xrealloc(entry->gids,
-				       entry->ngids * sizeof(gid_t));
+		entry->gids = xrecalloc(entry->gids, entry->ngids,
+					sizeof(gid_t));
 	}
 
 out:
