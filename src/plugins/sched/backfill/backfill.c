@@ -3106,14 +3106,18 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 	}
 }
 
-/* Report if any changes occurred to job, node or partition information */
+/*
+ * Report if any changes occurred to job, node, reservation
+ * or partition information
+ */
 static bool _more_work(time_t last_backfill_time)
 {
 	bool rc = false;
 
 	if ((last_job_update  >= last_backfill_time) ||
 	    (last_node_update >= last_backfill_time) ||
-	    (last_part_update >= last_backfill_time)) {
+	    (last_part_update >= last_backfill_time) ||
+	    (last_resv_update >= last_backfill_time)) {
 		rc = true;
 	}
 
