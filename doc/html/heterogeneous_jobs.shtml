@@ -308,7 +308,7 @@ JOBID PARTITION  NAME  USER ST  TIME  NODES NODELIST
 
 <p>While a heterogeneous job is in pending state, only the entire job can be
 cancelled rather than its individual components.
-A request to cancel an individual component of a heterogeneous job not in
+A request to cancel an individual component of a heterogeneous job in
 pending state will return an error.
 After the job has begun execution, the individual component can be cancelled.</p>
 
