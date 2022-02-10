@@ -360,7 +360,7 @@ If SchedulerParameters configuration parameter includes the option
 "whole_hetjob" then the operation would apply to all components of the job if
 any job component is specified to be operated upon. In the below example, the
 scancel command will either cancel all components of job 93 if
-SchedulingParameters=whole_hetjob is configured, otherwise only job 93+1 will be
+SchedulerParameters=whole_hetjob is configured, otherwise only job 93+1 will be
 cancelled. If a specific heterogeneous job component is specified (e.g. "scancel
 93+1"), then only that one component will be effected.</p>
 <pre>
@@ -780,6 +780,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 2 February 2022</p>
+<p style="text-align:center;">Last modified 10 February 2022</p>
 
 <!--#include virtual="footer.txt"-->

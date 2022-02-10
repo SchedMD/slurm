@@ -374,7 +374,7 @@ backfill scheduling.</p>
 <p>In addition, there are a multitude of backfill scheduling parameters
 which can impact which jobs are considered for backfill scheduling, such
 as the maximum number of jobs tested per user. For more information see
-the slurm.conf man page and check the configuration of SchedulingParameters
+the slurm.conf man page and check the configuration of SchedulerParameters
 on your system.</p>
 
 <p><a id="steps"><b>How can I run multiple jobs from within a
@@ -2252,6 +2252,6 @@ source: <a href="download.html#yaml">libyaml</a> and <a
 href="download.html#jwt">libjwt</a>.
 </p>
 
-<p style="text-align:center;">Last modified 20 Oct 2021</p>
+<p style="text-align:center;">Last modified 10 Feb 2022</p>
 
 <!--#include virtual="footer.txt"-->
