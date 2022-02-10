@@ -221,6 +221,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				 char *accounts);
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
 static int _update_group_uid_list(slurmctld_resv_t *resv_ptr, char *groups);
+static int _update_job_resv_list_str(void *x, void *arg);
 static void _validate_all_reservations(void);
 static int  _valid_job_access_resv(job_record_t *job_ptr,
 				   slurmctld_resv_t *resv_ptr);
@@ -650,8 +651,26 @@ static int _foreach_clear_job_resv(void *x, void *key)
 	job_ptr->resv_ptr = NULL;
 	xfree(job_ptr->resv_name);
 
+	if (job_ptr->resv_list) {
+		int resv_cnt;
+		list_remove_first(job_ptr->resv_list, _find_resv_ptr, resv_ptr);
+		job_ptr->resv_ptr = list_peek(job_ptr->resv_list);
+		resv_cnt = list_count(job_ptr->resv_list);
+		if (resv_cnt <= 0) {
+			FREE_NULL_LIST(job_ptr->resv_list);
+		} else if (resv_cnt == 1) {
+			job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
+			job_ptr->resv_name = xstrdup(job_ptr->resv_ptr->name);
+			FREE_NULL_LIST(job_ptr->resv_list);
+		} else {
+			list_for_each(job_ptr->resv_list,
+				      _update_job_resv_list_str,
+				      &job_ptr->resv_name);
+		}
+	}
+
 	if (!(resv_ptr->flags & RESERVE_FLAG_NO_HOLD_JOBS) &&
-	    IS_JOB_PENDING(job_ptr) &&
+	    IS_JOB_PENDING(job_ptr) && !job_ptr->resv_ptr &&
 	    (job_ptr->state_reason != WAIT_HELD)) {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = WAIT_RESV_DELETED;
@@ -663,6 +682,15 @@ static int _foreach_clear_job_resv(void *x, void *key)
 		      __func__, job_ptr, resv_ptr->name);
 		job_ptr->priority = 0;	/* Hold job */
 	}
+
+	return 0;
+}
+
+static int _update_job_resv_list_str(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	char **resv_name = arg;
+	xstrfmtcat(*resv_name, "%s%s", *resv_name ? "," : "", resv_ptr->name);
 
 	return 0;
 }
