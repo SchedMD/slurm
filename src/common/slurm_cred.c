@@ -801,8 +801,8 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 
 	memcpy(&cred->step_id, &arg->step_id, sizeof(cred->step_id));
 	cred->uid      = arg->uid;
-	cred->gid      = arg->gid;
-	cred->pw_name = xstrdup(arg->pw_name);
+	cred->gid = gid_from_uid(cred->uid);
+	cred->pw_name = uid_to_string_or_null(cred->uid);
 	cred->pw_gecos = xstrdup(arg->pw_gecos);
 	cred->pw_dir = xstrdup(arg->pw_dir);
 	cred->pw_shell = xstrdup(arg->pw_shell);
