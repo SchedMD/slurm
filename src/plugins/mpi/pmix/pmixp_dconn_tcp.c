@@ -129,6 +129,8 @@ static int _tcp_connect(void *_priv, void *ep_data, size_t ep_len,
 		}
 		fd = slurm_open_msg_conn(&address);
 		if ((fd >= 0) || (errno != ECONNREFUSED)) {
+			log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+				 __func__, &address);
 			break;
 		}
 		if (i == 0){

@@ -874,8 +874,11 @@ extern int slurm_open_controller_conn_spec(int dest,
 	}
 
 	rc = slurm_open_msg_conn(addr);
-	if (rc == -1)
+	if (rc == -1) {
+		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+			 __func__, addr);
 		_remap_slurmctld_errno();
+	}
 fini:	_slurm_api_free_comm_config(proto_conf);
 	return rc;
 }
@@ -2180,8 +2183,11 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 	int fd = -1;
 
 	resp->auth_cred = NULL;
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
+	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
+		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+			 __func__, &req->address);
 		return -1;
+	}
 
 	return _send_and_recv_msg(fd, req, resp, timeout);
 
@@ -2262,6 +2268,8 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	int pollrc;
 
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
+		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+			 __func__, &req->address);
 		return SLURM_ERROR;
 	}
 
@@ -2345,6 +2353,8 @@ void slurm_send_msg_maybe(slurm_msg_t *req)
 	int fd = -1;
 
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
+		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+			 __func__, &req->address);
 		return;
 	}
 
@@ -2480,8 +2490,11 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	req->ret_list = NULL;
 	req->forward_struct = NULL;
 
-	if ((fd = slurm_open_msg_conn(&req->address)) < 0)
+	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
+		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+			 __func__, &req->address);
 		return -1;
+	}
 	if (!_send_and_recv_msg(fd, req, &resp, timeout)) {
 		if (resp.auth_cred)
 			auth_g_destroy(resp.auth_cred);
