@@ -90,6 +90,8 @@ documents those changes that are of interest to users and administrators.
  -- Make HetJob signaling requests using the HetJobId+HetJobOffset format behave
     the same as with direct JobId requests with regards to job state and
     whole_hetjob considerations.
+ -- scancel - avoid issuing a RPC for each HetJob non-leader components hit by
+    using filters (not using jobids) when a RPC is issued for their leader.
 
 * Changes in Slurm 21.08.6
 ==========================

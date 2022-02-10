@@ -296,11 +296,14 @@ static int _verify_job_ids(void)
 static void _filter_job_records(void)
 {
 	int i, job_matches = 0;
-	job_info_t *job_ptr = NULL;
+	job_info_t *job_ptr = NULL, *het_leader = NULL;
 	uint32_t job_base_state;
 
 	job_ptr = job_buffer_ptr->job_array;
 	for (i = 0; i < job_buffer_ptr->record_count; i++, job_ptr++) {
+		if (job_ptr->het_job_id && !job_ptr->het_job_offset)
+			het_leader = job_ptr;
+
 		if (IS_JOB_FINISHED(job_ptr))
 			job_ptr->job_id = 0;
 		if (job_ptr->job_id == 0)
@@ -394,6 +397,30 @@ static void _filter_job_records(void)
 				job_ptr->job_id = 0;
 				continue;
 			}
+		}
+
+		if (het_leader && het_leader->job_id &&
+		    job_ptr->het_job_offset &&
+		    (job_ptr->het_job_id == het_leader->het_job_id)) {
+			/*
+			 * Filter out HetJob non-leader component as its leader
+			 * should have already been evaluated and hasn't been
+			 * filtered out.
+			 *
+			 * The leader RPC signal handler will affect all the
+			 * components, so this avoids extra unneeded RPCs, races
+			 * and issues interpreting multiple error codes.
+			 *
+			 * This can be done assuming the walking of the loaded
+			 * jobs is guaranteed to evaluate in an order such that
+			 * HetJob leaders are evaluated before their matching
+			 * non-leaders and the whole HetJob is evaluated
+			 * contiguously. The slurmctld job_list is ordered by
+			 * job creation time (always leader first) and HetJobs
+			 * are created in a row.
+			 */
+			job_ptr->job_id = 0;
+			continue;
 		}
 
 		job_matches++;
