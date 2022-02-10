@@ -4964,24 +4964,20 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_specs)
 	struct job_details *details;
 	char *sep = NULL;
 	int max_run_tasks, min_task_id, max_task_id, step_task_id = 1, task_cnt;
-	uint32_t i_cnt;
 
 	if (!job_specs->array_bitmap)
 		return;
 
-	i_cnt = bit_set_count(job_specs->array_bitmap);
-	if (i_cnt == 0) {
+	if ((min_task_id = bit_ffs(job_specs->array_bitmap)) == -1) {
 		info("%s: %pJ array_bitmap is empty", __func__, job_ptr);
 		return;
 	}
 
 	job_ptr->array_job_id = job_ptr->job_id;
 	job_ptr->array_recs = xmalloc(sizeof(job_array_struct_t));
-	min_task_id = bit_ffs(job_specs->array_bitmap);
 	max_task_id = bit_fls(job_specs->array_bitmap);
 	task_cnt = bit_set_count(job_specs->array_bitmap);
-	i_cnt = max_task_id + 1;
-	bit_realloc(job_specs->array_bitmap, i_cnt);
+	bit_realloc(job_specs->array_bitmap, max_task_id + 1);
 	job_ptr->array_recs->task_id_bitmap = job_specs->array_bitmap;
 	job_specs->array_bitmap = NULL;
 	job_ptr->array_recs->task_cnt =
