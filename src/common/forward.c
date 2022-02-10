@@ -125,7 +125,7 @@ void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 		if ((fd = slurm_open_msg_conn(&addr)) < 0) {
-			error("forward_thread to %s: %m", name);
+			error("forward_thread to %s (%pA): %m", name, &addr);
 
 			slurm_mutex_lock(&fwd_struct->forward_mutex);
 			mark_as_failed_forward(

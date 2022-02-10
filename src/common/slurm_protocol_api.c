@@ -789,14 +789,14 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 			fd = slurm_open_msg_conn(addr);
 			if (fd >= 0)
 				goto end_it;
-			log_flag(NET, "%s: Failed to contact controller: %m",
-				 __func__);
+			log_flag(NET, "%s: Failed to contact controller(%pA): %m",
+				 __func__, addr);
 		} else if (proto_conf->vip_addr_set) {
 			fd = slurm_open_msg_conn(&proto_conf->vip_addr);
 			if (fd >= 0)
 				goto end_it;
-			log_flag(NET, "%s: Failed to contact controller: %m",
-				 __func__);
+			log_flag(NET, "%s: Failed to contact controller(%pA): %m",
+				 __func__, &proto_conf->vip_addr);
 		} else {
 			if (!*use_backup) {
 				fd = slurm_open_msg_conn(
@@ -805,16 +805,19 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 					*use_backup = false;
 					goto end_it;
 				}
-				log_flag(NET,"%s: Failed to contact primary controller: %m",
-					 __func__);
+				log_flag(NET,"%s: Failed to contact primary controller(%pA): %m",
+					 __func__,
+					 &proto_conf->controller_addr[0]);
 			}
 			if ((proto_conf->control_cnt > 1) || *use_backup) {
 				for (i = 1; i < proto_conf->control_cnt; i++) {
 					fd = slurm_open_msg_conn(
 						&proto_conf->controller_addr[i]);
 					if (fd >= 0) {
-						log_flag(NET, "%s: Contacted backup controller attempt:%d",
-							 __func__, (i - 1));
+						log_flag(NET, "%s: Contacted backup controller(%pA) attempt:%d",
+							 __func__,
+							 &proto_conf->controller_addr[i],
+							 (i - 1));
 						*use_backup = true;
 						goto end_it;
 					}

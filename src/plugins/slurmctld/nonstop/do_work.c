@@ -1725,7 +1725,8 @@ static void _send_event_callbacks(void)
 			fd = slurm_open_msg_conn(&callback_addr);
 			sent = 0;
 			if (fd < 0) {
-				error("nonstop: socket open fail for job %u: %m",
+				error("nonstop: socket open to %pA fail for job %u: %m",
+				      &callback_addr,
 				      callback_jobid);
 				goto io_fini;
 			}

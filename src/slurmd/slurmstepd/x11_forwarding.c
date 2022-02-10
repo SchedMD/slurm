@@ -113,7 +113,8 @@ static int _x11_socket_read(eio_obj_t *obj, List objs)
 
 	*remote = slurm_open_msg_conn(&alloc_node);
 	if (*remote < 0) {
-		error("%s: slurm_open_msg_conn: %m", __func__);
+		error("%s: slurm_open_msg_conn(%pA): %m",
+		      __func__, &alloc_node);
 		goto shutdown;
 	}
 
