@@ -129,6 +129,18 @@ thread. Default is 10 seconds.
 .RE
 .IP
 
+.SH acct_gather_filesystem/lustre
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherFilesystemType=acct_gather_filesystem/lustre
+.fi
+.RE
+This plugin doesn't read any options from \fBacct_gather.conf\fR.
+.br
+Datasets provided by the plugin are: Reads, ReadMB, Writes, WriteMB.
+.IP
+
 .SH acct_gather_profile/HDF5
 Required entry in slurm.conf:
 .RS
