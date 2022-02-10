@@ -102,14 +102,7 @@ static int _find_entry(void *x, void *key)
 	gids_cache_t *entry = (gids_cache_t *) x;
 	gids_cache_needle_t *needle = (gids_cache_needle_t *) key;
 
-	if (needle->uid != entry->uid)
-		return 0;
-
-	if (needle->gid != entry->gid)
-		return 0;
-
-	/* success! all checks passed, we've found it */
-	return 1;
+	return (needle->uid == entry->uid);
 }
 
 /*
