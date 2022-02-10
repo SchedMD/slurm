@@ -83,6 +83,10 @@ documents those changes that are of interest to users and administrators.
     conflict with the pkgconfig package.
  -- Fix sacctmgr load dump printing incorrect default QOS when no value is set.
  -- Fix very early logging in the controller when daemonized
+ -- When whole_hetjob is set in SchedulerParameters and a
+    non-leader het job is given to job_str_signal() make behavior consistent
+    when either a numeric or a base + offset job id is given--both will
+    cause the whole het job to be killed.
 
 * Changes in Slurm 21.08.6
 ==========================
