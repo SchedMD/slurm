@@ -377,8 +377,6 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	in_daemon = run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmd");
 
 	count = slurm_conf_nodename_array(&ptr_array);
-	if (count == 0)
-		fatal("No NodeName information available!");
 
 	for (i = 0; i < count; i++) {
 		node = ptr_array[i];
