@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "January 2022" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "February 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1316,9 +1316,10 @@ the job has not started or if PreemptMode=OFF.
 .TP
 \fBPreemptTime\fR
 Time at which job was signaled that it was selected for preemption.
-(Meaningful only for PreemptMode=CANCEL and the partition or QOS
-with which the job is associated has a GraceTime value designated.) This is
-hidden if the job has not started or if PreemptMode=OFF.
+This value is only meaningful for \fIPreemptMode=CANCEL\fR and
+\fIPreemptMode=REQUEUE\fR and for jobs in a partition or QOS that has a
+GraceTime value designated. This is hidden if the job has not started or
+if \fIPreemptMode=OFF\fR.
 .IP
 
 .TP

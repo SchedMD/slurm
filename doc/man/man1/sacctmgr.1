@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "December 2021" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "February 2022" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -1704,7 +1704,8 @@ An arbitrary string describing a QOS.
 Preemption grace time to be extended to a job which has been
 selected for preemption in the format of hh:mm:ss.  The default
 value is zero, no preemption grace time is allowed on this partition.
-NOTE: This value is only meaningful for QOS PreemptMode=CANCEL.
+This value is only meaningful for QOS \fIPreemptMode=CANCEL\fR and
+\fIPreemptMode=REQUEUE\fR.
 .IP
 
 .TP
