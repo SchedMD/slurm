@@ -146,7 +146,7 @@ required software to build these plugins.</p>
 
 <p>To build RPMs directly, copy the distributed tarball into a directory
 and execute (substituting the appropriate Slurm version
-number):<br><code>rpmbuild -ta slurm-20.02.1.tar.bz2</code></p>
+number):<br><code>rpmbuild -ta slurm-21.08.1.tar.bz2</code></p>
 The rpm files will be installed under the <code>$(HOME)/rpmbuild</code>
 directory of the user building them.
 
@@ -808,6 +808,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 2 February 2022</p>
+<p style="text-align:center;">Last modified 11 February 2022</p>
 
 <!--#include virtual="footer.txt"-->

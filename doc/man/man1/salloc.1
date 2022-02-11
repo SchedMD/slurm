@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "February2022" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "February 2022" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -827,19 +827,19 @@ was not specified) as one task per requested thread.
 \fB\-\-get\-user\-env\fR[=\fItimeout\fR][\fImode\fR]
 This option will load login environment variables for the user specified
 in the \fB\-\-uid\fR option.
-The environment variables are retrieved by running something of this sort
+The environment variables are retrieved by running something along the lines of
 "su \- <username> \-c /usr/bin/env" and parsing the output.
 Be aware that any environment variables already set in salloc's environment
 will take precedence over any environment variables in the user's
 login environment.
 The optional \fItimeout\fR value is in seconds. Default value is 3 seconds.
-The optional \fImode\fR value control the "su" options.
+The optional \fImode\fR value controls the "su" options.
 With a \fImode\fR value of "S", "su" is executed without the "\-" option.
 With a \fImode\fR value of "L", "su" is executed with the "\-" option,
 replicating the login environment.
-If \fImode\fR not specified, the mode established at Slurm build time
+If \fImode\fR is not specified, the mode established at Slurm build time
 is used.
-Example of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
+Examples of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
 "\-\-get\-user\-env=10L", and "\-\-get\-user\-env=S".
 NOTE: This option only works if the caller has an
 effective uid of "root".

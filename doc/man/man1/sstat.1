@@ -1,4 +1,4 @@
-.TH sstat "1" "Slurm Commands" "October 2021" "Slurm Commands"
+.TH sstat "1" "Slurm Commands" "February 2022" "Slurm Commands"
 
 .SH "NAME"
 sstat \- Display the status information of a running job/step.
@@ -113,7 +113,10 @@ Print version.
 .IP
 
 .SS "Job Status Fields"
-The following are the field options:
+Descriptions of each field option can be found below.
+Note that the Ave*, Max* and Min* accounting fields look at the values for
+all the tasks of each step in a job and return the average, maximum or minimum
+values for the job step.
 .RS
 
 .TP

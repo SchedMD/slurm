@@ -1504,7 +1504,7 @@ Users can independently override each interval on a per job basis using the
 
 .TP
 \fBJobAcctGatherParams\fR
-Arbitrary parameters for the job account gather plugin
+Arbitrary parameters for the job account gather plugin.
 Acceptable values at present include:
 .IP
 .RS
@@ -5442,7 +5442,7 @@ The default entry values will apply only to lines following it in the
 configuration file and the default values can be reset multiple times
 in the configuration file with multiple entries where "NodeName=DEFAULT".
 Each line where \fBNodeName\fR is "DEFAULT" will replace or add to previous
-default values and not a reinitialize the default values.
+default values and will not reinitialize the default values.
 The "NodeName=" specification must be placed on every line
 describing the configuration of nodes.
 A single node name can not appear as a NodeName value in more than one line
@@ -7196,7 +7196,7 @@ This prevents the daemons from running if critical file systems are
 not mounted and will minimize the risk of cold\-starting (starting
 without preserving jobs).
 .LP
-Log files and job accounting files,
+Log files and job accounting files
 may need to be created/owned by the "SlurmUser" uid to be successfully
 accessed.  Use the "chown" and "chmod" commands to set the ownership
 and permissions appropriately.
