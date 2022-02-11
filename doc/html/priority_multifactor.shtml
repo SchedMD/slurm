@@ -36,7 +36,7 @@ is enabled by setting <i>PriorityType=priority/multifactor</i>. This provides
 a very versatile method of ordering the queue of jobs waiting to be scheduled
 based on several <a href="#mfjppintro">factors</a>.</p>
 
-<p>There are several several considerations the scheduler makes when making
+<p>There are several considerations the scheduler makes when making
 scheduling decisions. Jobs are selected to be evaluated by the scheduler
 in the following order:</p>
 
