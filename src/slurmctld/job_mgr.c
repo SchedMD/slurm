@@ -17886,11 +17886,13 @@ static int _update_job_nodes_str(void *x, void *arg)
 {
 	job_record_t *job_ptr = x;
 
+	xfree(job_ptr->nodes_completing);
+	xfree(job_ptr->nodes_pr);
+
 	if (!job_ptr->node_bitmap)
 		return 0;
 
 	if (IS_JOB_COMPLETING(job_ptr)) {
-		xfree(job_ptr->nodes_completing);
 		if (job_ptr->node_bitmap_cg) {
 			job_ptr->nodes_completing =
 				bitmap2node_name(job_ptr->node_bitmap_cg);
@@ -17900,7 +17902,6 @@ static int _update_job_nodes_str(void *x, void *arg)
 		}
 	}
 	if (job_ptr->state_reason == WAIT_PROLOG) {
-		xfree(job_ptr->nodes_pr);
 		if (job_ptr->node_bitmap_pr) {
 			job_ptr->nodes_pr =
 				bitmap2node_name(job_ptr->node_bitmap_pr);
