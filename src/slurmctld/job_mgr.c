@@ -252,6 +252,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags);
 static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp);
 static int  _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp);
 static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset);
+static int _update_job_nodes_str(void *x, void *arg);
 static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			    bitstr_t *req_bitmap, part_record_t *part_ptr,
 			    List part_ptr_list,
@@ -1442,28 +1443,13 @@ static int _dump_job_state(void *object, void *arg)
 	pack16(dump_job_ptr->start_protocol_ver, buffer);
 	packdouble(dump_job_ptr->billable_tres, buffer);
 
+	_update_job_nodes_str((void *)dump_job_ptr, NULL);
+
 	if (IS_JOB_COMPLETING(dump_job_ptr)) {
-		char *nodes_completing = NULL;
-		if (dump_job_ptr->node_bitmap_cg) {
-			nodes_completing = bitmap2node_name(
-						dump_job_ptr->node_bitmap_cg);
-		} else {
-			nodes_completing = bitmap2node_name(
-						dump_job_ptr->node_bitmap);
-		}
-		packstr(nodes_completing, buffer);
-		xfree(nodes_completing);
+		packstr(dump_job_ptr->nodes_completing, buffer);
 	}
 	if (dump_job_ptr->state_reason == WAIT_PROLOG) {
-		char *nodes_pr = NULL;
-		if (dump_job_ptr->node_bitmap_pr) {
-			nodes_pr = bitmap2node_name(
-					dump_job_ptr->node_bitmap_pr);
-		} else {
-			nodes_pr = bitmap2node_name(dump_job_ptr->node_bitmap);
-		}
-		packstr(nodes_pr, buffer);
-		xfree(nodes_pr);
+		packstr(dump_job_ptr->nodes_pr, buffer);
 	}
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
