@@ -958,11 +958,14 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 	uint32_t bpf_dev_type = NO_VAL;
 
 	/*
-	 * cgroup/v1 compatibility: We have no such level in cgroup/v2 hierarchy
-	 * but we may still get calls for this cgroup level. Ignore it.
+	 * cgroup/v1 legacy compatibility: We have no such levels in cgroup/v2
+	 * but we may still get calls for them.
 	 */
 	if (level == CG_LEVEL_USER)
 		return SLURM_SUCCESS;
+
+	if (level == CG_LEVEL_SLURM)
+		level = CG_LEVEL_ROOT;
 
 	/* This is for CoreSpec* and MemSpec* for slurmd */
 	if (level == CG_LEVEL_SYSTEM)
@@ -1098,8 +1101,21 @@ extern int cgroup_p_constrain_apply(cgroup_ctl_type_t ctl, cgroup_level_t level,
 	char *cgroup_path = NULL;
 
 	/*
-	 * cgroup/v1 compatibility: We have no such level in cgroup/v2 hierarchy
-	 * but we may still get calls for this cgroup level. Ignore it.
+	 * cgroup/v1 legacy compatibility: We have no such levels in cgroup/v2
+	 * but we may still get calls for them.
+	 */
+	if (level == CG_LEVEL_USER)
+		return SLURM_SUCCESS;
+
+	if (level == CG_LEVEL_SLURM)
+		level = CG_LEVEL_ROOT;
+	/*
+	 * Our real step level is the level for user processes. This will make
+	 * that the slurmstepd is never constrained in its own cgroup, which is
+	 * something we want. Instead, slurmstepd will be part of the job limit.
+	 * Note that a step which initializes pmi, could cause slurmstepd to
+	 * grow, and we don't want this to be part of the step, but be part of
+	 * the job.
 	 */
 	if (level == CG_LEVEL_STEP)
 		level = CG_LEVEL_STEP_USER;
@@ -1169,11 +1185,27 @@ extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t ctl,
 {
 	cgroup_limits_t *limits;
 
-	/* Legacy: We have no such level in cgroup/v2 hierarchy. */
+	/*
+	 * cgroup/v1 legacy compatibility: We have no such levels in cgroup/v2
+	 * but we may still get calls for them.
+	 */
 	if (level == CG_LEVEL_USER) {
-		log_flag(CGROUP, "Incorrect cgroup level: %d", level);
+		error("Incorrect cgroup level: %d", level);
 		return NULL;
 	}
+
+	if (level == CG_LEVEL_SLURM)
+		level = CG_LEVEL_ROOT;
+	/*
+	 * Our real step level is the level for user processes. This will make
+	 * that the slurmstepd is never constrained in its own cgroup, which is
+	 * something we want. Instead, slurmstepd will be part of the job limit.
+	 * Note that a step which initializes pmi, could cause slurmstepd to
+	 * grow, and we don't want this to be part of the step, but be part of
+	 * the job.
+	 */
+	if (level == CG_LEVEL_STEP)
+		level = CG_LEVEL_STEP_USER;
 
 	/* This is for CoreSpec* and MemSpec* for slurmd */
 	if (level == CG_LEVEL_SYSTEM)
