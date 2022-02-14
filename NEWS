@@ -69,7 +69,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacctmgr to set MaxJobsAccruePer{User|Account} and MinPrioThres in
     sacctmgr add qos, modify already worked correctly.
  -- job_container/tmpfs - avoid printing extraneous error messages in Prolog
-    and Epilog.
+    and Epilog, and when the job completes.
 
 * Changes in Slurm 21.08.5
 ==========================

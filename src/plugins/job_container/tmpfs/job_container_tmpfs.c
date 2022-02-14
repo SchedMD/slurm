@@ -779,7 +779,8 @@ static int _delete_ns(uint32_t job_id, bool is_slurmd)
 		xfree(job);
 		if (list_count(legacy_jobs) == 0)
 			FREE_NULL_LIST(legacy_jobs);
-	}
+	} else if (is_slurmd)
+		return SLURM_SUCCESS;
 
 	rc = umount2(ns_holder, MNT_DETACH);
 	if (rc) {
