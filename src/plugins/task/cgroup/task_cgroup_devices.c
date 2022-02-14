@@ -200,12 +200,15 @@ fini:
 extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
 				       uint32_t taskid)
 {
+	/* This plugin constrain devices to task level. */
+	return cgroup_g_task_addto(CG_DEVICES, job, pid, taskid);
+}
+
+extern int task_cgroup_devices_constrain(stepd_step_rec_t *job, pid_t pid,
+					 uint32_t taskid)
+{
 	List device_list = NULL;
 	handle_dev_args_t handle_args;
-
-	/* This plugin constrain devices to task level. */
-	if (cgroup_g_task_addto(CG_DEVICES, job, pid, taskid) != SLURM_SUCCESS)
-		return SLURM_ERROR;
 
 	/*
 	 * We do not explicitly constrain devices on the task level of these
