@@ -2785,7 +2785,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 {
 	char *acctg_freq = NULL, *req_nodes = NULL, *exc_nodes = NULL;
 	char *features = NULL, *cpu_bind = NULL, *dependency = NULL;
-	char *orig_dependency = NULL, *mem_bind, *cluster_features = NULL;
+	char *orig_dependency = NULL, *mem_bind = NULL;
+	char *cluster_features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	char *submit_line = NULL, *prefer = NULL;
