@@ -131,7 +131,7 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 		return -1;
 	}
 	if (cpid == 0) {
-		char *argv[2];
+		char *argv[2] = { (char *) path, NULL };
 
 		/*
 		 * For cncu only, container_g_join() allegedly needs to be
@@ -145,9 +145,6 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 		if (xstrstr(slurm_conf.job_container_plugin, "cncu")
 		    && (container_g_join(job_id, getuid()) != SLURM_SUCCESS))
 			error("container_g_join(%u): %m", job_id);
-
-		argv[0] = (char *)xstrdup(path);
-		argv[1] = NULL;
 
 		setpgid(0, 0);
 		execve(path, argv, env);
