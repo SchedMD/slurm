@@ -1438,7 +1438,8 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 			}
 		}
 		if (to_job_ptr->details->whole_node == 1) {
-			to_job_ptr->total_cpus += select_node_record[i].cpus;
+			to_job_ptr->total_cpus +=
+				select_node_record[i].node_ptr->cpus_efctv;
 		} else {
 			to_job_ptr->total_cpus += new_job_resrcs_ptr->
 				cpus[new_node_offset];

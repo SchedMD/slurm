@@ -1582,7 +1582,9 @@ alloc_job:
 			 * subtract from the total cpu count or you
 			 * will get an incorrect count.
 			 */
-			job_ptr->total_cpus += select_node_record[i].cpus;
+
+			job_ptr->total_cpus +=
+				select_node_record[i].node_ptr->cpus_efctv;
 		}
 	} else if (cr_type & CR_SOCKET) {
 		int ci = 0;
