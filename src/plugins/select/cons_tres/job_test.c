@@ -318,8 +318,10 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				      select_node_record[node_inx].tot_sockets;
 	} else if (mc_ptr->ntasks_per_core) {
 		min_tasks_this_node = mc_ptr->ntasks_per_core;
-		max_tasks_this_node = mc_ptr->ntasks_per_core *
-				      select_node_record[node_inx].tot_cores;
+		max_tasks_this_node =
+			mc_ptr->ntasks_per_core *
+			(select_node_record[node_inx].tot_cores -
+			 select_node_record[node_inx].node_ptr->core_spec_cnt);
 	} else if (details_ptr && details_ptr->ntasks_per_tres &&
 		   (details_ptr->ntasks_per_tres != NO_VAL16)) {
 		/* Node ranges not allowed with --ntasks-per-gpu */
