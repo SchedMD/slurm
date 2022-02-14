@@ -46,6 +46,7 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/list.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -132,14 +133,17 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 	if (cpid == 0) {
 		char *argv[2];
 
-		/* container_g_join needs to be called in the
-		   forked process part of the fork to avoid a race
-		   condition where if this process makes a file or
-		   detacts itself from a child before we add the pid
-		   to the container in the parent of the fork.
-		*/
-		if (container_g_join(job_id, getuid())
-		    != SLURM_SUCCESS)
+		/*
+		 * For cncu only, container_g_join() allegedly needs to be
+		 * called in the forked child to avoid a race condition where
+		 * if this process makes a file or detacts itself from a child
+		 * before we add the pid to the container in the parent of the
+		 * fork. This is definitely not safe to do here though - see
+		 * fork(2) for a discussion as to why only async-signal-safe
+		 * function should be used here.
+		 */
+		if (xstrstr(slurm_conf.job_container_plugin, "cncu")
+		    && (container_g_join(job_id, getuid()) != SLURM_SUCCESS))
 			error("container_g_join(%u): %m", job_id);
 
 		argv[0] = (char *)xstrdup(path);

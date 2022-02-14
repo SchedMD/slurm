@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
  -- Make --mem-bind=sort work with task_affinity
  -- Fix sacctmgr to set MaxJobsAccruePer{User|Account} and MinPrioThres in
     sacctmgr add qos, modify already worked correctly.
+ -- job_container/tmpfs - avoid printing extraneous error messages in Prolog
+    and Epilog.
 
 * Changes in Slurm 21.08.5
 ==========================
