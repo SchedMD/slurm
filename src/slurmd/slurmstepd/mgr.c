@@ -1890,24 +1890,6 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			      i, job->task[i]->pid, job->pgid);
 		}
 
-		if (task_g_pre_set_affinity(job, i) < 0) {
-			error("task_g_pre_set_affinity: %m");
-			rc = SLURM_ERROR;
-			goto fail2;
-		}
-
-		if (task_g_set_affinity(job, i) < 0) {
-			error("task_g_set_affinity: %m");
-			rc = SLURM_ERROR;
-			goto fail2;
-		}
-
-		if (task_g_post_set_affinity(job, i) < 0) {
-			error("task_g_post_set_affinity: %m");
-			rc = SLURM_ERROR;
-			goto fail2;
-		}
-
 		if (proctrack_g_add(job, job->task[i]->pid)
 		    == SLURM_ERROR) {
 			error("proctrack_g_add: %m");
@@ -1927,6 +1909,29 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			jobacct_gather_add_task(job->task[i]->pid, &jobacct_id,
 						0);
 		}
+
+		/*
+		 * Affinity must be set after cgroup is set, or moving pids from
+		 * one cgroup to another will reset affinity.
+		 */
+		if (task_g_pre_set_affinity(job, i) < 0) {
+			error("task_g_pre_set_affinity: %m");
+			rc = SLURM_ERROR;
+			goto fail2;
+		}
+
+		if (task_g_set_affinity(job, i) < 0) {
+			error("task_g_set_affinity: %m");
+			rc = SLURM_ERROR;
+			goto fail2;
+		}
+
+		if (task_g_post_set_affinity(job, i) < 0) {
+			error("task_g_post_set_affinity: %m");
+			rc = SLURM_ERROR;
+			goto fail2;
+		}
+
 		if (spank_task_post_fork (job, i) < 0) {
 			error ("spank task %d post-fork failed", i);
 			rc = SLURM_ERROR;
