@@ -2380,7 +2380,7 @@ static int _build_node_spec_bitmap(node_record_t *node_ptr)
 {
 	uint32_t c, coff, size;
 	int *cpu_spec_array;
-	uint i, node_inx;
+	int i, node_inx;
 
 	if (node_ptr->threads == 0) {
 		error("Node %s has invalid thread per core count (%u)",
