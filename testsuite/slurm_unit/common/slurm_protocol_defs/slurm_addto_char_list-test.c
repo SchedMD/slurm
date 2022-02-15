@@ -169,7 +169,7 @@ START_TEST(spaces) {
 	List char_list = list_create(NULL);
 
 	count = slurm_addto_char_list(char_list, names);
-	ck_assert_int_eq(count, 0);
+	ck_assert_int_eq(count, 3);
 
 	FREE_NULL_LIST(char_list);
 }

@@ -453,15 +453,6 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					 * ",,this".
 					 */
 					start = i + 1;
-					if (names[i + 1] == ' ') {
-						info("There is a problem "
-						     "with your request. "
-						     "It appears you have "
-						     "spaces inside your "
-						     "list.");
-						count = 0;
-						goto endit;
-					}
 				} else {
 					brack_not = false;
 					/*
@@ -533,7 +524,7 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 			list_append(char_list, name);
 		}
 	}
-endit:
+
 	list_iterator_destroy(itr);
 	return count;
 }
