@@ -475,63 +475,51 @@ end_it:
 
 /* Purge queued step records from the agent queue
  * RET number of records purged */
-static int _purge_step_req(void)
+static int _purge_step_req(void *x, void *arg)
 {
-	int purged = 0;
-	ListIterator iter;
 	uint16_t msg_type;
 	uint32_t offset;
-	buf_t *buffer;
+	buf_t *buffer = x;
 
-	iter = list_iterator_create(agent_list);
-	while ((buffer = list_next(iter))) {
-		offset = get_buf_offset(buffer);
-		if (offset < 2)
-			continue;
-		set_buf_offset(buffer, 0);
-		(void) unpack16(&msg_type, buffer);	/* checked by offset */
-		set_buf_offset(buffer, offset);
-		if ((msg_type == DBD_STEP_START) ||
-		    (msg_type == DBD_STEP_COMPLETE)) {
-			list_remove(iter);
-			purged++;
-		}
+	offset = get_buf_offset(buffer);
+	if (offset < 2)
+		return 0;
+	set_buf_offset(buffer, 0);
+	(void) unpack16(&msg_type, buffer);	/* checked by offset */
+	set_buf_offset(buffer, offset);
+	if ((msg_type == DBD_STEP_START) ||
+	    (msg_type == DBD_STEP_COMPLETE)) {
+		return 1;
 	}
-	list_iterator_destroy(iter);
-	info("purge %d step records", purged);
-	return purged;
+
+	return 0;
 }
 
 /* Purge queued job start records from the agent queue
  * RET number of records purged */
-static int _purge_job_start_req(void)
+static int _purge_job_start_req(void *x, void *arg)
 {
-	int purged = 0;
-	ListIterator iter;
 	uint16_t msg_type;
 	uint32_t offset;
-	buf_t *buffer;
+	buf_t *buffer = x;
 
-	iter = list_iterator_create(agent_list);
-	while ((buffer = list_next(iter))) {
-		offset = get_buf_offset(buffer);
-		if (offset < 2)
-			continue;
-		set_buf_offset(buffer, 0);
-		(void) unpack16(&msg_type, buffer);	/* checked by offset */
-		set_buf_offset(buffer, offset);
-		if (msg_type == DBD_JOB_START) {
-			list_remove(iter);
-			purged++;
-		}
+	offset = get_buf_offset(buffer);
+	if (offset < 2)
+		return 0;
+	set_buf_offset(buffer, 0);
+	(void) unpack16(&msg_type, buffer);	/* checked by offset */
+	set_buf_offset(buffer, offset);
+	if (msg_type == DBD_JOB_START) {
+		return 1;
 	}
-	list_iterator_destroy(iter);
-	info("purge %d job start records", purged);
-	return purged;
+
+	return 0;
+
 }
 
 static void _max_dbd_msg_action(uint32_t *msg_cnt)
 {
+	int purged = 0;
 	if (max_dbd_msg_action == MAX_DBD_ACTION_EXIT) {
 		if (*msg_cnt < slurm_conf.max_dbd_msgs)
 			return;
@@ -542,10 +530,17 @@ static void _max_dbd_msg_action(uint32_t *msg_cnt)
 	}
 
 	/* MAX_DBD_ACTION_DISCARD */
-	if (*msg_cnt >= (slurm_conf.max_dbd_msgs - 1))
-		*msg_cnt -= _purge_step_req();
-	if (*msg_cnt >= (slurm_conf.max_dbd_msgs - 1))
-		*msg_cnt -= _purge_job_start_req();
+	if (*msg_cnt >= (slurm_conf.max_dbd_msgs - 1)) {
+		purged = list_delete_all(agent_list, _purge_step_req, NULL);
+		*msg_cnt -= purged;
+		info("purge %d step records", purged);
+	}
+	if (*msg_cnt >= (slurm_conf.max_dbd_msgs - 1)) {
+		purged = list_delete_all(agent_list, _purge_job_start_req,
+					 NULL);
+		*msg_cnt -= purged;
+		info("purge %d job start records", purged);
+	}
 }
 
 static int _print_agent_list_msg_type(void *x, void *arg)
