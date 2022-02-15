@@ -1727,8 +1727,8 @@ static int _attempt_backfill(void)
 	slurmctld_diag_stats.bf_last_depth_try = 0;
 	slurmctld_diag_stats.bf_when_last_cycle = now;
 
-	node_space = xmalloc(sizeof(node_space_map_t) *
-			     (bf_node_space_size + 1));
+	node_space = xcalloc((bf_node_space_size + 1),
+			     sizeof(node_space_map_t));
 	node_space[0].begin_time = sched_start;
 	window_end = sched_start + backfill_window;
 	node_space[0].end_time = window_end;
@@ -3490,8 +3490,8 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 	uint64_t **tres_alloc_save = NULL;
 
-	tres_alloc_save = xmalloc(sizeof(uint64_t *) *
-				  list_count(map->het_job_rec_list));
+	tres_alloc_save = xcalloc(list_count(map->het_job_rec_list),
+				  sizeof(uint64_t *));
 	slurmctld_tres_size = sizeof(uint64_t) * slurmctld_tres_cnt;
 	iter = list_iterator_create(map->het_job_rec_list);
 	while ((rec = list_next(iter))) {
