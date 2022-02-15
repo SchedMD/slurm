@@ -313,14 +313,20 @@ static int _index_job(const char *jobcomp)
 	chunk.message = xmalloc(1);
 	chunk.size = 0;
 
-	curl_easy_setopt(curl_handle, CURLOPT_URL, log_url);
-	curl_easy_setopt(curl_handle, CURLOPT_POST, 1);
-	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, jobcomp);
-	curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, strlen(jobcomp));
-	curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, slist);
-	curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1);
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, _write_callback);
-	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
+	if (curl_easy_setopt(curl_handle, CURLOPT_URL, log_url) ||
+	    curl_easy_setopt(curl_handle, CURLOPT_POST, 1) ||
+	    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, jobcomp) ||
+	    curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE,
+			     strlen(jobcomp)) ||
+	    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, slist) ||
+	    curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1) ||
+	    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION,
+			     _write_callback) ||
+	    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk)) {
+		error("%s: curl_easy_setopt() failed", plugin_type);
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
 
 	if ((res = curl_easy_perform(curl_handle)) != CURLE_OK) {
 		log_flag(ESEARCH, "%s: Could not connect to: %s , reason: %s",
