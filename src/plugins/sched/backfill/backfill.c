@@ -363,7 +363,7 @@ static int _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 		return rc;
 
 	feat_iter = list_iterator_create(detail_ptr->feature_list_use);
-	while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+	while ((feat_ptr = list_next(feat_iter))) {
 		if (feat_ptr->count)
 			rc++;
 		if (feat_ptr->op_code == FEATURE_OP_XAND)
@@ -418,7 +418,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		tmp_bitmap = bit_copy(*avail_bitmap);
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		feat_iter = list_iterator_create(feature_cache);
-		while ((feat_ptr = (job_feature_t *) list_next(feat_iter)) &&
+		while ((feat_ptr = list_next(feat_iter)) &&
 		       (rc == SLURM_SUCCESS)) {
 			detail_ptr->feature_list_use =
 				list_create(feature_list_delete);
@@ -428,8 +428,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 			list_append(detail_ptr->feature_list_use, feature_base);
 			feat_min_node = feat_ptr->count;
 			while ((feat_ptr->paren > 0) &&
-			       ((feat_ptr = (job_feature_t *)
-					    list_next(feat_iter)))) {
+			       ((feat_ptr = list_next(feat_iter)))) {
 				feature_base = xmalloc(sizeof(job_feature_t));
 				feature_base->name = xstrdup(feat_ptr->name);
 				feature_base->op_code = feat_ptr->op_code;
@@ -522,7 +521,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		tmp_bitmap = bit_copy(*avail_bitmap);
 		preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
 		feat_iter = list_iterator_create(feature_cache);
-		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+		while ((feat_ptr = list_next(feat_iter))) {
 			detail_ptr->feature_list_use =
 				list_create(feature_list_delete);
 			feature_base = xmalloc(sizeof(job_feature_t));
@@ -530,8 +529,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 			feature_base->op_code = feat_ptr->op_code;
 			list_append(detail_ptr->feature_list_use, feature_base);
 			while ((feat_ptr->paren > 0) &&
-			       ((feat_ptr = (job_feature_t *)
-					    list_next(feat_iter)))) {
+			       ((feat_ptr = list_next(feat_iter)))) {
 				feature_base = xmalloc(sizeof(job_feature_t));
 				feature_base->name = xstrdup(feat_ptr->name);
 				feature_base->op_code = feat_ptr->op_code;
@@ -3302,7 +3300,7 @@ static void _het_job_start_clear(void)
 	ListIterator iter;
 
 	iter = list_iterator_create(het_job_list);
-	while ((map = (het_job_map_t *) list_next(iter))) {
+	while ((map = list_next(iter))) {
 		if (map->prev_start == 0) {
 			list_delete_item(iter);
 		} else {
@@ -3327,7 +3325,7 @@ static time_t _het_job_start_compute(het_job_map_t *map,
 	time_t latest_start = map->prev_start;
 
 	iter = list_iterator_create(map->het_job_rec_list);
-	while ((rec = (het_job_rec_t *) list_next(iter))) {
+	while ((rec = list_next(iter))) {
 		if (rec->job_id == exclude_job_id)
 			continue;
 		latest_start = MAX(latest_start, rec->latest_start);
@@ -3496,7 +3494,7 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 				  list_count(map->het_job_rec_list));
 	slurmctld_tres_size = sizeof(uint64_t) * slurmctld_tres_cnt;
 	iter = list_iterator_create(map->het_job_rec_list);
-	while ((rec = (het_job_rec_t *) list_next(iter))) {
+	while ((rec = list_next(iter))) {
 		uint16_t sockets_per_node;
 		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 			READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
@@ -3551,7 +3549,7 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 	}
 
 	list_iterator_reset(iter);
-	while ((rec = (het_job_rec_t *) list_next(iter))) {
+	while ((rec = list_next(iter))) {
 		job_ptr = rec->job_ptr;
 		if (begun_jobs > fini_jobs) {
 			time_t end_time_exp = job_ptr->end_time_exp;
@@ -3591,7 +3589,7 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 	uint32_t hard_limit;
 
 	iter = list_iterator_create(map->het_job_rec_list);
-	while ((rec = (het_job_rec_t *) list_next(iter))) {
+	while ((rec = list_next(iter))) {
 		bool reset_time = false;
 		job_ptr = rec->job_ptr;
 		job_ptr->part_ptr = rec->part_ptr;
@@ -3694,7 +3692,7 @@ static void _het_job_kill_now(het_job_map_t *map)
 				  SLURM_CRED_OPT_EXPIRY_WINDOW,
 				  &cred_lifetime);
 	iter = list_iterator_create(map->het_job_rec_list);
-	while ((rec = (het_job_rec_t *) list_next(iter))) {
+	while ((rec = list_next(iter))) {
 		job_ptr = rec->job_ptr;
 		if (IS_JOB_PENDING(job_ptr))
 			continue;
@@ -3918,14 +3916,12 @@ static bool _het_job_deadlock_test(job_record_t *job_ptr)
 	 */
 	if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 		part_iter = list_iterator_create(deadlock_global_list);
-		while ((dl_part_ptr2 = (deadlock_part_struct_t *)
-				       list_next(part_iter))){
+		while ((dl_part_ptr2 = list_next(part_iter))){
 			info("Partition %s Hetjobs:",
 			     dl_part_ptr2->part_ptr->name);
 			job_iter = list_iterator_create(dl_part_ptr2->
 							deadlock_job_list);
-			while ((dl_job_ptr2 = (deadlock_job_struct_t *)
-					      list_next(job_iter))) {
+			while ((dl_job_ptr2 = list_next(job_iter))) {
 				info("   Hetjob %u to start at %"PRIu64,
 				     dl_job_ptr2->het_job_id,
 				     (uint64_t) dl_job_ptr2->start_time);
@@ -3941,7 +3937,7 @@ static bool _het_job_deadlock_test(job_record_t *job_ptr)
 	 * partition
 	 */
 	part_iter = list_iterator_create(deadlock_global_list);
-	while ((dl_part_ptr2 = (deadlock_part_struct_t *)list_next(part_iter))){
+	while ((dl_part_ptr2 = list_next(part_iter))){
 		if (dl_part_ptr2 == dl_part_ptr) /* Current partition, skip it */
 			continue;
 		dl_job_ptr2 = list_find_first(dl_part_ptr2->deadlock_job_list,
@@ -3950,8 +3946,7 @@ static bool _het_job_deadlock_test(job_record_t *job_ptr)
 		if (!dl_job_ptr2) /* Hetjob not in this partition, no check */
 			continue;
 		job_iter = list_iterator_create(dl_part_ptr->deadlock_job_list);
-		while ((dl_job_ptr2 = (deadlock_job_struct_t *)
-				      list_next(job_iter))) {
+		while ((dl_job_ptr2 = list_next(job_iter))) {
 			if (dl_job_ptr2->het_job_id == dl_job_ptr->het_job_id)
 				break;	/* Self */
 			dl_job_ptr3 = list_find_first(
