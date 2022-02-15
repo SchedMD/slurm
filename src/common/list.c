@@ -210,7 +210,7 @@ list_is_empty (List l)
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
+	slurm_rwlock_rdlock(&l->mutex);
 	n = l->count;
 	slurm_rwlock_unlock(&l->mutex);
 
@@ -229,7 +229,7 @@ int list_count(List l)
 		return 0;
 
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
+	slurm_rwlock_rdlock(&l->mutex);
 	n = l->count;
 	slurm_rwlock_unlock(&l->mutex);
 
@@ -745,7 +745,7 @@ list_peek (List l)
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
+	slurm_rwlock_rdlock(&l->mutex);
 
 	v = (l->head) ? l->head->data : NULL;
 	slurm_rwlock_unlock(&l->mutex);
@@ -894,7 +894,7 @@ list_peek_next (ListIterator i)
 	xassert(i != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
 	xassert(i->list->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&i->list->mutex);
+	slurm_rwlock_rdlock(&i->list->mutex);
 
 	p = i->pos;
 
