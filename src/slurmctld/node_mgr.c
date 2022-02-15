@@ -2422,6 +2422,7 @@ static int _build_node_spec_bitmap(node_record_t *node_ptr)
 		bit_nclear(node_ptr->node_spec_bitmap, start, end);
 		i += 2;
 	}
+	node_ptr->core_spec_cnt = bit_clear_count(node_ptr->node_spec_bitmap);
 	xfree(cpu_spec_array);
 	return SLURM_SUCCESS;
 }
@@ -2486,7 +2487,7 @@ static void _split_node_config(node_record_t *node_ptr,
  */
 extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 {
-	int error_code, i, node_inx;
+	int error_code, node_inx;
 	config_record_t *config_ptr;
 	node_record_t *node_ptr;
 	char *reason_down = NULL;
@@ -2496,7 +2497,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	bool orig_node_avail;
 	static uint32_t cr_flag = NO_VAL;
 	static int node_features_cnt = 0;
-	int *cpu_spec_array;
 	int sockets1, sockets2;	/* total sockets on node */
 	int cores1, cores2;	/* total cores on node */
 	int threads1, threads2;	/* total threads on node */
@@ -2719,17 +2719,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		node_ptr->cpu_spec_list = reg_msg->cpu_spec_list;
 		reg_msg->cpu_spec_list = NULL;	/* Nothing left to free */
 
-		cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);
-		i = 0;
-		node_ptr->core_spec_cnt = 0;
-		while (cpu_spec_array[i] != -1) {
-			node_ptr->core_spec_cnt += (cpu_spec_array[i + 1] -
-				cpu_spec_array[i]) + 1;
-			i += 2;
-		}
-		if (node_ptr->threads)
-			node_ptr->core_spec_cnt /= node_ptr->threads;
-		xfree(cpu_spec_array);
 		if (_build_node_spec_bitmap(node_ptr) != SLURM_SUCCESS)
 			error_code = EINVAL;
 	}
