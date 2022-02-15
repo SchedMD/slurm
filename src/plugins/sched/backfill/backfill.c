@@ -126,14 +126,14 @@
 #define MAX_BF_MAX_JOB_USER_PART       MAX_BF_MAX_JOB_TEST
 #define MAX_BF_MAX_JOB_PART            MAX_BF_MAX_JOB_TEST
 
-typedef struct node_space_map {
+typedef struct {
 	time_t begin_time;
 	time_t end_time;
 	bitstr_t *avail_bitmap;
 	int next;	/* next record, by time, zero termination */
 } node_space_map_t;
 
-typedef struct node_space_handler {
+typedef struct {
 	node_space_map_t *node_space;
 	int *node_space_recs;
 } node_space_handler_t;
@@ -143,26 +143,26 @@ typedef struct node_space_handler {
  * NOTE: An individial hetjob component can be submitted to multiple
  *       partitions and have different start times in each
  */
-typedef struct het_job_rec {
+typedef struct {
 	uint32_t job_id;
 	job_record_t *job_ptr;
 	time_t latest_start;		/* Time when expected to start */
 	part_record_t *part_ptr;
 } het_job_rec_t;
 
-typedef struct het_job_map {
+typedef struct {
 	uint32_t comp_time_limit;	/* Time limit for hetjob */
 	uint32_t het_job_id;
 	List het_job_rec_list;		/* List of het_job_rec_t */
 	time_t prev_start;		/* Expected start time from last test */
 } het_job_map_t;
 
-typedef struct deadlock_job_struct {
+typedef struct {
 	uint32_t het_job_id;
 	time_t start_time;
 } deadlock_job_struct_t;
 
-typedef struct deadlock_part_struct {
+typedef struct {
 	List deadlock_job_list;
 	part_record_t *part_ptr;
 } deadlock_part_struct_t;
@@ -171,7 +171,7 @@ typedef struct deadlock_part_struct {
 extern diag_stats_t slurmctld_diag_stats;
 uint32_t bf_sleep_usec = 0;
 
-typedef struct backfill_user_usage {
+typedef struct {
 	slurmdb_bf_usage_t bf_usage;
 	uid_t uid;
 } bf_user_usage_t;
