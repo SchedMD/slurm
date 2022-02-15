@@ -50,46 +50,45 @@
 #include "src/slurmctld/slurmctld.h"
 #include "backfill.h"
 
-const char		plugin_name[]	= "Slurm Backfill Scheduler plugin";
-const char		plugin_type[]	= "sched/backfill";
-const uint32_t		plugin_version	= SLURM_VERSION_NUMBER;
+const char plugin_name[] = "Slurm Backfill Scheduler plugin";
+const char plugin_type[] = "sched/backfill";
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static pthread_t backfill_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int init( void )
+extern int init(void)
 {
 	if (slurmctld_config.scheduling_disabled)
 		return SLURM_SUCCESS;
 
 	sched_verbose("Backfill scheduler plugin loaded");
 
-	slurm_mutex_lock( &thread_flag_mutex );
-	if ( backfill_thread ) {
-		debug2( "Backfill thread already running, not starting "
-			"another" );
-		slurm_mutex_unlock( &thread_flag_mutex );
+	slurm_mutex_lock(&thread_flag_mutex);
+	if (backfill_thread) {
+		debug2("Backfill thread already running, not starting another");
+		slurm_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
 	}
 
 	/* since we do a join on this later we don't make it detached */
 	slurm_thread_create(&backfill_thread, backfill_agent, NULL);
 
-	slurm_mutex_unlock( &thread_flag_mutex );
+	slurm_mutex_unlock(&thread_flag_mutex);
 
 	return SLURM_SUCCESS;
 }
 
-void fini( void )
+extern void fini(void)
 {
-	slurm_mutex_lock( &thread_flag_mutex );
-	if ( backfill_thread ) {
-		verbose( "Backfill scheduler plugin shutting down" );
+	slurm_mutex_lock(&thread_flag_mutex);
+	if (backfill_thread) {
+		verbose("Backfill scheduler plugin shutting down");
 		stop_backfill_agent();
 		pthread_join(backfill_thread, NULL);
 		backfill_thread = 0;
 	}
-	slurm_mutex_unlock( &thread_flag_mutex );
+	slurm_mutex_unlock(&thread_flag_mutex);
 }
 
 extern int sched_p_reconfig(void)
