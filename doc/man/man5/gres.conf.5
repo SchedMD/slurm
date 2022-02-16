@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "February 2022" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -154,6 +154,9 @@ file using the \fBFile\fR parameter and \fBCount\fR would specify the number of
 MPS entries that would correspond to that GPU (typically 100 or some multiple of
 100).
 
+If using a card with Multi-Instance GPU functionality, use \fBMultipleFiles\fR
+instead. \fBFile\fR and \fBMultipleFiles\fR are mutually exclusive.
+
 NOTE: If you specify the \fBFile\fR parameter for a resource on some node,
 the option must be specified on all nodes and Slurm will track the assignment
 of each specific resource on each node. Otherwise Slurm will only track a
@@ -242,6 +245,22 @@ file (i.e. the X in \fI/dev/nvidiaX\fR) is not necessarily the same as the
 device number/index. The device number is created by sorting the GPUs by PCI bus
 ID and then numbering them starting from the smallest bus ID.
 See \fIhttps://slurm.schedmd.com/gres.html#GPU_Management\fR
+.IP
+
+.TP
+\fBMultipleFiles\fR
+Fully qualified pathname of the device files associated with a resource.
+Graphics cards using Multi-Instance GPU (MIG) technology will present multiple
+device files that should be managed as a single generic resource. The file
+names can be a comma separated list or it can include a numeric range suffix
+(e.g. MultipleFiles=/dev/nvidia[0-3]).
+
+Drain a node before changing the count of records with the \fBMultipleFiles\fR
+parameter, such as when adding or removing GPUs from a node's configuration.
+Failure to do so will result in any job using those GRES being aborted.
+
+When not using GPUs with MIG functionality, use \fBFile\fR instead.
+\fBMultipleFiles\fR and \fBFile\fR are mutually exclusive.
 .IP
 
 .TP

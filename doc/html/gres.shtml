@@ -471,6 +471,9 @@ displayed as well, including MIG UUID, GPU Instance (GI) ID, Compute Instance
 "UniqueID" (the value Slurm will use to select MIGs via
 <code class="commandline">CUDA_VISIBLE_DEVICES</code>).</p>
 
+<p>The <a href="gres.conf.html#OPT_MultipleFiles">MultipleFiles</a> parameter
+allows you to specify multiple device files for the GPU card.</p>
+
 <p>The sanity-check AutoDetect mode is not supported for MIGs.
 Slurm expects MIG devices to already be partitioned, and does not support
 dynamic MIG partitioning.</p>
@@ -479,6 +482,6 @@ dynamic MIG partitioning.</p>
 <a href="https://docs.nvidia.com/datacenter/tesla/mig-user-guide/index.html">
 the MIG user guide</a>.</p>
 
-<p style="text-align: center;">Last modified 26 January 2022</p>
+<p style="text-align: center;">Last modified 15 February 2022</p>
 
 <!--#include virtual="footer.txt"-->
