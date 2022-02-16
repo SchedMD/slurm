@@ -197,6 +197,7 @@ script for Slurm?</a></li>
     jobs on my machine?</a></li>
 <li><a href="#json_serializer">Why am I getting the following error: "Unable to
     find plugin: serializer/json"?</a></li>
+<li><a href="#epel">Why am I being offered an automatic update for Slurm?</a></li>
 </ul>
 
 <h2>For Management</h2>
@@ -2224,6 +2225,7 @@ but can be disabled explicitly by appending <i>join_container=false</i> as shown
 <pre>
 account	sufficient  pam_slurm_adopt.so join_container=false
 </pre>
+</p>
 
 <p><a id="json_serializer"><b>Why am I getting the following error: "Unable to
     find plugin: serializer/json"?</b></a>
@@ -2252,6 +2254,20 @@ source: <a href="download.html#yaml">libyaml</a> and <a
 href="download.html#jwt">libjwt</a>.
 </p>
 
-<p style="text-align:center;">Last modified 10 Feb 2022</p>
+<p><a id="epel"><b>Why am I being offered an automatic update for Slurm?</b></a>
+<br>
+EPEL has added Slurm packages to their repository to make them more widely
+available to the Linux community. However, this packaged version is not
+supported or maintained by SchedMD, and is not recommend for customers at this
+time. If you are using the EPEL repo you could be offered an update for Slurm
+that you may not anticipate. In order to prevent Slurm from being upgraded
+unintentionally, we recommend you modify the EPEL repository configuration file
+to exclude all Slurm packages from automatic updates.
+<pre>
+exclude=slurm*
+</pre>
+</p>
+
+<p style="text-align:center;">Last modified 15 February 2022</p>
 
 <!--#include virtual="footer.txt"-->

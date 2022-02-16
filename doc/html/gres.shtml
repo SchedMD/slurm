@@ -478,6 +478,9 @@ displayed as well, including MIG UUID, GPU Instance (GI) ID, Compute Instance
 "UniqueID" (the value Slurm will use to select MIGs via
 <code class="commandline">CUDA_VISIBLE_DEVICES</code>).</p>
 
+<p>The <a href="gres.conf.html#OPT_MultipleFiles">MultipleFiles</a> parameter
+allows you to specify multiple device files for the GPU card.</p>
+
 <p>The sanity-check AutoDetect mode is not supported for MIGs.
 Slurm expects MIG devices to already be partitioned, and does not support
 dynamic MIG partitioning.</p>
@@ -578,6 +581,6 @@ or <code class="commandline">GPU_DEVICE_ORDINAL</code> environment variable set
 which would be the same as if it were a GPU.
 </p>
 
-<p style="text-align: center;">Last modified 26 January 2022</p>
+<p style="text-align: center;">Last modified 15 February 2022</p>
 
 <!--#include virtual="footer.txt"-->
