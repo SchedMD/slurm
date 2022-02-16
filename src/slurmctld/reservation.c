@@ -7015,8 +7015,8 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 		else if (!maint_node_bitmap || !bit_test(maint_node_bitmap, i))
 			node_ptr->node_state &= (~flags);
 		/* mark that this node is now down if maint mode flag changed */
-		bool state_change = ((old_state ^ node_ptr->node_state)
-				    & NODE_STATE_MAINT) || reset_all;
+		bool state_change = ((old_state ^ node_ptr->node_state) &
+				     NODE_STATE_MAINT) || reset_all;
 		if (state_change && (IS_NODE_DOWN(node_ptr) ||
 				    IS_NODE_DRAIN(node_ptr) ||
 				    IS_NODE_FAIL(node_ptr))) {
