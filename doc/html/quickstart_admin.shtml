@@ -791,6 +791,18 @@ need modification to support a new version of Slurm. It is common for plugins
 to add new functions and function arguments during major updates.
 See the RELEASE_NOTES file for details.</p>
 
+<p><b>NOTE</b>: In the beginning of 2021, a version of Slurm was added to the
+EPEL repository. This version is not supported or maintained by SchedMD, and is
+not currently recommend for customer use. Unfortunately, this inclusion could
+cause Slurm to be updated to a newer version outside of a planned maintenance
+period. In order to prevent Slurm from being updated unintentionally, we
+recommend you modify the EPEL Repository configuration to exclude all Slurm
+packages from automatic updates.
+<pre>
+exclude=slurm*
+</pre>
+</p>
+
 <h2 id="FreeBSD">FreeBSD<a class="slurm_link" href="#FreeBSD"></a></h2>
 
 <p>FreeBSD administrators can install the latest stable Slurm as a binary
@@ -808,6 +820,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 11 February 2022</p>
+<p style="text-align:center;">Last modified 15 February 2022</p>
 
 <!--#include virtual="footer.txt"-->
