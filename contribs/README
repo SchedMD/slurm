@@ -88,10 +88,6 @@ of the Slurm contribs distribution follows:
   slurm_completion_help/     [shell script, vim file]
      Scripts to help in option completion when using slurm commands.
 
-  spank_core.c       [ SPANK plugin, C program ]
-     A Slurm SPANK plugin that can be used to permit users to generated
-     light-weight core files rather than full core files.
-
   torque/            [ Wrapper Scripts for Torque migration to Slurm ]
      Helpful scripts to make transition to Slurm easier from PBS or Torque.
      These scripts are easily updatable if there is functionality missing.
