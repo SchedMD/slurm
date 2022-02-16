@@ -292,33 +292,34 @@ static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 	}
 }
 
-static void _handle_nodesets(char **nodeline)
+extern char *expand_nodesets(const char *nodes)
 {
 	int count;
+	char *ret_nodelist;
 	slurm_conf_nodeset_t *ptr, **ptr_array;
 	hostlist_t hl;
 
 	count = slurm_conf_nodeset_array(&ptr_array);
 
-	hl = hostlist_create(*nodeline);
+	hl = hostlist_create(nodes);
 
 	for (int i = 0; i < count; i++) {
 		ptr = ptr_array[i];
 
 		/* swap the nodeset entry with the applicable nodes */
 		if (hostlist_delete_host(hl, ptr->name)) {
-			if (ptr->feature) {
+			if (ptr->feature)
 				_add_nodes_with_feature(hl, ptr->feature);
-			}
 
 			if (ptr->nodes)
 				hostlist_push_host(hl, ptr->nodes);
 		}
 	}
 
-	xfree(*nodeline);
-	*nodeline = hostlist_ranged_string_xmalloc(hl);
+	hostlist_uniq(hl);
+	ret_nodelist = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
+	return ret_nodelist;
 }
 
 static void _init_bitmaps(void)
@@ -359,7 +360,6 @@ static void _build_bitmaps_pre_select(void)
 	/* scan partition table and identify nodes in each */
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = list_next(part_iterator))) {
-		_handle_nodesets(&part_ptr->nodes);
 		if (build_part_bitmap(part_ptr) == ESLURM_INVALID_NODE_NAME)
 			fatal("Invalid node names in partition %s",
 					part_ptr->name);
@@ -781,6 +781,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->allow_groups = xstrdup(part->allow_groups);
 	part_ptr->alternate = xstrdup(part->alternate);
 	part_ptr->nodes = xstrdup(part->nodes);
+	part_ptr->orig_nodes = xstrdup(part->nodes);
 
 	if (part->billing_weights_str) {
 		set_partition_billing_weights(part->billing_weights_str,
@@ -2523,6 +2524,9 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				      "slurm.conf", part_ptr->name);
 				xfree(part_ptr->nodes);
 				part_ptr->nodes = xstrdup(old_part_ptr->nodes);
+				xfree(part_ptr->orig_nodes);
+				part_ptr->orig_nodes =
+					xstrdup(old_part_ptr->orig_nodes);
 			}
 			if (part_ptr->over_time_limit !=
 			    old_part_ptr->over_time_limit) {
@@ -2617,6 +2621,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			part_ptr->min_nodes_orig = old_part_ptr->
 						   min_nodes_orig;
 			part_ptr->nodes = xstrdup(old_part_ptr->nodes);
+			part_ptr->orig_nodes =
+				xstrdup(old_part_ptr->orig_nodes);
 			part_ptr->over_time_limit =
 				old_part_ptr->over_time_limit;
 			part_ptr->preempt_mode = old_part_ptr->preempt_mode;

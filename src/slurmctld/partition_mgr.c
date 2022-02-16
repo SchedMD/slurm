@@ -190,6 +190,9 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 			   node_record_count - 1);
 	}
 
+	xfree(part_ptr->nodes);
+	part_ptr->nodes = expand_nodesets(part_ptr->orig_nodes);
+
 	if (part_ptr->nodes == NULL) {	/* no nodes in partition */
 		_unlink_free_nodes(old_bitmap, part_ptr);
 		FREE_NULL_BITMAP(old_bitmap);
@@ -464,7 +467,8 @@ static int _dump_part_state(void *x, void *arg)
 	packstr(part_ptr->alternate,     buffer);
 	packstr(part_ptr->deny_accounts, buffer);
 	packstr(part_ptr->deny_qos,      buffer);
-	packstr(part_ptr->nodes,         buffer);
+	/* Save orig_nodes as nodes will be built from orig_nodes */
+	packstr(part_ptr->orig_nodes, buffer);
 
 	return 0;
 }
@@ -704,8 +708,13 @@ int load_all_part_state(void)
 		xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos       = deny_qos;
 		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
+
+		/*
+		 * Store saved nodelist in orig_nodes. nodes will be regenerated
+		 * from orig_nodes.
+		 */
 		xfree(part_ptr->nodes);
-		part_ptr->nodes = nodes;
+		part_ptr->orig_nodes = nodes;
 
 		xfree(part_name);
 	}
@@ -884,6 +893,7 @@ static void _list_delete_part(void *part_entry)
 	FREE_NULL_BITMAP(part_ptr->deny_qos_bitstr);
 	FREE_NULL_LIST(part_ptr->job_defaults_list);
 	xfree(part_ptr->name);
+	xfree(part_ptr->orig_nodes);
 	xfree(part_ptr->nodes);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
 	xfree(part_ptr->qos_char);
@@ -1696,6 +1706,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 					part_ptr->nodes[i] = ',';
 			}
 		}
+		xfree(part_ptr->orig_nodes);
+		part_ptr->orig_nodes = xstrdup(part_ptr->nodes);
 
 		error_code = build_part_bitmap(part_ptr);
 		if (error_code) {

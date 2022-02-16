@@ -381,7 +381,8 @@ typedef struct {
 	uint32_t min_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
 	char *name;		/* name of the partition */
 	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
-	char *nodes;		/* comma delimited list names of nodes */
+	char *nodes;		/* expanded nodelist from orig_nodes */
+	char *orig_nodes;	/* comma delimited list names of nodes */
 	double   norm_priority;	/* normalized scheduling priority for
 				 * jobs (DON'T PACK) */
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
@@ -2884,5 +2885,13 @@ extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
  */
 extern int update_node_active_features(char *node_names, char *active_features,
 				       int mode);
+
+/*
+ * Return a nodelist with nodesets expanded.
+ *
+ * IN nodes - nodelist that can have nodesets in it.
+ * NOTE: Caller must xfree returned string.
+ */
+extern char *expand_nodesets(const char *nodes);
 
 #endif /* !_HAVE_SLURMCTLD_H */
