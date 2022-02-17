@@ -835,6 +835,41 @@ extern node_record_t *add_node_record(char *alias, config_record_t *config_ptr)
 	return node_ptr;
 }
 
+static int _find_config_ptr(void *x, void *arg)
+{
+	return (x == arg);
+}
+
+extern void insert_node_record(node_record_t *node_ptr)
+{
+	for (int i = 0; i < node_record_count; i++) {
+		if (node_record_table_ptr[i])
+			continue;
+
+		if (i > last_node_index)
+			last_node_index = i;
+
+		if (!node_ptr->config_ptr)
+			error("node should have config_ptr from previous tables");
+
+		if (!list_find_first(config_list, _find_config_ptr,
+				     node_ptr->config_ptr))
+			list_append(config_list, node_ptr->config_ptr);
+
+		node_record_table_ptr[i] = node_ptr;
+		xhash_add(node_hash_table, node_ptr);
+
+		/* re-add node to conf node hash tables */
+		slurm_reset_alias(node_ptr->name,
+				  node_ptr->comm_name,
+				  node_ptr->node_hostname);
+		return;
+	}
+
+	error("Not able to add node '%s' to node_record_table_ptr",
+	      node_ptr->name);
+}
+
 extern void delete_node_record(char *name)
 {
 	int node_index;
@@ -965,6 +1000,8 @@ extern void init_node_conf(void)
 		purge_node_rec(node_ptr);
 
 	node_record_count = 0;
+	node_record_table_size = 0;
+	last_node_index = -1;
 	xfree(node_record_table_ptr);
 	xhash_free(node_hash_table);
 

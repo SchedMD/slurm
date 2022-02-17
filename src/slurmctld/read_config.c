@@ -1304,6 +1304,36 @@ void _sync_jobs_to_conf(void)
 	last_job_update = now;
 }
 
+static int _find_config_ptr(void *x, void *arg)
+{
+	return (x == arg);
+}
+
+static void _preserve_dynamic_nodes(node_record_t **old_node_table_ptr,
+				    int old_node_record_count,
+				    List old_config_list)
+{
+	for (int i = 0; i < old_node_record_count; i++) {
+		node_record_t *node_ptr = old_node_table_ptr[i];
+
+		if (!node_ptr ||
+		    !IS_NODE_DYNAMIC(node_ptr) ||
+		    find_node_record2(node_ptr->name))
+			continue;
+
+		insert_node_record(node_ptr);
+		old_node_table_ptr[i] = NULL;
+
+		/*
+		 * insert_node_record() appends node_ptr->config_ptr to the
+		 * global config_list. remove from old config_list so it
+		 * doesn't get free'd.
+		 */
+		list_remove_first(old_config_list, _find_config_ptr,
+				  node_ptr->config_ptr);
+	}
+}
+
 /*
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
@@ -1326,7 +1356,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	int i, rc = 0, load_job_ret = SLURM_SUCCESS;
 	int old_node_record_count = 0;
 	node_record_t **old_node_table_ptr = NULL, *node_ptr;
-	List old_part_list = NULL;
+	List old_part_list = NULL, old_config_list = NULL;
 	char *old_def_part_name = NULL;
 	char *old_auth_type = xstrdup(slurm_conf.authtype);
 	char *old_bb_type = xstrdup(slurm_conf.bb_type);
@@ -1365,6 +1395,8 @@ int read_slurm_conf(int recover, bool reconfig)
 			node_ptr->port   = node_ptr->config_ptr->cpus;
 			node_ptr->weight = node_ptr->config_ptr->weight;
 		}
+		old_config_list = config_list;
+		config_list = NULL;
 		node_record_table_ptr = NULL;
 		node_record_count = 0;
 		xhash_free(node_hash_table);
@@ -1505,6 +1537,10 @@ int read_slurm_conf(int recover, bool reconfig)
 			rc = _restore_node_state(recover, old_node_table_ptr,
 						 old_node_record_count);
 			error_code = MAX(error_code, rc);  /* not fatal */
+
+			_preserve_dynamic_nodes(old_node_table_ptr,
+						old_node_record_count,
+						old_config_list);
 		}
 		if (old_part_list && ((recover > 1) ||
 		    (slurm_conf.reconfig_flags & RECONFIG_KEEP_PART_INFO))) {
@@ -1579,6 +1615,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 	_purge_old_part_state(old_part_list, old_def_part_name);
+	FREE_NULL_LIST(old_config_list);
 
 	reserve_port_config(slurm_conf.mpi_params);
 

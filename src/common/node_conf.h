@@ -316,6 +316,15 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 extern node_record_t *add_node_record(char *alias, config_record_t *config_ptr);
 
 /*
+ * Add existing record to node_record_table_ptr
+ *
+ * e.g. Preserving dynamic nodes after a reconfig.
+ * Node must fit in currently allocated node_record_count/MaxNodeCount.
+ * node_ptr->config_ptr is added to the the global config_list.
+ */
+extern void insert_node_record(node_record_t *node_ptr);
+
+/*
  * Delete node from node_record_table_ptr.
  *
  * IN name - name of node_record_t to delete
