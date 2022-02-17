@@ -3023,16 +3023,10 @@ static int _compare_hostnames(node_record_t **old_node_table,
 	hostset_t old_set;
 	hostset_t set;
 
-	if (old_node_count != node_count) {
-		error("%s: node count has changed before reconfiguration "
-		      "from %d to %d. You have to restart slurmctld.",
-		      __func__, old_node_count, node_count);
-		return -1;
-	}
-
 	old_set = hostset_create("");
 	for (cc = 0; cc < old_node_count; cc++)
-		if (old_node_table[cc])
+		if (old_node_table[cc] &&
+		    !IS_NODE_DYNAMIC(old_node_table[cc]))
 			hostset_insert(old_set, old_node_table[cc]->name);
 
 	set = hostset_create("");
@@ -3047,6 +3041,13 @@ static int _compare_hostnames(node_record_t **old_node_table,
 
 	hostset_ranged_string(old_set, set_size, old_ranged);
 	hostset_ranged_string(set, set_size, ranged);
+
+	if (hostset_count(old_set) != hostset_count(set)) {
+		error("%s: node count has changed before reconfiguration "
+		      "from %d to %d. You have to restart slurmctld.",
+		      __func__, old_node_count, node_count);
+		return -1;
+	}
 
 	cc = 0;
 	if (xstrcmp(old_ranged, ranged) != 0) {
