@@ -70,6 +70,7 @@ documents those changes that are of interest to users and administrators.
     sacctmgr add qos, modify already worked correctly.
  -- job_container/tmpfs - avoid printing extraneous error messages in Prolog
     and Epilog, and when the job completes.
+ -- Fix step CPU memory allocation with --threads-per-core without --exact.
 
 * Changes in Slurm 21.08.5
 ==========================
