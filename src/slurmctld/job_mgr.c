@@ -5976,7 +5976,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		}
 		job_ptr = find_het_job_record(job_id, (uint32_t) long_id);
 		if (!job_ptr)
-			return ESLURM_ALREADY_DONE;
+			return ESLURM_INVALID_JOB_ID;
 		if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 						  job_ptr->account)) {
