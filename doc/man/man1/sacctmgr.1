@@ -1646,8 +1646,81 @@ This QOS\-specific \fBPreemptMode\fR will override the cluster\-wide
 by specifying "OFF", "" or "Cluster", makes it use the default cluster\-wide
 \fBPreemptMode\fR.
 .br
-See the description of the cluster\-wide \fBPreemptMode\fR parameter
-for further details of the available modes.
+The \fBGANG\fR option is used to enable gang scheduling independent of
+whether preemption is enabled (i.e. independent of the \fBPreemptType\fR
+setting). It can be specified in addition to a \fBPreemptMode\fR setting with
+the two options comma separated (e.g. \fBPreemptMode=SUSPEND,GANG\fR).
+.br
+See <https://slurm.schedmd.com/preempt.html> and
+<https://slurm.schedmd.com/gang_scheduling.html> for more details.
+
+\fBNOTE:\fR
+For performance reasons, the backfill scheduler reserves whole nodes for jobs,
+not partial nodes. If during backfill scheduling a job preempts one or more
+other jobs, the whole nodes for those preempted jobs are reserved for the
+preemptor job, even if the preemptor job requested fewer resources than that.
+These reserved nodes aren't available to other jobs during that backfill
+cycle, even if the other jobs could fit on the nodes. Therefore, jobs may
+preempt more resources during a single backfill iteration than they requested.
+.br
+\fBNOTE:\fR
+For heterogeneous job to be considered for preemption all components
+must be eligible for preemption. When a heterogeneous job is to be preempted
+the first identified component of the job with the highest order PreemptMode
+(\fBSUSPEND\fR (highest), \fBREQUEUE\fR, \fBCANCEL\fR (lowest)) will be
+used to set the PreemptMode for all components. The \fBGraceTime\fR and user
+warning signal for each component of the heterogeneous job remain unique.
+Heterogeneous jobs are excluded from GANG scheduling operations.
+.IP
+.RS
+.TP 12
+\fBOFF\fR
+Is the default value and disables job preemption and gang scheduling.
+It is only compatible with \fBPreemptType=preempt/none\fR at a global level.
+.IP
+
+.TP
+\fBCANCEL\fR
+The preempted job will be cancelled.
+.IP
+
+.TP
+\fBGANG\fR
+Enables gang scheduling (time slicing) of jobs in the same partition, and
+allows the resuming of suspended jobs.
+Gang scheduling is performed independently for each partition, so
+if you only want time\-slicing by \fBOverSubscribe\fR, without any preemption,
+then configuring partitions with overlapping nodes is not recommended.
+Time\-slicing won't happen between jobs on different partitions.
+
+\fBNOTE:\fR
+Heterogeneous jobs are excluded from GANG scheduling operations.
+.IP
+
+.TP
+\fBREQUEUE\fR
+Preempts jobs by requeuing them (if possible) or canceling them.
+For jobs to be requeued they must have the \-\-requeue sbatch option set
+or the cluster wide JobRequeue parameter in slurm.conf must be set to \fB1\fR.
+.IP
+
+.TP
+\fBSUSPEND\fR
+The preempted jobs will be suspended, and later the Gang scheduler will resume
+them. Therefore the \fBSUSPEND\fR preemption mode always needs the \fBGANG\fR
+option to be specified at the cluster level. Also, because the suspended jobs
+will still use memory on the allocated nodes, Slurm needs to be able to track
+memory resources to be able to suspend jobs.
+.br
+If \fBPreemptType=preempt/qos\fR is configured and if the preempted job(s) and
+the preemptor job are on the same partition, then they will share resources with
+the Gang scheduler (time\-slicing). If not (i.e. if the preemptees and preemptor
+are on different partitions) then the preempted jobs will remain suspended until
+the preemptor ends.
+
+\fBNOTE:\fR Suspended jobs will not release GRES. Higher priority jobs will not
+be able to preempt to gain access to GRES.
+.RE
 .IP
 
 .TP
