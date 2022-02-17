@@ -5968,16 +5968,11 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 	if (end_ptr[0] == '+') {	/* Signal hetjob element */
 		job_id = (uint32_t) long_id;
-		if (_get_whole_hetjob()) {
-			/* override offset and get the leader */
-			long_id = 0;
-		} else {
-			long_id = strtol(end_ptr + 1, &end_ptr, 10);
-			if ((long_id < 0) || (long_id == LONG_MAX) ||
-			    (end_ptr[0] != '\0')) {
-				info("%s(2): invalid JobId=%s", __func__, job_id_str);
-				return ESLURM_INVALID_JOB_ID;
-			}
+		long_id = strtol(end_ptr + 1, &end_ptr, 10);
+		if ((long_id < 0) || (long_id == LONG_MAX) ||
+		    (end_ptr[0] != '\0')) {
+			info("%s(2): invalid JobId=%s", __func__, job_id_str);
+			return ESLURM_INVALID_JOB_ID;
 		}
 		job_ptr = find_het_job_record(job_id, (uint32_t) long_id);
 		if (!job_ptr)
@@ -5989,9 +5984,6 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			      job_ptr, uid);
 			return ESLURM_ACCESS_DENIED;
 		}
-		if (_get_whole_hetjob())
-			return het_job_signal(job_ptr, signal, flags, uid,
-					      preempt);
 		if (IS_JOB_PENDING(job_ptr))
 			return ESLURM_NOT_WHOLE_HET_JOB;
 		return job_signal(job_ptr, signal, flags, uid,preempt);
