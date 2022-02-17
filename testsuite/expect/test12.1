@@ -41,38 +41,10 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 }
 
 #
-# Report the sacct help format
+# Verify the sacct help format
 #
+set output [run_command -fail "$sacct --help"]
 
-spawn $sacct --help
-expect {
-	-re "Slurm accounting storage is disabled" {
-		set not_support 1
-		exp_continue
-	}
-	-re "sacct...OPTION" {
-		incr matches
-		exp_continue
-	}
-	-re "Valid..OPTION..values are:" {
-		incr matches
-		exp_continue
-	}
-	-re "--duplicates" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "sacct not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$not_support != 0} {
-	skip "Can not test without accounting enabled"
-}
-if {$matches != 3} {
-	fail "sacct --help failed ($matches != 3)"
-}
+subtest {[regexp {sacct...OPTION} $output] &&
+         [regexp {Valid..OPTION..values are:} $output] &&
+         [regexp -- {--duplicates} $output]} "Verify sacct --help option"

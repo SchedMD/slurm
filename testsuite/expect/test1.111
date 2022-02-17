@@ -101,7 +101,7 @@ expect {
 		fail "Job submitted with a time limit different than calculated (00:09:00)"
 	}
 	timeout {
-		fail "sacct not responding"
+		fail "scontrol not responding"
 	}
 	eof {
 		wait

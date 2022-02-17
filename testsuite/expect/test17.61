@@ -49,30 +49,8 @@ make_bash_script $file_in "$bin_sleep 5"
 #
 # Spawn a batch job with a deadline and no time
 #
-set timeout $max_job_delay
-spawn $sbatch --output=/dev/null --error=/dev/null --begin now+1 --deadline now+600 --time-min 5 $file_in
-expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
-		fail "Requested time limit is invalid (missing or exceeds some limit)"
-	}
-	-re "Incompatible begin and deadline time specification" {
-		fail "Incompatible begin and deadline time specification"
-	}
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	fail "Batch not submitted with a deadline too short"
-}
+set job_id [submit_job "--output=/dev/null --error=/dev/null --begin now+1 --deadline now+600 --time-min 5 $file_in"]
+subtest {$job_id != 0} "Verify batch job with a deadline and no time can be submitted"
 
 #
 # test status deadline in scontrol and sacct
@@ -95,23 +73,9 @@ expect {
 	}
 }
 
-set not_support 0
-spawn $sacct -n -P -X -j $job_id -o State
-expect {
-	-re "Slurm accounting storage is disabled" {
-		set not_support 1
-		exp_continue
-	}
-	-re "DEADLINE" {
-		fail "Batch not submitted with a deadline and a time-min OK"
-	}
-	timeout {
-		fail "sacct not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$not_support != 0} {
-	skip "Can not fully test without accounting enabled"
+if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
+	set state [string trim [run_command_output -fail "$sacct -X -j $job_id --format State --parsable2 --noheader"]]
+	subtest {$state ne "DEADLINE"} "Verify batch submitted with a deadline is valid time-min"
+} else {
+	subskip "Unable to test status deadline in sacct without accounting enabled"
 }

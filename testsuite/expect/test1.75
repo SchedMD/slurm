@@ -119,21 +119,11 @@ proc sub_job { freq } {
 
 		wait_for_job -fail $job_id "DONE"
 
-		spawn $sacct -j$job_id -oavecpufreq --noheader
-		expect {
-			-re "($float)($re_word_str)" {
-				set this_freq($option) $expect_out(1,string)
-				set tmp $expect_out(2,string)
-				if {$tmp eq "M"} {
-					set this_freq($option) [expr $this_freq($option) / 1000.0]
-				}
-				exp_continue
-			}
-			timeout {
-				fail "sacct is not responding"
-			}
-			eof {
-				wait
+		set avecpufreq [string trim [run_command_output -fail "$sacct -j $job_id -o avecpufreq --noheader"]]
+		if [regexp {(\d+\.?\d*)([A-Z])?} $avecpufreq - base_number scale] {
+			set this_freq($option) $base_number
+			if {$scale eq "M"} {
+				set this_freq($option) [expr $this_freq($option) / 1000.0]
 			}
 		}
 

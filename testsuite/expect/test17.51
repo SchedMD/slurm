@@ -199,27 +199,16 @@ expect {
 if {$found == 0} {
 	 fail "Job was submitted with a bad mcs-label"
 }
-set found 0
-#test sacct if accounting, wait a few seconds for accounting data to reach DB
+
+# If accounting is configured, test mcs-label in sacct
 if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
-	sleep 5
-	spawn $sacct -j $job_id --noheader -o "mcslabel"
-	expect {
-		-re "$user_name" {
-			log_debug "MCS-label in sacct OK for this job"
-			set found 1
-			exp_continue
-		}
-		timeout {
-			fail "sacct is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$found == 0} {
-		fail "sacct got a bad mcs-label"
-	}
+	# Wait for job start record to reach the accounting database
+	wait_for_job_acct -fail $job_id start
+
+	set mcs_label [string trim [run_command_output -fail "$sacct -j $job_id --format McsLabel --parsable2 --noheader"]]
+	subtest {$mcs_label eq $user_name} "Verify MCS-label in sacct" "$mcs_label != $user_name"
+} else {
+	subskip "Test needs AccountingStorageType=accounting_storage/slurmdbd to verify MCS-labels in sacct"
 }
 
 set found 0
