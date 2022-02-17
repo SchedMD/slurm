@@ -107,6 +107,13 @@ static int _load_config(void)
 	}
 
 	if (s_p_get_string(&tmp, "SlurmdSpoolDir", tbl)) {
+		/*
+		 * Perform node wildcard substitution. Cannot use
+		 * slurm_conf_expand_slurmd_path() since that requires
+		 * slurm.conf be loaded which cannot be done safely
+		 * in nss_slurm.
+		 */
+		xstrsubstitute(tmp, "%n", node);
 		strlcpy(spool, tmp, PATH_MAX);
 		xfree(tmp);
 	}

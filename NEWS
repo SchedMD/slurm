@@ -103,6 +103,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove connect_timeout and timeout options from JobCompParams as there's no
     longer a connectivity check happening in the jobcomp/elasticsearch plugin
     when setting the location off of JobCompLoc.
+ -- Add %n for NodeName substitution in SlurmdSpoolDir in nss_slurm.conf.
 
 * Changes in Slurm 21.08.7
 ==========================
