@@ -87,6 +87,9 @@ documents those changes that are of interest to users and administrators.
     after a user has switched primary groups (eg: with sg).
  -- Make it so srun no longer inherits SLURM_CPUS_PER_TASK. It now will only
     inherit SRUN_CPUS_PER_TASK.
+ -- Make HetJob signaling requests using the HetJobId+HetJobOffset format behave
+    the same as with direct JobId requests with regards to job state and
+    whole_hetjob considerations.
 
 * Changes in Slurm 21.08.6
 ==========================

@@ -5984,9 +5984,44 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			      job_ptr, uid);
 			return ESLURM_ACCESS_DENIED;
 		}
+
+		if (!job_ptr->het_job_id)
+			return ESLURM_NOT_HET_JOB;
+
+		if (!job_ptr->het_job_offset)
+			/*
+			 * HetJob leader. Attempt to signal all components no
+			 * matter what. If we cared about state or whole_hetjob
+			 * for the leader, we would be being inconsistent with
+			 * direct format '#' below. But even if we made an
+			 * exception here for leader R and no whole_hetjob,
+			 * job_complete() would end all the components anyways.
+			 */
+			return het_job_signal(job_ptr, signal, flags, uid,
+					      preempt);
+
+		/* HetJob non-leader component. */
+		if (_get_whole_hetjob()) {
+			/* Attempt to signal all components no matter state. */
+			job_record_t *het_leader = NULL;
+			if (!(het_leader = find_het_job_record(job_id, 0))) {
+				/* Leader not found. Attempt individual. */
+				error("%s: can't find HetJob leader for HetJob component %pJ",
+				      __func__, job_ptr);
+				return job_signal(job_ptr, signal,
+						  flags, uid, preempt);
+			} else {
+				/* Got the leader, signal all. */
+				return het_job_signal(het_leader,
+						      signal, flags,
+						      uid, preempt);
+			}
+		}
+
 		if (IS_JOB_PENDING(job_ptr))
 			return ESLURM_NOT_WHOLE_HET_JOB;
-		return job_signal(job_ptr, signal, flags, uid,preempt);
+		else
+			return job_signal(job_ptr, signal, flags, uid, preempt);
 	}
 
 	last_job_update = now;
