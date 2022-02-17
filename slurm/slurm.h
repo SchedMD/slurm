@@ -2409,6 +2409,7 @@ typedef struct partition_info {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	char *nodes;		/* list names of nodes in partition */
+	char *nodesets;		/* list of nodesets used by partition */
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
 				   * number of minutes before cancellation */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */

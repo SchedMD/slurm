@@ -292,12 +292,15 @@ static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 	}
 }
 
-extern char *expand_nodesets(const char *nodes)
+extern char *expand_nodesets(const char *nodes, char **nodesets)
 {
 	int count;
 	char *ret_nodelist;
 	slurm_conf_nodeset_t *ptr, **ptr_array;
 	hostlist_t hl;
+
+	if (nodesets)
+		xfree(*nodesets);
 
 	count = slurm_conf_nodeset_array(&ptr_array);
 
@@ -308,6 +311,11 @@ extern char *expand_nodesets(const char *nodes)
 
 		/* swap the nodeset entry with the applicable nodes */
 		if (hostlist_delete_host(hl, ptr->name)) {
+			if (nodesets)
+				xstrfmtcat(*nodesets, "%s%s",
+					   *nodesets ? "," : "",
+					   ptr->name);
+
 			if (ptr->feature)
 				_add_nodes_with_feature(hl, ptr->feature);
 

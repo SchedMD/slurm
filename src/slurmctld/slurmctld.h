@@ -383,6 +383,7 @@ typedef struct {
 	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
 	char *nodes;		/* expanded nodelist from orig_nodes */
 	char *orig_nodes;	/* comma delimited list names of nodes */
+	char *nodesets;		/* store nodesets for display, NO PACK */
 	double   norm_priority;	/* normalized scheduling priority for
 				 * jobs (DON'T PACK) */
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
@@ -2890,8 +2891,10 @@ extern int update_node_active_features(char *node_names, char *active_features,
  * Return a nodelist with nodesets expanded.
  *
  * IN nodes - nodelist that can have nodesets in it.
+ * OUT nodesets (optional) - list of nodesets found in nodes string
+ *
  * NOTE: Caller must xfree returned string.
  */
-extern char *expand_nodesets(const char *nodes);
+extern char *expand_nodesets(const char *nodes, char **nodesets);
 
 #endif /* !_HAVE_SLURMCTLD_H */

@@ -192,7 +192,8 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 	}
 
 	xfree(part_ptr->nodes);
-	part_ptr->nodes = expand_nodesets(part_ptr->orig_nodes);
+	part_ptr->nodes = expand_nodesets(part_ptr->orig_nodes,
+					  &part_ptr->nodesets);
 
 	if (part_ptr->nodes == NULL) {	/* no nodes in partition */
 		_unlink_free_nodes(old_bitmap, part_ptr);
@@ -1164,6 +1165,7 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		packstr(part_ptr->deny_accounts, buffer);
 		packstr(part_ptr->deny_qos, buffer);
 		packstr(part_ptr->nodes, buffer);
+		packstr(part_ptr->nodesets, buffer);
 		pack_bit_str_hex(part_ptr->node_bitmap, buffer);
 		packstr(part_ptr->billing_weights_str, buffer);
 		packstr(part_ptr->tres_fmt_str, buffer);

@@ -2713,6 +2713,7 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		safe_unpackstr_xmalloc(&part->deny_qos, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&part->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&part->nodesets, &uint32_tmp, buffer);
 
 		unpack_bit_str_hex_as_inx(&part->node_inx, buffer);
 
