@@ -729,7 +729,13 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 		const size_t array_size = bit_size(j->core_bitmap);
 		size_t sock_inx = 0, sock_reps = 0, bit_inx = 0;
 
-		data_set_int(data_key_set(jrsc, "allocated_cpus"), j->ncpus);
+		if (slurm_conf.select_type_param & (CR_CORE|CR_SOCKET))
+			data_set_int(data_key_set(jrsc, "allocated_cores"),
+				     j->ncpus);
+		else if (slurm_conf.select_type_param & CR_CPU)
+			data_set_int(data_key_set(jrsc, "allocated_cpus"),
+				     j->ncpus);
+
 		data_set_int(data_key_set(jrsc, "allocated_hosts"), j->nhosts);
 
 		data_t *nodes = data_key_set(jrsc, "allocated_nodes");
