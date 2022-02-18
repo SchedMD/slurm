@@ -796,17 +796,27 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 
 	xassert(arg != NULL);
 
+	if (_slurm_cred_init() < 0)
+		return NULL;
+
 	cred = _slurm_cred_alloc();
 	slurm_mutex_lock(&cred->mutex);
 
 	memcpy(&cred->step_id, &arg->step_id, sizeof(cred->step_id));
 	cred->uid      = arg->uid;
 	cred->gid = gid_from_uid(cred->uid);
-	cred->pw_name = uid_to_string_or_null(cred->uid);
 	cred->pw_gecos = xstrdup(arg->pw_gecos);
 	cred->pw_dir = xstrdup(arg->pw_dir);
 	cred->pw_shell = xstrdup(arg->pw_shell);
 	cred->gr_names = copy_gr_names(arg->ngids, arg->gr_names);
+	if (_fill_cred_gids(cred, arg) != SLURM_SUCCESS) {
+		slurm_mutex_unlock(&cred->mutex);
+		slurm_cred_destroy(cred);
+		_slurm_cred_fini();
+		return NULL;
+	}
+	if (!cred->pw_name)
+		cred->pw_name = uid_to_string_or_null(cred->uid);
 	/*
 	 * If disable_send_gids is set, send gids anyway or TaskEpilog will
 	 * refuse to run.
@@ -893,13 +903,8 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 			cred->signature[i] = 'a' + (rand() & 0xf);
 	}
 
-	if (_fill_cred_gids(cred, arg) != SLURM_SUCCESS) {
-		slurm_mutex_unlock(&cred->mutex);
-		slurm_cred_destroy(cred);
-		return NULL;
-	}
-
 	slurm_mutex_unlock(&cred->mutex);
+	_slurm_cred_fini();
 	return cred;
 
 }

@@ -149,6 +149,7 @@ documents those changes that are of interest to users and administrators.
  -- preempt/qos - add support for WITHIN mode to allow for preemption between
     jobs within the same qos.
  -- Fix sattach for interactive step.
+ -- Fix srun -Z when using nss_slurm.
 
 * Changes in Slurm 21.08.7
 ==========================
