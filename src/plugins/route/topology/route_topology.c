@@ -121,6 +121,55 @@ extern int fini(void)
 }
 
 /*****************************************************************************\
+ *  Local functions
+\*****************************************************************************/
+
+/*
+ * _subtree_split_hostlist() split a hostlist into topology aware subhostlists
+ *
+ * IN/OUT nodes_bitmap - bitmap of all hosts that need to be sent
+ * IN parent - location in switch_record_table
+ * IN/OUT msg_count - running count of how many messages we need to send
+ * IN/OUT sp_hl - array of subhostlists
+ * IN/OUT count - position in sp_hl array
+ */
+static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
+				   int *msg_count, hostlist_t **sp_hl,
+				   int *count)
+{
+	int lst_count = 0, sw_count;
+	bitstr_t *fwd_bitmap = NULL;		/* nodes in forward list */
+
+	for (int i = 0; i < switch_record_table[parent].num_switches; i++) {
+		int k = switch_record_table[parent].switch_index[i];
+
+		fwd_bitmap = bit_copy(switch_record_table[k].node_bitmap);
+		bit_and(fwd_bitmap, nodes_bitmap);
+		sw_count = bit_set_count(fwd_bitmap);
+		if (sw_count == 0) {
+			continue; /* no nodes on this switch in message list */
+		}
+		(*sp_hl)[*count] = bitmap2hostlist(fwd_bitmap);
+		/* Now remove nodes from this switch from message list */
+		bit_and_not(nodes_bitmap, fwd_bitmap);
+		FREE_NULL_BITMAP(fwd_bitmap);
+		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
+			char *buf;
+			buf = hostlist_ranged_string_xmalloc((*sp_hl)[*count]);
+			debug("ROUTE: ... sublist[%d] switch=%s :: %s",
+			      i, switch_record_table[i].name, buf);
+			xfree(buf);
+		}
+		(*count)++;
+		lst_count += sw_count;
+		if (lst_count == msg_count)
+			break; /* all nodes in message are in a child list */
+	}
+
+	return lst_count;
+}
+
+/*****************************************************************************\
  *  API Implementations
 \*****************************************************************************/
 /*
@@ -141,13 +190,11 @@ extern int route_p_split_hostlist(hostlist_t hl,
 				  hostlist_t** sp_hl,
 				  int* count, uint16_t tree_width)
 {
-	int i, j, k, hl_ndx, msg_count, sw_count, lst_count;
+	int i, j, msg_count;
 	char *buf;
 	bitstr_t *nodes_bitmap = NULL;		/* nodes in message list */
-	bitstr_t *fwd_bitmap = NULL;		/* nodes in forward list */
 	slurmctld_lock_t node_read_lock = { .node = READ_LOCK };
 
-	msg_count = hostlist_count(hl);
 	slurm_mutex_lock(&route_lock);
 	if (switch_record_cnt == 0) {
 		if (run_in_slurmctld)
@@ -218,36 +265,13 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		return route_split_hostlist_treewidth(hl, sp_hl, count,
 						      tree_width);
 	}
-	/* loop through children, construction a hostlist for each child switch
-	 * with nodes in the message list */
-	hl_ndx = 0;
-	lst_count = 0;
-	for (i=0; i < switch_record_table[j].num_switches; i++) {
-		k = switch_record_table[j].switch_index[i];
-		fwd_bitmap = bit_copy(switch_record_table[k].node_bitmap);
-		bit_and(fwd_bitmap, nodes_bitmap);
-		sw_count = bit_set_count(fwd_bitmap);
-		if (sw_count == 0) {
-			continue; /* no nodes on this switch in message list */
-		}
-		(*sp_hl)[hl_ndx] = bitmap2hostlist(fwd_bitmap);
-		/* Now remove nodes from this switch from message list */
-		bit_and_not(nodes_bitmap, fwd_bitmap);
-		FREE_NULL_BITMAP(fwd_bitmap);
-		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
-			buf = hostlist_ranged_string_xmalloc((*sp_hl)[hl_ndx]);
-			debug("ROUTE: ... sublist[%d] switch=%s :: %s",
-			      i, switch_record_table[i].name, buf);
-			xfree(buf);
-		}
-		hl_ndx++;
-		lst_count += sw_count;
-		if (lst_count == msg_count)
-			break; /* all nodes in message are in a child list */
-	}
+
+	msg_count = hostlist_count(hl);
+	*count = 0;
+	_subtree_split_hostlist(nodes_bitmap, j, msg_count, sp_hl, count);
+
 	FREE_NULL_BITMAP(nodes_bitmap);
 
-	*count = hl_ndx;
 	return SLURM_SUCCESS;
 
 }
