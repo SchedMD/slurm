@@ -169,8 +169,8 @@ of <I>preempt/qos</I>.</LI>
 </LI>
 <LI>
 <B>PreemptExemptTime</B>: Specifies minimum run time of jobs before they are
-considered for preemption. Unlike <I>GraceTime</I>, this is honored for all
-values of <I>PreemptMode</I>. It is specified as a time string:
+considered for preemption. This is only honored when the <i>PreemptMode</i>
+is set to <i>REQUEUE</i> or <i>CANCEL</i>. It is specified as a time string:
 A time of -1 disables the option, equivalent to 0. Acceptable time formats
 include "minutes", "minutes:seconds", "hours:minutes:seconds", "days\-hours",
 "days\-hours:minutes", and "days\-hours:minutes:seconds".
@@ -524,6 +524,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 10 June 2021</p>
+<p style="text-align:center;">Last modified 18 February 2022</p>
 
 <!--#include virtual="footer.txt"-->

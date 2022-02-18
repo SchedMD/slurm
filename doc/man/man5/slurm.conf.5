@@ -2465,7 +2465,9 @@ See the \fBsacctmgr\fR man page to configure the options for \fBpreempt/qos\fR.
 \fBPreemptExemptTime\fR
 Global option for minimum run time for all jobs before they can be considered
 for preemption. Any QOS PreemptExemptTime takes precedence over the global
-option.
+option. This is only honored for \fBPreemptMode=REQUEUE\fR and
+\fBPreemptMode=CANCEL\fR.
+.br
 A time of \-1 disables the option, equivalent to 0. Acceptable time formats
 include "minutes", "minutes:seconds", "hours:minutes:seconds", "days\-hours",
 "days\-hours:minutes", and "days\-hours:minutes:seconds".
