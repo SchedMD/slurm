@@ -52,6 +52,7 @@ static uint16_t step_active_cnt;
 static xcgroup_ns_t int_cg_ns;
 static xcgroup_t int_cg[CG_LEVEL_CNT];
 static bpf_program_t p[CG_LEVEL_CNT];
+static uint32_t task_special_id = NO_VAL;
 static char *ctl_names[] = {
 	[CG_TRACK] = "freezer",
 	[CG_CPUS] = "cpuset",
@@ -767,8 +768,8 @@ extern int cgroup_p_step_addto(cgroup_ctl_type_t ctl, pid_t *pids, int npids)
 		/* Ignore any possible movement of slurmstepd */
 		if (pids[i] == stepd_pid)
 			continue;
-		if (cgroup_p_task_addto(ctl, &fake_job, pids[i], NO_VAL)
-		    != SLURM_SUCCESS)
+		if (cgroup_p_task_addto(ctl, &fake_job, pids[i],
+					task_special_id) != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 	}
 	return rc;
@@ -1423,7 +1424,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
 	if (pid == getpid())
 		return SLURM_SUCCESS;
 
-	if (task_id == NO_VAL)
+	if (task_id == task_special_id)
 		log_flag(CGROUP, "Starting task_special cgroup accounting");
 	else
 		log_flag(CGROUP, "Starting task %u cgroup accounting", task_id);
@@ -1438,7 +1439,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
 
 	if (need_to_add) {
 		/* Create task hierarchy in this step. */
-		if (task_id == NO_VAL)
+		if (task_id == task_special_id)
 			xstrfmtcat(task_cg_path, "%s/task_special",
 				   int_cg[CG_LEVEL_STEP_USER].name);
 		else
@@ -1448,7 +1449,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
 		if (common_cgroup_create(&int_cg_ns, &task_cg_info->task_cg,
 					 task_cg_path, uid, gid) !=
 		    SLURM_SUCCESS) {
-			if (task_id == NO_VAL)
+			if (task_id == task_special_id)
 				error("unable to create task_special cgroup");
 			else
 				error("unable to create task %u cgroup",
@@ -1461,7 +1462,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
 
 		if (common_cgroup_instantiate(&task_cg_info->task_cg) !=
 		    SLURM_SUCCESS) {
-			if (task_id == NO_VAL)
+			if (task_id == task_special_id)
 				error("unable to instantiate task_special cgroup");
 			else
 				error("unable to instantiate task %u cgroup",
@@ -1496,7 +1497,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 
 	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
 					     &task_id))) {
-		if (task_id == NO_VAL)
+		if (task_id == task_special_id)
 			error("No task found with id %u (task_special), this should never happen",
 			      task_id);
 		else
@@ -1509,7 +1510,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 				    "cpu.stat",
 				    &cpu_stat,
 				    &cpu_stat_sz) != SLURM_SUCCESS) {
-		if (task_id == NO_VAL)
+		if (task_id == task_special_id)
 			log_flag(CGROUP, "Cannot read task_special cpu.stat file");
 		else
 			log_flag(CGROUP, "Cannot read task %d cpu.stat file",
@@ -1520,7 +1521,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 				    "memory.stat",
 				    &memory_stat,
 				    &memory_stat_sz) != SLURM_SUCCESS) {
-		if (task_id == NO_VAL)
+		if (task_id == task_special_id)
 			log_flag(CGROUP, "Cannot read task_special memory.stat file");
 		else
 			log_flag(CGROUP, "Cannot read task %d memory.stat file",
