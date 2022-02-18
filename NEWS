@@ -92,6 +92,9 @@ documents those changes that are of interest to users and administrators.
     whole_hetjob considerations.
  -- scancel - avoid issuing a RPC for each HetJob non-leader components hit by
     using filters (not using jobids) when a RPC is issued for their leader.
+ -- Make slurmctld call the JobCompPlugin set location operation on SIGUSR2. As
+    a relevant consequence, the filetxt plugin reopens the file for potential
+    logrotation.
 
 * Changes in Slurm 21.08.6
 ==========================

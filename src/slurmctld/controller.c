@@ -1148,6 +1148,10 @@ static void *_slurmctld_signal_hand(void *no_data)
 			lock_slurmctld(conf_write_lock);
 			update_logging();
 			unlock_slurmctld(conf_write_lock);
+			if (jobcomp_g_set_location(slurm_conf.job_comp_loc) !=
+			    SLURM_SUCCESS)
+				error("%s: JobComp set location operation failed on SIGUSR2",
+				      __func__);
 			break;
 		default:
 			error("Invalid signal (%d) received", sig);
