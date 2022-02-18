@@ -404,6 +404,16 @@ static int _fill_cred_gids(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	cred->ngids = group_cache_lookup(arg->uid, arg->gid,
 					 arg->pw_name, &cred->gids);
 
+	if (enable_nss_slurm) {
+		if (cred->ngids) {
+			cred->gr_names = xcalloc(cred->ngids, sizeof(char *));
+			for (int i = 0; i < cred->ngids; i++) {
+				cred->gr_names[i] =
+					gid_to_string(cred->gids[i]);
+			}
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -670,16 +680,6 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 
 	if (_fill_cred_gids(cred, arg) != SLURM_SUCCESS)
 		goto fail;
-
-	if (enable_nss_slurm) {
-		if (cred->ngids) {
-			cred->gr_names = xcalloc(cred->ngids, sizeof(char *));
-			for (int i = 0; i < cred->ngids; i++) {
-				cred->gr_names[i] =
-					gid_to_string(cred->gids[i]);
-			}
-		}
-	}
 
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
