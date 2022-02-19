@@ -207,10 +207,10 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		step_req->min_nodes = opt_local->min_nodes;
 
 	/*
-	 * If the number of CPUs was specified (cpus_set==true) or
-	 * threads_per_core was specified, then we need to set exact = true.
-	 * Otherwise the step will be allocated the wrong number of CPUs
-	 * (and therefore the wrong amount memory if using mem_per_cpu).
+	 * If the number of CPUs was specified (cpus_set==true), then we need to
+	 * set exact = true. Otherwise the step will be allocated the wrong
+	 * number of CPUs (and therefore the wrong amount memory if using
+	 * mem_per_cpu).
 	 */
 	if (opt_local->overcommit) {
 		if (use_all_cpus)	/* job allocation created by srun */
@@ -342,9 +342,6 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 
 	if (opt_local->threads_per_core != NO_VAL) {
 		step_req->threads_per_core = opt.threads_per_core;
-		if (!srun_opt->exact)
-			verbose("Implicitly setting --exact, since --threads-per-core given");
-		srun_opt->exact = true;
 	} else
 		step_req->threads_per_core = NO_VAL16;
 

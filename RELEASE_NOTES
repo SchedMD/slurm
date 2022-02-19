@@ -155,7 +155,7 @@ COMMAND CHANGES (see man pages for details)
     to apply to the column headers as well as the printed fields.
  -- Invalidate multiple partition requests when using partition based
     associations.
- -- --cpus-per-task and --threads-per-core now imply --exact.
+ -- --cpus-per-task now implies --exact.
     This fixes issues where steps would be allocated the wrong number of CPUs.
  -- scrontab - create the temporary file under the TMPDIR environment variable
     (if set), otherwise continue to use TmpFS as configured in slurm.conf.
