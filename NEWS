@@ -73,6 +73,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix step CPU memory allocation with --threads-per-core without --exact.
  -- Remove implicit --exact when --threads-per-core or --hint=nomultithread
     is used.
+ -- Do not allow a step to request more threads per core than the
+    allocation did.
 
 * Changes in Slurm 21.08.5
 ==========================

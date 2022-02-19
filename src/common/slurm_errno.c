@@ -384,6 +384,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Multiple partition job request not supported when a partition is set in the association" },
 	{ ESLURM_IN_STANDBY_USE_BACKUP,
 	  "Controller is in standby mode, try a different controller"},
+	{ ESLURM_BAD_THREAD_PER_CORE,
+	  "Cannot request more threads per core than the job allocation" },
 
 	/* SPANK errors */
 	{ ESPANK_ERROR,

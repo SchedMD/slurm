@@ -1493,6 +1493,15 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				cpu_count /= req_tpc;
 				cpu_count *=
 					node_record_table_ptr[first_inx].vpus;
+			} else if (req_tpc >
+				   node_record_table_ptr[first_inx].vpus) {
+				log_flag(STEPS, "%s: requested more threads per core than possible in allocation (%u > %u) for %pJ",
+					 __func__,
+					 req_tpc,
+					 node_record_table_ptr[first_inx].vpus,
+					 job_ptr);
+				*return_code = ESLURM_BAD_THREAD_PER_CORE;
+				goto cleanup;
 			}
 		}
 
@@ -2714,6 +2723,12 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		else
 			return ESLURM_DUPLICATE_STEP_ID;
 	}
+
+	/* A step cannot request more threads per core than its allocation. */
+	if ((step_specs->threads_per_core != NO_VAL16) &&
+	    (step_specs->threads_per_core >
+	     job_ptr->job_resrcs->threads_per_core))
+		return ESLURM_BAD_THREAD_PER_CORE;
 
 	task_dist = step_specs->task_dist & SLURM_DIST_STATE_BASE;
 	/* Set to block in the case that mem is 0. srun leaves the dist
