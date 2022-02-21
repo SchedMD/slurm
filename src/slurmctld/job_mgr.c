@@ -3586,10 +3586,11 @@ extern job_record_t *find_job_array_rec(uint32_t array_job_id,
 /*
  * find_het_job_record - return a pointer to the job record with the given ID
  * IN job_id - requested job's ID
- * in het_job_id - hetjob component ID
+ * IN het_job_offset - hetjob component offset
  * RET pointer to the job's record, NULL on error
  */
-extern job_record_t *find_het_job_record(uint32_t job_id, uint32_t het_job_id)
+extern job_record_t *find_het_job_record(uint32_t job_id,
+					 uint32_t het_job_offset)
 {
 	job_record_t *het_job_leader, *het_job;
 	ListIterator iter;
@@ -3602,7 +3603,7 @@ extern job_record_t *find_het_job_record(uint32_t job_id, uint32_t het_job_id)
 	}
 	if (!het_job_leader)
 		return NULL;
-	if (het_job_leader->het_job_offset == het_job_id)
+	if (het_job_leader->het_job_offset == het_job_offset)
 		return het_job_leader;
 
 	if (!het_job_leader->het_job_list)
@@ -3614,7 +3615,7 @@ extern job_record_t *find_het_job_record(uint32_t job_id, uint32_t het_job_id)
 			      __func__, het_job_leader);
 			continue;
 		}
-		if (het_job->het_job_offset == het_job_id)
+		if (het_job->het_job_offset == het_job_offset)
 			break;
 	}
 	list_iterator_destroy(iter);
