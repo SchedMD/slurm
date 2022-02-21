@@ -95,22 +95,18 @@ static node_info_msg_t *job_node_ptr = NULL;
 
 /* This set of functions loads/free node information so that we can map a job's
  * core bitmap to it's CPU IDs based upon the thread count on each node. */
-static void _load_node_info(void)
-{
-	slurm_mutex_lock(&job_node_info_lock);
-	if (!job_node_ptr)
-		(void) slurm_load_node((time_t) NULL, &job_node_ptr, 0);
-	slurm_mutex_unlock(&job_node_info_lock);
-}
 
 static uint32_t _threads_per_core(char *host)
 {
 	uint32_t i, threads = 1;
 
-	if (!job_node_ptr || !host)
+	if (!host)
 		return threads;
 
 	slurm_mutex_lock(&job_node_info_lock);
+	if (!job_node_ptr)
+		slurm_load_node((time_t) NULL, &job_node_ptr, 0);
+
 	for (i = 0; i < job_node_ptr->record_count; i++) {
 		if (job_node_ptr->node_array[i].name &&
 		    !xstrcmp(host, job_node_ptr->node_array[i].name)) {
@@ -346,7 +342,6 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 {
 	char *print_this;
 
-	_load_node_info();
 	if ((print_this = slurm_sprint_job_info(job_ptr, one_liner))) {
 		fprintf(out, "%s", print_this);
 		xfree(print_this);
