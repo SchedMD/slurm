@@ -1848,6 +1848,9 @@ proc wait_for_command args {
 #	A command is repeated until its output matches the specified pattern
 #
 # OPTIONS
+#	-negate
+#		negates the match. The command is repeated until its output does not
+#		match the specified pattern
 #	-fail
 #		abort the test with failure if output does not match the pattern
 #		by the timeout
@@ -1874,8 +1877,14 @@ proc wait_for_command_match args {
 
 	set pattern [lindex $args end]
 	set args [lrange $args 0 end-1]
+	set match 1
+	set idx [lsearch $args "-negate"]
+	if {$idx != -1} {
+		set match 0
+		set args [lreplace $args $idx $idx]; # Remove the -negate argument
+	}
 
-	return [wait_for_command {*}$args "\[regexp {$pattern} \[dict get \$result output\]\] == 1"]
+	return [wait_for_command {*}$args "\[regexp {$pattern} \[dict get \$result output\]\] == $match"]
 }
 
 
