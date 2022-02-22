@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 21.08.7
 ==========================
  -- openapi/v0.0.37 - correct calculation for bf_queue_len_mean in /diag.
+ -- Optimize sending down nodes in maintenance mode to the database when
+    removing reservations.
 
 * Changes in Slurm 21.08.6
 ==========================
