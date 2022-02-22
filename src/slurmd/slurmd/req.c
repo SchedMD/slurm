@@ -41,6 +41,8 @@
 
 #include "config.h"
 
+#define _GNU_SOURCE	/* for setresuid() */
+
 #include <ctype.h>
 #include <fcntl.h>
 #include <grp.h>
@@ -1725,8 +1727,8 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 		error("%s: uid:%u setgid(%u): %m", __func__, uid, gid);
 		_exit(errno);
 	}
-	if (setuid(uid) < 0) {
-		error("%s: getuid(%u): %m", __func__, uid);
+	if (setresuid(uid, uid, -1) < 0) {
+		error("%s: setresuid(%u, %u, %d): %m", __func__, uid, uid, -1);
 		_exit(errno);
 	}
 
