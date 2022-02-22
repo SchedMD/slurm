@@ -47,6 +47,9 @@ HIGHLIGHTS
     through gres.conf.
  -- Node state flags (DRAIN, FAILED, POWERING UP, etc.) will be cleared now if
     node state is updated to FUTURE.
+ -- srun will no longer read in SLURM_CPUS_PER_TASK. This means you will
+    implicitly have to specify -c on your srun calls, or set the new
+    SRUN_CPUS_PER_TASK env var to accomplish the same thing.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

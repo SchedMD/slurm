@@ -89,6 +89,8 @@ documents those changes that are of interest to users and administrators.
     cause the whole het job to be killed.
  -- Fix possibility of primary group going missing when running jobs submitted
     after a user has switched primary groups (eg: with sg).
+ -- Make it so srun no longer inherits SLURM_CPUS_PER_TASK. It now will only
+    inherit SRUN_CPUS_PER_TASK.
 
 * Changes in Slurm 21.08.6
 ==========================
