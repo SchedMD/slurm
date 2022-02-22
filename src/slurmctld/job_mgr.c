@@ -5891,6 +5891,11 @@ extern int het_job_signal(job_record_t *het_job_leader, uint16_t signal,
 	int rc = SLURM_SUCCESS, rc1;
 	job_record_t *het_job;
 
+	if (!het_job_leader->het_job_id)
+		return ESLURM_NOT_HET_JOB;
+	else if (!het_job_leader->het_job_list)
+		return ESLURM_NOT_HET_JOB_LEADER;
+
 	iter = list_iterator_create(het_job_leader->het_job_list);
 	while ((het_job = list_next(iter))) {
 		if (het_job_leader->het_job_id != het_job->het_job_id) {
