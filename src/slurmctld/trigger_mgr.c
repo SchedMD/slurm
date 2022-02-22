@@ -40,6 +40,8 @@
 
 #include "config.h"
 
+#define _GNU_SOURCE	/* for setresuid() */
+
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -49,6 +51,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/fd.h"
@@ -1464,7 +1467,6 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 		trig_in->child_pid = child_pid;
 	} else if (child_pid == 0) {
 		bool run_as_self = (uid == slurm_conf.slurm_user_id);
-
 		closeall(0);
 		setpgid(0, 0);
 		setsid();
@@ -1476,8 +1478,8 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 			error("trigger: setgid: %m");
 			exit(1);
 		}
-		if ((setuid(uid) == -1) && !run_as_self) {
-			error("trigger: setuid: %m");
+		if ((setresuid(uid, uid, -1) == -1) && !run_as_self) {
+			error("trigger: setresuid: %m");
 			exit(1);
 		}
 		execv(program, args);
