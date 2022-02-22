@@ -69,13 +69,13 @@ typedef struct {
 
 static int _cmp_str(void *x, void *key)
 {
-	return !strcmp(x, key);
+	return !xstrcmp(x, key);
 }
 
 static int _cmp_features(void *x, void *key)
 {
 	plugin_feature_t *feature = x;
-	return !strcmp(feature->name, key);
+	return !xstrcmp(feature->name, key);
 }
 
 static bool _is_feature_valid(const char *k)
