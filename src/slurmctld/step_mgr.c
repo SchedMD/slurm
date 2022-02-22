@@ -1515,6 +1515,15 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				cpu_count /= req_tpc;
 				cpu_count *=
 					node_record_table_ptr[first_inx].vpus;
+			} else if (req_tpc >
+				   node_record_table_ptr[first_inx].vpus) {
+				log_flag(STEPS, "%s: requested more threads per core than possible in allocation (%u > %u) for %pJ",
+					 __func__,
+					 req_tpc,
+					 node_record_table_ptr[first_inx].vpus,
+					 job_ptr);
+				*return_code = ESLURM_BAD_THREAD_PER_CORE;
+				goto cleanup;
 			}
 		}
 
@@ -2074,6 +2083,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		uint64_t gres_step_node_mem_alloc = 0;
+		uint16_t vpus;
 
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
 			continue;
@@ -2102,15 +2112,31 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			node_cnt = 0;
 		}
 
+		vpus = node_record_table_ptr[i_node].vpus;
 		if (step_ptr->flags & SSF_WHOLE) {
-			cpus_alloc_mem =
-				job_resrcs_ptr->cpu_array_value[cpu_array_inx];
-			cpus_alloc =
+			cpus_alloc_mem = cpus_alloc =
 				job_resrcs_ptr->cpus[job_node_inx];
+
+			/*
+			 * If we are requesting all the memory in the job
+			 * (--mem=0) we get it all, otherwise we use what was
+			 * requested specifically for the step.
+			 *
+			 * Else factor in the tpc so we get the correct amount
+			 * of memory.
+			 */
+			if (all_job_mem)
+				cpus_alloc_mem =
+					job_resrcs_ptr->
+					cpu_array_value[cpu_array_inx];
+			else if ((req_tpc != NO_VAL16) &&
+				 (req_tpc < vpus)) {
+				cpus_alloc_mem += vpus - 1;
+				cpus_alloc_mem /= vpus;
+				cpus_alloc_mem *= req_tpc;
+			}
 		} else {
 			uint16_t cpus_per_task = step_ptr->cpus_per_task;
-			uint16_t vpus = node_record_table_ptr[i_node].vpus;
-
 			cpus_alloc =
 				step_ptr->step_layout->tasks[step_node_inx] *
 				cpus_per_task;
@@ -2718,6 +2744,12 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		else
 			return ESLURM_DUPLICATE_STEP_ID;
 	}
+
+	/* A step cannot request more threads per core than its allocation. */
+	if ((step_specs->threads_per_core != NO_VAL16) &&
+	    (step_specs->threads_per_core >
+	     job_ptr->job_resrcs->threads_per_core))
+		return ESLURM_BAD_THREAD_PER_CORE;
 
 	task_dist = step_specs->task_dist & SLURM_DIST_STATE_BASE;
 	/* Set to block in the case that mem is 0. srun leaves the dist
