@@ -287,8 +287,10 @@ static int _index_job(const char *jobcomp)
 	int rc = SLURM_SUCCESS;
 	char *token = NULL;
 
+	slurm_mutex_lock(&location_mutex);
 	if (log_url == NULL) {
 		error("%s: JobCompLoc parameter not configured", plugin_type);
+		slurm_mutex_unlock(&location_mutex);
 		return SLURM_ERROR;
 	}
 
@@ -375,6 +377,7 @@ cleanup_easy_init:
 	curl_easy_cleanup(curl_handle);
 cleanup_global_init:
 	curl_global_cleanup();
+	slurm_mutex_unlock(&location_mutex);
 	return rc;
 }
 
@@ -895,6 +898,7 @@ extern int jobcomp_p_set_location(char *location)
 		return SLURM_ERROR;
 	}
 
+	slurm_mutex_lock(&location_mutex);
 	if (log_url)
 		xfree(log_url);
 	log_url = xstrdup(location);
@@ -921,7 +925,6 @@ extern int jobcomp_p_set_location(char *location)
 	}
 	curl_global_cleanup();
 
-	slurm_mutex_lock(&location_mutex);
 	slurm_cond_broadcast(&location_cond);
 	slurm_mutex_unlock(&location_mutex);
 
