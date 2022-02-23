@@ -2376,6 +2376,13 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_error"
             }
+          },
+          "removed_associations": {
+            "type": "array",
+            "description": "the associations",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
