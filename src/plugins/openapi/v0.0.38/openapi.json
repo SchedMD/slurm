@@ -1319,7 +1319,6 @@
             "description": "Executable script (full contents) to run in batch step"
           },
           "job": {
-            "description": "Properties of an array job or non-HetJob",
             "$ref": "#/components/schemas/v0.0.38_job_properties"
           },
           "jobs": {
