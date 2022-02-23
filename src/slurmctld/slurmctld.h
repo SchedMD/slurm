@@ -2888,6 +2888,21 @@ extern int update_node_active_features(char *node_names, char *active_features,
 				       int mode);
 
 /*
+ * update_node_avail_features - Update available features associated with
+ *	nodes, build new config list records as needed
+ * IN node_names - List of nodes to update
+ * IN avail_features - New available features value
+ * IN mode - FEATURE_MODE_IND : Print each node change indivually
+ *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)
+ *           FEATURE_MODE_PEND: Print any pending change message
+ * RET: SLURM_SUCCESS or error code
+ * NOTE: Use mode=FEATURE_MODE_IND in a loop with node write lock set,
+ *	 then call with mode=FEATURE_MODE_PEND at the end of the loop
+ */
+extern int update_node_avail_features(char *node_names, char *avail_features,
+				      int mode);
+
+/*
  * Return a nodelist with nodesets expanded.
  *
  * IN nodes - nodelist that can have nodesets in it.

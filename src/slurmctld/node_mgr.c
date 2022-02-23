@@ -128,8 +128,6 @@ static void 	_pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 static void	_sync_bitmaps(node_record_t *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				   config_record_t *config_ptr);
-static int	_update_node_avail_features(char *node_names,
-				char *avail_features, int mode);
 static int	_update_node_gres(char *node_names, char *gres);
 static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint32_t old, uint32_t new);
@@ -1451,7 +1449,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						update_node_msg->features);
 			}
 			/*
-			 * _update_node_avail_features() logs and updates
+			 * update_node_avail_features() logs and updates
 			 * avail_feature_list below
 			 */
 		}
@@ -1830,7 +1828,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	last_node_update = now;
 
 	if ((error_code == SLURM_SUCCESS) && (update_node_msg->features)) {
-		error_code = _update_node_avail_features(
+		error_code = update_node_avail_features(
 					update_node_msg->node_names,
 					update_node_msg->features,
 					FEATURE_MODE_IND);
@@ -1888,9 +1886,9 @@ extern void restore_node_features(int recover)
 				      node_ptr->name, node_ptr->features);
 			}
 			if (recover == 2) {
-				_update_node_avail_features(node_ptr->name,
-							    node_ptr->features,
-							    FEATURE_MODE_COMB);
+				update_node_avail_features(node_ptr->name,
+							   node_ptr->features,
+							   FEATURE_MODE_COMB);
 			}
 		}
 
@@ -1908,7 +1906,7 @@ extern void restore_node_features(int recover)
 			node_ptr->tot_sockets);
 		gres_node_state_log(node_ptr->gres_list, node_ptr->name);
 	}
-	_update_node_avail_features(NULL, NULL, FEATURE_MODE_PEND);
+	update_node_avail_features(NULL, NULL, FEATURE_MODE_PEND);
 }
 
 /* Duplicate a configuration record except for the node names & bitmap */
@@ -2068,20 +2066,8 @@ extern int update_node_active_features(char *node_names, char *active_features,
 	return SLURM_SUCCESS;
 }
 
-/*
- * _update_node_avail_features - Update available features associated with
- *	nodes, build new config list records as needed
- * IN node_names - List of nodes to update
- * IN avail_features - New available features value
- * IN mode - FEATURE_MODE_IND : Print each node change indivually
- *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)
- *           FEATURE_MODE_PEND: Print any pending change message
- * RET: SLURM_SUCCESS or error code
- * NOTE: Use mode=FEATURE_MODE_IND in a loop with node write lock set,
- *	 then call with mode=FEATURE_MODE_PEND at the end of the loop
- */
-static int _update_node_avail_features(char *node_names, char *avail_features,
-				       int mode)
+extern int update_node_avail_features(char *node_names, char *avail_features,
+				      int mode)
 {
 	static char *last_avail_features = NULL;
 	static bitstr_t *last_node_bitmap = NULL;
@@ -2663,9 +2649,9 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 					reg_msg->features_avail,
 					orig_features, orig_features,
 					node_inx);
-		(void) _update_node_avail_features(node_ptr->name,
-						   node_ptr->features,
-						   FEATURE_MODE_IND);
+		(void) update_node_avail_features(node_ptr->name,
+						  node_ptr->features,
+						  FEATURE_MODE_IND);
 	}
 	if (reg_msg->features_active) {
 		char *tmp_feature;
