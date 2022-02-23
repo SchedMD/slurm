@@ -2717,6 +2717,9 @@
                               },
                               "user": {
                                 "$ref": "#/components/schemas/dbv0.0.38_tres_list"
+                              },
+                              "qos": {
+                                "$ref": "#/components/schemas/dbv0.0.38_tres_list"
                               }
                             }
                           }
