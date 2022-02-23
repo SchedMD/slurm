@@ -2899,11 +2899,7 @@
             }
           },
           "tres": {
-            "type": "array",
-            "description": "Array of tres",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.38_tres_list"
-            }
+            "$ref": "#/components/schemas/dbv0.0.36_tres_list"
           }
         }
       },
