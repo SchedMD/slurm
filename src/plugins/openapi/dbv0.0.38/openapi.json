@@ -1488,6 +1488,9 @@
     "schemas": {
       "dbv0.0.38_diag": {
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1639,6 +1642,9 @@
       "dbv0.0.38_account_info": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1692,6 +1698,9 @@
       "dbv0.0.38_response_account_delete": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1704,6 +1713,9 @@
       "dbv0.0.38_response_wckey_add": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1716,6 +1728,9 @@
       "dbv0.0.38_wckey_info": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1772,6 +1787,9 @@
       "dbv0.0.38_response_wckey_delete": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1784,6 +1802,9 @@
       "dbv0.0.38_response_cluster_add": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1855,6 +1876,9 @@
       "dbv0.0.38_response_cluster_delete": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1867,6 +1891,9 @@
       "dbv0.0.38_response_user_update": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1923,6 +1950,9 @@
       "dbv0.0.38_user_info": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1942,6 +1972,9 @@
       "dbv0.0.38_response_user_delete": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -1954,6 +1987,9 @@
       "dbv0.0.38_response_association_delete": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -2159,6 +2195,9 @@
       "dbv0.0.38_associations_info": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -2390,6 +2429,9 @@
       "dbv0.0.38_qos_info": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -2409,6 +2451,9 @@
       "dbv0.0.38_response_qos_delete": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -2421,6 +2466,9 @@
       "dbv0.0.38_response_associations": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -2433,6 +2481,9 @@
       "dbv0.0.38_response_tres": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -2445,6 +2496,9 @@
       "dbv0.0.38_tres_info": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -2489,6 +2543,9 @@
       "dbv0.0.38_job_info": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -3096,6 +3153,9 @@
       "dbv0.0.38_config_info": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -3150,6 +3210,9 @@
       "dbv0.0.38_account_response": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -3162,6 +3225,9 @@
       "dbv0.0.38_config_response": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "Slurm errors",
@@ -3183,6 +3249,51 @@
           }
         },
         "type": "object"
+      }
+    },
+    "dbv0.0.38_meta": {
+      "type": "object",
+      "properties": {
+        "plugin": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": ""
+            },
+            "name": {
+              "type": "string",
+              "description": ""
+            }
+          }
+        },
+        "Slurm": {
+          "type": "object",
+          "description": "Slurm information",
+          "properties": {
+            "version": {
+              "type": "object",
+              "properties": {
+                "major": {
+                  "type": "string",
+                  "description": ""
+                },
+                "micro": {
+                  "type": "string",
+                  "description": ""
+                },
+                "minor": {
+                  "type": "string",
+                  "description": ""
+                }
+              }
+            },
+            "release": {
+              "type": "string",
+              "description": "version specifier"
+            }
+          }
+        }
       }
     }
   }
