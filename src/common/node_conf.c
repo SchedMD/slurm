@@ -624,6 +624,50 @@ extern config_record_t *create_config_record(void)
 	return config_ptr;
 }
 
+
+/*
+ * Convert CPU list to reserve whole cores
+ * OUT:
+ *	node_ptr->node_spec_bitmap
+ *	node_ptr->cpu_spec_list
+ */
+static int _convert_cpu_spec_list(node_record_t *node_ptr, uint32_t tot_cores)
+{
+	int i;
+	bitstr_t *cpu_spec_bitmap;
+
+	/* create CPU bitmap from input CPU list */
+	cpu_spec_bitmap = bit_alloc(node_ptr->cpus);
+
+	if (bit_unfmt(cpu_spec_bitmap, node_ptr->cpu_spec_list)) {
+		error("CpuSpecList is invalid");
+	}
+
+	node_ptr->node_spec_bitmap = bit_alloc(tot_cores);
+
+	/* Create core spec bitmap from CPU bitmap */
+	for (i = 0; i < node_ptr->cpus; i++) {
+		if (bit_test(cpu_spec_bitmap, i))
+			bit_set(node_ptr->node_spec_bitmap,
+				(i / (node_ptr->vpus)));
+	}
+
+	/* Expand CPU bitmap to reserve whole cores */
+	for (i = 0; i < tot_cores; i++) {
+		if (bit_test(node_ptr->node_spec_bitmap, i)) {
+			bit_nset(cpu_spec_bitmap,
+				 (i * node_ptr->vpus),
+				 ((i+1) * node_ptr->vpus) - 1);
+		}
+	}
+	bit_fmt(node_ptr->cpu_spec_list, sizeof(node_ptr->cpu_spec_list),
+		cpu_spec_bitmap);
+
+	FREE_NULL_BITMAP(cpu_spec_bitmap);
+
+	return SLURM_SUCCESS;
+}
+
 static void _init_node_record(node_record_t *node_ptr,
 			      config_record_t *config_ptr)
 {
@@ -651,7 +695,6 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->boards = config_ptr->boards;
 	node_ptr->core_spec_cnt = config_ptr->core_spec_cnt;
 	node_ptr->cores = config_ptr->cores;
-	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	node_ptr->cpus = config_ptr->cpus;
 	node_ptr->mem_spec_limit = config_ptr->mem_spec_limit;
 	node_ptr->real_memory = config_ptr->real_memory;
@@ -668,6 +711,15 @@ static void _init_node_record(node_record_t *node_ptr,
 		node_ptr->vpus = 1;
 	else
 		node_ptr->vpus = config_ptr->threads;
+
+	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
+	if (node_ptr->cpu_spec_list) {
+		_convert_cpu_spec_list(node_ptr, tot_cores);
+		node_ptr->core_spec_cnt = bit_set_count(
+			node_ptr->node_spec_bitmap);
+		/* node_spec_bitmap is not set on spec cores. */
+		bit_not(node_ptr->node_spec_bitmap);
+	}
 
 	node_ptr->cpus_efctv = node_ptr->cpus -
 		(node_ptr->core_spec_cnt * node_ptr->vpus);
