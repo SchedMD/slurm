@@ -400,6 +400,29 @@
 			<li>.components.schemas."v0.0.38_job_submission_response".properties.meta</li>
 			<li>.components.schemas."v0.0.38_jobs_response".properties.meta</li>
 			<li>.components.schemas."v0.0.38_nodes_response".properties.meta</li>
+			<li>.components.schemas."v0.0.38_errors"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add error response contents</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/diag/"[].responses.default[]</li>
+			<li>.paths."/ping/"[].responses.default[]</li>
+			<li>.paths."/jobs/"[].responses.default[]</li>
+			<li>.paths."/job/{job_id}"[].responses.default[]</li>
+			<li>.paths."/job/submit"[].responses.default[]</li>
+			<li>.paths."/nodes/"[].responses.default[]</li>
+			<li>.paths."/node/{node_name}"[].responses.default[]</li>
+			<li>.paths."/partitions/"[].responses.default[]</li>
+			<li>.paths."/partition/{partition_name}"[].responses.default[]</li>
+			<li>.paths."/reservations/"[].responses.default[]</li>
+			<li>.paths."/reservation/{reservation_name}"[].responses.default[]</li>
 		</ul>
 	</td>
 </tr>

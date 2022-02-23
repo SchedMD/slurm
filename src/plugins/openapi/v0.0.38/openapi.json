@@ -61,7 +61,19 @@
             }
           },
           "default": {
-            "description": "unable to request ping test"
+            "description": "unable to request ping test",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -119,7 +131,19 @@
             }
           },
           "default": {
-            "description": "unable to request ping test"
+            "description": "unable to request ping test",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -162,7 +186,19 @@
             }
           },
           "default": {
-            "description": "job not found"
+            "description": "job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -332,7 +368,19 @@
             }
           },
           "default": {
-            "description": "job rejected"
+            "description": "job rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -375,7 +423,19 @@
             }
           },
           "default": {
-            "description": "no nodes in cluster"
+            "description": "no nodes in cluster",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -417,7 +477,19 @@
             }
           },
           "default": {
-            "description": "node not found"
+            "description": "node not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -460,7 +532,19 @@
             }
           },
           "default": {
-            "description": "no partitions found"
+            "description": "no partitions found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -514,7 +598,19 @@
             }
           },
           "default": {
-            "description": "no partitions found"
+            "description": "no partitions found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -557,7 +653,19 @@
             }
           },
           "default": {
-            "description": "no reservations found"
+            "description": "no reservations found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -611,7 +719,19 @@
             }
           },
           "default": {
-            "description": "no reservations found"
+            "description": "no reservations found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -1245,6 +1365,13 @@
               "$ref": "#/components/schemas/v0.0.38_reservation"
             }
           }
+        }
+      },
+      "v0.0.38_errors": {
+        "type": "array",
+        "description": "Slurm errors",
+        "items": {
+          "$ref": "#/components/schemas/v0.0.38_error"
         }
       },
       "v0.0.38_error": {

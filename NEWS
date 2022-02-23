@@ -111,6 +111,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - Correct field "errno" to "error_number" in schema for
     errors.
  -- openapi/dbv0.0.38 - add failure response contents in openapi.json.
+ -- openapi/v0.0.38 - add failure response contents in openapi.json.
 
 * Changes in Slurm 21.08.7
 ==========================
