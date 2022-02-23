@@ -32,7 +32,9 @@
   ],
   "security": [
     {
-      "user": [],
+      "user": []
+    },
+    {
       "token": []
     }
   ],

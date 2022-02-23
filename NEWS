@@ -105,6 +105,7 @@ documents those changes that are of interest to users and administrators.
     when setting the location off of JobCompLoc.
  -- Add %n for NodeName substitution in SlurmdSpoolDir in nss_slurm.conf.
  -- job_container/tmpfs - add basic environment variables to InitScript.
+ -- openapi/dbv0.0.38 - split security entries in openapi.json.
 
 * Changes in Slurm 21.08.7
 ==========================
