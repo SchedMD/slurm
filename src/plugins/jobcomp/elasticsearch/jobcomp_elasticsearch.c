@@ -895,6 +895,8 @@ extern int jobcomp_p_set_location(char *location)
 		return SLURM_ERROR;
 	}
 
+	if (log_url)
+		xfree(log_url);
 	log_url = xstrdup(location);
 
 	curl_global_init(CURL_GLOBAL_ALL);
