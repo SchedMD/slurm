@@ -214,8 +214,8 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	xstrfmtcat(out, "CPUAlloc=%u CPUTot=%u ",
-		   alloc_cpus, node_ptr->cpus);
+	xstrfmtcat(out, "CPUAlloc=%u CPUEfctv=%u CPUTot=%u ",
+		   alloc_cpus, node_ptr->cpus_efctv, node_ptr->cpus);
 
 	if (node_ptr->cpu_load == NO_VAL)
 		xstrcat(out, "CPULoad=N/A");
