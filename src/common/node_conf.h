@@ -102,6 +102,8 @@ struct node_record {
 	time_t cpu_load_time;		/* Time when cpu_load last set */
 	char *cpu_spec_list;		/* node's specialized cpus */
 	uint16_t cpus;			/* count of processors on the node */
+	uint16_t cpus_efctv;		/* count of effective cpus on the node.
+					   i.e. cpus minus specialized cpus*/
 	acct_gather_energy_t *energy;	/* power consumption data */
 	ext_sensors_data_t *ext_sensors; /* external sensor data */
 	char *extra;			/* arbitrary string */

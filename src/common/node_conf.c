@@ -668,6 +668,9 @@ static void _init_node_record(node_record_t *node_ptr,
 		node_ptr->vpus = 1;
 	else
 		node_ptr->vpus = config_ptr->threads;
+
+	node_ptr->cpus_efctv = node_ptr->cpus -
+		(node_ptr->core_spec_cnt * node_ptr->vpus);
 }
 
 /*

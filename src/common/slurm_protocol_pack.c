@@ -1542,6 +1542,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack64(&node->mem_spec_limit, buffer);
 		safe_unpackstr_xmalloc(&node->cpu_spec_list, &uint32_tmp,
 				       buffer);
+		safe_unpack16(&node->cpus_efctv, buffer);
 
 		safe_unpack32(&node->cpu_load, buffer);
 		safe_unpack64(&node->free_mem, buffer);
