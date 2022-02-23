@@ -113,6 +113,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - add failure response contents in openapi.json.
  -- openapi/v0.0.38 - add failure response contents in openapi.json.
  -- openapi/dbv0.0.38 - add requestBody for /users/ in openapi.json.
+ -- openapi/dbv0.0.38 - add requestBody for /accounts/ in openapi.json.
 
 * Changes in Slurm 21.08.7
 ==========================

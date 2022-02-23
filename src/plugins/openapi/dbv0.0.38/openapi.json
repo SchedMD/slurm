@@ -1399,7 +1399,23 @@
             }
           }
         },
-        "summary": "Update accounts"
+        "summary": "Update accounts",
+        "requestBody": {
+          "description": "update/create accounts",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_update_account"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_update_account"
+              }
+            }
+          },
+          "required": true
+        }
       }
     },
     "/jobs/": {
@@ -3672,6 +3688,16 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_user"
+            }
+          }
+        }
+      },
+      "dbv0.0.38_update_account": {
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_account"
             }
           }
         }
