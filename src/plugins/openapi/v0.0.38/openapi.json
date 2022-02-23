@@ -1254,9 +1254,9 @@
             "type": "string",
             "description": "error message"
           },
-          "errno": {
-            "type": "integer",
-            "description": "error number"
+          "error_number": {
+            "description": "Slurm internal error number",
+            "type": "integer"
           }
         }
       },
