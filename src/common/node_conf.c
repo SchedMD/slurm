@@ -714,7 +714,15 @@ static void _init_node_record(node_record_t *node_ptr,
 
 	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	if (node_ptr->cpu_spec_list) {
-		_convert_cpu_spec_list(node_ptr, tot_cores);
+		if (node_ptr->vpus > 1) {
+			_convert_cpu_spec_list(node_ptr, tot_cores);
+		} else {
+			node_ptr->node_spec_bitmap = bit_alloc(node_ptr->cpus);
+			if (bit_unfmt(node_ptr->node_spec_bitmap,
+				      node_ptr->cpu_spec_list)) {
+				error("CpuSpecList is invalid");
+			}
+		}
 		node_ptr->core_spec_cnt = bit_set_count(
 			node_ptr->node_spec_bitmap);
 		/* node_spec_bitmap is not set on spec cores. */

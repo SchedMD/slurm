@@ -2786,7 +2786,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	node_ptr->real_memory = reg_msg->real_memory;
 	node_ptr->tmp_disk = reg_msg->tmp_disk;
 
-	if (reg_msg->cpu_spec_list != NULL) {
+	if (reg_msg->cpu_spec_list && !node_ptr->cpu_spec_list) {
 		xfree(node_ptr->cpu_spec_list);
 		node_ptr->cpu_spec_list = reg_msg->cpu_spec_list;
 		reg_msg->cpu_spec_list = NULL;	/* Nothing left to free */

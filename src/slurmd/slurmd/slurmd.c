@@ -2552,15 +2552,27 @@ static int _validate_and_convert_cpu_list(void)
 {
 	int core_off, thread_inx, thread_off;
 
-	/* create CPU bitmap from input CPU list */
-	if (bit_unfmt(res_cpu_bitmap, conf->cpu_spec_list) != 0) {
-		return SLURM_ERROR;
+	if (ncores >= conf->cpus){
+		/*
+		 * create core bitmap from input CPU list because "cpus" are
+		 * representing cores rather than threads in this situation
+		 */
+		if (bit_unfmt(res_core_bitmap, conf->cpu_spec_list)) {
+			return SLURM_ERROR;
+		}
+	} else {
+		/* create CPU bitmap from input CPU list */
+		if (bit_unfmt(res_cpu_bitmap, conf->cpu_spec_list) != 0) {
+			return SLURM_ERROR;
+		}
+		/* create core bitmap and list from CPU bitmap */
+		for (thread_off = 0; thread_off < ncpus; thread_off++) {
+			if (bit_test(res_cpu_bitmap, thread_off) == 1)
+				bit_set(res_core_bitmap,
+					(thread_off / (conf->threads)));
+		}
 	}
-	/* create core bitmap and list from CPU bitmap */
-	for (thread_off = 0; thread_off < ncpus; thread_off++) {
-		if (bit_test(res_cpu_bitmap, thread_off) == 1)
-			bit_set(res_core_bitmap, thread_off/(conf->threads));
-	}
+
 	bit_fmt(res_abs_cores, res_abs_core_size, res_core_bitmap);
 	/* create output abstract CPU list from core bitmap */
 	for (core_off = 0; core_off < ncores; core_off++) {
