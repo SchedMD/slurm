@@ -708,6 +708,9 @@
       "v0.0.38_diag": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "slurm errors",
@@ -938,6 +941,9 @@
       "v0.0.38_pings": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "slurm errors",
@@ -1110,6 +1116,9 @@
       "v0.0.38_partitions_response": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "slurm errors",
@@ -1219,6 +1228,9 @@
       "v0.0.38_reservations_response": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "slurm errors",
@@ -1273,6 +1285,9 @@
       "v0.0.38_job_submission_response": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "slurm errors",
@@ -1319,6 +1334,9 @@
       "v0.0.38_jobs_response": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "slurm errors",
@@ -2345,6 +2363,9 @@
       "v0.0.38_nodes_response": {
         "type": "object",
         "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.38_meta"
+          },
           "errors": {
             "type": "array",
             "description": "slurm errors",
@@ -2357,6 +2378,51 @@
             "description": "nodes info",
             "items": {
               "$ref": "#/components/schemas/v0.0.38_node"
+            }
+          }
+        }
+      },
+      "v0.0.38_meta": {
+        "type": "object",
+        "properties": {
+          "plugin": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": ""
+              },
+              "name": {
+                "type": "string",
+                "description": ""
+              }
+            }
+          },
+          "Slurm": {
+            "type": "object",
+            "description": "Slurm information",
+            "properties": {
+              "version": {
+                "type": "object",
+                "properties": {
+                  "major": {
+                    "type": "string",
+                    "description": ""
+                  },
+                  "micro": {
+                    "type": "string",
+                    "description": ""
+                  },
+                  "minor": {
+                    "type": "string",
+                    "description": ""
+                  }
+                }
+              },
+              "release": {
+                "type": "string",
+                "description": "version specifier"
+              }
             }
           }
         }
