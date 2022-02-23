@@ -58,6 +58,35 @@
 </tr>
 </table>
 
+<h4>Add error response contents</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/account/{account_name}"[].responses.default[]</li>
+			<li>.paths."/accounts/"[].responses.default[]</li>
+			<li>.paths."/association/"[].responses.default[]</li>
+			<li>.paths."/associations/"[].responses.default[]</li>
+			<li>.paths."/cluster/{cluster_name}"[].responses.default[]</li>
+			<li>.paths."/clusters/"[].responses.default[]</li>
+			<li>.paths."/config/"[].responses.default[]</li>
+			<li>.paths."/diag/"[].responses.default[]</li>
+			<li>.paths."/job/{job_id}"[].responses.default[]</li>
+			<li>.paths."/jobs/"[].responses.default[]</li>
+			<li>.paths."/qos/{qos_name}/"[].responses.default[]</li>
+			<li>.paths."/qos/"[].responses.default[]</li>
+			<li>.paths."/tres/"[].responses.default[]</li>
+			<li>.paths."/users/"[].responses.default[]</li>
+			<li>.paths."/user/{user_name}"[].responses.default[]</li>
+			<li>.paths."/wckeys/"[].responses.default[]</li>
+			<li>.paths."/wckey/{wckey}"[].responses.default[]</li>
+			<li>.components.schemas."dbv0.0.38_meta"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h4>Move incorrectly named field</h4>
 <table class="tchange">
 <tr class="trchange">
@@ -149,6 +178,7 @@
 			<li>.components.schemas."dbv0.0.38_config_info".properties.meta</li>
 			<li>.components.schemas."dbv0.0.38_account_response".properties.meta</li>
 			<li>.components.schemas."dbv0.0.38_config_response".properties.meta</li>
+			<li>.components.schemas."dbv0.0.38_errors"</li>
 		</ul>
 	</td>
 </tr>

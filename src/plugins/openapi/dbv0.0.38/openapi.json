@@ -78,7 +78,19 @@
             "description": "Job description"
           },
           "default": {
-            "description": "Unable to find job"
+            "description": "Unable to find job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -107,7 +119,19 @@
             "description": "slurmdbd configuration"
           },
           "default": {
-            "description": "Unable to dump config"
+            "description": "Unable to dump config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         }
       },
@@ -134,7 +158,19 @@
             }
           },
           "default": {
-            "description": "Unable to set config"
+            "description": "Unable to set config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -162,7 +198,19 @@
             "description": "List of TRES"
           },
           "default": {
-            "description": "Unable to update TRES"
+            "description": "Unable to update TRES",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Set TRES info"
@@ -219,7 +267,19 @@
             "description": "Delete qos"
           },
           "default": {
-            "description": "Unable to delete QOS"
+            "description": "Unable to delete QOS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -259,7 +319,19 @@
             "description": "QOS information"
           },
           "default": {
-            "description": "QOS not found"
+            "description": "QOS not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -300,7 +372,19 @@
             "description": "List of QOS'"
           },
           "default": {
-            "description": "QOS not found"
+            "description": "QOS not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get QOS list"
@@ -329,7 +413,19 @@
             "description": "status of associations update"
           },
           "default": {
-            "description": "Unable to update associations"
+            "description": "Unable to update associations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Set associations info"
@@ -356,7 +452,19 @@
             "description": "List of associations"
           },
           "default": {
-            "description": "Association not found"
+            "description": "Association not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get association list"
@@ -431,7 +539,19 @@
             "description": "List of associations"
           },
           "default": {
-            "description": "Association not found"
+            "description": "Association not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get association info"
@@ -504,7 +624,19 @@
             "description": "Delete associations"
           },
           "default": {
-            "description": "Association not found or unable to delete association"
+            "description": "Association not found or unable to delete association",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Delete association"
@@ -534,7 +666,19 @@
             "description": "Delete user"
           },
           "default": {
-            "description": "User not found or unable to delete user"
+            "description": "User not found or unable to delete user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -574,7 +718,19 @@
             "description": "List of users"
           },
           "default": {
-            "description": "User not found"
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -616,7 +772,19 @@
             "description": "Update users"
           },
           "default": {
-            "description": "User not found or not able to update user"
+            "description": "User not found or not able to update user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         }
       },
@@ -643,7 +811,19 @@
             "description": "List of users"
           },
           "default": {
-            "description": "User not found"
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         }
       }
@@ -672,7 +852,19 @@
             "description": "Delete cluster"
           },
           "default": {
-            "description": "Cluster not found or unable to delete cluster"
+            "description": "Cluster not found or unable to delete cluster",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -712,7 +904,19 @@
             "description": "Cluster information"
           },
           "default": {
-            "description": "Cluster not found"
+            "description": "Cluster not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -753,7 +957,19 @@
             "description": "List of clusters"
           },
           "default": {
-            "description": "Cluster not found"
+            "description": "Cluster not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get cluster list"
@@ -780,7 +996,19 @@
             "description": "List of clusters"
           },
           "default": {
-            "description": "Unable to add cluster"
+            "description": "Unable to add cluster",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Add clusters"
@@ -810,7 +1038,19 @@
             "description": "Delete wckey"
           },
           "default": {
-            "description": "wckey not found or unable to delete wckey"
+            "description": "wckey not found or unable to delete wckey",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -850,7 +1090,19 @@
             "description": "List of wckey"
           },
           "default": {
-            "description": "wckey not found"
+            "description": "wckey not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -891,7 +1143,19 @@
             "description": "List of wckeys"
           },
           "default": {
-            "description": "wckey not found"
+            "description": "wckey not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get wckey list"
@@ -918,7 +1182,19 @@
             "description": "List of wckeys"
           },
           "default": {
-            "description": "Unable to add wckey"
+            "description": "Unable to add wckey",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Add wckeys"
@@ -948,7 +1224,19 @@
             "description": "Delete account"
           },
           "default": {
-            "description": "Unable to delete account"
+            "description": "Unable to delete account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -988,7 +1276,19 @@
             "description": "List of accounts"
           },
           "default": {
-            "description": "Account not found"
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "parameters": [
@@ -1029,7 +1329,19 @@
             "description": "List of accounts"
           },
           "default": {
-            "description": "Account not found"
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get account list"
@@ -1056,7 +1368,19 @@
             "description": "Add/update list of accounts"
           },
           "default": {
-            "description": "Unable to add or update accounts"
+            "description": "Unable to add or update accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Update accounts"
@@ -1362,7 +1686,19 @@
             "description": "List of jobs"
           },
           "default": {
-            "description": "Unable to query jobs"
+            "description": "Unable to query jobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get job list"
@@ -1391,7 +1727,19 @@
             "description": "Dictionary of statistics"
           },
           "default": {
-            "description": "Unable to query diagnostics"
+            "description": "Unable to query diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_errors"
+                }
+              }
+            }
           }
         },
         "summary": "Get slurmdb diagnostics"
@@ -3237,6 +3585,13 @@
           }
         }
       },
+      "dbv0.0.38_errors": {
+        "type": "array",
+        "description": "Slurm errors",
+        "items": {
+          "$ref": "#/components/schemas/dbv0.0.38_error"
+        }
+      },
       "dbv0.0.38_error": {
         "properties": {
           "errno": {
@@ -3249,48 +3604,48 @@
           }
         },
         "type": "object"
-      }
-    },
-    "dbv0.0.38_meta": {
-      "type": "object",
-      "properties": {
-        "plugin": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "description": ""
-            },
-            "name": {
-              "type": "string",
-              "description": ""
-            }
-          }
-        },
-        "Slurm": {
-          "type": "object",
-          "description": "Slurm information",
-          "properties": {
-            "version": {
-              "type": "object",
-              "properties": {
-                "major": {
-                  "type": "string",
-                  "description": ""
-                },
-                "micro": {
-                  "type": "string",
-                  "description": ""
-                },
-                "minor": {
-                  "type": "string",
-                  "description": ""
-                }
+      },
+      "dbv0.0.38_meta": {
+        "type": "object",
+        "properties": {
+          "plugin": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": ""
+              },
+              "name": {
+                "type": "string",
+                "description": ""
               }
-            },
-            "release": {
-              "type": "string",
-              "description": "version specifier"
+            }
+          },
+          "Slurm": {
+            "type": "object",
+            "description": "Slurm information",
+            "properties": {
+              "version": {
+                "type": "object",
+                "properties": {
+                  "major": {
+                    "type": "string",
+                    "description": ""
+                  },
+                  "micro": {
+                    "type": "string",
+                    "description": ""
+                  },
+                  "minor": {
+                    "type": "string",
+                    "description": ""
+                  }
+                }
+              },
+              "release": {
+                "type": "string",
+                "description": "version specifier"
+              }
             }
           }
         }
