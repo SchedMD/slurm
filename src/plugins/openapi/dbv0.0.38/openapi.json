@@ -2811,6 +2811,10 @@
           "usage_threshold": {
             "type": "number",
             "description": "Usage threshold"
+          },
+          "name": {
+            "description": "Assigned name of QOS",
+            "type": "string"
           }
         }
       },
