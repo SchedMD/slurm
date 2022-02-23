@@ -924,6 +924,50 @@ static void _sync_part_prio(void)
 	list_for_each(part_list, _reset_part_prio, NULL);
 }
 
+static int _foreach_requeue_job_node_failed(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	job_record_t *het_job_leader;
+	int rc = SLURM_SUCCESS;
+
+	xassert(job_ptr->magic == JOB_MAGIC);
+
+	if (!IS_JOB_NODE_FAILED(job_ptr) && !IS_JOB_REQUEUED(job_ptr))
+		return SLURM_SUCCESS;
+
+	het_job_leader = find_job_record(job_ptr->het_job_id);
+	if (het_job_leader && het_job_leader->batch_flag &&
+	    het_job_leader->details &&
+	    het_job_leader->details->requeue &&
+	    het_job_leader->part_ptr) {
+		info("Requeue het job leader %pJ due to node failure on %pJ",
+		     het_job_leader, job_ptr);
+		if ((rc = job_requeue(0, het_job_leader->job_id, NULL, false,
+				      0)))
+			error("Unable to requeue %pJ: %s",
+			      het_job_leader, slurm_strerror(rc));
+	} else if (job_ptr->batch_flag && job_ptr->details &&
+		   job_ptr->details->requeue && job_ptr->part_ptr) {
+		info("Requeue job %pJ due to node failure",
+		     job_ptr);
+		if ((rc = job_requeue(0, job_ptr->job_id, NULL, false, 0)))
+			error("Unable to requeue %pJ: %s",
+			      job_ptr, slurm_strerror(rc));
+	}
+
+	job_ptr->job_state &= (~JOB_REQUEUE);
+
+	return rc;
+}
+
+extern void _requeue_job_node_failed(void)
+{
+	xassert(job_list);
+
+	(void) list_for_each_nobreak(job_list,
+				     _foreach_requeue_job_node_failed, NULL);
+}
+
 static void _abort_job(job_record_t *job_ptr, uint32_t job_state,
 		       uint16_t state_reason, char *reason_string)
 {
@@ -1161,8 +1205,16 @@ void _sync_jobs_to_conf(void)
 		 * finished it still needs to happen just in case the job is
 		 * requeued.
 		 */
-		if (_sync_detail_bitmaps(job_ptr))
+		if (_sync_detail_bitmaps(job_ptr)) {
 			job_fail = true;
+			if (job_ptr->details) {
+				/*
+				 * job can't be requeued because either
+				 * req_nodes or exc_nodes can't be satisfied.
+				 */
+				job_ptr->details->requeue = false;
+			}
+		}
 
 		/*
 		 * While the job is completed at this point there is code in
@@ -1249,6 +1301,10 @@ void _sync_jobs_to_conf(void)
 			error("Aborting %pJ due to use of unsupported GRES options",
 			      job_ptr);
 			job_fail = true;
+			if (job_ptr->details) {
+				/* don't attempt to requeue job */
+				job_ptr->details->requeue = false;
+			}
 		}
 
 		if (!job_fail && job_ptr->job_resrcs &&
@@ -1271,6 +1327,7 @@ void _sync_jobs_to_conf(void)
 		build_node_details(job_ptr, false); /* set node_addr */
 
 		if (job_fail) {
+			bool was_running = false;
 			if (IS_JOB_PENDING(job_ptr)) {
 				job_ptr->start_time =
 					job_ptr->end_time = time(NULL);
@@ -1280,6 +1337,7 @@ void _sync_jobs_to_conf(void)
 				job_ptr->job_state =
 					JOB_NODE_FAIL | JOB_COMPLETING;
 				build_cg_bitmap(job_ptr);
+				was_running = true;
 			} else if (IS_JOB_SUSPENDED(job_ptr)) {
 				job_ptr->end_time = job_ptr->suspend_time;
 				job_ptr->job_state =
@@ -1289,6 +1347,7 @@ void _sync_jobs_to_conf(void)
 					difftime(now, job_ptr->suspend_time);
 				jobacct_storage_g_job_suspend(acct_db_conn,
 							      job_ptr);
+				was_running = true;
 			}
 			job_ptr->state_reason = FAIL_DOWN_NODE;
 			xfree(job_ptr->state_desc);
@@ -1296,6 +1355,21 @@ void _sync_jobs_to_conf(void)
 			if (job_ptr->job_state == JOB_NODE_FAIL) {
 				/* build_cg_bitmap() may clear JOB_COMPLETING */
 				epilog_slurmctld(job_ptr);
+			}
+			if (was_running && job_ptr->batch_flag &&
+			    job_ptr->details && job_ptr->details->requeue &&
+			    job_ptr->part_ptr) {
+				/*
+				 * Mark for requeue
+				 * see _requeue_job_node_failed()
+				 */
+				info("Attempting to requeue failed job %pJ",
+				     job_ptr);
+				job_ptr->job_state |= JOB_REQUEUE;
+
+				/* Reset node_cnt to exclude vanished nodes */
+				job_ptr->node_cnt = bit_set_count(
+					job_ptr->node_bitmap_cg);
 			}
 		}
 	}
@@ -1682,6 +1756,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	_validate_het_jobs();
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
+	_requeue_job_node_failed();
 	load_part_uid_allow_list(1);
 
 	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */

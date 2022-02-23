@@ -78,6 +78,10 @@ HIGHLIGHTS
     SLURM_JOB_ACCOUNT, SLURM_JOB_RESERVATION, SLURM_JOB_CONSTRAINTS,
     SLURM_JOB_NUM_HOSTS, SLURM_JOB_CPUS_PER_NODE, SLURM_JOB_NTASKS, and
     SLURM_JOB_RESTART_COUNT.
+ -- Attempt to requeue jobs terminated by slurm.conf changes (node vanish, node
+    socket/core change, etc). Processes may still be running on excised nodes.
+    Admin should take precautions when removing nodes that have jobs on running
+    on them.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

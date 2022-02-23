@@ -155,6 +155,7 @@
 <li><a href="#health_check_example">Does anyone have an example node health check
 script for Slurm?</a></li>
 <li><a href="#add_nodes">What process should I follow to add nodes to Slurm?</a></li>
+<li><a href="#rem_nodes">What process should I follow to remove nodes from Slurm?</a></li>
 <li><a href="#licenses">Can Slurm be configured to manage licenses?</a></li>
 <li><a href="#salloc_default_command">Can the salloc command be configured to
   launch a shell on a node in the job's allocation?</a></li>
@@ -1717,6 +1718,22 @@ following procedure is recommended:
 prior to new nodes being added to the slurm.conf can fail if the job is
 allocated one of the new nodes.
 
+<p><a id="rem_nodes"><b>What process should I follow to remove nodes from Slurm?</b></a><br>
+To safely remove a node from a system, it's best to drain the node of all jobs.
+This ensures that job processes aren't running on the node after removal. On
+restart of the controller, if a node is removed from a running job the
+controller will kill the job on any remaining allocated nodes and attempt to
+requeue the job if possible. The following procedure is recommended:
+
+<ol>
+<li>Drain node of all jobs (e.g. "scontrol update nodenname=<nodes> state=drain reason="removing nodes")</li>
+<li>Stop the slurmctld daemon (e.g. "systemctl stop slurmctld" on the head node)</li>
+<li>Update the slurm.conf file on all nodes in the cluster</li>
+<li>Restart the slurmd daemons on all nodes (e.g. "systemctl restart slurmd" on all nodes)</li>
+<li>Restart the slurmctld daemon (e.g. "systemctl start slurmctld" on the head node)</li>
+</ol>
+</p>
+
 <p><a id="licenses"><b>Can Slurm be configured to manage licenses?</b></a><br>
 Slurm is not currently integrated with FlexLM, but it does provide for the
 allocation of global resources called licenses. Use the Licenses configuration
@@ -2287,6 +2304,6 @@ exclude=slurm*
 </pre>
 </p>
 
-<p style="text-align:center;">Last modified 27 April 2022</p>
+<p style="text-align:center;">Last modified 3 May 2022</p>
 
 <!--#include virtual="footer.txt"-->

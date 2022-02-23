@@ -213,6 +213,10 @@ documents those changes that are of interest to users and administrators.
  -- sacctmgr - reject requests with incorrect TRES specification.
  -- Correct issue where conversion to/from JSON/YAML may have resulted in empty
     strings being replaced with strings containing "null" instead.
+ -- Attempt to requeue jobs terminated by slurm.conf changes (node vanish, node
+    socket/core change, etc). Processes may still be running on excised nodes.
+    Admin should take precautions when removing nodes that have jobs on running
+    on them.
 
 * Changes in Slurm 21.08.9
 ==========================
