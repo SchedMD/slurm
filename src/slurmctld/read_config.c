@@ -264,31 +264,45 @@ static void _sort_node_record_table_ptr(void)
 #endif
 }
 
-/*
- * Unfortunately the global feature bitmaps have not been set up at this point,
- * so we'll have to scan through the node_record_table directly to locate
- * the appropriate records.
- */
 static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 {
-	node_record_t *node_ptr;
-	for (int i = 0; (node_ptr = next_node(&i));) {
-		char *features, *tmp, *tok, *last = NULL;
-
-		if (!node_ptr->features)
-			continue;
-
-		features = tmp = xstrdup(node_ptr->features);
-
-		while ((tok = strtok_r(tmp, ",", &last))) {
-			if (!xstrcmp(tok, feature)) {
-				hostlist_push_host(
-					hl, node_ptr->name);
-				break;
-			}
-			tmp = NULL;
+	if (avail_feature_list) {
+		char *feature_nodes;
+		node_feature_t *node_feat_ptr;
+		if (!(node_feat_ptr = list_find_first(avail_feature_list,
+						      list_find_feature,
+						      feature))) {
+			debug2("unable to find nodeset feature '%s'", feature);
+			return;
 		}
-		xfree(features);
+		feature_nodes = bitmap2node_name(node_feat_ptr->node_bitmap);
+		hostlist_push(hl, feature_nodes);
+		xfree(feature_nodes);
+	} else {
+		node_record_t *node_ptr;
+		/*
+		 * The global feature bitmaps have not been set up at this
+		 * point, so we'll have to scan through the node_record_table
+		 * directly to locate the appropriate records.
+		 */
+		for (int i = 0; (node_ptr = next_node(&i));) {
+			char *features, *tmp, *tok, *last = NULL;
+
+			if (!node_ptr->features)
+				continue;
+
+			features = tmp = xstrdup(node_ptr->features);
+
+			while ((tok = strtok_r(tmp, ",", &last))) {
+				if (!xstrcmp(tok, feature)) {
+					hostlist_push_host(
+						hl, node_ptr->name);
+					break;
+				}
+				tmp = NULL;
+			}
+			xfree(features);
+		}
 	}
 }
 
