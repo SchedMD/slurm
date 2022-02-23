@@ -755,6 +755,22 @@
         ],
         "summary": "Update user",
         "operationId": "slurmdbd_update_users",
+        "requestBody": {
+          "description": "add or update user",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_update_users"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_update_users"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -3646,6 +3662,16 @@
                 "type": "string",
                 "description": "version specifier"
               }
+            }
+          }
+        }
+      },
+      "dbv0.0.38_update_users": {
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_user"
             }
           }
         }
