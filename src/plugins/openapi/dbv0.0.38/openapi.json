@@ -2292,12 +2292,10 @@
             "description": "Description of administrator level"
           },
           "associations": {
-            "type": "object",
+            "type": "array",
             "description": "Assigned associations",
-            "properties": {
-              "root": {
-                "$ref": "#/components/schemas/dbv0.0.38_association_short_info"
-              }
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_association_short_info"
             }
           },
           "coordinators": {

@@ -116,6 +116,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - add requestBody for /accounts/ in openapi.json.
  -- openapi/dbv0.0.38 - add missing response field "removed_associations"
     in openapi.json
+ -- openapi/dbv0.0.38 - Correct type from object to array for user assocations
+    list in openapi.json.
 
 * Changes in Slurm 21.08.7
 ==========================
