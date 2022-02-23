@@ -1055,7 +1055,19 @@ _read_config(void)
 		conf->threads = conf->conf_threads;
 	}
 
-	if ((conf->cpus    != conf->actual_cpus)    ||
+	if ((conf->cpus != conf->actual_cpus) &&
+	    ((conf->cpus == conf->actual_cores) ||
+	     (conf->cpus == conf->actual_sockets))) {
+		log_var(config_overrides ? LOG_LEVEL_INFO : LOG_LEVEL_DEBUG,
+			"CPUs has been set to match %s per node instead of threads CPUs=%u:%u(hw)",
+			(conf->cpus == conf->actual_cores) ?
+			"cores" : "sockets",
+			conf->cpus, conf->actual_cpus);
+	}
+
+	if (((conf->cpus != conf->actual_cpus) &&
+	     (conf->cpus != conf->actual_cores) &&
+	     (conf->cpus != conf->actual_sockets)) ||
 	    (conf->sockets != conf->actual_sockets) ||
 	    (conf->cores   != conf->actual_cores)   ||
 	    (conf->threads != conf->actual_threads)) {
