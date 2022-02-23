@@ -3130,11 +3130,11 @@
             "description": "Heterogeneous Job details (optional)",
             "properties": {
               "job_id": {
-                "type": "object",
+                "type": "integer",
                 "description": "Parent HetJob id"
               },
               "job_offset": {
-                "type": "object",
+                "type": "integer",
                 "description": "Offset of this job to parent"
               }
             }
