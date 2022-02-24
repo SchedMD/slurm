@@ -128,6 +128,7 @@ typedef struct {
 typedef struct {
 	data_t *src_paths;
 	data_t *dst_paths;
+	openapi_spec_flags_t flags;
 } merge_path_server_t;
 
 typedef struct {
@@ -137,8 +138,15 @@ typedef struct {
 
 typedef struct {
 	data_t *paths;
-	const char *server_path;
+	data_t *server_path;
+	openapi_spec_flags_t flags;
 } merge_path_t;
+
+typedef struct {
+	data_t *server_path;
+	char *operation;
+	char *at;
+} id_merge_path_t;
 
 typedef struct {
 	char *path;
@@ -1072,13 +1080,95 @@ data_for_each_cmd_t _merge_path_strings(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
+data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
+{
+	id_merge_path_t *args = arg;
+	char *p;
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return DATA_FOR_EACH_FAIL;
+
+	p = data_get_string(data);
+
+	/* sub out '.' for '_' to avoid breaking compilers */
+	for (int s = strlen(p), i = 0; i < s; i++)
+		if (p[i] == '.')
+			p[i] = '_';
+
+	xstrfmtcatat(args->operation, &args->at, "%s%s",
+		     (args->at ? "_" : ""),
+		     data_get_string(data));
+
+	return DATA_FOR_EACH_CONT;
+}
+
+/*
+ * Merge plugin id with operationIds in paths.
+ * All operationIds must be globaly unique.
+ */
+data_for_each_cmd_t _differentiate_path_operationId(const char *key,
+						    data_t *data, void *arg)
+{
+	data_t *merge[3] = { 0 }, *merged = NULL;
+	id_merge_path_t *args = arg;
+	data_t *op;
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return DATA_FOR_EACH_CONT;
+
+	if (!(op = data_key_get(data, "operationId"))) {
+		debug2("%s: unexpected missing operationId",
+		      __func__);
+		return DATA_FOR_EACH_CONT;
+	}
+
+	/* force operationId to be a string */
+	if (data_convert_type(op, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
+		error("%s: unexpected type for operationId: %s",
+		      __func__, data_type_to_string(data_get_type(op)));
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	merge[0] = args->server_path;
+	merge[1] = parse_url_path(data_get_string_const(op), false, true);
+	merged = data_list_join((const data_t **)merge, true);
+	FREE_NULL_DATA(merge[1]);
+	if (data_list_for_each(merged, _merge_operationId_strings, args) < 0)
+		return DATA_FOR_EACH_FAIL;
+
+	data_set_string_own(op, args->operation);
+	args->operation = NULL;
+
+	return DATA_FOR_EACH_CONT;
+}
+
+data_for_each_cmd_t _find_first_server(data_t *data, void *arg)
+{
+	data_t **srv = arg;
+	data_t *url;
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return DATA_FOR_EACH_FAIL;
+
+	url = data_key_get(data, "url");
+
+	if (data_convert_type(url, DATA_TYPE_STRING) == DATA_TYPE_STRING) {
+		*srv = parse_url_path(data_get_string(url), false, false);
+		return DATA_FOR_EACH_STOP;
+	}
+
+	return DATA_FOR_EACH_FAIL;
+}
+
 data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 {
 	merge_path_t *args = arg;
-	data_t *e;
+	data_t *e, *servers;
 	data_t *merge[3] = { 0 }, *merged = NULL;
 	merge_path_strings_t mp_args = { 0 };
 	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
+	id_merge_path_t id_merge = { 0 };
+	bool free_0 = false; /* free merge[0] ? */
 
 	if (data_get_type(data) != DATA_TYPE_DICT) {
 		rc = DATA_FOR_EACH_FAIL;
@@ -1086,15 +1176,24 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 	}
 
 	/* merge the paths together cleanly */
-	if (!data_key_get(data, "servers")) {
-		merge[0] = parse_url_path(args->server_path, false, true);
+	if (!(servers = data_key_get(data, "servers"))) {
+		merge[0] = id_merge.server_path = args->server_path;
 		merge[1] = parse_url_path(key, false, true);
 	} else {
 		/* servers is specified: only cleanup the path */
-		merge[0] = parse_url_path(key, false, true);
-	}
-	merged = data_list_join((const data_t **)merge, true);
+		/* only handling 1 server for now */
+		xassert(data_get_list_length(servers) == 1);
 
+		(void) data_list_for_each(servers, _find_first_server,
+					  &merge[0]);
+		id_merge.server_path = merge[0];
+		free_0 = true;
+		xassert(merge[0]);
+
+		merge[1] = parse_url_path(key, false, true);
+	}
+
+	merged = data_list_join((const data_t **)merge, true);
 	if (data_list_for_each(merged, _merge_path_strings, &mp_args) < 0) {
 		rc = DATA_FOR_EACH_FAIL;
 		goto cleanup;
@@ -1112,11 +1211,18 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 	data_set_dict(e);
 	data_copy(e, data);
 
-cleanup:
+	if ((args->flags & OAS_FLAG_MANGLE_OPID) &&
+	    data_dict_for_each(e, _differentiate_path_operationId,
+			       &id_merge) < 0) {
+		rc = DATA_FOR_EACH_FAIL;
+		goto cleanup;
+	}
 
-	FREE_NULL_DATA(merged);
-	FREE_NULL_DATA(merge[0]);
+cleanup:
+	if (free_0)
+		FREE_NULL_DATA(merge[0]);
 	FREE_NULL_DATA(merge[1]);
+	FREE_NULL_DATA(merged);
 	xfree(mp_args.path);
 
 	return rc;
@@ -1127,6 +1233,7 @@ data_for_each_cmd_t _merge_path_server(data_t *data, void *arg)
 	merge_path_server_t *args = arg;
 	merge_path_t p_args = {
 		.paths = args->dst_paths,
+		.flags = args->flags,
 	};
 	data_t *url;
 
@@ -1139,7 +1246,8 @@ data_for_each_cmd_t _merge_path_server(data_t *data, void *arg)
 	if (data_convert_type(url, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return DATA_FOR_EACH_FAIL;
 
-	p_args.server_path = data_get_string(url);
+	p_args.server_path = parse_url_path(data_get_string_const(url),
+					    false, false);
 
 	if (args->src_paths &&
 	    (data_dict_for_each(args->src_paths, _merge_path, &p_args) < 0))
@@ -1222,6 +1330,7 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 				.dst_paths = paths,
 				.src_paths = data_key_get(oas->spec[i],
 							  "paths"),
+				.flags = oas->spec_flags[i],
 			};
 
 			if (data_list_for_each(src_srvs, _merge_path_server,
@@ -1231,8 +1340,9 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 		} else {
 			/* servers is not populated, default to '/' */
 			merge_path_t p_args = {
-				.server_path = "/",
+				.server_path = NULL,
 				.paths = paths,
+				.flags = oas->spec_flags[i],
 			};
 			data_t *src_paths = data_key_get(oas->spec[i], "paths");
 

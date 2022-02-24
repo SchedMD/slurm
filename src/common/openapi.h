@@ -70,6 +70,7 @@ typedef int (*openapi_handler_t)(
 
 typedef enum {
 	OAS_FLAG_NONE = 0,
+	OAS_FLAG_MANGLE_OPID = SLURM_BIT(0), /* mangle operationid */
 	OAS_FLAG_MAX = SLURM_BIT(63) /* place holder */
 } openapi_spec_flags_t;
 

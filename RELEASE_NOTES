@@ -78,3 +78,6 @@ API CHANGES
  -- openapi - added flags to slurm_openapi_p_get_specification(). Existing
     plugins only need to update their prototype for the function as
     manipulating the flags pointer is optional.
+ -- openapi - Added OAS_FLAG_MANGLE_OPID to allow plugins to request that the
+    operationId of path methods be mangled with the full path to ensure
+    uniqueness.
