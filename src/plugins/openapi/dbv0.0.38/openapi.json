@@ -3628,12 +3628,20 @@
       },
       "dbv0.0.38_error": {
         "properties": {
-          "errno": {
-            "description": "Error number",
+          "error_number": {
+            "description": "Slurm internal error number",
             "type": "integer"
           },
           "error": {
             "description": "Error message",
+            "type": "string"
+          },
+          "source": {
+            "description": "Where error occured in the source",
+            "type": "string"
+          },
+          "description": {
+            "description": "Explaination of cause of error",
             "type": "string"
           }
         },
