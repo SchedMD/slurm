@@ -96,6 +96,9 @@ documents those changes that are of interest to users and administrators.
     a relevant consequence, the filetxt plugin reopens the file for potential
     logrotation.
 
+* Changes in Slurm 21.08.7
+==========================
+
 * Changes in Slurm 21.08.6
 ==========================
  -- Handle typed shared GRES better in accounting.
