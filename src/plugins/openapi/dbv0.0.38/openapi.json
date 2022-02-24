@@ -3482,14 +3482,8 @@
             }
           },
           "task": {
-            "type": "object",
-            "description": "Task properties",
-            "properties": {
-              "distribution": {
-                "type": "string",
-                "description": "Task distribution type"
-              }
-            }
+            "description": "Task distribution properties",
+            "type": "string"
           },
           "tres": {
             "type": "object",

@@ -123,6 +123,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - Add missing field for name in qos list in openapi.json.
  -- openapi/dbv0.0.38 - Correct tres field in qos list in openapi.json.
  -- openapi/dbv0.0.38 - Correct het job details types in jobs in openapi.json
+ -- openapi/dbv0.0.38 - Correct task type for job steps in openapi.json.
 
 * Changes in Slurm 21.08.7
 ==========================
