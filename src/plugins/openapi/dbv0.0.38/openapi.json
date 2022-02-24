@@ -53,7 +53,7 @@
             "in": "path",
             "description": "Slurm Job ID",
             "required": true,
-            "style": "label",
+            "style": "simple",
             "explode": false,
             "schema": {
               "type": "integer",

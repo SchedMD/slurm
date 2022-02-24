@@ -128,6 +128,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - Add missing field for adding clusters in clusters list
     in openapi.json.
  -- openapi/v0.0.38 - correct parameter styles from "simple" to "form".
+ -- openapi/dbv0.0.38 - correct parameter styles from "simple" to "form".
 
 * Changes in Slurm 21.08.7
 ==========================
