@@ -258,7 +258,7 @@ extern data_t * get_query_key_list(const char *path, data_t *errors,
 	return dst;
 }
 
-const data_t *slurm_openapi_p_get_specification(void)
+const data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 {
 	data_t *spec = NULL;
 

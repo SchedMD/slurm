@@ -160,7 +160,7 @@ extern int resp_error(data_t *errors, int error_code, const char *source,
 	return error_code;
 }
 
-extern data_t *slurm_openapi_p_get_specification(void)
+extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 {
 	data_t *spec = NULL;
 

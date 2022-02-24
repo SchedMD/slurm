@@ -62,7 +62,7 @@ typedef enum {
 typedef struct {
 	int (*init)(void);
 	int (*fini)(void);
-	data_t *(*get_oas)(void);
+	data_t *(*get_oas)(openapi_spec_flags_t *flags);
 } slurm_openapi_ops_t;
 
 /*
@@ -150,6 +150,7 @@ struct openapi_s {
 	List paths;
 	int path_tag_counter;
 	data_t **spec;
+	openapi_spec_flags_t *spec_flags;
 
 	slurm_openapi_ops_t *ops;
 	int context_cnt;
@@ -902,8 +903,11 @@ extern int init_openapi(openapi_t **oas, const char *plugins,
 	t->ops = xcalloc((t->plugin_count + 1), sizeof(*t->ops));
 	t->context = xcalloc((t->plugin_count + 1), sizeof(*t->context));
 	t->spec = xcalloc((t->plugin_count + 1), sizeof(*t->spec));
+	t->spec_flags = xcalloc((t->plugin_count + 1), sizeof(*t->spec_flags));
 
 	for (size_t i = 0; (i < t->plugin_count); i++) {
+		openapi_spec_flags_t flags = OAS_FLAG_NONE;
+
 		if (t->plugin_handles[i] == PLUGIN_INVALID_HANDLE) {
 			error("Invalid plugin to load?");
 			rc = ESLURM_PLUGIN_INVALID;
@@ -918,12 +922,17 @@ extern int init_openapi(openapi_t **oas, const char *plugins,
 			break;
 		}
 
-		t->spec[t->context_cnt] = (*(t->ops[t->context_cnt].get_oas))();
+		t->spec[t->context_cnt] =
+			(*(t->ops[t->context_cnt].get_oas))(&flags);
+		t->spec_flags[t->context_cnt] = flags;
 		if (!t->spec[t->context_cnt]) {
 			error("unable to load OpenAPI spec");
 			rc = ESLURM_PLUGIN_INCOMPLETE;
 			break;
 		}
+
+		debug2("%s: loaded plugin %s with flags 0x%"PRIx64,
+		       __func__, t->plugin_types[i], flags);
 
 		t->context_cnt++;
 	}
@@ -958,6 +967,7 @@ extern void destroy_openapi(openapi_t *oas)
 	for (size_t i = 0; oas->spec[i]; i++)
 		FREE_NULL_DATA(oas->spec[i]);
 	xfree(oas->spec);
+	xfree(oas->spec_flags);
 	xfree(oas->ops);
 
 	for (size_t i = 0; i < oas->plugin_count; i++) {

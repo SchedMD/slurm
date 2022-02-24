@@ -68,6 +68,11 @@ typedef int (*openapi_handler_t)(
 	void *auth /* authentication context */
 );
 
+typedef enum {
+	OAS_FLAG_NONE = 0,
+	OAS_FLAG_MAX = SLURM_BIT(63) /* place holder */
+} openapi_spec_flags_t;
+
 /*
  * Register a given unique tag against a path.
  *

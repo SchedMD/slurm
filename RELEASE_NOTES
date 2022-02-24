@@ -75,3 +75,6 @@ API CHANGES
 ===========
  -- openapi/v0.0.35 - Plugin has been removed.
  -- burst_buffer plugins - err_msg added to bb_p_job_validate().
+ -- openapi - added flags to slurm_openapi_p_get_specification(). Existing
+    plugins only need to update their prototype for the function as
+    manipulating the flags pointer is optional.

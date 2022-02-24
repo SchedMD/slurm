@@ -117,7 +117,7 @@ extern data_t *populate_response_format(data_t *resp)
 	return data_set_list(data_key_set(resp, "errors"));
 }
 
-extern data_t *slurm_openapi_p_get_specification(void)
+extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 {
 	data_t *spec = NULL;
 
