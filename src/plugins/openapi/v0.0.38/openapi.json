@@ -42,7 +42,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_diag",
+        "operationId": "diag",
         "summary": "get diagnostics",
         "responses": {
           "200": {
@@ -112,7 +112,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_ping",
+        "operationId": "ping",
         "summary": "ping test",
         "responses": {
           "200": {
@@ -153,7 +153,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_get_jobs",
+        "operationId": "get_jobs",
         "summary": "get list of jobs",
         "parameters": [
           {
@@ -208,7 +208,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_get_job",
+        "operationId": "get_job",
         "summary": "get job info",
         "parameters": [
           {
@@ -248,7 +248,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_update_job",
+        "operationId": "update_job",
         "summary": "update job",
         "parameters": [
           {
@@ -292,7 +292,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_cancel_job",
+        "operationId": "cancel_job",
         "summary": "cancel or signal job",
         "parameters": [
           {
@@ -333,7 +333,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_submit_job",
+        "operationId": "submit_job",
         "summary": "submit new job",
         "requestBody": {
           "description": "submit new job",
@@ -390,7 +390,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_get_nodes",
+        "operationId": "get_nodes",
         "summary": "get all node info",
         "parameters": [
           {
@@ -445,7 +445,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_get_node",
+        "operationId": "get_node",
         "summary": "get node info",
         "parameters": [
           {
@@ -499,7 +499,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_get_partitions",
+        "operationId": "get_partitions",
         "summary": "get all partition info",
         "parameters": [
           {
@@ -554,7 +554,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_get_partition",
+        "operationId": "get_partition",
         "summary": "get partition info",
         "parameters": [
           {
@@ -620,7 +620,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_get_reservations",
+        "operationId": "get_reservations",
         "summary": "get all reservation info",
         "parameters": [
           {
@@ -675,7 +675,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmctld_get_reservation",
+        "operationId": "get_reservation",
         "summary": "get reservation info",
         "parameters": [
           {
