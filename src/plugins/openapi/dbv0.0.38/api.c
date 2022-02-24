@@ -262,6 +262,8 @@ const data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 {
 	data_t *spec = NULL;
 
+	*flags |= OAS_FLAG_MANGLE_OPID;
+
 	static_ref_json_to_data_t(spec, openapi_json);
 
 	return spec;

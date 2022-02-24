@@ -131,6 +131,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - correct parameter styles from "simple" to "form".
  -- openapi - add flags to slurm_openapi_p_get_specification().
  -- openapi/v0.0.38 - use new operationId generation to ensure uniqueness.
+ -- openapi/dbv0.0.38 - use new operationId generation to ensure uniqueness.
 
 * Changes in Slurm 21.08.7
 ==========================

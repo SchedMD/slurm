@@ -44,7 +44,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_get_job",
+        "operationId": "get_job",
         "summary": "Get job info",
         "description": "This endpoint may return multiple job entries since job_id is not a unique key - only the tuple (cluster, job_id, start_time) is unique. If the requested job_id is a component of a heterogeneous job all components are returned.",
         "parameters": [
@@ -100,7 +100,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_get_db_config",
+        "operationId": "get_config",
         "summary": "Dump all configuration information",
         "responses": {
           "200": {
@@ -139,7 +139,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_set_db_config",
+        "operationId": "set_config",
         "summary": "Load all configuration information",
         "responses": {
           "200": {
@@ -180,7 +180,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_update_tres",
+        "operationId": "update_tres",
         "responses": {
           "200": {
             "content": {
@@ -219,7 +219,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_get_tres",
+        "operationId": "get_tres",
         "responses": {
           "200": {
             "content": {
@@ -249,7 +249,7 @@
           "slurm"
         ],
         "summary": "Delete QOS",
-        "operationId": "slurmdbd_delete_qos",
+        "operationId": "delete_qos",
         "responses": {
           "200": {
             "content": {
@@ -301,7 +301,7 @@
           "slurm"
         ],
         "summary": "Get QOS info",
-        "operationId": "slurmdbd_get_single_qos",
+        "operationId": "get_single_qos",
         "responses": {
           "200": {
             "content": {
@@ -354,7 +354,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_get_qos",
+        "operationId": "get_qos",
         "responses": {
           "200": {
             "content": {
@@ -395,7 +395,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_update_associations",
+        "operationId": "update_associations",
         "responses": {
           "200": {
             "content": {
@@ -434,7 +434,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_get_associations",
+        "operationId": "get_associations",
         "responses": {
           "200": {
             "content": {
@@ -475,7 +475,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_get_association",
+        "operationId": "get_association",
         "parameters": [
           {
             "name": "cluster",
@@ -560,7 +560,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_delete_association",
+        "operationId": "delete_association",
         "parameters": [
           {
             "name": "cluster",
@@ -648,7 +648,7 @@
           "slurm"
         ],
         "summary": "Delete user",
-        "operationId": "slurmdbd_delete_user",
+        "operationId": "delete_user",
         "responses": {
           "200": {
             "content": {
@@ -700,7 +700,7 @@
           "slurm"
         ],
         "summary": "Get user info",
-        "operationId": "slurmdbd_get_user",
+        "operationId": "get_user",
         "responses": {
           "200": {
             "content": {
@@ -754,7 +754,7 @@
           "slurm"
         ],
         "summary": "Update user",
-        "operationId": "slurmdbd_update_users",
+        "operationId": "update_users",
         "requestBody": {
           "description": "add or update user",
           "content": {
@@ -809,7 +809,7 @@
           "slurm"
         ],
         "summary": "Get user list",
-        "operationId": "slurmdbd_get_users",
+        "operationId": "get_users",
         "responses": {
           "200": {
             "content": {
@@ -850,7 +850,7 @@
           "slurm"
         ],
         "summary": "Delete cluster",
-        "operationId": "slurmdbd_delete_cluster",
+        "operationId": "delete_cluster",
         "responses": {
           "200": {
             "content": {
@@ -902,7 +902,7 @@
           "slurm"
         ],
         "summary": "Get cluster info",
-        "operationId": "slurmdbd_get_cluster",
+        "operationId": "get_cluster",
         "responses": {
           "200": {
             "content": {
@@ -955,7 +955,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_get_clusters",
+        "operationId": "get_clusters",
         "responses": {
           "200": {
             "content": {
@@ -994,7 +994,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_add_clusters",
+        "operationId": "add_clusters",
         "responses": {
           "200": {
             "content": {
@@ -1052,7 +1052,7 @@
           "slurm"
         ],
         "summary": "Delete wckey",
-        "operationId": "slurmdbd_delete_wckey",
+        "operationId": "delete_wckey",
         "responses": {
           "200": {
             "content": {
@@ -1104,7 +1104,7 @@
           "slurm"
         ],
         "summary": "Get wckey info",
-        "operationId": "slurmdbd_get_wckey",
+        "operationId": "get_wckey",
         "responses": {
           "200": {
             "content": {
@@ -1157,7 +1157,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_get_wckeys",
+        "operationId": "get_wckeys",
         "responses": {
           "200": {
             "content": {
@@ -1196,7 +1196,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_add_wckeys",
+        "operationId": "add_wckeys",
         "responses": {
           "200": {
             "content": {
@@ -1238,7 +1238,7 @@
           "slurm"
         ],
         "summary": "Delete account",
-        "operationId": "slurmdbd_delete_account",
+        "operationId": "delete_account",
         "responses": {
           "200": {
             "content": {
@@ -1290,7 +1290,7 @@
           "slurm"
         ],
         "summary": "Get account info",
-        "operationId": "slurmdbd_get_account",
+        "operationId": "get_account",
         "responses": {
           "200": {
             "content": {
@@ -1343,7 +1343,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_get_accounts",
+        "operationId": "get_accounts",
         "responses": {
           "200": {
             "content": {
@@ -1382,7 +1382,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_update_account",
+        "operationId": "update_account",
         "responses": {
           "200": {
             "content": {
@@ -1439,7 +1439,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_get_jobs",
+        "operationId": "get_jobs",
         "parameters": [
           {
             "in": "query",
@@ -1757,7 +1757,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "slurmdbd_diag",
+        "operationId": "diag",
         "responses": {
           "200": {
             "content": {
