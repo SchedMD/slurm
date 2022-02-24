@@ -254,7 +254,8 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 		step_req->node_list,
 		NULL, NULL,
 		step_req->min_nodes,
-		step_req->num_tasks);
+		step_req->num_tasks,
+		0);
 
 	if (switch_g_alloc_jobinfo(&step_resp->switch_job,
 				   step_req->step_id.job_id,

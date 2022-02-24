@@ -60,6 +60,7 @@ extern slurm_step_layout_t *slurm_step_layout_create(
  * IN node_cnt - number of nodes we have
  * IN task_cnt - number of tasks to distribute across these cpus 0
  *               if using cpus_per_node
+ * IN protocol_version - version to be set in layout structure
  * RET a pointer to an slurm_step_layout_t structure
  * NOTE: allocates memory that should be xfreed by caller
  */
@@ -68,7 +69,8 @@ extern slurm_step_layout_t *fake_slurm_step_layout_create(
 	uint16_t *cpus_per_node,
 	uint32_t *cpu_count_reps,
 	uint32_t node_cnt,
-	uint32_t task_cnt);
+	uint32_t task_cnt,
+	uint16_t protocol_version);
 
 /* copys structure for step layout */
 extern slurm_step_layout_t *slurm_step_layout_copy(
