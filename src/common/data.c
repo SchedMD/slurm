@@ -816,6 +816,7 @@ extern data_t *data_set_string_own(data_t *data, char *value)
 
 	if (!data || !value)
 		return NULL;
+	_release(data);
 
 	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to string: %s",
 		 __func__, (uintptr_t) data, value);
