@@ -1027,7 +1027,23 @@
             }
           }
         },
-        "summary": "Add clusters"
+        "summary": "Add clusters",
+        "requestBody": {
+          "description": "Add or update clusters",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_clusters_properties"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_clusters_properties"
+              }
+            }
+          },
+          "required": true
+        }
       }
     },
     "/wckey/{wckey}": {
@@ -3709,6 +3725,14 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_account"
             }
+          }
+        }
+      },
+      "dbv0.0.38_clusters_properties": {
+        "type": "object",
+        "properties": {
+          "clusters": {
+            "$ref": "#/components/schemas/dbv0.0.38_cluster_info"
           }
         }
       }

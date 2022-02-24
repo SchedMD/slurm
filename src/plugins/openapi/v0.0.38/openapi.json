@@ -1951,11 +1951,7 @@
             "description": "number of assigned job hosts"
           },
           "allocated_nodes": {
-            "type": "object",
-            "description": "node allocations",
-            "properties": {
-              "$ref": "#/components/schemas/v0.0.38_node_allocation"
-            }
+            "$ref": "#/components/schemas/v0.0.38_node_allocation"
           }
         }
       },
