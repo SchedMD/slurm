@@ -832,7 +832,9 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	   we add a cluster column.
 	*/
 	if (mysql_db_create_table(mysql_conn, txn_table, txn_table_fields,
-				  ", primary key (id))") == SLURM_ERROR)
+				  ", primary key (id), "
+				  "key archive_purge (timestamp, cluster))")
+	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if (mysql_db_create_table(mysql_conn, tres_table,
@@ -1427,7 +1429,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  id_usage_table_fields,
-				  ", primary key (id, id_tres, time_start))")
+				  ", primary key (id, id_tres, time_start), "
+				  "key time_start (time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1436,7 +1439,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  id_usage_table_fields,
-				  ", primary key (id, id_tres, time_start))")
+				  ", primary key (id, id_tres, time_start), "
+				  "key time_start (time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1445,7 +1449,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  id_usage_table_fields,
-				  ", primary key (id, id_tres, time_start))")
+				  ", primary key (id, id_tres, time_start), "
+				  "key time_start (time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1454,7 +1459,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
-				  ", primary key (id_tres, time_start))")
+				  ", primary key (id_tres, time_start), "
+				  "key time_start (time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1463,7 +1469,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
-				  ", primary key (id_tres, time_start))")
+				  ", primary key (id_tres, time_start), "
+				  "key time_start (time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1472,7 +1479,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  cluster_usage_table_fields,
-				  ", primary key (id_tres, time_start))")
+				  ", primary key (id_tres, time_start), "
+				  "key time_start (time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1483,7 +1491,9 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  event_table_fields,
 				  ", primary key (node_name(42), time_start), "
 				  "key rollup (node_name(42), time_start, "
-				  "time_end, state))") == SLURM_ERROR)
+				  "time_end, state), "
+				  "key time_start_end (time_start, time_end))")
+	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	snprintf(table_name, sizeof(table_name), "\"%s_%s\"",
@@ -1550,7 +1560,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		 cluster_name, resv_table);
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  resv_table_fields,
-				  ", primary key (id_resv, time_start))")
+				  ", primary key (id_resv, time_start), "
+				  "key time_start_end (time_start, time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
