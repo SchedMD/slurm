@@ -161,7 +161,7 @@
             "in": "query",
             "description": "Filter if changed since update_time. Use of this parameter can result in faster replies.",
             "required": false,
-            "style": "simple",
+            "style": "form",
             "explode": false,
             "schema": {
               "type": "integer",
@@ -398,7 +398,7 @@
             "in": "query",
             "description": "Filter if changed since update_time. Use of this parameter can result in faster replies.",
             "required": false,
-            "style": "simple",
+            "style": "form",
             "explode": false,
             "schema": {
               "type": "integer",
@@ -507,7 +507,7 @@
             "in": "query",
             "description": "Filter if changed since update_time. Use of this parameter can result in faster replies.",
             "required": false,
-            "style": "simple",
+            "style": "form",
             "explode": false,
             "schema": {
               "type": "integer",
@@ -573,7 +573,7 @@
             "in": "query",
             "description": "Filter if there were no partition changes (not limited to partition in URL endpoint) since update_time.",
             "required": false,
-            "style": "simple",
+            "style": "form",
             "explode": false,
             "schema": {
               "type": "integer",
@@ -628,7 +628,7 @@
             "in": "query",
             "description": "Filter if changed since update_time. Use of this parameter can result in faster replies.",
             "required": false,
-            "style": "simple",
+            "style": "form",
             "explode": false,
             "schema": {
               "type": "integer",
@@ -694,7 +694,7 @@
             "in": "query",
             "description": "Filter if no reservation (not limited to reservation in URL) changed since update_time.",
             "required": false,
-            "style": "simple",
+            "style": "form",
             "explode": false,
             "schema": {
               "type": "integer",

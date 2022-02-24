@@ -513,6 +513,27 @@
 </tr>
 </table>
 
+<h4>Correct parameter styles to "form"</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">modified fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/jobs/"[].parameters[]|select(.name="update_type)"</li>
+			<li>.paths."/job/{job_id}"[].get.parameters[]|select(.name="job_id)"</li>
+			<li>.paths."/job/{job_id}"[].post.parameters[]|select(.name="job_id)"</li>
+			<li>.paths."/nodes/"[].get.parameters[]|select(.name="update_time)"</li>
+			<li>.paths."/node/{node_name}"[].get.parameters[]|select(.name="node_name)"</li>
+			<li>.paths."/partitions/"[].get.parameters[]|select(.name="update_time)"</li>
+			<li>.paths."/partition/{partition_name}"[].get.parameters[]|select(.name="partition_name)"</li>
+			<li>.paths."/partition/{partition_name}"[].get.parameters[]|select(.name="update_time)"</li>
+			<li>.paths."/reservations/"[].get.parameters[]|select(.name="reservation_name)"</li>
+			<li>.paths."/reservations/"[].get.parameters[]|select(.name="update_time)"</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h3>openapi/v0.0.35 (src/plugins/openapi/v0.0.35/openapi.json)</h3>
 
 <h4>Removal notice</h4>
