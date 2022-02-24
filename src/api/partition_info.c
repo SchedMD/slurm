@@ -367,6 +367,10 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 			   part_ptr->max_mem_per_cpu);
 	}
 
+	/****** Line ******/
+	xstrcat(out, line_end);
+	xstrfmtcat(out, "TRES=%s", part_ptr->tres_fmt_str);
+
 	/****** Line 10 ******/
 	if (part_ptr->billing_weights_str) {
 		xstrcat(out, line_end);
