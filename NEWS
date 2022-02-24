@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 21.08.7
 ==========================
+ -- openapi/v0.0.37 - correct calculation for bf_queue_len_mean in /diag.
 
 * Changes in Slurm 21.08.6
 ==========================

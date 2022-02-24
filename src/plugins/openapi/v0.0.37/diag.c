@@ -138,7 +138,7 @@ static int _op_handler_diag(const char *context_id,
 	data_set_int(data_key_set(d, "bf_queue_len"), resp->bf_queue_len);
 	data_set_int(data_key_set(d, "bf_queue_len_mean"),
 		     (resp->bf_cycle_counter > 0) ?
-		      (resp->bf_table_size_sum / resp->bf_cycle_counter) : 0);
+		      (resp->bf_queue_len_sum / resp->bf_cycle_counter) : 0);
 	data_set_int(data_key_set(d, "bf_when_last_cycle"),
 		     resp->bf_when_last_cycle);
 	data_set_bool(data_key_set(d, "bf_active"), (resp->bf_active != 0));
