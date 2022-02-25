@@ -1713,9 +1713,13 @@ _slurmd_init(void)
 		 * in order to load in correct configs (e.g. gres, etc.). First
 		 * get the mapped node_name from the slurmctld.
 		 */
-		char hostname[HOST_NAME_MAX];
-		if (!gethostname(hostname, HOST_NAME_MAX))
-			conf->node_name = xstrdup(hostname);
+
+		/* Use -N name if specified. */
+		if (!conf->node_name) {
+			char hostname[HOST_NAME_MAX];
+			if (!gethostname(hostname, HOST_NAME_MAX))
+				conf->node_name = xstrdup(hostname);
+		}
 
 		xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
 					&conf->actual_boards,
