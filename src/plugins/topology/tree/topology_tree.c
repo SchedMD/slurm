@@ -530,6 +530,7 @@ static void _free_switch_record_table(void)
 			xfree(switch_record_table[i].nodes);
 			xfree(switch_record_table[i].switches);
 			xfree(switch_record_table[i].switches_dist);
+			xfree(switch_record_table[i].switch_desc_index);
 			xfree(switch_record_table[i].switch_index);
 			FREE_NULL_BITMAP(switch_record_table[i].node_bitmap);
 		}
