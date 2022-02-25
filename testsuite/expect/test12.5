@@ -52,44 +52,19 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 
 proc sacct_job { soption } {
 	global sacct
-	set debug       0
-	set matches     0
-	set not_support 0
-	log_debug "Sacct $soption"
 
-	spawn $sacct $soption
-	expect {
-		-re "Slurm accounting storage is disabled" {
-			set not_support 1
-			exp_continue
-		}
-		-re "Account.*AdminComment.*AllocCPUS.*AllocNodes" {
-			if {$debug} {log_debug "Match1"}
-			incr matches
-			exp_continue
-		}
-		-re "AllocTRES.*AssocID.*AveCPU.*AveCPUFreq" {
-			if {$debug} {log_debug "Match2"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sacct not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$not_support != 0} {
-		skip "Can not test without accounting enabled"
-	}
-	return $matches
+	set output [run_command_output -fail "$sacct $soption"]
+	subtest {[regexp Account $output] &&
+	         [regexp ExitCode $output] &&
+	         [regexp JobID $output] &&
+	         [regexp NodeList $output] &&
+	         [regexp ReqMem $output] &&
+	         [regexp Start $output] &&
+	         [regexp State $output] &&
+	         [regexp Timelimit $output] &&
+	         [regexp User $output] &&
+	         [regexp WorkDir $output]} "Verify sacct $soption"
 }
 
-################################################################
-set matches [sacct_job --helpformat]
-subtest {$matches == 2} "Verify sacct --helpformat option" "sacct --helpformat failed ($matches of 2)"
-
-set matches [sacct_job -e]
-subtest {$matches == 2} "Verify sacct -e option" "sacct -e failed ($matches of 2)"
+sacct_job --helpformat
+sacct_job -e

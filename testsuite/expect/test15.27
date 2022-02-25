@@ -45,63 +45,25 @@ proc check_alloc { } {
 	global scontrol salloc sacct cputot scontrol_cpu sacct_cpu nodes
 	global job_id number re_word_str
 
-	set node_name $nodes
-	spawn $scontrol show job $job_id
-	expect {
-		-re "NodeList=($re_word_str)" {
-			set node_name $expect_out(1,string)
-			exp_continue
-		}
-		-re "NumCPUs=($number)" {
-			set scontrol_cpu $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	set node_name [get_job_param $job_id NodeList]
 
+	# Get number of CPUs from scontrol show job
+	set scontrol_cpu [get_job_param $job_id NumCPUs]
 	if {$scontrol_cpu == 0} {
 		fail "Number of cpus is invalid"
 	}
 
-	# Wait a bit for sacct to populate
-	sleep 10
+	# Wait for sacct to populate the job completion record
+	wait_for_job_acct -fail $job_id end
 
-	spawn $sacct --job=$job_id --allocation -oalloccpus --noheader
-	expect {
-		-re "($number)" {
-			set sacct_cpu $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sacct is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
+	# Get number of allocated CPUs from sacct
+	set sacct_cpu [string trim [run_command_output -fail "$sacct --job=$job_id --allocation --format AllocCPUS --noheader"]]
 	if {$sacct_cpu == 0} {
 		fail "Number of cpus is invalid"
 	}
 
-	spawn $scontrol show node $node_name
-	expect {
-		-re "CPUTot=($number)" {
-			set cputot $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	# Get total number of CPUs from scontrol show node
+	set cputot [get_node_param $node_name CPUTot]
 
 	subtest {$cputot == $scontrol_cpu} "Verify used cpus reported by scontrol" "scontrol reported $scontrol_cpu cpus were used by job $job_id when it should have used $cputot cpus"
 	subtest {$cputot == $sacct_cpu} "Verify used cpus reported by sacct" "sacct reported $sacct_cpu cpus were used by job $job_id when it should have used $cputot cpus"

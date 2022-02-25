@@ -46,23 +46,7 @@ proc cleanup {} {
 
 make_bash_script $file_in "$srun -t00:01:00 sleep 300"
 
-spawn $sbatch -o/dev/null -t00:02:00 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	fail "No job was submitted"
-}
+set job_id [submit_job -fail "-o /dev/null -t00:02:00 $file_in"]
 
 if {[wait_for_job $job_id "DONE"] != 0} {
 	# TODO Temporary debug to troubleshoot bug 11887 (revert once fixed)
@@ -74,33 +58,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 	fail "Error waiting for job ($job_id) to complete"
 }
 
-set failed_cnt 0
-set timeout_cnt 0
-spawn $sacct --jobs=$job_id --format=State --noheader --starttime=00:00
-expect {
-	-re "FAILED" {
-		incr failed_cnt
-		exp_continue
-	}
-	-re "TIMEOUT" {
-		incr timeout_cnt
-		exp_continue
-	}
-	timeout {
-		fail "sacct is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$failed_cnt != 2 || $timeout_cnt != 1} {
-	log_debug "Gathering debug information:"
-	spawn $sacct --jobs=$job_id --starttime=00:00
-	expect {
-		eof {
-			wait
-		}
-	}
-	fail "Batch job ($job_id) did not FAIL and/or the step did not time out (Count for FAILED was $failed_cnt instead of 2 and TIMEOUT was $timeout_cnt instead of 1)"
-}
+set output [run_command_output -fail "$sacct --jobs=$job_id --format=JobID,State --parsable2 --noheader --starttime=00:00"]
+subtest [regexp "$job_id\\.0\\|TIMEOUT" $output] "Verify that the srun step timed out"
+subtest [regexp "$job_id\\.batch\\|FAILED" $output] "Verify that the batch step failed"
+subtest [regexp "$job_id\\|FAILED" $output] "Verify that the job failed"

@@ -76,50 +76,19 @@ wait_for_job -fail $job_id "DONE"
 #
 # Confirm correct ExitCode and DerivedExitCode settings in job record
 #
-set matches 0
-spawn $scontrol --detail show job $job_id
-expect {
-	-re "ExitCode=0:0" {
-		incr matches
-		exp_continue
-	}
-	-re "DerivedExitCode=123:0" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+set job_exit_code [get_job_param $job_id "ExitCode"]
+subtest {$job_exit_code eq "0:0"} "Verify ExitCode in job record" "$job_exit_code != 0:0"
+set derived_exit_code [get_job_param $job_id "DerivedExitCode"]
+subtest {$derived_exit_code eq "123:0"} "Verify DerivedExitCode in job record" "$derived_exit_code != 123:0"
 
-if {$matches != 2} {
-	fail "Job ExitCode incorrect"
-}
+# Wait for the end time to be recorded in the accounting database
+wait_for_job_acct -fail $job_id end
 
 #
 # Modify the DerivedExitCode and String of the job
-# (after waiting for the job to get written from slurmctld daemon to slurmdbd)
 #
-sleep 5
-set matches 0
-spawn $sacctmgr -i modify job job=$job_id set DerivedExitCode=22 Comment=hello
-expect {
-	-re "$job_id" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr modify job not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
+set output [run_command -fail "$sacctmgr -i modify job job=$job_id set DerivedExitCode=22 Comment=hello"]
+if {![regexp $job_id $output]} {
 	fail "sacctmgr failed to change DerivedExitCode/Comment"
 }
 
@@ -127,21 +96,5 @@ if {$matches != 1} {
 # Confirm the DerivedExitCode and String fields of the job record in the db
 # matches the above modification and that ExitCode did not change.
 #
-set matches 0
-spawn $sacct -n -P -X -j $job_id -o ExitCode,DerivedExitCode,Comment
-expect {
-	-re "0:0\\|0:22\\|hello" {	# Job record
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "sacct not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 1} {
-	fail "sacct (of $job_id) failed ($matches)"
-}
+set output [run_command_output -fail "$sacct -n -P -X -j $job_id -o ExitCode,DerivedExitCode,Comment"]
+subtest [regexp {0:0\|0:22\|hello} $output] "Verify job record in the accounting database has the right exit codes"

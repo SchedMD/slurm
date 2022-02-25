@@ -1854,6 +1854,9 @@ proc wait_for_command args {
 #	A command is repeated until its output matches the specified pattern
 #
 # OPTIONS
+#	-negate
+#		negates the match. The command is repeated until its output does not
+#		match the specified pattern
 #	-fail
 #		abort the test with failure if output does not match the pattern
 #		by the timeout
@@ -1880,8 +1883,14 @@ proc wait_for_command_match args {
 
 	set pattern [lindex $args end]
 	set args [lrange $args 0 end-1]
+	set match 1
+	set idx [lsearch $args "-negate"]
+	if {$idx != -1} {
+		set match 0
+		set args [lreplace $args $idx $idx]; # Remove the -negate argument
+	}
 
-	return [wait_for_command {*}$args "\[regexp {$pattern} \[dict get \$result output\]\] == 1"]
+	return [wait_for_command {*}$args "\[regexp {$pattern} \[dict get \$result output\]\] == $match"]
 }
 
 
@@ -2252,6 +2261,88 @@ proc wait_for_job args {
 		}
 	}
 	return $rc
+}
+
+
+################################################################
+#
+# NAME
+#	wait_for_job_acct - waits for the job accounting record to be updated
+#
+# SYNOPSIS
+#	wait_for_job ?options? job_id ?time_field?
+#
+# DESCRIPTION
+#	Wait for evidence that a specific job stage has been recorded in the
+#	accounting database by verifying that an associated time field has
+#	been populated. Currently supported time fields include Submit, Eligible,
+#	Start, and End. We check for the time field update rather than the state
+#	because it is often the case that the job completion record will be
+#	received well before the job start record update and in many cases it
+#	is necessary to wait for the job start information even after the job has
+#	been marked in the completed state.
+#
+# OPTIONS
+#	-fail
+#		If an error occurs or the job does has not populated the time field
+#		by the timeout, fail the test rather than returning an error
+#	-timeout <integer_number>
+#		time in seconds to wait for the job's time field to be populated
+#		before timing out (default is 90)
+#	-pollinterval <integer_number>
+#		time in seconds between each time field check (default is 1)
+#
+# ARGUMENTS
+#	job_id
+#		The Slurm job id of a job we want to wait for.
+#	time_field
+#		The time field that we are waiting to be populated.
+#		Currently supports:
+#			Submit   - job submission has been recorded
+#			Eligible - job eligibility has been recorded
+#			Start    - job start has been recorded
+#			End      - job end has been recorded (this is the default)
+#
+# RETURN VALUE
+#	RETURN_SUCCESS if the desired time field has been populated for the job
+#	in the accounting database, or non-zero value otherwise.
+#
+################################################################
+
+proc wait_for_job_acct args {
+	global sacct
+
+	set options [list]
+	set timeout 10
+	set pollinterval .2
+	set time_field End
+
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-fail   {
+				lappend options [lindex $args 0]
+				set args [lrange $args 1 end]
+			}
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - pollinterval]}
+			default break
+		}
+	}
+	lappend options -timeout $timeout
+	lappend options -pollinterval $pollinterval
+
+	set argument_count [llength $args]
+	if {$argument_count < 1} {
+		fail "Too few arguments ($argument_count): $args"
+	} elseif {$argument_count > 2}  {
+		fail "Too many arguments ($argument_count): $args"
+	}
+	lassign $args job_id
+	if {$argument_count == 2} {set time_field [lindex $args 1]}
+
+	# Wait for sacct to populate the specified time field
+	# We detect this by looking for a string containing a "T"
+	return [wait_for_command_match {*}$options -negate "$sacct -j $job_id --allocation --format $time_field --parsable2 --noheader" Unknown]
 }
 
 
