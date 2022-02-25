@@ -603,23 +603,6 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						   g_user_cgpath[sub]))
 		    != SLURM_SUCCESS)
 			goto step_c_err;
-
-		/*
-		 * Stick slurmstepd pid to the newly created job container
-		 * (Note: we do not put it in the step container because this
-		 * container could be used to suspend/resume tasks using freezer
-		 * properties so we need to let the slurmstepd outside of
-		 * this one)
-		 */
-		if (common_cgroup_add_pids(&int_cg[sub][CG_LEVEL_JOB],
-					   &job->jmgr_pid, 1) !=
-		    SLURM_SUCCESS) {
-			cgroup_p_step_destroy(sub);
-			goto step_c_err;
-		}
-
-		/* we use slurmstepd pid as the identifier of the container */
-		job->cont_id = (uint64_t)job->jmgr_pid;
 		break;
 	case CG_CPUS:
 		if ((rc = _cpuset_create(job))!= SLURM_SUCCESS)
@@ -705,6 +688,18 @@ extern int cgroup_p_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 
 	switch (sub) {
 	case CG_TRACK:
+		/*
+		 * Stick slurmstepd pid to the newly created job container
+		 * (Note: we do not put it in the step container because this
+		 * container could be used to suspend/resume tasks using freezer
+		 * properties so we need to let the slurmstepd outside of
+		 * this one).
+		 */
+		if ((npids == 1) && (*pids == getpid())) {
+			return common_cgroup_add_pids(
+				&int_cg[sub][CG_LEVEL_JOB], pids, npids);
+		}
+		break;
 	case CG_CPUS:
 	case CG_MEMORY:
 	case CG_DEVICES:

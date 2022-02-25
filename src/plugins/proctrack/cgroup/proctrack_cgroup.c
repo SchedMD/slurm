@@ -157,7 +157,15 @@ extern int fini (void)
  */
 extern int proctrack_p_create (stepd_step_rec_t *job)
 {
-	return cgroup_g_step_create(CG_TRACK, job);
+	int rc;
+
+	if ((rc = cgroup_g_step_create(CG_TRACK, job)) != SLURM_SUCCESS)
+		return rc;
+
+	/* Use slurmstepd pid as the id of the container. */
+	job->cont_id = (uint64_t)job->jmgr_pid;
+
+	return cgroup_g_step_addto(CG_TRACK, &job->jmgr_pid, 1);
 }
 
 extern int proctrack_p_add (stepd_step_rec_t *job, pid_t pid)
