@@ -64,6 +64,7 @@ set node1_cpus  2
 set test_job1   "${test_name}_job1"
 set test_job2   "${test_name}_job2"
 set test_job3   "${test_name}_job3"
+set test_job4   "${test_name}_job4"
 set cluster_cpus [expr $node0_cpus + $node1_cpus]
 set access_err  0
 set uid [get_my_uid]
@@ -156,6 +157,20 @@ set job3_nodes $node0
 set job3_cpus $node0_cpus
 set job3_alloc [expr $job3_run * $job3_cpus]
 set job3_acct $account2
+
+# job4
+# Make job eligible right at the end of job3
+set job4_elig $job3_elig
+# It never starts, so all it's time is 'planned'
+set job4_start 0
+set job4_run 0
+set job4_end 0
+set job4_diff_str "0"
+# Run on just node0
+set job4_nodes $node0
+set job4_cpus $node0_cpus
+set job4_alloc [expr $job4_run * $job4_cpus]
+set job4_acct $account2
 
 set acct1_alloc $job1_alloc
 set acct3_alloc $job2_alloc
@@ -369,7 +384,9 @@ proc create_sql {cluster sql_in sql_rem} {
 	global job2_end_str job2_diff_str account2 job3_start_str
 	global job3_end_str job3_diff_str sacctmgr node0_start_str
 	global node0_end_str matches users accounts
-	global test_job1 test_job2 test_job3
+	global test_job1 test_job2 test_job3 test_job4
+	global job4_elig job4_start job4_run job4_end job4_diff_str
+	global job4_nodes job4_alloc job4_acct job4_cpus
 
 	exec $bin_rm -f $sql_in
 	set file [open $sql_in "w"]
@@ -395,6 +412,7 @@ proc create_sql {cluster sql_in sql_rem} {
 	puts $file "('65537', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job1_acct', $job1_start, $job1_start, $job1_start, $job1_end, '0', '$test_job1', '0', '3', '0', '$job1_cpus', $job1_cpus, '1=$job1_cpus', '$job1_nodes', '0', '0', '0')"
 	puts $file ", ('65538', '$user2acct3', '$wckey1', '$user2wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job2_acct', $job2_elig, $job2_elig, $job2_start, $job2_end, '0', '$test_job2', '0', '3', '0', '$job2_cpus', '$job2_cpus', '1=$job2_cpus', '$job2_nodes', '0', '0', '0')"
 	puts $file ", ('65539', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job3_acct', $job3_elig, $job3_elig, $job3_start, $job3_end, '0', '$test_job3', '0', '3', '0', '$job3_cpus', '$job3_cpus', '1=$job3_cpus', '$job3_nodes', '0', '0', '0')"
+	puts $file ", ('65540', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$job4_acct', $job4_elig, $job4_elig, $job4_start, $job4_end, '0', '$test_job4', '0', '3', '0', '$job4_cpus', '$job4_cpus', '1=$job4_cpus', '$job4_nodes', '0', '0', '0')"
 	puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);";
 	close $file
 

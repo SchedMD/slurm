@@ -1640,7 +1640,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				int temp_start = row_eligible;
 				if (c_usage->start > temp_start)
 					temp_start = c_usage->start;
-				if (c_usage->end < temp_end)
+				if (!temp_end || (c_usage->end < temp_end))
 					temp_end = c_usage->end;
 				loc_seconds = (temp_end - temp_start);
 				if (loc_seconds > 0) {
