@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- Only check TRES limits against current usage for TRES requested by the job.
  -- Do not allocate shared gres (MPS) in whole-node allocations
  -- Fix minor memory leak when dealing with configless setups.
+ -- Constrain slurmstepd to job/step cgroup like in previous versions of Slurm.
 
 * Changes in Slurm 21.08.6
 ==========================

@@ -920,6 +920,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	cgroup_limits_t limits, *slurm_cg_limits = NULL;
 	char *job_alloc_cpus = NULL;
 	char *step_alloc_cpus = NULL;
+	pid_t pid;
 	int rc = SLURM_SUCCESS;
 
 	/* First create the cpuset hierarchy for this job */
@@ -975,6 +976,10 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	rc = cgroup_g_step_constrain_set(CG_CPUS, job, &limits);
 	if (rc != SLURM_SUCCESS)
 		goto endit;
+
+	/* attach the slurmstepd to the step cpuset cgroup */
+	pid = getpid();
+	rc = cgroup_g_step_addto(CG_CPUS, &pid, 1);
 
 	/* validate the requested cpu frequency and set it */
 	cpu_freq_cgroup_validate(job, step_alloc_cpus);

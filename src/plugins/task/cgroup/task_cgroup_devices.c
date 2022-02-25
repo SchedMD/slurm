@@ -218,6 +218,7 @@ extern int task_cgroup_devices_fini(void)
 extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 {
 	int k, allow_lines = 0;
+	pid_t pid;
 	List job_gres_list = job->job_gres_list;
 	List step_gres_list = job->step_gres_list;
 	List device_list = NULL;
@@ -298,6 +299,12 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		xfree(allowed_dev_major[k]);
 		xfree(allowed_devices[k]);
 	}
+
+	/* attach the slurmstepd to the step devices cgroup */
+	pid = getpid();
+	if (cgroup_g_step_addto(CG_DEVICES, &pid, 1) != SLURM_SUCCESS)
+		/* Everything went wrong, do the cleanup */
+		cgroup_g_step_destroy(CG_DEVICES);
 
 	return SLURM_SUCCESS;
 }
