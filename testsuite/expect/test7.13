@@ -76,71 +76,23 @@ wait_for_job -fail $job_id "DONE"
 #
 # Confirm correct ExitCode setting in job record
 #
-set matches 0
-spawn $scontrol --detail show job $job_id
-expect {
-	-re " ExitCode=0:0" {
-		incr matches
-		exp_continue
-	}
-	-re "DerivedExitCode=123:0" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$matches != 2} {
-	fail "Job ExitCode incorrect ($matches != 2)"
-}
+set job_exit_code [get_job_param $job_id "ExitCode"]
+subtest {$job_exit_code eq "0:0"} "Verify ExitCode in job record" "$job_exit_code != 0:0"
+set derived_exit_code [get_job_param $job_id "DerivedExitCode"]
+subtest {$derived_exit_code eq "123:0"} "Verify DerivedExitCode in job record" "$derived_exit_code != 123:0"
 
 #
 # Confirm the job record in the db has the same exit codes
 #
 if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
-	sleep 2
-	set matches 0
-	spawn $sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode,Comment
-	expect {
-		-re "$job_id\\|0:0\\|123:0\\|" {	# Job record
-			incr matches
-			exp_continue
-		}
-		-re "$job_id\\.batch\\|0:0\\|\\|" {	# Batch script
-			incr matches
-			exp_continue
-		}
-		-re "$job_id\\.extern\\|0:0\\|\\|" {	# Container, optional
-			exp_continue
-		}
-		-re "$job_id\\.($number)\\|0:0\\|\\|" {	# Step 0 record
-			incr matches
-			exp_continue
-		}
-		-re "$job_id\\.($number)\\|123:0\\|\\|" {	# Step 1 record
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sacct not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 4} {
-		# TODO: Temporary debug to troubleshoot bug 12281 (remove once fixed)
-		log_info "We saw a failure for bug 12281. Run it a few more times over the subsequent minute to see whether the accounting info rectifies itself"
-		wait_for -timeout 60 -pollinterval 5 {false} {
-			run_command "$sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode,Comment"
-		}
-		fail "sacct (of $job_id) failed ($matches != 4)"
-	}
+	# Wait for the end time to be recorded in the accounting database
+	wait_for_job_acct -fail $job_id end
+
+	set output [run_command_output -fail "$sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode"]
+	subtest [regexp -line "^$job_id\\|0:0\\|123:0\$" $output] "Verify job record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.batch\\|0:0\\|\$" $output] "Verify batch step record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.($number)\\|0:0\\|\$" $output] "Verify step 0 record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.($number)\\|123:0\\|\$" $output] "Verify step 1 record in the accounting database has the right exit codes"
 }
 
 #
@@ -169,63 +121,21 @@ wait_for_job -fail $job_id "DONE"
 #
 # Confirm correct ExitCode setting in job record
 #
-set matches 0
-spawn $scontrol --detail show job $job_id
-expect {
-	-re " ExitCode=33:0" {
-		incr matches
-		exp_continue
-	}
-	-re "DerivedExitCode=0:0" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 2} {
-	fail "Job ExitCode incorrect ($matches != 2)"
-}
+set exit_code [get_job_param $job_id "ExitCode"]
+subtest {$exit_code eq "33:0"} "Verify ExitCode in job record" "$exit_code != 33:0"
+set derived_exit_code [get_job_param $job_id "DerivedExitCode"]
+subtest {$derived_exit_code eq "0:0"} "Verify DerivedExitCode in job record" "$derived_exit_code != 0:0"
 
 #
 # Confirm the job record in the db has the same exit codes
 #
 if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
-	sleep 2
-	set matches 0
-	spawn $sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode,Comment
-	expect {
-		-re "$job_id\\|33:0\\|0:0\\|" {		# Job record
-			incr matches
-			exp_continue
-		}
-		-re "$job_id\\.batch\\|33:0\\|\\|" {	# Batch script
-			incr matches
-			exp_continue
-		}
-		-re "$job_id\\.extern\\|0:0\\|\\|" {	# Container, optional
-			exp_continue
-		}
-		-re "$job_id\\.($number)\\|0:0\\|\\|" {	# Step 0 record
-			incr matches
-			exp_continue
-		}
-		-re "$job_id\\.($number)\\|0:0\\|\\|" {	# Step 1 record
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sacct not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 4} {
-		fail "sacct (of $job_id) failed ($matches != 4)"
-	}
+	# Wait for the end time to be recorded in the accounting database
+	wait_for_job_acct -fail $job_id end
+
+	set output [run_command_output -fail "$sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode"]
+	subtest [regexp -line "^$job_id\\|33:0\\|0:0\$" $output] "Verify job record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.batch\\|33:0\\|\$" $output] "Verify batch step record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.($number)\\|0:0\\|\$" $output] "Verify step 0 record in the accounting database has the right exit codes"
+	subtest [regexp -line "^$job_id\\.($number)\\|0:0\\|\$" $output] "Verify step 1 record in the accounting database has the right exit codes"
 }

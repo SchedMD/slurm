@@ -52,77 +52,14 @@ proc cleanup {} {
 proc run_sacct { jobs exp_match_1 exp_match_2 } {
 	global sacct expected_steps array1_job_id array2_job_id
 
-	set matches_1 0
-	set matches_2 0
-	set expected_matches [expr $exp_match_1 + $exp_match_2]
-
 	# Now test sacct
-	spawn $sacct --noheader --starttime=00:00 -j $jobs
-	expect {
-		-re "$array1_job_id" {
-			incr matches_1
-			exp_continue
-		}
-		-re "$array2_job_id" {
-			incr matches_2
-			exp_continue
-		}
-		timeout {
-			fail "sacct not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches_1 != $exp_match_1} {
-		fail "sacct failure for array 1 ($matches_1 != $exp_match_1)"
-	}
-
-	if {$matches_2 != $exp_match_2} {
-		fail "sacct failure for array 2 ($matches_2 != $exp_match_2)"
-	}
-
-	set matches [expr $matches_1 + $matches_2]
-
-	if {$matches != $expected_matches} {
-		fail "sacct failure ($matches != $expected_matches)"
-	}
+	set output [run_command_output -fail "$sacct -j $jobs --starttime=00:00 --format JobID --noheader"]
+	subtest [regexp $array1_job_id $output] "Verify job record for array job 1 was found in the accounting database"
+	subtest [regexp $array2_job_id $output] "Verify job record for array job 2 was found in the accounting database"
 }
 
-spawn $sbatch -N1 --array=0-5 --output=/dev/null -t1 --wrap=exit
-expect {
-	-re "Submitted batch job ($number)" {
-		set array1_job_id $expect_out(1,string)
-		log_debug "Job $array1_job_id was submitted"
-	}
-	-re "error" {
-		fail "sbatch did not submit jobs"
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-eval spawn $sbatch -N1 --array=0-5 --output=/dev/null -t1 --wrap=exit
-expect {
-	-re "Submitted batch job ($number)" {
-		set array2_job_id $expect_out(1,string)
-		log_debug "Job $array2_job_id was submitted"
-	}
-	-re "error" {
-		fail "sbatch did not submit jobs"
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
+set array1_job_id [submit_job -fail "-N1 --array=0-5 --output=/dev/null -t1 --wrap=exit"]
+set array2_job_id [submit_job -fail "-N1 --array=0-5 --output=/dev/null -t1 --wrap=exit"]
 
 # If PrologFlags=contain is in slurm.conf, then an "extern" step will be
 # launched on each node, so we need to check for 3 steps per job instead of 2.
@@ -139,8 +76,8 @@ wait_for_job -fail $array1_job_id "DONE"
 wait_for_job -fail $array2_job_id "DONE"
 
 # Wait for accounting records to reach slurmdbd
-sleep 5
-set timeout 10
+wait_for_job_acct -fail $array1_job_id end
+wait_for_job_acct -fail $array2_job_id end
 
 # Now test sacct one task from each array
 run_sacct "$array1_job_id\_1,$array2_job_id\_3" $expected_steps $expected_steps
