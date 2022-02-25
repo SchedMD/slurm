@@ -54,11 +54,13 @@ typedef struct {
 	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
 					 * this switch */
 	char *nodes;			/* name if direct descendant nodes */
-	uint16_t  num_switches;         /* number of descendant switches */
+	uint16_t  num_switches;		/* number of direct descendant
+					   switches */
 	uint16_t  parent;		/* index of parent switch */
 	char *switches;			/* name of direct descendant switches */
 	uint32_t *switches_dist;
-	uint16_t *switch_index;		/* indexes of child switches */
+	uint16_t *switch_index;		/* indexes of child direct descendant
+					   switches */
 } switch_record_t;
 
 extern switch_record_t *switch_record_table;  /* ptr to switch records */
