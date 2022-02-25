@@ -849,9 +849,9 @@ bit_set_count(bitstr_t *b)
 	for (bit = 0; (bit + word_size) <= bit_cnt; bit += word_size) {
 		count += hweight(b[_bit_word(bit)]);
 	}
-	for ( ; bit < bit_cnt; bit++) {
-		if (bit_test(b, bit))
-			count++;
+	if (bit < bit_cnt) {
+		uint64_t mask = _bit_nmask(bit_cnt);
+		count += hweight(b[_bit_word(bit)] & mask);
 	}
 	return count;
 }
