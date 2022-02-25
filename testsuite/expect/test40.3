@@ -38,9 +38,9 @@ set job_id         0
 # NOTE: AllocGRES and ReqGRES values for all steps (including batch step)
 #	are reported based upon the job specification
 #
-proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
+proc test_acct { job_id job_mps step_mps req_mps have_mps_types batch_mps } {
 	global re_word_str number
-	global bin_cat bin_rm bin_grep file_out sacct
+	global bin_cat bin_rm file_out sacct
 
 	if {$job_id == 0} {
 		return
@@ -85,24 +85,26 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types } {
 		subtest {$mps_reported_count == 1} "sacct should report step MPS 1 time" "$mps_reported_count != 1"
 	}
 
-	# set match 0
-	# spawn $bin_grep $job_id.batch $file_out
-	# expect {
-	# 	-re "\[^:\]mps:($number)" {
-	# 		incr match
-	# 		subtest {$expect_out(1,string) == $job_mps} "Verify batch MPS count reported by sacct" "$expect_out(1,string) != $job_mps"
-	# 		exp_continue
-	# 	}
-	# 	-re ":mps:($number)" {
-	# 		incr match
-	# 		subtest {$expect_out(1,string) == $req_mps} "Verify batch MPS count reported by sacct" "$expect_out(1,string) != $req_mps"
-	# 		exp_continue
-	# 	}
-	# 	eof {
-	# 		wait
-	# 	}
-	# }
-	# subtest {$match == 2} "Verify batch MPS count is report from sacct" "$match != 2"
+	# Check and count reported batch mps on the job
+	set mps_reported_count 0
+	if ![dict exists $job_tres_dict "$job_id.batch"] {
+		fail "sacct did not report a record for job $job_id.batch"
+	}
+	set tres_dict [dict get $job_tres_dict "$job_id.batch"]
+	foreach tres_value [dict values $tres_dict] {
+		if {$have_mps_types} {
+			foreach {{} mps_count} [regexp -all -inline {gres/mps:[^=]+=(\d+)} $tres_value] {
+				subtest {$mps_count == $batch_mps} "Batch MPS reported by sacct should be $batch_mps" "$mps_count != $batch_mps"
+				incr mps_reported_count
+			}
+		} else {
+			foreach {{} mps_count} [regexp -all -inline {gres/mps=(\d+)} $tres_value] {
+				subtest {$mps_count == $batch_mps} "Batch MPS reported by sacct should be $batch_mps" "$mps_count != $batch_mps"
+				incr mps_reported_count
+			}
+		}
+	}
+	subtest {$mps_reported_count == 1} "sacct should report batch MPS 1 time" "found $mps_reported_count times"
 
 	# Check and count reported mps on the job
 	set mps_reported_count 0
@@ -157,6 +159,35 @@ proc test_out_file { file_out target } {
 	subtest {$match == $target} "Verify MPS accounting" "$match != $target"
 }
 
+#
+# Helper function to find $batch_mps from different outputs
+#
+proc get_batch_mps { file_out } {
+	global bin_cat
+
+	set batch_host "unknown"
+	set batch_mps  "unknown"
+	set output [run_command_output -fail "$bin_cat $file_out"]
+	set nodes [regexp -all -line -inline {    Nodes=+.*} $output]
+	set node_line [lindex $nodes 0]
+
+	if {[llength $nodes] > 1} {
+		# Output type where nodes are split on 2 lines, set $node_line to grab the BatchHost node
+		#  BatchHost=74dc179a_n1
+		#  ...
+		# >Nodes=74dc179a_n1 CPU_IDs=0-1 Mem=150 GRES=[[mps:2]](IDX:0-1)<
+		#  Nodes=74dc179a_n2 CPU_IDs=0-1 Mem=150 GRES=mps:1(IDX:0)
+
+		regexp -all -line {BatchHost=(.*)} $output - batch_host
+		set node_line [lindex [lsearch -all -inline $nodes *$batch_host*] 0]
+	}
+
+	if {![regexp {mps:(?:[^:( ]+:)?(\d+)} $node_line - batch_mps]} {
+		fail "Unable to get batch_mps"
+	}
+	return $batch_mps
+}
+
 set store_tres [string tolower [get_config_param "AccountingStorageTRES"]]
 set store_mps [string first "gres/mps" $store_tres]
 if {$store_mps == -1} {
@@ -191,7 +222,7 @@ proc cleanup {} {
 log_info "TEST 1: --gres=mps option by job"
 
 make_bash_script $file_in1 "
-	$scontrol -dd show job \${SLURM_JOBID} | grep mps
+	$scontrol -dd show job \${SLURM_JOBID}
 	exit 0"
 
 set req_mps 49
@@ -218,6 +249,8 @@ if {$job_id == 0} {
 wait_for_job -fail $job_id "DONE"
 
 wait_for_file -fail $file_out
+
+set batch_mps [get_batch_mps $file_out]
 set have_mps_types 0
 set match 0
 spawn $bin_cat $file_out
@@ -240,7 +273,7 @@ expect {
 if {$match != $target} {
 	fail "Failed to account for proper MPS count ($match != $target)"
 }
-test_acct $job_id $target -1 $req_mps $have_mps_types
+test_acct $job_id $target -1 $req_mps $have_mps_types $batch_mps
 
 #
 # Test --gres=mps option by step
@@ -251,6 +284,7 @@ make_bash_script $file_in1 "
 
 make_bash_script $file_in2 "
 	if \[ \$SLURM_PROCID -eq 0 \]; then
+		$scontrol -dd show job \${SLURM_JOBID}
 		$scontrol show step \${SLURM_JOBID}.\${SLURM_STEPID}
 	fi
 	exit 0"
@@ -280,6 +314,7 @@ if {$job_id == 0} {
 }
 
 wait_for_job -fail $job_id "DONE"
+set batch_mps [get_batch_mps $file_out]
 
 test_out_file $file_out $target
-test_acct $job_id $target $target $req_mps $have_mps_types
+test_acct $job_id $target $target $req_mps $have_mps_types $batch_mps
