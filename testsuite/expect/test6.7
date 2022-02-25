@@ -65,10 +65,9 @@ make_bash_script $file_in "
 #
 set job_id [submit_job -fail "--output=$file_out -t1 $file_in"]
 
-wait_for_job -fail $job_id RUNNING
-# Allow time for the step to start
-# This could take a while with launch/poe
-wait_for_step ${job_id}.0
+# Wait for the prog.c to be WAITING for signals
+wait_for_file -fail $file_out
+wait_for_command_match -fail "$bin_cat $file_out" "WAITING"
 
 #
 # Test verbose scancel
