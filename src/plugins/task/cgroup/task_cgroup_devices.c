@@ -191,9 +191,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 
 	/* attach the slurmstepd to the step devices cgroup */
 	pid = getpid();
-	if (cgroup_g_step_addto(CG_DEVICES, &pid, 1) != SLURM_SUCCESS)
-		/* Everything went wrong, do the cleanup */
-		cgroup_g_step_destroy(CG_DEVICES);
+	rc = cgroup_g_step_addto(CG_DEVICES, &pid, 1);
 
 fini:
 	return rc;
