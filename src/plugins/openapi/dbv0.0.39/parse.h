@@ -75,6 +75,7 @@ typedef enum {
 	PARSE_JOB_STATE, /* uint32_t <-> JOB_STATE_FLAGS */
 	PARSE_JOB_STEP, /* slurmdb_step_rec_t* */
 	PARSE_JOB_STEPS, /* slurmdb_job_rec_t->steps -> list of slurmdb_step_rec_t *'s*/
+	PARSE_JOB_USER, /* user/uid from slurmdb_job_rec_t* */
 	PARSE_QOS_ID, /* uint32_t of QOS id */
 	PARSE_QOS_PREEMPT_LIST, /* slurmdb_qos_rec_t->preempt_bitstr & preempt_list */
 	PARSE_QOS, /* slurmdb_qos_rec_t* */

@@ -366,8 +366,8 @@ static const parser_t parse_job[] = {
 	_add_parse(TRES_LIST, tres_req_str, "tres/requested"),
 	/* skipping uid (dup with user below) */
 	/* skipping alloc_gres (dup with TRES) */
-	/* skipping uid */
-	_add_parse(STRING, user, "user"),
+	/* parse uid or user depending on which is available */
+	_add_parse(JOB_USER, uid, "user"),
 	_add_parse(UINT32, user_cpu_sec, "time/user/seconds"),
 	_add_parse(UINT32, user_cpu_usec, "time/user/microseconds"),
 	_add_parse(WCKEY_TAG, wckey, "wckey"),
@@ -2398,6 +2398,31 @@ static int _dump_job_exit_code(const parser_t *const parse, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int _dump_job_user(const parser_t *const parse, void *obj, data_t *dst,
+			  const parser_env_t *penv)
+{
+	slurmdb_job_rec_t *job = obj;
+
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	/* job user may be set but fail back to resolving the uid */
+
+	if (job->user && job->user[0]) {
+		data_set_string(dst, job->user);
+		return SLURM_SUCCESS;
+	} else if (job->uid >= 0) {
+		char *u = uid_to_string_or_null(job->uid);
+
+		if (u && u[0]) {
+			data_set_string_own(dst, u);
+			return SLURM_SUCCESS;
+		}
+	}
+
+	data_set_null(dst);
+	return SLURM_SUCCESS;
+}
+
 #define _add_parse(mtype, field, path) \
 	add_parser(slurmdb_assoc_usage_t, mtype, false, field, path)
 /* should mirror the structure of slurmdb_assoc_usage_t */
@@ -2865,6 +2890,7 @@ const parser_funcs_t funcs[] = {
 	_add_func(_parse_tres_list, _dump_tres_list, PARSE_TRES_LIST),
 	_add_func(NULL, _dump_job_steps, PARSE_JOB_STEPS),
 	_add_func(NULL, _dump_job_exit_code, PARSE_JOB_EXIT_CODE),
+	_add_func(NULL, _dump_job_user, PARSE_JOB_USER),
 	_add_func(_parse_admin_lvl, _dump_admin_lvl, PARSE_ADMIN_LVL),
 	_add_func(_parse_acct_list, _dump_acct_list, PARSE_ACCOUNT_LIST),
 	_add_func(_parse_assoc_list, _dump_assoc_list, PARSE_ASSOC_LIST),

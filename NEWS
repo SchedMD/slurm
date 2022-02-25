@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Change cloud nodes to show by default. PrivateData=cloud is no longer
     needed.
  -- Add -F/--future option to sinfo to display future nodes.
+ -- openapi/dbv0.0.39 - resolve job user from uid when user is not provided.
 
 * Changes in Slurm 22.05.3
 ==========================
