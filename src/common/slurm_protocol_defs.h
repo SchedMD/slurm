@@ -1281,6 +1281,11 @@ typedef struct {
 	uint32_t gid;
 } crontab_update_request_msg_t;
 
+typedef enum {
+	DYN_NODE_NONE = 0,
+	DYN_NODE_FUTURE,
+} dynamic_node_type_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1289,7 +1294,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint16_t cores;
 	uint16_t cpus;
 	uint32_t cpu_load;	/* CPU load * 100 */
-	bool dynamic;		/* dynamic registration */
+	uint8_t dynamic_type;	/* dynamic registration type */
 	char *dynamic_feature;	/* dynamic registration feature */
 	uint16_t flags;	        /* Flags from the slurmd SLURMD_REG_FLAG_* */
 	uint64_t free_mem;	/* Free memory in MiB */

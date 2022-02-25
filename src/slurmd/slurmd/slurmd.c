@@ -680,7 +680,7 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 		/* assoc_mgr_post_tres_list will destroy the list */
 		resp->tres_list = NULL;
 
-		if (conf->dynamic && resp->node_name) {
+		if (conf->dynamic_type && resp->node_name) {
 			xfree(conf->node_name);
 			conf->node_name = resp->node_name;
 		}
@@ -743,7 +743,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	static time_t slurmd_start_time = 0;
 	buf_t *gres_info;
 
-	msg->dynamic = conf->dynamic;
+	msg->dynamic_type = conf->dynamic_type;
 	msg->dynamic_feature = xstrdup(conf->dynamic_feature);
 
 	msg->node_name   = xstrdup (conf->node_name);
@@ -1000,7 +1000,7 @@ _read_config(void)
 	 * for scheduling before these nodes check in.
 	 */
 	config_overrides = cf->conf_flags & CTL_CONF_OR;
-	if (conf->dynamic) {
+	if (conf->dynamic_type) {
 		/* Already set to actual config earlier in _slurmd_init() */
 	} else if (!config_overrides && (conf->actual_cpus < conf->conf_cpus)) {
 		conf->cpus    = conf->actual_cpus;
@@ -1279,7 +1279,6 @@ _init_conf(void)
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
 	conf->setwd	  = false;
 	conf->print_gres   = false;
-	conf->dynamic = false;
 
 	slurm_mutex_init(&conf->config_mutex);
 
@@ -1424,7 +1423,7 @@ _process_cmdline(int ac, char **av)
 			conf->conffile = xstrdup(optarg);
 			break;
 		case 'F':
-			conf->dynamic = true;
+			conf->dynamic_type = DYN_NODE_FUTURE;
 			conf->dynamic_feature = xstrdup(optarg);
 			break;
 		case 'G':
@@ -1708,7 +1707,7 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	}
 
-	if (conf->dynamic) {
+	if (conf->dynamic_type) {
 		/*
 		 * dynamic future nodes need to be mapped to a slurm.conf node
 		 * in order to load in correct configs (e.g. gres, etc.). First

@@ -2828,20 +2828,23 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			lock_slurmctld(job_write_lock);
 
-		if (node_reg_stat_msg->dynamic &&
+		if (node_reg_stat_msg->dynamic_type &&
 		    (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP)) {
-			/*
-			 * dynamic future nodes doen't know what node it's
-			 * mapped to to be able to load all configs in.
-			 * slurmctld will tell the slurmd what node it's mapped
-			 * to and then the slurmd will then load in
-			 * configuration based off of the mapped name and send
-			 * another registration.
-			 *
-			 * Subsequent slurmd registrations will have the mapped
-			 * node_name.
-			 */
-			_find_avail_future_node(msg);
+
+			if (node_reg_stat_msg->dynamic_type == DYN_NODE_FUTURE) {
+				/*
+				 * dynamic future nodes doen't know what node
+				 * it's mapped to to be able to load all configs
+				 * in. slurmctld will tell the slurmd what node
+				 * it's mapped to and then the slurmd will then
+				 * load in configuration based off of the mapped
+				 * name and send another registration.
+				 *
+				 * Subsequent slurmd registrations will have the
+				 * mapped node_name.
+				 */
+				_find_avail_future_node(msg);
+			}
 
 			if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 				unlock_slurmctld(job_write_lock);
@@ -2905,7 +2908,7 @@ send_resp:
 			 */
 			//resp->tres_list = assoc_mgr_tres_list;
 
-			if (node_reg_stat_msg->dynamic)
+			if (node_reg_stat_msg->dynamic_type)
 				resp->node_name = node_reg_stat_msg->node_name;
 
 			slurm_send_msg(msg, RESPONSE_NODE_REGISTRATION, resp);

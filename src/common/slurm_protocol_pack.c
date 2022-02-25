@@ -1057,7 +1057,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		acct_gather_energy_pack(msg->energy, buffer, protocol_version);
 		packstr(msg->version, buffer);
 
-		packbool(msg->dynamic, buffer);
+		pack8(msg->dynamic_type, buffer);
 		packstr(msg->dynamic_feature, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
@@ -1097,7 +1097,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		acct_gather_energy_pack(msg->energy, buffer, protocol_version);
 		packstr(msg->version, buffer);
 
-		packbool(msg->dynamic, buffer);
+		packbool(msg->dynamic_type, buffer);
 		packstr(msg->dynamic_feature, buffer);
 	}
 }
@@ -1168,9 +1168,10 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			goto unpack_error;
 		safe_unpackstr(&node_reg_ptr->version, buffer);
 
-		safe_unpackbool(&node_reg_ptr->dynamic, buffer);
+		safe_unpack8(&node_reg_ptr->dynamic_type, buffer);
 		safe_unpackstr(&node_reg_ptr->dynamic_feature, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		bool tmp_bool;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
 		safe_unpack_time(&node_reg_ptr->slurmd_start_time, buffer);
@@ -1221,7 +1222,9 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			goto unpack_error;
 		safe_unpackstr(&node_reg_ptr->version, buffer);
 
-		safe_unpackbool(&node_reg_ptr->dynamic, buffer);
+		safe_unpackbool(&tmp_bool, buffer);
+		if (tmp_bool)
+			node_reg_ptr->dynamic_type = DYN_NODE_FUTURE;
 		safe_unpackstr(&node_reg_ptr->dynamic_feature, buffer);
 	}
 
