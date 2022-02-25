@@ -1284,6 +1284,7 @@ typedef struct {
 typedef enum {
 	DYN_NODE_NONE = 0,
 	DYN_NODE_FUTURE,
+	DYN_NODE_NORM,
 } dynamic_node_type_t;
 
 /*****************************************************************************\

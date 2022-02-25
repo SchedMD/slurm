@@ -606,25 +606,21 @@ cleanup:
 static int _load_gres()
 {
 	int rc;
+	uint32_t cpu_cnt;
 	node_record_t *node_rec;
+	List gres_list = NULL;
 
 	node_rec = find_node_record(conf->node_name);
 	if (node_rec && node_rec->config_ptr) {
-		uint32_t cpu_cnt;
-		List gres_list = NULL;
 		(void) gres_init_node_config(node_rec->config_ptr->gres,
 					     &gres_list);
-
-		cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
-		rc = gres_g_node_config_load(cpu_cnt, conf->node_name, gres_list,
-					     (void *)&xcpuinfo_abs_to_mac,
-					     (void *)&xcpuinfo_mac_to_abs);
-		FREE_NULL_LIST(gres_list);
-	} else {
-		rc = SLURM_ERROR;
-		error("Unable to find node record for node:%s",
-		      conf->node_name);
 	}
+
+	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
+	rc = gres_g_node_config_load(cpu_cnt, conf->node_name, gres_list,
+				     (void *)&xcpuinfo_abs_to_mac,
+				     (void *)&xcpuinfo_mac_to_abs);
+	FREE_NULL_LIST(gres_list);
 
 	return rc;
 }
@@ -925,7 +921,10 @@ _read_config(void)
 			conf->node_name,
 			conf->hostname);
 
-	conf->port = slurm_conf_get_port(conf->node_name);
+	if (conf->dynamic_type == DYN_NODE_NORM)
+		conf->port = cf->slurmd_port;
+	else
+		conf->port = slurm_conf_get_port(conf->node_name);
 	slurm_conf.slurmd_port = conf->port;
 	slurm_conf_get_cpus_bsct(conf->node_name,
 				 &conf->conf_cpus, &conf->conf_boards,
@@ -1382,7 +1381,7 @@ static void _print_gres(void)
 static void
 _process_cmdline(int ac, char **av)
 {
-	static char *opt_string = "bcCd:Df:F::GhL:Mn:N:svV";
+	static char *opt_string = "bcCd:Df:F::GhL:Mn:N:svVZ::";
 	int c;
 	char *tmp_char;
 
@@ -1461,6 +1460,10 @@ _process_cmdline(int ac, char **av)
 		case 'V':
 			print_slurm_version();
 			exit(0);
+			break;
+		case 'Z':
+			conf->dynamic_type = DYN_NODE_NORM;
+			conf->dynamic_feature = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONF_SERVER:
 			conf->conf_server = xstrdup(optarg);
@@ -1734,6 +1737,7 @@ _slurmd_init(void)
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
 		conf->threads = conf->actual_threads;
+		get_memory(&conf->real_memory_size);
 
 		send_registration_msg(SLURM_SUCCESS);
 
@@ -1747,7 +1751,9 @@ _slurmd_init(void)
 	 */
 	_read_config();
 
-	if (!find_node_record(conf->node_name))
+	/* All but normal dynamic nodes should find a node record */
+	if ((conf->dynamic_type != DYN_NODE_NORM) &&
+	    !find_node_record(conf->node_name))
 		return SLURM_ERROR;
 
 	/*
@@ -2071,7 +2077,8 @@ Usage: %s [OPTIONS]\n\
    -N node                    Run the daemon for specified nodename.\n\
    -s                         Change working directory to SlurmdLogFile/SlurmdSpoolDir.\n\
    -v                         Verbose mode. Multiple -v's increase verbosity.\n\
-   -V                         Print version information and exit.\n",
+   -V                         Print version information and exit.\n\
+   -Z[feature]                Start as Dynamic Normal node w/optional Feature.\n",
 		conf->prog);
 	return;
 }

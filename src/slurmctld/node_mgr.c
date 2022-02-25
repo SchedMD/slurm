@@ -4450,6 +4450,85 @@ extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
 			  node_ptr->node_hostname);
 }
 
+static int _foreach_build_part_bitmap(void *x, void *arg)
+{
+	build_part_bitmap(x);
+	return SLURM_SUCCESS;
+}
+
+static void _update_parts()
+{
+	/* scan partition table and identify nodes in each */
+	list_for_each(part_list, _foreach_build_part_bitmap, NULL);
+	set_partition_tres();
+}
+
+extern int create_dynamic_reg_node(slurm_msg_t *msg)
+{
+	config_record_t *config_ptr;
+	node_record_t *node_ptr;
+	slurm_addr_t addr;
+	char *comm_name = NULL;
+	slurm_node_registration_status_msg_t *reg_msg = msg->data;
+
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
+
+	if (find_node_record2(reg_msg->node_name))
+		return SLURM_SUCCESS;
+
+	config_ptr = create_config_record();
+	config_ptr->boards = reg_msg->boards;
+	config_ptr->cores = reg_msg->cores;
+	config_ptr->cpus = reg_msg->cpus;
+	config_ptr->node_bitmap = bit_alloc(node_record_count);
+	config_ptr->nodes = xstrdup(reg_msg->node_name);
+	config_ptr->real_memory = reg_msg->real_memory;
+	config_ptr->threads = reg_msg->threads;
+	config_ptr->tmp_disk = reg_msg->tmp_disk;
+	config_ptr->tot_sockets = reg_msg->sockets;
+
+	if (!(node_ptr = add_node_record(reg_msg->node_name, config_ptr))) {
+		list_delete_ptr(config_list, config_ptr);
+		return SLURM_ERROR;
+	}
+
+	/* Get IP of slurmd */
+	if (msg->conn_fd >= 0 &&
+	    !slurm_get_peer_addr(msg->conn_fd, &addr)) {
+		comm_name = xmalloc(INET6_ADDRSTRLEN);
+		slurm_get_ip_str(&addr, comm_name,
+				 INET6_ADDRSTRLEN);
+	}
+
+	set_node_comm_name(node_ptr,
+			   comm_name ? comm_name :
+			   xstrdup(reg_msg->node_name),
+			   xstrdup(reg_msg->node_name));
+
+	slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
+		       node_ptr->comm_name);
+
+	if (reg_msg->dynamic_feature) {
+		node_ptr->features = xstrdup(reg_msg->dynamic_feature);
+		update_feature_list(avail_feature_list, node_ptr->features,
+				    config_ptr->node_bitmap);
+		node_ptr->features_act = xstrdup(reg_msg->dynamic_feature);
+		update_feature_list(active_feature_list, node_ptr->features_act,
+				    config_ptr->node_bitmap);
+	}
+
+	make_node_idle(node_ptr, NULL);
+	node_ptr->node_state |= NODE_STATE_DYNAMIC;
+
+	set_cluster_tres(false);
+	_update_parts();
+	select_g_reconfigure();
+
+	return SLURM_SUCCESS;
+}
+
 static void _remove_node_from_features(node_record_t *node_ptr)
 {
 	bitstr_t *node_bitmap = bit_alloc(node_record_count);
@@ -4527,8 +4606,8 @@ extern int delete_nodes(char *names, char **err_msg)
 	}
 
 	if (one_success) {
-		set_partition_tres();
 		rehash_node();
+		_update_parts();
 		select_g_reconfigure();
 	} else {
 		char *nodes = hostlist_ranged_string_xmalloc(error_hostlist);

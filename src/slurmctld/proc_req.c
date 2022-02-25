@@ -2798,7 +2798,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 		(slurm_node_registration_status_msg_t *) msg->data;
 	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	START_TIMER;
 	if (!validate_slurm_user(msg->auth_uid)) {
@@ -2844,6 +2844,8 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 				 * mapped node_name.
 				 */
 				_find_avail_future_node(msg);
+			} else {
+				error_code = create_dynamic_reg_node(msg);
 			}
 
 			if (!(msg->flags & CTLD_QUEUE_PROCESSING))

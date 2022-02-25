@@ -2527,6 +2527,14 @@ extern int update_node_record_acct_gather_data(
 	acct_gather_node_resp_msg_t *msg);
 
 /*
+ * Create and add dynamic node to system from registration.
+ *
+ * IN msg - slurm_msg_t containing slurm_node_registration_status_msg_t.
+ * RET SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int create_dynamic_reg_node(slurm_msg_t *msg);
+
+/*
  * Delete node names from system from a slurmctld perspective.
  *
  * e.g. remove node from partitions, reconfig cons_tres, etc.

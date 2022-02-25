@@ -298,6 +298,16 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 					    config_record_t *config_ptr);
 
 /*
+ * Add a node to node_record_table_ptr without growing the table and increasing
+ * node_reocrd_count. The node in an empty slot in the node_record_table_ptr.
+ *
+ * IN alias - name of node.
+ * IN config_ptr - config_record_t* to initialize node with.
+ * RET node_record_t* on SUCESS, NULL otherwise.
+ */
+extern node_record_t *add_node_record(char *alias, config_record_t *config_ptr);
+
+/*
  * Delete node from node_record_table_ptr.
  *
  * IN name - name of node_record_t to delete

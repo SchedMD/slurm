@@ -804,6 +804,35 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 	return node_ptr;
 }
 
+extern node_record_t *add_node_record(char *alias, config_record_t *config_ptr)
+{
+	node_record_t *node_ptr = NULL;
+
+	if ((node_ptr = find_node_record2(alias))) {
+		error("Node '%s' already exists in the node table", alias);
+		return NULL;
+	}
+
+	for (int i = 0; i < node_record_count; i++) {
+		if (node_record_table_ptr[i])
+			continue;
+
+		if (!(node_ptr = create_node_record_at(i, alias, config_ptr)))
+			return NULL;
+
+		bit_set(config_ptr->node_bitmap, i);
+
+		gres_init_node_config(node_ptr->config_ptr->gres,
+				      &node_ptr->gres_list);
+
+		break;
+	}
+	if (!node_ptr)
+		error("Unable to add node '%s', node table is full", alias);
+
+	return node_ptr;
+}
+
 extern void delete_node_record(char *name)
 {
 	int node_index;
