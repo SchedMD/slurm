@@ -170,10 +170,11 @@ extern void set_partition_tres()
  */
 extern int build_part_bitmap(part_record_t *part_ptr)
 {
+	int rc = SLURM_SUCCESS;
 	char *this_node_name;
 	bitstr_t *old_bitmap;
 	node_record_t *node_ptr;
-	hostlist_t host_list;
+	hostlist_t host_list, missing_hostlist = NULL;
 	int i;
 
 	part_ptr->total_cpus = 0;
@@ -215,12 +216,17 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 	while ((this_node_name = hostlist_shift(host_list))) {
 		node_ptr = find_node_record_no_alias(this_node_name);
 		if (node_ptr == NULL) {
-			error("%s: invalid node name %s",
-			      __func__, this_node_name);
+			if (!missing_hostlist)
+				missing_hostlist =
+					hostlist_create(this_node_name);
+			else
+				hostlist_push_host(missing_hostlist,
+						   this_node_name);
+			info("%s: invalid node name %s in partition",
+			     __func__, this_node_name);
 			free(this_node_name);
-			FREE_NULL_BITMAP(old_bitmap);
-			hostlist_destroy(host_list);
-			return ESLURM_INVALID_NODE_NAME;
+			rc = ESLURM_INVALID_NODE_NAME;
+			continue;
 		}
 		part_ptr->total_nodes++;
 		part_ptr->total_cpus += node_ptr->config_ptr->cpus;
@@ -249,10 +255,32 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 	}
 	hostlist_destroy(host_list);
 
+	if ((rc == ESLURM_INVALID_NODE_NAME) && missing_hostlist) {
+		/*
+		 * Remove missing node from partition nodes so we don't keep
+		 * trying to remove them.
+		 */
+		hostlist_t hl;
+		char *missing_nodes;
+
+		hl = hostlist_create(part_ptr->orig_nodes);
+		missing_nodes =
+			hostlist_ranged_string_xmalloc(missing_hostlist);
+		hostlist_delete(hl, missing_nodes);
+		xfree(missing_nodes);
+		xfree(part_ptr->orig_nodes);
+		part_ptr->orig_nodes = hostlist_ranged_string_xmalloc(hl);
+		hostlist_destroy(hl);
+
+		xfree(part_ptr->nodes);
+		part_ptr->nodes = bitmap2node_name(part_ptr->node_bitmap);
+	}
+	hostlist_destroy(missing_hostlist);
+
 	_unlink_free_nodes(old_bitmap, part_ptr);
 	last_node_update = time(NULL);
 	FREE_NULL_BITMAP(old_bitmap);
-	return 0;
+	return rc;
 }
 
 /* unlink nodes removed from a partition */
