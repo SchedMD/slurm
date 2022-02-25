@@ -145,6 +145,7 @@ documents those changes that are of interest to users and administrators.
     not properly respecting PrologEpilogTimeout.
  -- Add support for 'scontrol delete <ENTITY> <ID>' format alongside the already
     expected 'scontrol delete <ENTITY>=<ID>'.
+ -- Fix task/cgroup plugin which was not adding stepd to memory cgroup.
 
 * Changes in Slurm 21.08.7
 ==========================

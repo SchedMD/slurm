@@ -289,6 +289,8 @@ static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
 
 extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 {
+	pid_t pid;
+
 	if (cgroup_g_step_create(CG_MEMORY, job) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
@@ -301,7 +303,9 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	if (cgroup_g_step_start_oom_mgr() == SLURM_SUCCESS)
 		oom_mgr_started = true;
 
-	return SLURM_SUCCESS;
+	/* Attach the slurmstepd to the step memory cgroup. */
+	pid = getpid();
+	return cgroup_g_step_addto(CG_MEMORY, &pid, 1);
 }
 
 extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
