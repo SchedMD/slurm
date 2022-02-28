@@ -116,7 +116,7 @@ proc cleanup {} {
 # The followind diagram shows the timeline of a running job used in this
 # test:
 #
-#  <-------S-------|<------E------>|<------P------>|<------R------>|-------C-------->
+#  <-------S------>|<------E------>|<------P------>|<------R------>|<------C-------->
 #   ----|-----|----|----|-----|----|----|-----|----|----|-----|----|----|-----|----> t
 #      QsS   QeS   |   QsE   QeE   |   QsP   QeP   |   QsR   QeR   |   QsC   QeC
 #               Job Submitted   Job Eligible    Job Starts      Job Ends
@@ -149,7 +149,7 @@ proc cleanup {} {
 # 10) Do all the test with Q[s,e][S,E,P,R,C] with a Cancelled/Completed job.
 #
 # The expected behavior of default values of -S and -E are the ones defined
-# in the fucntion slurmdb_job_cond_def_start_end():
+# in the function slurmdb_job_cond_def_start_end():
 #
 #   - with -j and -s:
 #     -S defaults to Epoch 0
@@ -180,9 +180,9 @@ log_info "Unique job name used to avoid false test errors with old/duplicated jo
 # Get query times before any job is run (QsS and QeS)
 #
 set QsS [get_time]
-sleep 2
+sleep 1
 set QeS [get_time]
-sleep 2
+sleep 1
 
 #
 # Start a long job (will be cancelled)
@@ -204,16 +204,18 @@ set jobid_queue [submit_job -fail "-t5 -w $def_node --exclusive -J queue-$test_n
 #
 set jobid [submit_job -fail "-t5 --dependency=afterany:$jobid_dependent -w $def_node -J $jobname-$test_name --output=/dev/null --error=/dev/null --wrap '$bin_sleep 300'"]
 
-# ensure that job is actually pending (non-elegible)
+# Ensure that job is actually pending (non-eligible)
 wait_for_job $jobid "PENDING"
 
-sleep 2
-set QsE [get_time]
-sleep 2
-set QeE [get_time]
-sleep 2
+# Wait for the submit time to be recorded in the accounting database
+wait_for_job_acct -fail -timeout 30 $jobid submit
 
-log_info "Test cases while the job is still NonElegible..."
+set QsE [get_time]
+sleep 1
+set QeE [get_time]
+sleep 1
+
+log_info "Test cases while the job is still NonEligible..."
 
 testproc sacct_query $jobname "-j $jobid -s R" false
 testproc sacct_query $jobname "-j $jobid -s R -S $QsS -E $QeS" false
@@ -300,11 +302,13 @@ testproc sacct_query $jobname "-E $QeE" false
 cancel_job $jobid_dependent
 wait_for_job $jobid_queue "RUNNING"
 
-sleep 2
+# Wait for the eligible time to be recorded in the accounting database
+wait_for_job_acct -fail -timeout 30 $jobid eligible
+
 set QsP [get_time]
-sleep 2
+sleep 1
 set QeP [get_time]
-sleep 2
+sleep 1
 
 #
 # Test cases while the job is still pending
@@ -438,14 +442,16 @@ testproc sacct_query $jobname "-E $QeP" true
 cancel_job $jobid_queue
 wait_for_job $jobid "RUNNING"
 
+# Wait for the start time to be recorded in the accounting database
+wait_for_job_acct -fail -timeout 30 $jobid start
+
 #
 # Get query times while the job is running (QsR and QeR)
 #
-sleep 2
 set QsR [get_time]
-sleep 2
+sleep 1
 set QeR [get_time]
-sleep 2
+sleep 1
 
 #
 # Test cases while the job is still running
@@ -633,14 +639,16 @@ testproc sacct_query $jobname "-E $QeR" true
 #
 cancel_job $jobid
 
+# Wait for the end time to be recorded in the accounting database
+wait_for_job_acct -fail -timeout 30 $jobid end
+
 #
 # Get query times when job is no more running
 #
-sleep 2
 set QsC [get_time]
-sleep 2
+sleep 1
 set QeC [get_time]
-sleep 2
+sleep 1
 
 #
 # Test cases for non-running job

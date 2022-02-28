@@ -2341,8 +2341,9 @@ proc wait_for_job_acct args {
 	if {$argument_count == 2} {set time_field [lindex $args 1]}
 
 	# Wait for sacct to populate the specified time field
-	# We detect this by looking for a string containing a "T"
-	return [wait_for_command_match {*}$options -negate "$sacct -j $job_id --allocation --format $time_field --parsable2 --noheader" Unknown]
+	# We want to see the field be populated with anything but "Unknown"
+	# We can't use a negation match here because empty would match
+	return [wait_for_command_match {*}$options "$sacct -j $job_id --allocation --format $time_field --parsable2 --noheader" ^(?!.*Unknown).]
 }
 
 
