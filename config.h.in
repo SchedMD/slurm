@@ -181,6 +181,9 @@
 /* Define to 1 if using code with pma_query_via */
 #undef HAVE_OFED_PMA_QUERY_VIA
 
+/* Define to 1 if oneAPI library found */
+#undef HAVE_ONEAPI
+
 /* define if you have the PAM library */
 #undef HAVE_PAM
 

@@ -9,3 +9,7 @@ endif
 if BUILD_NVML
 SUBDIRS += nvml
 endif
+
+if BUILD_ONEAPI
+SUBDIRS += oneapi
+endif

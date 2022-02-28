@@ -1147,6 +1147,8 @@ static char *_get_autodetect_flags_str(void)
 			xstrfmtcat(flags, "%snvml", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI)
 			xstrfmtcat(flags, "%srsmi", flags ? "," : "");
+		else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI)
+			xstrfmtcat(flags, "%soneapi", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_OFF)
 			xstrfmtcat(flags, "%soff", flags ? "," : "");
 	}
@@ -1163,6 +1165,8 @@ static uint32_t _handle_autodetect_flags(char *str)
 		flags |= GRES_AUTODETECT_GPU_NVML;
 	else if (xstrcasestr(str, "rsmi"))
 		flags |= GRES_AUTODETECT_GPU_RSMI;
+	else if (xstrcasestr(str, "oneapi"))
+		flags |= GRES_AUTODETECT_GPU_ONEAPI;
 	else if (!xstrcasecmp(str, "off"))
 		flags |= GRES_AUTODETECT_GPU_OFF;
 	else
@@ -1248,6 +1252,8 @@ extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env,
 		flags |= GRES_CONF_ENV_NVML;
 	if (xstrcasestr(input, "amd_gpu_env"))
 		flags |= GRES_CONF_ENV_RSMI;
+	if (xstrcasestr(input, "intel_gpu_env"))
+		flags |= GRES_CONF_ENV_ONEAPI;
 	if (xstrcasestr(input, "opencl_env"))
 		flags |= GRES_CONF_ENV_OPENCL;
 	if (xstrcasestr(input, "one_sharing"))
@@ -9977,6 +9983,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 	if (config_flags & GRES_CONF_ENV_RSMI) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "ENV_RSMI");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_ENV_ONEAPI) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "ENV_ONEAPI");
 		sep = ",";
 	}
 

@@ -101,7 +101,17 @@ static char *_get_gpu_type(void)
 #else
 		info("Configured with rsmi, but rsmi isn't enabled during the build.");
 #endif
+	} else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI) {
+#ifdef HAVE_ONEAPI
+		if (!dlopen("libze_loader.so", RTLD_NOW | RTLD_GLOBAL))
+			info("Configured with oneAPI, but that lib wasn't found.");
+		else
+			return "gpu/oneapi";
+#else
+		info("Configured with oneAPI, but oneAPI isn't enabled during the build.");
+#endif
 	}
+
 	return "gpu/generic";
 }
 

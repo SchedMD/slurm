@@ -556,6 +556,9 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 		else if (gres_conf_flags & GRES_CONF_ENV_RSMI)
 			local_list = xstrdup(getenvp(*env_ptr,
 						     "ROCR_VISIBLE_DEVICES"));
+		else if (gres_conf_flags & GRES_CONF_ENV_ONEAPI)
+			local_list = xstrdup(getenvp(*env_ptr,
+						     "ZE_AFFINITY_MASK"));
 		else if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
 			local_list = xstrdup(getenvp(*env_ptr,
 						     "GPU_DEVICE_ORDINAL"));
@@ -597,6 +600,9 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 		if (gres_conf_flags & GRES_CONF_ENV_RSMI)
 			env_array_overwrite(env_ptr, "ROCR_VISIBLE_DEVICES",
 					    local_list);
+		if (gres_conf_flags & GRES_CONF_ENV_ONEAPI)
+			env_array_overwrite(env_ptr, "ZE_AFFINITY_MASK",
+					    local_list);
 		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
 			env_array_overwrite(env_ptr, "GPU_DEVICE_ORDINAL",
 					    local_list);
@@ -607,6 +613,8 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 			unsetenvp(*env_ptr, "CUDA_VISIBLE_DEVICES");
 		if (gres_conf_flags & GRES_CONF_ENV_RSMI)
 			unsetenvp(*env_ptr, "ROCR_VISIBLE_DEVICES");
+		if (gres_conf_flags & GRES_CONF_ENV_ONEAPI)
+			unsetenvp(*env_ptr, "ZE_AFFINITY_MASK");
 		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
 			unsetenvp(*env_ptr, "GPU_DEVICE_ORDINAL");
 	}
@@ -689,6 +697,9 @@ extern bool gres_common_epilog_set_env(char ***epilog_env_ptr,
 		if (gres_conf_flags & GRES_CONF_ENV_RSMI)
 			xstrfmtcat((*epilog_env_ptr)[(*env_inx)++],
 				   "ROCR_VISIBLE_DEVICES=%s", vendor_gpu_str);
+		if (gres_conf_flags & GRES_CONF_ENV_ONEAPI)
+			xstrfmtcat((*epilog_env_ptr)[(*env_inx)++],
+				   "ZE_AFFINITY_MASK=%s", vendor_gpu_str);
 		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
 			xstrfmtcat((*epilog_env_ptr)[(*env_inx)++],
 				   "GPU_DEVICE_ORDINAL=%s", vendor_gpu_str);
@@ -714,6 +725,8 @@ extern int gres_common_set_env_types_on_node_flags(void *x, void *arg)
 		*node_flags |= GRES_CONF_ENV_RSMI;
 	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_OPENCL)
 		*node_flags |= GRES_CONF_ENV_OPENCL;
+	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_ONEAPI)
+		*node_flags |= GRES_CONF_ENV_ONEAPI;
 
 	/* No need to continue if all are set */
 	if ((*node_flags & GRES_CONF_ENV_SET) == GRES_CONF_ENV_SET)

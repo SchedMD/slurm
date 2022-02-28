@@ -102,7 +102,9 @@ typedef struct {
 #define GRES_CONF_ONE_SHARING SLURM_BIT(10) /* Only allow use of a shared GRES
 					     * on one of the sharing GRES */
 
-#define GRES_CONF_ENV_SET    0x000000E0   /* Easy check if any of
+#define GRES_CONF_ENV_ONEAPI SLURM_BIT(11) /* Set ZE_AFFINITY_MASK */
+
+#define GRES_CONF_ENV_SET    0x000004E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */
 
 #define GRES_NO_CONSUME		0x0001	/* Requesting no consume of resources */
@@ -112,6 +114,7 @@ typedef struct {
 #define GRES_AUTODETECT_GPU_NVML  0x00000001
 #define GRES_AUTODETECT_GPU_RSMI  0x00000002
 #define GRES_AUTODETECT_GPU_OFF   0x00000004 /* Do NOT use global */
+#define GRES_AUTODETECT_GPU_ONEAPI 0x00000008
 
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */

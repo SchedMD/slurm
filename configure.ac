@@ -227,6 +227,7 @@ X_AC_LZ4
 X_AC_HWLOC
 X_AC_NVML
 X_AC_RSMI
+X_AC_ONEAPI
 X_AC_PMIX
 X_AC_FREEIPMI
 X_AC_RRDTOOL
@@ -516,6 +517,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/gpu/generic/Makefile
 		 src/plugins/gpu/nvml/Makefile
 		 src/plugins/gpu/rsmi/Makefile
+		 src/plugins/gpu/oneapi/Makefile
 		 src/plugins/gres/Makefile
 		 src/plugins/gres/common/Makefile
 		 src/plugins/gres/gpu/Makefile
