@@ -244,7 +244,7 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 
 extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				bitstr_t *usable_gres, char *prefix,
-				int *local_inx, bitstr_t *bit_alloc,
+				bitstr_t *bit_alloc,
 				char **local_list, char **global_list,
 				bool is_task, bool is_job, int *global_id,
 				gres_internal_flags_t flags, bool use_dev_num)
@@ -257,6 +257,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	char *new_global_list = NULL, *new_local_list = NULL;
 	int device_index = -1;
 	bool device_considered = false;
+	int local_inx = 0;
 
 	if (!gres_devices)
 		return;
@@ -309,7 +310,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			global_env_index = gres_device->index;
 
 		index = use_local_dev_index ?
-			(*local_inx)++ : global_env_index;
+			local_inx++ : global_env_index;
 
 		if (is_task) {
 			if (!first_device) {
@@ -371,7 +372,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			usable_str = xstrdup("NULL");
 		alloc_str = bit_fmt_hexmask_trim(bit_alloc);
 		fprintf(stderr, "gpu-bind: usable_gres=%s; bit_alloc=%s; local_inx=%d; global_list=%s; local_list=%s\n",
-			usable_str, alloc_str, *local_inx, *global_list,
+			usable_str, alloc_str, local_inx, *global_list,
 			*local_list);
 		xfree(alloc_str);
 		xfree(usable_str);
@@ -529,7 +530,6 @@ extern void print_gres_list_parsable(List gres_list)
 
 extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 				    bitstr_t *usable_gres, uint64_t gres_cnt,
-				    bool *already_seen, int *local_inx,
 				    bool is_task, bool is_job,
 				    gres_internal_flags_t flags,
 				    uint32_t gres_conf_flags,
@@ -542,30 +542,8 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	else
 		slurm_env_var = "SLURM_STEP_GPUS";
 
-	if (*already_seen) {
-		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
-
-		/*
-		 * Determine which existing env to check for local list.  We
-		 * only need one since they are all the same and this is only
-		 * for printing an error later.
-		 */
-		if (gres_conf_flags & GRES_CONF_ENV_NVML)
-			local_list = xstrdup(getenvp(*env_ptr,
-						     "CUDA_VISIBLE_DEVICES"));
-		else if (gres_conf_flags & GRES_CONF_ENV_RSMI)
-			local_list = xstrdup(getenvp(*env_ptr,
-						     "ROCR_VISIBLE_DEVICES"));
-		else if (gres_conf_flags & GRES_CONF_ENV_ONEAPI)
-			local_list = xstrdup(getenvp(*env_ptr,
-						     "ZE_AFFINITY_MASK"));
-		else if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
-			local_list = xstrdup(getenvp(*env_ptr,
-						     "GPU_DEVICE_ORDINAL"));
-	}
-
 	common_gres_set_env(gres_devices, env_ptr,
-			    usable_gres, "", local_inx,  gres_bit_alloc,
+			    usable_gres, "", gres_bit_alloc,
 			    &local_list, &global_list, is_task, is_job, global_id,
 			    flags, false);
 
@@ -607,7 +585,6 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 			env_array_overwrite(env_ptr, "GPU_DEVICE_ORDINAL",
 					    local_list);
 		xfree(local_list);
-		*already_seen = true;
 	} else if (!(flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
 		if (gres_conf_flags & GRES_CONF_ENV_NVML)
 			unsetenvp(*env_ptr, "CUDA_VISIBLE_DEVICES");

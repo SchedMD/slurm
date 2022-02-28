@@ -151,7 +151,6 @@ static uint64_t _get_dev_count(int global_id)
 
 static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 		     bitstr_t *usable_gres, uint64_t gres_per_node,
-		     bool *already_seen, int *local_inx,
 		     bool is_task, bool is_job, gres_internal_flags_t flags)
 {
 	char *perc_env = NULL;
@@ -159,15 +158,8 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	uint64_t count_on_dev, percentage;
 	int global_id = -1;
 
-
-	if (*already_seen) {
-		perc_env = xstrdup(getenvp(*env_ptr,
-					  "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"));
-	}
-
 	gres_common_gpu_set_env(env_ptr, gres_bit_alloc,
 				usable_gres, gres_per_node,
-				already_seen, local_inx,
 				is_task, is_job, flags, GRES_CONF_ENV_NVML,
 				gres_devices, &global_id);
 
@@ -213,19 +205,8 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 			       uint64_t gres_per_node,
 			       gres_internal_flags_t flags)
 {
-	/*
-	 * Variables are not static like in step_*_env since we could be calling
-	 * this from the slurmd where we are dealing with a different job each
-	 * time we hit this function, so we don't want to keep track of other
-	 * unrelated job's status.  This can also get called multiple times
-	 * (different prologs and such) which would also result in bad info each
-	 * call after the first.
-	 */
-	int local_inx = 0;
-	bool already_seen = false;
-
 	_set_env(job_env_ptr, gres_bit_alloc, NULL, gres_per_node,
-		 &already_seen, &local_inx, false, true, flags);
+		false, true, flags);
 }
 
 /*
@@ -237,11 +218,8 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 				uint64_t gres_per_node,
 				gres_internal_flags_t flags)
 {
-	static int local_inx = 0;
-	static bool already_seen = false;
-
 	_set_env(step_env_ptr, gres_bit_alloc, NULL, gres_per_node,
-		 &already_seen, &local_inx, false, false, flags);
+		 false, false, flags);
 }
 
 /*
@@ -254,11 +232,8 @@ extern void gres_p_task_set_env(char ***step_env_ptr,
 				uint64_t gres_per_node,
 				gres_internal_flags_t flags)
 {
-	static int local_inx = 0;
-	static bool already_seen = false;
-
 	_set_env(step_env_ptr, gres_bit_alloc, usable_gres, gres_per_node,
-		 &already_seen, &local_inx, true, false, flags);
+		 true, false, flags);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */

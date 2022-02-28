@@ -60,7 +60,7 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 /* set the environment for a job/step with the appropriate values */
 extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				bitstr_t *usable_gres, char *prefix,
-				int *local_inx, bitstr_t *bit_alloc,
+				bitstr_t *bit_alloc,
 				char **local_list, char **global_list,
 				bool is_task, bool is_job, int *global_id,
 				gres_internal_flags_t flags, bool use_dev_num);
@@ -92,7 +92,6 @@ extern void print_gres_list_parsable(List gres_list);
  */
 extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 				    bitstr_t *usable_gres, uint64_t gres_cnt,
-				    bool *already_seen, int *local_inx,
 				    bool is_task, bool is_job,
 				    gres_internal_flags_t flags,
 				    uint32_t gres_conf_flags,
