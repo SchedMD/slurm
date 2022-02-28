@@ -412,7 +412,7 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 							    node->nodenames);
 		}
 
-		check_nodeline_info(node, config_ptr, _check_callback);
+		expand_nodeline_info(node, config_ptr, _check_callback);
 	}
 
 	if (set_bitmap) {
@@ -427,13 +427,11 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 }
 
 /*
- * check_nodeline_info - From the slurm.conf reader, build table, and set values
- * Note: Operates on common variables
- *	default_node_record - default node configuration values
+ * Expand a nodeline's node names, host names, addrs, ports into separate nodes.
  */
-extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
-			        config_record_t *config_ptr,
-			        void (*_callback) (
+extern void expand_nodeline_info(slurm_conf_node_t *node_ptr, config_record_t
+				 *config_ptr,
+				 void (*_callback) (
 				       char *alias, char *hostname,
 				       char *address, char *bcast_address,
 				       uint16_t port, int state_val,
