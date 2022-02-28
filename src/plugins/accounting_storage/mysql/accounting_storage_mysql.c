@@ -833,7 +833,8 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	*/
 	if (mysql_db_create_table(mysql_conn, txn_table, txn_table_fields,
 				  ", primary key (id), "
-				  "key archive_purge (timestamp, cluster))")
+				  "key archive_purge (timestamp, cluster(42)))")
+
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
