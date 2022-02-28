@@ -135,9 +135,6 @@ static pthread_t job_handler_thread;
 static List jobslist = NULL;
 static bool thread_shutdown = false;
 
-static long curl_timeout = 0;
-static long curl_connecttimeout = 0;
-
 /* Get the user name for the give user_id */
 static void _get_user_name(uint32_t user_id, char *user_name, int buf_size)
 {
@@ -839,28 +836,11 @@ static void _jobslist_del(void *x)
 extern int init(void)
 {
 	int rc;
-	char *tmp_ptr = NULL;
 
 	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
 		error("%s: unable to load JSON serializer: %s", __func__,
 		      slurm_strerror(rc));
 		return rc;
-	}
-
-	/*                                                      12345678 */
-	if ((tmp_ptr = xstrcasestr(slurm_conf.job_comp_params, "timeout="))) {
-		curl_timeout = xstrntol(tmp_ptr + 8, NULL, 10, 10);
-
-		log_flag(ESEARCH, "%s: setting curl timeout: %lds",
-			 plugin_type, curl_timeout);
-	}
-	/*			    1234567890123456 */
-	if ((tmp_ptr = xstrcasestr(slurm_conf.job_comp_params,
-	                           "connect_timeout="))) {
-		curl_timeout = xstrntol(tmp_ptr + 16, NULL, 10, 10);
-
-		log_flag(ESEARCH, "%s: setting curl connect timeout: %lds",
-			 plugin_type, curl_timeout);
 	}
 
 	jobslist = list_create(_jobslist_del);
@@ -908,13 +888,6 @@ extern int jobcomp_p_set_location(char *location)
 	if (curl_handle) {
 		curl_easy_setopt(curl_handle, CURLOPT_URL, log_url);
 		curl_easy_setopt(curl_handle, CURLOPT_NOBODY, 1);
-		curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, curl_timeout);
-		curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT,
-				 curl_connecttimeout);
-
-		if ((curl_timeout > 0) || (curl_connecttimeout > 0))
-			curl_easy_setopt(curl_handle, CURLOPT_NOSIGNAL, 1);
-
 		res = curl_easy_perform(curl_handle);
 		if (res != CURLE_OK) {
 			error("%s: Could not connect to: %s", plugin_type,

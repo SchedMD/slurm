@@ -64,22 +64,6 @@ reindex API references on how to copy data from one index to another if needed.
 </p>
 </li>
 <li>
-<a href="slurm.conf.html#OPT_JobCompParams"><b>JobCompParams</b></a> should be
-set to the Elasticsearch server connecting comma-delimited options:
-<ul>
-<li>
-<pre>JobCompParams=timeout=5</pre>
-Use a timeout when communication with Elasticsearch server. After the timeout,
-error out and queue job record for 30 seconds to try again.
-</li>
-<li>
-<pre>JobCompParams=connect_timeout=5</pre>
-Use a timeout when connecting to Elasticsearch server. After the timeout,
-error out and queue job record for 30 seconds to try again.
-</li>
-</ul>
-</li>
-<li>
 <a href="slurm.conf.html#OPT_DebugFlags"><b>DebugFlags</b></a> could include
 the <b>Elasticsearch</b> flag for extra debugging purposes.
 <pre>DebugFlags=Elasticsearch</pre>
