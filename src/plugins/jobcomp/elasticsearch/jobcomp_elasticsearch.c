@@ -870,8 +870,6 @@ extern int fini(void)
 extern int jobcomp_p_set_location(char *location)
 {
 	int rc = SLURM_SUCCESS;
-	CURL *curl_handle;
-	CURLcode res;
 
 	if (location == NULL) {
 		error("%s: JobCompLoc parameter not configured", plugin_type);
@@ -882,22 +880,6 @@ extern int jobcomp_p_set_location(char *location)
 	if (log_url)
 		xfree(log_url);
 	log_url = xstrdup(location);
-
-	curl_global_init(CURL_GLOBAL_ALL);
-	curl_handle = curl_easy_init();
-	if (curl_handle) {
-		curl_easy_setopt(curl_handle, CURLOPT_URL, log_url);
-		curl_easy_setopt(curl_handle, CURLOPT_NOBODY, 1);
-		res = curl_easy_perform(curl_handle);
-		if (res != CURLE_OK) {
-			error("%s: Could not connect to: %s", plugin_type,
-			      log_url);
-			rc = SLURM_ERROR;
-		}
-		curl_easy_cleanup(curl_handle);
-	}
-	curl_global_cleanup();
-
 	slurm_cond_broadcast(&location_cond);
 	slurm_mutex_unlock(&location_mutex);
 
