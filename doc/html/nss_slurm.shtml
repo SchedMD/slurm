@@ -155,6 +155,10 @@ lookup requests &mdash; generally for info related to the user themselves,
 which is the only information nss_slurm will be able to provide &mdash; and
 overwhelm the underlying directory services.</p>
 
-<p style="text-align:center;">Last modified 13 April 2021</p>
+<p>nss_slurm is only able to communicate with a single slurmd. If running
+with --enable-multiple-slurmd, you can specify which slurmd is used with NodeName
+and SlurmdSpoolDir parameters in the <b>nss_slurm.conf</b> file.</p>
+
+<p style="text-align:center;">Last modified 1 March 2022</p>
 
 <!--#include virtual="footer.txt"-->
