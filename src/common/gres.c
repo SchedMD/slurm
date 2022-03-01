@@ -7320,14 +7320,15 @@ extern void gres_g_job_set_env(char ***job_env_ptr, List job_gres_list,
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; i<gres_context_cnt; i++) {
-		if (gres_context[i].ops.job_set_env == NULL)
+		slurm_gres_context_t *gres_ctx = &gres_context[i];
+		if (!gres_ctx->ops.job_set_env)
 			continue;	/* No plugin to call */
 		if (job_gres_list) {
 			gres_iter = list_iterator_create(job_gres_list);
 			while ((gres_state_job = (gres_state_t *)
 				list_next(gres_iter))) {
 				if (gres_state_job->plugin_id !=
-				    gres_context[i].plugin_id)
+				    gres_ctx->plugin_id)
 					continue;
 				_accumulate_job_gres_alloc(
 					gres_state_job->gres_data,
@@ -7335,7 +7336,7 @@ extern void gres_g_job_set_env(char ***job_env_ptr, List job_gres_list,
 					&gres_bit_alloc,
 					&gres_cnt);
 				/* Does job have a sharing GRES (GPU)? */
-				if (gres_id_sharing(gres_context[i].plugin_id))
+				if (gres_id_sharing(gres_ctx->plugin_id))
 					sharing_gres_alloced = true;
 			}
 			list_iterator_destroy(gres_iter);
@@ -7347,11 +7348,11 @@ extern void gres_g_job_set_env(char ***job_env_ptr, List job_gres_list,
 		 * MPS/Shard is not. Sharing GRES plugins always run before
 		 * shared GRES, so we don't need to protect MPS/Shard from GPU.
 		 */
-		if (gres_id_shared(gres_context[i].config_flags) &&
+		if (gres_id_shared(gres_ctx->config_flags) &&
 		    sharing_gres_alloced)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
-		(*(gres_context[i].ops.job_set_env))(job_env_ptr,
+		(*(gres_ctx->ops.job_set_env))(job_env_ptr,
 						     gres_bit_alloc, gres_cnt,
 						     flags);
 		gres_cnt = 0;
