@@ -4087,6 +4087,12 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	}
 	resv_desc.node_cnt = xcalloc(2, sizeof(uint32_t));
 	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
+	/* Exclude self reserved nodes only if reservation contains any nodes */
+	if (resv_ptr->node_bitmap) {
+		tmp_bitmap = bit_copy(avail_node_bitmap);
+		bit_and(tmp_bitmap, resv_ptr->part_ptr->node_bitmap);
+		bit_and_not(tmp_bitmap, resv_ptr->node_bitmap);
+	}
 	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap,
 			  &core_bitmap);
 	xfree(resv_desc.core_cnt);
@@ -4096,7 +4102,6 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	if (i == SLURM_SUCCESS) {
 		bit_and(resv_ptr->node_bitmap, avail_node_bitmap);
 		bit_or(resv_ptr->node_bitmap, tmp_bitmap);
-		FREE_NULL_BITMAP(tmp_bitmap);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		resv_ptr->core_bitmap = core_bitmap;
 		free_job_resources(&resv_ptr->core_resrcs);
@@ -4111,6 +4116,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		debug("reservation %s contains unusable nodes, "
 		      "can't reallocate now", resv_ptr->name);
 	}
+	FREE_NULL_BITMAP(tmp_bitmap);
 }
 
 /*
