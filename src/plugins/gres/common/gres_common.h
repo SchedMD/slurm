@@ -62,7 +62,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				bitstr_t *usable_gres, char *prefix,
 				int *local_inx, bitstr_t *bit_alloc,
 				char **local_list, char **global_list,
-				bool reset, bool is_job, int *global_id,
+				bool is_task, bool is_job, int *global_id,
 				gres_internal_flags_t flags, bool use_dev_num);
 
 /* Send GRES information to slurmstepd via a buffer */
