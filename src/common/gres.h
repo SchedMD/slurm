@@ -59,6 +59,11 @@ enum {
 typedef enum {
 	GRES_INTERNAL_FLAG_NONE = 0,
 	GRES_INTERNAL_FLAG_VERBOSE = 1 << 0,
+	/*
+	 * If a job/step/task has sharing GRES (GPU), don't let shared GRES
+	 * (MPS, Shard) clear that env.
+	 */
+	GRES_INTERNAL_FLAG_PROTECT_ENV = 2 << 0,
 } gres_internal_flags_t;
 
 typedef struct {

@@ -514,20 +514,22 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	 * environment variables, since this means GRES is not allocated.
 	 * This is useful for jobs and steps that request --gres=none within an
 	 * existing job allocation with GRES.
+	 * Do not unset envs that could have already been set by an allocated
+	 * sharing GRES (GPU).
 	 */
 	if (gres_cnt) {
 		char *gpus_on_node = xstrdup_printf("%"PRIu64, gres_cnt);
 		env_array_overwrite(env_ptr, "SLURM_GPUS_ON_NODE",
 				    gpus_on_node);
 		xfree(gpus_on_node);
-	} else {
+	} else if (!(flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
 		unsetenvp(*env_ptr, "SLURM_GPUS_ON_NODE");
 	}
 
 	if (global_list) {
 		env_array_overwrite(env_ptr, slurm_env_var, global_list);
 		xfree(global_list);
-	} else {
+	} else if (!(flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
 		unsetenvp(*env_ptr, slurm_env_var);
 	}
 
@@ -543,7 +545,7 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 					    local_list);
 		xfree(local_list);
 		*already_seen = true;
-	} else {
+	} else if (!(flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
 		if (gres_conf_flags & GRES_CONF_ENV_NVML)
 			unsetenvp(*env_ptr, "CUDA_VISIBLE_DEVICES");
 		if (gres_conf_flags & GRES_CONF_ENV_RSMI)

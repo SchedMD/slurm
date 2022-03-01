@@ -7328,6 +7328,9 @@ extern void gres_g_job_set_env(char ***job_env_ptr, List job_gres_list,
 	gres_state_t *gres_state_job = NULL;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
+	bool sharing_gres_alloced = false;
+	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
+
 	(void) gres_init();
 
 	slurm_mutex_lock(&gres_context_lock);
@@ -7346,12 +7349,26 @@ extern void gres_g_job_set_env(char ***job_env_ptr, List job_gres_list,
 					node_inx,
 					&gres_bit_alloc,
 					&gres_cnt);
+				/* Does job have a sharing GRES (GPU)? */
+				if (gres_id_sharing(gres_context[i].plugin_id))
+					sharing_gres_alloced = true;
 			}
 			list_iterator_destroy(gres_iter);
 		}
+
+		/*
+		 * Do not let MPS or Shard (shared GRES) clear any envs set for
+		 * a GPU (sharing GRES) when a GPU is allocated but an
+		 * MPS/Shard is not. Sharing GRES plugins always run before
+		 * shared GRES, so we don't need to protect MPS/Shard from GPU.
+		 */
+		if (gres_id_shared(gres_context[i].config_flags) &&
+		    sharing_gres_alloced)
+			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
+
 		(*(gres_context[i].ops.job_set_env))(job_env_ptr,
 						     gres_bit_alloc, gres_cnt,
-						     GRES_INTERNAL_FLAG_NONE);
+						     flags);
 		gres_cnt = 0;
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
@@ -9170,6 +9187,8 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 	gres_state_t *gres_state_step = NULL;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
+	bool sharing_gres_alloced = false;
+	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
 
 	(void) gres_init();
 	slurm_mutex_lock(&gres_context_lock);
@@ -9189,11 +9208,24 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 				continue;
 			_accumulate_step_gres_alloc(
 				gres_state_step, &gres_bit_alloc, &gres_cnt);
+			/* Does step have a sharing GRES (GPU)? */
+			if (gres_id_sharing(gres_ctx->plugin_id))
+				sharing_gres_alloced = true;
 		}
 		list_iterator_destroy(gres_iter);
+
+		/*
+		 * Do not let MPS or Shard (shared GRES) clear any envs set for
+		 * a GPU (sharing GRES) when a GPU is allocated but an
+		 * MPS/Shard is not. Sharing GRES plugins always run before
+		 * shared GRES, so we don't need to protect MPS/Shard from GPU.
+		 */
+		if (gres_id_shared(gres_ctx->config_flags) &&
+		    sharing_gres_alloced)
+			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
+
 		(*(gres_ctx->ops.step_set_env))(job_env_ptr, gres_bit_alloc,
-					       gres_cnt,
-					       GRES_INTERNAL_FLAG_NONE);
+					       gres_cnt, flags);
 		gres_cnt = 0;
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
@@ -9221,8 +9253,11 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
 	tres_bind_t tres_bind;
+	bool sharing_gres_alloced = false;
+	gres_internal_flags_t flags;
 
 	_parse_tres_bind(accel_bind_type, tres_bind_str, &tres_bind);
+	flags = tres_bind.gres_internal_flags;
 
 	(void) gres_init();
 	slurm_mutex_lock(&gres_context_lock);
@@ -9245,6 +9280,9 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 				continue;
 			_accumulate_step_gres_alloc(
 				gres_state_step, &gres_bit_alloc, &gres_cnt);
+			/* Does task have a sharing GRES (GPU)? */
+			if (gres_id_sharing(gres_ctx->plugin_id))
+				sharing_gres_alloced = true;
 		}
 		if (_get_usable_gres(gres_ctx->gres_name, i, local_proc_id, 0,
 				     &tres_bind, &usable_gres, gres_bit_alloc,
@@ -9252,9 +9290,19 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 			continue;
 
 		list_iterator_destroy(gres_iter);
+
+		/*
+		 * Do not let MPS or Shard (shared GRES) clear any envs set for
+		 * a GPU (sharing GRES) when a GPU is allocated but an
+		 * MPS/Shard is not. Sharing GRES plugins always run before
+		 * shared GRES, so we don't need to protect MPS/Shard from GPU.
+		 */
+		if (gres_id_shared(gres_ctx->config_flags) &&
+		    sharing_gres_alloced)
+			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
+
 		(*(gres_ctx->ops.task_set_env))(job_env_ptr, gres_bit_alloc,
-					       gres_cnt, usable_gres,
-					       tres_bind.gres_internal_flags);
+					        gres_cnt, usable_gres, flags);
 		gres_cnt = 0;
 		FREE_NULL_BITMAP(gres_bit_alloc);
 		FREE_NULL_BITMAP(usable_gres);
