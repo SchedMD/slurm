@@ -7319,14 +7319,13 @@ extern void gres_g_job_set_env(char ***job_env_ptr, List job_gres_list,
 	(void) gres_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	for (i=0; i<gres_context_cnt; i++) {
+	for (i = 0; i < gres_context_cnt; i++) {
 		slurm_gres_context_t *gres_ctx = &gres_context[i];
 		if (!gres_ctx->ops.job_set_env)
 			continue;	/* No plugin to call */
 		if (job_gres_list) {
 			gres_iter = list_iterator_create(job_gres_list);
-			while ((gres_state_job = (gres_state_t *)
-				list_next(gres_iter))) {
+			while ((gres_state_job = list_next(gres_iter))) {
 				if (gres_state_job->plugin_id !=
 				    gres_ctx->plugin_id)
 					continue;
