@@ -207,7 +207,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 				    perc_str);
 	} else {
 		unsetenvp(*env_ptr, "CUDA_MPS_ACTIVE_THREAD_perc_str");
-		unsetenvp(*env_ptr, "CUDA_MPS_ACTIVE_THREADS_PERCENTAGE");
+		unsetenvp(*env_ptr, "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE");
 	}
 }
 
