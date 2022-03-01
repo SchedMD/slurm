@@ -104,6 +104,7 @@ documents those changes that are of interest to users and administrators.
     longer a connectivity check happening in the jobcomp/elasticsearch plugin
     when setting the location off of JobCompLoc.
  -- Add %n for NodeName substitution in SlurmdSpoolDir in nss_slurm.conf.
+ -- job_container/tmpfs - add basic environment variables to InitScript.
 
 * Changes in Slurm 21.08.7
 ==========================

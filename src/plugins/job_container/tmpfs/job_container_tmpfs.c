@@ -470,8 +470,17 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 
 	/* run any initialization script- if any*/
 	if (jc_conf->initscript) {
+		char **env = env_array_create();
+		env_array_overwrite_fmt(&env, "SLURM_JOB_ID", "%u", job_id);
+		env_array_overwrite_fmt(&env, "SLURM_JOB_MOUNTPOINT_SRC", "%s",
+					src_bind);
+		env_array_overwrite_fmt(&env, "SLURM_CONF", "%s",
+					slurm_conf.slurm_conf);
+		env_array_overwrite_fmt(&env, "SLURMD_NODENAME", "%s",
+					conf->node_name);
 		result = run_command("initscript", jc_conf->initscript, NULL,
-				     NULL, 10000, 0, &rc);
+				     env, 10000, 0, &rc);
+		env_array_free(env);
 		if (rc) {
 			error("%s: init script: %s failed",
 			      __func__, jc_conf->initscript);
