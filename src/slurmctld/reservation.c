@@ -3337,7 +3337,6 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		return ESLURM_RESERVATION_INVALID;
 	}
 
-	(void) set_node_maint_mode(true);
 	last_resv_update = time(NULL);
 	schedule_resv_save();
 	return rc;
@@ -3951,6 +3950,12 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	}
 	resv_desc.node_cnt = xcalloc(2, sizeof(uint32_t));
 	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
+	/* Exclude self reserved nodes only if reservation contains any nodes */
+	if (resv_ptr->node_bitmap) {
+		tmp_bitmap = bit_copy(avail_node_bitmap);
+		bit_and(tmp_bitmap, resv_ptr->part_ptr->node_bitmap);
+		bit_and_not(tmp_bitmap, resv_ptr->node_bitmap);
+	}
 	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap,
 			  &core_bitmap);
 	xfree(resv_desc.core_cnt);
@@ -3960,7 +3965,6 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	if (i == SLURM_SUCCESS) {
 		bit_and(resv_ptr->node_bitmap, avail_node_bitmap);
 		bit_or(resv_ptr->node_bitmap, tmp_bitmap);
-		FREE_NULL_BITMAP(tmp_bitmap);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		resv_ptr->core_bitmap = core_bitmap;
 		free_job_resources(&resv_ptr->core_resrcs);
@@ -3975,6 +3979,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		debug("reservation %s contains unusable nodes, "
 		      "can't reallocate now", resv_ptr->name);
 	}
+	FREE_NULL_BITMAP(tmp_bitmap);
 }
 
 /*
@@ -6962,6 +6967,8 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 	int i, i_first, i_last;
 	node_record_t *node_ptr;
 	uint32_t old_state;
+	bitstr_t *maint_node_bitmap = NULL;
+	slurmctld_resv_t *resv2_ptr;
 
 	if (!resv_ptr->node_bitmap) {
 		if ((resv_ptr->flags & RESERVE_FLAG_ANY_NODES) == 0) {
@@ -6979,6 +6986,23 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 		}
 		return;
 	}
+
+	if (!(resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET) && !reset_all &&
+	    (resv_ptr->flags & RESERVE_FLAG_MAINT)) {
+		maint_node_bitmap = bit_alloc(node_record_count);
+		ListIterator iter = list_iterator_create(resv_list);
+		while ((resv2_ptr = list_next(iter))) {
+			if (resv_ptr != resv2_ptr &&
+			    resv2_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET &&
+			    resv2_ptr->flags & RESERVE_FLAG_MAINT &&
+			    resv2_ptr->node_bitmap) {
+				bit_or(maint_node_bitmap,
+				       resv2_ptr->node_bitmap);
+			}
+		}
+		list_iterator_destroy(iter);
+	}
+
 	i_last  = bit_fls(resv_ptr->node_bitmap);
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(resv_ptr->node_bitmap, i))
@@ -6988,7 +7012,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 		old_state = node_ptr->node_state;
 		if (resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET)
 			node_ptr->node_state |= flags;
-		else
+		else if (!maint_node_bitmap || !bit_test(maint_node_bitmap, i))
 			node_ptr->node_state &= (~flags);
 		/* mark that this node is now down if maint mode flag changed */
 		bool state_change = ((old_state ^ node_ptr->node_state)
@@ -7002,6 +7026,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 				slurm_conf.slurm_user_id);
 		}
 	}
+	FREE_NULL_BITMAP(maint_node_bitmap);
 }
 
 extern void job_resv_append_magnetic(job_queue_req_t *job_queue_req)
