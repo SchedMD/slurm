@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "February 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "March 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4691,9 +4691,9 @@ Log errors and verbose informational messages and even more debugging messages
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon's
 logs are written.
 The default value is none (performs logging via syslog).
-Any "%h" within the name is replaced with the hostname on which the
+The first "%h" within the name is replaced with the hostname on which the
 \fBslurmd\fR is running.
-Any "%n" within the name is replaced with the Slurm node name on which the
+The first "%n" within the name is replaced with the Slurm node name on which the
 \fBslurmd\fR is running.
 .br
 See the section \fBLOGGING\fR if a pathname is specified.
@@ -4732,9 +4732,9 @@ If set, the Slurmd will shut itself down when a reboot request is received.
 \fBSlurmdPidFile\fR
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon may write
 its process id. This may be used for automated signal processing.
-Any "%h" within the name is replaced with the hostname on which the
+The first "%h" within the name is replaced with the hostname on which the
 \fBslurmd\fR is running.
-Any "%n" within the name is replaced with the Slurm node name on which the
+The first "%n" within the name is replaced with the Slurm node name on which the
 \fBslurmd\fR is running.
 The default value is "/var/run/slurmd.pid".
 .IP
@@ -4761,9 +4761,9 @@ daemon's state information and batch job script information are written. This
 must be a common pathname for all nodes, but should represent a directory which
 is local to each node (reference a local file system). The default value
 is "/var/spool/slurmd".
-Any "%h" within the name is replaced with the hostname on which the
+The first "%h" within the name is replaced with the hostname on which the
 \fBslurmd\fR is running.
-Any "%n" within the name is replaced with the Slurm node name on which the
+The first "%n" within the name is replaced with the Slurm node name on which the
 \fBslurmd\fR is running.
 .IP
 
