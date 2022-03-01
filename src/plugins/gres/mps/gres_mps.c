@@ -153,7 +153,6 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 		     bitstr_t *usable_gres, uint64_t gres_per_node,
 		     bool is_task, bool is_job, gres_internal_flags_t flags)
 {
-	char *perc_env = NULL;
 	char perc_str[64];
 	uint64_t count_on_dev, percentage;
 	int global_id = -1;
@@ -169,12 +168,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	 * This is useful for jobs and steps that request --gres=none within an
 	 * existing job allocation with GRES.
 	 */
-	if (perc_env) {
-		env_array_overwrite(env_ptr,
-				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
-				    perc_env);
-		xfree(perc_env);
-	} else if (gres_per_node && shared_info) {
+	if (gres_per_node && shared_info) {
 		count_on_dev = _get_dev_count(global_id);
 		if (count_on_dev > 0) {
 			percentage = (gres_per_node * 100) / count_on_dev;
