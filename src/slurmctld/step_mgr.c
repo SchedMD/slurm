@@ -4846,7 +4846,7 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 			select_g_select_jobinfo_free(
 				kill_step->select_jobinfo);
 		}
-		xfree(kill_step);
+		slurm_free_kill_job_msg(kill_step);
 		return;
 	}
 
