@@ -3453,20 +3453,19 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
-	int error_code = SLURM_SUCCESS, rc, rem;
+	int rc, rem;
 	uint32_t step_rc;
 	DEF_TIMERS;
 	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
-	bool dump_job = false;
 
 	/* init */
 	START_TIMER;
-	log_flag(STEPS, "Processing RPC details: REQUEST_STEP_COMPLETE for %ps nodes %u-%u rc=%u",
+	log_flag(STEPS, "Processing RPC details: REQUEST_STEP_COMPLETE for %ps nodes %u-%u rc=%u(%s)",
 		 &req->step_id, req->range_first, req->range_last,
-		 req->step_rc);
+		 req->step_rc, slurm_strerror(req->step_rc));
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		_throttle_start(&active_rpc_cnt);
@@ -3475,39 +3474,20 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 
 	rc = step_partial_comp(req, msg->auth_uid, true, &rem, &step_rc);
 
-	if (rc || rem) {	/* some error or not totally done */
-		/* Note: Error printed within step_partial_comp */
-		if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
-			unlock_slurmctld(job_write_lock);
-			_throttle_fini(&active_rpc_cnt);
-		}
-		slurm_send_rc_msg(msg, rc);
-		if (!rc)	/* partition completion */
-			schedule_job_save();	/* Has own locking */
-		return;
-	}
-
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
 	}
+
 	END_TIMER2("_slurm_rpc_step_complete");
 
-	/* return result */
-	if (error_code) {
-		log_flag(STEPS, "%s 1 %ps %s",
-			 __func__, &req->step_id,
-			 slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-	} else {
-		log_flag(STEPS, "%s %ps %s",
-			 __func__, &req->step_id,
-			 TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		dump_job = true;
-	}
+	log_flag(STEPS, "%s: %ps rc:%s %s",
+		 __func__, &req->step_id, slurm_strerror(rc), TIME_STR);
 
-	if (dump_job)
+	/* return result */
+	(void) slurm_send_rc_msg(msg, rc);
+
+	if (rc == SLURM_SUCCESS)
 		(void) schedule_job_save();	/* Has own locking */
 }
 
