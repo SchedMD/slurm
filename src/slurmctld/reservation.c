@@ -152,7 +152,7 @@ static uint32_t _max_constraint_planning(constraint_planning_t* sched,
 
 
 static int _advance_resv_time(slurmctld_resv_t *resv_ptr);
-static void _advance_time(time_t *res_time, int day_cnt);
+static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
 				char ***account_list, bool *account_not);
 static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
@@ -241,15 +241,16 @@ static void _set_boot_time(slurmctld_resv_t *resv_ptr)
 		resv_ptr->boot_time = node_features_g_boot_time();
 }
 
-/* Advance res_time by the specified day count,
+/* Advance res_time by the specified day and hour counts,
  * account for daylight savings time */
-static void _advance_time(time_t *res_time, int day_cnt)
+static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt)
 {
 	time_t save_time = *res_time;
 	struct tm time_tm;
 
 	localtime_r(res_time, &time_tm);
 	time_tm.tm_mday += day_cnt;
+	time_tm.tm_hour += hour_cnt;
 	*res_time = slurm_mktime(&time_tm);
 	if (*res_time == (time_t)(-1)) {
 		error("Could not compute reservation time %lu",
@@ -2153,13 +2154,13 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 	for (i=0; ((i<7) && (!rc)); i++) {  /* look forward one week */
 		s_time1 = resv_desc_ptr->start_time;
 		e_time1 = resv_desc_ptr->end_time;
-		_advance_time(&s_time1, i);
-		_advance_time(&e_time1, i);
+		_advance_time(&s_time1, i, 0);
+		_advance_time(&e_time1, i, 0);
 		for (j=0; ((j<7) && (!rc)); j++) {
 			s_time2 = start_relative;
 			e_time2 = end_relative;
-			_advance_time(&s_time2, j);
-			_advance_time(&e_time2, j);
+			_advance_time(&s_time2, j, 0);
+			_advance_time(&e_time2, j, 0);
 			if ((s_time1 < e_time2) &&
 			    (e_time1 > s_time2)) {
 				rc = true;
@@ -6580,10 +6581,10 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 			(day_cnt > 1 ? "s" : ""));
 		resv_ptr->idle_start_time = 0;
 		resv_ptr->start_time = resv_ptr->start_time_first;
-		_advance_time(&resv_ptr->start_time, day_cnt);
+		_advance_time(&resv_ptr->start_time, day_cnt, 0);
 		resv_ptr->start_time_prev = resv_ptr->start_time;
 		resv_ptr->start_time_first = resv_ptr->start_time;
-		_advance_time(&resv_ptr->end_time, day_cnt);
+		_advance_time(&resv_ptr->end_time, day_cnt, 0);
 		resv_ptr->ctld_flags &= (~RESV_CTLD_PROLOG);
 		resv_ptr->ctld_flags &= (~RESV_CTLD_EPILOG);
 		_post_resv_create(resv_ptr);
