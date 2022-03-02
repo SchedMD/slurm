@@ -2480,6 +2480,13 @@ CPUs to jobs, so this number indicates the number of CPUs allocated to the job.
 .IP
 
 .TP
+\fBSLURM_JOB_GPUS\fR
+The global GPU IDs of the GPUs allocated to this job. The GPU IDs are not
+relative to any device cgroup, even if devices are constrained with task/cgroup.
+Only set in batch and interactive jobs.
+.IP
+
+.TP
 \fBSLURM_JOB_NODELIST\fR
 List of nodes allocated to the job.
 .IP

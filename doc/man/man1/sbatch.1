@@ -2900,6 +2900,13 @@ Account name associated of the job allocation.
 .IP
 
 .TP
+\fBSLURM_JOB_GPUS\fR
+The global GPU IDs of the GPUs allocated to this job. The GPU IDs are not
+relative to any device cgroup, even if devices are constrained with task/cgroup.
+Only set in batch and interactive jobs.
+.IP
+
+.TP
 \fBSLURM_JOB_ID\fR
 The ID of the job allocation.
 .IP
