@@ -112,6 +112,9 @@ documents those changes that are of interest to users and administrators.
  -- Optimize sending down nodes in maintenance mode to the database when
     removing reservations.
  -- Avoid shrinking a reservation when overlapping with downed nodes.
+ -- Fix 'planned time' in rollups for jobs that were still pending when the
+    rollup happened.
+ -- Prevent new elements from a job array from causing rerollups.
 
 * Changes in Slurm 21.08.6
 ==========================

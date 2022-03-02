@@ -40,6 +40,7 @@ proc inc22_1_3 { } {
 	global acct3_alloc total_alloc wckey1_alloc user1_wckey1_alloc
 	global user2_wckey1_alloc user1 user2 account1 account2 account3
 	global sql_rem_clus1 wckey1 wc_key_track
+	global job4_cpus job4_elig
 
 	# Since there are 2 test clusters we will just use one
 	set cluster $cluster1
@@ -65,8 +66,9 @@ proc inc22_1_3 { } {
 	set wckey_alloc_sec2 $job2_alloc
 	set resv [expr ($job2_start - $job2_elig) * $job2_cpus]
 	set resv [expr $resv + (($job3_start - $job3_elig) * $job3_cpus)]
-	# I didn't have time to do the correct math here so I am just putting in 9000 which should be the correct value of over commit
-	set over 9000
+	set resv [expr $resv + (($period_end - $job4_elig) * $job4_cpus)]
+	# I didn't have time to do the correct math here so I am just putting in 16800 which should be the correct value of over commit
+	set over 16800
 	set resv [expr $resv - $over]
 	set idle [expr $reported - ($down + $alloc_sec + $resv)]
 	# Do the same logic inside the plugin to figure out the correct
