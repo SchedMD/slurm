@@ -359,6 +359,47 @@ static void _check_callback(char *alias, char *hostname,
 	node_rec->reason    = xstrdup(node_ptr->reason);
 }
 
+extern config_record_t *config_record_from_conf_node(
+	slurm_conf_node_t *conf_node, int tres_cnt)
+{
+	config_record_t *config_ptr;
+	bool in_daemon;
+	static bool daemon_run = false, daemon_set = false;
+
+	config_ptr = create_config_record();
+	config_ptr->boards = conf_node->boards;
+	config_ptr->core_spec_cnt = conf_node->core_spec_cnt;
+	config_ptr->cores = conf_node->cores;
+	config_ptr->cpu_bind = conf_node->cpu_bind;
+	config_ptr->cpu_spec_list = xstrdup(conf_node->cpu_spec_list);
+	config_ptr->cpus = conf_node->cpus;
+	if (conf_node->feature && conf_node->feature[0])
+		config_ptr->feature = xstrdup(conf_node->feature);
+	config_ptr->mem_spec_limit = conf_node->mem_spec_limit;
+	config_ptr->nodes = xstrdup(conf_node->nodenames);
+	config_ptr->real_memory = conf_node->real_memory;
+	config_ptr->threads = conf_node->threads;
+	config_ptr->tmp_disk = conf_node->tmp_disk;
+	config_ptr->tot_sockets = conf_node->tot_sockets;
+	config_ptr->weight = conf_node->weight;
+
+	if (tres_cnt) {
+		config_ptr->tres_weights_str =
+			xstrdup(conf_node->tres_weights_str);
+		config_ptr->tres_weights =
+			slurm_get_tres_weight_array(conf_node->tres_weights_str,
+						    tres_cnt, true);
+	}
+
+	in_daemon = run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmd");
+	if (in_daemon) {
+		config_ptr->gres = gres_name_filter(conf_node->gres,
+						    conf_node->nodenames);
+	}
+
+	return config_ptr;
+}
+
 /*
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
@@ -371,47 +412,12 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	slurm_conf_node_t *node, **ptr_array;
 	config_record_t *config_ptr = NULL;
 	int count, i;
-	bool in_daemon;
-	static bool daemon_run = false, daemon_set = false;
-
-	in_daemon = run_in_daemon(&daemon_run, &daemon_set, "slurmctld,slurmd");
 
 	count = slurm_conf_nodename_array(&ptr_array);
 
 	for (i = 0; i < count; i++) {
 		node = ptr_array[i];
-
-		config_ptr = create_config_record();
-		config_ptr->nodes = xstrdup(node->nodenames);
-		config_ptr->cpu_bind = node->cpu_bind;
-		config_ptr->cpus = node->cpus;
-		config_ptr->boards = node->boards;
-		config_ptr->tot_sockets = node->tot_sockets;
-		config_ptr->cores = node->cores;
-		config_ptr->core_spec_cnt = node->core_spec_cnt;
-		config_ptr->cpu_spec_list = xstrdup(node->cpu_spec_list);
-		config_ptr->threads = node->threads;
-		config_ptr->real_memory = node->real_memory;
-		config_ptr->mem_spec_limit = node->mem_spec_limit;
-		config_ptr->tmp_disk = node->tmp_disk;
-
-		if (tres_cnt) {
-			config_ptr->tres_weights_str =
-				xstrdup(node->tres_weights_str);
-			config_ptr->tres_weights =
-				slurm_get_tres_weight_array(
-						node->tres_weights_str,
-						tres_cnt, true);
-		}
-
-		config_ptr->weight = node->weight;
-		if (node->feature && node->feature[0])
-			config_ptr->feature = xstrdup(node->feature);
-		if (in_daemon) {
-			config_ptr->gres = gres_name_filter(node->gres,
-							    node->nodenames);
-		}
-
+		config_ptr = config_record_from_conf_node(node, tres_cnt);
 		expand_nodeline_info(node, config_ptr, _check_callback);
 	}
 

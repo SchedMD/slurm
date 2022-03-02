@@ -266,6 +266,16 @@ extern void expand_nodeline_info(slurm_conf_node_t *node_ptr,
 extern config_record_t *create_config_record(void);
 
 /*
+ * Create a config_record and initialize it with the given conf_node.
+ *
+ * IN conf_node - conf_node from slurm.conf to initialize config_record with.
+ * IN tres_cnt - number of system tres to initialize tres arrays.
+ * RET return config_record_t* on success, NULL otherwise.
+ */
+extern config_record_t *config_record_from_conf_node(
+	slurm_conf_node_t *conf_node, int tres_cnt);
+
+/*
  * Grow the node_record_table_ptr.
  */
 extern void grow_node_record_table_ptr();
