@@ -251,7 +251,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 {
 	bool use_local_dev_index = gres_use_local_device_index();
 	bool set_global_id = false;
-	gres_device_t *gres_device, *first_device = NULL;
+	gres_device_t *gres_device;
 	ListIterator itr;
 	char *global_prefix = "", *local_prefix = "";
 	char *new_global_list = NULL, *new_local_list = NULL;
@@ -313,10 +313,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			local_inx++ : global_env_index;
 
 		if (is_task) {
-			if (!first_device) {
-				first_device = gres_device;
-			}
-
 			if (!bit_test(usable_gres,
 				      use_local_dev_index ?
 				      index : gres_device->index)) {
