@@ -6555,6 +6555,8 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 	}
 
 	if (day_cnt || hour_cnt) {
+		char *tmp_str = NULL;
+
 		if (!(resv_ptr->ctld_flags & RESV_CTLD_PROLOG))
 			_run_script(slurm_conf.resv_prolog, resv_ptr);
 		if (!(resv_ptr->ctld_flags & RESV_CTLD_EPILOG))
@@ -6578,9 +6580,16 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 				NULL, _update_resv_jobs, &resv_ptr->resv_id);
 		}
 
-		verbose("%s: reservation %s advanced by %d day%s",
-			__func__, resv_ptr->name, day_cnt,
-			(day_cnt > 1 ? "s" : ""));
+		if (hour_cnt)
+			xstrfmtcat(tmp_str, "%d hour%s",
+				   hour_cnt, ((hour_cnt > 1) ? "s" : ""));
+		else if (day_cnt)
+			xstrfmtcat(tmp_str, "%d day%s",
+				   day_cnt, ((day_cnt > 1) ? "s" : ""));
+		verbose("%s: reservation %s advanced by %s",
+			__func__, resv_ptr->name, tmp_str);
+		xfree(tmp_str);
+
 		resv_ptr->idle_start_time = 0;
 		resv_ptr->start_time = resv_ptr->start_time_first;
 		_advance_time(&resv_ptr->start_time, day_cnt, hour_cnt);
@@ -6594,7 +6603,7 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 		schedule_resv_save();
 		rc = SLURM_SUCCESS;
 	} else {
-		log_flag(RESERVATION, "%s: skipping reservation %s for being advanced by any days",
+		log_flag(RESERVATION, "%s: skipping reservation %s for being advanced in time",
 			 __func__, resv_ptr->name);
 	}
 	return rc;
