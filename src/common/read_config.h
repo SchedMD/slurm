@@ -555,6 +555,18 @@ extern int slurm_conf_get_res_spec_info(const char *node_name,
 					uint64_t *mem_spec_limit);
 
 /*
+ * Parse slurm.conf NodeName line and return single slurm_conf_node_t*.
+ *
+ * IN nodeline - NodeName= line string.
+ * OUT out_hashtbl - ptr to the generated hashtable so it can be deleted by
+ *                   caller after using the slurm_conf_node_t*. Currently, not a
+ *                   way to disassociate items from the hashtbl.
+ * RET slurm_conf_t* on success, NULL otherwise.
+ */
+extern slurm_conf_node_t *slurm_conf_parse_nodeline(const char *nodeline,
+						    s_p_hashtbl_t **out_hashtbl);
+
+/*
  * init_slurm_conf - initialize or re-initialize the slurm configuration
  *	values to defaults (NULL or NO_VAL). Note that the configuration
  *	file pathname (slurm_conf) is not changed.

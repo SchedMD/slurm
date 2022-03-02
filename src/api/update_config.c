@@ -138,6 +138,11 @@ tryagain:
 	return rc;
 }
 
+int slurm_create_node(update_node_msg_t *node_msg)
+{
+	return _slurm_update(node_msg, REQUEST_CREATE_NODE);
+}
+
 /*
  * slurm_update_node - issue RPC to a node's configuration per request,
  *	only usable by user root

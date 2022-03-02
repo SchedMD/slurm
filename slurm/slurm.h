@@ -4264,6 +4264,13 @@ extern char *slurm_sprint_node_table(node_info_t *node_ptr,
 void slurm_init_update_node_msg(update_node_msg_t *update_node_msg);
 
 /*
+ * slurm_create_node - issue RPC to create node(s), only usable by user root
+ * IN node_msg - node definition(s)
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+extern int slurm_create_node(update_node_msg_t *node_msg);
+
+/*
  * slurm_update_node - issue RPC to a node's configuration per request,
  *	only usable by user root
  * IN node_msg - description of node updates

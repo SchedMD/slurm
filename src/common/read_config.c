@@ -3142,6 +3142,45 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	return;
 }
 
+extern slurm_conf_node_t *slurm_conf_parse_nodeline(const char *nodeline,
+						    s_p_hashtbl_t **out_hashtbl)
+{
+	int count = 0;
+	slurm_conf_node_t **ptr_array;
+	s_p_hashtbl_t *node_hashtbl = NULL;
+	char *leftover = NULL;
+	s_p_options_t node_options[] = {
+		{"NodeName", S_P_ARRAY, _parse_nodename, _destroy_nodename},
+		{NULL}
+	};
+
+	xassert(out_hashtbl);
+
+	node_hashtbl = s_p_hashtbl_create(node_options);
+	if (!s_p_parse_line(node_hashtbl, nodeline, &leftover)) {
+		s_p_hashtbl_destroy(node_hashtbl);
+		error("Failed to parse nodeline: '%s'", nodeline);
+		return NULL;
+	}
+
+	if (!s_p_get_array((void ***)&ptr_array, &count, "NodeName",
+			   node_hashtbl)) {
+		s_p_hashtbl_destroy(node_hashtbl);
+		error("Failed to find nodename in nodeline: '%s'", nodeline);
+		return NULL;
+	}
+
+	if (count != 1) {
+		s_p_hashtbl_destroy(node_hashtbl);
+		error("Failed to find one NodeName in nodeline: '%s'",
+		      nodeline);
+		return NULL;
+	}
+
+	*out_hashtbl = node_hashtbl;
+	return ptr_array[0];
+}
+
 /* caller must lock conf_lock */
 static int _init_slurm_conf(const char *file_name)
 {

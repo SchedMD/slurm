@@ -4463,6 +4463,104 @@ static void _update_parts()
 	set_partition_tres();
 }
 
+static void _build_node_callback(char *alias, char *hostname, char *address,
+				 char *bcast_address, uint16_t port,
+				 int state_val, slurm_conf_node_t *conf_node,
+				 config_record_t *config_ptr)
+{
+	node_record_t *node_ptr;
+
+	if (!(node_ptr = add_node_record(alias, config_ptr)))
+		return;
+
+	if ((state_val != NO_VAL) &&
+	    (state_val != NODE_STATE_UNKNOWN))
+		node_ptr->node_state = state_val;
+	node_ptr->last_response = (time_t) 0;
+	node_ptr->comm_name = xstrdup(address);
+	node_ptr->cpu_bind  = conf_node->cpu_bind;
+	node_ptr->node_hostname = xstrdup(hostname);
+	node_ptr->bcast_address = xstrdup(bcast_address);
+	node_ptr->port = port;
+	node_ptr->weight = conf_node->weight;
+	node_ptr->reason = xstrdup(conf_node->reason);
+
+	slurm_reset_alias(node_ptr->name,
+			  node_ptr->comm_name,
+			  node_ptr->node_hostname);
+
+	if ((state_val != NODE_STATE_FUTURE) &&
+	     !(state_val & NODE_STATE_CLOUD)) {
+		slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
+			       node_ptr->comm_name);
+	}
+
+	if (config_ptr->feature) {
+		node_ptr->features = xstrdup(config_ptr->feature);
+		node_ptr->features_act = xstrdup(config_ptr->feature);
+	}
+
+	if (!IS_NODE_FUTURE(node_ptr))
+		make_node_idle(node_ptr, NULL);
+}
+
+extern int create_nodes(char *nodeline, char **err_msg)
+{
+	int state_val, rc = SLURM_SUCCESS;
+	slurm_conf_node_t *conf_node;
+	config_record_t *config_ptr;
+	s_p_hashtbl_t *node_hashtbl = NULL;
+	slurmctld_lock_t write_lock = {
+		.job = WRITE_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK
+	};
+
+	xassert(nodeline);
+	xassert(err_msg);
+
+	lock_slurmctld(write_lock);
+
+	if (!(conf_node = slurm_conf_parse_nodeline(nodeline, &node_hashtbl))) {
+		*err_msg = xstrdup_printf("Failed to parse nodeline '%s'",
+					  nodeline);
+		error("%s", *err_msg);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	state_val = state_str2int(conf_node->state, conf_node->nodenames);
+	if ((state_val == NO_VAL) ||
+	    ((state_val != NODE_STATE_FUTURE) &&
+	     !(state_val & NODE_STATE_CLOUD))) {
+		*err_msg = xstrdup("Only State=FUTURE and State=CLOUD allowed for nodes created by scontrol");
+		error("%s", *err_msg);
+		rc = ESLURM_INVALID_NODE_STATE;
+		goto fini;
+	}
+
+	config_ptr = config_record_from_conf_node(conf_node,
+						  slurmctld_tres_cnt);
+	config_ptr->node_bitmap = bit_alloc(node_record_count);
+
+	expand_nodeline_info(conf_node, config_ptr, _build_node_callback);
+	s_p_hashtbl_destroy(node_hashtbl);
+
+	if (config_ptr->feature) {
+		update_feature_list(avail_feature_list, config_ptr->feature,
+				    config_ptr->node_bitmap);
+		update_feature_list(active_feature_list, config_ptr->feature,
+				    config_ptr->node_bitmap);
+	}
+
+	set_cluster_tres(false);
+	_update_parts();
+	select_g_reconfigure();
+
+fini:
+	unlock_slurmctld(write_lock);
+
+	return rc;
+}
+
 extern int create_dynamic_reg_node(slurm_msg_t *msg)
 {
 	config_record_t *config_ptr;
