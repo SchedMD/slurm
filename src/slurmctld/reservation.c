@@ -6520,7 +6520,7 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 {
 	time_t now;
 	struct tm tm;
-	int day_cnt = 0;
+	int day_cnt = 0, hour_cnt = 0;
 	int rc = SLURM_ERROR;
 	/* Make sure we have node write locks. */
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -6528,7 +6528,9 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT)
 		return rc;		/* Not applicable */
 
-	if (resv_ptr->flags & RESERVE_FLAG_DAILY) {
+	if (resv_ptr->flags & RESERVE_FLAG_HOURLY) {
+		hour_cnt = 1;
+	} else if (resv_ptr->flags & RESERVE_FLAG_DAILY) {
 		day_cnt = 1;
 	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKDAY) {
 		now = time(NULL);
@@ -6552,7 +6554,7 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 		day_cnt = 7;
 	}
 
-	if (day_cnt) {
+	if (day_cnt || hour_cnt) {
 		if (!(resv_ptr->ctld_flags & RESV_CTLD_PROLOG))
 			_run_script(slurm_conf.resv_prolog, resv_ptr);
 		if (!(resv_ptr->ctld_flags & RESV_CTLD_EPILOG))
@@ -6581,10 +6583,10 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 			(day_cnt > 1 ? "s" : ""));
 		resv_ptr->idle_start_time = 0;
 		resv_ptr->start_time = resv_ptr->start_time_first;
-		_advance_time(&resv_ptr->start_time, day_cnt, 0);
+		_advance_time(&resv_ptr->start_time, day_cnt, hour_cnt);
 		resv_ptr->start_time_prev = resv_ptr->start_time;
 		resv_ptr->start_time_first = resv_ptr->start_time;
-		_advance_time(&resv_ptr->end_time, day_cnt, 0);
+		_advance_time(&resv_ptr->end_time, day_cnt, hour_cnt);
 		resv_ptr->ctld_flags &= (~RESV_CTLD_PROLOG);
 		resv_ptr->ctld_flags &= (~RESV_CTLD_EPILOG);
 		_post_resv_create(resv_ptr);
