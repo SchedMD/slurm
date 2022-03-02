@@ -2552,9 +2552,12 @@ typedef struct will_run_response_msg {
 						  * reservation without
 						  * deleting the
 						  * reservation proper */
+#define RESERVE_FLAG_HOURLY	   SLURM_BIT(35) /* Set HOURLY flag */
+#define RESERVE_FLAG_NO_HOURLY	   SLURM_BIT(36) /* Clear HOURLY flag */
 
-#define RESERVE_REOCCURING	(RESERVE_FLAG_DAILY | RESERVE_FLAG_WEEKLY | \
-				 RESERVE_FLAG_WEEKDAY | RESERVE_FLAG_WEEKEND)
+#define RESERVE_REOCCURING	(RESERVE_FLAG_HOURLY | RESERVE_FLAG_DAILY | \
+				 RESERVE_FLAG_WEEKLY | RESERVE_FLAG_WEEKDAY | \
+				 RESERVE_FLAG_WEEKEND)
 
 typedef struct resv_core_spec {
 	char *node_name;	/* Name of reserved node */

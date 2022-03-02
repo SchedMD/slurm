@@ -352,6 +352,10 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * RESERVE_FLAG_SPEC_NODES   0x00008000
 
+=item * RESERVE_FLAG_HOURLY       0x00010000
+
+=item * RESERVE_FLAG_NO_HOURLY    0x00020000
+
 =back
 
 =head3 Log debug flags

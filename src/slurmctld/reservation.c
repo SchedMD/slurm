@@ -2376,6 +2376,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					RESERVE_FLAG_FLEX     |
 					RESERVE_FLAG_OVERLAP  |
 					RESERVE_FLAG_IGN_JOBS |
+					RESERVE_FLAG_HOURLY   |
 					RESERVE_FLAG_DAILY    |
 					RESERVE_FLAG_WEEKDAY  |
 					RESERVE_FLAG_WEEKEND  |
@@ -2833,6 +2834,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_IGN_JOBS;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_IGN_JOB)
 			resv_ptr->flags &= (~RESERVE_FLAG_IGN_JOBS);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_HOURLY)
+			resv_ptr->flags |= RESERVE_FLAG_HOURLY;
+		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_HOURLY)
+			resv_ptr->flags &= (~RESERVE_FLAG_HOURLY);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_DAILY)
 			resv_ptr->flags |= RESERVE_FLAG_DAILY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_DAILY)

@@ -1447,6 +1447,12 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 				outflags |= RESERVE_FLAG_NO_IGN_JOB;
 			else
 				outflags |= RESERVE_FLAG_IGN_JOBS;
+		} else if (xstrncasecmp(curr, "Hourly", MAX(taglen, 1)) == 0) {
+			curr += taglen;
+			if (op == RESV_REM)
+				outflags |= RESERVE_FLAG_NO_HOURLY;
+			else
+				outflags |= RESERVE_FLAG_HOURLY;
 		} else if (xstrncasecmp(curr, "Daily", MAX(taglen,1)) == 0) {
 			curr += taglen;
 			if (op == RESV_REM)

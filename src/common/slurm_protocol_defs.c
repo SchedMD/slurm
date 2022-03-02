@@ -3167,6 +3167,16 @@ extern char *reservation_flags_string(reserve_info_t * resv_ptr)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "IGNORE_JOBS");
 	}
+	if (flags & RESERVE_FLAG_HOURLY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "HOURLY");
+	}
+	if (flags & RESERVE_FLAG_NO_HOURLY) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_HOURLY");
+	}
 	if (flags & RESERVE_FLAG_DAILY) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
