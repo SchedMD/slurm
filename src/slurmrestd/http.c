@@ -144,7 +144,7 @@ static void _http_parser_url_init(struct http_parser_url *url)
 
 static int _on_message_begin(http_parser *parser)
 {
-	debug5("%s: stub called", __func__);
+	log_flag(NET, "%s: stub called", __func__);
 	return 0;
 }
 
@@ -169,14 +169,14 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 	}
 
 	if (url.field_set & (1 << UF_SCHEMA))
-		debug2("%s: [%s] URL Schema currently not supported",
-		       __func__, request->context->con->name);
+		log_flag(NET, "%s: [%s] URL Schema currently not supported",
+			 __func__, request->context->con->name);
 	if (url.field_set & (1 << UF_HOST))
-		debug2("%s: [%s] URL host currently not supported",
-		       __func__, request->context->con->name);
+		log_flag(NET, "%s: [%s] URL host currently not supported",
+			 __func__, request->context->con->name);
 	if (url.field_set & (1 << UF_PORT))
-		debug2("%s: [%s] URL port currently not supported",
-		       __func__, request->context->con->name);
+		log_flag(NET, "%s: [%s] URL port currently not supported",
+			 __func__, request->context->con->name);
 	if (url.field_set & (1 << UF_PATH)) {
 		xassert(url.field_data[UF_PATH].len <= length);
 		request->path = xstrndup(at + url.field_data[UF_PATH].off,
@@ -188,11 +188,11 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 					  url.field_data[UF_QUERY].len);
 	}
 	if (url.field_set & (1 << UF_FRAGMENT))
-		debug2("%s: [%s] URL fragment currently not supported",
-		       __func__, request->context->con->name);
+		log_flag(NET, "%s: [%s] URL fragment currently not supported",
+			 __func__, request->context->con->name);
 	if (url.field_set & (1 << UF_USERINFO))
-		debug2("%s: [%s] URL user currently not supported",
-		       __func__, request->context->con->name);
+		log_flag(NET, "%s: [%s] URL user currently not supported",
+			 __func__, request->context->con->name);
 
 	debug("%s: [%s] url path: %s query: %s",
 	      __func__, request->context->con->name, request->path,
@@ -203,7 +203,7 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 
 static int _on_status(http_parser *parser, const char *at, size_t length)
 {
-	debug5("%s: stub called", __func__);
+	log_flag(NET, "%s: stub called", __func__);
 	return 0;
 }
 
@@ -239,9 +239,9 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 	xstrtrim(buffer->name);
 
 	list_append(request->headers, buffer);
-	debug2("%s: [%s] Header: %s Value: %s",
-	       __func__, request->context->con->name, buffer->name,
-	       buffer->value);
+	log_flag(NET, "%s: [%s] Header: %s Value: %s",
+		 __func__, request->context->con->name, buffer->name,
+		 buffer->value);
 
 	/* Watch for connection headers */
 	if (!xstrcasecmp(buffer->name, "Connection")) {
@@ -316,15 +316,15 @@ static int _on_headers_complete(http_parser *parser)
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if (parser->http_major == 1 && parser->http_minor == 0) {
-		debug3("%s: [%s] HTTP/1.0 connection",
-		       __func__, request->context->con->name);
+		log_flag(NET, "%s: [%s] HTTP/1.0 connection",
+			 __func__, request->context->con->name);
 
 		/* 1.0 defaults to close w/o keep_alive */
 		if (!request->keep_alive)
 			request->connection_close = true;
 	} else if (parser->http_major == 1 && parser->http_minor == 1) {
-		debug3("%s: [%s] HTTP/1.1 connection",
-		       __func__, request->context->con->name);
+		log_flag(NET, "%s: [%s] HTTP/1.1 connection",
+			 __func__, request->context->con->name);
 
 		/* keep alive is assumed for 1.1 */
 		if (request->keep_alive == -1)
@@ -400,9 +400,9 @@ static int _on_body(http_parser *parser, const char *at, size_t length)
 		request->body[length] = '\0';
 	}
 
-	debug2("%s: [%s] received %zu bytes for HTTP body length %zu/%zu bytes",
-	       __func__, request->context->con->name, length,
-	       request->body_length, request->expected_body_length);
+	log_flag(NET, "%s: [%s] received %zu bytes for HTTP body length %zu/%zu bytes",
+		 __func__, request->context->con->name, length,
+		 request->body_length, request->expected_body_length);
 
 	return 0;
 
@@ -530,10 +530,10 @@ extern int send_http_response(const send_http_response_args_t *args)
 						 strlen(CRLF))))
 			return rc;
 
-		debug5("%s: [%s] rc=%s(%u) sending body:\n%s",
-		       __func__, args->con->name,
-		       get_http_status_code_string(args->status_code),
-		       args->status_code, args->body);
+		log_flag(NET, "%s: [%s] rc=%s(%u) sending body:\n%s",
+			 __func__, args->con->name,
+			 get_http_status_code_string(args->status_code),
+			 args->status_code, args->body);
 
 		if ((rc = con_mgr_queue_write_fd(args->con, args->body,
 						 args->body_length)))
@@ -610,9 +610,9 @@ static int _on_message_complete_request(http_parser *parser,
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((rc = request->context->on_http_request(&args))) {
-		debug2("%s: [%s] on_http_request rejected: %s",
-		       __func__, request->context->con->name,
-		       slurm_strerror(rc));
+		log_flag(NET, "%s: [%s] on_http_request rejected: %s",
+			 __func__, request->context->con->name,
+			 slurm_strerror(rc));
 		return HTTP_PARSER_RETURN_ERROR;
 	} else
 		return SLURM_SUCCESS;
@@ -686,8 +686,8 @@ static int _on_message_complete(http_parser *parser)
 
 	if (request->keep_alive) {
 		//TODO: implement keep alive correctly
-		debug2("%s: [%s] keep alive not currently implemented",
-		       __func__, request->context->con->name);
+		log_flag(NET, "%s: [%s] keep alive not currently implemented",
+			 __func__, request->context->con->name);
 	}
 
 	if (!request->connection_close) {
@@ -719,13 +719,13 @@ static int _on_message_complete(http_parser *parser)
 
 static int _on_chunk_header(http_parser *parser)
 {
-	debug5("%s: stub called", __func__);
+	log_flag(NET, "%s: stub called", __func__);
 	return 0;
 }
 
 static int _on_chunk_complete(http_parser *parser)
 {
-	debug5("%s: stub called", __func__);
+	log_flag(NET, "%s: stub called", __func__);
 	return 0;
 }
 
@@ -757,8 +757,8 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 	if (!request) {
 		/* Connection has already been closed */
 		rest_auth_g_clear();
-		debug("%s: [%s] Rejecting continued HTTP connection",
-		      __func__, con->name);
+		log_flag(NET, "%s: [%s] Rejecting continued HTTP connection",
+			 __func__, con->name);
 		return SLURM_UNEXPECTED_MSG_ERROR;
 	}
 
@@ -772,14 +772,14 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 
 	parser->data = request;
 
-	debug("%s: [%s] Accepted HTTP connection", __func__, con->name);
+	log_flag(NET, "%s: [%s] Accepted HTTP connection", __func__, con->name);
 
 	size_t bytes_parsed = http_parser_execute(parser, &settings,
 						  get_buf_data(buffer),
 						  size_buf(buffer));
 
-	debug4("%s: [%s] parsed %zu/%u bytes",
-	       __func__, con->name, bytes_parsed, size_buf(buffer));
+	log_flag(NET, "%s: [%s] parsed %zu/%u bytes",
+		 __func__, con->name, bytes_parsed, size_buf(buffer));
 
 	if (bytes_parsed > 0)
 		set_buf_offset(buffer, bytes_parsed);
@@ -789,8 +789,8 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 		      http_errno_description(parser->http_errno));
 		rc = _send_reject(parser, HTTP_STATUS_CODE_ERROR_BAD_REQUEST);
 	} else if (parser->upgrade) {
-		debug2("%s: [%s] HTTP Upgrade currently not supported",
-		       __func__, con->name);
+		log_flag(NET, "%s: [%s] HTTP Upgrade currently not supported",
+			 __func__, con->name);
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 	}
 
@@ -846,8 +846,8 @@ extern parsed_host_port_t *parse_host_port(const char *str)
 					url.field_data[UF_PORT].len);
 
 	if (parsed->host && parsed->port)
-		debug4("%s: parsed: %s -> %s:%s",
-		       __func__, str, parsed->host, parsed->port);
+		log_flag(NET, "%s: parsed: %s -> %s:%s",
+			 __func__, str, parsed->host, parsed->port);
 
 	return parsed;
 }
