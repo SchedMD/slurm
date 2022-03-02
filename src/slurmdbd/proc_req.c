@@ -3029,7 +3029,13 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	job.nodes = step_start_msg->nodes;
 	step.network = step_start_msg->node_inx;
 	job.start_protocol_ver = slurmdbd_conn->conn->version;
-	step.start_time = step_start_msg->start_time;
+	/*
+	 * Set job.start_time to be the same as step.start_time. If the
+	 * job_db_inx hasn't be created yet we need the start time or we will
+	 * cause re-rolling to happen at details.submit_time. When dealing with
+	 * job arrays that could be a long time in the past.
+	 */
+	job.start_time = step.start_time = step_start_msg->start_time;
 	details.submit_time = step_start_msg->job_submit_time;
 
 	memcpy(&step.step_id, &step_start_msg->step_id, sizeof(step.step_id));
