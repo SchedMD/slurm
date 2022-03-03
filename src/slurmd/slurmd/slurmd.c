@@ -426,18 +426,28 @@ main (int argc, char **argv)
 static void *
 _registration_engine(void *arg)
 {
+	static const uint32_t MAX_DELAY = 128;
+	uint32_t delay = 1;
 	_increment_thd_count();
 
-	while (!_shutdown) {
-		if ((sent_reg_time == (time_t) 0) &&
-		    (send_registration_msg(SLURM_SUCCESS, true) !=
-		     SLURM_SUCCESS)) {
-			debug("Unable to register with slurm controller, retrying");
-		} else if (_shutdown || sent_reg_time) {
+	while (!_shutdown && !sent_reg_time) {
+		int rc;
+
+		if (!(rc = send_registration_msg(SLURM_SUCCESS, true)))
 			break;
-		}
-		sleep(1);
+
+		debug("Unable to register with slurm controller (retry in %us): %s",
+		      delay, slurm_strerror(rc));
+
+		sleep(delay);
+
+		/* increase delay until max on every failure */
+		delay *= 2;
+		if (delay > MAX_DELAY)
+			delay = MAX_DELAY;
 	}
+
+	debug3("%s complete", __func__);
 
 	_decrement_thd_count();
 	return NULL;
