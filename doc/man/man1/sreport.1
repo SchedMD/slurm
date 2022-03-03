@@ -295,7 +295,7 @@ on separate lines.
 .TP
 .B cluster Utilization
 This report will display total usage divided amongst Allocated, Down,
-Planned Down, Idle, and Reserved time for selected clusters.
+Planned Down, Idle, and Planned time for selected clusters.
 .RS
 .IP Allocated 14
 
@@ -311,15 +311,15 @@ responding (assuming TrackSlurmctldDown is set in slurmdbd.conf).
 Time where nodes had no active jobs or reservations.
 .IP OverCommitted
 
-Time of eligible jobs waiting in the queue over the Reserved time. Unlike
-Reserved, this has no limit. It is typically useful to determine whether your
+Time of eligible jobs waiting in the queue over the Planned time. Unlike
+Planned, this has no limit. It is typically useful to determine whether your
 system is overloaded and by how much.
 .IP PlannedDown
 
 Time that nodes were in use by a reservation created with the MAINT flag
 but not the IGNORE_JOBS flag. Also, time that nodes were in the FUTURE state or
 CLOUD nodes that were POWERED_DOWN.
-.IP Reserved
+.IP Planned
 
 Time that a node spent idle with eligible jobs in the queue that were
 unable to start due to time or size constraints. The maximum time is limited
@@ -340,7 +340,7 @@ possibility for them to be accounted for incorrectly.
 .RS
 
 Note: The default view for the "Cluster Utilization" report includes the
-following fields: Cluster, Allocated, Down, PlannedDown, Idle, Reserved,
+following fields: Cluster, Allocated, Down, PlannedDown, Idle, Planned,
 Reported. You can include additional fields like OverCommitted and TresCount
 fields with the \fBFormat\fP option. The TresName will also be included if
 using the \fB\-T,  \-\-tres <tres_names>\fR option.
@@ -623,7 +623,7 @@ Cluster, Login, Proper, TresCount, Used, Wckey
 
 .TP
 \fBUtilization\fR
-Allocated, Cluster, Down, Idle, OverCommitted, PlannedDown, Reported, Reserved,
+Allocated, Cluster, Down, Idle, OverCommitted, PlannedDown, Reported, Planned,
 TresCount, TresName
 .IP
 
