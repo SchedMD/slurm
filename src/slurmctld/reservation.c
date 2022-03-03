@@ -2133,6 +2133,7 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 
 	return rc;
 }
+
 /* Set a reservation's TRES count. Requires that the reservation's
  *	node_bitmap be set.
  * This needs to be done after all other setup is done.
