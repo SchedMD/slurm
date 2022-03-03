@@ -1826,8 +1826,7 @@ static int _attempt_backfill(void)
 		if (many_rpcs || (slurm_delta_tv(&start_tv) >= yield_interval)) {
 			if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
-				info("yielding locks after testing "
-				     "%u(%d) jobs, %s",
+				info("yielding locks after testing %u(%d) jobs, %s",
 				     slurmctld_diag_stats.bf_last_depth,
 				     job_test_count, TIME_STR);
 			}
