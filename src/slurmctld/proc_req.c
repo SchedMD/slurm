@@ -2777,13 +2777,15 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 		}
 	}
 
-	/*
-	 * We always need to send the hostname back to the slurmd. In
-	 * case the slurmd already registered and we found the node_ptr
-	 * by the node_hostname.
-	 */
-	xfree(reg_msg->node_name);
-	reg_msg->node_name = xstrdup(node_ptr->name);
+	if (node_ptr) {
+		/*
+		 * We always need to send the hostname back to the slurmd. In
+		 * case the slurmd already registered and we found the node_ptr
+		 * by the node_hostname.
+		 */
+		xfree(reg_msg->node_name);
+		reg_msg->node_name = xstrdup(node_ptr->name);
+	}
 }
 
 /* _slurm_rpc_node_registration - process RPC to determine if a node's
