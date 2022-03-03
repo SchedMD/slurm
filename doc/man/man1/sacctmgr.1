@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "February 2022" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "March 2022" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -230,8 +230,15 @@ The hierarchy may have an arbitrary depth.
 The entity used to group information consisting of four parameters:
 \fBaccount\fR, \fBcluster\fR, \fBpartition\fR (optional), and \fBuser\fR.
 Used only with the \fBlist\fR or \fBshow\fR command.  Add, modify, and
-delete should be done to a user, account or cluster entity.  This will
-in turn update the underlying associations.
+delete should be done to a user, account or cluster entity, which will
+in turn update the underlying associations. Modification of attributes like
+limits is allowed for an association but not a modification of the four
+core attributes of an association. You cannot change the partition setting
+(or set one if it has not been set) for an existing association. Instead,
+you will need to create a new association with the partition included. You
+can either keep the previous association with no partition defined, or delete
+it. Note that these newly added associations are unique entities and any
+existing usage information will not be carried over to the new association.
 .IP
 
 .TP
