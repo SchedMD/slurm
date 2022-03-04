@@ -263,19 +263,7 @@ extern int slurm_rest_auth_p_apply(rest_auth_context_t *context)
 	xassert(((plugin_data_t *) context->plugin_data)->magic == MAGIC);
 	xassert(context->plugin_id == plugin_id);
 
-	/*
-	 * auth_munge does not support user aliasing: only allow same user
-	 * Always check for a NULL user and not rely on xstrcmp to do the
-	 * check. Neither user or context->user_name shoud never be NULL, but
-	 * just to be safe.
-	 */
-	if (!user || xstrcmp(context->user_name, user)) {
-		rc = ESLURM_AUTH_CRED_INVALID;
-		error("rejecting local auth for user %s", context->user_name);
-	} else {
-		rc = SLURM_SUCCESS;
-		info("apply local auth for user %s", context->user_name);
-	}
+	rc = auth_g_thread_config(NULL, context->user_name);
 
 	xfree(user);
 
