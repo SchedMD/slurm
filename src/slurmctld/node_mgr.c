@@ -444,12 +444,34 @@ extern int load_all_node_state ( bool state_only )
 
 		}
 
+		if (node_state & NODE_STATE_DYNAMIC_NORM) {
+			/* Create node record to restore node into. */
+			config_record_t *config_ptr;
+			config_ptr = create_config_record();
+			config_ptr->boards = boards;
+			config_ptr->cores = cores;
+			config_ptr->cpus = cpus;
+			config_ptr->feature = xstrdup(features);
+			config_ptr->node_bitmap = bit_alloc(node_record_count);
+			config_ptr->nodes = xstrdup(node_name);
+			config_ptr->real_memory = real_memory;
+			config_ptr->threads = threads;
+			config_ptr->tmp_disk = tmp_disk;
+			config_ptr->tot_sockets = sockets;
+
+			if (!(node_ptr = add_node_record(node_name,
+							 config_ptr))) {
+				list_delete_ptr(config_list, config_ptr);
+			}
+		}
+
 		/* find record and perform update */
 		node_ptr = find_node_record (node_name);
 		if (node_ptr == NULL) {
 			error ("Node %s has vanished from configuration",
 			       node_name);
-		} else if (state_only) {
+		} else if (state_only &&
+			   !(node_state & NODE_STATE_DYNAMIC_NORM)) {
 			uint32_t orig_flags;
 			if ((IS_NODE_CLOUD(node_ptr) ||
 			    (node_state & NODE_STATE_DYNAMIC_FUTURE)) &&
