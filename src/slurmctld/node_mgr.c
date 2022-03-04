@@ -611,7 +611,8 @@ extern int load_all_node_state ( bool state_only )
 					hs = hostset_create(node_name);
 			}
 			if ((IS_NODE_CLOUD(node_ptr) ||
-			    (node_state & NODE_STATE_DYNAMIC)) &&
+			    (node_state & NODE_STATE_DYNAMIC) ||
+			    (node_state & NODE_STATE_DYNAMIC_NORM)) &&
 			    comm_name && node_hostname) {
 				/* Recover NodeAddr and NodeHostName */
 				set_node_comm_name(node_ptr,
@@ -4485,6 +4486,8 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 	node_ptr->weight = conf_node->weight;
 	node_ptr->reason = xstrdup(conf_node->reason);
 
+	node_ptr->node_state |= NODE_STATE_DYNAMIC_NORM;
+
 	slurm_reset_alias(node_ptr->name,
 			  node_ptr->comm_name,
 			  node_ptr->node_hostname);
@@ -4618,7 +4621,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	}
 
 	make_node_idle(node_ptr, NULL);
-	node_ptr->node_state |= NODE_STATE_DYNAMIC;
+	node_ptr->node_state |= NODE_STATE_DYNAMIC_NORM;
 
 	set_cluster_tres(false);
 	_update_parts();

@@ -964,6 +964,7 @@ enum node_states {
 #define NODE_STATE_POWER_DOWN SLURM_BIT(23) /* manual node power down */
 #define NODE_STATE_POWER_UP SLURM_BIT(24) /* manual node power up */
 #define NODE_STATE_POWER_DRAIN SLURM_BIT(25) /* signal power down asap */
+#define NODE_STATE_DYNAMIC_NORM SLURM_BIT(26) /* dynamic norm node */
 
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t

@@ -1317,8 +1317,7 @@ static void _preserve_dynamic_nodes(node_record_t **old_node_table_ptr,
 		node_record_t *node_ptr = old_node_table_ptr[i];
 
 		if (!node_ptr ||
-		    !IS_NODE_DYNAMIC(node_ptr) ||
-		    find_node_record2(node_ptr->name))
+		    !IS_NODE_DYNAMIC_NORM(node_ptr))
 			continue;
 
 		insert_node_record(node_ptr);
@@ -3063,7 +3062,7 @@ static int _compare_hostnames(node_record_t **old_node_table,
 	old_set = hostset_create("");
 	for (cc = 0; cc < old_node_count; cc++)
 		if (old_node_table[cc] &&
-		    !IS_NODE_DYNAMIC(old_node_table[cc]))
+		    !IS_NODE_DYNAMIC_NORM(old_node_table[cc]))
 			hostset_insert(old_set, old_node_table[cc]->name);
 
 	set = hostset_create("");

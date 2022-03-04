@@ -171,6 +171,7 @@ extern void allocate_nodes(job_record_t *job_ptr)
 	int i;
 	node_record_t *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
+	bool has_dynamic_norm = false;
 	static bool cloud_dns = false;
 	static time_t sched_update = 0;
 
@@ -190,6 +191,12 @@ extern void allocate_nodes(job_record_t *job_ptr)
 		if (IS_NODE_DYNAMIC(node_ptr))
 			has_cloud = true;
 
+		if (IS_NODE_DYNAMIC_NORM(node_ptr)) {
+			/* Must set alias list as nodes won't exist in conf */
+			has_cloud = true;
+			has_dynamic_norm = true;
+		}
+
 		if (IS_NODE_CLOUD(node_ptr)) {
 			has_cloud = true;
 			if (IS_NODE_POWERED_DOWN(node_ptr) ||
@@ -203,7 +210,7 @@ extern void allocate_nodes(job_record_t *job_ptr)
 	license_job_get(job_ptr);
 
 	if (has_cloud) {
-		if (cloud_dns) {
+		if (cloud_dns && !has_dynamic_norm) {
 			job_ptr->wait_all_nodes = 1;
 		} else if (has_cloud_power_save) {
 			job_ptr->alias_list = xstrdup("TBD");
@@ -226,7 +233,9 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 		if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
 			continue;
 
-		if (IS_NODE_DYNAMIC(node_ptr) || IS_NODE_CLOUD(node_ptr)) {
+		if (IS_NODE_DYNAMIC(node_ptr) ||
+		    IS_NODE_DYNAMIC_NORM(node_ptr) ||
+		    IS_NODE_CLOUD(node_ptr)) {
 			if (IS_NODE_POWERED_DOWN(node_ptr) ||
 			    IS_NODE_POWERING_UP(node_ptr)) {
 				xfree(job_ptr->alias_list);

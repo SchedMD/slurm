@@ -144,6 +144,8 @@
 	(IS_NODE_DRAIN(_X) && !IS_NODE_DRAINING(_X))
 #define IS_NODE_DYNAMIC(_X)		\
 	(_X->node_state & NODE_STATE_DYNAMIC)
+#define IS_NODE_DYNAMIC_NORM(_X)		\
+	(_X->node_state & NODE_STATE_DYNAMIC_NORM)
 #define IS_NODE_COMPLETING(_X)	\
 	(_X->node_state & NODE_STATE_COMPLETING)
 #define IS_NODE_INVALID_REG(_X)	\
