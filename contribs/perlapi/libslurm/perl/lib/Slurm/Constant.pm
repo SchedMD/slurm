@@ -332,25 +332,25 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =over 2
 
-=item * RESERVE_FLAG_MAINT        0x0001
+=item * RESERVE_FLAG_MAINT        0x00000001
 
-=item * RESERVE_FLAG_NO_MAINT     0x0002
+=item * RESERVE_FLAG_NO_MAINT     0x00000002
 
-=item * RESERVE_FLAG_DAILY        0x0004
+=item * RESERVE_FLAG_DAILY        0x00000004
 
-=item * RESERVE_FLAG_NO_DAILY     0x0008
+=item * RESERVE_FLAG_NO_DAILY     0x00000008
 
-=item * RESERVE_FLAG_WEEKLY       0x0010
+=item * RESERVE_FLAG_WEEKLY       0x00000010
 
-=item * RESERVE_FLAG_NO_WEEKLY    0x0020
+=item * RESERVE_FLAG_NO_WEEKLY    0x00000020
 
-=item * RESERVE_FLAG_IGN_JOBS     0x0040
+=item * RESERVE_FLAG_IGN_JOBS     0x00000040
 
-=item * RESERVE_FLAG_NO_IGN_JOB   0x0080
+=item * RESERVE_FLAG_NO_IGN_JOB   0x00000080
 
-=item * RESERVE_FLAG_OVERLAP      0x4000
+=item * RESERVE_FLAG_OVERLAP      0x00004000
 
-=item * RESERVE_FLAG_SPEC_NODES   0x8000
+=item * RESERVE_FLAG_SPEC_NODES   0x00008000
 
 =back
 
