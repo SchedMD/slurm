@@ -53,6 +53,7 @@ HIGHLIGHTS
  -- Remove connect_timeout and timeout options from JobCompParams as there's no
     longer a connectivity check happening in the jobcomp/elasticsearch plugin
     when setting the location off of JobCompLoc.
+ -- Add support for hourly reoccurring reservations.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
