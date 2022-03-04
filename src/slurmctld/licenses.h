@@ -73,11 +73,11 @@ extern void license_free(void);
 extern void license_free_rec(void *x);
 
 /*
- * license_job_copy - create a copy of a job's license list
+ * license_copy - create a copy of license list
  * IN license_list_src - job license list to be copied
- * RET a copy of the original job license list
+ * RET a copy of the license list
  */
-extern List license_job_copy(List license_list_src);
+extern List license_copy(List license_list_src);
 
 /*
  * license_job_get - Get the licenses required for a job

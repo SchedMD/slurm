@@ -638,11 +638,11 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 }
 
 /*
- * license_job_copy - create a copy of a job's license list
+ * license_copy - create a copy of a license list
  * IN license_list_src - job license list to be copied
- * RET a copy of the original job license list
+ * RET a copy of the license list
  */
-extern List license_job_copy(List license_list_src)
+extern List license_copy(List license_list_src)
 {
 	licenses_t *license_entry_src, *license_entry_dest;
 	ListIterator iter;

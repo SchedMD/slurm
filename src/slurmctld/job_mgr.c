@@ -4788,7 +4788,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->job_resrcs = NULL;
 
 	job_ptr_pend->licenses = xstrdup(job_ptr->licenses);
-	job_ptr_pend->license_list = license_job_copy(job_ptr->license_list);
+	job_ptr_pend->license_list = license_copy(job_ptr->license_list);
 	job_ptr_pend->mail_user = xstrdup(job_ptr->mail_user);
 	job_ptr_pend->mcs_label = xstrdup(job_ptr->mcs_label);
 	job_ptr_pend->name = xstrdup(job_ptr->name);
