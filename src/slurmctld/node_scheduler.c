@@ -188,7 +188,7 @@ extern void allocate_nodes(job_record_t *job_ptr)
 		if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
 			continue;
 
-		if (IS_NODE_DYNAMIC(node_ptr))
+		if (IS_NODE_DYNAMIC_FUTURE(node_ptr))
 			has_cloud = true;
 
 		if (IS_NODE_DYNAMIC_NORM(node_ptr)) {
@@ -233,7 +233,7 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 		if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
 			continue;
 
-		if (IS_NODE_DYNAMIC(node_ptr) ||
+		if (IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
 		    IS_NODE_DYNAMIC_NORM(node_ptr) ||
 		    IS_NODE_CLOUD(node_ptr)) {
 			if (IS_NODE_POWERED_DOWN(node_ptr) ||

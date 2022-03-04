@@ -2225,7 +2225,7 @@ static int _restore_node_state(int recover,
 				hs = hostset_create(node_ptr->name);
 		}
 
-		if (IS_NODE_DYNAMIC(node_ptr) ||
+		if (IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
 		    (IS_NODE_CLOUD(node_ptr) &&
 		     !IS_NODE_POWERED_DOWN(node_ptr))) {
 			/* Preserve NodeHostname + NodeAddr set by scontrol */

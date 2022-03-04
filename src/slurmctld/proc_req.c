@@ -2769,7 +2769,7 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 					    xstrdup(reg_msg->node_name),
 				xstrdup(reg_msg->node_name));
 
-			node_ptr->node_state |= NODE_STATE_DYNAMIC;
+			node_ptr->node_state |= NODE_STATE_DYNAMIC_FUTURE;
 
 			bit_clear(future_node_bitmap, node_ptr->index);
 

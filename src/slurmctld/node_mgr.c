@@ -452,7 +452,7 @@ extern int load_all_node_state ( bool state_only )
 		} else if (state_only) {
 			uint32_t orig_flags;
 			if ((IS_NODE_CLOUD(node_ptr) ||
-			    (node_state & NODE_STATE_DYNAMIC)) &&
+			    (node_state & NODE_STATE_DYNAMIC_FUTURE)) &&
 			    comm_name && node_hostname) {
 				/* Recover NodeAddr and NodeHostName */
 				set_node_comm_name(node_ptr,
@@ -462,7 +462,7 @@ extern int load_all_node_state ( bool state_only )
 				node_hostname = NULL;
 			}
 			if (IS_NODE_FUTURE(node_ptr) &&
-			    (node_state & NODE_STATE_DYNAMIC)) {
+			    (node_state & NODE_STATE_DYNAMIC_FUTURE)) {
 				/* Preserve active dynamic future node state */
 				node_ptr->node_state    = node_state;
 
@@ -611,7 +611,7 @@ extern int load_all_node_state ( bool state_only )
 					hs = hostset_create(node_name);
 			}
 			if ((IS_NODE_CLOUD(node_ptr) ||
-			    (node_state & NODE_STATE_DYNAMIC) ||
+			    (node_state & NODE_STATE_DYNAMIC_FUTURE) ||
 			    (node_state & NODE_STATE_DYNAMIC_NORM)) &&
 			    comm_name && node_hostname) {
 				/* Recover NodeAddr and NodeHostName */
@@ -1613,7 +1613,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				_make_node_down(node_ptr, now);
 				kill_running_job_by_node_name (this_node_name);
 				if (state_val == NODE_STATE_FUTURE) {
-					if (IS_NODE_DYNAMIC(node_ptr)) {
+					if (IS_NODE_DYNAMIC_FUTURE(node_ptr)) {
 						/* Reset comm and hostname */
 						set_node_comm_name(
 							node_ptr,

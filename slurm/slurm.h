@@ -955,7 +955,7 @@ enum node_states {
 #define NODE_STATE_REBOOT_REQUESTED SLURM_BIT(16) /* node reboot requested */
 #define NODE_STATE_REBOOT_CANCEL SLURM_BIT(17) /* cancel pending reboot */
 #define NODE_STATE_POWERING_DOWN SLURM_BIT(18) /* node is powering down */
-#define NODE_STATE_DYNAMIC    SLURM_BIT(19) /* node is dynamically assigned */
+#define NODE_STATE_DYNAMIC_FUTURE SLURM_BIT(19) /* dynamic future node */
 #define NODE_STATE_REBOOT_ISSUED SLURM_BIT(20) /* node reboot passed to agent */
 #define NODE_STATE_PLANNED    SLURM_BIT(21) /* node scheduled for a job in the
 					     * future */
