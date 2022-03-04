@@ -1788,7 +1788,7 @@ static int _attempt_backfill(void)
 				job_ptr->time_limit = orig_time_limit;
 		}
 		xfree(job_queue_rec);
-		job_queue_rec = (job_queue_rec_t *) list_pop(job_queue);
+		job_queue_rec = list_pop(job_queue);
 		if (!job_queue_rec) {
 			log_flag(BACKFILL, "reached end of job queue");
 			break;
@@ -3347,9 +3347,8 @@ static time_t _het_job_start_find(job_record_t *job_ptr)
 	time_t latest_start = (time_t) 0;
 
 	if (job_ptr->het_job_id) {
-		map = (het_job_map_t *) list_find_first(het_job_list,
-							_het_job_find_map,
-							 &job_ptr->het_job_id);
+		map = list_find_first(het_job_list, _het_job_find_map,
+				      &job_ptr->het_job_id);
 		if (map) {
 			latest_start = _het_job_start_compute(map,
 							      job_ptr->job_id);
@@ -3377,9 +3376,8 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 	if (comp_time_limit == NO_VAL)
 		comp_time_limit = job_ptr->time_limit;
 	if (job_ptr->het_job_id) {
-		map = (het_job_map_t *) list_find_first(het_job_list,
-							_het_job_find_map,
-							 &job_ptr->het_job_id);
+		map = list_find_first(het_job_list, _het_job_find_map,
+				      &job_ptr->het_job_id);
 		if (map) {
 			if (!map->comp_time_limit) {
 				map->comp_time_limit = comp_time_limit;
@@ -3800,9 +3798,8 @@ static void _het_job_start_test(node_space_map_t *node_space, uint32_t het_job_i
 				    _het_job_start_test_list, node_space);
 	} else {
 		/* Test single map. */
-		map = (het_job_map_t *)list_find_first(het_job_list,
-						       _het_job_find_map,
-							&het_job_id);
+		map = list_find_first(het_job_list, _het_job_find_map,
+				      &het_job_id);
 		_het_job_start_test_single(node_space, map, true);
 	}
 }
