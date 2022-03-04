@@ -253,6 +253,7 @@ static void _dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer)
 	packstr (dump_node_ptr->mcs_label, buffer);
 	(void) gres_node_state_pack(dump_node_ptr->gres_list, buffer,
 				    dump_node_ptr->name);
+	pack32(dump_node_ptr->weight, buffer);
 }
 
 
@@ -297,7 +298,7 @@ extern int load_all_node_state ( bool state_only )
 	uint32_t node_state, cpu_bind = 0, next_state = NO_VAL;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
 	uint64_t real_memory;
-	uint32_t tmp_disk, name_len;
+	uint32_t tmp_disk, name_len, weight = 0;
 	uint32_t reason_uid = NO_VAL;
 	time_t boot_req_time = 0, reason_time = 0, last_response = 0;
 	time_t power_save_req_time = 0;
@@ -386,6 +387,7 @@ extern int load_all_node_state ( bool state_only )
 						   protocol_version) !=
 			    SLURM_SUCCESS)
 				goto unpack_error;
+			safe_unpack32(&weight, buffer);
 			base_state = node_state & NODE_STATE_BASE;
 		} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 			uint32_t len;
@@ -494,6 +496,7 @@ extern int load_all_node_state ( bool state_only )
 			config_ptr->threads = threads;
 			config_ptr->tmp_disk = tmp_disk;
 			config_ptr->tot_sockets = sockets;
+			config_ptr->weight = weight;
 
 			if (!(node_ptr = add_node_record(node_name,
 							 config_ptr))) {
