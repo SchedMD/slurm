@@ -184,7 +184,7 @@ static List _build_license_list(char *licenses, bool *valid)
  *
  * IN license_list - list of license_t records
  *
- * RET string represenation of licenses. Must be destroyed by caller.
+ * RET string representation of licenses. Must be destroyed by caller.
  */
 extern char *license_list_to_string(List license_list)
 {

@@ -141,7 +141,7 @@ extern bool license_list_overlap(List list_1, List list_2);
  *
  * IN license_list - list of license_t records
  *
- * RET string represenation of licenses. Must be destroyed by caller.
+ * RET string representation of licenses. Must be destroyed by caller.
  */
 extern char *license_list_to_string(List license_list);
 
