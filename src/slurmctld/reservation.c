@@ -2194,6 +2194,16 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_HOURLY) &&
 		    !(resv_desc_ptr->flags & RESERVE_FLAG_DAILY))
 			break;
+
+		/*
+		 * After 1st iteration, if execution reaches this point both
+		 * reservations have either HOURLY or DAILY flags.
+		 * If the flags are the same there's no need to further look
+		 * forward as if they haven't overlapped already, they won't
+		 * ever do as they would advance at the same pace.
+		 */
+		if (i_steps == j_steps)
+			break;
 	}
 
 	return rc;
