@@ -2643,6 +2643,32 @@ static void _clear_zero_tres(char **tres_spec)
 }
 
 /*
+ * A step may explicity request --gres=none in order to avoid making use
+ * of the job's TRES specifications. At this point, clear all GRES records.
+ */
+static void _clear_gres_tres(char **tres_spec)
+{
+	char *new_spec = NULL, *new_sep = "";
+	char *tmp, *tok, *save_ptr = NULL;
+
+	if (*tres_spec == NULL)
+		return;
+
+	tmp = xstrdup(*tres_spec);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		if (xstrncmp(tok, "gres", 4)) {
+			xstrfmtcat(new_spec, "%s%s", new_sep, tok);
+			new_sep = ",";
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+	xfree(*tres_spec);
+	*tres_spec = new_spec;
+}
+
+/*
  * If a job step specification does not include any GRES specification,
  * then copy those values from the job record.
  * Currently we only want to check if the step lacks a "gres" request.
@@ -2654,6 +2680,9 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
 {
 	if (!xstrcasecmp(step_specs->tres_per_node, "NONE")) {
 		xfree(step_specs->tres_per_node);
+		_clear_gres_tres(&step_specs->tres_per_step);
+		_clear_gres_tres(&step_specs->tres_per_socket);
+		_clear_gres_tres(&step_specs->tres_per_task);
 	} else if (xstrstr(step_specs->tres_per_step, "gres")	||
 		   xstrstr(step_specs->tres_per_node, "gres")	||
 		   xstrstr(step_specs->tres_per_socket, "gres")	||
