@@ -2127,7 +2127,6 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 			       slurmctld_resv_t *resv_ptr)
 {
 	bool rc = false;
-	int i, j;
 	time_t s_time1, s_time2, e_time1, e_time2;
 	time_t start_relative, end_relative;
 	time_t now = time(NULL);
@@ -2135,12 +2134,10 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
 		start_relative = resv_ptr->start_time + now;
 		if (resv_ptr->duration == INFINITE)
-			end_relative = start_relative +
-				       YEAR_SECONDS;
+			end_relative = start_relative + YEAR_SECONDS;
 		else if (resv_ptr->duration &&
 			 (resv_ptr->duration != NO_VAL)) {
-			end_relative = start_relative +
-				       resv_ptr->duration * 60;
+			end_relative = start_relative + resv_ptr->duration * 60;
 		} else {
 			end_relative = resv_ptr->end_time;
 			if (start_relative > end_relative)
@@ -2151,12 +2148,13 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 		end_relative = resv_ptr->end_time;
 	}
 
-	for (i=0; ((i<7) && (!rc)); i++) {  /* look forward one week */
+	/* look forward one week */
+	for (int i = 0; ((i < 7) && !rc); i++) {
 		s_time1 = resv_desc_ptr->start_time;
 		e_time1 = resv_desc_ptr->end_time;
 		_advance_time(&s_time1, i, 0);
 		_advance_time(&e_time1, i, 0);
-		for (j=0; ((j<7) && (!rc)); j++) {
+		for (int j = 0; ((j < 7) && !rc); j++) {
 			s_time2 = start_relative;
 			e_time2 = end_relative;
 			_advance_time(&s_time2, j, 0);
