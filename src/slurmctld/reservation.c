@@ -2127,6 +2127,7 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 			       slurmctld_resv_t *resv_ptr)
 {
 	bool rc = false;
+	int i_steps, j_steps;
 	time_t s_time1, s_time2, e_time1, e_time2;
 	time_t start_relative, end_relative;
 	time_t now = time(NULL);
@@ -2148,26 +2149,50 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 		end_relative = resv_ptr->end_time;
 	}
 
+	if (resv_desc_ptr->flags & RESERVE_FLAG_HOURLY)
+		i_steps = 7 * 24; /* Hours in one week. */
+	else
+		i_steps = 7; /* Days in one week. */
+
+	if (resv_ptr->flags & RESERVE_FLAG_HOURLY)
+		j_steps = 7 * 24;
+	else
+		j_steps = 7;
+
 	/* look forward one week */
-	for (int i = 0; ((i < 7) && !rc); i++) {
+	for (int i = 0; ((i < i_steps) && !rc); i++) {
 		s_time1 = resv_desc_ptr->start_time;
 		e_time1 = resv_desc_ptr->end_time;
-		_advance_time(&s_time1, i, 0);
-		_advance_time(&e_time1, i, 0);
-		for (int j = 0; ((j < 7) && !rc); j++) {
+		if (i_steps == 7) {
+			/* advance days. */
+			_advance_time(&s_time1, i, 0);
+			_advance_time(&e_time1, i, 0);
+		} else {
+			/* advance hours. */
+			_advance_time(&s_time1, 0, i);
+			_advance_time(&e_time1, 0, i);
+		}
+		for (int j = 0; ((j < j_steps) && !rc); j++) {
 			s_time2 = start_relative;
 			e_time2 = end_relative;
-			_advance_time(&s_time2, j, 0);
-			_advance_time(&e_time2, j, 0);
+			if (j_steps == 7) {
+				_advance_time(&s_time2, j, 0);
+				_advance_time(&e_time2, j, 0);
+			} else {
+				_advance_time(&s_time2, 0, j);
+				_advance_time(&e_time2, 0, j);
+			}
 			if ((s_time1 < e_time2) &&
 			    (e_time1 > s_time2)) {
 				rc = true;
 				break;
 			}
-			if (!(resv_ptr->flags & RESERVE_FLAG_DAILY))
+			if (!(resv_ptr->flags & RESERVE_FLAG_HOURLY) &&
+			    !(resv_ptr->flags & RESERVE_FLAG_DAILY))
 				break;
 		}
-		if (!(resv_desc_ptr->flags & RESERVE_FLAG_DAILY))
+		if (!(resv_desc_ptr->flags & RESERVE_FLAG_HOURLY) &&
+		    !(resv_desc_ptr->flags & RESERVE_FLAG_DAILY))
 			break;
 	}
 
