@@ -42,7 +42,7 @@
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 
-typedef struct licenses {
+typedef struct {
 	char *		name;		/* name associated with a license */
 	uint32_t	total;		/* total license configued */
 	uint32_t	used;		/* used licenses */

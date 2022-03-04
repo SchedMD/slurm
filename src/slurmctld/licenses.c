@@ -58,7 +58,7 @@
 List license_list = (List) NULL;
 time_t last_license_update = 0;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
-static void _pack_license(struct licenses *lic, buf_t *buffer,
+static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version);
 
 /* Print all licenses on a list */
@@ -930,7 +930,7 @@ extern void license_set_job_tres_cnt(List license_list,
  * Please update src/common/slurm_protocol_pack.c _unpack_license_info_msg() if
  * this changes.
  */
-static void _pack_license(struct licenses *lic, buf_t *buffer,
+static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
