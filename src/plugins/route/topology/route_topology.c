@@ -210,7 +210,6 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		}
 	}
 	slurm_mutex_unlock(&route_lock);
-	*sp_hl = xcalloc(switch_record_cnt, sizeof(hostlist_t));
 	/* Only acquire the slurmctld lock if running as the slurmctld. */
 	if (run_in_slurmctld)
 		lock_slurmctld(node_read_lock);
@@ -254,18 +253,17 @@ extern int route_p_split_hostlist(hostlist_t hl,
 			xfree(buf);
 		}
 		FREE_NULL_BITMAP(nodes_bitmap);
-		xfree(*sp_hl);
 		return route_split_hostlist_treewidth(hl, sp_hl, count,
 						      tree_width);
 	}
 	if (switch_record_table[j].level == 0) {
 		/* This is a leaf switch. Construct list based on TreeWidth */
 		FREE_NULL_BITMAP(nodes_bitmap);
-		xfree(*sp_hl);
 		return route_split_hostlist_treewidth(hl, sp_hl, count,
 						      tree_width);
 	}
 
+	*sp_hl = xcalloc(switch_record_cnt, sizeof(hostlist_t));
 	msg_count = hostlist_count(hl);
 	*count = 0;
 	_subtree_split_hostlist(nodes_bitmap, j, msg_count, sp_hl, count);
