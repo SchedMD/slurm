@@ -834,9 +834,18 @@ static int _get_joules_task(uint16_t delta)
 				new->current_watts);
 
 		if (!first) {
-			new->consumed_energy -= start_current_energies[i];
-			new->base_consumed_energy = adjustment +
-				(new->consumed_energy - old->consumed_energy);
+			/* if slurmd is reloaded while the step is alive */
+			if (old->consumed_energy > new->consumed_energy)
+				new->base_consumed_energy =
+					new->consumed_energy + adjustment;
+			else {
+				new->consumed_energy -=
+					start_current_energies[i];
+				new->base_consumed_energy =
+					adjustment +
+					(new->consumed_energy -
+					 old->consumed_energy);
+			}
 		} else {
 			/* This is just for the step, so take all the pervious
 			   consumption out of the mix.
