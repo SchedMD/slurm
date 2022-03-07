@@ -1096,8 +1096,7 @@ data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 			p[i] = '_';
 
 	xstrfmtcatat(args->operation, &args->at, "%s%s",
-		     (args->at ? "_" : ""),
-		     data_get_string(data));
+		     (args->operation ? "_" : ""), data_get_string(data));
 
 	return DATA_FOR_EACH_CONT;
 }
