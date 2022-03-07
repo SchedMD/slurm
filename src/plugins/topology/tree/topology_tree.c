@@ -275,6 +275,46 @@ static void _find_child_switches(int sw)
 	hostlist_destroy(swlist);
 }
 
+static void _merge_switches_array(uint16_t *switch_index1, uint16_t *cnt1,
+				  uint16_t *switch_index2, uint16_t cnt2)
+{
+	int i, j;
+	uint16_t init_cnt1 = *cnt1;
+
+	for (i = 0; i < cnt2; i++) {
+		for (j = 0; j < init_cnt1; j++) {
+			if (switch_index1[j] == switch_index2[i])
+				break;
+		}
+		if (j < init_cnt1)
+			continue;
+		switch_index1[*cnt1] = switch_index2[i];
+		(*cnt1)++;
+	}
+}
+
+/*
+ * _find_desc_switches creates an array of indexes to the
+ * all descendants of switch sw.
+ */
+static void _find_desc_switches(int sw)
+{
+	int k;
+	_merge_switches_array(switch_record_table[sw].switch_desc_index,
+			      &(switch_record_table[sw].num_desc_switches),
+			      switch_record_table[sw].switch_index,
+			      switch_record_table[sw].num_switches);
+
+	for (k = 0; k < switch_record_table[sw].num_switches; k++) {
+		int child_index = switch_record_table[sw].switch_index[k];
+		_merge_switches_array(
+			switch_record_table[sw].switch_desc_index,
+			&(switch_record_table[sw].num_desc_switches),
+			switch_record_table[child_index].switch_desc_index,
+			switch_record_table[child_index].num_desc_switches);
+	}
+
+}
 static void _validate_switches(void)
 {
 	slurm_conf_switches_t *ptr, **ptr_array;
@@ -448,6 +488,9 @@ static void _validate_switches(void)
 	for (i = 0; i < switch_record_cnt; i++) {
 		switch_record_table[i].switches_dist = xcalloc(
 			switch_record_cnt, sizeof(uint32_t));
+		switch_record_table[i].switch_desc_index = xcalloc(
+			switch_record_cnt, sizeof(uint16_t));
+		switch_record_table[i].num_desc_switches = 0;
 	}
 	for (i = 0; i < switch_record_cnt; i++) {
 		for (j = i + 1; j < switch_record_cnt; j++) {
@@ -467,6 +510,13 @@ static void _validate_switches(void)
 			for (k = 0; k < switch_record_cnt; k++) {
 				_check_better_path(i, j ,k);
 			}
+		}
+	}
+	for (i = 1; i <= switch_levels; i++) {
+		for (j = 0; j < switch_record_cnt; j++) {
+			if (switch_record_table[j].level != i)
+				continue;
+			_find_desc_switches(j);
 		}
 	}
 	if (!have_root && running_in_daemon())
@@ -500,6 +550,16 @@ static void _log_switches(void)
 			sep = ", ";
 		}
 		debug("\tswitches_dist[%d]:\t%s", i, tmp_str);
+		xfree(tmp_str);
+	}
+	for (i = 0; i < switch_record_cnt; i++) {
+		sep = "";
+		for (j = 0; j < switch_record_table[i].num_desc_switches; j++) {
+			xstrfmtcat(tmp_str, "%s%u", sep,
+				   switch_record_table[i].switch_desc_index[j]);
+			sep = ", ";
+		}
+		debug("\tswitch_desc_index[%d]:\t%s", i, tmp_str);
 		xfree(tmp_str);
 	}
 }
