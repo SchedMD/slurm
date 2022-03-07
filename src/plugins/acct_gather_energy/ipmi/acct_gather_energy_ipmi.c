@@ -600,7 +600,7 @@ static int _thread_init(void)
 	int rc = SLURM_SUCCESS;
 	uint16_t i;
 
-	if (!first)
+	if (!first && ipmi_ctx)
 		return first_init;
 	first = false;
 
@@ -926,8 +926,10 @@ extern int fini(void)
 	/* clean up the run thread */
 	slurm_cond_signal(&ipmi_cond);
 
-	if (ipmi_ctx)
+	if (ipmi_ctx) {
 		ipmi_monitoring_ctx_destroy(ipmi_ctx);
+		ipmi_ctx = NULL;
+	}
 	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 
 	slurm_mutex_unlock(&ipmi_mutex);
@@ -935,15 +937,25 @@ extern int fini(void)
 	if (thread_ipmi_id_run)
 		pthread_join(thread_ipmi_id_run, NULL);
 
-	xfree(sensors);
-	xfree(start_current_energies);
+	/*
+	 * We don't really want to destroy the sensors nor the initial state,
+	 * so those values persist a reconfig. And if the process dies, this
+	 * will be lost anyway. So not freeing these variables is not really a
+	 * leak.
+	 *
+	 * xfree(sensors);
+	 * xfree(start_current_energies);
+	 */
 
 	for (i = 0; i < descriptions_len; ++i) {
 		xfree(descriptions[i].label);
 		xfree(descriptions[i].sensor_idxs);
 	}
 	xfree(descriptions);
+	descriptions = NULL;
+	descriptions_len = 0;
 
+	flag_init = false;
 	return SLURM_SUCCESS;
 }
 
