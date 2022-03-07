@@ -91,6 +91,8 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 	char *ast, *end_ptr = NULL, *result = NULL, *save_ptr = NULL;
 	char *sep = "", *tmp, *tok;
 	long int count, i;
+	int (*isfunc) (int) = isdigit;
+	bool mask = false;
 
 	*error_code = SLURM_SUCCESS;
 
@@ -98,13 +100,27 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 		return NULL;
 
 	tmp = xstrdup(list);
-	if (!strchr(tmp, '*'))	/* No expansion needed*/
-		return tmp;
+
+	if (!xstrncmp(type, "mask", 4)) {
+		isfunc = isxdigit;
+		mask = true;
+	}
 
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
+		if (mask && !xstrncmp(tok, "0x", 2))
+			tok+=2;
+
 		ast = strchr(tok, '*');
 		if (ast) {
+			for (int i = 0; ast[i]; i++)
+				if (!isdigit(ast[i])) {
+					error("Failed to validate number: %s, the offending character is %c",
+					      ast, ast[i]);
+					*error_code = SLURM_ERROR;
+					return 0;
+				}
+
 			count = strtol(ast + 1, &end_ptr, 10);
 			if ((count <= 0) || (end_ptr[0] != '\0') ||
 			    (count == LONG_MIN) || (count == LONG_MAX)) {
@@ -115,11 +131,26 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 				break;
 			}
 			ast[0] = '\0';
+			for (int i = 0; tok[i]; i++)
+				if (!isfunc(tok[i])) {
+					error("Failed to validate number: %s, the offending character is %c",
+					      tok, tok[i]);
+					*error_code = SLURM_ERROR;
+					return 0;
+				}
+
 			for (i = 0; i < count; i++) {
 				xstrfmtcat(result, "%s%s", sep, tok);
 				sep = ",";
 			}
 		} else {
+			for (int i = 0; tok[i]; i++)
+				if (!isfunc(tok[i])) {
+					error("Failed to validate number: %s, the offending character is %c",
+					      tok, tok[i]);
+					*error_code = SLURM_ERROR;
+					return 0;
+				}
 			xstrfmtcat(result, "%s%s", sep, tok);
 			sep = ",";
 		}
@@ -411,6 +442,8 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		}
 	}
 	xfree(buf);
+	if (rc)
+		fatal("Failed to parse --cpu-bind= values.");
 
 	return rc;
 }
