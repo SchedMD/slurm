@@ -1133,11 +1133,14 @@ data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 	merge[1] = parse_url_path(data_get_string_const(op), false, true);
 	merged = data_list_join((const data_t **)merge, true);
 	FREE_NULL_DATA(merge[1]);
-	if (data_list_for_each(merged, _merge_operationId_strings, args) < 0)
+	if (data_list_for_each(merged, _merge_operationId_strings, args) < 0) {
+		FREE_NULL_DATA(merged);
 		return DATA_FOR_EACH_FAIL;
+	}
 
 	data_set_string_own(op, args->operation);
 	args->operation = NULL;
+	FREE_NULL_DATA(merged);
 
 	return DATA_FOR_EACH_CONT;
 }
