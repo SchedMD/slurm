@@ -474,6 +474,8 @@ static void _do_power_work(time_t now)
 		    (!IS_NODE_POWERING_UP(node_ptr))			&&
 		    (!IS_NODE_POWERING_UP(node_ptr))			&&
 		    (!IS_NODE_POWERING_DOWN(node_ptr))			&&
+		    (!IS_NODE_REBOOT_ISSUED(node_ptr))			&&
+		    (!IS_NODE_REBOOT_REQUESTED(node_ptr))		&&
 		    (IS_NODE_POWER_DOWN(node_ptr) ||
 		     ((node_ptr->last_busy != 0) &&
 		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
