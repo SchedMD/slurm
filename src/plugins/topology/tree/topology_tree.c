@@ -261,7 +261,7 @@ static void _find_child_switches(int sw)
 	while ((swname = hostlist_next(hi))) {
 		/* Find switch whose name is the name of this child.
 		 * and add its index to child index array */
-		for (i=0; i<switch_record_cnt; i++) {
+		for (i = 0; i < switch_record_cnt; i++) {
 			if (xstrcmp(swname, switch_record_table[i].name) == 0) {
 				switch_record_table[sw].switch_index[cldx] = i;
 				switch_record_table[i].parent = sw;
@@ -305,7 +305,7 @@ static void _validate_switches(void)
 		switch_ptr->name = xstrdup(ptr->switch_name);
 		/* See if switch name has already been defined. */
 		prior_ptr = switch_record_table;
-		for (j=0; j<i; j++, prior_ptr++) {
+		for (j = 0; j < i; j++, prior_ptr++) {
 			if (xstrcmp(switch_ptr->name, prior_ptr->name) == 0) {
 				fatal("Switch (%s) has already been defined",
 				      prior_ptr->name);
@@ -345,7 +345,7 @@ static void _validate_switches(void)
 	for (depth = 1; ; depth++) {
 		bool resolved = true;
 		switch_ptr = switch_record_table;
-		for (i=0; i < switch_record_cnt; i++, switch_ptr++) {
+		for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
 			if (switch_ptr->level != -1)
 				continue;
 			hl = hostlist_create(switch_ptr->switches);
@@ -437,7 +437,7 @@ static void _validate_switches(void)
 	 * and see if any switch can reach all nodes */
 	for (i = 0; i < switch_record_cnt; i++) {
 		if (switch_record_table[i].level != 0) {
-			_find_child_switches (i);
+			_find_child_switches(i);
 		}
 		if (node_record_count ==
 			bit_set_count(switch_record_table[i].node_bitmap)) {
