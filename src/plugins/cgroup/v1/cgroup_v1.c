@@ -231,10 +231,9 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str)
 
 	/*
 	 * Always try to move slurmstepd process to the root cgroup, otherwise
-	 * the rmdir(2) triggered by the calls below could fail if the pid
-	 * of stepd was in the cgroup. This should never happen but we don't
-	 * know what other plugins will do and whether they will attach the
-	 * stepd pid to the cg.
+	 * the rmdir(2) triggered by the calls below will always fail if the pid
+	 * of stepd is in the cgroup. We don't know what other plugins will do
+	 * and whether they will attach the stepd pid to the cg.
 	 */
 	rc = common_cgroup_move_process(root_cg, getpid());
 	if (rc != SLURM_SUCCESS) {
@@ -604,6 +603,20 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						   g_user_cgpath[sub]))
 		    != SLURM_SUCCESS)
 			goto step_c_err;
+
+		/*
+		 * Stick slurmstepd pid to the newly created job container
+		 * (Note: we do not put it in the step container because this
+		 * container could be used to suspend/resume tasks using freezer
+		 * properties so we need to let the slurmstepd outside of
+		 * this one)
+		 */
+		if (common_cgroup_add_pids(&int_cg[sub][CG_LEVEL_JOB],
+					   &job->jmgr_pid, 1) !=
+		    SLURM_SUCCESS) {
+			cgroup_p_step_destroy(sub);
+			goto step_c_err;
+		}
 
 		/* we use slurmstepd pid as the identifier of the container */
 		job->cont_id = (uint64_t)job->jmgr_pid;
