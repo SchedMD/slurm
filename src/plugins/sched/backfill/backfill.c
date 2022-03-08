@@ -218,7 +218,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     node_space_map_t *node_space,
 			     int *node_space_recs);
 static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val);
-static int  _attempt_backfill(void);
+static void _attempt_backfill(void);
 static int  _clear_job_estimates(void *x, void *arg);
 static int  _clear_qos_blocked_times(void *x, void *arg);
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
@@ -1068,7 +1068,7 @@ extern void *backfill_agent(void *args)
 		lock_slurmctld(all_locks);
 		if ((backfill_cnt++ % 2) == 0)
 			_het_job_start_clear();
-		(void) _attempt_backfill();
+		_attempt_backfill();
 		last_backfill_time = time(NULL);
 		(void) bb_g_job_try_stage_in();
 		unlock_slurmctld(all_locks);
@@ -1637,7 +1637,7 @@ static void _handle_planned(bool set)
 		last_node_update = time(NULL);
 }
 
-static int _attempt_backfill(void)
+static void _attempt_backfill(void)
 {
 	DEF_TIMERS;
 	List job_queue;
@@ -1656,7 +1656,7 @@ static int _attempt_backfill(void)
 	time_t het_job_time, orig_sched_start, orig_start_time = (time_t) 0;
 	node_space_map_t *node_space;
 	struct timeval bf_time1, bf_time2;
-	int rc = 0, error_code;
+	int error_code;
 	int job_test_count = 0, test_time_count = 0, pend_time;
 	bool already_counted, many_rpcs = false;
 	job_record_t *reject_array_job = NULL;
@@ -1685,7 +1685,7 @@ static int _attempt_backfill(void)
 
 	if (!fed_mgr_sibs_synced()) {
 		info("returning, federation siblings not synced yet");
-		return SLURM_SUCCESS;
+		return;
 	}
 
 	(void) bb_g_load_state(false);
@@ -1708,7 +1708,7 @@ static int _attempt_backfill(void)
 		else
 			debug("no jobs to backfill");
 		FREE_NULL_LIST(job_queue);
-		return 0;
+		return;
 	} else
 		debug("%u jobs to backfill", job_test_count);
 
@@ -1835,7 +1835,6 @@ static int _attempt_backfill(void)
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
-				rc = 1;
 				break;
 			}
 			/* Reset backfill scheduling timers, resume testing */
@@ -2179,7 +2178,6 @@ next_task:
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
-				rc = 1;
 				break;
 			}
 
@@ -2958,7 +2956,7 @@ skip_start:
 	}
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 
-	return rc;
+	return;
 }
 
 /* Try to start the job on any non-reserved nodes */
