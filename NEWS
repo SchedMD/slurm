@@ -147,6 +147,7 @@ documents those changes that are of interest to users and administrators.
     rollup happened.
  -- Prevent new elements from a job array from causing rerollups.
  -- Only check TRES limits against current usage for TRES requested by the job.
+ -- Do not allocate shared gres (MPS) in whole-node allocations
 
 * Changes in Slurm 21.08.6
 ==========================

@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "February 2022" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "March 2022" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -840,6 +840,9 @@ design to support gang scheduling, because suspended jobs still reside in
 memory. To request all the memory on a node, use \fB\-\-mem=0\fR.
 The default shared/exclusive behavior depends on system configuration and the
 partition's \fBOverSubscribe\fR option takes precedence over the job's option.
+NOTE: Since shared GRES (MPS) cannot be allocated at the same time as a sharing
+GRES (GPU) this option only allocates all sharing GRES and no underlying shared
+GRES.
 .IP
 
 .TP

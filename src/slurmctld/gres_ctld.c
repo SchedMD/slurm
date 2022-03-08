@@ -832,6 +832,10 @@ extern int gres_ctld_job_select_whole_node(
 		if (!gres_ns->gres_cnt_config)
 			continue;
 
+		/* Never allocate any shared GRES. */
+		if (gres_id_shared(gres_state_node->config_flags))
+			continue;
+
 		job_search_key.config_flags = gres_state_node->config_flags;
 		job_search_key.plugin_id = gres_state_node->plugin_id;
 
@@ -1006,6 +1010,10 @@ extern int gres_ctld_job_alloc_whole_node(
 		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
 
 		if (!gres_ns->gres_cnt_config)
+			continue;
+
+		/* Never allocate any shared GRES. */
+		if (gres_id_shared(gres_state_node->config_flags))
 			continue;
 
 		job_search_key.config_flags = gres_state_node->config_flags;

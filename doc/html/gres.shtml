@@ -344,6 +344,9 @@ not be available as a gres/gpu.
 However the same GPU can be allocated as MPS generic resources to multiple jobs
 belonging to multiple users, so long as the total count of MPS allocated to
 jobs does not exceed the configured count.
+Also, since shared GRES (MPS) cannot be allocated at the same time as a sharing
+GRES (GPU) this option only allocates all sharing GRES and no underlying shared
+GRES.
 Some example configurations for Slurm's gres.conf file are shown below.</p>
 
 <PRE>
@@ -581,6 +584,6 @@ or <code class="commandline">GPU_DEVICE_ORDINAL</code> environment variable set
 which would be the same as if it were a GPU.
 </p>
 
-<p style="text-align: center;">Last modified 15 February 2022</p>
+<p style="text-align: center;">Last modified 8 March 2022</p>
 
 <!--#include virtual="footer.txt"-->
