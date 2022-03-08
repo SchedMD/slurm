@@ -965,6 +965,14 @@ static bool _opt_verify(void)
 			opt.nodes_set = false;
 	}
 
+	/* slurm_verify_cpu_bind has to be called before validate_hint_option */
+	if (opt.srun_opt->cpu_bind) {
+		if (slurm_verify_cpu_bind(opt.srun_opt->cpu_bind,
+					  &opt.srun_opt->cpu_bind,
+					  &opt.srun_opt->cpu_bind_type))
+			verified = false;
+	}
+
 	if (opt.hint &&
 	    !validate_hint_option(&opt)) {
 		xassert(opt.ntasks_per_core == NO_VAL);

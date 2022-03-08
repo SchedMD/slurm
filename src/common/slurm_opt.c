@@ -1090,43 +1090,7 @@ static slurm_cli_opt_t slurm_opt_cores_per_socket = {
 	.reset_each_pass = true,
 };
 
-static int arg_set_cpu_bind(slurm_opt_t *opt, const char *arg)
-{
-	if (!opt->srun_opt)
-		return SLURM_ERROR;
-
-	if (slurm_verify_cpu_bind(arg, &opt->srun_opt->cpu_bind,
-				  &opt->srun_opt->cpu_bind_type))
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
-}
-static char *arg_get_cpu_bind(slurm_opt_t *opt)
-{
-	char tmp[100];
-
-	if (!opt->srun_opt)
-		return xstrdup("invalid-context");
-
-	slurm_sprint_cpu_bind_type(tmp, opt->srun_opt->cpu_bind_type);
-
-	return xstrdup(tmp);
-}
-static void arg_reset_cpu_bind(slurm_opt_t *opt)
-{
-	if (opt->srun_opt) {
-		bool cpu_bind_verbose = false;
-		if (opt->srun_opt->cpu_bind_type & CPU_BIND_VERBOSE)
-			cpu_bind_verbose = true;
-
-		xfree(opt->srun_opt->cpu_bind);
-		opt->srun_opt->cpu_bind_type = 0;
-		if (cpu_bind_verbose)
-			slurm_verify_cpu_bind("verbose",
-					      &opt->srun_opt->cpu_bind,
-					      &opt->srun_opt->cpu_bind_type);
-	}
-}
+COMMON_SRUN_STRING_OPTION(cpu_bind);
 static slurm_cli_opt_t slurm_opt_cpu_bind = {
 	.name = "cpu-bind",
 	.has_arg = required_argument,
@@ -5811,7 +5775,7 @@ static void _validate_threads_per_core_option(slurm_opt_t *opt)
 					      &opt->srun_opt->cpu_bind,
 					      &opt->srun_opt->cpu_bind_type);
 	} else if (opt->srun_opt &&
-		   (opt->srun_opt->cpu_bind_type == CPU_BIND_VERBOSE)) {
+		   !xstrcmp(opt->srun_opt->cpu_bind, "verbose")) {
 		verbose("Setting --cpu-bind=threads,verbose as a default of --threads-per-core use");
 		if (opt->srun_opt)
 			slurm_verify_cpu_bind("threads,verbose",
