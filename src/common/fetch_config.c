@@ -479,6 +479,11 @@ extern void load_config_response_list(config_response_msg_t *msg, char *files[])
 extern void destroy_config_file(void *object)
 {
 	config_file_t *conf_file = (config_file_t *)object;
+
+	if (!conf_file)
+		return;
+
 	xfree(conf_file->file_name);
 	xfree(conf_file->file_content);
+	xfree(conf_file);
 }
