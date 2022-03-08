@@ -841,6 +841,10 @@ extern int gres_ctld_job_select_whole_node(
 		if (!node_state_ptr->gres_cnt_config)
 			continue;
 
+		/* Never allocate any shared GRES. */
+		if (gres_id_shared(node_gres_ptr->plugin_id))
+			continue;
+
 		job_search_key.plugin_id = node_gres_ptr->plugin_id;
 
 		if (!node_state_ptr->type_cnt) {
@@ -1020,6 +1024,10 @@ extern int gres_ctld_job_alloc_whole_node(
 		node_state_ptr = (gres_node_state_t *) node_gres_ptr->gres_data;
 
 		if (!node_state_ptr->gres_cnt_config)
+			continue;
+
+		/* Never allocate any shared GRES. */
+		if (gres_id_shared(node_gres_ptr->plugin_id))
 			continue;
 
 		job_search_key.plugin_id = node_gres_ptr->plugin_id;
