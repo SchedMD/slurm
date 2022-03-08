@@ -655,9 +655,10 @@ static int _convert_cpu_spec_list(node_record_t *node_ptr, uint32_t tot_cores)
 	/* Expand CPU bitmap to reserve whole cores */
 	for (i = 0; i < tot_cores; i++) {
 		if (bit_test(node_ptr->node_spec_bitmap, i)) {
+			/* typecast to int to avoid coverity error */
 			bit_nset(cpu_spec_bitmap,
-				 (i * node_ptr->vpus),
-				 ((i+1) * node_ptr->vpus) - 1);
+				 (i * (int) node_ptr->vpus),
+				 ((i+1) * (int) node_ptr->vpus) - 1);
 		}
 	}
 	xfree(node_ptr->cpu_spec_list);
