@@ -36,10 +36,6 @@ that the data is voluminous so solutions that pass data to the Slurm control
 daemon via RPC may not scale to very large clusters or jobs with
 many allocated nodes.</p>
 
-<p>A separate <a href="acct_gather_profile_plugins.html">
-Slurm Profile Accounting Plugin API (AcctGatherProfileType)</a> documents how
-to write other Profile Accounting plugins.</P>
-
 <h2 id="Administration">Administration
 <a class="slurm_link" href="#Administration"></a>
 </h2>
@@ -371,6 +367,6 @@ correlate activity with other sources such as logs.</DD>
 
 
 
-<p style="text-align:center;">Last modified 29 June 2021</p>
+<p style="text-align:center;">Last modified 8 March 2022</p>
 
 <!--#include virtual="footer.txt"-->
