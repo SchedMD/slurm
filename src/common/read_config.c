@@ -4774,6 +4774,13 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);
 
+	if (conf->max_node_cnt &&
+	    !xstrstr(conf->select_type, "cons_tres")) {
+		conf->max_node_cnt = 0;
+		error("MaxNodeCount only compatible with cons_tres");
+		return SLURM_ERROR;
+	}
+
 	if (s_p_get_string(&temp_str,
 			   "SelectTypeParameters", hashtbl)) {
 		uint16_t type_param;

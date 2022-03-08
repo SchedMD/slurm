@@ -4581,6 +4581,12 @@ extern int create_nodes(char *nodeline, char **err_msg)
 	xassert(nodeline);
 	xassert(err_msg);
 
+	if (!xstrstr(slurm_conf.select_type, "cons_tres")) {
+		*err_msg = xstrdup("Node creation only compatible with select/cons_tres");
+		error("%s", *err_msg);
+		return ESLURM_ACCESS_DENIED;
+	}
+
 	lock_slurmctld(write_lock);
 
 	if (!(conf_node = slurm_conf_parse_nodeline(nodeline, &node_hashtbl))) {
@@ -4636,6 +4642,11 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
+
+	if (!xstrstr(slurm_conf.select_type, "cons_tres")) {
+		error("Node creation only compatible with select/cons_tres");
+		return ESLURM_ACCESS_DENIED;
+	}
 
 	if (find_node_record2(reg_msg->node_name))
 		return SLURM_SUCCESS;
@@ -4748,6 +4759,12 @@ extern int delete_nodes(char *names, char **err_msg)
 
 	slurmctld_lock_t write_lock = {
 		.job = WRITE_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK};
+
+	if (!xstrstr(slurm_conf.select_type, "cons_tres")) {
+		*err_msg = xstrdup("Node deletion only compatible with select/cons_tres");
+		error("%s", *err_msg);
+		return ESLURM_ACCESS_DENIED;
+	}
 
 	lock_slurmctld(write_lock);
 
