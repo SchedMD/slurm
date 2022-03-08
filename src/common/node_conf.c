@@ -660,8 +660,8 @@ static int _convert_cpu_spec_list(node_record_t *node_ptr, uint32_t tot_cores)
 				 ((i+1) * node_ptr->vpus) - 1);
 		}
 	}
-	bit_fmt(node_ptr->cpu_spec_list, sizeof(node_ptr->cpu_spec_list),
-		cpu_spec_bitmap);
+	xfree(node_ptr->cpu_spec_list);
+	node_ptr->cpu_spec_list = bit_fmt_full(cpu_spec_bitmap);
 
 	FREE_NULL_BITMAP(cpu_spec_bitmap);
 
