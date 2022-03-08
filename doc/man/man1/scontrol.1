@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "February 2022" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "March 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1427,6 +1427,10 @@ however \fIActiveFeatures\fP may be configured as a subset of the
 configurations. In that case, all possible configurations may be identified as
 \fIAvailableFeatures\fP, while \fIActiveFeatures\fP would identify the current
 node configuration.
+When updating the ActiveFeatures with scontrol, the change is only made in
+slurmctld. When using a node_features plugin the state/features of the node
+must be updated on the node such that a new node start will report the updated
+state/features.
 .IP
 
 .TP
