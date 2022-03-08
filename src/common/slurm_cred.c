@@ -805,10 +805,6 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	memcpy(&cred->step_id, &arg->step_id, sizeof(cred->step_id));
 	cred->uid      = arg->uid;
 	cred->gid = gid_from_uid(cred->uid);
-	cred->pw_gecos = xstrdup(arg->pw_gecos);
-	cred->pw_dir = xstrdup(arg->pw_dir);
-	cred->pw_shell = xstrdup(arg->pw_shell);
-	cred->gr_names = copy_gr_names(arg->ngids, arg->gr_names);
 	if (_fill_cred_gids(cred, arg) != SLURM_SUCCESS) {
 		slurm_mutex_unlock(&cred->mutex);
 		slurm_cred_destroy(cred);
