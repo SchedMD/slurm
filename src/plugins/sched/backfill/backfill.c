@@ -1109,7 +1109,7 @@ static int _yield_locks(int64_t usec)
 {
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	time_t job_update, node_update, part_update;
+	time_t job_update, node_update, part_update, config_update;
 	bool load_config = false;
 	int yield_rpc_cnt;
 
@@ -1117,6 +1117,7 @@ static int _yield_locks(int64_t usec)
 	job_update  = last_job_update;
 	node_update = last_node_update;
 	part_update = last_part_update;
+	config_update = slurm_conf.last_update;
 
 	unlock_slurmctld(all_locks);
 	while (!stop_backfill) {
@@ -1137,13 +1138,14 @@ static int _yield_locks(int64_t usec)
 		load_config = true;
 	slurm_mutex_unlock(&config_lock);
 
-	if ((last_job_update  == job_update)  &&
-	    (last_node_update == node_update) &&
-	    (last_part_update == part_update) &&
-	    (!stop_backfill) && (!load_config))
-		return 0;
-	else
+	if (((!backfill_continue) && ((last_job_update != job_update) ||
+	     (last_node_update != node_update))) ||
+	    (last_part_update != part_update) ||
+	    (slurm_conf.last_update != config_update) ||
+	    stop_backfill || load_config)
 		return 1;
+	else
+		return 0;
 }
 
 /* Test if this job still has access to the specified partition. The job's
@@ -1659,8 +1661,6 @@ static int _attempt_backfill(void)
 	part_record_t *reject_array_part = NULL;
 	slurmctld_resv_t *reject_array_resv = NULL;
 	uint32_t start_time;
-	time_t config_update = slurm_conf.last_update;
-	time_t part_update = last_part_update;
 	struct timeval start_tv;
 	uint32_t test_array_job_id = 0;
 	uint32_t test_array_count = 0;
@@ -1829,17 +1829,13 @@ static int _attempt_backfill(void)
 				     slurmctld_diag_stats.bf_last_depth,
 				     job_test_count, TIME_STR);
 			}
-			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
-			    (slurm_conf.last_update != config_update) ||
-			    (last_part_update != part_update)) {
+			if (_yield_locks(yield_sleep)) {
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
 				rc = 1;
 				break;
 			}
-			if (stop_backfill)
-				break;
 			/* Reset backfill scheduling timers, resume testing */
 			sched_start = time(NULL);
 			gettimeofday(&start_tv, NULL);
@@ -2177,17 +2173,13 @@ next_task:
 				     slurmctld_diag_stats.bf_last_depth,
 				     job_test_count, test_time_count, TIME_STR);
 			}
-			if ((_yield_locks(yield_sleep) && !backfill_continue) ||
-			    (slurm_conf.last_update != config_update) ||
-			    (last_part_update != part_update)) {
+			if (_yield_locks(yield_sleep)) {
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
 				rc = 1;
 				break;
 			}
-			if (stop_backfill)
-				break;
 
 			/* Reset backfill scheduling timers, resume testing */
 			sched_start = time(NULL);
