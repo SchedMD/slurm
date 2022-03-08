@@ -2460,7 +2460,7 @@ static void *_start_stage_in(void *x)
 	argv[1] = xstrdup_printf("%u", stage_in_args->uid);
 	argv[2] = xstrdup_printf("%u", stage_in_args->gid);
 	argv[3] = xstrdup_printf("%s", stage_in_args->pool);
-	argv[4] = xstrdup_printf("%lu", stage_in_args->bb_size);
+	argv[4] = xstrdup_printf("%"PRIu64, stage_in_args->bb_size);
 	argv[5] = xstrdup_printf("%s", stage_in_args->job_script);
 
 	timeout = bb_state.bb_config.other_timeout;
@@ -2593,7 +2593,7 @@ static void *_start_stage_in(void *x)
 			 * returns something bigger.
 			 */
 			if (((uint64_t)real_size) > bb_job->req_size) {
-				info("%pJ total_size increased from %"PRIu64" to %"PRIu64,
+				info("%pJ total_size increased from %"PRIu64" to %ld",
 				     job_ptr,
 				     bb_job->req_size, real_size);
 				bb_job->total_size = real_size;

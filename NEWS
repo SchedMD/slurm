@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Do not allocate shared gres (MPS) in whole-node allocations
  -- Fix minor memory leak when dealing with configless setups.
  -- Constrain slurmstepd to job/step cgroup like in previous versions of Slurm.
+ -- Fix warnings on 32-bit compilers related to printf() formats.
 
 * Changes in Slurm 21.08.6
 ==========================
