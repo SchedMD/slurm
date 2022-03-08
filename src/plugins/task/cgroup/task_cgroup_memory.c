@@ -260,18 +260,18 @@ static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
 	if (constrain_swap_space) {
 		limits.swappiness = slurm_cgroup_conf.memory_swappiness;
 		limits.memsw_limit_in_bytes = mls;
-		info("%s: alloc=%luMB mem.limit=%luMB "
-		     "memsw.limit=%luMB job_swappiness=%lu",
+		info("%s: alloc=%"PRIu64"MB mem.limit=%"PRIu64"MB "
+		     "memsw.limit=%"PRIu64"MB job_swappiness=%"PRIu64,
 		     is_step ? "step" : "job",
-		     (unsigned long) mem_limit,
-		     (unsigned long) mlb/(1024*1024),
-		     (unsigned long) mls/(1024*1024),
+		     mem_limit,
+		     mlb/(1024*1024),
+		     mls/(1024*1024),
 		     limits.swappiness);
 	} else {
-		info("%s: alloc=%luMB mem.limit=%luMB "
+		info("%s: alloc=%"PRIu64"MB mem.limit=%"PRIu64"MB "
 		     "memsw.limit=unlimited", is_step ? "step" : "job",
-		     (unsigned long) mem_limit,
-		     (unsigned long) mlb/(1024*1024));
+		     mem_limit,
+		     mlb/(1024*1024));
 	}
 
 	if (!is_step) {

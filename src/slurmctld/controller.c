@@ -979,7 +979,7 @@ static void _send_future_cloud_to_db()
 			list_append(event_cond.state_list,
 				    xstrdup_printf("%u", NODE_STATE_FUTURE));
 			list_append(event_cond.state_list,
-				    xstrdup_printf("%lu",
+				    xstrdup_printf("%"PRIu64,
 						   NODE_STATE_CLOUD |
 						   NODE_STATE_POWERED_DOWN));
 
