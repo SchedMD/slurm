@@ -133,7 +133,7 @@ static int  _sync_nodes_to_jobs(bool reconfig);
 static int  _sync_nodes_to_active_job(job_record_t *job_ptr);
 static void _sync_nodes_to_suspended_job(job_record_t *job_ptr);
 static void _sync_part_prio(void);
-static int  _update_preempt(uint16_t old_enable_preempt);
+static void _update_preempt(uint16_t old_enable_preempt);
 
 
 /*
@@ -1703,8 +1703,7 @@ int read_slurm_conf(int recover, bool reconfig)
 			}
 		}
 	}
-	rc = _update_preempt(old_preempt_mode);
-	error_code = MAX(error_code, rc);	/* not fatal */
+	_update_preempt(old_preempt_mode);
 
 	/* Update plugin parameters as possible */
 	rc = job_submit_plugin_reconfig();
@@ -2704,29 +2703,22 @@ static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
 
 /* Start or stop the gang scheduler module as needed based upon changes in
  *	configuration */
-static int _update_preempt(uint16_t old_preempt_mode)
+static void _update_preempt(uint16_t old_preempt_mode)
 {
 	uint16_t new_preempt_mode = slurm_conf.preempt_mode;
 
 	if ((old_preempt_mode & PREEMPT_MODE_GANG) ==
 	    (new_preempt_mode & PREEMPT_MODE_GANG))
-		return SLURM_SUCCESS;
-
+		return;
+	/* GANG bits for old,new are either 0,1 or 1,0 */
 	if (new_preempt_mode & PREEMPT_MODE_GANG) {
 		info("Enabling gang scheduling");
 		gs_init();
-		return SLURM_SUCCESS;
-	}
-
-	if (old_preempt_mode & PREEMPT_MODE_GANG) {
+	} else {
 		info("Disabling gang scheduling");
 		gs_wake_jobs();
 		gs_fini();
-		return SLURM_SUCCESS;
 	}
-
-	error("Invalid gang scheduling mode change");
-	return EINVAL;
 }
 
 /*
