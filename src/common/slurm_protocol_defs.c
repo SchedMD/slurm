@@ -2725,6 +2725,8 @@ extern const char *preempt_mode_string(uint16_t preempt_mode)
 		return "OFF";
 	if (preempt_mode == PREEMPT_MODE_GANG)
 		return "GANG";
+	if (preempt_mode == PREEMPT_MODE_WITHIN)
+		return "WITHIN";
 
 	if (preempt_mode & PREEMPT_MODE_GANG) {
 		preempt_mode &= (~PREEMPT_MODE_GANG);
@@ -2735,6 +2737,15 @@ extern const char *preempt_mode_string(uint16_t preempt_mode)
 		else if (preempt_mode == PREEMPT_MODE_SUSPEND)
 			return "GANG,SUSPEND";
 		return "GANG,UNKNOWN";
+	} else if (preempt_mode & PREEMPT_MODE_WITHIN) {
+		preempt_mode &= (~PREEMPT_MODE_WITHIN);
+		if (preempt_mode == PREEMPT_MODE_CANCEL)
+			return "WITHIN,CANCEL";
+		else if (preempt_mode == PREEMPT_MODE_REQUEUE)
+			return "WITHIN,REQUEUE";
+		else if (preempt_mode == PREEMPT_MODE_SUSPEND)
+			return "WITHIN,SUSPEND";
+		return "WITHIN,UNKNOWN";
 	} else {
 		if (preempt_mode == PREEMPT_MODE_CANCEL)
 			return "CANCEL";
@@ -2761,6 +2772,8 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 	while (tok) {
 		if (xstrcasecmp(tok, "gang") == 0) {
 			mode_num |= PREEMPT_MODE_GANG;
+		} else if (!xstrcasecmp(tok, "within")) {
+			mode_num |= PREEMPT_MODE_WITHIN;
 		} else if ((xstrcasecmp(tok, "off") == 0)
 			   || (xstrcasecmp(tok, "cluster") == 0)) {
 			mode_num += PREEMPT_MODE_OFF;
@@ -2783,7 +2796,15 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 		tok = strtok_r(NULL, ",", &last);
 	}
 	xfree(tmp_str);
+
 	if (preempt_modes > 1) {
+		/*
+		 * Only one mode value may be set, optionally combined with
+		 * GANG or WITHIN.
+		 */
+		mode_num = NO_VAL16;
+	} else if (mode_num & (PREEMPT_MODE_GANG | PREEMPT_MODE_WITHIN)) {
+		/* "GANG,WITHIN" is an invalid combination */
 		mode_num = NO_VAL16;
 	}
 

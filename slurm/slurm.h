@@ -2714,6 +2714,7 @@ typedef struct reservation_name_msg {
 
 #define PREEMPT_MODE_CANCEL	0x0008	/* always cancel the job */
 #define PREEMPT_MODE_COND_OFF	0x0010	/* represents PREEMPT_MODE_OFF in list*/
+#define PREEMPT_MODE_WITHIN	0x4000	/* enable preemption within qos */
 #define PREEMPT_MODE_GANG	0x8000	/* enable gang scheduling */
 
 #define RECONFIG_KEEP_PART_INFO 0x0001 /* keep dynamic partition info on scontrol reconfig */
