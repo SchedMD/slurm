@@ -62,10 +62,16 @@ extern bool preempt_p_preemptable(
 
 static uint16_t _job_preempt_mode(job_record_t *job_ptr)
 {
-	if (job_ptr->qos_ptr && job_ptr->qos_ptr->preempt_mode)
-		return job_ptr->qos_ptr->preempt_mode;
+	uint16_t mode;
 
-	return (slurm_conf.preempt_mode & (~PREEMPT_MODE_GANG));
+	if (job_ptr->qos_ptr && job_ptr->qos_ptr->preempt_mode)
+		mode = job_ptr->qos_ptr->preempt_mode;
+	else
+		mode = slurm_conf.preempt_mode;
+
+	mode &= ~PREEMPT_MODE_GANG;
+
+	return mode;
 }
 
 /* Generate the job's priority. It is partly based upon the QOS priority
