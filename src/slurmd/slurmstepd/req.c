@@ -640,7 +640,8 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	int sig, flag;
+	int sig, flag, details_len;
+	char *details = NULL;
 	uid_t req_uid;
 	static int msg_sent = 0;
 	stepd_step_task_info_t *task;
@@ -648,6 +649,10 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 
 	safe_read(fd, &sig, sizeof(int));
 	safe_read(fd, &flag, sizeof(int));
+	safe_read(fd, &details_len, sizeof(int));
+	if (details_len)
+		details = xmalloc(details_len + 1);
+	safe_read(fd, details, details_len);
 	safe_read(fd, &req_uid, sizeof(uid_t));
 
 	debug("_handle_signal_container for %ps uid=%u signal=%d",
@@ -741,6 +746,9 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 			      entity, job->node_name, time_str);
 			msg_sent = 1;
 		}
+
+		if (details)
+			error("*** REASON: %s ***", details);
 	}
 	if ((sig == SIG_TIME_LIMIT) || (sig == SIG_NODE_FAIL) ||
 	    (sig == SIG_PREEMPTED)  || (sig == SIG_FAILURE) ||
@@ -816,11 +824,14 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	slurm_mutex_unlock(&suspend_mutex);
 
 done:
+	xfree(details);
+
 	/* Send the return code and errnum */
 	safe_write(fd, &rc, sizeof(int));
 	safe_write(fd, &errnum, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
+	xfree(details);
 	return SLURM_ERROR;
 }
 

@@ -317,11 +317,10 @@ stepd_notify_job(int fd, uint16_t protocol_version, char *message)
 /*
  * Send a signal to the proctrack container of a job step.
  */
-int
-stepd_signal_container(int fd, uint16_t protocol_version, int signal, int flags,
-		       uid_t req_uid)
+int stepd_signal_container(int fd, uint16_t protocol_version, int signal,
+			   int flags, char *details, uid_t req_uid)
 {
-	int req = REQUEST_SIGNAL_CONTAINER;
+	int req = REQUEST_SIGNAL_CONTAINER, details_len = 0;
 	int rc;
 	int errnum = 0;
 
@@ -329,6 +328,10 @@ stepd_signal_container(int fd, uint16_t protocol_version, int signal, int flags,
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		safe_write(fd, &signal, sizeof(int));
 		safe_write(fd, &flags, sizeof(int));
+		if (details)
+			details_len = strlen(details);
+		safe_write(fd, &details_len, sizeof(int));
+		safe_write(fd, details, details_len);
 		safe_write(fd, &req_uid, sizeof(uid_t));
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &signal, sizeof(int));
@@ -627,7 +630,7 @@ stepd_cleanup_sockets(const char *directory, const char *nodename)
 			} else {
 				if (stepd_signal_container(
 					    fd, protocol_version, SIGKILL, 0,
-					    getuid())
+					    NULL, getuid())
 				    == -1) {
 					debug("Error sending SIGKILL to %ps",
 					      &step_id);

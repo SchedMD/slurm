@@ -164,7 +164,7 @@ int stepd_notify_job(int fd, uint16_t protocol_version, char *message);
  * Send a signal to the proctrack container of a job step.
  */
 int stepd_signal_container(int fd, uint16_t protocol_version, int signal,
-			   int flags, uid_t uid);
+			   int flags, char *details, uid_t uid);
 
 /*
  * Attach a client to a running job step.
