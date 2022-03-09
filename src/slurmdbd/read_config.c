@@ -536,9 +536,8 @@ extern int read_slurmdbd_conf(void)
 					      slurm_conf.slurm_user_name);
 				}
 			} else
-				fatal("No user entry for uid(%d) owning slurmdbd.conf file %s found",
-				      conf_path_uid,
-				      conf_path);
+				fatal("No user entry for uid(%u) owning slurmdbd.conf file %s found",
+				      conf_path_uid, conf_path);
 		}
 
 		if (s_p_get_uint32(&slurmdbd_conf->purge_step,

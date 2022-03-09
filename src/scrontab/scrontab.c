@@ -341,7 +341,7 @@ static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
 		struct passwd *pwd = NULL;
 
 		if (!(pwd = getpwuid(uid)))
-			fatal("getpwuid(%d) failed", uid);
+			fatal("getpwuid(%u) failed", uid);
 
 		job->work_dir = xstrdup(pwd->pw_dir);
 	}

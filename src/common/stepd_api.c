@@ -105,8 +105,8 @@ _handle_stray_socket(const char *socket_name)
 	}
 
 	if ((uid = getuid()) != buf.st_uid) {
-		debug3("_handle_stray_socket: socket %s is not owned by uid %d",
-		       socket_name, (int)uid);
+		debug3("_handle_stray_socket: socket %s is not owned by uid %u",
+		       socket_name, uid);
 		return;
 	}
 

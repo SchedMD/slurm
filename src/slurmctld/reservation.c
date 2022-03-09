@@ -2531,7 +2531,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		info("processed groups %s", resv_desc_ptr->groups);
 		/* set the count */
 		for (user_cnt = 0; user_list[user_cnt]; user_cnt++)
-			info("uid %d", user_list[user_cnt]);
+			info("uid %u", user_list[user_cnt]);
 	}
 
 	if (resv_desc_ptr->licenses) {

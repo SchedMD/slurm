@@ -147,7 +147,7 @@ pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
 	 *   denied (!PAM_SUCCESS) or disable_sys_info is not set
 	 */
 	if ((auth != PAM_SUCCESS) || (!opts.disable_sys_info)) {
-		_log_msg(LOG_INFO, "access %s for user %s (uid=%d)",
+		_log_msg(LOG_INFO, "access %s for user %s (uid=%u)",
 			 (auth == PAM_SUCCESS) ? "granted" : "denied",
 			 user, uid);
 	}
@@ -398,7 +398,7 @@ _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
 	/*  Construct msg to send to app.
 	 */
 	n = snprintf(str, sizeof(str),
-		     "%sAccess denied: user %s (uid=%d) has no active jobs on this node.%s",
+		     "%sAccess denied: user %s (uid=%u) has no active jobs on this node.%s",
 		     opts->msg_prefix, user, uid, opts->msg_suffix);
 	if ((n < 0) || (n >= sizeof(str)))
 		_log_msg(LOG_ERR, "exceeded buffer for pam_conv message");

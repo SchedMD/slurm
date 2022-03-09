@@ -1946,7 +1946,7 @@ extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
 	    (job_desc->burst_buffer[0] == '\0'))
 		return rc;
 
-	log_flag(BURST_BUF, "job_user_id:%u, submit_uid:%d",
+	log_flag(BURST_BUF, "job_user_id:%u, submit_uid:%u",
 		 job_desc->user_id, submit_uid);
 	log_flag(BURST_BUF, "burst_buffer:\n%s",
 		 job_desc->burst_buffer);

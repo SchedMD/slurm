@@ -650,13 +650,12 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	safe_read(fd, &flag, sizeof(int));
 	safe_read(fd, &req_uid, sizeof(uid_t));
 
-	debug("_handle_signal_container for %ps uid=%d signal=%d",
-	      &job->step_id, (int) req_uid, sig);
+	debug("_handle_signal_container for %ps uid=%u signal=%d",
+	      &job->step_id, req_uid, sig);
 	/* verify uid off uid instead of req_uid as we can trust that one */
 	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
-		error("signal container req from uid %ld for %ps "
-		      "owned by uid %ld",
-		      (long)req_uid, &job->step_id, (long)job->uid);
+		error("signal container req from uid %u for %ps owned by uid %u",
+		      req_uid, &job->step_id, job->uid);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
@@ -840,11 +839,10 @@ _handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid)
 		safe_read(fd, message, len); /* '\0' terminated */
 	}
 
-	debug3("  uid = %d", uid);
+	debug3("  uid = %u", uid);
 	if ((uid != job->uid) && !_slurm_authorized_user(uid)) {
-		debug("notify req from uid %ld for %ps "
-		      "owned by uid %ld",
-		      (long)uid, &job->step_id, (long)job->uid);
+		debug("notify req from uid %u for %ps owned by uid %u",
+		      uid, &job->step_id, job->uid);
 		rc = EPERM;
 		goto done;
 	}
@@ -878,7 +876,7 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 		errnum = EPERM;
 		goto done;
 	}
-	debug("_handle_terminate for %ps uid=%d", &job->step_id, uid);
+	debug("_handle_terminate for %ps uid=%u", &job->step_id, uid);
 	step_terminate_monitor_start(job);
 
 	/*
@@ -1591,10 +1589,10 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 
 	debug("_handle_completion for %ps", &job->step_id);
 
-	debug3("  uid = %d", uid);
+	debug3("  uid = %u", uid);
 	if (!_slurm_authorized_user(uid)) {
-		debug("step completion message from uid %ld for %ps ",
-		      (long)uid, &job->step_id);
+		debug("step completion message from uid %u for %ps ",
+		      uid, &job->step_id);
 		rc = -1;
 		errnum = EPERM;
 		/* Send the return code and errno */
@@ -1715,11 +1713,10 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *job, uid_t uid)
 	int num_tasks = 0;
 	debug("_handle_stat_jobacct for %ps", &job->step_id);
 
-	debug3("  uid = %d", uid);
+	debug3("  uid = %u", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {
-		debug("stat jobacct from uid %ld for %ps "
-		      "owned by uid %ld",
-		      (long)uid, &job->step_id, (long)job->uid);
+		debug("stat jobacct from uid %u for %ps owned by uid %u",
+		      uid, &job->step_id, job->uid);
 		/* Send NULL */
 		jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
 				    SLURM_PROTOCOL_VERSION);

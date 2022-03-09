@@ -149,14 +149,14 @@ static char *_convert_to_id(char *name, bool gid)
 			error("Invalid group id: %s", name);
 			return NULL;
 		}
-		tmp_name = xstrdup_printf( "%d", (int) gid );
+		tmp_name = xstrdup_printf("%u", gid);
 	} else {
 		uid_t uid;
 		if (uid_from_string( name, &uid )) {
 			error("Invalid user id: %s", name);
 			return NULL;
 		}
-		tmp_name = xstrdup_printf( "%d", (int) uid );
+		tmp_name = xstrdup_printf("%u", uid);
 	}
 	return tmp_name;
 }

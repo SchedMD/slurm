@@ -1689,8 +1689,7 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 	     &msg->step_id, hostname, msg->tasks_to_launch[nodeid], task_list);
 	xfree(task_list);
 
-	debug3("uid:%ld gid:%ld cwd:%s %d", (long) msg->uid,
-		(long) msg->gid, msg->cwd, nodeid);
+	debug3("uid:%u gid:%u cwd:%s %d", msg->uid, msg->gid, msg->cwd, nodeid);
 }
 
 /*

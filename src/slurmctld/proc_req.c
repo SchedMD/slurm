@@ -4081,7 +4081,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	if (job_desc_msg->user_id != NO_VAL) {
 		if (!validate_super_user(uid)) {
 			error_code = ESLURM_USER_ID_MISSING;
-			error("Security violation, REQUEST_UPDATE_JOB RPC from uid=%d",
+			error("Security violation, REQUEST_UPDATE_JOB RPC from uid=%u",
 			      uid);
 			/* Send back the error message for this case because
 			 * update_job also sends back an error message */
@@ -4142,21 +4142,21 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	/* return result */
 	if (error_code) {
 		if (job_desc_msg->job_id_str) {
-			info("%s: JobId=%s uid=%d: %s", __func__,
-			     job_desc_msg->job_id_str, uid,
+			info("%s: JobId=%s uid=%u: %s",
+			     __func__, job_desc_msg->job_id_str, uid,
 			     slurm_strerror(error_code));
 		} else {
-			info("%s: JobId=%u uid=%d: %s", __func__,
-			     job_desc_msg->job_id, uid,
+			info("%s: JobId=%u uid=%u: %s",
+			     __func__, job_desc_msg->job_id, uid,
 			     slurm_strerror(error_code));
 		}
 	} else {
 		if (job_desc_msg->job_id_str) {
-			info("%s: complete JobId=%s uid=%d %s", __func__,
-			     job_desc_msg->job_id_str, uid, TIME_STR);
+			info("%s: complete JobId=%s uid=%u %s",
+			     __func__, job_desc_msg->job_id_str, uid, TIME_STR);
 		} else {
-			info("%s: complete JobId=%u uid=%d %s", __func__,
-			     job_desc_msg->job_id, uid, TIME_STR);
+			info("%s: complete JobId=%u uid=%u %s",
+			     __func__, job_desc_msg->job_id, uid, TIME_STR);
 		}
 		/* Below functions provide their own locking */
 		schedule_job_save();
@@ -5152,7 +5152,7 @@ static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 		error_code = srun_user_message(job_ptr, notify_msg->message);
 	else {
 		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, REQUEST_JOB_NOTIFY RPC from uid=%u for %pJ owner %d",
+		error("Security violation, REQUEST_JOB_NOTIFY RPC from uid=%u for %pJ owner %u",
 		      msg->auth_uid, job_ptr, job_ptr->user_id);
 	}
 	unlock_slurmctld(job_read_lock);
@@ -5928,7 +5928,7 @@ static void _slurm_rpc_sib_msg(uint32_t uid, slurm_msg_t *msg) {
 static void _slurm_rpc_dependency_msg(uint32_t uid, slurm_msg_t *msg)
 {
 	if (!msg->conn || !validate_slurm_user(uid)) {
-		error("Security violation, REQUEST_SEND_DEP RPC from uid=%d",
+		error("Security violation, REQUEST_SEND_DEP RPC from uid=%u",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
@@ -5940,7 +5940,7 @@ static void _slurm_rpc_dependency_msg(uint32_t uid, slurm_msg_t *msg)
 static void _slurm_rpc_update_origin_dep_msg(uint32_t uid, slurm_msg_t *msg)
 {
 	if (!msg->conn || !validate_slurm_user(uid)) {
-		error("Security violation, REQUEST_UPDATE_ORIGIN_DEP RPC from uid=%d",
+		error("Security violation, REQUEST_UPDATE_ORIGIN_DEP RPC from uid=%u",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;

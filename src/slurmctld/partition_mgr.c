@@ -995,7 +995,7 @@ static int _build_visible_parts_foreach(void *elem, void *x)
 			for (int i = 0; arg->visible_parts[i]; i++)
 				xstrfmtcat(tmp_str, "%s%s", tmp_str ? "," : "",
 					   arg->visible_parts[i]->name);
-			debug3("%s: uid:%d visible_parts:%s",
+			debug3("%s: uid:%u visible_parts:%s",
 			       __func__, arg->uid, tmp_str);
 			xfree(tmp_str);
 		}

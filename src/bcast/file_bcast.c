@@ -113,8 +113,8 @@ static int _file_state(struct bcast_parameters *params)
 	}
 
 	verbose("modes    = %o", (unsigned int) f_stat.st_mode);
-	verbose("uid      = %d", (int) f_stat.st_uid);
-	verbose("gid      = %d", (int) f_stat.st_gid);
+	verbose("uid      = %u", f_stat.st_uid);
+	verbose("gid      = %u", f_stat.st_gid);
 	verbose("atime    = %s", slurm_ctime2(&f_stat.st_atime));
 	verbose("mtime    = %s", slurm_ctime2(&f_stat.st_mtime));
 	verbose("ctime    = %s", slurm_ctime2(&f_stat.st_ctime));

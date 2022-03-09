@@ -328,7 +328,7 @@ static char *_get_shell(void)
 	pw_ent_ptr = getpwuid(opt.uid);
 	if (!pw_ent_ptr) {
 		pw_ent_ptr = getpwnam("nobody");
-		error("warning - no user information for user %d", opt.uid);
+		error("warning - no user information for user %u", opt.uid);
 	}
 	return pw_ent_ptr->pw_shell;
 }

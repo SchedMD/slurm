@@ -1858,7 +1858,7 @@ extern char *get_reason(void)
 		if (user_name)
 			xstrcat(reason_str, user_name);
 		else
-			xstrfmtcat(reason_str, "%d", getuid());
+			xstrfmtcat(reason_str, "%u", getuid());
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 		xstrfmtcat(reason_str, "@%s]", time_str);
 	} else

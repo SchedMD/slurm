@@ -2443,10 +2443,10 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 						   enforce, NULL, locked)
 			    == SLURM_ERROR) {
 				if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
-					error("User %d not found", assoc->uid);
+					error("User %u not found", assoc->uid);
 					return SLURM_ERROR;
 				} else {
-					debug3("User %d not found", assoc->uid);
+					debug3("User %u not found", assoc->uid);
 					return SLURM_SUCCESS;
 				}
 			}
@@ -2455,14 +2455,12 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 				assoc->acct = user.default_acct;
 			else {
 				if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
-					error("User %s(%d) doesn't have a "
-					      "default account", assoc->user,
-					      assoc->uid);
+					error("User %s(%u) doesn't have a default account",
+					      assoc->user, assoc->uid);
 					return SLURM_ERROR;
 				} else {
-					debug3("User %s(%d) doesn't have a "
-					       "default account", assoc->user,
-					       assoc->uid);
+					debug3("User %s(%u) doesn't have a default account",
+					       assoc->user, assoc->uid);
 					return SLURM_SUCCESS;
 				}
 			}
@@ -2872,10 +2870,10 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 						   enforce, NULL, locked)
 			    == SLURM_ERROR) {
 				if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
-					error("User %d not found", wckey->uid);
+					error("User %u not found", wckey->uid);
 					return SLURM_ERROR;
 				} else {
-					debug3("User %d not found", wckey->uid);
+					debug3("User %u not found", wckey->uid);
 					return SLURM_SUCCESS;
 				}
 			}
@@ -3134,7 +3132,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 				    db_conn, &user,
 				    ACCOUNTING_ENFORCE_ASSOCS, NULL, false)
 			    == SLURM_ERROR) {
-				debug3("User %d not found", user.uid);
+				debug3("User %u not found", user.uid);
 				goto end_it;
 			}
 		}
@@ -3337,7 +3335,7 @@ extern void assoc_mgr_info_get_pack_msg(
 				    db_conn, &user,
 				    ACCOUNTING_ENFORCE_ASSOCS, NULL, false)
 			    == SLURM_ERROR) {
-				debug3("User %d not found", user.uid);
+				debug3("User %u not found", user.uid);
 				goto end_it;
 			}
 		}

@@ -391,7 +391,7 @@ static int _open_apinfo(const stepd_step_rec_t *job)
 
 	// Change ownership of file to application user
 	if ((fchown(fd, job->uid, job->gid) == -1) && (getuid() == 0)) {
-		error("%s: Couldn't chown %s to uid %d gid %d: %m",
+		error("%s: Couldn't chown %s to uid %u gid %u: %m",
 		      plugin_type, apinfo, job->uid, job->gid);
 		close(fd);
 		return -1;

@@ -2988,18 +2988,18 @@ void update_logging(void)
 		rc = chown(slurm_conf.slurmctld_logfile,
 			   slurm_user_id, slurm_user_gid);
 		if (rc && daemonize) {
-			error("chown(%s, %d, %d): %m",
+			error("chown(%s, %u, %u): %m",
 			      slurm_conf.slurmctld_logfile,
-			      (int) slurm_user_id, (int) slurm_user_gid);
+			      slurm_user_id, slurm_user_gid);
 		}
 	}
 	if (slurm_conf.sched_logfile) {
 		rc = chown(slurm_conf.sched_logfile,
 			   slurm_user_id, slurm_user_gid);
 		if (rc && daemonize) {
-			error("chown(%s, %d, %d): %m",
+			error("chown(%s, %u, %u): %m",
 			      slurm_conf.sched_logfile,
-			      (int) slurm_user_id, (int) slurm_user_gid);
+			      slurm_user_id, slurm_user_gid);
 		}
 	}
 }
@@ -3352,7 +3352,7 @@ static void _become_slurm_user(void)
 	/* Set GID to GID of SlurmUser */
 	if ((slurm_user_gid != getegid()) &&
 	    (setgid(slurm_user_gid))) {
-		fatal("Failed to set GID to %d", slurm_user_gid);
+		fatal("Failed to set GID to %u", slurm_user_gid);
 	}
 
 	/* Set UID to UID of SlurmUser */

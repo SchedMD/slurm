@@ -1053,7 +1053,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		if (!(job->flags & LAUNCH_BUFFERED_IO)) {
 #if HAVE_SETRESUID
 			if (setresuid(geteuid(), geteuid(), 0) < 0)
-				error("%s: %d setresuid() %m",
+				error("%s: %u setresuid() %m",
 				      __func__, geteuid());
 #endif
 			if (openpty(pout, pout + 1, NULL, NULL, NULL) < 0) {

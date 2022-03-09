@@ -12365,7 +12365,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		 */
 		if (!is_coord_oldacc ||
 		    (!is_coord_newacc && job_specs->account)) {
-			error("Security violation, JOB_UPDATE RPC from uid %d",
+			error("Security violation, JOB_UPDATE RPC from uid %u",
 			      uid);
 			return ESLURM_USER_ID_MISSING;
 		}
@@ -16987,7 +16987,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 	/* validate the request */
 	if (!validate_operator(uid)) {
 		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
-		      (int) uid);
+		      uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto reply;
 	}
@@ -17057,7 +17057,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	/* validate the request */
 	if (!validate_operator(uid)) {
 		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
-		      (int) uid);
+		      uid);
 		rc = ESLURM_ACCESS_DENIED;
 		goto reply;
 	}

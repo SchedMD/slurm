@@ -614,8 +614,7 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 	}
 
 	if ((job_ptr->user_id != uid) && !validate_slurm_user(uid)) {
-		error("Security violation, JOB_CANCEL RPC from uid %d",
-		      uid);
+		error("Security violation, JOB_CANCEL RPC from uid %u", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -5095,7 +5094,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
 	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 					  job_ptr->account)) {
-		error("Security violation, STEP_UPDATE RPC from uid %d", uid);
+		error("Security violation, STEP_UPDATE RPC from uid %u", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
