@@ -2531,7 +2531,7 @@ _rpc_job_notify(slurm_msg_t *msg)
 
 	debug("%s: uid = %u, %ps", __func__, msg->auth_uid, &req->step_id);
 	job_uid = _get_job_uid(req->step_id.job_id);
-	if ((int)job_uid < 0)
+	if (job_uid == INFINITE)
 		goto no_job;
 
 	/*
@@ -3277,7 +3277,7 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	uid_t job_uid;
 
 	job_uid = _get_job_uid(req->step_id.job_id);
-	if ((int)job_uid < 0) {
+	if (job_uid == INFINITE) {
 		debug("%s: failed to get job_uid for job %u",
 		      __func__, req->step_id.job_id);
 		rc = ESLURM_INVALID_JOB_ID;
@@ -3332,7 +3332,7 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
+	if ((uid = stepd_get_uid(fd, protocol_version)) == INFINITE) {
 		debug("terminate_tasks couldn't read from the %ps: %m",
 		      &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
@@ -3491,7 +3491,7 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 		return;
 	}
 
-	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
+	if ((uid = stepd_get_uid(fd, protocol_version)) == INFINITE) {
 		debug("stat_jobacct couldn't read from %ps: %m", req);
 		close(fd);
 		if (msg->conn_fd >= 0)
@@ -3645,7 +3645,7 @@ static void _rpc_list_pids(slurm_msg_t *msg)
 
 	job_uid = _get_job_uid(req->job_id);
 
-	if ((int)job_uid < 0) {
+	if (job_uid == INFINITE) {
 		error("stat_pid for invalid job_id: %u",
 		      req->job_id);
 		if (msg->conn_fd >= 0)
@@ -4342,7 +4342,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if ((int)(uid = stepd_get_uid(fd, protocol_version)) < 0) {
+	if ((uid = stepd_get_uid(fd, protocol_version)) == INFINITE) {
 		debug("_rpc_reattach_tasks couldn't read from the %ps: %m",
 		      &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
@@ -4448,7 +4448,7 @@ static uid_t _get_job_uid(uint32_t jobid)
 		uid = stepd_get_uid(fd, stepd->protocol_version);
 
 		close(fd);
-		if ((int)uid < 0) {
+		if (uid == INFINITE) {
 			debug("stepd_get_uid failed %ps: %m",
 			      &stepd->step_id);
 			continue;

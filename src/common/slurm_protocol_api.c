@@ -92,7 +92,7 @@ static int message_timeout = -1;
 /* STATIC FUNCTIONS */
 static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
-static int _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version);
+static uid_t _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version);
 static bool  _is_port_ok(int, uint16_t, bool);
 
 /* define slurmdbd_conf here so we can treat its existence as a flag */
@@ -896,13 +896,13 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 
 	if (check_header_version(&header) < 0) {
 		slurm_addr_t resp_addr;
-		int uid = _unpack_msg_uid(buffer, header.version);
+		uid_t uid = _unpack_msg_uid(buffer, header.version);
 
 		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("%s: Invalid Protocol Version %u from uid=%d at %pA",
+			error("%s: Invalid Protocol Version %u from uid=%u at %pA",
 			      __func__, header.version, uid, &resp_addr);
 		} else {
-			error("%s: Invalid Protocol Version %u from uid=%d from "
+			error("%s: Invalid Protocol Version %u from uid=%u from "
 			      "problem connection: %m", __func__,
 			      header.version, uid);
 		}
@@ -1168,9 +1168,9 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 
 	if (check_header_version(&header) < 0) {
 		slurm_addr_t resp_addr;
-		int uid = _unpack_msg_uid(buffer, header.version);
+		uid_t uid = _unpack_msg_uid(buffer, header.version);
 		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("%s: [%s] Invalid Protocol Version %u from uid=%d at %pA",
+			error("%s: [%s] Invalid Protocol Version %u from uid=%u at %pA",
 			      __func__, peer, header.version, uid, &resp_addr);
 		} else {
 			error("%s: [%s] Invalid Protocol Version %u from uid=%d from problem connection: %m",
@@ -1289,11 +1289,13 @@ total_return:
 
 }
 
-/* try to determine the UID associated with a message with different
- * message header version, return -1 if we can't tell */
-static int _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version)
+/*
+ * Try to determine the UID associated with a message with different
+ * message header version, return INFINITE ((uid_t) -1) if we can't tell.
+ */
+static uid_t _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version)
 {
-	int uid = -1;
+	uid_t uid = INFINITE;
 	void *auth_cred = NULL;
 
 	if (!(auth_cred = auth_g_unpack(buffer, protocol_version)))
@@ -1301,7 +1303,7 @@ static int _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version)
 	if (auth_g_verify(auth_cred, slurm_conf.authinfo))
 		return uid;
 
-	uid = (int) auth_g_get_uid(auth_cred);
+	uid = auth_g_get_uid(auth_cred);
 	auth_g_destroy(auth_cred);
 
 	return uid;
@@ -1367,10 +1369,10 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 	if (check_header_version(&header) < 0) {
 		slurm_addr_t resp_addr;
-		int uid = _unpack_msg_uid(buffer, header.version);
+		uid_t uid = _unpack_msg_uid(buffer, header.version);
 
 		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("Invalid Protocol Version %u from uid=%d at %pA",
+			error("Invalid Protocol Version %u from uid=%u at %pA",
 			      header.version, uid, &resp_addr);
 		} else {
 			error("Invalid Protocol Version %u from uid=%d from "
