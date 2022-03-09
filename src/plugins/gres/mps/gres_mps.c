@@ -185,7 +185,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	 */
 	if (perc_env) {
 		env_array_overwrite(env_ptr,
-				    "CUDA_MPS_ACTIVE_THREAD_perc_str",
+				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
 				    perc_env);
 		xfree(perc_env);
 	} else if (gres_per_node && shared_info) {
@@ -206,7 +206,6 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
 				    perc_str);
 	} else {
-		unsetenvp(*env_ptr, "CUDA_MPS_ACTIVE_THREAD_perc_str");
 		unsetenvp(*env_ptr, "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE");
 	}
 }
