@@ -295,10 +295,10 @@ static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 	arg.step_id.step_het_comp = NO_VAL;
 	arg.uid      = uid;
 
-	arg.job_hostlist  = nodelist;
+	arg.job_hostlist = xstrdup(nodelist);
 	arg.job_nhosts    = node_cnt;
 
-	arg.step_hostlist = nodelist;
+	arg.step_hostlist = xstrdup(nodelist);
 
 	arg.job_core_bitmap   = bit_alloc(node_cnt);
 	bit_nset(arg.job_core_bitmap, 0, node_cnt-1);
@@ -314,11 +314,7 @@ static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
 
 	cred = slurm_cred_faker(&arg);
 
-	FREE_NULL_BITMAP(arg.job_core_bitmap);
-	FREE_NULL_BITMAP(arg.step_core_bitmap);
-	xfree(arg.cores_per_socket);
-	xfree(arg.sockets_per_node);
-	xfree(arg.sock_core_rep_count);
+	slurm_cred_free_args(&arg);
 	return cred;
 }
 
