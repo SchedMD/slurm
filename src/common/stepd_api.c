@@ -326,7 +326,11 @@ stepd_signal_container(int fd, uint16_t protocol_version, int signal, int flags,
 	int errnum = 0;
 
 	safe_write(fd, &req, sizeof(int));
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		safe_write(fd, &signal, sizeof(int));
+		safe_write(fd, &flags, sizeof(int));
+		safe_write(fd, &req_uid, sizeof(uid_t));
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &signal, sizeof(int));
 		safe_write(fd, &flags, sizeof(int));
 		safe_write(fd, &req_uid, sizeof(uid_t));
