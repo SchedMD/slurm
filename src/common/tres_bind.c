@@ -36,6 +36,7 @@
 
 #include <limits.h>	/* For LONG_MIN, LONG_MAX */
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -53,16 +54,32 @@ static int _valid_num(const char *arg)
  * Test for valid comma-delimited set of numbers
  * RET - -1 on error, else 0
  */
-static int _valid_num_list(const char *arg)
+static int _valid_num_list(const char *arg, bool hex)
 {
 	char *tmp, *tok, *end_ptr = NULL, *save_ptr = NULL;
 	long int val;
 	int rc = 0;
+	int base = 10;
+	int (*isvalid)(int) = isdigit;
+
+	if (hex) {
+		isvalid = isxdigit;
+		base = 16;
+	}
 
 	tmp = xstrdup(arg);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
-		val = strtol(tok, &end_ptr, 0);
+		if (hex && !xstrncmp(tok, "0x", 2))
+			tok += 2;
+		for (int i = 0; tok[i]; i++)
+			if (!isvalid(tok[i])) {
+				error("Failed to validate %s, offending character is %c",
+				      tok, tok[i]);
+				return -1;
+			}
+
+		val = strtol(tok, &end_ptr, base);
 		if ((val < 0) || (val == LONG_MAX) ||
 		    ((end_ptr[0] != '\0') && (end_ptr[0] != '*'))) {
 			rc = -1;
@@ -94,9 +111,9 @@ static int _valid_gpu_bind(char *arg)
 	if (!xstrncasecmp(arg, "closest", 1))
 		return 0;
 	if (!xstrncasecmp(arg, "map_gpu:", 8))
-		return _valid_num_list(arg + 8);
+		return _valid_num_list(arg + 8, false);
 	if (!xstrncasecmp(arg, "mask_gpu:", 9))
-		return _valid_num_list(arg + 9);
+		return _valid_num_list(arg + 9, true);
 	if (!xstrncasecmp(arg, "none", 1))
 		return 0;
 	if (!xstrncasecmp(arg, "per_task:", 9))
