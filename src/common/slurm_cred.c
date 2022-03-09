@@ -806,9 +806,15 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->pw_gecos = xstrdup(arg->pw_gecos);
 	cred->pw_dir = xstrdup(arg->pw_dir);
 	cred->pw_shell = xstrdup(arg->pw_shell);
-	cred->ngids = arg->ngids;
-	cred->gids = copy_gids(arg->ngids, arg->gids);
 	cred->gr_names = copy_gr_names(arg->ngids, arg->gr_names);
+	/*
+	 * If disable_send_gids is set, send gids anyway or TaskEpilog will
+	 * refuse to run.
+	 */
+	if (!enable_send_gids)
+		cred->ngids = group_cache_lookup(arg->uid, arg->gid,
+						 arg->pw_name, &cred->gids);
+
 	cred->job_core_spec  = arg->job_core_spec;
 	cred->job_mem_limit  = arg->job_mem_limit;
 	if (arg->job_mem_alloc_size) {
