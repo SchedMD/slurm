@@ -2437,6 +2437,13 @@ be able to preempt to gain access to GRES.
 .IP
 
 .TP
+\fBWITHIN\fR
+For \fBPreemptType=preempt/qos\fR, allow jobs within the same qos to preempt
+one another. While this can be set globally here, it is recommend that this
+only be set directly on a relevant subset of the system qos values instead. 
+.IP
+
+.TP
 \fBPreemptType\fR
 Specifies the plugin used to identify which jobs can be
 preempted in order to start a pending job.

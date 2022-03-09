@@ -146,6 +146,8 @@ documents those changes that are of interest to users and administrators.
  -- Add support for 'scontrol delete <ENTITY> <ID>' format alongside the already
     expected 'scontrol delete <ENTITY>=<ID>'.
  -- Fix task/cgroup plugin which was not adding stepd to memory cgroup.
+ -- preempt/qos - add support for WITHIN mode to allow for preemption between
+    jobs within the same qos.
 
 * Changes in Slurm 21.08.7
 ==========================

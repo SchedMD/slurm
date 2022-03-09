@@ -62,6 +62,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     NoShared are both defined.
  -- KeepAliveTime has been moved into CommunicationParameters. The standalone
     option will be removed in a future version.
+ -- preempt/qos - add support for WITHIN mode to allow for preemption between
+    jobs within the same qos.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
