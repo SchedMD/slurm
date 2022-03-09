@@ -150,6 +150,7 @@ documents those changes that are of interest to users and administrators.
     jobs within the same qos.
  -- Fix sattach for interactive step.
  -- Fix srun -Z when using nss_slurm.
+ -- Avoid memory leak in srun -Z.
 
 * Changes in Slurm 21.08.7
 ==========================
