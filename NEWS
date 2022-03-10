@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix warnings on 32-bit compilers related to printf() formats.
  -- Fix memory leak when freeing kill_job_msg_t.
  -- Fix memory leak when using data_t.
+ -- Fix reconfigure issues after disabling/reenabling the GANG PreemptMode.
 
 * Changes in Slurm 21.08.6
 ==========================
