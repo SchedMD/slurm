@@ -1142,6 +1142,11 @@ extern void gs_fini(void)
 		usleep(120000);
 		if (timeslicer_thread_id)
 			error("gang: timeslicer pthread still running");
+		else {
+			slurm_mutex_lock(&thread_flag_mutex);
+			thread_running = false;
+			slurm_mutex_unlock(&thread_flag_mutex);
+		}
 	} else {
 		slurm_mutex_unlock(&thread_flag_mutex);
 	}
