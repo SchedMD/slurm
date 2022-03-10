@@ -109,9 +109,15 @@ static void _set_int_cg_ns()
 
 	/* We already know where we will live if we're stepd. */
 	if (running_in_slurmstepd()) {
+#ifdef MULTIPLE_SLURMD
 		xstrfmtcat(int_cg_ns.mnt_point, "%s/%s/%s_%s",
 			   slurm_cgroup_conf.cgroup_mountpoint, SYSTEM_CGSLICE,
 			   conf->node_name, SYSTEM_CGSCOPE);
+#else
+		xstrfmtcat(int_cg_ns.mnt_point, "%s/%s/%s",
+			   slurm_cgroup_conf.cgroup_mountpoint, SYSTEM_CGSLICE,
+			   SYSTEM_CGSCOPE);
+#endif
 		if (stat(int_cg_ns.mnt_point, &st) < 0) {
 			error("cannot read cgroup path %s: %m",
 			      int_cg_ns.mnt_point);
@@ -425,9 +431,14 @@ static void _create_new_scope(const char *slice, const char *scope,
 {
 	char *scope_path = NULL;
 	char *full_path = NULL;
-
-	xstrfmtcat(scope_path, "/sys/fs/cgroup/%s/%s_%s",
-		   slice, conf->node_name, scope);
+#ifdef MULTIPLE_SLURMD
+	xstrfmtcat(scope_path, "%s/%s/%s_%s",
+		   slurm_cgroup_conf.cgroup_mountpoint, slice, conf->node_name,
+		   scope);
+#else
+	xstrfmtcat(scope_path, "%s/%s/%s",
+		   slurm_cgroup_conf.cgroup_mountpoint, slice, scope);
+#endif
 	xstrfmtcat(full_path, "%s/%s", scope_path, dir);
 
 	// Don't fail if it already exists.
@@ -445,11 +456,8 @@ static void _create_new_scope(const char *slice, const char *scope,
 static int _move_pid_to_scope(const char *slice, const char *scope,
 			      const char *dir, pid_t pid)
 {
-	char *scope_path = NULL;
 	char *dir_path = NULL;
 
-	xstrfmtcat(scope_path, "/sys/fs/cgroup/%s/%s_%s",
-		   slice, conf->node_name, scope);
 	xstrfmtcat(dir_path, "/%s", dir);
 
 	common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_SYSTEM],
@@ -464,7 +472,6 @@ static int _move_pid_to_scope(const char *slice, const char *scope,
 		return SLURM_ERROR;
 	}
 
-	xfree(scope_path);
 	xfree(dir_path);
 	return SLURM_SUCCESS;
 }
