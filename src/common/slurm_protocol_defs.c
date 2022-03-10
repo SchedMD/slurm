@@ -2803,7 +2803,8 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 		 * GANG or WITHIN.
 		 */
 		mode_num = NO_VAL16;
-	} else if (mode_num & (PREEMPT_MODE_GANG | PREEMPT_MODE_WITHIN)) {
+	} else if ((mode_num & PREEMPT_MODE_GANG) &&
+		   (mode_num & PREEMPT_MODE_WITHIN)) {
 		/* "GANG,WITHIN" is an invalid combination */
 		mode_num = NO_VAL16;
 	}
