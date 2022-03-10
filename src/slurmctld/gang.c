@@ -1146,6 +1146,9 @@ extern void gs_fini(void)
 			slurm_mutex_lock(&thread_flag_mutex);
 			thread_running = false;
 			slurm_mutex_unlock(&thread_flag_mutex);
+			slurm_mutex_lock(&term_lock);
+			thread_shutdown = false;
+			slurm_mutex_unlock(&term_lock);
 		}
 	} else {
 		slurm_mutex_unlock(&thread_flag_mutex);
