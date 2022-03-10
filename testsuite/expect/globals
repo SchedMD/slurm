@@ -2592,7 +2592,7 @@ proc wait_for_step args {
 			return $::RETURN_SUCCESS
 		}
 		if { $my_delay > $timeout } {
-			log_error "Timeout waiting for job step"
+			log_warn "Timeout waiting for job step"
 			return $::RETURN_TIMEOUT
 		}
 
