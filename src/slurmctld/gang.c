@@ -1130,9 +1130,6 @@ extern void gs_init(void)
 /* Terminate the gang scheduling thread and free its data structures */
 extern void gs_fini(void)
 {
-	if (!(slurm_conf.preempt_mode & PREEMPT_MODE_GANG))
-		return;
-
 	/* terminate the timeslicer thread */
 	log_flag(GANG, "gang: entering gs_fini");
 	slurm_mutex_lock(&thread_flag_mutex);
@@ -1209,9 +1206,6 @@ extern void gs_wake_jobs(void)
 {
 	job_record_t *job_ptr;
 	ListIterator job_iterator;
-
-	if (!(slurm_conf.preempt_mode & PREEMPT_MODE_GANG))
-		return;
 
 	if (!job_list)	/* no jobs */
 		return;
