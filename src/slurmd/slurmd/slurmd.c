@@ -433,7 +433,7 @@ _registration_engine(void *arg)
 	while (!_shutdown && !sent_reg_time) {
 		int rc;
 
-		if (!(rc = send_registration_msg(SLURM_SUCCESS, true)))
+		if (!(rc = send_registration_msg(SLURM_SUCCESS)))
 			break;
 
 		debug("Unable to register with slurm controller (retry in %us): %s",
@@ -689,8 +689,7 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 	}
 }
 
-extern int
-send_registration_msg(uint32_t status, bool startup)
+extern int send_registration_msg(uint32_t status)
 {
 	int ret_val = SLURM_SUCCESS;
 	slurm_msg_t req, resp_msg;
@@ -700,8 +699,6 @@ send_registration_msg(uint32_t status, bool startup)
 	slurm_msg_t_init(&req);
 	slurm_msg_t_init(&resp_msg);
 
-	if (startup)
-		msg->flags |= SLURMD_REG_FLAG_STARTUP;
 	if (get_reg_resp)
 		msg->flags |= SLURMD_REG_FLAG_RESP;
 
@@ -1178,7 +1175,7 @@ _reconfigure(void)
 
 	_build_conf_buf();
 
-	send_registration_msg(SLURM_SUCCESS, false);
+	send_registration_msg(SLURM_SUCCESS);
 
 	acct_gather_reconfig();
 
@@ -1733,7 +1730,7 @@ _slurmd_init(void)
 		conf->cores   = conf->actual_cores;
 		conf->threads = conf->actual_threads;
 
-		send_registration_msg(SLURM_SUCCESS, false);
+		send_registration_msg(SLURM_SUCCESS);
 
 		/* send registration again after loading everything in */
 		sent_reg_time = 0;

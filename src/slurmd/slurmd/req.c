@@ -1632,7 +1632,7 @@ done:
 	 */
 	if (errnum == ESLURMD_PROLOG_FAILED) {
 		_launch_job_fail(req->step_id.job_id, errnum);
-		send_registration_msg(errnum, false);
+		send_registration_msg(errnum);
 	}
 
 }
@@ -2250,7 +2250,7 @@ notify_result:
 
 		if (rc != SLURM_SUCCESS) {
 			alt_rc = _launch_job_fail(req->job_id, rc);
-			send_registration_msg(rc, false);
+			send_registration_msg(rc);
 		}
 
 		if (alt_rc != SLURM_SUCCESS) {
@@ -2492,7 +2492,7 @@ done:
 	if ((rc == ESLURMD_PROLOG_FAILED)
 	    || (rc == SLURM_COMMUNICATIONS_SEND_ERROR)
 	    || (rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)) {
-		send_registration_msg(rc, false);
+		send_registration_msg(rc);
 	}
 }
 
@@ -3041,7 +3041,7 @@ static void _rpc_ping(slurm_msg_t *msg)
 		 * timely fashion. */
 		if (slurm_send_rc_msg(msg, rc) < 0) {
 			error("Error responding to ping: %m");
-			send_registration_msg(SLURM_SUCCESS, false);
+			send_registration_msg(SLURM_SUCCESS);
 		}
 	} else {
 		slurm_msg_t resp_msg;
@@ -3061,7 +3061,7 @@ static void _rpc_ping(slurm_msg_t *msg)
 
 		if (msg->msg_type == REQUEST_NODE_REGISTRATION_STATUS) {
 			get_reg_resp = true;
-			send_registration_msg(SLURM_SUCCESS, true);
+			send_registration_msg(SLURM_SUCCESS);
 		}
 	}
 }
@@ -3085,7 +3085,7 @@ static void _rpc_health_check(slurm_msg_t *msg)
 	 * slurmd paging and not being able to respond in a timely fashion. */
 	if (slurm_send_rc_msg(msg, rc) < 0) {
 		error("Error responding to health check: %m");
-		send_registration_msg(SLURM_SUCCESS, false);
+		send_registration_msg(SLURM_SUCCESS);
 	}
 
 	if (rc == SLURM_SUCCESS)
@@ -3125,7 +3125,7 @@ static void _rpc_acct_gather_update(slurm_msg_t *msg)
 		 * timely fashion. */
 		if (slurm_send_rc_msg(msg, rc) < 0) {
 			error("Error responding to account gather: %m");
-			send_registration_msg(SLURM_SUCCESS, false);
+			send_registration_msg(SLURM_SUCCESS);
 		}
 	} else {
 		slurm_msg_t resp_msg;
