@@ -236,15 +236,6 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 	return SLURM_ERROR;
 }
 
-/*
- * node switch state monitoring functions
- * required for IBM Federation switch
- */
-extern int switch_p_clear_node_state(void)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 	char *nodelist)
 {

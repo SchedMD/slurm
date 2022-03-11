@@ -366,8 +366,6 @@ main (int argc, char **argv)
 		fatal("Unable to initialize switch plugin.");
 	if (node_features_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize node_features plugin");
-	if (conf->cleanstart && switch_g_clear_node_state())
-		fatal("Unable to clear interconnect state.");
 	file_bcast_init();
 	run_command_init();
 

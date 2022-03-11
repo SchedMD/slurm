@@ -96,7 +96,6 @@ typedef struct slurm_switch_ops {
 					    char ***env, uint32_t nodeid,
 					    uint32_t procid, uint32_t nnodes,
 					    uint32_t nprocs, uint32_t rank);
-	int          (*clear_node)        ( void );
 	int          (*step_complete)     ( switch_jobinfo_t *jobinfo,
 					    char *nodelist );
 	int          (*step_allocated)    ( switch_jobinfo_t *jobinfo,
@@ -136,7 +135,6 @@ static const char *syms[] = {
 	"switch_p_job_fini",
 	"switch_p_job_postfini",
 	"switch_p_job_attach",
-	"switch_p_clear_node_state",
 	"switch_p_job_step_complete",
 	"switch_p_job_step_allocated",
 	"switch_p_libstate_clear",
@@ -610,18 +608,6 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
 
 	return (*(ops[plugin_id].job_attach))
 		(data, env, nodeid, procid, nnodes, nprocs, gid);
-}
-
-/*
- * node switch state monitoring functions
- * required for IBM Federation switch
- */
-extern int switch_g_clear_node_state(void)
-{
-	if ( switch_init(0) < 0 )
-		return SLURM_ERROR;
-
-	return (*(ops[switch_context_default].clear_node))();
 }
 
 extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,

@@ -310,11 +310,6 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
 			       uint32_t nodeid, uint32_t procid,
 			       uint32_t nnodes, uint32_t nprocs, uint32_t rank);
 
-/*
- * Clear switch state on this node
- */
-extern int switch_g_clear_node_state(void);
-
 /********************************************************************\
  * JOB STEP {PRE,POST}-SUSPEND and {PRE-POST}-RESUME FUNCTIONS      *
 \********************************************************************/
