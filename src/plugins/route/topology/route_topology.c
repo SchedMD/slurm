@@ -143,7 +143,12 @@ static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
 	for (int i = 0; i < switch_record_table[parent].num_switches; i++) {
 		int k = switch_record_table[parent].switch_index[i];
 
-		fwd_bitmap = bit_copy(switch_record_table[k].node_bitmap);
+		if (!fwd_bitmap)
+			fwd_bitmap = bit_copy(
+				switch_record_table[k].node_bitmap);
+		else
+			bit_copybits(fwd_bitmap,
+				     switch_record_table[k].node_bitmap);
 		bit_and(fwd_bitmap, nodes_bitmap);
 		sw_count = bit_set_count(fwd_bitmap);
 		if (sw_count == 0) {
@@ -152,7 +157,6 @@ static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
 		(*sp_hl)[*count] = bitmap2hostlist(fwd_bitmap);
 		/* Now remove nodes from this switch from message list */
 		bit_and_not(nodes_bitmap, fwd_bitmap);
-		FREE_NULL_BITMAP(fwd_bitmap);
 		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 			char *buf;
 			buf = hostlist_ranged_string_xmalloc((*sp_hl)[*count]);
@@ -166,6 +170,7 @@ static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
 			break; /* all nodes in message are in a child list */
 	}
 
+	FREE_NULL_BITMAP(fwd_bitmap);
 	return lst_count;
 }
 
