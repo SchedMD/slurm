@@ -838,7 +838,6 @@ typedef struct {
 	uint32_t timelimit;
 	uint64_t tot_cpu_sec;
 	uint64_t tot_cpu_usec;
-	uint16_t track_steps;
 	char *tres_alloc_str;
 	char *tres_req_str;
 	uint32_t uid;

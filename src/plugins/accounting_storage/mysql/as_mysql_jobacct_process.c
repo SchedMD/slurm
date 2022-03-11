@@ -95,7 +95,6 @@ char *job_req_inx[] = {
 	"t1.time_submit",
 	"t1.time_suspended",
 	"t1.timelimit",
-	"t1.track_steps",
 	"t1.wckey",
 	"t1.gres_used",
 	"t1.tres_alloc",
@@ -153,7 +152,6 @@ enum {
 	JOB_REQ_SUBMIT,
 	JOB_REQ_SUSPENDED,
 	JOB_REQ_TIMELIMIT,
-	JOB_REQ_TRACKSTEPS,
 	JOB_REQ_WCKEY,
 	JOB_REQ_GRES_USED,
 	JOB_REQ_TRESA,
@@ -873,7 +871,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			job->nodes = xstrdup("(unknown)");
 		}
 
-		job->track_steps = slurm_atoul(row[JOB_REQ_TRACKSTEPS]);
 		job->priority = slurm_atoul(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = slurm_atoul(row[JOB_REQ_REQ_CPUS]);
 		job->req_mem = slurm_atoull(row[JOB_REQ_REQ_MEM]);

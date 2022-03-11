@@ -1308,7 +1308,6 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "work_dir", "text not null default ''" },
 		{ "submit_line", "text" },
 		{ "system_comment", "text" },
-		{ "track_steps", "tinyint not null" },
 		{ "tres_alloc", "text not null default ''" },
 		{ "tres_req", "text not null default ''" },
 		{ NULL, NULL}

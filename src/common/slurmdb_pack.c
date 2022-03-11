@@ -3804,7 +3804,6 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->timelimit, buffer);
 		pack64(job->tot_cpu_sec, buffer);
 		pack64(job->tot_cpu_usec, buffer);
-		pack16(job->track_steps, buffer);
 
 		packstr(job->tres_alloc_str, buffer);
 		packstr(job->tres_req_str, buffer);
@@ -3888,7 +3887,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->timelimit, buffer);
 		pack64(job->tot_cpu_sec, buffer);
 		pack64(job->tot_cpu_usec, buffer);
-		pack16(job->track_steps, buffer);
+		pack16(1, buffer); /* job->track_steps removed in 22.05 */
 
 		packstr(job->tres_alloc_str, buffer);
 		packstr(job->tres_req_str, buffer);
@@ -3980,7 +3979,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);
 		else
 			pack32(job->tot_cpu_usec, buffer);
-		pack16(job->track_steps, buffer);
+		pack16(1, buffer); /* job->track_steps removed in 22.05 */
 
 		packstr(job->tres_alloc_str, buffer);
 		packstr(job->tres_req_str, buffer);
@@ -4012,6 +4011,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 	slurmdb_step_rec_t *step = NULL;
 	uint32_t count = 0;
 	uint32_t uint32_tmp;
+	uint16_t uint16_tmp = 0;
 
 	*job = job_ptr;
 
@@ -4102,7 +4102,6 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->timelimit, buffer);
 		safe_unpack64(&job_ptr->tot_cpu_sec, buffer);
 		safe_unpack64(&job_ptr->tot_cpu_usec, buffer);
-		safe_unpack16(&job_ptr->track_steps, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_req_str,
@@ -4201,7 +4200,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->timelimit, buffer);
 		safe_unpack64(&job_ptr->tot_cpu_sec, buffer);
 		safe_unpack64(&job_ptr->tot_cpu_usec, buffer);
-		safe_unpack16(&job_ptr->track_steps, buffer);
+		/* job->track_steps removed in 22.05 */
+		safe_unpack16(&uint16_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_req_str,
@@ -4296,7 +4296,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		job_ptr->tot_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
 		job_ptr->tot_cpu_usec = uint32_tmp;
-		safe_unpack16(&job_ptr->track_steps, buffer);
+		/* job->track_steps removed in 22.05 */
+		safe_unpack16(&uint16_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_req_str,

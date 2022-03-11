@@ -354,7 +354,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	char *nodes = NULL, *jname = NULL;
-	int track_steps = 0;
 	char *partition = NULL;
 	char *query = NULL;
 	int reinit = 0;
@@ -566,7 +565,7 @@ no_rollup_change:
 			"id_assoc, id_qos, id_user, "
 			"id_group, nodelist, id_resv, timelimit, "
 			"time_eligible, time_submit, time_start, "
-			"job_name, track_steps, state, priority, cpus_req, "
+			"job_name, state, priority, cpus_req, "
 			"nodes_alloc, mem_req, flags, state_reason_prev, "
 			"env_hash_inx, script_hash_inx",
 			mysql_conn->cluster_name, job_table);
@@ -606,7 +605,7 @@ no_rollup_change:
 			   ") values (%u, UNIX_TIMESTAMP(), "
 			   "%u, %u, %u, %u, %u, %u, %u, %u, "
 			   "'%s', %u, %u, %ld, %ld, %ld, "
-			   "'%s', %u, %u, %u, %u, %u, %"PRIu64", %u, %u, "
+			   "'%s', %u, %u, %u, %u, %"PRIu64", %u, %u, "
 			   "%"PRIu64", %"PRIu64,
 			   job_ptr->job_id,
 			   job_ptr->array_job_id, array_task_id,
@@ -615,7 +614,7 @@ no_rollup_change:
 			   job_ptr->user_id, job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   begin_time, submit_time, start_time,
-			   jname, track_steps, job_state,
+			   jname, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
 			   job_ptr->total_nodes,
 			   job_ptr->details->pn_min_memory,
@@ -667,7 +666,7 @@ no_rollup_change:
 			   "nodelist='%s', id_resv=%u, timelimit=%u, "
 			   "time_submit=%ld, time_eligible=%ld, "
 			   "time_start=%ld, mod_time=UNIX_TIMESTAMP(), "
-			   "job_name='%s', track_steps=%u, id_qos=%u, "
+			   "job_name='%s', id_qos=%u, "
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, nodes_alloc=%u, "
 			   "mem_req=%"PRIu64", id_array_job=%u, id_array_task=%u, "
@@ -678,7 +677,7 @@ no_rollup_change:
 			   job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
 			   submit_time, begin_time, start_time,
-			   jname, track_steps, job_ptr->qos_id, job_state,
+			   jname, job_ptr->qos_id, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
 			   job_ptr->total_nodes,
 			   job_ptr->details->pn_min_memory,
