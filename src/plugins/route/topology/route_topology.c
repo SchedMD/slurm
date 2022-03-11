@@ -196,9 +196,11 @@ extern int route_p_split_hostlist(hostlist_t hl,
 				  hostlist_t** sp_hl,
 				  int* count, uint16_t tree_width)
 {
-	int i, j, msg_count;
+	int i, j, k, msg_count, switch_count;
+	int s_first, s_last;
 	char *buf;
 	bitstr_t *nodes_bitmap = NULL;		/* nodes in message list */
+	bitstr_t *switch_bitmap = NULL;		/* switches  */
 	slurmctld_lock_t node_read_lock = { .node = READ_LOCK };
 
 	slurm_mutex_lock(&route_lock);
@@ -227,54 +229,106 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	if (run_in_slurmctld)
 		unlock_slurmctld(node_read_lock);
 
-	/* Find lowest level switch containing all the nodes in the list */
-	j = 0;
-	for (i = 0; i <= switch_levels; i++) {
+	/* Find lowest level switches containing all the nodes in the list */
+	switch_bitmap = bit_alloc(switch_record_cnt);
+	for (j = 0; j < switch_record_cnt; j++) {
+		if ((switch_record_table[j].level == 0 ) &&
+		    bit_overlap_any(switch_record_table[j].node_bitmap,
+				    nodes_bitmap)) {
+				bit_set(switch_bitmap, j);
+		}
+	}
+
+	switch_count = bit_set_count(switch_bitmap);
+
+	for (i = 1; i <= switch_levels; i++) {
+		/* All nodes in message list are in one switch */
+		if (switch_count < 2)
+			break;
 		for (j = 0; j < switch_record_cnt; j++) {
+			if (switch_count < 2)
+				break;
 			if (switch_record_table[j].level == i) {
-				if (bit_super_set(nodes_bitmap,
-						  switch_record_table[j].
-						  node_bitmap)) {
-					/* All nodes in message list are in
-					 * this switch */
-					break;
+				int first_child = -1, child_cnt = 0, num_desc;
+				num_desc = switch_record_table[j].
+						num_desc_switches;
+				for (k = 0; k < num_desc; k++) {
+					int index = switch_record_table[j].
+						switch_desc_index[k];
+					if (bit_test(switch_bitmap, index)) {
+						child_cnt++;
+						if (child_cnt > 1) {
+							bit_clear(switch_bitmap,
+								  index);
+						} else {
+							first_child = index;
+						}
+					}
+				}
+				if (child_cnt > 1) {
+					bit_clear(switch_bitmap, first_child);
+					bit_set(switch_bitmap, j);
+					switch_count -= (child_cnt - 1);
 				}
 			}
 		}
-		if (j < switch_record_cnt) {
-			/* Got here via break after bit_super_set */
-			break; // 'j' is our switch
-		} /* else, no switches at this level reach all nodes */
 	}
-	if (i > switch_levels) {
-		/* This can only happen if trying to schedule multiple physical
-		 * clusters as a single logical cluster under the control of a
-		 * single slurmctld daemon, and sending something like a
-		 * node_registation request to all nodes.
-		 * Revert to default behavior*/
+
+	s_first = bit_ffs(switch_bitmap);
+	if (s_first != -1)
+		s_last = bit_fls(switch_bitmap);
+	else
+		s_last = -2;
+
+	if (switch_count == 1 && switch_record_table[s_first].level == 0 &&
+	    bit_super_set(nodes_bitmap,
+			  switch_record_table[s_first].node_bitmap)) {
+		/* This is a leaf switch. Construct list based on TreeWidth */
+		FREE_NULL_BITMAP(nodes_bitmap);
+		FREE_NULL_BITMAP(switch_bitmap);
+		return route_split_hostlist_treewidth(hl, sp_hl, count,
+						      tree_width);
+	}
+	*sp_hl = xcalloc(switch_record_cnt, sizeof(hostlist_t));
+	msg_count = hostlist_count(hl);
+	*count = 0;
+	for (j = s_first; j <= s_last; j++) {
+		xassert(msg_count);
+
+		if (!bit_test(switch_bitmap, j))
+			continue;
+		_subtree_split_hostlist(nodes_bitmap, j, &msg_count, sp_hl,
+					count);
+	}
+	xassert(msg_count == bit_set_count(nodes_bitmap));
+	if (msg_count) {
+		size_t new_size = xsize(*sp_hl);
+		int n_first, n_last;
+
 		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
-			buf = hostlist_ranged_string_xmalloc(hl);
+			buf = bitmap2node_name(nodes_bitmap);
 			debug("ROUTE: didn't find switch containing nodes=%s",
 			      buf);
 			xfree(buf);
 		}
-		FREE_NULL_BITMAP(nodes_bitmap);
-		return route_split_hostlist_treewidth(hl, sp_hl, count,
-						      tree_width);
-	}
-	if (switch_record_table[j].level == 0) {
-		/* This is a leaf switch. Construct list based on TreeWidth */
-		FREE_NULL_BITMAP(nodes_bitmap);
-		return route_split_hostlist_treewidth(hl, sp_hl, count,
-						      tree_width);
-	}
+		new_size += msg_count * sizeof(hostlist_t);
+		xrealloc(*sp_hl, new_size);
 
-	*sp_hl = xcalloc(switch_record_cnt, sizeof(hostlist_t));
-	msg_count = hostlist_count(hl);
-	*count = 0;
-	_subtree_split_hostlist(nodes_bitmap, j, &msg_count, sp_hl, count);
+		n_first = bit_ffs(nodes_bitmap);
+		if (n_first != -1)
+			n_last = bit_fls(nodes_bitmap);
+		else
+			n_last = -2;
+		for (j = n_first; j <= n_last; j++) {
+			(*sp_hl)[*count] = hostlist_create(NULL);
+			hostlist_push_host((*sp_hl)[*count],
+					   node_record_table_ptr[j]->name);
+			(*count)++;
+		}
+	}
 
 	FREE_NULL_BITMAP(nodes_bitmap);
+	FREE_NULL_BITMAP(switch_bitmap);
 
 	return SLURM_SUCCESS;
 
