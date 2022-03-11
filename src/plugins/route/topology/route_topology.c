@@ -166,9 +166,10 @@ static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
 		}
 		(*count)++;
 		lst_count += sw_count;
-		if (lst_count == msg_count)
+		if (lst_count == *msg_count)
 			break; /* all nodes in message are in a child list */
 	}
+	*msg_count -= lst_count;
 
 	FREE_NULL_BITMAP(fwd_bitmap);
 	return lst_count;
@@ -271,7 +272,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	*sp_hl = xcalloc(switch_record_cnt, sizeof(hostlist_t));
 	msg_count = hostlist_count(hl);
 	*count = 0;
-	_subtree_split_hostlist(nodes_bitmap, j, msg_count, sp_hl, count);
+	_subtree_split_hostlist(nodes_bitmap, j, &msg_count, sp_hl, count);
 
 	FREE_NULL_BITMAP(nodes_bitmap);
 
