@@ -315,36 +315,6 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
  */
 extern int switch_g_clear_node_state(void);
 
-/*
- * Allocate storage for a node's switch state record
- */
-extern int switch_g_alloc_node_info(switch_node_info_t **switch_node);
-
-/*
- * Fill in a previously allocated switch state record for the node on which
- * this function is executed.
- */
-extern int switch_g_build_node_info(switch_node_info_t *switch_node);
-
-/*
- * Pack the data associated with a node's switch state into a buffer
- * for network transmission.
- */
-extern int switch_g_pack_node_info(switch_node_info_t *switch_node,
-				   buf_t *buffer, uint16_t protocol_version);
-
-/*
- * Unpack the data associated with a node's switch state record
- * from a buffer.
- */
-extern int switch_g_unpack_node_info(switch_node_info_t **switch_node,
-				     buf_t *buffer, uint16_t protocol_version);
-
-/*
- * Release the storage associated with a node's switch state record.
- */
-extern int switch_g_free_node_info(switch_node_info_t **switch_node);
-
 /********************************************************************\
  * JOB STEP {PRE,POST}-SUSPEND and {PRE-POST}-RESUME FUNCTIONS      *
 \********************************************************************/

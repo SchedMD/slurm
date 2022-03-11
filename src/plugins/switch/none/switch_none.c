@@ -245,33 +245,6 @@ extern int switch_p_clear_node_state(void)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_alloc_node_info(switch_node_info_t **switch_node)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_build_node_info(switch_node_info_t *switch_node)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_pack_node_info(switch_node_info_t *switch_node,
-				   buf_t *buffer, uint16_t protocol_version)
-{
-	return 0;
-}
-
-extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
-				     buf_t *buffer, uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_free_node_info(switch_node_info_t **switch_node)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 	char *nodelist)
 {

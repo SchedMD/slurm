@@ -813,13 +813,6 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			   buf.sysname, buf.release, buf.version);
 	}
 
-	if (msg->flags & SLURMD_REG_FLAG_STARTUP) {
-		if (switch_g_alloc_node_info(&msg->switch_nodeinfo))
-			error("switch_g_alloc_node_info: %m");
-		if (switch_g_build_node_info(msg->switch_nodeinfo))
-			error("switch_g_build_node_info: %m");
-	}
-
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	msg->job_count = list_count(steps);
 	msg->step_id = xmalloc(msg->job_count * sizeof(*msg->step_id));
