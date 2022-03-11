@@ -1047,9 +1047,6 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 				      protocol_version);
 		}
 		pack16(msg->flags, buffer);
-		if (msg->flags & SLURMD_REG_FLAG_STARTUP)
-			switch_g_pack_node_info(msg->switch_nodeinfo, buffer,
-						protocol_version);
 		if (msg->gres_info)
 			gres_info_size = get_buf_offset(msg->gres_info);
 		pack32(gres_info_size, buffer);
@@ -1115,11 +1112,6 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 				goto unpack_error;
 
 		safe_unpack16(&node_reg_ptr->flags, buffer);
-		if ((node_reg_ptr->flags & SLURMD_REG_FLAG_STARTUP)
-		    &&  (switch_g_unpack_node_info(
-				 &node_reg_ptr->switch_nodeinfo, buffer,
-				 protocol_version)))
-			goto unpack_error;
 
 		safe_unpack32(&gres_info_size, buffer);
 		if (gres_info_size) {
