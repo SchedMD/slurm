@@ -164,6 +164,7 @@ documents those changes that are of interest to users and administrators.
  -- Constrain slurmstepd to job/step cgroup like in previous versions of Slurm.
  -- Fix warnings on 32-bit compilers related to printf() formats.
  -- Fix memory leak when freeing kill_job_msg_t.
+ -- Fix memory leak when using data_t.
 
 * Changes in Slurm 21.08.6
 ==========================
