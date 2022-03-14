@@ -189,3 +189,28 @@ file delete $file_in
 if {$cfgok != $cfgcount} {
 	fail "Some of the configurations failed"
 }
+
+###############################################
+# test 33.1.5
+###############################################
+log_info "Test33.1.5"
+set file_in "$wd/etc.33.1.5/slurm.conf"
+file delete $file_in
+set fd [open "$file_in" a]
+puts $fd "$params
+RoutePlugin=route/topology
+
+# ================================
+# Node and Partition Definitions
+# ================================
+
+NodeName=peta\[10000-10399,99999\]
+PartitionName=all  Nodes=peta\[10000-10399,99999\] Default=YES"
+
+close $fd
+run_config "etc.33.1.5"
+file delete $file_in
+
+if {$cfgok != $cfgcount} {
+	fail "Some of the configurations failed"
+}
