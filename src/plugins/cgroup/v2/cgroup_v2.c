@@ -39,8 +39,9 @@
 #include "cgroup_v2.h"
 
 #define SYSTEM_CGSLICE "system.slice"
-#define SYSTEM_CGSCOPE "slurmstepd_home.scope"
+#define SYSTEM_CGSCOPE "slurmstepd"
 #define SYSTEM_CGDIR "system"
+#define CGROUP_MAX_RETRIES 100
 
 const char plugin_name[] = "Cgroup v2 plugin";
 const char plugin_type[] = "cgroup/v2";
@@ -52,6 +53,7 @@ static uint16_t step_active_cnt;
 static xcgroup_ns_t int_cg_ns;
 static xcgroup_t int_cg[CG_LEVEL_CNT];
 static bpf_program_t p[CG_LEVEL_CNT];
+static char *stepd_scope_path = NULL;
 static uint32_t task_special_id = NO_VAL;
 static char *ctl_names[] = {
 	[CG_TRACK] = "freezer",
@@ -93,38 +95,15 @@ typedef struct {
  */
 
 /*
- * Fill up the internal cgroup namespace object. This mainly contains the path
- * to the root.
- *
  * The cgroup v2 documented way to know which is the process root in the cgroup
  * hierarchy is just to read /proc/self/cgroup. In Unified hierarchies this
  * must contain only one line. If there are more lines this would mean we are
  * in Hybrid or in Legacy cgroup.
  */
-static void _set_int_cg_ns()
+static char *_get_self_cg_path()
 {
-	char *buf, *start = NULL, *p;
+	char *buf, *start = NULL, *p, *ret = NULL;
 	size_t sz;
-	struct stat st;
-
-	/* We already know where we will live if we're stepd. */
-	if (running_in_slurmstepd()) {
-#ifdef MULTIPLE_SLURMD
-		xstrfmtcat(int_cg_ns.mnt_point, "%s/%s/%s_%s",
-			   slurm_cgroup_conf.cgroup_mountpoint, SYSTEM_CGSLICE,
-			   conf->node_name, SYSTEM_CGSCOPE);
-#else
-		xstrfmtcat(int_cg_ns.mnt_point, "%s/%s/%s",
-			   slurm_cgroup_conf.cgroup_mountpoint, SYSTEM_CGSLICE,
-			   SYSTEM_CGSCOPE);
-#endif
-		if (stat(int_cg_ns.mnt_point, &st) < 0) {
-			error("cannot read cgroup path %s: %m",
-			      int_cg_ns.mnt_point);
-			xfree(int_cg_ns.mnt_point);
-		}
-		return;
-	}
 
 	if (common_file_read_content("/proc/self/cgroup", &buf, &sz)
 	    != SLURM_SUCCESS)
@@ -155,11 +134,35 @@ static void _set_int_cg_ns()
 	if (start && *start != '\0') {
 		if ((p = xstrchr(start, '\n')))
 			*p = '\0';
-		xstrfmtcat(int_cg_ns.mnt_point, "%s%s",
+		xstrfmtcat(ret, "%s%s",
 			   slurm_cgroup_conf.cgroup_mountpoint, start);
 	}
 
 	xfree(buf);
+	return ret;
+}
+
+/*
+ * Fill up the internal cgroup namespace object. This mainly contains the path
+ * to what will be our root cgroup.
+ * E.g. /sys/fs/cgroup/system.slice/node1_slurmstepd.scope/ for slurmstepd.
+ */
+static void _set_int_cg_ns()
+{
+#ifdef MULTIPLE_SLURMD
+	xstrfmtcat(stepd_scope_path, "%s/%s/%s_%s.scope",
+		   slurm_cgroup_conf.cgroup_mountpoint,
+		   SYSTEM_CGSLICE, conf->node_name,
+		   SYSTEM_CGSCOPE);
+#else
+	xstrfmtcat(stepd_scope_path, "%s/%s/%s.scope",
+		   slurm_cgroup_conf.cgroup_mountpoint,
+		   SYSTEM_CGSLICE, SYSTEM_CGSCOPE);
+#endif
+	if (running_in_slurmstepd())
+		int_cg_ns.mnt_point = stepd_scope_path;
+	else
+		int_cg_ns.mnt_point = _get_self_cg_path();
 }
 
 /*
@@ -418,51 +421,34 @@ end_inotify:
 	xfree(cgroup_events);
 }
 
-/*
- * Talk with systemd through dbus to create a new scope where we will put all
- * the slurmstepds and user processes. This way we can safely restart slurmd
- * and not affect jobs at all.
- * Technically it must do:
- *	- Start a new transient scope with Delegate=yes and all controllers.
- *      - Create a new system/ directory under it.
- */
-static void _create_new_scope(const char *slice, const char *scope,
-			      const char *dir)
+static int _init_stepd_system_scope(pid_t pid)
 {
-	char *scope_path = NULL;
-	char *full_path = NULL;
-#ifdef MULTIPLE_SLURMD
-	xstrfmtcat(scope_path, "%s/%s/%s_%s",
-		   slurm_cgroup_conf.cgroup_mountpoint, slice, conf->node_name,
-		   scope);
-#else
-	xstrfmtcat(scope_path, "%s/%s/%s",
-		   slurm_cgroup_conf.cgroup_mountpoint, slice, scope);
-#endif
-	xstrfmtcat(full_path, "%s/%s", scope_path, dir);
-
-	// Don't fail if it already exists.
-	mkdir(scope_path, O_CREAT);
-	mkdir(full_path, 0755);
-
-	xfree(scope_path);
-	xfree(full_path);
-}
-
-/*
- * Talk with systemd through dbus to move the slurmstepd pid into the reserved
- * scope for stepds and user processes.
- */
-static int _move_pid_to_scope(const char *slice, const char *scope,
-			      const char *dir, pid_t pid)
-{
-	char *dir_path = NULL;
-
-	xstrfmtcat(dir_path, "/%s", dir);
-
+	char *system_dir = "/" SYSTEM_CGDIR;
+	char *self_cg_path;
 	common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_SYSTEM],
-			     dir_path, (uid_t) 0, (gid_t) 0);
-	common_cgroup_move_process(&int_cg[CG_LEVEL_SYSTEM], pid);
+			     system_dir, (uid_t) 0, (gid_t) 0);
+
+	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_SYSTEM]) !=
+	    SLURM_SUCCESS) {
+		error("Unable to instantiate system %s cgroup", system_dir);
+		return SLURM_ERROR;
+	}
+
+	if (common_cgroup_move_process(&int_cg[CG_LEVEL_SYSTEM], pid) !=
+	    SLURM_SUCCESS) {
+		error("Unable to attach pid %d to %s cgroup.", pid, system_dir);
+		return SLURM_ERROR;
+	}
+
+	/* Now check we're really where we belong to. */
+	self_cg_path = _get_self_cg_path();
+	if (xstrcmp(self_cg_path, int_cg[CG_LEVEL_SYSTEM].path)) {
+		error("Could not move slurmstepd pid %d to a Slurm's delegated cgroup. Should be in %s, we are in %s.",
+		      pid, self_cg_path, int_cg[CG_LEVEL_SYSTEM].path);
+		xfree(self_cg_path);
+		return SLURM_ERROR;
+	}
+	xfree(self_cg_path);
 
 	if (_enable_subtree_control(int_cg[CG_LEVEL_ROOT].path,
 				    int_cg_ns.avail_controllers) !=
@@ -472,7 +458,163 @@ static int _move_pid_to_scope(const char *slice, const char *scope,
 		return SLURM_ERROR;
 	}
 
-	xfree(dir_path);
+	return SLURM_SUCCESS;
+}
+
+static int _init_new_scope(char *scope_path)
+{
+	int rc;
+
+	rc = mkdir(scope_path, O_CREAT);
+	if (rc && (errno != EEXIST)) {
+		error("Could not create scope directory %s: %m", scope_path);
+		return SLURM_ERROR;
+	}
+
+	log_flag(CGROUP, "Created %s", scope_path);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Talk to systemd through dbus to move the slurmstepd pid into the reserved
+ * scope for stepds and user processes.
+ */
+static int _init_new_scope_dbus(char *scope_path)
+{
+	struct stat sb;
+	int status, retries = 0;
+	pid_t pid, sleep_parent_pid;
+	xcgroup_t sys_root;
+	char *const argv[3] = {
+		(char *)conf->stepd_loc,
+		"infinity",
+		NULL };
+
+	pid = fork();
+
+	if (pid < 0) {
+		return SLURM_ERROR;
+	} else if (pid == 0) { /* child */
+		sleep_parent_pid = getpid();
+		if (cgroup_dbus_attach_to_scope(sleep_parent_pid, scope_path) !=
+		    SLURM_SUCCESS) {
+			/*
+			 * Systemd scope unit may already exist or is stuck, and
+			 * the directory is not there!.
+			 */
+			_exit(1);
+		}
+		/*
+		 * Wait for the scope to be alive. There's no way that dbus
+		 * tells us if the mkdir operation on the cgroup filesystem went
+		 * well, and we know that there's a noticeable delay. Because of
+		 * systemd and because of cgroup. We need to wait.
+		 */
+		while ((retries < CGROUP_MAX_RETRIES) &&
+		       (stat(scope_path, &sb) < 0)) {
+			if (errno == ENOENT) {
+				retries++;
+				usleep(10000);
+			} else {
+				error("stat() error waiting for %s to show up after dbus call: %m",
+				      scope_path);
+				_exit(1);
+			}
+		}
+		if (retries < CGROUP_MAX_RETRIES) {
+			/*
+			 * We need to "abandon" this scope or if we terminate,
+			 * the unit will also terminate.
+			 */
+			if (cgroup_dbus_abandon_scope(scope_path))
+				error("Cannot abandon cgroup scope %s",
+				      scope_path);
+			else
+				log_flag(CGROUP, "Abandoned scope %s",
+					 scope_path);
+		} else {
+			error("Long time waiting for %s to show up after dbus call.",
+			      scope_path);
+		}
+		if (retries > 1)
+			log_flag(CGROUP, "Possible systemd slowness, %d msec waiting scope to show up.",
+				 (retries * 10));
+
+		/* Do last try here. */
+		memset(&sys_root, 0, sizeof(sys_root));
+		xstrfmtcat(sys_root.path, "%s/%s", scope_path, SYSTEM_CGDIR);
+		if (_init_new_scope(sys_root.path) != SLURM_SUCCESS) {
+			xfree(sys_root.path);
+			_exit(1);
+		}
+		/* Success!, we got the cg directory, move ourselves there. */
+		if (common_cgroup_move_process(&sys_root, sleep_parent_pid)) {
+			error("Unable to move pid %d to system cgroup %s",
+			      sleep_parent_pid, sys_root.path);
+			_exit(1);
+		}
+		common_cgroup_destroy(&sys_root);
+
+		/*
+		 * We don't need to wait to be in the new cgroup, if the fs is
+		 * slow we anyway know that at some point the kernel will move
+		 * us there. So continue as normal.
+		 */
+		if (xdaemon() != 0) {
+			error("Cannot spawn dummy process for the systemd scope.");
+			_exit(127);
+		}
+		execvp(argv[0], argv);
+		error("execvp of slurmstepd wait failed: %m");
+		_exit(127);
+	} else if (pid > 0) {
+		if ((waitpid(pid, &status, 0) != pid) || WEXITSTATUS(status)) {
+			/* If we receive an error it means scope is not ok. */
+			error("%s: scope and/or cgroup directory for slurmstepd could not be set.",
+			      __func__);
+			return SLURM_ERROR;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * If IgnoreSystemd=yes in cgroup.conf we do a mkdir in
+ * /sys/fs/cgroup/system.slice/<nodename>_slurmstepd or /slurmstepd if no
+ * MULTIPLE_SLURMD.
+ *
+ * Otherwise call dbus to talk to systemd and create a 'scope' which will in
+ * turn create the same cgroup directory.
+ *
+ * This directory will be used to place future slurmstepds.
+ */
+static int _init_slurmd_system_scope()
+{
+	struct stat sb;
+
+	/* Do only if the cgroup associated to the scope is not created yet. */
+	if (!stat(stepd_scope_path, &sb))
+		return SLURM_SUCCESS;
+
+	/*
+	 * If we don't want to use systemd at all just create the cgroup
+	 * directories manually and return.
+	 */
+	if (slurm_cgroup_conf.ignore_systemd)
+		return _init_new_scope(stepd_scope_path);
+
+	/* Call systemd through dbus to create a new scope. */
+	if ((_init_new_scope_dbus(stepd_scope_path) != SLURM_SUCCESS)) {
+		if (slurm_cgroup_conf.ignore_systemd_on_failure) {
+			log_flag(CGROUP, "Could not create scope through systemd, doing it manually as IgnoreSystemdOnFailure is set in cgroup.conf");
+			return _init_new_scope(stepd_scope_path);
+		} else {
+			error("cannot initialize cgroup directory for stepds");
+			return SLURM_ERROR;
+		}
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -508,17 +650,9 @@ extern int init(void)
 	task_list = list_create(_free_task_cg_info);
 
 	/*
-	 * If we are slurmd we need to create a new place for forked stepds to
-	 * give them its independence. If we don't do that, a slurmd restart
-	 * through systemd would not succeed because the cgroup would be busy
-	 * and systemd would fail to place the new slurmd in the cgroup.
-	 */
-	if (running_in_slurmd())
-		_create_new_scope(SYSTEM_CGSLICE, SYSTEM_CGSCOPE, SYSTEM_CGDIR);
-
-	/*
 	 * Check our current root dir. Systemd MUST have Delegated it to us,
-	 * so we want slurmd to be started by systemd
+	 * so we want slurmd to be started by systemd. In the case of stepd
+	 * we must guess our future path here, and make the directory later.
 	 */
 	_set_int_cg_ns();
 	if (!int_cg_ns.mnt_point) {
@@ -526,36 +660,45 @@ extern int init(void)
 		return SLURM_ERROR;
 	}
 
-	/*
-	 * Check available controllers in cgroup.controller and record them in
-	 * our bitmap.
-	 */
-	if (_check_avail_controllers() != SLURM_SUCCESS)
-		return SLURM_ERROR;
-
 	/* Setup the root cgroup object. */
 	common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_ROOT], "",
 			     (uid_t) 0, (gid_t) 0);
 
 	/*
-	 * If we are slurmstepd we are living in slurmd's place. We need first
-	 * to emancipate to our new place and tell systemd about it or we will
-	 * mess its accounting.
+	 * Check available controllers in cgroup.controller and record
+	 * them in our bitmap.
 	 */
-	if (running_in_slurmstepd())
-		_move_pid_to_scope(SYSTEM_CGSLICE, SYSTEM_CGSCOPE, SYSTEM_CGDIR,
-				   getpid());
+	if (_check_avail_controllers() != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	/*
+	 * slurmd will setup a new home for future slurmstepds. Every stepd
+	 * will emigrate to this new place.
+	 */
+	if (running_in_slurmd()) {
+		if (_init_slurmd_system_scope() != SLURM_SUCCESS)
+			return SLURM_ERROR;
+	}
+
+	if (running_in_slurmstepd()) {
+		/*
+		 * We expect slurmd to already have set our scope directory.
+		 * Move ourselves in the system subdirectory, which is a
+		 * temporary 'parking' until we have not created the job
+		 * hierarchy.
+		 */
+		if (_init_stepd_system_scope(getpid()) != SLURM_SUCCESS)
+			return SLURM_ERROR;
+	}
 
 	/*
 	 * If we're slurmd we're all set and able to constrain things, i.e.
 	 * CoreSpec* and MemSpec*.
 	 *
 	 * If we are a new slurmstepd we are ready now to create job steps. In
-	 * that case, since we're still living in slurmd's place, we will need
-	 * to emancipate to the slurmd_family cgroup, and then create
-	 * int_cg[CG_LEVEL_ROOT].path/job_x/step_x. Per each new step we'll need
-	 * to first move the stepd process out of slurmd directory where we
-	 * still live.
+	 * that case, since we're still in the temporary "system" directory,
+	 * we will need move ourselves out to a new job directory and then
+	 * create int_cg[CG_LEVEL_ROOT].path/job_x/step_x.
 	 */
 	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -575,6 +718,7 @@ extern int fini(void)
 	FREE_NULL_LIST(task_list);
 	free_ebpf_prog(&p[CG_LEVEL_JOB]);
 	free_ebpf_prog(&p[CG_LEVEL_STEP_USER]);
+	xfree(stepd_scope_path);
 
 	debug("unloading %s", plugin_name);
 	return SLURM_SUCCESS;

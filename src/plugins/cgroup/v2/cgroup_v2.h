@@ -55,10 +55,12 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/daemonize.h"
 #include "src/common/cgroup.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/plugins/cgroup/common/cgroup_common.h"
+#include "src/plugins/cgroup/v2/cgroup_dbus.h"
 #include "src/plugins/cgroup/v2/ebpf.h"
 
 /* Functions */
