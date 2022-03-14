@@ -1427,7 +1427,7 @@ extern void do_list(void)
 			print_fields(JOB, job);
 
 		if (!(job_cond->flags & JOBCOND_FLAG_NO_STEP)
-		    && (job->track_steps || !job->show_full)) {
+		    && job->show_full) {
 			itr_step = list_iterator_create(job->steps);
 			while ((step = list_next(itr_step))) {
 				if (step->end == 0)

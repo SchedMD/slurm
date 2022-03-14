@@ -1132,31 +1132,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					xstrdup(step_row[STEP_REQ_TRES]);
 		}
 		mysql_free_result(step_result);
-
-		if (!job->track_steps) {
-			uint64_t j_cpus, s_cpus;
-			/* If we don't have track_steps we want to see
-			   if we have multiple steps.  If we only have
-			   1 step check the job name against the step
-			   name in most all cases it will be
-			   different.  If it is different print out
-			   the step separate.  It could also be a single
-			   step/allocation where the job was allocated more than
-			   the step requested (eg. CR_Socket).
-			*/
-			if (list_count(job->steps) > 1)
-				job->track_steps = 1;
-			else if (step &&
-				 (xstrcmp(step->stepname, job->jobname) ||
-				  (((j_cpus = slurmdb_find_tres_count_in_string(
-					     job->tres_alloc_str, TRES_CPU))
-				    != INFINITE64) &&
-				   ((s_cpus = slurmdb_find_tres_count_in_string(
-					     step->tres_alloc_str, TRES_CPU))
-				    != INFINITE64) &&
-				  j_cpus != s_cpus)))
-					job->track_steps = 1;
-		}
 	skip_steps:
 		/* need to reset here to make the above test valid */
 		step = NULL;

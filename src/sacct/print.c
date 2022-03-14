@@ -122,21 +122,13 @@ static char *_get_tres_node(int type, void *object, int tres_pos,
 	slurmdb_stats_t *stats = NULL;
 	char *tmp_char = NULL;
 	char *nodes = NULL;
+	slurmdb_step_rec_t *step = object;
 
-	if ((type != JOB) && (type != JOBSTEP))
+	if (type != JOBSTEP)
 		return NULL;
 
-	if (type == JOB) {
-		slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
-		if (!job->track_steps) {
-			stats = &job->stats;
-			nodes = job->nodes;
-		}
-	} else {
-		slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
-		stats = &step->stats;
-		nodes = step->nodes;
-	}
+	stats = &step->stats;
+	nodes = step->nodes;
 
 	if (!stats)
 		return NULL;
@@ -162,18 +154,12 @@ static uint32_t _get_tres_task(int type, void *object, int tres_pos,
 	uint32_t tmp_uint32 = NO_VAL;
 	uint64_t tmp_uint64 = NO_VAL64;
 	char *tmp_char = NULL;
+	slurmdb_step_rec_t *step = object;
 
-	if ((type != JOB) && (type != JOBSTEP))
+	if (type != JOBSTEP)
 		return tmp_uint32;
 
-	if (type == JOB) {
-		slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
-		if (!job->track_steps)
-			stats = &job->stats;
-	} else {
-		slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
-		stats = &step->stats;
-	}
+	stats = &step->stats;
 
 	if (!stats)
 		return tmp_uint32;
@@ -204,18 +190,12 @@ static uint64_t _get_tres_cnt(int type, void *object, int tres_pos,
 	slurmdb_stats_t *stats = NULL;
 	uint64_t tmp_uint64 = NO_VAL64;
 	char *tmp_char = NULL;
+	slurmdb_step_rec_t *step = object;
 
-	if ((type != JOB) && (type != JOBSTEP))
+	if (type != JOBSTEP)
 		return NO_VAL64;
 
-	if (type == JOB) {
-		slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
-		if (!job->track_steps)
-			stats = &job->stats;
-	} else {
-		slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
-		stats = &step->stats;
-	}
+	stats = &step->stats;
 
 	if (!stats)
 		return tmp_uint64;
@@ -293,21 +273,6 @@ extern void print_fields(type_t type, void *object)
 
 	switch (type) {
 	case JOB:
-		step = NULL;
-		if (!job->track_steps)
-			step = (slurmdb_step_rec_t *)job->first_step_ptr;
-		/*
-		 * set this to avoid printing out info for things that
-		 * don't mean anything.  Like an allocation that never
-		 * ran anything.
-		 */
-		if (!step)
-			job->track_steps = 1;
-		else
-			step_cpu_tres_rec_count =
-				slurmdb_find_tres_count_in_string(
-					step->tres_alloc_str, TRES_CPU);
-
 		job_comp = NULL;
 		cpu_tres_rec_count = slurmdb_find_tres_count_in_string(
 			(job->tres_alloc_str && job->tres_alloc_str[0]) ?
@@ -363,10 +328,7 @@ extern void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				tmp_int = cpu_tres_rec_count;
-
-				// we want to use the step info
-				if (!step)
-					break;
+				break;
 			case JOBSTEP:
 				tmp_int = step_cpu_tres_rec_count;
 				break;
@@ -432,8 +394,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_ACT_CPUFREQ:
 			switch (type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_dub = step->stats.act_cpufreq;
+				tmp_dub = NO_VAL;
 				break;
 			case JOBSTEP:
 				tmp_dub = step->stats.act_cpufreq;
@@ -1042,11 +1003,6 @@ extern void print_fields(type_t type, void *object)
 
 			switch(type) {
 			case JOB:
-				/* below really should be step.  It is
-				   not a typo */
-				if (!job->track_steps)
-					name = slurm_step_layout_type_name(
-						step->task_dist);
 				break;
 			case JOBSTEP:
 				name = slurm_step_layout_type_name(
@@ -1199,9 +1155,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUIA:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char =
-						job->stats.tres_usage_in_ave;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char =
@@ -1219,8 +1173,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUIM:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char = job->stats.tres_usage_in_max;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_in_max;
@@ -1237,9 +1190,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUIMN:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char = job->stats.
-						tres_usage_in_max_nodeid;
+				tmp_char = NULL;
 				nodes = job->nodes;
 				break;
 			case JOBSTEP:
@@ -1257,9 +1208,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUIMT:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char = job->stats.
-						tres_usage_in_max_taskid;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_in_max_taskid;
@@ -1274,8 +1223,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUIMI:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char = job->stats.tres_usage_in_min;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_in_min;
@@ -1292,9 +1240,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUIMIN:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char = job->stats.
-						tres_usage_in_min_nodeid;
+				tmp_char = NULL;
 				nodes = job->nodes;
 				break;
 			case JOBSTEP:
@@ -1312,9 +1258,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUIMIT:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char = job->stats.
-						tres_usage_in_min_taskid;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_in_min_taskid;
@@ -1329,9 +1273,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUIT:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char =
-						job->stats.tres_usage_in_tot;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char =
@@ -1348,9 +1290,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUOA:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char =
-						job->stats.tres_usage_out_ave;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char =
@@ -1368,9 +1308,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUOM:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char =
-						job->stats.tres_usage_out_max;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_out_max;
@@ -1387,9 +1325,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUOMN:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char = job->stats.
-						tres_usage_out_max_nodeid;
+				tmp_char = NULL;
 				nodes = job->nodes;
 				break;
 			case JOBSTEP:
@@ -1408,9 +1344,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUOMT:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char = job->stats.
-						tres_usage_out_max_taskid;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char =
@@ -1427,9 +1361,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUOMI:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char =
-						job->stats.tres_usage_out_min;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_out_min;
@@ -1446,9 +1378,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUOMIN:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char = job->stats.
-						tres_usage_out_min_nodeid;
+				tmp_char = NULL;
 				nodes = job->nodes;
 				break;
 			case JOBSTEP:
@@ -1467,9 +1397,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUOMIT:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char = job->stats.
-						tres_usage_out_min_taskid;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char =
@@ -1486,9 +1414,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TRESUOT:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps)
-					tmp_char =
-						job->stats.tres_usage_out_tot;
+				tmp_char = NULL;
 				break;
 			case JOBSTEP:
 				tmp_char =
@@ -1619,11 +1545,8 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_NTASKS:
 			switch(type) {
 			case JOB:
-				if (!job->track_steps && !step)
-					tmp_uint32 = cpu_tres_rec_count;
-				// we want to use the step info
-				if (!step)
-					break;
+				tmp_uint32 = NO_VAL;
+				break;
 			case JOBSTEP:
 				tmp_uint32 = step->ntasks;
 				break;
@@ -1742,11 +1665,8 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_REQ_CPUFREQ_MIN:
 			switch (type) {
 			case JOB:
-				if (!job->track_steps && !step)
-					tmp_uint32 = NO_VAL;
-				// we want to use the step info
-				if (!step)
-					break;
+				tmp_uint32 = NO_VAL;
+				break;
 			case JOBSTEP:
 				tmp_uint32 = step->req_cpufreq_min;
 				break;
@@ -1761,11 +1681,8 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_REQ_CPUFREQ_MAX:
 			switch (type) {
 			case JOB:
-				if (!job->track_steps && !step)
-					tmp_uint32 = NO_VAL;
-				// we want to use the step info
-				if (!step)
-					break;
+				tmp_uint32 = NO_VAL;
+				break;
 			case JOBSTEP:
 				tmp_uint32 = step->req_cpufreq_max;
 				break;
@@ -1780,11 +1697,8 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_REQ_CPUFREQ_GOV:
 			switch (type) {
 			case JOB:
-				if (!job->track_steps && !step)
-					tmp_uint32 = NO_VAL;
-				// we want to use the step info
-				if (!step)
-					break;
+				tmp_uint32 = NO_VAL;
+				break;
 			case JOBSTEP:
 				tmp_uint32 = step->req_cpufreq_gov;
 				break;
