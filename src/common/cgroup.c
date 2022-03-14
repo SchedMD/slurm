@@ -154,6 +154,8 @@ static void _clear_slurm_cgroup_conf()
 	slurm_cgroup_conf.constrain_devices = false;
 	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
 	xfree(slurm_cgroup_conf.cgroup_plugin);
+	slurm_cgroup_conf.ignore_systemd = false;
+	slurm_cgroup_conf.ignore_systemd_on_failure = false;
 }
 
 static void _pack_cgroup_conf(buf_t *buffer)
@@ -193,6 +195,9 @@ static void _pack_cgroup_conf(buf_t *buffer)
 
 	packbool(slurm_cgroup_conf.constrain_devices, buffer);
 	packstr(slurm_cgroup_conf.cgroup_plugin, buffer);
+
+	packbool(slurm_cgroup_conf.ignore_systemd, buffer);
+	packbool(slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
 }
 
 static int _unpack_cgroup_conf(buf_t *buffer)
@@ -237,6 +242,10 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpackbool(&slurm_cgroup_conf.constrain_devices, buffer);
 	safe_unpackstr_xmalloc(&slurm_cgroup_conf.cgroup_plugin,
 			       &uint32_tmp, buffer);
+
+	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd, buffer);
+	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -273,6 +282,8 @@ static void _read_slurm_cgroup_conf(void)
 		{"AllowedDevicesFile", S_P_STRING},
 		{"MemorySwappiness", S_P_UINT64},
 		{"CgroupPlugin", S_P_STRING},
+		{"IgnoreSystemd", S_P_BOOLEAN},
+		{"IgnoreSystemdOnFailure", S_P_BOOLEAN},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL, *tmp_str;
@@ -394,6 +405,19 @@ static void _read_slurm_cgroup_conf(void)
 
 		(void) s_p_get_string(&slurm_cgroup_conf.cgroup_plugin,
 				      "CgroupPlugin", tbl);
+
+		if (!s_p_get_boolean(&slurm_cgroup_conf.ignore_systemd,
+				     "IgnoreSystemd", tbl))
+			slurm_cgroup_conf.ignore_systemd = false;
+		else
+			/* Implicitly set these other one. */
+			slurm_cgroup_conf.ignore_systemd_on_failure = true;
+
+		if (!slurm_cgroup_conf.ignore_systemd &&
+		    (!s_p_get_boolean(
+			    &slurm_cgroup_conf.ignore_systemd_on_failure,
+			    "IgnoreSystemdOnFailure", tbl)))
+			slurm_cgroup_conf.ignore_systemd_on_failure = false;
 
 		s_p_hashtbl_destroy(tbl);
 	}
@@ -641,6 +665,20 @@ extern List cgroup_get_conf_list(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CgroupPlugin");
 	key_pair->value = xstrdup(cg_conf->cgroup_plugin);
+	list_append(cgroup_conf_l, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("IgnoreSystemd");
+	key_pair->value = xstrdup_printf("%s",
+					 cg_conf->ignore_systemd ?
+					 "yes" : "no");
+	list_append(cgroup_conf_l, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("IgnoreSystemdOnFailure");
+	key_pair->value = xstrdup_printf("%s",
+					 cg_conf->ignore_systemd_on_failure ?
+					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
 	list_sort(cgroup_conf_l, (ListCmpF) sort_key_pairs);

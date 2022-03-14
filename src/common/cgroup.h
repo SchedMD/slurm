@@ -174,6 +174,9 @@ typedef struct {
 
 	bool constrain_devices;
 	char *cgroup_plugin;
+
+	bool ignore_systemd;
+	bool ignore_systemd_on_failure;
 } cgroup_conf_t;
 
 
