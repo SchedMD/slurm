@@ -153,6 +153,14 @@ expect {
 subtest {$task_mask == $expected_mask} "Affinity mask should be consistent for a job step with affinity" "$task_mask != $expected_mask"
 
 #
+# Run --cpu-bind:map_cpu with NaN or octal value - this should fail
+#
+set output [run_command_output -xfail "$srun -c1 --cpu-bind=verbose,map_cpu:NaN hostname"]
+subtest {[regexp "error: Failed to validate number: NaN, the offending character is N" $output]} "The command should fail because of invalid argument"
+
+set output [run_command_output -xfail "$srun -c1 --cpu-bind=verbose,map_cpu:0x0 hostname"]
+subtest {[regexp "error: Failed to validate number: 0x0, the offending character is x" $output]} "The command should fail because of invalid argument"
+
 # Run a job step with verbosity and all tasks on CPU 0
 #
 set task_mask 0
@@ -218,6 +226,12 @@ while {$cpu_cnt < $task_cnt} {
 	subtest {$mask_sum == $task_cnt * $mask} "Affinity mask should be consistent for all tasks bound to the same CPU by specifying a map" "$mask_sum != $task_cnt * $mask"
 	incr cpu_cnt 1
 }
+
+#
+# Check if invalid mask_cpu fails option values validation
+#
+set output [run_command_output -xfail "$srun -c1 --cpu-bind=verbose,mask_cpu:NaN hostname"]
+subtest {[regexp "error: Failed to validate number: NaN, the offending character is N" $output]} "The command should fail because of invalid argument"
 
 #
 # Run all tasks all bound to the same CPU by specifying a mask (for each CPU)
