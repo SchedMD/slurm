@@ -911,13 +911,14 @@ static int32_t _bit_overlap_internal(bitstr_t *b1, bitstr_t *b2, bool count_it)
 		else if (anded)
 			return 1;
 	}
-	for ( ; bit < bit_cnt; bit++) {
-		if (bit_test(b1, bit) && bit_test(b2, bit)) {
-			if (count_it)
-				count++;
-			else
-				return 1;
-		}
+
+	if (bit < bit_cnt) {
+		uint64_t mask = _bit_nmask(bit_cnt);
+		anded = b1[_bit_word(bit)] & b2[_bit_word(bit)] & mask;
+		if (count_it)
+			count += hweight(anded);
+		else if (anded)
+			return 1;
 	}
 
 	return count;
