@@ -81,6 +81,16 @@ set tot_cpus [expr $tot_gpus * $cpus_per_gpu]
 make_bash_script $file_in "$scontrol show step \$SLURM_JOB_ID.\$SLURM_STEP_ID
 exit 0"
 
+
+#
+# Verify if incorrect map_gpu, mask_gpu values are rejected
+#
+set output [run_command_output -xfail "$srun --gpu-bind=verbose,mask_gpu:NaN hostname"]
+subtest {[regexp "srun: error: Failed to validate NaN, offending character is N" $output]} "The command should fail because of invalid argument"
+
+set output [run_command_output -xfail "$srun --gpu-bind=verbose,map_gpu:NaN hostname"]
+subtest {[regexp "srun: error: Failed to validate NaN, offending character is N" $output]} "The command should fail because of invalid argument"
+
 #
 # Spawn srun job with various --gpu options
 # We only look at the output of the first task. Multiple tasks may be used
