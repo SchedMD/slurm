@@ -745,7 +745,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		/* since the job->end could be set later end it here */
 		if (job->end) {
 			job_ended = 1;
-			if (!job->start || (job->start > job->end))
+			if (job->start > job->end)
 				job->start = job->end;
 		}
 
@@ -851,6 +851,15 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->constraints = xstrdup(row[JOB_REQ_CONSTRAINTS]);
 		job->container = xstrdup(row[JOB_REQ_CONTAINER]);
 		job->flags = slurm_atoul(row[JOB_REQ_FLAGS]);
+
+		/*
+		 * This tells us we never had a start time so the job was
+		 * canceled before it ran.
+		 */
+		if (!job->start && job->end &&
+		    (job->flags & SLURMDB_JOB_FLAG_START_R))
+			job->start = NO_VAL;
+
 		job->state_reason_prev = slurm_atoul(row[JOB_REQ_STATE_REASON]);
 
 		if (row[JOB_REQ_PARTITION])
