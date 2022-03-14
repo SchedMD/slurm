@@ -3443,16 +3443,12 @@ static int arg_set_overlap(slurm_opt_t *opt, const char *arg)
 	if (!opt->srun_opt)
 		return SLURM_SUCCESS;
 
-	opt->srun_opt->overlap_force = false;
-	if (arg) {
-		if (!xstrcmp(arg, "force")) {
-			opt->srun_opt->overlap_force = true;
-		} else {
-			error("Invalid argument \"%s\" to --overlap", arg);
-			return SLURM_ERROR;
-		}
-	}
-
+	/*
+	 * overlap_force means that the step will overlap all resources
+	 * (CPUs, memory, GRES).
+	 * Make this the only behavior for --overlap.
+	 */
+	opt->srun_opt->overlap_force = true;
 	opt->srun_opt->exclusive = false;
 
 	return SLURM_SUCCESS;

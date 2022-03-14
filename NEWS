@@ -136,10 +136,6 @@ documents those changes that are of interest to users and administrators.
     during job startup.
  -- slurmstepd - report and log I/O setup failure using corresponding error
     code during job start.
- -- Steps may only overlap with steps that also used --overlap.
- -- Add --overlap=force option for srun. This option allows a step to overlap
-    all other running steps on all resources (CPUs, memory, and GRES), even
-    those steps that did not specify --overlap.
  -- Do not run the job if PrologSlurmctld times out.
  -- Fix SPANK plugin calls slurm_spank_job_prolog and slurm_spank_job_epilog
     not properly respecting PrologEpilogTimeout.
@@ -160,6 +156,9 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - Fix issue where association's QOS list consisted of IDs
     instead of names.
  -- Allow nodes to be dynamically added and removed from the system.
+ -- srun --overlap now allows the step to share all resources (CPUs, memory, and
+    GRES), where previously --overlap only allowed the step to share CPUs with
+    other steps.
 
 * Changes in Slurm 21.08.7
 ==========================

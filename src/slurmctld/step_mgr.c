@@ -1866,12 +1866,13 @@ static bool _pick_step_core(step_record_t *step_ptr,
 			 __func__, job_node_inx, sock_inx, core_inx);
 	} else {
 		/* Check and set the job's used cores. */
-		if ((use_all_cores == false) &&
-		    bit_test(job_resrcs_ptr->core_bitmap_used, bit_offset))
-			return false;
-
-		if (!(step_ptr->flags & SSF_OVERLAP_FORCE))
+		if (!(step_ptr->flags & SSF_OVERLAP_FORCE)) {
+			if ((use_all_cores == false) &&
+			    bit_test(job_resrcs_ptr->core_bitmap_used,
+				     bit_offset))
+				return false;
 			bit_set(job_resrcs_ptr->core_bitmap_used, bit_offset);
+		}
 
 		log_flag(STEPS, "%s: alloc Node:%d Socket:%d Core:%d",
 			 __func__, job_node_inx, sock_inx, core_inx);

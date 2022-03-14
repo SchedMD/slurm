@@ -262,7 +262,7 @@ typedef struct {
 	bool multi_prog;		/* multiple programs to execute */
 	int32_t multi_prog_cmds;	/* number of commands in multi prog file */
 	bool no_alloc;			/* --no-allocate		*/
-	bool overlap_force;		/* true if --overlap=force	*/
+	bool overlap_force;		/* true if --overlap		*/
 	char *het_group;		/* --het-group			*/
 	bitstr_t *het_grp_bits;		/* --het-group in bitmap form	*/
 	int het_step_cnt;		/* Total count of het groups to launch */
