@@ -2173,12 +2173,18 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 		args->gres_state_step->gres_data;
 	gres_step_state_t *gres_ss_alloc;
 
-	/* This isn't the gres we are looking for */
+	/*
+	 * This isn't the gres we are looking for, or we already have allocated
+	 * all of this GRES to other steps. If decr_job_alloc is false, then
+	 * this step can share GRES. So, only do the last check if the step
+	 * cannot share GRES (decr_job_alloc is true).
+	 */
 	if ((!args->gres_needed && !args->max_gres) ||
 	    !gres_find_job_by_key_with_cnt(gres_state_job,
 					   args->job_search_key) ||
-	    (gres_js->gres_cnt_step_alloc[args->node_offset] ==
-	     gres_js->gres_cnt_node_alloc[args->node_offset]))
+	    (args->decr_job_alloc &&
+	     (gres_js->gres_cnt_step_alloc[args->node_offset] ==
+	      gres_js->gres_cnt_node_alloc[args->node_offset])))
 		return 0;
 
 	gres_ss_alloc = _step_get_alloc_gres_ptr(
