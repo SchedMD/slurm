@@ -1890,7 +1890,7 @@ proc wait_for_command_match args {
 		set args [lreplace $args $idx $idx]; # Remove the -negate argument
 	}
 
-	return [wait_for_command {*}$args "\[regexp {$pattern} \[dict get \$result output\]\] == $match"]
+	return [wait_for_command {*}$args "\[regexp -- {$pattern} \[dict get \$result output\]\] == $match"]
 }
 
 
