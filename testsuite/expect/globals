@@ -2270,41 +2270,31 @@ proc wait_for_job args {
 #	wait_for_job_acct - waits for the job accounting record to be updated
 #
 # SYNOPSIS
-#	wait_for_job ?options? job_id ?time_field?
+#	wait_for_job_acct ?options? job_id ?field?
 #
 # DESCRIPTION
 #	Wait for evidence that a specific job stage has been recorded in the
-#	accounting database by verifying that an associated time field has
-#	been populated. Currently supported time fields include Submit, Eligible,
-#	Start, and End. We check for the time field update rather than the state
-#	because it is often the case that the job completion record will be
-#	received well before the job start record update and in many cases it
-#	is necessary to wait for the job start information even after the job has
-#	been marked in the completed state.
+#	accounting database by verifying that a field has been populated.
 #
 # OPTIONS
 #	-fail
-#		If an error occurs or the job does has not populated the time field
+#		If an error occurs or the job does has not populated the field
 #		by the timeout, fail the test rather than returning an error
 #	-timeout <integer_number>
-#		time in seconds to wait for the job's time field to be populated
+#		time in seconds to wait for the job's field to be populated
 #		before timing out (default is 90)
 #	-pollinterval <integer_number>
-#		time in seconds between each time field check (default is 1)
+#		time in seconds between each field check (default is 1)
 #
 # ARGUMENTS
 #	job_id
 #		The Slurm job id of a job we want to wait for.
-#	time_field
-#		The time field that we are waiting to be populated.
-#		Currently supports:
-#			Submit   - job submission has been recorded
-#			Eligible - job eligibility has been recorded
-#			Start    - job start has been recorded
-#			End      - job end has been recorded (this is the default)
+#	field
+#		The field that we are waiting to be populated, not empty and
+#		not "Unknown". (Default: End)
 #
 # RETURN VALUE
-#	RETURN_SUCCESS if the desired time field has been populated for the job
+#	RETURN_SUCCESS if the desired field has been populated for the job
 #	in the accounting database, or non-zero value otherwise.
 #
 ################################################################
@@ -2315,7 +2305,7 @@ proc wait_for_job_acct args {
 	set options [list]
 	set timeout 10
 	set pollinterval .2
-	set time_field End
+	set field End
 
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
@@ -2338,12 +2328,12 @@ proc wait_for_job_acct args {
 		fail "Too many arguments ($argument_count): $args"
 	}
 	lassign $args job_id
-	if {$argument_count == 2} {set time_field [lindex $args 1]}
+	if {$argument_count == 2} {set field [lindex $args 1]}
 
-	# Wait for sacct to populate the specified time field
+	# Wait for sacct to populate the specified field
 	# We want to see the field be populated with anything but "Unknown"
 	# We can't use a negation match here because empty would match
-	return [wait_for_command_match {*}$options "$sacct -j $job_id --allocation --format $time_field --parsable2 --noheader" ^(?!.*Unknown).]
+	return [wait_for_command_match {*}$options "$sacct -j $job_id --allocation --format $field --parsable2 --noheader" ^(?!.*Unknown$|\n).]
 }
 
 
@@ -2598,7 +2588,7 @@ proc wait_for_step args {
 			return $::RETURN_SUCCESS
 		}
 		if { $my_delay > $timeout } {
-			log_error "Timeout waiting for job step"
+			log_warn "Timeout waiting for job step"
 			return $::RETURN_TIMEOUT
 		}
 
