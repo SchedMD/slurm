@@ -52,6 +52,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/log.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
@@ -278,6 +279,7 @@ int main(int argc, char *argv[])
 	char** testcase;
 	char*  measure_case;
 	FILE *fd;
+	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 
 	int cc;
 
@@ -290,6 +292,8 @@ int main(int argc, char *argv[])
 		goto ouch;
 
 	slurm_init(NULL);
+	opts.stderr_level = LOG_LEVEL_DEBUG;
+	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);
 
 	if ((fd = fopen(params.testcases, "r")) == NULL) {
 		info("Failed to open %s: %m",params.testcases);
