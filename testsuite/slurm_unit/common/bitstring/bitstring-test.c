@@ -203,6 +203,30 @@ main(int argc, char *argv[])
 		bit_free(bs2);
 	}
 
+	note("Testing bit_overlap");
+	{
+		bitstr_t *bs = bit_alloc(1000);
+		bitstr_t *bs2;
+
+		bit_set(bs,1);
+		bit_set(bs,3);
+		bit_set(bs,64);
+		bit_set(bs,998);
+		bit_set(bs,999);
+
+		bs2 = bit_copy(bs);
+		bit_not(bs2);
+		TEST(bit_overlap(bs, bs2) == 0, "bitstring");
+		TEST(bit_overlap_any(bs, bs2) == 0, "bitstring");
+		bit_set(bs2,3);
+		bit_set(bs2,64);
+		bit_set(bs2,999);
+		TEST(bit_overlap(bs, bs2) == 3, "bitstring");
+		TEST(bit_overlap_any(bs, bs2) == 1, "bitstring any");
+
+		bit_free(bs);
+		bit_free(bs2);
+	}
 	totals();
 	return failed;
 }
