@@ -131,13 +131,9 @@ slurm_step_layout_t *slurm_step_layout_create(
  * RET a pointer to an slurm_step_layout_t structure
  * NOTE: allocates memory that should be xfreed by caller
  */
-slurm_step_layout_t *fake_slurm_step_layout_create(
-	const char *tlist,
-	uint16_t *cpus_per_node,
-	uint32_t *cpu_count_reps,
-	uint32_t node_cnt,
-	uint32_t task_cnt,
-	uint16_t protocol_version)
+extern slurm_step_layout_t *fake_slurm_step_layout_create(
+	const char *tlist, uint16_t *cpus_per_node, uint32_t *cpu_count_reps,
+	uint32_t node_cnt, uint32_t task_cnt, uint16_t protocol_version)
 {
 	uint32_t cpn = 1;
 	int cpu_cnt = 0, cpu_inx = 0, i, j;
