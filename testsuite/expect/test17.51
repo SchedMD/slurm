@@ -202,11 +202,7 @@ if {$found == 0} {
 
 # If accounting is configured, test mcs-label in sacct
 if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
-	# Wait for job start record to reach the accounting database
-	wait_for_job_acct -fail $job_id start
-
-	set mcs_label [string trim [run_command_output -fail "$sacct -j $job_id --format McsLabel --parsable2 --noheader"]]
-	subtest {$mcs_label eq $user_name} "Verify MCS-label in sacct" "$mcs_label != $user_name"
+	subtest {![wait_for_command_match "$sacct -j $job_id --allocations --format McsLabel --parsable2 --noheader" $user_name]} "Verify MCS-label in sacct"
 } else {
 	subskip "Test needs AccountingStorageType=accounting_storage/slurmdbd to verify MCS-labels in sacct"
 }
