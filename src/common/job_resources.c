@@ -1168,19 +1168,13 @@ extern int job_resources_bits_copy(job_resources_t *new_job_resrcs_ptr,
 	if (new_core_cnt != from_core_cnt) {
 		error("job_resources_bits_move: core_cnt mis-match (%d != %d)",
 		      new_core_cnt, from_core_cnt);
-		new_core_cnt = MIN(new_core_cnt, from_core_cnt);
 		rc = SLURM_ERROR;
 	}
 
-	for (i = 0; i < new_core_cnt; i++) {
-		if (bit_test(from_job_resrcs_ptr->core_bitmap, from_bit_inx+i))
-			bit_set(new_job_resrcs_ptr->core_bitmap,new_bit_inx+i);
-		if (bit_test(from_job_resrcs_ptr->core_bitmap_used,
-			     from_bit_inx+i)) {
-			bit_set(new_job_resrcs_ptr->core_bitmap_used,
-				new_bit_inx+i);
-		}
-	}
+	bit_or(new_job_resrcs_ptr->core_bitmap,
+	       from_job_resrcs_ptr->core_bitmap);
+	bit_or(new_job_resrcs_ptr->core_bitmap_used,
+	       from_job_resrcs_ptr->core_bitmap_used);
 
 	return rc;
 }
