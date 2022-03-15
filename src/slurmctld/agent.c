@@ -426,13 +426,11 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 {
-	int i = 0, j = 0;
 	agent_info_t *agent_info_ptr = NULL;
 	thd_t *thread_ptr = NULL;
-	int *span = NULL;
 	int thr_count = 0;
-	hostlist_t hl = NULL;
 	char *name = NULL;
+	bool split;
 
 	agent_info_ptr = xmalloc(sizeof(agent_info_t));
 	slurm_mutex_init(&agent_info_ptr->thread_mutex);
@@ -447,6 +445,12 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
 	agent_info_ptr->protocol_version = agent_arg_ptr->protocol_version;
 
+	if (!agent_info_ptr->thread_count)
+		return agent_info_ptr;
+
+	xassert(agent_arg_ptr->node_count ==
+		hostlist_count(agent_arg_ptr->hostlist));
+
 	if ((agent_arg_ptr->msg_type != REQUEST_JOB_NOTIFY)	&&
 	    (agent_arg_ptr->msg_type != REQUEST_REBOOT_NODES)	&&
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE)	&&
@@ -460,57 +464,58 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	    (agent_arg_ptr->msg_type != SRUN_STEP_SIGNAL)	&&
 	    (agent_arg_ptr->msg_type != SRUN_JOB_COMPLETE)) {
 #ifdef HAVE_FRONT_END
-		span = set_span(agent_arg_ptr->node_count,
-				agent_arg_ptr->node_count);
+		split = true;
 #else
 		/* Sending message to a possibly large number of slurmd.
 		 * Push all message forwarding to slurmd in order to
 		 * offload as much work from slurmctld as possible. */
-		span = set_span(agent_arg_ptr->node_count, 1);
+		split = false;
 #endif
 		agent_info_ptr->get_reply = true;
 	} else {
 		/* Message is going to one node (for srun) or we want
 		 * it to get processed ASAP (SHUTDOWN or RECONFIGURE).
 		 * Send the message directly to each node. */
-		span = set_span(agent_arg_ptr->node_count,
-				agent_arg_ptr->node_count);
+		split = true;
 	}
-	i = 0;
-	while (i < agent_info_ptr->thread_count) {
-		thread_ptr[thr_count].state      = DSH_NEW;
-		thread_ptr[thr_count].addr = agent_arg_ptr->addr;
+	if (agent_arg_ptr->addr || !split) {
+		thread_ptr[0].state = DSH_NEW;
+		if (agent_arg_ptr->addr) {
+			name = hostlist_shift(agent_arg_ptr->hostlist);
+			thread_ptr[0].addr = agent_arg_ptr->addr;
+			thread_ptr[0].nodelist = xstrdup(name);
+			if (agent_arg_ptr->node_count > 1)
+				error("%s: you will only be sending this to %s",
+				      __func__, name);
+			free(name);
+		} else {
+			thread_ptr[0].nodelist = hostlist_ranged_string_xmalloc(
+					agent_arg_ptr->hostlist);
+			thread_ptr[thr_count].addr = NULL;
+		}
+		agent_info_ptr->thread_count = 1;
+		log_flag(AGENT, "%s: sending msg_type %s to nodes %s",
+			 __func__, rpc_num2string(agent_arg_ptr->msg_type),
+			 thread_ptr[thr_count].nodelist);
+		return agent_info_ptr;
+	}
+
+	hostlist_uniq(agent_arg_ptr->hostlist);
+	while (thr_count < agent_info_ptr->thread_count) {
 		name = hostlist_shift(agent_arg_ptr->hostlist);
 		if (!name) {
 			debug3("no more nodes to send to");
 			break;
 		}
-		hl = hostlist_create(name);
-		if (thread_ptr[thr_count].addr && span[thr_count]) {
-			debug("warning: you will only be sending this to %s",
-			      name);
-			span[thr_count] = 0;
-		}
-		free(name);
-		i++;
-		for (j = 0; j < span[thr_count]; j++) {
-			name = hostlist_shift(agent_arg_ptr->hostlist);
-			if (!name)
-				break;
-			hostlist_push_host(hl, name);
-			free(name);
-			i++;
-		}
-		hostlist_uniq(hl);
-		thread_ptr[thr_count].nodelist =
-			hostlist_ranged_string_xmalloc(hl);
-		hostlist_destroy(hl);
+		thread_ptr[thr_count].state = DSH_NEW;
+		thread_ptr[thr_count].addr = NULL;
+		thread_ptr[thr_count].nodelist = xstrdup(name);
 		log_flag(AGENT, "%s: sending msg_type %s to nodes %s",
 			 __func__, rpc_num2string(agent_arg_ptr->msg_type),
 			 thread_ptr[thr_count].nodelist);
+		free(name);
 		thr_count++;
 	}
-	xfree(span);
 	agent_info_ptr->thread_count = thr_count;
 	return agent_info_ptr;
 }
