@@ -45,4 +45,5 @@
 #include "src/slurmctld/slurmctld.h"
 
 extern int cgroup_dbus_attach_to_scope(pid_t stepd_pid, char *full_path);
+extern int cgroup_dbus_abandon_scope(char *full_path);
 #endif /*!_CG_DBUS_H */

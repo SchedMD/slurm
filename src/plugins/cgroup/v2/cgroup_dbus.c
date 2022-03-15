@@ -36,6 +36,42 @@
 
 #include "src/plugins/cgroup/v2/cgroup_dbus.h"
 
+static int _process_and_close_abandon_reply_msg(DBusMessage *msg)
+{
+	DBusMessageIter itr;
+	int type, rc = SLURM_SUCCESS;
+	char *tmp_str;
+
+	dbus_message_iter_init(msg, &itr);
+	do {
+		type = dbus_message_iter_get_arg_type(&itr);
+		switch (type) {
+		case DBUS_TYPE_INVALID:
+			/* AbandonScope doesn't return anything on success. */
+			break;
+		case DBUS_TYPE_STRING:
+		case DBUS_TYPE_SIGNATURE:
+			rc = SLURM_ERROR;
+			dbus_message_iter_get_basic(&itr, &tmp_str);
+			error("Got an error an error on dbus AbandonScope: %s",
+			      tmp_str);
+			break;
+		default:
+			rc = SLURM_ERROR;
+			error("%s: Invalid response type %c not supported by Slurm",
+			      __func__, type);
+			break;
+		}
+	} while (dbus_message_iter_next(&itr));
+
+	dbus_message_unref(msg);
+
+	if (rc == SLURM_SUCCESS)
+		log_flag(CGROUP, "Successfully abandoned scope.");
+
+	return rc;
+}
+
 static int _process_and_close_reply_msg(DBusMessage *msg)
 {
 	DBusMessageIter itr;
@@ -200,6 +236,71 @@ oom:
 	return false;
 }
 
+static int _abandon_scope(char *scope_name)
+{
+	DBusMessage *msg;
+	DBusMessageIter args_itr = DBUS_MESSAGE_ITER_INIT_CLOSED;
+	DBusConnection *conn = NULL;
+	DBusPendingCall *pending;
+	DBusError err;
+
+	log_flag(CGROUP, "Abandoning Slurm scope %s", scope_name);
+
+	dbus_error_init(&err);
+	conn = dbus_bus_get(DBUS_BUS_SYSTEM, &err);
+
+	if (dbus_error_is_set(&err)) {
+		error("%s: cannot connect to dbus system daemon: %s",
+		      __func__, err.message);
+		dbus_error_free(&err);
+	}
+	if (!conn)
+		return SLURM_ERROR;
+
+	msg = dbus_message_new_method_call("org.freedesktop.systemd1",
+					   "/org/freedesktop/systemd1",
+					   "org.freedesktop.systemd1.Manager",
+					   "AbandonScope");
+	if (!msg) {
+		error("%s: not enough memory setting dbus msg.", __func__);
+		return SLURM_ERROR;
+	}
+
+	dbus_message_iter_init_append(msg, &args_itr);
+	if (!dbus_message_iter_append_basic(&args_itr, DBUS_TYPE_STRING,
+					    &scope_name)) {
+		error("%s: memory couldn't be allocated while appending argument.",
+		      __func__);
+		return SLURM_ERROR;
+	}
+	log_flag(CGROUP,"dbus AbandonScope msg signature: %s",
+		 dbus_message_get_signature(msg));
+
+	if (!dbus_connection_send_with_reply(conn, msg, &pending, -1)) {
+		error("%s: failed to send dbus message.", __func__);
+		return SLURM_ERROR;
+	}
+	if (!pending) {
+		error("%s: could not get a handle for dbus reply.", __func__);
+		return SLURM_ERROR;
+	}
+
+	dbus_connection_flush(conn);
+	dbus_message_unref(msg);
+	dbus_pending_call_block(pending);
+	if (!(msg = dbus_pending_call_steal_reply(pending))) {
+		error("%s: cannot abandon scope, dbus reply msg is null.",
+		      __func__);
+		return SLURM_ERROR;
+	}
+	dbus_pending_call_unref(pending);
+
+	if (_process_and_close_abandon_reply_msg(msg) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Slurm function to attach stepd to a systemd scope, using dbus.
  */
@@ -296,7 +397,7 @@ extern int cgroup_dbus_attach_to_scope(pid_t stepd_pid, char *full_path)
 		return SLURM_ERROR;
 	}
 
-	log_flag(CGROUP,"dbus msg signature: %s",
+	log_flag(CGROUP,"dbus StartTransientUnit msg signature: %s",
 		 dbus_message_get_signature(msg));
 
 	/*
@@ -329,5 +430,13 @@ extern int cgroup_dbus_attach_to_scope(pid_t stepd_pid, char *full_path)
 	dbus_pending_call_unref(pending);
 	dbus_connection_unref(conn);
 
-	return _process_and_close_reply_msg(msg);
+	if (_process_and_close_reply_msg(msg) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+extern int cgroup_dbus_abandon_scope(char *full_path)
+{
+	return _abandon_scope(xbasename(full_path));
 }
