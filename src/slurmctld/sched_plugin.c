@@ -115,7 +115,8 @@ extern int sched_g_fini(void)
 
 	main_sched_fini();
 
-	gs_fini();
+	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
+		gs_fini();
 
 	return rc;
 }

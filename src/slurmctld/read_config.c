@@ -2718,7 +2718,7 @@ static int _update_preempt(uint16_t old_preempt_mode)
 		return SLURM_SUCCESS;
 	}
 
-	if (old_preempt_mode == PREEMPT_MODE_GANG) {
+	if (old_preempt_mode & PREEMPT_MODE_GANG) {
 		info("Disabling gang scheduling");
 		gs_wake_jobs();
 		gs_fini();
