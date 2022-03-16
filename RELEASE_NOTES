@@ -90,3 +90,5 @@ API CHANGES
  -- openapi - Added OAS_FLAG_MANGLE_OPID to allow plugins to request that the
     operationId of path methods be mangled with the full path to ensure
     uniqueness.
+ -- openapi/[db]v0.0.36 - Plugins have been marked as deprecated and will be
+    removed in the next major release.

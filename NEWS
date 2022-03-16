@@ -162,6 +162,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - new format for how core and socket allocations are dumped
     for jobs.
  -- openapi/v0.0.38 - add RPC call statistics to diag endpoint.
+ -- openapi/[db]v0.0.36 - plugins have been marked as deprecated.
 
 * Changes in Slurm 21.08.7
 ==========================

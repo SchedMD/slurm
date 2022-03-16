@@ -39,6 +39,7 @@
   "paths": {
     "/diag/": {
       "get": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -68,6 +69,7 @@
     },
     "/ping/": {
       "get": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -97,6 +99,7 @@
     },
     "/jobs/": {
       "get": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -126,6 +129,7 @@
     },
     "/job/{job_id}": {
       "get": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -167,6 +171,7 @@
         }
       },
       "post": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -212,6 +217,7 @@
         }
       },
       "delete": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -254,6 +260,7 @@
     },
     "/job/submit": {
       "post": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -299,6 +306,7 @@
     },
     "/nodes/": {
       "get": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -328,6 +336,7 @@
     },
     "/node/{node_name}": {
       "get": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -370,6 +379,7 @@
     },
     "/partitions/": {
       "get": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -399,6 +409,7 @@
     },
     "/partition/{partition_name}": {
       "get": {
+        "deprecated": true,
         "tags": [
           "slurm"
         ],
