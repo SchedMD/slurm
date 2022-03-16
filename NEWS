@@ -151,6 +151,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix sattach for interactive step.
  -- Fix srun -Z when using nss_slurm.
  -- Avoid memory leak in srun -Z.
+ -- openapi/dbv0.0.38 - disable automatic lookup of all HetJob components on
+    specific job lookups.
 
 * Changes in Slurm 21.08.7
 ==========================

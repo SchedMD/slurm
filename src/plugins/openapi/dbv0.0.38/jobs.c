@@ -431,8 +431,7 @@ extern int op_handler_jobs(const char *context_id, http_request_method_t method,
 			 * default to grabbing all information
 			 * based on _init_params()
 			 */
-			.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC |
-				  JOBCOND_FLAG_WHOLE_HETJOB),
+			.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC),
 			.db_flags = SLURMDB_JOB_FLAG_NOTSET,
 		};
 		foreach_query_search_t args = {
@@ -459,8 +458,7 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 	data_t *errors = populate_response_format(resp);
 	char *jobid;
 	slurmdb_job_cond_t job_cond = {
-		.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC |
-			  JOBCOND_FLAG_WHOLE_HETJOB),
+		.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC),
 		.db_flags = SLURMDB_JOB_FLAG_NOTSET,
 	};
 
