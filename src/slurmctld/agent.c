@@ -439,7 +439,6 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->retry          = agent_arg_ptr->retry;
 	agent_info_ptr->threads_active = 0;
 	thread_ptr = xcalloc(agent_info_ptr->thread_count, sizeof(thd_t));
-	memset(thread_ptr, 0, (agent_info_ptr->thread_count * sizeof(thd_t)));
 	agent_info_ptr->thread_struct  = thread_ptr;
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
