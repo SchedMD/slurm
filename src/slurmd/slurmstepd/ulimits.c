@@ -261,8 +261,15 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 		rlim_to_string (env_value,  req, sizeof (req)) );
 
 	r.rlim_cur = (rlim_t) env_value;
-	if (r.rlim_max < r.rlim_cur)
-		r.rlim_max = r.rlim_cur;
+	if ((!u_req_propagate) && (r.rlim_cur > r.rlim_max)) {
+		verbose("%s: %-14s: reducing req:%s to max:%s",
+			__func__,
+			rlimit_name,
+			rlim_to_string(env_value, req, sizeof(req)),
+			rlim_to_string(r.rlim_max, max, sizeof(max)));
+
+		r.rlim_cur = r.rlim_max;
+	}
 
 	if (setrlimit( rli->resource, &r ) < 0) {
 		/*
