@@ -71,8 +71,11 @@ static int _op_handler_diag(const char *context_id,
 	data_t *d = data_set_dict(data_key_set(p, "statistics"));
 	debug4("%s:[%s] diag handler called", __func__, context_id);
 
-	if ((rc = slurm_get_statistics(&resp, req)))
+	if ((rc = slurm_get_statistics(&resp, req))) {
+		resp_error(errors, rc, "slurm_get_statistics",
+			   "request failed");
 		goto cleanup;
+	}
 
 	data_set_int(data_key_set(d, "parts_packed"), resp->parts_packed);
 	data_set_int(data_key_set(d, "req_time"), resp->req_time);
@@ -148,12 +151,6 @@ static int _op_handler_diag(const char *context_id,
 	data_set_bool(data_key_set(d, "bf_active"), (resp->bf_active != 0));
 
 cleanup:
-	if (rc) {
-		data_t *e = data_set_dict(data_list_append(errors));
-		data_set_string(data_key_set(e, "error"), slurm_strerror(rc));
-		data_set_int(data_key_set(e, "errno"), rc);
-	}
-
 	slurm_free_stats_response_msg(resp);
 	xfree(req);
 	return rc;
