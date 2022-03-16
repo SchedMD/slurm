@@ -204,6 +204,10 @@ static int _cpuset_create(stepd_step_rec_t *job)
 		log_flag(CGROUP,
 			 "system cgroup: system cpuset cgroup initialized");
 	} else {
+		/*
+		 * We don't lock here the g_root cg[CG_CPUS] because it is
+		 * locked from the caller.
+		 */
 		rc = xcgroup_create_hierarchy(__func__,
 					      job,
 					      &g_cg_ns[CG_CPUS],
@@ -524,6 +528,11 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;
 
+	/*
+	 * Note: we do not need to lock the root cgroup because the only user
+	 * of this function is a single thread of slurmd.
+	 */
+
 	/* Another plugin may have already destroyed this subsystem. */
 	if (!g_sys_cg[sub].path)
 		return SLURM_SUCCESS;
@@ -580,6 +589,16 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 	/* Don't let other plugins destroy our structs. */
 	g_step_active_cnt[sub]++;
 
+	/*
+	 * Lock the root cgroup so we don't race with other steps that are being
+	 * terminated, they could remove the directories while we're creating
+	 * them.
+	 */
+	if (xcgroup_lock(&g_root_cg[sub]) != SLURM_SUCCESS) {
+		error("xcgroup_lock error");
+		return SLURM_ERROR;
+	}
+
 	switch (sub) {
 	case CG_TRACK:
 		/* create a new cgroup for that container */
@@ -604,7 +623,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		 */
 		if (common_cgroup_add_pids(&g_job_cg[sub], &job->jmgr_pid, 1) !=
 		    SLURM_SUCCESS) {
-			_step_destroy_internal(sub, false);
+			_step_destroy_internal(sub, true);
 			goto step_c_err;
 		}
 
@@ -634,7 +653,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						  "1")) != SLURM_SUCCESS) {
 			error("unable to set hierarchical accounting for %s",
 			      g_user_cgpath[sub]);
-			_step_destroy_internal(sub, false);
+			_step_destroy_internal(sub, true);
 			break;
 		}
 		if ((rc = common_cgroup_set_param(&g_job_cg[sub],
@@ -642,7 +661,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						  "1")) != SLURM_SUCCESS) {
 			error("unable to set hierarchical accounting for %s",
 			      g_job_cgpath[sub]);
-			_step_destroy_internal(sub, false);
+			_step_destroy_internal(sub, true);
 			break;
 		}
 		if ((rc = common_cgroup_set_param(&g_step_cg[sub],
@@ -650,7 +669,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						  "1") != SLURM_SUCCESS)) {
 			error("unable to set hierarchical accounting for %s",
 			      g_step_cg[sub].path);
-			_step_destroy_internal(sub, false);
+			_step_destroy_internal(sub, true);
 			break;
 		}
 		break;
@@ -688,11 +707,12 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		rc = SLURM_ERROR;
 		goto step_c_err;
 	}
-
+	xcgroup_unlock(&g_root_cg[sub]);
 	return rc;
 
 step_c_err:
 	/* step cgroup is not created */
+	xcgroup_unlock(&g_root_cg[sub]);
 	g_step_active_cnt[sub]--;
 	return rc;
 }

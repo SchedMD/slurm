@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak when freeing kill_job_msg_t.
  -- Fix memory leak when using data_t.
  -- Fix reconfigure issues after disabling/reenabling the GANG PreemptMode.
+ -- Fix race condition where a cgroup was being deleted while another step
+    was creating it.
 
 * Changes in Slurm 21.08.6
 ==========================
