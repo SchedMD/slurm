@@ -137,7 +137,8 @@ typedef struct thd {
 					 * upon termination */
 	slurm_addr_t *addr;		/* specific addr to send to
 					 * will not do nodelist if set */
-	char *nodelist;			/* list of nodes to send to */
+	hostlist_t nodelist;		/* list of nodes to send to */
+	char *nodename;			/* node to send to */
 	List ret_list;
 } thd_t;
 
@@ -482,20 +483,30 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		if (agent_arg_ptr->addr) {
 			name = hostlist_shift(agent_arg_ptr->hostlist);
 			thread_ptr[0].addr = agent_arg_ptr->addr;
-			thread_ptr[0].nodelist = xstrdup(name);
+			thread_ptr[0].nodename = xstrdup(name);
 			if (agent_arg_ptr->node_count > 1)
 				error("%s: you will only be sending this to %s",
 				      __func__, name);
 			free(name);
+			log_flag(AGENT, "%s: sending msg_type %s to node %s",
+				 __func__,
+				 rpc_num2string(agent_arg_ptr->msg_type),
+				 thread_ptr[thr_count].nodename);
 		} else {
-			thread_ptr[0].nodelist = hostlist_ranged_string_xmalloc(
-					agent_arg_ptr->hostlist);
+			thread_ptr[0].nodelist = agent_arg_ptr->hostlist;
 			thread_ptr[thr_count].addr = NULL;
+			if (slurm_conf.debug_flags & DEBUG_FLAG_AGENT) {
+				char *buf;
+				buf = hostlist_ranged_string_xmalloc(
+						agent_arg_ptr->hostlist);
+				debug("%s: sending msg_type %s to nodes %s",
+				      __func__,
+				      rpc_num2string(agent_arg_ptr->msg_type),
+				      buf);
+				xfree(buf);
+			}
 		}
 		agent_info_ptr->thread_count = 1;
-		log_flag(AGENT, "%s: sending msg_type %s to nodes %s",
-			 __func__, rpc_num2string(agent_arg_ptr->msg_type),
-			 thread_ptr[thr_count].nodelist);
 		return agent_info_ptr;
 	}
 
@@ -508,10 +519,10 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		}
 		thread_ptr[thr_count].state = DSH_NEW;
 		thread_ptr[thr_count].addr = NULL;
-		thread_ptr[thr_count].nodelist = xstrdup(name);
-		log_flag(AGENT, "%s: sending msg_type %s to nodes %s",
+		thread_ptr[thr_count].nodename = xstrdup(name);
+		log_flag(AGENT, "%s: sending msg_type %s to node %s",
 			 __func__, rpc_num2string(agent_arg_ptr->msg_type),
-			 thread_ptr[thr_count].nodelist);
+			 thread_ptr[thr_count].nodename);
 		free(name);
 		thr_count++;
 	}
@@ -643,7 +654,7 @@ static void *_wdog(void *args)
 
 	for (i = 0; i < agent_ptr->thread_count; i++) {
 		FREE_NULL_LIST(thread_ptr[i].ret_list);
-		xfree(thread_ptr[i].nodelist);
+		xfree(thread_ptr[i].nodename);
 	}
 
 	if (thd_comp.max_delay)
@@ -760,7 +771,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				node_names = ret_data_info->node_name;
 				resp_type = ret_data_info->type;
 			} else
-				node_names = thread_ptr[i].nodelist;
+				node_names = thread_ptr[i].nodename;
 
 			switch (state) {
 			case DSH_NO_RESP:
@@ -918,21 +929,29 @@ static void *_thread_per_group_rpc(void *args)
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
 
-	log_flag(AGENT, "%s: sending %s to %s",
-		 __func__, rpc_num2string(msg_type), thread_ptr->nodelist);
+	if (thread_ptr->nodename)
+		log_flag(AGENT, "%s: sending %s to %s", __func__,
+			 rpc_num2string(msg_type), thread_ptr->nodename);
+	else if (slurm_conf.debug_flags & DEBUG_FLAG_AGENT) {
+		char *tmp_str;
+		tmp_str = hostlist_ranged_string_xmalloc(thread_ptr->nodelist);
+		debug("%s: sending %s to %s", __func__,
+		      rpc_num2string(msg_type), tmp_str);
+		xfree(tmp_str);
+	}
 
 	if (task_ptr->get_reply) {
 		if (thread_ptr->addr) {
 			msg.address = *thread_ptr->addr;
 
 			if (!(ret_list = slurm_send_addr_recv_msgs(
-				     &msg, thread_ptr->nodelist, 0))) {
+				     &msg, thread_ptr->nodename, 0))) {
 				error("%s: no ret_list given", __func__);
 				goto cleanup;
 			}
 		} else {
-			if (!(ret_list = slurm_send_recv_msgs(
-				     thread_ptr->nodelist, &msg, 0))) {
+			if (!(ret_list = start_msg_tree(thread_ptr->nodelist,
+							&msg, 0))) {
 				error("%s: no ret_list given", __func__);
 				goto cleanup;
 			}
@@ -943,15 +962,16 @@ static void *_thread_per_group_rpc(void *args)
 			msg.address = *thread_ptr->addr;
 		} else {
 			//info("no address given");
-			if (slurm_conf_get_addr(thread_ptr->nodelist,
+			xassert(thread_ptr->nodename);
+			if (slurm_conf_get_addr(thread_ptr->nodename,
 					        &msg.address, msg.flags)
 			    == SLURM_ERROR) {
 				error("%s: can't find address for host %s, check slurm.conf",
-				      __func__, thread_ptr->nodelist);
+				      __func__, thread_ptr->nodename);
 				goto cleanup;
 			}
 		}
-		//info("sending %u to %s", msg_type, thread_ptr->nodelist);
+		//info("sending %u to %s", msg_type, thread_ptr->nodename);
 		if (msg_type == SRUN_JOB_COMPLETE) {
 			/*
 			 * The srun runs as a single thread, while the kernel
@@ -972,7 +992,7 @@ static void *_thread_per_group_rpc(void *args)
 		} else {
 			if (!srun_agent) {
 				lock_slurmctld(node_read_lock);
-				_comm_err(thread_ptr->nodelist, msg_type);
+				_comm_err(thread_ptr->nodename, msg_type);
 				unlock_slurmctld(node_read_lock);
 			}
 		}
@@ -1295,12 +1315,12 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 				continue;
 
 			debug("got the name %s to resend",
-			      thread_ptr[i].nodelist);
+			      thread_ptr[i].nodename);
 #ifdef HAVE_FRONT_END
 			node_ptr = find_front_end_record(
-						thread_ptr[i].nodelist);
+						thread_ptr[i].nodename);
 #else
-			node_ptr = find_node_record(thread_ptr[i].nodelist);
+			node_ptr = find_node_record(thread_ptr[i].nodename);
 #endif
 			if (node_ptr &&
 			    (IS_NODE_DOWN(node_ptr) ||
@@ -1311,7 +1331,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 					count--;
 			} else {
 				hostlist_push_host(agent_arg_ptr->hostlist,
-						   thread_ptr[i].nodelist);
+						   thread_ptr[i].nodename);
 				j++;
 			}
 			if (j == count)
