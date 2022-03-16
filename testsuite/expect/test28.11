@@ -63,7 +63,7 @@ if {$features == "(null)"} {
 } else {
 	set features "$features,$node_feature"
 }
-run_command -fail "$scontrol update nodename=$node AvailableFeatures=$features"
+run_command -fail "$scontrol update nodename=$node AvailableFeatures=$features ActiveFeatures=$features"
 
 # Verify that MinJobAge was set
 regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
