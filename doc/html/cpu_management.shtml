@@ -1381,7 +1381,7 @@ for allocation.</p>
 </li><li><a href="#Example14">Example 14: Consumable resources with task affinity and customized allocation and distribution</a>
 </li><li><a href="#Example15">Example 15: Consumable resources with task affinity to optimize the performance of a multi-task,
 multi-thread job</a>
-</li><li><a href="#Example16">Example 16: Consumable resources with task cgroup and core binding</a>
+</li><li><a href="#Example16">Example 16: Consumable resources with task cgroup</a>
 </li></ul><br>
 <h3 id="Example">Example Node and Partition Configuration
 <a class="slurm_link" href="#Example"></a>
@@ -3406,11 +3406,11 @@ for this job. For example, task id 2 is bound to CPU ids 0, 1 and 2 on socket id
 </center>
 <br>
 <h3 id="Example16">
-Example 16: Consumable resources with task cgroup and core binding
+Example 16: Consumable resources with task cgroup
 <a class="slurm_link" href="#Example16"></a>
 </h3>
 <p>A job requires 6 CPUs (6 tasks with no overcommitment). Run the job in a
-single node in the default partition. Apply core binding to each task using the task/cgroup plugin.
+single node in the default partition.
 </p>
 <p>slurm.conf options:</p>
 <pre>SelectType=select/cons_res
@@ -3421,13 +3421,14 @@ TaskPlugin=task/cgroup
 <pre>ConstrainCores=yes
 </pre>
 <p>Command line:</p>
-<pre>srun --nodes=1-1 --ntasks=6 --cpu-bind=cores ...
+<pre>srun --nodes=1-1 --ntasks=6 ...
 </pre>
 <p>Comments:</p>
 <p>The task/cgroup plugin currently supports only the block method for
-allocating cores within nodes and distributing tasks to CPUs for binding.
+allocating cores within nodes. Slurm distributes tasks to the cores but
+without cpu binding, each task has access to all the allocated CPUs.
 The following table shows a possible pattern of allocation, distribution
-and binding for this job. For example, task id 2 is bound to CPU id 2.
+and binding for this job.
 </p><p>
 </p><center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="443">
@@ -3521,35 +3522,26 @@ and binding for this job. For example, task id 2 is bound to CPU id 2.
 			<td bgcolor="#e0e0e0" width="47">
 				<p align="CENTER"><font style="font-size: 8pt" size="1"><b>Task id</b></font></p>
 			</td>
-			<td width="10">
-				<p align="CENTER"><font style="font-size: 8pt" size="1">0</font></p>
+			<td colspan="4" width="76">
+				<p align="CENTER"><font style="font-size: 8pt" size="1">0-5</font></p>
 			</td>
-			<td width="10">
-				<p align="CENTER"><font style="font-size: 8pt" size="1">1</font></p>
+			<td colspan="2" width="37">
+				<p align="CENTER"><font style="font-size: 8pt" size="1">0-5</font></p>
 			</td>
-			<td width="10">
-				<p align="CENTER"><font style="font-size: 8pt" size="1">2</font></p>
-			</td>
-			<td width="10">
-				<p align="CENTER"><font style="font-size: 8pt" size="1">3</font></p>
-			</td>
-			<td width="10">
-				<p align="CENTER"><font style="font-size: 8pt" size="1">4</font></p>
-			</td>
-			<td width="10">
-				<p align="CENTER"><font style="font-size: 8pt" size="1">5</font></p>
-			</td>
-			<td width="10">
-				<p align="CENTER"><font style="font-size: 8pt" size="1">-</font></p>
-			</td>
-			<td width="9">
+			<td colspan="2" width="36">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">-</font></p>
 			</td>
 		</tr>
 	</tbody></table>
 </center>
 
+<p>
+The task/cgroup plugin does not bind tasks to CPUs. To bind tasks to CPUs and
+for access to all task distribution options, the task/affinity plugin can be
+used with the task/cgroup plugin:
+</p>
+<pre>TaskPlugin=task/cgroup,task/affinity</pre>
 
-<p style="text-align:center;">Last modified 15 July 2021</p>
+<p style="text-align:center;">Last modified 16 March 2022</p>
 
 <!--#include virtual="footer.txt"-->

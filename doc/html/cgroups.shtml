@@ -99,13 +99,6 @@ the task/affinity plugin for task management. task/cgroup provides the
 following features:</p>
 <ul>
 <li>The ability to confine jobs and steps to their allocated cpuset.</li>
-<li>The ability to bind tasks to sockets, cores and threads within their step's
-allocated cpuset on a node.
-<ul>
-<li>Supports block and cyclic distribution of allocated cpus to tasks for
-binding.</li>
-</ul>
-</li>
 <li>The ability to confine jobs and steps to specific memory resources.</li>
 <li>The ability to confine jobs to their allocated set of generic resources
 (gres devices).</li>
@@ -175,6 +168,6 @@ hierarchies:</p>
 use more than one node will have a cgroup structure on each node.</p>
 
 
-<p style="text-align:center;">Last modified 18 March 2022</p>
+<p style="text-align:center;">Last modified 15 April 2022</p>
 
 <!--#include virtual="footer.txt"-->
