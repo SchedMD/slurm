@@ -820,6 +820,16 @@ extern data_t *data_set_string_own(data_t *data, char *value)
 	/* check that the string was xmalloc()ed and actually has contents */
 	xassert(xsize(value));
 
+#ifndef NDEBUG
+	/*
+	 * catch use after free by the caller by using the existing xfree()
+	 * functionality
+	 */
+	char *nv = xstrdup(value);
+	xfree(value);
+	value = nv;
+#endif
+
 	_release(data);
 
 	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to string: %s",
