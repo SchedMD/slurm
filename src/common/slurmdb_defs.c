@@ -2385,17 +2385,16 @@ extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos)
 	return print_this;
 }
 
-extern char *get_qos_complete_str(List qos_list, List num_qos_list)
+extern List get_qos_name_list(List qos_list, List num_qos_list)
 {
 	List temp_list = NULL;
 	char *temp_char = NULL;
-	char *print_this = NULL;
 	ListIterator itr = NULL;
 	int option = 0;
 
 	if (!qos_list || !list_count(qos_list)
 	    || !num_qos_list || !list_count(num_qos_list))
-		return xstrdup("");
+		return NULL;
 
 	temp_list = list_create(xfree_ptr);
 
@@ -2416,6 +2415,19 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list)
 		}
 	}
 	list_iterator_destroy(itr);
+	return temp_list;
+}
+
+extern char *get_qos_complete_str(List qos_list, List num_qos_list)
+{
+	List temp_list;
+	char *print_this;
+
+	if (!qos_list || !list_count(qos_list) || !num_qos_list ||
+	    !list_count(num_qos_list))
+		return xstrdup("");
+
+	temp_list = get_qos_name_list(qos_list, num_qos_list);
 
 	print_this = slurm_char_list_to_xstr(temp_list);
 	FREE_NULL_LIST(temp_list);

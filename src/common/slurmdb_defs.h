@@ -156,6 +156,7 @@ extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list);
 extern int set_qos_bitstr_from_string(bitstr_t *valid_qos, char *names);
 extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list);
 extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos);
+extern List get_qos_name_list(List qos_list, List num_qos_list);
 extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 
 extern char *get_classification_str(uint16_t classification);
