@@ -240,6 +240,7 @@ documents those changes that are of interest to users and administrators.
  -- Include k12 hash of the RPC message body in the auth/munge tokens to
     provide for additional communication resiliency.
  -- Allow job steps to continue to launch during OverTimeLimit.
+ -- slurmctld - avoid crash when attempting to load job without a script.
 
 * Changes in Slurm 21.08.9
 ==========================

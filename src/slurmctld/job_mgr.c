@@ -2844,6 +2844,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	List depend_list = NULL;
 	multi_core_data_t *mc_ptr;
 	cron_entry_t *crontab_entry = NULL;
+	buf_t *script_buf;
 
 	/* unpack the job's details from the buffer */
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
@@ -3144,8 +3145,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->env_hash = env_hash;
 
 	/* 2 versions after 22.05 we can remove this if */
-	if (env_hash && !script_hash) {
-		buf_t *script_buf = get_job_script(job_ptr);
+	if (env_hash && !script_hash &&
+	    (script_buf = get_job_script(job_ptr))) {
 		slurm_hash_t hash = {
 			.type = HASH_PLUGIN_K12,
 		};
