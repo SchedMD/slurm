@@ -172,12 +172,13 @@ enum cluster_fed_states {
  * slurmdb_job_[rec|cond]_t
  */
 #define SLURMDB_JOB_FLAG_NONE     0x00000000 /* No flags */
-#define SLURMDB_JOB_CLEAR_SCHED   0x0000000f /* clear scheduling bits */
-#define SLURMDB_JOB_FLAG_NOTSET   0x00000001 /* Not set */
-#define SLURMDB_JOB_FLAG_SUBMIT   0x00000002 /* Job was started on submit */
-#define SLURMDB_JOB_FLAG_SCHED    0x00000004 /* Job was started from main
-					      * scheduler */
-#define SLURMDB_JOB_FLAG_BACKFILL 0x00000008 /* Job was started from backfill */
+#define SLURMDB_JOB_CLEAR_SCHED   0x0000000f /* clear scheduling bits (0-3) */
+#define SLURMDB_JOB_FLAG_NOTSET   SLURM_BIT(0) /* Schedule bits not set */
+#define SLURMDB_JOB_FLAG_SUBMIT   SLURM_BIT(1) /* Job was started on submit */
+#define SLURMDB_JOB_FLAG_SCHED    SLURM_BIT(2) /* Job was started from main
+						* scheduler */
+#define SLURMDB_JOB_FLAG_BACKFILL SLURM_BIT(3) /* Job was started from
+						* backfill */
 
 /*
  * Slurm job condition flags
