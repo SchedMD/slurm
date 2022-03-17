@@ -1852,9 +1852,8 @@ extern char *slurmdb_job_flags_str(uint32_t flags)
 		return xstrdup("None");
 
 	if (flags & SLURMDB_JOB_FLAG_NOTSET)
-		return xstrdup("NotSet");
-
-	if (flags & SLURMDB_JOB_FLAG_SUBMIT)
+		xstrcat(job_flags, "SchedNotSet");
+	else if (flags & SLURMDB_JOB_FLAG_SUBMIT)
 		xstrcat(job_flags, "SchedSubmit");
 	else if (flags & SLURMDB_JOB_FLAG_SCHED)
 		xstrcat(job_flags, "SchedMain");
