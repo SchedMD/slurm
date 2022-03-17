@@ -666,6 +666,8 @@ slurm_make_time_str (time_t *time, char *string, int size)
 	localtime_r(time, &time_tm);
 	if ((*time == (time_t) 0) || (*time == (time_t) INFINITE)) {
 		snprintf(string, size, "Unknown");
+	} else if (*time == (time_t) NO_VAL) {
+		snprintf(string, size, "None");
 	} else {
 		static char fmt_buf[32];
 		static const char *display_fmt;
