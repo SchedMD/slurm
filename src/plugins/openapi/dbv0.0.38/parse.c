@@ -1272,11 +1272,14 @@ static int _dump_qos_str_list(const parser_t *const parse, void *obj,
 		.magic = MAGIC_FOREACH_DUMP_QOS_STR_LIST,
 		.qos = dst,
 	};
+	/* Convert list of QOS id strings into actual name strings */
+	List qos_list_names = get_qos_name_list(penv->g_qos_list, *qos_list);
+	list_sort(qos_list_names, slurm_sort_char_list_asc);
 
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	data_set_list(dst);
 
-	if (list_for_each(*qos_list, _foreach_dump_qos_str_list, &args) < 0)
+	if (list_for_each(qos_list_names, _foreach_dump_qos_str_list, &args) < 0)
 		return ESLURM_DATA_CONV_FAILED;
 
 	return SLURM_SUCCESS;
