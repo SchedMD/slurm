@@ -174,6 +174,14 @@ static sig_atomic_t _update_log = 0;
 static pthread_t msg_pthread = (pthread_t) 0;
 static time_t sent_reg_time = (time_t) 0;
 
+/*
+ * cached features
+ */
+static char *cached_features_avail = NULL;
+static char *cached_features_active = NULL;
+static bool refresh_cached_features = true;
+static pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static void      _atfork_final(void);
 static void      _atfork_prepare(void);
 static int       _convert_spec_cores(void);
@@ -777,7 +785,17 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		slurmd_start_time = time(NULL);
 	msg->slurmd_start_time = slurmd_start_time;
 
-	node_features_g_node_state(&msg->features_avail, &msg->features_active);
+	slurm_mutex_lock(&cached_features_mutex);
+	if (refresh_cached_features) {
+		xfree(cached_features_avail);
+		xfree(cached_features_active);
+		node_features_g_node_state(&cached_features_avail,
+					   &cached_features_active);
+		refresh_cached_features = false;
+	}
+	msg->features_avail = xstrdup(cached_features_avail);
+	msg->features_active = xstrdup(cached_features_active);
+	slurm_mutex_unlock(&cached_features_mutex);
 
 	if (first_msg) {
 		first_msg = false;
@@ -2098,6 +2116,11 @@ _slurmd_fini(void)
 	cgroup_g_fini();
 	route_fini();
 	xcpuinfo_fini();
+	slurm_mutex_lock(&cached_features_mutex);
+	xfree(cached_features_avail);
+	xfree(cached_features_active);
+	refresh_cached_features = true;
+	slurm_mutex_unlock(&cached_features_mutex);
 	slurm_mutex_lock(&fini_job_mutex);
 	xfree(fini_job_id);
 	fini_job_cnt = 0;
