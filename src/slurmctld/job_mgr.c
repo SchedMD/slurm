@@ -6410,7 +6410,6 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		job_comp_flag = JOB_COMPLETING;
 	else if (IS_JOB_PENDING(job_ptr)) {
 		job_return_code = NO_VAL;
-		job_ptr->start_time = now;
 		fed_mgr_job_revoke_sibs(job_ptr);
 	}
 
