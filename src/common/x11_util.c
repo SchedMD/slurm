@@ -215,14 +215,14 @@ extern char *x11_get_xauth(void)
 	return cookie;
 }
 
-extern int x11_set_xauth(char *xauthority, char *cookie,
-			 char *host, uint16_t display)
+extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display)
 {
 	int i=0, status;
 	char *result;
 	char **xauth_argv;
 	char template[] = "/tmp/xauth-source-XXXXXX";
 	char *contents = NULL;
+	char host[256];
 	int fd;
 	run_command_args_t run_command_args = {
 		.max_wait = 10000,
@@ -230,6 +230,9 @@ extern int x11_set_xauth(char *xauthority, char *cookie,
 		.script_type = "xauth",
 		.status = &status,
 	};
+
+	if (gethostname(host, sizeof(host)))
+		fatal("%s: gethostname() failed: %m", __func__);
 
 	/* protect against weak file permissions in old glibc */
 	umask(0077);

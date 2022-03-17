@@ -99,6 +99,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/x11_util.c"
 
 #include "src/slurmd/slurmd/slurmd.h"
 
@@ -911,8 +912,9 @@ static void *_x11_signal_handler(void *arg)
 {
 	stepd_step_rec_t *job = (stepd_step_rec_t *) arg;
 	struct priv_state sprivs = { 0 };
-	int sig;
+	int sig, status;
 	sigset_t set;
+	pid_t cpid, pid;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -925,14 +927,31 @@ static void *_x11_signal_handler(void *arg)
 		switch (sig) {
 		case SIGTERM:	/* kill -15 */
 			debug("Terminate signal (SIGTERM) received");
-			if (_drop_privileges(job, true, &sprivs, false) < 0) {
-				error("Unable to drop privileges");
-				return NULL;
+			if ((cpid = fork()) == 0) {
+				container_g_join(job->step_id.job_id, job->uid);
+				if (_drop_privileges(job, true, &sprivs,
+						     false) < 0) {
+					error("%s: Unable to drop privileges",
+					      __func__);
+					_exit(1);
+				}
+				shutdown_x11_forward(job);
+				_exit(0);
+			} else if (cpid < 0) {
+				error("%s: fork: %m", __func__);
+			} else {
+				pid = waitpid(cpid, &status, 0);
+				if (pid < 0)
+					error("%s: waitpid failed: %m",
+					      __func__);
+				else if (!WIFEXITED(status))
+					error("%s: child terminated abnormally",
+					      __func__);
+				else if (WEXITSTATUS(status))
+					error("%s: child returned non-zero",
+					      __func__);
 			}
-			shutdown_x11_forward(job);
-			if (_reclaim_privileges(&sprivs) < 0)
-				error("Unable to reclaim privileges");
-			return NULL;	/* Normal termination */
+			return NULL;
 		default:
 			error("Invalid signal (%d) received", sig);
 		}
@@ -1012,6 +1031,31 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		set_oom_adj(0);	/* the tasks may be killed by OOM */
 		acct_gather_profile_g_child_forked();
 		_unblock_signals();
+
+		if (job->x11) {
+			struct priv_state sprivs = { 0 };
+
+			container_g_join(jobid, job->uid);
+			if (_drop_privileges(job, true, &sprivs, false) < 0) {
+				error("%s: Unable to drop privileges before xauth",
+				      __func__);
+				_exit(1);
+			}
+
+			if (x11_set_xauth(job->x11_xauthority,
+					  job->x11_magic_cookie,
+					  job->x11_display)) {
+				error("%s: failed to run xauth", __func__);
+				_exit(1);
+			}
+
+			if (_reclaim_privileges(&sprivs) < 0) {
+				error("%s: Unable to reclaim privileges after xauth",
+				      __func__);
+				_exit(1);
+			}
+		}
+
 		/*
 		 * Need to exec() something for proctrack/linuxproc to
 		 * work, it will not keep a process named "slurmstepd"

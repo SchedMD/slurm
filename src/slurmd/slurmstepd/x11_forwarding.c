@@ -289,11 +289,6 @@ extern int setup_x11_forward(stepd_step_rec_t *job)
 	}
 
 	job->x11_display = port - X11_TCP_PORT_OFFSET;
-	if (x11_set_xauth(job->x11_xauthority, job->x11_magic_cookie,
-			  hostname, job->x11_display)) {
-		error("%s: failed to run xauth", __func__);
-		goto shutdown;
-	}
 
 	info("X11 forwarding established on DISPLAY=%s:%d.0",
 	     hostname, job->x11_display);

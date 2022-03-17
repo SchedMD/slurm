@@ -66,8 +66,7 @@ extern void x11_get_display(uint16_t *port, char **target);
  */
 extern char *x11_get_xauth(void);
 
-extern int x11_set_xauth(char *xauthority, char *cookie,
-			 char *host, uint16_t display);
+extern int x11_set_xauth(char *xauthority, char *cookie, uint16_t display);
 
 extern int x11_delete_xauth(char *xauthority, char *host, uint16_t display);
 
