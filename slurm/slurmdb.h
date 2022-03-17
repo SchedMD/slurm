@@ -179,6 +179,7 @@ enum cluster_fed_states {
 						* scheduler */
 #define SLURMDB_JOB_FLAG_BACKFILL SLURM_BIT(3) /* Job was started from
 						* backfill */
+#define SLURMDB_JOB_FLAG_START_R  SLURM_BIT(4) /* Job start rpc was recieved */
 
 /*
  * Slurm job condition flags

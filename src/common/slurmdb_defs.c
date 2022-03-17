@@ -462,6 +462,9 @@ static uint32_t _str_2_job_flags(char *flags)
 	if (xstrcasestr(flags, "SchedBackfill"))
 		return SLURMDB_JOB_FLAG_BACKFILL;
 
+	if (xstrcasestr(flags, "StartRecieved"))
+		return SLURMDB_JOB_FLAG_START_R;
+
 	return SLURMDB_JOB_FLAG_NOTSET;
 }
 
@@ -1860,13 +1863,8 @@ extern char *slurmdb_job_flags_str(uint32_t flags)
 	else if (flags & SLURMDB_JOB_FLAG_BACKFILL)
 		xstrcat(job_flags, "SchedBackfill");
 
-	/*
-	 * In the future if there are more flags we will need to add comma's to
-	 * the end of Backfilled and NormalSched above and uncomment this code
-	 * below.
-	 */
-	/* if (job_flags) */
-	/* 	job_flags[strlen(job_flags)-1] = '\0'; */
+	if (flags & SLURMDB_JOB_FLAG_START_R)
+		xstrfmtcat(job_flags, "%sStartRecieved", job_flags ? "," : "");
 
 	return job_flags;
 }
