@@ -872,7 +872,6 @@ int dump_all_job_state(void)
 	list_for_each_ro(job_list, _dump_job_state, buffer);
 	jobs_end = get_buf_offset(buffer);
 	if ((difftime(now, last_job_state_size_check) > 60) &&
-	    (get_log_level() >= LOG_LEVEL_INFO) &&
 	    (jobs_count = list_count(job_list))) {
 		uint64_t ave_job_size = jobs_end - jobs_start;
 		uint64_t estimated_job_state_size = ave_job_size *
