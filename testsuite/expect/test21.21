@@ -41,9 +41,10 @@ set grcpu_num   0
 set timeout     60
 set test_node   " "
 # cr_core = 1 / cr_cpu = 0
-set selectparam  0
-set one_task_pc  0
-set job_id       0
+set selectparam 0
+set one_task_pc 0
+set job_list    [list]
+set job_id      0
 
 # test maxjob maxnode maxsubmit maxwall
 array set acct_mod_desc {}
@@ -114,12 +115,10 @@ if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
 
 # Define global cleanup routine so it can be called on exit
 proc cleanup { } {
-	global sacctmgr ta test_qos job_id
+	global sacctmgr ta test_qos job_list
 
-	# First wait for the job to complete
-	if { $job_id } {
-		wait_for_job $job_id "DONE"
-	}
+	# Cancel any lingering jobs
+	cancel_job $job_list
 
 	#
 	# Use sacctmgr to delete the test account
@@ -166,7 +165,6 @@ if {$totcpus == 0} {
 }
 
 proc assoc_setup { limit_type limit_val } {
-
 	global acct_mod_assoc_test_vals
 	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals ta
 
@@ -343,6 +341,7 @@ if {$job_id == 0} {
 #
 make_bash_script $file_in "$bin_id"
 set job_id [submit_job -fail "-N1 --account=$ta --output=none $file_in"]
+lappend job_list $job_id
 set matches 0
 spawn $scontrol show job $job_id
 expect {
