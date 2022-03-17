@@ -1200,6 +1200,9 @@ _reconfigure(void)
 
 	_build_conf_buf();
 
+	slurm_mutex_lock(&cached_features_mutex);
+	refresh_cached_features = true;
+	slurm_mutex_unlock(&cached_features_mutex);
 	send_registration_msg(SLURM_SUCCESS);
 
 	acct_gather_reconfig();
