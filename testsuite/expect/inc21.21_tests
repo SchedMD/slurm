@@ -126,9 +126,8 @@ proc inc21_21_bad { test_type limit } {
 
 proc inc21_21_grp_test { test_type limit } {
 	global number bin_id ta srun sbatch test_node selectparam nthreads is_skip
-	global file_in squeue scancel bin_bash bin_chmod
+	global file_in squeue scancel bin_bash bin_chmod job_list
 
-	set job_id 0
 	set val 0
 	set exclusive ""
 
@@ -171,25 +170,32 @@ $exclusive
 sleep 10"
 
 	#
-	# Submit n+1 number of jobs but job n+1 should be pending
-	# since it will be past the association limit
+	# First we will submit n jobs that should be below the association limit
+	# and should run. We wait for these to start before submitting the
+	# over-limit job. If we were to submit them all at once, periodically the
+	# earlier submitted jobs can take longer to start than later submitted jobs
+	# such as when an epilog is still in progress on the assigned nodes.
 	#
-	set matches 0
-	set time 1
-	for {set inx 0} {$inx <= $val} {incr inx} {
-		if { $inx == $val } {
-			# the n+1'th job gets a longer time limit to avoid
-			# having it prematurely start after _decay_thread() runs
-			# and decays the values of the other running jobs
-			set time $val
+	for {set inx 0} {$inx < $val} {incr inx} {
+		set job_id($inx) [submit_job -fail "-t1 [lindex $limit 0]1 --account=$ta --output=/dev/null --error=/dev/null $file_in"]
+		lappend job_list $job_id($inx)
+	}
+
+	# Wait for the expected jobs to start running
+	for {set inx 0} {$inx < $val} {incr inx} {
+		wait_for -fail -timeout 30 -pollinterval .2 {$state eq "RUNNING"} {
+			set state [get_job_param $job_id($inx) "JobState"]
 		}
-		set job_id [submit_job -fail "[lindex $limit 0]1 --account=$ta --output=/dev/null --error=/dev/null -t$time $file_in"]
 	}
 
 	#
-	# Wait for squeue to update
+	# Submit an additional job. This job should pend since it will be past the
+	# association limit. This job gets a longer time limit to avoid having it
+	# prematurely start after _decay_thread() runs and decays the values of the
+	# other running jobs.
 	#
-	sleep 5
+	set job_id($inx) [submit_job -fail "-t$val [lindex $limit 0]1 --account=$ta --output=/dev/null --error=/dev/null $file_in"]
+	lappend job_list $job_id($inx)
 
 	set pending 0
 	set running 0
@@ -232,7 +238,7 @@ proc inc21_21_submit_test { limit } {
 	global file_in srun sbatch squeue scancel bin_id number bin_sleep is_skip
 	global bin_rm ta maxjob_lim maxsub_lim
 	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals
-	global acct_mod_assoc_test_vals
+	global acct_mod_assoc_test_vals job_list
 
 	set limit_job ""
 	set limit_sub ""
@@ -251,7 +257,6 @@ proc inc21_21_submit_test { limit } {
 		set limit_job "grpjob"
 		set limit_sub "grpsubmit"
 	}
-
 
 	set acct_mod_assoc_test_vals($limit_job) \
 	    [lindex $acct_mod_assoc_vals($limit) 0]
@@ -272,40 +277,26 @@ proc inc21_21_submit_test { limit } {
 	log_info "==== Test $limit ===="
 
 	# Submit jobs to test the limit set in the association
-	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} \
-	    {incr inx} {
-		    set job_id($inx) [submit_job -fail "-N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in"]
-		    if { !$job_id($inx) } {
-			    fail "sbatch didn't return jobid"
-		    }
-		    # We need to sleep because of the way the scheduler works
-		    # if we don't sleep then we could
-		    sleep 1
-	    }
-
-	# then submit one more over the limit and it should fail
-	set matches 0
-	spawn $sbatch -N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in
-	expect {
-		-re "Job violates accounting/QOS policy" {
-			incr matches
-			log_info "This error is expected, not a problem"
-			exp_continue
+	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} {incr inx} {
+		set job_id($inx) [submit_job -fail "-N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in"]
+		if { !$job_id($inx) } {
+			fail "sbatch didn't return jobid"
 		}
-		-re "Submitted batch job ($number)" {
-			fail "This job should not have ran"
-		}
-		-re "Unable to contact" {
-			fail "Slurm appears to be down"
-		}
-		timeout {
-			fail "sbatch not responding"
-		}
-		eof {
-			wait
-		}
+		lappend job_list $job_id($inx)
+		# We need to sleep because of the way the scheduler works
+		# if we don't sleep then we could
+		sleep 1
 	}
-	subtest -fail { $matches == 1 } "Policy violation error detected"
+
+	# Wait for the allowed jobs to start running
+	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_job)} {incr inx} {
+		wait_for_job -fail -timeout 10 -pollinterval .1 $job_id($inx) "RUNNING"
+	}
+
+	# Then submit one more over the limit and it should fail
+	set result [run_command "$sbatch -N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in"]
+	subtest [dict get $result exit_code] "Job submitted in excess of $limit limit should fail"
+	subtest {[regexp {Job violates accounting/QOS policy} [dict get $result output]]} "Job submitted in execess of $limit limit should display policy violation error"
 
 	set matches 0
 	spawn $squeue -A$ta -h -o "\%i \%t \%r"
@@ -349,38 +340,27 @@ proc inc21_21_submit_test { limit } {
 	log_info "==== Test $limit with job arrays ===="
 
 	# Submit jobs to test the limit set in the association
-	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} \
-	    {incr inx} {
-		    set job_id($inx) [submit_job -fail "-N1 -a0 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in"]
-		    if { !$job_id($inx) } {
-			    fail "sbatch didn't return jobid"
-		    }
+	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} {incr inx} {
+		set job_id($inx) [submit_job -fail "-N1 -a0 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in"]
+		if { !$job_id($inx) } {
+			fail "sbatch didn't return jobid"
+		}
+		lappend job_list $job_id($inx)
 
-		    # We need to sleep because of the way the scheduler works
-		    # if we don't sleep then we could
-		    sleep 1
-	    }
-
-	# then submit one more over the limit and it should fail
-	spawn $sbatch -N1 -a0 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in
-	expect {
-		-re "Job violates accounting/QOS policy" {
-			log_info "\[Job array test\] This error is expected, not a problem"
-			exp_continue
-		}
-		-re "Submitted batch job ($number)" {
-			fail "\[Job array test\] This job should not have run"
-		}
-		-re "Unable to contact" {
-			fail "\[Job array test\] Slurm appears to be down"
-		}
-		timeout {
-			fail "\[Job array test\] sbatch not responding"
-		}
-		eof {
-			wait
-		}
+		# We need to sleep because of the way the scheduler works
+		# if we don't sleep then we could
+		sleep 1
 	}
+
+	# Wait for the allowed job arrays to start running
+	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_job)} {incr inx} {
+		wait_for_job -fail -timeout 10 -pollinterval .1 $job_id($inx) "RUNNING"
+	}
+
+	# Then submit one more over the limit and it should fail
+	set result [run_command "$sbatch -N1 -a0 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in"]
+	subtest [dict get $result exit_code] "Job submitted in excess of $limit limit should fail"
+	subtest {[regexp {Job violates accounting/QOS policy} [dict get $result output]]} "Job submitted in execess of $limit limit should display policy violation error"
 
 	set matches 0
 	spawn $squeue -A$ta -h -o "\%i \%t \%r"
@@ -427,9 +407,9 @@ proc inc21_21_submit_test { limit } {
 # Function that tests an association's grpwall limit
 #
 proc inc21_21_grpwall { test_type limit } {
-	global bin_sleep ta test_qos
+	global bin_sleep ta test_qos job_list
 
-	set job_id_list     [list]
+	set local_job_list  [list]
 	set jobs            5.0
 	set grpwall_num     [lindex $limit 1]
 	set grpwall_per_job [expr $grpwall_num * 1.1 / $jobs]
@@ -448,10 +428,12 @@ proc inc21_21_grpwall { test_type limit } {
 
 	log_debug "Running $jobs jobs of $sleep_time seconds of duration to ensure that we reach the Grpwall limit of $grpwall_num minutes"
 	for {set i 0} {$i < $jobs} {incr i} {
-		lappend job_id_list [submit_job -fail "--account=$ta -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
+		set job_id [submit_job -fail "--account=$ta -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
+		lappend local_job_list $job_id
+		lappend job_list $job_id
 	}
 
-	foreach job_id $job_id_list {
+	foreach job_id $local_job_list {
 		if {[wait_job_reason $job_id COMPLETED] != $::RETURN_SUCCESS} {
 			fail "Job ($job_id) did not complete"
 		}
@@ -459,13 +441,14 @@ proc inc21_21_grpwall { test_type limit } {
 
 	log_debug "Submitting the final job and check that it is set Pending with Reason AssocGrpWallLimit"
 	set job_id [submit_job -fail "--account=$ta -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
-	lappend job_id_list $job_id
+	lappend local_job_list $job_id
+	lappend job_list $job_id
 	# Subtest of the limit
 	if {[wait_job_reason $job_id PENDING AssocGrpWallLimit] != $::RETURN_SUCCESS} {
-		cancel_job $job_id_list
+		cancel_job $local_job_list
 		fail "Job should not have run"
 	}
 
 	# Cancel jobs
-	cancel_job $job_id_list
+	cancel_job $local_job_list
 }
