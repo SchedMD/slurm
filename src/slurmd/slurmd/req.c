@@ -904,8 +904,8 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id_in,
 			   &protocol_version);
 
 	if (fd == -1) {
-		error("could not get x11 forwarding display for job %u step %u,"
-		      " x11 forwarding disabled", job_id, step_id_in);
+		error("Cannot connect to slurmstepd. Could not get x11 forwarding display for job %u step %u, x11 forwarding disabled",
+		      job_id, step_id_in);
 		return;
 	}
 
@@ -913,8 +913,8 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id_in,
 	close(fd);
 
 	if (!display) {
-		error("could not get x11 forwarding display for job %u step %u,"
-		      " x11 forwarding disabled", job_id, step_id_in);
+		error("Didn't get display. Could not get x11 forwarding display for job %u step %u, x11 forwarding disabled",
+		      job_id, step_id_in);
 		env_array_overwrite(env, "DISPLAY", "SLURM_X11_SETUP_FAILED");
 		*envc = envcount(*env);
 		return;
