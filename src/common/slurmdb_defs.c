@@ -2387,10 +2387,10 @@ extern char *get_qos_complete_str_bitstr(List qos_list, bitstr_t *valid_qos)
 
 extern List get_qos_name_list(List qos_list, List num_qos_list)
 {
-	List temp_list = NULL;
-	char *temp_char = NULL;
-	ListIterator itr = NULL;
-	int option = 0;
+	List temp_list;
+	char *temp_char;
+	ListIterator itr;
+	int option;
 
 	if (!qos_list || !list_count(qos_list)
 	    || !num_qos_list || !list_count(num_qos_list))
