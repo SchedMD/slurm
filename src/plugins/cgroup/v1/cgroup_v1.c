@@ -116,6 +116,8 @@ typedef struct {
 	uint32_t taskid;
 } task_cg_info_t;
 
+static int _step_destroy_internal(cgroup_ctl_type_t sub, bool root_locked);
+
 static int _cgroup_init(cgroup_ctl_type_t sub)
 {
 	if (sub >= CG_CTL_CNT)
@@ -222,7 +224,8 @@ end:
 
 static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
 				xcgroup_t *job_cg, xcgroup_t *user_cg,
-				xcgroup_t *slurm_cg, const char *log_str)
+				xcgroup_t *slurm_cg, const char *log_str,
+				bool root_locked)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -243,7 +246,7 @@ static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
 	 * Lock the root cgroup so we don't race with other steps that are being
 	 * started.
 	 */
-	if (xcgroup_lock(root_cg) != SLURM_SUCCESS) {
+	if (!root_locked && (xcgroup_lock(root_cg) != SLURM_SUCCESS)) {
 		error("xcgroup_lock error (%s)", log_str);
 		return SLURM_ERROR;
 	}
@@ -278,7 +281,8 @@ static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
 	common_cgroup_destroy(slurm_cg);
 
 end:
-	xcgroup_unlock(root_cg);
+	if (!root_locked)
+		xcgroup_unlock(root_cg);
 	return rc;
 }
 
@@ -600,7 +604,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		 */
 		if (common_cgroup_add_pids(&g_job_cg[sub], &job->jmgr_pid, 1) !=
 		    SLURM_SUCCESS) {
-			cgroup_p_step_destroy(sub);
+			_step_destroy_internal(sub, false);
 			goto step_c_err;
 		}
 
@@ -630,7 +634,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						  "1")) != SLURM_SUCCESS) {
 			error("unable to set hierarchical accounting for %s",
 			      g_user_cgpath[sub]);
-			cgroup_p_step_destroy(sub);
+			_step_destroy_internal(sub, false);
 			break;
 		}
 		if ((rc = common_cgroup_set_param(&g_job_cg[sub],
@@ -638,7 +642,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						  "1")) != SLURM_SUCCESS) {
 			error("unable to set hierarchical accounting for %s",
 			      g_job_cgpath[sub]);
-			cgroup_p_step_destroy(sub);
+			_step_destroy_internal(sub, false);
 			break;
 		}
 		if ((rc = common_cgroup_set_param(&g_step_cg[sub],
@@ -646,7 +650,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						  "1") != SLURM_SUCCESS)) {
 			error("unable to set hierarchical accounting for %s",
 			      g_step_cg[sub].path);
-			cgroup_p_step_destroy(sub);
+			_step_destroy_internal(sub, false);
 			break;
 		}
 		break;
@@ -741,7 +745,7 @@ extern int cgroup_p_step_resume(void)
 				       "THAWED");
 }
 
-extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
+static int _step_destroy_internal(cgroup_ctl_type_t sub, bool root_locked)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -787,7 +791,8 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 				  &g_job_cg[sub],
 				  &g_user_cg[sub],
 				  &g_slurm_cg[sub],
-				  g_cg_name[sub]);
+				  g_cg_name[sub],
+				  root_locked);
 
 	if (rc == SLURM_SUCCESS) {
 		g_step_active_cnt[sub] = 0;
@@ -795,6 +800,11 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 	}
 
 	return rc;
+}
+
+extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
+{
+	return _step_destroy_internal(sub, false);
 }
 
 /*
