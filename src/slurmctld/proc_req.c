@@ -118,7 +118,7 @@ static uint32_t rpc_user_id[RPC_USER_SIZE] = { 0 };
 static uint32_t rpc_user_cnt[RPC_USER_SIZE] = { 0 };
 static uint64_t rpc_user_time[RPC_USER_SIZE] = { 0 };
 
-static char *slurmd_config_files[] = {
+char *slurmd_config_files[] = {
 	"slurm.conf", "acct_gather.conf", "cgroup.conf",
 	"cli_filter.lua", "ext_sensors.conf", "gres.conf", "helpers.conf",
 	"job_container.conf", "knl_cray.conf", "mpi.conf", "oci.conf",
@@ -130,7 +130,7 @@ static char *client_config_files[] = {
 };
 
 
-static config_response_msg_t *config_for_slurmd = NULL;
+config_response_msg_t *config_for_slurmd = NULL;
 static config_response_msg_t *config_for_clients = NULL;
 
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;

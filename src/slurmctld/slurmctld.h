@@ -241,6 +241,13 @@ extern bool   test_config;
 extern int    test_config_rc;
 
 /*****************************************************************************\
+ * Configless data structures, defined in src/slurmctld/proc_req.c
+\*****************************************************************************/
+extern char *slurmd_config_files[];
+
+extern config_response_msg_t *config_for_slurmd;
+
+/*****************************************************************************\
  *  NODE parameters and data structures, mostly in src/common/node_conf.h
 \*****************************************************************************/
 extern bool ping_nodes_now;		/* if set, ping nodes immediately */
