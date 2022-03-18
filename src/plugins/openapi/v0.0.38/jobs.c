@@ -156,7 +156,7 @@ const params_t job_params[] = {
 	{ "mail_type", LONG_OPT_MAIL_TYPE },
 	{ "mail_user", LONG_OPT_MAIL_USER },
 	{ "max_threads", 'T', true },
-	{ "msc_label", LONG_OPT_MCS_LABEL },
+	{ "mcs_label", LONG_OPT_MCS_LABEL },
 	{ "memory_binding", LONG_OPT_MEM_BIND },
 	{ "memory_per_CPU", LONG_OPT_MEM_PER_CPU },
 	{ "memory_per_GPU", LONG_OPT_MEM_PER_GPU },
