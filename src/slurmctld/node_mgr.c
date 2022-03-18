@@ -4464,7 +4464,8 @@ extern bool waiting_for_node_power_down(node_record_t *node_ptr)
 
 	if (IS_NODE_POWERING_DOWN(node_ptr) &&
 	    node_ptr->power_save_req_time &&
-	    (node_ptr->boot_time < node_ptr->last_response)) {
+	    (node_ptr->boot_time <
+	     (node_ptr->power_save_req_time + slurm_conf.suspend_timeout))) {
 		debug("Still waiting for node '%s' to power off",
 		      node_ptr->name);
 		return true;
