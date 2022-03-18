@@ -1103,6 +1103,11 @@ static void _reconfigure_slurm(void)
 	else {
 		_update_cred_key();
 		set_slurmctld_state_loc();
+		if (config_for_slurmd) {
+			configless_update();
+			push_reconfig_to_slurmd(slurmd_config_files);
+		} else
+			msg_to_slurmd(REQUEST_RECONFIGURE);
 	}
 
 	gs_reconfig();
