@@ -36,6 +36,12 @@
 
 #include "src/plugins/cgroup/v2/cgroup_dbus.h"
 
+/*
+ * This is how systemd code understand you're asking for the max. of some
+ * cgroup interface, e.g. pids.max, memory.[low|high|max], etc.
+ */
+#define SYSTEMD_CGROUP_LIMIT_MAX ((uint64_t) -1)
+
 static int _process_and_close_abandon_reply_msg(DBusMessage *msg)
 {
 	DBusMessageIter itr;
@@ -112,10 +118,13 @@ static bool _set_scope_properties(DBusMessageIter *main_itr, pid_t *p,
 	DBusMessageIter it[4] = { DBUS_MESSAGE_ITER_INIT_CLOSED };
 	const char *pid_prop_name = "PIDs";
 	const char *dlg_prop_name = "Delegate";
+	const char *tasksmax_prop_name = "TasksMax";
 	const char pid_prop_sig[] = { DBUS_TYPE_ARRAY, DBUS_TYPE_UINT32, '\0' };
 	const char dlg_prop_sig [] = { DBUS_TYPE_BOOLEAN, '\0' };
+	const char tasksmax_prop_sig [] = { DBUS_TYPE_UINT64, '\0' };
 	char sig[5];
 	int dlg = delegate ? 1 : 0;
+	uint64_t tasksmax_val = SYSTEMD_CGROUP_LIMIT_MAX;
 
 	/* Signature for the container - (sv) part */
 	sig[0] = DBUS_STRUCT_BEGIN_CHAR;
@@ -182,6 +191,35 @@ static bool _set_scope_properties(DBusMessageIter *main_itr, pid_t *p,
 	if (!dbus_message_iter_append_basic(&it[2], *(dlg_prop_sig), &dlg))
 		goto abandon;
 
+	/*
+	 * At this point we have the Delegate=yes inserted, let's close this
+	 * block: Close variant, Close struct.
+	 */
+	if (!dbus_message_iter_close_container(&it[1], &it[2])
+	    || !dbus_message_iter_close_container(&it[0], &it[1]))
+		goto abandon;
+
+	/*
+	 * Add the property of TasksMax = infinity. We are into the array (it1)
+	 * and we need to open a new struct (it2) to put the string and the
+	 * variant which is a uint64_t.
+	 */
+	if (!dbus_message_iter_open_container(&it[0], DBUS_TYPE_STRUCT, NULL,
+					      &it[1]))
+		goto abandon;
+	if (!dbus_message_iter_append_basic(&it[1], DBUS_TYPE_STRING,
+					    &tasksmax_prop_name))
+		goto abandon;
+	if (!dbus_message_iter_open_container(&it[1], DBUS_TYPE_VARIANT,
+					      tasksmax_prop_sig, &it[2]))
+		goto abandon;
+	if (!dbus_message_iter_append_basic(&it[2], *(tasksmax_prop_sig),
+					    &tasksmax_val))
+		goto abandon;
+	/*
+	 * At this point we have the TasksMax=infinity inserted, let's close all
+	 * block: Close variant, Close struct, Close array.
+	 */
 	if (!dbus_message_iter_close_container(&it[1], &it[2])
 	    || !dbus_message_iter_close_container(&it[0], &it[1])
 	    || !dbus_message_iter_close_container(main_itr, &it[0]))
@@ -313,7 +351,7 @@ extern int cgroup_dbus_attach_to_scope(pid_t stepd_pid, char *full_path)
 	DBusConnection *conn = NULL;
 	DBusPendingCall *pending;
 	DBusError err;
-	pid_t pids[1];
+	pid_t pids[] = { stepd_pid };
 	int npids = 1;
 
 	log_flag(CGROUP, "Creating Slurm scope %s into system slice and adding pid %d.",
@@ -377,8 +415,6 @@ extern int cgroup_dbus_attach_to_scope(pid_t stepd_pid, char *full_path)
 	 * interested in adding Delegate=yes, and the PIDs list (stepd's pid)
 	 * which will be moved to this scope container at startup.
 	 */
-	npids = 1;
-	pids[0] = stepd_pid;
 
 	if (!_set_scope_properties(&args_itr, pids, npids, true)) {
 		error("%s: cannot set scope properties, scope not started.",
