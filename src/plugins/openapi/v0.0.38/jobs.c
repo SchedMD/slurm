@@ -110,7 +110,7 @@ const params_t job_params[] = {
 	{ "contiguous", LONG_OPT_CONTIGUOUS, true },
 	{ "core_specification", 'S' },
 	{ "cores_per_socket", LONG_OPT_CORESPERSOCKET },
-	{ "cpu_binding hint", LONG_OPT_HINT },
+	{ "cpu_binding_hint", LONG_OPT_HINT },
 	{ "cpu_binding", LONG_OPT_CPU_BIND, true },
 	{ "cpu_frequency", LONG_OPT_CPU_FREQ },
 	{ "cpus_per_gpu", LONG_OPT_CPUS_PER_GPU },

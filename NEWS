@@ -155,6 +155,7 @@ documents those changes that are of interest to users and administrators.
     specific job lookups.
  -- Add support for hourly reoccurring reservations.
  -- openapi/v0.0.38 - Fix misspelling of job parameter time_minimum.
+ -- openapi/v0.0.38 - Fix misspelling of job parameter cpu_binding_hint.
 
 * Changes in Slurm 21.08.7
 ==========================
