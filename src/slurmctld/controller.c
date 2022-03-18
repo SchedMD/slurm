@@ -1108,6 +1108,7 @@ static void _reconfigure_slurm(void)
 			push_reconfig_to_slurmd(slurmd_config_files);
 		} else
 			msg_to_slurmd(REQUEST_RECONFIGURE);
+		node_features_updated = true;
 	}
 
 	gs_reconfig();
