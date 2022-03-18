@@ -159,8 +159,9 @@ Some macro definitions that may be used in building Slurm include:
 <dd>Specify if debugging logic within Slurm is to be enabled
 <dt>_prefix
 <dd>Pathname of directory to contain the Slurm files
-<dt>_sysconfdir  (or _slurm_sysconfdir)
-<dd>Pathname of directory containing the slurm.conf configuration file
+<dt>_slurm_sysconfdir
+<dd>Pathname of directory containing the slurm.conf configuration file (default
+/etc/slurm)
 <dt>with_munge
 <dd>Specifies the MUNGE (authentication library) installation location
 <dt>with_ssl
@@ -174,7 +175,7 @@ Some macro definitions that may be used in building Slurm include:
 #
 %_enable_debug     "--with-debug"
 %_prefix           /opt/slurm
-%_sysconfdir       %{_prefix}/etc/slurm
+%_slurm_sysconfdir %{_prefix}/etc/slurm
 %_defaultdocdir    %{_prefix}/doc
 %with_munge        "--with-munge=/opt/munge"
 </pre>
