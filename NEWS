@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix Slurm user commands displaying available features as active features
     when no features were active.
  -- Don't power down nodes that are rebooting.
+ -- Clear pending node reboot on power down request.
 
 * Changes in Slurm 21.08.6
 ==========================

@@ -1699,6 +1699,36 @@ int update_node ( update_node_msg_t * update_node_msg )
 					continue;
 				}
 
+				/* Abort reboot request */
+				if (IS_NODE_REBOOT_REQUESTED(node_ptr) ||
+				    IS_NODE_REBOOT_ISSUED(node_ptr)) {
+					/*
+					 * A node is DOWN+REBOOT_ISSUED when the
+					 * reboot has been issued. Set node
+					 * state back to idle only if the reboot
+					 * has been issued. Node will remain
+					 * cleared in the avail_node_bitmap
+					 * until the node is powered down.
+					 */
+					if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
+					    IS_NODE_DOWN(node_ptr)) {
+						node_ptr->node_state =
+							NODE_STATE_IDLE |
+							(node_ptr->node_state &
+							 NODE_STATE_FLAGS);
+					}
+
+					node_ptr->node_state &=
+						(~NODE_STATE_REBOOT_REQUESTED);
+					node_ptr->node_state &=
+						(~NODE_STATE_REBOOT_ISSUED);
+					node_ptr->boot_req_time = 0;
+					xfree(node_ptr->reason);
+
+					info("Canceling REBOOT on node %s",
+					     this_node_name);
+				}
+
 				if (IS_NODE_POWERED_DOWN(node_ptr)) {
 					node_ptr->node_state &=
 						(~NODE_STATE_POWERED_DOWN);
