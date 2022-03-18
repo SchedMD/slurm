@@ -112,6 +112,8 @@ typedef struct {
 	uint32_t taskid;
 } task_cg_info_t;
 
+static int _step_destroy_internal(cgroup_ctl_type_t sub, bool root_locked);
+
 static int _cgroup_init(cgroup_ctl_type_t sub)
 {
 	if (sub >= CG_CTL_CNT)
@@ -204,6 +206,10 @@ static int _cpuset_create(stepd_step_rec_t *job)
 		log_flag(CGROUP,
 			 "system cgroup: system cpuset cgroup initialized");
 	} else {
+		/*
+		 * We don't lock here the g_root cg[CG_CPUS] because it is
+		 * locked from the caller.
+		 */
 		rc = xcgroup_create_hierarchy(__func__,
 					      job,
 					      &g_cg_ns[CG_CPUS],
@@ -220,7 +226,8 @@ end:
 	return rc;
 }
 
-static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str)
+static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str,
+				bool root_locked)
 {
 	xcgroup_t *root_cg = &int_cg[CG_LEVEL_ROOT];
 	xcgroup_t *job_cg = &int_cg[CG_LEVEL_JOB];
@@ -246,7 +253,7 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str)
 	 * Lock the root cgroup so we don't race with other steps that are being
 	 * started.
 	 */
-	if (xcgroup_lock(root_cg) != SLURM_SUCCESS) {
+	if (!root_locked && (xcgroup_lock(root_cg) != SLURM_SUCCESS)) {
 		error("xcgroup_lock error (%s)", log_str);
 		return SLURM_ERROR;
 	}
@@ -281,7 +288,8 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str)
 	common_cgroup_destroy(slurm_cg);
 
 end:
-	xcgroup_unlock(root_cg);
+	if (!root_locked)
+		xcgroup_unlock(root_cg);
 	return rc;
 }
 
@@ -534,6 +542,11 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;
 
+	/*
+	 * Note: we do not need to lock the root cgroup because the only user
+	 * of this function is a single thread of slurmd.
+	 */
+
 	/* Another plugin may have already destroyed this subsystem. */
 	if (!int_cg[sub][CG_LEVEL_SYSTEM].path)
 		return SLURM_SUCCESS;
@@ -591,6 +604,16 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 	/* Don't let other plugins destroy our structs. */
 	g_step_active_cnt[sub]++;
 
+	/*
+	 * Lock the root cgroup so we don't race with other steps that are being
+	 * terminated, they could remove the directories while we're creating
+	 * them.
+	 */
+	if (xcgroup_lock(&int_cg[sub][CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
+		error("xcgroup_lock error");
+		return SLURM_ERROR;
+	}
+
 	switch (sub) {
 	case CG_TRACK:
 		/* create a new cgroup for that container */
@@ -624,7 +647,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						  "1")) != SLURM_SUCCESS) {
 			error("unable to set hierarchical accounting for %s",
 			      g_user_cgpath[sub]);
-			cgroup_p_step_destroy(sub);
+			_step_destroy_internal(sub, true);
 			break;
 		}
 		if ((rc = common_cgroup_set_param(&int_cg[sub][CG_LEVEL_JOB],
@@ -632,7 +655,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						  "1")) != SLURM_SUCCESS) {
 			error("unable to set hierarchical accounting for %s",
 			      g_job_cgpath[sub]);
-			cgroup_p_step_destroy(sub);
+			_step_destroy_internal(sub, true);
 			break;
 		}
 		if ((rc = common_cgroup_set_param(&int_cg[sub][CG_LEVEL_STEP],
@@ -640,7 +663,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 						  "1") != SLURM_SUCCESS)) {
 			error("unable to set hierarchical accounting for %s",
 			      int_cg[sub][CG_LEVEL_STEP].path);
-			cgroup_p_step_destroy(sub);
+			_step_destroy_internal(sub, true);
 			break;
 		}
 		break;
@@ -672,11 +695,12 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		rc = SLURM_ERROR;
 		goto step_c_err;
 	}
-
+	xcgroup_unlock(&int_cg[sub][CG_LEVEL_ROOT]);
 	return rc;
 
 step_c_err:
 	/* step cgroup is not created */
+	xcgroup_unlock(&int_cg[sub][CG_LEVEL_ROOT]);
 	g_step_active_cnt[sub]--;
 	return rc;
 }
@@ -742,7 +766,7 @@ extern int cgroup_p_step_resume(void)
 				       "freezer.state", "THAWED");
 }
 
-extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
+static int _step_destroy_internal(cgroup_ctl_type_t sub, bool root_locked)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -783,7 +807,7 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 		break;
 	}
 
-	rc = _remove_cg_subsystem(int_cg[sub], g_cg_name[sub]);
+	rc = _remove_cg_subsystem(int_cg[sub], g_cg_name[sub], root_locked);
 
 	if (rc == SLURM_SUCCESS) {
 		g_step_active_cnt[sub] = 0;
@@ -791,6 +815,11 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 	}
 
 	return rc;
+}
+
+extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
+{
+	return _step_destroy_internal(sub, false);
 }
 
 /*
