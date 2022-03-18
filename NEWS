@@ -154,6 +154,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - disable automatic lookup of all HetJob components on
     specific job lookups.
  -- Add support for hourly reoccurring reservations.
+ -- openapi/v0.0.38 - Fix misspelling of job parameter time_minimum.
 
 * Changes in Slurm 21.08.7
 ==========================

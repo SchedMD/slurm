@@ -228,7 +228,7 @@ const params_t job_params[] = {
 	{ "threads_per_Core", LONG_OPT_THREADSPERCORE },
 	{ "threads", 'T', true },
 	{ "time_limit", 't' },
-	{ "time minimum", LONG_OPT_TIME_MIN },
+	{ "time_minimum", LONG_OPT_TIME_MIN },
 	/* Handler for LONG_OPT_TRES_PER_JOB never defined
 	 * { "TRES per job", LONG_OPT_TRES_PER_JOB, true },
 	 */
