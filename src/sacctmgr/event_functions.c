@@ -262,7 +262,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (!event_cond->state_list)
 				event_cond->state_list = list_create(xfree_ptr);
 			if (_addto_state_char_list(event_cond->state_list,
-						  argv[i]+end)) {
+						  argv[i]+end) > 0) {
 				event_cond->event_type = SLURMDB_EVENT_NODE;
 				set = 1;
 			}
@@ -273,7 +273,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					list_create(xfree_ptr);
 			if (slurm_addto_id_char_list(
 				event_cond->reason_uid_list,
-				argv[i]+end, 0)) {
+				argv[i]+end, 0) > 0) {
 				event_cond->event_type = SLURMDB_EVENT_NODE;
 				set = 1;
 			} else {

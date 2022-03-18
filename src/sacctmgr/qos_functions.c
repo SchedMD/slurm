@@ -642,7 +642,7 @@ static int _set_rec(int *start, int argc, char **argv,
 
 			if (slurmdb_addto_qos_char_list(qos->preempt_list,
 						       g_qos_list, argv[i]+end,
-						       option))
+						       option) > 0)
 				set = 1;
 			else
 				exit_code = 1;

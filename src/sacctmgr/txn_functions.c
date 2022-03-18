@@ -106,7 +106,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				txn_cond->action_list = list_create(xfree_ptr);
 
 			if (addto_action_char_list(txn_cond->action_list,
-						  argv[i]+end))
+						  argv[i]+end) > 0)
 				set = 1;
 			else
 				exit_code=1;

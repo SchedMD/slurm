@@ -746,8 +746,8 @@ extern void parse_command_line(int argc, char **argv)
 		case 'g':
 			if (!job_cond->groupid_list)
 				job_cond->groupid_list = list_create(xfree_ptr);
-			if (!slurm_addto_id_char_list(job_cond->groupid_list,
-			                              optarg, 1))
+			if (slurm_addto_id_char_list(job_cond->groupid_list,
+						     optarg, 1) < 1)
 				exit(1);
 			break;
 		case 'h':
@@ -895,8 +895,8 @@ extern void parse_command_line(int argc, char **argv)
 			all_users = false;
 			if (!job_cond->userid_list)
 				job_cond->userid_list = list_create(xfree_ptr);
-			if (!slurm_addto_id_char_list(job_cond->userid_list,
-			                              optarg, 0))
+			if (slurm_addto_id_char_list(job_cond->userid_list,
+						     optarg, 0) < 1)
 				exit(1);
 			break;
 		case OPT_LONG_LOCAL_UID:
@@ -1081,8 +1081,8 @@ extern void parse_command_line(int argc, char **argv)
 		if (!job_cond->qos_list)
 			job_cond->qos_list = list_create(xfree_ptr);
 
-		if (!slurmdb_addto_qos_char_list(job_cond->qos_list,
-						g_qos_list, qos_names, 0))
+		if (slurmdb_addto_qos_char_list(job_cond->qos_list,
+						g_qos_list, qos_names, 0) < 1)
 			fatal("problem processing qos list");
 		xfree(qos_names);
 	}
