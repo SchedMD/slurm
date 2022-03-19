@@ -1404,6 +1404,9 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src);
 /* here to add \\ to all \" in a string this needs to be xfreed later */
 extern char *slurm_add_slash_to_quotes(char *str);
 extern List slurm_copy_char_list(List char_list);
+extern int slurm_parse_char_list(List char_list, char *names, void *args,
+				 int (*func_ptr)(List char_list, char *name,
+						void *args));
 extern int slurm_addto_char_list(List char_list, char *names);
 extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					   bool lower_case_normalization);

@@ -84,93 +84,34 @@ static uint32_t _decode_node_state(char *val)
 	return NO_VAL;
 }
 
+static int _addto_state_char_list_internal(List char_list, char *name, void *x)
+{
+	uint32_t c;
+	char *tmp_name = NULL;
+
+	c = _decode_node_state(name);
+	if (c == NO_VAL)
+		fatal("unrecognized job state value");
+	tmp_name = xstrdup_printf("%u", c);
+
+	if (!list_find_first(char_list, slurm_find_char_in_list, tmp_name)) {
+		list_append(char_list, tmp_name);
+		return 1;
+	} else {
+		xfree(tmp_name);
+		return 0;
+	}
+}
+
 static int _addto_state_char_list(List char_list, char *names)
 {
-	int i=0, start=0;
-	uint32_t c;
-	char *name = NULL, *tmp_char = NULL;
-	ListIterator itr = NULL;
-	char quote_c = '\0';
-	int quote = 0;
-	int count = 0;
-
 	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
-	itr = list_iterator_create(char_list);
-	if (names) {
-		if (names[i] == '\"' || names[i] == '\'') {
-			quote_c = names[i];
-			quote = 1;
-			i++;
-		}
-		start = i;
-		while(names[i]) {
-			//info("got %d - %d = %d", i, start, i-start);
-			if (quote && names[i] == quote_c)
-				break;
-			else if (names[i] == '\"' || names[i] == '\'')
-				names[i] = '`';
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-					c = _decode_node_state(name);
-					if (c == NO_VAL)
-						fatal("unrecognized job "
-						      "state value");
-					xfree(name);
-					name = xstrdup_printf("%u", c);
-
-					while((tmp_char = list_next(itr))) {
-						if (!xstrcasecmp(tmp_char,
-								 name))
-							break;
-					}
-
-					if (!tmp_char) {
-						list_append(char_list, name);
-						count++;
-					} else
-						xfree(name);
-					list_iterator_reset(itr);
-				}
-				i++;
-				start = i;
-				if (names[i] == ' ') {
-					info("There is a problem with "
-					     "your request.  It appears you "
-					     "have spaces inside your list.");
-					break;
-				}
-			}
-			i++;
-		}
-		if ((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-			c = _decode_node_state(name);
-			if (c == NO_VAL)
-				fatal("unrecognized job state value");
-			xfree(name);
-			name = xstrdup_printf("%u", c);
-
-			while((tmp_char = list_next(itr))) {
-				if (!xstrcasecmp(tmp_char, name))
-					break;
-			}
-
-			if (!tmp_char) {
-				list_append(char_list, name);
-				count++;
-			} else
-				xfree(name);
-		}
-	}
-	list_iterator_destroy(itr);
-	return count;
+	return slurm_parse_char_list(char_list, names, NULL,
+				     _addto_state_char_list_internal);
 }
 
 static uint32_t _parse_cond_flags(const char *flags_str)
@@ -321,7 +262,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (!event_cond->state_list)
 				event_cond->state_list = list_create(xfree_ptr);
 			if (_addto_state_char_list(event_cond->state_list,
-						  argv[i]+end)) {
+						  argv[i]+end) > 0) {
 				event_cond->event_type = SLURMDB_EVENT_NODE;
 				set = 1;
 			}
@@ -332,7 +273,7 @@ static int _set_cond(int *start, int argc, char **argv,
 					list_create(xfree_ptr);
 			if (slurm_addto_id_char_list(
 				event_cond->reason_uid_list,
-				argv[i]+end, 0)) {
+				argv[i]+end, 0) > 0) {
 				event_cond->event_type = SLURMDB_EVENT_NODE;
 				set = 1;
 			} else {

@@ -92,6 +92,9 @@ check_PROGRAMS = $(am__EXEEXT_2)
 TESTS = $(am__EXEEXT_1)
 #MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
 @HAVE_CHECK_TRUE@am__append_1 = slurm_addto_char_list-test \
+@HAVE_CHECK_TRUE@	 slurm_addto_id_char_list-test \
+@HAVE_CHECK_TRUE@	 slurm_addto_mode_char_list-test \
+@HAVE_CHECK_TRUE@	 slurm_addto_step_list-test \
 @HAVE_CHECK_TRUE@	 xlate_array_task_str-test
 
 subdir = testsuite/slurm_unit/common/slurm_protocol_defs
@@ -152,6 +155,9 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = slurm_addto_char_list-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	slurm_addto_id_char_list-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	slurm_addto_mode_char_list-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	slurm_addto_step_list-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	xlate_array_task_str-test$(EXEEXT)
 am__EXEEXT_2 = $(am__EXEEXT_1)
 slurm_addto_char_list_test_SOURCES = slurm_addto_char_list-test.c
@@ -168,6 +174,32 @@ am__v_lt_1 =
 slurm_addto_char_list_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(slurm_addto_char_list_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+slurm_addto_id_char_list_test_SOURCES =  \
+	slurm_addto_id_char_list-test.c
+slurm_addto_id_char_list_test_OBJECTS = slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@slurm_addto_id_char_list_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+slurm_addto_id_char_list_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(slurm_addto_id_char_list_test_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+slurm_addto_mode_char_list_test_SOURCES =  \
+	slurm_addto_mode_char_list-test.c
+slurm_addto_mode_char_list_test_OBJECTS = slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@slurm_addto_mode_char_list_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+slurm_addto_mode_char_list_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(slurm_addto_mode_char_list_test_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+slurm_addto_step_list_test_SOURCES = slurm_addto_step_list-test.c
+slurm_addto_step_list_test_OBJECTS = slurm_addto_step_list_test-slurm_addto_step_list-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@slurm_addto_step_list_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+slurm_addto_step_list_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(slurm_addto_step_list_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 xlate_array_task_str_test_SOURCES = xlate_array_task_str-test.c
 xlate_array_task_str_test_OBJECTS =  \
@@ -194,6 +226,9 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/slurm_addto_char_list_test-slurm_addto_char_list-test.Po \
+	./$(DEPDIR)/slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.Po \
+	./$(DEPDIR)/slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.Po \
+	./$(DEPDIR)/slurm_addto_step_list_test-slurm_addto_step_list-test.Po \
 	./$(DEPDIR)/xlate_array_task_str_test-xlate_array_task_str-test.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -214,7 +249,9 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = slurm_addto_char_list-test.c xlate_array_task_str-test.c
+SOURCES = slurm_addto_char_list-test.c slurm_addto_id_char_list-test.c \
+	slurm_addto_mode_char_list-test.c slurm_addto_step_list-test.c \
+	xlate_array_task_str-test.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -704,6 +741,12 @@ LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
 @HAVE_CHECK_TRUE@slurm_addto_char_list_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@slurm_addto_char_list_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@slurm_addto_id_char_list_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@slurm_addto_id_char_list_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@slurm_addto_mode_char_list_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@slurm_addto_mode_char_list_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@slurm_addto_step_list_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@slurm_addto_step_list_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@xlate_array_task_str_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@xlate_array_task_str_test_LDADD = $(LDADD) @CHECK_LIBS@
 all: all-am
@@ -753,6 +796,18 @@ slurm_addto_char_list-test$(EXEEXT): $(slurm_addto_char_list_test_OBJECTS) $(slu
 	@rm -f slurm_addto_char_list-test$(EXEEXT)
 	$(AM_V_CCLD)$(slurm_addto_char_list_test_LINK) $(slurm_addto_char_list_test_OBJECTS) $(slurm_addto_char_list_test_LDADD) $(LIBS)
 
+slurm_addto_id_char_list-test$(EXEEXT): $(slurm_addto_id_char_list_test_OBJECTS) $(slurm_addto_id_char_list_test_DEPENDENCIES) $(EXTRA_slurm_addto_id_char_list_test_DEPENDENCIES) 
+	@rm -f slurm_addto_id_char_list-test$(EXEEXT)
+	$(AM_V_CCLD)$(slurm_addto_id_char_list_test_LINK) $(slurm_addto_id_char_list_test_OBJECTS) $(slurm_addto_id_char_list_test_LDADD) $(LIBS)
+
+slurm_addto_mode_char_list-test$(EXEEXT): $(slurm_addto_mode_char_list_test_OBJECTS) $(slurm_addto_mode_char_list_test_DEPENDENCIES) $(EXTRA_slurm_addto_mode_char_list_test_DEPENDENCIES) 
+	@rm -f slurm_addto_mode_char_list-test$(EXEEXT)
+	$(AM_V_CCLD)$(slurm_addto_mode_char_list_test_LINK) $(slurm_addto_mode_char_list_test_OBJECTS) $(slurm_addto_mode_char_list_test_LDADD) $(LIBS)
+
+slurm_addto_step_list-test$(EXEEXT): $(slurm_addto_step_list_test_OBJECTS) $(slurm_addto_step_list_test_DEPENDENCIES) $(EXTRA_slurm_addto_step_list_test_DEPENDENCIES) 
+	@rm -f slurm_addto_step_list-test$(EXEEXT)
+	$(AM_V_CCLD)$(slurm_addto_step_list_test_LINK) $(slurm_addto_step_list_test_OBJECTS) $(slurm_addto_step_list_test_LDADD) $(LIBS)
+
 xlate_array_task_str-test$(EXEEXT): $(xlate_array_task_str_test_OBJECTS) $(xlate_array_task_str_test_DEPENDENCIES) $(EXTRA_xlate_array_task_str_test_DEPENDENCIES) 
 	@rm -f xlate_array_task_str-test$(EXEEXT)
 	$(AM_V_CCLD)$(xlate_array_task_str_test_LINK) $(xlate_array_task_str_test_OBJECTS) $(xlate_array_task_str_test_LDADD) $(LIBS)
@@ -764,6 +819,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_addto_char_list_test-slurm_addto_char_list-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_addto_step_list_test-slurm_addto_step_list-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xlate_array_task_str_test-xlate_array_task_str-test.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -806,6 +864,48 @@ slurm_addto_char_list_test-slurm_addto_char_list-test.obj: slurm_addto_char_list
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_addto_char_list-test.c' object='slurm_addto_char_list_test-slurm_addto_char_list-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_char_list_test_CFLAGS) $(CFLAGS) -c -o slurm_addto_char_list_test-slurm_addto_char_list-test.obj `if test -f 'slurm_addto_char_list-test.c'; then $(CYGPATH_W) 'slurm_addto_char_list-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_addto_char_list-test.c'; fi`
+
+slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.o: slurm_addto_id_char_list-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_id_char_list_test_CFLAGS) $(CFLAGS) -MT slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.o -MD -MP -MF $(DEPDIR)/slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.Tpo -c -o slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.o `test -f 'slurm_addto_id_char_list-test.c' || echo '$(srcdir)/'`slurm_addto_id_char_list-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.Tpo $(DEPDIR)/slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_addto_id_char_list-test.c' object='slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_id_char_list_test_CFLAGS) $(CFLAGS) -c -o slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.o `test -f 'slurm_addto_id_char_list-test.c' || echo '$(srcdir)/'`slurm_addto_id_char_list-test.c
+
+slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.obj: slurm_addto_id_char_list-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_id_char_list_test_CFLAGS) $(CFLAGS) -MT slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.obj -MD -MP -MF $(DEPDIR)/slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.Tpo -c -o slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.obj `if test -f 'slurm_addto_id_char_list-test.c'; then $(CYGPATH_W) 'slurm_addto_id_char_list-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_addto_id_char_list-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.Tpo $(DEPDIR)/slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_addto_id_char_list-test.c' object='slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_id_char_list_test_CFLAGS) $(CFLAGS) -c -o slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.obj `if test -f 'slurm_addto_id_char_list-test.c'; then $(CYGPATH_W) 'slurm_addto_id_char_list-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_addto_id_char_list-test.c'; fi`
+
+slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.o: slurm_addto_mode_char_list-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_mode_char_list_test_CFLAGS) $(CFLAGS) -MT slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.o -MD -MP -MF $(DEPDIR)/slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.Tpo -c -o slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.o `test -f 'slurm_addto_mode_char_list-test.c' || echo '$(srcdir)/'`slurm_addto_mode_char_list-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.Tpo $(DEPDIR)/slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_addto_mode_char_list-test.c' object='slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_mode_char_list_test_CFLAGS) $(CFLAGS) -c -o slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.o `test -f 'slurm_addto_mode_char_list-test.c' || echo '$(srcdir)/'`slurm_addto_mode_char_list-test.c
+
+slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.obj: slurm_addto_mode_char_list-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_mode_char_list_test_CFLAGS) $(CFLAGS) -MT slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.obj -MD -MP -MF $(DEPDIR)/slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.Tpo -c -o slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.obj `if test -f 'slurm_addto_mode_char_list-test.c'; then $(CYGPATH_W) 'slurm_addto_mode_char_list-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_addto_mode_char_list-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.Tpo $(DEPDIR)/slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_addto_mode_char_list-test.c' object='slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_mode_char_list_test_CFLAGS) $(CFLAGS) -c -o slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.obj `if test -f 'slurm_addto_mode_char_list-test.c'; then $(CYGPATH_W) 'slurm_addto_mode_char_list-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_addto_mode_char_list-test.c'; fi`
+
+slurm_addto_step_list_test-slurm_addto_step_list-test.o: slurm_addto_step_list-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_step_list_test_CFLAGS) $(CFLAGS) -MT slurm_addto_step_list_test-slurm_addto_step_list-test.o -MD -MP -MF $(DEPDIR)/slurm_addto_step_list_test-slurm_addto_step_list-test.Tpo -c -o slurm_addto_step_list_test-slurm_addto_step_list-test.o `test -f 'slurm_addto_step_list-test.c' || echo '$(srcdir)/'`slurm_addto_step_list-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurm_addto_step_list_test-slurm_addto_step_list-test.Tpo $(DEPDIR)/slurm_addto_step_list_test-slurm_addto_step_list-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_addto_step_list-test.c' object='slurm_addto_step_list_test-slurm_addto_step_list-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_step_list_test_CFLAGS) $(CFLAGS) -c -o slurm_addto_step_list_test-slurm_addto_step_list-test.o `test -f 'slurm_addto_step_list-test.c' || echo '$(srcdir)/'`slurm_addto_step_list-test.c
+
+slurm_addto_step_list_test-slurm_addto_step_list-test.obj: slurm_addto_step_list-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_step_list_test_CFLAGS) $(CFLAGS) -MT slurm_addto_step_list_test-slurm_addto_step_list-test.obj -MD -MP -MF $(DEPDIR)/slurm_addto_step_list_test-slurm_addto_step_list-test.Tpo -c -o slurm_addto_step_list_test-slurm_addto_step_list-test.obj `if test -f 'slurm_addto_step_list-test.c'; then $(CYGPATH_W) 'slurm_addto_step_list-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_addto_step_list-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurm_addto_step_list_test-slurm_addto_step_list-test.Tpo $(DEPDIR)/slurm_addto_step_list_test-slurm_addto_step_list-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_addto_step_list-test.c' object='slurm_addto_step_list_test-slurm_addto_step_list-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_addto_step_list_test_CFLAGS) $(CFLAGS) -c -o slurm_addto_step_list_test-slurm_addto_step_list-test.obj `if test -f 'slurm_addto_step_list-test.c'; then $(CYGPATH_W) 'slurm_addto_step_list-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_addto_step_list-test.c'; fi`
 
 xlate_array_task_str_test-xlate_array_task_str-test.o: xlate_array_task_str-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xlate_array_task_str_test_CFLAGS) $(CFLAGS) -MT xlate_array_task_str_test-xlate_array_task_str-test.o -MD -MP -MF $(DEPDIR)/xlate_array_task_str_test-xlate_array_task_str-test.Tpo -c -o xlate_array_task_str_test-xlate_array_task_str-test.o `test -f 'xlate_array_task_str-test.c' || echo '$(srcdir)/'`xlate_array_task_str-test.c
@@ -1027,6 +1127,27 @@ slurm_addto_char_list-test.log: slurm_addto_char_list-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+slurm_addto_id_char_list-test.log: slurm_addto_id_char_list-test$(EXEEXT)
+	@p='slurm_addto_id_char_list-test$(EXEEXT)'; \
+	b='slurm_addto_id_char_list-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+slurm_addto_mode_char_list-test.log: slurm_addto_mode_char_list-test$(EXEEXT)
+	@p='slurm_addto_mode_char_list-test$(EXEEXT)'; \
+	b='slurm_addto_mode_char_list-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+slurm_addto_step_list-test.log: slurm_addto_step_list-test$(EXEEXT)
+	@p='slurm_addto_step_list-test$(EXEEXT)'; \
+	b='slurm_addto_step_list-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 xlate_array_task_str-test.log: xlate_array_task_str-test$(EXEEXT)
 	@p='xlate_array_task_str-test$(EXEEXT)'; \
 	b='xlate_array_task_str-test'; \
@@ -1094,6 +1215,9 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/slurm_addto_char_list_test-slurm_addto_char_list-test.Po
+	-rm -f ./$(DEPDIR)/slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.Po
+	-rm -f ./$(DEPDIR)/slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.Po
+	-rm -f ./$(DEPDIR)/slurm_addto_step_list_test-slurm_addto_step_list-test.Po
 	-rm -f ./$(DEPDIR)/xlate_array_task_str_test-xlate_array_task_str-test.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -1141,6 +1265,9 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/slurm_addto_char_list_test-slurm_addto_char_list-test.Po
+	-rm -f ./$(DEPDIR)/slurm_addto_id_char_list_test-slurm_addto_id_char_list-test.Po
+	-rm -f ./$(DEPDIR)/slurm_addto_mode_char_list_test-slurm_addto_mode_char_list-test.Po
+	-rm -f ./$(DEPDIR)/slurm_addto_step_list_test-slurm_addto_step_list-test.Po
 	-rm -f ./$(DEPDIR)/xlate_array_task_str_test-xlate_array_task_str-test.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

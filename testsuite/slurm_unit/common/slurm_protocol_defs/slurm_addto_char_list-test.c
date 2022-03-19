@@ -42,7 +42,7 @@ START_TEST(easy)
 {
 	int count;
 	char *names = "hi,this,that";
-	List char_list = list_create(NULL);
+	List char_list = list_create(xfree_ptr);
 	ListIterator itr;
 
 	count = slurm_addto_char_list(char_list, names);
@@ -61,7 +61,7 @@ START_TEST(commas_at_end)
 {
 	int count;
 	char *names = "hi,this,that,,,,,,,,,,,,,,,,,,,,,,,,";
-	List char_list = list_create(NULL);
+	List char_list = list_create(xfree_ptr);
 	ListIterator itr;
 
 	count = slurm_addto_char_list(char_list, names);
@@ -80,7 +80,7 @@ START_TEST(commas_at_start)
 {
 	int count;
 	char *names = ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,hi,this,that";
-	List char_list = list_create(NULL);
+	List char_list = list_create(xfree_ptr);
 	ListIterator itr;
 
 	count = slurm_addto_char_list(char_list, names);
@@ -99,7 +99,7 @@ START_TEST(commas_between)
 {
 	int count;
 	char *names = "hi,,,,,,,this,,,,,,,,that";
-	List char_list = list_create(NULL);
+	List char_list = list_create(xfree_ptr);
 	ListIterator itr;
 
 	count = slurm_addto_char_list(char_list, names);
@@ -130,7 +130,7 @@ END_TEST
 START_TEST(brackets) {
 	int count;
 	char *names = "hi[0-2],,hi[2-3],,this";
-	List char_list = list_create(NULL);
+	List char_list = list_create(xfree_ptr);
 	ListIterator itr;
 
 	count = slurm_addto_char_list(char_list, names);
@@ -150,7 +150,7 @@ END_TEST
 START_TEST(duplicates) {
 	int count;
 	char *names = "hi,hi,hi,hi";
-	List char_list = list_create(NULL);
+	List char_list = list_create(xfree_ptr);
 	ListIterator itr;
 
 	count = slurm_addto_char_list(char_list, names);
@@ -166,10 +166,10 @@ END_TEST
 START_TEST(spaces) {
 	int count;
 	char *names = "hi, this, that";
-	List char_list = list_create(NULL);
+	List char_list = list_create(xfree_ptr);
 
 	count = slurm_addto_char_list(char_list, names);
-	ck_assert_int_eq(count, 0);
+	ck_assert_int_eq(count, 3);
 
 	FREE_NULL_LIST(char_list);
 }
@@ -179,7 +179,7 @@ START_TEST(quotes)
 {
 	int count;
 	char *names = xstrdup("\"hi,this\'");
-	List char_list = list_create(NULL);
+	List char_list = list_create(xfree_ptr);
 	ListIterator itr;
 
 	count = slurm_addto_char_list(char_list, names);

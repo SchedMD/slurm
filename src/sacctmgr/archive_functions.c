@@ -335,7 +335,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (!job_cond->userid_list)
 				job_cond->userid_list = list_create(xfree_ptr);
 			if (slurm_addto_id_char_list(job_cond->userid_list,
-			                             argv[i]+end, false))
+						     argv[i]+end, false) > 0)
 				set = 1;
 			else
 				exit_code = 1;

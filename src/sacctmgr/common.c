@@ -41,6 +41,7 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_protocol_defs.h"
 
 #include <unistd.h>
 #include <termios.h>
@@ -1509,103 +1510,38 @@ extern int get_double(char *in_value, double *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
+static int _addto_action_char_list_internal(List char_list, char *name, void *x)
+{
+	uint32_t id = 0;
+	char *tmp_name = NULL;
+
+	id = str_2_slurmdbd_msg_type(name);
+	if (id == NO_VAL) {
+		error("You gave a bad action '%s'.", name);
+		list_flush(char_list);
+		return SLURM_ERROR;
+	}
+
+	tmp_name = xstrdup_printf("%u", id);
+
+	if (!list_find_first(char_list, slurm_find_char_in_list, tmp_name)) {
+		list_append(char_list, tmp_name);
+		return 1;
+	} else {
+		xfree(tmp_name);
+		return 0;
+	}
+}
+
 extern int addto_action_char_list(List char_list, char *names)
 {
-	int i=0, start=0;
-	char *name = NULL, *tmp_char = NULL;
-	ListIterator itr = NULL;
-	char quote_c = '\0';
-	int quote = 0;
-	uint32_t id=0;
-	int count = 0;
-
 	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
-	itr = list_iterator_create(char_list);
-	if (names) {
-		if (names[i] == '\"' || names[i] == '\'') {
-			quote_c = names[i];
-			quote = 1;
-			i++;
-		}
-		start = i;
-		while(names[i]) {
-			if (quote && names[i] == quote_c)
-				break;
-			else if (names[i] == '\"' || names[i] == '\'')
-				names[i] = '`';
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-
-					id = str_2_slurmdbd_msg_type(name);
-					if (id == NO_VAL) {
-						error("You gave a bad action "
-						      "'%s'.", name);
-						xfree(name);
-						break;
-					}
-					xfree(name);
-
-					name = xstrdup_printf("%u", id);
-					while((tmp_char = list_next(itr))) {
-						if (!xstrcasecmp(tmp_char,
-								 name))
-							break;
-					}
-					list_iterator_reset(itr);
-
-					if (!tmp_char) {
-						list_append(char_list, name);
-						count++;
-					} else
-						xfree(name);
-				}
-
-				i++;
-				start = i;
-				if (names[i] == ' ') {
-					error("There is a problem with "
-					      "your request.  It appears you "
-					      "have spaces inside your list.");
-					break;
-				}
-			}
-			i++;
-		}
-		if ((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-
-			id = str_2_slurmdbd_msg_type(name);
-			if (id == NO_VAL)  {
-				error("You gave a bad action '%s'.",
-				      name);
-				xfree(name);
-				goto end_it;
-			}
-			xfree(name);
-
-			name = xstrdup_printf("%u", id);
-			while((tmp_char = list_next(itr))) {
-				if (!xstrcasecmp(tmp_char, name))
-					break;
-			}
-
-			if (!tmp_char) {
-				list_append(char_list, name);
-				count++;
-			} else
-				xfree(name);
-		}
-	}
-end_it:
-	list_iterator_destroy(itr);
-	return count;
+	return slurm_parse_char_list(char_list, names, NULL,
+				     _addto_action_char_list_internal);
 }
 
 extern void sacctmgr_print_coord_list(

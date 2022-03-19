@@ -108,94 +108,35 @@ static void _help_fields_msg(void)
 }
 
 /* returns number of objects added to list */
+static int _addto_reason_char_list_internal(List char_list, char *name, void *x)
+{
+	uint32_t c;
+	char *tmp_name = NULL;
+
+	c = job_reason_num(name);
+	if (c == NO_VAL)
+		fatal("unrecognized job reason value '%s'", name);
+	tmp_name = xstrdup_printf("%u", c);
+
+	if (!list_find_first(char_list, slurm_find_char_in_list, tmp_name)) {
+		list_append(char_list, tmp_name);
+		return 1;
+	} else {
+		xfree(tmp_name);
+		return 0;
+	}
+}
+
+/* returns number of objects added to list */
 static int _addto_reason_char_list(List char_list, char *names)
 {
-	int i = 0, start = 0;
-	uint32_t c;
-	char *name = NULL, *tmp_char = NULL;
-	ListIterator itr = NULL;
-	char quote_c = '\0';
-	int quote = 0;
-	int count = 0;
-
 	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
-	itr = list_iterator_create(char_list);
-	if (names) {
-		if (names[i] == '\"' || names[i] == '\'') {
-			quote_c = names[i];
-			quote = 1;
-			i++;
-		}
-		start = i;
-		while (names[i]) {
-			//info("got %d - %d = %d", i, start, i-start);
-			if (quote && names[i] == quote_c)
-				break;
-			else if (names[i] == '\"' || names[i] == '\'')
-				names[i] = '`';
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-					c = job_reason_num(name);
-					if (c == NO_VAL)
-						fatal("unrecognized job reason value %s",
-						      name);
-					xfree(name);
-					name = xstrdup_printf("%u", c);
-
-					while ((tmp_char = list_next(itr))) {
-						if (!xstrcasecmp(tmp_char,
-								 name))
-							break;
-					}
-
-					if (!tmp_char) {
-						list_append(char_list, name);
-						count++;
-					} else
-						xfree(name);
-					list_iterator_reset(itr);
-				}
-				i++;
-				start = i;
-				if (names[i] == ' ') {
-					info("There is a problem with "
-					     "your request.  It appears you "
-					     "have spaces inside your list.");
-					break;
-				}
-			}
-			i++;
-		}
-		if ((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-			c = job_reason_num(name);
-			if (c == NO_VAL)
-				fatal("unrecognized job reason value '%s'",
-				      name);
-			xfree(name);
-			name = xstrdup_printf("%u", c);
-
-			while ((tmp_char = list_next(itr))) {
-				if (!xstrcasecmp(tmp_char, name))
-					break;
-			}
-
-			if (!tmp_char) {
-				list_append(char_list, name);
-				count++;
-			} else
-				xfree(name);
-		}
-	}
-	list_iterator_destroy(itr);
-	return count;
+	return slurm_parse_char_list(char_list, names, NULL,
+				     _addto_reason_char_list_internal);
 }
 
 static bool _supported_state(uint32_t state_num)
@@ -225,99 +166,38 @@ static bool _supported_state(uint32_t state_num)
 	}
 }
 
+static int _addto_state_char_list_internal(List char_list, char *name, void *x)
+{
+	uint32_t c;
+	char *tmp_name = NULL;
+
+	c = job_state_num(name);
+	if (c == NO_VAL)
+		fatal("unrecognized job state value '%s'", name);
+	if (!_supported_state(c))
+		fatal("job state %s is not supported / accounted", name);
+	tmp_name = xstrdup_printf("%d", c);
+
+	if (!list_find_first(char_list, slurm_find_char_in_list, tmp_name)) {
+		list_append(char_list, tmp_name);
+		return 1;
+	} else {
+		xfree(tmp_name);
+		return 0;
+	}
+}
+
 /* returns number of objects added to list */
 /* also checks if states are supported by sacct and fatals if not */
 static int _addto_state_char_list(List char_list, char *names)
 {
-	int i = 0, start = 0;
-	uint32_t c;
-	char *name = NULL, *tmp_char = NULL;
-	ListIterator itr = NULL;
-	char quote_c = '\0';
-	int quote = 0;
-	int count = 0;
-
 	if (!char_list) {
 		error("No list was given to fill in");
 		return 0;
 	}
 
-	itr = list_iterator_create(char_list);
-	if (names) {
-		if (names[i] == '\"' || names[i] == '\'') {
-			quote_c = names[i];
-			quote = 1;
-			i++;
-		}
-		start = i;
-		while (names[i]) {
-			//info("got %d - %d = %d", i, start, i-start);
-			if (quote && names[i] == quote_c)
-				break;
-			else if (names[i] == '\"' || names[i] == '\'')
-				names[i] = '`';
-			else if (names[i] == ',') {
-				if ((i-start) > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-					c = job_state_num(name);
-					if (c == NO_VAL)
-						fatal("unrecognized job state value %s", name);
-					if (!_supported_state(c))
-						fatal("job state %s is not supported / accounted", name);
-					xfree(name);
-					name = xstrdup_printf("%d", c);
-
-					while ((tmp_char = list_next(itr))) {
-						if (!xstrcasecmp(tmp_char,
-								 name))
-							break;
-					}
-
-					if (!tmp_char) {
-						list_append(char_list, name);
-						count++;
-					} else
-						xfree(name);
-					list_iterator_reset(itr);
-				}
-				i++;
-				start = i;
-				if (names[i] == ' ') {
-					info("There is a problem with "
-					     "your request.  It appears you "
-					     "have spaces inside your list.");
-					break;
-				}
-			}
-			i++;
-		}
-		if ((i-start) > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-			c = job_state_num(name);
-			if (c == NO_VAL)
-				fatal("unrecognized job state value '%s'",
-				      name);
-			if (!_supported_state(c))
-				fatal("job state %s is not supported / accounted", name);
-			xfree(name);
-			name = xstrdup_printf("%d", c);
-
-			while ((tmp_char = list_next(itr))) {
-				if (!xstrcasecmp(tmp_char, name))
-					break;
-			}
-
-			if (!tmp_char) {
-				list_append(char_list, name);
-				count++;
-			} else
-				xfree(name);
-		}
-	}
-	list_iterator_destroy(itr);
-	return count;
+	return slurm_parse_char_list(char_list, names, NULL,
+				     _addto_state_char_list_internal);
 }
 
 static void _help_msg(void)
@@ -866,8 +746,8 @@ extern void parse_command_line(int argc, char **argv)
 		case 'g':
 			if (!job_cond->groupid_list)
 				job_cond->groupid_list = list_create(xfree_ptr);
-			if (!slurm_addto_id_char_list(job_cond->groupid_list,
-			                              optarg, 1))
+			if (slurm_addto_id_char_list(job_cond->groupid_list,
+						     optarg, 1) < 1)
 				exit(1);
 			break;
 		case 'h':
@@ -1015,8 +895,8 @@ extern void parse_command_line(int argc, char **argv)
 			all_users = false;
 			if (!job_cond->userid_list)
 				job_cond->userid_list = list_create(xfree_ptr);
-			if (!slurm_addto_id_char_list(job_cond->userid_list,
-			                              optarg, 0))
+			if (slurm_addto_id_char_list(job_cond->userid_list,
+						     optarg, 0) < 1)
 				exit(1);
 			break;
 		case OPT_LONG_LOCAL_UID:
@@ -1201,8 +1081,8 @@ extern void parse_command_line(int argc, char **argv)
 		if (!job_cond->qos_list)
 			job_cond->qos_list = list_create(xfree_ptr);
 
-		if (!slurmdb_addto_qos_char_list(job_cond->qos_list,
-						g_qos_list, qos_names, 0))
+		if (slurmdb_addto_qos_char_list(job_cond->qos_list,
+						g_qos_list, qos_names, 0) < 1)
 			fatal("problem processing qos list");
 		xfree(qos_names);
 	}
