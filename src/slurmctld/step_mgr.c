@@ -1873,22 +1873,64 @@ static bool _pick_step_core(step_record_t *step_ptr,
 
 static bool _handle_core_select(step_record_t *step_ptr,
 				job_resources_t *job_resrcs_ptr,
-				int job_node_inx,
-				int sock_inx, int core_inx, bool use_all_cores,
+				int job_node_inx, uint16_t sockets,
+				uint16_t cores, bool use_all_cores,
 				bool oversubscribing_cpus, int *cpu_cnt)
 {
+	int core_inx, i, sock_inx;
+	static int last_core_inx;
+
 	xassert(cpu_cnt);
 
-	if (!_pick_step_core(step_ptr,
-			     job_resrcs_ptr,
-			     job_node_inx, sock_inx,
-			     core_inx, use_all_cores,
-			     oversubscribing_cpus))
-		return false;
+	/*
+	 * Use last_core_inx to avoid putting all of the extra
+	 * work onto core zero when oversubscribing cpus.
+	 */
+	if (oversubscribing_cpus)
+		last_core_inx = (last_core_inx + 1) % cores;
 
-	if (--(*cpu_cnt) == 0)
-		return true;
+	/*
+	 * Figure out the task distribution. The default is to cyclically
+	 * distribute to sockets.
+	 */
+	if (step_ptr->step_layout &&
+	    (step_ptr->step_layout->task_dist & SLURM_DIST_SOCKBLOCK)) {
+		/* Fill sockets before allocating to the next socket */
+		for (sock_inx=0; sock_inx < sockets; sock_inx++) {
+			for (i=0; i < cores; i++) {
+				if (oversubscribing_cpus)
+					core_inx = (last_core_inx + i) % cores;
+				else
+					core_inx = i;
 
+				if (!_pick_step_core(step_ptr, job_resrcs_ptr,
+						     job_node_inx, sock_inx,
+						     core_inx, use_all_cores,
+						     oversubscribing_cpus))
+					continue;
+
+				if (--(*cpu_cnt) == 0)
+					return true;
+			}
+		}
+	} else {
+		for (i = 0; i < cores; i++) {
+			if (oversubscribing_cpus)
+				core_inx = (last_core_inx + i) % cores;
+			else
+				core_inx = i;
+			for (sock_inx = 0; sock_inx < sockets; sock_inx++) {
+				if (!_pick_step_core(step_ptr, job_resrcs_ptr,
+						     job_node_inx, sock_inx,
+						     core_inx, use_all_cores,
+						     oversubscribing_cpus))
+					continue;
+
+				if (--(*cpu_cnt) == 0)
+					return true;
+			}
+		}
+	}
 	return false;
 }
 
@@ -1937,38 +1979,9 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	}
 
 	/* select idle cores first */
-	/*
-	 * Figure out the task distribution. The default is to cyclically
-	 * distribute to sockets.
-	 */
-	if (step_ptr->step_layout &&
-	    (step_ptr->step_layout->task_dist & SLURM_DIST_SOCKBLOCK)) {
-		/* Fill sockets before allocating to the next socket */
-		for (sock_inx=0; sock_inx < sockets; sock_inx++) {
-			for (core_inx=0; core_inx < cores; core_inx++) {
-				if (_handle_core_select(step_ptr,
-							job_resrcs_ptr,
-							job_node_inx, sock_inx,
-							core_inx,
-							use_all_cores,
-							false, &cpu_cnt))
-					return SLURM_SUCCESS;
-			}
-		}
-	} else {
-		/* Cyclically allocate cores across sockets */
-		for (core_inx=0; core_inx < cores; core_inx++) {
-			for (sock_inx=0; sock_inx < sockets; sock_inx++) {
-				if (_handle_core_select(step_ptr,
-							job_resrcs_ptr,
-							job_node_inx, sock_inx,
-							core_inx,
-							use_all_cores,
-							false, &cpu_cnt))
-					return SLURM_SUCCESS;
-			}
-		}
-	}
+	if (_handle_core_select(step_ptr, job_resrcs_ptr, job_node_inx, sockets,
+				cores, use_all_cores, false, &cpu_cnt))
+		return SLURM_SUCCESS;
 
 	/* The test for cores==0 is just to avoid CLANG errors.
 	 * It should never happen */
@@ -1978,46 +1991,17 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	if (!(step_ptr->flags & SSF_OVERCOMMIT))
 		return ESLURM_NODES_BUSY;
 
-	/* We need to over-subscribe one or more cores.
-	 * Use last_core_inx to avoid putting all of the extra
-	 * work onto core zero */
+	/* We need to over-subscribe one or more cores. */
 	verbose("%s: %pS needs to over-subscribe cores required:%u assigned:%u/%"PRIu64 " overcommit:%c exclusive:%c",
 		__func__, step_ptr, cores,
 		bit_set_count(job_resrcs_ptr->core_bitmap),
 		bit_size(job_resrcs_ptr->core_bitmap),
 		((step_ptr->flags & SSF_OVERCOMMIT) ? 'T' : 'F'),
 		((step_ptr->flags & SSF_EXCLUSIVE) ? 'T' : 'F'));
-	last_core_inx = (last_core_inx + 1) % cores;
 
-	if (step_ptr->step_layout &&
-	    (step_ptr->step_layout->task_dist & SLURM_DIST_SOCKBLOCK)) {
-		/* Fill sockets before allocating to the next socket */
-		for (sock_inx=0; sock_inx < sockets; sock_inx++) {
-			for (i=0; i < cores; i++) {
-				core_inx = (last_core_inx + i) % cores;
-				if (_handle_core_select(step_ptr,
-							job_resrcs_ptr,
-							job_node_inx, sock_inx,
-							core_inx,
-							use_all_cores,
-							true, &cpu_cnt))
-					return SLURM_SUCCESS;
-			}
-		}
-	} else {
-		for (i=0; i < cores; i++) {
-			core_inx = (last_core_inx + i) % cores;
-			for (sock_inx=0; sock_inx < sockets; sock_inx++) {
-				if (_handle_core_select(step_ptr,
-							job_resrcs_ptr,
-							job_node_inx, sock_inx,
-							core_inx,
-							use_all_cores,
-							true, &cpu_cnt))
-					return SLURM_SUCCESS;
-			}
-		}
-	}
+	if (_handle_core_select(step_ptr, job_resrcs_ptr, job_node_inx, sockets,
+				cores, use_all_cores, true, &cpu_cnt))
+		return SLURM_SUCCESS;
 
 	return SLURM_SUCCESS;
 }
