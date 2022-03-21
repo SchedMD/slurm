@@ -236,16 +236,12 @@ int eio_signal_wakeup(eio_handle_t *eio)
 	return 0;
 }
 
-static void _mark_shutdown_true(List obj_list)
+static int _mark_shutdown_true(void *x, void *arg)
 {
-	ListIterator objs;
-	eio_obj_t *obj;
+	eio_obj_t *obj = x;
 
-	objs = list_iterator_create(obj_list);
-	while ((obj = list_next(objs))) {
-		obj->shutdown = true;
-	}
-	list_iterator_destroy(objs);
+	obj->shutdown = true;
+	return 0;
 }
 
 static int _eio_wakeup_handler(eio_handle_t *eio)
@@ -255,7 +251,7 @@ static int _eio_wakeup_handler(eio_handle_t *eio)
 
 	while ((rc = (read(eio->fds[0], &c, 1)) > 0)) {
 		if (c == 1)
-			_mark_shutdown_true(eio->obj_list);
+			list_for_each(eio->obj_list, _mark_shutdown_true, NULL);
 	}
 
 	/* move new eio objects from the new_objs to the obj_list */
