@@ -192,7 +192,8 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 		return EPLUGIN_DLOPEN_FAILED;
 	}
 
-	if ((rc = _verify_syms(plug, NULL, 0, __func__, fq_path))) {
+	rc = _verify_syms(plug, NULL, 0, __func__, fq_path);
+	if (rc != EPLUGIN_SUCCESS) {
 		dlclose(plug);
 		return rc;
 	}
