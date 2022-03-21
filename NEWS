@@ -165,6 +165,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/[db]v0.0.36 - plugins have been marked as deprecated.
  -- sacct - allocations made by srun will now always display the allocation and
     step(s). Previously, the allocation and step were combined when possible.
+ -- Steps now allocate gres according to topo data.
 
 * Changes in Slurm 21.08.7
 ==========================

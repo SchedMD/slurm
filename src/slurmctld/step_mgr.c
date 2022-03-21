@@ -88,6 +88,16 @@ typedef struct {
 	uid_t uid;
 } step_signal_t;
 
+typedef struct {
+	bitstr_t *all_gres_core_bitmap;
+	bitstr_t *any_gres_core_bitmap;
+	int core_end_bit;
+	int core_start_bit;
+	int job_node_inx;
+	List node_gres_list;
+} foreach_gres_filter_t;
+
+
 static void _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs);
 static int _step_partial_comp(step_record_t *step_ptr,
@@ -1827,9 +1837,63 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 	return sum;
 }
 
+/* Clear avail_core_bitmap cores which are not bound to the allocated gres */
+static int _gres_filter_avail_sockets(void *x, void *arg)
+{
+	gres_state_t *gres_state_step = x;
+	foreach_gres_filter_t *args = arg;
+	gres_step_state_t *gres_ss = gres_state_step->gres_data;
+	bitstr_t *filter_core_bitmap;
+	gres_state_t *gres_state_node;
+	gres_node_state_t *gres_ns;
+
+	if (!(gres_state_node = list_find_first(args->node_gres_list,
+						gres_find_id,
+						&gres_state_step->plugin_id))) {
+		error("No node gres when step gres is allocated. This should never happen.");
+		return 0;
+	}
+	gres_ns = gres_state_node->gres_data;
+
+	if (!gres_ns->topo_cnt) /* No topology info */
+		return 0;
+
+	filter_core_bitmap = bit_copy(args->all_gres_core_bitmap);
+
+	/* Determine which specific cores can be used */
+	for (int i = 0; i < gres_ns->topo_cnt; i++) {
+		/* Is this gres allocated to the step? */
+		if (!bit_overlap_any(gres_ss->gres_bit_alloc[args->
+							     job_node_inx],
+				     gres_ns->topo_gres_bitmap[i]))
+			continue;
+		/* Does it specifify which cores which can use it */
+		if (!gres_ns->topo_core_bitmap[i]) {
+			bit_nset(args->any_gres_core_bitmap,
+				 args->core_start_bit, args->core_end_bit);
+			continue;
+		}
+		bit_nclear(filter_core_bitmap, args->core_start_bit,
+			   args->core_end_bit);
+		for (int j = 0;
+		     j < bit_size(gres_ns->topo_core_bitmap[i]);
+		     j++) {
+			if (bit_test(gres_ns->topo_core_bitmap[i], j)) {
+				bit_set(filter_core_bitmap,
+					args->core_start_bit + j);
+			}
+		}
+		bit_or(args->any_gres_core_bitmap, filter_core_bitmap);
+		bit_and(args->all_gres_core_bitmap, filter_core_bitmap);
+	}
+	FREE_NULL_BITMAP(filter_core_bitmap);
+	return 0;
+}
+
 /* Return true if a core was picked, false if not */
 static bool _pick_step_core(step_record_t *step_ptr,
-			    job_resources_t *job_resrcs_ptr, int job_node_inx,
+			    job_resources_t *job_resrcs_ptr,
+			    bitstr_t *avail_core_bitmap, int job_node_inx,
 			    int sock_inx, int core_inx, bool use_all_cores,
 			    bool oversubscribing_cpus)
 {
@@ -1842,7 +1906,7 @@ static bool _pick_step_core(step_record_t *step_ptr,
 	if (bit_offset < 0)
 		fatal("get_job_resources_offset");
 
-	if (!bit_test(job_resrcs_ptr->core_bitmap, bit_offset))
+	if (!bit_test(avail_core_bitmap, bit_offset))
 		return false;
 
 	if (oversubscribing_cpus) {
@@ -1873,6 +1937,7 @@ static bool _pick_step_core(step_record_t *step_ptr,
 
 static bool _handle_core_select(step_record_t *step_ptr,
 				job_resources_t *job_resrcs_ptr,
+				bitstr_t *avail_core_bitmap,
 				int job_node_inx, uint16_t sockets,
 				uint16_t cores, bool use_all_cores,
 				bool oversubscribing_cpus, int *cpu_cnt)
@@ -1904,6 +1969,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 					core_inx = i;
 
 				if (!_pick_step_core(step_ptr, job_resrcs_ptr,
+						     avail_core_bitmap,
 						     job_node_inx, sock_inx,
 						     core_inx, use_all_cores,
 						     oversubscribing_cpus))
@@ -1921,6 +1987,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 				core_inx = i;
 			for (sock_inx = 0; sock_inx < sockets; sock_inx++) {
 				if (!_pick_step_core(step_ptr, job_resrcs_ptr,
+						     avail_core_bitmap,
 						     job_node_inx, sock_inx,
 						     core_inx, use_all_cores,
 						     oversubscribing_cpus))
@@ -1939,13 +2006,13 @@ static bool _handle_core_select(step_record_t *step_ptr,
  *	and step's allocation */
 static int _pick_step_cores(step_record_t *step_ptr,
 			    job_resources_t *job_resrcs_ptr, int job_node_inx,
-			    uint16_t task_cnt, uint16_t cpus_per_core)
+			    uint16_t task_cnt, uint16_t cpus_per_core,
+			    int node_inx)
 {
-	int core_inx, i, sock_inx;
 	uint16_t sockets, cores;
 	int cpu_cnt = (int) task_cnt;
 	bool use_all_cores;
-	static int last_core_inx;
+	bitstr_t *all_gres_core_bitmap = NULL, *any_gres_core_bitmap = NULL;
 
 	if (!step_ptr->core_bitmap_job)
 		step_ptr->core_bitmap_job =
@@ -1978,18 +2045,67 @@ static int _pick_step_cores(step_record_t *step_ptr,
 
 	}
 
-	/* select idle cores first */
-	if (_handle_core_select(step_ptr, job_resrcs_ptr, job_node_inx, sockets,
-				cores, use_all_cores, false, &cpu_cnt))
-		return SLURM_SUCCESS;
+	all_gres_core_bitmap = bit_copy(job_resrcs_ptr->core_bitmap);
+	any_gres_core_bitmap = bit_copy(job_resrcs_ptr->core_bitmap);
+	if (step_ptr->gres_list_alloc) {
+		foreach_gres_filter_t args = {
+			.all_gres_core_bitmap = all_gres_core_bitmap,
+			.any_gres_core_bitmap = any_gres_core_bitmap,
+			.core_start_bit = get_job_resources_offset(
+				job_resrcs_ptr, job_node_inx, 0, 0),
+			.core_end_bit = get_job_resources_offset(
+				job_resrcs_ptr, job_node_inx, sockets - 1,
+				cores - 1),
+			.job_node_inx = job_node_inx,
+			.node_gres_list =
+				node_record_table_ptr[node_inx]->gres_list,
+		};
+
+		if ((args.core_start_bit > bit_size(all_gres_core_bitmap)) ||
+		    (args.core_end_bit > bit_size(all_gres_core_bitmap)))
+			error("coremap offsets fall outside core_bitmap size. This should never happen.");
+		else if (!args.node_gres_list)
+			error("No node gres when step gres is allocated. This should never happen.");
+		else {
+			bit_nclear(any_gres_core_bitmap, args.core_start_bit,
+				   args.core_end_bit);
+			list_for_each(step_ptr->gres_list_alloc,
+				      _gres_filter_avail_sockets, &args);
+			bit_and(any_gres_core_bitmap,
+				job_resrcs_ptr->core_bitmap);
+		}
+	}
+
+	/* select idle cores that fit all gres binding first */
+	if (_handle_core_select(step_ptr, job_resrcs_ptr,
+				all_gres_core_bitmap, job_node_inx,
+				sockets, cores, use_all_cores, false, &cpu_cnt))
+		goto cleanup;
+
+	/* select idle cores that fit any gres binding second */
+	if (_handle_core_select(step_ptr, job_resrcs_ptr,
+				any_gres_core_bitmap, job_node_inx,
+				sockets, cores, use_all_cores, false, &cpu_cnt))
+		goto cleanup;
+
+	/* select any idle cores */
+	if (_handle_core_select(step_ptr, job_resrcs_ptr,
+				job_resrcs_ptr->core_bitmap, job_node_inx,
+				sockets, cores, use_all_cores, false, &cpu_cnt))
+		goto cleanup;
+
 
 	/* The test for cores==0 is just to avoid CLANG errors.
 	 * It should never happen */
 	if (use_all_cores || (cores == 0))
-		return SLURM_SUCCESS;
+		goto cleanup;
 
-	if (!(step_ptr->flags & SSF_OVERCOMMIT))
+
+	if (!(step_ptr->flags & SSF_OVERCOMMIT)) {
+		FREE_NULL_BITMAP(all_gres_core_bitmap);
+		FREE_NULL_BITMAP(any_gres_core_bitmap);
 		return ESLURM_NODES_BUSY;
+	}
 
 	/* We need to over-subscribe one or more cores. */
 	verbose("%s: %pS needs to over-subscribe cores required:%u assigned:%u/%"PRIu64 " overcommit:%c exclusive:%c",
@@ -1999,10 +2115,28 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		((step_ptr->flags & SSF_OVERCOMMIT) ? 'T' : 'F'),
 		((step_ptr->flags & SSF_EXCLUSIVE) ? 'T' : 'F'));
 
-	if (_handle_core_select(step_ptr, job_resrcs_ptr, job_node_inx, sockets,
-				cores, use_all_cores, true, &cpu_cnt))
-		return SLURM_SUCCESS;
+	/* oversubscribe cores that fit all gres binding first */
+	if (_handle_core_select(step_ptr, job_resrcs_ptr,
+				all_gres_core_bitmap, job_node_inx,
+				sockets, cores, use_all_cores, true, &cpu_cnt))
+		goto cleanup;
 
+	/* oversubscribe cores that fit any gres binding second */
+	if (_handle_core_select(step_ptr, job_resrcs_ptr,
+				any_gres_core_bitmap, job_node_inx,
+				sockets, cores, use_all_cores, true, &cpu_cnt))
+		goto cleanup;
+
+	/* oversubscribe any cores */
+	if (_handle_core_select(step_ptr, job_resrcs_ptr,
+				job_resrcs_ptr->core_bitmap, job_node_inx,
+				sockets, cores, use_all_cores, true, &cpu_cnt))
+		goto cleanup;
+
+
+cleanup:
+	FREE_NULL_BITMAP(all_gres_core_bitmap);
+	FREE_NULL_BITMAP(any_gres_core_bitmap);
 	return SLURM_SUCCESS;
 }
 
@@ -2270,7 +2404,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 						   job_node_inx,
 						   step_ptr->step_layout->
 						   tasks[step_node_inx],
-						   cpus_per_core))) {
+						   cpus_per_core, i_node))) {
 				log_flag(STEPS, "unable to pick step cores for job node %d (%s): %s",
 					 job_node_inx,
 					 node_record_table_ptr[i_node]->name,
