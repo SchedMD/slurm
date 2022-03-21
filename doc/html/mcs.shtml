@@ -111,6 +111,11 @@ mcs/group plugin.</li>
 </li>
 </ul>
 
+<p>When enforcing privatedata with mcs/account, users will need to have an
+association with just the relevant Account to see other jobs in that Account.
+If a Partition is included in the association, it will be over-constrained
+and will not allow them to view other jobs in the Account.</p>
+
 Different requests and configurations lead to different combinations of
 use-cases. The following table is intended to help understand the end user
 the expected behavior (related to exclusivity) for a subset of these use-cases:
@@ -252,6 +257,6 @@ NodeName=node0001 Arch=x86_64 CoresPerSocket=4
    ExtSensorsJoules=n/s ExtSensorsWatts=0 ExtSensorsTemp=n/s
 </pre>
 
-<p style="text-align:center;">Last modified 6 August 2021</p>
+<p style="text-align:center;">Last modified 21 March 2022</p>
 
 <!--#include virtual="footer.txt"-->
