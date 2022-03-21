@@ -548,20 +548,7 @@ void eio_new_obj(eio_handle_t *eio, eio_obj_t *obj)
 
 bool eio_remove_obj(eio_obj_t *obj, List objs)
 {
-	ListIterator i;
-	eio_obj_t *obj1;
-	bool ret = false;
-
 	xassert(obj != NULL);
 
-	i  = list_iterator_create(objs);
-	while ((obj1 = list_next(i))) {
-		if (obj1 == obj) {
-			list_delete_item(i);
-			ret = true;
-			break;
-		}
-	}
-	list_iterator_destroy(i);
-	return ret;
+	return list_delete_ptr(objs, obj);
 }
