@@ -258,7 +258,7 @@ static int _eio_wakeup_handler(eio_handle_t *eio)
 	list_transfer(eio->obj_list, eio->new_objs);
 
 	if (rc < 0)
-		return error("eio_clear: read: %m");
+		return error("%s: read: %m", __func__);
 
 	return 0;
 }
