@@ -67,6 +67,15 @@
 #define	_bit_mask(bit) ((bitstr_t)1 << ((bit)&BITSTR_MAXPOS))
 #endif
 
+/* mask for less significant bits within their word*/
+#ifdef SLURM_BIGENDIAN
+#define _bit_nmask(n) \
+	((~((bitstr_t) 0)) << ((BITSTR_MAXPOS + 1) - ((n) & BITSTR_MAXPOS)))
+#else
+#define _bit_nmask(n) \
+	(((bitstr_t) 1 << ((n) & BITSTR_MAXPOS)) - 1)
+#endif
+
 /* number of bits actually allocated to a bitstr */
 #define _bitstr_bits(name) 	((name)[1])
 
