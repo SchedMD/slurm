@@ -162,7 +162,7 @@ typedef struct {
  * field_offset since the array actually has all of the flag offsets in the
  * struct
  */
-#define add_parser_flags(flags_array, stype, req, field, path)                \
+#define add_parser_flags(flags_array, req, path)                              \
 	{                                                                     \
 		.field_offset = (uintptr_t)flags_array,                       \
 		.key = path,                                                  \
@@ -222,8 +222,7 @@ static const parser_t parse_assoc[] = {
 	/* skipping bf_usage (not packed) */
 	_add_parse(STRING, cluster, "cluster"),
 	_add_parse(QOS_ID, def_qos_id, "default/qos"),
-	add_parser_flags(parser_assoc_flags, slurmdb_assoc_rec_t, false, flags,
-			 "flags"),
+	add_parser_flags(parser_assoc_flags, false, "flags"),
 	/* skip lft */
 	_add_parse(UINT32, grp_jobs, "max/jobs/per/count"),
 	_add_parse(UINT32, grp_jobs_accrue, "max/jobs/per/accruing"),
@@ -321,8 +320,7 @@ static const parser_t parse_job[] = {
 	_add_parse(UINT32, eligible, "time/eligible"),
 	_add_parse(UINT32, end, "time/end"),
 	_add_parse(JOB_EXIT_CODE, exitcode, "exit_code"),
-	add_parser_flags(parser_job_flags, slurmdb_job_rec_t, false, flags,
-			 "flags"),
+	add_parser_flags(parser_job_flags, false, "flags"),
 	/* skipping first_step_ptr (already added in steps) */
 	_add_parse(GROUP_ID, gid, "group"),
 	_add_parse(UINT32, het_job_id, "het/job_id"),
@@ -382,8 +380,7 @@ static const parser_t parse_acct[] = {
 	_add_parse(STRING, description, "description"),
 	_add_parse(STRING, name, "name"),
 	_add_parse(STRING, organization, "organization"),
-	add_parser_flags(parser_acct_flags, slurmdb_account_rec_t, false, flags,
-			 "flags"),
+	add_parser_flags(parser_acct_flags, false, "flags"),
 };
 #undef _add_parse
 
@@ -418,8 +415,7 @@ static const parser_t parse_wckey[] = {
 	_add_parse_req(STRING, name, "name"),
 	_add_parse_req(STRING, user, "user"),
 	/* skipping uid */
-	add_parser_flags(parser_wckey_flags, slurmdb_wckey_rec_t, false, flags,
-			 "flags"),
+	add_parser_flags(parser_wckey_flags, false, "flags"),
 };
 #undef _add_parse
 #undef _add_parse_req
@@ -481,8 +477,7 @@ static const parser_enum_t parser_qos_preempt_flags[] = {
 static const parser_t parse_qos[] = {
 	/* skipping accounting_list */
 	_add_parse(STRING, description, "description"),
-	add_parser_flags(parser_qos_flags, slurmdb_qos_rec_t, false, flags,
-			 "flags"),
+	add_parser_flags(parser_qos_flags, false, "flags"),
 	_add_parse(UINT32, id, "id"),
 	_add_parse(UINT32, grace_time, "limits/grace_time"),
 	_add_parse(UINT32, grp_jobs_accrue, "limits/max/active_jobs/accruing"),
@@ -526,8 +521,7 @@ static const parser_t parse_qos[] = {
 	/* skipping min_tres_pj_ctld (not packed) */
 	add_parser_qos_preempt(false, "preempt/list"),
 	/* skip preempt_list (only for ops) */
-	add_parser_flags(parser_qos_preempt_flags, slurmdb_qos_rec_t, false,
-			 preempt_mode, "preempt/mode"),
+	add_parser_flags(parser_qos_preempt_flags, false, "preempt/mode"),
 	_add_parse(UINT32, preempt_exempt_time, "preempt/exempt_time"),
 	_add_parse(UINT32, priority, "priority"),
 	/* skip usage (not packed) */
@@ -564,8 +558,7 @@ static const parser_t parse_job_step[] = {
 	_add_parse(STRING, pid_str, "pid"),
 	_add_parse(UINT32, req_cpufreq_min, "CPU/requested_frequency/min"),
 	_add_parse(UINT32, req_cpufreq_max, "CPU/requested_frequency/max"),
-	add_parser_flags(parse_job_step_cpu_freq_flags, slurmdb_step_rec_t,
-			 false, req_cpufreq_gov, "CPU/governor"),
+	add_parser_flags(parse_job_step_cpu_freq_flags, false, "CPU/governor"),
 	_add_parse(USER_ID, requid, "kill_request_user"),
 	_add_parse(UINT32, start, "time/start"),
 	_add_parse(JOB_STATE, state, "state"),
@@ -664,8 +657,7 @@ static const parser_t parse_cluster_rec[] = {
 	_add_parse(UINT32, control_port, "controller/port"),
 	/* skip dim_size (BG deprecated) */
 	/* skip fed[eration] support */
-	add_parser_flags(parse_cluster_rec_flags, slurmdb_cluster_rec_t, false,
-			 flags, "flags"),
+	add_parser_flags(parse_cluster_rec_flags, false, "flags"),
 	/* skip lock (not packed) */
 	_add_parse(STRING, name, "name"),
 	_add_parse(STRING, nodes, "nodes"),
