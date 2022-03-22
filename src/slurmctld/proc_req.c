@@ -5298,9 +5298,8 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_REBOOT_REQUESTED(node_ptr) ||
 		    IS_NODE_REBOOT_ISSUED(node_ptr) ||
-		    (IS_NODE_CLOUD(node_ptr) &&
-		     (IS_NODE_POWERED_DOWN(node_ptr) ||
-		      IS_NODE_POWERING_DOWN(node_ptr)))) {
+		    IS_NODE_POWERED_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_DOWN(node_ptr)) {
 			bit_clear(bitmap, i);
 			continue;
 		}

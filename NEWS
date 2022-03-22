@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't power down nodes that are rebooting.
  -- Clear pending node reboot on power down request.
  -- Ignore node registrations while node is powering down.
+ -- Don't reboot any node that is power<ing|ed> down.
 
 * Changes in Slurm 21.08.6
 ==========================
