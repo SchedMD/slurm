@@ -97,9 +97,9 @@ const char * plugin_strerror(plugin_err_t e)
 	return ("Unknown error");
 }
 
-static int _verify_syms(plugin_handle_t plug, char *plugin_type,
-			const size_t type_len, const char *caller,
-			const char *fq_path)
+static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
+				 const size_t type_len, const char *caller,
+				 const char *fq_path)
 {
 	char *type, *name;
 	uint32_t *version;
@@ -149,10 +149,10 @@ static int _verify_syms(plugin_handle_t plug, char *plugin_type,
 	return EPLUGIN_SUCCESS;
 }
 
-extern int plugin_peek(const char *fq_path, char *plugin_type,
-		       const size_t type_len, uint32_t *plugin_version)
+extern plugin_err_t plugin_peek(const char *fq_path, char *plugin_type,
+				const size_t type_len, uint32_t *plugin_version)
 {
-	int rc;
+	plugin_err_t rc;
 	plugin_handle_t plug;
 
 	if (!(plug = dlopen(fq_path, RTLD_LAZY))) {
@@ -168,7 +168,7 @@ extern int plugin_peek(const char *fq_path, char *plugin_type,
 plugin_err_t
 plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 {
-	int rc;
+	plugin_err_t rc;
 	plugin_handle_t plug;
 	int (*init)(void);
 

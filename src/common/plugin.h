@@ -105,12 +105,12 @@ const char *plugin_strerror(plugin_err_t err);
  *	be NULL to indicate that the caller is not interested in the
  *	plugin version.
  *
- * Returns a Slurm errno.
+ * Returns a plugin_err_t.
  */
-int plugin_peek( const char *fq_path,
-		 char *plugin_type,
-		 const size_t type_len,
-		 uint32_t *plugin_version );
+extern plugin_err_t plugin_peek(const char *fq_path,
+				char *plugin_type,
+				const size_t type_len,
+				uint32_t *plugin_version);
 
 
 /*
