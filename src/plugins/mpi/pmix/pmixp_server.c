@@ -603,8 +603,6 @@ static int _serv_read(eio_obj_t *obj, List objs)
 		if (!pmixp_conn_is_alive(conn)) {
 			obj->shutdown = true;
 			PMIXP_DEBUG("Connection closed fd = %d", obj->fd);
-			/* cleanup after this connection */
-			eio_remove_obj(obj, objs);
 			pmixp_conn_return(conn);
 			proceed = false;
 		}
@@ -664,8 +662,6 @@ static int _serv_write(eio_obj_t *obj, List objs)
 	if (!pmixp_conn_is_alive(conn)) {
 		obj->shutdown = true;
 		PMIXP_DEBUG("Connection finalized fd = %d", obj->fd);
-		/* cleanup after this connection */
-		eio_remove_obj(obj, objs);
 		pmixp_conn_return(conn);
 	}
 	return 0;
