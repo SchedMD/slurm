@@ -159,6 +159,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - Fix misspelling of job parameter mcs_label
  -- openapi/dbv0.0.38 - Fix issue where association's QOS list consisted of IDs
     instead of names.
+ -- Allow nodes to be dynamically added and removed from the system.
 
 * Changes in Slurm 21.08.7
 ==========================
