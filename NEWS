@@ -231,6 +231,7 @@ documents those changes that are of interest to users and administrators.
  -- CVE-2022-29502 - Correctly validate io keys.
  -- openapi/dbv0.0.38 - set with_deleted to false by default for /user[s].
  -- openapi/dbv0.0.38 - add with_deleted input parameter to GET /user[s].
+ -- openapi/dbv0.0.38 - add deleted flag to /user[s] output.
 
 * Changes in Slurm 21.08.9
 ==========================

@@ -271,6 +271,14 @@ static const parser_t parse_assoc[] = {
 	add_parser(slurmdb_user_rec_t, mtype, false, field, path)
 #define _add_parse_req(mtype, field, path) \
 	add_parser(slurmdb_user_rec_t, mtype, true, field, path)
+
+#define _add_flag(flagn, flagv) \
+	add_parser_enum_flag(slurmdb_user_rec_t, flags, flagn, flagv)
+static const parser_enum_t parser_user_flags[] = {
+	_add_flag(SLURMDB_USER_FLAG_DELETED, "DELETED"),
+};
+#undef _add_flag
+
 /* should mirror the structure of slurmdb_user_rec */
 static const parser_t parse_user[] = {
 	_add_parse(ADMIN_LVL, admin_level, "administrator_level"),
@@ -278,6 +286,7 @@ static const parser_t parse_user[] = {
 	_add_parse(COORD_LIST, coord_accts, "coordinators"),
 	_add_parse(STRING, default_acct, "default/account"),
 	_add_parse(STRING, default_wckey, "default/wckey"),
+	add_parser_flags(parser_user_flags, false, "flags"),
 	_add_parse_req(STRING, name, "name"),
 	/* skipping old_name */
 	/* skipping uid (should always be 0) */

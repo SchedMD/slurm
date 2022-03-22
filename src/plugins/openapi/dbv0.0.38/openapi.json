@@ -2418,6 +2418,14 @@
               }
             }
           },
+          "flags": {
+            "type": "array",
+            "description": "List of properties of user",
+            "items": {
+              "type": "string",
+              "description": "String of property name"
+            }
+          },
           "name": {
             "type": "string",
             "description": "User name"
