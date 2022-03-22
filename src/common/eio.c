@@ -90,6 +90,12 @@ struct eio_handle_components {
 	List new_objs;
 };
 
+typedef struct {
+	eio_obj_t **map;
+	unsigned int *nfds_ptr;
+	struct pollfd *pfds;
+} foreach_pollfd_t;
+
 /* Function prototypes */
 
 static int          _poll_internal(struct pollfd *pfds, unsigned int nfds,
@@ -370,41 +376,54 @@ static bool _is_readable(eio_obj_t *obj)
 	return (obj->ops->readable && (*obj->ops->readable)(obj));
 }
 
+static int _foreach_helper_setup_pollfds(void *x, void *arg)
+{
+	eio_obj_t *obj = x;
+	foreach_pollfd_t *hargs = arg;
+	struct pollfd *pfds = hargs->pfds;
+	eio_obj_t **map = hargs->map;
+	unsigned int nfds = *hargs->nfds_ptr;
+	bool readable, writable;
+
+	writable = _is_writable(obj);
+	readable = _is_readable(obj);
+	if (writable && readable) {
+		pfds[nfds].fd     = obj->fd;
+		pfds[nfds].events = POLLOUT | POLLIN | POLLHUP | POLLRDHUP;
+		map[nfds]         = obj;
+	} else if (readable) {
+		pfds[nfds].fd     = obj->fd;
+		pfds[nfds].events = POLLIN | POLLRDHUP;
+		map[nfds]         = obj;
+	} else if (writable) {
+		pfds[nfds].fd     = obj->fd;
+		pfds[nfds].events = POLLOUT | POLLHUP;
+		map[nfds]         = obj;
+	}
+
+	if (writable || readable)
+		(*hargs->nfds_ptr)++;
+
+	return 0;
+}
+
 static unsigned int _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[],
 					List l)
 {
-	ListIterator  i    = list_iterator_create(l);
-	eio_obj_t    *obj  = NULL;
 	unsigned int  nfds = 0;
-	bool          readable, writable;
+	foreach_pollfd_t args = {
+		.pfds = pfds,
+		.map = map,
+		.nfds_ptr = &nfds
+	};
 
 	if (!pfds) {	/* Fix for CLANG false positive */
 		fatal("%s: pollfd data structure is null", __func__);
 		return nfds;
 	}
 
-	while ((obj = list_next(i))) {
-		writable = _is_writable(obj);
-		readable = _is_readable(obj);
-		if (writable && readable) {
-			pfds[nfds].fd     = obj->fd;
-			pfds[nfds].events = POLLOUT | POLLIN |
-					    POLLHUP | POLLRDHUP;
-			map[nfds]         = obj;
-			nfds++;
-		} else if (readable) {
-			pfds[nfds].fd     = obj->fd;
-			pfds[nfds].events = POLLIN | POLLRDHUP;
-			map[nfds]         = obj;
-			nfds++;
-		} else if (writable) {
-			pfds[nfds].fd     = obj->fd;
-			pfds[nfds].events = POLLOUT | POLLHUP;
-			map[nfds]         = obj;
-			nfds++;
-		}
-	}
-	list_iterator_destroy(i);
+	list_for_each(l, _foreach_helper_setup_pollfds, &args);
+
 	return nfds;
 }
 
