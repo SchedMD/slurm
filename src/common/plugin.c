@@ -114,7 +114,7 @@ static int _verify_syms(plugin_handle_t plug, char *plugin_type,
 	if (!(type = dlsym(plug, PLUGIN_TYPE))) {
 		verbose("%s: %s is not a Slurm plugin: %s",
 			caller, fq_path, _dlerror());
-		return ESLURM_PLUGIN_INVALID;
+		return EPLUGIN_MISSING_NAME;
 	}
 
 	if (plugin_type) {
@@ -125,7 +125,7 @@ static int _verify_syms(plugin_handle_t plug, char *plugin_type,
 	if (!version) {
 		verbose("%s: %s symbol not found in %s: %s",
 			caller, PLUGIN_VERSION, fq_path, _dlerror());
-		return ESLURM_PLUGIN_INVALID;
+		return EPLUGIN_MISSING_NAME;
 	}
 
 	debug3("%s->%s: found Slurm plugin name:%s type:%s version:0x%x",
@@ -143,10 +143,10 @@ static int _verify_syms(plugin_handle_t plug, char *plugin_type,
 
 		info("%s: Incompatible Slurm plugin %s version (%d.%02d.%d)",
 		     caller, fq_path, plugin_major, plugin_minor, plugin_micro);
-		return ESLURM_PLUGIN_INVALID;
+		return EPLUGIN_BAD_VERSION;
 	}
 
-	return SLURM_SUCCESS;
+	return EPLUGIN_SUCCESS;
 }
 
 extern int plugin_peek(const char *fq_path, char *plugin_type,
@@ -157,7 +157,7 @@ extern int plugin_peek(const char *fq_path, char *plugin_type,
 
 	if (!(plug = dlopen(fq_path, RTLD_LAZY))) {
 		debug3("%s: dlopen(%s): %s", __func__, fq_path, _dlerror());
-		return SLURM_ERROR;
+		return EPLUGIN_DLOPEN_FAILED;
 	}
 
 	rc = _verify_syms(plug, plugin_type, type_len, __func__, fq_path);

@@ -274,8 +274,8 @@ static int _plugrack_read_single_dir(plugrack_t *rack, char *dir)
 			continue;
 
 		/* Test the type. */
-		if (plugin_peek(fq_path, plugin_type, type_len, NULL) ==
-		    SLURM_ERROR) {
+		if (plugin_peek(fq_path, plugin_type, type_len, NULL) !=
+		    EPLUGIN_SUCCESS) {
 			continue;
 		}
 
