@@ -598,7 +598,7 @@ static int _serv_read(eio_obj_t *obj, List objs)
 	/* Read and process all received messages */
 	while (proceed) {
 		if (!pmixp_conn_progress_rcv(conn)) {
-			proceed = 0;
+			proceed = false;
 		}
 		if (!pmixp_conn_is_alive(conn)) {
 			obj->shutdown = true;
@@ -606,7 +606,7 @@ static int _serv_read(eio_obj_t *obj, List objs)
 			/* cleanup after this connection */
 			eio_remove_obj(obj, objs);
 			pmixp_conn_return(conn);
-			proceed = 0;
+			proceed = false;
 		}
 	}
 	return 0;
