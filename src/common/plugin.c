@@ -94,6 +94,7 @@ const char * plugin_strerror(plugin_err_t e)
 		case EPLUGIN_BAD_VERSION:
 			return ("Incompatible plugin version");
 	}
+	error("%s: Unknown plugin error: %d", __func__, e);
 	return ("Unknown error");
 }
 
