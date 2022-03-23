@@ -253,8 +253,8 @@ extern int setup_x11_forward(stepd_step_rec_t *job)
 		/* use a node-local XAUTHORITY file instead of ~/.Xauthority */
 		int fd;
 		local_xauthority = true;
-		job->x11_xauthority = xstrdup_printf("%s/.Xauthority-XXXXXX",
-						     slurm_conf.tmp_fs);
+		job->x11_xauthority = slurm_get_tmp_fs(conf->node_name);
+		xstrcat(job->x11_xauthority, "/.Xauthority-XXXXXX");
 
 		/* protect against weak file permissions in old glibc */
 		umask(0077);
