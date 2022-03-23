@@ -166,7 +166,7 @@ time as performed with this tool:
   (for use with <a href="https://github.com/edf-hpc/jobmetrics">jobmetrics</a>)</li>
 </ul></li><br>
 
-<li><a name="json" href="https://github.com/json-c/json-c/wiki"><b>JSON</b></a>
+<li><a id="json" href="https://github.com/json-c/json-c/wiki"><b>JSON</b></a>
 	<p>Some Slurm plugins (<a href="rest.html">slurmrestd</a>,
 	<a href="burst_buffer.html">burst_buffer/datawarp</a>,
 	<a href="burst_buffer.html">burst_buffer/lua</a>,
@@ -188,7 +188,7 @@ sudo make install</pre>
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:$PKG_CONFIG_PATH</pre>
 </li><br>
 
-<li><a name="httpparser" href="https://github.com/nodejs/http-parser">
+<li><a id="httpparser" href="https://github.com/nodejs/http-parser">
     <b>HTTP Parser</b></a>
 	<p><a href="rest.html">slurmrestd</a> requires libhttp_parser
 	(>=v2.6.0). Instructions for the build are as follows:</p>
@@ -201,7 +201,7 @@ sudo make install</pre>
 	<pre>--with-http-parser=/usr/local/</pre>
 </li><br>
 
-<li><a name="yaml" href="https://github.com/yaml/libyaml">
+<li><a id="yaml" href="https://github.com/yaml/libyaml">
     <b>YAML Parser</b></a>
 	<p><a href="rest.html">slurmrestd</a> requires libyaml to support
 	YAML. Instructions for the build are as follows:</p>
@@ -216,7 +216,7 @@ sudo make install</pre>
 	<pre>--with-yaml=/usr/local/</pre>
 </li><br>
 
-<li><a name="jwt" href="https://github.com/benmcollins/libjwt">
+<li><a id="jwt" href="https://github.com/benmcollins/libjwt">
     <b>JWT library</b></a>
 	<p><a href="jwt.html">JWT authentication</a> requires libjwt.
 	Instructions for the build are as follows:</p>
