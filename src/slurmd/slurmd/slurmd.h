@@ -115,6 +115,7 @@ typedef struct slurmd_config {
 	char         *node_topo_pattern;/* node's topology address pattern */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
+	char         *tmp_fs;		/* TmpFS                           */
 	uint32_t     syslog_debug;	/* send output to both logfile and
 					 * syslog */
 	char         *spooldir;		/* SlurmdSpoolDir		   */
