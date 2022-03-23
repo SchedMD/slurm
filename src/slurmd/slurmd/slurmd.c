@@ -372,7 +372,7 @@ main (int argc, char **argv)
 	_create_msg_socket();
 
 	conf->pid = getpid();
-	pidfd = create_pidfile(slurm_conf.slurmd_pidfile, 0);
+	pidfd = create_pidfile(conf->pidfile, 0);
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
 	info("%s started on %s", slurm_prog_name, time_stamp);
@@ -392,9 +392,9 @@ main (int argc, char **argv)
 	 * but do not close until later. Closing the file will release
 	 * the flock, which will then let a new slurmd process start.
 	 */
-	if (unlink(slurm_conf.slurmd_pidfile) < 0)
+	if (unlink(conf->pidfile) < 0)
 		error("Unable to remove pidfile `%s': %m",
-		      slurm_conf.slurmd_pidfile);
+		      conf->pidfile);
 
 	run_command_shutdown();
 	_wait_for_all_threads(120);
@@ -858,21 +858,6 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 }
 
 /*
- * Replace first "%h" in path string with actual hostname.
- * Replace first "%n" in path string with NodeName.
- */
-static void
-_massage_pathname(char **path)
-{
-	if (path && *path) {
-		if (conf->hostname)
-			xstrsubstitute(*path, "%h", conf->hostname);
-		if (conf->node_name)
-			xstrsubstitute(*path, "%n", conf->node_name);
-	}
-}
-
-/*
  * Read the slurm configuration file (slurm.conf) and substitute some
  * values into the slurmd configuration in preference of the defaults.
  */
@@ -1082,9 +1067,13 @@ _read_config(void)
 			      cf->tmp_fs,
 			      conf->node_name,
 			      conf->hostname));
+	_free_and_set(conf->pidfile,
+		      slurm_conf_expand_slurmd_path(
+			      cf->slurmd_pidfile,
+			      conf->node_name,
+			      conf->hostname));
 
 	get_tmp_disk(&conf->tmp_disk_space, conf->tmp_fs);
-	_massage_pathname(&slurm_conf.slurmd_pidfile);
 	_free_and_set(conf->pubkey,   path_pubkey);
 
 	conf->syslog_debug = cf->slurmd_syslog_debug;
@@ -1250,7 +1239,7 @@ _print_conf(void)
 	debug3("RealMemory  = %"PRIu64"",conf->real_memory_size);
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     cf->epilog);
-	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
+	debug3("Logfile     = `%s'",     conf->logfile);
 	debug3("HealthCheck = `%s'",     cf->health_check_program);
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
@@ -1260,7 +1249,7 @@ _print_conf(void)
 	debug3("Slurmstepd  = `%s'",     conf->stepd_loc);
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Syslog Debug  = %d",     cf->slurmd_syslog_debug);
-	debug3("Pid File    = `%s'",     cf->slurmd_pidfile);
+	debug3("Pid File    = `%s'",     conf->pidfile);
 	debug3("Slurm UID   = %u",       cf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     cf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     cf->task_epilog);
@@ -1327,6 +1316,7 @@ _destroy_conf(void)
 		xfree(conf->node_name);
 		xfree(conf->node_topo_addr);
 		xfree(conf->node_topo_pattern);
+		xfree(conf->pidfile);
 		xfree(conf->pubkey);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
@@ -2117,7 +2107,7 @@ static void
 _kill_old_slurmd(void)
 {
 	int fd;
-	pid_t oldpid = read_pidfile(slurm_conf.slurmd_pidfile, &fd);
+	pid_t oldpid = read_pidfile(conf->pidfile, &fd);
 	if (oldpid != (pid_t) 0) {
 		info ("killing old slurmd[%lu]", (unsigned long) oldpid);
 		kill(oldpid, SIGTERM);
@@ -2127,7 +2117,7 @@ _kill_old_slurmd(void)
 		 */
 		if (fd_get_readw_lock(fd) < 0) {
 			fatal("error getting readw lock on file %s: %m",
-			      slurm_conf.slurmd_pidfile);
+			      conf->pidfile);
 		}
 		(void) close(fd); /* Ignore errors */
 	}
