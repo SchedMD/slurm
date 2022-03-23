@@ -300,17 +300,18 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	 * tree_sock_addr has to remain unformatted since the formatting
 	 * happens on the slurmd side
 	 */
-	spool = xstrdup(slurm_conf.slurmd_spooldir);
 	snprintf(tree_sock_addr, sizeof(tree_sock_addr), PMI2_SOCK_ADDR_FMT,
-		 spool, job_info.step_id.job_id, job_info.step_id.step_id);
+		 slurm_conf.slurmd_spooldir,
+		 job_info.step_id.job_id, job_info.step_id.step_id);
 	/*
 	 * Make sure we adjust for the spool dir coming in on the address to
 	 * point to the right spot.
 	 * We need to unlink this later so we need a formatted version of the
 	 * string to unlink.
 	 */
-	xstrsubstitute(spool, "%n", job->node_name);
-	xstrsubstitute(spool, "%h", job->node_name);
+	spool = slurm_conf_expand_slurmd_path(slurm_conf.slurmd_spooldir,
+					      job->node_name,
+					      job->node_name);
 	xstrfmtcat(fmt_tree_sock_addr, PMI2_SOCK_ADDR_FMT, spool,
 		   job_info.step_id.job_id, job_info.step_id.step_id);
 
