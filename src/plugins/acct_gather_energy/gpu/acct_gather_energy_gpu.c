@@ -471,8 +471,8 @@ static int _get_joules_task(uint16_t delta)
 
 	xassert(context_id != -1);
 
-	if (slurm_get_node_energy(
-		    NULL, context_id, delta, &gpu_cnt, &energies)) {
+	if (slurm_get_node_energy(conf->node_name, context_id, delta, &gpu_cnt,
+				  &energies)) {
 		error("%s: can't get info from slurmd", __func__);
 		return SLURM_ERROR;
 	}
