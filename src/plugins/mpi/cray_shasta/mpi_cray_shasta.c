@@ -231,9 +231,9 @@ static int _rmdir_recursive(char *path)
 extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 	/* do the node_name substitution once */
-	char *spool = xstrdup(slurm_conf.slurmd_spooldir);
-	xstrsubstitute(spool, "%n", job->node_name);
-	xstrsubstitute(spool, "%h", job->node_name);
+	char *spool = slurm_conf_expand_slurmd_path(slurm_conf.slurmd_spooldir,
+						    job->node_name,
+						    job->node_name);
 
 	// Set up spool directory and apinfo
 	if (_create_mpi_dir(spool) == SLURM_ERROR ||
