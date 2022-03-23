@@ -961,8 +961,11 @@ _read_config(void)
 	 * slurmstepd processes will not get the reconfigure request,
 	 * and logs may be lost if the path changed or the log was rotated.
 	 */
-	_free_and_set(conf->spooldir, xstrdup(cf->slurmd_spooldir));
-	_massage_pathname(&conf->spooldir);
+	_free_and_set(conf->spooldir,
+		      slurm_conf_expand_slurmd_path(
+			      cf->slurmd_spooldir,
+			      conf->node_name,
+			      conf->hostname));
 	/*
 	 * Only rebuild this if running configless, which is indicated by
 	 * the presence of a conf_server value.
@@ -1618,14 +1621,17 @@ static int _establish_configuration(void)
 		return SLURM_ERROR;
 	}
 
-	conf->spooldir = configs->slurmd_spooldir;
-	configs->slurmd_spooldir = NULL;
 	/*
 	 * One limitation - if node_name was not set through -N
 	 * the %n replacement here will not be possible since we can't
 	 * load the node tables yet.
 	 */
-	_massage_pathname(&conf->spooldir);
+	_free_and_set(conf->spooldir,
+		      slurm_conf_expand_slurmd_path(
+			      configs->slurmd_spooldir,
+			      conf->node_name,
+			      conf->hostname));
+
 	if (_set_slurmd_spooldir(conf->spooldir) < 0) {
 		error("Unable to initialize slurmd spooldir");
 		return SLURM_ERROR;
