@@ -314,6 +314,7 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 					      job->node_name);
 	xstrfmtcat(fmt_tree_sock_addr, PMI2_SOCK_ADDR_FMT, spool,
 		   job_info.step_id.job_id, job_info.step_id.step_id);
+	xfree(spool);
 
 	/*
 	 * If socket name would be truncated, emit error and exit
@@ -323,7 +324,6 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 		      __func__, fmt_tree_sock_addr,
 		      (long int)(strlen(fmt_tree_sock_addr) + 1),
 		      (long int)sizeof(sa.sun_path));
-		xfree(spool);
 		xfree(fmt_tree_sock_addr);
 		return SLURM_ERROR;
 	}
@@ -331,7 +331,6 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	strlcpy(sa.sun_path, fmt_tree_sock_addr, sizeof(sa.sun_path));
 
 	unlink(sa.sun_path);    /* remove possible old socket */
-	xfree(spool);
 
 	if (bind(tree_sock, (struct sockaddr *)&sa, SUN_LEN(&sa)) < 0) {
 		error("mpi/pmi2: failed to bind tree socket: %m");
