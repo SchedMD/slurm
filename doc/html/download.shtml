@@ -126,7 +126,7 @@ there is
 <a href="https://github.com/mej/nhc">LBNL Node Health Check</a>.
 It has integration with Slurm as well as Torque resource managers.</li><br>
 
-<li><b>Accounting Tools</b><br>
+<li><b>Accounting Tools</b>
 <ul>
 <li><b>UBMoD</b> is a web based tool for displaying accounting data from various
 resource managers. It aggregates the accounting data from sacct into a MySQL
