@@ -1426,7 +1426,6 @@ alloc_job:
 	job_res->cpus             = cpu_count;	/* Per node CPU counts */
 	job_res->cpus_used        = xmalloc(job_res->nhosts *
 					    sizeof(uint16_t));
-	job_res->cpus_overlap = xcalloc(job_res->nhosts, sizeof(uint16_t));
 	job_res->memory_allocated = xmalloc(job_res->nhosts *
 					    sizeof(uint64_t));
 	job_res->memory_used      = xmalloc(job_res->nhosts *

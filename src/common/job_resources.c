@@ -375,13 +375,6 @@ extern job_resources_t *copy_job_resources(job_resources_t *job_resrcs_ptr)
 		memcpy(new_layout->cpus_used, job_resrcs_ptr->cpus_used,
 		       (sizeof(uint16_t) * job_resrcs_ptr->nhosts));
 	}
-	if (job_resrcs_ptr->cpus_overlap) {
-		new_layout->cpus_overlap = xcalloc(job_resrcs_ptr->nhosts,
-						   sizeof(uint16_t));
-		memcpy(new_layout->cpus_overlap,
-		       job_resrcs_ptr->cpus_overlap,
-		       (sizeof(uint16_t) * job_resrcs_ptr->nhosts));
-	}
 
 	if (job_resrcs_ptr->memory_allocated) {
 		new_layout->memory_allocated = xcalloc(new_layout->nhosts,
@@ -439,7 +432,6 @@ extern void free_job_resources(job_resources_t **job_resrcs_pptr)
 		xfree(job_resrcs_ptr->cpu_array_value);
 		xfree(job_resrcs_ptr->cpus);
 		xfree(job_resrcs_ptr->cpus_used);
-		xfree(job_resrcs_ptr->cpus_overlap);
 		xfree(job_resrcs_ptr->memory_allocated);
 		xfree(job_resrcs_ptr->memory_used);
 		FREE_NULL_BITMAP(job_resrcs_ptr->node_bitmap);
@@ -503,7 +495,7 @@ extern void log_job_resources(void *void_job_ptr)
 
 	/* Can only log node_bitmap from slurmctld, so don't bother here */
 	for (node_inx=0; node_inx<job_resrcs_ptr->nhosts; node_inx++) {
-		uint32_t cpus_used = 0, cpus_overlap = 0;
+		uint32_t cpus_used = 0;
 		uint64_t memory_allocated = 0, memory_used = 0;
 		info("Node[%d]:", node_inx);
 
@@ -516,20 +508,19 @@ extern void log_job_resources(void *void_job_ptr)
 
 		if (job_resrcs_ptr->cpus_used)
 			cpus_used = job_resrcs_ptr->cpus_used[node_inx];
-		if (job_resrcs_ptr->cpus_overlap)
-			cpus_overlap = job_resrcs_ptr->cpus_overlap[node_inx];
 		if (job_resrcs_ptr->memory_used)
 			memory_used = job_resrcs_ptr->memory_used[node_inx];
 		if (job_resrcs_ptr->memory_allocated)
 			memory_allocated = job_resrcs_ptr->
 				memory_allocated[node_inx];
 
-		info("  Mem(MB):%"PRIu64":%"PRIu64"  Sockets:%u  Cores:%u  CPUs:%u:%u:%u",
+		info("  Mem(MB):%"PRIu64":%"PRIu64"  Sockets:%u"
+		     "  Cores:%u  CPUs:%u:%u",
 		     memory_allocated, memory_used,
 		     job_resrcs_ptr->sockets_per_node[sock_inx],
 		     job_resrcs_ptr->cores_per_socket[sock_inx],
 		     job_resrcs_ptr->cpus[node_inx],
-		     cpus_used, cpus_overlap);
+		     cpus_used);
 
 		bit_reps = job_resrcs_ptr->sockets_per_node[sock_inx] *
 			job_resrcs_ptr->cores_per_socket[sock_inx];
@@ -1650,7 +1641,6 @@ extern int extract_job_resources_node(job_resources_t *job, uint32_t node_id)
 	for (i = n; i < job->nhosts; i++) {
 		job->cpus[i] = job->cpus[i+1];
 		job->cpus_used[i] = job->cpus_used[i+1];
-		job->cpus_overlap[i] = job->cpus_overlap[i + 1];
 		job->memory_allocated[i] = job->memory_allocated[i+1];
 		job->memory_used[i] = job->memory_used[i+1];
 	}

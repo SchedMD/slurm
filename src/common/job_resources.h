@@ -57,8 +57,6 @@
  *			  interpretation of core_bitmap
  * cpus			- Count of desired/allocated CPUs per node for job/step
  * cpus_used		- For a job, count of CPUs per node used by job steps
- * cpus_used_overlap	- For a job, count of CPUs per node used by job
- *			  overlapping steps
  * cpu_array_cnt	- Count of elements in cpu_array_* below
  * cpu_array_value	- Count of allocated CPUs per node for job
  * cpu_array_reps	- Number of consecutive nodes on which cpu_array_value
@@ -112,7 +110,6 @@ struct job_resources {
 	uint16_t *cpu_array_value;
 	uint32_t *cpu_array_reps;
 	uint16_t *cpus;
-	uint16_t *cpus_overlap;
 	uint16_t *cpus_used;
 	uint16_t *cores_per_socket;
 	uint16_t  cr_type;
