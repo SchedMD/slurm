@@ -2899,7 +2899,7 @@ end_it:
 extern void launch_prolog(job_record_t *job_ptr)
 {
 	prolog_launch_msg_t *prolog_msg_ptr;
-	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
+	uint16_t protocol_version = job_ptr->start_protocol_ver;
 	agent_arg_t *agent_arg_ptr;
 	job_resources_t *job_resrcs_ptr;
 	slurm_cred_arg_t cred_arg;
@@ -2917,9 +2917,9 @@ extern void launch_prolog(job_record_t *job_ptr)
 		return;
 
 	xassert(job_ptr->front_end_ptr);
-	protocol_version = job_ptr->front_end_ptr->protocol_version;
+	if (protocol_version > job_ptr->front_end_ptr->protocol_version)
+		protocol_version = job_ptr->front_end_ptr->protocol_version;
 #else
-	protocol_version = SLURM_PROTOCOL_VERSION;
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
