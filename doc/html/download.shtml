@@ -54,7 +54,7 @@ See our <a href="accounting.html">Accounting</a> web page for more information.
 is an implementation of <a href="http://www.gridforum.org/">Open Grid Forum</a>
 <a href="http://www.drmaa.org/">DRMAA 1.0</a> (Distributed Resource Management Application API)
 <a href="http://www.ogf.org/documents/GFD.133.pdf">specification</a> for submission
-and control of jobs to <href="https://slurm.schedmd.com">Slurm</a>.
+and control of jobs to <a href="https://slurm.schedmd.com">Slurm</a>.
 Using DRMAA, grid applications builders, portal developers and ISVs can use
 the same high-level API to link their software with different cluster/resource
 management systems.<br><br>
