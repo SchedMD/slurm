@@ -2091,12 +2091,15 @@ static int _pick_step_cores(step_record_t *step_ptr,
 
 	/* select any idle cores */
 	if (!(step_ptr->job_ptr->bit_flags & GRES_ENFORCE_BIND) &&
-	    !bit_equal(any_gres_core_bitmap, job_resrcs_ptr->core_bitmap) &&
-	    _handle_core_select(step_ptr, job_resrcs_ptr,
-				job_resrcs_ptr->core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, false, &cpu_cnt))
-		goto cleanup;
-
+	    !bit_equal(any_gres_core_bitmap, job_resrcs_ptr->core_bitmap)) {
+		log_flag(STEPS, "gres topology sub-optimal for %ps",
+			&(step_ptr->step_id));
+		if (_handle_core_select(step_ptr, job_resrcs_ptr,
+					job_resrcs_ptr->core_bitmap,
+					job_node_inx, sockets, cores,
+					use_all_cores, false, &cpu_cnt))
+			goto cleanup;
+	}
 
 	/* The test for cores==0 is just to avoid CLANG errors.
 	 * It should never happen */
