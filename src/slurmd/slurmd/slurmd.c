@@ -897,9 +897,6 @@ _read_config(void)
 
 	path_pubkey = xstrdup(cf->job_credential_public_certificate);
 
-	if (!conf->logfile)
-		conf->logfile = xstrdup(cf->slurmd_logfile);
-
 #ifndef HAVE_FRONT_END
 	if (!xstrcmp(cf->select_type, "select/cons_res") ||
 	    !xstrcmp(cf->select_type, "select/cons_tres"))
@@ -937,7 +934,11 @@ _read_config(void)
 		xfree(bcast_address);
 	}
 
-	_massage_pathname(&conf->logfile);
+	if (!conf->logfile)
+		conf->logfile = slurm_conf_expand_slurmd_path(
+			cf->slurmd_logfile,
+			conf->node_name,
+			conf->hostname);
 
 	conf->port = slurm_conf_get_port(conf->node_name);
 	slurm_conf.slurmd_port = conf->port;
