@@ -454,15 +454,17 @@ extern int xcgroup_create_slurm_cg(xcgroup_ns_t *ns, xcgroup_t *slurm_cg)
 	int rc = SLURM_SUCCESS;
 	char *pre;
 
-	pre = xstrdup(slurm_cgroup_conf.cgroup_prepend);
-
 #ifdef MULTIPLE_SLURMD
 	if (conf->node_name) {
-		xstrsubstitute(pre, "%n", conf->node_name);
+		pre = slurm_conf_expand_slurmd_path(
+			slurm_cgroup_conf.cgroup_prepend,
+			conf->node_name,
+			conf->hostname);
 	} else {
-		xfree(pre);
 		pre = xstrdup("/slurm");
 	}
+#else
+	pre = xstrdup(slurm_cgroup_conf.cgroup_prepend);
 #endif
 
 	/* create slurm cgroup in the ns (it could already exist) */
