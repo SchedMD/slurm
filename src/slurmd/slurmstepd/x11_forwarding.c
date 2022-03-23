@@ -76,6 +76,7 @@ static slurm_addr_t alloc_node;
 static char *x11_target = NULL;
 /* X11 display port on target (if not a UNIX socket). */
 static uint16_t x11_target_port = 0;
+static uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 
 static void *_eio_thread(void *arg)
 {
@@ -127,6 +128,7 @@ static int _x11_socket_read(eio_obj_t *obj, List objs)
 	slurm_msg_t_init(&resp);
 
 	req.msg_type = SRUN_NET_FORWARD;
+	req.protocol_version = protocol_version;
 	req.data = &rpc;
 
 	slurm_send_recv_msg(*remote, &req, &resp, 0);
@@ -232,6 +234,10 @@ extern int setup_x11_forward(stepd_step_rec_t *job)
 		.readable = _x11_socket_readable,
 		.handle_read = _x11_socket_read,
 	};
+	srun_info_t *srun = list_peek(job->sruns);
+	/* This should always be set to something else we have a bug. */
+	xassert(srun && srun->protocol_version);
+	protocol_version = srun->protocol_version;
 
 	job_id = job->step_id.job_id;
 	x11_target = xstrdup(job->x11_target);
