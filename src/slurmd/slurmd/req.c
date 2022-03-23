@@ -5935,14 +5935,19 @@ _rpc_forward_data(slurm_msg_t *msg)
 {
 	forward_data_msg_t *req = (forward_data_msg_t *)msg->data;
 	uint32_t req_uid = msg->auth_uid;
+	char *tmp_addr = req->address;
 	struct sockaddr_un sa;
 	int fd = -1, rc = 0;
 
-	/* Make sure we adjust for the spool dir coming in on the address to
-	 * point to the right spot.
+	/*
+	 * Make sure we adjust for the spool dir coming in on the address to
+	 * point to the right spot. Use conf->node_name for both nodename and
+	 * hostname as that is what happens on the other side.
 	 */
-	xstrsubstitute(req->address, "%n", conf->node_name);
-	xstrsubstitute(req->address, "%h", conf->node_name);
+	req->address = slurm_conf_expand_slurmd_path(tmp_addr,
+						     conf->node_name,
+						     conf->node_name);
+	xfree(tmp_addr);
 	debug3("Entering _rpc_forward_data, address: %s, len: %u",
 	       req->address, req->len);
 
