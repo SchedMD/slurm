@@ -5110,8 +5110,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
  *
  * Returns an xmalloc()ed string which the caller must free with xfree().
  */
-extern char *
-slurm_conf_expand_slurmd_path(const char *path, const char *node_name)
+extern char *slurm_conf_expand_slurmd_path(const char *path,
+					   const char *node_name)
 {
 	char *hostname;
 	char *dir = NULL;
