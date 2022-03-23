@@ -1758,7 +1758,10 @@ DYNAMIC state indicates that the node was started as a Dynamic Future node.
 
 .TP
 \fBINVALID_REG\fR
-The node did not register correctly with the controller.
+The node did not register correctly with the controller. This happens when
+a node registers with less resources than configured in the slurm.conf file.
+The node will clear from this state with a valid registration (i.e. a slurmd
+restart is required).
 .IP
 
 .TP

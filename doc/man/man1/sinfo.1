@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "January 2022" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "March 2022" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- View information about Slurm nodes and partitions.
@@ -1073,8 +1073,10 @@ The node is not allocated to any jobs and is available for use.
 
 .TP
 \fBINVAL\fR
-The node registered with an invalid configuration. The node will clear from
-this state with a valid registration (ie. a slurmd restart is required).
+The node did not register correctly with the controller. This happens when
+a node registers with less resources than configured in the slurm.conf file.
+The node will clear from this state with a valid registration (i.e. a slurmd
+restart is required).
 .IP
 
 .TP
