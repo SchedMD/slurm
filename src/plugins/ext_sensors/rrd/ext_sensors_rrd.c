@@ -163,8 +163,7 @@ static char* _get_node_rrd_path(char* component_name,
 	if (!component_name || !strlen(component_name) || !rrd_file)
 		return NULL;
 
-	p = xstrdup(rrd_file);
-	xstrsubstitute(p, "%n", component_name);
+	p = slurm_conf_expand_slurmd_path(rrd_file, component_name, NULL);
 
 	if (!xstrcmp(p, rrd_file)) {
 		xfree(p);
