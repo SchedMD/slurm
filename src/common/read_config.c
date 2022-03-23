@@ -5111,15 +5111,20 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
  * Returns an xmalloc()ed string which the caller must free with xfree().
  */
 extern char *slurm_conf_expand_slurmd_path(const char *path,
-					   const char *node_name)
+					   const char *node_name,
+					   const char *host_name)
 {
-	char *hostname;
+	const char *hostname;
 	char *dir = NULL;
 
 	dir = xstrdup(path);
-	hostname = _internal_get_hostname(node_name);
+	if (!host_name)
+		hostname = _internal_get_hostname(node_name);
+	else
+		hostname = host_name;
 	xstrsubstitute(dir, "%h", hostname);
-	xfree(hostname);
+	if (!host_name)
+		xfree(hostname);
 	xstrsubstitute(dir, "%n", node_name);
 
 	return dir;

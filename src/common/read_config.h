@@ -588,7 +588,8 @@ extern int gethostname_short(char *name, size_t len);
  * Returns an xmalloc()ed string which the caller must free with xfree().
  */
 extern char *slurm_conf_expand_slurmd_path(const char *path,
-					   const char *node_name);
+					   const char *node_name,
+					   const char *host_name);
 
 /*
  * prolog_flags2str - convert a PrologFlags uint16_t to the equivalent string

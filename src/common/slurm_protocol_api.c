@@ -305,7 +305,7 @@ extern char *slurm_get_tmp_fs(char *node_name)
 			tmp_fs = xstrdup(conf->tmp_fs);
 		else
 			tmp_fs = slurm_conf_expand_slurmd_path(
-				conf->tmp_fs, node_name);
+				conf->tmp_fs, node_name, NULL);
 		slurm_conf_unlock();
 	}
 	return tmp_fs;

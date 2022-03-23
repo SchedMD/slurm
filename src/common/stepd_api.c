@@ -246,7 +246,7 @@ extern int stepd_connect(const char *directory, const char *nodename,
 	if (directory == NULL) {
 		slurm_conf_t *cf = slurm_conf_lock();
 		directory = slurm_conf_expand_slurmd_path(cf->slurmd_spooldir,
-							  nodename);
+							  nodename, NULL);
 		slurm_conf_unlock();
 	}
 
@@ -529,7 +529,7 @@ stepd_available(const char *directory, const char *nodename)
 	if (directory == NULL) {
 		slurm_conf_t *cf = slurm_conf_lock();
 		directory = slurm_conf_expand_slurmd_path(
-			cf->slurmd_spooldir, nodename);
+			cf->slurmd_spooldir, nodename, NULL);
 		slurm_conf_unlock();
 	}
 

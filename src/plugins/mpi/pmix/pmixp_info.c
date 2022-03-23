@@ -401,7 +401,7 @@ static int _env_set(char ***env)
 
 	_pmixp_job_info.lib_tmpdir = slurm_conf_expand_slurmd_path(
 				_pmixp_job_info.server_addr_unfmt,
-				_pmixp_job_info.hostname);
+				_pmixp_job_info.hostname, NULL);
 
 	xstrfmtcat(_pmixp_job_info.server_addr_unfmt,
 		   "/stepd.slurm.pmix.%d.%d",
