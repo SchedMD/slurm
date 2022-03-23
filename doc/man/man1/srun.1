@@ -1432,7 +1432,6 @@ to "none".
 .TP
 \fB\-\-gres\-flags\fR=<\fItype\fR>
 Specify generic resource task binding options.
-This option applies to job allocations.
 .IP
 .RS
 .TP
@@ -1443,13 +1442,14 @@ This option is currently required to use more CPUs than are bound to a GRES
 one socket are required to run the job).
 This option may permit a job to be allocated resources sooner than otherwise
 possible, but may result in lower job performance.
+This option applies to job allocations.
 .br
 \fBNOTE\fR: This option is specific to \fBSelectType=cons_res\fR.
 .IP
 
 .TP
 .B enforce\-binding
-The only CPUs available to the job will be those bound to the selected
+The only CPUs available to the job/step will be those bound to the selected
 GRES (i.e. the CPUs identified in the gres.conf file will be strictly
 enforced). This option may result in delayed initiation of a job.
 For example a job requiring two GPUs and one CPU will be delayed until both
@@ -1458,8 +1458,10 @@ sockets, however, the application performance may be improved due to improved
 communication speed.
 Requires the node to be configured with more than one socket and resource
 filtering will be performed on a per\-socket basis.
+\fBNOTE\fR: Job steps that don't use \fB--exact\fR will not be affected.
 .br
-\fBNOTE\fR: This option is specific to \fBSelectType=cons_tres\fR.
+\fBNOTE\fR: This option is specific to \fBSelectType=cons_tres\fR for job
+allocations.
 .RE
 .IP
 

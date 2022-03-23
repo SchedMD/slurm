@@ -2090,7 +2090,8 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		goto cleanup;
 
 	/* select any idle cores */
-	if (!bit_equal(any_gres_core_bitmap, job_resrcs_ptr->core_bitmap) &&
+	if (!(step_ptr->job_ptr->bit_flags & GRES_ENFORCE_BIND) &&
+	    !bit_equal(any_gres_core_bitmap, job_resrcs_ptr->core_bitmap) &&
 	    _handle_core_select(step_ptr, job_resrcs_ptr,
 				job_resrcs_ptr->core_bitmap, job_node_inx,
 				sockets, cores, use_all_cores, false, &cpu_cnt))
@@ -2131,7 +2132,8 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		goto cleanup;
 
 	/* oversubscribe any cores */
-	if (!bit_equal(any_gres_core_bitmap, job_resrcs_ptr->core_bitmap) &&
+	if (!(step_ptr->job_ptr->bit_flags & GRES_ENFORCE_BIND) &&
+	    !bit_equal(any_gres_core_bitmap, job_resrcs_ptr->core_bitmap) &&
 	    _handle_core_select(step_ptr, job_resrcs_ptr,
 				job_resrcs_ptr->core_bitmap, job_node_inx,
 				sockets, cores, use_all_cores, true, &cpu_cnt))
