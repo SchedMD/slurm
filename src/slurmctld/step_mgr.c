@@ -5213,7 +5213,7 @@ static step_record_t *_build_interactive_step(
 		job_ptr = job_ptr_in;
 
 	step_id.job_id = job_ptr->job_id;
-	step_id.step_id = SLURM_INTERACTIVE_STEP,
+	step_id.step_id = SLURM_INTERACTIVE_STEP;
 	step_id.step_het_comp = NO_VAL;
 	step_ptr = find_step_record(job_ptr, &step_id);
 	if (step_ptr) {
