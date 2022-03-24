@@ -671,6 +671,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	FREE_NULL_LIST(job->outgoing_cache);
 	FREE_NULL_LIST(job->job_gres_list);
 	FREE_NULL_LIST(job->step_gres_list);
+	xfree(job->alias_list);
 	xfree(job->container);
 	xfree(job->cpu_bind);
 	xfree(job->cwd);
