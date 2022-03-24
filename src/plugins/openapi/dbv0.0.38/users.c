@@ -65,6 +65,11 @@ typedef struct {
 	List qos_list;
 } foreach_user_t;
 
+typedef struct {
+	data_t *errors;
+	slurmdb_user_cond_t *user_cond;
+} foreach_query_search_t;
+
 static int _foreach_user(void *x, void *arg)
 {
 	slurmdb_user_rec_t *user = x;
@@ -84,7 +89,35 @@ static int _foreach_user(void *x, void *arg)
 		return 0;
 }
 
-static int _dump_users(data_t *resp, data_t *errors, void *auth, char *user_name)
+static data_for_each_cmd_t _foreach_query_search(const char *key,
+						 data_t *data,
+						 void *arg)
+{
+	foreach_query_search_t *args = arg;
+	data_t *errors = args->errors;
+
+	if (!xstrcasecmp("with_deleted", key)) {
+		if (data_convert_type(data, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
+			resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				   "must be a Boolean", NULL);
+			return DATA_FOR_EACH_FAIL;
+		}
+
+		if (data->data.bool_u)
+			args->user_cond->with_deleted = true;
+		else
+			args->user_cond->with_deleted = false;
+
+		return DATA_FOR_EACH_CONT;
+	}
+
+	resp_error(errors, ESLURM_REST_INVALID_QUERY, "Unknown query field",
+		   NULL);
+	return DATA_FOR_EACH_FAIL;
+}
+
+static int _dump_users(data_t *resp, data_t *errors, void *auth, char *user_name,
+		       slurmdb_user_cond_t *user_cond)
 {
 	int rc = SLURM_SUCCESS;
 	List user_list = NULL;
@@ -99,13 +132,12 @@ static int _dump_users(data_t *resp, data_t *errors, void *auth, char *user_name
 		.users = data_set_list(data_key_set(resp, "users")),
 	};
 	slurmdb_assoc_cond_t assoc_cond = { 0 };
-	slurmdb_user_cond_t user_cond = {
-		.assoc_cond = &assoc_cond,
-		.with_assocs = true,
-		.with_coords = true,
-		/* with_deleted defaults to false */
-		.with_wckeys = true,
-	};
+
+	user_cond->assoc_cond = &assoc_cond;
+	user_cond->with_assocs = true;
+	user_cond->with_coords = true;
+	/* with_deleted defaults to false */
+	user_cond->with_wckeys = true;
 
 	if (user_name) {
 		assoc_cond.user_list = list_create(NULL);
@@ -113,7 +145,7 @@ static int _dump_users(data_t *resp, data_t *errors, void *auth, char *user_name
 	}
 
 	if (!(rc = db_query_list(errors, auth, &user_list, slurmdb_users_get,
-				 &user_cond)) &&
+				 user_cond)) &&
 	    !(rc = db_query_list(errors, auth, &args.tres_list,
 				 slurmdb_tres_get, &tres_cond)) &&
 	    !(rc = db_query_list(errors, auth, &args.qos_list, slurmdb_qos_get,
@@ -368,8 +400,20 @@ extern int op_handler_users(const char *context_id,
 {
 	data_t *errors = populate_response_format(resp);
 
+	slurmdb_user_cond_t user_cond = {0};
+	if (query && data_get_dict_length(query)) {
+		/* Default to no deleted users */
+		foreach_query_search_t args = {
+			.errors = errors,
+			.user_cond = &user_cond,
+		};
+
+		if (data_dict_for_each(query, _foreach_query_search, &args) < 0)
+			return ESLURM_REST_INVALID_QUERY;
+	}
+
 	if (method == HTTP_REQUEST_GET)
-		return _dump_users(resp, errors, auth, NULL);
+		return _dump_users(resp, errors, auth, NULL, &user_cond);
 	else if (method == HTTP_REQUEST_POST)
 		return _update_users(query, resp, auth, (tag != CONFIG_OP_TAG));
 	else
@@ -384,10 +428,22 @@ static int op_handler_user(const char *context_id, http_request_method_t method,
 	data_t *errors = populate_response_format(resp);
 	char *user_name = get_str_param("user_name", errors, parameters);
 
+	slurmdb_user_cond_t user_cond = {0};
+	if (query && data_get_dict_length(query)) {
+		/* Default to no deleted users */
+		foreach_query_search_t args = {
+			.errors = errors,
+			.user_cond = &user_cond,
+		};
+
+		if (data_dict_for_each(query, _foreach_query_search, &args) < 0)
+			return ESLURM_REST_INVALID_QUERY;
+	}
+
 	if (!user_name)
 		rc = ESLURM_REST_INVALID_QUERY;
 	else if (method == HTTP_REQUEST_GET)
-		rc = _dump_users(resp, errors, auth, user_name);
+		rc = _dump_users(resp, errors, auth, user_name, &user_cond);
 	else if (method == HTTP_REQUEST_DELETE)
 		rc = _delete_user(resp, auth, user_name, errors);
 	else

@@ -798,6 +798,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "with_deleted",
+            "in": "query",
+            "description": "Include deleted users. False by default.",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ]
       }
@@ -895,7 +906,20 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "with_deleted",
+            "in": "query",
+            "description": "Include deleted users. False by default.",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ]
       }
     },
     "/cluster/{cluster_name}": {
