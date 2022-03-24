@@ -228,7 +228,7 @@ static int _purge_duplicate_steps(void *x, void *arg)
 	 */
 	if ((step_specs->step_id.step_id == step_ptr->step_id.step_id) &&
 	    ((step_specs->step_id.step_het_comp ==
-		step_ptr->step_id.step_het_comp) ||
+	      step_ptr->step_id.step_het_comp) ||
 	     (step_ptr->step_id.step_het_comp == NO_VAL)))
 		return -1;
 
@@ -587,11 +587,13 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 			   uint16_t signal, uint16_t flags, uid_t uid)
 {
 	job_record_t *job_ptr;
-	step_signal_t step_signal = { .flags = flags,
-				      .found = false,
-				      .rc_in = SLURM_SUCCESS,
-				      .signal = signal,
-				      .uid = uid };
+	step_signal_t step_signal = {
+		.flags = flags,
+		.found = false,
+		.rc_in = SLURM_SUCCESS,
+		.signal = signal,
+		.uid = uid,
+	};
 
 	memcpy(&step_signal.step_id, step_id, sizeof(step_signal.step_id));
 
@@ -1113,7 +1115,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 		if (IS_JOB_CONFIGURING(job_ptr)) {
 			info("%s: Configuration for %pJ is complete",
-			      __func__, job_ptr);
+			     __func__, job_ptr);
 			job_config_fini(job_ptr);
 		}
 	}
@@ -1213,7 +1215,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				mem_use &= (~MEM_PER_CPU);
 				/* ignore current step allocations */
 				tmp_mem    = job_resrcs_ptr->
-					     memory_allocated[node_inx];
+					memory_allocated[node_inx];
 				tmp_cpus   = tmp_mem / mem_use;
 				total_cpus = MIN(total_cpus, tmp_cpus);
 				/*
@@ -1222,7 +1224,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				 */
 				if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
 					tmp_mem   -= job_resrcs_ptr->
-						     memory_used[node_inx];
+						memory_used[node_inx];
 					tmp_cpus   = tmp_mem / mem_use;
 				}
 				if (tmp_cpus < avail_cpus) {
@@ -1237,7 +1239,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				uint64_t mem_use = step_spec->pn_min_memory;
 				/* ignore current step allocations */
 				tmp_mem    = job_resrcs_ptr->
-					     memory_allocated[node_inx];
+					memory_allocated[node_inx];
 				if (tmp_mem < mem_use)
 					total_cpus = 0;
 				/*
@@ -1246,7 +1248,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				 */
 				if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
 					tmp_mem   -= job_resrcs_ptr->
-						     memory_used[node_inx];
+						memory_used[node_inx];
 				}
 				if ((tmp_mem < mem_use) && (avail_cpus > 0)) {
 					log_flag(STEPS, "%s: %pJ Usable memory on node: %"PRIu64" is less than requested %"PRIu64" skipping the node",
@@ -1332,9 +1334,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						*return_code = fail_mode;
 						log_flag(STEPS, "%s: %pJ Step cannot ever run in the allocation: %s",
 							 __func__,
-							job_ptr,
-							slurm_strerror(
-								fail_mode));
+							 job_ptr,
+							 slurm_strerror(
+								 fail_mode));
 					}
 					return NULL;
 				}
@@ -1382,7 +1384,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					      &selected_nodes);
 		if (error_code) {
 			log_flag(STEPS, "%s: invalid node list %s", __func__,
-			     step_spec->node_list);
+				 step_spec->node_list);
 			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
@@ -1559,9 +1561,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 		i = (cpu_count +
 		     (job_ptr->job_resrcs->cpu_array_value[0] - 1)) /
-		    job_ptr->job_resrcs->cpu_array_value[0];
+			job_ptr->job_resrcs->cpu_array_value[0];
 		step_spec->min_nodes = (i > step_spec->min_nodes) ?
-					i : step_spec->min_nodes ;
+			i : step_spec->min_nodes ;
 
 		/*
 		 * If we are trying to pack the nodes we only want the minimum
@@ -1882,10 +1884,10 @@ static bool _pick_step_core(step_record_t *step_ptr,
 }
 
 static bool _handle_core_select(step_record_t *step_ptr,
-			       job_resources_t *job_resrcs_ptr,
-			       int job_node_inx,
-			       int sock_inx, int core_inx, bool use_all_cores,
-			       bool oversubscribing_cpus, int *cpu_cnt)
+				job_resources_t *job_resrcs_ptr,
+				int job_node_inx,
+				int sock_inx, int core_inx, bool use_all_cores,
+				bool oversubscribing_cpus, int *cpu_cnt)
 {
 	xassert(cpu_cnt);
 
@@ -2275,8 +2277,8 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			 */
 			if (!_use_one_thread_per_core(step_ptr) &&
 			    (!(node_record_table_ptr[i_node].cpus ==
-			      (node_record_table_ptr[i_node].tot_sockets *
-			       node_record_table_ptr[i_node].cores)))) {
+			       (node_record_table_ptr[i_node].tot_sockets *
+				node_record_table_ptr[i_node].cores)))) {
 				multi_core_data_t *mc_ptr;
 				mc_ptr = job_ptr->details->mc_ptr;
 				if (step_ptr->threads_per_core != NO_VAL16)
@@ -2489,9 +2491,9 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 					 job_node_inx,
 					 node_record_table_ptr[i_node].name,
 					 job_resrcs_ptr->
-						memory_used[job_node_inx],
+					 memory_used[job_node_inx],
 					 job_resrcs_ptr->
-						memory_allocated[job_node_inx]);
+					 memory_allocated[job_node_inx]);
 			} else {
 				error("%s: Allocated memory underflow for %pS (freed memeory=%"PRIu64")",
 				      __func__, step_ptr, mem_use);
@@ -2584,7 +2586,7 @@ static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
 		}
 		num_tasks -= (job_ptr->job_resrcs->cpu_array_value[i] /
 			      cpus_per_task) *
-			     job_ptr->job_resrcs->cpu_array_reps[i];
+			job_ptr->job_resrcs->cpu_array_reps[i];
 	}
 
 	if (num_tasks > 0)
@@ -2610,13 +2612,13 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 		return;		/* No data structure */
 
 	bind_to_bits = CPU_BIND_TO_SOCKETS | CPU_BIND_TO_CORES |
-		       CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS;
+		CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS;
 	if ((job_ptr->details->cpu_bind_type != NO_VAL16) &&
 	    (job_ptr->details->cpu_bind_type & bind_to_bits)) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) {
 			char tmp_str[128];
-			slurm_sprint_cpu_bind_type(tmp_str,
-				job_ptr->details->cpu_bind_type);
+			slurm_sprint_cpu_bind_type(
+				tmp_str, job_ptr->details->cpu_bind_type);
 			log_flag(CPU_BIND, "%pJ CpuBind='%s' already set for job/allocation using it as a default for new step.",
 				 job_ptr, tmp_str);
 		}
@@ -2650,8 +2652,8 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 		job_ptr->details->cpu_bind_type = bind_bits | node_bind;
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) {
 			char tmp_str[128];
-			slurm_sprint_cpu_bind_type(tmp_str,
-				job_ptr->details->cpu_bind_type);
+			slurm_sprint_cpu_bind_type(
+				tmp_str, job_ptr->details->cpu_bind_type);
 			log_flag(CPU_BIND, "%pJ setting default CpuBind to nodes default '%s' for new step.",
 				 job_ptr, tmp_str);
 		}
@@ -2661,11 +2663,11 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 	/* Use partition's cpu_bind (if any) */
 	if (job_ptr->part_ptr && job_ptr->part_ptr->cpu_bind) {
 		job_ptr->details->cpu_bind_type = bind_bits |
-						  job_ptr->part_ptr->cpu_bind;
+			job_ptr->part_ptr->cpu_bind;
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) {
 			char tmp_str[128];
-			slurm_sprint_cpu_bind_type(tmp_str,
-				job_ptr->details->cpu_bind_type);
+			slurm_sprint_cpu_bind_type(
+				tmp_str, job_ptr->details->cpu_bind_type);
 			log_flag(CPU_BIND, "%pJ setting default CpuBind to partition default '%s' for new step.",
 				 job_ptr, tmp_str);
 
@@ -2675,12 +2677,12 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 
 	/* Use global default from TaskPluginParams */
 	job_ptr->details->cpu_bind_type = bind_bits |
-					  slurm_conf.task_plugin_param;
+		slurm_conf.task_plugin_param;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) {
 		char tmp_str[128];
 		slurm_sprint_cpu_bind_type(tmp_str,
-			job_ptr->details->cpu_bind_type);
+					   job_ptr->details->cpu_bind_type);
 		log_flag(CPU_BIND, "%pJ setting default CpuBind to TaskPluginParam '%s' for new step.",
 			 job_ptr, tmp_str);
 
@@ -3265,37 +3267,37 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			 */
 			step_layout = NULL;
 		}
-       } else if (step_specs->step_id.step_het_comp != NO_VAL) {
-               slurm_step_id_t step_id = {
-                       .job_id = step_ptr->step_id.job_id,
-                       .step_id = step_ptr->step_id.step_id,
-                       .step_het_comp = 0,
-               };
-               /* get the first het step component */
-               step_record_t *het_step_ptr =
-		       find_step_record(job_ptr, &step_id);
+	} else if (step_specs->step_id.step_het_comp != NO_VAL) {
+		slurm_step_id_t step_id = {
+			.job_id = step_ptr->step_id.job_id,
+			.step_id = step_ptr->step_id.step_id,
+			.step_het_comp = 0,
+		};
+		/* get the first het step component */
+		step_record_t *het_step_ptr =
+			find_step_record(job_ptr, &step_id);
 
-               jobid = job_ptr->job_id;
-               if (!het_step_ptr || !het_step_ptr->switch_job) {
-                       memset(&tmp_step_layout, 0, sizeof(tmp_step_layout));
-                       step_layout = &tmp_step_layout;
-                       step_layout->node_list = xstrdup(job_ptr->nodes);
-                       step_layout->node_cnt = job_ptr->node_cnt;
-                       tmp_step_layout_used = true;
-               } else {
-                       if (!het_step_ptr->switch_job) {
-			       delete_step_record(job_ptr, step_ptr);
-                               return ESLURM_INTERCONNECT_FAILURE;
-		       }
+		jobid = job_ptr->job_id;
+		if (!het_step_ptr || !het_step_ptr->switch_job) {
+			memset(&tmp_step_layout, 0, sizeof(tmp_step_layout));
+			step_layout = &tmp_step_layout;
+			step_layout->node_list = xstrdup(job_ptr->nodes);
+			step_layout->node_cnt = job_ptr->node_cnt;
+			tmp_step_layout_used = true;
+		} else {
+			if (!het_step_ptr->switch_job) {
+				delete_step_record(job_ptr, step_ptr);
+				return ESLURM_INTERCONNECT_FAILURE;
+			}
 
-                       switch_g_duplicate_jobinfo(het_step_ptr->switch_job,
-                                                  &step_ptr->switch_job);
-                       /*
-                        * Prevent switch_g_build_jobinfo from getting a new
-                        * cookie below.
-                        */
-                       step_layout = NULL;
-               }
+			switch_g_duplicate_jobinfo(het_step_ptr->switch_job,
+						   &step_ptr->switch_job);
+			/*
+			 * Prevent switch_g_build_jobinfo from getting a new
+			 * cookie below.
+			 */
+			step_layout = NULL;
+		}
 	} else {
 		step_layout = step_ptr->step_layout;
 		jobid = job_ptr->job_id;
@@ -3375,7 +3377,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
 	     (job_resrcs_ptr->memory_used == NULL))) {
 		error("%s: lack memory allocation details to enforce memory limits for %pJ",
-		       __func__, job_ptr);
+		      __func__, job_ptr);
 		step_ptr->pn_min_memory = 0;
 	} else if (step_ptr->pn_min_memory == MEM_PER_CPU)
 		step_ptr->pn_min_memory = 0;	/* clear MEM_PER_CPU flag */
@@ -4443,8 +4445,10 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	List gres_list_req = NULL, gres_list_alloc = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	jobacctinfo_t *jobacct = NULL;
-	slurm_step_id_t step_id = { .job_id = job_ptr->job_id,
-				    .step_het_comp = NO_VAL };
+	slurm_step_id_t step_id = {
+		.job_id = job_ptr->job_id,
+		.step_het_comp = NO_VAL,
+	};
 
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
@@ -4499,7 +4503,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		if (uint8_tmp &&
 		    (switch_g_unpack_jobinfo(&switch_tmp, buffer,
 					     protocol_version)))
-				goto unpack_error;
+			goto unpack_error;
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
@@ -4572,7 +4576,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		if (uint8_tmp &&
 		    (switch_g_unpack_jobinfo(&switch_tmp, buffer,
 					     protocol_version)))
-				goto unpack_error;
+			goto unpack_error;
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
@@ -4838,7 +4842,7 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 	kill_step->time      = now;
 	kill_step->start_time = job_ptr->start_time;
 	kill_step->select_jobinfo = select_g_select_jobinfo_copy(
-			job_ptr->select_jobinfo);
+		job_ptr->select_jobinfo);
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
@@ -4899,7 +4903,7 @@ extern int check_job_step_time_limit(void *x, void *arg)
 		return 0;
 
 	job_run_mins = (uint32_t) (((*now - step_ptr->start_time) -
-				   step_ptr->tot_sus_time) / 60);
+				    step_ptr->tot_sus_time) / 60);
 
 	if (job_run_mins >= step_ptr->time_limit) {
 		/* this step has timed out */
@@ -5149,7 +5153,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr =
-				find_front_end_record(job_ptr->batch_host);
+		find_front_end_record(job_ptr->batch_host);
 	if (front_end_ptr && front_end_ptr->name)
 		host = front_end_ptr->name;
 	else {
@@ -5158,7 +5162,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 		host = job_ptr->batch_host;
 	}
 #else
-		host = job_ptr->batch_host;
+	host = job_ptr->batch_host;
 #endif
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		host, NULL, NULL, 1, 1, 0);
@@ -5220,7 +5224,7 @@ static step_record_t *_build_interactive_step(
 
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr =
-				find_front_end_record(job_ptr->batch_host);
+		find_front_end_record(job_ptr->batch_host);
 	if (front_end_ptr && front_end_ptr->name)
 		host = front_end_ptr->name;
 	else {
@@ -5229,7 +5233,7 @@ static step_record_t *_build_interactive_step(
 		host = job_ptr->batch_host;
 	}
 #else
-		host = job_ptr->batch_host;
+	host = job_ptr->batch_host;
 #endif
 	if (!host) {
 		error("%s: %pJ batch_host is NULL! This should never happen",
