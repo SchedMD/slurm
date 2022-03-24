@@ -4049,6 +4049,8 @@ extern void make_node_alloc(node_record_t *node_ptr, job_record_t *job_ptr)
 extern void make_node_avail(node_record_t *node_ptr)
 {
 	int node_inx = node_ptr - node_record_table_ptr;
+	if (IS_NODE_POWER_DOWN(node_ptr) || IS_NODE_POWERING_DOWN(node_ptr))
+		return;
 	bit_set(avail_node_bitmap, node_inx);
 
 	/*
