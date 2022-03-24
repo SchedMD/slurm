@@ -542,7 +542,7 @@ static void _do_power_work(time_t now)
 			if (!IS_NODE_DOWN(node_ptr) &&
 			    !IS_NODE_DRAIN(node_ptr) &&
 			    !IS_NODE_FAIL(node_ptr))
-				make_node_avail(i);
+				make_node_avail(node_ptr);
 
 			node_ptr->last_busy = 0;
 			node_ptr->power_save_req_time = 0;
