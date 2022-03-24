@@ -2507,9 +2507,9 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 
 static int _build_node_spec_bitmap(node_record_t *node_ptr)
 {
-	uint32_t c, coff, size;
+	uint32_t size;
 	int *cpu_spec_array;
-	int i, node_inx;
+	int i;
 
 	if (node_ptr->threads == 0) {
 		error("Node %s has invalid thread per core count (%u)",
@@ -2519,10 +2519,8 @@ static int _build_node_spec_bitmap(node_record_t *node_ptr)
 
 	if (!node_ptr->cpu_spec_list)
 		return SLURM_SUCCESS;
-	node_inx = node_ptr->index;
-	c = cr_get_coremap_offset(node_inx);
-	coff = cr_get_coremap_offset(node_inx+1);
-	size = coff - c;
+	size = node_ptr->config_ptr->cores;
+	size *= node_ptr->config_ptr->tot_sockets;
 	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
 	node_ptr->node_spec_bitmap = bit_alloc(size);
 	bit_nset(node_ptr->node_spec_bitmap, 0, size-1);
