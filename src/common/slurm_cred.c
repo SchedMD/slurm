@@ -199,6 +199,7 @@ struct slurm_job_credential {
 	List job_gres_list;		/* Generic resources allocated to JOB */
 	List step_gres_list;		/* Generic resources allocated to STEP */
 
+	char *job_alias_list;           /* node name to address aliases */
 	char     *job_constraints;	/* constraints in job allocation */
 	bitstr_t *job_core_bitmap;
 	uint16_t  job_core_spec;	/* Count of specialized cores */
@@ -672,6 +673,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 		       arg->sock_core_rep_count,
 		       (sizeof(uint32_t) * i));
 	}
+	cred->job_alias_list = xstrdup(arg->job_alias_list);
 	cred->job_constraints = xstrdup(arg->job_constraints);
 	cred->job_nhosts      = arg->job_nhosts;
 	cred->job_hostlist    = xstrdup(arg->job_hostlist);
@@ -772,6 +774,7 @@ slurm_cred_copy(slurm_cred_t *cred)
 					     sizeof(uint32_t));
 	memcpy(rcred->sock_core_rep_count, cred->sock_core_rep_count,
 	       (sizeof(uint32_t) * rcred->core_array_size));
+	rcred->job_alias_list = xstrdup(cred->job_alias_list);
 	rcred->job_constraints = xstrdup(cred->job_constraints);
 	rcred->job_nhosts      = cred->job_nhosts;
 	rcred->job_hostlist    = xstrdup(cred->job_hostlist);
@@ -878,6 +881,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->sock_core_rep_count = xcalloc(i, sizeof(uint32_t));
 	memcpy(cred->sock_core_rep_count, arg->sock_core_rep_count,
 	       (sizeof(uint32_t) * i));
+	cred->job_constraints = xstrdup(arg->job_alias_list);
 	cred->job_constraints = xstrdup(arg->job_constraints);
 	cred->job_nhosts      = arg->job_nhosts;
 	cred->job_hostlist    = xstrdup(arg->job_hostlist);
@@ -927,6 +931,7 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	FREE_NULL_LIST(arg->job_gres_list);
 	FREE_NULL_LIST(arg->step_gres_list);
 	xfree(arg->step_hostlist);
+	xfree(arg->job_alias_list);
 	xfree(arg->job_constraints);
 	xfree(arg->job_hostlist);
 	xfree(arg->sock_core_rep_count);
@@ -1000,6 +1005,7 @@ static void _copy_cred_to_arg(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 					   sizeof(uint32_t));
 	memcpy(arg->sock_core_rep_count, cred->sock_core_rep_count,
 	       (sizeof(uint32_t) * cred->core_array_size));
+	arg->job_alias_list = xstrdup(cred->job_alias_list);
 	arg->job_constraints = xstrdup(cred->job_constraints);
 	arg->job_nhosts      = cred->job_nhosts;
 	arg->job_hostlist    = xstrdup(cred->job_hostlist);
@@ -1130,6 +1136,7 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	FREE_NULL_BITMAP(cred->job_core_bitmap);
 	FREE_NULL_BITMAP(cred->step_core_bitmap);
 	xfree(cred->cores_per_socket);
+	xfree(cred->job_alias_list);
 	xfree(cred->job_constraints);
 	xfree(cred->job_hostlist);
 	xfree(cred->sock_core_rep_count);
@@ -1586,6 +1593,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 		safe_unpack16(&cred->job_core_spec, buffer);
+		safe_unpackstr_xmalloc(&cred->job_alias_list, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack16(&cred->x11, buffer);
@@ -2062,6 +2070,7 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		gres_step_state_pack(cred->step_gres_list, buffer,
 				     &cred->step_id, protocol_version);
 		pack16(cred->job_core_spec, buffer);
+		packstr(cred->job_alias_list, buffer);
 		packstr(cred->job_constraints, buffer);
 		packstr(cred->step_hostlist, buffer);
 		pack16(cred->x11, buffer);
