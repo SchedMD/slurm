@@ -777,6 +777,15 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 			    conf->node_topo_addr);
 	env_array_overwrite(&job->env,"SLURM_TOPOLOGY_ADDR_PATTERN",
 			    conf->node_topo_pattern);
+	/*
+	 * Reset address for cloud nodes
+	 */
+	if (job->alias_list && set_nodes_alias(job->alias_list)) {
+		error("%s: set_nodes_alias failed: %s", __func__,
+		      job->alias_list);
+		stepd_step_rec_destroy(job);
+		return NULL;
+	}
 
 	set_msg_node_id(job);
 
