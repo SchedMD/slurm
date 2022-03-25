@@ -45,7 +45,7 @@
  * fd             is the file descriptor to write to
  * buf            is the char buffer to write
  * len            is the buffer length in bytes
- * task_id        is will be used in the label
+ * task_id        will be used in the label
  * het_job_offset is the offset within a hetjob or NO_VAL
  * het_job_task_offset is the task offset within a hetjob or NO_VAL
  * label          if true, prepend each line of the buffer with a
