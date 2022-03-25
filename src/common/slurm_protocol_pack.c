@@ -1058,6 +1058,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		packstr(msg->version, buffer);
 
 		pack8(msg->dynamic_type, buffer);
+		packstr(msg->dynamic_conf, buffer);
 		packstr(msg->dynamic_feature, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
@@ -1169,6 +1170,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpackstr(&node_reg_ptr->version, buffer);
 
 		safe_unpack8(&node_reg_ptr->dynamic_type, buffer);
+		safe_unpackstr(&node_reg_ptr->dynamic_conf, buffer);
 		safe_unpackstr(&node_reg_ptr->dynamic_feature, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		bool tmp_bool;

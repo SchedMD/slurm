@@ -745,6 +745,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	buf_t *gres_info;
 
 	msg->dynamic_type = conf->dynamic_type;
+	msg->dynamic_conf = xstrdup(conf->dynamic_conf);
 	msg->dynamic_feature = xstrdup(conf->dynamic_feature);
 
 	msg->node_name   = xstrdup (conf->node_name);
@@ -1392,10 +1393,12 @@ _process_cmdline(int ac, char **av)
 
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
+		LONG_OPT_CONF,
 		LONG_OPT_CONF_SERVER,
 	};
 
 	static struct option long_options[] = {
+		{"conf",		required_argument, 0, LONG_OPT_CONF},
 		{"conf-server",		required_argument, 0, LONG_OPT_CONF_SERVER},
 		{"version",		no_argument,       0, 'V'},
 		{NULL,			0,                 0, 0}
@@ -1469,6 +1472,9 @@ _process_cmdline(int ac, char **av)
 		case 'Z':
 			conf->dynamic_type = DYN_NODE_NORM;
 			conf->dynamic_feature = xstrdup(optarg);
+			break;
+		case LONG_OPT_CONF:
+			conf->dynamic_conf = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONF_SERVER:
 			conf->conf_server = xstrdup(optarg);
@@ -1668,6 +1674,89 @@ static int _establish_configuration(void)
 	return SLURM_SUCCESS;
 }
 
+static void _build_node_callback(char *alias, char *hostname, char *address,
+				 char *bcast_address, uint16_t port,
+				 int state_val, slurm_conf_node_t *conf_node,
+				 config_record_t *config_ptr)
+{
+	node_record_t *node_ptr;
+
+	if (!(node_ptr = create_node_record(config_ptr, alias)))
+		return;
+
+	if ((state_val != NO_VAL) &&
+	    (state_val != NODE_STATE_UNKNOWN))
+		node_ptr->node_state = state_val;
+	node_ptr->last_response = (time_t) 0;
+	node_ptr->comm_name = xstrdup(address);
+	node_ptr->cpu_bind  = conf_node->cpu_bind;
+	node_ptr->node_hostname = xstrdup(hostname);
+	node_ptr->bcast_address = xstrdup(bcast_address);
+	node_ptr->port = port;
+	node_ptr->weight = conf_node->weight;
+	node_ptr->reason = xstrdup(conf_node->reason);
+
+	node_ptr->node_state |= NODE_STATE_DYNAMIC_NORM;
+
+	slurm_conf_add_node(node_ptr);
+}
+
+extern int _create_nodes(char *nodeline, char **err_msg)
+{
+	int rc = SLURM_SUCCESS;
+	slurm_conf_node_t *conf_node;
+	config_record_t *config_ptr;
+	s_p_hashtbl_t *node_hashtbl = NULL;
+
+	xassert(nodeline);
+	xassert(err_msg);
+
+	if (!xstrstr(slurm_conf.select_type, "cons_tres")) {
+		*err_msg = xstrdup("Node creation only compatible with select/cons_tres");
+		error("%s", *err_msg);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	if (!(conf_node = slurm_conf_parse_nodeline(nodeline, &node_hashtbl))) {
+		*err_msg = xstrdup_printf("Failed to parse nodeline '%s'",
+					  nodeline);
+		error("%s", *err_msg);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	config_ptr = config_record_from_conf_node(conf_node, 0);
+	expand_nodeline_info(conf_node, config_ptr, _build_node_callback);
+	s_p_hashtbl_destroy(node_hashtbl);
+
+fini:
+	return rc;
+}
+
+static void _valididate_dynamic_conf(void)
+{
+	char *invalid_opts[] = {
+		"Boards=",
+		"CPUs=",
+		"CoresPerSocket=",
+		"NodeName=",
+		"Port=", /* Must use SlurmdPort, alias_list doesn't pass port */
+		"RealMemory=",
+		"SocketsPerBoard=",
+		"ThreadsPerCore=",
+		NULL
+	};
+
+	if (!conf->dynamic_conf)
+		return;
+
+	for (int i = 0; invalid_opts[i]; i++) {
+		if (xstrcasestr(conf->dynamic_conf, invalid_opts[i]))
+			fatal("option '%s' not allowed in --conf",
+			      invalid_opts[i]);
+	}
+}
+
 static void _dynamic_init(void)
 {
 	if (!conf->dynamic_type)
@@ -1695,7 +1784,8 @@ static void _dynamic_init(void)
 	conf->threads = conf->actual_threads;
 	get_memory(&conf->real_memory_size);
 
-	if (conf->dynamic_type == DYN_NODE_FUTURE) {
+	switch (conf->dynamic_type) {
+	case DYN_NODE_FUTURE:
 		/*
 		 * dynamic future nodes need to be mapped to a slurm.conf node
 		 * in order to load in correct configs (e.g. gres, etc.). First
@@ -1705,6 +1795,44 @@ static void _dynamic_init(void)
 
 		/* send registration again after loading everything in */
 		sent_reg_time = 0;
+		break;
+	case DYN_NODE_NORM:
+	{
+		/*
+		 * Build NodeName config line for slurmd and slurmctld to
+		 * process and create instances from -- so things like Gres and
+		 * CoreSpec work. A dynamic normal node doesn't need/can't to
+		 * map to slurm.conf config record so no need to ask the
+		 * slurmctld for a node name like dynamic future nodes have to
+		 * do.
+		 */
+		char *err_msg = NULL;
+		char *tmp;
+
+		_valididate_dynamic_conf();
+
+		tmp = xstrdup_printf(
+			"NodeName=%s CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u ThreadsPerCore=%u RealMemory=%"PRIu64" %s\n",
+			conf->node_name,
+			conf->actual_cpus, conf->actual_boards,
+			(conf->actual_sockets / conf->actual_boards),
+			conf->actual_cores, conf->actual_threads,
+			conf->real_memory_size,
+			conf->dynamic_conf ? conf->dynamic_conf : "");
+
+		xfree(conf->dynamic_conf);
+		conf->dynamic_conf = tmp;
+
+		if (_create_nodes(conf->dynamic_conf, &err_msg)) {
+			fatal("failed to create dynamic node '%s'",
+			      conf->dynamic_conf);
+		}
+		xfree(err_msg);
+		break;
+	}
+	default:
+		fatal("unknown dynamic registration type: %d",
+		      conf->dynamic_type);
 	}
 }
 
@@ -1763,9 +1891,7 @@ _slurmd_init(void)
 	 */
 	_read_config();
 
-	/* All but normal dynamic nodes should find a node record */
-	if ((conf->dynamic_type != DYN_NODE_NORM) &&
-	    !find_node_record(conf->node_name))
+	if (!find_node_record(conf->node_name))
 		return SLURM_ERROR;
 
 	/*
@@ -2076,6 +2202,7 @@ Usage: %s [OPTIONS]\n\
    -b                         Report node reboot now.\n\
    -c                         Force cleanup of slurmd shared memory.\n\
    -C                         Print node configuration information and exit.\n\
+   --conf                     Dynamic node configuration.\n\
    --conf-server host[:port]  Get configs from slurmctld at `host[:port]`.\n\
    -d stepd                   Pathname to the slurmstepd program.\n\
    -D                         Run daemon in foreground.\n\

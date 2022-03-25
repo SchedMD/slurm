@@ -1299,6 +1299,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint16_t cpus;
 	uint32_t cpu_load;	/* CPU load * 100 */
 	uint8_t dynamic_type;	/* dynamic registration type */
+	char *dynamic_conf;	/* dynamic configuration */
 	char *dynamic_feature;	/* dynamic registration feature */
 	uint16_t flags;	        /* Flags from the slurmd SLURMD_REG_FLAG_* */
 	uint64_t free_mem;	/* Free memory in MiB */

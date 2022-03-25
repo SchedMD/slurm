@@ -490,6 +490,7 @@ extern int load_all_node_state ( bool state_only )
 			config_ptr->cores = cores;
 			config_ptr->cpus = cpus;
 			config_ptr->feature = xstrdup(features);
+			config_ptr->gres = gres;
 			config_ptr->node_bitmap = bit_alloc(node_record_count);
 			config_ptr->nodes = xstrdup(node_name);
 			config_ptr->real_memory = real_memory;
@@ -4635,6 +4636,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	node_record_t *node_ptr;
 	slurm_addr_t addr;
 	char *comm_name = NULL;
+	int state_val = NODE_STATE_UNKNOWN;
 	slurm_node_registration_status_msg_t *reg_msg = msg->data;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -4649,16 +4651,38 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	if (find_node_record2(reg_msg->node_name))
 		return SLURM_SUCCESS;
 
-	config_ptr = create_config_record();
-	config_ptr->boards = reg_msg->boards;
-	config_ptr->cores = reg_msg->cores;
-	config_ptr->cpus = reg_msg->cpus;
+	if (reg_msg->dynamic_conf) {
+		slurm_conf_node_t *conf_node;
+		s_p_hashtbl_t *node_hashtbl = NULL;
+
+		if (!(conf_node =
+		      slurm_conf_parse_nodeline(reg_msg->dynamic_conf,
+						&node_hashtbl))) {
+			s_p_hashtbl_destroy(node_hashtbl);
+			error("Failed to parse dynamic nodeline '%s'",
+			      reg_msg->dynamic_conf);
+			return SLURM_ERROR;
+		}
+		config_ptr = config_record_from_conf_node(conf_node,
+							  slurmctld_tres_cnt);
+		if (conf_node->state)
+			state_val = state_str2int(conf_node->state,
+						  conf_node->nodenames);
+
+		s_p_hashtbl_destroy(node_hashtbl);
+	} else {
+		config_ptr = create_config_record();
+		config_ptr->boards = reg_msg->boards;
+		config_ptr->cores = reg_msg->cores;
+		config_ptr->cpus = reg_msg->cpus;
+		config_ptr->nodes = xstrdup(reg_msg->node_name);
+		config_ptr->real_memory = reg_msg->real_memory;
+		config_ptr->threads = reg_msg->threads;
+		config_ptr->tmp_disk = reg_msg->tmp_disk;
+		config_ptr->tot_sockets = reg_msg->sockets;
+	}
+
 	config_ptr->node_bitmap = bit_alloc(node_record_count);
-	config_ptr->nodes = xstrdup(reg_msg->node_name);
-	config_ptr->real_memory = reg_msg->real_memory;
-	config_ptr->threads = reg_msg->threads;
-	config_ptr->tmp_disk = reg_msg->tmp_disk;
-	config_ptr->tot_sockets = reg_msg->sockets;
 
 	if (!(node_ptr = add_node_record(reg_msg->node_name, config_ptr))) {
 		list_delete_ptr(config_list, config_ptr);
@@ -4681,16 +4705,26 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
 		       node_ptr->comm_name);
 
-	if (reg_msg->dynamic_feature) {
-		node_ptr->features = xstrdup(reg_msg->dynamic_feature);
-		update_feature_list(avail_feature_list, node_ptr->features,
-				    config_ptr->node_bitmap);
-		node_ptr->features_act = xstrdup(reg_msg->dynamic_feature);
-		update_feature_list(active_feature_list, node_ptr->features_act,
-				    config_ptr->node_bitmap);
-	}
+	if (reg_msg->dynamic_feature)
+		xstrfmtcat(node_ptr->config_ptr->feature, "%s%s",
+			   node_ptr->config_ptr->feature ? "," : "",
+			   reg_msg->dynamic_feature);
 
-	make_node_idle(node_ptr, NULL);
+	node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
+	update_feature_list(avail_feature_list, node_ptr->features,
+			    config_ptr->node_bitmap);
+	node_ptr->features_act = xstrdup(node_ptr->config_ptr->feature);
+	update_feature_list(active_feature_list, node_ptr->features_act,
+			    config_ptr->node_bitmap);
+
+	/* Handle DOWN and DRAIN, otherwise make the node idle */
+	if ((state_val == NODE_STATE_DOWN) ||
+	    (state_val & NODE_STATE_DRAIN)) {
+		_make_node_down(node_ptr, time(NULL));
+		node_ptr->node_state = state_val;
+	} else
+		make_node_idle(node_ptr, NULL);
+
 	node_ptr->node_state |= NODE_STATE_DYNAMIC_NORM;
 
 	set_cluster_tres(false);
