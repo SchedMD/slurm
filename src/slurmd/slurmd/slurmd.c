@@ -1000,7 +1000,7 @@ _read_config(void)
 	 */
 	config_overrides = cf->conf_flags & CTL_CONF_OR;
 	if (conf->dynamic_type) {
-		/* Already set to actual config earlier in _slurmd_init() */
+		/* Already set to actual config earlier in _dynamic_init() */
 	} else if (!config_overrides && (conf->actual_cpus < conf->conf_cpus)) {
 		conf->cpus    = conf->actual_cpus;
 		conf->boards  = conf->actual_boards;
@@ -1663,6 +1663,45 @@ static int _establish_configuration(void)
 	return SLURM_SUCCESS;
 }
 
+static void _dynamic_init(void)
+{
+	if (!conf->dynamic_type)
+		return;
+
+	/*
+	 * dynamic future nodes need to be mapped to a slurm.conf node
+	 * in order to load in correct configs (e.g. gres, etc.). First
+	 * get the mapped node_name from the slurmctld.
+	 */
+
+	/* Use -N name if specified. */
+	if (!conf->node_name) {
+		char hostname[HOST_NAME_MAX];
+		if (!gethostname(hostname, HOST_NAME_MAX))
+			conf->node_name = xstrdup(hostname);
+	}
+
+	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
+				&conf->actual_boards,
+				&conf->actual_sockets,
+				&conf->actual_cores,
+				&conf->actual_threads,
+				&conf->block_map_size,
+				&conf->block_map, &conf->block_map_inv);
+
+	conf->cpus    = conf->actual_cpus;
+	conf->boards  = conf->actual_boards;
+	conf->sockets = conf->actual_sockets;
+	conf->cores   = conf->actual_cores;
+	conf->threads = conf->actual_threads;
+	get_memory(&conf->real_memory_size);
+
+	send_registration_msg(SLURM_SUCCESS);
+
+	/* send registration again after loading everything in */
+	sent_reg_time = 0;
+}
+
 static int
 _slurmd_init(void)
 {
@@ -1710,40 +1749,7 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	}
 
-	if (conf->dynamic_type) {
-		/*
-		 * dynamic future nodes need to be mapped to a slurm.conf node
-		 * in order to load in correct configs (e.g. gres, etc.). First
-		 * get the mapped node_name from the slurmctld.
-		 */
-
-		/* Use -N name if specified. */
-		if (!conf->node_name) {
-			char hostname[HOST_NAME_MAX];
-			if (!gethostname(hostname, HOST_NAME_MAX))
-				conf->node_name = xstrdup(hostname);
-		}
-
-		xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
-					&conf->actual_boards,
-					&conf->actual_sockets,
-					&conf->actual_cores,
-					&conf->actual_threads,
-					&conf->block_map_size,
-					&conf->block_map, &conf->block_map_inv);
-
-		conf->cpus    = conf->actual_cpus;
-		conf->boards  = conf->actual_boards;
-		conf->sockets = conf->actual_sockets;
-		conf->cores   = conf->actual_cores;
-		conf->threads = conf->actual_threads;
-		get_memory(&conf->real_memory_size);
-
-		send_registration_msg(SLURM_SUCCESS);
-
-		/* send registration again after loading everything in */
-		sent_reg_time = 0;
-	}
+	_dynamic_init();
 
 	/*
 	 * Read global slurm config file, override necessary values from
