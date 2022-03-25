@@ -360,6 +360,16 @@ extern void job_defaults_pack(void *in, uint16_t protocol_version,
 extern int job_defaults_unpack(void **out, uint16_t protocol_version,
 			       buf_t *buffer);
 
+/*
+ * slurm_reset_alias() for each node in alias_list
+ *
+ * IN alias_list - string with sets of node name, communication address in []
+ * 	and hostname. Each element in the set if colon separated and
+ * 	each set is comma separated.
+ * 	eg.: ec0:[1.2.3.4]:foo,ec1:[1.2.3.5]:bar
+ * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int set_nodes_alias(const char *alias_list);
 
 /*
  * slurm_conf_init - load the slurm configuration from the a file.
