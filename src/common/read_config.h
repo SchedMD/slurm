@@ -360,13 +360,6 @@ extern void job_defaults_pack(void *in, uint16_t protocol_version,
 extern int job_defaults_unpack(void **out, uint16_t protocol_version,
 			       buf_t *buffer);
 
-/*
- * list_find_frontend - find an entry in the front_end list, see list.h for
- *	documentation
- * IN key - is feature name or NULL for all features
- * RET 1 if found, 0 otherwise
- */
-extern int list_find_frontend (void *front_end_entry, void *key);
 
 /*
  * slurm_conf_init - load the slurm configuration from the a file.
