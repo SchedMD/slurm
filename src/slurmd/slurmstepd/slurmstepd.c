@@ -745,6 +745,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		} else if (rc) {
 			error("%s: container setup failed: %s",
 			      __func__, slurm_strerror(rc));
+			stepd_step_rec_destroy(job);
 			return NULL;
 		} else {
 			debug2("%s: container %s successfully setup",
