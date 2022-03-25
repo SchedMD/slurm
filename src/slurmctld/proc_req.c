@@ -2846,14 +2846,14 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 				 * mapped node_name.
 				 */
 				_find_avail_future_node(msg);
+
+				if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+					unlock_slurmctld(job_write_lock);
+
+				goto send_resp;
 			} else {
 				error_code = create_dynamic_reg_node(msg);
 			}
-
-			if (!(msg->flags & CTLD_QUEUE_PROCESSING))
-				unlock_slurmctld(job_write_lock);
-
-			goto send_resp;
 		}
 
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */

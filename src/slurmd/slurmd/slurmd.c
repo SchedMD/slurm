@@ -676,7 +676,12 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 		/* assoc_mgr_post_tres_list will destroy the list */
 		resp->tres_list = NULL;
 
-		if (conf->dynamic_type && resp->node_name) {
+		/*
+		 * Get the mapped node name for a dynamic future node so the
+		 * slurmd can find slurm.conf config record.
+		 */
+		if ((conf->dynamic_type == DYN_NODE_FUTURE) &&
+		    resp->node_name) {
 			xfree(conf->node_name);
 			conf->node_name = resp->node_name;
 		}
@@ -1668,12 +1673,6 @@ static void _dynamic_init(void)
 	if (!conf->dynamic_type)
 		return;
 
-	/*
-	 * dynamic future nodes need to be mapped to a slurm.conf node
-	 * in order to load in correct configs (e.g. gres, etc.). First
-	 * get the mapped node_name from the slurmctld.
-	 */
-
 	/* Use -N name if specified. */
 	if (!conf->node_name) {
 		char hostname[HOST_NAME_MAX];
@@ -1696,10 +1695,17 @@ static void _dynamic_init(void)
 	conf->threads = conf->actual_threads;
 	get_memory(&conf->real_memory_size);
 
-	send_registration_msg(SLURM_SUCCESS);
+	if (conf->dynamic_type == DYN_NODE_FUTURE) {
+		/*
+		 * dynamic future nodes need to be mapped to a slurm.conf node
+		 * in order to load in correct configs (e.g. gres, etc.). First
+		 * get the mapped node_name from the slurmctld.
+		 */
+		send_registration_msg(SLURM_SUCCESS);
 
-	/* send registration again after loading everything in */
-	sent_reg_time = 0;
+		/* send registration again after loading everything in */
+		sent_reg_time = 0;
+	}
 }
 
 static int
