@@ -1758,7 +1758,7 @@
             "type": "string",
             "description": "Charge resources used by this job to specified account."
           },
-          "account_gather_freqency": {
+          "account_gather_frequency": {
             "type": "string",
             "description": "Define the job accounting and profiling sampling intervals."
           },
@@ -1786,7 +1786,7 @@
             "type": "string",
             "description": "Burst buffer specification."
           },
-          "cluster_constraints": {
+          "cluster_constraint": {
             "type": "string",
             "description": "Specifies features that a federated cluster must have to have a sibling job submitted to it."
           },
