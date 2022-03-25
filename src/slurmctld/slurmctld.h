@@ -2840,4 +2840,11 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete);
  */
 extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
 
+/*
+ * set_node_reboot_reason - appropriately set node reason with reboot message
+ * IN node_ptr - node_ptr to the node
+ * IN reason - message to be appended
+ */
+extern void set_node_reboot_reason(node_record_t *node_ptr, char *message);
+
 #endif /* !_HAVE_SLURMCTLD_H */

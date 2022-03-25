@@ -3000,10 +3000,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			    NODE_STATE_DOWN) {
 				node_ptr->node_state = NODE_STATE_DOWN |
 						       node_flags;
-				if (node_ptr->reason) {
-					xstrcat(node_ptr->reason,
-						" : reboot complete");
-				}
+				set_node_reboot_reason(node_ptr,
+						       "reboot complete");
 			} else if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 						       node_flags;
@@ -4509,4 +4507,21 @@ extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
 	slurm_reset_alias(node_ptr->name,
 			  node_ptr->comm_name,
 			  node_ptr->node_hostname);
+}
+
+extern void set_node_reboot_reason(node_record_t *node_ptr, char *message)
+{
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(node_ptr);
+
+	if (message == NULL) {
+		xfree(node_ptr->reason);
+		node_ptr->reason_time = 0;
+		node_ptr->reason_uid = NO_VAL;
+	} else {
+		if (node_ptr->reason &&
+		    !xstrstr(node_ptr->reason, message)) {
+			xstrfmtcat(node_ptr->reason, " : %s", message);
+		}
+	}
 }
