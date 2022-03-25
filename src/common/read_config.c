@@ -198,6 +198,15 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 static int _validate_bcast_exclude(slurm_conf_t *conf);
 static uint16_t *_parse_srun_ports(const char *);
 
+static void _push_to_hashtbls(char *alias, char *hostname, char *address,
+			      char *bcast_address, uint16_t port,
+			      uint16_t cpus, uint16_t boards,
+			      uint16_t sockets, uint16_t cores,
+			      uint16_t threads, bool front_end,
+			      char *cpu_spec_list, uint16_t core_spec_cnt,
+			      uint64_t mem_spec_limit, slurm_addr_t *addr,
+			      bool initialized);
+
 s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageTRES", S_P_STRING},
 	{"AccountingStorageEnforce", S_P_STRING},
@@ -6059,6 +6068,17 @@ extern void config_test_start(void)
 {
 	lvl = LOG_LEVEL_ERROR;
 	local_test_config_rc = 0;
+}
+
+extern void slurm_conf_add_node(node_record_t *node_ptr)
+{
+	_push_to_hashtbls(node_ptr->name, node_ptr->node_hostname,
+			  node_ptr->comm_name, node_ptr->bcast_address,
+			  node_ptr->port, node_ptr->cpus, node_ptr->boards,
+			  node_ptr->tot_sockets, node_ptr->cores,
+			  node_ptr->threads, 0, node_ptr->cpu_spec_list,
+			  node_ptr->core_spec_cnt, node_ptr->mem_spec_limit,
+			  NULL, false);
 }
 
 extern void slurm_conf_remove_node(char *node_name)

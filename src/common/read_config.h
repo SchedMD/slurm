@@ -58,6 +58,15 @@ extern char *default_plugin_path;
 extern uint16_t drop_priv_flag;
 #endif
 
+/*
+ * We can't include node_conf.h to get node_record_t because node_conf.h
+ * includes read_config.h and creates a circular dependency. We create the
+ * typedef so that we don't have to move the struct around.
+ */
+#ifndef node_record_t
+typedef struct node_record node_record_t;
+#endif
+
 #define ACCOUNTING_ENFORCE_ASSOCS 0x0001
 #define ACCOUNTING_ENFORCE_LIMITS 0x0002
 #define ACCOUNTING_ENFORCE_WCKEYS 0x0004
@@ -682,6 +691,11 @@ extern char *xlate_features(char *job_features);
  */
 extern int add_remote_nodes_to_conf_tbls(char *node_list,
 					 slurm_addr_t *node_addrs);
+
+/*
+ * Add record to conf hash tables from node_record_t.
+ */
+extern void slurm_conf_add_node(node_record_t *node_ptr);
 
 /*
  * Remove node from node conf hash tables.
