@@ -1165,8 +1165,8 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 	if (is_cons_tres)
 		core_array_size = select_node_cnt;
 
-	select_node_record = xcalloc(select_node_cnt,
-				     sizeof(node_res_record_t) + 1);
+	select_node_record = xcalloc(select_node_cnt + 1,
+				     sizeof(node_res_record_t));
 	select_node_usage  = xcalloc(select_node_cnt,
 				     sizeof(node_use_record_t));
 
