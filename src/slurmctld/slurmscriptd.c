@@ -510,7 +510,7 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 {
 	int pfd[2] = {-1, -1};
 	bool got_resp = false;
-	int status;
+	int status = 0;
 	char *resp = NULL;
 	pid_t cpid;
 
