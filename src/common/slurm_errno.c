@@ -386,6 +386,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Cannot request more threads per core than the job allocation" },
 	{ ESLURM_INVALID_PREFER,
 	  "Invalid preferred feature specification"		},
+	{ ESLURM_INSUFFICIENT_GRES,
+	  "Insufficient GRES available for allocation"		},
 
 	/* SPANK errors */
 	{ ESPANK_ERROR,

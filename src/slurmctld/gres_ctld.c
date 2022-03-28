@@ -2239,7 +2239,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 	if (job_gres_list == NULL) {
 		error("%s: step allocates GRES, but job %u has none",
 		      __func__, job_id);
-		return SLURM_ERROR;
+		return ESLURM_INSUFFICIENT_GRES;
 	}
 
 	if (!*step_gres_list_alloc)
@@ -2290,7 +2290,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 			error("gres/%s: %s for %ps, step's > job's for node %d (gres still needed: %"PRIu64")",
 			      gres_state_step->gres_name, __func__, &tmp_step_id,
 			      node_offset, args.gres_needed);
-			rc = SLURM_ERROR;
+			rc = ESLURM_INSUFFICIENT_GRES;
 		}
 	}
 	list_iterator_destroy(step_gres_iter);
