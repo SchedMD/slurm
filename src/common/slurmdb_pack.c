@@ -3779,7 +3779,6 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack_time(job->start, buffer);
 		pack32(job->state, buffer);
 		pack32(job->state_reason_prev, buffer);
-		_pack_slurmdb_stats(&job->stats, protocol_version, buffer);
 
 		if (job->steps)
 			count = list_count(job->steps);
@@ -3862,7 +3861,8 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack_time(job->start, buffer);
 		pack32(job->state, buffer);
 		pack32(job->state_reason_prev, buffer);
-		_pack_slurmdb_stats(&job->stats, protocol_version, buffer);
+		/* job->stats removed in 22.05 */
+		_pack_slurmdb_stats(NULL, protocol_version, buffer);
 
 		if (job->steps)
 			count = list_count(job->steps);
@@ -3943,7 +3943,8 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack_time(job->start, buffer);
 		pack32(job->state, buffer);
 		pack32(job->state_reason_prev, buffer);
-		_pack_slurmdb_stats(&job->stats, protocol_version, buffer);
+		/* job->stats removed in 22.05 */
+		_pack_slurmdb_stats(NULL, protocol_version, buffer);
 
 		if (job->steps)
 			count = list_count(job->steps);
@@ -4072,10 +4073,6 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&uint32_tmp, buffer);
 		job_ptr->state = uint32_tmp;
 		safe_unpack32(&job_ptr->state_reason_prev, buffer);
-		if (_unpack_slurmdb_stats(&job_ptr->stats, protocol_version,
-					  buffer)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
 
 		safe_unpack32(&count, buffer);
 		job_ptr->steps = list_create(slurmdb_destroy_step_rec);
@@ -4114,6 +4111,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->wckeyid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->work_dir, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		slurmdb_stats_t stats = {0};
+
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->admin_comment, &uint32_tmp,
 				       buffer);
@@ -4170,10 +4169,11 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&uint32_tmp, buffer);
 		job_ptr->state = uint32_tmp;
 		safe_unpack32(&job_ptr->state_reason_prev, buffer);
-		if (_unpack_slurmdb_stats(&job_ptr->stats, protocol_version,
-					  buffer)
+		/* job->stats removed in 22.05 */
+		if (_unpack_slurmdb_stats(&stats, protocol_version, buffer)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
+		slurmdb_free_slurmdb_stats_members(&stats);
 
 		safe_unpack32(&count, buffer);
 		job_ptr->steps = list_create(slurmdb_destroy_step_rec);
@@ -4214,6 +4214,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->wckeyid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->work_dir, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		slurmdb_stats_t stats = {0};
+
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->admin_comment, &uint32_tmp,
 				       buffer);
@@ -4264,10 +4266,11 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&uint32_tmp, buffer);
 		job_ptr->state = uint32_tmp;
 		safe_unpack32(&job_ptr->state_reason_prev, buffer);
-		if (_unpack_slurmdb_stats(&job_ptr->stats, protocol_version,
-					  buffer)
+		/* job->stats removed in 22.05 */
+		if (_unpack_slurmdb_stats(&stats, protocol_version, buffer)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
+		slurmdb_free_slurmdb_stats_members(&stats);
 
 		safe_unpack32(&count, buffer);
 		job_ptr->steps = list_create(slurmdb_destroy_step_rec);
