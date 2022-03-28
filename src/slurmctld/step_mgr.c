@@ -2200,16 +2200,24 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		if (!(step_ptr->flags & SSF_OVERLAP_FORCE))
 			job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 
-		gres_ctld_step_alloc(step_ptr->gres_list_req,
-				     &step_ptr->gres_list_alloc,
-				     job_ptr->gres_list_alloc,
-				     job_node_inx, first_step_node,
-				     step_ptr->step_layout->
-				     tasks[step_node_inx],
-				     rem_nodes, job_ptr->job_id,
-				     step_ptr->step_id.step_id,
-				     !(step_ptr->flags & SSF_OVERLAP_FORCE),
-				     &gres_step_node_mem_alloc);
+		rc = gres_ctld_step_alloc(step_ptr->gres_list_req,
+					  &step_ptr->gres_list_alloc,
+					  job_ptr->gres_list_alloc,
+					  job_node_inx, first_step_node,
+					  step_ptr->step_layout->
+					  tasks[step_node_inx],
+					  rem_nodes, job_ptr->job_id,
+					  step_ptr->step_id.step_id,
+					  !(step_ptr->flags &
+					    SSF_OVERLAP_FORCE),
+					  &gres_step_node_mem_alloc);
+		if (rc != SLURM_SUCCESS) {
+			log_flag(STEPS, "unable to allocate step GRES for job node %d (%s): %s",
+				 job_node_inx,
+				 node_record_table_ptr[i_node]->name,
+				 slurm_strerror(rc));
+			break;
+		}
 		first_step_node = false;
 		rem_nodes--;
 		if (!step_ptr->pn_min_memory && !gres_step_node_mem_alloc) {
