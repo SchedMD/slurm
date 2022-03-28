@@ -415,7 +415,7 @@ static int _get_list_excl_count(void *x, void *y)
 {
 	char *feature = (char *) x;
 	char *job_features = ((excl_count_t *) y)->job_features;
-	char *ptr = strstr(job_features, feature);
+	char *ptr = xstrstr(job_features, feature);
 	unsigned int len = strlen(feature);
 
 	/* check for every matching pattern */
@@ -423,18 +423,18 @@ static int _get_list_excl_count(void *x, void *y)
 		/* check word+1 to verify exact match */
 		if (isalnum(ptr[len]) || ptr[len] == '-' || ptr[len] == '.' ||
 			ptr[len] == '_' || ptr[len] == '=') {
-			ptr = strstr(&ptr[len], feature);
+			ptr = xstrstr(&ptr[len], feature);
 			continue;
 		}
 
 		/* check word-1 to verify exact match */
 		if ((ptr != job_features) && isalnum(ptr[-1])) {
-			ptr = strstr(&ptr[len], feature);
+			ptr = xstrstr(&ptr[len], feature);
 			continue;
 		}
 
 		((excl_count_t *) y)->count++;
-		ptr = strstr(&ptr[len], feature);
+		ptr = xstrstr(&ptr[len], feature);
 	}
 
 	return 0;
@@ -462,7 +462,7 @@ static int _foreach_feature(void *x, void *y)
 	char *job_features = (char *)y;
 	plugin_feature_t *feature = (plugin_feature_t *)x;
 
-	if (strstr(job_features, feature->name) != NULL) {
+	if (xstrstr(job_features, feature->name) != NULL) {
 		return -1;
 	}
 
