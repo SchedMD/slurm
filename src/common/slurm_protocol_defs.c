@@ -349,7 +349,7 @@ extern int slurm_parse_char_list(List char_list, char *names, void *args,
 			break;
 		} else if ((tmp_names[i] == '\"') || (tmp_names[i] == '\''))
 			tmp_names[i] = '`';
-		else if ((tmp_names[i] == ',')) {
+		else if (tmp_names[i] == ',') {
 			if (i != start) {
 				tmp_names[i] = '\0';
 				result = (*func_ptr)(char_list,
