@@ -121,9 +121,9 @@ int sattach(int argc, char **argv)
 	slurm_step_layout_t *layout;
 	slurm_cred_t *fake_cred;
 	message_thread_state_t *mts;
+	uint32_t jobid, stepid;
 	client_io_t *io;
 	char *hosts;
-	slurm_step_id_t step_id;
 
 	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
@@ -147,10 +147,8 @@ int sattach(int argc, char **argv)
 		exit(error_exit);
 	}
 	/* FIXME: this does not work with hetsteps */
-	step_id.job_id = opt.jobid;
-	step_id.step_id = opt.stepid;
-	step_id.step_het_comp = NO_VAL;
-	layout = slurm_job_step_layout_get(&step_id);
+
+	layout = slurm_job_step_layout_get(&opt.selected_step->step_id);
 	if (layout == NULL) {
 		error("Could not get job step info: %m");
 		exit(error_exit);
@@ -159,11 +157,13 @@ int sattach(int argc, char **argv)
 		print_layout_info(layout);
 		exit(0);
 	}
+	jobid = opt.selected_step->step_id.job_id;
+	stepid = opt.selected_step->step_id.step_id;
 
 	totalview_jobid = NULL;
-	xstrfmtcat(totalview_jobid, "%u", opt.jobid);
+	xstrfmtcat(totalview_jobid, "%u", jobid);
 	totalview_stepid = NULL;
-	xstrfmtcat(totalview_stepid, "%u", opt.stepid);
+	xstrfmtcat(totalview_stepid, "%u", stepid);
 
 	_mpir_init(layout->task_cnt);
 	if (opt.input_filter_set) {
@@ -175,7 +175,7 @@ int sattach(int argc, char **argv)
 		hosts = layout->front_end;
 	else
 		hosts = layout->node_list;
-	fake_cred = _generate_fake_cred(opt.jobid, opt.stepid,
+	fake_cred = _generate_fake_cred(jobid, stepid,
 					opt.uid, hosts, layout->node_cnt);
 	mts = _msg_thr_create(layout->node_cnt, layout->task_cnt);
 
@@ -199,7 +199,7 @@ int sattach(int argc, char **argv)
 		xsignal_block(pty_sigarray);
 	}
 
-	_attach_to_tasks(opt.jobid, opt.stepid, layout, fake_cred,
+	_attach_to_tasks(jobid, stepid, layout, fake_cred,
 			 mts->num_resp_port, mts->resp_port,
 			 io->num_listen, io->listenport,
 			 mts->tasks_started);
@@ -534,8 +534,8 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 	int i;
 	int rc;
 
-	if ((msg->step_id.job_id != opt.jobid) ||
-	    (msg->step_id.step_id != opt.stepid)) {
+	if ((msg->step_id.job_id != opt.selected_step->step_id.job_id) ||
+	    (msg->step_id.step_id != opt.selected_step->step_id.step_id)) {
 		debug("Received MESSAGE_TASK_EXIT from wrong job: %ps",
 		      &msg->step_id);
 		return;

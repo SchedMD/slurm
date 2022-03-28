@@ -156,9 +156,6 @@ static void _opt_default()
 
 	opt.progname = NULL;
 
-	opt.jobid = NO_VAL;
-	opt.jobid_set = false;
-
 	opt.quiet = 0;
 	opt.verbose = 0;
 
@@ -329,46 +326,6 @@ void set_options(const int argc, char **argv)
 	}
 }
 
-static void _parse_jobid_stepid(char *jobid_str)
-{
-	char *ptr, *job, *step;
-	long jobid, stepid;
-
-	verbose("jobid/stepid string = %s\n", jobid_str);
-	job = xstrdup(jobid_str);
-	ptr = xstrchr(job, '.');
-	if (ptr == NULL) {
-		error("Did not find a period in the step ID string");
-		_usage();
-		xfree(job);
-		exit(error_exit);
-	} else {
-		*ptr = '\0';
-		step = ptr + 1;
-	}
-
-	jobid = slurm_xlate_job_id(job);
-	if (jobid == 0) {
-		error("\"%s\" does not look like a jobid", job);
-		_usage();
-		xfree(job);
-		exit(error_exit);
-	}
-
-	stepid = strtol(step, &ptr, 10);
-	if (!xstring_is_whitespace(ptr)) {
-		error("\"%s\" does not look like a stepid", step);
-		_usage();
-		xfree(job);
-		exit(error_exit);
-	}
-
-	opt.jobid = (uint32_t) jobid;
-	opt.stepid = (uint32_t) stepid;
-
-	xfree(job);
-}
-
 /*
  * _opt_args() : set options via commandline args and popt
  */
@@ -391,7 +348,12 @@ static void _opt_args(int argc, char **argv)
 		exit(error_exit);
 	}
 
-	_parse_jobid_stepid(*(argv + optind));
+	opt.selected_step = slurm_parse_step_str(*(argv + optind));
+	if (opt.selected_step->step_id.step_id == NO_VAL) {
+		error("Failed to parse stepid from command line options");
+		_usage();
+		exit(error_exit);
+	}
 
 	if (!_opt_verify())
 		exit(error_exit);
@@ -438,8 +400,8 @@ static void _opt_list()
 {
 	info("defined options for program `%s'", opt.progname);
 	info("--------------- ---------------------");
-	info("job ID         : %u", opt.jobid);
-	info("step ID        : %u", opt.stepid);
+	info("job ID         : %u", opt.selected_step->step_id.job_id);
+	info("step ID        : %u", opt.selected_step->step_id.step_id);
 	info("user           : `%s'", opt.user);
 	info("uid            : %ld", (long) opt.uid);
 	info("gid            : %ld", (long) opt.gid);

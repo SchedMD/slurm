@@ -50,8 +50,7 @@ typedef struct sbatch_options {
 	uid_t euid;		/* effective user --uid=user	*/
 	gid_t egid;		/* effective group --gid=group	*/
 	char *job_name;		/* --job-name=,     -J name	*/
-	uint32_t jobid;
-	uint32_t stepid;
+	slurm_selected_step_t *selected_step;
 	bool jobid_set;		/* true of jobid explicitly set */
 	int quiet;
 	int verbose;
