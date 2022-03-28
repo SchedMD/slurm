@@ -201,6 +201,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/operations - fix memory leak when resolving bad path.
  -- sacctmgr - improve performance of query generation for archive load.
  -- sattach - allow connecting to interactive steps with JOBID.interactive
+ -- Fix for --gpus-per-task parsing when using --cpus-per-gpu and multiple gpu
+    types in the same request.
 
 * Changes in Slurm 21.08.8
 ==========================

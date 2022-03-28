@@ -236,14 +236,14 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 
 		tok = strtok_r(tmp_str, ",", &save_ptr);
 		while (tok) {
-			int tmp;
+			int tmp = 0;
 			sep = xstrchr(tok, ':');
 			if (sep)
-				tmp =+ atoi(sep + 1);
+				tmp += atoi(sep + 1);
 			else
-				tmp =+ atoi(tok);
+				tmp += atoi(tok);
 			if (tmp > 0)
-				gpus_per_task =+ tmp;
+				gpus_per_task += tmp;
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(tmp_str);
