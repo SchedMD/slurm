@@ -183,6 +183,7 @@ documents those changes that are of interest to users and administrators.
  -- Set the slurmd port correctly if multi-slurmd
  -- openapi/v0.0.37 - Fix misspelling of account_gather_frequency in spec.
  -- openapi/v0.0.37 - Fix misspelling of cluster_constraint in spec.
+ -- Fix FAIL mail not being sent if a job was cancelled due to preemption.
 
 * Changes in Slurm 21.08.6
 ==========================

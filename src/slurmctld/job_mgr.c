@@ -16321,7 +16321,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 			base_state = job_ptr->job_state & JOB_STATE_BASE;
 			if ((job_ptr->mail_type & MAIL_JOB_FAIL) &&
 			    (base_state >= JOB_FAILED) &&
-			    (base_state != JOB_PREEMPTED))
+			    ((base_state != JOB_PREEMPTED) || !requeue))
 				mail_job_info(job_ptr, MAIL_JOB_FAIL);
 
 			if (requeue &&
