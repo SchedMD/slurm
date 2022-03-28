@@ -4078,8 +4078,8 @@ extern void kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 			      bool node_fail)
 {
 	kill_step_on_node_args_t args = {
-		node_ptr = node_ptr,
-		node_fail = node_fail,
+		.node_ptr = node_ptr,
+		.node_fail = node_fail,
 	};
 
 	if (!job_ptr || !node_ptr)
