@@ -1260,11 +1260,14 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		 */
 		exit_code = 256;
 	}
+	xstrfmtcat(query, ", exit_code=%d, ", exit_code);
 
-	xstrfmtcat(query,
-		   ", exit_code=%d, kill_requid=%d where job_db_inx=%"PRIu64";",
-		   exit_code, job_ptr->requid,
-		   job_ptr->db_index);
+	if (job_ptr->requid == (uid_t) -1)
+		xstrfmtcat(query, "kill_requid=null ");
+	else
+		xstrfmtcat(query, "kill_requid=%u ", job_ptr->requid);
+
+	xstrfmtcat(query, "where job_db_inx=%"PRIu64";", job_ptr->db_index);
 
 	DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
@@ -1533,12 +1536,15 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 
 	/* The stepid could be negative so use %d not %u */
 	query = xstrdup_printf(
-		"update \"%s_%s\" set time_end=%d, state=%u, "
-		"kill_requid=%d, exit_code=%d",
+		"update \"%s_%s\" set time_end=%d, state=%u, exit_code=%d, ",
 		mysql_conn->cluster_name, step_table, (int)now,
 		comp_status,
-		step_ptr->requid,
 		exit_code);
+
+	if (step_ptr->requid == (uid_t) -1)
+		xstrfmtcat(query, "kill_requid=null");
+	else
+		xstrfmtcat(query, "kill_requid=%u", step_ptr->requid);
 
 
 	if (jobacct) {

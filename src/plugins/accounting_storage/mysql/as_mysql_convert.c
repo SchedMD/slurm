@@ -44,8 +44,9 @@
  * NOTE: 9 was the first version of 20.11.
  * NOTE: 10 was the first version of 21.08.
  * NOTE: 11 was the first version of 22.05.
+ * NOTE: 12 was the second version of 22.05.
  */
-#define CONVERT_VERSION 11
+#define CONVERT_VERSION 12
 
 #define JOB_CONVERT_LIMIT_CNT 1000
 
@@ -244,7 +245,7 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "id_group", "int unsigned not null" },
 		{ "het_job_id", "int unsigned not null" },
 		{ "het_job_offset", "int unsigned not null" },
-		{ "kill_requid", "int default -1 not null" },
+		{ "kill_requid", "int default null" },
 		{ "state_reason_prev", "int unsigned not null" },
 		{ "mcs_label", "tinytext default ''" },
 		{ "mem_req", "bigint unsigned default 0 not null" },
@@ -372,9 +373,62 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 			return rc;
 	}
 
+	if (db_curr_ver < 12) {
+		char *table_name;
+		char *query;
+
+		table_name = xstrdup_printf("\"%s_%s\"",
+					    cluster_name, job_table);
+		/* Update kill_requid to NULL instead of -1 for not set */
+		query = xstrdup_printf("alter table %s modify kill_requid "
+				       "int default null;", table_name);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS) {
+			xfree(query);
+			return rc;
+		}
+		xfree(query);
+		query = xstrdup_printf("update %s set kill_requid=null where "
+				       "kill_requid=-1;", table_name);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		xfree(table_name);
+	}
+
 	return rc;
 }
 
+static int _convert_step_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (db_curr_ver < 12) {
+		char *table_name;
+		char *query;
+
+		table_name = xstrdup_printf("\"%s_%s\"",
+					    cluster_name, step_table);
+		/* temporarily "not null" from req_uid */
+		query = xstrdup_printf("alter table %s modify kill_requid "
+				       "int default null;", table_name);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS) {
+			xfree(query);
+			return rc;
+		}
+		xfree(query);
+		/* update kill_requid = -1 to NULL */
+		query = xstrdup_printf("update %s set kill_requid=null where "
+				       "kill_requid=-1;", table_name);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		xfree(table_name);
+	}
+
+	return rc;
+}
 static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 {
 	char *query;
@@ -462,6 +516,10 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 			break;
 		info("pre-converting job table for %s", cluster_name);
 		if ((rc = _convert_job_table_pre(mysql_conn, cluster_name)
+		     != SLURM_SUCCESS))
+			break;
+		info("pre-converting step table for %s", cluster_name);
+		if ((rc = _convert_step_table_pre(mysql_conn, cluster_name)
 		     != SLURM_SUCCESS))
 			break;
 	}

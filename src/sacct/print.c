@@ -1752,7 +1752,7 @@ extern void print_fields(type_t type, void *object)
 			}
 
 			if (((tmp_uint32 & JOB_STATE_BASE) == JOB_CANCELLED) &&
-			    (tmp2_uint32 != -1))
+			    (tmp2_uint32 != INFINITE))
 				snprintf(outbuf, FORMAT_STRING_SIZE,
 					 "%s by %u",
 					 job_state_string(tmp_uint32),

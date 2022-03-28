@@ -874,7 +874,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->priority = slurm_atoul(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = slurm_atoul(row[JOB_REQ_REQ_CPUS]);
 		job->req_mem = slurm_atoull(row[JOB_REQ_REQ_MEM]);
-		job->requid = slurm_atoul(row[JOB_REQ_KILL_REQUID]);
+		if (!row[JOB_REQ_KILL_REQUID])
+			job->requid = INFINITE;
+		else
+			job->requid = slurm_atoul(row[JOB_REQ_KILL_REQUID]);
 		job->qosid = slurm_atoul(row[JOB_REQ_QOS]);
 		job->show_full = 1;
 
@@ -1052,8 +1055,11 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 			step->stepname = xstrdup(step_row[STEP_REQ_NAME]);
 			step->nodes = xstrdup(step_row[STEP_REQ_NODELIST]);
-			step->requid =
-				slurm_atoul(step_row[STEP_REQ_KILL_REQUID]);
+			if (!step_row[STEP_REQ_KILL_REQUID])
+				step->requid = INFINITE;
+			else
+				step->requid = slurm_atoul(
+					step_row[STEP_REQ_KILL_REQUID]);
 
 			step->submit_line =
 				xstrdup(step_row[STEP_REQ_SUBMIT_LINE]);
