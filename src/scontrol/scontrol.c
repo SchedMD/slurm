@@ -1646,7 +1646,7 @@ static void _delete_it(int argc, char **argv)
 		node_msg.node_names = val;
 		if (slurm_delete_node(&node_msg)) {
 			char errmsg[64];
-			snprintf(errmsg, 64, "delete_reservation %s", argv[0]);
+			snprintf(errmsg, 64, "delete_node %s", argv[0]);
 			slurm_perror(errmsg);
 			exit_code = 1;
 		}
