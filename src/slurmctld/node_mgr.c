@@ -4581,8 +4581,12 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 		node_ptr->features_act = xstrdup(config_ptr->feature);
 	}
 
-	if (!IS_NODE_FUTURE(node_ptr))
+	if (IS_NODE_FUTURE(node_ptr)) {
+		bit_set(future_node_bitmap, node_ptr->index);
+	} else if (IS_NODE_CLOUD(node_ptr)) {
 		make_node_idle(node_ptr, NULL);
+		bit_set(power_node_bitmap, node_ptr->index);
+	}
 }
 
 extern int create_nodes(char *nodeline, char **err_msg)
