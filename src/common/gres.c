@@ -9084,14 +9084,16 @@ static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 				GRES_INTERNAL_FLAG_VERBOSE;
 		}
 		if (!xstrncasecmp(sep, "single:", 7)) {
+			long tasks_per_gres;
 			sep += 7;
-			tres_bind->tasks_per_gres = strtol(sep, NULL, 0);
-			if ((tres_bind->tasks_per_gres <= 0) ||
-			    (tres_bind->tasks_per_gres == LONG_MAX)) {
+			tasks_per_gres = strtol(sep, NULL, 0);
+			if ((tasks_per_gres <= 0) ||
+			    (tasks_per_gres > UINT32_MAX)) {
 				error("%s: single:%s does not specify a valid number. Defaulting to 1.",
 				      __func__, sep);
-				tres_bind->tasks_per_gres = 1;
+				tasks_per_gres = 1;
 			}
+			tres_bind->tasks_per_gres = tasks_per_gres;
 			tres_bind->bind_gpu = true;
 		} else if (!xstrncasecmp(sep, "closest", 7))
 			tres_bind->bind_gpu = true;
