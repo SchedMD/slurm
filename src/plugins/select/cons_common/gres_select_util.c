@@ -265,7 +265,7 @@ extern bool gres_select_util_job_mem_set(List job_gres_list,
 				gres_node_state_t *gres_ns;
 
 				gres_state_node = list_find_first(
-					node_record_table_ptr[i].gres_list,
+					node_record_table_ptr[i]->gres_list,
 					gres_find_id,
 					&gres_state_job->plugin_id);
 				if (!gres_state_node)

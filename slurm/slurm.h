@@ -955,7 +955,7 @@ enum node_states {
 #define NODE_STATE_REBOOT_REQUESTED SLURM_BIT(16) /* node reboot requested */
 #define NODE_STATE_REBOOT_CANCEL SLURM_BIT(17) /* cancel pending reboot */
 #define NODE_STATE_POWERING_DOWN SLURM_BIT(18) /* node is powering down */
-#define NODE_STATE_DYNAMIC    SLURM_BIT(19) /* node is dynamically assigned */
+#define NODE_STATE_DYNAMIC_FUTURE SLURM_BIT(19) /* dynamic future node */
 #define NODE_STATE_REBOOT_ISSUED SLURM_BIT(20) /* node reboot passed to agent */
 #define NODE_STATE_PLANNED    SLURM_BIT(21) /* node scheduled for a job in the
 					     * future */
@@ -964,6 +964,7 @@ enum node_states {
 #define NODE_STATE_POWER_DOWN SLURM_BIT(23) /* manual node power down */
 #define NODE_STATE_POWER_UP SLURM_BIT(24) /* manual node power up */
 #define NODE_STATE_POWER_DRAIN SLURM_BIT(25) /* signal power down asap */
+#define NODE_STATE_DYNAMIC_NORM SLURM_BIT(26) /* dynamic norm node */
 
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t
@@ -2409,6 +2410,7 @@ typedef struct partition_info {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	char *nodes;		/* list names of nodes in partition */
+	char *nodesets;		/* list of nodesets used by partition */
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
 				   * number of minutes before cancellation */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
@@ -2874,6 +2876,7 @@ typedef struct {
 	uint32_t max_job_cnt;	/* maximum number of active jobs */
 	uint32_t max_job_id;	/* maximum job id before using first_job_id */
 	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
+	uint32_t max_node_cnt;  /* max number of static + dynamic nodes */
 	uint32_t max_step_cnt;	/* maximum number of steps per job */
 	uint16_t max_tasks_per_node; /* maximum tasks per node */
 	char *mcs_plugin; /* mcs plugin type */
@@ -4262,6 +4265,13 @@ extern char *slurm_sprint_node_table(node_info_t *node_ptr,
 void slurm_init_update_node_msg(update_node_msg_t *update_node_msg);
 
 /*
+ * slurm_create_node - issue RPC to create node(s), only usable by user root
+ * IN node_msg - node definition(s)
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+extern int slurm_create_node(update_node_msg_t *node_msg);
+
+/*
  * slurm_update_node - issue RPC to a node's configuration per request,
  *	only usable by user root
  * IN node_msg - description of node updates
@@ -4269,6 +4279,12 @@ void slurm_init_update_node_msg(update_node_msg_t *update_node_msg);
  */
 extern int slurm_update_node(update_node_msg_t *node_msg);
 
+/*
+ * slurm_delete_node - issue RPC to delete a node, only usable by user root
+ * IN node_msg - use to pass nodelist of names to delete
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+int slurm_delete_node(update_node_msg_t *node_msg);
 
 /*****************************************************************************\
  *	SLURM FRONT_END CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

@@ -52,6 +52,9 @@ static bitstr_t *_create_core_bitmap(int node_inx)
 {
 	xassert(node_inx < select_node_cnt);
 
+	if (!select_node_record[node_inx].node_ptr)
+		return NULL;
+
 	if (is_cons_tres)
 		return bit_alloc(select_node_record[node_inx].tot_cores);
 	else {
@@ -167,8 +170,10 @@ static void _log_tres_state(node_use_record_t *node_usage,
 	int i;
 
 	for (i = 0; i < select_node_cnt; i++) {
+		if (!node_record_table_ptr[i])
+			continue;;
 		info("Node:%s State:%s AllocMem:%"PRIu64" of %"PRIu64,
-		     node_record_table_ptr[i].name,
+		     node_record_table_ptr[i]->name,
 		     _node_state_str(node_usage[i].node_state),
 		     node_usage[i].alloc_memory,
 		     select_node_record[i].real_memory);
@@ -483,7 +488,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 		if (job->cpus[n] == 0)
 			continue;  /* node lost by job resize */
 
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		if (action != JOB_RES_ACTION_RESUME) {
 			List job_gres_list;
 			List node_gres_list;
@@ -592,7 +597,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 					node_usage[i].node_state -=
 						job->node_req;
 				} else {
-					node_ptr = node_record_table_ptr + i;
+					node_ptr = node_record_table_ptr[i];
 					error("node_state mis-count (%pJ job_cnt:%u node:%s node_cnt:%u)",
 					      job_ptr,
 					      job->node_req, node_ptr->name,

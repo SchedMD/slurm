@@ -458,7 +458,7 @@ extern int select_g_job_init(List job_list)
  * IN node_ptr - current node data
  * IN node_count - number of node entries
  */
-extern int select_g_node_init(node_record_t *node_ptr, int node_cnt)
+extern int select_g_node_init(node_record_t **node_ptr, int node_cnt)
 {
 	if (select_g_init(0) < 0)
 		return SLURM_ERROR;

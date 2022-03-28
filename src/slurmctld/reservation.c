@@ -1968,7 +1968,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 						continue;
 					offset_start = cr_get_coremap_offset(i);
 					offset_end = cr_get_coremap_offset(i+1);
-					node_ptr = node_record_table_ptr + i;
+					node_ptr = node_record_table_ptr[i];
 					packstr(node_ptr->name, buffer);
 					core_str = bit_fmt_range(
 						resv_ptr->core_bitmap,
@@ -2218,7 +2218,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 {
 	int i;
 	uint64_t cpu_cnt = 0;
-	node_record_t *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr;
 	char start_time[32], end_time[32], tmp_msd[40];
 	char *name1, *name2, *name3, *val1, *val2, *val3;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
@@ -2227,8 +2227,8 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	    resv_ptr->node_bitmap) {
 		resv_ptr->core_cnt = 0;
 
-		for (i=0; i<node_record_count; i++, node_ptr++) {
-			if (!bit_test(resv_ptr->node_bitmap, i))
+		for (i = 0; (node_ptr = next_node(&i));) {
+			if (!bit_test(resv_ptr->node_bitmap, node_ptr->index))
 				continue;
 			resv_ptr->core_cnt +=
 				(node_ptr->config_ptr->cores *
@@ -2240,12 +2240,13 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			bit_set_count(resv_ptr->core_bitmap);
 
 		if (resv_ptr->node_bitmap) {
-			for (i = 0; i < node_record_count; i++, node_ptr++) {
+			for (i = 0; i < node_record_count; i++) {
 				int offset, core;
 				uint32_t cores, threads;
 				if (!bit_test(resv_ptr->node_bitmap, i))
 					continue;
 
+				node_ptr = node_record_table_ptr[i];
 				cores = (node_ptr->config_ptr->cores *
 					 node_ptr->config_ptr->tot_sockets);
 				threads = node_ptr->config_ptr->threads;
@@ -6889,8 +6890,7 @@ extern int set_node_maint_mode(bool reset_all)
 	flags = NODE_STATE_RES;
 	if (reset_all)
 		flags |= NODE_STATE_MAINT;
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i <= node_record_count; i++, node_ptr++) {
+	for (i = 0; (node_ptr = next_node(&i));) {
 		node_ptr->node_state &= (~flags);
 	}
 
@@ -7106,7 +7106,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 		if (!bit_test(resv_ptr->node_bitmap, i))
 			continue;
 
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		old_state = node_ptr->node_state;
 		if (resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET)
 			node_ptr->node_state |= flags;

@@ -73,19 +73,19 @@ extern job_resources_t *create_job_resources(void)
  * rc = build_job_resources(job_resrcs_ptr, node_record_table_ptr);
  */
 extern int build_job_resources(job_resources_t *job_resrcs,
-			       void *node_rec_table)
+			       node_record_t **node_rec_table)
 {
 	int i, bitmap_len;
 	int core_cnt = 0, sock_inx = -1;
 	uint32_t cores, socks;
-	node_record_t *node_ptr, *node_record_table;
+	node_record_t *node_ptr, **node_record_table;
 
 	if (job_resrcs->node_bitmap == NULL) {
 		error("build_job_resources: node_bitmap is NULL");
 		return SLURM_ERROR;
 	}
 
-	node_record_table = (node_record_t *) node_rec_table;
+	node_record_table = node_rec_table;
 	xfree(job_resrcs->sockets_per_node);
 	xfree(job_resrcs->cores_per_socket);
 	xfree(job_resrcs->sock_core_rep_count);
@@ -100,7 +100,7 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 	for (i=0; i<bitmap_len; i++) {
 		if (!bit_test(job_resrcs->node_bitmap, i))
 			continue;
-		node_ptr = node_record_table + i;
+		node_ptr = node_record_table[i];
 
 		socks = node_ptr->config_ptr->tot_sockets;
 		cores = node_ptr->config_ptr->cores;
@@ -270,13 +270,13 @@ extern int reset_node_bitmap(void *void_job_ptr)
 }
 
 extern int valid_job_resources(job_resources_t *job_resrcs,
-			       void *node_rec_table)
+			       node_record_t **node_rec_table)
 {
 	int i, bitmap_len;
 	int sock_inx = 0, sock_cnt = 0;
 	int total_job_cores, total_node_cores;
 	uint32_t cores, socks;
-	node_record_t *node_ptr, *node_record_table;
+	node_record_t *node_ptr, **node_record_table;
 
 	if (job_resrcs->node_bitmap == NULL) {
 		error("valid_job_resources: node_bitmap is NULL");
@@ -289,12 +289,12 @@ extern int valid_job_resources(job_resources_t *job_resrcs,
 		return SLURM_ERROR;
 	}
 
-	node_record_table = (node_record_t *) node_rec_table;
+	node_record_table = node_rec_table;
 	bitmap_len = bit_size(job_resrcs->node_bitmap);
 	for (i=0; i<bitmap_len; i++) {
 		if (!bit_test(job_resrcs->node_bitmap, i))
 			continue;
-		node_ptr = node_record_table + i;
+		node_ptr = node_record_table[i];
 
 		socks = node_ptr->config_ptr->tot_sockets;
 		cores = node_ptr->config_ptr->cores;
@@ -1981,8 +1981,8 @@ extern uint16_t job_resources_get_node_cpu_cnt(job_resources_t *job_resrcs_ptr,
 	if (((job_resrcs_ptr->cr_type & CR_CORE) ||
 	     (job_resrcs_ptr->cr_type & CR_SOCKET)) &&
 	    (job_resrcs_ptr->threads_per_core <
-	     node_record_table_ptr[sys_node_inx].vpus)) {
-		cpu_count /= node_record_table_ptr[sys_node_inx].vpus;
+	     node_record_table_ptr[sys_node_inx]->vpus)) {
+		cpu_count /= node_record_table_ptr[sys_node_inx]->vpus;
 		cpu_count *= job_resrcs_ptr->threads_per_core;
 	}
 

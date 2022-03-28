@@ -138,6 +138,11 @@ tryagain:
 	return rc;
 }
 
+int slurm_create_node(update_node_msg_t *node_msg)
+{
+	return _slurm_update(node_msg, REQUEST_CREATE_NODE);
+}
+
 /*
  * slurm_update_node - issue RPC to a node's configuration per request,
  *	only usable by user root
@@ -148,6 +153,16 @@ int
 slurm_update_node ( update_node_msg_t * node_msg)
 {
 	return _slurm_update ((void *) node_msg, REQUEST_UPDATE_NODE);
+}
+
+/*
+ * slurm_delete_node - issue RPC to delete a node, only usable by user root
+ * IN node_msg - use to pass nodelist of names to delete
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+int slurm_delete_node(update_node_msg_t *node_msg)
+{
+	return _slurm_update(node_msg, REQUEST_DELETE_NODE);
 }
 
 /*

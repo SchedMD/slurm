@@ -165,7 +165,7 @@ extern job_resources_t *create_job_resources(void);
  * rc = build_job_resources(job_resrcs_ptr, node_record_table_ptr);
  */
 extern int build_job_resources(job_resources_t *job_resrcs_ptr,
-			       void *node_rec_table);
+			       node_record_t **node_rec_table);
 
 /* Rebuild cpu_array_cnt, cpu_array_value, and cpu_array_reps based upon the
  * values of cpus in an existing data structure
@@ -188,7 +188,7 @@ extern int build_job_resources_cpus_array(job_resources_t *job_resrcs_ptr);
  * rc = valid_job_resources(job_resrcs_ptr, node_record_table_ptr);
  */
 extern int valid_job_resources(job_resources_t *job_resrcs_ptr,
-			       void *node_rec_table);
+			       node_record_t **node_rec_table);
 
 /* Make a copy of a job_resources data structure,
  * free using free_job_resources() */

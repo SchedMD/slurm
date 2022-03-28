@@ -1726,10 +1726,6 @@ int init ( void )
 			&start_time);
 		unlock_slurmctld(job_write_lock);
 	} else if (assoc_mgr_root_assoc) {
-		if (!cluster_cpus)
-			fatal("We need to have a cluster cpu count "
-			      "before we can init the priority/multifactor "
-			      "plugin");
 		assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
 
 		/* The decay_thread sets up some global variables that are

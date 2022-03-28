@@ -107,25 +107,25 @@ static void _add_config_feature_inx(List feature_list, char *feature,
 				    int node_inx);
 static void _build_bitmaps(void);
 static void _build_bitmaps_pre_select(void);
-static int  _compare_hostnames(node_record_t *old_node_table,
-			       int old_node_count, node_record_t *node_table,
+static int  _compare_hostnames(node_record_t **old_node_table,
+			       int old_node_count, node_record_t **node_table,
 			       int node_count);
 static void _gres_reconfig(bool reconfig);
 static void _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
 static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
                                        uint16_t old_select_type_p);
-static void _purge_old_node_state(node_record_t *old_node_table_ptr,
+static void _purge_old_node_state(node_record_t **old_node_table_ptr,
 				  int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
 static int  _reset_node_bitmaps(void *x, void *arg);
 static void _restore_job_accounting();
 
-static int  _restore_node_state(int recover, node_record_t *old_node_table_ptr,
+static int  _restore_node_state(int recover, node_record_t **old_node_table_ptr,
 				int old_node_record_count);
 static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				uint16_t flags);
-static void _set_features(node_record_t *old_node_table_ptr,
+static void _set_features(node_record_t **old_node_table_ptr,
 			  int old_node_record_count, int recover);
 static void _stat_slurm_dirs(void);
 static int  _sync_nodes_to_comp_job(void);
@@ -205,140 +205,143 @@ static void _stat_slurm_dirs(void)
 }
 
 /*
- * _reorder_nodes_by_name - order node table in ascending order of name
- */
-static void _reorder_nodes_by_name(void)
-{
-	node_record_t *node_ptr, *node_ptr2;
-	int i, j, min_inx;
-
-	/* Now we need to sort the node records */
-	for (i = 0; i < node_record_count; i++) {
-		min_inx = i;
-		for (j = i + 1; j < node_record_count; j++) {
-			if (strnatcmp(node_record_table_ptr[j].name,
-				      node_record_table_ptr[min_inx].name) < 0)
-				min_inx = j;
-		}
-
-		if (min_inx != i) {	/* swap records */
-			node_record_t node_record_tmp;
-
-			j = sizeof(node_record_t);
-			node_ptr  = node_record_table_ptr + i;
-			node_ptr2 = node_record_table_ptr + min_inx;
-
-			memcpy(&node_record_tmp, node_ptr, j);
-			memcpy(node_ptr, node_ptr2, j);
-			memcpy(node_ptr2, &node_record_tmp, j);
-		}
-	}
-
-#if _DEBUG
-	/* Log the results */
-	for (i=0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
-		info("node_rank[%d]: %s", i, node_ptr->name);
-	}
-#endif
-}
-
-/*
  * _reorder_nodes_by_rank - order node table in ascending order of node_rank
  * This depends on the TopologyPlugin, which may generate such a ranking.
  */
-static void _reorder_nodes_by_rank(void)
+static int _sort_nodes_by_rank(const void *a, const void *b)
 {
-	node_record_t *node_ptr, *node_ptr2;
-	int i, j, min_inx;
-	uint32_t min_val;
+	node_record_t *n1 = *(node_record_t **)a;
+	node_record_t *n2 = *(node_record_t **)b;
 
-	/* Now we need to sort the node records */
-	for (i = 0; i < node_record_count; i++) {
-		min_val = node_record_table_ptr[i].node_rank;
-		min_inx = i;
-		for (j = i + 1; j < node_record_count; j++) {
-			if (node_record_table_ptr[j].node_rank < min_val) {
-				min_val = node_record_table_ptr[j].node_rank;
-				min_inx = j;
-			}
-		}
+	if (!n1)
+		return 1;
+	if (!n2)
+		return -1;
 
-		if (min_inx != i) {	/* swap records */
-			node_record_t node_record_tmp;
+	return (n1->node_rank - n2->node_rank);
+}
 
-			j = sizeof(node_record_t);
-			node_ptr  = node_record_table_ptr + i;
-			node_ptr2 = node_record_table_ptr + min_inx;
+/*
+ * _reorder_nodes_by_name - order node table in ascending order of name
+ */
+static int _sort_nodes_by_name(const void *a, const void *b)
+{
+	node_record_t *n1 = *(node_record_t **)a;
+	node_record_t *n2 = *(node_record_t **)b;
 
-			memcpy(&node_record_tmp, node_ptr, j);
-			memcpy(node_ptr, node_ptr2, j);
-			memcpy(node_ptr2, &node_record_tmp, j);
-		}
+	if (!n1)
+		return 1;
+	if (!n2)
+		return -1;
+
+	return strnatcmp(n1->name, n2->name);
+}
+
+static void _sort_node_record_table_ptr(void)
+{
+	int (*compare_fn)(const void *, const void *);
+
+	if (slurm_topo_generate_node_ranking())
+		compare_fn = &_sort_nodes_by_rank;
+	else
+		compare_fn = &_sort_nodes_by_name;
+
+	qsort(node_record_table_ptr, node_record_count,
+	      sizeof(node_record_t *), compare_fn);
+
+	for (int i = 0; i < node_record_count; i++) {
+		if (node_record_table_ptr[i])
+			node_record_table_ptr[i]->index = i;
 	}
 
 #if _DEBUG
 	/* Log the results */
-	for (i=0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
-		info("node_rank[%u]: %s", node_ptr->node_rank, node_ptr->name);
+	node_record_t *node_ptr;
+	for (int i = 0; (node_ptr = next_node(&i));) {
+		info("node_rank[%d:%d]: %s",
+		     node_ptr->index, node_ptr->node_rank, node_ptr->name);
 	}
 #endif
 }
 
-/*
- * Unfortunately the global feature bitmaps have not been set up at this point,
- * so we'll have to scan through the node_record_table directly to locate
- * the appropriate records.
- */
 static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 {
-	for (int i = 0; i < node_record_count; i++) {
-		char *features, *tmp, *tok, *last = NULL;
-
-		if (!node_record_table_ptr[i].features)
-			continue;
-
-		features = tmp = xstrdup(node_record_table_ptr[i].features);
-
-		while ((tok = strtok_r(tmp, ",", &last))) {
-			if (!xstrcmp(tok, feature)) {
-				hostlist_push_host(hl, node_record_table_ptr[i].name);
-				break;
-			}
-			tmp = NULL;
+	if (avail_feature_list) {
+		char *feature_nodes;
+		node_feature_t *node_feat_ptr;
+		if (!(node_feat_ptr = list_find_first(avail_feature_list,
+						      list_find_feature,
+						      feature))) {
+			debug2("unable to find nodeset feature '%s'", feature);
+			return;
 		}
-		xfree(features);
+		feature_nodes = bitmap2node_name(node_feat_ptr->node_bitmap);
+		hostlist_push(hl, feature_nodes);
+		xfree(feature_nodes);
+	} else {
+		node_record_t *node_ptr;
+		/*
+		 * The global feature bitmaps have not been set up at this
+		 * point, so we'll have to scan through the node_record_table
+		 * directly to locate the appropriate records.
+		 */
+		for (int i = 0; (node_ptr = next_node(&i));) {
+			char *features, *tmp, *tok, *last = NULL;
+
+			if (!node_ptr->features)
+				continue;
+
+			features = tmp = xstrdup(node_ptr->features);
+
+			while ((tok = strtok_r(tmp, ",", &last))) {
+				if (!xstrcmp(tok, feature)) {
+					hostlist_push_host(
+						hl, node_ptr->name);
+					break;
+				}
+				tmp = NULL;
+			}
+			xfree(features);
+		}
 	}
 }
 
-static void _handle_nodesets(char **nodeline)
+extern char *expand_nodesets(const char *nodes, char **nodesets)
 {
 	int count;
+	char *ret_nodelist;
 	slurm_conf_nodeset_t *ptr, **ptr_array;
 	hostlist_t hl;
 
+	if (nodesets)
+		xfree(*nodesets);
+
 	count = slurm_conf_nodeset_array(&ptr_array);
 
-	hl = hostlist_create(*nodeline);
+	hl = hostlist_create(nodes);
 
 	for (int i = 0; i < count; i++) {
 		ptr = ptr_array[i];
 
 		/* swap the nodeset entry with the applicable nodes */
 		if (hostlist_delete_host(hl, ptr->name)) {
-			if (ptr->feature) {
+			if (nodesets)
+				xstrfmtcat(*nodesets, "%s%s",
+					   *nodesets ? "," : "",
+					   ptr->name);
+
+			if (ptr->feature)
 				_add_nodes_with_feature(hl, ptr->feature);
-			}
 
 			if (ptr->nodes)
 				hostlist_push_host(hl, ptr->nodes);
 		}
 	}
 
-	xfree(*nodeline);
-	*nodeline = hostlist_ranged_string_xmalloc(hl);
+	hostlist_uniq(hl);
+	ret_nodelist = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
+	return ret_nodelist;
 }
 
 static void _init_bitmaps(void)
@@ -375,12 +378,10 @@ static void _build_bitmaps_pre_select(void)
 	part_record_t *part_ptr;
 	node_record_t *node_ptr;
 	ListIterator part_iterator;
-	int i;
 
 	/* scan partition table and identify nodes in each */
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = list_next(part_iterator))) {
-		_handle_nodesets(&part_ptr->nodes);
 		if (build_part_bitmap(part_ptr) == ESLURM_INVALID_NODE_NAME)
 			fatal("Invalid node names in partition %s",
 					part_ptr->name);
@@ -390,10 +391,10 @@ static void _build_bitmaps_pre_select(void)
 	/* initialize the configuration bitmaps */
 	list_for_each(config_list, _reset_node_bitmaps, NULL);
 
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
+	for (int i = 0; (node_ptr = next_node(&i));) {
 		if (node_ptr->config_ptr)
-			bit_set(node_ptr->config_ptr->node_bitmap, i);
+			bit_set(node_ptr->config_ptr->node_bitmap,
+				node_ptr->index);
 	}
 
 	return;
@@ -431,14 +432,13 @@ static int _set_share_node_bitmap(void *x, void *arg)
 static void _set_slurmd_addr(void)
 {
 #ifndef HAVE_FRONT_END
-	int i;
-	node_record_t *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr;
 	DEF_TIMERS;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	START_TIMER;
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
+	for (int i = 0; (node_ptr = next_node(&i));) {
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
 			continue;
@@ -479,7 +479,6 @@ static void _set_slurmd_addr(void)
  */
 static void _build_bitmaps(void)
 {
-	int i;
 	node_record_t *node_ptr;
 
 	last_node_update = time(NULL);
@@ -493,8 +492,7 @@ static void _build_bitmaps(void)
 
 	/* scan all nodes and identify which are up, idle and
 	 * their configuration, resync DRAINED vs. DRAINING state */
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
+	for (int i = 0; (node_ptr = next_node(&i));) {
 		uint32_t drain_flag, job_cnt;
 
 		if (node_ptr->name[0] == '\0')
@@ -505,11 +503,11 @@ static void _build_bitmaps(void)
 
 		if ((IS_NODE_IDLE(node_ptr) && (job_cnt == 0)) ||
 		    IS_NODE_DOWN(node_ptr))
-			bit_set(idle_node_bitmap, i);
+			bit_set(idle_node_bitmap, node_ptr->index);
 		if (IS_NODE_POWERING_UP(node_ptr))
-			bit_set(booting_node_bitmap, i);
+			bit_set(booting_node_bitmap, node_ptr->index);
 		if (IS_NODE_COMPLETING(node_ptr))
-			bit_set(cg_node_bitmap, i);
+			bit_set(cg_node_bitmap, node_ptr->index);
 		if (IS_NODE_IDLE(node_ptr) ||
 		    IS_NODE_ALLOCATED(node_ptr) ||
 		    ((IS_NODE_REBOOT_REQUESTED(node_ptr) ||
@@ -518,22 +516,22 @@ static void _build_bitmaps(void)
 		      NODE_RESUME))) {
 			if ((drain_flag == 0) &&
 			    (!IS_NODE_NO_RESPOND(node_ptr)))
-				make_node_avail(i);
-			bit_set(up_node_bitmap, i);
+				make_node_avail(node_ptr->index);
+			bit_set(up_node_bitmap, node_ptr->index);
 		}
 		if (IS_NODE_POWERED_DOWN(node_ptr))
-			bit_set(power_node_bitmap, i);
+			bit_set(power_node_bitmap, node_ptr->index);
 		if (IS_NODE_POWERING_DOWN(node_ptr)) {
-			bit_set(power_node_bitmap, i);
-			bit_clear(avail_node_bitmap, i);
+			bit_set(power_node_bitmap, node_ptr->index);
+			bit_clear(avail_node_bitmap, node_ptr->index);
 		}
 		if (IS_NODE_FUTURE(node_ptr))
-			bit_set(future_node_bitmap, i);
+			bit_set(future_node_bitmap, node_ptr->index);
 
 		if ((IS_NODE_REBOOT_REQUESTED(node_ptr) ||
 		     IS_NODE_REBOOT_ISSUED(node_ptr)) &&
 		    ((node_ptr->next_state & NODE_STATE_FLAGS) & NODE_RESUME))
-			bit_set(rs_node_bitmap, i);
+			bit_set(rs_node_bitmap, node_ptr->index);
 	}
 }
 
@@ -805,6 +803,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->allow_groups = xstrdup(part->allow_groups);
 	part_ptr->alternate = xstrdup(part->alternate);
 	part_ptr->nodes = xstrdup(part->nodes);
+	part_ptr->orig_nodes = xstrdup(part->nodes);
 
 	if (part->billing_weights_str) {
 		set_partition_billing_weights(part->billing_weights_str,
@@ -1305,6 +1304,35 @@ void _sync_jobs_to_conf(void)
 	last_job_update = now;
 }
 
+static int _find_config_ptr(void *x, void *arg)
+{
+	return (x == arg);
+}
+
+static void _preserve_dynamic_nodes(node_record_t **old_node_table_ptr,
+				    int old_node_record_count,
+				    List old_config_list)
+{
+	for (int i = 0; i < old_node_record_count; i++) {
+		node_record_t *node_ptr = old_node_table_ptr[i];
+
+		if (!node_ptr ||
+		    !IS_NODE_DYNAMIC_NORM(node_ptr))
+			continue;
+
+		insert_node_record(node_ptr);
+		old_node_table_ptr[i] = NULL;
+
+		/*
+		 * insert_node_record() appends node_ptr->config_ptr to the
+		 * global config_list. remove from old config_list so it
+		 * doesn't get free'd.
+		 */
+		list_remove_first(old_config_list, _find_config_ptr,
+				  node_ptr->config_ptr);
+	}
+}
+
 /*
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
@@ -1326,8 +1354,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	int error_code = SLURM_SUCCESS;
 	int i, rc = 0, load_job_ret = SLURM_SUCCESS;
 	int old_node_record_count = 0;
-	node_record_t *old_node_table_ptr = NULL, *node_ptr;
-	List old_part_list = NULL;
+	node_record_t **old_node_table_ptr = NULL, *node_ptr;
+	List old_part_list = NULL, old_config_list = NULL;
 	char *old_def_part_name = NULL;
 	char *old_auth_type = xstrdup(slurm_conf.authtype);
 	char *old_bb_type = xstrdup(slurm_conf.bb_type);
@@ -1355,8 +1383,9 @@ int read_slurm_conf(int recover, bool reconfig)
 		old_node_record_count = node_record_count;
 		old_node_table_ptr    = node_record_table_ptr;
 
-		for (i = 0, node_ptr = old_node_table_ptr;
-		     i < node_record_count; i++, node_ptr++) {
+		for (i = 0; i < node_record_count; i++) {
+			if (!(node_ptr = old_node_table_ptr[i]))
+				continue;
 			/*
 			 * Store the original configured CPU count somewhere
 			 * (port is reused here for that purpose) so we can
@@ -1365,6 +1394,8 @@ int read_slurm_conf(int recover, bool reconfig)
 			node_ptr->port   = node_ptr->config_ptr->cpus;
 			node_ptr->weight = node_ptr->config_ptr->weight;
 		}
+		old_config_list = config_list;
+		config_list = NULL;
 		node_record_table_ptr = NULL;
 		node_record_count = 0;
 		xhash_free(node_hash_table);
@@ -1404,6 +1435,15 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* Build node and partition information based upon slurm.conf file */
 	build_all_nodeline_info(false, slurmctld_tres_cnt);
+	/* Increase node table to handle dyanmic nodes. */
+	if (node_record_count < slurm_conf.max_node_cnt) {
+		node_record_count = slurm_conf.max_node_cnt;
+		grow_node_record_table_ptr();
+	} else {
+		/* Lock node_record_table_ptr from growing */
+		slurm_conf.max_node_cnt = node_record_count;
+	}
+
 	(void)acct_storage_g_reconfig(acct_db_conn, 0);
 	build_all_frontend_info(false);
 	if (reconfig) {
@@ -1427,8 +1467,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 		/* store new config */
 		if (!test_config)
-			dump_config_state_lite();
-	}
+			dump_config_state_lite(); }
 	update_logging();
 	jobcomp_g_init(slurm_conf.job_comp_loc);
 	if (sched_g_init() != SLURM_SUCCESS) {
@@ -1470,10 +1509,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	 * Reordering the table must be done before hashing the
 	 * nodes, and before any position-relative bitmaps are created.
 	 */
-	if (slurm_topo_generate_node_ranking())
-		_reorder_nodes_by_rank();
-	else
-		_reorder_nodes_by_name();
+	_sort_node_record_table_ptr();
 
 	rehash_node();
 	slurm_topo_build_config();
@@ -1500,6 +1536,10 @@ int read_slurm_conf(int recover, bool reconfig)
 			rc = _restore_node_state(recover, old_node_table_ptr,
 						 old_node_record_count);
 			error_code = MAX(error_code, rc);  /* not fatal */
+
+			_preserve_dynamic_nodes(old_node_table_ptr,
+						old_node_record_count,
+						old_config_list);
 		}
 		if (old_part_list && ((recover > 1) ||
 		    (slurm_conf.reconfig_flags & RECONFIG_KEEP_PART_INFO))) {
@@ -1574,6 +1614,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 	_purge_old_part_state(old_part_list, old_def_part_name);
+	FREE_NULL_LIST(old_config_list);
 
 	reserve_port_config(slurm_conf.mpi_params);
 
@@ -1914,14 +1955,13 @@ extern void build_feature_list_ne(void)
 	active_feature_list = list_create(_list_delete_feature);
 	avail_feature_list = list_create(_list_delete_feature);
 
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
+	for (i = 0; (node_ptr = next_node(&i));) {
 		if (node_ptr->features_act) {
 			tmp_str = xstrdup(node_ptr->features_act);
 			token = strtok_r(tmp_str, ",", &last);
 			while (token) {
 				_add_config_feature_inx(active_feature_list,
-							token, i);
+							token, node_ptr->index);
 				token = strtok_r(NULL, ",", &last);
 			}
 			xfree(tmp_str);
@@ -1931,11 +1971,11 @@ extern void build_feature_list_ne(void)
 			token = strtok_r(tmp_str, ",", &last);
 			while (token) {
 				_add_config_feature_inx(avail_feature_list,
-							token, i);
+							token, node_ptr->index);
 				if (!node_ptr->features_act) {
 					_add_config_feature_inx(
 							active_feature_list,
-							token, i);
+							token, node_ptr->index);
 				}
 				token = strtok_r(NULL, ",", &last);
 			}
@@ -1990,8 +2030,7 @@ static void _gres_reconfig(bool reconfig)
 		return;
 	}
 
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
+	for (i = 0; (node_ptr = next_node(&i));) {
 		if (node_ptr->gres)
 			gres_name = node_ptr->gres;
 		else
@@ -2026,16 +2065,16 @@ static void _gres_reconfig(bool reconfig)
  *              0, 1 - use data from config record, built using slurm.conf
  *              2 = use data from node record, built from saved state
  */
-static void _set_features(node_record_t *old_node_table_ptr,
+static void _set_features(node_record_t **old_node_table_ptr,
 			  int old_node_record_count, int recover)
 {
 	node_record_t *node_ptr, *old_node_ptr;
 	char *tmp, *tok, *sep;
 	int i, node_features_cnt = node_features_g_count();
 
-	for (i = 0, old_node_ptr = old_node_table_ptr;
-	     i < old_node_record_count;
-	     i++, old_node_ptr++) {
+	for (i = 0; i < old_node_record_count; i++) {
+		if (!(old_node_ptr = old_node_table_ptr[i]))
+			continue;
 
 		node_ptr  = find_node_record(old_node_ptr->name);
 
@@ -2117,7 +2156,7 @@ static void _set_features(node_record_t *old_node_table_ptr,
  * drained, we set those states. We only recover a node's Features if
  * recover==2. */
 static int _restore_node_state(int recover,
-			       node_record_t *old_node_table_ptr,
+			       node_record_t **old_node_table_ptr,
 			       int old_node_record_count)
 {
 	node_record_t *node_ptr, *old_node_ptr;
@@ -2128,16 +2167,15 @@ static int _restore_node_state(int recover,
 	if (slurm_conf.suspend_program && slurm_conf.resume_program)
 		power_save_mode = true;
 
-	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
-	     i++, node_ptr++) {
+	for (i = 0; (node_ptr = next_node(&i));)
 		node_ptr->not_responding = true;
-	}
 
-	for (i=0, old_node_ptr=old_node_table_ptr; i<old_node_record_count;
-	     i++, old_node_ptr++) {
+	for (i = 0; i < old_node_record_count; i++) {
 		bool cloud_flag = false, drain_flag = false, down_flag = false;
 		dynamic_plugin_data_t *tmp_select_nodeinfo;
 
+		if (!(old_node_ptr = old_node_table_ptr[i]))
+			continue;
 		node_ptr  = find_node_record(old_node_ptr->name);
 		if (node_ptr == NULL)
 			continue;
@@ -2187,7 +2225,7 @@ static int _restore_node_state(int recover,
 				hs = hostset_create(node_ptr->name);
 		}
 
-		if (IS_NODE_DYNAMIC(node_ptr) ||
+		if (IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
 		    (IS_NODE_CLOUD(node_ptr) &&
 		     !IS_NODE_POWERED_DOWN(node_ptr))) {
 			/* Preserve NodeHostname + NodeAddr set by scontrol */
@@ -2284,8 +2322,7 @@ static int _restore_node_state(int recover,
 		hs = NULL;
 	}
 
-	for (i=0, node_ptr=node_record_table_ptr; i<node_record_count;
-	     i++, node_ptr++) {
+	for (i = 0; (node_ptr = next_node(&i));) {
 		if (!node_ptr->not_responding)
 			continue;
 		node_ptr->not_responding = false;
@@ -2306,16 +2343,15 @@ static int _restore_node_state(int recover,
 }
 
 /* Purge old node state information */
-static void _purge_old_node_state(node_record_t *old_node_table_ptr,
+static void _purge_old_node_state(node_record_t **old_node_table_ptr,
 				  int old_node_record_count)
 {
 	int i;
-	node_record_t *node_ptr;
 
-	node_ptr = old_node_table_ptr;
 	if (old_node_table_ptr) {
-		for (i = 0; i< old_node_record_count; i++, node_ptr++)
-			purge_node_rec(node_ptr);
+		for (i = 0; i < old_node_record_count; i++)
+			if (old_node_table_ptr[i])
+				purge_node_rec(old_node_table_ptr[i]);
 		xfree(old_node_table_ptr);
 	}
 }
@@ -2546,6 +2582,9 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				      "slurm.conf", part_ptr->name);
 				xfree(part_ptr->nodes);
 				part_ptr->nodes = xstrdup(old_part_ptr->nodes);
+				xfree(part_ptr->orig_nodes);
+				part_ptr->orig_nodes =
+					xstrdup(old_part_ptr->orig_nodes);
 			}
 			if (part_ptr->over_time_limit !=
 			    old_part_ptr->over_time_limit) {
@@ -2640,6 +2679,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			part_ptr->min_nodes_orig = old_part_ptr->
 						   min_nodes_orig;
 			part_ptr->nodes = xstrdup(old_part_ptr->nodes);
+			part_ptr->orig_nodes =
+				xstrdup(old_part_ptr->orig_nodes);
 			part_ptr->over_time_limit =
 				old_part_ptr->over_time_limit;
 			part_ptr->preempt_mode = old_part_ptr->preempt_mode;
@@ -2817,17 +2858,17 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 {
 	int i, cnt = 0;
 	uint32_t node_flags;
-	node_record_t *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr;
 
 	if (job_ptr->node_bitmap_cg) /* job completing */
 		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap_cg);
 	else
 		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
+	for (i = 0; (node_ptr = next_node(&i));) {
 		if (job_ptr->node_bitmap_cg) { /* job completing */
-			if (bit_test(job_ptr->node_bitmap_cg, i) == 0)
+			if (!bit_test(job_ptr->node_bitmap_cg, node_ptr->index))
 				continue;
-		} else if (bit_test(job_ptr->node_bitmap, i) == 0)
+		} else if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
 			continue;
 
 		if ((job_ptr->details &&
@@ -2895,11 +2936,10 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 /* Synchronize states of nodes and suspended jobs */
 static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 {
-	int i;
-	node_record_t *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr;
 
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
+	for (int i = 0; (node_ptr = next_node(&i));) {
+		if (bit_test(job_ptr->node_bitmap, node_ptr->index) == 0)
 			continue;
 
 		node_ptr->sus_job_cnt++;
@@ -3008,8 +3048,8 @@ static void _acct_restore_active_jobs(void)
 
 /* _compare_hostnames()
  */
-static int _compare_hostnames(node_record_t *old_node_table,
-			      int old_node_count, node_record_t *node_table,
+static int _compare_hostnames(node_record_t **old_node_table,
+			      int old_node_count, node_record_t **node_table,
 			      int node_count)
 {
 	int cc;
@@ -3019,20 +3059,16 @@ static int _compare_hostnames(node_record_t *old_node_table,
 	hostset_t old_set;
 	hostset_t set;
 
-	if (old_node_count != node_count) {
-		error("%s: node count has changed before reconfiguration "
-		      "from %d to %d. You have to restart slurmctld.",
-		      __func__, old_node_count, node_count);
-		return -1;
-	}
-
 	old_set = hostset_create("");
 	for (cc = 0; cc < old_node_count; cc++)
-		hostset_insert(old_set, old_node_table[cc].name);
+		if (old_node_table[cc] &&
+		    !IS_NODE_DYNAMIC_NORM(old_node_table[cc]))
+			hostset_insert(old_set, old_node_table[cc]->name);
 
 	set = hostset_create("");
 	for (cc = 0; cc < node_count; cc++)
-		hostset_insert(set, node_table[cc].name);
+		if (node_table[cc])
+			hostset_insert(set, node_table[cc]->name);
 
 	set_size = HOST_NAME_MAX * node_count + node_count + 1;
 
@@ -3041,6 +3077,13 @@ static int _compare_hostnames(node_record_t *old_node_table,
 
 	hostset_ranged_string(old_set, set_size, old_ranged);
 	hostset_ranged_string(set, set_size, ranged);
+
+	if (hostset_count(old_set) != hostset_count(set)) {
+		error("%s: node count has changed before reconfiguration "
+		      "from %d to %d. You have to restart slurmctld.",
+		      __func__, old_node_count, node_count);
+		return -1;
+	}
 
 	cc = 0;
 	if (xstrcmp(old_ranged, ranged) != 0) {

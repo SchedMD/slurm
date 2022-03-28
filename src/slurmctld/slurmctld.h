@@ -381,7 +381,9 @@ typedef struct {
 	uint32_t min_nodes_orig;/* unscaled value (c-nodes on BlueGene) */
 	char *name;		/* name of the partition */
 	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
-	char *nodes;		/* comma delimited list names of nodes */
+	char *nodes;		/* expanded nodelist from orig_nodes */
+	char *orig_nodes;	/* comma delimited list names of nodes */
+	char *nodesets;		/* store nodesets for display, NO PACK */
 	double   norm_priority;	/* normalized scheduling priority for
 				 * jobs (DON'T PACK) */
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
@@ -2525,6 +2527,34 @@ extern int update_node_record_acct_gather_data(
 	acct_gather_node_resp_msg_t *msg);
 
 /*
+ * Create nodes from scontrol using slurm.conf nodeline syntax.
+ *
+ * IN nodeline - slurm.conf nodename description.
+ * OUT err_msg - pass error messages out.
+ * RET SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int create_nodes(char *nodeline, char **err_msg);
+
+/*
+ * Create and add dynamic node to system from registration.
+ *
+ * IN msg - slurm_msg_t containing slurm_node_registration_status_msg_t.
+ * RET SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int create_dynamic_reg_node(slurm_msg_t *msg);
+
+/*
+ * Delete node names from system from a slurmctld perspective.
+ *
+ * e.g. remove node from partitions, reconfig cons_tres, etc.
+ *
+ * IN names - node names to delete.
+ * OUT err_msg - pass error messages out.
+ * RET SLURM_SUCCESS on success, error code otherwise.
+ */
+extern int delete_nodes(char *names, char **err_msg);
+
+/*
  * Process string and set partition fields to appropriate values if valid
  *
  * IN billing_weights_str - suggested billing weights
@@ -2873,5 +2903,30 @@ extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
  */
 extern int update_node_active_features(char *node_names, char *active_features,
 				       int mode);
+
+/*
+ * update_node_avail_features - Update available features associated with
+ *	nodes, build new config list records as needed
+ * IN node_names - List of nodes to update
+ * IN avail_features - New available features value
+ * IN mode - FEATURE_MODE_IND : Print each node change indivually
+ *           FEATURE_MODE_COMB: Try to combine like changes (SEE NOTE BELOW)
+ *           FEATURE_MODE_PEND: Print any pending change message
+ * RET: SLURM_SUCCESS or error code
+ * NOTE: Use mode=FEATURE_MODE_IND in a loop with node write lock set,
+ *	 then call with mode=FEATURE_MODE_PEND at the end of the loop
+ */
+extern int update_node_avail_features(char *node_names, char *avail_features,
+				      int mode);
+
+/*
+ * Return a nodelist with nodesets expanded.
+ *
+ * IN nodes - nodelist that can have nodesets in it.
+ * OUT nodesets (optional) - list of nodesets found in nodes string
+ *
+ * NOTE: Caller must xfree returned string.
+ */
+extern char *expand_nodesets(const char *nodes, char **nodesets);
 
 #endif /* !_HAVE_SLURMCTLD_H */

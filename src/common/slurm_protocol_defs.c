@@ -108,7 +108,8 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_CLOUD, "CLOUD" },
 	{ NODE_STATE_COMPLETING, "COMPLETING" },
 	{ NODE_STATE_DRAIN, "DRAIN" },
-	{ NODE_STATE_DYNAMIC, "DYNAMIC" },
+	{ NODE_STATE_DYNAMIC_FUTURE, "DYNAMIC_FUTURE" },
+	{ NODE_STATE_DYNAMIC_NORM, "DYNAMIC_NORM" },
 	{ NODE_STATE_INVALID_REG, "INVALID_REG" },
 	{ NODE_STATE_FAIL, "FAIL" },
 	{ NODE_STATE_MAINT, "MAINTENANCE" },
@@ -5096,7 +5097,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_FRONT_END:
 		slurm_free_update_front_end_msg(data);
 		break;
+	case REQUEST_CREATE_NODE:
 	case REQUEST_UPDATE_NODE:
+	case REQUEST_DELETE_NODE:
 		slurm_free_update_node_msg(data);
 		break;
 	case REQUEST_CREATE_PARTITION:
@@ -5655,6 +5658,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_UPDATE_RESERVATION";
 	case REQUEST_UPDATE_FRONT_END:				/* 3011 */
 		return "REQUEST_UPDATE_FRONT_END";
+	case REQUEST_DELETE_NODE:
+		return "REQUEST_DELETE_NODE";
+	case REQUEST_CREATE_NODE:
+		return "REQUEST_CREATE_NODE";
 
 	case REQUEST_RESOURCE_ALLOCATION:			/* 4001 */
 		return "REQUEST_RESOURCE_ALLOCATION";

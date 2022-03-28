@@ -1487,11 +1487,12 @@ static void _update_all_node_features(
 	int i, node_inx, numa_inx, width = 5;
 	uint64_t mcdram_size;
 
-	if ((node_record_table_ptr == NULL) ||
-	    (node_record_table_ptr->name == NULL)) {
+	if (!node_record_table_ptr ||
+	    !node_record_table_ptr[0] ||
+	    !node_record_table_ptr[0]->name) {
 		prefix = xstrdup("nid");
 	} else {
-		prefix = xstrdup(node_record_table_ptr->name);
+		prefix = xstrdup(node_record_table_ptr[0]->name);
 		for (i = 0; prefix[i]; i++) {
 			if ((prefix[i] >= '0') && (prefix[i] <= '9')) {
 				prefix[i] = '\0';
@@ -1510,7 +1511,7 @@ static void _update_all_node_features(
 				 "%s%.*d", prefix, width, mcdram_cap[i].nid);
 			node_ptr = find_node_record(node_name);
 			if (node_ptr) {
-				node_inx = node_ptr - node_record_table_ptr;
+				node_inx = node_ptr->index;
 				bit_set(knl_node_bitmap, node_inx);
 				if (validate_mode == 0) {
 					_merge_strings(&node_ptr->features,
@@ -1526,7 +1527,7 @@ static void _update_all_node_features(
 				 "%s%.*d", prefix, width, mcdram_cfg[i].nid);
 			if (!(node_ptr = find_node_record(node_name)))
 				continue;
-			mcdram_per_node[node_ptr - node_record_table_ptr] =
+			mcdram_per_node[node_ptr->index] =
 				mcdram_cfg[i].mcdram_size;
 			_merge_strings(&node_ptr->features_act,
 				       mcdram_cfg[i].mcdram_cfg,
@@ -1574,9 +1575,9 @@ static void _update_all_node_features(
 	 * Make sure that only nodes reported by "capmc get_mcdram_capabilities"
 	 * contain KNL features
 	 */
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
-		if (knl_node_bitmap && bit_test(knl_node_bitmap, i)) {
+	for (i = 0; (node_ptr = next_node(&i));) {
+		if (knl_node_bitmap && bit_test(knl_node_bitmap,
+						node_ptr->index)) {
 			if (validate_mode)
 				_validate_node_features(node_ptr);
 			continue;
@@ -1643,7 +1644,7 @@ static void _update_node_features(node_record_t *node_ptr,
 			_merge_strings(&node_ptr->features_act,
 				       mcdram_cfg[i].mcdram_cfg, allow_mcdram);
 
-			mcdram_per_node[node_ptr - node_record_table_ptr] =
+			mcdram_per_node[node_ptr->index] =
 				mcdram_cfg[i].mcdram_size;
 			mcdram_size = mcdram_cfg[i].mcdram_size *
 				      (100 - mcdram_cfg[i].mcdram_pct) / 100;
@@ -1707,7 +1708,7 @@ static void _update_node_features(node_record_t *node_ptr,
 
 	/* Update bitmaps and lists used by slurmctld for scheduling */
 	node_bitmap = bit_alloc(node_record_count);
-	bit_set(node_bitmap, (node_ptr - node_record_table_ptr));
+	bit_set(node_bitmap, node_ptr->index);
 	update_feature_list(active_feature_list, node_ptr->features_act,
 			    node_bitmap);
 	(void) node_features_p_node_update(node_ptr->features_act, node_bitmap);
@@ -2101,8 +2102,7 @@ static void _check_node_status(void)
 	}
 	json_object_put(j_obj);	/* Frees json memory */
 
-	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
-	     i++, node_ptr++) {
+	for (i = 0; (node_ptr = next_node(&i));) {
 		nid = atoi(node_ptr->name + 3);	/* Skip "nid" */
 		if ((nid < 0) || (nid >= 100000) ||
 		    bit_test(capmc_node_bitmap, nid))
@@ -2117,7 +2117,7 @@ static void _check_node_status(void)
 		node_ptr->reason_time = time(NULL);
 		node_ptr->reason_uid = slurm_conf.slurm_user_id;
 		if (avail_node_bitmap)
-			bit_clear(avail_node_bitmap, i);
+			bit_clear(avail_node_bitmap, node_ptr->index);
 	}
 	FREE_NULL_BITMAP(capmc_node_bitmap);
 }
@@ -2549,8 +2549,7 @@ static int _update_node_state(char *node_list, bool set_locks)
 			unlock_slurmctld(write_nodes_lock);
 		hostlist_destroy(host_list);
 	} else {
-		for (i = 0, node_ptr = node_record_table_ptr;
-		     i < node_record_count; i++, node_ptr++) {
+		for (i = 0; (node_ptr = next_node(&i));) {
 			if (waiting_for_node_boot(node_ptr)) {
 				/*
 				 * Reboot likely in progress.
@@ -2801,7 +2800,7 @@ extern int node_features_p_node_update(char *active_features,
 			rc = SLURM_ERROR;
 			break;
 		}
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		if ((numa_inx >= 0) && cpu_bind[numa_inx])
 			node_ptr->cpu_bind = cpu_bind[numa_inx];
 		if (mcdram_per_node && (mcdram_inx >= 0)) {

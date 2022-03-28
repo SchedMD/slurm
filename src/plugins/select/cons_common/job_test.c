@@ -1539,7 +1539,7 @@ alloc_job:
 				if (gres_task_limit[j] != NO_VAL)
 					task_limit_set = true;
 			}
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 			node_gres_list[j] = node_ptr->gres_list;
 			sock_gres_list[j] =
 				avail_res_array[i]->sock_gres_list;

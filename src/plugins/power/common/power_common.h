@@ -62,7 +62,7 @@ typedef struct power_by_nodes {
 /* For all nodes in a cluster
  * 1) set default values and
  * 2) return global power allocation/consumption information */
-extern void get_cluster_power(node_record_t *node_record_table_ptr,
+extern void get_cluster_power(node_record_t **node_record_table_ptr,
 			      int node_record_count,
 			      uint32_t *alloc_watts, uint32_t *used_watts);
 
@@ -70,7 +70,7 @@ extern void get_cluster_power(node_record_t *node_record_table_ptr,
  * containing elements of type power_by_job_t.
  * NOTE: Job data structure must be locked on function entry
  * NOTE: Call list_delete() to free return value */
-extern List get_job_power(List job_list, node_record_t *node_record_table_ptr);
+extern List get_job_power(List job_list, node_record_t **node_record_table_ptr);
 
 /* Execute a script, wait for termination and return its stdout.
  * script_name IN - Name of program being run (e.g. "StartStageIn")
@@ -88,6 +88,6 @@ extern char *power_run_script(char *script_name, char *script_path,
 /* For a newly starting job, set "new_job_time" in each of it's nodes
  * NOTE: The job and node data structures must be locked on function entry */
 extern void set_node_new_job(job_record_t *job_ptr,
-			     node_record_t *node_record_table_ptr);
+			     node_record_t **node_record_table_ptr);
 
 #endif	/* __POWER_COMMON_H__ */

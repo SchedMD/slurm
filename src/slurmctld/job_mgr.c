@@ -4020,7 +4020,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 				if (job_ptr->node_cnt == 0) {
 					cleanup_completing(job_ptr);
 				}
-				node_ptr = &node_record_table_ptr[i];
+				node_ptr = node_record_table_ptr[i];
 				if (node_ptr->comp_job_cnt)
 					(node_ptr->comp_job_cnt)--;
 				else {
@@ -4226,7 +4226,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 	node_ptr = find_node_record(node_name);
 	if (node_ptr == NULL)	/* No such node */
 		return 0;
-	node_inx = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr->index;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
@@ -6354,9 +6354,7 @@ extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
 
 		node_ptr = find_node_record(node_name);
 		if (node_ptr) {
-			int node_inx;
-			node_inx = node_ptr - node_record_table_ptr;
-			bit_clear(job_ptr->node_bitmap_pr, node_inx);
+			bit_clear(job_ptr->node_bitmap_pr, node_ptr->index);
 		} else {
 			error("%s: can't find node:%s", __func__, node_name);
 			bit_clear_all(job_ptr->node_bitmap_pr);
@@ -6463,7 +6461,7 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		if (job_ptr->node_bitmap) {
 			i = bit_ffs(job_ptr->node_bitmap);
 			if (i >= 0) {
-				node_ptr = node_record_table_ptr + i;
+				node_ptr = node_record_table_ptr[i];
 				if (IS_NODE_CLOUD(node_ptr))
 					use_cloud = true;
 			}
@@ -8798,7 +8796,7 @@ static uint16_t _cpus_per_node_part(part_record_t *part_ptr)
 	if (part_ptr->node_bitmap)
 		node_inx = bit_ffs(part_ptr->node_bitmap);
 	if (node_inx >= 0) {
-		node_ptr = node_record_table_ptr + node_inx;
+		node_ptr = node_record_table_ptr[node_inx];
 		return node_ptr->config_ptr->cpus;
 	}
 	return 0;
@@ -8816,7 +8814,7 @@ static uint64_t _mem_per_node_part(part_record_t *part_ptr)
 	if (part_ptr->node_bitmap)
 		node_inx = bit_ffs(part_ptr->node_bitmap);
 	if (node_inx >= 0) {
-		node_ptr = node_record_table_ptr + node_inx;
+		node_ptr = node_record_table_ptr[node_inx];
 		return (node_ptr->config_ptr->real_memory -
 			node_ptr->mem_spec_limit);
 	}
@@ -9614,7 +9612,7 @@ extern int job_update_tres_cnt(job_record_t *job_ptr, int node_inx)
 		 * node could of only used 1 thread per core.
 		 */
 		node_record_t *node_ptr =
-			node_record_table_ptr + node_inx;
+			node_record_table_ptr[node_inx];
 		cpu_cnt = node_ptr->config_ptr->cpus;
 	} else {
 		if ((offset = job_resources_node_inx_to_cpu_inx(
@@ -10978,11 +10976,11 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 	static int max_cpu_cnt = -1, max_core_cnt = -1;
 	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	int i;
-	node_record_t *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr;
 
 	slurm_mutex_lock(&lock);
 	if (max_cpu_cnt == -1) {
-		for (i = 0; i < node_record_count; i++, node_ptr++) {
+		for (i = 0; (node_ptr = next_node(&i));) {
 			/* Only data from config_record used for scheduling */
 			max_cpu_cnt = MAX(max_cpu_cnt,
 					  node_ptr->config_ptr->cpus);
@@ -12172,7 +12170,7 @@ static void _realloc_nodes(job_record_t *job_ptr, bitstr_t *orig_node_bitmap)
 		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i) ||
 		    bit_test(orig_node_bitmap, i))
 			continue;
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		make_node_alloc(node_ptr, job_ptr);
 	}
 }
@@ -12620,7 +12618,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			for (i = i_first; i <= i_last; i++) {
 				if (!bit_test(rem_nodes, i))
 					continue;
-				node_ptr = node_record_table_ptr + i;
+				node_ptr = node_record_table_ptr[i];
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
@@ -14103,7 +14101,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			for (i = i_first, total = 0; i <= i_last; i++) {
 				if (!bit_test(rem_nodes, i))
 					continue;
-				node_ptr = node_record_table_ptr + i;
+				node_ptr = node_record_table_ptr[i];
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
@@ -14972,9 +14970,8 @@ static void _send_job_kill(job_record_t *job_ptr)
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
-		if (!bit_test(job_ptr->node_bitmap_cg, i))
+	for (i = 0; (node_ptr = next_node(&i));) {
+		if (!bit_test(job_ptr->node_bitmap_cg, node_ptr->index))
 			continue;
 		if (agent_args->protocol_version > node_ptr->protocol_version)
 			agent_args->protocol_version =
@@ -15112,7 +15109,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	    waiting_for_node_power_down(node_ptr))
 		return;
 
-	node_inx = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr->index;
 
 	/* Check that jobs running are really supposed to be there */
 	for (i = 0; i < reg_msg->job_count; i++) {
@@ -15232,7 +15229,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
-	node_record_t *node_ptr = node_record_table_ptr + node_inx;
+	node_record_t *node_ptr = node_record_table_ptr[node_inx];
 	time_t batch_startup_time, node_boot_time = (time_t) 0, startup_time;
 	static bool power_save_on = false;
 	static time_t sched_update = 0;
@@ -15293,7 +15290,7 @@ static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 {
 	ListIterator step_iterator;
 	step_record_t *step_ptr;
-	char *node_name = node_record_table_ptr[node_inx].name;
+	char *node_name = node_record_table_ptr[node_inx]->name;
 
 	xassert(job_ptr);
 	step_iterator = list_iterator_create (job_ptr->step_list);
@@ -15431,13 +15428,13 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 	full_node_bitmap = bit_copy(node_bitmap);
 	while ((i_first = bit_ffs(full_node_bitmap)) >= 0) {
 		i_last = bit_fls(full_node_bitmap);
-		node_ptr = node_record_table_ptr + i_first;
+		node_ptr = node_record_table_ptr[i_first];
 		protocol_version = node_ptr->protocol_version;
 		tmp_node_bitmap = bit_alloc(bit_size(node_bitmap));
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(full_node_bitmap, i))
 				continue;
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 			if (node_ptr->protocol_version != protocol_version)
 				continue;
 			bit_clear(full_node_bitmap, i);
@@ -15990,7 +15987,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		for (i = 0; i < node_record_count; i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
-			node_ptr = &node_record_table_ptr[i];
+			node_ptr = node_record_table_ptr[i];
 			if (return_code) {
 				drain_nodes(node_ptr->name, "Epilog error",
 				            slurm_conf.slurm_user_id);
@@ -16557,11 +16554,11 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		if (agent_args->protocol_version >
-		    node_record_table_ptr[i].protocol_version)
+		    node_record_table_ptr[i]->protocol_version)
 			agent_args->protocol_version =
-				node_record_table_ptr[i].protocol_version;
+				node_record_table_ptr[i]->protocol_version;
 		hostlist_push_host(agent_args->hostlist,
-				   node_record_table_ptr[i].name);
+				   node_record_table_ptr[i]->name);
 		agent_args->node_count++;
 	}
 #endif
@@ -16636,11 +16633,11 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		if (agent_args->protocol_version >
-		    node_record_table_ptr[i].protocol_version)
+		    node_record_table_ptr[i]->protocol_version)
 			agent_args->protocol_version =
-				node_record_table_ptr[i].protocol_version;
+				node_record_table_ptr[i]->protocol_version;
 		hostlist_push_host(agent_args->hostlist,
-				   node_record_table_ptr[i].name);
+				   node_record_table_ptr[i]->name);
 		agent_args->node_count++;
 	}
 #endif
@@ -16677,8 +16674,8 @@ static int _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp)
 		i_last = bit_fls(job_ptr->node_bitmap);
 	else
 		i_last = -2;
-	node_ptr = node_record_table_ptr + i_first;
-	for (i = i_first; i <= i_last; i++, node_ptr++) {
+	for (i = i_first; i <= i_last; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 		node_ptr->sus_job_cnt++;
@@ -16738,16 +16735,16 @@ static int _resume_job_nodes(job_record_t *job_ptr, bool indf_susp)
 		i_last = bit_fls(job_ptr->node_bitmap);
 	else
 		i_last = -2;
-	node_ptr = node_record_table_ptr + i_first;
-	for (i = i_first; i <= i_last; i++, node_ptr++) {
+	for (i = i_first; i <= i_last; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 		if (IS_NODE_DOWN(node_ptr))
 			return SLURM_ERROR;
 	}
 
-	node_ptr = node_record_table_ptr + i_first;
-	for (i = i_first; i <= i_last; i++, node_ptr++) {
+	for (i = i_first; i <= i_last; i++) {
+		node_ptr = node_record_table_ptr[i];
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 

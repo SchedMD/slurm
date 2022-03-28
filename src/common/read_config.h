@@ -58,6 +58,15 @@ extern char *default_plugin_path;
 extern uint16_t drop_priv_flag;
 #endif
 
+/*
+ * We can't include node_conf.h to get node_record_t because node_conf.h
+ * includes read_config.h and creates a circular dependency. We create the
+ * typedef so that we don't have to move the struct around.
+ */
+#ifndef node_record_t
+typedef struct node_record node_record_t;
+#endif
+
 #define ACCOUNTING_ENFORCE_ASSOCS 0x0001
 #define ACCOUNTING_ENFORCE_LIMITS 0x0002
 #define ACCOUNTING_ENFORCE_WCKEYS 0x0004
@@ -555,6 +564,18 @@ extern int slurm_conf_get_res_spec_info(const char *node_name,
 					uint64_t *mem_spec_limit);
 
 /*
+ * Parse slurm.conf NodeName line and return single slurm_conf_node_t*.
+ *
+ * IN nodeline - NodeName= line string.
+ * OUT out_hashtbl - ptr to the generated hashtable so it can be deleted by
+ *                   caller after using the slurm_conf_node_t*. Currently, not a
+ *                   way to disassociate items from the hashtbl.
+ * RET slurm_conf_t* on success, NULL otherwise.
+ */
+extern slurm_conf_node_t *slurm_conf_parse_nodeline(const char *nodeline,
+						    s_p_hashtbl_t **out_hashtbl);
+
+/*
  * init_slurm_conf - initialize or re-initialize the slurm configuration
  *	values to defaults (NULL or NO_VAL). Note that the configuration
  *	file pathname (slurm_conf) is not changed.
@@ -670,5 +691,15 @@ extern char *xlate_features(char *job_features);
  */
 extern int add_remote_nodes_to_conf_tbls(char *node_list,
 					 slurm_addr_t *node_addrs);
+
+/*
+ * Add record to conf hash tables from node_record_t.
+ */
+extern void slurm_conf_add_node(node_record_t *node_ptr);
+
+/*
+ * Remove node from node conf hash tables.
+ */
+extern void slurm_conf_remove_node(char *node_name);
 
 #endif /* !_READ_CONFIG_H */

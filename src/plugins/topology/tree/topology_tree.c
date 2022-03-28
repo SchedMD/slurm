@@ -56,13 +56,13 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-extern node_record_t *node_record_table_ptr __attribute__((weak_import));
+extern node_record_t **node_record_table_ptr __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
 extern switch_record_t *switch_record_table __attribute__((weak_import));
 extern int switch_record_cnt __attribute__((weak_import));
 extern int switch_levels __attribute__((weak_import));
 #else
-node_record_t *node_record_table_ptr;
+node_record_t **node_record_table_ptr;
 int node_record_count;
 switch_record_t *switch_record_table;
 int switch_record_cnt;
@@ -191,7 +191,7 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 	/* node not found in configuration */
 	if ( node_ptr == NULL )
 		return SLURM_ERROR;
-	node_inx = node_ptr - node_record_table_ptr;
+	node_inx = node_ptr->index;
 
 	/* look for switches max level */
 	for (i=0; i<switch_record_cnt; i++) {
@@ -657,8 +657,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 		node_record_t *node_ptr;
 		node_ptr = find_node_record(this_node_name);
 		if (node_ptr) {
-			bit_set(my_bitmap,
-				(bitoff_t) (node_ptr - node_record_table_ptr));
+			bit_set(my_bitmap, node_ptr->index);
 		} else {
 			debug2("_node_name2bitmap: invalid node specified %s",
 			       this_node_name);

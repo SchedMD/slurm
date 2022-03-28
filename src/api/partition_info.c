@@ -258,7 +258,13 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 
 	xstrcat(out, line_end);
 
-	/****** Line 7 ******/
+	/****** Line ******/
+	if (part_ptr->nodesets) {
+		xstrfmtcat(out, "NodeSets=%s", part_ptr->nodesets);
+		xstrcat(out, line_end);
+	}
+
+	/****** Line ******/
 	xstrfmtcat(out, "Nodes=%s", part_ptr->nodes);
 	xstrcat(out, line_end);
 
@@ -360,6 +366,10 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrfmtcat(out, " MaxMemPerNode=%"PRIu64"",
 			   part_ptr->max_mem_per_cpu);
 	}
+
+	/****** Line ******/
+	xstrcat(out, line_end);
+	xstrfmtcat(out, "TRES=%s", part_ptr->tres_fmt_str);
 
 	/****** Line 10 ******/
 	if (part_ptr->billing_weights_str) {

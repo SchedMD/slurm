@@ -112,9 +112,8 @@ static int _calc_part_tres(void *x, void *arg)
 	tres_cnt = part_ptr->tres_cnt;
 
 	/* sum up nodes' tres in the partition. */
-	node_ptr = node_record_table_ptr;
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (!bit_test(part_ptr->node_bitmap, i))
+	for (i = 0; (node_ptr = next_node(&i));) {
+		if (!bit_test(part_ptr->node_bitmap, node_ptr->index))
 			continue;
 		for (j = 0; j < slurmctld_tres_cnt; j++)
 			tres_cnt[j] += node_ptr->tres_cnt[j];
@@ -171,10 +170,11 @@ extern void set_partition_tres()
  */
 extern int build_part_bitmap(part_record_t *part_ptr)
 {
+	int rc = SLURM_SUCCESS;
 	char *this_node_name;
 	bitstr_t *old_bitmap;
 	node_record_t *node_ptr;
-	hostlist_t host_list;
+	hostlist_t host_list, missing_hostlist = NULL;
 	int i;
 
 	part_ptr->total_cpus = 0;
@@ -190,6 +190,10 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 		bit_nclear(part_ptr->node_bitmap, 0,
 			   node_record_count - 1);
 	}
+
+	xfree(part_ptr->nodes);
+	part_ptr->nodes = expand_nodesets(part_ptr->orig_nodes,
+					  &part_ptr->nodesets);
 
 	if (part_ptr->nodes == NULL) {	/* no nodes in partition */
 		_unlink_free_nodes(old_bitmap, part_ptr);
@@ -213,12 +217,17 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 	while ((this_node_name = hostlist_shift(host_list))) {
 		node_ptr = find_node_record_no_alias(this_node_name);
 		if (node_ptr == NULL) {
-			error("%s: invalid node name %s",
-			      __func__, this_node_name);
+			if (!missing_hostlist)
+				missing_hostlist =
+					hostlist_create(this_node_name);
+			else
+				hostlist_push_host(missing_hostlist,
+						   this_node_name);
+			info("%s: invalid node name %s in partition",
+			     __func__, this_node_name);
 			free(this_node_name);
-			FREE_NULL_BITMAP(old_bitmap);
-			hostlist_destroy(host_list);
-			return ESLURM_INVALID_NODE_NAME;
+			rc = ESLURM_INVALID_NODE_NAME;
+			continue;
 		}
 		part_ptr->total_nodes++;
 		part_ptr->total_cpus += node_ptr->config_ptr->cpus;
@@ -240,19 +249,39 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 			node_ptr->part_pptr[node_ptr->part_cnt-1] = part_ptr;
 		}
 		if (old_bitmap)
-			bit_clear(old_bitmap,
-				  (int) (node_ptr -
-					 node_record_table_ptr));
-		bit_set(part_ptr->node_bitmap,
-			(int) (node_ptr - node_record_table_ptr));
+			bit_clear(old_bitmap, node_ptr->index);
+
+		bit_set(part_ptr->node_bitmap, node_ptr->index);
 		free(this_node_name);
 	}
 	hostlist_destroy(host_list);
 
+	if ((rc == ESLURM_INVALID_NODE_NAME) && missing_hostlist) {
+		/*
+		 * Remove missing node from partition nodes so we don't keep
+		 * trying to remove them.
+		 */
+		hostlist_t hl;
+		char *missing_nodes;
+
+		hl = hostlist_create(part_ptr->orig_nodes);
+		missing_nodes =
+			hostlist_ranged_string_xmalloc(missing_hostlist);
+		hostlist_delete(hl, missing_nodes);
+		xfree(missing_nodes);
+		xfree(part_ptr->orig_nodes);
+		part_ptr->orig_nodes = hostlist_ranged_string_xmalloc(hl);
+		hostlist_destroy(hl);
+
+		xfree(part_ptr->nodes);
+		part_ptr->nodes = bitmap2node_name(part_ptr->node_bitmap);
+	}
+	hostlist_destroy(missing_hostlist);
+
 	_unlink_free_nodes(old_bitmap, part_ptr);
 	last_node_update = time(NULL);
 	FREE_NULL_BITMAP(old_bitmap);
-	return 0;
+	return rc;
 }
 
 /* unlink nodes removed from a partition */
@@ -264,9 +293,8 @@ static void _unlink_free_nodes(bitstr_t *old_bitmap, part_record_t *part_ptr)
 	if (old_bitmap == NULL)
 		return;
 
-	node_ptr = &node_record_table_ptr[0];
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (bit_test(old_bitmap, i) == 0)
+	for (i = 0; (node_ptr = next_node(&i));) {
+		if (bit_test(old_bitmap, node_ptr->index) == 0)
 			continue;
 		for (j=0; j<node_ptr->part_cnt; j++) {
 			if (node_ptr->part_pptr[j] != part_ptr)
@@ -468,7 +496,8 @@ static int _dump_part_state(void *x, void *arg)
 	packstr(part_ptr->alternate,     buffer);
 	packstr(part_ptr->deny_accounts, buffer);
 	packstr(part_ptr->deny_qos,      buffer);
-	packstr(part_ptr->nodes,         buffer);
+	/* Save orig_nodes as nodes will be built from orig_nodes */
+	packstr(part_ptr->orig_nodes, buffer);
 
 	return 0;
 }
@@ -708,8 +737,13 @@ int load_all_part_state(void)
 		xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos       = deny_qos;
 		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
+
+		/*
+		 * Store saved nodelist in orig_nodes. nodes will be regenerated
+		 * from orig_nodes.
+		 */
 		xfree(part_ptr->nodes);
-		part_ptr->nodes = nodes;
+		part_ptr->orig_nodes = nodes;
 
 		xfree(part_name);
 	}
@@ -859,8 +893,7 @@ static void _list_delete_part(void *part_entry)
 	int i, j, k;
 
 	part_ptr = (part_record_t *) part_entry;
-	node_ptr = &node_record_table_ptr[0];
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
+	for (i = 0; (node_ptr = next_node(&i));) {
 		for (j=0; j<node_ptr->part_cnt; j++) {
 			if (node_ptr->part_pptr[j] != part_ptr)
 				continue;
@@ -889,6 +922,7 @@ static void _list_delete_part(void *part_entry)
 	FREE_NULL_BITMAP(part_ptr->deny_qos_bitstr);
 	FREE_NULL_LIST(part_ptr->job_defaults_list);
 	xfree(part_ptr->name);
+	xfree(part_ptr->orig_nodes);
 	xfree(part_ptr->nodes);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
 	xfree(part_ptr->qos_char);
@@ -1091,7 +1125,54 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
  */
 void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		if (default_part_loc == part_ptr)
+			part_ptr->flags |= PART_FLAG_DEFAULT;
+		else
+			part_ptr->flags &= (~PART_FLAG_DEFAULT);
+
+		packstr(part_ptr->name, buffer);
+		pack32(part_ptr->cpu_bind, buffer);
+		pack32(part_ptr->grace_time, buffer);
+		pack32(part_ptr->max_time, buffer);
+		pack32(part_ptr->default_time, buffer);
+		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->min_nodes_orig, buffer);
+		pack32(part_ptr->total_nodes, buffer);
+		pack32(part_ptr->total_cpus, buffer);
+		pack64(part_ptr->def_mem_per_cpu, buffer);
+		pack32(part_ptr->max_cpus_per_node, buffer);
+		pack64(part_ptr->max_mem_per_cpu, buffer);
+
+		pack16(part_ptr->flags,      buffer);
+		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->over_time_limit, buffer);
+		pack16(part_ptr->preempt_mode, buffer);
+		pack16(part_ptr->priority_job_factor, buffer);
+		pack16(part_ptr->priority_tier, buffer);
+		pack16(part_ptr->state_up, buffer);
+		pack16(part_ptr->cr_type, buffer);
+		pack16(part_ptr->resume_timeout, buffer);
+		pack16(part_ptr->suspend_timeout, buffer);
+		pack32(part_ptr->suspend_time, buffer);
+
+		packstr(part_ptr->allow_accounts, buffer);
+		packstr(part_ptr->allow_groups, buffer);
+		packstr(part_ptr->allow_alloc_nodes, buffer);
+		packstr(part_ptr->allow_qos, buffer);
+		packstr(part_ptr->qos_char, buffer);
+		packstr(part_ptr->alternate, buffer);
+		packstr(part_ptr->deny_accounts, buffer);
+		packstr(part_ptr->deny_qos, buffer);
+		packstr(part_ptr->nodes, buffer);
+		packstr(part_ptr->nodesets, buffer);
+		pack_bit_str_hex(part_ptr->node_bitmap, buffer);
+		packstr(part_ptr->billing_weights_str, buffer);
+		packstr(part_ptr->tres_fmt_str, buffer);
+		(void)slurm_pack_list(part_ptr->job_defaults_list,
+				      job_defaults_pack, buffer,
+				      protocol_version);
+	} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else
@@ -1701,6 +1782,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 					part_ptr->nodes[i] = ',';
 			}
 		}
+		xfree(part_ptr->orig_nodes);
+		part_ptr->orig_nodes = xstrdup(part_ptr->nodes);
 
 		error_code = build_part_bitmap(part_ptr);
 		if (error_code) {

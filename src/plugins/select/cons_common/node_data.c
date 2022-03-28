@@ -65,6 +65,8 @@ extern void node_data_dump(void)
 		return;
 
 	for (i = 0; i < select_node_cnt; i++) {
+		if (!select_node_record[i].node_ptr)
+			continue;
 		node_ptr = select_node_record[i].node_ptr;
 		info("Node:%s Boards:%u SocketsPerBoard:%u CoresPerSocket:%u ThreadsPerCore:%u TotalCores:%u CumeCores:%u TotalCPUs:%u PUsPerCore:%u AvailMem:%"PRIu64" AllocMem:%"PRIu64" State:%s(%d)",
 		     node_ptr->name,
@@ -123,7 +125,7 @@ extern node_use_record_t *node_data_dup_use(
 		if (orig_ptr[i].gres_list)
 			gres_list = orig_ptr[i].gres_list;
 		else
-			gres_list = node_record_table_ptr[i].gres_list;
+			gres_list = node_record_table_ptr[i]->gres_list;
 		new_ptr[i].gres_list = gres_node_state_list_dup(gres_list);
 	}
 	return new_use_ptr;

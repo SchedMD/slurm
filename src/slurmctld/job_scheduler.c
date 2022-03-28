@@ -172,12 +172,11 @@ static double _get_system_usage(void)
 		int    i;
 		double alloc_tres = 0;
 		double tot_tres   = 0;
+		node_record_t *node_ptr;
 
 		select_g_select_nodeinfo_set_all();
 
-		for (i = 0; i < node_record_count; i++) {
-			node_record_t *node_ptr =
-				&node_record_table_ptr[i];
+		for (i = 0; (node_ptr = next_node(&i));) {
 			double node_alloc_tres = 0.0;
 			double node_tot_tres   = 0.0;
 
@@ -4375,7 +4374,7 @@ static void _set_reboot_features_active(bitstr_t *node_bitmap,
 		if (!bit_test(node_bitmap, i))
 			continue;
 
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		/* Point to node features, don't copy */
 		orig_features_act =
 			node_ptr->features_act ?
@@ -4446,7 +4445,7 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(boot_node_bitmap, i))
 			continue;
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		if (protocol_version > node_ptr->protocol_version)
 			protocol_version = node_ptr->protocol_version;
 

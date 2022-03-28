@@ -632,7 +632,7 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 			bit_fmt(core_str, 64, job_res->core_bitmap);
 			error("b_min > nboards_nb (%d > %u) node:%s core_bitmap:%s",
 			      b_min, nboards_nb,
-			      node_record_table_ptr[n].name, core_str);
+			      node_record_table_ptr[n]->name, core_str);
 			break;
 		}
 		sock_per_comb = b_min * sock_per_brd;

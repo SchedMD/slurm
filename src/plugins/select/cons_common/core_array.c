@@ -245,7 +245,7 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 	}
 
 	core_bitmap =
-		bit_alloc(select_node_record[select_node_cnt-1].cume_cores);
+		bit_alloc(select_node_record[select_node_cnt].cume_cores);
 	for (i = 0; i < core_array_size; i++) {
 		if (!core_array[i])
 			continue;

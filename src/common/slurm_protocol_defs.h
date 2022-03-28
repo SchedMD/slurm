@@ -142,8 +142,10 @@
 	 && (IS_NODE_ALLOCATED(_X) || IS_NODE_MIXED(_X)))
 #define IS_NODE_DRAINED(_X)		\
 	(IS_NODE_DRAIN(_X) && !IS_NODE_DRAINING(_X))
-#define IS_NODE_DYNAMIC(_X)		\
-	(_X->node_state & NODE_STATE_DYNAMIC)
+#define IS_NODE_DYNAMIC_FUTURE(_X)		\
+	(_X->node_state & NODE_STATE_DYNAMIC_FUTURE)
+#define IS_NODE_DYNAMIC_NORM(_X)		\
+	(_X->node_state & NODE_STATE_DYNAMIC_NORM)
 #define IS_NODE_COMPLETING(_X)	\
 	(_X->node_state & NODE_STATE_COMPLETING)
 #define IS_NODE_INVALID_REG(_X)	\
@@ -317,6 +319,8 @@ typedef enum {
 	REQUEST_UPDATE_FRONT_END,		/* 3011 */
 	DEFUNCT_RPC_3012,
 	DEFUNCT_RPC_3013,
+	REQUEST_DELETE_NODE,
+	REQUEST_CREATE_NODE,
 
 	REQUEST_RESOURCE_ALLOCATION = 4001,
 	RESPONSE_RESOURCE_ALLOCATION,
@@ -1280,6 +1284,12 @@ typedef struct {
 	uint32_t gid;
 } crontab_update_request_msg_t;
 
+typedef enum {
+	DYN_NODE_NONE = 0,
+	DYN_NODE_FUTURE,
+	DYN_NODE_NORM,
+} dynamic_node_type_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1288,7 +1298,8 @@ typedef struct slurm_node_registration_status_msg {
 	uint16_t cores;
 	uint16_t cpus;
 	uint32_t cpu_load;	/* CPU load * 100 */
-	bool dynamic;		/* dynamic registration */
+	uint8_t dynamic_type;	/* dynamic registration type */
+	char *dynamic_conf;	/* dynamic configuration */
 	char *dynamic_feature;	/* dynamic registration feature */
 	uint16_t flags;	        /* Flags from the slurmd SLURMD_REG_FLAG_* */
 	uint64_t free_mem;	/* Free memory in MiB */

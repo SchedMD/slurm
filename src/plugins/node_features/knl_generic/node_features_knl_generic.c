@@ -1710,7 +1710,7 @@ extern int node_features_p_node_update(char *active_features,
 			rc = SLURM_ERROR;
 			break;
 		}
-		node_ptr = node_record_table_ptr + i;
+		node_ptr = node_record_table_ptr[i];
 		if ((numa_inx >= 0) && cpu_bind[numa_inx])
 			node_ptr->cpu_bind = cpu_bind[numa_inx];
 		if (mcdram_per_node && (mcdram_inx >= 0)) {

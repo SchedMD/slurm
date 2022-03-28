@@ -260,8 +260,7 @@ void ping_nodes (void)
 		ping_agent_args->node_count++;
 	}
 #else
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
+	for (i = 0; (node_ptr = next_node(&i));) {
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
@@ -300,7 +299,8 @@ void ping_nodes (void)
 		 * once in a while). We limit these requests since they
 		 * can generate a flood of incoming RPCs. */
 		if (IS_NODE_UNKNOWN(node_ptr) || (node_ptr->boot_time == 0) ||
-		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
+		    ((node_ptr->index >= offset) &&
+		     (node_ptr->index < (offset + max_reg_threads)))) {
 			if (reg_agent_args->protocol_version >
 			    node_ptr->protocol_version)
 				reg_agent_args->protocol_version =
@@ -452,9 +452,9 @@ extern void run_health_check(void)
 				base_node_loc = -1;
 				break;
 			}
-			node_ptr = node_record_table_ptr + base_node_loc;
+			node_ptr = node_record_table_ptr[base_node_loc];
 		} else {
-			node_ptr = node_record_table_ptr + i;
+			node_ptr = node_record_table_ptr[i];
 		}
 		if (IS_NODE_NO_RESPOND(node_ptr) ||
 		    IS_NODE_FUTURE(node_ptr) ||
@@ -550,8 +550,7 @@ extern void update_nodes_acct_gather_data(void)
 		agent_args->node_count++;
 	}
 #else
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
+	for (i = 0; (node_ptr = next_node(&i));) {
 		if (IS_NODE_NO_RESPOND(node_ptr) ||
 		    IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||

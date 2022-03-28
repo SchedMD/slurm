@@ -141,10 +141,11 @@ COMPLETING or DOWN state.
 .TP
 \fBdelete\fR <\fISPECIFICATION\fR>
 Delete the entry with the specified \fISPECIFICATION\fP.
-The two \fISPECIFICATION\fP choices are \fIPartitionName=<name>\fP and
-\fIReservation=<name>\fP. Reservations and partitions should have
-no associated jobs at the time of their deletion (modify the jobs first).
-If the specified partition is in use, the request is denied.
+The three \fISPECIFICATION\fP choices are \fINodeName=<nodelist>\fP,
+\fIPartitionName=<name>\fP and \fIReservation=<name>\fP. Nodes can't be deleted
+if they are in a reservation or have jobs on running. Reservations and
+partitions should have no associated jobs at the time of their deletion (modify
+the jobs first). If the specified partition is in use, the request is denied.
 .IP
 
 .TP
@@ -1413,6 +1414,12 @@ time limit (e.g. "TimeLimit=+30"). In order to increment or decrement the
 current time limit, the \fIStepId\fP specification must precede the
 \fITimeLimit\fP specification.
 .IP
+
+.SH "NODES \- SPECIFICATIONS FOR CREATE COMMAND"
+
+Provide the same NodeName configration as found in the slurm.conf. See
+slurm.conf man page for details. Only State=CLOUD and State=FUTURE nodes are
+allowed.
 
 .SH "NODES \- SPECIFICATIONS FOR UPDATE COMMAND"
 

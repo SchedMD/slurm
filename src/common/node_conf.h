@@ -120,6 +120,7 @@ struct node_record {
 					 * use for scheduling purposes */
 	List gres_list;			/* list of gres state info managed by
 					 * plugins */
+	uint32_t index;			/* Index into node_record_table_ptr */
 	time_t last_busy;		/* time node was last busy (no jobs) */
 	time_t last_response;		/* last response from the node */
 	uint32_t magic;			/* magic cookie for data integrity */
@@ -186,7 +187,7 @@ struct node_record {
 					 * save/restore, DO NOT use for
 					 * scheduling purposes. */
 };
-extern node_record_t *node_record_table_ptr;  /* ptr to node records */
+extern node_record_t **node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */
 extern xhash_t* node_hash_table;	/* hash table for node records */
 extern time_t last_node_update;		/* time of last node record update */
@@ -242,13 +243,11 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt);
 extern void build_all_frontend_info (bool is_slurmd_context);
 
 /*
- * check_nodeline_info - From the slurm.conf reader, build table, and set values
- * Note: Operates on common variables
- *	default_node_record - default node configuration values
+ * Expand a nodeline's node names, host names, addrs, ports into separate nodes.
  */
-extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
-			        config_record_t *config_ptr,
-			        void (*_callback) (
+extern void expand_nodeline_info(slurm_conf_node_t *node_ptr,
+				 config_record_t *config_ptr,
+				 void (*_callback) (
 				       char *alias, char *hostname,
 				       char *address, char *bcast_addr,
 				       uint16_t port, int state_val,
@@ -267,15 +266,70 @@ extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
 extern config_record_t *create_config_record(void);
 
 /*
+ * Create a config_record and initialize it with the given conf_node.
+ *
+ * IN conf_node - conf_node from slurm.conf to initialize config_record with.
+ * IN tres_cnt - number of system tres to initialize tres arrays.
+ * RET return config_record_t* on success, NULL otherwise.
+ */
+extern config_record_t *config_record_from_conf_node(
+	slurm_conf_node_t *conf_node, int tres_cnt);
+
+/*
+ * Grow the node_record_table_ptr.
+ */
+extern void grow_node_record_table_ptr();
+
+/*
  * create_node_record - create a node record and set its values to defaults
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
  * RET pointer to the record or NULL if error
- * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
- *	the global node table is no longer required
+ * NOTE: grows node_record_table_ptr if needed and appends a new node_record_t *
+ *       to node_record_table_ptr and increases node_record_count.
  */
 extern node_record_t *create_node_record(config_record_t *config_ptr,
 					 char *node_name);
+
+/*
+ * Create a new node_record_t * at the specified index.
+ *
+ * IN index - index in node_record_table_ptr where to create new
+ *            node_record_t *. node_record_table_ptr[index] should be null and
+ *            less than node_record_count.
+ * IN node_name - name of node to create
+ * IN config_ptr - pointer to node's configuration information
+ * RET new node_record_t * on sucess, NULL otherwise.
+ * NOTE: node_record_count isn't changed.
+ */
+extern node_record_t *create_node_record_at(int index, char *node_name,
+					    config_record_t *config_ptr);
+
+/*
+ * Add a node to node_record_table_ptr without growing the table and increasing
+ * node_reocrd_count. The node in an empty slot in the node_record_table_ptr.
+ *
+ * IN alias - name of node.
+ * IN config_ptr - config_record_t* to initialize node with.
+ * RET node_record_t* on SUCESS, NULL otherwise.
+ */
+extern node_record_t *add_node_record(char *alias, config_record_t *config_ptr);
+
+/*
+ * Add existing record to node_record_table_ptr
+ *
+ * e.g. Preserving dynamic nodes after a reconfig.
+ * Node must fit in currently allocated node_record_count/MaxNodeCount.
+ * node_ptr->config_ptr is added to the the global config_list.
+ */
+extern void insert_node_record(node_record_t *node_ptr);
+
+/*
+ * Delete node from node_record_table_ptr.
+ *
+ * IN name - name of node_record_t to delete
+ */
+extern void delete_node_record(char *name);
 
 /*
  * find_node_record - find a record for node with specified name
@@ -351,7 +405,7 @@ extern void rehash_node (void);
 extern int state_str2int(const char *state_str, char *node_name);
 
 /* (re)set cr_node_num_cores arrays */
-extern void cr_init_global_core_data(node_record_t *node_ptr, int node_cnt);
+extern void cr_init_global_core_data(node_record_t **node_ptr, int node_cnt);
 
 extern void cr_fini_global_core_data(void);
 
@@ -382,5 +436,16 @@ extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, int cpus_per_task,
  * NOTE: caller must xfree result.
  */
 extern char *find_hostname(uint32_t pos, char *hosts);
+
+/*
+ * Return the next non-null node_record_t * in the node_record_table_ptr.
+ *
+ * IN/OUT index - index to start iterating node_record_table_ptr from. Set to
+ *                the index to start at for subsequent call. index should not
+ *                be used for mapping nodes in bitmaps as it is +1 of the
+ *                returned node_record_t * -- use node_ptr->index instead.
+ * RET - next non-null node_record_t * or NULL if finished iterating.
+ */
+extern node_record_t * next_node(int *index);
 
 #endif /* !_HAVE_NODE_CONF_H */

@@ -54,6 +54,9 @@ HIGHLIGHTS
     longer a connectivity check happening in the jobcomp/elasticsearch plugin
     when setting the location off of JobCompLoc.
  -- Add support for hourly reoccurring reservations.
+ -- Allow nodes to be dynamically added and removed from the system. Configure
+    MaxNodeCount to accomodate nodes created with dynamic node registrations
+    (slurmd -Z<feature> --conf="") and scontrol.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

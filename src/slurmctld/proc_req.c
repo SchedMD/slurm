@@ -401,6 +401,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->max_job_cnt         = conf->max_job_cnt;
 	conf_ptr->max_job_id          = conf->max_job_id;
 	conf_ptr->max_mem_per_cpu     = conf->max_mem_per_cpu;
+	conf_ptr->max_node_cnt        = conf->max_node_cnt;
 	conf_ptr->max_step_cnt        = conf->max_step_cnt;
 	conf_ptr->max_tasks_per_node  = conf->max_tasks_per_node;
 	conf_ptr->mcs_plugin          = xstrdup(conf->mcs_plugin);
@@ -2711,7 +2712,7 @@ static bool _node_has_feature(node_record_t *node_ptr, char *feature)
 
 	if ((node_feature = list_find_first(active_feature_list,
 					    list_find_feature, feature))) {
-		int node_inx = node_ptr - node_record_table_ptr;
+		int node_inx = node_ptr->index;
 		if (bit_test(node_feature->node_bitmap, node_inx))
 		    return true;
 	}
@@ -2736,8 +2737,7 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 	if (node_ptr == NULL) {
 		int i;
 
-		node_ptr = node_record_table_ptr;
-		for (i = 0; i < node_record_count; i++, node_ptr++) {
+		for (i = 0; (node_ptr = next_node(&i));) {
 			slurm_addr_t addr;
 			char *comm_name = NULL;
 
@@ -2769,22 +2769,23 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 					    xstrdup(reg_msg->node_name),
 				xstrdup(reg_msg->node_name));
 
-			node_ptr->node_state |= NODE_STATE_DYNAMIC;
+			node_ptr->node_state |= NODE_STATE_DYNAMIC_FUTURE;
 
-			bit_clear(future_node_bitmap,
-				  node_ptr - node_record_table_ptr);
+			bit_clear(future_node_bitmap, node_ptr->index);
 
 			break;
 		}
 	}
 
-	/*
-	 * We always need to send the hostname back to the slurmd. In
-	 * case the slurmd already registered and we found the node_ptr
-	 * by the node_hostname.
-	 */
-	xfree(reg_msg->node_name);
-	reg_msg->node_name = xstrdup(node_ptr->name);
+	if (node_ptr) {
+		/*
+		 * We always need to send the hostname back to the slurmd. In
+		 * case the slurmd already registered and we found the node_ptr
+		 * by the node_hostname.
+		 */
+		xfree(reg_msg->node_name);
+		reg_msg->node_name = xstrdup(node_ptr->name);
+	}
 }
 
 /* _slurm_rpc_node_registration - process RPC to determine if a node's
@@ -2799,7 +2800,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 		(slurm_node_registration_status_msg_t *) msg->data;
 	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	START_TIMER;
 	if (!validate_slurm_user(msg->auth_uid)) {
@@ -2829,25 +2830,30 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			lock_slurmctld(job_write_lock);
 
-		if (node_reg_stat_msg->dynamic &&
+		if (node_reg_stat_msg->dynamic_type &&
 		    (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP)) {
-			/*
-			 * dynamic future nodes doen't know what node it's
-			 * mapped to to be able to load all configs in.
-			 * slurmctld will tell the slurmd what node it's mapped
-			 * to and then the slurmd will then load in
-			 * configuration based off of the mapped name and send
-			 * another registration.
-			 *
-			 * Subsequent slurmd registrations will have the mapped
-			 * node_name.
-			 */
-			_find_avail_future_node(msg);
 
-			if (!(msg->flags & CTLD_QUEUE_PROCESSING))
-				unlock_slurmctld(job_write_lock);
+			if (node_reg_stat_msg->dynamic_type == DYN_NODE_FUTURE) {
+				/*
+				 * dynamic future nodes doen't know what node
+				 * it's mapped to to be able to load all configs
+				 * in. slurmctld will tell the slurmd what node
+				 * it's mapped to and then the slurmd will then
+				 * load in configuration based off of the mapped
+				 * name and send another registration.
+				 *
+				 * Subsequent slurmd registrations will have the
+				 * mapped node_name.
+				 */
+				_find_avail_future_node(msg);
 
-			goto send_resp;
+				if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+					unlock_slurmctld(job_write_lock);
+
+				goto send_resp;
+			} else {
+				error_code = create_dynamic_reg_node(msg);
+			}
 		}
 
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */
@@ -2906,7 +2912,7 @@ send_resp:
 			 */
 			//resp->tres_list = assoc_mgr_tres_list;
 
-			if (node_reg_stat_msg->dynamic)
+			if (node_reg_stat_msg->dynamic_type)
 				resp->node_name = node_reg_stat_msg->node_name;
 
 			slurm_send_msg(msg, RESPONSE_NODE_REGISTRATION, resp);
@@ -4229,6 +4235,51 @@ static void _slurm_rpc_update_front_end(slurm_msg_t * msg)
 }
 
 /*
+ * _slurm_rpc_create_node - process RPC to create node(s).
+ */
+static void _slurm_rpc_create_node(slurm_msg_t *msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	update_node_msg_t *node_msg = msg->data;
+	char *err_msg = NULL;
+
+	START_TIMER;
+	if (!validate_super_user(msg->auth_uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error("Security violation, DELETE_NODE RPC from uid=%u",
+		      msg->auth_uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		error_code = create_nodes(node_msg->extra, &err_msg);
+		END_TIMER2("_slurm_rpc_create_node");
+	}
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_create_node for %s: %s",
+		     node_msg->node_names,
+		     slurm_strerror(error_code));
+		if (err_msg)
+			slurm_send_rc_err_msg(msg, error_code, err_msg);
+		else
+			slurm_send_rc_msg(msg, error_code);
+	} else {
+		debug2("_slurm_rpc_create_node complete for %s %s",
+		       node_msg->node_names, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
+	xfree(err_msg);
+
+	/* Below functions provide their own locks */
+	schedule_node_save();
+	validate_all_reservations(false);
+	queue_job_scheduler();
+	trigger_reconfig();
+}
+
+/*
  * _slurm_rpc_update_node - process RPC to update the configuration of a
  *	node (e.g. UP/DOWN)
  */
@@ -4268,6 +4319,51 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 		       update_node_msg_ptr->node_names, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
+
+	/* Below functions provide their own locks */
+	schedule_node_save();
+	validate_all_reservations(false);
+	queue_job_scheduler();
+	trigger_reconfig();
+}
+
+/*
+ * _slurm_rpc_delete_node - process RPC to delete node.
+ */
+static void _slurm_rpc_delete_node(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	update_node_msg_t *node_msg = msg->data;
+	char *err_msg = NULL;
+	DEF_TIMERS;
+
+	START_TIMER;
+	if (!validate_super_user(msg->auth_uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error("Security violation, DELETE_NODE RPC from uid=%u",
+		      msg->auth_uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		error_code = delete_nodes(node_msg->node_names, &err_msg);
+		END_TIMER2("_slurm_rpc_delete_node");
+	}
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_delete_node for %s: %s",
+		     node_msg->node_names,
+		     slurm_strerror(error_code));
+		if (err_msg)
+			slurm_send_rc_err_msg(msg, error_code, err_msg);
+		else
+			slurm_send_rc_msg(msg, error_code);
+	} else {
+		debug2("_slurm_rpc_delete_node complete for %s %s",
+		       node_msg->node_names, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	}
+	xfree(err_msg);
 
 	/* Below functions provide their own locks */
 	schedule_node_save();
@@ -5295,9 +5391,8 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	}
 
 	lock_slurmctld(node_write_lock);
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
-		if (!bit_test(bitmap, i))
+	for (i = 0; (node_ptr = next_node(&i));) {
+		if (!bit_test(bitmap, node_ptr->index))
 			continue;
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_REBOOT_REQUESTED(node_ptr) ||
@@ -5305,7 +5400,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		    (IS_NODE_CLOUD(node_ptr) &&
 		     (IS_NODE_POWERED_DOWN(node_ptr) ||
 		      IS_NODE_POWERING_DOWN(node_ptr)))) {
-			bit_clear(bitmap, i);
+			bit_clear(bitmap, node_ptr->index);
 			continue;
 		}
 		node_ptr->node_state |= NODE_STATE_REBOOT_REQUESTED;
@@ -5313,7 +5408,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		if (reboot_msg) {
 			node_ptr->next_state = reboot_msg->next_state;
 			if (node_ptr->next_state == NODE_RESUME)
-				bit_set(rs_node_bitmap, i);
+				bit_set(rs_node_bitmap, node_ptr->index);
 
 			if (reboot_msg->reason) {
 				xfree(node_ptr->reason);
@@ -5329,7 +5424,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 						NODE_STATE_UNDRAIN;
 
 				node_ptr->node_state |= NODE_STATE_DRAIN;
-				bit_clear(avail_node_bitmap, i);
+				bit_clear(avail_node_bitmap, node_ptr->index);
 
 				if (node_ptr->reason == NULL) {
 					node_ptr->reason =
@@ -6343,8 +6438,14 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.msg_type = REQUEST_UPDATE_JOB,
 		.func = _slurm_rpc_update_job,
 	},{
+		.msg_type = REQUEST_CREATE_NODE,
+		.func = _slurm_rpc_create_node,
+	},{
 		.msg_type = REQUEST_UPDATE_NODE,
 		.func = _slurm_rpc_update_node,
+	},{
+		.msg_type = REQUEST_DELETE_NODE,
+		.func = _slurm_rpc_delete_node,
 	},{
 		.msg_type = REQUEST_CREATE_PARTITION,
 		.func = _slurm_rpc_update_partition,
