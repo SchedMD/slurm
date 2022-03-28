@@ -1344,12 +1344,12 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 				     nn, topology[nn].nid);
 			}
 			fatal("Node %s(%d) isn't found in the ALPS system topoloogy table",
-			      node_ptr->name, nodeinfo->nid);
+			      node_rec->name, nodeinfo->nid);
 		} else if (!found) {
 			end_nn = last_nn;
 			last_nn = 0;
 			debug2("starting again looking for %s(%u)",
-			       node_ptr->name, nodeinfo->nid);
+			       node_rec->name, nodeinfo->nid);
 			goto start_again;
 		}
 #else
