@@ -1387,7 +1387,7 @@ static void _print_gres(void)
 static void
 _process_cmdline(int ac, char **av)
 {
-	static char *opt_string = "bcCd:Df:F::GhL:Mn:N:svVZ::";
+	static char *opt_string = "bcCd:Df:F::GhL:Mn:N:svVZ";
 	int c;
 	char *tmp_char;
 
@@ -1471,7 +1471,6 @@ _process_cmdline(int ac, char **av)
 			break;
 		case 'Z':
 			conf->dynamic_type = DYN_NODE_NORM;
-			conf->dynamic_feature = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONF:
 			conf->dynamic_conf = xstrdup(optarg);
@@ -2217,7 +2216,7 @@ Usage: %s [OPTIONS]\n\
    -s                         Change working directory to SlurmdLogFile/SlurmdSpoolDir.\n\
    -v                         Verbose mode. Multiple -v's increase verbosity.\n\
    -V                         Print version information and exit.\n\
-   -Z[feature]                Start as Dynamic Normal node w/optional Feature.\n",
+   -Z                         Start as Dynamic Normal node.\n",
 		conf->prog);
 	return;
 }
