@@ -1067,7 +1067,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			char *node_name, bool old_job, uint32_t plugin_id,
 			bool resize)
 {
-	int i, j, len, sz1, sz2;
+	int i, j, len, sz1, sz2, last_node;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	uint64_t gres_cnt = 0, k;
@@ -1271,6 +1271,9 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	 * However, a job isn't destroyed when it is resized. So we need to
 	 * remove this node's GRES from the job's GRES bitmaps.
 	 */
+
+	last_node = job_gres_ptr->node_cnt - 1;
+
 	if (job_gres_ptr->gres_cnt_node_alloc) {
 		/*
 		 * This GRES is no longer part of the job, remove it from the
@@ -1281,13 +1284,13 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			return ESLURM_UNSUPPORTED_GRES;
 		job_gres_ptr->total_gres -=
 			job_gres_ptr->gres_cnt_node_alloc[node_offset];
-		job_gres_ptr->gres_cnt_node_alloc[node_offset] = 0;
-
 		/* Shift job GRES counts down, if necessary */
 		for (int i = node_offset + 1; i < job_gres_ptr->node_cnt; i++) {
 			job_gres_ptr->gres_cnt_node_alloc[i - 1] =
 				job_gres_ptr->gres_cnt_node_alloc[i];
 		}
+		/* Zero this out since we are reducing the node count */
+		job_gres_ptr->gres_cnt_node_alloc[last_node] = 0;
 	}
 	/* Downsize job GRES for this node */
 	if (job_gres_ptr->gres_bit_alloc &&
@@ -1300,6 +1303,8 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			job_gres_ptr->gres_bit_alloc[i - 1] =
 				job_gres_ptr->gres_bit_alloc[i];
 		}
+		/* NULL the last node since we are reducing the node count. */
+		job_gres_ptr->gres_bit_alloc[last_node] = NULL;
 	}
 
 	/* Downsize job step GRES for this node */
@@ -1313,17 +1318,18 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			job_gres_ptr->gres_bit_step_alloc[i - 1] =
 				job_gres_ptr->gres_bit_step_alloc[i];
 		}
+		/* NULL the last node since we are reducing the node count. */
+		job_gres_ptr->gres_bit_step_alloc[last_node] = NULL;
 	}
 	if (job_gres_ptr->gres_cnt_step_alloc &&
 	    job_gres_ptr->gres_cnt_step_alloc[node_offset]) {
-		/* Clear step GRES count and subtract from total */
-		job_gres_ptr->gres_cnt_step_alloc[node_offset] = 0;
-
 		/* Shift step GRES counts down, if necessary */
 		for (int i = node_offset + 1; i < job_gres_ptr->node_cnt; i++) {
 			job_gres_ptr->gres_cnt_step_alloc[i - 1] =
 				job_gres_ptr->gres_cnt_step_alloc[i];
 		}
+		/* Zero this out since we are reducing the node count */
+		job_gres_ptr->gres_cnt_step_alloc[last_node] = 0;
 	}
 
 	/* Finally, reduce the node count, since this node is deallocated */
