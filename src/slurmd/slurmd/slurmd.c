@@ -2201,7 +2201,7 @@ Usage: %s [OPTIONS]\n\
    -b                         Report node reboot now.\n\
    -c                         Force cleanup of slurmd shared memory.\n\
    -C                         Print node configuration information and exit.\n\
-   --conf                     Dynamic node configuration.\n\
+   --conf                     Dynamic node configuration, works with -Z.\n\
    --conf-server host[:port]  Get configs from slurmctld at `host[:port]`.\n\
    -d stepd                   Pathname to the slurmstepd program.\n\
    -D                         Run daemon in foreground.\n\
