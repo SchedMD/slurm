@@ -387,7 +387,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_PREFER,
 	  "Invalid preferred feature specification"		},
 	{ ESLURM_INSUFFICIENT_GRES,
-	  "Insufficient GRES available for allocation"		},
+	  "Insufficient GRES available in allocation"		},
 
 	/* SPANK errors */
 	{ ESPANK_ERROR,
