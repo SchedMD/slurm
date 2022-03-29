@@ -68,14 +68,13 @@ static void _mpir_cleanup(void);
 static void _mpir_dump_proctable(void);
 static void _pty_restore(void);
 static void print_layout_info(slurm_step_layout_t *layout);
-static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
+static slurm_cred_t *_generate_fake_cred(slurm_step_id_t stepid,
 					uid_t uid, char *nodelist,
 					uint32_t node_cnt);
 static uint32_t _nodeid_from_layout(slurm_step_layout_t *layout,
 				    uint32_t taskid);
 static void _set_exit_code(void);
-static int _attach_to_tasks(uint32_t jobid,
-			    uint32_t stepid,
+static int _attach_to_tasks(slurm_step_id_t stepid,
 			    slurm_step_layout_t *layout,
 			    slurm_cred_t *fake_cred,
 			    uint16_t num_resp_ports,
@@ -175,7 +174,7 @@ int sattach(int argc, char **argv)
 		hosts = layout->front_end;
 	else
 		hosts = layout->node_list;
-	fake_cred = _generate_fake_cred(jobid, stepid,
+	fake_cred = _generate_fake_cred(opt.selected_step->step_id,
 					opt.uid, hosts, layout->node_cnt);
 	mts = _msg_thr_create(layout->node_cnt, layout->task_cnt);
 
@@ -199,7 +198,7 @@ int sattach(int argc, char **argv)
 		xsignal_block(pty_sigarray);
 	}
 
-	_attach_to_tasks(jobid, stepid, layout, fake_cred,
+	_attach_to_tasks(opt.selected_step->step_id, layout, fake_cred,
 			 mts->num_resp_port, mts->resp_port,
 			 io->num_listen, io->listenport,
 			 mts->tasks_started);
@@ -282,16 +281,16 @@ static void print_layout_info(slurm_step_layout_t *layout)
 
 
 /* return a faked job credential */
-static slurm_cred_t *_generate_fake_cred(uint32_t jobid, uint32_t stepid,
+static slurm_cred_t *_generate_fake_cred(slurm_step_id_t stepid,
 					uid_t uid, char *nodelist,
 					uint32_t node_cnt)
 {
 	slurm_cred_t *cred;
 	slurm_cred_arg_t *arg = xmalloc(sizeof(*arg));
 
-	arg->step_id.job_id = jobid;
-	arg->step_id.step_id = stepid;
-	arg->step_id.step_het_comp = NO_VAL;
+	arg->step_id.job_id = stepid.job_id;
+	arg->step_id.step_id = stepid.step_id;
+	arg->step_id.step_het_comp = stepid.step_het_comp;
 	arg->uid = uid;
 
 	arg->job_hostlist = nodelist;
@@ -383,8 +382,7 @@ void _handle_response_msg_list(List other_nodes_resp, bitstr_t *tasks_started)
  * A bit is set in tasks_started for each task for which we receive a
  * reattach response message stating that the task is still running.
  */
-static int _attach_to_tasks(uint32_t jobid,
-			    uint32_t stepid,
+static int _attach_to_tasks(slurm_step_id_t stepid,
 			    slurm_step_layout_t *layout,
 			    slurm_cred_t *fake_cred,
 			    uint16_t num_resp_ports,
@@ -401,9 +399,7 @@ static int _attach_to_tasks(uint32_t jobid,
 
 	slurm_msg_t_init(&msg);
 
-	reattach_msg.step_id.job_id = jobid;
-	reattach_msg.step_id.step_id = stepid;
-	reattach_msg.step_id.step_het_comp = NO_VAL;
+	reattach_msg.step_id = stepid;
 	reattach_msg.num_resp_port = num_resp_ports;
 	reattach_msg.resp_port = resp_ports; /* array of response ports */
 	reattach_msg.num_io_port = num_io_ports;
