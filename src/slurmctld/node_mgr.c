@@ -1722,7 +1722,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 						(~NODE_STATE_REBOOT_REQUESTED);
 					node_ptr->node_state &=
 						(~NODE_STATE_REBOOT_ISSUED);
-					node_ptr->boot_req_time = 0;
 					xfree(node_ptr->reason);
 
 					info("Canceling REBOOT on node %s",

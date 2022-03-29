@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
  -- Ignore node registrations while node is powering down.
  -- Don't reboot any node that is power<ing|ed> down.
  -- Don't allow a node to reboot if it's marked for power down.
+ -- Fix issuing reboot and downing when rebooting a powering up node.
 
 * Changes in Slurm 21.08.6
 ==========================
