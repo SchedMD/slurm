@@ -4893,9 +4893,12 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 	auth_username = uid_to_string_or_null(msg->auth_uid);
 
 	if (request_msg->username) {
-		if (validate_slurm_user(msg->auth_uid))
+		if (validate_slurm_user(msg->auth_uid)) {
 			username = request_msg->username;
-		else {
+		} else if (!xstrcmp(request_msg->username, auth_username)) {
+			/* user explicitly provided their own username */
+			username = request_msg->username;
+		} else {
 			error("%s: attempt to retrieve a token for a different user by UID=%u",
 			      __func__, msg->auth_uid);
 			xfree(auth_username);
