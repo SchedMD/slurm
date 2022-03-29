@@ -564,6 +564,7 @@ static void _do_power_work(time_t now)
 			 */
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
+			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 			bit_set(power_node_bitmap, i);
