@@ -181,7 +181,7 @@ static int _feature_set_state(const plugin_feature_t *feature)
 
 static List _feature_get_state(const plugin_feature_t *feature)
 {
-	char *tmp, *kv;
+	char *tmp, *saveptr;
 	char *output = NULL;
 	int rc = 0;
 	List result = list_create(xfree_ptr);
@@ -197,12 +197,9 @@ static List _feature_get_state(const plugin_feature_t *feature)
 		goto cleanup;
 	}
 
-	tmp = output;
-	while ((kv = strsep(&tmp, "\n"))) {
-		if (kv[0] == '\0')
-			break;
-
-		list_append(result, xstrdup(kv));
+	for (tmp = strtok_r(output, "\n", &saveptr); tmp;
+	     tmp = strtok_r(NULL, "\n", &saveptr)) {
+		list_append(result, xstrdup(tmp));
 	}
 
 cleanup:
@@ -235,10 +232,10 @@ static int _exclusive_register(const char *listp)
 {
 	List data_list = list_create(xfree_ptr);
 	char *input = xstrdup(listp);
-	char *tmp = input;
-	char *entry;
+	char *entry, *saveptr;
 
-	while ((entry = strsep(&tmp, ","))) {
+	for (entry = strtok_r(input, ",", &saveptr); entry;
+	     entry = strtok_r(NULL, ",", &saveptr)) {
 		if (list_find_first(data_list, _cmp_str, entry)) {
 			error("Feature \"%s\" already in exclusive list",
 			      entry);
@@ -498,18 +495,17 @@ extern int node_features_p_job_valid(char *job_features)
 
 extern int node_features_p_node_set(char *active_features)
 {
-	char *kv, *tmp;
+	char *tmp, *saveptr;
 	char *input = NULL;
 	const plugin_feature_t *feature = NULL;
 	int rc = SLURM_ERROR;
 
 	input = xstrdup(active_features);
-	tmp = input;
-	while ((kv = strsep(&tmp, ","))) {
-
-		feature = list_find_first(helper_features, _cmp_features, kv);
+	for (tmp = strtok_r(input, ",", &saveptr); tmp;
+	     tmp = strtok_r(NULL, ",", &saveptr)) {
+		feature = list_find_first(helper_features, _cmp_features, tmp);
 		if (!feature) {
-			info("skipping unregistered feature \"%s\"", kv);
+			info("skipping unregistered feature \"%s\"", tmp);
 			continue;
 		}
 
@@ -616,8 +612,8 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
 	List features = NULL;
 	char *feature = NULL;
 	char *input = NULL;
-	char *tmp = NULL;
 	char *merged = NULL;
+	char *saveptr = NULL;
 
 	log_flag(NODE_FEATURES, "new_features: %s", new_features);
 	log_flag(NODE_FEATURES, "orig_features: %s", orig_features);
@@ -634,14 +630,15 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
 
 	/* Add all features in "new_features" */
 	input = xstrdup(new_features);
-	tmp = input;
-	while ((feature = strsep(&tmp, ",")))
+	for (feature = strtok_r(input, ",", &saveptr); feature;
+	     feature = strtok_r(NULL, ",", &saveptr)) {
 		list_append(features, xstrdup(feature));
+	}
 	xfree(input);
 
 	input = xstrdup(orig_features);
-	tmp = input;
-	while ((feature = strsep(&tmp, ","))) {
+	for (feature = strtok_r(input, ",", &saveptr); feature;
+	     feature = strtok_r(NULL, ",", &saveptr)) {
 		/* orig_features - plugin_changeable_features */
 		if (node_features_p_changeable_feature(feature))
 			continue;
