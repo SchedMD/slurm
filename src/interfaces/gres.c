@@ -9973,34 +9973,24 @@ extern uint32_t gres_get_autodetect_flags(void)
 
 extern void gres_clear_tres_cnt(uint64_t *tres_cnt, bool locked)
 {
-	static bool first_run = 1;
-	static slurmdb_tres_rec_t tres_rec;
-	int tres_pos;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
-	/* we only need to init this once */
-	if (first_run) {
-		first_run = 0;
-		memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
-		tres_rec.type = "gres";
-	}
+	/*
+	 * If gres_context_lock is ever locked/unlocked here, it should happen
+	 * in between assoc_mgr_lock() and before assoc_mgr_unlock().
+	 */
 
-	/* must be locked first before gres_contrex_lock!!! */
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
-	slurm_mutex_lock(&gres_context_lock);
 	/* Initialize all GRES counters to zero. Increment them later. */
-	for (int i = 0; i < gres_context_cnt; i++) {
-		tres_rec.name =	gres_context[i].gres_name;
-		if (tres_rec.name &&
-		    ((tres_pos = assoc_mgr_find_tres_pos(
-			      &tres_rec, true)) !=-1))
-			tres_cnt[tres_pos] = 0;
+	for (int i = 0; i < g_tres_count; ++i) {
+		/* Skip all non-GRES TRES */
+		if (xstrcasecmp(assoc_mgr_tres_array[i]->type, "gres"))
+			continue;
+		tres_cnt[i] = 0;
 	}
-	slurm_mutex_unlock(&gres_context_lock);
 
-	/* must be locked first before gres_contrex_lock!!! */
 	if (!locked)
 		assoc_mgr_unlock(&locks);
 }
