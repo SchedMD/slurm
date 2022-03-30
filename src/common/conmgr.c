@@ -49,7 +49,9 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/conmgr.h"
 #include "src/common/fd.h"
+#include "src/common/http.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
 #include "src/common/pack.h"
@@ -61,9 +63,6 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "src/slurmrestd/conmgr.h"
-#include "src/slurmrestd/http.h"
 
 #define MAGIC_CON_MGR_FD 0xD23444EF
 #define MAGIC_CON_MGR 0xD232444A

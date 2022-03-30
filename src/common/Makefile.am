@@ -20,6 +20,8 @@ libcommon_la_SOURCES =				\
 	cgroup.h				\
 	cli_filter.c				\
 	cli_filter.h				\
+	conmgr.c				\
+	conmgr.h				\
 	cpu_frequency.c				\
 	cpu_frequency.h				\
 	cron.c					\

@@ -8,7 +8,6 @@ CLEANFILES = core.* *.bino
 REF = usage.txt
 
 SRCS = \
-	conmgr.h conmgr.c \
 	http.c http.h \
 	operations.c operations.h \
 	slurmrestd.c \

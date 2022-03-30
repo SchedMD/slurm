@@ -156,13 +156,13 @@ am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
-	cbuf.lo cgroup.lo cli_filter.lo cpu_frequency.lo cron.lo \
-	daemonize.lo data.lo eio.lo env.lo fd.lo fetch_config.lo \
-	forward.lo gpu.lo global_defaults.lo gres.lo group_cache.lo \
-	hash.lo half_duplex.lo hostlist.lo http.lo io_hdr.lo \
-	job_options.lo job_resources.lo list.lo log.lo net.lo \
-	node_conf.lo node_features.lo openapi.lo optz.lo pack.lo \
-	parse_config.lo parse_time.lo parse_value.lo plugin.lo \
+	cbuf.lo cgroup.lo cli_filter.lo conmgr.lo cpu_frequency.lo \
+	cron.lo daemonize.lo data.lo eio.lo env.lo fd.lo \
+	fetch_config.lo forward.lo gpu.lo global_defaults.lo gres.lo \
+	group_cache.lo hash.lo half_duplex.lo hostlist.lo http.lo \
+	io_hdr.lo job_options.lo job_resources.lo list.lo log.lo \
+	net.lo node_conf.lo node_features.lo openapi.lo optz.lo \
+	pack.lo parse_config.lo parse_time.lo parse_value.lo plugin.lo \
 	plugrack.lo plugstack.lo power.lo prep.lo print_fields.lo \
 	proc_args.lo read_config.lo reverse_tree.lo run_command.lo \
 	run_in_daemon.lo select.lo setproctitle.lo site_factor.lo \
@@ -213,17 +213,18 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/bitstring.Plo ./$(DEPDIR)/callerid.Plo \
 	./$(DEPDIR)/cbuf.Plo ./$(DEPDIR)/cgroup.Plo \
-	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/cpu_frequency.Plo \
-	./$(DEPDIR)/cron.Plo ./$(DEPDIR)/daemonize.Plo \
-	./$(DEPDIR)/data.Plo ./$(DEPDIR)/eio.Plo ./$(DEPDIR)/env.Plo \
-	./$(DEPDIR)/fd.Plo ./$(DEPDIR)/fetch_config.Plo \
-	./$(DEPDIR)/forward.Plo ./$(DEPDIR)/global_defaults.Plo \
-	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo \
-	./$(DEPDIR)/group_cache.Plo ./$(DEPDIR)/half_duplex.Plo \
-	./$(DEPDIR)/hash.Plo ./$(DEPDIR)/hostlist.Plo \
-	./$(DEPDIR)/http.Plo ./$(DEPDIR)/io_hdr.Plo \
-	./$(DEPDIR)/job_options.Plo ./$(DEPDIR)/job_resources.Plo \
-	./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
+	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/conmgr.Plo \
+	./$(DEPDIR)/cpu_frequency.Plo ./$(DEPDIR)/cron.Plo \
+	./$(DEPDIR)/daemonize.Plo ./$(DEPDIR)/data.Plo \
+	./$(DEPDIR)/eio.Plo ./$(DEPDIR)/env.Plo ./$(DEPDIR)/fd.Plo \
+	./$(DEPDIR)/fetch_config.Plo ./$(DEPDIR)/forward.Plo \
+	./$(DEPDIR)/global_defaults.Plo ./$(DEPDIR)/gpu.Plo \
+	./$(DEPDIR)/gres.Plo ./$(DEPDIR)/group_cache.Plo \
+	./$(DEPDIR)/half_duplex.Plo ./$(DEPDIR)/hash.Plo \
+	./$(DEPDIR)/hostlist.Plo ./$(DEPDIR)/http.Plo \
+	./$(DEPDIR)/io_hdr.Plo ./$(DEPDIR)/job_options.Plo \
+	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/list.Plo \
+	./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
 	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/node_features.Plo \
 	./$(DEPDIR)/openapi.Plo ./$(DEPDIR)/optz.Plo \
 	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/parse_config.Plo \
@@ -588,6 +589,8 @@ libcommon_la_SOURCES = \
 	cgroup.h				\
 	cli_filter.c				\
 	cli_filter.h				\
+	conmgr.c				\
+	conmgr.h				\
 	cpu_frequency.c				\
 	cpu_frequency.h				\
 	cron.c					\
@@ -865,6 +868,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbuf.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cgroup.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli_filter.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conmgr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu_frequency.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cron.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/daemonize.Plo@am__quote@ # am--include-marker
@@ -1095,6 +1099,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cbuf.Plo
 	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
+	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/cpu_frequency.Plo
 	-rm -f ./$(DEPDIR)/cron.Plo
 	-rm -f ./$(DEPDIR)/daemonize.Plo
@@ -1245,6 +1250,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cbuf.Plo
 	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
+	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/cpu_frequency.Plo
 	-rm -f ./$(DEPDIR)/cron.Plo
 	-rm -f ./$(DEPDIR)/daemonize.Plo

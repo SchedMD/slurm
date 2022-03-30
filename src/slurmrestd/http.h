@@ -40,9 +40,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "src/common/list.h"
+#include "src/common/conmgr.h"
 #include "src/common/http.h"
-#include "src/slurmrestd/conmgr.h"
+#include "src/common/list.h"
 
 struct on_http_request_args_s;
 typedef struct on_http_request_args_s on_http_request_args_t;

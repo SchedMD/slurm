@@ -44,6 +44,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/http.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -300,4 +301,16 @@ extern http_request_method_t get_http_method(const char *str)
 	if (!xstrcasecmp(str, "trace"))
 		return HTTP_REQUEST_TRACE;
 	return HTTP_REQUEST_INVALID;
+}
+
+/* parse according to rfc8820 & rfc3986 */
+extern parsed_host_port_t *parse_host_port(const char *str)
+{
+	fatal_abort("code stub");
+	return NULL;
+}
+
+extern void free_parse_host_port(parsed_host_port_t *parsed)
+{
+	fatal_abort("code stub");
 }

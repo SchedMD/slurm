@@ -51,6 +51,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/conmgr.h"
 #include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -66,7 +67,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/conmgr.h"
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
