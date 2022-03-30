@@ -5813,7 +5813,7 @@ static int _merge_generic_data(
  * IN/OUT cpus_per_task - requested cpus_per_task count, may be reset to
  *		      provide consistent gres_per_task/cpus_per_gres values
  * IN/OUT ntasks_per_tres - requested ntasks_per_tres count
- * OUT gres_list - List of GRES records for this job to track usage
+ * IN/OUT gres_list - List of GRES records for this job to track usage
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
 extern int gres_job_state_validate(char *cpus_per_tres,
