@@ -171,6 +171,7 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	slurmdb_free_slurmdb_stats_members(stats);
 	memset(stats, 0, sizeof(slurmdb_stats_t));
 	return SLURM_ERROR;
 }
