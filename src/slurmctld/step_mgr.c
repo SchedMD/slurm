@@ -2083,13 +2083,15 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		goto cleanup;
 
 	/* select idle cores that fit any gres binding second */
-	if (_handle_core_select(step_ptr, job_resrcs_ptr,
+	if (!bit_equal(all_gres_core_bitmap, any_gres_core_bitmap) &&
+	    _handle_core_select(step_ptr, job_resrcs_ptr,
 				any_gres_core_bitmap, job_node_inx,
 				sockets, cores, use_all_cores, false, &cpu_cnt))
 		goto cleanup;
 
 	/* select any idle cores */
-	if (_handle_core_select(step_ptr, job_resrcs_ptr,
+	if (!bit_equal(any_gres_core_bitmap, job_resrcs_ptr->core_bitmap) &&
+	    _handle_core_select(step_ptr, job_resrcs_ptr,
 				job_resrcs_ptr->core_bitmap, job_node_inx,
 				sockets, cores, use_all_cores, false, &cpu_cnt))
 		goto cleanup;
@@ -2122,13 +2124,15 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		goto cleanup;
 
 	/* oversubscribe cores that fit any gres binding second */
-	if (_handle_core_select(step_ptr, job_resrcs_ptr,
+	if (!bit_equal(all_gres_core_bitmap, any_gres_core_bitmap) &&
+	    _handle_core_select(step_ptr, job_resrcs_ptr,
 				any_gres_core_bitmap, job_node_inx,
 				sockets, cores, use_all_cores, true, &cpu_cnt))
 		goto cleanup;
 
 	/* oversubscribe any cores */
-	if (_handle_core_select(step_ptr, job_resrcs_ptr,
+	if (!bit_equal(any_gres_core_bitmap, job_resrcs_ptr->core_bitmap) &&
+	    _handle_core_select(step_ptr, job_resrcs_ptr,
 				job_resrcs_ptr->core_bitmap, job_node_inx,
 				sockets, cores, use_all_cores, true, &cpu_cnt))
 		goto cleanup;
