@@ -1949,26 +1949,6 @@ static uint64_t _step_get_gres_needed(gres_step_state_t *gres_ss,
 	return gres_needed;
 }
 
-static uint64_t _step_get_gres_avail(gres_state_t *gres_state_job,
-				     int node_offset, bool decr_job_alloc)
-{
-	gres_job_state_t *gres_js = gres_state_job->gres_data;
-	uint64_t gres_avail;
-
-	if (gres_js->gres_cnt_node_alloc)
-		gres_avail = gres_js->gres_cnt_node_alloc[node_offset];
-	else {
-		error("gres/%s: %s gres_cnt_node_alloc is not allocated",
-		      gres_state_job->gres_name, __func__);
-		return SLURM_ERROR;
-	}
-
-	if ((gres_avail != NO_CONSUME_VAL64) && decr_job_alloc)
-		gres_avail -= gres_js->gres_cnt_step_alloc[node_offset];
-
-	return gres_avail;
-}
-
 static int _step_alloc(gres_step_state_t *gres_ss,
 		       gres_state_t *gres_state_step_req,
 		       gres_state_t *gres_state_job,
@@ -1988,7 +1968,13 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 	xassert(gres_ss);
 	xassert(gres_ss_req);
 
-	if (gres_js->total_gres == NO_CONSUME_VAL64) {
+	if (!gres_js->gres_cnt_node_alloc) {
+		error("gres/%s: %s gres_cnt_node_alloc is not allocated",
+		      gres_state_job->gres_name, __func__);
+		return SLURM_ERROR;
+	}
+	if ((gres_js->gres_cnt_node_alloc[node_offset] == NO_CONSUME_VAL64) ||
+	    (gres_js->total_gres == NO_CONSUME_VAL64)) {
 		if (*gres_needed != INFINITE64)
 			*gres_needed = 0;
 		gres_ss->total_gres = NO_CONSUME_VAL64;
@@ -2014,14 +2000,12 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 			gres_js->node_cnt, sizeof(uint64_t));
 	}
 
-	gres_alloc = _step_get_gres_avail(gres_state_job, node_offset,
-					  decr_job_alloc);
-	if (gres_alloc == NO_CONSUME_VAL64) {
-		if (*gres_needed != INFINITE64)
-			*gres_needed = 0;
-		gres_ss->total_gres = NO_CONSUME_VAL64;
-		return SLURM_SUCCESS;
-	} else if (*gres_needed != INFINITE64) {
+	gres_alloc = gres_js->gres_cnt_node_alloc[node_offset];
+
+	if (decr_job_alloc)
+		gres_alloc -= gres_js->gres_cnt_step_alloc[node_offset];
+
+	if (*gres_needed != INFINITE64) {
 		if (*max_gres && decr_job_alloc) {
 			gres_alloc = MIN(gres_alloc, *max_gres);
 			*max_gres -= gres_alloc;
