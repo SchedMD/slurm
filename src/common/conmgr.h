@@ -64,9 +64,10 @@ typedef struct {
 	 * Call back for new connection for setup
 	 *
 	 * IN fd file descriptor of new connection
-	 * RET arg ptr to hand to
+	 * IN arg - arg ptr handed to fd processing functions
+	 * RET arg ptr to hand to events
 	 */
-	void *(*on_connection)(con_mgr_fd_t *con);
+	void *(*on_connection)(con_mgr_fd_t *con, void *arg);
 
 	/*
 	 * Call back when there is data ready in "in" buffer
@@ -118,6 +119,8 @@ struct con_mgr_fd_s {
 	/* input and output may be a different fd to inet mode */
 	int input_fd;
 	int output_fd;
+	/* arg handed to on_connection */
+	void *new_arg;
 	/* arg returned from on_connection */
 	void *arg;
 	/* name of connection for logging */
@@ -238,11 +241,13 @@ extern void free_con_mgr(con_mgr_t *mgr);
  * IN events call backs on events of fd
  * IN addr socket address (if known or NULL) (will always xfree())
  * IN addrlen sizeof addr or 0 if addr is NULL
+ * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
 			      const con_mgr_events_t events,
-			      const slurm_addr_t *addr, socklen_t addrlen);
+			      const slurm_addr_t *addr, socklen_t addrlen,
+			      void *arg);
 
 /*
  * instruct connection manager to listen to fd (async)
@@ -251,12 +256,13 @@ extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
  * IN events call backs on events of fd
  * IN addr socket listen address (will not xfree())
  * IN addrlen sizeof addr or 0 if addr is NULL
+ * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
 				     const con_mgr_events_t events,
 				     const slurm_addr_t *addr,
-				     socklen_t addrlen);
+				     socklen_t addrlen, void *arg);
 
 /*
  * instruct connection manager to listen to unix socket fd (async)
@@ -266,12 +272,14 @@ extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
  * IN addr socket listen address (will not xfree())
  * IN addrlen sizeof addr or 0 if addr is NULL
  * IN path path to unix socket on filesystem
+ * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr, int fd,
 					  const con_mgr_events_t events,
 					  const slurm_addr_t *addr,
-					  socklen_t addrlen, const char *path);
+					  socklen_t addrlen, const char *path,
+					  void *arg);
 
 /*
  * Write binary data to connection (from callback).
@@ -299,10 +307,11 @@ extern void con_mgr_queue_close_fd(con_mgr_fd_t *con);
  * IN  hostports list_t* of cstrings to listen on.
  *	format: host:port
  * IN events function callback on events
+ * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
 extern int con_mgr_create_sockets(con_mgr_t *mgr, list_t *hostports,
-				  con_mgr_events_t events);
+				  con_mgr_events_t events, void *arg);
 
 /*
  * Run connection manager main loop for until all processing is done

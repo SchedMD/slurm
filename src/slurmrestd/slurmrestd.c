@@ -348,8 +348,9 @@ static void _lock_down(void)
 }
 
 /* simple wrapper to hand over operations router in http context */
-static void *_setup_http_context(con_mgr_fd_t *con)
+static void *_setup_http_context(con_mgr_fd_t *con, void *arg)
 {
+	xassert(operations_router == arg);
 	return setup_http_context(con, operations_router);
 }
 
@@ -512,7 +513,7 @@ int main(int argc, char **argv)
 	if (!run_mode.listen) {
 		if ((rc = con_mgr_process_fd(conmgr, STDIN_FILENO,
 					     STDOUT_FILENO, conmgr_events, NULL,
-					     0)))
+					     0, operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
@@ -522,7 +523,7 @@ int main(int argc, char **argv)
 		mode_t mask = umask(0);
 
 		if (con_mgr_create_sockets(conmgr, socket_listen,
-					   conmgr_events))
+					   conmgr_events, operations_router))
 			fatal("Unable to create sockets");
 
 		umask(mask);

@@ -417,7 +417,7 @@ static con_mgr_fd_t *_add_connection(con_mgr_t *mgr, con_mgr_fd_t *source,
 				     const con_mgr_events_t events,
 				     const slurm_addr_t *addr,
 				     socklen_t addrlen, bool is_listen,
-				     const char *unix_socket_path)
+				     const char *unix_socket_path, void *arg)
 {
 	struct stat fbuf = { 0 };
 	con_mgr_fd_t *con = NULL;
@@ -450,6 +450,7 @@ static con_mgr_fd_t *_add_connection(con_mgr_t *mgr, con_mgr_fd_t *source,
 		.is_listen = is_listen,
 		.mgr = mgr,
 		.work = list_create(NULL),
+		.new_arg = arg,
 	};
 
 	if (!is_listen) {
@@ -887,7 +888,7 @@ static void _wrap_on_connection(void *x)
 	log_flag(NET, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 		 __func__, con->name, (uintptr_t) con->events.on_connection);
 
-	arg = con->events.on_connection(con);
+	arg = con->events.on_connection(con, con->new_arg);
 
 	log_flag(NET, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 		 __func__, con->name, (uintptr_t) con->events.on_connection,
@@ -914,13 +915,13 @@ static int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_fd_t *source,
 					int input_fd, int output_fd,
 					const con_mgr_events_t events,
 					const slurm_addr_t *addr,
-					socklen_t addrlen)
+					socklen_t addrlen, void *arg)
 {
 	con_mgr_fd_t *con;
 	_check_magic_mgr(mgr);
 
 	con = _add_connection(mgr, source, input_fd, output_fd, events, addr,
-			      addrlen, false, NULL);
+			      addrlen, false, NULL, arg);
 
 	if (!con)
 		return SLURM_ERROR;
@@ -935,13 +936,14 @@ static int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_fd_t *source,
 
 extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
 			      const con_mgr_events_t events,
-			      const slurm_addr_t *addr, socklen_t addrlen)
+			      const slurm_addr_t *addr, socklen_t addrlen,
+			      void *arg)
 {
 	con_mgr_fd_t *con;
 	_check_magic_mgr(mgr);
 
 	con = _add_connection(mgr, NULL, input_fd, output_fd, events, addr,
-			      addrlen, false, NULL);
+			      addrlen, false, NULL, arg);
 
 	if (!con)
 		return SLURM_ERROR;
@@ -957,13 +959,13 @@ extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
 extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
 				     const con_mgr_events_t events,
 				     const slurm_addr_t *addr,
-				     socklen_t addrlen)
+				     socklen_t addrlen, void *arg)
 {
 	con_mgr_fd_t *con;
 	_check_magic_mgr(mgr);
 
 	con = _add_connection(mgr, NULL, fd, fd, events, addr, addrlen, true,
-			      NULL);
+			      NULL, arg);
 	if (!con)
 		return SLURM_ERROR;
 
@@ -977,13 +979,14 @@ extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
 extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr, int fd,
 					  const con_mgr_events_t events,
 					  const slurm_addr_t *addr,
-					  socklen_t addrlen, const char *path)
+					  socklen_t addrlen, const char *path,
+					  void *arg)
 {
 	con_mgr_fd_t *con;
 	_check_magic_mgr(mgr);
 
 	con = _add_connection(mgr, NULL, fd, fd, events, addr, addrlen, true,
-			      path);
+			      path, arg);
 	if (!con)
 		return SLURM_ERROR;
 
@@ -1765,7 +1768,7 @@ static void _listen_accept(void *x)
 
 	/* hand over FD for normal processing */
 	if ((rc = _con_mgr_process_fd_internal(mgr, con, fd, fd, con->events,
-					       &addr, addrlen))) {
+					       &addr, addrlen, con->new_arg))) {
 		log_flag(NET, "%s: [fd:%d] _con_mgr_process_fd_internal rejected: %s",
 			 __func__, fd, slurm_strerror(rc));
 		_close_con(false, con);
@@ -1812,6 +1815,7 @@ extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
 typedef struct {
 	con_mgr_events_t events;
 	con_mgr_t *mgr;
+	void *arg;
 } socket_listen_init_t;
 
 static int _create_socket(void *x, void *arg)
@@ -1860,7 +1864,7 @@ static int _create_socket(void *x, void *arg)
 		return con_mgr_process_fd_unix_listen(
 			init->mgr, fd, init->events,
 			(const slurm_addr_t *) &addr, sizeof(addr),
-			unixsock);
+			unixsock, init->arg);
 	} else {
 		/* split up host and port */
 		if (!(parsed_hp = init->mgr->callbacks.parse(hostport)))
@@ -1918,7 +1922,7 @@ static int _create_socket(void *x, void *arg)
 
 		rc = con_mgr_process_fd_listen(init->mgr, fd, init->events,
 			(const slurm_addr_t *) addr->ai_addr,
-			addr->ai_addrlen);
+			addr->ai_addrlen, init->arg);
 	}
 
 	freeaddrinfo(addrlist);
@@ -1928,12 +1932,13 @@ static int _create_socket(void *x, void *arg)
 }
 
 extern int con_mgr_create_sockets(con_mgr_t *mgr, list_t *hostports,
-				  con_mgr_events_t events)
+				  con_mgr_events_t events, void *arg)
 {
 	int rc;
 	socket_listen_init_t *init = xmalloc(sizeof(*init));
 	init->events = events;
 	init->mgr = mgr;
+	init->arg = arg;
 
 	if (list_for_each(hostports, _create_socket, init) > 0)
 		rc = SLURM_SUCCESS;
