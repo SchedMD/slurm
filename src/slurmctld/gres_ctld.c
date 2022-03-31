@@ -2329,8 +2329,14 @@ static int _step_dealloc(gres_state_t *step_gres_ptr, List job_gres_list,
 			xassert(!step_data_ptr->node_in_use);
 			xassert(!step_data_ptr->gres_bit_alloc);
 			return SLURM_SUCCESS;
-		} else if (job_data_ptr->node_cnt < i)
+		} else if (job_data_ptr->node_cnt <= i ) {
+			/*
+			 * gres_find_job_by_key_with_cnt() already does this
+			 * check so we should never get here, but here as a
+			 * sanity check.
+			 */
 			return SLURM_SUCCESS;
+		}
 
 		if (!step_data_ptr->node_in_use) {
 			error("gres/%s: %s %ps dealloc, node_in_use is NULL",
