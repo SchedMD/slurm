@@ -2499,6 +2499,33 @@ extern char *slurm_conf_get_aliased_nodename()
 }
 
 /*
+ * Return NodeAddr (if set) for a given NodeName, or NULL.
+ */
+extern char *slurm_conf_get_address(const char *node_name)
+{
+	int idx;
+	names_ll_t *p;
+	char *address;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
+	idx = _get_hash_idx(node_name);
+	p = node_to_host_hashtbl[idx];
+	while (p && xstrcmp(p->alias, node_name))
+		p = p->next_alias;
+
+	if (!p) {
+		slurm_conf_unlock();
+		return NULL;
+	}
+
+	address = xstrdup(p->address);
+	slurm_conf_unlock();
+	return address;
+}
+
+/*
  * Return BcastAddr (if set) for a given NodeName, or NULL.
  */
 extern char *slurm_conf_get_bcast_address(const char *node_name)

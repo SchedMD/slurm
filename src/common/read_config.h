@@ -466,6 +466,16 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 			      char *node_hostname);
 
 /*
+ * Return NodeAddr (if set) for a given NodeName, or NULL
+ *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char* slurm_conf_get_address(const char *node_name);
+
+/*
  * slurm_conf_get_hostname - Return the NodeHostname for given NodeName
  *
  * Returned string was allocated with xmalloc(), and must be freed by
