@@ -760,6 +760,11 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	char **rest = NULL;
 	char *fullpath;
 
+	static char *prev_mpi = NULL;
+	static int het_comp_number = -1;
+
+	het_comp_number++;
+
 	sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 	bit_set(sropt.het_grp_bits, het_job_offset);
 
@@ -788,6 +793,12 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 
 	command_args = sropt.argc;
 
+	if (!prev_mpi && het_comp_number &&
+	    xstrcmp(sropt.mpi_type, slurm_conf.mpi_default)) {
+		error("--mpi is only supported in the first heterogeneous component");
+		exit(error_exit);
+	}
+	prev_mpi = sropt.mpi_type;
 	if (!xstrcmp(sropt.mpi_type, "list")) {
 		_mpi_print_list();
 		exit(0);
