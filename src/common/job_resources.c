@@ -552,7 +552,7 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 			       uint16_t protocol_version)
 {
 	int i;
-	uint32_t core_cnt = 0, sock_recs = 0;
+	uint32_t sock_recs = 0;
 
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		if (job_resrcs_ptr == NULL) {
@@ -612,9 +612,6 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 		xassert(job_resrcs_ptr->sockets_per_node);
 
 		for (i=0; i < job_resrcs_ptr->nhosts; i++) {
-			core_cnt += job_resrcs_ptr->sockets_per_node[i]
-				* job_resrcs_ptr->cores_per_socket[i] *
-				job_resrcs_ptr->sock_core_rep_count[i];
 			sock_recs += job_resrcs_ptr->
 				     sock_core_rep_count[i];
 			if (sock_recs >= job_resrcs_ptr->nhosts)
@@ -691,9 +688,6 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 		xassert(job_resrcs_ptr->sockets_per_node);
 
 		for (i=0; i < job_resrcs_ptr->nhosts; i++) {
-			core_cnt += job_resrcs_ptr->sockets_per_node[i]
-				* job_resrcs_ptr->cores_per_socket[i] *
-				job_resrcs_ptr->sock_core_rep_count[i];
 			sock_recs += job_resrcs_ptr->
 				     sock_core_rep_count[i];
 			if (sock_recs >= job_resrcs_ptr->nhosts)
@@ -768,9 +762,6 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 		xassert(job_resrcs_ptr->sockets_per_node);
 
 		for (i=0; i < job_resrcs_ptr->nhosts; i++) {
-			core_cnt += job_resrcs_ptr->sockets_per_node[i]
-				* job_resrcs_ptr->cores_per_socket[i] *
-				job_resrcs_ptr->sock_core_rep_count[i];
 			sock_recs += job_resrcs_ptr->
 				     sock_core_rep_count[i];
 			if (sock_recs >= job_resrcs_ptr->nhosts)
