@@ -161,7 +161,6 @@ int print_job_from_format(priority_factors_object_t * job, List list)
 {
 	ListIterator i = list_iterator_create(list);
 	job_format_t *current;
-	int total_width = 0;
 
 	while ((current = list_next(i))) {
 		if (current->
@@ -169,10 +168,6 @@ int print_job_from_format(priority_factors_object_t * job, List list)
 			     current->suffix)
 		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
-		if (current->width)
-			total_width += (current->width + 1);
-		else
-			total_width += 10;
 	}
 	list_iterator_destroy(i);
 
