@@ -263,7 +263,7 @@ static void _list_delete_path_t(void *x)
 	xassert(path->tag != -1);
 	em = path->methods;
 
-	while (em->method) {
+	while (em->entries) {
 		debug5("%s: remove path tag:%d method:%s", __func__, path->tag,
 		       get_http_method_string(em->method));
 
