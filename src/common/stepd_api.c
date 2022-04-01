@@ -43,6 +43,7 @@
 #include <dirent.h>
 #include <grp.h>
 #include <inttypes.h>
+#include <netdb.h>
 #include <regex.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -78,6 +79,8 @@ strong_alias(stepd_getpw, slurm_stepd_getpw);
 strong_alias(xfree_struct_passwd, slurm_xfree_struct_passwd);
 strong_alias(stepd_getgr, slurm_stepd_getgr);
 strong_alias(xfree_struct_group_array, slurm_xfree_struct_group_array);
+strong_alias(stepd_gethostbyname, slurm_stepd_gethostbyname);
+strong_alias(xfree_struct_hostent, slurm_xfree_struct_hostent);
 strong_alias(stepd_get_namespace_fd, slurm_stepd_get_namespace_fd);
 
 /*
@@ -874,6 +877,85 @@ extern void xfree_struct_group_array(struct group **grps)
 		xfree(grps[i]);
 	}
 	xfree(grps);
+}
+
+extern struct hostent *stepd_gethostbyname(int fd, uint16_t protocol_version,
+					   int mode, const char *nodename)
+{
+	int req = REQUEST_GETHOST;
+	int found = 0;
+	int len = 0;
+	int cnt = 0;
+	struct hostent *host = NULL;
+
+	safe_write(fd, &req, sizeof(int));
+
+	safe_write(fd, &mode, sizeof(int));
+
+	if (nodename) {
+		len = strlen(nodename);
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, nodename, len);
+	} else {
+		safe_write(fd, &len, sizeof(int));
+	}
+
+	safe_read(fd, &found, sizeof(int));
+
+	if (!found)
+		return NULL;
+
+	host = xmalloc(sizeof(struct hostent));
+
+	safe_read(fd, &len, sizeof(int));
+	host->h_name = xmalloc(len + 1);
+	safe_read(fd, host->h_name, len);
+
+	safe_read(fd, &cnt, sizeof(int));
+	host->h_aliases = xcalloc(cnt + 1, sizeof(char *));
+	for (int i = 0; i < cnt; i++) {
+		safe_read(fd, &len, sizeof(int));
+		host->h_aliases[i] = xmalloc(len + 1);
+		safe_read(fd, host->h_aliases[i], len);
+	}
+	safe_read(fd, &host->h_addrtype, sizeof(int));
+	safe_read(fd, &len, sizeof(int));
+	host->h_length = len;
+
+	/*
+	 * In the current implementation, we define each host to
+	 * only have a single address.
+	 * (Since h_addr_list is a NULL terminated array, allocate
+	 * space for two elements.)
+	 */
+	host->h_addr_list = xcalloc(2, sizeof(char *));
+	host->h_addr_list[0] = xmalloc(len);
+	safe_read(fd, host->h_addr_list[0], len);
+
+	debug("Leaving %s", __func__);
+	return host;
+
+rwfail:
+	xfree_struct_hostent(host);
+	return NULL;
+
+}
+
+extern void xfree_struct_hostent(struct hostent *host)
+{
+	if (!host)
+		return;
+	xfree(host->h_name);
+	for (int i = 0; host->h_aliases && host->h_aliases[i];
+	     i++) {
+		xfree(host->h_aliases[i]);
+	}
+	xfree(host->h_aliases);
+	if (host->h_addr_list) {
+		xfree(host->h_addr_list[0]);
+		xfree(host->h_addr_list);
+	}
+	xfree(host);
 }
 
 /*

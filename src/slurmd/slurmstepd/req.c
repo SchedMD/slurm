@@ -39,6 +39,7 @@
 
 #define _GNU_SOURCE	/* needed for struct ucred definition */
 
+#include <arpa/inet.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -94,6 +95,7 @@ static int _handle_add_extern_pid(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_x11_display(int fd, stepd_step_rec_t *job);
 static int _handle_getpw(int fd, stepd_step_rec_t *job, pid_t remote_pid);
 static int _handle_getgr(int fd, stepd_step_rec_t *job, pid_t remote_pid);
+static int _handle_gethost(int fd, stepd_step_rec_t *job, pid_t remote_pid);
 static int _handle_daemon_pid(int fd, stepd_step_rec_t *job);
 static int _handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid);
@@ -583,6 +585,10 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, pid_t remote_pid)
 	case REQUEST_GET_NS_FD:
 		debug("Handling REQUEST_GET_NS_FD");
 		rc = _handle_get_ns_fd(fd, job);
+		break;
+	case REQUEST_GETHOST:
+		debug("Handling REQUEST_GETHOST");
+		rc = _handle_gethost(fd, job, remote_pid);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -1423,6 +1429,93 @@ static int _handle_getgr(int fd, stepd_step_rec_t *job, pid_t remote_pid)
 
 rwfail:
 	xfree(name);
+	return SLURM_ERROR;
+}
+
+static int _handle_gethost(int fd, stepd_step_rec_t *job, pid_t remote_pid)
+{
+	int mode = 0;
+	int len = 0;
+	char *nodename = NULL;
+	char *nodename_r = NULL;
+	char *hostname = NULL;
+	bool pid_match;
+	int found = 0;
+	unsigned char address[sizeof(struct in6_addr)];
+	char *address_str = NULL;
+	int af;
+
+	safe_read(fd, &mode, sizeof(int));
+	safe_read(fd, &len, sizeof(int));
+	if (len) {
+		nodename = xmalloc(len + 1); /* add room for NULL */
+		safe_read(fd, nodename, len);
+	}
+
+	pid_match = proctrack_g_has_pid(job->cont_id, remote_pid);
+
+	if (!(mode & GETHOST_NOT_MATCH_PID) && !pid_match)
+		debug("%s: no pid_match", __func__);
+	else if (nodename && (address_str = slurm_conf_get_address(nodename))) {
+		if ((mode & GETHOST_IPV6) &&
+		    (inet_pton(AF_INET6, address_str, &address) == 1)) {
+			found = 1;
+			af = AF_INET6;
+		} else if ((mode & GETHOST_IPV4) &&
+			   (inet_pton(AF_INET, address_str, &address) == 1)) {
+			found = 1;
+			af = AF_INET;
+		}
+		if (found) {
+			if (!(nodename_r = slurm_conf_get_nodename(nodename)) ||
+			    !(hostname = slurm_conf_get_hostname(nodename_r))) {
+				xfree(nodename_r);
+				xfree(hostname);
+				found = 0;
+			}
+		}
+	}
+	xfree(nodename);
+
+	safe_write(fd, &found, sizeof(int));
+
+	if (!found)
+		return SLURM_SUCCESS;
+
+	len = strlen(hostname);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, hostname, len);
+
+	len = 1;
+	safe_write(fd, &len, sizeof(int));
+	len = strlen(nodename_r);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, nodename_r, len);
+
+	safe_write(fd, &af, sizeof(int));
+
+	if (af == AF_INET6) {
+		len = 16;
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, &address, len);
+
+	} else if (af == AF_INET) {
+		len = 4;
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, &address, len);
+	} else {
+		error("Not supported address type: %u", af);
+		goto rwfail;
+	}
+
+	xfree(hostname);
+	xfree(nodename_r);
+	debug2("Leaving %s", __func__);
+	return SLURM_SUCCESS;
+
+rwfail:
+	xfree(hostname);
+	xfree(nodename_r);
 	return SLURM_ERROR;
 }
 
