@@ -2067,7 +2067,8 @@ Maximum count of nodes which may exist in the controller. By default MaxNodeCoun
 will be set to the number of nodes found in the slurm.conf. MaxNodeCount will
 be ignored if less than the number of nodes found in the slurm.conf. Increase
 MaxNodeCount to accommodate dynamically created nodes with dynamic node
-registrations and nodes created with scontrol.
+registrations and nodes created with scontrol. The slurmctld daemon must be
+restarted for changes to this parameter to take effect.
 .IP
 
 .TP

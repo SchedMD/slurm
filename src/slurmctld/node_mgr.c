@@ -4705,11 +4705,6 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
 		       node_ptr->comm_name);
 
-	if (reg_msg->dynamic_feature)
-		xstrfmtcat(node_ptr->config_ptr->feature, "%s%s",
-			   node_ptr->config_ptr->feature ? "," : "",
-			   reg_msg->dynamic_feature);
-
 	node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
 	update_feature_list(avail_feature_list, node_ptr->features,
 			    config_ptr->node_bitmap);

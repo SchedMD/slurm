@@ -3253,6 +3253,7 @@ _destroy_slurm_conf(void)
 		default_partition_tbl = NULL;
 	}
 	free_slurm_conf(conf_ptr, true);
+	memset(conf_ptr, 0, sizeof(slurm_conf_t));
 	conf_initialized = false;
 
 	/* xfree(conf_ptr); */
