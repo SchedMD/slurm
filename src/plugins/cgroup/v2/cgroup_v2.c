@@ -154,31 +154,34 @@ static void _set_int_cg_ns()
  * pid to it. Enabling the controllers will make their interfaces available
  * (e.g. the memory.*, cpu.*, cpuset.* ... files) to control the cgroup.
  */
-static int _enable_subtree_control(xcgroup_t *cg)
+static int _enable_subtree_control(char *path, bitstr_t *ctl_bitmap)
 {
 	int i, rc = SLURM_SUCCESS;
-	char *param = NULL;
+	char *content = NULL, *file_path = NULL;
 
+	xassert(ctl_bitmap);
+
+	xstrfmtcat(file_path, "%s/cgroup.subtree_control", path);
 	for (i = 0; i < CG_CTL_CNT; i++) {
-		if (bit_test(int_cg_ns.avail_controllers, i)) {
-			xstrfmtcat(param, "+%s", ctl_names[i]);
-			rc = common_cgroup_set_param(cg,
-						     "cgroup.subtree_control",
-						     param);
-			xfree(param);
-			if (rc != SLURM_SUCCESS) {
-				error("Cannot enable %s in %s/cgroup.subtree_control",
-				      ctl_names[i], cg->path);
-				bit_clear(int_cg_ns.avail_controllers, i);
-				rc = SLURM_ERROR;
-			} else {
-				log_flag(CGROUP, "Enabled %s controller in %s",
-					 ctl_names[i], cg->path);
-				bit_set(int_cg_ns.enabled_controllers, i);
-			}
+		if (!bit_test(ctl_bitmap, i))
+			continue;
+
+		xstrfmtcat(content, "+%s", ctl_names[i]);
+		rc = common_file_write_content(file_path, content,
+					       sizeof(content));
+		xfree(content);
+		if (rc != SLURM_SUCCESS) {
+			error("Cannot enable %s in %s",
+			      ctl_names[i], file_path);
+			bit_clear(ctl_bitmap, i);
+			rc = SLURM_ERROR;
+		} else {
+			log_flag(CGROUP, "Enabled %s controller in %s",
+				 ctl_names[i], file_path);
+			bit_set(ctl_bitmap, i);
 		}
 	}
-
+	xfree(file_path);
 	return rc;
 }
 
@@ -347,7 +350,9 @@ static int _move_pid_to_scope(const char *slice, const char *scope,
 			     dir_path, (uid_t) 0, (gid_t) 0);
 	common_cgroup_move_process(&int_cg[CG_LEVEL_SYSTEM], pid);
 
-	if (_enable_subtree_control(&int_cg[CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
+	if (_enable_subtree_control(int_cg[CG_LEVEL_ROOT].path,
+				    int_cg_ns.avail_controllers) !=
+	    SLURM_SUCCESS) {
 		error("Cannot enable subtree_control at the top level %s",
 		      int_cg_ns.mnt_point);
 		return SLURM_ERROR;
@@ -385,7 +390,6 @@ static int _move_pid_to_scope(const char *slice, const char *scope,
 extern int init(void)
 {
 	int_cg_ns.avail_controllers = bit_alloc(CG_CTL_CNT);
-	int_cg_ns.enabled_controllers = bit_alloc(CG_CTL_CNT);
 	step_active_cnt = 0;
 	FREE_NULL_LIST(task_list);
 	task_list = list_create(_free_task_cg_info);
@@ -452,7 +456,6 @@ extern int fini(void)
 	 * remove the remaining directories.
 	 */
 	FREE_NULL_BITMAP(int_cg_ns.avail_controllers);
-	FREE_NULL_BITMAP(int_cg_ns.enabled_controllers);
 	common_cgroup_destroy(&int_cg[CG_LEVEL_SYSTEM]);
 	common_cgroup_destroy(&int_cg[CG_LEVEL_ROOT]);
 	common_cgroup_ns_destroy(&int_cg_ns);
@@ -554,7 +557,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 		goto endit;
 	}
 	xfree(new_path);
-	_enable_subtree_control(&int_cg[CG_LEVEL_JOB]);
+	_enable_subtree_control(int_cg[CG_LEVEL_JOB].path,
+				int_cg_ns.avail_controllers);
 
 	/* Step cgroup */
 	xstrfmtcat(new_path, "%s/step_%s", int_cg[CG_LEVEL_JOB].name,
@@ -577,7 +581,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 		goto endit;
 	}
 	xfree(new_path);
-	_enable_subtree_control(&int_cg[CG_LEVEL_STEP]);
+	_enable_subtree_control(int_cg[CG_LEVEL_STEP].path,
+				int_cg_ns.avail_controllers);
 
 	/* Step User processes cgroup */
 	xstrfmtcat(new_path, "%s/user", int_cg[CG_LEVEL_STEP].name);
@@ -597,7 +602,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 		goto endit;
 	}
 	xfree(new_path);
-	_enable_subtree_control(&int_cg[CG_LEVEL_STEP_USER]);
+	_enable_subtree_control(int_cg[CG_LEVEL_STEP_USER].path,
+				int_cg_ns.avail_controllers);
 
 	/*
 	 * Step Slurm processes cgroup

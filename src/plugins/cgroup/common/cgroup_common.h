@@ -56,7 +56,6 @@
 
 typedef struct {
 	bitstr_t *avail_controllers;
-	bitstr_t *enabled_controllers;
 	char *mnt_point;	/* mount point to use */
 	char *mnt_args;		/* additional mount args */
 	char *subsystems;	/* comma-separated subsystems to provide */
