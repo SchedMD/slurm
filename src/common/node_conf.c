@@ -655,7 +655,7 @@ static int _convert_cpu_spec_list(node_record_t *node_ptr, uint32_t tot_cores)
 	for (i = 0; i < node_ptr->cpus; i++) {
 		if (bit_test(cpu_spec_bitmap, i))
 			bit_set(node_ptr->node_spec_bitmap,
-				(i / (node_ptr->vpus)));
+				(i / (node_ptr->tpc)));
 	}
 
 	/* Expand CPU bitmap to reserve whole cores */
@@ -663,8 +663,8 @@ static int _convert_cpu_spec_list(node_record_t *node_ptr, uint32_t tot_cores)
 		if (bit_test(node_ptr->node_spec_bitmap, i)) {
 			/* typecast to int to avoid coverity error */
 			bit_nset(cpu_spec_bitmap,
-				 (i * (int) node_ptr->vpus),
-				 ((i+1) * (int) node_ptr->vpus) - 1);
+				 (i * (int) node_ptr->tpc),
+				 ((i+1) * (int) node_ptr->tpc) - 1);
 		}
 	}
 	xfree(node_ptr->cpu_spec_list);
@@ -711,17 +711,17 @@ static void _init_node_record(node_record_t *node_ptr,
 
 	/*
 	 * Here we determine if this node is scheduling threads or not.
-	 * We will set vpus to be the number of schedulable threads.
+	 * We will set tpc to be the number of schedulable threads per core.
 	 */
 	tot_cores = config_ptr->tot_sockets * config_ptr->cores;
 	if (tot_cores >= config_ptr->cpus)
-		node_ptr->vpus = 1;
+		node_ptr->tpc = 1;
 	else
-		node_ptr->vpus = config_ptr->threads;
+		node_ptr->tpc = config_ptr->threads;
 
 	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	if (node_ptr->cpu_spec_list) {
-		if (node_ptr->vpus > 1) {
+		if (node_ptr->tpc > 1) {
 			_convert_cpu_spec_list(node_ptr, tot_cores);
 		} else {
 			node_ptr->node_spec_bitmap = bit_alloc(node_ptr->cpus);
@@ -737,7 +737,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	}
 
 	node_ptr->cpus_efctv = node_ptr->cpus -
-		(node_ptr->core_spec_cnt * node_ptr->vpus);
+		(node_ptr->core_spec_cnt * node_ptr->tpc);
 }
 
 extern void grow_node_record_table_ptr(void)

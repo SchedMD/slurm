@@ -180,7 +180,7 @@ struct node_record {
 	uint16_t tot_sockets;		/* number of sockets per node */
 	uint32_t up_time;		/* seconds since node boot */
 	char *version;			/* Slurm version */
-	uint16_t vpus;	                /* number of threads we are using per
+	uint16_t tpc;	                /* number of threads we are using per
 					 * core */
 	uint32_t weight;		/* orignal weight, used only for state
 					 * save/restore, DO NOT use for

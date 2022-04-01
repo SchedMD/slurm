@@ -1539,17 +1539,17 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				*return_code = ESLURM_INVALID_NODE_COUNT;
 				goto cleanup;
 			}
-			if (req_tpc < node_record_table_ptr[first_inx]->vpus) {
+			if (req_tpc < node_record_table_ptr[first_inx]->tpc) {
 				cpu_count += req_tpc - 1;
 				cpu_count /= req_tpc;
 				cpu_count *=
-					node_record_table_ptr[first_inx]->vpus;
+					node_record_table_ptr[first_inx]->tpc;
 			} else if (req_tpc >
-				   node_record_table_ptr[first_inx]->vpus) {
+				   node_record_table_ptr[first_inx]->tpc) {
 				log_flag(STEPS, "%s: requested more threads per core than possible in allocation (%u > %u) for %pJ",
 					 __func__,
 					 req_tpc,
-					 node_record_table_ptr[first_inx]->vpus,
+					 node_record_table_ptr[first_inx]->tpc,
 					 job_ptr);
 				*return_code = ESLURM_BAD_THREAD_PER_CORE;
 				goto cleanup;
@@ -2264,7 +2264,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			node_cnt = 0;
 		}
 
-		vpus = node_record_table_ptr[i_node]->vpus;
+		vpus = node_record_table_ptr[i_node]->tpc;
 		if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc_mem = cpus_alloc =
 				job_resrcs_ptr->cpus[job_node_inx];
@@ -2566,7 +2566,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
 		else {
 			uint16_t cpus_per_task = step_ptr->cpus_per_task;
-			uint16_t vpus = node_record_table_ptr[i_node]->vpus;
+			uint16_t vpus = node_record_table_ptr[i_node]->tpc;
 
 			cpus_alloc =
 				step_ptr->step_layout->tasks[step_node_inx] *
