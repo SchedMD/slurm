@@ -1058,7 +1058,7 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	char *gres_name = gres_state_job->gres_name;
 	uint32_t config_flags = gres_state_job->config_flags;
-	int i, j, len, sz1, sz2;
+	int i, j, len, sz1, sz2, last_node;
 	uint64_t gres_cnt = 0, k;
 	uint64_t gres_per_bit = 1;
 
@@ -1258,6 +1258,7 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 	 * However, a job isn't destroyed when it is resized. So we need to
 	 * remove this node's GRES from the job's GRES bitmaps.
 	 */
+	last_node = gres_js->node_cnt - 1;
 	if (gres_js->gres_cnt_node_alloc) {
 		/*
 		 * This GRES is no longer part of the job, remove it from the
@@ -1268,49 +1269,50 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 			return ESLURM_UNSUPPORTED_GRES;
 		gres_js->total_gres -=
 			gres_js->gres_cnt_node_alloc[node_offset];
-		gres_js->gres_cnt_node_alloc[node_offset] = 0;
-
 		/* Shift job GRES counts down, if necessary */
 		for (int i = node_offset + 1; i < gres_js->node_cnt; i++) {
 			gres_js->gres_cnt_node_alloc[i - 1] =
 				gres_js->gres_cnt_node_alloc[i];
 		}
+		/* Zero this out since we are reducing the node count */
+		gres_js->gres_cnt_node_alloc[last_node] = 0;
 	}
 	/* Downsize job GRES for this node */
-	if (gres_js->gres_bit_alloc &&
-	    gres_js->gres_bit_alloc[node_offset]) {
+	if (gres_js->gres_bit_alloc) {
 		/* Free the job's GRES bitmap */
-		xfree(gres_js->gres_bit_alloc[node_offset]);
+		FREE_NULL_BITMAP(gres_js->gres_bit_alloc[node_offset]);
 
 		/* Shift job GRES bitmaps down, if necessary */
 		for (int i = node_offset + 1; i < gres_js->node_cnt; i++) {
 			gres_js->gres_bit_alloc[i - 1] =
 				gres_js->gres_bit_alloc[i];
 		}
+		/* NULL the last node since we are reducing the node count. */
+		gres_js->gres_bit_alloc[last_node] = NULL;
 	}
 
 	/* Downsize job step GRES for this node */
-	if (gres_js->gres_bit_step_alloc &&
-	    gres_js->gres_bit_step_alloc[node_offset]) {
+	if (gres_js->gres_bit_step_alloc) {
 		/* Free the step's GRES bitmap */
-		xfree(gres_js->gres_bit_step_alloc[node_offset]);
+		FREE_NULL_BITMAP(gres_js->gres_bit_step_alloc[node_offset]);
 
 		/* Shift step GRES bitmaps down, if necessary */
 		for (int i = node_offset + 1; i < gres_js->node_cnt; i++) {
 			gres_js->gres_bit_step_alloc[i - 1] =
 				gres_js->gres_bit_step_alloc[i];
 		}
+		/* NULL the last node since we are reducing the node count. */
+		gres_js->gres_bit_step_alloc[last_node] = NULL;
 	}
-	if (gres_js->gres_cnt_step_alloc &&
-	    gres_js->gres_cnt_step_alloc[node_offset]) {
-		/* Clear step GRES count and subtract from total */
-		gres_js->gres_cnt_step_alloc[node_offset] = 0;
 
+	if (gres_js->gres_cnt_step_alloc) {
 		/* Shift step GRES counts down, if necessary */
 		for (int i = node_offset + 1; i < gres_js->node_cnt; i++) {
 			gres_js->gres_cnt_step_alloc[i - 1] =
 				gres_js->gres_cnt_step_alloc[i];
 		}
+		/* Zero this out since we are reducing the node count */
+		gres_js->gres_cnt_step_alloc[last_node] = 0;
 	}
 
 	/* Finally, reduce the node count, since this node is deallocated */
@@ -2332,8 +2334,14 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 			xassert(!gres_ss->node_in_use);
 			xassert(!gres_ss->gres_bit_alloc);
 			return SLURM_SUCCESS;
-		} else if (gres_js->node_cnt < i)
+		} else if (gres_js->node_cnt < i) {
+			/*
+			 * gres_find_job_by_key_with_cnt() already does this
+			 * check so we should never get here, but here as a
+			 * sanity check.
+			 */
 			return SLURM_SUCCESS;
+		}
 
 		if (!gres_ss->node_in_use) {
 			error("gres/%s: %s %ps dealloc, node_in_use is NULL",
