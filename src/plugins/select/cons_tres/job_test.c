@@ -190,10 +190,10 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 		return;
 	}
 
-	log_flag(SELECT_TYPE, "Node:%s Sockets:%u SpecThreads:%u CPUs:Min-Max,Avail:%u-%u,%u VPUs:%u",
+	log_flag(SELECT_TYPE, "Node:%s Sockets:%u SpecThreads:%u CPUs:Min-Max,Avail:%u-%u,%u ThreadsPerCore:%u",
 		 node_name, avail_res->sock_cnt, avail_res->spec_threads,
 		 avail_res->min_cpus, avail_res->max_cpus,
-		 avail_res->avail_cpus, avail_res->vpus);
+		 avail_res->avail_cpus, avail_res->tpc);
 	gres_info = gres_sock_str(avail_res->sock_gres_list, -1);
 	if (gres_info) {
 		log_flag(SELECT_TYPE, "  AnySocket %s", gres_info);
