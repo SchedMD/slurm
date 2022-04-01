@@ -1278,10 +1278,18 @@ static inline void _poll(con_mgr_t *mgr, poll_args_t *args, List fds,
 	struct pollfd *fds_ptr = NULL;
 	con_mgr_fd_t *con;
 
+again:
 	rc = poll(args->fds, args->nfds, -1);
-	if (rc == -1)
+	if (rc == -1) {
+		if ((errno == EINTR) && !mgr->exit_on_error) {
+			log_flag(NET, "%s: [%s] poll interrupted. Trying again.",
+				 __func__, tag);
+			goto again;
+		}
+
 		fatal("%s: [%s] unable to poll listening sockets: %m",
 		      __func__, tag);
+	}
 
 	slurm_mutex_lock(&mgr->mutex);
 
