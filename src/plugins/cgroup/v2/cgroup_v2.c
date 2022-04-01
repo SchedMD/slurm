@@ -822,11 +822,11 @@ extern int fini(void)
 
 /*
  * Unlike in Legacy mode (v1) where we needed to create a directory for each
- * controller, in Unified mode this function will be mostly empty because the
- * hierarchy is unified into the same path. The controllers will be enabled
- * when we create the hierarchy. The only controller that may need an init is
- * the 'devices', which in Unified is not a real controller, but instead we
- * need to register an eBPF program.
+ * controller, in Unified mode this function will do almost nothing except for
+ * some sanity checks. That's because hierarchy is unified into the same path.
+ * and the controllers will be enabled when we create the hierarchy. The only
+ * controller that may need a real init is the 'devices', which in Unified is
+ * not a real controller, but instead we need to register an eBPF program.
  */
 extern int cgroup_p_initialize(cgroup_ctl_type_t ctl)
 {
@@ -835,10 +835,29 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t ctl)
 		init_ebpf_prog(&p[CG_LEVEL_JOB]);
 		init_ebpf_prog(&p[CG_LEVEL_STEP_USER]);
 		break;
+	case CG_TRACK:
+		/* This is not a controller in Cgroup v2.*/
+		break;
 	default:
+		if (!bit_test(int_cg_ns.avail_controllers, ctl)) {
+			error("%s cgroup controller is not available.",
+			      ctl_names[ctl]);
+			return SLURM_ERROR;
+		}
+
+		if (running_in_slurmd()) {
+			bitstr_t *scope_ctrls = bit_alloc(CG_CTL_CNT);
+			_get_controllers(stepd_scope_path, scope_ctrls);
+			if (!bit_test(scope_ctrls, ctl)) {
+				error("%s cgroup controller is not available for %s.",
+				      ctl_names[ctl], stepd_scope_path);
+				FREE_NULL_BITMAP(scope_ctrls);
+				return SLURM_ERROR;
+			}
+			FREE_NULL_BITMAP(scope_ctrls);
+		}
 		break;
 	}
-
 	return SLURM_SUCCESS;
 }
 
