@@ -333,8 +333,9 @@ extern void print_fields(type_t type, void *object)
 				tmp_int = step_cpu_tres_rec_count;
 				break;
 			case JOBCOMP:
-			default:
 				tmp_int = job_comp->proc_cnt;
+				break;
+			default:
 				break;
 			}
 			field->print_routine(field,
