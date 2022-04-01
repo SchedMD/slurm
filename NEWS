@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - move debug logs for HTTP handling to be gated by debugflag
     NETWORK to avoid unnecessary logging of communication contents.
  -- Fix issue with bad memory access when shrinking running steps.
+ -- Fix various issues with internal job accounting with GRES when jobs are
+    shrunk.
 
 * Changes in Slurm 21.08.6
 ==========================
