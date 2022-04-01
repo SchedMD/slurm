@@ -98,6 +98,11 @@ typedef enum {
 	CG_CTL_CNT
 } cgroup_ctl_type_t;
 
+/* Current supported cgroup controller features */
+typedef enum {
+	CG_MEMCG_SWAP
+} cgroup_ctl_feature_t;
+
 typedef enum {
 	CG_LEVEL_ROOT,
 	CG_LEVEL_SLURM,
@@ -221,4 +226,11 @@ extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
 extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid);
 extern long int cgroup_g_get_acct_units();
 
+/*
+ * Check if Cgroup has this feature available.
+ * Usually this will depend on the kernel config settings or the boot flags,
+ * and since checks can be done by slurmd before init, we are checking it
+ * directly from the root.
+ */
+extern bool cgroup_g_has_feature(cgroup_ctl_feature_t f);
 #endif

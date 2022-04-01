@@ -74,6 +74,7 @@ typedef struct {
 					 uint32_t task_id);
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
 	long int (*get_acct_units)	(void);
+	bool (*has_feature) (cgroup_ctl_feature_t f);
 } slurm_ops_t;
 
 /*
@@ -100,6 +101,7 @@ static const char *syms[] = {
 	"cgroup_p_task_addto",
 	"cgroup_p_task_get_acct_data",
 	"cgroup_p_get_acct_units",
+	"cgroup_p_has_feature",
 };
 
 /* Local variables */
@@ -978,4 +980,12 @@ extern long int cgroup_g_get_acct_units()
 		return false;
 
 	return (*(ops.get_acct_units))();
+}
+
+extern bool cgroup_g_has_feature(cgroup_ctl_feature_t f)
+{
+	if (cgroup_g_init() < 0)
+		return false;
+
+	return (*(ops.has_feature))(f);
 }

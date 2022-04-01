@@ -64,6 +64,12 @@ extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
 
+	if (slurm_cgroup_conf.constrain_swap_space &&
+	    !cgroup_g_has_feature(CG_MEMCG_SWAP)) {
+		error("ConstrainSwapSpace is enabled but there is no support for swap in the memory cgroup controller.");
+		return SLURM_ERROR;
+	}
+
 	if (!running_in_slurmstepd())
 		goto end;
 

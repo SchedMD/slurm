@@ -1444,3 +1444,25 @@ extern long int cgroup_p_get_acct_units()
 {
 	return jobacct_gather_get_clk_tck();
 }
+
+extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
+{
+	struct stat st;
+	int rc;
+	char *memsw_filepath = NULL;
+
+	/* Check if swap constrain capability is enabled in this system. */
+	switch (f) {
+	case CG_MEMCG_SWAP:
+		xstrfmtcat(memsw_filepath,
+			   "%s/memory/memory.memsw.limit_in_bytes",
+			   slurm_cgroup_conf.cgroup_mountpoint);
+		rc = stat(memsw_filepath, &st);
+		xfree(memsw_filepath);
+		return (rc == 0);
+	default:
+		break;
+	}
+
+	return false;
+}
