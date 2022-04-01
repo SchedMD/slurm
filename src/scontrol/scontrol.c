@@ -933,6 +933,15 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		}
 		exit_flag = 1;
+	} else if (!xstrncasecmp(tag, "gethost", MAX(tag_len, 7))) {
+		if (argc == 3)
+			scontrol_gethost(argv[1], argv[2]);
+		else {
+			exit_code = 1;
+			fprintf(stderr,
+				"two arguments required for keyword:%s\n",
+				tag);
+		}
 	} else if (!xstrncasecmp(tag, "hash_file", MAX(tag_len, 15))) {
 		if (argc > 3) {
 			exit_code = 1;
