@@ -203,16 +203,14 @@ static int _enable_subtree_control(char *path, bitstr_t *ctl_bitmap)
 	return rc;
 }
 
-/*
- * Read the cgroup.controllers file of the root to detect which are the
- * available controllers in this system.
- */
-static int _check_avail_controllers()
+static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 {
 	char *buf, *ptr, *save_ptr, *ctl_filepath = NULL;
 	size_t sz;
 
-	xstrfmtcat(ctl_filepath, "%s/cgroup.controllers", int_cg_ns.mnt_point);
+	xassert(ctl_bitmap);
+
+	xstrfmtcat(ctl_filepath, "%s/cgroup.controllers", path);
 	if (common_file_read_content(ctl_filepath, &buf, &sz) !=
 	    SLURM_SUCCESS || !buf) {
 		error("cannot read %s: %m", ctl_filepath);
@@ -227,16 +225,111 @@ static int _check_avail_controllers()
 			if (!xstrcmp(ctl_names[i], ""))
 				continue;
 			if (!xstrcasecmp(ctl_names[i], ptr))
-				bit_set(int_cg_ns.avail_controllers, i);
+				bit_set(ctl_bitmap, i);
 		}
 		ptr = strtok_r(NULL, " ", &save_ptr);
 	}
 	xfree(buf);
 
+	for (int i = 0; i < CG_CTL_CNT; i++) {
+		if ((i == CG_DEVICES) || (i == CG_TRACK))
+			continue;
+		if (!bit_test(ctl_bitmap, i))
+			error("Controller %s is not enabled!", ctl_names[i]);
+	}
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Enabling the subtree from the top mountpoint to the slice we will reside
+ * is needed to get all the controllers we want to support. Nevertheless note
+ * that if systemd is reloaded, reset, or does any operation that implies
+ * traversing the cgroup tree matching its internal database, and there's no
+ * service started with Delegate=yes (like running this slurmd manually), the
+ * controllers can eventually be deactivated without warning by systemd.
+ *
+ * Also note that usually starting any service or scope with Delegate=yes in the
+ * slice we want to live, will make systemd to automatically activate the
+ * controllers in the tree, so this operation here would be redundant.
+ */
+static int _enable_system_controllers()
+{
+	char *slice_path = NULL;
+	bitstr_t *system_ctrls = bit_alloc(CG_CTL_CNT);
+	char *tok, *next, *curr;
+	char *save_ptr = NULL, *orig = NULL;
+	bool started = false;
+
+	if (_get_controllers(slurm_cgroup_conf.cgroup_mountpoint,
+			     system_ctrls) != SLURM_SUCCESS) {
+		FREE_NULL_BITMAP(system_ctrls);
+		return SLURM_ERROR;
+	}
+
+	/* Enable controllers for the top of the tree. */
+	_enable_subtree_control(slurm_cgroup_conf.cgroup_mountpoint,
+				system_ctrls);
+
+	/* Enable it for us, slurmd, recursively. We may be anywhere. */
+	next = xmalloc(strlen(int_cg_ns.mnt_point) + 1);
+	curr = xmalloc(strlen(int_cg_ns.mnt_point) + 1);
+	orig = xstrdup(int_cg_ns.mnt_point);
+	tok = strtok_r(orig, "/", &save_ptr);
+	while (tok) {
+		/* Start from the mnt_point skipping any previous dir. */
+		if (!started &&
+		    (!xstrcmp(next, slurm_cgroup_conf.cgroup_mountpoint)))
+			started = true;
+
+		sprintf(next, "%s/%s", curr, tok);
+		strcpy(curr, next);
+
+		/* Skip the last directory which is a leaf where we live. */
+		if (started && !xstrcmp(curr, int_cg_ns.mnt_point))
+			break;
+
+		if (started)
+			_enable_subtree_control(curr, system_ctrls);
+
+		tok = strtok_r(NULL, "/", &save_ptr);
+	}
+	xfree(orig);
+	xfree(curr);
+	xfree(next);
+
+
+	/* Enable it for system slice, where stepd scope will reside. */
+	xstrfmtcat(slice_path, "%s/%s",
+		   slurm_cgroup_conf.cgroup_mountpoint, SYSTEM_CGSLICE);
+	_enable_subtree_control(slice_path, system_ctrls);
+	xfree(slice_path);
+
+	FREE_NULL_BITMAP(system_ctrls);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Read the cgroup.controllers file of the root to detect which are the
+ * available controllers in this system.
+ */
+static int _setup_controllers()
+{
 	/* Field not used in v2 */
 	int_cg_ns.subsystems = NULL;
 
-	return SLURM_SUCCESS;
+	/*
+	 * Slurmd will check the real available controllers in this system and
+	 * will enable them in every level of the tree if CgroupAutomount is set
+	 * but only if we decide to ignore systemd. Basically systemd mounts all
+	 * the controllers if unit has Delegate=yes.
+	 */
+	if (running_in_slurmd() && slurm_cgroup_conf.cgroup_automount &&
+	    slurm_cgroup_conf.ignore_systemd)
+		_enable_system_controllers();
+
+	/* Get the controllers on our namespace. */
+	return _get_controllers(int_cg_ns.mnt_point,
+				int_cg_ns.avail_controllers);
 }
 
 static int _rmdir_task(void *x, void *arg)
@@ -665,10 +758,13 @@ extern int init(void)
 			     (uid_t) 0, (gid_t) 0);
 
 	/*
-	 * Check available controllers in cgroup.controller and record
-	 * them in our bitmap.
+	 * Check available controllers in cgroup.controller, record them in our
+	 * bitmap and enable them if CgroupAutomountOption is set.
+	 * We enable them manually just because we support CgroupIgnoreSystemd
+	 * option. Theorically when starting a unit with Delegate=yes, you will
+	 * get all controllers available at your level.
 	 */
-	if (_check_avail_controllers() != SLURM_SUCCESS)
+	if (_setup_controllers() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	/*
