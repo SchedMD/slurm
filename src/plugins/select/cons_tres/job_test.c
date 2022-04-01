@@ -1530,7 +1530,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	int64_t rem_max_cpus;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
-	int total_cpus = 0;	/* #CPUs allocated to job */
 	bool enforce_binding = false;
 	struct job_details *details_ptr = job_ptr->details;
 	bool gres_per_job, sufficient = false;
@@ -1632,7 +1631,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
-			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 		}
@@ -1856,7 +1854,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
-			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 		}
@@ -2012,7 +2009,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				rem_nodes--;
 				min_rem_nodes--;
 				max_nodes--;
-				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
 				rem_max_cpus -= avail_cpus;
 				bit_set(node_map, j);
@@ -2070,7 +2066,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				rem_nodes--;
 				min_rem_nodes--;
 				max_nodes--;
-				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
 				rem_max_cpus -= avail_cpus;
 				bit_set(node_map, j);
@@ -2179,7 +2174,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	int64_t rem_max_cpus;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
-	int total_cpus = 0;	/* #CPUs allocated to job */
 	bool enforce_binding = false;
 	struct job_details *details_ptr = job_ptr->details;
 	bool gres_per_job, sufficient = false;
@@ -2277,7 +2271,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
-			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 		}
@@ -2506,7 +2499,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
-			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 		}
@@ -2608,7 +2600,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				rem_nodes--;
 				min_rem_nodes--;
 				max_nodes--;
-				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
 				rem_max_cpus -= avail_cpus;
 				bit_set(node_map, j);
@@ -2677,7 +2668,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
-			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 			bit_set(node_map, i);
