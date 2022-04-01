@@ -393,9 +393,6 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_ACT_CPUFREQ:
 			switch (type) {
-			case JOB:
-				tmp_dub = NO_VAL;
-				break;
 			case JOBSTEP:
 				tmp_dub = step->stats.act_cpufreq;
 				break;
@@ -419,10 +416,7 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_char = job->admin_comment;
 				break;
-			case JOBSTEP:
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			field->print_routine(field,
@@ -437,9 +431,7 @@ extern void print_fields(type_t type, void *object)
 			case JOBSTEP:
 				tmp_uint32 = step->job_ptr->associd;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_uint32 = NO_VAL;
 				break;
 			}
 			field->print_routine(field,
@@ -536,8 +528,6 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_char = job->blockid;
 				break;
-			case JOBSTEP:
-				break;
 			case JOBCOMP:
 				tmp_char = job_comp->blockid;
 				break;
@@ -571,10 +561,7 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_char = job->derived_es;
 				break;
-			case JOBSTEP:
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			field->print_routine(field,
@@ -586,10 +573,7 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_char = job->constraints;
 				break;
-			case JOBSTEP:
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			field->print_routine(field,
@@ -604,9 +588,7 @@ extern void print_fields(type_t type, void *object)
 			case JOBSTEP:
 				tmp_char = step->container;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			field->print_routine(field,
@@ -672,8 +654,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_uint64 = (uint64_t)step->elapsed
 					* (uint64_t)step_cpu_tres_rec_count;
 				break;
-			case JOBCOMP:
-				break;
 			default:
 				break;
 			}
@@ -691,8 +671,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_uint64 = (uint64_t)step->elapsed
 					* (uint64_t)step_cpu_tres_rec_count;
 				break;
-			case JOBCOMP:
-				break;
 			default:
 				break;
 			}
@@ -709,7 +687,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_uint64 = step->job_ptr->db_index;
 				break;
 			default:
-				tmp_uint64 = NO_VAL64;
 				break;
 			}
 			field->print_routine(field,
@@ -729,8 +706,6 @@ extern void print_fields(type_t type, void *object)
 
 				snprintf(outbuf, sizeof(outbuf), "%d:%d",
 					 tmp_int, tmp_int2);
-				break;
-			case JOBSTEP:
 				break;
 			case JOBCOMP:
 				if (job_comp->derived_ec)
@@ -757,7 +732,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_uint64 = job_comp->elapsed_time;
 				break;
 			default:
-				tmp_uint64 = NO_VAL64;
 				break;
 			}
 			field->print_routine(field,
@@ -776,7 +750,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_uint32 = job_comp->elapsed_time;
 				break;
 			default:
-				tmp_uint32 = NO_VAL;
 				break;
 			}
 			field->print_routine(field,
@@ -857,8 +830,6 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_uint32 = job->flags;
 				break;
-			case JOBSTEP:
-			case JOBCOMP:
 			default:
 				tmp_uint32 = SLURMDB_JOB_FLAG_NONE;
 				break;
@@ -875,14 +846,10 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_uint32 = job->gid;
 				break;
-			case JOBSTEP:
-				tmp_uint32 = NO_VAL;
-				break;
 			case JOBCOMP:
 				tmp_uint32 = job_comp->gid;
 				break;
 			default:
-				tmp_uint32 = NO_VAL;
 				break;
 			}
 			field->print_routine(field,
@@ -894,14 +861,10 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_uint32 = job->gid;
 				break;
-			case JOBSTEP:
-				tmp_uint32 = NO_VAL;
-				break;
 			case JOBCOMP:
 				tmp_uint32 = job_comp->gid;
 				break;
 			default:
-				tmp_uint32 = NO_VAL;
 				break;
 			}
 			tmp_char = NULL;
@@ -990,7 +953,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job_comp->jobname;
 				break;
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			field->print_routine(field,
@@ -1002,16 +964,11 @@ extern void print_fields(type_t type, void *object)
 			char *name = NULL;
 
 			switch(type) {
-			case JOB:
-				break;
 			case JOBSTEP:
 				name = slurm_step_layout_type_name(
 					step->task_dist);
 				break;
-			case JOBCOMP:
-				break;
 			default:
-				/* no-op */
 				break;
 			}
 			field->print_routine(field, name,
@@ -1154,16 +1111,11 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUIA:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char =
 					step->stats.tres_usage_in_ave;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1172,15 +1124,10 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUIM:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_in_max;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1189,17 +1136,11 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUIMN:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				nodes = job->nodes;
-				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_in_max_nodeid;
 				nodes = step->nodes;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1207,30 +1148,20 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUIMT:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_in_max_taskid;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			_print_tres_field(tmp_char, NULL, 0, 0);
 			break;
 		case PRINT_TRESUIMI:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_in_min;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1239,17 +1170,11 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUIMIN:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				nodes = job->nodes;
-				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_in_min_nodeid;
 				nodes = step->nodes;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1257,31 +1182,21 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUIMIT:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_in_min_taskid;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			_print_tres_field(tmp_char, NULL, 0, 0);
 			break;
 		case PRINT_TRESUIT:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char =
 					step->stats.tres_usage_in_tot;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			_print_tres_field(tmp_char, NULL, 1,
@@ -1289,16 +1204,11 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUOA:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char =
 					step->stats.tres_usage_out_ave;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1307,15 +1217,10 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUOM:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_out_max;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1324,18 +1229,12 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUOMN:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				nodes = job->nodes;
-				break;
 			case JOBSTEP:
 				tmp_char =
 					step->stats.tres_usage_out_max_nodeid;
 				nodes = step->nodes;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1343,16 +1242,11 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUOMT:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char =
 					step->stats.tres_usage_out_max_taskid;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1360,15 +1254,10 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUOMI:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char = step->stats.tres_usage_out_min;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1377,18 +1266,12 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUOMIN:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				nodes = job->nodes;
-				break;
 			case JOBSTEP:
 				tmp_char =
 					step->stats.tres_usage_out_min_nodeid;
 				nodes = step->nodes;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1396,16 +1279,11 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUOMIT:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char =
 					step->stats.tres_usage_out_min_taskid;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1413,16 +1291,11 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_TRESUOT:
 			switch(type) {
-			case JOB:
-				tmp_char = NULL;
-				break;
 			case JOBSTEP:
 				tmp_char =
 					step->stats.tres_usage_out_tot;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -1544,15 +1417,10 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_NTASKS:
 			switch(type) {
-			case JOB:
-				tmp_uint32 = NO_VAL;
-				break;
 			case JOBSTEP:
 				tmp_uint32 = step->ntasks;
 				break;
-			case JOBCOMP:
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -1564,14 +1432,7 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_uint32 = job->priority;
 				break;
-			case JOBSTEP:
-
-				break;
-			case JOBCOMP:
-
-				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -1583,14 +1444,10 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_char = job->partition;
 				break;
-			case JOBSTEP:
-
-				break;
 			case JOBCOMP:
 				tmp_char = job_comp->partition;
 				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -1613,14 +1470,10 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = _find_qos_name_from_list(g_qos_list,
 								    tmp_int);
 				break;
-			case JOBSTEP:
-
-				break;
 			case JOBCOMP:
 				tmp_char = job_comp->qos_name;
 				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -1632,14 +1485,7 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_uint32 = job->qosid;
 				break;
-			case JOBSTEP:
-
-				break;
-			case JOBCOMP:
-
-				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -1652,10 +1498,7 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job_reason_string(
 					job->state_reason_prev);
 				break;
-			case JOBSTEP:
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			field->print_routine(field,
@@ -1664,9 +1507,6 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_REQ_CPUFREQ_MIN:
 			switch (type) {
-			case JOB:
-				tmp_uint32 = NO_VAL;
-				break;
 			case JOBSTEP:
 				tmp_uint32 = step->req_cpufreq_min;
 				break;
@@ -1680,9 +1520,6 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_REQ_CPUFREQ_MAX:
 			switch (type) {
-			case JOB:
-				tmp_uint32 = NO_VAL;
-				break;
 			case JOBSTEP:
 				tmp_uint32 = step->req_cpufreq_max;
 				break;
@@ -1696,9 +1533,6 @@ extern void print_fields(type_t type, void *object)
 			break;
 		case PRINT_REQ_CPUFREQ_GOV:
 			switch (type) {
-			case JOB:
-				tmp_uint32 = NO_VAL;
-				break;
 			case JOBSTEP:
 				tmp_uint32 = step->req_cpufreq_gov;
 				break;
@@ -1718,9 +1552,6 @@ extern void print_fields(type_t type, void *object)
 			case JOBSTEP:
 				tmp_uint32 = step_cpu_tres_rec_count;
 				break;
-			case JOBCOMP:
-
-				break;
 			default:
 
 				break;
@@ -1735,11 +1566,7 @@ extern void print_fields(type_t type, void *object)
 				tmp_uint64 = slurmdb_find_tres_count_in_string(
 					job->tres_req_str, TRES_MEM);
 				break;
-			case JOBSTEP:
-				/* Step doesn't have requested TRES */
-			case JOBCOMP:
 			default:
-				tmp_uint64 = NO_VAL64;
 				break;
 			}
 
@@ -1790,18 +1617,12 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				if (job->resv_name) {
 					tmp_char = job->resv_name;
-				} else {
-					tmp_char = NULL;
 				}
-				break;
-			case JOBSTEP:
-				tmp_char = NULL;
 				break;
 			case JOBCOMP:
 				tmp_char = job_comp->resv_name;
 				break;
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			field->print_routine(field,
@@ -1813,17 +1634,8 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				if (job->resvid)
 					tmp_uint32 = job->resvid;
-				else
-					tmp_uint32 = NO_VAL;
-				break;
-			case JOBSTEP:
-				tmp_uint32 = NO_VAL;
-				break;
-			case JOBCOMP:
-				tmp_uint32 = NO_VAL;
 				break;
 			default:
-				tmp_uint32 = NO_VAL;
 				break;
 			}
 			if (tmp_uint32 == NO_VAL)
@@ -1847,13 +1659,7 @@ extern void print_fields(type_t type, void *object)
 				else
 					tmp_int = time(NULL) - job->eligible;
 				break;
-			case JOBSTEP:
-				break;
-			case JOBCOMP:
-
-				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -1876,11 +1682,6 @@ extern void print_fields(type_t type, void *object)
 				else
 					tmp_int = (time(NULL) - job->eligible)
 						* job->req_cpus;
-				break;
-			case JOBSTEP:
-				break;
-			case JOBCOMP:
-
 				break;
 			default:
 
@@ -1907,13 +1708,7 @@ extern void print_fields(type_t type, void *object)
 					tmp_int = (time(NULL) - job->eligible)
 						* job->req_cpus;
 				break;
-			case JOBSTEP:
-				break;
-			case JOBCOMP:
-
-				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -1932,7 +1727,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_time = parse_time(job_comp->start_time, 1);
 				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -1953,7 +1747,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job_comp->state;
 				break;
 			default:
-
 				break;
 			}
 
@@ -1988,7 +1781,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_time = parse_time(job_comp->start_time, 1);
 				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -2003,9 +1795,7 @@ extern void print_fields(type_t type, void *object)
 			case JOBSTEP:
 				tmp_char = step->submit_line;
 				break;
-			case JOBCOMP:
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -2020,11 +1810,7 @@ extern void print_fields(type_t type, void *object)
 			case JOBSTEP:
 				tmp_uint32 = step->suspended;
 				break;
-			case JOBCOMP:
-
-				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -2041,7 +1827,6 @@ extern void print_fields(type_t type, void *object)
 				tmp_uint64 = step->sys_cpu_sec;
 				tmp2_uint64 = step->sys_cpu_usec;
 				break;
-			case JOBCOMP:
 			default:
 				break;
 			}
@@ -2057,10 +1842,7 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_char = job->system_comment;
 				break;
-			case JOBSTEP:
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 			field->print_routine(field,
@@ -2079,8 +1861,6 @@ extern void print_fields(type_t type, void *object)
 						      tmp1, sizeof(tmp1));
 					tmp_char = tmp1;
 				}
-				break;
-			case JOBSTEP:
 				break;
 			case JOBCOMP:
 				tmp_char = job_comp->timelimit;
@@ -2105,8 +1885,6 @@ extern void print_fields(type_t type, void *object)
 							job->timelimit);
                                 }
                                 break;
-                        case JOBSTEP:
-                                break;
                         case JOBCOMP:
                                 tmp_char = job_comp->timelimit;
                                 break;
@@ -2129,11 +1907,7 @@ extern void print_fields(type_t type, void *object)
 				tmp_uint64 = step->tot_cpu_sec;
 				tmp2_uint64 = step->tot_cpu_usec;
 				break;
-			case JOBCOMP:
-
-				break;
 			default:
-
 				break;
 			}
 			tmp_char = _elapsed_time(tmp_uint64, tmp2_uint64);
@@ -2151,9 +1925,7 @@ extern void print_fields(type_t type, void *object)
 			case JOBSTEP:
 				tmp_char = step->tres_alloc_str;
 				break;
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -2164,10 +1936,7 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_char = job->tres_req_str;
 				break;
-			case JOBSTEP:
-			case JOBCOMP:
 			default:
-				tmp_char = NULL;
 				break;
 			}
 
@@ -2182,13 +1951,10 @@ extern void print_fields(type_t type, void *object)
 				else
 					tmp_uint32 = job->uid;
 				break;
-			case JOBSTEP:
-				break;
 			case JOBCOMP:
 				tmp_uint32 = job_comp->uid;
 				break;
 			default:
-
 				break;
 			}
 
@@ -2204,14 +1970,10 @@ extern void print_fields(type_t type, void *object)
 				else if ((pw=getpwuid(job->uid)))
 						tmp_char = pw->pw_name;
 				break;
-			case JOBSTEP:
-
-				break;
 			case JOBCOMP:
 				tmp_char = job_comp->uid_name;
 				break;
 			default:
-
 				break;
 			}
 
@@ -2229,13 +1991,11 @@ extern void print_fields(type_t type, void *object)
 				tmp_uint64 = step->user_cpu_sec;
 				tmp2_uint64 = step->user_cpu_usec;
 				break;
-			case JOBCOMP:
 			default:
 				break;
 			}
 
 			tmp_char = _elapsed_time(tmp_uint64, tmp2_uint64);
-
 
 			field->print_routine(field,
 					     tmp_char,
@@ -2247,14 +2007,10 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_char = job->wckey;
 				break;
-			case JOBSTEP:
-
-				break;
 			case JOBCOMP:
 				tmp_char = job_comp->wckey;
 				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -2266,14 +2022,7 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_uint32 = job->wckeyid;
 				break;
-			case JOBSTEP:
-
-				break;
-			case JOBCOMP:
-
-				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
@@ -2285,14 +2034,10 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				tmp_char = job->work_dir;
 				break;
-			case JOBSTEP:
-
-				break;
 			case JOBCOMP:
 				tmp_char = job_comp->work_dir;
 				break;
 			default:
-
 				break;
 			}
 			field->print_routine(field,
