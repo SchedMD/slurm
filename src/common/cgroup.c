@@ -271,6 +271,7 @@ static void _read_slurm_cgroup_conf(void)
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL, *tmp_str;
 	struct stat buf;
+	size_t sz;
 
 	/* Get the cgroup.conf path and validate the file */
 	conf_path = get_extra_conf_path("cgroup.conf");
@@ -294,10 +295,18 @@ static void _read_slurm_cgroup_conf(void)
 			slurm_cgroup_conf.cgroup_automount = false;
 
 		if (!s_p_get_string(&slurm_cgroup_conf.cgroup_mountpoint,
-				    "CgroupMountpoint", tbl))
+				    "CgroupMountpoint", tbl)) {
 			slurm_cgroup_conf.cgroup_mountpoint =
 				xstrdup(DEFAULT_CGROUP_BASEDIR);
-
+		} else {
+			/* Remove the trailing / if any. */
+			tmp_str = slurm_cgroup_conf.cgroup_mountpoint;
+			sz = strlen(tmp_str);
+			if (*(tmp_str + sz - 1) == '/')
+				*(tmp_str + sz - 1) = '\0';
+			slurm_cgroup_conf.cgroup_mountpoint = xstrdup(tmp_str);
+			xfree(tmp_str);
+		}
 		if (s_p_get_string(&tmp_str, "CgroupReleaseAgentDir", tbl)) {
 			xfree(tmp_str);
 			fatal("Support for CgroupReleaseAgentDir option has been removed.");
