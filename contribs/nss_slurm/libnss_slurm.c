@@ -127,6 +127,120 @@ error:
 	return (config_loaded = SLURM_ERROR);
 }
 
+static struct hostent *_host_internal(int mode, const char *nodename)
+{
+	List steps = NULL;
+	ListIterator itr = NULL;
+	step_loc_t *stepd;
+	int fd;
+	struct hostent *host = NULL;
+
+	if (_load_config())
+		return NULL;
+	/*
+	 * Both arguments to stepd_available() must be provided, otherwise
+	 * it will internally try to load the Slurm config to sort it out.
+	 */
+	if (!(steps = stepd_available(spool, node))) {
+		fprintf(stderr, "error retrieving Slurm step info\n");
+		return NULL;
+	}
+
+	itr = list_iterator_create(steps);
+        while ((stepd = list_next(itr))) {
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   &stepd->step_id, &stepd->protocol_version);
+
+		if (fd < 0)
+			continue;
+
+		host = stepd_gethostbyname(fd, stepd->protocol_version, mode,
+					   nodename);
+		close(fd);
+		if (host)
+			break;
+	}
+	list_iterator_destroy(itr);
+	FREE_NULL_LIST(steps);
+
+	return host;
+}
+
+static int _internal_gethost(int af, const char *name, char *buf,
+			     size_t buflen, struct hostent *result)
+{
+	int len_name, len_aliases = 0, cnt_aliases = 0, len_addr;
+	struct hostent *rpc_result = NULL;
+	int i, mode = 0;
+
+	if (af == AF_INET)
+		mode = GETHOST_IPV4;
+	else if (af == AF_INET6)
+		mode = GETHOST_IPV6;
+	else if (af == AF_UNSPEC)
+		mode = GETHOST_IPV4 | GETHOST_IPV6;
+
+	if (!(rpc_result = _host_internal(mode, name)))
+		return NSS_STATUS_NOTFOUND;
+
+	len_name = strlen(rpc_result->h_name);
+	len_aliases = sizeof(char*);
+	for (i = 0; rpc_result->h_aliases[i]; i++) {
+		len_aliases += strlen(rpc_result->h_aliases[i]);
+		cnt_aliases++;
+	}
+	len_addr = rpc_result->h_length;
+
+	if ((len_name + len_aliases + ((cnt_aliases + 1) * sizeof(char*)) +
+	     len_addr + (2 * sizeof(char *)) + cnt_aliases + 1) > buflen) {
+		xfree_struct_hostent(rpc_result);
+		return ERANGE;
+	}
+
+	strncpy(buf, rpc_result->h_name, len_name + 1);
+	result->h_name = buf;
+	buf += len_name + 1;
+
+	result->h_aliases = (char **) buf;
+	buf += ((cnt_aliases + 1) * sizeof(char*));
+
+	for (i = 0; i < cnt_aliases; i++) {
+		len_aliases = strlen(rpc_result->h_aliases[i]);
+		strncpy(buf, rpc_result->h_aliases[i], len_aliases + 1);
+		result->h_aliases[i] = buf;
+		buf += len_aliases + 1;
+	}
+	result->h_aliases[cnt_aliases] = NULL;
+
+	result->h_addrtype = rpc_result->h_addrtype;
+	result->h_length = rpc_result->h_length;
+
+	result->h_addr_list = (char **) buf;
+	buf += (2 * sizeof(char*));
+	memcpy(buf, rpc_result->h_addr_list[0], len_addr);
+	result->h_addr_list[0] = buf;
+	result->h_addr_list[1] = NULL;
+
+	xfree_struct_hostent(rpc_result);
+	return NSS_STATUS_SUCCESS;
+}
+
+enum nss_status _nss_slurm_gethostbyname_r(const char *name,
+					   struct hostent *result, char *buf,
+					   size_t buflen, int *errnop,
+					   int *herrnop)
+{
+	return _internal_gethost(AF_UNSPEC, name, buf, buflen, result);
+}
+
+enum nss_status _nss_slurm_gethostbyname2_r(const char *name, int af,
+					    struct hostent *result,
+					    char *buf, size_t buflen,
+					    int *errnop, int *herrnop)
+{
+	return _internal_gethost(af, name, buf, buflen, result);
+}
+
 static struct passwd *_pw_internal(int mode, uid_t uid, const char *name)
 {
 	List steps = NULL;
