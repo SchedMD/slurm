@@ -835,6 +835,14 @@ static void _wrap_on_data(void *x)
 			mgr->error = rc;
 		slurm_mutex_unlock(&mgr->mutex);
 
+		/*
+		 * processing data failed so drop any
+		 * pending data on the floor
+		 */
+		log_flag(NET, "%s: [%s] on_data callback failed. Purging the remaining %d bytes of pending input.",
+			 __func__, con->name, get_buf_offset(con->in));
+		set_buf_offset(con->in, 0);
+
 		_close_con(false, con);
 		return;
 	}
