@@ -323,9 +323,6 @@ static void _close_all_connections(void *x)
 	list_for_each(mgr->connections, _close_con_for_each, NULL);
 	list_for_each(mgr->listen, _close_con_for_each, NULL);
 
-	/* break out of any poll() calls */
-	_signal_change(mgr, true);
-
 	slurm_mutex_unlock(&mgr->mutex);
 }
 
@@ -422,6 +419,8 @@ static void _close_con(bool locked, con_mgr_fd_t *con)
 
 	/* forget the now invalid FD */
 	con->input_fd = -1;
+
+	_signal_change(con->mgr, true);
 cleanup:
 	if (!locked)
 		slurm_mutex_unlock(&con->mgr->mutex);
