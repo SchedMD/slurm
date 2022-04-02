@@ -1780,6 +1780,8 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 
 extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
 {
+	xassert(con->has_work);
+
 	_check_magic_fd(con);
 	_close_con(false, con);
 }
