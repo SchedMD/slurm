@@ -827,7 +827,6 @@ typedef struct {
 	time_t start;
 	uint32_t state;
 	uint32_t state_reason_prev;
-	slurmdb_stats_t stats;
 	List    steps; /* list of slurmdb_step_rec_t *'s */
 	time_t submit;
 	char *submit_line;
@@ -838,7 +837,6 @@ typedef struct {
 	uint32_t timelimit;
 	uint64_t tot_cpu_sec;
 	uint64_t tot_cpu_usec;
-	uint16_t track_steps;
 	char *tres_alloc_str;
 	char *tres_req_str;
 	uint32_t uid;

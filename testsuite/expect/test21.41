@@ -114,16 +114,16 @@ proc create_sql {cluster sql_in sql_rem} {
 	puts $file "on duplicate key update period_start=VALUES(period_start), period_end=VALUES(period_end);"
 
 	# add jobs
-	puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, track_steps, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
-	puts $file "('$jobid01', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
-	puts $file "('$jobid02', '$user1acct1', '$wckey2', '$user1wckey2', '$uid', '$gid', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
-	puts $file "('$jobid03', '$user2acct1', '$wckey1', '$user2wckey1',    '0',    '0', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
-	puts $file "('$jobid04', '$user2acct1', '$wckey2', '$user2wckey2',    '0',    '0', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "insert into job_table (jobid, associd, wckey, wckeyid, uid, gid, `partition`, blockid, cluster, account, eligible, submit, start, end, suspended, name, state, comp_code, priority, req_cpus, tres_alloc, nodelist, kill_requid, qos, deleted) values"
+	puts $file "('$jobid01', '$user1acct1', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid02', '$user1acct1', '$wckey2', '$user1wckey2', '$uid', '$gid', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid03', '$user2acct1', '$wckey1', '$user2wckey1',    '0',    '0', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid04', '$user2acct1', '$wckey2', '$user2wckey2',    '0',    '0', 'debug', '', '$cluster', '$account1', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
 
-	puts $file "('$jobid05', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
-	puts $file "('$jobid06', '$user1acct2', '$wckey2', '$user1wckey2', '$uid', '$gid', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
-	puts $file "('$jobid07', '$user2acct2', '$wckey1', '$user2wckey1',    '0',    '0', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
-	puts $file "('$jobid08', '$user2acct2', '$wckey2', '$user2wckey2',    '0',    '0', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '0', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid05', '$user1acct2', '$wckey1', '$user1wckey1', '$uid', '$gid', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid06', '$user1acct2', '$wckey2', '$user1wckey2', '$uid', '$gid', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid07', '$user2acct2', '$wckey1', '$user2wckey1',    '0',    '0', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
+	puts $file "('$jobid08', '$user2acct2', '$wckey2', '$user2wckey2',    '0',    '0', 'debug', '', '$cluster', '$account2', 1199138400, 1199138400, 1199138400, 1199139600, '0', '$job_name', '3', '0', '2', 2, '1=2', '$node_list', '0', '0', '0')"
 	puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc), wckey=VALUES(wckey), wckeyid=VALUES(wckeyid);";
 	close $file
 

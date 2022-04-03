@@ -163,6 +163,8 @@ documents those changes that are of interest to users and administrators.
     for jobs.
  -- openapi/v0.0.38 - add RPC call statistics to diag endpoint.
  -- openapi/[db]v0.0.36 - plugins have been marked as deprecated.
+ -- sacct - allocations made by srun will now always display the allocation and
+    step(s). Previously, the allocation and step were combined when possible.
 
 * Changes in Slurm 21.08.7
 ==========================

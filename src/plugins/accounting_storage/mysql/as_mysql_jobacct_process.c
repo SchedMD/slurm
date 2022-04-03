@@ -95,7 +95,6 @@ char *job_req_inx[] = {
 	"t1.time_submit",
 	"t1.time_suspended",
 	"t1.timelimit",
-	"t1.track_steps",
 	"t1.wckey",
 	"t1.gres_used",
 	"t1.tres_alloc",
@@ -153,7 +152,6 @@ enum {
 	JOB_REQ_SUBMIT,
 	JOB_REQ_SUSPENDED,
 	JOB_REQ_TIMELIMIT,
-	JOB_REQ_TRACKSTEPS,
 	JOB_REQ_WCKEY,
 	JOB_REQ_GRES_USED,
 	JOB_REQ_TRESA,
@@ -873,7 +871,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			job->nodes = xstrdup("(unknown)");
 		}
 
-		job->track_steps = slurm_atoul(row[JOB_REQ_TRACKSTEPS]);
 		job->priority = slurm_atoul(row[JOB_REQ_PRIORITY]);
 		job->req_cpus = slurm_atoul(row[JOB_REQ_REQ_CPUS]);
 		job->req_mem = slurm_atoull(row[JOB_REQ_REQ_MEM]);
@@ -1132,31 +1129,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					xstrdup(step_row[STEP_REQ_TRES]);
 		}
 		mysql_free_result(step_result);
-
-		if (!job->track_steps) {
-			uint64_t j_cpus, s_cpus;
-			/* If we don't have track_steps we want to see
-			   if we have multiple steps.  If we only have
-			   1 step check the job name against the step
-			   name in most all cases it will be
-			   different.  If it is different print out
-			   the step separate.  It could also be a single
-			   step/allocation where the job was allocated more than
-			   the step requested (eg. CR_Socket).
-			*/
-			if (list_count(job->steps) > 1)
-				job->track_steps = 1;
-			else if (step &&
-				 (xstrcmp(step->stepname, job->jobname) ||
-				  (((j_cpus = slurmdb_find_tres_count_in_string(
-					     job->tres_alloc_str, TRES_CPU))
-				    != INFINITE64) &&
-				   ((s_cpus = slurmdb_find_tres_count_in_string(
-					     step->tres_alloc_str, TRES_CPU))
-				    != INFINITE64) &&
-				  j_cpus != s_cpus)))
-					job->track_steps = 1;
-		}
 	skip_steps:
 		/* need to reset here to make the above test valid */
 		step = NULL;

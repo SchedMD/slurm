@@ -504,7 +504,6 @@ extern int get_data(void)
 	ListIterator itr_step = NULL;
 	slurmdb_job_cond_t *job_cond = params.job_cond;
 	int cnt;
-	char *tmp_usage;
 
 	if (params.opt_completion) {
 		jobs = slurmdb_jobcomp_jobs_get(job_cond);
@@ -551,21 +550,7 @@ extern int get_data(void)
 				step->sys_cpu_sec;
 			job->sys_cpu_usec +=
 				step->sys_cpu_usec;
-
-			/* get the max for all the sacct_t struct */
-			aggregate_stats(&job->stats, &step->stats);
 		}
-
-		/* Now figure out the average of the total of averages */
-		tmp_usage = job->stats.tres_usage_in_ave;
-		job->stats.tres_usage_in_ave =
-			slurmdb_ave_tres_usage(tmp_usage, cnt);
-		xfree(tmp_usage);
-		tmp_usage = job->stats.tres_usage_out_ave;
-		job->stats.tres_usage_out_ave =
-			slurmdb_ave_tres_usage(tmp_usage, cnt);
-		xfree(tmp_usage);
-
 		list_iterator_destroy(itr_step);
 	}
 	list_iterator_destroy(itr);
@@ -1426,8 +1411,7 @@ extern void do_list(void)
 		if (job->show_full)
 			print_fields(JOB, job);
 
-		if (!(job_cond->flags & JOBCOND_FLAG_NO_STEP)
-		    && (job->track_steps || !job->show_full)) {
+		if (!(job_cond->flags & JOBCOND_FLAG_NO_STEP)) {
 			itr_step = list_iterator_create(job->steps);
 			while ((step = list_next(itr_step))) {
 				if (step->end == 0)

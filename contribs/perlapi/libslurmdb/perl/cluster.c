@@ -707,11 +707,7 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     slurmdb_step_rec_t *step;
     ListIterator itr = NULL;
     AV* steps_av = (AV*)sv_2mortal((SV*)newAV());
-    HV* stats_hv = (HV*)sv_2mortal((SV*)newHV());
     HV* step_hv;
-
-    stats_to_hv(&rec->stats, stats_hv);
-    hv_store_sv(hv, "stats", newRV((SV*)stats_hv));
 
     if (rec->steps) {
 	itr = slurm_list_iterator_create(rec->steps);
@@ -766,7 +762,6 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, timelimit,       uint32_t);
     STORE_FIELD(hv, rec, tot_cpu_sec,     uint32_t);
     STORE_FIELD(hv, rec, tot_cpu_usec,    uint32_t);
-    STORE_FIELD(hv, rec, track_steps,     uint16_t);
     STORE_FIELD(hv, rec, tres_alloc_str,  charp);
     STORE_FIELD(hv, rec, tres_req_str,    charp);
     STORE_FIELD(hv, rec, uid,             uint32_t);

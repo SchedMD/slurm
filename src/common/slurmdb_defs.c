@@ -646,7 +646,6 @@ static void _find_create_parent(slurmdb_assoc_rec_t *assoc_rec, List assoc_list,
 extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
-	memset(&job->stats, 0, sizeof(slurmdb_stats_t));
 	job->array_task_id = NO_VAL;
 	job->derived_ec = NO_VAL;
 	job->state = JOB_PENDING;
@@ -945,7 +944,6 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->nodes);
 		xfree(job->resv_name);
 		xfree(job->script);
-		slurmdb_free_slurmdb_stats_members(&job->stats);
 		FREE_NULL_LIST(job->steps);
 		xfree(job->submit_line);
 		xfree(job->system_comment);

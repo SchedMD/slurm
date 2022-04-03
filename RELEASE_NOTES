@@ -57,6 +57,8 @@ HIGHLIGHTS
  -- Allow nodes to be dynamically added and removed from the system. Configure
     MaxNodeCount to accomodate nodes created with dynamic node registrations
     (slurmd -Z<feature> --conf="") and scontrol.
+ -- sacct - allocations made by srun will now always display the allocation and
+    step(s). Previously, the allocation and step were combined when possible.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
