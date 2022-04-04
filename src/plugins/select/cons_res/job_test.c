@@ -166,7 +166,7 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 
 	if ((s_p_n == NO_VAL) || (core_bitmap == NULL) ||
 	    (select_node_record == NULL) ||
-	    ((sock_cnt = select_node_record[node_i].sockets) < 2) ||
+	    ((sock_cnt = select_node_record[node_i].tot_sockets) < 2) ||
 	    (sock_cnt <= s_p_n)) {
 		/* No socket filtering possible, use all sockets */
 		return gres_job_test(job_gres_list, node_gres_list,

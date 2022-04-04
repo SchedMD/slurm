@@ -903,7 +903,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	n_first = bit_ffs(job_res->node_bitmap);
 	if (n_first != -1) {
 		n_last = bit_fls(job_res->node_bitmap);
-		sock_size  = select_node_record[n_first].sockets;
+		sock_size  = select_node_record[n_first].tot_sockets;
 		sock_avoid = xcalloc(sock_size, sizeof(bool));
 		sock_start = xcalloc(sock_size, sizeof(uint32_t));
 		sock_end   = xcalloc(sock_size, sizeof(uint32_t));
@@ -933,7 +933,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	for (c = 0, i = 0, n = n_first; n <= n_last; n++) {
 		if (bit_test(job_res->node_bitmap, n) == 0)
 			continue;
-		sockets = select_node_record[n].sockets;
+		sockets = select_node_record[n].tot_sockets;
 		cps     = select_node_record[n].cores;
 		vpus    = common_cpus_per_core(job_ptr->details, n);
 
