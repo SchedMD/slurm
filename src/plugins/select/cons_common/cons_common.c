@@ -1887,12 +1887,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 			alloc_cpus *= node_threads;
 		nodeinfo->alloc_cpus = alloc_cpus;
 
-		if (select_node_record) {
-			nodeinfo->alloc_memory =
-				select_node_usage[n].alloc_memory;
-		} else {
-			nodeinfo->alloc_memory = 0;
-		}
+		nodeinfo->alloc_memory = select_node_usage[n].alloc_memory;
 
 		/* Build allocated TRES info */
 		if (!nodeinfo->tres_alloc_cnt)
