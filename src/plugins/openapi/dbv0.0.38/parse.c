@@ -1857,6 +1857,14 @@ static data_for_each_cmd_t _for_each_parse_tres_count(data_t *data, void *arg)
 
 		if (!tres->id)
 			tres->id = ftres->id;
+	} else {
+		char *msg = NULL;
+		xstrfmtcat(msg,
+			   "Couldn't find TRES matching name:%s type:%s",
+			   targs.tres->name, targs.tres->type);
+		resp_error(errors, ESLURM_INVALID_TRES, msg, __func__);
+		xfree(msg);
+		return DATA_FOR_EACH_FAIL;
 	}
 
 	return DATA_FOR_EACH_CONT;
