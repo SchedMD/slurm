@@ -230,7 +230,7 @@ static const char *_get_entry_type_string(entry_type_t type)
 	}
 }
 
-static void _free_entry_list(entry_t *entry, path_t *path,
+static void _free_entry_list(entry_t *entry, int tag,
 			     entry_method_t *method)
 {
 	entry_t *itr = entry;
@@ -240,7 +240,7 @@ static void _free_entry_list(entry_t *entry, path_t *path,
 
 	while (itr->type) {
 		debug5("%s: remove path tag:%d method:%s entry:%s name:%s",
-		       __func__, (path ? path->tag : -1),
+		       __func__, tag,
 		       (method ? get_http_method_string(method->method) :
 				       "UNKNOWN"),
 		       itr->entry, itr->name);
@@ -267,7 +267,7 @@ static void _list_delete_path_t(void *x)
 		debug5("%s: remove path tag:%d method:%s", __func__, path->tag,
 		       get_http_method_string(em->method));
 
-		_free_entry_list(em->entries, path, em);
+		_free_entry_list(em->entries, path->tag, em);
 		em->entries = NULL;
 		em++;
 	}
@@ -686,7 +686,7 @@ extern int register_path_tag(openapi_t *oas, const char *str_path)
 	rc = path->tag;
 
 cleanup:
-	_free_entry_list(entries, path, args.method);
+	_free_entry_list(entries, (path ? path->tag : -1), args.method);
 	entries = NULL;
 
 	return rc;
