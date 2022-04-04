@@ -612,15 +612,15 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	if (!method->entries) {
 		/* only add entries on first method parse */
 		method->entries = xcalloc((count + 1), sizeof(entry_t));
-		/* count is already bounded */
-		memcpy(method->entries, args->entries,
-		       (count * sizeof(entry_t)));
-	}
-
-	/* unlink strings from source */
-	for (entry = args->entries; entry->type; entry++) {
-		entry->entry = NULL;
-		entry->name = NULL;
+		/* Copy spec entry list into method entry list */
+		entry_t *dest = method->entries;
+		for (entry_t *src = args->entries; src->type; src++) {
+			dest->entry = xstrdup(src->entry);
+			dest->name = xstrdup(src->name);
+			dest->type = src->type;
+			dest->parameter = src->parameter;
+			dest++;
+		}
 	}
 
 	/* point to new entries clone */
