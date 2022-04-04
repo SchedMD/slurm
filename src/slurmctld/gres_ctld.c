@@ -1958,30 +1958,29 @@ static int _set_step_gres_bit_alloc(gres_step_state_t *gres_ss,
 				    bool decr_job_alloc)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
-	bitstr_t *gres_bit_alloc = bit_copy(
+	int len = bit_size(gres_js->gres_bit_alloc[node_offset]);
+	bitstr_t *gres_bit_alloc = bit_alloc(len);
+	bitstr_t *gres_bit_avail = bit_copy(
 		gres_js->gres_bit_alloc[node_offset]);
-	int len = bit_size(gres_bit_alloc);
 
 	if (decr_job_alloc &&
 	    gres_js->gres_bit_step_alloc &&
 	    gres_js->gres_bit_step_alloc[node_offset] &&
 	    !gres_id_shared(gres_state_job->config_flags)) {
-		bit_and_not(gres_bit_alloc,
+		bit_and_not(gres_bit_avail,
 			    gres_js->gres_bit_step_alloc[node_offset]);
 	}
-	for (int i = 0; i < len; i++) {
-		if (gres_alloc > 0) {
-			if (bit_test(gres_bit_alloc, i)) {
-				if (gres_id_shared(
-					    gres_state_job->config_flags))
-					gres_alloc = 0;
-				else
-					gres_alloc--;
-			}
-		} else {
-			bit_clear(gres_bit_alloc, i);
-		}
+
+	for (int i = 0; i < len && gres_alloc; i++) {
+		if (!bit_test(gres_bit_avail, i))
+			continue;
+		bit_set(gres_bit_alloc, i);
+		if (gres_id_shared(gres_state_job->config_flags))
+			gres_alloc = 0;
+		else
+			gres_alloc--;
 	}
+	FREE_NULL_BITMAP(gres_bit_avail);
 
 	if (decr_job_alloc) {
 		if (!gres_js->gres_bit_step_alloc) {
