@@ -41,6 +41,7 @@
 
 #include "src/common/list.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/workq.h"
 
 /*
@@ -72,12 +73,25 @@ typedef struct {
 	/*
 	 * Call back when there is data ready in "in" buffer
 	 * This may be called several times in the same connection.
+	 * Only called when type = CON_TYPE_RAW.
 	 *
 	 * IN con connection handler
 	 * IN arg ptr to be handed return of con_mgr_on_new_connection_t().
 	 * RET SLURM_SUCCESS or error to kill connection
 	 */
 	int (*on_data)(con_mgr_fd_t *con, void *arg);
+
+	/*
+	 * Call back when there is new RPC msg ready
+	 * This may be called several times in the same connection.
+	 * Only called when type = CON_TYPE_RPC.
+	 *
+	 * IN con connection handler
+	 * IN msg ptr to new msg (call must slurm_free_msg())
+	 * IN arg ptr to be handed return of con_mgr_on_new_connection_t().
+	 * RET SLURM_SUCCESS or error to kill connection
+	 */
+	int (*on_msg)(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg);
 
 	/*
 	 * Call back when connection ended.
@@ -115,6 +129,7 @@ typedef struct {
 typedef enum {
 	CON_TYPE_INVALID = 0,
 	CON_TYPE_RAW, /* handle data unprocessed to/from */
+	CON_TYPE_RPC, /* handle data Slurm RPCs to/from */
 	CON_TYPE_MAX /* place holder - do not use */
 } con_mgr_con_type_t;
 
@@ -157,6 +172,8 @@ struct con_mgr_fd_s {
 	bool read_eof;
 	/* has this connection called on_connection */
 	bool is_connected;
+	/* incoming msg length - CON_TYPE_RPC only */
+	uint32_t msglen;
 	/*
 	 * has pending work:
 	 * there must only be 1 thread at a time working on this connection
@@ -171,6 +188,7 @@ struct con_mgr_fd_s {
 	 * 	con (will not be moved)
 	 * 	arg
 	 *	on_data_tried
+	 *	msglen
 	 *
 	 */
 	bool has_work;
@@ -300,6 +318,7 @@ extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr,
 /*
  * Write binary data to connection (from callback).
  * NOTE: only call from within a callback
+ * NOTE: type=CON_TYPE_RAW only
  * IN con connection manager connection struct
  * IN buffer pointer to buffer
  * IN bytes number of bytes in buffer to write
@@ -307,6 +326,16 @@ extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr,
  */
 extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 				  const size_t bytes);
+
+/*
+ * Write packed msg to connection (from callback).
+ * NOTE: only call from within a callback
+ * NOTE: type=CON_TYPE_RPC only
+ * IN con conmgr connection ptr
+ * IN msg message to send
+ * RET SLURM_SUCCESS or error
+ */
+extern int con_mgr_queue_write_msg(con_mgr_fd_t *con, slurm_msg_t *msg);
 
 /*
  * Request soft close of connection

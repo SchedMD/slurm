@@ -53,12 +53,16 @@
 
 #include "src/common/conmgr.h"
 #include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/http.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/strlcpy.h"
 #include "src/common/timers.h"
 #include "src/common/workq.h"
@@ -134,9 +138,19 @@ static void _check_magic_fd(con_mgr_fd_t *con)
 	xassert(con);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->events.on_connection);
-	xassert(con->events.on_data);
 	xassert(con->name && con->name[0]);
 	xassert((con->type > CON_TYPE_INVALID) && (con->type < CON_TYPE_MAX));
+
+	if (con->type == CON_TYPE_RAW) {
+		xassert(con->events.on_data);
+		xassert(!con->events.on_msg);
+		xassert(!con->msglen);
+	}
+	if (con->type == CON_TYPE_RPC) {
+		xassert(!con->events.on_data);
+		xassert(con->events.on_msg);
+		xassert(!con->msglen || con->is_connected);
+	}
 
 	/*
 	 * any positive non-zero fd is plausible but
@@ -423,6 +437,8 @@ static con_mgr_fd_t *_add_connection(
 	con_mgr_fd_t *con = NULL;
 
 	_check_magic_mgr(mgr);
+	xassert((type == CON_TYPE_RAW && events.on_data && !events.on_msg) ||
+		(type == CON_TYPE_RPC && !events.on_data && events.on_msg));
 
 	/* verify FD is valid and still open */
 	if (fstat(input_fd, &fbuf) == -1) {
@@ -596,6 +612,7 @@ static void _wrap_work(void *x)
 		(args->func == _wrap_on_connection));
 	xassert(change.on_data_tried == con->on_data_tried ||
 		(args->func == _wrap_on_data));
+	xassert(change.msglen == con->msglen);
 #endif /* !NDEBUG */
 	xassert(con->has_work);
 	con->has_work = false;
@@ -799,6 +816,104 @@ static void _handle_write(void *x)
 		set_buf_offset(con->out, 0);
 }
 
+static int _on_rpc_connection_data(con_mgr_fd_t *con, void *arg)
+{
+	int rc = SLURM_ERROR;
+	uint32_t need;
+	slurm_msg_t *msg = NULL;
+
+	_check_magic_fd(con);
+
+	/* based on slurm_msg_recvfrom_timeout() */
+	if (!con->msglen) {
+		log_flag(NET, "%s: [%s] got %d bytes pending for RPC connection",
+			 __func__, con->name, size_buf(con->in));
+
+		xassert(sizeof(con->msglen) == sizeof(uint32_t));
+		if (size_buf(con->in) >= sizeof(con->msglen)) {
+			con->msglen = ntohl(
+				*(uint32_t *) get_buf_data(con->in));
+			log_flag(NET, "%s: [%s] got message length %u for RPC connection with %d bytes pending",
+				 __func__, con->name, con->msglen, size_buf(con->in));
+		} else {
+			log_flag(NET, "%s: [%s] waiting for message length for RPC connection",
+				 __func__, con->name);
+			return SLURM_SUCCESS;
+		}
+
+		if (con->msglen > MAX_MSG_SIZE) {
+			log_flag(NET, "%s: [%s] rejecting RPC message length: %u",
+				 __func__, con->name, con->msglen);
+			return SLURM_PROTOCOL_INSANE_MSG_LENGTH;
+		}
+	}
+
+	need = sizeof(con->msglen) + con->msglen;
+	if (size_buf(con->in) < need) {
+		uint32_t delta = (need - size_buf(con->in));
+		log_flag(NET, "%s: [%s] increasing buffer %u bytes for  RPC message length: %u",
+			 __func__, con->name, delta, con->msglen);
+
+		grow_buf(con->in, delta);
+	}
+
+	if (size_buf(con->in) >= need) {
+		/* there is enough data to unpack now */
+		msg = xmalloc(sizeof(*msg));
+		slurm_msg_t_init(msg);
+
+		/* shift the data pointer up by sizeof(msglen) */
+		get_buf_data(con->in) += sizeof(con->msglen);
+
+		log_flag_hex(NET_RAW, get_buf_data(con->in),
+			     size_buf(con->in), "%s: [%s] unpacking RPC",
+			     __func__, con->name);
+
+		if ((rc = slurm_unpack_received_msg(msg, con->input_fd,
+						    con->in))) {
+			rc = errno;
+			error("%s: [%s] unpack_msg() failed: %s",
+			      __func__, con->name, slurm_strerror(rc));
+			slurm_free_msg(msg);
+			msg = NULL;
+		} else {
+			log_flag(NET, "%s: [%s] unpacked %u bytes containing %s RPC",
+				 __func__, con->name, need,
+				 rpc_num2string(msg->msg_type));
+		}
+
+		/* unshift the data pointer */
+		get_buf_data(con->in) -= sizeof(con->msglen);
+
+		/* notify conmgr we processed some data */
+		set_buf_offset(con->in, need);
+
+		/* reset message length to start all over again */
+		con->msglen = 0;
+	} else {
+		log_flag(NET, "%s: [%s] waiting for message length %u/%u for RPC message",
+			 __func__, con->name, size_buf(con->in), need);
+		return SLURM_SUCCESS;
+	}
+
+	/* if there is an error then there should not be a message */
+	xassert(!rc != !msg);
+
+	if (!rc && msg) {
+		log_flag(PROTOCOL, "%s: [%s] received RPC %s",
+			 __func__, con->name, rpc_num2string(msg->msg_type));
+		log_flag(NET, "%s: [%s] RPC BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
+			 __func__, con->name, (uintptr_t) con->events.on_msg,
+			 (uintptr_t) con->arg);
+		rc = con->events.on_msg(con, msg, con->arg);
+		log_flag(NET, "%s: [%s] RPC END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
+			 __func__, con->name, (uintptr_t) con->events.on_msg,
+			 (uintptr_t) con->arg, slurm_strerror(rc));
+	}
+
+	return rc;
+}
+
 static void _wrap_on_data(void *x)
 {
 	con_mgr_fd_t *con = x;
@@ -820,7 +935,12 @@ static void _wrap_on_data(void *x)
 		 __func__, con->name, (uintptr_t) con->events.on_data,
 		 (uintptr_t) con->arg);
 
-	rc = con->events.on_data(con, con->arg);
+	if (con->type == CON_TYPE_RAW)
+		rc = con->events.on_data(con, con->arg);
+	else if (con->type == CON_TYPE_RPC)
+		rc = _on_rpc_connection_data(con, con->arg);
+	else
+		fatal("%s: invalid type", __func__);
 
 	log_flag(NET, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" rc=%s",
 		 __func__, con->name, (uintptr_t) con->events.on_data,
@@ -1808,6 +1928,65 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 	_signal_change(con->mgr, false);
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * based on _pack_msg() and slurm_send_node_msg() in slurm_protocol_api.c
+ */
+extern int con_mgr_queue_write_msg(con_mgr_fd_t *con, slurm_msg_t *msg)
+{
+	int rc;
+	msg_bufs_t buffers = {0};
+	uint32_t msglen = 0;
+
+	_check_magic_fd(con);
+
+	if ((rc = slurm_buffers_pack_msg(msg, &buffers, false)))
+		goto cleanup;
+
+	msglen = get_buf_offset(buffers.auth) + get_buf_offset(buffers.body) +
+		get_buf_offset(buffers.header);
+
+	/* switch to network order */
+	msglen = htonl(msglen);
+
+	//TODO: handing over the buffers would be better than copying
+
+	if ((rc = con_mgr_queue_write_fd(con, &msglen, sizeof(msglen))))
+		goto cleanup;
+
+	if ((rc = con_mgr_queue_write_fd(con, get_buf_data(buffers.header),
+					 get_buf_offset(buffers.header))))
+		goto cleanup;
+
+	if ((rc = con_mgr_queue_write_fd(con, get_buf_data(buffers.auth),
+					 get_buf_offset(buffers.auth))))
+		goto cleanup;
+
+	rc = con_mgr_queue_write_fd(con, get_buf_data(buffers.body),
+				    get_buf_offset(buffers.body));
+cleanup:
+	if (!rc) {
+		log_flag(PROTOCOL, "%s: [%s] sending RPC %s",
+			 __func__, con->name, rpc_num2string(msg->msg_type));
+		log_flag(NET, "%s: [%s] sending RPC %s packed into %u bytes",
+			 __func__, con->name, rpc_num2string(msg->msg_type),
+			 ntohl(msglen));
+		log_flag_hex(NET_RAW, get_buf_data(con->out),
+			     get_buf_offset(con->out),
+			     "%s: [%s] sending RPC %s", __func__, con->name,
+			     rpc_num2string(msg->msg_type));
+	} else {
+		log_flag(NET, "%s: [%s] error packing RPC %s: %s",
+			 __func__, con->name, rpc_num2string(msg->msg_type),
+			 slurm_strerror(rc));
+	}
+
+	FREE_NULL_BUFFER(buffers.auth);
+	FREE_NULL_BUFFER(buffers.body);
+	FREE_NULL_BUFFER(buffers.header);
+
+	return rc;
 }
 
 extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
