@@ -1170,21 +1170,19 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 				     sizeof(node_use_record_t));
 
 	for (i = 0; i < select_node_cnt; i++) {
-		config_record_t *config_ptr;
 		if (!node_ptr[i])
 			continue;
 		select_node_record[i].node_ptr = node_ptr[i];
 		select_node_record[i].mem_spec_limit =
 			node_ptr[i]->mem_spec_limit;
 
-		config_ptr = node_ptr[i]->config_ptr;
-		select_node_record[i].cpus    = config_ptr->cpus;
-		select_node_record[i].boards  = config_ptr->boards;
-		select_node_record[i].tot_sockets = config_ptr->tot_sockets;
-		select_node_record[i].cores   = config_ptr->cores;
-		select_node_record[i].threads = config_ptr->threads;
-		select_node_record[i].vpus    = config_ptr->threads;
-		select_node_record[i].real_memory = config_ptr->real_memory;
+		select_node_record[i].cpus    = node_ptr[i]->cpus;
+		select_node_record[i].boards  = node_ptr[i]->boards;
+		select_node_record[i].tot_sockets = node_ptr[i]->tot_sockets;
+		select_node_record[i].cores   = node_ptr[i]->cores;
+		select_node_record[i].threads = node_ptr[i]->threads;
+		select_node_record[i].vpus    = node_ptr[i]->threads;
+		select_node_record[i].real_memory = node_ptr[i]->real_memory;
 
 		select_node_record[i].sockets =
 			select_node_record[i].tot_sockets /
@@ -2101,19 +2099,18 @@ extern int select_p_update_node_config(int index)
 	 */
 	if (!(slurm_conf.conf_flags & CTL_CONF_OR) &&
 	    (select_node_record[index].tot_sockets !=
-	     select_node_record[index].node_ptr->config_ptr->tot_sockets) &&
+	     select_node_record[index].node_ptr->tot_sockets) &&
 	    (select_node_record[index].cores !=
-	     select_node_record[index].node_ptr->config_ptr->cores) &&
+	     select_node_record[index].node_ptr->cores) &&
 	    ((select_node_record[index].tot_sockets *
 	      select_node_record[index].cores) ==
 	     (select_node_record[index].node_ptr->tot_sockets *
 	      select_node_record[index].node_ptr->cores))) {
 		select_node_record[index].cores =
-			select_node_record[index].node_ptr->config_ptr->cores;
+			select_node_record[index].node_ptr->cores;
 		select_node_record[index].sockets =
-			select_node_record[index].node_ptr->config_ptr->
-				tot_sockets /
-			select_node_record[index].node_ptr->config_ptr->boards;
+			select_node_record[index].node_ptr->tot_sockets /
+			select_node_record[index].node_ptr->boards;
 
 		/* tot_sockets should be the same */
 		/* tot_cores should be the same */
