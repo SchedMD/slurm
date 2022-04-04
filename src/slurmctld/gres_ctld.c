@@ -39,10 +39,12 @@
 #include "src/common/xstring.h"
 
 typedef struct {
+	bitstr_t *core_bitmap;
 	bool decr_job_alloc;
 	uint64_t gres_needed;
 	gres_key_t *job_search_key;
 	uint64_t max_gres;
+	List node_gres_list;
 	int node_offset;
 	int rc;
 	List step_gres_list_alloc;
@@ -1955,13 +1957,25 @@ static int _set_step_gres_bit_alloc(gres_step_state_t *gres_ss,
 				    int node_offset,
 				    slurm_step_id_t *step_id,
 				    uint64_t gres_alloc,
-				    bool decr_job_alloc)
+				    bool decr_job_alloc,
+				    List node_gres_list,
+				    bitstr_t *core_bitmap)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	int len = bit_size(gres_js->gres_bit_alloc[node_offset]);
 	bitstr_t *gres_bit_alloc = bit_alloc(len);
 	bitstr_t *gres_bit_avail = bit_copy(
 		gres_js->gres_bit_alloc[node_offset]);
+	gres_state_t *gres_state_node;
+	gres_node_state_t *gres_ns;
+
+	if (!(gres_state_node = list_find_first(node_gres_list,
+						gres_find_id,
+						&gres_state_job->plugin_id))) {
+		error("No node gres when step gres is allocated. This should never happen.");
+		return 0;
+	}
+	gres_ns = gres_state_node->gres_data;
 
 	if (decr_job_alloc &&
 	    gres_js->gres_bit_step_alloc &&
@@ -1972,7 +1986,9 @@ static int _set_step_gres_bit_alloc(gres_step_state_t *gres_ss,
 	}
 
 	for (int i = 0; i < len && gres_alloc; i++) {
-		if (!bit_test(gres_bit_avail, i))
+		if (!bit_test(gres_bit_avail, i) ||
+		    bit_test(gres_bit_alloc, i) ||
+		    !_cores_on_gres(core_bitmap, NULL, gres_ns, i, gres_js))
 			continue;
 		bit_set(gres_bit_alloc, i);
 		if (gres_id_shared(gres_state_job->config_flags))
@@ -2001,8 +2017,6 @@ static int _set_step_gres_bit_alloc(gres_step_state_t *gres_ss,
 			xcalloc(gres_js->node_cnt, sizeof(bitstr_t *));
 	}
 	if (gres_ss->gres_bit_alloc[node_offset]) {
-		error("gres/%s: %s %ps bit_alloc already exists",
-		      gres_state_job->gres_name, __func__, step_id);
 		bit_or(gres_ss->gres_bit_alloc[node_offset],
 		       gres_bit_alloc);
 		FREE_NULL_BITMAP(gres_bit_alloc);
@@ -2020,7 +2034,9 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 		       slurm_step_id_t *step_id,
 		       uint64_t *gres_needed, uint64_t *max_gres,
 		       bool decr_job_alloc,
-		       uint64_t *step_node_mem_alloc)
+		       uint64_t *step_node_mem_alloc,
+		       List node_gres_list,
+		       bitstr_t *core_bitmap)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_step_state_t *gres_ss_req = gres_state_step_req->gres_data;
@@ -2070,9 +2086,30 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 	if (*gres_needed != INFINITE64) {
 		if (*max_gres && decr_job_alloc) {
 			gres_alloc = MIN(gres_alloc, *max_gres);
-			*max_gres -= gres_alloc;
 		} else
 			gres_alloc = MIN(gres_alloc,*gres_needed);
+	}
+
+	if (gres_js->gres_bit_alloc && gres_js->gres_bit_alloc[node_offset]) {
+		gres_left = _set_step_gres_bit_alloc(gres_ss, gres_state_job,
+						     node_offset, step_id,
+						     gres_alloc,
+						     decr_job_alloc,
+						     node_gres_list,
+						     core_bitmap);
+		if (gres_left && !core_bitmap) /* only on Pass 2 */
+			error("gres/%s: %s %ps oversubscribed resources on node %d",
+			      gres_state_job->gres_name, __func__, step_id,
+			      node_offset);
+		else
+			gres_alloc -= gres_left;
+	} else
+		debug3("gres/%s: %s gres_bit_alloc for %ps is NULL",
+		       gres_state_job->gres_name, __func__, step_id);
+
+	if (*gres_needed != INFINITE64) {
+		if (*max_gres && decr_job_alloc)
+			*max_gres -= gres_alloc;
 		if (gres_alloc < *gres_needed)
 			*gres_needed -= gres_alloc;
 		else
@@ -2081,7 +2118,7 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 
 	if (gres_ss->gres_cnt_node_alloc &&
 	    (node_offset < gres_ss->node_cnt)) {
-		gres_ss->gres_cnt_node_alloc[node_offset] = gres_alloc;
+		gres_ss->gres_cnt_node_alloc[node_offset] += gres_alloc;
 		/*
 		 * Calculate memory allocated to the step based on the
 		 * mem_per_gres limit.
@@ -2107,18 +2144,6 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 	if (decr_job_alloc)
 		gres_js->gres_cnt_step_alloc[node_offset] += gres_alloc;
 
-	if (gres_js->gres_bit_alloc && gres_js->gres_bit_alloc[node_offset]) {
-		gres_left = _set_step_gres_bit_alloc(gres_ss, gres_state_job,
-						     node_offset, step_id,
-						     gres_alloc,
-						     decr_job_alloc);
-		if (gres_left)
-			error("gres/%s: %s %ps oversubscribed resources on node %d",
-			      gres_state_job->gres_name, __func__, step_id,
-			      node_offset);
-	} else
-		debug3("gres/%s: %s gres_bit_alloc for %ps is NULL",
-		       gres_state_job->gres_name, __func__, step_id);
 	return SLURM_SUCCESS;
 }
 
@@ -2187,7 +2212,9 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 			       args->node_offset, &args->tmp_step_id,
 			       &args->gres_needed, &args->max_gres,
 			       args->decr_job_alloc,
-			       args->step_node_mem_alloc);
+			       args->step_node_mem_alloc,
+			       args->node_gres_list,
+			       args->core_bitmap);
 
 	if (args->rc != SLURM_SUCCESS) {
 		return -1;
@@ -2210,6 +2237,8 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
  * IN tasks_on_node - number of tasks to be launched on this node
  * IN rem_nodes - desired additional node count to allocate, including this node
  * IN job_id, step_id - ID of the step being allocated.
+ * IN node_gres_list - node's gres list
+ * IN core_bitmap - bitmap of all cores available for the step
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_step_alloc(List step_gres_list,
@@ -2219,7 +2248,9 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 				uint16_t tasks_on_node, uint32_t rem_nodes,
 				uint32_t job_id, uint32_t step_id,
 				bool decr_job_alloc,
-				uint64_t *step_node_mem_alloc)
+				uint64_t *step_node_mem_alloc,
+				List node_gres_list,
+				bitstr_t *core_bitmap)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator step_gres_iter;
@@ -2258,12 +2289,14 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 			job_search_key.type_id = NO_VAL;
 
 		job_search_key.node_offset = node_offset;
+		args.core_bitmap = core_bitmap;
 		args.decr_job_alloc = decr_job_alloc;
 		args.gres_needed = _step_get_gres_needed(
 			gres_ss, first_step_node, tasks_on_node,
 			rem_nodes, &args.max_gres);
 
 		args.job_search_key = &job_search_key;
+		args.node_gres_list = node_gres_list;
 		args.node_offset = node_offset;
 		args.rc = SLURM_SUCCESS;
 		args.step_gres_list_alloc = *step_gres_list_alloc;
@@ -2271,8 +2304,17 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 		args.step_node_mem_alloc = step_node_mem_alloc;
 		args.tmp_step_id = tmp_step_id;
 
-		(void)list_for_each(job_gres_list, (ListForF) _step_alloc_type,
-				    &args);
+		/* Pass 1: Allocate GRES overlapping available cores */
+		(void) list_for_each(job_gres_list, (ListForF) _step_alloc_type,
+				     &args);
+		if (args.gres_needed) {
+			log_flag(STEPS, "cpus for optimal gres/%s topology unavailable for %ps allocating anyway.",
+				 gres_state_step->gres_name, &tmp_step_id);
+		}
+		/* Pass 2: Allocate any available GRES */
+		args.core_bitmap = NULL;
+		(void) list_for_each(job_gres_list, (ListForF) _step_alloc_type,
+				     &args);
 
 		if (args.rc != SLURM_SUCCESS)
 			rc = args.rc;

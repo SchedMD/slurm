@@ -2232,6 +2232,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		uint64_t gres_step_node_mem_alloc = 0;
 		uint16_t vpus;
+		bitstr_t *unused_core_bitmap;
 
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
 			continue;
@@ -2327,6 +2328,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		if (!(step_ptr->flags & SSF_OVERLAP_FORCE))
 			job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 
+		unused_core_bitmap = bit_copy(job_resrcs_ptr->core_bitmap);
+		bit_and_not(unused_core_bitmap,
+			    job_resrcs_ptr->core_bitmap_used);
 		rc = gres_ctld_step_alloc(step_ptr->gres_list_req,
 					  &step_ptr->gres_list_alloc,
 					  job_ptr->gres_list_alloc,
@@ -2337,7 +2341,11 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 					  step_ptr->step_id.step_id,
 					  !(step_ptr->flags &
 					    SSF_OVERLAP_FORCE),
-					  &gres_step_node_mem_alloc);
+					  &gres_step_node_mem_alloc,
+					  node_record_table_ptr[i_node]->
+					  gres_list,
+					  unused_core_bitmap);
+		FREE_NULL_BITMAP(unused_core_bitmap);
 		if (rc != SLURM_SUCCESS) {
 			log_flag(STEPS, "unable to allocate step GRES for job node %d (%s): %s",
 				 job_node_inx,

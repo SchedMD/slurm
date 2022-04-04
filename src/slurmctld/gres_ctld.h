@@ -190,6 +190,8 @@ extern void gres_ctld_set_node_tres_cnt(List gres_list,
  *                     job allocation.
  * OUT step_node_mem_alloc - the amount of memory allocated to the step on this
  * 		node based on mem_per_gres requirements.
+ * IN node_gres_list - node's gres list
+ * IN core_bitmap - bitmap of all cores available for the step
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_step_alloc(List step_gres_list,
@@ -199,7 +201,9 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 				uint16_t tasks_on_node, uint32_t rem_nodes,
 				uint32_t job_id, uint32_t step_id,
 				bool decr_job_alloc,
-				uint64_t *step_node_mem_alloc);
+				uint64_t *step_node_mem_alloc,
+				List node_gres_list,
+				bitstr_t *core_bitmap);
 
 /*
  * Deallocate resource to a step and update job and step gres information
