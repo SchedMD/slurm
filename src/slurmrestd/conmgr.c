@@ -1929,3 +1929,17 @@ extern int con_mgr_create_sockets(con_mgr_t *mgr, List hostports,
 
 	return rc;
 }
+
+extern void con_mgr_request_shutdown(con_mgr_fd_t *con)
+{
+	con_mgr_t *mgr = con->mgr;
+
+	_check_magic_fd(con);
+
+	log_flag(NET, "%s: shutdown requested", __func__);
+
+	slurm_mutex_lock(&mgr->mutex);
+	mgr->shutdown = true;
+	_signal_change(mgr, true);
+	slurm_mutex_unlock(&mgr->mutex);
+}
