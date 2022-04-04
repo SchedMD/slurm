@@ -1796,6 +1796,10 @@ static int _find_tres_id(void *x, void *key)
 
 	xassert(args->magic == MAGIC_FIND_TRES);
 
+	debug5("Comparing database tres(name:%s, type:%s, id:%u) with requested(name:%s, type:%s, id:%u).",
+	       tres->name, tres->type, tres->id,
+	       args->tres->name, args->tres->type, args->tres->id);
+
 	if ((args->tres->id > 0) && args->tres->id == tres->id)
 		return 1;
 	if ((!args->tres->name || !args->tres->name[0]) &&
