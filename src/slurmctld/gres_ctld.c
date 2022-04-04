@@ -1949,6 +1949,67 @@ static uint64_t _step_get_gres_needed(gres_step_state_t *gres_ss,
 	return gres_needed;
 }
 
+
+static int _set_step_gres_bit_alloc(gres_step_state_t *gres_ss,
+				    gres_state_t *gres_state_job,
+				    int node_offset,
+				    slurm_step_id_t *step_id,
+				    uint64_t gres_alloc,
+				    bool decr_job_alloc)
+{
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	bitstr_t *gres_bit_alloc = bit_copy(
+		gres_js->gres_bit_alloc[node_offset]);
+	int i, len = bit_size(gres_bit_alloc);
+
+	if (gres_id_shared(gres_state_job->config_flags)) {
+		if (decr_job_alloc &&
+		    gres_js->gres_bit_step_alloc &&
+		    gres_js->gres_bit_step_alloc[node_offset]) {
+			bit_and_not(gres_bit_alloc,
+				    gres_js->gres_bit_step_alloc[node_offset]);
+		}
+		for (i = 0; i < len; i++) {
+			if (gres_alloc > 0) {
+				if (bit_test(gres_bit_alloc, i))
+					gres_alloc--;
+			} else {
+				bit_clear(gres_bit_alloc, i);
+			}
+		}
+	}
+
+	if (decr_job_alloc) {
+		if (!gres_js->gres_bit_step_alloc) {
+			gres_js->gres_bit_step_alloc =
+				xcalloc(gres_js->node_cnt,
+					sizeof(bitstr_t *));
+		}
+		if (gres_js->gres_bit_step_alloc[node_offset]) {
+			bit_or(gres_js->gres_bit_step_alloc[node_offset],
+			       gres_bit_alloc);
+		} else {
+			gres_js->gres_bit_step_alloc[node_offset] =
+				bit_copy(gres_bit_alloc);
+		}
+	}
+	if (!gres_ss->gres_bit_alloc) {
+		gres_ss->gres_bit_alloc =
+			xcalloc(gres_js->node_cnt, sizeof(bitstr_t *));
+	}
+	if (gres_ss->gres_bit_alloc[node_offset]) {
+		error("gres/%s: %s %ps bit_alloc already exists",
+		      gres_state_job->gres_name, __func__, step_id);
+		bit_or(gres_ss->gres_bit_alloc[node_offset],
+		       gres_bit_alloc);
+		FREE_NULL_BITMAP(gres_bit_alloc);
+	} else {
+		gres_ss->gres_bit_alloc[node_offset] = gres_bit_alloc;
+	}
+
+	return gres_alloc;
+}
+
 static int _step_alloc(gres_step_state_t *gres_ss,
 		       gres_state_t *gres_state_step_req,
 		       gres_state_t *gres_state_job,
@@ -1960,9 +2021,7 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_step_state_t *gres_ss_req = gres_state_step_req->gres_data;
-	uint64_t gres_alloc;
-	bitstr_t *gres_bit_alloc;
-	int i, len;
+	uint64_t gres_alloc, gres_left;
 
 	xassert(gres_js);
 	xassert(gres_ss);
@@ -2045,74 +2104,18 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 	if (decr_job_alloc)
 		gres_js->gres_cnt_step_alloc[node_offset] += gres_alloc;
 
-	if ((gres_js->gres_bit_alloc == NULL) ||
-	    (gres_js->gres_bit_alloc[node_offset] == NULL)) {
+	if (gres_js->gres_bit_alloc && gres_js->gres_bit_alloc[node_offset]) {
+		gres_left = _set_step_gres_bit_alloc(gres_ss, gres_state_job,
+						     node_offset, step_id,
+						     gres_alloc,
+						     decr_job_alloc);
+		if (gres_left)
+			error("gres/%s: %s %ps oversubscribed resources on node %d",
+			      gres_state_job->gres_name, __func__, step_id,
+			      node_offset);
+	} else
 		debug3("gres/%s: %s gres_bit_alloc for %ps is NULL",
 		       gres_state_job->gres_name, __func__, step_id);
-		return SLURM_SUCCESS;
-	}
-
-	gres_bit_alloc = bit_copy(gres_js->gres_bit_alloc[node_offset]);
-	len = bit_size(gres_bit_alloc);
-	if (gres_id_shared(gres_state_job->config_flags)) {
-		for (i = 0; i < len; i++) {
-			if (gres_alloc > 0) {
-				if (bit_test(gres_bit_alloc, i))
-					gres_alloc = 0;
-			} else {
-				bit_clear(gres_bit_alloc, i);
-			}
-		}
-	} else {
-		if (decr_job_alloc &&
-		    gres_js->gres_bit_step_alloc &&
-		    gres_js->gres_bit_step_alloc[node_offset]) {
-			bit_and_not(gres_bit_alloc,
-				    gres_js->gres_bit_step_alloc[node_offset]);
-		}
-		for (i = 0; i < len; i++) {
-			if (gres_alloc > 0) {
-				if (bit_test(gres_bit_alloc, i))
-					gres_alloc--;
-			} else {
-				bit_clear(gres_bit_alloc, i);
-			}
-		}
-	}
-	if (gres_alloc) {
-		error("gres/%s: %s %ps oversubscribed resources on node %d",
-		      gres_state_job->gres_name,
-		      __func__, step_id, node_offset);
-	}
-
-	if (decr_job_alloc) {
-		if (gres_js->gres_bit_step_alloc == NULL) {
-			gres_js->gres_bit_step_alloc =
-				xcalloc(gres_js->node_cnt,
-					sizeof(bitstr_t *));
-		}
-		if (gres_js->gres_bit_step_alloc[node_offset]) {
-			bit_or(gres_js->gres_bit_step_alloc[node_offset],
-			       gres_bit_alloc);
-		} else {
-			gres_js->gres_bit_step_alloc[node_offset] =
-				bit_copy(gres_bit_alloc);
-		}
-	}
-	if (gres_ss->gres_bit_alloc == NULL) {
-		gres_ss->gres_bit_alloc =
-			xcalloc(gres_js->node_cnt, sizeof(bitstr_t *));
-	}
-	if (gres_ss->gres_bit_alloc[node_offset]) {
-		error("gres/%s: %s %ps bit_alloc already exists",
-		      gres_state_job->gres_name, __func__, step_id);
-		bit_or(gres_ss->gres_bit_alloc[node_offset],
-		       gres_bit_alloc);
-		FREE_NULL_BITMAP(gres_bit_alloc);
-	} else {
-		gres_ss->gres_bit_alloc[node_offset] = gres_bit_alloc;
-	}
-
 	return SLURM_SUCCESS;
 }
 
