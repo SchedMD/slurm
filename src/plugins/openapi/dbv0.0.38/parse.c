@@ -1850,8 +1850,13 @@ static data_for_each_cmd_t _for_each_parse_tres_count(data_t *data, void *arg)
 	if ((ftres = list_find_first(args->penv->g_tres_list, _find_tres_id,
 				     &targs))) {
 		if ((tres->id > 0) && tres->id != ftres->id) {
-			resp_error(errors, ESLURM_INVALID_TRES,
-				   "TRES id unknown", "id");
+			char *msg = NULL;
+			xstrfmtcat(msg,
+				   "Requested TRES id(%d) doesn't match TRES type/name(%s/%s) which id is %d",
+				   tres->id, ftres->type, ftres->name,
+				   ftres->id);
+			resp_error(errors, ESLURM_INVALID_TRES, msg, __func__);
+			xfree(msg);
 			return DATA_FOR_EACH_FAIL;
 		}
 
