@@ -627,8 +627,11 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	nargs.entries = method->entries;
 
 	para = data_key_get_const(data, "parameters");
-	if (!para)
+	if (!para) {
+		/* increment to next method entry */
+		args->method++;
 		return DATA_FOR_EACH_CONT;
+	}
 	if (data_get_type(para) != DATA_TYPE_LIST)
 		return DATA_FOR_EACH_FAIL;
 	if (data_list_for_each_const(para, _populate_parameters, &nargs) < 0)

@@ -197,6 +197,7 @@ documents those changes that are of interest to users and administrators.
  -- Add slurmdbd.conf option AllowNoDefAcct to remove requirement for users to
     have a default account.
  -- Fix issues related to users with very large uids.
+ -- common/openapi - fix bug populating methods for parameter-less endpoint.
 
 * Changes in Slurm 21.08.8
 ==========================
