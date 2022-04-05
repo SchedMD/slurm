@@ -1863,7 +1863,8 @@ static int _gres_filter_avail_sockets(void *x, void *arg)
 	/* Determine which specific cores can be used */
 	for (int i = 0; i < gres_ns->topo_cnt; i++) {
 		/* Is this gres allocated to the step? */
-		if (!bit_overlap_any(
+		if (gres_ss->gres_bit_alloc[args->job_node_inx] &&
+		    !bit_overlap_any(
 			    gres_ss->gres_bit_alloc[args->job_node_inx],
 			    gres_ns->topo_gres_bitmap[i]))
 			continue;
