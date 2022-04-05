@@ -1838,7 +1838,7 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 }
 
 /* Clear avail_core_bitmap cores which are not bound to the allocated gres */
-static int _gres_filter_avail_sockets(void *x, void *arg)
+static int _gres_filter_avail_cores(void *x, void *arg)
 {
 	gres_state_t *gres_state_step = x;
 	foreach_gres_filter_t *args = arg;
@@ -2074,7 +2074,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 			bit_nclear(any_gres_core_bitmap, args.core_start_bit,
 				   args.core_end_bit);
 			list_for_each(step_ptr->gres_list_alloc,
-				      _gres_filter_avail_sockets, &args);
+				      _gres_filter_avail_cores, &args);
 			bit_and(any_gres_core_bitmap,
 				job_resrcs_ptr->core_bitmap);
 		}
