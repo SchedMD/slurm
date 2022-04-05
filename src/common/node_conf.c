@@ -1017,7 +1017,7 @@ extern void node_fini2 (void)
 
 	xhash_free(node_hash_table);
 	for (i = 0; (node_ptr = next_node(&i));)
-		purge_node_rec(node_ptr);
+		delete_node_record(node_ptr);
 
 	if (config_list) {
 		/*
