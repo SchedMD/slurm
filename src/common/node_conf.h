@@ -327,9 +327,9 @@ extern void insert_node_record(node_record_t *node_ptr);
 /*
  * Delete node from node_record_table_ptr.
  *
- * IN name - name of node_record_t to delete
+ * IN node_ptr - node_ptr to delete
  */
-extern void delete_node_record(char *name);
+extern void delete_node_record(node_record_t *node_ptr);
 
 /*
  * find_node_record - find a record for node with specified name

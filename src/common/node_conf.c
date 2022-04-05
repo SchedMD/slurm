@@ -870,16 +870,11 @@ extern void insert_node_record(node_record_t *node_ptr)
 	      node_ptr->name);
 }
 
-extern void delete_node_record(char *name)
+extern void delete_node_record(node_record_t *node_ptr)
 {
 	int node_index;
-	node_record_t *node_ptr;
 
-	node_ptr = find_node_record(name);
-	if (!node_ptr) {
-		error("Unable to find node %s to delete record", name);
-		return;
-	}
+	xassert(node_ptr);
 
 	node_index = node_ptr->index;
 	purge_node_rec(node_ptr);

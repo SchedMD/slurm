@@ -4767,7 +4767,7 @@ static int _delete_node(char *name)
 
 	_remove_node_from_features(node_ptr);
 
-	delete_node_record(name);
+	delete_node_record(node_ptr);
 	slurm_conf_remove_node(name);
 
 	return SLURM_SUCCESS;
