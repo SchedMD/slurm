@@ -678,8 +678,6 @@ static int _convert_cpu_spec_list(node_record_t *node_ptr, uint32_t tot_cores)
 static void _init_node_record(node_record_t *node_ptr,
 			      config_record_t *config_ptr)
 {
-	uint32_t tot_cores;
-
 	/*
 	 * Some of these vars will be overwritten when the node actually
 	 * registers.
@@ -708,13 +706,13 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->threads = config_ptr->threads;
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
 	node_ptr->tot_sockets = config_ptr->tot_sockets;
+	node_ptr->tot_cores = config_ptr->tot_sockets * config_ptr->cores;
 
 	/*
 	 * Here we determine if this node is scheduling threads or not.
 	 * We will set tpc to be the number of schedulable threads per core.
 	 */
-	tot_cores = config_ptr->tot_sockets * config_ptr->cores;
-	if (tot_cores >= config_ptr->cpus)
+	if (node_ptr->tot_cores >= config_ptr->cpus)
 		node_ptr->tpc = 1;
 	else
 		node_ptr->tpc = config_ptr->threads;
@@ -722,7 +720,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	if (node_ptr->cpu_spec_list) {
 		if (node_ptr->tpc > 1) {
-			_convert_cpu_spec_list(node_ptr, tot_cores);
+			_convert_cpu_spec_list(node_ptr, node_ptr->tot_cores);
 		} else {
 			node_ptr->node_spec_bitmap = bit_alloc(node_ptr->cpus);
 			if (bit_unfmt(node_ptr->node_spec_bitmap,

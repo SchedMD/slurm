@@ -2306,6 +2306,7 @@ static int _restore_node_state(int recover,
 		node_ptr->slurmd_start_time = old_node_ptr->slurmd_start_time;
 		node_ptr->tmp_disk      = old_node_ptr->tmp_disk;
 		node_ptr->weight        = old_node_ptr->weight;
+		node_ptr->tot_cores = node_ptr->tot_sockets * node_ptr->cores;
 
 		node_ptr->sus_job_cnt   = old_node_ptr->sus_job_cnt;
 

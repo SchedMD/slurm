@@ -607,6 +607,7 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->boards        = boards;
 					node_ptr->tot_sockets = sockets;
 					node_ptr->cores         = cores;
+					node_ptr->tot_cores = sockets * cores;
 					node_ptr->core_spec_cnt =
 						core_spec_cnt;
 					xfree(node_ptr->cpu_spec_list);
@@ -716,6 +717,7 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->boards        = boards;
 			node_ptr->tot_sockets = sockets;
 			node_ptr->cores         = cores;
+			node_ptr->tot_cores = sockets * cores;
 			node_ptr->core_spec_cnt = core_spec_cnt;
 			node_ptr->threads       = threads;
 			node_ptr->real_memory   = real_memory;
@@ -2827,6 +2829,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		node_ptr->cores   = reg_msg->cores;
 		node_ptr->threads = reg_msg->threads;
 		node_ptr->cpus    = reg_msg->cpus;
+		node_ptr->tot_cores = node_ptr->tot_sockets * node_ptr->cores;
 	}
 	if (!(slurm_conf.conf_flags & CTL_CONF_OR)) {
 		double node_reg_mem_percent;

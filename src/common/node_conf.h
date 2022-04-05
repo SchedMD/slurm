@@ -177,6 +177,7 @@ struct node_record {
 	char *tres_str;                 /* tres this node has */
 	uint16_t threads;		/* number of threads per core */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
+	uint16_t tot_cores;		/* number of cores per node */
 	uint16_t tot_sockets;		/* number of sockets per node */
 	uint32_t up_time;		/* seconds since node boot */
 	char *version;			/* Slurm version */
