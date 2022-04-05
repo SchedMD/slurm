@@ -195,6 +195,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with bad memory access when shrinking running steps.
  -- Fix various issues with internal job accounting with GRES when jobs are
     shrunk.
+ -- Fix ipmi polling on slurmd reconfig or restart.
 
 * Changes in Slurm 21.08.6
 ==========================
