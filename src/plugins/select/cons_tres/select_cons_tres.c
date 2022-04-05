@@ -131,7 +131,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 				 tmp);
 		}
 
-		c = select_node_record[select_node_cnt].cume_cores;
+		c = cr_get_coremap_offset(select_node_cnt + 1);
 		tmp_core_bitmap = bit_alloc(c);
 		bit_not(tmp_core_bitmap);
 		avail_cores = core_bitmap_to_array(tmp_core_bitmap);
@@ -154,7 +154,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 		 * Ensure all nodes in avail_node_bitmap are represented
 		 * in exc_cores. For now include ALL nodes.
 		 */
-		c = select_node_record[select_node_cnt].cume_cores;
+		c = cr_get_coremap_offset(select_node_cnt + 1);
 		tmp_core_bitmap = bit_alloc(c);
 		bit_not(tmp_core_bitmap);
 		avail_cores = core_bitmap_to_array(tmp_core_bitmap);
@@ -284,7 +284,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			info("avail_nodes:%s", tmp);
 			info("exc_cores: NULL");
 #endif
-			c = select_node_record[select_node_cnt].cume_cores;
+			c = cr_get_coremap_offset(select_node_cnt + 1);
 			tmp_core_bitmap = bit_alloc(c);
 			bit_not(tmp_core_bitmap);
 			avail_cores = core_bitmap_to_array(tmp_core_bitmap);
@@ -305,7 +305,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			 * Ensure all nodes in avail_node_bitmap are represented
 			 * in exc_cores. For now include ALL nodes.
 			 */
-			c = select_node_record[select_node_cnt].cume_cores;
+			c = cr_get_coremap_offset(select_node_cnt + 1);
 			tmp_core_bitmap = bit_alloc(c);
 			bit_not(tmp_core_bitmap);
 			avail_cores = core_bitmap_to_array(tmp_core_bitmap);

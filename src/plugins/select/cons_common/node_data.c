@@ -75,7 +75,7 @@ extern void node_data_dump(void)
 		     select_node_record[i].cores,
 		     select_node_record[i].threads,
 		     select_node_record[i].tot_cores,
-		     select_node_record[i].cume_cores,
+		     cr_get_coremap_offset(i + 1),
 		     select_node_record[i].cpus,
 		     select_node_record[i].vpus,
 		     select_node_record[i].real_memory,

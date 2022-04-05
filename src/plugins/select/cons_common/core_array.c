@@ -244,13 +244,11 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 		return core_bitmap;
 	}
 
-	core_bitmap =
-		bit_alloc(select_node_record[select_node_cnt].cume_cores);
+	core_bitmap = bit_alloc(cr_get_coremap_offset(select_node_cnt + 1));
 	for (i = 0; i < core_array_size; i++) {
 		if (!core_array[i])
 			continue;
-		core_offset = select_node_record[i].cume_cores -
-			      select_node_record[i].tot_cores;
+		core_offset = cr_get_coremap_offset(i);
 		for (c = 0; c < select_node_record[i].tot_cores; c++) {
 			if (bit_test(core_array[i], c))
 				bit_set(core_bitmap, core_offset + c);
@@ -298,9 +296,9 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 		if (!bit_test(core_bitmap, i))
 			continue;
 		for (j = node_inx; j < select_node_cnt; j++) {
-			if (i < select_node_record[j].cume_cores) {
+			if (i < cr_get_coremap_offset(j+1)) {
 				node_inx = j;
-				i = select_node_record[j].cume_cores - 1;
+				i = cr_get_coremap_offset(j+1) - 1;
 				break;
 			}
 		}
@@ -313,8 +311,7 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 		/* Copy all core bitmaps for this node here */
 		core_array[node_inx] =
 			bit_alloc(select_node_record[node_inx].tot_cores);
-		core_offset = select_node_record[node_inx].cume_cores -
-			      select_node_record[node_inx].tot_cores;
+		core_offset = cr_get_coremap_offset(node_inx);
 		for (c = 0; c < select_node_record[node_inx].tot_cores; c++) {
 			if (bit_test(core_bitmap, core_offset + c))
 				bit_set(core_array[node_inx], c);
