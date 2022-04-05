@@ -2890,6 +2890,11 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 					     avail_res_array[i], i, cr_type);
 				if (avail_cpus == 0)
 					continue;
+				/*
+				 * Find the "least-loaded" node at the current
+				 * node-weight level. This is defined as the
+				 * node with the greatest max_cpus count.
+				 */
 				if ((max_cpu_idx == -1) ||
 				    (avail_res_array[max_cpu_idx]->max_cpus <
 				     avail_res_array[i]->max_cpus)) {
