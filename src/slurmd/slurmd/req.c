@@ -142,6 +142,11 @@ typedef struct {
 	pthread_mutex_t *timer_mutex;
 } timer_struct_t;
 
+typedef struct {
+	bool batch_step;
+	uint32_t job_id;
+} active_job_t;
+
 static void _fb_rdlock(void);
 static void _fb_rdunlock(void);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
@@ -151,12 +156,12 @@ static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, int flags,
 				   char *details, bool batch, uid_t req_uid);
-static void _launch_complete_add(uint32_t job_id);
+static void _launch_complete_add(uint32_t job_id, bool btch_step);
 static void _launch_complete_log(char *type, uint32_t job_id);
 static void _launch_complete_rm(uint32_t job_id);
 static void _launch_complete_wait(uint32_t job_id);
 static int  _launch_job_fail(uint32_t job_id, uint32_t slurm_rc);
-static bool _launch_job_test(uint32_t job_id);
+static bool _launch_job_test(uint32_t job_id, bool batch_step);
 static void _note_batch_job_finished(uint32_t job_id);
 static int  _prolog_is_running (uint32_t jobid);
 static int  _step_limits_match(void *x, void *key);
@@ -252,7 +257,7 @@ static int job_suspend_size = 0;
 #define JOB_STATE_CNT 64
 static pthread_mutex_t job_state_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  job_state_cond    = PTHREAD_COND_INITIALIZER;
-static uint32_t active_job_id[JOB_STATE_CNT] = {0};
+static active_job_t active_job_id[JOB_STATE_CNT] = {0};
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1625,7 +1630,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
 
-	_launch_complete_add(req->step_id.job_id);
+	_launch_complete_add(req->step_id.job_id, false);
 
 done:
 	if (step_hset)
@@ -2285,7 +2290,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if (_launch_job_test(req->job_id)) {
+	if (_launch_job_test(req->job_id, true)) {
 		error("Job %u already running, do not launch second copy",
 		      req->job_id);
 		rc = ESLURM_DUPLICATE_JOB_ID;	/* job already running */
@@ -2447,7 +2452,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 				  (hostset_t)NULL, SLURM_PROTOCOL_VERSION);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
 
-	_launch_complete_add(req->job_id);
+	_launch_complete_add(req->job_id, true);
 
 	/* On a busy system, slurmstepd may take a while to respond,
 	 * if the job was cancelled in the interim, run through the
@@ -4792,7 +4797,9 @@ extern void record_launched_jobs(void)
 		if (fd == -1)
 			continue; /* step gone */
 		close(fd);
-		_launch_complete_add(stepd->step_id.job_id);
+		_launch_complete_add(stepd->step_id.job_id,
+				     (stepd->step_id.step_id ==
+				      SLURM_BATCH_SCRIPT));
 	}
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
@@ -6026,28 +6033,33 @@ done:
 	slurm_send_rc_msg(msg, rc);
 }
 
-static void _launch_complete_add(uint32_t job_id)
+static void _launch_complete_add(uint32_t job_id, bool batch_step)
 {
 	int j, empty;
 
 	slurm_mutex_lock(&job_state_mutex);
 	empty = -1;
 	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j])
+		if (job_id == active_job_id[j].job_id) {
+			if (batch_step)
+				active_job_id[j].batch_step = batch_step;
 			break;
-		if ((active_job_id[j] == 0) && (empty == -1))
+		}
+		if ((active_job_id[j].job_id == 0) && (empty == -1))
 			empty = j;
 	}
-	if (j >= JOB_STATE_CNT || job_id != active_job_id[j]) {
+	if (j >= JOB_STATE_CNT || job_id != active_job_id[j].job_id) {
 		if (empty == -1)	/* Discard oldest job */
 			empty = 0;
 		for (j = empty + 1; j < JOB_STATE_CNT; j++) {
 			active_job_id[j - 1] = active_job_id[j];
 		}
-		active_job_id[JOB_STATE_CNT - 1] = 0;
+		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
+		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
 		for (j = 0; j < JOB_STATE_CNT; j++) {
-			if (active_job_id[j] == 0) {
-				active_job_id[j] = job_id;
+			if (active_job_id[j].job_id == 0) {
+				active_job_id[j].job_id = job_id;
+				active_job_id[j].batch_step = batch_step;
 				break;
 			}
 		}
@@ -6065,8 +6077,9 @@ static void _launch_complete_log(char *type, uint32_t job_id)
 	info("active %s %u", type, job_id);
 	slurm_mutex_lock(&job_state_mutex);
 	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (active_job_id[j] != 0) {
-			info("active_job_id[%d]=%u", j, active_job_id[j]);
+		if (active_job_id[j].job_id != 0) {
+			info("active_job_id[%d]=%u", j,
+			     active_job_id[j].job_id);
 		}
 	}
 	slurm_mutex_unlock(&job_state_mutex);
@@ -6074,15 +6087,16 @@ static void _launch_complete_log(char *type, uint32_t job_id)
 }
 
 /* Test if we have a specific job ID still running */
-static bool _launch_job_test(uint32_t job_id)
+static bool _launch_job_test(uint32_t job_id, bool batch_step)
 {
 	bool found = false;
 	int j;
 
 	slurm_mutex_lock(&job_state_mutex);
 	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j]) {
-			found = true;
+		if (job_id == active_job_id[j].job_id) {
+			if (!batch_step || active_job_id[j].batch_step)
+				found = true;
 			break;
 		}
 	}
@@ -6097,14 +6111,15 @@ static void _launch_complete_rm(uint32_t job_id)
 
 	slurm_mutex_lock(&job_state_mutex);
 	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j])
+		if (job_id == active_job_id[j].job_id)
 			break;
 	}
-	if (j < JOB_STATE_CNT && job_id == active_job_id[j]) {
+	if (j < JOB_STATE_CNT && job_id == active_job_id[j].job_id) {
 		for (j = j + 1; j < JOB_STATE_CNT; j++) {
 			active_job_id[j - 1] = active_job_id[j];
 		}
-		active_job_id[JOB_STATE_CNT - 1] = 0;
+		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
+		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
 	}
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job remove", job_id);
@@ -6121,9 +6136,9 @@ static void _launch_complete_wait(uint32_t job_id)
 	for (i = 0; ; i++) {
 		empty = -1;
 		for (j = 0; j < JOB_STATE_CNT; j++) {
-			if (job_id == active_job_id[j])
+			if (job_id == active_job_id[j].job_id)
 				break;
-			if ((active_job_id[j] == 0) && (empty == -1))
+			if ((active_job_id[j].job_id == 0) && (empty == -1))
 				empty = j;
 		}
 		if (j < JOB_STATE_CNT)	/* Found job, ready to return */
@@ -6143,10 +6158,11 @@ static void _launch_complete_wait(uint32_t job_id)
 		for (j = empty + 1; j < JOB_STATE_CNT; j++) {
 			active_job_id[j - 1] = active_job_id[j];
 		}
-		active_job_id[JOB_STATE_CNT - 1] = 0;
+		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
+		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
 		for (j = 0; j < JOB_STATE_CNT; j++) {
-			if (active_job_id[j] == 0) {
-				active_job_id[j] = job_id;
+			if (active_job_id[j].job_id == 0) {
+				active_job_id[j].job_id = job_id;
 				break;
 			}
 		}
