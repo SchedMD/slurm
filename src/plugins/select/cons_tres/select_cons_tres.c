@@ -177,7 +177,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 		}
 		bit_set(picked_node_bitmap, i);
 		c_cnt = 0;
-		for (c = 0; c < select_node_record[i].tot_cores; c++) {
+		for (c = 0; c < node_record_table_ptr[i]->tot_cores; c++) {
 			if (!bit_test(avail_cores[i], c))
 				continue;
 			if (++c_cnt > core_cnt[local_node_offset])
@@ -348,7 +348,8 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 				c_target = core_cnt[local_node_offset];
 			}
 			c_cnt = 0;
-			for (c = 0; c < select_node_record[i].tot_cores; c++) {
+			for (c = 0; c < node_record_table_ptr[i]->tot_cores;
+			     c++) {
 				if (!bit_test(avail_cores[i], c))
 					continue;
 				if (c_cnt >= c_target)

@@ -249,7 +249,7 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 		if (!core_array[i])
 			continue;
 		core_offset = cr_get_coremap_offset(i);
-		for (c = 0; c < select_node_record[i].tot_cores; c++) {
+		for (c = 0; c < node_record_table_ptr[i]->tot_cores; c++) {
 			if (bit_test(core_array[i], c))
 				bit_set(core_bitmap, core_offset + c);
 		}
@@ -310,9 +310,10 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 		}
 		/* Copy all core bitmaps for this node here */
 		core_array[node_inx] =
-			bit_alloc(select_node_record[node_inx].tot_cores);
+			bit_alloc(node_record_table_ptr[node_inx]->tot_cores);
 		core_offset = cr_get_coremap_offset(node_inx);
-		for (c = 0; c < select_node_record[node_inx].tot_cores; c++) {
+		for (c = 0; c < node_record_table_ptr[node_inx]->tot_cores;
+		     c++) {
 			if (bit_test(core_bitmap, core_offset + c))
 				bit_set(core_array[node_inx], c);
 		}

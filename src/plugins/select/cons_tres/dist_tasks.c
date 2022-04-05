@@ -129,7 +129,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	for (i = i_first, n = 0; i <= i_last; i++) {
 		if (!bit_test(job_res->node_bitmap, i))
 			continue;
-		vpus[n++] = select_node_record[i].vpus;
+		vpus[n++] = node_record_table_ptr[i]->tpc;
 	}
 
 	maxtasks = job_res->ncpus;

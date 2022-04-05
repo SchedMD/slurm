@@ -185,7 +185,7 @@ static void _clear_spec_cores(job_record_t *job_ptr,
 
 		if (is_cons_tres) {
 			first_core = 0;
-			last_core  = select_node_record[i].tot_cores;
+			last_core  = node_record_table_ptr[i]->tot_cores;
 			use_core_array = core_array[i];
 		} else {
 			first_core = cr_get_coremap_offset(i);
@@ -196,7 +196,7 @@ static void _clear_spec_cores(job_record_t *job_ptr,
 		for (c = first_core; c < last_core; c++) {
 			alloc_core++;
 			if (bit_test(use_core_array, c)) {
-				uint16_t tpc = select_node_record[i].vpus;
+				uint16_t tpc = node_record_table_ptr[i]->tpc;
 				if (mc_ptr &&
 				    (mc_ptr->threads_per_core != NO_VAL16) &&
 				    (mc_ptr->threads_per_core < tpc))
@@ -360,9 +360,9 @@ static int _set_task_dist(job_record_t *job_ptr, const uint16_t cr_type)
 		for (int n = n_first; n <= n_last; n++) {
 			if (!bit_test(job_res->node_bitmap, n) ||
 			    (job_ptr->details->mc_ptr->threads_per_core ==
-			     select_node_record[n].vpus))
+			     node_record_table_ptr[n]->tpc))
 				continue;
-			job_res->cpus[i++] *= select_node_record[n].vpus;
+			job_res->cpus[i++] *= node_record_table_ptr[n]->tpc;
 		}
 	}
 	return SLURM_SUCCESS;
@@ -514,10 +514,10 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 	n_first = bit_ffs(job_res->node_bitmap);
 	if (n_first != -1) {
 		n_last = bit_fls(job_res->node_bitmap);
-		sockets_nb  = select_node_record[n_first].tot_sockets;
+		sockets_nb  = node_record_table_ptr[n_first]->tot_sockets;
 		sockets_core_cnt = xcalloc(sockets_nb, sizeof(int));
 		sockets_used = xcalloc(sockets_nb, sizeof(bool));
-		boards_nb = select_node_record[n_first].boards;
+		boards_nb = node_record_table_ptr[n_first]->boards;
 		boards_core_cnt = xcalloc(boards_nb, sizeof(int));
 		sort_brds_core_cnt = xcalloc(boards_nb, sizeof(int));
 	} else
@@ -544,9 +544,9 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 			continue;
 
 		core_cnt = 0;
-		ncores_nb = select_node_record[n].cores;
-		nsockets_nb = select_node_record[n].tot_sockets;
-		nboards_nb = select_node_record[n].boards;
+		ncores_nb = node_record_table_ptr[n]->cores;
+		nsockets_nb = node_record_table_ptr[n]->tot_sockets;
+		nboards_nb = node_record_table_ptr[n]->boards;
 		num_bits =  nsockets_nb * ncores_nb;
 
 		if ((c + num_bits) > csize) {
@@ -593,7 +593,7 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 		}
 
 		/* Count available cores on each socket and board */
-		sock_per_brd = select_node_record[n].sockets;
+		sock_per_brd = nsockets_nb / nboards_nb;
 
 		for (b = 0; b < nboards_nb; b++) {
 			boards_core_cnt[b] = 0;
@@ -858,9 +858,9 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 
 		/* adjust cpus count of the current node */
 		if ((alloc_cores || alloc_sockets) &&
-		    (select_node_record[n].vpus >= 1)) {
+		    (node_record_table_ptr[n]->tpc >= 1)) {
 			job_res->cpus[i] = core_cnt *
-				select_node_record[n].vpus;
+				node_record_table_ptr[n]->tpc;
 		}
 		i++;
 
@@ -903,7 +903,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	n_first = bit_ffs(job_res->node_bitmap);
 	if (n_first != -1) {
 		n_last = bit_fls(job_res->node_bitmap);
-		sock_size  = select_node_record[n_first].tot_sockets;
+		sock_size  = node_record_table_ptr[n_first]->tot_sockets;
 		sock_avoid = xcalloc(sock_size, sizeof(bool));
 		sock_start = xcalloc(sock_size, sizeof(uint32_t));
 		sock_end   = xcalloc(sock_size, sizeof(uint32_t));
@@ -933,13 +933,13 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	for (c = 0, i = 0, n = n_first; n <= n_last; n++) {
 		if (bit_test(job_res->node_bitmap, n) == 0)
 			continue;
-		sockets = select_node_record[n].tot_sockets;
-		cps     = select_node_record[n].cores;
+		sockets = node_record_table_ptr[n]->tot_sockets;
+		cps     = node_record_table_ptr[n]->cores;
 		vpus    = common_cpus_per_core(job_ptr->details, n);
 
 		log_flag(SELECT_TYPE, "%pJ node %s vpus %u cpus %u",
 		         job_ptr,
-		         select_node_record[n].node_ptr->name,
+		         node_record_table_ptr[n]->name,
 		         vpus, job_res->cpus[i]);
 
 		if ((c + (sockets * cps)) > csize) {
@@ -1105,7 +1105,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 				      "tried to use %u CPUs on node %s core_map:%s avoided_sockets:%s vpus:%u",
 				      job_ptr,
 				      orig_cpu_cnt,
-				      select_node_record[n].node_ptr->name,
+				      node_record_table_ptr[n]->name,
 				      core_str, sock_str, vpus);
 				xfree(core_str);
 				xfree(sock_str);
@@ -1125,7 +1125,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 				bit_nclear(core_map, sock_start[s],
 					   sock_end[s]-1);
 			}
-			if ((select_node_record[n].vpus >= 1) &&
+			if ((node_record_table_ptr[n]->tpc >= 1) &&
 			    (alloc_sockets || alloc_cores) && sock_used[s]) {
 				for (j = sock_start[s]; j < sock_end[s]; j++) {
 					/* Mark all cores as used */
@@ -1137,9 +1137,9 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 			}
 		}
 		if ((alloc_cores || alloc_sockets) &&
-		    (select_node_record[n].vpus >= 1)) {
+		    (node_record_table_ptr[n]->tpc >= 1)) {
 			job_res->cpus[i] = core_cnt *
-					   select_node_record[n].vpus;
+					   node_record_table_ptr[n]->tpc;
 		}
 		i++;
 		/* advance 'c' to the beginning of the next node */

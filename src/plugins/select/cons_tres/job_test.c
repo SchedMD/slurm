@@ -238,7 +238,7 @@ static void _cpus_to_use(uint16_t *avail_cpus, int64_t rem_max_cpus,
 	resv_cpus = MAX((rem_nodes - 1), 0);
 	resv_cpus *= common_cpus_per_core(details_ptr, node_inx);
 	if (cr_type & CR_SOCKET)
-		resv_cpus *= select_node_record[node_inx].cores;
+		resv_cpus *= node_record_table_ptr[node_inx]->cores;
 	rem_max_cpus -= resv_cpus;
 	if (*avail_cpus > rem_max_cpus) {
 		*avail_cpus = MAX(rem_max_cpus, (int)details_ptr->pn_min_cpus);
@@ -303,6 +303,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	int alloc_tasks = 0;
 	uint32_t min_tasks_this_node = 0, max_tasks_this_node = 0;
 	struct job_details *details_ptr = job_ptr->details;
+	node_record_t *node_ptr = node_record_table_ptr[node_inx];
 
 	rem_nodes = MIN(rem_nodes, 1);	/* If range of node counts */
 	if (mc_ptr->ntasks_per_node) {
@@ -311,17 +312,16 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	} else if (mc_ptr->ntasks_per_board) {
 		min_tasks_this_node = mc_ptr->ntasks_per_board;
 		max_tasks_this_node = mc_ptr->ntasks_per_board *
-				      select_node_record[node_inx].boards;
+				      node_ptr->boards;
 	} else if (mc_ptr->ntasks_per_socket) {
 		min_tasks_this_node = mc_ptr->ntasks_per_socket;
 		max_tasks_this_node = mc_ptr->ntasks_per_socket *
-				      select_node_record[node_inx].tot_sockets;
+				      node_ptr->tot_sockets;
 	} else if (mc_ptr->ntasks_per_core) {
 		min_tasks_this_node = mc_ptr->ntasks_per_core;
-		max_tasks_this_node =
-			mc_ptr->ntasks_per_core *
-			(select_node_record[node_inx].tot_cores -
-			 select_node_record[node_inx].node_ptr->core_spec_cnt);
+		max_tasks_this_node = mc_ptr->ntasks_per_core *
+				      (node_ptr->tot_cores -
+				       node_ptr->core_spec_cnt);
 	} else if (details_ptr && details_ptr->ntasks_per_tres &&
 		   (details_ptr->ntasks_per_tres != NO_VAL16)) {
 		/* Node ranges not allowed with --ntasks-per-gpu */
@@ -373,8 +373,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			mc_ptr,
 			avail_res_array[node_inx]->sock_gres_list,
 			avail_res_array[node_inx]->sock_cnt,
-			select_node_record[node_inx].cores,
-			select_node_record[node_inx].vpus, avail_cpus,
+			node_ptr->cores, node_ptr->tpc, avail_cpus,
 			&min_tasks_this_node, &max_tasks_this_node,
 			rem_nodes, enforce_binding, first_pass,
 			avail_core[node_inx]);
@@ -2899,9 +2898,9 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				 */
 				if ((max_cpu_idx == -1) ||
 				    ((avail_res_array[max_cpu_idx]->max_cpus *
-				      select_node_record[i].cpus) <
+				      node_record_table_ptr[i]->cpus) <
 				     (avail_res_array[i]->max_cpus *
-				      select_node_record[max_cpu_idx].cpus))) {
+				      node_record_table_ptr[max_cpu_idx]->cpus))) {
 					max_cpu_idx = i;
 					max_cpu_avail_cpus = avail_cpus;
 					if (avail_res_array[max_cpu_idx]->
@@ -3269,7 +3268,7 @@ fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list_req &&
 			    !orig_core_array[i] || !avail_core[i])
 				continue;
 			count = bit_set_count(avail_core[i]);
-			count *= select_node_record[i].vpus;
+			count *= node_record_table_ptr[i]->tpc;
 			avail_res_array[i]->avail_cpus =
 				MIN(count, avail_res_array[i]->avail_cpus);
 			if (avail_res_array[i]->avail_cpus == 0) {
@@ -3352,15 +3351,13 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		if (job_ptr->bit_flags & GRES_ENFORCE_BIND)
 			enforce_binding = true;
 		if (!core_map[node_i]) {
-			core_map[node_i] = bit_alloc(
-					select_node_record[node_i].tot_cores);
+			core_map[node_i] = bit_alloc(node_ptr->tot_cores);
 			bit_set_all(core_map[node_i]);
 		}
 		sock_gres_list = gres_sched_create_sock_gres_list(
 					job_ptr->gres_list_req, node_gres_list,
 					test_only, core_map[node_i],
-					select_node_record[node_i].tot_sockets,
-					select_node_record[node_i].cores,
+					node_ptr->tot_sockets, node_ptr->cores,
 					job_ptr->job_id, node_ptr->name,
 					enforce_binding, s_p_n, &req_sock_map,
 					job_ptr->user_id, node_i);
@@ -3408,8 +3405,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	}
 
 	if (cr_type & CR_MEMORY) {
-		avail_mem = select_node_record[node_i].real_memory -
-			    select_node_record[node_i].mem_spec_limit;
+		avail_mem = node_ptr->real_memory - node_ptr->mem_spec_limit;
 		if (!test_only)
 			avail_mem -= node_usage[node_i].alloc_memory;
 	}
@@ -3422,9 +3418,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 			sock_gres_list, avail_mem,
 			avail_res->avail_cpus,
 			enforce_binding, core_map[node_i],
-			select_node_record[node_i].tot_sockets,
-			select_node_record[node_i].cores,
-			select_node_record[node_i].vpus,
+			node_ptr->tot_sockets, node_ptr->cores, node_ptr->tpc,
 			s_p_n,
 			job_ptr->details->ntasks_per_node,
 			job_ptr->details->cpus_per_task,
@@ -3473,8 +3467,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 				while ((cpus > 0) &&
 				       ((req_mem *
 					 ((uint64_t)cpus *
-					  (uint64_t)select_node_record[node_i].
-					  vpus))
+					  (uint64_t)node_ptr->tpc))
 					 > avail_mem))
 					cpus -= 1;
 			} else {
@@ -3509,10 +3502,9 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	}
 
 	log_flag(SELECT_TYPE, "%u CPUs on %s(state:%d), mem %"PRIu64"/%"PRIu64,
-	         cpus,
-	         select_node_record[node_i].node_ptr->name,
+	         cpus, node_ptr->name,
 	         node_usage[node_i].node_state, node_usage[node_i].alloc_memory,
-	         select_node_record[node_i].real_memory);
+	         node_ptr->real_memory);
 
 	avail_res->avail_cpus = cpus;
 	avail_res->avail_res_cnt = cpus + avail_res->avail_gpus;

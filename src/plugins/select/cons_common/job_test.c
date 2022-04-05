@@ -96,7 +96,7 @@ static void _block_whole_nodes(bitstr_t *node_bitmap,
 			continue;
 		if (is_cons_tres) {
 			first_core = 0;
-			last_core = select_node_record[i_node].tot_cores;
+			last_core = node_record_table_ptr[i_node]->tot_cores;
 			cr_orig_core_bitmap = orig_core_bitmap[i_node];
 			cr_new_core_bitmap = new_core_bitmap[i_node];
 		} else {
@@ -662,11 +662,11 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(node_bitmap, i))
 			continue;
-		node_ptr = select_node_record[i].node_ptr;
+		node_ptr = node_record_table_ptr[i];
 		/* node-level memory check */
 		if (min_mem && (cr_type & CR_MEMORY)) {
-			avail_mem = select_node_record[i].real_memory -
-				select_node_record[i].mem_spec_limit;
+			avail_mem = node_ptr->real_memory -
+				    node_ptr->mem_spec_limit;
 			if (avail_mem > node_usage[i].alloc_memory) {
 				free_mem = avail_mem -
 					node_usage[i].alloc_memory;
@@ -729,7 +729,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 					   disable_binding);
 		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL)
-			gres_cpus *= select_node_record[i].vpus;
+			gres_cpus *= node_ptr->tpc;
 		if (gres_cpus == 0) {
 			debug3("node %s lacks GRES",
 			       node_ptr->name);
@@ -1460,7 +1460,7 @@ alloc_job:
 
 		if (is_cons_tres) {
 			first_core = 0;
-			last_core = select_node_record[n].tot_cores;
+			last_core = node_record_table_ptr[n]->tot_cores;
 			use_free_cores = free_cores[n];
 		} else {
 			first_core = cr_get_coremap_offset(n);
@@ -1472,9 +1472,9 @@ alloc_job:
 				continue;
 			if (c >= c_size) {
 				error("core_bitmap index error on node %s (NODE_INX:%d, C_SIZE:%u)",
-				      select_node_record[n].node_ptr->name,
+				      node_record_table_ptr[n]->name,
 				      n, c_size);
-				drain_nodes(select_node_record[n].node_ptr->name,
+				drain_nodes(node_record_table_ptr[n]->name,
 					    "Bad core count", getuid());
 				_free_avail_res_array(avail_res_array);
 				free_job_resources(&job_res);
@@ -1584,7 +1584,7 @@ alloc_job:
 			 */
 
 			job_ptr->total_cpus +=
-				select_node_record[i].node_ptr->cpus_efctv;
+				node_record_table_ptr[i]->cpus_efctv;
 		}
 	} else if (cr_type & CR_SOCKET) {
 		int ci = 0;
@@ -1595,10 +1595,13 @@ alloc_job:
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
 			sock_cnt = 0;
-			for (s = 0; s < select_node_record[i].tot_sockets; s++){
+			for (s = 0; s < node_record_table_ptr[i]->tot_sockets;
+			     s++) {
 				last_s = -1;
-				for (c = 0; c<select_node_record[i].cores; c++){
-					if (bit_test(job_res->core_bitmap, ci)){
+				for (c = 0; c < node_record_table_ptr[i]->cores;
+				     c++) {
+					if (bit_test(job_res->core_bitmap,
+						     ci)) {
 						if (s != last_s) {
 							sock_cnt++;
 							last_s = s;
@@ -1607,9 +1610,9 @@ alloc_job:
 					ci++;
 				}
 			}
-			job_ptr->total_cpus += (sock_cnt *
-						select_node_record[i].cores *
-						select_node_record[i].vpus);
+			job_ptr->total_cpus +=
+				(sock_cnt * node_record_table_ptr[i]->cores *
+				 node_record_table_ptr[i]->tpc);
 		}
 	} else if (build_cnt >= 0)
 		job_ptr->total_cpus = build_cnt;
@@ -1638,9 +1641,9 @@ alloc_job:
 		for (i = i_first, j = 0; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
-			nodename = select_node_record[i].node_ptr->name;
-			avail_mem = select_node_record[i].real_memory -
-				select_node_record[i].mem_spec_limit;
+			nodename = node_record_table_ptr[i]->name;
+			avail_mem = node_record_table_ptr[i]->real_memory -
+				    node_record_table_ptr[i]->mem_spec_limit;
 			if (save_mem & MEM_PER_CPU) {	/* Memory per CPU */
 				/*
 				 * If the job requested less threads that we

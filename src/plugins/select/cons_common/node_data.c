@@ -64,21 +64,18 @@ extern void node_data_dump(void)
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE))
 		return;
 
-	for (i = 0; i < select_node_cnt; i++) {
-		if (!select_node_record[i].node_ptr)
-			continue;
-		node_ptr = select_node_record[i].node_ptr;
+	for (i = 0; (node_ptr = next_node(&i));) {
 		info("Node:%s Boards:%u SocketsPerBoard:%u CoresPerSocket:%u ThreadsPerCore:%u TotalCores:%u CumeCores:%u TotalCPUs:%u PUsPerCore:%u AvailMem:%"PRIu64" AllocMem:%"PRIu64" State:%s(%d)",
 		     node_ptr->name,
-		     select_node_record[i].boards,
-		     select_node_record[i].sockets,
-		     select_node_record[i].cores,
-		     select_node_record[i].threads,
-		     select_node_record[i].tot_cores,
+		     node_ptr->boards,
+		     node_ptr->tot_sockets / node_ptr->boards,
+		     node_ptr->cores,
+		     node_ptr->threads,
+		     node_ptr->tot_cores,
 		     cr_get_coremap_offset(i + 1),
-		     select_node_record[i].cpus,
-		     select_node_record[i].vpus,
-		     select_node_record[i].real_memory,
+		     node_ptr->cpus,
+		     node_ptr->tpc,
+		     node_ptr->real_memory,
 		     select_node_usage[i].alloc_memory,
 		     common_node_state_str(select_node_usage[i].node_state),
 		     select_node_usage[i].node_state);
