@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "March 2022" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "April 2022" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -1847,6 +1847,20 @@ or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
 is reached all associated jobs running will be killed and all future jobs
 submitted with this QOS will be delayed until they are able to run
 inside the limit.
+.IP
+
+.TP
+\fBMaxJobsAccruePerAccount\fR
+Maximum number of jobs an account (or subacct) can have accruing age priority
+at any given time. This limit only applies to the job's QOS and not the
+partition's QOS.
+.IP
+
+.TP
+\fBMaxJobsAccruePerUser\fR
+Maximum number of jobs a user can have accruing age priority at any given
+time. This limit only applies to the job's QOS and not the partition's
+QOS.
 .IP
 
 .TP
