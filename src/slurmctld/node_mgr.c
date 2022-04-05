@@ -2294,7 +2294,7 @@ static int _update_node_gres(char *node_names, char *gres)
 				&node_ptr->gres_list,
 				slurm_conf.conf_flags & CTL_CONF_OR,
 				node_ptr->cores,
-				(node_ptr->boards * node_ptr->tot_sockets));
+				node_ptr->tot_sockets);
 			if (rc2 != SLURM_SUCCESS) {
 				bit_clear(tmp_bitmap, i);
 				overlap1--;

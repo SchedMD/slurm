@@ -1789,7 +1789,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	node_record_t *node_ptr = NULL;
 	int i, n;
 	uint32_t alloc_cpus, alloc_cores, node_cores, node_cpus, node_threads;
-	uint32_t node_boards, node_sockets, total_node_cores;
+	uint32_t node_sockets, total_node_cores;
 	bitstr_t **alloc_core_bitmap = NULL;
 	List gres_list;
 
@@ -1842,7 +1842,6 @@ extern int select_p_select_nodeinfo_set_all(void)
 			continue;
 		}
 
-		node_boards  = node_ptr->config_ptr->boards;
 		node_sockets = node_ptr->config_ptr->tot_sockets;
 		node_cores   = node_ptr->config_ptr->cores;
 		node_cpus    = node_ptr->config_ptr->cpus;
@@ -1855,8 +1854,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 			else
 				alloc_cores = 0;
 
-			total_node_cores =
-				node_boards * node_sockets * node_cores;
+			total_node_cores = node_sockets * node_cores;
 		} else {
 			int start = cr_get_coremap_offset(n);
 			int end = cr_get_coremap_offset(n + 1);
