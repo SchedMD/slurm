@@ -863,8 +863,16 @@ extern int find_path_tag(openapi_t *oas, const data_t *dpath, data_t *params,
 	xassert(data_get_type(params) == DATA_TYPE_DICT);
 
 	path = list_find_first(oas->paths, _match_path_from_data, &args);
-	if (path)
-		tag = path->tag;
+	if (!path)
+		return tag;
+
+	/* Make sure the path tag actually contains the method requested */
+	for (entry_method_t *em = path->methods; em->entries; em++) {
+		if (em->method == method) {
+			tag = path->tag;
+			break;
+		}
+	}
 
 	return tag;
 }
