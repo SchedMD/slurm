@@ -168,6 +168,8 @@ documents those changes that are of interest to users and administrators.
  -- Steps now allocate gres according to topo data.
  -- Add validation of numbers provided to --gpu-bind=map_gpu and
     --gpu-bind=mask_gpu=.
+ -- Fatal error if CgroupReleaseAgentDir is configured in cgroup.conf. The
+    option has long been obsolete.
 
 * Changes in Slurm 21.08.7
 ==========================

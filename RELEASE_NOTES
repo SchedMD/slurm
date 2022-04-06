@@ -70,6 +70,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     option will be removed in a future version.
  -- preempt/qos - add support for WITHIN mode to allow for preemption between
     jobs within the same qos.
+ -- Fatal error if CgroupReleaseAgentDir is configured in cgroup.conf. The
+    option has long been obsolete.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

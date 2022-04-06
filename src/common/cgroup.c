@@ -300,7 +300,7 @@ static void _read_slurm_cgroup_conf(void)
 
 		if (s_p_get_string(&tmp_str, "CgroupReleaseAgentDir", tbl)) {
 			xfree(tmp_str);
-			log_flag(CGROUP, "Ignoring obsolete CgroupReleaseAgentDir option.");
+			fatal("Support for CgroupReleaseAgentDir option has been removed.");
 		}
 
 		/* cgroup prepend directory */
