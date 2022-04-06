@@ -2071,7 +2071,7 @@ timer_check:
 
 	FREE_NULL_LIST(cr_job_list);
 	part_data_destroy_res(future_part);
-	node_data_destroy(future_usage, NULL);
+	node_data_destroy(future_usage);
 	FREE_NULL_BITMAP(orig_map);
 
 	return rc;
@@ -2217,7 +2217,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 			FREE_NULL_BITMAP(orig_node_map);
 			list_iterator_destroy(job_iterator);
 			part_data_destroy_res(future_part);
-			node_data_destroy(future_usage, NULL);
+			node_data_destroy(future_usage);
 			goto top;
 		}
 		list_iterator_destroy(job_iterator);
@@ -2254,7 +2254,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 		}
 
 		part_data_destroy_res(future_part);
-		node_data_destroy(future_usage, NULL);
+		node_data_destroy(future_usage);
 	}
 	FREE_NULL_BITMAP(orig_node_map);
 	FREE_NULL_BITMAP(save_node_map);

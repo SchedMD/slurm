@@ -855,8 +855,7 @@ extern void common_fini(void)
 	else
 		verbose("%s shutting down ...", plugin_type);
 
-	node_data_destroy(select_node_usage, select_node_record);
-	select_node_record = NULL;
+	node_data_destroy(select_node_usage);
 	select_node_usage = NULL;
 	part_data_destroy_res(select_part_record);
 	select_part_record = NULL;
@@ -1078,7 +1077,6 @@ extern int select_p_job_init(List job_list)
 extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 {
 	char *preempt_type, *tmp_ptr;
-	uint32_t cume_cores = 0;
 	int i;
 
 	if (!slurm_conf.select_type_param) {
@@ -1154,43 +1152,18 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 	select_state_initializing = true;
 	cr_init_global_core_data(node_ptr, node_cnt);
 
-	node_data_destroy(select_node_usage, select_node_record);
+	node_data_destroy(select_node_usage);
 	select_node_cnt = node_cnt;
 
 	if (is_cons_tres)
 		core_array_size = select_node_cnt;
 
-	select_node_record = xcalloc(select_node_cnt + 1,
-				     sizeof(node_res_record_t));
 	select_node_usage  = xcalloc(select_node_cnt,
 				     sizeof(node_use_record_t));
 
 	for (i = 0; i < select_node_cnt; i++) {
 		if (!node_ptr[i])
 			continue;
-		select_node_record[i].node_ptr = node_ptr[i];
-		select_node_record[i].mem_spec_limit =
-			node_ptr[i]->mem_spec_limit;
-
-		select_node_record[i].cpus    = node_ptr[i]->cpus;
-		select_node_record[i].boards  = node_ptr[i]->boards;
-		select_node_record[i].tot_sockets = node_ptr[i]->tot_sockets;
-		select_node_record[i].cores   = node_ptr[i]->cores;
-		select_node_record[i].threads = node_ptr[i]->threads;
-		select_node_record[i].vpus    = node_ptr[i]->threads;
-		select_node_record[i].real_memory = node_ptr[i]->real_memory;
-
-		select_node_record[i].sockets =
-			select_node_record[i].tot_sockets /
-			select_node_record[i].boards;
-		select_node_record[i].tot_cores =
-			select_node_record[i].tot_sockets *
-			select_node_record[i].cores;
-		cume_cores += select_node_record[i].tot_cores;
-		select_node_record[i].cume_cores = cume_cores;
-		if (select_node_record[i].tot_cores >=
-		    select_node_record[i].cpus)
-			select_node_record[i].vpus = 1;
 
 		if ((node_ptr[i]->cpus != node_ptr[i]->tot_cores) &&
 		    (node_ptr[i]->cpus !=
@@ -1213,12 +1186,7 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
 		gres_node_state_dealloc_all(node_ptr[i]->gres_list);
 	}
-	/*
-	 * Since there can be holes in the node table and the last node could be
-	 * a hole, keep track of total cores in extra slot.
-	 * cr_init_global_core_data() does a similar thing.
-	 */
-	select_node_record[select_node_cnt].cume_cores = cume_cores;
+
 	part_data_create_array();
 	node_data_dump();
 
@@ -2083,29 +2051,6 @@ extern int select_p_update_node_config(int index)
 		error("index too large (%d > %d)", index,
 		      select_node_cnt);
 		return SLURM_ERROR;
-	}
-
-	/*
-	 * Socket and core count can be changed when KNL node reboots in a
-	 * different NUMA configuration
-	 */
-	if (!(slurm_conf.conf_flags & CTL_CONF_OR) &&
-	    (select_node_record[index].tot_sockets !=
-	     select_node_record[index].node_ptr->tot_sockets) &&
-	    (select_node_record[index].cores !=
-	     select_node_record[index].node_ptr->cores) &&
-	    ((select_node_record[index].tot_sockets *
-	      select_node_record[index].cores) ==
-	     (select_node_record[index].node_ptr->tot_sockets *
-	      select_node_record[index].node_ptr->cores))) {
-		select_node_record[index].cores =
-			select_node_record[index].node_ptr->cores;
-		select_node_record[index].sockets =
-			select_node_record[index].node_ptr->tot_sockets /
-			select_node_record[index].node_ptr->boards;
-
-		/* tot_sockets should be the same */
-		/* tot_cores should be the same */
 	}
 
 	return SLURM_SUCCESS;

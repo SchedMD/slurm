@@ -37,16 +37,13 @@
 
 #include "cons_common.h"
 
-node_res_record_t *select_node_record = NULL;
 node_use_record_t *select_node_usage  = NULL;
 
-/* Delete the given select_node_record and select_node_usage arrays */
-extern void node_data_destroy(node_use_record_t *node_usage,
-			      node_res_record_t *node_data)
+/* Delete the given select_node_usage array */
+extern void node_data_destroy(node_use_record_t *node_usage)
 {
 	int i;
 
-	xfree(node_data);
 	if (node_usage) {
 		for (i = 0; i < select_node_cnt; i++) {
 			FREE_NULL_LIST(node_usage[i].gres_list);

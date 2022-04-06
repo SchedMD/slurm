@@ -38,27 +38,6 @@
 #ifndef _CONS_COMMON_NODE_DATA_H
 #define _CONS_COMMON_NODE_DATA_H
 
-/* per-node resource data */
-typedef struct {
-	uint16_t boards; 	      /* count of boards configured */
-	uint16_t cores;		      /* count of cores per socket configured */
-	uint16_t cpus;		      /* count of logical processors
-				       * configured */
-	uint32_t cume_cores;	      /* total cores for all nodes through us */
-	uint64_t mem_spec_limit;      /* MB of specialized/system memory */
-	node_record_t *node_ptr;      /* ptr to the actual node */
-	uint64_t real_memory;	      /* MB of real memory configured */
-	uint16_t sockets;	      /* count of sockets per board configured*/
-	uint16_t threads;	      /* count of hyperthreads per core */
-	uint16_t tot_cores;	      /* total cores per node */
-	uint16_t tot_sockets;	      /* total sockets per node */
-	uint16_t vpus;		      /* count of virtual processors configure
-				       * this could be the physical threads
-				       * count or could be the core count if
-				       * the node's cpu count matches the
-				       * core count */
-} node_res_record_t;
-
 /* per-node resource usage record */
 typedef struct {
 	uint64_t alloc_memory;	      /* real memory reserved by already
@@ -70,12 +49,10 @@ typedef struct {
 	uint16_t node_state;	      /* see node_cr_state comments */
 } node_use_record_t;
 
-extern node_res_record_t *select_node_record;
 extern node_use_record_t *select_node_usage;
 
-/* Delete the given select_node_record and select_node_usage arrays */
-extern void node_data_destroy(node_use_record_t *node_usage,
-			      node_res_record_t *node_data);
+/* Delete the given select_node_usage array */
+extern void node_data_destroy(node_use_record_t *node_usage);
 
 extern void node_data_dump(void);
 

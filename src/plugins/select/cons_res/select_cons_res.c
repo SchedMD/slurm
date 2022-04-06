@@ -557,8 +557,6 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 
 /* select_p_get_info_from_plugin() in cons_common */
 
-/* select_p_update_node_config() in cons_common */
-
 /* select_p_reconfigure() in cons_common */
 
 /* select_p_resv_test() in cons_common */
