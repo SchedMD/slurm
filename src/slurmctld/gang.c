@@ -282,7 +282,7 @@ static uint16_t _get_phys_bit_cnt(int node_index)
 	node_record_t *node_ptr = node_record_table_ptr[node_index];
 
 	if (gr_type == GS_CPU)
-		return node_ptr->config_ptr->cpus;
+		return node_ptr->cpus;
 	return node_ptr->tot_cores;
 }
 

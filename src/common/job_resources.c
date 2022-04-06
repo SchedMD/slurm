@@ -99,15 +99,15 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 			continue;
 
 		if ((sock_inx < 0) ||
-		    (node_rec_table[i]->config_ptr->tot_sockets !=
+		    (node_rec_table[i]->tot_sockets !=
 		     job_resrcs->sockets_per_node[sock_inx]) ||
-		    (node_rec_table[i]->config_ptr->cores !=
+		    (node_rec_table[i]->cores !=
 		     job_resrcs->cores_per_socket[sock_inx])) {
 			sock_inx++;
 			job_resrcs->sockets_per_node[sock_inx] =
-				node_rec_table[i]->config_ptr->tot_sockets;
+				node_rec_table[i]->tot_sockets;
 			job_resrcs->cores_per_socket[sock_inx] =
-				node_rec_table[i]->config_ptr->cores;
+				node_rec_table[i]->cores;
 		}
 		job_resrcs->sock_core_rep_count[sock_inx]++;
 		core_cnt += node_rec_table[i]->tot_cores;
@@ -301,9 +301,9 @@ extern int valid_job_resources(job_resources_t *job_resrcs,
 		if (total_job_cores != total_node_cores) {
 			error("valid_job_resources: %s sockets:%u,%u, cores %u,%u",
 			      node_rec_table[i]->name,
-			      node_rec_table[i]->config_ptr->tot_sockets,
+			      node_rec_table[i]->tot_sockets,
 			      job_resrcs->sockets_per_node[sock_inx],
-			      node_rec_table[i]->config_ptr->cores,
+			      node_rec_table[i]->cores,
 			      job_resrcs->cores_per_socket[sock_inx]);
 			return SLURM_ERROR;
 		}

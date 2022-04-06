@@ -2231,7 +2231,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			if (!bit_test(resv_ptr->node_bitmap, node_ptr->index))
 				continue;
 			resv_ptr->core_cnt += node_ptr->tot_cores;
-			cpu_cnt += node_ptr->config_ptr->cpus;
+			cpu_cnt += node_ptr->cpus;
 		}
 	} else if (resv_ptr->core_bitmap) {
 		resv_ptr->core_cnt =
@@ -2246,7 +2246,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 
 				node_ptr = node_record_table_ptr[i];
 				cores = node_ptr->tot_cores;
-				threads = node_ptr->config_ptr->threads;
+				threads = node_ptr->threads;
 
 				offset = cr_get_coremap_offset(i);
 

@@ -3268,7 +3268,6 @@ extern int job_req_node_filter(job_record_t *job_ptr,
 	struct job_details *detail_ptr = job_ptr->details;
 	multi_core_data_t *mc_ptr;
 	node_record_t *node_ptr;
-	config_record_t *config_ptr;
 	bool has_xor = false;
 
 	if (detail_ptr == NULL) {
@@ -3282,25 +3281,24 @@ extern int job_req_node_filter(job_record_t *job_ptr,
 		if (!bit_test(avail_bitmap, i))
 			continue;
 		node_ptr = node_record_table_ptr[i];
-		config_ptr = node_ptr->config_ptr;
-		if ((detail_ptr->pn_min_cpus  > config_ptr->cpus)   ||
+		if ((detail_ptr->pn_min_cpus  > node_ptr->cpus)   ||
 		    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
-		     config_ptr->real_memory) 			    ||
+		     node_ptr->real_memory) 			    ||
 		    ((detail_ptr->pn_min_memory & (MEM_PER_CPU)) &&
 		     ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) *
 		      detail_ptr->pn_min_cpus) >
-		     config_ptr->real_memory) 			    ||
+		     node_ptr->real_memory) 			    ||
 		    (detail_ptr->pn_min_tmp_disk >
-		     config_ptr->tmp_disk)) {
+		     node_ptr->tmp_disk)) {
 			bit_clear(avail_bitmap, i);
 			continue;
 		}
 		if (mc_ptr &&
-		    (((mc_ptr->sockets_per_node > config_ptr->tot_sockets) &&
+		    (((mc_ptr->sockets_per_node > node_ptr->tot_sockets) &&
 		      (mc_ptr->sockets_per_node != NO_VAL16)) ||
-		     ((mc_ptr->cores_per_socket > config_ptr->cores)   &&
+		     ((mc_ptr->cores_per_socket > node_ptr->cores)   &&
 		      (mc_ptr->cores_per_socket != NO_VAL16)) ||
-		     ((mc_ptr->threads_per_core > config_ptr->threads) &&
+		     ((mc_ptr->threads_per_core > node_ptr->threads) &&
 		      (mc_ptr->threads_per_core != NO_VAL16)))) {
 			bit_clear(avail_bitmap, i);
 			continue;

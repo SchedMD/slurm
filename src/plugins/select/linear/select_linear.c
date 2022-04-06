@@ -394,23 +394,21 @@ static int _get_avail_cpus(job_record_t *job_ptr, int index)
 #if SELECT_DEBUG
 	info("host:%s HW_ cpus_per_node:%u boards_per_node:%u "
 	     "sockets_per_boards:%u cores_per_socket:%u thread_per_core:%u ",
-	     node_ptr->name, node_ptr->config_ptr->cpus,
-	     node_ptr->config_ptr->boards,
-	     node_ptr->config_ptr->tot_sockets / node_ptr->config_ptr->boards,
-	     node_ptr->config_ptr->cores, node_ptr->config_ptr->threads);
+	     node_ptr->name, node_ptr->cpus, node_ptr->boards,
+	     node_ptr->tot_sockets / node_ptr->boards, node_ptr->cores,
+	     node_ptr->threads);
 #endif
 
 	avail_cpus = adjust_cpus_nppcu(ntasks_per_core, cpus_per_task,
-				       node_ptr->tot_cores,
-				       node_ptr->config_ptr->cpus);
+				       node_ptr->tot_cores, node_ptr->cpus);
 	if (ntasks_per_node > 0)
 		avail_cpus = MIN(avail_cpus, ntasks_per_node * cpus_per_task);
 #if SELECT_DEBUG
 	debug("avail_cpus index %d = %u (out of boards_per_node:%u "
 	      "sockets_per_boards:%u cores_per_socket:%u thread_per_core:%u)",
-	      index, avail_cpus, node_ptr->config_ptr->boards,
-	      node_ptr->config_ptr->tot_sockets / node_ptr->config_ptr->boards,
-	      node_ptr->config_ptr->cores, node_ptr->config_ptr->threads);
+	      index, avail_cpus, node_ptr->boards,
+	      node_ptr->tot_sockets / node_ptr->boards, node_ptr->cores,
+	      node_ptr->threads);
 #endif
 	return(avail_cpus);
 }

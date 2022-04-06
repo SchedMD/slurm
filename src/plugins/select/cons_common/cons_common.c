@@ -1833,8 +1833,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 		 * The minimum allocatable unit may a core, so scale by thread
 		 * count up to the proper CPU count as needed
 		 */
-		if (total_node_cores < node_ptr->config_ptr->cpus)
-			alloc_cpus *= node_ptr->config_ptr->threads;
+		if (total_node_cores < node_ptr->cpus)
+			alloc_cpus *= node_ptr->threads;
 		nodeinfo->alloc_cpus = alloc_cpus;
 
 		nodeinfo->alloc_memory = select_node_usage[n].alloc_memory;

@@ -232,9 +232,9 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 			continue;
 		}
 		part_ptr->total_nodes++;
-		part_ptr->total_cpus += node_ptr->config_ptr->cpus;
+		part_ptr->total_cpus += node_ptr->cpus;
 		part_ptr->max_cpu_cnt = MAX(part_ptr->max_cpu_cnt,
-					    node_ptr->config_ptr->cpus);
+					    node_ptr->cpus);
 		part_ptr->max_core_cnt = MAX(part_ptr->max_core_cnt,
 					     node_ptr->tot_cores);
 
