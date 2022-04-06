@@ -1255,9 +1255,7 @@ void _sync_jobs_to_conf(void)
 
 		_sync_steps_to_conf(job_ptr);
 
-		/* Do not increase the job->node_cnt for completed jobs */
-		if (! IS_JOB_COMPLETED(job_ptr))
-			build_node_details(job_ptr, false); /* set node_addr */
+		build_node_details(job_ptr, false); /* set node_addr */
 
 		if (job_fail) {
 			if (IS_JOB_PENDING(job_ptr)) {
