@@ -44,6 +44,8 @@ typedef struct {
 	List include_list;
 } conf_includes_map_t;
 
+extern List conf_includes_list;
+
 extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags);
 
 extern config_response_msg_t *fetch_config_from_controller(uint32_t flags);
