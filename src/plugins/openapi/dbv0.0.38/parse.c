@@ -1279,9 +1279,13 @@ static int _dump_qos_str_list(const parser_t *const parse, void *obj,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	data_set_list(dst);
 
-	if (list_for_each(qos_list_names, _foreach_dump_qos_str_list, &args) < 0)
+	if (list_for_each(qos_list_names, _foreach_dump_qos_str_list,
+			  &args) < 0) {
+		FREE_NULL_LIST(qos_list_names);
 		return ESLURM_DATA_CONV_FAILED;
+	}
 
+	FREE_NULL_LIST(qos_list_names);
 	return SLURM_SUCCESS;
 }
 
