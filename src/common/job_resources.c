@@ -77,15 +77,12 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 {
 	int i, bitmap_len;
 	int core_cnt = 0, sock_inx = -1;
-	uint32_t cores, socks;
-	node_record_t *node_ptr, **node_record_table;
 
 	if (job_resrcs->node_bitmap == NULL) {
 		error("build_job_resources: node_bitmap is NULL");
 		return SLURM_ERROR;
 	}
 
-	node_record_table = node_rec_table;
 	xfree(job_resrcs->sockets_per_node);
 	xfree(job_resrcs->cores_per_socket);
 	xfree(job_resrcs->sock_core_rep_count);
@@ -100,17 +97,17 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 	for (i=0; i<bitmap_len; i++) {
 		if (!bit_test(job_resrcs->node_bitmap, i))
 			continue;
-		node_ptr = node_record_table[i];
-
-		socks = node_ptr->config_ptr->tot_sockets;
-		cores = node_ptr->config_ptr->cores;
 
 		if ((sock_inx < 0) ||
-		    (socks != job_resrcs->sockets_per_node[sock_inx]) ||
-		    (cores != job_resrcs->cores_per_socket[sock_inx])) {
+		    (node_rec_table[i]->config_ptr->tot_sockets !=
+		     job_resrcs->sockets_per_node[sock_inx]) ||
+		    (node_rec_table[i]->config_ptr->cores !=
+		     job_resrcs->cores_per_socket[sock_inx])) {
 			sock_inx++;
-			job_resrcs->sockets_per_node[sock_inx] = socks;
-			job_resrcs->cores_per_socket[sock_inx] = cores;
+			job_resrcs->sockets_per_node[sock_inx] =
+				node_rec_table[i]->config_ptr->tot_sockets;
+			job_resrcs->cores_per_socket[sock_inx] =
+				node_rec_table[i]->config_ptr->cores;
 		}
 		job_resrcs->sock_core_rep_count[sock_inx]++;
 		core_cnt += node_rec_table[i]->tot_cores;
@@ -275,8 +272,6 @@ extern int valid_job_resources(job_resources_t *job_resrcs,
 	int i, bitmap_len;
 	int sock_inx = 0, sock_cnt = 0;
 	int total_job_cores, total_node_cores;
-	uint32_t cores, socks;
-	node_record_t *node_ptr, **node_record_table;
 
 	if (job_resrcs->node_bitmap == NULL) {
 		error("valid_job_resources: node_bitmap is NULL");
@@ -289,15 +284,10 @@ extern int valid_job_resources(job_resources_t *job_resrcs,
 		return SLURM_ERROR;
 	}
 
-	node_record_table = node_rec_table;
 	bitmap_len = bit_size(job_resrcs->node_bitmap);
 	for (i=0; i<bitmap_len; i++) {
 		if (!bit_test(job_resrcs->node_bitmap, i))
 			continue;
-		node_ptr = node_record_table[i];
-
-		socks = node_ptr->config_ptr->tot_sockets;
-		cores = node_ptr->config_ptr->cores;
 
 		if (sock_cnt >= job_resrcs->sock_core_rep_count[sock_inx]) {
 			sock_inx++;
@@ -310,9 +300,11 @@ extern int valid_job_resources(job_resources_t *job_resrcs,
 		total_node_cores = node_rec_table[i]->tot_cores;
 		if (total_job_cores != total_node_cores) {
 			error("valid_job_resources: %s sockets:%u,%u, cores %u,%u",
-			      node_ptr->name,
-			      socks, job_resrcs->sockets_per_node[sock_inx],
-			      cores, job_resrcs->cores_per_socket[sock_inx]);
+			      node_rec_table[i]->name,
+			      node_rec_table[i]->config_ptr->tot_sockets,
+			      job_resrcs->sockets_per_node[sock_inx],
+			      node_rec_table[i]->config_ptr->cores,
+			      job_resrcs->cores_per_socket[sock_inx]);
 			return SLURM_ERROR;
 		}
 		sock_cnt++;

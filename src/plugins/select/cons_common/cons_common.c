@@ -1746,8 +1746,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	part_res_record_t *p_ptr;
 	node_record_t *node_ptr = NULL;
 	int i, n;
-	uint32_t alloc_cpus, alloc_cores, node_cpus, node_threads;
-	uint32_t total_node_cores;
+	uint32_t alloc_cpus, alloc_cores, total_node_cores;
 	bitstr_t **alloc_core_bitmap = NULL;
 	List gres_list;
 
@@ -1800,9 +1799,6 @@ extern int select_p_select_nodeinfo_set_all(void)
 			continue;
 		}
 
-		node_cpus    = node_ptr->config_ptr->cpus;
-		node_threads = node_ptr->config_ptr->threads;
-
 		if (is_cons_tres) {
 			if (alloc_core_bitmap && alloc_core_bitmap[n])
 				alloc_cores = bit_set_count(
@@ -1837,8 +1833,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 		 * The minimum allocatable unit may a core, so scale by thread
 		 * count up to the proper CPU count as needed
 		 */
-		if (total_node_cores < node_cpus)
-			alloc_cpus *= node_threads;
+		if (total_node_cores < node_ptr->config_ptr->cpus)
+			alloc_cpus *= node_ptr->config_ptr->threads;
 		nodeinfo->alloc_cpus = alloc_cpus;
 
 		nodeinfo->alloc_memory = select_node_usage[n].alloc_memory;

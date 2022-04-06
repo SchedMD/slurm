@@ -373,11 +373,8 @@ static int _get_avail_cpus(job_record_t *job_ptr, int index)
 {
 	node_record_t *node_ptr;
 	int avail_cpus;
-	uint16_t boards_per_node, sockets_per_board;
-	uint16_t cores_per_socket, thread_per_core;
-	uint16_t cpus_per_node, cpus_per_task = 1;
+	uint16_t cpus_per_task = 1;
 	uint16_t ntasks_per_node = 0, ntasks_per_core;
-	uint32_t nppcu;
 	multi_core_data_t *mc_ptr = NULL;
 
 	if (job_ptr->details == NULL)
@@ -393,30 +390,27 @@ static int _get_avail_cpus(job_record_t *job_ptr, int index)
 		ntasks_per_core   = 0;
 
 	node_ptr = select_node_ptr[index];
-	cpus_per_node     = node_ptr->config_ptr->cpus;
-	boards_per_node   = node_ptr->config_ptr->boards;
-	sockets_per_board = node_ptr->config_ptr->tot_sockets /
-			    boards_per_node;
-	cores_per_socket  = node_ptr->config_ptr->cores;
-	thread_per_core   = node_ptr->config_ptr->threads;
 
 #if SELECT_DEBUG
 	info("host:%s HW_ cpus_per_node:%u boards_per_node:%u "
 	     "sockets_per_boards:%u cores_per_socket:%u thread_per_core:%u ",
-	     node_ptr->name, cpus_per_node, boards_per_node, sockets_per_board,
-	     cores_per_socket, thread_per_core);
+	     node_ptr->name, node_ptr->config_ptr->cpus,
+	     node_ptr->config_ptr->boards,
+	     node_ptr->config_ptr->tot_sockets / node_ptr->config_ptr->boards,
+	     node_ptr->config_ptr->cores, node_ptr->config_ptr->threads);
 #endif
 
-	nppcu = ntasks_per_core;
-	avail_cpus = adjust_cpus_nppcu(nppcu, cpus_per_task,
-				       node_ptr->tot_cores, cpus_per_node);
+	avail_cpus = adjust_cpus_nppcu(ntasks_per_core, cpus_per_task,
+				       node_ptr->tot_cores,
+				       node_ptr->config_ptr->cpus);
 	if (ntasks_per_node > 0)
 		avail_cpus = MIN(avail_cpus, ntasks_per_node * cpus_per_task);
 #if SELECT_DEBUG
 	debug("avail_cpus index %d = %u (out of boards_per_node:%u "
 	      "sockets_per_boards:%u cores_per_socket:%u thread_per_core:%u)",
-	      index, avail_cpus, boards_per_node, sockets_per_board,
-	      cores_per_socket, thread_per_core);
+	      index, avail_cpus, node_ptr->config_ptr->boards,
+	      node_ptr->config_ptr->tot_sockets / node_ptr->config_ptr->boards,
+	      node_ptr->config_ptr->cores, node_ptr->config_ptr->threads);
 #endif
 	return(avail_cpus);
 }
