@@ -1142,16 +1142,18 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 		if (!file_name)	/* Error printed by _parse_for_format() */
 			return -1;
 		path_name = _add_full_path(file_name, slurm_conf_path);
-		xfree(file_name);
 		if (!last_ancestor)
 			last_ancestor = xbasename(slurm_conf_path);
 		rc = s_p_parse_file(hashtbl, hash_val, path_name, ignore_new,
 				    last_ancestor);
 		xfree(path_name);
-		if (rc == SLURM_SUCCESS)
+		if (rc == SLURM_SUCCESS) {
+			xfree(file_name);
 			return 1;
-		else
+		} else {
+			xfree(file_name);
 			return -1;
+		}
 	} else {
 		return 0;
 	}
