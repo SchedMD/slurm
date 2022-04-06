@@ -338,7 +338,7 @@ static int _delete_user(data_t *resp, void *auth,
 		.with_deleted = false,
 		.with_wckeys = true,
 	};
-	List user_list;
+	List user_list = NULL;
 
 	list_append(assoc_cond.user_list, user_name);
 
