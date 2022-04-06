@@ -206,10 +206,6 @@ extern char *run_command(run_command_args_t *args)
 			closeall(3);
 		} else {
 			closeall(0);
-			if ((cpid = fork()) < 0)
-				_exit(127);
-			else if (cpid > 0)
-				_exit(0);
 		}
 		setpgid(0, 0);
 		/*
