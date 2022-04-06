@@ -242,7 +242,7 @@ static void _free_entry_list(entry_t *entry, int tag,
 		debug5("%s: remove path tag:%d method:%s entry:%s name:%s",
 		       __func__, tag,
 		       (method ? get_http_method_string(method->method) :
-				       "UNKNOWN"),
+				       "N/A"),
 		       itr->entry, itr->name);
 		xfree(itr->entry);
 		xfree(itr->name);
