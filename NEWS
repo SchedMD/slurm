@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
     fails.
  -- rlimits - remove final calls to limit nofiles to 4096 but to instead use
     the max possible nofiles in slurmd and slurmdbd.
+ -- Fix slurmctld memory leak after a reconfigure with configless.
 
 * Changes in Slurm 21.08.6
 ==========================
