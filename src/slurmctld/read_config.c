@@ -1194,7 +1194,7 @@ void _sync_jobs_to_conf(void)
 		 * If the job is finished there is no reason to do anything
 		 * below this.
 		 */
-		if (IS_JOB_FINISHED(job_ptr))
+		if (IS_JOB_COMPLETED(job_ptr))
 			continue;
 
 		FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
