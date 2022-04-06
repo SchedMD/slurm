@@ -1,0 +1,512 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Control Group v2 plugin</h1>
+
+<p>Slurm provides support for systems with Control Group v2.<br>
+Documentation for this cgroup version can be found in kernel.org
+<a href="https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html">
+Control Cgroup v2 Documentation</a>.</p>
+
+<p>The <i>cgroup/v2</i> plugin is an internal Slurm API used by other plugins,
+like <i>proctrack/cgroup</i>, <i>task/cgroup</i> and
+<i>jobacctgather/cgroup</i>. This document gives an overview of how it
+is designed, with the aim of getting a better idea of what is happening on the
+system when Slurm constrains resources with this plugin.</p>
+
+<p>Before reading this document we assume you have read the cgroup v2 kernel
+documentation and you are familiar with most of the concepts and terminology.
+It is equally important to read systemd's
+<a href="https://www.freedesktop.org/wiki/Software/systemd/ControlGroupInterface">
+Control Group Interfaces Documentation</a> since <i>cgroup/v2</i> needs to
+interact with systemd and a lot of concepts will overlap. Finally, it is
+recommended that you understand the concept of
+<a href="https://ebpf.io/what-is-ebpf">eBPF technology</a>, since in cgroup v2
+the device cgroup controller is eBPF-based.</p>
+
+<h2 id="v2_rules">Following cgroup v2 rules
+<a class="slurm_link" href="#v2_rules"></a>
+</h2>
+<p>Kernel's Control Group v2 has two particularities that affect how Slurm
+needs to structure its internal cgroup tree.</p>
+
+<h3 id="top_down">Top-down Constraint
+<a class="slurm_link" href="#top_down"></a>
+</h3>
+<p>Resources are distributed top-down to the tree, so a controller is only
+available on a cgroup directory if the parent node has it listed in its
+<i>cgroup.controllers</i> file and added to its <i>cgroup.subtree_control</i>.
+Also, a controller activated in the subtree cannot be disabled if one or more
+children has them enabled. For Slurm this implies we need to do this kind of
+management over our hierarchy modifying this file and enabling the required
+controllers for the child.</p>
+
+<h3 id="no_internal_process">No Internal Process Constraint
+<a class="slurm_link" href="#no_internal_process"></a>
+</h3>
+<p>Except for the root cgroup, parent cgroups (really called domain cgroups) can
+only enable controllers for their children if they do not have any process at
+their own level. This means we can create a subtree inside a cgroup directory,
+but before writing to <i>cgroup.subtree_control</i>, all the pids listed in the
+parent's <i>cgroup.procs</i> must be migrated to the child. This requires that
+all processes must live on the leaves of the tree and so it will not be possible
+to have pids in non-leaf directories.</p>
+
+<h2 id="systemd_rules">Following systemd rules
+<a class="slurm_link" href="#systemd_rules"></a>
+</h2>
+<p>Systemd is currently the most widely used init mechanism. For this reason
+Slurm needs to find a way to coexist with the rules of systemd. The designers of
+systemd have conceived a new rule called the "single-writer" rule, which implies
+that every cgroup has one single owner and nobody else should write to it. Read
+more about this in <a href="https://systemd.io/CGROUP_DELEGATION">systemd.io
+Cgroup Delegation Documentation</a>. In practice this means that the systemd
+daemon, started when the kernel boots and which takes pid 1, will consider
+itself the absolute owner and single writer of the entire cgroup tree.
+This means that systemd expects that no other process should be modifying any
+cgroup directly, nor should another process be creating directories or moving
+pids around, without systemd being aware of it.</p>
+
+<p>There's one method that allows Slurm to work without issues, which is to
+start Slurm daemons in a systemd <i>Unit</i> with the special systemd option
+<i>Delegate=yes</i>. Starting slurmd within a systemd Unit, will give Slurm a
+"delegated" cgroup subtree in the filesystem where it will be able to create
+directories, move pids, and manage its own hierarchy. In practice, what
+happens is that systemd registers a new <i>Unit</i> in its internal database and
+relates the cgroup directory to it. Then for any future "intrusive" actions of
+the cgroup tree, systemd will effectively ignore the "delegated" directories.
+</p>
+
+<p>This is similar to what happened in cgroup v1, since this is not a
+kernel rule, but a systemd rule. But this fact combined with the new cgroup v2
+rules, forces Slurm to choose a design which coexists with both.</p>
+
+<h3 id="real_sysd_prob">The real problem: systemd + restarting slurmd
+<a class="slurm_link" href="#real_sysd_prob"></a>
+</h3>
+<p>When designing the cgroup/v2 plugin for Slurm, the initial idea was to let
+slurmd setup the required hierarchy in its own cgroup directory. Ther it would
+place jobs and steps and move newer forked slurmstepds into the corresponding
+directories.</p>
+<p>This worked fine, until we needed to restart slurmd. Since the hierarchy was
+already created, the slurmd restart just terminated the slurmd process and then
+started a new one, but then it would try to put the new process directly in
+the root of the specific group tree. Since this directory was now a domain
+controller and not a leaf anymore, systemd would fail to start the daemon.
+</p>
+<p>Lacking any mechanism in systemd to tackle this situation, this left us with
+no other choice but to separate slurmd and forked slurmstepds into separate
+subtree directories. Because of the design rule of systemd about being the
+single-writer on the tree, it was not possible to just do a "mkdir" from
+slurmd or the slurmstepd itself and then move the stepd process into a new and
+separate directory, that would mean this directory was not controlled by systemd
+and would cause problems.</p>
+
+<p>The only way that a "mkdir" could work was if it was done inside a
+"delegated" cgroup subtree, so we needed to find a way to find a Unit with
+"Delegate=yes", different from the slurmd one, which would guarantee our
+independence. So, we really needed to start a new unit for user jobs.</p>
+
+<p>Actually, in systemd there are two types of Units that can get the
+"Delegate=yes" parameter and that are directly related to a cgroup directory,
+one is a "Service" and the other is a "Scope". We are interested the "scope":
+<ul>
+<li><b>A Systemd Scope:</b> systemd takes a pid as an argument, creates a cgroup
+directory and then adds the provided pid to the directory. The scope will remain
+until this pid is gone.</li>
+</ul>
+<p>Because we wanted to keep the systemd scope for any pid, we needed to call a
+specific function named "abandonScope" in systemd's dbus interface. Abandoning a
+scope makes it so that the scope will continue to be alive while there's a
+living pid in its cgroup tree, not just the initial pid.
+</p>
+<p>It is worth noting that a discussion with main systemd developers raised
+the <i>RemainAfterExit</i> systemd parameter. This parameter is intended to keep
+the unit alive even if all the processes on it are gone. This option is only
+valid for "Services" and not for "Scopes". This would be a very interesting
+option to have if it was included also for Scopes. They stated
+that its functionality could be extended to not only keep the unit, but
+to also keep the cgroup directories until the unit was manually terminated.
+Currently, the unit remains alive but the cgroup is cleaned anyway.
+</p>
+<p>With all this background, we're ready to show which solution was used to make
+Slurm get away from the problem of the slurmd restart.</p>
+<ul>
+<li>Create a new Scope on slurmd startup for hosting new slurmstepd processes.
+It does one single call at the <b>first</b> slurmd startup. Slurmd prepares a
+scope for future slurmstepd pids, and the stepd itself moves itself there when
+starting. This comes without any performance issue, and conceptually is just
+like a slower "mkdir" + informing systemd from slurmd only at the first startup.
+Moving processes from one delegated unit to another delegated unit was approved
+by systemd developers. The only downside is that the scope needs processes
+inside or it will terminate and cleanup the cgroup, so slurmd needed to create a
+"sleep" infinity process, which we encoded into the "slurmstepd infinity"
+process, which will live forever in the scope. In the future, if the
+<i>RemainAfterExit</i> parameter is extended to scopes and allows the cgroup
+tree to not be destroyed, the need for this infinity process would be
+eliminated.
+</li>
+</ul>
+<p>Finally we ended up with separating slurmd from slurmstepds, using a scope
+with "Delegate=yes" option.</p>
+
+<h3 id="consequences_nosysd">Consequences of not following systemd rules
+<a class="slurm_link" href="#consequences_nosysd"></a>
+</h3>
+<p>There is a known issue where systemd can decide to cleanup the cgroup
+hierarchy with the intention of making it match with its internal database.
+For example, if there are no units in the system with "Delegate=yes",
+it will go through the tree and possibly deactivate all the controllers which
+it thinks are not in use. In our testing we stopped all our units with
+"Delegate=yes", issued a "systemd reload" or a
+"systemd reset-failed" and witnessed how the <i>cpuset</i> controller
+disappeared from our "manually" created directories deep in the cgroup tree.
+There are other situations, and the fact that systemd developers and
+documentation claim that they are the unique single-writer to the tree, made
+SchedMD decide to be on the safe side and have Slurm coexist with systemd.
+</p>
+<p>It is worth noting that we added <i>IgnoreSystemd</i> and
+<i>IgnoreSystemdOnFailure</i> as cgroup.conf parameters which will avoid any
+contact with systemd, and will just use a regular "mkdir" to create the same
+directory structures. These parameters are for development and testing
+purposes only.</p>
+
+<h3 id="distro_no_sysd">What happens with Linux distros without systemd?
+<a class="slurm_link" href="#distro_no_sysd"></a>
+</h3>
+<p>Slurm does not support them, but they can still work. The only
+requirements are to have libdbus, ebpf and systemd packages installed in
+the system to compile slurm. Then you can set the <i>IgnoreSystemd</i>
+parameter in cgroup.conf to manually create the
+<i>/sys/fs/cgroup/system.slice/</i> directory. With these requirements met,
+Slurm should work normally.</p>
+
+<h2 id="v2_overview">cgroup/v2 overview
+<a class="slurm_link" href="#v2_overview"></a>
+</h2>
+
+<p>We will explain briefly this plugin's workflow.</p>
+
+<h3 id="slurmd_startup">slurmd startup
+<a class="slurm_link" href="#slurmd_startup"></a>
+</h3>
+<p>Fresh system: slurmd is started. Some plugins (proctrack, jobacctgather or
+task) which use cgroup, call init() function of cgroup/v2 plugin. What happens
+immediately is that slurmd does a call to dbus using libdbus, and creates
+a new systemd "Scope". The scope name is predefined and set depending on an
+internal constant SYSTEM_CGSCOPE under SYSTEM_CGSLICE. It basically ends up
+with the name "slurmstepd.scope" or "nodename_slurmstepd.scope" depending on
+whether Slurm is compiled with <i>--enable-multiple-slurmd</i> (prefixes node
+name) or not. The cgroup directory associated with this scope will be fixed as:
+"/sys/fs/cgroup/system.slice/slurmstepd.scope" or
+"/sys/fs/cgroup/system.slice/nodename_slurmstepd.scope".
+</p>
+<p>The scope is also "abandoned" calling the dbus method of "abandonScope" with
+the purpose explained <a href="#real_sysd_prob">previously</a> on this page.</p>
+<p>Since the call to dbus "startTransientUnit" requires a pid as a parameter,
+slurmd needs to fork a "slurmstepd infinity" and use this parameter as the
+argument.</p>
+<p>The call to dbus is asynchronous, so slurmd delivers the message to the Dbus
+bus and then starts an active wait, waiting for the scope directory to show up.
+If the directory doesn't show up within a hardcoded timeout, it fails.
+Otherwise it continues and slurmd then creates a directory for new slurmstepds
+and for the infinity pid in the recently created scope directory, called
+"system". It moves the infinity process into there and then enables all the
+required controllers in the new cgroup directories.
+</p>
+<p>As this is a regular systemd Unit, the scope will show up in
+"systemctl list-unit-files" and other systemd commands, for example:</p>
+<pre>
+]$ systemctl cat gamba1_slurmstepd.scope
+# /run/systemd/transient/gamba1_slurmstepd.scope
+# This is a transient unit file, created programmatically via the systemd API. Do not edit.
+[Scope]
+Delegate=yes
+TasksMax=infinity
+
+]$ systemctl list-unit-files gamba1_slurmstepd.scope
+UNIT FILE               STATE     VENDOR PRESET
+gamba1_slurmstepd.scope transient -
+
+1 unit files listed.
+
+]$ systemctl status gamba1_slurmstepd.scope
+● gamba1_slurmstepd.scope
+     Loaded: loaded (/run/systemd/transient/gamba1_slurmstepd.scope; transient)
+  Transient: yes
+     Active: active (abandoned) since Wed 2022-04-06 14:17:46 CEST; 2h 47min ago
+      Tasks: 1
+     Memory: 1.6M
+        CPU: 258ms
+     CGroup: /system.slice/gamba1_slurmstepd.scope
+             └─system
+               └─113094 /home/lipi/slurm/master/inst/sbin/slurmstepd infinity
+
+apr 06 14:17:46 llit systemd[1]: Started gamba1_slurmstepd.scope.
+</pre>
+
+<p>Another action of slurmd init will be to detect which controllers are
+available in the system (in /sys/fs/cgroup), and recursively enable the
+needed ones until reaching its level. It will enable them for the recently
+created slurmstepd scope.</p>
+
+<pre>
+]$ cat /sys/fs/cgroup/system.slice/gamba1_slurmstepd.scope/cgroup.controllers
+cpuset cpu io memory pids
+
+]$ cat /sys/fs/cgroup/system.slice/gamba1_slurmstepd.scope/cgroup.subtree_control
+cpuset cpu memory
+</pre>
+
+<p>If resource specialization is enabled, slurmd will set its memory and/or
+cpu constrains at its own level too.</p>
+
+<h3 id="slurmd_restart">slurmd restart
+<a class="slurm_link" href="#slurmd_restart"></a>
+</h3>
+<p>Slurmd restarts as usual. When restarted, it will detect if the "scope"
+directory already exists, and will do nothing if it does. Otherwise it will
+try to setup the scope again.</p>
+
+<h3 id="stepd_start">slurmstepd start
+<a class="slurm_link" href="#stepd_start"></a>
+</h3>
+<p>When a new step needs to be created, whether part of a new job or as part of
+an existing job, slurmd will fork the slurmstepd process in its own cgroup
+directory. Instantly slurmstepd will start initializing and (if cgroup plugins
+are enabled) it will infer the scope directory and will move itself into the
+"waiting" area, which is the
+<i>/sys/fs/cgroup/system.slice/slurmstepd_nodename.scope/system</i> directory.
+Immediately it will initialize the job and step cgroup directories and will move
+itself into them, setting the subtree_controllers as required.</p>
+
+<h3 id="term_clean">Termination and cleanup
+<a class="slurm_link" href="#term_clean"></a>
+</h3>
+<p>When a job ends, slurmstepd will take care of removing all the created
+directories. The slurmstepd.scope directory will <b>never</b> be removed or
+stopped by Slurm, and the "slurmstepd infinity" process will never be killed by
+Slurm.</p>
+<p>When slurmd ends (since on supported systems it has been started by systemd)
+its cgroup will just be cleaned up by systemd.</p>
+
+<h3 id="hierarchy_overview">Hierarchy overview
+<a class="slurm_link" href="#hierarchy_overview"></a>
+</h3>
+Hierarchy will take this form:
+<div class="figure">
+<img src="cg_hierarchy.jpg"></img>
+<br>
+Figure 1. Slurm cgroup v2 hierarchy.
+</div>
+<p>On the left side we have the slurmd service, started with systemd and living
+alone in its own delegated cgroup.</p>
+<p>On the right side we see the slurmstepd scope, a directory in the cgroup tree
+also delegated where all slurmstepd and user jobs will reside. The slurmstepd
+is migrated initially in the waiting area for new stepds, <i>system</i>
+directory, and immediately, when it initializes the job hierarchy, it will move
+itself into the corresponding <i>job_x/step_y/slurm_processes</i> directory.
+</p>
+<p>User processes will be spawned by slurmstepd and moved into the appropriate
+task directory.</p>
+<p>At this point it should be possible to check which processes
+are running in a slurmstepd scope by issuing this command:</p>
+<pre>
+]$ systemctl status slurmstepd.scope
+● slurmstepd.scope
+     Loaded: loaded (/run/systemd/transient/slurmstepd.scope; transient)
+  Transient: yes
+     Active: active (abandoned) since Wed 2022-04-06 14:17:46 CEST; 2min 47s ago
+      Tasks: 24
+     Memory: 18.7M
+        CPU: 141ms
+     CGroup: /system.slice/slurmstepd.scope
+             ├─job_3385
+             │ ├─step_0
+             │ │ ├─slurm
+             │ │ │ └─113630 slurmstepd: [3385.0]
+             │ │ └─user
+             │ │   └─task_0
+             │ │     └─113635 /usr/bin/sleep 123
+             │ ├─step_extern
+             │ │ ├─slurm
+             │ │ │ └─113565 slurmstepd: [3385.extern]
+             │ │ └─user
+             │ │   └─task_0
+             │ │     └─113569 sleep 100000000
+             │ └─step_interactive
+             │   ├─slurm
+             │   │ └─113584 slurmstepd: [3385.interactive]
+             │   └─user
+             │     └─task_0
+             │       ├─113590 /bin/bash
+             │       ├─113620 srun sleep 123
+             │       └─113623 srun sleep 123
+             └─system
+               └─113094 /home/lipi/slurm/master/inst/sbin/slurmstepd infinity
+</pre>
+<p><b>NOTE</b>: If running on a development system with
+<i>--enable-multiple-slurmd</i>, the slurmstepd.scope will have the nodename
+prepended to it.</p>
+
+<h2 id="task_level">Working at the task level
+<a class="slurm_link" href="#task_level"></a>
+</h2>
+<p>There is a directory called <i>task_special</i> in the user job hierarchy.
+The <i>jobacctgather/cgroup</i> and <i>task/cgroup</i> plugins respectively get
+statistics and constrain resources at the task level. Other plugins like
+<i>proctrack/cgroup</i> just work at the step level. To unify the hierarchy and
+make it work for all different plugins, when a plugin asks to add a pid to a
+step but not to a task, the pid will be put into a special directory called
+<i>task_special</i>. If another plugin adds this pid to a task, it will be
+migrated from there. Normally this happens with the proctrack plugin when a call
+is done to add a pid to a step with <i>proctrack_g_add_pid</i>.</p>
+
+<h2 id="ebpf_controller">The eBPF based devices controller
+<a class="slurm_link" href="#ebpf_controller"></a>
+</h2>
+<p>In Control Group v2, the devices controller interfaces has been removed.
+Instead of controlling it through files, now it is required to create a bpf
+program of type BPF_PROG_TYPE_CGROUP_DEVICE and attach it to the desired
+cgroup. This program is created by slurmtepd dynamically and inserted into
+the kernel with a bpf syscall, and describes which devices are allowed or
+denied for the job, step and task.</p>
+<p>The only devices that are managed are the ones described in the
+gres.conf file.</p>
+<p>The insertion and removal of such programs will be logged in the system
+log:</p>
+<pre>
+apr 06 17:20:14 node1 audit: BPF prog-id=564 op=LOAD
+apr 06 17:20:14 node1 audit: BPF prog-id=565 op=LOAD
+apr 06 17:20:14 node1 audit: BPF prog-id=566 op=LOAD
+apr 06 17:20:14 node1 audit: BPF prog-id=567 op=LOAD
+apr 06 17:20:14 node1 audit: BPF prog-id=564 op=UNLOAD
+apr 06 17:20:14 node1 audit: BPF prog-id=567 op=UNLOAD
+apr 06 17:20:14 node1 audit: BPF prog-id=566 op=UNLOAD
+apr 06 17:20:14 node1 audit: BPF prog-id=565 op=UNLOAD
+</pre>
+
+<h2 id="diff_ver">Running different nodes with different cgroup versions
+<a class="slurm_link" href="#diff_ver"></a>
+</h2>
+<p>The cgroup version to be used is entirely dependent on the node. Because of
+this, it is possible to run the same job on different nodes with different
+cgroup plugins. The configuration is done per node in cgroup.conf.</p>
+<p>What can not be done is to swap the version of cgroup plugin in cgroup.conf
+without rebooting and configuring the node. Since we do not support "hybrid"
+systems with mixed controller versions, a node must be booted with one specific
+cgroup version.</p>
+
+<h2 id="configuration">Configuration
+<a class="slurm_link" href="#configuration"></a>
+</h2>
+<p>In terms of configuration, setup does not differ much from the previous
+<i>cgroup/v1</i> plugin, but the following considerations must be taken into
+account when configuring the cgroup plugin in <i>cgroup.conf</i>:</p>
+
+<h3 id="cgroup_plugin">Cgroup Plugin
+<a class="slurm_link" href="#cgroup_plugin"></a>
+</h3>
+<p>This option allows the sysadmin to specify which cgroup version will be run
+on the node. It is recommended to use <i>autodetect</i> and forget about it, but
+this can be forced to the plugin version too.</p>
+<p><b>CgroupPlugin=[autodetect|cgroup/v1|cgroup/v2]</b></p>
+
+<h3 id="dev_options">Developer options
+<a class="slurm_link" href="#dev_options"></a>
+</h3>
+<ul>
+<li><b>IgnoreSystemd=[yes|no]</b>: This option is used to avoid any call to dbus
+for contacting systemd. Instead of requesting the creation of a new scope when
+slurmd starts up, it will only use "mkdir" to prepare the cgroup directories for
+the slurmstepds. Use of this option in production systems with systemd is not
+supported for the reasons mentioned <a href="#consequences_nosysd">above</a>.
+This option can be useful for systems without systemd though.
+</li>
+<li><b>IgnoreSystemdOnFailure=[yes|no]</b>: This option will fallback to manual
+mode for creating the cgroup directories without creating a systemd "scope".
+This is only if a call to dbus returned an error, as it would be with
+<b>IgnoreSystemd</b>.
+</li>
+<li><b>CgroupAutomount=[yes|no]</b>: This option is only used when
+<b>IgnoreSystemd</b> is set. If both are set slurmd will check all the
+available controllers in <i>/sys/fs/cgroup</i> and will enable them recursively
+until it reaches the slurmd level. This will imply that the manually created
+slurmstepd directories will also have these controllers set.
+</li>
+<li><b>CgroupMountPoint=/path/to/mount/point</b>: In most cases with cgroup v2,
+this parameter should not be used because <i>/sys/fs/cgroup</i> will be the only
+cgroup directory.
+</li>
+</ul>
+
+<h3 id="ignored_params">Ignored parameters
+<a class="slurm_link" href="#ignored_params"></a>
+</h3>
+<p>Since Cgroup v2 doesn't provide the Kmem* or swappiness interfaces anymore in
+the memory controller, the following parameters in cgroup.conf will be ignored:
+</p>
+<pre>
+AllowedKmemSpace=
+MemorySwappiness=
+MaxKmemPercent=
+MinKmemSpace=
+</pre>
+
+<h2 id="requirements">Requirements
+<a class="slurm_link" href="#requirements"></a>
+</h2>
+<p>For building <i>cgroup/v2</i> there are two required libraries checked at
+configure time. Look at your config.log when configuring to see if they
+were correctly detected on your system.</p>
+<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="3" cellspacing="0" width="100%">
+<colgroup>
+<col width="5%">
+<col width="20%">
+<col width="15%">
+<col width="15%">
+<col width="35%">
+</colgroup>
+<tr bgcolor="#e0e0e0">
+<td><u><b>Library</b></u></td>
+<td><u><b>Header file</b></u></td>
+<td><u><b>Package provides</b></u></td>
+<td><u><b>Configure option</b></u></td>
+<td><u><b>Purpose</b></u></td>
+</tr>
+<tr>
+<td>eBPF</td>
+<td>include/linux/ebpf.h</td>
+<td>kernel-headers</td>
+<td>--with-ebpf=</td>
+<td>Constrain devices to a job/step/task</td>
+</tr>
+<tr>
+<td>dBus</td>
+<td>dbus-1.0/dbus/dbus.h</td>
+<td>dbus-devel</td>
+<td>n/a</td>
+<td>dBus API for contacting systemd</td>
+</tr>
+</table>
+<br>
+<p><b>NOTE</b>: In systems without systemd, these libraries are also needed to
+compile Slurm. If some other requirement exists, like not including the dbus
+or systemd package requirement, the configure files would have to be modified.
+</p>
+
+<h2 id="pam_slurm_adopt">PAM Slurm Adopt plugin on cgroup v2
+<a class="slurm_link" href="#pam_slurm_adopt"></a>
+</h2>
+<p>The <a href="pam_slurm_adopt.html">pam_slurm_adopt plugin</a> has a
+dependency with the API of <i>cgroup/v1</i> because in some situations it relied
+on the job's cgroup creation time for choosing which job id should be picked to
+add your sshd pid into. With v2 we wanted to remove this dependency and not
+rely on the cgroup filesystem, but simply on the job id. This won't guarantee
+that the sshd session is inserted into the youngest job, but will guarantee it
+will be put into the largest job id. Thanks to this we removed the dependency of
+the plugin against the specific cgroup hierarchy.
+</p>
+
+<p style="text-align:center;">Last modified 06 April 2022</p>
+
+<!--#include virtual="footer.txt"-->
