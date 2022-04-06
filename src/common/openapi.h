@@ -98,7 +98,9 @@ extern void unregister_path_tag(openapi_t *oas, int tag);
  * 	params must be DATA_TYPE_DICT.
  *
  * IN method - HTTP method to match
- * RET -1 if tag not found or tag given to register_path_tag()
+ * RET -1 if path tag was not found, or
+ *     -2 if path tag was found, but method wasn't found within path tag, or
+ *     the tag assigned to the given path.
  */
 extern int find_path_tag(openapi_t *oas, const data_t *path, data_t *params,
 			 http_request_method_t method);

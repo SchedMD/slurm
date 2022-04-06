@@ -853,7 +853,6 @@ extern int find_path_tag(openapi_t *oas, const data_t *dpath, data_t *params,
 			 http_request_method_t method)
 {
 	path_t *path;
-	int tag = -1;
 	match_path_from_data_t args = {
 		.params = params,
 		.dpath = dpath,
@@ -864,17 +863,15 @@ extern int find_path_tag(openapi_t *oas, const data_t *dpath, data_t *params,
 
 	path = list_find_first(oas->paths, _match_path_from_data, &args);
 	if (!path)
-		return tag;
+		return -1;
 
 	/* Make sure the path tag actually contains the method requested */
 	for (entry_method_t *em = path->methods; em->entries; em++) {
-		if (em->method == method) {
-			tag = path->tag;
-			break;
-		}
+		if (em->method == method)
+			return path->tag;
 	}
 
-	return tag;
+	return -2;
 }
 
 static void _oas_plugrack_foreach(const char *full_type, const char *fq_path,

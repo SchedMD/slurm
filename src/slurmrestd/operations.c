@@ -246,8 +246,13 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 			args,
 			"Unable find requested URL. Please view /openapi/v3 for API reference.",
 			HTTP_STATUS_CODE_ERROR_NOT_FOUND, NULL);
-
-	return SLURM_SUCCESS;
+	else if (*path_tag == -2)
+		return _operations_router_reject(
+			args,
+			"Requested REST method is not defined at URL. Please view /openapi/v3 for API reference.",
+			HTTP_STATUS_CODE_ERROR_METHOD_NOT_ALLOWED, NULL);
+	else
+		return SLURM_SUCCESS;
 }
 
 static int _get_query(on_http_request_args_t *args, data_t **query,
