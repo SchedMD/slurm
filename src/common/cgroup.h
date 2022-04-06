@@ -150,6 +150,7 @@ typedef struct {
 	uint64_t ssec;
 	uint64_t total_rss;
 	uint64_t total_pgmajfault;
+	uint64_t total_vmem;
 } cgroup_acct_t;
 
 /* Slurm cgroup plugins configuration parameters */

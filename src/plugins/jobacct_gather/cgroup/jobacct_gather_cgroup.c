@@ -106,7 +106,8 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 	}
 
 	if (cgroup_acct_data->total_rss == NO_VAL64 &&
-	    cgroup_acct_data->total_pgmajfault == NO_VAL64) {
+	    cgroup_acct_data->total_pgmajfault == NO_VAL64 &&
+	    cgroup_acct_data->total_vmem == NO_VAL64) {
 		debug2("failed to collect cgroup memory stats pid %d ppid %d",
 		       prec->pid, prec->ppid);
 	} else {
@@ -125,6 +126,17 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 		 */
 		prec->tres_data[TRES_ARRAY_PAGES].size_read =
 			cgroup_acct_data->total_pgmajfault;
+
+		/*
+		 * The most important thing about getting the values from cgroup
+		 * is that it returns the amount of mem occupied by the whole
+		 * process tree, not only the stepd child like by default.
+		 * Adding vmem to cgroup as well, so the user doesn't see a
+		 * RSS>VMem in some cases.
+		 */
+		prec->tres_data[TRES_ARRAY_VMEM].size_read =
+			cgroup_acct_data->total_vmem;
+
 	}
 
 	xfree(cgroup_acct_data);
