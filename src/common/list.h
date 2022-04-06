@@ -241,7 +241,7 @@ int list_for_each_ro(List l, ListForF f, void *arg);
  *  For each item in list [l], invokes the function [f] with [arg].
  *  Returns a count of the number of items on which [f] was invoked.
  *  If [f] returns <0 for a given item, the iteration is NOT aborted but the
- *  function will return -1, else return 0.
+ *  return value (count of items processed) will be negated.
  */
 int list_for_each_nobreak(List l, ListForF f, void *arg);
 
