@@ -49,6 +49,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/fetch_config.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -117,6 +118,8 @@ typedef struct _expline_values_st {
 	s_p_hashtbl_t*	index;
 	s_p_hashtbl_t**	values;
 } _expline_values_t;
+
+List conf_includes_list = NULL;
 
 static bool _run_in_daemon(void)
 {
