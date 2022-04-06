@@ -1588,7 +1588,6 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	static uint32_t cr_enabled = NO_VAL;
 	static uint32_t single_select_job_test = 0;
 
-	node_record_t *node_ptr;
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, avail_nodes = 0;
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
@@ -1694,9 +1693,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		    ((job_ptr->details->core_spec & CORE_SPEC_THREAD) == 0)) {
 			i = bit_ffs(job_ptr->details->req_node_bitmap);
 			if (i >= 0) {
-				node_ptr = node_record_table_ptr[i];
-				j = node_ptr->config_ptr->tot_sockets *
-					node_ptr->config_ptr->cores;
+				j = node_record_table_ptr[i]->tot_cores;
 			}
 			if ((i >= 0) && (job_ptr->details->core_spec >= j)) {
 				if (part_ptr->name) {

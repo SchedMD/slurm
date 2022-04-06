@@ -113,7 +113,7 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 			job_resrcs->cores_per_socket[sock_inx] = cores;
 		}
 		job_resrcs->sock_core_rep_count[sock_inx]++;
-		core_cnt += (cores * socks);
+		core_cnt += node_rec_table[i]->tot_cores;
 	}
 	if (core_cnt) {
 		/*
@@ -307,7 +307,7 @@ extern int valid_job_resources(job_resources_t *job_resrcs,
 		 * but the socket/NUMA count can change on reboot */
 		total_job_cores = job_resrcs->sockets_per_node[sock_inx] *
 				  job_resrcs->cores_per_socket[sock_inx];
-		total_node_cores = socks * cores;
+		total_node_cores = node_rec_table[i]->tot_cores;
 		if (total_job_cores != total_node_cores) {
 			error("valid_job_resources: %s sockets:%u,%u, cores %u,%u",
 			      node_ptr->name,

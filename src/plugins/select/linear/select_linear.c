@@ -377,7 +377,7 @@ static int _get_avail_cpus(job_record_t *job_ptr, int index)
 	uint16_t cores_per_socket, thread_per_core;
 	uint16_t cpus_per_node, cpus_per_task = 1;
 	uint16_t ntasks_per_node = 0, ntasks_per_core;
-	uint32_t nppcu, total_cores;
+	uint32_t nppcu;
 	multi_core_data_t *mc_ptr = NULL;
 
 	if (job_ptr->details == NULL)
@@ -421,9 +421,8 @@ static int _get_avail_cpus(job_record_t *job_ptr, int index)
 	}
 
 	nppcu = ntasks_per_core;
-	total_cores = boards_per_node * sockets_per_board * cores_per_socket;
 	avail_cpus = adjust_cpus_nppcu(nppcu, cpus_per_task,
-				       total_cores, cpus_per_node);
+				       node_ptr->tot_cores, cpus_per_node);
 	if (ntasks_per_node > 0)
 		avail_cpus = MIN(avail_cpus, ntasks_per_node * cpus_per_task);
 #if SELECT_DEBUG

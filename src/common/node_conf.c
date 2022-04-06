@@ -1255,15 +1255,10 @@ extern void cr_init_global_core_data(node_record_t **node_ptr, int node_cnt)
 	cr_node_cores_offset = xmalloc((node_cnt+1) * sizeof(uint32_t));
 
 	for (n = 0; n < node_cnt; n++) {
-		uint16_t cores;
-
 		if (!node_ptr[n])
 			continue;
 
-		cores = node_ptr[n]->config_ptr->cores;
-		cores *= node_ptr[n]->config_ptr->tot_sockets;
-
-		cr_node_num_cores[n] = cores;
+		cr_node_num_cores[n] = node_ptr[n]->tot_cores;
 		if (n > 0) {
 			cr_node_cores_offset[n] =
 				cr_node_cores_offset[prev_index] +

@@ -2552,8 +2552,7 @@ static int _build_node_spec_bitmap(node_record_t *node_ptr)
 
 	if (!node_ptr->cpu_spec_list)
 		return SLURM_SUCCESS;
-	size = node_ptr->config_ptr->cores;
-	size *= node_ptr->config_ptr->tot_sockets;
+	size = node_ptr->tot_cores;
 	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
 	node_ptr->node_spec_bitmap = bit_alloc(size);
 	bit_nset(node_ptr->node_spec_bitmap, 0, size-1);

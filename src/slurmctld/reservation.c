@@ -2230,9 +2230,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			if (!bit_test(resv_ptr->node_bitmap, node_ptr->index))
 				continue;
-			resv_ptr->core_cnt +=
-				(node_ptr->config_ptr->cores *
-				 node_ptr->config_ptr->tot_sockets);
+			resv_ptr->core_cnt += node_ptr->tot_cores;
 			cpu_cnt += node_ptr->config_ptr->cpus;
 		}
 	} else if (resv_ptr->core_bitmap) {
@@ -2247,8 +2245,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 					continue;
 
 				node_ptr = node_record_table_ptr[i];
-				cores = (node_ptr->config_ptr->cores *
-					 node_ptr->config_ptr->tot_sockets);
+				cores = node_ptr->tot_cores;
 				threads = node_ptr->config_ptr->threads;
 
 				offset = cr_get_coremap_offset(i);

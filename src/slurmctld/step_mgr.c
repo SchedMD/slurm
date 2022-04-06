@@ -2404,8 +2404,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			 */
 			if (!_use_one_thread_per_core(step_ptr) &&
 			    (!(node_record_table_ptr[i_node]->cpus ==
-			       (node_record_table_ptr[i_node]->tot_sockets *
-				node_record_table_ptr[i_node]->cores)))) {
+			       (node_record_table_ptr[i_node]->tot_cores)))) {
 				multi_core_data_t *mc_ptr;
 				mc_ptr = job_ptr->details->mc_ptr;
 				if (step_ptr->threads_per_core != NO_VAL16)
@@ -5124,22 +5123,10 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	return SLURM_SUCCESS;
 }
 
-/* Return the total core count on a given node index */
-static int _get_node_cores(int node_inx)
-{
-	node_record_t *node_ptr = node_record_table_ptr[node_inx];
-	int socks, cores;
-
-	socks = node_ptr->config_ptr->tot_sockets;
-	cores = node_ptr->config_ptr->cores;
-
-	return socks * cores;
-}
-
 static int _rebuild_bitmaps(void *x, void *arg)
 {
 	int i_first, i_last, i_size;
-	int old_core_offset = 0, new_core_offset = 0, node_core_count;
+	int old_core_offset = 0, new_core_offset = 0;
 	bool old_node_set, new_node_set;
 	bitstr_t *orig_step_core_bitmap;
 	step_record_t *step_ptr = (step_record_t *) x;
@@ -5167,9 +5154,9 @@ static int _rebuild_bitmaps(void *x, void *arg)
 		new_node_set = bit_test(job_ptr->job_resrcs->node_bitmap, i);
 		if (!old_node_set && !new_node_set)
 			continue;
-		node_core_count = _get_node_cores(i);
 		if (old_node_set && new_node_set) {
-			for (int j = 0; j < node_core_count; j++) {
+			for (int j = 0; j < node_record_table_ptr[i]->tot_cores;
+			     j++) {
 				if (!bit_test(orig_step_core_bitmap,
 					      old_core_offset + j))
 					continue;
@@ -5181,9 +5168,9 @@ static int _rebuild_bitmaps(void *x, void *arg)
 			}
 		}
 		if (old_node_set)
-			old_core_offset += node_core_count;
+			old_core_offset += node_record_table_ptr[i]->tot_cores;
 		if (new_node_set)
-			new_core_offset += node_core_count;
+			new_core_offset += node_record_table_ptr[i]->tot_cores;
 	}
 	bit_free(orig_step_core_bitmap);
 
