@@ -922,7 +922,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 
 		FREE_NULL_HOSTLIST(exclude_hl);
 
-		if (resv_ports) {
+		if (!rc && resv_ports) {
 			/*
 			 * Merge numeric values into single range
 			 * (e.g. "10-12,13-15,16-18" -> "10-18")
@@ -948,8 +948,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				job->step_ctx->step_resp->resv_ports =
 					xstrdup(resv_ports);
 			}
-			xfree(resv_ports);
 		}
+		xfree(resv_ports);
 		list_iterator_destroy(job_iter);
 		if (opt_iter)
 			list_iterator_destroy(opt_iter);
