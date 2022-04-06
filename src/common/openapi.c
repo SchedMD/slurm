@@ -686,7 +686,7 @@ extern int register_path_tag(openapi_t *oas, const char *str_path)
 	rc = path->tag;
 
 cleanup:
-	_free_entry_list(entries, (path ? path->tag : -1), args.method);
+	_free_entry_list(entries, (path ? path->tag : -1), NULL);
 	entries = NULL;
 
 	return rc;
