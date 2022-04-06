@@ -4264,39 +4264,6 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr)
 	return boot_node_bitmap;
 }
 
-/* Determine if node boot required for this job
- * IN job_ptr - pointer to job that will be initiated
- * IN node_bitmap - nodes to be allocated
- * RET - true if reboot required
- */
-extern bool node_features_reboot_test(job_record_t *job_ptr,
-				      bitstr_t *node_bitmap)
-{
-	bitstr_t *active_bitmap = NULL, *boot_node_bitmap = NULL;
-	int node_cnt;
-
-	if (job_ptr->reboot)
-		return true;
-
-	if ((node_features_g_count() == 0) ||
-	    !node_features_g_user_update(job_ptr->user_id))
-		return false;
-
-	build_active_feature_bitmap(job_ptr, node_bitmap, &active_bitmap);
-	if (active_bitmap == NULL)	/* All have desired features */
-		return false;
-
-	boot_node_bitmap = bit_copy(node_bitmap);
-	bit_and_not(boot_node_bitmap, active_bitmap);
-	node_cnt = bit_set_count(boot_node_bitmap);
-	FREE_NULL_BITMAP(active_bitmap);
-	FREE_NULL_BITMAP(boot_node_bitmap);
-
-	if (node_cnt == 0)
-		return false;
-	return true;
-}
-
 /*
  * reboot_job_nodes - Reboot the compute nodes allocated to a job.
  * Also change the modes of KNL nodes for node_features/knl_generic plugin.
