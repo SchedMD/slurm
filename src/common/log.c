@@ -68,6 +68,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
+#include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -75,7 +76,11 @@
 #include "src/common/slurm_time.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/serializer.h"
+
 #include "src/slurmctld/slurmctld.h"
+
 
 #ifndef LINEBUFSIZE
 #  define LINEBUFSIZE 256
@@ -1289,6 +1294,37 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 
 	if (!log->logfp || (level > log->opt.logfile_level)) {
 		/* do nothing */
+	} else if (log->opt.logfile_fmt == LOG_FILE_FMT_JSON) {
+		/*
+		 * log format json gets all of the logging to match
+		 * https://docs.docker.com/config/containers/logging/json-file/
+		 */
+		char time[50];
+		char *json = NULL;
+		char *stream;
+		data_t *out = data_set_dict(data_new());
+
+		if (level <= log->opt.stderr_level)
+			stream = "stderr";
+		else
+			stream = "stdout";
+
+		log_timestamp(time, sizeof(time));
+		data_set_string_fmt(data_key_set(out, "log"), "%s%s%s",
+				    log->prefix, pfx, buf);
+		data_set_string(data_key_set(out, "stream"), stream);
+		data_set_string(data_key_set(out, "time"), time);
+
+		serialize_g_data_to_string(&json, NULL, out, MIME_TYPE_JSON,
+					   SER_FLAGS_COMPACT);
+		FREE_NULL_DATA(out);
+
+		if (json)
+			_log_printf(log, log->fbuf, log->logfp, "%s\n", json);
+
+		xfree(json);
+		fflush(log->logfp);
+		xfree(msgbuf);
 	} else {
 		xassert(log->opt.logfile_fmt == LOG_FILE_FMT_TIMESTAMP);
 		xlogfmtcat(&msgbuf, "[%M] %s%s%s", log->prefix, pfx, buf);

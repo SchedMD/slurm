@@ -92,6 +92,7 @@ typedef enum {
 
 typedef enum {
 	LOG_FILE_FMT_TIMESTAMP = 0,
+	LOG_FILE_FMT_JSON,
 } log_file_fmt_t;
 
 /*
