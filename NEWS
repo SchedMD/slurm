@@ -196,6 +196,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix various issues with internal job accounting with GRES when jobs are
     shrunk.
  -- Fix ipmi polling on slurmd reconfig or restart.
+ -- Fix srun crash when reserved ports are being used and het step fails
+    to launch.
 
 * Changes in Slurm 21.08.6
 ==========================
