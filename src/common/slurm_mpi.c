@@ -81,12 +81,10 @@ static bool init_run = false;
 static void _log_env(char **env)
 {
 #if _DEBUG > 1
-	int i;
-
 	if (!env)
 		return;
 
-	for (i = 0; env[i]; i++)
+	for (int i = 0; env[i]; i++)
 		info("%s", env[i]);
 #endif
 }
@@ -123,7 +121,6 @@ static void _log_step_rec(const stepd_step_rec_t *job)
 static void _log_mpi_rec(const mpi_plugin_client_info_t *job)
 {
 	slurm_step_layout_t *layout = job->step_layout;
-	int i, j;
 
 	info("MPI_PLUGIN_CLIENT_INFO");
 	info("%ps", &job->step_id);
@@ -136,9 +133,9 @@ static void _log_mpi_rec(const mpi_plugin_client_info_t *job)
 		info("node_list:%s", layout->node_list);
 		info("plane_size:%u task_dist:%u", layout->plane_size,
 		     layout->task_dist);
-		for (i = 0; i < layout->node_cnt; i++) {
+		for (int i = 0; i < layout->node_cnt; i++) {
 			info("tasks[%d]:%u", i, layout->tasks[i]);
-			for (j = 0; j < layout->tasks[i]; j++) {
+			for (int j = 0; j < layout->tasks[i]; j++) {
 				info("tids[%d][%d]:%u", i, j,
 				     layout->tids[i][j]);
 			}
