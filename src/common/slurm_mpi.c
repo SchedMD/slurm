@@ -187,18 +187,18 @@ static int _mpi_init(char *mpi_type)
 		goto done;
 	}
 
-	setenvf(NULL, "SLURM_MPI_TYPE", "%s", mpi_type);
-
 	plugin_name = xstrdup_printf("mpi/%s", mpi_type);
 	g_context = plugin_context_create(
 		plugin_type, plugin_name, (void **)&ops, syms, sizeof(syms));
 	xfree(plugin_name);
 
-	if (!g_context) {
+	if (g_context) {
+		setenvf(NULL, "SLURM_MPI_TYPE", "%s", mpi_type);
+		init_run = true;
+	} else {
 		error("MPI: Cannot create context for %s", mpi_type);
 		rc = SLURM_ERROR;
-	} else
-		init_run = true;
+	}
 
 done:
 	slurm_mutex_unlock(&context_lock);
