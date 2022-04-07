@@ -4468,6 +4468,8 @@ slurmctld, and on any 'scontrol reconfigure' command new configs will
 be automatically pushed out and applied to nodes that are running in this
 "configless" mode.
 NOTE: a restart of the slurmctld is required for this to take effect.
+NOTE: Included files with the \fBInclude\fR directive will only be pushed
+if the filename has no path separators and is located adjacent to slurm.conf.
 .IP
 
 .TP
