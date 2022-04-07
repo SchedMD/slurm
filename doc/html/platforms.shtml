@@ -9,14 +9,15 @@ distributions using arm64 (aarch64), ppc64, and x86_64 architectures. Some
 features are limited to recent releases and newer Linux kernel versions.
 Currently supported distributions include:
 <ul>
-<li>Cray Linux Environment 6</li>
 <li>Cray Linux Environment 7</li>
-<li>Debian (jessie, stretch, buster, and newer)</li>
-<li>RedHat Enterprise Linux 6 (RHEL6), CentOS 6, Scientific Linux 6 (deprecated, and will be removed in a future release)</li>
+<li>Debian 10 (Buster)</li>
+<li>Debian 11 (Bullseye)</li>
 <li>RedHat Enterprise Linux 7 (RHEL7), CentOS 7, Scientific Linux 7</li>
-<li>RedHat Enterprise Linux 8 (RHEL8), CentOS 8 (and newer)</li>
-<li>SUSE Linux Enterprise Server (SLES) 12 (and newer)</li>
-<li>Ubuntu (16.04, 18.04, and newer)</li>
+<li>RedHat Enterprise Linux 8 (RHEL8) and RHEL8 derivatives</li>
+<li>SUSE Linux Enterprise Server (SLES) 12</li>
+<li>SUSE Linux Enterprise Server (SLES) 15</li>
+<li>Ubuntu 18.04</li>
+<li>Ubuntu 20.04</li>
 </ul>
 </li>
 <li><b>NetBSD</b> &mdash; Limited support, not actively tested.</li>
