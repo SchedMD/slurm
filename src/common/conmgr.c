@@ -1457,6 +1457,13 @@ static void _listen(void *x)
 	slurm_mutex_lock(&mgr->mutex);
 	xassert(mgr->listen_active);
 
+	/* if shutdown has been requested: then don't listen() anymore */
+	if (mgr->shutdown) {
+		log_flag(NET, "%s: caught shutdown. closing %u listeners",
+			 __func__, list_count(mgr->listen));
+		goto cleanup;
+	}
+
 	/* grab counts once */
 	count = list_count(mgr->listen);
 
