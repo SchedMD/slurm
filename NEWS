@@ -176,6 +176,7 @@ documents those changes that are of interest to users and administrators.
  -- Added keepaliveinterval and keepaliveprobes options to
     CommunicationParameters.
  -- Correctly failover to backup slurmdbd if the primary slurmdbd node crashes.
+ -- Add support to ship Include configuration files with configless.
 
 * Changes in Slurm 21.08.7
 ==========================
