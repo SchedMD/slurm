@@ -5769,20 +5769,22 @@ static void _validate_threads_per_core_option(slurm_opt_t *opt)
 		return;
 
 	if (!slurm_option_isset(opt, "cpu-bind")) {
-		verbose("Setting --cpu-bind=threads as a default of --threads-per-core use");
+		if (opt->verbose)
+			info("Setting --cpu-bind=threads as a default of --threads-per-core use");
 		if (opt->srun_opt)
 			slurm_verify_cpu_bind("threads",
 					      &opt->srun_opt->cpu_bind,
 					      &opt->srun_opt->cpu_bind_type);
 	} else if (opt->srun_opt &&
 		   !xstrcmp(opt->srun_opt->cpu_bind, "verbose")) {
-		verbose("Setting --cpu-bind=threads,verbose as a default of --threads-per-core use");
+		if (opt->verbose)
+			info("Setting --cpu-bind=threads,verbose as a default of --threads-per-core use");
 		if (opt->srun_opt)
 			slurm_verify_cpu_bind("threads,verbose",
 					      &opt->srun_opt->cpu_bind,
 					      &opt->srun_opt->cpu_bind_type);
-	} else {
-		debug3("Not setting --cpu-bind=threads because of --threads-per-core since --cpu-bind already set by cli option or environment variable");
+	} else if (opt->verbose > 1) {
+		info("Not setting --cpu-bind=threads because of --threads-per-core since --cpu-bind already set by cli option or environment variable");
 	}
 }
 
