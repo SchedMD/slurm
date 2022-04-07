@@ -58,6 +58,7 @@
 #include "src/common/parse_value.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -1108,6 +1109,57 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 }
 
 /*
+ * ListDelF for conf_includes_list
+ *
+ * IN/OUT: object (conf_includes_map_t *map)
+ */
+static void _delete_conf_includes(void *object)
+{
+	conf_includes_map_t *map = object;
+
+	if (map) {
+		xfree(map->conf_file);
+		FREE_NULL_LIST(map->include_list);
+		xfree(map);
+	}
+}
+
+/*
+ * Allocate memory for conf_includes_list if needed.
+ *
+ * Append the include_file to its appropriate conf_file mapping if found,
+ * otherwise create a map for conf_file <-> include_file and append it to
+ * conf_includes_list.
+ *
+ * IN: include_file to be appended.
+ * IN: conf_file where include_file belongs to.
+ */
+static void _handle_include(char *include_file, char *conf_file)
+{
+	conf_includes_map_t *map = NULL;
+
+	xassert(include_file);
+	xassert(conf_file);
+
+	if (!conf_includes_list)
+		conf_includes_list = list_create(_delete_conf_includes);
+
+	if (!(map = list_find_first_ro(conf_includes_list,
+				       find_map_conf_file,
+				       conf_file))) {
+		map = xmalloc(sizeof(*map));
+		map->conf_file = xstrdup(conf_file);
+		map->include_list = list_create(xfree_ptr);
+		list_append(map->include_list, xstrdup(include_file));
+		list_append(conf_includes_list, map);
+	} else if (!list_find_first_ro(map->include_list,
+				       slurm_find_char_exact_in_list,
+				       include_file)) {
+		list_append(map->include_list, xstrdup(include_file));
+	}
+}
+
+/*
  * Returns 1 if the line contained an include directive and the included
  * file was parsed without error.  Returns -1 if the line was an include
  * directive but the included file contained errors.  Returns 0 if
@@ -1150,8 +1202,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 		xfree(path_name);
 		if (rc == SLURM_SUCCESS) {
 			if (!xstrstr(file_name, "/") && running_in_slurmctld())
-				/* Will handle include here. */
-				;
+				_handle_include(file_name, last_ancestor);
 			xfree(file_name);
 			return 1;
 		} else {
