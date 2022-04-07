@@ -78,7 +78,7 @@ static bool init_run = false;
 
 #if _DEBUG
 /* Debugging information is invaluable to debug heterogeneous step support */
-static inline void _log_env(char **env)
+static void _log_env(char **env)
 {
 #if _DEBUG > 1
 	int i;
