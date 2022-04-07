@@ -468,6 +468,29 @@ static void _load_conf2list(config_response_msg_t *msg, char *file_name)
 	free_buf(config);
 }
 
+/*
+ * ListFindF for conf_file in conf_includes_list.
+ *
+ * IN: x, list data (conf_includes_map_t node).
+ * IN: key, conf filename to be found.
+ *
+ * RET: 1 if found, 0 otherwise.
+ */
+extern int find_map_conf_file(void *x, void *key)
+{
+	conf_includes_map_t *map = x;
+	char *conf_file = key;
+
+	xassert(map);
+	xassert(map->conf_file);
+	xassert(conf_file);
+
+	if (!xstrcmp(map->conf_file, conf_file))
+		return 1;
+
+	return 0;
+}
+
 extern void load_config_response_list(config_response_msg_t *msg, char *files[])
 {
 	xassert(msg);
