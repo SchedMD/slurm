@@ -650,6 +650,15 @@ int main(int argc, char **argv)
 				      slurm_conf.slurm_conf,
 				      slurm_strerror(error_code));
 			}
+			/*
+			 * configless_setup() is called only after slurm.conf
+			 * has been parsed, and thus only the slurm.conf Include
+			 * files have been identified. Call configless_update()
+			 * now to setup configless with the included files from
+			 * other conf files.
+			 */
+			configless_update();
+
 			unlock_slurmctld(config_write_lock);
 			select_g_select_nodeinfo_set_all();
 

@@ -717,6 +717,9 @@ extern void configless_setup(void)
  */
 extern void configless_update(void)
 {
+	if (!config_for_slurmd)
+		return;
+
 	config_response_msg_t *new = xmalloc(sizeof(*new));
 	config_response_msg_t *old = xmalloc(sizeof(*old));
 
