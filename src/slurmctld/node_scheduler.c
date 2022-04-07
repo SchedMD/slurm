@@ -393,6 +393,14 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		 * will happen after EpilogSlurmctld is done.
 		 */
 		if (job_ptr->node_bitmap_cg) {
+			/*
+			 * Call cleanup_completing before job_epilog_complete or
+			 * we will end up requeuing there before this is called.
+			 */
+			if ((job_ptr->node_cnt == 0) &&
+			    !job_ptr->epilog_running)
+				cleanup_completing(job_ptr);
+
 			i_first = bit_ffs(job_ptr->node_bitmap_cg);
 			if (i_first >= 0)
 				i_last = bit_fls(job_ptr->node_bitmap_cg);
@@ -405,9 +413,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 					job_ptr->job_id,
 					node_record_table_ptr[i].name, 0);
 			}
-			if ((job_ptr->node_cnt == 0) &&
-			    !job_ptr->epilog_running)
-				cleanup_completing(job_ptr);
 		}
 
 		return;
