@@ -2689,6 +2689,8 @@ extern void cleanup_completing(job_record_t *job_ptr);
  * RPC.
  */
 extern void configless_setup(void);
+/* Reload the internal cached config values. */
+extern void configless_update(void);
 /* Free cached values to avoid memory leak. */
 extern void configless_clear(void);
 
