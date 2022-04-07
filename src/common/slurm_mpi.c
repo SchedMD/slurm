@@ -155,8 +155,8 @@ static void _log_task_rec(const mpi_plugin_task_info_t *job)
 
 static int _mpi_init(char *mpi_type)
 {
-	int retval = SLURM_SUCCESS;
-	char *plugin_type = "mpi", *type = NULL;
+	int rc = SLURM_SUCCESS;
+	char *plugin_type = "mpi", *plugin_name = NULL;
 
 #if _DEBUG
 	info("%s: MPI: Type: %s", __func__, mpi_type);
@@ -165,7 +165,7 @@ static int _mpi_init(char *mpi_type)
 #endif
 
 	if (init_run && g_context)
-		return retval;
+		return rc;
 
 	slurm_mutex_lock(&context_lock);
 
@@ -183,26 +183,26 @@ static int _mpi_init(char *mpi_type)
 	}
 	if (!mpi_type) {
 		error("MPI: No default type set.");
-		retval = SLURM_ERROR;
+		rc = SLURM_ERROR;
 		goto done;
 	}
 
 	setenvf(NULL, "SLURM_MPI_TYPE", "%s", mpi_type);
 
-	type = xstrdup_printf("mpi/%s", mpi_type);
+	plugin_name = xstrdup_printf("mpi/%s", mpi_type);
 	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
-	xfree(type);
+		plugin_type, plugin_name, (void **)&ops, syms, sizeof(syms));
+	xfree(plugin_name);
 
 	if (!g_context) {
 		error("MPI: Cannot create context for %s", mpi_type);
-		retval = SLURM_ERROR;
+		rc = SLURM_ERROR;
 	} else
 		init_run = true;
 
 done:
 	slurm_mutex_unlock(&context_lock);
-	return retval;
+	return rc;
 }
 
 extern int mpi_g_slurmstepd_init(char ***env)
@@ -266,7 +266,7 @@ extern int mpi_g_client_init(char *mpi_type)
 extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 	const mpi_plugin_client_info_t *job, char ***env)
 {
-	mpi_plugin_client_state_t *rc;
+	mpi_plugin_client_state_t *state;
 #if _DEBUG
 	info("%s: MPI: Details before call:", __func__);
 	_log_env(*env);
@@ -276,12 +276,12 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 	if (_mpi_init(NULL) < 0)
 		return NULL;
 
-	rc = (*(ops.client_prelaunch))(job, env);
+	state = (*(ops.client_prelaunch))(job, env);
 #if _DEBUG
 	info("%s: MPI: Environment after call:", __func__);
 	_log_env(*env);
 #endif
-	return rc;
+	return state;
 }
 
 extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
