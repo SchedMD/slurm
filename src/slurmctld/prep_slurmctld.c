@@ -142,7 +142,6 @@ extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id,
 	job_record_t *job_ptr;
 
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(job_id);
 	if (!(job_ptr = find_job_record(job_id))) {
 		error("%s: missing JobId=%u", __func__, job_id);
 		unlock_slurmctld(job_write_lock);
