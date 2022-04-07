@@ -1148,6 +1148,9 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 				    last_ancestor);
 		xfree(path_name);
 		if (rc == SLURM_SUCCESS) {
+			if (!xstrstr(file_name, "/"))
+				/* Will handle include here. */
+				;
 			xfree(file_name);
 			return 1;
 		} else {
