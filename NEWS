@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmstepd - reduce user requested soft rlimits when they are above max
     hard rlimits to avoid rlimit request being completely ignored and
     processes using default limits.
+ -- Fix memory leaks when job/step specifies a container.
 
 * Changes in Slurm 21.08.6
 ==========================

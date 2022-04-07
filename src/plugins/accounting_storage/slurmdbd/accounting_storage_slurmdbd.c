@@ -127,6 +127,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->account);
 		xfree(req->array_task_str);
 		xfree(req->constraints);
+		xfree(req->container);
 		xfree(req->env);
 		xfree(req->mcs_label);
 		xfree(req->name);
@@ -152,6 +153,7 @@ static void _partial_destroy_dbd_job_start(void *object)
 	}
 }
 
+/* Anything allocated here must be freed in _partial_free_dbd_job_start() */
 static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 				job_record_t *job_ptr)
 {
@@ -2811,7 +2813,7 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 	memset(&req, 0, sizeof(dbd_step_start_msg_t));
 
 	req.assoc_id    = step_ptr->job_ptr->assoc_id;
-	req.container   = xstrdup(step_ptr->container);
+	req.container   = step_ptr->container;
 	req.db_index    = step_ptr->job_ptr->db_index;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
