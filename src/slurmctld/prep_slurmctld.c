@@ -90,9 +90,26 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id)
 			srun_user_message(job_ptr,
 					  "PrologSlurmctld failed, job killed");
 
-			if (job_ptr->het_job_list) {
-				(void) het_job_signal(job_ptr, SIGKILL, 0, 0,
-						       false);
+			if (job_ptr->het_job_id) {
+				job_record_t *het_leader = job_ptr;
+
+				if (!het_leader->het_job_list) {
+					het_leader = find_job_record(
+						job_ptr->het_job_id);
+				}
+
+				/*
+				 * Don't do anything if there isn't a het_leader
+				 * (which there should be).
+				 */
+				if (het_leader) {
+					(void) het_job_signal(het_leader,
+							      SIGKILL,
+							      0, 0, false);
+				} else {
+					error("No het_leader found for %pJ",
+					      job_ptr);
+				}
 			} else {
 				job_signal(job_ptr, SIGKILL, 0, 0, false);
 			}
