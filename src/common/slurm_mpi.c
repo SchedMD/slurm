@@ -207,6 +207,7 @@ done:
 
 extern int mpi_g_slurmstepd_init(char ***env)
 {
+	int rc = SLURM_SUCCESS;
 	char *mpi_type = getenvp(*env, "SLURM_MPI_TYPE");
 
 #if _DEBUG
@@ -214,8 +215,8 @@ extern int mpi_g_slurmstepd_init(char ***env)
 	_log_env(*env);
 #endif
 
-	if (_mpi_init(mpi_type) == SLURM_ERROR)
-		return SLURM_ERROR;
+	if ((rc = _mpi_init(mpi_type)) != SLURM_SUCCESS)
+		return rc;
 
 	/*
 	 * Unset env var so that "none" doesn't exist in salloc'ed env, but
@@ -224,7 +225,7 @@ extern int mpi_g_slurmstepd_init(char ***env)
 	if (!xstrcmp(mpi_type, "none"))
 		unsetenvp(*env, "SLURM_MPI_TYPE");
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
@@ -251,10 +252,7 @@ extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 
 extern int mpi_g_client_init(char *mpi_type)
 {
-	if (_mpi_init(mpi_type) == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
+	return _mpi_init(mpi_type);
 }
 
 extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
