@@ -82,6 +82,8 @@ typedef struct {
  */
 extern int mpi_g_slurmstepd_init(char ***env);
 
+extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env);
+
 /*
  * Load the plugin (if not already loaded) and call the plugin
  * mpi_p_slurmstepd_task() function.
@@ -100,9 +102,6 @@ extern int mpi_g_slurmstepd_init(char ***env);
  */
 extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job,
 				 char ***env);
-
-
-extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env);
 
 /**********************************************************************
  * Hooks called by client applications.
