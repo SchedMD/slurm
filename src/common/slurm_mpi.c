@@ -235,9 +235,6 @@ extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 	_log_step_rec(job);
 #endif
 
-	if (mpi_g_slurmstepd_init(env) == SLURM_ERROR)
-		return SLURM_ERROR;
-
 	return (*(ops.slurmstepd_prefork))(job, env);
 }
 
@@ -248,9 +245,6 @@ extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 	_log_env(*env);
 	_log_task_rec(job);
 #endif
-
-	if (mpi_g_slurmstepd_init(env) == SLURM_ERROR)
-		return SLURM_ERROR;
 
 	return (*(ops.slurmstepd_task))(job, env);
 }
@@ -273,9 +267,6 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 	_log_mpi_rec(job);
 #endif
 
-	if (_mpi_init(NULL) < 0)
-		return NULL;
-
 	state = (*(ops.client_prelaunch))(job, env);
 #if _DEBUG
 	info("%s: MPI: Environment after call:", __func__);
@@ -289,9 +280,6 @@ extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 #if _DEBUG
 	info("%s called", __func__);
 #endif
-
-	if (_mpi_init(NULL) < 0)
-		return SLURM_ERROR;
 
 	return (*(ops.client_fini))(state);
 }
