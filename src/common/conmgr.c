@@ -1523,6 +1523,7 @@ static void _listen(void *x)
 	log_flag(NET, "%s: polling %u/%u file descriptors",
 		 __func__, args->nfds, (count + 2));
 
+	/* _poll() will lock mgr->mutex */
 	_poll(mgr, args, mgr->listen, &_handle_listen_event, __func__);
 cleanup:
 	mgr->listen_active = false;
