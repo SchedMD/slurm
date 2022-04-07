@@ -316,10 +316,14 @@ int list_transfer_max(List l, List sub, int max)
 	xassert(sub->magic == LIST_MAGIC);
 	xassert(l->fDel == sub->fDel);
 
-	while ((!max || n <= max) && (v = list_pop(sub))) {
-		list_append(l, v);
+	slurm_rwlock_wrlock(&l->mutex);
+	slurm_rwlock_wrlock(&sub->mutex);
+	while ((!max || n <= max) && (v = _list_pop_locked(sub))) {
+		_list_append_locked(l, v);
 		n++;
 	}
+	slurm_rwlock_unlock(&sub->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return n;
 }
