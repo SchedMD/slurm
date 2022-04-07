@@ -771,6 +771,7 @@ extern void configless_clear(void)
 		FREE_NULL_LIST(config_for_clients->config_files);
 		xfree(config_for_clients);
 	}
+	FREE_NULL_LIST(conf_includes_list);
 }
 
 /* _kill_job_on_msg_fail - The request to create a job record successed,
