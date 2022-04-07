@@ -57,6 +57,7 @@
 #include "src/common/parse_config.h"
 #include "src/common/parse_value.h"
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -1148,7 +1149,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 				    last_ancestor);
 		xfree(path_name);
 		if (rc == SLURM_SUCCESS) {
-			if (!xstrstr(file_name, "/"))
+			if (!xstrstr(file_name, "/") && running_in_slurmctld())
 				/* Will handle include here. */
 				;
 			xfree(file_name);
