@@ -279,21 +279,25 @@ list_append (List l, void *x)
 int
 list_append_list (List l, List sub)
 {
-	ListIterator itr;
-	void *v;
 	int n = 0;
+	ListNode p;
 
 	xassert(l != NULL);
 	xassert(l->fDel == NULL);
 	xassert(sub != NULL);
-	itr = list_iterator_create(sub);
-	while((v = list_next(itr))) {
-		if (list_append(l, v))
-			n++;
-		else
+
+	slurm_rwlock_wrlock(&l->mutex);
+	slurm_rwlock_wrlock(&sub->mutex);
+	p = sub->head;
+	while (p) {
+		if (!_list_append_locked(l, p->data))
 			break;
+		n++;
+		p = p->next;
 	}
-	list_iterator_destroy(itr);
+
+	slurm_rwlock_unlock(&sub->mutex);
+	slurm_rwlock_unlock(&l->mutex);
 
 	return n;
 }
