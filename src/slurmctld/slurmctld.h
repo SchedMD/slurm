@@ -255,6 +255,7 @@ typedef struct node_features {
 
 extern List active_feature_list;/* list of currently active node features */
 extern List avail_feature_list;	/* list of available node features */
+extern List conf_includes_list; /* list of conf_includes_map_t */
 
 /*****************************************************************************\
  *  NODE states and bitmaps
