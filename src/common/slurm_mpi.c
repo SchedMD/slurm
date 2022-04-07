@@ -55,7 +55,7 @@
 typedef struct slurm_mpi_ops {
 	int          (*slurmstepd_prefork)(const stepd_step_rec_t *job,
 					   char ***env);
-	int          (*slurmstepd_init)   (const mpi_plugin_task_info_t *job,
+	int          (*slurmstepd_task)   (const mpi_plugin_task_info_t *job,
 					   char ***env);
 	mpi_plugin_client_state_t *
 	             (*client_prelaunch)  (const mpi_plugin_client_info_t *job,
@@ -257,7 +257,7 @@ extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 	if (mpi_g_slurmstepd_init(env) == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	return (*(ops.slurmstepd_init))(job, env);
+	return (*(ops.slurmstepd_task))(job, env);
 }
 
 extern int mpi_g_client_init(char *mpi_type)
