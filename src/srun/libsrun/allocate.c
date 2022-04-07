@@ -286,6 +286,9 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			tmp_str = alloc->alias_list;
 			alloc->alias_list = resp->alias_list;
 			resp->alias_list = tmp_str;
+			if (resp->node_addr)
+				add_remote_nodes_to_conf_tbls(resp->node_list,
+							      resp->node_addr);
 			slurm_free_resource_allocation_response_msg(resp);
 		}
 	} else if (!destroy_job) {

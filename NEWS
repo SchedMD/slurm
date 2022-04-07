@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issuing reboot and downing when rebooting a powering up node.
  -- Clear DRAIN on node after failing to resume before ResumeTimeout.
  -- Prevent repeating power down if node fails to resume before ResumeTimeout.
+ -- Fix federated cloud node communication with srun and cloud_dns.
 
 * Changes in Slurm 21.08.6
 ==========================
