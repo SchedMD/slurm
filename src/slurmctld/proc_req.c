@@ -3339,6 +3339,13 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		save_all_state();		/* has its own locks */
 		queue_job_scheduler();
 	}
+	if (conf_includes_list) {
+		/*
+		 * clear included files so that subsequent conf parsings refill
+		 * it with updated information.
+		 */
+		list_flush(conf_includes_list);
+	}
 	slurm_mutex_unlock(&reconfig_mutex);
 	slurm_cond_broadcast(&reconfig_cond);
 }
