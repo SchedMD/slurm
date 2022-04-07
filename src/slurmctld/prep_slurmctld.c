@@ -86,9 +86,17 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id,
 
 	/* all async prologs have completed, continue on now */
 	if (job_ptr->prep_prolog_failed) {
+		uint32_t jid = job_id;
+
 		job_ptr->prep_prolog_failed = false;
-		if ((rc = job_requeue(0, job_id, NULL, false, 0))) {
-			info("unable to requeue JobId=%u: %s", job_id,
+
+		/* requeue het leader if het job */
+		if (job_ptr->het_job_id)
+			jid = job_ptr->het_job_id;
+
+		if ((rc = job_requeue(0, jid, NULL, false, 0)) &&
+		    (rc != ESLURM_JOB_PENDING)) {
+			info("unable to requeue JobId=%u: %s", jid,
 			     slurm_strerror(rc));
 
 			srun_user_message(job_ptr,
