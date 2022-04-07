@@ -239,21 +239,9 @@ int list_count(List l)
 List list_shallow_copy(List l)
 {
 	List m = list_create(NULL);
-	ListNode p;
 
-	xassert(l != NULL);
-	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
-	slurm_rwlock_wrlock(&m->mutex);
+	(void) list_append_list(m, l);
 
-	p = l->head;
-	while (p) {
-		_list_append_locked(m, p->data);
-		p = p->next;
-	}
-
-	slurm_rwlock_unlock(&m->mutex);
-	slurm_rwlock_unlock(&l->mutex);
 	return m;
 }
 
@@ -283,8 +271,10 @@ list_append_list (List l, List sub)
 	ListNode p;
 
 	xassert(l != NULL);
+	xassert(l->magic == LIST_MAGIC);
 	xassert(l->fDel == NULL);
 	xassert(sub != NULL);
+	xassert(sub->magic == LIST_MAGIC);
 
 	slurm_rwlock_wrlock(&l->mutex);
 	slurm_rwlock_wrlock(&sub->mutex);
