@@ -161,6 +161,12 @@ static int _mpi_init(char *mpi_type)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "mpi", *type = NULL;
 
+#if _DEBUG
+	info("%s: MPI: Type: %s", __func__, mpi_type);
+#else
+	debug("MPI: Type: %s", mpi_type);
+#endif
+
 	if (init_run && g_context)
 		return retval;
 
@@ -179,7 +185,7 @@ static int _mpi_init(char *mpi_type)
 		mpi_type = "none";
 	}
 	if (!mpi_type) {
-		error("No MPI default set.");
+		error("MPI: No default type set.");
 		retval = SLURM_ERROR;
 		goto done;
 	}
@@ -187,18 +193,17 @@ static int _mpi_init(char *mpi_type)
 	setenvf(NULL, "SLURM_MPI_TYPE", "%s", mpi_type);
 
 	type = xstrdup_printf("mpi/%s", mpi_type);
-
 	g_context = plugin_context_create(
 		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+	xfree(type);
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("MPI: Cannot create context for %s", mpi_type);
 		retval = SLURM_ERROR;
 	} else
 		init_run = true;
 
 done:
-	xfree(type);
 	slurm_mutex_unlock(&context_lock);
 	return retval;
 }
@@ -208,10 +213,8 @@ extern int mpi_g_slurmstepd_init(char ***env)
 	char *mpi_type = getenvp(*env, "SLURM_MPI_TYPE");
 
 #if _DEBUG
-	info("IN %s mpi_type:%s", __func__, mpi_type);
+	info("%s: MPI: Environment before call:", __func__);
 	_log_env(*env);
-#else
-	debug("mpi type = %s", mpi_type);
 #endif
 
 	if (_mpi_init(mpi_type) == SLURM_ERROR)
@@ -230,7 +233,7 @@ extern int mpi_g_slurmstepd_init(char ***env)
 extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
 #if _DEBUG
-	info("IN %s", __func__);
+	info("%s: MPI: Details before call:", __func__);
 	_log_env(*env);
 	_log_step_rec(job);
 #endif
@@ -244,9 +247,9 @@ extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 {
 #if _DEBUG
-	info("IN %s", __func__);
-	_log_task_rec(job);
+	info("%s: MPI: Details before call:", __func__);
 	_log_env(*env);
+	_log_task_rec(job);
 #endif
 
 	if (mpi_g_slurmstepd_init(env) == SLURM_ERROR)
@@ -257,12 +260,6 @@ extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 
 extern int mpi_g_client_init(char *mpi_type)
 {
-#if _DEBUG
-	info("IN %s mpi_type:%s", __func__, mpi_type);
-#else
-	debug("mpi type = %s", mpi_type);
-#endif
-
 	if (_mpi_init(mpi_type) == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -274,7 +271,7 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 {
 	mpi_plugin_client_state_t *rc;
 #if _DEBUG
-	info("IN %s", __func__);
+	info("%s: MPI: Details before call:", __func__);
 	_log_env(*env);
 	_log_mpi_rec(job);
 #endif
@@ -284,6 +281,7 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 
 	rc = (*(ops.client_prelaunch))(job, env);
 #if _DEBUG
+	info("%s: MPI: Environment after call:", __func__);
 	_log_env(*env);
 #endif
 	return rc;
@@ -292,7 +290,7 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 {
 #if _DEBUG
-	info("IN %s", __func__);
+	info("%s called", __func__);
 #endif
 
 	if (_mpi_init(NULL) < 0)
