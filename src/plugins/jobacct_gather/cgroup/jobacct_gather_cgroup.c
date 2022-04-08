@@ -170,9 +170,12 @@ extern int init (void)
 extern int fini (void)
 {
 	if (running_in_slurmstepd()) {
-		/* Remove job/uid/step directories */
-		cgroup_g_step_destroy(CG_MEMORY);
-		cgroup_g_step_destroy(CG_CPUACCT);
+		/* Only destroy step if it has been previously created */
+		if (!is_first_task) {
+			/* Remove job/uid/step directories */
+			cgroup_g_step_destroy(CG_MEMORY);
+			cgroup_g_step_destroy(CG_CPUACCT);
+		}
 
 		acct_gather_energy_fini();
 	}
