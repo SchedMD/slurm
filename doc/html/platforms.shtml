@@ -2,7 +2,6 @@
 
 <h1>Platforms</h1>
 <h2 id="os">Operating Systems<a class="slurm_link" href="#os"></a></h2>
-<p>
 <ul>
 <li><b>FreeBSD</b> &mdash; Limited support, not actively tested.</li>
 <li><b>Linux</b> &mdash; Slurm has been thoroughly tested on most popular Linux
@@ -25,7 +24,6 @@ Currently supported distributions include:
 currently. It should be possible to fix this with some adjustments to linker
 and compiler flags, and any patches would be appreciated.
 </ul>
-</p>
 
 <h2 id="database">Databases<a class="slurm_link" href="#database"></a></h2>
 <p>Slurm will be built with support for MySQL if it finds supported
@@ -37,12 +35,11 @@ you use a currently supported version of MySQL or MariaDB.
 <h2 id="accel">Accelerators<a class="slurm_link" href="#accel"></a></h2>
 
 <p>Slurm has optional support for managing a variety of accelerator cards.
-Specific plugins have been developed for:
+Specific plugins have been developed for:</p>
 <ul>
 <li>gres/gpu with AutoDetect=nvml &mdash; autodetection of NVIDIA GPUs through their proprietary NVML library (tested on x86_64 and arm64)</li>
 <li>gres/mps &mdash; NVIDIA CUDA Multi-Process Service provides ways to share GPUs between multiple compute processes</li>
 </ul>
-</p>
 
 <p style="text-align:center;">Last modified 8 April 2022</p>
 
