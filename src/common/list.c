@@ -362,7 +362,8 @@ static void *_list_find_first_locked(List l, ListFindF f, void *key)
 	return NULL;
 }
 
-static void *list_find_first_lock(List l, ListFindF f, void *key, bool write_lock)
+static void *_list_find_first_lock(
+	List l, ListFindF f, void *key, bool write_lock)
 {
 	void *v = NULL;
 
@@ -386,7 +387,7 @@ static void *list_find_first_lock(List l, ListFindF f, void *key, bool write_loc
  */
 void *list_find_first(List l, ListFindF f, void *key)
 {
-	return list_find_first_lock(l, f, key, true);
+	return _list_find_first_lock(l, f, key, true);
 }
 
 /*
@@ -395,7 +396,7 @@ void *list_find_first(List l, ListFindF f, void *key)
  */
 void *list_find_first_ro(List l, ListFindF f, void *key)
 {
-	return list_find_first_lock(l, f, key, false);
+	return _list_find_first_lock(l, f, key, false);
 }
 
 /* list_remove_first()
