@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun crash when reserved ports are being used and het step fails
     to launch.
  -- openapi/dbv0.0.37 - fix DELETE execution path on /user/{user_name}.
+ -- slurmctld - Properly requeue all components of a het job if PrologSlurmctld
+    fails.
 
 * Changes in Slurm 21.08.6
 ==========================
