@@ -15,7 +15,7 @@ Currently supported distributions include:
 <li>Debian (jessie, stretch, buster, and newer)</li>
 <li>RedHat Enterprise Linux 6 (RHEL6), CentOS 6, Scientific Linux 6 (deprecated, and will be removed in a future release)</li>
 <li>RedHat Enterprise Linux 7 (RHEL7), CentOS 7, Scientific Linux 7</li>
-<li>RedHat Enterprise Linux 8 (RHEL7), CentOS 8 (and newer)</li>
+<li>RedHat Enterprise Linux 8 (RHEL8), CentOS 8 (and newer)</li>
 <li>SUSE Linux Enterprise Server (SLES) 12 (and newer)</li>
 <li>Ubuntu (16.04, 18.04, and newer)</li>
 </ul>
@@ -44,6 +44,6 @@ Specific plugins have been developed for:
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 2 February 2022</p>
+<p style="text-align:center;">Last modified 8 April 2022</p>
 
 <!--#include virtual="footer.txt"-->
