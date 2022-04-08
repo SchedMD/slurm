@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix ipmi polling on slurmd reconfig or restart.
  -- Fix srun crash when reserved ports are being used and het step fails
     to launch.
+ -- openapi/dbv0.0.37 - fix DELETE execution path on /user/{user_name}.
 
 * Changes in Slurm 21.08.6
 ==========================
