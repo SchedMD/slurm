@@ -388,12 +388,7 @@ static int op_handler_user(const char *context_id, http_request_method_t method,
 		rc = ESLURM_REST_INVALID_QUERY;
 	else if (method == HTTP_REQUEST_GET)
 		rc = _dump_users(resp, errors, auth, user_name);
-	else
-		rc = ESLURM_NOT_SUPPORTED;
-
-	if ((!rc) && (method == HTTP_REQUEST_GET))
-		rc = _dump_users(resp, errors, auth, user_name);
-	else if ((!rc) && (method == HTTP_REQUEST_DELETE))
+	else if (method == HTTP_REQUEST_DELETE)
 		rc = _delete_user(resp, auth, user_name, errors);
 	else
 		rc = ESLURM_REST_INVALID_QUERY;
