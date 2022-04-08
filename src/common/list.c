@@ -352,9 +352,18 @@ list_prepend (List l, void *x)
 	return v;
 }
 
+static void *_list_find_first_locked(List l, ListFindF f, void *key)
+{
+	for (ListNode p = l->head; p; p = p->next) {
+		if (f(p->data, key))
+			return p->data;
+	}
+
+	return NULL;
+}
+
 static void *list_find_first_lock(List l, ListFindF f, void *key, bool write_lock)
 {
-	ListNode p;
 	void *v = NULL;
 
 	xassert(l != NULL);
@@ -365,12 +374,8 @@ static void *list_find_first_lock(List l, ListFindF f, void *key, bool write_loc
 	else
 		slurm_rwlock_rdlock(&l->mutex);
 
-	for (p = l->head; p; p = p->next) {
-		if (f(p->data, key)) {
-			v = p->data;
-			break;
-		}
-	}
+	v = _list_find_first_locked(l, f, key);
+
 	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
