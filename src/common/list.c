@@ -140,6 +140,7 @@ static void *_list_node_create(List l, ListNode *pp, void *x);
 static void *_list_node_destroy(List l, ListNode *pp);
 static void *_list_pop_locked(List l);
 static void *_list_append_locked(List l, void *x);
+static void *_list_find_first_locked(List l, ListFindF f, void *key);
 
 #ifndef NDEBUG
 static int _list_mutex_is_locked(pthread_rwlock_t *mutex);
@@ -332,6 +333,51 @@ int list_transfer_max(List l, List sub, int max)
 int list_transfer(List l, List sub)
 {
 	return list_transfer_max(l, sub, 0);
+}
+
+/*
+ *  Pop off elements in list [sub] to [l], unless already in [l].
+ *  Note: list [l] must have the same destroy function as list [sub].
+ *  Note: list [l] could contain repeated elements, but those aren't removed.
+ *  Note: list [sub] will be returned with repeated elements or empty,
+ *        but never destroyed.
+ *  Returns a count of the number of items added to list [l].
+ */
+int list_transfer_unique(List l, ListFindF f, List sub)
+{
+	int n = 0;
+
+	xassert(l);
+	xassert(f);
+	xassert(sub);
+	xassert(l->magic == LIST_MAGIC);
+	xassert(sub->magic == LIST_MAGIC);
+	xassert(l->fDel == sub->fDel);
+
+	slurm_rwlock_wrlock(&l->mutex);
+	slurm_rwlock_wrlock(&sub->mutex);
+
+	for (ListNode prev_subp, subp = sub->head; subp;) {
+		/*
+		 * Increase index now.
+		 * If node is destroyed index would be unrecoverable.
+		 */
+		prev_subp = subp;
+		subp = subp->next;
+
+		/* Is this element already in destination list? */
+		if (!_list_find_first_locked(l, f, prev_subp->data)) {
+			/* Not found: Transfer the element */
+			_list_append_locked(l, prev_subp->data);
+			_list_node_destroy(sub, &prev_subp);
+			n++;
+		}
+	}
+
+	slurm_rwlock_unlock(&sub->mutex);
+	slurm_rwlock_unlock(&l->mutex);
+
+	return n;
 }
 
 /* list_prepend()

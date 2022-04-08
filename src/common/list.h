@@ -157,6 +157,16 @@ int list_append_list(List l, List sub);
 int list_transfer(List l, List sub);
 
 /*
+ *  Pop off elements in list [sub] to [l], unless already in [l].
+ *  Note: list [l] must have the same destroy function as list [sub].
+ *  Note: list [l] could contain repeated elements, but those aren't removed.
+ *  Note: list [sub] will be returned with repeated elements or empty,
+ *        but never destroyed.
+ *  Returns a count of the number of items added to list [l].
+ */
+int list_transfer_unique(List l, ListFindF f, List sub);
+
+/*
  *  Pops off list [sub] to [l] with maximum number of entries.
  *  Set max = -1 to transfer all entries.
  *  Note: list [l] must have the same destroy function as list [sub].
