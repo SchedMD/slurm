@@ -373,6 +373,7 @@ extern void run_health_check(void)
 {
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
+	int i;
 #else
 	node_record_t *node_ptr;
 	int node_test_cnt = 0, node_limit, node_states, run_cyclic;
