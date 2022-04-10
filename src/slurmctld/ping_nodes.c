@@ -376,10 +376,9 @@ extern void run_health_check(void)
 #else
 	node_record_t *node_ptr;
 	int node_test_cnt = 0, node_limit, node_states, run_cyclic;
-	static int base_node_loc = -1;
+	static int base_node_loc = 0;
 	static time_t cycle_start_time = (time_t) 0;
 #endif
-	int i;
 	char *host_str = NULL;
 	agent_arg_t *check_agent_args = NULL;
 
@@ -419,7 +418,7 @@ extern void run_health_check(void)
 		time_t now = time(NULL);
 		if (cycle_start_time == (time_t) 0)
 			cycle_start_time = now;
-		else if (base_node_loc >= 0)
+		else if (base_node_loc > 0)
 			;	/* mid-cycle */
 		else if (difftime(now, cycle_start_time) <
 		         slurm_conf.health_check_interval) {
@@ -443,19 +442,12 @@ extern void run_health_check(void)
 	check_agent_args->retry = 0;
 	check_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	check_agent_args->hostlist = hostlist_create(NULL);
-	for (i = 0; i < node_record_count; i++) {
-		if (run_cyclic) {
-			if (node_test_cnt++ >= node_limit)
+	for (; base_node_loc < node_record_count; base_node_loc++) {
+		if (!(node_ptr = node_record_table_ptr[base_node_loc]))
+			continue;
+		if (run_cyclic &&
+		    (node_test_cnt++ >= node_limit))
 				break;
-			base_node_loc++;
-			if (base_node_loc >= node_record_count) {
-				base_node_loc = -1;
-				break;
-			}
-			node_ptr = node_record_table_ptr[base_node_loc];
-		} else {
-			node_ptr = node_record_table_ptr[i];
-		}
 		if (IS_NODE_NO_RESPOND(node_ptr) ||
 		    IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
@@ -500,8 +492,8 @@ extern void run_health_check(void)
 		hostlist_push_host(check_agent_args->hostlist, node_ptr->name);
 		check_agent_args->node_count++;
 	}
-	if (run_cyclic && (i >= node_record_count))
-		base_node_loc = -1;
+	if (base_node_loc >= node_record_count)
+		base_node_loc = 0;
 #endif
 
 	if (check_agent_args->node_count == 0) {
