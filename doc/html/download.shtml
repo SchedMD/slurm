@@ -7,21 +7,17 @@ https://www.schedmd.com/downloads.php</a>.<br>
 Slurm has also been packaged for
 <a href="https://packages.debian.org/search?keywords=slurm-wlm">Debian</a> and
 <a href="http://packages.ubuntu.com/search?keywords=slurm-wlm">Ubuntu</a>
-(named <i>slurm-wlm</i> or <i>slurm-llnl</i> depending upon the version),
-<a href="https://apps.fedoraproject.org/packages/slurm">Fedora</a>, and
+(named <i>slurm-wlm</i>),
+<a href="https://src.fedoraproject.org/rpms/slurm">Fedora</a>, and
 <a href="http://www.pkgsrc.org">NetBSD</a> (in pkgsrc) and
 <a href="http://www.freshports.org/sysutils/slurm-wlm/">FreeBSD</a>.</p>
 
-<!--
-Slurm interface to PHP
-https://github.com/jcftang/slurm/commits/php-slurm
-http://thammuz.tchpc.tcd.ie/mirrors/php-slurm/1.0/
-Development by Peter Vermeulen with help from staff of
-Trinity Centre for High Performance Computing,
-Trinity College Dublin, Ireland.
--->
-
-<h2>Download Related Software</h2>
+<h2>Related Software</h2>
+<p>Note that the following software is not written or maintained by
+SchedMD. Some of the software is required for certain functionality
+(e.g. MySQL or MariaDB are required to use slurmdbd) while other software
+was written to provide additional functionality for users or
+administrators.</p>
 <ul>
 <li><b>Authentication</b> plugins identifies the user originating
 a message.</li>
@@ -33,7 +29,7 @@ you will need to build and install MUNGE, available from
 <a href="http://packages.debian.org/src:munge">Debian</a> and
 <a href="http://fedoraproject.org/">Fedora</a> and
 <a href="http://packages.ubuntu.com/src:munge">Ubuntu</a>.</li>
-</ul><br>
+</ul>
 
 <li><b>Authentication</b> tools for users that work with Slurm.</li>
 <ul>
@@ -43,30 +39,22 @@ to non-interactive applications, like batch systems (Slurm, LSF, Torque, etc.).
 It includes a plugin for the Slurm workload manager. AUKS is not used as
 an authentication plugin by the Slurm code itself, but provides a mechanism
 for the application to manage Kerberos V credentials.</li>
-</ul><br>
+</ul>
 
 <li><b>Databases</b> can be used to store accounting information.
 See our <a href="accounting.html">Accounting</a> web page for more information.
+</li>
 <ul>
 <li><a href="http://www.mysql.com/">MySQL</a></li>
 <li><a href="https://mariadb.org/">MariaDB</a></li>
 </ul><br>
 
-<li><b>Debuggers</b> and debugging tools</li>
-<ul>
-<li><a href="http://www.roguewave.com/products-services/totalview"><b>TotalView</b></a>
-is a GUI-based source code debugger well suited for parallel applications.</li>
-<li><a href="http://padb.pittman.org.uk/"><b>Padb</b></a>
-is a job inspection tool for examining and debugging parallel programs, primarily it simplifies the process of gathering stack traces but also supports a wide range of other functions.
-It's an open source, non-interactive, command line, scriptable tool intended for use by programmers and system administrators alike.</li>
-</ul><br>
-
 <li><b>DRMAA (Distributed Resource Management Application API)</b><br>
-<a href="http://apps.man.poznan.pl/trac/slurm-drmaa">PSNC DRMAA</a> for Slurm
+<a href="https://github.com/psnc-apps/slurm-drmaa">PSNC DRMAA</a> for Slurm
 is an implementation of <a href="http://www.gridforum.org/">Open Grid Forum</a>
 <a href="http://www.drmaa.org/">DRMAA 1.0</a> (Distributed Resource Management Application API)
 <a href="http://www.ogf.org/documents/GFD.133.pdf">specification</a> for submission
-and control of jobs to <href="https://slurm.schedmd.com">Slurm</a>.
+and control of jobs to <a href="https://slurm.schedmd.com">Slurm</a>.
 Using DRMAA, grid applications builders, portal developers and ISVs can use
 the same high-level API to link their software with different cluster/resource
 management systems.<br><br>
@@ -90,72 +78,19 @@ https://github.com/grondo/lua-hostlist</a><br>
 ranges anywhere except at the end of the name (i.e. "tux[0001-0100]"
 and "rack[0-3]_blade[0-63]" are not supported).</li><br>
 
-<li><b>Interactive Script</b><br>
-A wrapper script that makes it very simple to get an interactive shell on a
-cluster. Download the code from:<br>
-<a href="https://github.com/ilri/hpc-infrastructure-scripts/blob/master/slurm/interactive">
-https://github.com/ilri/hpc-infrastructure-scripts/blob/master/slurm/interactive
-</a></li><br>
-
-<li><b>Interconnect</b> plugins (Switch plugin)</li>
-<ul>
-<li><b>Infiniband</b><br>
-The <b>topology.conf</b> file for an Infiniband switch can be
-automatically generated using the <b>slurmibtopology</b> tool found here:<br>
-<a href="https://ftp.fysik.dtu.dk/Slurm/slurmibtopology.sh">
-https://ftp.fysik.dtu.dk/Slurm/slurmibtopology.sh</a>.
-
-</ul><br>
-
-<li><b>I/O Watchdog</b><br>
-A facility for monitoring user applications, most notably parallel jobs,
-for <i>hangs</i> which typically have a side-effect of ceasing all write
-activity. This facility attempts to monitor all write activity of an
-application and trigger a set of user-defined actions when write activity
-as ceased for a configurable period of time. A SPANK plugin is provided
-for use with Slurm. See the README and man page in the package for more
-details.
-<a href="https://github.com/grondo/io-watchdog">
-https://github.com/grondo/io-watchdog</a></li><br>
-
 <li><b>MPI</b> versions supported</li>
 <ul>
 <li><a href="https://software.intel.com/en-us/intel-mpi-library">Intel MPI</a></li>
 <li><a href="https://www.mpich.org/">MPICH (a.k.a. MPICH2 / MPICH2)</a></li>
 <li><a href="http://mvapich.cse.ohio-state.edu/">MVAPICH (a.k.a MVAPICH2)</a></li>
 <li><a href="https://www.open-mpi.org">Open MPI</a></li>
-</ul><br>
-
-<li><b>Workload Simulator</b><br>
-A <a href="http://www.bsc.es/marenostrum-support-services/services/slurm-simulator">Slurm simulator</a>
-is available to assess various scheduling policies using historic workload data.
-Under simulation, jobs are not actually executed. Instead, a job execution trace
-from a real system, or a synthetic trace, are used.<br>
-<b>NOTE:</b> This software is currently not maintained.</li><br>
-
-<li><b>PAM Module (pam_slurm)</b><br>
-Pluggable Authentication Module (PAM) for restricting access to compute nodes
-where Slurm performs workload management. Access to the node is restricted to
-user root and users who have been allocated resources on that node.
-NOTE: pam_slurm is included within the Slurm distribution.
-For earlier Slurm versions, pam_slurm is available for download
-<a href="https://www.schedmd.com/downloads/extras/pam_slurm-1.6.tar.bz2">here</a>.
-<br>
-Slurm's PAM module has also been packaged for
-<a href="http://packages.debian.org/src:libpam-slurm">Debian</a> and
-<a href="http://packages.ubuntu.com/src:libpam-slurm">Ubuntu</a>
-(both named <i>libpam-slurm</i>).</li><br>
+</ul>
 
 <li><b>Command wrappers</b><br>
 There is a wrapper for Maui/Moab's showq command
-<a href="https://github.com/pedmon/slurm_showq">here</a>.<br><br>
+<a href="https://github.com/pedmon/slurm_showq">here</a>.</li><br>
 
-<li><b>Job Script Generator</b><br>
-Brigham Young University has developed a Javascript tool to generate
-batch job scripts for Slurm which is available
-<a href="https://github.com/BYUHPC/BYUJobScriptGenerator">here</a>.<br><br>
-
-<li><b>Scripting interfaces</b>
+<li><b>Scripting interfaces</b></li>
 <ul>
 <li>A <b>Perl</b> interface is included in the Slurm distribution in the
 <i>contribs/perlapi</i> directory and packaged in the <i>perapi</i> RPM.</li>
@@ -165,13 +100,7 @@ Python/Cython module to interface with Slurm.
 There is also a Python module to expand and collect hostlist expressions
 available <a href="http://www.nsc.liu.se/~kent/python-hostlist/">
 here</a>.</li>
-
-<!--
-This directly communicates with the database, so it is something that we
-probably do not want to recommend.
-<li><a href="http://pypi.python.org/pypi/slurchemy">slurchemy</a> provides
-SQL Alchemy bindings for your slurmdbd database.</li>
--->
+</ul><br>
 
 <li><b>SPANK Plugins</b><br>
 SPANK provides a very generic interface for stackable plug-ins which
@@ -182,27 +111,14 @@ SPANK config file plugstack.conf, and they will be loaded at runtime
 during the next job launch. Thus, the SPANK infrastructure provides
 administrators and other developers a low cost, low effort ability to
 dynamically modify the runtime behavior of Slurm job launch.
-As assortment of SPANK plugins are available from<br>
-<a href="https://github.com/grondo/slurm-spank-plugins">
-https://github.com/grondo/slurm-spank-plugins</a>.<br>
-
-A SPANK plugin called "spunnel" to support ssh port forwarding is available
-from Harvard University.
-It can be downloaded from the
-<a href="https://github.com/harvardinformatics/spunnel">spunnel repository</a>.</li><br>
-
-<li><b>Sqlog</b><br>
-A set of scripts that leverages Slurm's job completion logging facility
-in provide information about what jobs were running at any point in the
-past as well as what resources they used. Download the code from:<br>
-<a href="https://github.com/grondo/sqlog">
-https://github.com/grondo/sqlog</a></li><br>
+Additional documentation can be found
+<a href="https://slurm.schedmd.com/spank.html">here</a>.</li><br>
 
 <li><b>Task Affinity</b> plugins</li>
 <ul>
 <li><a href="http://www.open-mpi.org/projects/hwloc/">
 Portable Hardware Locality (HWLOC)</a></li>
-</ul><br>
+</ul>
 
 <li><b>Node Health Check</b><br>
 Probably the most comprehensive and lightweight health check tool out
@@ -210,7 +126,7 @@ there is
 <a href="https://github.com/mej/nhc">LBNL Node Health Check</a>.
 It has integration with Slurm as well as Torque resource managers.</li><br>
 
-<li><b>Accounting Tools</b><br>
+<li><b>Accounting Tools</b>
 <ul>
 <li><b>UBMoD</b> is a web based tool for displaying accounting data from various
 resource managers. It aggregates the accounting data from sacct into a MySQL
@@ -228,83 +144,14 @@ scholarship and research.</li>
 
 <li><b>STUBL (Slurm Tools and UBiLities)</b><br>
 STUBL is a collection of supplemental tools and utility scripts for Slurm.<br>
-<a href="https://github.com/ubccr/stubl">STUBL home page</a>.<br><br>
-<dl>
-<dt>pbs2sbatch</dt>
-<dd>Converts PBS directives to equivalent Slurm sbatch directives. Accommodates
-    old UB CCR-specific PBS tags like IB1, IB2, etc.</dd>
-<dt>pbs2slurm</dt>
-<dd>A script that attempts to convert PBS scripts into corresponding sbatch
-    scripts. It will convert PBS directives as well as PBS environment variables
-    and will insert bash code to create a SLURM_NODEFILE that is consistent with
-    the PBS_NODEFILE.</dd>
-<dt>slurmbf</dt>
-<dd>Analogous to the PBS "showbf -S" command.</dd>
-<dt>snodes</dt>
-<dd>A customized version of sinfo. Displays node information in an
-   easy-to-interpret format. Filters can be applied to view (1) specific nodes,
-   (2) nodes in a specific partition, or (3) nodes in a specific state.</dd>
-<dt>sqstat</dt>
-<dd>A customized version of squeue that produces output analogous to the PBS
-    qstat and xqstat commands (requires clush).</dd>
-<dt>fisbatch</dt>
-<dd>Friendly Interactive sbatch. A customized version of sbatch that provides a
-    user-friendly interface to an interactive job with X11 forwarding enabled.
-    It is analogous to the PBS "qsub -I -X" command. This code was adopted from
-    srun.x11 (requires clush).</dd>
-<dt>sranks</dt>
-<dd>A command that lists the overall priorities and associated priority
-    components of queued jobs in ascending order. Top-ranked jobs will be given
-    priority by the scheduler but lower ranked jobs may get slotted in first if
-    they fit into the scheduler's backfill window.</dd>
-<dt>sqelp</dt>
-<dd>A customized version of squeue that only prints a double-quote if the
-    information in a column is the same from row to row. Some users find this
-    type of formatting easier to visually digest.</dd>
-<dt>sjeff</dt>
-<dd>Determines the efficiency of one or more running jobs. Inefficient jobs are
-    high-lighted in red text (requires clush).</dd>
-<dt>sueff</dt>
-<dd>Determines the overall efficiency of the running jobs of one or more users.
-    Users that are inefficient are highlighted in red text (requires clush).</dd>
-<dt>yasqr</dt>
-<dd>Yet Another Squeue Replacement. Fixes squeue bugs in earlier versions of
-    Slurm.</dd>
-<dt>sgetscr</dt>
-<dd>Retrieves the Slurm/sbatch script and environment files for a job that is
-    queued or running.</dd>
-<dt>snacct</dt>
-<dd>Retrieves Slurm accounting information for a given node and for a given
-    period of time.</dd>
-<dt>suacct</dt>
-<dd>Retrieves Slurm accounting information for a given user's jobs for a given
-    period of time.</dd>
-<dt>slist</dt>
-<dd>Retrieves Slurm accounting and node information for a running or completed
-    job (requires clush).</dd>
-<dt>slogs</dt>
-<dd>Retrieves resource usage and accounting information for a user or list of
-    users. For each job that was run after the given start date, the following
-    information is gathered from the Slurm accounting logs: Number of CPUs,
-    Start Time, Elapsed Time, Amount of RAM Requested, Average RAM Used, and
-    Max RAM Used.</dd>
-</dl></li><br>
+<a href="https://github.com/ubccr/stubl">STUBL home page</a>.</li><br>
 
 <li><b>pestat</b><br>
-Prints a consolidated compute node status line, with one line per node including a list of jobs.<br>
-<a href="https://github.com/OleHolmNielsen/Slurm_tools/tree/master/pestat">Home page</a></li><br>
+Prints a consolidated compute node status line, with one line per node
+including a list of jobs.<br>
+<a href="https://github.com/OleHolmNielsen/Slurm_tools/tree/master/pestat">
+Home page</a></li><br>
 <!-- It would be nice to provide our own perl-based version of pestat -->
-
-<li><b>Slurmmon</b><br>
-Slurmmon is a system for gathering and plotting data about Slurm scheduling and
-job characteristics. It currently simply sends the data to ganglia, but it
-includes some custom reports and a web page for an organized summary.
-It collects all the data from sdiag as well as total counts of running and
-pending jobs in the system and the maximum such values for any single user.
-It can also submit probe jobs to various partitions in order to trend the
-times spent pending in them, which is often a good bellwether of scheduling
-problems.<br>
-<a href="https://github.com/fasrc/slurmmon">Slurmmon code</a></li><br>
 
 <li><b>Graphical Sdiag</b><br>
 The sdiag utility is a diagnostic tool that maintains statistics on Slurm's
@@ -313,25 +160,13 @@ Slurm's configuration. However if you want a historical view of these
 statistics, you could save them in a time-series database and graph them over
 time as performed with this tool:
 <ul>
-<li><a href="http://giovannitorres.me/graphing-sdiag-with-graphite.html">Graphing sdiag with Graphite</a></li>
 <li><a href="https://github.com/fasrc/slurm-diamond-collector">
   A collection of custom diamond collectors to gather various Slurm statistics</a></li>
 <li><a href="https://github.com/collectd/collectd/pull/1198">Collectd</a>
   (for use with <a href="https://github.com/edf-hpc/jobmetrics">jobmetrics</a>)</li>
 </ul></li><br>
 
-<li><b>MSlurm</b><br>
-Such a superstructure for the management of multiple Slurm environments is done
-with MSlurm. Thereby several Slurm clusters - even across multiple Slurm
-databases - can run parallel on a Slurm master and can be administered in an
-easy and elegantly manner.
-<ul>
-<li><a href="mslurm/mslurm_overview.pdf">Overview</a></li>
-<li><a href="mslurm/mslurm_install_instructions.pdf">Installation Instructions</a></li>
-<li><a href="mslurm/mslurm.tgz">Code</a></li>
-</ul></li><br>
-
-<li><a name="json" href="https://github.com/json-c/json-c/wiki"><b>JSON</b></a>
+<li><a id="json" href="https://github.com/json-c/json-c/wiki"><b>JSON</b></a>
 	<p>Some Slurm plugins (<a href="rest.html">slurmrestd</a>,
 	<a href="burst_buffer.html">burst_buffer/datawarp</a>,
 	<a href="burst_buffer.html">burst_buffer/lua</a>,
@@ -346,16 +181,14 @@ mkdir json-c-build
 cd json-c-build
 cmake ../json-c
 make
-sudo make install
-	</pre>
+sudo make install</pre>
 	Declare the package configuration path before compiling Slurm
 	(example provided for /bin/sh):
 	<pre>
-export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:$PKG_CONFIG_PATH
-	</pre>
-</li>
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:$PKG_CONFIG_PATH</pre>
+</li><br>
 
-<li><a name="httpparser" href="https://github.com/nodejs/http-parser">
+<li><a id="httpparser" href="https://github.com/nodejs/http-parser">
     <b>HTTP Parser</b></a>
 	<p><a href="rest.html">slurmrestd</a> requires libhttp_parser
 	(>=v2.6.0). Instructions for the build are as follows:</p>
@@ -363,13 +196,12 @@ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:$PKG_CONFIG_PATH
 git clone --depth 1 --single-branch -b v2.9.4 https://github.com/nodejs/http-parser.git http_parser-c
 cd http_parser
 make
-sudo make install
-	</pre>
+sudo make install</pre>
 	Add the following argument when running <i>configure</i> for Slurm:
 	<pre>--with-http-parser=/usr/local/</pre>
-</li>
+</li><br>
 
-<li><a name="yaml" href="https://github.com/yaml/libyaml">
+<li><a id="yaml" href="https://github.com/yaml/libyaml">
     <b>YAML Parser</b></a>
 	<p><a href="rest.html">slurmrestd</a> requires libyaml to support
 	YAML. Instructions for the build are as follows:</p>
@@ -379,13 +211,12 @@ cd libyaml
 ./bootstrap
 ./configure
 make
-sudo make install
-	</pre>
+sudo make install</pre>
 	Add the following argument when running <i>configure</i> for Slurm:
 	<pre>--with-yaml=/usr/local/</pre>
-</li>
+</li><br>
 
-<li><a name="jwt" href="https://github.com/benmcollins/libjwt">
+<li><a id="jwt" href="https://github.com/benmcollins/libjwt">
     <b>JWT library</b></a>
 	<p><a href="jwt.html">JWT authentication</a> requires libjwt.
 	Instructions for the build are as follows:</p>
@@ -395,11 +226,10 @@ cd libjwt
 autoreconf --force --install
 ./configure --prefix=/usr/local
 make -j
-sudo make install
-	</pre>
+sudo make install</pre>
 	Add the following argument when running <i>configure</i> for Slurm:
 	<pre>--with-jwt=/usr/local/</pre>
-</li>
+</li><br>
 
 <li><b>Slurm-web</b><br>
 Slurm-web is a free software, distributed under the GPL version 3 license,
@@ -410,6 +240,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 9 December 2021</p>
+<p style="text-align:center;">Last modified 24 March 2022</p>
 
 <!--#include virtual="footer.txt"-->
