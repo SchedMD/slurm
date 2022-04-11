@@ -188,7 +188,6 @@ slurm_setup_remote_working_cluster(resource_allocation_response_msg_t *msg)
 	xassert(msg);
 	xassert(msg->working_cluster_rec);
 	xassert(msg->node_list);
-	xassert(msg->node_addr);
 
 	if (working_cluster_rec)
 		slurmdb_destroy_cluster_rec(working_cluster_rec);
@@ -207,5 +206,6 @@ slurm_setup_remote_working_cluster(resource_allocation_response_msg_t *msg)
 		    working_cluster_rec->name) < 0)
 		error("unable to set SLURM_CLUSTER_NAME in environment");
 
-	add_remote_nodes_to_conf_tbls(msg->node_list, msg->node_addr);
+	if (msg->node_addr)
+		add_remote_nodes_to_conf_tbls(msg->node_list, msg->node_addr);
 }

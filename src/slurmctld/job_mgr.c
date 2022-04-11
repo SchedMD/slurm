@@ -18804,8 +18804,6 @@ extern void set_remote_working_response(
 
 	if (job_ptr->node_cnt && req_cluster &&
 	    xstrcmp(slurm_conf.cluster_name, req_cluster)) {
-		int i, i_first, i_last, addr_index = 0;
-
 		if (job_ptr->fed_details &&
 		    fed_mgr_cluster_rec) {
 			resp->working_cluster_rec = fed_mgr_cluster_rec;
@@ -18813,19 +18811,31 @@ extern void set_remote_working_response(
 			resp->working_cluster_rec = response_cluster_rec;
 		}
 
-		resp->node_addr = xcalloc(job_ptr->node_cnt,
-					  sizeof(slurm_addr_t));
-		i_first = bit_ffs(job_ptr->node_bitmap);
-		if (i_first >= 0)
-			i_last = bit_fls(job_ptr->node_bitmap);
-		else
-			i_last = -2;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
-				continue;
-			slurm_conf_get_addr(
-				node_record_table_ptr[i]->name,
-				&resp->node_addr[addr_index++], 0);
+		/*
+		 * Must send the list regardless for <= 21.08 because
+		 * slurm_setup_remote_working_cluster() asserts the node_addr
+		 * exists.
+		 */
+		if ((job_ptr->start_protocol_ver <=
+		     SLURM_21_08_PROTOCOL_VERSION) ||
+		    !job_ptr->alias_list ||
+		    xstrcmp(job_ptr->alias_list, "TBD")) {
+			int i, i_first, i_last, addr_index = 0;
+
+			resp->node_addr = xcalloc(job_ptr->node_cnt,
+						  sizeof(slurm_addr_t));
+			i_first = bit_ffs(job_ptr->node_bitmap);
+			if (i_first >= 0)
+				i_last = bit_fls(job_ptr->node_bitmap);
+			else
+				i_last = -2;
+			for (i = i_first; i <= i_last; i++) {
+				if (!bit_test(job_ptr->node_bitmap, i))
+					continue;
+				slurm_conf_get_addr(
+					node_record_table_ptr[i]->name,
+					&resp->node_addr[addr_index++], 0);
+			}
 		}
 	}
 }
