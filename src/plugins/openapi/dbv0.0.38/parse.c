@@ -2951,6 +2951,7 @@ static int _parser_run(void *obj, const parser_t *const parse,
 				xassert(funcs[f].rfunc);
 				rc = funcs[f].rfunc((parse + i), obj, pd,
 						    errors, penv);
+				break;
 			}
 		}
 
