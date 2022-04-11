@@ -203,6 +203,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.37 - fix DELETE execution path on /user/{user_name}.
  -- slurmctld - Properly requeue all components of a het job if PrologSlurmctld
     fails.
+ -- rlimits - remove final calls to limit nofiles to 4096 but to instead use
+    the max possible nofiles in slurmd and slurmdbd.
 
 * Changes in Slurm 21.08.6
 ==========================
