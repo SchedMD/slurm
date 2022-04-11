@@ -145,6 +145,8 @@ available in the job_submit plugin for these jobs.</p>
 	end
 ...
 </pre>
+<p><b>NOTE</b>: To get/set the environment for all types of jobs, an alternate
+approach is to use <a href="cli_filter_plugins.html">CliFilterPlugins</a>.</p>
 
 <p class="commandline">
 int slurm_job_submit(job_desc_msg_t *job_desc, List part_list, uint32_t
