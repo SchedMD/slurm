@@ -1920,6 +1920,13 @@ extern data_t *data_resolve_dict_path(data_t *data, const char *path)
 		log_flag(DATA, "%s: data (0x%"PRIXPTR") failed to resolve dictionary path \"%s\"",
 			 __func__, (uintptr_t) data, path);
 
+	if ((data_get_type(found) == DATA_TYPE_LIST) &&
+	    (!found->data.list_u->count)) {
+		log_flag(DATA, "%s: Returning NULL for a 0 count list",
+			 __func__);
+		return NULL;
+	}
+
 	return found;
 }
 
