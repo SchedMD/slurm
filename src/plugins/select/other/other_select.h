@@ -83,7 +83,7 @@ extern int other_job_init(List job_list);
  * IN node_ptr - current node data
  * IN node_count - number of node entries
  */
-extern int other_node_init(node_record_t **node_ptr, int node_cnt);
+extern int other_node_init();
 
 /*
  * Get select data from a plugin

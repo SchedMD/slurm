@@ -1604,9 +1604,8 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	_sync_part_prio();
 	_build_bitmaps_pre_select();
-	if ((select_g_node_init(node_record_table_ptr, node_record_count)
-	     != SLURM_SUCCESS)						||
-	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS)	||
+	if ((select_g_node_init() != SLURM_SUCCESS) ||
+	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) ||
 	    (select_g_job_init(job_list) != SLURM_SUCCESS)) {
 		if (test_config) {
 			error("Failed to initialize node selection plugin state");

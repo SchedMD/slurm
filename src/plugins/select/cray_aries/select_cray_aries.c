@@ -1247,7 +1247,7 @@ extern int select_p_job_init(List job_list)
 	return other_job_init(job_list);
 }
 
-extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
+extern int select_p_node_init()
 {
 	select_nodeinfo_t *nodeinfo = NULL;
 	node_record_t *node_rec;
@@ -1256,7 +1256,7 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 	DEF_TIMERS;
 
 	if (scheduling_disabled)
-		return other_node_init(node_ptr, node_cnt);
+		return other_node_init();
 
 	START_TIMER;
 
@@ -1293,14 +1293,12 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 	slurm_mutex_lock(&blade_mutex);
 
 	if (!blade_array)
-		blade_array = xcalloc(node_cnt, sizeof(blade_info_t));
+		blade_array = xcalloc(node_record_count, sizeof(blade_info_t));
 
 	if (!blade_nodes_running_npc)
-		blade_nodes_running_npc = bit_alloc(node_cnt);
+		blade_nodes_running_npc = bit_alloc(node_record_count);
 
-	for (i = 0; i < node_cnt; i++) {
-		if (!(node_rec = node_ptr[i]))
-			continue;
+	for (i = 0; (node_rec = next_node(&i));) {
 		if (!node_rec->select_nodeinfo)
 			node_rec->select_nodeinfo =
 				select_g_select_nodeinfo_alloc();
@@ -1365,7 +1363,8 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 
 		if (j == blade_cnt) {
 			blade_cnt++;
-			blade_array[j].node_bitmap = bit_alloc(node_cnt);
+			blade_array[j].node_bitmap = bit_alloc(
+				node_record_count);
 		}
 
 		bit_set(blade_array[j].node_bitmap, i);
@@ -1386,7 +1385,7 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
-	rc = other_node_init(node_ptr, node_cnt);
+	rc = other_node_init();
 
 #ifdef HAVE_NATIVE_CRAY
 	if (!aeld_running)

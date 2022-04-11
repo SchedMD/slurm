@@ -61,7 +61,7 @@ extern void node_data_dump(void)
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE))
 		return;
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		info("Node:%s Boards:%u SocketsPerBoard:%u CoresPerSocket:%u ThreadsPerCore:%u TotalCores:%u CumeCores:%u TotalCPUs:%u PUsPerCore:%u AvailMem:%"PRIu64" AllocMem:%"PRIu64" State:%s(%d)",
 		     node_ptr->name,
 		     node_ptr->boards,
@@ -73,12 +73,14 @@ extern void node_data_dump(void)
 		     node_ptr->cpus,
 		     node_ptr->tpc,
 		     node_ptr->real_memory,
-		     select_node_usage[i].alloc_memory,
-		     common_node_state_str(select_node_usage[i].node_state),
-		     select_node_usage[i].node_state);
+		     select_node_usage[node_ptr->index].alloc_memory,
+		     common_node_state_str(
+			     select_node_usage[node_ptr->index].node_state),
+		     select_node_usage[node_ptr->index].node_state);
 
-		if (select_node_usage[i].gres_list)
-			gres_list = select_node_usage[i].gres_list;
+		if (select_node_usage[node_ptr->index].gres_list)
+			gres_list = select_node_usage[node_ptr->index].
+					gres_list;
 		else
 			gres_list = node_ptr->gres_list;
 		if (gres_list)

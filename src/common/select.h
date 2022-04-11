@@ -69,8 +69,7 @@ typedef struct {
 	int		(*state_save)		(char *dir_name);
 	int		(*state_restore)	(char *dir_name);
 	int		(*job_init)		(List job_list);
-	int		(*node_init)		(node_record_t **node_ptr,
-						 int node_cnt);
+	int		(*node_init)		(void);
 	int		(*job_test)		(job_record_t *job_ptr,
 						 bitstr_t *bitmap,
 						 uint32_t min_nodes,
@@ -217,7 +216,7 @@ extern int select_g_state_restore(char *dir_name);
  * IN node_ptr - current node data
  * IN node_count - number of node entries
  */
-extern int select_g_node_init(node_record_t **node_ptr, int node_cnt);
+extern int select_g_node_init();
 
 /*
  * Note the initialization of job records, issued upon restart of

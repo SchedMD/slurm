@@ -1074,10 +1074,11 @@ extern int select_p_job_init(List job_list)
  *                                       job data to the 'select_part_record'
  *                                       global array
  */
-extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
+extern int select_p_node_init()
 {
 	char *preempt_type, *tmp_ptr;
 	int i;
+	node_record_t *node_ptr;
 
 	if (!slurm_conf.select_type_param) {
 		info("%s SelectTypeParameters not specified, using default value: CR_Core_Memory",
@@ -1089,14 +1090,6 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 		      "You need at least CR_(CPU|CORE|SOCKET)*",
 		      select_type_param_string(slurm_conf.select_type_param),
 		      slurm_conf.select_type_param);
-	}
-	if (node_ptr == NULL) {
-		error("select_p_node_init: node_ptr == NULL");
-		return SLURM_ERROR;
-	}
-	if (node_cnt < 0) {
-		error("select_p_node_init: node_cnt < 0");
-		return SLURM_ERROR;
 	}
 
 	if (xstrcasestr(slurm_conf.sched_params, "preempt_strict_order"))
@@ -1150,10 +1143,10 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 
 	/* initial global core data structures */
 	select_state_initializing = true;
-	cr_init_global_core_data(node_ptr, node_cnt);
+	cr_init_global_core_data(node_record_table_ptr, node_record_count);
 
 	node_data_destroy(select_node_usage);
-	select_node_cnt = node_cnt;
+	select_node_cnt = node_record_count;
 
 	if (is_cons_tres)
 		core_array_size = select_node_cnt;
@@ -1161,30 +1154,27 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 	select_node_usage  = xcalloc(select_node_cnt,
 				     sizeof(node_use_record_t));
 
-	for (i = 0; i < select_node_cnt; i++) {
-		if (!node_ptr[i])
-			continue;
-
-		if ((node_ptr[i]->cpus != node_ptr[i]->tot_cores) &&
-		    (node_ptr[i]->cpus !=
-		     node_ptr[i]->tot_cores * node_ptr[i]->threads))
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		if ((node_ptr->cpus != node_ptr->tot_cores) &&
+		    (node_ptr->cpus != node_ptr->tot_cores * node_ptr->threads))
 			fatal("NodeName=%s CPUs=%u doesn't match neither Sockets(%u)*CoresPerSocket(%u)=(%u) nor Sockets(%u)*CoresPerSocket(%u)*ThreadsPerCore(%u)=(%u).  Please fix your slurm.conf.",
-			      node_ptr[i]->name,
-			      node_ptr[i]->cpus,
-			      node_ptr[i]->tot_sockets,
-			      node_ptr[i]->cores,
-			      node_ptr[i]->tot_cores,
-			      node_ptr[i]->tot_sockets,
-			      node_ptr[i]->cores,
-			      node_ptr[i]->threads,
-			      node_ptr[i]->tot_cores * node_ptr[i]->threads);
+			      node_ptr->name,
+			      node_ptr->cpus,
+			      node_ptr->tot_sockets,
+			      node_ptr->cores,
+			      node_ptr->tot_cores,
+			      node_ptr->tot_sockets,
+			      node_ptr->cores,
+			      node_ptr->threads,
+			      node_ptr->tot_cores * node_ptr->threads);
 
 		if ((slurm_conf.select_type_param & CR_SOCKET) &&
 		    (slurm_conf.conf_flags & CTL_CONF_ASRU) == 0)
-			_check_allocatable_sockets(node_ptr[i]);
+			_check_allocatable_sockets(node_ptr);
 
-		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
-		gres_node_state_dealloc_all(node_ptr[i]->gres_list);
+		select_node_usage[node_ptr->index].node_state =
+			NODE_CR_AVAILABLE;
+		gres_node_state_dealloc_all(node_ptr->gres_list);
 	}
 
 	part_data_create_array();
@@ -2069,7 +2059,7 @@ extern int select_p_reconfigure(void)
 		}
 	}
 
-	rc = select_p_node_init(node_record_table_ptr, node_record_count);
+	rc = select_p_node_init();
 	if (rc != SLURM_SUCCESS)
 		return rc;
 

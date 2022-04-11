@@ -3526,18 +3526,8 @@ extern int select_p_job_init(List job_list_arg)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
+extern int select_p_node_init()
 {
-	if (node_ptr == NULL) {
-		error("select_p_node_init: node_ptr == NULL");
-		return SLURM_ERROR;
-	}
-
-	if (node_cnt < 0) {
-		error("select_p_node_init: node_cnt < 0");
-		return SLURM_ERROR;
-	}
-
 	/* NOTE: We free the consumable resources info here, but
 	 * can't rebuild it since the partition and node structures
 	 * have not yet had node bitmaps reset. */
@@ -3545,9 +3535,9 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 	_free_cr(cr_ptr);
 	cr_ptr = NULL;
 
-	select_node_ptr = node_ptr;
-	select_node_cnt = node_cnt;
-	cr_init_global_core_data(node_ptr, node_cnt);
+	select_node_ptr = node_record_table_ptr;
+	select_node_cnt = node_record_count;
+	cr_init_global_core_data(node_record_table_ptr, node_record_count);
 	slurm_mutex_unlock(&cr_mutex);
 
 	return SLURM_SUCCESS;
