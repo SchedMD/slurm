@@ -155,8 +155,10 @@ static void _log_task_rec(const mpi_plugin_task_info_t *job)
 
 static int _mpi_init(char *mpi_type)
 {
+	const char *plugin_type = "mpi";
+
 	int rc = SLURM_SUCCESS;
-	char *plugin_type = "mpi", *plugin_name = NULL;
+	char *plugin_name = NULL;
 
 #if _DEBUG
 	info("%s: MPI: Type: %s", __func__, mpi_type);
@@ -187,7 +189,7 @@ static int _mpi_init(char *mpi_type)
 		goto done;
 	}
 
-	plugin_name = xstrdup_printf("mpi/%s", mpi_type);
+	plugin_name = xstrdup_printf("%s/%s", plugin_type, mpi_type);
 	g_context = plugin_context_create(
 		plugin_type, plugin_name, (void **)&ops, syms, sizeof(syms));
 	xfree(plugin_name);
