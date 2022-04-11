@@ -127,13 +127,24 @@ the Lua scripts is the same location as the Slurm configuration file,
 <i>slurm.conf</i>.
 Reading and writing of job environment variables using Lua is possible
 by referencing the environment variables as a data structure containing
-named elements. For example:<br>
-if (job_desc.environment.LANGUAGE == "en_US") then<br>
-....</p>
+named elements.</p>
 <p><b>NOTE</b>: Only sbatch sends the environment to slurmctld. salloc and srun
 do not send the environment to slurmctld, so <i>job_desc.environment</i> is not
 available in the job_submit plugin for these jobs.</p>
-
+<p>For example:</p>
+<pre>
+...
+	-- job_desc.environment is only available for batch jobs.
+	if (job_desc.script) then
+		if (job_desc.environment ~= nil) then
+			if (job_desc.environment["FOO"] ~= nil) then
+				slurm.log_user("Found env FOO=%s",
+					       job_desc.environment["FOO"])
+			end
+		end
+	end
+...
+</pre>
 
 <p class="commandline">
 int slurm_job_submit(job_desc_msg_t *job_desc, List part_list, uint32_t
@@ -288,6 +299,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 26 January 2022</p>
+<p style="text-align:center;">Last modified 11 April 2022</p>
 
 <!--#include virtual="footer.txt"-->
