@@ -2333,7 +2333,7 @@ proc wait_for_job_acct args {
 	# Wait for sacct to populate the specified field
 	# We want to see the field be populated with anything but "Unknown"
 	# We can't use a negation match here because empty would match
-	return [wait_for_command_match {*}$options "$sacct -j $job_id --allocation --format $field --parsable2 --noheader" ^(?!.*Unknown$|\n).]
+	return [wait_for_command_match {*}$options "$sacct -j $job_id --allocation --format $field --parsable2 --noheader" (?n)^(?!.*Unknown$).]
 }
 
 
