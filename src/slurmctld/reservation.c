@@ -1839,7 +1839,7 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
 	resv_ptr->core_resrcs->nodes = xstrdup(resv_ptr->node_list);
 	resv_ptr->core_resrcs->node_bitmap = bit_copy(resv_ptr->node_bitmap);
 	resv_ptr->core_resrcs->nhosts = bit_set_count(resv_ptr->node_bitmap);
-	rc = build_job_resources(resv_ptr->core_resrcs, node_record_table_ptr);
+	rc = build_job_resources(resv_ptr->core_resrcs);
 	if (rc != SLURM_SUCCESS) {
 		free_job_resources(&resv_ptr->core_resrcs);
 		return;

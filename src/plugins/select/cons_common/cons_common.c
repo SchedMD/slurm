@@ -1297,7 +1297,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 		to_job_resrcs_ptr->threads_per_core;
 	new_job_resrcs_ptr->cr_type = to_job_resrcs_ptr->cr_type;
 
-	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr);
+	build_job_resources(new_job_resrcs_ptr);
 	to_job_ptr->total_cpus = 0;
 
 	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),

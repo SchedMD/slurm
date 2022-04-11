@@ -159,10 +159,9 @@ extern job_resources_t *create_job_resources(void);
  *
  * job_resources_t *job_resrcs_ptr = create_job_resources();
  * node_name2bitmap("dummy[2,5,12,16]", true, &(job_res_ptr->node_bitmap));
- * rc = build_job_resources(job_resrcs_ptr, node_record_table_ptr);
+ * rc = build_job_resources(job_resrcs_ptr);
  */
-extern int build_job_resources(job_resources_t *job_resrcs_ptr,
-			       node_record_t **node_rec_table);
+extern int build_job_resources(job_resources_t *job_resrcs_ptr);
 
 /* Rebuild cpu_array_cnt, cpu_array_value, and cpu_array_reps based upon the
  * values of cpus in an existing data structure

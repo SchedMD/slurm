@@ -464,7 +464,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	job_resrcs_ptr->nodes = bitmap2node_name(bitmap);
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
-	if (build_job_resources(job_resrcs_ptr, node_record_table_ptr))
+	if (build_job_resources(job_resrcs_ptr))
 		error("_build_select_struct: build_job_resources: %m");
 
 	first_bit = bit_ffs(bitmap);
@@ -2459,7 +2459,7 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 	new_job_resrcs_ptr->node_bitmap = tmp_bitmap;
 	new_job_resrcs_ptr->nodes = bitmap2node_name(new_job_resrcs_ptr->
 						     node_bitmap);
-	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr);
+	build_job_resources(new_job_resrcs_ptr);
 	to_job_ptr->total_cpus = 0;
 
 	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),

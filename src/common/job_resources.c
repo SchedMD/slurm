@@ -70,10 +70,9 @@ extern job_resources_t *create_job_resources(void)
  *
  * job_resources_t *job_resrcs_ptr = create_job_resources();
  * node_name2bitmap("dummy[2,5,12,16]", true, &(job_res_ptr->node_bitmap));
- * rc = build_job_resources(job_resrcs_ptr, node_record_table_ptr);
+ * rc = build_job_resources(job_resrcs_ptr);
  */
-extern int build_job_resources(job_resources_t *job_resrcs,
-			       node_record_t **node_rec_table)
+extern int build_job_resources(job_resources_t *job_resrcs)
 {
 	int i, bitmap_len;
 	int core_cnt = 0, sock_inx = -1;
@@ -97,20 +96,21 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 	for (i=0; i<bitmap_len; i++) {
 		if (!bit_test(job_resrcs->node_bitmap, i))
 			continue;
+		node_record_t *node_ptr = node_record_table_ptr[i];
 
 		if ((sock_inx < 0) ||
-		    (node_rec_table[i]->tot_sockets !=
+		    (node_ptr->tot_sockets !=
 		     job_resrcs->sockets_per_node[sock_inx]) ||
-		    (node_rec_table[i]->cores !=
+		    (node_ptr->cores !=
 		     job_resrcs->cores_per_socket[sock_inx])) {
 			sock_inx++;
 			job_resrcs->sockets_per_node[sock_inx] =
-				node_rec_table[i]->tot_sockets;
+				node_ptr->tot_sockets;
 			job_resrcs->cores_per_socket[sock_inx] =
-				node_rec_table[i]->cores;
+				node_ptr->cores;
 		}
 		job_resrcs->sock_core_rep_count[sock_inx]++;
-		core_cnt += node_rec_table[i]->tot_cores;
+		core_cnt += node_ptr->tot_cores;
 	}
 	if (core_cnt) {
 		/*

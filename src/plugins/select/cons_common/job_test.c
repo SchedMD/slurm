@@ -1433,7 +1433,7 @@ alloc_job:
 	job_res->whole_node       = job_ptr->details->whole_node;
 
 	/* store the hardware data for the selected nodes */
-	error_code = build_job_resources(job_res, node_record_table_ptr);
+	error_code = build_job_resources(job_res);
 	if (error_code != SLURM_SUCCESS) {
 		xfree(tres_mc_ptr);
 		_free_avail_res_array(avail_res_array);
@@ -1555,7 +1555,7 @@ alloc_job:
 			sock_gres_list,
 			job_ptr->job_id, job_res,
 			job_ptr->details->overcommit,
-			tres_mc_ptr, node_record_table_ptr);
+			tres_mc_ptr);
 	}
 	xfree(gres_task_limit);
 	xfree(node_gres_list);
