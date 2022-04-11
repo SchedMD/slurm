@@ -59,6 +59,8 @@ HIGHLIGHTS
     (slurmd -Z<feature> --conf="") and scontrol.
  -- sacct - allocations made by srun will now always display the allocation and
     step(s). Previously, the allocation and step were combined when possible.
+ -- cons_tres - change definition of the "least loaded node" (LLN) to the
+    node with the greatest ratio of available cpus to total cpus.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
