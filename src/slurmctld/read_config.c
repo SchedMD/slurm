@@ -1396,6 +1396,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 		old_config_list = config_list;
 		config_list = NULL;
+		FREE_NULL_LIST(front_end_list);
 		node_record_table_ptr = NULL;
 		node_record_count = 0;
 		xhash_free(node_hash_table);
