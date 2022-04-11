@@ -113,7 +113,6 @@ extern const uint32_t plugin_id;
 extern bool     preempt_by_part;
 extern bool     preempt_by_qos;
 extern uint16_t priority_flags;
-extern int      select_node_cnt;
 extern bool     spec_cores_first;
 extern bool     topo_optional;
 

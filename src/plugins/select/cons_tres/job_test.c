@@ -163,7 +163,7 @@ static List _build_node_weight_list(bitstr_t *node_bitmap)
 		nwt = list_find_first(node_list, _node_weight_find, node_ptr);
 		if (!nwt) {
 			nwt = xmalloc(sizeof(node_weight_type));
-			nwt->node_bitmap = bit_alloc(select_node_cnt);
+			nwt->node_bitmap = bit_alloc(node_record_count);
 			nwt->weight = node_ptr->sched_weight;
 			list_append(node_list, nwt);
 		}
@@ -440,11 +440,6 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	uint16_t *avail_cpu_per_node = NULL;
 
 	xassert(node_map);
-	if (select_node_cnt != node_record_count) {
-		error("node count inconsistent with slurmctld (%u != %u)",
-		      select_node_cnt, node_record_count);
-		return error_code;
-	}
 	if (bit_set_count(node_map) < min_nodes)
 		return error_code;
 
@@ -533,7 +528,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
 	consec_weight[consec_index] = NO_VAL64;
 
-	avail_cpu_per_node = xcalloc(select_node_cnt, sizeof(uint16_t));
+	avail_cpu_per_node = xcalloc(node_record_count, sizeof(uint16_t));
 	rem_cpus = details_ptr->min_cpus;
 	min_rem_nodes = min_nodes;
 	if ((gres_per_job = gres_sched_init(job_ptr->gres_list_req))) {
@@ -598,7 +593,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		}
 	}
 
-	for (i = 0; i < select_node_cnt; i++) {		/* For each node */
+	for (i = 0; i < node_record_count; i++) { /* For each node */
 		if (!node_record_table_ptr[i])
 			continue;
 		if ((consec_index + 1) >= consec_size) {
@@ -707,7 +702,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				}
 			}
 
-			host_bitmap = bit_alloc(select_node_cnt);
+			host_bitmap = bit_alloc(node_record_count);
 			bit_nset(host_bitmap, consec_start[i], consec_end[i]);
 			host_list = bitmap2node_name(host_bitmap);
 			info("set:%d consec "
@@ -1608,7 +1603,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		goto fini;
 	}
 	i_last = bit_fls(node_map);
-	avail_cpu_per_node = xcalloc(select_node_cnt, sizeof(uint16_t));
+	avail_cpu_per_node = xcalloc(node_record_count, sizeof(uint16_t));
 	node_weight_list = list_create(_topo_weight_free);
 	for (i = i_first; i <= i_last; i++) {
 		topo_weight_info_t nw_static;
@@ -1648,7 +1643,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				     &nw_static);
 		if (!nw) {	/* New node weight to add */
 			nw = xmalloc(sizeof(topo_weight_info_t));
-			nw->node_bitmap = bit_alloc(select_node_cnt);
+			nw->node_bitmap = bit_alloc(node_record_count);
 			nw->weight = node_ptr->sched_weight;
 			list_append(node_weight_list, nw);
 		}
@@ -1757,7 +1752,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	 * usually identify more nodes than required to satisfy the request.
 	 * Later logic selects from those nodes to get the best topology.
 	 */
-	best_nodes_bitmap = bit_alloc(select_node_cnt);
+	best_nodes_bitmap = bit_alloc(node_record_count);
 	iter = list_iterator_create(node_weight_list);
 	while (!sufficient && (nw = list_next(iter))) {
 		if (best_node_cnt > 0) {
@@ -2253,7 +2248,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		goto fini;
 	}
 	i_last = bit_fls(node_map);
-	avail_cpu_per_node = xcalloc(select_node_cnt, sizeof(uint16_t));
+	avail_cpu_per_node = xcalloc(node_record_count, sizeof(uint16_t));
 	node_weight_list = list_create(_topo_weight_free);
 	for (i = i_first; i <= i_last; i++) {
 		topo_weight_info_t nw_static;
@@ -2293,7 +2288,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				     &nw_static);
 		if (!nw) {	/* New node weight to add */
 			nw = xmalloc(sizeof(topo_weight_info_t));
-			nw->node_bitmap = bit_alloc(select_node_cnt);
+			nw->node_bitmap = bit_alloc(node_record_count);
 			nw->weight = node_ptr->sched_weight;
 			list_append(node_weight_list, nw);
 		}
@@ -2407,7 +2402,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	 * usually identify more nodes than required to satisfy the request.
 	 * Later logic selects from those nodes to get the best topology.
 	 */
-	best_nodes_bitmap = bit_alloc(select_node_cnt);
+	best_nodes_bitmap = bit_alloc(node_record_count);
 	iter = list_iterator_create(node_weight_list);
 	while (!sufficient && (nw = list_next(iter))) {
 		if (best_node_cnt > 0) {
@@ -3220,7 +3215,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 	 * incrementally remove nodes with low resource counts (sum of CPU and
 	 * GPU count if using GPUs, otherwise the CPU count) and retry
 	 */
-	for (i = 0; i < select_node_cnt; i++) {
+	for (i = 0; i < node_record_count; i++) {
 		if (avail_res_array[i]) {
 			most_res = MAX(most_res,
 				       avail_res_array[i]->avail_res_cnt);

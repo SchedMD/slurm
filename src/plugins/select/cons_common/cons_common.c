@@ -89,7 +89,6 @@ bool     is_cons_tres         = false;
 bool     pack_serial_at_end   = false;
 bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
-int      select_node_cnt      = 0;
 bool     spec_cores_first     = false;
 bool     topo_optional        = false;
 
@@ -114,7 +113,7 @@ static int _get_avail_cores_on_node(int node_inx, bitstr_t **exc_bitmap)
 {
 	int exc_cnt = 0, tot_cores;
 
-	xassert(node_inx <= select_node_cnt);
+	xassert(node_inx <= node_record_count);
 
 	tot_cores = node_record_table_ptr[node_inx]->tot_cores;
 
@@ -1146,12 +1145,11 @@ extern int select_p_node_init()
 	cr_init_global_core_data(node_record_table_ptr, node_record_count);
 
 	node_data_destroy(select_node_usage);
-	select_node_cnt = node_record_count;
 
 	if (is_cons_tres)
-		core_array_size = select_node_cnt;
+		core_array_size = node_record_count;
 
-	select_node_usage  = xcalloc(select_node_cnt,
+	select_node_usage  = xcalloc(node_record_count,
 				     sizeof(node_use_record_t));
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
@@ -1772,7 +1770,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 		}
 	}
 
-	for (n = 0; n < select_node_cnt; n++) {
+	for (n = 0; n < node_record_count; n++) {
 		select_nodeinfo_t *nodeinfo = NULL;
 		if (!(node_ptr = node_record_table_ptr[n]))
 			continue;
@@ -2031,9 +2029,8 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 
 extern int select_p_update_node_config(int index)
 {
-	if (index >= select_node_cnt) {
-		error("index too large (%d > %d)", index,
-		      select_node_cnt);
+	if (index >= node_record_count) {
+		error("index too large (%d > %d)", index, node_record_count);
 		return SLURM_ERROR;
 	}
 

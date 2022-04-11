@@ -196,7 +196,7 @@ extern void _free_avail_res_array(avail_res_t **avail_res_array)
 	if (!avail_res_array)
 		return;
 
-	for (n = 0; n < select_node_cnt; n++)
+	for (n = 0; n < node_record_count; n++)
 		common_free_avail_res(avail_res_array[n]);
 	xfree(avail_res_array);
 }
@@ -335,7 +335,7 @@ static avail_res_t **_get_res_avail(job_record_t *job_ptr,
 
 	xassert(*cons_common_callbacks.can_job_run_on_node);
 
-	avail_res_array = xcalloc(select_node_cnt, sizeof(avail_res_t *));
+	avail_res_array = xcalloc(node_record_count, sizeof(avail_res_t *));
 	i_first = bit_ffs(node_map);
 	if (i_first != -1)
 		i_last = bit_fls(node_map);
@@ -509,7 +509,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 		return avail_res_array;
 
 	/* Eliminate nodes that don't have sufficient resources for this job */
-	for (n = 0; n < select_node_cnt; n++) {
+	for (n = 0; n < node_record_count; n++) {
 		if (bit_test(node_bitmap, n) &&
 		    (!avail_res_array[n] ||
 		     !avail_res_array[n]->avail_cpus)) {
@@ -1451,7 +1451,7 @@ alloc_job:
 	else
 		c_size = 0;
 	i_first = bit_ffs(node_bitmap);
-	for (i = 0, n = i_first; n < select_node_cnt; n++) {
+	for (i = 0, n = i_first; n < node_record_count; n++) {
 		int first_core, last_core;
 		bitstr_t *use_free_cores = NULL;
 

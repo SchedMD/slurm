@@ -300,11 +300,6 @@ static int _eval_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 	bitstr_t *req_map    = details_ptr->req_node_bitmap;
 
 	xassert(node_map);
-	if (select_node_cnt != node_record_count) {
-		error("%s: node count inconsistent with slurmctld (%u != %u)",
-		      plugin_type, select_node_cnt, node_record_count);
-		return error_code;
-	}
 
 	if (bit_set_count(node_map) < min_nodes)
 		return error_code;
@@ -380,7 +375,7 @@ static int _eval_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 	rem_nodes = MAX(min_nodes, req_nodes);
 	min_rem_nodes = min_nodes;
 
-	for (i = 0; i < select_node_cnt; i++) {
+	for (i = 0; i < node_record_count; i++) {
 		if (req_map)
 			required_node = bit_test(req_map, i);
 		else
@@ -738,7 +733,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 			}
 		}
 	} else {
-		bit_nclear(node_map, 0, (select_node_cnt - 1));
+		bit_nclear(node_map, 0, (node_record_count - 1));
 	}
 
 	/* Compute CPUs already allocated to required nodes */
@@ -764,7 +759,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, select_node_cnt); /* Clear Map. */
+		bit_nclear(node_map, 0, node_record_count); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -817,7 +812,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr, bitstr_t *node_map,
 			}
 		}
 	} else {
-		bit_nclear(node_map, 0, (select_node_cnt - 1));
+		bit_nclear(node_map, 0, (node_record_count - 1));
 	}
 
 	/* Compute CPUs already allocated to required nodes */
@@ -867,7 +862,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, select_node_cnt); /* Clear Map. */
+		bit_nclear(node_map, 0, node_record_count); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -919,7 +914,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr, bitstr_t *node_map,
 			}
 		}
 	} else {
-		bit_nclear(node_map, 0, (select_node_cnt - 1));
+		bit_nclear(node_map, 0, (node_record_count - 1));
 	}
 
 	/* Compute CPUs already allocated to required nodes */
@@ -964,7 +959,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, select_node_cnt); /* Clear Map. */
+		bit_nclear(node_map, 0, node_record_count); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -1016,7 +1011,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr, bitstr_t *node_map,
 			}
 		}
 	} else {
-		bit_nclear(node_map, 0, (select_node_cnt - 1));
+		bit_nclear(node_map, 0, (node_record_count - 1));
 	}
 
 	/* Compute CPUs already allocated to required nodes */
@@ -1053,7 +1048,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, select_node_cnt); /* Clear Map. */
+		bit_nclear(node_map, 0, node_record_count); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -1119,7 +1114,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 	switches_cpu_cnt  = xmalloc(sizeof(int)        * switch_record_cnt);
 	switches_node_cnt = xmalloc(sizeof(int)        * switch_record_cnt);
 	switches_required = xmalloc(sizeof(int)        * switch_record_cnt);
-	avail_nodes_bitmap = bit_alloc(select_node_cnt);
+	avail_nodes_bitmap = bit_alloc(node_record_count);
 	for (i=0; i<switch_record_cnt; i++) {
 		switches_bitmap[i] = bit_copy(switch_record_table[i].
 					      node_bitmap);
@@ -1131,7 +1126,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 			switches_required[i] = 1;
 		}
 	}
-	bit_nclear(bitmap, 0, select_node_cnt - 1);
+	bit_nclear(bitmap, 0, node_record_count - 1);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i=0; i<switch_record_cnt; i++) {
@@ -1580,7 +1575,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 	switches_cpu_cnt  = xmalloc(sizeof(int)        * switch_record_cnt);
 	switches_node_cnt = xmalloc(sizeof(int)        * switch_record_cnt);
 	switches_node_use = xmalloc(sizeof(int)        * switch_record_cnt);
-	avail_nodes_bitmap = bit_alloc(select_node_cnt);
+	avail_nodes_bitmap = bit_alloc(node_record_count);
 	for (i = 0; i < switch_record_cnt; i++) {
 		switches_bitmap[i] = bit_copy(switch_record_table[i].
 					      node_bitmap);
@@ -1588,7 +1583,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 		bit_or(avail_nodes_bitmap, switches_bitmap[i]);
 		switches_node_cnt[i] = bit_set_count(switches_bitmap[i]);
 	}
-	bit_nclear(bitmap, 0, select_node_cnt - 1);
+	bit_nclear(bitmap, 0, node_record_count - 1);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < switch_record_cnt; i++) {
@@ -1986,7 +1981,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 
 	/* This nodeset didn't work. To avoid a possible knapsack problem,
 	 * incrementally remove nodes with low cpu counts and retry */
-	for (i = 0; i < select_node_cnt; i++) {
+	for (i = 0; i < node_record_count; i++) {
 		if (avail_res_array[i]) {
 			most_cpus = MAX(most_cpus,
 					avail_res_array[i]->avail_cpus);
@@ -1998,7 +1993,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 		bool no_change = true, no_more_remove = false;
 		bit_or(node_map, origmap);
 		rem_node_cnt = bit_set_count(node_map);
-		for (i = 0; i < select_node_cnt; i++) {
+		for (i = 0; i < node_record_count; i++) {
 			if (!bit_test(node_map, i))
 				continue;
 			if ((avail_res_array[i]->avail_cpus > 0) &&

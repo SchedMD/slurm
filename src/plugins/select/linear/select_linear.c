@@ -220,7 +220,6 @@ const uint32_t plugin_id	= SELECT_PLUGIN_LINEAR;
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 static node_record_t **select_node_ptr = NULL;
-static int select_node_cnt = 0;
 static uint16_t cr_type;
 static bool have_dragonfly = false;
 static bool topo_optional = false;
@@ -754,8 +753,8 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	else
 		rem_nodes = min_nodes;
 
-	avail_cpu_cnt = xcalloc(select_node_cnt, sizeof(int));
-	for (i = 0; i < select_node_cnt; i++) {
+	avail_cpu_cnt = xcalloc(node_record_count, sizeof(int));
+	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(bitmap, i)) {
 			avail_cpu_cnt[i] = _get_avail_cpus(job_ptr, i);
 			if (++total_node_cnt == 1)
@@ -832,7 +831,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		while ((max_nodes > 0) &&
 		       ((rem_nodes > 0) || (rem_cpus > 0))) {
 			int high_cpu_cnt = 0, high_cpu_inx = -1;
-			for (i = 0; i < select_node_cnt; i++) {
+			for (i = 0; i < node_record_count; i++) {
 				if (high_cpu_cnt > avail_cpu_cnt[i])
 					continue;
 				if (bit_test(bitmap, i))
@@ -2853,7 +2852,7 @@ static void _free_cr(struct cr_record *cr_ptr)
 	if (cr_ptr == NULL)
 		return;
 
-	for (i = 0; i < select_node_cnt; i++) {
+	for (i = 0; i < node_record_count; i++) {
 		part_cr_ptr1 = cr_ptr->nodes[i].parts;
 		while (part_cr_ptr1) {
 			part_cr_ptr2 = part_cr_ptr1->next;
@@ -2934,7 +2933,7 @@ static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
 	new_cr_ptr->tot_job_ids = xmalloc(i);
 	memcpy(new_cr_ptr->tot_job_ids, cr_ptr->tot_job_ids, i);
 
-	new_cr_ptr->nodes = xcalloc(select_node_cnt,
+	new_cr_ptr->nodes = xcalloc(node_record_count,
 				    sizeof(struct node_cr_record));
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		new_cr_ptr->nodes[node_ptr->index].alloc_memory =
@@ -2982,13 +2981,13 @@ static void _init_node_cr(void)
 		return;
 
 	cr_ptr = xmalloc(sizeof(struct cr_record));
-	cr_ptr->nodes = xcalloc(select_node_cnt,
+	cr_ptr->nodes = xcalloc(node_record_count,
 				sizeof(struct node_cr_record));
 
 	/* build partition records */
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = list_next(part_iterator))) {
-		for (i = 0; i < select_node_cnt; i++) {
+		for (i = 0; i < node_record_count; i++) {
 			if (part_ptr->node_bitmap == NULL)
 				break;
 			if (!bit_test(part_ptr->node_bitmap, i))

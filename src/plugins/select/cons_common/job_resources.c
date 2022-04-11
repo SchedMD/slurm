@@ -50,7 +50,7 @@ typedef enum {
 
 static bitstr_t *_create_core_bitmap(int node_inx)
 {
-	xassert(node_inx < select_node_cnt);
+	xassert(node_inx < node_record_count);
 
 	if (!node_record_table_ptr[node_inx])
 		return NULL;
@@ -68,7 +68,7 @@ static bitstr_t *_create_core_bitmap(int node_inx)
 
 		if (sys_core_size == NO_VAL) {
 			sys_core_size = 0;
-			for (int i = 0; i < select_node_cnt; i++)
+			for (int i = 0; i < node_record_count; i++)
 				sys_core_size +=
 					node_record_table_ptr[i]->tot_cores;
 		}
@@ -169,7 +169,7 @@ static void _log_tres_state(node_use_record_t *node_usage,
 	char *core_str;
 	int i;
 
-	for (i = 0; i < select_node_cnt; i++) {
+	for (i = 0; i < node_record_count; i++) {
 		if (!node_record_table_ptr[i])
 			continue;;
 		info("Node:%s State:%s AllocMem:%"PRIu64" of %"PRIu64,

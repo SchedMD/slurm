@@ -244,7 +244,7 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 		return core_bitmap;
 	}
 
-	core_bitmap = bit_alloc(cr_get_coremap_offset(select_node_cnt));
+	core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
 	for (i = 0; i < core_array_size; i++) {
 		if (!core_array[i])
 			continue;
@@ -295,14 +295,14 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(core_bitmap, i))
 			continue;
-		for (j = node_inx; j < select_node_cnt; j++) {
+		for (j = node_inx; j < node_record_count; j++) {
 			if (i < cr_get_coremap_offset(j+1)) {
 				node_inx = j;
 				i = cr_get_coremap_offset(j+1) - 1;
 				break;
 			}
 		}
-		if (j >= select_node_cnt) {
+		if (j >= node_record_count) {
 			bit_fmt(tmp, sizeof(tmp), core_bitmap);
 			error("error translating core bitmap %s",
 			      tmp);

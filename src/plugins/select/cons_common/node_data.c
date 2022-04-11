@@ -45,7 +45,7 @@ extern void node_data_destroy(node_use_record_t *node_usage)
 	int i;
 
 	if (node_usage) {
-		for (i = 0; i < select_node_cnt; i++) {
+		for (i = 0; i < node_record_count; i++) {
 			FREE_NULL_LIST(node_usage[i].gres_list);
 		}
 		xfree(node_usage);
@@ -99,7 +99,7 @@ extern node_use_record_t *node_data_dup_use(
 	if (orig_ptr == NULL)
 		return NULL;
 
-	new_use_ptr = xcalloc(select_node_cnt, sizeof(node_use_record_t));
+	new_use_ptr = xcalloc(node_record_count, sizeof(node_use_record_t));
 	new_ptr = new_use_ptr;
 
 	if (node_map) {
@@ -110,7 +110,7 @@ extern node_use_record_t *node_data_dup_use(
 			i_last = -1;
 	} else {
 		i_first = 0;
-		i_last = select_node_cnt;
+		i_last = node_record_count;
 	}
 
 	for (i = i_first; i < i_last; i++) {
