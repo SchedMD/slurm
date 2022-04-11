@@ -78,7 +78,7 @@ typedef struct {
  * The MPI module type is passed through an environment variable
  * SLURM_MPI_TYPE from the client.  There is no more official protocol.
  * This function will remove SLURM_MPI_TYPE from the environment variable
- * array "env", if it exists.
+ * array "*env", if it exists and its value is "none".
  */
 extern int mpi_g_slurmstepd_init(char ***env);
 
@@ -94,10 +94,10 @@ extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env);
  *
  * If the plugin wants to set environment variables for the task,
  * it will add the necessary variables the env array pointed
- * to be "env".  If "env" is NULL, a new array will be allocated
- * automaticallly.
+ * to be "env".  If "*env" is NULL, a new array will be allocated
+ * automatically.
  *
- * The returned "env" array may be manipulated (and freed) by using
+ * The returned "*env" array may be manipulated (and freed) by using
  * the src/common/env.c:env_array_* functions.
  */
 extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job,
@@ -122,10 +122,10 @@ extern int mpi_g_client_init(char *mpi_type);
  *
  * If the plugin requires that environment variables be set in the
  * environment of every task, it will add the necessary variables
- * the env array pointed to be "env".  If "env" is NULL, a new
- * array will be allocated automaticallly.
+ * the env array pointed to be "env".  If "*env" is NULL, a new
+ * array will be allocated automatically.
  *
- * The returned "env" array may be manipulated (and freed) by using
+ * The returned "*env" array may be manipulated (and freed) by using
  * the src/common/env.c:env_array_* functions.
  *
  * Returns NULL on error.  On success returns an opaque pointer
