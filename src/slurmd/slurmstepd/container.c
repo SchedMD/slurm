@@ -42,12 +42,12 @@
 
 #include "src/common/data.h"
 #include "src/common/fd.h"
+#include "src/common/oci_config.h"
 #include "src/common/run_command.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmd/slurmstepd/container.h"
-#include "src/slurmd/slurmstepd/read_oci_conf.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 
 /*

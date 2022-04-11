@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_oci_conf.c - parse oci.conf configuration file.
+ *  oci_config.c - parse oci.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2021 SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
@@ -41,12 +41,11 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
+#include "src/common/oci_config.h"
 #include "src/common/parse_config.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "read_oci_conf.h"
 
 #define OCI_CONF "oci.conf"
 

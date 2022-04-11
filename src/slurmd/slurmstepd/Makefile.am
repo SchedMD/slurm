@@ -33,7 +33,6 @@ slurmstepd_SOURCES = 	        	\
 	ulimits.c ulimits.h     	\
 	pdebug.c pdebug.h		\
 	pam_ses.c pam_ses.h		\
-	read_oci_conf.h read_oci_conf.c \
 	req.c req.h			\
 	multi_prog.c multi_prog.h	\
 	step_terminate_monitor.c step_terminate_monitor.h \

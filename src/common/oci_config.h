@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_oci_conf.h - parse oci.conf configuration file.
+ *  oci_config.h - parse oci.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2021 SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _READ_OCI_CONF_H
-#define _READ_OCI_CONF_H
+#ifndef OCI_CONFIG_H
+#define OCI_CONFIG_H
 
 typedef struct {
 	char *container_path; /* path pattern to use for holding OCI config */
@@ -60,4 +60,4 @@ extern void free_oci_conf(oci_conf_t *oci);
 		_X = NULL;                 \
 	} while (0)
 
-#endif /*_READ_OCI_CONF_H */
+#endif /* OCI_CONFIG_H */

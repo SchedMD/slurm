@@ -164,13 +164,14 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	fetch_config.lo forward.lo gpu.lo global_defaults.lo gres.lo \
 	group_cache.lo hash.lo half_duplex.lo hostlist.lo http.lo \
 	io_hdr.lo job_options.lo job_resources.lo list.lo log.lo \
-	net.lo node_conf.lo node_features.lo openapi.lo optz.lo \
-	pack.lo parse_config.lo parse_time.lo parse_value.lo plugin.lo \
-	plugrack.lo plugstack.lo power.lo prep.lo print_fields.lo \
-	proc_args.lo read_config.lo reverse_tree.lo run_command.lo \
-	run_in_daemon.lo select.lo setproctitle.lo site_factor.lo \
-	slurm_accounting_storage.lo slurm_acct_gather.lo \
-	slurm_acct_gather_energy.lo slurm_acct_gather_filesystem.lo \
+	net.lo node_conf.lo node_features.lo oci_config.lo openapi.lo \
+	optz.lo pack.lo parse_config.lo parse_time.lo parse_value.lo \
+	plugin.lo plugrack.lo plugstack.lo power.lo prep.lo \
+	print_fields.lo proc_args.lo read_config.lo reverse_tree.lo \
+	run_command.lo run_in_daemon.lo select.lo setproctitle.lo \
+	site_factor.lo slurm_accounting_storage.lo \
+	slurm_acct_gather.lo slurm_acct_gather_energy.lo \
+	slurm_acct_gather_filesystem.lo \
 	slurm_acct_gather_interconnect.lo slurm_acct_gather_profile.lo \
 	slurm_auth.lo slurm_cred.lo slurm_errno.lo \
 	slurm_ext_sensors.lo slurm_jobacct_gather.lo slurm_jobcomp.lo \
@@ -229,16 +230,17 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/list.Plo \
 	./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
 	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/node_features.Plo \
-	./$(DEPDIR)/openapi.Plo ./$(DEPDIR)/optz.Plo \
-	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/parse_config.Plo \
-	./$(DEPDIR)/parse_time.Plo ./$(DEPDIR)/parse_value.Plo \
-	./$(DEPDIR)/plugin.Plo ./$(DEPDIR)/plugrack.Plo \
-	./$(DEPDIR)/plugstack.Plo ./$(DEPDIR)/power.Plo \
-	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/print_fields.Plo \
-	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
-	./$(DEPDIR)/reverse_tree.Plo ./$(DEPDIR)/run_command.Plo \
-	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/select.Plo \
-	./$(DEPDIR)/setproctitle.Plo ./$(DEPDIR)/site_factor.Plo \
+	./$(DEPDIR)/oci_config.Plo ./$(DEPDIR)/openapi.Plo \
+	./$(DEPDIR)/optz.Plo ./$(DEPDIR)/pack.Plo \
+	./$(DEPDIR)/parse_config.Plo ./$(DEPDIR)/parse_time.Plo \
+	./$(DEPDIR)/parse_value.Plo ./$(DEPDIR)/plugin.Plo \
+	./$(DEPDIR)/plugrack.Plo ./$(DEPDIR)/plugstack.Plo \
+	./$(DEPDIR)/power.Plo ./$(DEPDIR)/prep.Plo \
+	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/proc_args.Plo \
+	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/reverse_tree.Plo \
+	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
+	./$(DEPDIR)/select.Plo ./$(DEPDIR)/setproctitle.Plo \
+	./$(DEPDIR)/site_factor.Plo \
 	./$(DEPDIR)/slurm_accounting_storage.Plo \
 	./$(DEPDIR)/slurm_acct_gather.Plo \
 	./$(DEPDIR)/slurm_acct_gather_energy.Plo \
@@ -651,6 +653,8 @@ libcommon_la_SOURCES = \
 	node_conf.h				\
 	node_features.c				\
 	node_features.h				\
+	oci_config.c				\
+	oci_config.h				\
 	openapi.c				\
 	openapi.h				\
 	optz.c					\
@@ -904,6 +908,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_conf.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_features.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/oci_config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openapi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optz.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack.Plo@am__quote@ # am--include-marker
@@ -1135,6 +1140,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/net.Plo
 	-rm -f ./$(DEPDIR)/node_conf.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
+	-rm -f ./$(DEPDIR)/oci_config.Plo
 	-rm -f ./$(DEPDIR)/openapi.Plo
 	-rm -f ./$(DEPDIR)/optz.Plo
 	-rm -f ./$(DEPDIR)/pack.Plo
@@ -1286,6 +1292,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/net.Plo
 	-rm -f ./$(DEPDIR)/node_conf.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
+	-rm -f ./$(DEPDIR)/oci_config.Plo
 	-rm -f ./$(DEPDIR)/openapi.Plo
 	-rm -f ./$(DEPDIR)/optz.Plo
 	-rm -f ./$(DEPDIR)/pack.Plo
