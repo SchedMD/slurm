@@ -1821,7 +1821,7 @@ _slurmd_init(void)
 		setrlimit(RLIMIT_CORE, &rlim);
 	}
 
-	rlimits_adjust_nofile();
+	rlimits_use_max_nofile();
 
 	/*
 	 * Create a context for verifying slurm job credentials
