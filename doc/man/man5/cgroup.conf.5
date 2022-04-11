@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "April 2022" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -46,7 +46,7 @@ Specify the plugin to be used when interacting with the cgroup subsystem.
 Supported values at the moment are only "cgroup/v1" which supports the legacy
 interface of cgroup v1, or "autodetect" which tries to determine which
 cgroup version does your system provide. This is useful if nodes have support
-for different cgroup versions. The default value is "autodetect".
+for different cgroup versions. The default value is "cgroup/v1".
 .IP
 
 .SH "TASK/CGROUP PLUGIN"
