@@ -174,20 +174,18 @@ static int _mpi_init(char *mpi_type)
 	if (g_context)
 		goto done;
 
-	if (!mpi_type)
-		mpi_type = slurm_conf.mpi_default;
-	else if (!xstrcmp(mpi_type, "openmpi")) {
-		/*
-		 * The openmpi plugin has been equivalent to none for a while.
-		 * Translate so we can discard that duplicated no-op plugin.
-		 */
-		mpi_type = "none";
-	}
-	if (!mpi_type) {
+	if (!slurm_conf.mpi_default) {
 		error("MPI: No default type set.");
 		rc = SLURM_ERROR;
 		goto done;
-	}
+	} else if (!mpi_type)
+		mpi_type = slurm_conf.mpi_default;
+	/*
+	 * The openmpi plugin has been equivalent to none for a while.
+	 * Translate so we can discard that duplicated no-op plugin.
+	 */
+	if (!xstrcmp(mpi_type, "openmpi"))
+		mpi_type = "none";
 
 	plugin_name = xstrdup_printf("%s/%s", plugin_type, mpi_type);
 	g_context = plugin_context_create(
@@ -210,7 +208,14 @@ done:
 extern int mpi_g_slurmstepd_init(char ***env)
 {
 	int rc = SLURM_SUCCESS;
-	char *mpi_type = getenvp(*env, "SLURM_MPI_TYPE");
+	char *mpi_type;
+
+	xassert(env);
+
+	if (!(mpi_type = getenvp(*env, "SLURM_MPI_TYPE"))) {
+		error("MPI: SLURM_MPI_TYPE environmental variable is not set.");
+		return SLURM_ERROR;
+	}
 
 #if _DEBUG
 	info("%s: MPI: Environment before call:", __func__);
@@ -232,6 +237,10 @@ extern int mpi_g_slurmstepd_init(char ***env)
 
 extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 {
+	xassert(job);
+	xassert(env);
+	xassert(g_context);
+
 #if _DEBUG
 	info("%s: MPI: Details before call:", __func__);
 	_log_env(*env);
@@ -243,6 +252,10 @@ extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 
 extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 {
+	xassert(job);
+	xassert(env);
+	xassert(g_context);
+
 #if _DEBUG
 	info("%s: MPI: Details before call:", __func__);
 	_log_env(*env);
@@ -261,6 +274,11 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 	const mpi_plugin_client_info_t *job, char ***env)
 {
 	mpi_plugin_client_state_t *state;
+
+	xassert(job);
+	xassert(env);
+	xassert(g_context);
+
 #if _DEBUG
 	info("%s: MPI: Details before call:", __func__);
 	_log_env(*env);
@@ -277,6 +295,9 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 
 extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 {
+	xassert(state);
+	xassert(g_context);
+
 #if _DEBUG
 	info("%s called", __func__);
 #endif
