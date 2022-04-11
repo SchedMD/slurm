@@ -2944,8 +2944,8 @@ static int _parser_run(void *obj, const parser_t *const parse,
 	int rc = SLURM_SUCCESS;
 
 	for (int i = 0; (!rc) && (i < parse_member_count); i++) {
+		data_t *pd = data_resolve_dict_path(data, parse[i].key);
 		for (int f = 0; f < ARRAY_SIZE(funcs); f++) {
-			data_t *pd = data_resolve_dict_path(data, parse[i].key);
 
 			if (pd && parse[i].type == funcs[f].type) {
 				xassert(funcs[f].rfunc);
