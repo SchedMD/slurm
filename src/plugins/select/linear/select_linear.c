@@ -219,7 +219,6 @@ const char plugin_type[]       	= "select/linear";
 const uint32_t plugin_id	= SELECT_PLUGIN_LINEAR;
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
-static node_record_t **select_node_ptr = NULL;
 static uint16_t cr_type;
 static bool have_dragonfly = false;
 static bool topo_optional = false;
@@ -366,7 +365,7 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
  *	maximum sockets, cores, threads.  Note that the value of
  *	cpus is the lowest-level logical processor (LLLP).
  * IN job_ptr - pointer to job being scheduled
- * IN index - index of node's configuration information in select_node_ptr
+ * IN index - index of node's configuration information in node_record_table_ptr
  */
 static int _get_avail_cpus(job_record_t *job_ptr, int index)
 {
@@ -388,7 +387,7 @@ static int _get_avail_cpus(job_record_t *job_ptr, int index)
 	else
 		ntasks_per_core   = 0;
 
-	node_ptr = select_node_ptr[index];
+	node_ptr = node_record_table_ptr[index];
 
 #if SELECT_DEBUG
 	info("host:%s HW_ cpus_per_node:%u boards_per_node:%u "
@@ -416,11 +415,11 @@ static int _get_avail_cpus(job_record_t *job_ptr, int index)
  * _get_total_cpus - Get the total number of cpus on a node
  *	Note that the value of cpus is the lowest-level logical
  *	processor (LLLP).
- * IN index - index of node's configuration information in select_node_ptr
+ * IN index - index of node's configuration information in node_record_table_ptr
  */
 static uint16_t _get_total_cpus(int index)
 {
-	node_record_t *node_ptr = select_node_ptr[index];
+	node_record_t *node_ptr = node_record_table_ptr[index];
 	return node_ptr->config_ptr->cpus;
 }
 
@@ -465,7 +464,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	job_resrcs_ptr->nodes = bitmap2node_name(bitmap);
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
-	if (build_job_resources(job_resrcs_ptr, select_node_ptr))
+	if (build_job_resources(job_resrcs_ptr, node_record_table_ptr))
 		error("_build_select_struct: build_job_resources: %m");
 
 	first_bit = bit_ffs(bitmap);
@@ -815,14 +814,14 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	for (i = 0; i < consec_index; i++) {
 		if (consec_req[i] != -1)
 			debug3("start=%s, end=%s, nodes=%d, cpus=%d, req=%s",
-			       select_node_ptr[consec_start[i]]->name,
-			       select_node_ptr[consec_end[i]]->name,
+			       node_record_table_ptr[consec_start[i]]->name,
+			       node_record_table_ptr[consec_end[i]]->name,
 			       consec_nodes[i], consec_cpus[i],
-			       select_node_ptr[consec_req[i]]->name);
+			       node_record_table_ptr[consec_req[i]]->name);
 		else
 			debug3("start=%s, end=%s, nodes=%d, cpus=%d",
-			       select_node_ptr[consec_start[i]]->name,
-			       select_node_ptr[consec_end[i]]->name,
+			       node_record_table_ptr[consec_start[i]]->name,
+			       node_record_table_ptr[consec_end[i]]->name,
 			       consec_nodes[i], consec_cpus[i]);
 	}
 #endif
@@ -3534,8 +3533,6 @@ extern int select_p_node_init()
 	_free_cr(cr_ptr);
 	cr_ptr = NULL;
 
-	select_node_ptr = node_record_table_ptr;
-	select_node_cnt = node_record_count;
 	cr_init_global_core_data(node_record_table_ptr, node_record_count);
 	slurm_mutex_unlock(&cr_mutex);
 
