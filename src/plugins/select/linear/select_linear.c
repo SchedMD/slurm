@@ -406,19 +406,6 @@ static int _get_avail_cpus(job_record_t *job_ptr, int index)
 	     node_ptr->name, cpus_per_node, boards_per_node, sockets_per_board,
 	     cores_per_socket, thread_per_core);
 #endif
-	/* pick defaults for any unspecified items */
-	if (cpus_per_task <= 0)
-		cpus_per_task = 1;
-	if (thread_per_core <= 0)
-		thread_per_core = 1;
-	if (cores_per_socket <= 0)
-		cores_per_socket = 1;
-	if (boards_per_node <= 0)
-		boards_per_node = 1;
-	if (sockets_per_board <= 0) {
-		sockets_per_board = cpus_per_node / boards_per_node /
-				    cores_per_socket / thread_per_core;
-	}
 
 	nppcu = ntasks_per_core;
 	avail_cpus = adjust_cpus_nppcu(nppcu, cpus_per_task,
