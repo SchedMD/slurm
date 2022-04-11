@@ -349,7 +349,11 @@ static int _set_job_env_field(lua_State *L)
 	if (job_desc == NULL) {
 		error("%s: job_desc is NULL", __func__);
 	} else if (job_desc->environment == NULL) {
-		error("%s: job_desc->environment is NULL", __func__);
+		if (job_desc->script)
+			error("%s: %s: job_desc->environment is NULL.",
+			      plugin_type, __func__);
+		else
+			info("job_desc->environment only accessible for batch jobs. ");
 		lua_pushnil(L);
 	} else {
 		value_str = luaL_checkstring(L, 3);
@@ -390,7 +394,11 @@ static int _job_env_field(const job_desc_msg_t *job_desc, const char *name)
 		error("%s: job_desc is NULL", __func__);
 		lua_pushnil(L);
 	} else if (job_desc->environment == NULL) {
-		error("%s: job_desc->environment is NULL", __func__);
+		if (job_desc->script)
+			error("%s: %s: job_desc->environment is NULL.",
+			      plugin_type, __func__);
+		else
+			info("job_desc->environment only accessible for batch jobs.");
 		lua_pushnil(L);
 	} else {
 		for (i = 0; job_desc->environment[i]; i++) {
