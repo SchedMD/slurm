@@ -222,7 +222,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		       sizeof(slurm_step_launch_callbacks_t));
 	}
 
-	if (mpi_g_client_init(params->mpi_plugin_name) != SLURM_SUCCESS) {
+	if (mpi_g_client_init(
+		(char **)&params->mpi_plugin_name) != SLURM_SUCCESS) {
 		slurm_seterrno(SLURM_MPI_PLUGIN_NAME_INVALID);
 		return SLURM_ERROR;
 	}

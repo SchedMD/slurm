@@ -153,17 +153,19 @@ static void _log_task_rec(const mpi_plugin_task_info_t *job)
 }
 #endif
 
-static int _mpi_init(char *mpi_type)
+static int _mpi_init(char **mpi_type)
 {
 	const char *plugin_type = "mpi";
 
 	int rc = SLURM_SUCCESS;
 	char *plugin_name = NULL;
 
+	xassert(mpi_type);
+
 #if _DEBUG
-	info("%s: MPI: Type: %s", __func__, mpi_type);
+	info("%s: MPI: Type: %s", __func__, *mpi_type);
 #else
-	debug("MPI: Type: %s", mpi_type);
+	debug("MPI: Type: %s", *mpi_type);
 #endif
 
 	if (init_run && g_context)
@@ -178,25 +180,27 @@ static int _mpi_init(char *mpi_type)
 		error("MPI: No default type set.");
 		rc = SLURM_ERROR;
 		goto done;
-	} else if (!mpi_type)
-		mpi_type = slurm_conf.mpi_default;
+	} else if (!*mpi_type)
+		*mpi_type = xstrdup(slurm_conf.mpi_default);
 	/*
 	 * The openmpi plugin has been equivalent to none for a while.
 	 * Translate so we can discard that duplicated no-op plugin.
 	 */
-	if (!xstrcmp(mpi_type, "openmpi"))
-		mpi_type = "none";
+	if (!xstrcmp(*mpi_type, "openmpi")) {
+		xfree(*mpi_type);
+		*mpi_type = xstrdup("none");
+	}
 
-	plugin_name = xstrdup_printf("%s/%s", plugin_type, mpi_type);
+	plugin_name = xstrdup_printf("%s/%s", plugin_type, *mpi_type);
 	g_context = plugin_context_create(
 		plugin_type, plugin_name, (void **)&ops, syms, sizeof(syms));
 	xfree(plugin_name);
 
 	if (g_context) {
-		setenvf(NULL, "SLURM_MPI_TYPE", "%s", mpi_type);
+		setenvf(NULL, "SLURM_MPI_TYPE", "%s", *mpi_type);
 		init_run = true;
 	} else {
-		error("MPI: Cannot create context for %s", mpi_type);
+		error("MPI: Cannot create context for %s", *mpi_type);
 		rc = SLURM_ERROR;
 	}
 
@@ -212,9 +216,10 @@ extern int mpi_g_slurmstepd_init(char ***env)
 
 	xassert(env);
 
-	if (!(mpi_type = getenvp(*env, "SLURM_MPI_TYPE"))) {
+	if (!(mpi_type = xstrdup(getenvp(*env, "SLURM_MPI_TYPE")))) {
 		error("MPI: SLURM_MPI_TYPE environmental variable is not set.");
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto done;
 	}
 
 #if _DEBUG
@@ -222,8 +227,8 @@ extern int mpi_g_slurmstepd_init(char ***env)
 	_log_env(*env);
 #endif
 
-	if ((rc = _mpi_init(mpi_type)) != SLURM_SUCCESS)
-		return rc;
+	if ((rc = _mpi_init(&mpi_type)) != SLURM_SUCCESS)
+		goto done;
 
 	/*
 	 * Unset env var so that "none" doesn't exist in salloc'ed env, but
@@ -232,6 +237,8 @@ extern int mpi_g_slurmstepd_init(char ***env)
 	if (!xstrcmp(mpi_type, "none"))
 		unsetenvp(*env, "SLURM_MPI_TYPE");
 
+done:
+	xfree(mpi_type);
 	return rc;
 }
 
@@ -265,7 +272,7 @@ extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 	return (*(ops.slurmstepd_task))(job, env);
 }
 
-extern int mpi_g_client_init(char *mpi_type)
+extern int mpi_g_client_init(char **mpi_type)
 {
 	return _mpi_init(mpi_type);
 }

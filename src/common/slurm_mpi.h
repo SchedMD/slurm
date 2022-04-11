@@ -112,10 +112,10 @@ extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job,
  * Just load the requested plugin.  No explicit calls into the plugin
  * once loaded (just the implicit call to the plugin's init() function).
  *
- * If "mpi_type" is NULL, the system-default mpi plugin
+ * If "*mpi_type" is NULL, the system-default mpi plugin
  * is initialized.
  */
-extern int mpi_g_client_init(char *mpi_type);
+extern int mpi_g_client_init(char **mpi_type);
 
 /*
  * Call the plugin mpi_p_client_prelaunch() function.
