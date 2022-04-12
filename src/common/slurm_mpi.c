@@ -71,8 +71,14 @@ static const char *syms[] = {
 	"mpi_p_slurmstepd_task"
 };
 
-static slurm_mpi_ops_t ops;
-static plugin_context_t *g_context = NULL;
+/*
+ * Can't be "static char *plugin_type". Conflicting declaration: log.h
+ * Can't be "#define PLUGIN_TYPE". Previous declaration: plugin.h
+ */
+static char *mpi_char = "mpi";
+static slurm_mpi_ops_t *ops = NULL;
+static plugin_context_t **g_context = NULL;
+static int g_context_cnt = 0;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
@@ -153,57 +159,101 @@ static void _log_task_rec(const mpi_plugin_task_info_t *job)
 }
 #endif
 
+static int _load_plugin(void *x, void *arg)
+{
+	char *plugin_name = x;
+
+	g_context[g_context_cnt] = plugin_context_create(
+		mpi_char, plugin_name, (void **)&ops[g_context_cnt],
+		syms, sizeof(syms));
+
+	if (g_context[g_context_cnt])
+		g_context_cnt++;
+	else
+		error("MPI: Cannot create context for %s", plugin_name);
+
+	return SLURM_SUCCESS;
+}
+
 static int _mpi_fini_locked(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	init_run = false;
-	rc = plugin_context_destroy(g_context);
-	g_context = NULL;
+
+	for (int i = 0; i < g_context_cnt; i++)
+		if ((rc =
+		     plugin_context_destroy(g_context[i])) != SLURM_SUCCESS)
+			error("MPI: Unable to destroy context plugin.");
+
+	xfree(g_context);
+	xfree(ops);
+	g_context_cnt = 0;
 
 	return rc;
 }
 
 static int _mpi_init_locked(char **mpi_type)
 {
-	const char *plugin_type = "mpi";
+	int plugin_cnt = 0;
+	List plugin_names;
 
-	char *plugin_name = NULL;
-
-	xassert(mpi_type);
-
+	/* NULL in the double pointer means load all, otherwise load just one */
+	if (mpi_type) {
 #if _DEBUG
-	info("%s: MPI: Type: %s", __func__, *mpi_type);
+		info("%s: MPI: Type: %s", __func__, *mpi_type);
 #else
-	debug("MPI: Type: %s", *mpi_type);
+		debug("MPI: Type: %s", *mpi_type);
 #endif
 
-	if (!slurm_conf.mpi_default) {
-		error("MPI: No default type set.");
-		return SLURM_ERROR;
-	} else if (!*mpi_type)
-		*mpi_type = xstrdup(slurm_conf.mpi_default);
-	/*
-	 * The openmpi plugin has been equivalent to none for a while.
-	 * Translate so we can discard that duplicated no-op plugin.
-	 */
-	if (!xstrcmp(*mpi_type, "openmpi")) {
-		xfree(*mpi_type);
-		*mpi_type = xstrdup("none");
-	}
+		if (!slurm_conf.mpi_default) {
+			error("MPI: No default type set.");
+			return SLURM_ERROR;
+		} else if (!*mpi_type)
+			*mpi_type = xstrdup(slurm_conf.mpi_default);
+		/*
+		 * The openmpi plugin has been equivalent to none for a while.
+		 * Translate so we can discard that duplicated no-op plugin.
+		 */
+		if (!xstrcmp(*mpi_type, "openmpi")) {
+			xfree(*mpi_type);
+			*mpi_type = xstrdup("none");
+		}
 
-	plugin_name = xstrdup_printf("%s/%s", plugin_type, *mpi_type);
-	g_context = plugin_context_create(
-		plugin_type, plugin_name, (void **)&ops, syms, sizeof(syms));
-	xfree(plugin_name);
-
-	if (g_context) {
-		setenvf(NULL, "SLURM_MPI_TYPE", "%s", *mpi_type);
-		init_run = true;
+		plugin_names = list_create(xfree_ptr);
+		list_append(plugin_names,
+			    xstrdup_printf("%s/%s", mpi_char, *mpi_type));
 	} else {
-		error("MPI: Cannot create context for %s", *mpi_type);
-		return SLURM_ERROR;
+#if _DEBUG
+		info("%s: MPI: Loading all types", __func__);
+#else
+		debug("MPI: Loading all types");
+#endif
+
+		plugin_names = plugin_get_plugins_of_type(mpi_char);
 	}
+
+	/* Iterate and load */
+	if (plugin_names && (plugin_cnt = list_count(plugin_names))) {
+		ops = xcalloc(plugin_cnt, sizeof(*ops));
+		g_context = xcalloc(plugin_cnt, sizeof(*g_context));
+
+		list_for_each(plugin_names, _load_plugin, NULL);
+	}
+	FREE_NULL_LIST(plugin_names);
+
+	if (!g_context_cnt) {
+		/* No plugin could load: clean */
+		_mpi_fini_locked();
+		return SLURM_ERROR;
+	} else if (g_context_cnt < plugin_cnt) {
+		/* Some could load but not all: shrink */
+		xrecalloc(ops, g_context_cnt, sizeof(*ops));
+		xrecalloc(g_context, g_context_cnt, sizeof(*g_context));
+	} else if (mpi_type)
+		setenvf(NULL, "SLURM_MPI_TYPE", "%s", *mpi_type);
+
+	init_run = true;
 
 	return SLURM_SUCCESS;
 }
@@ -262,6 +312,7 @@ extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 	xassert(job);
 	xassert(env);
 	xassert(g_context);
+	xassert(ops);
 
 #if _DEBUG
 	info("%s: MPI: Details before call:", __func__);
@@ -269,7 +320,7 @@ extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 	_log_step_rec(job);
 #endif
 
-	return (*(ops.slurmstepd_prefork))(job, env);
+	return (*(ops[0].slurmstepd_prefork))(job, env);
 }
 
 extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
@@ -277,6 +328,7 @@ extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 	xassert(job);
 	xassert(env);
 	xassert(g_context);
+	xassert(ops);
 
 #if _DEBUG
 	info("%s: MPI: Details before call:", __func__);
@@ -284,7 +336,7 @@ extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 	_log_task_rec(job);
 #endif
 
-	return (*(ops.slurmstepd_task))(job, env);
+	return (*(ops[0].slurmstepd_task))(job, env);
 }
 
 extern int mpi_g_client_init(char **mpi_type)
@@ -300,6 +352,7 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 	xassert(job);
 	xassert(env);
 	xassert(g_context);
+	xassert(ops);
 
 #if _DEBUG
 	info("%s: MPI: Details before call:", __func__);
@@ -307,7 +360,7 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 	_log_mpi_rec(job);
 #endif
 
-	state = (*(ops.client_prelaunch))(job, env);
+	state = (*(ops[0].client_prelaunch))(job, env);
 #if _DEBUG
 	info("%s: MPI: Environment after call:", __func__);
 	_log_env(*env);
@@ -319,12 +372,13 @@ extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 {
 	xassert(state);
 	xassert(g_context);
+	xassert(ops);
 
 #if _DEBUG
 	info("%s called", __func__);
 #endif
 
-	return (*(ops.client_fini))(state);
+	return (*(ops[0].client_fini))(state);
 }
 
 extern int mpi_fini(void)
