@@ -153,11 +153,21 @@ static void _log_task_rec(const mpi_plugin_task_info_t *job)
 }
 #endif
 
-static int _mpi_init(char **mpi_type)
+static int _mpi_fini_locked(void)
+{
+	int rc;
+
+	init_run = false;
+	rc = plugin_context_destroy(g_context);
+	g_context = NULL;
+
+	return rc;
+}
+
+static int _mpi_init_locked(char **mpi_type)
 {
 	const char *plugin_type = "mpi";
 
-	int rc = SLURM_SUCCESS;
 	char *plugin_name = NULL;
 
 	xassert(mpi_type);
@@ -168,18 +178,9 @@ static int _mpi_init(char **mpi_type)
 	debug("MPI: Type: %s", *mpi_type);
 #endif
 
-	if (init_run && g_context)
-		return rc;
-
-	slurm_mutex_lock(&context_lock);
-
-	if (g_context)
-		goto done;
-
 	if (!slurm_conf.mpi_default) {
 		error("MPI: No default type set.");
-		rc = SLURM_ERROR;
-		goto done;
+		return SLURM_ERROR;
 	} else if (!*mpi_type)
 		*mpi_type = xstrdup(slurm_conf.mpi_default);
 	/*
@@ -201,10 +202,24 @@ static int _mpi_init(char **mpi_type)
 		init_run = true;
 	} else {
 		error("MPI: Cannot create context for %s", *mpi_type);
-		rc = SLURM_ERROR;
+		return SLURM_ERROR;
 	}
 
-done:
+	return SLURM_SUCCESS;
+}
+
+static int _mpi_init(char **mpi_type)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (init_run && g_context)
+		return rc;
+
+	slurm_mutex_lock(&context_lock);
+
+	if (!g_context)
+		rc = _mpi_init_locked(mpi_type);
+
 	slurm_mutex_unlock(&context_lock);
 	return rc;
 }
@@ -314,17 +329,16 @@ extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 
 extern int mpi_fini(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
+
+	if (!init_run || !g_context)
+		return rc;
 
 	slurm_mutex_lock(&context_lock);
-	if (!g_context) {
-		slurm_mutex_unlock(&context_lock);
-		return SLURM_SUCCESS;
-	}
 
-	init_run = false;
-	rc = plugin_context_destroy(g_context);
-	g_context = NULL;
+	if (g_context)
+		rc = _mpi_fini_locked();
+
 	slurm_mutex_unlock(&context_lock);
 	return rc;
 }
