@@ -2115,6 +2115,80 @@ connections are established for each protocol (LAPI and MPI) and each task.
 If there are two networks and four tasks on the node then a total
 of 32 connections are established (2 instances x 2 protocols x 2 networks x
 4 tasks).
+.IP
+.RE
+
+The \fBnetwork\fR option is also available on systems with HPE Slingshot
+networks. It can be used to override the default network resources allocated
+for the job step. Multiple values may be specified in a comma-separated list.
+.IP
+
+.RS
+.TP
+\fBdef_<rsrc>\fR=<\fIval\fR>
+Per-CPU reserved allocation for this resource.
+.IP
+
+.TP
+\fBres_<rsrc>\fR=<\fIval\fR>
+Per-node reserved allocation for this resource.
+If set, overrides the per-CPU allocation.
+.IP
+
+.TP
+\fBmax_<rsrc>\fR=<\fIval\fR>
+Maximum per-node limit for this resource.
+.IP
+
+.TP
+\fBdepth\fR=<\fIdepth\fR>
+Multiplier for per-CPU resource allocation.
+Default is the number of reserved CPUs on the node.
+.IP
+.RE
+
+The resources that may be requested are:
+.IP
+
+.RS
+.TP
+\fBtxqs\fR
+Transmit command queues. The default is 3 per-CPU, maximum 1024 per-node.
+.IP
+
+.TP
+\fBtgqs\fR
+Target command queues. The default is 2 per-CPU, maximum 512 per-node.
+.IP
+
+.TP
+\fBeqs\fR
+Event queues. The default is 8 per-CPU, maximum 2048 per-node.
+.IP
+
+.TP
+\fBcts\fR
+Counters. The default is 2 per-CPU, maximum 2048 per-node.
+.IP
+
+.TP
+\fBtles\fR
+Trigger list entries. The default is 1 per-CPU, maximum 2048 per-node.
+.IP
+
+.TP
+\fBptes\fR
+Portable table entries. The default is 8 per-CPU, maximum 2048 per-node.
+.IP
+
+.TP
+\fBles\fR
+List entries. The default is 134 per-CPU, maximum 65535 per-node.
+.IP
+
+.TP
+\fBacs\fR
+Addressing contexts. The default is 4 per-CPU, maximum 1024 per-node.
 .RE
 .IP
 

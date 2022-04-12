@@ -5081,6 +5081,96 @@ The default value is 30 seconds.
 .TP
 \fBSwitchParameters\fR
 Optional parameters for the switch plugin.
+
+On HPE Slingshot systems configured with SwitchType=switch/hpe_slingshot,
+the following parameters are supported
+(separate multiple parameters with a comma):
+.IP
+
+.RS
+.TP
+\fBvnis\fR=<\fImin\fR>-<\fImax\fR>
+Range of VNIs to allocate for jobs and applications.
+The default value is 32768-65535.
+.IP
+
+.TP
+\fBtcs\fR=<\fIclass1\fR>[:<\fIclass2\fR>]...
+Set of traffic classes to configure for applications.
+Supported traffic classes are DEDICATED_ACCESS, LOW_LATENCY, BULK_DATA, and
+BEST_EFFORT.
+.IP
+
+.TP
+\fBsingle_node_vni\fR
+Allocate a VNI for single node job steps.
+.IP
+
+.TP
+\fBjob_vni\fR
+Allocate an additional VNI for jobs, shared among all job steps.
+.IP
+
+.TP
+\fBdef_<rsrc>\fR=<\fIval\fR>
+Per-CPU reserved allocation for this resource.
+.IP
+
+.TP
+\fBres_<rsrc>\fR=<\fIval\fR>
+Per-node reserved allocation for this resource.
+If set, overrides the per-CPU allocation.
+.IP
+
+.TP
+\fBmax_<rsrc>\fR=<\fIval\fR>
+Maximum per-node application for this resource.
+.IP
+.RE
+
+The resources that may be configured are:
+.IP
+
+.RS
+.TP
+\fBtxqs\fR
+Transmit command queues. The default is 3 per-CPU, maximum 1024 per-node.
+.IP
+
+.TP
+\fBtgqs\fR
+Target command queues. The default is 2 per-CPU, maximum 512 per-node.
+.IP
+
+.TP
+\fBeqs\fR
+Event queues. The default is 8 per-CPU, maximum 2048 per-node.
+.IP
+
+.TP
+\fBcts\fR
+Counters. The default is 2 per-CPU, maximum 2048 per-node.
+.IP
+
+.TP
+\fBtles\fR
+Trigger list entries. The default is 1 per-CPU, maximum 2048 per-node.
+.IP
+
+.TP
+\fBptes\fR
+Portable table entries. The default is 8 per-CPU, maximum 2048 per-node.
+.IP
+
+.TP
+\fBles\fR
+List entries. The default is 134 per-CPU, maximum 65535 per-node.
+.IP
+
+.TP
+\fBacs\fR
+Addressing contexts. The default is 4 per-CPU, maximum 1024 per-node.
+.RE
 .IP
 
 .TP
@@ -5089,8 +5179,9 @@ Identifies the type of switch or interconnect used for application
 communications.
 Acceptable values include
 "switch/cray_aries" for Cray systems,
+"switch/hpe_slingshot" for HPE Slingshot systems and
 "switch/none" for switches not requiring special processing for job launch
-or termination (Ethernet, and InfiniBand) and
+or termination (Ethernet, and InfiniBand).
 The default value is "switch/none".
 All Slurm daemons, commands and running jobs must be restarted for a
 change in \fBSwitchType\fR to take effect.
