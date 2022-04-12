@@ -29,6 +29,9 @@ source ./globals
 set file_in1       "$test_dir/input1"
 set file_in2       "$test_dir/input2"
 set file_out       "$test_dir/output"
+set step0_done     "$test_dir/step0_done"
+set step1_done     "$test_dir/step1_done"
+set step2_done     "$test_dir/step2_done"
 set number_commas  "\[0-9_,\]+"
 set job_id         0
 
@@ -101,7 +104,7 @@ make_bash_script $file_in2 "
 	fi
 	exit 0"
 
-exec $bin_rm -f $file_out
+file delete $file_out
 set timeout $max_job_delay
 spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n3 -t1 -o $file_out -J $test_name $file_in1
 expect {
@@ -176,7 +179,7 @@ make_bash_script $file_in2 "
 	fi
 	exit 0"
 
-exec $bin_rm -f $file_out
+file delete $file_out
 set job_id 0
 set timeout $max_job_delay
 spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n2 -t1 -o $file_out -J $test_name $file_in1
@@ -255,7 +258,7 @@ make_bash_script $file_in2 "
 	fi
 	exit 0"
 
-exec $bin_rm -f $file_out
+file delete $file_out
 set job_id 0
 set timeout $max_job_delay
 spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n2 -t1 -o $file_out -J $test_name $file_in1
@@ -322,23 +325,24 @@ if {$gpu_cnt > 2} {
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
-		$srun --exact -n1 --gpus=2 --gpus-per-node=0 --mem=0 $file_in2 &
+		$srun --exact -n2 --gpus=2 --gpus-per-node=0 --mem=0 $file_in2 &
 		$srun --exact -n1 --gpus=1 --gpus-per-node=0 --mem=0 $file_in2 &
-		wait
+		while \[ \! -f $step1_done \]; do sleep 0.25; done
+		while \[ \! -f $step0_done \]; do sleep 0.25; done
 		exit 0"
 
 	make_bash_script $file_in2 "
 		echo 'STEP_ID:'\$SLURM_STEP_ID 'CUDA_VISIBLE_DEVICES:'\$CUDA_VISIBLE_DEVICES
-		sleep 3
-		if \[ \$SLURM_STEP_ID -eq 1 \]; then
-			$scontrol show step \$SLURM_JOB_ID.\$SLURM_STEP_ID
-		fi
+
+		\[ \$SLURM_STEP_ID == 0 \] && touch $step0_done && while \[ \! -f $step1_done \]; do sleep 0.25; done
+		\[ \$SLURM_STEP_ID == 1 \] && touch $step1_done && while \[ \! -f $step0_done \]; do sleep 0.25; done
+
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
-	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=3 -N1 -n3 -t1 -o $file_out -J $test_name $file_in1
+	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=3 -N1 -n3 -t2 -o $file_out -J $test_name $file_in1
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
@@ -357,55 +361,22 @@ if {$gpu_cnt > 2} {
 
 	wait_for_job -fail $job_id "DONE"
 
-	wait_for_file -fail $file_out
-	set bad_cuda_cnt 0
-	set bad_cuda_val 0
-	set last_cuda_val -1
-	spawn $bin_cat $file_out
-	expect {
-		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number),($number)," {
-			incr bad_cuda_cnt
-			exp_continue
-		}
-		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number),($number)" {
-			set val $expect_out(2,string)
-			set val2 $expect_out(3,string)
-			if {$constrain_devices} {
-				if {$val != 0 || $val2 != 1} {
-					fail "Expected CUDA_VISIBLE_DEVICES:0,1 with cgroup-constrained devices"
-				}
-			} elseif {$last_cuda_val == -1} {
-				set last_cuda_val $val
-			} elseif {$last_cuda_val == $val} {
-				incr bad_cuda_val
-			}
-			exp_continue
-		}
-		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number)" {
-			set val $expect_out(2,string)
-			if {$constrain_devices} {
-				if {$val != 0} {
-					fail "Expected CUDA_VISIBLE_DEVICES:0 with cgroup-constrained devices"
-				}
-			} elseif {$last_cuda_val == -1} {
-				set last_cuda_val $val
-			} elseif {$last_cuda_val == $val} {
-				incr bad_cuda_val
-			}
-			exp_continue
-		}
-		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:" {
-			incr bad_cuda_cnt
-			exp_continue
-		}
-		eof {
-			wait
-		}
+	if {[wait_for_file $file_out] != 0} {
+		fail "No output file"
 	}
-	if {$bad_cuda_cnt != 0} {
-		fail "Bad CUDA count for $bad_cuda_cnt of 2 steps"
-	} elseif {$bad_cuda_val != 0} {
-		fail "Duplicate CUDA values for parallel steps 2 steps"
+
+	set output [run_command "$bin_cat $file_out"]
+	set step_2gpu [lreplace [regexp -inline "STEP_ID:$number CUDA_VISIBLE_DEVICES:($number),($number)" $output] 0 0]
+	set step_1gpu [lreplace [regexp -inline -line "STEP_ID:$number CUDA_VISIBLE_DEVICES:($number$)" $output] 0 0]
+
+	if {[llength $step_1gpu] != 1 || [llength $step_2gpu] != 2} {
+		fail "Error parsing output fail to obtain all GPUs index ([llength $step_1gpu] != 1 || [llength $step_2gpu] != 2)"
+	}
+
+	if {$constrain_devices} {
+		subtest {[lindex $step_2gpu 0] == 0 && $step_1gpu == 0} "Verify that if devices are constrained CUDA_VISIBLE_DEVICES start always with 0 in a step"
+	} else {
+		subtest {[lsearch $step_2gpu $step_1gpu] == -1} "Verify that if devices are NOT constrained, all CUDA_VISIBLE_DEVICES are unique"
 	}
 }
 
@@ -434,7 +405,7 @@ if {$gpu_cnt > 2} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N1 -n3 -t1 -o $file_out -J $test_name $file_in1
@@ -538,7 +509,7 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n6 -t1 -o $file_out -J $test_name $file_in1
@@ -643,7 +614,7 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n6 -t1 -o $file_out -J $test_name $file_in1
@@ -725,7 +696,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n4 -t1 -o $file_out -J $test_name $file_in1
@@ -838,7 +809,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n5 -t1 -o $file_out -J $test_name $file_in1
@@ -929,7 +900,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n5 -t1 -o $file_out -J $test_name $file_in1
