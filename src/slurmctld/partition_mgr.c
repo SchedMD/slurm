@@ -924,6 +924,7 @@ static void _list_delete_part(void *part_entry)
 	xfree(part_ptr->name);
 	xfree(part_ptr->orig_nodes);
 	xfree(part_ptr->nodes);
+	xfree(part_ptr->nodesets);
 	FREE_NULL_BITMAP(part_ptr->node_bitmap);
 	xfree(part_ptr->qos_char);
 	xfree(part_ptr->tres_cnt);
