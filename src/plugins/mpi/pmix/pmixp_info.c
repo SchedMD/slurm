@@ -54,8 +54,6 @@ static bool _srv_use_direct_conn_early = false;
 static bool _srv_same_arch = true;
 #ifdef HAVE_UCX
 static bool _srv_use_direct_conn_ucx = true;
-#else
-static bool _srv_use_direct_conn_ucx = false;
 #endif
 static int _srv_fence_coll_type = PMIXP_COLL_TYPE_FENCE_MAX;
 static bool _srv_fence_coll_barrier = false;
@@ -98,10 +96,11 @@ bool pmixp_info_srv_direct_conn(void){
 bool pmixp_info_srv_direct_conn_early(void){
 	return _srv_use_direct_conn_early && _srv_use_direct_conn;
 }
-
+#ifdef HAVE_UCX
 bool pmixp_info_srv_direct_conn_ucx(void){
 	return _srv_use_direct_conn_ucx && _srv_use_direct_conn;
 }
+#endif
 
 int pmixp_info_srv_fence_coll_type(void)
 {

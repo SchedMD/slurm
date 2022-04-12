@@ -36,7 +36,9 @@
 
 #include "pmixp_dconn.h"
 #include "pmixp_dconn_tcp.h"
+#ifdef HAVE_UCX
 #include "pmixp_dconn_ucx.h"
+#endif
 
 pmixp_dconn_t *_pmixp_dconn_conns = NULL;
 uint32_t _pmixp_dconn_conn_cnt = 0;

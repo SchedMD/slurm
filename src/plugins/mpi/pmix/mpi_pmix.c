@@ -49,7 +49,6 @@
 #include "pmixp_debug.h"
 #include "pmixp_agent.h"
 #include "pmixp_info.h"
-#include "pmixp_dconn_ucx.h"
 #include "pmixp_client.h"
 
 /*
