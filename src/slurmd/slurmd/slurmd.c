@@ -1005,8 +1005,14 @@ _read_config(void)
 	 * for scheduling before these nodes check in.
 	 */
 	config_overrides = cf->conf_flags & CTL_CONF_OR;
-	if (conf->dynamic_type) {
+	if (conf->dynamic_type & DYN_NODE_FUTURE) {
 		/* Already set to actual config earlier in _dynamic_init() */
+	} else if (conf->dynamic_type & DYN_NODE_NORM) {
+		conf->cpus = conf->conf_cpus;
+		conf->boards = conf->conf_boards;
+		conf->sockets = conf->conf_sockets;
+		conf->cores = conf->conf_cores;
+		conf->threads = conf->conf_threads;
 	} else if (!config_overrides && (conf->actual_cpus < conf->conf_cpus)) {
 		conf->cpus    = conf->actual_cpus;
 		conf->boards  = conf->actual_boards;
@@ -1735,14 +1741,8 @@ fini:
 static void _valididate_dynamic_conf(void)
 {
 	char *invalid_opts[] = {
-		"Boards=",
-		"CPUs=",
-		"CoresPerSocket=",
 		"NodeName=",
 		"Port=", /* Must use SlurmdPort, alias_list doesn't pass port */
-		"RealMemory=",
-		"SocketsPerBoard=",
-		"ThreadsPerCore=",
 		NULL
 	};
 
@@ -1810,14 +1810,28 @@ static void _dynamic_init(void)
 
 		_valididate_dynamic_conf();
 
-		tmp = xstrdup_printf(
-			"NodeName=%s CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u ThreadsPerCore=%u RealMemory=%"PRIu64" %s\n",
-			conf->node_name,
-			conf->actual_cpus, conf->actual_boards,
-			(conf->actual_sockets / conf->actual_boards),
-			conf->actual_cores, conf->actual_threads,
-			conf->real_memory_size,
-			conf->dynamic_conf ? conf->dynamic_conf : "");
+		tmp = xstrdup_printf("NodeName=%s ", conf->node_name);
+		if (xstrcasestr(conf->dynamic_conf, "CPUs=") ||
+		    xstrcasestr(conf->dynamic_conf, "Boards=") ||
+		    xstrcasestr(conf->dynamic_conf, "SocketsPerBoard=") ||
+		    xstrcasestr(conf->dynamic_conf, "CoresPerSocket=") ||
+		    xstrcasestr(conf->dynamic_conf, "ThreadsPerCore=")) {
+			/* Using what the user gave */
+		} else {
+			xstrfmtcat(tmp, "CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u ThreadsPerCore=%u ",
+				conf->actual_cpus,
+				conf->actual_boards,
+				(conf->actual_sockets / conf->actual_boards),
+				conf->actual_cores,
+				conf->actual_threads);
+		}
+
+		if (!xstrcasestr(conf->dynamic_conf, "RealMemory="))
+			xstrfmtcat(tmp, "RealMemory=%"PRIu64" ",
+				   conf->real_memory_size);
+
+		if (conf->dynamic_conf)
+			xstrcat(tmp, conf->dynamic_conf);
 
 		xfree(conf->dynamic_conf);
 		conf->dynamic_conf = tmp;
