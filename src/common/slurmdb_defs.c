@@ -3682,16 +3682,17 @@ extern char *slurmdb_format_tres_str(
 		if (tmp_str[0] >= '0' && tmp_str[0] <= '9') {
 			int id = atoi(tmp_str);
 			if (id <= 0) {
-				error("slurmdb_format_tres_str: "
-				      "no id found at %s instead", tmp_str);
-				goto get_next;
+				error("%s: cannot convert %s to ID.",
+				      __func__, tmp_str);
+				return NULL;
 			}
+
 			if (!(tres_rec = list_find_first(
 				      full_tres_list, slurmdb_find_tres_in_list,
 				      &id))) {
-				debug("slurmdb_format_tres_str: "
-				      "No tres known by id %d", id);
-				goto get_next;
+				error("%s: no TRES known by id %d",
+				      __func__, id);
+				return NULL;
 			}
 		} else {
 			int end = 0;
@@ -3703,27 +3704,26 @@ extern char *slurmdb_format_tres_str(
 				end++;
 			}
 			if (!tmp_str[end]) {
-				error("slurmdb_format_tres_str: "
-				      "no id found at %s instead", tmp_str);
-				goto get_next;
+				error("%s: no TRES id found for %s",
+				      __func__, tmp_str);
+				return NULL;
 			}
 			tres_name = xstrndup(tmp_str, end);
 			if (!(tres_rec = list_find_first(
 				      full_tres_list,
 				      slurmdb_find_tres_in_list_by_type,
 				      tres_name))) {
-				debug("slurmdb_format_tres_str: "
-				      "No tres known by type %s", tres_name);
+				error("%s: no TRES known by type %s",
+				      __func__, tres_name);
 				xfree(tres_name);
-				goto get_next;
+				return NULL;
 			}
 			xfree(tres_name);
 		}
 
 		if (!(tmp_str = strchr(tmp_str, '='))) {
-			error("slurmdb_format_tres_str: "
-			      "no value found");
-			break;
+			error("%s: no value given as TRES type/id.", __func__);
+			return NULL;
 		}
 		count = strtoull(++tmp_str, &val_unit, 10);
 		if (val_unit && *val_unit != ',' && *val_unit != '\0' &&
@@ -3748,7 +3748,6 @@ extern char *slurmdb_format_tres_str(
 				   tres_rec->name ? "/" : "",
 				   tres_rec->name ? tres_rec->name : "",
 				   count);
-	get_next:
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;
 		tmp_str++;

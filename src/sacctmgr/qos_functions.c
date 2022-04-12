@@ -342,7 +342,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "GrpTRESMins",
 					 MAX(command_len, 8))) {
 			sacctmgr_initialize_g_tres_list();
@@ -354,7 +355,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "GrpTRESRunMins",
 					 MAX(command_len, 8))) {
 			sacctmgr_initialize_g_tres_list();
@@ -366,7 +368,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "GrpWall",
 					 MAX(command_len, 4))) {
 			mins = time_str2mins(argv[i]+end);
@@ -504,7 +507,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "MaxTRESPerJob",
 					 MAX(command_len, 7))) {
 			sacctmgr_initialize_g_tres_list();
@@ -516,7 +520,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "MaxTRESPerNode",
 					 MAX(command_len, 11))) {
 			sacctmgr_initialize_g_tres_list();
@@ -528,7 +533,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "MaxTRESPerUser",
 					 MAX(command_len, 11)) ||
 			   !xstrncasecmp(argv[i], "MaxTRESPU",
@@ -542,7 +548,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "MaxTRESMinsPerJob",
 					 MAX(command_len, 8))) {
 			sacctmgr_initialize_g_tres_list();
@@ -554,7 +561,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "MaxTRESRunMinsPA",
 					 MAX(command_len, 16))) {
 			sacctmgr_initialize_g_tres_list();
@@ -566,7 +574,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "MaxTRESRunMinsPU",
 					 MAX(command_len, 8))) {
 			sacctmgr_initialize_g_tres_list();
@@ -578,7 +587,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "MaxWallDurationPerJob",
 					 MAX(command_len, 4))) {
 			mins = time_str2mins(argv[i]+end);
@@ -619,7 +629,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				set = 1;
 				xfree(tmp_char);
-			}
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "PreemptMode",
 					 MAX(command_len, 8))) {
 			qos->preempt_mode = preempt_mode_num(argv[i]+end);

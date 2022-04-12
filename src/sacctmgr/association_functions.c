@@ -435,7 +435,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				tres_flags);
 			set = 1;
 			xfree(tmp_char);
-		}
+		} else
+			exit_code = 1;
 	} else if (!xstrncasecmp(type, "GrpTRESMins", MAX(command_len, 8))) {
 		sacctmgr_initialize_g_tres_list();
 
@@ -446,7 +447,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				tres_flags);
 			set = 1;
 			xfree(tmp_char);
-		}
+		} else
+			exit_code = 1;
 	} else if (!xstrncasecmp(type, "GrpTRESRunMins", MAX(command_len, 8))) {
 		sacctmgr_initialize_g_tres_list();
 
@@ -457,7 +459,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				tres_flags);
 			set = 1;
 			xfree(tmp_char);
-		}
+		} else
+			exit_code = 1;
 	} else if (!xstrncasecmp(type, "GrpWall", MAX(command_len, 4))) {
 		mins = time_str2mins(value);
 		if (mins != NO_VAL) {
@@ -540,7 +543,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				tres_flags);
 			set = 1;
 			xfree(tmp_char);
-		}
+		} else
+			exit_code = 1;
 	} else if (!xstrncasecmp(type, "MaxTRESPerNode", MAX(command_len, 11))) {
 		sacctmgr_initialize_g_tres_list();
 
@@ -551,7 +555,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				tres_flags);
 			set = 1;
 			xfree(tmp_char);
-		}
+		} else
+			exit_code = 1;
 	} else if (!xstrncasecmp(type, "MaxTRESMinsPerJob",
 				MAX(command_len, 8))) {
 		sacctmgr_initialize_g_tres_list();
@@ -563,7 +568,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				tres_flags);
 			set = 1;
 			xfree(tmp_char);
-		}
+		} else
+			exit_code = 1;
 	} else if (!xstrncasecmp(type, "MaxTRESRunMins", MAX(command_len, 8))) {
 		sacctmgr_initialize_g_tres_list();
 
@@ -574,7 +580,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				tres_flags);
 			set = 1;
 			xfree(tmp_char);
-		}
+		} else
+			exit_code = 1;
 	} else if (!xstrncasecmp(type, "MaxWallDurationPerJob",
 				MAX(command_len, 4))) {
 		mins = time_str2mins(value);

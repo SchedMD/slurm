@@ -210,6 +210,7 @@ documents those changes that are of interest to users and administrators.
  -- scrontab - On errors, print 1-index line numbers instead of 0-indexing them.
  -- openapi/dbv0.0.38 - Correct OpenAPI specification for diag request.
  -- openapi/dbv0.0.38 - reject requests with incorrect TRES specification.
+ -- sacctmgr - reject requests with incorrect TRES specification.
 
 * Changes in Slurm 21.08.8
 ==========================
