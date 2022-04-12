@@ -95,6 +95,7 @@
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_mcs.h"
+#include "src/common/slurm_mpi.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -373,6 +374,8 @@ main (int argc, char **argv)
 		fatal("Unable to initialize switch plugin.");
 	if (node_features_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize node_features plugin");
+	if (mpi_g_daemon_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize MPI plugins.");
 	file_bcast_init();
 	run_command_init();
 
@@ -1209,6 +1212,9 @@ _reconfigure(void)
 
 	/* reconfigure energy */
 	acct_gather_energy_g_set_data(ENERGY_DATA_RECONFIG, NULL);
+
+	if (mpi_g_daemon_reconfig() != SLURM_SUCCESS)
+		fatal("Failed reconfigure MPI plugins.");
 
 	/*
 	 * XXX: reopen slurmd port?
@@ -2094,6 +2100,7 @@ static int
 _slurmd_fini(void)
 {
 	assoc_mgr_fini(false);
+	mpi_fini();
 	node_features_g_fini();
 	core_spec_g_fini();
 	jobacct_gather_fini();

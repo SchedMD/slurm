@@ -522,6 +522,26 @@ extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 	return (*(ops[0].client_fini))(state);
 }
 
+extern int mpi_g_daemon_init(void)
+{
+	return _mpi_init(NULL);
+}
+
+extern int mpi_g_daemon_reconfig(void)
+{
+	int rc;
+
+	slurm_mutex_lock(&context_lock);
+
+	if (g_context)
+		_mpi_fini_locked();
+
+	rc = _mpi_init_locked(NULL);
+
+	slurm_mutex_unlock(&context_lock);
+	return rc;
+}
+
 extern int mpi_fini(void)
 {
 	int rc = SLURM_SUCCESS;

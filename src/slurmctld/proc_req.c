@@ -74,6 +74,7 @@
 #include "src/common/slurm_ext_sensors.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_mpi.h"
 #include "src/common/slurm_persist_conn.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
@@ -3323,6 +3324,13 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		assoc_mgr_set_missing_uids();
 		slurmscriptd_reconfig();
 		start_power_mgr(&slurmctld_config.thread_id_power);
+		if (mpi_g_daemon_reconfig() != SLURM_SUCCESS) {
+			if (test_config) {
+				error("Failed to reconfigure MPI plugins.");
+				test_config_rc = 1;
+			} else
+				fatal("Failed to reconfigure MPI plugins.");
+		}
 		trigger_reconfig();
 	}
 	END_TIMER2("_slurm_rpc_reconfigure_controller");

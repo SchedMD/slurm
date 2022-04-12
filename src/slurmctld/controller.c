@@ -80,6 +80,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_mcs.h"
+#include "src/common/slurm_mpi.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -577,6 +578,13 @@ int main(int argc, char **argv)
 			fatal("failed to initialize node_features plugin");
 		}
 	}
+	if (mpi_g_daemon_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("Failed to initialize MPI plugins.");
+			test_config_rc = 1;
+		} else
+			fatal("Failed to initialize MPI plugins.");
+	}
 	agent_init();
 
 	while (1) {
@@ -880,6 +888,7 @@ int main(int argc, char **argv)
 	job_fini();
 	part_fini();	/* part_fini() must precede node_fini() */
 	node_fini();
+	mpi_fini();
 	node_features_g_fini();
 	purge_front_end_state();
 	resv_fini();
@@ -1102,6 +1111,13 @@ static void _reconfigure_slurm(void)
 	assoc_mgr_set_missing_uids();
 	slurmscriptd_reconfig();
 	start_power_mgr(&slurmctld_config.thread_id_power);
+	if (mpi_g_daemon_reconfig() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("Failed to reconfigure MPI plugins.");
+			test_config_rc = 1;
+		} else
+			fatal("Failed to reconfigure MPI plugins.");
+	}
 	trigger_reconfig();
 	priority_g_reconfig(true);	/* notify priority plugin too */
 	save_all_state();		/* Has own locking */

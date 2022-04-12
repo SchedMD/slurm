@@ -138,6 +138,12 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 /* Call the plugin mpi_p_client_fini() function. */
 extern int mpi_g_client_fini(mpi_plugin_client_state_t *state);
 
+/* Initialize all available plugins, read and set their config from mpi.conf. */
+extern int mpi_g_daemon_init(void);
+
+/* Fini and init in sequence */
+extern int mpi_g_daemon_reconfig(void);
+
 /* Tear down things in the MPI plugin */
 extern int mpi_fini(void);
 
