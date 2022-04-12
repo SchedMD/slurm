@@ -56,6 +56,11 @@ typedef struct slurm_mpi_ops {
 	int (*client_fini)(mpi_plugin_client_state_t *state);
 	mpi_plugin_client_state_t *(*client_prelaunch)(
 		const mpi_plugin_client_info_t *job, char ***env);
+	s_p_hashtbl_t *(*conf_get)(void);
+	List (*conf_get_printable)(void);
+	void (*conf_options)(s_p_options_t **full_options,
+			     int *full_options_cnt);
+	void (*conf_set)(s_p_hashtbl_t *tbl);
 	int (*slurmstepd_prefork)(const stepd_step_rec_t *job, char ***env);
 	int (*slurmstepd_task)(const mpi_plugin_task_info_t *job, char ***env);
 } slurm_mpi_ops_t;
@@ -67,6 +72,10 @@ typedef struct slurm_mpi_ops {
 static const char *syms[] = {
 	"mpi_p_client_fini",
 	"mpi_p_client_prelaunch",
+	"mpi_p_conf_get",
+	"mpi_p_conf_get_printable",
+	"mpi_p_conf_options",
+	"mpi_p_conf_set",
 	"mpi_p_slurmstepd_prefork",
 	"mpi_p_slurmstepd_task"
 };

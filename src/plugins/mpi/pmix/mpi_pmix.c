@@ -256,3 +256,21 @@ extern int mpi_p_client_fini(void)
 	xfree(process_mapping);
 	return pmixp_abort_agent_stop();
 }
+
+extern void mpi_p_conf_options(s_p_options_t **full_options, int *full_opt_cnt)
+{
+}
+
+extern void mpi_p_conf_set(s_p_hashtbl_t *tbl)
+{
+}
+
+extern s_p_hashtbl_t *mpi_p_conf_get(void)
+{
+	return NULL;
+}
+
+extern List mpi_p_conf_get_printable(void)
+{
+	return NULL;
+}

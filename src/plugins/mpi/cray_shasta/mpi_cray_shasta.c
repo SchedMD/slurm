@@ -295,3 +295,21 @@ extern int fini(void)
 
 	return SLURM_SUCCESS;
 }
+
+extern void mpi_p_conf_options(s_p_options_t **full_options, int *full_opt_cnt)
+{
+}
+
+extern void mpi_p_conf_set(s_p_hashtbl_t *tbl)
+{
+}
+
+extern s_p_hashtbl_t *mpi_p_conf_get(void)
+{
+	return NULL;
+}
+
+extern List mpi_p_conf_get_printable(void)
+{
+	return NULL;
+}
