@@ -4367,39 +4367,12 @@ extern int kill_running_job_by_node_name(char *node_name)
 extern void excise_node_from_job(job_record_t *job_ptr,
 				 node_record_t *node_ptr)
 {
-	int i, i_first, i_last, orig_pos = -1, new_pos = -1;
-	bitstr_t *orig_bitmap;
-
-	orig_bitmap = bit_copy(job_ptr->node_bitmap);
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
 	xfree(job_ptr->nodes);
 	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
-	i_first = bit_ffs(orig_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(orig_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(orig_bitmap,i))
-			continue;
-		orig_pos++;
-		if (!bit_test(job_ptr->node_bitmap, i))
-			continue;
-		new_pos++;
-		if (orig_pos == new_pos)
-			continue;
-		memcpy(&job_ptr->node_addr[new_pos],
-		       &job_ptr->node_addr[orig_pos], sizeof(slurm_addr_t));
-		/*
-		 * NOTE: The job's allocation in the job_ptr->job_resrcs
-		 * data structure is unchanged  even after a node allocated
-		 * to the job goes DOWN.
-		 */
-	}
 
-	job_ptr->total_nodes = job_ptr->node_cnt = new_pos + 1;
+	job_ptr->total_nodes = job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
 
-	FREE_NULL_BITMAP(orig_bitmap);
 	(void) select_g_job_resized(job_ptr, node_ptr);
 }
 
@@ -4817,7 +4790,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->mcs_label = xstrdup(job_ptr->mcs_label);
 	job_ptr_pend->name = xstrdup(job_ptr->name);
 	job_ptr_pend->network = xstrdup(job_ptr->network);
-	job_ptr_pend->node_addr = NULL;
 	job_ptr_pend->node_bitmap = NULL;
 	job_ptr_pend->node_bitmap_cg = NULL;
 	job_ptr_pend->node_bitmap_pr = NULL;
@@ -9939,7 +9911,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->mem_per_tres);
 	xfree(job_ptr->name);
 	xfree(job_ptr->network);
-	xfree(job_ptr->node_addr);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
