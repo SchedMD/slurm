@@ -69,3 +69,15 @@ AC_DEFUN([X_AC_BPF], [
 
   AM_CONDITIONAL(WITH_BPF, test -n "$x_ac_cv_bpf_dir")
 ])
+
+AC_DEFUN([X_AC_DBUS],
+[
+       PKG_CHECK_MODULES([dbus], [dbus-1],
+                         [x_ac_have_dbus="yes"],
+                         [x_ac_have_dbus="no"])
+       AC_MSG_RESULT([$x_ac_have_dbus, ${x_ac_dbus_pkg_name} was found.])
+       AM_CONDITIONAL(WITH_DBUS, test "x$x_ac_have_dbus" = "xyes")
+       if test "x$x_ac_have_dbus" = "xno"; then
+          AC_MSG_WARN([unable to link against dbus-1 libraries required for cgroup/v2])
+       fi
+])
