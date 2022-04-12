@@ -1250,7 +1250,7 @@ extern int select_p_job_init(List job_list)
 extern int select_p_node_init()
 {
 	select_nodeinfo_t *nodeinfo = NULL;
-	node_record_t *node_rec;
+	node_record_t *node_ptr;
 	int i, j, rc;
 	uint64_t blade_id = 0;
 	DEF_TIMERS;
@@ -1298,20 +1298,20 @@ extern int select_p_node_init()
 	if (!blade_nodes_running_npc)
 		blade_nodes_running_npc = bit_alloc(node_record_count);
 
-	for (i = 0; (node_rec = next_node(&i));) {
-		if (!node_rec->select_nodeinfo)
-			node_rec->select_nodeinfo =
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		if (!node_ptr->select_nodeinfo)
+			node_ptr->select_nodeinfo =
 				select_g_select_nodeinfo_alloc();
-		nodeinfo = node_rec->select_nodeinfo->data;
+		nodeinfo = node_ptr->select_nodeinfo->data;
 		if (nodeinfo->nid == NO_VAL) {
 			char *nid_char;
 
-			if (!(nid_char = strpbrk(node_rec->name,
+			if (!(nid_char = strpbrk(node_ptr->name,
 						 "0123456789"))) {
 				error("(%s: %d: %s) Error: Node was not "
 				      "recognizable: %s",
 				      THIS_FILE, __LINE__, __func__,
-				      node_rec->name);
+				      node_ptr->name);
 				slurm_mutex_unlock(&blade_mutex);
 				return SLURM_ERROR;
 			}
@@ -1343,12 +1343,12 @@ extern int select_p_node_init()
 				     nn, topology[nn].nid);
 			}
 			fatal("Node %s(%d) isn't found in the ALPS system topoloogy table",
-			      node_rec->name, nodeinfo->nid);
+			      node_ptr->name, nodeinfo->nid);
 		} else if (!found) {
 			end_nn = last_nn;
 			last_nn = 0;
 			debug2("starting again looking for %s(%u)",
-			       node_rec->name, nodeinfo->nid);
+			       node_ptr->name, nodeinfo->nid);
 			goto start_again;
 		}
 #else
@@ -1371,7 +1371,7 @@ extern int select_p_node_init()
 		blade_array[j].id = blade_id;
 
 		debug2("got %s(%u) blade %u %"PRIu64" %"PRIu64" %d %d %d",
-		       node_rec->name, nodeinfo->nid, nodeinfo->blade_id,
+		       node_ptr->name, nodeinfo->nid, nodeinfo->blade_id,
 		       blade_id, blade_array[nodeinfo->blade_id].id,
 		       GET_BLADE_X(blade_array[nodeinfo->blade_id].id),
 		       GET_BLADE_Y(blade_array[nodeinfo->blade_id].id),
