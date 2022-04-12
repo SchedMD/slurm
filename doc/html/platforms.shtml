@@ -2,7 +2,6 @@
 
 <h1>Platforms</h1>
 <h2 id="os">Operating Systems<a class="slurm_link" href="#os"></a></h2>
-<p>
 <ul>
 <li><b>FreeBSD</b> &mdash; Limited support, not actively tested.</li>
 <li><b>Linux</b> &mdash; Slurm has been thoroughly tested on most popular Linux
@@ -15,7 +14,7 @@ Currently supported distributions include:
 <li>Debian (jessie, stretch, buster, and newer)</li>
 <li>RedHat Enterprise Linux 6 (RHEL6), CentOS 6, Scientific Linux 6 (deprecated, and will be removed in a future release)</li>
 <li>RedHat Enterprise Linux 7 (RHEL7), CentOS 7, Scientific Linux 7</li>
-<li>RedHat Enterprise Linux 8 (RHEL7), CentOS 8 (and newer)</li>
+<li>RedHat Enterprise Linux 8 (RHEL8), CentOS 8 (and newer)</li>
 <li>SUSE Linux Enterprise Server (SLES) 12 (and newer)</li>
 <li>Ubuntu (16.04, 18.04, and newer)</li>
 </ul>
@@ -25,7 +24,6 @@ Currently supported distributions include:
 currently. It should be possible to fix this with some adjustments to linker
 and compiler flags, and any patches would be appreciated.
 </ul>
-</p>
 
 <h2 id="database">Databases<a class="slurm_link" href="#database"></a></h2>
 <p>Slurm will be built with support for MySQL if it finds supported
@@ -37,13 +35,12 @@ you use a currently supported version of MySQL or MariaDB.
 <h2 id="accel">Accelerators<a class="slurm_link" href="#accel"></a></h2>
 
 <p>Slurm has optional support for managing a variety of accelerator cards.
-Specific plugins have been developed for:
+Specific plugins have been developed for:</p>
 <ul>
 <li>gres/gpu with AutoDetect=nvml &mdash; autodetection of NVIDIA GPUs through their proprietary NVML library (tested on x86_64 and arm64)</li>
 <li>gres/mps &mdash; NVIDIA CUDA Multi-Process Service provides ways to share GPUs between multiple compute processes</li>
 </ul>
-</p>
 
-<p style="text-align:center;">Last modified 2 February 2022</p>
+<p style="text-align:center;">Last modified 8 April 2022</p>
 
 <!--#include virtual="footer.txt"-->
