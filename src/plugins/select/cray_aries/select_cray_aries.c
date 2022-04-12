@@ -1299,7 +1299,8 @@ extern int select_p_node_init(node_record_t **node_ptr, int node_cnt)
 		blade_nodes_running_npc = bit_alloc(node_cnt);
 
 	for (i = 0; i < node_cnt; i++) {
-		node_rec = node_ptr[i];
+		if (!(node_rec = node_ptr[i]))
+			continue;
 		if (!node_rec->select_nodeinfo)
 			node_rec->select_nodeinfo =
 				select_g_select_nodeinfo_alloc();
