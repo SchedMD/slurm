@@ -1633,22 +1633,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 						node_ptr->port =
 							slurm_conf.slurmd_port;
 					}
-					slurm_set_addr(	&node_ptr->slurm_addr,
-							node_ptr->port,
-							node_ptr->comm_name);
-					if (!slurm_addr_is_unspec(
-						&node_ptr->slurm_addr)) {
-						state_val = NODE_STATE_IDLE;
-						bit_clear(future_node_bitmap,
-							  node_inx);
+					state_val = NODE_STATE_IDLE;
+					bit_clear(future_node_bitmap,
+						  node_inx);
 
-						_require_node_reg(node_ptr);
-					} else {
-						error("slurm_set_addr failure "
-						      "on %s",
-		       				      node_ptr->comm_name);
-						state_val = base_state;
-					}
+					_require_node_reg(node_ptr);
 				} else if (node_flags & NODE_STATE_DRAIN) {
 					state_val = base_state;
 					_require_node_reg(node_ptr);
@@ -4582,12 +4571,6 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 			  node_ptr->comm_name,
 			  node_ptr->node_hostname);
 
-	if ((state_val != NODE_STATE_FUTURE) &&
-	     !(state_val & NODE_STATE_CLOUD)) {
-		slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
-			       node_ptr->comm_name);
-	}
-
 	if (config_ptr->feature) {
 		node_ptr->features = xstrdup(config_ptr->feature);
 		node_ptr->features_act = xstrdup(config_ptr->feature);
@@ -4731,9 +4714,6 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 			   comm_name ? comm_name :
 			   xstrdup(reg_msg->node_name),
 			   xstrdup(reg_msg->node_name));
-
-	slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
-		       node_ptr->comm_name);
 
 	node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
 	update_feature_list(avail_feature_list, node_ptr->features,
