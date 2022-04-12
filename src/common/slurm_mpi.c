@@ -172,6 +172,16 @@ static void _log_task_rec(const mpi_plugin_task_info_t *job)
 }
 #endif
 
+static int _match_keys(void *x, void *y)
+{
+	config_key_pair_t *key_pair1 = x, *key_pair2 = y;
+
+	xassert(key_pair1);
+	xassert(key_pair2);
+
+	return !xstrcmp(key_pair1->name, key_pair2->name);
+}
+
 static int _load_plugin(void *x, void *arg)
 {
 	char *plugin_name = x;
@@ -540,6 +550,35 @@ extern int mpi_g_daemon_reconfig(void)
 
 	slurm_mutex_unlock(&context_lock);
 	return rc;
+}
+
+extern List mpi_g_conf_get_printable(void)
+{
+	List opts_list, opts;
+
+	slurm_mutex_lock(&context_lock);
+
+	xassert(g_context);
+	xassert(ops);
+
+	opts_list = list_create(destroy_config_key_pair);
+
+	for (int i = 0; i < g_context_cnt; i++) {
+		opts = (*(ops[i].conf_get_printable))();
+
+		if (opts) {
+			list_transfer_unique(opts_list, _match_keys, opts);
+			FREE_NULL_LIST(opts);
+		}
+	}
+
+	if (!list_count(opts_list))
+		FREE_NULL_LIST(opts_list);
+	else
+		list_sort(opts_list, sort_key_pairs);
+
+	slurm_mutex_unlock(&context_lock);
+	return opts_list;
 }
 
 extern int mpi_fini(void)

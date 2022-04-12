@@ -408,6 +408,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->mcs_plugin          = xstrdup(conf->mcs_plugin);
 	conf_ptr->mcs_plugin_params   = xstrdup(conf->mcs_plugin_params);
 	conf_ptr->min_job_age         = conf->min_job_age;
+	conf_ptr->mpi_conf = mpi_g_conf_get_printable();
 	conf_ptr->mpi_default         = xstrdup(conf->mpi_default);
 	conf_ptr->mpi_params          = xstrdup(conf->mpi_params);
 	conf_ptr->msg_timeout         = conf->msg_timeout;

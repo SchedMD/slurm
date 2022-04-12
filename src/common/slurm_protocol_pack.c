@@ -4053,6 +4053,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->mcs_plugin_params, buffer);
 
 		pack32(build_ptr->min_job_age, buffer);
+		pack_key_pair_list(
+			build_ptr->mpi_conf, protocol_version, buffer);
 		packstr(build_ptr->mpi_default, buffer);
 		packstr(build_ptr->mpi_params, buffer);
 		pack16(build_ptr->msg_timeout, buffer);
@@ -4996,6 +4998,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->mcs_plugin_params,
 		                       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->min_job_age, buffer);
+		if (unpack_key_pair_list(&build_ptr->mpi_conf, protocol_version,
+					 buffer) != SLURM_SUCCESS)
+			goto unpack_error;
 		safe_unpackstr_xmalloc(&build_ptr->mpi_default,
 		                       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->mpi_params,

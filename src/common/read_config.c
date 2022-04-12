@@ -2910,6 +2910,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->mail_prog);
 	xfree (ctl_conf_ptr->mcs_plugin);
 	xfree (ctl_conf_ptr->mcs_plugin_params);
+	FREE_NULL_LIST(ctl_conf_ptr->mpi_conf);
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
 	FREE_NULL_LIST(ctl_conf_ptr->node_features_conf);
@@ -3083,6 +3084,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree(ctl_conf_ptr->mcs_plugin_params);
 	ctl_conf_ptr->job_acct_oom_kill         = false;
 	ctl_conf_ptr->min_job_age = NO_VAL;
+	FREE_NULL_LIST(ctl_conf_ptr->mpi_conf);
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
 	ctl_conf_ptr->msg_timeout		= NO_VAL16;

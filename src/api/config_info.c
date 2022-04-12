@@ -492,6 +492,8 @@ void slurm_print_ctl_conf ( FILE* out,
 
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->ext_sensors_conf,
 			      "\nExternal Sensors Configuration:\n");
+	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->mpi_conf,
+			      "\nMPI Plugins Configuration:\n");
 
 	xstrcat(tmp2_str, "\nNode Features Configuration:");
 	_print_config_plugin_params_list(out,

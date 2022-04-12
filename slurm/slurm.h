@@ -2885,6 +2885,7 @@ typedef struct {
 	char *mcs_plugin_params; /* mcs plugin parameters */
 	uint32_t min_job_age;	/* COMPLETED jobs over this age (secs)
 				 * purged from in memory records */
+	void *mpi_conf;		/* MPI support config file */
 	char *mpi_default;	/* Default version of MPI in use */
 	char *mpi_params;	/* MPI parameters */
 	uint16_t msg_timeout;	/* message timeout */
