@@ -40,9 +40,12 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "src/common/env.h"
 #include "src/common/macros.h"
+#include "src/common/pack.h"
+#include "src/common/parse_config.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
@@ -87,6 +90,7 @@ static const char *syms[] = {
 static char *mpi_char = "mpi";
 static slurm_mpi_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
+static buf_t **mpi_confs = NULL;
 static int g_context_cnt = 0;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
@@ -190,6 +194,15 @@ static int _mpi_fini_locked(void)
 
 	init_run = false;
 
+	/* Conf cleanup */
+	if (mpi_confs) {
+		for (int i = 0; i < g_context_cnt; i++)
+			FREE_NULL_BUFFER(mpi_confs[i]);
+
+		xfree(mpi_confs);
+	}
+
+	/* Plugin cleanup */
 	for (int i = 0; i < g_context_cnt; i++)
 		if ((rc =
 		     plugin_context_destroy(g_context[i])) != SLURM_SUCCESS)
@@ -204,8 +217,14 @@ static int _mpi_fini_locked(void)
 
 static int _mpi_init_locked(char **mpi_type)
 {
-	int plugin_cnt = 0;
+	int count = 0, *opts_cnt;
 	List plugin_names;
+	s_p_hashtbl_t **all_tbls, *tbl;
+	s_p_options_t **opts;
+	char *conf_path;
+	struct stat buf;
+
+	/* Plugin load */
 
 	/* NULL in the double pointer means load all, otherwise load just one */
 	if (mpi_type) {
@@ -243,9 +262,9 @@ static int _mpi_init_locked(char **mpi_type)
 	}
 
 	/* Iterate and load */
-	if (plugin_names && (plugin_cnt = list_count(plugin_names))) {
-		ops = xcalloc(plugin_cnt, sizeof(*ops));
-		g_context = xcalloc(plugin_cnt, sizeof(*g_context));
+	if (plugin_names && (count = list_count(plugin_names))) {
+		ops = xcalloc(count, sizeof(*ops));
+		g_context = xcalloc(count, sizeof(*g_context));
 
 		list_for_each(plugin_names, _load_plugin, NULL);
 	}
@@ -255,12 +274,125 @@ static int _mpi_init_locked(char **mpi_type)
 		/* No plugin could load: clean */
 		_mpi_fini_locked();
 		return SLURM_ERROR;
-	} else if (g_context_cnt < plugin_cnt) {
+	} else if (g_context_cnt < count) {
 		/* Some could load but not all: shrink */
 		xrecalloc(ops, g_context_cnt, sizeof(*ops));
 		xrecalloc(g_context, g_context_cnt, sizeof(*g_context));
 	} else if (mpi_type)
 		setenvf(NULL, "SLURM_MPI_TYPE", "%s", *mpi_type);
+
+	/* Conf load */
+
+	xassert(ops);
+	/* Stepd section, else daemons section */
+	if (mpi_type) {
+		/* Unpack & load the plugin with received config from slurmd */
+		if (mpi_confs) {
+			xassert(mpi_confs[0]);
+
+			if ((tbl = s_p_unpack_hashtbl(mpi_confs[0]))) {
+				(*(ops[0].conf_set))(tbl);
+				s_p_hashtbl_destroy(tbl);
+			} else {
+				s_p_hashtbl_destroy(tbl);
+				_mpi_fini_locked();
+				error("MPI: Unable to unpack config for %s.",
+				      *mpi_type);
+				return SLURM_ERROR;
+			}
+		}
+		/* If no config, continue with default values */
+	} else {
+		/* Read config from file and apply to all loaded plugin(s) */
+		opts = xcalloc(g_context_cnt, sizeof(*opts));
+		opts_cnt = xcalloc(g_context_cnt, sizeof(*opts_cnt));
+		all_tbls = xcalloc(g_context_cnt, sizeof(*all_tbls));
+
+		/* Get options from all plugins */
+		for (int i = 0; i < g_context_cnt; i++) {
+			(*(ops[i].conf_options))(&opts[i], &opts_cnt[i]);
+			if (!opts[i])
+				continue;
+
+			/*
+			 * For the NULL at the end. Just in case the plugin
+			 * forgot to add it.
+			 */
+			xrealloc(opts[i], ((opts_cnt[i] + 1) * sizeof(**opts)));
+
+			all_tbls[i] = s_p_hashtbl_create(opts[i]);
+		}
+
+		/* Read mpi.conf and fetch only values from plugins' options */
+		if (!(conf_path = get_extra_conf_path("mpi.conf")) ||
+		    stat(conf_path, &buf))
+			debug2("No mpi.conf file (%s)", conf_path);
+		else {
+			debug2("Reading mpi.conf file (%s)", conf_path);
+			for (int i = 0; i < g_context_cnt; i++) {
+				if (!all_tbls[i])
+					continue;
+				if (s_p_parse_file(all_tbls[i],
+						   NULL, conf_path,
+						   true, NULL) != SLURM_SUCCESS)
+					/*
+					 * conf_path can't be freed: It's needed
+					 * by fatal and fatal will exit
+					 */
+					fatal("Could not open/read/parse "
+					      "mpi.conf file %s. Many times "
+					      "this is because you have "
+					      "defined options for plugins "
+					      "that are not loaded. Please "
+					      "check your slurm.conf file and "
+					      "make sure the plugins for the "
+					      "options listed are loaded.",
+					      conf_path);
+			}
+		}
+
+		xfree(conf_path);
+
+		mpi_confs = xcalloc(g_context_cnt, sizeof(*mpi_confs));
+		count = 0;
+
+		/* Validate and set values for affected options */
+		for (int i = 0; i < g_context_cnt; i++) {
+			/* Check plugin accepts specified values for configs */
+			(*(ops[i].conf_set))(all_tbls[i]);
+
+			/*
+			 * Pack the config for later usage. If plugin config
+			 * table exists, pack it. If it doesn't exist,
+			 * mpi_confs[i] is NULL.
+			 */
+			if ((tbl = (*(ops[i].conf_get))())) {
+				mpi_confs[i] = s_p_pack_hashtbl(tbl, opts[i],
+								opts_cnt[i]);
+				if (mpi_confs[i]) {
+					if (get_buf_offset(mpi_confs[i]))
+						count++;
+					else
+						FREE_NULL_BUFFER(mpi_confs[i]);
+				}
+				s_p_hashtbl_destroy(tbl);
+			}
+		}
+		/* No plugin has config, clean it */
+		if (!count)
+			xfree(mpi_confs);
+
+		/* Cleanup for temporal variables */
+		for (int i = 0; i < g_context_cnt; i++) {
+			for (int j = 0; j < opts_cnt[i]; j++)
+				xfree(opts[i][j].key);
+			xfree(opts[i]);
+			s_p_hashtbl_destroy(all_tbls[i]);
+		}
+		xfree(opts);
+		xfree(opts_cnt);
+		xfree(all_tbls);
+	}
 
 	init_run = true;
 
