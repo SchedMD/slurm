@@ -1049,6 +1049,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
@@ -1102,6 +1105,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
@@ -1151,6 +1157,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
@@ -1197,6 +1206,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
@@ -1242,6 +1254,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
@@ -1286,6 +1301,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
@@ -1348,6 +1366,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
@@ -1414,6 +1435,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
@@ -1476,6 +1500,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
@@ -1538,6 +1565,9 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
@@ -3291,7 +3321,6 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_HET_JOB_OFFSET,
 		JOB_REQ_DB_INX,
 		JOB_REQ_JOBID,
-		JOB_REQ_KILL_REQUID,
 		JOB_REQ_MOD_TIME,
 		JOB_REQ_NAME,
 		JOB_REQ_PARTITION,
@@ -3323,6 +3352,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_CONSTRAINTS,
 		JOB_REQ_CONTAINER,
 		JOB_REQ_DERIVED_ES,
+		JOB_REQ_KILL_REQUID,
 		JOB_REQ_MCS_LABEL,
 		JOB_REQ_NODELIST,
 		JOB_REQ_NODE_INX,
@@ -3388,6 +3418,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			xstrcat(format, ", %s");
 		else
 			xstrcat(format, ", '%s'");
+		if (object.kill_requid == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
 		if (object.mcs_label == NULL)
 			xstrcat(format, ", %s");
 		else
@@ -3431,7 +3465,6 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			   object.het_job_id,
 			   object.het_job_offset,
 			   object.job_db_inx,
-			   object.jobid,
 			   object.kill_requid,
 			   object.mod_time,
 			   object.name,
@@ -3467,6 +3500,8 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 				"NULL" : object.container,
 			   (object.derived_es == NULL) ?
 				"NULL" : object.derived_es,
+			   (object.kill_requid == NULL) ?
+				"NULL" : object.kill_requid,
 			   (object.mcs_label == NULL) ?
 				"NULL" : object.mcs_label,
 			   (object.nodelist == NULL) ?
