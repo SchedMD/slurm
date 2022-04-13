@@ -75,9 +75,11 @@ static config_response_msg_t *_fetch_parent(pid_t pid)
 
 	if (unpack_config_response_msg(&config, buffer,
 				       SLURM_PROTOCOL_VERSION)) {
+		FREE_NULL_BUFFER(buffer);
 		error("%s: unpack failed", __func__);
 		return NULL;
 	}
+	FREE_NULL_BUFFER(buffer);
 
 	waitpid(pid, &status, 0);
 	debug2("%s: status from child %d", __func__, status);
