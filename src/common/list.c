@@ -345,6 +345,8 @@ int list_transfer(List l, List sub)
  */
 int list_transfer_unique(List l, ListFindF f, List sub)
 {
+	ListNode *pp;
+	void *v;
 	int n = 0;
 
 	xassert(l);
@@ -357,21 +359,20 @@ int list_transfer_unique(List l, ListFindF f, List sub)
 	slurm_rwlock_wrlock(&l->mutex);
 	slurm_rwlock_wrlock(&sub->mutex);
 
-	for (ListNode prev_subp, subp = sub->head; subp;) {
-		/*
-		 * Increase index now.
-		 * If node is destroyed index would be unrecoverable.
-		 */
-		prev_subp = subp;
-		subp = subp->next;
+	pp = &sub->head;
+	while (*pp) {
+		v = (*pp)->data;
 
 		/* Is this element already in destination list? */
-		if (!_list_find_first_locked(l, f, prev_subp->data)) {
+		if (!_list_find_first_locked(l, f, v)) {
 			/* Not found: Transfer the element */
-			_list_append_locked(l, prev_subp->data);
-			_list_node_destroy(sub, &prev_subp);
+			_list_append_locked(l, v);
+			/* Destroy increases index */
+			_list_node_destroy(sub, pp);
 			n++;
-		}
+		} else
+			/* Found: Just increase index */
+			pp = &(*pp)->next;
 	}
 
 	slurm_rwlock_unlock(&sub->mutex);
