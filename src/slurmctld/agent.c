@@ -1855,6 +1855,8 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurm_free_prolog_launch_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_REBOOT_NODES)
 			slurm_free_reboot_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_RECONFIGURE_WITH_CONFIG)
+			slurm_free_config_response_msg(agent_arg_ptr->msg_args);
 		else
 			xfree(agent_arg_ptr->msg_args);
 	}
