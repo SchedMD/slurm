@@ -62,6 +62,7 @@ strong_alias(list_append,	slurm_list_append);
 strong_alias(list_append_list,	slurm_list_append_list);
 strong_alias(list_transfer,	slurm_list_transfer);
 strong_alias(list_transfer_max,	slurm_list_transfer_max);
+strong_alias(list_transfer_unique,	slurm_list_transfer_unieuq);
 strong_alias(list_prepend,	slurm_list_prepend);
 strong_alias(list_find_first,	slurm_list_find_first);
 strong_alias(list_find_first_ro, slurm_list_find_first_ro);

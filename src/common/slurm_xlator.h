@@ -207,6 +207,7 @@
 #define	list_append_list	slurm_list_append_list
 #define	list_transfer		slurm_list_transfer
 #define	list_transfer_max	slurm_list_transfer_max
+#define	list_transfer_unique	slurm_list_transfer_unique
 #define	list_prepend		slurm_list_prepend
 #define	list_find_first		slurm_list_find_first
 #define	list_find_first_ro	slurm_list_find_first_ro
