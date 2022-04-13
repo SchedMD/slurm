@@ -1311,6 +1311,7 @@ _destroy_conf(void)
 		xfree(conf->conf_server);
 		xfree(conf->conf_cache);
 		xfree(conf->cpu_spec_list);
+		xfree(conf->dynamic_conf);
 		xfree(conf->dynamic_feature);
 		xfree(conf->hostname);
 		if (conf->hwloc_xml) {
