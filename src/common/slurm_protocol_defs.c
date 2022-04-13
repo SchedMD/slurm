@@ -1266,6 +1266,7 @@ extern void slurm_free_node_reg_resp_msg(
 	if (!msg)
 		return;
 
+	xfree(msg->node_name);
 	FREE_NULL_LIST(msg->tres_list);
 	xfree(msg);
 }
