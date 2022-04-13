@@ -1830,7 +1830,7 @@ typedef struct job_info {
 	char *sched_nodes;	/* list of nodes scheduled to be used for job */
 	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
 						* process using
-						* slurm_get_select_jobinfo()
+						* select_g_select_jobinfo_*
 						*/
 	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
@@ -2165,7 +2165,7 @@ typedef struct {
 	time_t run_time;	/* net run time (factor out time suspended) */
 	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
 						* process using
-						* slurm_get_select_jobinfo()
+						* select_g_select_jobinfo_*
 						*/
 	char *srun_host;	/* host of srun command */
 	uint32_t srun_pid;	/* PID of srun command */
@@ -2465,7 +2465,7 @@ typedef struct resource_allocation_response_msg {
 	char *resv_name;         /* allocation reservation */
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data structure,
 						 * use
-						 * slurm_get_select_jobinfo()
+						 * select_g_select_jobinfo_*
 						 * to access contents */
 	void *working_cluster_rec; /* Cluster to direct remaining messages to.
 				    * slurmdb_cluster_rec_t* because slurm.h
