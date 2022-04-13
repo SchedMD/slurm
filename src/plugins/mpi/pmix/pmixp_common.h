@@ -55,6 +55,7 @@
  * symbols do not get resolved correctly.
  */
 #include <pmix_server.h>
+#include <pmix.h>
 
 /* Common includes for all source files
  * Define Slurm translator header first to override

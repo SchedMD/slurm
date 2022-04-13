@@ -84,6 +84,8 @@ const char plugin_name[] = "PMIx plugin";
 const char plugin_type[] = "mpi/pmix_v2";
 #elif (HAVE_PMIX_VER == 3)
 const char plugin_type[] = "mpi/pmix_v3";
+#elif (HAVE_PMIX_VER == 4)
+const char plugin_type[] = "mpi/pmix_v4";
 #endif
 
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
@@ -109,6 +111,8 @@ static void *_libpmix_open(void)
 	xstrfmtcat(full_path, "%s/", PMIXP_V2_LIBPATH);
 #elif defined PMIXP_V3_LIBPATH
 	xstrfmtcat(full_path, "%s/", PMIXP_V3_LIBPATH);
+#elif defined PMIXP_V4_LIBPATH
+	xstrfmtcat(full_path, "%s/", PMIXP_V4_LIBPATH);
 #endif
 	xstrfmtcat(full_path, "libpmix.so");
 
