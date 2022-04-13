@@ -377,6 +377,7 @@ static int _slurm_cred_fini(void)
 	return rc;
 }
 
+/* Fill in user information based on what options are enabled. */
 static int _fill_cred_gids(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 {
 	struct passwd pwd, *result;
@@ -805,18 +806,23 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	memcpy(&cred->step_id, &arg->step_id, sizeof(cred->step_id));
 	cred->uid      = arg->uid;
 	cred->gid = gid_from_uid(cred->uid);
+	/*
+	 * pw_name, pw_gecos, pw_dir, pw_shell, pw_ngids, pw_gids, gr_names
+	 * are all filled in below based on arguments in the slurm.conf
+	 */
 	if (_fill_cred_gids(cred, arg) != SLURM_SUCCESS) {
 		slurm_mutex_unlock(&cred->mutex);
 		slurm_cred_destroy(cred);
 		_slurm_cred_fini();
 		return NULL;
 	}
+	/*
+	 * We will skip most of the normal user setup on the node side.  Fill in
+	 * the minimal amount of data regardless of settings to ensure
+	 * everything works (EG: TaskEpilog).
+	 */
 	if (!cred->pw_name)
 		cred->pw_name = uid_to_string_or_null(cred->uid);
-	/*
-	 * If disable_send_gids is set, send gids anyway or TaskEpilog will
-	 * refuse to run.
-	 */
 	if (!enable_send_gids)
 		cred->ngids = group_cache_lookup(arg->uid, arg->gid,
 						 arg->pw_name, &cred->gids);

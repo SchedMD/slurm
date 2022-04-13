@@ -129,7 +129,7 @@ int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
 
 
 /*
- * Container for Slurm credential create and verify arguments
+ * Container for Slurm credential create/fetch/verify arguments
  *
  * The core_bitmap, cores_per_socket, sockets_per_node, and
  * sock_core_rep_count is based upon the nodes allocated to the
@@ -140,15 +140,20 @@ int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
  */
 typedef struct {
 	slurm_step_id_t step_id;
-	uid_t uid;
-	gid_t gid;
-	char *pw_name;
-	char *pw_gecos;
-	char *pw_dir;
-	char *pw_shell;
-	int ngids;
-	gid_t *gids;
-	char **gr_names;
+	uid_t uid; /* user for which the cred is valid */
+	gid_t gid; /* user's primary group id */
+	/*
+	 * These are only used in certain conditions and should not be supplied
+	 * when creating a new credential.  They are defined here so the values
+	 * can be fetched from the credential.
+	 */
+	char *pw_name; /* user_name as a string */
+	char *pw_gecos; /* user information */
+	char *pw_dir; /* home directory */
+	char *pw_shell; /* user program */
+	int ngids; /* number of extended group ids */
+	gid_t *gids; /* extended group ids for user */
+	char **gr_names; /* array of group names matching gids */
 
 	/* job_core_bitmap and step_core_bitmap cover the same set of nodes,
 	 * namely the set of nodes allocated to the job. The core and socket
