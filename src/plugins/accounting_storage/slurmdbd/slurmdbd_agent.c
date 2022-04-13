@@ -258,7 +258,7 @@ static buf_t *_load_dbd_rec(int fd)
 		error("state recover error: %m");
 		return NULL;
 	}
-	if (msg_size > MAX_DBD_MSG_LEN) {
+	if (msg_size > MAX_BUF_SIZE) {
 		error("state recover error, msg_size=%u", msg_size);
 		return NULL;
 	}

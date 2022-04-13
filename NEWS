@@ -215,6 +215,7 @@ documents those changes that are of interest to users and administrators.
     the max possible nofiles in slurmd and slurmdbd.
  -- Fix slurmctld memory leak after a reconfigure with configless.
  -- Fix slurmd memory leak when fetching configless files.
+ -- Allow the DBD agent to load large messages (up to MAX_BUF_SIZE) from state.
 
 * Changes in Slurm 21.08.6
 ==========================
