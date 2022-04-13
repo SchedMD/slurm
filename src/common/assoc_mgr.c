@@ -389,36 +389,35 @@ static void _normalize_assoc_shares_traditional(
 	}
 }
 
-
-static int _addto_used_info(slurmdb_assoc_rec_t *assoc1,
-			    slurmdb_assoc_rec_t *assoc2)
+static int _addto_used_info(slurmdb_assoc_usage_t *usage1,
+			    slurmdb_assoc_usage_t *usage2)
 {
 	int i;
 
-	if (!assoc1 || !assoc2)
+	if (!usage1 || !usage2)
 		return SLURM_ERROR;
 
-	for (i=0; i < assoc1->usage->tres_cnt; i++) {
-		assoc1->usage->grp_used_tres[i] +=
-			assoc2->usage->grp_used_tres[i];
-		assoc1->usage->grp_used_tres_run_secs[i] +=
-			assoc2->usage->grp_used_tres_run_secs[i];
-		assoc1->usage->usage_tres_raw[i] +=
-			assoc2->usage->usage_tres_raw[i];
+	for (i=0; i < usage1->tres_cnt; i++) {
+		usage1->grp_used_tres[i] +=
+			usage2->grp_used_tres[i];
+		usage1->grp_used_tres_run_secs[i] +=
+			usage2->grp_used_tres_run_secs[i];
+		usage1->usage_tres_raw[i] +=
+			usage2->usage_tres_raw[i];
 	}
 
-	assoc1->usage->accrue_cnt += assoc2->usage->accrue_cnt;
+	usage1->accrue_cnt += usage2->accrue_cnt;
 
-	assoc1->usage->grp_used_wall += assoc2->usage->grp_used_wall;
+	usage1->grp_used_wall += usage2->grp_used_wall;
 
-	assoc1->usage->used_jobs += assoc2->usage->used_jobs;
-	assoc1->usage->used_submit_jobs += assoc2->usage->used_submit_jobs;
-	assoc1->usage->usage_raw += assoc2->usage->usage_raw;
+	usage1->used_jobs += usage2->used_jobs;
+	usage1->used_submit_jobs += usage2->used_submit_jobs;
+	usage1->usage_raw += usage2->usage_raw;
 
-	slurmdb_merge_grp_node_usage(&assoc1->usage->grp_node_bitmap,
-				     &assoc1->usage->grp_node_job_cnt,
-				     assoc2->usage->grp_node_bitmap,
-				     assoc2->usage->grp_node_job_cnt);
+	slurmdb_merge_grp_node_usage(&usage1->grp_node_bitmap,
+				     &usage1->grp_node_job_cnt,
+				     usage2->grp_node_bitmap,
+				     usage2->grp_node_job_cnt);
 	return SLURM_SUCCESS;
 }
 
@@ -1802,7 +1801,7 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 			continue;
 
 		while (assoc) {
-			_addto_used_info(assoc, curr_assoc);
+			_addto_used_info(assoc->usage, curr_assoc->usage);
 			/* get the parent last since this pointer is
 			   different than the one we are updating from */
 			assoc = assoc->usage->parent_assoc_ptr;
@@ -4105,7 +4104,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				*/
 				object = object->usage->parent_assoc_ptr;
 
-				_addto_used_info(object, rec);
+				_addto_used_info(object->usage, rec->usage);
 			}
 		}
 		if (setup_children) {
