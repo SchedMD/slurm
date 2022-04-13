@@ -252,6 +252,7 @@ cset sleep_error_message "(invalid time interval)|(bad character in argument)|(u
 set ::env(LANG)          "en_US.UTF-8"
 
 # Testsuite level variables
+cset testsuite_dir "[file dirname [file normalize [info script]]]"
 cset testsuite_shared_dir "[$bin_pwd]"
 
 # Testsuite non-privileged user (set it in globals.local)
@@ -670,25 +671,9 @@ proc get_subtest_fail_count {} {
 ################################################################
 
 proc reset_bash_prompt {} {
-	global eol test_prompt
+	global testsuite_dir
 
-	send "unset PROMPT_COMMAND\r"
-	send "unset PS0\r"
-	send "export PS1=\"$test_prompt\"\r"
-	expect {
-		# Some callers may expect/wait for an initial $test_prompt
-		# after this proc, but undesired $test_prompt strings surrounded
-		# by quotes may be echoed back once or twice depending on
-		# whether the original bash prompt returns before or after the
-		# send command above.
-		# So, we wait for the $test_prompt without quotes to skip the
-		# undesired quoted echoes from the caller, but also using a
-		# positive lookahead match to avoid consuming it from the
-		# expect buffer leaving it there for the caller in case they
-		# need it.
-		-re "${eol}(?=$test_prompt)" {}
-		timeout { fail "Failed to reset bash prompt" }
-	}
+	send "source $testsuite_dir/.reset_bash_prompt.sh\n"
 }
 
 
