@@ -81,7 +81,7 @@ static int _load_config(void)
 	tbl = s_p_hashtbl_create(options);
 	if (stat(conf, &statbuf) || !statbuf.st_size) {
 		/* No file, continue below to set defaults */
-	} else if (s_p_parse_file(tbl, NULL, conf, false)) {
+	} else if (s_p_parse_file(tbl, NULL, conf, false, NULL)) {
 		/* could not load or parse file */
 		return (config_loaded = SLURM_ERROR);
 	}

@@ -154,7 +154,7 @@ static int _read_slurm_jc_conf(void)
 
 	debug("Reading %s file %s", tmpfs_conf_file, conf_path);
 	tbl = s_p_hashtbl_create(options);
-	if (s_p_parse_file(tbl, NULL, conf_path, false) == SLURM_ERROR) {
+	if (s_p_parse_file(tbl, NULL, conf_path, false, NULL) == SLURM_ERROR) {
 		fatal("Could not open/read/parse %s file %s",
 		      tmpfs_conf_file, conf_path);
 		goto end_it;

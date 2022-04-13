@@ -552,7 +552,7 @@ extern int _ext_sensors_read_conf(void)
 	} else {
 		debug2("ext_sensors: Reading ext_sensors file %s", conf_path);
 		tbl = s_p_hashtbl_create(options);
-		if (s_p_parse_file(tbl, NULL, conf_path, false) ==
+		if (s_p_parse_file(tbl, NULL, conf_path, false, NULL) ==
 		    SLURM_ERROR) {
 			fatal("ext_sensors: Could not open/read/parse "
 			      "ext_sensors file %s", conf_path);

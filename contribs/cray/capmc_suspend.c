@@ -128,7 +128,7 @@ static s_p_hashtbl_t *_config_make_tbl(char *filename)
 		return tbl;
 	}
 
-	if (s_p_parse_file(tbl, NULL, filename, false) == SLURM_ERROR) {
+	if (s_p_parse_file(tbl, NULL, filename, false, NULL) == SLURM_ERROR) {
 		error("%s: s_p_parse_file error: %s", prog_name,
 		      slurm_strerror(slurm_get_errno()));
 		s_p_hashtbl_destroy(tbl);
