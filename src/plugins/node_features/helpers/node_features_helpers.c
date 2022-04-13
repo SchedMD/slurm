@@ -559,8 +559,10 @@ static int _foreach_helper_get_modes(void *x, void *y)
 
 	xstrfmtcat(*avail_modes, "%s%s", (*avail_modes ? "," : ""), feature->name);
 
-	if (!current || list_is_empty(current))
+	if (!current || list_is_empty(current)) {
+		FREE_NULL_LIST(current);
 		return 0;
+	}
 
 	/* filter out duplicates */
 	list_for_each(current, _foreach_check_duplicates, all_current);
