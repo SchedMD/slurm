@@ -147,6 +147,10 @@ extern int mpi_g_daemon_reconfig(void);
 /* Deliver a printable list to the client with config from all loaded plugins */
 extern List mpi_g_conf_get_printable(void);
 
+/* Functions to send config from Slurmd to Slurstepd, peer to peer */
+extern int mpi_conf_send_stepd(int fd, char *mpi_type);
+extern int mpi_conf_recv_stepd(int fd);
+
 /* Tear down things in the MPI plugin */
 extern int mpi_fini(void);
 

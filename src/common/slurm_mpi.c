@@ -182,6 +182,25 @@ static int _match_keys(void *x, void *y)
 	return !xstrcmp(key_pair1->name, key_pair2->name);
 }
 
+static char *_plugin_type(int index)
+{
+	if (index > -1 && index < g_context_cnt)
+		return &((xstrchr(g_context[index]->type, '/'))[1]);
+
+	return NULL;
+}
+
+static int _plugin_idx(char *mpi_type)
+{
+	xassert(g_context_cnt);
+
+	for (int i = 0; i < g_context_cnt; i++)
+		if (!xstrcmp(_plugin_type(i), mpi_type))
+			return i;
+
+	return -1;
+}
+
 static int _load_plugin(void *x, void *arg)
 {
 	char *plugin_name = x;
@@ -579,6 +598,65 @@ extern List mpi_g_conf_get_printable(void)
 
 	slurm_mutex_unlock(&context_lock);
 	return opts_list;
+}
+
+extern int mpi_conf_send_stepd(int fd, char *mpi_type)
+{
+	int index;
+	bool have_conf;
+	uint32_t len = 0, ns;
+
+	/* NULL type can't happen at this point. */
+	xassert(mpi_type);
+
+	slurm_mutex_lock(&context_lock);
+
+	if ((index = _plugin_idx(mpi_type)) < 0)
+		goto rwfail;
+
+	if ((have_conf = (mpi_confs && mpi_confs[index])))
+		len = get_buf_offset(mpi_confs[index]);
+	ns = htonl(len);
+	safe_write(fd, &ns, sizeof(ns));
+	if (have_conf)
+		safe_write(fd, get_buf_data(mpi_confs[index]), len);
+
+	slurm_mutex_unlock(&context_lock);
+	return SLURM_SUCCESS;
+rwfail:
+	slurm_mutex_unlock(&context_lock);
+	return SLURM_ERROR;
+}
+
+extern int mpi_conf_recv_stepd(int fd)
+{
+	uint32_t len;
+	buf_t *buf = NULL;
+
+	safe_read(fd, &len, sizeof(len));
+	len = ntohl(len);
+
+	/* We have no conf for this specific plugin. Sender sent empty buffer */
+	if (!len)
+		return SLURM_SUCCESS;
+
+	buf = init_buf(len);
+	safe_read(fd, get_buf_data(buf), len);
+
+	slurm_mutex_lock(&context_lock);
+
+	/*
+	 * As we are in the stepd, only 1 plugin is loaded, and we always
+	 * receive this conf before the plugin gets loaded
+	 */
+	mpi_confs = xcalloc(1, sizeof(*mpi_confs));
+	mpi_confs[0] = buf;
+
+	slurm_mutex_unlock(&context_lock);
+	return SLURM_SUCCESS;
+rwfail:
+	FREE_NULL_BUFFER(buf);
+	return SLURM_ERROR;
 }
 
 extern int mpi_fini(void)

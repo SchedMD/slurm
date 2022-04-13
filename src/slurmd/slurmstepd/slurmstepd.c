@@ -580,6 +580,10 @@ _init_from_slurmd(int sock, char **argv,
 	if (acct_gather_read_conf(sock) != SLURM_SUCCESS)
 		fatal("Failed to read acct_gather conf from slurmd");
 
+	/* Receive mpi.conf from slurmd */
+	if (mpi_conf_recv_stepd(sock) != SLURM_SUCCESS)
+		fatal("Failed to read MPI conf from slurmd");
+
 	/* receive job type from slurmd */
 	safe_read(sock, &step_type, sizeof(int));
 	debug3("step_type = %d", step_type);
