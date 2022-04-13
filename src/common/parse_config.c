@@ -1111,7 +1111,8 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
  */
 static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 				    const char *line, char **leftover,
-				    bool ignore_new, char *slurm_conf_path)
+				    bool ignore_new, char *slurm_conf_path,
+				    char *last_ancestor)
 {
 	char *ptr;
 	char *fn_start, *fn_stop;
@@ -1139,8 +1140,10 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 			return -1;
 		path_name = _add_full_path(file_name, slurm_conf_path);
 		xfree(file_name);
+		if (!last_ancestor)
+			last_ancestor = xbasename(slurm_conf_path);
 		rc = s_p_parse_file(hashtbl, hash_val, path_name, ignore_new,
-				    NULL);
+				    last_ancestor);
 		xfree(path_name);
 		if (rc == SLURM_SUCCESS)
 			return 1;
@@ -1204,7 +1207,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 
 		inc_rc = _parse_include_directive(hashtbl, hash_val,
 						  line, &leftover, ignore_new,
-						  filename);
+						  filename, last_ancestor);
 		if (inc_rc == 0) {
 			if (!_parse_next_key(hashtbl, line, &leftover,
 					     ignore_new)) {
