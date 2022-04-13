@@ -312,14 +312,20 @@ extern char *expand_nodesets(const char *nodes, char **nodesets)
 	char *ret_nodelist;
 	slurm_conf_nodeset_t *ptr, **ptr_array;
 	hostlist_t hl;
+	node_record_t *node_ptr;
 
 	if (nodesets)
 		xfree(*nodesets);
 
+	if (!xstrcmp(nodes, "ALL")) {
+		hl = hostlist_create(NULL);
+		for (int i = 0; (node_ptr = next_node(&i)); i++)
+			hostlist_push_host(hl, node_ptr->name);
+	} else {
+		hl = hostlist_create(nodes);
+	}
+
 	count = slurm_conf_nodeset_array(&ptr_array);
-
-	hl = hostlist_create(nodes);
-
 	for (int i = 0; i < count; i++) {
 		ptr = ptr_array[i];
 

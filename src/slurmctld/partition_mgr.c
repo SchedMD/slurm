@@ -201,12 +201,6 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 		return 0;
 	}
 
-	if (!xstrcmp(part_ptr->nodes, "ALL")) {
-		bit_nset(part_ptr->node_bitmap, 0, node_record_count - 1);
-		xfree(part_ptr->nodes);
-		part_ptr->nodes = bitmap2node_name(part_ptr->node_bitmap);
-		bit_nclear(part_ptr->node_bitmap, 0, node_record_count - 1);
-	}
 	if ((host_list = hostlist_create(part_ptr->nodes)) == NULL) {
 		FREE_NULL_BITMAP(old_bitmap);
 		error("hostlist_create error on %s, %m",
