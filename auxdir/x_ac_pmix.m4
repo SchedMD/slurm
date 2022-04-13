@@ -2,6 +2,7 @@
 #  AUTHOR:
 #    Artem Polyakov <artpol84@gmail.com>
 #    Ralph Castain <ralph.h.castain@intel.com>
+#    Isaias Compres <isaias.compres@tum.de>
 #
 #  SYNOPSIS:
 #    X_AC_PMIX
@@ -18,6 +19,7 @@ AC_DEFUN([X_AC_PMIX],
   _x_ac_pmix_v2_found="0"
   _x_ac_pmix_v3_found="0"
   _x_ac_pmix_v4_found="0"
+  _x_ac_pmix_v5_found="0"
 
   AC_ARG_WITH(
     [pmix],
@@ -60,6 +62,13 @@ AC_DEFUN([X_AC_PMIX],
             _x_ac_pmix_version="0"
             AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
               #include <pmix_version.h>
+              #if (PMIX_VERSION_MAJOR != 5L)
+                #error "not version 5"
+              #endif
+            ], [ ] )],
+            [ _x_ac_pmix_version="5" ],
+            [ AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
+              #include <pmix_version.h>
               #if (PMIX_VERSION_MAJOR != 4L)
                 #error "not version 4"
               #endif
@@ -79,6 +88,7 @@ AC_DEFUN([X_AC_PMIX],
               #endif
             ], [ ] )],
             [ _x_ac_pmix_version="2" ] )
+            ])
             ])
             ])
 
@@ -140,6 +150,24 @@ AC_DEFUN([X_AC_PMIX],
               # symlink of lib.
               break
             fi
+
+            if [test "$_x_ac_pmix_version" = "5"]; then
+              if [test "$_x_ac_pmix_v5_found" = "1" ]; then
+                m4_define([err_pmix_v5],[error processing $x_ac_cv_pmix_libdir: PMIx v5.x])
+                AC_MSG_ERROR(err_pmix_v5 err_pmix)
+              fi
+              _x_ac_pmix_v5_found="1"
+              PMIX_V5_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
+              if test "$ac_with_rpath" = "yes"; then
+                PMIX_V5_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
+              else
+                PMIX_V5_CPPFLAGS=$PMIX_V5_CPPFLAGS" -DPMIXP_V5_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
+              fi
+              # We don't want to search the other lib after we found it in
+              # one place or we might report a false duplicate if lib64 is a
+              # symlink of lib.
+              break
+            fi
           done
         done
       ])
@@ -152,9 +180,11 @@ AC_DEFUN([X_AC_PMIX],
     AC_SUBST(PMIX_V3_LDFLAGS)
     AC_SUBST(PMIX_V4_CPPFLAGS)
     AC_SUBST(PMIX_V4_LDFLAGS)
+    AC_SUBST(PMIX_V5_CPPFLAGS)
+    AC_SUBST(PMIX_V5_LDFLAGS)
 
-    if test $_x_ac_pmix_v2_found = 0 &&
-          test $_x_ac_pmix_v3_found = 0 && test $_x_ac_pmix_v4_found = 0; then
+    if test $_x_ac_pmix_v2_found = 0 && test $_x_ac_pmix_v3_found = 0 &&
+          test $_x_ac_pmix_v4_found = 0 && test $_x_ac_pmix_v5_found = 0; then
       if test -z "$with_pmix"; then
         AC_MSG_WARN([unable to locate pmix installation])
       else
@@ -169,4 +199,5 @@ AC_DEFUN([X_AC_PMIX],
   AM_CONDITIONAL(HAVE_PMIX_V2, [test $_x_ac_pmix_v2_found = "1"])
   AM_CONDITIONAL(HAVE_PMIX_V3, [test $_x_ac_pmix_v3_found = "1"])
   AM_CONDITIONAL(HAVE_PMIX_V4, [test $_x_ac_pmix_v4_found = "1"])
+  AM_CONDITIONAL(HAVE_PMIX_V5, [test $_x_ac_pmix_v5_found = "1"])
 ])
