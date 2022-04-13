@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "March 2022" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "April 2022" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -1105,6 +1105,8 @@ Multiple options can be requested in a comma separated list, for example:
 "\-\-gpus=volta:3,kepler:1".
 See also the \fB\-\-gpus\-per\-node\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
+.br
+\fBNOTE\fR: The allocation has to contain at least one GPU per node.
 .IP
 
 .TP
@@ -1784,8 +1786,9 @@ Note that the environment
 variable \fBSLURM_JOB_NUM_NODES\fR will be set to the count of nodes actually
 allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section
 for more information.  If \fB\-N\fR is not specified, the default
-behavior is to allocate enough nodes to satisfy the requirements of
-the \fB\-n\fR and \fB\-c\fR options.
+behavior is to allocate enough nodes to satisfy the requested resources as
+expressed by per\-job specification options, e.g. \fB\-n\fR, \fB\-c\fR and
+\fB--gpus\fR.
 The job will be allocated as many nodes as possible within the range specified
 and without delaying the initiation of the job.
 The node count specification may include a numeric value followed by a suffix
