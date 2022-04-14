@@ -1805,6 +1805,9 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 				       &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
@@ -1870,6 +1873,9 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 				       &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
@@ -1933,6 +1939,9 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->consumed_energy, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
@@ -1983,6 +1992,9 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->consumed_energy, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
@@ -2064,6 +2076,9 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->consumed_energy, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&max_disk_read, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&max_disk_read_node, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&max_disk_read_task, &tmp32, buffer);
@@ -2223,6 +2238,9 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		xfree(tmp_char);
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		/* kill_requid is NULL instead of -1 starting in 22.05 */
+		if (!xstrcmp(object->kill_requid, "-1"))
+			xfree(object->kill_requid);
 		safe_unpackstr_xmalloc(&max_disk_read, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&max_disk_read_node, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&max_disk_read_task, &tmp32, buffer);
@@ -3711,7 +3729,6 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 		STEP_REQ_NAME,
 		STEP_REQ_NODELIST,
 		STEP_REQ_STATE,
-		STEP_REQ_KILL_REQUID,
 		STEP_REQ_EXIT_CODE,
 		STEP_REQ_NODES,
 		STEP_REQ_TASKS,
@@ -3746,6 +3763,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 
 	/* Sync w/ step_table_fields where text/tinytext can be NULL */
 	int null_attributes[] = {
+		STEP_REQ_KILL_REQUID,
 		STEP_REQ_NODE_INX,
 		STEP_REQ_CONTAINER,
 		STEP_REQ_SUBMIT_LINE,
@@ -3782,6 +3800,10 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			xstrcat(format, ", '%s'");
 		}
 		/* special handling for NULL attributes */
+		if (object.kill_requid == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
 		if (object.node_inx == NULL)
 			xstrcat(format, ", %s");
 		else
@@ -3839,6 +3861,8 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			   object.tres_usage_out_min_nodeid,
 			   object.tres_usage_out_min_taskid,
 			   object.tres_usage_out_tot,
+			   (object.kill_requid == NULL) ?
+				"NULL" : object.kill_requid,
 			   (object.node_inx == NULL) ?
 				"NULL" : object.node_inx,
 			   (object.container == NULL) ?
