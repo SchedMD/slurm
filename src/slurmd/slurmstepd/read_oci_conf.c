@@ -80,7 +80,7 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 
 	debug("Reading %s file %s", OCI_CONF, conf_path);
 	tbl = s_p_hashtbl_create(options);
-	if (s_p_parse_file(tbl, NULL, conf_path, false) == SLURM_ERROR)
+	if (s_p_parse_file(tbl, NULL, conf_path, false, NULL) == SLURM_ERROR)
 		fatal("Could not parse %s file: %s", OCI_CONF, conf_path);
 
 	(void) s_p_get_string(&oci->container_path, "ContainerPath", tbl);

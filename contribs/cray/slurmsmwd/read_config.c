@@ -83,7 +83,7 @@ extern void slurmsmwd_read_config(void)
 	if (stat(config_file, &config_stat) < 0)
 		fatal("Can't stat slurmsmwd.conf %s: %m", config_file);
 	tbl = s_p_hashtbl_create(slurmsmwd_options);
-	if (s_p_parse_file(tbl, NULL, config_file, false) == SLURM_ERROR)
+	if (s_p_parse_file(tbl, NULL, config_file, false, NULL) == SLURM_ERROR)
 		fatal("Can't parse slurmsmwd.conf %s: %m", config_file);
 
 	s_p_get_uint16(&slurmsmwd_cabinets_per_row, "CabinetsPerRow", tbl);

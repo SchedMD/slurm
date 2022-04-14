@@ -92,9 +92,11 @@ start. (The example slurmd.service file shipped in Slurm 20.02 and above does
 not include this entry.)</p>
 
 <p>If any of the supported config files "Include" additional config files,
-the Included configs will <b>NOT</b> be shipped to the slurmds. Any additional
-config files will need to be shared a different way or added to the parent
-config.</p>
+the Included configs will <b>ONLY</b> be shipped if their "Include" filename
+reference has no path separators and the file is located adjacent to slurm.conf.
+Any additional config files will need to be shared a different way or added to
+the parent config.
+</p>
 
 <h2 id="NOTES">Notes<a class="slurm_link" href="#NOTES"></a></h2>
 
@@ -127,6 +129,6 @@ is as follows:
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 13 October 2021</p>
+<p style="text-align:center;">Last modified 7 April 2022</p>
 
 <!--#include virtual="footer.txt"-->

@@ -49,6 +49,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/fetch_config.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -56,6 +57,8 @@
 #include "src/common/parse_config.h"
 #include "src/common/parse_value.h"
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -117,6 +120,8 @@ typedef struct _expline_values_st {
 	s_p_hashtbl_t*	index;
 	s_p_hashtbl_t**	values;
 } _expline_values_t;
+
+List conf_includes_list = NULL;
 
 static bool _run_in_daemon(void)
 {
@@ -1104,6 +1109,57 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 }
 
 /*
+ * ListDelF for conf_includes_list
+ *
+ * IN/OUT: object (conf_includes_map_t *map)
+ */
+static void _delete_conf_includes(void *object)
+{
+	conf_includes_map_t *map = object;
+
+	if (map) {
+		xfree(map->conf_file);
+		FREE_NULL_LIST(map->include_list);
+		xfree(map);
+	}
+}
+
+/*
+ * Allocate memory for conf_includes_list if needed.
+ *
+ * Append the include_file to its appropriate conf_file mapping if found,
+ * otherwise create a map for conf_file <-> include_file and append it to
+ * conf_includes_list.
+ *
+ * IN: include_file to be appended.
+ * IN: conf_file where include_file belongs to.
+ */
+static void _handle_include(char *include_file, char *conf_file)
+{
+	conf_includes_map_t *map = NULL;
+
+	xassert(include_file);
+	xassert(conf_file);
+
+	if (!conf_includes_list)
+		conf_includes_list = list_create(_delete_conf_includes);
+
+	if (!(map = list_find_first_ro(conf_includes_list,
+				       find_map_conf_file,
+				       conf_file))) {
+		map = xmalloc(sizeof(*map));
+		map->conf_file = xstrdup(conf_file);
+		map->include_list = list_create(xfree_ptr);
+		list_append(map->include_list, xstrdup(include_file));
+		list_append(conf_includes_list, map);
+	} else if (!list_find_first_ro(map->include_list,
+				       slurm_find_char_exact_in_list,
+				       include_file)) {
+		list_append(map->include_list, xstrdup(include_file));
+	}
+}
+
+/*
  * Returns 1 if the line contained an include directive and the included
  * file was parsed without error.  Returns -1 if the line was an include
  * directive but the included file contained errors.  Returns 0 if
@@ -1111,7 +1167,8 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
  */
 static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 				    const char *line, char **leftover,
-				    bool ignore_new, char *slurm_conf_path)
+				    bool ignore_new, char *slurm_conf_path,
+				    char *last_ancestor)
 {
 	char *ptr;
 	char *fn_start, *fn_stop;
@@ -1138,20 +1195,27 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 		if (!file_name)	/* Error printed by _parse_for_format() */
 			return -1;
 		path_name = _add_full_path(file_name, slurm_conf_path);
-		xfree(file_name);
-		rc = s_p_parse_file(hashtbl, hash_val, path_name, ignore_new);
+		if (!last_ancestor)
+			last_ancestor = xbasename(slurm_conf_path);
+		rc = s_p_parse_file(hashtbl, hash_val, path_name, ignore_new,
+				    last_ancestor);
 		xfree(path_name);
-		if (rc == SLURM_SUCCESS)
+		if (rc == SLURM_SUCCESS) {
+			if (!xstrstr(file_name, "/") && running_in_slurmctld())
+				_handle_include(file_name, last_ancestor);
+			xfree(file_name);
 			return 1;
-		else
+		} else {
+			xfree(file_name);
 			return -1;
+		}
 	} else {
 		return 0;
 	}
 }
 
 int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
-		   bool ignore_new)
+		   bool ignore_new, char *last_ancestor)
 {
 	FILE *f;
 	char *leftover = NULL;
@@ -1203,7 +1267,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 
 		inc_rc = _parse_include_directive(hashtbl, hash_val,
 						  line, &leftover, ignore_new,
-						  filename);
+						  filename, last_ancestor);
 		if (inc_rc == 0) {
 			if (!_parse_next_key(hashtbl, line, &leftover,
 					     ignore_new)) {

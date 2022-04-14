@@ -255,6 +255,7 @@ typedef struct node_features {
 
 extern List active_feature_list;/* list of currently active node features */
 extern List avail_feature_list;	/* list of available node features */
+extern List conf_includes_list; /* list of conf_includes_map_t */
 
 /*****************************************************************************\
  *  NODE states and bitmaps
@@ -2689,6 +2690,8 @@ extern void cleanup_completing(job_record_t *job_ptr);
  * RPC.
  */
 extern void configless_setup(void);
+/* Reload the internal cached config values. */
+extern void configless_update(void);
 /* Free cached values to avoid memory leak. */
 extern void configless_clear(void);
 

@@ -717,6 +717,9 @@ extern void configless_setup(void)
  */
 extern void configless_update(void)
 {
+	if (!config_for_slurmd)
+		return;
+
 	config_response_msg_t *new = xmalloc(sizeof(*new));
 	config_response_msg_t *old = xmalloc(sizeof(*old));
 
@@ -768,6 +771,7 @@ extern void configless_clear(void)
 		FREE_NULL_LIST(config_for_clients->config_files);
 		xfree(config_for_clients);
 	}
+	FREE_NULL_LIST(conf_includes_list);
 }
 
 /* _kill_job_on_msg_fail - The request to create a job record successed,
@@ -3335,6 +3339,13 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		priority_g_reconfig(true);	/* notify priority plugin too */
 		save_all_state();		/* has its own locks */
 		queue_job_scheduler();
+	}
+	if (conf_includes_list) {
+		/*
+		 * clear included files so that subsequent conf parsings refill
+		 * it with updated information.
+		 */
+		list_flush(conf_includes_list);
 	}
 	slurm_mutex_unlock(&reconfig_mutex);
 	slurm_cond_broadcast(&reconfig_cond);

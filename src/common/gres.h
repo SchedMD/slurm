@@ -1169,4 +1169,11 @@ extern int gres_links_validate(char *links);
 extern bool gres_use_busy_dev(gres_state_t *gres_state_node,
 			      bool use_total_gres);
 
+/*
+ * Dummy reading of gres.conf without loading data.
+ * Meant to be used by slurmctld to discover Include files and append them
+ * to conf_includes_list for configless files push.
+ */
+extern void gres_parse_config_dummy(void);
+
 #endif /* !_GRES_H */

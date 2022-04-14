@@ -292,6 +292,9 @@ static void	_node_state_log(gres_node_state_t *gres_ns, char *node_name,
 static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 				   const char *key, const char *value,
 				   const char *line, char **leftover);
+static int _parse_gres_config_dummy(void **dest, slurm_parser_enum_t type,
+				    const char *key, const char *value,
+				    const char *line, char **leftover);
 static int	_parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 					const char *key, const char *value,
 					const char *line, char **leftover);
@@ -2266,7 +2269,8 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 				   void *xcpuinfo_abs_to_mac,
 				   void *xcpuinfo_mac_to_abs)
 {
-	static s_p_options_t _gres_options[] = {
+	/* Keep options in sync with gres_parse_config_dummy(). */
+	static s_p_options_t _gres_conf_options[] = {
 		{"AutoDetect", S_P_STRING},
 		{"Name",     S_P_ARRAY, _parse_gres_config,  NULL},
 		{"NodeName", S_P_ARRAY, _parse_gres_config_node, NULL},
@@ -2318,8 +2322,8 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		}
 
 		gres_cpu_cnt = cpu_cnt;
-		tbl = s_p_hashtbl_create(_gres_options);
-		if (s_p_parse_file(tbl, NULL, gres_conf_file, false) ==
+		tbl = s_p_hashtbl_create(_gres_conf_options);
+		if (s_p_parse_file(tbl, NULL, gres_conf_file, false, NULL) ==
 		    SLURM_ERROR)
 			fatal("error opening/reading %s", gres_conf_file);
 
@@ -10130,4 +10134,31 @@ extern bool gres_use_busy_dev(gres_state_t *gres_state_node,
 	}
 
 	return false;
+}
+
+static int _parse_gres_config_dummy(void **dest, slurm_parser_enum_t type,
+				    const char *key, const char *value,
+				    const char *line, char **leftover)
+{
+	s_p_hashtbl_t *tbl = s_p_hashtbl_create(_gres_options);
+	s_p_parse_line(tbl, *leftover, leftover);
+	s_p_hashtbl_destroy(tbl);
+
+	return SLURM_SUCCESS;
+}
+
+extern void gres_parse_config_dummy(void)
+{
+	/* Keep options in sync with node_config_load(). */
+	static s_p_options_t _gres_conf_options[] = {
+		{"AutoDetect", S_P_STRING},
+		{"Name", S_P_ARRAY, _parse_gres_config_dummy, NULL},
+		{"NodeName", S_P_ARRAY, _parse_gres_config_dummy, NULL},
+		{NULL}
+	};
+
+	char *gres_conf_file = get_extra_conf_path("gres.conf");
+	s_p_hashtbl_t *tbl = s_p_hashtbl_create(_gres_conf_options);
+	s_p_parse_file(tbl, NULL, gres_conf_file, false, NULL);
+	s_p_hashtbl_destroy(tbl);
 }

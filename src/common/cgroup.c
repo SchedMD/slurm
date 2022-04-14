@@ -282,7 +282,7 @@ static void _read_slurm_cgroup_conf(void)
 		debug("Reading cgroup.conf file %s", conf_path);
 
 		tbl = s_p_hashtbl_create(options);
-		if (s_p_parse_file(tbl, NULL, conf_path, false) ==
+		if (s_p_parse_file(tbl, NULL, conf_path, false, NULL) ==
 		    SLURM_ERROR) {
 			fatal("Could not open/read/parse cgroup.conf file %s",
 			      conf_path);

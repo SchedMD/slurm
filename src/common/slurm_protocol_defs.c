@@ -251,6 +251,25 @@ extern List slurm_copy_char_list(List char_list)
 	return ret_list;
 }
 
+/*
+ * ListFindF to find exact string in char pointer List.
+ *
+ * IN: x, list data (char *).
+ * IN: key, string to be found.
+ *
+ * RET: 1 if found, 0 otherwise
+ */
+extern int slurm_find_char_exact_in_list(void *x, void *key)
+{
+	char *str1 = x;
+	char *str2 = key;
+
+	if (!xstrcmp(str1, str2))
+		return 1;
+
+	return 0;
+}
+
 extern int slurm_find_char_in_list(void *x, void *key)
 {
 	char *char1 = (char *)x;
