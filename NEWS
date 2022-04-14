@@ -218,6 +218,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmd memory leak when fetching configless files.
  -- Allow the DBD agent to load large messages (up to MAX_BUF_SIZE) from state.
  -- Fix minor memory leak with cleaning up the extern step.
+ -- Fix potential deadlock during slurmctld restart when there is a completing
+    job.
 
 * Changes in Slurm 21.08.6
 ==========================

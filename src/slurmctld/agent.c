@@ -819,7 +819,7 @@ finished:	;
 	if (run_scheduler) {
 		run_scheduler = false;
 		/* below functions all have their own locking */
-		schedule(false);
+		queue_job_scheduler();
 	}
 	if ((agent_ptr->msg_type == REQUEST_PING) ||
 	    (agent_ptr->msg_type == REQUEST_HEALTH_CHECK) ||
