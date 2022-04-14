@@ -1652,8 +1652,6 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->features_act, &uint32_tmp, buffer);
-		if (!node->features_act)
-			node->features_act = xstrdup(node->features);
 		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_drain, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_used, &uint32_tmp, buffer);
@@ -1722,8 +1720,6 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->features_act, &uint32_tmp, buffer);
-		if (!node->features_act)
-			node->features_act = xstrdup(node->features);
 		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_drain, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_used, &uint32_tmp, buffer);
@@ -1791,8 +1787,6 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->features_act, &uint32_tmp, buffer);
-		if (!node->features_act)
-			node->features_act = xstrdup(node->features);
 		safe_unpackstr_xmalloc(&node->gres, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_drain, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_used, &uint32_tmp, buffer);
