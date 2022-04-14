@@ -252,27 +252,37 @@ extern int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 extern int proctrack_p_wait(uint64_t cont_id)
 {
 	int delay = 1;
-	time_t start = time(NULL);
+	time_t start = time(NULL), now;
+	pid_t *pids = NULL;
+	int npids = 0, rc;
 
-	if (cont_id == 0 || cont_id == 1) {
-		errno = EINVAL;
+	if (cont_id == 0 || cont_id == 1)
 		return SLURM_ERROR;
-	}
 
-	/* Spin until the container is successfully destroyed */
-	/* This indicates that all tasks have exited the container */
-	while (proctrack_p_destroy(cont_id) != SLURM_SUCCESS) {
-		time_t now = time(NULL);
+	/*
+	 * Spin until the container is empty. This indicates that all tasks have
+	 * exited the container.
+	 */
+	rc = proctrack_p_get_pids(cont_id, &pids, &npids);
+	while ((rc == SLURM_SUCCESS) && npids) {
+		if ((npids == 1) && (pids[0] == cont_id))
+			break;
 
+		now = time(NULL);
 		if (now > (start + slurm_conf.unkillable_timeout)) {
-			error("Unable to destroy container %"PRIu64" in cgroup plugin, giving up after %lu sec",
-			      cont_id, (now - start));
+			error("Container %"PRIu64" in cgroup plugin has %d processes, giving up after %lu sec",
+			      cont_id, npids, (now - start));
 			break;
 		}
+		/*
+		 * The call to proctrack_p_signal is safe since it takes care of
+		 * not killing slurmstepd processes (ourselves).
+		 */
 		proctrack_p_signal(cont_id, SIGKILL);
 		sleep(delay);
 		if (delay < 32)
 			delay *= 2;
+		rc = proctrack_p_get_pids(cont_id, &pids, &npids);
 	}
 
 	return SLURM_SUCCESS;

@@ -213,6 +213,12 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 
 	mpi_fini();
 
+	/*
+	 * This call is only done once per step since stepd_cleanup is protected
+	 * agains multiple and concurrent calls.
+	 */
+	proctrack_g_destroy(job->cont_id);
+
 	if (conf->hwloc_xml)
 		(void)remove(conf->hwloc_xml);
 
