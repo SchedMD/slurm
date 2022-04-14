@@ -220,6 +220,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor memory leak with cleaning up the extern step.
  -- Fix potential deadlock during slurmctld restart when there is a completing
     job.
+ -- slurmstepd - reduce user requested soft rlimits when they are above max
+    hard rlimits to avoid rlimit request being completely ignored and
+    processes using default limits.
 
 * Changes in Slurm 21.08.6
 ==========================
