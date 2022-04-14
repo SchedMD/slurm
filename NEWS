@@ -180,6 +180,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues with track_script cleanup.
  -- Add new max_token_lifespan limit to AuthAltParameters.
  -- sacctmgr - allow Admins to update AdminComment and SystemComment fields.
+ -- slurmd - Cache node features at startup and scontrol reconfig. It avoids
+    executing node_features/helpers scripts in the middle of a job. This clould
+    potentially affect job performance.
 
 * Changes in Slurm 21.08.8
 ==========================
