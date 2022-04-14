@@ -235,6 +235,7 @@ X_AC_X11
 X_AC_SELINUX
 
 X_AC_CGROUP
+X_AC_BPF
 
 #
 #  Tests for Check
