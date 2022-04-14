@@ -1162,6 +1162,7 @@ static void *_wait_extern_pid(void *args)
 	next_pid:
 		fclose(stat_fp);
 	}
+	xfree(pids);
 
 	return NULL;
 }
