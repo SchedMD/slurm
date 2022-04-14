@@ -3665,22 +3665,73 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 	char *insert = NULL, *format = NULL;
 	local_step_t object;
 	int i;
+	int safe_attributes[] = {
+		STEP_REQ_DB_INX,
+		STEP_REQ_STEPID,
+		STEP_REQ_STEP_HET_COMP,
+		STEP_REQ_DELETED,
+		STEP_REQ_START,
+		STEP_REQ_END,
+		STEP_REQ_SUSPENDED,
+		STEP_REQ_NAME,
+		STEP_REQ_NODELIST,
+		STEP_REQ_STATE,
+		STEP_REQ_KILL_REQUID,
+		STEP_REQ_EXIT_CODE,
+		STEP_REQ_NODES,
+		STEP_REQ_TASKS,
+		STEP_REQ_TASKDIST,
+		STEP_REQ_USER_SEC,
+		STEP_REQ_USER_USEC,
+		STEP_REQ_SYS_SEC,
+		STEP_REQ_SYS_USEC,
+		STEP_REQ_ACT_CPUFREQ,
+		STEP_REQ_CONSUMED_ENERGY,
+		STEP_REQ_REQ_CPUFREQ_MIN,
+		STEP_REQ_REQ_CPUFREQ_MAX,
+		STEP_REQ_REQ_CPUFREQ_GOV,
+		STEP_REQ_TRES,
+		STEP_TRES_USAGE_IN_AVE,
+		STEP_TRES_USAGE_IN_MAX,
+		STEP_TRES_USAGE_IN_MAX_NODEID,
+		STEP_TRES_USAGE_IN_MAX_TASKID,
+		STEP_TRES_USAGE_IN_MIN,
+		STEP_TRES_USAGE_IN_MIN_NODEID,
+		STEP_TRES_USAGE_IN_MIN_TASKID,
+		STEP_TRES_USAGE_IN_TOT,
+		STEP_TRES_USAGE_OUT_AVE,
+		STEP_TRES_USAGE_OUT_MAX,
+		STEP_TRES_USAGE_OUT_MAX_NODEID,
+		STEP_TRES_USAGE_OUT_MAX_TASKID,
+		STEP_TRES_USAGE_OUT_MIN,
+		STEP_TRES_USAGE_OUT_MIN_NODEID,
+		STEP_TRES_USAGE_OUT_MIN_TASKID,
+		STEP_TRES_USAGE_OUT_TOT,
+		STEP_REQ_COUNT };
+
+	/* Sync w/ step_table_fields where text/tinytext can be NULL */
+	int null_attributes[] = {
+		STEP_REQ_NODE_INX,
+		STEP_REQ_CONTAINER,
+		STEP_REQ_SUBMIT_LINE,
+		STEP_REQ_COUNT };
 
 	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
 		   cluster_name, step_table, step_req_inx[0]);
-	xstrcat(format, "('%s'");
-	for (i=1; i<STEP_REQ_COUNT; i++) {
-		xstrfmtcat(insert, ", %s", step_req_inx[i]);
-		xstrcat(format, ", '%s'");
+	for (i = 1; safe_attributes[i] < STEP_REQ_COUNT; i++) {
+		xstrfmtcat(insert, ", %s", step_req_inx[safe_attributes[i]]);
+	}
+	/* Some attributes that might be NULL require special handling */
+	for (i = 0; null_attributes[i] < STEP_REQ_COUNT; i++) {
+		xstrfmtcat(insert, ", %s", step_req_inx[null_attributes[i]]);
 	}
 	xstrcat(insert, ") values ");
-	xstrcat(format, ")");
+
 	for (i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_step_t));
 		if (_unpack_local_step(&object, rpc_version, buffer)
 		    != SLURM_SUCCESS) {
 			error("issue unpacking");
-			xfree(format);
 			xfree(insert);
 			break;
 		}
@@ -3690,6 +3741,25 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 
 		if (!object.step_het_comp)
 			object.step_het_comp = xstrdup_printf("%u", NO_VAL);
+
+		xstrcat(format, "('%s'");
+		for (int j = 1; safe_attributes[j] < STEP_REQ_COUNT; j++) {
+			xstrcat(format, ", '%s'");
+		}
+		/* special handling for NULL attributes */
+		if (object.node_inx == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.container == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.submit_line == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		xstrcat(format, ")");
 
 		xstrfmtcat(insert, format,
 			   object.job_db_inx,
@@ -3701,7 +3771,6 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			   object.period_suspended,
 			   object.name,
 			   object.nodelist,
-			   object.node_inx,
 			   object.state,
 			   object.kill_requid,
 			   object.exit_code,
@@ -3718,7 +3787,6 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			   object.req_cpufreq_max,
 			   object.req_cpufreq_min,
 			   object.req_cpufreq_gov,
-			   object.submit_line,
 			   object.tres_alloc_str,
 			   object.tres_usage_in_ave,
 			   object.tres_usage_in_max,
@@ -3735,9 +3803,16 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			   object.tres_usage_out_min,
 			   object.tres_usage_out_min_nodeid,
 			   object.tres_usage_out_min_taskid,
-			   object.tres_usage_out_tot);
+			   object.tres_usage_out_tot,
+			   (object.node_inx == NULL) ?
+				"NULL" : object.node_inx,
+			   (object.container == NULL) ?
+				"NULL" : object.node_inx,
+			   (object.submit_line == NULL) ?
+				"NULL" : object.submit_line);
 
 		_free_local_step_members(&object);
+		xfree(format);
 	}
 //	END_TIMER2("step query");
 //	info("step query took %s", TIME_STR);
