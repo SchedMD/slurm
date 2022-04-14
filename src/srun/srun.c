@@ -128,7 +128,7 @@ static void  _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc);
 static void *_launch_one_app(void *data);
 static void  _pty_restore(void);
 static void  _set_exit_code(void);
-static void  _set_node_alias(void);
+static void _set_node_alias(srun_job_t *job);
 static void  _setup_env_working_cluster(void);
 static void  _setup_job_env(srun_job_t *job, List srun_job_list,
 			    bool got_alloc);
@@ -209,7 +209,7 @@ int srun(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	}
 
-	_set_node_alias();
+	_set_node_alias(job);
 	_launch_app(job, srun_job_list, got_alloc);
 
 	if ((global_rc & 0xff) == SIG_OOM)
@@ -861,13 +861,16 @@ static void _set_exit_code(void)
 	}
 }
 
-static void _set_node_alias(void)
+static void _set_node_alias(srun_job_t *job)
 {
-	char *tmp;
+	char *alias_list = NULL;
 
-	tmp = getenv("SLURM_NODE_ALIASES");
-	if (tmp)
-		set_nodes_alias(tmp);
+	if (job->step_ctx &&
+	    job->step_ctx->step_resp &&
+	    job->step_ctx->step_resp->cred &&
+	    (alias_list = slurm_cred_get_arg(job->step_ctx->step_resp->cred,
+					     CRED_ARG_JOB_ALIAS_LIST)))
+		set_nodes_alias(alias_list);
 }
 
 static void _pty_restore(void)
