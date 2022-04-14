@@ -243,6 +243,12 @@ extern bool proctrack_p_has_pid(uint64_t cont_id, pid_t pid)
 	return cgroup_g_has_pid(pid);
 }
 
+
+extern int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
+{
+	return cgroup_g_step_get_pids(pids, npids);
+}
+
 extern int proctrack_p_wait(uint64_t cont_id)
 {
 	int delay = 1;
@@ -270,9 +276,4 @@ extern int proctrack_p_wait(uint64_t cont_id)
 	}
 
 	return SLURM_SUCCESS;
-}
-
-extern int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
-{
-	return cgroup_g_step_get_pids(pids, npids);
 }
