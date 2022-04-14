@@ -1045,6 +1045,9 @@ extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
 	case CRED_ARG_JOB_GRES_LIST:
 		rc = (void *) cred->job_gres_list;
 		break;
+	case CRED_ARG_JOB_ALIAS_LIST:
+		rc = (void *) cred->job_alias_list;
+		break;
 	default:
 		error("%s: Invalid arg type requested (%d)", __func__,
 		      cred_arg_type);

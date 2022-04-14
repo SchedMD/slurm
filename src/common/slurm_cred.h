@@ -74,6 +74,7 @@ typedef struct slurm_cred_context   * slurm_cred_ctx_t;
 
 /* Used by slurm_cred_get_arg() */
 #define CRED_ARG_JOB_GRES_LIST 1
+#define CRED_ARG_JOB_ALIAS_LIST 2
 
 /*
  * Initialize current process for slurm credential creation.
