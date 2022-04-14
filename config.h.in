@@ -24,6 +24,9 @@
 /* Define to 1 if 3-dimensional architecture */
 #undef HAVE_3D
 
+/* Define if you are compiling with bpf. */
+#undef HAVE_BPF
+
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 

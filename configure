@@ -701,6 +701,9 @@ HAVE_CHECK_FALSE
 HAVE_CHECK_TRUE
 CHECK_LIBS
 CHECK_CFLAGS
+WITH_BPF_FALSE
+WITH_BPF_TRUE
+BPF_CPPFLAGS
 WITH_CGROUP_FALSE
 WITH_CGROUP_TRUE
 libselinux_LIBS
@@ -996,6 +999,7 @@ with_rrdtool
 with_ucx
 enable_x11
 enable_selinux
+with_bpf
 enable_glibtest
 enable_gtktest
 enable_cray_network
@@ -1765,6 +1769,7 @@ Optional Packages:
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-ucx=PATH         Build with Unified Communication X library support
+  --with-bpf=PATH         Specify path to bpf header
   --with-cray_dir=PATH    Specify path to Cray file installation - /opt/cray
                           by default
   --with-datawarp=PATH    Specify path to DataWarp installation
@@ -22413,6 +22418,68 @@ $as_echo "#define WITH_CGROUP 1" >>confdefs.h
   fi
 
 
+
+  _x_ac_bpf_dirs="/usr"
+
+
+# Check whether --with-bpf was given.
+if test "${with_bpf+set}" = set; then :
+  withval=$with_bpf; if test "x$with_bpf" != xno && test "x$with_bpf" != xyes; then :
+  _x_ac_bpf_dirs="$with_bpf"
+fi
+fi
+
+
+  if test "x$with_bpf" = xno; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for bpf disabled" >&5
+$as_echo "$as_me: WARNING: support for bpf disabled" >&2;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for bpf installation" >&5
+$as_echo_n "checking for bpf installation... " >&6; }
+if ${x_ac_cv_bpf_dir+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+        for d in $_x_ac_bpf_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -d "$d/include/linux" || continue
+          test -f "$d/include/linux/bpf.h" || continue
+	  x_ac_cv_bpf_dir=$d
+          test -n "$x_ac_cv_bpf_dir" && break
+        done
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_bpf_dir" >&5
+$as_echo "$x_ac_cv_bpf_dir" >&6; }
+
+    if test -z "$x_ac_cv_bpf_dir"; then
+      if test -z "$with_bpf"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate bpf header" >&5
+$as_echo "$as_me: WARNING: unable to locate bpf header" >&2;}
+      else
+        as_fn_error $? "unable to locate bpf header" "$LINENO" 5
+      fi
+    else
+
+$as_echo "#define HAVE_BPF 1" >>confdefs.h
+
+      BPF_CPPFLAGS="-I$x_ac_cv_bpf_dir/include"
+    fi
+
+
+  fi
+
+   if test -n "$x_ac_cv_bpf_dir"; then
+  WITH_BPF_TRUE=
+  WITH_BPF_FALSE='#'
+else
+  WITH_BPF_TRUE='#'
+  WITH_BPF_FALSE=
+fi
+
+
+
 #
 #  Tests for Check
 #
@@ -25567,6 +25634,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_CGROUP_TRUE}" && test -z "${WITH_CGROUP_FALSE}"; then
   as_fn_error $? "conditional \"WITH_CGROUP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_BPF_TRUE}" && test -z "${WITH_BPF_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_BPF\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CHECK_TRUE}" && test -z "${HAVE_CHECK_FALSE}"; then
