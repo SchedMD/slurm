@@ -86,20 +86,20 @@ static char *_get_gpu_type(void)
 	if (autodetect_flags & GRES_AUTODETECT_GPU_NVML) {
 #ifdef HAVE_NVML
 		if (!dlopen("libnvidia-ml.so", RTLD_NOW | RTLD_GLOBAL))
-			fatal("We were configured with nvml functionality, but that lib wasn't found on the system.");
+			info("We were configured with nvml functionality, but that lib wasn't found on the system.");
 		else
 			return "gpu/nvml";
 #else
-		fatal("We were configured to autodetect nvml functionality, but we weren't able to find that lib when Slurm was configured.");
+		info("We were configured to autodetect nvml functionality, but we weren't able to find that lib when Slurm was configured.");
 #endif
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI) {
 #ifdef HAVE_RSMI
 		if (!dlopen("librocm_smi64.so", RTLD_NOW | RTLD_GLOBAL))
-			fatal("Configured with rsmi, but that lib wasn't found.");
+			info("Configured with rsmi, but that lib wasn't found.");
 		else
 			return "gpu/rsmi";
 #else
-		fatal("Configured with rsmi, but rsmi isn't enabled during the build.");
+		info("Configured with rsmi, but rsmi isn't enabled during the build.");
 #endif
 	}
 	return "gpu/generic";
