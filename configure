@@ -701,6 +701,10 @@ HAVE_CHECK_FALSE
 HAVE_CHECK_TRUE
 CHECK_LIBS
 CHECK_CFLAGS
+WITH_DBUS_FALSE
+WITH_DBUS_TRUE
+dbus_LIBS
+dbus_CFLAGS
 WITH_BPF_FALSE
 WITH_BPF_TRUE
 BPF_CPPFLAGS
@@ -1047,6 +1051,8 @@ PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
 libselinux_CFLAGS
 libselinux_LIBS
+dbus_CFLAGS
+dbus_LIBS
 CHECK_CFLAGS
 CHECK_LIBS
 GLIB_CFLAGS
@@ -1811,6 +1817,8 @@ Some influential environment variables:
               C compiler flags for libselinux, overriding pkg-config
   libselinux_LIBS
               linker flags for libselinux, overriding pkg-config
+  dbus_CFLAGS C compiler flags for dbus, overriding pkg-config
+  dbus_LIBS   linker flags for dbus, overriding pkg-config
   CHECK_CFLAGS
               C compiler flags for CHECK, overriding pkg-config
   CHECK_LIBS  linker flags for CHECK, overriding pkg-config
@@ -22480,6 +22488,93 @@ fi
 
 
 
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dbus-1" >&5
+$as_echo_n "checking for dbus-1... " >&6; }
+
+if test -n "$dbus_CFLAGS"; then
+    pkg_cv_dbus_CFLAGS="$dbus_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"dbus-1\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "dbus-1") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_dbus_CFLAGS=`$PKG_CONFIG --cflags "dbus-1" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$dbus_LIBS"; then
+    pkg_cv_dbus_LIBS="$dbus_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"dbus-1\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "dbus-1") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_dbus_LIBS=`$PKG_CONFIG --libs "dbus-1" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        dbus_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "dbus-1" 2>&1`
+        else
+	        dbus_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "dbus-1" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$dbus_PKG_ERRORS" >&5
+
+	x_ac_have_dbus="no"
+elif test $pkg_failed = untried; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	x_ac_have_dbus="no"
+else
+	dbus_CFLAGS=$pkg_cv_dbus_CFLAGS
+	dbus_LIBS=$pkg_cv_dbus_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	x_ac_have_dbus="yes"
+fi
+       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_have_dbus, ${x_ac_dbus_pkg_name} was found." >&5
+$as_echo "$x_ac_have_dbus, ${x_ac_dbus_pkg_name} was found." >&6; }
+        if test "x$x_ac_have_dbus" = "xyes"; then
+  WITH_DBUS_TRUE=
+  WITH_DBUS_FALSE='#'
+else
+  WITH_DBUS_TRUE='#'
+  WITH_DBUS_FALSE=
+fi
+
+       if test "x$x_ac_have_dbus" = "xno"; then
+          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to link against dbus-1 libraries required for cgroup/v2" >&5
+$as_echo "$as_me: WARNING: unable to link against dbus-1 libraries required for cgroup/v2" >&2;}
+       fi
+
+
 #
 #  Tests for Check
 #
@@ -25638,6 +25733,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_BPF_TRUE}" && test -z "${WITH_BPF_FALSE}"; then
   as_fn_error $? "conditional \"WITH_BPF\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_DBUS_TRUE}" && test -z "${WITH_DBUS_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_DBUS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CHECK_TRUE}" && test -z "${HAVE_CHECK_FALSE}"; then
