@@ -2266,7 +2266,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 				   void *xcpuinfo_abs_to_mac,
 				   void *xcpuinfo_mac_to_abs)
 {
-	static s_p_options_t _gres_options[] = {
+	static s_p_options_t _gres_conf_options[] = {
 		{"AutoDetect", S_P_STRING},
 		{"Name",     S_P_ARRAY, _parse_gres_config,  NULL},
 		{"NodeName", S_P_ARRAY, _parse_gres_config_node, NULL},
@@ -2318,7 +2318,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		}
 
 		gres_cpu_cnt = cpu_cnt;
-		tbl = s_p_hashtbl_create(_gres_options);
+		tbl = s_p_hashtbl_create(_gres_conf_options);
 		if (s_p_parse_file(tbl, NULL, gres_conf_file, false, NULL) ==
 		    SLURM_ERROR)
 			fatal("error opening/reading %s", gres_conf_file);
