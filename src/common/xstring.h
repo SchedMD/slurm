@@ -43,6 +43,7 @@
 #include "src/common/macros.h"
 
 #define xstrcat(__p, __q)		_xstrcat(&(__p), __q)
+#define xstrcatat(__p, __q, __s) _xstrcatat(&(__p), __q, __s)
 #define xstrncat(__p, __q, __l)		_xstrncat(&(__p), __q, __l)
 #define xstrcatchar(__p, __c)		_xstrcatchar(&(__p), __c)
 #define xstrftimecat(__p, __fmt)	_xstrftimecat(&(__p), __fmt)
@@ -72,6 +73,16 @@
 ** cat str2 onto str1, expanding str1 as necessary
 */
 void _xstrcat(char **str1, const char *str2);
+
+/*
+ * Append str2 onto str at pos, * expanding buf as needed. pos is updated to the
+ * end of the appended string.
+ *
+ * Meant to be used in loops contructing longer strings that are performance
+ * sensitive, as xstrcat() needs to re-seek to the end of str making the string
+ * construction worse by another O(log(strlen)) factor.
+ */
+void _xstrcatat(char **str, char **pos, const char *str2);
 
 /*
 ** cat len of str2 onto str1, expanding str1 as necessary

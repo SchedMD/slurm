@@ -379,6 +379,7 @@
 
 /* xstring.[ch] functions */
 #define	_xstrcat		slurm_xstrcat
+#define	_xstrcatat		slurm_xstrcatat
 #define	_xstrncat		slurm_xstrncat
 #define	_xstrcatchar		slurm_xstrcatchar
 #define	_xstrftimecat		slurm_xstrftimecat

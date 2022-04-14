@@ -70,6 +70,7 @@ static size_t _xstrdup_vprintf(char **str, const char *_fmt, va_list _ap);
  * for details.
  */
 strong_alias(_xstrcat,		slurm_xstrcat);
+strong_alias(_xstrcatat,	slurm_xstrcatat);
 strong_alias(_xstrncat,		slurm_xstrncat);
 strong_alias(_xstrcatchar,	slurm_xstrcatchar);
 strong_alias(_xstrftimecat,	slurm_xstrftimecat);
@@ -139,6 +140,49 @@ void _xstrcat(char **str1, const char *str2)
 
 	_makespace(str1, -1, strlen(str2));
 	strcat(*str1, str2);
+}
+
+/*
+ * Append str2 onto str at pos, * expanding buf as needed. pos is updated to the
+ * end of the appended string.
+ *
+ * Meant to be used in loops contructing longer strings that are performance
+ * sensitive, as xstrcat() needs to re-seek to the end of str making the string
+ * construction worse by another O(log(strlen)) factor.
+ */
+void _xstrcatat(char **str, char **pos, const char *str2)
+{
+	size_t orig_len, append_len;
+
+	if (!str2)
+		return;
+
+	append_len = strlen(str2);
+
+	/* No string yet to append to, so return a copy of str2. */
+	if (!*str) {
+		*str = xstrdup(str2);
+		*pos = *str + append_len;
+		return;
+	}
+
+	if (!*pos) {
+		orig_len = strlen(*str);
+		*pos = *str + orig_len;
+	} else {
+		xassert(*pos >= *str);
+		orig_len = *pos - *str;
+	}
+
+	_makespace(str, orig_len, append_len);
+
+	memcpy(*str + orig_len, str2, append_len);
+
+	/*
+	 * Update *pos. Cannot happen earlier as _makespace() may have
+	 * changed *str to a different address.
+	 */
+	*pos = *str + orig_len + append_len;
 }
 
 /*
