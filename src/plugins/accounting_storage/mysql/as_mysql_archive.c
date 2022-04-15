@@ -3185,19 +3185,20 @@ static buf_t *_pack_archive_events(MYSQL_RES *result, char *cluster_name,
 static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 			  char *cluster_name, uint32_t rec_cnt)
 {
-	char *insert = NULL, *format = NULL;
+	char *insert = NULL, *insert_pos = NULL;
+	char *format = NULL, *format_pos = NULL;
 	local_event_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
-		   cluster_name, event_table, event_req_inx[0]);
-	xstrcat(format, "('%s'");
+	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
+		     cluster_name, event_table, event_req_inx[0]);
+	xstrcatat(format, &format_pos, "('%s'");
 	for(i=1; i<EVENT_REQ_COUNT; i++) {
-		xstrfmtcat(insert, ", %s", event_req_inx[i]);
-		xstrcat(format, ", '%s'");
+		xstrfmtcatat(insert, &insert_pos, ", %s", event_req_inx[i]);
+		xstrcatat(format, &format_pos, ", '%s'");
 	}
-	xstrcat(insert, ") values ");
-	xstrcat(format, ")");
+	xstrcatat(insert, &insert_pos, ") values ");
+	xstrcatat(format, &format_pos, ")");
 
 	for (i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_event_t));
@@ -3210,17 +3211,17 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 		}
 
 		if (i)
-			xstrcat(insert, ", ");
+			xstrcatat(insert, &insert_pos, ", ");
 
-		xstrfmtcat(insert, format,
-			   object.period_start,
-			   object.period_end,
-			   object.node_name,
-			   object.cluster_nodes,
-			   object.reason,
-			   object.reason_uid,
-			   object.state,
-			   object.tres_str);
+		xstrfmtcatat(insert, &insert_pos, format,
+			     object.period_start,
+			     object.period_end,
+			     object.node_name,
+			     object.cluster_nodes,
+			     object.reason,
+			     object.reason_uid,
+			     object.state,
+			     object.tres_str);
 
 
 		_free_local_event_members(&object);
