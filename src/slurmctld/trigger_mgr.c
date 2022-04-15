@@ -532,53 +532,45 @@ extern void trigger_front_end_up(front_end_record_t *front_end_ptr)
 
 extern void trigger_node_down(node_record_t *node_ptr)
 {
-	int inx = node_ptr->index;
-
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_down_nodes_bitmap == NULL)
 		trigger_down_nodes_bitmap = bit_alloc(node_record_count);
-	bit_set(trigger_down_nodes_bitmap, inx);
+	bit_set(trigger_down_nodes_bitmap, node_ptr->index);
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
 extern void trigger_node_drained(node_record_t *node_ptr)
 {
-	int inx = node_ptr->index;
-
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_drained_nodes_bitmap == NULL)
 		trigger_drained_nodes_bitmap = bit_alloc(node_record_count);
-	bit_set(trigger_drained_nodes_bitmap, inx);
+	bit_set(trigger_drained_nodes_bitmap, node_ptr->index);
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
 extern void trigger_node_failing(node_record_t *node_ptr)
 {
-	int inx = node_ptr->index;
-
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_fail_nodes_bitmap == NULL)
 		trigger_fail_nodes_bitmap = bit_alloc(node_record_count);
-	bit_set(trigger_fail_nodes_bitmap, inx);
+	bit_set(trigger_fail_nodes_bitmap, node_ptr->index);
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
 extern void trigger_node_up(node_record_t *node_ptr)
 {
-	int inx = node_ptr->index;
-
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_up_nodes_bitmap == NULL)
 		trigger_up_nodes_bitmap = bit_alloc(node_record_count);
-	bit_set(trigger_up_nodes_bitmap, inx);
+	bit_set(trigger_up_nodes_bitmap, node_ptr->index);
 	slurm_mutex_unlock(&trigger_mutex);
 }
 

@@ -174,7 +174,6 @@ extern bool topo_generate_node_ranking(void)
 extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 {
 	node_record_t *node_ptr;
-	int node_inx;
 	hostlist_t sl = NULL;
 
 	int s_max_level = 0;
@@ -191,7 +190,6 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 	/* node not found in configuration */
 	if ( node_ptr == NULL )
 		return SLURM_ERROR;
-	node_inx = node_ptr->index;
 
 	/* look for switches max level */
 	for (i=0; i<switch_record_cnt; i++) {
@@ -209,7 +207,7 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 			if (switch_record_table[i].level != j)
 				continue;
 			if (!bit_test(switch_record_table[i].node_bitmap,
-				      node_inx))
+				      node_ptr->index))
 				continue;
 			if (sl == NULL) {
 				sl = hostlist_create(switch_record_table[i].

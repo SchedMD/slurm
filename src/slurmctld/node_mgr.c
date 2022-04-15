@@ -1362,7 +1362,7 @@ static void _require_node_reg(node_record_t *node_ptr)
  */
 int update_node ( update_node_msg_t * update_node_msg )
 {
-	int error_code = 0, node_cnt, node_inx;
+	int error_code = 0, node_cnt;
 	node_record_t *node_ptr = NULL;
 	char *this_node_name = NULL, *tmp_feature, *orig_features_act = NULL;
 	hostlist_t host_list, hostaddr_list = NULL, hostname_list = NULL;
@@ -1428,7 +1428,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 			free (this_node_name);
 			break;
 		}
-		node_inx = node_ptr->index;
 
 		if (hostaddr_list) {
 			char *this_addr = hostlist_shift(hostaddr_list);
@@ -1521,7 +1520,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			tmp_feature = node_features_g_node_xlate(
 					update_node_msg->features_act,
 					orig_features_act, node_ptr->features,
-					node_inx);
+					node_ptr->index);
 			xfree(node_ptr->features_act);
 			node_ptr->features_act = tmp_feature;
 			error_code = update_node_active_features(
@@ -1635,7 +1634,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					}
 					state_val = NODE_STATE_IDLE;
 					bit_clear(future_node_bitmap,
-						  node_inx);
+						  node_ptr->index);
 
 					_require_node_reg(node_ptr);
 				} else if (node_flags & NODE_STATE_DRAIN) {
@@ -1673,7 +1672,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 					}
 					node_ptr->node_state =
 						NODE_STATE_FUTURE;
-					bit_set(future_node_bitmap, node_inx);
+					bit_set(future_node_bitmap,
+						node_ptr->index);
 					clusteracct_storage_g_node_down(
 						acct_db_conn,
 						node_ptr, now,
@@ -1704,8 +1704,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if (!IS_NODE_NO_RESPOND(node_ptr) ||
 				     IS_NODE_POWERED_DOWN(node_ptr))
 					make_node_avail(node_ptr);
-				bit_set (idle_node_bitmap, node_inx);
-				bit_set (up_node_bitmap, node_inx);
+				bit_set (idle_node_bitmap, node_ptr->index);
+				bit_set (up_node_bitmap, node_ptr->index);
 				if (IS_NODE_POWERED_DOWN(node_ptr))
 					node_ptr->last_busy = 0;
 				else
@@ -1715,8 +1715,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				    !IS_NODE_FAIL(node_ptr)  &&
 				    !IS_NODE_NO_RESPOND(node_ptr))
 					make_node_avail(node_ptr);
-				bit_set (up_node_bitmap, node_inx);
-				bit_clear (idle_node_bitmap, node_inx);
+				bit_set (up_node_bitmap, node_ptr->index);
+				bit_clear (idle_node_bitmap, node_ptr->index);
 			} else if ((state_val == NODE_STATE_DRAIN) ||
 				   (state_val == NODE_STATE_FAIL)) {
 				uint32_t new_state = state_val;
@@ -1729,7 +1729,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					kill_running_job_by_node_name(
 								this_node_name);
 				}
-				bit_clear (avail_node_bitmap, node_inx);
+				bit_clear (avail_node_bitmap, node_ptr->index);
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				state_val = node_ptr->node_state |= state_val;
@@ -1824,11 +1824,12 @@ int update_node ( update_node_msg_t * update_node_msg )
 					 * that it will power_down before jobs
 					 * get on it.
 					 */
-					bit_clear(avail_node_bitmap, node_inx);
+					bit_clear(avail_node_bitmap,
+						  node_ptr->index);
 				}
 
 				node_ptr->next_state = NO_VAL;
-				bit_clear(rs_node_bitmap, node_inx);
+				bit_clear(rs_node_bitmap, node_ptr->index);
 				free(this_node_name);
 				continue;
 			} else if (state_val == NODE_STATE_POWER_UP) {
@@ -1853,13 +1854,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 					     this_node_name);
 				}
 				node_ptr->next_state = NO_VAL;
-				bit_clear(rs_node_bitmap, node_inx);
+				bit_clear(rs_node_bitmap, node_ptr->index);
 				free(this_node_name);
 				continue;
 			} else if (state_val == NODE_STATE_NO_RESPOND) {
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 				state_val = base_state;
-				bit_clear(avail_node_bitmap, node_inx);
+				bit_clear(avail_node_bitmap, node_ptr->index);
 			} else if (state_val == NODE_STATE_REBOOT_CANCEL) {
 				if (!IS_NODE_REBOOT_ISSUED(node_ptr)) {
 					node_ptr->node_state &=
@@ -1890,7 +1891,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if (!IS_NODE_REBOOT_REQUESTED(node_ptr) &&
 				    !IS_NODE_REBOOT_ISSUED(node_ptr))
 					node_ptr->next_state = NO_VAL;
-				bit_clear(rs_node_bitmap, node_inx);
+				bit_clear(rs_node_bitmap, node_ptr->index);
 
 				info ("update_node: node %s state set to %s",
 					this_node_name,
@@ -2375,7 +2376,6 @@ static void _update_config_ptr(bitstr_t *bitmap, config_record_t *config_ptr)
 static void _drain_node(node_record_t *node_ptr, char *reason,
 			uint32_t reason_uid)
 {
-	int node_inx;
 	time_t now = time(NULL);
 
 	xassert(node_ptr);
@@ -2386,8 +2386,7 @@ static void _drain_node(node_record_t *node_ptr, char *reason,
 	}
 
 	node_ptr->node_state |= NODE_STATE_DRAIN;
-	node_inx = node_ptr->index;
-	bit_clear(avail_node_bitmap, node_inx);
+	bit_clear(avail_node_bitmap, node_ptr->index);
 	info("drain_nodes: node %s state set to DRAIN",
 	     node_ptr->name);
 	if ((node_ptr->reason == NULL) ||
@@ -2604,7 +2603,6 @@ static void _split_node_config(node_record_t *node_ptr,
 			       slurm_node_registration_status_msg_t *reg_msg)
 {
 	config_record_t *config_ptr, *new_config_ptr;
-	int node_inx;
 
 	if (!node_ptr)
 		return;
@@ -2612,20 +2610,19 @@ static void _split_node_config(node_record_t *node_ptr,
 	if (!config_ptr)
 		return;
 
-	node_inx = node_ptr->index;
 	if ((bit_set_count(config_ptr->node_bitmap) > 1) &&
-	    bit_test(config_ptr->node_bitmap, node_inx)) {
+	    bit_test(config_ptr->node_bitmap, node_ptr->index)) {
 		new_config_ptr = create_config_record();
 		memcpy(new_config_ptr, config_ptr, sizeof(config_record_t));
 		new_config_ptr->cpu_spec_list =
 			xstrdup(config_ptr->cpu_spec_list);
 		new_config_ptr->feature = xstrdup(config_ptr->feature);
 		new_config_ptr->gres = xstrdup(config_ptr->gres);
-		bit_clear(config_ptr->node_bitmap, node_inx);
+		bit_clear(config_ptr->node_bitmap, node_ptr->index);
 		xfree(config_ptr->nodes);
 		config_ptr->nodes = bitmap2node_name(config_ptr->node_bitmap);
 		new_config_ptr->node_bitmap = bit_alloc(node_record_count);
-		bit_set(new_config_ptr->node_bitmap, node_inx);
+		bit_set(new_config_ptr->node_bitmap, node_ptr->index);
 		new_config_ptr->nodes = xstrdup(node_ptr->name);
 		node_ptr->config_ptr = new_config_ptr;
 		config_ptr = new_config_ptr;
@@ -2643,7 +2640,7 @@ static void _split_node_config(node_record_t *node_ptr,
  */
 extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 {
-	int error_code, node_inx;
+	int error_code;
 	config_record_t *config_ptr;
 	node_record_t *node_ptr;
 	char *reason_down = NULL;
@@ -2686,8 +2683,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 	}
 
-	node_inx = node_ptr->index;
-	orig_node_avail = bit_test(avail_node_bitmap, node_inx);
+	orig_node_avail = bit_test(avail_node_bitmap, node_ptr->index);
 
 	config_ptr = node_ptr->config_ptr;
 	error_code = SLURM_SUCCESS;
@@ -2700,7 +2696,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	if (waiting_for_node_boot(node_ptr) ||
 	    waiting_for_node_power_down(node_ptr))
 		return SLURM_SUCCESS;
-	bit_clear(booting_node_bitmap, node_inx);
+	bit_clear(booting_node_bitmap, node_ptr->index);
 
 	if (cr_flag == NO_VAL) {
 		cr_flag = 0;  /* call is no-op for select/linear and others */
@@ -2737,7 +2733,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		node_ptr->features = node_features_g_node_xlate(
 					reg_msg->features_avail,
 					orig_features, orig_features,
-					node_inx);
+					node_ptr->index);
 		(void) update_node_avail_features(node_ptr->name,
 						  node_ptr->features,
 						  FEATURE_MODE_IND);
@@ -2748,7 +2744,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 						reg_msg->features_active,
 						orig_features_act,
 						orig_features,
-						node_inx);
+						node_ptr->index);
 		xfree(node_ptr->features_act);
 		node_ptr->features_act = tmp_feature;
 		(void) update_node_active_features(node_ptr->name,
@@ -2934,10 +2930,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 		node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 		node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
-		if (!is_node_in_maint_reservation(node_inx))
+		if (!is_node_in_maint_reservation(node_ptr->index))
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
 
-		bit_clear(power_node_bitmap, node_inx);
+		bit_clear(power_node_bitmap, node_ptr->index);
 
 		last_node_update = now;
 
@@ -2983,7 +2979,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			      reg_msg->node_name,reg_msg->job_count);
 			if (IS_NODE_FUTURE(node_ptr)) {
 				if (IS_NODE_MAINT(node_ptr) &&
-				    !is_node_in_maint_reservation(node_inx))
+				    !is_node_in_maint_reservation(
+					    node_ptr->index))
 					node_flags &= (~NODE_STATE_MAINT);
 				node_flags &= (~NODE_STATE_REBOOT_REQUESTED);
 				node_flags &= (~NODE_STATE_REBOOT_ISSUED);
@@ -3037,7 +3034,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 				node_ptr->last_busy = now;
 			}
 			node_ptr->next_state = NO_VAL;
-			bit_clear(rs_node_bitmap, node_inx);
+			bit_clear(rs_node_bitmap, node_ptr->index);
 
 			info("node %s returned to service",
 			     reg_msg->node_name);
@@ -3081,7 +3078,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			   (reg_msg->job_count == 0)) {	/* job already done */
 			node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 			last_node_update = now;
-			bit_clear(cg_node_bitmap, node_inx);
+			bit_clear(cg_node_bitmap, node_ptr->index);
 		} else if (IS_NODE_IDLE(node_ptr) &&
 			   (reg_msg->job_count != 0)) {
 			if (node_ptr->run_job_cnt != 0) {
@@ -3098,7 +3095,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			 */
 			if (node_ptr->comp_job_cnt != 0) {
 				node_ptr->node_state |= NODE_STATE_COMPLETING;
-				bit_set(cg_node_bitmap, node_inx);
+				bit_set(cg_node_bitmap, node_ptr->index);
 			}
 			last_node_update = now;
 		}
@@ -3107,7 +3104,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			xfree(node_ptr->mcs_label);
 		}
 
-		select_g_update_node_config(node_inx);
+		select_g_update_node_config(node_ptr->index);
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	}
 
@@ -3120,7 +3117,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	node_ptr->boot_req_time = (time_t) 0;
 	node_ptr->power_save_req_time = (time_t) 0;
 
-	*newly_up = (!orig_node_avail && bit_test(avail_node_bitmap, node_inx));
+	*newly_up = (!orig_node_avail &&
+		     bit_test(avail_node_bitmap, node_ptr->index));
 
 	if (!error_code && IS_NODE_CLOUD(node_ptr) && cloud_reg_addrs) {
 		slurm_addr_t addr;
@@ -3506,21 +3504,19 @@ extern int validate_nodes_via_front_end(
 /* Sync idle, share, and avail_node_bitmaps for a given node */
 static void _sync_bitmaps(node_record_t *node_ptr, int job_count)
 {
-	int node_inx = node_ptr->index;
-
 	if (job_count == 0) {
-		bit_set (idle_node_bitmap, node_inx);
-		bit_set (share_node_bitmap, node_inx);
+		bit_set (idle_node_bitmap, node_ptr->index);
+		bit_set (share_node_bitmap, node_ptr->index);
 	}
 	if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
 	    IS_NODE_FAIL(node_ptr) || IS_NODE_NO_RESPOND(node_ptr))
-		bit_clear (avail_node_bitmap, node_inx);
+		bit_clear (avail_node_bitmap, node_ptr->index);
 	else
 		make_node_avail(node_ptr);
 	if (IS_NODE_DOWN(node_ptr))
-		bit_clear (up_node_bitmap, node_inx);
+		bit_clear (up_node_bitmap, node_ptr->index);
 	else
-		bit_set   (up_node_bitmap, node_inx);
+		bit_set   (up_node_bitmap, node_ptr->index);
 }
 
 #ifdef HAVE_FRONT_END
@@ -3562,11 +3558,9 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 #else
 static void _node_did_resp(node_record_t *node_ptr)
 {
-	int node_inx;
 	uint32_t node_flags;
 	time_t now = time(NULL);
 
-	node_inx = node_ptr->index;
 	if (waiting_for_node_boot(node_ptr) ||
 	    waiting_for_node_power_down(node_ptr))
 		return;
@@ -3575,7 +3569,7 @@ static void _node_did_resp(node_record_t *node_ptr)
 		info("Node %s now responding", node_ptr->name);
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
-		if (!is_node_in_maint_reservation(node_inx))
+		if (!is_node_in_maint_reservation(node_ptr->index))
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
 		last_node_update = now;
 	}
@@ -3613,20 +3607,20 @@ static void _node_did_resp(node_record_t *node_ptr)
 		}
 	}
 	if (IS_NODE_IDLE(node_ptr) && !IS_NODE_COMPLETING(node_ptr)) {
-		bit_set (idle_node_bitmap, node_inx);
-		bit_set (share_node_bitmap, node_inx);
+		bit_set (idle_node_bitmap, node_ptr->index);
+		bit_set (share_node_bitmap, node_ptr->index);
 	}
 	if (IS_NODE_DOWN(node_ptr) ||
 	    IS_NODE_DRAIN(node_ptr) ||
 	    IS_NODE_FAIL(node_ptr) ||
 	    (IS_NODE_POWER_DOWN(node_ptr) && !IS_NODE_ALLOCATED(node_ptr))) {
-		bit_clear (avail_node_bitmap, node_inx);
+		bit_clear (avail_node_bitmap, node_ptr->index);
 	} else
-		bit_set   (avail_node_bitmap, node_inx);
+		bit_set   (avail_node_bitmap, node_ptr->index);
 	if (IS_NODE_DOWN(node_ptr))
-		bit_clear (up_node_bitmap, node_inx);
+		bit_clear (up_node_bitmap, node_ptr->index);
 	else
-		bit_set   (up_node_bitmap, node_inx);
+		bit_set   (up_node_bitmap, node_ptr->index);
 	return;
 }
 #endif
@@ -4045,13 +4039,12 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
  */
 extern void make_node_alloc(node_record_t *node_ptr, job_record_t *job_ptr)
 {
-	int inx = node_ptr->index;
 	uint32_t node_flags;
 
 	(node_ptr->run_job_cnt)++;
-	bit_clear(idle_node_bitmap, inx);
+	bit_clear(idle_node_bitmap, node_ptr->index);
 	if (job_ptr->details && (job_ptr->details->share_res == 0)) {
-		bit_clear(share_node_bitmap, inx);
+		bit_clear(share_node_bitmap, node_ptr->index);
 		(node_ptr->no_share_job_cnt)++;
 	}
 
@@ -4341,7 +4334,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		 * from the avail_node_bitmap to prevent jobs being scheduled on
 		 * the node before it power's off.
 		 */
-		bit_clear(avail_node_bitmap, inx);
+		bit_clear(avail_node_bitmap, node_ptr->index);
 	}
 
 fini:

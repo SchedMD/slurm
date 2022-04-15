@@ -480,7 +480,6 @@ static void _failing_node(node_record_t *node_ptr)
 	job_record_t *job_ptr;
 	time_t now = time(NULL);
 	uint32_t event_flag = 0;
-	int node_inx;
 
 	info("node_fail_callback for node:%s", node_ptr->name);
 	if (!job_fail_list)
@@ -489,7 +488,6 @@ static void _failing_node(node_record_t *node_ptr)
 		event_flag |= SMD_EVENT_NODE_FAILED;
 	if (IS_NODE_FAIL(node_ptr))
 		event_flag |= SMD_EVENT_NODE_FAILING;
-	node_inx = node_ptr->index;
 	slurm_mutex_lock(&job_fail_mutex);
 	job_iterator = list_iterator_create(job_fail_list);
 	while ((job_fail_ptr = (job_failures_t *) list_next(job_iterator))) {
@@ -497,7 +495,7 @@ static void _failing_node(node_record_t *node_ptr)
 			continue;
 		job_ptr = job_fail_ptr->job_ptr;
 		if (IS_JOB_FINISHED(job_ptr) || !job_ptr->node_bitmap ||
-		    !bit_test(job_ptr->node_bitmap, node_inx))
+		    !bit_test(job_ptr->node_bitmap, node_ptr->index))
 			continue;
 		job_fail_ptr->callback_flags |= event_flag;
 		job_fail_update_time = now;
@@ -510,7 +508,6 @@ extern void node_fail_callback(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	job_failures_t *job_fail_ptr;
 	uint32_t event_flag = 0;
-	int node_inx;
 
 	if (!job_ptr) {
 		_failing_node(node_ptr);
@@ -538,9 +535,8 @@ extern void node_fail_callback(job_record_t *job_ptr, node_record_t *node_ptr)
 	job_fail_ptr->fail_node_cnt++;
 	xrealloc(job_fail_ptr->fail_node_cpus,
 		 (sizeof(uint32_t) * job_fail_ptr->fail_node_cnt));
-	node_inx = node_ptr->index;
 	job_fail_ptr->fail_node_cpus[job_fail_ptr->fail_node_cnt - 1] =
-		_get_job_cpus(job_ptr, node_inx);
+		_get_job_cpus(job_ptr, node_ptr->index);
 	xrealloc(job_fail_ptr->fail_node_names,
 		 (sizeof(char *) * job_fail_ptr->fail_node_cnt));
 	job_fail_ptr->fail_node_names[job_fail_ptr->fail_node_cnt - 1] =
@@ -844,13 +840,11 @@ static char *_job_node_features(job_record_t *job_ptr, node_record_t *node_ptr)
 	job_feature_t *job_feat_ptr;
 	ListIterator job_iter, node_iter;
 	char *req_feat = NULL;
-	int node_inx;
 
 	if (!job_ptr->details || !job_ptr->details->features ||
 	    !job_ptr->details->feature_list)
 		return req_feat;
 
-	node_inx = node_ptr->index;
 	job_iter = list_iterator_create(job_ptr->details->feature_list);
 	while ((job_feat_ptr = (job_feature_t *) list_next(job_iter))) {
 		node_iter = list_iterator_create(active_feature_list);
@@ -859,7 +853,8 @@ static char *_job_node_features(job_record_t *job_ptr, node_record_t *node_ptr)
 			if (!job_feat_ptr->name  ||
 			    !node_feat_ptr->name ||
 			    !node_feat_ptr->node_bitmap ||
-			    !bit_test(node_feat_ptr->node_bitmap, node_inx) ||
+			    !bit_test(node_feat_ptr->node_bitmap,
+				      node_ptr->index) ||
 			    xstrcmp(job_feat_ptr->name, node_feat_ptr->name))
 				continue;
 			if (req_feat)

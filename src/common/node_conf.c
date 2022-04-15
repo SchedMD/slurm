@@ -872,15 +872,12 @@ extern void insert_node_record(node_record_t *node_ptr)
 
 extern void delete_node_record(node_record_t *node_ptr)
 {
-	int node_index;
-
 	xassert(node_ptr);
 
-	node_index = node_ptr->index;
 	purge_node_rec(node_ptr);
-	node_record_table_ptr[node_index] = NULL;
+	node_record_table_ptr[node_ptr->index] = NULL;
 
-	if (node_index == last_node_index) {
+	if (node_ptr->index == last_node_index) {
 		int i = 0;
 		for (i = last_node_index - 1; i >=0; i--) {
 			if (node_record_table_ptr[i]) {

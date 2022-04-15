@@ -2716,8 +2716,7 @@ static bool _node_has_feature(node_record_t *node_ptr, char *feature)
 
 	if ((node_feature = list_find_first(active_feature_list,
 					    list_find_feature, feature))) {
-		int node_inx = node_ptr->index;
-		if (bit_test(node_feature->node_bitmap, node_inx))
+		if (bit_test(node_feature->node_bitmap, node_ptr->index))
 		    return true;
 	}
 

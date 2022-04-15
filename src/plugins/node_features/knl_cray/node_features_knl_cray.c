@@ -1511,8 +1511,7 @@ static void _update_all_node_features(
 				 "%s%.*d", prefix, width, mcdram_cap[i].nid);
 			node_ptr = find_node_record(node_name);
 			if (node_ptr) {
-				node_inx = node_ptr->index;
-				bit_set(knl_node_bitmap, node_inx);
+				bit_set(knl_node_bitmap, node_ptr->index);
 				if (validate_mode == 0) {
 					_merge_strings(&node_ptr->features,
 						       mcdram_cap[i].mcdram_cfg,

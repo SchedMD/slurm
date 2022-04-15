@@ -1496,7 +1496,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	node_use_record_t *node_usage = select_node_usage;
 	struct job_resources *job = job_ptr->job_resrcs;
 	part_res_record_t *p_ptr;
-	int i, i_first, i_last, node_inx, n;
+	int i, i_first, i_last, n;
 	List gres_list;
 	bool old_job = false;
 
@@ -1517,7 +1517,6 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		_dump_job_res(job);
 
 	/* subtract memory */
-	node_inx = node_ptr->index;
 	i_first = bit_ffs(job->node_bitmap);
 	if (i_first != -1)
 		i_last  = bit_fls(job->node_bitmap);
@@ -1526,7 +1525,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	for (i = i_first, n = 0; i <= i_last; i++) {
 		if (!bit_test(job->node_bitmap, i))
 			continue;
-		if (i != node_inx) {
+		if (i != node_ptr->index) {
 			n++;
 			continue;
 		}
@@ -1613,11 +1612,11 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	 * Adjust the node_state of the node removed from this job.
 	 * If all cores are now available, set node_state = NODE_CR_AVAILABLE
 	 */
-	if (node_usage[node_inx].node_state >= job->node_req) {
-		node_usage[node_inx].node_state -= job->node_req;
+	if (node_usage[node_ptr->index].node_state >= job->node_req) {
+		node_usage[node_ptr->index].node_state -= job->node_req;
 	} else {
 		error("node_state miscount");
-		node_usage[node_inx].node_state = NODE_CR_AVAILABLE;
+		node_usage[node_ptr->index].node_state = NODE_CR_AVAILABLE;
 	}
 
 	return SLURM_SUCCESS;
