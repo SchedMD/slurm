@@ -4100,7 +4100,6 @@ extern void make_node_avail(node_record_t *node_ptr)
 extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 			   bool suspended)
 {
-	int inx = node_ptr->index;
 	uint32_t node_flags;
 	time_t now = time(NULL);
 
@@ -4127,7 +4126,7 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 				      __func__, job_ptr, node_ptr->name);
 			}
 			if (node_ptr->no_share_job_cnt == 0)
-				bit_set(share_node_bitmap, inx);
+				bit_set(share_node_bitmap, node_ptr->index);
 		}
 	}
 
@@ -4138,14 +4137,14 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 		/* Don't verify RPC if node in DOWN or POWER_UP state */
 		(node_ptr->comp_job_cnt)++;
 		node_ptr->node_state |= NODE_STATE_COMPLETING;
-		bit_set(cg_node_bitmap, inx);
+		bit_set(cg_node_bitmap, node_ptr->index);
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
 	if ((node_ptr->run_job_cnt  == 0) &&
 	    (node_ptr->comp_job_cnt == 0)) {
 		node_ptr->last_busy = now;
-		bit_set(idle_node_bitmap, inx);
+		bit_set(idle_node_bitmap, node_ptr->index);
 		if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
 			trigger_node_drained(node_ptr);
 			clusteracct_storage_g_node_down(
@@ -4172,16 +4171,14 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
  */
 static void _make_node_unavail(node_record_t *node_ptr)
 {
-	int inx = node_ptr->index;
-
 	xassert(node_ptr);
 
 	node_ptr->node_state &= (~NODE_STATE_COMPLETING);
-	bit_clear(avail_node_bitmap, inx);
-	bit_clear(cg_node_bitmap, inx);
-	bit_set(idle_node_bitmap, inx);
-	bit_set(share_node_bitmap, inx);
-	bit_clear(up_node_bitmap, inx);
+	bit_clear(avail_node_bitmap, node_ptr->index);
+	bit_clear(cg_node_bitmap, node_ptr->index);
+	bit_set(idle_node_bitmap, node_ptr->index);
+	bit_set(share_node_bitmap, node_ptr->index);
+	bit_clear(up_node_bitmap, node_ptr->index);
 }
 
 /* _make_node_down - flag specified node as down */
@@ -4215,7 +4212,6 @@ static void _make_node_down(node_record_t *node_ptr, time_t event_time)
  */
 void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 {
-	int inx = node_ptr->index;
 	uint32_t node_flags;
 	time_t now = time(NULL);
 	bitstr_t *node_bitmap = NULL;
@@ -4230,13 +4226,13 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	xassert(node_ptr);
-	if (node_bitmap && (bit_test(node_bitmap, inx))) {
+	if (node_bitmap && (bit_test(node_bitmap, node_ptr->index))) {
 		/* Not a replay */
 		last_job_update = now;
-		bit_clear(node_bitmap, inx);
+		bit_clear(node_bitmap, node_ptr->index);
 
 		if (!IS_JOB_FINISHED(job_ptr))
-			job_update_tres_cnt(job_ptr, inx);
+			job_update_tres_cnt(job_ptr, node_ptr->index);
 
 		if (job_ptr->node_cnt) {
 			/*
@@ -4288,7 +4284,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 
 	if (node_ptr->comp_job_cnt == 0) {
 		node_ptr->node_state &= (~NODE_STATE_COMPLETING);
-		bit_clear(cg_node_bitmap, inx);
+		bit_clear(cg_node_bitmap, node_ptr->index);
 		if (IS_NODE_IDLE(node_ptr)) {
 			node_ptr->owner = NO_VAL;
 			xfree(node_ptr->mcs_label);
@@ -4302,18 +4298,18 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		       node_state_base_string(node_ptr->node_state));
 		goto fini;
 	}
-	bit_set(up_node_bitmap, inx);
+	bit_set(up_node_bitmap, node_ptr->index);
 
 	if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr) ||
 	    IS_NODE_NO_RESPOND(node_ptr))
-		bit_clear(avail_node_bitmap, inx);
+		bit_clear(avail_node_bitmap, node_ptr->index);
 	else
 		make_node_avail(node_ptr);
 
 	if ((IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) &&
 	    (node_ptr->run_job_cnt == 0) && (node_ptr->comp_job_cnt == 0)) {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
-		bit_set(idle_node_bitmap, inx);
+		bit_set(idle_node_bitmap, node_ptr->index);
 		debug3("%s: %pJ node %s is DRAINED",
 		       __func__, job_ptr, node_ptr->name);
 		node_ptr->last_busy = now;
@@ -4335,7 +4331,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 			make_node_avail(node_ptr);
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_COMPLETING(node_ptr))
-			bit_set(idle_node_bitmap, inx);
+			bit_set(idle_node_bitmap, node_ptr->index);
 		node_ptr->last_busy = now;
 	}
 
