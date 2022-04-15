@@ -3927,19 +3927,21 @@ static buf_t *_pack_archive_suspends(MYSQL_RES *result, char *cluster_name,
 static char *_load_suspend(uint16_t rpc_version, buf_t *buffer,
 			   char *cluster_name, uint32_t rec_cnt)
 {
-	char *insert = NULL, *format = NULL;
+	char *insert = NULL, *insert_pos = NULL;
+	char *format = NULL, *format_pos = NULL;
 	local_suspend_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
-		   cluster_name, suspend_table, suspend_req_inx[0]);
-	xstrcat(format, "('%s'");
+	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
+		    cluster_name, suspend_table, suspend_req_inx[0]);
+	xstrcatat(format, &format_pos, "('%s'");
 	for(i=1; i<SUSPEND_REQ_COUNT; i++) {
-		xstrfmtcat(insert, ", %s", suspend_req_inx[i]);
-		xstrcat(format, ", '%s'");
+		xstrfmtcatat(insert, &insert_pos, ", %s", suspend_req_inx[i]);
+		xstrcatat(format, &format_pos, ", '%s'");
 	}
-	xstrcat(insert, ") values ");
-	xstrcat(format, ")");
+	xstrcatat(insert, &insert_pos, ") values ");
+	xstrcatat(format, &format_pos, ")");
+
 	for(i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_suspend_t));
 		if (_unpack_local_suspend(&object, rpc_version, buffer)
@@ -3951,13 +3953,13 @@ static char *_load_suspend(uint16_t rpc_version, buf_t *buffer,
 		}
 
 		if (i)
-			xstrcat(insert, ", ");
+			xstrcatat(insert, &insert_pos, ", ");
 
-		xstrfmtcat(insert, format,
-			   object.job_db_inx,
-			   object.associd,
-			   object.period_start,
-			   object.period_end);
+		xstrfmtcatat(insert, &insert_pos, format,
+			     object.job_db_inx,
+			     object.associd,
+			     object.period_start,
+			     object.period_end);
 
 		_free_local_suspend_members(&object);
 	}
