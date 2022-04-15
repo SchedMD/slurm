@@ -97,6 +97,7 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->dbd_port = 0;
 		slurmdbd_conf->debug_level = LOG_LEVEL_INFO;
 		xfree(slurmdbd_conf->default_qos);
+		slurmdbd_conf->flags = 0;
 		xfree(slurmdbd_conf->log_file);
 		slurmdbd_conf->syslog_debug = LOG_LEVEL_END;
 		xfree(slurmdbd_conf->parameters);
@@ -123,6 +124,7 @@ static void _clear_slurmdbd_conf(void)
 extern int read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
+		{"AllowNoDefAcct", S_P_BOOLEAN},
 		{"ArchiveDir", S_P_STRING},
 		{"ArchiveEvents", S_P_BOOLEAN},
 		{"ArchiveJobs", S_P_BOOLEAN},
@@ -208,6 +210,7 @@ extern int read_slurmdbd_conf(void)
 		bool a_events = false, a_jobs = false, a_resv = false;
 		bool a_steps = false, a_suspend = false, a_txn = false;
 		bool a_usage = false;
+		bool tmp_bool = false;
 		uid_t conf_path_uid;
 		debug3("Checking slurmdbd.conf file:%s access permissions",
 		       conf_path);
@@ -231,6 +234,12 @@ extern int read_slurmdbd_conf(void)
 				    tbl))
 			slurmdbd_conf->archive_dir =
 				xstrdup(DEFAULT_SLURMDBD_ARCHIVE_DIR);
+
+		tmp_bool = false;
+		s_p_get_boolean(&tmp_bool, "AllowNoDefAcct", tbl);
+		if (tmp_bool)
+			slurmdbd_conf->flags |= DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT;
+
 		s_p_get_boolean(&a_events, "ArchiveEvents", tbl);
 		s_p_get_boolean(&a_jobs, "ArchiveJobs", tbl);
 		s_p_get_boolean(&a_resv, "ArchiveResvs", tbl);
@@ -728,6 +737,13 @@ extern List dump_config(void)
 	config_key_pair_t *key_pair;
 	char time_str[32];
 	List my_list = list_create(destroy_config_key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AllowNoDefAcct");
+	key_pair->value = xstrdup(
+		(slurmdbd_conf->flags & DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT) ?
+		"Yes" : "No");
+	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ArchiveDir");

@@ -24,6 +24,12 @@ contains a database password.
 The overall configuration parameters available include:
 
 .TP
+\fBAllowNoDefAcct\fR
+Remove requirement for users to have a default account.  Boolean, yes to turn
+on, no (default) to enforce default accounts.
+.IP
+
+.TP
 \fBArchiveDir\fR
 If ArchiveScript is not set the slurmdbd will generate a file that can be
 read in anytime with sacctmgr load filename.  This directory is where the

@@ -384,6 +384,9 @@ static int _make_sure_users_have_default(
 	ListIterator itr = NULL, clus_itr = NULL;
 	int rc = SLURM_SUCCESS;
 
+	if (slurmdbd_conf->flags & DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT)
+		return rc;
+
 	if (!user_list)
 		return SLURM_SUCCESS;
 

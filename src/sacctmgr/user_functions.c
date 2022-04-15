@@ -945,28 +945,13 @@ extern int sacctmgr_add_user(int argc, char **argv)
 			     local_user_list, name))) {
 			uid_t pw_uid;
 
-			if (!local_def_acct
-			    && assoc_cond->acct_list
-			    && list_count(assoc_cond->acct_list))
-				local_def_acct = xstrdup(
-					list_peek(assoc_cond->acct_list));
-
 			if (!local_def_wckey
 			    && wckey_cond->name_list
 			    && list_count(wckey_cond->name_list))
 				local_def_wckey = xstrdup(
 					list_peek(wckey_cond->name_list));
 
-			if (!local_def_acct || !local_def_acct[0]) {
-				exit_code=1;
-				fprintf(stderr, " Need a default account for "
-					"these users to add.\n");
-				rc = SLURM_ERROR;
-				xfree(local_def_acct);
-				xfree(local_def_wckey);
-				goto no_default;
-			}
-			if (first) {
+			if (first && local_def_acct) {
 				if (!sacctmgr_find_account_from_list(
 					   local_acct_list, local_def_acct)) {
 					exit_code=1;
@@ -981,6 +966,7 @@ extern int sacctmgr_add_user(int argc, char **argv)
 				}
 				first = 0;
 			}
+
 			if (uid_from_string (name, &pw_uid) < 0) {
 				char *warning = xstrdup_printf(
 					"There is no uid for user '%s'"
@@ -1050,23 +1036,6 @@ extern int sacctmgr_add_user(int argc, char **argv)
 							account, cluster);
 					}
 					continue;
-				} else if (!local_def_acct) {
-					slurmdb_assoc_rec_t *assoc_rec;
-					if (user_rec
-					    && (assoc_rec =
-						sacctmgr_find_assoc_from_list(
-						     user_rec->assoc_list,
-						     name, NULL,
-						     cluster, "*")))
-						local_def_acct = xstrdup(
-							assoc_rec->acct);
-					else if (assoc_cond
-						   && assoc_cond->acct_list
-						   && list_count(assoc_cond->
-								 acct_list))
-						local_def_acct = xstrdup(
-							list_peek(assoc_cond->
-								  acct_list));
 				}
 
 				itr_p = list_iterator_create(
@@ -1217,7 +1186,7 @@ extern int sacctmgr_add_user(int argc, char **argv)
 		list_iterator_destroy(itr_w);
 		xfree(local_def_wckey);
 	}
-no_default:
+
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(local_user_list);
 	FREE_NULL_LIST(local_acct_list);

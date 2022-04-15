@@ -194,6 +194,8 @@ documents those changes that are of interest to users and administrators.
  -- Add support for PMIx v4
  -- Add support for PMIx v5
  -- Correctly load potentially NULL values from slurmdbd archive files.
+ -- Add slurmdbd.conf option AllowNoDefAcct to remove requirement for users to
+    have a default account.
 
 * Changes in Slurm 21.08.8
 ==========================
