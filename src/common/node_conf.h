@@ -439,10 +439,11 @@ extern char *find_hostname(uint32_t pos, char *hosts);
 /*
  * Return the next non-null node_record_t * in the node_record_table_ptr.
  *
- * IN/OUT index - index to start iterating node_record_table_ptr from. Set to
- *                the index to start at for subsequent call. index should not
- *                be used for mapping nodes in bitmaps as it is +1 of the
- *                returned node_record_t * -- use node_ptr->index instead.
+ * IN/OUT index - index to start iterating node_record_table_ptr from.
+ *                Should be used in the following form so that i will increment
+ *                to the next slot and i == node_ptr->index.
+ *                e.g.
+ *                for (int i = 0; (node_ptr = next_node(&i); i++)
  * RET - next non-null node_record_t * or NULL if finished iterating.
  */
 extern node_record_t * next_node(int *index);

@@ -260,7 +260,7 @@ void ping_nodes (void)
 		ping_agent_args->node_count++;
 	}
 #else
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
@@ -543,7 +543,7 @@ extern void update_nodes_acct_gather_data(void)
 		agent_args->node_count++;
 	}
 #else
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_NO_RESPOND(node_ptr) ||
 		    IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||

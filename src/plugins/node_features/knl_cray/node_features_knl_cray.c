@@ -1575,7 +1575,7 @@ static void _update_all_node_features(
 	 * Make sure that only nodes reported by "capmc get_mcdram_capabilities"
 	 * contain KNL features
 	 */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (knl_node_bitmap && bit_test(knl_node_bitmap,
 						node_ptr->index)) {
 			if (validate_mode)
@@ -2102,7 +2102,7 @@ static void _check_node_status(void)
 	}
 	json_object_put(j_obj);	/* Frees json memory */
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		nid = atoi(node_ptr->name + 3);	/* Skip "nid" */
 		if ((nid < 0) || (nid >= 100000) ||
 		    bit_test(capmc_node_bitmap, nid))
@@ -2549,7 +2549,7 @@ static int _update_node_state(char *node_list, bool set_locks)
 			unlock_slurmctld(write_nodes_lock);
 		hostlist_destroy(host_list);
 	} else {
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			if (waiting_for_node_boot(node_ptr)) {
 				/*
 				 * Reboot likely in progress.

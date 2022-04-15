@@ -670,7 +670,7 @@ static void _build_full_nid_string(void)
 		return;
 
 	lock_slurmctld(read_node_lock);
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_DOWN(node_ptr))
 			continue;
 		if (!hs)
@@ -971,7 +971,7 @@ static void _get_nodes_ready(void)
 	json_object_put(j_obj);	/* Frees json memory */
 
 	lock_slurmctld(write_node_lock);
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!node_ptr->power)
 			node_ptr->power = xmalloc(sizeof(power_mgmt_data_t));
 		else
@@ -1107,7 +1107,7 @@ static void _get_node_energy_counter(void)
 	json_object_put(j_obj);	/* Frees json memory */
 
 	lock_slurmctld(write_node_lock);
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!node_ptr->power)
 			node_ptr->power = xmalloc(sizeof(power_mgmt_data_t));
 		else
@@ -1312,7 +1312,7 @@ static void _clear_node_caps(void)
 	node_record_t *node_ptr;
 	int i;
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_DOWN(node_ptr))
 			continue;
 		if (!node_ptr->power)
@@ -1329,7 +1329,7 @@ static void _set_node_caps(void)
 	node_record_t *node_ptr;
 	int i;
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_DOWN(node_ptr))
 			continue;
 		if (!node_ptr->power)
@@ -1422,7 +1422,7 @@ static void _rebalance_node_power(void)
 	int i;
 
 	/* Lower caps on under used nodes */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!node_ptr->power)
 			continue;
 		if (IS_NODE_DOWN(node_ptr) ||
@@ -1493,7 +1493,7 @@ static void _rebalance_node_power(void)
 		if (node_num == 0)
 			node_num = node_record_count;
 		red1 /= node_num;
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			if (IS_NODE_DOWN(node_ptr))
 				continue;
 			if (!node_ptr->power || !node_ptr->power->new_cap_watts)
@@ -1513,7 +1513,7 @@ static void _rebalance_node_power(void)
 	/* Distribute rest of power cap on remaining nodes. */
 	if (node_power_raise_cnt) {
 		ave_power = avail_power / node_power_raise_cnt;
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			if (IS_NODE_DOWN(node_ptr))
 				continue;
 			if (!node_ptr->power || (node_ptr->power->state != 1))
@@ -1564,7 +1564,7 @@ static void _log_node_power(void)
 	int i;
 
 	/* Build and log summary table of required updates to power caps */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		char *ready_str;
 		if (!node_ptr->power)
 			continue;
@@ -1613,7 +1613,7 @@ static void _set_power_caps(void)
 	script_argv[3] = NULL;
 
 	/* Pass 1, decrease power for select nodes */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_DOWN(node_ptr) ||
 		    !node_ptr->power ||
 		    (node_ptr->power->state != 1) ||
@@ -1653,7 +1653,7 @@ static void _set_power_caps(void)
 	}
 
 	/* Pass 2, increase power for select nodes */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_DOWN(node_ptr) ||
 		    !node_ptr->power ||
 		    (node_ptr->power->state != 1) ||

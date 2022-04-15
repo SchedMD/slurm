@@ -991,7 +991,7 @@ extern void init_node_conf(void)
 	int i;
 	node_record_t *node_ptr;
 
-	for (i = 0; (node_ptr = next_node(&i));)
+	for (i = 0; (node_ptr = next_node(&i)); i++)
 		purge_node_rec(node_ptr);
 
 	node_record_count = 0;
@@ -1016,7 +1016,7 @@ extern void node_fini2 (void)
 	node_record_t *node_ptr;
 
 	xhash_free(node_hash_table);
-	for (i = 0; (node_ptr = next_node(&i));)
+	for (i = 0; (node_ptr = next_node(&i)); i++)
 		delete_node_record(node_ptr);
 
 	if (config_list) {
@@ -1151,7 +1151,7 @@ static void _delete_node_config_ptr(node_record_t *node_ptr)
 	this_config_ptr = node_ptr->config_ptr;
 	node_ptr->config_ptr = NULL;
 
-	for (int i = 0; (tmp_ptr = next_node(&i));) {
+	for (int i = 0; (tmp_ptr = next_node(&i)); i++) {
 		if (tmp_ptr->config_ptr == this_config_ptr) {
 			delete = false;
 			break;
@@ -1204,7 +1204,7 @@ extern void rehash_node (void)
 
 	xhash_free (node_hash_table);
 	node_hash_table = xhash_init(_node_record_hash_identity, NULL);
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
 			continue;	/* vestigial record */
@@ -1376,5 +1376,5 @@ extern node_record_t * next_node(int *index)
 			return NULL;
 	}
 
-	return node_record_table_ptr[(*index)++];
+	return node_record_table_ptr[*index];
 }

@@ -2227,7 +2227,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	    resv_ptr->node_bitmap) {
 		resv_ptr->core_cnt = 0;
 
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			if (!bit_test(resv_ptr->node_bitmap, node_ptr->index))
 				continue;
 			resv_ptr->core_cnt +=
@@ -6890,7 +6890,7 @@ extern int set_node_maint_mode(bool reset_all)
 	flags = NODE_STATE_RES;
 	if (reset_all)
 		flags |= NODE_STATE_MAINT;
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		node_ptr->node_state &= (~flags);
 	}
 

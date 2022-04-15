@@ -2741,7 +2741,7 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 	if (node_ptr == NULL) {
 		int i;
 
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			slurm_addr_t addr;
 			char *comm_name = NULL;
 
@@ -5402,7 +5402,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	}
 
 	lock_slurmctld(node_write_lock);
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!bit_test(bitmap, node_ptr->index))
 			continue;
 		if (IS_NODE_FUTURE(node_ptr) ||

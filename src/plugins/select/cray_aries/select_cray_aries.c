@@ -1838,7 +1838,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 	slurm_mutex_lock(&blade_mutex);
 	/* clear all marks */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (bit_test(blade_nodes_running_npc, node_ptr->index))
 			node_ptr->node_state |= NODE_STATE_NET;
 		else

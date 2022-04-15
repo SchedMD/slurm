@@ -1227,7 +1227,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 		bitstr_t *trigger_idle_node_bitmap;
 
 		trigger_idle_node_bitmap = bit_alloc(node_record_count);
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			if (!IS_NODE_IDLE(node_ptr) ||
 			    (node_ptr->last_busy > min_idle))
 				continue;

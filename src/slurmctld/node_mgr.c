@@ -154,7 +154,7 @@ int dump_all_node_state ( void )
 
 	/* write node records to buffer */
 	lock_slurmctld (node_read_lock);
-	for (inx = 0; (node_ptr = next_node(&inx));) {
+	for (inx = 0; (node_ptr = next_node(&inx)); inx++) {
 		xassert (node_ptr->magic == NODE_MAGIC);
 		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
 		_dump_node_state (node_ptr, buffer);
@@ -1959,7 +1959,7 @@ extern void restore_node_features(int recover)
 	node_record_t *node_ptr;
 
 	node_features_plugin_cnt = node_features_g_count();
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (node_ptr->weight != node_ptr->config_ptr->weight) {
 			error("Node %s Weight(%u) differ from slurm.conf",
 			      node_ptr->name, node_ptr->weight);
@@ -3343,7 +3343,7 @@ extern int validate_nodes_via_front_end(
 
 	(void) gres_node_config_unpack(reg_msg->gres_info,
 				       node_record_table_ptr[i]->name);
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		bool acct_updated = false;
 
 		config_ptr = node_ptr->config_ptr;
@@ -3727,7 +3727,7 @@ extern void node_no_resp_msg(void)
 	char *host_str = NULL;
 	hostlist_t no_resp_hostlist = NULL;
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!node_ptr->not_responding ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
@@ -3904,7 +3904,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		kill_agent_args->node_count++;
 	}
 #else
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&
@@ -3982,7 +3982,7 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 	load_config_response_msg(old_config, CONFIG_REQUEST_SLURMD);
 	old_args->msg_args = old_config;
 
-	for (int i = 0; (node_ptr = next_node(&i));) {
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&
@@ -4375,7 +4375,7 @@ extern int send_nodes_to_accounting(time_t event_time)
 
  	lock_slurmctld(node_read_lock);
 	/* send nodes not in 'up' state */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!node_ptr->name)
 			continue;
 		if (node_ptr->reason)
@@ -4476,7 +4476,7 @@ extern void check_reboot_nodes()
 		sched_update = slurm_conf.last_update;
 	}
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 
 		if ((IS_NODE_REBOOT_ISSUED(node_ptr) ||
 		     (!power_save_on && IS_NODE_POWERING_UP(node_ptr))) &&

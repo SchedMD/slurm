@@ -10951,7 +10951,7 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 
 	slurm_mutex_lock(&lock);
 	if (max_cpu_cnt == -1) {
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			/* Only data from config_record used for scheduling */
 			max_cpu_cnt = MAX(max_cpu_cnt,
 					  node_ptr->config_ptr->cpus);
@@ -14941,7 +14941,7 @@ static void _send_job_kill(job_record_t *job_ptr)
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!bit_test(job_ptr->node_bitmap_cg, node_ptr->index))
 			continue;
 		if (agent_args->protocol_version > node_ptr->protocol_version)
