@@ -4126,7 +4126,8 @@ static char *_load_usage(uint16_t rpc_version, buf_t *buffer,
 			 char *cluster_name, uint16_t type, uint16_t period,
 			 uint32_t rec_cnt)
 {
-	char *insert = NULL, *format = NULL, *my_usage_table = NULL;
+	char *insert = NULL, *insert_pos = NULL;
+	char *format = NULL, *format_pos = NULL, *my_usage_table = NULL;
 	local_usage_t object;
 	int i = 0;
 
@@ -4171,15 +4172,15 @@ static char *_load_usage(uint16_t rpc_version, buf_t *buffer,
 		break;
 	}
 
-	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
+	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
 		   cluster_name, my_usage_table, usage_req_inx[0]);
-	xstrcat(format, "('%s'");
+	xstrcatat(format, &format_pos, "('%s'");
 	for(i=1; i<USAGE_COUNT; i++) {
-		xstrfmtcat(insert, ", %s", usage_req_inx[i]);
-		xstrcat(format, ", '%s'");
+		xstrfmtcatat(insert, &insert_pos, ", %s", usage_req_inx[i]);
+		xstrcatat(format, &format_pos, ", '%s'");
 	}
-	xstrcat(insert, ") values ");
-	xstrcat(format, ")");
+	xstrcatat(insert, &insert_pos, ") values ");
+	xstrcatat(format, &format_pos, ")");
 	for(i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_usage_t));
 		if (_unpack_local_usage(&object, rpc_version, buffer)
@@ -4191,16 +4192,16 @@ static char *_load_usage(uint16_t rpc_version, buf_t *buffer,
 		}
 
 		if (i)
-			xstrcat(insert, ", ");
+			xstrcatat(insert, &insert_pos, ", ");
 
-		xstrfmtcat(insert, format,
-			   object.id,
-			   object.tres_id,
-			   object.time_start,
-			   object.alloc_secs,
-			   object.creation_time,
-			   object.mod_time,
-			   object.deleted);
+		xstrfmtcatat(insert, &insert_pos, format,
+			     object.id,
+			     object.tres_id,
+			     object.time_start,
+			     object.alloc_secs,
+			     object.creation_time,
+			     object.mod_time,
+			     object.deleted);
 
 		_free_local_usage_members(&object);
 	}
