@@ -4297,6 +4297,15 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		node_ptr->last_busy = now;
 	}
 
+	if (IS_NODE_IDLE(node_ptr) && IS_NODE_POWER_DOWN(node_ptr)) {
+		/*
+		 * Now that the node is idle and is to be powered off, remove
+		 * from the avail_node_bitmap to prevent jobs being scheduled on
+		 * the node before it power's off.
+		 */
+		bit_clear(avail_node_bitmap, inx);
+	}
+
 fini:
 	if (job_ptr &&
 	    ((job_ptr->details &&
