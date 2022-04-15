@@ -253,8 +253,8 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str,
 	 * Lock the root cgroup so we don't race with other steps that are being
 	 * started.
 	 */
-	if (!root_locked && (xcgroup_lock(root_cg) != SLURM_SUCCESS)) {
-		error("xcgroup_lock error (%s)", log_str);
+	if (!root_locked && (common_cgroup_lock(root_cg) != SLURM_SUCCESS)) {
+		error("common_cgroup_lock error (%s)", log_str);
 		return SLURM_ERROR;
 	}
 
@@ -289,7 +289,7 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str,
 
 end:
 	if (!root_locked)
-		xcgroup_unlock(root_cg);
+		common_cgroup_unlock(root_cg);
 	return rc;
 }
 
@@ -612,8 +612,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 	 * terminated, they could remove the directories while we're creating
 	 * them.
 	 */
-	if (xcgroup_lock(&int_cg[sub][CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
-		error("xcgroup_lock error");
+	if (common_cgroup_lock(&int_cg[sub][CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
+		error("common_cgroup_lock error");
 		return SLURM_ERROR;
 	}
 
@@ -698,12 +698,12 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		rc = SLURM_ERROR;
 		goto step_c_err;
 	}
-	xcgroup_unlock(&int_cg[sub][CG_LEVEL_ROOT]);
+	common_cgroup_unlock(&int_cg[sub][CG_LEVEL_ROOT]);
 	return rc;
 
 step_c_err:
 	/* step cgroup is not created */
-	xcgroup_unlock(&int_cg[sub][CG_LEVEL_ROOT]);
+	common_cgroup_unlock(&int_cg[sub][CG_LEVEL_ROOT]);
 	g_step_active_cnt[sub]--;
 	return rc;
 }
@@ -1305,8 +1305,9 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 		goto fail_oom_results;
 	}
 
-	if (xcgroup_lock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]) != SLURM_SUCCESS) {
-		error("xcgroup_lock error: %m");
+	if (common_cgroup_lock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]) !=
+	    SLURM_SUCCESS) {
+		error("common_cgroup_lock error: %m");
 		goto fail_oom_results;
 	}
 
@@ -1322,7 +1323,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 	results->job_mem_failcnt = _failcnt(&int_cg[CG_MEMORY][CG_LEVEL_JOB],
 					    "memory.failcnt");
 
-	xcgroup_unlock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]);
+	common_cgroup_unlock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]);
 
 	/*
 	 * oom_thread created, but could have finished before we attempt
