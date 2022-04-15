@@ -476,6 +476,8 @@ static void _do_power_work(time_t now)
 		    (!IS_NODE_COMPLETING(node_ptr))			&&
 		    (!IS_NODE_POWERING_UP(node_ptr))			&&
 		    (!IS_NODE_POWERING_DOWN(node_ptr))			&&
+		    (!IS_NODE_REBOOT_ISSUED(node_ptr))			&&
+		    (!IS_NODE_REBOOT_REQUESTED(node_ptr))		&&
 		    (IS_NODE_POWER_DOWN(node_ptr) ||
 		     ((node_ptr->last_busy != 0) &&
 		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
@@ -554,6 +556,8 @@ static void _do_power_work(time_t now)
 		    IS_NODE_NO_RESPOND(node_ptr)) {
 			info("node %s not resumed by ResumeTimeout(%d) - marking down and power_save",
 			     node_ptr->name, node_ptr->resume_timeout);
+			node_ptr->node_state &= (~NODE_STATE_DRAIN);
+			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 			/*
