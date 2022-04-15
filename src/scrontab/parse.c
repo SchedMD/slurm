@@ -370,11 +370,12 @@ fail:
  */
 extern char **convert_file_to_line_array(char *file, int *line_count)
 {
-	int lines = 0;
-	char **line_array = xcalloc(2, sizeof(char *));
+	int lines = 1;
+	char **line_array = xcalloc(3, sizeof(char *));
 	char *ptr = file;
 
-	line_array[0] = ptr;
+	line_array[0] = "\0";
+	line_array[1] = ptr;
 	while (*ptr != '\0') {
 		if (*ptr == '\n') {
 			*ptr = '\0';
