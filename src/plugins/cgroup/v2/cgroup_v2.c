@@ -712,6 +712,59 @@ static int _init_slurmd_system_scope()
 }
 
 /*
+ * Slurmd started manually may not remain in the actual scope. Normally there
+ * are other pids there, like the terminal from where it's been launched, so
+ * slurmd would affect these pids. For example a CoreSpecCount of 1 would leave
+ * the bash terminal with only one core.
+ *
+ * Get out of there and put ourselves into a new home. This shouldn't happen on
+ * production systems.
+ */
+static int _migrate_to_stepd_scope()
+{
+	char *new_home = NULL;
+	pid_t slurmd_pid = getpid();
+
+	bit_clear_all(int_cg_ns.avail_controllers);
+	common_cgroup_destroy(&int_cg[CG_LEVEL_ROOT]);
+	common_cgroup_ns_destroy(&int_cg_ns);
+
+	xstrfmtcat(new_home, "%s/slurmd", stepd_scope_path);
+	int_cg_ns.mnt_point = new_home;
+	common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_ROOT], "",
+			     (uid_t) 0, (gid_t) 0);
+
+	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_ROOT]) !=
+	    SLURM_SUCCESS) {
+		error("Unable to instantiate slurmd %s cgroup", new_home);
+		return SLURM_ERROR;
+	}
+	log_flag(CGROUP, "Created %s", new_home);
+
+	if (_get_controllers(stepd_scope_path, int_cg_ns.avail_controllers)
+	    != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	if (_enable_subtree_control(stepd_scope_path,
+				    int_cg_ns.avail_controllers) !=
+	    SLURM_SUCCESS) {
+		error("Cannot enable subtree_control at the top level %s",
+		      int_cg_ns.mnt_point);
+		return SLURM_ERROR;
+	}
+
+	if (common_cgroup_move_process(&int_cg[CG_LEVEL_ROOT], slurmd_pid) !=
+	    SLURM_SUCCESS) {
+		error("Unable to attach slurmd pid %d to %s cgroup.",
+		      slurmd_pid, new_home);
+		return SLURM_ERROR;
+	}
+
+	return _setup_controllers();
+}
+
+
+/*
  * Initialize the cgroup plugin. Slurmd MUST be started by systemd and the
  * option Delegate set to 'Yes' or equal to a string with the desired
  * controllers we want to support in this system. If we are slurmd we're going
@@ -773,6 +826,20 @@ extern int init(void)
 	 */
 	if (running_in_slurmd()) {
 		if (_init_slurmd_system_scope() != SLURM_SUCCESS)
+			return SLURM_ERROR;
+
+		/*
+		 * If we are not started by systemd we need to move out to not
+		 * mess with the pids that may be in our actual cgroup. We are
+		 * not checking the PPID=1 because starting slurmd with -D over
+		 * a sshd session, slurmd will be reparented by 1, while doing
+		 * this on a graphical session, it will be reparented by
+		 * "systemd --user". So it is not a reliable check. Instead use
+		 * the existence of INVOCATION_ID to know if the pid has been
+		 * forked by systemd.
+		 */
+		if (!getenv("INVOCATION_ID") &&
+		    (_migrate_to_stepd_scope() != SLURM_SUCCESS))
 			return SLURM_ERROR;
 	}
 
