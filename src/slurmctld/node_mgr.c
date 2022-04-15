@@ -1759,6 +1759,16 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 				node_ptr->node_state |=
 					NODE_STATE_POWER_DOWN;
+
+				if (IS_NODE_IDLE(node_ptr)) {
+					/*
+					 * remove node from avail_node_bitmap so
+					 * that it will power_down before jobs
+					 * get on it.
+					 */
+					bit_clear(avail_node_bitmap, node_inx);
+				}
+
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_inx);
 				free(this_node_name);
