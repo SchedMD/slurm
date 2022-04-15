@@ -3588,19 +3588,21 @@ static buf_t *_pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
 static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 			 char *cluster_name, uint32_t rec_cnt)
 {
-	char *insert = NULL, *format = NULL;
+	char *insert = NULL, *insert_pos = NULL;
+	char *format = NULL, *format_pos = NULL;
 	local_resv_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
-		   cluster_name, resv_table, resv_req_inx[0]);
-	xstrcat(format, "('%s'");
+	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
+		     cluster_name, resv_table, resv_req_inx[0]);
+	xstrcatat(format, &format_pos, "('%s'");
 	for(i=1; i<RESV_REQ_COUNT; i++) {
-		xstrfmtcat(insert, ", %s", resv_req_inx[i]);
-		xstrcat(format, ", '%s'");
+		xstrfmtcatat(insert, &insert_pos, ", %s", resv_req_inx[i]);
+		xstrcatat(format, &format_pos, ", '%s'");
 	}
-	xstrcat(insert, ") values ");
-	xstrcat(format, ")");
+	xstrcatat(insert, &insert_pos, ") values ");
+	xstrcatat(format, &format_pos, ")");
+
 	for(i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_resv_t));
 		if (_unpack_local_resv(&object, rpc_version, buffer)
@@ -3612,20 +3614,20 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 		}
 
 		if (i)
-			xstrcat(insert, ", ");
+			xstrcatat(insert, &insert_pos, ", ");
 
-		xstrfmtcat(insert, format,
-			   object.id,
-			   object.deleted,
-			   object.assocs,
-			   object.flags,
-			   object.tres_str,
-			   object.nodes,
-			   object.node_inx,
-			   object.name,
-			   object.time_start,
-			   object.time_end,
-			   object.unused_wall);
+		xstrfmtcatat(insert, &insert_pos, format,
+			     object.id,
+			     object.deleted,
+			     object.assocs,
+			     object.flags,
+			     object.tres_str,
+			     object.nodes,
+			     object.node_inx,
+			     object.name,
+			     object.time_start,
+			     object.time_end,
+			     object.unused_wall);
 
 		_free_local_resv_members(&object);
 	}
