@@ -3584,8 +3584,10 @@ static void _node_did_resp(node_record_t *node_ptr)
 		bit_set (idle_node_bitmap, node_inx);
 		bit_set (share_node_bitmap, node_inx);
 	}
-	if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
-	    IS_NODE_FAIL(node_ptr)) {
+	if (IS_NODE_DOWN(node_ptr) ||
+	    IS_NODE_DRAIN(node_ptr) ||
+	    IS_NODE_FAIL(node_ptr) ||
+	    (IS_NODE_POWER_DOWN(node_ptr) && !IS_NODE_ALLOCATED(node_ptr))) {
 		bit_clear (avail_node_bitmap, node_inx);
 	} else
 		bit_set   (avail_node_bitmap, node_inx);
