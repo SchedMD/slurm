@@ -702,85 +702,21 @@ extern int read_slurmdbd_conf(void)
 /* Log the current configuration using verbose() */
 extern void log_config(void)
 {
-	char tmp_str[128];
-	char *tmp_ptr = NULL;
+	List dbd_config_list;
+	config_key_pair_t *key_pair;
+	ListIterator itr;
 
-	debug2("ArchiveDir        = %s", slurmdbd_conf->archive_dir);
-	debug2("ArchiveScript     = %s", slurmdbd_conf->archive_script);
-	debug2("AuthAltTypes      = %s", slurm_conf.authalttypes);
-	debug2("AuthAltParameters = %s", slurm_conf.authalt_params);
-	debug2("AuthInfo          = %s", slurm_conf.authinfo);
-	debug2("AuthType          = %s", slurm_conf.authtype);
-	debug2("CommitDelay       = %u", slurmdbd_conf->commit_delay);
-	debug2("CommunicationParameters	= %s", slurm_conf.comm_params);
-	debug2("DbdAddr           = %s", slurmdbd_conf->dbd_addr);
-	debug2("DbdBackupHost     = %s", slurmdbd_conf->dbd_backup);
-	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
-	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
-	tmp_ptr = debug_flags2str(slurm_conf.debug_flags);
-	debug2("DebugFlags        = %s", tmp_ptr);
-	xfree(tmp_ptr);
-	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
-	debug2("DebugLevelSyslog  = %u", slurmdbd_conf->syslog_debug);
-	debug2("DefaultQOS        = %s", slurmdbd_conf->default_qos);
+	if (slurmdbd_conf->debug_level < LOG_LEVEL_DEBUG2)
+		return;
 
-	debug2("LogFile           = %s", slurmdbd_conf->log_file);
-	debug2("MessageTimeout    = %u", slurm_conf.msg_timeout);
-	debug2("Parameters        = %s", slurmdbd_conf->parameters);
-	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
-	debug2("PluginDir         = %s", slurm_conf.plugindir);
+	dbd_config_list = dump_config();
 
-	private_data_string(slurm_conf.private_data,
-			    tmp_str, sizeof(tmp_str));
-	debug2("PrivateData       = %s", tmp_str);
+	itr = list_iterator_create(dbd_config_list);
+	while ((key_pair = list_next(itr)))
+		debug2("%-22s = %s", key_pair->name, key_pair->value);
+	list_iterator_destroy(itr);
 
-	slurmdb_purge_string(slurmdbd_conf->purge_event,
-			     tmp_str, sizeof(tmp_str), 1);
-	debug2("PurgeEventAfter   = %s", tmp_str);
-
-	slurmdb_purge_string(slurmdbd_conf->purge_job,
-			     tmp_str, sizeof(tmp_str), 1);
-	debug2("PurgeJobAfter     = %s", tmp_str);
-
-	slurmdb_purge_string(slurmdbd_conf->purge_resv,
-			     tmp_str, sizeof(tmp_str), 1);
-	debug2("PurgeResvAfter    = %s", tmp_str);
-
-	slurmdb_purge_string(slurmdbd_conf->purge_step,
-			     tmp_str, sizeof(tmp_str), 1);
-	debug2("PurgeStepAfter    = %s", tmp_str);
-
-	slurmdb_purge_string(slurmdbd_conf->purge_suspend,
-			     tmp_str, sizeof(tmp_str), 1);
-	debug2("PurgeSuspendAfter = %s", tmp_str);
-
-	slurmdb_purge_string(slurmdbd_conf->purge_txn,
-			     tmp_str, sizeof(tmp_str), 1);
-	debug2("PurgeTXNAfter = %s", tmp_str);
-
-	slurmdb_purge_string(slurmdbd_conf->purge_usage,
-			     tmp_str, sizeof(tmp_str), 1);
-	debug2("PurgeUsageAfter = %s", tmp_str);
-
-	debug2("SlurmUser         = %s(%u)",
-	       slurm_conf.slurm_user_name, slurm_conf.slurm_user_id);
-
-	debug2("StorageBackupHost = %s",
-	       slurm_conf.accounting_storage_backup_host);
-	debug2("StorageHost       = %s",
-	       slurm_conf.accounting_storage_host);
-	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
-	debug2("StorageParameters = %s", slurm_conf.accounting_storage_params);
-	/* debug2("StoragePass       = %s",
-	       slurm_conf.accounting_storage_pass); */
-	debug2("StoragePort       = %u", slurm_conf.accounting_storage_port);
-	debug2("StorageType       = %s", slurm_conf.accounting_storage_type);
-	debug2("StorageUser       = %s", slurm_conf.accounting_storage_user);
-
-	debug2("TCPTimeout        = %u", slurm_conf.tcp_timeout);
-
-	debug2("TrackWCKey        = %u", slurmdbd_conf->track_wckey);
-	debug2("TrackSlurmctldDown= %u", slurmdbd_conf->track_ctld);
+	FREE_NULL_LIST(dbd_config_list);
 }
 
 /*
