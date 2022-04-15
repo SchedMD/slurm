@@ -3865,18 +3865,29 @@ static char *_load_txn(uint16_t rpc_version, buf_t *buffer,
 		       char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
+	int safe_attributes[] = {
+		TXN_REQ_ID,
+		TXN_REQ_TS,
+		TXN_REQ_ACTION,
+		TXN_REQ_NAME,
+		TXN_REQ_ACTOR,
+		TXN_REQ_CLUSTER,
+		TXN_REQ_COUNT };
+	/* Sync w/ txn_table_fields where text/tinytext can be NULL */
+	int null_attributes[] = {
+		TXN_REQ_INFO,
+		TXN_REQ_COUNT };
 	local_txn_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into \"%s\" (%s",
-		   txn_table, txn_req_inx[0]);
-	xstrcat(format, "('%s'");
-	for(i=1; i<TXN_REQ_COUNT; i++) {
-		xstrfmtcat(insert, ", %s", txn_req_inx[i]);
-		xstrcat(format, ", '%s'");
-	}
+	xstrfmtcat(insert, "insert into \"%s\" (%s", txn_table, txn_req_inx[0]);
+	for (i = 1; safe_attributes[i] < TXN_REQ_COUNT; i++)
+		xstrfmtcat(insert, ", %s", txn_req_inx[safe_attributes[i]]);
+	/* Some attributes that might be NULL require special handling */
+	for (i = 0; null_attributes[i] < TXN_REQ_COUNT; i++)
+		xstrfmtcat(insert, ", %s", txn_req_inx[null_attributes[i]]);
 	xstrcat(insert, ") values ");
-	xstrcat(format, ")");
+
 	for(i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_txn_t));
 		if (_unpack_local_txn(&object, rpc_version, buffer)
@@ -3890,20 +3901,33 @@ static char *_load_txn(uint16_t rpc_version, buf_t *buffer,
 		if (i)
 			xstrcat(insert, ", ");
 
+		xstrcat(format, "('%s'");
+		for(int j = 1; safe_attributes[j] < TXN_REQ_COUNT; j++) {
+			xstrcat(format, ", '%s'");
+		}
+
+		/* special handling for NULL attributes */
+		if (object.info == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		xstrcat(format, ")");
+
 		xstrfmtcat(insert, format,
 			   object.id,
 			   object.timestamp,
 			   object.action,
 			   object.name,
 			   object.actor,
-			   object.info,
-			   object.cluster);
+			   object.cluster,
+			   (object.info == NULL) ?
+				"NULL" : object.info);
 
 		_free_local_txn_members(&object);
+		xfree(format);
 	}
 //	END_TIMER2("txn query");
 //	info("txn query took %s", TIME_STR);
-	xfree(format);
 
 	return insert;
 }
