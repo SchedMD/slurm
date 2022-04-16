@@ -10161,4 +10161,5 @@ extern void gres_parse_config_dummy(void)
 	s_p_hashtbl_t *tbl = s_p_hashtbl_create(_gres_conf_options);
 	s_p_parse_file(tbl, NULL, gres_conf_file, false, NULL);
 	s_p_hashtbl_destroy(tbl);
+	xfree(gres_conf_file);
 }
