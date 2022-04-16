@@ -10156,9 +10156,16 @@ extern void gres_parse_config_dummy(void)
 		{"NodeName", S_P_ARRAY, _parse_gres_config_dummy, NULL},
 		{NULL}
 	};
-
+	struct stat stat_buf;
+	s_p_hashtbl_t *tbl;
 	char *gres_conf_file = get_extra_conf_path("gres.conf");
-	s_p_hashtbl_t *tbl = s_p_hashtbl_create(_gres_conf_options);
+
+	if (stat(gres_conf_file, &stat_buf) < 0) {
+		xfree(gres_conf_file);
+		return;
+	}
+
+	tbl = s_p_hashtbl_create(_gres_conf_options);
 	s_p_parse_file(tbl, NULL, gres_conf_file, false, NULL);
 	s_p_hashtbl_destroy(tbl);
 	xfree(gres_conf_file);
