@@ -426,13 +426,13 @@ static int _set_share_node_bitmap(void *x, void *arg)
 }
 
 /*
- * _set_slurmd_addr - establish the slurm_addr_t for the slurmd on each node
- *	Uses common data structures.
+ * Validate that nodes are addressable.
  */
-static void _set_slurmd_addr(void)
+static void _validate_slurmd_addr(void)
 {
 #ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
+	slurm_addr_t slurm_addr;
 	DEF_TIMERS;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -450,9 +450,9 @@ static void _set_slurmd_addr(void)
 				continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurm_conf.slurmd_port;
-		slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
+		slurm_set_addr(&slurm_addr, node_ptr->port,
 			       node_ptr->comm_name);
-		if (slurm_get_port(&node_ptr->slurm_addr))
+		if (slurm_get_port(&slurm_addr))
 			continue;
 		error("%s: failure on %s", __func__, node_ptr->comm_name);
 		node_ptr->node_state = NODE_STATE_FUTURE;
@@ -463,7 +463,7 @@ static void _set_slurmd_addr(void)
 		node_ptr->reason_uid = slurm_conf.slurm_user_id;
 	}
 
-	END_TIMER2("_set_slurmd_addr");
+	END_TIMER2("_validate_slurmd_addr");
 #endif
 }
 
@@ -1525,7 +1525,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		power_g_reconfig();
 
 	rehash_jobs();
-	_set_slurmd_addr();
+	_validate_slurmd_addr();
 
 	_stat_slurm_dirs();
 

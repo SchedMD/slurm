@@ -3992,7 +3992,6 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 	if ((job_ptr->node_bitmap == NULL) || (job_ptr->nodes == NULL)) {
 		/* No nodes allocated, we're done... */
 		job_ptr->node_cnt = 0;
-		xfree(job_ptr->node_addr);
 		return;
 	}
 
@@ -4005,8 +4004,6 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 	if (job_ptr->details->ntasks_per_node && job_ptr->details->num_tasks)
 		job_ptr->details->num_tasks = job_ptr->node_cnt *
 			job_ptr->details->ntasks_per_node;
-
-	xrecalloc(job_ptr->node_addr, job_ptr->node_cnt, sizeof(slurm_addr_t));
 
 #ifdef HAVE_FRONT_END
 	if (new_alloc) {
@@ -4029,8 +4026,7 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 
 	while ((this_node_name = hostlist_shift(host_list))) {
 		if ((node_ptr = find_node_record(this_node_name))) {
-			memcpy(&job_ptr->node_addr[node_inx++],
-			       &node_ptr->slurm_addr, sizeof(slurm_addr_t));
+			node_inx++;
 		} else {
 			error("Invalid node %s in %pJ",
 			      this_node_name, job_ptr);

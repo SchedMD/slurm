@@ -796,8 +796,6 @@ struct job_record {
 	char *network;			/* network/switch requirement spec */
 	uint32_t next_step_id;		/* next step id to be used */
 	char *nodes;			/* list of nodes allocated to job */
-	slurm_addr_t *node_addr;	/* addresses of the nodes allocated to
-					 * job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
 	bitstr_t *node_bitmap_pr;	/* bitmap of nodes with running prolog */

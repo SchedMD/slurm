@@ -166,7 +166,6 @@ struct node_record {
 	dynamic_plugin_data_t *select_nodeinfo; /* opaque data structure,
 						 * use select_g_get_nodeinfo()
 						 * to access contents */
-	slurm_addr_t slurm_addr;	/* network address */
 	time_t slurmd_start_time;	/* Time of slurmd startup */
 	uint16_t sus_job_cnt;		/* count of jobs suspended on node */
 	uint32_t suspend_time; 		/* node idle for this long before

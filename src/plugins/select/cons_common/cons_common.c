@@ -1271,7 +1271,6 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 {
 	job_resources_t *from_job_resrcs_ptr, *to_job_resrcs_ptr,
 		*new_job_resrcs_ptr;
-	node_record_t *node_ptr;
 	int first_bit, last_bit, i, node_cnt;
 	bool from_node_used, to_node_used;
 	int from_node_offset, to_node_offset, new_node_offset;
@@ -1353,8 +1352,6 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	new_job_resrcs_ptr->cr_type = to_job_resrcs_ptr->cr_type;
 
 	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr);
-	xfree(to_job_ptr->node_addr);
-	to_job_ptr->node_addr = xcalloc(node_cnt, sizeof(slurm_addr_t));
 	to_job_ptr->total_cpus = 0;
 
 	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),
@@ -1375,9 +1372,6 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 		if (!from_node_used && !to_node_used)
 			continue;
 		new_node_offset++;
-		node_ptr = node_record_table_ptr[i];
-		memcpy(&to_job_ptr->node_addr[new_node_offset],
-		       &node_ptr->slurm_addr, sizeof(slurm_addr_t));
 		if (from_node_used) {
 			/*
 			 * Merge alloc info from both "from" and "to" jobs,
