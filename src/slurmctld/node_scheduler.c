@@ -210,7 +210,13 @@ extern void allocate_nodes(job_record_t *job_ptr)
 	license_job_get(job_ptr);
 
 	if (has_cloud) {
-		if (cloud_dns && !has_dynamic_norm) {
+		if (has_cloud_power_save &&
+		    job_ptr->origin_cluster &&
+		    xstrcmp(slurm_conf.cluster_name, job_ptr->origin_cluster)) {
+			/* Set TBD so remote srun will updated node_addrs */
+			job_ptr->alias_list = xstrdup("TBD");
+			job_ptr->wait_all_nodes = 1;
+		} else if (cloud_dns && !has_dynamic_norm) {
 			job_ptr->wait_all_nodes = 1;
 		} else if (has_cloud_power_save) {
 			job_ptr->alias_list = xstrdup("TBD");
@@ -227,8 +233,23 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 {
 	int i;
 	node_record_t *node_ptr;
+	static bool cloud_dns = false;
+	static time_t sched_update = 0;
+
+	if (sched_update != slurm_conf.last_update) {
+		if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
+			cloud_dns = true;
+		else
+			cloud_dns = false;
+
+		sched_update = slurm_conf.last_update;
+	}
 
 	xfree(job_ptr->alias_list);
+
+	if (cloud_dns)
+		return;
+
 	for (i = 0; (node_ptr = next_node(&i));) {
 		if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
 			continue;
