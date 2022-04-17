@@ -435,8 +435,10 @@ pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env)
 extern void
 pmi2_cleanup_stepd(void)
 {
-	close(tree_sock);
-	_remove_tree_sock();
+	if (run_in_stepd) {
+		close(tree_sock);
+		_remove_tree_sock();
+	}
 }
 /**************************************************************/
 
