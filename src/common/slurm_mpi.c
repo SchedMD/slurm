@@ -112,6 +112,8 @@ static void _log_step_rec(const stepd_step_rec_t *job)
 {
 	int i;
 
+	xassert(job);
+
 	info("STEPD_STEP_REC");
 	info("%ps", &job->step_id);
 	info("ntasks:%u nnodes:%u node_id:%u", job->ntasks, job->nnodes,
@@ -141,6 +143,8 @@ static void _log_mpi_rec(const mpi_plugin_client_info_t *job)
 {
 	slurm_step_layout_t *layout = job->step_layout;
 
+	xassert(job);
+
 	info("MPI_PLUGIN_CLIENT_INFO");
 	info("%ps", &job->step_id);
 	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL)) {
@@ -164,6 +168,8 @@ static void _log_mpi_rec(const mpi_plugin_client_info_t *job)
 
 static void _log_task_rec(const mpi_plugin_task_info_t *job)
 {
+	xassert(job);
+
 	info("MPI_PLUGIN_TASK_INFO");
 	info("%ps", &job->step_id);
 	info("nnodes:%u node_id:%u", job->nnodes, job->nodeid);
@@ -184,10 +190,11 @@ static int _match_keys(void *x, void *y)
 
 static char *_plugin_type(int index)
 {
-	if (index > -1 && index < g_context_cnt)
-		return &((xstrchr(g_context[index]->type, '/'))[1]);
+	xassert(index > -1);
+	xassert(index < g_context_cnt);
+	xassert(g_context);
 
-	return NULL;
+	return &((xstrchr(g_context[index]->type, '/'))[1]);
 }
 
 static int _plugin_idx(char *mpi_type)
@@ -204,6 +211,9 @@ static int _plugin_idx(char *mpi_type)
 static int _load_plugin(void *x, void *arg)
 {
 	char *plugin_name = x;
+
+	xassert(plugin_name);
+	xassert(g_context);
 
 	g_context[g_context_cnt] = plugin_context_create(
 		mpi_char, plugin_name, (void **)&ops[g_context_cnt],
@@ -577,6 +587,7 @@ extern List mpi_g_conf_get_printable(void)
 
 	slurm_mutex_lock(&context_lock);
 
+	xassert(g_context_cnt);
 	xassert(g_context);
 	xassert(ops);
 
