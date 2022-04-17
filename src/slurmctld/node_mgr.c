@@ -1703,7 +1703,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				if (!IS_NODE_NO_RESPOND(node_ptr) ||
 				     IS_NODE_POWERED_DOWN(node_ptr))
-					make_node_avail(node_inx);
+					make_node_avail(node_ptr);
 				bit_set (idle_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
 				if (IS_NODE_POWERED_DOWN(node_ptr))
@@ -1714,7 +1714,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if (!IS_NODE_DRAIN(node_ptr) &&
 				    !IS_NODE_FAIL(node_ptr)  &&
 				    !IS_NODE_NO_RESPOND(node_ptr))
-					make_node_avail(node_inx);
+					make_node_avail(node_ptr);
 				bit_set (up_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
 			} else if ((state_val == NODE_STATE_DRAIN) ||
@@ -1817,6 +1817,16 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 				node_ptr->node_state |=
 					NODE_STATE_POWER_DOWN;
+
+				if (IS_NODE_IDLE(node_ptr)) {
+					/*
+					 * remove node from avail_node_bitmap so
+					 * that it will power_down before jobs
+					 * get on it.
+					 */
+					bit_clear(avail_node_bitmap, node_inx);
+				}
+
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_inx);
 				free(this_node_name);
@@ -3506,7 +3516,7 @@ static void _sync_bitmaps(node_record_t *node_ptr, int job_count)
 	    IS_NODE_FAIL(node_ptr) || IS_NODE_NO_RESPOND(node_ptr))
 		bit_clear (avail_node_bitmap, node_inx);
 	else
-		make_node_avail(node_inx);
+		make_node_avail(node_ptr);
 	if (IS_NODE_DOWN(node_ptr))
 		bit_clear (up_node_bitmap, node_inx);
 	else
@@ -3606,8 +3616,10 @@ static void _node_did_resp(node_record_t *node_ptr)
 		bit_set (idle_node_bitmap, node_inx);
 		bit_set (share_node_bitmap, node_inx);
 	}
-	if (IS_NODE_DOWN(node_ptr) || IS_NODE_DRAIN(node_ptr) ||
-	    IS_NODE_FAIL(node_ptr)) {
+	if (IS_NODE_DOWN(node_ptr) ||
+	    IS_NODE_DRAIN(node_ptr) ||
+	    IS_NODE_FAIL(node_ptr) ||
+	    (IS_NODE_POWER_DOWN(node_ptr) && !IS_NODE_ALLOCATED(node_ptr))) {
 		bit_clear (avail_node_bitmap, node_inx);
 	} else
 		bit_set   (avail_node_bitmap, node_inx);
@@ -4066,16 +4078,18 @@ extern void make_node_alloc(node_record_t *node_ptr, job_record_t *job_ptr)
 }
 
 /* make_node_avail - flag specified node as available */
-extern void make_node_avail(int node_inx)
+extern void make_node_avail(node_record_t *node_ptr)
 {
-	bit_set(avail_node_bitmap, node_inx);
+	if (IS_NODE_POWER_DOWN(node_ptr) || IS_NODE_POWERING_DOWN(node_ptr))
+		return;
+	bit_set(avail_node_bitmap, node_ptr->index);
 
 	/*
 	 * If we are in the middle of a backfill cycle, this bitmap is
 	 * used (when bf_continue is enabled) to avoid scheduling lower
 	 * priority jobs on to newly available resources.
 	 */
-	bit_set(bf_ignore_node_bitmap, node_inx);
+	bit_set(bf_ignore_node_bitmap, node_ptr->index);
 }
 
 /* make_node_comp - flag specified node as completing a job
@@ -4294,7 +4308,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 	    IS_NODE_NO_RESPOND(node_ptr))
 		bit_clear(avail_node_bitmap, inx);
 	else
-		make_node_avail(inx);
+		make_node_avail(node_ptr);
 
 	if ((IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) &&
 	    (node_ptr->run_job_cnt == 0) && (node_ptr->comp_job_cnt == 0)) {
@@ -4313,16 +4327,25 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
 		     !IS_NODE_FAIL(node_ptr) && !IS_NODE_DRAIN(node_ptr))
-			make_node_avail(inx);
+			make_node_avail(node_ptr);
 	} else {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
 		     !IS_NODE_FAIL(node_ptr) && !IS_NODE_DRAIN(node_ptr))
-			make_node_avail(inx);
+			make_node_avail(node_ptr);
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_COMPLETING(node_ptr))
 			bit_set(idle_node_bitmap, inx);
 		node_ptr->last_busy = now;
+	}
+
+	if (IS_NODE_IDLE(node_ptr) && IS_NODE_POWER_DOWN(node_ptr)) {
+		/*
+		 * Now that the node is idle and is to be powered off, remove
+		 * from the avail_node_bitmap to prevent jobs being scheduled on
+		 * the node before it power's off.
+		 */
+		bit_clear(avail_node_bitmap, inx);
 	}
 
 fini:

@@ -1269,7 +1269,7 @@ extern void excise_node_from_job(job_record_t *job_ptr,
 				 node_record_t *node_ptr);
 
 /* make_node_avail - flag specified node as available */
-extern void make_node_avail(int node_inx);
+extern void make_node_avail(node_record_t *node_ptr);
 
 /*
  * Copy a job's feature list

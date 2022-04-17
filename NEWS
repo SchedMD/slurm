@@ -235,6 +235,7 @@ documents those changes that are of interest to users and administrators.
  -- Clear DRAIN on node after failing to resume before ResumeTimeout.
  -- Prevent repeating power down if node fails to resume before ResumeTimeout.
  -- Fix federated cloud node communication with srun and cloud_dns.
+ -- Fix jobs being scheduled on nodes marked to be powered_down when idle.
 
 * Changes in Slurm 21.08.6
 ==========================
