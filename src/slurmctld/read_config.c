@@ -518,7 +518,7 @@ static void _build_bitmaps(void)
 		      NODE_RESUME))) {
 			if ((drain_flag == 0) &&
 			    (!IS_NODE_NO_RESPOND(node_ptr)))
-				make_node_avail(i);
+				make_node_avail(node_ptr);
 			bit_set(up_node_bitmap, i);
 		}
 		if (IS_NODE_POWERED_DOWN(node_ptr))
