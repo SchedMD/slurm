@@ -1954,11 +1954,7 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 		}
 		core_offset = get_job_resources_offset(job_res, job_node_inx++,
 						       0, 0);
-		if (node_record_table_ptr[i]->cores) {
-			cpus_per_core = node_record_table_ptr[i]->cpus /
-				node_record_table_ptr[i]->cores;
-		} else
-			cpus_per_core = 1;
+		cpus_per_core = node_record_table_ptr[i]->tpc;
 		for (s = 0; s < sock_cnt; s++) {
 			int tasks_per_socket = 0, tpc, skip_cores = 0;
 			for (c = 0; c < cores_per_socket_cnt; c++) {
