@@ -267,3 +267,8 @@ extern int switch_p_job_step_post_resume( stepd_step_rec_t *job )
 {
 	return SLURM_SUCCESS;
 }
+
+extern void switch_p_job_complete(uint32_t job_id)
+{
+	return;
+}

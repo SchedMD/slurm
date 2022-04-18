@@ -166,6 +166,11 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 	char *nodelist);
 
 /*
+ * End of job - free any slurmctld job-specific switch data
+ */
+extern void switch_g_job_complete(uint32_t job_id);
+
+/*
  * Restore the switch allocation information "jobinfo" for an already
  * allocated job step, most likely to restore the switch information
  * after a call to switch_g_clear().

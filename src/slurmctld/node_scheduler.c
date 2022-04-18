@@ -64,6 +64,7 @@
 #include "src/common/slurm_mcs.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_topology.h"
+#include "src/common/switch.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -315,6 +316,10 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	acct_policy_job_fini(job_ptr);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
 		error("select_g_job_fini(%pJ): %m", job_ptr);
+
+	/* Release any job-related switch data */
+	switch_g_job_complete(job_ptr->job_id);
+
 	epilog_slurmctld(job_ptr);
 
 	if (!job_ptr->details->prolog_running)

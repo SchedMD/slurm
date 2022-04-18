@@ -102,3 +102,4 @@ API CHANGES
     uniqueness.
  -- openapi/[db]v0.0.36 - Plugins have been marked as deprecated and will be
     removed in the next major release.
+ -- switch plugins - add switch_g_job_complete() function.

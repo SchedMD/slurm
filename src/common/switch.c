@@ -106,6 +106,7 @@ typedef struct slurm_switch_ops {
 	int          (*job_step_post_suspend)( stepd_step_rec_t *job );
 	int          (*job_step_pre_resume)( stepd_step_rec_t *job );
 	int          (*job_step_post_resume)( stepd_step_rec_t *job );
+	void         (*job_complete)      ( uint32_t job_id );
 } slurm_switch_ops_t;
 
 /*
@@ -143,6 +144,7 @@ static const char *syms[] = {
 	"switch_p_job_step_post_suspend",
 	"switch_p_job_step_pre_resume",
 	"switch_p_job_step_post_resume",
+	"switch_p_job_complete",
 };
 
 static slurm_switch_ops_t  *ops            = NULL;
@@ -676,4 +678,12 @@ extern int switch_g_job_step_post_resume(stepd_step_rec_t *job)
 		return SLURM_ERROR;
 
 	return (*(ops[switch_context_default].job_step_post_resume)) ( job );
+}
+
+extern void switch_g_job_complete(uint32_t job_id)
+{
+	if (switch_init(0) < 0)
+		return;
+
+	(*(ops[switch_context_default].job_complete))(job_id);
 }
