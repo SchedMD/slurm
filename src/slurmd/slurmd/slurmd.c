@@ -1738,7 +1738,7 @@ fini:
 	return rc;
 }
 
-static void _valididate_dynamic_conf(void)
+static void _validate_dynamic_conf(void)
 {
 	char *invalid_opts[] = {
 		"NodeName=",
@@ -1808,7 +1808,7 @@ static void _dynamic_init(void)
 		char *err_msg = NULL;
 		char *tmp;
 
-		_valididate_dynamic_conf();
+		_validate_dynamic_conf();
 
 		tmp = xstrdup_printf("NodeName=%s ", conf->node_name);
 		if (xstrcasestr(conf->dynamic_conf, "CPUs=") ||
