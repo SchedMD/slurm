@@ -2910,7 +2910,7 @@ static void _dump_node_cr(struct cr_record *cr_ptr)
 			info("Alloc JobId=%u", cr_ptr->tot_job_ids[i]);
 	}
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		info("Node:%s exclusive_cnt:%u alloc_mem:%"PRIu64"",
 		     node_ptr->name,
 		     cr_ptr->nodes[node_ptr->index].exclusive_cnt,
@@ -2958,7 +2958,7 @@ static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
 
 	new_cr_ptr->nodes = xcalloc(select_node_cnt,
 				    sizeof(struct node_cr_record));
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		new_cr_ptr->nodes[node_ptr->index].alloc_memory =
 			cr_ptr->nodes[node_ptr->index].alloc_memory;
 		new_cr_ptr->nodes[node_ptr->index].exclusive_cnt =
@@ -3025,7 +3025,7 @@ static void _init_node_cr(void)
 	list_iterator_destroy(part_iterator);
 
 	/* Clear existing node Gres allocations */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		gres_node_state_dealloc_all(node_ptr->gres_list);
 	}
 
@@ -3937,7 +3937,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	}
 	last_set_all = last_node_update;
 
-	for (n = 0; (node_ptr = next_node(&n));) {
+	for (n = 0; (node_ptr = next_node(&n)); n++) {
 		select_nodeinfo_t *nodeinfo = NULL;
 		/* We have to use the '_g_' here to make sure we get the
 		 * correct data to work on.  i.e. cray calls this plugin

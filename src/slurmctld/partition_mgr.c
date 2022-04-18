@@ -112,7 +112,7 @@ static int _calc_part_tres(void *x, void *arg)
 	tres_cnt = part_ptr->tres_cnt;
 
 	/* sum up nodes' tres in the partition. */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!bit_test(part_ptr->node_bitmap, node_ptr->index))
 			continue;
 		for (j = 0; j < slurmctld_tres_cnt; j++)
@@ -293,7 +293,7 @@ static void _unlink_free_nodes(bitstr_t *old_bitmap, part_record_t *part_ptr)
 	if (old_bitmap == NULL)
 		return;
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (bit_test(old_bitmap, node_ptr->index) == 0)
 			continue;
 		for (j=0; j<node_ptr->part_cnt; j++) {
@@ -893,7 +893,7 @@ static void _list_delete_part(void *part_entry)
 	int i, j, k;
 
 	part_ptr = (part_record_t *) part_entry;
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		for (j=0; j<node_ptr->part_cnt; j++) {
 			if (node_ptr->part_pptr[j] != part_ptr)
 				continue;

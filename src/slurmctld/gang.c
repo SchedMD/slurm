@@ -259,7 +259,7 @@ static void _load_phys_res_cnt(void)
 
 	gs_bits_per_node = xmalloc(node_record_count * sizeof(uint16_t));
 
-	for (int i = 0; (node_ptr = next_node(&i));) {
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		if (gr_type == GS_CPU) {
 			bit = node_ptr->config_ptr->cpus;
 		} else {

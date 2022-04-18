@@ -532,53 +532,45 @@ extern void trigger_front_end_up(front_end_record_t *front_end_ptr)
 
 extern void trigger_node_down(node_record_t *node_ptr)
 {
-	int inx = node_ptr->index;
-
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_down_nodes_bitmap == NULL)
 		trigger_down_nodes_bitmap = bit_alloc(node_record_count);
-	bit_set(trigger_down_nodes_bitmap, inx);
+	bit_set(trigger_down_nodes_bitmap, node_ptr->index);
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
 extern void trigger_node_drained(node_record_t *node_ptr)
 {
-	int inx = node_ptr->index;
-
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_drained_nodes_bitmap == NULL)
 		trigger_drained_nodes_bitmap = bit_alloc(node_record_count);
-	bit_set(trigger_drained_nodes_bitmap, inx);
+	bit_set(trigger_drained_nodes_bitmap, node_ptr->index);
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
 extern void trigger_node_failing(node_record_t *node_ptr)
 {
-	int inx = node_ptr->index;
-
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_fail_nodes_bitmap == NULL)
 		trigger_fail_nodes_bitmap = bit_alloc(node_record_count);
-	bit_set(trigger_fail_nodes_bitmap, inx);
+	bit_set(trigger_fail_nodes_bitmap, node_ptr->index);
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
 extern void trigger_node_up(node_record_t *node_ptr)
 {
-	int inx = node_ptr->index;
-
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	slurm_mutex_lock(&trigger_mutex);
 	if (trigger_up_nodes_bitmap == NULL)
 		trigger_up_nodes_bitmap = bit_alloc(node_record_count);
-	bit_set(trigger_up_nodes_bitmap, inx);
+	bit_set(trigger_up_nodes_bitmap, node_ptr->index);
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
@@ -1227,7 +1219,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 		bitstr_t *trigger_idle_node_bitmap;
 
 		trigger_idle_node_bitmap = bit_alloc(node_record_count);
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			if (!IS_NODE_IDLE(node_ptr) ||
 			    (node_ptr->last_busy > min_idle))
 				continue;

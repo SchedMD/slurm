@@ -4216,7 +4216,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
 	node_record_t *node_ptr;
-	int node_inx;
 	int kill_job_cnt = 0;
 	time_t now = time(NULL);
 
@@ -4226,12 +4225,11 @@ extern int kill_running_job_by_node_name(char *node_name)
 	node_ptr = find_node_record(node_name);
 	if (node_ptr == NULL)	/* No such node */
 		return 0;
-	node_inx = node_ptr->index;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		bool suspended = false;
-		if (!_het_job_on_node(job_ptr, node_inx))
+		if (!_het_job_on_node(job_ptr, node_ptr->index))
 			continue;	/* job not on this node */
 		if (nonstop_ops.node_fail)
 			(nonstop_ops.node_fail)(job_ptr, node_ptr);
@@ -4248,11 +4246,11 @@ extern int kill_running_job_by_node_name(char *node_name)
 		}
 
 		if (IS_JOB_COMPLETING(job_ptr)) {
-			if (!bit_test(job_ptr->node_bitmap_cg, node_inx))
+			if (!bit_test(job_ptr->node_bitmap_cg, node_ptr->index))
 				continue;
 			kill_job_cnt++;
-			bit_clear(job_ptr->node_bitmap_cg, node_inx);
-			job_update_tres_cnt(job_ptr, node_inx);
+			bit_clear(job_ptr->node_bitmap_cg, node_ptr->index);
+			job_update_tres_cnt(job_ptr, node_ptr->index);
 			if (job_ptr->node_cnt)
 				(job_ptr->node_cnt)--;
 			else {
@@ -10951,7 +10949,7 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 
 	slurm_mutex_lock(&lock);
 	if (max_cpu_cnt == -1) {
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			/* Only data from config_record used for scheduling */
 			max_cpu_cnt = MAX(max_cpu_cnt,
 					  node_ptr->config_ptr->cpus);
@@ -14941,7 +14939,7 @@ static void _send_job_kill(job_record_t *job_ptr)
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!bit_test(job_ptr->node_bitmap_cg, node_ptr->index))
 			continue;
 		if (agent_args->protocol_version > node_ptr->protocol_version)
@@ -15045,7 +15043,7 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 extern void
 validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 {
-	int i, node_inx, jobs_on_node;
+	int i, jobs_on_node;
 	node_record_t *node_ptr;
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
@@ -15080,8 +15078,6 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	    waiting_for_node_power_down(node_ptr))
 		return;
 
-	node_inx = node_ptr->index;
-
 	/* Check that jobs running are really supposed to be there */
 	for (i = 0; i < reg_msg->job_count; i++) {
 		if ( (reg_msg->step_id[i].job_id >= MIN_NOALLOC_JOBID) &&
@@ -15102,9 +15098,9 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 
 		else if (IS_JOB_RUNNING(job_ptr) ||
 			 IS_JOB_SUSPENDED(job_ptr)) {
-			if (bit_test(job_ptr->node_bitmap, node_inx)) {
+			if (bit_test(job_ptr->node_bitmap, node_ptr->index)) {
 				if ((job_ptr->batch_flag) &&
-				    (node_inx == bit_ffs(
+				    (node_ptr->index == bit_ffs(
 					    job_ptr->node_bitmap))) {
 					/* NOTE: Used for purging defunct
 					 * batch jobs */
@@ -15127,7 +15123,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 				      reg_msg->node_name);
 				info("%s: job nodes %s count %d inx %d",
 				     __func__, job_ptr->nodes,
-				     job_ptr->node_cnt, node_inx);
+				     job_ptr->node_cnt, node_ptr->index);
 				abort_job_on_node(reg_msg->step_id[i].job_id,
 						  job_ptr,
 						  node_ptr->name);
@@ -15173,7 +15169,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 
 	jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 	if (jobs_on_node)
-		_purge_missing_jobs(node_inx, now);
+		_purge_missing_jobs(node_ptr->index, now);
 
 	if (jobs_on_node != reg_msg->job_count) {
 		/* slurmd will not know of a job unless the job has

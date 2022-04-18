@@ -440,7 +440,7 @@ static int _update_node_data(void)
 	node_record_t *node_ptr;
 
 	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_NODE_ENERGY) {
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			ext_sensors = node_ptr->ext_sensors;
 			if (ext_sensors->energy_update_time == 0) {
 				ext_sensors->energy_update_time = now;
@@ -480,7 +480,7 @@ static int _update_node_data(void)
 	}
 
 	if (ext_sensors_cnf->dataopts & EXT_SENSORS_OPT_NODE_TEMP) {
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			ext_sensors = node_ptr->ext_sensors;
 			if (!(path = _get_node_rrd_path(
 				      node_ptr->name,

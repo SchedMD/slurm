@@ -176,7 +176,7 @@ static double _get_system_usage(void)
 
 		select_g_select_nodeinfo_set_all();
 
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			double node_alloc_tres = 0.0;
 			double node_tot_tres   = 0.0;
 

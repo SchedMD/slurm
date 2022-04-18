@@ -432,7 +432,7 @@ static void _do_power_work(time_t now)
 	}
 
 	/* Build bitmaps identifying each node which should change state */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		susp_state = IS_NODE_POWERED_DOWN(node_ptr);
 
 		if (susp_state)
@@ -872,7 +872,7 @@ static int _set_partition_options(void *x, void *arg)
 	if (part_ptr->suspend_timeout != NO_VAL16)
 		max_timeout = MAX(max_timeout, part_ptr->resume_timeout);
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!bit_test(part_ptr->node_bitmap, node_ptr->index))
 			continue;
 
@@ -958,7 +958,7 @@ static int _init_power_config(void)
 		      &partition_suspend_time_set);
 
 	/* Apply global options to node level if not set at partition level. */
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		node_ptr->suspend_time =
 			((node_ptr->suspend_time == NO_VAL) ?
 				slurm_conf.suspend_time :

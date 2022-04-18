@@ -84,7 +84,7 @@ extern void get_cluster_power(node_record_t **node_record_table_ptr,
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_POWER))
 		return;
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (node_ptr->power) {
 			if (!node_ptr->power->cap_watts) {	/* No limit */
 				if (!node_ptr->power->max_watts)

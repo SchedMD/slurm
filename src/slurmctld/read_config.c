@@ -257,7 +257,7 @@ static void _sort_node_record_table_ptr(void)
 #if _DEBUG
 	/* Log the results */
 	node_record_t *node_ptr;
-	for (int i = 0; (node_ptr = next_node(&i));) {
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		info("node_rank[%d:%d]: %s",
 		     node_ptr->index, node_ptr->node_rank, node_ptr->name);
 	}
@@ -285,7 +285,7 @@ static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 		 * point, so we'll have to scan through the node_record_table
 		 * directly to locate the appropriate records.
 		 */
-		for (int i = 0; (node_ptr = next_node(&i));) {
+		for (int i = 0; (node_ptr = next_node(&i)); i++) {
 			char *features, *tmp, *tok, *last = NULL;
 
 			if (!node_ptr->features)
@@ -391,7 +391,7 @@ static void _build_bitmaps_pre_select(void)
 	/* initialize the configuration bitmaps */
 	list_for_each(config_list, _reset_node_bitmaps, NULL);
 
-	for (int i = 0; (node_ptr = next_node(&i));) {
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		if (node_ptr->config_ptr)
 			bit_set(node_ptr->config_ptr->node_bitmap,
 				node_ptr->index);
@@ -438,7 +438,7 @@ static void _validate_slurmd_addr(void)
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
 	START_TIMER;
-	for (int i = 0; (node_ptr = next_node(&i));) {
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
 			continue;
@@ -492,7 +492,7 @@ static void _build_bitmaps(void)
 
 	/* scan all nodes and identify which are up, idle and
 	 * their configuration, resync DRAINED vs. DRAINING state */
-	for (int i = 0; (node_ptr = next_node(&i));) {
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		uint32_t drain_flag, job_cnt;
 
 		if (node_ptr->name[0] == '\0')
@@ -1962,7 +1962,7 @@ extern void build_feature_list_ne(void)
 	active_feature_list = list_create(_list_delete_feature);
 	avail_feature_list = list_create(_list_delete_feature);
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (node_ptr->features_act) {
 			tmp_str = xstrdup(node_ptr->features_act);
 			token = strtok_r(tmp_str, ",", &last);
@@ -2038,7 +2038,7 @@ static void _gres_reconfig(bool reconfig)
 		goto grab_includes;
 	}
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (node_ptr->gres)
 			gres_name = node_ptr->gres;
 		else
@@ -2188,7 +2188,7 @@ static int _restore_node_state(int recover,
 	if (slurm_conf.suspend_program && slurm_conf.resume_program)
 		power_save_mode = true;
 
-	for (i = 0; (node_ptr = next_node(&i));)
+	for (i = 0; (node_ptr = next_node(&i)); i++)
 		node_ptr->not_responding = true;
 
 	for (i = 0; i < old_node_record_count; i++) {
@@ -2343,7 +2343,7 @@ static int _restore_node_state(int recover,
 		hs = NULL;
 	}
 
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!node_ptr->not_responding)
 			continue;
 		node_ptr->not_responding = false;
@@ -2885,7 +2885,7 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap_cg);
 	else
 		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (job_ptr->node_bitmap_cg) { /* job completing */
 			if (!bit_test(job_ptr->node_bitmap_cg, node_ptr->index))
 				continue;
@@ -2959,7 +2959,7 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 {
 	node_record_t *node_ptr;
 
-	for (int i = 0; (node_ptr = next_node(&i));) {
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		if (bit_test(job_ptr->node_bitmap, node_ptr->index) == 0)
 			continue;
 

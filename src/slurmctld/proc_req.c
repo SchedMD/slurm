@@ -2716,8 +2716,7 @@ static bool _node_has_feature(node_record_t *node_ptr, char *feature)
 
 	if ((node_feature = list_find_first(active_feature_list,
 					    list_find_feature, feature))) {
-		int node_inx = node_ptr->index;
-		if (bit_test(node_feature->node_bitmap, node_inx))
+		if (bit_test(node_feature->node_bitmap, node_ptr->index))
 		    return true;
 	}
 
@@ -2741,7 +2740,7 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 	if (node_ptr == NULL) {
 		int i;
 
-		for (i = 0; (node_ptr = next_node(&i));) {
+		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			slurm_addr_t addr;
 			char *comm_name = NULL;
 
@@ -5402,7 +5401,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	}
 
 	lock_slurmctld(node_write_lock);
-	for (i = 0; (node_ptr = next_node(&i));) {
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!bit_test(bitmap, node_ptr->index))
 			continue;
 		if (IS_NODE_FUTURE(node_ptr) ||
