@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent repeating power down if node fails to resume before ResumeTimeout.
  -- Fix federated cloud node communication with srun and cloud_dns.
  -- Fix jobs being scheduled on nodes marked to be powered_down when idle.
+ -- Fix problem where a privileged user could not view array tasks specified by
+    <array_job_id>_<task_id> when PrivateData had the jobs value set.
 
 * Changes in Slurm 21.08.6
 ==========================
