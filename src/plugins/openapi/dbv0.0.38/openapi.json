@@ -51,13 +51,12 @@
           {
             "name": "job_id",
             "in": "path",
-            "description": "Slurm Job ID",
+            "description": "Slurm JobID",
             "required": true,
             "style": "simple",
             "explode": false,
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string"
             }
           }
         ],
