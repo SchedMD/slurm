@@ -2921,13 +2921,18 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 				      int mode);
 
 /*
- * Return a nodelist with nodesets expanded.
+ * Return a hostlist with expanded node specification.
  *
- * IN nodes - nodelist that can have nodesets in it.
+ * Handles node range expressions, nodesets and ALL keyword.
+ *
+ * IN nodes - nodelist that can have nodesets or ALL in it.
  * OUT nodesets (optional) - list of nodesets found in nodes string
  *
- * NOTE: Caller must xfree returned string.
+ * RET NULL on error, hostlist_t otherwise.
+ *
+ * NOTE: Caller must FREE_NULL_HOSTLIST() returned hostlist_t.
+ * NOTE: Caller should interpret a non-NULL but empty hostlist conveniently.
  */
-extern char *expand_nodesets(const char *nodes, char **nodesets);
+extern hostlist_t nodespec_to_hostlist(const char *nodes, char **nodesets);
 
 #endif /* !_HAVE_SLURMCTLD_H */

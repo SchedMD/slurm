@@ -191,21 +191,29 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 			   node_record_count - 1);
 	}
 
-	xfree(part_ptr->nodes);
-	part_ptr->nodes = expand_nodesets(part_ptr->orig_nodes,
-					  &part_ptr->nodesets);
+	if (!(host_list = nodespec_to_hostlist(part_ptr->orig_nodes,
+					       &part_ptr->nodesets))) {
+		/* Error, restore original bitmap */
+		FREE_NULL_BITMAP(part_ptr->node_bitmap);
+		part_ptr->node_bitmap = old_bitmap;
+		return ESLURM_INVALID_NODE_NAME;
+	} else if (!hostlist_count(host_list)) {
+		/* No nodes in partition */
 
-	if (part_ptr->nodes == NULL) {	/* no nodes in partition */
+		/*
+		 * Clear "nodes" but leave "orig_nodes" intact.
+		 * e.g.
+		 * orig_nodes="nodeset1" and all of the nodes in "nodeset1" are
+		 * removed. "nodes" should be cleared to show that there are no
+		 * nodes in the partition right now. "orig_nodes" needs to stay
+		 * intact so that when "nodeset1" nodes come back they are added
+		 * to the partition.
+		 */
+		xfree(part_ptr->nodes);
 		_unlink_free_nodes(old_bitmap, part_ptr);
 		FREE_NULL_BITMAP(old_bitmap);
+		FREE_NULL_HOSTLIST(host_list);
 		return 0;
-	}
-
-	if ((host_list = hostlist_create(part_ptr->nodes)) == NULL) {
-		FREE_NULL_BITMAP(old_bitmap);
-		error("hostlist_create error on %s, %m",
-		      part_ptr->nodes);
-		return ESLURM_INVALID_NODE_NAME;
 	}
 
 	while ((this_node_name = hostlist_shift(host_list))) {
@@ -267,10 +275,10 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 		part_ptr->orig_nodes = hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
 
-		xfree(part_ptr->nodes);
-		part_ptr->nodes = bitmap2node_name(part_ptr->node_bitmap);
 	}
 	hostlist_destroy(missing_hostlist);
+	xfree(part_ptr->nodes);
+	part_ptr->nodes = bitmap2node_name(part_ptr->node_bitmap);
 
 	_unlink_free_nodes(old_bitmap, part_ptr);
 	last_node_update = time(NULL);

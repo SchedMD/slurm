@@ -306,10 +306,9 @@ static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 	}
 }
 
-extern char *expand_nodesets(const char *nodes, char **nodesets)
+extern hostlist_t nodespec_to_hostlist(const char *nodes, char **nodesets)
 {
 	int count;
-	char *ret_nodelist;
 	slurm_conf_nodeset_t *ptr, **ptr_array;
 	hostlist_t hl;
 	node_record_t *node_ptr;
@@ -318,11 +317,21 @@ extern char *expand_nodesets(const char *nodes, char **nodesets)
 		xfree(*nodesets);
 
 	if (!xstrcasecmp(nodes, "ALL")) {
-		hl = hostlist_create(NULL);
+		if (!(hl = hostlist_create(NULL))) {
+			error("%s: hostlist_create() error for %s", __func__, nodes);
+			return NULL;
+		}
 		for (int i = 0; (node_ptr = next_node(&i)); i++)
 			hostlist_push_host(hl, node_ptr->name);
-	} else {
-		hl = hostlist_create(nodes);
+		return hl;
+	} else if (!(hl = hostlist_create(nodes))) {
+		error("%s: hostlist_create() error for %s", __func__, nodes);
+		return NULL;
+	}
+
+	if (!hostlist_count(hl)) {
+		/* no need to look for nodests */
+		return hl;
 	}
 
 	count = slurm_conf_nodeset_array(&ptr_array);
@@ -340,14 +349,12 @@ extern char *expand_nodesets(const char *nodes, char **nodesets)
 				_add_nodes_with_feature(hl, ptr->feature);
 
 			if (ptr->nodes)
-				hostlist_push_host(hl, ptr->nodes);
+				hostlist_push(hl, ptr->nodes);
 		}
 	}
 
 	hostlist_uniq(hl);
-	ret_nodelist = hostlist_ranged_string_xmalloc(hl);
-	hostlist_destroy(hl);
-	return ret_nodelist;
+	return hl;
 }
 
 static void _init_bitmaps(void)
