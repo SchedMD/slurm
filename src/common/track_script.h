@@ -63,9 +63,22 @@ extern void track_script_flush_job(uint32_t job_id);
 extern void track_script_rec_add(uint32_t job_id, pid_t cpid, pthread_t tid);
 
 /*
- * Signal script thread to end
+ * Return true if the script was SIGKILL'd (usually by track_script_flush() or
+ * track_script_flush_job()).
+ *
+ * IN tid - thread id that is tracking the script
+ * IN status - exit status of the script. If the exit status has not yet been
+ *             obtained (by calling waitpid), then passing 0 here will still
+ *             return true if track_script_flush() was called.
+ * IN waitpid_called - pass true if waitpid(2) has been called to reap the
+ *                     PID and get the exit status. If true, then this will
+ *                     signal the cleanup thread that is waiting for this
+ *                     script to complete.
+ *
+ * RET true if the WTERMSIG(status) == SIGKILL; or true if track_script_flush
+ *     was called
  */
-extern bool track_script_broadcast(pthread_t tid, int status);
+extern bool track_script_killed(pthread_t tid, int status, bool waitpid_called);
 
 /* Remove this thread from the track_script system */
 extern void track_script_remove(pthread_t tid);
