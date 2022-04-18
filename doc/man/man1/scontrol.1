@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "March 2022" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "April 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1651,6 +1651,18 @@ of the slurmctld daemon with the \fI\-R\fR option and state files
 preserved or slurmctld's receipt of a SIGHUP.
 Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
+.IP
+
+.SH "NODES \- SPECIFICATIONS FOR DELETE COMMAND"
+
+.TP
+\fBNodeName\fR=<\fInodes\fR>
+Identify the node(s) to be deleted. Multiple node names may be specified using
+simple node range expressions (e.g. "lx[10\-20]"). Nodesets can also be
+specified by themselves or mixed with node range expressions, using a comma as
+a list separator. If the keyword "ALL" is specified alone, then the update
+will be attempted against all the nodes in the local cluster. This specification
+is required.
 .IP
 
 .SH "NODES \- SPECIFICATIONS FOR SHOW COMMAND"
