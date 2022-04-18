@@ -317,7 +317,7 @@ extern char *expand_nodesets(const char *nodes, char **nodesets)
 	if (nodesets)
 		xfree(*nodesets);
 
-	if (!xstrcmp(nodes, "ALL")) {
+	if (!xstrcasecmp(nodes, "ALL")) {
 		hl = hostlist_create(NULL);
 		for (int i = 0; (node_ptr = next_node(&i)); i++)
 			hostlist_push_host(hl, node_ptr->name);
