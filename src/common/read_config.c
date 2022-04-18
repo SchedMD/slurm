@@ -5609,6 +5609,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "License");
 	}
+	if (debug_flags & DEBUG_FLAG_MPI) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "MPI");
+	}
 	if (debug_flags & DEBUG_FLAG_NET) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5787,6 +5792,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
 		else if (xstrcasecmp(tok, "License") == 0)
 			(*flags_out) |= DEBUG_FLAG_LICENSE;
+		else if (xstrcasecmp(tok, "MPI") == 0)
+			(*flags_out) |= DEBUG_FLAG_MPI;
 		else if (xstrcasecmp(tok, "Network") == 0 ||
 			 xstrcasecmp(tok, "Net") == 0)
 			(*flags_out) |= DEBUG_FLAG_NET;

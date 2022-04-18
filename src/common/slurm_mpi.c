@@ -53,8 +53,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#define _DEBUG 0
-
 typedef struct slurm_mpi_ops {
 	int (*client_fini)(mpi_plugin_client_state_t *state);
 	mpi_plugin_client_state_t *(*client_prelaunch)(
@@ -95,17 +93,16 @@ static int g_context_cnt = 0;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
-#if _DEBUG
-/* Debugging information is invaluable to debug heterogeneous step support */
 static void _log_env(char **env)
 {
-#if _DEBUG > 1
-	if (!env)
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_MPI) || !env)
 		return;
 
+	log_flag(MPI, "ENVIRONMENT");
+	log_flag(MPI, "-----------");
 	for (int i = 0; env[i]; i++)
-		info("%s", env[i]);
-#endif
+		log_flag(MPI, "%s", env[i]);
+	log_flag(MPI, "-----------");
 }
 
 static void _log_step_rec(const stepd_step_rec_t *job)
@@ -114,69 +111,84 @@ static void _log_step_rec(const stepd_step_rec_t *job)
 
 	xassert(job);
 
-	info("STEPD_STEP_REC");
-	info("%ps", &job->step_id);
-	info("ntasks:%u nnodes:%u node_id:%u", job->ntasks, job->nnodes,
-	     job->nodeid);
-	info("node_tasks:%u", job->node_tasks);
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_MPI))
+		return;
+
+	log_flag(MPI, "STEPD_STEP_REC");
+	log_flag(MPI, "--------------");
+	log_flag(MPI, "%ps", &job->step_id);
+	log_flag(MPI, "ntasks:%u nnodes:%u node_id:%u", job->ntasks,
+		 job->nnodes, job->nodeid);
+	log_flag(MPI, "node_tasks:%u", job->node_tasks);
 	for (i = 0; i < job->node_tasks; i++)
-		info("gtid[%d]:%u", i, job->task[i]->gtid);
+		log_flag(MPI, "gtid[%d]:%u", i, job->task[i]->gtid);
 	for (i = 0; i < job->nnodes; i++)
-		info("task_cnts[%d]:%u", i, job->task_cnts[i]);
+		log_flag(MPI, "task_cnts[%d]:%u", i, job->task_cnts[i]);
 
 	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL))
-		info("het_job_id:%u", job->het_job_id);
+		log_flag(MPI, "het_job_id:%u", job->het_job_id);
 
 	if (job->het_job_offset != NO_VAL) {
-		info("het_job_ntasks:%u het_job_nnodes:%u", job->het_job_ntasks,
-		     job->het_job_nnodes);
-		info("het_job_node_offset:%u het_job_task_offset:%u",
-		     job->het_job_offset, job->het_job_task_offset);
+		log_flag(MPI, "het_job_ntasks:%u het_job_nnodes:%u",
+			 job->het_job_ntasks, job->het_job_nnodes);
+		log_flag(MPI, "het_job_node_offset:%u het_job_task_offset:%u",
+			 job->het_job_offset, job->het_job_task_offset);
 		for (i = 0; i < job->het_job_nnodes; i++)
-			info("het_job_task_cnts[%d]:%u", i,
-			     job->het_job_task_cnts[i]);
-		info("het_job_node_list:%s", job->het_job_node_list);
+			log_flag(MPI, "het_job_task_cnts[%d]:%u", i,
+				 job->het_job_task_cnts[i]);
+		log_flag(MPI, "het_job_node_list:%s", job->het_job_node_list);
 	}
+	log_flag(MPI, "--------------");
 }
 
 static void _log_mpi_rec(const mpi_plugin_client_info_t *job)
 {
-	slurm_step_layout_t *layout = job->step_layout;
+	slurm_step_layout_t *layout;
 
 	xassert(job);
 
-	info("MPI_PLUGIN_CLIENT_INFO");
-	info("%ps", &job->step_id);
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_MPI))
+		return;
+
+	log_flag(MPI, "----------------------");
+	log_flag(MPI, "MPI_PLUGIN_CLIENT_INFO");
+	log_flag(MPI, "%ps", &job->step_id);
 	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL)) {
-		info("het_job_id:%u", job->het_job_id);
+		log_flag(MPI, "het_job_id:%u", job->het_job_id);
 	}
-	if (layout) {
-		info("node_cnt:%u task_cnt:%u", layout->node_cnt,
-		     layout->task_cnt);
-		info("node_list:%s", layout->node_list);
-		info("plane_size:%u task_dist:%u", layout->plane_size,
-		     layout->task_dist);
+	if ((layout = job->step_layout)) {
+		log_flag(MPI, "node_cnt:%u task_cnt:%u", layout->node_cnt,
+			 layout->task_cnt);
+		log_flag(MPI, "node_list:%s", layout->node_list);
+		log_flag(MPI, "plane_size:%u task_dist:%u", layout->plane_size,
+			 layout->task_dist);
 		for (int i = 0; i < layout->node_cnt; i++) {
-			info("tasks[%d]:%u", i, layout->tasks[i]);
+			log_flag(MPI, "tasks[%d]:%u", i, layout->tasks[i]);
 			for (int j = 0; j < layout->tasks[i]; j++) {
-				info("tids[%d][%d]:%u", i, j,
-				     layout->tids[i][j]);
+				log_flag(MPI, "tids[%d][%d]:%u", i, j,
+					 layout->tids[i][j]);
 			}
 		}
 	}
+	log_flag(MPI, "----------------------");
 }
 
 static void _log_task_rec(const mpi_plugin_task_info_t *job)
 {
 	xassert(job);
 
-	info("MPI_PLUGIN_TASK_INFO");
-	info("%ps", &job->step_id);
-	info("nnodes:%u node_id:%u", job->nnodes, job->nodeid);
-	info("ntasks:%u local_tasks:%u", job->ntasks, job->ltasks);
-	info("global_task_id:%u local_task_id:%u", job->gtaskid, job->ltaskid);
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_MPI))
+		return;
+
+	log_flag(MPI, "MPI_PLUGIN_TASK_INFO");
+	log_flag(MPI, "--------------------");
+	log_flag(MPI, "%ps", &job->step_id);
+	log_flag(MPI, "nnodes:%u node_id:%u", job->nnodes, job->nodeid);
+	log_flag(MPI, "ntasks:%u local_tasks:%u", job->ntasks, job->ltasks);
+	log_flag(MPI, "global_task_id:%u local_task_id:%u", job->gtaskid,
+		 job->ltaskid);
+	log_flag(MPI, "--------------------");
 }
-#endif
 
 static int _match_keys(void *x, void *y)
 {
@@ -267,11 +279,7 @@ static int _mpi_init_locked(char **mpi_type)
 
 	/* NULL in the double pointer means load all, otherwise load just one */
 	if (mpi_type) {
-#if _DEBUG
-		info("%s: MPI: Type: %s", __func__, *mpi_type);
-#else
 		debug("MPI: Type: %s", *mpi_type);
-#endif
 
 		if (!slurm_conf.mpi_default) {
 			error("MPI: No default type set.");
@@ -291,11 +299,7 @@ static int _mpi_init_locked(char **mpi_type)
 		list_append(plugin_names,
 			    xstrdup_printf("%s/%s", mpi_char, *mpi_type));
 	} else {
-#if _DEBUG
-		info("%s: MPI: Loading all types", __func__);
-#else
 		debug("MPI: Loading all types");
-#endif
 
 		plugin_names = plugin_get_plugins_of_type(mpi_char);
 	}
@@ -467,10 +471,8 @@ extern int mpi_g_slurmstepd_init(char ***env)
 		goto done;
 	}
 
-#if _DEBUG
-	info("%s: MPI: Environment before call:", __func__);
+	log_flag(MPI, "%s: Environment before call:", __func__);
 	_log_env(*env);
-#endif
 
 	if ((rc = _mpi_init(&mpi_type)) != SLURM_SUCCESS)
 		goto done;
@@ -494,11 +496,9 @@ extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 	xassert(g_context);
 	xassert(ops);
 
-#if _DEBUG
-	info("%s: MPI: Details before call:", __func__);
+	log_flag(MPI, "%s: Details before call:", __func__);
 	_log_env(*env);
 	_log_step_rec(job);
-#endif
 
 	return (*(ops[0].slurmstepd_prefork))(job, env);
 }
@@ -510,11 +510,9 @@ extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 	xassert(g_context);
 	xassert(ops);
 
-#if _DEBUG
-	info("%s: MPI: Details before call:", __func__);
+	log_flag(MPI, "%s: Details before call:", __func__);
 	_log_env(*env);
 	_log_task_rec(job);
-#endif
 
 	return (*(ops[0].slurmstepd_task))(job, env);
 }
@@ -534,17 +532,15 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 	xassert(g_context);
 	xassert(ops);
 
-#if _DEBUG
-	info("%s: MPI: Details before call:", __func__);
+	log_flag(MPI, "%s: Details before call:", __func__);
 	_log_env(*env);
 	_log_mpi_rec(job);
-#endif
 
 	state = (*(ops[0].client_prelaunch))(job, env);
-#if _DEBUG
-	info("%s: MPI: Environment after call:", __func__);
+
+	log_flag(MPI, "%s: Environment after call:", __func__);
 	_log_env(*env);
-#endif
+
 	return state;
 }
 
@@ -554,9 +550,7 @@ extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 	xassert(g_context);
 	xassert(ops);
 
-#if _DEBUG
-	info("%s called", __func__);
-#endif
+	log_flag(MPI, "%s called", __func__);
 
 	return (*(ops[0].client_fini))(state);
 }
