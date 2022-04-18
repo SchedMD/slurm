@@ -200,8 +200,11 @@ extern int proctrack_p_signal (uint64_t id, int signal)
 	}
 
 	for (i = 0 ; i<npids ; i++) {
-		/* do not kill slurmstepd (it should not be part
-		 * of the list, but just to not forget about that ;))
+		/*
+		 * Be on the safe side and do not kill slurmstepd (ourselves),
+		 * since a call to proctrack_g_get_pids can return all the pids
+		 * in the container which can include us, depending on the
+		 * plugin used (e.g. cgroup/v2).
 		 */
 		if (pids[i] == (pid_t)id)
 			continue;
@@ -243,36 +246,47 @@ extern bool proctrack_p_has_pid(uint64_t cont_id, pid_t pid)
 	return cgroup_g_has_pid(pid);
 }
 
-extern int proctrack_p_wait(uint64_t cont_id)
-{
-	int delay = 1;
-	time_t start = time(NULL);
-
-	if (cont_id == 0 || cont_id == 1) {
-		errno = EINVAL;
-		return SLURM_ERROR;
-	}
-
-	/* Spin until the container is successfully destroyed */
-	/* This indicates that all tasks have exited the container */
-	while (proctrack_p_destroy(cont_id) != SLURM_SUCCESS) {
-		time_t now = time(NULL);
-
-		if (now > (start + slurm_conf.unkillable_timeout)) {
-			error("Unable to destroy container %"PRIu64" in cgroup plugin, giving up after %lu sec",
-			      cont_id, (now - start));
-			break;
-		}
-		proctrack_p_signal(cont_id, SIGKILL);
-		sleep(delay);
-		if (delay < 32)
-			delay *= 2;
-	}
-
-	return SLURM_SUCCESS;
-}
 
 extern int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	return cgroup_g_step_get_pids(pids, npids);
+}
+
+extern int proctrack_p_wait(uint64_t cont_id)
+{
+	int delay = 1;
+	time_t start = time(NULL), now;
+	pid_t *pids = NULL;
+	int npids = 0, rc;
+
+	if (cont_id == 0 || cont_id == 1)
+		return SLURM_ERROR;
+
+	/*
+	 * Spin until the container is empty. This indicates that all tasks have
+	 * exited the container.
+	 */
+	rc = proctrack_p_get_pids(cont_id, &pids, &npids);
+	while ((rc == SLURM_SUCCESS) && npids) {
+		if ((npids == 1) && (pids[0] == cont_id))
+			break;
+
+		now = time(NULL);
+		if (now > (start + slurm_conf.unkillable_timeout)) {
+			error("Container %"PRIu64" in cgroup plugin has %d processes, giving up after %lu sec",
+			      cont_id, npids, (now - start));
+			break;
+		}
+		/*
+		 * The call to proctrack_p_signal is safe since it takes care of
+		 * not killing slurmstepd processes (ourselves).
+		 */
+		proctrack_p_signal(cont_id, SIGKILL);
+		sleep(delay);
+		if (delay < 32)
+			delay *= 2;
+		rc = proctrack_p_get_pids(cont_id, &pids, &npids);
+	}
+
+	return SLURM_SUCCESS;
 }

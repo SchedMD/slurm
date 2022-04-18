@@ -219,9 +219,9 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
  */
 extern int init (void)
 {
-	if (running_in_slurmstepd()) {
-		jag_common_init(0);
-	}
+	if (running_in_slurmstepd())
+		jag_common_init(jobacct_gather_get_clk_tck());
+
 	debug("%s loaded", plugin_name);
 
 	return SLURM_SUCCESS;

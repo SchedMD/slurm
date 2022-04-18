@@ -50,6 +50,10 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job);
 extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
 				       uint32_t taskid);
 
+/* constrain the devices in the task */
+extern int task_cgroup_devices_constrain(stepd_step_rec_t *job, pid_t pid,
+				         uint32_t taskid);
+
 /* add a pid to the extern step devices cgroup */
 extern int task_cgroup_devices_add_extern_pid(pid_t pid);
 

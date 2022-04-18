@@ -26,27 +26,41 @@ of Slurm cgroup plugins.
 
 .TP
 \fBCgroupAutomount\fR=<yes|no>
-Slurm cgroup plugins require valid and functional cgroup subsystem to be mounted
-under /sys/fs/cgroup/<subsystem_name>.
-When launched, plugins check their subsystem availability. If not available,
-the plugin launch fails unless CgroupAutomount is set to yes. In that case, the
-plugin will first try to mount the required subsystems.
+In cgroup/v1 this parameter detects if /sys/fs/cgroup/<controller_name> is
+available, and if not it tries to mount the filesystem.
+In cgroup/v2 this parameter only takes effect if IgnoreSystemd is set, and
+enables the required controllers on slurmd and slurmstepd cgroup directories.
+This parameter is intended for development and testing with cgroup/v2.
 .IP
 
 .TP
 \fBCgroupMountpoint\fR=\fIPATH\fR
-Specify the \fIPATH\fR under which cgroups should be mounted. This
-should be a writable directory which will contain cgroups mounted
-one per subsystem. The default \fIPATH\fR is /sys/fs/cgroup.
+Only intended for development and testing. Specifies the \fIPATH\fR under which
+cgroup controllers should be mounted. The default \fIPATH\fR is /sys/fs/cgroup.
 .IP
 
 .TP
-\fBCgroupPlugin\fR=\fI<cgroup/v1|autodetect>\fR
+\fBCgroupPlugin\fR=\fI<cgroup/v1|cgroup/v2|autodetect>\fR
 Specify the plugin to be used when interacting with the cgroup subsystem.
-Supported values at the moment are only "cgroup/v1" which supports the legacy
-interface of cgroup v1, or "autodetect" which tries to determine which
-cgroup version does your system provide. This is useful if nodes have support
-for different cgroup versions. The default value is "cgroup/v1".
+Supported values at the moment are "cgroup/v1" which supports the legacy
+interface of cgroup v1, "cgroup/v2" for unified architecture, or "autodetect"
+which tries to determine which cgroup version does your system provide.
+This is useful if nodes have support for different cgroup versions.
+The default value is "autodetect".
+.IP
+
+.TP
+\fBIgnoreSystemd\fR=\fI<yes|no>\fR
+Only for cgroup/v2 and for development and testing. It will avoid any call to
+dbus and contact with systemd, and instead will prepare all the cgroup hierarchy
+manually. This option is dangerous in systems with systemd since the cgroup
+can be modified by systemd and cause issues to jobs.
+.IP
+
+.TP
+\fBIgnoreSystemdOnFailure\fR=\fI<yes|no>\fR
+Only for cgroup/v2 and for development and testing. It has similar functionality
+to \fBIgnoreSystemd\fR but only in the case that a dbus call does not succeed.
 .IP
 
 .SH "TASK/CGROUP PLUGIN"
@@ -57,6 +71,7 @@ of this particular plugin:
 
 .TP
 \fBAllowedKmemSpace\fR=<number>
+Only for cgroup/v1.
 Constrain the job cgroup kernel memory to this amount of the allocated memory,
 specified in bytes. The \fBAllowedKmemSpace\fR must be between the upper and
 lower memory limits, specified by \fBMaxKmemPercent\fR and \fBMinKmemSpace\fR,
@@ -113,6 +128,7 @@ The default value is "no".
 
 .TP
 \fBConstrainKmemSpace\fR=<yes|no>
+Only for cgroup/v1.
 If configured to "yes" then constrain the job's Kmem RAM usage in addition to
 RAM usage. Only takes effect if \fBConstrainRAMSpace\fR is set to "yes". If
 enabled, the job's Kmem limit will be assigned the value of
@@ -179,6 +195,7 @@ The default value is 100.
 
 .TP
 \fBMaxKmemPercent\fR=\fIPERCENT\fR
+Only for cgroup/v1.
 Set an upper bound in percent of total RAM as the maximum Kmem for a job. The
 \fIPERCENT\fR may be an arbitrary floating point number, however, the product
 of \fBMaxKmemPercent\fR and job requested memory has to fall between
@@ -188,6 +205,7 @@ used. The default value is 100.
 
 .TP
 \fBMemorySwappiness\fR=<number>
+Only for cgroup/v1.
 Configure the kernel's priority for swapping out anonymous pages (such as
 program data) verses file cache pages for the job cgroup. Valid values are
 between 0 and 100, inclusive. A value of 0 prevents the kernel from swapping
@@ -199,6 +217,7 @@ must be set to \fByes\fR in order for this parameter to be applied.
 
 .TP
 \fBMinKmemSpace\fR=<number>
+Only for cgroup/v1.
 Set a lower bound (in MB) on the memory limits defined by
 \fBAllowedKmemSpace\fR. The default limit is 30M.
 .IP

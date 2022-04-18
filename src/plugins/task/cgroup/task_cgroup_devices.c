@@ -69,31 +69,47 @@ static int _handle_device_access(void *x, void *arg)
 	gres_device_t *gres_device = (gres_device_t *)x;
 	handle_dev_args_t *handle_args = (handle_dev_args_t *)arg;
 	cgroup_limits_t limits;
-	char *t_str = NULL;
+	char *dev_id_str;
+	int rc = SLURM_SUCCESS;
 
-	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
-	    (handle_args->cgroup_type == CG_LEVEL_TASK))
-		xstrfmtcat(t_str, "task_%d", handle_args->taskid);
-	log_flag(GRES, "%s %s: adding %s(%s)",
-		 handle_args->cgroup_type == CG_LEVEL_JOB ? "job" :
-		 handle_args->cgroup_type == CG_LEVEL_STEP ? "step" : t_str,
-		 gres_device->alloc ? "devices.allow" : "devices.deny",
-		 gres_device->major, gres_device->path);
-	xfree(t_str);
+	dev_id_str = gres_device_id2str(&gres_device->dev_desc);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
+		char *t_str = NULL;
+		switch (handle_args->cgroup_type) {
+		case CG_LEVEL_TASK:
+			t_str = xstrdup_printf("task_%d", handle_args->taskid);
+			break;
+		case CG_LEVEL_JOB:
+			t_str = xstrdup("job");
+			break;
+		case CG_LEVEL_STEP:
+			t_str = xstrdup("step");
+			break;
+		default:
+			t_str = xstrdup("unknown");
+			break;
+		}
+		log_flag(GRES, "%s %s: adding %s(%s)",
+			 t_str,
+			 gres_device->alloc ? "devices.allow" : "devices.deny",
+			 dev_id_str, gres_device->path);
+		xfree(t_str);
+	}
 
-	memset(&limits, 0, sizeof(limits));
+	cgroup_init_limits(&limits);
 	limits.allow_device = gres_device->alloc;
-	limits.device_major = gres_device->major;
+	limits.device = gres_device->dev_desc;
 	limits.taskid = handle_args->taskid;
 
 	if (cgroup_g_constrain_set(CG_DEVICES, handle_args->cgroup_type,
 				   &limits) != SLURM_SUCCESS) {
 		error("Unable to set access constraint for device %s(%s)",
-		      gres_device->major, gres_device->path);
-		return SLURM_ERROR; /* Quit for-each */
+		      dev_id_str, gres_device->path);
+		rc = SLURM_ERROR;
 	}
 
-	return SLURM_SUCCESS;
+	xfree(dev_id_str);
+	return rc;
 }
 
 extern int task_cgroup_devices_init(void)
@@ -162,6 +178,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 			rc = SLURM_ERROR;
 			goto fini;
 		}
+		cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_JOB, NO_VAL);
 	}
 
 	if ((job->step_id.step_id != SLURM_BATCH_SCRIPT) &&
@@ -186,6 +203,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 				rc = SLURM_ERROR;
 				goto fini;
 			}
+			cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_STEP,
+						 NO_VAL);
 		}
 	}
 
@@ -200,12 +219,15 @@ fini:
 extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
 				       uint32_t taskid)
 {
+	/* This plugin constrain devices to task level. */
+	return cgroup_g_task_addto(CG_DEVICES, job, pid, taskid);
+}
+
+extern int task_cgroup_devices_constrain(stepd_step_rec_t *job, pid_t pid,
+					 uint32_t taskid)
+{
 	List device_list = NULL;
 	handle_dev_args_t handle_args;
-
-	/* This plugin constrain devices to task level. */
-	if (cgroup_g_task_addto(CG_DEVICES, job, pid, taskid) != SLURM_SUCCESS)
-		return SLURM_ERROR;
 
 	/*
 	 * We do not explicitly constrain devices on the task level of these
@@ -236,6 +258,8 @@ extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
 		FREE_NULL_LIST(device_list);
 		if (tmp < 0)
 			return SLURM_ERROR;
+
+                cgroup_g_constrain_apply(CG_DEVICES, CG_LEVEL_TASK, taskid);
 	}
 
 	return SLURM_SUCCESS;

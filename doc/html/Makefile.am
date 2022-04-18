@@ -8,6 +8,7 @@ generated_html = \
 	big_sys.html \
 	burst_buffer.html \
 	cgroups.html \
+	cgroup_v2.html \
 	classic_fair_share.html \
 	cli_filter_plugins.html \
 	configless_slurm.html \
@@ -95,6 +96,7 @@ html_DATA = \
 	coding_style.pdf \
 	configurator.html \
 	configurator.easy.html \
+	cg_hierarchy.jpg \
 	entities.gif \
 	example_usage.gif \
 	fonts.css \

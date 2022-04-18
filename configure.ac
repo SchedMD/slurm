@@ -235,6 +235,8 @@ X_AC_X11
 X_AC_SELINUX
 
 X_AC_CGROUP
+X_AC_BPF
+X_AC_DBUS
 
 #
 #  Tests for Check
@@ -493,6 +495,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/cgroup/Makefile
 		 src/plugins/cgroup/common/Makefile
 		 src/plugins/cgroup/v1/Makefile
+		 src/plugins/cgroup/v2/Makefile
 		 src/plugins/cli_filter/Makefile
 		 src/plugins/cli_filter/common/Makefile
 		 src/plugins/cli_filter/lua/Makefile

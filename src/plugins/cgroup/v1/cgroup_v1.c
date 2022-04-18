@@ -253,8 +253,8 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str,
 	 * Lock the root cgroup so we don't race with other steps that are being
 	 * started.
 	 */
-	if (!root_locked && (xcgroup_lock(root_cg) != SLURM_SUCCESS)) {
-		error("xcgroup_lock error (%s)", log_str);
+	if (!root_locked && (common_cgroup_lock(root_cg) != SLURM_SUCCESS)) {
+		error("common_cgroup_lock error (%s)", log_str);
 		return SLURM_ERROR;
 	}
 
@@ -289,7 +289,7 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str,
 
 end:
 	if (!root_locked)
-		xcgroup_unlock(root_cg);
+		common_cgroup_unlock(root_cg);
 	return rc;
 }
 
@@ -503,6 +503,11 @@ extern int cgroup_p_system_create(cgroup_ctl_type_t sub)
 			goto end;
 		}
 		break;
+	case CG_TRACK:
+	case CG_DEVICES:
+	case CG_CPUACCT:
+		error("This operation is not supported for %s", g_cg_name[sub]);
+		return SLURM_ERROR;
 	default:
 		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
@@ -528,14 +533,14 @@ extern int cgroup_p_system_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 	case CG_DEVICES:
 		break;
 	case CG_CPUACCT:
-		error("This operation is not supported for %s", g_cg_name[sub]);
-		return SLURM_ERROR;
+		break;
 	default:
 		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
 	}
 
-	return common_cgroup_add_pids(&int_cg[sub][CG_LEVEL_STEP], pids, npids);
+	error("This operation is not supported for %s", g_cg_name[sub]);
+	return SLURM_ERROR;
 }
 
 extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
@@ -553,16 +558,14 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 
 	/* Custom actions for every cgroup subsystem */
 	switch (sub) {
-	case CG_TRACK:
-		break;
 	case CG_CPUS:
-		break;
 	case CG_MEMORY:
 		break;
+	case CG_TRACK:
 	case CG_DEVICES:
-		break;
 	case CG_CPUACCT:
-		break;
+		error("This operation is not supported for %s", g_cg_name[sub]);
+		return SLURM_SUCCESS;
 	default:
 		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
@@ -609,8 +612,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 	 * terminated, they could remove the directories while we're creating
 	 * them.
 	 */
-	if (xcgroup_lock(&int_cg[sub][CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
-		error("xcgroup_lock error");
+	if (common_cgroup_lock(&int_cg[sub][CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
+		error("common_cgroup_lock error");
 		return SLURM_ERROR;
 	}
 
@@ -695,12 +698,12 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		rc = SLURM_ERROR;
 		goto step_c_err;
 	}
-	xcgroup_unlock(&int_cg[sub][CG_LEVEL_ROOT]);
+	common_cgroup_unlock(&int_cg[sub][CG_LEVEL_ROOT]);
 	return rc;
 
 step_c_err:
 	/* step cgroup is not created */
-	xcgroup_unlock(&int_cg[sub][CG_LEVEL_ROOT]);
+	common_cgroup_unlock(&int_cg[sub][CG_LEVEL_ROOT]);
 	g_step_active_cnt[sub]--;
 	return rc;
 }
@@ -896,6 +899,7 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 {
 	int rc = SLURM_SUCCESS;
 	task_cg_info_t *task_cg_info;
+	char *dev_str = NULL;
 #ifdef HAVE_NATIVE_CRAY
 	char expected_usage[32];
 	uint64_t exp;
@@ -992,20 +996,21 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 		}
 		break;
 	case CG_DEVICES:
+		dev_str = gres_device_id2str(&limits->device);
 		if (level == CG_LEVEL_STEP ||
 		    level == CG_LEVEL_JOB) {
 			if (limits->allow_device) {
 				if (common_cgroup_set_param(
 					    &int_cg[sub][level],
 					    "devices.allow",
-					    limits->device_major)
+					    dev_str)
 				    != SLURM_SUCCESS)
 					rc = SLURM_ERROR;
 			} else {
 				if (common_cgroup_set_param(
 					    &int_cg[sub][level],
 					    "devices.deny",
-					    limits->device_major)
+					    dev_str)
 				    != SLURM_SUCCESS)
 					rc = SLURM_ERROR;
 			}
@@ -1026,12 +1031,12 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 				rc = common_cgroup_set_param(
 					&task_cg_info->task_cg,
 					"devices.allow",
-					limits->device_major);
+					dev_str);
 			} else {
 				rc = common_cgroup_set_param(
 					&task_cg_info->task_cg,
 					"devices.deny",
-					limits->device_major);
+					dev_str);
 			}
 		}
 		break;
@@ -1041,9 +1046,15 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 		break;
 	}
 
+	xfree(dev_str);
 	return rc;
 }
 
+extern int cgroup_p_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
+                                    uint32_t task_id)
+{
+    return SLURM_SUCCESS;
+}
 
 /*
  * Code based on linux tools/cgroup/cgroup_event_listener.c with adapted
@@ -1294,8 +1305,9 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 		goto fail_oom_results;
 	}
 
-	if (xcgroup_lock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]) != SLURM_SUCCESS) {
-		error("xcgroup_lock error: %m");
+	if (common_cgroup_lock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]) !=
+	    SLURM_SUCCESS) {
+		error("common_cgroup_lock error: %m");
 		goto fail_oom_results;
 	}
 
@@ -1311,7 +1323,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 	results->job_mem_failcnt = _failcnt(&int_cg[CG_MEMORY][CG_LEVEL_JOB],
 					    "memory.failcnt");
 
-	xcgroup_unlock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]);
+	common_cgroup_unlock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]);
 
 	/*
 	 * oom_thread created, but could have finished before we attempt
@@ -1425,4 +1437,10 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	xfree(memory_stat);
 
 	return stats;
+}
+
+/* cgroup/v1 usec and ssec are provided in USER_HZ. */
+extern long int cgroup_p_get_acct_units()
+{
+	return jobacct_gather_get_clk_tck();
 }

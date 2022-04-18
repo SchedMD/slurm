@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
@@ -68,6 +69,7 @@
 
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/job_container_plugin.h"
+#include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmd/common/proctrack.h"
@@ -212,6 +214,12 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	}
 
 	mpi_fini();
+
+	/*
+	 * This call is only done once per step since stepd_cleanup is protected
+	 * agains multiple and concurrent calls.
+	 */
+	proctrack_g_destroy(job->cont_id);
 
 	if (conf->hwloc_xml)
 		(void)remove(conf->hwloc_xml);
@@ -459,6 +467,11 @@ static int _process_cmdline (int argc, char **argv)
 	if ((argc == 2) && (xstrcmp(argv[1], "getenv") == 0)) {
 		print_rlimits();
 		_dump_user_env();
+		exit(0);
+	}
+	if ((argc == 2) && (xstrcmp(argv[1], "infinity") == 0)) {
+		set_oom_adj(-1000);
+		(void) poll(NULL, 0, -1);
 		exit(0);
 	}
 	if ((argc == 3) && (xstrcmp(argv[1], "spank") == 0)) {

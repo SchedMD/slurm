@@ -72,7 +72,7 @@ char **assoc_mgr_tres_name_array;
 
 
 static int cpunfo_frequency = 0;
-static long hertz = 0;
+static long conv_units = 0;
 List prec_list = NULL;
 
 static int my_pagesize = 0;
@@ -781,7 +781,7 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	                                      (void *)data, jobacct->cur_time);
 }
 
-extern void jag_common_init(long in_hertz)
+extern void jag_common_init(long plugin_units)
 {
 	uint32_t profile_opt;
 
@@ -796,17 +796,11 @@ extern void jag_common_init(long in_hertz)
 	if (profile_opt & ACCT_GATHER_PROFILE_ENERGY)
 		energy_profile = ENERGY_DATA_NODE_ENERGY;
 
-	if (in_hertz) {
-		hertz = in_hertz;
-	} else {
-		hertz = sysconf(_SC_CLK_TCK);
+	if (plugin_units < 1)
+		fatal("Invalid units for statistics. Initialization failed.");
 
-		if (hertz < 1) {
-			error ("_get_process_data: unable to get clock rate");
-			hertz = 100;	/* default on many systems */
-		}
-	}
-
+	/* Dividing the gathered data by this unit will give seconds. */
+	conv_units = plugin_units;
 	my_pagesize = getpagesize();
 }
 
@@ -945,7 +939,7 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 		last_total_cputime =
 			(double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
 
-		cpu_calc = (prec->ssec + prec->usec) / (double)hertz;
+		cpu_calc = (prec->ssec + prec->usec) / (double) conv_units;
 
 		/*
 		 * Since we are not storing things as a double anymore make it
@@ -1018,8 +1012,10 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 		total_job_vsize += jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
 
 		/* Update the cpu times */
-		jobacct->user_cpu_sec = (uint64_t)(prec->usec / (double)hertz);
-		jobacct->sys_cpu_sec = (uint64_t)(prec->ssec / (double)hertz);
+		jobacct->user_cpu_sec = (uint64_t)(prec->usec /
+						   (double)conv_units);
+		jobacct->sys_cpu_sec = (uint64_t)(prec->ssec /
+						  (double)conv_units);
 
 		/* compute frequency */
 		jobacct->this_sampled_cputime =

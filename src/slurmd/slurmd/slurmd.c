@@ -106,7 +106,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
-#include "src/common/cgroup.h"
 
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/job_container_plugin.h"
@@ -1889,13 +1888,10 @@ _slurmd_init(void)
 	build_all_frontend_info(true);
 
 	/*
-	 * This needs to happen before _read_config where we will try to attach
-	 * the slurmd pid to system cgroup.
+	 * This needs to happen before _read_config where we will try to read
+	 * cgroup.conf values
 	 */
-	if (cgroup_g_init() != SLURM_SUCCESS) {
-		error("Unable to initialize cgroup plugin");
-		return SLURM_ERROR;
-	}
+	cgroup_conf_init();
 
 	_dynamic_init();
 
@@ -1904,6 +1900,15 @@ _slurmd_init(void)
 	 * defaults and command line.
 	 */
 	_read_config();
+	/*
+	 * This needs to happen before _resource_spec_init where we will try to
+	 * attach the slurmd pid to system cgroup, and after _read_config to
+	 * have proper logging.
+	 */
+	if (cgroup_g_init() != SLURM_SUCCESS) {
+		error("Unable to initialize cgroup plugin");
+		return SLURM_ERROR;
+	}
 
 	if (!find_node_record(conf->node_name))
 		return SLURM_ERROR;

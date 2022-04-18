@@ -184,6 +184,11 @@ extern int task_p_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 		    job->task[node_tid]->pid) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
+	if (use_devices &&
+	    (task_cgroup_devices_add_pid(job, job->task[node_tid]->pid,
+					 node_tid) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
+
 	return rc;
 }
 
@@ -203,9 +208,9 @@ extern int task_p_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 extern int task_p_post_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 {
 	if (use_devices)
-		return task_cgroup_devices_add_pid(job,
-						   job->task[node_tid]->pid,
-						   node_tid);
+		return task_cgroup_devices_constrain(job,
+						     job->task[node_tid]->pid,
+						     node_tid);
 	return SLURM_SUCCESS;
 }
 

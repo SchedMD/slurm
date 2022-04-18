@@ -242,6 +242,73 @@ static time_t _cgroup_creation_time(char *uidcg, uint32_t job_id)
 	return statbuf.st_mtime;
 }
 
+static int _check_cg_version()
+{
+	char *type;
+	int cg_ver = 0;
+
+	/* Check cgroup version */
+	type = slurm_cgroup_conf.cgroup_plugin;
+
+	/* Default is autodetect */
+	if (!type)
+		type = "autodetect";
+
+	if (!xstrcmp(type, "autodetect"))
+		if (!(type = slurm_autodetect_cgroup_version()))
+			return cg_ver;
+
+	if (!xstrcmp("cgroup/v1", type))
+		cg_ver = 1;
+	else if (!xstrcmp("cgroup/v2", type))
+		cg_ver = 2;
+
+	return cg_ver;
+}
+
+/*
+ * Pick a random job belonging to this user.
+ * Unlike when using cgroup/v1, we will pick here the job with the lowest JobID
+ * instead of getting the job which has the earliest cgroup creation time.
+ */
+static int _indeterminate_multiple_v2(pam_handle_t *pamh, List steps, uid_t uid,
+				      step_loc_t **out_stepd)
+{
+	int rc = PAM_PERM_DENIED;
+	ListIterator itr = NULL;
+	step_loc_t *stepd = NULL;
+	uint32_t most_recent = NO_VAL;
+
+	itr = list_iterator_create(steps);
+	while ((stepd = list_next(itr))) {
+		if ((stepd->step_id.step_id == SLURM_EXTERN_CONT) &&
+		    (uid == _get_job_uid(stepd))) {
+			if (stepd->step_id.job_id == NO_VAL ||
+			    stepd->step_id.job_id > most_recent) {
+				most_recent = stepd->step_id.job_id;
+				*out_stepd = stepd;
+				rc = PAM_SUCCESS;
+			}
+		}
+	}
+
+	if (rc != PAM_SUCCESS) {
+		if (opts.action_no_jobs == CALLERID_ACTION_DENY) {
+			debug("uid %u owns no jobs => deny", uid);
+			send_user_msg(pamh, "Access denied by " PAM_MODULE_NAME
+				      ": you have no active jobs on this node");
+			rc = PAM_PERM_DENIED;
+		} else {
+			debug("uid %u owns no jobs but action_no_jobs=allow",
+			      uid);
+			rc = PAM_SUCCESS;
+		}
+	}
+
+	list_iterator_destroy(itr);
+	return rc;
+}
+
 static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 				   step_loc_t **out_stepd)
 {
@@ -252,6 +319,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	char uidcg[PATH_MAX];
 	char *cgroup_suffix = "";
 	char *cgroup_res = "";
+	int cg_ver;
 
 	if (opts.action_unknown == CALLERID_ACTION_DENY) {
 		debug("Denying due to action_unknown=deny");
@@ -261,6 +329,15 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 			      ": unable to determine source job");
 		return PAM_PERM_DENIED;
 	}
+
+	cg_ver = _check_cg_version();
+	debug("Detected cgroup version %d", cg_ver);
+
+	if (cg_ver != 1 && cg_ver != 2)
+		return PAM_SESSION_ERR;
+
+	if (cg_ver == 2)
+		return _indeterminate_multiple_v2(pamh, steps, uid, out_stepd);
 
 	if (opts.node_name)
 		cgroup_suffix = xstrdup_printf("_%s", opts.node_name);

@@ -458,11 +458,6 @@ extern bool proctrack_g_has_pid(uint64_t cont_id, pid_t pid)
 /*
  * Wait for all processes within a container to exit.
  *
- * When proctrack_g_wait returns SLURM_SUCCESS, the container is considered
- * destroyed.  There is no need to call proctrack_g_destroy after
- * a successful call to proctrack_g_wait, and in fact it will trigger
- * undefined behavior.
- *
  * Return SLURM_SUCCESS or SLURM_ERROR.
  */
 extern int proctrack_g_wait(uint64_t cont_id)

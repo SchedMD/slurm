@@ -740,3 +740,37 @@ extern int common_cgroup_set_uint64_param(xcgroup_t *cg, char *param,
 
 	return fstatus;
 }
+
+extern int common_cgroup_lock(xcgroup_t *cg)
+{
+	int fstatus = SLURM_ERROR;
+
+	if (cg->path == NULL)
+		return fstatus;
+
+	if ((cg->fd = open(cg->path, O_RDONLY)) < 0) {
+		error("error from open of cgroup '%s' : %m", cg->path);
+		return fstatus;
+	}
+
+	if (flock(cg->fd,  LOCK_EX) < 0) {
+		error("error locking cgroup '%s' : %m", cg->path);
+		close(cg->fd);
+	} else
+		fstatus = SLURM_SUCCESS;
+
+	return fstatus;
+}
+
+extern int common_cgroup_unlock(xcgroup_t *cg)
+{
+	int fstatus = SLURM_ERROR;
+
+	if (flock(cg->fd,  LOCK_UN) < 0) {
+		error("error unlocking cgroup '%s' : %m", cg->path);
+	} else
+		fstatus = SLURM_SUCCESS;
+
+	close(cg->fd);
+	return fstatus;
+}

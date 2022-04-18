@@ -237,7 +237,7 @@ static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
 		mlb_soft = mlb;
 	}
 
-	memset(&limits, 0, sizeof(limits));
+	cgroup_init_limits(&limits);
 
 	/*
 	 * When RAM space has not to be constrained and we are here, it means

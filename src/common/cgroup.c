@@ -39,6 +39,7 @@
 /* Define slurm-specific aliases for use by plugins, see slurm_xlator.h. */
 strong_alias(cgroup_conf_init, slurm_cgroup_conf_init);
 strong_alias(cgroup_conf_destroy, slurm_cgroup_conf_destroy);
+strong_alias(autodetect_cgroup_version, slurm_autodetect_cgroup_version);
 
 #define DEFAULT_CGROUP_BASEDIR "/sys/fs/cgroup"
 
@@ -63,12 +64,16 @@ typedef struct {
 	int	(*constrain_set)	(cgroup_ctl_type_t sub,
 					 cgroup_level_t level,
 					 cgroup_limits_t *limits);
+        int	(*constrain_apply)	(cgroup_ctl_type_t sub,
+                                         cgroup_level_t level,
+                                         uint32_t task_id);
 	int	(*step_start_oom_mgr)	(void);
 	cgroup_oom_t *(*step_stop_oom_mgr) (stepd_step_rec_t *job);
 	int	(*task_addto)		(cgroup_ctl_type_t sub,
 					 stepd_step_rec_t *job, pid_t pid,
 					 uint32_t task_id);
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
+	long int (*get_acct_units)	(void);
 } slurm_ops_t;
 
 /*
@@ -89,10 +94,12 @@ static const char *syms[] = {
 	"cgroup_p_has_pid",
 	"cgroup_p_constrain_get",
 	"cgroup_p_constrain_set",
+        "cgroup_p_constrain_apply",
 	"cgroup_p_step_start_oom_mgr",
 	"cgroup_p_step_stop_oom_mgr",
 	"cgroup_p_task_addto",
 	"cgroup_p_task_get_acct_data",
+	"cgroup_p_get_acct_units",
 };
 
 /* Local variables */
@@ -114,7 +121,6 @@ static void _clear_slurm_cgroup_conf();
 static void _pack_cgroup_conf(buf_t *buffer);
 static int _unpack_cgroup_conf(buf_t *buffer);
 static void _read_slurm_cgroup_conf(void);
-static char *_autodetect_cgroup_version(void);
 
 /* Local functions */
 static void _cgroup_conf_fini()
@@ -148,6 +154,8 @@ static void _clear_slurm_cgroup_conf()
 	slurm_cgroup_conf.constrain_devices = false;
 	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
 	xfree(slurm_cgroup_conf.cgroup_plugin);
+	slurm_cgroup_conf.ignore_systemd = false;
+	slurm_cgroup_conf.ignore_systemd_on_failure = false;
 }
 
 static void _pack_cgroup_conf(buf_t *buffer)
@@ -187,6 +195,9 @@ static void _pack_cgroup_conf(buf_t *buffer)
 
 	packbool(slurm_cgroup_conf.constrain_devices, buffer);
 	packstr(slurm_cgroup_conf.cgroup_plugin, buffer);
+
+	packbool(slurm_cgroup_conf.ignore_systemd, buffer);
+	packbool(slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
 }
 
 static int _unpack_cgroup_conf(buf_t *buffer)
@@ -231,6 +242,10 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpackbool(&slurm_cgroup_conf.constrain_devices, buffer);
 	safe_unpackstr_xmalloc(&slurm_cgroup_conf.cgroup_plugin,
 			       &uint32_tmp, buffer);
+
+	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd, buffer);
+	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -267,10 +282,13 @@ static void _read_slurm_cgroup_conf(void)
 		{"AllowedDevicesFile", S_P_STRING},
 		{"MemorySwappiness", S_P_UINT64},
 		{"CgroupPlugin", S_P_STRING},
+		{"IgnoreSystemd", S_P_BOOLEAN},
+		{"IgnoreSystemdOnFailure", S_P_BOOLEAN},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL, *tmp_str;
 	struct stat buf;
+	size_t sz;
 
 	/* Get the cgroup.conf path and validate the file */
 	conf_path = get_extra_conf_path("cgroup.conf");
@@ -294,10 +312,18 @@ static void _read_slurm_cgroup_conf(void)
 			slurm_cgroup_conf.cgroup_automount = false;
 
 		if (!s_p_get_string(&slurm_cgroup_conf.cgroup_mountpoint,
-				    "CgroupMountpoint", tbl))
+				    "CgroupMountpoint", tbl)) {
 			slurm_cgroup_conf.cgroup_mountpoint =
 				xstrdup(DEFAULT_CGROUP_BASEDIR);
-
+		} else {
+			/* Remove the trailing / if any. */
+			tmp_str = slurm_cgroup_conf.cgroup_mountpoint;
+			sz = strlen(tmp_str);
+			if (*(tmp_str + sz - 1) == '/')
+				*(tmp_str + sz - 1) = '\0';
+			slurm_cgroup_conf.cgroup_mountpoint = xstrdup(tmp_str);
+			xfree(tmp_str);
+		}
 		if (s_p_get_string(&tmp_str, "CgroupReleaseAgentDir", tbl)) {
 			xfree(tmp_str);
 			fatal("Support for CgroupReleaseAgentDir option has been removed.");
@@ -380,6 +406,19 @@ static void _read_slurm_cgroup_conf(void)
 		(void) s_p_get_string(&slurm_cgroup_conf.cgroup_plugin,
 				      "CgroupPlugin", tbl);
 
+		if (!s_p_get_boolean(&slurm_cgroup_conf.ignore_systemd,
+				     "IgnoreSystemd", tbl))
+			slurm_cgroup_conf.ignore_systemd = false;
+		else
+			/* Implicitly set these other one. */
+			slurm_cgroup_conf.ignore_systemd_on_failure = true;
+
+		if (!slurm_cgroup_conf.ignore_systemd &&
+		    (!s_p_get_boolean(
+			    &slurm_cgroup_conf.ignore_systemd_on_failure,
+			    "IgnoreSystemdOnFailure", tbl)))
+			slurm_cgroup_conf.ignore_systemd_on_failure = false;
+
 		s_p_hashtbl_destroy(tbl);
 	}
 
@@ -389,7 +428,7 @@ static void _read_slurm_cgroup_conf(void)
 }
 
 /* Autodetect logic inspired from systemd source code */
-static char *_autodetect_cgroup_version(void)
+extern char *autodetect_cgroup_version(void)
 {
 	struct statfs fs;
 	int cgroup_ver = -1;
@@ -428,7 +467,6 @@ static char *_autodetect_cgroup_version(void)
 	}
 
 	log_flag(CGROUP, "%s: using cgroup version %d", __func__, cgroup_ver);
-
 
 	switch (cgroup_ver) {
 	case 1:
@@ -493,8 +531,25 @@ extern void cgroup_free_limits(cgroup_limits_t *limits)
 
 	xfree(limits->allow_cores);
 	xfree(limits->allow_mems);
-	xfree(limits->device_major);
 	xfree(limits);
+}
+
+extern void cgroup_init_limits(cgroup_limits_t *limits)
+{
+	if (!limits)
+		return;
+
+	memset(limits, 0, sizeof(*limits));
+
+	limits->taskid = NO_VAL;
+	limits->device.type = DEV_TYPE_NONE;
+	limits->device.major = NO_VAL;
+	limits->device.minor = NO_VAL;
+	limits->limit_in_bytes = NO_VAL64;
+	limits->soft_limit_in_bytes = NO_VAL64;
+	limits->kmem_limit_in_bytes = NO_VAL64;
+	limits->memsw_limit_in_bytes = NO_VAL64;
+	limits->swappiness = NO_VAL64;
 }
 
 /*
@@ -612,6 +667,20 @@ extern List cgroup_get_conf_list(void)
 	key_pair->value = xstrdup(cg_conf->cgroup_plugin);
 	list_append(cgroup_conf_l, key_pair);
 
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("IgnoreSystemd");
+	key_pair->value = xstrdup_printf("%s",
+					 cg_conf->ignore_systemd ?
+					 "yes" : "no");
+	list_append(cgroup_conf_l, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("IgnoreSystemdOnFailure");
+	key_pair->value = xstrdup_printf("%s",
+					 cg_conf->ignore_systemd_on_failure ?
+					 "yes" : "no");
+	list_append(cgroup_conf_l, key_pair);
+
 	list_sort(cgroup_conf_l, (ListCmpF) sort_key_pairs);
 
 	slurm_rwlock_unlock(&cg_conf_lock);
@@ -710,12 +779,12 @@ extern int cgroup_g_init(void)
 	cgroup_conf_init();
 	type = slurm_cgroup_conf.cgroup_plugin;
 
-	/* Default is cgroup/v1 */
+	/* Default is autodetect */
 	if (!type)
-		type = "cgroup/v1";
+		type = "autodetect";
 
 	if (!xstrcmp(type, "autodetect")) {
-		if (!(type = _autodetect_cgroup_version())) {
+		if (!(type = autodetect_cgroup_version())) {
 			rc = SLURM_ERROR;
 			goto done;
 		}
@@ -861,6 +930,15 @@ extern int cgroup_g_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 	return (*(ops.constrain_set))(sub, level, limits);
 }
 
+extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
+                                    uint32_t task_id)
+{
+	if (cgroup_g_init() < 0)
+		return false;
+
+	return (*(ops.constrain_apply))(sub, level, task_id);
+}
+
 extern int cgroup_g_step_start_oom_mgr()
 {
 	if (cgroup_g_init() < 0)
@@ -892,4 +970,12 @@ extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid)
 		return false;
 
 	return (*(ops.task_get_acct_data))(taskid);
+}
+
+extern long int cgroup_g_get_acct_units()
+{
+	if (cgroup_g_init() < 0)
+		return false;
+
+	return (*(ops.get_acct_units))();
 }

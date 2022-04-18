@@ -86,23 +86,6 @@ extern int xcgroup_ns_is_available(xcgroup_ns_t *cgns);
 extern int xcgroup_ns_find_by_pid(xcgroup_ns_t *cgns, xcgroup_t *cg, pid_t pid);
 
 /*
- * Use filesystem lock over a cgroup path typically to avoid removal from one
- * step when another one is creating it.
- *
- * IN cg - Cgroup object containing path to lock.
- * RETURN SLURM_SUCCESS if lock was successful, SLURM_ERROR otherwise.
- */
-extern int xcgroup_lock(xcgroup_t *cg);
-
-/*
- * Unlock a cgroup using filesystem lock.
- *
- * IN cg - Cgroup object containing path to unlock.
- * RETURN SLURM_SUCCESS if unlock was successful, SLURM_ERROR otherwise.
- */
-extern int xcgroup_unlock(xcgroup_t *cg);
-
-/*
  * Set the cgroup struct parameters for a given cgroup from a namespace.
  *
  * IN cgns - Cgroup namespace where the cgroup resides.

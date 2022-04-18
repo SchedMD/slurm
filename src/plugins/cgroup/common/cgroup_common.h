@@ -55,6 +55,7 @@
 #include "src/common/xstring.h"
 
 typedef struct {
+	bitstr_t *avail_controllers;
 	char *mnt_point;	/* mount point to use */
 	char *mnt_args;		/* additional mount args */
 	char *subsystems;	/* comma-separated subsystems to provide */
@@ -197,5 +198,22 @@ extern int common_cgroup_get_param(xcgroup_t *cg, char *param, char **content,
  */
 extern int common_cgroup_set_uint64_param(xcgroup_t *cg, char *parameter,
 					  uint64_t value);
+
+/*
+ * Use filesystem lock over a cgroup path typically to avoid removal from one
+ * step when another one is creating it.
+ *
+ * IN cg - Cgroup object containing path to lock.
+ * RETURN SLURM_SUCCESS if lock was successful, SLURM_ERROR otherwise.
+ */
+extern int common_cgroup_lock(xcgroup_t *cg);
+
+/*
+ * Unlock a cgroup using filesystem lock.
+ *
+ * IN cg - Cgroup object containing path to unlock.
+ * RETURN SLURM_SUCCESS if unlock was successful, SLURM_ERROR otherwise.
+ */
+extern int common_cgroup_unlock(xcgroup_t *cg);
 
 #endif /* !_CGROUP_COMMON_H */

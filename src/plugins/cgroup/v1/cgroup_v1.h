@@ -47,6 +47,7 @@
 #include "src/common/cgroup.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -211,6 +212,12 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 				  cgroup_limits_t *limits);
 
 /*
+ * This function is only needed in v2, in v1 will always return SLURM_SUCCESS
+ */
+extern int cgroup_p_constrain_apply(cgroup_ctl_type_t sub,
+                                    cgroup_level_t level, uint32_t task_id);
+
+/*
  * Cgroup v1 function to detect OOM conditions.
  *
  * Do use memory.oom_control and cgroup.event_control, see:
@@ -256,5 +263,13 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
  * RET cgroup_acct_t - struct containing the required data.
  */
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid);
+
+/*
+ * Return conversion units used for stats gathered from cpuacct.
+ * Dividing the provided data by this number will give seconds.
+ *
+ * RET hertz - USER_HZ of the system.
+ */
+extern long int cgroup_p_get_acct_units();
 
 #endif /* !_CGROUP_V1_H */

@@ -191,7 +191,6 @@
 #define gres_get_value_by_type	slurm_gres_get_value_by_type
 #define gres_get_job_info	slurm_gres_get_job_info
 #define gres_get_step_info	slurm_gres_get_step_info
-#define gres_device_major	slurm_gres_device_major
 #define gres_sock_delete	slurm_gres_sock_delete
 #define gres_job_list_delete	slurm_gres_job_list_delete
 #define destroy_gres_device	slurm_destroy_gres_device
@@ -527,7 +526,7 @@
 /* cgroup.[ch] functions */
 #define cgroup_conf_init		slurm_cgroup_conf_init
 #define cgroup_conf_destroy		slurm_cgroup_conf_destroy
-
+#define autodetect_cgroup_version       slurm_autodetect_cgroup_version
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */

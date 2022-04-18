@@ -173,16 +173,18 @@ connecting from a login node. Configurable values are:
   <b id="action_unknown_newest">newest</b> (default)
   <a class="slurm_link" href="#action_unknown_newest"></a>
 </dt>
-<dd>Pick the newest job on the node. The "newest" job is chosen based
-on the mtime of the job's step_extern cgroup; asking Slurm would
-require an RPC to the controller. Thus, the memory cgroup must be in
-use so that the code can check mtimes of cgroup directories. The user
+<dd>On systems with <i>cgroup/v1</i> pick the newest job on the node.
+The "newest" job is chosen based on the mtime of the job's step_extern cgroup;
+asking Slurm would require an RPC to the controller. Thus, the memory cgroup
+must be in use so that the code can check mtimes of cgroup directories. The user
 can ssh in but may be adopted into a job that exits earlier than the
 job they intended to check on. The ssh connection will at least be
 subject to appropriate limits and the user can be informed of better
 ways to accomplish their objectives if this becomes a problem.
 NOTE: If the module fails to retrieve the cgroup mtime, then the picked
 job may not be the newest one.
+On systems with <i>cgroup/v2</i> the newest is just the job with the greatest
+id, and thus this does not ensure that it is really the newest job.
 </dd>
 <dt>
   <b id="action_unknown_allow">allow</b>
@@ -444,6 +446,6 @@ break process adoption with pam_slurm_adopt.</p>
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 9 August 2021</p>
+<p style="text-align:center;">Last modified 6 April 2022</p>
 
 <!--#include virtual="footer.txt"-->

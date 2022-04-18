@@ -56,6 +56,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+#include "src/common/gres.h"
 #include "src/common/log.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -103,6 +104,8 @@ typedef enum {
 	CG_LEVEL_USER,
 	CG_LEVEL_JOB,
 	CG_LEVEL_STEP,
+	CG_LEVEL_STEP_SLURM,
+	CG_LEVEL_STEP_USER,
 	CG_LEVEL_TASK,
 	CG_LEVEL_SYSTEM,
 	CG_LEVEL_CNT
@@ -120,7 +123,7 @@ typedef struct {
 	size_t mems_size;
 	/* task devices */
 	bool allow_device;
-	char *device_major;
+	gres_device_id_t device;
 	/* jobacct memory */
 	uint64_t limit_in_bytes;
 	uint64_t soft_limit_in_bytes;
@@ -171,6 +174,9 @@ typedef struct {
 
 	bool constrain_devices;
 	char *cgroup_plugin;
+
+	bool ignore_systemd;
+	bool ignore_systemd_on_failure;
 } cgroup_conf_t;
 
 
@@ -181,10 +187,12 @@ extern int cgroup_conf_init(void);
 extern void cgroup_conf_destroy(void);
 extern void cgroup_conf_reinit(void);
 extern void cgroup_free_limits(cgroup_limits_t *limits);
+extern void cgroup_init_limits(cgroup_limits_t *limits);
 extern List cgroup_get_conf_list(void);
 extern int cgroup_write_conf(int fd);
 extern int cgroup_read_conf(int fd);
 extern bool cgroup_memcg_job_confinement(void);
+extern char *autodetect_cgroup_version(void);
 
 /* global plugin functions */
 extern int cgroup_g_init(void);
@@ -204,10 +212,13 @@ extern cgroup_limits_t *cgroup_g_constrain_get(cgroup_ctl_type_t sub,
 					       cgroup_level_t type);
 extern int cgroup_g_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 				  cgroup_limits_t *limits);
+extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
+                                    uint32_t task_id);
 extern int cgroup_g_step_start_oom_mgr(void);
 extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *job);
 extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
 			       pid_t pid, uint32_t task_id);
 extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid);
+extern long int cgroup_g_get_acct_units();
 
 #endif

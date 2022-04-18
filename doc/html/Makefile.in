@@ -203,6 +203,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BPF_CPPFLAGS = @BPF_CPPFLAGS@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -409,6 +410,8 @@ build_vendor = @build_vendor@
 builddir = @builddir@
 datadir = @datadir@
 datarootdir = @datarootdir@
+dbus_CFLAGS = @dbus_CFLAGS@
+dbus_LIBS = @dbus_LIBS@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
@@ -457,6 +460,7 @@ generated_html = \
 	big_sys.html \
 	burst_buffer.html \
 	cgroups.html \
+	cgroup_v2.html \
 	classic_fair_share.html \
 	cli_filter_plugins.html \
 	configless_slurm.html \
@@ -544,6 +548,7 @@ html_DATA = \
 	coding_style.pdf \
 	configurator.html \
 	configurator.easy.html \
+	cg_hierarchy.jpg \
 	entities.gif \
 	example_usage.gif \
 	fonts.css \
