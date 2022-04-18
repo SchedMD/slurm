@@ -2230,14 +2230,11 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 					       sock_gres, job_id, tres_mc_ptr,
 					       tasks_per_node_socket);
 			} else if (gres_js->gres_per_job) {
-				uint16_t cpus_per_core;
-				cpus_per_core = node_record_table_ptr[i]->cpus /
-					node_record_table_ptr[i]->tot_cores;
 				job_fini = _set_job_bits1(
 					job_res, i, node_inx,
 					rem_node_cnt, sock_gres,
 					job_id, tres_mc_ptr,
-					cpus_per_core);
+					node_ptr->tpc);
 			} else {
 				error("%s job %u job_spec lacks GRES counter",
 				      __func__, job_id);

@@ -2068,7 +2068,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	uint16_t cpus;
 	avail_res_t *avail_res = NULL;
 	uint64_t avail_mem, req_mem;
-	uint32_t gres_cores, gres_cpus, cpus_per_core;
+	uint32_t gres_cores, gres_cpus;
 	int core_start_bit, core_end_bit, cpu_alloc_size, i;
 	bool disable_binding;
 	node_record_t *node_ptr = node_record_table_ptr[node_i];
@@ -2091,7 +2091,6 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 
 	core_start_bit = cr_get_coremap_offset(node_i);
 	core_end_bit   = cr_get_coremap_offset(node_i+1) - 1;
-	cpus_per_core  = node_ptr->cpus / (core_end_bit - core_start_bit + 1);
 	if (node_usage[node_i].gres_list)
 		gres_list = node_usage[node_i].gres_list;
 	else
@@ -2188,7 +2187,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 
 	gres_cpus = gres_cores;
 	if (gres_cpus != NO_VAL)
-		gres_cpus *= cpus_per_core;
+		gres_cpus *= node_ptr->tpc;
 	if ((gres_cpus < job_ptr->details->ntasks_per_node) ||
 	    ((job_ptr->details->cpus_per_task > 1) &&
 	     (gres_cpus < job_ptr->details->cpus_per_task)))
