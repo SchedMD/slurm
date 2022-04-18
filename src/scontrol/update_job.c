@@ -39,6 +39,7 @@
 
 #include "scontrol.h"
 #include "src/common/env.h"
+#include "src/common/gres.h"
 #include "src/common/proc_args.h"
 #include "src/common/uid.h"
 
@@ -1047,10 +1048,15 @@ extern int scontrol_update_job(int argc, char **argv)
 			if (!xstrcasecmp(val, "help") ||
 			    !xstrcasecmp(val, "list")) {
 				print_gres_help();
-			} else if (job_msg.tres_per_node) {
-				xstrfmtcat(job_msg.tres_per_node, ",%s", val);
 			} else {
-				job_msg.tres_per_node = xstrdup(val);
+				char *tmp = gres_prepend_tres_type(val);
+				if (job_msg.tres_per_node) {
+					xstrfmtcat(job_msg.tres_per_node, ",%s",
+						   tmp);
+					xfree(tmp);
+				} else {
+					job_msg.tres_per_node = tmp;
+				}
 				update_cnt++;
 			}
 		}
