@@ -181,6 +181,9 @@ documents those changes that are of interest to users and administrators.
  -- Add new max_token_lifespan limit to AuthAltParameters.
  -- sacctmgr - allow Admins to update AdminComment and SystemComment fields.
 
+* Changes in Slurm 21.08.8
+==========================
+
 * Changes in Slurm 21.08.7
 ==========================
  -- openapi/v0.0.37 - correct calculation for bf_queue_len_mean in /diag.
