@@ -901,20 +901,22 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	} else if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
+	if (!is_admin && (job->admin_comment || job->system_comment)) {
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
+	}
+
 	if (job->derived_ec != NO_VAL)
 		xstrfmtcat(vals, ", derived_ec=%u", job->derived_ec);
 
 	if (job->derived_es)
 		xstrfmtcat(vals, ", derived_es='%s'", job->derived_es);
 
-	if (job->system_comment && is_admin)
-		xstrfmtcat(vals, ", system_comment='%s'",
-			   job->system_comment);
-	else {
-		xfree(vals);
-		errno = ESLURM_ACCESS_DENIED;
-		return NULL;
-	}
+	if (job->admin_comment)
+		xstrfmtcat(vals, ", admin_comment='%s'", job->admin_comment);
+
+	if (job->system_comment)
+		xstrfmtcat(vals, ", system_comment='%s'", job->system_comment);
 
 	if (job->wckey)
 		xstrfmtcat(vals, ", wckey='%s'", job->wckey);

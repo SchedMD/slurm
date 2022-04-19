@@ -190,6 +190,12 @@ static int _set_rec(int *start, int argc, char **argv,
 				xfree(job->derived_es);
 			job->derived_es = strip_quotes(argv[i]+end, NULL, 1);
 			set = 1;
+		} else if (!xstrncasecmp(argv[i], "AdminComment",
+					 MAX(command_len, 12))) {
+			if (job->admin_comment)
+				xfree(job->admin_comment);
+			job->admin_comment = strip_quotes(argv[i]+end, NULL, 1);
+			set = 1;
 		} else if (!xstrncasecmp(argv[i], "NewWCKey",
 					 MAX(command_len, 1))) {
 			if (job->wckey)

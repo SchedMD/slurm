@@ -179,6 +179,7 @@ documents those changes that are of interest to users and administrators.
  -- Add support to ship Include configuration files with configless.
  -- Fix issues with track_script cleanup.
  -- Add new max_token_lifespan limit to AuthAltParameters.
+ -- sacctmgr - allow Admins to update AdminComment field on a job.
 
 * Changes in Slurm 21.08.7
 ==========================
