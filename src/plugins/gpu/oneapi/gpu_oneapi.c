@@ -318,13 +318,6 @@ static bool _oneapi_get_nearest_freq(zes_freq_handle_t freq_handle,
 	qsort(freqs_sort, freqs_size, sizeof(unsigned int),
 	      gpu_common_sort_freq_descending);
 
-	if ((freqs_size > 1) &&
-	    (freqs_sort[0] <= freqs_sort[(freqs_size) - 1])) {
-		error("%s: frequencies are not stored in descending order!",
-		      __func__);
-		return false;
-	}
-
 	/* Set the nearest valid frequency for the requested frequency */
 	gpu_common_get_nearest_freq(freq, freqs_size, freqs_sort);
 	return true;
