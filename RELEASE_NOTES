@@ -67,6 +67,7 @@ HIGHLIGHTS
     when hitting a resource limit.
  -- Pass and use alias_list through credential instead of environment variable.
  -- Add ability to get host addresses from nss_slurm.
+ -- Enable reverse fanout for cloud+alias_list jobs.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

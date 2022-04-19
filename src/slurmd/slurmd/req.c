@@ -498,21 +498,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		children = 0;
 		depth = 0;
 		max_depth = 0;
-	} else if ((type == LAUNCH_TASKS) &&
-		   (((launch_tasks_request_msg_t *)req)->alias_list)) {
-		/*
-		 * In the cloud, each task talks directly to the slurmctld
-		 * since node addressing is abnormal. Setting parent_rank = -1
-		 * is sufficient to force slurmstepd to talk directly to the
-		 * slurmctld - see _one_step_complete_msg. We need to make sure
-		 * to set rank to the actual rank so that the slurmctld will
-		 * properly clean up all nodes.
-		 */
-		rank = hostset_find(step_hset, conf->node_name);
-		parent_rank = -1;
-		children = 0;
-		depth = 0;
-		max_depth = 0;
 	} else {
 #ifndef HAVE_FRONT_END
 		int count;
@@ -1378,6 +1363,21 @@ static void _handle_libdir_fixup(launch_tasks_request_msg_t *req)
 	xfree(new);
 }
 
+static int _set_node_alias(launch_tasks_request_msg_t *req)
+{
+	char *alias_list = NULL;
+
+	if (req->cred &&
+	    (alias_list = slurm_cred_get_arg(req->cred,
+					     CRED_ARG_JOB_ALIAS_LIST)) &&
+	    set_nodes_alias(alias_list)) {
+		error("Failed to process alias_list: '%s'", alias_list);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static void
 _rpc_launch_tasks(slurm_msg_t *msg)
 {
@@ -1423,6 +1423,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (node_id < 0) {
 		info("%s: Invalid node list (%s not in %s)", __func__,
 		     conf->node_name, req->complete_nodelist);
+		errnum = ESLURM_INVALID_NODE_NAME;
+		goto done;
+	}
+
+	if (_set_node_alias(req)) {
 		errnum = ESLURM_INVALID_NODE_NAME;
 		goto done;
 	}
