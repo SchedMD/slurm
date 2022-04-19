@@ -214,12 +214,6 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 				uint16_t protocol_version);
 
 /*
- * Copy a slurm credential.
- * Returns NULL on failure.
- */
-slurm_cred_t *slurm_cred_copy(slurm_cred_t *cred);
-
-/*
  * Create a "fake" credential with bogus data in the signature.
  * This function can be used for testing, or when srun would like
  * to talk to slurmd directly, bypassing the controller
