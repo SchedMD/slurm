@@ -64,7 +64,7 @@ HIGHLIGHTS
     node with the greatest ratio of available cpus to total cpus.
  -- Add support to ship Include configuration files with configless.
 
-CONFIGURATION FILE CHANGES (see man appropriate man page for details)
+CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
  -- AcctGatherEnergyType 'rsmi' is now 'gpu'.
  -- TaskAffinity parameter was removed from cgroup.conf.
