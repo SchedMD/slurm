@@ -558,7 +558,7 @@ static int _init_new_scope(char *scope_path)
 {
 	int rc;
 
-	rc = mkdir(scope_path, O_CREAT);
+	rc = mkdir(scope_path, 0755);
 	if (rc && (errno != EEXIST)) {
 		error("Could not create scope directory %s: %m", scope_path);
 		return SLURM_ERROR;
