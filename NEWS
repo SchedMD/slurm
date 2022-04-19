@@ -184,6 +184,7 @@ documents those changes that are of interest to users and administrators.
     executing node_features/helpers scripts in the middle of a job. This clould
     potentially affect job performance.
  -- Pass and use alias_list through credential instead of environment variable.
+ -- Add ability to get host addresses from nss_slurm.
 
 * Changes in Slurm 21.08.8
 ==========================
