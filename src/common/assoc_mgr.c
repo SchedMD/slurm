@@ -792,6 +792,9 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc)
 
 	if (!assoc->usage)
 		assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	/* Users have no children so leaf is same as total */
+	if (assoc->user)
+		assoc->leaf_usage = assoc->usage;
 
 	if (assoc->parent_id) {
 		/* Here we need the direct parent (parent_assoc_ptr)
@@ -915,6 +918,9 @@ static void _set_assoc_norm_priority(slurmdb_assoc_rec_t *assoc)
 
 	if (!assoc->usage)
 		assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	/* Users have no children so leaf_usage is same as total */
+	if (assoc->user)
+		assoc->leaf_usage = assoc->usage;
 
 	if (!g_assoc_max_priority)
 		assoc->usage->priority_norm = 0.0;
@@ -1794,14 +1800,14 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 	/* add used limits We only look for the user associations to
 	 * do the parents since a parent may have moved */
 	while ((curr_assoc = list_next(curr_itr))) {
-		if (!curr_assoc->user)
+		if (!curr_assoc->leaf_usage)
 			continue;
 
 		if (!(assoc = _find_assoc_rec_id(curr_assoc->id)))
 			continue;
 
 		while (assoc) {
-			_addto_used_info(assoc->usage, curr_assoc->usage);
+			_addto_used_info(assoc->usage, curr_assoc->leaf_usage);
 			/* get the parent last since this pointer is
 			   different than the one we are updating from */
 			assoc = assoc->usage->parent_assoc_ptr;
@@ -3949,6 +3955,11 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				object->usage =
 					slurmdb_create_assoc_usage(
 						g_tres_count);
+
+			/* Users have no children so leaf is same as total */
+			if (object->user)
+				object->leaf_usage = object->usage;
+
 			/* If is_def is uninitialized the value will
 			   be NO_VAL, so if it isn't 1 make it 0.
 			*/
@@ -3991,6 +4002,25 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 							set the shares
 							of surrounding children
 						     */
+
+			/*
+			 * We don't want to lose the usage data of the user
+			 * so we store it directly to its parent assoc.
+			 * Otherwise accounts could boost their fairshare by
+			 * removing users.
+			 */
+			if (rec->leaf_usage && rec->usage->parent_assoc_ptr) {
+				slurmdb_assoc_rec_t *parent_assoc_ptr =
+					rec->usage->parent_assoc_ptr;
+
+				if (!parent_assoc_ptr->leaf_usage)
+					parent_assoc_ptr->leaf_usage =
+						slurmdb_create_assoc_usage(
+							g_tres_count);
+
+				_addto_used_info(parent_assoc_ptr->leaf_usage,
+						 rec->leaf_usage);
+			}
 
 			/* We need to renormalize of something else */
 			if (rec->priority == g_assoc_max_priority)
@@ -4091,9 +4121,13 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 					_get_children_level_shares(object));
 			}
 		is_user:
-			if (!object->user)
+			if (!object->leaf_usage)
 				continue;
 
+			/* Add usage of formerly deleted child assocs*/
+			if (object->leaf_usage != object->usage)
+				_addto_used_info(object->usage,
+						 object->leaf_usage);
 			rec = object;
 			/* look for a parent since we are starting at
 			   the parent instead of the child
@@ -4104,7 +4138,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				*/
 				object = object->usage->parent_assoc_ptr;
 
-				_addto_used_info(object->usage, rec->usage);
+				_addto_used_info(object->usage,
+						 rec->leaf_usage);
 			}
 		}
 		if (setup_children) {
@@ -5138,6 +5173,9 @@ static void _reset_children_usages(List children_list)
 		if (assoc->user)
 			continue;
 
+		slurmdb_destroy_assoc_usage(assoc->leaf_usage);
+		assoc->leaf_usage = NULL;
+
 		_reset_children_usages(assoc->usage->children_list);
 	}
 	list_iterator_destroy(itr);
@@ -5261,6 +5299,10 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc)
 	}
 	if (sav_assoc->user)
 		return;
+
+	slurmdb_destroy_assoc_usage(sav_assoc->leaf_usage);
+	sav_assoc->leaf_usage = NULL;
+
 /*
  *	The assoc is an account, so reset all children
  */
@@ -5477,16 +5519,16 @@ extern int dump_assoc_mgr_state(void)
 		slurmdb_assoc_rec_t *assoc = NULL;
 		itr = list_iterator_create(assoc_mgr_assoc_list);
 		while ((assoc = list_next(itr))) {
-			if (!assoc->user)
+			if (!assoc->leaf_usage)
 				continue;
 
 			pack32(assoc->id, buffer);
-			packlongdouble(assoc->usage->usage_raw, buffer);
+			packlongdouble(assoc->leaf_usage->usage_raw, buffer);
 			tmp_char = _make_usage_tres_raw_str(
-				assoc->usage->usage_tres_raw);
+				assoc->leaf_usage->usage_tres_raw);
 			packstr(tmp_char, buffer);
 			xfree(tmp_char);
-			pack32(assoc->usage->grp_used_wall, buffer);
+			pack32(assoc->leaf_usage->grp_used_wall, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
@@ -5679,12 +5721,18 @@ extern int load_assoc_usage(void)
 		   normalize against.
 		*/
 		if (assoc) {
-			assoc->usage->grp_used_wall = 0;
-			assoc->usage->usage_raw = 0;
-			for (i=0; i < g_tres_count; i++)
-				assoc->usage->usage_tres_raw[i] = 0;
 			memset(usage_tres_raw, 0, sizeof(usage_tres_raw));
 			_set_usage_tres_raw(usage_tres_raw, tmp_str);
+			if (!assoc->leaf_usage)
+				assoc->leaf_usage = slurmdb_create_assoc_usage(
+					g_tres_count);
+			assoc->leaf_usage->grp_used_wall = grp_used_wall;
+			assoc->leaf_usage->usage_raw = usage_raw;
+			for (i = 0; i < g_tres_count; i++)
+				assoc->leaf_usage->usage_tres_raw[i] =
+					usage_tres_raw[i];
+			if (assoc->leaf_usage == assoc->usage)
+				assoc = assoc->usage->parent_assoc_ptr;
 		}
 		while (assoc) {
 			assoc->usage->grp_used_wall += grp_used_wall;

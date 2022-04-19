@@ -190,6 +190,14 @@ static int _apply_decay(double real_decay)
 		for (i=0; i<slurmctld_tres_cnt; i++)
 			assoc->usage->usage_tres_raw[i] *= real_decay;
 		assoc->usage->grp_used_wall *= real_decay;
+
+		if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
+			assoc->leaf_usage->usage_raw *= real_decay;
+			for (i = 0; i < slurmctld_tres_cnt; i++)
+				assoc->leaf_usage->usage_tres_raw[i] *=
+					real_decay;
+			assoc->leaf_usage->grp_used_wall *= real_decay;
+		}
 	}
 	list_iterator_destroy(itr);
 
@@ -238,6 +246,11 @@ static int _reset_usage(void)
 		for (i=0; i<slurmctld_tres_cnt; i++)
 			assoc->usage->usage_tres_raw[i] = 0;
 		assoc->usage->grp_used_wall = 0;
+
+		if (assoc->leaf_usage && (assoc->leaf_usage != assoc->usage)) {
+			slurmdb_destroy_assoc_usage(assoc->leaf_usage);
+			assoc->leaf_usage = NULL;
+		}
 	}
 	list_iterator_destroy(itr);
 

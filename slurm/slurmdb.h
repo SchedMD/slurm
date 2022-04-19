@@ -512,6 +512,9 @@ typedef struct slurmdb_assoc_rec {
 
 	uint16_t is_def;           /* Is this the users default assoc/acct */
 
+	slurmdb_assoc_usage_t *leaf_usage; /* Points to usage for user assocs.
+					    * Holds usage of deleted users in
+					    * parent assocs (DON'T PACK) */
 	uint32_t lft;		   /* lft used for grouping sub
 				    * associations and jobs as a left
 				    * most container used with rgt */

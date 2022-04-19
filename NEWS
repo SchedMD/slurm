@@ -225,6 +225,8 @@ documents those changes that are of interest to users and administrators.
  -- Add switch/hpe_slingshot plugin.
  -- cloud_reg_addrs - use hostname from slurmd rather than from munge
     credential for NodeHostName.
+ -- Store assoc usage in parent assoc when deleted to preserve account
+    fairshare.
 
 * Changes in Slurm 21.08.9
 ==========================

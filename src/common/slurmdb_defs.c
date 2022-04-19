@@ -891,6 +891,15 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		FREE_NULL_LIST(assoc->qos_list);
 		xfree(assoc->user);
 
+		/* Account with previously deleted users */
+		if (assoc->leaf_usage != assoc->usage)
+			slurmdb_destroy_assoc_usage(assoc->leaf_usage);
+		/*
+		 * Be crazy safe and set this to NULL as it should never be used
+		 * again!
+		 */
+		assoc->leaf_usage = NULL;
+
 		slurmdb_destroy_assoc_usage(assoc->usage);
 		/* NOTE assoc->user_rec is a soft reference, do not free here */
 		assoc->user_rec = NULL;
