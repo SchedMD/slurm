@@ -874,7 +874,6 @@ extern void delete_node_record(node_record_t *node_ptr)
 {
 	xassert(node_ptr);
 
-	purge_node_rec(node_ptr);
 	node_record_table_ptr[node_ptr->index] = NULL;
 
 	if (node_ptr->index == last_node_index) {
@@ -888,6 +887,8 @@ extern void delete_node_record(node_record_t *node_ptr)
 		if (i < 0)
 			last_node_index = -1;
 	}
+
+	purge_node_rec(node_ptr);
 }
 
 /*
