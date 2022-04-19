@@ -890,6 +890,10 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	ListIterator itr;
 	List id_switch_list = NULL;
 	id_switch_t *id_switch;
+	bool is_admin;
+
+	is_admin = is_user_min_admin_level(mysql_conn, uid,
+					   SLURMDB_ADMIN_OPERATOR);
 
 	if (!job_cond || !job) {
 		error("we need something to change");
@@ -936,9 +940,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 		char tmp_char[25];
 		char *vals_mod = NULL;
 
-		if ((uid != job_rec->uid) &&
-		    !is_user_min_admin_level(mysql_conn, uid,
-					     SLURMDB_ADMIN_OPERATOR)) {
+		if ((uid != job_rec->uid) && !is_admin) {
 			errno = ESLURM_ACCESS_DENIED;
 			rc = SLURM_ERROR;
 			break;
