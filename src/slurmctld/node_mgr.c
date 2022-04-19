@@ -4848,10 +4848,12 @@ extern int delete_nodes(char *names, char **err_msg)
 		rehash_node();
 		_update_parts();
 		select_g_reconfigure();
-	} else {
+	}
+	if (error_hostlist) {
 		char *nodes = hostlist_ranged_string_xmalloc(error_hostlist);
 		*err_msg = xstrdup_printf("failed to delete nodes %s", nodes);
 		xfree(nodes);
+		FREE_NULL_HOSTLIST(error_hostlist);
 	}
 
 cleanup:
