@@ -199,6 +199,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues related to users with very large uids.
  -- common/openapi - fix bug populating methods for parameter-less endpoint.
  -- slurmrestd/operations - fix memory leak when resolving bad path.
+ -- sacctmgr - improve performance of query generation for archive load.
 
 * Changes in Slurm 21.08.8
 ==========================
