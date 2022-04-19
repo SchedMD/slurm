@@ -1358,7 +1358,7 @@ extern char *find_hostname(uint32_t pos, char *hosts)
 	return host;
 }
 
-extern node_record_t * next_node(int *index)
+extern node_record_t *next_node(int *index)
 {
 	xassert(index);
 

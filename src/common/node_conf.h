@@ -446,6 +446,6 @@ extern char *find_hostname(uint32_t pos, char *hosts);
  *                for (int i = 0; (node_ptr = next_node(&i); i++)
  * RET - next non-null node_record_t * or NULL if finished iterating.
  */
-extern node_record_t * next_node(int *index);
+extern node_record_t *next_node(int *index);
 
 #endif /* !_HAVE_NODE_CONF_H */
