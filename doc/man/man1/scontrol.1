@@ -1425,7 +1425,11 @@ allowed.
 .TP
 \fBNodeName\fR=<\fIname\fR>
 Identify the node(s) to be updated. Multiple node names may be specified using
-simple node range expressions (e.g. "lx[10\-20]"). This specification is required.
+simple node range expressions (e.g. "lx[10\-20]"). Nodesets can also be
+specified by themselves or mixed with node range expressions, using a comma as
+a list separator. If the keyword "ALL" is specified alone, then the update
+will be attempted against all the nodes in the local cluster. This specification
+is required.
 .IP
 
 .TP

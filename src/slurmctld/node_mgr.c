@@ -1374,13 +1374,16 @@ int update_node ( update_node_msg_t * update_node_msg )
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
-	host_list = hostlist_create(update_node_msg->node_names);
-	if (host_list == NULL) {
-		info("update_node: hostlist_create error on %s: %m",
-		      update_node_msg->node_names);
+	if (!(host_list = nodespec_to_hostlist(update_node_msg->node_names,
+					       NULL)))
+		return ESLURM_INVALID_NODE_NAME;
+
+	if (!(node_cnt = hostlist_count(host_list))) {
+		info("%s: expansion of node specification '%s' resulted in zero nodes",
+		     __func__, update_node_msg->node_names);
+		FREE_NULL_HOSTLIST(host_list);
 		return ESLURM_INVALID_NODE_NAME;
 	}
-	node_cnt = hostlist_count(host_list);
 
 	if (update_node_msg->node_addr) {
 		hostaddr_list = hostlist_create(update_node_msg->node_addr);
