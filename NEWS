@@ -183,6 +183,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmd - Cache node features at startup and scontrol reconfig. It avoids
     executing node_features/helpers scripts in the middle of a job. This clould
     potentially affect job performance.
+ -- Pass and use alias_list through credential instead of environment variable.
 
 * Changes in Slurm 21.08.8
 ==========================

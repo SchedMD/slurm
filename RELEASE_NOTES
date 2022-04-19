@@ -65,6 +65,7 @@ HIGHLIGHTS
  -- Add support to ship Include configuration files with configless.
  -- Provide a detailed reason in the job log as to why it has been terminated
     when hitting a resource limit.
+ -- Pass and use alias_list through credential instead of environment variable.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
