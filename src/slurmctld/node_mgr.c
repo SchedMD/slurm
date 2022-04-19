@@ -4800,7 +4800,7 @@ extern int delete_nodes(char *names, char **err_msg)
 	char *node_name;
 	hostset_t to_delete;
 	hostlist_iterator_t to_delete_itr;
-	bool one_success;
+	bool one_success = false;
 	int ret_rc = SLURM_SUCCESS;
 	hostlist_t error_hostlist = NULL;
 
