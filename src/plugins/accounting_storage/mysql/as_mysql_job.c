@@ -907,9 +907,14 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (job->derived_es)
 		xstrfmtcat(vals, ", derived_es='%s'", job->derived_es);
 
-	if (job->system_comment)
+	if (job->system_comment && is_admin)
 		xstrfmtcat(vals, ", system_comment='%s'",
 			   job->system_comment);
+	else {
+		xfree(vals);
+		errno = ESLURM_ACCESS_DENIED;
+		return NULL;
+	}
 
 	if (job->wckey)
 		xstrfmtcat(vals, ", wckey='%s'", job->wckey);
