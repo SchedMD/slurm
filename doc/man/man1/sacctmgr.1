@@ -274,8 +274,8 @@ A group of clusters that work together to schedule jobs.
 
 .TP
 \fBjob\fR
-Used to modify specific fields of a job: Derived Exit Code, the AdminComment
-string, the Comment string or WCKey.
+Used to modify specific fields of a job: Derived Exit Code, Comment,
+AdminComment, SystemComment, or WCKey.
 .IP
 
 .TP
@@ -1379,6 +1379,12 @@ Jobs must start at or after this time to be modified in the same format as
 .IP
 
 .TP
+\fBSystemComment\fR=<\fIsystem_comment\fR>
+Arbitrary descriptive string, usually managed by the BurstBufferPlugin.
+Can only be modified by a Slurm administrator.
+.IP
+
+.TP
 \fBUser\fR=<\fIuser_list\fR>
 Used to specify the jobs of users jobs to alter.
 .IP
@@ -1389,9 +1395,9 @@ Used to specify the wckeys to alter.
 .IP
 
 .P
-The \fIDerivedExitCode\fP, \fIAdminComment\fP, \fIComment\fP and \fIWCKey\fP
-fields are the only fields of a job record in the database that can be modified
-after job completion.
+The \fIDerivedExitCode\fP, \fIAdminComment\fP, \fIComment\fP,
+\fSystemComment\fP, and \fIWCKey\fP fields are the only fields of a job record
+in the database that can be modified after job completion.
 .IP
 
 .SH "LIST/SHOW JOB FORMAT OPTIONS"
