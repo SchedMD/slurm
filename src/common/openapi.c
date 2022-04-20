@@ -254,22 +254,22 @@ static void _free_entry_list(entry_t *entry, path_t *path,
 
 static void _list_delete_path_t(void *x)
 {
-	entry_method_t *method;
+	entry_method_t *em;
 
 	if (!x)
 		return;
 
 	path_t *path = x;
 	xassert(path->tag != -1);
-	method = path->methods;
+	em = path->methods;
 
-	while (method->method) {
+	while (em->method) {
 		debug5("%s: remove path tag:%d method:%s", __func__, path->tag,
-		       get_http_method_string(method->method));
+		       get_http_method_string(em->method));
 
-		_free_entry_list(method->entries, path, method);
-		method->entries = NULL;
-		method++;
+		_free_entry_list(em->entries, path, em);
+		em->entries = NULL;
+		em++;
 	}
 
 	xfree(path->methods);
