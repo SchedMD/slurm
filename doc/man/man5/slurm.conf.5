@@ -2012,11 +2012,10 @@ messages. The default value is 10000, or \fBMaxJobCount\fR * 2 + Node Count
 
 .TP
 \fBMaxJobCount\fR
-The maximum number of jobs Slurm can have in its active database
-at one time. Set the values of \fBMaxJobCount\fR and \fBMinJobAge\fR
-to ensure the slurmctld daemon does not exhaust its memory or other
-resources. Once this limit is reached, requests to submit additional
-jobs will fail. The default value is 10000 jobs.
+The maximum number of jobs slurmctld can have in memory at one time.
+Combine with \fBMinJobAge\fR to ensure the slurmctld daemon does not exhaust
+its memory or other resources. Once this limit is reached, requests to submit
+additional jobs will fail. The default value is 10000 jobs.
 NOTE: Each task of a job array counts as one job even though they will not
 occupy separate job records until modified or initiated.
 Performance can suffer with more than a few hundred thousand jobs.
@@ -2148,8 +2147,8 @@ necessitate higher values.
 
 .TP
 \fBMinJobAge\fR
-The minimum age of a completed job before its record is purged from
-Slurm's active database. Set the values of \fBMaxJobCount\fR and
+The minimum age of a completed job before its record is cleared from the list
+of jobs slurmctld keeps in memory. Combine with \fBMaxJobCount\fR
 to ensure the slurmctld daemon does not exhaust
 its memory or other resources. The default value is 300 seconds.
 A value of zero prevents any job record purging.
