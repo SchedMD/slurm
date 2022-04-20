@@ -625,6 +625,10 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ NULL, NULL}
 	};
 
+	/*
+	 * Note: if the preempt field changes, _alter_table_after_upgrade() will
+	 * need to be updated.
+	 */
 	storage_field_t qos_table_fields[] = {
 		{ "creation_time", "bigint unsigned not null" },
 		{ "mod_time", "bigint unsigned default 0 not null" },

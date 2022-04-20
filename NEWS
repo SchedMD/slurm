@@ -41,6 +41,9 @@ documents those changes that are of interest to users and administrators.
     while slurmd initializes.
  -- openapi/v0.0.38 - avoid divison by zero causing slurmrestd to crash during
     diag queries.
+ -- Update default values for text/blob columns in the database if upgrading
+    to MariaDB >= 10.2.1 from a pre-10.2.1 version or from MySQL to avoid
+    sacctmgr failures.
 
 * Changes in Slurm 22.05.6
 ==========================
