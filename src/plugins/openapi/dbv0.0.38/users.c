@@ -103,7 +103,7 @@ static int _dump_users(data_t *resp, data_t *errors, void *auth, char *user_name
 		.assoc_cond = &assoc_cond,
 		.with_assocs = true,
 		.with_coords = true,
-		.with_deleted = true,
+		/* with_deleted defaults to false */
 		.with_wckeys = true,
 	};
 
