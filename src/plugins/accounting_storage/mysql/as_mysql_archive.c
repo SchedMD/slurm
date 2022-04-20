@@ -111,10 +111,11 @@ typedef struct {
 	char *array_task_str;
 	char *blockid;
 	char *constraints;
+	char *container;
 	char *deleted;
 	char *derived_ec;
 	char *derived_es;
-	char *env;
+	char *env_hash_inx;
 	char *exit_code;
 	char *eligible;
 	char *end;
@@ -137,11 +138,12 @@ typedef struct {
 	char *req_cpus;
 	char *req_mem;
 	char *resvid;
-	char *script;
+	char *script_hash_inx;
 	char *start;
 	char *state;
 	char *state_reason_prev;
 	char *submit;
+	char *submit_line;
 	char *suspended;
 	char *system_comment;
 	char *timelimit;
@@ -181,10 +183,11 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->array_task_str);
 		xfree(object->blockid);
 		xfree(object->constraints);
+		xfree(object->container);
 		xfree(object->deleted);
 		xfree(object->derived_ec);
 		xfree(object->derived_es);
-		xfree(object->env);
+		xfree(object->env_hash_inx);
 		xfree(object->exit_code);
 		xfree(object->eligible);
 		xfree(object->end);
@@ -207,11 +210,12 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->req_cpus);
 		xfree(object->req_mem);
 		xfree(object->resvid);
-		xfree(object->script);
+		xfree(object->script_hash_inx);
 		xfree(object->start);
 		xfree(object->state);
 		xfree(object->state_reason_prev);
 		xfree(object->submit);
+		xfree(object->submit_line);
 		xfree(object->suspended);
 		xfree(object->system_comment);
 		xfree(object->timelimit);
@@ -483,13 +487,14 @@ static char *job_req_inx[] = {
 	"id_assoc",
 	"id_array_job",
 	"id_array_task",
-	"batch_script",
+	"script_hash_inx",
 	"id_block",
 	"constraints",
+	"container",
 	"deleted",
 	"derived_ec",
 	"derived_es",
-	"env_vars",
+	"env_hash_inx",
 	"exit_code",
 	"flags",
 	"timelimit",
@@ -516,6 +521,7 @@ static char *job_req_inx[] = {
 	"time_start",
 	"state",
 	"state_reason_prev",
+	"submit_line",
 	"system_comment",
 	"time_submit",
 	"time_suspended",
@@ -537,13 +543,14 @@ enum {
 	JOB_REQ_ASSOCID,
 	JOB_REQ_ARRAYJOBID,
 	JOB_REQ_ARRAYTASKID,
-	JOB_REQ_SCRIPT,
+	JOB_REQ_SCRIPT_HASH_INX,
 	JOB_REQ_BLOCKID,
 	JOB_REQ_CONSTRAINTS,
+	JOB_REQ_CONTAINER,
 	JOB_REQ_DELETED,
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
-	JOB_REQ_ENV,
+	JOB_REQ_ENV_HASH_INX,
 	JOB_REQ_EXIT_CODE,
 	JOB_REQ_FLAGS,
 	JOB_REQ_TIMELIMIT,
@@ -570,6 +577,7 @@ enum {
 	JOB_REQ_START,
 	JOB_REQ_STATE,
 	JOB_REQ_STATE_REASON,
+	JOB_REQ_SUBMIT_LINE,
 	JOB_REQ_SYSTEM_COMMENT,
 	JOB_REQ_SUBMIT,
 	JOB_REQ_SUSPENDED,
@@ -881,13 +889,14 @@ static void _pack_local_job(local_job_t *object, uint16_t rpc_version,
 	packstr(object->array_taskid, buffer);
 	packstr(object->array_task_pending, buffer);
 	packstr(object->array_task_str, buffer);
-	packstr(object->script, buffer);
+	packstr(object->script_hash_inx, buffer);
 	packstr(object->blockid, buffer);
 	packstr(object->constraints, buffer);
+	packstr(object->container, buffer);
 	packstr(object->deleted, buffer);
 	packstr(object->derived_ec, buffer);
 	packstr(object->derived_es, buffer);
-	packstr(object->env, buffer);
+	packstr(object->env_hash_inx, buffer);
 	packstr(object->exit_code, buffer);
 	packstr(object->flags, buffer);
 	packstr(object->timelimit, buffer);
@@ -916,6 +925,7 @@ static void _pack_local_job(local_job_t *object, uint16_t rpc_version,
 	packstr(object->state_reason_prev, buffer);
 	packstr(object->submit, buffer);
 	packstr(object->suspended, buffer);
+	packstr(object->submit_line, buffer);
 	packstr(object->system_comment, buffer);
 	packstr(object->tres_alloc_str, buffer);
 	packstr(object->tres_req_str, buffer);
@@ -964,13 +974,14 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->array_task_pending, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->array_task_str, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->script, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->script_hash_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->constraints, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->container, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->env, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->env_hash_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
@@ -999,6 +1010,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->state_reason_prev, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit_line, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->system_comment, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
@@ -1016,13 +1028,17 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->array_task_pending, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->array_task_str, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->script, &tmp32, buffer);
+		/* job->script was removed in 22.05 */
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
+		xfree(tmp_char);
 		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->constraints, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->env, &tmp32, buffer);
+		/* job->env was removed in 22.05 */
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
+		xfree(tmp_char);
 		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
@@ -3198,13 +3214,14 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.array_taskid = row[JOB_REQ_ARRAYTASKID];
 		job.array_task_pending = row[JOB_REQ_ARRAY_TASK_PENDING];
 		job.array_task_str = row[JOB_REQ_ARRAY_TASK_STR];
-		job.script = row[JOB_REQ_SCRIPT];
+		job.script_hash_inx = row[JOB_REQ_SCRIPT_HASH_INX];
 		job.blockid = row[JOB_REQ_BLOCKID];
 		job.constraints = row[JOB_REQ_CONSTRAINTS];
+		job.container = row[JOB_REQ_CONTAINER];
 		job.deleted = row[JOB_REQ_DELETED];
 		job.derived_ec = row[JOB_REQ_DERIVED_EC];
 		job.derived_es = row[JOB_REQ_DERIVED_ES];
-		job.env = row[JOB_REQ_ENV];
+		job.env_hash_inx = row[JOB_REQ_ENV_HASH_INX];
 		job.exit_code = row[JOB_REQ_EXIT_CODE];
 		job.flags = row[JOB_REQ_FLAGS];
 		job.timelimit = row[JOB_REQ_TIMELIMIT];
@@ -3232,6 +3249,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.state = row[JOB_REQ_STATE];
 		job.state_reason_prev = row[JOB_REQ_STATE_REASON];
 		job.submit = row[JOB_REQ_SUBMIT];
+		job.submit_line = row[JOB_REQ_SUBMIT_LINE];
 		job.suspended = row[JOB_REQ_SUSPENDED];
 		job.system_comment = row[JOB_REQ_SYSTEM_COMMENT];
 		job.tres_alloc_str = row[JOB_REQ_TRESA];
@@ -3261,6 +3279,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_ARRAYTASKID,
 		JOB_REQ_DELETED,
 		JOB_REQ_DERIVED_EC,
+		JOB_REQ_ENV_HASH_INX,
 		JOB_REQ_EXIT_CODE,
 		JOB_REQ_FLAGS,
 		JOB_REQ_TIMELIMIT,
@@ -3281,6 +3300,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_REQ_CPUS,
 		JOB_REQ_REQ_MEM,
 		JOB_REQ_RESVID,
+		JOB_REQ_SCRIPT_HASH_INX,
 		JOB_REQ_START,
 		JOB_REQ_STATE,
 		JOB_REQ_STATE_REASON,
@@ -3299,14 +3319,14 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_ACCOUNT,
 		JOB_REQ_ADMIN_COMMENT,
 		JOB_REQ_ARRAY_TASK_STR,
-		JOB_REQ_SCRIPT,
 		JOB_REQ_BLOCKID,
 		JOB_REQ_CONSTRAINTS,
+		JOB_REQ_CONTAINER,
 		JOB_REQ_DERIVED_ES,
-		JOB_REQ_ENV,
 		JOB_REQ_MCS_LABEL,
 		JOB_REQ_NODELIST,
 		JOB_REQ_NODE_INX,
+		JOB_REQ_SUBMIT_LINE,
 		JOB_REQ_SYSTEM_COMMENT,
 		JOB_REQ_COUNT };
 
@@ -3352,10 +3372,6 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			xstrcat(format, ", %s");
 		else
 			xstrcat(format, ", '%s'");
-		if (object.script == NULL)
-			xstrcat(format, ", %s");
-		else
-			xstrcat(format, ", '%s'");
 		if (object.blockid == NULL)
 			xstrcat(format, ", %s");
 		else
@@ -3364,11 +3380,11 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			xstrcat(format, ", %s");
 		else
 			xstrcat(format, ", '%s'");
-		if (object.derived_es == NULL)
+		if (object.container == NULL)
 			xstrcat(format, ", %s");
 		else
 			xstrcat(format, ", '%s'");
-		if (object.env == NULL)
+		if (object.derived_es == NULL)
 			xstrcat(format, ", %s");
 		else
 			xstrcat(format, ", '%s'");
@@ -3381,6 +3397,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		else
 			xstrcat(format, ", '%s'");
 		if (object.node_inx == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.submit_line == NULL)
 			xstrcat(format, ", %s");
 		else
 			xstrcat(format, ", '%s'");
@@ -3400,6 +3420,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			   object.array_taskid,
 			   object.deleted,
 			   object.derived_ec,
+			   object.env_hash_inx,
 			   object.exit_code,
 			   object.flags,
 			   object.timelimit,
@@ -3420,6 +3441,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			   object.req_cpus,
 			   object.req_mem,
 			   object.resvid,
+			   object.script_hash_inx,
 			   object.start,
 			   object.state,
 			   object.state_reason_prev,
@@ -3437,22 +3459,22 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 				"NULL" : object.admin_comment,
 			   (object.array_task_str == NULL) ?
 				"NULL" : object.array_task_str,
-			   (object.script == NULL) ?
-				"NULL" : object.script,
 			   (object.blockid == NULL) ?
 				"NULL" : object.blockid,
 			   (object.constraints == NULL) ?
 				"NULL" : object.constraints,
+			   (object.container == NULL) ?
+				"NULL" : object.container,
 			   (object.derived_es == NULL) ?
 				"NULL" : object.derived_es,
-			   (object.env == NULL) ?
-				"NULL" : object.env,
 			   (object.mcs_label == NULL) ?
 				"NULL" : object.mcs_label,
 			   (object.nodelist == NULL) ?
 				"NULL" : object.nodelist,
 			   (object.node_inx == NULL) ?
 				"NULL" : object.node_inx,
+			   (object.submit_line == NULL) ?
+				"NULL" : object.submit_line,
 			   (object.system_comment == NULL) ?
 				"NULL" : object.system_comment);
 
