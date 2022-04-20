@@ -244,7 +244,7 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 		return core_bitmap;
 	}
 
-	core_bitmap = bit_alloc(cr_get_coremap_offset(select_node_cnt + 1));
+	core_bitmap = bit_alloc(cr_get_coremap_offset(select_node_cnt));
 	for (i = 0; i < core_array_size; i++) {
 		if (!core_array[i])
 			continue;
