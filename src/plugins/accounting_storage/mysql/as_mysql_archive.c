@@ -260,6 +260,7 @@ typedef struct {
 	char *deleted;
 	char *exit_code;
 	char *consumed_energy;
+	char *container;
 	char *job_db_inx;
 	char *kill_requid;
 	char *name;
@@ -308,6 +309,7 @@ static void _free_local_step_members(local_step_t *object)
 		xfree(object->deleted);
 		xfree(object->exit_code);
 		xfree(object->consumed_energy);
+		xfree(object->container);
 		xfree(object->job_db_inx);
 		xfree(object->kill_requid);
 		xfree(object->name);
@@ -634,6 +636,7 @@ static char *step_req_inx[] = {
 	"sys_usec",
 	"act_cpufreq",
 	"consumed_energy",
+	"container",
 	"req_cpufreq_min",
 	"req_cpufreq",
 	"req_cpufreq_gov",
@@ -681,6 +684,7 @@ enum {
 	STEP_REQ_SYS_USEC,
 	STEP_REQ_ACT_CPUFREQ,
 	STEP_REQ_CONSUMED_ENERGY,
+	STEP_REQ_CONTAINER,
 	STEP_REQ_REQ_CPUFREQ_MIN,
 	STEP_REQ_REQ_CPUFREQ_MAX,
 	STEP_REQ_REQ_CPUFREQ_GOV,
@@ -1631,6 +1635,7 @@ static void _pack_local_step(local_step_t *object, uint16_t rpc_version,
 	packstr(object->deleted, buffer);
 	packstr(object->exit_code, buffer);
 	packstr(object->consumed_energy, buffer);
+	packstr(object->container, buffer);
 	packstr(object->job_db_inx, buffer);
 	packstr(object->kill_requid, buffer);
 	packstr(object->name, buffer);
@@ -1686,6 +1691,7 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->consumed_energy,
 				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->container, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
@@ -3574,6 +3580,7 @@ static buf_t *_pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		step.act_cpufreq = row[STEP_REQ_ACT_CPUFREQ];
 		step.deleted = row[STEP_REQ_DELETED];
 		step.consumed_energy = row[STEP_REQ_CONSUMED_ENERGY];
+		step.container = row[STEP_REQ_CONTAINER];
 		step.exit_code = row[STEP_REQ_EXIT_CODE];
 		step.job_db_inx = row[STEP_REQ_DB_INX];
 		step.kill_requid = row[STEP_REQ_KILL_REQUID];
@@ -3685,6 +3692,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			   object.sys_usec,
 			   object.act_cpufreq,
 			   object.consumed_energy,
+			   object.container,
 			   object.req_cpufreq_max,
 			   object.req_cpufreq_min,
 			   object.req_cpufreq_gov,
