@@ -103,9 +103,8 @@ Optional Slurm plugins will be built automatically when the
 present. Build dependencies for various plugins and commands are denoted below:
 </p>
 <ul>
-<li> <b>cgroup Task Affinity</b> The <i>task/cgroup</i> plugin will be built
-		with task affinity support if the <i>hwloc</i> development
-		library is present.</li>
+<li> <b>cgroup Task Constraining</b> The <i>task/cgroup</i> plugin will be built
+		if the <i>hwloc</i> development library is present.</li>
 <li> <b>HDF5 Job Profiling</b> The <i>acct_gather_profile/hdf5</i> job profiling
 		plugin will be built if the <i>hdf5</i> development library is
 		present.</li>
@@ -821,6 +820,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 15 February 2022</p>
+<p style="text-align:center;">Last modified 15 April 2022</p>
 
 <!--#include virtual="footer.txt"-->
