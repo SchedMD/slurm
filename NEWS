@@ -241,6 +241,7 @@ documents those changes that are of interest to users and administrators.
     provide for additional communication resiliency.
  -- Allow job steps to continue to launch during OverTimeLimit.
  -- slurmctld - avoid crash when attempting to load job without a script.
+ -- Fix exclusive jobs breaking MaxCPUsPerNode limit
 
 * Changes in Slurm 21.08.9
 ==========================
