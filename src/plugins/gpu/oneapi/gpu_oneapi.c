@@ -964,7 +964,8 @@ extern int init(void)
 
 	/* Init oneAPI */
 	setenv("ZES_ENABLE_SYSMAN", "1", 1);
-	zeInit(0);
+	if (zeInit(0) != ZE_RESULT_SUCCESS)
+		fatal("zeInit failed");
 
 	return SLURM_SUCCESS;
 }
