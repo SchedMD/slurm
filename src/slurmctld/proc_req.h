@@ -83,19 +83,6 @@ extern void record_rpc_stats(slurm_msg_t *msg, long delta);
  */
 extern void response_init(slurm_msg_t *resp, slurm_msg_t *msg);
 
-/*
- * slurm_drain_nodes - process a request to drain a list of nodes,
- *	no-op for nodes already drained or draining
- * node_list IN - list of nodes to drain
- * reason IN - reason to drain the nodes
- * reason_uid IN - who set the reason
- * RET SLURM_SUCCESS or error code
- * NOTE: This is utilzed by plugins and not via RPC and it sets its
- *	own locks.
- */
-extern int slurm_drain_nodes(char *node_list, char *reason,
-			     uint32_t reason_uid);
-
 /* Copy an array of type char **, xmalloc() the array and xstrdup() the
  * strings in the array */
 extern char **xduparray(uint32_t size, char ** array);

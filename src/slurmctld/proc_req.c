@@ -4186,33 +4186,6 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 }
 
 /*
- * slurm_drain_nodes - process a request to drain a list of nodes,
- *	no-op for nodes already drained or draining
- * node_list IN - list of nodes to drain
- * reason IN - reason to drain the nodes
- * reason_uid IN - who set the reason
- * RET SLURM_SUCCESS or error code
- * NOTE: This is utilzed by plugins and not via RPC and it sets its
- *	own locks.
- */
-extern int slurm_drain_nodes(char *node_list, char *reason, uint32_t reason_uid)
-{
-	int error_code;
-	DEF_TIMERS;
-	/* Locks: Write  node */
-	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-
-	START_TIMER;
-	lock_slurmctld(node_write_lock);
-	error_code = drain_nodes(node_list, reason, reason_uid);
-	unlock_slurmctld(node_write_lock);
-	END_TIMER2("slurm_drain_nodes");
-
-	return error_code;
-}
-
-/*
  * _slurm_rpc_update_front_end - process RPC to update the configuration of a
  *	front_end node (e.g. UP/DOWN)
  */
