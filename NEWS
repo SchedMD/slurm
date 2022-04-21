@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix ResumeTimeout error message missing when node already has reason set.
  -- Avoid "running with local config" error when conf server is provided by DNS.
  -- openapi/v0.0.37 - resolve job user name when not sent by slurmctld.
+ -- openapi/dbv0.0.37 - Correct OpenAPI specification for diag request.
 
 * Changes in Slurm 21.08.7
 ==========================
