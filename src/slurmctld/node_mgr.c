@@ -4526,5 +4526,7 @@ extern void set_node_reboot_reason(node_record_t *node_ptr, char *message)
 			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup(message);
 		}
+		node_ptr->reason_time = time(NULL);
+		node_ptr->reason_uid = slurm_conf.slurm_user_id;
 	}
 }
