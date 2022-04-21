@@ -1913,9 +1913,7 @@ static void _queue_reboot_msg(void)
 
 		node_ptr->boot_req_time = now;
 
-		if (node_ptr->reason &&
-		    !xstrstr(node_ptr->reason, "reboot issued"))
-			xstrcat(node_ptr->reason, " : reboot issued");
+		set_node_reboot_reason(node_ptr, "reboot issued");
 
 		clusteracct_storage_g_node_down(acct_db_conn, node_ptr, now,
 		                                NULL, slurm_conf.slurm_user_id);

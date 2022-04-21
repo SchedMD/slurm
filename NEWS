@@ -196,6 +196,10 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- openapi/dbv0.0.37 - fix slurmrestd fatal() when deleting an association.
  -- Allow scontrol update <job> Gres=... to not require "gres:".
+ -- Fix inconsistent reboot message appending behavior.
+ -- Fix incorrect reason_time and reason_uid on reboot message.
+ -- Fix "scontrol reboot" clearing node reason on ResumeTimeout.
+ -- Fix ResumeTimeout error message missing when node already has reason set.
 
 * Changes in Slurm 21.08.7
 ==========================

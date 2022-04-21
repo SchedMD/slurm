@@ -3026,10 +3026,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			    NODE_STATE_DOWN) {
 				node_ptr->node_state = NODE_STATE_DOWN |
 						       node_flags;
-				if (node_ptr->reason) {
-					xstrcat(node_ptr->reason,
-						" : reboot complete");
-				}
+				set_node_reboot_reason(node_ptr,
+						       "reboot complete");
 			} else if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 						       node_flags;
@@ -4476,18 +4474,8 @@ extern void check_reboot_nodes()
 		     (!power_save_on && IS_NODE_POWERING_UP(node_ptr))) &&
 		    node_ptr->boot_req_time &&
 		    (node_ptr->boot_req_time + resume_timeout < now)) {
-			char *timeout_msg = "reboot timed out";
-
-			if ((node_ptr->next_state != NO_VAL) &&
-			    node_ptr->reason) {
-				xstrfmtcat(node_ptr->reason, " : %s",
-					   timeout_msg);
-			} else {
-				xfree(node_ptr->reason);
-				node_ptr->reason = xstrdup(timeout_msg);
-			}
-			node_ptr->reason_time = now;
-			node_ptr->reason_uid = slurm_conf.slurm_user_id;
+			set_node_reboot_reason(node_ptr,
+					       "reboot timed out");
 
 			/*
 			 * Remove states now so that event state shows as DOWN.
@@ -4866,3 +4854,24 @@ cleanup:
 	return ret_rc;
 }
 
+extern void set_node_reboot_reason(node_record_t *node_ptr, char *message)
+{
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(node_ptr);
+
+	if (message == NULL) {
+		xfree(node_ptr->reason);
+		node_ptr->reason_time = 0;
+		node_ptr->reason_uid = NO_VAL;
+	} else {
+		if (node_ptr->reason &&
+		    !xstrstr(node_ptr->reason, message)) {
+			xstrfmtcat(node_ptr->reason, " : %s", message);
+		} else {
+			xfree(node_ptr->reason);
+			node_ptr->reason = xstrdup(message);
+		}
+		node_ptr->reason_time = time(NULL);
+		node_ptr->reason_uid = slurm_conf.slurm_user_id;
+	}
+}

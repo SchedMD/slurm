@@ -570,6 +570,7 @@ static void _do_power_work(time_t now)
 			 * set_node_down_ptr()->_make_node_down()->
 			 * clusteracct_storage_g_node_down().
 			 */
+			xfree(node_ptr->reason);
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
 			bit_set(power_node_bitmap, node_ptr->index);
 			bit_clear(booting_node_bitmap, node_ptr->index);

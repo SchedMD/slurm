@@ -2935,4 +2935,11 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
  */
 extern hostlist_t nodespec_to_hostlist(const char *nodes, char **nodesets);
 
+/*
+ * set_node_reboot_reason - appropriately set node reason with reboot message
+ * IN node_ptr - node_ptr to the node
+ * IN reason - message to be appended
+ */
+extern void set_node_reboot_reason(node_record_t *node_ptr, char *message);
+
 #endif /* !_HAVE_SLURMCTLD_H */

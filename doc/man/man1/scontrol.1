@@ -240,8 +240,9 @@ backfill future scheduling and won't be replaced by idle nodes in a reservation.
 The "reason" option sets each node's reason to a user\-defined message.
 A default reason of "reboot requested" is set if no other reason is set on the
 node.
-The reason will be appended with "reboot issued" when the reboot is issued and
-"reboot complete" when the node registers and has a "nextstate" of "DOWN".
+The reason will be appended with: "reboot issued" when the reboot is issued;
+"reboot complete" when the node registers and has a "nextstate" of "DOWN"; or
+"reboot timed out" when the node fails to register within \fBResumeTimeout\fR.
 You must specify either a list of nodes or that ALL nodes are to be rebooted.
 NOTE: By default, this command does not prevent additional jobs from being
 scheduled on any nodes before reboot.
