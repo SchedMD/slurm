@@ -814,8 +814,11 @@ extern data_t *data_set_string_own(data_t *data, char *value)
 {
 	_check_magic(data);
 
-	if (!data || !value)
+	if (!data)
 		return NULL;
+
+	if (!value)
+		return data_set_null(data);
 
 	/* check that the string was xmalloc()ed and actually has contents */
 	xassert(xsize(value));
