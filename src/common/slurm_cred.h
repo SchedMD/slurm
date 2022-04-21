@@ -74,6 +74,7 @@ typedef struct slurm_cred_context   * slurm_cred_ctx_t;
 
 /* Used by slurm_cred_get_arg() */
 #define CRED_ARG_JOB_GRES_LIST 1
+#define CRED_ARG_JOB_ALIAS_LIST 2
 
 /*
  * Initialize current process for slurm credential creation.
@@ -163,6 +164,7 @@ typedef struct {
 	uint32_t *sock_core_rep_count;	/* Used for job/step_core_bitmaps */
 
 	/* JOB specific info */
+	char *job_alias_list;		/* node name to address aliases */
 	char     *job_constraints;	/* constraints in job allocation */
 	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
 	uint16_t  job_core_spec;	/* count of specialized cores */
@@ -210,12 +212,6 @@ int slurm_cred_fini(void);
  */
 slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 				uint16_t protocol_version);
-
-/*
- * Copy a slurm credential.
- * Returns NULL on failure.
- */
-slurm_cred_t *slurm_cred_copy(slurm_cred_t *cred);
 
 /*
  * Create a "fake" credential with bogus data in the signature.

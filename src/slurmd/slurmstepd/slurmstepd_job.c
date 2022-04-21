@@ -271,6 +271,8 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *job)
 	job->selinux_context = cred_arg.selinux_context;
 	cred_arg.selinux_context = NULL;
 
+	job->alias_list = xstrdup(cred_arg.job_alias_list);
+
 	slurm_cred_free_args(&cred_arg);
 }
 
@@ -671,6 +673,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	FREE_NULL_LIST(job->outgoing_cache);
 	FREE_NULL_LIST(job->job_gres_list);
 	FREE_NULL_LIST(job->step_gres_list);
+	xfree(job->alias_list);
 	xfree(job->container);
 	xfree(job->cpu_bind);
 	xfree(job->cwd);

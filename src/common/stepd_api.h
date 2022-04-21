@@ -47,6 +47,10 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/io_hdr.h"
 
+#define GETHOST_NOT_MATCH_PID SLURM_BIT(0)
+#define GETHOST_IPV4 SLURM_BIT(1)
+#define GETHOST_IPV6 SLURM_BIT(2)
+
 typedef enum {
 	REQUEST_CONNECT = 0,
 	REQUEST_STEP_DEFUNCT_1,
@@ -75,6 +79,7 @@ typedef enum {
 	REQUEST_GETPW,
 	REQUEST_GETGR,
 	REQUEST_GET_NS_FD,
+	REQUEST_GETHOST,
 } step_msg_t;
 
 typedef enum {
@@ -235,6 +240,13 @@ extern struct group **stepd_getgr(int fd, uint16_t protocol_version,
 
 extern void xfree_struct_group_array(struct group **grp);
 
+/*
+ * Rerturn hostent based based off node_to_host_hashtbl for nodename.
+ */
+extern struct hostent *stepd_gethostbyname(int fd, uint16_t protocol_version,
+					   int mode, const char *nodename);
+
+extern void xfree_struct_hostent(struct hostent *host);
 /*
  * Return the process ID of the slurmstepd.
  */

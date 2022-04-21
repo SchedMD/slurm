@@ -361,12 +361,15 @@ extern int job_defaults_unpack(void **out, uint16_t protocol_version,
 			       buf_t *buffer);
 
 /*
- * list_find_frontend - find an entry in the front_end list, see list.h for
- *	documentation
- * IN key - is feature name or NULL for all features
- * RET 1 if found, 0 otherwise
+ * slurm_reset_alias() for each node in alias_list
+ *
+ * IN alias_list - string with sets of node name, communication address in []
+ * 	and hostname. Each element in the set if colon separated and
+ * 	each set is comma separated.
+ * 	eg.: ec0:[1.2.3.4]:foo,ec1:[1.2.3.5]:bar
+ * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
  */
-extern int list_find_frontend (void *front_end_entry, void *key);
+extern int set_nodes_alias(const char *alias_list);
 
 /*
  * slurm_conf_init - load the slurm configuration from the a file.
@@ -461,6 +464,16 @@ extern int slurm_conf_nodeset_array(slurm_conf_nodeset_t **ptr_array[]);
  */
 extern void slurm_reset_alias(char *node_name, char *node_addr,
 			      char *node_hostname);
+
+/*
+ * Return NodeAddr (if set) for a given NodeName, or NULL
+ *
+ * Returned string was allocated with xmalloc(), and must be freed by
+ * the caller using xfree().
+ *
+ * NOTE: Caller must NOT be holding slurm_conf_lock().
+ */
+extern char* slurm_conf_get_address(const char *node_name);
 
 /*
  * slurm_conf_get_hostname - Return the NodeHostname for given NodeName

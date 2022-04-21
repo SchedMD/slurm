@@ -521,6 +521,8 @@
 #define xfree_struct_passwd		slurm_xfree_struct_passwd
 #define stepd_getgr			slurm_stepd_getgr
 #define xfree_struct_group_array	slurm_xfree_struct_group_array
+#define stepd_gethostbyname		slurm_stepd_gethostbyname
+#define xfree_struct_hostent		slurm_xfree_struct_hostent
 #define stepd_get_namespace_fd		slurm_stepd_get_namespace_fd
 
 /* cgroup.[ch] functions */

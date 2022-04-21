@@ -824,6 +824,54 @@ extern void scontrol_getent(const char *node_name)
 	FREE_NULL_LIST(steps);
 }
 
+extern void scontrol_gethost(const char *stepd_node, const char *node_name)
+{
+	List steps = NULL;
+	ListIterator itr = NULL;
+	step_loc_t *stepd;
+	int fd;
+
+	if (!(steps = stepd_available(NULL, stepd_node))) {
+		fprintf(stderr, "No steps found on this node\n");
+		return;
+	}
+
+	itr = list_iterator_create(steps);
+	while ((stepd = list_next(itr))) {
+		char tmp_char[45], buf[INET6_ADDRSTRLEN];
+		struct hostent *host = NULL;
+		const char *ip;
+		int i, j;
+
+		fd = stepd_connect(NULL, stepd_node, &stepd->step_id,
+				   &stepd->protocol_version);
+
+		if (fd < 0)
+			continue;
+		host = stepd_gethostbyname(fd, stepd->protocol_version,
+					   (GETHOST_IPV4 | GETHOST_IPV6 |
+					    GETHOST_NOT_MATCH_PID), node_name);
+		log_build_step_id_str(&stepd->step_id, tmp_char,
+				      sizeof(tmp_char), STEP_ID_FLAG_NO_PREFIX);
+		printf("JobId=%s:\nHost:\n", tmp_char);
+		for (i = 0; host && host->h_addr_list[i] != NULL; ++i) {
+			ip = inet_ntop(host->h_addrtype, host->h_addr_list[i],
+				       buf, sizeof (buf));
+			printf("%-15s %s", ip, host->h_name);
+			for (j = 0; host->h_aliases[j] != NULL; ++j) {
+				printf(" %s", host->h_aliases[i]);
+			}
+			printf("\n");
+		}
+
+		xfree_struct_hostent(host);
+		close(fd);
+		printf("\n");
+	}
+	list_iterator_destroy(itr);
+	FREE_NULL_LIST(steps);
+}
+
 /*
  * scontrol_print_hosts - given a node list expression, return
  *	a list of nodes, one per line
