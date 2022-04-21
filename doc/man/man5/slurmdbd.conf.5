@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "April 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -499,7 +499,7 @@ Return an error if a query is against too large of a time span, to prevent
 ill\-formed queries from causing performance problems within SlurmDBD.
 Default value is INFINITE which allows any queries to proceed.
 Accepted time formats are the same as the MaxTime option in slurm.conf.
-User \fBSlurmUser\fR and \fBroot\fR are exempt from this restriction.
+Operator and higher privileged users are exempt from this restriction.
 Note that queries which attempt to return over 3GB of data will still
 fail to complete with ESLURM_RESULT_TOO_LARGE.
 .IP
