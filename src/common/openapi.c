@@ -347,6 +347,44 @@ fail:
 	return NULL;
 }
 
+static int _print_path_tag_methods(void *x, void *arg)
+{
+	path_t *path = (path_t *) x;
+	int *tag = (int *) arg;
+	char *methods_str = NULL;
+
+	if (path->tag != *tag)
+		return 0;
+
+	for (entry_method_t *em = path->methods; em->entries; em++)
+		xstrfmtcat(methods_str, "%s%s (%d)", methods_str ? ", " : "",
+			   get_http_method_string(em->method), em->method);
+
+	if (methods_str)
+		debug4("%s:    methods: %s", __func__, methods_str);
+	else
+		debug4("%s:    no methods found in path tag %d",
+		       __func__, path->tag);
+	xfree(methods_str);
+
+	/*
+	 * We found the (unique) tag, so return -1 to exit early. The item's
+	 * index returned by list_for_each_ro() will be negative.
+	 */
+	return -1;
+}
+
+extern void print_path_tag_methods(openapi_t *oas, int tag)
+{
+	if (get_log_level() < LOG_LEVEL_DEBUG4)
+		return;
+
+	xassert(oas->magic == MAGIC_OAS);
+
+	if (list_for_each_ro(oas->paths, _print_path_tag_methods, &tag) >= 0)
+		error("%s: Tag %d not found in oas->paths", __func__, tag);
+}
+
 static bool _match_server_path(const data_t *server_path, const data_t *path,
 			       const data_t *match_path)
 {

@@ -104,6 +104,11 @@ extern int find_path_tag(openapi_t *oas, const data_t *path, data_t *params,
 			 http_request_method_t method);
 
 /*
+ * Print registered methods for the requested tag at log level DEBUG4.
+ */
+extern void print_path_tag_methods(openapi_t *oas, int tag);
+
+/*
  * Init the OAS data structs.
  * IN/OUT oas - openapi state (must point to NULL)
  * IN plugins - comma delimited list of plugins or "list"
