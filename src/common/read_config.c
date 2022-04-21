@@ -689,6 +689,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		default_nodename_tbl = tbl;
 
 		return 0;
+	} else if (!xstrcasecmp(value, "ALL")) {
+		fatal("'%s' is a reserved word disallowed for use with NodeName",
+		      value);
 	} else {
 		bool no_cpus    = false;
 		bool no_sockets = false;

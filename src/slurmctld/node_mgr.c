@@ -1374,13 +1374,16 @@ int update_node ( update_node_msg_t * update_node_msg )
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
-	host_list = hostlist_create(update_node_msg->node_names);
-	if (host_list == NULL) {
-		info("update_node: hostlist_create error on %s: %m",
-		      update_node_msg->node_names);
+	if (!(host_list = nodespec_to_hostlist(update_node_msg->node_names,
+					       NULL)))
+		return ESLURM_INVALID_NODE_NAME;
+
+	if (!(node_cnt = hostlist_count(host_list))) {
+		info("%s: expansion of node specification '%s' resulted in zero nodes",
+		     __func__, update_node_msg->node_names);
+		FREE_NULL_HOSTLIST(host_list);
 		return ESLURM_INVALID_NODE_NAME;
 	}
-	node_cnt = hostlist_count(host_list);
 
 	if (update_node_msg->node_addr) {
 		hostaddr_list = hostlist_create(update_node_msg->node_addr);
@@ -4798,8 +4801,7 @@ static int _delete_node(char *name)
 extern int delete_nodes(char *names, char **err_msg)
 {
 	char *node_name;
-	hostset_t to_delete;
-	hostlist_iterator_t to_delete_itr;
+	hostlist_t to_delete;
 	bool one_success = false;
 	int ret_rc = SLURM_SUCCESS;
 	hostlist_t error_hostlist = NULL;
@@ -4817,9 +4819,18 @@ extern int delete_nodes(char *names, char **err_msg)
 
 	lock_slurmctld(write_lock);
 
-	to_delete = hostset_create(names);
-	to_delete_itr = hostset_iterator_create(to_delete);
-	while ((node_name = hostlist_next(to_delete_itr))) {
+	if (!(to_delete = nodespec_to_hostlist(names, NULL))) {
+		ret_rc = ESLURM_INVALID_NODE_NAME;
+		goto cleanup;
+	}
+	if (!hostlist_count(to_delete)) {
+		info("%s: expansion of node specification '%s' resulted in zero nodes",
+		     __func__, names);
+		ret_rc = ESLURM_INVALID_NODE_NAME;
+		goto cleanup;
+	}
+
+	while ((node_name = hostlist_shift(to_delete))) {
 		int rc;
 		if ((rc = _delete_node(node_name))) {
 			error("failed to delete node '%s'", node_name);
@@ -4843,10 +4854,10 @@ extern int delete_nodes(char *names, char **err_msg)
 		xfree(nodes);
 	}
 
+cleanup:
 	unlock_slurmctld(write_lock);
 
-	hostlist_iterator_destroy(to_delete_itr);
-	hostset_destroy(to_delete);
+	FREE_NULL_HOSTLIST(to_delete);
 
 	return ret_rc;
 }
