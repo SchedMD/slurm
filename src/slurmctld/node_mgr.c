@@ -4522,6 +4522,9 @@ extern void set_node_reboot_reason(node_record_t *node_ptr, char *message)
 		if (node_ptr->reason &&
 		    !xstrstr(node_ptr->reason, message)) {
 			xstrfmtcat(node_ptr->reason, " : %s", message);
+		} else {
+			xfree(node_ptr->reason);
+			node_ptr->reason = xstrdup(message);
 		}
 	}
 }
