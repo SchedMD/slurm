@@ -87,6 +87,7 @@ static void _signal_while_allocating(int signo);
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 
 static sig_atomic_t destroy_job = 0;
+static bool is_het_job = false;
 
 static void _set_pending_job_id(uint32_t job_id)
 {
@@ -137,15 +138,16 @@ static void _signal_while_allocating(int signo)
 /* This typically signifies the job was cancelled by scancel */
 static void _job_complete_handler(srun_job_complete_msg_t *msg)
 {
-	if (pending_job_id && (pending_job_id != msg->job_id)) {
+	if (!is_het_job && pending_job_id && (pending_job_id != msg->job_id)) {
 		error("Ignoring job_complete for job %u because our job ID is %u",
 		      msg->job_id, pending_job_id);
 		return;
 	}
 
-	if (msg->step_id == NO_VAL)
+	if (msg->step_id == NO_VAL) {
 		info("Force Terminated job %u", msg->job_id);
-	else
+		destroy_job = 1;
+	} else
 		info("Force Terminated %ps", msg);
 }
 
@@ -260,6 +262,8 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		rc = slurm_job_node_ready(alloc->job_id);
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
+		if (destroy_job)
+			break;
 		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
 			continue;			/* retry */
 		if ((rc & READY_JOB_STATE) == 0) {	/* job killed */
@@ -271,8 +275,6 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			is_ready = 1;
 			break;
 		}
-		if (destroy_job)
-			break;
 	}
 	if (is_ready) {
 		resource_allocation_response_msg_t *resp;
@@ -555,6 +557,8 @@ List allocate_het_job_nodes(bool handle_signals)
 		for (i = 0; sig_array[i]; i++)
 			xsignal(sig_array[i], _signal_while_allocating);
 	}
+
+	is_het_job = true;
 
 	while (first_opt && !job_resp_list) {
 		job_resp_list = slurm_allocate_het_job_blocking(job_req_list,
