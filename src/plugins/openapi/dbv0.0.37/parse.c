@@ -864,7 +864,7 @@ static int _parse_to_uint16(const parser_t *const parse, void *obj, data_t *str,
 static int _dump_to_uint16(const parser_t *const parse, void *obj, data_t *dst,
 			   const parser_env_t *penv)
 {
-	int16_t *src = (((void *)obj) + parse->field_offset);
+	uint16_t *src = (((void *)obj) + parse->field_offset);
 
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
