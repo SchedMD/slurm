@@ -10089,6 +10089,7 @@ extern char *gres_prepend_tres_type(const char *gres_str)
 	if (gres_str) {
 		output = xstrdup_printf("gres:%s", gres_str);
 		xstrsubstituteall(output, ",", ",gres:");
+		xstrsubstituteall(output, "gres:gres:", "gres:");
 	}
 	return output;
 }
