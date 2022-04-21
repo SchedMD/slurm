@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- Add SlurmdParameters=numa_node_as_socket to use the numa node as a socket.
  -- Avoid creating and referencing NULL script/env hash entries when not storing
     the job script or job environment.
+ -- slurmd - If a het component job fails to launch due to a node prolog or
+    other failure, properly handle the whole het job.
 
 * Changes in Slurm 22.05.0rc1
 =============================
