@@ -562,6 +562,7 @@ static void _do_power_work(time_t now)
 			 * set_node_down_ptr() will remove the node from the
 			 * avail_node_bitmap.
 			 */
+			xfree(node_ptr->reason);
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
