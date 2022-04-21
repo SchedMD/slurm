@@ -148,6 +148,7 @@ extern int bind_operation_handler(const char *str_path,
 	/* add new path */
 	debug4("%s: new path %s with path_tag %d callback_tag %d",
 	       __func__, str_path, path_tag, callback_tag);
+	print_path_tag_methods(openapi_state, path_tag);
 
 	path = xmalloc(sizeof(*path));
 	path->magic = MAGIC;
