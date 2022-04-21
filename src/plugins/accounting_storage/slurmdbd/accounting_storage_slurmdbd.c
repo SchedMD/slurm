@@ -121,6 +121,9 @@ static bool running_db_inx = 0;
 static int first = 1;
 static time_t plugin_shutdown = 0;
 
+static char *cluster_nodes = NULL;
+static char *cluster_tres = NULL;
+
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
 extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
 extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
@@ -531,6 +534,26 @@ static int _send_cluster_tres(void *db_conn,
 	return rc;
 }
 
+extern void _update_cluster_nodes(void)
+{
+	bitstr_t *total_node_bitmap = NULL;
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+
+	xfree(cluster_nodes);
+	total_node_bitmap = bit_alloc(node_record_count);
+	bit_nset(total_node_bitmap, 0, node_record_count-1);
+	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
+	FREE_NULL_BITMAP(total_node_bitmap);
+
+	assoc_mgr_lock(&locks);
+	xfree(cluster_tres);
+	cluster_tres = slurmdb_make_tres_string(
+		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
+	assoc_mgr_unlock(&locks);
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -585,6 +608,8 @@ extern int fini ( void )
 		pthread_join(db_inx_handler_thread, NULL);
 
 	ext_dbd_fini();
+	xfree(cluster_nodes);
+	xfree(cluster_tres);
 
 	first = 1;
 
@@ -2624,43 +2649,25 @@ extern int clusteracct_storage_p_node_up(void *db_conn, node_record_t *node_ptr,
 }
 
 extern int clusteracct_storage_p_cluster_tres(void *db_conn,
-					      char *cluster_nodes,
+					      char *cluster_nodes_in,
 					      char *tres_str_in,
 					      time_t event_time,
 					      uint16_t rpc_version)
 {
 	int rc = SLURM_ERROR;
-	bitstr_t *total_node_bitmap = NULL;
-	char *cluster_tres_str;
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
-
-	event_time = time(NULL);
 
 	lock_slurmctld(node_write_lock);
-	/* Now get the names of all the nodes on the cluster at this
-	   time and send it also.
-	*/
-	total_node_bitmap = bit_alloc(node_record_count);
-	bit_nset(total_node_bitmap, 0, node_record_count-1);
-	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
-	FREE_NULL_BITMAP(total_node_bitmap);
 
-	assoc_mgr_lock(&locks);
-
-	cluster_tres_str = slurmdb_make_tres_string(
-		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
-	assoc_mgr_unlock(&locks);
+	_update_cluster_nodes();
 
 	unlock_slurmctld(node_write_lock);
 
+	event_time = time(NULL);
 	rc = _send_cluster_tres(db_conn, cluster_nodes,
-				cluster_tres_str, event_time,
+				cluster_tres, event_time,
 				rpc_version);
-
-	xfree(cluster_nodes);
-	xfree(cluster_tres_str);
 
 	if ((rc == ACCOUNTING_FIRST_REG) ||
 	    (rc == ACCOUNTING_NODES_CHANGE_DB) ||
