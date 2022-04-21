@@ -1657,7 +1657,10 @@ done:
 	 *  If job prolog failed, indicate failure to slurmctld
 	 */
 	if (errnum == ESLURMD_PROLOG_FAILED) {
-		_launch_job_fail(req->step_id.job_id, errnum);
+		_launch_job_fail(
+		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
+		    req->het_job_id : req->step_id.job_id,
+		    errnum);
 		send_registration_msg(errnum);
 	}
 
@@ -2209,8 +2212,12 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		debug3("%s: return from _forkexec_slurmstepd %d",
 		       __func__, rc);
 
-		if (rc != SLURM_SUCCESS)
-			_launch_job_fail(req->job_id, rc);
+		if (rc != SLURM_SUCCESS) {
+			_launch_job_fail(
+			    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
+			    req->het_job_id : req->job_id,
+			    rc);
+		}
 
 		if (step_hset)
 			hostset_destroy(step_hset);
@@ -2335,6 +2342,11 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		slurm_mutex_unlock(&prolog_mutex);
 
 notify_result:
+	if (req->het_job_id && (req->het_job_id != NO_VAL))
+		jobid = req->het_job_id;
+	else
+		jobid = req->job_id;
+
 	/*
 	 * We need the slurmctld to know we are done or we can get into a
 	 * situation where nothing from the job will ever launch because the
@@ -2348,7 +2360,7 @@ notify_result:
 			alt_rc = SLURM_SUCCESS;
 
 		if (rc != SLURM_SUCCESS) {
-			alt_rc = _launch_job_fail(req->job_id, rc);
+			alt_rc = _launch_job_fail(jobid, rc);
 			send_registration_msg(rc);
 		}
 
@@ -2380,7 +2392,10 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		error("Job %u already running, do not launch second copy",
 		      req->job_id);
 		rc = ESLURM_DUPLICATE_JOB_ID;	/* job already running */
-		_launch_job_fail(req->job_id, rc);
+		_launch_job_fail(
+		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
+		    req->het_job_id : req->job_id,
+		    rc);
 		goto done;
 	}
 
@@ -2581,7 +2596,10 @@ done:
 	if (rc != SLURM_SUCCESS) {
 		/* prolog or job launch failure,
 		 * tell slurmctld that the job failed */
-		_launch_job_fail(req->job_id, rc);
+		_launch_job_fail(
+		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
+		    req->het_job_id : req->job_id,
+		    rc);
 	}
 
 	/*
