@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow scontrol update <job> Gres=... to not require "gres:".
  -- Fix inconsistent reboot message appending behavior.
  -- Fix incorrect reason_time and reason_uid on reboot message.
+ -- Fix "scontrol reboot" clearing node reason on ResumeTimeout.
 
 * Changes in Slurm 21.08.7
 ==========================

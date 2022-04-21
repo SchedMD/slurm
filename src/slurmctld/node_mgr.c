@@ -4439,18 +4439,8 @@ extern void check_reboot_nodes()
 		if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
 		    node_ptr->boot_req_time &&
 		    (node_ptr->boot_req_time + resume_timeout < now)) {
-			char *timeout_msg = "reboot timed out";
-
-			if ((node_ptr->next_state != NO_VAL) &&
-			    node_ptr->reason) {
-				xstrfmtcat(node_ptr->reason, " : %s",
-					   timeout_msg);
-			} else {
-				xfree(node_ptr->reason);
-				node_ptr->reason = xstrdup(timeout_msg);
-			}
-			node_ptr->reason_time = now;
-			node_ptr->reason_uid = slurm_conf.slurm_user_id;
+			set_node_reboot_reason(node_ptr,
+					       "reboot timed out");
 
 			/*
 			 * Remove states now so that event state shows as DOWN.
