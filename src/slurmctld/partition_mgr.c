@@ -198,8 +198,7 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 		part_ptr->node_bitmap = old_bitmap;
 		return ESLURM_INVALID_NODE_NAME;
 	} else if (!hostlist_count(host_list)) {
-		/* No nodes in partition */
-
+		info("%s: No nodes in partition %s", __func__, part_ptr->name);
 		/*
 		 * Clear "nodes" but leave "orig_nodes" intact.
 		 * e.g.
