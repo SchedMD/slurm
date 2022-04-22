@@ -190,8 +190,10 @@ static int _update_qos(data_t *query, data_t *resp, void *auth, bool commit)
 	};
 	data_t *dqos = get_query_key_list("QOS", errors, query);
 
-	if (!dqos)
+	if (!dqos) {
+		FREE_NULL_LIST(args.qos_list);
 		return ESLURM_REST_INVALID_QUERY;
+	}
 
 	if (!(rc = db_query_list(errors, auth, &args.g_tres_list,
 				 slurmdb_tres_get, &tres_cond)) &&
