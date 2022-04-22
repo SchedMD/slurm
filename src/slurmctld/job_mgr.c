@@ -10351,6 +10351,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK, .user = READ_LOCK };
 	slurmdb_user_rec_t user_rec = { 0 };
 	bool hide_job = false;
+	bool valid_operator;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -10364,7 +10365,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 
 	job_ptr = find_job_record(job_id);
 
-	if (!validate_operator_user_rec(&user_rec))
+	if (!(valid_operator = validate_operator_user_rec(&user_rec)))
 		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
 
 	if (job_ptr && job_ptr->het_job_list) {
@@ -10400,12 +10401,13 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 			if ((job_ptr->job_id == job_id) && packed_head) {
 				;	/* Already packed */
 			} else if (job_ptr->array_job_id == job_id) {
-				if (_hide_job_user_rec(
-					    job_ptr, &user_rec, show_flags))
-					break;
-				pack_job(job_ptr, show_flags, buffer,
-					 protocol_version, uid, true);
-				jobs_packed++;
+				if (valid_operator ||
+				    !_hide_job_user_rec(job_ptr, &user_rec,
+							show_flags)) {
+					pack_job(job_ptr, show_flags, buffer,
+						 protocol_version, uid, true);
+					jobs_packed++;
+				}
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
