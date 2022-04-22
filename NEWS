@@ -193,6 +193,7 @@ documents those changes that are of interest to users and administrators.
     NodeName=ns1,nodes[1-3]').
  -- Add support for PMIx v4
  -- Add support for PMIx v5
+ -- Correctly load potentially NULL values from slurmdbd archive files.
 
 * Changes in Slurm 21.08.8
 ==========================
