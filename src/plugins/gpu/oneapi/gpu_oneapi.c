@@ -960,7 +960,7 @@ static bool _oneapi_get_device_affinity(const char *device_name,
 
 extern int init(void)
 {
-	debug("loaded");
+	debug("loading");
 
 	/* Init oneAPI */
 	setenv("ZES_ENABLE_SYSMAN", "1", 1);
