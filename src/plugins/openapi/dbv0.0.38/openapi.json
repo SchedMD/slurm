@@ -510,42 +510,9 @@
       },
       "get": {
         "tags": [
-          "slurm"
-        ],
-        "operationId": "get_associations",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_associations_info"
-                }
-              },
-              "application/x-yaml": {
-                "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_associations_info"
-                }
-              }
-            },
-            "description": "List of associations"
-          },
-          "default": {
-            "description": "Association not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_errors"
-                }
-              },
-              "application/x-yaml": {
-                "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_errors"
-                }
-              }
-            }
-          }
-        },
-	"summary": "Get association list",
+	  "slurm"
+	],
+	"operationId": "get_associations",
 	"parameters": [
 	  {
 	    "name": "cluster",
@@ -591,7 +558,40 @@
 	      "type": "string"
 	    }
 	  }
-	]
+	],
+	"responses": {
+	  "200": {
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_associations_info"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_associations_info"
+		}
+	      }
+	    },
+	    "description": "List of associations"
+	  },
+	  "default": {
+	    "description": "Association not found",
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_errors"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_errors"
+		}
+	      }
+	    }
+	  }
+	},
+	"summary": "Get association list"
       },
       "delete": {
 	"tags": [
@@ -649,12 +649,12 @@
 	    "content": {
 	      "application/json": {
 		"schema": {
-		  "$ref": "#/components/schemas/dbv0.0.38_response_association_delete"
+		  "$ref": "#/components/schemas/dbv0.0.38_response_associations_delete"
 		}
 	      },
 	      "application/x-yaml": {
 		"schema": {
-		  "$ref": "#/components/schemas/dbv0.0.38_response_association_delete"
+		  "$ref": "#/components/schemas/dbv0.0.38_response_associations_delete"
 		}
 	      }
 	    },
@@ -821,12 +821,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_response_association_delete"
+		  "$ref": "#/components/schemas/dbv0.0.38_response_associations_delete"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_response_association_delete"
+		  "$ref": "#/components/schemas/dbv0.0.38_response_associations_delete"
                 }
               }
             },
@@ -2648,28 +2648,6 @@
           }
         }
       },
-      "dbv0.0.38_response_association_delete": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.38_error"
-            }
-          },
-          "removed_associations": {
-            "type": "array",
-            "description": "the associations",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "dbv0.0.38_association": {
         "type": "object",
         "description": "Association description",
@@ -4034,6 +4012,28 @@
             "$ref": "#/components/schemas/dbv0.0.38_cluster_info"
           }
         }
+      },
+      "dbv0.0.38_response_associations_delete": {
+	"type": "object",
+	"properties": {
+	  "meta": {
+	    "$ref": "#/components/schemas/v0.0.38_meta"
+	  },
+	  "errors": {
+	    "type": "array",
+	    "description": "Slurm errors",
+	    "items": {
+	      "$ref": "#/components/schemas/dbv0.0.38_error"
+	    }
+	  },
+	  "removed_associations": {
+	    "type": "array",
+	    "description": "the associations",
+	    "items": {
+	      "type": "string"
+	    }
+	  }
+	}
       }
     }
   }
