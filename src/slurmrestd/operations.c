@@ -531,7 +531,7 @@ extern int operations_router(on_http_request_args_t *args)
 
 	params = data_set_dict(data_new());
 	if ((rc = _resolve_path(args, &path_tag, params)))
-	    return rc;
+		goto cleanup;
 
 	/*
 	 * Hold read lock while the callback is executing to avoid

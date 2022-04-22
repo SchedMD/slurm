@@ -198,6 +198,7 @@ documents those changes that are of interest to users and administrators.
     have a default account.
  -- Fix issues related to users with very large uids.
  -- common/openapi - fix bug populating methods for parameter-less endpoint.
+ -- slurmrestd/operations - fix memory leak when resolving bad path.
 
 * Changes in Slurm 21.08.8
 ==========================
