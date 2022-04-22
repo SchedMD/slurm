@@ -2562,7 +2562,7 @@ just_update:
 			       "grp_tres_mins=DEFAULT, "
 			       "grp_tres_run_mins=DEFAULT, "
 			       "qos=DEFAULT, delta_qos=DEFAULT, "
-			       "priority=DEFAULT "
+			       "priority=DEFAULT, is_def=DEFAULT "
 			       "where (%s);",
 			       cluster_name, assoc_table, now,
 			       loc_assoc_char);
