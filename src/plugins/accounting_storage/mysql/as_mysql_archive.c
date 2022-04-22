@@ -3205,7 +3205,6 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 		if (_unpack_local_event(&object, rpc_version, buffer)
 		    != SLURM_SUCCESS) {
 			error("issue unpacking");
-			xfree(format);
 			xfree(insert);
 			break;
 		}
@@ -3608,7 +3607,6 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 		if (_unpack_local_resv(&object, rpc_version, buffer)
 		    != SLURM_SUCCESS) {
 			error("issue unpacking");
-			xfree(format);
 			xfree(insert);
 			break;
 		}
@@ -3885,7 +3883,6 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 	}
 //	END_TIMER2("step query");
 //	info("step query took %s", TIME_STR);
-	xfree(format);
 
 	return insert;
 }
@@ -3947,7 +3944,6 @@ static char *_load_suspend(uint16_t rpc_version, buf_t *buffer,
 		if (_unpack_local_suspend(&object, rpc_version, buffer)
 		    != SLURM_SUCCESS) {
 			error("issue unpacking");
-			xfree(format);
 			xfree(insert);
 			break;
 		}
@@ -4043,7 +4039,6 @@ static char *_load_txn(uint16_t rpc_version, buf_t *buffer,
 		if (_unpack_local_txn(&object, rpc_version, buffer)
 		    != SLURM_SUCCESS) {
 			error("issue unpacking");
-			xfree(format);
 			xfree(insert);
 			break;
 		}
@@ -4186,7 +4181,6 @@ static char *_load_usage(uint16_t rpc_version, buf_t *buffer,
 		if (_unpack_local_usage(&object, rpc_version, buffer)
 		    != SLURM_SUCCESS) {
 			error("issue unpacking");
-			xfree(format);
 			xfree(insert);
 			break;
 		}
@@ -4296,7 +4290,6 @@ static char *_load_cluster_usage(uint16_t rpc_version, buf_t *buffer,
 		if (_unpack_local_cluster_usage(&object, rpc_version, buffer)
 		    != SLURM_SUCCESS) {
 			error("issue unpacking");
-			xfree(format);
 			xfree(insert);
 			break;
 		}
