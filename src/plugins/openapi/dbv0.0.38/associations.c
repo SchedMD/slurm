@@ -177,21 +177,27 @@ static int _dump_assoc_cond(data_t *resp, void *auth, data_t *errors,
 }
 
 static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
-			 slurmdb_assoc_cond_t *assoc_cond)
+			 slurmdb_assoc_cond_t *assoc_cond, bool only_one)
 {
 	int rc = SLURM_SUCCESS;
 	List removed = NULL;
+	data_t *drem = data_set_list(data_key_set(resp, "removed_associations"));
 
-	if (!(rc = db_query_list(errors, auth, &removed,
-				 slurmdb_associations_remove, assoc_cond)) &&
-	    (list_for_each(removed, _foreach_delete_assoc,
-			   data_set_list(data_key_set(
-				   resp, "removed_associations"))) < 0))
-		resp_error(errors, ESLURM_REST_INVALID_QUERY,
-			   "unable to delete associations", NULL);
-
-	if (!rc)
+	rc = db_query_list(errors, auth, &removed, slurmdb_associations_remove,
+			   assoc_cond);
+	if (rc) {
+		(void) resp_error(errors, rc, "unable to query associations",
+				NULL);
+	} else if (only_one && list_count(removed) > 1) {
+		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				"ambiguous request: More than 1 association would have been deleted.",
+				NULL);
+	} else if (list_for_each(removed, _foreach_delete_assoc, drem) < 0) {
+		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				"unable to delete associations", NULL);
+	} else if (!rc) {
 		rc = db_query_commit(errors, auth);
+	}
 
 	FREE_NULL_LIST(removed);
 
@@ -353,7 +359,7 @@ static int op_handler_association(const char *context_id,
 	if (method == HTTP_REQUEST_GET)
 		rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, true);
 	else if (method == HTTP_REQUEST_DELETE)
-		rc = _delete_assoc(resp, auth, errors, assoc_cond);
+		rc = _delete_assoc(resp, auth, errors, assoc_cond, true);
 
 	slurmdb_destroy_assoc_cond(assoc_cond);
 	return rc;
@@ -375,6 +381,8 @@ extern int op_handler_associations(const char *context_id,
 	else if (method == HTTP_REQUEST_POST)
 		rc = _update_assocations(query, resp, auth,
 					 (tag != CONFIG_OP_TAG));
+	else if (method == HTTP_REQUEST_DELETE)
+		rc = _delete_assoc(resp, auth, errors, assoc_cond, false);
 
 	slurmdb_destroy_assoc_cond(assoc_cond);
 	return rc;

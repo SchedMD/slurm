@@ -592,6 +592,91 @@
 	    }
 	  }
 	]
+      },
+      "delete": {
+	"tags": [
+	  "slurm"
+	],
+	"operationId": "delete_associations",
+	"parameters": [
+	  {
+	    "name": "cluster",
+	    "in": "query",
+	    "description": "Cluster name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "account",
+	    "in": "query",
+	    "description": "Account name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "user",
+	    "in": "query",
+	    "description": "User name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "partition",
+	    "in": "query",
+	    "description": "Partition Name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  }
+	],
+	"responses": {
+	  "200": {
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_response_association_delete"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_response_association_delete"
+		}
+	      }
+	    },
+	    "description": "Delete associations"
+	  },
+	  "default": {
+	    "description": "Associations not found or unable to delete association",
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_errors"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_errors"
+		}
+	      }
+	    }
+	  }
+	},
+	"summary": "Delete associations"
       }
     },
     "/association/": {
@@ -701,7 +786,7 @@
             "name": "account",
             "in": "query",
             "description": "Account name",
-            "required": true,
+	    "required": false,
             "style": "form",
             "explode": false,
             "schema": {
@@ -712,7 +797,7 @@
             "name": "user",
             "in": "query",
             "description": "User name",
-            "required": true,
+	    "required": false,
             "style": "form",
             "explode": false,
             "schema": {
