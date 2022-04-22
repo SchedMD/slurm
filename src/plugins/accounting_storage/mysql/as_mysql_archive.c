@@ -3719,7 +3719,8 @@ static buf_t *_pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			 char *cluster_name, uint32_t rec_cnt)
 {
-	char *insert = NULL, *format = NULL;
+	char *insert = NULL, *insert_pos = NULL;
+	char *format = NULL, *format_pos = NULL;
 	local_step_t object;
 	int i;
 	int safe_attributes[] = {
@@ -3773,16 +3774,18 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 		STEP_REQ_SUBMIT_LINE,
 		STEP_REQ_COUNT };
 
-	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
-		   cluster_name, step_table, step_req_inx[0]);
+	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
+		     cluster_name, step_table, step_req_inx[0]);
 	for (i = 1; safe_attributes[i] < STEP_REQ_COUNT; i++) {
-		xstrfmtcat(insert, ", %s", step_req_inx[safe_attributes[i]]);
+		xstrfmtcatat(insert, &insert_pos,
+			     ", %s", step_req_inx[safe_attributes[i]]);
 	}
 	/* Some attributes that might be NULL require special handling */
 	for (i = 0; null_attributes[i] < STEP_REQ_COUNT; i++) {
-		xstrfmtcat(insert, ", %s", step_req_inx[null_attributes[i]]);
+		xstrfmtcatat(insert, &insert_pos,
+			     ", %s", step_req_inx[null_attributes[i]]);
 	}
-	xstrcat(insert, ") values ");
+	xstrcatat(insert, &insert_pos, ") values ");
 
 	for (i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_step_t));
@@ -3794,85 +3797,87 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 		}
 
 		if (i)
-			xstrcat(insert, ", ");
+			xstrcatat(insert, &insert_pos, ", ");
 
 		if (!object.step_het_comp)
 			object.step_het_comp = xstrdup_printf("%u", NO_VAL);
 
-		xstrcat(format, "('%s'");
+		xstrcatat(format, &format_pos, "('%s'");
 		for (int j = 1; safe_attributes[j] < STEP_REQ_COUNT; j++) {
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		}
 		/* special handling for NULL attributes */
 		if (object.kill_requid == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.node_inx == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.container == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.submit_line == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
-		xstrcat(format, ")");
+			xstrcatat(format, &format_pos, ", '%s'");
 
-		xstrfmtcat(insert, format,
-			   object.job_db_inx,
-			   object.stepid,
-			   object.step_het_comp,
-			   object.deleted,
-			   object.period_start,
-			   object.period_end,
-			   object.period_suspended,
-			   object.name,
-			   object.nodelist,
-			   object.state,
-			   object.exit_code,
-			   object.nodes,
-			   object.tasks,
-			   object.task_dist,
-			   object.user_sec,
-			   object.user_usec,
-			   object.sys_sec,
-			   object.sys_usec,
-			   object.act_cpufreq,
-			   object.consumed_energy,
-			   object.req_cpufreq_max,
-			   object.req_cpufreq_min,
-			   object.req_cpufreq_gov,
-			   object.tres_alloc_str,
-			   object.tres_usage_in_ave,
-			   object.tres_usage_in_max,
-			   object.tres_usage_in_max_nodeid,
-			   object.tres_usage_in_max_taskid,
-			   object.tres_usage_in_min,
-			   object.tres_usage_in_min_nodeid,
-			   object.tres_usage_in_min_taskid,
-			   object.tres_usage_in_tot,
-			   object.tres_usage_out_ave,
-			   object.tres_usage_out_max,
-			   object.tres_usage_out_max_nodeid,
-			   object.tres_usage_out_max_taskid,
-			   object.tres_usage_out_min,
-			   object.tres_usage_out_min_nodeid,
-			   object.tres_usage_out_min_taskid,
-			   object.tres_usage_out_tot,
-			   (object.kill_requid == NULL) ?
+		xstrcatat(format, &format_pos, ")");
+
+		xstrfmtcatat(insert, &insert_pos, format,
+			     object.job_db_inx,
+			     object.stepid,
+			     object.step_het_comp,
+			     object.deleted,
+			     object.period_start,
+			     object.period_end,
+			     object.period_suspended,
+			     object.name,
+			     object.nodelist,
+			     object.state,
+			     object.exit_code,
+			     object.nodes,
+			     object.tasks,
+			     object.task_dist,
+			     object.user_sec,
+			     object.user_usec,
+			     object.sys_sec,
+			     object.sys_usec,
+			     object.act_cpufreq,
+			     object.consumed_energy,
+			     object.req_cpufreq_max,
+			     object.req_cpufreq_min,
+			     object.req_cpufreq_gov,
+			     object.tres_alloc_str,
+			     object.tres_usage_in_ave,
+			     object.tres_usage_in_max,
+			     object.tres_usage_in_max_nodeid,
+			     object.tres_usage_in_max_taskid,
+			     object.tres_usage_in_min,
+			     object.tres_usage_in_min_nodeid,
+			     object.tres_usage_in_min_taskid,
+			     object.tres_usage_in_tot,
+			     object.tres_usage_out_ave,
+			     object.tres_usage_out_max,
+			     object.tres_usage_out_max_nodeid,
+			     object.tres_usage_out_max_taskid,
+			     object.tres_usage_out_min,
+			     object.tres_usage_out_min_nodeid,
+			     object.tres_usage_out_min_taskid,
+			     object.tres_usage_out_tot,
+			     (object.kill_requid == NULL) ?
 				"NULL" : object.kill_requid,
-			   (object.node_inx == NULL) ?
+			     (object.node_inx == NULL) ?
 				"NULL" : object.node_inx,
-			   (object.container == NULL) ?
+			     (object.container == NULL) ?
 				"NULL" : object.node_inx,
-			   (object.submit_line == NULL) ?
+			     (object.submit_line == NULL) ?
 				"NULL" : object.submit_line);
 
 		_free_local_step_members(&object);
+		format_pos = NULL;
 		xfree(format);
 	}
 //	END_TIMER2("step query");
