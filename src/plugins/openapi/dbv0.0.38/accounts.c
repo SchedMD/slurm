@@ -219,6 +219,8 @@ static int _delete_account(data_t *resp, void *auth, char *account)
 		rc = db_query_commit(errors, auth);
 
 	FREE_NULL_LIST(removed);
+	FREE_NULL_LIST(assoc_cond.acct_list);
+	FREE_NULL_LIST(assoc_cond.user_list);
 
 	return rc;
 }

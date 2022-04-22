@@ -315,6 +315,7 @@ static int _update_assocations(data_t *query, data_t *resp,
 		rc = db_query_commit(errors, auth);
 
 	FREE_NULL_LIST(args.tres_list);
+	FREE_NULL_LIST(args.qos_list);
 
 	return rc;
 }

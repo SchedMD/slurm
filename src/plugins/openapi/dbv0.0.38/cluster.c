@@ -111,6 +111,8 @@ static int _dump_clusters(data_t *resp, data_t *errors, char *cluster,
 		rc = ESLURM_DATA_CONV_FAILED;
 
 	FREE_NULL_LIST(cluster_list);
+	FREE_NULL_LIST(cluster_cond.cluster_list);
+	FREE_NULL_LIST(args.tres_list);
 
 	return rc;
 }
@@ -229,6 +231,7 @@ static int _update_clusters(data_t *query, data_t *resp, data_t *errors,
 		db_query_commit(errors, auth);
 
 	FREE_NULL_LIST(args.cluster_list);
+	FREE_NULL_LIST(args.tres_list);
 
 	return rc;
 }

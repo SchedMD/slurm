@@ -204,6 +204,7 @@ static int _update_qos(data_t *query, data_t *resp, void *auth, bool commit)
 		rc = db_query_commit(errors, auth);
 
 	FREE_NULL_LIST(args.qos_list);
+	FREE_NULL_LIST(args.g_tres_list);
 
 	return rc;
 }
