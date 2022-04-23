@@ -703,124 +703,19 @@ fail:
 slurm_cred_t *
 slurm_cred_faker(slurm_cred_arg_t *arg)
 {
-	int fd, i;
+	slurm_cred_ctx_t ctx;
 	slurm_cred_t *cred = NULL;
 
-	xassert(arg != NULL);
-
-	if (_slurm_cred_init() < 0)
-		return NULL;
-
-	cred = _slurm_cred_alloc();
-	slurm_mutex_lock(&cred->mutex);
-
-	memcpy(&cred->step_id, &arg->step_id, sizeof(cred->step_id));
-	cred->uid      = arg->uid;
-	cred->gid = gid_from_uid(cred->uid);
 	/*
-	 * pw_name, pw_gecos, pw_dir, pw_shell, pw_ngids, pw_gids, gr_names
-	 * are all filled in below based on arguments in the slurm.conf
+	 * Force this on to ensure pw_name, ngid, gids are all populated.
 	 */
-	if (_fill_cred_gids(cred, arg) != SLURM_SUCCESS) {
-		slurm_mutex_unlock(&cred->mutex);
-		slurm_cred_destroy(cred);
-		_slurm_cred_fini();
-		return NULL;
-	}
-	/*
-	 * We will skip most of the normal user setup on the node side.  Fill in
-	 * the minimal amount of data regardless of settings to ensure
-	 * everything works (EG: TaskEpilog).
-	 */
-	if (!cred->pw_name)
-		cred->pw_name = uid_to_string_or_null(cred->uid);
-	if (!enable_send_gids)
-		cred->ngids = group_cache_lookup(arg->uid, arg->gid,
-						 arg->pw_name, &cred->gids);
+	enable_send_gids = true;
 
-	cred->job_core_spec  = arg->job_core_spec;
-	cred->job_mem_limit  = arg->job_mem_limit;
-	if (arg->job_mem_alloc_size) {
-		cred->job_mem_alloc_size = arg->job_mem_alloc_size;
-		cred->job_mem_alloc = xcalloc(arg->job_mem_alloc_size,
-					      sizeof(uint64_t));
-		memcpy(cred->job_mem_alloc, arg->job_mem_alloc,
-		       sizeof(uint64_t) * arg->job_mem_alloc_size);
+	ctx = slurm_cred_creator_ctx_create(NULL);
+	cred = slurm_cred_create(ctx, arg, SLURM_PROTOCOL_VERSION);
+	slurm_cred_ctx_destroy(ctx);
 
-		cred->job_mem_alloc_rep_count =
-			xcalloc(arg->job_mem_alloc_size, sizeof(uint32_t));
-		memcpy(cred->job_mem_alloc_rep_count,
-		       arg->job_mem_alloc_rep_count,
-		       sizeof(uint32_t) * arg->job_mem_alloc_size);
-	}
-	cred->step_mem_limit = arg->step_mem_limit;
-	if (arg->step_mem_alloc_size) {
-		cred->step_mem_alloc_size = arg->step_mem_alloc_size;
-		cred->step_mem_alloc = xcalloc(arg->step_mem_alloc_size,
-					       sizeof(uint64_t));
-		memcpy(cred->step_mem_alloc, arg->step_mem_alloc,
-		       sizeof(uint64_t) * arg->step_mem_alloc_size);
-
-		cred->step_mem_alloc_rep_count =
-			xcalloc(arg->step_mem_alloc_size, sizeof(uint32_t));
-		memcpy(cred->step_mem_alloc_rep_count,
-		       arg->step_mem_alloc_rep_count,
-		       sizeof(uint32_t) * arg->step_mem_alloc_size);
-
-	}
-	cred->step_hostlist  = xstrdup(arg->step_hostlist);
-	cred->x11            = arg->x11;
-	int sock_recs = 0;
-	for (i = 0; i < arg->job_nhosts; i++) {
-		sock_recs += arg->sock_core_rep_count[i];
-		if (sock_recs >= arg->job_nhosts)
-			break;
-	}
-	i++;
-	cred->job_core_bitmap  = bit_copy(arg->job_core_bitmap);
-	cred->step_core_bitmap = bit_copy(arg->step_core_bitmap);
-	cred->core_array_size = i;
-	cred->cores_per_socket = xcalloc(i, sizeof(uint16_t));
-	memcpy(cred->cores_per_socket, arg->cores_per_socket,
-	       (sizeof(uint16_t) * i));
-	cred->sockets_per_node = xcalloc(i, sizeof(uint16_t));
-	memcpy(cred->sockets_per_node, arg->sockets_per_node,
-	       (sizeof(uint16_t) * i));
-	cred->sock_core_rep_count = xcalloc(i, sizeof(uint32_t));
-	memcpy(cred->sock_core_rep_count, arg->sock_core_rep_count,
-	       (sizeof(uint32_t) * i));
-	cred->job_alias_list = xstrdup(arg->job_alias_list);
-	cred->job_constraints = xstrdup(arg->job_constraints);
-	cred->job_nhosts      = arg->job_nhosts;
-	cred->job_hostlist    = xstrdup(arg->job_hostlist);
-
-	cred->selinux_context = xstrdup(arg->selinux_context);
-
-	cred->ctime  = time(NULL);
-	cred->siglen = SLURM_IO_KEY_SIZE;
-
-	cred->signature = xmalloc(cred->siglen);
-
-	if ((fd = open("/dev/urandom", O_RDONLY)) >= 0) {
-		if (read(fd, cred->signature, cred->siglen-1) == -1)
-			error("reading fake signature from /dev/urandom: %m");
-		if (close(fd) < 0)
-			error("close(/dev/urandom): %m");
-		for (i=0; i<cred->siglen-1; i++)
-			cred->signature[i] = 'a' + (cred->signature[i] & 0xf);
-	} else {	/* Note: some systems lack this file */
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		i = (unsigned int) (tv.tv_sec + tv.tv_usec);
-		srand((unsigned int) i);
-		for (i=0; i<cred->siglen-1; i++)
-			cred->signature[i] = 'a' + (rand() & 0xf);
-	}
-
-	slurm_mutex_unlock(&cred->mutex);
-	_slurm_cred_fini();
 	return cred;
-
 }
 
 void slurm_cred_free_args(slurm_cred_arg_t *arg)
