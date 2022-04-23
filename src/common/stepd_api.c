@@ -400,7 +400,13 @@ stepd_attach(int fd, uint16_t protocol_version,
 	int req = REQUEST_ATTACH;
 	int rc = SLURM_SUCCESS;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		safe_write(fd, &req, sizeof(int));
+		safe_write(fd, ioaddr, sizeof(slurm_addr_t));
+		safe_write(fd, respaddr, sizeof(slurm_addr_t));
+		safe_write(fd, job_cred_sig, SLURM_IO_KEY_SIZE);
+		safe_write(fd, &protocol_version, sizeof(uint16_t));
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int));
 		safe_write(fd, ioaddr, sizeof(slurm_addr_t));
 		safe_write(fd, respaddr, sizeof(slurm_addr_t));
