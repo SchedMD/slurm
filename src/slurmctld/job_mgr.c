@@ -19110,6 +19110,9 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 		        slurm_conf.cluster_name);
 	}
 
+	if (job_ptr->comment)
+		setenvf(&my_env, "SLURM_JOB_COMMENT", "%s", job_ptr->comment);
+
 	if (job_ptr->het_job_id) {
 		/* Continue support for old hetjob terminology. */
 		setenvf(&my_env, "SLURM_PACK_JOB_ID", "%u",
