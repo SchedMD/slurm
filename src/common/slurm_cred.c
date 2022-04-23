@@ -607,9 +607,6 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	memcpy(&cred->step_id, &arg->step_id, sizeof(cred->step_id));
 	cred->uid    = arg->uid;
 	cred->gid    = arg->gid;
-	cred->ngids = arg->ngids;
-	cred->gids = copy_gids(arg->ngids, arg->gids);
-	cred->gr_names = copy_gr_names(arg->ngids, arg->gr_names);
 	cred->job_core_spec   = arg->job_core_spec;
 	cred->job_gres_list   = gres_job_state_list_dup(arg->job_gres_list);
 	cred->step_gres_list  = gres_step_state_list_dup(arg->step_gres_list);
