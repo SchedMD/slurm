@@ -105,6 +105,12 @@ if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
+if { [get_config_param -dbd "AllowNoDefAcct"] eq "Yes" } {
+	set def_acct ""
+} else {
+	set def_acct $nm1
+}
+
 # Make sure we have a clean system and permission to do this work
 remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
@@ -149,7 +155,7 @@ expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
 	}
-	-re "($us1.$nm1.$aln.$nm1.|($us2|$us3).$nm1.$aln..)" {
+	-re "($us1.$def_acct.$aln.$nm1.|($us2|$us3).$def_acct.$aln..)" {
 		incr matches
 		exp_continue
 	}
@@ -179,7 +185,7 @@ expect {
 	-re "There was a problem" {
 		fail "There was a problem with the sacctmgr command"
 	}
-	-re "($us1.$nm1.$aln.$nm1.|($us2|$us3).$nm1.$aln.$nm1,$nm3)" {
+	-re "($us1.$def_acct.$aln.$nm1.|($us2|$us3).$def_acct.$aln.$nm1,$nm3)" {
 		incr matches
 		exp_continue
 	}
