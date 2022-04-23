@@ -2536,6 +2536,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		}
 		response_init(&resp, msg);
 		resp.msg_type = RESPONSE_JOB_STEP_CREATE;
+		resp.protocol_version = step_rec->start_protocol_ver;
 		resp.data = &job_step_resp;
 
 		slurm_send_node_msg(msg->conn_fd, &resp);
