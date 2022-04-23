@@ -211,6 +211,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - Correct OpenAPI specification for diag request.
  -- openapi/dbv0.0.38 - reject requests with incorrect TRES specification.
  -- sacctmgr - reject requests with incorrect TRES specification.
+ -- Correct issue where conversion to/from JSON/YAML may have resulted in empty
+    strings being replaced with strings containing "null" instead.
 
 * Changes in Slurm 21.08.8
 ==========================

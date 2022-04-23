@@ -57,8 +57,6 @@
  * Regex matches based on YAML 1.1 section 5.5.
  * Honors ~ as YAML 1.1 allows for null fields.
  */
-static const char *bool_pattern_null = "^(\\~|[Nn][uU][lL][lL])$";
-static regex_t bool_pattern_null_re;
 static const char *bool_pattern_true = "^([Yy](|[eE][sS])|[tT]([rR][uU][eE]|)|[Oo][nN])$";
 static regex_t bool_pattern_true_re;
 static const char *bool_pattern_false = "^([nN]([Oo]|)|[fF](|[aA][lL][sS][eE])|[oO][fF][fF])$";
@@ -184,7 +182,6 @@ extern void data_fini(void)
 	slurm_mutex_lock(&init_mutex);
 
 	if (initialized) {
-		regfree(&bool_pattern_null_re);
 		regfree(&bool_pattern_true_re);
 		regfree(&bool_pattern_false_re);
 		regfree(&bool_pattern_int_re);
@@ -394,12 +391,6 @@ extern int data_init(const char *plugin_list, plugrack_foreach_t listf)
 	if (initialized)
 		goto load_plugins;
 	initialized = true;
-
-	if (!rc && (reg_rc = regcomp(&bool_pattern_null_re, bool_pattern_null,
-			      REG_EXTENDED)) != 0) {
-		_dump_regex_error(reg_rc, &bool_pattern_null_re);
-		rc = ESLURM_DATA_REGEX_COMPILE;
-	}
 
 	if (!rc && (reg_rc = regcomp(&bool_pattern_true_re, bool_pattern_true,
 			      REG_EXTENDED)) != 0) {
@@ -1472,7 +1463,7 @@ static int _convert_data_string(data_t *data)
 		data_set_string(data, (data->data.bool_u ? "true" : "false"));
 		return SLURM_SUCCESS;
 	case DATA_TYPE_NULL:
-		data_set_string(data, "null");
+		data_set_string(data, "");
 		return SLURM_SUCCESS;
 	case DATA_TYPE_FLOAT:
 	{
@@ -1545,8 +1536,7 @@ static int _convert_data_null(data_t *data)
 
 	switch (data->type) {
 	case DATA_TYPE_STRING:
-		if (_regex_quick_match(data->data.string_u,
-				       &bool_pattern_null_re)) {
+		if (!data->data.string_u || !data->data.string_u[0]) {
 			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to null: %s->null",
 				 __func__, (uintptr_t) data,
 				 data->data.string_u);
