@@ -392,10 +392,9 @@ rwfail:
  * On success returns SLURM_SUCCESS and fills in resp->local_pids,
  * resp->gtids, resp->ntasks, and resp->executable.
  */
-int
-stepd_attach(int fd, uint16_t protocol_version,
-	     slurm_addr_t *ioaddr, slurm_addr_t *respaddr,
-	     void *job_cred_sig, reattach_tasks_response_msg_t *resp)
+int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
+		 slurm_addr_t *respaddr, void *job_cred_sig, uint32_t sig_len,
+		 reattach_tasks_response_msg_t *resp)
 {
 	int req = REQUEST_ATTACH;
 	int rc = SLURM_SUCCESS;
@@ -404,7 +403,8 @@ stepd_attach(int fd, uint16_t protocol_version,
 		safe_write(fd, &req, sizeof(int));
 		safe_write(fd, ioaddr, sizeof(slurm_addr_t));
 		safe_write(fd, respaddr, sizeof(slurm_addr_t));
-		safe_write(fd, job_cred_sig, SLURM_IO_KEY_SIZE);
+		safe_write(fd, &sig_len, sizeof(uint32_t));
+		safe_write(fd, job_cred_sig, sig_len);
 		safe_write(fd, &protocol_version, sizeof(uint16_t));
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int));

@@ -4376,7 +4376,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	 * this to prove its identity when it connects back to srun.
 	 */
 	slurm_cred_get_signature(req->cred, (char **)(&job_cred_sig), &len);
-	if (len != SLURM_IO_KEY_SIZE) {
+	if (len < SLURM_IO_KEY_SIZE) {
 		error("Incorrect slurm cred signature length");
 		goto done2;
 	}
@@ -4390,8 +4390,8 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 		protocol_version = msg->protocol_version;
 
 	/* Following call fills in gtids and local_pids when successful. */
-	rc = stepd_attach(fd, protocol_version, &ioaddr,
-			  &resp_msg.address, job_cred_sig, resp);
+	rc = stepd_attach(fd, protocol_version, &ioaddr, &resp_msg.address,
+			  job_cred_sig, len, resp);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_attach call failed");
 		goto done2;

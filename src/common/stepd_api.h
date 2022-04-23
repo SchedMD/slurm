@@ -181,9 +181,9 @@ int stepd_signal_container(int fd, uint16_t protocol_version, int signal,
  *         probably be moved into a more generic stepd_api call so that
  *         this header does not need to include slurm_protocol_defs.h.
  */
-int stepd_attach(int fd, uint16_t protocol_version,
-		 slurm_addr_t *ioaddr, slurm_addr_t *respaddr,
-		 void *job_cred_sig, reattach_tasks_response_msg_t *resp);
+int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
+		 slurm_addr_t *respaddr, void *job_cred_sig, uint32_t sig_len,
+		 reattach_tasks_response_msg_t *resp);
 
 /*
  * Scan for available running slurm step daemons by checking

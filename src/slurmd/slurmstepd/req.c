@@ -964,14 +964,14 @@ _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid)
 
 	srun       = xmalloc(sizeof(srun_info_t));
 	srun->key = xmalloc(sizeof(srun_key_t));
-	srun->key->len = SLURM_IO_KEY_SIZE;
-	srun->key->data = xmalloc(SLURM_IO_KEY_SIZE);
 
 	debug("sizeof(srun_info_t) = %d, sizeof(slurm_addr_t) = %d",
 	      (int) sizeof(srun_info_t), (int) sizeof(slurm_addr_t));
 	safe_read(fd, &srun->ioaddr, sizeof(slurm_addr_t));
 	safe_read(fd, &srun->resp_addr, sizeof(slurm_addr_t));
-	safe_read(fd, srun->key->data, SLURM_IO_KEY_SIZE);
+	safe_read(fd, &srun->key->len, sizeof(uint32_t));
+	srun->key->data = xmalloc(srun->key->len);
+	safe_read(fd, srun->key->data, srun->key->len);
 	safe_read(fd, &srun->protocol_version, sizeof(uint16_t));
 
 	if (!srun->protocol_version)
