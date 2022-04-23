@@ -214,6 +214,7 @@ struct slurm_job_credential {
 
 	char     *signature; 	/* credential signature			*/
 	uint32_t siglen;	/* signature length in bytes		*/
+	bool verified;		/* credential has been verified successfully */
 };
 
 typedef struct {
@@ -259,6 +260,13 @@ static bool enable_nss_slurm = false;
 static bool enable_send_gids = true;
 
 /*
+ * Verification context used in slurmd during credential unpack operations.
+ * Needs to be a global here since we don't want to modify the entire
+ * unpack chain ahead of slurm_cred_unpack() to pass this around.
+ */
+static slurm_cred_ctx_t verifier_ctx = NULL;
+
+/*
  * Static prototypes:
  */
 
@@ -287,8 +295,9 @@ static bool _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
 static int _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 			    uint16_t protocol_version);
-static int _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *c,
-					uint16_t protocol_version);
+static void _cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
+				   void *start, uint32_t len,
+				   uint16_t protocol_version);
 
 static int _slurm_cred_init(void);
 static int _slurm_cred_fini(void);
@@ -455,7 +464,6 @@ fail:
 	return NULL;
 }
 
-
 slurm_cred_ctx_t
 slurm_cred_verifier_ctx_create(const char *path)
 {
@@ -476,6 +484,8 @@ slurm_cred_verifier_ctx_create(const char *path)
 	_verifier_ctx_init(ctx);
 
 	slurm_mutex_unlock(&ctx->mutex);
+
+	verifier_ctx = ctx;
 	return ctx;
 
 fail:
@@ -886,7 +896,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
 
 	/* NOTE: the verification checks that the credential was
 	 * created by SlurmUser or root */
-	if (_slurm_cred_verify_signature(ctx, cred, protocol_version) < 0) {
+	if (!cred->verified) {
 		slurm_seterrno(ESLURMD_INVALID_JOB_CREDENTIAL);
 		goto error;
 	}
@@ -1366,8 +1376,12 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	char *bit_fmt_str = NULL;
 	char       **sigp;
 	uint32_t tot_core_cnt;
+	uint32_t cred_start, cred_len;
 
 	xassert(buffer != NULL);
+
+	/* Save current buffer position here, use it later to verify cred. */
+	cred_start = get_buf_offset(buffer);
 
 	cred = _slurm_cred_alloc();
 	slurm_mutex_lock(&cred->mutex);
@@ -1458,6 +1472,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->selinux_context, &len, buffer);
 
 		/* "sigp" must be last */
+		cred_len = get_buf_offset(buffer) - cred_start;
 		sigp = (char **) &cred->signature;
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
 		cred->siglen = len;
@@ -1547,6 +1562,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->selinux_context, &len, buffer);
 
 		/* "sigp" must be last */
+		cred_len = get_buf_offset(buffer) - cred_start;
 		sigp = (char **) &cred->signature;
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
 		cred->siglen = len;
@@ -1626,6 +1642,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->job_hostlist, &len, buffer);
 
 		/* "sigp" must be last */
+		cred_len = get_buf_offset(buffer) - cred_start;
 		sigp = (char **) &cred->signature;
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
 		cred->siglen = len;
@@ -1636,6 +1653,18 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		goto unpack_error;
 	}
 	slurm_mutex_unlock(&cred->mutex);
+
+	/*
+	 * Using the saved position, verify the credential.
+	 * This avoids needing to re-pack the entire thing just to
+	 * cross-check that the signature matches up later.
+	 * (Only done in slurmd.)
+	 */
+	if (verifier_ctx)
+		_cred_verify_signature(verifier_ctx, cred,
+				       get_buf_data(buffer) + cred_start,
+				       cred_len, protocol_version);
+
 	return cred;
 
 unpack_error:
@@ -1790,6 +1819,7 @@ _slurm_cred_alloc(void)
 	slurm_mutex_init(&cred->mutex);
 	cred->uid = (uid_t) -1;
 	cred->gid = (gid_t) -1;
+	cred->verified = false;
 
 	cred->magic = CRED_MAGIC;
 
@@ -1819,36 +1849,30 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 	return SLURM_SUCCESS;
 }
 
-static int
-_slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
-			     uint16_t protocol_version)
+static void _cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
+				   void *start, uint32_t len,
+				   uint16_t protocol_version)
 {
-	int            rc;
-	buf_t *buffer = init_buf(4096);
+	int rc;
 
 	debug("Checking credential with %u bytes of sig data", cred->siglen);
-	_pack_cred(cred, buffer, protocol_version);
 
-	rc = (*(ops.cred_verify_sign))(ctx->key,
-				       get_buf_data(buffer),
-				       get_buf_offset(buffer),
+	rc = (*(ops.cred_verify_sign))(ctx->key, start, len,
 				       cred->signature,
 				       cred->siglen);
 	if (rc && _exkey_is_valid(ctx)) {
-		rc = (*(ops.cred_verify_sign))(ctx->exkey,
-					       get_buf_data(buffer),
-					       get_buf_offset(buffer),
+		rc = (*(ops.cred_verify_sign))(ctx->exkey, start, len,
 					       cred->signature,
 					       cred->siglen);
 	}
-	free_buf(buffer);
 
 	if (rc) {
 		error("Credential signature check: %s",
 		      (*(ops.cred_str_error))(rc));
-		return SLURM_ERROR;
+		return;
 	}
-	return SLURM_SUCCESS;
+
+	cred->verified = true;
 }
 
 
