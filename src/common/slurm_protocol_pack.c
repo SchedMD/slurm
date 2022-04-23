@@ -8016,6 +8016,8 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 					   uint16_t protocol_version)
 {
 	int i = 0;
+	uint16_t cred_version =
+		msg->cred_version ? msg->cred_version : protocol_version;
 
 	xassert(msg);
 
@@ -8064,7 +8066,8 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack16(msg->job_core_spec, buffer);
 		pack16(msg->accel_bind_type, buffer);
 
-		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		pack16(cred_version, buffer);
+		slurm_cred_pack(msg->cred, buffer, cred_version);
 		for (i = 0; i < msg->nnodes; i++) {
 			pack16(msg->tasks_to_launch[i], buffer);
 			pack32_array(msg->global_task_ids[i],
@@ -8392,7 +8395,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack16(&msg->job_core_spec, buffer);
 		safe_unpack16(&msg->accel_bind_type, buffer);
 
-		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
+		safe_unpack16(&msg->cred_version, buffer);
+		if (!(msg->cred = slurm_cred_unpack(buffer, msg->cred_version)))
 			goto unpack_error;
 		safe_xcalloc(msg->tasks_to_launch, msg->nnodes,
 			     sizeof(uint16_t));
@@ -8541,6 +8545,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack16(&msg->job_core_spec, buffer);
 		safe_unpack16(&msg->accel_bind_type, buffer);
 
+		msg->cred_version = protocol_version;
 		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
 			goto unpack_error;
 		safe_xcalloc(msg->tasks_to_launch, msg->nnodes,
@@ -8689,6 +8694,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack16(&msg->job_core_spec, buffer);
 		safe_unpack16(&msg->accel_bind_type, buffer);
 
+		msg->cred_version = protocol_version;
 		if (!(msg->cred = slurm_cred_unpack(buffer, protocol_version)))
 			goto unpack_error;
 		safe_xcalloc(msg->tasks_to_launch, msg->nnodes,
@@ -9852,6 +9858,8 @@ static void
 _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 			   uint16_t protocol_version)
 {
+	uint16_t cred_version =
+		msg->cred_version ? msg->cred_version : protocol_version;
 	xassert(msg);
 
 	if (msg->script_buf)
@@ -9910,7 +9918,8 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 
 		pack64(msg->job_mem, buffer);
 
-		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		pack16(cred_version, buffer);
+		slurm_cred_pack(msg->cred, buffer, cred_version);
 
 		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
 					     protocol_version);
@@ -10140,8 +10149,9 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 
 		safe_unpack64(&launch_msg_ptr->job_mem, buffer);
 
+		safe_unpack16(&launch_msg_ptr->cred_version, buffer);
 		if (!(launch_msg_ptr->cred = slurm_cred_unpack(
-			      buffer, protocol_version)))
+			      buffer, launch_msg_ptr->cred_version)))
 			goto unpack_error;
 
 		if (select_g_select_jobinfo_unpack(&launch_msg_ptr->
@@ -10232,6 +10242,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 
 		safe_unpack64(&launch_msg_ptr->job_mem, buffer);
 
+		launch_msg_ptr->cred_version = protocol_version;
 		if (!(launch_msg_ptr->cred = slurm_cred_unpack(
 			      buffer, protocol_version)))
 			goto unpack_error;
@@ -10332,6 +10343,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 
 		safe_unpack64(&launch_msg_ptr->job_mem, buffer);
 
+		launch_msg_ptr->cred_version = protocol_version;
 		if (!(launch_msg_ptr->cred = slurm_cred_unpack(
 			      buffer, protocol_version)))
 			goto unpack_error;

@@ -912,6 +912,7 @@ typedef struct launch_tasks_request_msg {
 
 	uint16_t   slurmd_debug; /* remote slurmd debug level */
 
+	uint16_t cred_version;	/* job credential protocol_version */
 	slurm_cred_t *cred;	/* job credential            */
 	dynamic_plugin_data_t *switch_job; /* switch credential for the job */
 	List options;  /* Arbitrary job options */
@@ -1113,6 +1114,7 @@ typedef struct batch_job_launch_msg {
 	char **environment;	/* environment variables to set for job,
 				 *   name=value pairs, one per line */
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
+	uint16_t cred_version;	/* job credential protocol_version */
 	slurm_cred_t *cred;
 	uint8_t open_mode;	/* stdout/err append or truncate */
 	uint8_t overcommit;	/* if resources being over subscribed */
