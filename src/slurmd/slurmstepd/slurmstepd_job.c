@@ -243,37 +243,29 @@ static void _task_info_array_destroy(stepd_step_rec_t *job)
 
 static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *job)
 {
-	slurm_cred_arg_t cred_arg;
-	slurm_cred_get_args(cred, &cred_arg);
+	slurm_cred_arg_t *cred_arg = slurm_cred_get_args(cred);
 
 	/*
 	 * This may have been filed in already from batch_job_launch_msg_t
 	 * or launch_tasks_request_msg_t.
 	 */
-	if (!job->user_name) {
-		job->user_name = cred_arg.pw_name;
-		cred_arg.pw_name = NULL;
-	}
+	if (!job->user_name)
+		job->user_name = xstrdup(cred_arg->pw_name);
 
-	job->pw_gecos = cred_arg.pw_gecos;
-	cred_arg.pw_gecos = NULL;
-	job->pw_dir = cred_arg.pw_dir;
-	cred_arg.pw_dir = NULL;
-	job->pw_shell = cred_arg.pw_shell;
-	cred_arg.pw_shell = NULL;
+	job->pw_gecos = xstrdup(cred_arg->pw_gecos);
+	job->pw_dir = xstrdup(cred_arg->pw_dir);
+	job->pw_shell = xstrdup(cred_arg->pw_shell);
 
-	job->ngids = cred_arg.ngids;
-	job->gids = cred_arg.gids;
-	cred_arg.gids = NULL;
-	job->gr_names = cred_arg.gr_names;
-	cred_arg.gr_names = NULL;
+	job->ngids = cred_arg->ngids;
+	job->gids = cred_arg->gids;
+	cred_arg->gids = copy_gids(cred_arg->ngids, cred_arg->gids);
+	job->gr_names = copy_gr_names(cred_arg->ngids, cred_arg->gr_names);
 
-	job->selinux_context = cred_arg.selinux_context;
-	cred_arg.selinux_context = NULL;
+	job->selinux_context = xstrdup(cred_arg->selinux_context);
 
-	job->alias_list = xstrdup(cred_arg.job_alias_list);
+	job->alias_list = xstrdup(cred_arg->job_alias_list);
 
-	slurm_cred_free_args(&cred_arg);
+	slurm_cred_free_args(cred_arg);
 }
 
 /* create a slurmd job structure from a launch tasks message */

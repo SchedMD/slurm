@@ -226,7 +226,7 @@ slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg);
 void slurm_cred_free_args(slurm_cred_arg_t *arg);
 
 /* Make a copy of the credential's arguments */
-int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg);
+extern slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred);
 
 /*
  * Return a pointer specific field from a job credential
@@ -250,8 +250,8 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred,
 			      uint64_t *job_mem_limit,
 			      uint64_t *step_mem_limit);
 /*
- * Verify the signed credential `cred,' and return cred contents in
- * the cred_arg structure. The credential is cached and cannot be reused.
+ * Verify the signed credential 'cred', and return cred contents.
+ * The credential is cached and cannot be reused.
  *
  * Will perform at least the following checks:
  *   - Credential signature is valid
@@ -260,8 +260,9 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred,
  *   - Credential has not been revoked
  *   - Credential has not been replayed
  */
-int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
-		      slurm_cred_arg_t *arg, uint16_t protocol_version);
+extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
+					   slurm_cred_t *cred,
+					   uint16_t protocol_version);
 
 /*
  * Rewind the last play of credential cred. This allows the credential

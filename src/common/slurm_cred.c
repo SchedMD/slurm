@@ -848,6 +848,8 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->job_mem_alloc_rep_count);
 	xfree(arg->step_mem_alloc);
 	xfree(arg->step_mem_alloc_rep_count);
+
+	xfree(arg);
 }
 
 static void _copy_cred_to_arg(slurm_cred_t *cred, slurm_cred_arg_t *arg)
@@ -921,10 +923,10 @@ static void _copy_cred_to_arg(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->selinux_context = xstrdup(cred->selinux_context);
 }
 
-int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
+slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred)
 {
+	slurm_cred_arg_t *arg = xmalloc(sizeof(*arg));
 	xassert(cred != NULL);
-	xassert(arg  != NULL);
 
 	/*
 	 * set arguments to cred contents
@@ -933,7 +935,7 @@ int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	_copy_cred_to_arg(cred, arg);
 	slurm_mutex_unlock(&cred->mutex);
 
-	return SLURM_SUCCESS;
+	return arg;
 }
 
 /*
@@ -966,18 +968,19 @@ extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
 	return rc;
 }
 
-extern int
-slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
-		  slurm_cred_arg_t *arg, uint16_t protocol_version)
+extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
+					   slurm_cred_t *cred,
+					   uint16_t protocol_version)
 {
+	slurm_cred_arg_t *arg = NULL;
 	time_t now = time(NULL);
 	int errnum;
 
 	xassert(ctx  != NULL);
 	xassert(cred != NULL);
-	xassert(arg  != NULL);
+
 	if (_slurm_cred_init() < 0)
-		return SLURM_ERROR;
+		return NULL;
 
 	slurm_mutex_lock(&cred->mutex);
 	slurm_mutex_lock(&ctx->mutex);
@@ -1012,18 +1015,19 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 
 	slurm_mutex_unlock(&ctx->mutex);
 
+	arg = xmalloc(sizeof(slurm_cred_arg_t));
 	_copy_cred_to_arg(cred, arg);
 
 	slurm_mutex_unlock(&cred->mutex);
 
-	return SLURM_SUCCESS;
+	return arg;
 
 error:
 	errnum = slurm_get_errno();
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_mutex_unlock(&cred->mutex);
 	slurm_seterrno(errnum);
-	return SLURM_ERROR;
+	return NULL;
 }
 
 

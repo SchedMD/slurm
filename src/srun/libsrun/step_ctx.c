@@ -84,50 +84,47 @@ static void _signal_while_allocating(int signo)
 
 static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 {
-	slurm_cred_arg_t arg;
 	uint32_t node_cnt = ctx->step_resp->step_layout->node_cnt;
+	slurm_cred_arg_t *arg = xmalloc(sizeof(*arg));
 
-	memset(&arg, 0, sizeof(slurm_cred_arg_t));
-	memcpy(&arg.step_id, &ctx->step_req->step_id, sizeof(arg.step_id));
-	arg.uid            = ctx->user_id;
+	memcpy(&arg->step_id, &ctx->step_req->step_id, sizeof(arg->step_id));
+	arg->uid = ctx->user_id;
 
-	arg.job_nhosts     = node_cnt;
-	arg.job_hostlist = ctx->step_resp->step_layout->node_list;
-	arg.job_mem_limit  = 0;
-	arg.job_mem_alloc = xmalloc(sizeof(uint64_t));
-	arg.job_mem_alloc[0] = 0;
-	arg.job_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
-	arg.job_mem_alloc_rep_count[0] = node_cnt;
-	arg.job_mem_alloc_size = 1;
+	arg->job_nhosts = node_cnt;
+	arg->job_hostlist = ctx->step_resp->step_layout->node_list;
+	arg->job_mem_limit = 0;
+	arg->job_mem_alloc = xmalloc(sizeof(uint64_t));
+	arg->job_mem_alloc[0] = 0;
+	arg->job_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
+	arg->job_mem_alloc_rep_count[0] = node_cnt;
+	arg->job_mem_alloc_size = 1;
 
-	arg.step_hostlist = ctx->step_req->node_list;
-	arg.step_mem_limit = 0;
-	arg.step_mem_alloc = xmalloc(sizeof(uint64_t));
-	arg.step_mem_alloc[0] = 0;
-	arg.step_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
-	arg.step_mem_alloc_rep_count[0] = node_cnt;
-	arg.step_mem_alloc_size = 1;
+	arg->step_hostlist = ctx->step_req->node_list;
+	arg->step_mem_limit = 0;
+	arg->step_mem_alloc = xmalloc(sizeof(uint64_t));
+	arg->step_mem_alloc[0] = 0;
+	arg->step_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
+	arg->step_mem_alloc_rep_count[0] = node_cnt;
+	arg->step_mem_alloc_size = 1;
 
-	arg.job_gres_list     = NULL;
-	arg.job_constraints   = NULL;
-	arg.job_core_bitmap   = bit_alloc(node_cnt);
-	bit_nset(arg.job_core_bitmap,  0, node_cnt-1);
-	arg.step_core_bitmap  = bit_alloc(node_cnt);
-	bit_nset(arg.step_core_bitmap, 0, node_cnt-1);
+	arg->job_core_bitmap = bit_alloc(node_cnt);
+	bit_nset(arg->job_core_bitmap, 0, node_cnt - 1);
+	arg->step_core_bitmap  = bit_alloc(node_cnt);
+	bit_nset(arg->step_core_bitmap, 0, node_cnt - 1);
 
-	arg.cores_per_socket = xmalloc(sizeof(uint16_t));
-	arg.cores_per_socket[0] = 1;
-	arg.sockets_per_node = xmalloc(sizeof(uint16_t));
-	arg.sockets_per_node[0] = 1;
-	arg.sock_core_rep_count = xmalloc(sizeof(uint32_t));
-	arg.sock_core_rep_count[0] = node_cnt;
+	arg->cores_per_socket = xmalloc(sizeof(uint16_t));
+	arg->cores_per_socket[0] = 1;
+	arg->sockets_per_node = xmalloc(sizeof(uint16_t));
+	arg->sockets_per_node[0] = 1;
+	arg->sock_core_rep_count = xmalloc(sizeof(uint32_t));
+	arg->sock_core_rep_count[0] = node_cnt;
 
-	ctx->step_resp->cred = slurm_cred_faker(&arg);
+	ctx->step_resp->cred = slurm_cred_faker(arg);
 
 	/* Don't free, this memory will be free'd later */
-	arg.job_hostlist = NULL;
-	arg.step_hostlist = NULL;
-	slurm_cred_free_args(&arg);
+	arg->job_hostlist = NULL;
+	arg->step_hostlist = NULL;
+	slurm_cred_free_args(arg);
 }
 
 /*

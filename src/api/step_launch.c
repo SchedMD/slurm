@@ -1574,7 +1574,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 uint32_t timeout, char *nodelist)
 {
 #ifdef HAVE_FRONT_END
-	slurm_cred_arg_t cred_args;
+	slurm_cred_arg_t *cred_args;
 #endif
 	slurm_msg_t msg;
 	List ret_list = NULL;
@@ -1612,10 +1612,10 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 		msg.protocol_version = ctx->step_resp->use_protocol_ver;
 
 #ifdef HAVE_FRONT_END
-	slurm_cred_get_args(ctx->step_resp->cred, &cred_args);
-	//info("hostlist=%s", cred_args.step_hostlist);
-	ret_list = slurm_send_recv_msgs(cred_args.step_hostlist, &msg, timeout);
-	slurm_cred_free_args(&cred_args);
+	cred_args = slurm_cred_get_args(ctx->step_resp->cred);
+	//info("hostlist=%s", cred_args->step_hostlist);
+	ret_list = slurm_send_recv_msgs(cred_args->step_hostlist, &msg, timeout);
+	slurm_cred_free_args(cred_args);
 #else
 	ret_list = slurm_send_recv_msgs(nodelist, &msg, timeout);
 #endif

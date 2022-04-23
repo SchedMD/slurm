@@ -173,11 +173,12 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		setenvf(&env, "SLURM_SCRIPT_CONTEXT", "prolog_slurmd");
 
 	if (cred) {
-		slurm_cred_arg_t cred_arg;
-		slurm_cred_get_args(cred, &cred_arg);
+		slurm_cred_arg_t *cred_arg = slurm_cred_get_args(cred);
+
 		setenvf(&env, "SLURM_JOB_CONSTRAINTS", "%s",
-			cred_arg.job_constraints);
-		slurm_cred_free_args(&cred_arg);
+			cred_arg->job_constraints);
+
+		slurm_cred_free_args(cred_arg);
 	}
 
 	return env;

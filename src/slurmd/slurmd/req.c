@@ -943,7 +943,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 				 uint16_t protocol_version,
 				 bool super_user)
 {
-	slurm_cred_arg_t arg;
+	slurm_cred_arg_t *arg;
 	hostset_t	s_hset = NULL;
 	int		host_index = -1;
 	slurm_cred_t    *cred = req->cred;
@@ -970,38 +970,38 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	/*
 	 * First call slurm_cred_verify() so that all credentials are checked
 	 */
-	if (slurm_cred_verify(conf->vctx, cred, &arg, protocol_version) < 0)
+	if (!(arg = slurm_cred_verify(conf->vctx, cred, protocol_version)))
 		return SLURM_ERROR;
-	xassert(arg.job_mem_alloc);
+	xassert(arg->job_mem_alloc);
 
-	if ((arg.step_id.job_id != jobid) || (arg.step_id.step_id != stepid)) {
+	if ((arg->step_id.job_id != jobid) || (arg->step_id.step_id != stepid)) {
 		error("job credential for %ps, expected %ps",
-		      &arg.step_id, &req->step_id);
+		      &arg->step_id, &req->step_id);
 		goto fail;
 	}
 
-	if (arg.uid != req->uid) {
+	if (arg->uid != req->uid) {
 		error("job %u credential created for uid %u, expected %u",
-		      arg.step_id.job_id, arg.uid, req->uid);
+		      arg->step_id.job_id, arg->uid, req->uid);
 		goto fail;
 	}
 
-	if (arg.gid != req->gid) {
+	if (arg->gid != req->gid) {
 		error("job %u credential created for gid %u, expected %u",
-		      arg.step_id.job_id, arg.gid, req->gid);
+		      arg->step_id.job_id, arg->gid, req->gid);
 		goto fail;
 	}
 
 	xfree(req->user_name);
-	if (arg.pw_name)
-		req->user_name = xstrdup(arg.pw_name);
+	if (arg->pw_name)
+		req->user_name = xstrdup(arg->pw_name);
 	else
 		req->user_name = uid_to_string(req->uid);
 
 	xfree(req->gids);
-	if (arg.ngids) {
-		req->ngids = arg.ngids;
-		req->gids = copy_gids(arg.ngids, arg.gids);
+	if (arg->ngids) {
+		req->ngids = arg->ngids;
+		req->gids = copy_gids(arg->ngids, arg->gids);
 	} else {
 		/*
 		 * The gids were not sent in the cred, or dealing with an older
@@ -1014,21 +1014,20 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	/*
 	 * Check that credential is valid for this host
 	 */
-	if (!(s_hset = hostset_create(arg.step_hostlist))) {
+	if (!(s_hset = hostset_create(arg->step_hostlist))) {
 		error("Unable to parse credential hostlist: `%s'",
-		      arg.step_hostlist);
+		      arg->step_hostlist);
 		goto fail;
 	}
 
 	if (!hostset_within(s_hset, conf->node_name)) {
-		error("Invalid %ps credential for user %u: "
-		      "host %s not in hostset %s",
-		      &arg.step_id, arg.uid,
-		      conf->node_name, arg.step_hostlist);
+		error("Invalid %ps credential for user %u: host %s not in hostset %s",
+		      &arg->step_id, arg->uid, conf->node_name,
+		      arg->step_hostlist);
 		goto fail;
 	}
 
-	if ((arg.job_nhosts > 0) && (tasks_to_launch > 0)) {
+	if ((arg->job_nhosts > 0) && (tasks_to_launch > 0)) {
 		uint32_t hi, i, i_first_bit=0, i_last_bit=0, j;
 		bool cpu_log = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
 		bool setup_x11 = false;
@@ -1039,17 +1038,17 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		hostset_t j_hset;
 		/* Determine the CPU count based upon this node's index into
 		 * the _job's_ allocation (job's hostlist and core_bitmap) */
-		if (!(j_hset = hostset_create(arg.job_hostlist))) {
+		if (!(j_hset = hostset_create(arg->job_hostlist))) {
 			error("Unable to parse credential hostlist: `%s'",
-			      arg.job_hostlist);
+			      arg->job_hostlist);
 			goto fail;
 		}
 		host_index = hostset_find(j_hset, conf->node_name);
 		hostset_destroy(j_hset);
 
-		if ((host_index < 0) || (host_index >= arg.job_nhosts)) {
-			error("job cr credential invalid host_index %d for "
-			      "job %u", host_index, arg.step_id.job_id);
+		if ((host_index < 0) || (host_index >= arg->job_nhosts)) {
+			error("job cr credential invalid host_index %d for job %u",
+			      host_index, arg->step_id.job_id);
 			goto fail;
 		}
 #endif
@@ -1059,16 +1058,16 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		 * host_index already.
 		 *
 		 */
-		if (!arg.x11)
+		if (!arg->x11)
 			setup_x11 = false;
-		else if (arg.x11 & X11_FORWARD_ALL)
+		else if (arg->x11 & X11_FORWARD_ALL)
 			setup_x11 = true;
 		/* assumes that the first node is the batch host */
-		else if (((arg.x11 & X11_FORWARD_FIRST) ||
-			  (arg.x11 & X11_FORWARD_BATCH))
+		else if (((arg->x11 & X11_FORWARD_FIRST) ||
+			  (arg->x11 & X11_FORWARD_BATCH))
 			 && (host_index == 0))
 			setup_x11 = true;
-		else if ((arg.x11 & X11_FORWARD_LAST)
+		else if ((arg->x11 & X11_FORWARD_LAST)
 			 && (host_index == (req->nnodes - 1)))
 			setup_x11 = true;
 
@@ -1085,29 +1084,29 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 
 		hi = host_index + 1;	/* change from 0-origin to 1-origin */
 		for (i=0; hi; i++) {
-			if (hi > arg.sock_core_rep_count[i]) {
-				i_first_bit += arg.sockets_per_node[i] *
-					arg.cores_per_socket[i] *
-					arg.sock_core_rep_count[i];
-				hi -= arg.sock_core_rep_count[i];
+			if (hi > arg->sock_core_rep_count[i]) {
+				i_first_bit += arg->sockets_per_node[i] *
+					arg->cores_per_socket[i] *
+					arg->sock_core_rep_count[i];
+				hi -= arg->sock_core_rep_count[i];
 			} else {
-				i_first_bit += arg.sockets_per_node[i] *
-					arg.cores_per_socket[i] *
+				i_first_bit += arg->sockets_per_node[i] *
+					arg->cores_per_socket[i] *
 					(hi - 1);
 				i_last_bit = i_first_bit +
-					arg.sockets_per_node[i] *
-					arg.cores_per_socket[i];
+					arg->sockets_per_node[i] *
+					arg->cores_per_socket[i];
 				break;
 			}
 		}
 		/* Now count the allocated processors */
 		for (i=i_first_bit, j=0; i<i_last_bit; i++, j++) {
 			char *who_has = NULL;
-			if (bit_test(arg.job_core_bitmap, i)) {
+			if (bit_test(arg->job_core_bitmap, i)) {
 				job_cpus++;
 				who_has = "Job";
 			}
-			if (bit_test(arg.step_core_bitmap, i)) {
+			if (bit_test(arg->step_core_bitmap, i)) {
 				step_cpus++;
 				who_has = "Step";
 			}
@@ -1142,10 +1141,9 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		if (tasks_to_launch > step_cpus) {
 			/* This is expected with the --overcommit option
 			 * or hyperthreads */
-			debug("cons_res: More than one tasks per logical "
-			      "processor (%d > %u) on host [%ps %ld %s] ",
-			      tasks_to_launch, step_cpus, &arg.step_id,
-			      (long) arg.uid, arg.step_hostlist);
+			debug("cons_res: More than one tasks per logical processor (%d > %u) on host [%ps %u %s]",
+			      tasks_to_launch, step_cpus, &arg->step_id,
+			      arg->uid, arg->step_hostlist);
 		}
 	} else {
 		step_cpus = 1;
@@ -1160,18 +1158,18 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 			   &req->step_mem_lim);
 
 	/* Reset the CPU count on this node to correct value. */
-	req->job_core_spec = arg.job_core_spec;
+	req->job_core_spec = arg->job_core_spec;
 	req->node_cpus = step_cpus;
 
 	*step_hset = s_hset;
-	slurm_cred_free_args(&arg);
+	slurm_cred_free_args(arg);
 	return SLURM_SUCCESS;
 
 fail:
 	if (s_hset)
 		hostset_destroy(s_hset);
 	*step_hset = NULL;
-	slurm_cred_free_args(&arg);
+	slurm_cred_free_args(arg);
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 }
 
@@ -1855,12 +1853,10 @@ _get_user_env(batch_job_launch_msg_t *req)
 static void
 _set_batch_job_limits(slurm_msg_t *msg)
 {
-	slurm_cred_arg_t arg;
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
+	slurm_cred_arg_t *arg = slurm_cred_get_args(req->cred);
 
-	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS)
-		return;
-	req->job_core_spec = arg.job_core_spec;	/* Prevent user reset */
+	req->job_core_spec = arg->job_core_spec; /* Prevent user reset */
 
 	slurm_cred_get_mem(req->cred, conf->node_name, __func__, &req->job_mem,
 			   NULL);
@@ -1869,11 +1865,11 @@ _set_batch_job_limits(slurm_msg_t *msg)
 	 * handle x11 settings here since this is the only access to the cred
 	 * on the batch step.
 	 */
-	if ((arg.x11 & X11_FORWARD_ALL) || (arg.x11 & X11_FORWARD_BATCH))
+	if ((arg->x11 & X11_FORWARD_ALL) || (arg->x11 & X11_FORWARD_BATCH))
 		_setup_x11_display(req->job_id, SLURM_BATCH_SCRIPT,
 				   &req->environment, &req->envc);
 
-	slurm_cred_free_args(&arg);
+	slurm_cred_free_args(arg);
 }
 
 /* These functions prevent a possible race condition if the batch script's
@@ -1939,28 +1935,26 @@ static int _notify_slurmctld_prolog_fini(
 static int _convert_job_mem(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
-	slurm_cred_arg_t arg;
-	int rc;
+	slurm_cred_arg_t *arg;
 
-	rc = slurm_cred_verify(conf->vctx, req->cred, &arg,
-			       msg->protocol_version);
-	if (rc < 0) {
+	if (!(arg = slurm_cred_verify(conf->vctx, req->cred,
+				      msg->protocol_version))) {
 		error("%s: slurm_cred_verify failed: %m", __func__);
 		return errno;
 	}
 
-	if (req->nnodes > arg.job_nhosts) {
+	if (req->nnodes > arg->job_nhosts) {
 		error("%s: request node count:%u is larger than cred job node count:%u",
-		      __func__, req->nnodes, arg.job_nhosts);
+		      __func__, req->nnodes, arg->job_nhosts);
 		return ESLURM_INVALID_NODE_COUNT;
 	}
 
-	req->nnodes = arg.job_nhosts;
+	req->nnodes = arg->job_nhosts;
 
 	slurm_cred_get_mem(req->cred, conf->node_name, __func__,
 			   &req->job_mem_limit, NULL);
 
-	slurm_cred_free_args(&arg);
+	slurm_cred_free_args(arg);
 	return SLURM_SUCCESS;
 }
 
@@ -2282,7 +2276,7 @@ notify_result:
 
 static void _rpc_batch_job(slurm_msg_t *msg)
 {
-	slurm_cred_arg_t cred_arg;
+	slurm_cred_arg_t *cred_arg;
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 	bool     first_job_run;
 	int      rc = SLURM_SUCCESS, node_id = 0;
@@ -2312,23 +2306,23 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	slurm_cred_get_args(req->cred, &cred_arg);
+	cred_arg = slurm_cred_get_args(req->cred);
 	xfree(req->user_name); /* Never sent by slurmctld */
 	/* If available, use the cred to fill in username. */
-	if (cred_arg.pw_name)
-		req->user_name = xstrdup(cred_arg.pw_name);
+	if (cred_arg->pw_name)
+		req->user_name = xstrdup(cred_arg->pw_name);
 	else
 		req->user_name = uid_to_string(req->uid);
 
 	xfree(req->gids); /* Never sent by slurmctld */
 	/* If available, use the cred to fill in groups */
-	if (cred_arg.ngids) {
-		req->ngids = cred_arg.ngids;
-		req->gids = copy_gids(cred_arg.ngids, cred_arg.gids);
+	if (cred_arg->ngids) {
+		req->ngids = cred_arg->ngids;
+		req->gids = copy_gids(cred_arg->ngids, cred_arg->gids);
 	} else
 		req->ngids = group_cache_lookup(req->uid, req->gid,
 						req->user_name, &req->gids);
-	slurm_cred_free_args(&cred_arg);
+	slurm_cred_free_args(cred_arg);
 
 	task_g_slurmd_batch_request(req);	/* determine task affinity */
 
