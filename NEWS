@@ -37,6 +37,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - correct association QOS list parsing for updates.
  -- Fix rollup incorrectly divying up unused reservation time between
     associations.
+ -- slurmrestd - add SLURMRESTD_SECURITY=disable_unshare_files environment
+    variable.
 
 * Changes in Slurm 22.05.2
 ==========================

@@ -103,6 +103,7 @@ static plugrack_t *auth_rack = NULL;
 
 static char *oas_specs = NULL;
 bool unshare_sysv = true;
+bool unshare_files = true;
 bool check_user = true;
 
 /* SIGPIPE handler - mostly a no-op */
@@ -153,6 +154,9 @@ static void _parse_env(void)
 		while (token) {
 			if (!xstrcasecmp(token, "disable_unshare_sysv")) {
 				unshare_sysv = false;
+			} else if (!xstrcasecmp(token,
+						"disable_unshare_files")) {
+				unshare_files = false;
 			} else if (!xstrcasecmp(token, "disable_user_check")) {
 				check_user = false;
 			} else {
@@ -304,7 +308,7 @@ static void _lock_down(void)
 		fatal("Unable to disable new privileges: %m");
 	if (unshare_sysv && unshare(CLONE_SYSVSEM))
 		fatal("Unable to unshare System V namespace: %m");
-	if (unshare(CLONE_FILES))
+	if (unshare_files && unshare(CLONE_FILES))
 		fatal("Unable to unshare file descriptors: %m");
 	if (gid && setgroups(0, NULL))
 		fatal("Unable to drop supplementary groups: %m");
