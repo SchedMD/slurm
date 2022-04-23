@@ -19187,6 +19187,8 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 		setenvf(&my_env, "SLURM_JOB_RESERVATION", "%s",
 			job_ptr->resv_ptr->name);
 
+	setenvf(&my_env, "SLURM_JOB_RESTART_COUNT", "%d", job_ptr->restart_cnt);
+
 	setenvf(&my_env, "SLURM_JOB_UID", "%u", job_ptr->user_id);
 	name = uid_to_string((uid_t) job_ptr->user_id);
 	setenvf(&my_env, "SLURM_JOB_USER", "%s", name);
