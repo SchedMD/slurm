@@ -1959,7 +1959,6 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		       uint16_t protocol_version)
 {
-	uint32_t cred_uid = (uint32_t) cred->uid;
 	uint32_t tot_core_cnt = 0;
 	/*
 	 * The gr_names array is optional. If the array exists the length
@@ -1969,7 +1968,7 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
-		pack32(cred_uid, buffer);
+		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
 		packstr(cred->pw_name, buffer);
 		packstr(cred->pw_gecos, buffer);
@@ -2030,7 +2029,7 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		packstr(cred->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
-		pack32(cred_uid, buffer);
+		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
 		packstr(cred->pw_name, buffer);
 		packstr(cred->pw_gecos, buffer);
@@ -2090,7 +2089,7 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		packstr(cred->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
-		pack32(cred_uid, buffer);
+		pack32(cred->uid, buffer);
 		pack32(cred->gid, buffer);
 		packstr(cred->pw_name, buffer);
 		packstr(cred->pw_gecos, buffer);
