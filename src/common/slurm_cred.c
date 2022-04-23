@@ -166,6 +166,9 @@ struct slurm_cred_context {
 struct slurm_job_credential {
 	int      magic;
 	pthread_mutex_t mutex;
+	buf_t *buffer;		/* packed representation of credential */
+	uint16_t buf_version;	/* version buffer was generated with */
+
 	slurm_step_id_t step_id;/* Job step ID for this credential	*/
 	uid_t     uid;		/* user for which this cred is valid	*/
 	gid_t     gid;		/* user's primary group id 		*/
@@ -296,7 +299,6 @@ static bool _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 static int _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 			    uint16_t protocol_version);
 static void _cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
-				   void *start, uint32_t len,
 				   uint16_t protocol_version);
 
 static int _slurm_cred_init(void);
@@ -970,6 +972,7 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	xfree(cred->step_mem_alloc);
 	xfree(cred->step_mem_alloc_rep_count);
 
+	FREE_NULL_BUFFER(cred->buffer);
 	cred->magic = ~CRED_MAGIC;
 	slurm_mutex_unlock(&cred->mutex);
 	slurm_mutex_destroy(&cred->mutex);
@@ -1360,13 +1363,14 @@ void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 
 	slurm_mutex_lock(&cred->mutex);
 
-	_pack_cred(cred, buffer, protocol_version);
+	xassert(cred->buffer);
+	xassert(cred->buf_version == protocol_version);
+	packbuf(cred->buffer, buffer);
+
 	xassert(cred->siglen > 0);
 	packmem(cred->signature, cred->siglen, buffer);
 
 	slurm_mutex_unlock(&cred->mutex);
-
-	return;
 }
 
 slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
@@ -1655,15 +1659,25 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	slurm_mutex_unlock(&cred->mutex);
 
 	/*
+	 * Both srun and slurmd will unpack the credential just to pack it
+	 * again. Hold onto a buffer with the pre-packed representation.
+	 */
+	if (!running_in_slurmstepd()) {
+		cred->buffer = init_buf(cred_len);
+		cred->buf_version = protocol_version;
+		memcpy(cred->buffer->head, get_buf_data(buffer) + cred_start,
+		       cred_len);
+		cred->buffer->processed = cred_len;
+	}
+
+	/*
 	 * Using the saved position, verify the credential.
 	 * This avoids needing to re-pack the entire thing just to
 	 * cross-check that the signature matches up later.
 	 * (Only done in slurmd.)
 	 */
 	if (verifier_ctx)
-		_cred_verify_signature(verifier_ctx, cred,
-				       get_buf_data(buffer) + cred_start,
-				       cred_len, protocol_version);
+		_cred_verify_signature(verifier_ctx, cred, protocol_version);
 
 	return cred;
 
@@ -1830,16 +1844,16 @@ static int
 _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 		 uint16_t protocol_version)
 {
-	int           rc;
-	buf_t *buffer = init_buf(4096);
+	int rc;
 
-	_pack_cred(cred, buffer, protocol_version);
+	cred->buffer = init_buf(4096);
+	cred->buf_version = protocol_version;
+	_pack_cred(cred, cred->buffer, protocol_version);
 	rc = (*(ops.cred_sign))(ctx->key,
-				get_buf_data(buffer),
-				get_buf_offset(buffer),
+				get_buf_data(cred->buffer),
+				get_buf_offset(cred->buffer),
 				&cred->signature,
 				&cred->siglen);
-	free_buf(buffer);
 
 	if (rc) {
 		error("Credential sign: %s",
@@ -1850,10 +1864,11 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 }
 
 static void _cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
-				   void *start, uint32_t len,
 				   uint16_t protocol_version)
 {
 	int rc;
+	void *start = get_buf_data(cred->buffer);
+	uint32_t len = get_buf_offset(cred->buffer);
 
 	debug("Checking credential with %u bytes of sig data", cred->siglen);
 
