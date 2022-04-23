@@ -792,7 +792,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->sock_core_rep_count = xcalloc(i, sizeof(uint32_t));
 	memcpy(cred->sock_core_rep_count, arg->sock_core_rep_count,
 	       (sizeof(uint32_t) * i));
-	cred->job_constraints = xstrdup(arg->job_alias_list);
+	cred->job_alias_list = xstrdup(arg->job_alias_list);
 	cred->job_constraints = xstrdup(arg->job_constraints);
 	cred->job_nhosts      = arg->job_nhosts;
 	cred->job_hostlist    = xstrdup(arg->job_hostlist);
