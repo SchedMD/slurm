@@ -1526,53 +1526,6 @@ proc reset_qos_usage { cluster qos } {
 ###############################################################
 #
 # NAME
-#	check_wckey_tracking_slurmdbd - checks to see if wckey tracking is enabled in the SlurmDBD
-#
-# SYNOPSIS
-#	check_wckey_tracking_slurmdbd
-#
-# DESCRIPTION
-#	Check to see that wckey tracking is enabled in the SlurmDBD
-#
-# RETURN VALUE
-#	1 if successful, 0 otherwise
-#
-###############################################################
-
-proc check_wckey_tracking_slurmdbd { } {
-	global sacctmgr
-
-	log_user 0
-	set wckey 0
-	set slurmdbd_config 0
-	spawn $sacctmgr show config
-	expect {
-		-re "SlurmDBD configuration" {
-			set slurmdbd_config 1
-			exp_continue
-		}
-		-re "TrackWCKey *= Yes" {
-			if { $slurmdbd_config == 1 } {
-				set wckey 1
-			}
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $wckey
-}
-
-
-###############################################################
-#
-# NAME
 #	check_qos_limits - verifies that the qos limits are correct
 #
 # SYNOPSIS
