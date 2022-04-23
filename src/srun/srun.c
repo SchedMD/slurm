@@ -866,7 +866,8 @@ static void _set_node_alias(srun_job_t *job)
 {
 	char *alias_list = NULL;
 
-	if (job->step_ctx &&
+	if (job &&
+	    job->step_ctx &&
 	    job->step_ctx->step_resp &&
 	    job->step_ctx->step_resp->cred &&
 	    (alias_list = slurm_cred_get_arg(job->step_ctx->step_resp->cred,
