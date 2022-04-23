@@ -2008,6 +2008,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->alias_list		= req->alias_list;
 	launch_req->complete_nodelist	= req->nodes;
 	launch_req->cpus_per_task	= 1;
+	launch_req->cred_version = msg->protocol_version;
 	launch_req->cred		= req->cred;
 	launch_req->cwd			= req->work_dir;
 	launch_req->efname		= "/dev/null";
