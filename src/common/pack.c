@@ -765,6 +765,32 @@ int unpackbool(bool *valp, buf_t *buffer)
 }
 
 /*
+ * Append the contents of the source buffer into the target buffer while
+ * validating buffer size constraints.
+ */
+extern void packbuf(buf_t *source, buf_t *buffer)
+{
+	uint32_t size_val = get_buf_offset(source);
+
+	if (!size_val)
+		return;
+
+	if (remaining_buf(buffer) < size_val) {
+		if ((buffer->size + size_val) > MAX_BUF_SIZE) {
+			error("%s: Buffer size limit exceeded (%u > %u)",
+			      __func__, (buffer->size + size_val),
+			      MAX_BUF_SIZE);
+			return;
+		}
+		buffer->size += size_val;
+		xrealloc_nz(buffer->head, buffer->size);
+	}
+
+	memcpy(&buffer->head[buffer->processed], get_buf_data(source), size_val);
+	buffer->processed += size_val;
+}
+
+/*
  * Given a pointer to memory (valp) and a size (size_val), convert
  * size_val to network byte order and store at buffer followed by
  * the data at valp. Adjust buffer counters.
