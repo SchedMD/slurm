@@ -19066,11 +19066,6 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
 
-	if (job_ptr->details && job_ptr->details->features_use) {
-		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS",
-			"%s", job_ptr->details->features_use);
-	}
-
 	if (is_complete) {
 		exit_code = signal = 0;
 		if (WIFEXITED(job_ptr->exit_code)) {
@@ -19193,6 +19188,10 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	}
 
 	if (job_ptr->details) {
+		if (job_ptr->details->features_use)
+			setenvf(&my_env, "SLURM_JOB_CONSTRAINTS", "%s",
+				job_ptr->details->features_use);
+
 		if (job_ptr->details->std_err)
 			setenvf(&my_env, "SLURM_JOB_STDERR", "%s",
 				job_ptr->details->std_err);
