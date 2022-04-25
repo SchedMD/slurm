@@ -582,7 +582,6 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 		return NULL;
 
 	cred = _slurm_cred_alloc();
-	slurm_mutex_lock(&cred->mutex);
 	xassert(cred->magic == CRED_MAGIC);
 
 	if (arg->sock_core_rep_count) {
@@ -616,12 +615,10 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	_release_cred_gids(arg);
 
 	slurm_mutex_unlock(&ctx->mutex);
-	slurm_mutex_unlock(&cred->mutex);
 
 	return cred;
 
 fail:
-	slurm_mutex_unlock(&cred->mutex);
 	slurm_cred_destroy(cred);
 	return NULL;
 }
