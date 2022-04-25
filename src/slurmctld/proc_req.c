@@ -849,7 +849,7 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 	cred_arg.selinux_context = job_ptr->selinux_context;
 
 	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg,
-					protocol_version);
+					true, protocol_version);
 
 	xfree(cred_arg.job_mem_alloc);
 	xfree(cred_arg.job_mem_alloc_rep_count);

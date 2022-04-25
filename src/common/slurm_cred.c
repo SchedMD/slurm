@@ -597,10 +597,8 @@ slurm_cred_ctx_key_update(slurm_cred_ctx_t ctx, const char *path)
 		return _ctx_update_public_key(ctx, path);
 }
 
-
-slurm_cred_t *
-slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
-		  uint16_t protocol_version)
+slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
+				bool sign_it, uint16_t protocol_version)
 {
 	slurm_cred_t *cred = NULL;
 	int i = 0, sock_recs = 0;
@@ -700,7 +698,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 
 	_pack_cred(cred, cred->buffer, protocol_version);
 
-	if (_cred_sign(ctx, cred) < 0) {
+	if (sign_it && _cred_sign(ctx, cred) < 0) {
 		slurm_mutex_unlock(&ctx->mutex);
 		goto fail;
 	}
@@ -728,7 +726,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	enable_send_gids = true;
 
 	ctx = slurm_cred_creator_ctx_create(NULL);
-	cred = slurm_cred_create(ctx, arg, SLURM_PROTOCOL_VERSION);
+	cred = slurm_cred_create(ctx, arg, true, SLURM_PROTOCOL_VERSION);
 	slurm_cred_ctx_destroy(ctx);
 
 	return cred;
@@ -1370,8 +1368,19 @@ void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 	xassert(cred->buf_version == protocol_version);
 	packbuf(cred->buffer, buffer);
 
-	xassert(cred->siglen > 0);
-	packmem(cred->signature, cred->siglen, buffer);
+	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		packmem(cred->signature, cred->siglen, buffer);
+	} else {
+		/*
+		 * Older Slurm versions can xassert() on a 0-length signature,
+		 * so ensure something is packed there even when the signature
+		 * is not required.
+		 */
+		if (cred->siglen)
+			packmem(cred->signature, cred->siglen, buffer);
+		else
+			packmem("-", 1, buffer);
+	}
 
 	slurm_mutex_unlock(&cred->mutex);
 }
@@ -1483,7 +1492,6 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		sigp = (char **) &cred->signature;
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
 		cred->siglen = len;
-		xassert(len > 0);
 	} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)

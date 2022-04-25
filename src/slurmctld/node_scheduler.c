@@ -2932,6 +2932,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	agent_arg_t *agent_arg_ptr;
 	job_resources_t *job_resrcs_ptr;
 	slurm_cred_arg_t cred_arg;
+	bool sign_cred = false;
 #ifndef HAVE_FRONT_END
 	int i;
 #endif
@@ -3039,8 +3040,17 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	cred_arg.selinux_context = job_ptr->selinux_context;
 
+	/*
+	 * Pre-22.05 slurmd does verify the credential, and still requires
+	 * the signature. Newer versions trust the prolog launch implicitly.
+	 */
+	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION)
+		sign_cred = false;
+	else
+		sign_cred = true;
+
 	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
-						 &cred_arg,
+						 &cred_arg, sign_cred,
 						 protocol_version);
 	xfree(cred_arg.job_mem_alloc);
 	xfree(cred_arg.job_mem_alloc_rep_count);
