@@ -3317,7 +3317,8 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			char *cluster_name, uint32_t rec_cnt)
 {
-	char *insert = NULL, *format = NULL;
+	char *insert = NULL, *insert_pos = NULL;
+	char *format = NULL, *format_pos = NULL;
 	int safe_attributes[] = {
 		JOB_REQ_ARRAY_MAX,
 		JOB_REQ_ARRAY_TASK_PENDING,
@@ -3381,14 +3382,16 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 	local_job_t object;
 	int i = 0;
 
-	xstrfmtcat(insert, "insert into \"%s_%s\" (%s",
-		   cluster_name, job_table,job_req_inx[safe_attributes[0]]);
+	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
+		     cluster_name, job_table,job_req_inx[safe_attributes[0]]);
 	for (i = 1; safe_attributes[i] < JOB_REQ_COUNT; i++)
-		xstrfmtcat(insert, ", %s", job_req_inx[safe_attributes[i]]);
+		xstrfmtcatat(insert, &insert_pos,
+			     ", %s", job_req_inx[safe_attributes[i]]);
 	/* Some attributes that might be NULL require special handling */
 	for (i = 0; null_attributes[i] < JOB_REQ_COUNT; i++)
-		xstrfmtcat(insert, ", %s", job_req_inx[null_attributes[i]]);
-	xstrcat(insert, ") values ");
+		xstrfmtcatat(insert, &insert_pos,
+			     ", %s", job_req_inx[null_attributes[i]]);
+	xstrcatat(insert, &insert_pos, ") values ");
 
 	for (i = 0; i < rec_cnt; i++) {
 
@@ -3400,138 +3403,139 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		}
 
 		if (i)
-			xstrcat(insert, ", ");
+			xstrcatat(insert, &insert_pos, ", ");
 
-		xstrcat(format, "('%s'");
+		xstrcatat(format, &format_pos, "('%s'");
 		for(int j = 1; safe_attributes[j] < JOB_REQ_COUNT; j++) {
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		}
 
 		/* special handling for NULL attributes */
 		if (object.account == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.admin_comment == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.array_task_str == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.blockid == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.constraints == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.container == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.derived_es == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.kill_requid == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.mcs_label == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.nodelist == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.node_inx == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.submit_line == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.system_comment == NULL)
-			xstrcat(format, ", %s");
+			xstrcatat(format, &format_pos, ", %s");
 		else
-			xstrcat(format, ", '%s'");
+			xstrcatat(format, &format_pos, ", '%s'");
 
-		xstrcat(format, ")");
+		xstrcatat(format, &format_pos, ")");
 
-		xstrfmtcat(insert, format,
-			   object.array_max_tasks,
-			   object.array_task_pending,
-			   object.alloc_nodes,
-			   object.associd,
-			   object.array_jobid,
-			   object.array_taskid,
-			   object.deleted,
-			   object.derived_ec,
-			   object.env_hash_inx,
-			   object.exit_code,
-			   object.flags,
-			   object.timelimit,
-			   object.eligible,
-			   object.end,
-			   object.gid,
-			   object.gres_used,
-			   object.het_job_id,
-			   object.het_job_offset,
-			   object.job_db_inx,
-			   object.jobid,
-			   object.mod_time,
-			   object.name,
-			   object.partition,
-			   object.priority,
-			   object.qos,
-			   object.req_cpus,
-			   object.req_mem,
-			   object.resvid,
-			   object.script_hash_inx,
-			   object.start,
-			   object.state,
-			   object.state_reason_prev,
-			   object.submit,
-			   object.suspended,
-			   object.uid,
-			   object.wckey,
-			   object.wckey_id,
-			   object.work_dir,
-			   object.tres_alloc_str,
-			   object.tres_req_str,
-			   (object.account == NULL) ?
+		xstrfmtcatat(insert, &insert_pos, format,
+			     object.array_max_tasks,
+			     object.array_task_pending,
+			     object.alloc_nodes,
+			     object.associd,
+			     object.array_jobid,
+			     object.array_taskid,
+			     object.deleted,
+			     object.derived_ec,
+			     object.env_hash_inx,
+			     object.exit_code,
+			     object.flags,
+			     object.timelimit,
+			     object.eligible,
+			     object.end,
+			     object.gid,
+			     object.gres_used,
+			     object.het_job_id,
+			     object.het_job_offset,
+			     object.job_db_inx,
+			     object.jobid,
+			     object.mod_time,
+			     object.name,
+			     object.partition,
+			     object.priority,
+			     object.qos,
+			     object.req_cpus,
+			     object.req_mem,
+			     object.resvid,
+			     object.script_hash_inx,
+			     object.start,
+			     object.state,
+			     object.state_reason_prev,
+			     object.submit,
+			     object.suspended,
+			     object.uid,
+			     object.wckey,
+			     object.wckey_id,
+			     object.work_dir,
+			     object.tres_alloc_str,
+			     object.tres_req_str,
+			     (object.account == NULL) ?
 				"NULL" : object.account,
-			   (object.admin_comment == NULL) ?
+			     (object.admin_comment == NULL) ?
 				"NULL" : object.admin_comment,
-			   (object.array_task_str == NULL) ?
+			     (object.array_task_str == NULL) ?
 				"NULL" : object.array_task_str,
-			   (object.blockid == NULL) ?
+			     (object.blockid == NULL) ?
 				"NULL" : object.blockid,
-			   (object.constraints == NULL) ?
+			     (object.constraints == NULL) ?
 				"NULL" : object.constraints,
-			   (object.container == NULL) ?
+			     (object.container == NULL) ?
 				"NULL" : object.container,
-			   (object.derived_es == NULL) ?
+			     (object.derived_es == NULL) ?
 				"NULL" : object.derived_es,
-			   (object.kill_requid == NULL) ?
+			     (object.kill_requid == NULL) ?
 				"NULL" : object.kill_requid,
-			   (object.mcs_label == NULL) ?
+			     (object.mcs_label == NULL) ?
 				"NULL" : object.mcs_label,
-			   (object.nodelist == NULL) ?
+			     (object.nodelist == NULL) ?
 				"NULL" : object.nodelist,
-			   (object.node_inx == NULL) ?
+			     (object.node_inx == NULL) ?
 				"NULL" : object.node_inx,
-			   (object.submit_line == NULL) ?
+			     (object.submit_line == NULL) ?
 				"NULL" : object.submit_line,
-			   (object.system_comment == NULL) ?
+			     (object.system_comment == NULL) ?
 				"NULL" : object.system_comment);
 
 		_free_local_job_members(&object);
+		format_pos = NULL;
 		xfree(format);
 	}
 //	END_TIMER2("step query");
