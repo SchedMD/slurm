@@ -89,8 +89,9 @@ extern void agent_queue_request(agent_arg_t *agent_arg_ptr);
  * IN mail_too - Send pending email too, note this performed using a
  *	fork/waitpid, so it can take longer than just creating a pthread
  *	to send RPCs
+ * IN check_defer - force defer_list check
  */
-extern void agent_trigger(int min_wait, bool mail_too);
+extern void agent_trigger(int min_wait, bool mail_too, bool check_defer);
 
 /* agent_purge - purge all pending RPC requests */
 extern void agent_purge(void);

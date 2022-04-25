@@ -6334,8 +6334,10 @@ extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
 	if (!job_ptr->node_bitmap_pr ||
 	    (bit_ffs(job_ptr->node_bitmap_pr) == -1))
 #endif
+	{
 		job_ptr->state_reason = WAIT_NO_REASON;
-
+		agent_trigger(999, false, true);
+	}
 	last_job_update = time(NULL);
 
 	return SLURM_SUCCESS;

@@ -229,6 +229,7 @@ static pthread_cond_t  pending_cond = PTHREAD_COND_INITIALIZER;
 static int pending_wait_time = NO_VAL16;
 static bool pending_mail = false;
 static bool pending_thread_running = false;
+static bool pending_check_defer = false;
 
 static bool run_scheduler    = false;
 
@@ -401,7 +402,7 @@ cleanup:
 	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	if (spawn_retry_agent)
-		agent_trigger(RPC_RETRY_INTERVAL, true);
+		agent_trigger(RPC_RETRY_INTERVAL, true, false);
 
 	return NULL;
 }
@@ -1396,7 +1397,8 @@ static void *_agent_init(void *arg)
 	while (true) {
 		slurm_mutex_lock(&pending_mutex);
 		while (!slurmctld_config.shutdown_time &&
-		       !pending_mail && (pending_wait_time == NO_VAL16)) {
+		       !pending_mail && !pending_check_defer &&
+		       (pending_wait_time == NO_VAL16)) {
 			ts.tv_sec  = time(NULL) + 2;
 			slurm_cond_timedwait(&pending_cond, &pending_mutex,
 					     &ts);
@@ -1411,8 +1413,10 @@ static void *_agent_init(void *arg)
 		pending_wait_time = NO_VAL16;
 		slurm_mutex_unlock(&pending_mutex);
 
-		if (last_defer_attempt + 2 < last_job_update) {
+		if ((last_defer_attempt + 2 < last_job_update) ||
+		    pending_check_defer) {
 			last_defer_attempt = time(NULL);
+			pending_check_defer = false;
 			_agent_defer();
 		}
 
@@ -1445,8 +1449,9 @@ extern void agent_init(void)
  * IN mail_too - Send pending email too, note this performed using a
  *	fork/waitpid, so it can take longer than just creating a pthread
  *	to send RPCs
+ * IN check_defer - force defer_list check
  */
-extern void agent_trigger(int min_wait, bool mail_too)
+extern void agent_trigger(int min_wait, bool mail_too, bool check_defer)
 {
 	log_flag(AGENT, "%s: pending_wait_time=%d->%d mail_too=%c->%c Agent_cnt=%d agent_thread_cnt=%d retry_list_size=%d",
 		 __func__, pending_wait_time, min_wait,
@@ -1459,6 +1464,8 @@ extern void agent_trigger(int min_wait, bool mail_too)
 		pending_wait_time = min_wait;
 	if (mail_too)
 		pending_mail = mail_too;
+	if (check_defer)
+		pending_check_defer = check_defer;
 	slurm_cond_broadcast(&pending_cond);
 	slurm_mutex_unlock(&pending_mutex);
 }
@@ -1753,7 +1760,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	}
 	/* now process the request in a separate pthread
 	 * (if we can create another pthread to do so) */
-	agent_trigger(999, false);
+	agent_trigger(999, false, false);
 }
 
 /* agent_purge - purge all pending RPC requests */

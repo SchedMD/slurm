@@ -2157,7 +2157,7 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		/* Process any pending agent work */
-		agent_trigger(RPC_RETRY_INTERVAL, true);
+		agent_trigger(RPC_RETRY_INTERVAL, true, true);
 
 		if (slurm_conf.group_time &&
 		    (difftime(now, last_group_time)
