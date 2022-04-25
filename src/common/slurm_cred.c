@@ -296,8 +296,7 @@ static void _verifier_ctx_init(slurm_cred_ctx_t ctx);
 static bool _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 static bool _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
-static int _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
-			    uint16_t protocol_version);
+static int _cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 static void _cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
 static int _slurm_cred_init(void);
@@ -701,7 +700,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 
 	_pack_cred(cred, cred->buffer, protocol_version);
 
-	if (_slurm_cred_sign(ctx, cred, protocol_version) < 0) {
+	if (_cred_sign(ctx, cred) < 0) {
 		slurm_mutex_unlock(&ctx->mutex);
 		goto fail;
 	}
@@ -1844,9 +1843,7 @@ _slurm_cred_alloc(void)
 	return cred;
 }
 
-static int
-_slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
-		 uint16_t protocol_version)
+static int _cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 {
 	int rc;
 
