@@ -208,6 +208,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect reason_time and reason_uid on reboot message.
  -- Fix "scontrol reboot" clearing node reason on ResumeTimeout.
  -- Fix ResumeTimeout error message missing when node already has reason set.
+ -- Avoid "running with local config" error when conf server is provided by DNS.
 
 * Changes in Slurm 21.08.7
 ==========================

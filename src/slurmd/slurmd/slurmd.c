@@ -978,9 +978,9 @@ _read_config(void)
 			      conf->hostname));
 	/*
 	 * Only rebuild this if running configless, which is indicated by
-	 * the presence of a conf_server value.
+	 * the presence of a conf_cache value.
 	 */
-	if (conf->conf_server)
+	if (conf->conf_cache)
 		_free_and_set(conf->conf_cache,
 			      xstrdup_printf("%s/conf-cache", conf->spooldir));
 
@@ -989,8 +989,8 @@ _read_config(void)
 
 	conf->actual_cpus = 0;
 
-	if (!conf->conf_server && xstrcasestr(cf->slurmctld_params,
-					      "enable_configless"))
+	if (!conf->conf_cache && xstrcasestr(cf->slurmctld_params,
+					     "enable_configless"))
 		error("Running with local config file despite slurmctld having been setup for configless operation");
 
 	/*
