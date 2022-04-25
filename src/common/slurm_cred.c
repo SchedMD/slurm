@@ -1343,6 +1343,7 @@ void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t     cred_uid, cred_gid, u32_ngids, len;
+	slurm_cred_t *credential = NULL;
 	slurm_cred_t *cred = NULL;
 	char *bit_fmt_str = NULL;
 	char       **sigp;
@@ -1354,7 +1355,8 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	/* Save current buffer position here, use it later to verify cred. */
 	cred_start = get_buf_offset(buffer);
 
-	cred = _slurm_cred_alloc();
+	credential = _slurm_cred_alloc();
+	cred = credential;
 	slurm_mutex_lock(&cred->mutex);
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred->step_id, buffer,
@@ -1392,7 +1394,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack16(&cred->x11, buffer);
-		safe_unpack_time(&cred->ctime, buffer);
+		safe_unpack_time(&credential->ctime, buffer);
 		safe_unpack32(&tot_core_cnt, buffer);
 		unpack_bit_str_hex(&cred->job_core_bitmap, buffer);
 		unpack_bit_str_hex(&cred->step_core_bitmap, buffer);
@@ -1444,9 +1446,9 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 
 		/* "sigp" must be last */
 		cred_len = get_buf_offset(buffer) - cred_start;
-		sigp = (char **) &cred->signature;
+		sigp = (char **) &credential->signature;
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
-		cred->siglen = len;
+		credential->siglen = len;
 	} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
@@ -1482,7 +1484,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack16(&cred->x11, buffer);
-		safe_unpack_time(&cred->ctime, buffer);
+		safe_unpack_time(&credential->ctime, buffer);
 		safe_unpack32(&tot_core_cnt, buffer);
 		unpack_bit_str_hex(&cred->job_core_bitmap, buffer);
 		unpack_bit_str_hex(&cred->step_core_bitmap, buffer);
@@ -1533,9 +1535,9 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 
 		/* "sigp" must be last */
 		cred_len = get_buf_offset(buffer) - cred_start;
-		sigp = (char **) &cred->signature;
+		sigp = (char **) &credential->signature;
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
-		cred->siglen = len;
+		credential->siglen = len;
 		xassert(len > 0);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred->step_id, buffer,
@@ -1585,7 +1587,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack16(&cred->x11, buffer);
-		safe_unpack_time(&cred->ctime, buffer);
+		safe_unpack_time(&credential->ctime, buffer);
 		safe_unpack32(&tot_core_cnt, buffer);
 		unpack_bit_str_hex(&cred->job_core_bitmap, buffer);
 		unpack_bit_str_hex(&cred->step_core_bitmap, buffer);
@@ -1613,9 +1615,9 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 
 		/* "sigp" must be last */
 		cred_len = get_buf_offset(buffer) - cred_start;
-		sigp = (char **) &cred->signature;
+		sigp = (char **) &credential->signature;
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
-		cred->siglen = len;
+		credential->siglen = len;
 		xassert(len > 0);
 	} else {
 		error("slurm_cred_unpack: protocol_version"
