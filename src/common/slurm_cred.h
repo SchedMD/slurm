@@ -159,6 +159,7 @@ typedef struct {
 	/* job_core_bitmap and step_core_bitmap cover the same set of nodes,
 	 * namely the set of nodes allocated to the job. The core and socket
 	 * information below applies to job_core_bitmap AND step_core_bitmap */
+	uint16_t core_array_size;	/* core/socket array size */
 	uint16_t *cores_per_socket;	/* Used for job/step_core_bitmaps */
 	uint16_t *sockets_per_node;	/* Used for job/step_core_bitmaps */
 	uint32_t *sock_core_rep_count;	/* Used for job/step_core_bitmaps */

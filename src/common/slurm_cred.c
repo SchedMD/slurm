@@ -657,6 +657,8 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 		}
 	}
 	i++;
+	arg->core_array_size = i;
+
 	if (arg->job_core_bitmap)
 		cred->job_core_bitmap = bit_copy(arg->job_core_bitmap);
 	if (arg->step_core_bitmap)
