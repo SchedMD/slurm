@@ -862,33 +862,6 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	xassert(cred->magic == CRED_MAGIC);
 
 	slurm_mutex_lock(&cred->mutex);
-#if 0
-	xfree(cred->pw_name);
-	xfree(cred->pw_gecos);
-	xfree(cred->pw_dir);
-	xfree(cred->pw_shell);
-	xfree(cred->gids);
-	for (int i = 0; cred->gr_names && i < cred->ngids; i++)
-		xfree(cred->gr_names[i]);
-	xfree(cred->gr_names);
-	FREE_NULL_BITMAP(cred->job_core_bitmap);
-	FREE_NULL_BITMAP(cred->step_core_bitmap);
-	xfree(cred->cores_per_socket);
-	xfree(cred->job_alias_list);
-	xfree(cred->job_constraints);
-	xfree(cred->job_hostlist);
-	xfree(cred->sock_core_rep_count);
-	xfree(cred->sockets_per_node);
-	FREE_NULL_LIST(cred->job_gres_list);
-	FREE_NULL_LIST(cred->step_gres_list);
-	xfree(cred->step_hostlist);
-	xfree(cred->signature);
-	xfree(cred->job_mem_alloc);
-	xfree(cred->job_mem_alloc_rep_count);
-	xfree(cred->step_mem_alloc);
-	xfree(cred->step_mem_alloc_rep_count);
-#endif
-
 	slurm_cred_free_args(cred->arg);
 	FREE_NULL_BUFFER(cred->buffer);
 	cred->magic = ~CRED_MAGIC;
