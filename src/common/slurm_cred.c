@@ -305,7 +305,7 @@ static int _slurm_cred_fini(void);
 static job_state_t *_job_state_unpack_one(buf_t *buffer);
 static cred_state_t *_cred_state_unpack_one(buf_t *buffer);
 
-static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
+static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		       uint16_t protocol_version);
 static void _job_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
 static void _job_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
@@ -388,7 +388,7 @@ static int _slurm_cred_fini(void)
 }
 
 /* Fill in user information based on what options are enabled. */
-static int _fill_cred_gids(slurm_cred_t *cred, slurm_cred_arg_t *arg)
+static int _fill_cred_gids(slurm_cred_arg_t *arg)
 {
 	struct passwd pwd, *result;
 	char buffer[PW_BUF_SIZE];
@@ -397,7 +397,6 @@ static int _fill_cred_gids(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	if (!enable_nss_slurm && !enable_send_gids)
 		return SLURM_SUCCESS;
 
-	xassert(cred);
 	xassert(arg);
 
 	rc = slurm_getpwuid_r(arg->uid, &pwd, buffer, PW_BUF_SIZE, &result);
@@ -407,25 +406,42 @@ static int _fill_cred_gids(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 		return SLURM_ERROR;
 	}
 
-	cred->pw_name = xstrdup(result->pw_name);
-	cred->pw_gecos = xstrdup(result->pw_gecos);
-	cred->pw_dir = xstrdup(result->pw_dir);
-	cred->pw_shell = xstrdup(result->pw_shell);
+	arg->pw_name = xstrdup(result->pw_name);
+	arg->pw_gecos = xstrdup(result->pw_gecos);
+	arg->pw_dir = xstrdup(result->pw_dir);
+	arg->pw_shell = xstrdup(result->pw_shell);
 
-	cred->ngids = group_cache_lookup(arg->uid, arg->gid,
-					 arg->pw_name, &cred->gids);
+	arg->ngids = group_cache_lookup(arg->uid, arg->gid,
+					arg->pw_name, &arg->gids);
 
 	if (enable_nss_slurm) {
-		if (cred->ngids) {
-			cred->gr_names = xcalloc(cred->ngids, sizeof(char *));
-			for (int i = 0; i < cred->ngids; i++) {
-				cred->gr_names[i] =
-					gid_to_string(cred->gids[i]);
-			}
+		if (arg->ngids) {
+			arg->gr_names = xcalloc(arg->ngids, sizeof(char *));
+			for (int i = 0; i < arg->ngids; i++)
+				arg->gr_names[i] = gid_to_string(arg->gids[i]);
 		}
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static void _release_cred_gids(slurm_cred_arg_t *arg)
+{
+	if (!enable_nss_slurm && !enable_send_gids)
+		return;
+
+	xfree(arg->pw_name);
+	xfree(arg->pw_gecos);
+	xfree(arg->pw_dir);
+	xfree(arg->pw_shell);
+	xfree(arg->gids);
+
+	if (arg->gr_names) {
+		for (int i = 0; i < arg->ngids; i++)
+			xfree(arg->gr_names[i]);
+		xfree(arg->gr_names);
+	}
+	arg->ngids = 0;
 }
 
 /* Terminate the plugin and release all memory. */
@@ -687,7 +703,7 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 
 	cred->selinux_context = xstrdup(arg->selinux_context);
 
-	if (_fill_cred_gids(cred, arg) != SLURM_SUCCESS)
+	if (_fill_cred_gids(arg) != SLURM_SUCCESS)
 		goto fail;
 
 	slurm_mutex_lock(&ctx->mutex);
@@ -697,12 +713,15 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->buffer = init_buf(4096);
 	cred->buf_version = protocol_version;
 
-	_pack_cred(cred, cred->buffer, protocol_version);
+	_pack_cred(arg, cred->buffer, protocol_version);
 
 	if (sign_it && _cred_sign(ctx, cred) < 0) {
 		slurm_mutex_unlock(&ctx->mutex);
 		goto fail;
 	}
+
+	/* Release any values populated through _fill_cred_gids(). */
+	_release_cred_gids(arg);
 
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_mutex_unlock(&cred->mutex);
@@ -1897,7 +1916,7 @@ static void _cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 }
 
 
-static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
+static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		       uint16_t protocol_version)
 {
 	uint32_t tot_core_cnt = 0;
