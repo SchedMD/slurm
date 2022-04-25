@@ -6203,7 +6203,12 @@ proc submit_job args {
 		set run_options [lrange $args 0 [expr [llength $args] - 2 ]]
 	}
 
-	set output [run_command_output {*}$run_options "$env $sbatch $job_options"]
+	set command ""
+	if {$env ne ""} {
+		set command "$env "
+	}
+	set command "$command$sbatch $job_options"
+	set output [run_command_output {*}$run_options "$command"]
 	regexp {Submitted \S+ job (\d+)} $output - job_id
 
 	return $job_id
