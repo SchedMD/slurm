@@ -628,43 +628,6 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	slurm_mutex_lock(&cred->mutex);
 	xassert(cred->magic == CRED_MAGIC);
 
-	memcpy(&cred->step_id, &arg->step_id, sizeof(cred->step_id));
-	cred->uid    = arg->uid;
-	cred->gid    = arg->gid;
-	cred->job_core_spec   = arg->job_core_spec;
-	cred->job_gres_list   = gres_job_state_list_dup(arg->job_gres_list);
-	cred->step_gres_list  = gres_step_state_list_dup(arg->step_gres_list);
-	cred->job_mem_limit   = arg->job_mem_limit;
-	if (arg->job_mem_alloc_size) {
-		cred->job_mem_alloc_size = arg->job_mem_alloc_size;
-		cred->job_mem_alloc = xcalloc(arg->job_mem_alloc_size,
-					      sizeof(uint64_t));
-		memcpy(cred->job_mem_alloc, arg->job_mem_alloc,
-		       sizeof(uint64_t) * arg->job_mem_alloc_size);
-
-		cred->job_mem_alloc_rep_count =
-			xcalloc(arg->job_mem_alloc_size, sizeof(uint32_t));
-		memcpy(cred->job_mem_alloc_rep_count,
-		       arg->job_mem_alloc_rep_count,
-		       sizeof(uint32_t) * arg->job_mem_alloc_size);
-	}
-	cred->step_mem_limit  = arg->step_mem_limit;
-	if (arg->step_mem_alloc_size) {
-		cred->step_mem_alloc_size = arg->step_mem_alloc_size;
-		cred->step_mem_alloc = xcalloc(arg->step_mem_alloc_size,
-					       sizeof(uint64_t));
-		memcpy(cred->step_mem_alloc, arg->step_mem_alloc,
-		       sizeof(uint64_t) * arg->step_mem_alloc_size);
-
-		cred->step_mem_alloc_rep_count =
-			xcalloc(arg->step_mem_alloc_size, sizeof(uint32_t));
-		memcpy(cred->step_mem_alloc_rep_count,
-		       arg->step_mem_alloc_rep_count,
-		       sizeof(uint32_t) * arg->step_mem_alloc_size);
-
-	}
-	cred->step_hostlist   = xstrdup(arg->step_hostlist);
-	cred->x11             = arg->x11;
 	if (arg->sock_core_rep_count) {
 		for (i = 0; i < arg->job_nhosts; i++) {
 			sock_recs += arg->sock_core_rep_count[i];
@@ -674,34 +637,6 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	}
 	i++;
 	arg->core_array_size = i;
-
-	if (arg->job_core_bitmap)
-		cred->job_core_bitmap = bit_copy(arg->job_core_bitmap);
-	if (arg->step_core_bitmap)
-		cred->step_core_bitmap = bit_copy(arg->step_core_bitmap);
-	cred->core_array_size     = i;
-	cred->cores_per_socket = xcalloc(i, sizeof(uint16_t));
-	cred->sockets_per_node = xcalloc(i, sizeof(uint16_t));
-	cred->sock_core_rep_count = xcalloc(i, sizeof(uint32_t));
-	if (arg->cores_per_socket) {
-		memcpy(cred->cores_per_socket, arg->cores_per_socket,
-		       (sizeof(uint16_t) * i));
-	}
-	if (arg->sockets_per_node) {
-		memcpy(cred->sockets_per_node, arg->sockets_per_node,
-		       (sizeof(uint16_t) * i));
-	}
-	if (arg->sock_core_rep_count) {
-		memcpy(cred->sock_core_rep_count,
-		       arg->sock_core_rep_count,
-		       (sizeof(uint32_t) * i));
-	}
-	cred->job_alias_list = xstrdup(arg->job_alias_list);
-	cred->job_constraints = xstrdup(arg->job_constraints);
-	cred->job_nhosts      = arg->job_nhosts;
-	cred->job_hostlist    = xstrdup(arg->job_hostlist);
-
-	cred->selinux_context = xstrdup(arg->selinux_context);
 
 	if (_fill_cred_gids(arg) != SLURM_SUCCESS)
 		goto fail;
