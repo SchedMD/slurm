@@ -682,7 +682,6 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->job_constraints = xstrdup(arg->job_constraints);
 	cred->job_nhosts      = arg->job_nhosts;
 	cred->job_hostlist    = xstrdup(arg->job_hostlist);
-	cred->ctime  = time(NULL);
 
 	cred->selinux_context = xstrdup(arg->selinux_context);
 
@@ -1905,6 +1904,7 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 	 * must match that of the gids array.
 	 */
 	uint32_t gr_names_cnt = (cred->gr_names) ? cred->ngids : 0;
+	time_t ctime = time(NULL);
 
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
@@ -1927,7 +1927,7 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		packstr(cred->job_constraints, buffer);
 		packstr(cred->step_hostlist, buffer);
 		pack16(cred->x11, buffer);
-		pack_time(cred->ctime, buffer);
+		pack_time(ctime, buffer);
 
 		if (cred->job_core_bitmap)
 			tot_core_cnt = bit_size(cred->job_core_bitmap);
@@ -1987,7 +1987,7 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		packstr(cred->job_constraints, buffer);
 		packstr(cred->step_hostlist, buffer);
 		pack16(cred->x11, buffer);
-		pack_time(cred->ctime, buffer);
+		pack_time(ctime, buffer);
 
 		if (cred->job_core_bitmap)
 			tot_core_cnt = bit_size(cred->job_core_bitmap);
@@ -2049,7 +2049,7 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		packstr(cred->job_constraints, buffer);
 		packstr(cred->step_hostlist, buffer);
 		pack16(cred->x11, buffer);
-		pack_time(cred->ctime, buffer);
+		pack_time(ctime, buffer);
 
 		if (cred->job_core_bitmap)
 			tot_core_cnt = bit_size(cred->job_core_bitmap);
