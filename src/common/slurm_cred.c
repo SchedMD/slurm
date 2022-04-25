@@ -165,7 +165,7 @@ struct slurm_cred_context {
 #define CRED_MAGIC 0x0b0b0b
 struct slurm_job_credential {
 	int      magic;
-	pthread_mutex_t mutex;
+	pthread_rwlock_t mutex;
 	buf_t *buffer;		/* packed representation of credential */
 	uint16_t buf_version;	/* version buffer was generated with */
 
@@ -751,9 +751,9 @@ slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred)
 	/*
 	 * set arguments to cred contents
 	 */
-	slurm_mutex_lock(&cred->mutex);
+	slurm_rwlock_rdlock(&cred->mutex);
 	_copy_cred_to_arg(cred, arg);
-	slurm_mutex_unlock(&cred->mutex);
+	slurm_rwlock_unlock(&cred->mutex);
 
 	return arg;
 }
@@ -770,7 +770,7 @@ extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
 
 	xassert(cred != NULL);
 
-	slurm_mutex_lock(&cred->mutex);
+	slurm_rwlock_rdlock(&cred->mutex);
 	switch (cred_arg_type) {
 	case CRED_ARG_JOB_GRES_LIST:
 		rc = (void *) cred->arg->job_gres_list;
@@ -783,7 +783,7 @@ extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
 		      cred_arg_type);
 
 	}
-	slurm_mutex_unlock(&cred->mutex);
+	slurm_rwlock_unlock(&cred->mutex);
 
 	return rc;
 }
@@ -801,7 +801,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
 	if (_slurm_cred_init() < 0)
 		return NULL;
 
-	slurm_mutex_lock(&cred->mutex);
+	slurm_rwlock_rdlock(&cred->mutex);
 	slurm_mutex_lock(&ctx->mutex);
 
 	xassert(ctx->magic  == CRED_CTX_MAGIC);
@@ -837,14 +837,14 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
 	arg = xmalloc(sizeof(slurm_cred_arg_t));
 	_copy_cred_to_arg(cred, arg);
 
-	slurm_mutex_unlock(&cred->mutex);
+	slurm_rwlock_unlock(&cred->mutex);
 
 	return arg;
 
 error:
 	errnum = slurm_get_errno();
 	slurm_mutex_unlock(&ctx->mutex);
-	slurm_mutex_unlock(&cred->mutex);
+	slurm_rwlock_unlock(&cred->mutex);
 	slurm_seterrno(errnum);
 	return NULL;
 }
@@ -858,12 +858,12 @@ slurm_cred_destroy(slurm_cred_t *cred)
 
 	xassert(cred->magic == CRED_MAGIC);
 
-	slurm_mutex_lock(&cred->mutex);
+	slurm_rwlock_wrlock(&cred->mutex);
 	slurm_cred_free_args(cred->arg);
 	FREE_NULL_BUFFER(cred->buffer);
 	cred->magic = ~CRED_MAGIC;
-	slurm_mutex_unlock(&cred->mutex);
-	slurm_mutex_destroy(&cred->mutex);
+	slurm_rwlock_unlock(&cred->mutex);
+	slurm_rwlock_destroy(&cred->mutex);
 
 	xfree(cred);
 }
@@ -1013,12 +1013,12 @@ slurm_cred_get_signature(slurm_cred_t *cred, char **datap, uint32_t *datalen)
 	xassert(datap   != NULL);
 	xassert(datalen != NULL);
 
-	slurm_mutex_lock(&cred->mutex);
+	slurm_rwlock_rdlock(&cred->mutex);
 
 	*datap   = (char *) cred->signature;
 	*datalen = cred->siglen;
 
-	slurm_mutex_unlock(&cred->mutex);
+	slurm_rwlock_unlock(&cred->mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -1253,7 +1253,7 @@ void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 	xassert(cred != NULL);
 	xassert(cred->magic == CRED_MAGIC);
 
-	slurm_mutex_lock(&cred->mutex);
+	slurm_rwlock_rdlock(&cred->mutex);
 
 	xassert(cred->buffer);
 	xassert(cred->buf_version == protocol_version);
@@ -1273,7 +1273,7 @@ void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 			packmem("-", 1, buffer);
 	}
 
-	slurm_mutex_unlock(&cred->mutex);
+	slurm_rwlock_unlock(&cred->mutex);
 }
 
 slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
@@ -1736,7 +1736,7 @@ _slurm_cred_alloc(void)
 	slurm_cred_t *cred = xmalloc(sizeof(*cred));
 	/* Contents initialized to zero */
 
-	slurm_mutex_init(&cred->mutex);
+	slurm_rwlock_init(&cred->mutex);
 	cred->arg = xmalloc(sizeof(slurm_cred_arg_t));
 	cred->arg->uid = (uid_t) -1;
 	cred->arg->gid = (gid_t) -1;
