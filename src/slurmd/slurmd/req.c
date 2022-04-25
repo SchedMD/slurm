@@ -1935,13 +1935,7 @@ static int _notify_slurmctld_prolog_fini(
 static int _convert_job_mem(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
-	slurm_cred_arg_t *arg;
-
-	if (!(arg = slurm_cred_verify(conf->vctx, req->cred,
-				      msg->protocol_version))) {
-		error("%s: slurm_cred_verify failed: %m", __func__);
-		return errno;
-	}
+	slurm_cred_arg_t *arg = slurm_cred_get_args(req->cred);
 
 	if (req->nnodes > arg->job_nhosts) {
 		error("%s: request node count:%u is larger than cred job node count:%u",
