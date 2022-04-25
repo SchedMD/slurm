@@ -1357,7 +1357,6 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 
 	credential = _slurm_cred_alloc();
 	cred = credential;
-	slurm_mutex_lock(&cred->mutex);
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
@@ -1624,7 +1623,6 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		      " %hu not supported", protocol_version);
 		goto unpack_error;
 	}
-	slurm_mutex_unlock(&cred->mutex);
 
 	/*
 	 * Both srun and slurmd will unpack the credential just to pack it
@@ -1651,7 +1649,6 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 
 unpack_error:
 	xfree(bit_fmt_str);
-	slurm_mutex_unlock(&cred->mutex);
 	slurm_cred_destroy(cred);
 	return NULL;
 }
