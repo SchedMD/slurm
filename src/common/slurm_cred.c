@@ -169,6 +169,8 @@ struct slurm_job_credential {
 	buf_t *buffer;		/* packed representation of credential */
 	uint16_t buf_version;	/* version buffer was generated with */
 
+	slurm_cred_arg_t *arg;	/* fields */
+
 	slurm_step_id_t step_id;/* Job step ID for this credential	*/
 	uid_t     uid;		/* user for which this cred is valid	*/
 	gid_t     gid;		/* user's primary group id 		*/
@@ -716,8 +718,10 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg);
 }
 
-static void _copy_cred_to_arg(slurm_cred_t *cred, slurm_cred_arg_t *arg)
+static void _copy_cred_to_arg(slurm_cred_t *credential, slurm_cred_arg_t *arg)
 {
+	slurm_cred_arg_t *cred = credential->arg;
+
 	xassert(cred);
 	xassert(arg);
 
@@ -817,10 +821,10 @@ extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
 	slurm_mutex_lock(&cred->mutex);
 	switch (cred_arg_type) {
 	case CRED_ARG_JOB_GRES_LIST:
-		rc = (void *) cred->job_gres_list;
+		rc = (void *) cred->arg->job_gres_list;
 		break;
 	case CRED_ARG_JOB_ALIAS_LIST:
-		rc = (void *) cred->job_alias_list;
+		rc = (void *) cred->arg->job_alias_list;
 		break;
 	default:
 		error("%s: Invalid arg type requested (%d)", __func__,
@@ -903,6 +907,7 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	xassert(cred->magic == CRED_MAGIC);
 
 	slurm_mutex_lock(&cred->mutex);
+#if 0
 	xfree(cred->pw_name);
 	xfree(cred->pw_gecos);
 	xfree(cred->pw_dir);
@@ -927,7 +932,9 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	xfree(cred->job_mem_alloc_rep_count);
 	xfree(cred->step_mem_alloc);
 	xfree(cred->step_mem_alloc_rep_count);
+#endif
 
+	slurm_cred_free_args(cred->arg);
 	FREE_NULL_BUFFER(cred->buffer);
 	cred->magic = ~CRED_MAGIC;
 	slurm_mutex_unlock(&cred->mutex);
@@ -1091,11 +1098,12 @@ slurm_cred_get_signature(slurm_cred_t *cred, char **datap, uint32_t *datalen)
 	return SLURM_SUCCESS;
 }
 
-extern void slurm_cred_get_mem(slurm_cred_t *cred, char *node_name,
+extern void slurm_cred_get_mem(slurm_cred_t *credential, char *node_name,
 			       const char *func_name,
 			       uint64_t *job_mem_limit,
 			       uint64_t *step_mem_limit)
 {
+	slurm_cred_arg_t *cred = credential->arg;
 	int rep_idx = -1;
 	int node_id = -1;
 
@@ -1179,10 +1187,12 @@ static char *_core_format(bitstr_t *core_bitmap)
  *
  * NOTE: caller must xfree the returned strings.
  */
-void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
-			char **job_alloc_cores, char **step_alloc_cores,
-			uint64_t *job_mem_limit, uint64_t *step_mem_limit)
+void format_core_allocs(slurm_cred_t *credential, char *node_name,
+			uint16_t cpus, char **job_alloc_cores,
+			char **step_alloc_cores, uint64_t *job_mem_limit,
+			uint64_t *step_mem_limit)
 {
+	slurm_cred_arg_t *cred = credential->arg;
 	bitstr_t	*job_core_bitmap, *step_core_bitmap;
 	hostset_t	hset = NULL;
 	int		host_index = -1;
@@ -1254,7 +1264,7 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 		}
 	}
 
-	slurm_cred_get_mem(cred, node_name, __func__, job_mem_limit,
+	slurm_cred_get_mem(credential, node_name, __func__, job_mem_limit,
 			   step_mem_limit);
 
 	*job_alloc_cores  = _core_format(job_core_bitmap);
@@ -1270,9 +1280,10 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
  *
  * NOTE: Caller must destroy the returned lists
  */
-extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
+extern void get_cred_gres(slurm_cred_t *credential, char *node_name,
 			  List *job_gres_list, List *step_gres_list)
 {
+	slurm_cred_arg_t *cred = credential->arg;
 	hostset_t	hset = NULL;
 	int		host_index = -1;
 
@@ -1344,7 +1355,11 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t     cred_uid, cred_gid, u32_ngids, len;
 	slurm_cred_t *credential = NULL;
-	slurm_cred_t *cred = NULL;
+	/*
+	 * The slightly confusing name is to avoid changing the entire unpack
+	 * blocks below during refactor.
+	 */
+	slurm_cred_arg_t *cred = NULL;
 	char *bit_fmt_str = NULL;
 	char       **sigp;
 	uint32_t tot_core_cnt;
@@ -1356,7 +1371,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	cred_start = get_buf_offset(buffer);
 
 	credential = _slurm_cred_alloc();
-	cred = credential;
+	cred = credential->arg;
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
@@ -1629,11 +1644,12 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	 * again. Hold onto a buffer with the pre-packed representation.
 	 */
 	if (!running_in_slurmstepd()) {
-		cred->buffer = init_buf(cred_len);
-		cred->buf_version = protocol_version;
-		memcpy(cred->buffer->head, get_buf_data(buffer) + cred_start,
+		credential->buffer = init_buf(cred_len);
+		credential->buf_version = protocol_version;
+		memcpy(credential->buffer->head,
+		       get_buf_data(buffer) + cred_start,
 		       cred_len);
-		cred->buffer->processed = cred_len;
+		credential->buffer->processed = cred_len;
 	}
 
 	/*
@@ -1643,13 +1659,13 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	 * (Only done in slurmd.)
 	 */
 	if (verifier_ctx)
-		_cred_verify_signature(verifier_ctx, cred);
+		_cred_verify_signature(verifier_ctx, credential);
 
-	return cred;
+	return credential;
 
 unpack_error:
 	xfree(bit_fmt_str);
-	slurm_cred_destroy(cred);
+	slurm_cred_destroy(credential);
 	return NULL;
 }
 
@@ -1796,8 +1812,9 @@ _slurm_cred_alloc(void)
 	/* Contents initialized to zero */
 
 	slurm_mutex_init(&cred->mutex);
-	cred->uid = (uid_t) -1;
-	cred->gid = (gid_t) -1;
+	cred->arg = xmalloc(sizeof(slurm_cred_arg_t));
+	cred->arg->uid = (uid_t) -1;
+	cred->arg->gid = (gid_t) -1;
 	cred->verified = false;
 
 	cred->magic = CRED_MAGIC;
@@ -2033,7 +2050,7 @@ static int _list_find_cred_state(void *x, void *key)
 	cred_state_t *s = (cred_state_t *) x;
 	slurm_cred_t *cred = (slurm_cred_t *) key;
 
-	if (!memcmp(&s->step_id, &cred->step_id, sizeof(s->step_id)) &&
+	if (!memcmp(&s->step_id, &cred->arg->step_id, sizeof(s->step_id)) &&
 	    (s->ctime == cred->ctime))
 		return 1;
 
@@ -2071,7 +2088,7 @@ slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred, bool locked)
 	if (!locked)
 		slurm_mutex_lock(&ctx->mutex);
 
-	j = _find_job_state(ctx, cred->step_id.job_id);
+	j = _find_job_state(ctx, cred->arg->step_id.job_id);
 
 	if (j != NULL && j->revoked && (cred->ctime > j->revoked)) {
 		/* The credential has been reissued.  Purge the
@@ -2097,7 +2114,7 @@ slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 
 	slurm_mutex_lock(&ctx->mutex);
 
-	j = _find_job_state(ctx, cred->step_id.job_id);
+	j = _find_job_state(ctx, cred->arg->step_id.job_id);
 
 	if (j && (j->revoked != (time_t)0) && (cred->ctime <= j->revoked))
 		rc = true;
@@ -2114,8 +2131,8 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 
 	_clear_expired_job_states(ctx);
 
-	if (!(j = _find_job_state(ctx, cred->step_id.job_id))) {
-		(void) _insert_job_state(ctx, cred->step_id.job_id);
+	if (!(j = _find_job_state(ctx, cred->arg->step_id.job_id))) {
+		(void) _insert_job_state(ctx, cred->arg->step_id.job_id);
 		return false;
 	}
 
@@ -2242,7 +2259,7 @@ _cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 {
 	cred_state_t *s = xmalloc(sizeof(*s));
 
-	memcpy(&s->step_id, &cred->step_id, sizeof(s->step_id));
+	memcpy(&s->step_id, &cred->arg->step_id, sizeof(s->step_id));
 	s->ctime      = cred->ctime;
 	s->expiration = cred->ctime + ctx->expiry_window;
 
