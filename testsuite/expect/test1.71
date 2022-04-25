@@ -97,4 +97,4 @@ expect {
 	}
 }
 
-subtest {$error_match == 2} "srun should have a segmentation error when running the program" "$error_match != "
+subtest {$error_match == 2} "srun should have a segmentation error when running the program" "$error_match != 2"
