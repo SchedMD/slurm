@@ -171,52 +171,7 @@ struct slurm_job_credential {
 
 	slurm_cred_arg_t *arg;	/* fields */
 
-	slurm_step_id_t step_id;/* Job step ID for this credential	*/
-	uid_t     uid;		/* user for which this cred is valid	*/
-	gid_t     gid;		/* user's primary group id 		*/
-	char *pw_name;		/* username				*/
-	char *pw_gecos;		/* user information			*/
-	char *pw_dir;		/* home directory			*/
-	char *pw_shell;		/* user program				*/
-	int ngids;		/* number of extended group ids sent in
-				 * credential. if 0, these will need to
-				 * be fetched locally instead. */
-	gid_t *gids;		/* extended group ids for user		*/
-	char **gr_names;	/* array of group names matching gids	*/
-
-	uint64_t  job_mem_limit;/* MB of memory reserved per node OR
-				 * real memory per CPU | MEM_PER_CPU,
-				 * default=0 (no limit) */
-	uint64_t *job_mem_alloc;           /* Per node allocated memory in */
-	uint32_t *job_mem_alloc_rep_count; /* the form of value and rep.cnt*/
-	uint32_t job_mem_alloc_size;
-
-	uint64_t  step_mem_limit;
-	uint64_t *step_mem_alloc;          /* Per node step allocated memory */
-	uint32_t *step_mem_alloc_rep_count;/* in form of value and rep.cnt */
-	uint32_t step_mem_alloc_size;
-
-	uint16_t  core_array_size;	/* core/socket array size */
-	uint16_t *cores_per_socket;
-	uint16_t *sockets_per_node;
-	uint32_t *sock_core_rep_count;
-
-	List job_gres_list;		/* Generic resources allocated to JOB */
-	List step_gres_list;		/* Generic resources allocated to STEP */
-
-	char *job_alias_list;           /* node name to address aliases */
-	char     *job_constraints;	/* constraints in job allocation */
-	bitstr_t *job_core_bitmap;
-	uint16_t  job_core_spec;	/* Count of specialized cores */
-	uint32_t  job_nhosts;	/* count of nodes allocated to JOB */
-	char     *job_hostlist;	/* list of nodes allocated to JOB */
-	bitstr_t *step_core_bitmap;
 	time_t    ctime;	/* time of credential creation		*/
-	char     *step_hostlist;/* hostnames for which the cred is ok	*/
-	uint16_t  x11;		/* x11 flags set on job allocation	*/
-
-	char *selinux_context;
-
 	char     *signature; 	/* credential signature			*/
 	uint32_t siglen;	/* signature length in bytes		*/
 	bool verified;		/* credential has been verified successfully */
