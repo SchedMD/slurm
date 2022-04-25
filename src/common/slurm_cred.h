@@ -261,8 +261,7 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred,
  *   - Credential has not been replayed
  */
 extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
-					   slurm_cred_t *cred,
-					   uint16_t protocol_version);
+					   slurm_cred_t *cred);
 
 /*
  * Rewind the last play of credential cred. This allows the credential
