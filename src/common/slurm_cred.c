@@ -695,6 +695,12 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 	xassert(ctx->type == SLURM_CRED_CREATOR);
+
+	cred->buffer = init_buf(4096);
+	cred->buf_version = protocol_version;
+
+	_pack_cred(cred, cred->buffer, protocol_version);
+
 	if (_slurm_cred_sign(ctx, cred, protocol_version) < 0) {
 		slurm_mutex_unlock(&ctx->mutex);
 		goto fail;
@@ -1844,9 +1850,6 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 {
 	int rc;
 
-	cred->buffer = init_buf(4096);
-	cred->buf_version = protocol_version;
-	_pack_cred(cred, cred->buffer, protocol_version);
 	rc = (*(ops.cred_sign))(ctx->key,
 				get_buf_data(cred->buffer),
 				get_buf_offset(cred->buffer),
