@@ -383,6 +383,7 @@ static int _make_sure_users_have_default(
 	char *query = NULL, *cluster = NULL, *user = NULL;
 	ListIterator itr = NULL, clus_itr = NULL;
 	int rc = SLURM_SUCCESS;
+	slurmdb_assoc_rec_t *mod_assoc;
 
 	if (slurmdbd_conf->flags & DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT)
 		return rc;
@@ -443,6 +444,51 @@ static int _make_sure_users_have_default(
 			xfree(query);
 			if (rc != SLURM_SUCCESS) {
 				error("problem with update query");
+				rc = SLURM_ERROR;
+				break;
+			}
+
+			/*
+			 * Now we need to add this association as the default to
+			 * the update_list.
+			 */
+			query = xstrdup_printf(
+				"select id_assoc from \"%s_%s\" where user='%s' and is_def=1 and deleted=0 LIMIT 1;",
+				cluster, assoc_table, user);
+			DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s",
+			         query);
+			if (!(result = mysql_db_query_ret(
+				      mysql_conn, query, 0))) {
+				xfree(query);
+				error("couldn't query the database");
+				rc = SLURM_ERROR;
+				break;
+			}
+			xfree(query);
+
+			/* check if the row is default */
+			row = mysql_fetch_row(result);
+			if (!row[0]) {
+				error("User '%s' doesn't have a default like you would expect on cluster '%s'.",
+				      user, cluster);
+				/* default found, continue */
+				mysql_free_result(result);
+				continue;
+			}
+
+			mod_assoc = xmalloc(sizeof(*mod_assoc));
+			slurmdb_init_assoc_rec(mod_assoc, 0);
+			mod_assoc->cluster = xstrdup(cluster);
+			mod_assoc->id = slurm_atoul(row[0]);
+			mod_assoc->is_def = 1;
+
+			mysql_free_result(result);
+
+			if (addto_update_list(mysql_conn->update_list,
+					      SLURMDB_MODIFY_ASSOC,
+					      mod_assoc) != SLURM_SUCCESS) {
+				slurmdb_destroy_assoc_rec(mod_assoc);
+				error("couldn't add to the update list");
 				rc = SLURM_ERROR;
 				break;
 			}
