@@ -1282,12 +1282,21 @@ extern void cr_fini_global_core_data(void)
 	xfree(cr_node_cores_offset);
 }
 
-/* return the coremap index to the first core of the given node */
-
+/*
+ * Return the coremap index to the first core of the given node
+ *
+ * If node_index points to NULL record in the node_record_table_ptr, then it
+ * will attempt to find the next available node. If a valid node isn't found,
+ * then the last core offset will be returned --
+ * cr_node_cores_offset[node_record_count].
+ */
 extern uint32_t cr_get_coremap_offset(uint32_t node_index)
 {
 	xassert(cr_node_cores_offset);
-	return cr_node_cores_offset[node_index];
+	if (next_node((int *)&node_index))
+		return cr_node_cores_offset[node_index];
+
+	return cr_node_cores_offset[node_record_count];
 }
 
 /* Return a bitmap the size of the machine in cores. On a Bluegene
