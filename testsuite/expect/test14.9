@@ -44,9 +44,15 @@ proc cleanup {} {
 	run_command -none "$sacctmgr -vi delete account name=$test_name"
 }
 
+if { [get_config_param -dbd "AllowNoDefAcct"] eq "Yes" } {
+	set def_acct " defaultaccount=$test_name"
+} else {
+	set def_acct ""
+}
+
 # Setup the test user
 run_command -fail "$sacctmgr -vi add account name=$test_name"
-run_command -fail "$sacctmgr -vi add user name=$testsuite_user account=$test_name"
+run_command -fail "$sacctmgr -vi add user name=$testsuite_user account=$test_name$def_acct"
 run_command -fail "$sacctmgr -vi update user $testsuite_user set adminlevel=None"
 
 #

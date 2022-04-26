@@ -48,10 +48,16 @@ if {![check_run_as_user $testsuite_user]} {
 	skip "This test needs testsuite_user configured in globals.local"
 }
 
+if { [get_config_param -dbd "AllowNoDefAcct"] eq "Yes" } {
+	set def_acct " defaultaccount=$test_name"
+} else {
+	set def_acct ""
+}
+
 # Provide the right permissions to $testsuite_user
 cleanup
 run_command -fail "$sacctmgr -vi add account name=$test_name"
-run_command -fail "$sacctmgr -vi add user name=$testsuite_user account=$test_name"
+run_command -fail "$sacctmgr -vi add user name=$testsuite_user account=$test_name$def_acct"
 run_command -fail "$sacctmgr -vi update user $testsuite_user set adminlevel=None"
 
 #
