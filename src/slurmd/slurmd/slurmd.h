@@ -57,6 +57,7 @@ extern int devnull;
 extern bool get_reg_resp;
 
 typedef struct {
+	int (*container_join)(uint32_t job_id, uid_t uid);
 	char **gres_job_env;
 	uint32_t het_job_id;
 	uint32_t jobid;

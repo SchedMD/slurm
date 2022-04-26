@@ -45,13 +45,13 @@
 #include "src/common/macros.h"
 #include "src/common/plugstack.h"
 #include "src/common/prep.h"
+#include "src/common/run_command.h"
 #include "src/common/track_script.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmd/common/job_container_plugin.h"
-#include "src/slurmd/common/run_script.h"
 #include "src/slurmd/slurmd/req.h"
 
 #include "prep_script.h"
@@ -71,13 +71,9 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 {
 	char *name = is_epilog ? "epilog" : "prolog";
 	char *path = is_epilog ? slurm_conf.epilog : slurm_conf.prolog;
-	char **env = _build_env(job_env, cred, is_epilog);
-	int status = 0, rc;
+	char **env = NULL;
+	int status = 0;
 	uint32_t jobid = job_env->jobid;
-	int timeout = slurm_conf.prolog_epilog_timeout;
-
-	if (timeout == NO_VAL16)
-		timeout = -1;
 
 #ifdef HAVE_NATIVE_CRAY
 	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL))
@@ -91,10 +87,57 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	 *   prolog/epilog status.
 	 */
 	if ((is_epilog && spank_has_epilog()) ||
-	    (!is_epilog && spank_has_prolog()))
+	    (!is_epilog && spank_has_prolog())) {
+		if (!env)
+			env = _build_env(job_env, cred, is_epilog);
 		status = _run_spank_job_script(name, env, jobid);
-	if ((rc = run_script(name, path, jobid, timeout, env, job_env->uid)))
+	}
+
+	if (path) {
+		int rc;
+		int timeout = slurm_conf.prolog_epilog_timeout;
+		char *cmd_argv[2];
+		char *resp = NULL;
+		run_command_args_t run_command_args = {
+			.container_join = job_env->container_join,
+			.job_id = jobid,
+			.script_argv = cmd_argv,
+			.script_path = path,
+			.script_type = name,
+			.status = &rc,
+		};
+
+		if (!env)
+			env = _build_env(job_env, cred, is_epilog);
+
+		if (timeout == NO_VAL16)
+			timeout = -1;
+
+		cmd_argv[0] = path;
+		cmd_argv[1] = NULL;
+
+		run_command_args.env = env;
+		run_command_args.max_wait = timeout;
+
+		resp = run_command(&run_command_args);
+
+		if (rc) {
+			if (WIFEXITED(rc))
+				error("%s failed: rc:%u output:%s",
+				      name, WEXITSTATUS(rc), resp);
+			else if (WIFSIGNALED(rc))
+				error("%s killed by signal %u output:%s",
+				      name, WTERMSIG(rc), resp);
+			else
+				error("%s didn't run: status:%d reason:%s",
+				      name, rc, resp);
+			rc = SLURM_ERROR;
+		} else
+			debug2("%s success rc:%d output:%s",
+			       name, rc, resp);
 		status = rc;
+		xfree(resp);
+	}
 
 	env_array_free(env);
 
