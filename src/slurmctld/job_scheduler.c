@@ -569,7 +569,9 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			acct_policy_handle_accrue_time(job_ptr, false);
 			if ((job_ptr->state_reason != WAIT_NO_REASON) &&
 			    (job_ptr->state_reason != WAIT_PRIORITY) &&
-			    (job_ptr->state_reason != WAIT_RESOURCES)) {
+			    (job_ptr->state_reason != WAIT_RESOURCES) &&
+			    (job_ptr->state_reason !=
+			     job_ptr->state_reason_prev_db)) {
 				job_ptr->state_reason_prev_db =
 					job_ptr->state_reason;
 				last_job_update = now;
