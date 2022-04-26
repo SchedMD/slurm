@@ -1437,6 +1437,7 @@ extern void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 {
 	if (msg) {
 		int i;
+		slurm_cred_destroy(msg->cred);
 		xfree(msg->details);
 		FREE_NULL_LIST(msg->job_gres_info);
 		xfree(msg->nodes);
