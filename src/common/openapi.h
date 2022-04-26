@@ -134,8 +134,6 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp);
 
 /*
  * Extracts the db_conn using given auth context
- * The context is only valid inside of the handler function and must be cleaned
- * up with openapi_destroy_db_conn()
  * Note: This must be implemented in process calling openapi functions.
  */
 extern void *openapi_get_db_conn(void *ctxt);
