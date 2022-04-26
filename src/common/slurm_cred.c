@@ -159,21 +159,19 @@ struct slurm_cred_context {
 
 /*
  * Completion of slurm job credential type, slurm_cred_t:
- *
- * FIXME: 2 versions after 21.08 you can remove job_mem_limit and step_mem_limit
  */
 #define CRED_MAGIC 0x0b0b0b
 struct slurm_job_credential {
-	int      magic;
+	int magic;
 	pthread_rwlock_t mutex;
 	buf_t *buffer;		/* packed representation of credential */
 	uint16_t buf_version;	/* version buffer was generated with */
 
 	slurm_cred_arg_t *arg;	/* fields */
 
-	time_t    ctime;	/* time of credential creation		*/
-	char     *signature; 	/* credential signature			*/
-	uint32_t siglen;	/* signature length in bytes		*/
+	time_t ctime;		/* time of credential creation */
+	char *signature; 	/* credential signature */
+	uint32_t siglen;	/* signature length in bytes */
 	bool verified;		/* credential has been verified successfully */
 };
 
