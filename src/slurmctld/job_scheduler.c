@@ -567,12 +567,11 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			job_ptr->bit_flags &= ~BACKFILL_SCHED;
 			set_job_failed_assoc_qos_ptr(job_ptr);
 			acct_policy_handle_accrue_time(job_ptr, false);
-			if (job_ptr->state_reason != WAIT_NO_REASON) {
-				if ((job_ptr->state_reason != WAIT_PRIORITY) &&
-				    (job_ptr->state_reason != WAIT_RESOURCES)) {
-					job_ptr->state_reason_prev_db =
-						job_ptr->state_reason;
-				}
+			if ((job_ptr->state_reason != WAIT_NO_REASON) &&
+			    (job_ptr->state_reason != WAIT_PRIORITY) &&
+			    (job_ptr->state_reason != WAIT_RESOURCES)) {
+				job_ptr->state_reason_prev_db =
+					job_ptr->state_reason;
 				last_job_update = now;
 			}
 		}
