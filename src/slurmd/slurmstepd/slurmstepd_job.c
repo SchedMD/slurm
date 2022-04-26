@@ -265,7 +265,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *job)
 
 	job->alias_list = xstrdup(cred_arg->job_alias_list);
 
-	slurm_cred_free_args(cred_arg);
+	slurm_cred_unlock_args(cred);
 }
 
 /* create a slurmd job structure from a launch tasks message */

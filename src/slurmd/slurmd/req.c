@@ -1162,14 +1162,14 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	req->node_cpus = step_cpus;
 
 	*step_hset = s_hset;
-	slurm_cred_free_args(arg);
+	slurm_cred_unlock_args(cred);
 	return SLURM_SUCCESS;
 
 fail:
 	if (s_hset)
 		hostset_destroy(s_hset);
 	*step_hset = NULL;
-	slurm_cred_free_args(arg);
+	slurm_cred_unlock_args(cred);
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 }
 
@@ -1869,7 +1869,7 @@ _set_batch_job_limits(slurm_msg_t *msg)
 		_setup_x11_display(req->job_id, SLURM_BATCH_SCRIPT,
 				   &req->environment, &req->envc);
 
-	slurm_cred_free_args(arg);
+	slurm_cred_unlock_args(req->cred);
 }
 
 /* These functions prevent a possible race condition if the batch script's
@@ -1948,7 +1948,7 @@ static int _convert_job_mem(slurm_msg_t *msg)
 	slurm_cred_get_mem(req->cred, conf->node_name, __func__,
 			   &req->job_mem_limit, NULL);
 
-	slurm_cred_free_args(arg);
+	slurm_cred_unlock_args(req->cred);
 	return SLURM_SUCCESS;
 }
 

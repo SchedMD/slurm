@@ -178,7 +178,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	if ((job_node_id < 0) || (job_node_id > arg->job_nhosts)) {
 		error("%s: missing node %s in job credential (%s)",
 		      __func__, conf->node_name, arg->job_hostlist);
-		slurm_cred_free_args(arg);
+		slurm_cred_unlock_args(req->cred);
 		return;
 	}
 
@@ -787,7 +787,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	if ((job_node_id < 0) || (job_node_id > arg->job_nhosts)) {
 		error("%s: missing node %s in job credential (%s)",
 		      __func__, conf->node_name, arg->job_hostlist);
-		slurm_cred_free_args(arg);
+		slurm_cred_unlock_args(req->cred);
 		return NULL;
 	}
 	start = _get_local_node_info(arg, job_node_id, &sockets, &cores);
@@ -859,7 +859,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	xfree(str);
 
 	FREE_NULL_BITMAP(req_map);
-	slurm_cred_free_args(arg);
+	slurm_cred_unlock_args(req->cred);
 	return hw_map;
 }
 

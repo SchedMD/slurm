@@ -226,7 +226,16 @@ slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg);
  * slurm_cred_get_args() or slurm_cred_verify() */
 void slurm_cred_free_args(slurm_cred_arg_t *arg);
 
-/* Make a copy of the credential's arguments */
+/*
+ * Release the internal lock acquired through slurm_cred_get_args()
+ * or slurm_cred_verify().
+ */
+extern void slurm_cred_unlock_args(slurm_cred_t *cred);
+
+/*
+ * Access the credential's arguments. NULL on error.
+ * *Must* release lock with slurm_cred_unlock_arg().
+ */
 extern slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred);
 
 /*
@@ -260,6 +269,8 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred,
  *   - If credential is reissue will purge the old credential
  *   - Credential has not been revoked
  *   - Credential has not been replayed
+ *
+ * *Must* release lock with slurm_cred_unlock_arg().
  */
 extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
 					   slurm_cred_t *cred);

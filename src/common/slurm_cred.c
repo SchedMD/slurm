@@ -670,6 +670,12 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg);
 }
 
+extern void slurm_cred_unlock_args(slurm_cred_t *cred)
+{
+	slurm_rwlock_unlock(&cred->mutex);
+}
+
+#if 0
 static void _copy_cred_to_arg(slurm_cred_t *credential, slurm_cred_arg_t *arg)
 {
 	slurm_cred_arg_t *cred = credential->arg;
@@ -742,20 +748,17 @@ static void _copy_cred_to_arg(slurm_cred_t *credential, slurm_cred_arg_t *arg)
 
 	arg->selinux_context = xstrdup(cred->selinux_context);
 }
+#endif
 
+/*
+ * Caller *must* release lock.
+ */
 slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred)
 {
-	slurm_cred_arg_t *arg = xmalloc(sizeof(*arg));
 	xassert(cred != NULL);
 
-	/*
-	 * set arguments to cred contents
-	 */
 	slurm_rwlock_rdlock(&cred->mutex);
-	_copy_cred_to_arg(cred, arg);
-	slurm_rwlock_unlock(&cred->mutex);
-
-	return arg;
+	return cred->arg;
 }
 
 /*
@@ -763,6 +766,10 @@ slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred)
  * cred IN - job credential
  * cred_arg_type in - Field desired
  * RET - pointer to the information of interest (NOT COPIED), NULL on error
+ */
+/*
+ * FIXME: for correct thread-safety, this should hold a read lock,
+ * and force callers to release through slurm_cred_unlock_args().
  */
 extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
 {
@@ -788,10 +795,15 @@ extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
 	return rc;
 }
 
+/*
+ * Returns NULL on error.
+ *
+ * On success, returns a pointer to the arg structure within the credential.
+ * Caller *must* release the lock.
+ */
 extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
 					   slurm_cred_t *cred)
 {
-	slurm_cred_arg_t *arg = NULL;
 	time_t now = time(NULL);
 	int errnum;
 
@@ -834,12 +846,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
 
 	slurm_mutex_unlock(&ctx->mutex);
 
-	arg = xmalloc(sizeof(slurm_cred_arg_t));
-	_copy_cred_to_arg(cred, arg);
-
-	slurm_rwlock_unlock(&cred->mutex);
-
-	return arg;
+	return cred->arg;
 
 error:
 	errnum = slurm_get_errno();

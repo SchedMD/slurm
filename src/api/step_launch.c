@@ -1615,7 +1615,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	cred_args = slurm_cred_get_args(ctx->step_resp->cred);
 	//info("hostlist=%s", cred_args->step_hostlist);
 	ret_list = slurm_send_recv_msgs(cred_args->step_hostlist, &msg, timeout);
-	slurm_cred_free_args(cred_args);
+	slurm_cred_unlock_args(ctx->step_resp->cred);
 #else
 	ret_list = slurm_send_recv_msgs(nodelist, &msg, timeout);
 #endif
