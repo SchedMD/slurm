@@ -2820,16 +2820,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		reg_msg->boards = 1;
 	}
 
-	/* reset partition and node config (in that order) */
-
-	if (error_code == SLURM_SUCCESS) {
-		node_ptr->boards  = reg_msg->boards;
-		node_ptr->tot_sockets = reg_msg->sockets;
-		node_ptr->cores   = reg_msg->cores;
-		node_ptr->threads = reg_msg->threads;
-		node_ptr->cpus    = reg_msg->cpus;
-		node_ptr->tot_cores = node_ptr->tot_sockets * node_ptr->cores;
-	}
 	if (!(slurm_conf.conf_flags & CTL_CONF_OR)) {
 		double node_reg_mem_percent;
 		if (conf_node_reg_mem_percent == -1) {
@@ -2867,9 +2857,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			xstrcat(reason_down, "Low TmpDisk");
 		}
 	}
-
-	node_ptr->real_memory = reg_msg->real_memory;
-	node_ptr->tmp_disk = reg_msg->tmp_disk;
 
 	if (reg_msg->cpu_spec_list && !node_ptr->cpu_spec_list) {
 		xfree(node_ptr->cpu_spec_list);
