@@ -156,8 +156,7 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 libslurmd_common_la_LIBADD =
 am_libslurmd_common_la_OBJECTS = core_spec_plugin.lo fname.lo \
 	job_container_plugin.lo proctrack.lo slurmd_cgroup.lo \
-	slurmstepd_init.lo run_script.lo task_plugin.lo set_oomadj.lo \
-	xcpuinfo.lo
+	slurmstepd_init.lo task_plugin.lo set_oomadj.lo xcpuinfo.lo
 libslurmd_common_la_OBJECTS = $(am_libslurmd_common_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -187,10 +186,9 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/core_spec_plugin.Plo \
 	./$(DEPDIR)/fname.Plo ./$(DEPDIR)/job_container_plugin.Plo \
-	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/run_script.Plo \
-	./$(DEPDIR)/set_oomadj.Plo ./$(DEPDIR)/slurmd_cgroup.Plo \
-	./$(DEPDIR)/slurmstepd_init.Plo ./$(DEPDIR)/task_plugin.Plo \
-	./$(DEPDIR)/xcpuinfo.Plo
+	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/set_oomadj.Plo \
+	./$(DEPDIR)/slurmd_cgroup.Plo ./$(DEPDIR)/slurmstepd_init.Plo \
+	./$(DEPDIR)/task_plugin.Plo ./$(DEPDIR)/xcpuinfo.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -509,7 +507,6 @@ libslurmd_common_la_SOURCES = \
 	proctrack.c proctrack.h \
 	slurmd_cgroup.c slurmd_cgroup.h \
 	slurmstepd_init.c slurmstepd_init.h \
-	run_script.c run_script.h \
 	task_plugin.c task_plugin.h \
 	set_oomadj.c set_oomadj.h \
 	xcpuinfo.c xcpuinfo.h
@@ -586,7 +583,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_container_plugin.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_script.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/set_oomadj.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmd_cgroup.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_init.Plo@am__quote@ # am--include-marker
@@ -722,7 +718,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/fname.Plo
 	-rm -f ./$(DEPDIR)/job_container_plugin.Plo
 	-rm -f ./$(DEPDIR)/proctrack.Plo
-	-rm -f ./$(DEPDIR)/run_script.Plo
 	-rm -f ./$(DEPDIR)/set_oomadj.Plo
 	-rm -f ./$(DEPDIR)/slurmd_cgroup.Plo
 	-rm -f ./$(DEPDIR)/slurmstepd_init.Plo
@@ -777,7 +772,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/fname.Plo
 	-rm -f ./$(DEPDIR)/job_container_plugin.Plo
 	-rm -f ./$(DEPDIR)/proctrack.Plo
-	-rm -f ./$(DEPDIR)/run_script.Plo
 	-rm -f ./$(DEPDIR)/set_oomadj.Plo
 	-rm -f ./$(DEPDIR)/slurmd_cgroup.Plo
 	-rm -f ./$(DEPDIR)/slurmstepd_init.Plo

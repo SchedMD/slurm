@@ -17,7 +17,6 @@ libslurmd_common_la_SOURCES =    \
 	proctrack.c proctrack.h \
 	slurmd_cgroup.c slurmd_cgroup.h \
 	slurmstepd_init.c slurmstepd_init.h \
-	run_script.c run_script.h \
 	task_plugin.c task_plugin.h \
 	set_oomadj.c set_oomadj.h \
 	xcpuinfo.c xcpuinfo.h
