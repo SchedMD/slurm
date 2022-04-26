@@ -442,6 +442,12 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	rc = callback(args->context->con->name, args->method, params, query,
 		      callback_tag, resp, args->context->auth);
 
+	/*
+	 * Clear auth context after callback is complete. Client has to provide
+	 * full auth for every request already.
+	 */
+	FREE_NULL_REST_AUTH(args->context->auth);
+
 	if (data_get_type(resp) != DATA_TYPE_NULL) {
 		int rc2 = data_g_serialize(&body, resp, write_mime,
 					   DATA_SER_FLAGS_PRETTY);
@@ -566,8 +572,7 @@ cleanup:
 	FREE_NULL_DATA(params);
 
 	/* always clear the auth context */
-	rest_auth_g_free(args->context->auth);
-	args->context->auth = NULL;
+	FREE_NULL_REST_AUTH(args->context->auth);
 
 	return rc;
 }

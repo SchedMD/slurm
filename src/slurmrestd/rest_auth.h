@@ -84,16 +84,17 @@ extern int rest_auth_g_apply(rest_auth_context_t *context);
 
 /*
  * Retrieve db_conn for slurmdbd calls.
- * WARNING: pointer will be invalidated by next rest_auth_g_free()
+ * WARNING: pointer will be invalidated by next call to rest_auth_g_free()
  * RET NULL on error or db_conn pointer
  */
 extern void *rest_auth_g_get_db_conn(rest_auth_context_t *context);
 
-/*
- * Clear current auth context
- * will fatal on error
- */
-extern void rest_auth_g_clear(void);
+#define FREE_NULL_REST_AUTH(_X)			\
+	do {					\
+		if (_X)				\
+			rest_auth_g_free(_X);	\
+		_X = NULL;			\
+	} while (0)
 
 /*
  * Setup locks and register REST authentication plugins.

@@ -166,6 +166,8 @@ static void _clear_auth(rest_auth_context_t *ctxt)
 {
 	_check_magic(ctxt);
 
+	auth_g_thread_clear();
+
 	if (ctxt->plugin_id) {
 		bool found = false;
 
@@ -185,8 +187,6 @@ static void _clear_auth(rest_auth_context_t *ctxt)
 	xassert(!ctxt->plugin_data);
 	xfree(ctxt->user_name);
 	ctxt->plugin_id = 0;
-
-	rest_auth_g_clear();
 }
 
 extern int rest_authenticate_http_request(on_http_request_args_t *args)
@@ -222,7 +222,7 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args)
 			break;
 	}
 
-	rest_auth_g_clear();
+	FREE_NULL_REST_AUTH(args->context->auth);
 	return rc;
 }
 
@@ -248,11 +248,6 @@ extern int rest_auth_g_apply(rest_auth_context_t *context)
 			return (*(ops[i].apply))(context);
 
 	return ESLURM_AUTH_CRED_INVALID;
-}
-
-extern void rest_auth_g_clear(void)
-{
-	auth_g_thread_clear();
 }
 
 extern void *openapi_get_db_conn(void *ctxt)
