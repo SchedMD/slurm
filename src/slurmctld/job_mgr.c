@@ -16031,6 +16031,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	job_ptr->suspend_time = 0;
 	job_ptr->tot_sus_time = 0;
 	job_ptr->next_step_id = 0;
+	job_ptr->state_reason_prev_db = 0;
 
 	job_ptr->node_cnt = 0;
 	xfree(job_ptr->nodes);
