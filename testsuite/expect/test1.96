@@ -36,7 +36,7 @@ set task_cnt           8
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 } elseif {![file exists $oshcc]} {
-	skip "$oshcc does not exists"
+	skip "$oshcc does not exist"
 }
 
 proc cleanup {} {
