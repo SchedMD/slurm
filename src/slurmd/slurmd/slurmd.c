@@ -2827,7 +2827,6 @@ extern int run_script_health_check(void)
 		 * (not on the heap).
 		 */
 		run_command_args_t run_command_args = {
-			.env = env,
 			.max_wait = 60 * 1000,
 			.script_argv = cmd_argv,
 			.script_path = slurm_conf.health_check_program,
@@ -2839,9 +2838,13 @@ extern int run_script_health_check(void)
 		cmd_argv[1] = NULL;
 
 		setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
+		/*
+		 * We need to set the pointer after we alter or we may be
+		 * pointing to the wrong place otherwise.
+		 */
+		run_command_args.env = env;
 
 		resp = run_command(&run_command_args);
-
 		if (rc) {
 			if (WIFEXITED(rc))
 				error("health_check failed: rc:%u output:%s",
