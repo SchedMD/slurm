@@ -104,7 +104,7 @@ typedef struct {
 
 #define GRES_CONF_ENV_ONEAPI SLURM_BIT(11) /* Set ZE_AFFINITY_MASK */
 
-#define GRES_CONF_ENV_SET    0x000004E0   /* Easy check if any of
+#define GRES_CONF_ENV_SET    0x000008E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */
 
 #define GRES_NO_CONSUME		0x0001	/* Requesting no consume of resources */
