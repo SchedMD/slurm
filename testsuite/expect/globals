@@ -1349,7 +1349,7 @@ proc cancel_job args {
 	}
 	foreach job_id $job_list_clean {
 		if {[wait_for_job $job_id "DONE" $het_job]} {
-			set message "Job $job_id did not end when cancelled"
+			set message "Job ($job_id) did not end when cancelled"
 			if {$fatal} {
 				fail $message
 			} else {
@@ -1951,7 +1951,7 @@ proc wait_for_file args {
 		}
 		exec /bin/ls $dir_name
 	}
-	set message "Timeout waiting for file $file_name"
+	set message "Timeout waiting for file ($file_name)"
 	if {$fatal} {
 		fail $message
 	}
@@ -2045,7 +2045,7 @@ proc _wait_for_single_job args {
 	}
 
 	if {$job_id == 0} {
-		set message "Invalid job ID: $job_id"
+		set message "Invalid job ID ($job_id)"
 		if {$fatal} {
 			fail $message
 		}
@@ -2074,7 +2074,7 @@ proc _wait_for_single_job args {
 					sleep 2
 					return $::RETURN_SUCCESS
 				}
-				set message "Job $job_id is $state, but we wanted $desired_state"
+				set message "Job ($job_id) is $state, but we wanted $desired_state"
 				if {$fatal} {
 					fail $message
 				}
@@ -2095,7 +2095,7 @@ proc _wait_for_single_job args {
 					sleep 2
 					return $::RETURN_SUCCESS
 				}
-				set message "Job $job_id is $state, but we wanted $desired_state"
+				set message "Job ($job_id) is $state, but we wanted $desired_state"
 				if {$fatal} {
 					fail $message
 				}
@@ -2412,7 +2412,7 @@ proc wait_for_account_done args {
 		}
 
 		if { $my_delay > $timeout } {
-			log_error "Timeout waiting for account(s) '$accounts' to be finished"
+			log_error "Timeout waiting for account(s) ($accounts) to be finished"
 			log_user 1
 			return $::RETURN_TIMEOUT
 		}
@@ -2503,7 +2503,7 @@ proc wait_for_part_done args {
 		}
 
 		if { $my_delay > $timeout } {
-			log_error "Timeout waiting for partition '$partition' to be finished"
+			log_error "Timeout waiting for partition ($partition) to be finished"
 			return $::RETURN_TIMEOUT
 		}
 
@@ -4549,7 +4549,7 @@ proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 	foreach host $check_hosts_list {
 		set idx_cur [lsearch $part_hosts_list $host]
 		if {$idx_cur == -1} {
-			fail "host ($host) not found in list of hosts from partition $partition"
+			fail "Host ($host) not found in list of hosts from partition $partition"
 		}
 		if {[info exists idx_old]} {
 			if {$idx_cur != [expr $idx_old + 1]} {
@@ -6209,7 +6209,12 @@ proc submit_job args {
 		set run_options [lrange $args 0 [expr [llength $args] - 2 ]]
 	}
 
-	set output [run_command_output {*}$run_options "$env $sbatch $job_options"]
+	set command ""
+	if {$env ne ""} {
+		set command "$env "
+	}
+	set command "$command$sbatch $job_options"
+	set output [run_command_output {*}$run_options "$command"]
 	regexp {Submitted \S+ job (\d+)} $output - job_id
 
 	return $job_id

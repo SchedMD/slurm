@@ -73,7 +73,7 @@ expect {
 if {$rpc_rec_cnt > 0} {
 	incr matches
 }
-subtest {$matches == 5} "sacctmgr should show all expected sections" "($matches != 5)"
+subtest {$matches == 5} "sacctmgr should show all expected sections" "$matches != 5"
 
 #
 # sacctmgr clear stats
