@@ -109,7 +109,7 @@ extern void *slurm_rest_auth_p_get_db_conn(rest_auth_context_t *context)
 	errno = 0;
 	data->db_conn = slurmdb_connection_get(NULL);
 
-	if (!errno)
+	if (!errno && data->db_conn)
 		return data->db_conn;
 
 	error("%s: unable to connect to slurmdbd: %m",
