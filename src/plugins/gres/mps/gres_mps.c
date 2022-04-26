@@ -380,12 +380,12 @@ extern gres_epilog_info_t *gres_p_epilog_build_env(
 extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 				  gres_epilog_info_t *gres_ei, int node_inx)
 {
-	int dev_inx = -1, env_inx = 0, global_id = -1, i;
+	int dev_inx = -1, global_id = -1, i;
 	uint64_t count_on_dev, gres_per_node = 0, percentage;
 	gres_device_t *gres_device;
 	ListIterator iter;
 
-	if (gres_common_epilog_set_env(epilog_env_ptr, &env_inx,
+	if (gres_common_epilog_set_env(epilog_env_ptr,
 				       gres_ei, node_inx,
 				       GRES_CONF_ENV_NVML, gres_devices))
 		return;
@@ -417,17 +417,10 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 		} else
 			percentage = 0;
 
-		/*
-		 * Make space for CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
-		 * *epilog_env_ptr and env_inx are
-		 * alreay set from gres_common_epilog_set_env()
-		 */
 		xassert(*epilog_env_ptr);
-		xrecalloc(*epilog_env_ptr, env_inx + 2, sizeof(char *));
-
-		xstrfmtcat((*epilog_env_ptr)[env_inx++],
-			   "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE=%"PRIu64,
-			   percentage);
+		env_array_overwrite_fmt(epilog_env_ptr,
+					"CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
+					PRIu64, percentage);
 	}
 
 	return;
