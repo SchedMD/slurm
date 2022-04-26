@@ -40,7 +40,9 @@
 #include "src/common/track_script.h"
 
 typedef struct {
+	int (*container_join)(uint32_t job_id, uid_t uid);
 	char **env;
+	uint32_t job_id;
 	int max_wait;
 	char **script_argv;
 	const char *script_path;

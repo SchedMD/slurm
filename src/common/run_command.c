@@ -193,6 +193,16 @@ extern char *run_command(run_command_args_t *args)
 	child_proc_count++;
 	slurm_mutex_unlock(&proc_count_mutex);
 	if ((cpid = fork()) == 0) {
+		/*
+		 * container_g_join() needs to be called in the child process
+		 * to avoid a race condition if this process makes a file
+		 * before we add the pid to the container in the parent.
+		 */
+		if (args->container_join &&
+		    ((*(args->container_join))(args->job_id, getuid()) !=
+		     SLURM_SUCCESS))
+			error("container_g_join(%u): %m", args->job_id);
+
 		if (args->max_wait != -1) {
 			int devnull;
 			if ((devnull = open("/dev/null", O_RDWR)) < 0) {
