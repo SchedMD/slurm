@@ -1881,6 +1881,20 @@ inside the limit.
 .IP
 
 .TP
+\fBMaxJobsAccruePerAccount\fR
+Maximum number of jobs an account (or subacct) can have accruing age priority
+at any given time. This limit only applies to the job's QOS and not the
+partition's QOS.
+.IP
+
+.TP
+\fBMaxJobsAccruePerUser\fR
+Maximum number of jobs a user can have accruing age priority at any given
+time. This limit only applies to the job's QOS and not the partition's
+QOS.
+.IP
+
+.TP
 \fBMaxTRESMinsPerJob\fR
 Maximum number of TRES minutes each job is able to use.
 To clear a previously set value use the modify command with a new
