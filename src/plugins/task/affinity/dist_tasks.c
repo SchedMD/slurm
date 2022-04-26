@@ -185,7 +185,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	start = _get_local_node_info(arg, job_node_id, &sockets, &cores);
 	if ((sockets * cores) == 0) {
 		error("%s: socket and core count both zero", __func__);
-		slurm_cred_free_args(arg);
+		slurm_cred_unlock_args(req->cred);
 		return;
 	}
 
@@ -271,7 +271,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	}
 	FREE_NULL_BITMAP(hw_map);
 	FREE_NULL_BITMAP(req_map);
-	slurm_cred_free_args(arg);
+	slurm_cred_unlock_args(req->cred);
 }
 
 static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,

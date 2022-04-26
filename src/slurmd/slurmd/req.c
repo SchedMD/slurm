@@ -2317,7 +2317,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	} else
 		req->ngids = group_cache_lookup(req->uid, req->gid,
 						req->user_name, &req->gids);
-	slurm_cred_free_args(cred_arg);
+	slurm_cred_unlock_args(req->cred);
 
 	task_g_slurmd_batch_request(req);	/* determine task affinity */
 
