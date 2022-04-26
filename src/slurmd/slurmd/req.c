@@ -4691,20 +4691,6 @@ _steps_completed_now(uint32_t jobid)
 	return rc;
 }
 
-static void _epilog_complete_msg_setup(
-	slurm_msg_t *msg, epilog_complete_msg_t *req, uint32_t jobid, int rc)
-{
-	slurm_msg_t_init(msg);
-	memset(req, 0, sizeof(epilog_complete_msg_t));
-
-	req->job_id      = jobid;
-	req->return_code = rc;
-	req->node_name   = conf->node_name;
-
-	msg->msg_type    = MESSAGE_EPILOG_COMPLETE;
-	msg->data        = req;
-}
-
 /*
  *  Send epilog complete message to currently active controller.
  *   Returns SLURM_SUCCESS if message sent successfully,
@@ -4715,7 +4701,15 @@ static int _epilog_complete(uint32_t jobid, int rc)
 	slurm_msg_t msg;
 	epilog_complete_msg_t req;
 
-	_epilog_complete_msg_setup(&msg, &req, jobid, rc);
+	slurm_msg_t_init(&msg);
+	memset(&req, 0, sizeof(req));
+
+	req.job_id = jobid;
+	req.return_code = rc;
+	req.node_name = conf->node_name;
+
+	msg.msg_type = MESSAGE_EPILOG_COMPLETE;
+	msg.data = &req;
 
 	/*
 	 * Note: No return code from message, slurmctld will resend
