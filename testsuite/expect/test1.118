@@ -119,8 +119,8 @@ foreach option $options {
 			wait
 		}
 	}
-	subtest {$job_id != 0} "$cmd should have given an id"
-	subtest {$matches == 0} "$cmd should not find 'mutually exclusive'" "got $matches matches"
+	subtest {$job_id != 0} "$client should have given an id"
+	subtest {$matches == 0} "$client should not find 'mutually exclusive'" "got $matches matches"
 
 	set threads_req [get_job_param $job_id "ReqB:S:C:T"]
 	set tasks_req [get_job_param $job_id "NtasksPerN:B:S:C"]

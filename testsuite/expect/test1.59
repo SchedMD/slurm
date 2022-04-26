@@ -215,7 +215,7 @@ for {set i 0} {$i<5} {incr i} {
 
 	if { $i==1 } {
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
-			fail "node names not set from previous srun"
+			fail "Node names not set from previous srun"
 		}
 		set 1node0 $node0
 		set 1node1 $node1
