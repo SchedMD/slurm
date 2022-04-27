@@ -49,6 +49,7 @@
 
 #include <dirent.h>
 #include <fcntl.h>
+#include <float.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1359,7 +1360,7 @@ static void _item_analysis_double(hsize_t nb_tables, hid_t *tables,
 
 	buffer = xmalloc(buf_size);
 	for (;;) {
-		min_val = UINT64_MAX;
+		min_val = DBL_MAX;
 		max_val = 0;
 		sum = 0;
 		nb_series_in_smp = 0;
