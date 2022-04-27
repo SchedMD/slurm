@@ -663,6 +663,7 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->sockets_per_node);
 	xfree(arg->job_mem_alloc);
 	xfree(arg->job_mem_alloc_rep_count);
+	xfree(arg->job_partition);
 	xfree(arg->job_reservation);
 	xfree(arg->step_mem_alloc);
 	xfree(arg->step_mem_alloc_rep_count);
@@ -1265,6 +1266,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->job_account, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->job_alias_list, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
+		safe_unpackstr_xmalloc(&cred->job_partition, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->job_reservation, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack16(&cred->x11, buffer);
@@ -1758,6 +1760,7 @@ static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		packstr(cred->job_account, buffer);
 		packstr(cred->job_alias_list, buffer);
 		packstr(cred->job_constraints, buffer);
+		packstr(cred->job_partition, buffer);
 		packstr(cred->job_reservation, buffer);
 		packstr(cred->step_hostlist, buffer);
 		pack16(cred->x11, buffer);

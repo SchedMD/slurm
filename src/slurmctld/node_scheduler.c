@@ -2930,6 +2930,9 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 		cred_arg->sock_core_rep_count = resrcs->sock_core_rep_count;
 		cred_arg->sockets_per_node = resrcs->sockets_per_node;
 	}
+
+	if (job_ptr->part_ptr)
+		cred_arg->job_partition = job_ptr->part_ptr->name;
 }
 
 /*

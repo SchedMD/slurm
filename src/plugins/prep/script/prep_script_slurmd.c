@@ -207,6 +207,10 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 	if (job_env->node_list)
 		setenvf(&env, "SLURM_NODELIST", "%s", job_env->node_list);
 
+	/*
+	 * Overridden by the credential version if available.
+	 * Remove two versions after 22.05.
+	 */
 	if (job_env->partition)
 		setenvf(&env, "SLURM_JOB_PARTITION", "%s", job_env->partition);
 
@@ -224,6 +228,9 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_constraints)
 			setenvf(&env, "SLURM_JOB_CONSTRAINTS", "%s",
 				cred_arg->job_constraints);
+		if (cred_arg->job_partition)
+			setenvf(&env, "SLURM_JOB_PARTITION", "%s",
+				cred_arg->job_partition);
 		if (cred_arg->job_reservation)
 			setenvf(&env, "SLURM_JOB_RESERVATION", "%s",
 				cred_arg->job_reservation);

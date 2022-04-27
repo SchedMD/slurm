@@ -8066,7 +8066,6 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack16(msg->ntasks_per_core, buffer);
 		pack16(msg->ntasks_per_tres, buffer);
 		pack16(msg->ntasks_per_socket, buffer);
-		packstr(msg->partition, buffer);
 		pack64(msg->job_mem_lim, buffer);
 		pack64(msg->step_mem_lim, buffer);
 
@@ -8392,7 +8391,6 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack16(&msg->ntasks_per_core, buffer);
 		safe_unpack16(&msg->ntasks_per_tres, buffer);
 		safe_unpack16(&msg->ntasks_per_socket, buffer);
-		safe_unpackstr_xmalloc(&msg->partition, &uint32_tmp, buffer);
 		safe_unpack64(&msg->job_mem_lim, buffer);
 		safe_unpack64(&msg->step_mem_lim, buffer);
 
@@ -9117,7 +9115,6 @@ static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
 
 		packstr(msg->alias_list, buffer);
 		packstr(msg->nodes, buffer);
-		packstr(msg->partition, buffer);
 		packstr(msg->std_err, buffer);
 		packstr(msg->std_out, buffer);
 		packstr(msg->work_dir, buffer);
@@ -9185,8 +9182,6 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 		safe_unpackstr_xmalloc(&launch_msg_ptr->alias_list, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->nodes, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&launch_msg_ptr->partition, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->std_err, &uint32_tmp,
 				       buffer);
