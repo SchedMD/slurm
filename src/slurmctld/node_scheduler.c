@@ -480,26 +480,9 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	agent_args->hostlist = hostlist;
 	agent_args->node_count = node_count;
 
-	kill_job = xmalloc(sizeof(kill_job_msg_t));
+	kill_job = create_kill_job_msg(job_ptr);
 	last_node_update = time(NULL);
-	kill_job->job_gres_info =
-		gres_g_epilog_build_env(job_ptr->gres_list_req, job_ptr->nodes);
-	kill_job->step_id.job_id = job_ptr->job_id;
-	kill_job->het_job_id = job_ptr->het_job_id;
-	kill_job->step_id.step_id = NO_VAL;
-	kill_job->step_id.step_het_comp = NO_VAL;
-	kill_job->job_state = job_ptr->job_state;
-	kill_job->job_uid = job_ptr->user_id;
-	kill_job->job_gid = job_ptr->group_id;
 	kill_job->nodes = xstrdup(job_ptr->nodes);
-	kill_job->time = time(NULL);
-	kill_job->start_time = job_ptr->start_time;
-	kill_job->details = xstrdup(job_ptr->state_desc);
-	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
-		job_ptr->select_jobinfo);
-	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
-					    job_ptr->spank_job_env);
-	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
 	kill_job->work_dir = xstrdup(job_ptr->details->work_dir);
 
 	agent_args->msg_args = kill_job;
@@ -4316,24 +4299,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 	agent_args->hostlist = hostlist_create(NULL);
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	agent_args->retry = 0;
-	kill_job = xmalloc(sizeof(kill_job_msg_t));
-	kill_job->job_gres_info	=
-		gres_g_epilog_build_env(job_ptr->gres_list_req,job_ptr->nodes);
-	kill_job->step_id.job_id    = job_ptr->job_id;
-	kill_job->het_job_id = job_ptr->het_job_id;
-	kill_job->step_id.step_id = NO_VAL;
-	kill_job->step_id.step_het_comp = NO_VAL;
-	kill_job->job_uid   = job_ptr->user_id;
-	kill_job->job_gid   = job_ptr->group_id;
-	kill_job->job_state = job_ptr->job_state;
-	kill_job->time      = time(NULL);
-	kill_job->start_time = job_ptr->start_time;
-	kill_job->details = xstrdup(job_ptr->state_desc);
-	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
-				   job_ptr->select_jobinfo);
-	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
-					    job_ptr->spank_job_env);
-	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
+	kill_job = create_kill_job_msg(job_ptr);
 	kill_job->work_dir = xstrdup(job_ptr->details->work_dir);
 
 	/* On a Cray system this will start the NHC early so it is

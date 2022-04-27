@@ -14895,9 +14895,36 @@ reply:
 	return rc;
 }
 
+extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr)
+{
+	kill_job_msg_t *msg = xmalloc(sizeof(*msg));
+
+	xassert(job_ptr);
+	xassert(job_ptr->details);
+
+	msg->details = xstrdup(job_ptr->state_desc);
+	msg->het_job_id = job_ptr->het_job_id;
+	msg->job_gres_info = gres_g_epilog_build_env(job_ptr->gres_list_req,
+						     job_ptr->nodes);
+	msg->job_state = job_ptr->job_state;
+	msg->job_uid = job_ptr->user_id;
+	msg->job_gid = job_ptr->group_id;
+	msg->select_jobinfo =
+		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
+	msg->start_time = job_ptr->start_time;
+	msg->step_id.job_id = job_ptr->job_id;
+	msg->step_id.step_het_comp = NO_VAL;
+	msg->step_id.step_id = NO_VAL;
+	msg->spank_job_env = xduparray(job_ptr->spank_job_env_size,
+				       job_ptr->spank_job_env);
+	msg->spank_job_env_size = job_ptr->spank_job_env_size;
+	msg->time = time(NULL);
+
+	return msg;
+}
+
 static void _send_job_kill(job_record_t *job_ptr)
 {
-	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
@@ -14905,34 +14932,16 @@ static void _send_job_kill(job_record_t *job_ptr)
 	int i;
 	node_record_t *node_ptr;
 #endif
-
-	xassert(job_ptr);
-	xassert(job_ptr->details);
+	kill_job_msg_t *kill_job = create_kill_job_msg(job_ptr);
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_TERMINATE_JOB;
 	agent_args->retry = 0;	/* re_kill_job() resends as needed */
 	agent_args->hostlist = hostlist_create(NULL);
-	kill_job = xmalloc(sizeof(kill_job_msg_t));
+
 	last_node_update    = time(NULL);
-	kill_job->job_gres_info	=
-		gres_g_epilog_build_env(job_ptr->gres_list_req, job_ptr->nodes);
-	kill_job->step_id.job_id = job_ptr->job_id;
-	kill_job->het_job_id = job_ptr->het_job_id;
-	kill_job->step_id.step_id = NO_VAL;
-	kill_job->step_id.step_het_comp = NO_VAL;
-	kill_job->job_state = job_ptr->job_state;
-	kill_job->job_uid   = job_ptr->user_id;
-	kill_job->job_gid   = job_ptr->group_id;
+
 	kill_job->nodes     = xstrdup(job_ptr->nodes);
-	kill_job->time      = time(NULL);
-	kill_job->start_time = job_ptr->start_time;
-	kill_job->details = xstrdup(job_ptr->state_desc);
-	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
-		job_ptr->select_jobinfo);
-	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
-					    job_ptr->spank_job_env);
-	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
 
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&
@@ -15456,27 +15465,9 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 			     node_record_t *node_ptr)
 {
 	agent_arg_t *agent_info;
-	kill_job_msg_t *kill_req;
+	kill_job_msg_t *kill_req = create_kill_job_msg(job_ptr);
 
-	kill_req = xmalloc(sizeof(kill_job_msg_t));
-	kill_req->job_gres_info	=
-		gres_g_epilog_build_env(job_ptr->gres_list_req,job_ptr->nodes);
-	kill_req->het_job_id	= job_ptr->het_job_id;
-	kill_req->step_id.job_id = job_ptr->job_id;
-	kill_req->step_id.step_id = NO_VAL;
-	kill_req->step_id.step_het_comp = NO_VAL;
-	kill_req->time          = time(NULL);
-	kill_req->start_time	= job_ptr->start_time;
-	kill_req->details = xstrdup(job_ptr->state_desc);
 	kill_req->nodes		= xstrdup(node_ptr->name);
-	kill_req->select_jobinfo =
-		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
-	kill_req->job_state	= job_ptr->job_state;
-	kill_req->job_uid = job_ptr->user_id;
-	kill_req->job_gid = job_ptr->group_id;
-	kill_req->spank_job_env = xduparray(job_ptr->spank_job_env_size,
-					    job_ptr->spank_job_env);
-	kill_req->spank_job_env_size = job_ptr->spank_job_env_size;
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
