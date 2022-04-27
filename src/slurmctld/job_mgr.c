@@ -14919,6 +14919,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr)
 				       job_ptr->spank_job_env);
 	msg->spank_job_env_size = job_ptr->spank_job_env_size;
 	msg->time = time(NULL);
+	msg->work_dir = xstrdup(job_ptr->details->work_dir);
 
 	return msg;
 }
