@@ -15329,29 +15329,17 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
 
-	kill_req = xmalloc(sizeof(kill_job_msg_t));
-	kill_req->step_id.job_id = job_id;
-	kill_req->step_id.step_id = NO_VAL;
-	kill_req->step_id.step_het_comp = NO_VAL;
-	kill_req->time          = time(NULL);
-	kill_req->nodes		= xstrdup(node_name);
 	if (job_ptr) {  /* NULL if unknown */
-		kill_req->job_uid = job_ptr->user_id;
-		kill_req->job_gid = job_ptr->group_id;
-		kill_req->job_gres_info	=
-			gres_g_epilog_build_env(job_ptr->gres_list_req,
-						job_ptr->nodes);
-		kill_req->het_job_id	= job_ptr->het_job_id;
-		kill_req->start_time = job_ptr->start_time;
-		kill_req->details = xstrdup(job_ptr->state_desc);
-		kill_req->select_jobinfo =
-			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
-		kill_req->spank_job_env = xduparray(job_ptr->spank_job_env_size,
-						    job_ptr->spank_job_env);
-		kill_req->spank_job_env_size = job_ptr->spank_job_env_size;
+		kill_req = create_kill_job_msg(job_ptr);
 	} else {
+		kill_req = xmalloc(sizeof(*kill_req));
+		kill_req->step_id.job_id = job_id;
+		kill_req->step_id.step_id = NO_VAL;
+		kill_req->step_id.step_het_comp = NO_VAL;
+		kill_req->time = time(NULL);
 		/* kill_req->start_time = 0;  Default value */
 	}
+	kill_req->nodes = xstrdup(node_name);
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
@@ -15423,25 +15411,8 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 			bit_clear(full_node_bitmap, i);
 			bit_set(tmp_node_bitmap, i);
 		}
-		kill_req = xmalloc(sizeof(kill_job_msg_t));
-		kill_req->job_gres_info	=
-			gres_g_epilog_build_env(job_ptr->gres_list_req,
-						job_ptr->nodes);
-		kill_req->job_uid = job_ptr->user_id;
-		kill_req->job_gid = job_ptr->group_id;
-		kill_req->step_id.job_id = job_ptr->job_id;
-		kill_req->step_id.step_id = NO_VAL;
-		kill_req->step_id.step_het_comp = NO_VAL;
-		kill_req->time          = time(NULL);
+		kill_req = create_kill_job_msg(job_ptr);
 		kill_req->nodes		= bitmap2node_name(tmp_node_bitmap);
-		kill_req->het_job_id	= job_ptr->het_job_id;
-		kill_req->start_time	= job_ptr->start_time;
-		kill_req->details = xstrdup(job_ptr->state_desc);
-		kill_req->select_jobinfo =
-			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
-		kill_req->spank_job_env = xduparray(job_ptr->spank_job_env_size,
-						    job_ptr->spank_job_env);
-		kill_req->spank_job_env_size = job_ptr->spank_job_env_size;
 		agent_info = xmalloc(sizeof(agent_arg_t));
 		agent_info->node_count	= bit_set_count(tmp_node_bitmap);
 		agent_info->retry	= 1;
