@@ -588,8 +588,8 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 			if (sock_recs >= arg->job_nhosts)
 				break;
 		}
+		i++;
 	}
-	i++;
 	arg->core_array_size = i;
 
 	if (_fill_cred_gids(arg) != SLURM_SUCCESS)
