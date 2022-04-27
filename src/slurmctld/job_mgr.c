@@ -19175,9 +19175,19 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 		setenvf(&my_env, "SLURM_JOB_LICENSES", "%s", job_ptr->licenses);
 	setenvf(&my_env, "SLURM_JOB_NAME", "%s", job_ptr->name);
 	setenvf(&my_env, "SLURM_JOB_NODELIST", "%s", job_ptr->nodes);
-	if (job_ptr->job_resrcs)
+	if (job_ptr->job_resrcs) {
+		char *tmp;
+
+		tmp = uint32_compressed_to_str(
+			job_ptr->job_resrcs->cpu_array_cnt,
+			job_ptr->job_resrcs->cpu_array_value,
+			job_ptr->job_resrcs->cpu_array_reps);
+		setenvf(&my_env, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
+		xfree(tmp);
+
 		setenvf(&my_env, "SLURM_JOB_NUM_NODES", "%u",
 			job_ptr->job_resrcs->nhosts);
+	}
 	if (job_ptr->part_ptr) {
 		setenvf(&my_env, "SLURM_JOB_PARTITION", "%s",
 			job_ptr->part_ptr->name);
