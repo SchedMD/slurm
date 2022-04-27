@@ -1443,57 +1443,11 @@ extern void server_thread_incr(void)
 
 static int _accounting_cluster_ready(void)
 {
-	int rc = SLURM_ERROR;
-	time_t event_time = time(NULL);
-	bitstr_t *total_node_bitmap = NULL;
-	char *cluster_nodes = NULL, *cluster_tres_str;
-	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
-
-	lock_slurmctld(node_write_lock);
-	/* Now get the names of all the nodes on the cluster at this
-	   time and send it also.
-	*/
-	total_node_bitmap = bit_alloc(node_record_count);
-	bit_nset(total_node_bitmap, 0, node_record_count-1);
-	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
-	FREE_NULL_BITMAP(total_node_bitmap);
-
-	assoc_mgr_lock(&locks);
-
-	cluster_tres_str = slurmdb_make_tres_string(
-		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
-	assoc_mgr_unlock(&locks);
-
-	unlock_slurmctld(node_write_lock);
-
-	rc = clusteracct_storage_g_cluster_tres(acct_db_conn,
-						cluster_nodes,
-						cluster_tres_str, event_time,
-						SLURM_PROTOCOL_VERSION);
-
-	xfree(cluster_nodes);
-	xfree(cluster_tres_str);
-
-	/*
-	 * FIXME: We should do things differently here depending on the return
-	 *        value.  If NODES_CHANGE or FIRST_REQ we probably want to send
-	 *        most everything to accounting, but if just the TRES changed it
-	 *        means the nodes didn't change and we might not need to send
-	 *        anything.
-	 */
-	if ((rc == ACCOUNTING_FIRST_REG) ||
-	    (rc == ACCOUNTING_NODES_CHANGE_DB) ||
-	    (rc == ACCOUNTING_TRES_CHANGE_DB)) {
-		/* see if we are running directly to a database
-		 * instead of a slurmdbd.
-		 */
-		send_all_to_accounting(event_time, rc);
-		rc = SLURM_SUCCESS;
-	}
-
-	return rc;
+	return clusteracct_storage_g_cluster_tres(acct_db_conn,
+						  NULL,
+						  NULL,
+						  0,
+						  SLURM_PROTOCOL_VERSION);
 }
 
 static int _accounting_mark_all_nodes_down(char *reason)

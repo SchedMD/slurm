@@ -498,6 +498,34 @@ static void *_set_db_inx_thread(void *no_data)
 	return NULL;
 }
 
+static int _send_cluster_tres(void *db_conn,
+			      char *cluster_nodes,
+			      char *tres_str_in,
+			      time_t event_time,
+			      uint16_t rpc_version)
+{
+	persist_msg_t msg = {0};
+	dbd_cluster_tres_msg_t req;
+	int rc = SLURM_ERROR;
+
+	if (!tres_str_in)
+		return rc;
+
+	debug2("Sending tres '%s' for cluster", tres_str_in);
+	memset(&req, 0, sizeof(dbd_cluster_tres_msg_t));
+	req.cluster_nodes = cluster_nodes;
+	req.event_time    = event_time;
+	req.tres_str      = tres_str_in;
+
+	msg.msg_type      = DBD_CLUSTER_TRES;
+	msg.conn          = db_conn;
+	msg.data          = &req;
+
+	dbd_conn_send_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
+
+	return rc;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -2596,24 +2624,45 @@ extern int clusteracct_storage_p_cluster_tres(void *db_conn,
 					      time_t event_time,
 					      uint16_t rpc_version)
 {
-	persist_msg_t msg = {0};
-	dbd_cluster_tres_msg_t req;
 	int rc = SLURM_ERROR;
+	bitstr_t *total_node_bitmap = NULL;
+	char *cluster_tres_str;
+	slurmctld_lock_t node_write_lock = {
+		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 
-	if (!tres_str_in)
-		return rc;
+	event_time = time(NULL);
 
-	debug2("Sending tres '%s' for cluster", tres_str_in);
-	memset(&req, 0, sizeof(dbd_cluster_tres_msg_t));
-	req.cluster_nodes = cluster_nodes;
-	req.event_time    = event_time;
-	req.tres_str      = tres_str_in;
+	lock_slurmctld(node_write_lock);
+	/* Now get the names of all the nodes on the cluster at this
+	   time and send it also.
+	*/
+	total_node_bitmap = bit_alloc(node_record_count);
+	bit_nset(total_node_bitmap, 0, node_record_count-1);
+	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
+	FREE_NULL_BITMAP(total_node_bitmap);
 
-	msg.msg_type      = DBD_CLUSTER_TRES;
-	msg.conn          = db_conn;
-	msg.data          = &req;
+	assoc_mgr_lock(&locks);
 
-	dbd_conn_send_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
+	cluster_tres_str = slurmdb_make_tres_string(
+		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
+	assoc_mgr_unlock(&locks);
+
+	unlock_slurmctld(node_write_lock);
+
+	rc = _send_cluster_tres(db_conn, cluster_nodes,
+				cluster_tres_str, event_time,
+				rpc_version);
+
+	xfree(cluster_nodes);
+	xfree(cluster_tres_str);
+
+	if ((rc == ACCOUNTING_FIRST_REG) ||
+	    (rc == ACCOUNTING_NODES_CHANGE_DB) ||
+	    (rc == ACCOUNTING_TRES_CHANGE_DB)) {
+		send_all_to_accounting(event_time, rc);
+		rc = SLURM_SUCCESS;
+	}
 
 	return rc;
 }
