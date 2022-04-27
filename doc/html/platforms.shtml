@@ -33,6 +33,11 @@ against older versions of MySQL, it is not recommended. SchedMD recommends
 you use a currently supported version of MySQL or MariaDB.
 </p>
 
+<p><b>NOTE</b>: If you have an existing Slurm accounting database and
+plan to upgrade your database server to MariaDB 10.2.1 (or newer) from a
+pre-10.2.1 version or from any version of MySQL, please contact SchedMD
+for assistance.</p>
+
 <h2 id="accel">Accelerators<a class="slurm_link" href="#accel"></a></h2>
 
 <p>Slurm has optional support for managing a variety of accelerator cards.
@@ -42,6 +47,6 @@ Specific plugins have been developed for:</p>
 <li>gres/mps &mdash; NVIDIA CUDA Multi-Process Service provides ways to share GPUs between multiple compute processes</li>
 </ul>
 
-<p style="text-align:center;">Last modified 8 April 2022</p>
+<p style="text-align:center;">Last modified 27 April 2022</p>
 
 <!--#include virtual="footer.txt"-->
