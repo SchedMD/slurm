@@ -700,6 +700,11 @@ before proceeding with the upgrade. Note that requests intended for
 is down, but the queue size is limited and you should monitor the DBD Agent
 Queue size with the <b>sdiag</b> command.</p>
 
+<p><b>NOTE</b>: If you have an existing Slurm accounting database and
+plan to upgrade your database server to MariaDB 10.2.1 (or newer) from a
+pre-10.2.1 version or from any version of MySQL, please contact SchedMD
+for assistance.</p>
+
 <p>The slurmctld daemon must also be upgraded before or at the same time as
 the slurmd daemons on the compute nodes.
 Generally, upgrading Slurm on all of the login and compute nodes is recommended,
@@ -820,6 +825,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 15 April 2022</p>
+<p style="text-align:center;">Last modified 27 April 2022</p>
 
 <!--#include virtual="footer.txt"-->

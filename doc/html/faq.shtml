@@ -180,6 +180,8 @@ script for Slurm?</a></li>
 <li><a href="#cray_dvs">How can I update Slurm on a Cray DVS file system without
     rebooting the nodes?</a></li>
 <li><a href="#dbd_rebuild">How can I rebuild the database hierarchy?</a></li>
+<li><a href="#db_upgrade">Is there anything exceptional to be aware of when
+    upgrading my database server?</a></li>
 <li><a href="#routing_queue">How can a routing queue be configured?</a></li>
 <li><a href="#squeue_script">How can I suspend, resume, hold or release all
     of the jobs belonging to a specific user, partition, etc?</a></li>
@@ -1987,6 +1989,23 @@ administrator error in directly modifying the database. In order to rebuild
 the database information, start the slurmdbd daemon with the "-R" option
 followed by an optional comma separated list of cluster names to operate on.</p>
 
+<p><a id="db_upgrade"><b>Is there anything exceptional to be aware of when
+upgrading my database server?</b></a><br>
+Generally, no. However if you are using MariaDB and have been using an older
+version or are upgrading from MySQL, additional steps will need to be taken.</p>
+
+<p>From the MariaDB documentation:</p>
+
+<p><i>Before MariaDB 10.2.1, BLOB and TEXT columns could not be assigned a
+DEFAULT value. This restriction was lifted in MariaDB 10.2.1.</i></p>
+
+<p>Therefore, if a site begins using MariaDB >= 10.2.1 and is either using
+an existing Slurm database from an earlier version or has restored one from
+a dump from an earlier version or from any version of MySQL, some text/blob
+default values will need to be altered to avoid failures from subsequent
+queries from slurmdbd that set affected fields to DEFAULT. Please contact
+SchedMD for assistance with this.</p>
+
 <p><a id="routing_queue"><b>How can a routing queue be configured?</b></a><br>
 A job submit plugin is designed to have access to a job request from a user,
 plus information about all of the available system partitions/queue.
@@ -2268,6 +2287,6 @@ exclude=slurm*
 </pre>
 </p>
 
-<p style="text-align:center;">Last modified 15 February 2022</p>
+<p style="text-align:center;">Last modified 27 April 2022</p>
 
 <!--#include virtual="footer.txt"-->

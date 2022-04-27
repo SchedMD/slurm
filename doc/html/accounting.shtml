@@ -233,6 +233,12 @@ job completions and similar data, this configuration will not allow for
 a configuration.
 
 <p><b>MySQL or MariaDB is the preferred database.</b>
+
+<p><b>NOTE</b>: If you have an existing Slurm accounting database and
+plan to upgrade your database server to MariaDB 10.2.1 (or newer) from a
+pre-10.2.1 version or from any version of MySQL, please contact SchedMD
+for assistance.</p>
+
 To enable this database support
 one only needs to have the development package for the database they
 wish to use on the system. <b>Slurm uses the InnoDB storage
@@ -522,6 +528,11 @@ with to store the job accounting data.</li>
 <h2 id="mysql-configuration">MySQL Configuration
 <a class="slurm_link" href="#mysql-configuration"></a>
 </h2>
+
+<p><b>NOTE</b>: If you have an existing Slurm accounting database and
+plan to upgrade your database server to MariaDB 10.2.1 (or newer) from a
+pre-10.2.1 version or from any version of MySQL, please contact SchedMD
+for assistance.</p>
 
 <p>While Slurm will create the database tables automatically you will need to
 make sure the StorageUser is given permissions in the MySQL or MariaDB database
@@ -841,7 +852,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 2 February 2022</p>
+<p style="text-align:center;">Last modified 27 April 2022</p>
 
 <!--#include virtual="footer.txt"-->
 
