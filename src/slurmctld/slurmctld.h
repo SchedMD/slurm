@@ -2483,7 +2483,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid);
 /*
  * Allocate a kill_job_msg_t and populate most fields.
  */
-extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr);
+extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
+					   uint16_t protocol_version);
 
 /*
  * Modify the wckey associated with a pending job

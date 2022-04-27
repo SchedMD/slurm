@@ -14895,7 +14895,8 @@ reply:
 	return rc;
 }
 
-extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr)
+extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
+					   uint16_t protocol_version)
 {
 	kill_job_msg_t *msg = xmalloc(sizeof(*msg));
 
@@ -14933,7 +14934,7 @@ static void _send_job_kill(job_record_t *job_ptr)
 	int i;
 	node_record_t *node_ptr;
 #endif
-	kill_job_msg_t *kill_job = create_kill_job_msg(job_ptr);
+	kill_job_msg_t *kill_job;
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_TERMINATE_JOB;
@@ -14941,8 +14942,6 @@ static void _send_job_kill(job_record_t *job_ptr)
 	agent_args->hostlist = hostlist_create(NULL);
 
 	last_node_update    = time(NULL);
-
-	kill_job->nodes     = xstrdup(job_ptr->nodes);
 
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&
@@ -14970,11 +14969,13 @@ static void _send_job_kill(job_record_t *job_ptr)
 			error("%s: %pJ allocated no nodes to be killed on",
 			      __func__, job_ptr);
 		}
-		slurm_free_kill_job_msg(kill_job);
 		hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
 		return;
 	}
+
+	kill_job = create_kill_job_msg(job_ptr, agent_args->protocol_version);
+	kill_job->nodes = xstrdup(job_ptr->nodes);
 
 	agent_args->msg_args = kill_job;
 	agent_queue_request(agent_args);
@@ -15330,18 +15331,6 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
 
-	if (job_ptr) {  /* NULL if unknown */
-		kill_req = create_kill_job_msg(job_ptr);
-	} else {
-		kill_req = xmalloc(sizeof(*kill_req));
-		kill_req->step_id.job_id = job_id;
-		kill_req->step_id.step_id = NO_VAL;
-		kill_req->step_id.step_het_comp = NO_VAL;
-		kill_req->time = time(NULL);
-		/* kill_req->start_time = 0;  Default value */
-	}
-	kill_req->nodes = xstrdup(node_name);
-
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
 	agent_info->retry	= 0;
@@ -15365,6 +15354,21 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	else
 		debug("Aborting JobId=%u on node %s", job_id, node_name);
 #endif
+
+	if (job_ptr) {  /* NULL if unknown */
+		kill_req = create_kill_job_msg(job_ptr,
+					       agent_info->protocol_version);
+	} else {
+		kill_req = xmalloc(sizeof(*kill_req));
+		kill_req->step_id.job_id = job_id;
+		kill_req->step_id.step_id = NO_VAL;
+		kill_req->step_id.step_het_comp = NO_VAL;
+		kill_req->time = time(NULL);
+		/* kill_req->start_time = 0;  Default value */
+	}
+
+	kill_req->nodes = xstrdup(node_name);
+
 	agent_info->msg_type	= REQUEST_ABORT_JOB;
 	agent_info->msg_args	= kill_req;
 
@@ -15412,7 +15416,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 			bit_clear(full_node_bitmap, i);
 			bit_set(tmp_node_bitmap, i);
 		}
-		kill_req = create_kill_job_msg(job_ptr);
+		kill_req = create_kill_job_msg(job_ptr, protocol_version);
 		kill_req->nodes		= bitmap2node_name(tmp_node_bitmap);
 		agent_info = xmalloc(sizeof(agent_arg_t));
 		agent_info->node_count	= bit_set_count(tmp_node_bitmap);
@@ -15437,9 +15441,7 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 			     node_record_t *node_ptr)
 {
 	agent_arg_t *agent_info;
-	kill_job_msg_t *kill_req = create_kill_job_msg(job_ptr);
-
-	kill_req->nodes		= xstrdup(node_ptr->name);
+	kill_job_msg_t *kill_req;
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
@@ -15457,6 +15459,10 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	agent_info->hostlist	= hostlist_create(node_ptr->name);
 	debug("Killing %pJ on node %s", job_ptr, node_ptr->name);
 #endif
+
+	kill_req = create_kill_job_msg(job_ptr, agent_info->protocol_version);
+	kill_req->nodes	= xstrdup(node_ptr->name);
+
 	agent_info->msg_type	= REQUEST_TERMINATE_JOB;
 	agent_info->msg_args	= kill_req;
 

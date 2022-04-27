@@ -480,8 +480,8 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	agent_args->hostlist = hostlist;
 	agent_args->node_count = node_count;
 
-	kill_job = create_kill_job_msg(job_ptr);
 	last_node_update = time(NULL);
+	kill_job = create_kill_job_msg(job_ptr, use_protocol_version);
 	kill_job->nodes = xstrdup(job_ptr->nodes);
 
 	agent_args->msg_args = kill_job;
@@ -4298,7 +4298,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 	agent_args->hostlist = hostlist_create(NULL);
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	agent_args->retry = 0;
-	kill_job = create_kill_job_msg(job_ptr);
+	kill_job = create_kill_job_msg(job_ptr, SLURM_PROTOCOL_VERSION);
 
 	/* On a Cray system this will start the NHC early so it is
 	 * able to gather any information it can from the apparent
