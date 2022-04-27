@@ -2912,6 +2912,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	cred_arg->job_comment = job_ptr->comment;
 	cred_arg->job_gres_list = job_ptr->gres_list_alloc;
 	cred_arg->job_reservation = job_ptr->resv_name;
+	cred_arg->job_restart_cnt = job_ptr->restart_cnt;
 	cred_arg->selinux_context = job_ptr->selinux_context;
 	cred_arg->uid = job_ptr->user_id;
 

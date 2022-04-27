@@ -183,6 +183,7 @@ typedef struct {
 	List job_gres_list;		/* Generic resources allocated to JOB */
 	char *job_partition;		/* partition */
 	char *job_reservation;		/* Reservation, if applicable */
+	uint16_t job_restart_cnt;	/* restart count */
 	uint16_t  x11;			/* x11 flag set on job */
 
 	char *selinux_context;

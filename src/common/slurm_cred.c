@@ -1270,6 +1270,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->job_partition, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->job_reservation, &len, buffer);
+		safe_unpack16(&cred->job_restart_cnt, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack16(&cred->x11, buffer);
 		safe_unpack_time(&credential->ctime, buffer);
@@ -1328,6 +1329,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
 		credential->siglen = len;
 	} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		cred->job_restart_cnt = INFINITE16;
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
@@ -1418,6 +1420,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		credential->siglen = len;
 		xassert(len > 0);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		cred->job_restart_cnt = INFINITE16;
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
@@ -1765,6 +1768,7 @@ static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		packstr(cred->job_constraints, buffer);
 		packstr(cred->job_partition, buffer);
 		packstr(cred->job_reservation, buffer);
+		pack16(cred->job_restart_cnt, buffer);
 		packstr(cred->step_hostlist, buffer);
 		pack16(cred->x11, buffer);
 		pack_time(ctime, buffer);
