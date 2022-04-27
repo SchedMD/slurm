@@ -791,6 +791,7 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	slurm_rwlock_wrlock(&cred->mutex);
 	slurm_cred_free_args(cred->arg);
 	FREE_NULL_BUFFER(cred->buffer);
+	xfree(cred->signature);
 	cred->magic = ~CRED_MAGIC;
 	slurm_rwlock_unlock(&cred->mutex);
 	slurm_rwlock_destroy(&cred->mutex);
