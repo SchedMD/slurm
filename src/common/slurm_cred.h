@@ -179,6 +179,7 @@ typedef struct {
 	uint32_t job_mem_alloc_size;	/* Size of memory arrays above */
 	uint32_t  job_nhosts;		/* count of nodes allocated to JOB */
 	List job_gres_list;		/* Generic resources allocated to JOB */
+	char *job_reservation;		/* Reservation, if applicable */
 	uint16_t  x11;			/* x11 flag set on job */
 
 	char *selinux_context;

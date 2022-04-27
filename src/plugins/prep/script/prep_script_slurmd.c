@@ -221,6 +221,9 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_constraints)
 			setenvf(&env, "SLURM_JOB_CONSTRAINTS", "%s",
 				cred_arg->job_constraints);
+		if (cred_arg->job_reservation)
+			setenvf(&env, "SLURM_JOB_RESERVATION", "%s",
+				cred_arg->job_reservation);
 
 		slurm_cred_unlock_args(cred);
 	}
