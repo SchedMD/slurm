@@ -73,6 +73,7 @@
  */
 const char plugin_name[]        = "mpi none plugin";
 const char plugin_type[]        = "mpi/none";
+const uint32_t plugin_id = MPI_PLUGIN_NONE;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)

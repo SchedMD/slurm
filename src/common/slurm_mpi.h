@@ -45,6 +45,16 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+enum mpi_plugin_type {
+	MPI_PLUGIN_NONE = 101,
+	MPI_PLUGIN_PMI2 = 102,
+	MPI_PLUGIN_CRAY_SHASTA = 103,
+	MPI_PLUGIN_PMIX2 = 104,
+	MPI_PLUGIN_PMIX3 = 105,
+	MPI_PLUGIN_PMIX4 = 106,
+	MPI_PLUGIN_PMIX5 = 107,
+};
+
 typedef struct slurm_mpi_context *slurm_mpi_context_t;
 typedef void mpi_plugin_client_state_t;
 
@@ -150,6 +160,9 @@ extern List mpi_g_conf_get_printable(void);
 /* Functions to send config from Slurmd to Slurstepd, peer to peer */
 extern int mpi_conf_send_stepd(int fd, char *mpi_type);
 extern int mpi_conf_recv_stepd(int fd);
+
+/* given a mpi_type return the plugin_id see mpi_plugin_type above */
+extern int mpi_id_from_plugin_type(char *mpi_type);
 
 /* Tear down things in the MPI plugin */
 extern int mpi_fini(void);

@@ -201,6 +201,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	char **mpi_env = NULL;
 	int rc = SLURM_SUCCESS;
 	bool preserve_env = params->preserve_env;
+	uint32_t mpi_plugin_id;
 
 	debug("Entering %s", __func__);
 	memset(&launch, 0, sizeof(launch));
@@ -222,8 +223,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		       sizeof(slurm_step_launch_callbacks_t));
 	}
 
-	if (mpi_g_client_init(
-		(char **)&params->mpi_plugin_name) != SLURM_SUCCESS) {
+	mpi_plugin_id = mpi_g_client_init((char **)&params->mpi_plugin_name);
+	if (!mpi_plugin_id) {
 		slurm_seterrno(SLURM_MPI_PLUGIN_NAME_INVALID);
 		return SLURM_ERROR;
 	}
@@ -289,6 +290,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	else
 		launch.cwd = _lookup_cwd();
 	launch.alias_list	= params->alias_list;
+	launch.mpi_plugin_id = mpi_plugin_id;
 	launch.nnodes		= ctx->step_resp->step_layout->node_cnt;
 	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;
 	launch.slurmd_debug	= params->slurmd_debug;
@@ -419,12 +421,19 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	int rc = SLURM_SUCCESS;
 	uint16_t resp_port = 0;
 	bool preserve_env = params->preserve_env;
+	uint32_t mpi_plugin_id;
 
 	debug("Entering %s", __func__);
 
 	if ((ctx == NULL) || (ctx->magic != STEP_CTX_MAGIC)) {
 		error("%s: Not a valid slurm_step_ctx_t", __func__);
 		slurm_seterrno(EINVAL);
+		return SLURM_ERROR;
+	}
+
+	mpi_plugin_id = mpi_g_client_init((char **)&params->mpi_plugin_name);
+	if (!mpi_plugin_id) {
+		slurm_seterrno(SLURM_MPI_PLUGIN_NAME_INVALID);
 		return SLURM_ERROR;
 	}
 
@@ -475,6 +484,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	else
 		launch.cwd = _lookup_cwd();
 	launch.alias_list	= params->alias_list;
+	launch.mpi_plugin_id = mpi_plugin_id;
 	launch.nnodes		= ctx->step_resp->step_layout->node_cnt;
 	launch.ntasks		= ctx->step_resp->step_layout->task_cnt;
 	launch.slurmd_debug	= params->slurmd_debug;

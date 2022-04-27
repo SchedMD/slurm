@@ -76,6 +76,7 @@
  */
 const char plugin_name[]        = "mpi PMI2 plugin";
 const char plugin_type[]        = "mpi/pmi2";
+const uint32_t plugin_id = MPI_PLUGIN_PMI2;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /*

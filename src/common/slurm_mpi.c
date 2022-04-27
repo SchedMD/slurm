@@ -54,6 +54,7 @@
 #include "src/common/xstring.h"
 
 typedef struct slurm_mpi_ops {
+	uint32_t (*plugin_id);
 	int (*client_fini)(mpi_plugin_client_state_t *state);
 	mpi_plugin_client_state_t *(*client_prelaunch)(
 		const mpi_plugin_client_info_t *job, char ***env);
@@ -71,6 +72,7 @@ typedef struct slurm_mpi_ops {
  * declared for slurm_mpi_ops_t.
  */
 static const char *syms[] = {
+	"plugin_id",
 	"mpi_p_client_fini",
 	"mpi_p_client_prelaunch",
 	"mpi_p_conf_get",
@@ -662,6 +664,19 @@ extern int mpi_conf_recv_stepd(int fd)
 rwfail:
 	FREE_NULL_BUFFER(buf);
 	return SLURM_ERROR;
+}
+
+extern int mpi_id_from_plugin_type(char *mpi_type)
+{
+	xassert(g_context_cnt);
+
+	slurm_mutex_lock(&context_lock);
+	for (int i = 0; i < g_context_cnt; i++)
+		if (!xstrcmp(_plugin_type(i), mpi_type))
+			return *(ops[i].plugin_id);
+	slurm_mutex_unlock(&context_lock);
+
+	return -1;
 }
 
 extern int mpi_fini(void)
