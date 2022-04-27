@@ -219,6 +219,17 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 	else
 		setenvf(&env, "SLURM_SCRIPT_CONTEXT", "prolog_slurmd");
 
+	if (is_epilog && (job_env->exit_code != INFINITE)) {
+		int exit_code = 0, signal = 0;
+		if (WIFEXITED(job_env->exit_code))
+                        exit_code = WEXITSTATUS(job_env->exit_code);
+		if (WIFSIGNALED(job_env->exit_code))
+                        signal = WTERMSIG(job_env->exit_code);
+		setenvf(&env, "SLURM_JOB_DERIVED_EC", "%u", job_env->derived_ec);
+		setenvf(&env, "SLURM_JOB_EXIT_CODE", "%u", job_env->exit_code);
+                setenvf(&env, "SLURM_JOB_EXIT_CODE2", "%d:%d", exit_code, signal);
+	}
+
 	if (cred) {
 		slurm_cred_arg_t *cred_arg = slurm_cred_get_args(cred);
 

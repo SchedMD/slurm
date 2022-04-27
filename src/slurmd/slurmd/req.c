@@ -5074,6 +5074,8 @@ _rpc_abort_job(slurm_msg_t *msg)
 	gres_g_epilog_set_env(&job_env.gres_job_env, req->job_gres_info,
 			      node_id);
 	job_env.jobid = req->step_id.job_id;
+	job_env.derived_ec = req->derived_ec;
+	job_env.exit_code = req->exit_code;
 	job_env.node_list = req->nodes;
 	job_env.het_job_id = req->het_job_id;
 	job_env.spank_job_env = req->spank_job_env;
@@ -5327,6 +5329,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			      node_id);
 
 	job_env.jobid = req->step_id.job_id;
+	job_env.derived_ec = req->derived_ec;
+	job_env.exit_code = req->exit_code;
 	job_env.node_list = req->nodes;
 	job_env.het_job_id = req->het_job_id;
 	job_env.spank_job_env = req->spank_job_env;
