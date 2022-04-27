@@ -1725,7 +1725,8 @@ add_it:
 	query = xstrdup_printf(
 		"insert into \"%s_%s\" (cluster_nodes, tres, "
 		"time_start, reason) "
-		"values ('%s', '%s', %ld, 'Cluster Registered TRES');",
+		"values ('%s', '%s', %ld, 'Cluster Registered TRES') "
+		"on duplicate key update time_end=0, tres=VALUES(tres);",
 		mysql_conn->cluster_name, event_table,
 		cluster_nodes, *tres_str_in, event_time);
 
