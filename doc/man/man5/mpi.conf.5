@@ -1,0 +1,116 @@
+.TH "mpi.conf" "5" "Slurm Configuration File" "May 2022" "Slurm Configuration File"
+
+.SH "NAME"
+mpi.conf \- Slurm configuration file to allow the configuration of MPI plugins.
+
+.SH "DESCRIPTION"
+\fBmpi.conf\fR is an ASCII file which defines parameters that control the
+behavior of MPI plugins. Currently the configuration file can only be used
+to configure the PMIx plugin, but it can be extended to support other MPI
+plugins as well. The file will always be located in the same directory as
+the \fBslurm.conf\fR. This file is optional.
+
+Parameter names are case insensitive. Any text following a "#" in the
+configuration file is treated as a comment through the end of that line.
+Changes to the configuration file take effect upon restart of Slurm daemons,
+daemon receipt of the SIGHUP signal, or execution of the command "scontrol
+reconfigure" unless otherwise noted.
+
+Settings from this configuration file can be viewed in the output of
+"scontrol show config". This configuration file can be included when using
+"configless" mode. Information from mpi.conf is read at startup or upon
+reconfigure by slurmctld and slurmd. Instances of slurmstepd for batch steps
+will receive information about the plugin requested from slurmd.
+
+.SH "PARAMETERS"
+
+.TP
+\fBPMIxCliTmpDirBase\fR=<\fIpath\fR>
+Directory to have PMIx use for temporary files.
+Defaults to not being set.
+.IP
+
+.TP
+\fBPMIxCollFence\fR={mixed|tree|ring}
+Define the type of fence to use for collecting inter-node data.
+Defaults to not being set. See also \fBPMIxFenceBarrier\fR.
+.IP
+
+.TP
+\fBPMIxDebug\fR={0|1}
+Enable debug logging for the PMIx plugin.
+Defaults to 0.
+.IP
+
+.TP
+\fBPMIxDirectConn\fR={true|false}
+Disable direct launching of tasks. Default is "true".
+.IP
+
+.TP
+\fBPMIxDirectConnEarly\fR={true|false}
+Allow early connections to a parent node.
+Defaults to "false".
+.IP
+
+.TP
+\fBPMIxDirectConnUCX\fR={true|false}
+Allow PMIx to use UCX for communication.
+Defaults to "false".
+.IP
+
+.TP
+\fBPMIxDirectSameArch\fR={true|false}
+Enable additional communication optimizations when \fBPMIxDirectConn\fR is
+set to true, assuming all the job's nodes have the same architecture.
+Defaults to "false".
+.IP
+
+.TP
+\fBPMIxEnv\fR=<\fIenvironment variables\fR>
+Comma separated list of environment variables to be set in job environments
+to be used by PMIx. Defaults to not being set.
+.IP
+
+.TP
+\fBPMIxFenceBarrier\fR={true|false}
+Define whether to fence inter-node communication for data collection.
+Default is "false". See also \fBPMIxCollFence\fR.
+.IP
+
+.TP
+\fBPMIxNetDevicesUCX\fR=<\fIdevice type\fR>
+Type of network device to use for communication.
+Defaults to not being set.
+.IP
+
+.TP
+\fBPMIxTimeout\fR=<\fItime\fR>
+The maximum time (in seconds) allowed for communication between hosts to
+take place. Defaults to 10 seconds.
+.IP
+
+.TP
+\fBPMIxTlsUCX\fR={true|false}
+Use TLS for UCX communication. Defaults to not being set.
+.IP
+
+.SH "COPYING"
+Copyright (C) 2022 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)
