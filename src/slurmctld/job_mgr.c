@@ -14906,7 +14906,6 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 
 	setup_cred_arg(&cred_arg, job_ptr);
 
-	cred_arg.job_constraints = job_ptr->details->features_use;
 	cred_arg.step_id.job_id = job_ptr->job_id;
 	cred_arg.step_id.step_het_comp = NO_VAL;
 	cred_arg.step_id.step_id = NO_VAL;

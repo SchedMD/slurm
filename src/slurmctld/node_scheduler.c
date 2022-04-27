@@ -2905,6 +2905,29 @@ end_it:
 extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 {
 	memset(cred_arg, 0, sizeof(slurm_cred_arg_t));
+
+	cred_arg->gid = job_ptr->group_id;
+	cred_arg->job_alias_list = job_ptr->alias_list;
+	cred_arg->job_gres_list = job_ptr->gres_list_alloc;
+	cred_arg->selinux_context = job_ptr->selinux_context;
+	cred_arg->uid = job_ptr->user_id;
+
+	if (job_ptr->details) {
+		cred_arg->job_constraints = job_ptr->details->features_use;
+		cred_arg->job_core_spec = job_ptr->details->core_spec;
+		cred_arg->job_mem_limit = job_ptr->details->pn_min_memory;
+		cred_arg->x11 = job_ptr->details->x11;
+	}
+
+	if (job_ptr->job_resrcs) {
+		job_resources_t *resrcs = job_ptr->job_resrcs;
+		cred_arg->cores_per_socket = resrcs->cores_per_socket;
+		cred_arg->job_core_bitmap = resrcs->core_bitmap;
+		cred_arg->job_hostlist = resrcs->nodes;
+		cred_arg->job_nhosts = resrcs->nhosts;
+		cred_arg->sock_core_rep_count = resrcs->sock_core_rep_count;
+		cred_arg->sockets_per_node = resrcs->sockets_per_node;
+	}
 }
 
 /*
@@ -2992,15 +3015,6 @@ extern void launch_prolog(job_record_t *job_ptr)
 	cred_arg.step_id.job_id = job_ptr->job_id;
 	cred_arg.step_id.step_id = SLURM_EXTERN_CONT;
 	cred_arg.step_id.step_het_comp = NO_VAL;
-	cred_arg.uid                 = job_ptr->user_id;
-	cred_arg.gid                 = job_ptr->group_id;
-	cred_arg.x11                 = job_ptr->details->x11;
-	cred_arg.job_core_spec       = job_ptr->details->core_spec;
-	cred_arg.job_gres_list       = job_ptr->gres_list_alloc;
-	cred_arg.job_nhosts          = job_ptr->job_resrcs->nhosts;
-	cred_arg.job_alias_list = job_ptr->alias_list;
-	cred_arg.job_constraints     = job_ptr->details->features_use;
-	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;
 	if (job_resrcs_ptr->memory_allocated) {
 		slurm_array64_to_value_reps(job_resrcs_ptr->memory_allocated,
 					    job_resrcs_ptr->nhosts,
@@ -3010,22 +3024,16 @@ extern void launch_prolog(job_record_t *job_ptr)
 	}
 
 	cred_arg.step_mem_limit      = job_ptr->details->pn_min_memory;
-	cred_arg.cores_per_socket    = job_resrcs_ptr->cores_per_socket;
-	cred_arg.job_core_bitmap     = job_resrcs_ptr->core_bitmap;
 	cred_arg.step_core_bitmap    = job_resrcs_ptr->core_bitmap;
-	cred_arg.sockets_per_node    = job_resrcs_ptr->sockets_per_node;
-	cred_arg.sock_core_rep_count = job_resrcs_ptr->sock_core_rep_count;
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
+	/* override */
 	cred_arg.job_hostlist    = job_ptr->batch_host;
 	cred_arg.step_hostlist   = job_ptr->batch_host;
 #else
-	cred_arg.job_hostlist    = job_ptr->job_resrcs->nodes;
 	cred_arg.step_hostlist   = job_ptr->job_resrcs->nodes;
 #endif
-
-	cred_arg.selinux_context = job_ptr->selinux_context;
 
 	/*
 	 * Pre-22.05 slurmd does verify the credential, and still requires
