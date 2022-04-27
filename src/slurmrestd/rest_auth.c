@@ -162,33 +162,6 @@ extern int init_rest_auth(const plugin_handle_t *plugin_handles,
 	return rc;
 }
 
-static void _clear_auth(rest_auth_context_t *ctxt)
-{
-	_check_magic(ctxt);
-
-	auth_g_thread_clear();
-
-	if (ctxt->plugin_id) {
-		bool found = false;
-
-		for (int i = 0; (g_context_cnt > 0) && (i < g_context_cnt); i++) {
-			if (plugin_ids[i] == ctxt->plugin_id) {
-				(*(ops[i].free))(ctxt);
-				found = true;
-				break;
-			}
-		}
-
-		if (!found)
-			fatal_abort("%s: unable to free auth context with plugin_id: %u",
-				    __func__, ctxt->plugin_id);
-	}
-
-	xassert(!ctxt->plugin_data);
-	xfree(ctxt->user_name);
-	ctxt->plugin_id = 0;
-}
-
 extern int rest_authenticate_http_request(on_http_request_args_t *args)
 {
 	int rc = ESLURM_AUTH_CRED_INVALID;
@@ -278,8 +251,10 @@ extern void rest_auth_g_free(rest_auth_context_t *context)
 	bool found = false;
 	if (!context)
 		return;
+	_check_magic(context);
 
-	_clear_auth(context);
+	auth_g_thread_clear();
+
 	if (context->plugin_id) {
 		for (int i = 0;
 		     (g_context_cnt > 0) && (i < g_context_cnt);
@@ -287,6 +262,7 @@ extern void rest_auth_g_free(rest_auth_context_t *context)
 			if (context->plugin_id == plugin_ids[i]) {
 				found = true;
 				(*(ops[i].free))(context);
+				/* plugins are required to free their own data */
 				xassert(!context->plugin_data);
 				break;
 			}
@@ -296,6 +272,9 @@ extern void rest_auth_g_free(rest_auth_context_t *context)
 			fatal_abort("%s: unable to find plugin_id: %u",
 				    __func__, context->plugin_id);
 	}
+
+	xfree(context->user_name);
+	context->plugin_id = 0;
 	context->magic = ~MAGIC;
 	xfree(context);
 }
