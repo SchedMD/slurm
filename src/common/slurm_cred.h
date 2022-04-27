@@ -184,6 +184,9 @@ typedef struct {
 	char *job_partition;		/* partition */
 	char *job_reservation;		/* Reservation, if applicable */
 	uint16_t job_restart_cnt;	/* restart count */
+	char *job_std_err;
+	char *job_std_in;
+	char *job_std_out;
 	uint16_t  x11;			/* x11 flag set on job */
 
 	char *selinux_context;

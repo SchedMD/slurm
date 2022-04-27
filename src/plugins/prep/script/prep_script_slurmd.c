@@ -243,6 +243,15 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_restart_cnt != INFINITE16)
 			setenvf(&env, "SLURM_JOB_RESTART_COUNT", "%u",
 				cred_arg->job_restart_cnt);
+		if (cred_arg->job_std_err)
+			setenvf(&env, "SLURM_JOB_STDERR", "%s",
+				cred_arg->job_std_err);
+		if (cred_arg->job_std_in)
+			setenvf(&env, "SLURM_JOB_STDIN", "%s",
+				cred_arg->job_std_in);
+		if (cred_arg->job_std_out)
+			setenvf(&env, "SLURM_JOB_STDOUT", "%s",
+				cred_arg->job_std_out);
 
 		slurm_cred_unlock_args(cred);
 	}
