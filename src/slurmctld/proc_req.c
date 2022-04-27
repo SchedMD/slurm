@@ -95,6 +95,7 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
@@ -802,7 +803,7 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 
 	xassert(job_resrcs_ptr && job_resrcs_ptr->cpus);
 
-	memset(&cred_arg, 0, sizeof(cred_arg));
+	setup_cred_arg(&cred_arg, job_ptr);
 
 	memcpy(&cred_arg.step_id, &step_ptr->step_id, sizeof(cred_arg.step_id));
 	cred_arg.uid      = job_ptr->user_id;

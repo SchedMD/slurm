@@ -159,6 +159,8 @@ extern int get_node_cnts(job_record_t *job_ptr, uint32_t qos_flags,
 			 part_record_t *part_ptr, uint32_t *min_nodes,
 			 uint32_t *req_nodes, uint32_t *max_nodes);
 
+extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr);
+
 /* launch_prolog - launch job prolog script by slurmd on allocated nodes
  * IN job_ptr - pointer to the job record
  */

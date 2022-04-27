@@ -2902,6 +2902,11 @@ end_it:
 	return error_code;
 }
 
+extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
+{
+	memset(cred_arg, 0, sizeof(slurm_cred_arg_t));
+}
+
 /*
  * Launch prolog via RPC to slurmd. This is useful when we need to run
  * prolog at allocation stage. Then we ask slurmd to launch the prolog
@@ -2983,7 +2988,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	xassert(job_ptr->job_resrcs);
 	job_resrcs_ptr = job_ptr->job_resrcs;
-	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
+	setup_cred_arg(&cred_arg, job_ptr);
 	cred_arg.step_id.job_id = job_ptr->job_id;
 	cred_arg.step_id.step_id = SLURM_EXTERN_CONT;
 	cred_arg.step_id.step_het_comp = NO_VAL;

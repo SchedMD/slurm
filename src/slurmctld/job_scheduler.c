@@ -2643,7 +2643,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 		return SLURM_ERROR;
 	}
 
-	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
+	setup_cred_arg(&cred_arg, job_ptr);
 
 	cred_arg.step_id.job_id = launch_msg_ptr->job_id;
 	cred_arg.step_id.step_id = SLURM_BATCH_SCRIPT;
