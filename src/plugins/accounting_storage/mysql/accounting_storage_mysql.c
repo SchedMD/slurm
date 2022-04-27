@@ -3617,6 +3617,12 @@ extern int acct_storage_p_get_data(void *db_conn, acct_storage_info_t dinfo,
 	return SLURM_SUCCESS;
 }
 
+extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
+				    slurm_msg_type_t msg_type)
+{
+	return;
+}
+
 extern int acct_storage_p_shutdown(void *db_conn, bool dbd)
 {
 	return SLURM_SUCCESS;

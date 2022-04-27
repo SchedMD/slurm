@@ -207,6 +207,8 @@ typedef struct slurm_acct_storage_ops {
 	int (*clear_stats)         (void *db_conn);
 	int (*get_data)            (void *db_conn, acct_storage_info_t dinfo,
 				    void *data);
+	void (*send_all) (void *db_conn, time_t event_time,
+			  slurm_msg_type_t msg_type);
 	int (*shutdown)            (void *db_conn);
 } slurm_acct_storage_ops_t;
 /*
@@ -286,6 +288,7 @@ static const char *syms[] = {
 	"acct_storage_p_get_stats",
 	"acct_storage_p_clear_stats",
 	"acct_storage_p_get_data",
+	"acct_storage_p_send_all",
 	"acct_storage_p_shutdown",
 };
 
@@ -1090,6 +1093,18 @@ extern int acct_storage_g_get_data(void *db_conn, acct_storage_info_t dinfo,
 	return (*(ops.get_data))(db_conn, dinfo, data);
 }
 
+
+/*
+ * Send all relavant information to the DBD.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern void acct_storage_g_send_all(void *db_conn, time_t event_time,
+				    slurm_msg_type_t msg_type)
+{
+	if (slurm_acct_storage_init() < 0)
+		return;
+	(*(ops.send_all))(db_conn, event_time, msg_type);
+}
 
 /*
  * Shutdown database server.

@@ -2283,9 +2283,6 @@ extern void save_all_state(void);
  * restored */
 extern void ctld_assoc_mgr_init(void);
 
-/* send all info for the controller to accounting */
-extern void send_all_to_accounting(time_t event_time, int db_rc);
-
 /* A slurmctld lock needs to at least have a node read lock set before
  * this is called */
 extern void set_cluster_tres(bool assoc_mgr_locked);

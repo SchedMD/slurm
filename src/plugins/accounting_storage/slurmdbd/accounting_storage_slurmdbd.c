@@ -56,6 +56,7 @@
 #include "src/common/slurm_persist_conn.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/locks.h"
 
@@ -120,6 +121,8 @@ static time_t plugin_shutdown = 0;
 
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
 extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
+extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
+				    slurm_msg_type_t msg_type);
 
 static void _partial_free_dbd_job_start(void *object)
 {
@@ -2660,7 +2663,7 @@ extern int clusteracct_storage_p_cluster_tres(void *db_conn,
 	if ((rc == ACCOUNTING_FIRST_REG) ||
 	    (rc == ACCOUNTING_NODES_CHANGE_DB) ||
 	    (rc == ACCOUNTING_TRES_CHANGE_DB)) {
-		send_all_to_accounting(event_time, rc);
+		acct_storage_p_send_all(db_conn, event_time, rc);
 		rc = SLURM_SUCCESS;
 	}
 
@@ -3326,6 +3329,32 @@ extern int acct_storage_p_get_data(void *db_conn, acct_storage_info_t dinfo,
 		break;
 	}
 	return rc;
+}
+
+extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
+				    slurm_msg_type_t msg_type)
+{
+	/*
+	 * Ignore the rcs here because if there was an error we will
+	 * push the requests on the queue and process them when the
+	 * database server comes back up.
+	 */
+	debug2("called %s", rpc_num2string(msg_type));
+	switch (msg_type) {
+	case ACCOUNTING_FIRST_REG:
+	case ACCOUNTING_NODES_CHANGE_DB:
+		(void) send_jobs_to_accounting();
+		(void) send_resvs_to_accounting(msg_type);
+		/* fall through */
+	case ACCOUNTING_TRES_CHANGE_DB:
+		/* No need to do jobs or resvs when only the TRES change. */
+		(void) send_nodes_to_accounting(event_time);
+		break;
+	default:
+		error("%s: unknown message type of %d given",
+		      __func__, msg_type);
+		xassert(0);
+	}
 }
 
 extern int acct_storage_p_shutdown(void *db_conn)

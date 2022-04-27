@@ -2405,29 +2405,6 @@ extern void ctld_assoc_mgr_init(void)
 
 }
 
-/* send all info for the controller to accounting */
-extern void send_all_to_accounting(time_t event_time, int db_rc)
-{
-	/* ignore the rcs here because if there was an error we will
-	   push the requests on the queue and process them when the
-	   database server comes back up.
-	*/
-	debug2("send_all_to_accounting: called %s", rpc_num2string(db_rc));
-	switch (db_rc) {
-	case ACCOUNTING_FIRST_REG:
-	case ACCOUNTING_NODES_CHANGE_DB:
-		send_jobs_to_accounting();
-		send_resvs_to_accounting(db_rc);
-		/* fall through */
-	case ACCOUNTING_TRES_CHANGE_DB:
-		/* No need to do jobs or resvs when only the TRES change. */
-		send_nodes_to_accounting(event_time);
-		break;
-	default:
-		error("unknown rc of %d given", db_rc);
-	}
-}
-
 static int _add_node_gres_tres(void *x, void *arg)
 {
 	uint64_t gres_cnt;
