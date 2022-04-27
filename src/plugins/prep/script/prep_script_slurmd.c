@@ -231,6 +231,9 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_constraints)
 			setenvf(&env, "SLURM_JOB_CONSTRAINTS", "%s",
 				cred_arg->job_constraints);
+		if (cred_arg->job_nhosts)
+			setenvf(&env, "SLURM_JOB_NUM_NODES", "%u",
+				cred_arg->job_nhosts);
 		if (cred_arg->job_partition)
 			setenvf(&env, "SLURM_JOB_PARTITION", "%s",
 				cred_arg->job_partition);
