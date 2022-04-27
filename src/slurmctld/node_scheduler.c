@@ -2930,6 +2930,9 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	if (job_ptr->job_resrcs) {
 		job_resources_t *resrcs = job_ptr->job_resrcs;
 		cred_arg->cores_per_socket = resrcs->cores_per_socket;
+		cred_arg->cpu_array_count = resrcs->cpu_array_cnt;
+		cred_arg->cpu_array = resrcs->cpu_array_value;
+		cred_arg->cpu_array_reps = resrcs->cpu_array_reps;
 		cred_arg->job_core_bitmap = resrcs->core_bitmap;
 		cred_arg->job_hostlist = resrcs->nodes;
 		cred_arg->job_nhosts = resrcs->nhosts;

@@ -652,6 +652,8 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	FREE_NULL_BITMAP(arg->job_core_bitmap);
 	FREE_NULL_BITMAP(arg->step_core_bitmap);
 	xfree(arg->cores_per_socket);
+	xfree(arg->cpu_array);
+	xfree(arg->cpu_array_reps);
 	FREE_NULL_LIST(arg->job_gres_list);
 	FREE_NULL_LIST(arg->step_gres_list);
 	xfree(arg->step_hostlist);
@@ -1298,6 +1300,16 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 			if (len != cred->core_array_size)
 				goto unpack_error;
 		}
+		safe_unpack32(&cred->cpu_array_count, buffer);
+		if (cred->cpu_array_count) {
+			safe_unpack16_array(&cred->cpu_array, &len, buffer);
+			if (len != cred->cpu_array_count)
+				goto unpack_error;
+			safe_unpack32_array(&cred->cpu_array_reps, &len,
+					    buffer);
+			if (len != cred->cpu_array_count)
+				goto unpack_error;
+		}
 		safe_unpack32(&cred->job_nhosts, buffer);
 		safe_unpack32(&cred->job_ntasks, buffer);
 		safe_unpackstr_xmalloc(&cred->job_hostlist, &len, buffer);
@@ -1798,6 +1810,15 @@ static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 				     buffer);
 			pack32_array(cred->sock_core_rep_count,
 				     cred->core_array_size,
+				     buffer);
+		}
+		pack32(cred->cpu_array_count, buffer);
+		if (cred->cpu_array_count) {
+			pack16_array(cred->cpu_array,
+				     cred->cpu_array_count,
+				     buffer);
+			pack32_array(cred->cpu_array_reps,
+				     cred->cpu_array_count,
 				     buffer);
 		}
 		pack32(cred->job_nhosts, buffer);

@@ -164,6 +164,10 @@ typedef struct {
 	uint16_t *sockets_per_node;	/* Used for job/step_core_bitmaps */
 	uint32_t *sock_core_rep_count;	/* Used for job/step_core_bitmaps */
 
+	uint32_t cpu_array_count;
+	uint16_t *cpu_array;
+	uint32_t *cpu_array_reps;
+
 	/* JOB specific info */
 	char *job_account;		/* account */
 	char *job_alias_list;		/* node name to address aliases */
