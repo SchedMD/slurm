@@ -420,7 +420,7 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 		xassert(*epilog_env_ptr);
 		env_array_overwrite_fmt(epilog_env_ptr,
 					"CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
-					PRIu64, percentage);
+					"%"PRIu64, percentage);
 	}
 
 	return;
