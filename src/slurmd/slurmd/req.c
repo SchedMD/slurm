@@ -190,7 +190,7 @@ static void _rpc_step_complete(slurm_msg_t *msg);
 static void _rpc_stat_jobacct(slurm_msg_t *msg);
 static void _rpc_list_pids(slurm_msg_t *msg);
 static void _rpc_daemon_status(slurm_msg_t *msg);
-static int  _run_epilog(job_env_t *job_env);
+static int _run_epilog(job_env_t *job_env, slurm_cred_t *cred);
 static int  _run_prolog(job_env_t *job_env, slurm_cred_t *cred,
 			bool remove_running);
 static void _rpc_forward_data(slurm_msg_t *msg);
@@ -5082,7 +5082,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	job_env.uid = req->job_uid;
 	job_env.gid = req->job_gid;
 
-	_run_epilog(&job_env);
+	_run_epilog(&job_env, req->cred);
 	_free_job_env(&job_env);
 
 #ifdef HAVE_NATIVE_CRAY
@@ -5335,7 +5335,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	job_env.uid = req->job_uid;
 	job_env.gid = req->job_gid;
 
-	rc = _run_epilog(&job_env);
+	rc = _run_epilog(&job_env, req->cred);
 	_free_job_env(&job_env);
 
 	if (rc) {
@@ -5660,8 +5660,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	return rc;
 }
 
-static int
-_run_epilog(job_env_t *job_env)
+static int _run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	time_t start_time = time(NULL);
 	int error_code, diff_time;
@@ -5682,7 +5681,7 @@ _run_epilog(job_env_t *job_env)
 	if (xstrstr(slurm_conf.job_container_plugin, "cncu"))
 		job_env->container_join = container_g_join;
 
-	error_code = prep_g_epilog(job_env, NULL);
+	error_code = prep_g_epilog(job_env, cred);
 
 	diff_time = difftime(time(NULL), start_time);
 	if (diff_time >= (slurm_conf.msg_timeout / 2)) {
