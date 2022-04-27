@@ -655,6 +655,7 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	FREE_NULL_LIST(arg->job_gres_list);
 	FREE_NULL_LIST(arg->step_gres_list);
 	xfree(arg->step_hostlist);
+	xfree(arg->job_account);
 	xfree(arg->job_alias_list);
 	xfree(arg->job_constraints);
 	xfree(arg->job_hostlist);
@@ -1261,6 +1262,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 		safe_unpack16(&cred->job_core_spec, buffer);
+		safe_unpackstr_xmalloc(&cred->job_account, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->job_alias_list, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->job_reservation, &len, buffer);
@@ -1753,6 +1755,7 @@ static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		gres_step_state_pack(cred->step_gres_list, buffer,
 				     &cred->step_id, protocol_version);
 		pack16(cred->job_core_spec, buffer);
+		packstr(cred->job_account, buffer);
 		packstr(cred->job_alias_list, buffer);
 		packstr(cred->job_constraints, buffer);
 		packstr(cred->job_reservation, buffer);

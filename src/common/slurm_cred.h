@@ -165,6 +165,7 @@ typedef struct {
 	uint32_t *sock_core_rep_count;	/* Used for job/step_core_bitmaps */
 
 	/* JOB specific info */
+	char *job_account;		/* account */
 	char *job_alias_list;		/* node name to address aliases */
 	char     *job_constraints;	/* constraints in job allocation */
 	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
