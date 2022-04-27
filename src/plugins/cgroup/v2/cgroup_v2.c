@@ -1698,7 +1698,8 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 	cgroup_oom_t *oom_step_results = NULL;
 	char *mem_events = NULL, *mem_swap_events = NULL, *ptr;
 	size_t sz;
-	uint64_t job_kills, step_kills, job_swkills, step_swkills;
+	uint64_t job_kills = 0, step_kills = 0;
+	uint64_t job_swkills = 0, step_swkills = 0;
 
 	if (!bit_test(int_cg_ns.avail_controllers, CG_MEMORY))
 		return NULL;
@@ -1874,7 +1875,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	size_t cpu_stat_sz = 0, memory_stat_sz = 0;
 	cgroup_acct_t *stats = NULL;
 	task_cg_info_t *task_cg_info;
-	uint64_t tmp;
+	uint64_t tmp = 0;
 
 	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
 					     &task_id))) {
