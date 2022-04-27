@@ -167,6 +167,7 @@ typedef struct {
 	/* JOB specific info */
 	char *job_account;		/* account */
 	char *job_alias_list;		/* node name to address aliases */
+	char *job_comment;		/* comment */
 	char     *job_constraints;	/* constraints in job allocation */
 	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
 	uint16_t  job_core_spec;	/* count of specialized cores */
