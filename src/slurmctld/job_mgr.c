@@ -14898,10 +14898,19 @@ reply:
 extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 					   uint16_t protocol_version)
 {
+	slurm_cred_arg_t cred_arg;
 	kill_job_msg_t *msg = xmalloc(sizeof(*msg));
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
+
+	memset(&cred_arg, 0, sizeof(cred_arg));
+	cred_arg.step_id.job_id = job_ptr->job_id;
+	cred_arg.step_id.step_het_comp = NO_VAL;
+	cred_arg.step_id.step_id = NO_VAL;
+
+	msg->cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg,
+				      false, protocol_version);
 
 	msg->details = xstrdup(job_ptr->state_desc);
 	msg->het_job_id = job_ptr->het_job_id;
