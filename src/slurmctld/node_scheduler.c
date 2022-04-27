@@ -2920,6 +2920,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 		cred_arg->job_constraints = job_ptr->details->features_use;
 		cred_arg->job_core_spec = job_ptr->details->core_spec;
 		cred_arg->job_mem_limit = job_ptr->details->pn_min_memory;
+		cred_arg->job_ntasks = job_ptr->details->num_tasks;
 		cred_arg->job_std_err = job_ptr->details->std_err;
 		cred_arg->job_std_in = job_ptr->details->std_in;
 		cred_arg->job_std_out = job_ptr->details->std_out;

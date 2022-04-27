@@ -1299,6 +1299,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 		}
 		safe_unpack32(&cred->job_nhosts, buffer);
+		safe_unpack32(&cred->job_ntasks, buffer);
 		safe_unpackstr_xmalloc(&cred->job_hostlist, &len, buffer);
 
 		safe_unpack32(&cred->job_mem_alloc_size, buffer);
@@ -1800,6 +1801,7 @@ static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 				     buffer);
 		}
 		pack32(cred->job_nhosts, buffer);
+		pack32(cred->job_ntasks, buffer);
 		packstr(cred->job_hostlist, buffer);
 		pack32(cred->job_mem_alloc_size, buffer);
 		if (cred->job_mem_alloc_size) {
