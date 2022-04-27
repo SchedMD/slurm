@@ -14913,7 +14913,9 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 	msg->cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg,
 				      false, protocol_version);
 
+	msg->derived_ec = job_ptr->derived_ec;
 	msg->details = xstrdup(job_ptr->state_desc);
+	msg->exit_code = job_ptr->exit_code;
 	msg->het_job_id = job_ptr->het_job_id;
 	msg->job_gres_info = gres_g_epilog_build_env(job_ptr->gres_list_req,
 						     job_ptr->nodes);

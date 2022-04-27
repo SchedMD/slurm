@@ -2489,6 +2489,8 @@ _pack_kill_job_msg(kill_job_msg_t * msg, buf_t *buffer, uint16_t protocol_versio
 		} else
 			pack8(0, buffer);
 		packstr(msg->details, buffer);
+		pack32(msg->derived_ec, buffer);
+		pack32(msg->exit_code, buffer);
 		gres_job_alloc_pack(msg->job_gres_info, buffer,
 				    protocol_version);
 		pack_step_id(&msg->step_id, buffer, protocol_version);
@@ -2560,6 +2562,8 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, buf_t *buffer,
 				goto unpack_error;
 		}
 		safe_unpackstr_xmalloc(&tmp_ptr->details, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->derived_ec, buffer);
+		safe_unpack32(&tmp_ptr->exit_code, buffer);
 		if (gres_job_alloc_unpack(&tmp_ptr->job_gres_info,
 					  buffer, protocol_version))
 			goto unpack_error;
@@ -2580,6 +2584,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, buf_t *buffer,
 		safe_unpack_time(&tmp_ptr->time, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->work_dir, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		tmp_ptr->exit_code = INFINITE;
 		if (gres_job_alloc_unpack(&tmp_ptr->job_gres_info,
 					  buffer, protocol_version))
 			goto unpack_error;
@@ -2600,6 +2605,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, buf_t *buffer,
 		safe_unpack_time(&tmp_ptr->time, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->work_dir, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		tmp_ptr->exit_code = INFINITE;
 		if (gres_job_alloc_unpack(&tmp_ptr->job_gres_info,
 					  buffer, protocol_version))
 			goto unpack_error;

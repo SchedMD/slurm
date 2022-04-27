@@ -1004,6 +1004,8 @@ typedef struct control_status_msg {
 typedef struct kill_job_msg {
 	slurm_cred_t *cred;
 	char *details;
+	uint32_t derived_ec;
+	uint32_t exit_code;
 	uint32_t het_job_id;
 	List job_gres_info;	/* Used to set Epilog environment variables */
 	uint32_t job_state;
