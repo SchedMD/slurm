@@ -35,6 +35,17 @@ AC_DEFUN([X_AC_PMIX],
       [for pmix installation],
       [x_ac_cv_pmix_dir],
       [
+        if [test "x$with_pmix" = xyes]; then
+          $PKG_CONFIG pmix
+          if [test "$?" -eq 0]; then
+            # this is really just to determine if the pkg-config output is useful
+            CPPFLAGS_tmp="$($PKG_CONFIG --cflags-only-I pmix)"
+            pmix_prefix="$($PKG_CONFIG --variable=prefix pmix)"
+            if [test "x$CPPFLAGS_tmp" != x && test "x$pmix_prefix" != x] ; then
+              _x_ac_pmix_dirs="$pmix_prefix"
+            fi
+          fi
+        fi
         for d in $_x_ac_pmix_dirs; do
           if [ ! test -d "$d/include" ] || [ ! test -f "$d/include/pmix_server.h" ] ||
 		[ ! test -f "$d/include/pmix/pmix_common.h" && ! test -f $d/include/pmix_common.h ]; then
