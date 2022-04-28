@@ -179,7 +179,11 @@ static void _send_reply(int new_fd, char *msg)
 
 	if (msg)
 		msg_size = strlen(msg) + 1;
-	(void) sprintf(header, "%08u\n", msg_size);
+	data_sent = snprintf(header, sizeof(header), "%08u\n", msg_size);
+	if (data_sent >= sizeof(header)) {
+		info("slurmctld/nonstop: not sending msg, msg is too large.");
+		return;
+	}
 	if (_write_bytes((int) new_fd, header, 9) != 9) {
 		info("slurmctld/nonstop: failed to write message header %m");
 		return;
