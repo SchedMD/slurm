@@ -61,6 +61,7 @@
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/select.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
@@ -532,6 +533,7 @@ int main(int argc, char **argv)
 
 	xfree(auth_plugin_handles);
 	select_g_fini();
+	slurm_acct_storage_fini();
 	slurm_auth_fini();
 	slurm_conf_destroy();
 	log_fini();
