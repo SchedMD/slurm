@@ -233,11 +233,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->nodes         = xstrdup(job_ptr->nodes);
 	req->work_dir      = xstrdup(job_ptr->details->work_dir);
 
-	if (job_ptr->node_bitmap) {
-		char temp_bit[BUF_SIZE];
-		req->node_inx = xstrdup(bit_fmt(temp_bit, sizeof(temp_bit),
-						job_ptr->node_bitmap));
-	}
+	/* create req->node_inx outside of locks when packing */
 
 	if (!IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr)
 		req->partition = xstrdup(job_ptr->part_ptr->name);
@@ -2984,7 +2980,6 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 	char *node_list = NULL;
 	persist_msg_t msg = {0};
 	dbd_step_start_msg_t req;
-	char temp_bit[BUF_SIZE];
 
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		tasks = step_ptr->job_ptr->total_cpus;
@@ -3011,10 +3006,7 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 	req.db_index    = step_ptr->job_ptr->db_index;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
-	if (step_ptr->step_node_bitmap) {
-		req.node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
-				       step_ptr->step_node_bitmap);
-	}
+	/* reate req->node_inx outside of locks when packing */
 	req.node_cnt    = nodes;
 	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		req.start_time = step_ptr->start_time;
