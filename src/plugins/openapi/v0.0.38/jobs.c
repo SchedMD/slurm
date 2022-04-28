@@ -740,6 +740,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 			job->cluster_features);
 	data_set_string(data_key_set(jd, "command"), job->command);
 	data_set_string(data_key_set(jd, "comment"), job->comment);
+	data_set_string(data_key_set(jd, "container"), job->container);
 	if (job->contiguous != NO_VAL16)
 		data_set_bool(data_key_set(jd, "contiguous"),
 			      job->contiguous == 1);
@@ -1004,6 +1005,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 	data_set_int(data_key_set(jd, "suspend_time"), job->suspend_time);
 	data_set_string(data_key_set(jd, "system_comment"),
 			job->system_comment);
+	data_set_string(data_key_set(jd, "container"), job->container);
 	if (job->time_limit != INFINITE)
 		data_set_int(data_key_set(jd, "time_limit"), job->time_limit);
 	else

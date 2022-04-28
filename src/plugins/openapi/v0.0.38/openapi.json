@@ -1622,6 +1622,10 @@
             "type": "string",
             "description": "arbitrary comment"
           },
+          "container": {
+            "type": "string",
+            "description": "absolute path to OCI container bundle"
+          },
           "contiguous": {
             "type": "boolean",
             "description": "job requires contiguous nodes"
