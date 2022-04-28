@@ -248,13 +248,13 @@ extern int load_ebpf_prog(bpf_program_t *program, const char cgroup_path[],
 	 */
 	memset(&attr, 0, sizeof(attr));
 	attr.prog_type = BPF_PROG_TYPE_CGROUP_DEVICE;
-	attr.insns = (uint64_t) program->program;
+	attr.insns = (size_t) program->program;
 	attr.insn_cnt = program->n_inst;
 	/* We set the license to GPL to use helper functions marked gpl_only. */
-	attr.license = (uint64_t) "GPL";
+	attr.license = (size_t) "GPL";
 	strlcpy(attr.prog_name, "Slurm_Cgroup_v2", BPF_OBJ_NAME_LEN);
 	attr.log_level = 1;
-	attr.log_buf = (uint64_t) log;
+	attr.log_buf = (size_t) log;
 	attr.log_size = sizeof(log);
 
 	/* Call the load syscall */
