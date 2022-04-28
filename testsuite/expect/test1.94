@@ -42,7 +42,7 @@ if {[info exists mpicc] == 0} {
 	skip "Mpicc not defined, can't perform mpi testing"
 }
 if {[file executable $mpicc] == 0} {
-	skip "$mpicc does not exists"
+	skip "$mpicc does not exist"
 }
 
 proc cleanup {} {

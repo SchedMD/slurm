@@ -61,7 +61,7 @@ if {[info exists mpicc] == 0} {
 	skip "Mpicc not defined, can't perform MPI testing"
 }
 if {[file executable $mpicc] == 0} {
-	skip "$mpicc does not exists"
+	skip "$mpicc does not exist"
 }
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
