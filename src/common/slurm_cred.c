@@ -1544,7 +1544,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	 * cross-check that the signature matches up later.
 	 * (Only done in slurmd.)
 	 */
-	if (verifier_ctx)
+	if (credential->siglen && verifier_ctx)
 		_cred_verify_signature(verifier_ctx, credential);
 
 	return credential;
