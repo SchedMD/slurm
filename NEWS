@@ -216,6 +216,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix "scontrol reboot" clearing node reason on ResumeTimeout.
  -- Fix ResumeTimeout error message missing when node already has reason set.
  -- Avoid "running with local config" error when conf server is provided by DNS.
+ -- openapi/v0.0.37 - resolve job user name when not sent by slurmctld.
 
 * Changes in Slurm 21.08.7
 ==========================

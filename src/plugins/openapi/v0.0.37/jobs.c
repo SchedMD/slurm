@@ -60,6 +60,7 @@
 #include "src/common/strlcpy.h"
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
+#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -973,7 +974,15 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 	data_set_string(data_key_set(jd, "tres_alloc_str"),
 			job->tres_alloc_str);
 	data_set_int(data_key_set(jd, "user_id"), job->user_id);
-	data_set_string(data_key_set(jd, "user_name"), job->user_name);
+
+	if (job->user_name) {
+		data_set_string(data_key_set(jd, "user_name"), job->user_name);
+	} else {
+		data_set_string_own(
+			data_key_set(jd, "user_name"),
+			uid_to_string_or_null((uid_t) job->user_id));
+	}
+
 	/* wait4switch intentionally omitted */
 	data_set_string(data_key_set(jd, "wckey"), job->wckey);
 	data_set_string(data_key_set(jd, "current_working_directory"),
