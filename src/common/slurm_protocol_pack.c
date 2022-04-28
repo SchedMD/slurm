@@ -8067,6 +8067,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->het_job_step_cnt, buffer);
 		pack32(msg->het_job_task_offset, buffer);
 		packstr(msg->het_job_node_list, buffer);
+		pack32(msg->mpi_plugin_id, buffer);
 		pack32(msg->ntasks, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
@@ -8392,6 +8393,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->het_job_task_offset, buffer);
 		safe_unpackstr_xmalloc(&msg->het_job_node_list, &uint32_tmp,
 				       buffer);
+		safe_unpack32(&msg->mpi_plugin_id, buffer);
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack16(&msg->ntasks_per_board, buffer);
 		safe_unpack16(&msg->ntasks_per_core, buffer);

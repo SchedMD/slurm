@@ -848,6 +848,7 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  het_job_step_cnt;	/* number of steps for entire hetjob */
 	uint32_t  het_job_task_offset;	/* Hetjob task ID offset or NO_VAL */
 	char     *het_job_node_list;	/* Hetjob step node list */
+	uint32_t mpi_plugin_id;		/* numeric version of mpi_plugin */
 	uint32_t  nnodes;	/* number of nodes in this job step       */
 	uint32_t  ntasks;	/* number of tasks in this job step   */
 	uint16_t  ntasks_per_board;/* number of tasks to invoke on each board */

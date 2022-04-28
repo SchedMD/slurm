@@ -94,6 +94,7 @@ static buf_t **mpi_confs = NULL;
 static int g_context_cnt = 0;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+static uint32_t client_plugin_id = 0;
 
 static void _log_env(char **env)
 {
@@ -211,14 +212,13 @@ static char *_plugin_type(int index)
 	return &((xstrchr(g_context[index]->type, '/'))[1]);
 }
 
-static int _plugin_idx(char *mpi_type)
+extern int _plugin_idx(uint32_t plugin_id)
 {
 	xassert(g_context_cnt);
 
 	for (int i = 0; i < g_context_cnt; i++)
-		if (!xstrcmp(_plugin_type(i), mpi_type))
+		if (*(ops[i].plugin_id) == plugin_id)
 			return i;
-
 	return -1;
 }
 
@@ -346,6 +346,7 @@ static int _mpi_init_locked(char **mpi_type)
 				return SLURM_ERROR;
 			}
 		}
+		client_plugin_id = *(ops[0].plugin_id);
 		/* If no config, continue with default values */
 	} else {
 		/* Read config from file and apply to all loaded plugin(s) */
@@ -521,7 +522,9 @@ extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 
 extern int mpi_g_client_init(char **mpi_type)
 {
-	return _mpi_init(mpi_type);
+	_mpi_init(mpi_type);
+
+	return client_plugin_id;
 }
 
 extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
@@ -607,20 +610,19 @@ extern List mpi_g_conf_get_printable(void)
 	return opts_list;
 }
 
-extern int mpi_conf_send_stepd(int fd, char *mpi_type)
+extern int mpi_conf_send_stepd(int fd, uint32_t plugin_id)
 {
 	int index;
 	bool have_conf;
 	uint32_t len = 0, ns;
 
-	/* NULL type can't happen at this point. */
-	xassert(mpi_type);
+	/* 0 shouldn't ever happen here. */
+	xassert(plugin_id);
 
 	slurm_mutex_lock(&context_lock);
 
-	if ((index = _plugin_idx(mpi_type)) < 0)
+	if ((index = _plugin_idx(plugin_id)) < 0)
 		goto rwfail;
-
 	if ((have_conf = (mpi_confs && mpi_confs[index])))
 		len = get_buf_offset(mpi_confs[index]);
 	ns = htonl(len);

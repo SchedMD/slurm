@@ -580,10 +580,6 @@ _init_from_slurmd(int sock, char **argv,
 	if (acct_gather_read_conf(sock) != SLURM_SUCCESS)
 		fatal("Failed to read acct_gather conf from slurmd");
 
-	/* Receive mpi.conf from slurmd */
-	if (mpi_conf_recv_stepd(sock) != SLURM_SUCCESS)
-		fatal("Failed to read MPI conf from slurmd");
-
 	/* receive job type from slurmd */
 	safe_read(sock, &step_type, sizeof(int));
 	debug3("step_type = %d", step_type);
@@ -683,6 +679,13 @@ _init_from_slurmd(int sock, char **argv,
 
 	/* Receive GRES information from slurmd */
 	gres_g_recv_stepd(sock, msg);
+
+	/* Receive mpi.conf from slurmd */
+	if ((step_type == LAUNCH_TASKS) &&
+	    (step_id.step_id != SLURM_EXTERN_CONT) &&
+	    (step_id.step_id != SLURM_INTERACTIVE_STEP) &&
+	    (mpi_conf_recv_stepd(sock) != SLURM_SUCCESS))
+		fatal("Failed to read MPI conf from slurmd");
 
 	_set_job_log_prefix(&step_id);
 
