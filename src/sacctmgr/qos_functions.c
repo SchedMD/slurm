@@ -779,7 +779,7 @@ end_it:
 extern int sacctmgr_add_qos(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
-	int i, limit_set = 0;
+	int i;
 	ListIterator itr = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
 	slurmdb_qos_rec_t *start_qos = xmalloc(sizeof(slurmdb_qos_rec_t));
@@ -797,7 +797,7 @@ extern int sacctmgr_add_qos(int argc, char **argv)
 		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 
-		limit_set += _set_rec(&i, argc, argv, name_list, start_qos);
+		_set_rec(&i, argc, argv, name_list, start_qos);
 	}
 
 	if (exit_code) {

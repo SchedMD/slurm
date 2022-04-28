@@ -494,7 +494,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 
 {
 	int rc = SLURM_SUCCESS;
-	int i = 0, limit_set = 0;
+	int i = 0;
 	ListIterator itr = NULL;
 	ListIterator clus_itr = NULL;
 	slurmdb_res_rec_t *res = NULL;
@@ -514,8 +514,8 @@ extern int sacctmgr_add_res(int argc, char **argv)
 		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
 
-		limit_set += _set_res_rec(&i, argc, argv, name_list,
-					  cluster_list, start_res);
+		_set_res_rec(&i, argc, argv, name_list, cluster_list,
+			     start_res);
 	}
 
 	if (exit_code) {
