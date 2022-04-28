@@ -1857,6 +1857,7 @@ static int _parse_tres_list(const parser_t *const parse, void *obj, data_t *src,
 			    data_t *errors, const parser_env_t *penv)
 {
 	char **tres = (((void *)obj) + parse->field_offset);
+	int rc;
 	for_each_parse_tres_t args = {
 		.magic = MAGIC_FOREACH_PARSE_TRES_COUNT,
 		.penv = penv,
@@ -1866,19 +1867,28 @@ static int _parse_tres_list(const parser_t *const parse, void *obj, data_t *src,
 
 	if (!penv->g_tres_list) {
 		xassert(penv->g_tres_list);
-		return ESLURM_NOT_SUPPORTED;
+		rc = ESLURM_NOT_SUPPORTED;
+		goto cleanup;
 	}
 
-	if (data_get_type(src) != DATA_TYPE_LIST)
-		return ESLURM_REST_FAIL_PARSING;
+	if (data_get_type(src) != DATA_TYPE_LIST) {
+		rc = ESLURM_REST_FAIL_PARSING;
+		goto cleanup;
+	}
 
-	if (data_list_for_each(src, _for_each_parse_tres_count, &args) < 0)
-		return ESLURM_REST_FAIL_PARSING;
+	if (data_list_for_each(src, _for_each_parse_tres_count, &args) < 0) {
+		rc = ESLURM_REST_FAIL_PARSING;
+		goto cleanup;
+	}
 
 	if ((*tres = slurmdb_make_tres_string(args.tres, TRES_STR_FLAG_SIMPLE)))
-		return SLURM_SUCCESS;
+		rc = SLURM_SUCCESS;
 	else
-		return ESLURM_REST_FAIL_PARSING;
+		rc = ESLURM_REST_FAIL_PARSING;
+
+cleanup:
+	FREE_NULL_LIST(args.tres);
+	return rc;
 }
 
 #define MAGIC_LIST_PER_TRES 0xf7f8baf0
