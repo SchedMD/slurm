@@ -124,6 +124,9 @@ static time_t plugin_shutdown = 0;
 static char *cluster_nodes = NULL;
 static char *cluster_tres = NULL;
 
+static hostlist_t cluster_hl = NULL;
+static pthread_mutex_t cluster_hl_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
 extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
 extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
@@ -550,11 +553,23 @@ extern void _update_cluster_nodes(void)
 		prev_node_record_count = node_record_count;
 	}
 
+	slurm_mutex_lock(&cluster_hl_mutex);
+
+	FREE_NULL_HOSTLIST(cluster_hl);
+	cluster_hl = bitmap2hostlist(total_node_bitmap);
+	if (cluster_hl == NULL) {
+		cluster_nodes = xstrdup("");
+	} else {
+		cluster_nodes = hostlist_ranged_string_xmalloc(cluster_hl);
+	}
+
 	assoc_mgr_lock(&locks);
 	xfree(cluster_tres);
 	cluster_tres = slurmdb_make_tres_string(
 		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
 	assoc_mgr_unlock(&locks);
+
+	slurm_mutex_unlock(&cluster_hl_mutex);
 }
 
 /*
@@ -613,6 +628,7 @@ extern int fini ( void )
 	ext_dbd_fini();
 	xfree(cluster_nodes);
 	xfree(cluster_tres);
+	FREE_NULL_HOSTLIST(cluster_hl);
 
 	first = 1;
 
