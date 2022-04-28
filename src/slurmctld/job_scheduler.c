@@ -5060,49 +5060,6 @@ void cleanup_completing(job_record_t *job_ptr)
 				     job_ptr->start_time);
 }
 
-/*
- * _waitpid_timeout()
- *
- *  Same as waitpid(2) but kill process group for pid after timeout secs.
- */
-int
-waitpid_timeout(const char *name, pid_t pid, int *pstatus, int timeout)
-{
-	int timeout_ms = 1000 * timeout; /* timeout in ms */
-	int max_delay = 1000;		 /* max delay between waitpid calls */
-	int delay = 10;			 /* initial delay */
-	int rc;
-	int options = WNOHANG;
-
-	if (timeout <= 0 || timeout == NO_VAL16)
-		options = 0;
-
-	while ((rc = waitpid (pid, pstatus, options)) <= 0) {
-		if (rc < 0) {
-			if (errno == EINTR)
-				continue;
-			error("waitpid: %m");
-			return -1;
-		}
-		else if (timeout_ms <= 0) {
-			info("%s%stimeout after %ds: killing pgid %d",
-			     name != NULL ? name : "",
-			     name != NULL ? ": " : "",
-			     timeout, pid);
-			killpg(pid, SIGKILL);
-			options = 0;
-		}
-		else {
-			(void) poll(NULL, 0, delay);
-			timeout_ms -= delay;
-			delay = MIN (timeout_ms, MIN(max_delay, delay*2));
-		}
-	}
-
-	killpg(pid, SIGKILL);  /* kill children too */
-	return pid;
-}
-
 void main_sched_init(void)
 {
 	if (thread_id_sched)

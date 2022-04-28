@@ -100,4 +100,19 @@ extern int run_command_count(void);
  */
 extern char *run_command(run_command_args_t *run_command_args);
 
+/*
+ * run_command_waitpid_timeout()
+ *
+ *  Same as waitpid(2) but kill process group for pid after timeout secs.
+ *
+ *  name IN - name or class of program we're waiting on (for log messages)
+ *  pid IN - child on which to call waitpid(2)
+ *  pstatus OUT - pointer to integer status
+ *  timeout IN - timeout in seconds
+ *
+ *  Returns 0 for valid status in pstatus, -1 on failure of waitpid(2).
+ */
+extern int run_command_waitpid_timeout(
+	const char *name, pid_t pid, int *pstatus, int timeout);
+
 #endif	/* __RUN_COMMAND_H__ */

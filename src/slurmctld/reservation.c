@@ -6672,8 +6672,8 @@ static void *_fork_script(void *x)
 		_exit(127);
 	}
 
-	if (waitpid_timeout(__func__, cpid, &status,
-			    slurm_conf.prolog_epilog_timeout) == -1)
+	if (run_command_waitpid_timeout(__func__, cpid, &status,
+					slurm_conf.prolog_epilog_timeout) == -1)
 		error("%s: timed out after %u secs",
 		      __func__, slurm_conf.prolog_epilog_timeout);
 

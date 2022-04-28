@@ -337,7 +337,7 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 		timeout = -1;
 	else
 		timeout = slurm_conf.prolog_epilog_timeout;
-	if (waitpid_timeout(mode, cpid, &status, timeout) < 0) {
+	if (run_command_waitpid_timeout(mode, cpid, &status, timeout) < 0) {
 		error("spank/%s timed out after %u secs", mode, timeout);
 		return SLURM_ERROR;
 	}
