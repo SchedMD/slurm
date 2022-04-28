@@ -36,6 +36,7 @@
 
 #include "config.h"
 
+#include <glob.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -66,6 +67,87 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog);
 static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id);
 
+
+static int _ef(const char *p, int errnum)
+{
+	return error("prep_script_slurmd: glob: %s: %s", p, strerror(errno));
+}
+
+static List _script_list_create(const char *pattern)
+{
+	glob_t gl;
+	List l = NULL;
+	int rc;
+
+	if (!pattern)
+		return NULL;
+
+	rc = glob(pattern, GLOB_ERR, _ef, &gl);
+
+	switch (rc) {
+	case 0:
+		l = list_create(xfree_ptr);
+		for (size_t i = 0; i < gl.gl_pathc; i++)
+			list_push(l, xstrdup(gl.gl_pathv[i]));
+		break;
+	case GLOB_NOMATCH:
+		break;
+	case GLOB_NOSPACE:
+		error("prep_script_slurmd: glob(3): Out of memory");
+		break;
+	case GLOB_ABORTED:
+		error("prep_script_slurmd: cannot read dir %s: %m", pattern);
+		break;
+	default:
+		error("Unknown glob(3) return code = %d", rc);
+		break;
+	}
+
+	globfree(&gl);
+
+	return l;
+}
+
+static int _run_subpath_command(void *x, void *arg)
+{
+	run_command_args_t *run_command_args = arg;
+	char *resp;
+	int rc = 0;
+
+	xassert(run_command_args->script_argv);
+
+	run_command_args->script_path = x;
+	run_command_args->script_argv[0] = x;
+
+	resp = run_command(run_command_args);
+
+	if (*run_command_args->status) {
+		if (WIFEXITED(*run_command_args->status))
+			error("%s failed: rc:%u output:%s",
+			      run_command_args->script_type,
+			      WEXITSTATUS(*run_command_args->status),
+			      resp);
+		else if (WIFSIGNALED(*run_command_args->status))
+			error("%s killed by signal %u output:%s",
+			      run_command_args->script_type,
+			      WTERMSIG(*run_command_args->status),
+			      resp);
+		else
+			error("%s didn't run: status:%d reason:%s",
+			      run_command_args->script_type,
+			      *run_command_args->status,
+			      resp);
+		rc = -1;
+	} else
+		debug2("%s success rc:%d output:%s",
+		       run_command_args->script_type,
+		       *run_command_args->status,
+		       resp);
+	xfree(resp);
+
+	return rc;
+}
+
 extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 			 bool is_epilog)
 {
@@ -94,17 +176,15 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	}
 
 	if (path) {
-		int rc;
 		int timeout = slurm_conf.prolog_epilog_timeout;
-		char *cmd_argv[2];
-		char *resp = NULL;
+		char *cmd_argv[2] = {0};
+		List path_list;
 		run_command_args_t run_command_args = {
 			.container_join = job_env->container_join,
 			.job_id = jobid,
 			.script_argv = cmd_argv,
-			.script_path = path,
 			.script_type = name,
-			.status = &rc,
+			.status = &status,
 		};
 
 		if (!env)
@@ -113,30 +193,15 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 		if (timeout == NO_VAL16)
 			timeout = -1;
 
-		cmd_argv[0] = path;
-		cmd_argv[1] = NULL;
-
 		run_command_args.env = env;
 		run_command_args.max_wait = timeout;
 
-		resp = run_command(&run_command_args);
-
-		if (rc) {
-			if (WIFEXITED(rc))
-				error("%s failed: rc:%u output:%s",
-				      name, WEXITSTATUS(rc), resp);
-			else if (WIFSIGNALED(rc))
-				error("%s killed by signal %u output:%s",
-				      name, WTERMSIG(rc), resp);
-			else
-				error("%s didn't run: status:%d reason:%s",
-				      name, rc, resp);
-			rc = SLURM_ERROR;
-		} else
-			debug2("%s success rc:%d output:%s",
-			       name, rc, resp);
-		status = rc;
-		xfree(resp);
+		if (!(path_list = _script_list_create(path)))
+			return error("%s: Unable to create list of paths [%s]",
+				     name, path);
+		list_for_each(
+			path_list, _run_subpath_command, &run_command_args);
+		FREE_NULL_LIST(path_list);
 	}
 
 	env_array_free(env);
