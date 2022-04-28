@@ -321,6 +321,7 @@ static const parser_t parse_job[] = {
 	/* skip blockid (deprecated bluegene) */
 	_add_parse(STRING, cluster, "cluster"),
 	_add_parse(STRING, constraints, "constraints"),
+	_add_parse(STRING, container, "container"),
 	/* skip db_index */
 	_add_parse(JOB_EXIT_CODE, derived_ec, "derived_exit_code"),
 	_add_parse(STRING, derived_es, "comment/job"),

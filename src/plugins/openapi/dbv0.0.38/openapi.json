@@ -3433,6 +3433,10 @@
           "working_directory": {
             "type": "string",
             "description": "Directory where job was initially started"
+          },
+          "container": {
+            "type": "string",
+            "description": "absolute path to OCI container bundle"
           }
         }
       },

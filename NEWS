@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - add group name to job info
  -- openapi/v0.0.38 - add container field to job description.
  -- openapi/v0.0.38 - add container to job submission.
+ -- openapi/[db]v0.0.38 - add container field to job description.
 
 * Changes in Slurm 22.05.0rc1
 =============================
