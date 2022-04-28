@@ -1076,8 +1076,7 @@ extern int job_resources_bits_copy(job_resources_t *new_job_resrcs_ptr,
 				   uint16_t from_node_offset)
 {
 	int i, rc = SLURM_SUCCESS;
-	int new_bit_inx  = 0, new_core_cnt  = 0;
-	int from_bit_inx = 0, from_core_cnt = 0;
+	int new_core_cnt = 0, from_core_cnt = 0;
 
 	xassert(new_job_resrcs_ptr);
 	xassert(from_job_resrcs_ptr);
@@ -1091,15 +1090,9 @@ extern int job_resources_bits_copy(job_resources_t *new_job_resrcs_ptr,
 	for (i = 0; i < new_job_resrcs_ptr->nhosts; i++) {
 		if (new_job_resrcs_ptr->sock_core_rep_count[i] <=
 		    new_node_offset) {
-			new_bit_inx += new_job_resrcs_ptr->sockets_per_node[i] *
-				new_job_resrcs_ptr->cores_per_socket[i] *
-				new_job_resrcs_ptr->sock_core_rep_count[i];
 			new_node_offset -= new_job_resrcs_ptr->
 					   sock_core_rep_count[i];
 		} else {
-			new_bit_inx += new_job_resrcs_ptr->sockets_per_node[i] *
-				new_job_resrcs_ptr->cores_per_socket[i] *
-				new_node_offset;
 			new_core_cnt = new_job_resrcs_ptr->sockets_per_node[i] *
 				new_job_resrcs_ptr->cores_per_socket[i];
 			break;
@@ -1115,15 +1108,9 @@ extern int job_resources_bits_copy(job_resources_t *new_job_resrcs_ptr,
 	for (i = 0; i < from_job_resrcs_ptr->nhosts; i++) {
 		if (from_job_resrcs_ptr->sock_core_rep_count[i] <=
 		    from_node_offset) {
-			from_bit_inx += from_job_resrcs_ptr->sockets_per_node[i] *
-				from_job_resrcs_ptr->cores_per_socket[i] *
-				from_job_resrcs_ptr->sock_core_rep_count[i];
 			from_node_offset -= from_job_resrcs_ptr->
 					    sock_core_rep_count[i];
 		} else {
-			from_bit_inx += from_job_resrcs_ptr->sockets_per_node[i] *
-				from_job_resrcs_ptr->cores_per_socket[i] *
-				from_node_offset;
 			from_core_cnt = from_job_resrcs_ptr->sockets_per_node[i] *
 				from_job_resrcs_ptr->cores_per_socket[i];
 			break;
