@@ -556,6 +556,12 @@ extern void _update_cluster_nodes(void)
 	if (cluster_hl == NULL) {
 		cluster_nodes = xstrdup("");
 	} else {
+		/*
+		 * Can sort since db job's node_inx is based off of
+		 * cluster_nodes instead of node_record_table_ptr.
+		 * See acct_storage_p_node_inx().
+		 */
+		hostlist_sort(cluster_hl);
 		cluster_nodes = hostlist_ranged_string_xmalloc(cluster_hl);
 	}
 
