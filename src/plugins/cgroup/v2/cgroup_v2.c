@@ -1726,7 +1726,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 
 	if (mem_events) {
 		if ((ptr = xstrstr(mem_events, "oom_kill"))) {
-			if (sscanf(ptr, "oom_kill %lu", &step_kills) != 1)
+			if (sscanf(ptr, "oom_kill %"PRIu64, &step_kills) != 1)
 				error("Cannot read step's oom_kill counter from memory.events file.");
 		}
 		xfree(mem_events);
@@ -1734,7 +1734,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 
 	if (mem_swap_events) {
 		if ((ptr = xstrstr(mem_swap_events, "fail"))) {
-			if (sscanf(ptr, "fail %lu", &step_swkills) != 1)
+			if (sscanf(ptr, "fail %"PRIu64, &step_swkills) != 1)
 				error("Cannot read step's fail counter from memory.swap.events file.");
 		}
 		xfree(mem_swap_events);
@@ -1755,7 +1755,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 
 	if (mem_events) {
 		if ((ptr = xstrstr(mem_events, "oom_kill"))) {
-			if (sscanf(ptr, "oom_kill %lu", &job_kills) != 1)
+			if (sscanf(ptr, "oom_kill %"PRIu64, &job_kills) != 1)
 				error("Cannot read job's oom_kill counter from memory.events file.");
 		}
 		xfree(mem_events);
@@ -1763,14 +1763,14 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 
 	if (mem_swap_events) {
 		if ((ptr = xstrstr(mem_swap_events, "fail"))) {
-			if (sscanf(ptr, "fail %lu", &job_swkills) != 1)
+			if (sscanf(ptr, "fail %"PRIu64, &job_swkills) != 1)
 				error("Cannot read step's fail counter from memory.swap.events file.");
 		}
 		xfree(mem_swap_events);
 	}
 
 	/* Return stats */
-	log_flag(CGROUP, "OOM detected %lu job and %lu step kills",
+	log_flag(CGROUP, "OOM detected %"PRIu64" job and %"PRIu64" step kills",
 		 job_kills, step_kills);
 	oom_step_results = xmalloc(sizeof(*oom_step_results));
 	oom_step_results->job_mem_failcnt = job_kills;
@@ -1922,11 +1922,11 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 
 	if (cpu_stat) {
 		ptr = xstrstr(cpu_stat, "user_usec");
-		if (ptr && (sscanf(ptr, "user_usec %lu", &stats->usec) != 1))
+		if (ptr && (sscanf(ptr, "user_usec %"PRIu64, &stats->usec) != 1))
 			error("Cannot parse user_sec field in cpu.stat file");
 
 		ptr = xstrstr(cpu_stat, "system_usec");
-		if (ptr && (sscanf(ptr, "system_usec %lu", &stats->ssec) != 1))
+		if (ptr && (sscanf(ptr, "system_usec %"PRIu64, &stats->ssec) != 1))
 			error("Cannot parse system_usec field in cpu.stat file");
 		xfree(cpu_stat);
 	}
@@ -1946,17 +1946,17 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	 */
 	if (memory_stat) {
 		ptr = xstrstr(memory_stat, "anon");
-		if (ptr && (sscanf(ptr, "anon %lu", &stats->total_rss) != 1))
+		if (ptr && (sscanf(ptr, "anon %"PRIu64, &stats->total_rss) != 1))
 			error("Cannot parse anon field in memory.stat file");
 
 		ptr = xstrstr(memory_stat, "swapcached");
-		if (ptr && (sscanf(ptr, "swapcached %lu", &tmp) != 1))
+		if (ptr && (sscanf(ptr, "swapcached %"PRIu64, &tmp) != 1))
 			log_flag(CGROUP, "Cannot parse swapcached field in memory.stat file");
 		else
 			stats->total_rss += tmp;
 
 		ptr = xstrstr(memory_stat, "anon_thp");
-		if (ptr && (sscanf(ptr, "anon_thp %lu", &tmp) != 1))
+		if (ptr && (sscanf(ptr, "anon_thp %"PRIu64, &tmp) != 1))
 			log_flag(CGROUP, "Cannot parse anon_thp field in memory.stat file");
 		else
 			stats->total_rss += tmp;
@@ -1967,7 +1967,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 		 */
 
 		ptr = xstrstr(memory_stat, "pgmajfault");
-		if (ptr && (sscanf(ptr, "pgmajfault %lu",
+		if (ptr && (sscanf(ptr, "pgmajfault %"PRIu64,
 				   &stats->total_pgmajfault) != 1))
 			log_flag(CGROUP, "Cannot parse pgmajfault field in memory.stat file");
 		xfree(memory_stat);
