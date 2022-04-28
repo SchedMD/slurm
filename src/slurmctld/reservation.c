@@ -63,6 +63,7 @@
 #include "src/common/node_features.h"
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
+#include "src/common/run_command.h"
 #include "src/common/select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_time.h"
@@ -6653,7 +6654,7 @@ static void *_fork_script(void *x)
 {
 	resv_thread_args_t *args = (resv_thread_args_t *) x;
 	char *argv[3], *envp[1];
-	int status, wait_rc;
+	int status;
 	pid_t cpid;
 
 	argv[0] = args->script;
@@ -6671,19 +6672,11 @@ static void *_fork_script(void *x)
 		_exit(127);
 	}
 
-	while (1) {
-		wait_rc = waitpid_timeout(__func__, cpid, &status,
-					  slurm_conf.prolog_epilog_timeout);
-		if (wait_rc < 0) {
-			if (errno == EINTR)
-				continue;
-			error("_fork_script waitpid error: %m");
-			break;
-		} else if (wait_rc > 0) {
-			killpg(cpid, SIGKILL);	/* kill children too */
-			break;
-		}
-	}
+	if (waitpid_timeout(__func__, cpid, &status,
+			    slurm_conf.prolog_epilog_timeout) == -1)
+		error("%s: timed out after %u secs",
+		      __func__, slurm_conf.prolog_epilog_timeout);
+
 fini:	_free_script_arg(args);
 	return NULL;
 }
