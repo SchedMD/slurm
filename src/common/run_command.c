@@ -181,7 +181,7 @@ extern char *run_command(run_command_args_t *args)
 		resp = xstrdup("Run command failed - configuration error");
 		return resp;
 	}
-	if (args->max_wait != -1) {
+	if (!args->turnoff_output) {
 		if (pipe(pfd) != 0) {
 			error("%s: pipe(): %m", __func__);
 			*(args->status) = 127;
@@ -203,7 +203,7 @@ extern char *run_command(run_command_args_t *args)
 		     SLURM_SUCCESS))
 			error("container_g_join(%u): %m", args->job_id);
 
-		if (args->max_wait != -1) {
+		if (!args->turnoff_output) {
 			int devnull;
 			if ((devnull = open("/dev/null", O_RDWR)) < 0) {
 				error("%s: Unable to open /dev/null: %m",
@@ -237,7 +237,7 @@ extern char *run_command(run_command_args_t *args)
 		error("%s: execv(%s): %m", __func__, args->script_path);
 		_exit(127);
 	} else if (cpid < 0) {
-		if (args->max_wait != -1) {
+		if (!args->turnoff_output) {
 			close(pfd[0]);
 			close(pfd[1]);
 		}
@@ -245,7 +245,7 @@ extern char *run_command(run_command_args_t *args)
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
-	} else if (args->max_wait != -1) {
+	} else if (!args->turnoff_output) {
 		struct pollfd fds;
 		struct timeval tstart;
 		resp_size = 1024;
