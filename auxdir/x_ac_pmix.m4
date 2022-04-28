@@ -13,7 +13,7 @@
 
 AC_DEFUN([X_AC_PMIX],
 [
-  _x_ac_pmix_dirs="/usr /usr/local"
+  _x_ac_pmix_dirs="/usr /usr/local /usr/lib/x86_64-linux-gnu/pmix /usr/lib/x86_64-linux-gnu/pmix2"
   _x_ac_pmix_libs="lib64 lib"
 
   _x_ac_pmix_found="0"
