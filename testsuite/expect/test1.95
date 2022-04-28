@@ -41,7 +41,7 @@ if {[info exists upcc] == 0} {
 	skip "UPC compiler (upcc) not defined, can't perform UPC testing"
 }
 if {[file executable $upcc] == 0} {
-	skip "$upcc does not exists"
+	skip "$upcc does not exist"
 }
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"

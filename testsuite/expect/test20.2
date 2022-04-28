@@ -41,13 +41,13 @@ proc cleanup {} {
 }
 
 if {[file executable $qsub] == 0} {
-	skip "$qsub does not exists"
+	skip "$qsub does not exist"
 }
 if {[file executable $qstat] == 0} {
-	skip "$qstat does not exists"
+	skip "$qstat does not exist"
 }
 if {[file executable $qdel] == 0} {
-	skip "$qdel does not exists"
+	skip "$qdel does not exist"
 }
 
 make_bash_script $file_in "sleep 60"

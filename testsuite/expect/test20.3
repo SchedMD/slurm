@@ -34,10 +34,10 @@ set file_err    "$test_dir/error"
 set job_id      0
 
 if {[file executable $qsub] == 0} {
-	skip "$qsub does not exists"
+	skip "$qsub does not exist"
 }
 if {[file executable $qdel] == 0} {
-	skip "$qdel does not exists"
+	skip "$qdel does not exist"
 }
 
 proc cleanup {} {

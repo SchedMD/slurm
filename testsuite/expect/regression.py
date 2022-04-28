@@ -164,43 +164,22 @@ def main(argv=None):
         if status != 'pass' and options.results_file:
             testlog.flush()
             testlog.seek(0)
+            test_output = testlog.read()
 
-            fatals = []
-            errors = []
-            section = 'pre'
-            for line in testlog.readlines():
-                if re.search(fr"^{'=' * 78}", line):
-                    if section == 'pre':
-                        section = 'header'
-                    elif section == 'header':
-                        section = 'body'
-                    elif section == 'body':
-                        section = 'footer'
-                    elif section == 'footer':
-                        section = 'post'
-                    elif section != 'unknown':
-                        section = 'unknown'
-                    continue
-                if section == 'pre' and re.search(r'^TEST:\s+test', line):
-                    section = 'header'
-                    continue
-                if section == 'body':
-                    match = re.search(r'^\[[^\]]+\][ \[]+Fatal[ \]:]+(.*) \([^\)\(]+\)$', line)
-                    if match:
-                        fatals.append(match.group(1))
-                    else:
-                        match = re.search(r'^\[[^\]]+\][ \[]+Error[ \]:]+(.*) \([^\)\(]+\)$', line)
-                        if match:
-                            errors.append(match.group(1))
-                    continue
-                if section == 'footer':
-                    if re.search(r'^(?:SUCCESS\|SKIPPED\|FAILURE)\s+: test', line):
-                        continue
+            sections = [s for s in test_output.split('=' * 78 + "\n") if s.strip() != '']
+            header = sections[0]
+            body = sections[1]
+            footer = ''.join(sections[2:])
 
+            fatals = re.findall(r'(?ms)^\[[^\]]+\][ \[]+Fatal[ \]:]+(.*?) \(fail[^\)]+\)$', body)
+            errors = re.findall(r'(?ms)^\[[^\]]+\][ \[]+Error[ \]:]+(.*?) \(subfail[^\)]+\)$', body)
+            warnings = re.findall(r'(?ms)^\[[^\]]+\][ \[]+Warning[ \]:]+((?:(?!Warning).)*) \((?:sub)?skip[^\)]+\)$', body)
             if fatals:
                 test_dict['reason'] = fatals[0]
             elif errors:
                 test_dict['reason'] = errors[0]
+            elif warnings:
+                test_dict['reason'] = warnings[0]
 
         results_list.append(test_dict)
 
