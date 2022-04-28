@@ -536,16 +536,19 @@ static int _send_cluster_tres(void *db_conn,
 
 extern void _update_cluster_nodes(void)
 {
-	bitstr_t *total_node_bitmap = NULL;
+	static int prev_node_record_count = -1;
+	static bitstr_t *total_node_bitmap = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
 	xfree(cluster_nodes);
-	total_node_bitmap = bit_alloc(node_record_count);
-	bit_nset(total_node_bitmap, 0, node_record_count-1);
-	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
-	FREE_NULL_BITMAP(total_node_bitmap);
+	if (prev_node_record_count != node_record_count) {
+		FREE_NULL_BITMAP(total_node_bitmap);
+		total_node_bitmap = bit_alloc(node_record_count);
+		bit_nset(total_node_bitmap, 0, node_record_count-1);
+		prev_node_record_count = node_record_count;
+	}
 
 	assoc_mgr_lock(&locks);
 	xfree(cluster_tres);
