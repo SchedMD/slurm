@@ -206,6 +206,7 @@ documents those changes that are of interest to users and administrators.
  -- rest_auth/local - always log when new slurmdbd connection fails.
  -- openapi/dbv0.0.38 - gracefully update existing associations.
  -- Improve auto-detection of pmix
+ -- openapi/dbv0.0.3[6-8] - fix warning while compiling with clang.
 
 * Changes in Slurm 21.08.8
 ==========================
