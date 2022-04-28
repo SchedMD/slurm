@@ -597,8 +597,7 @@ static void _dump_node_res(data_t *dnodes, job_resources_t *j,
 		xassert(*bit_inx < array_size);
 
 		if (*bit_inx >= array_size) {
-			error("%s: unexpected invalid bit index:%" PRId64
-			      "/%" PRId64,
+			error("%s: unexpected invalid bit index:%zu/%zu",
 			      __func__, *bit_inx, array_size);
 			break;
 		}
