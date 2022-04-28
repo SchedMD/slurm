@@ -3227,15 +3227,22 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 			       uint32_t end_reserve)
 {
 	bool overlap = false;
-	int j;
+	int j = 0;
 
-	for (j=0; ; ) {
-		if ((node_space[j].end_time   > start_time) &&
-		    (node_space[j].begin_time < end_reserve) &&
-		    (!bit_super_set(use_bitmap, node_space[j].avail_bitmap))) {
-			overlap = true;
-			break;
+	while (true) {
+		if ((node_space[j].end_time > start_time) &&
+		    (node_space[j].begin_time < end_reserve)) {
+			/*
+			 * Jobs will run concurrently.
+			 * Do they conflict for resources?
+			 */
+			if (!bit_super_set(use_bitmap,
+					   node_space[j].avail_bitmap)) {
+				overlap = true;
+				break;
+			}
 		}
+
 		if ((j = node_space[j].next) == 0)
 			break;
 	}
