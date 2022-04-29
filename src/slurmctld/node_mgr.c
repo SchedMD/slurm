@@ -4350,7 +4350,8 @@ extern int send_nodes_to_accounting(time_t event_time)
 	node_record_t *node_ptr = NULL;
 	char *reason = NULL;
 	slurmctld_lock_t node_read_lock = {
-		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
+		.node = READ_LOCK,
+	};
 
  	lock_slurmctld(node_read_lock);
 	/* send nodes not in 'up' state */
