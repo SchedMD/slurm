@@ -1386,22 +1386,36 @@ static int _bf_reserve_running(void *x, void *arg)
 	node_space_map_t *node_space = ns_h->node_space;
 	int *ns_recs_ptr = ns_h->node_space_recs;
 	time_t end_time = job_ptr->end_time;
+	bool licenses, whole, preemptable;
+	bitstr_t *tmp_bitmap;
 
-	if (!job_ptr || ! IS_JOB_RUNNING(job_ptr))
+	if (!job_ptr || !IS_JOB_RUNNING(job_ptr) || !job_ptr->job_resrcs)
 		return SLURM_SUCCESS;
-	if (!job_ptr->job_resrcs || !(job_ptr->job_resrcs->whole_node ==
-				      WHOLE_NODE_REQUIRED))
+
+	whole = (job_ptr->job_resrcs->whole_node == WHOLE_NODE_REQUIRED);
+	licenses = (job_ptr->license_list);
+
+	if (!whole && !licenses)
 		return SLURM_SUCCESS;
-	if (slurm_job_preempt_mode(job_ptr) != PREEMPT_MODE_OFF)
+
+	preemptable = (slurm_job_preempt_mode(job_ptr) != PREEMPT_MODE_OFF);
+
+	if (preemptable && !licenses)
 		return SLURM_SUCCESS;
 
 	if (*ns_recs_ptr >= bf_node_space_size)
 		return SLURM_ERROR;
 
-	bitstr_t *tmp_bitmap = bit_copy(job_ptr->node_bitmap);
+	end_time = (end_time / backfill_resolution) * backfill_resolution;
+
+	if (preemptable || !whole) {
+		/* Reservation only needed for licenses. */
+		tmp_bitmap = bit_alloc(node_record_count);
+	} else {
+		tmp_bitmap = bit_copy(job_ptr->node_bitmap);
+	}
 
 	bit_not(tmp_bitmap);
-	end_time = (end_time / backfill_resolution) * backfill_resolution;
 
 	/*
 	 * Ensure reservation start time is aligned to the start of the
