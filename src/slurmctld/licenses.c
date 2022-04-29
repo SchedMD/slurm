@@ -944,3 +944,170 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 		      __func__, protocol_version);
 	}
 }
+
+static void _bf_license_free_rec(void *x)
+{
+	bf_license_t *entry = x;
+
+	if (!entry)
+		return;
+
+	xfree(entry->name);
+	xfree(entry);
+}
+
+static int _bf_licenses_find_rec(void *x, void *key)
+{
+	bf_license_t *license_entry = x;
+	char *name = key;
+
+	xassert(license_entry->name);
+	xassert(name);
+
+	if (!xstrcmp(license_entry->name, name))
+		return 1;
+
+	return 0;
+}
+
+extern List bf_licenses_initial(bool bf_running_job_reserve)
+{
+	List bf_list;
+	ListIterator iter;
+	licenses_t *license_entry;
+	bf_license_t *bf_entry;
+
+	if (!license_list || !list_count(license_list))
+		return NULL;
+
+	bf_list = list_create(_bf_license_free_rec);
+
+	iter = list_iterator_create(license_list);
+	while ((license_entry = list_next(iter))) {
+		bf_entry = xmalloc(sizeof(*bf_entry));
+		bf_entry->name = xstrdup(license_entry->name);
+		bf_entry->remaining = license_entry->total;
+
+		if (!bf_running_job_reserve)
+			bf_entry->remaining -= license_entry->used;
+
+		list_push(bf_list, bf_entry);
+	}
+	list_iterator_destroy(iter);
+
+	return bf_list;
+}
+
+extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
+{
+	char *sep = "";
+	char *licenses = NULL;
+	ListIterator iter;
+	bf_license_t *entry;
+
+	if (!licenses_list)
+		return NULL;
+
+	iter = list_iterator_create(licenses_list);
+	while ((entry = list_next(iter))) {
+		xstrfmtcat(licenses, "%s%s:%u",
+			   sep, entry->name, entry->remaining);
+		sep = ",";
+	}
+	list_iterator_destroy(iter);
+
+	return licenses;
+}
+
+extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src)
+{
+	bf_license_t *entry_src, *entry_dest;
+	ListIterator iter;
+	bf_licenses_t *licenses_dest = NULL;
+
+	if (!licenses_src)
+		return NULL;
+
+	licenses_dest = list_create(_bf_license_free_rec);
+
+	iter = list_iterator_create(licenses_src);
+	while ((entry_src = list_next(iter))) {
+		entry_dest = xmalloc(sizeof(*entry_dest));
+		entry_dest->name = xstrdup(entry_src->name);
+		entry_dest->remaining = entry_src->remaining;
+		list_append(licenses_dest, entry_dest);
+	}
+	list_iterator_destroy(iter);
+
+	return licenses_dest;
+}
+
+extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses, List additional)
+{
+	bf_license_t *bf_entry;
+	licenses_t *job_entry;
+	ListIterator iter;
+
+	if (!additional)
+		return;
+
+	iter = list_iterator_create(additional);
+	while ((job_entry = list_next(iter))) {
+		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
+					   job_entry->name);
+
+		if (bf_entry->remaining < job_entry->total) {
+			error("%s: underflow on %s", __func__, bf_entry->name);
+			bf_entry->remaining = 0;
+		} else {
+			bf_entry->remaining -= job_entry->total;
+		}
+	}
+	list_iterator_destroy(iter);
+}
+
+extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses, List needed)
+{
+	ListIterator iter;
+	bf_license_t *bf_entry;
+	licenses_t *need;
+	bool avail = true;
+
+	if (!needed)
+		return true;
+
+	iter = list_iterator_create(needed);
+	while ((need = list_next(iter))) {
+		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
+					   need->name);
+
+		if (bf_entry->remaining < need->total) {
+			avail = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return avail;
+}
+
+extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
+{
+	bf_license_t *entry_a, *entry_b;
+	ListIterator iter;
+	bool equivalent = true;
+
+	iter = list_iterator_create(a);
+	while ((entry_a = list_next(iter))) {
+		entry_b = list_find_first(b, _bf_licenses_find_rec,
+					  entry_a->name);
+
+		if (entry_a->remaining != entry_b->remaining) {
+			equivalent = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return equivalent;
+}
