@@ -332,6 +332,7 @@ static int _mpi_init_locked(char **mpi_type)
 	if (!g_context_cnt) {
 		/* No plugin could load: clean */
 		_mpi_fini_locked();
+		error("MPI: Unable to load any plugin");
 		return SLURM_ERROR;
 	} else if (g_context_cnt < count) {
 		/* Some could load but not all: shrink */
