@@ -4633,6 +4633,12 @@ extern int create_nodes(char *nodeline, char **err_msg)
 fini:
 	unlock_slurmctld(write_lock);
 
+	if (rc == SLURM_SUCCESS) {
+		/* Must be called outside of locks */
+		clusteracct_storage_g_cluster_tres(
+			acct_db_conn, NULL, NULL, 0, SLURM_PROTOCOL_VERSION);
+	}
+
 	return rc;
 }
 
@@ -4836,6 +4842,11 @@ extern int delete_nodes(char *names, char **err_msg)
 
 cleanup:
 	unlock_slurmctld(write_lock);
+	if (one_success) {
+		/* Must be called outside of locks */
+		clusteracct_storage_g_cluster_tres(
+			acct_db_conn, NULL, NULL, 0, SLURM_PROTOCOL_VERSION);
+	}
 
 	FREE_NULL_HOSTLIST(to_delete);
 
