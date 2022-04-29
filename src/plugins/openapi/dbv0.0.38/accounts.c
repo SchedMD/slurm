@@ -149,6 +149,12 @@ static data_for_each_cmd_t _foreach_update_acct(data_t *data, void *arg)
 		slurmdb_destroy_account_rec(acct);
 		return DATA_FOR_EACH_FAIL;
 	} else {
+		/* sacctmgr will set the org/desc as name if NULL */
+		if (!acct->organization)
+			acct->organization = xstrdup(acct->name);
+		if (!acct->description)
+			acct->description = xstrdup(acct->name);
+
 		(void)list_append(args->acct_list, acct);
 		return DATA_FOR_EACH_CONT;
 	}
