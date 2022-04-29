@@ -2616,6 +2616,11 @@ skip_start:
 			if (IS_JOB_FINISHED(job_ptr)) {
 				/* Zero size or killed on startup */
 			} else if (job_ptr->start_time) {
+				node_space_handler_t ns_handler = {
+					.node_space = node_space,
+					.node_space_recs = &node_space_recs,
+				};
+
 				if (job_ptr->time_limit == INFINITE)
 					hard_limit = YEAR_SECONDS;
 				else
@@ -2631,6 +2636,8 @@ skip_start:
 							      node_space);
 					time_limit = job_ptr->time_limit;
 				}
+
+				_bf_reserve_running(job_ptr, &ns_handler);
 			} else if (rc == SLURM_SUCCESS) {
 				error("start_time of 0 on successful backfill. This shouldn't happen. :)");
 			}
