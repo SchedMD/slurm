@@ -1730,8 +1730,10 @@ static void _attempt_backfill(void)
 
 	node_space = xcalloc((bf_node_space_size + 1),
 			     sizeof(node_space_map_t));
-	node_space[0].begin_time = sched_start;
-	window_end = sched_start + backfill_window;
+	node_space[0].begin_time = sched_start / backfill_resolution;
+	node_space[0].begin_time *= backfill_resolution;
+	window_end = (sched_start + backfill_window) / backfill_resolution;
+	window_end *= backfill_resolution;
 	node_space[0].end_time = window_end;
 
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
