@@ -1020,6 +1020,7 @@ static int _schedule(bool full_queue)
 	static int sched_max_job_start = 0;
 	static int bf_min_age_reserve = 0;
 	static uint32_t bf_min_prio_reserve = 0;
+	static bool bf_licenses = false;
 	static int def_job_limit = 100;
 	static int max_jobs_per_part = 0;
 	static int defer_rpc_cnt = 0;
@@ -1085,6 +1086,10 @@ static int _schedule(bool full_queue)
 			if (min_prio > 0)
 				bf_min_prio_reserve = (uint32_t) min_prio;
 		}
+
+		bf_licenses = false;
+		if (xstrcasestr(slurm_conf.sched_params, "bf_licenses"))
+			bf_licenses = true;
 
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "build_queue_timeout="))) {
@@ -1247,10 +1252,10 @@ static int _schedule(bool full_queue)
 		sched_update = slurm_conf.last_update;
 		info("SchedulerParameters=default_queue_depth=%d,"
 		     "max_rpc_cnt=%d,max_sched_time=%d,partition_job_depth=%d,"
-		     "sched_max_job_start=%d,sched_min_interval=%d",
+		     "sched_max_job_start=%d,sched_min_interval=%d%s",
 		     def_job_limit, defer_rpc_cnt, sched_timeout,
 		     max_jobs_per_part, sched_max_job_start,
-		     sched_min_interval);
+		     sched_min_interval, (bf_licenses ? ",bf_licenses" : ""));
 	}
 
 	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
