@@ -130,6 +130,7 @@ typedef struct {
 	time_t begin_time;
 	time_t end_time;
 	bitstr_t *avail_bitmap;
+	bf_licenses_t *licenses;
 	int next;	/* next record, by time, zero termination */
 } node_space_map_t;
 
@@ -215,7 +216,7 @@ static bitstr_t *planned_bitmap = NULL;
 
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
-			     bitstr_t *res_bitmap,
+			     bitstr_t *res_bitmap, List licenses,
 			     node_space_map_t *node_space,
 			     int *node_space_recs);
 static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val);
@@ -295,7 +296,7 @@ static void _dump_job_test(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 {
 	int i = 0;
-	char begin_buf[32], end_buf[32], *node_list;
+	char begin_buf[32], end_buf[32], *node_list, *licenses;
 
 	info("=========================================");
 	while (1) {
@@ -304,9 +305,11 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 		slurm_make_time_str(&node_space_ptr[i].end_time,
 				    end_buf, sizeof(end_buf));
 		node_list = bitmap2node_name(node_space_ptr[i].avail_bitmap);
-		info("Begin:%s End:%s Nodes:%s",
-		     begin_buf, end_buf, node_list);
+		licenses = bf_licenses_to_string(node_space_ptr[i].licenses);
+		info("Begin:%s End:%s Nodes:%s Licenses:%s",
+		     begin_buf, end_buf, node_list, licenses);
 		xfree(node_list);
+		xfree(licenses);
 		if ((i = node_space_ptr[i].next) == 0)
 			break;
 	}
@@ -1407,7 +1410,8 @@ static int _bf_reserve_running(void *x, void *arg)
 	 * seconds - or significantly longer with bf_continue set - which
 	 * would fragment the start of the backfill map.
 	 */
-	_add_reservation(0, end_time, tmp_bitmap, node_space, ns_recs_ptr);
+	_add_reservation(0, end_time, tmp_bitmap, job_ptr->license_list,
+			 node_space, ns_recs_ptr);
 
 	FREE_NULL_BITMAP(tmp_bitmap);
 
@@ -1752,6 +1756,10 @@ static void _attempt_backfill(void)
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
 	/* Make "resuming" nodes available to be scheduled in backfill */
 	bit_or(node_space[0].avail_bitmap, rs_node_bitmap);
+
+	if (bf_licenses)
+		node_space[0].licenses =
+			bf_licenses_initial(bf_running_job_reserve);
 
 	node_space[0].next = 0;
 	node_space_recs = 1;
@@ -2891,7 +2899,8 @@ skip_start:
 				break;
 			}
 			_add_reservation(start_time, end_reserve, avail_bitmap,
-					 node_space, &node_space_recs);
+					 job_ptr->license_list, node_space,
+					 &node_space_recs);
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_node_space_table(node_space);
@@ -2948,6 +2957,7 @@ skip_start:
 
 	for (i = 0; ; ) {
 		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
+		FREE_NULL_BF_LICENSES(node_space[i].licenses);
 		if ((i = node_space[i].next) == 0)
 			break;
 	}
@@ -3139,7 +3149,7 @@ static bool _more_work(time_t last_backfill_time)
 
 /* Create a reservation for a job in the future */
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
-			     bitstr_t *res_bitmap,
+			     bitstr_t *res_bitmap, List licenses,
 			     node_space_map_t *node_space,
 			     int *node_space_recs)
 {
@@ -3175,6 +3185,8 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			node_space[j].end_time = start_time;
 			node_space[i].avail_bitmap =
 				bit_copy(node_space[j].avail_bitmap);
+			node_space[i].licenses =
+				bf_licenses_copy(node_space[j].licenses);
 			node_space[i].next = node_space[j].next;
 			node_space[j].next = i;
 			(*node_space_recs)++;
@@ -3200,6 +3212,8 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			node_space[j].end_time = end_reserve;
 			node_space[i].avail_bitmap =
 				bit_copy(node_space[j].avail_bitmap);
+			node_space[i].licenses =
+				bf_licenses_copy(node_space[j].licenses);
 			node_space[i].next = node_space[j].next;
 			node_space[j].next = i;
 			(*node_space_recs)++;
@@ -3207,6 +3221,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 
 		/* merge in new usage with this record */
 		bit_and(node_space[j].avail_bitmap, res_bitmap);
+		bf_licenses_deduct(node_space[j].licenses, licenses);
 
 		if (end_reserve == node_space[j].end_time) {
 			if (node_space[j].next)
@@ -3220,6 +3235,11 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 	for (i = one_before; i != one_after; ) {
 		if ((j = node_space[i].next) == 0)
 			break;
+		if (!bf_licenses_equal(node_space[i].licenses,
+				       node_space[j].licenses)) {
+			i = j;
+			continue;
+		}
 		if (!bit_equal(node_space[i].avail_bitmap,
 			       node_space[j].avail_bitmap)) {
 			i = j;
@@ -3228,6 +3248,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		node_space[i].end_time = node_space[j].end_time;
 		node_space[i].next = node_space[j].next;
 		FREE_NULL_BITMAP(node_space[j].avail_bitmap);
+		FREE_NULL_BF_LICENSES(node_space[j].licenses);
 		break;
 	}
 }
