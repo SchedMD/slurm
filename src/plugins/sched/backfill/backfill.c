@@ -1374,7 +1374,6 @@ static int _bf_reserve_running(void *x, void *arg)
 	node_space_handler_t *ns_h = (node_space_handler_t *) arg;
 	node_space_map_t *node_space = ns_h->node_space;
 	int *ns_recs_ptr = ns_h->node_space_recs;
-	time_t start_time = job_ptr->start_time;
 	time_t end_time = job_ptr->end_time;
 
 	if (!job_ptr || ! IS_JOB_RUNNING(job_ptr))
@@ -1393,8 +1392,14 @@ static int _bf_reserve_running(void *x, void *arg)
 	bit_not(tmp_bitmap);
 	end_time = (end_time / backfill_resolution) * backfill_resolution;
 
-	_add_reservation(start_time, end_time, tmp_bitmap, node_space,
-			 ns_recs_ptr);
+	/*
+	 * Ensure reservation start time is aligned to the start of the
+	 * backfill map by sending 0 in instead of the actual start time.
+	 * A long-running backfill cycle could lead to a skew of a few
+	 * seconds - or significantly longer with bf_continue set - which
+	 * would fragment the start of the backfill map.
+	 */
+	_add_reservation(0, end_time, tmp_bitmap, node_space, ns_recs_ptr);
 
 	FREE_NULL_BITMAP(tmp_bitmap);
 
