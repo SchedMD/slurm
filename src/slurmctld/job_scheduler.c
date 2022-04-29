@@ -1733,6 +1733,11 @@ next_task:
 				     job_state_string(job_ptr->job_state),
 				     job_reason_string(job_ptr->state_reason),
 				     job_ptr->priority);
+			if (bf_licenses) {
+				sched_debug("%pJ is blocked on licenses. Stopping scheduling so license backfill can handle this",
+					    job_ptr);
+				break;
+			}
 			continue;
 		}
 
