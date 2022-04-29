@@ -191,6 +191,7 @@ static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int bf_min_age_reserve = 0;
 static int bf_node_space_size = 0;
 static bool bf_running_job_reserve = false;
+static bool bf_licenses = false;
 static uint32_t bf_min_prio_reserve = 0;
 static List deadlock_global_list;
 static bool bf_hetjob_immediate = false;
@@ -948,6 +949,13 @@ static void _load_config(void)
 		bf_running_job_reserve = true;
 	else
 		bf_running_job_reserve = false;
+
+	if (xstrcasestr(sched_params, "bf_licenses")) {
+		bf_licenses = true;
+		bf_running_job_reserve = true;
+	} else {
+		bf_licenses = false;
+	}
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_cnt=")))
 		max_rpc_cnt = atoi(tmp_ptr + 12);
