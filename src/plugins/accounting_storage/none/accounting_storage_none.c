@@ -413,6 +413,12 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 {
 	return SLURM_SUCCESS;
 }
+
+extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)
+{
+	return NULL;
+}
+
 extern int clusteracct_storage_p_node_up(void *db_conn, node_record_t *node_ptr,
 					 time_t event_time)
 {

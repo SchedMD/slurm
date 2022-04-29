@@ -2641,6 +2641,57 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Create bitmap based off of hostlist order instead of node_ptr->index.
+ *
+ * node_record_table_ptr can have NULL slots and result in bitmaps that don't
+ * match the hostlist that the dbd needs.
+ * .e.g.
+ * node_record_table_ptr
+ * [0]=node1
+ * [1]=NULL
+ * [2]=node2
+ * job runs on node1 and node2.
+ *
+ * The bitmap generated against node_record_table_ptr would be 0,2. But the dbd
+ * doesn't know about the NULL slots and expects node[1-2] to be 0,1. A query
+ * for jobs running on node2 won't be found because node2 on the controller is
+ * index 2 and on the dbd it's index 1. See setup_cluster_list_with_inx() and
+ * good_nodes_from_inx().
+ */
+extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)
+{
+	char *host, *ret_str;
+	hostlist_t node_hl;
+	bitstr_t *node_bitmap;
+	hostlist_iterator_t h_itr;
+
+	xassert(cluster_hl);
+
+	if (!nodes)
+		return NULL;
+
+	node_hl = hostlist_create(nodes);
+	node_bitmap = bit_alloc(node_record_count);
+	h_itr = hostlist_iterator_create(node_hl);
+
+	slurm_mutex_lock(&cluster_hl_mutex);
+	while ((host = hostlist_next(h_itr))) {
+		int loc;
+		if ((loc = hostlist_find(cluster_hl, host)) != -1)
+			bit_set(node_bitmap, loc);
+		free(host);
+	}
+	slurm_mutex_unlock(&cluster_hl_mutex);
+
+	hostlist_iterator_destroy(h_itr);
+	FREE_NULL_HOSTLIST(node_hl);
+
+	ret_str = bit_fmt_full(node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
+	return ret_str;
+}
+
 extern int clusteracct_storage_p_node_up(void *db_conn, node_record_t *node_ptr,
 					 time_t event_time)
 {
