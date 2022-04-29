@@ -255,8 +255,8 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 static int  _set_hetjob_details(void *x, void *arg);
 static int  _start_job(job_record_t *job_ptr, bitstr_t *avail_bitmap);
 static bool _test_resv_overlap(node_space_map_t *node_space,
-			       bitstr_t *use_bitmap, uint32_t start_time,
-			       uint32_t end_reserve);
+			       bitstr_t *use_bitmap, List use_licenses,
+			       uint32_t start_time, uint32_t end_reserve);
 static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, bitstr_t *exc_core_bitmap);
@@ -2784,7 +2784,8 @@ skip_start:
 		    (job_ptr->state_reason != WAIT_BURST_BUFFER_RESOURCE) &&
 		    (job_ptr->state_reason != WAIT_BURST_BUFFER_STAGING) &&
 		    _test_resv_overlap(node_space, avail_bitmap,
-				       start_time, end_reserve)) {
+				       job_ptr->license_list, start_time,
+				       end_reserve)) {
 			/* This job overlaps with an existing reservation for
 			 * job to be backfill scheduled, which the sched
 			 * plugin does not know about. Try again later. */
@@ -3279,12 +3280,13 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
  *	reservation that the backfill scheduler has made for a job to be
  *	started in the future.
  * IN use_bitmap - nodes to be allocated
+ * IN use_licenses - licenses to be allocated
  * IN start_time - start time of job
  * IN end_reserve - end time of job
  */
 static bool _test_resv_overlap(node_space_map_t *node_space,
-			       bitstr_t *use_bitmap, uint32_t start_time,
-			       uint32_t end_reserve)
+			       bitstr_t *use_bitmap, List use_licenses,
+			       uint32_t start_time, uint32_t end_reserve)
 {
 	bool overlap = false;
 	int j = 0;
@@ -3298,6 +3300,11 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 			 */
 			if (!bit_super_set(use_bitmap,
 					   node_space[j].avail_bitmap)) {
+				overlap = true;
+				break;
+			}
+			if (!bf_licenses_avail(node_space[j].licenses,
+					       use_licenses)) {
 				overlap = true;
 				break;
 			}
