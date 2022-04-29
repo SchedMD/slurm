@@ -1805,6 +1805,7 @@ static void _attempt_backfill(void)
 	while (1) {
 		uint32_t bf_job_priority, prio_reserve;
 		bool get_boot_time = false;
+		bool licenses_unavail;
 
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr) {
@@ -2104,9 +2105,8 @@ next_task:
 			continue;
 		}
 
-		if ((!job_independent(job_ptr)) ||
-		    (license_job_test(job_ptr, time(NULL), true) !=
-		     SLURM_SUCCESS)) {
+		/* XXXX kicked licenses here previously */
+		if (!job_independent(job_ptr)) {
 			log_flag(BACKFILL, "%pJ not runable now",
 				 job_ptr);
 			continue;
@@ -2269,6 +2269,7 @@ next_task:
 		start_res = MAX(later_start, het_job_time);
 		resv_end = 0;
 		later_start = 0;
+		licenses_unavail = false;
 		/* Determine impact of any advance reservations */
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
 				  &exc_core_bitmap, &resv_overlap, false);
@@ -2326,6 +2327,11 @@ next_task:
 			else if (node_space[j].begin_time <= end_time) {
 				bit_and(avail_bitmap,
 					node_space[j].avail_bitmap);
+				if (!bf_licenses_avail(node_space[j].licenses,
+						       job_ptr->license_list)) {
+					licenses_unavail = true;
+					later_start = node_space[j].end_time;
+				}
 			} else
 				break;
 			if ((j = node_space[j].next) == 0)
@@ -2342,12 +2348,14 @@ next_task:
 				job_ptr->details->exc_node_bitmap);
 		}
 
-		/* Test if insufficient nodes remain OR
+		/* Test if licenses are unavailable OR
+		 *	insufficient nodes remain OR
 		 *	required nodes missing OR
 		 *	nodes lack features OR
 		 *	no change since previously tested nodes (only changes
 		 *	in other partition nodes) */
-		if ((bit_set_count(avail_bitmap) < min_nodes) ||
+		if (licenses_unavail ||
+		    (bit_set_count(avail_bitmap) < min_nodes) ||
 		    ((job_ptr->details->req_node_bitmap) &&
 		     (!bit_super_set(job_ptr->details->req_node_bitmap,
 				     avail_bitmap))) ||
