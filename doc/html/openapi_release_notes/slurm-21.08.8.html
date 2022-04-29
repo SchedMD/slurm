@@ -1,0 +1,24 @@
+<h2>Slurm 21.08.8</h2>
+
+<h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
+
+<h4>Move response fields in dbv0.0.37_diag under "statistics"</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new parent field</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.37_diag".properties.statistics</li>
+		</ul>
+	</td>
+	<td class="tdfield">subordinated fields</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.components.schemas."dbv0.0.37_diag".properties.time_start</li>
+			<li>.components.schemas."dbv0.0.37_diag".properties.rollups</li>
+			<li>.components.schemas."dbv0.0.37_diag".properties.RPCs</li>
+			<li>.components.schemas."dbv0.0.37_diag".properties.users</li>
+		</ul>
+	</td>
+</tr>
+</table>
