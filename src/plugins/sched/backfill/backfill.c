@@ -3150,6 +3150,14 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 #endif
 
 	start_time = MAX(start_time, node_space[0].begin_time);
+	/*
+	 * Ensure that the job always occupies at least one bf_resolution
+	 * slot within the map. This also fixes potential issues when
+	 * running with bf_running_job_reserve if jobs have run past
+	 * their timelimit but have not yet been terminated.
+	 */
+	if (end_reserve < (start_time + backfill_resolution))
+		end_reserve = start_time + backfill_resolution;
 	for (j = 0; ; ) {
 		if (node_space[j].end_time > start_time) {
 			/* insert start entry record */
