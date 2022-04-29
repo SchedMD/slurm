@@ -180,8 +180,8 @@ extern int task_p_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 		rc = SLURM_ERROR;
 
 	if (use_memory &&
-	    (task_cgroup_memory_add_pid(
-		    job->task[node_tid]->pid) != SLURM_SUCCESS))
+	    (task_cgroup_memory_add_pid(job, job->task[node_tid]->pid,
+					node_tid) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	if (use_devices &&
@@ -259,7 +259,8 @@ extern int task_p_add_pid(pid_t pid)
 	if (use_cpuset && (task_cgroup_cpuset_add_pid(pid) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
-	if (use_memory && (task_cgroup_memory_add_pid(pid) != SLURM_SUCCESS))
+	if (use_memory && (task_cgroup_memory_add_extern_pid(pid) !=
+			   SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	if (use_devices &&

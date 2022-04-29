@@ -50,6 +50,10 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job);
 extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job);
 
 /* add a pid to the cgroup */
-extern int task_cgroup_memory_add_pid(pid_t pid);
+extern int task_cgroup_memory_add_pid(stepd_step_rec_t *job, pid_t pid,
+				      uint32_t taskid);
+
+/* add a pid to extern step cgroup. This one doesn't go at task_x level. */
+extern int task_cgroup_memory_add_extern_pid(pid_t pid);
 
 #endif

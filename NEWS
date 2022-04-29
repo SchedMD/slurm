@@ -217,6 +217,8 @@ documents those changes that are of interest to users and administrators.
     socket/core change, etc). Processes may still be running on excised nodes.
     Admin should take precautions when removing nodes that have jobs on running
     on them.
+ -- Fix race with task/cgroup memory and jobacctgather/cgroup, the first was
+    removing the pid from the task_X cgroup directory.
 
 * Changes in Slurm 21.08.9
 ==========================
