@@ -3095,7 +3095,9 @@ static uint32_t _get_job_max_tl(job_record_t *job_ptr, time_t now,
 		if ((node_space[j].begin_time != now) && // No current conflicts
 		    (node_space[j].begin_time < job_ptr->end_time) &&
 		    (!bit_super_set(job_ptr->node_bitmap,
-				    node_space[j].avail_bitmap))) {
+				    node_space[j].avail_bitmap) ||
+		     !bf_licenses_avail(node_space[j].licenses,
+					job_ptr->license_list))) {
 			/* Job overlaps pending job's resource reservation */
 			if ((comp_time == 0) ||
 			    (comp_time > node_space[j].begin_time))
