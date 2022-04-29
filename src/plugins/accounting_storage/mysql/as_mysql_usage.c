@@ -967,3 +967,27 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 
 	return rc;
 }
+
+extern bool trigger_reroll(mysql_conn_t *mysql_conn, time_t event_time)
+{
+	slurm_mutex_lock(&rollup_lock);
+	if (event_time < global_last_rollup) {
+		char *query;
+		global_last_rollup = event_time;
+		slurm_mutex_unlock(&rollup_lock);
+
+		query = xstrdup_printf("update \"%s_%s\" set "
+				       "hourly_rollup=%ld, "
+				       "daily_rollup=%ld, monthly_rollup=%ld",
+				       mysql_conn->cluster_name,
+				       last_ran_table, event_time,
+				       event_time, event_time);
+		DB_DEBUG(DB_USAGE, mysql_conn->conn, "query\n%s", query);
+		(void) mysql_db_query(mysql_conn, query);
+		xfree(query);
+		return true;
+	}
+
+	slurm_mutex_unlock(&rollup_lock);
+	return false;
+}
