@@ -149,7 +149,12 @@ proc inc22_1_fed {} {
 		}
 	}
 
-	subtest {$matches == 1} "Test the federated UserUtilizationByWckey report" "We are looking for $cluster.$user1.$wckey1.$alloc"
+	if {!$wc_key_track} {
+		subskip "Test the federated UserUtilizationByWckey needs TrackWCKey"
+	} else {
+		subtest {$matches == 1} "Test the federated UserUtilizationByWckey report" "We are looking for $cluster.$user1.$wckey1.$alloc"
+	}
+
 
 	# Test the WckeyUtilizationByUser report
 	set matches 0
@@ -174,7 +179,11 @@ proc inc22_1_fed {} {
 		}
 	}
 
-	subtest {$matches == 2} "Test the federated WckeyUtilizationByUser report"
+	if {!$wc_key_track} {
+		subskip "Test the federated WckeyUtilizationByUser needs TrackWCKey"
+	} else {
+		subtest {$matches == 2} "Test the federated WckeyUtilizationByUser report"
+	}
 
 	# Test the User Top report
 	set matches 0
