@@ -208,6 +208,7 @@ documents those changes that are of interest to users and administrators.
  -- Improve auto-detection of pmix
  -- openapi/dbv0.0.38 - Add missing method POST for /qos/.
  -- scrontab - On errors, print 1-index line numbers instead of 0-indexing them.
+ -- openapi/dbv0.0.38 - Correct OpenAPI specification for diag request.
 
 * Changes in Slurm 21.08.8
 ==========================

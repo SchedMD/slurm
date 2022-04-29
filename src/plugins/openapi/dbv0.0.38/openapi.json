@@ -1949,6 +1949,9 @@
               "$ref": "#/components/schemas/dbv0.0.38_error"
             }
           },
+          "statistics": {
+              "type": "object",
+              "properties": {
           "time_start": {
             "type": "integer",
             "description": "Unix timestamp of start time"
@@ -2046,7 +2049,7 @@
                   }
                 }
               }
-            }
+            }}}
           }
         }
       },
