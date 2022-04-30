@@ -384,6 +384,7 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	job->envtp->stepid = job->step_id.step_id;
 	job->envtp->nodeid = job->nodeid + node_offset;
 	job->envtp->cpus_on_node = job->cpus;
+	job->envtp->cpus_per_task = job->cpus_per_task;
 	job->envtp->procid = task->gtid + task_offset;
 	job->envtp->localid = task->id;
 	job->envtp->task_pid = getpid();

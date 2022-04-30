@@ -220,6 +220,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid "running with local config" error when conf server is provided by DNS.
  -- openapi/v0.0.37 - resolve job user name when not sent by slurmctld.
  -- openapi/dbv0.0.37 - Correct OpenAPI specification for diag request.
+ -- Add missing job environment variable SLURM_CPUS_PER_TASK when a job is
+    submitted with the rest API.
 
 * Changes in Slurm 21.08.7
 ==========================
