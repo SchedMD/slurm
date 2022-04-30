@@ -3136,7 +3136,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     int *node_space_recs)
 {
 	bool placed = false;
-	int i, j;
+	int i, j, one_before = 0, one_after = -1;
 
 #if 0
 	info("add job start:%u end:%u", start_time, end_reserve);
@@ -3178,6 +3178,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			placed = true;
 			break;
 		}
+		one_before = j;
 		if ((j = node_space[j].next) == 0)
 			break;
 	}
@@ -3199,13 +3200,16 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		/* merge in new usage with this record */
 		bit_and(node_space[j].avail_bitmap, res_bitmap);
 
-		if (end_reserve == node_space[j].end_time)
+		if (end_reserve == node_space[j].end_time) {
+			if (node_space[j].next)
+				one_after = node_space[j].next;
 			break;
+		}
 	}
 
 	/* Drop records with identical bitmaps (up to one record).
 	 * This can significantly improve performance of the backfill tests. */
-	for (i = 0; ; ) {
+	for (i = one_before; i != one_after; ) {
 		if ((j = node_space[i].next) == 0)
 			break;
 		if (!bit_equal(node_space[i].avail_bitmap,
