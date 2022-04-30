@@ -3194,19 +3194,12 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			node_space[i].next = node_space[j].next;
 			node_space[j].next = i;
 			(*node_space_recs)++;
-			break;
 		}
-		if (end_reserve == node_space[j].end_time) {
-			break;
-		}
-	}
 
-	for (j = 0; ; ) {
-		if ((node_space[j].begin_time >= start_time) &&
-		    (node_space[j].end_time <= end_reserve))
-			bit_and(node_space[j].avail_bitmap, res_bitmap);
-		if ((node_space[j].begin_time >= end_reserve) ||
-		    ((j = node_space[j].next) == 0))
+		/* merge in new usage with this record */
+		bit_and(node_space[j].avail_bitmap, res_bitmap);
+
+		if (end_reserve == node_space[j].end_time)
 			break;
 	}
 
