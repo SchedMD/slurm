@@ -3171,36 +3171,34 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			node_space[j].next = i;
 			(*node_space_recs)++;
 			placed = true;
+			break;
 		}
 		if (node_space[j].end_time == start_time) {
 			/* no need to insert new start entry record */
 			placed = true;
-		}
-		if (placed == true) {
-			while ((j = node_space[j].next)) {
-				if (end_reserve < node_space[j].end_time) {
-					/* insert end entry record */
-					i = *node_space_recs;
-					node_space[i].begin_time = end_reserve;
-					node_space[i].end_time = node_space[j].
-								 end_time;
-					node_space[j].end_time = end_reserve;
-					node_space[i].avail_bitmap =
-						bit_copy(node_space[j].
-							 avail_bitmap);
-					node_space[i].next = node_space[j].next;
-					node_space[j].next = i;
-					(*node_space_recs)++;
-					break;
-				}
-				if (end_reserve == node_space[j].end_time) {
-					break;
-				}
-			}
 			break;
 		}
 		if ((j = node_space[j].next) == 0)
 			break;
+	}
+
+	while (placed && (j = node_space[j].next)) {
+		if (end_reserve < node_space[j].end_time) {
+			/* insert end entry record */
+			i = *node_space_recs;
+			node_space[i].begin_time = end_reserve;
+			node_space[i].end_time = node_space[j].end_time;
+			node_space[j].end_time = end_reserve;
+			node_space[i].avail_bitmap =
+				bit_copy(node_space[j].avail_bitmap);
+			node_space[i].next = node_space[j].next;
+			node_space[j].next = i;
+			(*node_space_recs)++;
+			break;
+		}
+		if (end_reserve == node_space[j].end_time) {
+			break;
+		}
 	}
 
 	for (j = 0; ; ) {
