@@ -57,4 +57,9 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn,
 			       uint16_t archive_data,
 			       List *rollup_stats_list_in);
 
+/*
+ * Set last_ran_table to event_time if it happened before the last rollup.
+ */
+extern bool trigger_reroll(mysql_conn_t *mysql_conn, time_t event_time);
+
 #endif

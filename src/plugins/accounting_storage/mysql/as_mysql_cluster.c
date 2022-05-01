@@ -44,6 +44,7 @@
 #include "as_mysql_wckey.h"
 
 #include "src/common/select.h"
+#include "src/common/slurm_time.h"
 
 extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 				       const char *cluster,
@@ -1732,6 +1733,10 @@ add_it:
 
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
+
+	if (trigger_reroll(mysql_conn, event_time))
+		debug("Need to reroll usage from %s, cluster %s changes happened before last rollup.",
+		      slurm_ctime2(&event_time), mysql_conn->cluster_name);
 
 	if (rc != SLURM_SUCCESS)
 		goto end_it;

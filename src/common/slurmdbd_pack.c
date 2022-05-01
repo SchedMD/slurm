@@ -431,6 +431,14 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 {
 	dbd_job_start_msg_t *msg = (dbd_job_start_msg_t *)in;
 
+	/*
+	 * Generate node_inx outside of locks -- not _setup_job_start_msg().
+	 * See slurmdbd/acct_storage_p_node_inx() for need to
+	 * use_create_node_inx().
+	 */
+	xassert(!msg->node_inx);
+	msg->node_inx = acct_storage_g_node_inx(NULL, msg->nodes);
+
 	if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		pack32(msg->alloc_nodes, buffer);
@@ -1097,6 +1105,15 @@ static void _pack_step_start_msg(dbd_step_start_msg_t *msg,
 				 uint16_t rpc_version,
 				 buf_t *buffer)
 {
+	/*
+	 * Generate node_inx outside of locks -- not
+	 * jobacct_storage_p_step_start().
+	 * See slurmdbd/acct_storage_p_node_inx() for need to
+	 * use_create_node_inx().
+	 */
+	xassert(!msg->node_inx);
+	msg->node_inx = acct_storage_g_node_inx(NULL, msg->nodes);
+
 	if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		pack32(msg->assoc_id, buffer);
 		pack64(msg->db_index, buffer);

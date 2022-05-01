@@ -2909,6 +2909,13 @@ send_resp:
 			slurm_send_msg(msg, RESPONSE_NODE_REGISTRATION, resp);
 		} else
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+
+		if (node_reg_stat_msg->dynamic_type == DYN_NODE_NORM) {
+			/* Must be called outside of locks */
+			clusteracct_storage_g_cluster_tres(
+				acct_db_conn, NULL, NULL, 0,
+				SLURM_PROTOCOL_VERSION);
+		}
 	}
 }
 

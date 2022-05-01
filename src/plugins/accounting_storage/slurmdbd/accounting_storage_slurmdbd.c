@@ -121,6 +121,12 @@ static bool running_db_inx = 0;
 static int first = 1;
 static time_t plugin_shutdown = 0;
 
+static char *cluster_nodes = NULL;
+static char *cluster_tres = NULL;
+
+static hostlist_t cluster_hl = NULL;
+static pthread_mutex_t cluster_hl_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
 extern int jobacct_storage_p_job_heavy(void *db_conn, job_record_t *job_ptr);
 extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
@@ -227,11 +233,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->nodes         = xstrdup(job_ptr->nodes);
 	req->work_dir      = xstrdup(job_ptr->details->work_dir);
 
-	if (job_ptr->node_bitmap) {
-		char temp_bit[BUF_SIZE];
-		req->node_inx = xstrdup(bit_fmt(temp_bit, sizeof(temp_bit),
-						job_ptr->node_bitmap));
-	}
+	/* create req->node_inx outside of locks when packing */
 
 	if (!IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr)
 		req->partition = xstrdup(job_ptr->part_ptr->name);
@@ -531,6 +533,47 @@ static int _send_cluster_tres(void *db_conn,
 	return rc;
 }
 
+extern void _update_cluster_nodes(void)
+{
+	static int prev_node_record_count = -1;
+	static bitstr_t *total_node_bitmap = NULL;
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+
+	xfree(cluster_nodes);
+	if (prev_node_record_count != node_record_count) {
+		FREE_NULL_BITMAP(total_node_bitmap);
+		total_node_bitmap = bit_alloc(node_record_count);
+		bit_nset(total_node_bitmap, 0, node_record_count-1);
+		prev_node_record_count = node_record_count;
+	}
+
+	slurm_mutex_lock(&cluster_hl_mutex);
+
+	FREE_NULL_HOSTLIST(cluster_hl);
+	cluster_hl = bitmap2hostlist(total_node_bitmap);
+	if (cluster_hl == NULL) {
+		cluster_nodes = xstrdup("");
+	} else {
+		/*
+		 * Can sort since db job's node_inx is based off of
+		 * cluster_nodes instead of node_record_table_ptr.
+		 * See acct_storage_p_node_inx().
+		 */
+		hostlist_sort(cluster_hl);
+		cluster_nodes = hostlist_ranged_string_xmalloc(cluster_hl);
+	}
+
+	assoc_mgr_lock(&locks);
+	xfree(cluster_tres);
+	cluster_tres = slurmdb_make_tres_string(
+		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
+	assoc_mgr_unlock(&locks);
+
+	slurm_mutex_unlock(&cluster_hl_mutex);
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -585,6 +628,9 @@ extern int fini ( void )
 		pthread_join(db_inx_handler_thread, NULL);
 
 	ext_dbd_fini();
+	xfree(cluster_nodes);
+	xfree(cluster_tres);
+	FREE_NULL_HOSTLIST(cluster_hl);
 
 	first = 1;
 
@@ -2597,6 +2643,57 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Create bitmap based off of hostlist order instead of node_ptr->index.
+ *
+ * node_record_table_ptr can have NULL slots and result in bitmaps that don't
+ * match the hostlist that the dbd needs.
+ * .e.g.
+ * node_record_table_ptr
+ * [0]=node1
+ * [1]=NULL
+ * [2]=node2
+ * job runs on node1 and node2.
+ *
+ * The bitmap generated against node_record_table_ptr would be 0,2. But the dbd
+ * doesn't know about the NULL slots and expects node[1-2] to be 0,1. A query
+ * for jobs running on node2 won't be found because node2 on the controller is
+ * index 2 and on the dbd it's index 1. See setup_cluster_list_with_inx() and
+ * good_nodes_from_inx().
+ */
+extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)
+{
+	char *host, *ret_str;
+	hostlist_t node_hl;
+	bitstr_t *node_bitmap;
+	hostlist_iterator_t h_itr;
+
+	xassert(cluster_hl);
+
+	if (!nodes)
+		return NULL;
+
+	node_hl = hostlist_create(nodes);
+	node_bitmap = bit_alloc(node_record_count);
+	h_itr = hostlist_iterator_create(node_hl);
+
+	slurm_mutex_lock(&cluster_hl_mutex);
+	while ((host = hostlist_next(h_itr))) {
+		int loc;
+		if ((loc = hostlist_find(cluster_hl, host)) != -1)
+			bit_set(node_bitmap, loc);
+		free(host);
+	}
+	slurm_mutex_unlock(&cluster_hl_mutex);
+
+	hostlist_iterator_destroy(h_itr);
+	FREE_NULL_HOSTLIST(node_hl);
+
+	ret_str = bit_fmt_full(node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
+	return ret_str;
+}
+
 extern int clusteracct_storage_p_node_up(void *db_conn, node_record_t *node_ptr,
 					 time_t event_time)
 {
@@ -2624,43 +2721,25 @@ extern int clusteracct_storage_p_node_up(void *db_conn, node_record_t *node_ptr,
 }
 
 extern int clusteracct_storage_p_cluster_tres(void *db_conn,
-					      char *cluster_nodes,
+					      char *cluster_nodes_in,
 					      char *tres_str_in,
 					      time_t event_time,
 					      uint16_t rpc_version)
 {
 	int rc = SLURM_ERROR;
-	bitstr_t *total_node_bitmap = NULL;
-	char *cluster_tres_str;
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
-
-	event_time = time(NULL);
 
 	lock_slurmctld(node_write_lock);
-	/* Now get the names of all the nodes on the cluster at this
-	   time and send it also.
-	*/
-	total_node_bitmap = bit_alloc(node_record_count);
-	bit_nset(total_node_bitmap, 0, node_record_count-1);
-	cluster_nodes = bitmap2node_name_sortable(total_node_bitmap, 0);
-	FREE_NULL_BITMAP(total_node_bitmap);
 
-	assoc_mgr_lock(&locks);
-
-	cluster_tres_str = slurmdb_make_tres_string(
-		assoc_mgr_tres_list, TRES_STR_FLAG_SIMPLE);
-	assoc_mgr_unlock(&locks);
+	_update_cluster_nodes();
 
 	unlock_slurmctld(node_write_lock);
 
+	event_time = time(NULL);
 	rc = _send_cluster_tres(db_conn, cluster_nodes,
-				cluster_tres_str, event_time,
+				cluster_tres, event_time,
 				rpc_version);
-
-	xfree(cluster_nodes);
-	xfree(cluster_tres_str);
 
 	if ((rc == ACCOUNTING_FIRST_REG) ||
 	    (rc == ACCOUNTING_NODES_CHANGE_DB) ||
@@ -2907,7 +2986,6 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 	char *node_list = NULL;
 	persist_msg_t msg = {0};
 	dbd_step_start_msg_t req;
-	char temp_bit[BUF_SIZE];
 
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		tasks = step_ptr->job_ptr->total_cpus;
@@ -2934,10 +3012,7 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 	req.db_index    = step_ptr->job_ptr->db_index;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
-	if (step_ptr->step_node_bitmap) {
-		req.node_inx = bit_fmt(temp_bit, sizeof(temp_bit),
-				       step_ptr->step_node_bitmap);
-	}
+	/* reate req->node_inx outside of locks when packing */
 	req.node_cnt    = nodes;
 	if (step_ptr->start_time > step_ptr->job_ptr->resize_time)
 		req.start_time = step_ptr->start_time;

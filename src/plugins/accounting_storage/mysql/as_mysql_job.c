@@ -1180,26 +1180,11 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 			job_state = job_ptr->job_state & JOB_STATE_BASE;
 	}
 
-	slurm_mutex_lock(&rollup_lock);
-	if (end_time < global_last_rollup) {
+	if (trigger_reroll(mysql_conn, end_time))
 		debug("Need to reroll usage from %s Job %u from %s %s then and we are just now hearing about it.",
 		      slurm_ctime2(&end_time),
 		      job_ptr->job_id, mysql_conn->cluster_name,
 		      IS_JOB_RESIZING(job_ptr) ? "resized" : "ended");
-		global_last_rollup = end_time;
-		slurm_mutex_unlock(&rollup_lock);
-
-		query = xstrdup_printf("update \"%s_%s\" set "
-				       "hourly_rollup=%ld, "
-				       "daily_rollup=%ld, monthly_rollup=%ld",
-				       mysql_conn->cluster_name,
-				       last_ran_table, end_time,
-				       end_time, end_time);
-		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
-		(void) mysql_db_query(mysql_conn, query);
-		xfree(query);
-	} else
-		slurm_mutex_unlock(&rollup_lock);
 
 	if (!job_ptr->db_index) {
 		if (!(job_ptr->db_index =

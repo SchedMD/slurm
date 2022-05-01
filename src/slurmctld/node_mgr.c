@@ -4350,7 +4350,8 @@ extern int send_nodes_to_accounting(time_t event_time)
 	node_record_t *node_ptr = NULL;
 	char *reason = NULL;
 	slurmctld_lock_t node_read_lock = {
-		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
+		.node = READ_LOCK,
+	};
 
  	lock_slurmctld(node_read_lock);
 	/* send nodes not in 'up' state */
@@ -4632,6 +4633,12 @@ extern int create_nodes(char *nodeline, char **err_msg)
 fini:
 	unlock_slurmctld(write_lock);
 
+	if (rc == SLURM_SUCCESS) {
+		/* Must be called outside of locks */
+		clusteracct_storage_g_cluster_tres(
+			acct_db_conn, NULL, NULL, 0, SLURM_PROTOCOL_VERSION);
+	}
+
 	return rc;
 }
 
@@ -4835,6 +4842,11 @@ extern int delete_nodes(char *names, char **err_msg)
 
 cleanup:
 	unlock_slurmctld(write_lock);
+	if (one_success) {
+		/* Must be called outside of locks */
+		clusteracct_storage_g_cluster_tres(
+			acct_db_conn, NULL, NULL, 0, SLURM_PROTOCOL_VERSION);
+	}
 
 	FREE_NULL_HOSTLIST(to_delete);
 
