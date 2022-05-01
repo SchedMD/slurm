@@ -3093,6 +3093,11 @@ static int _compare_hostnames(node_record_t **old_node_table,
 	hostset_t old_set;
 	hostset_t set;
 
+	/*
+	 * Don't compare old DYNAMIC_NORM nodes because they don't rely on
+	 * fanout communications. Plus they haven't been loaded from state yet
+	 * into the new node_record_table_ptr.
+	 */
 	old_set = hostset_create("");
 	for (cc = 0; cc < old_node_count; cc++)
 		if (old_node_table[cc] &&
