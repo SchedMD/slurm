@@ -3115,7 +3115,7 @@ static int _compare_hostnames(node_record_t **old_node_table,
 	if (hostset_count(old_set) != hostset_count(set)) {
 		error("%s: node count has changed before reconfiguration "
 		      "from %d to %d. You have to restart slurmctld.",
-		      __func__, old_node_count, node_count);
+		      __func__, hostset_count(old_set), hostset_count(set));
 		return -1;
 	}
 
