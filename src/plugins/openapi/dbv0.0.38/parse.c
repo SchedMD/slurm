@@ -1800,7 +1800,12 @@ static int _find_tres_id(void *x, void *key)
 	       tres->name, tres->type, tres->id,
 	       args->tres->name, args->tres->type, args->tres->id);
 
-	if ((args->tres->id > 0) && args->tres->id == tres->id)
+	if ((args->tres->id > 0) &&
+	    ((args->tres->id == tres->id) &&
+	     (!args->tres->type ||
+	      !xstrcasecmp(args->tres->type, tres->type)) &&
+	     (!args->tres->name ||
+	      !xstrcasecmp(args->tres->name, tres->name))))
 		return 1;
 	if ((!args->tres->name || !args->tres->name[0]) &&
 	    !xstrcasecmp(args->tres->type, tres->type))
