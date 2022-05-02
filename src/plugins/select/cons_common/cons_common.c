@@ -711,9 +711,10 @@ static void _check_allocatable_sockets(node_record_t *node_ptr)
 	if (node_ptr->cpu_spec_list != NULL) {
 		bool socket_without_spec_cores = false;
 		bitstr_t *cpu_spec_bitmap = bit_alloc(node_ptr->cpus);
+		int cpu_socket = node_ptr->cores * node_ptr->threads;
+
 		bit_unfmt(cpu_spec_bitmap, node_ptr->cpu_spec_list);
 		for (int i = 0; i < node_ptr->tot_sockets; i++) {
-			int cpu_socket = node_ptr->cores * node_ptr->threads;
 			if (!bit_set_count_range(cpu_spec_bitmap,
 						 i * cpu_socket,
 						 (i + 1) * cpu_socket)) {
