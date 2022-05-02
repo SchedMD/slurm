@@ -1950,106 +1950,108 @@
             }
           },
           "statistics": {
-              "type": "object",
-              "properties": {
-          "time_start": {
-            "type": "integer",
-            "description": "Unix timestamp of start time"
-          },
-          "rollups": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "Rollup statistics",
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "description": "Type of rollup"
-                },
-                "last_run": {
-                  "type": "integer",
-                  "description": "Timestamp of last rollup"
-                },
-                "last_cycle": {
-                  "type": "integer",
-                  "description": "Timestamp of last cycle"
-                },
-                "max_cycle": {
-                  "type": "integer",
-                  "description": "Max time of all cycles"
-                },
-                "total_time": {
-                  "type": "integer",
-                  "description": "Total time (s) spent doing rollup"
-                },
-                "mean_cycles": {
-                  "type": "integer",
-                  "description": "Average time (s) of cycle"
-                }
-              }
-            }
-          },
-          "RPCs": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "Statistics by RPC type",
-              "properties": {
-                "rpc": {
-                  "type": "string",
-                  "description": "RPC type"
-                },
-                "count": {
-                  "type": "integer",
-                  "description": "Number of RPCs"
-                },
-                "time": {
+            "type": "object",
+            "properties": {
+              "time_start": {
+                "type": "integer",
+                "description": "Unix timestamp of start time"
+              },
+              "rollups": {
+                "type": "array",
+                "items": {
                   "type": "object",
-                  "description": "Time values",
+                  "description": "Rollup statistics",
                   "properties": {
-                    "average": {
-                      "type": "integer",
-                      "description": "Average time spent processing this RPC type"
+                    "type": {
+                      "type": "string",
+                      "description": "Type of rollup"
                     },
-                    "total": {
+                    "last_run": {
                       "type": "integer",
-                      "description": "Total time spent processing this RPC type"
+                      "description": "Timestamp of last rollup"
+                    },
+                    "last_cycle": {
+                      "type": "integer",
+                      "description": "Timestamp of last cycle"
+                    },
+                    "max_cycle": {
+                      "type": "integer",
+                      "description": "Max time of all cycles"
+                    },
+                    "total_time": {
+                      "type": "integer",
+                      "description": "Total time (s) spent doing rollup"
+                    },
+                    "mean_cycles": {
+                      "type": "integer",
+                      "description": "Average time (s) of cycle"
+                    }
+                  }
+                }
+              },
+              "RPCs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "Statistics by RPC type",
+                  "properties": {
+                    "rpc": {
+                      "type": "string",
+                      "description": "RPC type"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "description": "Number of RPCs"
+                    },
+                    "time": {
+                      "type": "object",
+                      "description": "Time values",
+                      "properties": {
+                        "average": {
+                          "type": "integer",
+                          "description": "Average time spent processing this RPC type"
+                        },
+                        "total": {
+                          "type": "integer",
+                          "description": "Total time spent processing this RPC type"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "users": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "Statistics by user RPCs",
+                  "properties": {
+                    "user": {
+                      "type": "string",
+                      "description": "User name"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "description": "Number of RPCs"
+                    },
+                    "time": {
+                      "type": "object",
+                      "description": "Time values",
+                      "properties": {
+                        "average": {
+                          "type": "integer",
+                          "description": "Average time spent processing each user RPC"
+                        },
+                        "total": {
+                          "type": "integer",
+                          "description": "Total time spent processing each user RPC"
+                        }
+                      }
                     }
                   }
                 }
               }
             }
-          },
-          "users": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "Statistics by user RPCs",
-              "properties": {
-                "user": {
-                  "type": "string",
-                  "description": "User name"
-                },
-                "count": {
-                  "type": "integer",
-                  "description": "Number of RPCs"
-                },
-                "time": {
-                  "type": "object",
-                  "description": "Time values",
-                  "properties": {
-                    "average": {
-                      "type": "integer",
-                      "description": "Average time spent processing each user RPC"
-                    },
-                    "total": {
-                      "type": "integer",
-                      "description": "Total time spent processing each user RPC"
-                    }
-                  }
-                }
-              }
-            }}}
           }
         }
       },
