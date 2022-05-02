@@ -91,6 +91,7 @@ new Slurm release.</p>
 <li>Francois Diakhate (CEA, France)</li>
 <li>Daniele Didomizio (EURAC Research, Italy)</li>
 <li>Joseph Donaghy (Lawrence Livermore National Laboratory)</li>
+<li>Paddy Doyle (Trinity College Dublin, Ireland)</li>
 <li>Chris Dunlap (Lawrence Livermore National Laboratory)</li>
 <br>
 <li>Phil Eckert (Lawrence Livermore National Laboratory)</li>
@@ -129,6 +130,7 @@ new Slurm release.</p>
 <li>Matthieu Hautreux (CEA, France)</li>
 <li>Dave Henseler (Cray)</li>
 <li>John Hensley (University of Michigan)</li>
+<li>Oscar Hern&aacute;ndez (SchedMD)</li>
 <li>Scott Hilton (SchedMD)</li>
 <li>Michael Hinton (SchedMD)</li>
 <li>Chris Holmes (HP)</li>
@@ -291,10 +293,9 @@ new Slurm release.</p>
 <br>
 <li>Yair Yarom (The Hebrew University of Jerusalem, Israel)</li>
 <li>Nathan Yee (SchedMD)</li>
-<li>Paddy Doyle (Trinity College Dublin, Ireland)</li>
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 6 May 2021</p>
+<p style="text-align:center;">Last modified 2 May 2022</p>
 
 <!--#include virtual="footer.txt"-->
