@@ -246,6 +246,7 @@ extern char *run_command(run_command_args_t *args)
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
 	} else if (!args->turnoff_output) {
+		char *wait_str;
 		struct pollfd fds;
 		struct timeval tstart;
 		resp_size = 1024;
@@ -316,9 +317,10 @@ extern char *run_command(run_command_args_t *args)
 			}
 		}
 		killpg(cpid, SIGTERM);
-		usleep(10000);
-		killpg(cpid, SIGKILL);
-		waitpid(cpid, args->status, 0);
+		wait_str = xstrdup_printf("SIGTERM %s", args->script_type);
+		run_command_waitpid_timeout(wait_str, cpid, args->status,
+					    10, NULL);
+		xfree(wait_str);
 		close(pfd[0]);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
