@@ -414,7 +414,6 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 		error("error calling waitpid() for spank/%s", mode);
 		return SLURM_ERROR;
 	} else if (timed_out) {
-		error("spank/%s timed out after %u secs", mode, timeout);
 		return SLURM_ERROR;
 	}
 

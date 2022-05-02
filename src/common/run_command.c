@@ -357,10 +357,10 @@ extern int run_command_waitpid_timeout(
 			error("waitpid: %m");
 			return -1;
 		} else if (timeout_ms <= 0) {
-			info("%s%stimeout after %ds: killing pgid %d",
-			     name != NULL ? name : "",
-			     name != NULL ? ": " : "",
-			     timeout, pid);
+			error("%s%stimeout after %ds: killing pgid %d",
+			      name != NULL ? name : "",
+			      name != NULL ? ": " : "",
+			      timeout, pid);
 			killpg(pid, SIGKILL);
 			options = 0;
 			if (timed_out)
