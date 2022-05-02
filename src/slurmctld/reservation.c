@@ -6667,7 +6667,7 @@ static void *_fork_script(void *x)
 		_exit(127);
 	}
 
-	if (run_command_waitpid_timeout(__func__, cpid, &status,
+	if (run_command_waitpid_timeout(args->script, cpid, &status,
 					slurm_conf.prolog_epilog_timeout,
 					&timed_out) == -1) {
 		/*
@@ -6676,8 +6676,8 @@ static void *_fork_script(void *x)
 		 */
 		error("error calling waitpid() for %s", args->script);
 	} else if (timed_out)
-		error("%s: timed out after %u secs",
-		      __func__, slurm_conf.prolog_epilog_timeout);
+		error("%s: %s timed out after %u secs",
+		      __func__, args->script, slurm_conf.prolog_epilog_timeout);
 
 fini:	_free_script_arg(args);
 	return NULL;
