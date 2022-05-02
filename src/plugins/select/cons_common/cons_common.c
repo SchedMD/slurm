@@ -253,7 +253,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		core_end = node_ptr->tot_cores;
 	} else {
 		core_begin = cr_get_coremap_offset(node_i);
-		core_end = cr_get_coremap_offset(node_i+1);
+		core_end = cr_get_coremap_offset(node_i + 1);
 	}
 
 	memset(free_cores, 0, sockets * sizeof(uint16_t));
