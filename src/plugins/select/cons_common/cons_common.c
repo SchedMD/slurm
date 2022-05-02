@@ -244,6 +244,8 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	avail_res_t *avail_res = xmalloc(sizeof(avail_res_t));
 	bitstr_t *tmp_core = NULL;
 	bool use_tpc = false;
+	uint32_t socket_begin;
+	uint32_t socket_end;
 
 
 	if (is_cons_tres) {
@@ -351,20 +353,28 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	 * Step 1: create and compute core-count-per-socket
 	 * arrays and total core counts
 	 */
-	for (c = core_begin; c < core_end; c++) {
-		i = (uint16_t) ((c - core_begin) / cores_per_socket);
-		if (bit_test(core_map, c)) {
-			free_cores[i]++;
-			free_core_count++;
-		} else if (!part_core_map) {
-			used_cores[i]++;
-		} else if (bit_test(part_core_map, c)) {
-			used_cores[i]++;
-			used_cpu_array[i]++;
-		}
+	if (part_core_map) {
+		tmp_core = bit_copy(part_core_map);
+		bit_and_not(tmp_core, core_map);
 	}
 
+	socket_begin = core_begin;
+	socket_end = core_begin + cores_per_socket;
 	for (i = 0; i < sockets; i++) {
+		free_cores[i] = bit_set_count_range(core_map, socket_begin,
+						    socket_end);
+		free_core_count += free_cores[i];
+		if (!tmp_core) {
+			used_cores[i] += (cores_per_socket - free_cores[i]);
+		} else {
+			used_cores[i] = bit_set_count_range(tmp_core,
+							    socket_begin,
+							    socket_end);
+			used_cpu_array[i] = used_cores[i];
+		}
+
+		socket_begin = socket_end;
+		socket_end += cores_per_socket;
 		/*
 		 * if a socket is already in use and entire_sockets_only is
 		 * enabled, it cannot be used by this job
@@ -379,6 +389,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 			used_cpu_count += used_cores[i] * threads_per_core;
 	}
 	avail_res->max_cpus = free_cpu_count;
+	FREE_NULL_BITMAP(tmp_core);
 
 	/* Enforce partition CPU limit, but do not pick specific cores yet */
 	if ((job_ptr->part_ptr->max_cpus_per_node != INFINITE) &&
