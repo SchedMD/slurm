@@ -353,6 +353,7 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 	pid_t cpid;
 	int status = 0, timeout;
 	int pfds[2];
+	bool timed_out = false;
 
 	if (pipe(pfds) < 0) {
 		error("%s: pipe: %m", __func__);
@@ -404,7 +405,15 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 		timeout = -1;
 	else
 		timeout = slurm_conf.prolog_epilog_timeout;
-	if (run_command_waitpid_timeout(mode, cpid, &status, timeout) < 0) {
+	if (run_command_waitpid_timeout(mode, cpid, &status, timeout,
+					&timed_out) < 0) {
+		/*
+		 * waitpid returned an error and set errno;
+		 * run_command_waitpid_timeout() already logged an error
+		 */
+		error("error calling waitpid() for spank/%s", mode);
+		return SLURM_ERROR;
+	} else if (timed_out) {
 		error("spank/%s timed out after %u secs", mode, timeout);
 		return SLURM_ERROR;
 	}

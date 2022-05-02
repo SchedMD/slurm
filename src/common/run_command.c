@@ -338,7 +338,8 @@ extern char *run_command(run_command_args_t *args)
  *  Same as waitpid(2) but kill process group for pid after timeout secs.
  */
 extern int run_command_waitpid_timeout(
-	const char *name, pid_t pid, int *pstatus, int timeout)
+	const char *name, pid_t pid, int *pstatus, int timeout,
+	bool *timed_out)
 {
 	int timeout_ms = 1000 * timeout; /* timeout in ms */
 	int max_delay = 1000;		 /* max delay between waitpid calls */
@@ -362,6 +363,8 @@ extern int run_command_waitpid_timeout(
 			     timeout, pid);
 			killpg(pid, SIGKILL);
 			options = 0;
+			if (timed_out)
+				*timed_out = true;
 		} else {
 			(void) poll(NULL, 0, delay);
 			timeout_ms -= delay;
@@ -370,5 +373,5 @@ extern int run_command_waitpid_timeout(
 	}
 
 	killpg(pid, SIGKILL);  /* kill children too */
-	return 0;
+	return rc;
 }

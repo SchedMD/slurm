@@ -6650,6 +6650,7 @@ static void *_fork_script(void *x)
 	char *argv[3], *envp[1];
 	int status;
 	pid_t cpid;
+	bool timed_out = false;
 
 	argv[0] = args->script;
 	argv[1] = args->resv_name;
@@ -6667,7 +6668,14 @@ static void *_fork_script(void *x)
 	}
 
 	if (run_command_waitpid_timeout(__func__, cpid, &status,
-					slurm_conf.prolog_epilog_timeout) == -1)
+					slurm_conf.prolog_epilog_timeout,
+					&timed_out) == -1) {
+		/*
+		 * waitpid returned an error and set errno;
+		 * run_command_waitpid_timeout() already logged an error
+		 */
+		error("error calling waitpid() for %s", args->script);
+	} else if (timed_out)
 		error("%s: timed out after %u secs",
 		      __func__, slurm_conf.prolog_epilog_timeout);
 

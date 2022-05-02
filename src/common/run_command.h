@@ -110,10 +110,13 @@ extern char *run_command(run_command_args_t *run_command_args);
  *  pid IN - child on which to call waitpid(2)
  *  pstatus OUT - pointer to integer status
  *  timeout IN - timeout in seconds
+ *  timed_out OUT - If not NULL, then set to true if waitpid() did not return
+ *                  successfully after timeout_ms milliseconds.
  *
  *  Returns 0 for valid status in pstatus, -1 on failure of waitpid(2).
  */
 extern int run_command_waitpid_timeout(
-	const char *name, pid_t pid, int *pstatus, int timeout);
+	const char *name, pid_t pid, int *pstatus, int timeout,
+	bool *timed_out);
 
 #endif	/* __RUN_COMMAND_H__ */
