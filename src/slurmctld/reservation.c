@@ -6649,6 +6649,7 @@ static void *_fork_script(void *x)
 	resv_thread_args_t *args = (resv_thread_args_t *) x;
 	char *argv[3], *envp[1];
 	int status;
+	int timeout = slurm_conf.prolog_epilog_timeout;
 	pid_t cpid;
 
 	argv[0] = args->script;
@@ -6666,8 +6667,12 @@ static void *_fork_script(void *x)
 		_exit(127);
 	}
 
+	if (timeout == NO_VAL16)
+		timeout = -1;
+	else
+		timeout *= 1000;
 	if (run_command_waitpid_timeout(args->script, cpid, &status,
-					slurm_conf.prolog_epilog_timeout,
+					timeout,
 					NULL) == -1) {
 		/*
 		 * waitpid returned an error and set errno;
