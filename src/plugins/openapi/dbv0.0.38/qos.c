@@ -63,6 +63,38 @@ enum {
 	TAG_SINGLE_QOS,
 };
 
+typedef struct {
+	data_t *errors;
+	slurmdb_qos_cond_t *qos_cond;
+} foreach_query_search_t;
+
+static data_for_each_cmd_t _foreach_query_search(const char *key,
+						 data_t *data,
+						 void *arg)
+{
+	foreach_query_search_t *args = arg;
+	data_t *errors = args->errors;
+
+	if (!xstrcasecmp("with_deleted", key)) {
+		if (data_convert_type(data, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
+			resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				   "must be a Boolean", NULL);
+			return DATA_FOR_EACH_FAIL;
+		}
+
+		if (data->data.bool_u)
+			args->qos_cond->with_deleted = true;
+		else
+			args->qos_cond->with_deleted = false;
+
+		return DATA_FOR_EACH_CONT;
+	}
+
+	resp_error(errors, ESLURM_REST_INVALID_QUERY, "Unknown query field",
+		   NULL);
+	return DATA_FOR_EACH_FAIL;
+}
+
 static int _foreach_qos(slurmdb_qos_rec_t *qos, data_t *dqos_list,
 			List qos_list, List g_tres_list)
 {
@@ -220,6 +252,17 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 	List g_qos_list = NULL;
 	char *qos_name = NULL;
 	slurmdb_qos_cond_t qos_cond = { 0 };
+
+	/* Update qos_cond with requested search parameters */
+	if (query && data_get_dict_length(query)) {
+		foreach_query_search_t args = {
+			.errors = errors,
+			.qos_cond = &qos_cond,
+		};
+
+		if (data_dict_for_each(query, _foreach_query_search, &args) < 0)
+			return ESLURM_REST_INVALID_QUERY;
+	}
 
 	if (method == HTTP_REQUEST_GET) {
 		/* need global list of QOS to dump even a single QOS */

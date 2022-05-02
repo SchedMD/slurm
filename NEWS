@@ -233,6 +233,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - add with_deleted input parameter to GET /user[s].
  -- openapi/dbv0.0.38 - add deleted flag to /user[s] output.
  -- openapi/dbv0.0.38 - set with_deleted to false by default for GET /qos.
+ -- openapi/dbv0.0.38 - add with_deleted input to GET /qos.
 
 * Changes in Slurm 21.08.9
 ==========================

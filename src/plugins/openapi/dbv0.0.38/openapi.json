@@ -344,6 +344,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "with_deleted",
+            "in": "query",
+            "description": "Include deleted QOSs. False by default.",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ]
       }
@@ -354,6 +365,19 @@
           "slurm"
         ],
         "operationId": "get_qos",
+        "parameters": [
+          {
+            "name": "with_deleted",
+            "in": "query",
+            "description": "Include deleted QOSs. False by default.",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
