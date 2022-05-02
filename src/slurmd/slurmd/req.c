@@ -257,7 +257,7 @@ static int job_suspend_size = 0;
 #define JOB_STATE_CNT 64
 static pthread_mutex_t job_state_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  job_state_cond    = PTHREAD_COND_INITIALIZER;
-static active_job_t active_job_id[JOB_STATE_CNT] = {0};
+static active_job_t active_job_id[JOB_STATE_CNT] = {{0}};
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
