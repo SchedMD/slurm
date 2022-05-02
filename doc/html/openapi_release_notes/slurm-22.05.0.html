@@ -379,6 +379,19 @@
 </tr>
 </table>
 
+<h4>Add with_deleted input parameter to GET /account, /accounts</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">New parameter</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/account/{account_name}".get.parameters[] | select(.name=="with_deleted")</li>
+			<li>.paths."/accounts/".get.parameters[] | select(.name=="with_deleted")</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h3>openapi/dbv0.0.36 (src/plugins/openapi/dbv0.0.36/openapi.json)</h3>
 
 <h4>Deprecation notice</h4>
