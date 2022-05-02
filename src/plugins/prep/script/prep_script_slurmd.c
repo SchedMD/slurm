@@ -192,6 +192,8 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 
 		if (timeout == NO_VAL16)
 			timeout = -1;
+		else
+			timeout *= 1000;
 
 		run_command_args.env = env;
 		run_command_args.max_wait = timeout;
