@@ -219,9 +219,7 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 	data_t *errors = populate_response_format(resp);
 	List g_qos_list = NULL;
 	char *qos_name = NULL;
-	slurmdb_qos_cond_t qos_cond = {
-		.with_deleted = 1,
-	};
+	slurmdb_qos_cond_t qos_cond = { 0 };
 
 	if (method == HTTP_REQUEST_GET) {
 		/* need global list of QOS to dump even a single QOS */
