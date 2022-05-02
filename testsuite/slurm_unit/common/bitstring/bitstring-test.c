@@ -227,6 +227,30 @@ main(int argc, char *argv[])
 		bit_free(bs);
 		bit_free(bs2);
 	}
+
+	note("Testing bit_set_count_range");
+	{
+		bitstr_t *bs = bit_alloc(16);
+		bit_nset(bs,0,14);
+		TEST(bit_set_count_range(bs,0,14) == 14, "bit_set_count_range");
+		TEST(bit_set_count_range(bs,2,14) == 12, "bit_set_count_range");
+		TEST(bit_set_count_range(bs,2,15) == 13, "bit_set_count_range");
+		TEST(bit_set_count_range(bs,2,16) == 13, "bit_set_count_range");
+		TEST(bit_set_count_range(bs,0,15) == 15, "bit_set_count_range");
+		TEST(bit_set_count_range(bs,0,16) == 15, "bit_set_count_range");
+		bit_set(bs,15);
+		TEST(bit_set_count_range(bs,0,16) == 16, "bit_set_count_range");
+		bs = bit_realloc(bs,128);
+		bit_nset(bs,0,127);
+		TEST(bit_set_count_range(bs,0,63) == 63, "bit_set_count_range");
+		TEST(bit_set_count_range(bs,0,64) == 64, "bit_set_count_range");
+		TEST(bit_set_count_range(bs,0,65) == 65, "bit_set_count_range");
+		TEST(bit_set_count_range(bs,1,63) == 62, "bit_set_count_range");
+		TEST(bit_set_count_range(bs,1,64) == 63, "bit_set_count_range");
+		TEST(bit_set_count_range(bs,1,65) == 64, "bit_set_count_range");
+		bit_free(bs);
+	}
+
 	totals();
 	return failed;
 }
