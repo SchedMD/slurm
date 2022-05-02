@@ -697,10 +697,14 @@ fini:
 		avail_res->min_cpus = *cpu_alloc_size;
 		avail_res->avail_cores_per_sock =
 			xcalloc(sockets, sizeof(uint16_t));
-		for (c = core_begin; c < core_end; c++) {
-			i = (uint16_t) ((c - core_begin) / cores_per_socket);
-			if (bit_test(core_map, c))
-				avail_res->avail_cores_per_sock[i]++;
+		socket_begin = core_begin;
+		socket_end = core_begin + cores_per_socket;
+		for (i = 0; i < sockets; i++) {
+			avail_res->avail_cores_per_sock[i] =
+				bit_set_count_range(core_map, socket_begin,
+						    socket_end);
+			socket_begin = socket_end;
+			socket_end += cores_per_socket;
 		}
 		avail_res->sock_cnt = sockets;
 		avail_res->spec_threads = spec_threads;
