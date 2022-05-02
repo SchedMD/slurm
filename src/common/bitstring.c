@@ -874,7 +874,8 @@ bit_set_count_range(bitstr_t *b, int32_t start, int32_t end)
 	_assert_bit_valid(b,start);
 
 	end = MIN(end, _bitstr_bits(b));
-	eow = ((start+word_size-1)/word_size) * word_size;  /* end of word */
+	/* end of word */
+	eow = (((start + BITSTR_MAXPOS) >> BITSTR_SHIFT) << BITSTR_SHIFT);
 	for ( bit = start; bit < end && bit < eow; bit++) {
 		if (bit_test(b, bit))
 			count++;
