@@ -129,6 +129,7 @@ new Slurm release.</p>
 <li>Matthieu Hautreux (CEA, France)</li>
 <li>Dave Henseler (Cray)</li>
 <li>John Hensley (University of Michigan)</li>
+<li>Oscar Hern&aacute;ndez (SchedMD)</li>
 <li>Scott Hilton (SchedMD)</li>
 <li>Michael Hinton (SchedMD)</li>
 <li>Chris Holmes (HP)</li>
@@ -295,6 +296,6 @@ new Slurm release.</p>
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 6 May 2021</p>
+<p style="text-align:center;">Last modified 2 May 2022</p>
 
 <!--#include virtual="footer.txt"-->
