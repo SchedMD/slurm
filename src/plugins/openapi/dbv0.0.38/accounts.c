@@ -250,7 +250,7 @@ extern int op_handler_account(const char *context_id,
 			.assoc_cond = &assoc_cond,
 			.with_assocs = true,
 			.with_coords = true,
-			.with_deleted = true,
+			/* with_deleted defaults to false */
 		};
 
 		list_append(assoc_cond.acct_list, acct);
@@ -276,7 +276,7 @@ extern int op_handler_accounts(const char *context_id,
 		slurmdb_account_cond_t acct_cond = {
 			.with_assocs = true,
 			.with_coords = true,
-			.with_deleted = true,
+			/* with_deleted defaults to false */
 		};
 
 		return _dump_accounts(resp, auth, &acct_cond);
