@@ -329,8 +329,8 @@ extern int op_handler_accounts(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
 			       data_t *query, int tag, data_t *resp, void *auth)
 {
+	data_t *errors = populate_response_format(resp);
 	if (method == HTTP_REQUEST_GET) {
-		data_t *errors = populate_response_format(resp);
 		slurmdb_account_cond_t acct_cond = {
 			.with_assocs = true,
 			.with_coords = true,
