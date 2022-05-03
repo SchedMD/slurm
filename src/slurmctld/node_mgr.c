@@ -1794,6 +1794,12 @@ int update_node ( update_node_msg_t * update_node_msg )
 						(~NODE_STATE_POWERED_DOWN);
 					info("power down request repeating "
 					     "for node %s", this_node_name);
+				} else if (IS_NODE_POWERING_DOWN(node_ptr)) {
+					info("ignoring power down request for node %s, already powering down",
+					     this_node_name);
+					node_ptr->next_state = NO_VAL;
+					free(this_node_name);
+					continue;
 				} else
 					info("powering down node %s",
 					     this_node_name);
