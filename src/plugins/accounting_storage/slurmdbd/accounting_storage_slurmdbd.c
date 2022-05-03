@@ -2668,9 +2668,7 @@ extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)
 	bitstr_t *node_bitmap;
 	hostlist_iterator_t h_itr;
 
-	xassert(cluster_hl);
-
-	if (!nodes)
+	if (!nodes || !cluster_hl)
 		return NULL;
 
 	node_hl = hostlist_create(nodes);
