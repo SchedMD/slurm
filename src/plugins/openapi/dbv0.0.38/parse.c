@@ -2945,9 +2945,9 @@ static int _parser_run(void *obj, const parser_t *const parse,
 
 	for (int i = 0; (!rc) && (i < parse_member_count); i++) {
 		data_t *pd = data_resolve_dict_path(data, parse[i].key);
-		for (int f = 0; f < ARRAY_SIZE(funcs); f++) {
+		for (int f = 0; pd && (f < ARRAY_SIZE(funcs)); f++) {
 
-			if (pd && parse[i].type == funcs[f].type) {
+			if (parse[i].type == funcs[f].type) {
 				xassert(funcs[f].rfunc);
 				rc = funcs[f].rfunc((parse + i), obj, pd,
 						    errors, penv);
