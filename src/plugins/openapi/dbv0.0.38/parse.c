@@ -2955,11 +2955,22 @@ static int _parser_run(void *obj, const parser_t *const parse,
 			}
 		}
 
-		if (rc && parse[i].required)
-			resp_error(errors, rc, "Required field failed to parse",
-				   parse[i].key);
-		else
-			rc = SLURM_SUCCESS;
+		if (!pd && parse[i].required) {
+			char *tmp_str =
+				xstrdup_printf("Missing required field '%s'",
+					       parse[i].key);
+			resp_error(errors, rc, tmp_str, __func__);
+			xfree(tmp_str);
+			break;
+		} else if (rc) {
+			char *tmp_str =
+				xstrdup_printf("Failed to parse %sfield '%s'",
+					       parse[i].required ?
+					       "required " : "",
+					       parse[i].key);
+			resp_error(errors, rc, tmp_str, __func__);
+			xfree(tmp_str);
+		}
 	}
 
 	return rc;
