@@ -173,12 +173,12 @@ static int _delete_qos(data_t *resp, void *auth, data_t *errors,
 #define MAGIC_FOREACH_UP_QOS 0xdaebfae8
 typedef struct {
 	int magic;
-	List qos_list;
 	List g_tres_list;
 	data_t *errors;
 	rest_auth_context_t *auth;
 } foreach_update_qos_t;
 
+/* If the QOS already exists, update it. If not, create it */
 static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 {
 	foreach_update_qos_t *args = arg;
@@ -187,6 +187,10 @@ static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 		.auth = args->auth,
 		.g_tres_list = args->g_tres_list,
 	};
+	int rc;
+	List qos_list = NULL;
+	slurmdb_qos_cond_t cond = {0};
+	bool qos_exists;
 
 	xassert(args->magic == MAGIC_FOREACH_UP_QOS);
 
@@ -202,10 +206,78 @@ static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 	if (parse(PARSE_QOS, qos, data, args->errors, &penv)) {
 		slurmdb_destroy_qos_rec(qos);
 		return DATA_FOR_EACH_FAIL;
-	} else {
-		(void)list_append(args->qos_list, qos);
-		return DATA_FOR_EACH_CONT;
 	}
+
+	/* Search for a QOS with the same id and/or name, if set */
+	if (qos->id || qos->name) {
+		data_t *query_errors = data_new();
+		if (qos->id) {
+			/* Need to free string copy of id with xfree_ptr */
+			cond.id_list = list_create(xfree_ptr);
+			list_append(cond.id_list,
+				    xstrdup_printf("%u", qos->id));
+		}
+		if (qos->name) {
+			/* Temporarily alias/borrow qos->name into cond */
+			cond.name_list = list_create(NULL);
+			list_append(cond.name_list, qos->name);
+		}
+
+		/* See if QOS already exists */
+		rc = db_query_list(query_errors, args->auth, &qos_list,
+				   slurmdb_qos_get, &cond);
+		FREE_NULL_DATA(query_errors);
+		qos_exists = ((rc == SLURM_SUCCESS) && qos_list &&
+			      !list_is_empty(qos_list));
+	} else
+		qos_exists = false;
+
+	if (!qos_exists && qos->id) {
+		/* No QOS exists for qos->id. Can't update */
+		rc = resp_error(args->errors, ESLURM_REST_INVALID_QUERY,
+				"QOS was not found for the requested ID",
+				"_foreach_update_qos");
+	} else if (!qos_exists && !qos->name) {
+		/* Can't create a QOS without a name */
+		rc = resp_error(args->errors, ESLURM_REST_INVALID_QUERY,
+				"Cannot create a QOS without a name",
+				"_foreach_update_qos");
+	} else if (!qos_exists) {
+		/* The QOS was not found, so create a new QOS */
+		List qos_add_list = list_create(NULL);
+		debug("%s: adding qos request: name=%s description=%s",
+		      __func__, qos->name, qos->description);
+
+		list_append(qos_add_list, qos);
+		rc = db_query_rc(args->errors, args->auth, qos_add_list,
+				 slurmdb_qos_add);
+		/* Freeing qos_add_list won't free qos, to avoid double free */
+		FREE_NULL_LIST(qos_add_list);
+	} else if (list_count(qos_list) > 1) {
+		/* More than one QOS was found with the search criteria */
+		rc = resp_error(args->errors, ESLURM_REST_INVALID_QUERY,
+				"ambiguous modify request",
+				"_foreach_update_qos");
+	} else {
+		/* Exactly one QOS was found; let's update it */
+		slurmdb_qos_rec_t *qos_found = list_peek(qos_list);
+		debug("%s: modifying qos request: id=%u name=%s",
+		      __func__, qos_found->id, qos_found->name);
+		if (qos->name)
+			xassert(!xstrcmp(qos_found->name, qos->name));
+		if (qos->id)
+			xassert(qos_found->id == qos->id);
+
+		rc = db_modify_rc(args->errors, args->auth, &cond, qos,
+				  slurmdb_qos_modify);
+	}
+
+	FREE_NULL_LIST(qos_list);
+	FREE_NULL_LIST(cond.id_list);
+	FREE_NULL_LIST(cond.name_list);
+	slurmdb_destroy_qos_rec(qos);
+
+	return (rc != SLURM_SUCCESS) ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
 }
 
 static int _update_qos(data_t *query, data_t *resp, void *auth, bool commit)
@@ -216,7 +288,6 @@ static int _update_qos(data_t *query, data_t *resp, void *auth, bool commit)
 		.magic = MAGIC_FOREACH_UP_QOS,
 		.auth = auth,
 		.errors = errors,
-		.qos_list = list_create(slurmdb_destroy_qos_rec),
 	};
 	slurmdb_tres_cond_t tres_cond = {
 		.with_deleted = 1,
@@ -224,7 +295,6 @@ static int _update_qos(data_t *query, data_t *resp, void *auth, bool commit)
 	data_t *dqos = get_query_key_list("QOS", errors, query);
 
 	if (!dqos) {
-		FREE_NULL_LIST(args.qos_list);
 		return ESLURM_REST_INVALID_QUERY;
 	}
 
@@ -233,12 +303,9 @@ static int _update_qos(data_t *query, data_t *resp, void *auth, bool commit)
 	    (data_list_for_each(dqos, _foreach_update_qos, &args) < 0))
 		rc = ESLURM_REST_INVALID_QUERY;
 
-	if (!rc &&
-	    !(rc = db_query_rc(errors, auth, args.qos_list, slurmdb_qos_add)) &&
-	    commit)
+	if (!rc && commit)
 		rc = db_query_commit(errors, auth);
 
-	FREE_NULL_LIST(args.qos_list);
 	FREE_NULL_LIST(args.g_tres_list);
 
 	return rc;
