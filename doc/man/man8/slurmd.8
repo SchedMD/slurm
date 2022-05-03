@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "June 2021" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "May 2022" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -26,8 +26,10 @@ abnormally.
 
 .TP
 \fB\-C\fR
-Print actual hardware configuration and exit. The format of output is the same
-as used in \fBslurm.conf\fR to describe a node's configuration plus its uptime.
+Print the actual hardware configuration (not the configuration from the
+slurm.conf file) and exit.
+The format of output is the same as used in \fBslurm.conf\fR to describe a node's
+configuration plus its uptime.
 .IP
 
 .TP
