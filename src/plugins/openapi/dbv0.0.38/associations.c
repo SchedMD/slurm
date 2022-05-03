@@ -235,8 +235,10 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 	assoc = xmalloc(sizeof(*assoc));
 	slurmdb_init_assoc_rec(assoc, false);
 
-	if (parse(PARSE_ASSOC, assoc, data, args->errors, &penv))
+	if (parse(PARSE_ASSOC, assoc, data, args->errors, &penv)) {
+		slurmdb_destroy_assoc_rec(assoc);
 		return DATA_FOR_EACH_FAIL;
+	}
 
 	if (assoc->acct) {
 		cond.acct_list = list_create(NULL);
