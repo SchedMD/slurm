@@ -2452,12 +2452,10 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 			return true;
 
 		case NODE_STATE_POWER_DOWN:
+		case NODE_STATE_POWER_UP:
 		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWER_UP):
 		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWERED_DOWN):
 		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWER_DRAIN):
-			if (node_flags & NODE_STATE_POWERING_DOWN)
-				break;
-		case NODE_STATE_POWER_UP:
 			if (power_save_on)
 				return true;
 			info("attempt to do power work on node but PowerSave is disabled");
