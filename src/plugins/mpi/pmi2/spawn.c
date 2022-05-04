@@ -149,7 +149,8 @@ extern void spawn_req_pack(spawn_req_t *req, buf_t *buf)
 	spawn_subcmd_t *subcmd;
 	void *auth_cred;
 
-	auth_cred = auth_g_create(AUTH_DEFAULT_INDEX, slurm_conf.authinfo);
+	auth_cred = auth_g_create(AUTH_DEFAULT_INDEX, slurm_conf.authinfo,
+				  job_info.uid, NULL, 0);
 	if (auth_cred == NULL) {
 		error("authentication: %m");
 		return;
@@ -207,6 +208,7 @@ extern int spawn_req_unpack(spawn_req_t **req_ptr, buf_t *buf)
 	}
 	if (auth_g_verify(auth_cred, slurm_conf.authinfo)) {
 		error("authentication: %m");
+		auth_g_destroy(auth_cred);
 		return SLURM_ERROR;
 	}
 	auth_uid = auth_g_get_uid(auth_cred);

@@ -75,6 +75,7 @@ const char plugin_name[] = "Null authentication plugin";
 const char plugin_type[] = "auth/none";
 const uint32_t plugin_id = AUTH_PLUGIN_NONE;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+bool hash_enable = false;
 
 /*
  * An opaque type representing authentication credentials.  This type can be
@@ -138,7 +139,8 @@ extern int fini(void)
  * Allocate and initializes a credential.  This function should return
  * NULL if it cannot allocate a credential.
  */
-auth_credential_t *auth_p_create(char *auth_info)
+auth_credential_t *auth_p_create(char *auth_info, uid_t r_uid,
+				 void *data, int dlen)
 {
 	auth_credential_t *cred = xmalloc(sizeof(*cred));
 
@@ -215,6 +217,19 @@ char *auth_p_get_host(auth_credential_t *cred)
 	}
 
 	return xstrdup(cred->hostname);
+}
+
+int auth_p_get_data(auth_credential_t *cred, char **data, uint32_t *len)
+{
+	if (!cred) {
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return SLURM_ERROR;
+	}
+
+	*data = NULL;
+	*len = 0;
+
+	return SLURM_SUCCESS;
 }
 
 /*

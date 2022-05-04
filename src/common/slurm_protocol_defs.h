@@ -59,6 +59,7 @@
 #include "src/common/job_options.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_persist_conn.h"
@@ -523,6 +524,8 @@ typedef struct slurm_msg {
 				 * slurm_msg_t_init() was not called since
 				 * auth_uid would be root.
 				 */
+	uid_t restrict_uid;
+	bool restrict_uid_set;
 	uint32_t body_offset; /* DON'T PACK: offset in buffer where body part of
 				 buffer starts. */
 	buf_t *buffer;		/* DON'T PACK! ptr to buffer that msg was

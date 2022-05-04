@@ -77,6 +77,7 @@ const char plugin_name[] = "JWT authentication plugin";
 const char plugin_type[] = "auth/jwt";
 const uint32_t plugin_id = AUTH_PLUGIN_JWT;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+bool hash_enable = false;
 
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
@@ -248,7 +249,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-auth_token_t *auth_p_create(char *auth_info)
+auth_token_t *auth_p_create(char *auth_info, uid_t r_uid, void *data, int dlen)
 {
 	return xmalloc(sizeof(auth_token_t));
 }
@@ -508,6 +509,18 @@ char *auth_p_get_host(auth_token_t *cred)
 
 	/* No way to encode this in a useful manner */
 	return NULL;
+}
+
+int auth_p_get_data(auth_token_t *cred, char **data, uint32_t *len)
+{
+	if (cred == NULL) {
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return SLURM_ERROR;
+	}
+
+	*data = NULL;
+	*len = 0;
+	return SLURM_SUCCESS;
 }
 
 int auth_p_pack(auth_token_t *cred, buf_t *buf, uint16_t protocol_version)

@@ -173,6 +173,36 @@ cleanup:
 	return proto_conf;
 }
 
+static int _check_hash(buf_t *buffer, header_t *header, slurm_msg_t *msg,
+		       void *cred)
+{
+	char *cred_hash = NULL;
+	uint32_t cred_hash_len = 0;
+	int rc;
+	static time_t config_update = (time_t) -1;
+	static bool block_null_hash = true;
+
+	if (config_update != slurm_conf.last_update) {
+		block_null_hash = (xstrcasestr(slurm_conf.comm_params,
+					       "block_null_hash"));
+		config_update = slurm_conf.last_update;
+	}
+
+	rc = auth_g_get_data(cred, &cred_hash, &cred_hash_len);
+
+	if (cred_hash || cred_hash_len) {
+		if (cred_hash_len != 3 || cred_hash[0] != 1 ||
+		    memcmp(cred_hash + 1,
+			   &msg->msg_type, sizeof(msg->msg_type)))
+			rc = SLURM_ERROR;
+	} else if (block_null_hash &&
+		   slurm_get_plugin_hash_enable(msg->auth_index))
+		rc = SLURM_ERROR;
+
+	xfree(cred_hash);
+	return rc;
+}
+
 static int _get_tres_id(char *type, char *name)
 {
 	slurmdb_tres_rec_t tres_rec;
@@ -961,6 +991,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 	msg->body_offset =  get_buf_offset(buffer);
 
 	if ((header.body_length > remaining_buf(buffer)) ||
+	    _check_hash(buffer, &header, msg, auth_cred) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		(void) auth_g_destroy(auth_cred);
@@ -1063,6 +1094,8 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 	 */
 	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
 		rc = errno;
+		if (!rc)
+			rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 		goto endit;
 	}
 
@@ -1243,6 +1276,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	msg.flags = header.flags;
 
 	if ((header.body_length > remaining_buf(buffer)) ||
+	    _check_hash(buffer, &header, &msg, auth_cred) ||
 	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
 		(void) auth_g_destroy(auth_cred);
 		free_buf(buffer);
@@ -1290,6 +1324,155 @@ total_return:
 
 }
 
+List slurm_receive_resp_msgs(int fd, int steps, int timeout)
+{
+	char *buf = NULL;
+	size_t buflen = 0;
+	header_t header;
+	int rc;
+	void *auth_cred = NULL;
+	slurm_msg_t msg;
+	buf_t *buffer;
+	ret_data_info_t *ret_data_info = NULL;
+	List ret_list = NULL;
+	int orig_timeout = timeout;
+
+	xassert(fd >= 0);
+
+	slurm_msg_t_init(&msg);
+	msg.conn_fd = fd;
+
+	if (timeout <= 0) {
+		/* convert secs to msec */
+		timeout = slurm_conf.msg_timeout * 1000;
+		orig_timeout = timeout;
+	}
+	if (steps) {
+		if (message_timeout < 0)
+			message_timeout = slurm_conf.msg_timeout * 1000;
+		orig_timeout = (timeout -
+				(message_timeout*(steps-1)))/steps;
+		steps--;
+	}
+
+	log_flag(NET, "%s: orig_timeout was %d we have %d steps and a timeout of %d",
+		 __func__, orig_timeout, steps, timeout);
+	/* we compare to the orig_timeout here because that is really
+	 *  what we are going to wait for each step
+	 */
+	if (orig_timeout >= (slurm_conf.msg_timeout * 10000)) {
+		log_flag(NET, "%s: Sending a message with timeout's greater than %d seconds, requested timeout is %d seconds",
+			 __func__, (slurm_conf.msg_timeout * 10),
+			 (timeout/1000));
+	} else if (orig_timeout < 1000) {
+		log_flag(NET, "%s: Sending a message with a very short timeout of %d milliseconds each step in the tree has %d milliseconds",
+			 __func__, timeout, orig_timeout);
+	}
+
+
+	/*
+	 * Receive a msg. slurm_msg_recvfrom() will read the message
+	 *  length and allocate space on the heap for a buffer containing
+	 *  the message.
+	 */
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+		forward_init(&header.forward);
+		rc = errno;
+		goto total_return;
+	}
+
+	log_flag_hex(NET_RAW, buf, buflen, "%s: read", __func__);
+	buffer = create_buf(buf, buflen);
+
+	if (unpack_header(&header, buffer) == SLURM_ERROR) {
+		free_buf(buffer);
+		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
+		goto total_return;
+	}
+
+	if (check_header_version(&header) < 0) {
+		slurm_addr_t resp_addr;
+		if (!slurm_get_peer_addr(fd, &resp_addr)) {
+			error("%s: Invalid Protocol Version %u from at %pA",
+			      __func__, header.version, &resp_addr);
+		} else {
+			error("%s: Invalid Protocol Version %u from problem connection: %m",
+			      __func__, header.version);
+		}
+
+		free_buf(buffer);
+		rc = SLURM_PROTOCOL_VERSION_ERROR;
+		goto total_return;
+	}
+	//info("ret_cnt = %d",header.ret_cnt);
+	if (header.ret_cnt > 0) {
+		if (header.ret_list)
+			ret_list = header.ret_list;
+		else
+			ret_list = list_create(destroy_data_info);
+		header.ret_cnt = 0;
+		header.ret_list = NULL;
+	}
+
+	/* Forward message to other nodes */
+	if (header.forward.cnt > 0) {
+		error("%s: We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		      __func__);
+	}
+
+	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
+		error("%s: auth_g_unpack: %m", __func__);
+		free_buf(buffer);
+		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+		goto total_return;
+	}
+	auth_g_destroy(auth_cred);
+	/*
+	 * Unpack message body
+	 */
+	msg.protocol_version = header.version;
+	msg.msg_type = header.msg_type;
+	msg.flags = header.flags;
+
+	if ((header.body_length > remaining_buf(buffer)) ||
+	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
+		free_buf(buffer);
+		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+		goto total_return;
+	}
+	free_buf(buffer);
+	rc = SLURM_SUCCESS;
+
+total_return:
+	destroy_forward(&header.forward);
+
+	if (rc != SLURM_SUCCESS) {
+		if (ret_list) {
+			ret_data_info = xmalloc(sizeof(ret_data_info_t));
+			ret_data_info->err = rc;
+			ret_data_info->type = RESPONSE_FORWARD_FAILED;
+			ret_data_info->data = NULL;
+			list_push(ret_list, ret_data_info);
+		}
+
+		error("%s: failed: %s",
+		      __func__, slurm_strerror(rc));
+		usleep(10000);	/* Discourage brute force attack */
+	} else {
+		if (!ret_list)
+			ret_list = list_create(destroy_data_info);
+		ret_data_info = xmalloc(sizeof(ret_data_info_t));
+		ret_data_info->err = rc;
+		ret_data_info->node_name = NULL;
+		ret_data_info->type = msg.msg_type;
+		ret_data_info->data = msg.data;
+		list_push(ret_list, ret_data_info);
+	}
+
+	errno = rc;
+	return ret_list;
+
+}
 /* try to determine the UID associated with a message with different
  * message header version, return -1 if we can't tell */
 static int _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version)
@@ -1467,6 +1650,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	msg->flags = header.flags;
 
 	if ( (header.body_length > remaining_buf(buffer)) ||
+	    _check_hash(buffer, &header, msg, auth_cred) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
 		(void) auth_g_destroy(auth_cred);
 		free_buf(buffer);
@@ -1533,6 +1717,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	int      rc;
 	void *   auth_cred;
 	time_t   start_time = time(NULL);
+	unsigned char auth_payload[3] = { 1 }; /* uint8_t + uint16_t (msg_type) */
 
 	if (msg->conn) {
 		persist_msg_t persist_msg;
@@ -1565,6 +1750,9 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		return rc;
 	}
 
+	if (!msg->restrict_uid_set)
+		fatal("%s: restrict_uid is not set", __func__);
+	memcpy(auth_payload + 1, &msg->msg_type, sizeof(msg->msg_type));
 	/*
 	 * Initialize header with Auth credential and message type.
 	 * We get the credential now rather than later so the work can
@@ -1573,9 +1761,13 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 * wait too long for the incoming message.
 	 */
 	if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
-		auth_cred = auth_g_create(msg->auth_index, _global_auth_key());
+		auth_cred = auth_g_create(msg->auth_index, _global_auth_key(),
+					  msg->restrict_uid, auth_payload,
+					  sizeof(auth_payload));
 	} else {
-		auth_cred = auth_g_create(msg->auth_index, slurm_conf.authinfo);
+		auth_cred = auth_g_create(msg->auth_index, slurm_conf.authinfo,
+					  msg->restrict_uid, auth_payload,
+					  sizeof(auth_payload));
 	}
 
 	if (msg->forward.init != FORWARD_INIT) {
@@ -1592,10 +1784,16 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		(void) auth_g_destroy(auth_cred);
 		if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
 			auth_cred = auth_g_create(msg->auth_index,
-						  _global_auth_key());
+						  _global_auth_key(),
+						  msg->restrict_uid,
+						  auth_payload,
+						  sizeof(auth_payload));
 		} else {
 			auth_cred = auth_g_create(msg->auth_index,
-						  slurm_conf.authinfo);
+						  slurm_conf.authinfo,
+						  msg->restrict_uid,
+						  auth_payload,
+						  sizeof(auth_payload));
 		}
 	}
 	if (auth_cred == NULL) {
@@ -1849,6 +2047,8 @@ static void _resp_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
 	resp_msg->protocol_version = msg->protocol_version;
 	resp_msg->ret_list = msg->ret_list;
 	resp_msg->orig_addr = msg->orig_addr;
+	if (msg->auth_uid_set)
+		slurm_msg_set_r_uid(resp_msg, msg->auth_uid);
 }
 
 static void _rc_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
@@ -2134,6 +2334,7 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	forward_init(&request_msg->forward);
 	request_msg->ret_list = NULL;
 	request_msg->forward_struct = NULL;
+	slurm_msg_set_r_uid(request_msg, SLURM_AUTH_UID_ANY);
 
 tryagain:
 	retry = 1;
@@ -2270,6 +2471,8 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
+
+	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
 
 	if ((rc = slurm_send_node_msg(fd, req)) < 0) {
 		rc = SLURM_ERROR;
@@ -2652,6 +2855,12 @@ extern void slurm_free_msg(slurm_msg_t *msg)
 	}
 }
 
+extern void slurm_msg_set_r_uid(slurm_msg_t *msg, uid_t r_uid)
+{
+	msg->restrict_uid = r_uid;
+	msg->restrict_uid_set = true;
+}
+
 extern char *nodelist_nth_host(const char *nodelist, int inx)
 {
 	hostlist_t hl = hostlist_create(nodelist);
@@ -2833,6 +3042,7 @@ extern int slurm_forward_data(
 	req.len = len;
 	req.data = (char *)data;
 
+	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
 	msg.msg_type = REQUEST_FORWARD_DATA;
 	msg.data = &req;
 

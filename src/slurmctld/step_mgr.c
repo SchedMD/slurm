@@ -689,6 +689,7 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 	}
 
 	agent_args->msg_args = signal_tasks_msg;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }
@@ -734,6 +735,7 @@ void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
 	       sizeof(signal_tasks_msg->step_id));
 	signal_tasks_msg->signal      = signal;
 	agent_args->msg_args = signal_tasks_msg;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }
@@ -4851,6 +4853,7 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 	}
 
 	agent_args->msg_args = kill_step;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }

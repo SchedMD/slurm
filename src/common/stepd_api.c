@@ -405,7 +405,7 @@ rwfail:
 int
 stepd_attach(int fd, uint16_t protocol_version,
 	     slurm_addr_t *ioaddr, slurm_addr_t *respaddr,
-	     void *job_cred_sig, reattach_tasks_response_msg_t *resp)
+	     void *job_cred_sig, uid_t uid, reattach_tasks_response_msg_t *resp)
 {
 	int req = REQUEST_ATTACH;
 	int rc = SLURM_SUCCESS;
@@ -415,6 +415,7 @@ stepd_attach(int fd, uint16_t protocol_version,
 		safe_write(fd, ioaddr, sizeof(slurm_addr_t));
 		safe_write(fd, respaddr, sizeof(slurm_addr_t));
 		safe_write(fd, job_cred_sig, SLURM_IO_KEY_SIZE);
+		safe_write(fd, &uid, sizeof(uid_t));
 		safe_write(fd, &protocol_version, sizeof(uint16_t));
 	} else
 		goto rwfail;

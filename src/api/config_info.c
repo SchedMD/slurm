@@ -1949,6 +1949,7 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 	}
 	req_msg.msg_type = REQUEST_DAEMON_STATUS;
 	req_msg.data     = NULL;
+	slurm_msg_set_r_uid(&req_msg, SLURM_AUTH_UID_ANY);
 
 	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 

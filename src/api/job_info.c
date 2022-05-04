@@ -1531,6 +1531,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	req.job_pid      = job_pid;
 	req_msg.msg_type = REQUEST_JOB_ID;
 	req_msg.data     = &req;
+	slurm_msg_set_r_uid(&req_msg, SLURM_AUTH_UID_ANY);
 
 	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
@@ -1898,6 +1899,7 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 
 	req_msg.msg_type = REQUEST_NETWORK_CALLERID;
 	req_msg.data     = &req;
+	slurm_msg_set_r_uid(&req_msg, SLURM_AUTH_UID_ANY);
 
 	if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0) < 0)
 		return SLURM_ERROR;

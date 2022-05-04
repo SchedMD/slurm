@@ -78,15 +78,16 @@
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
+static int _init_from_slurmd(int sock, char **argv,
+			     slurm_addr_t **_cli, uid_t *_cli_uid,
 			     slurm_addr_t **_self, slurm_msg_t **_msg);
 
 static void _dump_user_env(void);
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
 static void _got_ack_from_slurmd(int);
-static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
-				     slurm_msg_t *msg);
+static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, uid_t cli_uid,
+				     slurm_addr_t *self, slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc);
 #endif
@@ -113,6 +114,7 @@ main (int argc, char **argv)
 {
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	slurm_addr_t *cli;
+	uid_t cli_uid;
 	slurm_addr_t *self;
 	slurm_msg_t *msg;
 	stepd_step_rec_t *job;
@@ -138,11 +140,11 @@ main (int argc, char **argv)
 		fatal( "failed to initialize authentication plugin" );
 
 	/* Receive job parameters from the slurmd */
-	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg);
+	_init_from_slurmd(STDIN_FILENO, argv, &cli, &cli_uid, &self, &msg);
 
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
-	if (!(job = _step_setup(cli, self, msg))) {
+	if (!(job = _step_setup(cli, cli_uid, self, msg))) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
 		rc = SLURM_ERROR;
 		goto ending;
@@ -535,7 +537,8 @@ static void _set_job_log_prefix(slurm_step_id_t *step_id)
  */
 static int
 _init_from_slurmd(int sock, char **argv,
-		  slurm_addr_t **_cli, slurm_addr_t **_self, slurm_msg_t **_msg)
+		  slurm_addr_t **_cli, uid_t *_cli_uid, slurm_addr_t **_self,
+		  slurm_msg_t **_msg)
 {
 	char *incoming_buffer = NULL;
 	buf_t *buffer;
@@ -543,6 +546,7 @@ _init_from_slurmd(int sock, char **argv,
 	int len;
 	uint16_t proto;
 	slurm_addr_t *cli = NULL;
+	uid_t cli_uid;
 	slurm_addr_t *self = NULL;
 	slurm_msg_t *msg = NULL;
 	slurm_step_id_t step_id = {
@@ -593,6 +597,7 @@ _init_from_slurmd(int sock, char **argv,
 	if (slurm_unpack_addr_no_alloc(cli, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
 	free_buf(buffer);
+	safe_read(sock, &cli_uid, sizeof(uid_t));
 
 	/* receive self from slurmd */
 	safe_read(sock, &len, sizeof(int));
@@ -693,6 +698,7 @@ _init_from_slurmd(int sock, char **argv,
 	msg->protocol_version = proto;
 
 	*_cli = cli;
+	*_cli_uid = cli_uid;
 	*_self = self;
 	*_msg = msg;
 
@@ -704,7 +710,8 @@ rwfail:
 }
 
 static stepd_step_rec_t *
-_step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
+_step_setup(slurm_addr_t *cli, uid_t cli_uid, slurm_addr_t *self,
+	    slurm_msg_t *msg)
 {
 	stepd_step_rec_t *job = NULL;
 
@@ -715,7 +722,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		debug2("setup for a launch_task");
-		job = mgr_launch_tasks_setup(msg->data, cli, self,
+		job = mgr_launch_tasks_setup(msg->data, cli, cli_uid, self,
 					     msg->protocol_version);
 		break;
 	default:

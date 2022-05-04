@@ -443,7 +443,7 @@ rwfail:
 
 static int
 _send_slurmstepd_init(int fd, int type, void *req,
-		      slurm_addr_t *cli, slurm_addr_t *self,
+		      slurm_addr_t *cli, uid_t cli_uid, slurm_addr_t *self,
 		      hostset_t step_hset, uint16_t protocol_version)
 {
 	int len = 0;
@@ -574,6 +574,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
 	buffer = NULL;
+	safe_write(fd, &cli_uid, sizeof(uid_t));
 
 	/* send self address over to slurmstepd */
 	if (self) {
@@ -655,7 +656,7 @@ rwfail:
  */
 static int
 _forkexec_slurmstepd(uint16_t type, void *req,
-		     slurm_addr_t *cli, slurm_addr_t *self,
+		     slurm_addr_t *cli, uid_t cli_uid, slurm_addr_t *self,
 		     const hostset_t step_hset, uint16_t protocol_version)
 {
 	pid_t pid;
@@ -697,7 +698,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 			error("Unable to close write to_slurmd in parent: %m");
 
 		if ((rc = _send_slurmstepd_init(to_stepd[1], type,
-						req, cli, self,
+						req, cli, cli_uid, self,
 						step_hset,
 						protocol_version)) != 0) {
 			error("Unable to init slurmstepd");
@@ -1599,8 +1600,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	slurm_mutex_lock(&launch_mutex);
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
-	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
-				      step_hset, msg->protocol_version);
+	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli,
+				      msg->auth_uid, &self, step_hset,
+				      msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
 
 	slurm_mutex_unlock(&launch_mutex);
@@ -2100,7 +2102,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
 		rc =  _forkexec_slurmstepd(LAUNCH_TASKS, (void *)launch_req,
-					   cli, &self, step_hset,
+					   cli, msg->auth_uid, &self, step_hset,
 					   msg->protocol_version);
 		debug3("%s: return from _forkexec_slurmstepd %d",
 		       __func__, rc);
@@ -2465,8 +2467,9 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	info("Launching batch job %u for UID %u", req->job_id, req->uid);
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
-	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
-				  (hostset_t)NULL, SLURM_PROTOCOL_VERSION);
+	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli,
+				  msg->auth_uid, NULL, (hostset_t)NULL,
+				  SLURM_PROTOCOL_VERSION);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
 
 	slurm_mutex_unlock(&launch_mutex);
@@ -4417,7 +4420,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 
 	/* Following call fills in gtids and local_pids when successful. */
 	rc = stepd_attach(fd, protocol_version, &ioaddr,
-			  &resp_msg.address, job_cred_sig, resp);
+			  &resp_msg.address, job_cred_sig, msg->auth_uid, resp);
 	if (rc != SLURM_SUCCESS) {
 		debug2("stepd_attach call failed");
 		goto done2;
