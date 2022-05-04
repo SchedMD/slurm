@@ -68,6 +68,8 @@ static void _pack_run_script(run_script_msg_t *script_msg, buf_t *buffer)
 	packstr(script_msg->script_path, buffer);
 	pack32(script_msg->script_type, buffer);
 	pack32(script_msg->timeout, buffer);
+	packstr(script_msg->tmp_file_env_name, buffer);
+	packstr(script_msg->tmp_file_str, buffer);
 }
 
 static int _unpack_run_script(run_script_msg_t **msg, buf_t *buffer)
@@ -85,6 +87,8 @@ static int _unpack_run_script(run_script_msg_t **msg, buf_t *buffer)
 	safe_unpackstr_xmalloc(&script_msg->script_path, &tmp32, buffer);
 	safe_unpack32(&script_msg->script_type, buffer);
 	safe_unpack32(&script_msg->timeout, buffer);
+	safe_unpackstr_xmalloc(&script_msg->tmp_file_env_name, &tmp32, buffer);
+	safe_unpackstr_xmalloc(&script_msg->tmp_file_str, &tmp32, buffer);
 
 	return rc;
 

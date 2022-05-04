@@ -50,7 +50,9 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/eio.h"
+#include "src/common/env.c"
 #include "src/common/fd.h"
+#include "src/common/fetch_config.h"
 #include "src/common/log.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
@@ -377,12 +379,15 @@ static int _tot_wait (struct timeval *start_time)
  * Return the status or SLURM_ERROR if fork() fails.
  */
 static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
-		       int timeout, char **resp_msg, bool *signalled)
+		       int timeout, char *tmp_file_env_name, char *tmp_file_str,
+		       char **resp_msg, bool *signalled)
 {
 	int status = SLURM_ERROR;
 	int ms_timeout;
 	char *resp = NULL;
 	bool killed;
+	int tmp_fd = 0;
+	char *tmp_file = NULL;
 
 	if ((timeout <= 0) || (timeout == NO_VAL16))
 		ms_timeout = -1; /* wait indefinitely in run_command() */
@@ -391,6 +396,26 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 
 	run_command_args->max_wait = ms_timeout;
 	run_command_args->status = &status;
+
+	if (tmp_file_str) {
+		/*
+		 * Open a file into which we dump tmp_file_str.
+		 * Set an environment variable so the script will know how to
+		 * read this file. We need to keep this file open for as long
+		 * as the script is running.
+		 */
+		xassert(tmp_file_env_name);
+		tmp_fd = dump_to_memfd((char*) run_command_args->script_type,
+				       tmp_file_str, &tmp_file);
+		if (tmp_fd == SLURM_ERROR) {
+			error("Failed to create tmp file for %s",
+			      run_command_args->script_type);
+			tmp_fd = 0;
+		} else {
+			env_array_append(&run_command_args->env,
+					 tmp_file_env_name, tmp_file);
+		}
+	}
 
 	track_script_rec_add(job_id, 0, pthread_self());
 	resp = run_command(run_command_args);
@@ -418,6 +443,9 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	 * potential for race.
 	 */
 	track_script_remove(pthread_self());
+
+	if (tmp_fd)
+		close(tmp_fd);
 
 	if (resp_msg)
 		*resp_msg = resp;
@@ -691,6 +719,8 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		 */
 		status = _run_script(&run_command_args, script_msg->job_id,
 				     script_msg->timeout,
+				     script_msg->tmp_file_env_name,
+				     script_msg->tmp_file_str,
 				     &resp_msg, &signalled);
 		break;
 	default:

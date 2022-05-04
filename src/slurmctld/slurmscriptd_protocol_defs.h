@@ -78,6 +78,8 @@ typedef struct {
 	char *script_path;
 	script_type_t script_type;
 	uint32_t timeout;
+	char *tmp_file_env_name;
+	char *tmp_file_str;
 } run_script_msg_t;
 
 typedef struct {
