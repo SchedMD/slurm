@@ -176,7 +176,7 @@ static const csv_list_t csv_lists[] = {
 	{ "wckey", offsetof(slurmdb_job_cond_t, wckey_list) },
 };
 
-data_for_each_cmd_t _foreach_step(data_t *data, void *arg)
+static data_for_each_cmd_t _foreach_step(data_t *data, void *arg)
 {
 	List list = arg;
 
@@ -189,8 +189,9 @@ data_for_each_cmd_t _foreach_step(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
-					  void *arg)
+static data_for_each_cmd_t _foreach_query_search(const char *key,
+						 data_t *data,
+						 void *arg)
 {
 	foreach_query_search_t *args = arg;
 	data_t *errors = args->errors;
