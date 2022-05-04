@@ -1149,6 +1149,7 @@ static void _pack_step_start_msg(dbd_step_start_msg_t *msg,
 		pack32(msg->total_tasks, buffer);
 		packstr(msg->tres_alloc_str, buffer);
 	}
+	xfree(msg->node_inx);
 }
 
 static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
