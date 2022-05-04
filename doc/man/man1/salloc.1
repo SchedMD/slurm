@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "April 2022" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "May 2022" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -494,6 +494,11 @@ cluster is comprised of quad\-processors nodes and we simply ask for
 the \-\-cpus\-per\-task=3 options, the controller knows that each task requires
 3 processors on the same node, and the controller will grant an allocation
 of 4 nodes, one for each of the 4 tasks.
+
+\fBNOTE\fR: Beginning with 22.05, srun will not inherit the
+\-\-cpus\-per\-task value requested by salloc or sbatch. It must be requested
+again with the call to srun or set with the SRUN_CPUS_PER_TASK environment
+variable if desired for the task(s).
 .IP
 
 .TP

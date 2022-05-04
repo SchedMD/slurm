@@ -48,8 +48,8 @@ HIGHLIGHTS
  -- Node state flags (DRAIN, FAILED, POWERING UP, etc.) will be cleared now if
     node state is updated to FUTURE.
  -- srun will no longer read in SLURM_CPUS_PER_TASK. This means you will
-    implicitly have to specify -c on your srun calls, or set the new
-    SRUN_CPUS_PER_TASK env var to accomplish the same thing.
+    implicitly have to specify --cpus-per-task on your srun calls, or set the
+    new SRUN_CPUS_PER_TASK env var to accomplish the same thing.
  -- Remove connect_timeout and timeout options from JobCompParams as there's no
     longer a connectivity check happening in the jobcomp/elasticsearch plugin
     when setting the location off of JobCompLoc.

@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "April 2022" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "May 2022" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -754,6 +754,10 @@ threads per CPU for a total of two tasks.
 \fBWARNING\fR: When srun is executed from within salloc or sbatch,
 there are configurations and options which can result in inconsistent
 allocations when \-c has a value greater than \-c on salloc or sbatch.
+The number of cpus per task specified for salloc or sbatch is not
+automatically inherited by srun and, if desired, must be requested again,
+either by specifying \-\-cpus\-per\-task when calling srun, or by setting the
+SRUN_CPUS_PER_TASK environment variable.
 
 This option applies to job and step allocations.
 .IP
