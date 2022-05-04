@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Ignore power_down request when node is already powering down.
  -- CVE-2022-29500 - Prevent credential abuse.
  -- CVE-2022-29501 - Prevent abuse of REQUEST_FORWARD_DATA.
+ -- CVE-2022-29502 - Correctly validate io keys.
 
 * Changes in Slurm 21.08.7
 ==========================

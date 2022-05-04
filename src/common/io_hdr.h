@@ -87,7 +87,7 @@ int io_hdr_read_fd(int fd, io_hdr_t *hdr);
 /*
  * Validate io init msg
  */
-int io_init_msg_validate(io_init_msg_t *msg, const char *sig);
+int io_init_msg_validate(io_init_msg_t *msg, const char *sig, uint32_t sig_len);
 int io_init_msg_write_to_fd(int fd, io_init_msg_t *msg);
 int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg);
 

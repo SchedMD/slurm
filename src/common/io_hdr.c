@@ -131,7 +131,8 @@ fail:
 	return n;
 }
 
-extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig)
+extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig,
+				uint32_t sig_len)
 {
 	debug2("Entering io_init_msg_validate");
 
@@ -144,7 +145,8 @@ extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig)
 		return SLURM_ERROR;
 	}
 
-	if (memcmp((void *) sig, (void *) msg->io_key, msg->io_key_len)) {
+	if (msg->io_key_len != sig_len ||
+	    memcmp((void *) sig, (void *) msg->io_key, msg->io_key_len)) {
 		error("Invalid IO init header signature");
 		return SLURM_ERROR;
 	}
@@ -243,6 +245,7 @@ extern int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg)
 {
 	buf_t *buf = NULL;
 	uint32_t len;
+	int rc;
 
 	xassert(msg);
 
@@ -257,11 +260,12 @@ extern int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg)
 	buf = init_buf(len);
 	safe_read(fd, buf->head, len);
 
-	io_init_msg_unpack(msg, buf);
+	if ((rc = io_init_msg_unpack(msg, buf)))
+		error("%s: io_init_msg_unpack failed: rc=%d", __func__, rc);
 
 	free_buf(buf);
 	debug2("Leaving %s", __func__);
-	return SLURM_SUCCESS;
+	return rc;
 
 rwfail:
 	free_buf(buf);
