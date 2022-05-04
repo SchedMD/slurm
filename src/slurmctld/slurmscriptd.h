@@ -83,6 +83,24 @@ extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
 				 char **env, uint32_t timeout, char **resp);
 
 /*
+ * slurmscriptd_run_power
+ * Run a power script in slurmscriptd
+ * IN script_path - fulle path to the script
+ * IN hosts - Slurm hostlist expression to pass to the script
+ * IN features - node features to pass to the script
+ * IN job_id - job id for the script (may be zero if not applicable)
+ * IN script_name - description of the script
+ * IN timeout - timeout in seconds
+ * IN tmp_file_env_name - name of the environment variable in which the path of
+ *                        the temporary file is stored
+ * IN tmp_file_str - data to put in the temporary file
+ */
+extern void slurmscriptd_run_power(char *script_path, char *hosts,
+				   char *features, uint32_t job_id,
+				   char *script_name, uint32_t timeout,
+				   char *tmp_file_env_name, char *tmp_file_str);
+
+/*
  * slurmscriptd_run_prepilog
  * Tell slurmscriptd to run PrologSlurmctld or EpilogSlurmctld for the job
  * IN job_id - Job that wants to run the script

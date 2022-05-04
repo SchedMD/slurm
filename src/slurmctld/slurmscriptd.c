@@ -710,6 +710,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		break;
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
 	case SLURMSCRIPTD_MAIL:
+	case SLURMSCRIPTD_POWER:
 	case SLURMSCRIPTD_PROLOG:
 		/*
 		 * script_msg->timeout is in seconds but
@@ -794,6 +795,9 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 		prep_epilog_slurmctld_callback(script_complete->status,
 					       script_complete->job_id,
 					       script_complete->timed_out);
+		break;
+	case SLURMSCRIPTD_POWER:
+		ping_nodes_now = true;
 		break;
 	case SLURMSCRIPTD_PROLOG:
 		prep_prolog_slurmctld_callback(script_complete->status,
@@ -1108,6 +1112,51 @@ extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
 
 	/* Cleanup */
 	return status;
+}
+
+extern void slurmscriptd_run_power(char *script_path, char *hosts,
+				   char *features, uint32_t job_id,
+				   char *script_name, uint32_t timeout,
+				   char *tmp_file_env_name, char *tmp_file_str)
+{
+	run_script_msg_t run_script_msg;
+	int argc;
+	char **env, **argv;
+
+	argc = 3;
+	argv = xcalloc(argc + 1, sizeof(char*)); /* Null terminated */
+	argv[0] = script_path;
+	argv[1] = hosts;
+	argv[2] = features;
+
+	env = env_array_create();
+	env_array_append(&env, "SLURM_CONF", slurm_conf.slurm_conf);
+	if (job_id)
+		env_array_append_fmt(&env, "SLURM_JOB_ID", "%u", job_id);
+
+	memset(&run_script_msg, 0, sizeof(run_script_msg));
+
+	/* Init run_script_msg */
+	run_script_msg.argc = argc;
+	run_script_msg.argv = argv;
+	run_script_msg.env = env;
+	run_script_msg.job_id = job_id;
+	run_script_msg.script_name = script_name;
+	run_script_msg.script_path = script_path;
+	run_script_msg.script_type = SLURMSCRIPTD_POWER;
+	run_script_msg.timeout = timeout;
+	run_script_msg.tmp_file_env_name = tmp_file_env_name;
+	run_script_msg.tmp_file_str = tmp_file_str;
+
+	/* Send message; wait for response */
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
+			      &run_script_msg, false, NULL, NULL);
+
+
+	/* Cleanup */
+	/* Don't free contents of argv since those were not xstrdup()'d */
+	xfree(argv);
+	xfree_array(env);
 }
 
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
