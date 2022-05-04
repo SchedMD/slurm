@@ -676,9 +676,9 @@ static void _do_resume(char *host, char *json)
 
 static void _do_suspend(char *host)
 {
-	pid_t pid = _run_prog(suspend_prog, host, NULL, 0, NULL);
-	log_flag(POWER, "power_save: pid %d suspending nodes %s",
-		 (int) pid, host);
+	slurmscriptd_run_power(suspend_prog, host, NULL, 0, "suspendprog",
+			       max_timeout, NULL, NULL);
+	log_flag(POWER, "power_save: suspending nodes %s", host);
 }
 
 /* run a suspend or resume program
