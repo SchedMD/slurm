@@ -2047,8 +2047,24 @@ static void _resp_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
 	resp_msg->protocol_version = msg->protocol_version;
 	resp_msg->ret_list = msg->ret_list;
 	resp_msg->orig_addr = msg->orig_addr;
-	if (msg->auth_uid_set)
+	/*
+	 * Extra sanity check. This should always be set. But if for some
+	 * reason it isn't, restrict the decode to avoid leaking an
+	 * unrestricted authentication token.
+	 *
+	 * Implicitly trust communications initiated by SlurmUser and
+	 * SlurmdUser. In future releases this won't matter - there's
+	 * no point packing an auth token on the reply as it isn't checked,
+	 * but we're stuck doing that on older protocol versions for
+	 * backwards-compatibility.
+	 */
+	if (!msg->auth_uid_set)
+		slurm_msg_set_r_uid(resp_msg, SLURM_AUTH_NOBODY);
+	else if ((msg->auth_uid != slurm_conf.slurm_user_id) &&
+		 (msg->auth_uid != slurm_conf.slurmd_user_id))
 		slurm_msg_set_r_uid(resp_msg, msg->auth_uid);
+	else
+		slurm_msg_set_r_uid(resp_msg, SLURM_AUTH_UID_ANY);
 }
 
 static void _rc_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
