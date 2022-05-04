@@ -497,7 +497,7 @@ static const parser_t parse_qos[] = {
 	_add_parse(TRES_LIST, grp_tres_run_mins,
 		   "limits/max/tres/minutes/per/qos"),
 	/* skipping grp_tres_run_mins_ctld (not packed) */
-	_add_parse_req(STRING, name, "name"),
+	_add_parse(STRING, name, "name"),
 	_add_parse(UINT32, grp_wall, "limits/max/wall_clock/per/qos"),
 	_add_parse(FLOAT64, limit_factor, "limits/factor"),
 	_add_parse(UINT32, max_jobs_pa,
