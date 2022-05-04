@@ -76,6 +76,7 @@
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 #define MAX_SHUTDOWN_DELAY	10	/* seconds to wait for child procs
@@ -645,10 +646,11 @@ extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
 
 	nodes = bitmap2node_name(node_bitmap);
 	if (nodes) {
-		pid_t pid = _run_prog(resume_prog, nodes, features,
-				      job_ptr->job_id, NULL);
-		log_flag(POWER, "%s: pid %d reboot nodes %s features %s",
-			 __func__, (int) pid, nodes, features);
+		slurmscriptd_run_power(resume_prog, nodes, features,
+				       job_ptr->job_id, "resumeprog_reboot",
+				       max_timeout, NULL, NULL);
+		log_flag(POWER, "%s: reboot nodes %s features %s",
+			 __func__, nodes, features);
 	} else {
 		error("%s: bitmap2nodename", __func__);
 		rc = SLURM_ERROR;
@@ -667,9 +669,9 @@ static void _do_failed_nodes(char *hosts)
 
 static void _do_resume(char *host, char *json)
 {
-	pid_t pid = _run_prog(resume_prog, host, NULL, 0, json);
-	log_flag(POWER, "power_save: pid %d waking nodes %s",
-		 (int) pid, host);
+	slurmscriptd_run_power(resume_prog, host, NULL, 0, "resumeprog",
+			       max_timeout, "SLURM_RESUME_FILE", json);
+	log_flag(POWER, "power_save: waking nodes %s", host);
 }
 
 static void _do_suspend(char *host)
