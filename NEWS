@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 20.11.10
+===========================
+
 * Changes in Slurm 20.11.9
 ==========================
  -- burst_buffer - add missing common directory to the Makefile SUBDIRS.
