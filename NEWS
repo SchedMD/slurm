@@ -214,6 +214,9 @@ documents those changes that are of interest to users and administrators.
  -- Correct issue where conversion to/from JSON/YAML may have resulted in empty
     strings being replaced with strings containing "null" instead.
 
+* Changes in Slurm 21.08.9
+==========================
+
 * Changes in Slurm 21.08.8
 ==========================
  -- openapi/dbv0.0.37 - fix slurmrestd fatal() when deleting an association.
@@ -226,6 +229,9 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.37 - resolve job user name when not sent by slurmctld.
  -- openapi/dbv0.0.37 - Correct OpenAPI specification for diag request.
  -- Ignore power_down request when node is already powering down.
+ -- CVE-2022-29500 - Prevent credential abuse.
+ -- CVE-2022-29501 - Prevent abuse of REQUEST_FORWARD_DATA.
+ -- CVE-2022-29502 - Correctly validate io keys.
 
 * Changes in Slurm 21.08.7
 ==========================
@@ -850,6 +856,9 @@ documents those changes that are of interest to users and administrators.
     object dependencies for sbcast and srun --bcast.
  -- Delay steps when memory already used instead of rejecting step request.
 
+* Changes in Slurm 20.11.10
+===========================
+
 * Changes in Slurm 20.11.9
 ==========================
  -- burst_buffer - add missing common directory to the Makefile SUBDIRS.
@@ -877,6 +886,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix shutdown of slurmdbd plugin to correctly notice when the agent thread
     finishes.
  -- Fix slurmctld segfault due to job array --batch features double free.
+ -- CVE-2022-29500 - Prevent credential abuse.
+ -- CVE-2022-29501 - Prevent abuse of REQUEST_FORWARD_DATA.
 
 * Changes in Slurm 20.11.8
 ==========================
