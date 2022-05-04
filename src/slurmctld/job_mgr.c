@@ -6084,6 +6084,7 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 	signal_tasks_msg->signal = signal;
 
 	agent_args->msg_args = signal_tasks_msg;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }
@@ -14501,8 +14502,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 
 reply:
 	if ((rc != ESLURM_JOB_SETTING_DB_INX) && (msg->conn_fd >= 0)) {
-		slurm_msg_t_init(&resp_msg);
-		resp_msg.protocol_version = msg->protocol_version;
+		response_init(&resp_msg, msg);
 		if (resp_array) {
 			resp_array_msg = _resp_array_xlate(resp_array, job_id);
 			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
@@ -14512,7 +14512,6 @@ reply:
 			rc_msg.return_code = rc;
 			resp_msg.data      = &rc_msg;
 		}
-		resp_msg.conn = msg->conn;
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);
 
 		if (resp_array_msg) {
@@ -14600,6 +14599,7 @@ static void _send_job_kill(job_record_t *job_ptr)
 	}
 
 	agent_args->msg_args = kill_job;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }
@@ -14995,6 +14995,7 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	agent_info->msg_type	= REQUEST_ABORT_JOB;
 	agent_info->msg_args	= kill_req;
 
+	set_agent_arg_r_uid(agent_info, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_info);
 }
 
@@ -15063,6 +15064,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 		agent_info->msg_type	= REQUEST_ABORT_JOB;
 		agent_info->msg_args	= kill_req;
 		agent_info->protocol_version = protocol_version;
+		set_agent_arg_r_uid(agent_info, SLURM_AUTH_UID_ANY);
 		agent_queue_request(agent_info);
 		bit_free(tmp_node_bitmap);
 	}
@@ -15116,6 +15118,7 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	agent_info->msg_type	= REQUEST_TERMINATE_JOB;
 	agent_info->msg_args	= kill_req;
 
+	set_agent_arg_r_uid(agent_info, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_info);
 }
 
@@ -16062,6 +16065,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	}
 
 	agent_args->msg_args = signal_job_msg;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }
@@ -16141,6 +16145,7 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	}
 
 	agent_args->msg_args = sus_ptr;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }
@@ -16506,6 +16511,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		memset(&rc_msg, 0, sizeof(rc_msg));
 		rc_msg.return_code = rc;
 		resp_msg.data      = &rc_msg;
+		slurm_msg_set_r_uid(&resp_msg, uid);
 		slurm_send_node_msg(conn_fd, &resp_msg);
 	}
 	return rc;
@@ -16656,6 +16662,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			rc_msg.return_code = rc;
 			resp_msg.data      = &rc_msg;
 		}
+		slurm_msg_set_r_uid(&resp_msg, uid);
 		slurm_send_node_msg(conn_fd, &resp_msg);
 
 		if (resp_array_msg) {
@@ -17389,6 +17396,7 @@ reply:	FREE_NULL_LIST(top_job_list);
 		memset(&rc_msg, 0, sizeof(rc_msg));
 		rc_msg.return_code = rc;
 		resp_msg.data      = &rc_msg;
+		slurm_msg_set_r_uid(&resp_msg, uid);
 		slurm_send_node_msg(conn_fd, &resp_msg);
 	}
 

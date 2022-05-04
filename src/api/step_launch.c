@@ -902,6 +902,7 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	hostlist_destroy(hl);
 
 RESEND:	slurm_msg_t_init(&req);
+	slurm_msg_set_r_uid(&req, SLURM_AUTH_UID_ANY);
 	req.msg_type = REQUEST_SIGNAL_TASKS;
 	req.data     = &msg;
 
@@ -1720,6 +1721,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	}
 
 	slurm_msg_t_init(&msg);
+	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
 

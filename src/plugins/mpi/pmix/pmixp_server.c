@@ -495,13 +495,13 @@ void pmixp_server_cleanup(void)
  * --------------------- Authentication functionality -------------------
  */
 
-static int _auth_cred_create(Buf buf)
+static int _auth_cred_create(Buf buf, uid_t uid)
 {
 	void *auth_cred = NULL;
 	int rc = SLURM_SUCCESS;
 
-	auth_cred = g_slurm_auth_create(AUTH_DEFAULT_INDEX,
-					slurm_conf.authinfo);
+	auth_cred = g_slurm_auth_create(AUTH_DEFAULT_INDEX, slurm_conf.authinfo,
+					uid, NULL, 0);
 	if (!auth_cred) {
 		PMIXP_ERROR("Creating authentication credential: %m");
 		return errno;
@@ -520,7 +520,7 @@ static int _auth_cred_create(Buf buf)
 	return rc;
 }
 
-static int _auth_cred_verify(Buf buf)
+static int _auth_cred_verify(Buf buf, uid_t *uid)
 {
 	void *auth_cred = NULL;
 	int rc = SLURM_SUCCESS;
@@ -537,8 +537,18 @@ static int _auth_cred_verify(Buf buf)
 
 	rc = g_slurm_auth_verify(auth_cred, slurm_conf.authinfo);
 
-	if (rc)
+	if (rc) {
 		PMIXP_ERROR("Verifying authentication credential: %m");
+	} else {
+		uid_t auth_uid;
+		auth_uid = g_slurm_auth_get_uid(auth_cred);
+		if ((auth_uid != slurm_conf.slurmd_user_id) &&
+		    (auth_uid != _pmixp_job_info.uid)) {
+			PMIXP_ERROR("Credential from uid %u", auth_uid);
+			rc = SLURM_ERROR;
+		}
+		*uid = auth_uid;
+	}
 	g_slurm_auth_destroy(auth_cred);
 	return rc;
 }
@@ -705,7 +715,7 @@ static int _process_extended_hdr(pmixp_base_hdr_t *hdr, Buf buf)
 		pmixp_base_hdr_t bhdr;
 		init_msg = xmalloc(sizeof(*init_msg));
 
-		rc = _auth_cred_create(buf_init);
+		rc = _auth_cred_create(buf_init, dconn->uid);
 		if (rc) {
 			FREE_NULL_BUFFER(init_msg->buf_ptr);
 			xfree(init_msg);
@@ -1247,6 +1257,7 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 	Buf buf_msg;
 	int rc;
 	char *nodename = NULL;
+	uid_t uid = SLURM_AUTH_NOBODY;
 
 	if (!hdr->ext_flag) {
 		nodename = pmixp_info_job_host(hdr->nodeid);
@@ -1270,7 +1281,7 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 		return;
 	}
 	/* Unpack and verify the auth credential */
-	rc = _auth_cred_verify(buf_msg);
+	rc = _auth_cred_verify(buf_msg, &uid);
 	FREE_NULL_BUFFER(buf_msg);
 	if (rc) {
 		close(fd);
@@ -1294,6 +1305,9 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 		xfree(nodename);
 		return;
 	}
+
+	dconn->uid = uid;
+
 	new_conn = pmixp_conn_new_persist(PMIXP_PROTO_DIRECT,
 					  pmixp_dconn_engine(dconn),
 					  _direct_new_msg_conn,

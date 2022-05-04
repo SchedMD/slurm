@@ -62,12 +62,16 @@ typedef struct {
 typedef struct {
 	uint32_t	(*plugin_id);
 	char		(*plugin_type);
-	void *		(*create)	(char *auth_info);
+	bool		(*hash_enable);
+	void *		(*create)	(char *auth_info, uid_t r_uid,
+					 void *data, int dlen);
 	int		(*destroy)	(void *cred);
 	int		(*verify)	(void *cred, char *auth_info);
 	uid_t		(*get_uid)	(void *cred);
 	gid_t		(*get_gid)	(void *cred);
 	char *		(*get_host)	(void *cred);
+	int		(*get_data)	(void *cred, char **data,
+					 uint32_t *len);
 	int		(*pack)		(void *cred, Buf buf,
 					 uint16_t protocol_version);
 	void *		(*unpack)	(Buf buf, uint16_t protocol_version);
@@ -82,17 +86,30 @@ typedef struct {
 static const char *syms[] = {
 	"plugin_id",
 	"plugin_type",
+	"hash_enable",
 	"slurm_auth_create",
 	"slurm_auth_destroy",
 	"slurm_auth_verify",
 	"slurm_auth_get_uid",
 	"slurm_auth_get_gid",
 	"slurm_auth_get_host",
+	"auth_p_get_data",
 	"slurm_auth_pack",
 	"slurm_auth_unpack",
 	"slurm_auth_thread_config",
 	"slurm_auth_thread_clear",
 	"slurm_auth_token_generate",
+};
+
+typedef struct {
+	int plugin_id;
+	char *type;
+} auth_plugin_types_t;
+
+auth_plugin_types_t auth_plugin_types[] = {
+	{ AUTH_PLUGIN_NONE, "auth/none" },
+	{ AUTH_PLUGIN_MUNGE, "auth/munge" },
+	{ AUTH_PLUGIN_JWT, "auth/jwt" },
 };
 
 /*
@@ -103,6 +120,15 @@ static slurm_auth_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static int g_context_num = -1;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
+
+extern bool slurm_get_plugin_hash_enable(int index)
+{
+	if (slurm_auth_init(NULL) < 0)
+		return true;
+
+	return *(ops[index].hash_enable);
+
+}
 
 extern int slurm_auth_init(char *auth_type)
 {
@@ -235,14 +261,15 @@ int slurm_auth_index(void *cred)
  * the API function dispatcher.
  */
 
-void *g_slurm_auth_create(int index, char *auth_info)
+void *g_slurm_auth_create(int index, char *auth_info, uid_t r_uid,
+			  void *data, int dlen)
 {
 	cred_wrapper_t *cred;
 
 	if (slurm_auth_init(NULL) < 0)
 		return NULL;
 
-	cred = (*(ops[index].create))(auth_info);
+	cred = (*(ops[index].create))(auth_info, r_uid, data, dlen);
 	if (cred)
 		cred->index = index;
 	return cred;
@@ -296,6 +323,16 @@ char *g_slurm_auth_get_host(void *cred)
 		return NULL;
 
 	return (*(ops[wrap->index].get_host))(cred);
+}
+
+int auth_g_get_data(void *cred, char **data, uint32_t *len)
+{
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+
+	if (!wrap || slurm_auth_init(NULL) < 0)
+		return SLURM_ERROR;
+
+	return (*(ops[wrap->index].get_data))(cred, data, len);
 }
 
 int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)

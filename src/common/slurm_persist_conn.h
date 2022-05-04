@@ -76,6 +76,7 @@ typedef struct {
 	uint16_t flags;
 	bool inited;
 	persist_conn_type_t persist_type;
+	uid_t r_uid;
 	char *rem_host;
 	uint16_t rem_port;
 	time_t *shutdown;

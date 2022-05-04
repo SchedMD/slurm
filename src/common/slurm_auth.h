@@ -64,6 +64,12 @@
 #define SLURM_AUTH_NOBODY 99
 
 /*
+ * This should be equal to MUNGE_UID_ANY
+ * do not restrict decode via uid
+ */
+#define SLURM_AUTH_UID_ANY -1
+
+/*
  * Default auth_index value, corresponds to the primary AuthType used.
  */
 #define AUTH_DEFAULT_INDEX 0
@@ -87,14 +93,22 @@ extern int slurm_auth_fini(void);
 extern int slurm_auth_index(void *cred);
 
 /*
+ * Check if plugin type corresponding to the authentication
+ * plugin index supports hash.
+ */
+extern bool slurm_get_plugin_hash_enable(int index);
+
+/*
  * Static bindings for the global authentication context.
  */
-extern void *g_slurm_auth_create(int index, char *auth_info);
+extern void *g_slurm_auth_create(int index, char *auth_info, uid_t r_uid,
+				 void *data, int dlen);
 extern int g_slurm_auth_destroy(void *cred);
 extern int g_slurm_auth_verify(void *cred, char *auth_info);
 extern uid_t g_slurm_auth_get_uid(void *cred);
 extern gid_t g_slurm_auth_get_gid(void *cred);
 extern char *g_slurm_auth_get_host(void *cred);
+extern int auth_g_get_data(void *cred, char **data, uint32_t *len);
 extern int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version);
 extern void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version);
 

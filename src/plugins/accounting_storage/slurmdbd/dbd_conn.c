@@ -94,6 +94,8 @@ again:
 	else
 		pc->flags &= (~PERSIST_FLAG_SUPPRESS_ERR);
 
+	pc->r_uid = SLURM_AUTH_UID_ANY;
+
 	if (((rc = slurm_persist_conn_open(pc)) != SLURM_SUCCESS) &&
 	    backup_host) {
 		xfree(pc->rem_host);

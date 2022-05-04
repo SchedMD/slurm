@@ -58,6 +58,7 @@
 
 typedef struct pmi2_job_info {
 	slurm_step_id_t step_id; /* Current step id struct            */
+	uid_t uid; /* user id for job */
 	uint32_t nnodes; /* number of nodes in current job step       */
 	uint32_t nodeid; /* relative position of this node in job     */
 	uint32_t ntasks; /* total number of tasks in current job      */

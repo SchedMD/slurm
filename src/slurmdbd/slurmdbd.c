@@ -849,6 +849,7 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 	} else {
 		slurm_msg_t out_msg;
 		slurm_msg_t_init(&out_msg);
+		slurm_msg_set_r_uid(&out_msg, SLURM_AUTH_UID_ANY);
 		out_msg.msg_type = ACCOUNTING_REGISTER_CTLD;
 		out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
 		out_msg.protocol_version = cluster_rec->rpc_version;

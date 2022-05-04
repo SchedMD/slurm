@@ -364,6 +364,8 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 		persist_conn->rem_port = cluster->control_port;
 	}
 
+	persist_conn->r_uid = SLURM_AUTH_UID_ANY;
+
 	rc = slurm_persist_conn_open(persist_conn);
 	if (rc != SLURM_SUCCESS) {
 		if (_comm_fail_log(cluster)) {

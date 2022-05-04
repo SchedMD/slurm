@@ -142,6 +142,7 @@ static void *_msg_thread(void *x)
 	slurm_msg_t msg_send;
 
 	slurm_msg_t_init(&msg_send);
+	slurm_msg_set_r_uid(&msg_send, SLURM_AUTH_UID_ANY);
 
 	debug2("KVS_Barrier msg to %s:%hu",
 		msg_arg_ptr->bar_ptr->hostname,

@@ -164,7 +164,7 @@ static int sig_array[] = {SIGTERM, 0};
 static bool _access(const char *path, int modes, uid_t uid,
 		    int ngids, gid_t *gids);
 static void _send_launch_failure(launch_tasks_request_msg_t *,
-				 slurm_addr_t *, int, uint16_t);
+				 slurm_addr_t *, uid_t, int, uint16_t);
 static int  _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized);
 static int  _become_user(stepd_step_rec_t *job, struct priv_state *ps);
 static void  _set_prio_process (stepd_step_rec_t *job);
@@ -201,7 +201,8 @@ static int    _send_complete_batch_script_msg(stepd_step_rec_t *job,
  */
 extern stepd_step_rec_t *
 mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
-		       slurm_addr_t *self, uint16_t protocol_version)
+		       uid_t cli_uid, slurm_addr_t *self,
+		       uint16_t protocol_version)
 {
 	stepd_step_rec_t *job = NULL;
 
@@ -212,7 +213,8 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 		 * reset in _send_launch_failure.
 		 */
 		int fail = errno;
-		_send_launch_failure(msg, cli, errno, protocol_version);
+		_send_launch_failure(msg, cli, cli_uid, errno,
+				     protocol_version);
 		errno = fail;
 		return NULL;
 	}
@@ -663,6 +665,7 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 		/* This should always be set to something else we have a bug. */
 		xassert(srun->protocol_version);
 		resp.protocol_version = srun->protocol_version;
+		slurm_msg_set_r_uid(&resp, srun->uid);
 
 		if (_send_srun_resp_msg(&resp, job->nnodes) != SLURM_SUCCESS)
 			error("Failed to send MESSAGE_TASK_EXIT: %m");
@@ -761,6 +764,7 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 	}
 	/*********************************************/
 	slurm_msg_t_init(&req);
+	slurm_msg_set_r_uid(&req, slurm_conf.slurmd_user_id);
 	req.msg_type = REQUEST_STEP_COMPLETE;
 	req.data = &msg;
 	req.address = step_complete.parent_addr;
@@ -2382,8 +2386,8 @@ extern int stepd_drain_node(char *reason)
 }
 
 static void
-_send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
-		     uint16_t protocol_version)
+_send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
+		     uid_t cli_uid, int rc, uint16_t protocol_version)
 {
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
@@ -2418,6 +2422,7 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 	resp_msg.protocol_version = protocol_version;
+	slurm_msg_set_r_uid(&resp_msg, cli_uid);
 
 	memcpy(&resp.step_id, &msg->step_id, sizeof(resp.step_id));
 
@@ -2446,6 +2451,7 @@ _send_launch_resp(stepd_step_rec_t *job, int rc)
 
 	slurm_msg_t_init(&resp_msg);
 	resp_msg.address	= srun->resp_addr;
+	slurm_msg_set_r_uid(&resp_msg, srun->uid);
 	resp_msg.protocol_version = srun->protocol_version;
 	resp_msg.data		= &resp;
 	resp_msg.msg_type	= RESPONSE_LAUNCH_TASKS;

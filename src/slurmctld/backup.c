@@ -392,8 +392,8 @@ static void *_background_rpc_mgr(void *no_data)
 		slurm_msg_t_init(&msg);
 		if (slurm_receive_msg(newsockfd, &msg, 0) != 0)
 			error("slurm_receive_msg: %m");
-
-		_background_process_msg(&msg);
+		else
+			_background_process_msg(&msg);
 
 		slurm_free_msg_members(&msg);
 
@@ -413,6 +413,10 @@ static int _background_process_msg(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	bool send_rc = true;
+
+	if (!msg->auth_uid_set)
+		fatal("%s: received message without previously validated auth",
+		      __func__);
 
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;
@@ -460,6 +464,7 @@ static void *_ping_ctld_thread(void *arg)
 	slurm_msg_t_init(&req);
 	slurm_set_addr(&req.address, ping->slurmctld_port, ping->control_addr);
 	req.msg_type = REQUEST_CONTROL_STATUS;
+	slurm_msg_set_r_uid(&req, SLURM_AUTH_UID_ANY);
 	if (slurm_send_recv_node_msg(&req, &resp, 0) == SLURM_SUCCESS) {
 		switch (resp.msg_type) {
 		case RESPONSE_CONTROL_STATUS:
@@ -601,6 +606,7 @@ static void *_shutdown_controller(void *arg)
 	xfree(arg);
 
 	slurm_msg_t_init(&req);
+	slurm_msg_set_r_uid(&req, slurm_conf.slurm_user_id);
 	slurm_set_addr(&req.address, slurm_conf.slurmctld_port,
 	               slurm_conf.control_addr[shutdown_inx]);
 	if (do_shutdown) {

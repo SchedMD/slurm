@@ -168,6 +168,7 @@ static int _file_bcast(struct bcast_parameters *params,
 	slurm_msg_t msg;
 
 	slurm_msg_t_init(&msg);
+	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
 	msg.data = bcast_msg;
 	msg.flags = USE_BCAST_NETWORK;
 	msg.forward.tree_width = params->fanout;

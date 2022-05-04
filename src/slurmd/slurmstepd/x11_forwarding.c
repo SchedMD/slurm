@@ -72,6 +72,8 @@ static eio_handle_t *eio_handle;
 
 /* Target salloc/srun host/port */
 static slurm_addr_t alloc_node;
+/* Target UID */
+static uid_t job_uid;
 /* X11 display hostname on target, or UNIX socket. */
 static char *x11_target = NULL;
 /* X11 display port on target (if not a UNIX socket). */
@@ -126,6 +128,7 @@ static int _x11_socket_read(eio_obj_t *obj, List objs)
 	slurm_msg_t_init(&resp);
 
 	req.msg_type = SRUN_NET_FORWARD;
+	slurm_msg_set_r_uid(&req, job_uid);
 	req.data = &rpc;
 
 	slurm_send_recv_msg(*remote, &req, &resp, 0);
@@ -237,6 +240,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job)
 	x11_target_port = job->x11_target_port;
 
 	slurm_set_addr(&alloc_node, job->x11_alloc_port, job->x11_alloc_host);
+	job_uid = job->uid;
 
 	debug("X11Parameters: %s", slurm_conf.x11_params);
 

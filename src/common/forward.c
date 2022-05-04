@@ -243,7 +243,7 @@ void *_forward_thread(void *arg)
 			/*      steps, fwd_msg->timeout); */
 		}
 
-		ret_list = slurm_receive_msgs(fd, steps, fwd_msg->timeout);
+		ret_list = slurm_receive_resp_msgs(fd, steps, fwd_msg->timeout);
 		/* info("sent %d forwards got %d back", */
 		/*      fwd_msg->header.forward.cnt, list_count(ret_list)); */
 
@@ -352,6 +352,9 @@ void *_fwd_tree_thread(void *arg)
 	send_msg.flags = fwd_tree->orig_msg->flags;
 	send_msg.data = fwd_tree->orig_msg->data;
 	send_msg.protocol_version = fwd_tree->orig_msg->protocol_version;
+	if (fwd_tree->orig_msg->restrict_uid_set)
+		slurm_msg_set_r_uid(&send_msg,
+				    fwd_tree->orig_msg->restrict_uid);
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(fwd_tree->tree_hl))) {

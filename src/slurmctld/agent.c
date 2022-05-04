@@ -144,6 +144,7 @@ typedef struct agent_info {
 	uint16_t retry;			/* if set, keep trying */
 	thd_t *thread_struct;		/* thread structures */
 	bool get_reply;			/* flag if reply expected */
+	uid_t r_uid;			/* receiver UID */
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
 	void **msg_args_pptr;		/* RPC data to be used */
 	uint16_t protocol_version;	/* if set, use this version */
@@ -157,6 +158,7 @@ typedef struct task_info {
 	uint32_t *threads_active_ptr;	/* currently active thread ptr */
 	thd_t *thread_struct_ptr;	/* thread structures ptr */
 	bool get_reply;			/* flag if reply expected */
+	uid_t r_uid;			/* receiver UID */
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
 	void *msg_args_ptr;		/* ptr to RPC data to be used */
 	uint16_t protocol_version;	/* if set, use this version */
@@ -312,11 +314,12 @@ void *agent(void *args)
 	/* start the watchdog thread */
 	slurm_thread_create(&thread_wdog, _wdog, agent_info_ptr);
 
-	log_flag(AGENT, "%s: New agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
+	log_flag(AGENT, "%s: New agent thread_count:%d threads_active:%d retry:%c get_reply:%c r_uid:%u msg_type:%s protocol_version:%hu",
 		 __func__, agent_info_ptr->thread_count,
 		 agent_info_ptr->threads_active,
 		 agent_info_ptr->retry ? 'T' : 'F',
 		 agent_info_ptr->get_reply ? 'T' : 'F',
+		 agent_info_ptr->r_uid,
 		 rpc_num2string(agent_arg_ptr->msg_type),
 		 agent_info_ptr->protocol_version);
 
@@ -415,6 +418,11 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 		     __func__, agent_arg_ptr->node_count, hostlist_cnt);
 		return SLURM_ERROR;	/* no messages to be sent */
 	}
+	if (!agent_arg_ptr->r_uid_set) {
+		error("%s: r_uid not set for message:%u ",
+		      __func__, agent_arg_ptr->msg_type);
+		return SLURM_ERROR;
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -437,6 +445,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	thread_ptr = xcalloc(agent_info_ptr->thread_count, sizeof(thd_t));
 	memset(thread_ptr, 0, (agent_info_ptr->thread_count * sizeof(thd_t)));
 	agent_info_ptr->thread_struct  = thread_ptr;
+	agent_info_ptr->r_uid = agent_arg_ptr->r_uid;
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
 	agent_info_ptr->protocol_version = agent_arg_ptr->protocol_version;
@@ -520,6 +529,7 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
 	task_info_ptr->threads_active_ptr= &agent_info_ptr->threads_active;
 	task_info_ptr->thread_struct_ptr = &agent_info_ptr->thread_struct[inx];
 	task_info_ptr->get_reply         = agent_info_ptr->get_reply;
+	task_info_ptr->r_uid = agent_info_ptr->r_uid;
 	task_info_ptr->msg_type          = agent_info_ptr->msg_type;
 	task_info_ptr->msg_args_ptr      = *agent_info_ptr->msg_args_pptr;
 	task_info_ptr->protocol_version  = agent_info_ptr->protocol_version;
@@ -916,6 +926,7 @@ static void *_thread_per_group_rpc(void *args)
 
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
+	slurm_msg_set_r_uid(&msg, task_ptr->r_uid);
 
 	log_flag(AGENT, "%s: sending %s to %s",
 		 __func__, rpc_num2string(msg_type), thread_ptr->nodelist);
@@ -1284,6 +1295,8 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	agent_arg_ptr->msg_type = agent_info_ptr->msg_type;
 	agent_arg_ptr->msg_args = *(agent_info_ptr->msg_args_pptr);
 	*(agent_info_ptr->msg_args_pptr) = NULL;
+
+	set_agent_arg_r_uid(agent_arg_ptr, agent_info_ptr->r_uid);
 
 	j = 0;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
@@ -2286,4 +2299,11 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 		}
 	}
 	xfree(argv[1]);
+}
+
+/* Set r_uid of agent_arg */
+extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid)
+{
+	agent_arg_ptr->r_uid = r_uid;
+	agent_arg_ptr->r_uid_set = true;
 }

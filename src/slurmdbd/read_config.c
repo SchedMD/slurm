@@ -660,6 +660,7 @@ extern int read_slurmdbd_conf(void)
 	if (!slurmdbd_conf->purge_usage)
 		slurmdbd_conf->purge_usage = NO_VAL;
 
+	slurm_conf.last_update = time(NULL);
 	slurm_mutex_unlock(&conf_mutex);
 	return SLURM_SUCCESS;
 }

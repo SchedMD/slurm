@@ -180,6 +180,7 @@ extern int slurm_pmi_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
 	_set_pmi_time();
 
 	slurm_msg_t_init(&msg_send);
+	slurm_msg_set_r_uid(&msg_send, SLURM_AUTH_UID_ANY);
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_PUT_REQ;
 	msg_send.data = (void *) kvs_set_ptr;
@@ -261,6 +262,7 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	data.port = slurm_get_port(&slurm_addr);
 	data.hostname = hostname;
 	slurm_msg_t_init(&msg_send);
+	slurm_msg_set_r_uid(&msg_send, SLURM_AUTH_UID_ANY);
 	slurm_msg_t_init(&msg_rcv);
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_GET_REQ;
@@ -345,6 +347,7 @@ static int _forward_comm_set(kvs_comm_set_t *kvs_set_ptr)
 		if (kvs_set_ptr->kvs_host_ptr[i].port == 0)
 			continue;	/* empty */
 		slurm_msg_t_init(&msg_send);
+		slurm_msg_set_r_uid(&msg_send, SLURM_AUTH_UID_ANY);
 		msg_send.msg_type = PMI_KVS_GET_RESP;
 		msg_send.data = (void *) kvs_set_ptr;
 		slurm_set_addr(&msg_send.address,

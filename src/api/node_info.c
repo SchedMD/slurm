@@ -862,6 +862,7 @@ extern int slurm_get_node_energy(char *host, uint16_t context_id,
 	req.delta        = delta;
 	req_msg.msg_type = REQUEST_ACCT_GATHER_ENERGY;
 	req_msg.data     = &req;
+	slurm_msg_set_r_uid(&req_msg, SLURM_AUTH_UID_ANY);
 
 	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 

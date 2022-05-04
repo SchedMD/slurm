@@ -340,6 +340,7 @@ void ping_nodes (void)
 		debug("Spawning ping agent for %s", host_str);
 		xfree(host_str);
 		ping_begin();
+		set_agent_arg_r_uid(ping_agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(ping_agent_args);
 	}
 
@@ -354,6 +355,7 @@ void ping_nodes (void)
 		      host_str, reg_agent_args->node_count);
 		xfree(host_str);
 		ping_begin();
+		set_agent_arg_r_uid(reg_agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(reg_agent_args);
 	}
 
@@ -510,6 +512,7 @@ extern void run_health_check(void)
 		debug("Spawning health check agent for %s", host_str);
 		xfree(host_str);
 		ping_begin();
+		set_agent_arg_r_uid(check_agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(check_agent_args);
 	}
 }
@@ -568,6 +571,7 @@ extern void update_nodes_acct_gather_data(void)
 		log_flag(ENERGY, "Updating acct_gather data for %s", host_str);
 		xfree(host_str);
 		ping_begin();
+		set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(agent_args);
 	}
 }

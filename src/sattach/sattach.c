@@ -412,6 +412,7 @@ static int _attach_to_tasks(uint32_t jobid,
 	reattach_msg.io_port = io_ports;
 	reattach_msg.cred = fake_cred;
 
+	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
 	msg.msg_type = REQUEST_REATTACH_TASKS;
 	msg.data = &reattach_msg;
 	msg.protocol_version = layout->start_protocol_ver;

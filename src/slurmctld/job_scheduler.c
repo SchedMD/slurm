@@ -2593,6 +2593,7 @@ extern void launch_job(job_record_t *job_ptr)
 	agent_arg_ptr->hostlist = hostlist_create(launch_job_ptr->batch_host);
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
+	set_agent_arg_r_uid(agent_arg_ptr, SLURM_AUTH_UID_ANY);
 
 	/* Launch the RPC via agent */
 	agent_queue_request(agent_arg_ptr);
@@ -4319,6 +4320,7 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 			rc = SLURM_ERROR;
 		}
 		xfree(nodes);
+		set_agent_arg_r_uid(reboot_agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(reboot_agent_args);
 	}
 
@@ -4350,6 +4352,7 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 			rc = SLURM_ERROR;
 		}
 		xfree(nodes);
+		set_agent_arg_r_uid(reboot_agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(reboot_agent_args);
 	}
 

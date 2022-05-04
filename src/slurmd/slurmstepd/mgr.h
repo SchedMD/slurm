@@ -53,7 +53,7 @@ void batch_finish(stepd_step_rec_t *job, int rc);
  * Initialize a stepd_step_rec_t structure for a launch tasks
  */
 stepd_step_rec_t *mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
-					 slurm_addr_t *client,
+					 slurm_addr_t *cli, uid_t cli_uid,
 					 slurm_addr_t *self,
 					 uint16_t protocol_version);
 

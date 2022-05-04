@@ -612,6 +612,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	req_msg.flags |= SLURM_GLOBAL_AUTH_KEY;
 	if (persist_conn->flags & PERSIST_FLAG_DBD)
 		req_msg.flags |= SLURMDBD_CONNECTION;
+	slurm_msg_set_r_uid(&req_msg, persist_conn->r_uid);
 
 	memset(&req, 0, sizeof(persist_init_req_msg_t));
 	req.cluster_name = persist_conn->cluster_name;

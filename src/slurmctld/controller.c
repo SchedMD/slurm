@@ -1850,6 +1850,7 @@ static void _queue_reboot_msg(void)
 				reboot_agent_args->hostlist);
 		debug("Issuing reboot request for nodes %s", host_str);
 		xfree(host_str);
+		set_agent_arg_r_uid(reboot_agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(reboot_agent_args);
 		last_node_update = now;
 		schedule_node_save();
@@ -2711,6 +2712,7 @@ static void *_shutdown_bu_thread(void *arg)
 	xfree(arg);
 
 	slurm_msg_t_init(&req);
+	slurm_msg_set_r_uid(&req, slurm_conf.slurm_user_id);
 	slurm_set_addr(&req.address, slurm_conf.slurmctld_port,
 	               slurm_conf.control_addr[bu_inx]);
 	if (do_shutdown) {

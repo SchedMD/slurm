@@ -157,6 +157,7 @@ static int _send_message_controller(int dest, slurm_msg_t *req)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
+	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
 	if (slurm_send_node_msg(fd, req) < 0) {
 		close(fd);
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
