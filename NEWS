@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     finishes.
  -- Fix slurmctld segfault due to job array --batch features double free.
  -- CVE-2022-29500 - Prevent credential abuse.
+ -- CVE-2022-29501 - Prevent abuse of REQUEST_FORWARD_DATA.
 
 * Changes in Slurm 20.11.8
 ==========================
