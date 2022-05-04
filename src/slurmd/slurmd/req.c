@@ -1748,6 +1748,88 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 	_exit(SLURM_SUCCESS);
 }
 
+/*
+ * Connect to unix socket based upon permissions of a different user
+ * IN sock_name - name of socket to open
+ * IN uid - User ID to use for file access check
+ * IN gid - Group ID to use for file access check
+ * OUT fd - File descriptor
+ * RET error or SLURM_SUCCESS
+ * */
+static int _connect_as_other(char *sock_name, uid_t uid, gid_t gid, int *fd)
+{
+	pid_t child;
+	int pipe[2];
+	int rc = 0;
+	struct sockaddr_un sa;
+
+	*fd = -1;
+	if (strlen(sock_name) >= sizeof(sa.sun_path)) {
+		error("%s: Unix socket path '%s' is too long. (%ld > %ld)",
+		      __func__, sock_name,
+		      (long int)(strlen(sock_name) + 1),
+		      (long int)sizeof(sa.sun_path));
+		return EINVAL;
+	}
+
+	/* child process will setuid to the user, register the process
+	 * with the container, and open the file for us. */
+	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe) != 0) {
+		error("%s: Failed to open pipe: %m", __func__);
+		return SLURM_ERROR;
+	}
+
+	child = fork();
+	if (child == -1) {
+		error("%s: fork failure", __func__);
+		close(pipe[0]);
+		close(pipe[1]);
+		return SLURM_ERROR;
+	} else if (child > 0) {
+		int exit_status = -1;
+		close(pipe[0]);
+		(void) waitpid(child, &rc, 0);
+		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0))
+			*fd = receive_fd_over_pipe(pipe[1]);
+		exit_status = WEXITSTATUS(rc);
+		close(pipe[1]);
+		return exit_status;
+	}
+
+	/* child process below here */
+
+	close(pipe[1]);
+
+	if (setgid(gid) < 0) {
+		error("%s: uid:%u setgid(%u): %m", __func__, uid, gid);
+		_exit(errno);
+	}
+	if (setuid(uid) < 0) {
+		error("%s: getuid(%u): %m", __func__, uid);
+		_exit(errno);
+	}
+
+	*fd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (*fd < 0) {
+		error("%s:failed creating UNIX domain socket: %m", __func__ );
+		_exit(errno);
+	}
+
+	memset(&sa, 0, sizeof(sa));
+	sa.sun_family = AF_UNIX;
+	strcpy(sa.sun_path, sock_name);
+	while (((rc = connect(*fd, (struct sockaddr *)&sa,
+			      SUN_LEN(&sa))) < 0) && (errno == EINTR));
+
+	if (rc < 0) {
+		debug2("%s: failed connecting to specified socket '%s': %m",
+		       __func__, sock_name);
+		_exit(errno);
+	}
+	send_fd_over_pipe(pipe[0], *fd);
+	close(*fd);
+	_exit(SLURM_SUCCESS);
+}
 
 static void
 _prolog_error(batch_job_launch_msg_t *req, int rc)
@@ -5931,8 +6013,8 @@ static void
 _rpc_forward_data(slurm_msg_t *msg)
 {
 	forward_data_msg_t *req = (forward_data_msg_t *)msg->data;
-	uint32_t req_uid = msg->auth_uid;
-	struct sockaddr_un sa;
+	uid_t req_uid = msg->auth_uid;
+	gid_t req_gid = auth_g_get_gid(msg->auth_cred);
 	int fd = -1, rc = 0;
 
 	/* Make sure we adjust for the spool dir coming in on the address to
@@ -5943,31 +6025,8 @@ _rpc_forward_data(slurm_msg_t *msg)
 	debug3("Entering _rpc_forward_data, address: %s, len: %u",
 	       req->address, req->len);
 
-	/*
-	 * If socket name would be truncated, emit error and exit
-	 */
-	if (strlen(req->address) >= sizeof(sa.sun_path)) {
-		error("%s: Unix socket path '%s' is too long. (%ld > %ld)",
-		      __func__, req->address,
-		      (long int)(strlen(req->address) + 1),
-		      (long int)sizeof(sa.sun_path));
-		slurm_seterrno(EINVAL);
-		rc = errno;
-		goto done;
-	}
+	rc = _connect_as_other(req->address, req_uid, req_gid, &fd);
 
-	/* connect to specified address */
-	fd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (fd < 0) {
-		rc = errno;
-		error("failed creating UNIX domain socket: %m");
-		goto done;
-	}
-	memset(&sa, 0, sizeof(sa));
-	sa.sun_family = AF_UNIX;
-	strcpy(sa.sun_path, req->address);
-	while (((rc = connect(fd, (struct sockaddr *)&sa, SUN_LEN(&sa))) < 0) &&
-	       (errno == EINTR));
 	if (rc < 0) {
 		rc = errno;
 		debug2("failed connecting to specified socket '%s': %m",

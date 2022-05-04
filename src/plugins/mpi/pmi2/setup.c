@@ -339,6 +339,11 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 		unlink(sa.sun_path);
 		return SLURM_ERROR;
 	}
+	if (chown(sa.sun_path, job->uid, -1) < 0) {
+		error("mpi/pmi2: failed to chown tree socket: %m");
+		unlink(sa.sun_path);
+		return SLURM_ERROR;
+	}
 	if (listen(tree_sock, 64) < 0) {
 		error("mpi/pmi2: failed to listen tree socket: %m");
 		unlink(sa.sun_path);

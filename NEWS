@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.37 - Correct OpenAPI specification for diag request.
  -- Ignore power_down request when node is already powering down.
  -- CVE-2022-29500 - Prevent credential abuse.
+ -- CVE-2022-29501 - Prevent abuse of REQUEST_FORWARD_DATA.
 
 * Changes in Slurm 21.08.7
 ==========================
