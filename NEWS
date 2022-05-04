@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix corner case issues when removing assocs/qos' while jobs are completing
     and a reconfigure happens.
  -- Add SlurmdParameters=numa_node_as_socket to use the numa node as a socket.
+ -- Avoid creating and referencing NULL script/env hash entries when not storing
+    the job script or job environment.
 
 * Changes in Slurm 22.05.0rc1
 =============================

@@ -7672,23 +7672,28 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		}
 		job_ptr->batch_flag = 1;
 
-		tmp = xstring_bytes2hex(job_desc->env_hash.hash,
-					sizeof(job_desc->env_hash.hash),
-					NULL);
+		if (slurm_conf.conf_flags & CTL_CONF_SJE) {
+			tmp = xstring_bytes2hex(job_desc->env_hash.hash,
+						sizeof(job_desc->env_hash.hash),
+						NULL);
+			job_ptr->details->env_hash =
+				xstrdup_printf("%d:%s",
+					       job_desc->env_hash.type,
+					       tmp);
+			xfree(tmp);
+		}
 
-		job_ptr->details->env_hash =
-			xstrdup_printf("%d:%s",
-				       job_desc->env_hash.type, tmp);
-		xfree(tmp);
+		if (slurm_conf.conf_flags & CTL_CONF_SJS) {
+			tmp = xstring_bytes2hex(
+				job_desc->script_hash.hash,
+				sizeof(job_desc->script_hash.hash), NULL);
 
-		tmp = xstring_bytes2hex(job_desc->script_hash.hash,
-					sizeof(job_desc->script_hash.hash),
-					NULL);
-		job_ptr->details->script_hash =
-			xstrdup_printf("%d:%s",
-				       job_desc->script_hash.type,
-				       tmp);
-		xfree(tmp);
+			job_ptr->details->script_hash =
+				xstrdup_printf("%d:%s",
+					       job_desc->script_hash.type,
+					       tmp);
+			xfree(tmp);
+		}
 	} else
 		job_ptr->batch_flag = 0;
 	if (!will_run &&
