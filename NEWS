@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 21.08.9
+==========================
+
 * Changes in Slurm 21.08.8-2
 ============================
  -- Fix communication forwarding when running with a mix of patch and unpatched
