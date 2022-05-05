@@ -92,8 +92,14 @@ static int _op_handler_config(const char *context_id,
 			rc = rc2;
 	}
 
-	if (!rc && (method == HTTP_REQUEST_POST))
-		rc = db_query_commit(errors, auth);
+	if (method == HTTP_REQUEST_POST) {
+		if (!rc)
+			rc = db_query_commit(errors, auth);
+		else
+			rc = resp_error(errors, rc,
+					"refusing to commit after error",
+					NULL);
+	}
 
 	return rc;
 }
