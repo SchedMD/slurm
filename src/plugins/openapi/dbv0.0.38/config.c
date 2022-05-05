@@ -92,7 +92,7 @@ static int _op_handler_config(const char *context_id,
 			rc = MAX(rc, rc2);
 	}
 
-	if (method == HTTP_REQUEST_POST)
+	if (!rc && (method == HTTP_REQUEST_POST))
 		rc = db_query_commit(errors, auth);
 
 	return rc;
