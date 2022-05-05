@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "June 2021" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "May 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -479,6 +479,13 @@ be lower case.
 Comma-separated options identifying communication options.
 .RS
 .TP 15
+\fBblock_null_hash\fR
+Require all Slurm authentication tokens to include a newer (20.11.9) payload
+that provides an additional layer of security against credential replay attacks.
+This option should only be enabled once all Slurm daemons have been upgraded
+to 20.11.9 or newer, and all jobs that were started before the upgrade have
+been completed.
+.TP
 \fBCheckGhalQuiesce\fR
 Used specifically on a Cray using an Aries Ghal interconnect.  This will check
 to see if the system is quiescing when sending a message, and if so, we wait
