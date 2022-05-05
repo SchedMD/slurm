@@ -89,7 +89,7 @@ static int _op_handler_config(const char *context_id,
 		 * there to dump.
 		 **/
 		if (rc2 != ESLURM_REST_EMPTY_RESULT)
-			rc = MAX(rc, rc2);
+			rc = rc2;
 	}
 
 	if (!rc && (method == HTTP_REQUEST_POST))
