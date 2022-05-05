@@ -42,6 +42,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+#include "src/common/slurm_xlator.h"
 #include "src/common/env.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
