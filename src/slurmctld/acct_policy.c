@@ -4685,6 +4685,8 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 	int job_cnt;
+	struct job_details *details_ptr = job_ptr->details;
+	time_t now = time(NULL);
 
 	/*
 	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
@@ -4697,8 +4699,13 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return;
 
-	/* If Job is held or dependent don't accrue time */
-	if (!job_ptr->priority || (job_ptr->bit_flags & JOB_DEPENDENT))
+	/*
+	 * If the job is not eligible because it is either held, dependent or
+	 * because its begin time is in the future don't accrue time.
+	 */
+	if (!job_ptr->priority || (job_ptr->bit_flags & JOB_DEPENDENT) ||
+	    (details_ptr &&
+	     (details_ptr->begin_time && (details_ptr->begin_time > now))))
 		return;
 
 	/* Job has to be pending to accrue time. */
