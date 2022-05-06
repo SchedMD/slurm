@@ -1384,5 +1384,7 @@ extern node_record_t *next_node(int *index)
 			return NULL;
 	}
 
+	xassert(node_record_table_ptr[*index]->index == *index);
+
 	return node_record_table_ptr[*index];
 }
