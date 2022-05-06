@@ -455,6 +455,17 @@ extern char *find_hostname(uint32_t pos, char *hosts);
 extern node_record_t *next_node(int *index);
 
 /*
+ * Return the next non-null node_record_t * in the node_record_table_ptr that
+ * is set in the given bitmap.
+ *
+ * IN bitmap - bitmap of available nodes in node_record_table_ptr. The bitmap
+ *	       must match size of node_record_table_ptr.
+ * IN/OUT index - index to start iterating node_record_table_ptr from.
+ * RET - next non-null node_record_t * or NULL if finished iterating.
+ */
+extern node_record_t *next_node_bitmap(bitstr_t *bitmap, int *index);
+
+/*
  * Return bitmap with all active nodes set.
  *
  * node_record_table_ptr may have NULL slots in it, so return a bitmap with only

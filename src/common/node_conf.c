@@ -1474,6 +1474,30 @@ extern node_record_t *next_node(int *index)
 	return node_record_table_ptr[*index];
 }
 
+extern node_record_t *next_node_bitmap(bitstr_t *bitmap, int *index)
+{
+	xassert(index);
+
+	if (*index >= node_record_count)
+		return NULL;
+
+	xassert(bitmap);
+	xassert(bit_size(bitmap) == node_record_count);
+
+	while (true) {
+		*index = bit_ffs_from_bit(bitmap, *index);
+		if (*index == -1)
+			return NULL;
+		if (node_record_table_ptr[*index])
+			break;
+		(*index)++;  /* Skip blank entries */
+	}
+
+	xassert(node_record_table_ptr[*index]->index == *index);
+
+	return node_record_table_ptr[*index];
+}
+
 extern bitstr_t *node_conf_get_active_bitmap(void)
 {
 	bitstr_t *b = bit_alloc(node_record_count);
