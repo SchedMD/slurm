@@ -4705,8 +4705,16 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 	 */
 	if (!job_ptr->priority || (job_ptr->bit_flags & JOB_DEPENDENT) ||
 	    (details_ptr &&
-	     (details_ptr->begin_time && (details_ptr->begin_time > now))))
+	     (details_ptr->begin_time && (details_ptr->begin_time > now)))) {
+		/*
+		 * If the job was previously accruing time (for example,
+		 * ACCRUE_ALWAYS could have been on or not having
+		 * ACCOUTING_ENFORCE_LIMITS), we need to remove the accrue_time.
+		 */
+		if (details_ptr)
+			details_ptr->accrue_time = 0;
 		return;
+	}
 
 	/* Job has to be pending to accrue time. */
 	if (!IS_JOB_PENDING(job_ptr))
