@@ -283,6 +283,8 @@ documents those changes that are of interest to users and administrators.
  -- Error if ConstrainSwapSpace is set and system doesn't have the kernel with
     CONFIG_MEMCG_SWAP set. This will avoid bad configurations.
  -- Add SlurmdParameters=numa_node_as_socket.
+ -- Fix incorrect node allocation when using multiple counts with --constraint
+    and --ntasks-per-node.
 
 * Changes in Slurm 21.08.9
 ==========================

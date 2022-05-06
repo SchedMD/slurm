@@ -1311,6 +1311,13 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			saved_job_num_tasks = job_ptr->details->num_tasks;
 			job_ptr->details->min_nodes = feat_ptr->count;
 			job_ptr->details->min_cpus = feat_ptr->count;
+			/*
+			 * Ensure that num_tasks is accurate if ntasks_per_node
+			 * is set
+			 */
+			if (job_ptr->details->ntasks_per_node)
+				job_ptr->details->num_tasks = min_nodes *
+					job_ptr->details->ntasks_per_node;
 			FREE_NULL_LIST(*preemptee_job_list);
 			job_ptr->details->pn_min_memory = orig_req_mem;
 			if (sort_again) {
