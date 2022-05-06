@@ -74,4 +74,12 @@ extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
 /* Free module's allocated memory */
 extern void power_save_fini(void);
 
+/*
+ * Set node power times based on global and per-partition settings.
+ *
+ * OUT (optional) partition_suspend_time_set - return True if any partition has
+ *                                             suspend_time set.
+ */
+extern void power_save_set_timeouts(bool *partition_suspend_time_set);
+
 #endif /* _HAVE_POWER_SAVE_H */

@@ -863,7 +863,8 @@ static int _set_partition_options(void *x, void *arg)
 	bool *suspend_time_set = (bool *)arg;
 	int i;
 
-	if ((part_ptr->suspend_time != INFINITE) &&
+	if (suspend_time_set &&
+	    (part_ptr->suspend_time != INFINITE) &&
 	    (part_ptr->suspend_time != NO_VAL))
 		*suspend_time_set = true;
 
@@ -910,8 +911,6 @@ static int _init_power_config(void)
 {
 	int rc;
 	char *tmp_ptr;
-	node_record_t *node_ptr;
-	int i;
 	bool partition_suspend_time_set = false;
 	slurmctld_lock_t init_config_locks = {
 		.conf = READ_LOCK, .node = WRITE_LOCK, .part = READ_LOCK };
@@ -954,25 +953,7 @@ static int _init_power_config(void)
 	}
 
 	lock_slurmctld(init_config_locks);
-	/* Figure out per-partition options and push to node level. */
-	list_for_each(part_list, _set_partition_options,
-		      &partition_suspend_time_set);
-
-	/* Apply global options to node level if not set at partition level. */
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		node_ptr->suspend_time =
-			((node_ptr->suspend_time == NO_VAL) ?
-				slurm_conf.suspend_time :
-				node_ptr->suspend_time);
-		node_ptr->suspend_timeout =
-			((node_ptr->suspend_timeout == NO_VAL16) ?
-				slurm_conf.suspend_timeout :
-				node_ptr->suspend_timeout);
-		node_ptr->resume_timeout =
-			((node_ptr->resume_timeout == NO_VAL16) ?
-				slurm_conf.resume_timeout :
-				node_ptr->resume_timeout);
-	}
+	power_save_set_timeouts(&partition_suspend_time_set);
 	unlock_slurmctld(init_config_locks);
 
 	if ((slurm_conf.suspend_time == INFINITE) &&
@@ -1205,4 +1186,34 @@ fini:	_clear_power_config();
 	slurm_mutex_unlock(&power_mutex);
 	pthread_exit(NULL);
 	return NULL;
+}
+
+extern void power_save_set_timeouts(bool *partition_suspend_time_set)
+
+{
+	node_record_t *node_ptr;
+
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+
+	/* Figure out per-partition options and push to node level. */
+	list_for_each(part_list, _set_partition_options,
+		      partition_suspend_time_set);
+
+	/* Apply global options to node level if not set at partition level. */
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
+		node_ptr->suspend_time =
+			((node_ptr->suspend_time == NO_VAL) ?
+				slurm_conf.suspend_time :
+				node_ptr->suspend_time);
+		node_ptr->suspend_timeout =
+			((node_ptr->suspend_timeout == NO_VAL16) ?
+				slurm_conf.suspend_timeout :
+				node_ptr->suspend_timeout);
+		node_ptr->resume_timeout =
+			((node_ptr->resume_timeout == NO_VAL16) ?
+				slurm_conf.resume_timeout :
+				node_ptr->resume_timeout);
+	}
 }
