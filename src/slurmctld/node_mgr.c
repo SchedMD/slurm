@@ -502,6 +502,12 @@ extern int load_all_node_state ( bool state_only )
 			if (!(node_ptr = add_node_record(node_name,
 							 config_ptr))) {
 				list_delete_ptr(config_list, config_ptr);
+			} else {
+				/*
+				 * add_node_record() populates gres_list but we
+				 * want to use the gres_list from state.
+				 */
+				FREE_NULL_LIST(node_ptr->gres_list);
 			}
 		}
 
