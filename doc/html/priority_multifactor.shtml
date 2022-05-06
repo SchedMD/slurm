@@ -362,7 +362,7 @@ factor as it is currently configured.</P>
 PriorityType=priority/multifactor.
 <ul>
 <li>ACCRUE_ALWAYS: If set, priority age factor will be increased despite job
-	dependencies or holds.</li>
+	dependencies or holds. Accrue limits are ignored.</li>
 <li>CALCULATE_RUNNING: If set, priorities will be recalculated not only for
 	pending jobs, but also running and suspended jobs.</li>
 <li>DEPTH_OBLIVIOUS: If set, priority will be calculated based similar to the
