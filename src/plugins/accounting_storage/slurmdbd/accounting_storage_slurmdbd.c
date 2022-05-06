@@ -121,8 +121,8 @@ static bool running_db_inx = 0;
 static int first = 1;
 static time_t plugin_shutdown = 0;
 
-static char *cluster_nodes = NULL;
-static char *cluster_tres = NULL;
+static char *cluster_nodes = NULL; /* Protected by node write lock */
+static char *cluster_tres = NULL; /* Protected by node write lock */
 
 static hostlist_t cluster_hl = NULL;
 static pthread_mutex_t cluster_hl_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -539,7 +539,7 @@ extern void _update_cluster_nodes(void)
 	static bitstr_t *total_node_bitmap = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
-	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
 	xfree(cluster_nodes);
 	if (prev_node_record_count != node_record_count) {
@@ -2724,6 +2724,7 @@ extern int clusteracct_storage_p_cluster_tres(void *db_conn,
 					      time_t event_time,
 					      uint16_t rpc_version)
 {
+	char *send_cluster_nodes, *send_cluster_tres;
 	int rc = SLURM_ERROR;
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
@@ -2731,13 +2732,19 @@ extern int clusteracct_storage_p_cluster_tres(void *db_conn,
 	lock_slurmctld(node_write_lock);
 
 	_update_cluster_nodes();
+	/* Make copies while in locks that protect the strings */
+	send_cluster_nodes = xstrdup(cluster_nodes);
+	send_cluster_tres = xstrdup(cluster_tres);
 
 	unlock_slurmctld(node_write_lock);
 
 	event_time = time(NULL);
-	rc = _send_cluster_tres(db_conn, cluster_nodes,
-				cluster_tres, event_time,
+	rc = _send_cluster_tres(db_conn, send_cluster_nodes,
+				send_cluster_tres, event_time,
 				rpc_version);
+
+	xfree(send_cluster_nodes);
+	xfree(send_cluster_tres);
 
 	if ((rc == ACCOUNTING_FIRST_REG) ||
 	    (rc == ACCOUNTING_NODES_CHANGE_DB) ||
