@@ -855,6 +855,14 @@ extern void insert_node_record(node_record_t *node_ptr)
 			list_append(config_list, node_ptr->config_ptr);
 
 		node_record_table_ptr[i] = node_ptr;
+		/*
+		 * _build_bitmaps_pre_select() will reset bitmaps on
+		 * start/reconfig. Set here to be consistent in case this is
+		 * called elsewhere.
+		 */
+		bit_clear(node_ptr->config_ptr->node_bitmap, node_ptr->index);
+		node_ptr->index = i;
+		bit_set(node_ptr->config_ptr->node_bitmap, node_ptr->index);
 		xhash_add(node_hash_table, node_ptr);
 
 		/* re-add node to conf node hash tables */
