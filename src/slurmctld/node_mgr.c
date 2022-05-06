@@ -4586,6 +4586,17 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 	} else if (IS_NODE_CLOUD(node_ptr)) {
 		make_node_idle(node_ptr, NULL);
 		bit_set(power_node_bitmap, node_ptr->index);
+
+		gres_g_node_config_load(
+			node_ptr->config_ptr->cpus, node_ptr->name,
+			node_ptr->gres_list, NULL, NULL);
+		gres_node_config_validate(
+			node_ptr->name, node_ptr->config_ptr->gres,
+			&node_ptr->gres, &node_ptr->gres_list,
+			node_ptr->config_ptr->threads,
+			node_ptr->config_ptr->cores,
+			node_ptr->config_ptr->tot_sockets,
+			slurm_conf.conf_flags & CTL_CONF_OR, NULL);
 	}
 }
 
