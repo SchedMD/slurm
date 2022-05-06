@@ -4607,7 +4607,10 @@ extern int create_nodes(char *nodeline, char **err_msg)
 	config_record_t *config_ptr;
 	s_p_hashtbl_t *node_hashtbl = NULL;
 	slurmctld_lock_t write_lock = {
-		.job = WRITE_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK
 	};
 
 	xassert(nodeline);
@@ -4655,6 +4658,7 @@ extern int create_nodes(char *nodeline, char **err_msg)
 
 	set_cluster_tres(false);
 	_update_parts();
+	power_save_set_timeouts(NULL);
 	select_g_reconfigure();
 
 fini:
@@ -4760,6 +4764,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 
 	set_cluster_tres(false);
 	_update_parts();
+	power_save_set_timeouts(NULL);
 	select_g_reconfigure();
 
 	return SLURM_SUCCESS;
