@@ -4686,6 +4686,13 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 	int job_cnt;
 
+	/*
+	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
+	 * submit_time (Not begin). Accrue limits don't work with this flag.
+	 */
+	if (slurm_conf.priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
+		return;
+
 	/* check to see if we are enforcing limits */
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return;
@@ -4745,6 +4752,13 @@ extern void acct_policy_remove_accrue_time(job_record_t *job_ptr,
 	slurmdb_used_limits_t *used_limits_user = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
 	int job_cnt;
+
+	/*
+	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
+	 * submit_time (Not begin).  Accrue limits don't work with this flag.
+	 */
+	if (slurm_conf.priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
+		return;
 
 	/* check to see if we are enforcing limits */
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
