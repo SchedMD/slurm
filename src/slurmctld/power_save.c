@@ -914,7 +914,7 @@ static int _init_power_config(void)
 	int i;
 	bool partition_suspend_time_set = false;
 	slurmctld_lock_t init_config_locks = {
-		.conf = READ_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK };
+		.conf = READ_LOCK, .node = WRITE_LOCK, .part = READ_LOCK };
 
 	last_config = slurm_conf.last_update;
 	last_work_scan  = 0;
