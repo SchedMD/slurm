@@ -758,6 +758,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->dynamic_conf = xstrdup(conf->dynamic_conf);
 	msg->dynamic_feature = xstrdup(conf->dynamic_feature);
 
+	msg->hostname = xstrdup(conf->hostname);
 	msg->node_name   = xstrdup (conf->node_name);
 	msg->version     = xstrdup(SLURM_VERSION_STRING);
 

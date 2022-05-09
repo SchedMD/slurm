@@ -1269,6 +1269,7 @@ extern void slurm_free_node_registration_status_msg(
 			acct_gather_energy_destroy(msg->energy);
 		xfree(msg->features_active);
 		xfree(msg->features_avail);
+		xfree(msg->hostname);
 		if (msg->gres_info)
 			free_buf(msg->gres_info);
 		xfree(msg->node_name);
