@@ -817,8 +817,12 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 				job->gres_detail_str[i]);
 	if (job->group_id == NO_VAL)
 		data_set_null(data_key_set(jd, "group_id"));
-	else
+	else {
 		data_set_int(data_key_set(jd, "group_id"), job->group_id);
+		data_set_string_own(
+			data_key_set(jd, "group_name"),
+			gid_to_string_or_null((gid_t) job->group_id));
+	}
 	if (job->job_id == NO_VAL)
 		data_set_null(data_key_set(jd, "job_id"));
 	else
