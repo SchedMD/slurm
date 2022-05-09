@@ -4746,7 +4746,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	set_node_comm_name(node_ptr,
 			   comm_name ? comm_name :
 			   xstrdup(reg_msg->node_name),
-			   xstrdup(reg_msg->node_name));
+			   xstrdup(reg_msg->hostname));
 
 	node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
 	update_feature_list(avail_feature_list, node_ptr->features,
