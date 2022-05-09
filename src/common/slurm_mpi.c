@@ -301,6 +301,19 @@ static int _mpi_init_locked(char **mpi_type)
 		plugin_names = list_create(xfree_ptr);
 		list_append(plugin_names,
 			    xstrdup_printf("%s/%s", mpi_char, *mpi_type));
+
+		/*
+		 * 2 versions after 22.05 this running_in_slurmctld() check can
+		 * be removed. Until then we still need to have the double load
+		 * of the symlink just incase a 21.08 srun is talking to a
+		 * 22.05+ slurmd.
+		 */
+		if (running_in_slurmctld()) {
+			/* Remove the PMIx symlink, so we don't load it twice */
+			list_delete_first(plugin_names,
+					  slurm_find_char_exact_in_list,
+					  "mpi/pmix");
+		}
 	} else {
 		debug("MPI: Loading all types");
 
