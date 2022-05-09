@@ -320,6 +320,8 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		else
 			n_last = -2;
 		for (j = n_first; j <= n_last; j++) {
+			if (!bit_test(nodes_bitmap, j))
+				continue;
 			(*sp_hl)[*count] = hostlist_create(NULL);
 			hostlist_push_host((*sp_hl)[*count],
 					   node_record_table_ptr[j]->name);
