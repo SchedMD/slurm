@@ -3133,7 +3133,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			slurm_get_ip_str(&addr, comm_name, INET6_ADDRSTRLEN);
 		}
 
-		hostname = auth_g_get_host(slurm_msg->auth_cred);
+		if (slurm_msg->protocol_version <= SLURM_21_08_PROTOCOL_VERSION)
+			hostname = auth_g_get_host(slurm_msg->auth_cred);
+		else
+			hostname = xstrdup(reg_msg->hostname);
 
 		set_node_comm_name(
 			node_ptr,

@@ -223,6 +223,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - Allow strings for JobId instead of only numerical JobId
     for GET job methods.
  -- Add switch/hpe_slingshot plugin.
+ -- cloud_reg_addrs - use hostname from slurmd rather than from munge
+    credential for NodeHostName.
 
 * Changes in Slurm 21.08.9
 ==========================
