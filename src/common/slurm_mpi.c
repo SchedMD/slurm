@@ -469,7 +469,7 @@ extern int mpi_process_env(char ***env)
 
 	xassert(env);
 
-	if (!(mpi_type = xstrdup(getenvp(*env, "SLURM_MPI_TYPE")))) {
+	if (!(mpi_type = getenvp(*env, "SLURM_MPI_TYPE"))) {
 		error("MPI: SLURM_MPI_TYPE environmental variable is not set.");
 		rc = SLURM_ERROR;
 		goto done;
@@ -486,7 +486,6 @@ extern int mpi_process_env(char ***env)
 		unsetenvp(*env, "SLURM_MPI_TYPE");
 
 done:
-	xfree(mpi_type);
 	return rc;
 }
 
