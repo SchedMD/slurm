@@ -647,22 +647,22 @@ extern int mpi_conf_recv_stepd(int fd)
 	len = ntohl(len);
 
 	/* We have no conf for this specific plugin. Sender sent empty buffer */
-	if (!len)
-		return SLURM_SUCCESS;
+	if (len) {
+		buf = init_buf(len);
+		safe_read(fd, get_buf_data(buf), len);
 
-	buf = init_buf(len);
-	safe_read(fd, get_buf_data(buf), len);
+		slurm_mutex_lock(&context_lock);
 
-	slurm_mutex_lock(&context_lock);
+		/*
+		 * As we are in the stepd, only 1 plugin is loaded, and we
+		 * always receive this conf before the plugin gets loaded
+		 */
+		mpi_confs = xcalloc(1, sizeof(*mpi_confs));
+		mpi_confs[0] = buf;
 
-	/*
-	 * As we are in the stepd, only 1 plugin is loaded, and we always
-	 * receive this conf before the plugin gets loaded
-	 */
-	mpi_confs = xcalloc(1, sizeof(*mpi_confs));
-	mpi_confs[0] = buf;
+		slurm_mutex_unlock(&context_lock);
 
-	slurm_mutex_unlock(&context_lock);
+	}
 	return SLURM_SUCCESS;
 rwfail:
 	FREE_NULL_BUFFER(buf);
