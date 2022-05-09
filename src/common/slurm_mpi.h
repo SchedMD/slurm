@@ -82,15 +82,10 @@ typedef struct {
  **********************************************************************/
 
 /*
- * Just load the requested plugin.  No explicit calls into the plugin
- * once loaded (just the implicit call to the plugin's init() function).
- *
- * The MPI module type is passed through an environment variable
- * SLURM_MPI_TYPE from the client.  There is no more official protocol.
  * This function will remove SLURM_MPI_TYPE from the environment variable
  * array "*env", if it exists and its value is "none".
  */
-extern int mpi_g_slurmstepd_init(char ***env);
+extern int mpi_process_env(char ***env);
 
 extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env);
 

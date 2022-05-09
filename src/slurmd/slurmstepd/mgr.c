@@ -1199,7 +1199,7 @@ job_manager(stepd_step_rec_t *job)
 
 	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT) &&
 	    (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
-	    (mpi_g_slurmstepd_init(&job->env) != SLURM_SUCCESS)) {
+	    (mpi_process_env(&job->env) != SLURM_SUCCESS)) {
 		rc = SLURM_MPI_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}

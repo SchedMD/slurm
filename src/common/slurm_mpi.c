@@ -462,7 +462,7 @@ static int _mpi_init(char **mpi_type)
 	return rc;
 }
 
-extern int mpi_g_slurmstepd_init(char ***env)
+extern int mpi_process_env(char ***env)
 {
 	int rc = SLURM_SUCCESS;
 	char *mpi_type;
