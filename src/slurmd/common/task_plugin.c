@@ -621,7 +621,7 @@ extern int task_str_to_cpuset(cpu_set_t *mask, const char* str)
 	int base = 0;
 
 	/* skip 0x, it's all hex anyway */
-	if (len > 1 && !memcmp(str, "0x", 2L))
+	if ((len > 1) && !memcmp(str, "0x", 2L))
 		str += 2;
 
 	CPU_ZERO(mask);
