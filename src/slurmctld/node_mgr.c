@@ -490,7 +490,7 @@ extern int load_all_node_state ( bool state_only )
 			config_ptr->cores = cores;
 			config_ptr->cpus = cpus;
 			config_ptr->feature = xstrdup(features);
-			config_ptr->gres = gres;
+			config_ptr->gres = xstrdup(gres);
 			config_ptr->node_bitmap = bit_alloc(node_record_count);
 			config_ptr->nodes = xstrdup(node_name);
 			config_ptr->real_memory = real_memory;
