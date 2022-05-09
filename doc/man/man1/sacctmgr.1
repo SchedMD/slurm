@@ -613,6 +613,10 @@ Display all coordinators for this account.
 .TP
 \fBWithDeleted\fR
 Display information with previously deleted data.
+Accounts that are deleted within 24 hours of being created and did not have
+a job run in the account during that time will be removed from the database.
+Otherwise, the account will be marked as deleted and will be viewable with
+the \fBWithDeleted\fR flag.
 .P
 NOTE: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
@@ -693,6 +697,10 @@ Display account names in a hierarchical fashion.
 .TP
 \fBWithDeleted\fR
 Display information with previously deleted data.
+Associations that are deleted within 24 hours of being created and did not have
+a job run in the association during that time will be removed from the database.
+Otherwise, the association will be marked as deleted and will be viewable with
+the \fBWithDeleted\fR flag.
 .IP
 
 .TP
@@ -975,6 +983,15 @@ configuration file for some Slurm\-managed cluster.
 .TP
 \fBRPC\fR=<\fIrpc_list\fR>
 Comma separated list of numeric RPC values.
+.IP
+
+.TP
+\fBWithDeleted\fR
+Display information with previously deleted data.
+Clusters that are deleted within 24 hours of being created and did not have
+a job run in the cluster during that time will be removed from the database.
+Otherwise, the cluster will be marked as deleted and will be viewable with
+the \fBWithDeleted\fR flag.
 .IP
 
 .TP
@@ -1297,6 +1314,15 @@ The name of the federation.
 .TP
 \fBTree\fR
 Display federations in a hierarchical fashion.
+.IP
+
+.TP
+\fBWithDeleted\fR
+Display information with previously deleted data.
+Federations that are deleted within 24 hours of being created will be removed
+from the database. Federations that were created more than 24 hours prior to
+the deletion request are just marked as deleted and will be viewable with
+the \fBWithDeleted\fR flag.
 .IP
 
 .SH "LIST/SHOW FEDERATION FORMAT OPTIONS"
@@ -1823,6 +1849,10 @@ shares on the system.
 .TP
 \fBWithDeleted\fR
 Display information with previously deleted data.
+A QOS that is deleted within 24 hours of being created and did not have
+a job run in the QOS during that time will be removed from the database.
+Otherwise, the QOS will be marked as deleted and will be viewable with
+the \fBWithDeleted\fR flag.
 .IP
 
 
@@ -2267,6 +2297,15 @@ Display the clusters percentage of resources.  If a resource hasn't
 been given to a cluster the resource will not be displayed with this flag.
 .IP
 
+.TP
+\fBWithDeleted\fR
+Display information with previously deleted data.
+Resources that are deleted within 24 hours of being created will be removed
+from the database. Resources that were created more than 24 hours prior to
+the deletion request are just marked as deleted and will be viewable with
+the \fBWithDeleted\fR flag.
+.IP
+
 .P
 NOTE:  Resource is used to define each resource configured on a system
 available for usage by Slurm clusters.
@@ -2507,6 +2546,10 @@ Display all accounts a user is coordinator for.
 .TP
 \fBWithDeleted\fR
 Display information with previously deleted data.
+Users that are deleted within 24 hours of being created and did not have
+a job run by the user during that time will be removed from the database.
+Otherwise, the user will be marked as deleted and will be viewable with
+the \fBWithDeleted\fR flag.
 .P
 NOTE: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
@@ -2573,6 +2616,15 @@ The name of a user for the WCKey.
 .TP
 \fBWCKey\fR
 Workload Characterization Key.
+.IP
+
+.TP
+\fBWithDeleted\fR
+Display information with previously deleted data.
+WCKeys that are deleted within 24 hours of being created and did not have
+a job run with the WCKey during that time will be removed from the database.
+Otherwise, the WCKey will be marked as deleted and will be viewable with
+the \fBWithDeleted\fR flag.
 .IP
 
 .SH "LIST/SHOW TRES"
