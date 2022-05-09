@@ -304,10 +304,6 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 		if (err_msg)
 			xstrfmtcat(*err_msg, "CPU binding outside of job step allocation, allocated CPUs are: %s.",
 				   avail_mask);
-		req->cpu_bind_type &= (~CPU_BIND_MAP);
-		req->cpu_bind_type |=   CPU_BIND_MASK;
-		xfree(req->cpu_bind);
-		req->cpu_bind = xstrdup(avail_mask);
 		rc = ESLURMD_CPU_BIND_ERROR;
 	}
 	return rc;
