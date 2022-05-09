@@ -283,7 +283,14 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 	int rc = SLURM_SUCCESS;
 
 	CPU_ZERO(&avail_cpus);
-	(void) task_str_to_cpuset(&avail_cpus, avail_mask);
+	if (task_str_to_cpuset(&avail_cpus, avail_mask)) {
+		char *err = "Failed to convert avail_mask into hex for CPU bind map";
+		error("%s", err);
+		if (err_msg)
+			xstrfmtcat(*err_msg, "%s", err);
+		return ESLURMD_CPU_BIND_ERROR;
+	}
+
 	tmp_map = xstrdup(req->cpu_bind);
 	tok = strtok_r(tmp_map, ",", &save_ptr);
 	while (tok) {
@@ -318,13 +325,27 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 	int rc = SLURM_SUCCESS;
 
 	CPU_ZERO(&avail_cpus);
-	(void) task_str_to_cpuset(&avail_cpus, avail_mask);
+	if (task_str_to_cpuset(&avail_cpus, avail_mask)) {
+		char *err = "Failed to convert avail_mask into hex for CPU bind mask";
+		error("%s", err);
+		if (err_msg)
+			xstrfmtcat(*err_msg, "%s", err);
+		return ESLURMD_CPU_BIND_ERROR;
+	}
+
 	tok = strtok_r(req->cpu_bind, ",", &save_ptr);
 	while (tok) {
 		int i, overlaps = 0;
 		char mask_str[CPU_SET_HEX_STR_SIZE];
 		CPU_ZERO(&task_cpus);
-		(void) task_str_to_cpuset(&task_cpus, tok);
+		if (task_str_to_cpuset(&task_cpus, tok)) {
+			char *err = "Failed to convert cpu bind string into hex for CPU bind mask";
+			error("%s", err);
+			if (err_msg)
+				xstrfmtcat(*err_msg, "%s", err);
+			xfree(new_mask);
+			return ESLURMD_CPU_BIND_ERROR;
+		}
 		for (i = 0; i < CPU_SETSIZE; i++) {
 			if (!CPU_ISSET(i, &task_cpus))
 				continue;
