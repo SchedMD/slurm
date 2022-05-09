@@ -157,7 +157,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
 	/* extract the selected mask from the list */
 	i = 0;
 	curstr = mstr;
-	while (*selstr && (*selstr != ',') && (i++ < (CPU_SETSIZE/4)))
+	while (*selstr && (*selstr != ',') && (++i < (1 + CPU_SETSIZE/4)))
 		*curstr++ = *selstr++;
 	*curstr = '\0';
 
