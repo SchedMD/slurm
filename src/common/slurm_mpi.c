@@ -478,9 +478,6 @@ extern int mpi_g_slurmstepd_init(char ***env)
 	log_flag(MPI, "%s: Environment before call:", __func__);
 	_log_env(*env);
 
-	if ((rc = _mpi_init(&mpi_type)) != SLURM_SUCCESS)
-		goto done;
-
 	/*
 	 * Unset env var so that "none" doesn't exist in salloc'ed env, but
 	 * still keep it in srun if not none.
@@ -616,6 +613,7 @@ extern int mpi_conf_send_stepd(int fd, uint32_t plugin_id)
 	int index;
 	bool have_conf;
 	uint32_t len = 0, ns;
+	char *mpi_type;
 
 	/* 0 shouldn't ever happen here. */
 	xassert(plugin_id);
@@ -624,8 +622,18 @@ extern int mpi_conf_send_stepd(int fd, uint32_t plugin_id)
 
 	if ((index = _plugin_idx(plugin_id)) < 0)
 		goto rwfail;
+
+	/* send the type over */
+	mpi_type = _plugin_type(index);
+	len = strlen(mpi_type);
+	safe_write(fd, &len, sizeof(len));
+	safe_write(fd, mpi_type, len);
+
 	if ((have_conf = (mpi_confs && mpi_confs[index])))
 		len = get_buf_offset(mpi_confs[index]);
+	else
+		len = 0;
+
 	ns = htonl(len);
 	safe_write(fd, &ns, sizeof(ns));
 	if (have_conf)
@@ -641,7 +649,14 @@ rwfail:
 extern int mpi_conf_recv_stepd(int fd)
 {
 	uint32_t len;
+	char *mpi_type = NULL;
 	buf_t *buf = NULL;
+	int rc;
+
+	safe_read(fd, &len, sizeof(len));
+	xassert(len);
+	mpi_type = xmalloc(len+1);
+	safe_read(fd, mpi_type, len);
 
 	safe_read(fd, &len, sizeof(len));
 	len = ntohl(len);
@@ -660,11 +675,20 @@ extern int mpi_conf_recv_stepd(int fd)
 		mpi_confs = xcalloc(1, sizeof(*mpi_confs));
 		mpi_confs[0] = buf;
 
+		rc = _mpi_init_locked(&mpi_type);
+
 		slurm_mutex_unlock(&context_lock);
 
-	}
+		if (rc != SLURM_SUCCESS)
+			goto rwfail;
+	} else if (_mpi_init(&mpi_type) != SLURM_SUCCESS)
+		goto rwfail;
+
+	xfree(mpi_type);
+
 	return SLURM_SUCCESS;
 rwfail:
+	xfree(mpi_type);
 	FREE_NULL_BUFFER(buf);
 	return SLURM_ERROR;
 }
