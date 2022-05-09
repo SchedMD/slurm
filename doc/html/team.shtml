@@ -97,6 +97,7 @@ new Slurm release.</p>
 <li>Phil Eckert (Lawrence Livermore National Laboratory)</li>
 <li>Robbert Eggermont (Delft University of Technology, Netherlands)</li>
 <li>Joey Ekstrom (Lawrence Livermore National Laboratory)</li>
+<li>Caden Ellis (SchedMD)</li>
 <li>Andrew Elwell</li>
 <li>Josh England (TGS Management Corporation)</li>
 <li>Kent Engstr&ouml;m  (National Supercomputer Centre, Sweden)</li>
@@ -115,6 +116,7 @@ new Slurm release.</p>
 <li>Raphael Geissert (Debian)</li>
 <li>Yiannis Georgiou (Bull)</li>
 <li>Albert Gil (SchedMD)</li>
+<li>Ben Glines (SchedMD)</li>
 <li>David Gloe (Cray)</li>
 <li>Armin Gr&ouml;&szlig;linger (University Passau, Germany)</li>
 <li>Mark Grondona (Lawrence Livermore National Laboratory)</li>
@@ -296,6 +298,6 @@ new Slurm release.</p>
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 2 May 2022</p>
+<p style="text-align:center;">Last modified 9 May 2022</p>
 
 <!--#include virtual="footer.txt"-->
