@@ -672,6 +672,7 @@ enum switch_plugin_type {
 	SWITCH_PLUGIN_GENERIC      = 101, /* Generic */
 	SWITCH_PLUGIN_CRAY         = 102, /* Cray */
 	/* 103 unused (originally used for NRT) */
+	SWITCH_PLUGIN_SLINGSHOT    = 104, /* HPE Slingshot */
 };
 
 enum select_jobdata_type {

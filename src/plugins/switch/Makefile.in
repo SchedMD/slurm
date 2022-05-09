@@ -91,6 +91,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @WITH_SWITCH_CRAY_ARIES_TRUE@am__append_1 = cray_aries
+@WITH_SWITCH_HPE_SLINGSHOT_TRUE@am__append_2 = hpe_slingshot
 subdir = src/plugins/switch
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -115,6 +116,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
+	$(top_srcdir)/auxdir/x_ac_hpe_slingshot.m4 \
 	$(top_srcdir)/auxdir/x_ac_http_parser.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_json.m4 \
@@ -199,7 +201,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = none cray_aries
+DIST_SUBDIRS = none cray_aries hpe_slingshot
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -273,6 +275,8 @@ HDF5_LDFLAGS = @HDF5_LDFLAGS@
 HDF5_LIBS = @HDF5_LIBS@
 HDF5_TYPE = @HDF5_TYPE@
 HDF5_VERSION = @HDF5_VERSION@
+HPE_SLINGSHOT_CFLAGS = @HPE_SLINGSHOT_CFLAGS@
+HPE_SLINGSHOT_LIBS = @HPE_SLINGSHOT_LIBS@
 HTTP_PARSER_CPPFLAGS = @HTTP_PARSER_CPPFLAGS@
 HTTP_PARSER_LDFLAGS = @HTTP_PARSER_LDFLAGS@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
@@ -463,7 +467,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = none $(am__append_1)
+SUBDIRS = none $(am__append_1) $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:

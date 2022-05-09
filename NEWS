@@ -222,6 +222,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - set default account org and desc to be account name.
  -- openapi/dbv0.0.38 - Allow strings for JobId instead of only numerical JobId
     for GET job methods.
+ -- Add switch/hpe_slingshot plugin.
 
 * Changes in Slurm 21.08.9
 ==========================

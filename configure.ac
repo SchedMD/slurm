@@ -285,6 +285,7 @@ fi
 AM_CONDITIONAL(BUILD_SVIEW, [test "x$ac_glib_test" = "xyes"] && [test "x$ac_gtk_test" = "xyes"])
 
 X_AC_CRAY
+X_AC_HPE_SLINGSHOT
 
 dnl checks for system services.
 dnl
@@ -611,6 +612,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/slurmctld/nonstop/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/cray_aries/Makefile
+		 src/plugins/switch/hpe_slingshot/Makefile
 		 src/plugins/switch/none/Makefile
 		 src/plugins/mpi/Makefile
 		 src/plugins/mpi/cray_shasta/Makefile

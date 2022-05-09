@@ -82,6 +82,7 @@ HIGHLIGHTS
     socket/core change, etc). Processes may still be running on excised nodes.
     Admin should take precautions when removing nodes that have jobs on running
     on them.
+ -- Add switch/hpe_slingshot plugin.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
