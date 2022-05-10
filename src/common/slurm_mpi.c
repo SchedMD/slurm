@@ -708,15 +708,19 @@ rwfail:
 
 extern int mpi_id_from_plugin_type(char *mpi_type)
 {
+	int id = -1;
 	xassert(g_context_cnt);
 
 	slurm_mutex_lock(&context_lock);
-	for (int i = 0; i < g_context_cnt; i++)
-		if (!xstrcmp(_plugin_type(i), mpi_type))
-			return *(ops[i].plugin_id);
+	for (int i = 0; i < g_context_cnt; i++) {
+		if (!xstrcmp(_plugin_type(i), mpi_type)) {
+			id = *(ops[i].plugin_id);
+			break;
+		}
+	}
 	slurm_mutex_unlock(&context_lock);
 
-	return -1;
+	return id;
 }
 
 extern int mpi_fini(void)
