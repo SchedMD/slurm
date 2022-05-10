@@ -118,7 +118,25 @@ void pack_header(header_t *header, buf_t *buffer)
 
 	pack16(header->version, buffer);
 
-	if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (header->version >= SLURM_22_05_PROTOCOL_VERSION) {
+		pack16(header->flags, buffer);
+		pack16(header->msg_index, buffer);
+		pack16(header->msg_type, buffer);
+		pack32(header->body_length, buffer);
+		pack16(header->forward.cnt, buffer);
+		if (header->forward.cnt > 0) {
+			packstr(header->forward.nodelist, buffer);
+			pack32(header->forward.timeout, buffer);
+			pack16(header->forward.tree_width, buffer);
+		}
+		pack16(header->ret_cnt, buffer);
+		if (header->ret_cnt > 0) {
+			_pack_ret_list(header->ret_list,
+				       header->ret_cnt, buffer,
+				       header->version);
+		}
+		slurm_pack_addr(&header->orig_addr, buffer);
+	} else if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(header->flags, buffer);
 		pack16(header->msg_index, buffer);
 		pack16(header->msg_type, buffer);
@@ -153,7 +171,29 @@ int unpack_header(header_t *header, buf_t *buffer)
 	header->ret_list = NULL;
 	safe_unpack16(&header->version, buffer);
 
-	if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (header->version >= SLURM_22_05_PROTOCOL_VERSION) {
+		safe_unpack16(&header->flags, buffer);
+		safe_unpack16(&header->msg_index, buffer);
+		safe_unpack16(&header->msg_type, buffer);
+		safe_unpack32(&header->body_length, buffer);
+		safe_unpack16(&header->forward.cnt, buffer);
+		if (header->forward.cnt > 0) {
+			safe_unpackstr(&header->forward.nodelist, buffer);
+			safe_unpack32(&header->forward.timeout, buffer);
+			safe_unpack16(&header->forward.tree_width, buffer);
+		}
+
+		safe_unpack16(&header->ret_cnt, buffer);
+		if (header->ret_cnt > 0) {
+			if (_unpack_ret_list(&(header->ret_list),
+					     header->ret_cnt, buffer,
+					     header->version))
+				goto unpack_error;
+		} else {
+			header->ret_list = NULL;
+		}
+		slurm_unpack_addr_no_alloc(&header->orig_addr, buffer);
+	} else if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&header->flags, buffer);
 		safe_unpack16(&header->msg_index, buffer);
 		safe_unpack16(&header->msg_type, buffer);
