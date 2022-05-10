@@ -19,7 +19,7 @@
 #undef GTK2_USE_TOOLTIP
 
 /* Make sure we get the 1.8 HDF5 API */
-#undef H5_NO_DEPRECATED_SYMBOLS
+#undef H5_USE_18_API
 
 /* Define to 1 if 3-dimensional architecture */
 #undef HAVE_3D

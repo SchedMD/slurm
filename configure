@@ -21137,7 +21137,7 @@ fi
 # because slurm uses the 1.8 API. By defining this CPP macro we get
 # the 1.8 API.
 
-$as_echo "#define H5_NO_DEPRECATED_SYMBOLS 1" >>confdefs.h
+$as_echo "#define H5_USE_18_API 1" >>confdefs.h
 
 
 #
