@@ -150,6 +150,7 @@ typedef struct agent_info {
 	uint16_t retry;			/* if set, keep trying */
 	thd_t *thread_struct;		/* thread structures */
 	bool get_reply;			/* flag if reply expected */
+	uid_t r_uid;			/* receiver UID */
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
 	void **msg_args_pptr;		/* RPC data to be used */
 	uint16_t protocol_version;	/* if set, use this version */
@@ -163,6 +164,7 @@ typedef struct task_info {
 	uint32_t *threads_active_ptr;	/* currently active thread ptr */
 	thd_t *thread_struct_ptr;	/* thread structures ptr */
 	bool get_reply;			/* flag if reply expected */
+	uid_t r_uid;			/* receiver UID */
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
 	void *msg_args_ptr;		/* ptr to RPC data to be used */
 	uint16_t protocol_version;	/* if set, use this version */
