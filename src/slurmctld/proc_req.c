@@ -244,6 +244,7 @@ extern void response_init(slurm_msg_t *resp, slurm_msg_t *msg)
 	resp->auth_index = msg->auth_index;
 	resp->conn = msg->conn;
 	resp->flags = msg->flags;
+	resp->hash_index = msg->hash_index;
 	resp->protocol_version = msg->protocol_version;
 	if (msg->auth_uid_set)
 		slurm_msg_set_r_uid(resp, msg->auth_uid);
