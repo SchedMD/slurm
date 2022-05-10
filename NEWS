@@ -228,6 +228,7 @@ documents those changes that are of interest to users and administrators.
  -- Store assoc usage in parent assoc when deleted to preserve account
     fairshare.
  -- CVE-2022-29501 - Prevent abuse of REQUEST_FORWARD_DATA.
+ -- CVE-2022-29502 - Correctly validate io keys.
 
 * Changes in Slurm 21.08.9
 ==========================

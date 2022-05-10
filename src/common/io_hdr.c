@@ -131,7 +131,8 @@ fail:
 	return n;
 }
 
-extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig)
+extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig,
+				uint32_t sig_len)
 {
 	debug2("Entering io_init_msg_validate");
 
@@ -144,7 +145,8 @@ extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig)
 		return SLURM_ERROR;
 	}
 
-	if (memcmp((void *) sig, (void *) msg->io_key, msg->io_key_len)) {
+	if (msg->io_key_len != sig_len ||
+	    memcmp((void *) sig, (void *) msg->io_key, msg->io_key_len)) {
 		error("Invalid IO init header signature");
 		return SLURM_ERROR;
 	}
