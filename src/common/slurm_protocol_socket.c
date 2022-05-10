@@ -190,17 +190,15 @@ ssize_t slurm_msg_sendto_timeout(int fd, char *buffer,
 	return len;
 }
 
-/* Send slurm message with timeout
- * RET message size (as specified in argument) or SLURM_ERROR on error */
-extern int slurm_send_timeout(int fd, char *buf, size_t size,
-			      uint32_t flags, int timeout)
+static int _send_timeout(int fd, char *buf, size_t size,
+			 uint32_t flags, int *timeout)
 {
 	int rc;
 	int sent = 0;
 	int fd_flags;
 	struct pollfd ufds;
 	struct timeval tstart;
-	int timeleft = timeout;
+	int timeleft = *timeout;
 	char temp[2];
 
 	ufds.fd     = fd;
@@ -212,7 +210,7 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 	gettimeofday(&tstart, NULL);
 
 	while (sent < size) {
-		timeleft = timeout - _tot_wait(&tstart);
+		timeleft = *timeout - _tot_wait(&tstart);
 		if (timeleft <= 0) {
 			debug("%s at %d of %zu, timeout", __func__, sent, size);
 			slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
@@ -307,8 +305,19 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 		slurm_seterrno(slurm_err);
 	}
 
+	*timeout = *timeout - _tot_wait(&tstart);
 	return sent;
 
+}
+
+/*
+ * Send slurm message with timeout
+ * RET message size (as specified in argument) or SLURM_ERROR on error
+ */
+extern int slurm_send_timeout(int fd, char *buf, size_t size,
+			      uint32_t flags, int timeout)
+{
+	return _send_timeout(fd, buf, size, flags, &timeout);
 }
 
 /* Get slurm message with timeout
