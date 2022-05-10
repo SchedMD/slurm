@@ -1863,7 +1863,9 @@ _print_options(void)
 	printf( "users       = %s\n", params.users );
 	printf( "verbose     = %d\n", params.verbose );
 
-	if ((params.verbose > 1) && params.job_list) {
+	if (params.verbose <= 1)
+		goto endit;
+	if (params.job_list) {
 		i = 0;
 		iterator = list_iterator_create( params.job_list );
 		while ( (job_step_id = list_next( iterator )) ) {
@@ -1880,7 +1882,7 @@ _print_options(void)
 	}
 
 
-	if ((params.verbose > 1) && params.name_list) {
+	if (params.name_list) {
 		i = 0;
 		iterator = list_iterator_create( params.name_list );
 		while ( (name = list_next( iterator )) ) {
@@ -1889,7 +1891,7 @@ _print_options(void)
 		list_iterator_destroy( iterator );
 	}
 
-	if ((params.verbose > 1) && params.licenses_list) {
+	if (params.licenses_list) {
 		i = 0;
 		iterator = list_iterator_create( params.licenses_list );
 		while ( (license = list_next( iterator )) ) {
@@ -1898,7 +1900,7 @@ _print_options(void)
 		list_iterator_destroy( iterator );
 	}
 
-	if ((params.verbose > 1) && params.part_list) {
+	if (params.part_list) {
 		i = 0;
 		iterator = list_iterator_create( params.part_list );
 		while ( (part = list_next( iterator )) ) {
@@ -1907,7 +1909,7 @@ _print_options(void)
 		list_iterator_destroy( iterator );
 	}
 
-	if ((params.verbose > 1) && params.state_list) {
+	if (params.state_list) {
 		i = 0;
 		iterator = list_iterator_create( params.state_list );
 		while ( (state_id = list_next( iterator )) ) {
@@ -1917,7 +1919,7 @@ _print_options(void)
 		list_iterator_destroy( iterator );
 	}
 
-	if ((params.verbose > 1) && params.step_list) {
+	if (params.step_list) {
 		char tmp_char[34];
 		i = 0;
 		iterator = list_iterator_create( params.step_list );
@@ -1944,7 +1946,7 @@ _print_options(void)
 		list_iterator_destroy( iterator );
 	}
 
-	if ((params.verbose > 1) && params.user_list) {
+	if (params.user_list) {
 		i = 0;
 		iterator = list_iterator_create( params.user_list );
 		while ( (user = list_next( iterator )) ) {
@@ -1952,7 +1954,7 @@ _print_options(void)
 		}
 		list_iterator_destroy( iterator );
 	}
-
+endit:
 	printf( "-----------------------------\n\n\n" );
 } ;
 
