@@ -22641,6 +22641,32 @@ $as_echo "$as_me: WARNING: unable to locate bpf header" >&2;}
         as_fn_error $? "unable to locate bpf header" "$LINENO" 5
       fi
     else
+      #Check for bpf defines existance added after original file creation
+      #in linux kernel release 3.18
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <linux/bpf.h>
+int
+main ()
+{
+int def_test;
+	    def_test = BPF_DEVCG_DEV_BLOCK;
+	    def_test = BPF_DEVCG_DEV_CHAR;
+	    def_test = BPF_F_ALLOW_OVERRIDE;
+	    def_test = BPF_OBJ_NAME_LEN;
+	    def_test = BPF_PROG_TYPE_CGROUP_DEVICE;
+	    def_test = BPF_PROG_ATTACH;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_bpf_define_presence=yes
+else
+  ac_bpf_define_presence=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 $as_echo "#define HAVE_BPF 1" >>confdefs.h
 
@@ -22650,7 +22676,7 @@ $as_echo "#define HAVE_BPF 1" >>confdefs.h
 
   fi
 
-   if test -n "$x_ac_cv_bpf_dir"; then
+   if test -n "$x_ac_cv_bpf_dir" && test "$ac_bpf_define_presence" = "yes"; then
   WITH_BPF_TRUE=
   WITH_BPF_FALSE='#'
 else

@@ -60,6 +60,19 @@ AC_DEFUN([X_AC_BPF], [
         AC_MSG_ERROR([unable to locate bpf header])
       fi
     else
+      #Check for bpf defines existance added after original file creation
+      #in linux kernel release 3.18
+      AC_LINK_IFELSE(
+	[AC_LANG_PROGRAM([[#include <linux/bpf.h>]],
+	  [[int def_test;
+	    def_test = BPF_DEVCG_DEV_BLOCK;
+	    def_test = BPF_DEVCG_DEV_CHAR;
+	    def_test = BPF_F_ALLOW_OVERRIDE;
+	    def_test = BPF_OBJ_NAME_LEN;
+	    def_test = BPF_PROG_TYPE_CGROUP_DEVICE;
+	    def_test = BPF_PROG_ATTACH;]])],
+	  [ac_bpf_define_presence=yes],
+	  [ac_bpf_define_presence=no])
       AC_DEFINE([HAVE_BPF], [1], [Define if you are compiling with bpf.])
       BPF_CPPFLAGS="-I$x_ac_cv_bpf_dir/include"
     fi
@@ -67,7 +80,7 @@ AC_DEFUN([X_AC_BPF], [
     AC_SUBST(BPF_CPPFLAGS)
   fi
 
-  AM_CONDITIONAL(WITH_BPF, test -n "$x_ac_cv_bpf_dir")
+  AM_CONDITIONAL(WITH_BPF, test -n "$x_ac_cv_bpf_dir" && test "$ac_bpf_define_presence" = "yes")
 ])
 
 AC_DEFUN([X_AC_DBUS],
