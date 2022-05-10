@@ -444,6 +444,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->threads_active = 0;
 	thread_ptr = xcalloc(agent_info_ptr->thread_count, sizeof(thd_t));
 	agent_info_ptr->thread_struct  = thread_ptr;
+	agent_info_ptr->r_uid = agent_arg_ptr->r_uid;
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
 	agent_info_ptr->msg_args_pptr  = &agent_arg_ptr->msg_args;
 	agent_info_ptr->protocol_version = agent_arg_ptr->protocol_version;
@@ -543,6 +544,7 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
 	task_info_ptr->threads_active_ptr= &agent_info_ptr->threads_active;
 	task_info_ptr->thread_struct_ptr = &agent_info_ptr->thread_struct[inx];
 	task_info_ptr->get_reply         = agent_info_ptr->get_reply;
+	task_info_ptr->r_uid = agent_info_ptr->r_uid;
 	task_info_ptr->msg_type          = agent_info_ptr->msg_type;
 	task_info_ptr->msg_args_ptr      = *agent_info_ptr->msg_args_pptr;
 	task_info_ptr->protocol_version  = agent_info_ptr->protocol_version;
@@ -1310,6 +1312,8 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	agent_arg_ptr->msg_type = agent_info_ptr->msg_type;
 	agent_arg_ptr->msg_args = *(agent_info_ptr->msg_args_pptr);
 	*(agent_info_ptr->msg_args_pptr) = NULL;
+
+	set_agent_arg_r_uid(agent_arg_ptr, agent_info_ptr->r_uid);
 
 	j = 0;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
