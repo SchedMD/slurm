@@ -322,11 +322,12 @@ void *agent(void *args)
 	/* start the watchdog thread */
 	slurm_thread_create(&thread_wdog, _wdog, agent_info_ptr);
 
-	log_flag(AGENT, "%s: New agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
+	log_flag(AGENT, "%s: New agent thread_count:%d threads_active:%d retry:%c get_reply:%c r_uid:%u msg_type:%s protocol_version:%hu",
 		 __func__, agent_info_ptr->thread_count,
 		 agent_info_ptr->threads_active,
 		 agent_info_ptr->retry ? 'T' : 'F',
 		 agent_info_ptr->get_reply ? 'T' : 'F',
+		 agent_info_ptr->r_uid,
 		 rpc_num2string(agent_arg_ptr->msg_type),
 		 agent_info_ptr->protocol_version);
 
