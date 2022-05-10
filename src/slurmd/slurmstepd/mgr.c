@@ -649,6 +649,7 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 		/* This should always be set to something else we have a bug. */
 		xassert(srun->protocol_version);
 		resp.protocol_version = srun->protocol_version;
+		slurm_msg_set_r_uid(&resp, srun->uid);
 
 		if (_send_srun_resp_msg(&resp, job->nnodes) != SLURM_SUCCESS)
 			error("Failed to send MESSAGE_TASK_EXIT: %m");
@@ -2485,6 +2486,7 @@ _send_launch_resp(stepd_step_rec_t *job, int rc)
 
 	slurm_msg_t_init(&resp_msg);
 	resp_msg.address	= srun->resp_addr;
+	slurm_msg_set_r_uid(&resp_msg, srun->uid);
 	resp_msg.protocol_version = srun->protocol_version;
 	resp_msg.data		= &resp;
 	resp_msg.msg_type	= RESPONSE_LAUNCH_TASKS;
