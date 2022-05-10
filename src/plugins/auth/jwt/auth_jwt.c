@@ -510,6 +510,18 @@ char *auth_p_get_host(auth_token_t *cred)
 	return NULL;
 }
 
+extern int auth_p_get_data(auth_token_t *cred, char **data, uint32_t *len)
+{
+	if (cred == NULL) {
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return SLURM_ERROR;
+	}
+
+	*data = NULL;
+	*len = 0;
+	return SLURM_SUCCESS;
+}
+
 int auth_p_pack(auth_token_t *cred, buf_t *buf, uint16_t protocol_version)
 {
 	char *pack_this = (thread_token) ? thread_token : token;

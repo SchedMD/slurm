@@ -385,6 +385,34 @@ char *auth_p_get_host(auth_credential_t *cred)
 }
 
 /*
+ * auth_p_verify() must be called first.
+ */
+extern int auth_p_get_data(auth_credential_t *cred, char **data, uint32_t *len)
+{
+	if (!cred || !cred->verified) {
+		/*
+		 * This xassert will trigger on a development build if
+		 * the calling path did not verify the credential first.
+		 */
+		xassert(!cred);
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return SLURM_ERROR;
+	}
+
+	xassert(cred->magic == MUNGE_MAGIC);
+
+	if (cred->data && cred->dlen) {
+		*data = xmalloc(cred->dlen);
+		memcpy(*data, cred->data, cred->dlen);
+		*len = cred->dlen;
+	} else {
+		*data = NULL;
+		*len = 0;
+	}
+	return SLURM_SUCCESS;
+}
+
+/*
  * Marshall a credential for transmission over the network, according to
  * Slurm's marshalling protocol.
  */

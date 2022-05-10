@@ -102,6 +102,7 @@ extern int auth_g_verify(void *cred, char *auth_info);
 extern uid_t auth_g_get_uid(void *cred);
 extern gid_t auth_g_get_gid(void *cred);
 extern char *auth_g_get_host(void *cred);
+extern int auth_g_get_data(void *cred, char **data, uint32_t *len);
 extern int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version);
 extern void *auth_g_unpack(buf_t *buf, uint16_t protocol_version);
 

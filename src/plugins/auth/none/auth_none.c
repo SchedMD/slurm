@@ -218,6 +218,19 @@ char *auth_p_get_host(auth_credential_t *cred)
 	return xstrdup(cred->hostname);
 }
 
+extern int auth_p_get_data(auth_credential_t *cred, char **data, uint32_t *len)
+{
+	if (!cred) {
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return SLURM_ERROR;
+	}
+
+	*data = NULL;
+	*len = 0;
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Marshall a credential for transmission over the network, according to
  * Slurm's marshalling protocol.
