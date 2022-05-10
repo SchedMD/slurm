@@ -227,6 +227,7 @@ documents those changes that are of interest to users and administrators.
     credential for NodeHostName.
  -- Store assoc usage in parent assoc when deleted to preserve account
     fairshare.
+ -- CVE-2022-29501 - Prevent abuse of REQUEST_FORWARD_DATA.
 
 * Changes in Slurm 21.08.9
 ==========================
