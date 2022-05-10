@@ -64,6 +64,7 @@ typedef struct {
 	slurm_addr_t ioaddr;       /* Address to connect on for normal I/O.
 				      Spawn IO uses messages to the normal
 				      resp_addr. */
+	uid_t uid;		   /* user id for job */
 	uint16_t protocol_version; /* protocol_version of the srun */
 } srun_info_t;
 
