@@ -4499,15 +4499,16 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	if (!details_ptr->accrue_time && !IS_JOB_PENDING(job_ptr))
 		return SLURM_SUCCESS;
 
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
 		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
 		      __func__, job_ptr);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto endit;
 	}
-
-	if (!assoc_mgr_locked)
-		assoc_mgr_lock(&locks);
 
 	qos_ptr = job_ptr->qos_ptr;
 	if (qos_ptr) {
@@ -4720,15 +4721,15 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 	if (!IS_JOB_PENDING(job_ptr))
 		return;
 
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
 		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
 		      __func__, job_ptr);
-		return;
+		goto endit;
 	}
-
-	if (!assoc_mgr_locked)
-		assoc_mgr_lock(&locks);
 
 	qos_ptr = job_ptr->qos_ptr;
 	if (qos_ptr) {
@@ -4754,6 +4755,7 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 				  used_limits_acct,
 				  used_limits_user,
 				  job_cnt);
+endit:
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 }
@@ -4843,15 +4845,15 @@ extern uint32_t acct_policy_get_prio_thresh(job_record_t *job_ptr,
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return 0;
 
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
 		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
 		      __func__, job_ptr);
-		return 0;
+		goto endit;
 	}
-
-	if (!assoc_mgr_locked)
-		assoc_mgr_lock(&locks);
 
 	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
@@ -4863,6 +4865,7 @@ extern uint32_t acct_policy_get_prio_thresh(job_record_t *job_ptr,
 
 	_get_prio_thresh(&prio_thresh, assoc_ptr->min_prio_thresh);
 
+endit:
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 
