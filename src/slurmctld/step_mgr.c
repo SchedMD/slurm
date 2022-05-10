@@ -2924,6 +2924,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t task_dist;
 	uint32_t max_tasks;
 	uint32_t jobid;
+	uint32_t over_time_limit;
 	slurm_step_layout_t *step_layout = NULL;
 	bool tmp_step_layout_used = false;
 #ifdef HAVE_NATIVE_CRAY
@@ -2961,8 +2962,16 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		return ESLURM_DUPLICATE_JOB_ID;
 	}
 
+	/* Get OverTimeLimit from job's partition if set, or globally. */
+	if (job_ptr->part_ptr &&
+	    (job_ptr->part_ptr->over_time_limit != NO_VAL16))
+		over_time_limit = job_ptr->part_ptr->over_time_limit;
+	else
+		over_time_limit = slurm_conf.over_time_limit;
+
 	if (IS_JOB_FINISHED(job_ptr) ||
-	    ((job_ptr->end_time <= time(NULL)) && !IS_JOB_CONFIGURING(job_ptr)))
+	    (((job_ptr->end_time + (over_time_limit * 60)) <= time(NULL)) &&
+	     !IS_JOB_CONFIGURING(job_ptr)))
 		return ESLURM_ALREADY_DONE;
 
 	if (job_ptr->details->prolog_running)
