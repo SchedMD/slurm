@@ -933,6 +933,7 @@ static void *_thread_per_group_rpc(void *args)
 
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
+	slurm_msg_set_r_uid(&msg, task_ptr->r_uid);
 
 	if (thread_ptr->nodename)
 		log_flag(AGENT, "%s: sending %s to %s", __func__,
