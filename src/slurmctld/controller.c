@@ -1894,6 +1894,7 @@ static void _queue_reboot_msg(void)
 				reboot_agent_args->hostlist);
 		debug("Issuing reboot request for nodes %s", host_str);
 		xfree(host_str);
+		set_agent_arg_r_uid(reboot_agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(reboot_agent_args);
 		last_node_update = now;
 		schedule_node_save();

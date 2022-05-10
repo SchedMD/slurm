@@ -2073,6 +2073,7 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	forward_init(&request_msg->forward);
 	request_msg->ret_list = NULL;
 	request_msg->forward_struct = NULL;
+	slurm_msg_set_r_uid(request_msg, SLURM_AUTH_UID_ANY);
 
 tryagain:
 	retry = 1;
@@ -2793,6 +2794,7 @@ extern int slurm_forward_data(
 	req.len = len;
 	req.data = (char *)data;
 
+	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
 	msg.msg_type = REQUEST_FORWARD_DATA;
 	msg.data = &req;
 

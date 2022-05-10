@@ -444,6 +444,7 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 		agent_arg_ptr->msg_type = REQUEST_JOB_NOTIFY;
 		agent_arg_ptr->msg_args = (void *) notify_msg_ptr;
 		/* Launch the RPC via agent */
+		set_agent_arg_r_uid(agent_arg_ptr, SLURM_AUTH_UID_ANY);
 		agent_queue_request(agent_arg_ptr);
 		return SLURM_SUCCESS;
 	}

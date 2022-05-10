@@ -590,6 +590,7 @@ extern int slurm_job_step_stat(slurm_step_id_t *step_id,
 	      __func__, step_id, node_list);
 
 	slurm_msg_t_init(&req_msg);
+	slurm_msg_set_r_uid(&req_msg, SLURM_AUTH_UID_ANY);
 
 	memcpy(&req, step_id, sizeof(req));
 	memcpy(&resp_out->step_id, step_id, sizeof(resp_out->step_id));
@@ -701,6 +702,7 @@ extern int slurm_job_step_get_pids(slurm_step_id_t *step_id,
 	      __func__, step_id, node_list);
 
 	slurm_msg_t_init(&req_msg);
+	slurm_msg_set_r_uid(&req_msg, SLURM_AUTH_UID_ANY);
 
 	memcpy(&req, step_id, sizeof(req));
 	memcpy(&resp_out->step_id, step_id, sizeof(resp_out->step_id));

@@ -6289,6 +6289,7 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 	signal_tasks_msg->signal = signal;
 
 	agent_args->msg_args = signal_tasks_msg;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }
@@ -14992,6 +14993,7 @@ static void _send_job_kill(job_record_t *job_ptr)
 	kill_job->nodes = xstrdup(job_ptr->nodes);
 
 	agent_args->msg_args = kill_job;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }
@@ -15386,6 +15388,7 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	agent_info->msg_type	= REQUEST_ABORT_JOB;
 	agent_info->msg_args	= kill_req;
 
+	set_agent_arg_r_uid(agent_info, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_info);
 }
 
@@ -15440,6 +15443,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 		agent_info->msg_type	= REQUEST_ABORT_JOB;
 		agent_info->msg_args	= kill_req;
 		agent_info->protocol_version = protocol_version;
+		set_agent_arg_r_uid(agent_info, SLURM_AUTH_UID_ANY);
 		agent_queue_request(agent_info);
 		bit_free(tmp_node_bitmap);
 	}
@@ -15480,6 +15484,7 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	agent_info->msg_type	= REQUEST_TERMINATE_JOB;
 	agent_info->msg_args	= kill_req;
 
+	set_agent_arg_r_uid(agent_info, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_info);
 }
 
@@ -16532,6 +16537,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	}
 
 	agent_args->msg_args = signal_job_msg;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }
@@ -16611,6 +16617,7 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	}
 
 	agent_args->msg_args = sus_ptr;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
 }

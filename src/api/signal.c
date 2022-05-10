@@ -59,6 +59,7 @@ static int _local_send_recv_rc_msgs(const char *nodelist,
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
 
 	slurm_msg_t_init(msg);
+	slurm_msg_set_r_uid(msg, SLURM_AUTH_UID_ANY);
 	msg->msg_type = type;
 	msg->data = data;
 
