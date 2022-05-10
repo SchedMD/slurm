@@ -95,7 +95,8 @@ extern int slurm_auth_index(void *cred);
 /*
  * Static bindings for the global authentication context.
  */
-extern void *auth_g_create(int index, char *auth_info, uid_t r_uid);
+extern void *auth_g_create(int index, char *auth_info, uid_t r_uid,
+			   void *data, int dlen);
 extern int auth_g_destroy(void *cred);
 extern int auth_g_verify(void *cred, char *auth_info);
 extern uid_t auth_g_get_uid(void *cred);

@@ -103,7 +103,8 @@ typedef struct {
 	gid_t   gid;       /* GID. valid only if verified == true            */
 } auth_credential_t;
 
-extern auth_credential_t *auth_p_create(char *opts, uid_t r_uid);
+extern auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data,
+					int dlen);
 extern int auth_p_destroy(auth_credential_t *cred);
 
 /* Static prototypes */
@@ -134,7 +135,7 @@ int init(void)
 		char *socket = slurm_auth_opts_to_socket(slurm_conf.authinfo);
 		uid_t uid = getuid() + 1;
 
-		cred = auth_p_create(slurm_conf.authinfo, uid);
+		cred = auth_p_create(slurm_conf.authinfo, uid, NULL, 0);
 		if (!_decode_cred(cred, socket, true)) {
 			error("MUNGE allows root to decode any credential");
 			rc = SLURM_ERROR;
@@ -152,7 +153,7 @@ int init(void)
  * allocate a credential.  Whether the credential is populated with useful
  * data at this time is implementation-dependent.
  */
-auth_credential_t *auth_p_create(char *opts, uid_t r_uid)
+auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data, int dlen)
 {
 	int rc, retry = RETRY_COUNT, auth_ttl;
 	auth_credential_t *cred = NULL;

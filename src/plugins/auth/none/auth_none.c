@@ -138,7 +138,8 @@ extern int fini(void)
  * Allocate and initializes a credential.  This function should return
  * NULL if it cannot allocate a credential.
  */
-auth_credential_t *auth_p_create(char *auth_info, uid_t r_uid)
+auth_credential_t *auth_p_create(char *auth_info, uid_t r_uid,
+				 void *data, int dlen)
 {
 	auth_credential_t *cred = xmalloc(sizeof(*cred));
 

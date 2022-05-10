@@ -1733,10 +1733,10 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 */
 	if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
 		auth_cred = auth_g_create(msg->auth_index, _global_auth_key(),
-					  msg->restrict_uid);
+					  msg->restrict_uid, NULL, 0);
 	} else {
 		auth_cred = auth_g_create(msg->auth_index, slurm_conf.authinfo,
-					  msg->restrict_uid);
+					  msg->restrict_uid, NULL, 0);
 	}
 
 	if (msg->forward.init != FORWARD_INIT) {
@@ -1754,11 +1754,11 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
 			auth_cred = auth_g_create(msg->auth_index,
 						  _global_auth_key(),
-						  msg->restrict_uid);
+						  msg->restrict_uid, NULL, 0);
 		} else {
 			auth_cred = auth_g_create(msg->auth_index,
 						  slurm_conf.authinfo,
-						  msg->restrict_uid);
+						  msg->restrict_uid, NULL, 0);
 		}
 	}
 	if (auth_cred == NULL) {
