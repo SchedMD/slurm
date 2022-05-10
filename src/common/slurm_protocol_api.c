@@ -2613,6 +2613,12 @@ extern void slurm_free_msg(slurm_msg_t *msg)
 	}
 }
 
+extern void slurm_msg_set_r_uid(slurm_msg_t *msg, uid_t r_uid)
+{
+	msg->restrict_uid = r_uid;
+	msg->restrict_uid_set = true;
+}
+
 extern char *nodelist_nth_host(const char *nodelist, int inx)
 {
 	hostlist_t hl = hostlist_create(nodelist);

@@ -572,6 +572,8 @@ extern int *set_span(int total, uint16_t tree_width);
 extern void slurm_free_msg_members(slurm_msg_t *msg);
 extern void slurm_free_msg(slurm_msg_t * msg);
 
+extern void slurm_msg_set_r_uid(slurm_msg_t *msg, uid_t r_uid);
+
 /* must free this memory with free not xfree */
 extern char *nodelist_nth_host(const char *nodelist, int inx);
 extern int nodelist_find(const char *nodelist, const char *name);
