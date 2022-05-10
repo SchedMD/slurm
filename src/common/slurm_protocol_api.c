@@ -1062,6 +1062,8 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 	 */
 	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
 		rc = errno;
+		if (!rc)
+			rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 		goto endit;
 	}
 
