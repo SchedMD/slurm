@@ -394,7 +394,7 @@ rwfail:
  */
 int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
 		 slurm_addr_t *respaddr, void *job_cred_sig, uint32_t sig_len,
-		 reattach_tasks_response_msg_t *resp)
+		 uid_t uid, reattach_tasks_response_msg_t *resp)
 {
 	int req = REQUEST_ATTACH;
 	int rc = SLURM_SUCCESS;
