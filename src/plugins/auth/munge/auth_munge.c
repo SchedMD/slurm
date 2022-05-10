@@ -207,7 +207,7 @@ auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data, int dlen)
 	ohandler = xsignal(SIGALRM, (SigFunc *)SIG_BLOCK);
 
 again:
-	err = munge_encode(&cred->m_str, ctx, NULL, 0);
+	err = munge_encode(&cred->m_str, ctx, data, dlen);
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {
 			debug("Munge encode failed: %s (retrying ...)",
@@ -502,7 +502,7 @@ static int _decode_cred(auth_credential_t *c, char *socket, bool test)
 	}
 
 again:
-	err = munge_decode(c->m_str, ctx, NULL, NULL, &c->uid, &c->gid);
+	err = munge_decode(c->m_str, ctx, &c->data, &c->dlen, &c->uid, &c->gid);
 	if (err != EMUNGE_SUCCESS) {
 		if (test)
 			goto done;
