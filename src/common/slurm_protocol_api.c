@@ -1691,35 +1691,13 @@ total_return:
 \**********************************************************************/
 
 /*
- *  Do the wonderful stuff that needs be done to pack msg
- *  and hdr into buffer
- */
-static void _pack_msg(slurm_msg_t *msg, header_t *hdr, buf_t *buffer)
-{
-	unsigned int tmplen, msglen;
-
-	tmplen = get_buf_offset(buffer);
-	pack_msg(msg, buffer);
-	msglen = get_buf_offset(buffer) - tmplen;
-
-	/* update header with correct cred and msg lengths */
-	update_header(hdr, msglen);
-
-	/* repack updated header */
-	tmplen = get_buf_offset(buffer);
-	set_buf_offset(buffer, 0);
-	pack_header(hdr, buffer);
-	set_buf_offset(buffer, tmplen);
-}
-
-/*
  *  Send a slurm message over an open file descriptor `fd'
  *    Returns the size of the message sent in bytes, or -1 on failure.
  */
 int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 {
 	header_t header;
-	buf_t *buffer;
+	msg_bufs_t buffers = { 0 };
 	int      rc;
 	void *   auth_cred;
 	time_t   start_time = time(NULL);
@@ -1727,6 +1705,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 
 	if (msg->conn) {
 		persist_msg_t persist_msg;
+		buf_t *buffer;
 
 		memset(&persist_msg, 0, sizeof(persist_msg_t));
 		persist_msg.msg_type  = msg->msg_type;
@@ -1759,6 +1738,15 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	if (!msg->restrict_uid_set)
 		fatal("%s: restrict_uid is not set", __func__);
 	memcpy(auth_payload + 1, &msg->msg_type, sizeof(msg->msg_type));
+	/*
+	 * Pack message into buffer
+	 */
+	buffers.body = init_buf(BUF_SIZE);
+	pack_msg(msg, buffers.body);
+	log_flag_hex(NET_RAW, get_buf_data(buffers.body),
+		     get_buf_offset(buffers.body),
+		     "%s: packed body", __func__);
+
 	/*
 	 * Initialize header with Auth credential and message type.
 	 * We get the credential now rather than later so the work can
@@ -1805,42 +1793,45 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	if (auth_cred == NULL) {
 		error("%s: auth_g_create: %s has authentication error",
 		      __func__, rpc_num2string(msg->msg_type));
+		free_buf(buffers.body);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 
 	init_header(&header, msg, msg->flags);
 
 	/*
-	 * Pack header into buffer for transmission
-	 */
-	buffer = init_buf(BUF_SIZE);
-	pack_header(&header, buffer);
-
-	/*
 	 * Pack auth credential
 	 */
-	rc = auth_g_pack(auth_cred, buffer, header.version);
+	buffers.auth = init_buf(BUF_SIZE);
+
+	rc = auth_g_pack(auth_cred, buffers.auth, header.version);
 	if (rc) {
 		error("%s: auth_g_pack: %s has  authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
 		(void) auth_g_destroy(auth_cred);
-		free_buf(buffer);
+		free_buf(buffers.auth);
+		free_buf(buffers.body);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 	(void) auth_g_destroy(auth_cred);
+	log_flag_hex(NET_RAW, get_buf_data(buffers.auth),
+		     get_buf_offset(buffers.auth),
+		     "%s: packed auth_cred", __func__);
 
 	/*
-	 * Pack message into buffer
+	 * Pack header into buffer for transmission
 	 */
-	_pack_msg(msg, &header, buffer);
-	log_flag_hex(NET_RAW, get_buf_data(buffer), get_buf_offset(buffer),
-		     "%s: packed", __func__);
+	update_header(&header, get_buf_offset(buffers.body));
+	buffers.header = init_buf(BUF_SIZE);
+	pack_header(&header, buffers.header);
+	log_flag_hex(NET_RAW, get_buf_data(buffers.header),
+		     get_buf_offset(buffers.header),
+		     "%s: packed header", __func__);
 
 	/*
 	 * Send message
 	 */
-	rc = slurm_msg_sendto(fd, get_buf_data(buffer),
-			      get_buf_offset(buffer));
+	rc = slurm_bufs_sendto(fd, buffers);
 
 	if ((rc < 0) && (errno == ENOTCONN)) {
 		log_flag(NET, "%s: peer has disappeared for msg_type=%u",
@@ -1858,7 +1849,9 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 			      msg->msg_type);
 	}
 
-	free_buf(buffer);
+	free_buf(buffers.header);
+	free_buf(buffers.auth);
+	free_buf(buffers.body);
 	return rc;
 }
 
