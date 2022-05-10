@@ -1291,6 +1291,160 @@ total_return:
 
 }
 
+extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
+{
+	char *buf = NULL;
+	size_t buflen = 0;
+	header_t header;
+	int rc;
+	void *auth_cred = NULL;
+	slurm_msg_t msg;
+	buf_t *buffer;
+	ret_data_info_t *ret_data_info = NULL;
+	List ret_list = NULL;
+	int orig_timeout = timeout;
+
+	xassert(fd >= 0);
+
+	slurm_msg_t_init(&msg);
+	msg.conn_fd = fd;
+
+	if (timeout <= 0) {
+		/* convert secs to msec */
+		timeout = slurm_conf.msg_timeout * 1000;
+		orig_timeout = timeout;
+	}
+
+	if (steps) {
+		if (message_timeout < 0)
+			message_timeout = slurm_conf.msg_timeout * 1000;
+		orig_timeout = timeout - (message_timeout * (steps - 1));
+		orig_timeout /= steps;
+		steps--;
+	}
+
+	log_flag(NET, "%s: orig_timeout was %d we have %d steps and a timeout of %d",
+		 __func__, orig_timeout, steps, timeout);
+	/*
+	 * Compare to the orig_timeout here, because that is what we are
+	 * going to wait for each step.
+	 */
+	if (orig_timeout >= (slurm_conf.msg_timeout * 10000)) {
+		log_flag(NET, "%s: Sending a message with timeouts greater than %d seconds, requested timeout is %d seconds",
+			 __func__, (slurm_conf.msg_timeout * 10),
+			 (timeout / 1000));
+	} else if (orig_timeout < 1000) {
+		log_flag(NET, "%s: Sending a message with a very short timeout of %d milliseconds, each step in the tree has %d milliseconds",
+			 __func__, timeout, orig_timeout);
+	}
+
+	/*
+	 * Receive a msg. slurm_msg_recvfrom_timeout() will read the message
+	 * length and allocate space on the heap for a buffer containing the
+	 * message.
+	 */
+	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+		forward_init(&header.forward);
+		rc = errno;
+		goto total_return;
+	}
+
+	log_flag_hex(NET_RAW, buf, buflen, "%s: read", __func__);
+	buffer = create_buf(buf, buflen);
+
+	if (unpack_header(&header, buffer) == SLURM_ERROR) {
+		free_buf(buffer);
+		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
+		goto total_return;
+	}
+
+	if (check_header_version(&header) < 0) {
+		slurm_addr_t resp_addr;
+		if (!slurm_get_peer_addr(fd, &resp_addr)) {
+			error("%s: Invalid Protocol Version %u from at %pA",
+			      __func__, header.version, &resp_addr);
+		} else {
+			error("%s: Invalid Protocol Version %u from problem connection: %m",
+			      __func__, header.version);
+		}
+
+		free_buf(buffer);
+		rc = SLURM_PROTOCOL_VERSION_ERROR;
+		goto total_return;
+	}
+
+	if (header.ret_cnt > 0) {
+		if (header.ret_list)
+			ret_list = header.ret_list;
+		else
+			ret_list = list_create(destroy_data_info);
+		header.ret_cnt = 0;
+		header.ret_list = NULL;
+	}
+
+	/* Forward message to other nodes */
+	if (header.forward.cnt > 0) {
+		error("%s: We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		      __func__);
+	}
+
+	/*
+	 * Skip credential verification here. This is on the reply path, so the
+	 * connections have been previously verified in the opposite direction.
+	 */
+	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
+		error("%s: auth_g_unpack: %m", __func__);
+		free_buf(buffer);
+		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+		goto total_return;
+	}
+	auth_g_destroy(auth_cred);
+
+	/*
+	 * Unpack message body
+	 */
+	msg.protocol_version = header.version;
+	msg.msg_type = header.msg_type;
+	msg.flags = header.flags;
+
+	if ((header.body_length > remaining_buf(buffer)) ||
+	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
+		free_buf(buffer);
+		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
+		goto total_return;
+	}
+	free_buf(buffer);
+	rc = SLURM_SUCCESS;
+
+total_return:
+	destroy_forward(&header.forward);
+
+	if (rc != SLURM_SUCCESS) {
+		if (ret_list) {
+			ret_data_info = xmalloc(sizeof(ret_data_info_t));
+			ret_data_info->err = rc;
+			ret_data_info->type = RESPONSE_FORWARD_FAILED;
+			ret_data_info->data = NULL;
+			list_push(ret_list, ret_data_info);
+		}
+
+		error("%s: failed: %s", __func__, slurm_strerror(rc));
+		usleep(10000);	/* Discourage brute force attack */
+	} else {
+		if (!ret_list)
+			ret_list = list_create(destroy_data_info);
+		ret_data_info = xmalloc(sizeof(ret_data_info_t));
+		ret_data_info->err = rc;
+		ret_data_info->node_name = NULL;
+		ret_data_info->type = msg.msg_type;
+		ret_data_info->data = msg.data;
+		list_push(ret_list, ret_data_info);
+	}
+
+	errno = rc;
+	return ret_list;
+}
+
 /*
  * Try to determine the UID associated with a message with different
  * message header version, return INFINITE ((uid_t) -1) if we can't tell.

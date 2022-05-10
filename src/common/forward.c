@@ -244,7 +244,7 @@ void *_forward_thread(void *arg)
 			/*      steps, fwd_msg->timeout); */
 		}
 
-		ret_list = slurm_receive_msgs(fd, steps, fwd_msg->timeout);
+		ret_list = slurm_receive_resp_msgs(fd, steps, fwd_msg->timeout);
 		/* info("sent %d forwards got %d back", */
 		/*      fwd_msg->header.forward.cnt, list_count(ret_list)); */
 

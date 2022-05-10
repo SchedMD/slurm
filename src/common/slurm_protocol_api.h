@@ -277,6 +277,7 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout);
  *                errno set.
  */
 List slurm_receive_msgs(int fd, int steps, int timeout);
+extern List slurm_receive_resp_msgs(int fd, int steps, int timeout);
 
 /*
  *  Receive a slurm message on the open slurm descriptor "fd". This will also
