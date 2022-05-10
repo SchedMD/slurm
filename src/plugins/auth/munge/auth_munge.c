@@ -101,6 +101,8 @@ typedef struct {
 	bool    verified;  /* true if this cred has been verified            */
 	uid_t   uid;       /* UID. valid only if verified == true            */
 	gid_t   gid;       /* GID. valid only if verified == true            */
+	void *data;        /* payload data */
+	int dlen;          /* payload data length */
 } auth_credential_t;
 
 extern auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data,
@@ -193,6 +195,8 @@ auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data, int dlen)
 	cred->magic = MUNGE_MAGIC;
 	cred->verified = false;
 	cred->m_str    = NULL;
+	cred->data = NULL;
+	cred->dlen = 0;
 
 	/*
 	 *  Temporarily block SIGALARM to avoid misleading
@@ -249,6 +253,8 @@ int auth_p_destroy(auth_credential_t *cred)
 	/* Note: Munge cred string not encoded with xmalloc() */
 	if (cred->m_str)
 		free(cred->m_str);
+	if (cred->data)
+		free(cred->data);
 
 	xfree(cred);
 	return SLURM_SUCCESS;
