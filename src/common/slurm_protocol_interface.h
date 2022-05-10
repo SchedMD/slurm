@@ -88,6 +88,15 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **buf,
 extern ssize_t slurm_msg_sendto(int open_fd,
 				char *buffer,
 				size_t size);
+
+/*
+ * Send message over the given connection, default timeout value
+ * IN open_fd - an open file descriptor
+ * IN buffer - array of buffers to transmit
+ * RET number of bytes written
+ */
+extern size_t slurm_bufs_sendto(int fd, msg_bufs_t buffer);
+
 /* slurm_msg_sendto_timeout is identical to _slurm_msg_sendto except
  * IN timeout - maximum time to wait for a message in milliseconds */
 extern ssize_t slurm_msg_sendto_timeout(int open_fd,

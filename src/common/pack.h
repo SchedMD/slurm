@@ -79,6 +79,12 @@ typedef struct {
 #define remaining_buf(__buf)		(__buf->size - __buf->processed)
 #define size_buf(__buf)			(__buf->size)
 
+typedef struct {
+	buf_t *header;
+	buf_t *auth;
+	buf_t *body;
+} msg_bufs_t;
+
 extern buf_t *create_buf(char *data, uint32_t size);
 extern buf_t *create_mmap_buf(const char *file);
 extern void free_buf(buf_t *my_buf);

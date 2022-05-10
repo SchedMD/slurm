@@ -320,6 +320,54 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 	return _send_timeout(fd, buf, size, flags, &timeout);
 }
 
+extern size_t slurm_bufs_sendto(int fd, msg_bufs_t buffer)
+{
+	int len;
+	int part_len;
+	size_t size = 0;
+	uint32_t usize;
+	SigFunc *ohandler;
+	int timeout = slurm_conf.msg_timeout * 1000;
+
+	/*
+	 * Ignore SIGPIPE so that send can return a error code if the other
+	 * side closes the socket
+	 */
+	ohandler = xsignal(SIGPIPE, SIG_IGN);
+
+	size += get_buf_offset(buffer.header);
+	size += get_buf_offset(buffer.auth);
+	size += get_buf_offset(buffer.body);
+
+	usize = htonl(size);
+
+	if ((len = _send_timeout(fd, (char *) &usize, sizeof(usize), 0,
+				 &timeout)) < 0)
+		goto done;
+
+	if ((part_len = _send_timeout(fd, get_buf_data(buffer.header),
+				      get_buf_offset(buffer.header), 0,
+				      &timeout)) < 0)
+			goto done;
+	len += part_len;
+
+	if ((part_len = _send_timeout(fd, get_buf_data(buffer.auth),
+				      get_buf_offset(buffer.auth), 0,
+				      &timeout)) < 0)
+			goto done;
+	len += part_len;
+
+	if ((part_len = _send_timeout(fd, get_buf_data(buffer.body),
+				      get_buf_offset(buffer.body), 0,
+				      &timeout)) < 0)
+			goto done;
+	len += part_len;
+
+done:
+	xsignal(SIGPIPE, ohandler);
+	return len;
+}
+
 /* Get slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
 extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
