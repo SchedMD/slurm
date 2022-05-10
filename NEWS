@@ -227,6 +227,7 @@ documents those changes that are of interest to users and administrators.
     credential for NodeHostName.
  -- Store assoc usage in parent assoc when deleted to preserve account
     fairshare.
+ -- CVE-2022-29500 - Prevent credential abuse.
  -- CVE-2022-29501 - Prevent abuse of REQUEST_FORWARD_DATA.
  -- CVE-2022-29502 - Correctly validate io keys.
  -- openapi/dbv0.0.38 - set with_deleted to false by default for /user[s].
