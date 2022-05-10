@@ -22910,10 +22910,9 @@ else
   BUILD_HDF5_FALSE=
 fi
 
-# Some older systems (Debian/Ubuntu/...) configure HDF5 with
-# --with-default-api-version=v16 which creates problems for slurm
-# because slurm uses the 1.8 API. By defining this CPP macro we get
-# the 1.8 API.
+# Some systems don't configure HDF5 with --with-default-api-version=v18
+# which creates problems for slurm because slurm uses the 1.8 API.
+# By defining this CPP macro we get the 1.8 API.
 
 printf "%s\n" "#define H5_USE_18_API 1" >>confdefs.h
 
