@@ -594,7 +594,11 @@ _service_connection(void *arg)
 		 * to are taken care of and sent back. This way the control
 		 * also has a better idea what happened to us
 		 */
-		slurm_send_rc_msg(msg, rc);
+		if (msg->auth_uid_set)
+			slurm_send_rc_msg(msg, rc);
+		else
+			debug("%s: incomplete message", __func__);
+
 		goto cleanup;
 	}
 	debug2("Start processing RPC: %s", rpc_num2string(msg->msg_type));
