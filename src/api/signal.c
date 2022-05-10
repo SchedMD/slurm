@@ -109,6 +109,7 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	rpc.flags = KILL_JOB_BATCH;
 
 	slurm_msg_t_init(&msg);
+	slurm_msg_set_r_uid(&msg, slurm_conf.slurmd_user_id);
 	msg.msg_type = REQUEST_SIGNAL_TASKS;
 	msg.data = &rpc;
 	if (slurm_conf_get_addr(name, &msg.address, msg.flags)
@@ -173,6 +174,7 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 
 	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_TERMINATE_TASKS;
+	slurm_msg_set_r_uid(&msg, slurm_conf.slurmd_user_id);
 	msg.data = &rpc;
 
 	if (slurm_conf_get_addr(name, &msg.address, msg.flags)
