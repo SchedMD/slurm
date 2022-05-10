@@ -531,6 +531,8 @@ typedef struct slurm_msg {
 				 * slurm_msg_t_init() was not called since
 				 * auth_uid would be root.
 				 */
+	uid_t restrict_uid;
+	bool restrict_uid_set;
 	uint32_t body_offset; /* DON'T PACK: offset in buffer where body part of
 				 buffer starts. */
 	buf_t *buffer;		/* DON'T PACK! ptr to buffer that msg was
