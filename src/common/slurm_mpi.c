@@ -301,6 +301,10 @@ static int _mpi_init_locked(char **mpi_type)
 		plugin_names = list_create(xfree_ptr);
 		list_append(plugin_names,
 			    xstrdup_printf("%s/%s", mpi_char, *mpi_type));
+	} else {
+		debug("MPI: Loading all types");
+
+		plugin_names = plugin_get_plugins_of_type(mpi_char);
 
 		/*
 		 * 2 versions after 22.05 this running_in_slurmctld() check can
@@ -314,10 +318,6 @@ static int _mpi_init_locked(char **mpi_type)
 					  slurm_find_char_exact_in_list,
 					  "mpi/pmix");
 		}
-	} else {
-		debug("MPI: Loading all types");
-
-		plugin_names = plugin_get_plugins_of_type(mpi_char);
 	}
 
 	/* Iterate and load */
