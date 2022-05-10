@@ -353,6 +353,9 @@ void *_fwd_tree_thread(void *arg)
 	send_msg.flags = fwd_tree->orig_msg->flags;
 	send_msg.data = fwd_tree->orig_msg->data;
 	send_msg.protocol_version = fwd_tree->orig_msg->protocol_version;
+	if (fwd_tree->orig_msg->restrict_uid_set)
+		slurm_msg_set_r_uid(&send_msg,
+				    fwd_tree->orig_msg->restrict_uid);
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(fwd_tree->tree_hl))) {
