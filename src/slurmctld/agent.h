@@ -117,4 +117,7 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type);
 /* Return length of agent's retry_list */
 extern int retry_list_size(void);
 
+/* Set r_uid of agent_arg */
+extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid);
+
 #endif /* !_AGENT_H */

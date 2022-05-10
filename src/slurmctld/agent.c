@@ -2380,3 +2380,10 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 	}
 	xfree(argv[1]);
 }
+
+/* Set r_uid of agent_arg */
+extern void set_agent_arg_r_uid(agent_arg_t *agent_arg_ptr, uid_t r_uid)
+{
+	agent_arg_ptr->r_uid = r_uid;
+	agent_arg_ptr->r_uid_set = true;
+}
