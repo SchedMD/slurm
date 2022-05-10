@@ -1566,6 +1566,8 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		return rc;
 	}
 
+	if (!msg->restrict_uid_set)
+		msg->restrict_uid = SLURM_AUTH_UID_ANY;
 	/*
 	 * Initialize header with Auth credential and message type.
 	 * We get the credential now rather than later so the work can
@@ -1574,9 +1576,11 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 * wait too long for the incoming message.
 	 */
 	if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
-		auth_cred = auth_g_create(msg->auth_index, _global_auth_key());
+		auth_cred = auth_g_create(msg->auth_index, _global_auth_key(),
+					  msg->restrict_uid);
 	} else {
-		auth_cred = auth_g_create(msg->auth_index, slurm_conf.authinfo);
+		auth_cred = auth_g_create(msg->auth_index, slurm_conf.authinfo,
+					  msg->restrict_uid);
 	}
 
 	if (msg->forward.init != FORWARD_INIT) {
@@ -1593,10 +1597,12 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		(void) auth_g_destroy(auth_cred);
 		if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
 			auth_cred = auth_g_create(msg->auth_index,
-						  _global_auth_key());
+						  _global_auth_key(),
+						  msg->restrict_uid);
 		} else {
 			auth_cred = auth_g_create(msg->auth_index,
-						  slurm_conf.authinfo);
+						  slurm_conf.authinfo,
+						  msg->restrict_uid);
 		}
 	}
 	if (auth_cred == NULL) {

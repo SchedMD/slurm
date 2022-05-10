@@ -149,7 +149,8 @@ extern void spawn_req_pack(spawn_req_t *req, buf_t *buf)
 	spawn_subcmd_t *subcmd;
 	void *auth_cred;
 
-	auth_cred = auth_g_create(AUTH_DEFAULT_INDEX, slurm_conf.authinfo);
+	auth_cred = auth_g_create(AUTH_DEFAULT_INDEX, slurm_conf.authinfo,
+				  SLURM_AUTH_UID_ANY);
 	if (auth_cred == NULL) {
 		error("authentication: %m");
 		return;

@@ -62,7 +62,7 @@ typedef struct {
 typedef struct {
 	uint32_t	(*plugin_id);
 	char		(*plugin_type);
-	void *		(*create)	(char *auth_info);
+	void *		(*create)	(char *auth_info, uid_t r_uid);
 	int		(*destroy)	(void *cred);
 	int		(*verify)	(void *cred, char *auth_info);
 	uid_t		(*get_uid)	(void *cred);
@@ -256,14 +256,14 @@ int slurm_auth_index(void *cred)
  * the API function dispatcher.
  */
 
-void *auth_g_create(int index, char *auth_info)
+void *auth_g_create(int index, char *auth_info, uid_t r_uid)
 {
 	cred_wrapper_t *cred;
 
 	if (slurm_auth_init(NULL) < 0)
 		return NULL;
 
-	cred = (*(ops[index].create))(auth_info);
+	cred = (*(ops[index].create))(auth_info, r_uid);
 	if (cred)
 		cred->index = index;
 	return cred;

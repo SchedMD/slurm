@@ -248,7 +248,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-auth_token_t *auth_p_create(char *auth_info)
+auth_token_t *auth_p_create(char *auth_info, uid_t r_uid)
 {
 	return xmalloc(sizeof(auth_token_t));
 }

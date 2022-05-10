@@ -129,7 +129,7 @@ int init(void)
  * allocate a credential.  Whether the credential is populated with useful
  * data at this time is implementation-dependent.
  */
-auth_credential_t *auth_p_create(char *opts)
+auth_credential_t *auth_p_create(char *opts, uid_t r_uid)
 {
 	int rc, retry = RETRY_COUNT, auth_ttl;
 	auth_credential_t *cred = NULL;
