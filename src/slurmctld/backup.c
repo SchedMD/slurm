@@ -392,8 +392,8 @@ static void *_background_rpc_mgr(void *no_data)
 		slurm_msg_t_init(&msg);
 		if (slurm_receive_msg(newsockfd, &msg, 0) != 0)
 			error("slurm_receive_msg: %m");
-
-		_background_process_msg(&msg);
+		else
+			_background_process_msg(&msg);
 
 		slurm_free_msg_members(&msg);
 
