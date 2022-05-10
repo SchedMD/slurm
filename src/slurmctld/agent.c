@@ -425,6 +425,11 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 		     __func__, agent_arg_ptr->node_count, hostlist_cnt);
 		return SLURM_ERROR;	/* no messages to be sent */
 	}
+	if (!agent_arg_ptr->r_uid_set) {
+		error("%s: r_uid not set for message:%u ",
+		      __func__, agent_arg_ptr->msg_type);
+		return SLURM_ERROR;
+	}
 	return SLURM_SUCCESS;
 }
 
