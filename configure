@@ -20916,9 +20916,9 @@ HDF5 support is being disabled (equivalent to --with-hdf5=no).
     else
                 HDF5_SHOW=$(eval $H5CC -show)
 
-                HDF5_CC=$(eval $H5CC -show | $AWK '{print $1}')
+                HDF5_CC=$(eval $H5CC -show | head -n 1 | $AWK '{print $1}')
         if test "$HDF5_CC" = "ccache"; then
-            HDF5_CC=$(eval $H5CC -show | $AWK '{print $2}')
+            HDF5_CC=$(eval $H5CC -show | head -n 1 | $AWK '{print $2}')
         fi
 
 
@@ -20938,18 +20938,18 @@ HDF5 support is being disabled (equivalent to --with-hdf5=no).
                 for arg in $HDF5_SHOW $HDF5_tmp_flags ; do
           case "$arg" in
             -I*) echo $HDF5_CPPFLAGS | $GREP -e "$arg" 2>&1 >/dev/null \
-                  || HDF5_CPPFLAGS="$arg $HDF5_CPPFLAGS"
+                  || HDF5_CPPFLAGS="$HDF5_CPPFLAGS $arg"
               ;;
             -L*) echo $HDF5_LDFLAGS | $GREP -e "$arg" 2>&1 >/dev/null \
-                  || HDF5_LDFLAGS="$arg $HDF5_LDFLAGS"
+                  || HDF5_LDFLAGS="$HDF5_LDFLAGS $arg"
               ;;
             -l*) echo $HDF5_LIBS | $GREP -e "$arg" 2>&1 >/dev/null \
-                  || HDF5_LIBS="$arg $HDF5_LIBS"
+                  || HDF5_LIBS="$HDF5_LIBS $arg"
               ;;
           esac
         done
 
-        HDF5_LIBS="$HDF5_LIBS -lhdf5"
+        HDF5_LIBS="-lhdf5 $HDF5_LIBS"
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (version $HDF5_VERSION)" >&5
 $as_echo "yes (version $HDF5_VERSION)" >&6; }
 
@@ -21052,7 +21052,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_hdf5_hl_main" >&5
 $as_echo "$ac_cv_lib_hdf5_hl_main" >&6; }
 if test "x$ac_cv_lib_hdf5_hl_main" = xyes; then :
-  HDF5_LIBS="$HDF5_LIBS -lhdf5_hl"
+  HDF5_LIBS="-lhdf5_hl $HDF5_LIBS"
 fi
 ac_cv_lib_hdf5_hl=ac_cv_lib_hdf5_hl_main
 
@@ -21081,12 +21081,12 @@ $as_echo "$H5FC" >&6; }
             do
               case "$arg" in #(
                 -I*) echo $HDF5_FFLAGS | $GREP -e "$arg" >/dev/null \
-                      || HDF5_FFLAGS="$arg $HDF5_FFLAGS"
+                      || HDF5_FFLAGS="$HDF5_FFLAGS $arg"
                   ;;#(
                 -L*) echo $HDF5_FFLAGS | $GREP -e "$arg" >/dev/null \
-                      || HDF5_FFLAGS="$arg $HDF5_FFLAGS"
+                      || HDF5_FFLAGS="$HDF5_FFLAGS $arg"
                                                                echo $HDF5_FFLAGS | $GREP -e "-I${arg#-L}" >/dev/null \
-                      || HDF5_FFLAGS="-I${arg#-L} $HDF5_FFLAGS"
+                      || HDF5_FFLAGS="$HDF5_FFLAGS -I${arg#-L}"
                   ;;
               esac
             done
