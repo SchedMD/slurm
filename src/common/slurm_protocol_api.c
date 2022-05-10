@@ -191,9 +191,15 @@ static int _check_hash(buf_t *buffer, header_t *header, slurm_msg_t *msg,
 	rc = auth_g_get_data(cred, &cred_hash, &cred_hash_len);
 
 	if (cred_hash || cred_hash_len) {
-		if (cred_hash_len != 3 || cred_hash[0] != 1 ||
-		    memcmp(cred_hash + 1,
-			   &msg->msg_type, sizeof(msg->msg_type)))
+		char *msg_type = (char *) &msg->msg_type;
+		if (cred_hash_len != 3 || cred_hash[0] != 1)
+			rc = SLURM_ERROR;
+		else if (((cred_hash[1] == msg_type[0]) &&
+			  (cred_hash[2] == msg_type[1])) ||
+			 ((cred_hash[1] == msg_type[1]) &&
+			  (cred_hash[2] == msg_type[0])))
+			;
+		else
 			rc = SLURM_ERROR;
 	} else if (block_null_hash &&
 		   slurm_get_plugin_hash_enable(msg->auth_index))

@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.11.10
 ===========================
+ -- Fix cross-endian communication.
 
 * Changes in Slurm 20.11.9
 ==========================
