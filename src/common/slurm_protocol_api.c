@@ -1723,7 +1723,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	}
 
 	if (!msg->restrict_uid_set)
-		msg->restrict_uid = SLURM_AUTH_UID_ANY;
+		fatal("%s: restrict_uid is not set", __func__);
 	/*
 	 * Initialize header with Auth credential and message type.
 	 * We get the credential now rather than later so the work can
