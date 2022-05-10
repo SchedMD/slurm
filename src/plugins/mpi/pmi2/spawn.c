@@ -150,7 +150,7 @@ extern void spawn_req_pack(spawn_req_t *req, buf_t *buf)
 	void *auth_cred;
 
 	auth_cred = auth_g_create(AUTH_DEFAULT_INDEX, slurm_conf.authinfo,
-				  SLURM_AUTH_UID_ANY);
+				  job_info.uid);
 	if (auth_cred == NULL) {
 		error("authentication: %m");
 		return;

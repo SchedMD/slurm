@@ -111,6 +111,8 @@ _setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
 	else
 		job_info.step_id.job_id  = job->step_id.job_id;
 
+	job_info.uid = job->uid;
+
 	if (job->het_job_offset != NO_VAL) {
 		job_info.step_id.step_id = job->step_id.step_id;
 		job_info.step_id.step_het_comp = job->step_id.step_het_comp;
