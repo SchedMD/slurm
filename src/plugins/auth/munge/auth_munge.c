@@ -103,9 +103,12 @@ typedef struct {
 	gid_t   gid;       /* GID. valid only if verified == true            */
 } auth_credential_t;
 
+extern auth_credential_t *auth_p_create(char *opts, uid_t r_uid);
+extern int auth_p_destroy(auth_credential_t *cred);
+
 /* Static prototypes */
 
-static int _decode_cred(auth_credential_t *c, char *socket);
+static int _decode_cred(auth_credential_t *c, char *socket, bool test);
 static void _print_cred(munge_ctx_t ctx);
 
 /*
@@ -113,14 +116,34 @@ static void _print_cred(munge_ctx_t ctx);
  */
 int init(void)
 {
+	int rc = SLURM_SUCCESS;
 	char *fail_test_env = getenv("SLURM_MUNGE_AUTH_FAIL_TEST");
 	if (fail_test_env)
 		bad_cred_test = atoi(fail_test_env);
 	else
 		bad_cred_test = 0;
 
+	/*
+	 * MUNGE has a compile-time option that permits root to decode any
+	 * credential regardless of the MUNGE_OPT_UID_RESTRICTION setting.
+	 * This must not be enabled. Protect against it by ensuring we cannot
+	 * decode a credential restricted to a different uid.
+	 */
+	if (running_in_daemon()) {
+		auth_credential_t *cred = NULL;
+		char *socket = slurm_auth_opts_to_socket(slurm_conf.authinfo);
+		uid_t uid = getuid() + 1;
+
+		cred = auth_p_create(slurm_conf.authinfo, uid);
+		if (!_decode_cred(cred, socket, true)) {
+			error("MUNGE allows root to decode any credential");
+			rc = SLURM_ERROR;
+		}
+		xfree(socket);
+		auth_p_destroy(cred);
+	}
 	debug("%s loaded", plugin_name);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 
@@ -251,7 +274,7 @@ int auth_p_verify(auth_credential_t *c, char *opts)
 		return SLURM_SUCCESS;
 
 	socket = slurm_auth_opts_to_socket(opts);
-	rc = _decode_cred(c, socket);
+	rc = _decode_cred(c, socket, false);
 	xfree(socket);
 	if (rc < 0)
 		return SLURM_ERROR;
@@ -418,7 +441,7 @@ unpack_error:
  * Decode the munge encoded credential `m_str' placing results, if validated,
  * into slurm credential `c'
  */
-static int _decode_cred(auth_credential_t *c, char *socket)
+static int _decode_cred(auth_credential_t *c, char *socket, bool test)
 {
 	int retry = RETRY_COUNT;
 	munge_err_t err;
@@ -446,6 +469,8 @@ static int _decode_cred(auth_credential_t *c, char *socket)
 again:
 	err = munge_decode(c->m_str, ctx, NULL, NULL, &c->uid, &c->gid);
 	if (err != EMUNGE_SUCCESS) {
+		if (test)
+			goto done;
 		if ((err == EMUNGE_SOCKET) && retry--) {
 			debug("Munge decode failed: %s (retrying ...)",
 			      munge_ctx_strerror(ctx));
