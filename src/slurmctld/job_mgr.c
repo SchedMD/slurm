@@ -16983,6 +16983,7 @@ reply:
 		memset(&rc_msg, 0, sizeof(rc_msg));
 		rc_msg.return_code = rc;
 		resp_msg.data      = &rc_msg;
+		slurm_msg_set_r_uid(&resp_msg, uid);
 		slurm_send_node_msg(conn_fd, &resp_msg);
 	}
 	return rc;
@@ -17133,6 +17134,7 @@ reply:
 			rc_msg.return_code = rc;
 			resp_msg.data      = &rc_msg;
 		}
+		slurm_msg_set_r_uid(&resp_msg, uid);
 		slurm_send_node_msg(conn_fd, &resp_msg);
 
 		if (resp_array_msg) {
@@ -17881,6 +17883,7 @@ reply:	FREE_NULL_LIST(top_job_list);
 		memset(&rc_msg, 0, sizeof(rc_msg));
 		rc_msg.return_code = rc;
 		resp_msg.data      = &rc_msg;
+		slurm_msg_set_r_uid(&resp_msg, uid);
 		slurm_send_node_msg(conn_fd, &resp_msg);
 	}
 
