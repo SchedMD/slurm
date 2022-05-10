@@ -412,6 +412,7 @@ int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
 		safe_write(fd, ioaddr, sizeof(slurm_addr_t));
 		safe_write(fd, respaddr, sizeof(slurm_addr_t));
 		safe_write(fd, job_cred_sig, SLURM_IO_KEY_SIZE);
+		safe_write(fd, &uid, sizeof(uid_t));
 		safe_write(fd, &protocol_version, sizeof(uint16_t));
 	} else
 		goto rwfail;
