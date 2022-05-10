@@ -2969,6 +2969,9 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	else
 		over_time_limit = slurm_conf.over_time_limit;
 
+	if (over_time_limit == INFINITE16)
+		over_time_limit = YEAR_MINUTES;
+
 	if (IS_JOB_FINISHED(job_ptr) ||
 	    (((job_ptr->end_time + (over_time_limit * 60)) <= time(NULL)) &&
 	     !IS_JOB_CONFIGURING(job_ptr)))
