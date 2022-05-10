@@ -173,6 +173,36 @@ cleanup:
 	return proto_conf;
 }
 
+static int _check_hash(buf_t *buffer, header_t *header, slurm_msg_t *msg,
+		       void *cred)
+{
+	char *cred_hash = NULL;
+	uint32_t cred_hash_len = 0;
+	int rc;
+	static time_t config_update = (time_t) -1;
+	static bool block_null_hash = true;
+
+	if (config_update != slurm_conf.last_update) {
+		block_null_hash = (xstrcasestr(slurm_conf.comm_params,
+					       "block_null_hash"));
+		config_update = slurm_conf.last_update;
+	}
+
+	rc = auth_g_get_data(cred, &cred_hash, &cred_hash_len);
+
+	if (cred_hash || cred_hash_len) {
+		if (cred_hash_len != 3 || cred_hash[0] != 1 ||
+		    memcmp(cred_hash + 1,
+			   &msg->msg_type, sizeof(msg->msg_type)))
+			rc = SLURM_ERROR;
+	} else if (block_null_hash &&
+		   slurm_get_plugin_hash_enable(msg->auth_index))
+		rc = SLURM_ERROR;
+
+	xfree(cred_hash);
+	return rc;
+}
+
 static int _get_tres_id(char *type, char *name)
 {
 	slurmdb_tres_rec_t tres_rec;
@@ -960,6 +990,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 	msg->body_offset =  get_buf_offset(buffer);
 
 	if ((header.body_length > remaining_buf(buffer)) ||
+	    _check_hash(buffer, &header, msg, auth_cred) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		(void) auth_g_destroy(auth_cred);
@@ -1244,6 +1275,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	msg.flags = header.flags;
 
 	if ((header.body_length > remaining_buf(buffer)) ||
+	    _check_hash(buffer, &header, &msg, auth_cred) ||
 	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
 		(void) auth_g_destroy(auth_cred);
 		free_buf(buffer);
@@ -1624,6 +1656,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	msg->flags = header.flags;
 
 	if ( (header.body_length > remaining_buf(buffer)) ||
+	    _check_hash(buffer, &header, msg, auth_cred) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
 		(void) auth_g_destroy(auth_cred);
 		free_buf(buffer);
@@ -1690,6 +1723,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	int      rc;
 	void *   auth_cred;
 	time_t   start_time = time(NULL);
+	uint8_t auth_payload[3] = { 1 }; /* uint8_t + uint16_t (msg_type) */
 
 	if (msg->conn) {
 		persist_msg_t persist_msg;
@@ -1724,6 +1758,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 
 	if (!msg->restrict_uid_set)
 		fatal("%s: restrict_uid is not set", __func__);
+	memcpy(auth_payload + 1, &msg->msg_type, sizeof(msg->msg_type));
 	/*
 	 * Initialize header with Auth credential and message type.
 	 * We get the credential now rather than later so the work can
@@ -1733,10 +1768,12 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 */
 	if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
 		auth_cred = auth_g_create(msg->auth_index, _global_auth_key(),
-					  msg->restrict_uid, NULL, 0);
+					  msg->restrict_uid, auth_payload,
+					  sizeof(auth_payload));
 	} else {
 		auth_cred = auth_g_create(msg->auth_index, slurm_conf.authinfo,
-					  msg->restrict_uid, NULL, 0);
+					  msg->restrict_uid, auth_payload,
+					  sizeof(auth_payload));
 	}
 
 	if (msg->forward.init != FORWARD_INIT) {
@@ -1754,11 +1791,15 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
 			auth_cred = auth_g_create(msg->auth_index,
 						  _global_auth_key(),
-						  msg->restrict_uid, NULL, 0);
+						  msg->restrict_uid,
+						  auth_payload,
+						  sizeof(auth_payload));
 		} else {
 			auth_cred = auth_g_create(msg->auth_index,
 						  slurm_conf.authinfo,
-						  msg->restrict_uid, NULL, 0);
+						  msg->restrict_uid,
+						  auth_payload,
+						  sizeof(auth_payload));
 		}
 	}
 	if (auth_cred == NULL) {
