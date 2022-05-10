@@ -748,6 +748,7 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 	}
 	/*********************************************/
 	slurm_msg_t_init(&req);
+	slurm_msg_set_r_uid(&req, slurm_conf.slurmd_user_id);
 	req.msg_type = REQUEST_STEP_COMPLETE;
 	req.data = &msg;
 	req.address = step_complete.parent_addr;
