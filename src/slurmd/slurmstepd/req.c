@@ -972,6 +972,7 @@ _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid)
 	safe_read(fd, &srun->key->len, sizeof(uint32_t));
 	srun->key->data = xmalloc(srun->key->len);
 	safe_read(fd, srun->key->data, srun->key->len);
+	safe_read(fd, &srun->uid, sizeof(uid_t));
 	safe_read(fd, &srun->protocol_version, sizeof(uint16_t));
 
 	if (!srun->protocol_version)

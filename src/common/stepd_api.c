@@ -405,6 +405,7 @@ int stepd_attach(int fd, uint16_t protocol_version, slurm_addr_t *ioaddr,
 		safe_write(fd, respaddr, sizeof(slurm_addr_t));
 		safe_write(fd, &sig_len, sizeof(uint32_t));
 		safe_write(fd, job_cred_sig, sig_len);
+		safe_write(fd, &uid, sizeof(uid_t));
 		safe_write(fd, &protocol_version, sizeof(uint16_t));
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int));
