@@ -414,6 +414,10 @@ static int _background_process_msg(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	bool send_rc = true;
 
+	if (!msg->auth_uid_set)
+		fatal("%s: received message without previously validated auth",
+		      __func__);
+
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;
 		uid_t uid = auth_g_get_uid(msg->auth_cred);
