@@ -154,6 +154,13 @@ auth_credential_t *auth_p_create(char *opts, uid_t r_uid)
 		}
 	}
 
+	rc = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, r_uid);
+	if (rc != EMUNGE_SUCCESS) {
+		error("munge_ctx_set failure");
+		munge_ctx_destroy(ctx);
+		return NULL;
+	}
+
 	auth_ttl = slurm_get_auth_ttl();
 	if (auth_ttl)
 		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
