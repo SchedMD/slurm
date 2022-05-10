@@ -82,6 +82,9 @@ typedef struct {
 	/* remote node info */
 	int nodeid;
 	void *priv;
+
+	/* authenticated uid on remote */
+	uid_t uid;
 } pmixp_dconn_t;
 
 typedef void *(*pmixp_dconn_p2p_init_t)(int nodeid,
