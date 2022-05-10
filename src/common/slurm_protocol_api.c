@@ -2368,6 +2368,8 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 		goto cleanup;
 	}
 
+	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
+
 	if ((rc = slurm_send_node_msg(fd, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
