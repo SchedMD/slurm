@@ -64,6 +64,12 @@
 #define SLURM_AUTH_NOBODY 99
 
 /*
+ * This should be equal to MUNGE_UID_ANY
+ * do not restrict decode via uid
+ */
+#define SLURM_AUTH_UID_ANY -1
+
+/*
  * Default auth_index value, corresponds to the primary AuthType used.
  */
 #define AUTH_DEFAULT_INDEX 0
