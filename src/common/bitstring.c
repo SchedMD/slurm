@@ -876,16 +876,24 @@ bit_set_count_range(bitstr_t *b, int32_t start, int32_t end)
 	end = MIN(end, _bitstr_bits(b));
 	/* end of word */
 	eow = (((start + BITSTR_MAXPOS) >> BITSTR_SHIFT) << BITSTR_SHIFT);
-	for ( bit = start; bit < end && bit < eow; bit++) {
-		if (bit_test(b, bit))
-			count++;
+
+	bit = start;
+	if ((start < eow) && (eow <= end)) {
+		uint64_t mask = ~_bit_nmask(start);
+		count += hweight(b[_bit_word(bit)] & mask);
+		bit = eow;
+	} else if (eow > start) {
+		uint64_t mask = ~_bit_nmask(start);
+		mask &= _bit_nmask(end);
+		count += hweight(b[_bit_word(bit)] & mask);
+		bit = eow;
 	}
 	for (; (bit + word_size) <= end ; bit += word_size) {
 		count += hweight(b[_bit_word(bit)]);
 	}
-	for ( ; bit < end; bit++) {
-		if (bit_test(b, bit))
-			count++;
+	if (bit < end) {
+		uint64_t mask = _bit_nmask(end);
+		count += hweight(b[_bit_word(bit)] & mask);
 	}
 
 	return count;
