@@ -243,6 +243,7 @@ extern int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg)
 {
 	buf_t *buf = NULL;
 	uint32_t len;
+	int rc;
 
 	xassert(msg);
 
@@ -257,11 +258,12 @@ extern int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg)
 	buf = init_buf(len);
 	safe_read(fd, buf->head, len);
 
-	io_init_msg_unpack(msg, buf);
+	if ((rc = io_init_msg_unpack(msg, buf)))
+		error("%s: io_init_msg_unpack failed: rc=%d", __func__, rc);
 
 	free_buf(buf);
 	debug2("Leaving %s", __func__);
-	return SLURM_SUCCESS;
+	return rc;
 
 rwfail:
 	free_buf(buf);
