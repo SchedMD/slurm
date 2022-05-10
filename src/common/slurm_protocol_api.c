@@ -200,12 +200,27 @@ static int _check_hash(buf_t *buffer, header_t *header, slurm_msg_t *msg,
 		log_flag_hex(NET_RAW, cred_hash, cred_hash_len,
 			     "%s: cred_hash:", __func__);
 		if (cred_hash[0] == HASH_PLUGIN_NONE) {
-			if (block_zero_hash || (cred_hash_len != 3) ||
-			    memcmp(cred_hash + 1, &msg->msg_type,
-				   sizeof(msg->msg_type)))
+			/*
+			 * Unfortunately the older versions did not normalize
+			 * msg_type to network-byte order when this was added
+			 * to the payload, so the sequence may be flipped and
+			 * either ordering must be permitted.
+			 */
+			uint16_t msg_type_nb = htons(msg->msg_type);
+			char *type = (char *) &msg_type_nb;
+
+			if (block_zero_hash || (cred_hash_len != 3))
 				rc = SLURM_ERROR;
-			else
+			else if ((cred_hash[1] == type[0]) &&
+				 (cred_hash[2] == type[1]))
 				msg->hash_index = HASH_PLUGIN_NONE;
+			else if ((msg->protocol_version <=
+				  SLURM_21_08_PROTOCOL_VERSION) &&
+				 (cred_hash[1] == type[1]) &&
+				 (cred_hash[2] == type[0]))
+				msg->hash_index = HASH_PLUGIN_NONE;
+			else
+				rc = SLURM_ERROR;
 		} else {
 			char *data;
 			uint32_t size = header->body_length;
@@ -238,18 +253,22 @@ static int _compute_hash(buf_t *buffer, slurm_msg_t *msg, slurm_hash_t *hash)
 	int h_len = 0;
 
 	if (slurm_get_plugin_hash_enable(msg->auth_index)) {
-		if (msg->hash_index != HASH_PLUGIN_DEFAULT)
-			hash->type = msg->hash_index;
-		else if (msg->protocol_version <= SLURM_21_08_PROTOCOL_VERSION)
+		uint16_t msg_type = htons(msg->msg_type);
+
+		if (msg->protocol_version <= SLURM_21_08_PROTOCOL_VERSION) {
+			/*
+			 * Unfortuantely 21.08.8 and 20.11.9 did not normalize
+			 * this to network order, and require host-byte order.
+			 */
+			msg_type = msg->msg_type;
 			hash->type = HASH_PLUGIN_NONE;
+		} else if (msg->hash_index != HASH_PLUGIN_DEFAULT)
+			hash->type = msg->hash_index;
 
 		if (hash->type == HASH_PLUGIN_NONE) {
-			memcpy(hash->hash, &msg->msg_type,
-			       sizeof(msg->msg_type));
+			memcpy(hash->hash, &msg_type, sizeof(msg_type));
 			h_len = sizeof(msg->msg_type);
 		} else {
-			uint16_t msg_type = htons(msg->msg_type);
-
 			h_len = hash_g_compute(get_buf_data(buffer),
 					       get_buf_offset(buffer),
 					       (char *) &msg_type,
