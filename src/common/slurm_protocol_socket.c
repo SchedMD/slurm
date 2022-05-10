@@ -214,8 +214,7 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 	while (sent < size) {
 		timeleft = timeout - _tot_wait(&tstart);
 		if (timeleft <= 0) {
-			debug("slurm_send_timeout at %d of %zu, timeout",
-				sent, size);
+			debug("%s at %d of %zu, timeout", __func__, sent, size);
 			slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
 			sent = SLURM_ERROR;
 			goto done;
@@ -225,9 +224,8 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 			if ((rc == 0) || (errno == EINTR) || (errno == EAGAIN))
  				continue;
 			else {
-				debug("slurm_send_timeout at %d of %zu, "
-					"poll error: %s",
-					sent, size, strerror(errno));
+				debug("%s at %d of %zu, poll error: %s",
+				      __func__, sent, size, strerror(errno));
 				slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
 				sent = SLURM_ERROR;
 				goto done;
@@ -269,17 +267,16 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 			goto done;
 		}
 		if ((ufds.revents & POLLOUT) != POLLOUT) {
-			error("slurm_send_timeout: Poll failure, revents:%d",
-			      ufds.revents);
+			error("%s: Poll failure, revents:%d",
+			      __func__, ufds.revents);
 		}
 
 		rc = send(fd, &buf[sent], (size - sent), flags);
 		if (rc < 0) {
  			if (errno == EINTR)
 				continue;
-			debug("slurm_send_timeout at %d of %zu, "
-				"send error: %s",
-				sent, size, strerror(errno));
+			debug("%s at %d of %zu, send error: %s",
+			      __func__, sent, size, strerror(errno));
  			if (errno == EAGAIN) {	/* poll() lied to us */
 				usleep(10000);
 				continue;
