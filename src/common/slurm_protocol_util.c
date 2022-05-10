@@ -142,7 +142,6 @@ void init_header(header_t *header, slurm_msg_t *msg, uint16_t flags)
 	else
 		header->ret_cnt = 0;
 	header->ret_list = msg->ret_list;
-	header->msg_index = msg->msg_index;
 	header->orig_addr = msg->orig_addr;
 }
 

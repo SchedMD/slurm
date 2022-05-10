@@ -120,7 +120,6 @@ void pack_header(header_t *header, buf_t *buffer)
 
 	if (header->version >= SLURM_22_05_PROTOCOL_VERSION) {
 		pack16(header->flags, buffer);
-		pack16(header->msg_index, buffer);
 		pack16(header->msg_type, buffer);
 		pack32(header->body_length, buffer);
 		pack16(header->forward.cnt, buffer);
@@ -138,7 +137,7 @@ void pack_header(header_t *header, buf_t *buffer)
 		slurm_pack_addr(&header->orig_addr, buffer);
 	} else if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(header->flags, buffer);
-		pack16(header->msg_index, buffer);
+		pack16(0, buffer);
 		pack16(header->msg_type, buffer);
 		pack32(header->body_length, buffer);
 		pack16(header->forward.cnt, buffer);
@@ -173,7 +172,6 @@ int unpack_header(header_t *header, buf_t *buffer)
 
 	if (header->version >= SLURM_22_05_PROTOCOL_VERSION) {
 		safe_unpack16(&header->flags, buffer);
-		safe_unpack16(&header->msg_index, buffer);
 		safe_unpack16(&header->msg_type, buffer);
 		safe_unpack32(&header->body_length, buffer);
 		safe_unpack16(&header->forward.cnt, buffer);
@@ -194,8 +192,9 @@ int unpack_header(header_t *header, buf_t *buffer)
 		}
 		slurm_unpack_addr_no_alloc(&header->orig_addr, buffer);
 	} else if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t tmp16;
 		safe_unpack16(&header->flags, buffer);
-		safe_unpack16(&header->msg_index, buffer);
+		safe_unpack16(&tmp16, buffer);
 		safe_unpack16(&header->msg_type, buffer);
 		safe_unpack32(&header->body_length, buffer);
 		safe_unpack16(&header->forward.cnt, buffer);

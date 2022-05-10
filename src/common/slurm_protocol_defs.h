@@ -479,7 +479,6 @@ typedef struct forward {
 typedef struct slurm_protocol_header {
 	uint16_t version;
 	uint16_t flags;
-	uint16_t msg_index;
 	uint16_t msg_type; /* really slurm_msg_type_t but needs to be
 			      uint16_t for packing purposes. */
 	uint32_t body_length;
@@ -548,7 +547,6 @@ typedef struct slurm_msg {
 	void *data;
 	uint32_t data_size;
 	uint16_t flags;
-	uint16_t msg_index;
 	uint16_t msg_type; /* really a slurm_msg_type_t but needs to be
 			    * this way for packing purposes.  message type */
 	uint16_t protocol_version; /* DON'T PACK!  Only used if

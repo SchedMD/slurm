@@ -2888,31 +2888,22 @@ send_resp:
 		       node_reg_stat_msg->node_name, TIME_STR);
 		/* If the slurmd is requesting a response send it */
 		if (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP) {
-			slurm_node_reg_resp_msg_t *resp = NULL, tmp_resp;
-			if (msg->msg_index && msg->ret_list) {
-				/*
-				 * If this is the case then the resp must be
-				 * xmalloced and will be freed when dealt with
-				 * later.
-				 */
-				resp = xmalloc(
-					sizeof(slurm_node_reg_resp_msg_t));
-			} else {
-				memset(&tmp_resp, 0, sizeof(tmp_resp));
-				resp = &tmp_resp;
-			}
+			slurm_node_reg_resp_msg_t tmp_resp;
+			memset(&tmp_resp, 0, sizeof(tmp_resp));
 
 			/*
 			 * Don't add the assoc_mgr_tres_list here as it could
 			 * get freed later if you do.  The pack functions grab
 			 * it for us if it isn't here.
 			 */
-			//resp->tres_list = assoc_mgr_tres_list;
+			//tmp_resp.tres_list = assoc_mgr_tres_list;
 
 			if (node_reg_stat_msg->dynamic_type)
-				resp->node_name = node_reg_stat_msg->node_name;
+				tmp_resp.node_name =
+					node_reg_stat_msg->node_name;
 
-			slurm_send_msg(msg, RESPONSE_NODE_REGISTRATION, resp);
+			slurm_send_msg(msg, RESPONSE_NODE_REGISTRATION,
+				       &tmp_resp);
 		} else
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 

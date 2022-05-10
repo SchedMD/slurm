@@ -1848,32 +1848,16 @@ static void _rc_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
  */
 int slurm_send_msg(slurm_msg_t *msg, uint16_t msg_type, void *resp)
 {
-	if (msg->msg_index && msg->ret_list) {
-		slurm_msg_t *resp_msg = xmalloc_nz(sizeof(slurm_msg_t));
+	slurm_msg_t resp_msg;
 
-		_resp_msg_setup(msg, resp_msg, msg_type, resp);
-
-		resp_msg->msg_index = msg->msg_index;
-		resp_msg->ret_list = NULL;
-		/*
-		 * The return list here is the list we are sending to
-		 * the node, so after we attach this message to it set
-		 * it to NULL to remove it.
-		 */
-		list_append(msg->ret_list, resp_msg);
-		return SLURM_SUCCESS;
-	} else {
-		slurm_msg_t resp_msg;
-
-		if (msg->conn_fd < 0) {
-			slurm_seterrno(ENOTCONN);
-			return SLURM_ERROR;
-		}
-		_resp_msg_setup(msg, &resp_msg, msg_type, resp);
-
-		/* send message */
-		return slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	if (msg->conn_fd < 0) {
+		slurm_seterrno(ENOTCONN);
+		return SLURM_ERROR;
 	}
+	_resp_msg_setup(msg, &resp_msg, msg_type, resp);
+
+	/* send message */
+	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
 
 /* slurm_send_rc_msg
@@ -1884,34 +1868,17 @@ int slurm_send_msg(slurm_msg_t *msg, uint16_t msg_type, void *resp)
  */
 int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 {
-	if (msg->msg_index && msg->ret_list) {
-		slurm_msg_t *resp_msg = xmalloc_nz(sizeof(slurm_msg_t));
-		return_code_msg_t *rc_msg =
-			xmalloc_nz(sizeof(return_code_msg_t));
+	slurm_msg_t resp_msg;
+	return_code_msg_t rc_msg;
 
-		_rc_msg_setup(msg, resp_msg, rc_msg, rc);
-
-		resp_msg->msg_index = msg->msg_index;
-		resp_msg->ret_list = NULL;
-		/* The return list here is the list we are sending to
-		   the node, so after we attach this message to it set
-		   it to NULL to remove it.
-		*/
-		list_append(msg->ret_list, resp_msg);
-		return SLURM_SUCCESS;
-	} else {
-		slurm_msg_t resp_msg;
-		return_code_msg_t rc_msg;
-
-		if (msg->conn_fd < 0) {
-			slurm_seterrno(ENOTCONN);
-			return SLURM_ERROR;
-		}
-		_rc_msg_setup(msg, &resp_msg, &rc_msg, rc);
-
-		/* send message */
-		return slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	if (msg->conn_fd < 0) {
+		slurm_seterrno(ENOTCONN);
+		return SLURM_ERROR;
 	}
+	_rc_msg_setup(msg, &resp_msg, &rc_msg, rc);
+
+	/* send message */
+	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
 }
 
 /* slurm_send_rc_err_msg
