@@ -64,6 +64,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 static uint32_t job_id = NO_VAL;
+static uid_t job_uid;
 
 static bool local_xauthority = false;
 static char hostname[256] = {0};
@@ -129,6 +130,7 @@ static int _x11_socket_read(eio_obj_t *obj, List objs)
 
 	req.msg_type = SRUN_NET_FORWARD;
 	req.protocol_version = protocol_version;
+	slurm_msg_set_r_uid(&req, job_uid);
 	req.data = &rpc;
 
 	slurm_send_recv_msg(*remote, &req, &resp, 0);
@@ -240,6 +242,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job)
 	protocol_version = srun->protocol_version;
 
 	job_id = job->step_id.job_id;
+	job_uid = job->uid;
 	x11_target = xstrdup(job->x11_target);
 	x11_target_port = job->x11_target_port;
 
