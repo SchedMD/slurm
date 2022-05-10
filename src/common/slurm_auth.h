@@ -93,6 +93,12 @@ extern int slurm_auth_fini(void);
 extern int slurm_auth_index(void *cred);
 
 /*
+ * Check if plugin type corresponding to the authentication
+ * plugin index supports hash.
+ */
+extern bool slurm_get_plugin_hash_enable(int index);
+
+/*
  * Static bindings for the global authentication context.
  */
 extern void *auth_g_create(int index, char *auth_info, uid_t r_uid,

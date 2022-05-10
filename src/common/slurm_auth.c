@@ -62,6 +62,7 @@ typedef struct {
 typedef struct {
 	uint32_t	(*plugin_id);
 	char		(*plugin_type);
+	bool		(*hash_enable);
 	void *		(*create)	(char *auth_info, uid_t r_uid,
 					 void *data, int dlen);
 	int		(*destroy)	(void *cred);
@@ -85,6 +86,7 @@ typedef struct {
 static const char *syms[] = {
 	"plugin_id",
 	"plugin_type",
+	"hash_enable",
 	"auth_p_create",
 	"auth_p_destroy",
 	"auth_p_verify",
@@ -126,6 +128,15 @@ extern const char *auth_get_plugin_name(int plugin_id)
 			return auth_plugin_types[i].type;
 
 	return "unknown";
+}
+
+extern bool slurm_get_plugin_hash_enable(int index)
+{
+	if (slurm_auth_init(NULL) < 0)
+		return true;
+
+	return *(ops[index].hash_enable);
+
 }
 
 extern int slurm_auth_init(char *auth_type)

@@ -77,6 +77,7 @@ const char plugin_name[] = "JWT authentication plugin";
 const char plugin_type[] = "auth/jwt";
 const uint32_t plugin_id = AUTH_PLUGIN_JWT;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+const bool hash_enable = false;
 
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
