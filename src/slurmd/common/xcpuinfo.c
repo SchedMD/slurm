@@ -334,6 +334,25 @@ extern int xcpuinfo_hwloc_topo_get(
 #else
 		error("SlurmdParameters=l3cache_as_socket requires hwloc v2");
 #endif
+	} else if (xstrcasestr(slurm_conf.slurmd_params,
+			       "numa_node_as_socket")) {
+#if HWLOC_API_VERSION >= 0x00020000
+		hwloc_obj_t numa_obj = hwloc_get_next_obj_by_type(
+			topology, HWLOC_OBJ_NODE, NULL);
+
+		if (numa_obj && numa_obj->parent) {
+			objtype[SOCKET] = numa_obj->parent->type;
+			if (get_log_level() >= LOG_LEVEL_DEBUG2) {
+				char tmp[128];
+				hwloc_obj_type_snprintf(tmp, sizeof(tmp),
+							numa_obj->parent, 0);
+				debug2("%s: numa_node_as_socket mapped to '%s'",
+				       __func__, tmp);
+			}
+		}
+#else
+		error("SlurmdParameters=numa_node_as_socket requires hwloc v2");
+#endif
 	}
 
 	/* Groups below root obj are interpreted as boards */

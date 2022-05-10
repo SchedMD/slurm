@@ -259,6 +259,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix exclusive jobs breaking MaxCPUsPerNode limit
  -- Error if ConstrainSwapSpace is set and system doesn't have the kernel with
     CONFIG_MEMCG_SWAP set. This will avoid bad configurations.
+ -- Add SlurmdParameters=numa_node_as_socket.
 
 * Changes in Slurm 21.08.9
 ==========================
