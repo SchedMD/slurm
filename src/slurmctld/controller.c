@@ -2734,6 +2734,7 @@ static void *_shutdown_bu_thread(void *arg)
 	xfree(arg);
 
 	slurm_msg_t_init(&req);
+	slurm_msg_set_r_uid(&req, slurm_conf.slurm_user_id);
 	slurm_set_addr(&req.address, slurm_conf.slurmctld_port,
 	               slurm_conf.control_addr[bu_inx]);
 	if (do_shutdown) {
