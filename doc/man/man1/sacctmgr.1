@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "April 2022" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "May 2022" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -355,8 +355,10 @@ This is overridden if set directly on a user.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
-.TP
-\fBFairshare\fR={<\fIfairshare_number\fR>|parent}
+.IP \fBFairshare\fR={<\fIfairshare_number\fR>|parent}
+.PD 0
+.IP \fBShare\fR={<\fIfairshare_number\fR>|parent}
+.PD
 Number used in conjunction with other accounts to determine job
 priority. Can also be the string \fIparent\fR, when used on a user
 this means that the parent association is used for fairshare.  If
@@ -365,6 +367,41 @@ effectively reparented for fairshare calculations to the first parent
 of their parent that is not Fairshare=parent.  Limits remain the same,
 only its fairshare value is affected.  To clear a previously set
 value use the modify command with a new value of \-1.
+.IP
+
+.TP
+\fBGrpJobs\fR=<\fImax_jobs\fR>
+Maximum number of running jobs in aggregate for
+this association and all associations which are children of this association.
+To clear a previously set value use the modify command with a new value of \-1.
+.IP
+
+.TP
+\fBGrpJobsAccrue\fR=<\fImax_jobs\fR>
+Maximum number of pending jobs in aggregate able to accrue age priority for this
+association and all associations which are children of this association.
+To clear a previously set value use the modify command with a new value of \-1.
+.IP
+
+.IP \fBGrpSubmit\fR=<\fImax_jobs\fR>
+.PD 0
+.IP \fBGrpSubmitJobs\fR=<\fImax_jobs\fR>
+.PD
+Maximum number of jobs which can be in a pending or running state at any time
+in aggregate for this association and all associations which are children of
+this association.
+To clear a previously set value use the modify command with a new value of \-1.
+.IP
+
+.TP
+\fBGrpTRES\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+Maximum number of TRES running jobs are able to be allocated in aggregate for
+this association and all associations which are children of this association.
+To clear a previously set value use the modify command with a new
+value of \-1 for each TRES id.
+
+NOTE: This limit only applies fully when using the Select Consumable
+Resource plugin.
 .IP
 
 .TP
@@ -396,41 +433,6 @@ time to free up.
 .IP
 
 .TP
-\fBGrpTRES\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
-Maximum number of TRES running jobs are able to be allocated in aggregate for
-this association and all associations which are children of this association.
-To clear a previously set value use the modify command with a new
-value of \-1 for each TRES id.
-
-NOTE: This limit only applies fully when using the Select Consumable
-Resource plugin.
-.IP
-
-.TP
-\fBGrpJobs\fR=<\fImax_jobs\fR>
-Maximum number of running jobs in aggregate for
-this association and all associations which are children of this association.
-To clear a previously set value use the modify command with a new value of \-1.
-.IP
-
-.TP
-\fBGrpJobsAccrue\fR=<\fImax_jobs\fR>
-Maximum number of pending jobs in aggregate able to accrue age priority for this
-association and all associations which are children of this association.
-To clear a previously set value use the modify command with a new value of \-1.
-.IP
-
-.TP
-\fBGrpSubmitJobs\fR=<\fImax_jobs\fR>
-Maximum number of jobs which can be in a pending or running state at any time
-in aggregate for this association and all associations which are children of
-this association.
-To clear a previously set value use the modify command with a new value of \-1.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBGrpSubmit\fR.
-.IP
-
-.TP
 \fBGrpWall\fR=<\fImax_wall\fR>
 Maximum wall clock time running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
@@ -446,31 +448,6 @@ or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
 is reached all associated jobs running will be killed and all future
 jobs submitted with associations in the group will be delayed until
 they are able to run inside the limit.
-.IP
-
-.TP
-\fBMaxTRESMinsPerJob\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
-Maximum number of TRES minutes each job is able to use in this association.
-This is overridden if set directly on a user.
-Default is the cluster's limit.
-To clear a previously set value use the modify command with a new
-value of \-1 for each TRES id.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRESMins\fR.
-.IP
-
-.TP
-\fBMaxTRESPerJob\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
-Maximum number of TRES each job is able to use in this association.
-This is overridden if set directly on a user.
-Default is the cluster's limit.
-To clear a previously set value use the modify command with a new
-value of \-1 for each TRES id.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRES\fR.
-
-\fBNOTE\fR: This limit only applies fully when using \fBcons_res\fR or
-\fBcons_tres\fR select type plugins.
 .IP
 
 .TP
@@ -491,18 +468,45 @@ Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
-.TP
-\fBMaxSubmitJobs\fR=<\fImax_jobs\fR>
+.IP \fBMaxSubmit\fR=<\fImax_jobs\fR>
+.PD 0
+.IP \fBMaxSubmitJobs\fR=<\fImax_jobs\fR>
+.PD
 Maximum number of jobs which can this association can have in a
 pending or running state at any time.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxSubmit\fR.
 .IP
 
-.TP
-\fBMaxWallDurationPerJob\fR=<\fImax_wall\fR>
+.IP \fBMaxTRESMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
+.PD 0
+.IP \fBMaxTRESMinsPerJob\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
+.PD
+Maximum number of TRES minutes each job is able to use in this association.
+This is overridden if set directly on a user.
+Default is the cluster's limit.
+To clear a previously set value use the modify command with a new
+value of \-1 for each TRES id.
+.IP
+
+.IP \fBMaxTRES\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+.PD 0
+.IP \fBMaxTRESPerJob\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+.PD
+Maximum number of TRES each job is able to use in this association.
+This is overridden if set directly on a user.
+Default is the cluster's limit.
+To clear a previously set value use the modify command with a new
+value of \-1 for each TRES id.
+
+\fBNOTE\fR: This limit only applies fully when using \fBcons_res\fR or
+\fBcons_tres\fR select type plugins.
+.IP
+
+.IP \fBMaxWall\fR=<\fImax_wall\fR>
+.PD 0
+.IP \fBMaxWallDurationPerJob\fR=<\fImax_wall\fR>
+.PD
 Maximum wall clock time each job is able to use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
@@ -513,8 +517,6 @@ To clear a previously set value use the modify command with a new value of \-1.
 
 \fBNOTE\fR: Changing this value will have no effect on any running or
 pending job.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxWall\fR.
 .IP
 
 .TP
@@ -739,8 +741,10 @@ The QOS the association will use by default if it as access to it in
 the QOS list mentioned below.
 .IP
 
-.TP
-\fBFairshare\fR
+.IP \fBFairshare\fR
+.PD 0
+.IP \fBShare\fR
+.PD
 Number used in conjunction with other accounts to determine job
 priority. Can also be the string \fIparent\fR, when used on a user
 this means that the parent association is used for fairshare.  If
@@ -748,6 +752,33 @@ Fairshare=parent is set on an account, that account's children will be
 effectively reparented for fairshare calculations to the first parent
 of their parent that is not Fairshare=parent.  Limits remain the same,
 only its fairshare value is affected.
+.IP
+
+.TP
+\fBGrpJobs\fR
+Maximum number of running jobs in aggregate for
+this association and all associations which are children of this association.
+.IP
+
+.TP
+\fBGrpJobsAccrue\fR
+Maximum number of pending jobs in aggregate able to accrue age priority for this
+association and all associations which are children of this association.
+.IP
+
+.IP \fBGrpSubmit\fR
+.PD 0
+.IP \fBGrpSubmitJobs\fR
+.PD
+Maximum number of jobs which can be in a pending or running state at any time
+in aggregate for this association and all associations which are children of
+this association.
+.IP
+
+.TP
+\fBGrpTRES\fR
+Maximum number of TRES running jobs are able to be allocated in aggregate for
+this association and all associations which are children of this association.
 .IP
 
 .TP
@@ -763,33 +794,6 @@ jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
 time to free up.
-.IP
-
-.TP
-\fBGrpTRES\fR
-Maximum number of TRES running jobs are able to be allocated in aggregate for
-this association and all associations which are children of this association.
-.IP
-
-.TP
-\fBGrpJobs\fR
-Maximum number of running jobs in aggregate for
-this association and all associations which are children of this association.
-.IP
-
-.TP
-\fBGrpJobsAccrue\fR
-Maximum number of pending jobs in aggregate able to accrue age priority for this
-association and all associations which are children of this association.
-.IP
-
-.TP
-\fBGrpSubmitJobs\fR
-Maximum number of jobs which can be in a pending or running state at any time
-in aggregate for this association and all associations which are children of
-this association.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBGrpSubmit\fR.
 .IP
 
 .TP
@@ -812,25 +816,6 @@ children of this association.
 .IP
 
 .TP
-\fBMaxTRESPerJob\fR
-Maximum number of TRES each job is able to use.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRES\fR.
-.IP
-
-.TP
-\fBMaxTRESMinsPerJob\fR
-Maximum number of TRES minutes each job is able to use.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRESMins\fR.
-.IP
-
-.TP
-\fBMaxTRESPerNode\fR
-Maximum number of TRES each node in a job allocation can use.
-.IP
-
-.TP
 \fBMaxJobs\fR
 Maximum number of jobs each user is allowed to run at one time.
 .IP
@@ -841,18 +826,37 @@ Maximum number of pending jobs able to accrue age priority at any given time.
 This limit only applies to the job's QOS and not the partition's QOS.
 .IP
 
-.TP
-\fBMaxSubmitJobs\fR
+.IP \fBMaxSubmit\fR
+.PD 0
+.IP \fBMaxSubmitJobs\fR
+.PD
 Maximum number of jobs pending or running state at any time.
+.IP
 
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxSubmit\fR.
+.IP \fBMaxTRES\fR
+.PD 0
+.IP \fBMaxTRESPerJob\fR
+.PD
+Maximum number of TRES each job is able to use.
+.IP
+
+.IP \fBMaxTRESMins\fR
+.PD 0
+.IP \fBMaxTRESMinsPerJob\fR
+.PD
+Maximum number of TRES minutes each job is able to use.
 .IP
 
 .TP
-\fBMaxWallDurationPerJob\fR
-Maximum wall clock time each job is able to use.
+\fBMaxTRESPerNode\fR
+Maximum number of TRES each node in a job allocation can use.
+.IP
 
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxWall\fR.
+.IP \fBMaxWall\fR
+.PD 0
+.IP \fBMaxWallDurationPerJob\fR
+.PD
+Maximum wall clock time each job is able to use.
 .IP
 
 .TP
@@ -886,19 +890,6 @@ What priority will be added to a job's priority when using this association.
 .IP
 
 .TP
-\fBWithRawQOSLevel\fR
-Display QosLevel in an unevaluated raw format, consisting of a comma
-separated list of QOS names prepended with '' (nothing), '+' or '\-' for
-the association. QOS names without +/\- prepended were assigned (ie,
-sacctmgr modify ... set QosLevel=qos_name) for the entity listed or
-on one of its parents in the hierarchy. QOS names with +/\- prepended
-indicate the QOS was added/filtered (ie, sacctmgr modify ... set
-QosLevel=[+\-]qos_name) for the entity listed or on one of its parents
-in the hierarchy. Including WOPLimits will show exactly where each QOS
-was assigned, added or filtered in the hierarchy.
-.IP
-
-.TP
 \fBRGT\fR
 Associations are kept in a hierarchy: this is the right most
 spot in the hierarchy.  When used with the LFT variable, all
@@ -909,6 +900,19 @@ children of this association.
 .TP
 \fBUser\fR
 The name of a user in the association.
+.IP
+
+.TP
+\fBWithRawQOSLevel\fR
+Display QosLevel in an unevaluated raw format, consisting of a comma
+separated list of QOS names prepended with '' (nothing), '+' or '\-' for
+the association. QOS names without +/\- prepended were assigned (ie,
+sacctmgr modify ... set QosLevel=qos_name) for the entity listed or
+on one of its parents in the hierarchy. QOS names with +/\- prepended
+indicate the QOS was added/filtered (ie, sacctmgr modify ... set
+QosLevel=[+\-]qos_name) for the entity listed or on one of its parents
+in the hierarchy. Including WOPLimits will show exactly where each QOS
+was assigned, added or filtered in the hierarchy.
 .IP
 
 .SH "SPECIFICATIONS FOR CLUSTERS"
@@ -1285,6 +1289,11 @@ Display federations in a hierarchical fashion.
 .SH "LIST/SHOW FEDERATION FORMAT OPTIONS"
 
 .TP
+\fBCluster\fR
+Name of the cluster that is a member of the federation.
+.IP
+
+.TP
 \fBFeatures\fR
 The list of features on the cluster.
 .IP
@@ -1292,11 +1301,6 @@ The list of features on the cluster.
 .TP
 \fBFederation\fR
 The name of the federation.
-.IP
-
-.TP
-\fBCluster\fR
-Name of the cluster that is a member of the federation.
 .IP
 
 .TP
@@ -1440,6 +1444,12 @@ result in starvation of larger jobs.
 .IP
 
 .TP
+\fBOverPartQOS\fR
+If set jobs using this QOS will be able to
+override any limits used by the requested partition's QOS limits.
+.IP
+
+.TP
 \fBPartitionMaxNodes\fR
 If set jobs using this QOS will be able to
 override the requested partition's MaxNodes limit.
@@ -1449,12 +1459,6 @@ override the requested partition's MaxNodes limit.
 \fBPartitionMinNodes\fR
 If set jobs using this QOS will be able to
 override the requested partition's MinNodes limit.
-.IP
-
-.TP
-\fBOverPartQOS\fR
-If set jobs using this QOS will be able to
-override any limits used by the requested partition's QOS limits.
 .IP
 
 .TP
@@ -1486,6 +1490,32 @@ selected for preemption.
 .IP
 
 .TP
+\fBGrpJobs\fR
+Maximum number of running jobs in aggregate for this QOS.
+.IP
+
+.TP
+\fBGrpJobsAccrue\fR
+Maximum number of pending jobs in aggregate able to accrue age priority for this
+QOS.
+This limit only applies to the job's QOS and not the partition's QOS.
+.IP
+
+.IP \fBGrpSubmit\fR
+.PD 0
+.IP \fBGrpSubmitJobs\fR
+.PD
+Maximum number of jobs which can be in a pending or running state at any time
+in aggregate for this QOS.
+.IP
+
+.TP
+\fBGrpTRES\fR
+Maximum number of TRES running jobs are able to be allocated in aggregate for
+this QOS.
+.IP
+
+.TP
 \fBGrpTRESMins\fR
 The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this QOS.
@@ -1501,32 +1531,6 @@ time to free up.
 .IP
 
 .TP
-\fBGrpTRES\fR
-Maximum number of TRES running jobs are able to be allocated in aggregate for
-this QOS.
-.IP
-
-.TP
-\fBGrpJobs\fR
-Maximum number of running jobs in aggregate for this QOS.
-.IP
-
-.TP
-\fBGrpJobsAccrue\fR
-Maximum number of pending jobs in aggregate able to accrue age priority for this
-QOS.
-This limit only applies to the job's QOS and not the partition's QOS.
-.IP
-
-.TP
-\fBGrpSubmitJobs\fR
-Maximum number of jobs which can be in a pending or running state at any time
-in aggregate for this QOS.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBGrpSubmit\fR.
-.IP
-
-.TP
 \fBGrpWall\fR
 Maximum wall clock time running jobs are able to be allocated in aggregate for
 this QOS. If this limit is reached submission requests will be denied and the
@@ -1539,56 +1543,76 @@ The id of the QOS.
 .IP
 
 .TP
-\fBMaxJobsAccruePerAccount\fR
+\fBLimitFactor\fR
+Factor to scale TRES count limits when running with this QOS. See below for more
+details.
+.IP
+
+.IP \fBMaxJobsAccruePA\fR
+.PD 0
+.IP \fBMaxJobsAccruePerAccount\fR
+.PD
 Maximum number of pending jobs an account (or subacct) can have accruing age
 priority at any given time.
 This limit only applies to the job's QOS and not the partition's QOS.
 .IP
 
-.TP
-\fBMaxJobsAccruePerUser\fR
+.IP \fBMaxJobsAccruePU\fR
+.PD 0
+.IP \fBMaxJobsAccruePerUser\fR
+.PD
 Maximum number of pending jobs a user can have accruing age priority at any
 given time.
 This limit only applies to the job's QOS and not the partition's QOS.
 .IP
 
-.TP
-\fBMaxJobsPerAccount\fR
+.IP \fBMaxJobsPA\fR
+.PD 0
+.IP \fBMaxJobsPerAccount\fR
+.PD
 Maximum number of jobs each account is allowed to run at one time.
 .IP
 
-.TP
-\fBMaxJobsPerUser\fR
+.IP \fBMaxJobsPU\fR
+.PD 0
+.IP \fBMaxJobsPerUser\fR
+.PD
 Maximum number of jobs each user is allowed to run at one time.
 .IP
 
-.TP
-\fBMaxSubmitJobsPerAccount\fR
+.IP \fBMaxSubmitJobsPA\fR
+.PD 0
+.IP \fBMaxSubmitJobsPerAccount\fR
+.PD
 Maximum number of jobs pending or running state at any time per account.
 .IP
 
-.TP
-\fBMaxSubmitJobsPerUser\fR
+.IP \fBMaxSubmitJobsPU\fR
+.PD 0
+.IP \fBMaxSubmitJobsPerUser\fR
+.PD
 Maximum number of jobs pending or running state at any time per user.
 .IP
 
-.TP
-\fBMaxTRESMinsPerJob\fR
-Maximum number of TRES minutes each job is able to use.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRESMins\fR.
-.IP
-
-.TP
-\fBMaxTRESPerAccount\fR
-Maximum number of TRES each account is able to use.
-.IP
-
-.TP
-\fBMaxTRESPerJob\fR
+.IP \fBMaxTRES\fR
+.PD 0
+.IP \fBMaxTRESPerJob\fR
+.PD
 Maximum number of TRES each job is able to use.
+.IP
 
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRES\fR.
+.IP \fBMaxTRESMins\fR
+.PD 0
+.IP \fBMaxTRESMinsPerJob\fR
+.PD
+Maximum number of TRES minutes each job is able to use.
+.IP
+
+.IP \fBMaxTRESPA\fR
+.PD 0
+.IP \fBMaxTRESPerAccount\fR
+.PD
+Maximum number of TRES each account is able to use.
 .IP
 
 .TP
@@ -1596,16 +1620,18 @@ Maximum number of TRES each job is able to use.
 Maximum number of TRES each node in a job allocation can use.
 .IP
 
-.TP
-\fBMaxTRESPerUser\fR
+.IP \fBMaxTRESPU\fR
+.PD 0
+.IP \fBMaxTRESPerUser\fR
+.PD
 Maximum number of TRES each user is able to use.
 .IP
 
-.TP
-\fBMaxWallDurationPerJob\fR
+.IP \fBMaxWall\fR
+.PD 0
+.IP \fBMaxWallDurationPerJob\fR
+.PD
 Maximum wall clock time each job is able to use.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxWall\fR.
 .IP
 
 .TP
@@ -1613,12 +1639,12 @@ Maximum wall clock time each job is able to use.
 Minimum priority required to reserve resources when scheduling.
 .IP
 
-.TP
-\fBMinTRESPerJob\fR
+.IP \fBMinTRES\fR
+.PD 0
+.IP \fBMinTRESPerJob\fR
+.PD
 Minimum number of TRES each job running under this QOS must request.
 Otherwise the job will pend until modified.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMinTRES\fR.
 .IP
 
 .TP
@@ -1755,12 +1781,6 @@ Usage factor when running with this QOS. See below for more details.
 .IP
 
 .TP
-\fBLimitFactor\fR
-Factor to scale TRES count limits when running with this QOS. See below for more
-details.
-.IP
-
-.TP
 \fBUsageThreshold\fR
 A float representing the lowest fairshare of an association allowable
 to run a job.  If an association falls below this threshold and has
@@ -1792,28 +1812,6 @@ This value is only meaningful for QOS \fIPreemptMode=CANCEL\fR and
 .IP
 
 .TP
-\fBGrpTRESMins\fR
-The total number of TRES minutes that can possibly be used by past,
-present and future jobs running from this QOS.
-To clear a previously set value use the modify command with a new
-value of \-1 for each TRES id.
-NOTE: This limit only applies when using the Priority Multifactor
-plugin.  The time is decayed using the value of PriorityDecayHalfLife
-or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
-is reached all associated jobs running will be killed and all future jobs
-submitted with this QOS will be delayed until they are able to run
-inside the limit.
-.IP
-
-.TP
-\fBGrpTRES\fR
-Maximum number of TRES running jobs are able to be allocated in aggregate for
-this QOS.
-To clear a previously set value use the modify command with a new
-value of \-1 for each TRES id.
-.IP
-
-.TP
 \fBGrpJobs\fR
 Maximum number of running jobs in aggregate for this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -1827,13 +1825,35 @@ This limit only applies to the job's QOS and not the partition's QOS.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
-.TP
-\fBGrpSubmitJobs\fR
+.IP \fBGrpSubmit\fR
+.PD 0
+.IP \fBGrpSubmitJobs\fR
+.PD
 Maximum number of jobs which can be in a pending or running state at any time
 in aggregate for this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
+.IP
 
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBGrpSubmit\fR.
+.TP
+\fBGrpTRES\fR
+Maximum number of TRES running jobs are able to be allocated in aggregate for
+this QOS.
+To clear a previously set value use the modify command with a new
+value of \-1 for each TRES id.
+.IP
+
+.TP
+\fBGrpTRESMins\fR
+The total number of TRES minutes that can possibly be used by past,
+present and future jobs running from this QOS.
+To clear a previously set value use the modify command with a new
+value of \-1 for each TRES id.
+NOTE: This limit only applies when using the Priority Multifactor
+plugin.  The time is decayed using the value of PriorityDecayHalfLife
+or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
+is reached all associated jobs running will be killed and all future jobs
+submitted with this QOS will be delayed until they are able to run
+inside the limit.
 .IP
 
 .TP
@@ -1850,42 +1870,76 @@ inside the limit.
 .IP
 
 .TP
-\fBMaxJobsAccruePerAccount\fR
+\fBLimitFactor\fR
+A float that is factored into an associations [Grp|Max]TRES limits.  For
+example, if the LimitFactor is 2, then an association with a GrpTRES of 30 CPUs,
+would be allowed to allocate 60 CPUs when running under this QOS.
+
+NOTE: This factor is only applied to associations running in this QOS and
+is not applied to any limits in the QOS itself.
+
+To clear a previously set value use the modify command with a new value of \-1.
+.IP
+
+.IP \fBMaxJobsAccruePA\fR
+.PD 0
+.IP \fBMaxJobsAccruePerAccount\fR
+.PD
 Maximum number of jobs an account (or subacct) can have accruing age priority
 at any given time. This limit only applies to the job's QOS and not the
 partition's QOS.
 .IP
 
-.TP
-\fBMaxJobsAccruePerUser\fR
+.IP \fBMaxJobsAccruePU\fR
+.PD 0
+.IP \fBMaxJobsAccruePerUser\fR
+.PD
 Maximum number of jobs a user can have accruing age priority at any given
 time. This limit only applies to the job's QOS and not the partition's
 QOS.
 .IP
 
-.TP
-\fBMaxTRESMinsPerJob\fR
+.IP \fBMaxJobsPA\fR
+.PD 0
+.IP \fBMaxJobsPerAccount\fR
+.PD
+Maximum number of jobs each account is allowed to run at one time.
+To clear a previously set value use the modify command with a new value of \-1.
+.IP
+
+.IP \fBMaxJobsPU\fR
+.PD 0
+.IP \fBMaxJobsPerUser\fR
+.PD
+Maximum number of jobs each user is allowed to run at one time.
+To clear a previously set value use the modify command with a new value of \-1.
+.IP
+
+.IP \fBMaxTRESMins\fR
+.PD 0
+.IP \fBMaxTRESMinsPerJob\fR
+.PD
 Maximum number of TRES minutes each job is able to use.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRESMins\fR.
 .IP
 
-.TP
-\fBMaxTRESPerAccount\fR
+.IP \fBMaxTRESPA\fR
+.PD 0
+.IP \fBMaxTRESPerAccount\fR
+.PD
 Maximum number of TRES each account is able to use.
 To clear a previously set value use the modify command with a new value of \-1
 for each TRES id.
 .IP
 
-.TP
-\fBMaxTRESPerJob\fR
+.IP \fBMaxTRES\fR
+.PD 0
+.IP \fBMaxTRESPerJob\fR
+.PD
 Maximum number of TRES each job is able to use.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxTRES\fR.
 .IP
 
 .TP
@@ -1895,46 +1949,40 @@ To clear a previously set value use the modify command with a new value of \-1
 for each TRES id.
 .IP
 
-.TP
-\fBMaxTRESPerUser\fR
+.IP \fBMaxTRESPU\fR
+.PD 0
+.IP \fBMaxTRESPerUser\fR
+.PD
 Maximum number of TRES each user is able to use.
 To clear a previously set value use the modify command with a new value of \-1
 for each TRES id.
 .IP
 
-.TP
-\fBMaxJobsPerAccount\fR
-Maximum number of jobs each account is allowed to run at one time.
-To clear a previously set value use the modify command with a new value of \-1.
-.IP
-
-.TP
-\fBMaxJobsPerUser\fR
-Maximum number of jobs each user is allowed to run at one time.
-To clear a previously set value use the modify command with a new value of \-1.
-.IP
-
-.TP
-\fBMaxSubmitJobsPerAccount\fR
+.IP \fBMaxSubmitJobsPA\fR
+.PD 0
+.IP \fBMaxSubmitJobsPerAccount\fR
+.PD
 Maximum number of jobs pending or running state at any time per account.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
-.TP
-\fBMaxSubmitJobsPerUser\fR
+.IP \fBMaxSubmitJobsPU\fR
+.PD 0
+.IP \fBMaxSubmitJobsPerUser\fR
+.PD
 Maximum number of jobs pending or running state at any time per user.
 To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
-.TP
-\fBMaxWallDurationPerJob\fR
+.IP \fBMaxWall\fR
+.PD 0
+.IP \fBMaxWallDurationPerJob\fR
+.PD
 Maximum wall clock time each job is able to use.
 <max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or
 <days>\-<hr>:<min>:<sec> or <days>\-<hr>.
 The value is recorded in minutes with rounding as needed.
 To clear a previously set value use the modify command with a new value of \-1.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxWall\fR.
 .IP
 
 .TP
@@ -2010,18 +2058,6 @@ See \fIAccountingStorageEnforce\fR in slurm.conf man page.
 
 Default is 1. To clear a previously set value use the modify command with a new
 value of \-1.
-.IP
-
-.TP
-\fBLimitFactor\fR
-A float that is factored into an associations [Grp|Max]TRES limits.  For
-example, if the LimitFactor is 2, then an association with a GrpTRES of 30 CPUs,
-would be allowed to allocate 60 CPUs when running under this QOS.
-
-NOTE: This factor is only applied to associations running in this QOS and
-is not applied to any limits in the QOS itself.
-
-To clear a previously set value use the modify command with a new value of \-1.
 .IP
 
 .SH "SPECIFICATIONS FOR RESERVATIONS"
@@ -2164,12 +2200,6 @@ no flags have been defined.
 .IP
 
 .TP
-\fBServerType\fR=<\fIOPT\fR>
-The type of a software resource manager providing the licenses. For example
-FlexNext Publisher Flexlm license server or Reprise License Manager RLM.
-.IP
-
-.TP
 \fBNames\fR=<\fIOPT\fR>
 Comma separated list of the name of a resource configured on the
 system being controlled by a resource manager.  If this resource is
@@ -2186,6 +2216,12 @@ Percentage of a specific resource that can be used on specified cluster.
 \fBServer\fR=<\fIOPT\fR>
 The name of the server serving up the resource.  Default is 'slurmdb' indicating
 the licenses are being served by the database.
+.IP
+
+.TP
+\fBServerType\fR=<\fIOPT\fR>
+The type of a software resource manager providing the licenses. For example
+FlexNext Publisher Flexlm license server or Reprise License Manager RLM.
 .IP
 
 .TP
@@ -2208,6 +2244,11 @@ available for usage by Slurm clusters.
 .SH "LIST/SHOW RESOURCE FORMAT OPTIONS"
 
 .TP
+\fBAllocated\fR
+The percent of licenses allocated to a cluster.
+.IP
+
+.TP
 \fBCluster\fR
 Name of cluster resource is given to.
 .IP
@@ -2218,18 +2259,8 @@ The count of a specific resource configured on the system globally.
 .IP
 
 .TP
-\fBAllocated\fR
-The percent of licenses allocated to a cluster.
-.IP
-
-.TP
 \fBDescription\fR
 Description of the resource.
-.IP
-
-.TP
-\fBServerType\fR
-The type of the server controlling the licenses.
 .IP
 
 .TP
@@ -2240,6 +2271,11 @@ Name of this resource.
 .TP
 \fBServer\fR
 Server serving up the resource.
+.IP
+
+.TP
+\fBServerType\fR
+The type of the server controlling the licenses.
 .IP
 
 .TP
@@ -2275,13 +2311,13 @@ Current State of the job in the database.
 .IP
 
 .TP
-\fBTimeStart\fR
-Time job started running.
+\fBTimeEnd\fR
+Current recorded time of the end of the job.
 .IP
 
 .TP
-\fBTimeEnd\fR
-Current recorded time of the end of the job.
+\fBTimeStart\fR
+Time job started running.
 .IP
 
 .SH "SPECIFICATIONS FOR TRANSACTIONS"
@@ -2511,17 +2547,17 @@ Workload Characterization Key.
 .SH "LIST/SHOW TRES"
 
 .TP
+\fBID\fR
+The identification number of the trackable resource as it appears
+in the database.
+.IP
+
+.TP
 \fBName\fR
 The name of the trackable resource.  This option is required for
 TRES types BB (Burst buffer), GRES, and License.  Types CPU, Energy,
 Memory, and Node do not have Names.  For example if GRES is the
 type then name is the denomination of the GRES itself e.g. GPU.
-.IP
-
-.TP
-\fBID\fR
-The identification number of the trackable resource as it appears
-in the database.
 .IP
 
 .TP
@@ -2605,25 +2641,8 @@ associations on this cluster.  The options for the cluster are:
 .RS
 
 .TP
-\fBGrpTRESMins=\fR
-The total number of TRES minutes that can possibly be used by past,
-present and future jobs running from this association and its children.
-.IP
-
-.TP
-\fBGrpTRESRunMins=\fR
-Used to limit the combined total number of TRES minutes used by all
-jobs running with this association and its children.  This takes into
-consideration time limit of running jobs and consumes it, if the limit
-is reached no new jobs are started until other jobs finish to allow
-time to free up.
-.IP
-
-.TP
-\fBGrpTRES=\fR
-Maximum number of TRES running jobs are able to be
-allocated in aggregate for this association and all associations which
-are children of this association.
+\fBFairShare=\fR
+Number used in conjunction with other associations to determine job priority.
 .IP
 
 .TP
@@ -2653,15 +2672,32 @@ associations which are children of this association.
 .IP
 
 .TP
-\fBGrpWall=\fR
-Maximum wall clock time running jobs are able to be
+\fBGrpTRES=\fR
+Maximum number of TRES running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
 .IP
 
 .TP
-\fBFairShare=\fR
-Number used in conjunction with other associations to determine job priority.
+\fBGrpTRESMins=\fR
+The total number of TRES minutes that can possibly be used by past,
+present and future jobs running from this association and its children.
+.IP
+
+.TP
+\fBGrpTRESRunMins=\fR
+Used to limit the combined total number of TRES minutes used by all
+jobs running with this association and its children.  This takes into
+consideration time limit of running jobs and consumes it, if the limit
+is reached no new jobs are started until other jobs finish to allow
+time to free up.
+.IP
+
+.TP
+\fBGrpWall=\fR
+Maximum wall clock time running jobs are able to be
+allocated in aggregate for this association and all associations which
+are children of this association.
 .IP
 
 .TP
@@ -2705,6 +2741,11 @@ Account options are:
 .TP
 \fBDescription=\fR
 A brief description of the account.
+.IP
+
+.TP
+\fBFairShare=\fR
+Number used in conjunction with other associations to determine job priority.
 .IP
 
 .TP
@@ -2758,11 +2799,6 @@ associations which are children of this association.
 Maximum wall clock time running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
-.IP
-
-.TP
-\fBFairShare=\fR
-Number used in conjunction with other associations to determine job priority.
 .IP
 
 .TP
