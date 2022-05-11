@@ -400,24 +400,26 @@ extern int op_handler_users(const char *context_id,
 {
 	data_t *errors = populate_response_format(resp);
 
-	slurmdb_user_cond_t user_cond = {0};
-	if (query && data_get_dict_length(query)) {
-		/* Default to no deleted users */
-		foreach_query_search_t args = {
-			.errors = errors,
-			.user_cond = &user_cond,
-		};
+	if (method == HTTP_REQUEST_GET) {
+		slurmdb_user_cond_t user_cond = {0};
+		if (query && data_get_dict_length(query)) {
+			/* Default to no deleted users */
+			foreach_query_search_t args = {
+				.errors = errors,
+				.user_cond = &user_cond,
+			};
 
-		if (data_dict_for_each(query, _foreach_query_search, &args) < 0)
-			return ESLURM_REST_INVALID_QUERY;
-	}
+			if (data_dict_for_each(query, _foreach_query_search,
+					       &args) < 0)
+				return ESLURM_REST_INVALID_QUERY;
+		}
 
-	if (method == HTTP_REQUEST_GET)
 		return _dump_users(resp, errors, auth, NULL, &user_cond);
-	else if (method == HTTP_REQUEST_POST)
+	} else if (method == HTTP_REQUEST_POST) {
 		return _update_users(query, resp, auth, (tag != CONFIG_OP_TAG));
-	else
+	} else {
 		return ESLURM_REST_INVALID_QUERY;
+	}
 }
 
 static int op_handler_user(const char *context_id, http_request_method_t method,
@@ -428,26 +430,28 @@ static int op_handler_user(const char *context_id, http_request_method_t method,
 	data_t *errors = populate_response_format(resp);
 	char *user_name = get_str_param("user_name", errors, parameters);
 
-	slurmdb_user_cond_t user_cond = {0};
-	if (query && data_get_dict_length(query)) {
-		/* Default to no deleted users */
-		foreach_query_search_t args = {
-			.errors = errors,
-			.user_cond = &user_cond,
-		};
-
-		if (data_dict_for_each(query, _foreach_query_search, &args) < 0)
-			return ESLURM_REST_INVALID_QUERY;
-	}
-
-	if (!user_name)
+	if (!user_name) {
 		rc = ESLURM_REST_INVALID_QUERY;
-	else if (method == HTTP_REQUEST_GET)
+	} else if (method == HTTP_REQUEST_GET) {
+		slurmdb_user_cond_t user_cond = {0};
+		if (query && data_get_dict_length(query)) {
+			/* Default to no deleted users */
+			foreach_query_search_t args = {
+				.errors = errors,
+				.user_cond = &user_cond,
+			};
+
+			if (data_dict_for_each(query, _foreach_query_search,
+					       &args) < 0)
+				return ESLURM_REST_INVALID_QUERY;
+		}
+
 		rc = _dump_users(resp, errors, auth, user_name, &user_cond);
-	else if (method == HTTP_REQUEST_DELETE)
+	} else if (method == HTTP_REQUEST_DELETE) {
 		rc = _delete_user(resp, auth, user_name, errors);
-	else
+	} else {
 		rc = ESLURM_REST_INVALID_QUERY;
+	}
 
 	return rc;
 }
