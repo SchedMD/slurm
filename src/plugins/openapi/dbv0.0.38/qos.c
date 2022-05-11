@@ -151,7 +151,7 @@ static int _delete_qos(data_t *resp, void *auth, data_t *errors,
 		       slurmdb_qos_cond_t *qos_cond)
 {
 	int rc = SLURM_SUCCESS;
-	List qos_list;
+	List qos_list = NULL;
 
 	if (!(rc = db_query_list(errors, auth, &qos_list, slurmdb_qos_remove,
 				 qos_cond)) &&
