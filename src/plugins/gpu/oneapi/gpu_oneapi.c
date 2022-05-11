@@ -45,8 +45,8 @@
 #include <ze_api.h>
 #include <zes_api.h>
 
-#include "src/common/strlcpy.h"
 #include "src/plugins/gpu/common/gpu_common.h"
+#include "src/common/strlcpy.h"
 
 #define MAX_GPU_NUM 256
 #define MAX_NUM_FREQUENCIES 256
