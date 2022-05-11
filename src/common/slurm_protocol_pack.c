@@ -11577,7 +11577,7 @@ unpack_multi_core_data (multi_core_data_t **mc_ptr, buf_t *buffer,
 			uint16_t protocol_version)
 {
 	uint8_t flag;
-	multi_core_data_t *multi_core;
+	multi_core_data_t *multi_core = NULL;
 
 	*mc_ptr = NULL;
 	safe_unpack8(&flag, buffer);
