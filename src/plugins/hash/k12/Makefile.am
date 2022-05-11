@@ -12,8 +12,8 @@ pkglib_LTLIBRARIES = hash_k12.la
 hash_k12_la_SOURCES =			\
 	align.h				\
 	brg_endian.h			\
-	config.h			\
 	hash_k12.c			\
+	k12-config.h			\
 	KangarooTwelve.c		\
 	KangarooTwelve.h		\
 	KeccakP-1600-64.macros		\

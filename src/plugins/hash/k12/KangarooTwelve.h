@@ -17,7 +17,7 @@ http://creativecommons.org/publicdomain/zero/1.0/
 #ifndef _KangarooTwelve_h_
 #define _KangarooTwelve_h_
 
-#include "config.h"
+#include "k12-config.h"
 #ifdef XKCP_has_KeccakP1600
 
 #include <stddef.h>
