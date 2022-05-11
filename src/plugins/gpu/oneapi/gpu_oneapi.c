@@ -45,6 +45,7 @@
 #include <ze_api.h>
 #include <zes_api.h>
 
+#include "src/common/strlcpy.h"
 #include "src/plugins/gpu/common/gpu_common.h"
 
 #define MAX_GPU_NUM 256
@@ -805,7 +806,7 @@ static bool _oneapi_read_cpu_affinity_list(const char *file,
 			debug2("tok is :%s", tok);
 			pos = strcspn(tok, "-");
 			if (pos > 0 && pos < strlen(tok)) {
-				strncpy(buf, tok, pos);
+				strlcpy(buf, tok, pos);
 				min_cpu = atoi(buf);
 				strcpy(buf, tok + pos + 1);
 				max_cpu = atoi(buf);
