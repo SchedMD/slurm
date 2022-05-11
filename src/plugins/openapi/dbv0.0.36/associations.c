@@ -164,7 +164,7 @@ static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
 			 char *partition)
 {
 	int rc = SLURM_SUCCESS;
-	List removed;
+	List removed = NULL;
 	slurmdb_assoc_cond_t assoc_cond = {
 		.acct_list = list_create(NULL),
 		.user_list = list_create(NULL),
