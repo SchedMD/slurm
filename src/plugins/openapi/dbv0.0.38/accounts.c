@@ -99,10 +99,9 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 	return DATA_FOR_EACH_FAIL;
 }
 
-static int _parse_other_params(
-	data_t *query,
-	slurmdb_account_cond_t *cond,
-	data_t *errors)
+static int _parse_other_params(data_t *query,
+			       slurmdb_account_cond_t *cond,
+			       data_t *errors)
 {
 	if (!query || !data_get_dict_length(query))
 		return SLURM_SUCCESS;
