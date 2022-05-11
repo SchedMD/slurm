@@ -156,7 +156,7 @@ extern int net_set_keep_alive(int sock)
 			return -1;
 		}
 	}
-	if (slurm_conf.keepalive_interval != NO_VAL) {
+	if (slurm_conf.keepalive_probes != NO_VAL) {
 		opt_int = (int) slurm_conf.keepalive_probes;
 		if (setsockopt(sock, SOL_TCP, TCP_KEEPCNT,
 			       &opt_int, opt_len) < 0) {
