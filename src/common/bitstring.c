@@ -552,7 +552,7 @@ bitoff_t bit_ffs_from_bit(bitstr_t *b, bitoff_t bit)
 		bit++;
 	}
 
-	while (bit < _bitstr_bits(b) && value == -1) {
+	while ((bit < _bitstr_bits(b)) && (value == -1)) {
 		int32_t word = _bit_word(bit);
 
 		if (b[word] == 0) {
