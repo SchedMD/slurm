@@ -573,7 +573,7 @@ extern int pmixp_lib_dmodex_request(
 	pmix_dmodex_response_fn_t cbfunc = (pmix_dmodex_response_fn_t)dmdx_fn;
 
 	proc_v1.rank = (int)proc->rank;
-	strncpy(proc_v1.nspace, proc->nspace, PMIX_MAX_NSLEN);
+	strlcpy(proc_v1.nspace, proc->nspace, PMIX_MAX_NSLEN);
 
 	rc = PMIx_server_dmodex_request(&proc_v1, cbfunc, caddy);
 	if (PMIX_SUCCESS != rc) {
@@ -588,7 +588,7 @@ extern int pmixp_lib_setup_fork(uint32_t rank, const char *nspace, char ***env)
 	pmix_status_t rc;
 
 	proc.rank = rank;
-	strncpy(proc.nspace, nspace, PMIX_MAX_NSLEN);
+	strlcpy(proc.nspace, nspace, PMIX_MAX_NSLEN);
 	rc = PMIx_server_setup_fork(&proc, env);
 	if (PMIX_SUCCESS != rc) {
 		return SLURM_ERROR;
@@ -676,7 +676,7 @@ extern int pmixp_libpmix_job_set(void)
 	for (i = 0; i < pmixp_info_tasks_loc(); i++) {
 		pmix_proc_t proc;
 		register_caddy[i+1].active = 1;
-		strncpy(proc.nspace, pmixp_info_namespace(), PMIX_MAX_NSLEN);
+		strlcpy(proc.nspace, pmixp_info_namespace(), PMIX_MAX_NSLEN);
 		proc.rank = pmixp_info_taskid(i);
 		rc = PMIx_server_register_client(&proc, uid, gid, NULL,
 						 _release_cb,

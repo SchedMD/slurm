@@ -50,7 +50,7 @@
 {								\
 	char *key = key_str;					\
 	kvp = (pmix_info_t *)xmalloc(sizeof(pmix_info_t));	\
-	(void)strncpy(kvp->key, key, PMIX_MAX_KEYLEN);		\
+	(void)strlcpy(kvp->key, key, PMIX_MAX_KEYLEN);		\
 }
 
 #define PMIXP_KVP_CREATE(kvp, key_str, val, type)		\
@@ -75,7 +75,7 @@
 		kvp = (pmix_info_t *)xrealloc(kvp, (key_num + 1) *	\
 					      sizeof(pmix_info_t));	\
 	}								\
-	(void)strncpy(kvp[key_num].key, key, PMIX_MAX_KEYLEN);		\
+	(void)strlcpy(kvp[key_num].key, key, PMIX_MAX_KEYLEN);		\
 	PMIXP_VALUE_LOAD(&kvp[key_num].value, val, type);		\
 }
 

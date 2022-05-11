@@ -110,7 +110,7 @@ static pmix_status_t _fencenb_fn(const pmix_proc_t procs_v2[], size_t nprocs,
 
 	for (i = 0; i < nprocs; i++) {
 		procs[i].rank = procs_v2[i].rank;
-		strncpy(procs[i].nspace, procs_v2[i].nspace,
+		strlcpy(procs[i].nspace, procs_v2[i].nspace,
 			sizeof(procs[i].nspace));
 	}
 	/* check the info keys */

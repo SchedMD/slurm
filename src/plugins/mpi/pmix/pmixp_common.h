@@ -69,6 +69,7 @@
 #include "src/common/fd.h"
 #include "src/common/net.h"
 #include "src/common/slurm_mpi.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"

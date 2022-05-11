@@ -259,7 +259,7 @@ int pmixp_dmdx_get(const pmix_nspace_t nspace, int rank,
 	req->cbdata = cbdata;
 	req->ts = time(NULL);
 #ifndef NDEBUG
-	strncpy(req->nspace, nspace, sizeof(req->nspace));
+	strlcpy(req->nspace, nspace, sizeof(req->nspace));
 	req->rank = rank;
 #endif
 	list_append(_dmdx_requests, req);
@@ -329,7 +329,7 @@ static void _dmdx_req(buf_t *buf, int nodeid, uint32_t seq_num)
 	caddy->seq_num = seq_num;
 
 	/* ns is a pointer inside incoming buffer */
-	strncpy(caddy->proc.nspace, ns, sizeof(caddy->proc.nspace));
+	strlcpy(caddy->proc.nspace, ns, sizeof(caddy->proc.nspace));
 	ns = NULL; /* protect the data */
 	caddy->proc.rank = rank;
 
