@@ -2932,7 +2932,8 @@ static int _filter_job(job_info_t * job)
 			return 2;
 	}
 
-	if (params.state_list) {
+	if (params.all_states) {
+	} else if (params.state_list) {
 		filter = 1;
 		iterator = list_iterator_create(params.state_list);
 		while ((state_id = list_next(iterator))) {

@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix "--gpu-bind=single:" having wrong env variables.
  -- Sync missing pieces in slurmctld SIGHUP handler with respect to
     REQUEST_RECONFIGURE RPC handler.
+ -- Fixed the behavior of the --states=all option in squeue to actually show
+    all of the states.
 
 * Changes in Slurm 22.05.0rc1
 =============================
