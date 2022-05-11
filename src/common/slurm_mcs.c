@@ -236,7 +236,14 @@ extern int mcs_g_set_mcs_label(job_record_t *job_ptr, char *label)
 	return (int) (*(ops.set))(job_ptr, label);
 }
 
-extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label)
+/*
+ * mcs_g_check_mcs_label - check if user_id has right to access mcs_label
+ * user_id - uid of user to be checked
+ * mcs_label - mcs_label to be checked
+ * assoc_locked - pass information if required assoc locks are already acquired
+ */
+extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label,
+				 bool assoc_locked)
 {
 	if (slurm_mcs_init() < 0)
 		return 0;

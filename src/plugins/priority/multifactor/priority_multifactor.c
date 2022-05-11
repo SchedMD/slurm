@@ -1971,8 +1971,8 @@ extern List priority_p_get_priority_factors_list(
 			      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 			                                    job_ptr->account))||
 			     ((slurm_mcs_get_privatedata() == 1) &&
-			      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label)
-			       != 0))))
+			      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label,
+						     false) != 0))))
 				continue;
 
 			_filter_job(job_ptr, req_msg, part_filter_list,

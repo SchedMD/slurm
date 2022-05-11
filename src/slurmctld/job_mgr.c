@@ -10134,7 +10134,8 @@ static bool _hide_job_user_rec(job_record_t *job_ptr, slurmdb_user_rec_t *user,
 	      !assoc_mgr_is_user_acct_coord_user_rec(acct_db_conn, user,
 						     job_ptr->account)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
-	      (mcs_g_check_mcs_label(user->uid, job_ptr->mcs_label) != 0))))
+	      (mcs_g_check_mcs_label(user->uid, job_ptr->mcs_label,
+				     true) != 0))))
 		return true;
 	return false;
 }
@@ -10231,7 +10232,8 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		.has_qos_lock = true,
 		.user_rec.uid = uid,
 	};
-	assoc_mgr_lock_t locks = { .user = READ_LOCK, .qos = READ_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK,
+				   .qos = READ_LOCK };
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -10283,7 +10285,8 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 		.has_qos_lock = true,
 		.user_rec.uid = uid,
 	};
-	assoc_mgr_lock_t locks = { .user = READ_LOCK, .qos = READ_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK,
+				   .qos = READ_LOCK };
 
 	xassert(job_ids);
 
@@ -15530,7 +15533,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr)
 	      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 					    job_ptr->account)) ||
 	     ((slurm_mcs_get_privatedata() == 1) &&
-	      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0))))
+	      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label, false) != 0))))
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;

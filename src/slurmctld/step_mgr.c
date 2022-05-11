@@ -3935,7 +3935,7 @@ static int _pack_job_steps(void *x, void *arg)
 	    (job_ptr->user_id != args->uid) && !args->privileged) {
 		if (slurm_mcs_get_privatedata()) {
 			if (mcs_g_check_mcs_label(args->uid,
-						  job_ptr->mcs_label))
+						  job_ptr->mcs_label, false))
 				return 0;
 		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
 							 args->uid,

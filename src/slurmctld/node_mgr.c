@@ -850,7 +850,8 @@ static bool _node_is_hidden(node_record_t *node_ptr,
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_NODES) &&
 	    (slurm_mcs_get_privatedata() == 1) &&
-	    (mcs_g_check_mcs_label(pack_info->uid, node_ptr->mcs_label) != 0))
+	    (mcs_g_check_mcs_label(pack_info->uid, node_ptr->mcs_label,
+				   false) != 0))
 		return true;
 
 	if (!node_ptr->part_cnt)

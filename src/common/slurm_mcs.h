@@ -55,6 +55,7 @@ extern int slurm_mcs_get_enforced(void);
 extern int slurm_mcs_get_privatedata(void);
 extern char *slurm_mcs_get_params_specific(void);
 extern int mcs_g_set_mcs_label(job_record_t *job_ptr, char *label);
-extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label);
+extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label,
+				 bool assoc_locked);
 
 #endif /*_SLURM_MCS_H */
