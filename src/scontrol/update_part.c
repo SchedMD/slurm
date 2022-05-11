@@ -120,8 +120,19 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
-		}
-		else if (xstrncasecmp(tag, "MaxNodes", MAX(taglen, 4)) == 0) {
+		} else if (!xstrncasecmp(tag, "MaxCPUsPerSocket",
+					 MAX(taglen, 4))) {
+			if (!xstrcasecmp(val, "UNLIMITED") ||
+			    !xstrcasecmp(val, "INFINITE")) {
+				part_msg_ptr->max_cpus_per_socket = INFINITE;
+			} else if (parse_uint32(val, &part_msg_ptr->
+						max_cpus_per_socket)) {
+				error("Invalid MaxCPUsPerSocket value: %s",
+				      val);
+				return SLURM_ERROR;
+			}
+			(*update_cnt_ptr)++;
+		} else if (xstrncasecmp(tag, "MaxNodes", MAX(taglen, 4)) == 0) {
 			min = 1;
 			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
 			    (xstrcasecmp(val,"INFINITE") == 0)) {

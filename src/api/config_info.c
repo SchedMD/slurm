@@ -334,6 +334,10 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 			fprintf(fp, " MaxCPUsPerNode=%u",
 				p[i].max_cpus_per_node);
 
+		if (p[i].max_cpus_per_socket != INFINITE)
+			fprintf(fp, " MaxCPUsPerSocket=%u",
+				p[i].max_cpus_per_socket);
+
 		if (p[i].max_mem_per_cpu & MEM_PER_CPU) {
 		        if (p[i].max_mem_per_cpu != MEM_PER_CPU)
 		                fprintf(fp, " MaxMemPerCPU=%"PRIu64"",

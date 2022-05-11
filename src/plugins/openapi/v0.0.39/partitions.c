@@ -116,6 +116,14 @@ static int _dump_part(data_t *p, partition_info_t *part)
 		data_set_int(data_key_set(d, "maximum_cpus_per_node"),
 			     part->max_cpus_per_node);
 
+	if (part->max_cpus_per_socket == INFINITE)
+		data_set_int(data_key_set(d, "maximum_cpus_per_socket"), -1);
+	else if (part->max_cpus_per_socket == NO_VAL)
+		data_set_null(data_key_set(d, "maximum_cpus_per_socket"));
+	else
+		data_set_int(data_key_set(d, "maximum_cpus_per_socket"),
+			     part->max_cpus_per_socket);
+
 	data_set_int(data_key_set(d, "maximum_memory_per_node"),
 		     part->max_mem_per_cpu);
 

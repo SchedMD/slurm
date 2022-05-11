@@ -2396,6 +2396,7 @@ typedef struct partition_info {
 	char *job_defaults_str;	/* String of job defaults,
 				 * used only for partition update RPC */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
+	uint32_t max_cpus_per_socket; /* maximum allocated CPUs per socket */
 	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint16_t max_share;	/* number of jobs to gang schedule */

@@ -378,9 +378,16 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		socket_end += cores_per_socket;
 		/*
 		 * if a socket is already in use and entire_sockets_only is
-		 * enabled, it cannot be used by this job
+		 * enabled or used_cpus reached MaxCPUsPerSocket partition limit
+		 * the socket cannot be used by this job
 		 */
-		if (entire_sockets_only && used_cores[i]) {
+		if ((entire_sockets_only && used_cores[i]) ||
+		    ((used_cores[i] * threads_per_core) >=
+		     job_ptr->part_ptr->max_cpus_per_socket)) {
+			log_flag(SELECT_TYPE, "MaxCpusPerSocket: %u, CPUs already used on socket[%d]: %u - won't use the socket.",
+				 job_ptr->part_ptr->max_cpus_per_socket,
+				 i,
+				 used_cpu_array[i]);
 			free_core_count -= free_cores[i];
 			used_cores[i] += free_cores[i];
 			free_cores[i] = 0;
@@ -398,9 +405,9 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	     job_ptr->part_ptr->max_cpus_per_node)) {
 
 		if (job_ptr->details->whole_node) {
-			debug2("Total cpu count greater than max_cpus_per_node on exclusive job. (%d > %d)",
-				free_cpu_count + used_cpu_count,
-				job_ptr->part_ptr->max_cpus_per_node);
+			log_flag(SELECT_TYPE, "Total cpu count greater than max_cpus_per_node on exclusive job. (%d > %d)",
+				 free_cpu_count + used_cpu_count,
+				 job_ptr->part_ptr->max_cpus_per_node);
 			num_tasks = 0;
 			goto fini;
 		}

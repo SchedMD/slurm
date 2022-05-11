@@ -256,6 +256,12 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 			   part_ptr->max_cpus_per_node);
 	}
 
+	if (part_ptr->max_cpus_per_socket == INFINITE) {
+		xstrcat(out, " MaxCPUsPerSocket=UNLIMITED");
+	} else {
+		xstrfmtcat(out, " MaxCPUsPerSocket=%u",
+			   part_ptr->max_cpus_per_socket);
+	}
 	xstrcat(out, line_end);
 
 	/****** Line ******/

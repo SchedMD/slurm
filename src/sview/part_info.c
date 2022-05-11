@@ -99,6 +99,7 @@ enum {
 	SORTID_JOB_DEFAULTS,
 	SORTID_JOB_SIZE,
 	SORTID_MAX_CPUS_PER_NODE,
+	SORTID_MAX_CPUS_PER_SOCKET,
 	SORTID_MEM,
 	SORTID_NAME,
 	SORTID_NODELIST,
@@ -177,6 +178,8 @@ static display_data_t display_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_SOCKET, "Max CPUs Per Socket",
+	 false, EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", false,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_OVER_TIME_LIMIT, "OverTimeLimit", false,
@@ -256,6 +259,9 @@ static display_data_t create_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_NODE, "Max CPUs Per Node", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_SOCKET, "Max CPUs Per Socket",
+	 false, EDIT_TEXTBOX, refresh_part,
+	 _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ROOT, "Root", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", false,
@@ -586,6 +592,14 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		if (temp_int <= 0)
 			goto return_error;
 		part_msg->max_cpus_per_node = temp_int;
+		break;
+	case SORTID_MAX_CPUS_PER_SOCKET:
+		temp_int = strtol(new_text, (char **)NULL, 10);
+		type = "max_cpus_per_socket";
+
+		if (temp_int <= 0)
+			goto return_error;
+		part_msg->max_cpus_per_socket = temp_int;
 		break;
 	case SORTID_NODES_MIN:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -1084,6 +1098,9 @@ static void _layout_part_record(GtkTreeView *treeview,
 		case SORTID_MAX_CPUS_PER_NODE:
 			limit_set = part_ptr->max_cpus_per_node;
 			break;
+		case SORTID_MAX_CPUS_PER_SOCKET:
+			limit_set = part_ptr->max_cpus_per_socket;
+			break;
 		case SORTID_NODE_INX:
 			break;
 		case SORTID_ONLY_LINE:
@@ -1213,6 +1230,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	char tmp_max_nodes[40], tmp_min_nodes[40], tmp_grace[40];
 	char tmp_over_time_limit_buf[40];
 	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
+	char tmp_max_cpus_per_socket[40];
 	char *tmp_alt, *tmp_default, *tmp_accounts, *tmp_groups, *tmp_hidden;
 	char *tmp_deny_accounts, *tmp_qos_char, *tmp_exc_user;
 	char *tmp_qos, *tmp_deny_qos, *job_def_str = NULL;
@@ -1298,6 +1316,13 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	} else {
 		sprintf(tmp_max_cpus_per_node, "%u",
 			part_ptr->max_cpus_per_node);
+	}
+
+	if (part_ptr->max_cpus_per_socket == INFINITE) {
+		sprintf(tmp_max_cpus_per_socket, "UNLIMITED");
+	} else {
+		sprintf(tmp_max_cpus_per_socket, "%u",
+			part_ptr->max_cpus_per_socket);
 	}
 
 	sprintf(tmp_node_cnt, "%u", part_ptr->total_nodes);
@@ -1396,6 +1421,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_JOB_DEFAULTS, job_def_str,
 			   SORTID_JOB_SIZE,   tmp_size,
 			   SORTID_MAX_CPUS_PER_NODE, tmp_max_cpus_per_node,
+			   SORTID_MAX_CPUS_PER_SOCKET, tmp_max_cpus_per_socket,
 			   SORTID_MEM,        "",
 			   SORTID_NAME,       part_ptr->name,
 			   SORTID_NODE_INX,   part_ptr->node_inx,
@@ -2285,6 +2311,7 @@ extern GtkListStore *create_model_part(int type)
 	case SORTID_NODES_MIN:
 	case SORTID_NODES_MAX:
 	case SORTID_MAX_CPUS_PER_NODE:
+	case SORTID_MAX_CPUS_PER_SOCKET:
 	case SORTID_OVER_TIME_LIMIT:
 		break;
 	case SORTID_OVER_SUBSCRIBE:

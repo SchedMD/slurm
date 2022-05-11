@@ -6461,6 +6461,14 @@ associated with two Slurm partitions (e.g. "cpu" and "gpu") and the
 partition/queue "cpu" could be limited to only a subset of the node's CPUs,
 ensuring that one or more CPUs would be available to jobs in the "gpu"
 partition/queue.
+Also see \fBMaxCPUsPerSocket\fR.
+.IP
+
+.TP
+\fBMaxCPUsPerSocket\fR
+Maximum number of CPUs on any node available on the all jobs from this
+partition. This can be especially useful to schedule GPUs.
+Also see \fBMaxCPUsPerNode\fR.
 .IP
 
 .TP

@@ -125,6 +125,7 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->def_mem_per_cpu = NO_VAL64;
 	update_part_msg->grace_time     = NO_VAL;
 	update_part_msg->max_cpus_per_node = NO_VAL;
+	update_part_msg->max_cpus_per_socket = NO_VAL;
 	update_part_msg->max_mem_per_cpu = NO_VAL64;
 	update_part_msg->max_nodes 	= NO_VAL;
 	update_part_msg->max_share 	= NO_VAL16;

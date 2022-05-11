@@ -1305,6 +1305,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"LLN", S_P_BOOLEAN}, /* YES or NO */
 		{"MaxCPUsPerNode", S_P_UINT32},
+		{"MaxCPUsPerSocket", S_P_UINT32},
 		{"MaxMemPerCPU", S_P_UINT64},
 		{"MaxMemPerNode", S_P_UINT64},
 		{"MaxTime", S_P_STRING},
@@ -1429,6 +1430,11 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				    tbl))
 			s_p_get_uint32(&p->max_cpus_per_node, "MaxCPUsPerNode",
 				       dflt);
+
+		if (!s_p_get_uint32(&p->max_cpus_per_socket, "MaxCPUsPerSocket",
+				    tbl))
+			s_p_get_uint32(&p->max_cpus_per_socket,
+				       "MaxCPUsPerSocket", dflt);
 
 		if (s_p_get_uint64(&def_cpu_per_gpu, "DefCPUPerGPU", tbl) ||
 		    s_p_get_uint64(&def_cpu_per_gpu, "DefCPUPerGPU", dflt)) {
@@ -1706,6 +1712,7 @@ static void _init_conf_part(slurm_conf_partition_t *conf_part)
 	/* sync with part_record_t */
 	conf_part->default_time = NO_VAL;
 	conf_part->max_cpus_per_node = INFINITE;
+	conf_part->max_cpus_per_socket = INFINITE;
 	conf_part->max_nodes = INFINITE;
 	conf_part->max_share = 1;
 	conf_part->max_time = INFINITE;

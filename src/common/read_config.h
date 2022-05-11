@@ -268,6 +268,7 @@ typedef struct slurm_conf_partition {
 	List job_defaults_list;	/* List of job_defaults_t elements */
 	bool     lln_flag;	/* 1 if nodes are selected in LLN order */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
+	uint32_t max_cpus_per_socket; /* maximum allocated CPUs per socket */
 	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint32_t max_time;	/* minutes or INFINITE */
 	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */

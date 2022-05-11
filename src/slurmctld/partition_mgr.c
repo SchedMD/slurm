@@ -333,6 +333,7 @@ static void _init_part_record(part_record_t *part_ptr)
 	/* sync with slurm_conf_partition_t */
 	part_ptr->default_time = NO_VAL;
 	part_ptr->max_cpus_per_node = INFINITE;
+	part_ptr->max_cpus_per_socket = INFINITE;
 	part_ptr->max_nodes = INFINITE;
 	part_ptr->max_share = 1;
 	part_ptr->max_time = INFINITE;
@@ -474,6 +475,7 @@ static int _dump_part_state(void *x, void *arg)
 	pack32(part_ptr->max_time,       buffer);
 	pack32(part_ptr->default_time,   buffer);
 	pack32(part_ptr->max_cpus_per_node, buffer);
+	pack32(part_ptr->max_cpus_per_socket, buffer);
 	pack32(part_ptr->max_nodes_orig, buffer);
 	pack32(part_ptr->min_nodes_orig, buffer);
 
@@ -539,6 +541,7 @@ int load_all_part_state(void)
 	char *state_file = NULL;
 	uint32_t max_time, default_time, max_nodes, min_nodes;
 	uint32_t max_cpus_per_node = INFINITE, cpu_bind = 0, grace_time = 0;
+	uint32_t max_cpus_per_socket = INFINITE;
 	time_t time;
 	uint16_t flags, priority_job_factor, priority_tier;
 	uint16_t max_share, over_time_limit = NO_VAL16, preempt_mode;
@@ -593,6 +596,7 @@ int load_all_part_state(void)
 			safe_unpack32(&max_time, buffer);
 			safe_unpack32(&default_time, buffer);
 			safe_unpack32(&max_cpus_per_node, buffer);
+			safe_unpack32(&max_cpus_per_socket, buffer);
 			safe_unpack32(&max_nodes, buffer);
 			safe_unpack32(&min_nodes, buffer);
 
@@ -734,6 +738,7 @@ int load_all_part_state(void)
 		part_ptr->max_time       = max_time;
 		part_ptr->default_time   = default_time;
 		part_ptr->max_cpus_per_node = max_cpus_per_node;
+		part_ptr->max_cpus_per_node = max_cpus_per_socket;
 		part_ptr->max_nodes      = max_nodes;
 		part_ptr->max_nodes_orig = max_nodes;
 		part_ptr->min_nodes      = min_nodes;
@@ -1192,6 +1197,7 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		pack32(part_ptr->total_cpus, buffer);
 		pack64(part_ptr->def_mem_per_cpu, buffer);
 		pack32(part_ptr->max_cpus_per_node, buffer);
+		pack32(part_ptr->max_cpus_per_socket, buffer);
 		pack64(part_ptr->max_mem_per_cpu, buffer);
 
 		pack16(part_ptr->flags, buffer);
@@ -1421,6 +1427,12 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		info("%s: setting MaxCPUsPerNode to %u for partition %s",
 		     __func__, part_desc->max_cpus_per_node, part_desc->name);
 		part_ptr->max_cpus_per_node = part_desc->max_cpus_per_node;
+	}
+
+	if (part_desc->max_cpus_per_socket != NO_VAL) {
+		info("%s: setting MaxCPUsPerSocket to %u for partition %s",
+		     __func__, part_desc->max_cpus_per_socket, part_desc->name);
+		part_ptr->max_cpus_per_socket = part_desc->max_cpus_per_socket;
 	}
 
 	if (part_desc->max_time != NO_VAL) {

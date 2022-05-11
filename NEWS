@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/[db]v0.0.39 - forked plugin openapi/[db]v0.0.38.
  -- Add SRUN_{ERROR,INPUT,OUTPUT} input environment variables for --error,
     --input and --output options respectively.
+ -- Add MaxCPUsPerSocket to partition configuration, similar to MaxCPUsPerNode.
 
 * Changes in Slurm 22.05.1
 ==========================
