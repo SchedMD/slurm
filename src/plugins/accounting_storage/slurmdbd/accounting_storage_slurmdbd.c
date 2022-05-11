@@ -474,7 +474,6 @@ static void *_set_db_inx_thread(void *no_data)
 				lock_slurmctld(job_read_lock);
 				/* USE READ LOCK, SEE ABOVE on first
 				 * read lock */
-				itr = list_iterator_create(job_list);
 				list_for_each(job_list,
 					      _reset_db_inx_for_each, NULL);
 				unlock_slurmctld(job_read_lock);
