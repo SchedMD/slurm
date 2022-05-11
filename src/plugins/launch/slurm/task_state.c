@@ -37,12 +37,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stdio.h>
 #include <string.h>
 
+#include "slurm/slurm.h"
 #include "src/common/slurm_xlator.h"
-#include "src/common/xmalloc.h"
+
 #include "src/common/bitstring.h"
+#include "src/common/log.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 
 #include "src/plugins/launch/slurm/task_state.h"
 

@@ -49,6 +49,7 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/cli_filter.h"
+#include "src/common/log.h"
 #include "src/common/slurm_opt.h"
 
 /*

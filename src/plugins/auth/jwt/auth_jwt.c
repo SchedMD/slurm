@@ -43,8 +43,15 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+
+#include "src/common/data.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/uid.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "auth_jwt.h"
 

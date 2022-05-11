@@ -48,6 +48,7 @@
 #include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/locks.h"

@@ -41,9 +41,10 @@
 #include <sys/types.h>
 
 #include "slurm/slurm_errno.h"
-
 #include "src/common/slurm_xlator.h"
+
 #include "src/common/env.h"
+#include "src/common/parse_config.h"
 #include "src/common/slurm_mpi.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 

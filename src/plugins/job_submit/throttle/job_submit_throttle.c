@@ -46,6 +46,8 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+
+#include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define MAX_ACCTG_FREQUENCY 30

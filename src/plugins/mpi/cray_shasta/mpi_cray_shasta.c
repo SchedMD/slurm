@@ -42,10 +42,13 @@
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
-
 #include "src/common/slurm_xlator.h"
+
 #include "src/common/env.h"
+#include "src/common/parse_config.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_mpi.h"
+#include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #include "apinfo.h"

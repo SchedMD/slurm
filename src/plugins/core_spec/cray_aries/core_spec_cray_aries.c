@@ -46,6 +46,10 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/log.h"
+#include "src/common/read_config.h"
+#include "src/common/timers.h"
+
 /* Set _DEBUG to 1 for detailed module debugging, 0 otherwise */
 #define _DEBUG 0
 

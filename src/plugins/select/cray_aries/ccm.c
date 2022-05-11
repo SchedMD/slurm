@@ -46,7 +46,10 @@
 
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/env.h"
 #include "src/common/pack.h"
+#include "src/common/select.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 
 #include "ccm.h"

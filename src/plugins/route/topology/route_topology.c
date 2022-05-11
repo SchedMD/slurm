@@ -42,10 +42,13 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+
 #include "src/common/forward.h"
 #include "src/common/node_conf.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_route.h"
 #include "src/common/slurm_topology.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 
 /* These are defined here so when we link with something other than

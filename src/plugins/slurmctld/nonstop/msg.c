@@ -49,6 +49,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "slurm/smd_ns.h"

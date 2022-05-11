@@ -41,6 +41,7 @@
 #include "cons_common.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/select.h"
 #include "src/common/slurm_selecttype_info.h"
 #include "src/common/slurm_topology.h"
 

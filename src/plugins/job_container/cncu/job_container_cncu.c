@@ -47,6 +47,11 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+
+#include "src/common/log.h"
+#include "src/common/read_config.h"
+#include "src/common/timers.h"
+#include "src/common/xstring.h"
 #include "src/slurmd/common/proctrack.h"
 
 #define ADD_FLAGS	0

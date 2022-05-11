@@ -37,7 +37,9 @@
 #define _GNU_SOURCE
 
 #include "src/common/slurm_xlator.h"
+
 #include "src/common/log.h"
+#include "src/slurmctld/slurmctld.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

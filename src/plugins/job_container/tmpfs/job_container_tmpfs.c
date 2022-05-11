@@ -53,8 +53,14 @@
 #include <semaphore.h>
 
 #include "src/common/slurm_xlator.h"
+
+#include "src/common/env.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/run_command.h"
+#include "src/common/stepd_api.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "read_jcconf.h"
 

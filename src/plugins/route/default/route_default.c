@@ -45,6 +45,7 @@
 #include "src/common/forward.h"
 #include "src/common/node_conf.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_route.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

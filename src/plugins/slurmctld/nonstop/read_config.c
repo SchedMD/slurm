@@ -41,8 +41,10 @@
 #include <unistd.h>
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
+
 #include "src/common/parse_config.h"
 #include "src/common/uid.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"

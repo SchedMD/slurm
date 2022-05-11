@@ -57,6 +57,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"

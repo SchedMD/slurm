@@ -36,18 +36,20 @@
 
 #include "config.h"
 
-#include "slurm/slurm.h"
-
-#include "src/common/slurm_xlator.h"
-#include "src/common/log.h"
-#include "src/common/xassert.h"
-#include "src/common/xstring.h"
-
 #if HAVE_JSON_C_INC
 #include <json-c/json.h>
 #else
 #include <json/json.h>
 #endif
+
+#include "slurm/slurm.h"
+#include "src/common/slurm_xlator.h"
+
+#include "src/common/data.h"
+#include "src/common/log.h"
+#include "src/common/read_config.h"
+#include "src/common/xassert.h"
+#include "src/common/xstring.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

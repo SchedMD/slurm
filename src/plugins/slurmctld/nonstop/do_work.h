@@ -37,6 +37,10 @@
 #ifndef _HAVE_NONSTOP_DO_WORK_H
 #define _HAVE_NONSTOP_DO_WORK_H
 
+#include <inttypes.h>
+
+#include "src/slurmctld/slurmctld.h"
+
 /*
  * Drain nodes which a user believes are bad
  * cmd_ptr IN - Input format "DRAIN:NODES:name:REASON:string"
