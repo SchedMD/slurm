@@ -42,6 +42,7 @@
 #include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/strlcpy.h"
 
 #include "switch_hpe_slingshot.h"
 
@@ -437,7 +438,7 @@ static bool _unpack_comm_profile(pals_comm_profile_t *profile, buf_t *buffer)
 	safe_unpack32(&profile->tcs, buffer);
 
 	safe_unpackstr_xmalloc(&device_name, &name_len, buffer);
-	strncpy(profile->device_name, device_name,
+	strlcpy(profile->device_name, device_name,
 		sizeof(profile->device_name));
 
 	return true;
