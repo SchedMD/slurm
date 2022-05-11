@@ -108,7 +108,7 @@ extern void closeall(int fd)
 		if (dir->d_type != DT_DIR) {
 			int open_fd = atoi(dir->d_name);
 			if (open_fd >= fd)
-				close(fd);
+				close(open_fd);
 		}
 	}
 	closedir(d);
