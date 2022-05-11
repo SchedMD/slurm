@@ -3181,7 +3181,7 @@ static int _compare_hostnames(node_record_t **old_node_table,
 
 	set = hostset_create("");
 	for (cc = 0; cc < node_count; cc++)
-		if (node_table[cc])
+		if (node_table && node_table[cc])
 			hostset_insert(set, node_table[cc]->name);
 
 	set_size = HOST_NAME_MAX * node_count + node_count + 1;
