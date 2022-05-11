@@ -3873,7 +3873,7 @@ static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			     (object.node_inx == NULL) ?
 				"NULL" : object.node_inx,
 			     (object.container == NULL) ?
-				"NULL" : object.node_inx,
+				"NULL" : object.container,
 			     (object.submit_line == NULL) ?
 				"NULL" : object.submit_line);
 
