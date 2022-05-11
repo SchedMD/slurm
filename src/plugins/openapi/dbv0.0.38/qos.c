@@ -253,18 +253,20 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 	char *qos_name = NULL;
 	slurmdb_qos_cond_t qos_cond = { 0 };
 
-	/* Update qos_cond with requested search parameters */
-	if (query && data_get_dict_length(query)) {
-		foreach_query_search_t args = {
-			.errors = errors,
-			.qos_cond = &qos_cond,
-		};
-
-		if (data_dict_for_each(query, _foreach_query_search, &args) < 0)
-			return ESLURM_REST_INVALID_QUERY;
-	}
 
 	if (method == HTTP_REQUEST_GET) {
+		/* Update qos_cond with requested search parameters */
+		if (query && data_get_dict_length(query)) {
+			foreach_query_search_t args = {
+				.errors = errors,
+				.qos_cond = &qos_cond,
+			};
+
+			if (data_dict_for_each(query, _foreach_query_search,
+					       &args) < 0)
+				return ESLURM_REST_INVALID_QUERY;
+		}
+
 		/* need global list of QOS to dump even a single QOS */
 		rc = db_query_list(errors, auth, &g_qos_list, slurmdb_qos_get,
 				   &qos_cond);
