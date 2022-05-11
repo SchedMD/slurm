@@ -269,12 +269,10 @@ static int _next_day_of_month(cron_entry_t *entry, struct tm *tm)
 		}
 	} else {
 		/* (ab)use mktime() to figure out leap years for februrary */
-		struct tm test;
+		struct tm test = { 0 };
 		test.tm_year = tm->tm_year;
 		test.tm_mon = 1;
 		test.tm_mday = 29;
-		test.tm_hour = 0;
-		test.tm_min = 0;
 		slurm_mktime(&test);
 		if (test.tm_mon == 1) {
 			/* leap year! */
