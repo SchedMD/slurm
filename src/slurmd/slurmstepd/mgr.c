@@ -933,7 +933,6 @@ static void *_x11_signal_handler(void *arg)
 			if (_reclaim_privileges(&sprivs) < 0)
 				error("Unable to reclaim privileges");
 			return NULL;	/* Normal termination */
-			break;
 		default:
 			error("Invalid signal (%d) received", sig);
 		}
