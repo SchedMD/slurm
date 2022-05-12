@@ -12,7 +12,6 @@ pkglib_LTLIBRARIES = cgroup_v2.la
 # Cgroup v2 plugin.
 cgroup_v2_la_SOURCES =	\
 	cgroup_v2.c	\
-	cgroup_v2.h	\
 	ebpf.c		\
 	ebpf.h		\
 	cgroup_dbus.c	\
