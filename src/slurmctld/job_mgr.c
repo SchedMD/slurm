@@ -13891,7 +13891,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 #ifndef HAVE_FRONT_END
 			abort_job_on_nodes(job_ptr, rem_nodes);
 #endif
-			for (i = i_first, total = 0; i <= i_last; i++) {
+			for (i = i_first; i <= i_last; i++) {
 				if (!bit_test(rem_nodes, i))
 					continue;
 				node_ptr = node_record_table_ptr[i];
