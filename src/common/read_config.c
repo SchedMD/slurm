@@ -193,6 +193,7 @@ static void _destroy_slurmctld_host(void *ptr);
 static int _defunct_option(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover);
+static void _internal_conf_remove_node(char *node_name);
 static int _validate_and_set_defaults(slurm_conf_t *conf,
                                       s_p_hashtbl_t *hashtbl);
 static int _validate_bcast_exclude(slurm_conf_t *conf);
@@ -6205,7 +6206,7 @@ extern void slurm_conf_add_node(node_record_t *node_ptr)
 			  NULL, false);
 }
 
-extern void slurm_conf_remove_node(char *node_name)
+static void _internal_conf_remove_node(char *node_name)
 {
 	int alias_idx;
 	names_ll_t *p_prev = NULL, *p_curr;
@@ -6227,7 +6228,15 @@ extern void slurm_conf_remove_node(char *node_name)
 		p_curr = p_curr->next_alias;
 	}
 
-	_remove_host_to_node_link(p_curr);
+	if (p_curr) {
+		_remove_host_to_node_link(p_curr);
 
-	_free_single_names_ll_t(p_curr);
+		_free_single_names_ll_t(p_curr);
+	}
+
+}
+
+extern void slurm_conf_remove_node(char *node_name)
+{
+	_internal_conf_remove_node(node_name);
 }
