@@ -1052,10 +1052,9 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 	return tree_view;
 }
 
-extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
-				      display_data_t *display_data,
-				      int count, int sort_column,
-				      int color_column)
+extern void create_treestore(GtkTreeView *tree_view,
+			     display_data_t *display_data, int count,
+			     int sort_column, int color_column)
 {
 	GtkTreeStore *treestore = NULL;
 	GType types[count];
@@ -1069,7 +1068,7 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 	treestore = gtk_tree_store_newv(count, types);
 	if (!treestore) {
 		g_print("Can't create treestore.\n");
-		return NULL;
+		return;
 	}
 
 	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(treestore));
@@ -1128,8 +1127,6 @@ extern GtkTreeStore *create_treestore(GtkTreeView *tree_view,
 	}
 
 	g_object_unref(treestore);
-
-	return treestore;
 }
 
 extern gboolean right_button_pressed(GtkTreeView *tree_view,
