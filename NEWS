@@ -3,6 +3,9 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 21.08.9
 ==========================
+ -- Fix cross-endian communication.
+ -- Fix slurmd segfault when seeing authentication issues alongside a failed
+    message forward.
 
 * Changes in Slurm 21.08.8-2
 ============================
@@ -650,6 +653,9 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.11.10
 ===========================
+ -- Fix cross-endian communication.
+ -- Fix slurmd segfault when seeing authentication issues alongside a failed
+    message forward.
 
 * Changes in Slurm 20.11.9
 ==========================
