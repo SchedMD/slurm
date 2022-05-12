@@ -21785,8 +21785,12 @@ fi
 $as_echo "#define HAVE_ONEAPI 1" >>confdefs.h
 
     else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libze_loader.so and/or ze_api.h" >&5
+      if test -z "$with_oneapi"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libze_loader.so and/or ze_api.h" >&5
 $as_echo "$as_me: WARNING: unable to locate libze_loader.so and/or ze_api.h" >&2;}
+      else
+        as_fn_error $? "unable to locate libze_loader.so and/or ze_api.h" "$LINENO" 5
+      fi
     fi
 
 

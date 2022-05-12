@@ -34,7 +34,11 @@ AC_DEFUN([X_AC_ONEAPI],
       ONEAPI_CPPFLAGS="$oneapi_includes"
       AC_DEFINE(HAVE_ONEAPI, 1, [Define to 1 if oneAPI library found])
     else
-      AC_MSG_WARN([unable to locate libze_loader.so and/or ze_api.h])
+      if test -z "$with_oneapi"; then
+        AC_MSG_WARN([unable to locate libze_loader.so and/or ze_api.h])
+      else
+        AC_MSG_ERROR([unable to locate libze_loader.so and/or ze_api.h])
+      fi
     fi
     AC_SUBST(ONEAPI_LIBS)
     AC_SUBST(ONEAPI_CPPFLAGS)
