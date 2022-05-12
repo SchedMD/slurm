@@ -289,8 +289,15 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
 {
 	int rc = 0; // Return number of pending jobs held
 
-	if (IS_JOB_FINISHED(job_ptr))
+	if (IS_JOB_FINISHED(job_ptr)) {
+		/*
+		 * The acct_policy has already be cleared for this job.  Just
+		 * reset the pointer.
+		 */
+		job_ptr->assoc_ptr = NULL;
+		job_ptr->assoc_id = 0;
 		return rc;
+	}
 
 	if (IS_JOB_PENDING(job_ptr)) {
 		info("%s: %pJ ineligible due to invalid association",
