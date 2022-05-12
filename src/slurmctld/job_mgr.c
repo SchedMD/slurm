@@ -12403,13 +12403,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				i_last  = bit_fls(job_ptr->node_bitmap);
 			else
 				i_last = -2;
-			rem_nodes = bit_alloc(bit_size(job_ptr->node_bitmap));
-			for (i = i_first; i <= i_last; i++) {
-				if (bit_test(new_req_bitmap, i) ||
-				    !bit_test(job_ptr->node_bitmap, i))
-					continue;
-				bit_set(rem_nodes, i);
-			}
+			rem_nodes = bit_copy(job_ptr->node_bitmap);
+			bit_and_not(rem_nodes, new_req_bitmap);
 #ifndef HAVE_FRONT_END
 			abort_job_on_nodes(job_ptr, rem_nodes);
 #endif
