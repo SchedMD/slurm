@@ -176,22 +176,6 @@ static int _dump_assoc_cond(data_t *resp, void *auth, data_t *errors,
 	return rc;
 }
 
-/* based on sacctmgr_list_assoc() */
-static int _dump_associations(const char *context_id,
-			      http_request_method_t method, data_t *parameters,
-			      data_t *query, int tag, data_t *resp,
-			      void *auth, data_t *errors)
-{
-	int rc;
-	slurmdb_assoc_cond_t assoc_cond = {
-		.with_deleted = true,
-	};
-
-	rc = _dump_assoc_cond(resp, auth, errors, &assoc_cond, false);
-
-	return rc;
-}
-
 static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
 			 slurmdb_assoc_cond_t *assoc_cond)
 {
@@ -380,16 +364,20 @@ extern int op_handler_associations(const char *context_id,
 				   data_t *parameters, data_t *query, int tag,
 				   data_t *resp, void *auth)
 {
+	int rc;
 	data_t *errors = populate_response_format(resp);
+	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
 
+	if ((rc = _populate_assoc_cond(errors, query, assoc_cond)))
+		/* no-op - already logged */;
 	if (method == HTTP_REQUEST_GET)
-		return _dump_associations(context_id, method, parameters, query,
-					  tag, resp, auth, errors);
+		rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, false);
 	else if (method == HTTP_REQUEST_POST)
-		return _update_assocations(query, resp, auth,
-					   (tag != CONFIG_OP_TAG));
+		rc = _update_assocations(query, resp, auth,
+					 (tag != CONFIG_OP_TAG));
 
-	return ESLURM_REST_INVALID_QUERY;
+	slurmdb_destroy_assoc_cond(assoc_cond);
+	return rc;
 }
 
 extern void init_op_associations(void)

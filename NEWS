@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
     association.
  -- openapi/dbv0.0.38 - Enforce DELETE /association/ to delete only a single
     association.
+ -- openapi/dbv0.0.38 - Add parameters to filter to GET /associations/.
 
 * Changes in Slurm 22.05.0rc1
 =============================

@@ -545,7 +545,53 @@
             }
           }
         },
-        "summary": "Get association list"
+	"summary": "Get association list",
+	"parameters": [
+	  {
+	    "name": "cluster",
+	    "in": "query",
+	    "description": "Cluster name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "account",
+	    "in": "query",
+	    "description": "Account name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "user",
+	    "in": "query",
+	    "description": "User name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "partition",
+	    "in": "query",
+	    "description": "Partition Name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  }
+	]
       }
     },
     "/association/": {
