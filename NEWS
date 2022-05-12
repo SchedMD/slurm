@@ -47,6 +47,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid segfault/assert when --thread-spec used with config_overrides
  -- Don't send SIGTERM to prematurely in run_command.
  -- Add logging to inform where networking errors are occurring on slurmd end.
+ -- openapi/dbv0.0.38 - Enforce GET /association/ to dump only a single
+    association.
 
 * Changes in Slurm 22.05.0rc1
 =============================

@@ -67,8 +67,8 @@ static int _foreach_delete_assoc(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _dump_assoc_cond(data_t *resp, void *auth,
-			    data_t *errors, slurmdb_assoc_cond_t *cond)
+static int _dump_assoc_cond(data_t *resp, void *auth, data_t *errors,
+			    slurmdb_assoc_cond_t *cond, bool only_one)
 {
 	int rc = SLURM_SUCCESS;
 	List assoc_list = NULL;
@@ -97,6 +97,13 @@ static int _dump_assoc_cond(data_t *resp, void *auth,
 			.g_assoc_list = assoc_list,
 		};
 
+		if (only_one && list_count(assoc_list) > 1) {
+			rc = resp_error(
+				errors, ESLURM_REST_INVALID_QUERY,
+				"Ambiguous request: More than 1 association would have been dumped.",
+				NULL);
+		}
+
 		while (!rc && (assoc = list_next(itr)))
 			rc = dump(PARSE_ASSOC, assoc,
 				  data_set_dict(data_list_append(dassocs)),
@@ -123,7 +130,7 @@ static int _dump_associations(const char *context_id,
 		.with_deleted = true,
 	};
 
-	rc = _dump_assoc_cond(resp, auth, errors, &assoc_cond);
+	rc = _dump_assoc_cond(resp, auth, errors, &assoc_cond, false);
 
 	return rc;
 }
@@ -152,7 +159,7 @@ static int _dump_association(data_t *resp, void *auth,
 		list_append(assoc_cond->partition_list, partition);
 	}
 
-	rc = _dump_assoc_cond(resp, auth, errors, assoc_cond);
+	rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, true);
 	slurmdb_destroy_assoc_cond(assoc_cond);
 
 	return rc;
