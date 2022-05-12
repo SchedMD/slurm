@@ -1793,6 +1793,8 @@ static void _dynamic_init(void)
 	if (!conf->dynamic_type)
 		return;
 
+	slurm_mutex_lock(&conf->config_mutex);
+
 	/* Use -N name if specified. */
 	if (!conf->node_name) {
 		char hostname[HOST_NAME_MAX];
@@ -1879,6 +1881,7 @@ static void _dynamic_init(void)
 		fatal("unknown dynamic registration type: %d",
 		      conf->dynamic_type);
 	}
+	slurm_mutex_unlock(&conf->config_mutex);
 }
 
 static int
