@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.0rc2
 =============================
+ -- openapi/v0.0.38 - add group name to job info
 
 * Changes in Slurm 22.05.0rc1
 =============================
@@ -247,7 +248,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix exclusive jobs breaking MaxCPUsPerNode limit
  -- Error if ConstrainSwapSpace is set and system doesn't have the kernel with
     CONFIG_MEMCG_SWAP set. This will avoid bad configurations.
- -- openapi/v0.0.38 - add group name to job info
 
 * Changes in Slurm 21.08.9
 ==========================
