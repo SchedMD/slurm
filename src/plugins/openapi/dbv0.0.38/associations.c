@@ -229,15 +229,16 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 	if (data_get_type(data) != DATA_TYPE_DICT) {
 		resp_error(errors, ESLURM_REST_INVALID_QUERY,
 			   "Associations must be a list of dictionaries", NULL);
-		return DATA_FOR_EACH_FAIL;
+		rc = DATA_FOR_EACH_FAIL;
+		goto cleanup;
 	}
 
 	assoc = xmalloc(sizeof(*assoc));
 	slurmdb_init_assoc_rec(assoc, false);
 
 	if (parse(PARSE_ASSOC, assoc, data, args->errors, &penv)) {
-		slurmdb_destroy_assoc_rec(assoc);
-		return DATA_FOR_EACH_FAIL;
+		rc = DATA_FOR_EACH_FAIL;
+		goto cleanup;
 	}
 
 	if (assoc->acct) {
@@ -277,6 +278,8 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 
 		rc = db_modify_rc(errors, args->auth, &cond, assoc, slurmdb_associations_modify);
 	}
+
+cleanup:
 
 	FREE_NULL_LIST(assoc_list);
 	FREE_NULL_LIST(cond.acct_list);
