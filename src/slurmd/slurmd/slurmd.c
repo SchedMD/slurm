@@ -596,9 +596,10 @@ _service_connection(void *arg)
 		 */
 		if (msg->auth_uid_set)
 			slurm_send_rc_msg(msg, rc);
-		else
+		else {
 			debug("%s: incomplete message", __func__);
-
+			forward_wait(msg);
+		}
 		goto cleanup;
 	}
 	debug2("Start processing RPC: %s", rpc_num2string(msg->msg_type));
