@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Add logging to inform where networking errors are occurring on slurmd end.
  -- openapi/dbv0.0.38 - Enforce GET /association/ to dump only a single
     association.
+ -- openapi/dbv0.0.38 - Enforce DELETE /association/ to delete only a single
+    association.
 
 * Changes in Slurm 22.05.0rc1
 =============================

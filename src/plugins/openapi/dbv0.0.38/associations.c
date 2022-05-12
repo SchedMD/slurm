@@ -192,47 +192,14 @@ static int _dump_associations(const char *context_id,
 	return rc;
 }
 
-static int _dump_association(data_t *resp, void *auth, data_t *errors,
-			     data_t *query)
-{
-	int rc;
-	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
-
-	if ((rc = _populate_assoc_cond(errors, query, assoc_cond))) {
-		/* no-op - error already logged */
-	} else {
-		rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, true);
-	}
-
-	slurmdb_destroy_assoc_cond(assoc_cond);
-
-	return rc;
-}
-
 static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
-			 char *account, char *cluster, char *user,
-			 char *partition)
+			 slurmdb_assoc_cond_t *assoc_cond)
 {
 	int rc = SLURM_SUCCESS;
 	List removed = NULL;
-	slurmdb_assoc_cond_t assoc_cond = {
-		.acct_list = list_create(NULL),
-		.user_list = list_create(NULL),
-	};
-
-	list_append(assoc_cond.acct_list, account);
-	if (cluster) {
-		assoc_cond.cluster_list = list_create(NULL);
-		list_append(assoc_cond.cluster_list, cluster);
-	}
-	list_append(assoc_cond.user_list, user);
-	if (partition) {
-		assoc_cond.partition_list = list_create(NULL);
-		list_append(assoc_cond.partition_list, partition);
-	}
 
 	if (!(rc = db_query_list(errors, auth, &removed,
-				 slurmdb_associations_remove, &assoc_cond)) &&
+				 slurmdb_associations_remove, assoc_cond)) &&
 	    (list_for_each(removed, _foreach_delete_assoc,
 			   data_set_list(data_key_set(
 				   resp, "removed_associations"))) < 0))
@@ -243,10 +210,6 @@ static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
 		rc = db_query_commit(errors, auth);
 
 	FREE_NULL_LIST(removed);
-	FREE_NULL_LIST(assoc_cond.acct_list);
-	FREE_NULL_LIST(assoc_cond.cluster_list);
-	FREE_NULL_LIST(assoc_cond.user_list);
-	FREE_NULL_LIST(assoc_cond.partition_list);
 
 	return rc;
 }
@@ -397,33 +360,18 @@ static int op_handler_association(const char *context_id,
 				  data_t *parameters, data_t *query, int tag,
 				  data_t *resp, void *auth)
 {
+	int rc;
 	data_t *errors = populate_response_format(resp);
-	char *user = NULL; /* optional */
-	char *account = NULL; /* optional */
-	char *cluster = NULL; /* optional */
-	char *partition = NULL; /* optional */
-	int rc = ESLURM_REST_INVALID_QUERY;
+	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
 
-	if (!query)
-		return resp_error(errors, ESLURM_REST_EMPTY_RESULT,
-				  "query is missing", "HTTP query");
-
-	(void)data_retrieve_dict_path_string(query, "partition", &partition);
-	(void)data_retrieve_dict_path_string(query, "cluster", &cluster);
-	(void)data_retrieve_dict_path_string(query, "user", &user);
-	(void)data_retrieve_dict_path_string(query, "account", &account);
-
+	if ((rc = _populate_assoc_cond(errors, query, assoc_cond)))
+		/* no-op - already logged */;
 	if (method == HTTP_REQUEST_GET)
-		rc = _dump_association(resp, auth, errors, query);
+		rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, true);
 	else if (method == HTTP_REQUEST_DELETE)
-		rc = _delete_assoc(resp, auth, errors, account, cluster, user,
-				   partition);
+		rc = _delete_assoc(resp, auth, errors, assoc_cond);
 
-	xfree(partition);
-	xfree(cluster);
-	xfree(user);
-	xfree(account);
-
+	slurmdb_destroy_assoc_cond(assoc_cond);
 	return rc;
 }
 
