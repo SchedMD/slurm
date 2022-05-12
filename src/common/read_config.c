@@ -6155,16 +6155,11 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 		return SLURM_ERROR;
 	}
 
-	/*
-	 * flush tables since clusters could share the same nodes names.
-	 * Leave nodehash_intialized so that the tables don't get overridden
-	 * later
-	 */
 	slurm_conf_lock();
-	_free_name_hashtbl();
-	nodehash_initialized = true;
+	_init_slurmd_nodehash();
 
 	while ((hostname = hostlist_shift(host_list))) {
+		_internal_conf_remove_node(hostname);
 		_push_to_hashtbls(hostname, hostname,
 				  NULL, NULL, 0, 0,
 				  0, 0, 0, 0, false, NULL, 0,
