@@ -2104,6 +2104,10 @@
             "type": "string",
             "description": "node features required by job."
           },
+          "container": {
+            "type": "string",
+            "description": "absolute path to OCI container bundle"
+          },
           "core_specification": {
             "type": "integer",
             "description": "Count of specialized threads per node reserved by the job for system operations and not used by the application."

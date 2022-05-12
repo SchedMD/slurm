@@ -109,6 +109,7 @@ const params_t job_params[] = {
 	{ "constraint", 'C' },
 	{ "constraints", 'C' },
 	{ "contiguous", LONG_OPT_CONTIGUOUS, true },
+	{ "container", LONG_OPT_CONTAINER },
 	{ "core_specification", 'S' },
 	{ "cores_per_socket", LONG_OPT_CORESPERSOCKET },
 	{ "cpu_binding_hint", LONG_OPT_HINT },
