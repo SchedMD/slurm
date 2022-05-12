@@ -222,8 +222,8 @@ static int _pick_exc_nodes(void *x, void *arg)
 		exc_node_cnt_bitmap =
 			bit_copy(ext_part_struct->exc_node_cnt_bitmap);
 	} else {
-		i = bit_size(ext_part_struct->exc_node_cnt_bitmap);
-		exc_node_cnt_bitmap = bit_alloc(i);
+		exc_node_cnt_bitmap = bit_alloc(
+			bit_size(ext_part_struct->exc_node_cnt_bitmap));
 		i_first = bit_ffs(ext_part_struct->exc_node_cnt_bitmap);
 		if (i_first >= 0)
 			i_last = bit_fls(ext_part_struct->exc_node_cnt_bitmap);

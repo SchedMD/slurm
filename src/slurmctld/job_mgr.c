@@ -16907,8 +16907,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	}
 	xfree(tmp);
 	if (valid) {
-		i_last = bit_fls(array_bitmap);
-		if (i_last < 0)
+		if (bit_fls(array_bitmap) < 0)
 			valid = false;
 	}
 	if (!valid) {
@@ -17387,8 +17386,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 	}
 	xfree(tmp);
 	if (valid) {
-		i_last = bit_fls(array_bitmap);
-		if (i_last < 0)
+		if (bit_fls(array_bitmap) < 0)
 			valid = false;
 	}
 	if (!valid) {
