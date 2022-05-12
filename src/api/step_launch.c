@@ -1622,6 +1622,8 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 
 	if (ctx->step_resp->use_protocol_ver)
 		msg.protocol_version = ctx->step_resp->use_protocol_ver;
+	else
+		msg.protocol_version = SLURM_PROTOCOL_VERSION;
 
 #ifdef HAVE_FRONT_END
 	cred_args = slurm_cred_get_args(ctx->step_resp->cred);
