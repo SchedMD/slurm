@@ -241,22 +241,30 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 		goto cleanup;
 	}
 
-	if (assoc->acct) {
-		cond.acct_list = list_create(NULL);
+	cond.acct_list = list_create(NULL);
+	cond.cluster_list = list_create(NULL);
+	cond.partition_list = list_create(NULL);
+	cond.user_list = list_create(NULL);
+
+	if (assoc->acct)
 		list_append(cond.acct_list, assoc->acct);
-	}
-	if (assoc->cluster) {
-		cond.cluster_list = list_create(NULL);
+	else
+		list_append(cond.acct_list, "");
+
+	if (assoc->cluster)
 		list_append(cond.cluster_list, assoc->cluster);
-	}
-	if (assoc->partition) {
-		cond.partition_list = list_create(NULL);
+	else
+		list_append(cond.cluster_list, "");
+
+	if (assoc->partition)
 		list_append(cond.partition_list, assoc->partition);
-	}
-	if (assoc->user) {
-		cond.user_list = list_create(NULL);
+	else
+		list_append(cond.partition_list, "");
+
+	if (assoc->user)
 		list_append(cond.user_list, assoc->user);
-	}
+	else
+		list_append(cond.user_list, "");
 
 	if ((rc = db_query_list(query_errors, args->auth, &assoc_list,
 				 slurmdb_associations_get, &cond)) ||
