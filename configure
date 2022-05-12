@@ -21134,9 +21134,65 @@ fi
 
 # Some systems don't configure HDF5 with --with-default-api-version=v18
 # which creates problems for slurm because slurm uses the 1.8 API.
-# By defining this CPP macro we get the 1.8 API.
+# For hdf5 1.8, define H5_NO_DEPRECATED_SYMBOLS, otherwise use H5_USE_18_API
+# to request the right api version.
 
+
+
+  # Used to indicate true or false condition
+  ax_compare_version=false
+
+  # Convert the two version strings to be compared into a format that
+  # allows a simple string comparison.  The end result is that a version
+  # string of the form 1.12.5-r617 will be converted to the form
+  # 0001001200050617.  In other words, each number is zero padded to four
+  # digits, and non digits are removed.
+
+  ax_compare_version_A=`echo "$HDF5_VERSION" | sed -e 's/\([0-9]*\)/Z\1Z/g' \
+                     -e 's/Z\([0-9]\)Z/Z0\1Z/g' \
+                     -e 's/Z\([0-9][0-9]\)Z/Z0\1Z/g' \
+                     -e 's/Z\([0-9][0-9][0-9]\)Z/Z0\1Z/g' \
+                     -e 's/[^0-9]//g'`
+
+
+  ax_compare_version_B=`echo "1.8" | sed -e 's/\([0-9]*\)/Z\1Z/g' \
+                     -e 's/Z\([0-9]\)Z/Z0\1Z/g' \
+                     -e 's/Z\([0-9][0-9]\)Z/Z0\1Z/g' \
+                     -e 's/Z\([0-9][0-9][0-9]\)Z/Z0\1Z/g' \
+                     -e 's/[^0-9]//g'`
+
+
+
+      # A count of zero means use the length of the shorter version.
+      # Determine the number of characters in A and B.
+      ax_compare_version_len_A=`echo "$ax_compare_version_A" | $AWK '{print(length)}'`
+      ax_compare_version_len_B=`echo "$ax_compare_version_B" | $AWK '{print(length)}'`
+
+      # Set A to no more than B's length and B to no more than A's length.
+      ax_compare_version_A=`echo "$ax_compare_version_A" | sed "s/\(.\{$ax_compare_version_len_B\}\).*/\1/"`
+      ax_compare_version_B=`echo "$ax_compare_version_B" | sed "s/\(.\{$ax_compare_version_len_A\}\).*/\1/"`
+
+
+    # Pad zeros at end of numbers to make same length.
+    ax_compare_version_tmp_A="$ax_compare_version_A`echo $ax_compare_version_B | sed 's/./0/g'`"
+    ax_compare_version_B="$ax_compare_version_B`echo $ax_compare_version_A | sed 's/./0/g'`"
+    ax_compare_version_A="$ax_compare_version_tmp_A"
+
+    # Check for equality or inequality as necessary.
+
+      test "x$ax_compare_version_A" = "x$ax_compare_version_B" && ax_compare_version=true
+
+
+
+
+    if test "$ax_compare_version" = "true" ; then
+
+$as_echo "#define H5_NO_DEPRECATED_SYMBOLS 1" >>confdefs.h
+
+    else
 $as_echo "#define H5_USE_18_API 1" >>confdefs.h
+
+  fi
 
 
 #

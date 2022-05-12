@@ -18,6 +18,9 @@
 /* Define to 1 if using gtk+-2.12.0 or higher */
 #undef GTK2_USE_TOOLTIP
 
+/* Use the 1.8 HDF5 API */
+#undef H5_NO_DEPRECATED_SYMBOLS
+
 /* Make sure we get the 1.8 HDF5 API */
 #undef H5_USE_18_API
 
