@@ -1,8 +1,8 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 22.05.0pre1
-==============================
+* Changes in Slurm 22.05.0rc1
+=============================
  -- gres/gpu - Avoid stripping GRES type field during normalization if any
     other GRES have a defined type field.
  -- burst_buffer/datawarp - free bb_job after stage-out or teardown are done.
