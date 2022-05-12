@@ -1872,6 +1872,8 @@ typedef struct job_info {
 	char *work_dir;		/* pathname of working directory */
 } slurm_job_info_t;
 
+typedef slurm_job_info_t job_info_t;
+
 typedef struct priority_factors_object {
 	char *cluster_name;	/* Cluster name ONLY set in federation */
 	uint32_t job_id;
@@ -1898,18 +1900,6 @@ typedef struct priority_factors_object {
 typedef struct priority_factors_response_msg {
 	List	 priority_factors_list;	/* priority_factors_object_t list */
 } priority_factors_response_msg_t;
-
-#ifndef __PERMAPI__H__
-/* If on an IBM PERCS machine the libpermapi.so file we generate in
- * the switch/nrt plugin will need to link to this file and the
- * permapi.h file which both have a job_info_t structure defined in
- * it.  So to avoid conflict only define job_info_t if we haven't
- * included that file first.  Then when in the libpermapi environment
- * we can use slurm_job_info_t to access the job_info_t data.  If not
- * in that environment we should never know anything changed.
- */
-typedef slurm_job_info_t job_info_t;
-#endif
 
 typedef struct job_info_msg {
 	time_t last_backfill;	/* time of late backfill run */
