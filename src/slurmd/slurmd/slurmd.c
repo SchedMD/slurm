@@ -191,6 +191,7 @@ static void      _create_msg_socket(void);
 static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static int       _drain_node(char *reason);
+static void      _dynamic_reconfig(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static void      _handle_connection(int fd, slurm_addr_t *client);
 static void      _hup_handler(int);
@@ -1205,6 +1206,7 @@ _reconfigure(void)
 	init_node_conf();
 	build_all_nodeline_info(true, 0);
 	build_all_frontend_info(true);
+	_dynamic_reconfig();
 	_load_gres();
 
 	_build_conf_buf();
@@ -1883,6 +1885,22 @@ static void _dynamic_init(void)
 		      conf->dynamic_type);
 	}
 	slurm_mutex_unlock(&conf->config_mutex);
+}
+
+static void _dynamic_reconfig(void)
+{
+	if (conf->dynamic_type == DYN_NODE_NORM) {
+		/*
+		 * Node needs to be re-added to node table so gres can be
+		 * loaded properly.
+		 */
+		char *err_msg = NULL;
+		if (_create_nodes(conf->dynamic_conf, &err_msg)) {
+			fatal("failed to create dynamic node '%s'",
+			      conf->dynamic_conf);
+		}
+		xfree(err_msg);
+	}
 }
 
 static int
