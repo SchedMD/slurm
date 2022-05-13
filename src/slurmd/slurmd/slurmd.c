@@ -1739,7 +1739,7 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 	slurm_conf_add_node(node_ptr);
 }
 
-extern int _create_nodes(char *nodeline, char **err_msg)
+static int _create_nodes(char *nodeline, char **err_msg)
 {
 	int rc = SLURM_SUCCESS;
 	slurm_conf_node_t *conf_node;
