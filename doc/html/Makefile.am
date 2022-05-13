@@ -35,6 +35,7 @@ generated_html = \
 	high_throughput.html \
 	intel_knl.html \
 	job_array.html \
+	job_container_tmpfs.html \
 	job_exit_code.html \
 	job_launch.html \
 	job_submit_plugins.html \
