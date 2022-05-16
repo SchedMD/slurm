@@ -1,0 +1,487 @@
+#!/usr/bin/perl -w
+############################################################################
+# Copyright (C) SchedMD LLC.
+############################################################################
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case);
+use autouse 'Pod::Usage' => qw(pod2usage);
+use Cwd qw(cwd abs_path);
+use FindBin qw($Bin);
+use Term::ANSIColor;
+
+my ($help, $exit_on_first_failure, $exclude_pattern, $include_pattern, $man, $no_cleanup_on_failure);
+my $output_dir = "$Bin/log";
+my $quiet = 0;
+my $verbose = 0;
+
+GetOptions(
+    'help' => \$help,
+    'man' => \$man,
+    'exit-on-first-failure|x' => \$exit_on_first_failure,
+    'exclude|e=s' => \$exclude_pattern,
+    'include|i=s' => \$include_pattern,
+    'output-dir|o=s' => \$output_dir,
+    'no-cleanup-on-failure|n' => \$no_cleanup_on_failure,
+    'verbose|v+' => \$verbose,
+    'quiet|q+' => \$quiet,
+) or pod2usage(2);
+
+pod2usage(2) if $help;
+
+# Display usage if necessary
+if ($man) {
+    if ($< == 0) { # Cannot invoke perldoc as root
+        my $id = eval { getpwnam("nobody") };
+        $id = eval { getpwnam("nouser") } unless defined $id;
+        $id = -2                          unless defined $id;
+        $<  = $id;
+    }
+    $> = $<;                         # Disengage setuid
+    $ENV{PATH} = "/bin:/usr/bin";    # Untaint PATH
+    delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
+    if ($0 =~ /^([-\/\w\.]+)$/) { $0 = $1; }    # Untaint $0
+    else { die "Illegal characters were found in \$0 ($0)\n"; }
+    pod2usage(-exitstatus => 0, -verbose => 2);
+}
+
+# Subtract quiet count from verbose count
+$verbose -= $quiet;
+
+my ($cmd, $output, $rc);
+my %summary = ('Passed' => 0, 'Failed' => 0, 'Errored' => 0, 'Skipped' => 0);
+my $exit_tests = 0;
+
+# Avoid using colors unless writing stdout to a terminal
+$ENV{ANSI_COLORS_DISABLED}++ unless -t STDOUT;
+
+# Derive default configuration parameters
+my %config = ();
+$config{slurmsourcedir} = abs_path("$Bin/..");
+$config{slurmbuilddir} = $config{slurmsourcedir};
+
+# Override configuration parameters with parameters from testsuite.conf
+open CONFIG_FILE, "$Bin/testsuite.conf" or die "Unable to open testsuite.conf for reading: $!. Did you run make install?\n";
+foreach my $line (<CONFIG_FILE>) {
+    if ($line =~ /^\s*(\S+)\s*=\s*(\S+)\s*$/) {
+        my ($parameter_name, $parameter_value) = (lc $1, $2);
+        $config{$parameter_name} = $parameter_value;
+    }
+}
+
+# Resolve and create test output directory if needed
+if (defined $output_dir) {
+    $output_dir = abs_path($output_dir);
+    if (! -d $output_dir) {
+        mkdir $output_dir or die "Unable to create output directory $output_dir: $!\n";
+    }
+}
+
+sub print_test_name {
+    my ($test_name) = @_;
+
+    if ($verbose >= -1) {
+        printf "%s ", $test_name;
+    }
+}
+
+
+sub print_test_status {
+    my ($test_name, $test_status, $diagnostic_message, $test_output) = @_;
+
+    # Update summary status totals
+    $summary{$test_status}++;
+
+    # Print the test status
+    if ($test_status eq 'Passed') {
+        if ($verbose >= -1) {
+            print color('green'), uc $test_status, color('reset'), "\n";
+        }
+    }
+    elsif ($test_status eq 'Skipped') {
+        if ($verbose == -1) {
+            # Overwrite the line
+            print "\b \b" x ((length $test_name) + 1);
+        }
+        elsif ($verbose >= 0) {
+            print color('yellow'), uc $test_status, color('reset'), "\n";
+        }
+    }
+    else {
+        if ($verbose >= -1) {
+            print color('red'), uc $test_status, color('reset'), "\n";
+        }
+    }
+
+    # Print diagnostic messages if verbosity is sufficiently high
+    if (defined $diagnostic_message &&
+        ((($test_status eq 'Failed' || $test_status eq 'Error') &&
+          ($verbose == 0 || $verbose == 1)) ||
+         ($test_status eq 'Skipped' &&
+          ($verbose == 1 || $verbose == 2)))) {
+        chomp($diagnostic_message);
+        if ($test_status eq 'Skipped') {
+            print color('yellow');
+        }
+        else {
+            print color('red');
+        }
+        foreach my $line (split /\n/, $diagnostic_message) {
+            $line =~ s/^\s+//;
+            printf "    $line\n";
+        }
+        print color('reset');
+    }
+
+    # Print test output if verbosity is sufficiently high
+    if (defined $test_output &&
+        ((($test_status eq 'Failed' || $test_status eq 'Error') &&
+          $verbose >= 2) ||
+         $verbose >= 3)) {
+        foreach my $line (split /\n/, $test_output) {
+            print "$line\n";
+        }
+    }
+
+    # Log output to file
+    log_output_file($test_name, $test_status, $test_output);
+
+    # Trigger exit on first failure if relevant
+    if ($exit_on_first_failure && ($test_status eq 'Failed' || $test_status eq 'Error')) {
+        $exit_tests = 1;
+    }
+}
+
+
+sub log_output_file {
+    my ($test_name, $test_status, $test_output) = @_;
+
+    return if ($output_dir eq '' || $output_dir eq '/dev/null');
+
+    my $output_file = "$test_name";
+    $output_file =~ s|/|%|g;
+    $output_file .= '.log';
+    if ($test_status eq 'Failed') { $output_file .= '.failed'; }
+    elsif ($test_status eq 'Error') { $output_file .= '.error'; }
+    elsif ($test_status eq 'Skipped') { $output_file .= '.skipped'; }
+    $output_file = "$output_dir/$output_file";
+
+    open OUTPUT_FILE, '>', "$output_file" or die "Unable to open $output_file for writing: $!\n";
+    print OUTPUT_FILE $test_output;
+    close OUTPUT_FILE;
+}
+
+
+##############################################################################
+# Run unit tests
+##############################################################################
+
+sub run_unit_tests {
+    my ($test_base) = @_;
+    my $build_testsuite_dir = "$config{slurmbuilddir}/testsuite";
+
+    # Change to the specified test directory and get a list of test subdirectories
+    chdir("$build_testsuite_dir/$test_base") or die "Unable to change directory to $build_testsuite_dir/$test_base: $!\n";
+    my $subdirs = `echo 'print: ; \@echo "\$(SUBDIRS)"' | make -f Makefile -f - print`;
+    chomp($subdirs);
+
+    # Recursively iterate through all test subdirectories
+    foreach my $subdir (split / /, $subdirs) {
+        run_unit_tests("$test_base/$subdir");
+    }
+
+    # Return to the specified test directory and get a list of tests
+    chdir("$build_testsuite_dir/$test_base") or die "Unable to change directory to $build_testsuite_dir/$test_base: $!\n";
+    my $tests = `echo 'print: ; \@echo "\$(TESTS)"' | make -f Makefile -f - print`;
+    chomp($tests);
+
+    # Run make clean so that we get a fresh compile and test execution
+    `make clean`;
+
+    # Iterate through all tests in the current test directory
+    foreach my $test (split /\s+/, $tests) {
+        my $test_name = "$test_base/$test";
+        last if $exit_tests;
+        next if (defined $include_pattern && $test_name !~ /$include_pattern/);
+        next if (defined $exclude_pattern && $test_name =~ /$exclude_pattern/);
+        print_test_name($test_name);
+
+        # Compile the unit test
+        my $compile_output = `make $test 2>&1`;
+        $rc = $? >> 8;
+        if ($rc) {
+            print_test_status($test_name, 'Error', 'Unable to compile test');
+            next;
+        }
+
+        # Execute the unit test using the test driver
+        my $test_output = `make ${test}.log 2>&1`;
+        $rc = $? >> 8;
+
+        my $test_status = 'Passed';
+        $test_status = 'Failed' if $rc;
+
+        print_test_status($test_name, $test_status, '', $test_output);
+    }
+}
+
+run_unit_tests('slurm_unit');
+
+
+##############################################################################
+# Run expect tests
+##############################################################################
+
+# Change directory to testsuite/expect
+chdir("$Bin/expect") or die "Unable to change directory to $Bin/expect: $!\n";
+
+# Obtain a list of expect tests to run
+$output = `bash -c "ls test{?,??}\.{?,??,???} 2>/dev/null | sort -V" 2>&1`;
+$rc = $? >> 8;
+if ($rc) {
+    die "Unable to obtain list of expect tests to run: $output\n";
+}
+my @expect_tests = split /\s+/, $output;
+#use Data::Dumper;
+#print Data::Dumper->Dump([\@expect_tests], ['expect_tests']), "\n";
+
+# Iterate over each expect test
+foreach my $test (@expect_tests) {
+    my $test_name = "expect/$test";
+
+    last if $exit_tests;
+    next if (defined $include_pattern && $test_name !~ /$include_pattern/);
+    next if (defined $exclude_pattern && $test_name =~ /$exclude_pattern/);
+
+    # Initially print the test name so we can see what test is being run
+    print_test_name($test_name);
+
+    # Run the test
+    my $test_output = `./$test 2>&1`;
+    $rc = $? >> 8;
+
+    my $test_status = '';
+    if ($rc == 0) { $test_status = 'Passed'; }
+    elsif ($rc > 127) { $test_status = 'Skipped'; }
+    else { $test_status = 'Failed'; }
+
+    # Parse the test output for diagnostic information
+    my $diagnostic_output = '';
+    foreach my $line (split /\n/, $test_output) {
+        if ($line =~ m%^\[[^\]]+\] (Fatal|Error)\s+(.*)$% || $line =~ m%^\[[^\]]+\] (Warning)\s+(.*skip\@globals.*)$%) {
+            my ($severity, $message) = ($1, $2);
+            $message =~ s/\([^\)]*\)//g; # Remove parenthesized inclusions
+            $message =~ s/\([^\)]*\)//g; # Remove singly nested layers
+            $message =~ s/\s{2,}/ /g; # Collapse whitespace
+            $message =~ s/\s+$//g; # Remove trailing whitespace
+            $diagnostic_output .= "$severity: $message\n";
+        }
+    }
+    
+    print_test_status($test_name, $test_status, $diagnostic_output, $test_output);
+}
+
+
+##############################################################################
+# Run python tests
+##############################################################################
+
+# Change directory to testsuite/python
+chdir("$Bin/python") or die "Unable to change directory to $Bin/python: $!\n";
+
+# Obtain a list of python tests to run via pytest
+my @python_tests = ();
+$output = `pytest-3 --collect-only tests 2>&1`;
+$rc = $? >> 8;
+if ($rc) {
+    die "Unable to obtain list of python tests to run: $output\n";
+}
+
+# Parse the collected test output
+my ($package, $module, $class, $function) = ('', '', '', '');;
+foreach my $line (split /\n/, $output) {
+    if ($line =~ /^<Module ([^>]*)>$/) {
+        #push @python_tests, $1;
+        $module = $1;
+        $package = '';
+        $class = '';
+    }
+    elsif ($line =~ /^<Package $Bin\/python\/([^>]*)>$/) {
+        $package = $1;
+    }
+    elsif ($line =~ /^  <Module ([^>]*)>/) {
+        #push @python_tests, "$package/$1";
+        $module = $1;
+        $class = '';
+    }
+    elsif ($line =~ /<Class ([^>]*)>/) {
+        $class = $1;
+    }
+    elsif ($line =~ /<Function ([^>]*)>/) {
+        my $test = $package ? "$package/$module" : $module;
+        $test .= "::$class" if $class;
+        $test .= "::$1";
+        next if $module =~ /test_expect\.py/;
+        push @python_tests, $test;
+    }
+}
+#use Data::Dumper;
+#print Data::Dumper->Dump([\@python_tests], ['python_tests']), "\n";
+
+# Iterate over each collected test
+foreach my $test (@python_tests) {
+    my $test_name = "python/$test";
+    last if $exit_tests;
+    next if (defined $include_pattern && $test_name !~ /$include_pattern/);
+    next if (defined $exclude_pattern && $test_name =~ /$exclude_pattern/);
+
+    # Initially print the test function name so we can see what test is being run
+    print_test_name($test_name);
+
+    # Run the test function
+    my $test_output = `pytest-3 -s -rA -v --junit-xml=junit.xml $test 2>&1`;
+    $rc = $? >> 8;
+
+    my $test_status;
+    #if ($rc == 0) { $test_status = 'Passed'; }
+    #elsif ($rc == 1) { $test_status = 'Failed'; }
+    #else { $test_status = 'Error'; }
+
+    # Parse the junit output for test function and status information
+    open JUNIT_XML, "junit.xml" or die "Unable to open junit.xml for reading: $!\n";
+    my $junit_output = do { local $/; <JUNIT_XML> };
+
+    $test_status = 'Passed';
+    my $test_message = '';
+
+    # Iterate over each test function
+    # Since we are now running function-centric, there will just be one
+    foreach my $testcase ($junit_output =~ m%<testcase.*?</testcase>%sg) {
+        # All of the functions have already been run. Here we are just printing
+        # out the per-function statuses.
+        last if $exit_tests;
+
+        my $subtest_class_name = '';
+        my $subtest_file_name = '';
+        my $subtest_fqn = '';
+        my $subtest_function_name = '';
+        my $subtest_status = 'Passed';
+        my $subtest_message = '';
+
+        $subtest_file_name = $1 if $testcase =~ m%file="([^"]+)"%;
+        $subtest_class_name = $1 if $testcase =~ m%classname="([^"]+)"%;
+        $subtest_function_name = $1 if $testcase =~ m% name="([^"]+)"%;
+        if ($subtest_class_name ne '') { $subtest_class_name =~ s/.*\.//; }
+        if (index($subtest_file_name, $subtest_class_name) == -1) {
+            $subtest_fqn = "${subtest_file_name}::${subtest_class_name}::${subtest_function_name}";
+        }
+        else {
+            $subtest_fqn = "${subtest_file_name}::${subtest_function_name}";
+        }
+        if ($testcase =~ /<failure/) {
+            $subtest_status = 'Failed';
+            $test_status = 'Failed';
+            $subtest_message = $1 if $testcase =~ m%message="([^"]+)"%;
+        }
+        elsif ($testcase =~ /<skipped/) {
+            $subtest_status = 'Skipped';
+            $test_status = 'Skipped' if $test_status eq 'Passed';
+            $subtest_message = $1 if $testcase =~ m%message="([^"]+)"%;
+        }
+
+        #print_test_status($subtest_status, $subtest_message);
+        $test_message = $subtest_message;
+    }
+
+    # Print the test function status (and write test output to the output file)
+    print_test_status($test_name, $test_status, $test_message, $test_output);
+}
+
+
+# Print summary of test status totals
+
+my $pass_count = $summary{'Passed'};
+my $fail_count = $summary{'Failed'};
+my $error_count = $summary{'Errored'};
+my $skip_count = $summary{'Skipped'};
+my $run_count = $pass_count + $fail_count + $error_count;
+my $percent = $run_count ? $pass_count * 100 / $run_count : 0;
+
+print "\n";
+printf "%d test%s passed (%0.01f%%)\n", $pass_count, $pass_count == 1 ? '' : 's', $percent;
+if ($error_count) {
+    printf "%d test%s had errors\n", $error_count, $error_count == 1 ? '' : 's';
+}
+if ($fail_count) {
+    printf "%d test%s had failures\n", $fail_count, $fail_count == 1 ? '' : 's';
+}
+if ($skip_count) {
+    printf "%d test%s were skipped\n", $skip_count, $skip_count == 1 ? '' : 's';
+}
+
+##############################################################################
+
+__END__
+
+=head1 NAME
+
+run-tests - run tests across multiple testsuites
+
+=head1 SYNOPSIS
+
+B<run-tests> [B<-i, --include> I<test_pattern>] [B<-e, --exclude> I<test_pattern>] [B<-o, --output-dir> I<directory_name>] [B<-x, --exit-on-first-failure>] [B<-v, --verbose>]... [B<-q, --quiet>]... [B<-?, --help>] [B<--man>]
+
+=for comment
+[B<-n, --no-cleanup-on-failure>]
+
+=head1 DESCRIPTION
+
+B<run-tests> is used to run tests across multiple testsuites (e.g. unit-tests, expect tests, python tests). It runs the tests and displays summary results (in a format similar to TAP). Test output files are left in the testsuite directory in order to review failure causes.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-i, --include> I<test_pattern>
+
+only tests matching the specified pattern will be run
+
+=item B<-e, --exclude> I<test_pattern>
+
+tests matching the specified pattern will not be run
+
+=item B<-o, --output-dir> I<directory_name>
+
+test output files will be written to the specified directory. The directory will be created if necessary. Output files are written to the testsuite/log directory by default.
+
+=item B<-x, --exit-on-first-failure>
+
+exit the testrun on the first test failure
+
+=for comment
+item B<-n, --no-cleanup-on-failure>
+does not teardown on failure
+
+=item B<-v, --verbose>...
+
+increase verbosity in test status and diagnostic information
+
+=item B<-q, --quiet>...
+
+reduce verbosity in test status and diagnostic information
+
+=item B<--help>
+
+brief help message
+
+=item B<--man>
+
+full documentation
+
+=back
+
+=head1 AUTHOR
+
+Scott Jackson, scottmo@schedmd.com
+
+=cut
