@@ -6425,7 +6425,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 				 * licenses ends.
 				 */
 				rc = ESLURM_NODES_BUSY;
-				*when = lic_resv_time;
+				if (lic_resv_time > *when)
+					*when = lic_resv_time;
 			}
 		}
 		if (rc == SLURM_SUCCESS)
