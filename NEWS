@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
     REQUEST_RECONFIGURE RPC handler.
  -- Fixed the behavior of the --states=all option in squeue to actually show
     all of the states.
+ -- job_container - Don't constrain a job using --no-allocate.
 
 * Changes in Slurm 22.05.0rc1
 =============================
