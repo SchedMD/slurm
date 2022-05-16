@@ -1,0 +1,2 @@
+proc slurm_exit {} {}
+proc slurm_version {} {}
