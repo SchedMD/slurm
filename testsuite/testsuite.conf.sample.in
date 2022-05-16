@@ -1,0 +1,11 @@
+# Slurm Source Directory (contains configure.ac and the src directory)
+SlurmSourceDir=@abs_top_srcdir@
+
+# Slurm Build Directory (where you ran configure and make from)
+SlurmBuildDir=@abs_top_builddir@
+
+# Slurm Installation Directory (value of --prefix configure option)
+SlurmInstallDir=@prefix@
+
+# Slurm Configuration Directory (compiled-in location of slurm.conf)
+SlurmConfigDir=@prefix@/etc
