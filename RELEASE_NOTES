@@ -1,4 +1,4 @@
-RELEASE NOTES FOR SLURM VERSION 22.05
+RELEASE NOTES FOR SLURM VERSION 23.02
 
 IMPORTANT NOTES:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
@@ -6,123 +6,28 @@ If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 NOTE: If using a backup DBD you must start the primary first to do any
 database conversion, the backup will not start until this has happened.
 
-The 22.05 slurmdbd will work with Slurm daemons of version 20.11 and above.
+The 23.02 slurmdbd will work with Slurm daemons of version 21.08 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
 
-Slurm can be upgraded from version 20.11 or 21.08 to version 22.05 without loss
+Slurm can be upgraded from version 21.08 or 22.05 to version 23.02 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
 All SPANK plugins must be recompiled when upgrading from any Slurm version
-prior to 22.05.
+prior to 23.02.
 
 NOTE: PMIx v1.x is no longer supported.
 
 HIGHLIGHTS
 ==========
- -- The template slurmrestd.service unit file now defaults to listen on both the
-    Unix socket and the slurmrestd port.
- -- The template slurmrestd.service unit file now defaults to enable auth/jwt
-    and the munge unit is no longer a dependency by default.
- -- Add extra 'EnvironmentFile=-/etc/default/$service' setting to service files.
- -- Allow jobs to pack onto nodes already rebooting with the desired features.
- -- Reset job start time after nodes are rebooted, previously only done for
-    cloud/power save boots.
- -- Node features (if any) are passed to RebootProgram if run from slurmctld.
- -- Fail srun when using invalid --cpu-bind options (e.g. --cpu-bind=map_cpu:99
-    when only 10 cpus are allocated).
- -- Storing batch scripts and env vars are now in indexed tables using
-    substantially less disk space.  Those storing scripts in 21.08 will all
-    be moved and indexed automatically.
- -- Run MailProg through slurmscriptd instead of directly fork+exec()'ing
-    from slurmctld.
- -- Add acct_gather_interconnect/sysfs plugin.
- -- Future and Cloud nodes are treated as "Planned Down" in usage reports.
- -- Add new shard plugin for sharing gpus but not with mps.
- -- Add support for Lenovo SD650 V2 in acct_gather_energy/xcc plugin.
- -- Remove cgroup_allowed_devices_file.conf, since the default policy in modern
-    kernels is to whitelist by default. Denying specific devices must be done
-    through gres.conf.
- -- Node state flags (DRAIN, FAILED, POWERING UP, etc.) will be cleared now if
-    node state is updated to FUTURE.
- -- srun will no longer read in SLURM_CPUS_PER_TASK. This means you will
-    implicitly have to specify --cpus-per-task on your srun calls, or set the
-    new SRUN_CPUS_PER_TASK env var to accomplish the same thing.
- -- Remove connect_timeout and timeout options from JobCompParams as there's no
-    longer a connectivity check happening in the jobcomp/elasticsearch plugin
-    when setting the location off of JobCompLoc.
- -- Add support for hourly reoccurring reservations.
- -- Allow nodes to be dynamically added and removed from the system. Configure
-    MaxNodeCount to accomodate nodes created with dynamic node registrations
-    (slurmd -Z<feature> --conf="") and scontrol.
- -- Added support for Cgroup Version 2.
- -- sacct - allocations made by srun will now always display the allocation and
-    step(s). Previously, the allocation and step were combined when possible.
- -- cons_tres - change definition of the "least loaded node" (LLN) to the
-    node with the greatest ratio of available cpus to total cpus.
- -- Add support to ship Include configuration files with configless.
- -- Provide a detailed reason in the job log as to why it has been terminated
-    when hitting a resource limit.
- -- Pass and use alias_list through credential instead of environment variable.
- -- Add ability to get host addresses from nss_slurm.
- -- Enable reverse fanout for cloud+alias_list jobs.
- -- Add support to delete/update nodes by specifying nodesets or the 'ALL'
-    keyword alongside the delete/update node message nodelist expression (i.e.
-    'scontrol delete/update NodeName=ALL' or 'scontrol delete/update
-    NodeName=ns1,nodes[1-3]').
- -- Expanded the set of environment variables accessible through Prolog/Epilog
-    and PrologSlurmctld/EpilogSlurmctld to include SLURM_JOB_COMMENT,
-    SLURM_JOB_STDERR, SLURM_JOB_STDIN, SLURM_JOB_STDOUT, SLURM_JOB_PARTITION,
-    SLURM_JOB_ACCOUNT, SLURM_JOB_RESERVATION, SLURM_JOB_CONSTRAINTS,
-    SLURM_JOB_NUM_HOSTS, SLURM_JOB_CPUS_PER_NODE, SLURM_JOB_NTASKS, and
-    SLURM_JOB_RESTART_COUNT.
- -- Attempt to requeue jobs terminated by slurm.conf changes (node vanish, node
-    socket/core change, etc). Processes may still be running on excised nodes.
-    Admin should take precautions when removing nodes that have jobs on running
-    on them.
- -- Add switch/hpe_slingshot plugin.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
- -- AcctGatherEnergyType 'rsmi' is now 'gpu'.
- -- TaskAffinity parameter was removed from cgroup.conf.
- -- Fatal if the mutually-exclusive JobAcctGatherParams options of UsePss and
-    NoShared are both defined.
- -- KeepAliveTime has been moved into CommunicationParameters. The standalone
-    option will be removed in a future version.
- -- preempt/qos - add support for WITHIN mode to allow for preemption between
-    jobs within the same qos.
- -- Fatal error if CgroupReleaseAgentDir is configured in cgroup.conf. The
-    option has long been obsolete.
- -- Fatal if more than one burst buffer plugin is configured.
- -- Added keepaliveinterval and keepaliveprobes to CommunicationParameters.
- -- Added new max_token_lifespan=<seconds> to AuthAltParameters to allow sites
-    to restrict the lifespan of any requested ticket by an unprivileged user.
- -- Disallow slurm.conf node configurations with NodeName=ALL.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- Remove support for (non-functional) --cpu-bind=boards.
- -- Added --prefer option at job submission to allow for 'soft' constraints.
- -- Add "condflags=open" to sacctmgr show events to return open/currently down
-    events.
- -- sacct -f flag implies -c flag.
- -- srun --overlap now allows the step to share all resources (CPUs, memory, and
-    GRES), where previously --overlap only allowed the step to share CPUs with
-    other steps.
 
 API CHANGES
 ===========
- -- openapi/v0.0.35 - Plugin has been removed.
- -- burst_buffer plugins - err_msg added to bb_p_job_validate().
- -- openapi - added flags to slurm_openapi_p_get_specification(). Existing
-    plugins only need to update their prototype for the function as
-    manipulating the flags pointer is optional.
- -- openapi - Added OAS_FLAG_MANGLE_OPID to allow plugins to request that the
-    operationId of path methods be mangled with the full path to ensure
-    uniqueness.
- -- openapi/[db]v0.0.36 - Plugins have been marked as deprecated and will be
-    removed in the next major release.
- -- switch plugins - add switch_g_job_complete() function.

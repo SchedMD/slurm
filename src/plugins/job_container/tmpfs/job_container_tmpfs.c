@@ -135,11 +135,6 @@ static int _find_step_in_list(step_loc_t *stepd, uint32_t *job_id)
 	return (stepd->step_id.job_id == *job_id);
 }
 
-static int _find_legacy_job_in_list(legacy_job_info_t *job, uint32_t *job_id)
-{
-	return (job->job_id == *job_id);
-}
-
 static int _restore_ns(List steps, const char *d_name)
 {
 	int fd;
@@ -169,16 +164,6 @@ static int _restore_ns(List steps, const char *d_name)
 	}
 
 	close(fd);
-
-	if (stepd->protocol_version == SLURM_20_11_PROTOCOL_VERSION) {
-		legacy_job_info_t *job = xmalloc(sizeof(*job));
-		if (!legacy_jobs)
-			legacy_jobs = list_create(NULL);
-		job->job_id = job_id;
-		job->protocol_version = stepd->protocol_version;
-		list_append(legacy_jobs, job);
-		return _create_ns(job_id, 0, true);
-	}
 
 	return SLURM_SUCCESS;
 }
@@ -779,27 +764,7 @@ static int _delete_ns(uint32_t job_id, bool is_slurmd)
 
 	errno = 0;
 
-	/*
-	 * FIXME: only used for SLURM_20_11_PROTOCOL_VERSION
-	 * This is only here to handle upgrades from 20.11, and should be
-	 * removed once upgrading from 20.11 is no longer supported.
-	 */
-	if (is_slurmd && legacy_jobs) {
-		legacy_job_info_t *job;
-		job = list_find_first(legacy_jobs,
-				      (ListFindF)_find_legacy_job_in_list,
-				      &job_id);
-		/* if we didn't find the job, it doesn't need legacy handling */
-		if (!job)
-			return SLURM_SUCCESS;
-		/* cleanup the list */
-		list_delete_first(legacy_jobs,
-				  (ListFindF)_find_legacy_job_in_list,
-				  &job_id);
-		xfree(job);
-		if (list_count(legacy_jobs) == 0)
-			FREE_NULL_LIST(legacy_jobs);
-	} else if (is_slurmd)
+	if (is_slurmd)
 		return SLURM_SUCCESS;
 
 	rc = umount2(ns_holder, MNT_DETACH);

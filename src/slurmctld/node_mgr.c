@@ -389,48 +389,13 @@ extern int load_all_node_state ( bool state_only )
 				goto unpack_error;
 			safe_unpack32(&weight, buffer);
 			base_state = node_state & NODE_STATE_BASE;
-		} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
-			uint32_t len;
-			safe_unpackstr_xmalloc(&comm_name, &len, buffer);
-			safe_unpackstr_xmalloc(&node_name, &len, buffer);
-			safe_unpackstr_xmalloc(&node_hostname, &len, buffer);
-			safe_unpackstr_xmalloc(&comment, &len, buffer);
-			safe_unpackstr_xmalloc(&extra, &len, buffer);
-			safe_unpackstr_xmalloc(&reason, &len, buffer);
-			safe_unpackstr_xmalloc(&features, &len, buffer);
-			safe_unpackstr_xmalloc(&features_act, &len,buffer);
-			safe_unpackstr_xmalloc(&gres, &len, buffer);
-			safe_unpackstr_xmalloc(&cpu_spec_list, &len, buffer);
-			safe_unpack32(&next_state, buffer);
-			safe_unpack32(&node_state, buffer);
-			safe_unpack32(&cpu_bind, buffer);
-			safe_unpack16(&cpus, buffer);
-			safe_unpack16(&boards, buffer);
-			safe_unpack16(&sockets, buffer);
-			safe_unpack16(&cores, buffer);
-			safe_unpack16(&core_spec_cnt, buffer);
-			safe_unpack16(&threads, buffer);
-			safe_unpack64(&real_memory, buffer);
-			safe_unpack32(&tmp_disk, buffer);
-			safe_unpack32(&reason_uid, buffer);
-			safe_unpack_time(&reason_time, buffer);
-			safe_unpack_time(&boot_req_time, buffer);
-			safe_unpack_time(&power_save_req_time, buffer);
-			safe_unpack_time(&last_response, buffer);
-			safe_unpack16(&obj_protocol_version, buffer);
-			safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
-			if (gres_node_state_unpack(&gres_list, buffer,
-						   node_name,
-						   protocol_version) !=
-			    SLURM_SUCCESS)
-				goto unpack_error;
-			base_state = node_state & NODE_STATE_BASE;
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			uint32_t len;
 			safe_unpackstr_xmalloc(&comm_name, &len, buffer);
 			safe_unpackstr_xmalloc(&node_name, &len, buffer);
 			safe_unpackstr_xmalloc(&node_hostname, &len, buffer);
 			safe_unpackstr_xmalloc(&comment, &len, buffer);
+			safe_unpackstr_xmalloc(&extra, &len, buffer);
 			safe_unpackstr_xmalloc(&reason, &len, buffer);
 			safe_unpackstr_xmalloc(&features, &len, buffer);
 			safe_unpackstr_xmalloc(&features_act, &len,buffer);
@@ -1149,7 +1114,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 				     protocol_version);
 
 		packstr(dump_node_ptr->tres_fmt_str, buffer);
-	} else if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(dump_node_ptr->name, buffer);
 		packstr(dump_node_ptr->node_hostname, buffer);
 		packstr(dump_node_ptr->comm_name, buffer);
@@ -1211,75 +1176,6 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->comment, buffer);
 		packstr(dump_node_ptr->extra, buffer);
-		packstr(dump_node_ptr->reason, buffer);
-		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
-					protocol_version);
-		ext_sensors_data_pack(dump_node_ptr->ext_sensors, buffer,
-				      protocol_version);
-		power_mgmt_data_pack(dump_node_ptr->power, buffer,
-				     protocol_version);
-
-		packstr(dump_node_ptr->tres_fmt_str, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		packstr(dump_node_ptr->name, buffer);
-		packstr(dump_node_ptr->node_hostname, buffer);
-		packstr(dump_node_ptr->comm_name, buffer);
-		packstr(dump_node_ptr->bcast_address, buffer);
-		pack16(dump_node_ptr->port, buffer);
-		pack32(dump_node_ptr->next_state, buffer);
-		pack32(dump_node_ptr->node_state, buffer);
-		packstr(dump_node_ptr->version, buffer);
-
-		/* Only data from config_record used for scheduling */
-		pack16(dump_node_ptr->config_ptr->cpus, buffer);
-		pack16(dump_node_ptr->config_ptr->boards, buffer);
-		pack16(dump_node_ptr->config_ptr->tot_sockets, buffer);
-		pack16(dump_node_ptr->config_ptr->cores, buffer);
-		pack16(dump_node_ptr->config_ptr->threads, buffer);
-		pack64(dump_node_ptr->config_ptr->real_memory, buffer);
-		pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
-
-		packstr(dump_node_ptr->mcs_label, buffer);
-		pack32(dump_node_ptr->owner, buffer);
-		pack16(dump_node_ptr->core_spec_cnt, buffer);
-		pack32(dump_node_ptr->cpu_bind, buffer);
-		pack64(dump_node_ptr->mem_spec_limit, buffer);
-		packstr(dump_node_ptr->cpu_spec_list, buffer);
-
-		pack32(dump_node_ptr->cpu_load, buffer);
-		pack64(dump_node_ptr->free_mem, buffer);
-		pack32(dump_node_ptr->config_ptr->weight, buffer);
-		pack32(dump_node_ptr->reason_uid, buffer);
-
-		pack_time(dump_node_ptr->boot_time, buffer);
-		pack_time(dump_node_ptr->reason_time, buffer);
-		pack_time(dump_node_ptr->slurmd_start_time, buffer);
-
-		select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo,
-					      buffer, protocol_version);
-
-		packstr(dump_node_ptr->arch, buffer);
-		packstr(dump_node_ptr->features, buffer);
-		packstr(dump_node_ptr->features_act, buffer);
-		if (dump_node_ptr->gres)
-			packstr(dump_node_ptr->gres, buffer);
-		else
-			packstr(dump_node_ptr->config_ptr->gres, buffer);
-
-		/* Gathering GRES details is slow, so don't by default */
-		if (show_flags & SHOW_DETAIL) {
-			gres_drain =
-				gres_get_node_drain(dump_node_ptr->gres_list);
-			gres_used  =
-				gres_get_node_used(dump_node_ptr->gres_list);
-		}
-		packstr(gres_drain, buffer);
-		packstr(gres_used, buffer);
-		xfree(gres_drain);
-		xfree(gres_used);
-
-		packstr(dump_node_ptr->os, buffer);
-		packstr(dump_node_ptr->comment, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
@@ -3134,7 +3030,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			slurm_get_ip_str(&addr, comm_name, INET6_ADDRSTRLEN);
 		}
 
-		if (slurm_msg->protocol_version <= SLURM_21_08_PROTOCOL_VERSION)
+		/* 2 versions after 21.08 this if can be removed */
+		if (slurm_msg->protocol_version <= SLURM_MIN_PROTOCOL_VERSION)
 			hostname = auth_g_get_host(slurm_msg->auth_cred);
 		else
 			hostname = xstrdup(reg_msg->hostname);

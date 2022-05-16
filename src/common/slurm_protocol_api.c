@@ -214,8 +214,9 @@ static int _check_hash(buf_t *buffer, header_t *header, slurm_msg_t *msg,
 			else if ((cred_hash[1] == type[0]) &&
 				 (cred_hash[2] == type[1]))
 				msg->hash_index = HASH_PLUGIN_NONE;
+			/* 2 versions after 21.08 this else if can be removed */
 			else if ((msg->protocol_version <=
-				  SLURM_21_08_PROTOCOL_VERSION) &&
+				  SLURM_MIN_PROTOCOL_VERSION) &&
 				 (cred_hash[1] == type[1]) &&
 				 (cred_hash[2] == type[0]))
 				msg->hash_index = HASH_PLUGIN_NONE;
@@ -255,7 +256,8 @@ static int _compute_hash(buf_t *buffer, slurm_msg_t *msg, slurm_hash_t *hash)
 	if (slurm_get_plugin_hash_enable(msg->auth_index)) {
 		uint16_t msg_type = htons(msg->msg_type);
 
-		if (msg->protocol_version <= SLURM_21_08_PROTOCOL_VERSION) {
+		/* 2 versions after 21.08 this if can be removed */
+		if (msg->protocol_version <= SLURM_MIN_PROTOCOL_VERSION) {
 			/*
 			 * Unfortuantely 21.08.8 and 20.11.9 did not normalize
 			 * this to network order, and require host-byte order.

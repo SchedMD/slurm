@@ -2474,7 +2474,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 	for (i = 0; i < rec_cnt; i++) {
 		bool new_has_file;
 		bool orig_has_file;
-		if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -2488,21 +2488,6 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_unique_id, &utmp32, buffer);
-		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-			uint8_t tmp_8;
-			safe_unpack32(&magic, buffer);
-			if (magic != GRES_MAGIC)
-				goto unpack_error;
-
-			safe_unpack64(&count64, buffer);
-			safe_unpack32(&cpu_cnt, buffer);
-			safe_unpack8(&tmp_8, buffer);
-			config_flags = tmp_8;
-			safe_unpack32(&plugin_id, buffer);
-			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
-			safe_unpackstr_xmalloc(&tmp_links, &utmp32, buffer);
-			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
-			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
 		}
 
 		if (!count64)

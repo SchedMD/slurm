@@ -41,7 +41,6 @@
 
 /*
  * Any time you have to add to an existing convert update this number.
- * NOTE: 9 was the first version of 20.11.
  * NOTE: 10 was the first version of 21.08.
  * NOTE: 11 was the first version of 22.05.
  * NOTE: 12 was the second version of 22.05.
@@ -61,36 +60,6 @@ typedef struct {
 } local_tres_t;
 
 static uint32_t db_curr_ver = NO_VAL;
-
-static int _convert_step_table_post(
-	mysql_conn_t *mysql_conn, char *cluster_name)
-{
-	int rc = SLURM_SUCCESS;
-	char *query = NULL;
-
-	if (db_curr_ver < 9) {
-		/*
-		 * Change the names pack_job_id and pack_job_offset to be het_*
-		 */
-		query = xstrdup_printf(
-			"update \"%s_%s\" set id_step = %d where id_step = -2;"
-			"update \"%s_%s\" set id_step = %d where id_step = -1;",
-			cluster_name, step_table, SLURM_BATCH_SCRIPT,
-			cluster_name, step_table, SLURM_EXTERN_CONT);
-	}
-
-	if (query) {
-		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		if (rc != SLURM_SUCCESS)
-			error("%s: Can't convert %s_%s info: %m",
-			      __func__, cluster_name, step_table);
-	}
-
-	return rc;
-}
 
 static int _rename_usage_columns(mysql_conn_t *mysql_conn, char *table)
 {
@@ -531,8 +500,8 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator itr;
-	char *cluster_name;
+	/* ListIterator itr; */
+	/* char *cluster_name; */
 
 	xassert(as_mysql_total_cluster_list);
 
@@ -557,14 +526,10 @@ extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
 	}
 
 	/* make it up to date */
-	itr = list_iterator_create(as_mysql_total_cluster_list);
-	while ((cluster_name = list_next(itr))) {
-		info("post-converting step table for %s", cluster_name);
-		if ((rc = _convert_step_table_post(mysql_conn, cluster_name)
-		     != SLURM_SUCCESS))
-			break;
-	}
-	list_iterator_destroy(itr);
+	/* itr = list_iterator_create(as_mysql_total_cluster_list); */
+	/* while ((cluster_name = list_next(itr))) { */
+	/* } */
+	/* list_iterator_destroy(itr); */
 
 	return rc;
 }

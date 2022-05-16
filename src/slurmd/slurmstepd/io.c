@@ -1652,7 +1652,8 @@ _send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *job, bool init)
 	memcpy(msg.io_key, srun->key->data, srun->key->len);
 	msg.nodeid = job->nodeid;
 
-	if (srun->protocol_version >= SLURM_21_08_PROTOCOL_VERSION)
+	/* 2 versions after 21.08 this if can be removed */
+	if (srun->protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
 		msg.version = SLURM_PROTOCOL_VERSION;
 	else
 		msg.version = IO_PROTOCOL_VERSION;
