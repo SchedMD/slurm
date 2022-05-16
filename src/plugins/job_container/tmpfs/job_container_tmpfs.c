@@ -65,7 +65,7 @@
 #include "read_jcconf.h"
 
 static int _create_ns(uint32_t job_id, uid_t uid, bool remount);
-static int _delete_ns(uint32_t job_id, bool is_slurmd);
+static int _delete_ns(uint32_t job_id);
 
 #if defined (__APPLE__)
 extern slurmd_conf_t *conf __attribute__((weak_import));
@@ -152,7 +152,7 @@ static int _restore_ns(List steps, const char *d_name)
 	if (!stepd) {
 		debug("%s: Job %u not found, deleting the namespace",
 		      __func__, job_id);
-		return _delete_ns(job_id, false);
+		return _delete_ns(job_id);
 	}
 
 	fd = stepd_connect(stepd->directory, stepd->nodename,
@@ -160,7 +160,7 @@ static int _restore_ns(List steps, const char *d_name)
 	if (fd == -1) {
 		error("%s: failed to connect to stepd for %u.",
 		      __func__, job_id);
-		return _delete_ns(job_id, false);
+		return _delete_ns(job_id);
 	}
 
 	close(fd);
@@ -747,7 +747,7 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	return SLURM_SUCCESS;
 }
 
-static int _delete_ns(uint32_t job_id, bool is_slurmd)
+static int _delete_ns(uint32_t job_id)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
@@ -763,9 +763,6 @@ static int _delete_ns(uint32_t job_id, bool is_slurmd)
 	}
 
 	errno = 0;
-
-	if (is_slurmd)
-		return SLURM_SUCCESS;
 
 	rc = umount2(ns_holder, MNT_DETACH);
 	if (rc) {
@@ -800,8 +797,7 @@ static int _delete_ns(uint32_t job_id, bool is_slurmd)
 
 extern int container_p_delete(uint32_t job_id)
 {
-	/* change to return SLURM_SUCCESS when 20.11 is not supported) */
-	return _delete_ns(job_id, true);
+	return SLURM_SUCCESS;
 }
 
 extern int container_p_stepd_create(uint32_t job_id, uid_t uid)
@@ -811,5 +807,5 @@ extern int container_p_stepd_create(uint32_t job_id, uid_t uid)
 
 extern int container_p_stepd_delete(uint32_t job_id)
 {
-	return _delete_ns(job_id, false);
+	return _delete_ns(job_id);
 }
