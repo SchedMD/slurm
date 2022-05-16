@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - gracefully update existing QOSs.
  -- Fix x11 forwarding with job_container/tmpfs and without home_xauthority.
  -- Fix reconfig of dynamic nodes with gres.
+ -- Fix corner case issues when removing assocs/qos' while jobs are completing
+    and a reconfigure happens.
 
 * Changes in Slurm 22.05.0rc1
 =============================
