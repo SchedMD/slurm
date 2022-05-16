@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix reconfig of dynamic nodes with gres.
  -- Fix corner case issues when removing assocs/qos' while jobs are completing
     and a reconfigure happens.
+ -- Add SlurmdParameters=numa_node_as_socket to use the numa node as a socket.
 
 * Changes in Slurm 22.05.0rc1
 =============================
