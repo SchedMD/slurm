@@ -632,6 +632,7 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/Makefile
 		 testsuite/testsuite.conf.sample
 		 testsuite/expect/Makefile
+		 testsuite/expect/globals.local.sample
 		 testsuite/python/Makefile
 		 testsuite/slurm_unit/Makefile
 		 testsuite/slurm_unit/api/Makefile
