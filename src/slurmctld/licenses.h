@@ -207,6 +207,10 @@ extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src);
 extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 				     job_record_t *job_ptr);
 
+#define bf_licenses_transfer(_x, _y) (_x ? slurm_bf_licenses_transfer(_x, _y) : NULL)
+extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
+				       job_record_t *job_ptr);
+
 #define bf_licenses_avail(_x, _y) (_x ? slurm_bf_licenses_avail(_x, _y) : true)
 extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 				    job_record_t *job_ptr);

@@ -1123,6 +1123,49 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 	list_iterator_destroy(iter);
 }
 
+/*
+ * Tranfer licenses into the control of a reservation.
+ * Finds the global license, deducts the required number, then assigns those
+ * to a new record locked to that reservation.
+ */
+extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
+				       job_record_t *job_ptr)
+{
+	licenses_t *resv_entry;
+	ListIterator iter;
+
+	xassert(job_ptr);
+
+	if (!job_ptr->license_list)
+		return;
+
+	iter = list_iterator_create(job_ptr->license_list);
+	while ((resv_entry = list_next(iter))) {
+		bf_license_t *bf_entry, *new_entry;
+		int needed = resv_entry->total, reservable;
+
+		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
+					   resv_entry->name);
+
+		if (bf_entry->remaining < needed) {
+			error("%s: underflow on %s", __func__, bf_entry->name);
+			reservable = bf_entry->remaining;
+			bf_entry->remaining = 0;
+		} else {
+			bf_entry->remaining -= needed;
+			reservable = needed;
+		}
+
+		new_entry = xmalloc(sizeof(*new_entry));
+		new_entry->name = xstrdup(resv_entry->name);
+		new_entry->remaining = reservable;
+		new_entry->resv_ptr = job_ptr->resv_ptr;
+
+		list_push(licenses, new_entry);
+	}
+	list_iterator_destroy(iter);
+}
+
 extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 				    job_record_t *job_ptr)
 {

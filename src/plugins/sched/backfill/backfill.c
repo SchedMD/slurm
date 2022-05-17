@@ -1379,6 +1379,43 @@ static int _foreach_het_job_details(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _bf_reserve_resv_licenses(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	node_space_handler_t *ns_h = arg;
+	node_space_map_t *node_space = ns_h->node_space;
+	int *ns_recs_ptr = ns_h->node_space_recs;
+	time_t start_time, end_time;
+	job_record_t fake_job = {
+		.license_list = resv_ptr->license_list,
+		.resv_ptr = resv_ptr,
+	};
+
+	if (!resv_ptr->license_list)
+		return 0;
+
+	if (resv_ptr->end_time < node_space[0].begin_time)
+		return 0;
+
+	/* treat flex reservations as always active */
+	if (resv_ptr->flags & RESERVE_FLAG_FLEX) {
+		start_time = 0;
+		end_time = INFINITE;
+	} else {
+		/* align to resolution */
+
+		start_time = resv_ptr->start_time / backfill_resolution;
+		start_time *= backfill_resolution;
+		end_time = resv_ptr->end_time / backfill_resolution;
+		end_time *= backfill_resolution;
+	}
+
+	_add_reservation(start_time, end_time, NULL, &fake_job, node_space,
+			 ns_recs_ptr);
+
+	return 0;
+}
+
 static int _bf_reserve_running(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
@@ -1782,6 +1819,10 @@ static void _attempt_backfill(void)
 		node_space_handler_t node_space_handler;
 		node_space_handler.node_space = node_space;
 		node_space_handler.node_space_recs = &node_space_recs;
+
+		if (bf_licenses)
+			list_for_each(resv_list, _bf_reserve_resv_licenses,
+				      &node_space_handler);
 
 		list_for_each(job_list, _bf_reserve_running,
 			      &node_space_handler);
@@ -3249,8 +3290,13 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		}
 
 		/* merge in new usage with this record */
-		bit_and(node_space[j].avail_bitmap, res_bitmap);
-		bf_licenses_deduct(node_space[j].licenses, job_ptr);
+		if (res_bitmap) {
+			bit_and(node_space[j].avail_bitmap, res_bitmap);
+			bf_licenses_deduct(node_space[j].licenses, job_ptr);
+		} else {
+			/* setting up reservation licenses */
+			bf_licenses_transfer(node_space[j].licenses, job_ptr);
+		}
 
 		if (end_reserve == node_space[j].end_time) {
 			if (node_space[j].next)
