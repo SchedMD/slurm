@@ -9296,8 +9296,7 @@ static void _translate_step_to_global_device_index(bitstr_t **usable_gres,
  */
 static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
 					       pid_t pid,
-					       bitstr_t *gres_bit_alloc,
-				     	       bool get_devices)
+					       bitstr_t *gres_bit_alloc)
 {
 #if defined(__APPLE__)
 	return NULL;
@@ -9368,12 +9367,7 @@ static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
 	cpuset_destroy(mask);
 #endif
 
-	if (!get_devices && gres_use_local_device_index()) {
-		bit_and(usable_gres, gres_bit_alloc);
-		bit_consolidate(usable_gres);
-	} else {
-		bit_and(usable_gres, gres_bit_alloc);
-	}
+	bit_and(usable_gres, gres_bit_alloc);
 
 	return usable_gres;
 #endif
@@ -9724,10 +9718,12 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 				false, get_devices);
 		} else if (tres_bind->bind_gpu) {
 			usable_gres = _get_usable_gres_cpu_affinity(
-				context_inx, pid, gres_bit_alloc, get_devices);
+				context_inx, pid, gres_bit_alloc);
 			_filter_usable_gres(usable_gres,
 					    tres_bind->tasks_per_gres,
 					    proc_id);
+			if (!get_devices && gres_use_local_device_index())
+				bit_consolidate(usable_gres);
 		} else if (tres_bind->gpus_per_task) {
 			if(!get_devices && gres_use_local_device_index()){
 				usable_gres = bit_alloc(
@@ -9743,9 +9739,12 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 		} else
 			return SLURM_ERROR;
 	} else if (!xstrcmp(gres_name, "nic")) {
-		if (tres_bind->bind_nic)
+		if (tres_bind->bind_nic) {
 			usable_gres = _get_usable_gres_cpu_affinity(
-				context_inx, pid, gres_bit_alloc, get_devices);
+				context_inx, pid, gres_bit_alloc);
+			if (!get_devices && gres_use_local_device_index())
+				bit_consolidate(usable_gres);
+		}
 		else
 			return SLURM_ERROR;
 	} else {
