@@ -1626,3 +1626,13 @@ bit_get_pos_num(bitstr_t *b, bitoff_t pos)
 
 	return cnt;
 }
+
+void bit_consolidate(bitstr_t *b)
+{
+	int set_count = bit_set_count(b);
+
+	if (set_count) {
+		bit_nclear(b, set_count, bit_size(b) - 1);
+		bit_nset(b, 0, set_count - 1);
+	}
+}

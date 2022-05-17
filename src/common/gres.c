@@ -9313,7 +9313,7 @@ static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int gres_inx = 0;
-	int bitmap_size, set_count;
+	int bitmap_size;
 
 	if (!gres_conf_list) {
 		error("gres_conf_list is null!");
@@ -9370,10 +9370,7 @@ static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
 
 	if (!get_devices && gres_use_local_device_index()) {
 		bit_and(usable_gres, gres_bit_alloc);
-		set_count = bit_set_count(usable_gres);
-		bit_clear_all(usable_gres);
-		if (set_count)
-			bit_nset(usable_gres, 0, set_count - 1);
+		bit_consolidate(usable_gres);
 	} else {
 		bit_and(usable_gres, gres_bit_alloc);
 	}
@@ -9528,7 +9525,7 @@ static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 {
 	bitstr_t *usable_gres = NULL;
 	char *tmp, *tok, *save_ptr = NULL, *mult;
-	int i, task_offset = 0, task_mult, bitmap_size, set_count;
+	int i, task_offset = 0, task_mult, bitmap_size;
 	int value, min, max;
 
 	if (!map_or_mask || !map_or_mask[0])
@@ -9581,10 +9578,7 @@ end:
 				&usable_gres, gres_bit_alloc);
 		else{
 			bit_and(usable_gres, gres_bit_alloc);
-			set_count = bit_set_count(usable_gres);
-			bit_clear_all(usable_gres);
-			if (set_count)
-				bit_nset(usable_gres, 0, set_count - 1);
+			bit_consolidate(usable_gres);
 		}
 	} else {
 		bit_and(usable_gres, gres_bit_alloc);
