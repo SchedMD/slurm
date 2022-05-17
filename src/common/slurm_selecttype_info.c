@@ -86,12 +86,6 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 		} else if (!xstrcasecmp(str_parameters, "other_cons_tres")) {
 			*param |= CR_OTHER_CONS_TRES;
 		} else if (!xstrcasecmp(str_parameters,
-				       "CR_ALLOCATE_FULL_SOCKET")) {
-			verbose("CR_ALLOCATE_FULL_SOCKET is deprecated.  "
-				"It is now the default for CR_SOCKET*.  "
-				"It is safe to remove it "
-				"from your slurm.conf");
-		} else if (!xstrcasecmp(str_parameters,
 				       "CR_ONE_TASK_PER_CORE")) {
 			*param |= CR_ONE_TASK_PER_CORE;
 		} else if (!xstrcasecmp(str_parameters,
