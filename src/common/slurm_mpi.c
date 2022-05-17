@@ -309,7 +309,7 @@ static int _mpi_init_locked(char **mpi_type)
 		/*
 		 * 2 versions after 22.05 this running_in_slurmctld() check can
 		 * be removed. Until then we still need to have the double load
-		 * of the symlink just incase a 21.08 srun is talking to a
+		 * of the symlink just in case a 21.08 srun is talking to a
 		 * 22.05+ slurmd.
 		 */
 		if (running_in_slurmctld()) {
