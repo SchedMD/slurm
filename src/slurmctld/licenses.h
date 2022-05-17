@@ -58,6 +58,7 @@ typedef struct xlist bf_licenses_t;
 typedef struct {
 	char *name;
 	uint32_t remaining;
+	slurmctld_resv_t *resv_ptr;
 } bf_license_t;
 
 extern List license_list;
@@ -203,10 +204,12 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list);
 extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src);
 
 #define bf_licenses_deduct(_x, _y) (_x ? slurm_bf_licenses_deduct(_x, _y) : NULL)
-extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses, List additional);
+extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
+				     job_record_t *job_ptr);
 
 #define bf_licenses_avail(_x, _y) (_x ? slurm_bf_licenses_avail(_x, _y) : true)
-extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses, List needed);
+extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
+				    job_record_t *job_ptr);
 
 #define bf_licenses_equal(_x, _y) (_x ? slurm_bf_licenses_equal(_x, _y) : true)
 extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b);

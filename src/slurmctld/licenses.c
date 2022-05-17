@@ -61,6 +61,11 @@ static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void _pack_license(licenses_t *lic, buf_t *buffer,
 			  uint16_t protocol_version);
 
+typedef struct {
+	char *name;
+	slurmctld_resv_t *resv_ptr;
+} bf_licenses_find_resv_t;
+
 /* Print all licenses on a list */
 static void _licenses_print(char *header, List licenses, job_record_t *job_ptr)
 {
@@ -956,6 +961,9 @@ static void _bf_license_free_rec(void *x)
 	xfree(entry);
 }
 
+/*
+ * Will never match on a reserved license.
+ */
 static int _bf_licenses_find_rec(void *x, void *key)
 {
 	bf_license_t *license_entry = x;
@@ -964,10 +972,27 @@ static int _bf_licenses_find_rec(void *x, void *key)
 	xassert(license_entry->name);
 	xassert(name);
 
+	if (license_entry->resv_ptr)
+		return 0;
+
 	if (!xstrcmp(license_entry->name, name))
 		return 1;
 
 	return 0;
+}
+
+static int _bf_licenses_find_resv(void *x, void *key)
+{
+	bf_license_t *license_entry = x;
+	bf_licenses_find_resv_t *target = key;
+
+	if (license_entry->resv_ptr != target->resv_ptr)
+		return 0;
+
+	if (xstrcmp(license_entry->name, target->name))
+		return 0;
+
+	return 1;
 }
 
 extern List bf_licenses_initial(bool bf_running_job_reserve)
@@ -1010,7 +1035,10 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
 
 	iter = list_iterator_create(licenses_list);
 	while ((entry = list_next(iter))) {
-		xstrfmtcat(licenses, "%s%s:%u",
+		xstrfmtcat(licenses, "%s%s%s%s%s:%u",
+			   (entry->resv_ptr ? "resv=" : ""),
+			   (entry->resv_ptr ? entry->resv_ptr->name : ""),
+			   (entry->resv_ptr ? ":" : ""),
 			   sep, entry->name, entry->remaining);
 		sep = ",";
 	}
@@ -1035,6 +1063,7 @@ extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src)
 		entry_dest = xmalloc(sizeof(*entry_dest));
 		entry_dest->name = xstrdup(entry_src->name);
 		entry_dest->remaining = entry_src->remaining;
+		entry_dest->resv_ptr = entry_src->resv_ptr;
 		list_append(licenses_dest, entry_dest);
 	}
 	list_iterator_destroy(iter);
@@ -1042,46 +1071,98 @@ extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src)
 	return licenses_dest;
 }
 
-extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses, List additional)
+extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
+				     job_record_t *job_ptr)
 {
-	bf_license_t *bf_entry;
 	licenses_t *job_entry;
 	ListIterator iter;
 
-	if (!additional)
+	xassert(job_ptr);
+
+	if (!job_ptr->license_list)
 		return;
 
-	iter = list_iterator_create(additional);
+	iter = list_iterator_create(job_ptr->license_list);
 	while ((job_entry = list_next(iter))) {
+		bf_license_t *resv_entry = NULL, *bf_entry;
+		int needed = job_entry->total;
+
+		/*
+		 * Jobs with reservations may use licenses out of the
+		 * reservation, as well as global ones. Deduct from
+		 * reservation first, then global as needed.
+		 */
+		if (job_ptr->resv_ptr) {
+			bf_licenses_find_resv_t target_record = {
+				.name = job_entry->name,
+				.resv_ptr = job_ptr->resv_ptr,
+			};
+
+			resv_entry = list_find_first(licenses,
+						     _bf_licenses_find_resv,
+						     &target_record);
+			if (resv_entry && (needed <= resv_entry->remaining)) {
+				resv_entry->remaining -= needed;
+				continue;
+			} else if (resv_entry) {
+				needed -= resv_entry->remaining;
+				resv_entry->remaining = 0;
+			}
+		}
+
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
 					   job_entry->name);
 
-		if (bf_entry->remaining < job_entry->total) {
+		if (bf_entry->remaining < needed) {
 			error("%s: underflow on %s", __func__, bf_entry->name);
 			bf_entry->remaining = 0;
 		} else {
-			bf_entry->remaining -= job_entry->total;
+			bf_entry->remaining -= needed;
 		}
 	}
 	list_iterator_destroy(iter);
 }
 
-extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses, List needed)
+extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
+				    job_record_t *job_ptr)
 {
 	ListIterator iter;
-	bf_license_t *bf_entry;
 	licenses_t *need;
 	bool avail = true;
 
-	if (!needed)
+	if (!job_ptr->license_list)
 		return true;
 
-	iter = list_iterator_create(needed);
+	iter = list_iterator_create(job_ptr->license_list);
 	while ((need = list_next(iter))) {
+		bf_license_t *resv_entry = NULL, *bf_entry;
+		int needed = need->total;
+
+		/*
+		 * Jobs with reservations may use licenses out of the
+		 * reservation, as well as global ones. Deduct from
+		 * reservation first, then global as needed.
+		 */
+		if (job_ptr->resv_ptr) {
+			bf_licenses_find_resv_t target_record = {
+				.name = need->name,
+				.resv_ptr = job_ptr->resv_ptr,
+			};
+
+			resv_entry = list_find_first(licenses,
+						     _bf_licenses_find_resv,
+						     &target_record);
+
+			if (resv_entry && (needed <= resv_entry->remaining))
+				continue;
+			else if (resv_entry)
+				needed -= resv_entry->remaining;
+		}
+
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
 					   need->name);
 
-		if (bf_entry->remaining < need->total) {
+		if (bf_entry->remaining < needed) {
 			avail = false;
 			break;
 		}
@@ -1102,7 +1183,8 @@ extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
 		entry_b = list_find_first(b, _bf_licenses_find_rec,
 					  entry_a->name);
 
-		if (entry_a->remaining != entry_b->remaining) {
+		if ((entry_a->remaining != entry_b->remaining) ||
+		    (entry_a->resv_ptr != entry_b->resv_ptr)) {
 			equivalent = false;
 			break;
 		}

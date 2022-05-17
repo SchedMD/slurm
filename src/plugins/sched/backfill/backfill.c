@@ -216,7 +216,7 @@ static bitstr_t *planned_bitmap = NULL;
 
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
-			     bitstr_t *res_bitmap, List licenses,
+			     bitstr_t *res_bitmap, job_record_t *job_ptr,
 			     node_space_map_t *node_space,
 			     int *node_space_recs);
 static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val);
@@ -255,7 +255,7 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 static int  _set_hetjob_details(void *x, void *arg);
 static int  _start_job(job_record_t *job_ptr, bitstr_t *avail_bitmap);
 static bool _test_resv_overlap(node_space_map_t *node_space,
-			       bitstr_t *use_bitmap, List use_licenses,
+			       bitstr_t *use_bitmap, job_record_t *job_ptr,
 			       uint32_t start_time, uint32_t end_reserve);
 static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
@@ -1424,8 +1424,8 @@ static int _bf_reserve_running(void *x, void *arg)
 	 * seconds - or significantly longer with bf_continue set - which
 	 * would fragment the start of the backfill map.
 	 */
-	_add_reservation(0, end_time, tmp_bitmap, job_ptr->license_list,
-			 node_space, ns_recs_ptr);
+	_add_reservation(0, end_time, tmp_bitmap, job_ptr, node_space,
+			 ns_recs_ptr);
 
 	FREE_NULL_BITMAP(tmp_bitmap);
 
@@ -2328,7 +2328,7 @@ next_task:
 				bit_and(avail_bitmap,
 					node_space[j].avail_bitmap);
 				if (!bf_licenses_avail(node_space[j].licenses,
-						       job_ptr->license_list)) {
+						       job_ptr)) {
 					licenses_unavail = true;
 					later_start = node_space[j].end_time;
 				}
@@ -2791,9 +2791,8 @@ skip_start:
 		if ((job_ptr->start_time > now) &&
 		    (job_ptr->state_reason != WAIT_BURST_BUFFER_RESOURCE) &&
 		    (job_ptr->state_reason != WAIT_BURST_BUFFER_STAGING) &&
-		    _test_resv_overlap(node_space, avail_bitmap,
-				       job_ptr->license_list, start_time,
-				       end_reserve)) {
+		    _test_resv_overlap(node_space, avail_bitmap, job_ptr,
+				       start_time, end_reserve)) {
 			/* This job overlaps with an existing reservation for
 			 * job to be backfill scheduled, which the sched
 			 * plugin does not know about. Try again later. */
@@ -2929,8 +2928,7 @@ skip_start:
 				break;
 			}
 			_add_reservation(start_time, end_reserve, avail_bitmap,
-					 job_ptr->license_list, node_space,
-					 &node_space_recs);
+					 job_ptr, node_space, &node_space_recs);
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_node_space_table(node_space);
@@ -3104,8 +3102,7 @@ static uint32_t _get_job_max_tl(job_record_t *job_ptr, time_t now,
 		    (node_space[j].begin_time < job_ptr->end_time) &&
 		    (!bit_super_set(job_ptr->node_bitmap,
 				    node_space[j].avail_bitmap) ||
-		     !bf_licenses_avail(node_space[j].licenses,
-					job_ptr->license_list))) {
+		     !bf_licenses_avail(node_space[j].licenses, job_ptr))) {
 			/* Job overlaps pending job's resource reservation */
 			if ((comp_time == 0) ||
 			    (comp_time > node_space[j].begin_time))
@@ -3181,7 +3178,7 @@ static bool _more_work(time_t last_backfill_time)
 
 /* Create a reservation for a job in the future */
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
-			     bitstr_t *res_bitmap, List licenses,
+			     bitstr_t *res_bitmap, job_record_t *job_ptr,
 			     node_space_map_t *node_space,
 			     int *node_space_recs)
 {
@@ -3253,7 +3250,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 
 		/* merge in new usage with this record */
 		bit_and(node_space[j].avail_bitmap, res_bitmap);
-		bf_licenses_deduct(node_space[j].licenses, licenses);
+		bf_licenses_deduct(node_space[j].licenses, job_ptr);
 
 		if (end_reserve == node_space[j].end_time) {
 			if (node_space[j].next)
@@ -3290,12 +3287,12 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
  *	reservation that the backfill scheduler has made for a job to be
  *	started in the future.
  * IN use_bitmap - nodes to be allocated
- * IN use_licenses - licenses to be allocated
+ * IN job_ptr - used for license and reservation info
  * IN start_time - start time of job
  * IN end_reserve - end time of job
  */
 static bool _test_resv_overlap(node_space_map_t *node_space,
-			       bitstr_t *use_bitmap, List use_licenses,
+			       bitstr_t *use_bitmap, job_record_t *job_ptr,
 			       uint32_t start_time, uint32_t end_reserve)
 {
 	bool overlap = false;
@@ -3314,7 +3311,7 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 				break;
 			}
 			if (!bf_licenses_avail(node_space[j].licenses,
-					       use_licenses)) {
+					       job_ptr)) {
 				overlap = true;
 				break;
 			}
