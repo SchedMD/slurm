@@ -532,31 +532,4 @@
 #define autodetect_cgroup_version       slurm_autodetect_cgroup_version
 #endif /* USE_ALIAS */
 
-/* Include the function definitions after redefining their names. */
-#include "src/common/bitstring.h"
-#include "src/common/callerid.h"
-#include "src/common/cgroup.h"
-#include "src/common/eio.h"
-#include "src/common/env.h"
-#include "src/common/hostlist.h"
-#include "src/common/list.h"
-#include "src/common/log.h"
-#include "src/common/macros.h"
-#include "src/common/pack.h"
-#include "src/common/parse_config.h"
-#include "src/common/read_config.h"
-#include "src/common/select.h"
-#include "src/common/slurm_auth.h"
-#include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_route.h"
-#include "src/common/slurm_step_layout.h"
-#include "src/common/strlcpy.h"
-#include "src/common/stepd_api.h"
-#include "src/common/switch.h"
-#include "src/common/working_cluster.h"
-#include "src/common/xassert.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
-#include "src/common/xstring.h"
-
 #endif /*__SLURM_XLATOR_H__*/
