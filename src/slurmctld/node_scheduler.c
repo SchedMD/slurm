@@ -2982,6 +2982,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	    !(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD)) {
 		job_ptr->state_reason = WAIT_PROLOG;
 #ifndef HAVE_FRONT_END
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 		job_ptr->node_bitmap_pr = bit_copy(job_ptr->node_bitmap);
 #endif
 	}

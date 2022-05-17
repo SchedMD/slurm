@@ -1068,6 +1068,8 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 
 	rc = acct_storage_g_add_reservation(acct_db_conn, &resv);
 
+	xfree(resv.node_inx);
+
 	return rc;
 }
 
@@ -1146,6 +1148,8 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 						resv_ptr->node_list);
 
 	rc = acct_storage_g_modify_reservation(acct_db_conn, &resv);
+
+	xfree(resv.node_inx);
 
 	return rc;
 }
