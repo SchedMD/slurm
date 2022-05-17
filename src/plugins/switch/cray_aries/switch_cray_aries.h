@@ -46,8 +46,10 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/common/xstring.h"
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 #include "alpscomm_cn.h"
