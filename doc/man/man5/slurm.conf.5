@@ -3505,6 +3505,14 @@ Default: 0, Min: 0, Max: 100000.
 .IP
 
 .TP
+\fBbf_licenses\fR
+Require the backfill scheduling logic to track and plan for license
+availability. By default, any job blocked on license availability will not
+have resources reserved which can lead to job starvation.
+This option implicitly enables \fBbf_running_job_reserve\fR.
+.IP
+
+.TP
 \fBbf_max_job_array_resv=#\fR
 The maximum number of tasks from a job array for which the backfill scheduler
 will reserve resources in the future.

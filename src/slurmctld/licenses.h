@@ -50,6 +50,17 @@ typedef struct {
 	uint8_t         remote;	        /* non-zero if remote (from database) */
 } licenses_t;
 
+/*
+ * In the future this should change to a more performant data structure.
+ */
+typedef struct xlist bf_licenses_t;
+
+typedef struct {
+	char *name;
+	uint32_t remaining;
+	slurmctld_resv_t *resv_ptr;
+} bf_license_t;
+
 extern List license_list;
 extern List clus_license_list;
 extern time_t last_license_update;
@@ -175,5 +186,38 @@ extern char *licenses_2_tres_str(List license_list);
 extern void license_set_job_tres_cnt(List license_list,
 				     uint64_t *tres_cnt,
 				     bool locked);
+
+extern bf_licenses_t *bf_licenses_initial(bool bf_running_job_reserve);
+
+extern char *bf_licenses_to_string(bf_licenses_t *licenses_list);
+
+/*
+ * A NULL licenses argument to these functions indicates that backfill
+ * license tracking support has been disabled, or that the system has no
+ * licenses to track.
+ *
+ * The backfill scheduler is especially performance sensitive, so each of these
+ * functions is wrapped in a macro that avoids the function call when a NULL
+ * licenses list is provided as the first argument.
+ */
+#define bf_licenses_copy(_x) (_x ? slurm_bf_licenses_copy(_x) : NULL)
+extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src);
+
+#define bf_licenses_deduct(_x, _y) (_x ? slurm_bf_licenses_deduct(_x, _y) : NULL)
+extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
+				     job_record_t *job_ptr);
+
+#define bf_licenses_transfer(_x, _y) (_x ? slurm_bf_licenses_transfer(_x, _y) : NULL)
+extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
+				       job_record_t *job_ptr);
+
+#define bf_licenses_avail(_x, _y) (_x ? slurm_bf_licenses_avail(_x, _y) : true)
+extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
+				    job_record_t *job_ptr);
+
+#define bf_licenses_equal(_x, _y) (_x ? slurm_bf_licenses_equal(_x, _y) : true)
+extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b);
+
+#define FREE_NULL_BF_LICENSES(_x) FREE_NULL_LIST(_x)
 
 #endif /* !_LICENSES_H */

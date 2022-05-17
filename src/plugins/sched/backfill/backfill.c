@@ -130,6 +130,7 @@ typedef struct {
 	time_t begin_time;
 	time_t end_time;
 	bitstr_t *avail_bitmap;
+	bf_licenses_t *licenses;
 	int next;	/* next record, by time, zero termination */
 } node_space_map_t;
 
@@ -191,6 +192,7 @@ static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int bf_min_age_reserve = 0;
 static int bf_node_space_size = 0;
 static bool bf_running_job_reserve = false;
+static bool bf_licenses = false;
 static uint32_t bf_min_prio_reserve = 0;
 static List deadlock_global_list;
 static bool bf_hetjob_immediate = false;
@@ -214,7 +216,7 @@ static bitstr_t *planned_bitmap = NULL;
 
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
-			     bitstr_t *res_bitmap,
+			     bitstr_t *res_bitmap, job_record_t *job_ptr,
 			     node_space_map_t *node_space,
 			     int *node_space_recs);
 static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val);
@@ -253,8 +255,8 @@ static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 static int  _set_hetjob_details(void *x, void *arg);
 static int  _start_job(job_record_t *job_ptr, bitstr_t *avail_bitmap);
 static bool _test_resv_overlap(node_space_map_t *node_space,
-			       bitstr_t *use_bitmap, uint32_t start_time,
-			       uint32_t end_reserve);
+			       bitstr_t *use_bitmap, job_record_t *job_ptr,
+			       uint32_t start_time, uint32_t end_reserve);
 static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, bitstr_t *exc_core_bitmap);
@@ -294,7 +296,7 @@ static void _dump_job_test(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 {
 	int i = 0;
-	char begin_buf[32], end_buf[32], *node_list;
+	char begin_buf[32], end_buf[32], *node_list, *licenses;
 
 	info("=========================================");
 	while (1) {
@@ -303,9 +305,11 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 		slurm_make_time_str(&node_space_ptr[i].end_time,
 				    end_buf, sizeof(end_buf));
 		node_list = bitmap2node_name(node_space_ptr[i].avail_bitmap);
-		info("Begin:%s End:%s Nodes:%s",
-		     begin_buf, end_buf, node_list);
+		licenses = bf_licenses_to_string(node_space_ptr[i].licenses);
+		info("Begin:%s End:%s Nodes:%s Licenses:%s",
+		     begin_buf, end_buf, node_list, licenses);
 		xfree(node_list);
+		xfree(licenses);
 		if ((i = node_space_ptr[i].next) == 0)
 			break;
 	}
@@ -949,6 +953,13 @@ static void _load_config(void)
 	else
 		bf_running_job_reserve = false;
 
+	if (xstrcasestr(sched_params, "bf_licenses")) {
+		bf_licenses = true;
+		bf_running_job_reserve = true;
+	} else {
+		bf_licenses = false;
+	}
+
 	if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_cnt=")))
 		max_rpc_cnt = atoi(tmp_ptr + 12);
 	else if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_count=")))
@@ -1368,6 +1379,43 @@ static int _foreach_het_job_details(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _bf_reserve_resv_licenses(void *x, void *arg)
+{
+	slurmctld_resv_t *resv_ptr = x;
+	node_space_handler_t *ns_h = arg;
+	node_space_map_t *node_space = ns_h->node_space;
+	int *ns_recs_ptr = ns_h->node_space_recs;
+	time_t start_time, end_time;
+	job_record_t fake_job = {
+		.license_list = resv_ptr->license_list,
+		.resv_ptr = resv_ptr,
+	};
+
+	if (!resv_ptr->license_list)
+		return 0;
+
+	if (resv_ptr->end_time < node_space[0].begin_time)
+		return 0;
+
+	/* treat flex reservations as always active */
+	if (resv_ptr->flags & RESERVE_FLAG_FLEX) {
+		start_time = 0;
+		end_time = INFINITE;
+	} else {
+		/* align to resolution */
+
+		start_time = resv_ptr->start_time / backfill_resolution;
+		start_time *= backfill_resolution;
+		end_time = resv_ptr->end_time / backfill_resolution;
+		end_time *= backfill_resolution;
+	}
+
+	_add_reservation(start_time, end_time, NULL, &fake_job, node_space,
+			 ns_recs_ptr);
+
+	return 0;
+}
+
 static int _bf_reserve_running(void *x, void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
@@ -1375,22 +1423,36 @@ static int _bf_reserve_running(void *x, void *arg)
 	node_space_map_t *node_space = ns_h->node_space;
 	int *ns_recs_ptr = ns_h->node_space_recs;
 	time_t end_time = job_ptr->end_time;
+	bool licenses, whole, preemptable;
+	bitstr_t *tmp_bitmap;
 
-	if (!job_ptr || ! IS_JOB_RUNNING(job_ptr))
+	if (!job_ptr || !IS_JOB_RUNNING(job_ptr) || !job_ptr->job_resrcs)
 		return SLURM_SUCCESS;
-	if (!job_ptr->job_resrcs || !(job_ptr->job_resrcs->whole_node ==
-				      WHOLE_NODE_REQUIRED))
+
+	whole = (job_ptr->job_resrcs->whole_node == WHOLE_NODE_REQUIRED);
+	licenses = (job_ptr->license_list);
+
+	if (!whole && !licenses)
 		return SLURM_SUCCESS;
-	if (slurm_job_preempt_mode(job_ptr) != PREEMPT_MODE_OFF)
+
+	preemptable = (slurm_job_preempt_mode(job_ptr) != PREEMPT_MODE_OFF);
+
+	if (preemptable && !licenses)
 		return SLURM_SUCCESS;
 
 	if (*ns_recs_ptr >= bf_node_space_size)
 		return SLURM_ERROR;
 
-	bitstr_t *tmp_bitmap = bit_copy(job_ptr->node_bitmap);
+	end_time = (end_time / backfill_resolution) * backfill_resolution;
+
+	if (preemptable || !whole) {
+		/* Reservation only needed for licenses. */
+		tmp_bitmap = bit_alloc(node_record_count);
+	} else {
+		tmp_bitmap = bit_copy(job_ptr->node_bitmap);
+	}
 
 	bit_not(tmp_bitmap);
-	end_time = (end_time / backfill_resolution) * backfill_resolution;
 
 	/*
 	 * Ensure reservation start time is aligned to the start of the
@@ -1399,7 +1461,8 @@ static int _bf_reserve_running(void *x, void *arg)
 	 * seconds - or significantly longer with bf_continue set - which
 	 * would fragment the start of the backfill map.
 	 */
-	_add_reservation(0, end_time, tmp_bitmap, node_space, ns_recs_ptr);
+	_add_reservation(0, end_time, tmp_bitmap, job_ptr, node_space,
+			 ns_recs_ptr);
 
 	FREE_NULL_BITMAP(tmp_bitmap);
 
@@ -1745,6 +1808,10 @@ static void _attempt_backfill(void)
 	/* Make "resuming" nodes available to be scheduled in backfill */
 	bit_or(node_space[0].avail_bitmap, rs_node_bitmap);
 
+	if (bf_licenses)
+		node_space[0].licenses =
+			bf_licenses_initial(bf_running_job_reserve);
+
 	node_space[0].next = 0;
 	node_space_recs = 1;
 
@@ -1752,6 +1819,10 @@ static void _attempt_backfill(void)
 		node_space_handler_t node_space_handler;
 		node_space_handler.node_space = node_space;
 		node_space_handler.node_space_recs = &node_space_recs;
+
+		if (bf_licenses)
+			list_for_each(resv_list, _bf_reserve_resv_licenses,
+				      &node_space_handler);
 
 		list_for_each(job_list, _bf_reserve_running,
 			      &node_space_handler);
@@ -1775,6 +1846,7 @@ static void _attempt_backfill(void)
 	while (1) {
 		uint32_t bf_job_priority, prio_reserve;
 		bool get_boot_time = false;
+		bool licenses_unavail;
 
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr) {
@@ -2074,9 +2146,8 @@ next_task:
 			continue;
 		}
 
-		if ((!job_independent(job_ptr)) ||
-		    (license_job_test(job_ptr, time(NULL), true) !=
-		     SLURM_SUCCESS)) {
+		/* XXXX kicked licenses here previously */
+		if (!job_independent(job_ptr)) {
 			log_flag(BACKFILL, "%pJ not runable now",
 				 job_ptr);
 			continue;
@@ -2239,6 +2310,7 @@ next_task:
 		start_res = MAX(later_start, het_job_time);
 		resv_end = 0;
 		later_start = 0;
+		licenses_unavail = false;
 		/* Determine impact of any advance reservations */
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
 				  &exc_core_bitmap, &resv_overlap, false);
@@ -2296,6 +2368,11 @@ next_task:
 			else if (node_space[j].begin_time <= end_time) {
 				bit_and(avail_bitmap,
 					node_space[j].avail_bitmap);
+				if (!bf_licenses_avail(node_space[j].licenses,
+						       job_ptr)) {
+					licenses_unavail = true;
+					later_start = node_space[j].end_time;
+				}
 			} else
 				break;
 			if ((j = node_space[j].next) == 0)
@@ -2312,12 +2389,14 @@ next_task:
 				job_ptr->details->exc_node_bitmap);
 		}
 
-		/* Test if insufficient nodes remain OR
+		/* Test if licenses are unavailable OR
+		 *	insufficient nodes remain OR
 		 *	required nodes missing OR
 		 *	nodes lack features OR
 		 *	no change since previously tested nodes (only changes
 		 *	in other partition nodes) */
-		if ((bit_set_count(avail_bitmap) < min_nodes) ||
+		if (licenses_unavail ||
+		    (bit_set_count(avail_bitmap) < min_nodes) ||
 		    ((job_ptr->details->req_node_bitmap) &&
 		     (!bit_super_set(job_ptr->details->req_node_bitmap,
 				     avail_bitmap))) ||
@@ -2586,6 +2665,11 @@ skip_start:
 			if (IS_JOB_FINISHED(job_ptr)) {
 				/* Zero size or killed on startup */
 			} else if (job_ptr->start_time) {
+				node_space_handler_t ns_handler = {
+					.node_space = node_space,
+					.node_space_recs = &node_space_recs,
+				};
+
 				if (job_ptr->time_limit == INFINITE)
 					hard_limit = YEAR_SECONDS;
 				else
@@ -2601,6 +2685,8 @@ skip_start:
 							      node_space);
 					time_limit = job_ptr->time_limit;
 				}
+
+				_bf_reserve_running(job_ptr, &ns_handler);
 			} else if (rc == SLURM_SUCCESS) {
 				error("start_time of 0 on successful backfill. This shouldn't happen. :)");
 			}
@@ -2746,7 +2832,7 @@ skip_start:
 		if ((job_ptr->start_time > now) &&
 		    (job_ptr->state_reason != WAIT_BURST_BUFFER_RESOURCE) &&
 		    (job_ptr->state_reason != WAIT_BURST_BUFFER_STAGING) &&
-		    _test_resv_overlap(node_space, avail_bitmap,
+		    _test_resv_overlap(node_space, avail_bitmap, job_ptr,
 				       start_time, end_reserve)) {
 			/* This job overlaps with an existing reservation for
 			 * job to be backfill scheduled, which the sched
@@ -2883,7 +2969,7 @@ skip_start:
 				break;
 			}
 			_add_reservation(start_time, end_reserve, avail_bitmap,
-					 node_space, &node_space_recs);
+					 job_ptr, node_space, &node_space_recs);
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_node_space_table(node_space);
@@ -2940,6 +3026,7 @@ skip_start:
 
 	for (i = 0; ; ) {
 		FREE_NULL_BITMAP(node_space[i].avail_bitmap);
+		FREE_NULL_BF_LICENSES(node_space[i].licenses);
 		if ((i = node_space[i].next) == 0)
 			break;
 	}
@@ -3055,7 +3142,8 @@ static uint32_t _get_job_max_tl(job_record_t *job_ptr, time_t now,
 		if ((node_space[j].begin_time != now) && // No current conflicts
 		    (node_space[j].begin_time < job_ptr->end_time) &&
 		    (!bit_super_set(job_ptr->node_bitmap,
-				    node_space[j].avail_bitmap))) {
+				    node_space[j].avail_bitmap) ||
+		     !bf_licenses_avail(node_space[j].licenses, job_ptr))) {
 			/* Job overlaps pending job's resource reservation */
 			if ((comp_time == 0) ||
 			    (comp_time > node_space[j].begin_time))
@@ -3131,7 +3219,7 @@ static bool _more_work(time_t last_backfill_time)
 
 /* Create a reservation for a job in the future */
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
-			     bitstr_t *res_bitmap,
+			     bitstr_t *res_bitmap, job_record_t *job_ptr,
 			     node_space_map_t *node_space,
 			     int *node_space_recs)
 {
@@ -3167,6 +3255,8 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			node_space[j].end_time = start_time;
 			node_space[i].avail_bitmap =
 				bit_copy(node_space[j].avail_bitmap);
+			node_space[i].licenses =
+				bf_licenses_copy(node_space[j].licenses);
 			node_space[i].next = node_space[j].next;
 			node_space[j].next = i;
 			(*node_space_recs)++;
@@ -3192,13 +3282,21 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			node_space[j].end_time = end_reserve;
 			node_space[i].avail_bitmap =
 				bit_copy(node_space[j].avail_bitmap);
+			node_space[i].licenses =
+				bf_licenses_copy(node_space[j].licenses);
 			node_space[i].next = node_space[j].next;
 			node_space[j].next = i;
 			(*node_space_recs)++;
 		}
 
 		/* merge in new usage with this record */
-		bit_and(node_space[j].avail_bitmap, res_bitmap);
+		if (res_bitmap) {
+			bit_and(node_space[j].avail_bitmap, res_bitmap);
+			bf_licenses_deduct(node_space[j].licenses, job_ptr);
+		} else {
+			/* setting up reservation licenses */
+			bf_licenses_transfer(node_space[j].licenses, job_ptr);
+		}
 
 		if (end_reserve == node_space[j].end_time) {
 			if (node_space[j].next)
@@ -3212,6 +3310,11 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 	for (i = one_before; i != one_after; ) {
 		if ((j = node_space[i].next) == 0)
 			break;
+		if (!bf_licenses_equal(node_space[i].licenses,
+				       node_space[j].licenses)) {
+			i = j;
+			continue;
+		}
 		if (!bit_equal(node_space[i].avail_bitmap,
 			       node_space[j].avail_bitmap)) {
 			i = j;
@@ -3220,6 +3323,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		node_space[i].end_time = node_space[j].end_time;
 		node_space[i].next = node_space[j].next;
 		FREE_NULL_BITMAP(node_space[j].avail_bitmap);
+		FREE_NULL_BF_LICENSES(node_space[j].licenses);
 		break;
 	}
 }
@@ -3229,12 +3333,13 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
  *	reservation that the backfill scheduler has made for a job to be
  *	started in the future.
  * IN use_bitmap - nodes to be allocated
+ * IN job_ptr - used for license and reservation info
  * IN start_time - start time of job
  * IN end_reserve - end time of job
  */
 static bool _test_resv_overlap(node_space_map_t *node_space,
-			       bitstr_t *use_bitmap, uint32_t start_time,
-			       uint32_t end_reserve)
+			       bitstr_t *use_bitmap, job_record_t *job_ptr,
+			       uint32_t start_time, uint32_t end_reserve)
 {
 	bool overlap = false;
 	int j = 0;
@@ -3248,6 +3353,11 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 			 */
 			if (!bit_super_set(use_bitmap,
 					   node_space[j].avail_bitmap)) {
+				overlap = true;
+				break;
+			}
+			if (!bf_licenses_avail(node_space[j].licenses,
+					       job_ptr)) {
 				overlap = true;
 				break;
 			}
