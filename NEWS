@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix possible race condition while handling forwarded messages.
  -- Add new SchedulerParameters option "bf_licenses" to track licenses as
     within the backfill scheduler.
+ -- Fix resuming nodes not part of an allocation.
 
 * Changes in Slurm 22.05.0rc1
 =============================
