@@ -6854,9 +6854,6 @@ See also the "Alternate" partition specification.
 \fBSuspendTime\fR
 Nodes which remain idle or down for this number of seconds will be placed into
 power save mode by \fBSuspendProgram\fR.
-For efficient system utilization, it is recommended that the value of
-\fBSuspendTime\fR be at least as large as the sum of \fBSuspendTimeout\fR
-plus \fBResumeTimeout\fR.
 For nodes that are in multiple partitions with this option set,
 the highest time will take effect. If not set on any partition, the node will
 use the \fBSuspendTime\fR value set for the entire cluster.
