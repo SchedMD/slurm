@@ -348,7 +348,7 @@ typedef struct gres_step_state {
 					 * GRES that could be available for this
 					 * step if no other steps active */
 	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
-					 * Used without GRES files */
+					 * Used with and without GRES files */
 	uint32_t node_cnt;
 	bitstr_t *node_in_use;
 	bitstr_t **gres_bit_alloc;	/* Used with GRES files */
