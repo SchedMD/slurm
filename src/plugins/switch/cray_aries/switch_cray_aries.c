@@ -58,7 +58,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/gres.h"
 #include "src/common/pack.h"
-#include "src/common/xstring.h"
+#include "src/common/select.h"
 
 #ifdef HAVE_NATIVE_CRAY
 #include <job.h> /* Cray's job module component */
