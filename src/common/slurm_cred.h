@@ -136,8 +136,6 @@ int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
  * sock_core_rep_count is based upon the nodes allocated to the
  * JOB, but the bits set in core_bitmap are those cores allocated
  * to this STEP
- *
- * FIXME: 2 versions after 21.08 you can remove job_mem_limit and step_mem_limit
  */
 typedef struct {
 	slurm_step_id_t step_id;
@@ -176,10 +174,6 @@ typedef struct {
 	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
 	uint16_t  job_core_spec;	/* count of specialized cores */
 	char     *job_hostlist;		/* list of nodes allocated to JOB */
-	uint64_t  job_mem_limit;	/* MB of memory reserved per node OR
-					 * real memory per CPU | MEM_PER_CPU,
-					 * default=0 (no limit) */
-
 	uint64_t *job_mem_alloc;	/* Per node allocated mem in rep.cnt. */
 	uint32_t *job_mem_alloc_rep_count;
 	uint32_t job_mem_alloc_size;	/* Size of memory arrays above */
@@ -199,9 +193,6 @@ typedef struct {
 	/* STEP specific info */
 	bitstr_t *step_core_bitmap;	/* cores allocated to STEP */
 	char     *step_hostlist;	/* list of nodes allocated to STEP */
-	uint64_t  step_mem_limit;	/* MB of memory reserved per node OR
-					 * real memory per CPU | MEM_PER_CPU,
-					 * default=0 (no limit) */
 	uint64_t *step_mem_alloc;	/* Per node allocated mem in rep.cnt. */
 	uint32_t *step_mem_alloc_rep_count;
 	uint32_t step_mem_alloc_size;	/* Size of memory arrays above */

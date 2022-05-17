@@ -827,7 +827,6 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 	cred_arg.step_hostlist   = step_ptr->step_layout->node_list;
 #endif
 	if (step_ptr->memory_allocated) {
-		cred_arg.step_mem_limit  = step_ptr->pn_min_memory;
 		slurm_array64_to_value_reps(step_ptr->memory_allocated,
 					    step_ptr->step_layout->node_cnt,
 					    &cred_arg.step_mem_alloc,

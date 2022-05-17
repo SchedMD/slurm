@@ -2680,7 +2680,6 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	xassert(job_ptr->batch_host);
 	cred_arg.step_hostlist       = job_ptr->batch_host;
 	cred_arg.step_core_bitmap    = job_resrcs_ptr->core_bitmap;
-	cred_arg.step_mem_limit      = job_ptr->details->pn_min_memory;
 
 	launch_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 						 &cred_arg, false,
