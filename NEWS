@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     within the backfill scheduler.
  -- Fix resuming nodes not part of an allocation.
  -- Minor memory leak fixes.
+ -- Use accept4() and pipe2() to ensure new file descriptors are always set
+    with close-on-exec flag.
 
 * Changes in Slurm 22.05.0rc1
 =============================
