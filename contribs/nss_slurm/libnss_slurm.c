@@ -37,6 +37,7 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <limits.h>
+#include <netdb.h>
 #include <nss.h>
 #include <pwd.h>
 #include <stdio.h>
@@ -50,7 +51,9 @@
 #include "src/common/slurm_xlator.h"
 
 #include "src/common/parse_config.h"
+#include "src/common/read_config.h"
 #include "src/common/stepd_api.h"
+#include "src/common/xstring.h"
 
 /*
  * One important design note: we cannot load the slurm.conf file using the

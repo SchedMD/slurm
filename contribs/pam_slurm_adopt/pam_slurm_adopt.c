@@ -65,8 +65,10 @@
 #include "helper.h"
 #include "slurm/slurm.h"
 #include "src/common/slurm_xlator.h"
-#include "src/common/slurm_protocol_api.h"
+
+#include "src/common/callerid.h"
 #include "src/common/cgroup.h"
+#include "src/common/slurm_protocol_api.h"
 
 typedef enum {
 	CALLERID_ACTION_NEWEST,

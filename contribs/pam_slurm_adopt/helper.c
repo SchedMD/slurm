@@ -56,6 +56,8 @@
 #include "slurm/slurm.h"
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/log.h"
+
 /*  Define the externally visible functions in this file.
  */
 #define PAM_SM_ACCOUNT

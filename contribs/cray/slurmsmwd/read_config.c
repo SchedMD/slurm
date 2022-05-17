@@ -41,7 +41,11 @@
 #include <unistd.h>
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
+
 #include "src/common/parse_config.h"
+#include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "read_config.h"
 
 /* Global variables */
