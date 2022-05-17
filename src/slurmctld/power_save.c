@@ -407,6 +407,8 @@ static void _do_power_work(time_t now)
 		else
 			i_last = i_first - 1;
 		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(need_resume_bitmap, i))
+				continue;
 			if ((resume_rate == 0) || (resume_cnt < resume_rate)) {
 				resume_cnt++;
 				resume_cnt_f++;
