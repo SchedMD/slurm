@@ -33,6 +33,37 @@ configuration plus its uptime.
 .IP
 
 .TP
+\fB\-\-conf <node parameters>\fR
+Used in conjunction with the \fB\-Z\fR option. Used to override or define
+additional parameters of a dynamic node using the same syntax and parameters
+used to define nodes in the slurm.conf. Specifying any of \fBCPUs\fR,
+\fBBoards\fR, \fBSocketsPerBoard\fR, \fBCoresPerSocket\fR or
+\fBThreadsPerCore\fR will override the defaults defined by the \fB\-C\fR
+option. \fBNodeName\fR and \fBPort\fR are not supported.
+
+For example if \fIslurmd \-C\fR reports
+.nf
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848
+.fi
+
+the following --conf specifications will generate the corresponding node definitions:
+.nf
+\-\-conf "Gres=gpu:2"
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=gpu:2
+.fi
+
+.nf
+\-\-conf "RealMemory=30000"
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=30000
+.fi
+
+.nf
+\-\-conf "CPUs=16"
+NodeName=node1 CPUs=16 RealMemory=331848
+.fi
+.IP
+
+.TP
 \fB\-\-conf\-server <host>[:<port>]\fR
 Comma\-separated list of controllers, the first being the primary slurmctld. A
 port can (optionally) be specified for each controller. These hosts are where
@@ -117,6 +148,13 @@ Verbose operation. Multiple \-v's increase verbosity.
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Print version information and exit.
+.IP
+
+.TP
+\fB\-Z\fR
+Start this node as a Dynamic Normal node. If no \fB\-\-conf\fR is specified,
+then the slurmd will register with the same hardware configuration as defined
+by the \fB\-C\fR option.
 .IP
 
 .SH "ENVIRONMENT VARIABLES"
