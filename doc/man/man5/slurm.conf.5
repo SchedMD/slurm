@@ -6013,28 +6013,6 @@ The default value is 0.
 .IP
 
 .TP
-\fBTRESWeights\fR
-TRESWeights are used to calculate a value that represents how
-busy a node is. Currently only used in federation configurations. TRESWeights
-are different from TRESBillingWeights \-\- which is used for fairshare
-calculations.
-
-TRES weights are specified as a comma\-separated list of
-\fI<TRES Type>\fR=\fI<TRES Weight>\fR pairs.
-.IP
-.nf
-e.g.
-NodeName=node1 ... TRESWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0"
-.fi
-
-By default the weighted TRES value is calculated as the sum of all node TRES
-types multiplied by their corresponding TRES weight.
-
-If PriorityFlags=MAX_TRES is configured, the weighted TRES value is calculated
-as the MAX of individual node TRES' (e.g. cpus, mem, gres).
-.IP
-
-.TP
 \fBWeight\fR
 The priority of the node for scheduling purposes.
 All things being equal, jobs will be allocated the nodes with
@@ -6876,9 +6854,6 @@ See also the "Alternate" partition specification.
 \fBSuspendTime\fR
 Nodes which remain idle or down for this number of seconds will be placed into
 power save mode by \fBSuspendProgram\fR.
-For efficient system utilization, it is recommended that the value of
-\fBSuspendTime\fR be at least as large as the sum of \fBSuspendTimeout\fR
-plus \fBResumeTimeout\fR.
 For nodes that are in multiple partitions with this option set,
 the highest time will take effect. If not set on any partition, the node will
 use the \fBSuspendTime\fR value set for the entire cluster.
