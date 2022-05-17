@@ -232,7 +232,7 @@ static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
 					    List ret_list,
 					    bool *default_account)
 {
-	char *tmp_char = NULL, *as_statement = "", *last_user = NULL;
+	char *query, *tmp_char = NULL, *as_statement = "", *last_user = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int i;
@@ -260,13 +260,14 @@ static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
 		as_statement = "as t2 ";
 
 	/* Query all the user associations given */
-	tmp_char = xstrdup_printf("select %s from \"%s_%s\" %swhere deleted=0 && user!='' && (%s) order by user, is_def asc",
-				  tmp_char, cluster_name, assoc_table,
-				  as_statement, assoc_char);
-	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", tmp_char);
-
-	result = mysql_db_query_ret(mysql_conn, tmp_char, 0);
+	query = xstrdup_printf("select %s from \"%s_%s\" %swhere deleted=0 && user!='' && (%s) order by user, is_def asc",
+			       tmp_char, cluster_name, assoc_table,
+			       as_statement, assoc_char);
 	xfree(tmp_char);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
 
 	if (!result)
 		return *default_account;
