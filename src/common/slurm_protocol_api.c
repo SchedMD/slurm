@@ -214,7 +214,7 @@ static int _check_hash(buf_t *buffer, header_t *header, slurm_msg_t *msg,
 			else if ((cred_hash[1] == type[0]) &&
 				 (cred_hash[2] == type[1]))
 				msg->hash_index = HASH_PLUGIN_NONE;
-			/* 2 versions after 21.08 this else if can be removed */
+			/* 2 versions after 22.05 this else if can be removed */
 			else if ((msg->protocol_version <=
 				  SLURM_MIN_PROTOCOL_VERSION) &&
 				 (cred_hash[1] == type[1]) &&
