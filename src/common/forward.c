@@ -297,19 +297,23 @@ void *_forward_thread(void *arg)
 				}
 				list_iterator_destroy(itr);
 				if (!node_found) {
+					slurm_mutex_lock(&fwd_struct->forward_mutex);
 					mark_as_failed_forward(
 						&fwd_struct->ret_list,
 						tmp,
 						SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+					slurm_mutex_unlock(&fwd_struct->forward_mutex);
 				}
 				free(tmp);
 			}
 			hostlist_iterator_destroy(host_itr);
 			if (!first_node_found) {
+				slurm_mutex_lock(&fwd_struct->forward_mutex);
 				mark_as_failed_forward(
 					&fwd_struct->ret_list,
 					name,
 					SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+				slurm_mutex_unlock(&fwd_struct->forward_mutex);
 			}
 		}
 		break;

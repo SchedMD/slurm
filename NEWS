@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     the job script or job environment.
  -- slurmd - If a het component job fails to launch due to a node prolog or
     other failure, properly handle the whole het job.
+ -- Fix possible race condition while handling forwarded messages.
 
 * Changes in Slurm 22.05.0rc1
 =============================
