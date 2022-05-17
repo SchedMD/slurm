@@ -254,7 +254,7 @@ static int _check_is_def_acct_before_remove(mysql_conn_t *mysql_conn,
 	xassert(default_account);
 
 	xstrcat(tmp_char, dassoc_inx[0]);
-	for(i=1; i<DASSOC_COUNT; i++)
+	for (i = 1; i < DASSOC_COUNT; i++)
 		xstrfmtcat(tmp_char, ", %s", dassoc_inx[i]);
 	if (!xstrncmp(assoc_char, "t2.", 3))
 		as_statement = "as t2 ";
