@@ -112,15 +112,13 @@ eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 
 	eio->magic = EIO_MAGIC;
 
-	if (pipe(eio->fds) < 0) {
+	if (pipe2(eio->fds, O_CLOEXEC) < 0) {
 		error("%s: pipe: %m", __func__);
 		eio_handle_destroy(eio);
 		return (NULL);
 	}
 
 	fd_set_nonblocking(eio->fds[0]);
-	fd_set_close_on_exec(eio->fds[0]);
-	fd_set_close_on_exec(eio->fds[1]);
 
 	eio->obj_list = list_create(eio_obj_destroy);
 	eio->new_objs = list_create(eio_obj_destroy);
@@ -196,7 +194,6 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 	}
 
 	net_set_keep_alive(fd);
-	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
 
 	debug2("%s: got message connection from %pA %d", __func__, &addr, fd);

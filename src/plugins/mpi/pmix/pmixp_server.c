@@ -388,7 +388,6 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 		rc = SLURM_ERROR;
 		goto err_usock;
 	}
-	fd_set_close_on_exec(fd);
 	pmixp_info_srv_usock_set(path, fd);
 
 
@@ -1323,7 +1322,6 @@ void pmixp_server_direct_conn(int fd)
 
 	/* Set nonblocking */
 	fd_set_nonblocking(fd);
-	fd_set_close_on_exec(fd);
 	pmixp_fd_set_nodelay(fd);
 	conn = pmixp_conn_new_temp(PMIXP_PROTO_DIRECT, fd,
 				   _direct_conn_establish);
@@ -1472,7 +1470,6 @@ void pmixp_server_slurm_conn(int fd)
 
 	/* Set nonblocking */
 	fd_set_nonblocking(fd);
-	fd_set_close_on_exec(fd);
 	conn = pmixp_conn_new_temp(PMIXP_PROTO_SLURM, fd, _slurm_new_msg);
 
 	/* try to process right here */

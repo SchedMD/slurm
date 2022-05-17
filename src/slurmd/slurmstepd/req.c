@@ -168,9 +168,8 @@ _create_socket(const char *name)
 	}
 
 	/* create a unix domain stream socket */
-	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+	if ((fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0)) < 0)
 		return -1;
-	fd_set_close_on_exec(fd);
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -377,8 +376,8 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 
 	debug3("Called _msg_socket_accept");
 
-	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
-			    (socklen_t *)&len)) < 0) {
+	while ((fd = accept4(obj->fd, (struct sockaddr *) &addr,
+			    (socklen_t *) &len, SOCK_CLOEXEC)) < 0) {
 		if (errno == EINTR)
 			continue;
 		if ((errno == EAGAIN) ||
@@ -401,7 +400,6 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	message_connections++;
 	slurm_mutex_unlock(&message_lock);
 
-	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
 
 	param = xmalloc(sizeof(struct request_params));

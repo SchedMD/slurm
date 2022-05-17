@@ -1548,13 +1548,10 @@ static struct exec_wait_info * _exec_wait_info_create (int i)
 	int fdpair[2];
 	struct exec_wait_info * e;
 
-	if (pipe (fdpair) < 0) {
+	if (pipe2(fdpair, O_CLOEXEC) < 0) {
 		error ("_exec_wait_info_create: pipe: %m");
 		return NULL;
 	}
-
-	fd_set_close_on_exec(fdpair[0]);
-	fd_set_close_on_exec(fdpair[1]);
 
 	e = xmalloc (sizeof (*e));
 	e->childfd = fdpair[0];

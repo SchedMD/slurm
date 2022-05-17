@@ -34,6 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include "config.h"
 
 #include <limits.h>
@@ -434,10 +436,6 @@ static con_mgr_fd_t *_add_connection(con_mgr_t *mgr, con_mgr_fd_t *source,
 		fd_set_nonblocking(output_fd);
 		net_set_keep_alive(output_fd);
 	}
-
-	/* stop listening sockets from surviving exec */
-	if (is_listen)
-		fd_set_close_on_exec(input_fd);
 
 	con = xmalloc(sizeof(*con));
 	*con = (con_mgr_fd_t){
@@ -1711,8 +1709,8 @@ static void _listen_accept(void *x)
 			 __func__, con->name);
 
 	/* try to get the new file descriptor and retry on errors */
-	if ((fd = accept(con->input_fd, (struct sockaddr *) &addr,
-			 &addrlen)) < 0) {
+	if ((fd = accept4(con->input_fd, (struct sockaddr *) &addr,
+			  &addrlen, SOCK_CLOEXEC)) < 0) {
 		if (errno == EINTR) {
 			log_flag(NET, "%s: [%s] interrupt on accept()",
 				 __func__, con->name);
@@ -1814,7 +1812,7 @@ static int _create_socket(void *x, void *arg)
 
 	/* check for name local sockets */
 	if (unixsock) {
-		int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+		int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
 		struct sockaddr_un addr = {
 			.sun_family = AF_UNIX,
 		};
@@ -1874,7 +1872,7 @@ static int _create_socket(void *x, void *arg)
 		 */
 		int fd;
 		int one = 1;
-		fd = socket(addr->ai_family, addr->ai_socktype,
+		fd = socket(addr->ai_family, addr->ai_socktype | SOCK_CLOEXEC,
 			    addr->ai_protocol);
 		if (fd < 0)
 			fatal("%s: [%s] Unable to create socket: %m",

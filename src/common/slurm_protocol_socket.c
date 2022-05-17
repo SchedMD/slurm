@@ -37,6 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -494,7 +496,8 @@ extern int slurm_init_msg_engine(slurm_addr_t *addr, bool quiet)
 	if (quiet)
 		log_lvl = LOG_LEVEL_DEBUG;
 
-	if ((fd = socket(addr->ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+	if ((fd = socket(addr->ss_family, SOCK_STREAM | SOCK_CLOEXEC,
+			 IPPROTO_TCP)) < 0) {
 		format_print(log_lvl, "Error creating slurm stream socket: %m");
 		return fd;
 	}
@@ -533,7 +536,7 @@ error:
 extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 {
 	socklen_t len = sizeof(*addr);
-	return accept(fd, (struct sockaddr *) addr, &len);
+	return accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
 }
 
 extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
@@ -568,7 +571,8 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 				       buffer[0], retry_cnt);
 			retry_cnt++;
 			close(quiesce_fd);
-			quiesce_fd = open(quiesce_status, O_RDONLY);
+			quiesce_fd = open(quiesce_status,
+					  (O_RDONLY | O_CLOEXEC));
 		}
 		if (quiesce_fd >= 0)
 			close(quiesce_fd);
@@ -584,7 +588,8 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	for (retry_cnt=0; ; retry_cnt++) {
 		int rc;
 
-		fd = socket(addr->ss_family, SOCK_STREAM, IPPROTO_TCP);
+		fd = socket(addr->ss_family, SOCK_STREAM | SOCK_CLOEXEC,
+			    IPPROTO_TCP);
 		if (fd < 0) {
 			error("Error creating slurm stream socket: %m");
 			slurm_seterrno(errno);

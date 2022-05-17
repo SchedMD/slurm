@@ -569,7 +569,6 @@ extern int slurm_persist_conn_open_without_init(
 		return SLURM_ERROR;
 	}
 	fd_set_nonblocking(persist_conn->fd);
-	fd_set_close_on_exec(persist_conn->fd);
 
 	return SLURM_SUCCESS;
 }

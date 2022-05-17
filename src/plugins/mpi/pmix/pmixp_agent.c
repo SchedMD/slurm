@@ -40,6 +40,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <pthread.h>
 #include <sched.h>
 #include <poll.h>
@@ -127,7 +129,8 @@ static int _server_conn_read(eio_obj_t *obj, List objs)
 			return 0;
 		}
 
-		while ((fd = accept(obj->fd, &addr, &size)) < 0) {
+		while ((fd = accept4(obj->fd, &addr, &size,
+				     (SOCK_CLOEXEC | SOCK_NONBLOCK))) < 0) {
 			if (errno == EINTR)
 				continue;
 			if (errno == EAGAIN) /* No more connections */
@@ -224,9 +227,7 @@ static void _shutdown_timeout_fds(void);
 
 #define SETUP_FDS(fds) { \
 	fd_set_nonblocking(fds[0]);	\
-	fd_set_close_on_exec(fds[0]);	\
 	fd_set_nonblocking(fds[1]);	\
-	fd_set_close_on_exec(fds[1]);	\
 	}
 
 static int _setup_timeout_fds(void)
@@ -236,14 +237,14 @@ static int _setup_timeout_fds(void)
 	timer_data.work_in = timer_data.work_out = -1;
 	timer_data.stop_in = timer_data.stop_out = -1;
 
-	if (pipe(fds)) {
+	if (pipe2(fds, O_CLOEXEC)) {
 		return SLURM_ERROR;
 	}
 	SETUP_FDS(fds);
 	timer_data.work_in = fds[0];
 	timer_data.work_out = fds[1];
 
-	if (pipe(fds)) {
+	if (pipe2(fds, O_CLOEXEC)) {
 		_shutdown_timeout_fds();
 		return SLURM_ERROR;
 	}
