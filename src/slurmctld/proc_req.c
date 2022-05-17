@@ -4862,7 +4862,7 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 	token_request_msg_t *request_msg = (token_request_msg_t *) msg->data;
 	slurm_msg_t response_msg;
 	token_response_msg_t *resp_data;
-	char *username = NULL;
+	char *auth_username = NULL, *username = NULL;
 	int lifespan = 0;
 	static int max_lifespan = -1;
 
@@ -4889,22 +4889,28 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 		}
 	}
 
+	auth_username = uid_to_string_or_null(msg->auth_uid);
+
 	if (request_msg->username) {
-		if (validate_slurm_user(msg->auth_uid))
+		if (validate_slurm_user(msg->auth_uid)) {
 			username = request_msg->username;
-		else {
-			error("%s: attempt to retrieve a token for a different user by UID=%u",
-			      __func__, msg->auth_uid);
+		} else if (!xstrcmp(request_msg->username, auth_username)) {
+			/* user explicitly provided their own username */
+			username = request_msg->username;
+		} else {
+			error("%s: attempt to retrieve a token for a different user=%s by UID=%u",
+			      __func__, request_msg->username, msg->auth_uid);
+			xfree(auth_username);
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 			return;
 		}
+	} else if (!auth_username) {
+		error("%s: attempt to retrieve a token for a missing username by UID=%u",
+		      __func__, msg->auth_uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
 	} else {
-		if (!(username = uid_to_string_or_null(msg->auth_uid))) {
-			error("%s: attempt to retrieve a token for a missing username by UID=%u",
-			      __func__, msg->auth_uid);
-			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-			return;
-		}
+		username = auth_username;
 	}
 
 	if (request_msg->lifespan)
@@ -4919,6 +4925,7 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 			error("%s: rejecting token lifespan %d for user:%s[%d] requested, exceeds limit of %d",
 			      __func__, request_msg->lifespan, username,
 			      msg->auth_uid, max_lifespan);
+			xfree(auth_username);
 			slurm_send_rc_msg(msg, ESLURM_INVALID_TIME_LIMIT);
 			return;
 		}
@@ -4927,6 +4934,7 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 	resp_data = xmalloc(sizeof(*resp_data));
 	resp_data->token = auth_g_token_generate(AUTH_PLUGIN_JWT, username,
 						 lifespan);
+	xfree(auth_username);
 	END_TIMER2(__func__);
 
 	response_init(&response_msg, msg);

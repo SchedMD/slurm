@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Minor memory leak fixes.
  -- Use accept4() and pipe2() to ensure new file descriptors are always set
     with close-on-exec flag.
+ -- slurmctld - allow users to request tokens for themselves by name.
 
 * Changes in Slurm 22.05.0rc1
 =============================
