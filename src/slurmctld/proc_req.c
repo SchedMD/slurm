@@ -4899,8 +4899,8 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 			/* user explicitly provided their own username */
 			username = request_msg->username;
 		} else {
-			error("%s: attempt to retrieve a token for a different user by UID=%u",
-			      __func__, msg->auth_uid);
+			error("%s: attempt to retrieve a token for a different user=%s by UID=%u",
+			      __func__, request_msg->username, msg->auth_uid);
 			xfree(auth_username);
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 			return;
