@@ -1,0 +1,34 @@
+############################################################################
+# Copyright (C) SchedMD LLC.
+############################################################################
+
+The Automated Test Framework (ATF) is a test framework designed to permit
+tests to be run under two alternative configuration modes:
+
+- The local-config mode was designed to be used with your current Slurm
+  installation and configuration. Tests that can be run using your current
+  configuration will be executed while those that require a different
+  configuration will be skipped. Local-config mode will avoid making changes
+  to your Slurm configuration, accounting database configuration and system
+  environment.
+
+- The auto-config mode was designed to be run within an automated testing
+  framework in which Slurm is automatically installed within a container
+  environment using a preset minimal configuration and where each test will
+  dynamically configure Slurm as necessary to run. This mode is intended to
+  be used primarily within automated systems and is not supported for use
+  with local installations.
+
+The associated testsuite uses tests and test libraries written in python and
+is executed under the pytest test harness. A wrapper script is provided
+(run-tests-python) to facilitate the use of the recommended pytest options.
+
+To run the testsuite under local-config mode:
+
+1) Install, configure and start Slurm.
+2) Review testsuite/testsuite.conf and edit if necessary.
+3) Set up your path and environment as necessary.
+4) Change directories to testsuite/python and run run-tests-python.
+
+   $ cd testsuite/python
+   $ ./run-tests-python
