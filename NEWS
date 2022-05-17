@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
     all of the states.
  -- job_container - Don't constrain a job using --no-allocate.
  -- Fix slurmctld segfault when a step requests a gres without a file.
+ -- Fix slurmctld segfault when cleaning up an overlapping step.
 
 * Changes in Slurm 22.05.0rc1
 =============================
