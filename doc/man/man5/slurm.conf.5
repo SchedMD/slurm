@@ -1513,8 +1513,10 @@ The default value for task sampling interval
 is 30 seconds. The default value for all other intervals is 0.
 An interval of 0 disables sampling of the specified type.
 If the task sampling interval is 0, accounting
-information is collected only at job termination (reducing Slurm
-interference with the job).
+information is collected only at job termination, which reduces Slurm
+interference with the job, but also means that the statistics about a job
+don't reflect the average or maximum of several samples thoughout the life
+of the job, but just show the information collected in the single sample.
 .br
 .br
 Smaller (non\-zero) values have a greater impact upon job performance,
