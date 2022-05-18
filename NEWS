@@ -283,6 +283,8 @@ documents those changes that are of interest to users and administrators.
     message forward.
  -- Fix resuming nodes not part of an allocation.
  -- Fix "--gpu-bind=single:" having wrong env variables.
+ -- Fix logic estimating when a job can start based on ANY_NODES / LICENSE_ONLY
+    reservations that could lead to an infinite loop in backfill.
 
 * Changes in Slurm 21.08.8-2
 ============================

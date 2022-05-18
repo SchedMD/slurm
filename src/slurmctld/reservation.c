@@ -6276,11 +6276,23 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			else
 				job_end_time_use = job_end_time;
 
-			if ((resv_ptr->node_bitmap == NULL) ||
-			    (start_relative >= job_end_time_use) ||
-			    (end_relative   <= job_start_time))
+			if ((start_relative >= job_end_time_use) ||
+			    (end_relative <= job_start_time))
 				continue;
+			/*
+			 * FIXME: This only tracks when ANY licenses required
+			 * by the job are freed by any reservation without
+			 * counting them, so the results are not accurate.
+			 */
+			if (license_list_overlap(job_ptr->license_list,
+						 resv_ptr->license_list)) {
+				if ((lic_resv_time == (time_t) 0) ||
+				    (lic_resv_time > resv_ptr->end_time))
+					lic_resv_time = resv_ptr->end_time;
+			}
 
+			if (resv_ptr->node_bitmap == NULL)
+				continue;
 			/*
 			 * Check if we are able to use this reservation's
 			 * resources even though we didn't request it.
@@ -6312,17 +6324,6 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 					*when = resv_ptr->end_time;
 				rc = ESLURM_NODES_BUSY;
 				break;
-			}
-			/*
-			 * FIXME: This only tracks when ANY licenses required
-			 * by the job are freed by any reservation without
-			 * counting them, so the results are not accurate.
-			 */
-			if (license_list_overlap(job_ptr->license_list,
-						 resv_ptr->license_list)) {
-				if ((lic_resv_time == (time_t) 0) ||
-				    (lic_resv_time > resv_ptr->end_time))
-					lic_resv_time = resv_ptr->end_time;
 			}
 
 			if ((resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) ||
@@ -6366,7 +6367,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 				 * licenses ends.
 				 */
 				rc = ESLURM_NODES_BUSY;
-				*when = lic_resv_time;
+				if (lic_resv_time > *when)
+					*when = lic_resv_time;
 			}
 		}
 		if (rc == SLURM_SUCCESS)
