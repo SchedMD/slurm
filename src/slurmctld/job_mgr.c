@@ -6036,7 +6036,9 @@ extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
 
 	if (prolog_return_code)
 		error("Prolog launch failure, %pJ", job_ptr);
-#ifndef HAVE_FRONT_END
+	/*
+	 * job_ptr->node_bitmap_pr is always NULL for front end systems
+	 */
 	if (job_ptr->node_bitmap_pr) {
 		node_record_t *node_ptr;
 
@@ -6048,10 +6050,8 @@ extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
 			bit_clear_all(job_ptr->node_bitmap_pr);
 		}
 	}
-
 	if (!job_ptr->node_bitmap_pr ||
 	    (bit_ffs(job_ptr->node_bitmap_pr) == -1))
-#endif
 	{
 		job_ptr->state_reason = WAIT_NO_REASON;
 		agent_trigger(999, false, true);
