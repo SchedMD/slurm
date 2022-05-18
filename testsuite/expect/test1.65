@@ -33,7 +33,7 @@ set matches     0
 #
 spawn $srun --mpi=list
 expect {
-	-re "MPI types are" {
+	-re "MPI plugin types are" {
 		incr matches
 		exp_continue
 	}
