@@ -1453,21 +1453,21 @@ alloc_job:
 	else
 		c_size = 0;
 	i_first = bit_ffs(node_bitmap);
-	for (i = 0, n = i_first; n < node_record_count; n++) {
+	for (i = i_first, n = 0; i < node_record_count; i++) {
 		int first_core, last_core;
 		bitstr_t *use_free_cores = NULL;
 
-		if (!bit_test(node_bitmap, n))
+		if (!bit_test(node_bitmap, i))
 			continue;
-		node_ptr = node_record_table_ptr[n];
+		node_ptr = node_record_table_ptr[i];
 
 		if (is_cons_tres) {
 			first_core = 0;
 			last_core = node_ptr->tot_cores;
-			use_free_cores = free_cores[n];
+			use_free_cores = free_cores[i];
 		} else {
-			first_core = cr_get_coremap_offset(n);
-			last_core = cr_get_coremap_offset(n + 1);
+			first_core = cr_get_coremap_offset(i);
+			last_core = cr_get_coremap_offset(i + 1);
 			use_free_cores = *free_cores;
 		}
 		for (j = first_core; j < last_core; j++, c++) {
@@ -1475,7 +1475,7 @@ alloc_job:
 				continue;
 			if (c >= c_size) {
 				error("core_bitmap index error on node %s (NODE_INX:%d, C_SIZE:%u)",
-				      node_ptr->name, n, c_size);
+				      node_ptr->name, i, c_size);
 				drain_nodes(node_ptr->name, "Bad core count",
 					    getuid());
 				_free_avail_res_array(avail_res_array);
@@ -1486,8 +1486,8 @@ alloc_job:
 			bit_set(job_res->core_bitmap, c);
 			c_alloc++;
 		}
-		total_cpus += job_res->cpus[i];
-		i++;
+		total_cpus += job_res->cpus[n];
+		n++;
 	}
 
 	/*

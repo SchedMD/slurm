@@ -2187,7 +2187,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	node_record_t *node_ptr;
 	int cpus_alloc, cpus_alloc_mem, cpu_array_inx = 0;
-	int i_node, i_first, i_last;
+	int i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1, node_cnt = 0;
 	bool first_step_node = true, pick_step_cores = true;
 	bool all_job_mem = false;
@@ -2243,18 +2243,18 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
-	for (i_node = i_first; i_node <= i_last; i_node++) {
+	for (int i = i_first; i <= i_last; i++) {
 		uint64_t gres_step_node_mem_alloc = 0;
 		uint16_t vpus;
 		bitstr_t *unused_core_bitmap;
 
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
+		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			continue;
 		job_node_inx++;
-		if (!bit_test(step_ptr->step_node_bitmap, i_node))
+		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
 		step_node_inx++;
-		node_ptr = node_record_table_ptr[i_node];
+		node_ptr = node_record_table_ptr[i];
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("%s: node index bad", __func__);
 
@@ -2434,7 +2434,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 						   job_node_inx,
 						   step_ptr->step_layout->
 						   tasks[step_node_inx],
-						   cpus_per_core, i_node))) {
+						   cpus_per_core, i))) {
 				log_flag(STEPS, "unable to pick step cores for job node %d (%s): %s",
 					 job_node_inx,
 					 node_ptr->name,
@@ -2519,7 +2519,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int cpus_alloc;
-	int i_node, i_first, i_last;
+	int i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 	uint16_t req_tpc = NO_VAL16;
 	node_record_t *node_ptr;
@@ -2556,14 +2556,14 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		 (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16))
 		req_tpc = job_ptr->details->mc_ptr->threads_per_core;
 
-	for (i_node = i_first; i_node <= i_last; i_node++) {
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
+	for (int i = i_first; i <= i_last; i++) {
+		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			continue;
 		job_node_inx++;
-		if (!bit_test(step_ptr->step_node_bitmap, i_node))
+		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
 		step_node_inx++;
-		node_ptr = node_record_table_ptr[i_node];
+		node_ptr = node_record_table_ptr[i];
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
 
