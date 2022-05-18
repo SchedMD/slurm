@@ -158,6 +158,12 @@ bitstr_t *bit_pick_cnt(bitstr_t *b, bitoff_t nbits);
 bitoff_t bit_get_bit_num(bitstr_t *b, int32_t pos);
 int32_t	bit_get_pos_num(bitstr_t *b, bitoff_t pos);
 
+/*
+ * Move all set bits to the beginning of the bitstring
+ *   b (IN)             bitstring to consolidate
+ */
+void bit_consolidate(bitstr_t *b);
+
 #define FREE_NULL_BITMAP(_X)	\
 do {				\
 	if (_X)			\
