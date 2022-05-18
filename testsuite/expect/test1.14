@@ -174,7 +174,7 @@ proc test_gpus {node_name} {
 
 	dict for {gres_name gres_count} $gres_dict_node {
 		# We don't want mps to be allocated with --exclusive
-		if {$gres_name eq "mps"} {
+		if {$gres_name eq "mps" || $gres_name eq "shard"} {
 			if {[dict exists $gres_dict_job $gres_name]} {
 				subfail "Gres ($gres_name) on node ($node_name) allocated on job ($job_id) with --exclusive but it shouldn't be"
 			} else {
