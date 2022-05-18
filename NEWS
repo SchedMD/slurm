@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
  -- Dynamic node fixes and updates.
  -- Added error logging when a node goes into an invalid state so that the user
     can still see the reason even if the user set a custom reason beforehand.
+ -- Remove redundant message when libdbus is found during configure.
 
 * Changes in Slurm 22.05.0rc1
 =============================
