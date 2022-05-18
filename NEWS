@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     with close-on-exec flag.
  -- slurmctld - allow users to request tokens for themselves by name.
  -- srun - adjust output of "--mpi=list".
+ -- Fix "--gpu-bind=single:" having wrong env variables.
 
 * Changes in Slurm 22.05.0rc1
 =============================
@@ -284,6 +285,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmd segfault when seeing authentication issues alongside a failed
     message forward.
  -- Fix resuming nodes not part of an allocation.
+ -- Fix "--gpu-bind=single:" having wrong env variables.
 
 * Changes in Slurm 21.08.8-2
 ============================
