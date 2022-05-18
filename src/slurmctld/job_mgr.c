@@ -15200,7 +15200,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 {
 	bitstr_t *full_node_bitmap, *tmp_node_bitmap;
 	node_record_t *node_ptr;
-	int i_first;
+	int zero = 0;
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
 	uint16_t protocol_version;
@@ -15211,8 +15211,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 	xassert(node_bitmap);
 	/* Send a separate message for nodes at different protocol_versions */
 	full_node_bitmap = bit_copy(node_bitmap);
-	while ((i_first = bit_ffs(full_node_bitmap)) >= 0) {
-		node_ptr = node_record_table_ptr[i_first];
+	while ((node_ptr = next_node_bitmap(full_node_bitmap, &zero))) {
 		protocol_version = node_ptr->protocol_version;
 		tmp_node_bitmap = bit_alloc(bit_size(node_bitmap));
 		for (int i = 0;
