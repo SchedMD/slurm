@@ -1849,7 +1849,8 @@ static int _gres_filter_avail_cores(void *x, void *arg)
 	gres_node_state_t *gres_ns;
 
 	/* Bail early if this GRES isn't used on the node */
-	if (!gres_ss->gres_bit_alloc[args->job_node_inx])
+	if (!gres_ss->gres_cnt_node_alloc ||
+	    !gres_ss->gres_cnt_node_alloc[args->job_node_inx])
 		return 0;
 
 	if (!(gres_state_node = list_find_first(args->node_gres_list,
@@ -1868,7 +1869,8 @@ static int _gres_filter_avail_cores(void *x, void *arg)
 	/* Determine which specific cores can be used */
 	for (int i = 0; i < gres_ns->topo_cnt; i++) {
 		/* Is this gres allocated to the step? */
-		if (!bit_overlap_any(
+		if (gres_ss->gres_bit_alloc &&
+		    !bit_overlap_any(
 			    gres_ss->gres_bit_alloc[args->job_node_inx],
 			    gres_ns->topo_gres_bitmap[i]))
 			continue;

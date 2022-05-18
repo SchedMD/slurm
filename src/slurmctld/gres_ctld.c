@@ -2386,7 +2386,8 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 
 		if (!decr_job_alloc) {
 			/* This step was not counted against job allocation */
-			FREE_NULL_BITMAP(gres_ss->gres_bit_alloc[i]);
+			if (gres_ss->gres_bit_alloc)
+				FREE_NULL_BITMAP(gres_ss->gres_bit_alloc[i]);
 			continue;
 		}
 
