@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - allow users to request tokens for themselves by name.
  -- srun - adjust output of "--mpi=list".
  -- Fix "--gpu-bind=single:" having wrong env variables.
+ -- Sync missing pieces in slurmctld SIGHUP handler with respect to
+    REQUEST_RECONFIGURE RPC handler.
 
 * Changes in Slurm 22.05.0rc1
 =============================
