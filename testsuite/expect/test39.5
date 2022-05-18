@@ -251,7 +251,7 @@ if {$use_gpus_per_node == 0} {
 	set use_tasks_per_node 1
 	set use_gpus_per_node $gpu_cnt
 }
-test_gpus_cnt "--gpus-per-task=1 --tasks-per-node=$use_tasks_per_node -N $nb_nodes" [expr $use_tasks_per_node * $nb_nodes] [expr $use_tasks_per_node * $nb_nodes]
+test_gpus_cnt "--gpus-per-task=1 --ntasks-per-node=$use_tasks_per_node -N $nb_nodes" [expr $use_tasks_per_node * $nb_nodes] [expr $use_tasks_per_node * $nb_nodes]
 
 #
 # Test --gpus-per-task option without task count
