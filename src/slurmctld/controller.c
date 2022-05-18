@@ -212,6 +212,8 @@ static int	new_nice = 0;
 static int	recover   = DEFAULT_RECOVER;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *	slurm_conf_filename;
+static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  reconfig_cond = PTHREAD_COND_INITIALIZER;
 
 /*
  * Static list of signals to block in this process
@@ -1081,24 +1083,35 @@ static void  _init_config(void)
  * _slurm_rpc_reconfigure_controller function inside proc_req.c try
  * to keep these in sync.
  */
-static void _reconfigure_slurm(void)
+extern int reconfigure_slurm(bool sighup)
 {
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	static bool in_progress = false;
 	int rc;
+	DEF_TIMERS;
 
-	if (slurmctld_config.shutdown_time)
-		return;
+	START_TIMER;
+
+	/* Reconfigure RPCs must be serially served. */
+	slurm_mutex_lock(&reconfig_mutex);
+
+	if (in_progress || slurmctld_config.shutdown_time) {
+		debug5("%s: already in progress: skipping", __func__);
+		return EINPROGRESS;
+	}
 
 	/*
 	 * XXX - need to shut down the scheduler
 	 * plugin, re-read the configuration, and then
 	 * restart the (possibly new) plugin.
 	 */
+	sched_debug("begin reconfiguration");
 	lock_slurmctld(config_write_lock);
-	rc = read_slurm_conf(2, true);
-	if (rc)
+	in_progress = true;
+	rc = read_slurm_conf(sighup ? 2 : 1, true);
+	if (rc != SLURM_SUCCESS)
 		error("read_slurm_conf: %s", slurm_strerror(rc));
 	else {
 		_update_cred_key();
@@ -1110,9 +1123,11 @@ static void _reconfigure_slurm(void)
 			msg_to_slurmd(REQUEST_RECONFIGURE);
 		node_features_updated = true;
 	}
+	in_progress = false;
 
 	gs_reconfig();
 	unlock_slurmctld(config_write_lock);
+
 	cgroup_conf_reinit();
 	assoc_mgr_set_missing_uids();
 	slurmscriptd_reconfig();
@@ -1125,9 +1140,39 @@ static void _reconfigure_slurm(void)
 			fatal("Failed to reconfigure MPI plugins.");
 	}
 	trigger_reconfig();
-	priority_g_reconfig(true);	/* notify priority plugin too */
-	save_all_state();		/* Has own locking */
-	queue_job_scheduler();
+
+	END_TIMER2("reconfigure_slurm");
+
+	if (rc)
+		error("%s: %s", __func__, slurm_strerror(rc));
+	else
+		info("%s: completed %s", __func__, TIME_STR);
+
+	return rc;
+}
+
+extern void reconfigure_slurm_post_send(int error_code)
+{
+	if (error_code != SLURM_SUCCESS) {
+		priority_g_reconfig(true);	/* notify priority plugin too */
+		save_all_state();		/* Has own locking */
+		queue_job_scheduler();
+	}
+
+	if (conf_includes_list) {
+		/*
+		 * clear included files so that subsequent conf parsings refill
+		 * it with updated information.
+		 */
+		list_flush(conf_includes_list);
+	}
+	slurm_mutex_unlock(&reconfig_mutex);
+	slurm_cond_broadcast(&reconfig_cond);
+}
+
+extern void _reconfigure_slurm(void)
+{
+	reconfigure_slurm_post_send(reconfigure_slurm(true));
 }
 
 /* Request that the job scheduler execute soon (typically within seconds) */

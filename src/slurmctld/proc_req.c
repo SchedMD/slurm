@@ -135,8 +135,6 @@ static config_response_msg_t *config_for_clients = NULL;
 
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
-static pthread_cond_t  reconfig_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void         _create_het_job_id_set(hostset_t jobid_hostset,
 					    uint32_t het_job_offset,
@@ -151,8 +149,6 @@ static int          _route_msg_to_origin(slurm_msg_t *msg, char *job_id_str,
 					 uint32_t job_id);
 static void         _throttle_fini(int *active_rpc_cnt);
 static void         _throttle_start(int *active_rpc_cnt);
-
-static void _update_cred_key(void);
 
 extern diag_stats_t slurmctld_diag_stats;
 
@@ -3268,85 +3264,23 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
  */
 static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 {
-	int error_code = SLURM_SUCCESS;
-	static bool in_progress = false;
-	DEF_TIMERS;
-	/* Locks: Write configuration, job, node and partition */
-	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	int error_code;
 
-	/* Reconfigure RPCs must be serially served. */
-	slurm_mutex_lock(&reconfig_mutex);
-
-	START_TIMER;
 	if (!validate_super_user(msg->auth_uid)) {
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      msg->auth_uid);
-		error_code = ESLURM_USER_ID_MISSING;
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
 	} else
 		info("Processing Reconfiguration Request");
 
-	if (in_progress || slurmctld_config.shutdown_time) {
-		error_code = EINPROGRESS;
-		debug5("%s: already in progress: skipping", __func__);
-	}
-
-	/* do RPC call */
-	if (error_code == SLURM_SUCCESS) {
-		sched_debug("begin reconfiguration");
-		lock_slurmctld(config_write_lock);
-		in_progress = true;
-		error_code = read_slurm_conf(1, true);
-		if (error_code == SLURM_SUCCESS) {
-			_update_cred_key();
-			set_slurmctld_state_loc();
-			if (config_for_slurmd) {
-				configless_update();
-				push_reconfig_to_slurmd(slurmd_config_files);
-			} else
-				msg_to_slurmd(REQUEST_RECONFIGURE);
-			node_features_updated = true;
-		}
-		in_progress = false;
-		gs_reconfig();
-		unlock_slurmctld(config_write_lock);
-		cgroup_conf_reinit();
-		assoc_mgr_set_missing_uids();
-		slurmscriptd_reconfig();
-		start_power_mgr(&slurmctld_config.thread_id_power);
-		if (mpi_g_daemon_reconfig() != SLURM_SUCCESS) {
-			if (test_config) {
-				error("Failed to reconfigure MPI plugins.");
-				test_config_rc = 1;
-			} else
-				fatal("Failed to reconfigure MPI plugins.");
-		}
-		trigger_reconfig();
-	}
-	END_TIMER2("_slurm_rpc_reconfigure_controller");
+	error_code = reconfigure_slurm(false);
 
 	/* return result */
-	if (error_code) {
-		error("_slurm_rpc_reconfigure_controller: %s",
-		      slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
-	} else {
-		info("_slurm_rpc_reconfigure_controller: completed %s",
-		     TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		priority_g_reconfig(true);	/* notify priority plugin too */
-		save_all_state();		/* has its own locks */
-		queue_job_scheduler();
-	}
-	if (conf_includes_list) {
-		/*
-		 * clear included files so that subsequent conf parsings refill
-		 * it with updated information.
-		 */
-		list_flush(conf_includes_list);
-	}
-	slurm_mutex_unlock(&reconfig_mutex);
-	slurm_cond_broadcast(&reconfig_cond);
+	slurm_send_rc_msg(msg, error_code);
+
+	/* finish up the configuration */
+	reconfigure_slurm_post_send(error_code);
 }
 
 /* _slurm_rpc_takeover - process takeover RPC */
@@ -4730,14 +4664,6 @@ static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		xfree(resp_buffer);
 	}
-}
-
-/* Reset the job credential key based upon configuration parameters.
- * NOTE: READ lock_slurmctld config before entry */
-static void _update_cred_key(void)
-{
-	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx,
-	                          slurm_conf.job_credential_private_key);
 }
 
 static void _slurm_rpc_suspend(slurm_msg_t *msg)
