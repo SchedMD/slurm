@@ -93,6 +93,7 @@ uint32_t *cr_node_cores_offset = NULL;
 
 /* Local function definitions */
 static void _delete_config_record(void);
+static void _delete_node_config_ptr(node_record_t *node_ptr);
 #if _DEBUG
 static void	_dump_hash (void);
 #endif
@@ -894,6 +895,8 @@ extern void delete_node_record(node_record_t *node_ptr)
 			last_node_index = -1;
 	}
 
+	_delete_node_config_ptr(node_ptr);
+
 	purge_node_rec(node_ptr);
 }
 
@@ -996,7 +999,7 @@ extern void init_node_conf(void)
 	node_record_t *node_ptr;
 
 	for (i = 0; (node_ptr = next_node(&i)); i++)
-		purge_node_rec(node_ptr);
+		delete_node_record(node_ptr);
 
 	node_record_count = 0;
 	node_record_table_size = 0;
@@ -1191,8 +1194,6 @@ extern void purge_node_rec(node_record_t *node_ptr)
 	xfree(node_ptr->tres_str);
 	xfree(node_ptr->tres_fmt_str);
 	xfree(node_ptr->tres_cnt);
-
-	_delete_node_config_ptr(node_ptr);
 
 	xfree(node_ptr);
 }
