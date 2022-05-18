@@ -173,7 +173,14 @@ proc test_gpus {node_name} {
 	set gres_dict_node [count_gres [get_node_param $node_name "Gres"]]
 
 	dict for {gres_name gres_count} $gres_dict_node {
-		if {![dict exists $gres_dict_job $gres_name]} {
+		# We don't want mps to be allocated with --exclusive
+		if {$gres_name eq "mps" || $gres_name eq "shard"} {
+			if {[dict exists $gres_dict_job $gres_name]} {
+				subfail "Gres ($gres_name) on node ($node_name) allocated on job ($job_id) with --exclusive but it shouldn't be"
+			} else {
+				subpass "Gres ($gres_name) on node ($node_name) was not allocated on job ($job_id) with --exclusive, this is expected"
+			}
+		} elseif {![dict exists $gres_dict_job $gres_name]} {
 			subfail "Gres ($gres_name) on node ($node_name) not allocated on job ($job_id) with --exclusive"
 		} else {
 			subpass "Gres ($gres_name) on node ($node_name) was allocated on job ($job_id) with --exclusive"
