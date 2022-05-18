@@ -1489,19 +1489,21 @@ static int _pre_task_child_privileged(
 	set_oom_adj(0); /* the tasks may be killed by OOM */
 
 #ifndef HAVE_NATIVE_CRAY
-	/* Add job's pid to job container */
+	if (!(job->flags & LAUNCH_NO_ALLOC)) {
+		/* Add job's pid to job container, if a normal job */
+		if (container_g_join(job->step_id.job_id, job->uid)) {
+			error("container_g_join failed: %u",
+			      job->step_id.job_id);
+			exit(1);
+		}
 
-	if (container_g_join(job->step_id.job_id, job->uid)) {
-		error("container_g_join failed: %u", job->step_id.job_id);
-		exit(1);
+		/*
+		 * tmpfs job container plugin changes the working directory
+		 * back to root working directory, so change it back to users
+		 * but after dropping privillege
+		 */
+		setwd = 1;
 	}
-
-	/*
-	 * tmpfs job container plugin changes the working directory
-	 * back to root working directory, so change it back to users
-	 * but after dropping privillege
-	 */
-	setwd = 1;
 #endif
 
 	if (spank_task_privileged(job, taskid) < 0)
@@ -2902,6 +2904,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		   to the container in the parent of the fork.
 		*/
 		if ((jobid != 0) &&	/* Ignore system processes */
+		    !(job->flags & LAUNCH_NO_ALLOC) &&
 		    (container_g_join(jobid, job->uid) != SLURM_SUCCESS))
 			error("container_g_join(%u): %m", job->step_id.job_id);
 
