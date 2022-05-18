@@ -176,12 +176,12 @@ highest version of the library:</p>
 
 <pre>
 user@testbox:~/t$ srun --mpi=list
-srun: MPI types are...
-srun: pmix_v1
-srun: pmi2
-srun: none
-srun: pmix
-srun: pmix_v2
+MPI plugin types are...
+	cray_shasta
+	none
+	pmi2
+	pmix
+specific pmix plugin versions available: pmix_v3
 </pre>
 
 <p>Continuing with the configuration, if Slurm is unable to locate the PMIx
@@ -266,11 +266,12 @@ both components work properly:</p>
 
 <pre>
 user@testbox:~/t$ srun --mpi=list
-srun: MPI types are...
-srun: pmi2
-srun: none
-srun: pmix
-srun: pmix_v2
+MPI plugin types are...
+	cray_shasta
+	none
+	pmi2
+	pmix
+specific pmix plugin versions available: pmix_v3
 user@testbox:~/t$ srun --mpi=pmix -n2 -N2 \
 &gt; ~/git/pmix/build/2.1/test/pmix_client -n 2 --job-fence -c
 OK
@@ -631,6 +632,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 29 June 2021</p>
+<p style="text-align:center;">Last modified 17 May 2022</p>
 
 <!--#include virtual="footer.txt"-->
