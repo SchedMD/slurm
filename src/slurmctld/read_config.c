@@ -1293,8 +1293,7 @@ void _sync_jobs_to_conf(void)
 			job_fail = true;
 		if (!job_fail &&
 		    job_ptr->job_resrcs && (cr_flag || gang_flag) &&
-		    valid_job_resources(job_ptr->job_resrcs,
-					node_record_table_ptr)) {
+		    valid_job_resources(job_ptr->job_resrcs)) {
 			error("Aborting %pJ due to change in socket/core configuration of allocated nodes",
 			      job_ptr);
 			job_fail = true;

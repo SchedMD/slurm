@@ -181,10 +181,9 @@ extern int build_job_resources_cpus_array(job_resources_t *job_resrcs_ptr);
  * change in a node's socket or core count require that any job running on
  * that node be killed. Example of use:
  *
- * rc = valid_job_resources(job_resrcs_ptr, node_record_table_ptr);
+ * rc = valid_job_resources(job_resrcs_ptr);
  */
-extern int valid_job_resources(job_resources_t *job_resrcs_ptr,
-			       node_record_t **node_rec_table);
+extern int valid_job_resources(job_resources_t *job_resrcs_ptr);
 
 /* Make a copy of a job_resources data structure,
  * free using free_job_resources() */
