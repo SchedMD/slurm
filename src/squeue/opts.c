@@ -73,7 +73,6 @@
 static List  _build_job_list( char* str );
 static List  _build_str_list( char* str );
 static List  _build_state_list( char* str );
-static List  _build_all_states_list( void );
 static List  _build_step_list( char* str );
 static List  _build_user_list( char* str );
 static char *_get_prefix(char *token);
@@ -1909,7 +1908,9 @@ _print_options(void)
 		list_iterator_destroy( iterator );
 	}
 
-	if (params.state_list) {
+	if (params.all_states) {
+		printf( "state_list = all\n");
+	} else if (params.state_list) {
 		i = 0;
 		iterator = list_iterator_create( params.state_list );
 		while ( (state_id = list_next( iterator )) ) {
@@ -2039,8 +2040,11 @@ _build_state_list( char* str )
 
 	if (str == NULL)
 		return NULL;
-	if (xstrcasecmp( str, "all") == 0)
-		return _build_all_states_list ();
+	if (!xstrcasecmp(str, "all")) {
+		params.all_states = true;
+		return NULL;
+	}
+	params.all_states = false;
 
 	my_list = list_create(NULL);
 	my_state_list = xstrdup(str);
@@ -2053,38 +2057,6 @@ _build_state_list( char* str )
 		state = strtok_r(NULL, ",", &tmp_char);
 	}
 	xfree(my_state_list);
-	return my_list;
-
-}
-
-static void _append_state_list(List my_list, uint32_t state_id)
-{
-	uint32_t *state_rec;
-
-	state_rec = xmalloc(sizeof(uint32_t));
-	*state_rec = state_id;
-	list_append(my_list, state_rec);
-}
-
-/*
- * _build_all_states_list - build a list containing all possible job states
- * RET List of uint16_t values
- */
-static List
-_build_all_states_list( void )
-{
-	List my_list;
-	uint32_t i;
-
-	my_list = list_create( NULL );
-	for (i = 0; i < JOB_END; i++)
-		_append_state_list(my_list, i);
-
-	_append_state_list(my_list, JOB_COMPLETING);
-	_append_state_list(my_list, JOB_CONFIGURING);
-	_append_state_list(my_list, JOB_REVOKED);
-	_append_state_list(my_list, JOB_SPECIAL_EXIT);
-
 	return my_list;
 
 }
