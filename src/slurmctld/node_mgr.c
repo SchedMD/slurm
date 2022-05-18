@@ -4751,7 +4751,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	}
 
 	set_node_comm_name(node_ptr,
-			   comm_name ? comm_name : reg_msg->node_name,
+			   comm_name ? comm_name : reg_msg->hostname,
 			   reg_msg->hostname);
 	xfree(comm_name);
 
