@@ -1899,6 +1899,7 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 	int task_per_node_limit = 0;
 	int32_t rem_tasks, excess_tasks;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
+	node_record_t *node_ptr;
 
 	rem_tasks = tres_mc_ptr->ntasks_per_job;
 	node_cnt = bit_size(job_res->node_bitmap);
@@ -1912,6 +1913,7 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 		int tasks_per_node = 0;
 		if (!bit_test(job_res->node_bitmap, i))
 			continue;
+		node_ptr = node_record_table_ptr[i];
 		if (get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 					  &cores_per_socket_cnt)) {
 			error("%s: failed to get socket/core count", __func__);
@@ -1956,7 +1958,7 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 		}
 		core_offset = get_job_resources_offset(job_res, job_node_inx++,
 						       0, 0);
-		cpus_per_core = node_record_table_ptr[i]->tpc;
+		cpus_per_core = node_ptr->tpc;
 		for (s = 0; s < sock_cnt; s++) {
 			int tasks_per_socket = 0, tpc, skip_cores = 0;
 			for (c = 0; c < cores_per_socket_cnt; c++) {

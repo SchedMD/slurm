@@ -309,6 +309,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	if (msg_count) {
 		size_t new_size = xsize(*sp_hl);
 		int n_first, n_last;
+		node_record_t *node_ptr;
 
 		if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 			buf = bitmap2node_name(nodes_bitmap);
@@ -327,9 +328,9 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		for (j = n_first; j <= n_last; j++) {
 			if (!bit_test(nodes_bitmap, j))
 				continue;
+			node_ptr = node_record_table_ptr[j];
 			(*sp_hl)[*count] = hostlist_create(NULL);
-			hostlist_push_host((*sp_hl)[*count],
-					   node_record_table_ptr[j]->name);
+			hostlist_push_host((*sp_hl)[*count], node_ptr->name);
 			(*count)++;
 		}
 	}

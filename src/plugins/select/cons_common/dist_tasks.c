@@ -167,6 +167,7 @@ static void _clear_spec_cores(job_record_t *job_ptr,
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	multi_core_data_t *mc_ptr = NULL;
 	bitstr_t *use_core_array = NULL;
+	node_record_t *node_ptr;
 
 	if (job_ptr->details && job_ptr->details->mc_ptr)
 		mc_ptr = job_ptr->details->mc_ptr;
@@ -181,11 +182,12 @@ static void _clear_spec_cores(job_record_t *job_ptr,
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(job_res->node_bitmap, i))
 			continue;
+		node_ptr = node_record_table_ptr[i];
 		job_res->cpus[++alloc_node] = 0;
 
 		if (is_cons_tres) {
 			first_core = 0;
-			last_core  = node_record_table_ptr[i]->tot_cores;
+			last_core  = node_ptr->tot_cores;
 			use_core_array = core_array[i];
 		} else {
 			first_core = cr_get_coremap_offset(i);
@@ -196,7 +198,7 @@ static void _clear_spec_cores(job_record_t *job_ptr,
 		for (c = first_core; c < last_core; c++) {
 			alloc_core++;
 			if (bit_test(use_core_array, c)) {
-				uint16_t tpc = node_record_table_ptr[i]->tpc;
+				uint16_t tpc = node_ptr->tpc;
 				if (mc_ptr &&
 				    (mc_ptr->threads_per_core != NO_VAL16) &&
 				    (mc_ptr->threads_per_core < tpc))
@@ -351,6 +353,7 @@ static int _set_task_dist(job_record_t *job_ptr, const uint16_t cr_type)
 	    (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16) &&
 	    ((cr_type & CR_CORE) || (cr_type & CR_SOCKET))) {
 		job_resources_t *job_res = job_ptr->job_resrcs;
+		node_record_t *node_ptr;
 		int i = 0, n_last, n_first = bit_ffs(job_res->node_bitmap);
 
 		if (n_first == -1)
@@ -358,11 +361,12 @@ static int _set_task_dist(job_record_t *job_ptr, const uint16_t cr_type)
 
 		n_last = bit_fls(job_res->node_bitmap);
 		for (int n = n_first; n <= n_last; n++) {
+			node_ptr = node_record_table_ptr[n];
 			if (!bit_test(job_res->node_bitmap, n) ||
 			    (job_ptr->details->mc_ptr->threads_per_core ==
-			     node_record_table_ptr[n]->tpc))
+			    node_ptr->tpc))
 				continue;
-			job_res->cpus[i++] *= node_record_table_ptr[n]->tpc;
+			job_res->cpus[i++] *= node_ptr->tpc;
 		}
 	}
 	return SLURM_SUCCESS;
@@ -895,6 +899,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	uint16_t ntasks_per_core = INFINITE16;
 	int error_code = SLURM_SUCCESS;
 	int tmp_cpt = 0; /* cpus_per_task */
+	node_record_t *node_ptr;
 
 	if ((job_res == NULL) || (job_res->core_bitmap == NULL) ||
 	    (job_ptr->details == NULL))
@@ -933,14 +938,13 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	for (c = 0, i = 0, n = n_first; n <= n_last; n++) {
 		if (bit_test(job_res->node_bitmap, n) == 0)
 			continue;
-		sockets = node_record_table_ptr[n]->tot_sockets;
-		cps     = node_record_table_ptr[n]->cores;
+		node_ptr = node_record_table_ptr[n];
+		sockets = node_ptr->tot_sockets;
+		cps     = node_ptr->cores;
 		vpus    = common_cpus_per_core(job_ptr->details, n);
 
 		log_flag(SELECT_TYPE, "%pJ node %s vpus %u cpus %u",
-		         job_ptr,
-		         node_record_table_ptr[n]->name,
-		         vpus, job_res->cpus[i]);
+			 job_ptr, node_ptr->name, vpus, job_res->cpus[i]);
 
 		if ((c + (sockets * cps)) > csize) {
 			error("index error");
@@ -1103,9 +1107,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 				job_ptr->state_reason = WAIT_HELD;
 				error("sync loop not progressing, holding %pJ, "
 				      "tried to use %u CPUs on node %s core_map:%s avoided_sockets:%s vpus:%u",
-				      job_ptr,
-				      orig_cpu_cnt,
-				      node_record_table_ptr[n]->name,
+				      job_ptr, orig_cpu_cnt, node_ptr->name,
 				      core_str, sock_str, vpus);
 				xfree(core_str);
 				xfree(sock_str);
@@ -1125,7 +1127,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 				bit_nclear(core_map, sock_start[s],
 					   sock_end[s]-1);
 			}
-			if ((node_record_table_ptr[n]->tpc >= 1) &&
+			if ((node_ptr->tpc >= 1) &&
 			    (alloc_sockets || alloc_cores) && sock_used[s]) {
 				for (j = sock_start[s]; j < sock_end[s]; j++) {
 					/* Mark all cores as used */
@@ -1136,10 +1138,8 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 				}
 			}
 		}
-		if ((alloc_cores || alloc_sockets) &&
-		    (node_record_table_ptr[n]->tpc >= 1)) {
-			job_res->cpus[i] = core_cnt *
-					   node_record_table_ptr[n]->tpc;
+		if ((alloc_cores || alloc_sockets) && (node_ptr->tpc >= 1)) {
+			job_res->cpus[i] = core_cnt * node_ptr->tpc;
 		}
 		i++;
 		/* advance 'c' to the beginning of the next node */

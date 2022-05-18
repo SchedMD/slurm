@@ -447,6 +447,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	uint32_t node_cpus, total_cpus = 0, node_cnt;
 	uint64_t job_memory_cpu = 0, job_memory_node = 0, min_mem = 0;
 	job_resources_t *job_resrcs_ptr;
+	node_record_t *node_ptr;
 
 	if (job_ptr->details->pn_min_memory  && (cr_type & CR_MEMORY)) {
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU)
@@ -478,6 +479,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	for (i = first_bit, j = 0, k = -1; i <= last_bit; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
+		node_ptr = node_record_table_ptr[i];
 		node_cpus = _get_total_cpus(i);
 		job_resrcs_ptr->cpus[j] = node_cpus;
 		if ((k == -1) ||
@@ -496,8 +498,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 				job_memory_cpu * node_cpus;
 		} else if (cr_type & CR_MEMORY) {
 			job_resrcs_ptr->memory_allocated[j] =
-				node_record_table_ptr[i]->config_ptr->
-				real_memory;
+				node_ptr->config_ptr->real_memory;
 			if (!min_mem ||
 			    (min_mem > job_resrcs_ptr->memory_allocated[j])) {
 				min_mem = job_resrcs_ptr->memory_allocated[j];

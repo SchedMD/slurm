@@ -76,7 +76,7 @@ static void _block_whole_nodes(bitstr_t *node_bitmap,
 {
 	int first_node, last_node, i_node;
 	int first_core, last_core, i_core;
-
+	node_record_t *node_ptr;
 	bitstr_t *cr_orig_core_bitmap = NULL;
 	bitstr_t *cr_new_core_bitmap = NULL;
 
@@ -94,9 +94,10 @@ static void _block_whole_nodes(bitstr_t *node_bitmap,
 	for (i_node = first_node; i_node <= last_node; i_node++) {
 		if (!bit_test(node_bitmap, i_node))
 			continue;
+		node_ptr = node_record_table_ptr[i_node];
 		if (is_cons_tres) {
 			first_core = 0;
-			last_core = node_record_table_ptr[i_node]->tot_cores;
+			last_core = node_ptr->tot_cores;
 			cr_orig_core_bitmap = orig_core_bitmap[i_node];
 			cr_new_core_bitmap = new_core_bitmap[i_node];
 		} else {
@@ -551,7 +552,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 			i_last = -2;
 
 		if (is_cons_tres) {
-			for (n = i_first; n < i_last; n++) {
+			for (n = 0; n < bit_size(node_bitmap); n++) {
 				if (!avail_res_array[n] ||
 				    !bit_test(node_bitmap, n))
 					FREE_NULL_BITMAP(avail_core[n]);
@@ -844,6 +845,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	uint32_t *gres_task_limit = NULL;
 	char *nodename = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
+	node_record_t *node_ptr;
 
 	free_job_resources(&job_ptr->job_resrcs);
 
@@ -1457,10 +1459,11 @@ alloc_job:
 
 		if (!bit_test(node_bitmap, n))
 			continue;
+		node_ptr = node_record_table_ptr[n];
 
 		if (is_cons_tres) {
 			first_core = 0;
-			last_core = node_record_table_ptr[n]->tot_cores;
+			last_core = node_ptr->tot_cores;
 			use_free_cores = free_cores[n];
 		} else {
 			first_core = cr_get_coremap_offset(n);
@@ -1472,10 +1475,9 @@ alloc_job:
 				continue;
 			if (c >= c_size) {
 				error("core_bitmap index error on node %s (NODE_INX:%d, C_SIZE:%u)",
-				      node_record_table_ptr[n]->name,
-				      n, c_size);
-				drain_nodes(node_record_table_ptr[n]->name,
-					    "Bad core count", getuid());
+				      node_ptr->name, n, c_size);
+				drain_nodes(node_ptr->name, "Bad core count",
+					    getuid());
 				_free_avail_res_array(avail_res_array);
 				free_job_resources(&job_res);
 				free_core_array(&free_cores);
@@ -1512,7 +1514,6 @@ alloc_job:
 		i_last = -2;
 	if (is_cons_tres &&
 	    job_ptr->gres_list_req && (error_code == SLURM_SUCCESS)) {
-		node_record_t *node_ptr;
 		bool have_gres_per_task, task_limit_set = false;
 
 		/*
@@ -1582,9 +1583,8 @@ alloc_job:
 			 * subtract from the total cpu count or you
 			 * will get an incorrect count.
 			 */
-
-			job_ptr->total_cpus +=
-				node_record_table_ptr[i]->cpus_efctv;
+			node_ptr = node_record_table_ptr[i];
+			job_ptr->total_cpus += node_ptr->cpus_efctv;
 		}
 	} else if (cr_type & CR_SOCKET) {
 		int ci = 0;
@@ -1594,12 +1594,11 @@ alloc_job:
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
+			node_ptr = node_record_table_ptr[i];
 			sock_cnt = 0;
-			for (s = 0; s < node_record_table_ptr[i]->tot_sockets;
-			     s++) {
+			for (s = 0; s < node_ptr->tot_sockets; s++) {
 				last_s = -1;
-				for (c = 0; c < node_record_table_ptr[i]->cores;
-				     c++) {
+				for (c = 0; c < node_ptr->cores; c++) {
 					if (bit_test(job_res->core_bitmap,
 						     ci)) {
 						if (s != last_s) {
@@ -1610,9 +1609,8 @@ alloc_job:
 					ci++;
 				}
 			}
-			job_ptr->total_cpus +=
-				(sock_cnt * node_record_table_ptr[i]->cores *
-				 node_record_table_ptr[i]->tpc);
+			job_ptr->total_cpus += (sock_cnt * node_ptr->cores *
+						node_ptr->tpc);
 		}
 	} else if (build_cnt >= 0)
 		job_ptr->total_cpus = build_cnt;
@@ -1641,9 +1639,10 @@ alloc_job:
 		for (i = i_first, j = 0; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
-			nodename = node_record_table_ptr[i]->name;
-			avail_mem = node_record_table_ptr[i]->real_memory -
-				    node_record_table_ptr[i]->mem_spec_limit;
+			node_ptr = node_record_table_ptr[i];
+			nodename = node_ptr->name;
+			avail_mem = node_ptr->real_memory -
+				    node_ptr->mem_spec_limit;
 			if (save_mem & MEM_PER_CPU) {	/* Memory per CPU */
 				/*
 				 * If the job requested less threads that we

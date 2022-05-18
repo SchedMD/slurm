@@ -16253,7 +16253,7 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 {
 #ifndef HAVE_FRONT_END
-	int i;
+	node_record_t *node_ptr;
 #endif
 	agent_arg_t *agent_args = NULL;
 	signal_tasks_msg_t *signal_job_msg = NULL;
@@ -16335,12 +16335,11 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		if (agent_args->protocol_version >
-		    node_record_table_ptr[i]->protocol_version)
+		node_ptr = node_record_table_ptr[i];
+		if (agent_args->protocol_version > node_ptr->protocol_version)
 			agent_args->protocol_version =
-				node_record_table_ptr[i]->protocol_version;
-		hostlist_push_host(agent_args->hostlist,
-				   node_record_table_ptr[i]->name);
+				node_ptr->protocol_version;
+		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
 #endif
@@ -16384,7 +16383,7 @@ static void *_switch_suspend_info(job_record_t *job_ptr)
 static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 {
 #ifndef HAVE_FRONT_END
-	int i;
+	node_record_t *node_ptr;
 #endif
 	agent_arg_t *agent_args;
 	suspend_int_msg_t *sus_ptr;
@@ -16415,12 +16414,11 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		if (agent_args->protocol_version >
-		    node_record_table_ptr[i]->protocol_version)
+		node_ptr = node_record_table_ptr[i];
+		if (agent_args->protocol_version > node_ptr->protocol_version)
 			agent_args->protocol_version =
-				node_record_table_ptr[i]->protocol_version;
-		hostlist_push_host(agent_args->hostlist,
-				   node_record_table_ptr[i]->name);
+				node_ptr->protocol_version;
+		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
 #endif
@@ -18607,6 +18605,7 @@ extern void set_remote_working_response(
 		     SLURM_MIN_PROTOCOL_VERSION) ||
 		    !job_ptr->alias_list ||
 		    xstrcmp(job_ptr->alias_list, "TBD")) {
+			node_record_t *node_ptr;
 			int i, i_first, i_last, addr_index = 0;
 
 			resp->node_addr = xcalloc(job_ptr->node_cnt,
@@ -18619,8 +18618,9 @@ extern void set_remote_working_response(
 			for (i = i_first; i <= i_last; i++) {
 				if (!bit_test(job_ptr->node_bitmap, i))
 					continue;
+				node_ptr = node_record_table_ptr[i];
 				slurm_conf_get_addr(
-					node_record_table_ptr[i]->name,
+					node_ptr->name,
 					&resp->node_addr[addr_index++], 0);
 			}
 		}

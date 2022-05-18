@@ -434,9 +434,9 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			for (int i = i_first; i <= i_last; i++) {
 				if (!bit_test(job_ptr->node_bitmap_cg, i))
 					continue;
-				job_epilog_complete(
-					job_ptr->job_id,
-					node_record_table_ptr[i]->name, 0);
+				node_ptr = node_record_table_ptr[i];
+				job_epilog_complete(job_ptr->job_id,
+						    node_ptr->name, 0);
 			}
 		}
 
@@ -2245,6 +2245,7 @@ static List _handle_exclusive_gres(job_record_t *job_ptr,
 {
 	int i_first, i_last;
 	List post_list = NULL;
+	node_record_t *node_ptr;
 
 	if (test_only || !gres_get_gres_cnt())
 		return NULL;
@@ -2265,11 +2266,11 @@ static List _handle_exclusive_gres(job_record_t *job_ptr,
 	for (int i = i_first; i <= i_last; i++) {
 		if (!bit_test(select_bitmap, i))
 			continue;
-		gres_ctld_job_select_whole_node(
-			&post_list,
-			node_record_table_ptr[i]->gres_list,
-			job_ptr->job_id,
-			node_record_table_ptr[i]->name);
+		node_ptr = node_record_table_ptr[i];
+		gres_ctld_job_select_whole_node(&post_list,
+						node_ptr->gres_list,
+						job_ptr->job_id,
+						node_ptr->name);
 	}
 
 	return post_list;
@@ -2952,6 +2953,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	bool sign_cred = false;
 #ifndef HAVE_FRONT_END
 	int i;
+	node_record_t *node_ptr;
 #endif
 
 	xassert(job_ptr);
@@ -2970,10 +2972,9 @@ extern void launch_prolog(job_record_t *job_ptr)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		if (protocol_version >
-		    node_record_table_ptr[i]->protocol_version)
-			protocol_version =
-				node_record_table_ptr[i]->protocol_version;
+		node_ptr = node_record_table_ptr[i];
+		if (protocol_version > node_ptr->protocol_version)
+			protocol_version = node_ptr->protocol_version;
 	}
 #endif
 

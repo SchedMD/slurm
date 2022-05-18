@@ -102,6 +102,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	bool space_remaining;
 	int i, i_first, i_last, rem_cpus, rem_tasks;
 	uint16_t cpus_per_task;
+	node_record_t *node_ptr;
 
 	if (!job_res)
 		err_msg = "job_res is NULL";
@@ -129,7 +130,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	for (i = i_first, n = 0; i <= i_last; i++) {
 		if (!bit_test(job_res->node_bitmap, i))
 			continue;
-		vpus[n++] = node_record_table_ptr[i]->tpc;
+		node_ptr = node_record_table_ptr[i];
+		vpus[n++] = node_ptr->tpc;
 	}
 
 	maxtasks = job_res->ncpus;

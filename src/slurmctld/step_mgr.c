@@ -653,6 +653,7 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 {
 #ifndef HAVE_FRONT_END
 	int i, i_first, i_last;
+	node_record_t *node_ptr;
 #endif
 	signal_tasks_msg_t *signal_tasks_msg;
 	agent_arg_t *agent_args = NULL;
@@ -684,12 +685,11 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 	for (i = i_first; i <= i_last; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
-		if (agent_args->protocol_version >
-		    node_record_table_ptr[i]->protocol_version)
+		node_ptr = node_record_table_ptr[i];
+		if (agent_args->protocol_version > node_ptr->protocol_version)
 			agent_args->protocol_version =
-				node_record_table_ptr[i]->protocol_version;
-		hostlist_push_host(agent_args->hostlist,
-				   node_record_table_ptr[i]->name);
+				node_ptr->protocol_version;
+		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
 #endif
@@ -2185,6 +2185,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+	node_record_t *node_ptr;
 	int cpus_alloc, cpus_alloc_mem, cpu_array_inx = 0;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1, node_cnt = 0;
@@ -2253,6 +2254,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
 			continue;
 		step_node_inx++;
+		node_ptr = node_record_table_ptr[i_node];
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("%s: node index bad", __func__);
 
@@ -2274,7 +2276,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			node_cnt = 0;
 		}
 
-		vpus = node_record_table_ptr[i_node]->tpc;
+		vpus = node_ptr->tpc;
 		if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc_mem = cpus_alloc =
 				job_resrcs_ptr->cpus[job_node_inx];
@@ -2355,14 +2357,13 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 					  !(step_ptr->flags &
 					    SSF_OVERLAP_FORCE),
 					  &gres_step_node_mem_alloc,
-					  node_record_table_ptr[i_node]->
-					  gres_list,
+					  node_ptr->gres_list,
 					  unused_core_bitmap);
 		FREE_NULL_BITMAP(unused_core_bitmap);
 		if (rc != SLURM_SUCCESS) {
 			log_flag(STEPS, "unable to allocate step GRES for job node %d (%s): %s",
 				 job_node_inx,
-				 node_record_table_ptr[i_node]->name,
+				 node_ptr->name,
 				 slurm_strerror(rc));
 			break;
 		}
@@ -2416,8 +2417,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			 * TODO: move cpus_per_core to slurm_step_layout_t
 			 */
 			if (!_use_one_thread_per_core(step_ptr) &&
-			    (!(node_record_table_ptr[i_node]->cpus ==
-			       (node_record_table_ptr[i_node]->tot_cores)))) {
+			    (!(node_ptr->cpus == node_ptr->tot_cores))) {
 				multi_core_data_t *mc_ptr;
 				mc_ptr = job_ptr->details->mc_ptr;
 				if (step_ptr->threads_per_core != NO_VAL16)
@@ -2427,9 +2427,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 					cpus_per_core =
 						mc_ptr->threads_per_core;
 				else {
-					node_record_t *n_ptr;
-					n_ptr = node_record_table_ptr[i_node];
-					cpus_per_core = n_ptr->threads;
+					cpus_per_core = node_ptr->threads;
 				}
 			}
 			if ((rc = _pick_step_cores(step_ptr, job_resrcs_ptr,
@@ -2439,7 +2437,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 						   cpus_per_core, i_node))) {
 				log_flag(STEPS, "unable to pick step cores for job node %d (%s): %s",
 					 job_node_inx,
-					 node_record_table_ptr[i_node]->name,
+					 node_ptr->name,
 					 slurm_strerror(rc));
 				break;
 			}
@@ -2450,12 +2448,12 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		if (step_ptr->flags & SSF_OVERLAP_FORCE)
 			log_flag(STEPS, "step alloc on job node %d (%s); does not count against job allocation",
 				 job_node_inx,
-				 node_record_table_ptr[i_node]->name);
+				 node_ptr->name);
 
 		else
 			log_flag(STEPS, "step alloc on job node %d (%s) used %u of %u CPUs",
 				 job_node_inx,
-				 node_record_table_ptr[i_node]->name,
+				 node_ptr->name,
 				 job_resrcs_ptr->cpus_used[job_node_inx],
 				 job_resrcs_ptr->cpus[job_node_inx]);
 
@@ -2524,6 +2522,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 	uint16_t req_tpc = NO_VAL16;
+	node_record_t *node_ptr;
 
 	xassert(job_resrcs_ptr);
 	if (!job_resrcs_ptr) {
@@ -2564,13 +2563,14 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
 			continue;
 		step_node_inx++;
+		node_ptr = node_record_table_ptr[i_node];
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
 
 		if (step_ptr->flags & SSF_OVERLAP_FORCE) {
 			log_flag(STEPS, "step dealloc on job node %d (%s); did not count against job allocation",
 				 job_node_inx,
-				 node_record_table_ptr[i_node]->name);
+				 node_ptr->name);
 			continue; /* Next node */
 		}
 
@@ -2578,7 +2578,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
 		else {
 			uint16_t cpus_per_task = step_ptr->cpus_per_task;
-			uint16_t vpus = node_record_table_ptr[i_node]->tpc;
+			uint16_t vpus = node_ptr->tpc;
 
 			cpus_alloc =
 				step_ptr->step_layout->tasks[step_node_inx] *
@@ -2620,7 +2620,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 				log_flag(STEPS, "Deallocating %"PRIu64"MB of memory on node %d (%s) now used: %"PRIu64" of %"PRIu64,
 					 mem_use,
 					 job_node_inx,
-					 node_record_table_ptr[i_node]->name,
+					 node_ptr->name,
 					 job_resrcs_ptr->
 					 memory_used[job_node_inx],
 					 job_resrcs_ptr->
@@ -2632,7 +2632,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			}
 		}
 		log_flag(STEPS, "step dealloc on job node %d (%s) used: %u of %u CPUs",
-			 job_node_inx, node_record_table_ptr[i_node]->name,
+			 job_node_inx, node_ptr->name,
 			 job_resrcs_ptr->cpus_used[job_node_inx],
 			 job_resrcs_ptr->cpus[job_node_inx]);
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
@@ -4977,6 +4977,7 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 {
 #ifndef HAVE_FRONT_END
 	int i;
+	node_record_t *node_ptr;
 #endif
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	kill_job_msg_t *kill_step;
@@ -5016,14 +5017,14 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 		for (i = 0; i < node_record_count; i++) {
 			if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 				continue;
+			node_ptr = node_record_table_ptr[i];
 			if (agent_args->protocol_version >
-			    node_record_table_ptr[i]->protocol_version) {
+			    node_ptr->protocol_version) {
 				agent_args->protocol_version =
-					node_record_table_ptr[i]->
-					protocol_version;
+					node_ptr->protocol_version;
 			}
 			hostlist_push_host(agent_args->hostlist,
-					   node_record_table_ptr[i]->name);
+					   node_ptr->name);
 			agent_args->node_count++;
 		}
 	} else {

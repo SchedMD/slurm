@@ -93,6 +93,7 @@ extern node_use_record_t *node_data_dup_use(
 	node_use_record_t *orig_ptr, bitstr_t *node_map)
 {
 	node_use_record_t *new_use_ptr, *new_ptr;
+	node_record_t *node_ptr;
 	List gres_list;
 	int i, i_first, i_last;
 
@@ -116,12 +117,13 @@ extern node_use_record_t *node_data_dup_use(
 	for (i = i_first; i < i_last; i++) {
 		if (node_map && !bit_test(node_map, i))
 			continue;
+		node_ptr = node_record_table_ptr[i];
 		new_ptr[i].node_state   = orig_ptr[i].node_state;
 		new_ptr[i].alloc_memory = orig_ptr[i].alloc_memory;
 		if (orig_ptr[i].gres_list)
 			gres_list = orig_ptr[i].gres_list;
 		else
-			gres_list = node_record_table_ptr[i]->gres_list;
+			gres_list = node_ptr->gres_list;
 		new_ptr[i].gres_list = gres_node_state_list_dup(gres_list);
 	}
 	return new_use_ptr;

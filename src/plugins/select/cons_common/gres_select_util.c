@@ -228,6 +228,7 @@ extern bool gres_select_util_job_mem_set(List job_gres_list,
 	bool rc = false, first_set = true;
 	uint64_t gres_cnt, mem_size, mem_per_gres;
 	int i, i_first, i_last, node_off;
+	node_record_t *node_ptr;
 
 	if (!job_gres_list)
 		return false;
@@ -259,13 +260,14 @@ extern bool gres_select_util_job_mem_set(List job_gres_list,
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
+			node_ptr = node_record_table_ptr[i];
 			node_off++;
 			if (job_res->whole_node == 1) {
 				gres_state_t *gres_state_node;
 				gres_node_state_t *gres_ns;
 
 				gres_state_node = list_find_first(
-					node_record_table_ptr[i]->gres_list,
+					node_ptr->gres_list,
 					gres_find_id,
 					&gres_state_job->plugin_id);
 				if (!gres_state_node)

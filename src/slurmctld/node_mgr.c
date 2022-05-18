@@ -2254,12 +2254,14 @@ static int _update_node_gres(char *node_names, char *gres)
 /* Reset the config pointer for updated jobs */
 static void _update_config_ptr(bitstr_t *bitmap, config_record_t *config_ptr)
 {
+	node_record_t *node_ptr;
 	int i;
 
 	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
-		node_record_table_ptr[i]->config_ptr = config_ptr;
+		node_ptr = node_record_table_ptr[i];
+		node_ptr->config_ptr = config_ptr;
 	}
 }
 

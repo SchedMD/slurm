@@ -95,6 +95,7 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 	bitstr_t *use_core_array;
 	uint32_t core_begin;
 	uint16_t cores_per_node;
+	node_record_t *node_ptr;
 
 	if (!job_resrcs_ptr->core_bitmap)
 		return 1;
@@ -120,7 +121,8 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			continue;
 
-		cores_per_node = node_record_table_ptr[i]->tot_cores;
+		node_ptr = node_record_table_ptr[i];
+		cores_per_node = node_ptr->tot_cores;
 
 		if (is_cons_tres) {
 			core_begin = 0;
