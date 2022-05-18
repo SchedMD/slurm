@@ -2997,6 +2997,14 @@ Setting the Contain implicitly sets the Alloc flag.
 .IP
 
 .TP
+\fBDeferBatch\fR
+If set, slurmctld will wait until the prolog completes on all allocated
+nodes before sending the batch job launch request. With just the Alloc flag,
+slurmctld will launch the batch step as soon as the first node in the job
+allocation completes the prolog.
+.IP
+
+.TP
 \fBNoHold\fR
 If set, the Alloc flag should also be set.  This will allow for salloc to not
 block until the prolog is finished on each node.  The blocking will happen when
