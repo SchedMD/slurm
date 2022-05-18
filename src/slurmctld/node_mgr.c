@@ -526,8 +526,6 @@ extern int load_all_node_state ( bool state_only )
 				set_node_comm_name(node_ptr,
 						   comm_name,
 						   node_hostname);
-				comm_name = NULL;
-				node_hostname = NULL;
 			}
 			if (IS_NODE_FUTURE(node_ptr) &&
 			    (node_state & NODE_STATE_DYNAMIC_FUTURE)) {
@@ -687,8 +685,6 @@ extern int load_all_node_state ( bool state_only )
 				set_node_comm_name(node_ptr,
 						   comm_name,
 						   node_hostname);
-				comm_name = NULL;
-				node_hostname = NULL;
 			}
 			node_ptr->node_state    = node_state;
 			xfree(node_ptr->extra);
@@ -1624,8 +1620,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 					    cloud_reg_addrs)
 						set_node_comm_name(
 							node_ptr,
-							xstrdup(node_ptr->name),
-							xstrdup(node_ptr->name));
+							node_ptr->name,
+							node_ptr->name);
 
 					node_ptr->power_save_req_time = 0;
 
@@ -1679,8 +1675,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 						/* Reset comm and hostname */
 						set_node_comm_name(
 							node_ptr,
-							xstrdup(node_ptr->name),
-							xstrdup(node_ptr->name));
+							node_ptr->name,
+							node_ptr->name);
 					}
 					node_ptr->node_state =
 						NODE_STATE_FUTURE;
@@ -3143,6 +3139,9 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			node_ptr,
 			comm_name ? comm_name : hostname,
 			hostname);
+
+		xfree(comm_name);
+		xfree(hostname);
 	}
 
 	return error_code;
@@ -4532,11 +4531,14 @@ extern bool waiting_for_node_power_down(node_record_t *node_ptr)
 extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
 			       char *hostname)
 {
+	char *new_comm_name = xstrdup(comm_name);
+	char *new_hostname = xstrdup(hostname);
+
 	xfree(node_ptr->comm_name);
-	node_ptr->comm_name = comm_name;
+	node_ptr->comm_name = new_comm_name;
 
 	xfree(node_ptr->node_hostname);
-	node_ptr->node_hostname = hostname;
+	node_ptr->node_hostname = new_hostname;
 
 	slurm_reset_alias(node_ptr->name,
 			  node_ptr->comm_name,
@@ -4749,9 +4751,9 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	}
 
 	set_node_comm_name(node_ptr,
-			   comm_name ? comm_name :
-			   xstrdup(reg_msg->node_name),
-			   xstrdup(reg_msg->hostname));
+			   comm_name ? comm_name : reg_msg->node_name,
+			   reg_msg->hostname);
+	xfree(comm_name);
 
 	node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
 	update_feature_list(avail_feature_list, node_ptr->features,

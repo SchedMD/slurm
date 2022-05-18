@@ -2340,8 +2340,6 @@ static int _restore_node_state(int recover,
 			set_node_comm_name(node_ptr,
 					   old_node_ptr->comm_name,
 					   old_node_ptr->node_hostname);
-			old_node_ptr->comm_name = NULL;
-			old_node_ptr->node_hostname = NULL;
 		}
 
 		node_ptr->last_response = old_node_ptr->last_response;

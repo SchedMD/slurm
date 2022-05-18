@@ -2759,13 +2759,13 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 
 			set_node_comm_name(
 				node_ptr,
-				comm_name ? comm_name :
-					    xstrdup(reg_msg->node_name),
-				xstrdup(reg_msg->node_name));
+				comm_name ? comm_name : reg_msg->node_name,
+				reg_msg->node_name);
 
 			node_ptr->node_state |= NODE_STATE_DYNAMIC_FUTURE;
 
 			bit_clear(future_node_bitmap, node_ptr->index);
+			xfree(comm_name);
 
 			break;
 		}
