@@ -94,7 +94,6 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
 		 float.h sys/statvfs.h
 		)
 AC_HEADER_SYS_WAIT
-AC_HEADER_TIME
 AC_HEADER_STDC
 
 # Workaround for transition of autoconf/glibc issues in deprecation of the
