@@ -198,12 +198,12 @@ AC_CHECK_FUNCS( \
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
 
 dnl Skip pthread checks on macOS as support is always enabled,
-dnl and ACX_PTHREAD will inject flags that will throw spurious warnings.
+dnl and AX_PTHREAD will inject flags that will throw spurious warnings.
 case "$host" in
 *-darwin*)
 	;;
 *)
-	ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
+	AX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 	;;
 esac
 
