@@ -2,10 +2,11 @@
 
 <h1>nss_slurm</h1>
 
-<p>nss_slurm is an optional NSS plugin that can permit passwd and group
+<p>nss_slurm is an optional NSS plugin that can permit passwd, group and
+cloud node host
 resolution for a job on the compute node to be serviced through the local
 slurmstepd process, rather than through some alternate network-based service
-such as LDAP, SSSD, or NSLCD.</p>
+such as LDAP, DNS, SSSD, or NSLCD.</p>
 
 <p>When enabled on the cluster, for each job, the job's user will have their
 full <b>struct passwd</b> info &mdash; username, uid, primary gid, gecos info,
@@ -20,6 +21,12 @@ an abbreviated view of <b>struct group</b> will be provided. Within a given
 process, the response will include only those groups that the user belongs to,
 but with only the user themselves listed as a member. The full list of group
 members is not provided.</p>
+
+<p>For host information &mdash; from the
+<b>gethostbyname()</b>/<b>gethostbyname</b> system calls &mdash;,
+an abbreviated view of <b>struct hostent</b> will be provided. Within a given
+process, the response will include only the cloud hosts that belong to
+allocation.</p>
 
 <h2 id="INSTALLATION">Installation
 <a class="slurm_link" href="#INSTALLATION"></a>
@@ -129,6 +136,10 @@ group database in <b>/etc/nsswitch.conf</b>. It is recommended that
 the sequence in which the NSS databases will be queried, and this ensures Slurm
 handles the request if able before submitting the query to other sources.</p>
 
+<p>To enable cloud node name resolution <b>slurm</b> needs to be added to the
+to hosts database in <b>/etc/nsswitch.conf</b>.
+It is recommended that <b>slurm</b> is listed last.</p>
+
 <p>Once enabled, test it by launching <b>getent</b> queries such as:</p>
 
 <pre>
@@ -159,6 +170,6 @@ overwhelm the underlying directory services.</p>
 with --enable-multiple-slurmd, you can specify which slurmd is used with NodeName
 and SlurmdSpoolDir parameters in the <b>nss_slurm.conf</b> file.</p>
 
-<p style="text-align:center;">Last modified 1 March 2022</p>
+<p style="text-align:center;">Last modified 19 May 2022</p>
 
 <!--#include virtual="footer.txt"-->
