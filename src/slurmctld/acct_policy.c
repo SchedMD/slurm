@@ -4447,6 +4447,58 @@ job_failed:
 	return false;
 }
 
+static void _get_accrue_limits(job_record_t *job_ptr,
+			       slurmdb_used_limits_t *used_limits_acct,
+			       slurmdb_used_limits_t *used_limits_user,
+			       uint32_t *max_jobs_accrue_ptr,
+			       int *create_cnt_ptr)
+{
+	slurmdb_assoc_rec_t *assoc_ptr;
+	bool parent = false;
+
+	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
+	xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
+
+	if (job_ptr->qos_ptr)
+		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
+				       job_ptr->qos_ptr->grp_jobs_accrue,
+				       job_ptr->qos_ptr->usage->accrue_cnt);
+	if (used_limits_acct)
+		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
+				       job_ptr->qos_ptr->max_jobs_accrue_pa,
+				       used_limits_acct->accrue_cnt);
+
+	if (used_limits_user)
+		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
+				       job_ptr->qos_ptr->max_jobs_accrue_pu,
+				       used_limits_user->accrue_cnt);
+
+	assoc_ptr = job_ptr->assoc_ptr;
+	while (assoc_ptr) {
+		if (*max_jobs_accrue_ptr != INFINITE)
+			break;
+
+		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
+				       assoc_ptr->grp_jobs_accrue,
+				       assoc_ptr->usage->accrue_cnt);
+		/*
+		 * We don't need to look at the regular limits for
+		 * parents since we have pre-propogated them, so just
+		 * continue with the next parent
+		 */
+		if (!parent)
+			_get_accrue_create_cnt(max_jobs_accrue_ptr,
+					       create_cnt_ptr,
+					       assoc_ptr->max_jobs_accrue,
+					       assoc_ptr->usage->accrue_cnt);
+
+		/* now go up the hierarchy */
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+		parent = true;
+	}
+
+}
+
 extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 					  bool assoc_mgr_locked)
 {
@@ -4460,7 +4512,6 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	uint32_t max_jobs_accrue = INFINITE;
 	int create_cnt = 0, i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
-	bool parent = false;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -4554,41 +4605,8 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	} else if (!IS_JOB_PENDING(job_ptr))
 		goto endit;
 
-	if (qos_ptr)
-		_get_accrue_create_cnt(&max_jobs_accrue, &create_cnt,
-				       qos_ptr->grp_jobs_accrue,
-				       qos_ptr->usage->accrue_cnt);
-	if (used_limits_acct)
-		_get_accrue_create_cnt(&max_jobs_accrue, &create_cnt,
-				       qos_ptr->max_jobs_accrue_pa,
-				       used_limits_acct->accrue_cnt);
-
-	if (used_limits_user)
-		_get_accrue_create_cnt(&max_jobs_accrue, &create_cnt,
-				       qos_ptr->max_jobs_accrue_pu,
-				       used_limits_user->accrue_cnt);
-
-	assoc_ptr = job_ptr->assoc_ptr;
-	while (assoc_ptr) {
-		if (max_jobs_accrue != INFINITE)
-			break;
-
-		_get_accrue_create_cnt(&max_jobs_accrue, &create_cnt,
-				       assoc_ptr->grp_jobs_accrue,
-				       assoc_ptr->usage->accrue_cnt);
-		/* We don't need to look at the regular limits for
-		 * parents since we have pre-propogated them, so just
-		 * continue with the next parent
-		 */
-		if (!parent)
-			_get_accrue_create_cnt(&max_jobs_accrue, &create_cnt,
-					       assoc_ptr->max_jobs_accrue,
-					       assoc_ptr->usage->accrue_cnt);
-
-		/* now go up the hierarchy */
-		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
-		parent = true;
-	}
+	_get_accrue_limits(job_ptr, used_limits_acct, used_limits_user,
+			   &max_jobs_accrue, &create_cnt);
 
 	/* No limit (or there is space to accrue) */
 	if ((max_jobs_accrue == INFINITE) ||
