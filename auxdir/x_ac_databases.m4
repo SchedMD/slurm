@@ -54,11 +54,17 @@ AC_DEFUN([X_AC_DATABASES],
 			save_LIBS="$LIBS"
        			CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
 			LIBS="$MYSQL_LIBS $save_LIBS"
-			AC_TRY_LINK([#include <mysql.h>],[
-						MYSQL mysql;
-						(void) mysql_init(&mysql);
-						(void) mysql_close(&mysql);
-					],
+			AC_LINK_IFELSE(
+				[AC_LANG_PROGRAM(
+					 [[
+					   #include <mysql.h>
+					 ]],
+					 [[
+					   MYSQL mysql;
+					   (void) mysql_init(&mysql);
+					   (void) mysql_close(&mysql);
+					 ]],
+				)],
 				[ac_have_mysql="yes"],
 				[ac_have_mysql="no"])
 			CFLAGS="$save_CFLAGS"

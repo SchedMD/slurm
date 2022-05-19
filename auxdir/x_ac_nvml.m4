@@ -21,11 +21,18 @@ AC_DEFUN([X_AC_NVML],
           # Check indirectly that CUDA 11.1+ was installed to see if we
 	  # can build NVML MIG code. Do this by checking for the existence of
 	  # gpuInstanceSliceCount in the nvmlDeviceAttributes_t struct.
-	  AC_TRY_LINK([#include <nvml.h>],
-		      [nvmlDeviceAttributes_t attributes;
-		       attributes.gpuInstanceSliceCount = 0;
-		      ],
-		      [ac_mig_support=yes], [ac_mig_support=no])
+	  AC_LINK_IFELSE(
+	      [AC_LANG_PROGRAM(
+		   [[
+		     #include <nvml.h>
+		   ]],
+		   [[
+		     nvmlDeviceAttributes_t attributes;
+		     attributes.gpuInstanceSliceCount = 0;
+		   ]],
+	       )],
+	      [ac_mig_support=yes],
+	      [ac_mig_support=no])
       fi
   }
 

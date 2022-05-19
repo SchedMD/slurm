@@ -34,14 +34,20 @@ AC_DEFUN([X_AC_LUA],
 	  CFLAGS="$CFLAGS $lua_CFLAGS"
 	  LIBS="$LIBS $lua_LIBS"
 	  AC_MSG_CHECKING([for whether we can link to liblua])
-	  AC_TRY_LINK(
-		[#include <lua.h>
-                 #include <lauxlib.h>
-		 #include <lualib.h>
-		],
-		[lua_State *L = luaL_newstate (); luaL_openlibs(L);
-		],
-		[], [x_ac_have_lua="no"])
+	  AC_LINK_IFELSE(
+		  [AC_LANG_PROGRAM(
+			   [[
+			     #include <lua.h>
+			     #include <lauxlib.h>
+			     #include <lualib.h>
+			   ]],
+			   [[
+			     lua_State *L = luaL_newstate();
+			     luaL_openlibs(L);
+			   ]],
+		   )],
+		  [],
+		  [x_ac_have_lua="no"])
 
 	  AC_MSG_RESULT([$x_ac_have_lua $x_ac_lua_pkg_name])
 	  if test "x$x_ac_have_lua" = "xno"; then

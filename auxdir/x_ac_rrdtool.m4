@@ -37,9 +37,18 @@ AC_DEFUN([X_AC_RRDTOOL],
             CPPFLAGS="-I$d/include $CPPFLAGS"
             _x_ac_rrdtool_libs_save="$LIBS"
             LIBS="-L$d/$bit -lrrd $LIBS"
-            AC_TRY_LINK([#include <rrd.h>],
-              [rrd_value_t *rrd_data;] [rrd_info_t *rrd_info;] [ rrd_test_error();],
-              AS_VAR_SET(x_ac_cv_rrdtool_dir, $d),
+            AC_LINK_IFELSE(
+              [AC_LANG_PROGRAM(
+                 [[
+                   #include <rrd.h>
+                 ]],
+                 [[
+                   rrd_value_t *rrd_data;
+                   rrd_info_t *rrd_info;
+                   rrd_test_error();
+                 ]],
+               )],
+              [AS_VAR_SET(x_ac_cv_rrdtool_dir, $d)],
               [])
             CPPFLAGS="$_x_ac_rrdtool_cppflags_save"
             LIBS="$_x_ac_rrdtool_libs_save"

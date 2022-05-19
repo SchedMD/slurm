@@ -38,14 +38,22 @@ AC_DEFUN([X_AC_FREEIPMI],
             CPPFLAGS="-I$d/include $CPPFLAGS"
             _x_ac_freeipmi_libs_save="$LIBS"
             LIBS="-L$d/$bit -lipmimonitoring -lfreeipmi $LIBS"
-            AC_TRY_LINK([#include <freeipmi/freeipmi.h>
-	      #include <ipmi_monitoring.h>
-	      #include <ipmi_monitoring_bitmasks.h>],
-              [ipmi_ctx_t ipmi_ctx = ipmi_ctx_create();]
-	      [int err;]
-              [unsigned int flag = 0;]
-              [return ipmi_monitoring_init (flag, &err);],
-              AS_VAR_SET(x_ac_cv_freeipmi_dir, $d), [])
+            AC_LINK_IFELSE(
+              [AC_LANG_PROGRAM(
+                [[
+                  #include <freeipmi/freeipmi.h>
+                  #include <ipmi_monitoring.h>
+                  #include <ipmi_monitoring_bitmasks.h>
+                ]],
+                [[
+                  ipmi_ctx_t ipmi_ctx = ipmi_ctx_create();
+                  int err;
+                  unsigned int flag = 0;
+                  return ipmi_monitoring_init (flag, &err);
+                ]],
+              )],
+              [AS_VAR_SET(x_ac_cv_freeipmi_dir, $d)],
+              [])
             CPPFLAGS="$_x_ac_freeipmi_cppflags_save"
             LIBS="$_x_ac_freeipmi_libs_save"
             test -n "$x_ac_cv_freeipmi_dir" && break
