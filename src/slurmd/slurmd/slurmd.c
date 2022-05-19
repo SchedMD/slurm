@@ -2230,7 +2230,6 @@ static int _drain_node(char *reason)
 	update_node_msg.node_names = conf->node_name;
 	update_node_msg.node_state = NODE_STATE_DRAIN;
 	update_node_msg.reason = reason;
-	update_node_msg.reason_uid = getuid();
 	update_node_msg.weight = NO_VAL;
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_UPDATE_NODE;

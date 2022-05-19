@@ -177,11 +177,6 @@ scontrol_update_node (int argc, char **argv)
 				reason_str[len] = '\0';
 
 			node_msg.reason = reason_str;
-			if ((getlogin() == NULL) ||
-			    (uid_from_string(getlogin(),
-					     &node_msg.reason_uid) < 0)) {
-				node_msg.reason_uid = getuid();
-			}
 			update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {
@@ -341,11 +336,6 @@ scontrol_update_front_end (int argc, char **argv)
 				reason_str[len] = '\0';
 
 			front_end_msg.reason = reason_str;
-			if ((getlogin() == NULL) ||
-			    (uid_from_string(getlogin(),
-					     &front_end_msg.reason_uid) < 0)) {
-				front_end_msg.reason_uid = getuid();
-			}
 			update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {

@@ -2298,7 +2298,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 				update_node_msg.node_state = NODE_STATE_DRAIN;
 				update_node_msg.reason =
 					"batch job complete failure";
-				error_code = update_front_end(&update_node_msg);
+				error_code = update_front_end(&update_node_msg,
+							      msg->auth_uid);
 			}
 #else
 			error_code = drain_nodes(comp_msg->node_name,
@@ -4206,7 +4207,8 @@ static void _slurm_rpc_update_front_end(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
 		lock_slurmctld(node_write_lock);
-		error_code = update_front_end(update_front_end_msg_ptr);
+		error_code = update_front_end(update_front_end_msg_ptr,
+					      msg->auth_uid);
 		unlock_slurmctld(node_write_lock);
 		END_TIMER2("_slurm_rpc_update_front_end");
 	}
@@ -4293,7 +4295,7 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
 		lock_slurmctld(node_write_lock);
-		error_code = update_node(update_node_msg_ptr);
+		error_code = update_node(update_node_msg_ptr, msg->auth_uid);
 		unlock_slurmctld(node_write_lock);
 		END_TIMER2("_slurm_rpc_update_node");
 	}

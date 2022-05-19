@@ -2518,10 +2518,11 @@ extern void update_logging(void);
 /*
  * update_node - update the configuration data for one or more nodes
  * IN update_node_msg - update node request
+ * IN auth_uid - UID that issued the update
  * RET 0 or error code
  * global: node_record_table_ptr - pointer to global node table
  */
-extern int update_node ( update_node_msg_t * update_node_msg )  ;
+extern int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid);
 
 /* Update nodes accounting usage data */
 extern void update_nodes_acct_gather_data(void);

@@ -654,8 +654,7 @@ extern char *drain_nodes_user(char *cmd_ptr, uid_t cmd_uid,
 	update_node_msg.node_names = node_names;
 	update_node_msg.node_state = NODE_STATE_FAIL;
 	update_node_msg.reason = reason;
-	update_node_msg.reason_uid = cmd_uid;
-	rc = update_node(&update_node_msg);
+	rc = update_node(&update_node_msg, cmd_uid);
 	if (rc) {
 		/* Log it but send back only the error with the version.
 		 * xstrfmtcat(resp, "%s EUPDNODE %s", SLURM_VERSION_STRING,
