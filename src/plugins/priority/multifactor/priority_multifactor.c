@@ -1483,6 +1483,7 @@ static void _filter_job(job_record_t *job_ptr,
 			 * Don't xstrdup dup anything here, the list is freed
 			 * with xfree_ptr.
 			 */
+			obj->account = job_ptr->account;
 			obj->job_id = job_ptr->job_id;
 			obj->partition = job_part_ptr->name;
 			obj->user_id = job_ptr->user_id;
@@ -1521,6 +1522,7 @@ static void _filter_job(job_record_t *job_ptr,
 			 * Don't xstrdup dup anything here, the list is freed
 			 * with xfree_ptr.
 			 */
+			obj->account = job_ptr->account;
 			obj->job_id = job_ptr->job_id;
 			obj->partition = job_part_ptr->name;
 			obj->user_id = job_ptr->user_id;

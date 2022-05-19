@@ -102,13 +102,13 @@ subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option 
 
 set soption "--long"
 set output [run_command_output -fail "$sprio $soption -j $jobid2"]
-subtest {[regexp "JOBID PARTITION     USER   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE                 TRES" $output]} "Verify $soption option shows the right header"
-subtest {[regexp "$jobid2.*$number *$number *$number *$number *$number *$number *$number" $output]} "Verify $soption option shows the right values"
+subtest {[regexp "JOBID PARTITION     USER  ACCOUNT   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE                 TRES" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2.*$number *$number *$number *$number *$number *$number *$number *$number" $output]} "Verify $soption option shows the right values"
 
 set soption "-l"
 set output [run_command_output -fail "$sprio $soption -j $jobid2"]
-subtest {[regexp "JOBID PARTITION     USER   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE                 TRES" $output]} "Verify $soption option shows the right header"
-subtest {[regexp "$jobid2.*$number *$number *$number *$number *$number *$number *$number" $output]} "Verify $soption option shows the right values"
+subtest {[regexp "JOBID PARTITION     USER  ACCOUNT   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE                 TRES" $output]} "Verify $soption option shows the right header"
+subtest {[regexp "$jobid2.*$number *$number *$number *$number *$number *$number *$number *$number" $output]} "Verify $soption option shows the right values"
 
 set soption "--norm"
 set output [run_command_output -fail "$sprio $soption -j $jobid2"]

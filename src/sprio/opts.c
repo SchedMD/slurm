@@ -326,6 +326,11 @@ extern int parse_format( char* format )
 						field_size,
 						right_justify,
 						suffix );
+		else if (field[0] == 'o')
+			job_format_add_account(params.format_list,
+					       field_size,
+					       right_justify,
+					       suffix);
 		else if (field[0] == 'p')
 			job_format_add_part_priority_normalized(params.format_list,
 								field_size,

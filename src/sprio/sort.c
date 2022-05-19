@@ -55,6 +55,7 @@ static bool sort_descend;
 static int _sort_by_cluster_name(void *v1, void *v2);
 static int _sort_by_job_id(void *v1, void *v2);
 static int _sort_by_nice_level(void *v1, void *v2);
+static int _sort_by_account(void *v1, void *v2);
 static int _sort_by_partition(void *v1, void *v2);
 static int _sort_by_username(void *v1, void *v2);
 static int _sort_by_age_prio(void *v1, void *v2);
@@ -99,6 +100,9 @@ extern void sort_job_list(List job_list)
 			break;
 		case 'N': /* sort by nice level ??? */
 			list_sort(job_list, _sort_by_nice_level);
+			break;
+		case 'o': /* sort by account name */
+			list_sort(job_list, _sort_by_account);
 			break;
 		case 'r': /* sort by partition name */
 			list_sort(job_list, _sort_by_partition);
@@ -194,6 +198,17 @@ static int _sort_by_nice_level(void *v1, void *v2)
 	_get_job_prio_from_void(&job1, &job2, v1, v2);
 
 	cmp = CMP_INT(job1->nice, job2->nice);
+	return COND_NEGATE(sort_descend, cmp);
+}
+
+static int _sort_by_account(void *v1, void *v2)
+{
+	int cmp;
+	priority_factors_object_t *job1, *job2;
+
+	_get_job_prio_from_void(&job1, &job2, v1, v2);
+
+	cmp = xstrcmp(job1->account, job2->account);
 	return COND_NEGATE(sort_descend, cmp);
 }
 

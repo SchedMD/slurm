@@ -4857,6 +4857,7 @@ extern void slurm_destroy_priority_factors_object(void *object)
 	if (!obj_ptr)
 		return;
 
+	xfree(obj_ptr->account);
 	xfree(obj_ptr->cluster_name);
 	xfree(obj_ptr->partition);
 	xfree(obj_ptr->priority_tres);

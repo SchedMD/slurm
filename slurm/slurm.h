@@ -1875,6 +1875,7 @@ typedef struct job_info {
 typedef slurm_job_info_t job_info_t;
 
 typedef struct priority_factors_object {
+	char *account;
 	char *cluster_name;	/* Cluster name ONLY set in federation */
 	uint32_t job_id;
 	char *partition;

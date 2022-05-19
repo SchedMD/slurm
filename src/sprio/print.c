@@ -190,6 +190,19 @@ int job_format_add_function(List list, int width, bool right, char *suffix,
 	return SLURM_SUCCESS;
 }
 
+int _print_account(priority_factors_object_t *job, int width, bool right,
+		     char *suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("ACCOUNT", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_str("", width, right, true);
+	else
+		_print_str(job->account, width, right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
 
 int _print_job_job_id(priority_factors_object_t * job, int width,
 		      bool right, char* suffix)

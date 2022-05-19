@@ -587,6 +587,7 @@ static void _pack_priority_factors_object(void *in, buf_t *buffer,
 	xassert(object);
 
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		packstr(object->account, buffer);
 		pack32(object->job_id, buffer);
 		pack32(object->user_id, buffer);
 
@@ -645,6 +646,7 @@ static int _unpack_priority_factors_object(void **object, buf_t *buffer,
 	*object = (void *) object_ptr;
 
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpackstr(&object_ptr->account, buffer);
 		safe_unpack32(&object_ptr->job_id, buffer);
 		safe_unpack32(&object_ptr->user_id, buffer);
 
