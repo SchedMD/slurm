@@ -1759,7 +1759,7 @@ void bit_consolidate(bitstr_t *b)
 {
 	int set_count = bit_set_count(b);
 
-	if (set_count) {
+	if (set_count && (set_count < bit_size(b))) {
 		bit_nclear(b, set_count, bit_size(b) - 1);
 		bit_nset(b, 0, set_count - 1);
 	}
