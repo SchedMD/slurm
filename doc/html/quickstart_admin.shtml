@@ -645,16 +645,16 @@ that represent both the major Slurm release and maintenance release level.
 The first two parts combine together to represent the major release, and match
 the year and month of that major release. The third number in the version
 designates a specific maintenance level:
-year.month.maintenance-release (e.g. 20.02.2 is major Slurm release 20.02, and
+year.month.maintenance-release (e.g. 21.08.2 is major Slurm release 21.08, and
 maintenance version 2).
 Thus version 21.08.x was initially released in August 2021.
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major release number changes, which typically happens about every nine
 months. A list of most recent major Slurm releases is shown below.</p>
 <ul>
-<li>20.02.x (Released February 2020)</li>
 <li>20.11.x (Released November 2020)</li>
 <li>21.08.x (Released August 2021)</li>
+<li>22.05.x (Released May 2022)</li>
 </ul>
 
 <p>Slurm's MPI libraries may also change if the major release number changes,
@@ -662,8 +662,8 @@ requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
 Slurm daemons will support RPCs and state files from the two previous major
-releases (e.g. a version 21.08.x SlurmDBD will support slurmctld daemons and
-commands with a version of 21.08.x, 20.11.x, or 20.02.x).
+releases (e.g. a version 22.05.x SlurmDBD will support slurmctld daemons and
+commands with a version of 22.05.x, 21.08.x or 20.11.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the mainenance release number generally represent only bug fixes,
@@ -672,7 +672,7 @@ but may also include minor enhancements.</p>
 <p>If the SlurmDBD daemon is used, it must be at the same or higher major
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
-from 20.02.x to 20.11.x) <b>always upgrade the SlurmDBD daemon first</b>.
+from 21.08.x to 22.05.x) <b>always upgrade the SlurmDBD daemon first</b>.
 Database table changes may be required for the upgrade, for example
 adding new fields to existing tables.
 If the database contains a large number of entries, <b>the SlurmDBD daemon
@@ -712,14 +712,14 @@ although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
 Also see the note above about reverse compatibility.</p>
 
-<p>Almost every new major release of Slurm (e.g. 20.02.x to 20.11.x)
+<p>Almost every new major release of Slurm (e.g. 20.11.x to 21.08.x)
 involves changes to the state files with new data structures, new options, etc.
 Slurm permits upgrades to a new major release from the past two major releases,
-which happen every nine months (e.g. 20.02.x or 20.11.x to 21.08.x) without loss of
+which happen every nine months (e.g. 20.11.x or 21.08.x to 22.05.x) without loss of
 jobs or other state information.
 State information from older versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
-State files are <b>not</b> recognized when downgrading (e.g. from 20.11.x to 20.02.x)
+State files are <b>not</b> recognized when downgrading (e.g. from 21.08.x to 20.11.x)
 and will be discarded, resulting in loss of all running and pending jobs.
 For this reason, creating backup copies of state files (as described below)
 can be of value.
@@ -731,7 +731,7 @@ recover the jobs.
 Jobs submitted under the new version will not be in those state files,
 but it can let you recover most jobs.
 An exception to this is that jobs may be lost when installing new pre-release
-versions (e.g. 20.02.0-pre1 to 20.02.0-pre2).
+versions (e.g. 22.05.0-pre1 to 22.05.0-pre2).
 Developers will try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
@@ -825,6 +825,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 27 April 2022</p>
+<p style="text-align:center;">Last modified 19 May 2022</p>
 
 <!--#include virtual="footer.txt"-->
