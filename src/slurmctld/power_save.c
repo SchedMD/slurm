@@ -530,8 +530,8 @@ static void _do_power_work(time_t now)
 			if (IS_NODE_CLOUD(node_ptr) && cloud_reg_addrs) {
 				/* Reset hostname and addr to node's name. */
 				set_node_comm_name(node_ptr,
-						   xstrdup(node_ptr->name),
-						   xstrdup(node_ptr->name));
+						   node_ptr->name,
+						   node_ptr->name);
 			}
 
 			if (!IS_NODE_DOWN(node_ptr) &&
