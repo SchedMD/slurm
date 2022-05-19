@@ -669,7 +669,7 @@ relinquish:
 	 */
 	rc = 1;
 	if (rc_pid != -1) {
-		if (!allocation_revoked && WIFEXITED(status)) {
+		if (WIFEXITED(status)) {
 			rc = WEXITSTATUS(status);
 		} else if (WIFSTOPPED(status)) {
 			/* Terminate stopped child process */
