@@ -47,7 +47,7 @@ dnl
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_MAKE_SET
-AC_PROG_LIBTOOL
+LT_INIT
 PKG_PROG_PKG_CONFIG([0.9.0])
 
 dnl Find objcopy and setup path
