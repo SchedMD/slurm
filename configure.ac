@@ -217,8 +217,11 @@ AX_LIB_HDF5()
 AM_CONDITIONAL(BUILD_HDF5, test "$with_hdf5" = "yes")
 # Some systems don't configure HDF5 with --with-default-api-version=v18
 # which creates problems for slurm because slurm uses the 1.8 API.
-# By defining this CPP macro we get the 1.8 API.
-AC_DEFINE([H5_USE_18_API], [1], [Make sure we get the 1.8 HDF5 API])
+# For hdf5 1.8, define H5_NO_DEPRECATED_SYMBOLS, otherwise use H5_USE_18_API
+# to request the right api version.
+AX_COMPARE_VERSION($[HDF5_VERSION], [eq0], [1.8],
+	[AC_DEFINE([H5_NO_DEPRECATED_SYMBOLS], [1], [Use the 1.8 HDF5 API])],
+	[AC_DEFINE([H5_USE_18_API], [1], [Make sure we get the 1.8 HDF5 API])])
 
 X_AC_LZ4
 X_AC_HWLOC
