@@ -306,7 +306,7 @@ static data_for_each_cmd_t _per_job_param(const char *key, const data_t *data,
 	if ((rc = slurm_process_option_data(args->opt, p->optval, data,
 					    errors))) {
 		resp_error(errors, rc, "slurm_process_option_data",
-			   "Unknown key \"%s\"", lkey);
+			   "Unable to process key \"%s\"", lkey);
 		return DATA_FOR_EACH_FAIL;
 	}
 
