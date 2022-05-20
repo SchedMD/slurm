@@ -169,26 +169,7 @@ proc test_gpus {node_name} {
 	subtest {![wait_for_job $job_id RUNNING]} "Job ($job_id) should start"
 
 	# Check all GRES of the node were allocated on the job
-	set gres_dict_job  [count_gres [get_job_param  $job_id "JOB_GRES"]]
-	set gres_dict_node [count_gres [get_node_param $node_name "Gres"]]
-
-	dict for {gres_name gres_count} $gres_dict_node {
-		# We don't want mps to be allocated with --exclusive
-		if {$gres_name eq "mps" || $gres_name eq "shard"} {
-			if {[dict exists $gres_dict_job $gres_name]} {
-				subfail "Gres ($gres_name) on node ($node_name) allocated on job ($job_id) with --exclusive but it shouldn't be"
-			} else {
-				subpass "Gres ($gres_name) on node ($node_name) was not allocated on job ($job_id) with --exclusive, this is expected"
-			}
-		} elseif {![dict exists $gres_dict_job $gres_name]} {
-			subfail "Gres ($gres_name) on node ($node_name) not allocated on job ($job_id) with --exclusive"
-		} else {
-			subpass "Gres ($gres_name) on node ($node_name) was allocated on job ($job_id) with --exclusive"
-
-			set gres_count_job [dict get $gres_dict_job $gres_name]
-			subtest { $gres_count_job == $gres_count } "Gres ($gres_name) on node ($node_name) fully allocated on job ($job_id) with --exclusive" "$gres_count_job != $gres_count"
-		}
-	}
+	check_exclusive_gres $job_id $node_name
 }
 
 testproc test_cpus
