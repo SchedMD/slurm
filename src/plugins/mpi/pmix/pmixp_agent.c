@@ -361,8 +361,13 @@ int pmixp_abort_agent_start(char ***env)
 	int abort_server_socket = -1;
 	slurm_addr_t abort_server;
 	eio_obj_t *obj;
+	uint16_t *ports;
 
-	if ((abort_server_socket = slurm_init_msg_engine_port(0)) < 0) {
+	if ((ports = slurm_get_srun_port_range()))
+		abort_server_socket = slurm_init_msg_engine_ports(ports);
+	else
+		abort_server_socket = slurm_init_msg_engine_port(0);
+	if (abort_server_socket < 0) {
 		PMIXP_ERROR("slurm_init_msg_engine_port() failed: %m");
 		return SLURM_ERROR;
 	}
