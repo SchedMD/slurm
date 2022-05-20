@@ -2556,7 +2556,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	char *orig_features = NULL, *orig_features_act = NULL;
 	uint32_t node_flags;
 	time_t now = time(NULL);
-	bool orig_node_avail;
+	bool orig_node_avail, was_invalid_reg;
 	static uint32_t cr_flag = NO_VAL;
 	static int node_features_cnt = 0;
 	int sockets1, sockets2;	/* total sockets on node */
@@ -2839,16 +2839,19 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 						      now);
 	}
 
+	was_invalid_reg = IS_NODE_INVALID_REG(node_ptr);
 	node_ptr->node_state &= ~NODE_STATE_INVALID_REG;
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
 	if (error_code) {
 		node_ptr->node_state |= NODE_STATE_INVALID_REG;
+		if (!was_invalid_reg)
+			error("Setting node %s state to INVAL with reason:%s",
+			       reg_msg->node_name, reason_down);
+
 		if (!IS_NODE_DOWN(node_ptr)
 			&& !IS_NODE_DRAIN(node_ptr)
 			&& ! IS_NODE_FAIL(node_ptr)) {
-			error("Setting node %s state to DRAIN with reason:%s",
-			       reg_msg->node_name, reason_down);
 			drain_nodes(reg_msg->node_name, reason_down,
 			            slurm_conf.slurm_user_id);
 		}

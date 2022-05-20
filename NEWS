@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld segfault when a step requests a gres without a file.
  -- Fix slurmctld segfault when cleaning up an overlapping step.
  -- Dynamic node fixes and updates.
+ -- Added error logging when a node goes into an invalid state so that the user
+    can still see the reason even if the user set a custom reason beforehand.
 
 * Changes in Slurm 22.05.0rc1
 =============================
