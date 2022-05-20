@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Added error logging when a node goes into an invalid state so that the user
     can still see the reason even if the user set a custom reason beforehand.
  -- Remove redundant message when libdbus is found during configure.
+ -- Fix pmix to honor SrunPortRange.
 
 * Changes in Slurm 22.05.0rc1
 =============================

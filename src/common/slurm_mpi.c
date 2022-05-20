@@ -562,7 +562,6 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 
 extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 {
-	xassert(state);
 	xassert(g_context);
 	xassert(ops);
 
