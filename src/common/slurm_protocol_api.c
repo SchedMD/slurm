@@ -1444,8 +1444,17 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	ret_data_info_t *ret_data_info = NULL;
 	List ret_list = NULL;
 	int orig_timeout = timeout;
+	char *peer = NULL;
 
 	xassert(fd >= 0);
+
+	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
+		/*
+		* cache to avoid resolving multiple times
+		* this call is expensive
+		*/
+		peer = fd_resolve_peer(fd);
+	}
 
 	slurm_msg_t_init(&msg);
 	msg.conn_fd = fd;
@@ -1464,19 +1473,19 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 		steps--;
 	}
 
-	log_flag(NET, "%s: orig_timeout was %d we have %d steps and a timeout of %d",
-		 __func__, orig_timeout, steps, timeout);
+	log_flag(NET, "%s: [%s] orig_timeout was %d we have %d steps and a timeout of %d",
+		 __func__, peer, orig_timeout, steps, timeout);
 	/*
 	 * Compare to the orig_timeout here, because that is what we are
 	 * going to wait for each step.
 	 */
 	if (orig_timeout >= (slurm_conf.msg_timeout * 10000)) {
-		log_flag(NET, "%s: Sending a message with timeouts greater than %d seconds, requested timeout is %d seconds",
-			 __func__, (slurm_conf.msg_timeout * 10),
+		log_flag(NET, "%s: [%s] Sending a message with timeouts greater than %d seconds, requested timeout is %d seconds",
+			 __func__, peer, (slurm_conf.msg_timeout * 10),
 			 (timeout / 1000));
 	} else if (orig_timeout < 1000) {
-		log_flag(NET, "%s: Sending a message with a very short timeout of %d milliseconds, each step in the tree has %d milliseconds",
-			 __func__, timeout, orig_timeout);
+		log_flag(NET, "%s: [%s] Sending a message with a very short timeout of %d milliseconds, each step in the tree has %d milliseconds",
+			 __func__, peer, timeout, orig_timeout);
 	}
 
 	/*
@@ -1490,7 +1499,7 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 		goto total_return;
 	}
 
-	log_flag_hex(NET_RAW, buf, buflen, "%s: read", __func__);
+	log_flag_hex(NET_RAW, buf, buflen, "%s: [%s] read", __func__, peer);
 	buffer = create_buf(buf, buflen);
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
@@ -1502,11 +1511,11 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	if (check_header_version(&header) < 0) {
 		slurm_addr_t resp_addr;
 		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("%s: Invalid Protocol Version %u from at %pA",
-			      __func__, header.version, &resp_addr);
+			error("%s: [%s] Invalid Protocol Version %u from at %pA",
+			      __func__, peer, header.version, &resp_addr);
 		} else {
-			error("%s: Invalid Protocol Version %u from problem connection: %m",
-			      __func__, header.version);
+			error("%s: [%s] Invalid Protocol Version %u from problem connection: %m",
+			      __func__, peer, header.version);
 		}
 
 		free_buf(buffer);
@@ -1525,8 +1534,12 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 
 	/* Forward message to other nodes */
 	if (header.forward.cnt > 0) {
-		error("%s: We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
-		      __func__);
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		      __func__, peer);
 	}
 
 	/*
@@ -1534,7 +1547,11 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	 * connections have been previously verified in the opposite direction.
 	 */
 	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
-		error("%s: auth_g_unpack: %m", __func__);
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] auth_g_unpack: %m", __func__, peer);
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
@@ -1568,8 +1585,12 @@ total_return:
 			ret_data_info->data = NULL;
 			list_push(ret_list, ret_data_info);
 		}
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
 
-		error("%s: failed: %s", __func__, slurm_strerror(rc));
+		error("%s: [%s] failed: %s",
+		      __func__, peer, slurm_strerror(rc));
 		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		if (!ret_list)
@@ -1583,6 +1604,7 @@ total_return:
 	}
 
 	errno = rc;
+	xfree(peer);
 	return ret_list;
 }
 
