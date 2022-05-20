@@ -55,12 +55,18 @@ AC_DEFUN([X_AC_DATABASES],
        			CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
 			LIBS="$MYSQL_LIBS $save_LIBS"
 			AC_LINK_IFELSE(
-			  [AC_LANG_PROGRAM([[#include <mysql.h>]],
-			     [[MYSQL mysql;
-			       (void) mysql_init(&mysql);
-			       (void) mysql_close(&mysql);]])],
-			  [ac_have_mysql="yes"],
-			  [ac_have_mysql="no"])
+				[AC_LANG_PROGRAM(
+					 [[
+					   #include <mysql.h>
+					 ]],
+					 [[
+					   MYSQL mysql;
+					   (void) mysql_init(&mysql);
+					   (void) mysql_close(&mysql);
+					 ]],
+				)],
+				[ac_have_mysql="yes"],
+				[ac_have_mysql="no"])
 			CFLAGS="$save_CFLAGS"
 			LIBS="$save_LIBS"
 			if test "$ac_have_mysql" = yes; then

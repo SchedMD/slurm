@@ -148,9 +148,6 @@
 /* Define to 1 if you have the `memfd_create' function. */
 #undef HAVE_MEMFD_CREATE
 
-/* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
-
 /* Define to 1 if NVML library has MIG support */
 #undef HAVE_MIG_SUPPORT
 
@@ -247,13 +244,16 @@
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
+/* Define to 1 if you have the <stdio.h> header file. */
+#undef HAVE_STDIO_H
+
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
 
 /* Define to 1 if you have the `strerror' function. */
 #undef HAVE_STRERROR
 
-/* Define to 1 if you have the `strerror_r' function. */
+/* Define if you have `strerror_r'. */
 #undef HAVE_STRERROR_R
 
 /* Define to 1 if you have the <strings.h> header file. */
@@ -548,7 +548,9 @@
 /* Define the project's version string. */
 #undef SLURM_VERSION_STRING
 
-/* Define to 1 if you have the ANSI C header files. */
+/* Define to 1 if all of the C90 standard headers exist (not just the ones
+   required in a freestanding environment). This macro is provided for
+   backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
 
 /* Define to 1 if strerror_r returns char *. */
@@ -559,9 +561,6 @@
 
 /* 3-dimensional architecture */
 #undef SYSTEM_DIMENSIONS
-
-/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
-#undef TIME_WITH_SYS_TIME
 
 /* Define slurm_ prefix function aliases for plugins */
 #undef USE_ALIAS
