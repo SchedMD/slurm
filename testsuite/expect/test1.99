@@ -177,6 +177,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	fail "Error waiting for job ($job_id) to start"
 }
 set match 0
+set timeout 60
 spawn $srun -t1 sleep 10
 expect {
 	-re "all ports in range" {
