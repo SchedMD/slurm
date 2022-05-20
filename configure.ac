@@ -47,7 +47,7 @@ dnl
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_MAKE_SET
-AC_PROG_LIBTOOL
+LT_INIT
 PKG_PROG_PKG_CONFIG([0.9.0])
 
 dnl Find objcopy and setup path
@@ -94,8 +94,6 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
 		 float.h sys/statvfs.h
 		)
 AC_HEADER_SYS_WAIT
-AC_HEADER_TIME
-AC_HEADER_STDC
 
 # Workaround for transition of autoconf/glibc issues in deprecation of the
 # definitions major, minor, makedev by sys/types.h vs sys/sysmacros.h
@@ -198,12 +196,12 @@ AC_CHECK_FUNCS( \
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
 
 dnl Skip pthread checks on macOS as support is always enabled,
-dnl and ACX_PTHREAD will inject flags that will throw spurious warnings.
+dnl and AX_PTHREAD will inject flags that will throw spurious warnings.
 case "$host" in
 *-darwin*)
 	;;
 *)
-	ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
+	AX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 	;;
 esac
 

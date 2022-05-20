@@ -22,11 +22,17 @@ AC_DEFUN([X_AC_NVML],
 	  # can build NVML MIG code. Do this by checking for the existence of
 	  # gpuInstanceSliceCount in the nvmlDeviceAttributes_t struct.
 	  AC_LINK_IFELSE(
-	    [AC_LANG_PROGRAM([[#include <nvml.h>]],
-	       [[nvmlDeviceAttributes_t attributes;
-	         attributes.gpuInstanceSliceCount = 0;]])],
-	    [ac_mig_support=yes],
-	    [ac_mig_support=no])
+	      [AC_LANG_PROGRAM(
+		   [[
+		     #include <nvml.h>
+		   ]],
+		   [[
+		     nvmlDeviceAttributes_t attributes;
+		     attributes.gpuInstanceSliceCount = 0;
+		   ]],
+	       )],
+	      [ac_mig_support=yes],
+	      [ac_mig_support=no])
       fi
   }
 
