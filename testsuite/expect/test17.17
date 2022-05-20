@@ -108,16 +108,4 @@ set job_id2 [submit_job -fail "-t1 -N1 -w $node_name --gres=gpu --exclusive --ou
 wait_for_job -fail $job_id2 "RUNNING"
 
 # Check all GRES of the node were allocated on the job
-set gres_dict_job  [count_gres [get_job_param  $job_id2   "JOB_GRES"]]
-set gres_dict_node [count_gres [get_node_param $node_name "Gres"]]
-
-dict for {gres_name gres_count} $gres_dict_node {
-	if {![dict exists $gres_dict_job $gres_name]} {
-		fail "Gres ($gres_name) on node ($node_name) not allocated on job ($job_id2) with --exclusive"
-	} else {
-		set gres_count_job [dict get $gres_dict_job $gres_name]
-		if { $gres_count_job != $gres_count } {
-			fail "Gres ($gres_name) on node ($node_name) not fully allocated on job ($job_id2) with --exclusive ($gres_count_job != $gres_count)"
-		}
-	}
-}
+check_exclusive_gres $job_id2 $node_name
