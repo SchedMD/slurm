@@ -4716,7 +4716,8 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 	slurmdb_used_limits_t *used_limits_user = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
-	int job_cnt;
+	int create_cnt = 0;
+	uint32_t max_jobs_accrue = INFINITE;
 	struct job_details *details_ptr = job_ptr->details;
 	time_t now = time(NULL);
 
@@ -4772,20 +4773,11 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 				job_ptr->user_id);
 	}
 
-	/*
-	 * Normally only single jobs come in here, but if we don't have any
-	 * limits the array itself comes in so we need to add it all.
-	 */
-	if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
-		job_cnt = job_ptr->array_recs->task_cnt;
-	else
-		job_cnt = 1;
+	_get_accrue_limits(job_ptr, used_limits_acct, used_limits_user,
+			   &max_jobs_accrue, &create_cnt);
+	_handle_add_accrue(job_ptr, used_limits_acct, used_limits_user,
+			   max_jobs_accrue, create_cnt, now);
 
-	_add_accrue_time_internal(assoc_ptr,
-				  qos_ptr,
-				  used_limits_acct,
-				  used_limits_user,
-				  job_cnt);
 endit:
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
