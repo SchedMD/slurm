@@ -4499,10 +4499,98 @@ static void _get_accrue_limits(job_record_t *job_ptr,
 
 }
 
+static void _handle_add_accrue(job_record_t *job_ptr,
+			       slurmdb_used_limits_t *used_limits_acct,
+			       slurmdb_used_limits_t *used_limits_user,
+			       uint32_t max_jobs_accrue,
+			       int create_cnt,
+			       time_t now)
+{
+	struct job_details *details_ptr = job_ptr->details;
+	job_record_t *old_job_ptr;
+
+	/* No limit (or there is space to accrue) */
+	if ((max_jobs_accrue == INFINITE) ||
+	    (create_cnt && (!job_ptr->array_recs ||
+			    !job_ptr->array_recs->task_cnt))) {
+		if (!details_ptr->accrue_time &&
+		    job_ptr->details->begin_time) {
+			/*
+			 * If no limit and begin_time hasn't happened yet
+			 * then set accrue_time to now.
+			 */
+			details_ptr->accrue_time =
+				((max_jobs_accrue == INFINITE) &&
+				 details_ptr->begin_time) ?
+				details_ptr->begin_time : time(NULL);
+
+			/*
+			 * If we have an array here and no limit we want to add
+			 * all the tasks in the array.
+			 */
+			if (job_ptr->array_recs &&
+			    job_ptr->array_recs->task_cnt)
+				create_cnt = job_ptr->array_recs->task_cnt;
+			else
+				create_cnt = 1;
+
+			_add_accrue_time_internal(job_ptr->assoc_ptr,
+						  job_ptr->qos_ptr,
+						  used_limits_acct,
+						  used_limits_user,
+						  create_cnt);
+		}
+
+		return;
+	}
+
+	/* Looks like we are at the limit */
+	if (!create_cnt) {
+		log_flag(ACCRUE, "%s: %pJ can't accrue, we are over a limit",
+			 __func__, job_ptr);
+		return;
+	}
+
+	create_cnt = MIN(create_cnt, job_ptr->array_recs->task_cnt);
+
+	/* How many can we spin off? */
+	for (int i = 0; i < create_cnt; i++) {
+		/*
+		 * After we split off the old_job_ptr is what we want to alter
+		 * as the job_ptr returned from job_array_post_sched will be the
+		 * master job_ptr for the array and we will use that to split
+		 * more off if needed.
+		 */
+		old_job_ptr = job_ptr;
+
+		job_array_pre_sched(job_ptr);
+		job_ptr = job_array_post_sched(job_ptr);
+
+		details_ptr = old_job_ptr->details;
+		if (!details_ptr) {
+			fatal_abort("%s: no details after split", __func__);
+			return;
+		}
+		details_ptr->accrue_time = now;
+		log_flag(ACCRUE, "%pJ is now accruing time %ld",
+			 old_job_ptr, now);
+	}
+
+	/*
+	 * Here we are ok to use all the same pointers from the main job_ptr as
+	 * an array will always have the same pointers.  If this ever changes in
+	 * the future some how we will need to address it.
+	 */
+	_add_accrue_time_internal(job_ptr->assoc_ptr,
+				  job_ptr->qos_ptr,
+				  used_limits_acct,
+				  used_limits_user,
+				  create_cnt);
+}
+
 extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 					  bool assoc_mgr_locked)
 {
-	job_record_t *old_job_ptr;
 	slurmdb_qos_rec_t *qos_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	struct job_details *details_ptr;
@@ -4510,7 +4598,7 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	slurmdb_used_limits_t *used_limits_user = NULL;
 
 	uint32_t max_jobs_accrue = INFINITE;
-	int create_cnt = 0, i, rc = SLURM_SUCCESS;
+	int create_cnt = 0, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
@@ -4608,83 +4696,8 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	_get_accrue_limits(job_ptr, used_limits_acct, used_limits_user,
 			   &max_jobs_accrue, &create_cnt);
 
-	/* No limit (or there is space to accrue) */
-	if ((max_jobs_accrue == INFINITE) ||
-	    (create_cnt && (!job_ptr->array_recs ||
-			    !job_ptr->array_recs->task_cnt))) {
-		if (!details_ptr->accrue_time &&
-		    job_ptr->details->begin_time) {
-			/*
-			 * If no limit and begin_time hasn't happened yet
-			 * then set accrue_time to now.
-			 */
-			details_ptr->accrue_time =
-				((max_jobs_accrue == INFINITE) &&
-				 details_ptr->begin_time) ?
-				details_ptr->begin_time : time(NULL);
-
-			/*
-			 * If we have an array here and no limit we want to add
-			 * all the tasks in the array.
-			 */
-			if (job_ptr->array_recs &&
-			    job_ptr->array_recs->task_cnt)
-				create_cnt = job_ptr->array_recs->task_cnt;
-			else
-				create_cnt = 1;
-
-			_add_accrue_time_internal(job_ptr->assoc_ptr,
-						  qos_ptr,
-						  used_limits_acct,
-						  used_limits_user,
-						  create_cnt);
-		}
-
-		goto endit;
-	}
-
-	/* Looks like we are at the limit */
-	if (!create_cnt) {
-		log_flag(ACCRUE, "%s: %pJ can't accrue, we are over a limit",
-			 __func__, job_ptr);
-		goto endit;
-	}
-
-	create_cnt = MIN(create_cnt, job_ptr->array_recs->task_cnt);
-
-	/* How many can we spin off? */
-	for (i = 0; i < create_cnt; i++) {
-		/*
-		 * After we split off the old_job_ptr is what we want to alter
-		 * as the job_ptr returned from job_array_post_sched will be the
-		 * master job_ptr for the array and we will use that to split
-		 * more off if needed.
-		 */
-		old_job_ptr = job_ptr;
-
-		job_array_pre_sched(job_ptr);
-		job_ptr = job_array_post_sched(job_ptr);
-
-		details_ptr = old_job_ptr->details;
-		if (!details_ptr) {
-			fatal_abort("%s: no details after split", __func__);
-			goto endit;
-		}
-		details_ptr->accrue_time = now;
-		log_flag(ACCRUE, "%pJ is now accruing time %ld",
-			 old_job_ptr, now);
-	}
-
-	/*
-	 * Here we are ok to use all the same pointers from the main job_ptr as
-	 * an array will always have the same pointers.  If this ever changes in
-	 * the future some how we will need to address it.
-	 */
-	_add_accrue_time_internal(job_ptr->assoc_ptr,
-				  qos_ptr,
-				  used_limits_acct,
-				  used_limits_user,
-				  create_cnt);
+	_handle_add_accrue(job_ptr, used_limits_acct, used_limits_user,
+			   max_jobs_accrue, create_cnt, now);
 
 endit:
 
