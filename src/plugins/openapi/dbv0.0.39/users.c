@@ -323,25 +323,24 @@ static int _update_users(const char *context_id, data_t *query, data_t *resp,
 	};
 	data_t *dusers = get_query_key_list("users", errors, query);
 
-	if (!dusers)
+	if (!dusers) {
 		debug("%s: [%s] ignoring empty or non-existant users array",
 		      __func__, context_id);
-	else if (data_list_for_each(dusers, _foreach_update_user, &args) < 0)
+	} else if (data_list_for_each(dusers, _foreach_update_user,
+				      &args) < 0) {
 		rc = ESLURM_REST_INVALID_QUERY;
 	/* split out the coordinators until after the users are done */
-	else if (list_for_each(args.user_list, _foreach_user_coord_split,
-			       &c_args) < 0)
+	} else if (list_for_each(args.user_list, _foreach_user_coord_split,
+				 &c_args) < 0) {
 		rc = ESLURM_REST_INVALID_QUERY;
-
-	if (!rc && !(rc = db_query_rc(errors, auth, args.user_list,
+	} else if (!(rc = db_query_rc(errors, auth, args.user_list,
 				      slurmdb_users_add))) {
 		(void)list_for_each(c_args.list_coords, _foreach_user_coord_add,
 				    &add_args);
 		rc = add_args.rc;
-	}
-
-	if (!rc && commit)
+	} else if (commit) {
 		db_query_commit(errors, auth);
+	}
 
 	FREE_NULL_LIST(args.user_list);
 	FREE_NULL_LIST(c_args.list_coords);
