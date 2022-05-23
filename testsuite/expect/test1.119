@@ -43,10 +43,7 @@ if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
 
-# For now, only test constrained devices
-if {[expr {[get_config_param "ConstrainDevices"] ne "yes"}]} {
-	skip "This test requires devices to be constrained by cgroups"
-}
+set constrain_dev [expr {[get_config_param "ConstrainDevices"] ne "yes"}]
 
 set sockets_per_node [list [get_node_param [lindex $nodes 0] "Sockets"] \
 			   [get_node_param [lindex $nodes 1] "Sockets"]]
@@ -62,6 +59,39 @@ if {[lindex $sockets_per_node 0] != 1 || [lindex $sockets_per_node 1] != 1} {
 
 if {[lindex $sockets_per_node 0] != [lindex $sockets_per_node 1]} {
 	skip "Nodes `[lindex $nodes 0]` and `[lindex $nodes 1]` must have the same # of sockets"
+}
+
+proc get_count_two_gpus {output} {
+	set match 0
+	set match0 0
+	set match1 0
+	set match0_index -1
+	set match1_index -1
+
+	foreach line [split $output "\n"] {
+		if {$match0_index == -1 && [regexp {[0-9]+} $line {} {}] == 1} {
+			set match0_index $line
+		}
+		if {$match0_index == $line} {
+			incr match0
+			incr match
+			continue
+		}
+
+		if {$match1_index == -1 && [regexp {[0-9]+} $line {} {}] == 1} {
+			set match1_index $line
+		}
+		if {$match1_index == $line} {
+			incr match1
+			incr match
+		}
+		# We are only looking for two gpus so we stop here.
+	}
+	return [dict create match $match \
+			    match0 $match0 \
+			    match1 $match1 \
+			    match0_index $match0_index \
+			    match1_index $match1_index]
 }
 
 ################################################################################
@@ -81,11 +111,7 @@ proc cleanup {} {
 
 # Assumes 2 GPUs
 proc test_srun {expected_tot expected_gpu srun_args {srun_env ""}} {
-	global srun
-
-	set match 0
-	set match0 0
-	set match1 0
+	global srun constrain_dev
 
 	if {$srun_env != ""} {
 		set output [run_command_output "env $srun_env $srun $srun_args -t1 printenv CUDA_VISIBLE_DEVICES"]
@@ -93,19 +119,19 @@ proc test_srun {expected_tot expected_gpu srun_args {srun_env ""}} {
 		set output [run_command_output "$srun $srun_args -t1 printenv CUDA_VISIBLE_DEVICES"]
 	}
 
-	foreach line [split $output "\n"] {
-		if {[regexp {0} $line {} {}] == 1} {
-			incr match0
-			incr match
-		}
-		if {[regexp {1} $line {} {}] == 1} {
-			incr match1
-			incr match
-		}
+	set result [get_count_two_gpus $output]
+	dict with result {}
+
+	if {$constrain_dev} {
+		subtest {$match0 == $expected_gpu} "GPU $match0_index should be bound to $expected_gpu" "$match0 != $expected_gpu"
+		subtest {$match1 == $expected_gpu} "GPU $match1_index should be bound to $expected_gpu" "$match1 != $expected_gpu"
+	} else {
+		# If we constrain devices then CUDA_VISIBLE_DEVICES will always equal 0 because each task will have its own cgroup.
+		subtest {$match0_index == 0} "GPU environment variable index should be 0 because it is in task cgroup"
+		subtest {$match0 == $expected_gpu*2} "GPU $match0_index should be bound to [expr {$expected_gpu * 2}]" "$match0 != $expected_gpu"
+		subtest {$match1 == 0} "There should not be any other gpu index besides 0"
 	}
 
-	subtest {$match0 == $expected_gpu} "GPU 0 should be bound to $expected_gpu" "$match0 != $expected_gpu"
-	subtest {$match1 == $expected_gpu} "GPU 1 should be bound to $expected_gpu" "$match1 != $expected_gpu"
 	subtest {$match  == $expected_tot} "Total bounds should be $expected_tot"   "$match  != $expected_tot"
 }
 
@@ -119,9 +145,6 @@ proc test_sbatch {expected_tasks args {env ""}} {
 	global bin_cat job_list
 
 	set job_id 0
-	set match 0
-	set match0 0
-	set match1 0
 
 	set job_id [submit_job -fail -env $env "$args -t1 -o $file_out -J $test_name $file_in"]
 	lappend job_list $job_id
@@ -129,7 +152,9 @@ proc test_sbatch {expected_tasks args {env ""}} {
 	wait_for_job -fail $job_id "DONE"
 	wait_for_file -fail $file_out
 	set output [run_command_output -fail "$bin_cat $file_out"]
-	set match  [regexp -all {[0|1]} $output]
+	set result [get_count_two_gpus $output]
+	dict with result {}
+
 	subtest {$match == $expected_tasks} "Number of tasks bound to 1 GPU should be $expected_tasks" "$match != $expected_tasks"
 }
 
