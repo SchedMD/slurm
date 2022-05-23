@@ -220,9 +220,6 @@ echo $( scontrol -o show jobs | cut -d' ' -f 2 | cut -d'=' -f 2 ) ;
 function _partitions() {
 echo $(scontrol show partitions|grep PartitionName|cut -c 15- |cut -f 1 -d' '|paste -s -d ' ') ;
 }
-function _nodes() {
-echo $(scontrol show nodes | grep NodeName | cut -c 10- | cut -f 1 -d' ' | paste -s -d ' ') ;
-}
 function _accounts() {
 echo $(sacctmgr -pn list accounts | cut -d'|' -f1 | paste -s -d' ') ;
 }
