@@ -207,8 +207,8 @@ static data_for_each_cmd_t _foreach_update_cluster(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _update_clusters(data_t *query, data_t *resp, data_t *errors,
-			    void *auth, bool commit)
+static int _update_clusters(const char *context_id, data_t *query, data_t *resp,
+			    data_t *errors, void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	foreach_update_cluster_t args = {
@@ -223,8 +223,8 @@ static int _update_clusters(data_t *query, data_t *resp, data_t *errors,
 	data_t *dclusters = get_query_key_list("clusters", errors, query);
 
 	if (!dclusters || !data_get_list_length(dclusters)) {
-		debug("%s: ignoring empty or non-existant clusters array",
-		      __func__);
+		debug("%s: [%s] ignoring empty or non-existant clusters array",
+		      __func__, context_id);
 	} else if (!(rc = db_query_list(errors, auth, &args.tres_list,
 					slurmdb_tres_get, &tres_cond)) &&
 	    (data_list_for_each(dclusters, _foreach_update_cluster,
@@ -270,7 +270,7 @@ extern int op_handler_clusters(const char *context_id,
 	if (method == HTTP_REQUEST_GET)
 		rc = _dump_clusters(resp, errors, NULL, auth);
 	else if (method == HTTP_REQUEST_POST)
-		rc = _update_clusters(query, resp, errors, auth,
+		rc = _update_clusters(context_id, query, resp, errors, auth,
 				      (tag != CONFIG_OP_TAG));
 	else
 		rc = ESLURM_REST_INVALID_QUERY;
