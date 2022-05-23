@@ -397,6 +397,14 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	    (free_cpu_count + used_cpu_count >
 	     job_ptr->part_ptr->max_cpus_per_node)) {
 
+		if (job_ptr->details->whole_node) {
+			debug2("Total cpu count greater than max_cpus_per_node on exclusive job. (%d > %d)",
+				free_cpu_count + used_cpu_count,
+				job_ptr->part_ptr->max_cpus_per_node);
+			num_tasks = 0;
+			goto fini;
+		}
+
 		if (is_cons_tres) {
 			if (used_cpu_count >=
 			    job_ptr->part_ptr->max_cpus_per_node) {
