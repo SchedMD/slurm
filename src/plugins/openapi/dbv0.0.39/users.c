@@ -301,8 +301,8 @@ static void _destroy_user_coord_t(void *x)
 	xfree(uc);
 }
 
-static int _update_users(data_t *query, data_t *resp, void *auth,
-			 bool commit)
+static int _update_users(const char *context_id, data_t *query, data_t *resp,
+			 void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -324,7 +324,8 @@ static int _update_users(data_t *query, data_t *resp, void *auth,
 	data_t *dusers = get_query_key_list("users", errors, query);
 
 	if (!dusers)
-		rc = ESLURM_REST_INVALID_QUERY;
+		debug("%s: [%s] ignoring empty or non-existant users array",
+		      __func__, context_id);
 	else if (data_list_for_each(dusers, _foreach_update_user, &args) < 0)
 		rc = ESLURM_REST_INVALID_QUERY;
 	/* split out the coordinators until after the users are done */
@@ -416,7 +417,8 @@ extern int op_handler_users(const char *context_id,
 
 		return _dump_users(resp, errors, auth, NULL, &user_cond);
 	} else if (method == HTTP_REQUEST_POST) {
-		return _update_users(query, resp, auth, (tag != CONFIG_OP_TAG));
+		return _update_users(context_id, query, resp, auth,
+				     (tag != CONFIG_OP_TAG));
 	} else {
 		return ESLURM_REST_INVALID_QUERY;
 	}
