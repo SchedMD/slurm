@@ -224,13 +224,13 @@ static int _update_clusters(data_t *query, data_t *resp, data_t *errors,
 
 	if (!(rc = db_query_list(errors, auth, &args.tres_list,
 				 slurmdb_tres_get, &tres_cond)) &&
-	    (data_list_for_each(dclusters, _foreach_update_cluster, &args) < 0))
+	    (data_list_for_each(dclusters, _foreach_update_cluster,
+				&args) < 0)) {
 		rc = ESLURM_REST_INVALID_QUERY;
-
-	if (!(rc = db_query_rc(errors, auth, args.cluster_list,
-			       slurmdb_clusters_add)) &&
-	    commit)
+	} else if (!(rc = db_query_rc(errors, auth, args.cluster_list,
+			       slurmdb_clusters_add)) && commit) {
 		db_query_commit(errors, auth);
+	}
 
 	FREE_NULL_LIST(args.cluster_list);
 	FREE_NULL_LIST(args.tres_list);
