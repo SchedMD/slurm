@@ -88,6 +88,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 
 static sig_atomic_t destroy_job = 0;
 static bool is_het_job = false;
+static bool revoke_job = false;
 
 static void _set_pending_job_id(uint32_t job_id)
 {
@@ -144,11 +145,10 @@ static void _job_complete_handler(srun_job_complete_msg_t *msg)
 		return;
 	}
 
-	if (msg->step_id == NO_VAL) {
-		info("Force Terminated job %u", msg->job_id);
-		destroy_job = 1;
-	} else
+	/* Only print if we know we were signaled */
+	if (destroy_job)
 		info("Force Terminated %ps", msg);
+	revoke_job = true;
 }
 
 /*
@@ -262,7 +262,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		rc = slurm_job_node_ready(alloc->job_id);
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
-		if (destroy_job)
+		if (destroy_job || revoke_job)
 			break;
 		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
 			continue;			/* retry */
@@ -452,7 +452,7 @@ extern resource_allocation_response_msg_t *
 				error("Something is wrong with the boot of the nodes.");
 			goto relinquish;
 		}
-	} else if (destroy_job) {
+	} else if (destroy_job || revoke_job) {
 		goto relinquish;
 	}
 
@@ -465,7 +465,7 @@ extern resource_allocation_response_msg_t *
 
 relinquish:
 	if (resp) {
-		if (destroy_job)
+		if (destroy_job || revoke_job)
 			slurm_complete_job(resp->job_id, 1);
 		slurm_free_resource_allocation_response_msg(resp);
 	}
