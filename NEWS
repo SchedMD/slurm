@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
     can still see the reason even if the user set a custom reason beforehand.
  -- Remove redundant message when libdbus is found during configure.
  -- Fix pmix to honor SrunPortRange.
+ -- Fix issue with ntasks_per_socket and ntasks_per_core with --exclusive
 
 * Changes in Slurm 22.05.0rc1
 =============================

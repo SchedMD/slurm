@@ -3366,14 +3366,6 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		FREE_NULL_LIST(sock_gres_list);
 		return NULL;
 	}
-	if (job_ptr->details->whole_node &&
-	    (avail_res->avail_cpus != avail_res->max_cpus)) {
-		log_flag(SELECT_TYPE, "Test fail on node %d: avail_res->avail_cpus != avail_res->max_cpus (%u != %u) on exclusive job",
-			 node_i, avail_res->avail_cpus, avail_res->max_cpus);
-		FREE_NULL_LIST(sock_gres_list);
-		common_free_avail_res(avail_res);
-		return NULL;
-	}
 
 	/* Check that sufficient CPUs remain to run a task on this node */
 	if (job_ptr->details->ntasks_per_node) {
