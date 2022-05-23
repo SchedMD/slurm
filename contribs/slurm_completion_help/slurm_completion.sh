@@ -239,7 +239,7 @@ function _nodes() {
 echo $(scontrol show nodes | grep NodeName | cut -c 10- | cut -f 1 -d' ' | paste -s -d ' ') ;
 }
 function _features() {
-echo $(scontrol -o show nodes|cut -d' ' -f8|sed 's/AvailableFeatures=//'|sort -u|tr -d '()'|paste -s -d ' ') ;
+echo $(scontrol -o show nodes | grep -E -o 'AvailableFeatures=(\w,?)+' | cut -d= -f2 | tr "," "\n" | sort -u) ;
 }
 function _users() {
 echo $(sacctmgr -pn list users | cut -d'|' -f1) ;
