@@ -146,7 +146,8 @@ static int _update_tres(data_t *query, data_t *resp, void *auth,
 #endif /*!NDEBUG*/
 
 	if (!(dtres = get_query_key_list("TRES", errors, query))) {
-		rc = ESLURM_REST_INVALID_QUERY;
+		debug("%s: ignoring empty or non-existant TRES array",
+		      __func__);
 	} else if (data_list_for_each(dtres, _foreach_tres, &args) < 0) {
 		rc = ESLURM_REST_INVALID_QUERY;
 	} else if (!(rc = db_query_rc(errors, auth, tres_list,
