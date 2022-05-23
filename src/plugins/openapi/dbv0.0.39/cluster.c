@@ -222,8 +222,11 @@ static int _update_clusters(data_t *query, data_t *resp, data_t *errors,
 	};
 	data_t *dclusters = get_query_key_list("clusters", errors, query);
 
-	if (!(rc = db_query_list(errors, auth, &args.tres_list,
-				 slurmdb_tres_get, &tres_cond)) &&
+	if (!dclusters || !data_get_list_length(dclusters)) {
+		debug("%s: ignoring empty or non-existant clusters array",
+		      __func__);
+	} else if (!(rc = db_query_list(errors, auth, &args.tres_list,
+					slurmdb_tres_get, &tres_cond)) &&
 	    (data_list_for_each(dclusters, _foreach_update_cluster,
 				&args) < 0)) {
 		rc = ESLURM_REST_INVALID_QUERY;
