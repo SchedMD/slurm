@@ -119,8 +119,8 @@ static data_for_each_cmd_t _foreach_tres(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _update_tres(data_t *query, data_t *resp, void *auth,
-			bool commit)
+static int _update_tres(const char *context_id, data_t *query, data_t *resp,
+			void *auth, bool commit)
 {
 	data_t *dtres = NULL;
 	int rc = SLURM_SUCCESS;
@@ -146,8 +146,8 @@ static int _update_tres(data_t *query, data_t *resp, void *auth,
 #endif /*!NDEBUG*/
 
 	if (!(dtres = get_query_key_list("TRES", errors, query))) {
-		debug("%s: ignoring empty or non-existant TRES array",
-		      __func__);
+		debug("%s: [%s] ignoring empty or non-existant TRES array",
+		      __func__, context_id);
 	} else if (data_list_for_each(dtres, _foreach_tres, &args) < 0) {
 		rc = ESLURM_REST_INVALID_QUERY;
 	} else if (!(rc = db_query_rc(errors, auth, tres_list,
@@ -168,7 +168,8 @@ extern int op_handler_tres(const char *context_id, http_request_method_t method,
 	if (method == HTTP_REQUEST_GET)
 		return _dump_tres(resp, auth);
 	else if (method == HTTP_REQUEST_POST)
-		return _update_tres(query, resp, auth, (tag != CONFIG_OP_TAG));
+		return _update_tres(context_id, query, resp, auth,
+				    (tag != CONFIG_OP_TAG));
 	else
 		return ESLURM_REST_INVALID_QUERY;
 }
