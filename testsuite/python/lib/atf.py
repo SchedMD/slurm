@@ -2421,7 +2421,7 @@ if squeue_path := shutil.which('squeue'):
 properties['slurm-sbin-dir'] = f"{properties['slurm-config-dir']}/sbin"
 if slurmctld_path := shutil.which('slurmctld'):
     properties['slurm-sbin-dir'] = os.path.dirname(slurmctld_path)
-properties['slurm-config-dir'] = re.sub('\${prefix}', properties['slurm-prefix'], properties['slurm-config-dir'])
+properties['slurm-config-dir'] = re.sub(r'\${prefix}', properties['slurm-prefix'], properties['slurm-config-dir'])
 if slurm_conf_path := os.getenv('SLURM_CONF'):
     properties['slurm-config-dir'] = os.path.dirname(slurm_conf_path)
 
