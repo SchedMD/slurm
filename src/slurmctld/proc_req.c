@@ -1694,15 +1694,22 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 		.node = READ_LOCK,
 		.part = READ_LOCK,
 	};
+	assoc_mgr_lock_t qos_read_locks = {
+		.qos = READ_LOCK,
+	};
+
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
+	assoc_mgr_lock(&qos_read_locks);
+
 	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
 		req_msg, msg->auth_uid);
 	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_PRIORITY_FACTORS;
 	response_msg.data     = &resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	assoc_mgr_unlock(&qos_read_locks);
 	unlock_slurmctld(job_read_lock);
 	FREE_NULL_LIST(resp_msg.priority_factors_list);
 	END_TIMER2("_slurm_rpc_get_priority_factors");

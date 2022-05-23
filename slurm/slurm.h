@@ -1891,6 +1891,7 @@ typedef struct priority_factors_object {
 	uint32_t priority_site;
 
 	double   *priority_tres;/* tres priorities with weights applied. */
+	char *qos;
 	uint32_t  tres_cnt;     /* number of configured tres' on system. */
 	char    **tres_names;	/* packed as assoc_mgr_tres_names[] */
 	double   *tres_weights; /* PriorityWeightTRES weights as an array */

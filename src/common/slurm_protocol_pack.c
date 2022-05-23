@@ -602,6 +602,7 @@ static void _pack_priority_factors_object(void *in, buf_t *buffer,
 
 		packdouble_array(object->priority_tres, object->tres_cnt,
 				 buffer);
+		packstr(object->qos, buffer);
 		pack32(object->tres_cnt, buffer);
 		packstr_array(assoc_mgr_tres_name_array, object->tres_cnt,
 			      buffer);
@@ -661,6 +662,7 @@ static int _unpack_priority_factors_object(void **object, buf_t *buffer,
 
 		safe_unpackdouble_array(&object_ptr->priority_tres, &tmp32,
 					buffer);
+		safe_unpackstr(&object_ptr->qos, buffer);
 		safe_unpack32(&object_ptr->tres_cnt, buffer);
 		safe_unpackstr_array(&object_ptr->tres_names,
 				     &object_ptr->tres_cnt, buffer);

@@ -135,7 +135,7 @@ int main (int argc, char **argv)
 	if (params.format == NULL) {
 		if (params.normalized) {
 			if (params.long_list) {
-				params.format = "%.15i %9r %.8u %.8o %10y %10a %10b %10f %10j %10p %10q %20t";
+				params.format = "%.15i %9r %.8u %.8o %10y %10a %10b %10f %10j %10p %10n %10q %20t";
 			} else {
 				params.format = xstrdup("%.15i %9r");
 				if (params.sibling && !params.local)
@@ -160,7 +160,7 @@ int main (int argc, char **argv)
 			}
 		} else {
 			if (params.long_list) {
-				params.format = "%.15i %9r %.8u %.8o %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T";
+				params.format = "%.15i %9r %.8u %.8o %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10n %.10Q %.11N %.20T";
 			} else {
 				params.format = xstrdup("%.15i %9r");
 				if (params.sibling && !params.local)

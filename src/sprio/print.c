@@ -462,6 +462,20 @@ int _print_partition(priority_factors_object_t *job, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_qos_name(priority_factors_object_t *job, int width, bool right,
+		     char *suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("QOSNAME", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_str("", width, right, true);
+	else
+		_print_str(job->qos, width, right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_qos_priority_normalized(priority_factors_object_t * job, int width,
 				   bool right, char* suffix)
 {

@@ -326,6 +326,11 @@ extern int parse_format( char* format )
 						field_size,
 						right_justify,
 						suffix );
+		else if (field[0] == 'n')
+			job_format_add_qos_name(params.format_list,
+						field_size,
+						right_justify,
+						suffix );
 		else if (field[0] == 'o')
 			job_format_add_account(params.format_list,
 					       field_size,
