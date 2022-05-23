@@ -232,6 +232,7 @@ static uint64_t _build_shared_dev_info(List gres_conf_list)
 	shared_dev_info_t *shared_conf;
 	ListIterator iter;
 
+	FREE_NULL_LIST(shared_info);
 	shared_info = list_create(xfree_ptr);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(iter))) {
@@ -541,6 +542,7 @@ extern void gres_c_s_recv_stepd(buf_t *buffer)
 	if (!shared_cnt)
 		return;
 
+	FREE_NULL_LIST(shared_info);
 	shared_info = list_create(xfree_ptr);
 	for (uint32_t i = 0; i < shared_cnt; i++) {
 		shared_ptr = xmalloc(sizeof(shared_dev_info_t));
