@@ -355,7 +355,6 @@ static void _check_callback(char *alias, char *hostname,
 	node_rec->node_hostname = xstrdup(hostname);
 	node_rec->bcast_address = xstrdup(bcast_address);
 	node_rec->port      = port;
-	node_rec->weight    = node_ptr->weight;
 	node_rec->features  = xstrdup(node_ptr->feature);
 	node_rec->reason    = xstrdup(node_ptr->reason);
 }
@@ -708,6 +707,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->tmp_disk = config_ptr->tmp_disk;
 	node_ptr->tot_sockets = config_ptr->tot_sockets;
 	node_ptr->tot_cores = config_ptr->tot_sockets * config_ptr->cores;
+	node_ptr->weight = config_ptr->weight;
 
 	/*
 	 * Here we determine if this node is scheduling threads or not.
