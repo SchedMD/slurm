@@ -930,11 +930,12 @@ _scontrol()
 	if param "steps"        ; then offer "$(_step)" ; fi
 	;;
     delete) # scontrol delete objectname=id
-	parameters="partitionname= reservationname="
+	parameters="nodename= partitionname= reservationname="
 
 	# If a parameter has been fully typed in, serve the corresponding
 	# values, otherwise, serve the list of parameters.
-	if   param "partitionname"   ; then offer_many "$(_partitions)"
+	if   param "nodename"        ; then offer_many "$(_nodes)"
+	elif param "partitionname"   ; then offer_many "$(_partitions)"
 	elif param "reservationname" ; then offer_many "$(_reservations)"
 	else offer "$parameters" ; fi
 	;;
@@ -1145,7 +1146,7 @@ _scontrol()
 	esac
 	;;
     create) # scontrol create (object attribute1=value1|objectname=id)
-	parameters="partitionname= reservation reservationname="
+	parameters="nodename= partitionname= reservation reservationname="
 
 	param=$(find_first_occurence "${COMP_WORDS[*]}" "$parameters")
 	param+=$(find_first_partial_occurence "${COMP_WORDS[*]}" "$parameters")
@@ -1153,6 +1154,31 @@ _scontrol()
 
 	# Process object
 	case $param in
+	nodename)
+	    local parameters="bcastaddr=<name> boards=<count>\
+			      corespeccount=<count> corespersocket=<count>\
+			      cpubind=<none|socket|idom|core|thread>\
+			      cpus=<count> cpuspeclist=<cpuspec_list>\
+			      features=<feature_list> gres=<gres_list>\
+			      memspeclimit=<MB> nodeaddr=<name>\
+			      nodehostname=<name> port=<port> realmemory=<MB>\
+			      reason=<reason> sockets=<count>\
+			      socketsperboard=<count> state=<cloud|future>\
+			      threadspercore=<count> tmpdisk=<MB>\
+			      weight=<weight>"
+
+	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
+	    # If a new named argument is about to be entered, serve the list of options
+	    [[ $cur == "" && $prev != "=" ]] && { offer "$remainings" ;
+		    return ; }
+
+	    if   param "cpubind"  ; then offer_many "core idom none socket thread"
+	    elif param "features" ; then offer_many "$(_features)"
+	    elif param "gres"     ; then offer_list "$(_gres)"
+	    elif param "state"    ; then offer_many "cloud future"
+	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
+	    fi
+	    ;;
 	partitionname)
 	    local parameters="allowgroups=<name> allocnodes=<node_list>\
 			      alternate=<partition_name> cpubind=<binding>\
