@@ -145,15 +145,15 @@ static int _update_tres(data_t *query, data_t *resp, void *auth,
 				  NULL);
 #endif /*!NDEBUG*/
 
-	if (!(dtres = get_query_key_list("TRES", errors, query)))
+	if (!(dtres = get_query_key_list("TRES", errors, query))) {
 		rc = ESLURM_REST_INVALID_QUERY;
-
-	if (!rc && (data_list_for_each(dtres, _foreach_tres, &args) < 0))
+	} else if (data_list_for_each(dtres, _foreach_tres, &args) < 0) {
 		rc = ESLURM_REST_INVALID_QUERY;
-
-	if (!(rc = db_query_rc(errors, auth, tres_list, slurmdb_tres_add)) &&
-	     commit)
+	} else if (!(rc = db_query_rc(errors, auth, tres_list,
+				      slurmdb_tres_add)) &&
+		   commit) {
 		db_query_commit(errors, auth);
+	}
 
 	FREE_NULL_LIST(tres_list);
 
