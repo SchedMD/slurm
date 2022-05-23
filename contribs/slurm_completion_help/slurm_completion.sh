@@ -1144,15 +1144,16 @@ _scontrol()
 
 	esac
 	;;
-    create) # command object attribute1=value1 etc.
-	parameters="partition reservation"
+    create) # scontrol create (object attribute1=value1|objectname=id)
+	parameters="partitionname= reservation reservationname="
 
 	param=$(find_first_occurence "${COMP_WORDS[*]}" "$parameters")
+	param+=$(find_first_partial_occurence "${COMP_WORDS[*]}" "$parameters")
 	[[ $param == "" ]] && { offer "$parameters" ; return ; }
 
 	# Process object
 	case $param in
-	partition)
+	partitionname)
 	    local parameters="allowgroups=<name> allocnodes=<node_list>\
 			      alternate=<partition_name> cpubind=<binding>\
 			      default=<yes|no> defaulttime=<d-h:m:s|unlimited>\
@@ -1198,7 +1199,7 @@ _scontrol()
 	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
 	    ;;
-	reservation)
+	reservation|reservationname)
 	    local parameters="accounts=<account_list> burstbuffer=<buffer_spec>\
 			      corecnt=<num>\
 			      duration=<[days-]hours:minutes:seconds>\
@@ -1207,7 +1208,6 @@ _scontrol()
 			      licenses=<licenses> maxstartdelay=<timespec>\
 			      nodecnt=<count> nodes=<node_list>\
 			      partitionname=<partition_list>\
-			      reservationname=<name>\
 			      starttime=<time_spec>\
 			      tres=<tres_spec> users=<user_list>"
 
