@@ -1899,7 +1899,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 {
 	char *cpu_stat = NULL, *memory_stat = NULL, *ptr;
-	size_t cpu_stat_sz = 0, memory_stat_sz = 0;
+	size_t tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
 	task_cg_info_t *task_cg_info;
 	uint64_t tmp = 0;
@@ -1918,7 +1918,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	if (common_cgroup_get_param(&task_cg_info->task_cg,
 				    "cpu.stat",
 				    &cpu_stat,
-				    &cpu_stat_sz) != SLURM_SUCCESS) {
+				    &tmp_sz) != SLURM_SUCCESS) {
 		if (task_id == task_special_id)
 			log_flag(CGROUP, "Cannot read task_special cpu.stat file");
 		else
@@ -1929,7 +1929,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	if (common_cgroup_get_param(&task_cg_info->task_cg,
 				    "memory.stat",
 				    &memory_stat,
-				    &memory_stat_sz) != SLURM_SUCCESS) {
+				    &tmp_sz) != SLURM_SUCCESS) {
 		if (task_id == task_special_id)
 			log_flag(CGROUP, "Cannot read task_special memory.stat file");
 		else
