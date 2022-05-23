@@ -245,7 +245,7 @@ function _users() {
 echo $(sacctmgr -pn list users | cut -d'|' -f1) ;
 }
 function _reservations() {
-echo $(scontrol -o show reservations | cut -d' ' -f1 | cut -d= -f2) ;
+echo $(scontrol -o show reservations | grep -E -o 'ReservationName=\w+' | cut -d= -f2 | sort -u) ;
 }
 function _gres() {
 echo $(scontrol show config | grep GresTypes | cut -d= -f2)
