@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.39 - change nice request field from string to integer.
  -- sacctmgr - no longer force updates to the AdminComment, Comment, or
     SystemComment to lower-case.
+ -- openapi/dbv0.0.39 - more graceful handling of POSTs when expected field
+    lists are missing or unparsable.
 
 * Changes in Slurm 22.05.3
 ==========================
