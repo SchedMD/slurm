@@ -31,8 +31,8 @@ select/cons_tres contain information at a finer resolution (sockets, cores,
 threads, or CPUs depending upon the SelectTypeParameters configuration
 parameter). The description below is generic and applies to the above three
 plugin implementations. Note that each of these plugins is able to manage
-memory allocations. They are also able to manage
-generic resource (GRES) allocations, making use of the GRES plugins.</p>
+memory allocations. If you need to track other resources, such as GPUs,
+you should use the select/cons_res or select/cons_tres plugins.</p>
 
 <p>Per node data structures include memory (configured and allocated),
 GRES (configured and allocated, in a List data structure), plus a flag
@@ -70,6 +70,6 @@ jobs, shrinking job allocations, un/packing job state information,
 un/packing node state information, etc. The operation of those functions is
 relatively straightforward and not detailed here.</p>
 
-<p style="text-align:center;">Last modified 14 June 2018</p>
+<p style="text-align:center;">Last modified 31 May 2022</p>
 
 <!--#include virtual="footer.txt"-->

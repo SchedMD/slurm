@@ -123,9 +123,10 @@ with <b>select/cons_res</b> and <b>select/cons_tres</b> for consistency.</li>
 or disabled cluster-wide.</li>
 
 <li>In the case where <b>select/linear</b> is enabled, the normal Slurm
-behaviors are not disrupted. The only changes users see when using the
-<b>select/cons_res</b> or <b>select/cons_tres</b> plugins, are that jobs can be
-co-scheduled on nodes when resources permit it.
+behaviors are not disrupted. The major change users see when using the
+<b>select/cons_res</b> or <b>select/cons_tres</b> plugins, is that jobs can be
+co-scheduled on nodes when resources permit it. Generic resources (such as GPUs)
+can also be tracked individually with these plugins.
 The rest of Slurm, such as srun and its options (except srun -s ...), etc. are not
 affected by this plugin. Slurm is, from the user's point of view, working the
 same way as when using the default node selection scheme.</li>
@@ -380,6 +381,6 @@ programs that will take advantage of all the CPUs on a node but only need
 one mpi process per node.</p>
 
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 31 May 2022</p>
 
 <!--#include virtual="footer.txt"-->
