@@ -34,6 +34,10 @@ The <i>srun</i> option <i>--mpi=</i> (or the equivalent environment
 variable <i>SLURM_MPI_TYPE</i>) can be used to specify when a
 different MPI implementation is to be supported for an individual job.</p>
 
+<p>There are parameters that can be set in the
+<a href="mpi.conf.html">mpi.conf</a> file that allow you to modify
+the behavior of the MPI plugins.</p>
+
 <p><b>NOTE</b>: Use of an MPI implementation without the appropriate Slurm
 plugin may result in application failure. If multiple MPI implementations
 are used on a system then some users may be required to explicitly specify
@@ -632,6 +636,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 17 May 2022</p>
+<p style="text-align:center;">Last modified 24 May 2022</p>
 
 <!--#include virtual="footer.txt"-->

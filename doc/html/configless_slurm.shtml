@@ -123,12 +123,13 @@ is as follows:
 <li>job_container.conf</li>
 <li>knl_cray.conf</li>
 <li>knl_generic.conf</li>
+<li>mpi.conf</li>
 <li>oci.conf</li>
 <li>plugstack.conf</li>
 <li>topology.conf</li>
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 7 April 2022</p>
+<p style="text-align:center;">Last modified 24 May 2022</p>
 
 <!--#include virtual="footer.txt"-->

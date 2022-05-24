@@ -9,6 +9,7 @@ man5_MANS = \
 	helpers.conf.5 \
 	job_container.conf.5 \
 	knl.conf.5 \
+	mpi.conf.5 \
 	nonstop.conf.5 \
 	oci.conf.5 \
 	slurm.conf.5 \
@@ -26,6 +27,7 @@ html_DATA = \
 	helpers.conf.html \
 	job_container.conf.html \
 	knl.conf.html \
+	mpi.conf.html \
 	nonstop.conf.html \
 	oci.conf.html \
 	slurm.conf.html \
