@@ -1000,6 +1000,15 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 	header_t header;
 	int rc;
 	void *auth_cred = NULL;
+	char *peer = NULL;
+
+	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
+		/*
+		* cache to avoid resolving multiple times
+		* this call is expensive
+		*/
+		peer = fd_resolve_peer(fd);
+	}
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
 		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
@@ -1007,25 +1016,26 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 	}
 
 	if (check_header_version(&header) < 0) {
-		slurm_addr_t resp_addr;
 		uid_t uid = _unpack_msg_uid(buffer, header.version);
 
-		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("%s: Invalid Protocol Version %u from uid=%u at %pA",
-			      __func__, header.version, uid, &resp_addr);
-		} else {
-			error("%s: Invalid Protocol Version %u from uid=%u from "
-			      "problem connection: %m", __func__,
-			      header.version, uid);
-		}
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] Invalid Protocol Version %u from uid=%u: %m",
+		      __func__, peer, header.version, uid);
 
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
 	//info("ret_cnt = %d",header.ret_cnt);
 	if (header.ret_cnt > 0) {
-		error("%s: we received more than one message back use "
-		      "slurm_receive_msgs instead", __func__);
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] we received more than one message back use slurm_receive_msgs instead",
+		      __func__, peer);
 		header.ret_cnt = 0;
 		FREE_NULL_LIST(header.ret_list);
 		header.ret_list = NULL;
@@ -1033,13 +1043,21 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 
 	/* Forward message to other nodes */
 	if (header.forward.cnt > 0) {
-		error("%s: We need to forward this to other nodes use "
-		      "slurm_receive_msg_and_forward instead", __func__);
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		      __func__, peer);
 	}
 
 	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
-		error("%s: auth_g_unpack: %s has authentication error: %m",
-		      __func__, rpc_num2string(header.msg_type));
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] auth_g_unpack: %s has authentication error: %m",
+		      __func__, peer, rpc_num2string(header.msg_type));
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
@@ -1051,8 +1069,12 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		error("%s: auth_g_verify: %s has authentication error: %s",
-		      __func__, rpc_num2string(header.msg_type),
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] auth_g_verify: %s has authentication error: %s",
+		      __func__, peer, rpc_num2string(header.msg_type),
 		      slurm_strerror(rc));
 		(void) auth_g_destroy(auth_cred);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
@@ -1089,12 +1111,17 @@ total_return:
 	slurm_seterrno(rc);
 	if (rc != SLURM_SUCCESS) {
 		msg->auth_cred = (void *) NULL;
-		error("%s: %s", __func__, slurm_strerror(rc));
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] %s", __func__, peer, slurm_strerror(rc));
 		rc = -1;
 		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		rc = 0;
 	}
+	xfree(peer);
 	return rc;
 }
 
@@ -1282,15 +1309,14 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	}
 
 	if (check_header_version(&header) < 0) {
-		slurm_addr_t resp_addr;
 		uid_t uid = _unpack_msg_uid(buffer, header.version);
-		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("%s: [%s] Invalid Protocol Version %u from uid=%u at %pA",
-			      __func__, peer, header.version, uid, &resp_addr);
-		} else {
-			error("%s: [%s] Invalid Protocol Version %u from uid=%d from problem connection: %m",
-			      __func__, peer, header.version, uid);
-		}
+
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] Invalid Protocol Version %u from uid=%d: %m",
+		      __func__, peer, header.version, uid);
 
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
@@ -1417,8 +1443,17 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	ret_data_info_t *ret_data_info = NULL;
 	List ret_list = NULL;
 	int orig_timeout = timeout;
+	char *peer = NULL;
 
 	xassert(fd >= 0);
+
+	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
+		/*
+		* cache to avoid resolving multiple times
+		* this call is expensive
+		*/
+		peer = fd_resolve_peer(fd);
+	}
 
 	slurm_msg_t_init(&msg);
 	msg.conn_fd = fd;
@@ -1437,19 +1472,19 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 		steps--;
 	}
 
-	log_flag(NET, "%s: orig_timeout was %d we have %d steps and a timeout of %d",
-		 __func__, orig_timeout, steps, timeout);
+	log_flag(NET, "%s: [%s] orig_timeout was %d we have %d steps and a timeout of %d",
+		 __func__, peer, orig_timeout, steps, timeout);
 	/*
 	 * Compare to the orig_timeout here, because that is what we are
 	 * going to wait for each step.
 	 */
 	if (orig_timeout >= (slurm_conf.msg_timeout * 10000)) {
-		log_flag(NET, "%s: Sending a message with timeouts greater than %d seconds, requested timeout is %d seconds",
-			 __func__, (slurm_conf.msg_timeout * 10),
+		log_flag(NET, "%s: [%s] Sending a message with timeouts greater than %d seconds, requested timeout is %d seconds",
+			 __func__, peer, (slurm_conf.msg_timeout * 10),
 			 (timeout / 1000));
 	} else if (orig_timeout < 1000) {
-		log_flag(NET, "%s: Sending a message with a very short timeout of %d milliseconds, each step in the tree has %d milliseconds",
-			 __func__, timeout, orig_timeout);
+		log_flag(NET, "%s: [%s] Sending a message with a very short timeout of %d milliseconds, each step in the tree has %d milliseconds",
+			 __func__, peer, timeout, orig_timeout);
 	}
 
 	/*
@@ -1463,7 +1498,7 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 		goto total_return;
 	}
 
-	log_flag_hex(NET_RAW, buf, buflen, "%s: read", __func__);
+	log_flag_hex(NET_RAW, buf, buflen, "%s: [%s] read", __func__, peer);
 	buffer = create_buf(buf, buflen);
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
@@ -1473,14 +1508,12 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	}
 
 	if (check_header_version(&header) < 0) {
-		slurm_addr_t resp_addr;
-		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("%s: Invalid Protocol Version %u from at %pA",
-			      __func__, header.version, &resp_addr);
-		} else {
-			error("%s: Invalid Protocol Version %u from problem connection: %m",
-			      __func__, header.version);
-		}
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] Invalid Protocol Version %u: %m",
+		      __func__, peer, header.version);
 
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
@@ -1498,8 +1531,12 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 
 	/* Forward message to other nodes */
 	if (header.forward.cnt > 0) {
-		error("%s: We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
-		      __func__);
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] We need to forward this to other nodes use slurm_receive_msg_and_forward instead",
+		      __func__, peer);
 	}
 
 	/*
@@ -1507,7 +1544,11 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	 * connections have been previously verified in the opposite direction.
 	 */
 	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
-		error("%s: auth_g_unpack: %m", __func__);
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] auth_g_unpack: %m", __func__, peer);
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
@@ -1541,8 +1582,12 @@ total_return:
 			ret_data_info->data = NULL;
 			list_push(ret_list, ret_data_info);
 		}
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
 
-		error("%s: failed: %s", __func__, slurm_strerror(rc));
+		error("%s: [%s] failed: %s",
+		      __func__, peer, slurm_strerror(rc));
 		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		if (!ret_list)
@@ -1556,6 +1601,7 @@ total_return:
 	}
 
 	errno = rc;
+	xfree(peer);
 	return ret_list;
 }
 
@@ -1597,8 +1643,17 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	int rc;
 	void *auth_cred = NULL;
 	buf_t *buffer;
+	char *peer = NULL;
 
 	xassert(fd >= 0);
+
+	if (slurm_conf.debug_flags & (DEBUG_FLAG_NET | DEBUG_FLAG_NET_RAW)) {
+		/*
+		 * cache to avoid resolving multiple times
+		 * this call is expensive
+		 */
+		peer = fd_resolve_peer(fd);
+	}
 
 	if (msg->forward.init != FORWARD_INIT)
 		slurm_msg_t_init(msg);
@@ -1628,7 +1683,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		goto total_return;
 	}
 
-	log_flag_hex(NET_RAW, buf, buflen, "%s: read", __func__);
+	log_flag_hex(NET_RAW, buf, buflen, "%s: [%s] read", __func__, peer);
 	buffer = create_buf(buf, buflen);
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
@@ -1638,25 +1693,26 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	}
 
 	if (check_header_version(&header) < 0) {
-		slurm_addr_t resp_addr;
 		uid_t uid = _unpack_msg_uid(buffer, header.version);
 
-		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("Invalid Protocol Version %u from uid=%u at %pA",
-			      header.version, uid, &resp_addr);
-		} else {
-			error("Invalid Protocol Version %u from uid=%d from "
-			      "problem connection: %m",
-			      header.version, uid);
-		}
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] Invalid Protocol Version %u from uid=%d: %m",
+		      __func__, peer, header.version, uid);
 
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
 	if (header.ret_cnt > 0) {
-		error("we received more than one message back use "
-		      "slurm_receive_msgs instead");
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] we received more than one message back use slurm_receive_msgs instead",
+		      __func__, peer);
 		header.ret_cnt = 0;
 		FREE_NULL_LIST(header.ret_list);
 		header.ret_list = NULL;
@@ -1675,8 +1731,8 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 	/* Forward message to other nodes */
 	if (header.forward.cnt > 0) {
-		log_flag(NET, "%s: forwarding to %u nodes",
-			 __func__, header.forward.cnt);
+		log_flag(NET, "%s: [%s] forwarding to %u nodes",
+			 __func__, peer, header.forward.cnt);
 		msg->forward_struct = xmalloc(sizeof(forward_struct_t));
 		slurm_mutex_init(&msg->forward_struct->forward_mutex);
 		slurm_cond_init(&msg->forward_struct->notify, NULL);
@@ -1695,18 +1751,27 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 			msg->forward_struct->timeout = message_timeout;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
-		log_flag(NET, "%s: forwarding messages to %u nodes with timeout of %d",
-			 __func__, msg->forward_struct->fwd_cnt,
+		log_flag(NET, "%s: [%s] forwarding messages to %u nodes with timeout of %d",
+			 __func__, peer, msg->forward_struct->fwd_cnt,
 			 msg->forward_struct->timeout);
 
 		if (forward_msg(msg->forward_struct, &header) == SLURM_ERROR) {
-			error("%s: problem with forward msg", __func__);
+			/* peer may have not been resolved already */
+			if (!peer)
+				peer = fd_resolve_peer(fd);
+
+			error("%s: [%s] problem with forward msg",
+			      __func__, peer);
 		}
 	}
 
 	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
-		error("%s: auth_g_unpack: %s has authentication error: %m",
-		      __func__, rpc_num2string(header.msg_type));
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] auth_g_unpack: %s has authentication error: %m",
+		      __func__, peer, rpc_num2string(header.msg_type));
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
@@ -1719,8 +1784,12 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		error("%s: auth_g_verify: %s has authentication error: %m",
-		      __func__, rpc_num2string(header.msg_type));
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] auth_g_verify: %s has authentication error: %m",
+		      __func__, peer, rpc_num2string(header.msg_type));
 		(void) auth_g_destroy(auth_cred);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
@@ -1758,12 +1827,17 @@ total_return:
 		msg->msg_type = RESPONSE_FORWARD_FAILED;
 		msg->auth_cred = (void *) NULL;
 		msg->data = NULL;
-		error("slurm_receive_msg_and_forward: %s",
-		      slurm_strerror(rc));
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] failed: %s",
+		      __func__, peer, slurm_strerror(rc));
 		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		rc = 0;
 	}
+	xfree(peer);
 	return rc;
 
 }
