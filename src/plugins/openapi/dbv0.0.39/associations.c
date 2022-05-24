@@ -332,16 +332,15 @@ static int _update_assocations(const char *context_id, data_t *query,
 		debug("%s: [%s] ignoring empty or non-existant users array",
 		      __func__, context_id);
 	} else if (!(rc = db_query_list(errors, auth, &args.tres_list,
-					slurmdb_tres_get, &tres_cond)) &&
-		 !(rc = db_query_list(errors, auth, &args.qos_list,
-				      slurmdb_qos_get, &qos_cond)) &&
-		 (data_list_for_each(dassoc, _foreach_update_assoc,
-				     &args) < 0)) {
-		if (!rc)
-			rc = ESLURM_REST_INVALID_QUERY;
-	}
-
-	if (!rc && commit)
+					slurmdb_tres_get, &tres_cond))) {
+		/* rc already set - do nothing */
+	} else if (!(rc = db_query_list(errors, auth, &args.qos_list,
+					slurmdb_qos_get, &qos_cond))) {
+		/* rc already set - do nothing */
+	} else if (data_list_for_each(dassoc, _foreach_update_assoc, &args) <
+		   0) {
+		rc = ESLURM_REST_INVALID_QUERY;
+	} else if (commit)
 		rc = db_query_commit(errors, auth);
 
 	FREE_NULL_LIST(args.tres_list);
