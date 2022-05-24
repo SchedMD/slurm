@@ -337,7 +337,8 @@ static int _update_assocations(const char *context_id, data_t *query,
 				      slurmdb_qos_get, &qos_cond)) &&
 		 (data_list_for_each(dassoc, _foreach_update_assoc,
 				     &args) < 0)) {
-		rc = ESLURM_REST_INVALID_QUERY;
+		if (!rc)
+			rc = ESLURM_REST_INVALID_QUERY;
 	}
 
 	if (!rc && commit)
