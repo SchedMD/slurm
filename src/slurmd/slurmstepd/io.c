@@ -805,7 +805,6 @@ static void *_window_manager(void *arg)
 	struct pollfd ufds;
 	char buf[4];
 
-	info("in _window_manager");
 	ufds.fd = win_info->pty_fd;
 	ufds.events = POLLIN;
 
