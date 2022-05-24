@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix pmix to honor SrunPortRange.
  -- Fix issue with ntasks_per_socket and ntasks_per_core with --exclusive
  -- openapi/v0.0.38 - change job parsing error message to reflect reality.
+ -- Avoid segfault/assert when --thread-spec used with config_overrides
 
 * Changes in Slurm 22.05.0rc1
 =============================

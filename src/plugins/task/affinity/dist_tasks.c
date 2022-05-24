@@ -735,6 +735,11 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 				     ((s >= 0) && (spec_thread_cnt > 0)); s--) {
 					i = s * cores + c;
 					i = (i * threads) + t;
+					/*
+					 * If config_overrides is used bitmap
+					 * may be too small for the counter
+					 */
+					i %= conf->block_map_size;
 					bit_clear(alloc_mask, i);
 					spec_thread_cnt--;
 				}
@@ -846,6 +851,11 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 				     ((s >= 0) && (spec_thread_cnt > 0)); s--) {
 					i = s * conf->cores + c;
 					i = (i * conf->threads) + t;
+					/*
+					 * If config_overrides is used bitmap
+					 * may be too small for the counter
+					 */
+					i %= conf->block_map_size;
 					bit_clear(hw_map, i);
 					spec_thread_cnt--;
 				}
