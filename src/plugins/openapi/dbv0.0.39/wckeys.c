@@ -210,11 +210,9 @@ static int _update_wckeys(data_t *query, data_t *resp, data_t *errors,
 		rc = ESLURM_REST_INVALID_QUERY;
 	else if (data_list_for_each(dwckeys, _foreach_update_wckey, &args) < 0)
 		rc = ESLURM_REST_INVALID_QUERY;
-
-	if (!rc &&
-	    !(rc = db_query_rc(errors, auth, args.wckey_list,
-			       slurmdb_wckeys_add)) &&
-	    commit)
+	else if (!(rc = db_query_rc(errors, auth, args.wckey_list,
+				    slurmdb_wckeys_add)) &&
+		 commit)
 		rc = db_query_commit(errors, auth);
 
 	FREE_NULL_LIST(args.wckey_list);
