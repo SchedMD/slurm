@@ -310,8 +310,8 @@ cleanup:
 	return rc ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
 }
 
-static int _update_assocations(data_t *query, data_t *resp,
-			       void *auth, bool commit)
+static int _update_assocations(const char *context_id, data_t *query,
+			       data_t *resp, void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -328,13 +328,17 @@ static int _update_assocations(data_t *query, data_t *resp,
 	};
 	data_t *dassoc = get_query_key_list("associations", errors, query);
 
-	if (dassoc &&
-	    !(rc = db_query_list(errors, auth, &args.tres_list,
-				 slurmdb_tres_get, &tres_cond)) &&
-	    !(rc = db_query_list(errors, auth, &args.qos_list, slurmdb_qos_get,
-				 &qos_cond)) &&
-	    (data_list_for_each(dassoc, _foreach_update_assoc, &args) < 0))
+	if (!dassoc) {
+		debug("%s: [%s] ignoring empty or non-existant users array",
+		      __func__, context_id);
+	} else if (!(rc = db_query_list(errors, auth, &args.tres_list,
+					slurmdb_tres_get, &tres_cond)) &&
+		 !(rc = db_query_list(errors, auth, &args.qos_list,
+				      slurmdb_qos_get, &qos_cond)) &&
+		 (data_list_for_each(dassoc, _foreach_update_assoc,
+				     &args) < 0)) {
 		rc = ESLURM_REST_INVALID_QUERY;
+	}
 
 	if (!rc && commit)
 		rc = db_query_commit(errors, auth);
@@ -379,7 +383,7 @@ extern int op_handler_associations(const char *context_id,
 	if (method == HTTP_REQUEST_GET)
 		rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, false);
 	else if (method == HTTP_REQUEST_POST)
-		rc = _update_assocations(query, resp, auth,
+		rc = _update_assocations(context_id, query, resp, auth,
 					 (tag != CONFIG_OP_TAG));
 	else if (method == HTTP_REQUEST_DELETE)
 		rc = _delete_assoc(resp, auth, errors, assoc_cond, false);
