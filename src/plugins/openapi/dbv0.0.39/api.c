@@ -273,16 +273,13 @@ extern data_t * get_query_key_list(const char *path, data_t *errors,
 {
 	data_t *dst = NULL;
 
-	if (!query)
-		resp_error(errors, ESLURM_REST_INVALID_QUERY,
-			   "No query provided", "HTTP query");
-	else if (!(dst = data_key_get(query, path)))
-		resp_error(errors, ESLURM_DATA_PATH_NOT_FOUND,
-			   "Query parameter not found", path);
-	else if (data_get_type(dst) != DATA_TYPE_LIST) {
+	if (!query || !(dst = data_key_get(query, path)))
+		return NULL;
+
+	if (data_get_type(dst) != DATA_TYPE_LIST) {
 		resp_error(errors, ESLURM_DATA_PATH_NOT_FOUND,
 			   "Query parameter must be a list", path);
-		dst = NULL;
+		return NULL;
 	}
 
 	return dst;
