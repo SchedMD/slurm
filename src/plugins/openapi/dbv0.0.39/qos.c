@@ -300,11 +300,12 @@ static int _update_qos(data_t *query, data_t *resp, void *auth, bool commit)
 
 	if (!(rc = db_query_list(errors, auth, &args.g_tres_list,
 				 slurmdb_tres_get, &tres_cond)) &&
-	    (data_list_for_each(dqos, _foreach_update_qos, &args) < 0))
-		rc = ESLURM_REST_INVALID_QUERY;
-
-	if (!rc && commit)
+	    (data_list_for_each(dqos, _foreach_update_qos, &args) < 0)) {
+		if (!rc)
+			rc = ESLURM_REST_INVALID_QUERY;
+	} else if (commit) {
 		rc = db_query_commit(errors, auth);
+	}
 
 	FREE_NULL_LIST(args.g_tres_list);
 
