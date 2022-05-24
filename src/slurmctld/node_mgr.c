@@ -4477,7 +4477,6 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 	node_ptr->node_hostname = xstrdup(hostname);
 	node_ptr->bcast_address = xstrdup(bcast_address);
 	node_ptr->port = port;
-	node_ptr->weight = conf_node->weight;
 	node_ptr->reason = xstrdup(conf_node->reason);
 
 	node_ptr->node_state |= NODE_STATE_DYNAMIC_NORM;

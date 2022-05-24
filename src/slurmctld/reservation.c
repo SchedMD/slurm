@@ -7106,7 +7106,8 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 		if (!bit_test(resv_ptr->node_bitmap, i))
 			continue;
 
-		node_ptr = node_record_table_ptr[i];
+		if (!(node_ptr = node_record_table_ptr[i]))
+			continue;
 		old_state = node_ptr->node_state;
 		if (resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET)
 			node_ptr->node_state |= flags;
