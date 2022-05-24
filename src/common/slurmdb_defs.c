@@ -1228,6 +1228,7 @@ extern void slurmdb_destroy_event_cond(void *object)
 
 	if (slurmdb_event) {
 		FREE_NULL_LIST(slurmdb_event->cluster_list);
+		FREE_NULL_LIST(slurmdb_event->format_list);
 		FREE_NULL_LIST(slurmdb_event->reason_list);
 		FREE_NULL_LIST(slurmdb_event->reason_uid_list);
 		FREE_NULL_LIST(slurmdb_event->state_list);
