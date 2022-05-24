@@ -246,6 +246,7 @@ extern char *run_command(run_command_args_t *args)
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
 	} else if (!args->turnoff_output) {
+		bool send_terminate = true;
 		char *wait_str;
 		struct pollfd fds;
 		struct timeval tstart;
@@ -296,11 +297,14 @@ extern char *run_command(run_command_args_t *args)
 				      __func__, args->script_type);
 				break;
 			}
-			if ((fds.revents & POLLIN) == 0)
+			if ((fds.revents & POLLIN) == 0) {
+				send_terminate = false;
 				break;
+			}
 			i = read(pfd[0], resp + resp_offset,
 				 resp_size - resp_offset);
 			if (i == 0) {
+				send_terminate = false;
 				break;
 			} else if (i < 0) {
 				if (errno == EAGAIN)
@@ -316,7 +320,9 @@ extern char *run_command(run_command_args_t *args)
 				}
 			}
 		}
-		killpg(cpid, SIGTERM);
+		/* Only send SIGTERM if the script isn't exiting normally. */
+		if (send_terminate)
+			killpg(cpid, SIGTERM);
 		wait_str = xstrdup_printf("SIGTERM %s", args->script_type);
 		run_command_waitpid_timeout(wait_str, cpid, args->status,
 					    10, NULL);
