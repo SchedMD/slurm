@@ -194,8 +194,8 @@ static data_for_each_cmd_t _foreach_update_wckey(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _update_wckeys(data_t *query, data_t *resp, data_t *errors,
-			  void *auth, bool commit)
+static int _update_wckeys(const char *context_id, data_t *query, data_t *resp,
+			  data_t *errors, void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	foreach_update_wckey_t args = {
@@ -206,14 +206,17 @@ static int _update_wckeys(data_t *query, data_t *resp, data_t *errors,
 	};
 	data_t *dwckeys = get_query_key_list("wckeys", errors, query);
 
-	if (!dwckeys)
+	if (!dwckeys) {
+		debug("%s: [%s] ignoring empty or non-existant wckeys array",
+		      __func__, context_id);
+	} else if (data_list_for_each(dwckeys, _foreach_update_wckey, &args) <
+		   0) {
 		rc = ESLURM_REST_INVALID_QUERY;
-	else if (data_list_for_each(dwckeys, _foreach_update_wckey, &args) < 0)
-		rc = ESLURM_REST_INVALID_QUERY;
-	else if (!(rc = db_query_rc(errors, auth, args.wckey_list,
-				    slurmdb_wckeys_add)) &&
-		 commit)
+	} else if (!(rc = db_query_rc(errors, auth, args.wckey_list,
+				      slurmdb_wckeys_add)) &&
+		   commit) {
 		rc = db_query_commit(errors, auth);
+	}
 
 	FREE_NULL_LIST(args.wckey_list);
 
@@ -252,7 +255,7 @@ extern int op_handler_wckeys(const char *context_id,
 	if (method == HTTP_REQUEST_GET)
 		rc = _dump_wckeys(resp, errors, NULL, auth);
 	else if (method == HTTP_REQUEST_POST)
-		rc = _update_wckeys(query, resp, errors, auth,
+		rc = _update_wckeys(context_id, query, resp, errors, auth,
 				    (tag != CONFIG_OP_TAG));
 	else
 		rc = ESLURM_REST_INVALID_QUERY;
