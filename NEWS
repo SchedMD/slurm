@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - change job parsing error message to reflect reality.
  -- Avoid segfault/assert when --thread-spec used with config_overrides
  -- Don't send SIGTERM to prematurely in run_command.
+ -- Add logging to inform where networking errors are occurring on slurmd end.
 
 * Changes in Slurm 22.05.0rc1
 =============================
