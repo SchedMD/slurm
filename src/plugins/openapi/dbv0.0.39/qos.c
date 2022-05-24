@@ -280,7 +280,8 @@ static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 	return (rc != SLURM_SUCCESS) ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
 }
 
-static int _update_qos(data_t *query, data_t *resp, void *auth, bool commit)
+static int _update_qos(const char *context_id, data_t *query, data_t *resp,
+		       void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -295,10 +296,9 @@ static int _update_qos(data_t *query, data_t *resp, void *auth, bool commit)
 	data_t *dqos = get_query_key_list("QOS", errors, query);
 
 	if (!dqos) {
-		return ESLURM_REST_INVALID_QUERY;
-	}
-
-	if (!(rc = db_query_list(errors, auth, &args.g_tres_list,
+		debug("%s: [%s] ignoring empty or non-existant QOS array",
+		      __func__, context_id);
+	} else if (!(rc = db_query_list(errors, auth, &args.g_tres_list,
 				 slurmdb_tres_get, &tres_cond)) &&
 	    (data_list_for_each(dqos, _foreach_update_qos, &args) < 0)) {
 		if (!rc)
@@ -359,7 +359,8 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 		rc = _delete_qos(resp, auth, errors, &qos_cond);
 	else if (method == HTTP_REQUEST_POST &&
 		 ((tag == TAG_ALL_QOS) || (tag == CONFIG_OP_TAG)))
-		rc = _update_qos(query, resp, auth, (tag != CONFIG_OP_TAG));
+		rc = _update_qos(context_id, query, resp, auth,
+				 (tag != CONFIG_OP_TAG));
 	else
 		rc = ESLURM_REST_INVALID_QUERY;
 
