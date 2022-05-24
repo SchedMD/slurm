@@ -1014,16 +1014,14 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 	}
 
 	if (check_header_version(&header) < 0) {
-		slurm_addr_t resp_addr;
 		uid_t uid = _unpack_msg_uid(buffer, header.version);
 
-		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("%s: [%s] Invalid Protocol Version %u from uid=%u at %pA",
-			      __func__, peer, header.version, uid, &resp_addr);
-		} else {
-			error("%s: [%s] Invalid Protocol Version %u from uid=%u from problem connection: %m",
-			      __func__, peer, header.version, uid);
-		}
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] Invalid Protocol Version %u from uid=%u: %m",
+		      __func__, peer, header.version, uid);
 
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
@@ -1309,15 +1307,14 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	}
 
 	if (check_header_version(&header) < 0) {
-		slurm_addr_t resp_addr;
 		uid_t uid = _unpack_msg_uid(buffer, header.version);
-		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("%s: [%s] Invalid Protocol Version %u from uid=%u at %pA",
-			      __func__, peer, header.version, uid, &resp_addr);
-		} else {
-			error("%s: [%s] Invalid Protocol Version %u from uid=%d from problem connection: %m",
-			      __func__, peer, header.version, uid);
-		}
+
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] Invalid Protocol Version %u from uid=%d: %m",
+		      __func__, peer, header.version, uid);
 
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
@@ -1509,14 +1506,12 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	}
 
 	if (check_header_version(&header) < 0) {
-		slurm_addr_t resp_addr;
-		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("%s: [%s] Invalid Protocol Version %u from at %pA",
-			      __func__, peer, header.version, &resp_addr);
-		} else {
-			error("%s: [%s] Invalid Protocol Version %u from problem connection: %m",
-			      __func__, peer, header.version);
-		}
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] Invalid Protocol Version %u: %m",
+		      __func__, peer, header.version);
 
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
@@ -1696,15 +1691,14 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	}
 
 	if (check_header_version(&header) < 0) {
-		slurm_addr_t resp_addr;
 		uid_t uid = _unpack_msg_uid(buffer, header.version);
-		if (!slurm_get_peer_addr(fd, &resp_addr)) {
-			error("%s: [%s] Invalid Protocol Version %u from uid=%u at %pA",
-			      __func__, peer, header.version, uid, &resp_addr);
-		} else {
-			error("%s: [%s] Invalid Protocol Version %u from uid=%d from problem connection: %m",
-			      __func__, peer, header.version, uid);
-		}
+
+		/* peer may have not been resolved already */
+		if (!peer)
+			peer = fd_resolve_peer(fd);
+
+		error("%s: [%s] Invalid Protocol Version %u from uid=%d: %m",
+		      __func__, peer, header.version, uid);
 
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
