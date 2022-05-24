@@ -707,6 +707,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 				   resp_msg, script_msg->script_name,
 				   script_msg->script_type, signalled, status,
 				   timed_out);
+	xfree(resp_msg);
 
 	return rc;
 }
