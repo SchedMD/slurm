@@ -404,6 +404,32 @@
 </tr>
 </table>
 
+<h4>Enforce limit to only DELETE or GET a single association instead of using
+required parameters.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">changed value</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/association/".get.parameters[].required</li>
+			<li>.paths."/association/".delete.parameters[].required</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Add filter parameters to GET /associations</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new method</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/associations/".get.parameters</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h3>openapi/dbv0.0.36 (src/plugins/openapi/dbv0.0.36/openapi.json)</h3>
 
 <h4>Deprecation notice</h4>
@@ -739,6 +765,30 @@ The dbv0.0.36 plugin has now been marked as deprecated.
 			<li>.components.schemas."v0.0.38_job_properties".properties.container</li>
 		</ul>
 	</td>
+</tr>
+</table>
+
+<h4>Add method to delete associations using filters</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new method</td>
+	<td class="tdchange" colspan=2>
+		<ul>
+			<li>.paths."/associations/".delete</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
+<h4>Rename response schema entry</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_response_association_delete"</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_response_associations_delete"</td>
 </tr>
 </table>
 

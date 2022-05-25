@@ -57,6 +57,63 @@
 
 #include "src/plugins/openapi/dbv0.0.38/api.h"
 
+typedef struct {
+	size_t offset;
+	char *parameter;
+} assoc_parameter_t;
+
+static const assoc_parameter_t assoc_parameters[] = {
+	{
+		offsetof(slurmdb_assoc_cond_t, partition_list),
+		"partition"
+	},
+	{
+		offsetof(slurmdb_assoc_cond_t, cluster_list),
+		"cluster"
+	},
+	{
+		offsetof(slurmdb_assoc_cond_t, acct_list),
+		"account"
+	},
+	{
+		offsetof(slurmdb_assoc_cond_t, user_list),
+		"user"
+	},
+};
+
+static int _populate_assoc_cond(data_t *errors, data_t *query,
+				slurmdb_assoc_cond_t *assoc_cond)
+{
+	if (!query)
+		return SLURM_SUCCESS;
+
+	for (int i = 0; i < ARRAY_SIZE(assoc_parameters); i++) {
+		char *value = NULL;
+		const assoc_parameter_t *ap = &assoc_parameters[i];
+		List *list = ((void *) assoc_cond) + ap->offset;
+		int rc = data_retrieve_dict_path_string(query, ap->parameter,
+							&value);
+
+		if (rc == ESLURM_DATA_PATH_NOT_FOUND) {
+			/* parameter not in query */
+			continue;
+		} else if (rc) {
+			char *err = xstrdup_printf("Invalid format for query parameter %s",
+						   ap->parameter);
+			rc = resp_error(errors, rc, err, "HTTP query");
+			xfree(err);
+			return rc;
+		}
+
+		*list = list_create(xfree_ptr);
+		(void) slurm_addto_char_list(*list, value);
+
+		xfree(value);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _foreach_delete_assoc(void *x, void *arg)
 {
 	char *assoc = x;
@@ -67,8 +124,8 @@ static int _foreach_delete_assoc(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _dump_assoc_cond(data_t *resp, void *auth,
-			    data_t *errors, slurmdb_assoc_cond_t *cond)
+static int _dump_assoc_cond(data_t *resp, void *auth, data_t *errors,
+			    slurmdb_assoc_cond_t *cond, bool only_one)
 {
 	int rc = SLURM_SUCCESS;
 	List assoc_list = NULL;
@@ -97,6 +154,13 @@ static int _dump_assoc_cond(data_t *resp, void *auth,
 			.g_assoc_list = assoc_list,
 		};
 
+		if (only_one && list_count(assoc_list) > 1) {
+			rc = resp_error(
+				errors, ESLURM_REST_INVALID_QUERY,
+				"Ambiguous request: More than 1 association would have been dumped.",
+				NULL);
+		}
+
 		while (!rc && (assoc = list_next(itr)))
 			rc = dump(PARSE_ASSOC, assoc,
 				  data_set_dict(data_list_append(dassocs)),
@@ -112,90 +176,30 @@ static int _dump_assoc_cond(data_t *resp, void *auth,
 	return rc;
 }
 
-/* based on sacctmgr_list_assoc() */
-static int _dump_associations(const char *context_id,
-			      http_request_method_t method, data_t *parameters,
-			      data_t *query, int tag, data_t *resp,
-			      void *auth, data_t *errors)
-{
-	int rc;
-	slurmdb_assoc_cond_t assoc_cond = {
-		.with_deleted = true,
-	};
-
-	rc = _dump_assoc_cond(resp, auth, errors, &assoc_cond);
-
-	return rc;
-}
-
-static int _dump_association(data_t *resp, void *auth,
-			     data_t *errors, char *account, char *cluster,
-			     char *user, char *partition)
-{
-	int rc = SLURM_SUCCESS;
-	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
-
-	if (account) {
-		assoc_cond->acct_list = list_create(NULL);
-		list_append(assoc_cond->acct_list, account);
-	}
-	if (cluster) {
-		assoc_cond->cluster_list = list_create(NULL);
-		list_append(assoc_cond->cluster_list, cluster);
-	}
-	if (user) {
-		assoc_cond->user_list = list_create(NULL);
-		list_append(assoc_cond->user_list, user);
-	}
-	if (partition) {
-		assoc_cond->partition_list = list_create(NULL);
-		list_append(assoc_cond->partition_list, partition);
-	}
-
-	rc = _dump_assoc_cond(resp, auth, errors, assoc_cond);
-	slurmdb_destroy_assoc_cond(assoc_cond);
-
-	return rc;
-}
-
 static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
-			 char *account, char *cluster, char *user,
-			 char *partition)
+			 slurmdb_assoc_cond_t *assoc_cond, bool only_one)
 {
 	int rc = SLURM_SUCCESS;
 	List removed = NULL;
-	slurmdb_assoc_cond_t assoc_cond = {
-		.acct_list = list_create(NULL),
-		.user_list = list_create(NULL),
-	};
+	data_t *drem = data_set_list(data_key_set(resp, "removed_associations"));
 
-	list_append(assoc_cond.acct_list, account);
-	if (cluster) {
-		assoc_cond.cluster_list = list_create(NULL);
-		list_append(assoc_cond.cluster_list, cluster);
-	}
-	list_append(assoc_cond.user_list, user);
-	if (partition) {
-		assoc_cond.partition_list = list_create(NULL);
-		list_append(assoc_cond.partition_list, partition);
-	}
-
-	if (!(rc = db_query_list(errors, auth, &removed,
-				 slurmdb_associations_remove, &assoc_cond)) &&
-	    (list_for_each(removed, _foreach_delete_assoc,
-			   data_set_list(data_key_set(
-				   resp, "removed_associations"))) < 0))
-		resp_error(errors, ESLURM_REST_INVALID_QUERY,
-			   "unable to delete associations", NULL);
-
-	if (!rc)
+	rc = db_query_list(errors, auth, &removed, slurmdb_associations_remove,
+			   assoc_cond);
+	if (rc) {
+		(void) resp_error(errors, rc, "unable to query associations",
+				NULL);
+	} else if (only_one && list_count(removed) > 1) {
+		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				"ambiguous request: More than 1 association would have been deleted.",
+				NULL);
+	} else if (list_for_each(removed, _foreach_delete_assoc, drem) < 0) {
+		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				"unable to delete associations", NULL);
+	} else if (!rc) {
 		rc = db_query_commit(errors, auth);
+	}
 
 	FREE_NULL_LIST(removed);
-	FREE_NULL_LIST(assoc_cond.acct_list);
-	FREE_NULL_LIST(assoc_cond.cluster_list);
-	FREE_NULL_LIST(assoc_cond.user_list);
-	FREE_NULL_LIST(assoc_cond.partition_list);
 
 	return rc;
 }
@@ -346,34 +350,18 @@ static int op_handler_association(const char *context_id,
 				  data_t *parameters, data_t *query, int tag,
 				  data_t *resp, void *auth)
 {
+	int rc;
 	data_t *errors = populate_response_format(resp);
-	char *user = NULL; /* optional */
-	char *account = NULL; /* optional */
-	char *cluster = NULL; /* optional */
-	char *partition = NULL; /* optional */
-	int rc = ESLURM_REST_INVALID_QUERY;
+	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
 
-	if (!query)
-		return resp_error(errors, ESLURM_REST_EMPTY_RESULT,
-				  "query is missing", "HTTP query");
-
-	(void)data_retrieve_dict_path_string(query, "partition", &partition);
-	(void)data_retrieve_dict_path_string(query, "cluster", &cluster);
-	(void)data_retrieve_dict_path_string(query, "user", &user);
-	(void)data_retrieve_dict_path_string(query, "account", &account);
-
+	if ((rc = _populate_assoc_cond(errors, query, assoc_cond)))
+		/* no-op - already logged */;
 	if (method == HTTP_REQUEST_GET)
-		rc = _dump_association(resp, auth, errors, account, cluster,
-				       user, partition);
+		rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, true);
 	else if (method == HTTP_REQUEST_DELETE)
-		rc = _delete_assoc(resp, auth, errors, account, cluster, user,
-				   partition);
+		rc = _delete_assoc(resp, auth, errors, assoc_cond, true);
 
-	xfree(partition);
-	xfree(cluster);
-	xfree(user);
-	xfree(account);
-
+	slurmdb_destroy_assoc_cond(assoc_cond);
 	return rc;
 }
 
@@ -382,16 +370,22 @@ extern int op_handler_associations(const char *context_id,
 				   data_t *parameters, data_t *query, int tag,
 				   data_t *resp, void *auth)
 {
+	int rc;
 	data_t *errors = populate_response_format(resp);
+	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
 
+	if ((rc = _populate_assoc_cond(errors, query, assoc_cond)))
+		/* no-op - already logged */;
 	if (method == HTTP_REQUEST_GET)
-		return _dump_associations(context_id, method, parameters, query,
-					  tag, resp, auth, errors);
+		rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, false);
 	else if (method == HTTP_REQUEST_POST)
-		return _update_assocations(query, resp, auth,
-					   (tag != CONFIG_OP_TAG));
+		rc = _update_assocations(query, resp, auth,
+					 (tag != CONFIG_OP_TAG));
+	else if (method == HTTP_REQUEST_DELETE)
+		rc = _delete_assoc(resp, auth, errors, assoc_cond, false);
 
-	return ESLURM_REST_INVALID_QUERY;
+	slurmdb_destroy_assoc_cond(assoc_cond);
+	return rc;
 }
 
 extern void init_op_associations(void)

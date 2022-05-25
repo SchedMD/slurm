@@ -50,6 +50,13 @@ documents those changes that are of interest to users and administrators.
  -- Avoid segfault/assert when --thread-spec used with config_overrides
  -- Don't send SIGTERM to prematurely in run_command.
  -- Add logging to inform where networking errors are occurring on slurmd end.
+ -- openapi/dbv0.0.38 - Enforce GET /association/ to dump only a single
+    association.
+ -- openapi/dbv0.0.38 - Enforce DELETE /association/ to delete only a single
+    association.
+ -- openapi/dbv0.0.38 - Add parameters to filter to GET /associations/.
+ -- openapi/dbv0.0.38 - Add DELETE /associations using parameters to set filters.
+ -- openapi/dbv0.0.38 - Fix plural form of delete association response schema.
 
 * Changes in Slurm 22.05.0rc1
 =============================

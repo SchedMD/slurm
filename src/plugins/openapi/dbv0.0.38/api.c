@@ -160,6 +160,7 @@ extern int db_query_list_funcname(data_t *errors, rest_auth_context_t *auth,
 	l = func(db_conn, cond);
 
 	if (errno) {
+		FREE_NULL_LIST(l);
 		return resp_error(errors, errno, NULL, func_name);
 	} else if (!l) {
 		return resp_error(errors, ESLURM_REST_INVALID_QUERY,

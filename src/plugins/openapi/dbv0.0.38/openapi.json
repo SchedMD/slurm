@@ -510,42 +510,173 @@
       },
       "get": {
         "tags": [
-          "slurm"
-        ],
-        "operationId": "get_associations",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_associations_info"
-                }
-              },
-              "application/x-yaml": {
-                "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_associations_info"
-                }
-              }
-            },
-            "description": "List of associations"
-          },
-          "default": {
-            "description": "Association not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_errors"
-                }
-              },
-              "application/x-yaml": {
-                "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_errors"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Get association list"
+	  "slurm"
+	],
+	"operationId": "get_associations",
+	"parameters": [
+	  {
+	    "name": "cluster",
+	    "in": "query",
+	    "description": "Cluster name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "account",
+	    "in": "query",
+	    "description": "Account name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "user",
+	    "in": "query",
+	    "description": "User name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "partition",
+	    "in": "query",
+	    "description": "Partition Name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  }
+	],
+	"responses": {
+	  "200": {
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_associations_info"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_associations_info"
+		}
+	      }
+	    },
+	    "description": "List of associations"
+	  },
+	  "default": {
+	    "description": "Association not found",
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_errors"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_errors"
+		}
+	      }
+	    }
+	  }
+	},
+	"summary": "Get association list"
+      },
+      "delete": {
+	"tags": [
+	  "slurm"
+	],
+	"operationId": "delete_associations",
+	"parameters": [
+	  {
+	    "name": "cluster",
+	    "in": "query",
+	    "description": "Cluster name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "account",
+	    "in": "query",
+	    "description": "Account name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "user",
+	    "in": "query",
+	    "description": "User name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  },
+	  {
+	    "name": "partition",
+	    "in": "query",
+	    "description": "Partition Name",
+	    "required": false,
+	    "style": "form",
+	    "explode": false,
+	    "schema": {
+	      "type": "string"
+	    }
+	  }
+	],
+	"responses": {
+	  "200": {
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_response_associations_delete"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_response_associations_delete"
+		}
+	      }
+	    },
+	    "description": "Delete associations"
+	  },
+	  "default": {
+	    "description": "Associations not found or unable to delete association",
+	    "content": {
+	      "application/json": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_errors"
+		}
+	      },
+	      "application/x-yaml": {
+		"schema": {
+		  "$ref": "#/components/schemas/dbv0.0.38_errors"
+		}
+	      }
+	    }
+	  }
+	},
+	"summary": "Delete associations"
       }
     },
     "/association/": {
@@ -655,7 +786,7 @@
             "name": "account",
             "in": "query",
             "description": "Account name",
-            "required": true,
+	    "required": false,
             "style": "form",
             "explode": false,
             "schema": {
@@ -666,7 +797,7 @@
             "name": "user",
             "in": "query",
             "description": "User name",
-            "required": true,
+	    "required": false,
             "style": "form",
             "explode": false,
             "schema": {
@@ -690,12 +821,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_response_association_delete"
+		  "$ref": "#/components/schemas/dbv0.0.38_response_associations_delete"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.38_response_association_delete"
+		  "$ref": "#/components/schemas/dbv0.0.38_response_associations_delete"
                 }
               }
             },
@@ -2517,28 +2648,6 @@
           }
         }
       },
-      "dbv0.0.38_response_association_delete": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.38_error"
-            }
-          },
-          "removed_associations": {
-            "type": "array",
-            "description": "the associations",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "dbv0.0.38_association": {
         "type": "object",
         "description": "Association description",
@@ -3903,6 +4012,28 @@
             "$ref": "#/components/schemas/dbv0.0.38_cluster_info"
           }
         }
+      },
+      "dbv0.0.38_response_associations_delete": {
+	"type": "object",
+	"properties": {
+	  "meta": {
+	    "$ref": "#/components/schemas/v0.0.38_meta"
+	  },
+	  "errors": {
+	    "type": "array",
+	    "description": "Slurm errors",
+	    "items": {
+	      "$ref": "#/components/schemas/dbv0.0.38_error"
+	    }
+	  },
+	  "removed_associations": {
+	    "type": "array",
+	    "description": "the associations",
+	    "items": {
+	      "type": "string"
+	    }
+	  }
+	}
       }
     }
   }
