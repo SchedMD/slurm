@@ -851,7 +851,6 @@ static int _set_partition_options(void *x, void *arg)
 	part_record_t *part_ptr = (part_record_t *)x;
 	node_record_t *node_ptr;
 	bool *suspend_time_set = (bool *)arg;
-	int i;
 
 	if (suspend_time_set &&
 	    (part_ptr->suspend_time != INFINITE) &&
@@ -864,10 +863,8 @@ static int _set_partition_options(void *x, void *arg)
 	if (part_ptr->suspend_timeout != NO_VAL16)
 		max_timeout = MAX(max_timeout, part_ptr->resume_timeout);
 
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (!bit_test(part_ptr->node_bitmap, node_ptr->index))
-			continue;
-
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(part_ptr->node_bitmap, &i)); i++) {
 		if (node_ptr->suspend_time == NO_VAL)
 			node_ptr->suspend_time = part_ptr->suspend_time;
 		else if (part_ptr->suspend_time != NO_VAL)

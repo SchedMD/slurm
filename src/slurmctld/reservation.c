@@ -2203,7 +2203,6 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			  slurmctld_resv_t *old_resv_ptr)
 {
-	int i;
 	uint64_t cpu_cnt = 0;
 	node_record_t *node_ptr;
 	char start_time[32], end_time[32], tmp_msd[40];
@@ -2214,9 +2213,9 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	    resv_ptr->node_bitmap) {
 		resv_ptr->core_cnt = 0;
 
-		for (i = 0; (node_ptr = next_node(&i)); i++) {
-			if (!bit_test(resv_ptr->node_bitmap, node_ptr->index))
-				continue;
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(resv_ptr->node_bitmap, &i));
+		     i++) {
 			resv_ptr->core_cnt += node_ptr->tot_cores;
 			cpu_cnt += node_ptr->cpus;
 		}

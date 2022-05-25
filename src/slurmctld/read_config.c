@@ -2976,21 +2976,18 @@ static int _sync_nodes_to_comp_job(void)
  * RET count of jobs with state changes */
 static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 {
-	int i, cnt = 0;
+	int cnt = 0;
 	uint32_t node_flags;
 	node_record_t *node_ptr;
+	bitstr_t *node_bitmap;
 
 	if (job_ptr->node_bitmap_cg) /* job completing */
-		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap_cg);
+		node_bitmap = job_ptr->node_bitmap_cg;
 	else
-		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (job_ptr->node_bitmap_cg) { /* job completing */
-			if (!bit_test(job_ptr->node_bitmap_cg, node_ptr->index))
-				continue;
-		} else if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
-			continue;
+		node_bitmap = job_ptr->node_bitmap;
 
+	job_ptr->node_cnt = bit_set_count(node_bitmap);
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		if ((job_ptr->details &&
 		     (job_ptr->details->whole_node == WHOLE_NODE_USER)) ||
 		    (job_ptr->part_ptr &&
@@ -3058,10 +3055,8 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 {
 	node_record_t *node_ptr;
 
-	for (int i = 0; (node_ptr = next_node(&i)); i++) {
-		if (bit_test(job_ptr->node_bitmap, node_ptr->index) == 0)
-			continue;
-
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		node_ptr->sus_job_cnt++;
 	}
 	return;

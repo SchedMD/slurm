@@ -1773,10 +1773,10 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpus &&
 	    job_ptr->job_resrcs->node_bitmap) {
 		int node_inx = -1;
-		for (i = 0; (node_ptr = next_node(&i)); i++) {
-			if (!bit_test(job_ptr->job_resrcs->node_bitmap,
-				      node_ptr->index))
-				continue;
+		for (i = 0;
+		     (node_ptr = next_node_bitmap(
+			job_ptr->job_resrcs->node_bitmap, &i));
+		     i++) {
 			node_inx++;
 			if (!bit_test(job_ptr->node_bitmap, node_ptr->index) ||
 			    !bit_test(bitmap, node_ptr->index)) {
@@ -1790,9 +1790,7 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 		}
 	} else {
 		error("%pJ lacks cpus array", job_ptr);
-		for (i = 0; (node_ptr = next_node(&i)); i++) {
-			if (!bit_test(bitmap, node_ptr->index))
-				continue;
+		for (i = 0; (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
 			sum += node_ptr->config_ptr->cpus;
 		}
 	}

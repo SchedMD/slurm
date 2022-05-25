@@ -169,7 +169,6 @@ static uint16_t _get_ntasks_per_core(struct job_details *details)
  */
 extern void allocate_nodes(job_record_t *job_ptr)
 {
-	int i;
 	node_record_t *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
 	bool has_dynamic_norm = false;
@@ -185,10 +184,8 @@ extern void allocate_nodes(job_record_t *job_ptr)
 		sched_update = slurm_conf.last_update;
 	}
 
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
-			continue;
-
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		if (IS_NODE_DYNAMIC_FUTURE(node_ptr))
 			has_cloud = true;
 
@@ -232,7 +229,6 @@ extern void allocate_nodes(job_record_t *job_ptr)
 /* Set a job's alias_list string */
 extern void set_job_alias_list(job_record_t *job_ptr)
 {
-	int i;
 	node_record_t *node_ptr;
 	static bool cloud_dns = false;
 	static time_t sched_update = 0;
@@ -251,10 +247,8 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 	if (cloud_dns)
 		return;
 
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
-			continue;
-
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		if (IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
 		    IS_NODE_DYNAMIC_NORM(node_ptr) ||
 		    IS_NODE_CLOUD(node_ptr)) {
@@ -351,12 +345,9 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 				front_end_ptr->node_state = NODE_STATE_IDLE |
 							    state_flags;
 			}
-			for (i = 0; (node_ptr = next_node(&i)); i++) {
-				if (!bit_test(job_ptr->node_bitmap,
-					      node_ptr->index))
-					continue;
-				node_ptr =
-					node_record_table_ptr[node_ptr->index];
+			for (int i = 0; (node_ptr = next_node_bitmap(
+					     job_ptr->node_bitmap, &i));
+			     i++) {
 				make_node_comp(node_ptr, job_ptr, suspended);
 				set_fe_comp = true;
 			}
@@ -4260,7 +4251,6 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
  */
 extern void re_kill_job(job_record_t *job_ptr)
 {
-	int i;
 	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
 	hostlist_t kill_hostlist;
@@ -4308,12 +4298,12 @@ extern void re_kill_job(job_record_t *job_ptr)
 	if (job_ptr->batch_host &&
 	    (front_end_ptr = find_front_end_record(job_ptr->batch_host))) {
 		agent_args->protocol_version = front_end_ptr->protocol_version;
-		if (IS_NODE_DOWN(front_end_ptr)) {
-			for (i = 0; (node_ptr = next_node(&i)); i++) {
-				if ((job_ptr->node_bitmap_cg == NULL) ||
-				    (!bit_test(job_ptr->node_bitmap_cg,
-					       node_ptr->index)))
-					continue;
+		if (IS_NODE_DOWN(front_end_ptr) &&
+		    job_ptr->node_bitmap_cg) {
+			for (int i = 0;
+			     (node_ptr =
+				next_node_bitmap(job_ptr->node_bitmap_cg, &i));
+			     i++) {
 				bit_clear(job_ptr->node_bitmap_cg,
 					  node_ptr->index);
 				job_update_tres_cnt(job_ptr, node_ptr->index);
@@ -4336,31 +4326,34 @@ extern void re_kill_job(job_record_t *job_ptr)
 		}
 	}
 #else
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if ((job_ptr->node_bitmap_cg == NULL) ||
-		    (bit_test(job_ptr->node_bitmap_cg, node_ptr->index) == 0)) {
-			continue;
-		} else if (IS_NODE_DOWN(node_ptr)) {
-			/* Consider job already completed */
-			bit_clear(job_ptr->node_bitmap_cg, node_ptr->index);
-			job_update_tres_cnt(job_ptr, node_ptr->index);
-			if (node_ptr->comp_job_cnt)
-				(node_ptr->comp_job_cnt)--;
-			if ((job_ptr->node_cnt > 0) &&
-			    ((--job_ptr->node_cnt) == 0)) {
-				cleanup_completing(job_ptr);
-				batch_requeue_fini(job_ptr);
-				last_node_update = time(NULL);
+	if (job_ptr->node_bitmap_cg) {
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap_cg, &i));
+		     i++) {
+			if (IS_NODE_DOWN(node_ptr)) {
+				/* Consider job already completed */
+				bit_clear(job_ptr->node_bitmap_cg,
+					  node_ptr->index);
+				job_update_tres_cnt(job_ptr, node_ptr->index);
+				if (node_ptr->comp_job_cnt)
+					(node_ptr->comp_job_cnt)--;
+				if ((job_ptr->node_cnt > 0) &&
+				    ((--job_ptr->node_cnt) == 0)) {
+					cleanup_completing(job_ptr);
+					batch_requeue_fini(job_ptr);
+					last_node_update = time(NULL);
+				}
+			} else if (!IS_NODE_NO_RESPOND(node_ptr)) {
+				(void)hostlist_push_host(kill_hostlist,
+							 node_ptr->name);
+				if (agent_args->protocol_version >
+				    node_ptr->protocol_version)
+					agent_args->protocol_version =
+						node_ptr->protocol_version;
+				hostlist_push_host(agent_args->hostlist,
+						   node_ptr->name);
+				agent_args->node_count++;
 			}
-		} else if (!IS_NODE_NO_RESPOND(node_ptr)) {
-			(void)hostlist_push_host(kill_hostlist, node_ptr->name);
-			if (agent_args->protocol_version >
-			    node_ptr->protocol_version)
-				agent_args->protocol_version =
-					node_ptr->protocol_version;
-			hostlist_push_host(agent_args->hostlist,
-					   node_ptr->name);
-			agent_args->node_count++;
 		}
 	}
 #endif

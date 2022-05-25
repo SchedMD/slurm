@@ -14740,7 +14740,6 @@ static void _send_job_kill(job_record_t *job_ptr)
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #else
-	int i;
 	node_record_t *node_ptr;
 #endif
 	kill_job_msg_t *kill_job;
@@ -14763,9 +14762,8 @@ static void _send_job_kill(job_record_t *job_ptr)
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (!bit_test(job_ptr->node_bitmap_cg, node_ptr->index))
-			continue;
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(job_ptr->node_bitmap_cg, &i)); i++) {
 		if (agent_args->protocol_version > node_ptr->protocol_version)
 			agent_args->protocol_version =
 				node_ptr->protocol_version;
