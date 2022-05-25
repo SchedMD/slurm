@@ -2142,7 +2142,7 @@
       "dbv0.0.39_diag": {
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2301,7 +2301,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2357,7 +2357,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2372,7 +2372,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2387,7 +2387,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2446,7 +2446,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2461,7 +2461,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2535,7 +2535,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2550,7 +2550,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2615,7 +2615,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2637,7 +2637,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -2845,7 +2845,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -3086,7 +3086,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -3108,7 +3108,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -3123,7 +3123,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -3138,7 +3138,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -3153,7 +3153,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -3168,7 +3168,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -3211,7 +3211,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -3819,7 +3819,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -3876,7 +3876,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -3891,7 +3891,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -4017,7 +4017,7 @@
 	"type": "object",
 	"properties": {
 	  "meta": {
-	    "$ref": "#/components/schemas/v0.0.39_meta"
+	    "$ref": "#/components/schemas/dbv0.0.39_meta"
 	  },
 	  "errors": {
 	    "type": "array",
@@ -4031,6 +4031,51 @@
 	    "description": "the associations",
 	    "items": {
 	      "type": "string"
+	    }
+	  }
+	}
+      },
+      "dbv0.0.39_meta": {
+	"type": "object",
+	"properties": {
+	  "plugin": {
+	    "type": "object",
+	    "properties": {
+	      "type": {
+		"type": "string",
+		"description": ""
+	      },
+	      "name": {
+		"type": "string",
+		"description": ""
+	      }
+	    }
+	  },
+	  "Slurm": {
+	    "type": "object",
+	    "description": "Slurm information",
+	    "properties": {
+	      "version": {
+		"type": "object",
+		"properties": {
+		  "major": {
+		    "type": "string",
+		    "description": ""
+		  },
+		  "micro": {
+		    "type": "string",
+		    "description": ""
+		  },
+		  "minor": {
+		    "type": "string",
+		    "description": ""
+		  }
+		}
+	      },
+	      "release": {
+		"type": "string",
+		"description": "version specifier"
+	      }
 	    }
 	  }
 	}
