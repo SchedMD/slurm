@@ -275,16 +275,22 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 		assoc = NULL;
 
 		debug("%s: adding association request: acct=%s cluster=%s partition=%s user=%s",
-		      __func__, assoc->acct, assoc->cluster, assoc->partition, assoc->user);
+		      __func__, assoc->acct, assoc->cluster, assoc->partition,
+		      assoc->user);
 
-		rc = db_query_rc(errors, args->auth, assoc_list, slurmdb_associations_add);
+		rc = db_query_rc(errors, args->auth, assoc_list,
+				 slurmdb_associations_add);
 	} else if (list_count(assoc_list) > 1) {
-		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY, "ambiguous modify request", "slurmdb_associations_get");
+		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				"ambiguous modify request",
+				"slurmdb_associations_get");
 	} else {
 		debug("%s: modifying association request: acct=%s cluster=%s partition=%s user=%s",
-		      __func__, assoc->acct, assoc->cluster, assoc->partition, assoc->user);
+		      __func__, assoc->acct, assoc->cluster, assoc->partition,
+		      assoc->user);
 
-		rc = db_modify_rc(errors, args->auth, &cond, assoc, slurmdb_associations_modify);
+		rc = db_modify_rc(errors, args->auth, &cond, assoc,
+				  slurmdb_associations_modify);
 	}
 
 cleanup:
