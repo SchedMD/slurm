@@ -199,15 +199,15 @@ echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS
 $bin_sleep 5
 exit 0"
 make_bash_script $file_in2 "
-$srun --overlap --gres=mps:$target_step $file_in1 &
-$srun --overlap --gres=mps:$target_step $file_in1 &
-$srun --overlap --gres=mps:$target_step $file_in1 &
+$srun --exact -n1 --gres=mps:$target_step $file_in1 &
+$srun --exact -n1 --gres=mps:$target_step $file_in1 &
+$srun --exact -n1 --gres=mps:$target_step $file_in1 &
 wait
 $bin_date
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J $test_name $file_in2
+spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n3 -t1 -o $file_out1 -J $test_name $file_in2
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
