@@ -39,6 +39,7 @@
   "paths": {
     "/job/{job_id}": {
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -83,6 +84,7 @@
     },
     "/config": {
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -110,6 +112,7 @@
         }
       },
       "post": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -139,6 +142,7 @@
     },
     "/tres/": {
       "post": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -166,6 +170,7 @@
         "summary": "Set TRES info"
       },
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -195,6 +200,7 @@
     },
     "/qos/{qos_name}": {
       "delete": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -235,6 +241,7 @@
         ]
       },
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -277,6 +284,7 @@
     },
     "/qos/": {
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -306,6 +314,7 @@
     },
     "/associations/": {
       "post": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -333,6 +342,7 @@
         "summary": "Set associations info"
       },
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -362,6 +372,7 @@
     },
     "/association/": {
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -435,6 +446,7 @@
         "summary": "Get association info"
       },
       "delete": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -510,6 +522,7 @@
     },
     "/user/{user_name}": {
       "delete": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -550,6 +563,7 @@
         ]
       },
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -592,6 +606,7 @@
     },
     "/users/": {
       "post": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -619,6 +634,7 @@
         }
       },
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -648,6 +664,7 @@
     },
     "/cluster/{cluster_name}": {
       "delete": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -688,6 +705,7 @@
         ]
       },
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -730,6 +748,7 @@
     },
     "/clusters/": {
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -757,6 +776,7 @@
         "summary": "Get cluster list"
       },
       "post": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -786,6 +806,7 @@
     },
     "/wckey/{wckey}": {
       "delete": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -826,6 +847,7 @@
         ]
       },
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -868,6 +890,7 @@
     },
     "/wckeys/": {
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -895,6 +918,7 @@
         "summary": "Get wckey list"
       },
       "post": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -924,6 +948,7 @@
     },
     "/account/{account_name}": {
       "delete": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -964,6 +989,7 @@
         ]
       },
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -1006,6 +1032,7 @@
     },
     "/accounts/": {
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -1033,6 +1060,7 @@
         "summary": "Get account list"
       },
       "post": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -1062,6 +1090,7 @@
     },
     "/jobs/": {
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],
@@ -1368,6 +1397,7 @@
     },
     "/diag/": {
       "get": {
+	"deprecated": true,
         "tags": [
           "slurm"
         ],

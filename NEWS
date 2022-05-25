@@ -8,7 +8,7 @@ documents those changes that are of interest to users and administrators.
     logs please update your scripts to use SIGUSR2 instead.
  -- Add Account and QOS name type specifications for sprio output formatting.
  -- openapi/[db]v0.0.36 - plugins have been removed.
- -- openapi/v0.0.37 - tagged as deprecated.
+ -- openapi/[db]v0.0.37 - tagged as deprecated.
 
 * Changes in Slurm 22.05.1
 ==========================
