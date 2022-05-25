@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Add Account and QOS name type specifications for sprio output formatting.
  -- openapi/[db]v0.0.36 - plugins have been removed.
  -- openapi/[db]v0.0.37 - tagged as deprecated.
+ -- openapi/v0.0.39 - forked plugin openapi/v0.0.38.
 
 * Changes in Slurm 22.05.1
 ==========================
