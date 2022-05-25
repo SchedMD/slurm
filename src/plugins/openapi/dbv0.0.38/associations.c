@@ -213,7 +213,7 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 {
 	foreach_update_assoc_t *args = arg;
 	data_t *errors = args->errors;
-	slurmdb_assoc_rec_t *assoc;
+	slurmdb_assoc_rec_t *assoc = NULL;
 	parser_env_t penv = {
 		.g_tres_list = args->tres_list,
 		.g_qos_list = args->qos_list,
