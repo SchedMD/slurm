@@ -23,6 +23,7 @@ generated_html = \
 	dist_plane.html \
 	documentation.html \
 	download.html \
+	dynamic_nodes.html \
 	elasticsearch.html \
 	elastic_computing.html \
 	faq.html \
