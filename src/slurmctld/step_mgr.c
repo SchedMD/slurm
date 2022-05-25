@@ -3488,179 +3488,165 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		bool test_mem_per_gres = false;
 		bool ignore_alloc;
 		int err_code = SLURM_SUCCESS;
+		node_record_t *node_ptr;
 
 		job_node_offset++;
-		if (bit_test(step_ptr->step_node_bitmap, i)) {
-			node_record_t *node_ptr =
-				node_record_table_ptr[i];
+		if (!bit_test(step_ptr->step_node_bitmap, i))
+			continue;
+		node_ptr = node_record_table_ptr[i];
 
 #ifndef HAVE_FRONT_END
-			if (step_ptr->start_protocol_ver >
-			    node_ptr->protocol_version)
-				step_ptr->start_protocol_ver =
-					node_ptr->protocol_version;
+		if (step_ptr->start_protocol_ver > node_ptr->protocol_version)
+			step_ptr->start_protocol_ver =
+				node_ptr->protocol_version;
 #endif
 
-			/* find out the position in the job */
-			pos = bit_get_pos_num(job_resrcs_ptr->node_bitmap, i);
-			if (pos == -1)
-				return NULL;
-			if (pos >= job_resrcs_ptr->nhosts)
-				fatal("%s: node index bad", __func__);
+		/* find out the position in the job */
+		pos = bit_get_pos_num(job_resrcs_ptr->node_bitmap, i);
+		if (pos == -1)
+			return NULL;
+		if (pos >= job_resrcs_ptr->nhosts)
+			fatal("%s: node index bad", __func__);
 
-			cpus = job_resrcs_ptr->cpus[pos];
-			cpus_used = job_resrcs_ptr->cpus_used[pos];
+		cpus = job_resrcs_ptr->cpus[pos];
+		cpus_used = job_resrcs_ptr->cpus_used[pos];
+		/*
+		 * Here we are trying to figure out the number
+		 * of cpus available if we only want to run 1
+		 * thread per core.
+		 */
+		if (_use_one_thread_per_core(step_ptr)) {
+			uint16_t threads;
+			threads = node_ptr->config_ptr->threads;
+
+			cpus /= threads;
+			cpus_used /= threads;
+			cpus_per_task_array[0] = cpus_per_task;
+			cpus_task_reps[0] = node_count;
+		} else {
 			/*
-			 * Here we are trying to figure out the number
-			 * of cpus available if we only want to run 1
-			 * thread per core.
+			 * Here we are trying to figure out how many
+			 * CPUs each task really needs. This really
+			 * only becomes an issue if the job requested
+			 * ntasks_per_core|socket=1. We just increase
+			 * the number of cpus_per_task to the thread
+			 * count. Since the system could be
+			 * heterogeneous, we needed to make this an
+			 * array.
 			 */
-			if (_use_one_thread_per_core(step_ptr)) {
-				uint16_t threads;
-				threads = node_ptr->config_ptr->threads;
+			uint16_t threads_per_core;
+			multi_core_data_t *mc_ptr = NULL;
 
-				cpus /= threads;
-				cpus_used /= threads;
-				cpus_per_task_array[0] = cpus_per_task;
-				cpus_task_reps[0] = node_count;
-			} else {
-				/*
-				 * Here we are trying to figure out how many
-				 * CPUs each task really needs. This really
-				 * only becomes an issue if the job requested
-				 * ntasks_per_core|socket=1. We just increase
-				 * the number of cpus_per_task to the thread
-				 * count. Since the system could be
-				 * heterogeneous, we needed to make this an
-				 * array.
-				 */
-				uint16_t threads_per_core;
-				multi_core_data_t *mc_ptr = NULL;
+			if (job_ptr->details)
+				mc_ptr = job_ptr->details->mc_ptr;
 
-				if (job_ptr->details)
-					mc_ptr = job_ptr->details->mc_ptr;
-
-				if (step_ptr->threads_per_core != NO_VAL16)
-					threads_per_core =
-						step_ptr->threads_per_core;
-				else if (mc_ptr &&
-					 (mc_ptr->threads_per_core != NO_VAL16))
-					threads_per_core =
-						mc_ptr->threads_per_core;
-				else
-					threads_per_core =
-						node_ptr->config_ptr->threads;
-				if (ntasks_per_socket == 1) {
-					uint16_t threads_per_socket;
-					threads_per_socket =
-						node_ptr->config_ptr->cores;
-					threads_per_socket *= threads_per_core;
-
-					if (cpus_per_task < threads_per_socket)
-						cpus_task = threads_per_socket;
-				} else if ((ntasks_per_core == 1) &&
-					   (cpus_per_task < threads_per_core))
-					cpus_task = threads_per_core;
-				else
-					cpus_task = cpus_per_task;
-
-				if ((cpus_task_inx == -1) ||
-				    (cpus_per_task_array[cpus_task_inx] !=
-				     cpus_task)) {
-					cpus_task_inx++;
-					cpus_per_task_array[cpus_task_inx] =
-						cpus_task;
-					cpus_task_reps[cpus_task_inx] = 1;
-				} else
-					cpus_task_reps[cpus_task_inx]++;
-			}
-
-			if (step_ptr->flags & SSF_OVERLAP_FORCE)
-				usable_cpus = cpus;
+			if (step_ptr->threads_per_core != NO_VAL16)
+				threads_per_core = step_ptr->threads_per_core;
+			else if (mc_ptr &&
+				 (mc_ptr->threads_per_core != NO_VAL16))
+				threads_per_core = mc_ptr->threads_per_core;
 			else
-				usable_cpus = cpus - cpus_used;
+				threads_per_core =
+					node_ptr->config_ptr->threads;
+			if (ntasks_per_socket == 1) {
+				uint16_t threads_per_socket;
+				threads_per_socket =
+					node_ptr->config_ptr->cores;
+				threads_per_socket *= threads_per_core;
 
-			if (usable_cpus <= 0)
-				continue;
-
-			if ((step_ptr->pn_min_memory & MEM_PER_CPU) &&
-			    _is_mem_resv()) {
-				uint64_t mem_use = step_ptr->pn_min_memory;
-				mem_use &= (~MEM_PER_CPU);
-				usable_mem =
-					job_resrcs_ptr->memory_allocated[pos] -
-					job_resrcs_ptr->memory_used[pos];
-				usable_mem /= mem_use;
-				usable_cpus = MIN(usable_cpus, usable_mem);
-			} else if ((!step_ptr->pn_min_memory) &&
-				   _is_mem_resv()) {
-				test_mem_per_gres = true;
-			}
-
-			if (step_ptr->flags & SSF_OVERLAP_FORCE)
-				ignore_alloc = true;
+				if (cpus_per_task < threads_per_socket)
+					cpus_task = threads_per_socket;
+			} else if ((ntasks_per_core == 1) &&
+				   (cpus_per_task < threads_per_core))
+				cpus_task = threads_per_core;
 			else
-				ignore_alloc = false;
+				cpus_task = cpus_per_task;
 
-			gres_cpus = gres_ctld_step_test(
-				step_ptr->gres_list_req,
-				job_ptr->gres_list_alloc,
-				job_node_offset,
-				first_step_node,
-				step_ptr->cpus_per_task,
-				rem_nodes, ignore_alloc,
-				job_ptr->job_id,
-				step_ptr->step_id.step_id,
-				test_mem_per_gres,
-				job_resrcs_ptr, &err_code);
-			if (usable_cpus > gres_cpus)
-				usable_cpus = gres_cpus;
-			if (usable_cpus <= 0) {
-				error("%s: no usable CPUs", __func__);
-				return NULL;
-			}
-			debug3("step_layout cpus = %d pos = %d",
-			       usable_cpus, pos);
-
-			if ((cpu_inx == -1) ||
-			    (cpus_per_node[cpu_inx] != usable_cpus)) {
-				cpu_inx++;
-
-				cpus_per_node[cpu_inx] = usable_cpus;
-				cpu_count_reps[cpu_inx] = 1;
+			if ((cpus_task_inx == -1) ||
+			    (cpus_per_task_array[cpus_task_inx] != cpus_task)) {
+				cpus_task_inx++;
+				cpus_per_task_array[cpus_task_inx] = cpus_task;
+				cpus_task_reps[cpus_task_inx] = 1;
 			} else
-				cpu_count_reps[cpu_inx]++;
-			set_nodes++;
-			first_step_node = false;
-			rem_nodes--;
+				cpus_task_reps[cpus_task_inx]++;
+		}
+
+		if (step_ptr->flags & SSF_OVERLAP_FORCE)
+			usable_cpus = cpus;
+		else
+			usable_cpus = cpus - cpus_used;
+
+		if (usable_cpus <= 0)
+			continue;
+
+		if ((step_ptr->pn_min_memory & MEM_PER_CPU) && _is_mem_resv()) {
+			uint64_t mem_use = step_ptr->pn_min_memory;
+			mem_use &= (~MEM_PER_CPU);
+			usable_mem = job_resrcs_ptr->memory_allocated[pos] -
+				     job_resrcs_ptr->memory_used[pos];
+			usable_mem /= mem_use;
+			usable_cpus = MIN(usable_cpus, usable_mem);
+		} else if ((!step_ptr->pn_min_memory) && _is_mem_resv()) {
+			test_mem_per_gres = true;
+		}
+
+		if (step_ptr->flags & SSF_OVERLAP_FORCE)
+			ignore_alloc = true;
+		else
+			ignore_alloc = false;
+
+		gres_cpus = gres_ctld_step_test(
+			step_ptr->gres_list_req, job_ptr->gres_list_alloc,
+			job_node_offset, first_step_node,
+			step_ptr->cpus_per_task, rem_nodes, ignore_alloc,
+			job_ptr->job_id, step_ptr->step_id.step_id,
+			test_mem_per_gres, job_resrcs_ptr, &err_code);
+		if (usable_cpus > gres_cpus)
+			usable_cpus = gres_cpus;
+		if (usable_cpus <= 0) {
+			error("%s: no usable CPUs", __func__);
+			return NULL;
+		}
+		debug3("step_layout cpus = %d pos = %d", usable_cpus, pos);
+
+		if ((cpu_inx == -1) ||
+		    (cpus_per_node[cpu_inx] != usable_cpus)) {
+			cpu_inx++;
+
+			cpus_per_node[cpu_inx] = usable_cpus;
+			cpu_count_reps[cpu_inx] = 1;
+		} else
+			cpu_count_reps[cpu_inx]++;
+		set_nodes++;
+		first_step_node = false;
+		rem_nodes--;
 
 #if 0
+		/*
+		 * FIXME: on a heterogeneous system running the
+		 * select/linear plugin we could get a node that doesn't
+		 * have as many CPUs as we decided we needed for each
+		 * task. This would result in not getting a task for
+		 * the node we selected. This is usually in error. This
+		 * only happens when the person doesn't specify how many
+		 * cpus_per_task they want, and we have to come up with
+		 * a number, in this case it is wrong.
+		 */
+		if (cpus_per_task > 0) {
+			set_tasks +=
+				(uint16_t)usable_cpus / cpus_per_task;
+		} else {
 			/*
-			 * FIXME: on a heterogeneous system running the
-			 * select/linear plugin we could get a node that doesn't
-			 * have as many CPUs as we decided we needed for each
-			 * task. This would result in not getting a task for
-			 * the node we selected. This is usually in error. This
-			 * only happens when the person doesn't specify how many
-			 * cpus_per_task they want, and we have to come up with
-			 * a number, in this case it is wrong.
+			 * Since cpus_per_task is 0, we just add the
+			 * count of CPUs available for this job
 			 */
-			if (cpus_per_task > 0) {
-				set_tasks +=
-					(uint16_t)usable_cpus / cpus_per_task;
-			} else {
-				/*
-				 * Since cpus_per_task is 0, we just add the
-				 * count of CPUs available for this job
-				 */
-				set_tasks += usable_cpus;
-			}
-			info("usable_cpus is %d and set_tasks %d %d",
-			     usable_cpus, set_tasks, cpus_per_task);
-#endif
-			if (set_nodes == node_count)
-				break;
+			set_tasks += usable_cpus;
 		}
+		info("usable_cpus is %d and set_tasks %d %d",
+		     usable_cpus, set_tasks, cpus_per_task);
+#endif
+		if (set_nodes == node_count)
+			break;
 	}
 
 	/* if (set_tasks < num_tasks) { */
