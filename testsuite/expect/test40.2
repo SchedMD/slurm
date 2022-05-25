@@ -152,7 +152,7 @@ expect {
 		wait
 	}
 }
-subtest {$matches == 3} "Verify CUDA information about job" "$matches != 3"
+subtest {$match == 3} "Verify CUDA information about job" "$match != 3"
 
 #
 # Run two steps in parallel to consume gres/mps using salloc
@@ -185,7 +185,7 @@ expect {
 		wait
 	}
 }
-subtest {$matches == 3} "Verify CUDA information about job" "$matches != 3"
+subtest {$match == 3} "Verify CUDA information about job" "$match != 3"
 
 #
 # Run three steps in parallel to make sure steps get delay as needed to avoid
@@ -243,7 +243,7 @@ expect {
 		wait
 	}
 }
-subtest {$matches == 3} "Verify CUDA information about job" "$matches != 3"
+subtest {$match == 3} "Verify CUDA information about job" "$match != 3"
 
 log_user 0
 set match 0
