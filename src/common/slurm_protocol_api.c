@@ -1995,15 +1995,17 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 */
 	rc = slurm_bufs_sendto(fd, buffers);
 
-	if ((rc < 0) && (errno == ENOTCONN)) {
+	if (rc >= 0) {
+		/* sent successfully */
+	} else if (errno == ENOTCONN) {
 		log_flag(NET, "%s: peer has disappeared for msg_type=%u",
 			 __func__, msg->msg_type);
-	} else if ((rc < 0) && (errno == EBADF)) {
+	} else if (errno == EBADF) {
 		/* failure of sendto() and peer lookup will never work */
 		error("%s: slurm_msg_sendto(fd=%d) with msg_type=%s failed: %s",
 		      __func__, fd, rpc_num2string(msg->msg_type),
 		      slurm_strerror(rc));
-	} else if (rc < 0) {
+	} else {
 		char *peer = fd_resolve_peer(fd);
 		error("%s: [%s] slurm_msg_sendto(msg_type=%s) failed: %s",
 		      __func__, peer, rpc_num2string(msg->msg_type),
