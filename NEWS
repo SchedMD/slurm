@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Make scontrol reconfigure and sending a SIGHUP to the slurmctld behave the
     same. If you were using SIGHUP as a 'lighter' scontrol reconfigure to rotate
     logs please update your scripts to use SIGUSR2 instead.
+ -- Add Account and QOS name type specifications for sprio output formatting.
 
 * Changes in Slurm 22.05.1
 ==========================
