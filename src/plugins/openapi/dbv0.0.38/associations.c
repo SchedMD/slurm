@@ -272,12 +272,12 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 		FREE_NULL_LIST(assoc_list);
 		assoc_list = list_create(slurmdb_destroy_assoc_rec);
 		list_append(assoc_list, assoc);
-		assoc = NULL;
 
 		debug("%s: adding association request: acct=%s cluster=%s partition=%s user=%s",
 		      __func__, assoc->acct, assoc->cluster, assoc->partition,
 		      assoc->user);
 
+		assoc = NULL;
 		rc = db_query_rc(errors, args->auth, assoc_list,
 				 slurmdb_associations_add);
 	} else if (list_count(assoc_list) > 1) {
