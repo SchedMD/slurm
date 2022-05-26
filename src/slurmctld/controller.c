@@ -1077,12 +1077,6 @@ static void  _init_config(void)
 	slurmctld_config.thread_id_rpc     = (pthread_t) 0;
 }
 
-/* Read configuration file.
- * Same name as API function for use in accounting_storage plugin.
- * Anything you add to this function must be added to the
- * _slurm_rpc_reconfigure_controller function inside proc_req.c try
- * to keep these in sync.
- */
 extern int reconfigure_slurm(bool sighup)
 {
 	/* Locks: Write configuration, job, node, and partition */
