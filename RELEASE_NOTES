@@ -56,7 +56,7 @@ HIGHLIGHTS
  -- Add support for hourly reoccurring reservations.
  -- Allow nodes to be dynamically added and removed from the system. Configure
     MaxNodeCount to accomodate nodes created with dynamic node registrations
-    (slurmd -Z<feature> --conf="") and scontrol.
+    (slurmd -Z --conf="") and scontrol.
  -- Added support for Cgroup Version 2.
  -- sacct - allocations made by srun will now always display the allocation and
     step(s). Previously, the allocation and step were combined when possible.
