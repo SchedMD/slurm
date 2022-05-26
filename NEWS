@@ -1,8 +1,8 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 22.05.0rc2
-=============================
+* Changes in Slurm 22.05.0
+==========================
  -- openapi/v0.0.38 - add group name to job info
  -- openapi/v0.0.38 - add container field to job description.
  -- openapi/v0.0.38 - add container to job submission.
