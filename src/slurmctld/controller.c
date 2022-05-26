@@ -1128,6 +1128,13 @@ static void _reconfigure_slurm(void)
 	priority_g_reconfig(true);	/* notify priority plugin too */
 	save_all_state();		/* Has own locking */
 	queue_job_scheduler();
+	if (conf_includes_list) {
+		/*
+		 * clear included files so that subsequent conf
+		 * parsings refill it with updated information.
+		 */
+		list_flush(conf_includes_list);
+	}
 }
 
 /* Request that the job scheduler execute soon (typically within seconds) */
