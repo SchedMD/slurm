@@ -41,6 +41,7 @@ used to define nodes in the slurm.conf. Specifying any of \fBCPUs\fR,
 \fBThreadsPerCore\fR will override the defaults defined by the \fB\-C\fR
 option. \fBNodeName\fR and \fBPort\fR are not supported.
 
+.br
 For example if \fIslurmd \-C\fR reports
 .nf
 NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848
@@ -60,6 +61,11 @@ NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCor
 .nf
 \-\-conf "CPUs=16"
 NodeName=node1 CPUs=16 RealMemory=331848
+.fi
+
+.nf
+\-\-conf "CPUs=16 RealMemory=30000 Gres=gpu:2"
+NodeName=node1 CPUs=16 RealMemory=30000 Gres=gpu:2"
 .fi
 .IP
 

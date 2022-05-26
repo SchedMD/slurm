@@ -46,6 +46,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="configurator.easy.html">Configuration Tool (Simplified version)</a></li>
 <li><a href="containers.html">Containers</a></li>
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
+<li><a href="dynamic_nodes.html">Dynamic Nodes</a></li>
 <li><a href="elasticsearch.html">Elasticsearch Guide</a></li>
 <li><a href="jwt.html">JSON Web Tokens Authentication</a></li>
 <li><a href="nonstop.html">Failure Management Support</a></li>
@@ -130,6 +131,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 14 December 2021</p>
+<p style="text-align:center;">Last modified 26 May 2022</p>
 
 <!--#include virtual="footer.txt"-->

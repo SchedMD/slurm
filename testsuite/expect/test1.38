@@ -83,7 +83,7 @@ expect {
 		cancel_job $job_id
 		exp_continue
 	}
-	-re "Force Terminated job" {
+	-re "Job step aborted" {
 		set match_term 1
 		exp_continue
 	}

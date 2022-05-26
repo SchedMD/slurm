@@ -1,0 +1,160 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Dynamic Nodes</a></h1>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
+
+<p>Starting in Slurm 22.05, nodes can be dynamically added and removed from
+Slurm.
+</p>
+
+<h2 id="communications">Dynamic Node Communications
+<a class="slurm_link" href="#config"></a>
+</h2>
+<p>
+For regular, non-dynamically created nodes, Slurm knows how to communicate with
+nodes by reading in the slurm.conf. This is why it is important for a
+non-dynamic setup that the slurm.conf is synchronized across the cluster. For
+dynamically created nodes, other than the slurmctld, the rest of the Slurm
+components (e.g. srun, daemons) don't know about the dynamically created nodes.
+In order for srun and the slurmds to know how to communicate with the other
+nodes in a job allocation, slurmctld passes each node's address information
+(NodeName, NodeAddr, NodeHostname) -- known as the alias list -- to the srun
+and the srun forwards the list to the slurmds. This list is seen in the job's
+environment as the <b>SLURM_NODE_ALIASES</b> envirionment variable.
+</p>
+
+<p>
+The controller automatically grabs the node's <b>NodeAddr</b> and
+<b>NodeHostname</b> for dynamic slurmd registrations. For cloud nodes created
+with scontrol, if the nodename is not resolvable, then either 1) the node's
+<b>NodeAddr</b> and <b>NodeHostname</b> need to be updated with the
+<b>scontrol update</b> command before the node registers or 2) use the 
+<a href="slurm.conf.html#OPT_cloud_reg_addrs">cloud_reg_addrs</a>
+<b>SlurmctldParameter</b>.
+</p>
+
+<h2 id="config">Slurm Configuration
+<a class="slurm_link" href="#config"></a>
+</h2>
+
+<p>
+<dl>
+<dt><b>MaxNodeCount=#</b>
+<dd>
+Set to the number of possible nodes that can be active in a system at a time.
+See the slurm.conf <a href="slurm.conf.html#OPT_MaxNodeCount">man</a> page for
+more details.
+
+<dt><b>SelectType=select/cons_tres</b>
+<dd>Dynamic nodes are only supported with cons_tres.
+
+<dt><b>TreeWidth=65533</b>
+<dd>
+Fanning out of controller pings and application launches through slurmds are
+not supported with dynamic nodes. TreeWidth must be disabled (i.e. set to
+65533) for dynamic environments. However, the reverse fanout of step
+completions through slurmds does happen due to the job's alias list.
+</dl>
+</p>
+
+<p>
+<b>NOTE:</b> The <b>cloud_dns</b> <b>SlurmctldParameter</b> must not be set as
+this disables the alias list.
+</p>
+
+<h3 id="config">Partition Assignment
+<a class="slurm_link" href="#partitions"></a>
+</h3>
+<p>
+Dynamic nodes can be automatically assigned to partitions at creation by using
+the partition's nodes <a href="slurm.conf.html#OPT_Nodes_1">ALL</a> keyword or
+<a href="slurm.conf.html#SECTION_NODESET-CONFIGURATION">NodeSets</a> and
+specifying a feature on the nodes.
+</p>
+
+<p>
+e.g.
+<pre>
+Nodeset=ns1 Feature=f1
+Nodeset=ns2 Feature=f2
+
+PartitionName=all  Nodes=ALL Default=yes
+PartitionName=dyn1 Nodes=ns1
+PartitionName=dyn2 Nodes=ns2
+PartitionName=dyn3 Nodes=ns1,ns2
+</pre>
+</a>
+
+<h2 id="config">Creating Nodes
+<a class="slurm_link" href="#create"></a>
+</h2>
+
+<p>
+Nodes can be created two ways:
+<ol>
+<li>
+<dl>
+<dt><b>Dynamic slurmd registration</b>
+<dd>
+<p>Using the slurmd <a href="slurmd.html#OPT_-Z">-Z</a> and
+<a href="slurmd.html#OPT_conf-<node-parameters>">--conf</a> options a slurmd
+will register with the controller and will automatically be added to the system.
+</p>
+
+<p>
+e.g.
+<pre>
+slurmd -Z --conf "RealMemory=80000 Gres=gpu:2 Feature=f1"
+</pre>
+</p>
+
+</dl>
+</li>
+<li>
+<dl>
+<dt><b>scontrol create NodeName= ...</b>
+<dd>
+<p>Create nodes using scontrol by specifying the same <b>NodeName</b>
+line that you would define in the slurm.conf. See slurm.conf
+<a href="slurm.conf.html#SECTION_NODE-CONFIGURATION">man</a> page for node
+options. Only <b>State=CLOUD</b> and <b>State=FUTURE</b> are supported. The
+node configuration should match what the slurmd will register with
+(e.g. slurmd -C) plus any additional attributes.
+</p>
+
+</p>
+e.g.
+<pre>
+scontrol create NodeName=d[1-100] CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=gpu:2 Feature=f1 State=cloud
+</pre>
+</p>
+</dl>
+</li>
+</ol>
+</p>
+
+<h2 id="config">Deleting Nodes
+<a class="slurm_link" href="#create"></a>
+</h2>
+<p>
+Nodes can be deleted using <b>scontrol delete nodename=&lt;nodelist&gt;</b>.
+Nodes can only be deleted if they have no jobs running on them and aren't part
+of a reservation.
+</p>
+
+<h2 id="LIMITATIONS">Limitations
+<a class="slurm_link" href="#limitations"></a>
+</h2>
+<p>The following are not supported with dynamic nodes:
+<ol>
+<li>
+Topology Plugins
+</li>
+</ol>
+</p>
+
+
+<p style="text-align:center;">Last modified 26 May 2022</p>
+
+<!--#include virtual="footer.txt"-->
