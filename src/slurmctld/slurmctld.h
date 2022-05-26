@@ -2955,10 +2955,8 @@ extern void set_node_reboot_reason(node_record_t *node_ptr, char *message);
 /*
  * Read configuration file - first part, reconfigure_slurm_post_send() must be
  * called every time after this is called.
- *
- * IN sighup - True if reconfigure is done by a sighup false otherwise.
  */
-extern int reconfigure_slurm(bool sighup);
+extern int reconfigure_slurm(void);
 
 /*
  * Read configuration file - second part, reconfigure_slurm() must be

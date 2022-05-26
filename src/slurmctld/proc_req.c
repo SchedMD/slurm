@@ -3281,7 +3281,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	} else
 		info("Processing Reconfiguration Request");
 
-	error_code = reconfigure_slurm(false);
+	error_code = reconfigure_slurm();
 
 	/* return result */
 	slurm_send_rc_msg(msg, error_code);

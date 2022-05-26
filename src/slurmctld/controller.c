@@ -1077,7 +1077,7 @@ static void  _init_config(void)
 	slurmctld_config.thread_id_rpc     = (pthread_t) 0;
 }
 
-extern int reconfigure_slurm(bool sighup)
+extern int reconfigure_slurm(void)
 {
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = {
@@ -1104,7 +1104,7 @@ extern int reconfigure_slurm(bool sighup)
 	sched_debug("begin reconfiguration");
 	lock_slurmctld(config_write_lock);
 	in_progress = true;
-	rc = read_slurm_conf(sighup ? 2 : 1, true);
+	rc = read_slurm_conf(1, true);
 	if (rc != SLURM_SUCCESS)
 		error("read_slurm_conf: %s", slurm_strerror(rc));
 	else {
@@ -1166,7 +1166,7 @@ extern void reconfigure_slurm_post_send(int error_code)
 
 extern void _reconfigure_slurm(void)
 {
-	reconfigure_slurm_post_send(reconfigure_slurm(true));
+	reconfigure_slurm_post_send(reconfigure_slurm());
 }
 
 /* Request that the job scheduler execute soon (typically within seconds) */
