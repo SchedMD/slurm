@@ -1166,7 +1166,8 @@ extern void reconfigure_slurm_post_send(int error_code)
 
 extern void _reconfigure_slurm(void)
 {
-	reconfigure_slurm_post_send(reconfigure_slurm());
+	int rc = reconfigure_slurm();
+	reconfigure_slurm_post_send(rc);
 }
 
 /* Request that the job scheduler execute soon (typically within seconds) */
