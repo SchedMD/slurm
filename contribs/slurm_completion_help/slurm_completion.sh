@@ -1123,7 +1123,7 @@ _scontrol()
 						     replace_down spec_nodes\
 						     static_alloc time_float\
 						     weekday weekend weekly"
-	    elif param "partitioname" ; then offer_many "$(_partitions)"
+	    elif param "partitionname" ; then offer_many "$(_partitions)"
 	    elif param "reservationname" ; then offer_many "$(_reservations)"
 	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
@@ -1255,7 +1255,7 @@ _scontrol()
 						     replace_down spec_nodes\
 						     static_alloc time_float\
 						     weekday weekend weekly"
-	    elif param "partitioname" ; then offer_many "$(_partitions)"
+	    elif param "partitionname" ; then offer_many "$(_partitions)"
 	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
 	    ;;
