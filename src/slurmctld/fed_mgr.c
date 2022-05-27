@@ -2080,7 +2080,7 @@ _handle_fed_job_update_response(fed_job_update_info_t *job_update_info)
 	unlock_slurmctld(fed_read_lock);
 }
 
-extern int _handle_fed_job_sync(fed_job_update_info_t *job_update_info)
+static int _handle_fed_job_sync(fed_job_update_info_t *job_update_info)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -2100,7 +2100,7 @@ extern int _handle_fed_job_sync(fed_job_update_info_t *job_update_info)
 
 /* Have to send the job sync from the job_update thread so that it can
  * independently get the job read lock. */
-extern int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
+static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 {
         int rc = SLURM_SUCCESS;
 	List jobids;

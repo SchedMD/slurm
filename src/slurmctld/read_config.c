@@ -960,7 +960,7 @@ static int _foreach_requeue_job_node_failed(void *x, void *arg)
 	return rc;
 }
 
-extern void _requeue_job_node_failed(void)
+static void _requeue_job_node_failed(void)
 {
 	xassert(job_list);
 

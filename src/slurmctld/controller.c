@@ -1164,7 +1164,7 @@ extern void reconfigure_slurm_post_send(int error_code)
 	slurm_cond_broadcast(&reconfig_cond);
 }
 
-extern void _reconfigure_slurm(void)
+static void _reconfigure_slurm(void)
 {
 	reconfigure_slurm_post_send(reconfigure_slurm());
 }

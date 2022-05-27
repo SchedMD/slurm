@@ -213,7 +213,7 @@ static char *_plugin_type(int index)
 	return &((xstrchr(g_context[index]->type, '/'))[1]);
 }
 
-extern int _plugin_idx(uint32_t plugin_id)
+static int _plugin_idx(uint32_t plugin_id)
 {
 	xassert(g_context_cnt);
 

@@ -1056,7 +1056,7 @@ static void _get_info_tabs(GtkTable *table, display_data_t *display_data)
 
 }
 
-extern void _change_cluster_main(GtkComboBox *combo, gpointer extra)
+static void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 {
 	GtkTreeModel *model;
 	GtkTreeIter iter;

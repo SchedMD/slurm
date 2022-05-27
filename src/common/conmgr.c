@@ -900,7 +900,7 @@ static void _wrap_on_connection(void *x)
 	_check_magic_mgr(mgr);
 }
 
-extern int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_fd_t *source,
+static int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_fd_t *source,
 					int input_fd, int output_fd,
 					const con_mgr_events_t events,
 					const slurm_addr_t *addr,

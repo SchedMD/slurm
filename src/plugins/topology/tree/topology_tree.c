@@ -118,7 +118,7 @@ static int  _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 static int  _parse_switches(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
 			    const char *line, char **leftover);
-extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[]);
+static int  _read_topo_file(slurm_conf_switches_t **ptr_array[]);
 static void _find_child_switches(int sw);
 static void _validate_switches(void);
 
@@ -599,7 +599,7 @@ static void _free_switch_record_table(void)
 }
 
 /* Return count of switch configuration entries read */
-extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
+static int  _read_topo_file(slurm_conf_switches_t **ptr_array[])
 {
 	static s_p_options_t switch_options[] = {
 		{"SwitchName", S_P_ARRAY, _parse_switches, _destroy_switches},

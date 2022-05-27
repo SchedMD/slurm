@@ -190,7 +190,7 @@ static int _find_job (void *x, void *key)
 	return 0;
 }
 
-extern void _free_avail_res_array(avail_res_t **avail_res_array)
+static void _free_avail_res_array(avail_res_t **avail_res_array)
 {
 	int n;
 	if (!avail_res_array)

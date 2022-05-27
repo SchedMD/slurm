@@ -533,7 +533,7 @@ static int _send_cluster_tres(void *db_conn,
 	return rc;
 }
 
-extern void _update_cluster_nodes(void)
+static void _update_cluster_nodes(void)
 {
 	static int prev_node_record_count = -1;
 	static bitstr_t *total_node_bitmap = NULL;

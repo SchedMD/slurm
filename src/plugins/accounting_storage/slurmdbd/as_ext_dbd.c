@@ -56,7 +56,7 @@ static pthread_mutex_t ext_conns_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  ext_thread_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t ext_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-extern void _destroy_external_host_conns(void *object)
+static void _destroy_external_host_conns(void *object)
 {
 	slurm_persist_conn_t *conn = (slurm_persist_conn_t *)object;
 	/*
@@ -86,7 +86,7 @@ extern slurm_persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 	return dbd_conn;
 }
 
-extern int _find_ext_conn(void *x, void *key)
+static int _find_ext_conn(void *x, void *key)
 {
 	slurm_persist_conn_t *selected_conn = (slurm_persist_conn_t *)x;
 	slurm_persist_conn_t *query_conn = (slurm_persist_conn_t *)key;

@@ -979,7 +979,7 @@ static void _become_slurm_user(void)
 	}
 }
 
-extern void _restart_self(int argc, char **argv)
+static void _restart_self(int argc, char **argv)
 {
 	info("Restarting self");
 	if (execvp(argv[0], argv))

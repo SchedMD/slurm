@@ -2271,7 +2271,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void _pack_job_step_create_request_msg(
+static void _pack_job_step_create_request_msg(
 	job_step_create_request_msg_t *msg, buf_t *buffer,
 	uint16_t protocol_version)
 {
@@ -2323,7 +2323,7 @@ extern void _pack_job_step_create_request_msg(
 	}
 }
 
-extern int _unpack_job_step_create_request_msg(
+static int _unpack_job_step_create_request_msg(
 	job_step_create_request_msg_t **msg, buf_t *buffer,
 	uint16_t protocol_version)
 {
@@ -2565,7 +2565,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void _pack_job_step_create_response_msg(
+static void _pack_job_step_create_response_msg(
 	job_step_create_response_msg_t *msg, buf_t *buffer,
 	uint16_t protocol_version)
 {
@@ -2586,7 +2586,7 @@ extern void _pack_job_step_create_response_msg(
 	}
 }
 
-extern int _unpack_job_step_create_response_msg(
+static int _unpack_job_step_create_response_msg(
 	job_step_create_response_msg_t **msg, buf_t *buffer,
 	uint16_t protocol_version)
 {

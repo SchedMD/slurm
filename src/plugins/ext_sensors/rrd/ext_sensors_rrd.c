@@ -108,7 +108,7 @@ static rrd_value_t last_valid_watt;
 static int _update_node_data(void);
 static int _update_switch_data(void);
 static int _update_door_data(void);
-extern int _ext_sensors_read_conf(void);
+static int _ext_sensors_read_conf(void);
 static void _ext_sensors_clear_free_conf(void);
 
 /* Local RRD functions */
@@ -521,7 +521,7 @@ static int _update_door_data(void)
 	return SLURM_SUCCESS;
 }
 
-extern int _ext_sensors_read_conf(void)
+static int _ext_sensors_read_conf(void)
 {
 	s_p_options_t options[] = {
 		{"JobData", S_P_STRING},

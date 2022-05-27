@@ -3165,7 +3165,7 @@ extern bool test_job_array_completed(uint32_t array_job_id)
  * Return true if ALL tasks of specific array job ID are completed AND
  * all except for the head job have been purged.
  */
-extern bool _test_job_array_purged(uint32_t array_job_id)
+static bool _test_job_array_purged(uint32_t array_job_id)
 {
 	job_record_t *job_ptr, *head_job_ptr;
 	int inx;

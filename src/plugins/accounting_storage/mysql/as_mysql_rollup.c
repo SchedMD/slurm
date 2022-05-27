@@ -1085,7 +1085,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 	return c_usage;
 }
 
-extern int _setup_resv_usage(mysql_conn_t *mysql_conn,
+static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 			     char *cluster_name,
 			     time_t curr_start,
 			     time_t curr_end,
