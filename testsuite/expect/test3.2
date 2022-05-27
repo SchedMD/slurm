@@ -37,10 +37,7 @@ if {![is_super_user]} {
 }
 
 proc cleanup {} {
-	global scontrol part_name part_old_state
-
-	# Return partition's state to its old value
-	run_command -fail "$scontrol update PartitionName=$part_name State=$part_old_state"
+	reconfigure
 }
 
 # Execute a srun job in the specified partition name
