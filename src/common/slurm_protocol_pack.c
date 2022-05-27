@@ -2782,7 +2782,63 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 {
 	uint32_t uint32_tmp;
 
-	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&part->name, &uint32_tmp, buffer);
+		if (part->name == NULL)
+			part->name = xmalloc(1);/* part->name = "" implicit */
+		safe_unpack32(&part->cpu_bind,     buffer);
+		safe_unpack32(&part->grace_time,   buffer);
+		safe_unpack32(&part->max_time,     buffer);
+		safe_unpack32(&part->default_time, buffer);
+		safe_unpack32(&part->max_nodes,    buffer);
+		safe_unpack32(&part->min_nodes,    buffer);
+		safe_unpack32(&part->total_nodes,  buffer);
+		safe_unpack32(&part->total_cpus,   buffer);
+		safe_unpack64(&part->def_mem_per_cpu, buffer);
+		safe_unpack32(&part->max_cpus_per_node, buffer);
+		safe_unpack64(&part->max_mem_per_cpu, buffer);
+		safe_unpack16(&part->flags,        buffer);
+		safe_unpack16(&part->max_share,    buffer);
+		safe_unpack16(&part->over_time_limit, buffer);
+		safe_unpack16(&part->preempt_mode, buffer);
+		safe_unpack16(&part->priority_job_factor, buffer);
+		safe_unpack16(&part->priority_tier, buffer);
+		safe_unpack16(&part->state_up,     buffer);
+		safe_unpack16(&part->cr_type ,     buffer);
+		safe_unpack16(&part->resume_timeout, buffer);
+		safe_unpack16(&part->suspend_timeout, buffer);
+		safe_unpack32(&part->suspend_time, buffer);
+
+		safe_unpackstr_xmalloc(&part->allow_accounts, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&part->allow_groups, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&part->allow_alloc_nodes, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&part->allow_qos, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&part->qos_char, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&part->alternate, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&part->deny_accounts, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&part->deny_qos, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&part->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&part->nodesets, &uint32_tmp, buffer);
+
+		unpack_bit_str_hex_as_inx(&part->node_inx, buffer);
+
+		safe_unpackstr_xmalloc(&part->billing_weights_str, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&part->tres_fmt_str, &uint32_tmp,
+				       buffer);
+		if (slurm_unpack_list(&part->job_defaults_list,
+				      job_defaults_unpack, xfree_ptr,
+				      buffer, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&part->name, &uint32_tmp, buffer);
 		if (part->name == NULL)
 			part->name = xmalloc(1);/* part->name = "" implicit */
