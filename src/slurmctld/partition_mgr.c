@@ -1194,8 +1194,8 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		pack32(part_ptr->max_cpus_per_node, buffer);
 		pack64(part_ptr->max_mem_per_cpu, buffer);
 
-		pack16(part_ptr->flags,      buffer);
-		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->flags, buffer);
+		pack16(part_ptr->max_share, buffer);
 		pack16(part_ptr->over_time_limit, buffer);
 		pack16(part_ptr->preempt_mode, buffer);
 		pack16(part_ptr->priority_job_factor, buffer);

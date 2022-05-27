@@ -2786,25 +2786,25 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		safe_unpackstr_xmalloc(&part->name, &uint32_tmp, buffer);
 		if (part->name == NULL)
 			part->name = xmalloc(1);/* part->name = "" implicit */
-		safe_unpack32(&part->cpu_bind,     buffer);
-		safe_unpack32(&part->grace_time,   buffer);
-		safe_unpack32(&part->max_time,     buffer);
+		safe_unpack32(&part->cpu_bind, buffer);
+		safe_unpack32(&part->grace_time, buffer);
+		safe_unpack32(&part->max_time, buffer);
 		safe_unpack32(&part->default_time, buffer);
-		safe_unpack32(&part->max_nodes,    buffer);
-		safe_unpack32(&part->min_nodes,    buffer);
-		safe_unpack32(&part->total_nodes,  buffer);
-		safe_unpack32(&part->total_cpus,   buffer);
+		safe_unpack32(&part->max_nodes, buffer);
+		safe_unpack32(&part->min_nodes, buffer);
+		safe_unpack32(&part->total_nodes, buffer);
+		safe_unpack32(&part->total_cpus, buffer);
 		safe_unpack64(&part->def_mem_per_cpu, buffer);
 		safe_unpack32(&part->max_cpus_per_node, buffer);
 		safe_unpack64(&part->max_mem_per_cpu, buffer);
-		safe_unpack16(&part->flags,        buffer);
-		safe_unpack16(&part->max_share,    buffer);
+		safe_unpack16(&part->flags, buffer);
+		safe_unpack16(&part->max_share, buffer);
 		safe_unpack16(&part->over_time_limit, buffer);
 		safe_unpack16(&part->preempt_mode, buffer);
 		safe_unpack16(&part->priority_job_factor, buffer);
 		safe_unpack16(&part->priority_tier, buffer);
-		safe_unpack16(&part->state_up,     buffer);
-		safe_unpack16(&part->cr_type ,     buffer);
+		safe_unpack16(&part->state_up, buffer);
+		safe_unpack16(&part->cr_type, buffer);
 		safe_unpack16(&part->resume_timeout, buffer);
 		safe_unpack16(&part->suspend_timeout, buffer);
 		safe_unpack32(&part->suspend_time, buffer);
