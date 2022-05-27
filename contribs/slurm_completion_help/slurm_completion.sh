@@ -984,7 +984,7 @@ _scontrol()
 			      switches=<count>[@<max-time-to-wait>]\
 			      taskspernode=<count>\
 			      timelimit=<time_spec> timemin=<time_spec>\
-			      userid=<UID or name> wait-for-switch=<seconds>\
+			      userid=<UID_or_name> wait-for-switch=<seconds>\
 			      wckey=<key> workdir=<path>"
 
 	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
@@ -1731,7 +1731,7 @@ _salloc()
 		       --mem=<MB> --mem-bind=<type> --mem-per-cpu=<MB>\
 		       --mem-per-gpu=<MB> --mincpus=<number>\
 		       --network=<type> --nice=<[adjustment]> --no-bell\
-		       --no-kill --no-shell --nodefile=<node file>\
+		       --no-kill --no-shell --nodefile=<nodefile>\
 		       --nodelist=<nodelist> --nodes=<minnodes[-maxnodes]>\
 		       --ntasks=<number>\
 		       --ntasks-per-core=<number> --ntasks-per-gpu=<ntasks>\
@@ -1823,8 +1823,8 @@ _sbatch()
 		       --cpus-per-task=<number>\
 		       --deadline=<OPT> --delay-boot=<minutes>\
 		       --dependency=<deplist> --distribution=<dist>\
-		       --error=<filename pattern> --exclude=<node name list>\
-		       --exclusive --export=<environment variables|ALL|NONE>\
+		       --error=<filename_pattern> --exclude=<nodename_list>\
+		       --exclusive --export=<environment_variables|ALL|NONE>\
 		       --export-file=<filename|fd>\
 		       --extra-node-info=<sockets[:cores[:threads]]>\
 		       --get-user-env --gid=<group>\
@@ -1841,7 +1841,7 @@ _sbatch()
 		       --mem-per-gpu=<MB> --mincpus=<n>\
 		       --network=<type> --nice --no-kill\
 		       --no-requeue --nodefile=<nodefile>\
-		       --nodelist=<node name list>\
+		       --nodelist=<nodename_list>\
 		       --nodes=<minnodes[-maxnodes]> --ntasks=<number>\
 		       --ntasks-per-core=<ntasks> --ntasks-per-gpu=<ntasks>\
 		       --ntasks-per-node=<ntasks>\
@@ -1860,7 +1860,7 @@ _sbatch()
 		       --uid=<user> --usage --use-min-nodes\
 		       --verbose --version\
 		       --wait --wait-all-nodes=<value> --wckey=<wckey>\
-		       --wrap=<command string>"
+		       --wrap=<command_string>"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
@@ -1935,7 +1935,7 @@ _srun()
 		       --deadline=<OPT> --delay-boot=<minutes>\
 		       --dependency=<dependency_list> --disable-status\
 		       --distribution=<type>\
-		       --epilog=<executable> --error=<filename pattern>\
+		       --epilog=<executable> --error=<filename_pattern>\
 		       --exact --exclude= --exclusive\
 		       --export=<[ALL,]environment variables|ALL|NONE>\
 		       --extra-node-info=<spec>\
@@ -1953,14 +1953,14 @@ _srun()
 		       --mem-per-gpu=<size[units]> --mincpus=<n>\
 		       --mpi=<mpi_type> --msg-timeout=<seconds> --multi-prog\
 		       --network=<type> --nice --no-allocate --no-kill\
-		       --nodefile=<node file>\
+		       --nodefile=<nodefile>\
 		       --nodelist=<host1,host2,... or filename>\
 		       --nodes=<minnodes[-maxnodes]> --ntasks=<number>\
 		       --ntasks-per-core=<ntasks> --ntasks-per-gpu=<ntasks>\
 		       --ntasks-per-node=<ntasks>\
 		       --ntasks-per-socket=<ntasks>\
 		       --open-mode=<append|truncate>\
-		       --output=<filename pattern> --overcommit --overlap\
+		       --output=<filename_pattern> --overcommit --overlap\
 		       --oversubscribe\
 		       --partition=<partition_names> --power=<flags>\
 		       --preserve-env --priority=<value> --profile=<type>\
