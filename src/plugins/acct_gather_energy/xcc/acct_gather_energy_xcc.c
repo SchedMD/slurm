@@ -424,6 +424,7 @@ static int _init_ipmi_config(void)
 cleanup:
 	ipmi_ctx_close(ipmi_ctx);
 	ipmi_ctx_destroy(ipmi_ctx);
+	ipmi_ctx = NULL;
 	return SLURM_ERROR;
 }
 
@@ -887,8 +888,6 @@ end_it:
  */
 extern int init(void)
 {
-	memset(&xcc_energy, 0, sizeof(acct_gather_energy_t));
-
 	return SLURM_SUCCESS;
 }
 
@@ -913,6 +912,7 @@ extern int fini(void)
 	if (ipmi_ctx) {
 		ipmi_ctx_close(ipmi_ctx);
 		ipmi_ctx_destroy(ipmi_ctx);
+		ipmi_ctx = NULL;
 	}
 	_reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 
@@ -1116,6 +1116,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in, s_p_hashtbl_t *tbl)
 
 	if (!flag_init) {
 		flag_init = true;
+		memset(&xcc_energy, 0, sizeof(acct_gather_energy_t));
 		if (running_in_slurmd()) {
 			slurm_thread_create(&thread_ipmi_id_launcher,
 					    _thread_launcher, NULL);
