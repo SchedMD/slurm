@@ -6160,6 +6160,7 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 	 * Leave nodehash_intialized so that the tables don't get overridden
 	 * later
 	 */
+	slurm_conf_lock();
 	_free_name_hashtbl();
 	nodehash_initialized = true;
 
@@ -6170,6 +6171,7 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 				  0, &node_addrs[i++], true);
 		free(hostname);
 	}
+	slurm_conf_unlock();
 
 	hostlist_destroy(host_list);
 
@@ -6197,6 +6199,9 @@ extern void config_test_start(void)
 
 extern void slurm_conf_add_node(node_record_t *node_ptr)
 {
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
 	_push_to_hashtbls(node_ptr->name, node_ptr->node_hostname,
 			  node_ptr->comm_name, node_ptr->bcast_address,
 			  node_ptr->port, node_ptr->cpus, node_ptr->boards,
@@ -6204,6 +6209,7 @@ extern void slurm_conf_add_node(node_record_t *node_ptr)
 			  node_ptr->threads, 0, node_ptr->cpu_spec_list,
 			  node_ptr->core_spec_cnt, node_ptr->mem_spec_limit,
 			  NULL, false);
+	slurm_conf_unlock();
 }
 
 static void _internal_conf_remove_node(char *node_name)
@@ -6238,5 +6244,8 @@ static void _internal_conf_remove_node(char *node_name)
 
 extern void slurm_conf_remove_node(char *node_name)
 {
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
 	_internal_conf_remove_node(node_name);
+	slurm_conf_unlock();
 }
