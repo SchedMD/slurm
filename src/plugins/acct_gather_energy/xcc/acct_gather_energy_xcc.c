@@ -850,32 +850,41 @@ static int _get_joules_task(uint16_t delta)
 		return SLURM_ERROR;
 	}
 
-	if (first) {
+	new->previous_consumed_energy = xcc_energy.consumed_energy;
+
+	if (!first) {
+		/* if slurmd is reloaded while the step is alive */
+		if (xcc_energy.consumed_energy > new->consumed_energy)
+			new->base_consumed_energy = new->consumed_energy;
+		else {
+			new->consumed_energy -= first_consumed_energy;
+			new->base_consumed_energy =
+				new->consumed_energy -
+				new->previous_consumed_energy;
+		}
+	} else {
 		if (!new->consumed_energy) {
 			info("we got a blank");
 			goto end_it;
 		}
 
 		/*
-		 * First number from the slurmd.  We will figure out the usage
-		 * by subtracting this each time.
+		 * This is just for the step, so take all the previous
+		 * consumption out of the mix.
 		 */
 		first_consumed_energy = new->consumed_energy;
+		new->base_consumed_energy = 0;
 		first = false;
 	}
 
-	new->consumed_energy -= first_consumed_energy;
-	new->previous_consumed_energy = xcc_energy.consumed_energy;
-	new->base_consumed_energy =
-		new->consumed_energy - new->previous_consumed_energy;
-
+	new->consumed_energy = new->previous_consumed_energy
+		+ new->base_consumed_energy;
 	memcpy(&xcc_energy, new, sizeof(acct_gather_energy_t));
 
 	log_flag(ENERGY, "consumed %"PRIu64" Joules (received %"PRIu64"(%u watts) from slurmd)",
 		 xcc_energy.consumed_energy, xcc_energy.base_consumed_energy,
 		 xcc_energy.current_watts);
 
-//	new->previous_consumed_energy = xcc_energy.consumed_energy;
 end_it:
 	acct_gather_energy_destroy(new);
 
