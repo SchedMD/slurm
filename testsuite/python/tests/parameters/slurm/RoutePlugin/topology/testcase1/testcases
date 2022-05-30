@@ -1,0 +1,55 @@
+# etc33.1.1 -- test a 10000 node symetric config with 3 levels of switches
+#
+# Full config, initial conditions
+peta[10000-19999]
+peta[10000-14999]
+peta[15000-19999]
+
+# Full config, after initial conditions
+peta[10000-19999]
+peta[10000-14999]
+peta[15000-19999]
+
+# two nodes, two different switches
+peta[10000,15000]
+peta10000
+peta15000
+
+# Half nodes, first forward
+peta[10000-14999]
+peta[10000-10399]
+peta[10400-10799]
+peta[10800-11199]
+peta[11200-11599]
+peta[11600-11999]
+peta[12000-12399]
+peta[12400-12799]
+peta[12800-13199]
+peta[13200-13599]
+peta[13600-13999]
+peta[14000-14399]
+peta[14400-14799]
+peta[14800-14999]
+
+# Second forward
+peta[10000-10399]
+peta[10000-10019]
+peta[10020-10039]
+peta[10040-10059]
+peta[10060-10079]
+peta[10080-10099]
+peta[10100-10119]
+peta[10120-10139]
+peta[10140-10159]
+peta[10160-10179]
+peta[10180-10199]
+peta[10200-10219]
+peta[10220-10239]
+peta[10240-10259]
+peta[10260-10279]
+peta[10280-10299]
+peta[10300-10319]
+peta[10320-10339]
+peta[10340-10359]
+peta[10360-10379]
+peta[10380-10399]

@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+############################################################################
+# Copyright (C) SchedMD LLC.
+############################################################################
+import argparse
+import importlib.util
+import os
+import pathlib
+import sys
+
+parser = argparse.ArgumentParser(description='Performs an ATF test run')
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--auto-config', action='store_true', help="the slurm configuration will be altered as needed by the test")
+group.add_argument('--local-config', action='store_false', dest='auto_config', help="the slurm configuration will not be altered. This is the default")
+parser.add_argument('--include-expect', action='store_true', help="include the expect tests")
+parser.add_argument('PYTEST_OPTION ...', nargs='?', help="additional pytest options")
+parser.add_argument('TEST_FILE_OR_DIR ...', nargs='?', help="test files or directories")
+args, unknown = parser.parse_known_args()
+
+# Verify that pytest is installed
+if importlib.util.find_spec('pytest') is None:
+    sys.exit("pytest must be installed in order to run the python testsuite")
+
+# Only highlight skips in auto-config mode
+if args.auto_config:
+    report_options = 'A'
+else:
+    report_options = 'fE'
+
+atf_base_dir = str(pathlib.Path(__file__).resolve().parent)
+
+# Change directory to the base of the ATF repo
+os.chdir(atf_base_dir)
+
+command = 'pytest-3'
+args = [command, '-s', f'-r{report_options}', '-v', '-p', 'no:cacheprovider']
+args.extend(sys.argv[1:])
+os.execvp(command, args)

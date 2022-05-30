@@ -1,0 +1,15 @@
+# Slurm source directory (contains configure.ac and src directory)
+#set src_dir "@abs_top_srcdir@"
+
+# Slurm build directory (where you ran configure and make)
+#set build_dir "@abs_top_builddir@"
+
+# Slurm installation directory (prefix used in configure)
+#set slurm_dir "@prefix@"
+
+# Cluster-wide shared directory
+#set testsuite_shared_dir "@abs_top_srcdir@/testsuite/expect"
+
+# Whether or not to run cleanup and remove test_dir on test failure
+#set testsuite_cleanup_on_failure true
+

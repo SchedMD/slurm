@@ -51,6 +51,35 @@ if {[info procs exit] eq "exit"} {
 	return
 }
 
+# Read in unified testsuite properties from testsuite/testsuite.conf
+set unified_testsuite_dir [file dirname [file normalize "[info script]/.."]]
+set unified_testsuite_conf_file "$unified_testsuite_dir/testsuite.conf"
+set unified_testsuite_config_dict [dict create]
+if [file readable "$unified_testsuite_conf_file"] {
+	set fp [open "$unified_testsuite_conf_file" r]
+	set file_data [read $fp]
+	close $fp
+	foreach line [split $file_data "\n"] {
+		if [regexp {^\s*(\S+)\s*=\s*(\S+)\s*$} $line {} parameter_name parameter_value] {
+			puts "Parsed {$parameter_name=$parameter_value}"
+			dict set unified_testsuite_config_dict [string tolower $parameter_name] $parameter_value
+		}
+	}
+} else {
+	puts stderr "Warning: Unable to open unified testsuite configuration file ($unified_testsuite_conf_file) for reading. Have you run make install?"
+    flush stderr
+    #exit 1
+}
+if [dict exists $unified_testsuite_config_dict "slurmsourcedir"] {
+	set src_dir [dict get $unified_testsuite_config_dict "slurmsourcedir"]
+}
+if [dict exists $unified_testsuite_config_dict "slurmbuilddir"] {
+	set build_dir [dict get $unified_testsuite_config_dict "slurmbuilddir"]
+}
+if [dict exists $unified_testsuite_config_dict "slurminstalldir"] {
+	set slurm_dir [dict get $unified_testsuite_config_dict "slurminstalldir"]
+}
+
 global sacctmgr sacct salloc sattach sbatch sbcast scancel scontrol sinfo
 global smd squeue sreport srun sstat strigger
 

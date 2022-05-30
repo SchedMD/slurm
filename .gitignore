@@ -5,6 +5,7 @@
 .*.swo
 .deps
 .libs
+__pycache__
 Makefile
 autom4te.cache
 /api/full_version.map
@@ -57,6 +58,9 @@ autom4te.cache
 /src/sstat/sstat
 /src/strigger/strigger
 /src/sview/sview
+/testsuite/testsuite.conf
 /testsuite/expect/globals.*
+!/testsuite/expect/globals.local.sample.in
 /testsuite/expect/*.log*
+/testsuite/python/pytest.ini
 TAGS
