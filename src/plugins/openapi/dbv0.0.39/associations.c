@@ -186,8 +186,8 @@ static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
 	rc = db_query_list(errors, auth, &removed, slurmdb_associations_remove,
 			   assoc_cond);
 	if (rc) {
-		(void) resp_error(errors, rc, "unable to query associations",
-				NULL);
+		(void) resp_error(errors, rc, "unable to remove associations",
+				  NULL);
 	} else if (only_one && list_count(removed) > 1) {
 		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
 				"ambiguous request: More than 1 association would have been deleted.",
