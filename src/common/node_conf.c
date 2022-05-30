@@ -1389,3 +1389,12 @@ extern node_record_t *next_node(int *index)
 
 	return node_record_table_ptr[*index];
 }
+
+extern bitstr_t *node_conf_get_active_bitmap(void)
+{
+	node_record_t *node_ptr;
+	bitstr_t *b = bit_alloc(node_record_count);
+	for (int i = 0; (node_ptr = next_node(&i)); i++)
+		bit_set(b, i);
+	return b;
+}
