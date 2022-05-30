@@ -1147,7 +1147,7 @@ extern int reconfigure_slurm(void)
 
 extern void reconfigure_slurm_post_send(int error_code)
 {
-	if (error_code != SLURM_SUCCESS) {
+	if (error_code == SLURM_SUCCESS) {
 		priority_g_reconfig(true);	/* notify priority plugin too */
 		save_all_state();		/* Has own locking */
 		queue_job_scheduler();
