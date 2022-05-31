@@ -10,8 +10,8 @@ The select plugin is aware of the systems topology, based upon data structures
 established by the topology plugn. It can also over-subscribe resources to
 support gang scheduling (time slicing of parallel jobs), if so configured.
 The select plugin is also capable of communicating with an external entity
-to perform these actions (the select/cray_aries plugin used with Cray ALPS/BASIL
-software is one example). Other architectures would rely upon either the
+to perform these actions (the select/cray_aries plugin is one example).
+Other architectures would rely upon either the
 select/linear or select/cons_res plugin. The select/linear plugin allocates
 whole nodes to jobs and is the simplest implementation. The select/cons_res
 plugin (<i>cons_res</i> is an abbreviation for <i>consumable resources</i>)
@@ -65,29 +65,6 @@ the jobs whose preemption is simulated).</p>
 jobs, shrinking job allocations, un/packing job state information,
 un/packing node state information, etc. The operation of those functions is
 relatively straightforward and not detailed here.</p>
-
-<h2 id="cray">Operation on Cray Systems
-<a class="slurm_link" href="#cray"></a>
-</h2>
-
-<p>The operation of the select/cray_aries plugin is unique in that it does not
-directly select resources for a job, but uses the select/linear plugin for
-that purpose. It also interfaces with Cray's ALPS software using the BASIL
-interface or directly using the database. On Cray systems, Slurm's <i>slurmd</i>
-daemon executes on the front-end nodes rather than the compute nodes and
-ALPS is the mechanism available for Slurm to manage compute nodes and their
-jobs.</p>
-
-<pre>
-           -------------------------
-           |   select/cray_aries   |
-           -------------------------
-              |              |
------------------          --------------
-| select/linear |          | BASIL/ALPS |
------------------          --------------
-</pre>
-
 
 <p style="text-align:center;">Last modified 14 June 2018</p>
 
