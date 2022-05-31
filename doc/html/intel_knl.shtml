@@ -15,7 +15,7 @@ described in this document.</p>
 </h2>
 
 <p>The desired NUMA and MCDRAM modes for a KNL processor should be specified
-using the -C or --constraints option of Slurm's job submission commands: salloc,
+using the -C or --constraint option of Slurm's job submission commands: salloc,
 sbatch, and srun. Currently available NUMA and MCDRAM modes are shown in the
 table below. Each node's available and current NUMA and MCDRAM modes are
 visible in the "available features" and "active features" fields respectively,
@@ -343,6 +343,6 @@ NodeName=nid[00000-00127] State=UNKNOWN
 </pre>
 
 
-<p style="text-align:center;">Last modified 9 October 2019</p>
+<p style="text-align:center;">Last modified 31 May 2022</p>
 
 <!--#include virtual="footer.txt"-->
