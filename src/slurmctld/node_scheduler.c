@@ -590,8 +590,7 @@ static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
 	    (node_features_g_count() == 0))	/* No inactive features */
 		return 0;
 
-	feature_bitmap = bit_alloc(node_record_count);
-	bit_set_all(feature_bitmap);
+	feature_bitmap = node_conf_get_active_bitmap();
 	work_bitmap = feature_bitmap;
 	job_feat_iter = list_iterator_create(feature_list);
 	while ((job_feat_ptr = list_next(job_feat_iter))) {
@@ -599,8 +598,7 @@ static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
 			/* Start of expression in parenthesis */
 			last_paren_op = last_op;
 			last_op = FEATURE_OP_AND;
-			paren_bitmap = bit_alloc(node_record_count);
-			bit_set_all(paren_bitmap);
+			paren_bitmap = node_conf_get_active_bitmap();
 			work_bitmap = paren_bitmap;
 		}
 
@@ -704,8 +702,7 @@ extern bitstr_t *build_active_feature_bitmap2(char *reboot_features)
 	node_feature_t *node_feat_ptr;
 
 	if (!reboot_features || (reboot_features[0] == '\0')) {
-		active_node_bitmap = bit_alloc(node_record_count);
-		bit_set_all(active_node_bitmap);
+		active_node_bitmap = node_conf_get_active_bitmap();
 		return active_node_bitmap;
 	}
 
@@ -3477,8 +3474,7 @@ static int _build_node_list(job_record_t *job_ptr,
 			bit_not(usable_node_mask);
 		}
 	} else if (usable_node_mask == NULL) {
-		usable_node_mask = bit_alloc(node_record_count);
-		bit_nset(usable_node_mask, 0, (node_record_count - 1));
+		usable_node_mask = node_conf_get_active_bitmap();
 	}
 
 	if ((rc = valid_feature_counts(job_ptr, false, usable_node_mask,

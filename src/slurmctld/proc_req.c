@@ -5407,8 +5407,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	if (reboot_msg)
 		nodelist = reboot_msg->node_list;
 	if (!nodelist || !xstrcasecmp(nodelist, "ALL")) {
-		bitmap = bit_alloc(node_record_count);
-		bit_nset(bitmap, 0, (node_record_count - 1));
+		bitmap = node_conf_get_active_bitmap();
 	} else if (node_name2bitmap(nodelist, false, &bitmap) != 0) {
 		FREE_NULL_BITMAP(bitmap);
 		error("%s: Bad node list in REBOOT_NODES request: \"%s\"",

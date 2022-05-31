@@ -6145,8 +6145,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		}
 		if (resv_ptr->flags & RESERVE_FLAG_FLEX) {
 			/* Job not bound to reservation nodes or time */
-			*node_bitmap = bit_alloc(node_record_count);
-			bit_nset(*node_bitmap, 0, (node_record_count - 1));
+			*node_bitmap = node_conf_get_active_bitmap();
 		} else {
 			if (resv_ptr->end_time <= now)
 				(void)_advance_resv_time(resv_ptr);
@@ -6184,9 +6183,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 				return ESLURM_RESERVATION_INVALID;
 			}
 			if (resv_ptr->flags & RESERVE_FLAG_ANY_NODES) {
-				*node_bitmap = bit_alloc(node_record_count);
-				bit_nset(*node_bitmap, 0,
-					 (node_record_count - 1));
+				*node_bitmap = node_conf_get_active_bitmap();
 			} else {
 				*node_bitmap = bit_copy(resv_ptr->node_bitmap);
 			}
@@ -6250,8 +6247,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 	}
 
 	job_ptr->resv_ptr = NULL;	/* should be redundant */
-	*node_bitmap = bit_alloc(node_record_count);
-	bit_nset(*node_bitmap, 0, (node_record_count - 1));
+	*node_bitmap = node_conf_get_active_bitmap();
 	if (list_count(resv_list) == 0)
 		return SLURM_SUCCESS;
 
@@ -6378,7 +6374,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			job_start_time = *when;
 			job_end_time   = *when +
 					 _get_job_duration(job_ptr, reboot);
-			bit_nset(*node_bitmap, 0, (node_record_count - 1));
+			node_conf_set_all_active_bits(*node_bitmap);
 			rc = SLURM_SUCCESS;
 			continue;
 		}

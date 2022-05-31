@@ -4040,8 +4040,7 @@ next_part:
 		}
 	} else {
 		/* assume all nodes available to job for testing */
-		avail_bitmap = bit_alloc(node_record_count);
-		bit_nset(avail_bitmap, 0, (node_record_count - 1));
+		avail_bitmap = node_conf_get_active_bitmap();
 	}
 
 	/* Consider only nodes in this job's partition */

@@ -794,10 +794,7 @@ extern void node_features_p_get_config(config_plugin_params_t *p)
 
 extern bitstr_t *node_features_p_get_node_bitmap(void)
 {
-	bitstr_t *bitmap;
-	bitmap = bit_alloc(node_record_count);
-	bit_set_all(bitmap);
-	return bitmap;
+	return node_conf_get_active_bitmap();
 }
 
 extern char *node_features_p_node_xlate2(char *new_features)

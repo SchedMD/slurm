@@ -798,8 +798,8 @@ static void _set_job_running(job_record_t *job_ptr)
 			blade_array[nodeinfo->blade_id].job_cnt++;
 
 			if (jobinfo->npc == NPC_SYS) {
-				bit_nset(blade_nodes_running_npc, 0,
-					 node_record_count-1);
+				node_conf_set_all_active_bits(
+					blade_nodes_running_npc);
 			} else if (jobinfo->npc)
 				bit_or(blade_nodes_running_npc,
 				       blade_array[nodeinfo->blade_id].
@@ -826,8 +826,7 @@ static void _set_job_running_restore(select_jobinfo_t *jobinfo)
 		blade_array[i].job_cnt++;
 
 		if (jobinfo->npc == NPC_SYS) {
-			bit_nset(blade_nodes_running_npc, 0,
-				 node_record_count-1);
+			node_conf_set_all_active_bits(blade_nodes_running_npc);
 		} else if (jobinfo->npc)
 			bit_or(blade_nodes_running_npc,
 			       blade_array[i].node_bitmap);
