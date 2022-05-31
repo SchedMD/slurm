@@ -197,7 +197,7 @@ function param () {
 }
 
 function _jobs() {
-echo $( scontrol -o show jobs | cut -d' ' -f 1 | cut -d'=' -f 2 ) ;
+echo $( scontrol -o show jobs | grep -E -o 'JobId=(\w,?)+' | cut -d'=' -f 2 ) ;
 }
 function _wckeys() {
 echo $(sacctmgr -p -n list wckeys | cut -d'|' -f1) ;
@@ -215,7 +215,7 @@ function _clus_rpc() {
 echo $(sacctmgr -Pn list clusters format=rpc | sort | uniq) ;
 }
 function _jobnames() {
-echo $( scontrol -o show jobs | cut -d' ' -f 2 | cut -d'=' -f 2 ) ;
+echo $( scontrol -o show jobs | grep -E -o 'JobName=(\w,?)+' | cut -d'=' -f 2 ) ;
 }
 function _partitions() {
 echo $(scontrol show partitions|grep PartitionName|cut -c 15- |cut -f 1 -d' '|paste -s -d ' ') ;
@@ -248,7 +248,7 @@ function _gres() {
 echo $(scontrol show config | grep GresTypes | cut -d= -f2)
 }
 function _jobname() {
-echo $(scontrol show -o jobs | cut -d' ' -f 2 | sed 's/Name=//')
+echo $( scontrol -o show jobs | grep -E -o 'JobName=(\w,?)+' | cut -d'=' -f 2 ) ;
 }
 function _resource() {
 echo $(sacctmgr -pn list resource | cut -d'|' -f1 | paste -s -d' ')
