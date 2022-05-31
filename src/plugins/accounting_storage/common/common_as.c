@@ -898,10 +898,6 @@ extern int archive_write_file(buf_t *buffer, char *cluster_name,
 	new_file = _make_archive_name(period_start, period_end,
 				      cluster_name, arch_dir,
 				      arch_type, archive_period);
-	if (!new_file) {
-		error("%s: Unable to make archive file name.", __func__);
-		return SLURM_ERROR;
-	}
 
 	debug("Storing %s archive for %s at %s",
 	      arch_type, cluster_name, new_file);
