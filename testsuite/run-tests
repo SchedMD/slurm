@@ -8,6 +8,7 @@ use Getopt::Long qw(:config no_ignore_case);
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Cwd qw(cwd abs_path);
 use FindBin qw($Bin);
+use IPC::Cmd qw(can_run);
 use Term::ANSIColor;
 
 my ($help, $exit_on_first_failure, $exclude_pattern, $include_pattern, $man, $no_cleanup_on_failure);
@@ -76,6 +77,14 @@ if (defined $output_dir) {
         mkdir $output_dir or die "Unable to create output directory $output_dir: $!\n";
     }
 }
+
+# Warn if pytest is not installed
+my $pytest_available = can_run('pytest-3');
+warn "Warning: The python tests require pytest to be installed in order to run.\n" unless $pytest_available;
+
+# Warn if expect is not installed
+my $expect_available = can_run('expect');
+warn "Warning: The expect tests require expect (TCL) to be installed in order to run.\n" unless $expect_available;
 
 sub print_test_name {
     my ($test_name) = @_;
@@ -232,53 +241,55 @@ run_unit_tests('slurm_unit');
 # Run expect tests
 ##############################################################################
 
-# Change directory to testsuite/expect
-chdir("$Bin/expect") or die "Unable to change directory to $Bin/expect: $!\n";
+if ($expect_available) {
+    # Change directory to testsuite/expect
+    chdir("$Bin/expect") or die "Unable to change directory to $Bin/expect: $!\n";
 
-# Obtain a list of expect tests to run
-$output = `bash -c "ls test{?,??}\.{?,??,???} 2>/dev/null | sort -V" 2>&1`;
-$rc = $? >> 8;
-if ($rc) {
-    die "Unable to obtain list of expect tests to run: $output\n";
-}
-my @expect_tests = split /\s+/, $output;
-#use Data::Dumper;
-#print Data::Dumper->Dump([\@expect_tests], ['expect_tests']), "\n";
-
-# Iterate over each expect test
-foreach my $test (@expect_tests) {
-    my $test_name = "expect/$test";
-
-    last if $exit_tests;
-    next if (defined $include_pattern && $test_name !~ /$include_pattern/);
-    next if (defined $exclude_pattern && $test_name =~ /$exclude_pattern/);
-
-    # Initially print the test name so we can see what test is being run
-    print_test_name($test_name);
-
-    # Run the test
-    my $test_output = `./$test 2>&1`;
+    # Obtain a list of expect tests to run
+    $output = `bash -c "ls test{?,??}\.{?,??,???} 2>/dev/null | sort -V" 2>&1`;
     $rc = $? >> 8;
-
-    my $test_status = '';
-    if ($rc == 0) { $test_status = 'Passed'; }
-    elsif ($rc > 127) { $test_status = 'Skipped'; }
-    else { $test_status = 'Failed'; }
-
-    # Parse the test output for diagnostic information
-    my $diagnostic_output = '';
-    foreach my $line (split /\n/, $test_output) {
-        if ($line =~ m%^\[[^\]]+\] (Fatal|Error)\s+(.*)$% || $line =~ m%^\[[^\]]+\] (Warning)\s+(.*skip\@globals.*)$%) {
-            my ($severity, $message) = ($1, $2);
-            $message =~ s/\([^\)]*\)//g; # Remove parenthesized inclusions
-            $message =~ s/\([^\)]*\)//g; # Remove singly nested layers
-            $message =~ s/\s{2,}/ /g; # Collapse whitespace
-            $message =~ s/\s+$//g; # Remove trailing whitespace
-            $diagnostic_output .= "$severity: $message\n";
-        }
+    if ($rc) {
+        die "Unable to obtain list of expect tests to run: $output\n";
     }
-    
-    print_test_status($test_name, $test_status, $diagnostic_output, $test_output);
+    my @expect_tests = split /\s+/, $output;
+    #use Data::Dumper;
+    #print Data::Dumper->Dump([\@expect_tests], ['expect_tests']), "\n";
+
+    # Iterate over each expect test
+    foreach my $test (@expect_tests) {
+        my $test_name = "expect/$test";
+
+        last if $exit_tests;
+        next if (defined $include_pattern && $test_name !~ /$include_pattern/);
+        next if (defined $exclude_pattern && $test_name =~ /$exclude_pattern/);
+
+        # Initially print the test name so we can see what test is being run
+        print_test_name($test_name);
+
+        # Run the test
+        my $test_output = `./$test 2>&1`;
+        $rc = $? >> 8;
+
+        my $test_status = '';
+        if ($rc == 0) { $test_status = 'Passed'; }
+        elsif ($rc > 127) { $test_status = 'Skipped'; }
+        else { $test_status = 'Failed'; }
+
+        # Parse the test output for diagnostic information
+        my $diagnostic_output = '';
+        foreach my $line (split /\n/, $test_output) {
+            if ($line =~ m%^\[[^\]]+\] (Fatal|Error)\s+(.*)$% || $line =~ m%^\[[^\]]+\] (Warning)\s+(.*skip\@globals.*)$%) {
+                my ($severity, $message) = ($1, $2);
+                $message =~ s/\([^\)]*\)//g; # Remove parenthesized inclusions
+                $message =~ s/\([^\)]*\)//g; # Remove singly nested layers
+                $message =~ s/\s{2,}/ /g; # Collapse whitespace
+                $message =~ s/\s+$//g; # Remove trailing whitespace
+                $diagnostic_output .= "$severity: $message\n";
+            }
+        }
+
+        print_test_status($test_name, $test_status, $diagnostic_output, $test_output);
+    }
 }
 
 
@@ -286,115 +297,117 @@ foreach my $test (@expect_tests) {
 # Run python tests
 ##############################################################################
 
-# Change directory to testsuite/python
-chdir("$Bin/python") or die "Unable to change directory to $Bin/python: $!\n";
+if ($pytest_available) {
+    # Change directory to testsuite/python
+    chdir("$Bin/python") or die "Unable to change directory to $Bin/python: $!\n";
 
-# Obtain a list of python tests to run via pytest
-my @python_tests = ();
-$output = `pytest-3 --collect-only tests 2>&1`;
-$rc = $? >> 8;
-if ($rc) {
-    die "Unable to obtain list of python tests to run: $output\n";
-}
-
-# Parse the collected test output
-my ($package, $module, $class, $function) = ('', '', '', '');;
-foreach my $line (split /\n/, $output) {
-    if ($line =~ /^<Module ([^>]*)>$/) {
-        #push @python_tests, $1;
-        $module = $1;
-        $package = '';
-        $class = '';
-    }
-    elsif ($line =~ /^<Package $Bin\/python\/([^>]*)>$/) {
-        $package = $1;
-    }
-    elsif ($line =~ /^  <Module ([^>]*)>/) {
-        #push @python_tests, "$package/$1";
-        $module = $1;
-        $class = '';
-    }
-    elsif ($line =~ /<Class ([^>]*)>/) {
-        $class = $1;
-    }
-    elsif ($line =~ /<Function ([^>]*)>/) {
-        my $test = $package ? "$package/$module" : $module;
-        $test .= "::$class" if $class;
-        $test .= "::$1";
-        next if $module =~ /test_expect\.py/;
-        push @python_tests, $test;
-    }
-}
-#use Data::Dumper;
-#print Data::Dumper->Dump([\@python_tests], ['python_tests']), "\n";
-
-# Iterate over each collected test
-foreach my $test (@python_tests) {
-    my $test_name = "python/$test";
-    last if $exit_tests;
-    next if (defined $include_pattern && $test_name !~ /$include_pattern/);
-    next if (defined $exclude_pattern && $test_name =~ /$exclude_pattern/);
-
-    # Initially print the test function name so we can see what test is being run
-    print_test_name($test_name);
-
-    # Run the test function
-    my $test_output = `pytest-3 -s -rA -v --junit-xml=junit.xml $test 2>&1`;
+    # Obtain a list of python tests to run via pytest
+    my @python_tests = ();
+    $output = `pytest-3 --collect-only tests 2>&1`;
     $rc = $? >> 8;
-
-    my $test_status;
-    #if ($rc == 0) { $test_status = 'Passed'; }
-    #elsif ($rc == 1) { $test_status = 'Failed'; }
-    #else { $test_status = 'Error'; }
-
-    # Parse the junit output for test function and status information
-    open JUNIT_XML, "junit.xml" or die "Unable to open junit.xml for reading: $!\n";
-    my $junit_output = do { local $/; <JUNIT_XML> };
-
-    $test_status = 'Passed';
-    my $test_message = '';
-
-    # Iterate over each test function
-    # Since we are now running function-centric, there will just be one
-    foreach my $testcase ($junit_output =~ m%<testcase.*?</testcase>%sg) {
-        # All of the functions have already been run. Here we are just printing
-        # out the per-function statuses.
-        last if $exit_tests;
-
-        my $subtest_class_name = '';
-        my $subtest_file_name = '';
-        my $subtest_fqn = '';
-        my $subtest_function_name = '';
-        my $subtest_status = 'Passed';
-        my $subtest_message = '';
-
-        $subtest_file_name = $1 if $testcase =~ m%file="([^"]+)"%;
-        $subtest_class_name = $1 if $testcase =~ m%classname="([^"]+)"%;
-        $subtest_function_name = $1 if $testcase =~ m% name="([^"]+)"%;
-        if ($subtest_class_name ne '') { $subtest_class_name =~ s/.*\.//; }
-        if (index($subtest_file_name, $subtest_class_name) == -1) {
-            $subtest_fqn = "${subtest_file_name}::${subtest_class_name}::${subtest_function_name}";
-        }
-        else {
-            $subtest_fqn = "${subtest_file_name}::${subtest_function_name}";
-        }
-        if ($testcase =~ /<failure/) {
-            $subtest_status = 'Failed';
-            $test_status = 'Failed';
-            $subtest_message = $1 if $testcase =~ m%message="([^"]+)"%;
-        }
-        elsif ($testcase =~ /<skipped/) {
-            $subtest_status = 'Skipped';
-            $test_status = 'Skipped' if $test_status eq 'Passed';
-            $subtest_message = $1 if $testcase =~ m%message="([^"]+)"%;
-        }
-
-        #print_test_status($subtest_status, $subtest_message);
-        $test_message = $subtest_message;
+    if ($rc) {
+        die "Unable to obtain list of python tests to run: $output\n";
     }
 
-    # Print the test function status (and write test output to the output file)
-    print_test_status($test_name, $test_status, $test_message, $test_output);
+    # Parse the collected test output
+    my ($package, $module, $class, $function) = ('', '', '', '');;
+    foreach my $line (split /\n/, $output) {
+        if ($line =~ /^<Module ([^>]*)>$/) {
+            #push @python_tests, $1;
+            $module = $1;
+            $package = '';
+            $class = '';
+        }
+        elsif ($line =~ /^<Package $Bin\/python\/([^>]*)>$/) {
+            $package = $1;
+        }
+        elsif ($line =~ /^  <Module ([^>]*)>/) {
+            #push @python_tests, "$package/$1";
+            $module = $1;
+            $class = '';
+        }
+        elsif ($line =~ /<Class ([^>]*)>/) {
+            $class = $1;
+        }
+        elsif ($line =~ /<Function ([^>]*)>/) {
+            my $test = $package ? "$package/$module" : $module;
+            $test .= "::$class" if $class;
+            $test .= "::$1";
+            next if $module =~ /test_expect\.py/;
+            push @python_tests, $test;
+        }
+    }
+    #use Data::Dumper;
+    #print Data::Dumper->Dump([\@python_tests], ['python_tests']), "\n";
+
+    # Iterate over each collected test
+    foreach my $test (@python_tests) {
+        my $test_name = "python/$test";
+        last if $exit_tests;
+        next if (defined $include_pattern && $test_name !~ /$include_pattern/);
+        next if (defined $exclude_pattern && $test_name =~ /$exclude_pattern/);
+
+        # Initially print the test function name so we can see what test is being run
+        print_test_name($test_name);
+
+        # Run the test function
+        my $test_output = `pytest-3 -s -rA -v --junit-xml=junit.xml $test 2>&1`;
+        $rc = $? >> 8;
+
+        my $test_status;
+        #if ($rc == 0) { $test_status = 'Passed'; }
+        #elsif ($rc == 1) { $test_status = 'Failed'; }
+        #else { $test_status = 'Error'; }
+
+        # Parse the junit output for test function and status information
+        open JUNIT_XML, "junit.xml" or die "Unable to open junit.xml for reading: $!\n";
+        my $junit_output = do { local $/; <JUNIT_XML> };
+
+        $test_status = 'Passed';
+        my $test_message = '';
+
+        # Iterate over each test function
+        # Since we are now running function-centric, there will just be one
+        foreach my $testcase ($junit_output =~ m%<testcase.*?</testcase>%sg) {
+            # All of the functions have already been run. Here we are just printing
+            # out the per-function statuses.
+            last if $exit_tests;
+
+            my $subtest_class_name = '';
+            my $subtest_file_name = '';
+            my $subtest_fqn = '';
+            my $subtest_function_name = '';
+            my $subtest_status = 'Passed';
+            my $subtest_message = '';
+
+            $subtest_file_name = $1 if $testcase =~ m%file="([^"]+)"%;
+            $subtest_class_name = $1 if $testcase =~ m%classname="([^"]+)"%;
+            $subtest_function_name = $1 if $testcase =~ m% name="([^"]+)"%;
+            if ($subtest_class_name ne '') { $subtest_class_name =~ s/.*\.//; }
+            if (index($subtest_file_name, $subtest_class_name) == -1) {
+                $subtest_fqn = "${subtest_file_name}::${subtest_class_name}::${subtest_function_name}";
+            }
+            else {
+                $subtest_fqn = "${subtest_file_name}::${subtest_function_name}";
+            }
+            if ($testcase =~ /<failure/) {
+                $subtest_status = 'Failed';
+                $test_status = 'Failed';
+                $subtest_message = $1 if $testcase =~ m%message="([^"]+)"%;
+            }
+            elsif ($testcase =~ /<skipped/) {
+                $subtest_status = 'Skipped';
+                $test_status = 'Skipped' if $test_status eq 'Passed';
+                $subtest_message = $1 if $testcase =~ m%message="([^"]+)"%;
+            }
+
+            #print_test_status($subtest_status, $subtest_message);
+            $test_message = $subtest_message;
+        }
+
+        # Print the test function status (and write test output to the output file)
+        print_test_status($test_name, $test_status, $test_message, $test_output);
+    }
 }
 
 
