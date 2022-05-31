@@ -10,25 +10,29 @@ The select plugin is aware of the systems topology, based upon data structures
 established by the topology plugn. It can also over-subscribe resources to
 support gang scheduling (time slicing of parallel jobs), if so configured.
 The select plugin is also capable of communicating with an external entity
-to perform these actions (the select/cray_aries plugin used with Cray ALPS/BASIL
-software is one example). Other architectures would rely upon either the
-select/linear or select/cons_res plugin. The select/linear plugin allocates
+to perform these actions (the select/cray_aries plugin is one example).
+Other architectures would rely upon the select/linear, select/cons_res
+or select/cons_tres plugins. The select/linear plugin allocates
 whole nodes to jobs and is the simplest implementation. The select/cons_res
 plugin (<i>cons_res</i> is an abbreviation for <i>consumable resources</i>)
 can allocate individual sockets, cores, threads, or CPUs within a node.
-The select/cons_res plugin is slightly slower than select/linear, but
-contains far more complex logic.</p>
+The select/cons_tres plugin (<i>cons_tres</i> is an abbrebiation for
+<i>trackable resources</i>) and is similar to the <i>cons_res</i> plugin,
+with an improved ability to manage other generic resources, such as GPUs.
+The select/cons_res and select/cons_tres plugins are slightly slower than
+select/linear, but contain far more complex logic.</p>
 
 <h2 id="mode">Mode of Operation<a class="slurm_link" href="#mode"></a></h2>
 
-<p>The select/linear and select/cons_res plugins have similar modes of
-operation. The obvious difference is that data structures in select/linear
-are node-centric, while those in select/cons_res contain information at a
-finer resolution (sockets, cores, threads, or CPUs depending upon the
-SelectTypeParameters configuration parameter). The description below is
-generic and applies to both plugin implementations. Note that both plugins
-are able to manage memory allocations. Both plugins are also able to manage
-generic resource (GRES) allocations, making use of the GRES plugins.</p>
+<p>The select/linear, select/cons_res and select/cons_tres plugins have
+similar modes of operation. The obvious difference is that data structures
+in select/linear are node-centric, while those in select/cons_res and
+select/cons_tres contain information at a finer resolution (sockets, cores,
+threads, or CPUs depending upon the SelectTypeParameters configuration
+parameter). The description below is generic and applies to the above three
+plugin implementations. Note that each of these plugins is able to manage
+memory allocations. If you need to track other resources, such as GPUs,
+you should use the select/cons_res or select/cons_tres plugins.</p>
 
 <p>Per node data structures include memory (configured and allocated),
 GRES (configured and allocated, in a List data structure), plus a flag
@@ -66,29 +70,6 @@ jobs, shrinking job allocations, un/packing job state information,
 un/packing node state information, etc. The operation of those functions is
 relatively straightforward and not detailed here.</p>
 
-<h2 id="cray">Operation on Cray Systems
-<a class="slurm_link" href="#cray"></a>
-</h2>
-
-<p>The operation of the select/cray_aries plugin is unique in that it does not
-directly select resources for a job, but uses the select/linear plugin for
-that purpose. It also interfaces with Cray's ALPS software using the BASIL
-interface or directly using the database. On Cray systems, Slurm's <i>slurmd</i>
-daemon executes on the front-end nodes rather than the compute nodes and
-ALPS is the mechanism available for Slurm to manage compute nodes and their
-jobs.</p>
-
-<pre>
-           -------------------------
-           |   select/cray_aries   |
-           -------------------------
-              |              |
------------------          --------------
-| select/linear |          | BASIL/ALPS |
------------------          --------------
-</pre>
-
-
-<p style="text-align:center;">Last modified 14 June 2018</p>
+<p style="text-align:center;">Last modified 31 May 2022</p>
 
 <!--#include virtual="footer.txt"-->

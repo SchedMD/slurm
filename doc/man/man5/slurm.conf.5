@@ -4196,7 +4196,9 @@ resource allocations will favor nodes with high CPU counts as needed based upon
 the job's node and CPU specification if \fBTopologyPlugin=topology/none\fR is
 configured. Use of other topology plugins with select/linear and heterogeneous
 nodes is not recommended and may result in valid job allocation requests being
-rejected.
+rejected. The linear plugin is not designed to track generic resources on a
+node. In cases where generic resources (such as GPUs) need to be tracked,
+the cons_res or cons_tres plugins should be used instead.
 This is the default value.
 .RE
 .IP
