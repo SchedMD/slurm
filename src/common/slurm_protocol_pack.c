@@ -98,9 +98,6 @@ static void _pack_ret_list(List ret_list, uint16_t size_val, buf_t *buffer,
 static int _unpack_ret_list(List *ret_list, uint16_t size_val, buf_t *buffer,
 			    uint16_t protocol_version);
 
-static void _priority_factors_resp_list_del(void *x);
-
-
 /* pack_header
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
@@ -652,7 +649,7 @@ static int _unpack_priority_factors_object(void **object, buf_t *buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	_priority_factors_resp_list_del(object_ptr);
+	slurm_destroy_priority_factors_object(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }
@@ -775,25 +772,6 @@ _pack_priority_factors_response_msg(priority_factors_response_msg_t * msg,
 	}
 }
 
-static void _priority_factors_resp_list_del(void *x)
-{
-	priority_factors_object_t *tmp_info = x;
-	int i;
-
-	if (tmp_info) {
-		xfree(tmp_info->cluster_name);
-		xfree(tmp_info->partition);
-		xfree(tmp_info->priority_tres);
-		if (tmp_info->tres_cnt && tmp_info->tres_names) {
-			for (i = 0; i < tmp_info->tres_cnt; i++)
-				xfree(tmp_info->tres_names[i]);
-		}
-		xfree(tmp_info->tres_names);
-		xfree(tmp_info->tres_weights);
-		xfree(tmp_info);
-	}
-}
-
 static int
 _unpack_priority_factors_response_msg(priority_factors_response_msg_t ** msg,
 				      buf_t *buffer,
@@ -813,7 +791,7 @@ _unpack_priority_factors_response_msg(priority_factors_response_msg_t ** msg,
 		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->priority_factors_list =
-			list_create(_priority_factors_resp_list_del);
+			list_create(slurm_destroy_priority_factors_object);
 		for (i = 0; i < count; i++) {
 			if (_unpack_priority_factors_object(&tmp_info, buffer,
 							    protocol_version)

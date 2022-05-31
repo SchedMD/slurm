@@ -1480,7 +1480,7 @@ static void _filter_job(job_record_t *job_ptr,
 							job_ptr->prio_factors);
 			}
 			obj->job_id = job_ptr->job_id;
-			obj->partition = job_part_ptr->name;
+			obj->partition = xstrdup(job_part_ptr->name);
 			obj->user_id = job_ptr->user_id;
 			list_append(ret_list, obj);
 		}
@@ -1514,7 +1514,7 @@ static void _filter_job(job_record_t *job_ptr,
 				 job_part_ptr->norm_priority) *
 				(double)weight_part;
 			obj->job_id = job_ptr->job_id;
-			obj->partition = job_part_ptr->name;
+			obj->partition = xstrdup(job_part_ptr->name);
 			obj->user_id = job_ptr->user_id;
 
 			if (obj->priority_tres) {
