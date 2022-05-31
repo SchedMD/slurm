@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 22.05.1
 ==========================
  -- Flush the list of Include config files on SIGHUP.
+ -- Fix and update Slurm completion script.
 
 * Changes in Slurm 22.05.0
 ==========================

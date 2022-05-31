@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "April 2022" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "May 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -128,8 +128,7 @@ The cluster to issue commands to. Only one cluster name may be specified.
 .TP
 \fBcreate\fR <\fISPECIFICATION\fR>
 Create a new node, partition, or reservation.  See the full list of parameters
-below.  Include the tag "res" to create a reservation without specifying
-a reservation name.
+below.
 .IP
 
 .TP
@@ -2224,7 +2223,7 @@ See the slurm.conf man page for more information.
 Identify the name of the reservation to be created, updated, or deleted.
 This parameter is required for update and is the only parameter for delete.
 For create, if you do not want to give a reservation name, use
-"scontrol create res ..." and a name will be created automatically.
+"scontrol create reservation ..." and a name will be created automatically.
 .IP
 
 .TP
