@@ -197,7 +197,7 @@ function param () {
 }
 
 function _jobs() {
-echo $( scontrol -o show jobs | cut -d' ' -f 1 | cut -d'=' -f 2 ) ;
+echo $( scontrol -o show jobs | grep -E -o 'JobId=(\w,?)+' | cut -d'=' -f 2 ) ;
 }
 function _wckeys() {
 echo $(sacctmgr -p -n list wckeys | cut -d'|' -f1) ;
@@ -215,13 +215,10 @@ function _clus_rpc() {
 echo $(sacctmgr -Pn list clusters format=rpc | sort | uniq) ;
 }
 function _jobnames() {
-echo $( scontrol -o show jobs | cut -d' ' -f 2 | cut -d'=' -f 2 ) ;
+echo $( scontrol -o show jobs | grep -E -o 'JobName=(\w,?)+' | cut -d'=' -f 2 ) ;
 }
 function _partitions() {
 echo $(scontrol show partitions|grep PartitionName|cut -c 15- |cut -f 1 -d' '|paste -s -d ' ') ;
-}
-function _nodes() {
-echo $(scontrol show nodes | grep NodeName | cut -c 10- | cut -f 1 -d' ' | paste -s -d ' ') ;
 }
 function _accounts() {
 echo $(sacctmgr -pn list accounts | cut -d'|' -f1 | paste -s -d' ') ;
@@ -239,19 +236,16 @@ function _nodes() {
 echo $(scontrol show nodes | grep NodeName | cut -c 10- | cut -f 1 -d' ' | paste -s -d ' ') ;
 }
 function _features() {
-echo $(scontrol -o show nodes|cut -d' ' -f8|sed 's/AvailableFeatures=//'|sort -u|tr -d '()'|paste -s -d ' ') ;
+echo $(scontrol -o show nodes | grep -E -o 'AvailableFeatures=(\w,?)+' | cut -d= -f2 | tr "," "\n" | sort -u) ;
 }
 function _users() {
 echo $(sacctmgr -pn list users | cut -d'|' -f1) ;
 }
 function _reservations() {
-echo $(scontrol -o show reservations | cut -d' ' -f1 | cut -d= -f2) ;
+echo $(scontrol -o show reservations | grep -E -o 'ReservationName=\w+' | cut -d= -f2 | sort -u) ;
 }
 function _gres() {
 echo $(scontrol show config | grep GresTypes | cut -d= -f2)
-}
-function _jobname() {
-echo $(scontrol show -o jobs | cut -d' ' -f 2 | sed 's/Name=//')
 }
 function _resource() {
 echo $(sacctmgr -pn list resource | cut -d'|' -f1 | paste -s -d' ')
@@ -930,11 +924,12 @@ _scontrol()
 	if param "steps"        ; then offer "$(_step)" ; fi
 	;;
     delete) # scontrol delete objectname=id
-	parameters="partitionname= reservationname="
+	parameters="nodename= partitionname= reservationname="
 
 	# If a parameter has been fully typed in, serve the corresponding
 	# values, otherwise, serve the list of parameters.
-	if   param "partitionname"   ; then offer_many "$(_partitions)"
+	if   param "nodename"        ; then offer_many "$(_nodes)"
+	elif param "partitionname"   ; then offer_many "$(_partitions)"
 	elif param "reservationname" ; then offer_many "$(_reservations)"
 	else offer "$parameters" ; fi
 	;;
@@ -986,7 +981,7 @@ _scontrol()
 			      switches=<count>[@<max-time-to-wait>]\
 			      taskspernode=<count>\
 			      timelimit=<time_spec> timemin=<time_spec>\
-			      userid=<UID or name> wait-for-switch=<seconds>\
+			      userid=<UID_or_name> wait-for-switch=<seconds>\
 			      wckey=<key> workdir=<path>"
 
 	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
@@ -1125,7 +1120,7 @@ _scontrol()
 						     replace_down spec_nodes\
 						     static_alloc time_float\
 						     weekday weekend weekly"
-	    elif param "partitioname" ; then offer_many "$(_partitions)"
+	    elif param "partitionname" ; then offer_many "$(_partitions)"
 	    elif param "reservationname" ; then offer_many "$(_reservations)"
 	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
@@ -1144,15 +1139,41 @@ _scontrol()
 
 	esac
 	;;
-    create) # command object attribute1=value1 etc.
-	parameters="partition reservation"
+    create) # scontrol create (object attribute1=value1|objectname=id)
+	parameters="nodename= partitionname= reservation reservationname="
 
 	param=$(find_first_occurence "${COMP_WORDS[*]}" "$parameters")
+	param+=$(find_first_partial_occurence "${COMP_WORDS[*]}" "$parameters")
 	[[ $param == "" ]] && { offer "$parameters" ; return ; }
 
 	# Process object
 	case $param in
-	partition)
+	nodename)
+	    local parameters="bcastaddr=<name> boards=<count>\
+			      corespeccount=<count> corespersocket=<count>\
+			      cpubind=<none|socket|idom|core|thread>\
+			      cpus=<count> cpuspeclist=<cpuspec_list>\
+			      features=<feature_list> gres=<gres_list>\
+			      memspeclimit=<MB> nodeaddr=<name>\
+			      nodehostname=<name> port=<port> realmemory=<MB>\
+			      reason=<reason> sockets=<count>\
+			      socketsperboard=<count> state=<cloud|future>\
+			      threadspercore=<count> tmpdisk=<MB>\
+			      weight=<weight>"
+
+	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
+	    # If a new named argument is about to be entered, serve the list of options
+	    [[ $cur == "" && $prev != "=" ]] && { offer "$remainings" ;
+		    return ; }
+
+	    if   param "cpubind"  ; then offer_many "core idom none socket thread"
+	    elif param "features" ; then offer_many "$(_features)"
+	    elif param "gres"     ; then offer_list "$(_gres)"
+	    elif param "state"    ; then offer_many "cloud future"
+	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
+	    fi
+	    ;;
+	partitionname)
 	    local parameters="allowgroups=<name> allocnodes=<node_list>\
 			      alternate=<partition_name> cpubind=<binding>\
 			      default=<yes|no> defaulttime=<d-h:m:s|unlimited>\
@@ -1198,7 +1219,7 @@ _scontrol()
 	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
 	    ;;
-	reservation)
+	reservation|reservationname)
 	    local parameters="accounts=<account_list> burstbuffer=<buffer_spec>\
 			      corecnt=<num>\
 			      duration=<[days-]hours:minutes:seconds>\
@@ -1207,7 +1228,6 @@ _scontrol()
 			      licenses=<licenses> maxstartdelay=<timespec>\
 			      nodecnt=<count> nodes=<node_list>\
 			      partitionname=<partition_list>\
-			      reservationname=<name>\
 			      starttime=<time_spec>\
 			      tres=<tres_spec> users=<user_list>"
 
@@ -1232,7 +1252,7 @@ _scontrol()
 						     replace_down spec_nodes\
 						     static_alloc time_float\
 						     weekday weekend weekly"
-	    elif param "partitioname" ; then offer_many "$(_partitions)"
+	    elif param "partitionname" ; then offer_many "$(_partitions)"
 	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
 	    ;;
@@ -1708,7 +1728,7 @@ _salloc()
 		       --mem=<MB> --mem-bind=<type> --mem-per-cpu=<MB>\
 		       --mem-per-gpu=<MB> --mincpus=<number>\
 		       --network=<type> --nice=<[adjustment]> --no-bell\
-		       --no-kill --no-shell --nodefile=<node file>\
+		       --no-kill --no-shell --nodefile=<nodefile>\
 		       --nodelist=<nodelist> --nodes=<minnodes[-maxnodes]>\
 		       --ntasks=<number>\
 		       --ntasks-per-core=<number> --ntasks-per-gpu=<ntasks>\
@@ -1800,8 +1820,8 @@ _sbatch()
 		       --cpus-per-task=<number>\
 		       --deadline=<OPT> --delay-boot=<minutes>\
 		       --dependency=<deplist> --distribution=<dist>\
-		       --error=<filename pattern> --exclude=<node name list>\
-		       --exclusive --export=<environment variables|ALL|NONE>\
+		       --error=<filename_pattern> --exclude=<nodename_list>\
+		       --exclusive --export=<environment_variables|ALL|NONE>\
 		       --export-file=<filename|fd>\
 		       --extra-node-info=<sockets[:cores[:threads]]>\
 		       --get-user-env --gid=<group>\
@@ -1818,7 +1838,7 @@ _sbatch()
 		       --mem-per-gpu=<MB> --mincpus=<n>\
 		       --network=<type> --nice --no-kill\
 		       --no-requeue --nodefile=<nodefile>\
-		       --nodelist=<node name list>\
+		       --nodelist=<nodename_list>\
 		       --nodes=<minnodes[-maxnodes]> --ntasks=<number>\
 		       --ntasks-per-core=<ntasks> --ntasks-per-gpu=<ntasks>\
 		       --ntasks-per-node=<ntasks>\
@@ -1837,7 +1857,7 @@ _sbatch()
 		       --uid=<user> --usage --use-min-nodes\
 		       --verbose --version\
 		       --wait --wait-all-nodes=<value> --wckey=<wckey>\
-		       --wrap=<command string>"
+		       --wrap=<command_string>"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
@@ -1912,7 +1932,7 @@ _srun()
 		       --deadline=<OPT> --delay-boot=<minutes>\
 		       --dependency=<dependency_list> --disable-status\
 		       --distribution=<type>\
-		       --epilog=<executable> --error=<filename pattern>\
+		       --epilog=<executable> --error=<filename_pattern>\
 		       --exact --exclude= --exclusive\
 		       --export=<[ALL,]environment variables|ALL|NONE>\
 		       --extra-node-info=<spec>\
@@ -1930,14 +1950,14 @@ _srun()
 		       --mem-per-gpu=<size[units]> --mincpus=<n>\
 		       --mpi=<mpi_type> --msg-timeout=<seconds> --multi-prog\
 		       --network=<type> --nice --no-allocate --no-kill\
-		       --nodefile=<node file>\
+		       --nodefile=<nodefile>\
 		       --nodelist=<host1,host2,... or filename>\
 		       --nodes=<minnodes[-maxnodes]> --ntasks=<number>\
 		       --ntasks-per-core=<ntasks> --ntasks-per-gpu=<ntasks>\
 		       --ntasks-per-node=<ntasks>\
 		       --ntasks-per-socket=<ntasks>\
 		       --open-mode=<append|truncate>\
-		       --output=<filename pattern> --overcommit --overlap\
+		       --output=<filename_pattern> --overcommit --overlap\
 		       --oversubscribe\
 		       --partition=<partition_names> --power=<flags>\
 		       --preserve-env --priority=<value> --profile=<type>\
@@ -2003,7 +2023,7 @@ _srun()
     --gres) offer_list "$(_gres)" ;;
     --gres-flags) offer_list "disable-binding enforce-binding" ;;
     --hint) offer "compute_bound memory_bound multithread nomultithread help" ;;
-    --job-name|-J) "$(_jobname)" ;;
+    --job-name|-J) "$(_jobnames)" ;;
     --jobid) offer_list "$(_jobs)" ;;
     --kill-on-bad-exit|-K) offer "0 1" ;;
     --licenses|-L) offer_list "$(_licenses)" ;;
