@@ -247,9 +247,6 @@ echo $(scontrol -o show reservations | grep -E -o 'ReservationName=\w+' | cut -d
 function _gres() {
 echo $(scontrol show config | grep GresTypes | cut -d= -f2)
 }
-function _jobname() {
-echo $( scontrol -o show jobs | grep -E -o 'JobName=(\w,?)+' | cut -d'=' -f 2 ) ;
-}
 function _resource() {
 echo $(sacctmgr -pn list resource | cut -d'|' -f1 | paste -s -d' ')
 }
@@ -2026,7 +2023,7 @@ _srun()
     --gres) offer_list "$(_gres)" ;;
     --gres-flags) offer_list "disable-binding enforce-binding" ;;
     --hint) offer "compute_bound memory_bound multithread nomultithread help" ;;
-    --job-name|-J) "$(_jobname)" ;;
+    --job-name|-J) "$(_jobnames)" ;;
     --jobid) offer_list "$(_jobs)" ;;
     --kill-on-bad-exit|-K) offer "0 1" ;;
     --licenses|-L) offer_list "$(_licenses)" ;;
