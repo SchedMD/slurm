@@ -172,7 +172,7 @@ and SlurmDBD configuration files (slurm.conf and slurmdbd.conf
 respectively, more details are provided below).</p>
 
 <p>Whether you use any authentication module or not you will need to have
-a way for the SlurmDBD to get UID's for users and/or admins.  If using
+a way for the SlurmDBD to get UIDs for users and/or admins.  If using
 MUNGE, it is ideal for your users to have the same id on all your
 clusters.  If this is the case you should have a combination of every cluster's
 /etc/passwd file on the database server to allow the DBD to resolve
