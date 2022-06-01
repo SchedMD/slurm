@@ -1473,9 +1473,10 @@ extern void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
 extern void slurm_destroy_assoc_shares_object(void *object);
 extern void slurm_free_shares_request_msg(shares_request_msg_t *msg);
 extern void slurm_free_shares_response_msg(shares_response_msg_t *msg);
+extern void slurm_destroy_priority_factors(void *object);
 extern void slurm_destroy_priority_factors_object(void *object);
-extern void slurm_copy_priority_factors_object(priority_factors_object_t *dest,
-					       priority_factors_object_t *src);
+extern void slurm_copy_priority_factors(priority_factors_t *dest,
+					priority_factors_t *src);
 extern void slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg);
 extern void slurm_free_forward_data_msg(forward_data_msg_t *msg);

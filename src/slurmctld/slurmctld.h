@@ -844,8 +844,9 @@ struct job_record {
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
 	uint32_t *priority_array;	/* partition based priority */
-	priority_factors_object_t *prio_factors; /* cached value used
-						  * by sprio command */
+	priority_factors_t *prio_factors; /* cached value of priority factors
+					   * figured out in the priority plugin
+					   */
 	uint32_t profile;		/* Acct_gather_profile option */
 	uint32_t qos_id;		/* quality of service id */
 	slurmdb_qos_rec_t *qos_ptr;	/* pointer to the quality of

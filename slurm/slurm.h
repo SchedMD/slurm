@@ -1874,29 +1874,32 @@ typedef struct job_info {
 
 typedef slurm_job_info_t job_info_t;
 
-typedef struct priority_factors_object {
-	char *account;
-	char *cluster_name;	/* Cluster name ONLY set in federation */
-	uint32_t job_id;
-	char *partition;
-	uint32_t user_id;
-
+typedef struct {
+	uint32_t nice;
 	double	 priority_age;
 	double	 priority_assoc;
 	double	 priority_fs;
 	double	 priority_js;
 	double	 priority_part;
 	double	 priority_qos;
-	double   direct_prio;   /* manually set priority */
 	uint32_t priority_site;
 
 	double   *priority_tres;/* tres priorities with weights applied. */
-	char *qos;
 	uint32_t  tres_cnt;     /* number of configured tres' on system. */
 	char    **tres_names;	/* packed as assoc_mgr_tres_names[] */
 	double   *tres_weights; /* PriorityWeightTRES weights as an array */
+} priority_factors_t;
 
-	uint32_t nice;
+typedef struct priority_factors_object {
+	char *account;
+	char *cluster_name;	/* Cluster name ONLY set in federation */
+	double direct_prio; /* Manually set priority. If it is set prio_factors
+			     * will be NULL */
+	uint32_t job_id;
+	char *partition;
+	priority_factors_t *prio_factors;
+	char *qos;
+	uint32_t user_id;
 } priority_factors_object_t;
 
 typedef struct priority_factors_response_msg {

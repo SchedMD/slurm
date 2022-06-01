@@ -4849,6 +4849,23 @@ inline void slurm_free_stats_info_request_msg(stats_info_request_msg_t *msg)
 }
 
 
+extern void slurm_destroy_priority_factors(void *object)
+{
+	priority_factors_t *obj_ptr = object;
+
+	if (!obj_ptr)
+		return;
+
+	xfree(obj_ptr->priority_tres);
+	if (obj_ptr->tres_cnt && obj_ptr->tres_names) {
+		for (int i = 0; i < obj_ptr->tres_cnt; i++)
+			xfree(obj_ptr->tres_names[i]);
+	}
+	xfree(obj_ptr->tres_names);
+	xfree(obj_ptr->tres_weights);
+	xfree(obj_ptr);
+}
+
 extern void slurm_destroy_priority_factors_object(void *object)
 {
 	priority_factors_object_t *obj_ptr =
@@ -4860,19 +4877,13 @@ extern void slurm_destroy_priority_factors_object(void *object)
 	xfree(obj_ptr->account);
 	xfree(obj_ptr->cluster_name);
 	xfree(obj_ptr->partition);
-	xfree(obj_ptr->priority_tres);
+	slurm_destroy_priority_factors(obj_ptr->prio_factors);
 	xfree(obj_ptr->qos);
-	if (obj_ptr->tres_cnt && obj_ptr->tres_names) {
-		for (int i = 0; i < obj_ptr->tres_cnt; i++)
-			xfree(obj_ptr->tres_names[i]);
-	}
-	xfree(obj_ptr->tres_names);
-	xfree(obj_ptr->tres_weights);
 	xfree(obj_ptr);
 }
 
-extern void slurm_copy_priority_factors_object(priority_factors_object_t *dest,
-					       priority_factors_object_t *src)
+extern void slurm_copy_priority_factors(priority_factors_t *dest,
+					priority_factors_t *src)
 {
 	int size;
 
@@ -4881,8 +4892,7 @@ extern void slurm_copy_priority_factors_object(priority_factors_object_t *dest,
 
 	size = sizeof(double) * src->tres_cnt;
 
-	memcpy(dest, src, sizeof(priority_factors_object_t));
-	dest->partition = xstrdup(src->partition);
+	memcpy(dest, src, sizeof(*dest));
 
 	if (src->priority_tres) {
 		dest->priority_tres = xmalloc(size);

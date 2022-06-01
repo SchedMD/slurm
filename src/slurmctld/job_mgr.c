@@ -633,7 +633,7 @@ static job_record_t *_create_job_record(uint32_t num_jobs)
 	job_ptr->magic = JOB_MAGIC;
 	job_ptr->array_task_id = NO_VAL;
 	job_ptr->details = detail_ptr;
-	job_ptr->prio_factors = xmalloc(sizeof(priority_factors_object_t));
+	job_ptr->prio_factors = xmalloc(sizeof(priority_factors_t));
 	job_ptr->site_factor = NICE_OFFSET;
 	job_ptr->step_list = list_create(free_step_record);
 
@@ -4394,7 +4394,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	struct job_details *job_details, *details_new, *save_details;
 	uint32_t save_job_id;
 	uint64_t save_db_index = job_ptr->db_index;
-	priority_factors_object_t *save_prio_factors;
+	priority_factors_t *save_prio_factors;
 	List save_step_list;
 	int i;
 
@@ -4428,8 +4428,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->db_index = save_db_index;
 
 	job_ptr_pend->prio_factors = save_prio_factors;
-	slurm_copy_priority_factors_object(job_ptr_pend->prio_factors,
-					   job_ptr->prio_factors);
+	slurm_copy_priority_factors(job_ptr_pend->prio_factors,
+				    job_ptr->prio_factors);
 
 	job_ptr_pend->account = xstrdup(job_ptr->account);
 	job_ptr_pend->admin_comment = xstrdup(job_ptr->admin_comment);
@@ -6924,7 +6924,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		   (!fuzzy_equal(qos_ptr->usage_thres, NO_VAL))) {
 		if (!job_ptr->prio_factors) {
 			job_ptr->prio_factors =
-				xmalloc(sizeof(priority_factors_object_t));
+				xmalloc(sizeof(priority_factors_t));
 		}
 		if (!job_ptr->prio_factors->priority_fs) {
 			if (fuzzy_equal(assoc_ptr->usage->usage_efctv, NO_VAL))
@@ -9655,7 +9655,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->partition);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
 	xfree(job_ptr->priority_array);
-	slurm_destroy_priority_factors_object(job_ptr->prio_factors);
+	slurm_destroy_priority_factors(job_ptr->prio_factors);
 	xfree(job_ptr->resp_host);
 	FREE_NULL_LIST(job_ptr->resv_list);
 	xfree(job_ptr->resv_name);

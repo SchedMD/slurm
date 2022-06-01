@@ -520,7 +520,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 				       job_record_t *job_ptr)
 {
 	double priority	= 0.0;
-	priority_factors_object_t pre_factors;
+	priority_factors_t pre_factors;
 	uint64_t tmp_64;
 	double tmp_tres = 0.0;
 	char *multi_part_str = NULL;
@@ -530,7 +530,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 			xfree(job_ptr->prio_factors->tres_weights);
 			xfree(job_ptr->prio_factors->priority_tres);
 			memset(job_ptr->prio_factors, 0,
-			       sizeof(priority_factors_object_t));
+			       sizeof(priority_factors_t));
 		}
 		return job_ptr->priority;
 	}
@@ -543,7 +543,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 			xfree(job_ptr->prio_factors->tres_weights);
 			xfree(job_ptr->prio_factors->priority_tres);
 			memset(job_ptr->prio_factors, 0,
-			       sizeof(priority_factors_object_t));
+			       sizeof(priority_factors_t));
 		}
 		return 0;
 	}
@@ -552,7 +552,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO) {
 		memcpy(&pre_factors, job_ptr->prio_factors,
-		       sizeof(priority_factors_object_t));
+		       sizeof(priority_factors_t));
 		if (job_ptr->prio_factors->priority_tres) {
 			pre_factors.priority_tres = xcalloc(slurmctld_tres_cnt,
 							    sizeof(double));
@@ -561,7 +561,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 			       sizeof(double) * slurmctld_tres_cnt);
 		}
 	} else	/* clang needs this memset to avoid a warning */
-		memset(&pre_factors, 0, sizeof(priority_factors_object_t));
+		memset(&pre_factors, 0, sizeof(priority_factors_t));
 
 	job_ptr->prio_factors->priority_age  *= (double)weight_age;
 	job_ptr->prio_factors->priority_assoc *= (double)weight_assoc;
@@ -1476,8 +1476,11 @@ static void _filter_job(job_record_t *job_ptr,
 			if (job_ptr->direct_set_prio) {
 				obj->direct_prio = job_ptr->priority;
 			} else {
-				slurm_copy_priority_factors_object(obj,
-							job_ptr->prio_factors);
+				obj->prio_factors =
+					xmalloc(sizeof(priority_factors_t));
+				slurm_copy_priority_factors(
+					obj->prio_factors,
+					job_ptr->prio_factors);
 			}
 			/*
 			 * Don't xstrdup dup anything here, the list is freed
@@ -1512,9 +1515,10 @@ static void _filter_job(job_record_t *job_ptr,
 
 		if (filter == 0) {
 			obj = xmalloc(sizeof(priority_factors_object_t));
-			slurm_copy_priority_factors_object(obj,
-						job_ptr->prio_factors);
-			obj->priority_part =
+			obj->prio_factors = xmalloc(sizeof(priority_factors_t));
+			slurm_copy_priority_factors(obj->prio_factors,
+						    job_ptr->prio_factors);
+			obj->prio_factors->priority_part =
 				((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
 				 job_part_ptr->priority_job_factor :
 				 job_part_ptr->norm_priority) *
@@ -1529,10 +1533,12 @@ static void _filter_job(job_record_t *job_ptr,
 			obj->qos = job_ptr->qos_ptr->name;
 			obj->user_id = job_ptr->user_id;
 
-			if (obj->priority_tres) {
-				_get_tres_factors(job_ptr, job_part_ptr,
-						  obj->priority_tres);
-				_get_tres_prio_weighted(obj->priority_tres);
+			if (obj->prio_factors->priority_tres) {
+				_get_tres_factors(
+					job_ptr, job_part_ptr,
+					obj->prio_factors->priority_tres);
+				_get_tres_prio_weighted(
+					obj->prio_factors->priority_tres);
 			}
 
 			list_append(ret_list, obj);
@@ -2067,12 +2073,11 @@ extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 
 	if (!job_ptr->prio_factors) {
 		job_ptr->prio_factors =
-			xmalloc(sizeof(priority_factors_object_t));
+			xmalloc(sizeof(priority_factors_t));
 	} else {
 		xfree(job_ptr->prio_factors->tres_weights);
 		xfree(job_ptr->prio_factors->priority_tres);
-		memset(job_ptr->prio_factors, 0,
-		       sizeof(priority_factors_object_t));
+		memset(job_ptr->prio_factors, 0, sizeof(priority_factors_t));
 	}
 
 	if (weight_age && job_ptr->details->accrue_time) {
