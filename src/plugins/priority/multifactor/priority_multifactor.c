@@ -1410,6 +1410,50 @@ static void *_decay_thread(void *no_data)
 	return NULL;
 }
 
+static priority_factors_object_t *_create_prio_factors_obj(
+	job_record_t *job_ptr, part_record_t *job_part_ptr)
+{
+	priority_factors_object_t *obj =
+		xmalloc(sizeof(priority_factors_object_t));
+
+	/*
+	 * Don't xstrdup dup anything here, the list is freed
+	 * with _destroy_priority_factors_obj_light.
+	 */
+	obj->account = job_ptr->account;
+	obj->job_id = job_ptr->job_id;
+	obj->partition = job_part_ptr ?
+		job_part_ptr->name : job_ptr->part_ptr->name;
+	obj->qos = job_ptr->qos_ptr->name;
+	obj->user_id = job_ptr->user_id;
+
+	if (job_ptr->direct_set_prio) {
+		obj->direct_prio = job_ptr->priority;
+	} else {
+		obj->prio_factors = xmalloc(sizeof(priority_factors_t));
+		slurm_copy_priority_factors(obj->prio_factors,
+					    job_ptr->prio_factors);
+
+		/* This portion is only needed for multi-partition jobs */
+		if (job_part_ptr) {
+			obj->prio_factors->priority_part =
+				((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
+				 job_part_ptr->priority_job_factor :
+				 job_part_ptr->norm_priority) *
+				(double)weight_part;
+			if (obj->prio_factors->priority_tres) {
+				_get_tres_factors(
+					job_ptr, job_part_ptr,
+					obj->prio_factors->priority_tres);
+				_get_tres_prio_weighted(
+					obj->prio_factors->priority_tres);
+			}
+		}
+	}
+
+	return obj;
+}
+
 /* If the specified job record satisfies the filter specifications in req_msg
  * and part_ptr_list (partition name filters), then add its priority specs
  * to ret_list */
@@ -1417,7 +1461,6 @@ static void _filter_job(job_record_t *job_ptr,
 			priority_factors_request_msg_t *req_msg,
 			List part_ptr_list, List ret_list)
 {
-	priority_factors_object_t *obj = NULL;
 	part_record_t *job_part_ptr = NULL, *filter_part_ptr = NULL;
 	List req_job_list, req_user_list;
 	int filter = 0, inx;
@@ -1483,26 +1526,8 @@ static void _filter_job(job_record_t *job_ptr,
 		}
 
 		if (filter == 0) {
-			obj = xmalloc(sizeof(priority_factors_object_t));
-			if (job_ptr->direct_set_prio) {
-				obj->direct_prio = job_ptr->priority;
-			} else {
-				obj->prio_factors =
-					xmalloc(sizeof(priority_factors_t));
-				slurm_copy_priority_factors(
-					obj->prio_factors,
-					job_ptr->prio_factors);
-			}
-			/*
-			 * Don't xstrdup dup anything here, the list is freed
-			 * with xfree_ptr.
-			 */
-			obj->account = job_ptr->account;
-			obj->job_id = job_ptr->job_id;
-			obj->partition = job_part_ptr->name;
-			obj->qos = job_ptr->qos_ptr->name;
-			obj->user_id = job_ptr->user_id;
-			list_append(ret_list, obj);
+			list_append(ret_list,
+				    _create_prio_factors_obj(job_ptr, NULL));
 		}
 		return;
 	}
@@ -1525,40 +1550,9 @@ static void _filter_job(job_record_t *job_ptr,
 		}
 
 		if (filter == 0) {
-			obj = xmalloc(sizeof(priority_factors_object_t));
-			if (job_ptr->direct_set_prio) {
-				obj->direct_prio = job_ptr->priority;
-			} else {
-				obj->prio_factors =
-					xmalloc(sizeof(priority_factors_t));
-				slurm_copy_priority_factors(
-					obj->prio_factors,
-					job_ptr->prio_factors);
-			}
-			obj->prio_factors->priority_part =
-				((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
-				 job_part_ptr->priority_job_factor :
-				 job_part_ptr->norm_priority) *
-				(double)weight_part;
-			/*
-			 * Don't xstrdup dup anything here, the list is freed
-			 * with xfree_ptr.
-			 */
-			obj->account = job_ptr->account;
-			obj->job_id = job_ptr->job_id;
-			obj->partition = job_part_ptr->name;
-			obj->qos = job_ptr->qos_ptr->name;
-			obj->user_id = job_ptr->user_id;
-
-			if (obj->prio_factors->priority_tres) {
-				_get_tres_factors(
-					job_ptr, job_part_ptr,
-					obj->prio_factors->priority_tres);
-				_get_tres_prio_weighted(
-					obj->prio_factors->priority_tres);
-			}
-
-			list_append(ret_list, obj);
+			list_append(ret_list,
+				    _create_prio_factors_obj(job_ptr,
+							     job_part_ptr));
 		}
 		inx++;
 	}
