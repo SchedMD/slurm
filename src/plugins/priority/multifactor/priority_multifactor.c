@@ -1479,8 +1479,12 @@ static void _filter_job(job_record_t *job_ptr,
 				slurm_copy_priority_factors_object(obj,
 							job_ptr->prio_factors);
 			}
+			/*
+			 * Don't xstrdup dup anything here, the list is freed
+			 * with xfree_ptr.
+			 */
 			obj->job_id = job_ptr->job_id;
-			obj->partition = xstrdup(job_part_ptr->name);
+			obj->partition = job_part_ptr->name;
 			obj->user_id = job_ptr->user_id;
 			list_append(ret_list, obj);
 		}
@@ -1513,8 +1517,12 @@ static void _filter_job(job_record_t *job_ptr,
 				 job_part_ptr->priority_job_factor :
 				 job_part_ptr->norm_priority) *
 				(double)weight_part;
+			/*
+			 * Don't xstrdup dup anything here, the list is freed
+			 * with xfree_ptr.
+			 */
 			obj->job_id = job_ptr->job_id;
-			obj->partition = xstrdup(job_part_ptr->name);
+			obj->partition = job_part_ptr->name;
 			obj->user_id = job_ptr->user_id;
 
 			if (obj->priority_tres) {
@@ -1935,7 +1943,7 @@ extern List priority_p_get_priority_factors_list(
 	if (job_list && list_count(job_list)) {
 		time_t use_time;
 
-		ret_list = list_create(slurm_destroy_priority_factors_object);
+		ret_list = list_create(xfree_ptr);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
 			if (!(flags & PRIORITY_FLAGS_CALCULATE_RUNNING) &&
