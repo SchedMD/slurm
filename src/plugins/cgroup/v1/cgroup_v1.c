@@ -1424,6 +1424,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	stats->ssec = NO_VAL64;
 	stats->total_rss = NO_VAL64;
 	stats->total_pgmajfault = NO_VAL64;
+	stats->total_vmem = NO_VAL64;
 
 	if (cpu_time != NULL)
 		sscanf(cpu_time, "%*s %"PRIu64" %*s %"PRIu64, &stats->usec, &stats->ssec);
@@ -1432,6 +1433,21 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 		sscanf(ptr, "total_rss %"PRIu64, &stats->total_rss);
 	if ((ptr = xstrstr(memory_stat, "total_pgmajfault")))
 		sscanf(ptr, "total_pgmajfault %"PRIu64, &stats->total_pgmajfault);
+
+	if (stats->total_rss != NO_VAL64) {
+		uint64_t total_cache = NO_VAL64, total_swap = NO_VAL64;
+
+		if ((ptr = xstrstr(memory_stat, "total_cache")))
+			sscanf(ptr, "total_cache %"PRIu64, &total_cache);
+		if ((ptr = xstrstr(memory_stat, "total_swap")))
+			sscanf(ptr, "total_swap %"PRIu64, &total_swap);
+
+		stats->total_vmem = stats->total_rss;
+		if (total_cache != NO_VAL64)
+			stats->total_vmem += total_cache;
+		if (total_swap != NO_VAL64)
+			stats->total_vmem += total_swap;
+	}
 
 	xfree(cpu_time);
 	xfree(memory_stat);
