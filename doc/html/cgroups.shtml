@@ -130,7 +130,7 @@ constraining memory to a job but it is not reliable (there's a window of time
 where jobs can exceed its limits) and only for very rare systems where cgroup is
 not available.</p>
 
-<p>task/cgroup provides thefollowing features:</p>
+<p>task/cgroup provides the following features:</p>
 
 <ul>
 <li>Confine jobs and steps to their allocated cpuset.</li>
@@ -292,8 +292,8 @@ systemd ControlGroupInterface</a> for more information.</p>
 cgroup plugins, but instead they only show internal functional differences.</p>
 
 <ul>
-<li>A controller in <i>cgroup/v2</i> is enabled writting to
-<i>cgroup.controllers</i> while in <i>cgroup/v1</i> a new mountpoint must be
+<li>A controller in <i>cgroup/v2</i> is enabled writing to
+<i>cgroup.controllers</i> while in <i>cgroup/v1</i> a new mount point must be
 mounted with filesystem type <i>"-t cgroup"</i> and corresponding options,
 e.g.<i>"-o freezer"</i>.
 </li>
