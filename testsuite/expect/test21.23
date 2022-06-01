@@ -50,7 +50,7 @@ proc cleanup {} {
 	}
 
 	run_command -none "$sacctmgr -i delete user name=$user_name account=$ta cluster=$cn"
-	run_command -none "$sacctmgr -i delete account $ta cluster=$cn"
+	run_command -none "$sacctmgr -i delete account $ta"
 
 	run_command -none "$sacctmgr -i delete user $user_name cluster=$cn wckey=$wk,$wk2,$wk3"
 }
