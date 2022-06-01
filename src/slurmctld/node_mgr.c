@@ -1612,6 +1612,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 				if (IS_NODE_POWERING_DOWN(node_ptr)) {
 					node_ptr->node_state &=
+						(~NODE_STATE_INVALID_REG);
+					node_ptr->node_state &=
 						(~NODE_STATE_POWERING_DOWN);
 					node_ptr->node_state |=
 						NODE_STATE_POWERED_DOWN;
