@@ -1914,13 +1914,12 @@ extern List priority_p_get_priority_factors_list(
 	part_record_t *part_ptr;
 	time_t start_time = time(NULL);
 	char *part_str, *tok, *last = NULL;
-	/* Read lock on jobs, nodes, and partitions */
-	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	xassert(req_msg);
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
-	lock_slurmctld(job_read_lock);
 	if (req_msg->partitions) {
 		part_filter_list = list_create(NULL);
 		part_str = xstrdup(req_msg->partitions);
@@ -1982,7 +1981,6 @@ extern List priority_p_get_priority_factors_list(
 		if (!list_count(ret_list))
 			FREE_NULL_LIST(ret_list);
 	}
-	unlock_slurmctld(job_read_lock);
 	FREE_NULL_LIST(part_filter_list);
 
 	return ret_list;

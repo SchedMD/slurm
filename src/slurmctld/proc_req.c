@@ -1688,14 +1688,22 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 		(priority_factors_request_msg_t *) msg->data;
 	priority_factors_response_msg_t resp_msg;
 	slurm_msg_t response_msg;
+	/* Read lock on jobs, nodes, and partitions */
+	slurmctld_lock_t job_read_lock = {
+		.job = READ_LOCK,
+		.node = READ_LOCK,
+		.part = READ_LOCK,
+	};
 
 	START_TIMER;
+	lock_slurmctld(job_read_lock);
 	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
 		req_msg, msg->auth_uid);
 	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_PRIORITY_FACTORS;
 	response_msg.data     = &resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
+	unlock_slurmctld(job_read_lock);
 	FREE_NULL_LIST(resp_msg.priority_factors_list);
 	END_TIMER2("_slurm_rpc_get_priority_factors");
 	debug2("_slurm_rpc_get_priority_factors %s", TIME_STR);
