@@ -1526,9 +1526,15 @@ static void _filter_job(job_record_t *job_ptr,
 
 		if (filter == 0) {
 			obj = xmalloc(sizeof(priority_factors_object_t));
-			obj->prio_factors = xmalloc(sizeof(priority_factors_t));
-			slurm_copy_priority_factors(obj->prio_factors,
-						    job_ptr->prio_factors);
+			if (job_ptr->direct_set_prio) {
+				obj->direct_prio = job_ptr->priority;
+			} else {
+				obj->prio_factors =
+					xmalloc(sizeof(priority_factors_t));
+				slurm_copy_priority_factors(
+					obj->prio_factors,
+					job_ptr->prio_factors);
+			}
 			obj->prio_factors->priority_part =
 				((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
 				 job_part_ptr->priority_job_factor :
