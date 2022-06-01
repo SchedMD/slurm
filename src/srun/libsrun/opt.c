@@ -598,9 +598,9 @@ env_vars_t env_vars[] = {
   { "SLURM_SIGNAL", LONG_OPT_SIGNAL },
   { "SLURM_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
   { "SLURM_SRUN_MULTI", LONG_OPT_MULTI },
-  { "SLURM_STDERRMODE", 'e' },
-  { "SLURM_STDINMODE", 'i' },
-  { "SLURM_STDOUTMODE", 'o' },
+  { "SLURM_STDERRMODE", 'e' }, /* Left for backward compatibility */
+  { "SLURM_STDINMODE", 'i' }, /* Left for backward compatibility */
+  { "SLURM_STDOUTMODE", 'o' }, /* Left for backward compatibility */
   { "SLURM_TASK_EPILOG", LONG_OPT_TASK_EPILOG },
   { "SLURM_TASK_PROLOG", LONG_OPT_TASK_PROLOG },
   { "SLURM_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
@@ -616,6 +616,9 @@ env_vars_t env_vars[] = {
   { "SLURMD_DEBUG", LONG_OPT_SLURMD_DEBUG },
   { "SRUN_CONTAINER", LONG_OPT_CONTAINER },
   { "SLURM_DEBUG", 'v'},
+  { "SRUN_ERROR", 'e' },
+  { "SRUN_INPUT", 'i' },
+  { "SRUN_OUTPUT", 'o' },
   { NULL }
 };
 

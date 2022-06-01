@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/[db]v0.0.36 - plugins have been removed.
  -- openapi/[db]v0.0.37 - tagged as deprecated.
  -- openapi/[db]v0.0.39 - forked plugin openapi/[db]v0.0.38.
+ -- Add SRUN_{ERROR,INPUT,OUTPUT} input environment variables for --error,
+    --input and --output options respectively.
 
 * Changes in Slurm 22.05.1
 ==========================
