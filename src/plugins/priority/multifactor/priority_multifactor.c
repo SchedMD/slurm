@@ -152,6 +152,17 @@ static double decay_factor = 1; /* The decay factor when decaying time. */
 static void _priority_p_set_assoc_usage_debug(slurmdb_assoc_rec_t *assoc);
 static void _set_assoc_usage_efctv(slurmdb_assoc_rec_t *assoc);
 
+static void _destroy_priority_factors_obj_light(void *object)
+{
+	priority_factors_object_t *obj_ptr = object;
+
+	if (!obj_ptr)
+		return;
+
+	slurm_destroy_priority_factors(obj_ptr->prio_factors);
+	xfree(obj_ptr);
+}
+
 /*
  * apply decay factor to all associations usage_raw
  * IN: real_decay - decay to be applied to each associations' used
@@ -1953,7 +1964,7 @@ extern List priority_p_get_priority_factors_list(
 	if (job_list && list_count(job_list)) {
 		time_t use_time;
 
-		ret_list = list_create(xfree_ptr);
+		ret_list = list_create(_destroy_priority_factors_obj_light);
 		itr = list_iterator_create(job_list);
 		while ((job_ptr = list_next(itr))) {
 			if (!(flags & PRIORITY_FLAGS_CALCULATE_RUNNING) &&
