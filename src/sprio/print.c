@@ -242,6 +242,8 @@ int _print_age_priority_normalized(priority_factors_object_t * job, int width,
 		_print_str("AGE", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_age, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else {
 		double num = 0;
 		priority_factors_t *prio_factors = job->prio_factors;
@@ -261,6 +263,8 @@ int _print_age_priority_weighted(priority_factors_object_t * job, int width,
 		_print_str("AGE", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_age, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else
 		_print_int(job->prio_factors->priority_age, width, right, true);
 	if (suffix)
@@ -275,6 +279,8 @@ int _print_assoc_priority_normalized(priority_factors_object_t * job, int width,
 		_print_str("ASSOC", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_assoc, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else {
 		double num = 0;
 		if (weight_assoc)
@@ -294,6 +300,8 @@ int _print_assoc_priority_weighted(priority_factors_object_t * job, int width,
 		_print_str("ASSOC", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_assoc, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else
 		_print_int(job->prio_factors->priority_assoc,
 			   width, right, true);
@@ -321,6 +329,8 @@ int _print_fs_priority_normalized(priority_factors_object_t * job, int width,
 		_print_str("FAIRSHARE", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_fs, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else {
 		double num = 0;
 		if (weight_fs)
@@ -340,6 +350,8 @@ int _print_fs_priority_weighted(priority_factors_object_t * job, int width,
 		_print_str("FAIRSHARE", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_fs, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else
 		_print_int(job->prio_factors->priority_fs, width, right, true);
 	if (suffix)
@@ -394,6 +406,8 @@ int _print_js_priority_normalized(priority_factors_object_t * job, int width,
 		_print_str("JOBSIZE", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_js, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else {
 		double num = 0;
 		if (weight_js)
@@ -414,6 +428,8 @@ int _print_js_priority_weighted(priority_factors_object_t * job, int width,
 		_print_str("JOBSIZE", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_js, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else {
 		_print_int(job->prio_factors->priority_js, width, right, true);
 	}
@@ -430,6 +446,8 @@ int _print_part_priority_normalized(priority_factors_object_t * job, int width,
 		_print_str("PARTITION", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_part, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else {
 		double num = 0;
 		if (weight_part)
@@ -449,6 +467,8 @@ int _print_part_priority_weighted(priority_factors_object_t * job, int width,
 		_print_str("PARTITION", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_part, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else
 		_print_int(job->prio_factors->priority_part,
 			   width, right, true);
@@ -492,6 +512,8 @@ int _print_qos_priority_normalized(priority_factors_object_t * job, int width,
 		_print_str("QOS", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_qos, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else {
 		double num = 0;
 		if (weight_qos)
@@ -511,6 +533,8 @@ int _print_qos_priority_weighted(priority_factors_object_t * job, int width,
 		_print_str("QOS", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(weight_qos, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else
 		_print_int(job->prio_factors->priority_qos, width, right, true);
 	if (suffix)
@@ -576,6 +600,8 @@ int _print_tres_normalized(priority_factors_object_t * job, int width,
 		_print_str("TRES", width, right, true);
 	} else if (job == (priority_factors_object_t *) -1)
 		_print_str("", width, right, true);
+	else if (job->direct_prio > 0)
+		_print_str("", width, right, true);
 	else {
 		priority_factors_t *prio_factors = job->prio_factors;
 		char *values = xstrdup("");
@@ -607,6 +633,8 @@ int _print_tres_weighted(priority_factors_object_t * job, int width,
 		_print_str("TRES", width, right, true);
 	} else if (job == (priority_factors_object_t *) -1)
 		_print_str(weight_tres, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_str("", width, right, true);
 	else {
 		priority_factors_t *prio_factors = job->prio_factors;
 		char *values = xstrdup("");

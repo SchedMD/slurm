@@ -209,10 +209,13 @@ static int _sort_by_nice_level(void *v1, void *v2)
 {
 	int cmp;
 	priority_factors_object_t *job1, *job2;
-
+	int val1, val2;
 	_get_job_prio_from_void(&job1, &job2, v1, v2);
 
-	cmp = CMP_INT(job1->prio_factors->nice, job2->prio_factors->nice);
+	val1 = job1->prio_factors ? job1->prio_factors->nice : 0;
+	val2 = job1->prio_factors ? job2->prio_factors->nice : 0;
+
+	cmp = CMP_INT(val1, val2);
 	return COND_NEGATE(sort_descend, cmp);
 }
 
@@ -256,11 +259,14 @@ static int _sort_by_age_prio(void *v1, void *v2)
 {
 	int cmp;
 	priority_factors_object_t *job1, *job2;
+	double val1, val2;
 
 	_get_job_prio_from_void(&job1, &job2, v1, v2);
 
-	cmp = _compare_double(job1->prio_factors->priority_age,
-			      job2->prio_factors->priority_age);
+	val1 = job1->prio_factors ? job1->prio_factors->priority_age : 0;
+	val2 = job1->prio_factors ? job2->prio_factors->priority_age : 0;
+
+	cmp = _compare_double(val1, val2);
 	return COND_NEGATE(sort_descend, cmp);
 }
 
@@ -268,11 +274,14 @@ static int _sort_by_fairshare_prio(void *v1, void *v2)
 {
 	int cmp;
 	priority_factors_object_t *job1, *job2;
+	double val1, val2;
 
 	_get_job_prio_from_void(&job1, &job2, v1, v2);
 
-	cmp = _compare_double(job1->prio_factors->priority_fs,
-			      job2->prio_factors->priority_fs);
+	val1 = job1->prio_factors ? job1->prio_factors->priority_fs : 0;
+	val2 = job1->prio_factors ? job2->prio_factors->priority_fs : 0;
+
+	cmp = _compare_double(val1, val2);
 	return COND_NEGATE(sort_descend, cmp);
 }
 
@@ -281,11 +290,14 @@ static int _sort_by_jobsize_prio(void *v1, void *v2)
 {
 	int cmp;
 	priority_factors_object_t *job1, *job2;
+	double val1, val2;
 
 	_get_job_prio_from_void(&job1, &job2, v1, v2);
 
-	cmp = _compare_double(job1->prio_factors->priority_js,
-			      job2->prio_factors->priority_js);
+	val1 = job1->prio_factors ? job1->prio_factors->priority_js : 0;
+	val2 = job1->prio_factors ? job2->prio_factors->priority_js : 0;
+
+	cmp = _compare_double(val1, val2);
 	return COND_NEGATE(sort_descend, cmp);
 }
 
@@ -293,11 +305,14 @@ static int _sort_by_partition_prio(void *v1, void *v2)
 {
 	int cmp;
 	priority_factors_object_t *job1, *job2;
+	double val1, val2;
 
 	_get_job_prio_from_void(&job1, &job2, v1, v2);
 
-	cmp = _compare_double(job1->prio_factors->priority_part,
-			      job2->prio_factors->priority_part);
+	val1 = job1->prio_factors ? job1->prio_factors->priority_part : 0;
+	val2 = job1->prio_factors ? job2->prio_factors->priority_part : 0;
+
+	cmp = _compare_double(val1, val2);
 	return COND_NEGATE(sort_descend, cmp);
 }
 
@@ -305,11 +320,14 @@ static int _sort_by_qos_prio(void *v1, void *v2)
 {
 	int cmp;
 	priority_factors_object_t *job1, *job2;
+	double val1, val2;
 
 	_get_job_prio_from_void(&job1, &job2, v1, v2);
 
-	cmp = _compare_double(job1->prio_factors->priority_qos,
-			      job2->prio_factors->priority_qos);
+	val1 = job1->prio_factors ? job1->prio_factors->priority_qos : 0;
+	val2 = job1->prio_factors ? job2->prio_factors->priority_qos : 0;
+
+	cmp = _compare_double(val1, val2);
 	return COND_NEGATE(sort_descend, cmp);
 }
 
@@ -318,15 +336,16 @@ static int _sort_by_tres_prio(void *v1, void *v2)
 	int cmp, i;
 	priority_factors_object_t *job1, *job2;
 	double job1_sum, job2_sum;
+	int val1, val2;
 
 	_get_job_prio_from_void(&job1, &job2, v1, v2);
 
-	/* is this ever not true? */
-	xassert(job1->prio_factors->tres_cnt == job2->prio_factors->tres_cnt);
+	val1 = job1->prio_factors ? job1->prio_factors->tres_cnt : 0;
+	val2 = job1->prio_factors ? job2->prio_factors->tres_cnt : 0;
 
-	for (i = 0, job1_sum = 0; i < job1->prio_factors->tres_cnt; i++)
+	for (i = 0, job1_sum = 0; i < val1; i++)
 		job1_sum += job1->prio_factors->priority_tres[i];
-	for (i = 0, job2_sum = 0; i < job2->prio_factors->tres_cnt; i++)
+	for (i = 0, job2_sum = 0; i < val2; i++)
 		job2_sum += job2->prio_factors->priority_tres[i];
 
 	cmp = _compare_double(job1_sum, job2_sum);
