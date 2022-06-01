@@ -86,30 +86,30 @@ void compare_test(priority_factors_response_msg_t *unpack_resp,
 	ck_assert(!xstrcmp(pack_req.partition, unpack_req->partition));
 	ck_assert(pack_req.user_id == unpack_req->user_id);
 
-	ck_assert(pack_f_req.priority_age == prio_factors->priority_age);
+	if (!pack_req.direct_prio) {
+		ck_assert(pack_f_req.priority_age == prio_factors->priority_age);
 
-	ck_assert(pack_f_req.priority_fs == prio_factors->priority_fs);
-	ck_assert(pack_f_req.priority_js == prio_factors->priority_js);
-	ck_assert(pack_f_req.priority_part == prio_factors->priority_part);
-	ck_assert(pack_f_req.priority_qos == prio_factors->priority_qos);
+		ck_assert(pack_f_req.priority_fs == prio_factors->priority_fs);
+		ck_assert(pack_f_req.priority_js == prio_factors->priority_js);
+		ck_assert(pack_f_req.priority_part == prio_factors->priority_part);
+		ck_assert(pack_f_req.priority_qos == prio_factors->priority_qos);
 
-	ck_assert(pack_f_req.tres_cnt == prio_factors->tres_cnt);
-	for (int i = 0; i < pack_f_req.tres_cnt; i++)
-		ck_assert(pack_f_req.tres_weights[i] == prio_factors->tres_weights[i]);
+		ck_assert(pack_f_req.tres_cnt == prio_factors->tres_cnt);
+		for (int i = 0; i < pack_f_req.tres_cnt; i++)
+			ck_assert(pack_f_req.tres_weights[i] == prio_factors->tres_weights[i]);
 
-	for (int i = 0; i < pack_f_req.tres_cnt; i++)
-		ck_assert(pack_f_req.priority_tres[i] == prio_factors->priority_tres[i]);
+		for (int i = 0; i < pack_f_req.tres_cnt; i++)
+			ck_assert(pack_f_req.priority_tres[i] == prio_factors->priority_tres[i]);
 
-	for (int i = 0; i < pack_f_req.tres_cnt; i++)
-		ck_assert(!xstrcmp(assoc_mgr_tres_name_array[i], prio_factors->tres_names[i]));
+		for (int i = 0; i < pack_f_req.tres_cnt; i++)
+			ck_assert(!xstrcmp(assoc_mgr_tres_name_array[i], prio_factors->tres_names[i]));
 
-	ck_assert(pack_f_req.nice == prio_factors->nice);
-
-	if (protocol_version >= SLURM_PROTOCOL_VERSION)
-		ck_assert(pack_req.direct_prio == unpack_req->direct_prio);
-	if (protocol_version >= SLURM_ONE_BACK_PROTOCOL_VERSION) {
+		ck_assert(pack_f_req.nice == prio_factors->nice);
 		ck_assert(pack_f_req.priority_assoc == prio_factors->priority_assoc);
 		ck_assert(pack_f_req.priority_site == prio_factors->priority_site);
+	} else {
+		ck_assert(pack_req.direct_prio == unpack_req->direct_prio);
+		ck_assert(!prio_factors);
 	}
 }
 
@@ -163,6 +163,13 @@ START_TEST(min_version)
 }
 END_TEST
 
+/* test the direct_prio which will make a NULL priority_factors_t */
+START_TEST(current_version_direct_prio)
+{
+	pack_req.direct_prio = 26;
+	run_test_version(SLURM_PROTOCOL_VERSION);
+}
+END_TEST
 
 /*****************************************************************************
  * TEST SUITE                                                                *
@@ -182,6 +189,7 @@ Suite *suite(SRunner *sr)
 	tcase_add_test(tc_core, current_version);
 	tcase_add_test(tc_core, one_back);
 	tcase_add_test(tc_core, min_version);
+	tcase_add_test(tc_core, current_version_direct_prio);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
