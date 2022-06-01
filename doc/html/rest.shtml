@@ -161,16 +161,21 @@ slurmrestd</a> documentation.</p>
 <h3 id="lifecycle">Plugin life cycle
 <a class="slurm_link" href="#lifecycle"></a>
 </h3>
-<p>Plugins provided with Slurm in any release are considered supported by that
-release. In general, only the latest versioned plugins will receive minor bug
-fixes but all will receive security fixes. Due to the nature of the plugins,
-one plugin can be supported across multiple Slurm releases to ensure (limited)
-forward client compatibility. SchedMD is currently only explicitly deprecating
-plugins and expect that any plugin not marked for deprecation will continue to
-exist in the next Slurm Major release. When a plugin is marked for removal in
-the next major Slurm release, the OpenAPI specification dictates that the given
-plugin will have all of the paths tagged with
-<code>"deprecated":"true"</code></p>
+<p>Plugins provided upstream with Slurm in any release are considered supported
+by that release. In general, only the latest versioned plugins will receive
+minor bug fixes but all will receive security fixes. Due to the nature of the
+plugins, one plugin can be supported across multiple Slurm releases to ensure
+(limited) backward client compatibility. SchedMD is currently only explicitly
+deprecating plugins per the
+<a href="https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md?plain=1#L861">
+OpenAPI standard method of setting "Deprecated: True"</a>
+in the method path. Any plugin that is not marked as deprecated will
+continue to exist in the next Slurm Major release pending any critical issues
+which will be announced seperately. Any plugin marked for deprecation will be
+removed on the next Slurm major release. In general, the last three plugins
+have been retained in each Slurm major release with the oldest getting marked
+as deprecated.
+</p>
 
 <p>Sites are <b>always</b> encouraged to use the latest stable plugin version
 available for code development. There is <b>no</b> guarantee of compatibility
@@ -290,6 +295,6 @@ internal tool</a> used for testing and training. It uses
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 14 December 2021</p>
+<p style="text-align:center;">Last modified 01 June 2022</p>
 
 <!--#include virtual="footer.txt"-->

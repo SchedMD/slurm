@@ -84,7 +84,7 @@ rules, forces Slurm to choose a design which coexists with both.</p>
 <a class="slurm_link" href="#real_sysd_prob"></a>
 </h3>
 <p>When designing the cgroup/v2 plugin for Slurm, the initial idea was to let
-slurmd setup the required hierarchy in its own cgroup directory. Ther it would
+slurmd setup the required hierarchy in its own cgroup directory. Then it would
 place jobs and steps and move newer forked slurmstepds into the corresponding
 directories.</p>
 <p>This worked fine, until we needed to restart slurmd. Since the hierarchy was
