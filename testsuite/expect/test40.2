@@ -61,23 +61,23 @@ exit 0"
 set timeout $max_job_delay
 set device -1
 set host "unknown"
-set matches 0
+set match 0
 set percentage -1
 set target_job  [expr $mps_cnt / 2]
 spawn $srun --gres=mps:$target_job -w $node_with_mps -n1 -t1 -J $test_name $file_in1
 expect {
 	-re "HOST:($re_word_str)" {
-		incr matches
+		incr match
 		set host $expect_out(1,string)
 		exp_continue
 	}
 	-re "CUDA_VISIBLE_DEVICES:($number)" {
 		subtest {$expect_out(1,string) == 0} "Verify CUDA_VISIBLE_DEVICES == 0" "$expect_out(1,string) != 0"
-		incr matches
+		incr match
 		exp_continue
 	}
 	-re "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
-		incr matches
+		incr match
 		exp_continue
 	}
 	timeout {
@@ -87,7 +87,7 @@ expect {
 		wait
 	}
 }
-subtest {$matches == 3} "Verify expected output" "$matches != 3"
+subtest {$match == 3} "Verify expected output" "$match != 3"
 
 #
 # Run two steps in parallel to consume gres/mps using sbatch
