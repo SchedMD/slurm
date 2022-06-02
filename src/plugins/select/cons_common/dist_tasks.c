@@ -897,15 +897,14 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 		return error_code;
 
 	n_first = bit_ffs(job_res->node_bitmap);
-	if (n_first != -1) {
-		n_last = bit_fls(job_res->node_bitmap);
-		sock_size  = node_record_table_ptr[n_first]->tot_sockets;
-		sock_avoid = xcalloc(sock_size, sizeof(bool));
-		sock_start = xcalloc(sock_size, sizeof(uint32_t));
-		sock_end   = xcalloc(sock_size, sizeof(uint32_t));
-		sock_used  = xcalloc(sock_size, sizeof(bool));
-	} else
+	if (n_first == -1)
 		return error_code;
+
+	sock_size  = node_record_table_ptr[n_first]->tot_sockets;
+	sock_avoid = xcalloc(sock_size, sizeof(bool));
+	sock_start = xcalloc(sock_size, sizeof(uint32_t));
+	sock_end   = xcalloc(sock_size, sizeof(uint32_t));
+	sock_used  = xcalloc(sock_size, sizeof(bool));
 
 
 	if (cr_type & CR_SOCKET)
