@@ -1850,7 +1850,8 @@ total_return:
  * message packing routines
 \**********************************************************************/
 
-extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers)
+extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
+				  bool block_for_forwarding)
 {
 	header_t header;
 	int rc;
@@ -1902,7 +1903,8 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers)
 	if (!msg->forward.tree_width)
 		msg->forward.tree_width = slurm_conf.tree_width;
 
-	forward_wait(msg);
+	if (block_for_forwarding)
+		forward_wait(msg);
 
 	if (difftime(time(NULL), start_time) >= 60) {
 		(void) auth_g_destroy(auth_cred);
@@ -2008,7 +2010,7 @@ extern int slurm_send_node_msg(int fd, slurm_msg_t *msg)
 	/*
 	 * Pack and send message
 	 */
-	if ((rc = slurm_buffers_pack_msg(msg, &buffers)))
+	if ((rc = slurm_buffers_pack_msg(msg, &buffers, true)))
 		goto cleanup;
 
 	rc = slurm_bufs_sendto(fd, buffers);

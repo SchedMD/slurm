@@ -426,9 +426,12 @@ extern int slurm_unpack_addr_array(slurm_addr_t **addr_array_ptr,
  *
  * IN msg - message to pack
  * IN buffers - buffers to populate with packed message
+ * IN block_for_forwarding - call the forward_wait() which blocks until
+ *    forwarding
  * RET SLURM_SUCCESS or error
  */
-extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers);
+extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
+				  bool block_for_forwarding);
 
 /**********************************************************************\
  * simplified communication routines
