@@ -169,7 +169,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 				usable_gres, gres_per_node,
 				already_seen, local_inx,
 				is_task, is_job, flags, GRES_CONF_ENV_NVML,
-				gres_devices);
+				gres_devices, NULL);
 
 
 	common_gres_set_env(gres_devices, env_ptr,

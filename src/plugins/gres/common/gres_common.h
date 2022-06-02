@@ -96,7 +96,7 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 				    bool is_task, bool is_job,
 				    gres_internal_flags_t flags,
 				    uint32_t gres_conf_flags,
-				    List gres_devices);
+				    List gres_devices, int *global_id);
 
 /*
  * Set environment variables as appropriate for a job's prolog or epilog based
