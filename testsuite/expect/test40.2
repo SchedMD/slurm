@@ -61,23 +61,23 @@ exit 0"
 set timeout $max_job_delay
 set device -1
 set host "unknown"
-set matches 0
+set match 0
 set percentage -1
 set target_job  [expr $mps_cnt / 2]
 spawn $srun --gres=mps:$target_job -w $node_with_mps -n1 -t1 -J $test_name $file_in1
 expect {
 	-re "HOST:($re_word_str)" {
-		incr matches
+		incr match
 		set host $expect_out(1,string)
 		exp_continue
 	}
 	-re "CUDA_VISIBLE_DEVICES:($number)" {
 		subtest {$expect_out(1,string) == 0} "Verify CUDA_VISIBLE_DEVICES == 0" "$expect_out(1,string) != 0"
-		incr matches
+		incr match
 		exp_continue
 	}
 	-re "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
-		incr matches
+		incr match
 		exp_continue
 	}
 	timeout {
@@ -87,7 +87,7 @@ expect {
 		wait
 	}
 }
-subtest {$matches == 3} "Verify expected output" "$matches != 3"
+subtest {$match == 3} "Verify expected output" "$match != 3"
 
 #
 # Run two steps in parallel to consume gres/mps using sbatch
@@ -100,11 +100,11 @@ echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS
 $bin_sleep 5
 exit 0"
 make_bash_script $file_in2 "
-$srun --mem=0 --overlap --gres=mps:$target_job $file_in1 &
+$srun --overlap --gres=mps:$target_job $file_in1 &
 wait
 $bin_date
-$srun --mem=0 --overlap --gres=mps:$target_step $file_in1 &
-$srun --mem=0 --overlap --gres=mps:$target_step $file_in1 &
+$srun --overlap --gres=mps:$target_step $file_in1 &
+$srun --overlap --gres=mps:$target_step $file_in1 &
 wait
 $bin_date
 exit 0"
@@ -152,7 +152,7 @@ expect {
 		wait
 	}
 }
-subtest {$matches == 3} "Verify CUDA information about job" "$matches != 3"
+subtest {$match == 3} "Verify CUDA information about job" "$match != 3"
 
 #
 # Run two steps in parallel to consume gres/mps using salloc
@@ -185,7 +185,7 @@ expect {
 		wait
 	}
 }
-subtest {$matches == 3} "Verify CUDA information about job" "$matches != 3"
+subtest {$match == 3} "Verify CUDA information about job" "$match != 3"
 
 #
 # Run three steps in parallel to make sure steps get delay as needed to avoid
@@ -199,15 +199,15 @@ echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS
 $bin_sleep 5
 exit 0"
 make_bash_script $file_in2 "
-$srun --mem=0 --overlap --gres=mps:$target_step $file_in1 &
-$srun --mem=0 --overlap --gres=mps:$target_step $file_in1 &
-$srun --mem=0 --overlap --gres=mps:$target_step $file_in1 &
+$srun --exact -n1 --gres=mps:$target_step $file_in1 &
+$srun --exact -n1 --gres=mps:$target_step $file_in1 &
+$srun --exact -n1 --gres=mps:$target_step $file_in1 &
 wait
 $bin_date
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J $test_name $file_in2
+spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n3 -t1 -o $file_out1 -J $test_name $file_in2
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -243,7 +243,7 @@ expect {
 		wait
 	}
 }
-subtest {$matches == 3} "Verify CUDA information about job" "$matches != 3"
+subtest {$match == 3} "Verify CUDA information about job" "$match != 3"
 
 log_user 0
 set match 0
@@ -271,7 +271,7 @@ echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS
 $bin_sleep 5
 exit 0"
 make_bash_script $file_in2 "
-$srun --mem=0 --overlap --gres=mps:$target_step $file_in1
+$srun --overlap --gres=mps:$target_step $file_in1
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
