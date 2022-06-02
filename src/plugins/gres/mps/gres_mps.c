@@ -154,7 +154,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 		     bool *already_seen, int *local_inx,
 		     bool is_task, bool is_job, gres_internal_flags_t flags)
 {
-	char *global_list = NULL, *local_list = NULL, *perc_env = NULL;
+	char *perc_env = NULL;
 	char perc_str[64];
 	uint64_t count_on_dev, percentage;
 	int global_id = -1;
@@ -169,13 +169,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 				usable_gres, gres_per_node,
 				already_seen, local_inx,
 				is_task, is_job, flags, GRES_CONF_ENV_NVML,
-				gres_devices, NULL);
-
-
-	common_gres_set_env(gres_devices, env_ptr,
-			    usable_gres, "", local_inx, gres_bit_alloc,
-			    &local_list, &global_list,
-			    is_task, is_job, &global_id, flags, true);
+				gres_devices, &global_id);
 
 	/*
 	 * Set environment variables if GRES is found. Otherwise, unset
