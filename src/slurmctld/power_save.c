@@ -524,6 +524,7 @@ static void _do_power_work(time_t now)
 		if (IS_NODE_POWERING_DOWN(node_ptr) &&
 		    ((node_ptr->power_save_req_time + node_ptr->suspend_timeout)
 		     < now)) {
+			node_ptr->node_state &= (~NODE_STATE_INVALID_REG);
 			node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 
