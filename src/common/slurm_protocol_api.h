@@ -418,6 +418,19 @@ extern int slurm_unpack_addr_array(slurm_addr_t **addr_array_ptr,
 				   uint32_t *size_val, buf_t *buffer);
 
 /**********************************************************************\
+ * message packing routines
+\**********************************************************************/
+
+/*
+ * Pack message into buffers to be ready to send.
+ *
+ * IN msg - message to pack
+ * IN buffers - buffers to populate with packed message
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers);
+
+/**********************************************************************\
  * simplified communication routines
  * They open a connection do work then close the connection all within
  * the function

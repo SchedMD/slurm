@@ -1847,65 +1847,27 @@ total_return:
 }
 
 /**********************************************************************\
- * send message functions
+ * message packing routines
 \**********************************************************************/
 
-/*
- *  Send a slurm message over an open file descriptor `fd'
- *    Returns the size of the message sent in bytes, or -1 on failure.
- */
-int slurm_send_node_msg(int fd, slurm_msg_t * msg)
+extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers)
 {
 	header_t header;
-	msg_bufs_t buffers = { 0 };
-	int      rc;
-	void *   auth_cred;
-	time_t   start_time = time(NULL);
+	int rc;
+	void *auth_cred;
+	time_t start_time = time(NULL);
 	slurm_hash_t hash = { 0 };
 	int h_len;
-
-	if (msg->conn) {
-		persist_msg_t persist_msg;
-		buf_t *buffer;
-		char *peer = NULL;
-
-		memset(&persist_msg, 0, sizeof(persist_msg_t));
-		persist_msg.msg_type  = msg->msg_type;
-		persist_msg.data      = msg->data;
-		persist_msg.data_size = msg->data_size;
-
-		buffer = slurm_persist_msg_pack(msg->conn, &persist_msg);
-		if (!buffer)    /* pack error */
-			return SLURM_ERROR;
-
-		rc = slurm_persist_send_msg(msg->conn, buffer);
-		FREE_NULL_BUFFER(buffer);
-
-		if ((rc < 0) && (errno == ENOTCONN)) {
-			if (slurm_conf.debug_flags & DEBUG_FLAG_NET)
-				peer = fd_resolve_peer(fd);
-
-			log_flag(NET, "%s: [%s] persistent connection has disappeared for msg_type=%u",
-				__func__, peer, msg->msg_type);
-		} else if (rc < 0) {
-			peer = fd_resolve_peer(fd);
-			error("%s: [%s] slurm_persist_send_msg(msg_type=%s) failed: %m",
-			      __func__, peer, rpc_num2string(msg->msg_type));
-		}
-
-		xfree(peer);
-		return rc;
-	}
 
 	if (!msg->restrict_uid_set)
 		fatal("%s: restrict_uid is not set", __func__);
 	/*
 	 * Pack message into buffer
 	 */
-	buffers.body = init_buf(BUF_SIZE);
-	pack_msg(msg, buffers.body);
-	log_flag_hex(NET_RAW, get_buf_data(buffers.body),
-		     get_buf_offset(buffers.body),
+	buffers->body = init_buf(BUF_SIZE);
+	pack_msg(msg, buffers->body);
+	log_flag_hex(NET_RAW, get_buf_data(buffers->body),
+		     get_buf_offset(buffers->body),
 		     "%s: packed body", __func__);
 
 	/*
@@ -1915,11 +1877,11 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 * but we may need to generate the credential again later if we
 	 * wait too long for the incoming message.
 	 */
-	h_len = _compute_hash(buffers.body, msg, &hash);
+	h_len = _compute_hash(buffers->body, msg, &hash);
 	if (h_len < 0) {
 		error("%s: hash_g_compute: %s has error",
 		      __func__, rpc_num2string(msg->msg_type));
-		FREE_NULL_BUFFER(buffers.body);
+		FREE_NULL_BUFFER(buffers->body);
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 	}
 	log_flag_hex(NET_RAW, &hash, sizeof(hash),
@@ -1959,7 +1921,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	if (auth_cred == NULL) {
 		error("%s: auth_g_create: %s has authentication error",
 		      __func__, rpc_num2string(msg->msg_type));
-		FREE_NULL_BUFFER(buffers.body);
+		FREE_NULL_BUFFER(buffers->body);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 
@@ -1968,35 +1930,87 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	/*
 	 * Pack auth credential
 	 */
-	buffers.auth = init_buf(BUF_SIZE);
+	buffers->auth = init_buf(BUF_SIZE);
 
-	rc = auth_g_pack(auth_cred, buffers.auth, header.version);
+	rc = auth_g_pack(auth_cred, buffers->auth, header.version);
 	if (rc) {
 		error("%s: auth_g_pack: %s has  authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
 		(void) auth_g_destroy(auth_cred);
-		FREE_NULL_BUFFER(buffers.auth);
-		FREE_NULL_BUFFER(buffers.body);
+		FREE_NULL_BUFFER(buffers->auth);
+		FREE_NULL_BUFFER(buffers->body);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 	(void) auth_g_destroy(auth_cred);
-	log_flag_hex(NET_RAW, get_buf_data(buffers.auth),
-		     get_buf_offset(buffers.auth),
+	log_flag_hex(NET_RAW, get_buf_data(buffers->auth),
+		     get_buf_offset(buffers->auth),
 		     "%s: packed auth_cred", __func__);
 
 	/*
-	 * Pack header into buffer for transmission
+	 * Pack and send message
 	 */
-	update_header(&header, get_buf_offset(buffers.body));
-	buffers.header = init_buf(BUF_SIZE);
-	pack_header(&header, buffers.header);
-	log_flag_hex(NET_RAW, get_buf_data(buffers.header),
-		     get_buf_offset(buffers.header),
+	update_header(&header, get_buf_offset(buffers->body));
+	buffers->header = init_buf(BUF_SIZE);
+	pack_header(&header, buffers->header);
+	log_flag_hex(NET_RAW, get_buf_data(buffers->header),
+		     get_buf_offset(buffers->header),
 		     "%s: packed header", __func__);
 
+	return rc;
+}
+
+/**********************************************************************\
+ * send message functions
+\**********************************************************************/
+
+/*
+ * Send a slurm message over an open file descriptor `fd'
+ * Returns the size of the message sent in bytes, or -1 on failure.
+ */
+extern int slurm_send_node_msg(int fd, slurm_msg_t *msg)
+{
+	msg_bufs_t buffers = { 0 };
+	int rc;
+
+	if (msg->conn) {
+		persist_msg_t persist_msg;
+		buf_t *buffer;
+		char *peer = NULL;
+
+		memset(&persist_msg, 0, sizeof(persist_msg_t));
+		persist_msg.msg_type  = msg->msg_type;
+		persist_msg.data      = msg->data;
+		persist_msg.data_size = msg->data_size;
+
+		buffer = slurm_persist_msg_pack(msg->conn, &persist_msg);
+		if (!buffer)    /* pack error */
+			return SLURM_ERROR;
+
+		rc = slurm_persist_send_msg(msg->conn, buffer);
+		FREE_NULL_BUFFER(buffer);
+
+		if ((rc < 0) && (errno == ENOTCONN)) {
+			if (slurm_conf.debug_flags & DEBUG_FLAG_NET)
+				peer = fd_resolve_peer(fd);
+
+			log_flag(NET, "%s: [%s] persistent connection has disappeared for msg_type=%u",
+				__func__, peer, msg->msg_type);
+		} else if (rc < 0) {
+			peer = fd_resolve_peer(fd);
+			error("%s: [%s] slurm_persist_send_msg(msg_type=%s) failed: %m",
+			      __func__, peer, rpc_num2string(msg->msg_type));
+		}
+
+		xfree(peer);
+		return rc;
+	}
+
 	/*
-	 * Send message
+	 * Pack and send message
 	 */
+	if ((rc = slurm_buffers_pack_msg(msg, &buffers)))
+		goto cleanup;
+
 	rc = slurm_bufs_sendto(fd, buffers);
 
 	if (rc >= 0) {
@@ -2017,6 +2031,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		xfree(peer);
 	}
 
+cleanup:
 	FREE_NULL_BUFFER(buffers.header);
 	FREE_NULL_BUFFER(buffers.auth);
 	FREE_NULL_BUFFER(buffers.body);
