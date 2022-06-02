@@ -363,26 +363,23 @@ static int _find_job_index(struct gs_part *p_ptr, uint32_t job_id)
 /* Return 1 if job "cpu count" fits in this row, else return 0 */
 static int _can_cpus_fit(job_record_t *job_ptr, struct gs_part *p_ptr)
 {
-	int i, j, size;
 	uint16_t *p_cpus, *j_cpus;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 
 	if (gr_type != GS_CPU)
 		return 0;
 
-	size = bit_size(job_res->node_bitmap);
 	p_cpus = p_ptr->active_cpus;
 	j_cpus = job_res->cpus;
 
 	if (!p_cpus || !j_cpus)
 		return 0;
 
-	for (j = 0, i = 0; i < size; i++) {
-		if (bit_test(job_res->node_bitmap, i)) {
-			if (p_cpus[i]+j_cpus[j] > _get_phys_bit_cnt(i))
-				return 0;
-			j++;
-		}
+	for (int j = 0, i = 0; next_node_bitmap(job_res->node_bitmap, &i);
+	     i++) {
+		if (p_cpus[i] + j_cpus[j] > _get_phys_bit_cnt(i))
+			return 0;
+		j++;
 	}
 	return 1;
 }

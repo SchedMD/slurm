@@ -100,7 +100,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	char *err_msg = NULL;
 	uint16_t *vpus;
 	bool space_remaining;
-	int i, i_first, i_last, rem_cpus, rem_tasks;
+	int rem_cpus, rem_tasks;
 	uint16_t cpus_per_task;
 	node_record_t *node_ptr;
 
@@ -122,15 +122,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 		job_ptr->details->cpus_per_task = 1;
 	cpus_per_task = job_ptr->details->cpus_per_task;
 
-	i_first = bit_ffs(job_res->node_bitmap);
-	if (i_first >= 0)
-		i_last  = bit_fls(job_res->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first, n = 0; i <= i_last; i++) {
-		if (!bit_test(job_res->node_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0, n = 0;
+	     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i)); i++) {
 		vpus[n++] = node_ptr->tpc;
 	}
 

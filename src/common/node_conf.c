@@ -185,25 +185,14 @@ static void _node_record_hash_identity (void* item, const char** key,
  */
 hostlist_t bitmap2hostlist (bitstr_t *bitmap)
 {
-	int i, first, last;
 	hostlist_t hl;
 	node_record_t *node_ptr;
 
 	if (bitmap == NULL)
 		return NULL;
 
-	first = bit_ffs(bitmap);
-	if (first == -1)
-		return NULL;
-
-	last  = bit_fls(bitmap);
 	hl = hostlist_create(NULL);
-	for (i = first; i <= last; i++) {
-		if (bit_test(bitmap, i) == 0)
-			continue;
-		if (!node_record_table_ptr[i])
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
 		hostlist_push_host(hl, node_ptr->name);
 	}
 	return hl;

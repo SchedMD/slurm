@@ -1662,23 +1662,14 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
  */
 static void _handle_planned(bool set)
 {
-	int n_first, n_last;
 	node_record_t *node_ptr;
 	bool node_update = false;
 
 	if (!planned_bitmap)
 		return;
 
-	n_first = bit_ffs(planned_bitmap);
-	if (n_first == -1)
-		return;
-
-	n_last = bit_fls(planned_bitmap);
-
-	for (int n = n_first; n <= n_last; n++) {
-		if (!bit_test(planned_bitmap, n))
-			continue;
-		node_ptr = node_record_table_ptr[n];
+	for (int n = 0; (node_ptr = next_node_bitmap(planned_bitmap, &n));
+	     n++) {
 		if (set) {
 			/*
 			 * If the node is allocated ignore this flag. This only

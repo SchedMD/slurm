@@ -161,7 +161,6 @@ static inline void _log_select_maps(char *loc, job_record_t *job_ptr)
 static void _clear_spec_cores(job_record_t *job_ptr,
 			      bitstr_t **core_array)
 {
-	int i, i_first, i_last;
 	int first_core, last_core;
 	int alloc_node = -1, alloc_core = -1, c;
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -174,15 +173,8 @@ static void _clear_spec_cores(job_record_t *job_ptr,
 
 	bit_set_all(job_res->core_bitmap);
 
-	i_first = bit_ffs(job_res->node_bitmap);
-	if (i_first != -1)
-		i_last = bit_fls(job_res->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_res->node_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i)); i++) {
 		job_res->cpus[++alloc_node] = 0;
 
 		if (is_cons_tres) {
@@ -354,17 +346,16 @@ static int _set_task_dist(job_record_t *job_ptr, const uint16_t cr_type)
 	    ((cr_type & CR_CORE) || (cr_type & CR_SOCKET))) {
 		job_resources_t *job_res = job_ptr->job_resrcs;
 		node_record_t *node_ptr;
-		int i = 0, n_last, n_first = bit_ffs(job_res->node_bitmap);
+		int i = 0;
 
-		if (n_first == -1)
+		if (!bit_set_count(job_res->node_bitmap))
 			return SLURM_ERROR;
 
-		n_last = bit_fls(job_res->node_bitmap);
-		for (int n = n_first; n <= n_last; n++) {
-			node_ptr = node_record_table_ptr[n];
-			if (!bit_test(job_res->node_bitmap, n) ||
-			    (job_ptr->details->mc_ptr->threads_per_core ==
-			    node_ptr->tpc))
+		for (int n = 0;
+		     (node_ptr = next_node_bitmap(job_res->node_bitmap, &n));
+		     n++) {
+			if (job_ptr->details->mc_ptr->threads_per_core ==
+			    node_ptr->tpc)
 				continue;
 			job_res->cpus[i++] *= node_ptr->tpc;
 		}
@@ -888,7 +879,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 				    const uint16_t cr_type, bool preempt_mode)
 {
 	uint32_t c, i, j, k, s;
-	int n, n_first, n_last;
+	int n, n_first;
 	uint32_t *sock_start, *sock_end, csize, core_cnt;
 	uint16_t cps = 0, cpus, vpus, sockets, sock_size, orig_cpu_cnt;
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -935,10 +926,8 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	}
 
 	csize = bit_size(core_map);
-	for (c = 0, i = 0, n = n_first; n <= n_last; n++) {
-		if (bit_test(job_res->node_bitmap, n) == 0)
-			continue;
-		node_ptr = node_record_table_ptr[n];
+	for (c = 0, i = 0, n = 0;
+	     (node_ptr = next_node_bitmap(job_res->node_bitmap, &n)); n++) {
 		sockets = node_ptr->tot_sockets;
 		cps     = node_ptr->cores;
 		vpus    = common_cpus_per_core(job_ptr->details, n);

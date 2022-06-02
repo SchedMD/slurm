@@ -4326,22 +4326,11 @@ static void _do_reboot(bool power_save_on, bitstr_t *node_bitmap,
 static void _set_reboot_features_active(bitstr_t *node_bitmap,
 					char *reboot_features)
 {
-	int i, i_first, i_last;
 	node_record_t *node_ptr;
 
-	i_first = bit_ffs(node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(node_bitmap);
-	else
-		i_last = i_first - 1;
-
-	for (i = i_first; i <= i_last; i++) {
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		char *tmp_feature, *orig_features_act;
 
-		if (!bit_test(node_bitmap, i))
-			continue;
-		if (!(node_ptr = node_record_table_ptr[i]))
-			continue;
 		/* Point to node features, don't copy */
 		orig_features_act =
 			node_ptr->features_act ?
@@ -4359,7 +4348,6 @@ static void _set_reboot_features_active(bitstr_t *node_bitmap,
 
 extern void reboot_job_nodes(job_record_t *job_ptr)
 {
-	int i, i_first, i_last;
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	bitstr_t *boot_node_bitmap = NULL, *feature_node_bitmap = NULL;
@@ -4404,16 +4392,8 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	job_ptr->wait_all_nodes = 1;
 
 	/* Modify state information for all nodes, KNL and others */
-	i_first = bit_ffs(boot_node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(boot_node_bitmap);
-	else
-		i_last = i_first - 1;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(boot_node_bitmap, i))
-			continue;
-		if (!(node_ptr = node_record_table_ptr[i]))
-			continue;
+	for (int i = 0; (node_ptr = next_node_bitmap(boot_node_bitmap, &i));
+	     i++) {
 		if (protocol_version > node_ptr->protocol_version)
 			protocol_version = node_ptr->protocol_version;
 

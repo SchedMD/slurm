@@ -905,7 +905,6 @@ extern bitstr_t **common_mark_avail_cores(
 	bitstr_t **avail_cores;
 	int from_core, to_core, incr_core, from_sock, to_sock, incr_sock;
 	int res_core, res_sock, res_off;
-	int n, n_first, n_last;
 	int c;
 	int rem_core_spec, node_core_spec, thread_spec = 0;
 	node_record_t *node_ptr;
@@ -928,17 +927,7 @@ extern bitstr_t **common_mark_avail_cores(
 		core_spec = NO_VAL16;		/* Don't remove cores */
 	}
 
-	n_first = bit_ffs(node_bitmap);
-	if (n_first != -1)
-		n_last = bit_fls(node_bitmap);
-	else
-		n_last = -2;
-	for (n = n_first; n <= n_last; n++) {
-		if (!bit_test(node_bitmap, n))
-			continue;
-
-		node_ptr = node_record_table_ptr[n];
-
+	for (int n = 0; (node_ptr = next_node_bitmap(node_bitmap, &n)); n++) {
 		if (is_cons_tres) {
 			c    = 0;
 			coff = node_ptr->tot_cores;
@@ -1220,7 +1209,6 @@ extern int select_p_job_begin(job_record_t *job_ptr)
 
 extern int select_p_job_ready(job_record_t *job_ptr)
 {
-	int i, i_first, i_last;
 	node_record_t *node_ptr;
 
 	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) {
@@ -1228,14 +1216,10 @@ extern int select_p_job_ready(job_record_t *job_ptr)
 		return 0;
 	}
 
-	if ((job_ptr->node_bitmap == NULL) ||
-	    ((i_first = bit_ffs(job_ptr->node_bitmap)) == -1))
+	if (!job_ptr->node_bitmap)
 		return READY_NODE_STATE;
-	i_last  = bit_fls(job_ptr->node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		if (IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_UP(node_ptr))
 			return 0;
@@ -1471,7 +1455,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	node_use_record_t *node_usage = select_node_usage;
 	struct job_resources *job = job_ptr->job_resrcs;
 	part_res_record_t *p_ptr;
-	int i, i_first, i_last, n;
+	int i, n;
 	List gres_list;
 	bool old_job = false;
 
@@ -1492,14 +1476,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		_dump_job_res(job);
 
 	/* subtract memory */
-	i_first = bit_ffs(job->node_bitmap);
-	if (i_first != -1)
-		i_last  = bit_fls(job->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first, n = 0; i <= i_last; i++) {
-		if (!bit_test(job->node_bitmap, i))
-			continue;
+	for (i = 0, n = 0; next_node_bitmap(job->node_bitmap, &i); i++) {
 		if (i != node_ptr->index) {
 			n++;
 			continue;
@@ -2129,7 +2106,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	int32_t prev_rem_cores, rem_cores = 0, rem_cores_save, rem_nodes;
 	uint32_t cores_per_node = 1;	/* Minimum cores per node to consider */
 	bool aggr_core_cnt = false, clear_core, sufficient;
-	int c, i, i_first, i_last, j, k, n;
+	int c, i, j, k, n;
 	int best_fit_inx, best_fit_nodes;
 	int best_fit_location = 0, best_fit_sufficient;
 
@@ -2243,15 +2220,8 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 		n = 0;
 
 		for (j = 0; j < switch_record_cnt; j++) {
-			i_first = bit_ffs(switches_bitmap[j]);
-			if (i_first >= 0)
-				i_last = bit_fls(switches_bitmap[j]);
-			else
-				i_last = i_first - 1;
-			for (i = i_first; i <= i_last; i++) {
-				if (!bit_test(switches_bitmap[j], i))
-					continue;
-
+			for (i = 0; next_node_bitmap(switches_bitmap[j], &i);
+			     i++) {
 				c = _get_avail_cores_on_node(
 					i, exc_core_bitmap);
 
@@ -2356,15 +2326,9 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 		if (best_fit_nodes == 0)
 			break;
 		/* Use select nodes from this leaf */
-		i_first = bit_ffs(switches_bitmap[best_fit_location]);
-		if (i_first >= 0)
-			i_last = bit_fls(switches_bitmap[best_fit_location]);
-		else
-			i_last = i_first - 1;
-
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(switches_bitmap[best_fit_location], i))
-				continue;
+		for (int i = 0;
+		     next_node_bitmap(switches_bitmap[best_fit_location], &i);
+		     i++) {
 			bit_clear(switches_bitmap[best_fit_location], i);
 			switches_node_cnt[best_fit_location]--;
 

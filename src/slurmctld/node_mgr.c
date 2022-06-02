@@ -2142,7 +2142,6 @@ static int _update_node_gres(char *node_names, char *gres)
 	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
 	node_record_t *node_ptr;
 	int rc, rc2, overlap1, overlap2;
-	int i, i_first, i_last;
 
 	rc = node_name2bitmap(node_names, false, &node_bitmap);
 	if (rc) {
@@ -2166,15 +2165,8 @@ static int _update_node_gres(char *node_names, char *gres)
 		/* At least some nodes in this config need to change */
 		tmp_bitmap = bit_copy(node_bitmap);
 		bit_and(tmp_bitmap, config_ptr->node_bitmap);
-		i_first = bit_ffs(tmp_bitmap);
-		if (i_first >= 0)
-			i_last = bit_fls(tmp_bitmap);
-		else
-			i_last = i_first - 1;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(tmp_bitmap, i))
-				continue;	/* Not this node */
-			node_ptr = node_record_table_ptr[i];
+		for (int i = 0; (node_ptr = next_node_bitmap(tmp_bitmap, &i));
+		     i++) {
 			rc2 = gres_node_reconfig(
 				node_ptr->name,
 				gres, &node_ptr->gres,
@@ -2255,12 +2247,8 @@ static int _update_node_gres(char *node_names, char *gres)
 static void _update_config_ptr(bitstr_t *bitmap, config_record_t *config_ptr)
 {
 	node_record_t *node_ptr;
-	int i;
 
-	for (i = 0; i < node_record_count; i++) {
-		if (!bit_test(bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
 		node_ptr->config_ptr = config_ptr;
 	}
 }

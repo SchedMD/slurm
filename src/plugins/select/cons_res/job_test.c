@@ -1172,11 +1172,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 
 	if (req_nodes_bitmap) {
 		/* Accumulate specific required resources, if any */
-		first = bit_ffs(req_nodes_bitmap);
-		last  = bit_fls(req_nodes_bitmap);
-		for (i=first; ((i<=last) && (first>=0)); i++) {
-			if (!bit_test(req_nodes_bitmap, i))
-				continue;
+		for (i = 0; next_node_bitmap(req_nodes_bitmap, &i); i++) {
 			if (max_nodes <= 0) {
 				info("%pJ requires nodes than allowed",
 				     job_ptr);
@@ -1627,11 +1623,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 
 	if (req_nodes_bitmap) {
 		/* Accumulate specific required resources, if any */
-		first = bit_ffs(req_nodes_bitmap);
-		last  = bit_fls(req_nodes_bitmap);
-		for (i = first; ((i <= last) && (first >= 0)); i++) {
-			if (!bit_test(req_nodes_bitmap, i))
-				continue;
+		for (i = 0; next_node_bitmap(req_nodes_bitmap, &i); i++) {
 			if (max_nodes <= 0) {
 				info("%pJ requires nodes than allowed",
 				     job_ptr);
@@ -1933,7 +1925,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 			avail_res_t **avail_res_array, uint16_t cr_type,
 			bool prefer_alloc_nodes, gres_mc_data_t *tres_mc_ptr)
 {
-	int i, count, ec, most_cpus = 0, i_first, i_last;
+	int i, count, ec, most_cpus = 0;
 	bitstr_t *origmap, *reqmap = NULL;
 	int rem_node_cnt, rem_cpu_cnt = 0;
 
@@ -1941,14 +1933,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 		reqmap = job_ptr->details->req_node_bitmap;
 
 	/* clear nodes from the bitmap that don't have available resources */
-	i_first = bit_ffs(node_map);
-	if (i_first >= 0)
-		i_last = bit_fls(node_map);
-	else
-		i_last = i_first - 1;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(node_map, i))
-			continue;
+	for (i = 0; next_node_bitmap(node_map, &i); i++) {
 		/* Make sure we don't say we can use a node exclusively
 		 * that is bigger than our max cpu count. */
 		if (((job_ptr->details->whole_node == 1) &&
@@ -1993,9 +1978,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 		bool no_change = true, no_more_remove = false;
 		bit_or(node_map, origmap);
 		rem_node_cnt = bit_set_count(node_map);
-		for (i = 0; i < node_record_count; i++) {
-			if (!bit_test(node_map, i))
-				continue;
+		for (i = 0; next_node_bitmap(node_map, &i); i++) {
 			if ((avail_res_array[i]->avail_cpus > 0) &&
 			    (avail_res_array[i]->avail_cpus <= count)) {
 				if (reqmap && bit_test(reqmap, i))

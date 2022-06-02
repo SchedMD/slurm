@@ -74,27 +74,19 @@ static void _block_whole_nodes(bitstr_t *node_bitmap,
 			       bitstr_t **orig_core_bitmap,
 			       bitstr_t **new_core_bitmap)
 {
-	int first_node, last_node, i_node;
+	int i_node;
 	int first_core, last_core, i_core;
 	node_record_t *node_ptr;
 	bitstr_t *cr_orig_core_bitmap = NULL;
 	bitstr_t *cr_new_core_bitmap = NULL;
-
-	first_node = bit_ffs(node_bitmap);
-	if (first_node >= 0)
-		last_node = bit_fls(node_bitmap);
-	else
-		last_node = -2;
 
 	if (!is_cons_tres) {
 		cr_orig_core_bitmap = *orig_core_bitmap;
 		cr_new_core_bitmap = *new_core_bitmap;
 	}
 
-	for (i_node = first_node; i_node <= last_node; i_node++) {
-		if (!bit_test(node_bitmap, i_node))
-			continue;
-		node_ptr = node_record_table_ptr[i_node];
+	for (i_node = 0; (node_ptr = next_node_bitmap(node_bitmap, &i_node));
+	     i_node++) {
 		if (is_cons_tres) {
 			first_core = 0;
 			last_core = node_ptr->tot_cores;
@@ -486,7 +478,6 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 				   gres_mc_data_t *tres_mc_ptr)
 {
 	int i, rc;
-	uint32_t n;
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	avail_res_t **avail_res_array;
@@ -510,9 +501,8 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 		return avail_res_array;
 
 	/* Eliminate nodes that don't have sufficient resources for this job */
-	for (n = 0; n < node_record_count; n++) {
-		if (bit_test(node_bitmap, n) &&
-		    (!avail_res_array[n] ||
+	for (int n = 0; next_node_bitmap(node_bitmap, &n); n++) {
+		if ((!avail_res_array[n] ||
 		     !avail_res_array[n]->avail_cpus)) {
 			/* insufficient resources available on this node */
 			bit_clear(node_bitmap, n);
@@ -543,13 +533,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 
 	/* If successful, sync up the avail_core with the node_map */
 	if (rc == SLURM_SUCCESS) {
-		int i_first, i_last, n, start;
-
-		i_first = bit_ffs(node_bitmap);
-		if (i_first != -1)
-			i_last = bit_fls(node_bitmap);
-		else
-			i_last = -2;
+		int n, start;
 
 		if (is_cons_tres) {
 			for (n = 0; n < bit_size(node_bitmap); n++) {
@@ -557,11 +541,10 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 				    !bit_test(node_bitmap, n))
 					FREE_NULL_BITMAP(avail_core[n]);
 			}
-		} else if (i_last != -2) {
+		} else if (bit_set_count(node_bitmap)) {
 			start = 0;
-			for (n = i_first; n < i_last; n++) {
-				if (!avail_res_array[n] ||
-				    !bit_test(node_bitmap, n))
+			for (n = 0; next_node_bitmap(node_bitmap, &n); n++) {
+				if (!avail_res_array[n])
 					continue;
 				if (cr_get_coremap_offset(n) != start)
 					bit_nclear(
@@ -631,7 +614,6 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 	uint32_t gres_cpus, gres_cores;
 	uint64_t free_mem, min_mem, avail_mem;
 	List gres_list;
-	int i, i_first, i_last;
 	bool disable_binding = false;
 
 	if (is_cons_tres && !(job_ptr->bit_flags & JOB_MEM_SET) &&
@@ -655,15 +637,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 
 	if (!is_cons_tres && (job_ptr->bit_flags & GRES_DISABLE_BIND))
 		disable_binding = true;
-	i_first = bit_ffs(node_bitmap);
-	if (i_first == -1)
-		i_last = -2;
-	else
-		i_last  = bit_fls(node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(node_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		/* node-level memory check */
 		if (min_mem && (cr_type & CR_MEMORY)) {
 			avail_mem = node_ptr->real_memory -
@@ -838,7 +812,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	struct job_details *details_ptr = job_ptr->details;
 	part_res_record_t *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
-	int i, i_first, i_last;
+	int i;
 	avail_res_t **avail_res_array, **avail_res_array_tmp;
 	gres_mc_data_t *tres_mc_ptr = NULL;
 	List *node_gres_list = NULL, *sock_gres_list = NULL;
@@ -1380,13 +1354,8 @@ alloc_job:
 	/** create the struct_job_res  **/
 	n = bit_set_count(node_bitmap);
 	cpu_count = xmalloc(sizeof(uint16_t) * n);
-	i_first = bit_ffs(node_bitmap);
-	if (i_first != -1)
-		i_last = bit_fls(node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first, j = 0; i <= i_last; i++) {
-		if (bit_test(node_bitmap, i) && avail_res_array[i])
+	for (i = 0, j = 0; next_node_bitmap(node_bitmap, &i); i++) {
+		if (avail_res_array[i])
 			cpu_count[j++] = avail_res_array[i]->avail_cpus;
 	}
 	if (j != n) {
@@ -1452,14 +1421,10 @@ alloc_job:
 		c_size = bit_size(job_res->core_bitmap);
 	else
 		c_size = 0;
-	i_first = bit_ffs(node_bitmap);
-	for (i = i_first, n = 0; i < node_record_count; i++) {
+	for (i = 0, n = 0; (node_ptr = next_node_bitmap(node_bitmap, &i));
+	     i++) {
 		int first_core, last_core;
 		bitstr_t *use_free_cores = NULL;
-
-		if (!bit_test(node_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
 
 		if (is_cons_tres) {
 			first_core = 0;
@@ -1507,11 +1472,6 @@ alloc_job:
 
 	/* distribute the tasks, clear unused cores from job_res->core_bitmap */
 	job_ptr->job_resrcs = job_res;
-	i_first = bit_ffs(job_res->node_bitmap);
-	if (i_first != -1)
-		i_last = bit_fls(job_res->node_bitmap);
-	else
-		i_last = -2;
 	if (is_cons_tres &&
 	    job_ptr->gres_list_req && (error_code == SLURM_SUCCESS)) {
 		bool have_gres_per_task, task_limit_set = false;
@@ -1528,9 +1488,9 @@ alloc_job:
 		}
 		node_gres_list = xcalloc(job_res->nhosts, sizeof(List));
 		sock_gres_list = xcalloc(job_res->nhosts, sizeof(List));
-		for (i = i_first, j = 0; i <= i_last; i++) {
-			if (!bit_test(job_res->node_bitmap, i))
-				continue;
+		for (i = 0, j = 0;
+		     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
+		     i++) {
 			if (have_gres_per_task) {
 				gres_task_limit[j] =
 					gres_select_util_get_task_limit(
@@ -1539,7 +1499,6 @@ alloc_job:
 				if (gres_task_limit[j] != NO_VAL)
 					task_limit_set = true;
 			}
-			node_ptr = node_record_table_ptr[i];
 			node_gres_list[j] = node_ptr->gres_list;
 			sock_gres_list[j] =
 				avail_res_array[i]->sock_gres_list;
@@ -1573,9 +1532,9 @@ alloc_job:
 	build_cnt = build_job_resources_cpu_array(job_res);
 	if (job_ptr->details->whole_node == 1) {
 		job_ptr->total_cpus = 0;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(job_res->node_bitmap, i))
-				continue;
+		for (i = 0;
+		     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
+		     i++) {
 			/*
 			 * This could make the job_res->cpus incorrect.
 			 * Don't use job_res->cpus when allocating
@@ -1583,7 +1542,6 @@ alloc_job:
 			 * subtract from the total cpu count or you
 			 * will get an incorrect count.
 			 */
-			node_ptr = node_record_table_ptr[i];
 			job_ptr->total_cpus += node_ptr->cpus_efctv;
 		}
 	} else if (cr_type & CR_SOCKET) {
@@ -1591,10 +1549,10 @@ alloc_job:
 		int s, last_s, sock_cnt = 0;
 
 		job_ptr->total_cpus = 0;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(job_res->node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (i = 0;
+		     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
+		     i++) {
+
 			sock_cnt = 0;
 			for (s = 0; s < node_ptr->tot_sockets; s++) {
 				last_s = -1;
@@ -1636,10 +1594,9 @@ alloc_job:
 	} else {
 		/* load memory allocated array */
 		save_mem = details_ptr->pn_min_memory;
-		for (i = i_first, j = 0; i <= i_last; i++) {
-			if (!bit_test(job_res->node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (i = 0, j = 0;
+		     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
+		     i++) {
 			nodename = node_ptr->name;
 			avail_mem = node_ptr->real_memory -
 				    node_ptr->mem_spec_limit;

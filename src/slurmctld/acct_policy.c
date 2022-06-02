@@ -200,8 +200,6 @@ static void _rm_usage_node_bitmap(job_record_t *job_ptr,
 				  uint16_t *grp_node_job_cnt,
 				  uint64_t *grp_used_tres)
 {
-	int i, i_first, i_last;
-
 	xassert(grp_used_tres);
 
 	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
@@ -227,14 +225,9 @@ static void _rm_usage_node_bitmap(job_record_t *job_ptr,
 		error("%s: grp_node_job_cnt is NULL", __func__);
 		return;
 	}
-	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
-	if (i_first == -1)
-		i_last = -2;
-	else
-		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
-			continue;
+
+	for (int i = 0;
+	     next_node_bitmap(job_ptr->job_resrcs->node_bitmap, &i); i++) {
 		if (--grp_node_job_cnt[i] == 0)
 			bit_clear(grp_node_bitmap, i);
 	}

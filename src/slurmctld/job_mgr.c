@@ -11952,23 +11952,18 @@ static slurmdb_assoc_rec_t *_retrieve_new_assoc(job_desc_msg_t *job_desc,
 /* Allocate nodes to new job. Old job info will be cleared at epilog complete */
 static void _realloc_nodes(job_record_t *job_ptr, bitstr_t *orig_node_bitmap)
 {
-	int i, i_first, i_last;
+	bitstr_t *node_bitmap;
 	node_record_t *node_ptr;
 
 	xassert(job_ptr);
 	xassert(orig_node_bitmap);
 	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap)
 		return;
-	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
-	else
-		i_last = -1;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i) ||
-		    bit_test(orig_node_bitmap, i))
+
+	node_bitmap = job_ptr->job_resrcs->node_bitmap;
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
+		if (bit_test(orig_node_bitmap, i))
 			continue;
-		node_ptr = node_record_table_ptr[i];
 		make_node_alloc(node_ptr, job_ptr);
 	}
 }
@@ -12369,7 +12364,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		}
 
 		if (new_req_bitmap) {
-			int i, i_first, i_last;
 			node_record_t *node_ptr;
 			bitstr_t *rem_nodes;
 
@@ -12398,20 +12392,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			sched_info("%s: setting nodes to %s for %pJ",
 				   __func__, job_specs->req_nodes, job_ptr);
 			job_pre_resize_acctg(job_ptr);
-			i_first = bit_ffs(job_ptr->node_bitmap);
-			if (i_first >= 0)
-				i_last  = bit_fls(job_ptr->node_bitmap);
-			else
-				i_last = -2;
 			rem_nodes = bit_copy(job_ptr->node_bitmap);
 			bit_and_not(rem_nodes, new_req_bitmap);
 #ifndef HAVE_FRONT_END
 			abort_job_on_nodes(job_ptr, rem_nodes);
 #endif
-			for (i = i_first; i <= i_last; i++) {
-				if (!bit_test(rem_nodes, i))
-					continue;
-				node_ptr = node_record_table_ptr[i];
+			for (int i = 0;
+			     (node_ptr = next_node_bitmap(rem_nodes, &i));
+			     i++) {
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
@@ -13840,7 +13828,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			error_code = ESLURM_NOT_SUPPORTED;
 			goto fini;
 		} else {
-			int i, i_first, i_last, total = 0;
+			int total = 0;
 			node_record_t *node_ptr;
 			bitstr_t *rem_nodes, *tmp_nodes;
 			sched_info("%s: set node count to %u for %pJ", __func__,
@@ -13875,15 +13863,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				}
 			}
 
-			i_first = bit_ffs(tmp_nodes);
-			if (i_first >= 0)
-				i_last  = bit_fls(tmp_nodes);
-			else
-				i_last = -2;
 			rem_nodes = bit_alloc(bit_size(tmp_nodes));
-			for (i = i_first; i <= i_last; i++) {
-				if (!bit_test(tmp_nodes, i))
-					continue;
+			for (int i = 0; next_node_bitmap(tmp_nodes, &i); i++) {
 				if (++total <= job_specs->min_nodes)
 					continue;
 				bit_set(rem_nodes, i);
@@ -13891,10 +13872,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 #ifndef HAVE_FRONT_END
 			abort_job_on_nodes(job_ptr, rem_nodes);
 #endif
-			for (i = i_first; i <= i_last; i++) {
-				if (!bit_test(rem_nodes, i))
-					continue;
-				node_ptr = node_record_table_ptr[i];
+			for (int i = 0;
+			     (node_ptr = next_node_bitmap(rem_nodes, &i));
+			     i++) {
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
@@ -15222,7 +15202,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 {
 	bitstr_t *full_node_bitmap, *tmp_node_bitmap;
 	node_record_t *node_ptr;
-	int i, i_first, i_last;
+	int i_first;
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
 	uint16_t protocol_version;
@@ -15234,14 +15214,11 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 	/* Send a separate message for nodes at different protocol_versions */
 	full_node_bitmap = bit_copy(node_bitmap);
 	while ((i_first = bit_ffs(full_node_bitmap)) >= 0) {
-		i_last = bit_fls(full_node_bitmap);
 		node_ptr = node_record_table_ptr[i_first];
 		protocol_version = node_ptr->protocol_version;
 		tmp_node_bitmap = bit_alloc(bit_size(node_bitmap));
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(full_node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(full_node_bitmap, &i)); i++) {
 			if (node_ptr->protocol_version != protocol_version)
 				continue;
 			bit_clear(full_node_bitmap, i);
@@ -15686,9 +15663,6 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 				uint32_t return_code)
 {
-#ifdef HAVE_FRONT_END
-	int i;
-#endif
 	job_record_t *job_ptr = find_job_record(job_id);
 	node_record_t *node_ptr;
 
@@ -15763,10 +15737,9 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		if (front_end_ptr)
 			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
 	} else {
-		for (i = 0; i < node_record_count; i++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+		     i++) {
 			if (return_code) {
 				drain_nodes(node_ptr->name, "Epilog error",
 				            slurm_conf.slurm_user_id);
@@ -16332,10 +16305,8 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	agent_args->node_count = 1;
 #else
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		if (agent_args->protocol_version > node_ptr->protocol_version)
 			agent_args->protocol_version =
 				node_ptr->protocol_version;
@@ -16411,10 +16382,8 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	agent_args->node_count = 1;
 #else
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		if (agent_args->protocol_version > node_ptr->protocol_version)
 			agent_args->protocol_version =
 				node_ptr->protocol_version;
@@ -16443,7 +16412,7 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
  */
 static int _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp)
 {
-	int i, i_first, i_last, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	node_record_t *node_ptr;
 	uint32_t node_flags;
 	time_t now = time(NULL);
@@ -16451,15 +16420,8 @@ static int _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp)
 	if ((rc = select_g_job_suspend(job_ptr, indf_susp)) != SLURM_SUCCESS)
 		return rc;
 
-	i_first = bit_ffs(job_ptr->node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(job_ptr->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		node_ptr = node_record_table_ptr[i];
-		if (!bit_test(job_ptr->node_bitmap, i))
-			continue;
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		node_ptr->sus_job_cnt++;
 		if (node_ptr->run_job_cnt)
 			(node_ptr->run_job_cnt)--;
@@ -16505,31 +16467,21 @@ static int _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp)
  */
 static int _resume_job_nodes(job_record_t *job_ptr, bool indf_susp)
 {
-	int i, i_first, i_last, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	node_record_t *node_ptr;
 	uint32_t node_flags;
 
 	if ((rc = select_g_job_resume(job_ptr, indf_susp)) != SLURM_SUCCESS)
 		return rc;
 
-	i_first = bit_ffs(job_ptr->node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(job_ptr->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		node_ptr = node_record_table_ptr[i];
-		if (!bit_test(job_ptr->node_bitmap, i))
-			continue;
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		if (IS_NODE_DOWN(node_ptr))
 			return SLURM_ERROR;
 	}
 
-	for (i = i_first; i <= i_last; i++) {
-		node_ptr = node_record_table_ptr[i];
-		if (!bit_test(job_ptr->node_bitmap, i))
-			continue;
-
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		if (node_ptr->sus_job_cnt)
 			(node_ptr->sus_job_cnt)--;
 		else {
@@ -16827,7 +16779,6 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 	char *end_ptr = NULL, *tok, *tmp;
 	bitstr_t *array_bitmap = NULL;
 	bool valid = true;
-	int32_t i, i_first, i_last;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	resp_array_struct_t *resp_array = NULL;
@@ -16914,14 +16865,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
-	i_first = bit_ffs(array_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(array_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(array_bitmap, i))
-			continue;
+	for (int i = 0; next_node_bitmap(array_bitmap, &i); i++) {
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
 			info("%s: invalid JobId=%u_%d", __func__, job_id, i);
@@ -17314,7 +17258,6 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 	char *end_ptr = NULL, *tok, *tmp;
 	bitstr_t *array_bitmap = NULL;
 	bool valid = true;
-	int32_t i, i_first, i_last;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	uint32_t flags = req_ptr->flags;
@@ -17393,14 +17336,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		goto reply;
 	}
 
-	i_first = bit_ffs(array_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(array_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(array_bitmap, i))
-			continue;
+	for (int i = 0; next_node_bitmap(array_bitmap, &i); i++) {
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
 			info("%s: invalid JobId=%u_%d", __func__, job_id, i);
@@ -18606,19 +18542,13 @@ extern void set_remote_working_response(
 		    !job_ptr->alias_list ||
 		    xstrcmp(job_ptr->alias_list, "TBD")) {
 			node_record_t *node_ptr;
-			int i, i_first, i_last, addr_index = 0;
 
 			resp->node_addr = xcalloc(job_ptr->node_cnt,
 						  sizeof(slurm_addr_t));
-			i_first = bit_ffs(job_ptr->node_bitmap);
-			if (i_first >= 0)
-				i_last = bit_fls(job_ptr->node_bitmap);
-			else
-				i_last = -2;
-			for (i = i_first; i <= i_last; i++) {
-				if (!bit_test(job_ptr->node_bitmap, i))
-					continue;
-				node_ptr = node_record_table_ptr[i];
+			for (int i = 0, addr_index = 0;
+			     (node_ptr = next_node_bitmap(job_ptr->node_bitmap,
+							  &i));
+			     i++) {
 				slurm_conf_get_addr(
 					node_ptr->name,
 					&resp->node_addr[addr_index++], 0);

@@ -4429,8 +4429,6 @@ extern void slurmdb_merge_grp_node_usage(bitstr_t **grp_node_bitmap1,
 					 bitstr_t *grp_node_bitmap2,
 					 uint16_t *grp_node_job_cnt2)
 {
-	int i_first, i_last;
-
 	if (!grp_node_bitmap2)
 		return;
 
@@ -4453,13 +4451,7 @@ extern void slurmdb_merge_grp_node_usage(bitstr_t **grp_node_bitmap1,
 		*grp_node_job_cnt1 =
 			xcalloc(bit_size(*grp_node_bitmap1), sizeof(uint16_t));
 
-	if ((i_first = bit_ffs(grp_node_bitmap2)) == -1)
-		return;
-
-	i_last = bit_fls(grp_node_bitmap2);
-	for (int i = i_first; i <= i_last; i++) {
-		if (!bit_test(grp_node_bitmap2, i))
-			continue;
+	for (int i = 0; next_node_bitmap(grp_node_bitmap2, &i); i++) {
 		(*grp_node_job_cnt1)[i] +=
 			grp_node_job_cnt2 ? grp_node_job_cnt2[i] : 1;
 	}

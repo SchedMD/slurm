@@ -782,15 +782,12 @@ unpack_error:
 /* job_write and blade_mutex must be locked before calling */
 static void _set_job_running(job_record_t *job_ptr)
 {
-	int i;
 	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
 	select_nodeinfo_t *nodeinfo;
 	node_record_t * node_ptr;
 
-	for (i = 0; i < node_record_count; i++) {
-		if (!bit_test(job_ptr->node_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		nodeinfo = node_ptr->select_nodeinfo->data;
 		if (!bit_test(jobinfo->blade_map, nodeinfo->blade_id)) {
 			bit_set(jobinfo->blade_map, nodeinfo->blade_id);
@@ -1689,7 +1686,6 @@ extern int select_p_step_start(step_record_t *step_ptr)
 
 	jobinfo = step_ptr->job_ptr->select_jobinfo->data;
 	if (jobinfo->npc && (step_ptr->step_id.step_id != SLURM_EXTERN_CONT)) {
-		int i;
 		select_jobinfo_t *step_jobinfo = step_ptr->select_jobinfo->data;
 		select_nodeinfo_t *nodeinfo;
 
@@ -1701,10 +1697,10 @@ extern int select_p_step_start(step_record_t *step_ptr)
 		if (!step_jobinfo->blade_map)
 			step_jobinfo->blade_map = bit_alloc(blade_cnt);
 
-		for (i=0; i<node_record_count; i++) {
-			if (!bit_test(step_ptr->step_node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(step_ptr->step_node_bitmap,
+						  &i));
+		     i++) {
 			nodeinfo = node_ptr->select_nodeinfo->data;
 			if (!bit_test(step_jobinfo->blade_map,
 				      nodeinfo->blade_id))

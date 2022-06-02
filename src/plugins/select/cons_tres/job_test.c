@@ -144,7 +144,6 @@ static int _node_weight_sort(void *x, void *y)
  */
 static List _build_node_weight_list(bitstr_t *node_bitmap)
 {
-	int i, i_first, i_last;
 	List node_list;
 	node_record_t *node_ptr;
 	node_weight_type *nwt;
@@ -152,14 +151,7 @@ static List _build_node_weight_list(bitstr_t *node_bitmap)
 	xassert(node_bitmap);
 	/* Build list of node_weight_type records, one per node weight */
 	node_list = list_create(_node_weight_free);
-	i_first = bit_ffs(node_bitmap);
-	if (i_first == -1)
-		return node_list;
-	i_last = bit_fls(node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(node_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		nwt = list_find_first(node_list, _node_weight_find, node_ptr);
 		if (!nwt) {
 			nwt = xmalloc(sizeof(node_weight_type));
@@ -543,19 +535,10 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	 * provide, then select additional resources as needed in next loop
 	 */
 	if (req_map) {
-		int i_first, i_last;
-		i_first = bit_ffs(req_map);
-		if (i_first >= 0) {
-			i_last = bit_fls(req_map);
-			if (((i_last - i_first + 1) > max_nodes) &&
-			    (bit_set_count(req_map) > max_nodes))
-				goto fini;
-		} else
-			i_last = i_first - 1;
-		for (i = i_first; ((i <= i_last) && (max_nodes > 0)); i++) {
-			if (!bit_test(req_map, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (i = 0;
+		     ((node_ptr = next_node_bitmap(req_map, &i)) &&
+		      (max_nodes > 0));
+		     i++) {
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
@@ -1518,7 +1501,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	bitstr_t  *req_nodes_bitmap   = NULL;	/* required node bitmap */
 	bitstr_t  *req2_nodes_bitmap  = NULL;	/* required+lowest prio nodes */
 	bitstr_t  *best_nodes_bitmap  = NULL;	/* required+low prio nodes */
-	int i, i_first, i_last, j, rc = SLURM_SUCCESS;
+	int i, j, rc = SLURM_SUCCESS;
 	int best_cpu_cnt = 0, best_node_cnt = 0, req_node_cnt = 0;
 	List best_gres = NULL;
 	switch_record_t *switch_ptr;
@@ -1594,20 +1577,16 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	 * Add required nodes to job allocation and
 	 * build list of node bitmaps, sorted by weight
 	 */
-	i_first = bit_ffs(node_map);
-	if (i_first == -1) {
+	if (!bit_set_count(node_map)) {
 		debug("%pJ node_map is empty",
 		      job_ptr);
 		rc = SLURM_ERROR;
 		goto fini;
 	}
-	i_last = bit_fls(node_map);
 	avail_cpu_per_node = xcalloc(node_record_count, sizeof(uint16_t));
 	node_weight_list = list_create(_topo_weight_free);
-	for (i = i_first; i <= i_last; i++) {
+	for (i = 0; (node_ptr = next_node_bitmap(node_map, &i)); i++) {
 		topo_weight_info_t nw_static;
-		if (!bit_test(node_map, i))
-			continue;
 		if (req_nodes_bitmap && bit_test(req_nodes_bitmap, i)) {
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
@@ -1635,7 +1614,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			rem_max_cpus -= avail_cpus;
 		}
 
-		node_ptr = node_record_table_ptr[i];
 		nw_static.weight = node_ptr->sched_weight;
 		nw = list_find_first(node_weight_list, _topo_weight_find,
 				     &nw_static);
@@ -1764,15 +1742,10 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			else
 				req2_nodes_bitmap = bit_copy(best_nodes_bitmap);
 		}
-		i_first = bit_ffs(nw->node_bitmap);
-		if (i_first == -1)
-			continue;
-		i_last = bit_fls(nw->node_bitmap);
-		for (i = i_first; i <= i_last; i++) {
+		for (i = 0; next_node_bitmap(nw->node_bitmap, &i); i++) {
 			if (avail_cpu_per_node[i])
 				continue;	/* Required node */
-			if (!bit_test(nw->node_bitmap, i) ||
-			    !bit_test(switch_node_bitmap[top_switch_inx], i))
+			if (!bit_test(switch_node_bitmap[top_switch_inx], i))
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
@@ -1833,14 +1806,9 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	 * Job will still need to add some higher weight nodes later.
 	 */
 	if (req2_nodes_bitmap) {
-		i_first = bit_ffs(req2_nodes_bitmap);
-		if (i_first >= 0)
-			i_last = bit_fls(req2_nodes_bitmap);
-		else
-			i_last = -2;
-		for (i = i_first; ((i <= i_last) && (max_nodes > 0)); i++) {
-			if (!bit_test(req2_nodes_bitmap, i))
-				continue;
+		for (i = 0;
+		     next_node_bitmap(req2_nodes_bitmap, &i) && (max_nodes > 0);
+		     i++) {
 			avail_cpus = avail_cpu_per_node[i];
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
@@ -1958,14 +1926,9 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			if (!switch_required[i] || !switch_node_bitmap[i] ||
 			    (switch_record_table[i].level != 0))
 				continue;
-			i_first = bit_ffs(switch_node_bitmap[i]);
-			if (i_first >= 0)
-				i_last = bit_fls(switch_node_bitmap[i]);
-			else
-				i_last = -2;
-			for (j = i_first; j <= i_last; j++) {
-				if (!bit_test(switch_node_bitmap[i], j) ||
-				    bit_test(node_map, j) ||
+			for (j = 0; next_node_bitmap(switch_node_bitmap[i], &j);
+			     j++) {
+				if (bit_test(node_map, j) ||
 				    !avail_cpu_per_node[j])
 					continue;
 				avail_cpus = avail_cpu_per_node[j];
@@ -1990,9 +1953,9 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		}
 		if (sufficient && (i < switch_record_cnt)) {
 			/* Complete request using this one leaf switch */
-			for (j = i_first; j <= i_last; j++) {
-				if (!bit_test(switch_node_bitmap[i], j) ||
-				    bit_test(node_map, j) ||
+			for (j = 0; next_node_bitmap(switch_node_bitmap[i], &j);
+			     j++) {
+				if (bit_test(node_map, j) ||
 				    !avail_cpu_per_node[j])
 					continue;
 				avail_cpus = avail_cpu_per_node[j];
@@ -2042,14 +2005,9 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			if (!switch_node_bitmap[i] ||
 			    (switch_record_table[i].level != 0))
 				continue;
-			i_first = bit_ffs(switch_node_bitmap[i]);
-			if (i_first >= 0)
-				i_last = bit_fls(switch_node_bitmap[i]);
-			else
-				i_last = -2;
-			for (j = i_first; j <= i_last; j++) {
-				if (!bit_test(switch_node_bitmap[i], j) ||
-				    bit_test(node_map, j) ||
+			for (j = 0; next_node_bitmap(switch_node_bitmap[i], &j);
+			     j++) {
+				if (bit_test(node_map, j) ||
 				    !avail_cpu_per_node[j])
 					continue;
 				avail_cpus = avail_cpu_per_node[j];
@@ -2162,7 +2120,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	bitstr_t  *req_nodes_bitmap   = NULL;	/* required node bitmap */
 	bitstr_t  *req2_nodes_bitmap  = NULL;	/* required+lowest prio nodes */
 	bitstr_t  *best_nodes_bitmap  = NULL;	/* required+low prio nodes */
-	int i, i_first, i_last, j, rc = SLURM_SUCCESS;
+	int i, j, rc = SLURM_SUCCESS;
 	int best_cpu_cnt = 0, best_node_cnt = 0, req_node_cnt = 0;
 	List best_gres = NULL;
 	switch_record_t *switch_ptr;
@@ -2234,20 +2192,16 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	 * Add required nodes to job allocation and
 	 * build list of node bitmaps, sorted by weight
 	 */
-	i_first = bit_ffs(node_map);
-	if (i_first == -1) {
+	if (!bit_set_count(node_map)) {
 		debug("%pJ node_map is empty",
 		      job_ptr);
 		rc = SLURM_ERROR;
 		goto fini;
 	}
-	i_last = bit_fls(node_map);
 	avail_cpu_per_node = xcalloc(node_record_count, sizeof(uint16_t));
 	node_weight_list = list_create(_topo_weight_free);
-	for (i = i_first; i <= i_last; i++) {
+	for (i = 0; (node_ptr = next_node_bitmap(node_map, &i)); i++) {
 		topo_weight_info_t nw_static;
-		if (!bit_test(node_map, i))
-			continue;
 		if (req_nodes_bitmap && bit_test(req_nodes_bitmap, i)) {
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
@@ -2275,7 +2229,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			rem_max_cpus -= avail_cpus;
 		}
 
-		node_ptr = node_record_table_ptr[i];
 		nw_static.weight = node_ptr->sched_weight;
 		nw = list_find_first(node_weight_list, _topo_weight_find,
 				     &nw_static);
@@ -2409,15 +2362,15 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			else
 				req2_nodes_bitmap = bit_copy(best_nodes_bitmap);
 		}
-		i_first = bit_ffs(nw->node_bitmap);
-		if (i_first == -1)
+
+		if (!bit_set_count(nw->node_bitmap))
 			continue;
-		i_last = bit_fls(nw->node_bitmap);
-		for (i = i_first; i <= i_last; i++) {
+
+		for (i = 0; (node_ptr = next_node_bitmap(nw->node_bitmap, &i));
+		     i++) {
 			if (avail_cpu_per_node[i])
 				continue;	/* Required node */
-			if (!bit_test(nw->node_bitmap, i) ||
-			    !bit_test(switch_node_bitmap[top_switch_inx], i))
+			if (!bit_test(switch_node_bitmap[top_switch_inx], i))
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
@@ -2478,14 +2431,9 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	 * Job will still need to add some higher weight nodes later.
 	 */
 	if (req2_nodes_bitmap) {
-		i_first = bit_ffs(req2_nodes_bitmap);
-		if (i_first >= 0)
-			i_last = bit_fls(req2_nodes_bitmap);
-		else
-			i_last = -2;
-		for (i = i_first; ((i <= i_last) && (max_nodes > 0)); i++) {
-			if (!bit_test(req2_nodes_bitmap, i))
-				continue;
+		for (i = 0;
+		     next_node_bitmap(req2_nodes_bitmap, &i) && (max_nodes > 0);
+		     i++) {
 			avail_cpus = avail_cpu_per_node[i];
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
@@ -2576,14 +2524,9 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			if (!switch_required[i] || !switch_node_bitmap[i] ||
 			    (switch_record_table[i].level != 0))
 				continue;
-			i_first = bit_ffs(switch_node_bitmap[i]);
-			if (i_first >= 0)
-				i_last = bit_fls(switch_node_bitmap[i]);
-			else
-				i_last = -2;
-			for (j = i_first; j <= i_last; j++) {
-				if (!bit_test(switch_node_bitmap[i], j) ||
-				    bit_test(node_map, j) ||
+			for (j = 0; next_node_bitmap(switch_node_bitmap[i], &j);
+			     j++) {
+				if (bit_test(node_map, j) ||
 				    !avail_cpu_per_node[j])
 					continue;
 				avail_cpus = avail_cpu_per_node[j];
@@ -2645,15 +2588,11 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		 * availability rather than in order of bitmap position, but
 		 * that would add even more complexity and overhead.
 		 */
-		i_first = bit_ffs(switch_node_bitmap[top_switch_inx]);
-		if (i_first >= 0)
-			i_last = bit_fls(switch_node_bitmap[top_switch_inx]);
-		else
-			i_last = -2;
-		for (i = i_first; ((i <= i_last) && (max_nodes > 0)); i++) {
-			if (!bit_test(switch_node_bitmap[top_switch_inx], i) ||
-			    bit_test(node_map, i) ||
-			    !avail_cpu_per_node[i])
+		for (i = 0;
+		     next_node_bitmap(switch_node_bitmap[top_switch_inx], &i) &&
+		     (max_nodes > 0);
+		     i++) {
+			if (bit_test(node_map, i) || !avail_cpu_per_node[i])
 				continue;
 			avail_cpus = avail_cpu_per_node[i];
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
@@ -3133,8 +3072,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 			avail_res_t **avail_res_array, uint16_t cr_type,
 			bool prefer_alloc_nodes, gres_mc_data_t *tres_mc_ptr)
 {
-	int i, i_first, i_last;
-	int count, ec, most_res = 0, rem_nodes, node_cnt = 0;
+	int i, count, ec, most_res = 0, rem_nodes, node_cnt = 0;
 	bitstr_t *orig_node_map, *req_node_map = NULL;
 	bitstr_t **orig_core_array;
 
@@ -3142,14 +3080,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 		req_node_map = job_ptr->details->req_node_bitmap;
 
 	/* clear nodes from the bitmap that don't have available resources */
-	i_first = bit_ffs(node_map);
-	if (i_first >= 0)
-		i_last = bit_fls(node_map);
-	else
-		i_last = i_first - 1;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(node_map, i))
-			continue;
+	for (i = 0; next_node_bitmap(node_map, &i); i++) {
 		/*
 		 * Make sure we don't say we can use a node exclusively
 		 * that is bigger than our whole-job maximum CPU count.
@@ -3216,9 +3147,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 		int nochange = 1;
 		bit_or(node_map, orig_node_map);
 		core_array_or(avail_core, orig_core_array);
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(node_map, i))
-				continue;
+		for (i = 0; next_node_bitmap(node_map, &i); i++) {
 			if ((avail_res_array[i]->avail_res_cnt > 0) &&
 			    (avail_res_array[i]->avail_res_cnt <= count)) {
 				if (req_node_map && bit_test(req_node_map, i))
@@ -3248,9 +3177,8 @@ fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list_req &&
 		 * Update available CPU count for any removed cores.
 		 * Cores are only removed for jobs with GRES to enforce binding.
 		 */
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(node_map, i)||
-			    !orig_core_array[i] || !avail_core[i])
+		for (i = 0; next_node_bitmap(node_map, &i); i++) {
+			if (!orig_core_array[i] || !avail_core[i])
 				continue;
 			count = bit_set_count(avail_core[i]);
 			count *= node_record_table_ptr[i]->tpc;
