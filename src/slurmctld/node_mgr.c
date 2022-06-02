@@ -1508,6 +1508,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 				if (IS_NODE_POWERING_DOWN(node_ptr)) {
 					node_ptr->node_state &=
+						(~NODE_STATE_INVALID_REG);
+					node_ptr->node_state &=
 						(~NODE_STATE_POWERING_DOWN);
 					node_ptr->node_state |=
 						NODE_STATE_POWERED_DOWN;
@@ -2377,10 +2379,6 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 	base_state = old & NODE_STATE_BASE;
 	node_flags = old & NODE_STATE_FLAGS;
 
-	/* Requires a valid registration from the slurmd */
-	if (old & NODE_STATE_INVALID_REG)
-		return false;
-
 	if (sched_update != slurm_conf.last_update) {
 		power_save_on = power_save_test();
 		sched_update = slurm_conf.last_update;
@@ -2391,8 +2389,12 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 		case NODE_STATE_DRAIN:
 		case NODE_STATE_FAIL:
 		case NODE_STATE_NO_RESPOND:
-		case NODE_STATE_UNDRAIN:
 			return true;
+
+		case NODE_STATE_UNDRAIN:
+			if (!(node_flags & NODE_STATE_INVALID_REG))
+				return true;
+			break;
 
 		case NODE_STATE_POWER_DOWN:
 		case NODE_STATE_POWER_UP:
@@ -2405,12 +2407,15 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 			break;
 
 		case NODE_RESUME:
+			if (node_flags & NODE_STATE_POWERING_DOWN)
+				return true;
+			if (node_flags & NODE_STATE_INVALID_REG)
+				return false;
 			if ((base_state == NODE_STATE_DOWN)   ||
 			    (base_state == NODE_STATE_FUTURE) ||
 			    (node_flags & NODE_STATE_DRAIN)   ||
 			    (node_flags & NODE_STATE_FAIL)    ||
-			    (node_flags & NODE_STATE_REBOOT_REQUESTED) ||
-			    (node_flags & NODE_STATE_POWERING_DOWN))
+			    (node_flags & NODE_STATE_REBOOT_REQUESTED))
 				return true;
 			break;
 
@@ -2426,8 +2431,9 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 			break;
 
 		case NODE_STATE_IDLE:
-			if ((base_state == NODE_STATE_DOWN) ||
-			    (base_state == NODE_STATE_IDLE))
+			if (!(node_flags & NODE_STATE_INVALID_REG) &&
+			    ((base_state == NODE_STATE_DOWN) ||
+			     (base_state == NODE_STATE_IDLE)))
 				return true;
 			break;
 

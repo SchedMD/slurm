@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- Flush the list of Include config files on SIGHUP.
  -- Fix and update Slurm completion script.
  -- jobacct_gather/cgroup - Add VMem support both for cgroup v1 and v2.
+ -- Allow subset of node state transitions when node is in INVAL state.
+ -- Remove INVAL state from cloud node after being powered down.
 
 * Changes in Slurm 22.05.0
 ==========================
