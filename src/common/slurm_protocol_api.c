@@ -1863,6 +1863,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	if (msg->conn) {
 		persist_msg_t persist_msg;
 		buf_t *buffer;
+		char *peer = NULL;
 
 		memset(&persist_msg, 0, sizeof(persist_msg_t));
 		persist_msg.msg_type  = msg->msg_type;
@@ -1877,18 +1878,18 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		free_buf(buffer);
 
 		if ((rc < 0) && (errno == ENOTCONN)) {
-			log_flag(NET, "%s: persistent connection has disappeared for msg_type=%u",
-				 __func__, msg->msg_type);
+			if (slurm_conf.debug_flags & DEBUG_FLAG_NET)
+				peer = fd_resolve_peer(fd);
+
+			log_flag(NET, "%s: [%s] persistent connection has disappeared for msg_type=%u",
+				__func__, peer, msg->msg_type);
 		} else if (rc < 0) {
-			slurm_addr_t peer_addr;
-			if (!slurm_get_peer_addr(msg->conn->fd, &peer_addr)) {
-				error("slurm_persist_send_msg: address:port=%pA msg_type=%u: %m",
-				      &peer_addr, msg->msg_type);
-			} else
-				error("slurm_persist_send_msg: msg_type=%u: %m",
-				      msg->msg_type);
+			peer = fd_resolve_peer(fd);
+			error("%s: [%s] slurm_persist_send_msg(msg_type=%s) failed: %m",
+			      __func__, peer, rpc_num2string(msg->msg_type));
 		}
 
+		xfree(peer);
 		return rc;
 	}
 
@@ -1994,20 +1995,22 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 */
 	rc = slurm_bufs_sendto(fd, buffers);
 
-	if ((rc < 0) && (errno == ENOTCONN)) {
+	if (rc >= 0) {
+		/* sent successfully */
+	} else if (errno == ENOTCONN) {
 		log_flag(NET, "%s: peer has disappeared for msg_type=%u",
 			 __func__, msg->msg_type);
-	} else if (rc < 0) {
-		slurm_addr_t peer_addr;
-		if (!slurm_get_peer_addr(fd, &peer_addr)) {
-			error("slurm_msg_sendto: address:port=%pA msg_type=%u: %m",
-			      &peer_addr, msg->msg_type);
-		} else if (errno == ENOTCONN) {
-			log_flag(NET, "%s: peer has disappeared for msg_type=%u",
-				 __func__, msg->msg_type);
-		} else
-			error("slurm_msg_sendto: msg_type=%u: %m",
-			      msg->msg_type);
+	} else if (errno == EBADF) {
+		/* failure of sendto() and peer lookup will never work */
+		error("%s: slurm_msg_sendto(fd=%d) with msg_type=%s failed: %s",
+		      __func__, fd, rpc_num2string(msg->msg_type),
+		      slurm_strerror(rc));
+	} else {
+		char *peer = fd_resolve_peer(fd);
+		error("%s: [%s] slurm_msg_sendto(msg_type=%s) failed: %s",
+		      __func__, peer, rpc_num2string(msg->msg_type),
+		      slurm_strerror(rc));
+		xfree(peer);
 	}
 
 	free_buf(buffers.header);
@@ -2080,10 +2083,9 @@ int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address)
 {
 	slurm_addr_t name;
 	socklen_t namelen = (socklen_t) sizeof(name);
-	int rc;
 
-	if ((rc = getpeername((int) fd, (struct sockaddr *) &name, &namelen)))
-		return rc;
+	if (getpeername((int) fd, (struct sockaddr *) &name, &namelen))
+		return errno;
 	memcpy(slurm_address, &name, sizeof(slurm_addr_t));
 	return 0;
 }
