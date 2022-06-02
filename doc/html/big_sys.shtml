@@ -4,11 +4,14 @@
 
 <p>This document contains Slurm administrator information specifically
 for clusters containing 1,024 nodes or more.
-Large systems currently managed by Slurm include
-Tianhe-2 (at the National University of Defense Technology in China with
-16,000 compute nodes and 3.1 million cores) and
-Sequoia (IBM Bluegene/Q at Lawrence Livermore National Laboratory with
-98,304 compute nodes and 1.6 million cores).
+Some examples of large systems currently managed by Slurm are:
+<ul>
+<li>Frontier at Oak Ridge National Laboratory (ORNL) with 8,699,904 cores.</li>
+<li>Tianhe-2 at the National University of Defense Technology in China with
+4,981,760 cores.</li>
+<li>Perlmutter at National Energy Research Scientific Computing (NERSC) with
+761,856 cores.</li>
+</ul>
 Slurm operation on systems orders of magnitude larger has been validated
 using emulation.
 Getting optimal performance at that scale does require some tuning and
@@ -200,6 +203,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 04 July 2023</p>
 
 <!--#include virtual="footer.txt"-->
