@@ -62,7 +62,8 @@ $config{slurmsourcedir} = abs_path("$Bin/..");
 $config{slurmbuilddir} = $config{slurmsourcedir};
 
 # Override configuration parameters with parameters from testsuite.conf
-open CONFIG_FILE, "$Bin/testsuite.conf" or die "Unable to open testsuite.conf for reading: $!. Did you run make install?\n";
+my $testsuite_config_file = defined $ENV{SLURM_TESTSUITE_CONF} ? $ENV{SLURM_TESTSUITE_CONF} : "$Bin/testsuite.conf";
+open CONFIG_FILE, $testsuite_config_file or die "Unable to open testsuite.conf ($testsuite_config_file) for reading: $!. This file is created in your build directory when running make install. If your build directory is separate from your source directory, set the value of the SLURM_TESTSUITE_CONF environment variable to the absolute path of your testsuite.conf file.\n";
 foreach my $line (<CONFIG_FILE>) {
     if ($line =~ /^\s*(\S+)\s*=\s*(\S+)\s*$/) {
         my ($parameter_name, $parameter_value) = (lc $1, $2);
