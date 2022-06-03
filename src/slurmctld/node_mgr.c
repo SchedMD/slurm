@@ -1255,13 +1255,7 @@ static void _require_node_reg(node_record_t *node_ptr)
 	ping_nodes_now = true;
 }
 
-/*
- * update_node - update the configuration data for one or more nodes
- * IN update_node_msg - update node request
- * RET SLURM_SUCCESS or error code
- * global: node_record_table_ptr - pointer to global node table
- */
-int update_node ( update_node_msg_t * update_node_msg )
+int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 {
 	int error_code = 0, node_cnt;
 	node_record_t *node_ptr = NULL;
@@ -1468,7 +1462,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup(update_node_msg->reason);
 			node_ptr->reason_time = now;
-			node_ptr->reason_uid = update_node_msg->reason_uid;
+			node_ptr->reason_uid = auth_uid;
 			info ("update_node: node %s reason set to: %s",
 				this_node_name, node_ptr->reason);
 		}

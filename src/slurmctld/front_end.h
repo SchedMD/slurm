@@ -127,8 +127,10 @@ extern void sync_front_end_state(void);
 /*
  * Update front end node state
  * update_front_end_msg_ptr IN change specification
+ * IN auth_uid - UID that issued the update
  * RET SLURM_SUCCESS or error code
  */
-extern int update_front_end(update_front_end_msg_t *update_front_end_msg_ptr);
+extern int update_front_end(update_front_end_msg_t *update_front_end_msg_ptr,
+			    uid_t auth_uid);
 
 #endif /*__SLURM_FRONT_END_H__*/
