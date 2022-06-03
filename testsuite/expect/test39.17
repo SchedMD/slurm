@@ -698,89 +698,18 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		exit 0"
 
 	file delete $file_out
-	set job_id 0
 	set timeout $max_job_delay
-	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n4 -t1 -o $file_out -J $test_name $file_in1
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sbatch not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_id == 0} {
-		fail "Job not submitted"
-	}
+	set job_id [submit_job -fail "--gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n4 -t1 -o $file_out -J $test_name $file_in1"]
 
 	wait_for_job -fail $job_id "DONE"
-
 	wait_for_file -fail $file_out
-	set match2 0
-	set match4 0
-	set bad_cuda_cnt 0
-	spawn $bin_cat $file_out
-	expect {
-		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number),($number),($number),($number)," {
-			incr bad_cuda_cnt
-			exp_continue
-		}
-		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number),($number),($number),($number) " {
-			incr match4
-			exp_continue
-		}
-		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number),($number),($number)," {
-			incr bad_cuda_cnt
-			exp_continue
-		}
-		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES: " {
-			incr bad_cuda_cnt
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 0
-	spawn $bin_cat $file_out
-	expect {
-		-re "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number),($number) " {
-			incr match2
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	if {$bad_cuda_cnt != 0} {
-		fail "Bad CUDA count for $bad_cuda_cnt of 2 steps"
-	} elseif {$match2 != 6} {
-		fail "Bad CUDA information for $match2 of 6 tasks"
-	} elseif {$match4 != 4} {
-		fail "Bad CUDA information for $match4 of 4 tasks"
-	}
 
-	log_user 0
-	set match 0
-	spawn $bin_grep "step creation temporarily disabled" $file_out
-	expect {
-		-re "step creation temporarily disabled" {
-			incr match
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	if {$match != 1} {
-		fail "Did not delay steps for available GPU"
-	}
+	set output [run_command_output -fail "$bin_cat $file_out"]
+	subtest {![regexp "STEP_ID:($number) CUDA_VISIBLE_DEVICES:($number),($number),($number),($number)," $output]} "Validate that no more that 4 GPUs are visible"
+	subtest {[regexp -all "STEP_ID:(0) CUDA_VISIBLE_DEVICES:($number),($number),($number),($number)" $output] == 4} "Validate that job has access to 4 GPUs"
+	subtest {[regexp -all "STEP_ID:(1) CUDA_VISIBLE_DEVICES:($number),($number)" $output] == 3} "Validate that step 1 has 3 tasks and 2 GPUs per task"
+	subtest {[regexp -all "STEP_ID:(2) CUDA_VISIBLE_DEVICES:($number),($number)" $output] == 3} "Validate that step 2 has 3 tasks and 2 GPUs per task"
+	subtest {[regexp -all "step creation temporarily disabled" $output] == 1} "Validate that one step was delayed"
 }
 
 #
