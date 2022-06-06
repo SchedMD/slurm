@@ -296,8 +296,8 @@ user@testbox:~/t$
 It relies upon Slurm managing reservations of communication ports for use by
 the Open MPI version 1.5.</p>
 
-<p>If OpenMPI is configured with <i>--with-pmi</i> either pmi or pmi2,
-the OMPI jobs can be launched directly using the srun command. This is
+<p>If OpenMPI is configured with <i>--with-pmi</i> set to either pmi or pmi2,
+then OMPI jobs can be launched directly using the srun command. This is
 the preferred mode of operation. If the pmi2 support is enabled, the option
 '--mpi=pmi2' or '--mpi=pmi2_v2' must be specified on the srun command line.
 Alternately configure 'MpiDefault=pmi' or 'MpiDefault=pmi_v2' in slurm.conf.</p>
@@ -627,7 +627,7 @@ $ srun -n16 --mpi=pmi2 a.out
 
 <p>Berkeley UPC (and likely other UPC implementations) rely upon Slurm to
 allocate resources and launch the application's tasks. The UPC library then
-read. Slurm environment variables in order to determine how the job's task
+reads Slurm environment variables in order to determine the job's task
 count and location. One would build the UPC program in the normal manner
 then initiate it using a command line of this sort:</p>
 <pre>
@@ -636,6 +636,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 24 May 2022</p>
+<p style="text-align:center;">Last modified 6 June 2022</p>
 
 <!--#include virtual="footer.txt"-->
