@@ -61,7 +61,6 @@ if [file readable "$unified_testsuite_conf_file"] {
 	close $fp
 	foreach line [split $file_data "\n"] {
 		if [regexp {^\s*(\S+)\s*=\s*(\S+)\s*$} $line {} parameter_name parameter_value] {
-			puts "Parsed {$parameter_name=$parameter_value}"
 			dict set unified_testsuite_config_dict [string tolower $parameter_name] $parameter_value
 		}
 	}
