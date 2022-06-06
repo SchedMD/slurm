@@ -394,6 +394,9 @@ extern int switch_p_duplicate_jobinfo(switch_jobinfo_t *tmp,
 		memcpy(new->profiles, old->profiles, profilesz);
 	}
 
+	if (old->vni_pids)
+		new->vni_pids = bit_copy(old->vni_pids);
+
 	*dest = (switch_jobinfo_t *)new;
 	return SLURM_SUCCESS;
 }
@@ -404,6 +407,8 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	xassert(jobinfo);
 	xfree(jobinfo->vnis);
 	xfree(jobinfo->profiles);
+	if (jobinfo->vni_pids)
+		bit_free(jobinfo->vni_pids);
 	xfree(jobinfo);
 }
 
@@ -492,6 +497,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 	for (pidx = 0; pidx < jobinfo->num_profiles; pidx++) {
 		_pack_comm_profile(&jobinfo->profiles[pidx], buffer);
 	}
+	pack_bit_str_hex(jobinfo->vni_pids, buffer);
 
 	return SLURM_SUCCESS;
 }
@@ -543,6 +549,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 		if (!_unpack_comm_profile(&jobinfo->profiles[pidx], buffer))
 			goto unpack_error;
 	}
+	unpack_bit_str_hex(&jobinfo->vni_pids, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -563,7 +570,8 @@ extern int switch_p_job_preinit(stepd_step_rec_t *step)
 	slingshot_jobinfo_t *jobinfo = step->switch_job->data;
 	xassert(jobinfo);
 	int step_cpus = step->node_tasks * step->cpus_per_task;
-	if (!slingshot_create_services(jobinfo, step->uid, step_cpus))
+	if (!slingshot_create_services(jobinfo, step->uid, step_cpus,
+				       step->step_id.job_id))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
@@ -643,7 +651,7 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 	slingshot_jobinfo_t *jobinfo;
 	jobinfo = (slingshot_jobinfo_t *)step->switch_job->data;
 	xassert(jobinfo);
-	if (!slingshot_destroy_services(jobinfo))
+	if (!slingshot_destroy_services(jobinfo, step->step_id.job_id))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
@@ -661,6 +669,7 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 	slingshot_jobinfo_t *job = (slingshot_jobinfo_t *)jobinfo;
 	int pidx, vidx;
 	char *svc_ids = NULL, *vnis = NULL, *devices = NULL, *tcss = NULL;
+	char *vni_pids = NULL;
 
 	if (job->num_profiles == 0)
 		return SLURM_SUCCESS;
@@ -678,19 +687,28 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 	for (vidx = 0; vidx < job->num_vnis; vidx++)
 		xstrfmtcat(vnis, "%s%hu", vidx ? "," : "", job->vnis[vidx]);
 
-	log_flag(SWITCH, "SLINGSHOT_SVC_IDS=%s SLINGSHOT_VNIS=%s"
-			" SLINGSHOT_DEVICES=%s SLINGSHOT_TCS=%s",
-			svc_ids, vnis, devices, tcss);
+	/* convert bitstr_t into range list */
+	if (job->vni_pids)
+		vni_pids = bit_fmt_full(job->vni_pids);
+
+	log_flag(SWITCH, "%s=%s %s=%s %s=%s %s=%s %s=%s",
+		SLINGSHOT_SVC_IDS_ENV, svc_ids, SLINGSHOT_VNIS_ENV, vnis,
+		SLINGSHOT_DEVICES_ENV, devices, SLINGSHOT_TCS_ENV, tcss,
+		SLINGSHOT_INTER_VNI_PIDS_ENV, vni_pids);
 
 	env_array_overwrite(env, SLINGSHOT_SVC_IDS_ENV, svc_ids);
 	env_array_overwrite(env, SLINGSHOT_VNIS_ENV, vnis);
 	env_array_overwrite(env, SLINGSHOT_DEVICES_ENV, devices);
 	env_array_overwrite(env, SLINGSHOT_TCS_ENV, tcss);
+	if (vni_pids)
+		env_array_overwrite(env, SLINGSHOT_INTER_VNI_PIDS_ENV,
+				    vni_pids);
 
 	xfree(svc_ids);
 	xfree(vnis);
 	xfree(devices);
 	xfree(tcss);
+	xfree(vni_pids);
 
 	return SLURM_SUCCESS;
 }

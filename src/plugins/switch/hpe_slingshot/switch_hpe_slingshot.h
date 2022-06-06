@@ -68,6 +68,13 @@
 #define SLINGSHOT_VNI_MIN_DEF 32768
 #define SLINGSHOT_VNI_MAX_DEF 65535
 
+/* Number of Slingshot VNI "PIDs"/device */
+#define SLINGSHOT_VNI_PIDS 256
+/* Max size for Slingshot VNI "PIDs" job file (256 bits in hex) */
+#define SLINGSHOT_VNI_PIDS_BUFSIZ ((SLINGSHOT_VNI_PIDS / 4) + 3)
+/* Format for VNI "PIDs" job file name */
+#define SLINGSHOT_VNI_PIDS_FMT "%s/vni_pids.%u" /* <spooldir>, <job_id> */
+
 /* Per-job shared VNI structure */
 typedef struct job_vni {
 	uint32_t job_id;        /* Job ID */
@@ -164,6 +171,7 @@ typedef struct slingshot_jobinfo {
 	uint32_t depth;        /* Threads-per-task for limit calculation */
 	uint32_t num_profiles; /* Number of communication profiles */
 	pals_comm_profile_t *profiles; /* List of communication profiles */
+	bitstr_t *vni_pids;    /* Set of Slingshot job VNI allocated PIDs */
 } slingshot_jobinfo_t;
 
 /* Slingshot traffic classes (bitmap) */
@@ -177,6 +185,7 @@ typedef struct slingshot_jobinfo {
 #define SLINGSHOT_VNIS_ENV            "SLINGSHOT_VNIS"
 #define SLINGSHOT_DEVICES_ENV         "SLINGSHOT_DEVICES"
 #define SLINGSHOT_TCS_ENV             "SLINGSHOT_TCS"
+#define SLINGSHOT_INTER_VNI_PIDS_ENV  "SLINGSHOT_INTER_VNI_PIDS"
 
 /* Global variables */
 extern slingshot_state_t slingshot_state;
@@ -192,8 +201,9 @@ extern void slingshot_free_job(uint32_t job_id);
 /* setup_nic.c */
 extern bool slingshot_open_cxi_lib(void);
 extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
-	uint16_t step_cpus);
-extern bool slingshot_destroy_services(slingshot_jobinfo_t *job);
+				      uint16_t step_cpus, uint32_t job_id);
+extern bool slingshot_destroy_services(slingshot_jobinfo_t *job,
+				       uint32_t job_id);
 extern void slingshot_free_services(void);
 
 #endif

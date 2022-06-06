@@ -760,9 +760,12 @@ extern bool slingshot_setup_job_step(slingshot_jobinfo_t *job, int node_cnt,
 	debug("allocate vni=%hu job_vni=%hu free_vnis=%d",
 	      vni, job_vni, free_vnis);
 
-	/* profiles are allocated in slurmd */
+	/* profiles are allocated in slurmstepd */
 	job->num_profiles = 0;
 	job->profiles = NULL;
+
+	/* vni_pids are allocated in slurmstepd */
+	job->vni_pids = NULL;
 
 	return true;
 
