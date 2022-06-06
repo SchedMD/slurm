@@ -114,39 +114,57 @@ static void _print_devinfo(int dev, struct cxil_devinfo *info)
 }
 
 /*
- * Return array of limits already reserved by system services
+ * Subtract the reserved limit for this system service from the
+ * max value for this limit specified in the device info;
+ * this will be used as the max value for the device
  */
-static bool _get_reserved_limits(int dev, slingshot_limits_set_t *limits)
+static void _adjust_limit(const char *name, int dev, int svc,
+			  struct cxi_limits *lim, uint16_t *devmax)
+{
+	uint16_t oldmax = *devmax;
+	*devmax -= lim->res;
+	log_flag(SWITCH, "CXI dev/svc[%d][%d]: limits.%s.res %hu (old/new max %hu %hu)",
+		 dev, svc, name, lim->res, oldmax, *devmax);
+}
+
+/*
+ * For this device, total the reserved resources used by system services,
+ * and remove that amount from the device's max limits (this will be used
+ * as a ceiling for resource requests)
+ */
+static bool _adjust_dev_limits(int dev, struct cxil_devinfo *devinfo)
 {
 	int svc, rc;
+	int num_svc = 0, num_system_svc = 0;
 	struct cxil_svc_list *list = NULL;
 
 	if (!cxi_devs[dev])
 		return true;
 	if ((rc = cxil_get_svc_list_p(cxi_devs[dev], &list))) {
 		error("Could not get service list for CXI device[%d] dev_id=%d (%s): %d",
-			dev, cxi_devs[dev]->info.dev_id,
-			cxi_devs[dev]->info.device_name, rc);
+			dev, devinfo->dev_id, devinfo->device_name, rc);
 		return false;
 	}
 	for (svc = 0; svc < list->count; svc++) {
-#define PLIMIT(DEV, SVC, LIM) { \
-	limits->LIM.res += list->descs[SVC].limits.LIM.res; \
-	log_flag(SWITCH, "CXI dev/svc/system[%d][%d][%d]: limits.%s.res %hu (tot/max %hu %hu)", \
-		 DEV, SVC, list->descs[SVC].is_system_svc, #LIM, \
-		 list->descs[SVC].limits.LIM.res, limits->LIM.res, \
-		 list->descs[SVC].limits.LIM.max); \
-}
-		PLIMIT(dev, svc, ptes);
-		PLIMIT(dev, svc, txqs);
-		PLIMIT(dev, svc, tgqs);
-		PLIMIT(dev, svc, eqs);
-		PLIMIT(dev, svc, cts);
-		PLIMIT(dev, svc, acs);
-		PLIMIT(dev, svc, tles);
-		PLIMIT(dev, svc, les);
-#undef PLIMIT
+		struct cxi_rsrc_limits *lim;
+		if (!list->descs[svc].is_system_svc) {
+			num_svc++;
+			continue;
+		}
+		num_system_svc++;
+		lim = &list->descs[svc].limits;
+		_adjust_limit("ptes", dev, svc, &lim->ptes, &devinfo->num_ptes);
+		_adjust_limit("txqs", dev, svc, &lim->txqs, &devinfo->num_txqs);
+		_adjust_limit("tgqs", dev, svc, &lim->tgqs, &devinfo->num_tgqs);
+		_adjust_limit("eqs", dev, svc, &lim->eqs, &devinfo->num_eqs);
+		_adjust_limit("cts", dev, svc, &lim->cts, &devinfo->num_cts);
+		_adjust_limit("acs", dev, svc, &lim->acs, &devinfo->num_acs);
+		_adjust_limit("tles", dev, svc, &lim->tles, &devinfo->num_tles);
+		_adjust_limit("les", dev, svc, &lim->les, &devinfo->num_les);
 	}
+	log_flag(SWITCH, "CXI services=%d system=%d user=%d",
+		 list->count, num_system_svc, num_svc);
+
 	free(list);	/* can't use xfree() */
 	return true;
 }
@@ -175,7 +193,6 @@ static bool _create_cxi_devs(void)
 	cxi_ndevs = list->count;
 
 	/* We're OK with only getting access to a subset */
-	slingshot_limits_set_t reslimits = { 0 };
 	for (dev = 0; dev < cxi_ndevs; dev++) {
 		struct cxil_devinfo *info = &list->info[dev];
 		if ((rc = cxil_open_device_p(info->dev_id, &cxi_devs[dev]))) {
@@ -185,10 +202,10 @@ static bool _create_cxi_devs(void)
 			continue;
 		}
 		/* Only done in debug mode */
-		if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH)
 			_print_devinfo(dev, &cxi_devs[dev]->info);
-			_get_reserved_limits(dev, &reslimits);
-		}
+		/* Adjust max resource available due to system services */
+		_adjust_dev_limits(dev, &cxi_devs[dev]->info);
 	}
 
 	return true;
@@ -198,9 +215,9 @@ static bool _create_cxi_devs(void)
  * Return a cxi_limits struct with res/max fields set according to
  * job max/res/def limits, device max limits, and number of CPUs on node
  */
-static struct cxi_limits set_desc_limits(const char *name,
-					 const slingshot_limits_t *joblimits,
-					 uint16_t dev_max, int ncpus)
+static struct cxi_limits _set_desc_limits(const char *name,
+					  const slingshot_limits_t *joblimits,
+					  uint16_t dev_max, int ncpus)
 {
 	struct cxi_limits ret;
 
@@ -275,22 +292,22 @@ static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
 	 * otherwise use the number of CPUs for this step
 	 */
 	cpus = job->depth ? job->depth : step_cpus;
-	desc->limits.txqs = set_desc_limits("txqs", &job->limits.txqs,
-					    devinfo->num_txqs, cpus);
-	desc->limits.tgqs = set_desc_limits("tgqs", &job->limits.tgqs,
-					    devinfo->num_tgqs, cpus);
-	desc->limits.eqs = set_desc_limits("eqs", &job->limits.eqs,
-					    devinfo->num_eqs, cpus);
-	desc->limits.cts = set_desc_limits("cts", &job->limits.cts,
-					    devinfo->num_cts, cpus);
-	desc->limits.tles = set_desc_limits("tles", &job->limits.tles,
-					    devinfo->num_tles, cpus);
-	desc->limits.ptes = set_desc_limits("ptes", &job->limits.ptes,
-					    devinfo->num_ptes, cpus);
-	desc->limits.les = set_desc_limits("les", &job->limits.les,
-					    devinfo->num_les, cpus);
-	desc->limits.acs = set_desc_limits("acs", &job->limits.acs,
-					    devinfo->num_acs, cpus);
+	desc->limits.txqs = _set_desc_limits("txqs", &job->limits.txqs,
+					     devinfo->num_txqs, cpus);
+	desc->limits.tgqs = _set_desc_limits("tgqs", &job->limits.tgqs,
+					     devinfo->num_tgqs, cpus);
+	desc->limits.eqs = _set_desc_limits("eqs", &job->limits.eqs,
+					     devinfo->num_eqs, cpus);
+	desc->limits.cts = _set_desc_limits("cts", &job->limits.cts,
+					     devinfo->num_cts, cpus);
+	desc->limits.tles = _set_desc_limits("tles", &job->limits.tles,
+					     devinfo->num_tles, cpus);
+	desc->limits.ptes = _set_desc_limits("ptes", &job->limits.ptes,
+					     devinfo->num_ptes, cpus);
+	desc->limits.les = _set_desc_limits("les", &job->limits.les,
+					     devinfo->num_les, cpus);
+	desc->limits.acs = _set_desc_limits("acs", &job->limits.acs,
+					     devinfo->num_acs, cpus);
 
 	/* Differentiates system and user services */
 	desc->is_system_svc = false;

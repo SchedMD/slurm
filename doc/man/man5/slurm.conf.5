@@ -5543,22 +5543,22 @@ The resources that may be configured are:
 .RS
 .TP
 \fBtxqs\fR
-Transmit command queues. The default is 3 per-CPU, maximum 1024 per-node.
+Transmit command queues. The default is 2 per-CPU, maximum 1024 per-node.
 .IP
 
 .TP
 \fBtgqs\fR
-Target command queues. The default is 2 per-CPU, maximum 512 per-node.
+Target command queues. The default is 1 per-CPU, maximum 512 per-node.
 .IP
 
 .TP
 \fBeqs\fR
-Event queues. The default is 8 per-CPU, maximum 2048 per-node.
+Event queues. The default is 4 per-CPU, maximum 2047 per-node.
 .IP
 
 .TP
 \fBcts\fR
-Counters. The default is 2 per-CPU, maximum 2048 per-node.
+Counters. The default is 1 per-CPU, maximum 2047 per-node.
 .IP
 
 .TP
@@ -5573,12 +5573,12 @@ Portable table entries. The default is 8 per-CPU, maximum 2048 per-node.
 
 .TP
 \fBles\fR
-List entries. The default is 134 per-CPU, maximum 65535 per-node.
+List entries. The default is 16 per-CPU, maximum 16384 per-node.
 .IP
 
 .TP
 \fBacs\fR
-Addressing contexts. The default is 4 per-CPU, maximum 1024 per-node.
+Addressing contexts. The default is 4 per-CPU, maximum 1022 per-node.
 .RE
 .IP
 

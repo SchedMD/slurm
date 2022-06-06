@@ -52,6 +52,7 @@ static void _config_defaults(void)
 
 	slingshot_config.single_node_vni = false;
 	slingshot_config.job_vni = SLINGSHOT_JOB_VNI_NONE;
+	slingshot_config.tcs = SLINGSHOT_TC_DEFAULT;
 
 	slingshot_config.limits.txqs.max = SLINGSHOT_TXQ_MAX;
 	slingshot_config.limits.tgqs.max = SLINGSHOT_TGQ_MAX;
@@ -402,8 +403,9 @@ extern bool slingshot_setup_config(const char *switch_params)
 	 *   vnis=<start>-<end> (e.g. vnis=1-16000)
 	 *   tcs=<tc_list> (e.g. tcs=BULK_DATA:BEST_EFFORT)
 	 *   single_node_vni: allocate VNI for single-node steps
-	 *   job_vni=<all,user>: allocate additional VNI per-job for all jobs,
-	 *     or only on user request (srun --network=job_vni)
+	 *   job_vni=<all,user,none>: allocate additional VNI per-job for
+	 *     all jobs, only on user request, or no jobs
+	 *     (via srun --network=job_vni)
 	 *   def_<NIC_resource>: default per-thread value for resource
 	 *   res_<NIC_resource>: reserved value for resource
 	 *   max_<NIC_resource>: maximum value for resource

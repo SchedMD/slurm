@@ -95,21 +95,21 @@ typedef struct slingshot_state {
 /* Max NIC resources per application */
 #define SLINGSHOT_TXQ_MAX     1024    /* Max transmit command queues */
 #define SLINGSHOT_TGQ_MAX     512     /* Max target command queues */
-#define SLINGSHOT_EQ_MAX      2048    /* Max event queues */
-#define SLINGSHOT_CT_MAX      2048    /* Max counters */
+#define SLINGSHOT_EQ_MAX      2047    /* Max event queues */
+#define SLINGSHOT_CT_MAX      2047    /* Max counters */
 #define SLINGSHOT_TLE_MAX     2048    /* Max trigger list entries */
 #define SLINGSHOT_PTE_MAX     2048    /* Max portal table entries */
-#define SLINGSHOT_LE_MAX      65535   /* Max list entries */
-#define SLINGSHOT_AC_MAX      1024    /* Max addressing contexts */
+#define SLINGSHOT_LE_MAX      16384   /* Max list entries */
+#define SLINGSHOT_AC_MAX      1022    /* Max addressing contexts */
 
 /* Default per-thread NIC resources per application */
-#define SLINGSHOT_TXQ_DEF     3       /* Per-thread transmit command queues */
-#define SLINGSHOT_TGQ_DEF     2       /* Per-thread target command queues */
-#define SLINGSHOT_EQ_DEF      8       /* Per-thread event queues */
-#define SLINGSHOT_CT_DEF      2       /* Per-thread counters */
+#define SLINGSHOT_TXQ_DEF     2       /* Per-thread transmit command queues */
+#define SLINGSHOT_TGQ_DEF     1       /* Per-thread target command queues */
+#define SLINGSHOT_EQ_DEF      4       /* Per-thread event queues */
+#define SLINGSHOT_CT_DEF      1       /* Per-thread counters */
 #define SLINGSHOT_TLE_DEF     1       /* Per-thread trigger list entries */
 #define SLINGSHOT_PTE_DEF     8       /* Per-thread portal table entries */
-#define SLINGSHOT_LE_DEF      134     /* Per-thread list entries */
+#define SLINGSHOT_LE_DEF      16      /* Per-thread list entries */
 #define SLINGSHOT_AC_DEF      4       /* Per-thread addressing contexts */
 
 /* NIC resource limit structure */
@@ -151,7 +151,7 @@ typedef struct slingshot_config {
 typedef struct pals_comm_profile {
 	uint32_t svc_id;        /* Slingshot service ID */
 	uint16_t vnis[SLINGSHOT_VNIS]; /* VNIs for this service */
-	uint16_t vnis_used;     /* number of valid VNIs in vnis[] */
+	uint16_t vnis_used;     /* Number of valid VNIs in vnis[] */
 	uint32_t tcs;           /* Bitmap of allowed traffic classes */
 	char device_name[16];   /* NIC device name (e.g. "cxi0") */
 } pals_comm_profile_t;
@@ -179,6 +179,8 @@ typedef struct slingshot_jobinfo {
 #define SLINGSHOT_TC_LOW_LATENCY      0x2
 #define SLINGSHOT_TC_BULK_DATA        0x4
 #define SLINGSHOT_TC_BEST_EFFORT      0x8
+#define SLINGSHOT_TC_DEFAULT          (SLINGSHOT_TC_LOW_LATENCY | \
+				       SLINGSHOT_TC_BEST_EFFORT)
 
 /* Environment variables set for applications */
 #define SLINGSHOT_SVC_IDS_ENV         "SLINGSHOT_SVC_IDS"
