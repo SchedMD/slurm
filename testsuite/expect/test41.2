@@ -73,6 +73,9 @@ if {[run_command_status -nolog "$bin_virtualenv  --version"]} {
 proc cleanup {} {
 }
 
+# Use Bash as the default shell
+set ::env(SHELL) $bin_bash
+
 foreach content_path [glob -type d $scripts/*] {
 	set content [file tail $content_path]
 	log_debug [concat "content: " $content]
