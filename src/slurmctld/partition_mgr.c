@@ -586,7 +586,57 @@ int load_all_part_state(void)
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+			safe_unpack32(&cpu_bind, buffer);
+			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
+			safe_unpack32(&grace_time, buffer);
+			safe_unpack32(&max_time, buffer);
+			safe_unpack32(&default_time, buffer);
+			safe_unpack32(&max_cpus_per_node, buffer);
+			safe_unpack32(&max_nodes, buffer);
+			safe_unpack32(&min_nodes, buffer);
+
+			safe_unpack16(&flags,        buffer);
+			safe_unpack16(&max_share,    buffer);
+			safe_unpack16(&over_time_limit, buffer);
+			safe_unpack16(&preempt_mode, buffer);
+
+			safe_unpack16(&priority_job_factor, buffer);
+			safe_unpack16(&priority_tier, buffer);
+			if (priority_job_factor > part_max_priority)
+				part_max_priority = priority_job_factor;
+
+			safe_unpack16(&state_up, buffer);
+			safe_unpack16(&cr_type, buffer);
+
+			safe_unpackstr_xmalloc(&allow_accounts,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_groups,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_qos,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&qos_char,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&allow_alloc_nodes, &name_len,
+					       buffer);
+			safe_unpackstr_xmalloc(&alternate, &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_accounts,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&deny_qos,
+					       &name_len, buffer);
+			safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+			if ((flags & PART_FLAG_DEFAULT_CLR)   ||
+			    (flags & PART_FLAG_EXC_USER_CLR)  ||
+			    (flags & PART_FLAG_HIDDEN_CLR)    ||
+			    (flags & PART_FLAG_NO_ROOT_CLR)   ||
+			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
+			    (flags & PART_FLAG_REQ_RESV_CLR)  ||
+			    (flags & PART_FLAG_LLN_CLR)) {
+				error("Invalid data for partition %s: flags=%u",
+				      part_name, flags);
+				error_code = EINVAL;
+			}
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&cpu_bind, buffer);
 			safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 			safe_unpack32(&grace_time, buffer);
