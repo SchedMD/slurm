@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "May 2022" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "June 2022" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -44,7 +44,7 @@ This is equivalent to the \fBhelp\fR command.
 
 .TP
 \fB\-i\fR, \fB\-\-immediate\fR
-commit changes immediately without asking for confirmation.
+Commit changes immediately without asking for confirmation.
 .IP
 
 .TP
@@ -472,7 +472,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 .PD 0
 .IP \fBMaxSubmitJobs\fR=<\fImax_jobs\fR>
 .PD
-Maximum number of jobs which can this association can have in a
+Maximum number of jobs which this association can have in a
 pending or running state at any time.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -838,7 +838,7 @@ This limit only applies to the job's QOS and not the partition's QOS.
 .PD 0
 .IP \fBMaxSubmitJobs\fR
 .PD
-Maximum number of jobs pending or running state at any time.
+Maximum number of jobs in the pending or running state at any time.
 .IP
 
 .IP \fBMaxTRES\fR
