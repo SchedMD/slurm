@@ -929,7 +929,12 @@ _pack_update_front_end_msg(update_front_end_msg_t * msg, buf_t *buffer,
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		packstr(msg->name, buffer);
+		pack32(msg->node_state, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->reason_uid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
 		pack32(msg->node_state, buffer);
 		packstr(msg->reason, buffer);
@@ -948,7 +953,12 @@ _unpack_update_front_end_msg(update_front_end_msg_t ** msg, buf_t *buffer,
 	tmp_ptr = xmalloc(sizeof(update_front_end_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpackstr(&tmp_ptr->name, buffer);
+		safe_unpack32(&tmp_ptr->node_state, buffer);
+		safe_unpackstr(&tmp_ptr->reason, buffer);
+		safe_unpack32(&tmp_ptr->reason_uid, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->name, buffer);
 		safe_unpack32(&tmp_ptr->node_state, buffer);
 		safe_unpackstr(&tmp_ptr->reason, buffer);
@@ -969,7 +979,21 @@ _pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		packstr(msg->comment, buffer);
+		pack32(msg->cpu_bind, buffer);
+		packstr(msg->extra, buffer);
+		packstr(msg->features, buffer);
+		packstr(msg->features_act, buffer);
+		packstr(msg->gres, buffer);
+		packstr(msg->node_addr, buffer);
+		packstr(msg->node_hostname, buffer);
+		packstr(msg->node_names, buffer);
+		pack32(msg->node_state, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->reason_uid, buffer);
+		pack32(msg->weight, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
 		packstr(msg->extra, buffer);
@@ -997,7 +1021,21 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 	tmp_ptr = xmalloc(sizeof(update_node_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpackstr(&tmp_ptr->comment, buffer);
+		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
+		safe_unpackstr(&tmp_ptr->extra, buffer);
+		safe_unpackstr(&tmp_ptr->features, buffer);
+		safe_unpackstr(&tmp_ptr->features_act, buffer);
+		safe_unpackstr(&tmp_ptr->gres, buffer);
+		safe_unpackstr(&tmp_ptr->node_addr, buffer);
+		safe_unpackstr(&tmp_ptr->node_hostname, buffer);
+		safe_unpackstr(&tmp_ptr->node_names, buffer);
+		safe_unpack32(&tmp_ptr->node_state, buffer);
+		safe_unpackstr(&tmp_ptr->reason, buffer);
+		safe_unpack32(&tmp_ptr->reason_uid, buffer);
+		safe_unpack32(&tmp_ptr->weight, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->comment, buffer);
 		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
 		safe_unpackstr(&tmp_ptr->extra, buffer);
