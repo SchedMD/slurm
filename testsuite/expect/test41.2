@@ -135,7 +135,7 @@ foreach content_path [glob -type d $scripts/*] {
 	run_command -nolog -fail \
 		"$bin_virtualenv --clear --no-download $pyenv"
 
-	run_command -nolog -fail \
+	run_command -timeout 300 -nolog -fail \
 		"source $pyenv/bin/activate; pip3 install '$pyapi'"
 
 	foreach script [glob -type f $scripts/$content/*.py] {
