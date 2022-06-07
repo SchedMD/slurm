@@ -3,7 +3,7 @@ import time
 import os
 import openapi_client
 from openapi_client.rest import ApiException
-from openapi_client.models import V0037JobSubmission as jobSubmission
+from openapi_client.models.v0037_job_submission import V0037JobSubmission as jobSubmission
 from openapi_client.models import V0037JobProperties as jobProperties
 from openapi_client.api import SlurmApi as slurm
 from pprint import pprint
