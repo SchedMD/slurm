@@ -166,10 +166,10 @@ def main(argv=None):
             testlog.seek(0)
             test_output = testlog.read()
 
-            sections = [s for s in test_output.split('=' * 78 + "\n") if s.strip() != '']
-            header = sections[0]
-            body = sections[1]
-            footer = ''.join(sections[2:])
+            sections = [s for s in test_output.split('=' * 78 + "\n")]
+            header = sections[1]
+            body = sections[2]
+            footer = ''.join(sections[3:])
 
             fatals = re.findall(r'(?ms)^\[[^\]]+\][ \[]+Fatal[ \]:]+(.*?) \(fail[^\)]+\)$', body)
             errors = re.findall(r'(?ms)^\[[^\]]+\][ \[]+Error[ \]:]+(.*?) \(subfail[^\)]+\)$', body)
