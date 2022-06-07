@@ -247,6 +247,7 @@ documents those changes that are of interest to users and administrators.
  -- When requesting --tres-per-task alter incorrect request for TRES,
     it should be TRESType/TRESName not TRESType:TRESName.
  -- Make it so reservations can reserve GRES.
+ -- switch/hpe_slingshot - Add disable_rdzv_get flag to disable rendezvous gets.
 
 * Changes in Slurm 23.02.7
 ==========================

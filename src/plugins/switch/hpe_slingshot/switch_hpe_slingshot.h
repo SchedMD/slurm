@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  switch_hpe_slingshot.h - Library for managing HPE Slingshot networks
  *****************************************************************************
- *  Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ *  Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  *  Written by David Gloe <david.gloe@hpe.com>
  *  Written by Jim Nordby <james.nordby@hpe.com>
  *
@@ -72,6 +72,14 @@
 
 /* Number of retries for destroying CXI services */
 #define SLINGSHOT_CXI_DESTROY_RETRIES 5
+
+/* File path format to rdzv_get_en setting */
+#define SLINGSHOT_RDZV_GET_EN_FMT \
+	"/sys/class/cxi/cxi%d/device/properties/rdzv_get_en"
+
+/* File path to the default rdzv_get_en setting */
+#define SLINGSHOT_RDZV_GET_EN_DEFAULT_FILE \
+	"/sys/module/cxi_core/parameters/rdzv_get_en_default"
 
 /*
  * Values/directories/filenames for jackaloped BASIC/OAUTH authentication
@@ -230,12 +238,16 @@ typedef struct slingshot_jobinfo {
  * If SLINGSHOT_FLAGS_ADJUST_LIMITS is set (default), slurmd will adjust
  * resource limit reservations by subtracting system service reserved/used
  * resources
+ *
+ * If SLINGSHOT_FLAGS_DISABLE_RDZV_GET is set, slurmd will disable rendezvous
+ * gets in the Cassini NIC for the duration of the application
  */
 #define SLINGSHOT_FLAGS_ADJUST_LIMITS 0x1
 /*
  * #define SLINGSHOT_FLAGS_VNI_PIDS      0x2 DEPRECATED in 23.02, can be used in
  *					     25.02
  */
+#define SLINGSHOT_FLAGS_DISABLE_RDZV_GET 0x4
 #define SLINGSHOT_FLAGS_DEFAULT SLINGSHOT_FLAGS_ADJUST_LIMITS
 
 /* Environment variables set for applications */

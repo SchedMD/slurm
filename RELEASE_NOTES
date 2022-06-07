@@ -137,6 +137,8 @@ COMMAND CHANGES (see man pages for details)
  -- Rename sbcast --fanout to --treewidth.
  -- salloc/sbatch/srun - When requesting --tres-per-task alter incorrect
     request for TRES, it should be TRESType/TRESName not TRESType:TRESName.
+ -- salloc/sbatch/srun - Add disable_rdzv_get option to --network to disable
+    rendezvous gets when using the switch/hpe_slingshot plugin.
 
 API CHANGES
 ===========

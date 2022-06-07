@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  config.c - Library for managing HPE Slingshot networks
  *****************************************************************************
- *  Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ *  Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  *  Written by Jim Nordby <james.nordby@hpe.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -840,6 +840,7 @@ err:
  *   no_vni: _don't_ allocate a VNI for this job even if multi-node
  *   {no_}adjust_limits: {don't} adjust resource limit reservations
  *     by subtracting system service reserved/used values
+ *   disable_rdzv_get: disable rendezvous gets
  *   tcs: set of traffic classes (job only)
  *   def_<NIC_resource>: default per-thread value for resource
  *   res_<NIC_resource>: reserved value for resource
@@ -862,6 +863,8 @@ static bool _parse_network_token(const char *token, bool is_job,
 	size_t adjust_limits_siz = sizeof(adjust_limits_str) - 1;
 	char no_adjust_limits_str[] = "no_adjust_limits";
 	size_t no_adjust_limits_siz = sizeof(no_adjust_limits_str) - 1;
+	char rdzv_get_str[] = "disable_rdzv_get";
+	size_t rdzv_get_siz = sizeof(rdzv_get_str) - 1;
 	char tcs_str[] = "tcs";
 	size_t tcs_siz = sizeof(tcs_str) - 1;
 
@@ -905,6 +908,8 @@ static bool _parse_network_token(const char *token, bool is_job,
 	} else if (!xstrncmp(token, no_adjust_limits_str,
 			     no_adjust_limits_siz)) {
 		job->flags &= ~(SLINGSHOT_FLAGS_ADJUST_LIMITS);
+	} else if (!xstrncmp(token, rdzv_get_str, rdzv_get_siz)) {
+		job->flags |= SLINGSHOT_FLAGS_DISABLE_RDZV_GET;
 	} else if (!xstrncmp(token, tcs_str, tcs_siz)) {
 		if (is_job)
 			return _config_tcs(token, arg, &job->tcs);
