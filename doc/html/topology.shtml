@@ -46,7 +46,7 @@ Use of this logic requires a configuration setting of
 
 <p>Note that slurm uses a best-fit algorithm on the currently
 available resources. This may result in an allocation with
-more that the optimum number of switches. The user can request
+more than the optimum number of switches. The user can request
 a maximum number of leaf switches for the job as well as a
 maximum time willing to wait for that number using the <i>--switches</i>
 option with the salloc, sbatch and srun commands. The parameters can
@@ -201,6 +201,6 @@ The value will be set component types listed in SLURM_TOPOLOGY_ADDR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.</p>
 
-<p style="text-align:center;">Last modified 7 February 2022</p>
+<p style="text-align:center;">Last modified 6 June 2022</p>
 
 <!--#include virtual="footer.txt"-->

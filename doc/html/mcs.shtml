@@ -4,7 +4,7 @@
 
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>The MCS Plugin is meant to extend the current Slurm functionality related to
-job nodes <b>exclusivity</b> and job/node information display <b>privacy</b>.
+job node <b>exclusivity</b> and job/node information display <b>privacy</b>.
 
 <p>Slurm's <b>OverSubscribe</b> option controls the ability of a partition to
 execute more than one job at a time on each resource, no matter "what type"
@@ -257,6 +257,6 @@ NodeName=node0001 Arch=x86_64 CoresPerSocket=4
    ExtSensorsJoules=n/s ExtSensorsWatts=0 ExtSensorsTemp=n/s
 </pre>
 
-<p style="text-align:center;">Last modified 21 March 2022</p>
+<p style="text-align:center;">Last modified 6 June 2022</p>
 
 <!--#include virtual="footer.txt"-->
