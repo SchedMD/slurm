@@ -27,7 +27,6 @@ source ./globals
 
 set spec $test_dir/openapi.spec
 set pyapi $test_dir/py_api
-set pyenv $test_dir/env
 set usock $test_dir/slurmrestd.sock
 set scripts "[$bin_pwd]/${test_name}_scripts"
 
@@ -130,13 +129,15 @@ foreach content_path [glob -type d $scripts/*] {
 	cd $test_dir
 
 	run_command -nolog -fail \
-		"$bin_oasgen generate -i '$spec' -g python --strict-spec=true -o '$pyapi'"
+		"$bin_oasgen generate -i '$spec' -g python --strict-spec=true -o '$pyapi/$content/'"
+
+	set pyenv $test_dir/env/$content/
 
 	run_command -nolog -fail \
 		"$bin_virtualenv --clear --no-download $pyenv"
 
 	run_command -timeout 300 -nolog -fail \
-		"source $pyenv/bin/activate; pip3 install '$pyapi'"
+		"source $pyenv/bin/activate; pip3 install '$pyapi/$content/'"
 
 	foreach script [glob -type f $scripts/$content/*.py] {
 		log_debug "running: $script"
