@@ -66,8 +66,7 @@ if [file readable "$unified_testsuite_conf_file"] {
 	}
 } else {
 	puts stderr "Warning: Unable to open unified testsuite configuration file ($unified_testsuite_conf_file) for reading. Have you run make install?"
-    flush stderr
-    #exit 1
+	flush stderr
 }
 if [dict exists $unified_testsuite_config_dict "slurmsourcedir"] {
 	set src_dir [dict get $unified_testsuite_config_dict "slurmsourcedir"]
