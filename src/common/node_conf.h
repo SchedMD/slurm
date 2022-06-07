@@ -449,4 +449,22 @@ extern char *find_hostname(uint32_t pos, char *hosts);
  */
 extern node_record_t *next_node(int *index);
 
+/*
+ * Return bitmap with all active nodes set.
+ *
+ * node_record_table_ptr may have NULL slots in it, so return a bitmap with only
+ * non-null node bits set.
+ *
+ * NOTE: caller must free returned bitmap.
+ */
+extern bitstr_t *node_conf_get_active_bitmap(void);
+
+/*
+ * Set bitmap with all active node bits.
+ *
+ * node_record_table_ptr may have NULL slots in it, so only set non-null node
+ * bits.
+ */
+extern void node_conf_set_all_active_bits(bitstr_t *b);
+
 #endif /* !_HAVE_NODE_CONF_H */

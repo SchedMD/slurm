@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove INVAL state from cloud node after being powered down.
  -- When showing reason UID in scontrol show node, use the authenticated UID
     instead of the login UID.
+ -- Fix calculation of reservation's NodeCnt when using dynamic nodes.
 
 * Changes in Slurm 22.05.0
 ==========================

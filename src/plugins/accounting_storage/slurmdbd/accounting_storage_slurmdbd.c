@@ -545,7 +545,11 @@ static void _update_cluster_nodes(void)
 	if (prev_node_record_count != node_record_count) {
 		FREE_NULL_BITMAP(total_node_bitmap);
 		total_node_bitmap = bit_alloc(node_record_count);
-		bit_nset(total_node_bitmap, 0, node_record_count-1);
+		/*
+		 * Set all bits, bitmap2hostlist() will filter out the non-NULL
+		 * node_record_t's in node_record_table_ptr.
+		 */
+		bit_set_all(total_node_bitmap);
 		prev_node_record_count = node_record_count;
 	}
 

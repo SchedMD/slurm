@@ -4039,8 +4039,7 @@ next_part:
 		}
 	} else {
 		/* assume all nodes available to job for testing */
-		avail_bitmap = bit_alloc(node_record_count);
-		bit_nset(avail_bitmap, 0, (node_record_count - 1));
+		avail_bitmap = node_conf_get_active_bitmap();
 	}
 
 	/* Consider only nodes in this job's partition */
@@ -4337,8 +4336,8 @@ static void _set_reboot_features_active(bitstr_t *node_bitmap,
 
 		if (!bit_test(node_bitmap, i))
 			continue;
-
-		node_ptr = node_record_table_ptr[i];
+		if (!(node_ptr = node_record_table_ptr[i]))
+			continue;
 		/* Point to node features, don't copy */
 		orig_features_act =
 			node_ptr->features_act ?
@@ -4409,7 +4408,8 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(boot_node_bitmap, i))
 			continue;
-		node_ptr = node_record_table_ptr[i];
+		if (!(node_ptr = node_record_table_ptr[i]))
+			continue;
 		if (protocol_version > node_ptr->protocol_version)
 			protocol_version = node_ptr->protocol_version;
 

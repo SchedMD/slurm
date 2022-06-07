@@ -2576,8 +2576,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 				resv_desc_ptr->flags &=
 					(~RESERVE_FLAG_PART_NODES);
 				resv_desc_ptr->flags |= RESERVE_FLAG_ALL_NODES;
-				node_bitmap = bit_alloc(node_record_count);
-				bit_nset(node_bitmap, 0,(node_record_count-1));
+				node_bitmap = node_conf_get_active_bitmap();
 			}
 			xfree(resv_desc_ptr->node_list);
 			resv_desc_ptr->node_list =
@@ -3198,8 +3197,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 				resv_ptr->node_list = xstrdup(part_ptr->nodes);
 			} else {
 				resv_ptr->flags |= RESERVE_FLAG_ALL_NODES;
-				node_bitmap = bit_alloc(node_record_count);
-				bit_nset(node_bitmap, 0,(node_record_count-1));
+				node_bitmap = node_conf_get_active_bitmap();
 				resv_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
 				xfree(resv_ptr->node_list);
 				xfree(resv_desc_ptr->node_list);
@@ -3713,8 +3711,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		old_resv_ptr.node_list = resv_ptr->node_list;
 		resv_ptr->node_list = NULL;
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
-		resv_ptr->node_bitmap = bit_alloc(node_record_count);
-		bit_nset(resv_ptr->node_bitmap, 0, (node_record_count - 1));
+		resv_ptr->node_bitmap = node_conf_get_active_bitmap();
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 		old_resv_ptr.tres_str = resv_ptr->tres_str;
@@ -6148,8 +6145,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		}
 		if (resv_ptr->flags & RESERVE_FLAG_FLEX) {
 			/* Job not bound to reservation nodes or time */
-			*node_bitmap = bit_alloc(node_record_count);
-			bit_nset(*node_bitmap, 0, (node_record_count - 1));
+			*node_bitmap = node_conf_get_active_bitmap();
 		} else {
 			if (resv_ptr->end_time <= now)
 				(void)_advance_resv_time(resv_ptr);
@@ -6187,9 +6183,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 				return ESLURM_RESERVATION_INVALID;
 			}
 			if (resv_ptr->flags & RESERVE_FLAG_ANY_NODES) {
-				*node_bitmap = bit_alloc(node_record_count);
-				bit_nset(*node_bitmap, 0,
-					 (node_record_count - 1));
+				*node_bitmap = node_conf_get_active_bitmap();
 			} else {
 				*node_bitmap = bit_copy(resv_ptr->node_bitmap);
 			}
@@ -6253,8 +6247,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 	}
 
 	job_ptr->resv_ptr = NULL;	/* should be redundant */
-	*node_bitmap = bit_alloc(node_record_count);
-	bit_nset(*node_bitmap, 0, (node_record_count - 1));
+	*node_bitmap = node_conf_get_active_bitmap();
 	if (list_count(resv_list) == 0)
 		return SLURM_SUCCESS;
 
@@ -6381,7 +6374,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			job_start_time = *when;
 			job_end_time   = *when +
 					 _get_job_duration(job_ptr, reboot);
-			bit_nset(*node_bitmap, 0, (node_record_count - 1));
+			node_conf_set_all_active_bits(*node_bitmap);
 			rc = SLURM_SUCCESS;
 			continue;
 		}
