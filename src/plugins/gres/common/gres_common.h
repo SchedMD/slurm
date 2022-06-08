@@ -104,7 +104,7 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
  * RETURN: 1 if nothing was done, 0 otherwise.
  */
 extern bool gres_common_prep_set_env(char ***prep_env_ptr,
-				     gres_prep_info_t *gres_ei,
+				     gres_prep_t *gres_prep,
 				     int node_inx, uint32_t gres_conf_flags,
 				     List gres_devices);
 

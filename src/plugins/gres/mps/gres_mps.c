@@ -308,32 +308,32 @@ extern void gres_p_step_hardware_fini(void)
  * Build record used to set environment variables as appropriate for a job's
  * prolog or epilog based GRES allocated to the job.
  */
-extern gres_prep_info_t *gres_p_prep_build_env(
+extern gres_prep_t *gres_p_prep_build_env(
 	gres_job_state_t *gres_js)
 {
 	int i;
-	gres_prep_info_t *gres_ei;
+	gres_prep_t *gres_prep;
 
-	gres_ei = xmalloc(sizeof(gres_prep_info_t));
-	gres_ei->node_cnt = gres_js->node_cnt;
-	gres_ei->gres_bit_alloc = xcalloc(gres_ei->node_cnt,
+	gres_prep = xmalloc(sizeof(gres_prep_t));
+	gres_prep->node_cnt = gres_js->node_cnt;
+	gres_prep->gres_bit_alloc = xcalloc(gres_prep->node_cnt,
 					  sizeof(bitstr_t *));
-	gres_ei->gres_cnt_node_alloc = xcalloc(gres_ei->node_cnt,
+	gres_prep->gres_cnt_node_alloc = xcalloc(gres_prep->node_cnt,
 					       sizeof(uint64_t));
-	for (i = 0; i < gres_ei->node_cnt; i++) {
+	for (i = 0; i < gres_prep->node_cnt; i++) {
 		if (gres_js->gres_bit_alloc &&
 		    gres_js->gres_bit_alloc[i]) {
-			gres_ei->gres_bit_alloc[i] =
+			gres_prep->gres_bit_alloc[i] =
 				bit_copy(gres_js->gres_bit_alloc[i]);
 		}
 		if (gres_js->gres_bit_alloc &&
 		    gres_js->gres_bit_alloc[i]) {
-			gres_ei->gres_cnt_node_alloc[i] =
+			gres_prep->gres_cnt_node_alloc[i] =
 				gres_js->gres_cnt_node_alloc[i];
 		}
 	}
 
-	return gres_ei;
+	return gres_prep;
 }
 
 /*
@@ -341,7 +341,7 @@ extern gres_prep_info_t *gres_p_prep_build_env(
  * GRES allocated to the job.
  */
 extern void gres_p_prep_set_env(char ***prep_env_ptr,
-				gres_prep_info_t *gres_ei, int node_inx)
+				gres_prep_t *gres_prep, int node_inx)
 {
 	int dev_inx = -1, global_id = -1, i;
 	uint64_t count_on_dev, gres_per_node = 0, percentage;
@@ -349,13 +349,13 @@ extern void gres_p_prep_set_env(char ***prep_env_ptr,
 	ListIterator iter;
 
 	if (gres_common_prep_set_env(prep_env_ptr,
-				     gres_ei, node_inx,
+				     gres_prep, node_inx,
 				     GRES_CONF_ENV_NVML, gres_devices))
 		return;
 
-	if (gres_ei->gres_bit_alloc &&
-	    gres_ei->gres_bit_alloc[node_inx])
-		dev_inx = bit_ffs(gres_ei->gres_bit_alloc[node_inx]);
+	if (gres_prep->gres_bit_alloc &&
+	    gres_prep->gres_bit_alloc[node_inx])
+		dev_inx = bit_ffs(gres_prep->gres_bit_alloc[node_inx]);
 	if (dev_inx >= 0) {
 		/* Translate bit to device number, may differ */
 		i = -1;
@@ -370,9 +370,9 @@ extern void gres_p_prep_set_env(char ***prep_env_ptr,
 		list_iterator_destroy(iter);
 	}
 	if ((global_id >= 0) &&
-	    gres_ei->gres_cnt_node_alloc &&
-	    gres_ei->gres_cnt_node_alloc[node_inx]) {
-		gres_per_node = gres_ei->gres_cnt_node_alloc[node_inx];
+	    gres_prep->gres_cnt_node_alloc &&
+	    gres_prep->gres_cnt_node_alloc[node_inx]) {
+		gres_per_node = gres_prep->gres_cnt_node_alloc[node_inx];
 		count_on_dev = _get_dev_count(global_id);
 		if (count_on_dev > 0) {
 			percentage = (gres_per_node * 100) / count_on_dev;

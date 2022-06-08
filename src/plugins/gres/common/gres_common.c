@@ -600,7 +600,7 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
  * RETURN: 1 if nothing was done, 0 otherwise.
  */
 extern bool gres_common_prep_set_env(char ***prep_env_ptr,
-				     gres_prep_info_t *gres_ei,
+				     gres_prep_t *gres_prep,
 				     int node_inx, uint32_t gres_conf_flags,
 				     List gres_devices)
 {
@@ -612,31 +612,32 @@ extern bool gres_common_prep_set_env(char ***prep_env_ptr,
 
 	xassert(prep_env_ptr);
 
-	if (!gres_ei)
+	if (!gres_prep)
 		return 1;
 
 	if (!gres_devices)
 		return 1;
 
-	if (gres_ei->node_cnt == 0)	/* no_consume */
+	if (gres_prep->node_cnt == 0)	/* no_consume */
 		return 1;
 
-	if (node_inx > gres_ei->node_cnt) {
+	if (node_inx > gres_prep->node_cnt) {
 		error("bad node index (%d > %u)",
-		      node_inx, gres_ei->node_cnt);
+		      node_inx, gres_prep->node_cnt);
 		return 1;
 	}
 
-	if (gres_ei->gres_bit_alloc &&
-	    gres_ei->gres_bit_alloc[node_inx]) {
-		dev_inx_first = bit_ffs(gres_ei->gres_bit_alloc[node_inx]);
+	if (gres_prep->gres_bit_alloc &&
+	    gres_prep->gres_bit_alloc[node_inx]) {
+		dev_inx_first = bit_ffs(gres_prep->gres_bit_alloc[node_inx]);
 	}
 	if (dev_inx_first >= 0)
-		dev_inx_last = bit_fls(gres_ei->gres_bit_alloc[node_inx]);
+		dev_inx_last = bit_fls(gres_prep->gres_bit_alloc[node_inx]);
 	else
 		dev_inx_last = -2;
 	for (dev_inx = dev_inx_first; dev_inx <= dev_inx_last; dev_inx++) {
-		if (!bit_test(gres_ei->gres_bit_alloc[node_inx], dev_inx))
+		if (!bit_test(gres_prep->gres_bit_alloc[node_inx],
+			      dev_inx))
 			continue;
 		if ((gres_device =
 		     list_find_first(gres_devices, _match_dev_inx, &dev_inx))) {

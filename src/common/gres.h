@@ -309,14 +309,14 @@ typedef struct gres_state {
 } gres_state_t;
 
 /* Used to set Prolog and Epilog env var. Currently designed for gres/mps. */
-typedef struct gres_prep_info {
+typedef struct {
 	uint32_t plugin_id;	/* GRES ID number */
 	uint32_t node_cnt;	/* Count of all hosts allocated to job */
 	char *node_list;	/* List of all hosts allocated to job */
 	bitstr_t **gres_bit_alloc; /* Per-node bitmap of allocated resources */
 	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
 					 * Used with and without GRES files */
-} gres_prep_info_t;
+} gres_prep_t;
 
 /* Gres job step state as used by slurmctld daemon */
 typedef struct gres_step_state {
