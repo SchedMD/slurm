@@ -1508,7 +1508,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (first_job_run) {
 		int rc;
 		job_env_t job_env;
-		List job_gres_list, epi_env_gres_list;
+		List job_gres_list, gres_prep_env_list;
 		uint32_t jobid;
 
 		slurm_cred_insert_jobid(conf->vctx, req->step_id.job_id);
@@ -1529,11 +1529,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = (List) slurm_cred_get_arg(req->cred,
 							CRED_ARG_JOB_GRES_LIST);
-		epi_env_gres_list = gres_g_prep_build_env(
+		gres_prep_env_list = gres_g_prep_build_env(
 			job_gres_list, req->complete_nodelist);
 		gres_g_prep_set_env(&job_env.gres_job_env,
-				    epi_env_gres_list, node_id);
-		FREE_NULL_LIST(epi_env_gres_list);
+				    gres_prep_env_list, node_id);
+		FREE_NULL_LIST(gres_prep_env_list);
 
 		job_env.jobid = req->step_id.job_id;
 		job_env.step_id = req->step_id.step_id;
@@ -2459,7 +2459,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 */
 	if (first_job_run) {
 		job_env_t job_env;
-		List job_gres_list, epi_env_gres_list;
+		List job_gres_list, gres_prep_env_list;
 		uint32_t jobid;
 
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
@@ -2473,11 +2473,11 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = (List) slurm_cred_get_arg(req->cred,
 							CRED_ARG_JOB_GRES_LIST);
-		epi_env_gres_list = gres_g_prep_build_env(job_gres_list,
-							  req->nodes);
+		gres_prep_env_list = gres_g_prep_build_env(job_gres_list,
+							   req->nodes);
 		gres_g_prep_set_env(&job_env.gres_job_env,
-				    epi_env_gres_list, node_id);
-		FREE_NULL_LIST(epi_env_gres_list);
+				    gres_prep_env_list, node_id);
+		FREE_NULL_LIST(gres_prep_env_list);
 		job_env.jobid = req->job_id;
 		job_env.step_id = SLURM_BATCH_SCRIPT;
 		job_env.node_list = req->nodes;
