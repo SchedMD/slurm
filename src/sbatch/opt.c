@@ -231,6 +231,9 @@ env_vars_t env_vars[] = {
   { "SBATCH_WAIT_ALL_NODES", LONG_OPT_WAIT_ALL_NODES },
   { "SBATCH_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SBATCH_WCKEY", LONG_OPT_WCKEY },
+  { "SBATCH_ERROR", 'e' },
+  { "SBATCH_INPUT", 'i' },
+  { "SBATCH_OUTPUT", 'o' },
   { NULL }
 };
 
