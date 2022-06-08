@@ -1528,7 +1528,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = (List) slurm_cred_get_arg(req->cred,
-							CRED_ARG_JOB_GRES_LIST);
+							  CRED_ARG_JOB_GRES_LIST);
 		gres_prep_env_list = gres_g_prep_build_env(
 			job_gres_list, req->complete_nodelist);
 		gres_g_prep_set_env(&job_env.gres_job_env,
@@ -2472,7 +2472,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 #endif
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = (List) slurm_cred_get_arg(req->cred,
-							CRED_ARG_JOB_GRES_LIST);
+							  CRED_ARG_JOB_GRES_LIST);
 		gres_prep_env_list = gres_g_prep_build_env(job_gres_list,
 							   req->nodes);
 		gres_g_prep_set_env(&job_env.gres_job_env,
