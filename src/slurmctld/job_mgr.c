@@ -14254,8 +14254,8 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 	msg->details = xstrdup(job_ptr->state_desc);
 	msg->exit_code = job_ptr->exit_code;
 	msg->het_job_id = job_ptr->het_job_id;
-	msg->job_gres_info = gres_g_epilog_build_env(job_ptr->gres_list_req,
-						     job_ptr->nodes);
+	msg->job_gres_info = gres_g_prep_build_env(job_ptr->gres_list_req,
+						   job_ptr->nodes);
 	msg->job_state = job_ptr->job_state;
 	msg->job_uid = job_ptr->user_id;
 	msg->job_gid = job_ptr->group_id;

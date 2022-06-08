@@ -308,13 +308,13 @@ extern void gres_p_step_hardware_fini(void)
  * Build record used to set environment variables as appropriate for a job's
  * prolog or epilog based GRES allocated to the job.
  */
-extern gres_epilog_info_t *gres_p_epilog_build_env(
+extern gres_prep_info_t *gres_p_prep_build_env(
 	gres_job_state_t *gres_js)
 {
 	int i;
-	gres_epilog_info_t *gres_ei;
+	gres_prep_info_t *gres_ei;
 
-	gres_ei = xmalloc(sizeof(gres_epilog_info_t));
+	gres_ei = xmalloc(sizeof(gres_prep_info_t));
 	gres_ei->node_cnt = gres_js->node_cnt;
 	gres_ei->gres_bit_alloc = xcalloc(gres_ei->node_cnt,
 					  sizeof(bitstr_t *));
@@ -340,17 +340,17 @@ extern gres_epilog_info_t *gres_p_epilog_build_env(
  * Set environment variables as appropriate for a job's prolog or epilog based
  * GRES allocated to the job.
  */
-extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
-				  gres_epilog_info_t *gres_ei, int node_inx)
+extern void gres_p_prep_set_env(char ***prep_env_ptr,
+				gres_prep_info_t *gres_ei, int node_inx)
 {
 	int dev_inx = -1, global_id = -1, i;
 	uint64_t count_on_dev, gres_per_node = 0, percentage;
 	gres_device_t *gres_device;
 	ListIterator iter;
 
-	if (gres_common_epilog_set_env(epilog_env_ptr,
-				       gres_ei, node_inx,
-				       GRES_CONF_ENV_NVML, gres_devices))
+	if (gres_common_prep_set_env(prep_env_ptr,
+				     gres_ei, node_inx,
+				     GRES_CONF_ENV_NVML, gres_devices))
 		return;
 
 	if (gres_ei->gres_bit_alloc &&
@@ -380,8 +380,8 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 		} else
 			percentage = 0;
 
-		xassert(*epilog_env_ptr);
-		env_array_overwrite_fmt(epilog_env_ptr,
+		xassert(*prep_env_ptr);
+		env_array_overwrite_fmt(prep_env_ptr,
 					"CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
 					"%"PRIu64, percentage);
 	}

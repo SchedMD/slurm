@@ -146,10 +146,10 @@ typedef struct slurm_gres_ops {
 	List            (*get_devices)		( void );
 	void            (*step_hardware_init)	( bitstr_t *, char * );
 	void            (*step_hardware_fini)	( void );
-	gres_epilog_info_t *(*epilog_build_env)(gres_job_state_t *gres_js);
-	void            (*epilog_set_env)	( char ***epilog_env_ptr,
-						  gres_epilog_info_t *gres_ei,
-						  int node_inx );
+	gres_prep_info_t *(*prep_build_env)(gres_job_state_t *gres_js);
+	void            (*prep_set_env)	( char ***prep_env_ptr,
+					  gres_prep_info_t *gres_ei,
+					  int node_inx );
 } slurm_gres_ops_t;
 
 /*
@@ -248,7 +248,7 @@ static gres_node_state_t *_build_gres_node_state(void);
 static void	_build_node_gres_str(List *gres_list, char **gres_str,
 				     int cores_per_sock, int sock_per_node);
 static bitstr_t *_core_bitmap_rebuild(bitstr_t *old_core_bitmap, int new_size);
-static void	_epilog_list_del(void *x);
+static void	_prep_list_del(void *x);
 static void	_get_gres_cnt(gres_node_state_t *gres_ns, char *orig_config,
 			      char *gres_name, char *gres_name_colon,
 			      int gres_name_colon_len);
@@ -505,8 +505,8 @@ static int _load_plugin(slurm_gres_context_t *gres_ctx)
 		"gres_p_get_devices",
 		"gres_p_step_hardware_init",
 		"gres_p_step_hardware_fini",
-		"gres_p_epilog_build_env",
-		"gres_p_epilog_set_env"
+		"gres_p_prep_build_env",
+		"gres_p_prep_set_env"
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -6516,7 +6516,7 @@ extern int gres_job_alloc_pack(List gres_list, buf_t *buffer,
 	uint32_t magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0;
 	ListIterator gres_iter;
-	gres_epilog_info_t *gres_ei;
+	gres_prep_info_t *gres_ei;
 
 	top_offset = get_buf_offset(buffer);
 	pack16(rec_cnt, buffer);	/* placeholder if data */
@@ -6568,9 +6568,9 @@ extern int gres_job_alloc_pack(List gres_list, buf_t *buffer,
 	return rc;
 }
 
-static void _epilog_list_del(void *x)
+static void _prep_list_del(void *x)
 {
-	gres_epilog_info_t *gres_ei = (gres_epilog_info_t *) x;
+	gres_prep_info_t *gres_ei = (gres_prep_info_t *) x;
 	int i;
 
 	if (!gres_ei)
@@ -6598,7 +6598,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 	uint32_t magic = 0, utmp32 = 0;
 	uint16_t rec_cnt = 0;
 	uint8_t filled = 0;
-	gres_epilog_info_t *gres_ei = NULL;
+	gres_prep_info_t *gres_ei = NULL;
 	bool locked = false;
 
 	safe_unpack16(&rec_cnt, buffer);
@@ -6610,7 +6610,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 	slurm_mutex_lock(&gres_context_lock);
 	locked = true;
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
-		*gres_list = list_create(_epilog_list_del);
+		*gres_list = list_create(_prep_list_del);
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
@@ -6623,7 +6623,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
-			gres_ei = xmalloc(sizeof(gres_epilog_info_t));
+			gres_ei = xmalloc(sizeof(gres_prep_info_t));
 			safe_unpack32(&gres_ei->plugin_id, buffer);
 			safe_unpack32(&gres_ei->node_cnt, buffer);
 			if (gres_ei->node_cnt > NO_VAL)
@@ -6658,7 +6658,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 			 */
 			error("%s: no plugin configured to unpack data type %u",
 			      __func__, gres_ei->plugin_id);
-			_epilog_list_del(gres_ei);
+			_prep_list_del(gres_ei);
 			continue;
 		}
 		list_append(*gres_list, gres_ei);
@@ -6670,7 +6670,7 @@ extern int gres_job_alloc_unpack(List *gres_list, buf_t *buffer,
 unpack_error:
 	error("%s: unpack error", __func__);
 	if (gres_ei)
-		_epilog_list_del(gres_ei);
+		_prep_list_del(gres_ei);
 	if (locked)
 		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
@@ -6684,12 +6684,12 @@ unpack_error:
  * IN hostlist - list of nodes associated with the job
  * RET information about the job's GRES allocation needed by Prolog or Epilog
  */
-extern List gres_g_epilog_build_env(List job_gres_list, char *node_list)
+extern List gres_g_prep_build_env(List job_gres_list, char *node_list)
 {
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
-	gres_epilog_info_t *gres_ei;
-	List epilog_gres_list = NULL;
+	gres_prep_info_t *gres_ei;
+	List prep_gres_list = NULL;
 
 	if (!job_gres_list)
 		return NULL;
@@ -6706,47 +6706,47 @@ extern List gres_g_epilog_build_env(List job_gres_list, char *node_list)
 			continue;
 		}
 
-		if (!gres_ctx->ops.epilog_build_env)
+		if (!gres_ctx->ops.prep_build_env)
 			continue;	/* No plugin to call */
-		gres_ei = (*(gres_ctx->ops.epilog_build_env))
+		gres_ei = (*(gres_ctx->ops.prep_build_env))
 			(gres_ptr->gres_data);
 		if (!gres_ei)
 			continue;	/* No info to add for this plugin */
-		if (!epilog_gres_list)
-			epilog_gres_list = list_create(_epilog_list_del);
+		if (!prep_gres_list)
+			prep_gres_list = list_create(_prep_list_del);
 		gres_ei->plugin_id = gres_ctx->plugin_id;
 		gres_ei->node_list = xstrdup(node_list);
-		list_append(epilog_gres_list, gres_ei);
+		list_append(prep_gres_list, gres_ei);
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
 
-	return epilog_gres_list;
+	return prep_gres_list;
 }
 
 /*
  * Set environment variables as appropriate for a job's prolog or epilog based
  * GRES allocated to the job.
  *
- * IN/OUT epilog_env_ptr - environment variable array
- * IN epilog_gres_list - generated by TBD
+ * IN/OUT prep_env_ptr - environment variable array
+ * IN prep_gres_list - generated by TBD
  * IN node_inx - zero origin node index
  */
-extern void gres_g_epilog_set_env(char ***epilog_env_ptr,
-				  List epilog_gres_list, int node_inx)
+extern void gres_g_prep_set_env(char ***prep_env_ptr,
+				List prep_gres_list, int node_inx)
 {
-	ListIterator epilog_iter;
-	gres_epilog_info_t *gres_ei;
+	ListIterator prep_iter;
+	gres_prep_info_t *gres_ei;
 
-	*epilog_env_ptr = NULL;
-	if (!epilog_gres_list)
+	*prep_env_ptr = NULL;
+	if (!prep_gres_list)
 		return;
 
 	(void) gres_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	epilog_iter = list_iterator_create(epilog_gres_list);
-	while ((gres_ei = list_next(epilog_iter))) {
+	prep_iter = list_iterator_create(prep_gres_list);
+	while ((gres_ei = list_next(prep_iter))) {
 		slurm_gres_context_t *gres_ctx;
 		if (!(gres_ctx = _find_context_by_id(gres_ei->plugin_id))) {
 			error("%s: GRES ID %u not found in context",
@@ -6754,12 +6754,12 @@ extern void gres_g_epilog_set_env(char ***epilog_env_ptr,
 			continue;
 		}
 
-		if (!gres_ctx->ops.epilog_set_env)
+		if (!gres_ctx->ops.prep_set_env)
 			continue;	/* No plugin to call */
-		(*(gres_ctx->ops.epilog_set_env))
-			(epilog_env_ptr, gres_ei, node_inx);
+		(*(gres_ctx->ops.prep_set_env))
+			(prep_env_ptr, gres_ei, node_inx);
 	}
-	list_iterator_destroy(epilog_iter);
+	list_iterator_destroy(prep_iter);
 	slurm_mutex_unlock(&gres_context_lock);
 }
 

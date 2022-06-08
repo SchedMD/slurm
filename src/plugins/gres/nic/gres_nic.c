@@ -278,7 +278,7 @@ extern void gres_p_step_hardware_fini(void)
  * Build record used to set environment variables as appropriate for a job's
  * prolog or epilog based GRES allocated to the job.
  */
-extern gres_epilog_info_t *gres_p_epilog_build_env(
+extern gres_prep_info_t *gres_p_prep_build_env(
 	gres_job_state_t *gres_js)
 {
 	return NULL;
@@ -288,8 +288,8 @@ extern gres_epilog_info_t *gres_p_epilog_build_env(
  * Set environment variables as appropriate for a job's prolog or epilog based
  * GRES allocated to the job.
  */
-extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
-				  gres_epilog_info_t *gres_ei, int node_inx)
+extern void gres_p_prep_set_env(char ***prep_env_ptr,
+				gres_prep_info_t *gres_ei, int node_inx)
 {
 	return;
 }

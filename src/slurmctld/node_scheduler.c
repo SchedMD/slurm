@@ -2992,7 +2992,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	}
 
 	prolog_msg_ptr->job_gres_info =
-		 gres_g_epilog_build_env(job_ptr->gres_list_req,job_ptr->nodes);
+		 gres_g_prep_build_env(job_ptr->gres_list_req,job_ptr->nodes);
 	prolog_msg_ptr->job_id = job_ptr->job_id;
 	prolog_msg_ptr->het_job_id = job_ptr->het_job_id;
 	prolog_msg_ptr->uid = job_ptr->user_id;

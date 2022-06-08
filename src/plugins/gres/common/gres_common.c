@@ -599,10 +599,10 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
  *
  * RETURN: 1 if nothing was done, 0 otherwise.
  */
-extern bool gres_common_epilog_set_env(char ***epilog_env_ptr,
-				       gres_epilog_info_t *gres_ei,
-				       int node_inx, uint32_t gres_conf_flags,
-				       List gres_devices)
+extern bool gres_common_prep_set_env(char ***prep_env_ptr,
+				     gres_prep_info_t *gres_ei,
+				     int node_inx, uint32_t gres_conf_flags,
+				     List gres_devices)
 {
 	int dev_inx_first = -1, dev_inx_last, dev_inx;
 	gres_device_t *gres_device;
@@ -610,7 +610,7 @@ extern bool gres_common_epilog_set_env(char ***epilog_env_ptr,
 	char *slurm_gpu_str = NULL;
 	char *sep = "";
 
-	xassert(epilog_env_ptr);
+	xassert(prep_env_ptr);
 
 	if (!gres_ei)
 		return 1;
@@ -653,25 +653,25 @@ extern bool gres_common_epilog_set_env(char ***epilog_env_ptr,
 	}
 	if (vendor_gpu_str) {
 		if (gres_conf_flags & GRES_CONF_ENV_NVML)
-			env_array_overwrite(epilog_env_ptr,
+			env_array_overwrite(prep_env_ptr,
 					    "CUDA_VISIBLE_DEVICES",
 					    vendor_gpu_str);
 		if (gres_conf_flags & GRES_CONF_ENV_RSMI)
-			env_array_overwrite(epilog_env_ptr,
+			env_array_overwrite(prep_env_ptr,
 					    "ROCR_VISIBLE_DEVICES",
 					    vendor_gpu_str);
 		if (gres_conf_flags & GRES_CONF_ENV_ONEAPI)
-			env_array_overwrite(epilog_env_ptr,
+			env_array_overwrite(prep_env_ptr,
 					    "ZE_AFFINITY_MASK",
 					    vendor_gpu_str);
 		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
-			env_array_overwrite(epilog_env_ptr,
+			env_array_overwrite(prep_env_ptr,
 					    "GPU_DEVICE_ORDINAL",
 					    vendor_gpu_str);
 		xfree(vendor_gpu_str);
 	}
 	if (slurm_gpu_str) {
-		env_array_overwrite(epilog_env_ptr, "SLURM_JOB_GPUS",
+		env_array_overwrite(prep_env_ptr, "SLURM_JOB_GPUS",
 				    slurm_gpu_str);
 		xfree(slurm_gpu_str);
 	}

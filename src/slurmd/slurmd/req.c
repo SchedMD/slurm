@@ -1529,10 +1529,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = (List) slurm_cred_get_arg(req->cred,
 							CRED_ARG_JOB_GRES_LIST);
-		epi_env_gres_list = gres_g_epilog_build_env(
+		epi_env_gres_list = gres_g_prep_build_env(
 			job_gres_list, req->complete_nodelist);
-		gres_g_epilog_set_env(&job_env.gres_job_env,
-				      epi_env_gres_list, node_id);
+		gres_g_prep_set_env(&job_env.gres_job_env,
+				    epi_env_gres_list, node_id);
 		FREE_NULL_LIST(epi_env_gres_list);
 
 		job_env.jobid = req->step_id.job_id;
@@ -2282,8 +2282,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		slurm_cond_broadcast(&conf->prolog_running_cond);
 		slurm_mutex_unlock(&prolog_mutex);
 		memset(&job_env, 0, sizeof(job_env));
-		gres_g_epilog_set_env(&job_env.gres_job_env,
-				      req->job_gres_info, node_id);
+		gres_g_prep_set_env(&job_env.gres_job_env,
+				    req->job_gres_info, node_id);
 
 		job_env.jobid = req->job_id;
 		job_env.step_id = 0;	/* not available */
@@ -2473,10 +2473,10 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		memset(&job_env, 0, sizeof(job_env));
 		job_gres_list = (List) slurm_cred_get_arg(req->cred,
 							CRED_ARG_JOB_GRES_LIST);
-		epi_env_gres_list = gres_g_epilog_build_env(job_gres_list,
-							    req->nodes);
-		gres_g_epilog_set_env(&job_env.gres_job_env,
-				      epi_env_gres_list, node_id);
+		epi_env_gres_list = gres_g_prep_build_env(job_gres_list,
+							  req->nodes);
+		gres_g_prep_set_env(&job_env.gres_job_env,
+				    epi_env_gres_list, node_id);
 		FREE_NULL_LIST(epi_env_gres_list);
 		job_env.jobid = req->job_id;
 		job_env.step_id = SLURM_BATCH_SCRIPT;
@@ -5181,8 +5181,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
 	memset(&job_env, 0, sizeof(job_env));
-	gres_g_epilog_set_env(&job_env.gres_job_env, req->job_gres_info,
-			      node_id);
+	gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_info, node_id);
 	job_env.jobid = req->step_id.job_id;
 	job_env.derived_ec = req->derived_ec;
 	job_env.exit_code = req->exit_code;
@@ -5435,8 +5434,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
 	memset(&job_env, 0, sizeof(job_env));
-	gres_g_epilog_set_env(&job_env.gres_job_env, req->job_gres_info,
-			      node_id);
+	gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_info, node_id);
 
 	job_env.jobid = req->step_id.job_id;
 	job_env.derived_ec = req->derived_ec;
