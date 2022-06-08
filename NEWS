@@ -11,8 +11,6 @@ documents those changes that are of interest to users and administrators.
  -- When showing reason UID in scontrol show node, use the authenticated UID
     instead of the login UID.
  -- Fix calculation of reservation's NodeCnt when using dynamic nodes.
- -- Add SBATCH_{ERROR,INPUT,OUTPUT} input environment variables for --error,
-    --input and --output options respectively.
 
 * Changes in Slurm 22.05.0
 ==========================
