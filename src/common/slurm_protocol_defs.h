@@ -1013,7 +1013,7 @@ typedef struct kill_job_msg {
 	uint32_t derived_ec;
 	uint32_t exit_code;
 	uint32_t het_job_id;
-	List job_gres_info;	/* Used to set Epilog environment variables */
+	List job_gres_prep;	/* Used to set Epilog environment variables */
 	uint32_t job_state;
 	uint32_t job_uid;
 	uint32_t job_gid;
@@ -1052,7 +1052,7 @@ typedef struct prolog_launch_msg {
 	slurm_cred_t *cred;
 	uint32_t gid;
 	uint32_t het_job_id;		/* HetJob id or NO_VAL */
-	List job_gres_info;		/* Used to set Prolog env vars */
+	List job_gres_prep;		/* Used to set Prolog env vars */
 	uint32_t job_id;		/* slurm job_id */
 	uint64_t job_mem_limit;		/* job's memory limit, passed via cred */
 	uint32_t nnodes;			/* count of nodes, passed via cred */

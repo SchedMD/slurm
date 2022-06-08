@@ -2283,7 +2283,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		slurm_mutex_unlock(&prolog_mutex);
 		memset(&job_env, 0, sizeof(job_env));
 		gres_g_prep_set_env(&job_env.gres_job_env,
-				    req->job_gres_info, node_id);
+				    req->job_gres_prep, node_id);
 
 		job_env.jobid = req->job_id;
 		job_env.step_id = 0;	/* not available */
@@ -5181,7 +5181,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
 	memset(&job_env, 0, sizeof(job_env));
-	gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_info, node_id);
+	gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep, node_id);
 	job_env.jobid = req->step_id.job_id;
 	job_env.derived_ec = req->derived_ec;
 	job_env.exit_code = req->exit_code;
@@ -5434,7 +5434,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
 	memset(&job_env, 0, sizeof(job_env));
-	gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_info, node_id);
+	gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep, node_id);
 
 	job_env.jobid = req->step_id.job_id;
 	job_env.derived_ec = req->derived_ec;
