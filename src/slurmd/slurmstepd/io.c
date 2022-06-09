@@ -959,6 +959,10 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			xfree(task->ifname);
 			task->ifname = xstrdup("/dev/null");
 			task->stdin_fd = open("/dev/null", O_RDWR | O_CLOEXEC);
+			if (task->stdin_fd < 0) {
+				error("Unable to open /dev/null: %m");
+				return SLURM_ERROR;
+			}
 			task->to_stdin = dup(task->stdin_fd);
 			fd_set_nonblocking(task->to_stdin);
 			task->in = _create_task_in_eio(task->to_stdin, job);

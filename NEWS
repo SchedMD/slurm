@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix calculation of reservation's NodeCnt when using dynamic nodes.
  -- Add SBATCH_{ERROR,INPUT,OUTPUT} input environment variables for --error,
     --input and --output options respectively.
+ -- Prevent oversubscription of licenses by the backfill scheduler when not
+    using the new "bf_licenses" option.
 
 * Changes in Slurm 22.05.0
 ==========================

@@ -2146,7 +2146,13 @@ next_task:
 			continue;
 		}
 
-		/* XXXX kicked licenses here previously */
+		if (!bf_licenses &&
+		    license_job_test(job_ptr, time(NULL), true)) {
+			log_flag(BACKFILL, "%pJ not runable now due to licenses",
+				 job_ptr);
+			continue;
+		}
+
 		if (!job_independent(job_ptr)) {
 			log_flag(BACKFILL, "%pJ not runable now",
 				 job_ptr);
