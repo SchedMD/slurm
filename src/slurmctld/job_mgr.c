@@ -1098,6 +1098,12 @@ extern void set_job_failed_assoc_qos_ptr(job_record_t *job_ptr)
 			&qos_error, false, LOG_LEVEL_DEBUG2);
 
 		if ((qos_error == SLURM_SUCCESS) && job_ptr->qos_ptr) {
+			/* job_ptr->qos_id should never start at 0 */
+			if (job_ptr->qos_id != qos_rec.id) {
+				error("%s: Changing job_ptr->qos_id from %u to %u; this should never happen",
+				      __func__, job_ptr->qos_id, qos_rec.id);
+				job_ptr->qos_id = qos_rec.id;
+			}
 			debug("%s: Filling in QOS for %pJ QOS=%s(%u)",
 			      __func__, job_ptr, qos_rec.name, job_ptr->qos_id);
 			job_ptr->state_reason = WAIT_NO_REASON;
