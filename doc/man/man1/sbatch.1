@@ -1354,9 +1354,6 @@ take precedence over the environment.
 
 NOTE: A memory size specification of zero is treated as a special case and
 grants the job access to all of the memory on each node.
-If the job is allocated multiple nodes in a heterogeneous cluster, the memory
-limit on each node will be that of the node in the allocation with the smallest
-memory size (same limit will apply to every node in the job's allocation).
 
 NOTE: Enforcement of memory limits currently relies upon the task/cgroup plugin
 or enabling of accounting, which samples memory use on a periodic basis (data

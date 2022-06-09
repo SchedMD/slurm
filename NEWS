@@ -27,6 +27,9 @@ documents those changes that are of interest to users and administrators.
     --input and --output options respectively.
  -- Prevent oversubscription of licenses by the backfill scheduler when not
     using the new "bf_licenses" option.
+ -- Jobs with multiple nodes in a heterogeneous cluster now have access to all
+    the memory on each node by using --mem=0. Previously the memory limit was
+    set by the node with the least amount of memory.
 
 * Changes in Slurm 22.05.0
 ==========================

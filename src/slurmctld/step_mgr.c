@@ -2365,7 +2365,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		if (!step_ptr->pn_min_memory && !gres_step_node_mem_alloc) {
 			/* If we aren't requesting memory get it from the job */
 			step_ptr->pn_min_memory =
-				job_ptr->details->pn_min_memory;
+				job_resrcs_ptr->memory_allocated[job_node_inx];
 			step_ptr->flags |= SSF_MEM_ZERO;
 		}
 
@@ -2375,6 +2375,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 				mem_use = step_ptr->pn_min_memory;
 				mem_use &= (~MEM_PER_CPU);
 				mem_use *= cpus_alloc_mem;
+			} else if (step_ptr->flags & SSF_MEM_ZERO) {
+				mem_use = job_resrcs_ptr->
+					memory_allocated[job_node_inx];
 			} else {
 				mem_use = step_ptr->pn_min_memory;
 			}
