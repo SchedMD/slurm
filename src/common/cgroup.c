@@ -42,6 +42,7 @@ strong_alias(cgroup_conf_destroy, slurm_cgroup_conf_destroy);
 strong_alias(autodetect_cgroup_version, slurm_autodetect_cgroup_version);
 
 #define DEFAULT_CGROUP_BASEDIR "/sys/fs/cgroup"
+#define DEFAULT_CGROUP_PLUGIN "autodetect"
 
 /* Symbols provided by the plugin */
 typedef struct {
@@ -424,8 +425,10 @@ static void _read_slurm_cgroup_conf(void)
 			info("WARNING: AllowedDevicesFile option is obsolete, please remove it from your configuration.");
 		}
 
-		(void) s_p_get_string(&slurm_cgroup_conf.cgroup_plugin,
-				      "CgroupPlugin", tbl);
+		if (!s_p_get_string(&slurm_cgroup_conf.cgroup_plugin,
+				    "CgroupPlugin", tbl))
+			slurm_cgroup_conf.cgroup_plugin =
+				xstrdup(DEFAULT_CGROUP_PLUGIN);
 
 		if (!s_p_get_boolean(&slurm_cgroup_conf.ignore_systemd,
 				     "IgnoreSystemd", tbl))
@@ -802,10 +805,6 @@ extern int cgroup_g_init(void)
 
 	cgroup_conf_init();
 	type = slurm_cgroup_conf.cgroup_plugin;
-
-	/* Default is autodetect */
-	if (!type)
-		type = "autodetect";
 
 	if (!xstrcmp(type, "autodetect")) {
 		if (!(type = autodetect_cgroup_version())) {
