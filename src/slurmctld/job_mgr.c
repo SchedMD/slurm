@@ -355,6 +355,7 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
 		job_ptr->qos_ptr = tmp_qos;
 
 		job_ptr->assoc_ptr = NULL;
+		/* Don't clear assoc_id, since that is what the job requests */
 	}
 
 	job_ptr->assoc_id = 0;
@@ -425,7 +426,7 @@ extern int job_fail_qos(job_record_t *job_ptr, const char *func_name)
 		job_ptr->assoc_ptr = tmp_assoc;
 
 		job_ptr->qos_ptr = NULL;
-		job_ptr->qos_id = 0;
+		/* Don't clear qos_id, since that is what the job requests */
 	}
 
 	return rc;
