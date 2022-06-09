@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't limit the size of TaskProlog output (previously TaskProlog output was
     limited to 4094 characters per line, which limited the size of exported
     environment variables or logging to the task).
+ -- Fix usage of possibly uninitialized buffer in proctrack/cgroup.
 
 * Changes in Slurm 22.05.0
 ==========================
