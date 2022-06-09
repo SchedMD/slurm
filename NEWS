@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
     limited to 4094 characters per line, which limited the size of exported
     environment variables or logging to the task).
  -- Fix usage of possibly uninitialized buffer in proctrack/cgroup.
+ -- Fix memleak in proctrack/cgroup proctrack_p_wait.
 
 * Changes in Slurm 22.05.0
 ==========================

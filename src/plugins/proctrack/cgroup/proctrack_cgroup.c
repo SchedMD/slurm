@@ -285,8 +285,9 @@ extern int proctrack_p_wait(uint64_t cont_id)
 		sleep(delay);
 		if (delay < 32)
 			delay *= 2;
+		xfree(pids);
 		rc = proctrack_p_get_pids(cont_id, &pids, &npids);
 	}
-
+	xfree(pids);
 	return SLURM_SUCCESS;
 }
