@@ -2089,11 +2089,18 @@ so resources would remain idle inside an allocation if the step
 running on a blade does not take up all the nodes on the blade.
 
 The \fBnetwork\fR option is also available on systems with HPE Slingshot
-networks. It can be used to override the default network resources allocated
-for the job step. Multiple values may be specified in a comma-separated list.
+networks. It can be used to request a job VNI (to be used for communication
+between job steps in a job). It also can be used to override the default
+network resources allocated for the job step. Multiple values may be specified
+in a comma-separated list.
 .IP
 
 .RS 4
+.TP
+\fBjob_vni\fR
+Allocate a job VNI for this job.
+.IP
+
 .TP
 \fBdef_<rsrc>\fR=<\fIval\fR>
 Per-CPU reserved allocation for this resource.

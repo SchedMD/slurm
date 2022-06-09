@@ -137,6 +137,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     be parsed for backwards compatibility, but are now undocumented.)
  -- Add LaunchParameters=ulimit_pam_adopt, which enables setting RLIMIT_RSS in
     adopted processes.
+ -- Update SwitchParameters=job_vni to enable/disable creating job VNIs for all
+    jobs, or when a user requests them.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -188,6 +190,7 @@ COMMAND CHANGES (see man pages for details)
     count" value (e.g., --nodes=20-100:20 is equivalent to
     --nodes=20,40,60,80,100) which can simplify the syntax when the job needs
     to scale by a certain "chunk" size.
+ -- srun - add user requestible vnis with '--network=job_vni' option.
 
 API CHANGES
 ===========

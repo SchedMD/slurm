@@ -279,6 +279,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sbcast --force option to work with --send-libs option. Now when --force
     is set, library directores transmitted will overwrite pre-existing libraries
     that were previously transmitted.
+ -- hpe/slingshot - Add support for user requestible job VNIs.
 
 * Changes in Slurm 22.05.9
 ==========================

@@ -130,14 +130,19 @@ typedef struct slingshot_limits_set {
  */
 typedef struct slingshot_config {
 	bool single_node_vni;           /* Allocate VNIs for single-node apps */
-	bool job_vni;                   /* Allocate extra VNI per-job */
+	uint8_t job_vni;                /* Allocate extra VNI per-job */
 	uint32_t tcs;                   /* Bitmap of default traffic classes */
 	slingshot_limits_set_t limits;  /* Set of NIC resource limits */
 } slingshot_config_t;
 
+/* Values for slingshot_config_t.job_vni */
+#define SLINGSHOT_JOB_VNI_NONE   0  /* No job VNIs allocated */
+#define SLINGSHOT_JOB_VNI_ALL    1  /* All jobs get a job VNI */
+#define SLINGSHOT_JOB_VNI_USER   2  /* Job VNIs using srun --network=job_vni */
+
 /* NIC communication profile structure (compute-node specific) */
 typedef struct pals_comm_profile {
-	uint32_t svc_id;        /* SLINGSHOT service ID */
+	uint32_t svc_id;        /* Slingshot service ID */
 	uint16_t vnis[SLINGSHOT_VNIS]; /* VNIs for this service */
 	uint16_t vnis_used;     /* number of valid VNIs in vnis[] */
 	uint32_t tcs;           /* Bitmap of allowed traffic classes */
@@ -161,7 +166,7 @@ typedef struct slingshot_jobinfo {
 	pals_comm_profile_t *profiles; /* List of communication profiles */
 } slingshot_jobinfo_t;
 
-/* SLINGSHOT traffic classes (bitmap) */
+/* Slingshot traffic classes (bitmap) */
 #define SLINGSHOT_TC_DEDICATED_ACCESS 0x1
 #define SLINGSHOT_TC_LOW_LATENCY      0x2
 #define SLINGSHOT_TC_BULK_DATA        0x4

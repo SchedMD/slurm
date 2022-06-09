@@ -5510,8 +5510,14 @@ Allocate a VNI for single node job steps.
 .IP
 
 .TP
-\fBjob_vni\fR
-Allocate an additional VNI for jobs, shared among all job steps.
+\fBjob_vni\fR=<\fIall\fR|\fIuser\fR|\fInone\fR>
+If set to 'all', allocate an additional VNI for jobs, shared among all job steps.
+If set to 'user', allocate an additional VNI for any job using the \fBsrun\fR
+\fB\-\-network=job_vni\fR option or \fBSLURM_NETWORK=job_vni\fR environment
+variable.
+If set to 'none' (or if \fBjob_vni\fR is not set), do not allocate any
+additional VNI for jobs. For backwards compatibility, setting \fBjob_vni\fR with
+no argument is equivalent to 'all'.
 .IP
 
 .TP
