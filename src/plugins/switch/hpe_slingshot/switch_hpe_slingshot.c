@@ -174,8 +174,6 @@ extern int switch_p_libstate_save(char *dir_name)
 			actual_job_vnis++;
 	}
 	pack32(actual_job_vnis, state_buf);
-	debug("%s: packing %u/%u job VNIs",
-	       state_file, actual_job_vnis, slingshot_state.num_job_vnis);
 	if (actual_job_vnis > 0) {
 		for (int i = 0; i < slingshot_state.num_job_vnis; i++) {
 			if (slingshot_state.job_vnis[i].job_id) {
@@ -192,6 +190,8 @@ extern int switch_p_libstate_save(char *dir_name)
 	xstrcat(new_state_file, "/" SLINGSHOT_STATE_FILE_NEW);
 	state_file = xstrdup(dir_name);
 	xstrcat(state_file, "/" SLINGSHOT_STATE_FILE);
+	debug("%s: packing %u/%u job VNIs",
+	       state_file, actual_job_vnis, slingshot_state.num_job_vnis);
 
 	/* Write buffer to new state file */
 	state_fd = creat(new_state_file, 0600);
@@ -451,6 +451,7 @@ static bool _unpack_comm_profile(pals_comm_profile_t *profile, buf_t *buffer)
 	safe_unpackstr_xmalloc(&device_name, &name_len, buffer);
 	strlcpy(profile->device_name, device_name,
 		sizeof(profile->device_name));
+	xfree(device_name);
 
 	return true;
 

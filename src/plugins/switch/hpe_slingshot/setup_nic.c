@@ -49,7 +49,7 @@
 /* Global variables */
 static void *cxi_handle = NULL;
 static bool cxi_avail = false;
-static struct cxil_dev **cxi_devs;
+static struct cxil_dev **cxi_devs = NULL;
 static int cxi_ndevs = 0;
 
 /* Function pointers loaded from libcxi */
@@ -509,7 +509,7 @@ extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
 			"%s", dev->info.device_name);
 
 		debug("Creating CXI profile[%d] on NIC %d (%s):"
-			" SVC ID %u vnis=[%hu %hu %hu %hu] tcs=%u",
+			" SVC ID %u vnis=[%hu %hu %hu %hu] tcs=%#x",
 			prof, devn, profile->device_name, profile->svc_id,
 			profile->vnis[0], profile->vnis[1], profile->vnis[2],
 			profile->vnis[3], profile->tcs);
