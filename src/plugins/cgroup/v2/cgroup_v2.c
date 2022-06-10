@@ -79,6 +79,7 @@ static xcgroup_t int_cg[CG_LEVEL_CNT];
 static bpf_program_t p[CG_LEVEL_CNT];
 static char *stepd_scope_path = NULL;
 static uint32_t task_special_id = NO_VAL;
+static char *invoc_id;
 static char *ctl_names[] = {
 	[CG_TRACK] = "freezer",
 	[CG_CPUS] = "cpuset",
@@ -261,7 +262,7 @@ static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 	for (int i = 0; i < CG_CTL_CNT; i++) {
 		if ((i == CG_DEVICES) || (i == CG_TRACK))
 			continue;
-		if (!bit_test(ctl_bitmap, i))
+		if (invoc_id && !bit_test(ctl_bitmap, i))
 			error("Controller %s is not enabled!", ctl_names[i]);
 	}
 	return SLURM_SUCCESS;
@@ -768,6 +769,12 @@ static int _migrate_to_stepd_scope()
 	}
 	log_flag(CGROUP, "Created %s", new_home);
 
+	/*
+	 * Set invoc_id to empty string to indicate that from now on we should
+	 * behave as if we were spawned by systemd.
+	 */
+	invoc_id = "";
+
 	if (_get_controllers(stepd_scope_path, int_cg_ns.avail_controllers)
 	    != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -823,6 +830,17 @@ extern int init(void)
 	task_list = list_create(_free_task_cg_info);
 
 	/*
+	 * Detect if we are started by systemd. Another way could be to check
+	 * if our PPID=1, but we cannot rely on it because when starting slurmd
+	 * with -D over a sshd session, slurmd will be reparented by 1, and
+	 * doing this on a graphical session, it will be reparented by
+	 * "systemd --user". So it is not a reliable check. Instead use
+	 * the existence of INVOCATION_ID to know if the pid has been forked by
+	 * systemd.
+	 */
+	invoc_id = getenv("INVOCATION_ID");
+
+	/*
 	 * Check our current root dir. Systemd MUST have Delegated it to us,
 	 * so we want slurmd to be started by systemd. In the case of stepd
 	 * we must guess our future path here, and make the directory later.
@@ -857,16 +875,9 @@ extern int init(void)
 
 		/*
 		 * If we are not started by systemd we need to move out to not
-		 * mess with the pids that may be in our actual cgroup. We are
-		 * not checking the PPID=1 because starting slurmd with -D over
-		 * a sshd session, slurmd will be reparented by 1, while doing
-		 * this on a graphical session, it will be reparented by
-		 * "systemd --user". So it is not a reliable check. Instead use
-		 * the existence of INVOCATION_ID to know if the pid has been
-		 * forked by systemd.
+		 * mess with the pids that may be in our actual cgroup.
 		 */
-		if (!getenv("INVOCATION_ID") &&
-		    (_migrate_to_stepd_scope() != SLURM_SUCCESS))
+		if (!invoc_id && (_migrate_to_stepd_scope() != SLURM_SUCCESS))
 			return SLURM_ERROR;
 	}
 
