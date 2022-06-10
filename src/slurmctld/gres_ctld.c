@@ -1716,6 +1716,8 @@ extern void gres_ctld_job_build_details(List job_gres_list,
 		gres_cnt = 0;
 
 		for (j = 0; j < my_gres_cnt; j++) {
+			uint64_t alloc_cnt;
+
 			if (j >= gres_js->node_cnt)
 				break;	/* node count mismatch */
 			if (my_gres_details[j])
@@ -1723,7 +1725,12 @@ extern void gres_ctld_job_build_details(List job_gres_list,
 			else
 				sep1 = "";
 
-			gres_cnt += gres_js->gres_cnt_node_alloc[j];
+			if (gres_js->gres_cnt_node_alloc[j] == NO_CONSUME_VAL64)
+				alloc_cnt = 0;
+			else
+				alloc_cnt = gres_js->gres_cnt_node_alloc[j];
+
+			gres_cnt += alloc_cnt;
 
 			if (gres_js->gres_bit_alloc[j]) {
 				bit_fmt(tmp_str, sizeof(tmp_str),
@@ -1731,13 +1738,13 @@ extern void gres_ctld_job_build_details(List job_gres_list,
 				xstrfmtcat(my_gres_details[j],
 					   "%s%s:%"PRIu64"(IDX:%s)",
 					   sep1, gres_name,
-					   gres_js->gres_cnt_node_alloc[j],
+					   alloc_cnt,
 					   tmp_str);
 			} else if (gres_js->gres_cnt_node_alloc[j]) {
 				xstrfmtcat(my_gres_details[j],
 					   "%s%s(CNT:%"PRIu64")",
 					   sep1, gres_name,
-					   gres_js->gres_cnt_node_alloc[j]);
+					   alloc_cnt);
 			}
 		}
 
