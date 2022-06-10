@@ -125,7 +125,7 @@ static int _update_tres(const char *context_id, data_t *query, data_t *resp,
 	data_t *dtres = NULL;
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
-	List tres_list = list_create(slurmdb_destroy_tres_rec);
+	List tres_list = NULL;
 	foreach_tres_t args = {
 		.magic = MAGIC_FOREACH_TRES,
 		.tres_list = tres_list,
@@ -144,6 +144,8 @@ static int _update_tres(const char *context_id, data_t *query, data_t *resp,
 				  "Updating TRES is not currently supported.",
 				  NULL);
 #endif /*!NDEBUG*/
+
+	tres_list = list_create(slurmdb_destroy_tres_rec);
 
 	if (!(dtres = get_query_key_list("TRES", errors, query))) {
 		debug("%s: [%s] ignoring empty or non-existant TRES array",
