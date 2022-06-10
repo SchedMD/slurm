@@ -589,6 +589,7 @@ static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
 			/* Start of expression in parenthesis */
 			last_paren_op = last_op;
 			last_op = FEATURE_OP_AND;
+			FREE_NULL_BITMAP(paren_bitmap);
 			paren_bitmap = node_conf_get_active_bitmap();
 			work_bitmap = paren_bitmap;
 		}
@@ -619,7 +620,6 @@ static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
 			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
 				bit_and(feature_bitmap, work_bitmap);
 			}
-			FREE_NULL_BITMAP(paren_bitmap);
 			work_bitmap = feature_bitmap;
 		}
 
