@@ -30,6 +30,9 @@ documents those changes that are of interest to users and administrators.
  -- Jobs with multiple nodes in a heterogeneous cluster now have access to all
     the memory on each node by using --mem=0. Previously the memory limit was
     set by the node with the least amount of memory.
+ -- Don't limit the size of TaskProlog output (previously TaskProlog output was
+    limited to 4094 characters per line, which limited the size of exported
+    environment variables or logging to the task).
 
 * Changes in Slurm 22.05.0
 ==========================

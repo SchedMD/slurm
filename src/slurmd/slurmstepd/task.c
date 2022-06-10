@@ -71,6 +71,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/plugstack.h"
+#include "src/common/run_command.h"
 #include "src/common/slurm_mpi.h"
 #include "src/common/strlcpy.h"
 #include "src/common/switch.h"
@@ -191,83 +192,44 @@ static int
 _run_script_and_set_env(const char *name, const char *path,
 			stepd_step_rec_t *job)
 {
-	int status, rc;
-	pid_t cpid;
-	int pfd[2];
-	char buf[4096];
-	FILE *f;
+	int status = 0, rc = 0;
+	char *argv[2];
+	char *buf = NULL;
+	run_command_args_t args = {
+		.job_id = job->step_id.job_id,
+		.max_wait = -1,
+		.script_path = path,
+		.script_type = name,
+		.status = &status
+	};
+
+	if (path == NULL || path[0] == '\0')
+		return rc;
 
 	xassert(job->env);
-	if (path == NULL || path[0] == '\0')
-		return 0;
+	setenvf(&job->env, "SLURM_SCRIPT_CONTEXT", "prolog_task");
+	args.env = job->env;
+
+	argv[0] = xstrdup(path);
+	argv[1] = NULL;
+	args.script_argv = argv;
 
 	debug("[job %u] attempting to run %s [%s]",
 	      job->step_id.job_id, name, path);
+	buf = run_command(&args);
 
-	if (access(path, R_OK | X_OK) < 0) {
-		error("Could not run %s [%s]: %m", name, path);
-		return 1;
-	}
-	if (pipe(pfd) < 0) {
-		error("executing %s: pipe: %m", name);
-		return 1;
-	}
-	if ((cpid = fork()) < 0) {
-		error("executing %s: fork: %m", name);
-		return 1;
-	}
-	if (cpid == 0) {
-		char *argv[2];
-
-		setenvf(&job->env, "SLURM_SCRIPT_CONTEXT", "prolog_task");
-
-		argv[0] = xstrdup(path);
-		argv[1] = NULL;
-		if (dup2(pfd[1], STDOUT_FILENO) == -1)
-			error("couldn't do the dup: %m");
-		close(STDERR_FILENO);
-		close(STDIN_FILENO);
-		close(pfd[0]);
-		close(pfd[1]);
-		setpgid(0, 0);
-		execve(path, argv, job->env);
-		error("execve(%s): %m", path);
-		_exit(127);
-	}
-
-	close(pfd[1]);
-	f = fdopen(pfd[0], "r");
-	if (f == NULL) {
-		error("Cannot open pipe device: %m");
-		log_fini();
-		exit(1);
-	}
-	while (feof(f) == 0) {
-		if (fgets(buf, sizeof(buf) - 1, f) != NULL) {
+	if (WIFEXITED(status)) {
+		if (buf)
 			_proc_stdout(buf, job);
-		}
-	}
-	fclose(f);
-
-	while (1) {
-		rc = waitpid(cpid, &status, 0);
-		if (rc < 0) {
-			if (errno == EINTR)
-				continue;
-			error("waitpid: %m");
-			return 0;
-		} else  {
-			killpg(cpid, SIGKILL);  /* kill children too */
-			if (WIFEXITED(status))
-				return WEXITSTATUS(status);
-			else {
-				error("script did not exit normally");
-				return 1;
-			}
-		}
+		rc = WEXITSTATUS(status);
+	} else {
+		error("%s did not exit normally. reason: %s", name, buf);
+		rc = 1;
 	}
 
-	/* NOTREACHED */
+	xfree(argv[0]);
+	xfree(buf);
+	return rc;
 }
 
 /* Given a program name, translate it to a fully qualified pathname as needed
