@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
     environment variables or logging to the task).
  -- Fix usage of possibly uninitialized buffer in proctrack/cgroup.
  -- Fix memleak in proctrack/cgroup proctrack_p_wait.
+ -- Fix cloud/remote het srun jobs.
 
 * Changes in Slurm 22.05.0
 ==========================

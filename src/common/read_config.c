@@ -193,6 +193,7 @@ static void _destroy_slurmctld_host(void *ptr);
 static int _defunct_option(void **dest, slurm_parser_enum_t type,
 			   const char *key, const char *value,
 			   const char *line, char **leftover);
+static void _internal_conf_remove_node(char *node_name);
 static int _validate_and_set_defaults(slurm_conf_t *conf,
                                       s_p_hashtbl_t *hashtbl);
 static int _validate_bcast_exclude(slurm_conf_t *conf);
@@ -6154,21 +6155,18 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 		return SLURM_ERROR;
 	}
 
-	/*
-	 * flush tables since clusters could share the same nodes names.
-	 * Leave nodehash_intialized so that the tables don't get overridden
-	 * later
-	 */
-	_free_name_hashtbl();
-	nodehash_initialized = true;
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
 
 	while ((hostname = hostlist_shift(host_list))) {
+		_internal_conf_remove_node(hostname);
 		_push_to_hashtbls(hostname, hostname,
 				  NULL, NULL, 0, 0,
 				  0, 0, 0, 0, false, NULL, 0,
 				  0, &node_addrs[i++], true);
 		free(hostname);
 	}
+	slurm_conf_unlock();
 
 	hostlist_destroy(host_list);
 
@@ -6196,6 +6194,9 @@ extern void config_test_start(void)
 
 extern void slurm_conf_add_node(node_record_t *node_ptr)
 {
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
 	_push_to_hashtbls(node_ptr->name, node_ptr->node_hostname,
 			  node_ptr->comm_name, node_ptr->bcast_address,
 			  node_ptr->port, node_ptr->cpus, node_ptr->boards,
@@ -6203,9 +6204,10 @@ extern void slurm_conf_add_node(node_record_t *node_ptr)
 			  node_ptr->threads, 0, node_ptr->cpu_spec_list,
 			  node_ptr->core_spec_cnt, node_ptr->mem_spec_limit,
 			  NULL, false);
+	slurm_conf_unlock();
 }
 
-extern void slurm_conf_remove_node(char *node_name)
+static void _internal_conf_remove_node(char *node_name)
 {
 	int alias_idx;
 	names_ll_t *p_prev = NULL, *p_curr;
@@ -6227,7 +6229,18 @@ extern void slurm_conf_remove_node(char *node_name)
 		p_curr = p_curr->next_alias;
 	}
 
-	_remove_host_to_node_link(p_curr);
+	if (p_curr) {
+		_remove_host_to_node_link(p_curr);
 
-	_free_single_names_ll_t(p_curr);
+		_free_single_names_ll_t(p_curr);
+	}
+
+}
+
+extern void slurm_conf_remove_node(char *node_name)
+{
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+	_internal_conf_remove_node(node_name);
+	slurm_conf_unlock();
 }
