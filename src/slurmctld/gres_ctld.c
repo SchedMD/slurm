@@ -668,7 +668,8 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 				bit_pick_cnt(left_over_bits,
 					     gres_cnt / gres_per_bit);
 			FREE_NULL_BITMAP(left_over_bits);
-			if (gres_cnt)
+			if (gres_cnt &&
+			    gres_js_alloc->gres_bit_alloc[node_offset])
 				last_gres_bit = bit_fls(
 					gres_js_alloc->
 					gres_bit_alloc[node_offset]);

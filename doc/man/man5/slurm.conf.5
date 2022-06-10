@@ -5825,6 +5825,9 @@ The optional no_consume field allows you to specify that a
 generic resource does not have a finite number of that resource that gets
 consumed as it is requested. The no_consume field is a GRES specific setting
 and applies to the GRES, regardless of the type specified.
+It should not be used with GRES that has a dedicated plugin, if you're looking
+for a way to overcommit GPUs to multiple processes at the time you may be
+interested in using "shard" GRES instead.
 The final field must specify a generic resources count.
 A suffix of "K", "M", "G", "T" or "P" may be used to multiply the number by
 1024, 1048576, 1073741824, etc. respectively.
