@@ -89,7 +89,7 @@ _slurm_cgroup_is_pid_a_slurm_task(uint64_t id, pid_t pid)
 	int fstatus = -1;
 	int fd;
 	pid_t ppid;
-	char file_path[PATH_MAX], buf[2048];
+	char file_path[PATH_MAX], buf[2048] = {0};
 
 	if (snprintf(file_path, PATH_MAX, "/proc/%ld/stat",
 		     (long)pid) >= PATH_MAX) {
@@ -285,8 +285,9 @@ extern int proctrack_p_wait(uint64_t cont_id)
 		sleep(delay);
 		if (delay < 32)
 			delay *= 2;
+		xfree(pids);
 		rc = proctrack_p_get_pids(cont_id, &pids, &npids);
 	}
-
+	xfree(pids);
 	return SLURM_SUCCESS;
 }
