@@ -99,6 +99,11 @@ Note also that Intel MPI doesn't officially support PMIx. It may work, but there
 is no guarantee that it will.
 </p>
 
+<p><b>NOTE</b>: If you build PMIx with hwloc, note that versions 2.5.0 through
+2.7.0 (inclusive) of hwloc have a bug that pushes an untouchable value into the
+environ array, causing a segfault when accessing it. It is advisable to avoid
+these versions.</p>
+
 <p>Although it is recommended to build PMIx from the
 <a href="https://github.com/openpmix/openpmix/releases">packaged releases</a>,
 here is an example on how to build PMIx v2.1 by cloning the git repository:
@@ -636,6 +641,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 6 June 2022</p>
+<p style="text-align:center;">Last modified 15 June 2022</p>
 
 <!--#include virtual="footer.txt"-->
