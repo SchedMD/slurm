@@ -238,10 +238,8 @@ size_t log_timestamp(char *s, size_t max)
 static int _fd_writeable(int fd)
 {
 	struct pollfd ufds;
-	struct stat stat_buf;
 	int write_timeout = 5000;
 	int rc;
-	char temp[2];
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
@@ -257,17 +255,7 @@ static int _fd_writeable(int fd)
 	if (rc == 0)
 		return 0;
 
-	/*
-	 * Check here to make sure that if this is a socket that it really
-	 * is still connected. If not then exit out and notify the sender.
-	 * This is here since a write doesn't always tell you the socket is
-	 * gone, but getting 0 back from a nonblocking read means just that.
-	 */
-	if ((ufds.revents & POLLHUP) || fstat(fd, &stat_buf) ||
-	    ((S_ISSOCK(stat_buf.st_mode) &&
-	     (rc = recv(fd, &temp, 1, MSG_DONTWAIT) <= 0) &&
-	     ((rc == 0) ||
-	      (errno && (errno != EAGAIN) && (errno != EWOULDBLOCK))))))
+	if (ufds.revents & POLLHUP)
 		return -1;
 	else if ((ufds.revents & POLLNVAL)
 		 || (ufds.revents & POLLERR)
