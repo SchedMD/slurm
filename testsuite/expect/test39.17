@@ -487,7 +487,7 @@ if {$gpu_cnt > 2} {
 #
 # Test --gpus option by job step
 #
-if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
+if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 4} {
 	log_info "TEST 6: --gpus-per-node for job and multiple simultaneous steps using --gpus option"
 
 	set job_gpus 2
@@ -512,7 +512,7 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
-	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n6 -t1 -o $file_out -J $test_name $file_in1
+	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=2 --gpus-per-node=$job_gpus -N2 -n6 -t1 -o $file_out -J $test_name $file_in1
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
