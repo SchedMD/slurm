@@ -2040,6 +2040,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 		xfree(memory_stat);
 	}
 
+	xfree(memory_swap_current);
 	return stats;
 }
 
