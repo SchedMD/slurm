@@ -153,19 +153,14 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 	slurmdb_res_rec_t *res = object;
 	slurmdb_wckey_rec_t *wckey = object;
 #endif
-	ListIterator itr = NULL;
 
 	if (!update_list) {
 		error("no update list given");
 		return SLURM_ERROR;
 	}
 
-	itr = list_iterator_create(update_list);
-	while((update_object = list_next(itr))) {
-		if (update_object->type == type)
-			break;
-	}
-	list_iterator_destroy(itr);
+	update_object = list_find_first(
+		update_list, slurmdb_find_update_object_in_list, &type);
 
 	if (update_object) {
 		/* here we prepend primarly for remove association
