@@ -1844,10 +1844,13 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	uint32_t smallest_lft = 0xFFFFFFFF;
+	bool process_skipped = false;
 
 	xassert(result);
-	if (*jobs_running || *default_account)
+	if (*jobs_running || *default_account) {
+		process_skipped = true;
 		goto skip_process;
+	}
 
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_assoc_rec_t *rem_assoc = NULL;
@@ -1928,17 +1931,20 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 
 	}
 
-	if ((rc = as_mysql_get_modified_lfts(
-		     mysql_conn, cluster_name, smallest_lft)) != SLURM_SUCCESS)
-		goto end_it;
-
-
 skip_process:
 	user_name = uid_to_string((uid_t) user->uid);
 
 	rc = remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now, user_name,
 			   assoc_table, name_char, assoc_char, cluster_name,
 			   ret_list, jobs_running, default_account);
+
+	/*
+	 * We need to check lfts after remove_common so we can avoid adding the
+	 * associations we just removed.
+	 */
+	if (!process_skipped && (rc == SLURM_SUCCESS))
+		rc = as_mysql_get_modified_lfts(
+			mysql_conn, cluster_name, smallest_lft);
 end_it:
 	xfree(user_name);
 	xfree(assoc_char);
