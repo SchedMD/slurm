@@ -3706,14 +3706,9 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 		 * lft's to the cluster.
 		 */
 		type = SLURMDB_ADD_ASSOC;
-		assoc_itr = list_iterator_create(mysql_conn->update_list);
-		while ((update_object = list_next(assoc_itr))) {
-			if (update_object->type == type) {
-				list_delete_item(assoc_itr);
-				break;
-			}
-		}
-		list_iterator_destroy(assoc_itr);
+		(void) list_delete_first(mysql_conn->update_list,
+					 slurmdb_find_update_object_in_list,
+					 &type);
 
 		/* Make the mod assoc update_object if it doesn't exist */
 		type = SLURMDB_MODIFY_ASSOC;
