@@ -2019,10 +2019,13 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 			else
 				stats->total_vmem += tmp;
 
-			if (sscanf(memory_swap_current, "%"PRIu64, &tmp) != 1)
-				log_flag(CGROUP, "Cannot parse file memory.swap.current file");
-			else
-				stats->total_vmem += tmp;
+			if (memory_swap_current) {
+				if (sscanf(memory_swap_current,
+					   "%"PRIu64, &tmp) != 1)
+					log_flag(CGROUP, "Cannot parse file memory.swap.current file");
+				else
+					stats->total_vmem += tmp;
+			}
 		}
 
 		/*
