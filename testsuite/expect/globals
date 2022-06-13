@@ -54,6 +54,9 @@ if {[info procs exit] eq "exit"} {
 # Read in unified testsuite properties from testsuite/testsuite.conf
 set unified_testsuite_dir [file dirname [file normalize "[info script]/.."]]
 set unified_testsuite_conf_file "$unified_testsuite_dir/testsuite.conf"
+if {[info exists env(SLURM_TESTSUITE_CONF)]} {
+	set unified_testsuite_conf_file $env(SLURM_TESTSUITE_CONF)
+}
 set unified_testsuite_config_dict [dict create]
 if [file readable "$unified_testsuite_conf_file"] {
 	set fp [open "$unified_testsuite_conf_file" r]

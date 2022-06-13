@@ -8,11 +8,15 @@ expect testsuite and the python testsuite.
 
 To run the testsuites using the unified test-runner:
 
-1) Slurm must first be installed, configured and running.
-2) Change directory to the base testsuite directory (containing this README).
-3) Review and edit testsuite.conf if necessary.
-4) pytest (pytest-3) must be installed in order to run the python testsuite.
-5) Execute run-tests with the desired options.
-
-If perldoc is installed, ./run-tests --man can be used to display a man page
-for the test-runner.
+* Slurm must first be installed, configured and running.
+* Running make install will create a testsuite/testsuite.conf file in your
+  build directory having populated some basic defaults for the testsuite.
+  Review and edit testsuite.conf if necessary.
+* If your build directory is separate from your source directory, you will
+  need to set the SLURM_TESTSUITE_CONF environment variable to the full path
+  of your testsuite.conf before executing the unified test-runner.
+* pytest (pytest-3) must be installed in order to run the python testsuite.
+* expect must be installed in order to run the expect testsuite.
+* If perldoc is installed, ./run-tests --man can be used to display a man page
+  for the test-runner.
+* Execute run-tests with the desired options to run the testsuites

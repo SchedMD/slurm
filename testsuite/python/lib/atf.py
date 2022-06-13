@@ -2397,9 +2397,11 @@ properties['slurm-prefix'] = '/usr/local'
 
 # Override directory properties with values from testsuite.conf file
 testsuite_config = {}
-testsuite_config_file = f"{testsuite_base_dir}/testsuite.conf"
+# The default location for the testsuite.conf file (in SRCDIR/testsuite)
+# can be overridden with the SLURM_TESTSUITE_CONF environment variable.
+testsuite_config_file = os.getenv('SLURM_TESTSUITE_CONF', f"{testsuite_base_dir}/testsuite.conf")
 if not os.path.isfile(testsuite_config_file):
-    log_die(f"The python testsuite was expecting testsuite.conf to be found in {testsuite_base_dir}.")
+    log_die(f"The python testsuite was expecting testsuite.conf to be found in {testsuite_base_dir}. This file is created in your build directory when running make install. If your build directory is separate from your source directory, set the value of the SLURM_TESTSUITE_CONF environment variable to the absolute path of your testsuite.conf file.")
 with open(testsuite_config_file, 'r') as f:
     for line in f.readlines():
         if match := re.search(rf"^\s*(\w+)\s*=\s*(.*)$", line):
