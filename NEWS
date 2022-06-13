@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SRUN_{ERROR,INPUT,OUTPUT} input environment variables for --error,
     --input and --output options respectively.
  -- Add MaxCPUsPerSocket to partition configuration, similar to MaxCPUsPerNode.
+ -- openapi/v0.0.39 - change nice request field from string to integer.
 
 * Changes in Slurm 22.05.3
 ==========================
