@@ -5242,17 +5242,6 @@ static void _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
-static int _find_update_object_in_list(void *x, void *key)
-{
-	slurmdb_update_object_t *object = (slurmdb_update_object_t *)x;
-	slurmdb_update_type_t type = *(slurmdb_update_type_t *)key;
-
-	if (object->type == type)
-		return 1;
-
-	return 0;
-}
-
 static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
@@ -5293,9 +5282,10 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 		slurmdb_update_object_t *object;
 
 		slurmdb_update_type_t fed_type = SLURMDB_UPDATE_FEDS;
-		if ((object = list_find_first(update_ptr->update_list,
-					      _find_update_object_in_list,
-					      &fed_type))) {
+		if ((object = list_find_first(
+			     update_ptr->update_list,
+			     slurmdb_find_update_object_in_list,
+			     &fed_type))) {
 #if HAVE_SYS_PRCTL_H
 			if (prctl(PR_SET_NAME, "fedmgr", NULL, NULL, NULL) < 0){
 				error("%s: cannot set my name to %s %m",
