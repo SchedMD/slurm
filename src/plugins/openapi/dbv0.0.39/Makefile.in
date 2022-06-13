@@ -32,8 +32,8 @@ am__make_running_with_option = \
   case $${target_option-} in \
       ?) ;; \
       *) echo "am__make_running_with_option: internal error: invalid" \
-	      "target option '$${target_option-}' specified" >&2; \
-	 exit 1;; \
+              "target option '$${target_option-}' specified" >&2; \
+         exit 1;; \
   esac; \
   has_opt=no; \
   sane_makeflags=$$MAKEFLAGS; \
@@ -42,9 +42,9 @@ am__make_running_with_option = \
   else \
     case $$MAKEFLAGS in \
       *\\[\ \	]*) \
-	bs=\\; \
-	sane_makeflags=`printf '%s\n' "$$MAKEFLAGS" \
-	  | sed "s/$$bs$$bs[$$bs $$bs	]*//g"`;; \
+        bs=\\; \
+        sane_makeflags=`printf '%s\n' "$$MAKEFLAGS" \
+          | sed "s/$$bs$$bs[$$bs $$bs	]*//g"`;; \
     esac; \
   fi; \
   skip_next=no; \
@@ -56,11 +56,11 @@ am__make_running_with_option = \
     test $$skip_next = yes && { skip_next=no; continue; }; \
     case $$flg in \
       *=*|--*) continue;; \
-	-*I) strip_trailopt 'I'; skip_next=yes;; \
+        -*I) strip_trailopt 'I'; skip_next=yes;; \
       -*I?*) strip_trailopt 'I';; \
-	-*O) strip_trailopt 'O'; skip_next=yes;; \
+        -*O) strip_trailopt 'O'; skip_next=yes;; \
       -*O?*) strip_trailopt 'O';; \
-	-*l) strip_trailopt 'l'; skip_next=yes;; \
+        -*l) strip_trailopt 'l'; skip_next=yes;; \
       -*l?*) strip_trailopt 'l';; \
       -[dEDm]) skip_next=yes;; \
       -[JT]) skip_next=yes;; \
@@ -176,7 +176,7 @@ am__uninstall_files_from_dir = { \
   test -z "$$files" \
     || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
-	 $(am__cd) "$$dir" && rm -f $$files; }; \
+         $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(noinst_LTLIBRARIES) $(pkglib_LTLIBRARIES)
@@ -186,7 +186,7 @@ libopenapi_ref_la_OBJECTS = $(am_libopenapi_ref_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 =
+am__v_lt_1 = 
 am_openapi_dbv0_0_39_la_OBJECTS = accounts.lo associations.lo api.lo \
 	cluster.lo config.lo diag.lo jobs.lo qos.lo parse.lo tres.lo \
 	users.lo wckeys.lo
@@ -202,11 +202,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 =
+am__v_GEN_1 = 
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 =
+am__v_at_1 = 
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
@@ -226,7 +226,7 @@ LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
 am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 =
+am__v_CC_1 = 
 CCLD = $(CC)
 LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -234,7 +234,7 @@ LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 =
+am__v_CCLD_1 = 
 SOURCES = $(libopenapi_ref_la_SOURCES) $(openapi_dbv0_0_39_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -531,7 +531,7 @@ REF = openapi.json
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
 BIN_REF = $(REF:.json=.bino)
-libopenapi_ref_la_SOURCES =
+libopenapi_ref_la_SOURCES = 
 libopenapi_ref_la_DEPENDENCIES = openapi_ref.lo
 pkglib_LTLIBRARIES = openapi_dbv0_0_39.la
 noinst_LTLIBRARIES = libopenapi_ref.la
@@ -552,7 +552,7 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
 	      ( cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh ) \
-		&& { if test -f $@; then exit 0; else break; fi; }; \
+	        && { if test -f $@; then exit 0; else break; fi; }; \
 	      exit 1;; \
 	  esac; \
 	done; \
@@ -623,10 +623,10 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-libopenapi_ref.la: $(libopenapi_ref_la_OBJECTS) $(libopenapi_ref_la_DEPENDENCIES) $(EXTRA_libopenapi_ref_la_DEPENDENCIES)
+libopenapi_ref.la: $(libopenapi_ref_la_OBJECTS) $(libopenapi_ref_la_DEPENDENCIES) $(EXTRA_libopenapi_ref_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libopenapi_ref_la_OBJECTS) $(libopenapi_ref_la_LIBADD) $(LIBS)
 
-openapi_dbv0_0_39.la: $(openapi_dbv0_0_39_la_OBJECTS) $(openapi_dbv0_0_39_la_DEPENDENCIES) $(EXTRA_openapi_dbv0_0_39_la_DEPENDENCIES)
+openapi_dbv0_0_39.la: $(openapi_dbv0_0_39_la_OBJECTS) $(openapi_dbv0_0_39_la_DEPENDENCIES) $(EXTRA_openapi_dbv0_0_39_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(openapi_dbv0_0_39_la_LINK) -rpath $(pkglibdir) $(openapi_dbv0_0_39_la_OBJECTS) $(openapi_dbv0_0_39_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
