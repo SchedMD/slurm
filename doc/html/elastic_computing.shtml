@@ -79,6 +79,10 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
    ]
 }
 </pre>
+<dt><b>PrivateData</b>
+<dd>Including the <i>cloud</i> flag with <b>PrivateData</b> will cause cloud
+nodes to be visible in the output of commands like <b>sinfo</b> at all times.
+Without this flag, nodes will only be visible when the they are powered on.
 <dt><b>ResumeTimeout</b>
 <dd>Maximum time permitted (in seconds) between when a node resume request
 is issued and when the node is actually available for use. Nodes which fail to
@@ -484,6 +488,6 @@ debug*      up    infinite     1    drng!  c1-compute-0-0
 debug*      up    infinite    99    idle~  c1-compute-0-[1-99]
 </pre>
 
-<p style="text-align:center;">Last modified 27 July 2021</p>
+<p style="text-align:center;">Last modified 14 June 2022</p>
 
 <!--#include virtual="footer.txt"-->
