@@ -738,7 +738,7 @@ int load_all_part_state(void)
 		part_ptr->max_time       = max_time;
 		part_ptr->default_time   = default_time;
 		part_ptr->max_cpus_per_node = max_cpus_per_node;
-		part_ptr->max_cpus_per_node = max_cpus_per_socket;
+		part_ptr->max_cpus_per_socket = max_cpus_per_socket;
 		part_ptr->max_nodes      = max_nodes;
 		part_ptr->max_nodes_orig = max_nodes;
 		part_ptr->min_nodes      = min_nodes;
