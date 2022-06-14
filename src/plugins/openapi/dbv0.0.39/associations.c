@@ -331,11 +331,11 @@ static int _update_assocations(const char *context_id, data_t *query,
 	if (!dassoc) {
 		debug("%s: [%s] ignoring empty or non-existant users array",
 		      __func__, context_id);
-	} else if (!(rc = db_query_list(errors, auth, &args.tres_list,
-					slurmdb_tres_get, &tres_cond))) {
+	} else if ((rc = db_query_list(errors, auth, &args.tres_list,
+				       slurmdb_tres_get, &tres_cond))) {
 		/* rc already set - do nothing */
-	} else if (!(rc = db_query_list(errors, auth, &args.qos_list,
-					slurmdb_qos_get, &qos_cond))) {
+	} else if ((rc = db_query_list(errors, auth, &args.qos_list,
+				       slurmdb_qos_get, &qos_cond))) {
 		/* rc already set - do nothing */
 	} else if (data_list_for_each(dassoc, _foreach_update_assoc, &args) <
 		   0) {
