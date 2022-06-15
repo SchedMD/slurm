@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.2
 ==========================
+ -- Fix a segfault in slurmctld when requesting gres in job arrays.
 
 * Changes in Slurm 22.05.1
 ==========================
