@@ -61,6 +61,7 @@
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
+static List  _build_part_list( char* str );
 static List  _build_user_list( char* str );
 static char *_get_prefix(char *token);
 static void  _help( void );
@@ -173,6 +174,7 @@ parse_command_line( int argc, char* *argv )
 		case (int) 'p':
 			xfree(params.parts);
 			params.parts = xstrdup(optarg);
+			params.part_list = _build_part_list(params.parts);
 			break;
 		case (int) 'u':
 			xfree(params.users);
@@ -523,6 +525,32 @@ _build_job_list( char* str )
 		job = strtok_r(NULL, ",", &tmp_char);
 	}
 	xfree(my_job_list);
+	return my_list;
+}
+
+/*
+ * _build_part_list- build a list of partitions
+ * IN str - comma separated list of partition names
+ * RET List of partitions (char)
+ */
+static List _build_part_list(char *str)
+{
+	List my_list;
+	char *part = NULL;
+	char *tmp_char = NULL, *tok = NULL, *my_part_list = NULL;
+
+	if (str == NULL)
+		return NULL;
+
+	my_list = list_create(xfree_ptr);
+	my_part_list = xstrdup(str);
+	tok = strtok_r(my_part_list, ",", &tmp_char);
+	while (tok) {
+		part = xstrdup(tok);
+		list_append(my_list, part);
+		tok = strtok_r(NULL, ",", &tmp_char);
+	}
+	xfree(my_part_list);
 	return my_list;
 }
 

@@ -79,6 +79,7 @@ struct sprio_parameters {
 
 	List  format_list;
 	List  job_list;
+	List  part_list;
 	List  user_list;
 };
 
@@ -97,6 +98,15 @@ extern char    *weight_tres; /* weight str TRES factors */
 
 extern void parse_command_line( int argc, char* *argv );
 extern int  parse_format( char* format );
+
+/*
+ * filter_job_list - filter a list of jobs according to options specified by the
+ *                   user that are containted in the 'params' global variable.
+ *
+ * IN/OUT job_list - list of priority_factors_object_t
+ */
+extern void filter_job_list(List job_list);
+
 extern void sort_job_list(List job_list);
 
 #endif

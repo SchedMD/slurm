@@ -124,8 +124,7 @@ int main (int argc, char **argv)
 		show_flags |= SHOW_LOCAL;
 	if (params.sibling)
 		show_flags |= SHOW_FEDERATION | SHOW_SIBLING;
-	error_code = slurm_load_job_prio(&resp_msg, params.job_list,
-					 params.parts, params.user_list,
+	error_code = slurm_load_job_prio(&resp_msg, NULL, NULL, NULL,
 					 show_flags);
 	if (error_code) {
 		slurm_perror("Couldn't get priority factors from controller");
@@ -193,6 +192,7 @@ int main (int argc, char **argv)
 			    !list_count(resp_msg->priority_factors_list))) {
 		printf("Unable to find jobs matching user/id(s) specified\n");
 	} else if (resp_msg) {
+		filter_job_list(resp_msg->priority_factors_list);
 		print_jobs_array(resp_msg->priority_factors_list,
 				 params.format_list);
 	}
