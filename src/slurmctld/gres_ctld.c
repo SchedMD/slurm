@@ -795,6 +795,30 @@ static void _job_select_whole_node_internal(
 		gres_js->total_gres += gres_ns->gres_cnt_avail;
 }
 
+static int _foreach_clear_job_gres(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js;
+	int i;
+
+	gres_js = gres_state_job->gres_data;
+	for (i = 0; i < gres_js->node_cnt; i++) {
+		if (gres_js->gres_bit_alloc) {
+			FREE_NULL_BITMAP(gres_js->gres_bit_alloc[i]);
+		}
+		if (gres_js->gres_bit_step_alloc) {
+			FREE_NULL_BITMAP(gres_js->gres_bit_step_alloc[i]);
+		}
+	}
+	xfree(gres_js->gres_bit_alloc);
+	xfree(gres_js->gres_bit_step_alloc);
+	xfree(gres_js->gres_cnt_step_alloc);
+	xfree(gres_js->gres_cnt_node_alloc);
+	gres_js->node_cnt = 0;
+
+	return 0;
+}
+
 /*
  * Fill in job_gres_list with the total amount of GRES on a node.
  * OUT job_gres_list - This list will be destroyed and remade with all GRES on
@@ -1630,34 +1654,11 @@ step3:
 /* Clear any vestigial job gres state. This may be needed on job requeue. */
 extern void gres_ctld_job_clear(List job_gres_list)
 {
-	int i;
-	ListIterator job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
 
 	if (job_gres_list == NULL)
 		return;
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = list_next(job_gres_iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		for (i = 0; i < gres_js->node_cnt; i++) {
-			if (gres_js->gres_bit_alloc) {
-				FREE_NULL_BITMAP(gres_js->
-						 gres_bit_alloc[i]);
-			}
-			if (gres_js->gres_bit_step_alloc) {
-				FREE_NULL_BITMAP(gres_js->
-						 gres_bit_step_alloc[i]);
-			}
-		}
-		xfree(gres_js->gres_bit_alloc);
-		xfree(gres_js->gres_bit_step_alloc);
-		xfree(gres_js->gres_cnt_step_alloc);
-		xfree(gres_js->gres_cnt_node_alloc);
-		gres_js->node_cnt = 0;
-	}
-	list_iterator_destroy(job_gres_iter);
+	list_for_each(job_gres_list, _foreach_clear_job_gres, NULL);
 }
 
 /* Given a job's GRES data structure, return the indecies for selected elements
