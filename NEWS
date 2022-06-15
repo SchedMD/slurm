@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 22.05.2
 ==========================
  -- Fix a segfault in slurmctld when requesting gres in job arrays.
+ -- Prevent jobs from launching on newly powered up nodes that register with
+    invalid config.
 
 * Changes in Slurm 22.05.1
 ==========================

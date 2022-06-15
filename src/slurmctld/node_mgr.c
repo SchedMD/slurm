@@ -2556,7 +2556,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	char *orig_features = NULL, *orig_features_act = NULL;
 	uint32_t node_flags;
 	time_t now = time(NULL);
-	bool orig_node_avail, was_invalid_reg;
+	bool orig_node_avail, was_invalid_reg, was_powering_up = false;
 	static uint32_t cr_flag = NO_VAL;
 	static int node_features_cnt = 0;
 	int sockets1, sockets2;	/* total sockets on node */
@@ -2820,8 +2820,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		 * IS_NODE_POWERED_DOWN() above to allow ReturnToService !=2
 		 * catch nodes [re]booting unexpectedly.
 		 */
-		if (IS_NODE_POWERING_UP(node_ptr))
+		if (IS_NODE_POWERING_UP(node_ptr)) {
 			node_ptr->last_response = now;
+			was_powering_up = true;
+		}
 
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
@@ -2845,9 +2847,13 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 	if (error_code) {
 		node_ptr->node_state |= NODE_STATE_INVALID_REG;
-		if (!was_invalid_reg)
+		if (!was_invalid_reg) {
 			error("Setting node %s state to INVAL with reason:%s",
 			       reg_msg->node_name, reason_down);
+
+			if (was_powering_up)
+				kill_running_job_by_node_name(node_ptr->name);
+		}
 
 		if (!IS_NODE_DOWN(node_ptr)
 			&& !IS_NODE_DRAIN(node_ptr)
