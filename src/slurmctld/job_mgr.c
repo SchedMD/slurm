@@ -4662,6 +4662,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 			job_ptr_pend->gres_list_req =
 				gres_job_state_list_dup(job_ptr->gres_list_req);
 	}
+	job_ptr_pend->gres_list_req_accum = NULL;
 	job_ptr_pend->gres_list_alloc = NULL;
 	job_ptr_pend->gres_detail_cnt = 0;
 	job_ptr_pend->gres_detail_str = NULL;
