@@ -80,6 +80,14 @@ to "off" in a node\-specific GRES line.
 E.g.: \fINodeName=tux3 AutoDetect=off Name=gpu File=/dev/nvidia[0\-3]\fR.
 \fIAutoDetect\fR cannot be used with cloud nodes.
 
+
+\fIAutoDetect\fR will automatically detect files, cores, links, and any other
+hardware. If a parameter such as \fBFile\fR, \fBCores\fR, or \fBLinks\fR are
+specified when \fIAutoDetect\fR is used, then the specified values are used to
+sanity check the auto detected values. If there is a mismatch, then the node's
+state is set to invalid and the node is drained.
+.IP
+
 .TP
 \fBCount\fR
 Number of resources of this name/type available on this node.
