@@ -36,9 +36,9 @@ needs to structure its internal cgroup tree.</p>
 available on a cgroup directory if the parent node has it listed in its
 <i>cgroup.controllers</i> file and added to its <i>cgroup.subtree_control</i>.
 Also, a controller activated in the subtree cannot be disabled if one or more
-children has them enabled. For Slurm this implies we need to do this kind of
-management over our hierarchy modifying this file and enabling the required
-controllers for the child.</p>
+children has them enabled. For Slurm, this implies that we need to do this
+kind of management over our hierarchy by modifying <i>cgroup.subtree_control</i>
+and enabling the required controllers for the child.</p>
 
 <h3 id="no_internal_process">No Internal Process Constraint
 <a class="slurm_link" href="#no_internal_process"></a>
@@ -107,8 +107,8 @@ and would cause problems.</p>
 independence. So, we really needed to start a new unit for user jobs.</p>
 
 <p>Actually, in systemd there are two types of Units that can get the
-"Delegate=yes" parameter and that are directly related to a cgroup directory,
-one is a "Service" and the other is a "Scope". We are interested the "scope":
+"Delegate=yes" parameter and that are directly related to a cgroup directory.
+One is a "Service" and the other is a "Scope". We are interested the "scope":
 <ul>
 <li><b>A Systemd Scope:</b> systemd takes a pid as an argument, creates a cgroup
 directory and then adds the provided pid to the directory. The scope will remain
@@ -207,7 +207,7 @@ slurmd needs to fork a "slurmstepd infinity" and use this parameter as the
 argument.</p>
 <p>The call to dbus is asynchronous, so slurmd delivers the message to the Dbus
 bus and then starts an active wait, waiting for the scope directory to show up.
-If the directory doesn't show up within a hardcoded timeout, it fails.
+If the directory doesn't show up within a hard-coded timeout, it fails.
 Otherwise it continues and slurmd then creates a directory for new slurmstepds
 and for the infinity pid in the recently created scope directory, called
 "system". It moves the infinity process into there and then enables all the
@@ -258,7 +258,7 @@ cpuset cpu memory
 </pre>
 
 <p>If resource specialization is enabled, slurmd will set its memory and/or
-cpu constrains at its own level too.</p>
+cpu constraints at its own level too.</p>
 
 <h3 id="slurmd_restart">slurmd restart
 <a class="slurm_link" href="#slurmd_restart"></a>
@@ -507,6 +507,6 @@ will be put into the largest job id. Thanks to this we removed the dependency of
 the plugin against the specific cgroup hierarchy.
 </p>
 
-<p style="text-align:center;">Last modified 06 April 2022</p>
+<p style="text-align:center;">Last modified 16 June 2022</p>
 
 <!--#include virtual="footer.txt"-->
