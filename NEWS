@@ -14,6 +14,9 @@ documents those changes that are of interest to users and administrators.
     --input and --output options respectively.
  -- Add MaxCPUsPerSocket to partition configuration, similar to MaxCPUsPerNode.
 
+* Changes in Slurm 22.05.3
+==========================
+
 * Changes in Slurm 22.05.2
 ==========================
  -- Fix a segfault in slurmctld when requesting gres in job arrays.
