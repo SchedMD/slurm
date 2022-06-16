@@ -208,7 +208,7 @@ information.</p>
 <p>
 Since 22.05, Slurm supports cgroup/v1 and cgroup/v2. Both plugins have very
 different ways of organizing their hierarchies and respond to different design
-constrains. The design is the responsibility of the kernel maintainers.
+constraints. The design is the responsibility of the kernel maintainers.
 </p>
 
 <h2 id="differences">Main differences between cgroup/v1 and cgroup/v2
@@ -224,14 +224,14 @@ constrains. The design is the responsibility of the kernel maintainers.
 means the job structure must be replicated and managed for every enabled
 controller. For example, for the same job, if using
 <i>memory</i> and <i>freezer</i> controllers, we will need to create the same
-slurm/uid/job_id/step_id/ hierarchy in both controllers directories, for example
-under:
+slurm/uid/job_id/step_id/ hierarchy in both controller's directories. For
+example:
 
 <pre>/sys/fs/cgroup/memory/slurm/uid_1000/job_1/step_0/</pre>
 <pre>/sys/fs/cgroup/freezer/slurm/uid_1000/job_1/step_0/</pre>
 
 <p>In <i>cgroup/v2</i> we have a <i>Unified</i> hierarchy, where controllers are
-enabled at a the same level and presented to the user as different files.</p>
+enabled at the same level and presented to the user as different files.</p>
 
 <pre>/sys/fs/cgroup/system.slice/slurmstepd.scope/job_1/step_0/</pre></p>
 
@@ -240,12 +240,12 @@ enabled at a the same level and presented to the user as different files.</p>
 <li><b>Top-down constraint in v2</b><br>
 <p>Resources are distributed top-down and a cgroup can further distribute a
 resource only if the resource has been distributed to it from the parent.
-Controllers enabled are listed in the <i>cgroup.controllers</i> file, and
-controllers enabled to a subtree are listed in <i>cgroup.subtree_control</i>.
+Enabled controllers are listed in the <i>cgroup.controllers</i> file and
+enabled controllers in a subtree are listed in <i>cgroup.subtree_control</i>.
 </li>
 
 <li><b>No-Internal-Process constraint in v2</b><br>
-<p>In <i>cgroup/v1</i> hierarchy is free, which means one can create any
+<p>In <i>cgroup/v1</i> the hierarchy is free, which means one can create any
 directory in the tree and put pids in it. In <i>cgroup/v2</i> there's a kernel
 restriction which impedes adding a pid to non-leaf directories.</p>
 </li>
@@ -254,10 +254,10 @@ restriction which impedes adding a pid to non-leaf directories.</p>
 </b><p> This is not a kernel limitation but a systemd decision, which imposes an
 important restriction on services that decide to use <i>Delegate=yes</i>.
 Systemd, with pid 1, decided to be the complete owner of the cgroup
-hierarchy <i>/sys/fs/cgroup</i> trying to impose a <i>single-writer</i>
+hierarchy, <i>/sys/fs/cgroup</i>, trying to impose a <i>single-writer</i>
 design. This means that everything related to cgroup must be under control of
-systemd. If one decides to manually modify the cgroup tree creating directories
-and moving pids around, it is possible that at some point systemd decides to
+systemd. If one decides to manually modify the cgroup tree, creating directories
+and moving pids around, it is possible that at some point systemd may decide to
 enable or disable controllers on the entire tree, or move pids around. It's been
 experienced that a
 
@@ -267,7 +267,7 @@ or a
 
 <pre>systemd reset-failed</pre>
 
-removed the controllers at any level and directory of the tree if there was not
+removed controllers, at any level and directory of the tree, if there was not
 any "systemd unit" making use of it and there were not any "Delegate=Yes"
 started "systemd unit" on the system. This is because systemd wants to cleanup
 the cgroup tree and match it against its internal unit database. In fact,
@@ -276,13 +276,13 @@ units with "Delegate=yes" flag are ignored, while any other cgroup directories
 are modified.  This makes it mandatory to start slurmd and slurmstepd processes
 under a unit with "Delegate=yes". This means we need to start, stop and restart
 slurmd with systemd. If we do that though, since we may have previously modified
-the tree where slurmd belongs (adding job directories) systemd will not be able
-to restart slurmd because of the <i>Top-down constraint</i> mentioned earlier.
-It will not be able to put the new slurmd pid into the root which is now a
-non-leaf. This forces us to separate the cgroup hierarchies of slurmstepd from
-the slurmd ones, and since we need to inform systemd about it and put slurmstepd
-into a new unit, we will do a dbus call to systemd to create a new scope for
-slurmstepds. See
+the tree where slurmd belongs (e.g. adding job directories) systemd will not be
+able to restart slurmd because of the <i>Top-down constraint</i> mentioned
+earlier. It will not be able to put the new slurmd pid into the root cgroup
+which is now a non-leaf. This forces us to separate the cgroup hierarchies of
+slurmstepd from the slurmd ones, and since we need to inform systemd about it
+and put slurmstepd into a new unit, we will do a dbus call to systemd to create
+a new scope for slurmstepds. See
 <a href="https://www.freedesktop.org/wiki/Software/systemd/ControlGroupInterface/">
 systemd ControlGroupInterface</a> for more information.</p>
 </li>
@@ -292,19 +292,19 @@ systemd ControlGroupInterface</a> for more information.</p>
 cgroup plugins, but instead they only show internal functional differences.</p>
 
 <ul>
-<li>A controller in <i>cgroup/v2</i> is enabled writing to
-<i>cgroup.controllers</i> while in <i>cgroup/v1</i> a new mount point must be
+<li>A controller in <i>cgroup/v2</i> is enabled by writing to
+<i>cgroup.controllers</i>, while in <i>cgroup/v1</i> a new mount point must be
 mounted with filesystem type <i>"-t cgroup"</i> and corresponding options,
 e.g.<i>"-o freezer"</i>.
 </li>
 
-<li>In <i>cgroup/v2</i> the freezer controller is inherently present in
-<i>cgroup.freeze</i> interface. In <i>cgroup/v1</i> it is a specific separate
-controller which needs to be mounted.
+<li>In <i>cgroup/v2</i> the freezer controller is inherently present in the
+<i>cgroup.freeze</i> interface. In <i>cgroup/v1</i> it is a specific and
+separate controller which needs to be mounted.
 </li>
 
-<li>Devices controller does not exist in cgroup/v2, instead a new eBPF program
-must be inserted in the kernel.
+<li>The devices controller does not exist in cgroup/v2, instead a new eBPF
+program must be inserted in the kernel.
 </li>
 
 <li>In <i>cgroup/v2</i>, memory.stat file has changed and now we do the sum of
@@ -371,11 +371,11 @@ in <i>cgroup/v1</i> provides metrics in USER_HZ.
 </h2>
 
 <ul>
-<li>Some configurations can exclude the swap cgroup accounting. This accounting
-is part of the features provided by the memory controller.  If this feature is
-disabled from the kernel or boot parameters, trying to enable swap constraints
-will produce an error. If this is required, add the following parameters to the
-kernel command line:
+<li>When using cgroup/v1, some configurations can exclude the swap cgroup
+accounting. This accounting is part of the features provided by the memory
+controller.  If this feature is disabled from the kernel or boot parameters,
+trying to enable swap constraints will produce an error. If this is required,
+add the following parameters to the kernel command line:
 
 <pre>cgroup_enable=memory swapaccount=1</pre>
 
@@ -397,6 +397,6 @@ controllers are under separate directories when using
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 05 April 2022</p>
+<p style="text-align:center;">Last modified 16 June 2022</p>
 
 <!--#include virtual="footer.txt"-->
