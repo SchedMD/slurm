@@ -136,8 +136,19 @@ static int _dump_part(data_t *p, partition_info_t *part)
 		data_set_int(data_key_set(d, "maximum_cpus_per_socket"),
 			     part->max_cpus_per_socket);
 
-	data_set_int(data_key_set(d, "maximum_memory_per_node"),
-		     part->max_mem_per_cpu);
+	if ((part->max_mem_per_cpu == INFINITE64) || !part->max_mem_per_cpu) {
+		data_set_string(data_key_set(d, "maximum_memory_per_node"),
+				"UNLIMITED");
+		data_set_null(data_key_set(d, "maximum_memory_per_cpu"));
+	} else if (part->max_mem_per_cpu & MEM_PER_CPU) {
+		data_set_int(data_key_set(d, "maximum_memory_per_cpu"),
+			     (part->max_mem_per_cpu & ~MEM_PER_CPU));
+		data_set_null(data_key_set(d, "maximum_memory_per_node"));
+	} else {
+		data_set_int(data_key_set(d, "maximum_memory_per_node"),
+			     (part->max_mem_per_cpu & ~MEM_PER_CPU));
+		data_set_null(data_key_set(d, "maximum_memory_per_cpu"));
+	}
 
 	if (part->max_nodes == INFINITE)
 		data_set_int(data_key_set(d, "maximum_nodes_per_job"), -1);
