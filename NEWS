@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/lua - pass the job's UID and GID to slurm_bb_pre_run,
     slurm_bb_data_in, slurm_bb_post_run, and slurm_bb_data_out in
     burst_buffer.lua.
+ -- openapi/v0.0.39 - add new field default_memory_per_node for partitions.
 
 * Changes in Slurm 22.05.3
 ==========================

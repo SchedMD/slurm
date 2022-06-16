@@ -1210,10 +1210,13 @@
 	    "type": "string",
 	    "description": "TRES billing weights"
 	  },
+	  "default_memory_per_node": {
+	    "type": "string",
+	    "description": "default MB memory per allocated node. May be INFINITE for all memory."
+	  },
 	  "default_memory_per_cpu": {
-	    "type": "integer",
-	    "format": "int64",
-	    "description": "default MB memory per allocated CPU"
+	    "type": "string",
+	    "description": "default MB memory per allocated CPU. May be INFINITE for all memory."
 	  },
 	  "default_time_limit": {
 	    "type": "integer",
