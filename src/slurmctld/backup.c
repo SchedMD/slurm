@@ -389,6 +389,9 @@ static void *_background_rpc_mgr(void *no_data)
 			continue;
 		}
 
+		log_flag(PROTOCOL, "%s: accept() connection from %pA",
+			 __func__, &cli_addr);
+
 		slurm_msg_t_init(&msg);
 		if (slurm_receive_msg(newsockfd, &msg, 0) != 0)
 			error("slurm_receive_msg: %m");
@@ -417,6 +420,20 @@ static int _background_process_msg(slurm_msg_t *msg)
 	if (!msg->auth_uid_set)
 		fatal("%s: received message without previously validated auth",
 		      __func__);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
+		char *p = rpc_num2string(msg->msg_type);
+		if (msg->conn) {
+			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
+			     __func__, p, msg->conn->cluster_name,
+			     msg->conn->rem_host, msg->auth_uid);
+		} else {
+			slurm_addr_t cli_addr;
+			(void) slurm_get_peer_addr(msg->conn_fd, &cli_addr);
+			info("%s: received opcode %s from %pA uid %u",
+			     __func__, p, &cli_addr, msg->auth_uid);
+		}
+	}
 
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;
