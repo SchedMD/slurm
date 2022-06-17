@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.3
 ==========================
+ -- job_container/tmpfs - cleanup containers even when the .ns file isn't
+    mounted anymore.
 
 * Changes in Slurm 22.05.2
 ==========================

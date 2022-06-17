@@ -764,11 +764,21 @@ static int _delete_ns(uint32_t job_id)
 
 	errno = 0;
 
+	/*
+	 * umount2() sets errno to EINVAL if the target is not a mount point
+	 * but also if called with invalid flags.  Consider this if changing the
+	 * flags to umount2().
+	 */
 	rc = umount2(ns_holder, MNT_DETACH);
 	if (rc) {
-		error("%s: umount2 %s failed: %s",
-		      __func__, ns_holder, strerror(errno));
-		return SLURM_ERROR;
+		if (errno == EINVAL) {
+			debug2("%s: umount2 %s failed: %s",
+			       __func__, ns_holder, strerror(errno));
+		} else {
+			error("%s: umount2 %s failed: %s",
+			      __func__, ns_holder, strerror(errno));
+			return SLURM_ERROR;
+		}
 	}
 
 	/*
