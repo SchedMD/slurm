@@ -353,6 +353,7 @@ extern int run_command_waitpid_timeout(
 	int delay = 10;			 /* initial delay */
 	int rc;
 	int options = WNOHANG;
+	int save_timeout_ms = timeout_ms;
 
 	if (timeout_ms <= 0 || timeout_ms == NO_VAL16)
 		options = 0;
@@ -367,7 +368,7 @@ extern int run_command_waitpid_timeout(
 			error("%s%stimeout after %d ms: killing pgid %d",
 			      name != NULL ? name : "",
 			      name != NULL ? ": " : "",
-			      timeout_ms, pid);
+			      save_timeout_ms, pid);
 			killpg(pid, SIGKILL);
 			options = 0;
 			if (timed_out)
