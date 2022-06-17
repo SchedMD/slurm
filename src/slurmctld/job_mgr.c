@@ -355,6 +355,7 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
 		job_ptr->qos_ptr = tmp_qos;
 
 		job_ptr->assoc_ptr = NULL;
+		/* Don't clear assoc_id, since that is what the job requests */
 	}
 
 	job_ptr->assoc_id = 0;
@@ -425,7 +426,7 @@ extern int job_fail_qos(job_record_t *job_ptr, const char *func_name)
 		job_ptr->assoc_ptr = tmp_assoc;
 
 		job_ptr->qos_ptr = NULL;
-		job_ptr->qos_id = 0;
+		/* Don't clear qos_id, since that is what the job requests */
 	}
 
 	return rc;
@@ -1097,6 +1098,12 @@ extern void set_job_failed_assoc_qos_ptr(job_record_t *job_ptr)
 			&qos_error, false, LOG_LEVEL_DEBUG2);
 
 		if ((qos_error == SLURM_SUCCESS) && job_ptr->qos_ptr) {
+			/* job_ptr->qos_id should never start at 0 */
+			if (job_ptr->qos_id != qos_rec.id) {
+				error("%s: Changing job_ptr->qos_id from %u to %u; this should never happen",
+				      __func__, job_ptr->qos_id, qos_rec.id);
+				job_ptr->qos_id = qos_rec.id;
+			}
 			debug("%s: Filling in QOS for %pJ QOS=%s(%u)",
 			      __func__, job_ptr, qos_rec.name, job_ptr->qos_id);
 			job_ptr->state_reason = WAIT_NO_REASON;

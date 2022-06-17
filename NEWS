@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - cleanup containers even when the .ns file isn't
     mounted anymore.
  -- Ignore the bf_licenses option if using sched/builtin.
+ -- Do not clear the job's requested QOS (qos_id) when ineligible due to QOS.
+ -- Emit error and add fail-safe when job's qos_id changes unexpectedly.
 
 * Changes in Slurm 22.05.2
 ==========================
