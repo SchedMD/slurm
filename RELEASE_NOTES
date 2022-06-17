@@ -31,6 +31,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- sacctmgr - no longer force updates to the AdminComment, Comment, or
+    SystemComment to lower-case.
 
 API CHANGES
 ===========
