@@ -124,13 +124,13 @@ set soption "--format"
 set output [run_command_output -fail "$sprio $soption \"%.15i %.8u %.10y %.10Y %.10S %.10a %.10A %.10b %.10B %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N\" -j $jobid2"]
 subtest {[regexp "JOBID     USER   PRIORITY   PRIORITY       SITE        AGE        AGE      ASSOC      ASSOC" $output]} "Verify $soption option shows the right header part 1"
 subtest {[regexp "FAIRSHARE  FAIRSHARE    JOBSIZE    JOBSIZE  PARTITION  PARTITION        QOS        QOS   NICE" $output]} "Verify $soption option shows the right header part 2"
-subtest {[regexp "$jobid2 *.* *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$number" $output]} "Verify $soption option shows the right values"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$float\\s+$number\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$number\\s*\$" $output]} "Verify $soption option shows the right values"
 
 set soption "-o"
 set output [run_command_output -fail "$sprio $soption \"%.15i %.8u %.10y %.10Y %.10S %.10a %.10A %.10b %.10B %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N\" -j $jobid2"]
 subtest {[regexp "JOBID     USER   PRIORITY   PRIORITY       SITE        AGE        AGE      ASSOC      ASSOC" $output]} "Verify $soption option shows the right header part 1"
 subtest {[regexp "FAIRSHARE  FAIRSHARE    JOBSIZE    JOBSIZE  PARTITION  PARTITION        QOS        QOS   NICE" $output]} "Verify $soption option shows the right header part 2"
-subtest {[regexp "$jobid2 *.* *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$float *$number *$number" $output]} "Verify $soption option shows the right values"
+subtest {[regexp "$jobid2\\s+\\S+\\s+$float\\s+$number\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$float\\s+$number\\s+$number\\s*\$" $output]} "Verify $soption option shows the right values"
 
 set soption "-u"
 set output [run_command_output -fail "$sprio $soption $user_name"]
@@ -167,18 +167,18 @@ subtest {[regexp "Usage: sprio .-j jid.s.. .-u user_name.s.. .-o format. .-p par
 
 set soption "--version"
 set output [run_command_output -fail "$sprio $soption"]
-subtest {[regexp "slurm $number.$number.$number" $output]} "Verify $soption option shows the right version format"
+subtest {[regexp "slurm $number\.$number\.$number" $output]} "Verify $soption option shows the right version format"
 
 set soption "-V"
 set output [run_command_output -fail "$sprio $soption"]
-subtest {[regexp "slurm $number.$number.$number" $output]} "Verify $soption option shows the right version format"
+subtest {[regexp "slurm $number\.$number\.$number" $output]} "Verify $soption option shows the right version format"
 
 set soption "--weights"
 set output [run_command_output -fail "$sprio $soption"]
 subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
-subtest {[regexp "Weights" $output]} "Verify $soption option shows the right value"
+subtest {[regexp "Weights\\s+$number" $output]} "Verify $soption option shows the right value"
 
 set soption "-w"
 set output [run_command_output -fail "$sprio $soption"]
 subtest {[regexp "JOBID\\s+PARTITION\\s+PRIORITY" $output]} "Verify $soption option shows the right header"
-subtest {[regexp "Weights" $output]} "Verify $soption option shows the right value"
+subtest {[regexp "Weights\\s+$number" $output]} "Verify $soption option shows the right value"
