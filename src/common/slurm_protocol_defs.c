@@ -4906,6 +4906,7 @@ extern void slurm_copy_priority_factors(priority_factors_t *dest,
 	}
 }
 
+/* this can be removed 2 versions after 23.02 */
 extern void slurm_free_priority_factors_request_msg(
 	priority_factors_request_msg_t *msg)
 {

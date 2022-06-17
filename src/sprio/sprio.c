@@ -124,8 +124,7 @@ int main (int argc, char **argv)
 		show_flags |= SHOW_LOCAL;
 	if (params.sibling)
 		show_flags |= SHOW_FEDERATION | SHOW_SIBLING;
-	error_code = slurm_load_job_prio(&resp_msg, NULL, NULL, NULL,
-					 show_flags);
+	error_code = slurm_load_job_prio(&resp_msg, show_flags);
 	if (error_code) {
 		slurm_perror("Couldn't get priority factors from controller");
 		exit(error_code);

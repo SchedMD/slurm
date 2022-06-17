@@ -768,48 +768,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_priority_factors_request_msg(
-	priority_factors_request_msg_t *msg, buf_t *buffer,
-	uint16_t protocol_version)
-{
-	uint32_t count;
-	uint32_t* tmp = NULL;
-	ListIterator itr = NULL;
-
-	xassert(msg);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (msg->job_id_list)
-			count = list_count(msg->job_id_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(msg->job_id_list);
-			while ((tmp = list_next(itr))) {
-				pack32(*tmp, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (msg->uid_list)
-			count = list_count(msg->uid_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && count != NO_VAL) {
-			itr = list_iterator_create(msg->uid_list);
-			while ((tmp = list_next(itr))) {
-				pack32(*tmp, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		packstr(msg->partitions, buffer);
-	}
-
-}
-
+/* this function can be removed 2 versions after 23.02 */
 static int _unpack_priority_factors_request_msg(
 	priority_factors_request_msg_t **msg, buf_t *buffer,
 	uint16_t protocol_version)
@@ -820,6 +779,10 @@ static int _unpack_priority_factors_request_msg(
 	priority_factors_request_msg_t *object_ptr = NULL;
 
 	xassert(msg);
+
+	/* This unpack is a no-op after 23.02+ */
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION)
+		return SLURM_SUCCESS;
 
 	object_ptr = xmalloc(sizeof(priority_factors_request_msg_t));
 	*msg = object_ptr;
@@ -11176,10 +11139,6 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 					  msg->protocol_version);
 		break;
 	case REQUEST_PRIORITY_FACTORS:
-		_pack_priority_factors_request_msg(
-			(priority_factors_request_msg_t*)msg->data,
-			buffer,
-			msg->protocol_version);
 		break;
 	case RESPONSE_PRIORITY_FACTORS:
 		_pack_priority_factors_response_msg(
@@ -11829,6 +11788,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 			msg->protocol_version);
 		break;
 	case REQUEST_PRIORITY_FACTORS:
+		/* this unpack call can be removed 2 versions after 23.02 */
 		rc = _unpack_priority_factors_request_msg(
 			(priority_factors_request_msg_t**)&msg->data,
 			buffer,

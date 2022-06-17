@@ -1684,6 +1684,7 @@ static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
 static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
+	/* req_msg can be removed 2 versions after 23.02 */
 	priority_factors_request_msg_t *req_msg =
 		(priority_factors_request_msg_t *) msg->data;
 	priority_factors_response_msg_t resp_msg;
@@ -1703,6 +1704,7 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);
 	assoc_mgr_lock(&qos_read_locks);
 
+	/* req_msg can be removed 2 versions after 23.02 */
 	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
 		req_msg, msg->auth_uid);
 	response_init(&response_msg, msg);

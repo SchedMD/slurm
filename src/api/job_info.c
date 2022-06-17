@@ -2201,23 +2201,17 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 }
 
 /*
- * slurm_load_job_prio - issue RPC to get job priority information for
- *	jobs which pass filter test
+ * slurm_load_job_prio - issue RPC to get job priority information for jobs
  * OUT factors_resp - job priority factors
- * IN job_id_list - list of job IDs to be reported
- * IN partitions - comma delimited list of partition names to be reported
- * IN uid_list - list of user IDs to be reported
- * IN show_flags -  job filtering option: 0, SHOW_LOCAL and/or SHOW_SIBLING
+ * IN show_flags -  job filtering option: 0 or SHOW_LOCAL
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_priority_factors_response_msg()
  */
 extern int
 slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
-		    List job_id_list, char *partitions, List uid_list,
 		    uint16_t show_flags)
 {
 	slurm_msg_t req_msg;
-	priority_factors_request_msg_t factors_req;
 	void *ptr = NULL;
 	slurmdb_federation_rec_t *fed;
 	int rc;
@@ -2233,14 +2227,8 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 		show_flags &= (~SHOW_FEDERATION);
 	}
 
-	memset(&factors_req, 0, sizeof(factors_req));
-	factors_req.job_id_list = job_id_list;
-	factors_req.partitions  = partitions;
-	factors_req.uid_list    = uid_list;
-
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_PRIORITY_FACTORS;
-	req_msg.data     = &factors_req;
 
 	/* With -M option, working_cluster_rec is set and  we only get
 	 * information for that cluster */

@@ -3916,19 +3916,14 @@ extern int slurm_load_job(job_info_msg_t **resp,
 			  uint16_t show_flags);
 
 /*
- * slurm_load_job_prio - issue RPC to get job priority information for
- *	jobs which pass filter test
+ * slurm_load_job_prio - issue RPC to get job priority information for jobs
  * OUT factors_resp - job priority factors
- * IN job_id_list - list of job IDs to be reported
- * IN partitions - comma delimited list of partition names to be reported
- * IN uid_list - list of user IDs to be reported
  * IN show_flags -  job filtering option: 0 or SHOW_LOCAL
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_priority_factors_response_msg()
  */
 extern int slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
-			       List job_id_list, char *partitions,
-			       List uid_list, uint16_t show_flags);
+			       uint16_t show_flags);
 
 /*
  * slurm_load_job_user - issue RPC to get slurm information about all jobs
