@@ -1088,8 +1088,12 @@ static int _schedule(bool full_queue)
 		}
 
 		bf_licenses = false;
-		if (xstrcasestr(slurm_conf.sched_params, "bf_licenses"))
-			bf_licenses = true;
+		if (xstrcasestr(slurm_conf.sched_params, "bf_licenses")) {
+			if (!xstrcmp(slurm_conf.schedtype, "sched/builtin"))
+				error("Ignoring SchedulerParameters=bf_licenses, this option is incompatible with sched/builtin.");
+			else
+				bf_licenses = true;
+		}
 
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "build_queue_timeout="))) {
