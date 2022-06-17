@@ -264,8 +264,11 @@ extern char *run_command(run_command_args_t *args)
 			track_script_reset_cpid(args->tid, cpid);
 		while (1) {
 			if (command_shutdown) {
-				error("%s: killing %s operation on shutdown",
-				      __func__, args->script_type);
+				error("%s: %s %s operation on shutdown",
+				      __func__,
+				      args->orphan_on_shutdown ?
+				      "orphaning" : "killing",
+				      args->script_type);
 				break;
 			}
 
@@ -327,8 +330,14 @@ extern char *run_command(run_command_args_t *args)
 				}
 			}
 		}
-		/* Kill immediately if the script isn't exiting normally. */
-		if (send_terminate) {
+		if (command_shutdown && args->orphan_on_shutdown) {
+			/* Don't kill the script on shutdown */
+			*args->status = 0;
+		} else if (send_terminate) {
+			/*
+			 * Kill immediately if the script isn't exiting
+			 * normally.
+			 */
 			_kill_pg(cpid);
 			waitpid(cpid, args->status, 0);
 		} else {
