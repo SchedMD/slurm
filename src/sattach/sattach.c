@@ -299,9 +299,9 @@ static slurm_cred_t *_generate_fake_cred(slurm_step_id_t stepid,
 	arg->step_hostlist = nodelist;
 
 	arg->job_core_bitmap = bit_alloc(node_cnt);
-	bit_nset(arg->job_core_bitmap, 0, node_cnt - 1);
+	bit_set_all(arg->job_core_bitmap);
 	arg->step_core_bitmap = bit_alloc(node_cnt);
-	bit_nset(arg->step_core_bitmap, 0, node_cnt - 1);
+	bit_set_all(arg->step_core_bitmap);
 
 	arg->cores_per_socket = xmalloc(sizeof(uint16_t));
 	arg->cores_per_socket[0] = 1;

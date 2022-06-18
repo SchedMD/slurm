@@ -106,9 +106,9 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	arg->step_mem_alloc_size = 1;
 
 	arg->job_core_bitmap = bit_alloc(node_cnt);
-	bit_nset(arg->job_core_bitmap, 0, node_cnt - 1);
+	bit_set_all(arg->job_core_bitmap);
 	arg->step_core_bitmap  = bit_alloc(node_cnt);
-	bit_nset(arg->step_core_bitmap, 0, node_cnt - 1);
+	bit_set_all(arg->step_core_bitmap);
 
 	arg->cores_per_socket = xmalloc(sizeof(uint16_t));
 	arg->cores_per_socket[0] = 1;

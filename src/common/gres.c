@@ -6958,7 +6958,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 					bit_set(alloc_core_bitmap, j);
 			}
 		} else {
-			bit_nset(alloc_core_bitmap, 0, core_ctld - 1);
+			bit_set_all(alloc_core_bitmap);
 		}
 
 		avail_core_bitmap = bit_copy(alloc_core_bitmap);
@@ -7048,7 +7048,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 				 * device selected
 				 */
 			} else if (!gres_ns->topo_core_bitmap[top_inx]) {
-				bit_nset(alloc_core_bitmap, 0, core_ctld - 1);
+				bit_set_all(alloc_core_bitmap);
 			} else if (gres_avail) {
 				bit_or(alloc_core_bitmap,
 				       gres_ns->
@@ -7078,7 +7078,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 		if (shared_gres && (top_inx >= 0) &&
 		    (gres_avail >= min_gres_node)) {
 			if (!gres_ns->topo_core_bitmap[top_inx]) {
-				bit_nset(alloc_core_bitmap, 0, core_ctld - 1);
+				bit_set_all(alloc_core_bitmap);
 			} else {
 				bit_or(alloc_core_bitmap,
 				       gres_ns->
