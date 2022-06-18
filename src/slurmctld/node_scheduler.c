@@ -326,8 +326,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			front_end_ptr->job_cnt_run  = 0;
 			down_node_cnt++;
 			if (job_ptr->node_bitmap_cg) {
-				bit_nclear(job_ptr->node_bitmap_cg, 0,
-					   node_record_count - 1);
+				bit_clear_all(job_ptr->node_bitmap_cg);
 			} else {
 				error("deallocate_nodes: node_bitmap_cg is "
 				      "not set");

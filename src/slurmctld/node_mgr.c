@@ -2460,7 +2460,7 @@ static int _build_node_spec_bitmap(node_record_t *node_ptr)
 	size = node_ptr->tot_cores;
 	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
 	node_ptr->node_spec_bitmap = bit_alloc(size);
-	bit_nset(node_ptr->node_spec_bitmap, 0, size-1);
+	bit_set_all(node_ptr->node_spec_bitmap);
 
 	/* remove node's specialized cpus now */
 	cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);

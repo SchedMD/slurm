@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
 	gres_job_state_log(job_gres_list, job_id);
 
 	cpu_bitmap = bit_alloc(cpu_count);
-	bit_nset(cpu_bitmap, 0, cpu_count - 1);
+	bit_set_all(cpu_bitmap);
 	cpu_alloc = gres_job_test(job_gres_list, node_gres_list, true,
 				  cpu_bitmap, 0, cpu_count - 1,
 				  job_id, node_name, false);

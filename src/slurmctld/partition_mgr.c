@@ -187,8 +187,7 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 		old_bitmap = NULL;
 	} else {
 		old_bitmap = bit_copy(part_ptr->node_bitmap);
-		bit_nclear(part_ptr->node_bitmap, 0,
-			   node_record_count - 1);
+		bit_clear_all(part_ptr->node_bitmap);
 	}
 
 	if (!(host_list = nodespec_to_hostlist(part_ptr->orig_nodes,

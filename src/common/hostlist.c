@@ -3141,7 +3141,7 @@ ssize_t hostlist_ranged_string_dims(hostlist_t hl, size_t n,
 			FREE_NULL_BITMAP(bit_grid);
 			bit_grid = bit_alloc(grid_size);
 		} else
-			bit_nclear(bit_grid, 0, grid_size - 1);
+			bit_clear_all(bit_grid);
 
 		memset(grid_start, hostlist_base, dim_grid_size);
 		memset(grid_end, -1, dim_grid_size);
