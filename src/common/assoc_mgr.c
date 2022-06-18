@@ -465,8 +465,7 @@ static void _clear_qos_used_limit_list(List used_limit_list, uint32_t tres_cnt)
 		used_limits->accrue_cnt = 0;
 		used_limits->jobs = 0;
 		if (used_limits->node_bitmap)
-			bit_nclear(used_limits->node_bitmap, 0,
-			         (node_record_count - 1));
+			bit_clear_all(used_limits->node_bitmap);
 		if (used_limits->node_job_cnt) {
 			memset(used_limits->node_job_cnt, 0,
 			       sizeof(uint16_t) * node_record_count);
@@ -505,8 +504,7 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 	qos->usage->grp_used_jobs  = 0;
 	qos->usage->grp_used_submit_jobs = 0;
 	if (qos->usage->grp_node_bitmap)
-		bit_nclear(qos->usage->grp_node_bitmap, 0,
-		         (node_record_count - 1));
+		bit_clear_all(qos->usage->grp_node_bitmap);
 	if (qos->usage->grp_node_job_cnt) {
 		memset(qos->usage->grp_node_job_cnt, 0,
 		       sizeof(uint16_t) * node_record_count);
@@ -880,9 +878,7 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc)
 				assoc->usage->valid_qos =
 					bit_alloc(g_qos_count);
 			} else
-				bit_nclear(assoc->usage->valid_qos, 0,
-					   (bit_size(assoc->usage->valid_qos)
-					    - 1));
+				bit_clear_all(assoc->usage->valid_qos);
 			set_qos_bitstr_from_list(assoc->usage->valid_qos,
 						 assoc->qos_list);
 			if (((int32_t)assoc->def_qos_id > 0)
@@ -3886,12 +3882,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 						rec->usage->valid_qos =
 							bit_alloc(g_qos_count);
 					} else
-						bit_nclear(rec->usage->
-							   valid_qos, 0,
-							   (bit_size(rec->
-								     usage->
-								     valid_qos)
-							    - 1));
+						bit_clear_all(
+							rec->usage->valid_qos);
 					set_qos_bitstr_from_list(
 						rec->usage->valid_qos,
 						rec->qos_list);

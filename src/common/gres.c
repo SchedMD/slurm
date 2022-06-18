@@ -4406,11 +4406,8 @@ static void _node_state_dealloc(gres_state_t *gres_state_node)
 
 	gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
 	gres_ns->gres_cnt_alloc = 0;
-	if (gres_ns->gres_bit_alloc) {
-		int i = bit_size(gres_ns->gres_bit_alloc) - 1;
-		if (i >= 0)
-			bit_nclear(gres_ns->gres_bit_alloc, 0, i);
-	}
+	if (gres_ns->gres_bit_alloc)
+		bit_clear_all(gres_ns->gres_bit_alloc);
 
 	if (gres_ns->topo_cnt && !gres_ns->topo_gres_cnt_alloc) {
 		for (i = 0; i < gres_context_cnt; i++) {

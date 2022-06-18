@@ -1462,7 +1462,7 @@ static int _job_test_hypercube(job_record_t *job_ptr, bitstr_t *bitmap,
 		alloc_nodes += i;
 	} else { // if there are no required nodes, update bitmaps accordingly
 		avail_bitmap = bit_copy(bitmap);
-		bit_nclear(bitmap, 0, node_record_count - 1);
+		bit_clear_all(bitmap);
 	}
 
 	/* Calculate node availability for each switch */
@@ -1673,7 +1673,7 @@ static int _job_test_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 			sufficient = true;
 		}
 	}
-	bit_nclear(bitmap, 0, node_record_count - 1);
+	bit_clear_all(bitmap);
 
 #if SELECT_DEBUG
 	/* Don't compile this, it slows things down too much */
@@ -1966,7 +1966,7 @@ static int _job_test_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 			sufficient = true;
 		}
 	}
-	bit_nclear(bitmap, 0, node_record_count - 1);
+	bit_clear_all(bitmap);
 
 #if SELECT_DEBUG
 	/* Don't compile this, it slows things down too much */
@@ -2440,10 +2440,8 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 	(void) _rm_job_from_nodes(cr_ptr, to_job_ptr,   "select_p_job_expand",
 				  true, true);
 
-	if (to_job_resrcs_ptr->core_bitmap_used) {
-		i = bit_size(to_job_resrcs_ptr->core_bitmap_used);
-		bit_nclear(to_job_resrcs_ptr->core_bitmap_used, 0, i-1);
-	}
+	if (to_job_resrcs_ptr->core_bitmap_used)
+		bit_clear_all(to_job_resrcs_ptr->core_bitmap_used);
 
 	tmp_bitmap = bit_copy(to_job_resrcs_ptr->node_bitmap);
 	bit_or(tmp_bitmap, from_job_resrcs_ptr->node_bitmap);
@@ -2559,9 +2557,8 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 	to_job_ptr->node_cnt        = new_job_resrcs_ptr->nhosts;
 
 	bit_or(to_job_ptr->node_bitmap, from_job_ptr->node_bitmap);
-	bit_nclear(from_job_ptr->node_bitmap, 0, (node_record_count - 1));
-	bit_nclear(from_job_resrcs_ptr->node_bitmap, 0,
-		  (node_record_count - 1));
+	bit_clear_all(from_job_ptr->node_bitmap);
+	bit_clear_all(from_job_resrcs_ptr->node_bitmap);
 
 	xfree(to_job_ptr->nodes);
 	to_job_ptr->nodes = xstrdup(new_job_resrcs_ptr->nodes);

@@ -719,8 +719,7 @@ static void _remove_job_from_blades(select_jobinfo_t *jobinfo)
 		}
 
 		if (jobinfo->npc == NPC_SYS) {
-			bit_nclear(blade_nodes_running_npc, 0,
-				   node_record_count-1);
+			bit_clear_all(blade_nodes_running_npc);
 		} else if (jobinfo->npc) {
 			bit_not(blade_nodes_running_npc);
 			bit_or(blade_nodes_running_npc,
@@ -1454,8 +1453,7 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 				 * NPC_SYS.
 				 */
 				if (bit_ffs(blade_nodes_running_npc) != -1)
-					bit_nclear(bitmap, 0,
-						   bit_size(bitmap) - 1);
+					bit_clear_all(bitmap);
 			} else {
 				bit_and_not(bitmap, blade_nodes_running_npc);
 			}
@@ -1492,8 +1490,7 @@ extern int select_p_job_begin(job_record_t *job_ptr)
 	if (!jobinfo->blade_map) {
 		jobinfo->blade_map = bit_alloc(blade_cnt);
 	} else {	/* Clear vestigial bitmap in case job requeued */
-		bit_nclear(jobinfo->blade_map, 0,
-			   bit_size(jobinfo->blade_map) - 1);
+		bit_clear_all(jobinfo->blade_map);
 	}
 	_set_job_running(job_ptr);
 

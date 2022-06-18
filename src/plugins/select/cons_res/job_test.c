@@ -733,7 +733,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 			}
 		}
 	} else {
-		bit_nclear(node_map, 0, (node_record_count - 1));
+		bit_clear_all(node_map);
 	}
 
 	/* Compute CPUs already allocated to required nodes */
@@ -759,7 +759,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, node_record_count); /* Clear Map. */
+		bit_clear_all(node_map); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -812,7 +812,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr, bitstr_t *node_map,
 			}
 		}
 	} else {
-		bit_nclear(node_map, 0, (node_record_count - 1));
+		bit_clear_all(node_map);
 	}
 
 	/* Compute CPUs already allocated to required nodes */
@@ -862,7 +862,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, node_record_count); /* Clear Map. */
+		bit_clear_all(node_map); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -914,7 +914,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr, bitstr_t *node_map,
 			}
 		}
 	} else {
-		bit_nclear(node_map, 0, (node_record_count - 1));
+		bit_clear_all(node_map);
 	}
 
 	/* Compute CPUs already allocated to required nodes */
@@ -959,7 +959,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, node_record_count); /* Clear Map. */
+		bit_clear_all(node_map); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -1011,7 +1011,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr, bitstr_t *node_map,
 			}
 		}
 	} else {
-		bit_nclear(node_map, 0, (node_record_count - 1));
+		bit_clear_all(node_map);
 	}
 
 	/* Compute CPUs already allocated to required nodes */
@@ -1048,7 +1048,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr, bitstr_t *node_map,
 	}
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0))  {
-		bit_nclear(node_map, 0, node_record_count); /* Clear Map. */
+		bit_clear_all(node_map); /* Clear Map. */
 		error_code = SLURM_ERROR;
 	} else
 		error_code = SLURM_SUCCESS;
@@ -1126,7 +1126,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 			switches_required[i] = 1;
 		}
 	}
-	bit_nclear(bitmap, 0, node_record_count - 1);
+	bit_clear_all(bitmap);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i=0; i<switch_record_cnt; i++) {
@@ -1583,7 +1583,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 		bit_or(avail_nodes_bitmap, switches_bitmap[i]);
 		switches_node_cnt[i] = bit_set_count(switches_bitmap[i]);
 	}
-	bit_nclear(bitmap, 0, node_record_count - 1);
+	bit_clear_all(bitmap);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < switch_record_cnt; i++) {

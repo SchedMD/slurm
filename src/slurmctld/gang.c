@@ -478,10 +478,8 @@ static void _add_job_to_active(job_record_t *job_ptr, struct gs_part *p_ptr)
 	job_gr_type = _get_part_gr_type(job_ptr->part_ptr);
 	if ((job_gr_type == GS_CPU2) || (job_gr_type == GS_CORE) ||
 	    (job_gr_type == GS_SOCKET)) {
-		if (p_ptr->jobs_active == 0 && p_ptr->active_resmap) {
-			uint32_t size = bit_size(p_ptr->active_resmap);
-			bit_nclear(p_ptr->active_resmap, 0, size-1);
-		}
+		if (p_ptr->jobs_active == 0 && p_ptr->active_resmap)
+			bit_clear_all(p_ptr->active_resmap);
 		add_job_to_cores(job_res, &(p_ptr->active_resmap),
 				 gs_bits_per_node);
 		if (job_gr_type == GS_SOCKET)
