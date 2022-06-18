@@ -134,10 +134,16 @@ foreach content_path [glob -type d $scripts/*] {
 	set pyenv $test_dir/env/$content/
 
 	run_command -nolog -fail \
-		"$bin_virtualenv --clear --no-download $pyenv"
+		"$bin_virtualenv --creator=venv --clear --no-download $pyenv"
 
-	run_command -timeout 300 -nolog -fail \
-		"source $pyenv/bin/activate; pip3 install '$pyapi/$content/'"
+	set activate_path "$pyenv/bin/activate"
+	if {![file isfile $activate_path]} {
+		log_debug "swapping to virtualenv local subdir"
+		set activate_path "$pyenv/local/bin/activate"
+	}
+
+	run_command -timeout 300 -fail \
+		"source $activate_path; python3 -m pip install '$pyapi/$content/'"
 
 	foreach script [glob -type f $scripts/$content/*.py] {
 		log_debug "running: $script"
