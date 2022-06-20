@@ -4824,16 +4824,8 @@ static void _job_state_delete(gres_job_state_t *gres_js)
 	if (gres_js == NULL)
 		return;
 
-	for (i = 0; i < gres_js->node_cnt; i++) {
-		if (gres_js->gres_bit_alloc)
-			FREE_NULL_BITMAP(gres_js->gres_bit_alloc[i]);
-		if (gres_js->gres_bit_step_alloc)
-			FREE_NULL_BITMAP(gres_js->gres_bit_step_alloc[i]);
-	}
-	xfree(gres_js->gres_bit_alloc);
-	xfree(gres_js->gres_cnt_node_alloc);
-	xfree(gres_js->gres_bit_step_alloc);
-	xfree(gres_js->gres_cnt_step_alloc);
+	gres_job_clear_alloc(gres_js);
+
 	if (gres_js->gres_bit_select) {
 		for (i = 0; i < gres_js->total_node_cnt; i++)
 			FREE_NULL_BITMAP(gres_js->gres_bit_select[i]);
@@ -4843,6 +4835,22 @@ static void _job_state_delete(gres_job_state_t *gres_js)
 	xfree(gres_js->gres_cnt_node_select);
 	xfree(gres_js->type_name);
 	xfree(gres_js);
+}
+
+extern void gres_job_clear_alloc(gres_job_state_t *gres_js)
+{
+	for (int i = 0; i < gres_js->node_cnt; i++) {
+		if (gres_js->gres_bit_alloc)
+			FREE_NULL_BITMAP(gres_js->gres_bit_alloc[i]);
+		if (gres_js->gres_bit_step_alloc)
+			FREE_NULL_BITMAP(gres_js->gres_bit_step_alloc[i]);
+	}
+
+	xfree(gres_js->gres_bit_alloc);
+	xfree(gres_js->gres_bit_step_alloc);
+	xfree(gres_js->gres_cnt_step_alloc);
+	xfree(gres_js->gres_cnt_node_alloc);
+	gres_js->node_cnt = 0;
 }
 
 extern void gres_job_list_delete(void *list_element)

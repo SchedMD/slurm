@@ -1109,6 +1109,8 @@ extern gres_state_t *gres_create_state(void *src_ptr,
 				       gres_state_type_enum_t state_type,
 				       void *gres_data);
 
+extern void gres_job_clear_alloc(gres_job_state_t *gres_js);
+
 extern void gres_job_list_delete(void *list_element);
 
 extern void gres_step_list_delete(void *list_element);

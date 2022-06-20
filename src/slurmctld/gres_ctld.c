@@ -797,24 +797,7 @@ static void _job_select_whole_node_internal(
 
 static int _foreach_clear_job_gres(void *x, void *arg)
 {
-	gres_state_t *gres_state_job = x;
-	gres_job_state_t *gres_js;
-	int i;
-
-	gres_js = gres_state_job->gres_data;
-	for (i = 0; i < gres_js->node_cnt; i++) {
-		if (gres_js->gres_bit_alloc) {
-			FREE_NULL_BITMAP(gres_js->gres_bit_alloc[i]);
-		}
-		if (gres_js->gres_bit_step_alloc) {
-			FREE_NULL_BITMAP(gres_js->gres_bit_step_alloc[i]);
-		}
-	}
-	xfree(gres_js->gres_bit_alloc);
-	xfree(gres_js->gres_bit_step_alloc);
-	xfree(gres_js->gres_cnt_step_alloc);
-	xfree(gres_js->gres_cnt_node_alloc);
-	gres_js->node_cnt = 0;
+	gres_job_clear_alloc(((gres_state_t *)x)->gres_data);
 
 	return 0;
 }
