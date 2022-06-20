@@ -168,8 +168,8 @@ end
 --This function is called immediately after slurm_bb_setup while the job is
 --pending.
 --]]
-function slurm_bb_data_in(job_id, job_script)
-	slurm.log_info("%s: slurm_bb_data_in(). job id:%s, job script:%s",
+function slurm_bb_data_in(job_id, job_script, uid, gid)
+	slurm.log_info("%s: slurm_bb_data_in(). job id:%s, job script:%s, uid:%s, gid:%s",
 		lua_script_name, job_id, job_script)
 	local rc, ret_str = sleep_wrapper(1)
 	return rc, ret_str
@@ -250,9 +250,9 @@ end
 --This function is called after the job finishes immediately after
 --slurm_bb_post_run. The job is in a "stage out" state.
 --]]
-function slurm_bb_data_out(job_id, job_script)
-	slurm.log_info("%s: slurm_bb_data_out(). job id:%s, job script%s",
-		lua_script_name, job_id, job_script)
+function slurm_bb_data_out(job_id, job_script, uid, gid)
+	slurm.log_info("%s: slurm_bb_data_out(). job id:%s, job script:%s, uid:%s, gid:%s",
+		lua_script_name, job_id, job_script, uid, gid)
 	local rc, ret_str = sleep_wrapper(1)
 	return rc, ret_str
 end

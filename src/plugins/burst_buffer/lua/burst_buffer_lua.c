@@ -169,6 +169,7 @@ typedef struct {
 } pre_run_args_t;
 
 typedef struct {
+	uint32_t gid;
 	uint32_t job_id;
 	char *job_script;
 	uint32_t uid;
@@ -1013,6 +1014,14 @@ static void *_start_stage_out(void *x)
 
 	if (rc == SLURM_SUCCESS) {
 		xfree(resp_msg);
+		xfree_array(argv);
+		argc = 4;
+		argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
+		argv[0] = xstrdup_printf("%u", stage_out_args->job_id);
+		argv[1] = xstrdup_printf("%s", stage_out_args->job_script);
+		argv[2] = xstrdup_printf("%u", stage_out_args->uid);
+		argv[3] = xstrdup_printf("%u", stage_out_args->gid);
+
 		timeout = bb_state.bb_config.stage_out_timeout;
 		op = "slurm_bb_data_out";
 		START_TIMER;
@@ -1096,6 +1105,7 @@ static void _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 	stage_out_args = xmalloc(sizeof *stage_out_args);
 	stage_out_args->job_id = bb_job->job_id;
 	stage_out_args->uid = bb_job->user_id;
+	stage_out_args->gid = job_ptr->group_id;
 	stage_out_args->job_script = bb_handle_job_script(job_ptr, bb_job);
 
 	slurm_thread_create_detached(&tid, _start_stage_out, stage_out_args);
@@ -2527,10 +2537,13 @@ static void *_start_stage_in(void *x)
 	if (rc == SLURM_SUCCESS) {
 		xfree(resp_msg);
 		xfree_array(argv);
-		argc = 2;
+		argc = 4;
 		argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
 		argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
 		argv[1] = xstrdup_printf("%s", stage_in_args->job_script);
+		argv[2] = xstrdup_printf("%u", stage_in_args->uid);
+		argv[3] = xstrdup_printf("%u", stage_in_args->gid);
+
 
 		timeout = bb_state.bb_config.stage_in_timeout;
 		op = "slurm_bb_data_in";
