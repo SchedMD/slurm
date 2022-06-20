@@ -2413,7 +2413,8 @@ extern char *slurm_conf_get_nodeaddr(const char *node_hostname)
 
 	p = host_to_node_hashtbl[idx];
 	while (p) {
-		if (xstrcmp(p->hostname, node_hostname) == 0) {
+		if (!xstrcmp(p->hostname, node_hostname) ||
+		    !xstrcmp(p->alias, node_hostname)) {
 			char *nodeaddr;
 			if (p->address != NULL)
 				nodeaddr = xstrdup(p->address);
