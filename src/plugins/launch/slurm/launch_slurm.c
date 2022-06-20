@@ -274,7 +274,7 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 static char *_mpir_get_host_name(char *node_name)
 {
 	if ((xstrcasestr(slurm_conf.launch_params, "mpir_use_nodeaddr")))
-		return slurm_conf_get_nodeaddr(NULL, node_name);
+		return slurm_conf_get_nodeaddr(node_name);
 
 	return xstrdup(node_name);
 }

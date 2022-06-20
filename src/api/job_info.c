@@ -1540,7 +1540,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		 *  Set request message address to slurmd on localhost
 		 */
 		gethostname_short(this_host, sizeof(this_host));
-		this_addr = slurm_conf_get_nodeaddr(this_host, NULL);
+		this_addr = slurm_conf_get_nodeaddr(this_host);
 		if (this_addr == NULL)
 			this_addr = xstrdup("localhost");
 		slurm_set_addr(&req_msg.address, slurm_conf.slurmd_port,
