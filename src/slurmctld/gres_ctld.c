@@ -1635,7 +1635,7 @@ step3:
 }
 
 /* Clear any vestigial job gres state. This may be needed on job requeue. */
-extern void gres_ctld_job_clear(List job_gres_list)
+extern void gres_ctld_job_clear_alloc(List job_gres_list)
 {
 
 	if (job_gres_list == NULL)

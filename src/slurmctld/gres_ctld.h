@@ -136,8 +136,12 @@ extern void gres_ctld_job_merge(List from_job_gres_list,
 				List to_job_gres_list,
 				bitstr_t *to_job_node_bitmap);
 
-/* Clear any vestigial job gres state. This may be needed on job requeue. */
-extern void gres_ctld_job_clear(List job_gres_list);
+/*
+ * Clear any vestigial alloc job gres state. This may be needed on job requeue.
+ * This only clears out the allocated portions of the gres list, it does not
+ * remove the actual items from the list.
+ */
+extern void gres_ctld_job_clear_alloc(List job_gres_list);
 
 /* Given a job's GRES data structure, return the indecies for selected elements
  * IN job_gres_list  - job's allocated GRES data structure
