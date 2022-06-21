@@ -385,7 +385,7 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	int status = SLURM_ERROR;
 	int ms_timeout;
 	char *resp = NULL;
-	bool killed;
+	bool killed = false;
 	int tmp_fd = 0;
 	char *tmp_file = NULL;
 
@@ -417,9 +417,14 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 		}
 	}
 
-	track_script_rec_add(job_id, 0, pthread_self());
+	if (run_command_args->tid)
+		track_script_rec_add(job_id, 0, pthread_self());
 	resp = run_command(run_command_args);
-	if ((killed = track_script_killed(pthread_self(), status, true))) {
+	if (run_command_args->tid)
+		killed = track_script_killed(pthread_self(), status, true);
+	else if (WIFSIGNALED(status) && (WTERMSIG(status) == SIGKILL))
+		killed = true;
+	if (killed) {
 		info("%s: JobId=%u %s killed by signal %u",
 		     __func__, job_id, run_command_args->script_type,
 		     WTERMSIG(status));
@@ -442,7 +447,8 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	 * Use pthread_self here instead of track_script_rec->tid to avoid any
 	 * potential for race.
 	 */
-	track_script_remove(pthread_self());
+	if (run_command_args->tid)
+		track_script_remove(pthread_self());
 
 	if (tmp_fd)
 		close(tmp_fd);
