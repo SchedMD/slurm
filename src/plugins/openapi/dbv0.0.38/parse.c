@@ -1149,17 +1149,23 @@ static data_for_each_cmd_t _for_each_parse_qos(data_t *data, void *arg)
 
 	xassert(args->magic == MAGIC_FOREACH_PARSE_QOS);
 
-	if (data_get_type(data) != DATA_TYPE_DICT)
+	switch (data_get_type(data)) {
+	case DATA_TYPE_STRING:
+		name = data;
+		break;
+	case DATA_TYPE_DICT:
+		/*
+		 * Note: we ignore everything but name for loading QOS into an
+		 * qos_list as that is the only field accepted
+		 */
+		if (!(name = data_key_get(data, "name")) ||
+		    data_convert_type(name, DATA_TYPE_STRING) !=
+			    DATA_TYPE_STRING)
+			return DATA_FOR_EACH_FAIL;
+		break;
+	default:
 		return DATA_FOR_EACH_FAIL;
-
-	/*
-	 * Note: we ignore everything but name for loading QOS into an
-	 * qos_list as that is the only field accepted
-	 */
-
-	if (!(name = data_key_get(data, "name")) ||
-	    data_convert_type(name, DATA_TYPE_STRING) != DATA_TYPE_STRING)
-		return DATA_FOR_EACH_FAIL;
+	}
 
 	(void)list_append(args->qos_list, xstrdup(data_get_string(name)));
 
