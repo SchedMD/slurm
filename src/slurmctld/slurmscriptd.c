@@ -67,6 +67,7 @@
 #include "src/slurmctld/slurmscriptd_protocol_pack.h"
 
 #define MAX_POLL_WAIT 500 /* in milliseconds */
+#define MAX_SHUTDOWN_DELAY 10
 
 /*
  *****************************************************************************
@@ -125,6 +126,8 @@ static xhash_t *script_resp_map = NULL;
  */
 static int slurmscriptd_readfd = -1;
 static int slurmscriptd_writefd = -1;
+static pthread_mutex_t powersave_script_count_mutex;
+static int powersave_script_count = 0;
 
 
 /* Function definitions: */
@@ -202,6 +205,63 @@ static void _wait_for_script_resp(script_response_t *script_resp,
 	slurm_mutex_unlock(&script_resp->mutex);
 }
 
+static void _wait_for_powersave_scripts()
+{
+	static bool called = false;
+	int i, cnt;
+
+	/*
+	 * Only do this wait once. Under normal operation, this is called twice:
+	 * (1) _handle_shutdown()
+	 * (2) _handle_close()
+	 * We could just call this from _handle_shutdown(). However, if
+	 * slurmctld fatal()'s or dies in some other way without sending
+	 * SLURMSCRIPTD_SHUTDOWN, then only _handle_close() is called. So, we
+	 * need this to be called from both places but only happen once.
+	 */
+	if (called)
+		return;
+	called = true;
+
+	/*
+	 * ResumeProgram has a temporary file open held in memory.
+	 * Wait a short time for powersave scripts to finish before
+	 * shutting down (which will close the temporary file).
+	 */
+	for (i = 0; i < MAX_SHUTDOWN_DELAY; i++) {
+		slurm_mutex_lock(&powersave_script_count_mutex);
+		cnt = powersave_script_count;
+		slurm_mutex_unlock(&powersave_script_count_mutex);
+		if (!cnt)
+			break;
+		if (i == 0)
+			log_flag(SCRIPT, "Waiting up to %d seconds for %d powersave scripts to complete",
+				 MAX_SHUTDOWN_DELAY, cnt);
+
+		sleep(1);
+	}
+
+	/* Kill or orphan running scripts. */
+	run_command_shutdown();
+	if (cnt) {
+		error("power_save: orphaning %d processes which are not terminating so slurmctld can exit",
+		      cnt);
+
+		/*
+		 * Wait for the script completion messages to be processed and
+		 * sent to slurmctld, otherwise slurmctld may wait forever for
+		 * a message that won't come.
+		 */
+		while (cnt) {
+			slurm_mutex_lock(&powersave_script_count_mutex);
+			cnt = powersave_script_count;
+			slurm_mutex_unlock(&powersave_script_count_mutex);
+			usleep(100000); /* 100 ms */
+		}
+	}
+
+}
+
 static int _handle_close(eio_obj_t *obj, List objs)
 {
 	debug3("Called %s", __func__);
@@ -219,7 +279,7 @@ static int _handle_close(eio_obj_t *obj, List objs)
 	obj->shutdown = true;
 
 	if (!running_in_slurmctld()) { /* Only do this for slurmscriptd */
-		run_command_shutdown();
+		_wait_for_powersave_scripts();
 		track_script_flush();
 	}
 
@@ -670,7 +730,7 @@ static int _handle_shutdown(slurmscriptd_msg_t *recv_msg)
 {
 	log_flag(SCRIPT, "Handling %s", rpc_num2string(recv_msg->msg_type));
 	/* Kill or orphan all running scripts. */
-	run_command_shutdown();
+	_wait_for_powersave_scripts();
 	track_script_flush();
 
 	eio_signal_shutdown(msg_handle);
@@ -729,6 +789,10 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 				     &resp_msg, &signalled);
 		break;
 	case SLURMSCRIPTD_POWER:
+		slurm_mutex_lock(&powersave_script_count_mutex);
+		powersave_script_count++;
+		slurm_mutex_unlock(&powersave_script_count_mutex);
+
 		/*
 		 * We want these scripts to keep running even if slurmctld
 		 * shuts down, so do not track these scripts with track_script
@@ -741,6 +805,10 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 				     script_msg->tmp_file_env_name,
 				     script_msg->tmp_file_str,
 				     &resp_msg, &signalled);
+
+		slurm_mutex_lock(&powersave_script_count_mutex);
+		powersave_script_count--;
+		slurm_mutex_unlock(&powersave_script_count_mutex);
 		break;
 	default:
 		error("%s: Invalid script type=%d",
@@ -1400,11 +1468,13 @@ extern int slurmscriptd_init(int argc, char **argv)
 		}
 
 		debug("slurmscriptd: Got ack from slurmctld, initialization successful");
+		slurm_mutex_init(&powersave_script_count_mutex);
 		slurm_mutex_init(&write_mutex);
 		_slurmscriptd_mainloop();
 
 #ifdef MEMORY_LEAK_DEBUG
 		track_script_fini();
+		slurm_mutex_destroy(&powersave_script_count_mutex);
 #endif
 
 		/* We never want to return from here, only exit. */
