@@ -467,7 +467,6 @@ static int _handle_flush(slurmscriptd_msg_t *recv_msg)
 {
 	log_flag(SCRIPT, "Handling %s", rpc_num2string(recv_msg->msg_type));
 	/* Kill all running scripts */
-	run_command_shutdown();
 	track_script_flush();
 
 	/* We need to respond to slurmctld that we are done */
