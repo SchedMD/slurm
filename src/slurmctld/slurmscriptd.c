@@ -670,7 +670,7 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 static int _handle_shutdown(slurmscriptd_msg_t *recv_msg)
 {
 	log_flag(SCRIPT, "Handling %s", rpc_num2string(recv_msg->msg_type));
-	/* Kill all running scripts. */
+	/* Kill or orphan all running scripts. */
 	run_command_shutdown();
 	track_script_flush();
 
@@ -716,7 +716,6 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		break;
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
 	case SLURMSCRIPTD_MAIL:
-	case SLURMSCRIPTD_POWER:
 	case SLURMSCRIPTD_PROLOG:
 		/*
 		 * script_msg->timeout is in seconds but
@@ -724,6 +723,20 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		 * script_msg->timeout may also not be set (NO_VAL16).
 		 * Let _run_script handle the conversion.
 		 */
+		status = _run_script(&run_command_args, script_msg->job_id,
+				     script_msg->timeout,
+				     script_msg->tmp_file_env_name,
+				     script_msg->tmp_file_str,
+				     &resp_msg, &signalled);
+		break;
+	case SLURMSCRIPTD_POWER:
+		/*
+		 * We want these scripts to keep running even if slurmctld
+		 * shuts down, so do not track these scripts with track_script
+		 * so they don't get killed when slurmctld shuts down.
+		 */
+		run_command_args.tid = 0;
+		run_command_args.orphan_on_shutdown = true;
 		status = _run_script(&run_command_args, script_msg->job_id,
 				     script_msg->timeout,
 				     script_msg->tmp_file_env_name,
