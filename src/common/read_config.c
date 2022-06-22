@@ -4003,7 +4003,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		list_append(conf->job_defaults_list, job_defaults);
 	}
 
-	if (s_p_get_string(&temp_str, "DebugFlags", hashtbl)) {
+	if ((temp_str = xstrdup(getenv("SLURM_DEBUG_FLAGS"))) ||
+	    s_p_get_string(&temp_str, "DebugFlags", hashtbl)) {
 		if (debug_str2flags(temp_str, &conf->debug_flags)
 		    != SLURM_SUCCESS) {
 			error("DebugFlags invalid: %s", temp_str);
