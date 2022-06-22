@@ -3376,6 +3376,10 @@ be removed from power savings mode (using Slurm's hostlist
 expression format). A job to node mapping is available in JSON format by
 reading the temporary file specified by the \fBSLURM_RESUME_FILE\fR environment
 variable.
+This file is closed once slurmctld shuts down. If ResumeProgram is running,
+slurmctld shutdown is delayed by up to ten seconds to give ResumeProgram time
+to read this file. Therefore, this file should be read at the beginning of
+ResumeProgram.
 By default no program is run.
 .IP
 
