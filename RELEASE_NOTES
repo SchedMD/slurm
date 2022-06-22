@@ -25,6 +25,9 @@ HIGHLIGHTS
  -- Make scontrol reconfigure and sending a SIGHUP to the slurmctld behave the
     same. If you were using SIGHUP as a 'lighter' scontrol reconfigure to rotate
     logs please update your scripts to use SIGUSR2 instead.
+ -- burst_buffer/lua - pass the job's UID and GID to slurm_bb_pre_run,
+    slurm_bb_data_in, slurm_bb_post_run, and slurm_bb_data_out in
+    burst_buffer.lua.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
