@@ -4754,8 +4754,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (s_p_get_string(&temp_str, "PrivateData", hashtbl)) {
 		if (xstrcasestr(temp_str, "account"))
 			conf->private_data |= PRIVATE_DATA_ACCOUNTS;
-		if (xstrcasestr(temp_str, "cloud"))
-			conf->private_data |= PRIVATE_CLOUD_NODES;
 		if (xstrcasestr(temp_str, "event"))
 			conf->private_data |= PRIVATE_DATA_EVENTS;
 		if (xstrcasestr(temp_str, "job"))

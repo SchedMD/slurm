@@ -116,7 +116,6 @@ static void	_drain_node(node_record_t *node_ptr, char *reason,
 			    uint32_t reason_uid);
 static front_end_record_t * _front_end_reg(
 				slurm_node_registration_status_msg_t *reg_msg);
-static bool	_is_cloud_hidden(node_record_t *node_ptr);
 static void    _make_node_unavail(node_record_t *node_ptr);
 static void 	_make_node_down(node_record_t *node_ptr,
 				time_t event_time);
@@ -794,16 +793,6 @@ int list_compare_config (void *config_entry1, void *config_entry2)
 	return (weight1 - weight2);
 }
 
-/* Return true if the node should be hidden by virtue of being powered down
- * and in the cloud. */
-static bool _is_cloud_hidden(node_record_t *node_ptr)
-{
-	if (((slurm_conf.private_data & PRIVATE_CLOUD_NODES) == 0) &&
-	    IS_NODE_CLOUD(node_ptr) && IS_NODE_POWERED_DOWN(node_ptr))
-		return true;
-	return false;
-}
-
 static bool _node_is_hidden(node_record_t *node_ptr,
 			    pack_node_info_t *pack_info)
 {
@@ -899,8 +888,6 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 			else if (IS_NODE_FUTURE(node_ptr) &&
 				 (!(show_flags & SHOW_FUTURE)))
 				hidden = true;
-			else if (_is_cloud_hidden(node_ptr))
-				hidden = true;
 			else if ((node_ptr->name == NULL) ||
 				 (node_ptr->name[0] == '\0'))
 				hidden = true;
@@ -993,9 +980,6 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			else if (IS_NODE_FUTURE(node_ptr) &&
 				 (!(show_flags & SHOW_FUTURE)))
 				hidden = true;
-//			Don't hide the node if explicitly requested by name
-//			else if (_is_cloud_hidden(node_ptr))
-//				hidden = true;
 			else if ((node_ptr->name == NULL) ||
 				 (node_ptr->name[0] == '\0'))
 				hidden = true;
