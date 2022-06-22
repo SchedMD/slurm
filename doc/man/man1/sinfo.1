@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "March 2022" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "June 2022" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- View information about Slurm nodes and partitions.
@@ -43,6 +43,11 @@ same partition and state (e.g. "250+").
 .TP
 \fB\-\-federation\fR
 Show all partitions from the federation if a member of one.
+.IP
+
+.TP
+\fB\-F\fR, \fB\-\-future\fR
+Report nodes in FUTURE state.
 .IP
 
 .TP
@@ -1169,6 +1174,11 @@ Same as \fB\-a, \-\-all\fR
 .TP
 \fBSINFO_FEDERATION\fR
 Same as \fB\-\-federation\fR
+.IP
+
+.TP
+\fBSCONTROL_FUTURE\fR
+\fB\-F, \-\-future\fR
 .IP
 
 .TP

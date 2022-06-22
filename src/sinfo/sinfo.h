@@ -171,6 +171,7 @@ struct sinfo_parameters {
 	bool def_format;
 	bool exact_match;
 	bool federation_flag;
+	bool future_flag;
 	bool filtering;
 	bool local;
 	bool long_output;

@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.39 - add new field default_memory_per_node for partitions.
  -- Change cloud nodes to show by default. PrivateData=cloud is no longer
     needed.
+ -- Add -F/--future option to sinfo to display future nodes.
 
 * Changes in Slurm 22.05.3
 ==========================

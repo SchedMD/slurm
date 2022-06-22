@@ -341,6 +341,8 @@ static List _query_server(bool clear_old)
 
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
+	if (params.future_flag)
+		show_flags |= SHOW_FUTURE;
 
 	if (old_part_ptr) {
 		if (clear_old)
@@ -442,6 +444,8 @@ static void *_load_job_prio_thread(void *args)
 		node_name = params.nodes;
 	if (params.all_flag)
 		show_flags |= SHOW_ALL;
+	if (params.future_flag)
+		show_flags |= SHOW_FUTURE;
 
 	error_code = slurm_load_partitions2((time_t) NULL, &new_part_ptr,
 					    show_flags, cluster);
