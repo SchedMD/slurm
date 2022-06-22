@@ -1421,7 +1421,7 @@ static int _dump_qos_preempt_list(const parser_t *const parse, void *obj,
 	}
 
 	/* based on get_qos_complete_str_bitstr() */
-	for (int i = 0; (i < bit_size(*preempt_bitstr)); i++) {
+	for (int i = 1; (i < bit_size(*preempt_bitstr)); i++) {
 		slurmdb_qos_rec_t *ptr_qos;
 
 		if (!bit_test(*preempt_bitstr, i))
