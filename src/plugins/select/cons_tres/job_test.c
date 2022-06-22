@@ -2268,12 +2268,10 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		 * Count total CPUs of the intersection of node_map and
 		 * switch_node_bitmap.
 		 */
-		i_first = bit_ffs(switch_node_bitmap[i]);
-		i_last = bit_fls(switch_node_bitmap[i]);
-		for (int j = i_first; j <= i_last; j++) {
-			node_ptr = node_record_table_ptr[j];
-			switch_cpus += node_ptr->cpus;
-		}
+		for (j = 0; (node_ptr = next_node_bitmap(switch_node_bitmap[i],
+							 &j));
+		     j++)
+			switch_cpus += avail_res_array[j]->avail_cpus;
 		switch_cpu_cnt[i] = switch_cpus;
 		if (req_nodes_bitmap &&
 		    bit_overlap_any(req_nodes_bitmap, switch_node_bitmap[i])) {
@@ -2286,7 +2284,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		}
 		if (!_enough_nodes(switch_node_cnt[i], rem_nodes,
 				   min_nodes, req_nodes) ||
-		    !(rem_cpus <= switch_cpu_cnt[i]))
+		    (rem_cpus > switch_cpu_cnt[i]))
 			continue;
 		if (!req_nodes_bitmap &&
 		    (nw = list_find_first(node_weight_list, _topo_node_find,
