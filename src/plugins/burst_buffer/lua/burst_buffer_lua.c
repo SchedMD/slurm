@@ -162,6 +162,7 @@ typedef struct {
 } stage_in_args_t;
 
 typedef struct {
+	uint32_t gid;
 	uint32_t job_id;
 	char *job_script;
 	uint32_t timeout;
@@ -968,10 +969,12 @@ static void *_start_stage_out(void *x)
 	DEF_STAGE_THROTTLE;
 	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
-	argc = 2;
+	argc = 4;
 	argv = xcalloc(argc + 1, sizeof(char *)); /* NULL-terminated */
 	argv[0] = xstrdup_printf("%u", stage_out_args->job_id);
 	argv[1] = xstrdup_printf("%s", stage_out_args->job_script);
+	argv[2] = xstrdup_printf("%u", stage_out_args->uid);
+	argv[3] = xstrdup_printf("%u", stage_out_args->gid);
 
 	timeout = bb_state.bb_config.other_timeout;
 
@@ -1014,13 +1017,6 @@ static void *_start_stage_out(void *x)
 
 	if (rc == SLURM_SUCCESS) {
 		xfree(resp_msg);
-		xfree_array(argv);
-		argc = 4;
-		argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
-		argv[0] = xstrdup_printf("%u", stage_out_args->job_id);
-		argv[1] = xstrdup_printf("%s", stage_out_args->job_script);
-		argv[2] = xstrdup_printf("%u", stage_out_args->uid);
-		argv[3] = xstrdup_printf("%u", stage_out_args->gid);
 
 		timeout = bb_state.bb_config.stage_out_timeout;
 		op = "slurm_bb_data_out";
@@ -3002,10 +2998,12 @@ static void *_start_pre_run(void *x)
 	DEF_STAGE_THROTTLE;
 	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
-	argc = 2;
+	argc = 4;
 	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
 	argv[0] = xstrdup_printf("%u", pre_run_args->job_id);
 	argv[1] = xstrdup_printf("%s", pre_run_args->job_script);
+	argv[2] = xstrdup_printf("%u", pre_run_args->uid);
+	argv[3] = xstrdup_printf("%u", pre_run_args->gid);
 
 	/* Wait for node boot to complete. */
 	while (!nodes_ready) {
@@ -3183,6 +3181,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	job_script = NULL; /* Avoid two variables pointing at the same string */
 	pre_run_args->timeout = bb_state.bb_config.other_timeout;
 	pre_run_args->uid = job_ptr->user_id;
+	pre_run_args->gid = job_ptr->group_id;
 	if (job_ptr->details) { /* Defer launch until completion */
 		job_ptr->details->prolog_running++;
 		job_ptr->job_state |= JOB_CONFIGURING;

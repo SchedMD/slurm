@@ -221,9 +221,9 @@ end
 --This function is called after the job is scheduled but before the
 --job starts running when the job is in a "running + configuring" state.
 --]]
-function slurm_bb_pre_run(job_id, job_script)
-	slurm.log_info("%s: slurm_bb_pre_run(). job id:%s, job script:%s",
-		lua_script_name, job_id, job_script)
+function slurm_bb_pre_run(job_id, job_script, uid, gid)
+	slurm.log_info("%s: slurm_bb_pre_run(). job id:%s, job script:%s, uid:%s, gid:%s",
+		lua_script_name, job_id, job_script, uid, gid)
 	local rc, ret_str, contents
 	rc, ret_str = sleep_wrapper(1)
 	return rc, ret_str
@@ -236,9 +236,9 @@ end
 --This function is called after the job finishes. The job is in a "stage out"
 --state.
 --]]
-function slurm_bb_post_run(job_id, job_script)
-	slurm.log_info("%s: slurm_post_run(). job id:%s, job script%s",
-		lua_script_name, job_id, job_script)
+function slurm_bb_post_run(job_id, job_script, uid, gid)
+	slurm.log_info("%s: slurm_post_run(). job id:%s, job script:%s, uid:%s, gid:%s",
+		lua_script_name, job_id, job_script, uid, gid)
 	local rc, ret_str = sleep_wrapper(1)
 	return rc, ret_str
 end
