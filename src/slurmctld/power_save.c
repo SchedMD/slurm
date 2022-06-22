@@ -130,8 +130,6 @@ static int   _init_power_config(void);
 static void *_init_power_save(void *arg);
 static int   _kill_procs(void);
 static void  _reap_procs(void);
-static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id,
-		       char *json);
 static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
 
@@ -662,9 +660,9 @@ extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
 
 static void _do_failed_nodes(char *hosts)
 {
-	pid_t pid = _run_prog(resume_fail_prog, hosts, NULL, 0, NULL);
-	log_flag(POWER, "power_save: pid %d handle failed nodes %s",
-		 (int)pid, hosts);
+	slurmscriptd_run_power(resume_fail_prog, hosts, NULL, 0,
+			       "resumefailprog", max_timeout, NULL, NULL);
+	log_flag(POWER, "power_save: handle failed nodes %s", hosts);
 }
 
 static void _do_resume(char *host, char *json)
@@ -679,68 +677,6 @@ static void _do_suspend(char *host)
 	slurmscriptd_run_power(suspend_prog, host, NULL, 0, "suspendprog",
 			       max_timeout, NULL, NULL);
 	log_flag(POWER, "power_save: suspending nodes %s", host);
-}
-
-/* run a suspend or resume program
- * prog IN	- program to run
- * arg1 IN	- first program argument, the hostlist expression
- * arg2 IN	- second program argumentor NULL
- * job_id IN	- Passed as SLURM_JOB_ID environment variable
- * json IN	- Passed as tmp file in SLURM_RESUME_FILE environment variable
- */
-static pid_t _run_prog(char *prog, char *arg1, char *arg2,
-		       uint32_t job_id, char *json)
-{
-	char *argv[4], *pname, *tmp_file = NULL;
-	pid_t child;
-	int tmp_fd = -1;
-
-	if (prog == NULL)	/* disabled, useful for testing */
-		return -1;
-
-	pname = strrchr(prog, '/');
-	if (pname == NULL)
-		argv[0] = prog;
-	else
-		argv[0] = pname + 1;
-	argv[1] = arg1;
-	argv[2] = arg2;
-	argv[3] = NULL;
-
-	if (json &&
-	    ((tmp_fd = dump_to_memfd("resumeprog", json, &tmp_file)) == -1))
-		error("failed to create tmp file for ResumeProgram");
-
-	child = fork();
-	if (child == 0) {
-		char **env = NULL;
-		closeall(0);
-		setpgid(0, 0);
-
-		env = env_array_create();
-		env_array_append(&env, "SLURM_CONF", slurm_conf.slurm_conf);
-		if (job_id)
-			env_array_append_fmt(&env, "SLURM_JOB_ID", "%u",
-					     job_id);
-		if (tmp_file)
-			env_array_append(&env, "SLURM_RESUME_FILE", tmp_file);
-
-		execve(prog, argv, env);
-		_exit(1);
-	} else if (child < 0) {
-		error("fork: %m");
-	} else {
-		/* save the pid */
-		proc_track_struct_t *proc_track;
-		proc_track = xmalloc(sizeof(proc_track_struct_t));
-		proc_track->child_pid = child;
-		proc_track->child_time = time(NULL);
-		proc_track->tmp_fd = tmp_fd;
-		list_append(proc_track_list, proc_track);
-	}
-
-	xfree(tmp_file);
-	return child;
 }
 
 /* reap child processes previously forked to modify node state. */
