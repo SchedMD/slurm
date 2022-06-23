@@ -104,27 +104,27 @@ extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 	return SLURM_SUCCESS;
 }
 
-extern int mpi_p_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
+extern int mpi_p_slurmstepd_task(const mpi_task_info_t *mpi_task, char ***env)
 {
 	int i;
 
 	env_array_overwrite_fmt(env, "PMI_FD", "%u",
-				TASK_PMI_SOCK(job->ltaskid));
+				TASK_PMI_SOCK(mpi_task->ltaskid));
 
 	env_array_overwrite_fmt(env, "PMI_JOBID", "%s",
 				job_info.pmi_jobid);
-	env_array_overwrite_fmt(env, "PMI_RANK", "%u", job->gtaskid);
-	env_array_overwrite_fmt(env, "PMI_SIZE", "%u", job->ntasks);
+	env_array_overwrite_fmt(env, "PMI_RANK", "%u", mpi_task->gtaskid);
+	env_array_overwrite_fmt(env, "PMI_SIZE", "%u", mpi_task->ntasks);
 	if (job_info.spawn_seq) { /* PMI1.1 needs this env-var */
 		env_array_overwrite_fmt(env, "PMI_SPAWNED", "%u", 1);
 	}
 	/* close unused sockets in task */
 	close(tree_sock);
 	tree_sock = 0;
-	for (i = 0; i < job->ltasks; i ++) {
+	for (i = 0; i < mpi_task->ltasks; i ++) {
 		close(STEPD_PMI_SOCK(i));
 		STEPD_PMI_SOCK(i) = 0;
-		if (i != job->ltaskid) {
+		if (i != mpi_task->ltaskid) {
 			close(TASK_PMI_SOCK(i));
 			TASK_PMI_SOCK(i) = 0;
 		}

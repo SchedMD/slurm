@@ -284,7 +284,7 @@ static char *_build_path(char *fname, char **prog_env)
 static int
 _setup_mpi(stepd_step_rec_t *step, int ltaskid)
 {
-	mpi_plugin_task_info_t info[1];
+	mpi_task_info_t info[1];
 
 	if (step->het_job_id && (step->het_job_id != NO_VAL))
 		info->step_id.job_id   = step->het_job_id;

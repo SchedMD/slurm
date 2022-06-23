@@ -75,7 +75,7 @@ typedef struct {
 	uint32_t ntasks; /* total number of tasks in current job */
 	slurm_addr_t *self;
 	slurm_step_id_t step_id; /* Current step id (or NO_VAL) */
-} mpi_plugin_task_info_t;
+} mpi_task_info_t;
 
 /**********************************************************************
  * Hooks called by the slurmd and/or slurmstepd.
@@ -105,7 +105,7 @@ extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env);
  * The returned "*env" array may be manipulated (and freed) by using
  * the src/common/env.c:env_array_* functions.
  */
-extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job,
+extern int mpi_g_slurmstepd_task(const mpi_task_info_t *mpi_task,
 				 char ***env);
 
 /**********************************************************************

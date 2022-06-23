@@ -252,13 +252,14 @@ extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 	return SLURM_SUCCESS;
 }
 
-extern int mpi_p_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
+extern int mpi_p_slurmstepd_task(const mpi_task_info_t *mpi_task, char ***env)
 {
 	// Set environment variables
 	env_array_overwrite_fmt(env, PALS_APID_ENV, "%u.%u",
-				job->step_id.job_id, job->step_id.step_id);
-	env_array_overwrite_fmt(env, PALS_RANKID_ENV, "%u", job->gtaskid);
-	env_array_overwrite_fmt(env, PALS_NODEID_ENV, "%u", job->nodeid);
+				mpi_task->step_id.job_id,
+				mpi_task->step_id.step_id);
+	env_array_overwrite_fmt(env, PALS_RANKID_ENV, "%u", mpi_task->gtaskid);
+	env_array_overwrite_fmt(env, PALS_NODEID_ENV, "%u", mpi_task->nodeid);
 	env_array_overwrite_fmt(env, PALS_SPOOL_DIR_ENV, "%s", appdir);
 	env_array_overwrite_fmt(env, PALS_APINFO_ENV, "%s", apinfo);
 

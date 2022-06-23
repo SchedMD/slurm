@@ -83,7 +83,7 @@ extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 	return SLURM_SUCCESS;
 }
 
-extern int mpi_p_slurmstepd_task(const mpi_plugin_task_info_t*job, char ***env)
+extern int mpi_p_slurmstepd_task(const mpi_task_info_t*job, char ***env)
 {
 	debug("Using mpi/none");
 	return SLURM_SUCCESS;

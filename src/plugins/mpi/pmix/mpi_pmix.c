@@ -237,14 +237,15 @@ err_ext:
 	return ret;
 }
 
-extern int mpi_p_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
+extern int mpi_p_slurmstepd_task(const mpi_task_info_t *mpi_task, char ***env)
 {
 	char **tmp_env = NULL;
 	pmixp_debug_hang(0);
 
-	PMIXP_DEBUG("Patch environment for task %d", job->gtaskid);
+	PMIXP_DEBUG("Patch environment for task %d", mpi_task->gtaskid);
 
-	pmixp_lib_setup_fork(job->gtaskid, pmixp_info_namespace(), &tmp_env);
+	pmixp_lib_setup_fork(
+		mpi_task->gtaskid, pmixp_info_namespace(), &tmp_env);
 	if (NULL != tmp_env) {
 		int i;
 		for (i = 0; NULL != tmp_env[i]; i++) {

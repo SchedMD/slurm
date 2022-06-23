@@ -65,7 +65,7 @@ typedef struct slurm_mpi_ops {
 			     int *full_options_cnt);
 	void (*conf_set)(s_p_hashtbl_t *tbl);
 	int (*slurmstepd_prefork)(const stepd_step_rec_t *step, char ***env);
-	int (*slurmstepd_task)(const mpi_plugin_task_info_t *job, char ***env);
+	int (*slurmstepd_task)(const mpi_task_info_t *mpi_task, char ***env);
 } slurm_mpi_ops_t;
 
 /*
@@ -177,20 +177,22 @@ static void _log_mpi_rec(const mpi_step_info_t *mpi_step)
 	log_flag(MPI, "----------------------");
 }
 
-static void _log_task_rec(const mpi_plugin_task_info_t *job)
+static void _log_task_rec(const mpi_task_info_t *mpi_task)
 {
-	xassert(job);
+	xassert(mpi_task);
 
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_MPI))
 		return;
 
-	log_flag(MPI, "MPI_PLUGIN_TASK_INFO");
+	log_flag(MPI, "MPI_TASK_INFO");
 	log_flag(MPI, "--------------------");
-	log_flag(MPI, "%ps", &job->step_id);
-	log_flag(MPI, "nnodes:%u node_id:%u", job->nnodes, job->nodeid);
-	log_flag(MPI, "ntasks:%u local_tasks:%u", job->ntasks, job->ltasks);
-	log_flag(MPI, "global_task_id:%u local_task_id:%u", job->gtaskid,
-		 job->ltaskid);
+	log_flag(MPI, "%ps", &mpi_task->step_id);
+	log_flag(MPI, "nnodes:%u node_id:%u",
+		 mpi_task->nnodes, mpi_task->nodeid);
+	log_flag(MPI, "ntasks:%u local_tasks:%u",
+		 mpi_task->ntasks, mpi_task->ltasks);
+	log_flag(MPI, "global_task_id:%u local_task_id:%u", mpi_task->gtaskid,
+		 mpi_task->ltaskid);
 	log_flag(MPI, "--------------------");
 }
 
@@ -517,18 +519,18 @@ extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 	return (*(ops[0].slurmstepd_prefork))(step, env);
 }
 
-extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
+extern int mpi_g_slurmstepd_task(const mpi_task_info_t *mpi_task, char ***env)
 {
-	xassert(job);
+	xassert(mpi_task);
 	xassert(env);
 	xassert(g_context);
 	xassert(ops);
 
 	log_flag(MPI, "%s: Details before call:", __func__);
 	_log_env(*env);
-	_log_task_rec(job);
+	_log_task_rec(mpi_task);
 
-	return (*(ops[0].slurmstepd_task))(job, env);
+	return (*(ops[0].slurmstepd_task))(mpi_task, env);
 }
 
 extern int mpi_g_client_init(char **mpi_type)
