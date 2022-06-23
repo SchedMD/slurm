@@ -758,9 +758,10 @@ static void _fetch_token(int argc, char **argv)
 	int lifespan = 0;
 
 	for (int i = 1; i < argc; i++) {
-		if (!xstrncasecmp("lifespan=", argv[i], 9))
-			lifespan = atoi(argv[i] + 9);
-		else if (!xstrncasecmp("username=", argv[i], 9))
+		if (!xstrncasecmp("lifespan=", argv[i], 9)) {
+			char *val = argv[i] + 9;
+			lifespan = parse_int("lifespan", val, true);
+		} else if (!xstrncasecmp("username=", argv[i], 9))
 			username = argv[i] + 9;
 		else {
 			fprintf(stderr, "Invalid option: `%s`\n", argv[i]);
