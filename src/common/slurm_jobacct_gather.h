@@ -75,7 +75,7 @@
 typedef struct {
 	uint32_t taskid; /* contains which task number it was on */
 	uint32_t nodeid; /* contains which node number it was on */
-	stepd_step_rec_t *job; /* contains stepd job pointer */
+	stepd_step_rec_t *step; /* contains stepd job pointer */
 } jobacct_id_t;
 
 struct jobacctinfo {

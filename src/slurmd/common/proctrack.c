@@ -69,8 +69,8 @@
 bool proctrack_forked = false;
 
 typedef struct slurm_proctrack_ops {
-	int              (*create)    (stepd_step_rec_t * job);
-	int              (*add)       (stepd_step_rec_t * job, pid_t pid);
+	int              (*create)    (stepd_step_rec_t *step);
+	int              (*add)       (stepd_step_rec_t *step, pid_t pid);
 	int              (*signal)    (uint64_t id, int signal);
 	int              (*destroy)   (uint64_t id);
 	uint64_t         (*find_cont) (pid_t pid);
@@ -148,29 +148,29 @@ extern int slurm_proctrack_fini(void)
 /*
  * Create a container
  * job IN - stepd_step_rec_t structure
- * job->cont_id OUT - Plugin must fill in job->cont_id either here
+ * step->cont_id OUT - Plugin must fill in step->cont_id either here
  *                    or in proctrack_g_add()
  *
  * Returns a Slurm errno.
  */
-extern int proctrack_g_create(stepd_step_rec_t * job)
+extern int proctrack_g_create(stepd_step_rec_t *step)
 {
 	if (slurm_proctrack_init() < 0)
 		return 0;
 
-	return (*(ops.create)) (job);
+	return (*(ops.create))(step);
 }
 
 /*
  * Add a process to the specified container
  * job IN - stepd_step_rec_t structure
  * pid IN      - process ID to be added to the container
- * job->cont_id OUT - Plugin must fill in job->cont_id either here
+ * step->cont_id OUT - Plugin must fill in step->cont_id either here
  *                    or in proctrack_g_create()
  *
  * Returns a Slurm errno.
  */
-extern int proctrack_g_add(stepd_step_rec_t * job, pid_t pid)
+extern int proctrack_g_add(stepd_step_rec_t *step, pid_t pid)
 {
 	int i = 0, max_retry = 3, rc;
 
@@ -180,11 +180,12 @@ extern int proctrack_g_add(stepd_step_rec_t * job, pid_t pid)
 	/* Sometimes a plugin is transient in adding a pid, so lets
 	 * try a few times before we call it quits.
 	 */
-	while ((rc = (*(ops.add)) (job, pid)) != SLURM_SUCCESS) {
+	while ((rc = (*(ops.add))(step, pid)) != SLURM_SUCCESS) {
 		if (i++ > max_retry)
 			break;
 		debug("%s: %u.%u couldn't add pid %u, sleeping and trying again",
-		      __func__, job->step_id.job_id, job->step_id.step_id, pid);
+		      __func__, step->step_id.job_id,
+		      step->step_id.step_id, pid);
 		sleep(1);
 	}
 

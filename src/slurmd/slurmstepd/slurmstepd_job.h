@@ -259,7 +259,7 @@ stepd_step_rec_t * stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 					 uint16_t protocol_version);
 stepd_step_rec_t * batch_stepd_step_rec_create(batch_job_launch_msg_t *msg);
 
-void stepd_step_rec_destroy(stepd_step_rec_t *job);
+void stepd_step_rec_destroy(stepd_step_rec_t *step);
 
 srun_info_t * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
 			       slurm_addr_t *ioaddr, uid_t uid,
@@ -279,16 +279,16 @@ stepd_step_task_info_t * task_info_create(int taskid, int gtaskid,
  *   without undefined symbol warnings.
  */
 static inline stepd_step_task_info_t *
-job_task_info_by_pid (stepd_step_rec_t *job, pid_t pid)
+job_task_info_by_pid (stepd_step_rec_t *step, pid_t pid)
 {
 	uint32_t i;
 
-	if (!job)
+	if (!step)
 		return NULL;
 
-	for (i = 0; i < job->node_tasks; i++) {
-		if (job->task[i]->pid == pid)
-			return (job->task[i]);
+	for (i = 0; i < step->node_tasks; i++) {
+		if (step->task[i]->pid == pid)
+			return (step->task[i]);
 	}
 	return (NULL);
 }

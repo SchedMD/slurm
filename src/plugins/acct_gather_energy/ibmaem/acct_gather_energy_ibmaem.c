@@ -75,7 +75,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 #define IBMAEM_SYSFS_POWER_FILENAME "power1_average"
 
 static acct_gather_energy_t *local_energy = NULL;
-static stepd_step_rec_t *job = NULL;
+static stepd_step_rec_t *step = NULL;
 
 enum {
 	GET_ENERGY,
@@ -300,7 +300,7 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 		break;
 	case ENERGY_DATA_STEP_PTR:
 		/* set global job if needed later */
-		job = (stepd_step_rec_t *)data;
+		step = (stepd_step_rec_t *)data;
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",

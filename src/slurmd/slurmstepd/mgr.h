@@ -47,7 +47,7 @@
 /*
  * Send batch exit code to slurmctld. Non-zero rc will DRAIN the node.
  */
-void batch_finish(stepd_step_rec_t *job, int rc);
+void batch_finish(stepd_step_rec_t *step, int rc);
 
 /*
  * Initialize a stepd_step_rec_t structure for a launch tasks
@@ -66,7 +66,7 @@ stepd_step_rec_t *mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
 /*
  * Finalize a batch job.
  */
-void mgr_launch_batch_job_cleanup(stepd_step_rec_t *job, int rc);
+void mgr_launch_batch_job_cleanup(stepd_step_rec_t *step, int rc);
 
 /*
  * Executes the functions of the slurmd job manager process,
@@ -76,7 +76,7 @@ void mgr_launch_batch_job_cleanup(stepd_step_rec_t *job, int rc);
  * Returns 0 if job ran and completed successfully.
  * Returns errno if job startup failed. NOTE: This will DRAIN the node.
  */
-int job_manager(stepd_step_rec_t *job);
+int job_manager(stepd_step_rec_t *step);
 
 /*
  * Register passwd entries so that we do not need to call initgroups(2)

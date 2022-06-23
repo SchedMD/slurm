@@ -107,7 +107,7 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_create ( stepd_step_rec_t *job )
+extern int proctrack_p_create(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
 }
@@ -115,9 +115,9 @@ extern int proctrack_p_create ( stepd_step_rec_t *job )
 /*
  * Uses job step process group id.
  */
-extern int proctrack_p_add ( stepd_step_rec_t *job, pid_t pid )
+extern int proctrack_p_add(stepd_step_rec_t *step, pid_t pid)
 {
-	job->cont_id = (uint64_t)job->pgid;
+	step->cont_id = (uint64_t)step->pgid;
 	return SLURM_SUCCESS;
 }
 

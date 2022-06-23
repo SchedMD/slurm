@@ -143,7 +143,7 @@ static int _cgroup_init(cgroup_ctl_type_t sub)
 	return SLURM_SUCCESS;
 }
 
-static int _cpuset_create(stepd_step_rec_t *job)
+static int _cpuset_create(stepd_step_rec_t *step)
 {
 	int rc;
 	char *sys_cgpath = NULL;
@@ -165,7 +165,7 @@ static int _cpuset_create(stepd_step_rec_t *job)
 	common_cgroup_set_param(&int_cg[CG_CPUS][CG_LEVEL_SLURM],
 				"cgroup.clone_children", "0");
 
-	if (job == NULL) {
+	if (step == NULL) {
 		/* This is a request to create a cpuset for slurmd daemon */
 		xstrfmtcat(sys_cgpath, "%s/system",
 			   int_cg[CG_CPUS][CG_LEVEL_SLURM].name);
@@ -211,7 +211,7 @@ static int _cpuset_create(stepd_step_rec_t *job)
 		 * locked from the caller.
 		 */
 		rc = xcgroup_create_hierarchy(__func__,
-					      job,
+					      step,
 					      &g_cg_ns[CG_CPUS],
 					      int_cg[CG_CPUS],
 					      g_job_cgpath[CG_CPUS],
@@ -325,14 +325,14 @@ static void _free_task_cg_info(void *object)
 	}
 }
 
-static int _handle_task_cgroup(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+static int _handle_task_cgroup(cgroup_ctl_type_t sub, stepd_step_rec_t *step,
 			       pid_t pid, uint32_t taskid)
 {
 	int rc = SLURM_SUCCESS;
 	bool need_to_add = false;
 	task_cg_info_t *task_cg_info;
-	uid_t uid = job->uid;
-	gid_t gid = job->gid;
+	uid_t uid = step->uid;
+	gid_t gid = step->gid;
 	char *task_cgroup_path = NULL;
 
 	/* build task cgroup relative path */
@@ -600,7 +600,7 @@ end:
  * so the number of calls to this function must mach the number of calls of
  * cgroup_p_step_destroy in each plugin.
  */
-extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
+extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -621,7 +621,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 	case CG_TRACK:
 		/* create a new cgroup for that container */
 		if ((rc = xcgroup_create_hierarchy(__func__,
-						   job,
+						   step,
 						   &g_cg_ns[sub],
 						   int_cg[sub],
 						   g_job_cgpath[sub],
@@ -631,12 +631,12 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 			goto step_c_err;
 		break;
 	case CG_CPUS:
-		if ((rc = _cpuset_create(job))!= SLURM_SUCCESS)
+		if ((rc = _cpuset_create(step))!= SLURM_SUCCESS)
 			goto step_c_err;
 		break;
 	case CG_MEMORY:
 		if ((rc = xcgroup_create_hierarchy(__func__,
-						   job,
+						   step,
 						   &g_cg_ns[sub],
 						   int_cg[sub],
 						   g_job_cgpath[sub],
@@ -673,7 +673,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 	case CG_DEVICES:
 		/* create a new cgroup for that container */
 		if ((rc = xcgroup_create_hierarchy(__func__,
-						   job,
+						   step,
 						   &g_cg_ns[sub],
 						   int_cg[sub],
 						   g_job_cgpath[sub],
@@ -684,7 +684,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		break;
 	case CG_CPUACCT:
 		if ((rc = xcgroup_create_hierarchy(__func__,
-						   job,
+						   step,
 						   &g_cg_ns[sub],
 						   int_cg[sub],
 						   g_job_cgpath[sub],
@@ -1067,7 +1067,7 @@ extern int cgroup_p_step_start_oom_mgr(void)
 	return SLURM_SUCCESS;
 }
 
-extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
+extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 {
 	log_flag(CGROUP, "OOM not available on FreeBSD, NetBSD, or macOS");
 	return NULL;
@@ -1293,7 +1293,7 @@ static uint64_t _failcnt(xcgroup_t *cg, char *param)
 	return value;
 }
 
-extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
+extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *results = NULL;
 	uint64_t stop_msg;
@@ -1301,7 +1301,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 
 	if (!oom_thread_created) {
 		log_flag(CGROUP, "OOM events were not monitored for %ps",
-			 &job->step_id);
+			 &step->step_id);
 		goto fail_oom_results;
 	}
 
@@ -1357,7 +1357,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 fail_oom_results:
 	if ((oom_pipe[1] != -1) && (close(oom_pipe[1]) == -1)) {
 		error("close() failed on oom_pipe[1] fd, %ps: %m",
-		      &job->step_id);
+		      &step->step_id);
 	}
 	slurm_mutex_destroy(&oom_mutex);
 
@@ -1368,16 +1368,16 @@ fail_oom_results:
 /***************************************
  ***** CGROUP TASK FUNCTIONS *****
  **************************************/
-extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *step,
 			       pid_t pid, uint32_t task_id)
 {
 	if (task_id > g_max_task_id)
 		g_max_task_id = task_id;
 
-	log_flag(CGROUP, "%ps taskid %u max_task_id %u", &job->step_id, task_id,
-		 g_max_task_id);
+	log_flag(CGROUP, "%ps taskid %u max_task_id %u",
+		 &step->step_id, task_id, g_max_task_id);
 
-	return _handle_task_cgroup(sub, job, pid, task_id);
+	return _handle_task_cgroup(sub, step, pid, task_id);
 }
 
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)

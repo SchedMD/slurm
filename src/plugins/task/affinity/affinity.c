@@ -89,7 +89,7 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 #endif
 }
 
-int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
+int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 {
 	int nummasks, maskid, i, threads;
 	char *curstr, *selstr;
@@ -97,36 +97,36 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
 	uint32_t local_id = node_tid;
 	char buftype[1024];
 
-	slurm_sprint_cpu_bind_type(buftype, job->cpu_bind_type);
-	debug3("get_cpuset (%s[%d]) %s", buftype, job->cpu_bind_type,
-		job->cpu_bind);
+	slurm_sprint_cpu_bind_type(buftype, step->cpu_bind_type);
+	debug3("get_cpuset (%s[%d]) %s", buftype, step->cpu_bind_type,
+		step->cpu_bind);
 	CPU_ZERO(mask);
 
-	if (job->cpu_bind_type & CPU_BIND_NONE) {
+	if (step->cpu_bind_type & CPU_BIND_NONE) {
 		return true;
 	}
 
-	if (job->cpu_bind_type & CPU_BIND_RANK) {
+	if (step->cpu_bind_type & CPU_BIND_RANK) {
 		threads = MAX(conf->threads, 1);
-		CPU_SET(node_tid % (job->cpus*threads), mask);
+		CPU_SET(node_tid % (step->cpus*threads), mask);
 		return true;
 	}
 
-	if (job->cpu_bind_type & CPU_BIND_LDRANK) {
+	if (step->cpu_bind_type & CPU_BIND_LDRANK) {
 		/* if HAVE_NUMA then bind this task ID to it's corresponding
 		 * locality domain ID. Otherwise, bind this task ID to it's
 		 * corresponding socket ID */
 		return _bind_ldom(local_id, mask);
 	}
 
-	if (!job->cpu_bind)
+	if (!step->cpu_bind)
 		return false;
 
 	nummasks = 1;
 	selstr = NULL;
 
 	/* get number of strings present in cpu_bind */
-	curstr = job->cpu_bind;
+	curstr = step->cpu_bind;
 	while (*curstr) {
 		if (nummasks == local_id+1) {
 			selstr = curstr;
@@ -142,7 +142,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
 		/* ...select mask string by wrapping task ID into list */
 		maskid = local_id % nummasks;
 		i = maskid;
-		curstr = job->cpu_bind;
+		curstr = step->cpu_bind;
 		while (*curstr && i) {
 			if (*curstr == ',')
 			    	i--;
@@ -161,7 +161,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
 		*curstr++ = *selstr++;
 	*curstr = '\0';
 
-	if (job->cpu_bind_type & CPU_BIND_MASK) {
+	if (step->cpu_bind_type & CPU_BIND_MASK) {
 		/* convert mask string into cpu_set_t mask */
 		if (task_str_to_cpuset(mask, mstr) < 0) {
 			error("task_str_to_cpuset %s", mstr);
@@ -170,7 +170,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
 		return true;
 	}
 
-	if (job->cpu_bind_type & CPU_BIND_MAP) {
+	if (step->cpu_bind_type & CPU_BIND_MAP) {
 		unsigned int mycpu = 0;
 		if (xstrncmp(mstr, "0x", 2) == 0) {
 			mycpu = strtoul (&(mstr[2]), NULL, 16);
@@ -181,7 +181,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
 		return true;
 	}
 
-	if (job->cpu_bind_type & CPU_BIND_LDMASK) {
+	if (step->cpu_bind_type & CPU_BIND_LDMASK) {
 		/* if HAVE_NUMA bind this task to the locality domains
 		 * identified in mstr. Otherwise bind this task to the
 		 * sockets identified in mstr */
@@ -211,7 +211,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
 		return true;
 	}
 
-	if (job->cpu_bind_type & CPU_BIND_LDMAP) {
+	if (step->cpu_bind_type & CPU_BIND_LDMAP) {
 		/* if HAVE_NUMA bind this task to the given locality
 		 * domain. Otherwise bind this task to the given
 		 * socket */

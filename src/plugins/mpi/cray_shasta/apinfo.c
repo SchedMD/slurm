@@ -128,7 +128,7 @@ static int _get_nid(const char *hostname)
  * Parse an MPMD file to determine the number of MPMD commands and task->cmd
  * mapping. Adopted from multi_prog_parse in src/slurmd/slurmstepd/multi_prog.c.
  *
- * The file's contents are stored in job->argv[1], and follow this format:
+ * The file's contents are stored in step->argv[1], and follow this format:
  * <taskids> <command> <arguments>
  *
  * taskids is a range list of task IDs or * (for all remaining task IDs).
@@ -136,7 +136,7 @@ static int _get_nid(const char *hostname)
  * Empty lines and lines starting with # are ignored.
  * Newlines may be escaped with \.
  */
-static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
+static void _multi_prog_parse(const stepd_step_rec_t *step, int *ncmds,
 			      uint32_t **tid_offsets)
 {
 	int i = 0, line_num = 0, rank_id = 0, num_cmds = 0, nranks = 0;
@@ -146,13 +146,13 @@ static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
 	hostlist_t hl;
 	uint32_t *offsets = NULL;
 
-	offsets = xcalloc(job->ntasks, sizeof(uint32_t));
-	for (i = 0; i < job->ntasks; i++) {
+	offsets = xcalloc(step->ntasks, sizeof(uint32_t));
+	for (i = 0; i < step->ntasks; i++) {
 		offsets[i] = NO_VAL;
 	}
 
 	// Copy contents of MPMD file so we can tokenize it
-	local_data = xstrdup(job->argv[1]);
+	local_data = xstrdup(step->argv[1]);
 
 	// Replace escaped newlines with spaces
 	while ((p = xstrstr(local_data, "\\\n"))) {
@@ -194,7 +194,7 @@ static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
 		nranks = 0;
 		// If rank_spec is '*', set all remaining ranks to this cmd
 		if (!xstrcmp(rank_spec, "*")) {
-			for (i = 0; i < job->ntasks; i++) {
+			for (i = 0; i < step->ntasks; i++) {
 				if (offsets[i] == NO_VAL) {
 					offsets[i] = num_cmds;
 					nranks++;
@@ -210,7 +210,7 @@ static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
 			while ((one_rank = hostlist_pop(hl))) {
 				rank_id = strtol(one_rank, &end_ptr, 10);
 				if ((end_ptr[0] != '\0') || (rank_id < 0) ||
-				    (rank_id >= job->ntasks)) {
+				    (rank_id >= step->ntasks)) {
 					hostlist_destroy(hl);
 					error("%s: invalid rank id %s",
 					      plugin_type, one_rank);
@@ -231,7 +231,7 @@ static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
 	}
 
 	// Make sure we've initialized all ranks
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < step->ntasks; i++) {
 		if (offsets[i] == NO_VAL) {
 			error("%s: no command for task id %d", plugin_type, i);
 			goto fail;
@@ -372,7 +372,7 @@ static void _build_header(pals_header_t *hdr, int ncmds, int npes, int nnodes)
 /*
  * Open the apinfo file and return a writeable fd, or -1 on failure
  */
-static int _open_apinfo(const stepd_step_rec_t *job)
+static int _open_apinfo(const stepd_step_rec_t *step)
 {
 	int fd = -1;
 
@@ -390,9 +390,9 @@ static int _open_apinfo(const stepd_step_rec_t *job)
 	}
 
 	// Change ownership of file to application user
-	if ((fchown(fd, job->uid, job->gid) == -1) && (getuid() == 0)) {
+	if ((fchown(fd, step->uid, step->gid) == -1) && (getuid() == 0)) {
 		error("%s: Couldn't chown %s to uid %u gid %u: %m",
-		      plugin_type, apinfo, job->uid, job->gid);
+		      plugin_type, apinfo, step->uid, step->gid);
 		close(fd);
 		return -1;
 	}
@@ -428,7 +428,7 @@ rwfail:
 /*
  * Write the application information file
  */
-extern int create_apinfo(const stepd_step_rec_t *job)
+extern int create_apinfo(const stepd_step_rec_t *step)
 {
 	int fd = -1;
 	pals_header_t hdr;
@@ -447,23 +447,23 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 	}
 
 	// Get relevant information from job
-	if (job->het_job_offset != NO_VAL) {
-		ntasks = job->het_job_ntasks;
-		ncmds = job->het_job_step_cnt;
-		nnodes = job->het_job_nnodes;
-		task_cnts = job->het_job_task_cnts;
-		tids = job->het_job_tids;
-		tid_offsets = job->het_job_tid_offsets;
-		nodelist = job->het_job_node_list;
+	if (step->het_job_offset != NO_VAL) {
+		ntasks = step->het_job_ntasks;
+		ncmds = step->het_job_step_cnt;
+		nnodes = step->het_job_nnodes;
+		task_cnts = step->het_job_task_cnts;
+		tids = step->het_job_tids;
+		tid_offsets = step->het_job_tid_offsets;
+		nodelist = step->het_job_node_list;
 	} else {
-		ntasks = job->ntasks;
-		nnodes = job->nnodes;
-		task_cnts = job->msg->tasks_to_launch;
-		tids = job->msg->global_task_ids;
-		nodelist = job->msg->complete_nodelist;
+		ntasks = step->ntasks;
+		nnodes = step->nnodes;
+		task_cnts = step->msg->tasks_to_launch;
+		tids = step->msg->global_task_ids;
+		nodelist = step->msg->complete_nodelist;
 
-		if (job->flags & LAUNCH_MULTI_PROG) {
-			_multi_prog_parse(job, &ncmds, &tid_offsets);
+		if (step->flags & LAUNCH_MULTI_PROG) {
+			_multi_prog_parse(step, &ncmds, &tid_offsets);
 			free_tid_offsets = true;
 		} else {
 			ncmds = 1;
@@ -500,10 +500,11 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 	// Get information to write
 	_build_header(&hdr, ncmds, ntasks, nnodes);
 	pes = _setup_pals_pes(ntasks, nnodes, task_cnts, tids, tid_offsets);
-	cmds = _setup_pals_cmds(ncmds, ntasks, nnodes, job->cpus_per_task, pes);
+	cmds = _setup_pals_cmds(ncmds, ntasks, nnodes,
+				step->cpus_per_task, pes);
 
 	// Create the file
-	fd = _open_apinfo(job);
+	fd = _open_apinfo(step);
 	if (fd == -1) {
 		goto rwfail;
 	}

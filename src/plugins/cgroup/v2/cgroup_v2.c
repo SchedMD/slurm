@@ -98,7 +98,7 @@ typedef struct {
 	pid_t *pids;
 } foreach_pid_array_t;
 
-extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
+extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 			       pid_t pid, uint32_t task_id);
 
 /* Hierarchy will take this form:
@@ -1001,7 +1001,7 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t ctl)
  *
  * Note that CoreSpec and/or MemSpec does not affect slurmstepd.
  */
-extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
+extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
 	char *new_path = NULL;
@@ -1020,17 +1020,17 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 	}
 
 	/* Job cgroup */
-	xstrfmtcat(new_path, "/job_%u", job->step_id.job_id);
+	xstrfmtcat(new_path, "/job_%u", step->step_id.job_id);
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_JOB],
 				 new_path, 0, 0) != SLURM_SUCCESS) {
-		error("unable to create job %u cgroup", job->step_id.job_id);
+		error("unable to create job %u cgroup", step->step_id.job_id);
 		rc = SLURM_ERROR;
 		goto endit;
 	}
 	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_JOB]) != SLURM_SUCCESS) {
 		common_cgroup_destroy(&int_cg[CG_LEVEL_JOB]);
 		error("unable to instantiate job %u cgroup",
-		      job->step_id.job_id);
+		      step->step_id.job_id);
 		rc = SLURM_ERROR;
 		goto endit;
 	}
@@ -1040,21 +1040,21 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 
 	/* Step cgroup */
 	xstrfmtcat(new_path, "%s/step_%s", int_cg[CG_LEVEL_JOB].name,
-		   log_build_step_id_str(&job->step_id, tmp_char,
+		   log_build_step_id_str(&step->step_id, tmp_char,
 					 sizeof(tmp_char),
 					 STEP_ID_FLAG_NO_PREFIX |
 					 STEP_ID_FLAG_NO_JOB));
 
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_STEP],
 				 new_path, 0, 0) != SLURM_SUCCESS) {
-		error("unable to create step %ps cgroup", &job->step_id);
+		error("unable to create step %ps cgroup", &step->step_id);
 		rc = SLURM_ERROR;
 		goto endit;
 	}
 	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_STEP]) !=
 	    SLURM_SUCCESS) {
 		common_cgroup_destroy(&int_cg[CG_LEVEL_STEP]);
-		error("unable to instantiate step %ps cgroup", &job->step_id);
+		error("unable to instantiate step %ps cgroup", &step->step_id);
 		rc = SLURM_ERROR;
 		goto endit;
 	}
@@ -1073,7 +1073,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_STEP_USER],
 				 new_path, 0, 0) != SLURM_SUCCESS) {
 		error("unable to create step %ps user procs cgroup",
-		      &job->step_id);
+		      &step->step_id);
 		rc = SLURM_ERROR;
 		goto endit;
 	}
@@ -1081,7 +1081,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 	    != SLURM_SUCCESS) {
 		common_cgroup_destroy(&int_cg[CG_LEVEL_STEP_USER]);
 		error("unable to instantiate step %ps user procs cgroup",
-		      &job->step_id);
+		      &step->step_id);
 		rc = SLURM_ERROR;
 		goto endit;
 	}
@@ -1097,7 +1097,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_STEP_SLURM],
 				 new_path, 0, 0) != SLURM_SUCCESS) {
 		error("unable to create step %ps slurm procs cgroup",
-		      &job->step_id);
+		      &step->step_id);
 		rc = SLURM_ERROR;
 		goto endit;
 	}
@@ -1105,7 +1105,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 	    != SLURM_SUCCESS) {
 		common_cgroup_destroy(&int_cg[CG_LEVEL_STEP_SLURM]);
 		error("unable to instantiate step %ps slurm procs cgroup",
-		      &job->step_id);
+		      &step->step_id);
 		rc = SLURM_ERROR;
 		goto endit;
 	}
@@ -1113,13 +1113,13 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 
 	/* Place this stepd is in the correct cgroup. */
 	if (common_cgroup_move_process(&int_cg[CG_LEVEL_STEP_SLURM],
-				       job->jmgr_pid) != SLURM_SUCCESS) {
+				       step->jmgr_pid) != SLURM_SUCCESS) {
 		error("unable to move stepd pid to its dedicated cgroup");
 		rc = SLURM_ERROR;
 	}
 
 	/* Use slurmstepd pid as the identifier of the container. */
-	job->cont_id = (uint64_t)job->jmgr_pid;
+	step->cont_id = (uint64_t)step->jmgr_pid;
 endit:
 	xfree(new_path);
 	if (rc != SLURM_SUCCESS)
@@ -1720,7 +1720,7 @@ extern int cgroup_p_step_start_oom_mgr()
 	return SLURM_SUCCESS;
 }
 
-extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
+extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *oom_step_results = NULL;
 	char *mem_events = NULL, *mem_swap_events = NULL, *ptr;
@@ -1808,13 +1808,13 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 	return oom_step_results;
 }
 
-extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
+extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 			       pid_t pid, uint32_t task_id)
 {
 	task_cg_info_t *task_cg_info;
 	char *task_cg_path = NULL;
-	uid_t uid = job->uid;
-	gid_t gid = job->gid;
+	uid_t uid = step->uid;
+	gid_t gid = step->gid;
 	bool need_to_add = false;
 
 	/* Ignore any possible movement of slurmstepd */

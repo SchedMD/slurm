@@ -91,7 +91,7 @@ static void _got_ack_from_slurmd(int);
 static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
 				     slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
-static void _step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc);
+static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
 #endif
 static int _process_cmdline (int argc, char **argv);
 
@@ -118,7 +118,7 @@ main (int argc, char **argv)
 	slurm_addr_t *cli;
 	slurm_addr_t *self;
 	slurm_msg_t *msg;
-	stepd_step_rec_t *job;
+	stepd_step_rec_t *step;
 	int rc = 0;
 
 	if (_process_cmdline (argc, argv) < 0)
@@ -145,7 +145,7 @@ main (int argc, char **argv)
 
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
-	if (!(job = _step_setup(cli, self, msg))) {
+	if (!(step = _step_setup(cli, self, msg))) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
 		rc = SLURM_ERROR;
 		goto ending;
@@ -155,14 +155,14 @@ main (int argc, char **argv)
 	 * to be re-initialized after the fork. */
 	slurm_conf_install_fork_handlers();
 
-	/* sets job->msg_handle and job->msgid */
-	if (msg_thr_create(job) == SLURM_ERROR) {
+	/* sets step->msg_handle and step->msgid */
+	if (msg_thr_create(step) == SLURM_ERROR) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
 		rc = SLURM_ERROR;
 		goto ending;
 	}
 
-	if (job->step_id.step_id != SLURM_EXTERN_CONT)
+	if (step->step_id.step_id != SLURM_EXTERN_CONT)
 		close_slurmd_conn();
 
 	/* slurmstepd is the only daemon that should survive upgrade. If it
@@ -183,18 +183,18 @@ main (int argc, char **argv)
 #endif
 	}
 
-	acct_gather_energy_g_set_data(ENERGY_DATA_STEP_PTR, job);
+	acct_gather_energy_g_set_data(ENERGY_DATA_STEP_PTR, step);
 
 	/* This does most of the stdio setup, then launches all the tasks,
 	 * and blocks until the step is complete */
-	rc = job_manager(job);
+	rc = job_manager(step);
 
-	return stepd_cleanup(msg, job, cli, self, rc, 0);
+	return stepd_cleanup(msg, step, cli, self, rc, 0);
 ending:
-	return stepd_cleanup(msg, job, cli, self, rc, 1);
+	return stepd_cleanup(msg, step, cli, self, rc, 1);
 }
 
-extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
+extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 			 slurm_addr_t *cli, slurm_addr_t *self,
 			 int rc, bool only_mem)
 {
@@ -204,13 +204,13 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 		goto done;
 
 	if (!only_mem) {
-		if (job->batch)
-			batch_finish(job, rc); /* sends batch complete message */
+		if (step->batch)
+			batch_finish(step, rc); /* sends batch complete message */
 
 		/* signal the message thread to shutdown, and wait for it */
-		if (job->msg_handle)
-			eio_signal_shutdown(job->msg_handle);
-		pthread_join(job->msgid, NULL);
+		if (step->msg_handle)
+			eio_signal_shutdown(step->msg_handle);
+		pthread_join(step->msgid, NULL);
 	}
 
 	mpi_fini();
@@ -219,25 +219,25 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	 * This call is only done once per step since stepd_cleanup is protected
 	 * agains multiple and concurrent calls.
 	 */
-	proctrack_g_destroy(job->cont_id);
+	proctrack_g_destroy(step->cont_id);
 
 	if (conf->hwloc_xml)
 		(void)remove(conf->hwloc_xml);
 
-	if (job->container)
-		cleanup_container(job);
+	if (step->container)
+		cleanup_container(step);
 
 	run_command_shutdown();
 
-	if (job->step_id.step_id == SLURM_EXTERN_CONT) {
+	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 		uint32_t jobid;
 #ifdef HAVE_NATIVE_CRAY
-		if (job->het_job_id && (job->het_job_id != NO_VAL))
-			jobid = job->het_job_id;
+		if (step->het_job_id && (step->het_job_id != NO_VAL))
+			jobid = step->het_job_id;
 		else
-			jobid = job->step_id.job_id;
+			jobid = step->step_id.job_id;
 #else
-		jobid = job->step_id.job_id;
+		jobid = step->step_id.job_id;
 #endif
 		if (container_g_stepd_delete(jobid))
 			error("container_g_stepd_delete(%u): %m", jobid);
@@ -246,7 +246,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
 	(void) core_spec_g_fini();
-	_step_cleanup(job, msg, rc);
+	_step_cleanup(step, msg, rc);
 
 	fini_setproctitle();
 
@@ -721,92 +721,92 @@ rwfail:
 static stepd_step_rec_t *
 _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 {
-	stepd_step_rec_t *job = NULL;
+	stepd_step_rec_t *step = NULL;
 
 	switch (msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		debug2("setup for a batch_job");
-		job = mgr_launch_batch_job_setup(msg->data, cli);
+		step = mgr_launch_batch_job_setup(msg->data, cli);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		debug2("setup for a launch_task");
-		job = mgr_launch_tasks_setup(msg->data, cli, self,
-					     msg->protocol_version);
+		step = mgr_launch_tasks_setup(msg->data, cli, self,
+					      msg->protocol_version);
 		break;
 	default:
 		fatal("handle_launch_message: Unrecognized launch RPC");
 		break;
 	}
 
-	if (!job) {
+	if (!step) {
 		error("_step_setup: no job returned");
 		return NULL;
 	}
 
-	if (job->container) {
-		int rc = setup_container(job);
+	if (step->container) {
+		int rc = setup_container(step);
 
 		if (rc == ESLURM_CONTAINER_NOT_CONFIGURED) {
 			debug2("%s: container %s requested but containers are not configured on this node",
-			       __func__, job->container);
+			       __func__, step->container);
 		} else if (rc) {
 			error("%s: container setup failed: %s",
 			      __func__, slurm_strerror(rc));
-			stepd_step_rec_destroy(job);
+			stepd_step_rec_destroy(step);
 			return NULL;
 		} else {
 			debug2("%s: container %s successfully setup",
-			       __func__, job->container);
+			       __func__, step->container);
 		}
 	}
 
-	job->jmgr_pid = getpid();
-	job->jobacct = jobacctinfo_create(NULL);
+	step->jmgr_pid = getpid();
+	step->jobacct = jobacctinfo_create(NULL);
 
 	/* Establish GRES environment variables */
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
-		gres_job_state_log(job->job_gres_list,
-				   job->step_id.job_id);
-		gres_step_state_log(job->step_gres_list,
-				    job->step_id.job_id,
-				    job->step_id.step_id);
+		gres_job_state_log(step->job_gres_list,
+				   step->step_id.job_id);
+		gres_step_state_log(step->step_gres_list,
+				    step->step_id.job_id,
+				    step->step_id.step_id);
 	}
-	if (job->batch || (job->step_id.step_id == SLURM_INTERACTIVE_STEP)) {
-		gres_g_job_set_env(&job->env, job->job_gres_list, 0);
+	if (step->batch || (step->step_id.step_id == SLURM_INTERACTIVE_STEP)) {
+		gres_g_job_set_env(&step->env, step->job_gres_list, 0);
 	} else if (msg->msg_type == REQUEST_LAUNCH_TASKS) {
-		gres_g_step_set_env(&job->env, job->step_gres_list);
+		gres_g_step_set_env(&step->env, step->step_gres_list);
 	}
 
 	/*
 	 * Add slurmd node topology informations to job env array
 	 */
-	env_array_overwrite(&job->env,"SLURM_TOPOLOGY_ADDR",
+	env_array_overwrite(&step->env,"SLURM_TOPOLOGY_ADDR",
 			    conf->node_topo_addr);
-	env_array_overwrite(&job->env,"SLURM_TOPOLOGY_ADDR_PATTERN",
+	env_array_overwrite(&step->env,"SLURM_TOPOLOGY_ADDR_PATTERN",
 			    conf->node_topo_pattern);
 	/*
 	 * Reset address for cloud nodes
 	 */
-	if (job->alias_list && set_nodes_alias(job->alias_list)) {
+	if (step->alias_list && set_nodes_alias(step->alias_list)) {
 		error("%s: set_nodes_alias failed: %s", __func__,
-		      job->alias_list);
-		stepd_step_rec_destroy(job);
+		      step->alias_list);
+		stepd_step_rec_destroy(step);
 		return NULL;
 	}
 
-	set_msg_node_id(job);
+	set_msg_node_id(step);
 
-	return job;
+	return step;
 }
 
 #ifdef MEMORY_LEAK_DEBUG
 static void
-_step_cleanup(stepd_step_rec_t *job, slurm_msg_t *msg, int rc)
+_step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc)
 {
-	if (job) {
-		jobacctinfo_destroy(job->jobacct);
-		if (!job->batch)
-			stepd_step_rec_destroy(job);
+	if (step) {
+		jobacctinfo_destroy(step->jobacct);
+		if (!step->batch)
+			stepd_step_rec_destroy(step);
 	}
 
 	if (msg) {

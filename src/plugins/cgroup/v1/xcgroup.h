@@ -171,7 +171,7 @@ extern int xcgroup_create_slurm_cg(xcgroup_ns_t *ns, xcgroup_t *slurm_cg);
  *     initialized. SLURM_ERROR otherwise, and changes to filesystem undone.
  */
 extern int xcgroup_create_hierarchy(const char *calling_func,
-				    stepd_step_rec_t *job,
+				    stepd_step_rec_t *step,
 				    xcgroup_ns_t *ns,
 				    xcgroup_t int_cg[],
 				    char job_cgroup_path[],

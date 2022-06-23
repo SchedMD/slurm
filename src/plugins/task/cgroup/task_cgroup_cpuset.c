@@ -72,7 +72,7 @@ extern int task_cgroup_cpuset_fini(void)
 	return cgroup_g_step_destroy(CG_CPUS);
 }
 
-extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
+extern int task_cgroup_cpuset_create(stepd_step_rec_t *step)
 {
 	cgroup_limits_t limits, *slurm_limits = NULL;
 	char *job_alloc_cpus = NULL;
@@ -81,21 +81,21 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	int rc = SLURM_SUCCESS;
 
 	/* First create the cpuset hierarchy for this job */
-	if ((rc = cgroup_g_step_create(CG_CPUS, job)) != SLURM_SUCCESS)
+	if ((rc = cgroup_g_step_create(CG_CPUS, step)) != SLURM_SUCCESS)
 		return rc;
 
 	/* Then constrain the user/job/step to the required cores/cpus */
 
 	/* build job and job steps allocated cores lists */
-	debug("job abstract cores are '%s'", job->job_alloc_cores);
-	debug("step abstract cores are '%s'", job->step_alloc_cores);
+	debug("job abstract cores are '%s'", step->job_alloc_cores);
+	debug("step abstract cores are '%s'", step->step_alloc_cores);
 
-	if (xcpuinfo_abs_to_mac(job->job_alloc_cores,
+	if (xcpuinfo_abs_to_mac(step->job_alloc_cores,
 				&job_alloc_cpus) != SLURM_SUCCESS) {
 		error("unable to build job physical cores");
 		goto endit;
 	}
-	if (xcpuinfo_abs_to_mac(job->step_alloc_cores,
+	if (xcpuinfo_abs_to_mac(step->step_alloc_cores,
 				&step_alloc_cpus) != SLURM_SUCCESS) {
 		error("unable to build step physical cores");
 		goto endit;
@@ -139,7 +139,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	rc = cgroup_g_step_addto(CG_CPUS, &pid, 1);
 
 	/* validate the requested cpu frequency and set it */
-	cpu_freq_cgroup_validate(job, step_alloc_cpus);
+	cpu_freq_cgroup_validate(step, step_alloc_cpus);
 
 endit:
 	xfree(job_alloc_cpus);

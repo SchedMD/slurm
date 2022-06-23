@@ -58,7 +58,7 @@ struct spank_launcher_job_info {
 	char      **argv;
 };
 
-int spank_init (stepd_step_rec_t *job);
+int spank_init(stepd_step_rec_t *step);
 
 int spank_slurmd_init (void);
 
@@ -68,23 +68,23 @@ int spank_init_allocator (void);
 
 int spank_init_post_opt (void);
 
-int spank_user (stepd_step_rec_t *job);
+int spank_user(stepd_step_rec_t *step);
 
 int spank_local_user (struct spank_launcher_job_info *job);
 
-int spank_task_privileged (stepd_step_rec_t *job, int taskid);
+int spank_task_privileged(stepd_step_rec_t *step, int taskid);
 
-int spank_user_task (stepd_step_rec_t *job, int taskid);
+int spank_user_task(stepd_step_rec_t *step, int taskid);
 
-int spank_task_post_fork (stepd_step_rec_t *job, int taskid);
+int spank_task_post_fork(stepd_step_rec_t *step, int taskid);
 
-int spank_task_exit (stepd_step_rec_t *job, int taskid);
+int spank_task_exit(stepd_step_rec_t *step, int taskid);
 
 int spank_job_epilog(uint32_t jobid, uid_t uid, gid_t gid);
 
 int spank_slurmd_exit (void);
 
-int spank_fini (stepd_step_rec_t *job);
+int spank_fini(stepd_step_rec_t *step);
 
 /*
  * Return true if a loaded spank plugin has a prolog function defined.

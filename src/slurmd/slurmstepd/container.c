@@ -77,7 +77,7 @@ static char *run_argv[] = {
 static char *start_argv[] = {
 	"/bin/sh", "-c", "echo 'start disabled'; exit 1", NULL };
 
-static char *_generate_pattern(const char *pattern, stepd_step_rec_t *job,
+static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 			       int task_id, char *rootfs_path, char **cmd_args)
 {
 	char *buffer = NULL, *offset = NULL;
@@ -119,19 +119,20 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *job,
 				}
 				break;
 			case 'b':
-				xstrfmtcatat(buffer, &offset, "%s", job->cwd);
+				xstrfmtcatat(buffer, &offset, "%s", step->cwd);
 				break;
 			case 'e':
 				xstrfmtcatat(buffer, &offset, "%s/%s",
-					     job->cwd, SLURM_CONTAINER_ENV_FILE);
+					     step->cwd,
+					     SLURM_CONTAINER_ENV_FILE);
 				break;
 			case 'j':
 				xstrfmtcatat(buffer, &offset, "%u",
-					     job->step_id.job_id);
+					     step->step_id.job_id);
 				break;
 			case 'n':
 				xstrfmtcatat(buffer, &offset, "%s",
-					     job->node_name);
+					     step->node_name);
 				break;
 			case 'r':
 				xstrfmtcatat(buffer, &offset, "%s",
@@ -139,14 +140,14 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *job,
 				break;
 			case 's':
 				xstrfmtcatat(buffer, &offset, "%u",
-					     job->step_id.step_id);
+					     step->step_id.step_id);
 				break;
 			case 't':
 				xstrfmtcatat(buffer, &offset, "%d", task_id);
 				break;
 			case 'u':
 				xstrfmtcatat(buffer, &offset, "%s",
-					     job->user_name);
+					     step->user_name);
 				break;
 			default:
 				fatal("%s: unexpected replacement character: %c",
@@ -207,7 +208,7 @@ cleanup:
 	return rc;
 }
 
-static int _write_config(const stepd_step_rec_t *job, const char *jconfig,
+static int _write_config(const stepd_step_rec_t *step, const char *jconfig,
 			 const char *out)
 {
 	int outfd = -1;
@@ -231,7 +232,7 @@ static int _write_config(const stepd_step_rec_t *job, const char *jconfig,
 
 	outfd = -1;
 
-	if (chown(jconfig, (uid_t) -1, (gid_t) job->gid) < 0) {
+	if (chown(jconfig, (uid_t) -1, (gid_t) step->gid) < 0) {
 		error("%s: chown(%s): %m", __func__, jconfig);
 		goto rwfail;
 	}
@@ -252,7 +253,7 @@ rwfail:
 	return rc;
 }
 
-static int _modify_config(stepd_step_rec_t *job, data_t *config,
+static int _modify_config(stepd_step_rec_t *step, data_t *config,
 			  char *rootfs_path)
 {
 	int rc = SLURM_SUCCESS;
@@ -265,13 +266,13 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 
 	/* point to correct rootfs */
 	data_set_string_fmt(data_define_dict_path(config, "/root/path/"),
-			    "%s/rootfs", job->container);
+			    "%s/rootfs", step->container);
 
 	mnts = data_define_dict_path(config, "/mounts/");
 	if (data_get_type(mnts) != DATA_TYPE_LIST)
 		data_set_list(mnts);
 
-	if (job->batch) {
+	if (step->batch) {
 		data_t *mnt, *opt;
 
 		/*
@@ -279,7 +280,7 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 		 * sure to not conflict with that:
 		 * https://github.com/opencontainers/runc/blob/master/libcontainer/rootfs_linux.go#L610-L613
 		 */
-		if (xstrcmp(job->task[0]->ifname, "/dev/null")) {
+		if (xstrcmp(step->task[0]->ifname, "/dev/null")) {
 			data_t *mnt = data_set_dict(data_list_append(mnts));
 			data_t *opt = data_set_list(
 				data_key_set(mnt, "options"));
@@ -287,12 +288,12 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 					SLURM_CONTAINER_STDIN);
 			data_set_string(data_key_set(mnt, "type"), "none");
 			data_set_string(data_key_set(mnt, "source"),
-					job->task[0]->ifname);
+					step->task[0]->ifname);
 			data_set_string(data_list_append(opt), "bind");
 		}
 
 		/* Bind mount stdout */
-		if (xstrcmp(job->task[0]->ofname, "/dev/null")) {
+		if (xstrcmp(step->task[0]->ofname, "/dev/null")) {
 			data_t *mnt = data_set_dict(data_list_append(mnts));
 			data_t *opt = data_set_list(
 				data_key_set(mnt, "options"));
@@ -301,12 +302,12 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 					SLURM_CONTAINER_STDOUT);
 			data_set_string(data_key_set(mnt, "type"), "none");
 			data_set_string(data_key_set(mnt, "source"),
-					job->task[0]->ofname);
+					step->task[0]->ofname);
 			data_set_string(data_list_append(opt), "bind");
 		}
 
 		/* Bind mount stderr */
-		if (xstrcmp(job->task[0]->efname, "/dev/null")) {
+		if (xstrcmp(step->task[0]->efname, "/dev/null")) {
 			data_t *mnt = data_set_dict(data_list_append(mnts));
 			data_t *opt = data_set_list(
 				data_key_set(mnt, "options"));
@@ -315,7 +316,7 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 					SLURM_CONTAINER_STDERR);
 			data_set_string(data_key_set(mnt, "type"), "none");
 			data_set_string(data_key_set(mnt, "source"),
-					job->task[0]->efname);
+					step->task[0]->efname);
 			data_set_string(data_list_append(opt), "bind");
 		}
 
@@ -330,8 +331,8 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 				SLURM_CONTAINER_BATCH_SCRIPT);
 		data_set_string(data_key_set(mnt, "type"), "none");
 		data_set_string_own(data_key_set(mnt, "source"),
-				    job->task[0]->argv[0]);
-		job->task[0]->argv[0] = xstrdup(SLURM_CONTAINER_BATCH_SCRIPT);
+				    step->task[0]->argv[0]);
+		step->task[0]->argv[0] = xstrdup(SLURM_CONTAINER_BATCH_SCRIPT);
 		data_set_string(data_list_append(opt), "bind");
 		data_set_string(data_list_append(opt), "ro");
 	}
@@ -342,11 +343,11 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 
 	if (oci_conf->create_env_file) {
 		cmd_env = env_array_create();
-		env_array_merge(&cmd_env, (const char **) job->env);
+		env_array_merge(&cmd_env, (const char **) step->env);
 	}
 
 	/* set/append requested env */
-	for (char **ptr = job->env; *ptr != NULL; ptr++) {
+	for (char **ptr = step->env; *ptr != NULL; ptr++) {
 		data_set_string(data_list_append(env), *ptr);
 
 		if (oci_conf->create_env_file) {
@@ -369,11 +370,11 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 
 		/* keep _generate_pattern() in sync with this path */
 		xstrfmtcat(envfile, "%s/%s",
-			   job->cwd, SLURM_CONTAINER_ENV_FILE);
+			   step->cwd, SLURM_CONTAINER_ENV_FILE);
 
 		rc = env_array_to_file(envfile, (const char **) cmd_env);
 
-		if (!rc && chown(envfile, job->uid, job->gid) < 0) {
+		if (!rc && chown(envfile, step->uid, step->gid) < 0) {
 			error("%s: chown(%s): %m", __func__, envfile);
 			rc = errno;
 		}
@@ -387,20 +388,20 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 	}
 
 	/* Overwrite args */
-	if (job->node_tasks <= 0) {
+	if (step->node_tasks <= 0) {
 		/* should have been caught at submission */
 		error("%s: no node tasks?", __func__);
 
 		return ESLURM_BAD_TASK_COUNT;
-	} else if (job->node_tasks > 1) {
+	} else if (step->node_tasks > 1) {
 		/* should have been caught at submission */
 		error("%s: unexpected number of tasks %u > 1",
-		      __func__, job->node_tasks);
+		      __func__, step->node_tasks);
 
 		return ESLURM_BAD_TASK_COUNT;
 	} else {
 		/* just 1 task */
-		stepd_step_task_info_t *task = job->task[0];
+		stepd_step_task_info_t *task = step->task[0];
 		data_t *args = data_set_list(
 			data_define_dict_path(config, "/process/args/"));
 		char *gen, **old_argv = task->argv;
@@ -416,8 +417,8 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 		 * containers do not use task->argv but we will leave a canary
 		 * to catch any code paths that avoid the container code
 		 */
-		xassert(job->argv == task->argv);
-		job->argv = task->argv = xcalloc(4, sizeof(*task->argv));
+		xassert(step->argv == task->argv);
+		step->argv = task->argv = xcalloc(4, sizeof(*task->argv));
 		task->argv[0] = xstrdup("/bin/sh");
 		task->argv[1] = xstrdup("-c");
 		task->argv[2] = xstrdup("echo 'this should never execute with a container'; exit 1");
@@ -426,33 +427,35 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 		 * Generate all the operations for later while we have all the
 		 * info needed
 		 */
-		gen = _generate_pattern(oci_conf->runtime_create, job, task->id,
+		gen = _generate_pattern(oci_conf->runtime_create,
+					step, task->id,
 					rootfs_path, old_argv);
 		if (gen)
 			create_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_delete, job, task->id,
+		gen = _generate_pattern(oci_conf->runtime_delete,
+					step, task->id,
 					rootfs_path, old_argv);
 		if (gen)
 			delete_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_kill, job, task->id,
+		gen = _generate_pattern(oci_conf->runtime_kill, step, task->id,
 					rootfs_path, old_argv);
 		if (gen)
 			kill_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_query, job, task->id,
+		gen = _generate_pattern(oci_conf->runtime_query, step, task->id,
 					rootfs_path, old_argv);
 		if (gen)
 			query_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_run, job, task->id,
+		gen = _generate_pattern(oci_conf->runtime_run, step, task->id,
 					rootfs_path, old_argv);
 
 		if (gen)
 			run_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_start, job, task->id,
+		gen = _generate_pattern(oci_conf->runtime_start, step, task->id,
 					rootfs_path, old_argv);
 		if (gen)
 			start_argv[2] = gen;
@@ -465,31 +468,31 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 	return rc;
 }
 
-static void _generate_bundle_path(stepd_step_rec_t *job, char *rootfs_path)
+static void _generate_bundle_path(stepd_step_rec_t *step, char *rootfs_path)
 {
 	char *path = NULL;
 
 	/* write new config.json in spool dir or requested pattern */
 	if (oci_conf->container_path) {
-		path = _generate_pattern(oci_conf->container_path, job,
-					 job->task[0]->id, rootfs_path, NULL);
-	} else if (job->step_id.step_id == SLURM_BATCH_SCRIPT) {
+		path = _generate_pattern(oci_conf->container_path, step,
+					 step->task[0]->id, rootfs_path, NULL);
+	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		xstrfmtcat(path, "%s/oci-job%05u-batch/", conf->spooldir,
-			   job->step_id.job_id);
-	} else if (job->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+			   step->step_id.job_id);
+	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
 		xstrfmtcat(path, "%s/oci-job%05u-interactive/", conf->spooldir,
-			   job->step_id.job_id);
+			   step->step_id.job_id);
 	} else {
 		xstrfmtcat(path, "%s/oci-job%05u-%05u/", conf->spooldir,
-			   job->step_id.job_id, job->step_id.step_id);
+			   step->step_id.job_id, step->step_id.step_id);
 	}
 
-	debug4("%s: swapping cwd from %s to %s", __func__, job->cwd, path);
-	xfree(job->cwd);
-	job->cwd = path;
+	debug4("%s: swapping cwd from %s to %s", __func__, step->cwd, path);
+	xfree(step->cwd);
+	step->cwd = path;
 }
 
-extern int setup_container(stepd_step_rec_t *job)
+extern int setup_container(stepd_step_rec_t *step)
 {
 	int rc;
 	char *jconfig = NULL;
@@ -505,7 +508,7 @@ extern int setup_container(stepd_step_rec_t *job)
 
 	if (!oci_conf) {
 		debug("%s: OCI Container not configured. Ignoring %pS requested container: %s",
-		      __func__, job, job->container);
+		      __func__, step, step->container);
 		return ESLURM_CONTAINER_NOT_CONFIGURED;
 	}
 
@@ -516,7 +519,7 @@ extern int setup_container(stepd_step_rec_t *job)
 	}
 
 	/* OCI runtime spec reqires config.json to be in root of bundle */
-	xstrfmtcat(jconfig, "%s/config.json", job->container);
+	xstrfmtcat(jconfig, "%s/config.json", step->container);
 
 	if ((rc = _read_config(jconfig, &config))) {
 		goto error;
@@ -535,19 +538,19 @@ extern int setup_container(stepd_step_rec_t *job)
 		/* always provide absolute path */
 		char *t = NULL;
 
-		xstrfmtcat(t, "%s/%s", job->container, rootfs_path);
+		xstrfmtcat(t, "%s/%s", step->container, rootfs_path);
 		xfree(rootfs_path);
 		rootfs_path = t;
 	}
 
-	_generate_bundle_path(job, rootfs_path);
+	_generate_bundle_path(step, rootfs_path);
 
-	if ((rc = _mkpath(job->cwd, job->uid, job->gid)))
+	if ((rc = _mkpath(step->cwd, step->uid, step->gid)))
 		goto error;
 
-	xstrfmtcat(jconfig, "%s/config.json", job->cwd);
+	xstrfmtcat(jconfig, "%s/config.json", step->cwd);
 
-	if ((rc = _modify_config(job, config, rootfs_path)))
+	if ((rc = _modify_config(step, config, rootfs_path)))
 		goto error;
 
 	if ((rc = data_g_serialize(&out, config, MIME_TYPE_JSON,
@@ -559,7 +562,7 @@ extern int setup_container(stepd_step_rec_t *job)
 
 	FREE_NULL_DATA(config);
 
-	if ((rc = _write_config(job, jconfig, out)))
+	if ((rc = _write_config(step, jconfig, out)))
 	    goto error;
 
 error:
@@ -687,13 +690,13 @@ static void _kill_container()
 	}
 }
 
-static void _run(stepd_step_rec_t *job, stepd_step_task_info_t *task)
+static void _run(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 {
 	execv(run_argv[0], run_argv);
 	fatal("execv(%s) failed: %m", run_argv[0]);
 }
 
-static void _create_start(stepd_step_rec_t *job,
+static void _create_start(stepd_step_rec_t *step,
 			  stepd_step_task_info_t *task)
 {
 	int stime = 250, rc = SLURM_ERROR;
@@ -785,40 +788,40 @@ static void _create_start(stepd_step_rec_t *job,
 	_exit(rc);
 }
 
-extern void container_run(stepd_step_rec_t *job,
+extern void container_run(stepd_step_rec_t *step,
 			  stepd_step_task_info_t *task)
 {
 	if (!oci_conf) {
 		debug("%s: OCI Container not configured. Ignoring %pS requested container: %s",
-		      __func__, job, job->container);
+		      __func__, step, step->container);
 		return;
 	}
 
 	if (oci_conf->runtime_run)
-		_run(job, task);
+		_run(step, task);
 	else
-		_create_start(job, task);
+		_create_start(step, task);
 
 }
 
-extern void cleanup_container(stepd_step_rec_t *job)
+extern void cleanup_container(stepd_step_rec_t *step)
 {
 	char *jconfig = NULL;
 
 	if (!oci_conf) {
 		debug("%s: OCI Container not configured. Ignoring %pS requested container: %s",
-		      __func__, job, job->container);
+		      __func__, step, step->container);
 		return;
 	}
 
-	xstrfmtcat(jconfig, "%s/config.json", job->cwd);
+	xstrfmtcat(jconfig, "%s/config.json", step->cwd);
 
 	if (unlink(jconfig) < 0)
 		error("unlink(%s): %m", jconfig);
 
 	xfree(jconfig);
 
-	if (rmdir(job->cwd))
+	if (rmdir(step->cwd))
 		error("rmdir(%s): %m", jconfig);
 
 	_kill_container();

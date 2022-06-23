@@ -83,7 +83,7 @@ void free_io_buf(struct io_buf *buf);
  * yet started, we initialize the msg_queue as an empty list and
  * directly add the eio_obj_t to the eio handle with eio_new_initial_handle.
  */
-int io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
+int io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
 			      int stdout_tasks, int stderr_tasks);
 
 /*
@@ -92,7 +92,7 @@ int io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
  * Create a new eio client object and wake up the eio engine so that
  * it can see the new object.
  */
-int io_client_connect(srun_info_t *srun, stepd_step_rec_t *job);
+int io_client_connect(srun_info_t *srun, stepd_step_rec_t *step);
 
 
 /*
@@ -101,14 +101,14 @@ int io_client_connect(srun_info_t *srun, stepd_step_rec_t *job);
  */
 int
 io_create_local_client(const char *filename, int file_flags,
-		       stepd_step_rec_t *job, bool labelio,
+		       stepd_step_rec_t *step, bool labelio,
 		       int stdout_tasks, int stderr_tasks);
 
 /*
  * Initialize each task's standard I/O file descriptors.  The file descriptors
  * may be files, or may be the end of a pipe which is handled by an eio_obj_t.
  */
-int io_init_tasks_stdio(stepd_step_rec_t *job);
+int io_init_tasks_stdio(stepd_step_rec_t *step);
 
 /*
  * Start IO handling thread.
@@ -116,7 +116,7 @@ int io_init_tasks_stdio(stepd_step_rec_t *job);
  * and opens 2*ntask initial connections for stdout/err, also appending these
  * to job->objs list.
  */
-extern void io_thread_start(stepd_step_rec_t *job);
+extern void io_thread_start(stepd_step_rec_t *step);
 
 int io_dup_stdio(stepd_step_task_info_t *t);
 
@@ -125,11 +125,11 @@ int io_dup_stdio(stepd_step_task_info_t *t);
  *  Presumably the tasks have already been started, and
  *  have their copies of these file descriptors.
  */
-void io_close_task_fds(stepd_step_rec_t *job);
+void io_close_task_fds(stepd_step_rec_t *step);
 
-void io_close_all(stepd_step_rec_t *job);
+void io_close_all(stepd_step_rec_t *step);
 
-void io_close_local_fds(stepd_step_rec_t *job);
+void io_close_local_fds(stepd_step_rec_t *step);
 
 
 /*
@@ -137,7 +137,7 @@ void io_close_local_fds(stepd_step_rec_t *job);
  *  if stdout and stderr point to the same file(s).
  *  See comments above for slurmd_filename_pattern_t.
  */
-void io_find_filename_pattern(  stepd_step_rec_t *job,
+void io_find_filename_pattern(  stepd_step_rec_t *step,
 				slurmd_filename_pattern_t *outpattern,
 				slurmd_filename_pattern_t *errpattern,
 				bool *same_out_err_files );
@@ -145,6 +145,6 @@ void io_find_filename_pattern(  stepd_step_rec_t *job,
 /*
  *  Get the flags to be used with the open call to create output files.
  */
-int io_get_file_flags(stepd_step_rec_t *job);
+int io_get_file_flags(stepd_step_rec_t *step);
 
 #endif /* !_IO_H */

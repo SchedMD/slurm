@@ -71,7 +71,7 @@ cpu_freq_recv_info(int fd);
  *  a pointer to a hex map of the cpus to be used by this step
  */
 extern void
-cpu_freq_cpuset_validate(stepd_step_rec_t *job);
+cpu_freq_cpuset_validate(stepd_step_rec_t *step);
 
 /*
  * Validate the cpus and select the frequency to set
@@ -79,7 +79,7 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job);
  *  the list of cpus to be used by this step
  */
 extern void
-cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores);
+cpu_freq_cgroup_validate(stepd_step_rec_t *step, char *step_alloc_cores);
 
 /*
  * Verify slurm.conf CpuFreqGovernors list
@@ -162,13 +162,13 @@ cpu_freq_to_string(char *buf, int buf_size, uint32_t cpu_freq);
  * set the userspace governor and the new frequency value
  */
 extern void
-cpu_freq_set(stepd_step_rec_t *job);
+cpu_freq_set(stepd_step_rec_t *step);
 
 /*
  * reset the governor and cpu frequency to the configured values
  */
 extern void
-cpu_freq_reset(stepd_step_rec_t *job);
+cpu_freq_reset(stepd_step_rec_t *step);
 
 /*
  * Convert frequency parameters to strings

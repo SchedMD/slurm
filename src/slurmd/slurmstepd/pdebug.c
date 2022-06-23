@@ -53,14 +53,14 @@
  * Returns SLURM_SUCCESS or SLURM_ERROR.
  */
 int
-pdebug_trace_process(stepd_step_rec_t *job, pid_t pid)
+pdebug_trace_process(stepd_step_rec_t *step, pid_t pid)
 {
 	/*  If task to be debugged, wait for it to stop via
 	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and
 	 *  ptrace(PTRACE_DETACH).
 	 */
 
-	if (job->flags & LAUNCH_PARALLEL_DEBUG) {
+	if (step->flags & LAUNCH_PARALLEL_DEBUG) {
 		int status;
 		waitpid(pid, &status, WUNTRACED);
 		if (!WIFSTOPPED(status)) {
@@ -81,9 +81,9 @@ pdebug_trace_process(stepd_step_rec_t *job, pid_t pid)
 			 * Mark this process as complete since it died
 			 * prematurely.
 			 */
-			for (i = 0; i < job->node_tasks; i++) {
-				if (job->task[i]->pid == pid) {
-					job->task[i]->state =
+			for (i = 0; i < step->node_tasks; i++) {
+				if (step->task[i]->pid == pid) {
+					step->task[i]->state =
 						STEPD_STEP_TASK_COMPLETE;
 				}
 			}
@@ -113,12 +113,12 @@ pdebug_trace_process(stepd_step_rec_t *job, pid_t pid)
  * Stop current task on exec() for connection from a parallel debugger
  */
 void
-pdebug_stop_current(stepd_step_rec_t *job)
+pdebug_stop_current(stepd_step_rec_t *step)
 {
 	/*
 	 * Stop the task on exec for TotalView to connect
 	 */
-	if ((job->flags & LAUNCH_PARALLEL_DEBUG)
+	if ((step->flags & LAUNCH_PARALLEL_DEBUG)
 #ifdef BSD
 	     && (_PTRACE(PT_TRACE_ME, 0, (caddr_t)0, 0) < 0) )
 #elif defined(PT_TRACE_ME)
@@ -176,9 +176,9 @@ static bool _pid_to_wake(pid_t pid)
 /*
  * Wake tasks currently stopped for parallel debugger attach
  */
-void pdebug_wake_process(stepd_step_rec_t *job, pid_t pid)
+void pdebug_wake_process(stepd_step_rec_t *step, pid_t pid)
 {
-	if ((job->flags & LAUNCH_PARALLEL_DEBUG) && (pid > (pid_t) 0)) {
+	if ((step->flags & LAUNCH_PARALLEL_DEBUG) && (pid > (pid_t) 0)) {
 		if (_pid_to_wake(pid)) {
 			if (kill(pid, SIGCONT) < 0)
 				error("kill(%lu): %m", (unsigned long) pid);

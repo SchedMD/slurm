@@ -83,16 +83,16 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
  * The following is executed in slurmstepd.
  */
 
-extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
+extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 {
 	int rc;
 
 	debug("using mpi/pmi2");
 
-	if (job->batch)
+	if (step->batch)
 		return SLURM_SUCCESS;
 
-	rc = pmi2_setup_stepd(job, env);
+	rc = pmi2_setup_stepd(step, env);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 

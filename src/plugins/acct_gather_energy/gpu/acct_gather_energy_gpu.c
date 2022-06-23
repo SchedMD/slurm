@@ -98,7 +98,7 @@ static pthread_cond_t gpu_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t launch_cond = PTHREAD_COND_INITIALIZER;
 
-static stepd_step_rec_t *job = NULL;
+static stepd_step_rec_t *step = NULL;
 
 pthread_t thread_gpu_id_launcher = 0;
 pthread_t thread_gpu_id_run = 0;
@@ -674,13 +674,13 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_STEP_PTR:
 	{
 		/* set global job if needed later */
-		job = (stepd_step_rec_t *)data;
+		step = (stepd_step_rec_t *)data;
 
 		/*
 		 * Get the GPUs used in the step so we only poll those when
 		 * looking at them
 		 */
-		rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
+		rc = gres_get_step_info(step->step_gres_list, "gpu", 0,
 					GRES_STEP_DATA_BITMAP,
 					&saved_usable_gpus);
 		/*

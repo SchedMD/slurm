@@ -249,7 +249,7 @@ static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t launch_cond = PTHREAD_COND_INITIALIZER;
 static pthread_t thread_ipmi_id_launcher = 0;
 static pthread_t thread_ipmi_id_run = 0;
-static stepd_step_rec_t *job = NULL;
+static stepd_step_rec_t *step = NULL;
 static int context_id = -1;
 
 /* Thread scope global vars */
@@ -1010,7 +1010,7 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 		break;
 	case ENERGY_DATA_STEP_PTR:
 		/* set global job if needed later */
-		job = (stepd_step_rec_t *)data;
+		step = (stepd_step_rec_t *)data;
 		break;
 	default:
 		error("acct_gather_energy_p_set_data: unknown enum %d",

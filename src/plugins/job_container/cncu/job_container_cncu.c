@@ -381,7 +381,7 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 /* Add a process to a job container, create the proctrack container to add */
 extern int container_p_join(uint32_t job_id, uid_t uid)
 {
-	stepd_step_rec_t job;
+	stepd_step_rec_t step;
 	int rc;
 	pid_t pid = getpid();
 	DEF_TIMERS;
@@ -391,9 +391,9 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	log_flag(JOB_CONT, "%s: adding pid(%u.%u)",
 		 plugin_type, job_id, (uint32_t) pid);
 
-	memset(&job, 0, sizeof(stepd_step_rec_t));
-	job.jmgr_pid = pid;
-	job.uid = uid;
+	memset(&step, 0, sizeof(stepd_step_rec_t));
+	step.jmgr_pid = pid;
+	step.uid = uid;
 
 	/*
 	 * container_g_join() is called only from forked processes, set the
@@ -401,14 +401,14 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	 * forked.
 	 */
 	proctrack_forked = true;
-	if (proctrack_g_create(&job) != SLURM_SUCCESS) {
+	if (proctrack_g_create(&step) != SLURM_SUCCESS) {
 		error("%s: proctrack_g_create job(%u)", plugin_type,job_id);
 		return SLURM_ERROR;
 	}
 
-	proctrack_g_add(&job, pid);
+	proctrack_g_add(&step, pid);
 
-	rc = container_p_add_cont(job_id, job.cont_id);
+	rc = container_p_add_cont(job_id, step.cont_id);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY) {
 		END_TIMER;

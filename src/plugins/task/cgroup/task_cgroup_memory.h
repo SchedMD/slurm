@@ -44,13 +44,13 @@ extern int task_cgroup_memory_init(void);
 extern int task_cgroup_memory_fini(void);
 
 /* create user/job/jobstep memory cgroups */
-extern int task_cgroup_memory_create(stepd_step_rec_t *job);
+extern int task_cgroup_memory_create(stepd_step_rec_t *step);
 
 /* detect if oom ran on a step or job and print notice of said event */
-extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job);
+extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step);
 
 /* add a pid to the cgroup */
-extern int task_cgroup_memory_add_pid(stepd_step_rec_t *job, pid_t pid,
+extern int task_cgroup_memory_add_pid(stepd_step_rec_t *step, pid_t pid,
 				      uint32_t taskid);
 
 /* add a pid to extern step cgroup. This one doesn't go at task_x level. */

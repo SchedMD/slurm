@@ -52,7 +52,7 @@ static uint64_t _get_mem_total(void);
  * Determines the cpu scaling amount to use.
  * Returns -1 on failure.
  */
-int get_cpu_scaling(stepd_step_rec_t *job)
+int get_cpu_scaling(stepd_step_rec_t *step)
 {
 	int total_cpus, num_app_cpus, cpu_scaling;
 
@@ -106,7 +106,7 @@ int get_cpu_scaling(stepd_step_rec_t *job)
  * Determines the memory scaling amount to use.
  * Returns -1 on failure.
  */
-int get_mem_scaling(stepd_step_rec_t *job)
+int get_mem_scaling(stepd_step_rec_t *step)
 {
 	int mem_scaling;
 	uint64_t total_mem;

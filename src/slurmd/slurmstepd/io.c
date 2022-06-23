@@ -96,7 +96,7 @@ struct io_operations client_ops = {
 #define CLIENT_IO_MAGIC 0x10102
 struct client_io_info {
 	int                   magic;
-	stepd_step_rec_t    *job;		 /* pointer back to job data   */
+	stepd_step_rec_t *step; /* pointer back to step data */
 
 	/* incoming variables */
 	struct slurm_io_header header;
@@ -146,7 +146,7 @@ struct io_operations task_write_ops = {
 #define TASK_IN_MAGIC 0x10103
 struct task_write_info {
 	int              magic;
-	stepd_step_rec_t    *job;		 /* pointer back to job data   */
+	stepd_step_rec_t *step; /* pointer back to step data */
 
 	List msg_queue;
 	struct io_buf *msg;
@@ -170,7 +170,7 @@ struct task_read_info {
 	uint16_t         type;           /* type of IO object          */
 	uint16_t         gtaskid;
 	uint16_t         ltaskid;
-	stepd_step_rec_t    *job;		 /* pointer back to job data   */
+	stepd_step_rec_t *step; /* pointer back to step data */
 	cbuf_t          *buf;
 	bool		 eof;
 	bool		 eof_msg_sent;
@@ -181,11 +181,11 @@ struct task_read_info {
  **********************************************************************/
 struct window_info {
 	stepd_step_task_info_t *task;
-	stepd_step_rec_t *job;
+	stepd_step_rec_t *step;
 	int pty_fd;
 };
 #ifdef HAVE_PTY_H
-static void  _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job);
+static void  _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step);
 static void *_window_manager(void *arg);
 #endif
 
@@ -193,20 +193,20 @@ static void *_window_manager(void *arg);
  * General declarations
  **********************************************************************/
 static void *_io_thr(void *);
-static int _send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *job,
+static int _send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *step,
 			     bool init);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
-					  stepd_step_rec_t *job, cbuf_t *cbuf);
+					  stepd_step_rec_t *step, cbuf_t *cbuf);
 static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
-static void _free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *job);
-static void _free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *job);
-static void _free_all_outgoing_msgs(List msg_queue, stepd_step_rec_t *job);
-static bool _incoming_buf_free(stepd_step_rec_t *job);
-static bool _outgoing_buf_free(stepd_step_rec_t *job);
-static int  _send_connection_okay_response(stepd_step_rec_t *job);
-static struct io_buf *_build_connection_okay_message(stepd_step_rec_t *job);
+static void _free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *step);
+static void _free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *step);
+static void _free_all_outgoing_msgs(List msg_queue, stepd_step_rec_t *step);
+static bool _incoming_buf_free(stepd_step_rec_t *step);
+static bool _outgoing_buf_free(stepd_step_rec_t *step);
+static int  _send_connection_okay_response(stepd_step_rec_t *step);
+static struct io_buf *_build_connection_okay_message(stepd_step_rec_t *step);
 
 /**********************************************************************
  * IO client socket functions
@@ -238,7 +238,7 @@ _client_readable(eio_obj_t *obj)
 	}
 
 	if (client->in_msg != NULL
-	    || _incoming_buf_free(client->job))
+	    || _incoming_buf_free(client->step))
 		return true;
 
 	debug5("  false");
@@ -266,14 +266,14 @@ _client_writable(eio_obj_t *obj)
 		ListIterator msgs;
 		struct io_buf *msg;
 		client->msg_queue = list_create(NULL); /* need destructor */
-		msgs = list_iterator_create(client->job->outgoing_cache);
+		msgs = list_iterator_create(client->step->outgoing_cache);
 		while ((msg = list_next(msgs))) {
 			msg->ref_count++;
 			list_enqueue(client->msg_queue, msg);
 		}
 		list_iterator_destroy(msgs);
 		/* and now make this object visible to tasks */
-		list_append(client->job->clients, (void *)obj);
+		list_append(client->step->clients, (void *)obj);
 	}
 
 	if (client->out_msg != NULL)
@@ -304,9 +304,9 @@ _client_read(eio_obj_t *obj, List objs)
 	 * Read the header, if a message read is not already in progress
 	 */
 	if (client->in_msg == NULL) {
-		if (_incoming_buf_free(client->job)) {
+		if (_incoming_buf_free(client->step)) {
 			client->in_msg =
-				list_dequeue(client->job->free_incoming);
+				list_dequeue(client->step->free_incoming);
 		} else {
 			debug5("  _client_read free_incoming is empty");
 			return SLURM_SUCCESS;
@@ -315,7 +315,8 @@ _client_read(eio_obj_t *obj, List objs)
 		if (n <= 0) { /* got eof or fatal error */
 			debug5("  got eof or error _client_read header, n=%d", n);
 			client->in_eof = true;
-			list_enqueue(client->job->free_incoming, client->in_msg);
+			list_enqueue(client->step->free_incoming,
+				     client->in_msg);
 			client->in_msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -333,11 +334,12 @@ _client_read(eio_obj_t *obj, List objs)
 	if (client->header.type == SLURM_IO_CONNECTION_TEST) {
 		if (client->header.length != 0) {
 			debug5("  error in _client_read: bad connection test");
-			list_enqueue(client->job->free_incoming, client->in_msg);
+			list_enqueue(client->step->free_incoming,
+				     client->in_msg);
 			client->in_msg = NULL;
 			return SLURM_ERROR;
 		}
-		if (_send_connection_okay_response(client->job)) {
+		if (_send_connection_okay_response(client->step)) {
 			/*
 			 * If we get here because of a failed
 			 * _send_connection_okay_response, it's because of a
@@ -347,7 +349,7 @@ _client_read(eio_obj_t *obj, List objs)
 			 */
 			return SLURM_SUCCESS;
 		}
-		list_enqueue(client->job->free_incoming, client->in_msg);
+		list_enqueue(client->step->free_incoming, client->in_msg);
 		client->in_msg = NULL;
 		return SLURM_SUCCESS;
 	} else if (client->header.length == 0) { /* zero length is an eof message */
@@ -369,7 +371,8 @@ _client_read(eio_obj_t *obj, List objs)
 		if (n <= 0) { /* got eof (or unhandled error) */
 			debug5("  got eof on _client_read body");
 			client->in_eof = true;
-			list_enqueue(client->job->free_incoming, client->in_msg);
+			list_enqueue(client->step->free_incoming,
+				     client->in_msg);
 			client->in_msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -395,16 +398,16 @@ _client_read(eio_obj_t *obj, List objs)
 
 		client->in_msg->ref_count = 0;
 		if (client->header.type == SLURM_IO_ALLSTDIN) {
-			for (i = 0; i < client->job->node_tasks; i++) {
-				task = client->job->task[i];
+			for (i = 0; i < client->step->node_tasks; i++) {
+				task = client->step->task[i];
 				io = (struct task_write_info *)task->in->arg;
 				client->in_msg->ref_count++;
 				list_enqueue(io->msg_queue, client->in_msg);
 			}
 			debug5("  message ref_count = %d", client->in_msg->ref_count);
 		} else {
-			for (i = 0; i < client->job->node_tasks; i++) {
-				task = client->job->task[i];
+			for (i = 0; i < client->step->node_tasks; i++) {
+				task = client->step->task[i];
 				if (task->in == NULL)
 					continue;
 				io = (struct task_write_info *)task->in->arg;
@@ -466,7 +469,8 @@ again:
 			return SLURM_SUCCESS;
 		} else {
 			client->out_eof = true;
-			_free_all_outgoing_msgs(client->msg_queue, client->job);
+			_free_all_outgoing_msgs(client->msg_queue,
+						client->step);
 			return SLURM_SUCCESS;
 		}
 	}
@@ -479,7 +483,7 @@ again:
 	if (client->out_remaining > 0)
 		return SLURM_SUCCESS;
 
-	_free_outgoing_msg(client->out_msg, client->job);
+	_free_outgoing_msg(client->out_msg, client->step);
 	client->out_msg = NULL;
 
 	return SLURM_SUCCESS;
@@ -548,7 +552,7 @@ _local_file_write(eio_obj_t *obj, List objs)
 	 * of the tasks.  Just free the message and return.
 	 */
 	if (header.length == 0) {
-		_free_outgoing_msg(client->out_msg, client->job);
+		_free_outgoing_msg(client->out_msg, client->step);
 		client->out_msg = NULL;
 		return SLURM_SUCCESS;
 	}
@@ -557,18 +561,18 @@ _local_file_write(eio_obj_t *obj, List objs)
 	buf = client->out_msg->data +
 		(client->out_msg->length - client->out_remaining);
 	n = write_labelled_message(obj->fd, buf, client->out_remaining,
-				   header.gtaskid, client->job->het_job_offset,
-				   client->job->het_job_task_offset,
+				   header.gtaskid, client->step->het_job_offset,
+				   client->step->het_job_task_offset,
 				   client->labelio, client->taskid_width);
 	if (n < 0) {
 		client->out_eof = true;
-		_free_all_outgoing_msgs(client->msg_queue, client->job);
+		_free_all_outgoing_msgs(client->msg_queue, client->step);
 		return SLURM_ERROR;
 	}
 
 	client->out_remaining -= n;
 	if (client->out_remaining == 0) {
-		_free_outgoing_msg(client->out_msg, client->job);
+		_free_outgoing_msg(client->out_msg, client->step);
 		client->out_msg = NULL;
 	}
 	return SLURM_SUCCESS;
@@ -584,13 +588,13 @@ _local_file_write(eio_obj_t *obj, List objs)
  * Create an eio_obj_t for handling a task's stdin traffic
  */
 static eio_obj_t *
-_create_task_in_eio(int fd, stepd_step_rec_t *job)
+_create_task_in_eio(int fd, stepd_step_rec_t *step)
 {
 	struct task_write_info *t = xmalloc(sizeof(*t));
 	eio_obj_t *eio = NULL;
 
 	t->magic = TASK_IN_MAGIC;
-	t->job = job;
+	t->step = step;
 	t->msg_queue = list_create(NULL); /* FIXME! Add destructor */
 	t->msg = NULL;
 	t->remaining = 0;
@@ -655,7 +659,7 @@ _task_write(eio_obj_t *obj, List objs)
 		if (in->msg->length == 0) { /* eof message */
 			close(obj->fd);
 			obj->fd = -1;
-			_free_incoming_msg(in->msg, in->job);
+			_free_incoming_msg(in->msg, in->step);
 			in->msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -675,7 +679,7 @@ again:
 		else {
 			close(obj->fd);
 			obj->fd = -1;
-			_free_incoming_msg(in->msg, in->job);
+			_free_incoming_msg(in->msg, in->step);
 			in->msg = NULL;
 			return SLURM_ERROR;
 		}
@@ -684,7 +688,7 @@ again:
 	if (in->remaining > 0)
 		return SLURM_SUCCESS;
 
-	_free_incoming_msg(in->msg, in->job);
+	_free_incoming_msg(in->msg, in->step);
 	in->msg = NULL;
 
 	return SLURM_SUCCESS;
@@ -698,7 +702,7 @@ again:
  */
 static eio_obj_t *
 _create_task_out_eio(int fd, uint16_t type,
-		     stepd_step_rec_t *job, stepd_step_task_info_t *task)
+		     stepd_step_rec_t *step, stepd_step_task_info_t *task)
 {
 	struct task_read_info *out = xmalloc(sizeof(*out));
 	eio_obj_t *eio = NULL;
@@ -707,7 +711,7 @@ _create_task_out_eio(int fd, uint16_t type,
 	out->type = type;
 	out->gtaskid = task->gtid;
 	out->ltaskid = task->id;
-	out->job = job;
+	out->step = step;
 	out->buf = cbuf_create(MAX_MSG_LEN, MAX_MSG_LEN*4);
 	out->eof = false;
 	out->eof_msg_sent = false;
@@ -848,7 +852,7 @@ static void *_window_manager(void *arg)
 }
 
 static void
-_spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job)
+_spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 {
 	char *host, *port, *rows, *cols;
 	int pty_fd;
@@ -858,22 +862,22 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 
 #if 0
 	/* NOTE: SLURM_LAUNCH_NODE_IPADDR is not available at this point */
-	if (!(ip_addr = getenvp(job->env, "SLURM_LAUNCH_NODE_IPADDR"))) {
+	if (!(ip_addr = getenvp(step->env, "SLURM_LAUNCH_NODE_IPADDR"))) {
 		error("SLURM_LAUNCH_NODE_IPADDR env var not set");
 		return;
 	}
 #endif
-	if (!(host = getenvp(job->env, "SLURM_SRUN_COMM_HOST"))) {
+	if (!(host = getenvp(step->env, "SLURM_SRUN_COMM_HOST"))) {
 		error("SLURM_SRUN_COMM_HOST env var not set");
 		return;
 	}
-	if (!(port = getenvp(job->env, "SLURM_PTY_PORT"))) {
+	if (!(port = getenvp(step->env, "SLURM_PTY_PORT"))) {
 		error("SLURM_PTY_PORT env var not set");
 		return;
 	}
-	if (!(cols = getenvp(job->env, "SLURM_PTY_WIN_COL")))
+	if (!(cols = getenvp(step->env, "SLURM_PTY_WIN_COL")))
 		error("SLURM_PTY_WIN_COL env var not set");
-	if (!(rows = getenvp(job->env, "SLURM_PTY_WIN_ROW")))
+	if (!(rows = getenvp(step->env, "SLURM_PTY_WIN_ROW")))
 		error("SLURM_PTY_WIN_ROW env var not set");
 
 	if (rows && cols) {
@@ -896,7 +900,7 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 
 	win_info = xmalloc(sizeof(struct window_info));
 	win_info->task   = task;
-	win_info->job    = job;
+	win_info->step    = step;
 	win_info->pty_fd = pty_fd;
 	slurm_thread_create_detached(NULL, _window_manager, win_info);
 }
@@ -912,15 +916,15 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *job)
  * file descriptors.
  */
 static int
-_init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
+_init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 {
-	int file_flags = io_get_file_flags(job);
+	int file_flags = io_get_file_flags(step);
 
 	/*
 	 *  Initialize stdin
 	 */
 #ifdef HAVE_PTY_H
-	if (job->flags & LAUNCH_PTY) {
+	if (step->flags & LAUNCH_PTY) {
 		/* All of the stdin fails unless EVERY
 		 * task gets an eio object for stdin.
 		 * Its not clear why that is. */
@@ -952,9 +956,9 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			fd_set_close_on_exec(task->stdin_fd);
 			fd_set_close_on_exec(task->to_stdin);
 			fd_set_nonblocking(task->to_stdin);
-			_spawn_window_manager(task, job);
-			task->in = _create_task_in_eio(task->to_stdin, job);
-			eio_new_initial_obj(job->eio, (void *)task->in);
+			_spawn_window_manager(task, step);
+			task->in = _create_task_in_eio(task->to_stdin, step);
+			eio_new_initial_obj(step->eio, (void *)task->in);
 		} else {
 			xfree(task->ifname);
 			task->ifname = xstrdup("/dev/null");
@@ -965,8 +969,8 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			}
 			task->to_stdin = dup(task->stdin_fd);
 			fd_set_nonblocking(task->to_stdin);
-			task->in = _create_task_in_eio(task->to_stdin, job);
-			eio_new_initial_obj(job->eio, (void *)task->in);
+			task->in = _create_task_in_eio(task->to_stdin, step);
+			eio_new_initial_obj(step->eio, (void *)task->in);
 		}
 	} else if (task->ifname != NULL) {
 #else
@@ -997,15 +1001,15 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		task->stdin_fd = pin[0];
 		task->to_stdin = pin[1];
 		fd_set_nonblocking(task->to_stdin);
-		task->in = _create_task_in_eio(task->to_stdin, job);
-		eio_new_initial_obj(job->eio, (void *)task->in);
+		task->in = _create_task_in_eio(task->to_stdin, step);
+		eio_new_initial_obj(step->eio, (void *)task->in);
 	}
 
 	/*
 	 *  Initialize stdout
 	 */
 #ifdef HAVE_PTY_H
-	if (job->flags & LAUNCH_PTY) {
+	if (step->flags & LAUNCH_PTY) {
 		if (task->gtid == 0) {
 			task->stdout_fd = dup(task->stdin_fd);
 			fd_set_close_on_exec(task->stdout_fd);
@@ -1013,9 +1017,9 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			fd_set_close_on_exec(task->from_stdout);
 			fd_set_nonblocking(task->from_stdout);
 			task->out = _create_task_out_eio(task->from_stdout,
-						 SLURM_IO_STDOUT, job, task);
-			list_append(job->stdout_eio_objs, (void *)task->out);
-			eio_new_initial_obj(job->eio, (void *)task->out);
+						 SLURM_IO_STDOUT, step, task);
+			list_append(step->stdout_eio_objs, (void *)task->out);
+			eio_new_initial_obj(step->eio, (void *)task->out);
 		} else {
 			xfree(task->ofname);
 			task->ofname = xstrdup("/dev/null");
@@ -1023,11 +1027,11 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 			task->from_stdout = -1;  /* not used */
 		}
 	} else if ((task->ofname != NULL) &&
-		   (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+		   (((step->flags & LAUNCH_LABEL_IO) == 0) ||
 		    (xstrcmp(task->ofname, "/dev/null") == 0))) {
 #else
 	if (task->ofname != NULL &&
-	    (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+	    (((step->flags & LAUNCH_LABEL_IO) == 0) ||
 	     xstrcmp(task->ofname, "/dev/null") == 0)) {
 #endif
 		int count = 0;
@@ -1049,7 +1053,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		int pout[2];
 #if HAVE_PTY_H
 		struct termios tio;
-		if (!(job->flags & LAUNCH_BUFFERED_IO)) {
+		if (!(step->flags & LAUNCH_BUFFERED_IO)) {
 #if HAVE_SETRESUID
 			if (setresuid(geteuid(), geteuid(), 0) < 0)
 				error("%s: %u setresuid() %m",
@@ -1089,16 +1093,16 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		fd_set_close_on_exec(task->from_stdout);
 		fd_set_nonblocking(task->from_stdout);
 		task->out = _create_task_out_eio(task->from_stdout,
-						 SLURM_IO_STDOUT, job, task);
-		list_append(job->stdout_eio_objs, (void *)task->out);
-		eio_new_initial_obj(job->eio, (void *)task->out);
+						 SLURM_IO_STDOUT, step, task);
+		list_append(step->stdout_eio_objs, (void *)task->out);
+		eio_new_initial_obj(step->eio, (void *)task->out);
 	}
 
 	/*
 	 *  Initialize stderr
 	 */
 #ifdef HAVE_PTY_H
-	if (job->flags & LAUNCH_PTY) {
+	if (step->flags & LAUNCH_PTY) {
 		if (task->gtid == 0) {
 			/* Make a file descriptor for the task to write to, but
 			   don't make a separate one read from, because in pty
@@ -1118,11 +1122,11 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		}
 
 	} else if ((task->efname != NULL) &&
-		   (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+		   (((step->flags & LAUNCH_LABEL_IO) == 0) ||
 		    (xstrcmp(task->efname, "/dev/null") == 0))) {
 #else
 	if ((task->efname != NULL) &&
-	    (((job->flags & LAUNCH_LABEL_IO) == 0) ||
+	    (((step->flags & LAUNCH_LABEL_IO) == 0) ||
 	     (xstrcmp(task->efname, "/dev/null") == 0))) {
 #endif
 		int count = 0;
@@ -1153,21 +1157,21 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		fd_set_close_on_exec(task->from_stderr);
 		fd_set_nonblocking(task->from_stderr);
 		task->err = _create_task_out_eio(task->from_stderr,
-						 SLURM_IO_STDERR, job, task);
-		list_append(job->stderr_eio_objs, (void *)task->err);
-		eio_new_initial_obj(job->eio, (void *)task->err);
+						 SLURM_IO_STDERR, step, task);
+		list_append(step->stderr_eio_objs, (void *)task->err);
+		eio_new_initial_obj(step->eio, (void *)task->err);
 	}
 
 	return SLURM_SUCCESS;
 }
 
 int
-io_init_tasks_stdio(stepd_step_rec_t *job)
+io_init_tasks_stdio(stepd_step_rec_t *step)
 {
 	int i, rc = SLURM_SUCCESS, tmprc;
 
-	for (i = 0; i < job->node_tasks; i++) {
-		tmprc = _init_task_stdio_fds(job->task[i], job);
+	for (i = 0; i < step->node_tasks; i++) {
+		tmprc = _init_task_stdio_fds(step->task[i], step);
 		if (tmprc != SLURM_SUCCESS)
 			rc = tmprc;
 	}
@@ -1175,14 +1179,14 @@ io_init_tasks_stdio(stepd_step_rec_t *job)
 	return rc;
 }
 
-extern void io_thread_start(stepd_step_rec_t *job)
+extern void io_thread_start(stepd_step_rec_t *step)
 {
-	slurm_thread_create(&job->ioid, _io_thr, job);
+	slurm_thread_create(&step->ioid, _io_thr, step);
 }
 
 
 void
-_shrink_msg_cache(List cache, stepd_step_rec_t *job)
+_shrink_msg_cache(List cache, stepd_step_rec_t *step)
 {
 	struct io_buf *msg;
 	int over = 0;
@@ -1196,28 +1200,28 @@ _shrink_msg_cache(List cache, stepd_step_rec_t *job)
 	for (i = 0; i < over; i++) {
 		msg = list_dequeue(cache);
 		/* FIXME - following call MIGHT lead to too much recursion */
-		_free_outgoing_msg(msg, job);
+		_free_outgoing_msg(msg, step);
 	}
 }
 
 
 
 static int
-_send_connection_okay_response(stepd_step_rec_t *job)
+_send_connection_okay_response(stepd_step_rec_t *step)
 {
 	eio_obj_t *eio;
 	ListIterator clients;
 	struct io_buf *msg;
 	struct client_io_info *client;
 
-	msg = _build_connection_okay_message(job);
+	msg = _build_connection_okay_message(step);
 	if (!msg) {
 		error(  "Could not send connection okay message because of "
 			"lack of buffer space.");
 		return SLURM_ERROR;
 	}
 
-	clients = list_iterator_create(job->clients);
+	clients = list_iterator_create(step->clients);
 	while ((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		if (client->out_eof || client->is_local_file)
@@ -1236,14 +1240,14 @@ _send_connection_okay_response(stepd_step_rec_t *job)
 
 
 static struct io_buf *
-_build_connection_okay_message(stepd_step_rec_t *job)
+_build_connection_okay_message(stepd_step_rec_t *step)
 {
 	struct io_buf *msg;
 	buf_t *packbuf;
 	struct slurm_io_header header;
 
-	if (_outgoing_buf_free(job)) {
-		msg = list_dequeue(job->free_outgoing);
+	if (_outgoing_buf_free(step)) {
+		msg = list_dequeue(step->free_outgoing);
 	} else {
 		return NULL;
 	}
@@ -1282,14 +1286,14 @@ _route_msg_task_to_client(eio_obj_t *obj)
 
 	/* Pack task output into messages for transfer to a client */
 	while (cbuf_used(out->buf) > 0
-	       && _outgoing_buf_free(out->job)) {
+	       && _outgoing_buf_free(out->step)) {
 		debug5("cbuf_used = %d", cbuf_used(out->buf));
-		msg = _task_build_message(out, out->job, out->buf);
+		msg = _task_build_message(out, out->step, out->buf);
 		if (msg == NULL)
 			return;
 
 		/* Add message to the msg_queue of all clients */
-		clients = list_iterator_create(out->job->clients);
+		clients = list_iterator_create(out->step->clients);
 		while ((eio = list_next(clients))) {
 			client = (struct client_io_info *)eio->arg;
 			if (client->out_eof == true)
@@ -1315,65 +1319,65 @@ _route_msg_task_to_client(eio_obj_t *obj)
 		list_iterator_destroy(clients);
 
 		/* Update the outgoing message cache */
-		if (list_enqueue(out->job->outgoing_cache, msg)) {
+		if (list_enqueue(out->step->outgoing_cache, msg)) {
 			msg->ref_count++;
-			_shrink_msg_cache(out->job->outgoing_cache, out->job);
+			_shrink_msg_cache(out->step->outgoing_cache, out->step);
 		}
 	}
 }
 
 static void
-_free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *job)
+_free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *step)
 {
 	msg->ref_count--;
 	if (msg->ref_count == 0) {
 		/* Put the message back on the free List */
-		list_enqueue(job->free_incoming, msg);
+		list_enqueue(step->free_incoming, msg);
 
 		/* Kick the event IO engine */
-		eio_signal_wakeup(job->eio);
+		eio_signal_wakeup(step->eio);
 	}
 }
 
 static void
-_free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *job)
+_free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *step)
 {
 	int i;
 
 	msg->ref_count--;
 	if (msg->ref_count == 0) {
 		/* Put the message back on the free List */
-		list_enqueue(job->free_outgoing, msg);
+		list_enqueue(step->free_outgoing, msg);
 
 		/* Try packing messages from tasks' output cbufs */
-		if (job->task == NULL)
+		if (step->task == NULL)
 			return;
-		for (i = 0; i < job->node_tasks; i++) {
-			if (job->task[i]->err != NULL) {
-				_route_msg_task_to_client(job->task[i]->err);
-				if (!_outgoing_buf_free(job))
+		for (i = 0; i < step->node_tasks; i++) {
+			if (step->task[i]->err != NULL) {
+				_route_msg_task_to_client(step->task[i]->err);
+				if (!_outgoing_buf_free(step))
 					break;
 			}
-			if (job->task[i]->out != NULL) {
-				_route_msg_task_to_client(job->task[i]->out);
-				if (!_outgoing_buf_free(job))
+			if (step->task[i]->out != NULL) {
+				_route_msg_task_to_client(step->task[i]->out);
+				if (!_outgoing_buf_free(step))
 					break;
 			}
 		}
 		/* Kick the event IO engine */
-		eio_signal_wakeup(job->eio);
+		eio_signal_wakeup(step->eio);
 	}
 }
 
 static void
-_free_all_outgoing_msgs(List msg_queue, stepd_step_rec_t *job)
+_free_all_outgoing_msgs(List msg_queue, stepd_step_rec_t *step)
 {
 	ListIterator msgs;
 	struct io_buf *msg;
 
 	msgs = list_iterator_create(msg_queue);
 	while((msg = list_next(msgs))) {
-		_free_outgoing_msg(msg, job);
+		_free_outgoing_msg(msg, step);
 	}
 	list_iterator_destroy(msgs);
 }
@@ -1381,25 +1385,25 @@ _free_all_outgoing_msgs(List msg_queue, stepd_step_rec_t *job)
 /* Close I/O file descriptors created by slurmstepd. The connections have
  * all been moved to the spawned tasks stdin/out/err file descriptors. */
 extern void
-io_close_task_fds(stepd_step_rec_t *job)
+io_close_task_fds(stepd_step_rec_t *step)
 {
 	int i;
 
-	for (i = 0; i < job->node_tasks; i++) {
-		close(job->task[i]->stdin_fd);
-		close(job->task[i]->stdout_fd);
-		close(job->task[i]->stderr_fd);
+	for (i = 0; i < step->node_tasks; i++) {
+		close(step->task[i]->stdin_fd);
+		close(step->task[i]->stdout_fd);
+		close(step->task[i]->stderr_fd);
 	}
 }
 
 void
-io_close_all(stepd_step_rec_t *job)
+io_close_all(stepd_step_rec_t *step)
 {
 	int devnull;
 #if 0
 	int i;
-	for (i = 0; i < job->node_tasks; i++)
-		_io_finalize(job->task[i]);
+	for (i = 0; i < step->node_tasks; i++)
+		_io_finalize(step->task[i]);
 #endif
 
 	/* No more debug info will be received by client after this point
@@ -1421,21 +1425,21 @@ io_close_all(stepd_step_rec_t *job)
 	/* Signal IO thread to close appropriate
 	 * client connections
 	 */
-	eio_signal_shutdown(job->eio);
+	eio_signal_shutdown(step->eio);
 }
 
 void
-io_close_local_fds(stepd_step_rec_t *job)
+io_close_local_fds(stepd_step_rec_t *step)
 {
 	ListIterator clients;
 	eio_obj_t *eio;
 	int rc;
 	struct client_io_info *client;
 
-	if (job == NULL || job->clients == NULL)
+	if (step == NULL || step->clients == NULL)
 		return;
 
-	clients = list_iterator_create(job->clients);
+	clients = list_iterator_create(step->clients);
 	while((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		if (client->is_local_file) {
@@ -1455,7 +1459,7 @@ io_close_local_fds(stepd_step_rec_t *job)
 static void *
 _io_thr(void *arg)
 {
-	stepd_step_rec_t *job = (stepd_step_rec_t *) arg;
+	stepd_step_rec_t *step = (stepd_step_rec_t *) arg;
 	sigset_t set;
 	int rc;
 
@@ -1469,20 +1473,20 @@ _io_thr(void *arg)
 	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 	debug("IO handler started pid=%lu", (unsigned long) getpid());
-	rc = eio_handle_mainloop(job->eio);
+	rc = eio_handle_mainloop(step->eio);
 	debug("IO handler exited, rc=%d", rc);
 	return (void *)1;
 }
 
 /*
- *  Add a client to the job's client list that will write stdout and/or
+ *  Add a client to the step's client list that will write stdout and/or
  *  stderr from the slurmstepd.  The slurmstepd handles the write when
  *  a file is created per node or per task, and the output needs to be
  *  modified in some way, like labelling lines with the task number.
  */
 int
 io_create_local_client(const char *filename, int file_flags,
-		       stepd_step_rec_t *job, bool labelio,
+		       stepd_step_rec_t *step, bool labelio,
 		       int stdout_tasks, int stderr_tasks)
 {
 	int fd = -1;
@@ -1498,7 +1502,7 @@ io_create_local_client(const char *filename, int file_flags,
 	/* Now set up the eio object */
 	client = xmalloc(sizeof(*client));
 	client->magic = CLIENT_IO_MAGIC;
-	client->job = job;
+	client->step = step;
 	client->msg_queue = list_create(NULL); /* FIXME - destructor */
 
 	client->ltaskid_stdout = stdout_tasks;
@@ -1507,15 +1511,15 @@ io_create_local_client(const char *filename, int file_flags,
 	client->is_local_file = true;
 
 	client->taskid_width = 1;
-	tmp = job->node_tasks - 1;
+	tmp = step->node_tasks - 1;
 	while ((tmp /= 10) > 0)
 		client->taskid_width++;
 
 
 	obj = eio_obj_create(fd, &local_file_ops, (void *)client);
-	list_append(job->clients, (void *)obj);
-	eio_new_initial_obj(job->eio, (void *)obj);
-	debug5("Now handling %d IO Client object(s)", list_count(job->clients));
+	list_append(step->clients, (void *)obj);
+	eio_new_initial_obj(step->eio, (void *)obj);
+	debug5("Now handling %d IO Client object(s)", list_count(step->clients));
 
 	return SLURM_SUCCESS;
 }
@@ -1531,14 +1535,14 @@ io_create_local_client(const char *filename, int file_flags,
  * an IO stream.
  */
 int
-io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
+io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
 			  int stdout_tasks, int stderr_tasks)
 {
 	int sock = -1;
 	struct client_io_info *client;
 	eio_obj_t *obj;
 
-	debug4 ("adding IO connection (logical node rank %d)", job->nodeid);
+	debug4 ("adding IO connection (logical node rank %d)", step->nodeid);
 
 	if (!slurm_addr_is_unspec(&srun->ioaddr)) {
 		if (slurm_get_port(&srun->ioaddr) == 0) {
@@ -1557,7 +1561,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 	}
 
 	fd_set_blocking(sock);  /* just in case... */
-	_send_io_init_msg(sock, srun, job, true);
+	_send_io_init_msg(sock, srun, step, true);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -1565,7 +1569,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 	/* Now set up the eio object */
 	client = xmalloc(sizeof(*client));
 	client->magic = CLIENT_IO_MAGIC;
-	client->job = job;
+	client->step = step;
 	client->msg_queue = list_create(NULL); /* FIXME - destructor */
 
 	client->ltaskid_stdout = stdout_tasks;
@@ -1575,9 +1579,10 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 	client->is_local_file = false;
 
 	obj = eio_obj_create(sock, &client_ops, (void *)client);
-	list_append(job->clients, (void *)obj);
-	eio_new_initial_obj(job->eio, (void *)obj);
-	debug5("Now handling %d IO Client object(s)", list_count(job->clients));
+	list_append(step->clients, (void *)obj);
+	eio_new_initial_obj(step->eio, (void *)obj);
+	debug5("Now handling %d IO Client object(s)",
+	       list_count(step->clients));
 
 	return SLURM_SUCCESS;
 }
@@ -1589,13 +1594,13 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
  * it can see the new object.
  */
 int
-io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
+io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 {
 	int sock = -1;
 	struct client_io_info *client;
 	eio_obj_t *obj;
 
-	debug4 ("adding IO connection (logical node rank %d)", job->nodeid);
+	debug4 ("adding IO connection (logical node rank %d)", step->nodeid);
 
 	if (!slurm_addr_is_unspec(&srun->ioaddr)) {
 		debug4("connecting IO back to %pA", &srun->ioaddr);
@@ -1610,7 +1615,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 	}
 
 	fd_set_blocking(sock);  /* just in case... */
-	_send_io_init_msg(sock, srun, job, false);
+	_send_io_init_msg(sock, srun, step, false);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -1618,7 +1623,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 	/* Now set up the eio object */
 	client = xmalloc(sizeof(*client));
 	client->magic = CLIENT_IO_MAGIC;
-	client->job = job;
+	client->step = step;
 	client->msg_queue = NULL; /* initialized in _client_writable */
 
 	client->ltaskid_stdout = -1;     /* accept from all tasks */
@@ -1627,10 +1632,10 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 	client->taskid_width = 0;
 	client->is_local_file = false;
 
-	/* client object adds itself to job->clients in _client_writable */
+	/* client object adds itself to step->clients in _client_writable */
 
 	obj = eio_obj_create(sock, &client_ops, (void *)client);
-	eio_new_obj(job->eio, (void *)obj);
+	eio_new_obj(step->eio, (void *)obj);
 
 	debug5("New IO Client object added");
 
@@ -1638,14 +1643,14 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 }
 
 static int
-_send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *job, bool init)
+_send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *step, bool init)
 {
 	io_init_msg_t msg;
 
 	msg.io_key = xmalloc(srun->key->len);
 	msg.io_key_len = srun->key->len;
 	memcpy(msg.io_key, srun->key->data, srun->key->len);
-	msg.nodeid = job->nodeid;
+	msg.nodeid = step->nodeid;
 
 	/* 2 versions after 21.08 this if can be removed */
 	if (srun->protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
@@ -1657,17 +1662,17 @@ _send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *job, bool init)
 	 * The initial message does not need the node_offset it is needed for
 	 * sattach
 	 */
-	if (!init && (job->step_id.step_het_comp != NO_VAL))
-		msg.nodeid += job->het_job_node_offset;
+	if (!init && (step->step_id.step_het_comp != NO_VAL))
+		msg.nodeid += step->het_job_node_offset;
 
-	if (job->stdout_eio_objs == NULL)
+	if (step->stdout_eio_objs == NULL)
 		msg.stdout_objs = 0;
 	else
-		msg.stdout_objs = list_count(job->stdout_eio_objs);
-	if (job->stderr_eio_objs == NULL)
+		msg.stdout_objs = list_count(step->stdout_eio_objs);
+	if (step->stderr_eio_objs == NULL)
 		msg.stderr_objs = 0;
 	else
-		msg.stderr_objs = list_count(job->stderr_eio_objs);
+		msg.stderr_objs = list_count(step->stderr_eio_objs);
 
 	if (io_init_msg_write_to_fd(sock, &msg) != SLURM_SUCCESS) {
 		error("Couldn't sent slurm_io_init_msg");
@@ -1723,8 +1728,8 @@ _send_eof_msg(struct task_read_info *out)
 	debug4("Entering _send_eof_msg");
 	out->eof_msg_sent = true;
 
-	if (_outgoing_buf_free(out->job)) {
-		msg = list_dequeue(out->job->free_outgoing);
+	if (_outgoing_buf_free(out->step)) {
+		msg = list_dequeue(out->step->free_outgoing);
 	} else {
 		/* eof message must be allowed to allocate new memory
 		   because _task_readable() will return "true" until
@@ -1755,7 +1760,7 @@ _send_eof_msg(struct task_read_info *out)
 	free_buf(packbuf);
 
 	/* Add eof message to the msg_queue of all clients */
-	clients = list_iterator_create(out->job->clients);
+	clients = list_iterator_create(out->step->clients);
 	while ((eio = list_next(clients))) {
 		client = (struct client_io_info *)eio->arg;
 		debug5("======================== Enqueued eof message");
@@ -1775,7 +1780,7 @@ _send_eof_msg(struct task_read_info *out)
 
 
 static struct io_buf *_task_build_message(struct task_read_info *out,
-					  stepd_step_rec_t *job, cbuf_t *cbuf)
+					  stepd_step_rec_t *step, cbuf_t *cbuf)
 {
 	struct io_buf *msg;
 	char *ptr;
@@ -1784,12 +1789,12 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 	int avail;
 	struct slurm_io_header header;
 	int n;
-	bool buffered_stdio = job->flags & LAUNCH_BUFFERED_IO;
+	bool buffered_stdio = step->flags & LAUNCH_BUFFERED_IO;
 
 	debug4("%s: Entering...", __func__);
 
-	if (_outgoing_buf_free(job)) {
-		msg = list_dequeue(job->free_outgoing);
+	if (_outgoing_buf_free(step)) {
+		msg = list_dequeue(step->free_outgoing);
 	} else {
 		return NULL;
 	}
@@ -1821,7 +1826,7 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 		if (n == 0) {
 			debug5("  partial line in buffer, ignoring");
 			debug4("Leaving  _task_build_message");
-			list_enqueue(job->free_outgoing, msg);
+			list_enqueue(step->free_outgoing, msg);
 			return NULL;
 		}
 	}
@@ -1875,17 +1880,17 @@ free_io_buf(struct io_buf *buf)
 
 /* This just determines if there's space to hold more of the stdin stream */
 static bool
-_incoming_buf_free(stepd_step_rec_t *job)
+_incoming_buf_free(stepd_step_rec_t *step)
 {
 	struct io_buf *buf;
 
-	if (list_count(job->free_incoming) > 0) {
+	if (list_count(step->free_incoming) > 0) {
 		return true;
-	} else if (job->incoming_count < STDIO_MAX_FREE_BUF) {
+	} else if (step->incoming_count < STDIO_MAX_FREE_BUF) {
 		buf = alloc_io_buf();
 		if (buf != NULL) {
-			list_enqueue(job->free_incoming, buf);
-			job->incoming_count++;
+			list_enqueue(step->free_incoming, buf);
+			step->incoming_count++;
 			return true;
 		}
 	}
@@ -1894,17 +1899,17 @@ _incoming_buf_free(stepd_step_rec_t *job)
 }
 
 static bool
-_outgoing_buf_free(stepd_step_rec_t *job)
+_outgoing_buf_free(stepd_step_rec_t *step)
 {
 	struct io_buf *buf;
 
-	if (list_count(job->free_outgoing) > 0) {
+	if (list_count(step->free_outgoing) > 0) {
 		return true;
-	} else if (job->outgoing_count < STDIO_MAX_FREE_BUF) {
+	} else if (step->outgoing_count < STDIO_MAX_FREE_BUF) {
 		buf = alloc_io_buf();
 		if (buf != NULL) {
-			list_enqueue(job->free_outgoing, buf);
-			job->outgoing_count++;
+			list_enqueue(step->free_outgoing, buf);
+			step->outgoing_count++;
 			return true;
 		}
 	}
@@ -1913,7 +1918,7 @@ _outgoing_buf_free(stepd_step_rec_t *job)
 }
 
 void
-io_find_filename_pattern( stepd_step_rec_t *job,
+io_find_filename_pattern( stepd_step_rec_t *step,
 			  slurmd_filename_pattern_t *outpattern,
 			  slurmd_filename_pattern_t *errpattern,
 			  bool *same_out_err_files )
@@ -1929,31 +1934,31 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 	*errpattern = SLURMD_UNKNOWN;
 	*same_out_err_files = false;
 
-	for (ii = 0; ii < job->node_tasks; ii++) {
-		if (job->task[ii]->ofname == NULL) {
+	for (ii = 0; ii < step->node_tasks; ii++) {
+		if (step->task[ii]->ofname == NULL) {
 			of_num_null++;
 			of_lastnull = ii;
-		} else if (xstrcmp(job->task[ii]->ofname, "/dev/null")==0) {
+		} else if (xstrcmp(step->task[ii]->ofname, "/dev/null")==0) {
 			of_num_devnull++;
 		}
 
-		if (job->task[ii]->efname == NULL) {
+		if (step->task[ii]->efname == NULL) {
 			ef_num_null++;
 			ef_lastnull = ii;
-		} else if (xstrcmp(job->task[ii]->efname, "/dev/null")==0) {
+		} else if (xstrcmp(step->task[ii]->efname, "/dev/null")==0) {
 			ef_num_devnull++;
 		}
 	}
-	if (of_num_null == job->node_tasks)
+	if (of_num_null == step->node_tasks)
 		*outpattern = SLURMD_ALL_NULL;
 
-	if (ef_num_null == job->node_tasks)
+	if (ef_num_null == step->node_tasks)
 		*errpattern = SLURMD_ALL_NULL;
 
-	if (of_num_null == 1 && of_num_devnull == job->node_tasks-1)
+	if (of_num_null == 1 && of_num_devnull == step->node_tasks-1)
 		*outpattern = SLURMD_ONE_NULL;
 
-	if (ef_num_null == 1 && ef_num_devnull == job->node_tasks-1)
+	if (ef_num_null == 1 && ef_num_devnull == step->node_tasks-1)
 		*errpattern = SLURMD_ONE_NULL;
 
 	if (*outpattern == SLURMD_ALL_NULL && *errpattern == SLURMD_ALL_NULL)
@@ -1966,13 +1971,13 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 	if (*outpattern != SLURMD_UNKNOWN && *errpattern != SLURMD_UNKNOWN)
 		return;
 
-	for (ii = 1; ii < job->node_tasks; ii++) {
-		if (!job->task[ii]->ofname || !job->task[0]->ofname ||
-		    xstrcmp(job->task[ii]->ofname, job->task[0]->ofname) != 0)
+	for (ii = 1; ii < step->node_tasks; ii++) {
+		if (!step->task[ii]->ofname || !step->task[0]->ofname ||
+		    xstrcmp(step->task[ii]->ofname, step->task[0]->ofname) != 0)
 			of_all_same = false;
 
-		if (!job->task[ii]->efname || !job->task[0]->efname ||
-		    xstrcmp(job->task[ii]->efname, job->task[0]->efname) != 0)
+		if (!step->task[ii]->efname || !step->task[0]->efname ||
+		    xstrcmp(step->task[ii]->efname, step->task[0]->efname) != 0)
 			ef_all_same = false;
 	}
 
@@ -1982,24 +1987,26 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 	if (ef_all_same && *errpattern == SLURMD_UNKNOWN)
 		*errpattern = SLURMD_ALL_SAME;
 
-	if (job->task[0]->ofname && job->task[0]->efname &&
-	    xstrcmp(job->task[0]->ofname, job->task[0]->efname)==0)
+	if (step->task[0]->ofname && step->task[0]->efname &&
+	    xstrcmp(step->task[0]->ofname, step->task[0]->efname)==0)
 		*same_out_err_files = true;
 
 	if (*outpattern != SLURMD_UNKNOWN && *errpattern != SLURMD_UNKNOWN)
 		return;
 
-	for (ii = 0; ii < job->node_tasks-1; ii++) {
-		for (jj = ii+1; jj < job->node_tasks; jj++) {
+	for (ii = 0; ii < step->node_tasks-1; ii++) {
+		for (jj = ii+1; jj < step->node_tasks; jj++) {
 
-			if (!job->task[ii]->ofname || !job->task[jj]->ofname ||
-			    xstrcmp(job->task[ii]->ofname,
-				    job->task[jj]->ofname) == 0)
+			if (!step->task[ii]->ofname ||
+			    !step->task[jj]->ofname ||
+			    xstrcmp(step->task[ii]->ofname,
+				    step->task[jj]->ofname) == 0)
 				of_all_unique = false;
 
-			if (!job->task[ii]->efname || !job->task[jj]->efname ||
-			    xstrcmp(job->task[ii]->efname,
-				    job->task[jj]->efname) == 0)
+			if (!step->task[ii]->efname ||
+			    !step->task[jj]->efname ||
+			    xstrcmp(step->task[ii]->efname,
+				    step->task[jj]->efname) == 0)
 				ef_all_unique = false;
 		}
 	}
@@ -2012,11 +2019,11 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 
 	if (of_all_unique && ef_all_unique) {
 		*same_out_err_files = true;
-		for (ii = 0; ii < job->node_tasks; ii++) {
-			if (job->task[ii]->ofname &&
-			    job->task[ii]->efname &&
-			    xstrcmp(job->task[ii]->ofname,
-				    job->task[ii]->efname) != 0) {
+		for (ii = 0; ii < step->node_tasks; ii++) {
+			if (step->task[ii]->ofname &&
+			    step->task[ii]->efname &&
+			    xstrcmp(step->task[ii]->ofname,
+				    step->task[ii]->efname) != 0) {
 				*same_out_err_files = false;
 				break;
 			}
@@ -2026,14 +2033,14 @@ io_find_filename_pattern( stepd_step_rec_t *job,
 
 
 int
-io_get_file_flags(stepd_step_rec_t *job)
+io_get_file_flags(stepd_step_rec_t *step)
 {
 	int file_flags;
 
 	/* set files for opening stdout/err */
-	if (job->open_mode == OPEN_MODE_APPEND)
+	if (step->open_mode == OPEN_MODE_APPEND)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND;
-	else if (job->open_mode == OPEN_MODE_TRUNCATE)
+	else if (step->open_mode == OPEN_MODE_TRUNCATE)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
 	else {
 		slurm_conf_t *conf = slurm_conf_lock();

@@ -41,7 +41,7 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-extern char *fname_create(stepd_step_rec_t *job, const char *fmt, int taskid);
+extern char *fname_create(stepd_step_rec_t *step, const char *fmt, int taskid);
 extern char *fname_create2(batch_job_launch_msg_t *req);
 extern int   fname_single_task_io(const char *fmt);
 extern char *remove_path_slashes(char *);

@@ -89,24 +89,24 @@
 /*
  * Static prototype definitions.
  */
-static void  _make_tmpdir(stepd_step_rec_t *job);
+static void  _make_tmpdir(stepd_step_rec_t *step);
 static int   _run_script_and_set_env(const char *name, const char *path,
-				     stepd_step_rec_t *job);
-static void  _proc_stdout(char *buf, stepd_step_rec_t *job);
+				     stepd_step_rec_t *step);
+static void  _proc_stdout(char *buf, stepd_step_rec_t *step);
 
 /*
  * Process TaskProlog output
  * "export NAME=value"	adds environment variables
  * "unset  NAME"	clears an environment variable
- * "print  <whatever>"	writes that to the job's stdout
+ * "print  <whatever>"	writes that to the step's stdout
  */
-static void _proc_stdout(char *buf, stepd_step_rec_t *job)
+static void _proc_stdout(char *buf, stepd_step_rec_t *step)
 {
 	bool end_buf = false;
 	int len;
 	char *buf_ptr, *name_ptr, *val_ptr;
 	char *end_line, *equal_ptr;
-	char ***env = &job->env;
+	char ***env = &step->env;
 
 	buf_ptr = buf;
 	while (buf_ptr[0]) {
@@ -134,10 +134,10 @@ static void _proc_stdout(char *buf, stepd_step_rec_t *job)
 			equal_ptr[0] = '\0';
 			end_line[0] = '\0';
 			if (!xstrcmp(name_ptr, "SLURM_PROLOG_CPU_MASK")) {
-				job->cpu_bind_type = CPU_BIND_MASK;
-				xfree(job->cpu_bind);
-				job->cpu_bind = xstrdup(val_ptr);
-				if (task_g_pre_launch(job)) {
+				step->cpu_bind_type = CPU_BIND_MASK;
+				xfree(step->cpu_bind);
+				step->cpu_bind = xstrdup(val_ptr);
+				if (task_g_pre_launch(step)) {
 					error("Failed SLURM_PROLOG_CPU_MASK "
 					      "setup");
 					exit(1);
@@ -184,19 +184,19 @@ rwfail:		 /* process rest of script output */
  *	in the script's standard output.
  * name IN: class of program ("system prolog", "user prolog", etc.)
  * path IN: pathname of program to run
- * job IN/OUT: pointer to associated job, can update job->env
+ * step IN/OUT: pointer to associated step, can update step->env
  *	if prolog
  * RET the exit status of the script or 1 on generic error and 0 on success
  */
 static int
 _run_script_and_set_env(const char *name, const char *path,
-			stepd_step_rec_t *job)
+			stepd_step_rec_t *step)
 {
 	int status = 0, rc = 0;
 	char *argv[2];
 	char *buf = NULL;
 	run_command_args_t args = {
-		.job_id = job->step_id.job_id,
+		.job_id = step->step_id.job_id,
 		.max_wait = -1,
 		.script_path = path,
 		.script_type = name,
@@ -206,21 +206,21 @@ _run_script_and_set_env(const char *name, const char *path,
 	if (path == NULL || path[0] == '\0')
 		return rc;
 
-	xassert(job->env);
-	setenvf(&job->env, "SLURM_SCRIPT_CONTEXT", "prolog_task");
-	args.env = job->env;
+	xassert(step->env);
+	setenvf(&step->env, "SLURM_SCRIPT_CONTEXT", "prolog_task");
+	args.env = step->env;
 
 	argv[0] = xstrdup(path);
 	argv[1] = NULL;
 	args.script_argv = argv;
 
 	debug("[job %u] attempting to run %s [%s]",
-	      job->step_id.job_id, name, path);
+	      step->step_id.job_id, name, path);
 	buf = run_command(&args);
 
 	if (WIFEXITED(status)) {
 		if (buf)
-			_proc_stdout(buf, job);
+			_proc_stdout(buf, step);
 		rc = WEXITSTATUS(status);
 	} else {
 		error("%s did not exit normally. reason: %s", name, buf);
@@ -282,122 +282,122 @@ static char *_build_path(char *fname, char **prog_env)
 }
 
 static int
-_setup_mpi(stepd_step_rec_t *job, int ltaskid)
+_setup_mpi(stepd_step_rec_t *step, int ltaskid)
 {
 	mpi_plugin_task_info_t info[1];
 
-	if (job->het_job_id && (job->het_job_id != NO_VAL))
-		info->step_id.job_id   = job->het_job_id;
+	if (step->het_job_id && (step->het_job_id != NO_VAL))
+		info->step_id.job_id   = step->het_job_id;
 	else
-		info->step_id.job_id   = job->step_id.job_id;
+		info->step_id.job_id   = step->step_id.job_id;
 
-	if (job->het_job_offset != NO_VAL) {
-		info->step_id.step_id  = job->step_id.step_id;
-		info->step_id.step_het_comp  = job->step_id.step_het_comp;
-		info->nnodes  = job->het_job_nnodes;
-		info->nodeid  = job->het_job_node_offset + job->nodeid;
-		info->ntasks  = job->het_job_ntasks;
-		info->ltasks  = job->node_tasks;
-		info->gtaskid = job->het_job_task_offset +
-				job->task[ltaskid]->gtid;
-		info->ltaskid = job->task[ltaskid]->id;
-		info->self    = job->envtp->self;
-		info->client  = job->envtp->cli;
+	if (step->het_job_offset != NO_VAL) {
+		info->step_id.step_id  = step->step_id.step_id;
+		info->step_id.step_het_comp  = step->step_id.step_het_comp;
+		info->nnodes  = step->het_job_nnodes;
+		info->nodeid  = step->het_job_node_offset + step->nodeid;
+		info->ntasks  = step->het_job_ntasks;
+		info->ltasks  = step->node_tasks;
+		info->gtaskid = step->het_job_task_offset +
+				step->task[ltaskid]->gtid;
+		info->ltaskid = step->task[ltaskid]->id;
+		info->self    = step->envtp->self;
+		info->client  = step->envtp->cli;
 	} else {
-		info->step_id.step_id  = job->step_id.step_id;
-		info->step_id.step_het_comp  = job->step_id.step_het_comp;
-		info->nnodes  = job->nnodes;
-		info->nodeid  = job->nodeid;
-		info->ntasks  = job->ntasks;
-		info->ltasks  = job->node_tasks;
-		info->gtaskid = job->task[ltaskid]->gtid;
-		info->ltaskid = job->task[ltaskid]->id;
-		info->self    = job->envtp->self;
-		info->client  = job->envtp->cli;
+		info->step_id.step_id  = step->step_id.step_id;
+		info->step_id.step_het_comp  = step->step_id.step_het_comp;
+		info->nnodes  = step->nnodes;
+		info->nodeid  = step->nodeid;
+		info->ntasks  = step->ntasks;
+		info->ltasks  = step->node_tasks;
+		info->gtaskid = step->task[ltaskid]->gtid;
+		info->ltaskid = step->task[ltaskid]->id;
+		info->self    = step->envtp->self;
+		info->client  = step->envtp->cli;
 	}
 
-	return mpi_g_slurmstepd_task(info, &job->env);
+	return mpi_g_slurmstepd_task(info, &step->env);
 }
 
 /*
  *  Current process is running as the user when this is called.
  */
-extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
+extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 {
 	int fd, j;
-	stepd_step_task_info_t *task = job->task[local_proc_id];
+	stepd_step_task_info_t *task = step->task[local_proc_id];
 	char **tmp_env;
 	int saved_errno, status;
 	uint32_t node_offset = 0, task_offset = 0;
 
-	if (job->het_job_node_offset != NO_VAL)
-		node_offset = job->het_job_node_offset;
-	if (job->het_job_task_offset != NO_VAL)
-		task_offset = job->het_job_task_offset;
+	if (step->het_job_node_offset != NO_VAL)
+		node_offset = step->het_job_node_offset;
+	if (step->het_job_task_offset != NO_VAL)
+		task_offset = step->het_job_task_offset;
 
-	for (j = 0; j < job->node_tasks; j++)
-		xstrfmtcat(job->envtp->sgtids, "%s%u", j ? "," : "",
-			   job->task[j]->gtid + task_offset);
+	for (j = 0; j < step->node_tasks; j++)
+		xstrfmtcat(step->envtp->sgtids, "%s%u", j ? "," : "",
+			   step->task[j]->gtid + task_offset);
 
-	if (job->het_job_id != NO_VAL)
-		job->envtp->jobid = job->het_job_id;
+	if (step->het_job_id != NO_VAL)
+		step->envtp->jobid = step->het_job_id;
 	else
-		job->envtp->jobid = job->step_id.job_id;
-	job->envtp->stepid = job->step_id.step_id;
-	job->envtp->nodeid = job->nodeid + node_offset;
-	job->envtp->cpus_on_node = job->cpus;
-	job->envtp->procid = task->gtid + task_offset;
-	job->envtp->localid = task->id;
-	job->envtp->task_pid = getpid();
-	job->envtp->distribution = job->task_dist;
-	job->envtp->cpu_bind = xstrdup(job->cpu_bind);
-	job->envtp->cpu_bind_type = job->cpu_bind_type;
-	job->envtp->cpu_freq_min = job->cpu_freq_min;
-	job->envtp->cpu_freq_max = job->cpu_freq_max;
-	job->envtp->cpu_freq_gov = job->cpu_freq_gov;
-	job->envtp->mem_bind = xstrdup(job->mem_bind);
-	job->envtp->mem_bind_type = job->mem_bind_type;
-	job->envtp->distribution = -1;
-	job->envtp->batch_flag = job->batch;
-	job->envtp->uid = job->uid;
-	job->envtp->user_name = xstrdup(job->user_name);
+		step->envtp->jobid = step->step_id.job_id;
+	step->envtp->stepid = step->step_id.step_id;
+	step->envtp->nodeid = step->nodeid + node_offset;
+	step->envtp->cpus_on_node = step->cpus;
+	step->envtp->procid = task->gtid + task_offset;
+	step->envtp->localid = task->id;
+	step->envtp->task_pid = getpid();
+	step->envtp->distribution = step->task_dist;
+	step->envtp->cpu_bind = xstrdup(step->cpu_bind);
+	step->envtp->cpu_bind_type = step->cpu_bind_type;
+	step->envtp->cpu_freq_min = step->cpu_freq_min;
+	step->envtp->cpu_freq_max = step->cpu_freq_max;
+	step->envtp->cpu_freq_gov = step->cpu_freq_gov;
+	step->envtp->mem_bind = xstrdup(step->mem_bind);
+	step->envtp->mem_bind_type = step->mem_bind_type;
+	step->envtp->distribution = -1;
+	step->envtp->batch_flag = step->batch;
+	step->envtp->uid = step->uid;
+	step->envtp->user_name = xstrdup(step->user_name);
 
 	/*
-	 * Modify copy of job's environment. Do not alter in place or
+	 * Modify copy of step's environment. Do not alter in place or
 	 * concurrent searches of the environment can generate invalid memory
 	 * references.
 	 */
-	job->envtp->env = env_array_copy((const char **) job->env);
-	setup_env(job->envtp, false);
-	setenvf(&job->envtp->env, "SLURM_JOB_GID", "%u", job->gid);
-	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
-	if (job->tres_bind) {
-		setenvf(&job->envtp->env, "SLURMD_TRES_BIND", "%s",
-			job->tres_bind);
+	step->envtp->env = env_array_copy((const char **) step->env);
+	setup_env(step->envtp, false);
+	setenvf(&step->envtp->env, "SLURM_JOB_GID", "%u", step->gid);
+	setenvf(&step->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
+	if (step->tres_bind) {
+		setenvf(&step->envtp->env, "SLURMD_TRES_BIND", "%s",
+			step->tres_bind);
 	}
-	if (job->tres_freq) {
-		setenvf(&job->envtp->env, "SLURMD_TRES_FREQ", "%s",
-			job->tres_freq);
+	if (step->tres_freq) {
+		setenvf(&step->envtp->env, "SLURMD_TRES_FREQ", "%s",
+			step->tres_freq);
 	}
-	tmp_env = job->env;
-	job->env = job->envtp->env;
+	tmp_env = step->env;
+	step->env = step->envtp->env;
 	env_array_free(tmp_env);
-	job->envtp->env = NULL;
+	step->envtp->env = NULL;
 
-	xfree(job->envtp->task_count);
+	xfree(step->envtp->task_count);
 
-	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT) &&
-	    (job->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
-		if (switch_g_job_attach(job->switch_job, &job->env,
-					job->nodeid, (uint32_t) local_proc_id,
-					job->nnodes, job->ntasks,
+	if (!step->batch && (step->step_id.step_id != SLURM_EXTERN_CONT) &&
+	    (step->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
+		if (switch_g_job_attach(step->switch_job, &step->env,
+					step->nodeid, (uint32_t) local_proc_id,
+					step->nnodes, step->ntasks,
 					task->gtid + task_offset) < 0) {
 			error("Unable to attach to interconnect: %m");
 			log_fini();
 			_exit(1);
 		}
 
-		if (_setup_mpi(job, local_proc_id) != SLURM_SUCCESS) {
+		if (_setup_mpi(step, local_proc_id) != SLURM_SUCCESS) {
 			error("Unable to configure MPI plugin: %m");
 			log_fini();
 			_exit(1);
@@ -407,39 +407,39 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	/* task-specific pre-launch activities */
 
 	/* task plugin hook */
-	if (task_g_pre_launch(job)) {
+	if (task_g_pre_launch(step)) {
 		error("Failed to invoke task plugins: task_p_pre_launch error");
 		_exit(1);
 	}
-	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
-	    (job->accel_bind_type || job->tres_bind)) {
+	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
+	    (step->accel_bind_type || step->tres_bind)) {
 		/*
-		 * Modify copy of job's environment as needed for GRES. Do not
+		 * Modify copy of step's environment as needed for GRES. Do not
 		 * alter in place or concurrent searches of the environment can
 		 * generate invalid memory references.
 		 */
-		job->envtp->env = env_array_copy((const char **) job->env);
-		gres_g_task_set_env(&job->envtp->env, job->step_gres_list,
-				    job->accel_bind_type, job->tres_bind,
+		step->envtp->env = env_array_copy((const char **) step->env);
+		gres_g_task_set_env(&step->envtp->env, step->step_gres_list,
+				    step->accel_bind_type, step->tres_bind,
 				    local_proc_id);
-		tmp_env = job->env;
-		job->env = job->envtp->env;
+		tmp_env = step->env;
+		step->env = step->envtp->env;
 		env_array_free(tmp_env);
 	}
 
-	if (spank_user_task(job, local_proc_id) < 0) {
+	if (spank_user_task(step, local_proc_id) < 0) {
 		error("Failed to invoke spank plugin stack");
 		_exit(1);
 	}
 
 #ifdef WITH_SELINUX
-	if (setexeccon(job->selinux_context)) {
+	if (setexeccon(step->selinux_context)) {
 		error("Failed to set SELinux context to %s: %m",
-		      job->selinux_context);
+		      step->selinux_context);
 		_exit(1);
 	}
 #else
-	if (job->selinux_context) {
+	if (step->selinux_context) {
 		error("Built without SELinux support but context was specified");
 		_exit(1);
 	}
@@ -447,15 +447,15 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 
 	if (slurm_conf.task_prolog) {
 		status = _run_script_and_set_env("slurm task_prolog",
-						 slurm_conf.task_prolog, job);
+						 slurm_conf.task_prolog, step);
 		if (status) {
 			error("TaskProlog failed status=%d", status);
 			_exit(status);
 		}
 	}
-	if (job->task_prolog) {
+	if (step->task_prolog) {
 		status = _run_script_and_set_env("user task_prolog",
-						 job->task_prolog, job);
+						 step->task_prolog, step);
 		if (status) {
 			error("--task-prolog failed status=%d", status);
 			_exit(status);
@@ -467,14 +467,14 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	 * might be set or changed in one of the prolog scripts.
 	 */
 	if (local_proc_id == 0)
-		_make_tmpdir(job);
+		_make_tmpdir(step);
 
-	if (!job->batch)
-		pdebug_stop_current(job);
-	if (job->env == NULL) {
-		debug("job->env is NULL");
-		job->env = (char **)xmalloc(sizeof(char *));
-		job->env[0] = (char *)NULL;
+	if (!step->batch)
+		pdebug_stop_current(step);
+	if (step->env == NULL) {
+		debug("step->env is NULL");
+		step->env = (char **)xmalloc(sizeof(char *));
+		step->env[0] = (char *)NULL;
 	}
 
 	if (task->argv[0] == NULL) {
@@ -490,14 +490,14 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		 * filesystem namespaces into the final arrangement, which
 		 * may affect which executable we select.
 		 */
-		task->argv[0] = _build_path(task->argv[0], job->env);
+		task->argv[0] = _build_path(task->argv[0], step->env);
 	}
 
 
 	/* Do this last so you don't worry too much about the users
 	   limits including the slurmstepd in with it.
 	*/
-	if (set_user_limits(job) < 0) {
+	if (set_user_limits(step) < 0) {
 		debug("Unable to set user limits");
 		log_fini();
 		_exit(5);
@@ -510,14 +510,14 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	 */
 	if (task->argv[0][strlen(task->argv[0]) - 1] == '/') {
 		xstrfmtcat(task->argv[0], "slurm_bcast_%u.%u_%s",
-			   job->step_id.job_id, job->step_id.step_id,
-			   job->node_name);
+			   step->step_id.job_id, step->step_id.step_id,
+			   step->node_name);
 	}
 
-	if (job->container)
-		container_run(job, task);
+	if (step->container)
+		container_run(step, task);
 
-	execve(task->argv[0], task->argv, job->env);
+	execve(task->argv[0], task->argv, step->env);
 	saved_errno = errno;
 
 	/*
@@ -544,12 +544,12 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 }
 
 static void
-_make_tmpdir(stepd_step_rec_t *job)
+_make_tmpdir(stepd_step_rec_t *step)
 {
 	char *tmpdir;
 
-	if (!(tmpdir = getenvp(job->env, "TMPDIR")))
-		setenvf(&job->env, "TMPDIR", "/tmp"); /* task may want it set */
+	if (!(tmpdir = getenvp(step->env, "TMPDIR")))
+		setenvf(&step->env, "TMPDIR", "/tmp"); /* task may want it set */
 	else if (mkdir(tmpdir, 0700) < 0) {
 		struct stat st;
 		int mkdir_errno = errno;
@@ -579,7 +579,7 @@ _make_tmpdir(stepd_step_rec_t *job)
 			return;
 
 		error("Setting TMPDIR to /tmp");
-		setenvf(&job->env, "TMPDIR", "/tmp");
+		setenvf(&step->env, "TMPDIR", "/tmp");
 	}
 
 	return;

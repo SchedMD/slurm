@@ -48,7 +48,7 @@
  * Returns 0 for off, 1 for on, 2 for not requested,
  * 3 for error.
  */
-static int _get_mps_request(stepd_step_rec_t *job)
+static int _get_mps_request(stepd_step_rec_t *step)
 {
 
         char *envval;
@@ -80,7 +80,7 @@ static int _get_mps_request(stepd_step_rec_t *job)
  * CRAY_CUDA_MPS or CRAY_CUDA_PROXY environment variables.
  * Returns SLURM_SUCCESS or SLURM_ERROR.
  */
-int setup_gpu(stepd_step_rec_t *job)
+int setup_gpu(stepd_step_rec_t *step)
 {
 	int rc, gpu_enable;
 	char *err_msg;
@@ -116,7 +116,7 @@ int setup_gpu(stepd_step_rec_t *job)
  * Reset the gpu to its default state after the job completes.
  *
  */
-int reset_gpu(stepd_step_rec_t *job)
+int reset_gpu(stepd_step_rec_t *step)
 {
 	int rc, gpu_enable;
 	char *err_msg;

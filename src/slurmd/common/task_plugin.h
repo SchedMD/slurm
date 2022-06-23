@@ -106,42 +106,42 @@ extern int task_g_slurmd_resume_job(uint32_t job_id);
  *
  * RET - slurm error code
  */
-extern int task_g_pre_setuid(stepd_step_rec_t *job);
+extern int task_g_pre_setuid(stepd_step_rec_t *step);
 
 /*
  * Note in privileged mode that a task launch is about to occur.
  *
  * RET - slurm error code
  */
-extern int task_g_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid);
+extern int task_g_pre_set_affinity(stepd_step_rec_t *step, uint32_t node_tid);
 
 /*
  * Note in privileged mode that a task launch is about to occur.
  *
  * RET - slurm error code
  */
-extern int task_g_set_affinity(stepd_step_rec_t *job, uint32_t node_tid);
+extern int task_g_set_affinity(stepd_step_rec_t *step, uint32_t node_tid);
 
 /*
  * Note in privileged mode that a task launch is about to occur.
  *
  * RET - slurm error code
  */
-extern int task_g_post_set_affinity(stepd_step_rec_t *job, uint32_t node_tid);
+extern int task_g_post_set_affinity(stepd_step_rec_t *step, uint32_t node_tid);
 
 /*
  * Note that a task launch is about to occur.
  *
  * RET - slurm error code
  */
-extern int task_g_pre_launch(stepd_step_rec_t *job);
+extern int task_g_pre_launch(stepd_step_rec_t *step);
 
 /*
  * Note that a task has terminated.
  *
  * RET - slurm error code
  */
-extern int task_g_post_term(stepd_step_rec_t *job,
+extern int task_g_post_term(stepd_step_rec_t *step,
 			    stepd_step_task_info_t *task);
 
 /*
@@ -149,7 +149,7 @@ extern int task_g_post_term(stepd_step_rec_t *job,
  *
  * RET - slurm error code
  */
-extern int task_g_post_step(stepd_step_rec_t *job);
+extern int task_g_post_step(stepd_step_rec_t *step);
 
 /*
  * Keep track of a pid.
@@ -159,7 +159,7 @@ extern int task_g_post_step(stepd_step_rec_t *job);
 extern int task_g_add_pid(pid_t pid);
 
 
-extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
+extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
 				   int statval, uint32_t taskid);
 
 /*

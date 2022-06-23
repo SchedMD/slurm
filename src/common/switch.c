@@ -74,8 +74,8 @@ typedef struct slurm_switch_ops {
 					    uint16_t protocol_version );
 	int          (*get_jobinfo)       ( switch_jobinfo_t *switch_job,
 					    int key, void *data);
-	int          (*job_preinit)       ( stepd_step_rec_t *job );
-	int          (*job_init)          ( stepd_step_rec_t *job );
+	int          (*job_preinit)       ( stepd_step_rec_t *step );
+	int          (*job_init)          ( stepd_step_rec_t *step );
 	int          (*job_suspend_test)  ( switch_jobinfo_t *jobinfo );
 	void         (*job_suspend_info_get)( switch_jobinfo_t *jobinfo,
 					      void *suspend_info );
@@ -91,7 +91,7 @@ typedef struct slurm_switch_ops {
 	int          (*job_resume)        ( void *suspend_info,
 					    int max_wait );
 	int          (*job_fini)          ( switch_jobinfo_t *jobinfo );
-	int          (*job_postfini)      ( stepd_step_rec_t *job);
+	int          (*job_postfini)      ( stepd_step_rec_t *step);
 	int          (*job_attach)        ( switch_jobinfo_t *jobinfo,
 					    char ***env, uint32_t nodeid,
 					    uint32_t procid, uint32_t nnodes,
@@ -102,10 +102,10 @@ typedef struct slurm_switch_ops {
 					    char *nodelist );
 	int          (*state_clear)       ( void );
 	int          (*reconfig)          ( void );
-	int          (*job_step_pre_suspend)( stepd_step_rec_t *job );
-	int          (*job_step_post_suspend)( stepd_step_rec_t *job );
-	int          (*job_step_pre_resume)( stepd_step_rec_t *job );
-	int          (*job_step_post_resume)( stepd_step_rec_t *job );
+	int          (*job_step_pre_suspend)( stepd_step_rec_t *step );
+	int          (*job_step_post_suspend)( stepd_step_rec_t *step );
+	int          (*job_step_pre_resume)( stepd_step_rec_t *step );
+	int          (*job_step_post_resume)( stepd_step_rec_t *step );
 	void         (*job_complete)      ( uint32_t job_id );
 } slurm_switch_ops_t;
 
@@ -470,20 +470,20 @@ extern int  switch_g_get_jobinfo(dynamic_plugin_data_t *jobinfo,
 	return (*(ops[plugin_id].get_jobinfo))(jobdata, data_type, data);
 }
 
-extern int switch_g_job_preinit(stepd_step_rec_t *job)
+extern int switch_g_job_preinit(stepd_step_rec_t *step)
 {
 	if ( switch_init(0) < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops[switch_context_default].job_preinit))(job);
+	return (*(ops[switch_context_default].job_preinit))(step);
 }
 
-extern int switch_g_job_init(stepd_step_rec_t *job)
+extern int switch_g_job_init(stepd_step_rec_t *step)
 {
 	if ( switch_init(0) < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops[switch_context_default].job_init)) (job);
+	return (*(ops[switch_context_default].job_init))(step);
 }
 
 extern int switch_g_job_suspend_test(dynamic_plugin_data_t *jobinfo)
@@ -584,12 +584,12 @@ extern int switch_g_job_fini(dynamic_plugin_data_t *jobinfo)
 	return (*(ops[plugin_id].job_fini)) (data);
 }
 
-extern int switch_g_job_postfini(stepd_step_rec_t *job)
+extern int switch_g_job_postfini(stepd_step_rec_t *step)
 {
 	if ( switch_init(0) < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops[switch_context_default].job_postfini)) (job);
+	return (*(ops[switch_context_default].job_postfini))(step);
 }
 
 extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
@@ -648,36 +648,36 @@ extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
 	return (*(ops[plugin_id].step_allocated))(data, nodelist);
 }
 
-extern int switch_g_job_step_pre_suspend(stepd_step_rec_t *job)
+extern int switch_g_job_step_pre_suspend(stepd_step_rec_t *step)
 {
 	if ( switch_init(0) < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops[switch_context_default].job_step_pre_suspend)) ( job );
+	return (*(ops[switch_context_default].job_step_pre_suspend))(step);
 }
 
-extern int switch_g_job_step_post_suspend(stepd_step_rec_t *job)
+extern int switch_g_job_step_post_suspend(stepd_step_rec_t *step)
 {
 	if ( switch_init(0) < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops[switch_context_default].job_step_post_suspend)) ( job );
+	return (*(ops[switch_context_default].job_step_post_suspend))(step);
 }
 
-extern int switch_g_job_step_pre_resume(stepd_step_rec_t *job)
+extern int switch_g_job_step_pre_resume(stepd_step_rec_t *step)
 {
 	if ( switch_init(0) < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops[switch_context_default].job_step_pre_resume)) ( job );
+	return (*(ops[switch_context_default].job_step_pre_resume))(step);
 }
 
-extern int switch_g_job_step_post_resume(stepd_step_rec_t *job)
+extern int switch_g_job_step_post_resume(stepd_step_rec_t *step)
 {
 	if ( switch_init(0) < 0 )
 		return SLURM_ERROR;
 
-	return (*(ops[switch_context_default].job_step_post_resume)) ( job );
+	return (*(ops[switch_context_default].job_step_post_resume))(step);
 }
 
 extern void switch_g_job_complete(uint32_t job_id)

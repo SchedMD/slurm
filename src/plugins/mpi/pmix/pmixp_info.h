@@ -129,7 +129,7 @@ void pmixp_info_io_set(eio_handle_t *h);
 eio_handle_t *pmixp_info_io(void);
 
 /* Job information */
-int pmixp_info_set(const stepd_step_rec_t *job, char ***env);
+int pmixp_info_set(const stepd_step_rec_t *step, char ***env);
 int pmixp_info_free(void);
 
 static inline uint32_t pmixp_info_jobuid(void)

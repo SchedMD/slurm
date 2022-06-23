@@ -93,13 +93,13 @@ extern int fini ( void )
 /*
  * Uses slurmd job-step manager's pid as the unique container id.
  */
-extern int proctrack_p_create ( stepd_step_rec_t *job )
+extern int proctrack_p_create(stepd_step_rec_t *step)
 {
-	job->cont_id = (uint64_t)job->jmgr_pid;
+	step->cont_id = (uint64_t)step->jmgr_pid;
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_add ( stepd_step_rec_t *job, pid_t pid )
+extern int proctrack_p_add(stepd_step_rec_t *step, pid_t pid)
 {
 	return SLURM_SUCCESS;
 }

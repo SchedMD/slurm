@@ -46,12 +46,12 @@
  * Set user resource limits as defined by SLURM_RLIMIT* environment
  * variables contained in job->env
  */
-int set_user_limits(stepd_step_rec_t *job);
+int set_user_limits(stepd_step_rec_t *step);
 
 /*
  * Set user ulimit based upon SLURM_ULIMIT envirionment variable
  * contained in job->env
  */
-int set_umask(stepd_step_rec_t *job);
+int set_umask(stepd_step_rec_t *step);
 
 #endif /* !_SLURMD_ULIMITS_H */

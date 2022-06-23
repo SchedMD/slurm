@@ -155,20 +155,20 @@ extern int fini (void)
 /*
  * Uses slurmd job-step manager's pid as the unique container id.
  */
-extern int proctrack_p_create (stepd_step_rec_t *job)
+extern int proctrack_p_create(stepd_step_rec_t *step)
 {
 	int rc;
 
-	if ((rc = cgroup_g_step_create(CG_TRACK, job)) != SLURM_SUCCESS)
+	if ((rc = cgroup_g_step_create(CG_TRACK, step)) != SLURM_SUCCESS)
 		return rc;
 
 	/* Use slurmstepd pid as the id of the container. */
-	job->cont_id = (uint64_t)job->jmgr_pid;
+	step->cont_id = (uint64_t)step->jmgr_pid;
 
-	return cgroup_g_step_addto(CG_TRACK, &job->jmgr_pid, 1);
+	return cgroup_g_step_addto(CG_TRACK, &step->jmgr_pid, 1);
 }
 
-extern int proctrack_p_add (stepd_step_rec_t *job, pid_t pid)
+extern int proctrack_p_add(stepd_step_rec_t *step, pid_t pid)
 {
 	return cgroup_g_step_addto(CG_TRACK, &pid, 1);
 }

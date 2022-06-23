@@ -243,11 +243,11 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 
 	if (is_first_task) {
 		/* Only do once in this plugin */
-		if (cgroup_g_step_create(CG_CPUACCT, jobacct_id->job)
+		if (cgroup_g_step_create(CG_CPUACCT, jobacct_id->step)
 		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
 
-		if (cgroup_g_step_create(CG_MEMORY, jobacct_id->job)
+		if (cgroup_g_step_create(CG_MEMORY, jobacct_id->step)
 		    != SLURM_SUCCESS) {
 			cgroup_g_step_destroy(CG_CPUACCT);
 			return SLURM_ERROR;
@@ -255,11 +255,11 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 		is_first_task = false;
 	}
 
-	if (cgroup_g_task_addto(CG_CPUACCT, jobacct_id->job, pid,
+	if (cgroup_g_task_addto(CG_CPUACCT, jobacct_id->step, pid,
 				jobacct_id->taskid) != SLURM_SUCCESS)
 		rc = SLURM_ERROR;
 
-	if (cgroup_g_task_addto(CG_MEMORY, jobacct_id->job, pid,
+	if (cgroup_g_task_addto(CG_MEMORY, jobacct_id->step, pid,
 				jobacct_id->taskid) != SLURM_SUCCESS)
 		rc = SLURM_ERROR;
 

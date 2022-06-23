@@ -55,9 +55,9 @@ static uint32_t recorded_jobid = NO_VAL;
 static uint32_t recorded_stepid = NO_VAL;
 
 static void *_monitor(void *);
-static int _call_external_program(stepd_step_rec_t *job);
+static int _call_external_program(stepd_step_rec_t *step);
 
-void step_terminate_monitor_start(stepd_step_rec_t *job)
+void step_terminate_monitor_start(stepd_step_rec_t *step)
 {
 	slurm_conf_t *conf;
 
@@ -74,13 +74,13 @@ void step_terminate_monitor_start(stepd_step_rec_t *job)
 	slurm_conf_unlock();
 
 	running_flag = true;
-	slurm_thread_create(&tid, _monitor, job);
+	slurm_thread_create(&tid, _monitor, step);
 
 #ifdef HAVE_NATIVE_CRAY
-	recorded_het_jobid = job->het_job_id;
+	recorded_het_jobid = step->het_job_id;
 #endif
-	recorded_jobid = job->step_id.job_id;
-	recorded_stepid = job->step_id.step_id;
+	recorded_jobid = step->step_id.job_id;
+	recorded_stepid = step->step_id.step_id;
 
 	slurm_mutex_unlock(&lock);
 }
@@ -109,7 +109,7 @@ void step_terminate_monitor_stop(void)
 
 static void *_monitor(void *arg)
 {
-	stepd_step_rec_t *job = (stepd_step_rec_t *)arg;
+	stepd_step_rec_t *step = (stepd_step_rec_t *)arg;
 	struct timespec ts = {0, 0};
 	int rc;
 
@@ -126,56 +126,57 @@ static void *_monitor(void *arg)
 		char entity[45], time_str[24];
 		time_t now = time(NULL);
 
-		_call_external_program(job);
+		_call_external_program(step);
 
-		if (job->step_id.step_id == SLURM_BATCH_SCRIPT) {
+		if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 			snprintf(entity, sizeof(entity),
-				 "JOB %u", job->step_id.job_id);
-		} else if (job->step_id.step_id == SLURM_EXTERN_CONT) {
+				 "JOB %u", step->step_id.job_id);
+		} else if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 			snprintf(entity, sizeof(entity),
-				 "EXTERN STEP FOR %u", job->step_id.job_id);
-		} else if (job->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+				 "EXTERN STEP FOR %u", step->step_id.job_id);
+		} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
 			snprintf(entity, sizeof(entity),
 				 "INTERACTIVE STEP FOR %u",
-				 job->step_id.job_id);
+				 step->step_id.job_id);
 		} else {
 			char tmp_char[33];
-			log_build_step_id_str(&job->step_id, tmp_char,
+			log_build_step_id_str(&step->step_id, tmp_char,
 					      sizeof(tmp_char),
 					      STEP_ID_FLAG_NO_PREFIX);
 			snprintf(entity, sizeof(entity), "STEP %s", tmp_char);
 		}
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 
-		if (job->state < SLURMSTEPD_STEP_RUNNING) {
+		if (step->state < SLURMSTEPD_STEP_RUNNING) {
 			error("*** %s STEPD TERMINATED ON %s AT %s DUE TO JOB NOT RUNNING ***",
-			      entity, job->node_name, time_str);
+			      entity, step->node_name, time_str);
 			rc = ESLURMD_JOB_NOTRUNNING;
 		} else {
 			error("*** %s STEPD TERMINATED ON %s AT %s DUE TO JOB NOT ENDING WITH SIGNALS ***",
-			      entity, job->node_name, time_str);
+			      entity, step->node_name, time_str);
 			rc = ESLURMD_KILL_TASK_FAILED;
 		}
 
 		stepd_drain_node(slurm_strerror(rc));
 
-		if (!job->batch) {
+		if (!step->batch) {
 			/* Notify waiting sruns */
-			if (job->step_id.step_id != SLURM_EXTERN_CONT)
-				while (stepd_send_pending_exit_msgs(job)) {;}
+			if (step->step_id.step_id != SLURM_EXTERN_CONT)
+				while (stepd_send_pending_exit_msgs(step)) {;}
 
 			if ((step_complete.rank > -1)) {
-				if (job->aborted)
+				if (step->aborted)
 					info("unkillable stepd exiting with aborted job");
 				else
-					stepd_wait_for_children_slurmstepd(job);
+					stepd_wait_for_children_slurmstepd(
+						step);
 			}
 			/* Notify parent stepd or ctld directly */
-			stepd_send_step_complete_msgs(job);
+			stepd_send_step_complete_msgs(step);
 		}
 
 		/* stepd_cleanup always returns rc as a pass-through */
-		(void) stepd_cleanup(NULL, job, NULL, NULL, rc, 0);
+		(void) stepd_cleanup(NULL, step, NULL, NULL, rc, 0);
 	} else if (rc != 0) {
 		error("Error waiting on condition in _monitor: %m");
 	}
@@ -187,7 +188,7 @@ done:
 }
 
 
-static int _call_external_program(stepd_step_rec_t *job)
+static int _call_external_program(stepd_step_rec_t *step)
 {
 	int status, rc, opt;
 	pid_t cpid;

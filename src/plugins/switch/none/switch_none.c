@@ -156,12 +156,12 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
  * switch functions for job initiation
  */
 
-int switch_p_job_preinit(stepd_step_rec_t *job)
+int switch_p_job_preinit(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_init (stepd_step_rec_t *job)
+extern int switch_p_job_init (stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
 }
@@ -209,9 +209,9 @@ int switch_p_job_fini ( switch_jobinfo_t *jobinfo )
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_postfini (stepd_step_rec_t *job)
+int switch_p_job_postfini(stepd_step_rec_t *step)
 {
-	uid_t pgid = job->jmgr_pid;
+	uid_t pgid = step->jmgr_pid;
 	/*
 	 *  Kill all processes in the job's session
 	 */
@@ -220,7 +220,7 @@ int switch_p_job_postfini (stepd_step_rec_t *job)
 			(unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("%ps: Bad pid valud %lu", &job->step_id,
+		debug("%ps: Bad pid valud %lu", &step->step_id,
 		      (unsigned long) pgid);
 
 	return SLURM_SUCCESS;
@@ -252,22 +252,22 @@ extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_pre_suspend( stepd_step_rec_t *job )
+extern int switch_p_job_step_pre_suspend( stepd_step_rec_t *step )
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_post_suspend( stepd_step_rec_t *job )
+extern int switch_p_job_step_post_suspend( stepd_step_rec_t *step )
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_pre_resume( stepd_step_rec_t *job )
+extern int switch_p_job_step_pre_resume( stepd_step_rec_t *step )
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_post_resume( stepd_step_rec_t *job )
+extern int switch_p_job_step_post_resume( stepd_step_rec_t *step )
 {
 	return SLURM_SUCCESS;
 }

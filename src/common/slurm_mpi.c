@@ -64,7 +64,7 @@ typedef struct slurm_mpi_ops {
 	void (*conf_options)(s_p_options_t **full_options,
 			     int *full_options_cnt);
 	void (*conf_set)(s_p_hashtbl_t *tbl);
-	int (*slurmstepd_prefork)(const stepd_step_rec_t *job, char ***env);
+	int (*slurmstepd_prefork)(const stepd_step_rec_t *step, char ***env);
 	int (*slurmstepd_task)(const mpi_plugin_task_info_t *job, char ***env);
 } slurm_mpi_ops_t;
 
@@ -109,38 +109,38 @@ static void _log_env(char **env)
 	log_flag(MPI, "-----------");
 }
 
-static void _log_step_rec(const stepd_step_rec_t *job)
+static void _log_step_rec(const stepd_step_rec_t *step)
 {
 	int i;
 
-	xassert(job);
+	xassert(step);
 
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_MPI))
 		return;
 
 	log_flag(MPI, "STEPD_STEP_REC");
 	log_flag(MPI, "--------------");
-	log_flag(MPI, "%ps", &job->step_id);
-	log_flag(MPI, "ntasks:%u nnodes:%u node_id:%u", job->ntasks,
-		 job->nnodes, job->nodeid);
-	log_flag(MPI, "node_tasks:%u", job->node_tasks);
-	for (i = 0; i < job->node_tasks; i++)
-		log_flag(MPI, "gtid[%d]:%u", i, job->task[i]->gtid);
-	for (i = 0; i < job->nnodes; i++)
-		log_flag(MPI, "task_cnts[%d]:%u", i, job->task_cnts[i]);
+	log_flag(MPI, "%ps", &step->step_id);
+	log_flag(MPI, "ntasks:%u nnodes:%u node_id:%u", step->ntasks,
+		 step->nnodes, step->nodeid);
+	log_flag(MPI, "node_tasks:%u", step->node_tasks);
+	for (i = 0; i < step->node_tasks; i++)
+		log_flag(MPI, "gtid[%d]:%u", i, step->task[i]->gtid);
+	for (i = 0; i < step->nnodes; i++)
+		log_flag(MPI, "task_cnts[%d]:%u", i, step->task_cnts[i]);
 
-	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL))
-		log_flag(MPI, "het_job_id:%u", job->het_job_id);
+	if ((step->het_job_id != 0) && (step->het_job_id != NO_VAL))
+		log_flag(MPI, "het_job_id:%u", step->het_job_id);
 
-	if (job->het_job_offset != NO_VAL) {
+	if (step->het_job_offset != NO_VAL) {
 		log_flag(MPI, "het_job_ntasks:%u het_job_nnodes:%u",
-			 job->het_job_ntasks, job->het_job_nnodes);
+			 step->het_job_ntasks, step->het_job_nnodes);
 		log_flag(MPI, "het_job_node_offset:%u het_job_task_offset:%u",
-			 job->het_job_offset, job->het_job_task_offset);
-		for (i = 0; i < job->het_job_nnodes; i++)
+			 step->het_job_offset, step->het_job_task_offset);
+		for (i = 0; i < step->het_job_nnodes; i++)
 			log_flag(MPI, "het_job_task_cnts[%d]:%u", i,
-				 job->het_job_task_cnts[i]);
-		log_flag(MPI, "het_job_node_list:%s", job->het_job_node_list);
+				 step->het_job_task_cnts[i]);
+		log_flag(MPI, "het_job_node_list:%s", step->het_job_node_list);
 	}
 	log_flag(MPI, "--------------");
 }
@@ -503,18 +503,18 @@ done:
 	return rc;
 }
 
-extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
+extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 {
-	xassert(job);
+	xassert(step);
 	xassert(env);
 	xassert(g_context);
 	xassert(ops);
 
 	log_flag(MPI, "%s: Details before call:", __func__);
 	_log_env(*env);
-	_log_step_rec(job);
+	_log_step_rec(step);
 
-	return (*(ops[0].slurmstepd_prefork))(job, env);
+	return (*(ops[0].slurmstepd_prefork))(step, env);
 }
 
 extern int mpi_g_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)

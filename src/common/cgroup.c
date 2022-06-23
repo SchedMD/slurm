@@ -51,7 +51,7 @@ typedef struct {
 					 int npids);
 	int	(*system_destroy)	(cgroup_ctl_type_t sub);
 	int	(*step_create)		(cgroup_ctl_type_t sub,
-					 stepd_step_rec_t *job);
+					 stepd_step_rec_t *step);
 	int	(*step_addto)		(cgroup_ctl_type_t sub, pid_t *pids,
 					 int npids);
 	int	(*step_get_pids)	(pid_t **pids, int *npids);
@@ -68,9 +68,9 @@ typedef struct {
                                          cgroup_level_t level,
                                          uint32_t task_id);
 	int	(*step_start_oom_mgr)	(void);
-	cgroup_oom_t *(*step_stop_oom_mgr) (stepd_step_rec_t *job);
+	cgroup_oom_t *(*step_stop_oom_mgr) (stepd_step_rec_t *step);
 	int	(*task_addto)		(cgroup_ctl_type_t sub,
-					 stepd_step_rec_t *job, pid_t pid,
+					 stepd_step_rec_t *step, pid_t pid,
 					 uint32_t task_id);
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
 	long int (*get_acct_units)	(void);
@@ -858,12 +858,12 @@ extern int cgroup_g_system_destroy(cgroup_ctl_type_t sub)
 	return (*(ops.system_destroy))(sub);
 }
 
-extern int cgroup_g_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
+extern int cgroup_g_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *step)
 {
 	if (cgroup_g_init() < 0)
 		return SLURM_ERROR;
 
-	return (*(ops.step_create))(sub, job);
+	return (*(ops.step_create))(sub, step);
 }
 
 extern int cgroup_g_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
@@ -949,21 +949,21 @@ extern int cgroup_g_step_start_oom_mgr()
 	return (*(ops.step_start_oom_mgr))();
 }
 
-extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *job)
+extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step)
 {
 	if (cgroup_g_init() < 0)
 		return false;
 
-	return (*(ops.step_stop_oom_mgr))(job);
+	return (*(ops.step_stop_oom_mgr))(step);
 }
 
-extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *step,
 			       pid_t pid, uint32_t task_id)
 {
 	if (cgroup_g_init() < 0)
 		return false;
 
-	return (*(ops.task_addto))(sub, job, pid, task_id);
+	return (*(ops.task_addto))(sub, step, pid, task_id);
 }
 
 extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid)

@@ -87,7 +87,7 @@ typedef struct {
  */
 extern int mpi_process_env(char ***env);
 
-extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env);
+extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env);
 
 /*
  * Load the plugin (if not already loaded) and call the plugin

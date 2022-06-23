@@ -545,7 +545,7 @@ error:
 /*
  * Set up CXI Services for each of the CXI NICs on this host
  */
-extern int switch_p_job_preinit(stepd_step_rec_t *job)
+extern int switch_p_job_preinit(stepd_step_rec_t *step)
 {
 	xassert(job);
 	slingshot_jobinfo_t *jobinfo = job->switch_job->data;
@@ -559,7 +559,7 @@ extern int switch_p_job_preinit(stepd_step_rec_t *job)
 /*
  * Privileged, but no jobinfo
  */
-extern int switch_p_job_init(stepd_step_rec_t *job)
+extern int switch_p_job_init(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
 }
@@ -613,7 +613,7 @@ extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 /*
  * Destroy CXI Services for each of the CXI NICs on this host
  */
-extern int switch_p_job_postfini(stepd_step_rec_t *job)
+extern int switch_p_job_postfini(stepd_step_rec_t *step)
 {
 	xassert(job);
 
@@ -709,22 +709,22 @@ extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
+extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_post_suspend(stepd_step_rec_t *job)
+extern int switch_p_job_step_post_suspend(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
+extern int switch_p_job_step_pre_resume(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_post_resume(stepd_step_rec_t *job)
+extern int switch_p_job_step_post_resume(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
 }

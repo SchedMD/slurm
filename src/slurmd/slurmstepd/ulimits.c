@@ -67,7 +67,7 @@ static int _set_limit(char **env, slurm_rlimits_info_t *rli);
 
 /*
  * Set user resource limits using the values of the environment variables
- * of the name "SLURM_RLIMIT_*" that are found in job->env.
+ * of the name "SLURM_RLIMIT_*" that are found in step->env.
  *
  * The sys admin can control the propagation of user limits in the slurm
  * conf file by setting values for the PropagateResourceRlimits and
@@ -85,7 +85,7 @@ static int _set_limit(char **env, slurm_rlimits_info_t *rli);
  * Run as normal user to disable setuid() and permit a core file to be written.
  */
 
-int set_user_limits(stepd_step_rec_t *job)
+int set_user_limits(stepd_step_rec_t *step)
 {
 #ifdef RLIMIT_AS
 #define SLURM_RLIMIT_VSIZE RLIMIT_AS
@@ -109,11 +109,11 @@ int set_user_limits(stepd_step_rec_t *job)
 	}
 
 	for (rli = get_slurm_rlimits_info(); rli->name; rli++)
-		_set_limit( job->env, rli );
+		_set_limit(step->env, rli);
 
 	/* Set soft and hard rss and vsize limit for this process,
 	 * handle job limit (for all spawned processes) in slurmd */
-	task_mem_bytes  = job->step_mem;	/* MB */
+	task_mem_bytes  = step->step_mem;	/* MB */
 	task_mem_bytes *= (1024 * 1024);
 
 	/* Many systems, Linux included, ignore RSS limits, but set it
@@ -129,9 +129,9 @@ int set_user_limits(stepd_step_rec_t *job)
 		if (setrlimit(RLIMIT_RSS, &r)) {
 			/* Indicates that limit has already been exceeded */
 			fatal("setrlimit(RLIMIT_RSS, %"PRIu64" MB): %m",
-			      job->step_mem);
+			      step->step_mem);
 		} else
-			debug2("Set task rss(%"PRIu64" MB)", job->step_mem);
+			debug2("Set task rss(%"PRIu64" MB)", step->step_mem);
 #if 0
 		getrlimit(RLIMIT_RSS, &r);
 		info("task RSS limits: %u %u", r.rlim_cur, r.rlim_max);
@@ -148,9 +148,9 @@ int set_user_limits(stepd_step_rec_t *job)
 		if (setrlimit(SLURM_RLIMIT_VSIZE, &r)) {
 			/* Indicates that limit has already been exceeded */
 			fatal("setrlimit(%s, %"PRIu64" MB): %m",
-			      SLURM_RLIMIT_VNAME, job->step_mem);
+			      SLURM_RLIMIT_VNAME, step->step_mem);
 		} else
-			debug2("Set task vsize(%"PRIu64" MB)", job->step_mem);
+			debug2("Set task vsize(%"PRIu64" MB)", step->step_mem);
 #if 0
 		getrlimit(SLURM_RLIMIT_VSIZE, &r);
 		info("task VSIZE limits:   %u %u", r.rlim_cur, r.rlim_max);
@@ -175,22 +175,22 @@ static char * rlim_to_string (unsigned long rlim, char *buf, size_t n)
 
 /* Set umask using value of env var SLURM_UMASK */
 extern int
-set_umask(stepd_step_rec_t *job)
+set_umask(stepd_step_rec_t *step)
 {
 	mode_t mask;
 	char *val;
 
-	if (!(val = getenvp(job->env, "SLURM_UMASK"))) {
-		if (job->step_id.step_id != SLURM_EXTERN_CONT)
+	if (!(val = getenvp(step->env, "SLURM_UMASK"))) {
+		if (step->step_id.step_id != SLURM_EXTERN_CONT)
 			debug("Couldn't find SLURM_UMASK in environment");
 		return SLURM_ERROR;
 	}
 
 	mask = strtol(val, (char **)NULL, 8);
-	if ((job->step_id.step_id == SLURM_EXTERN_CONT) ||
-	    (job->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
-	    (job->step_id.step_id == SLURM_BATCH_SCRIPT))
-		unsetenvp(job->env, "SLURM_UMASK");
+	if ((step->step_id.step_id == SLURM_EXTERN_CONT) ||
+	    (step->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
+	    (step->step_id.step_id == SLURM_BATCH_SCRIPT))
+		unsetenvp(step->env, "SLURM_UMASK");
 	umask(mask);
 	return SLURM_SUCCESS;
 }

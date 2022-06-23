@@ -54,10 +54,10 @@ typedef struct {
 
 // Static functions
 static int _setup_local_step_rec(local_step_rec_t *step_rec,
-				 stepd_step_rec_t *job);
+				 stepd_step_rec_t *step);
 static void _free_local_step_rec(local_step_rec_t *step_rec);
-static int _get_first_pe(stepd_step_rec_t *job);
-static int _get_cmd_index(stepd_step_rec_t *job);
+static int _get_first_pe(stepd_step_rec_t *step);
+static int _get_cmd_index(stepd_step_rec_t *step);
 static int *_get_cmd_map(local_step_rec_t *step_rec);
 static int *_get_node_cpu_map(local_step_rec_t *step_rec);
 static int *_get_pe_nid_map(local_step_rec_t *step_rec);
@@ -66,7 +66,7 @@ static void _print_alpsc_pe_info(alpsc_peInfo_t *alps_info, int cmd_index);
 /*
  * Fill in an alpsc_peInfo_t structure
  */
-int build_alpsc_pe_info(stepd_step_rec_t *job,
+int build_alpsc_pe_info(stepd_step_rec_t *step,
 			alpsc_peInfo_t *alpsc_pe_info, int *cmd_index)
 {
 	local_step_rec_t step_rec;
@@ -143,7 +143,7 @@ int build_alpsc_pe_info(stepd_step_rec_t *job,
 }
 
 static int _setup_local_step_rec(local_step_rec_t *step_rec,
-				 stepd_step_rec_t *job)
+				 stepd_step_rec_t *step)
 {
 	int cnt = 0, rc;
 	xassert(step_rec);
@@ -196,7 +196,7 @@ static void _free_local_step_rec(local_step_rec_t *step_rec)
 /*
  * Get the first PE placed on this node, or -1 if not found
  */
-static int _get_first_pe(stepd_step_rec_t *job)
+static int _get_first_pe(stepd_step_rec_t *step)
 {
 	int i = 0;
 	uint32_t first_pe;
@@ -364,7 +364,7 @@ static int *_get_node_cpu_map(local_step_rec_t *step_rec)
  * we'll just return one of the command indices on this node.
  * Returns -1 if no command is found on this node.
  */
-static int _get_cmd_index(stepd_step_rec_t *job)
+static int _get_cmd_index(stepd_step_rec_t *step)
 {
 	int cmd_index;
 

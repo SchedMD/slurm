@@ -87,7 +87,7 @@ extern bool proctrack_p_has_pid (uint64_t cont_id, pid_t pid);
 
 static void *_create_container_thread(void *args)
 {
-	stepd_step_rec_t *job = (stepd_step_rec_t *)args;
+	stepd_step_rec_t *step = (stepd_step_rec_t *)args;
 
 	job->cont_id = (uint64_t)job_create(0, job->uid, 0);
 
@@ -153,7 +153,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_create(stepd_step_rec_t *job)
+extern int proctrack_p_create(stepd_step_rec_t *step)
 {
 	DEF_TIMERS;
 	START_TIMER;
@@ -222,7 +222,7 @@ endit:
  * when forked, all we need to do is remove the slurmstepd from the container
  * (once) at this time.
  */
-int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
+int proctrack_p_add(stepd_step_rec_t *step, pid_t pid)
 {
 #ifdef HAVE_NATIVE_CRAY
 	char fname[64];

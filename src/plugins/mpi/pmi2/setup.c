@@ -99,42 +99,42 @@ _remove_tree_sock(void)
 }
 
 static int
-_setup_stepd_job_info(const stepd_step_rec_t *job, char ***env)
+_setup_stepd_job_info(const stepd_step_rec_t *step, char ***env)
 {
 	char *p;
 	int i;
 
 	memset(&job_info, 0, sizeof(job_info));
 
-	if (job->het_job_id && (job->het_job_id != NO_VAL))
-		job_info.step_id.job_id  = job->het_job_id;
+	if (step->het_job_id && (step->het_job_id != NO_VAL))
+		job_info.step_id.job_id  = step->het_job_id;
 	else
-		job_info.step_id.job_id  = job->step_id.job_id;
+		job_info.step_id.job_id  = step->step_id.job_id;
 
-	job_info.uid = job->uid;
+	job_info.uid = step->uid;
 
-	if (job->het_job_offset != NO_VAL) {
-		job_info.step_id.step_id = job->step_id.step_id;
-		job_info.step_id.step_het_comp = job->step_id.step_het_comp;
-		job_info.nnodes = job->het_job_nnodes;
-		job_info.nodeid = job->nodeid + job->het_job_node_offset;
-		job_info.ntasks = job->het_job_ntasks;
-		job_info.ltasks = job->node_tasks;
+	if (step->het_job_offset != NO_VAL) {
+		job_info.step_id.step_id = step->step_id.step_id;
+		job_info.step_id.step_het_comp = step->step_id.step_het_comp;
+		job_info.nnodes = step->het_job_nnodes;
+		job_info.nodeid = step->nodeid + step->het_job_node_offset;
+		job_info.ntasks = step->het_job_ntasks;
+		job_info.ltasks = step->node_tasks;
 		job_info.gtids = xmalloc(job_info.ltasks * sizeof(uint32_t));
 		for (i = 0; i < job_info.ltasks; i ++) {
-			job_info.gtids[i] = job->task[i]->gtid +
-					    job->het_job_task_offset;
+			job_info.gtids[i] = step->task[i]->gtid +
+					    step->het_job_task_offset;
 		}
 	} else {
-		job_info.step_id.step_id = job->step_id.step_id;
-		job_info.step_id.step_het_comp = job->step_id.step_het_comp;
-		job_info.nnodes = job->nnodes;
-		job_info.nodeid = job->nodeid;
-		job_info.ntasks = job->ntasks;
-		job_info.ltasks = job->node_tasks;
+		job_info.step_id.step_id = step->step_id.step_id;
+		job_info.step_id.step_het_comp = step->step_id.step_het_comp;
+		job_info.nnodes = step->nnodes;
+		job_info.nodeid = step->nodeid;
+		job_info.ntasks = step->ntasks;
+		job_info.ltasks = step->node_tasks;
 		job_info.gtids = xmalloc(job_info.ltasks * sizeof(uint32_t));
 		for (i = 0; i < job_info.ltasks; i ++) {
-			job_info.gtids[i] = job->task[i]->gtid;
+			job_info.gtids[i] = step->task[i]->gtid;
 		}
 	}
 
@@ -283,7 +283,7 @@ _setup_stepd_tree_info(char ***env)
  * setup sockets for slurmstepd
  */
 static int
-_setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
+_setup_stepd_sockets(const stepd_step_rec_t *step, char ***env)
 {
 	struct sockaddr_un sa;
 	int i;
@@ -312,8 +312,8 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	 * string to unlink.
 	 */
 	spool = slurm_conf_expand_slurmd_path(slurm_conf.slurmd_spooldir,
-					      job->node_name,
-					      job->node_name);
+					      step->node_name,
+					      step->node_name);
 	xstrfmtcat(fmt_tree_sock_addr, PMI2_SOCK_ADDR_FMT, spool,
 		   job_info.step_id.job_id, job_info.step_id.step_id);
 	xfree(spool);
@@ -339,7 +339,7 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 		unlink(sa.sun_path);
 		return SLURM_ERROR;
 	}
-	if (chown(sa.sun_path, job->uid, -1) < 0) {
+	if (chown(sa.sun_path, step->uid, -1) < 0) {
 		error("mpi/pmi2: failed to chown tree socket: %m");
 		unlink(sa.sun_path);
 		return SLURM_ERROR;
@@ -350,8 +350,8 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 		return SLURM_ERROR;
 	}
 
-	task_socks = xmalloc(2 * job->node_tasks * sizeof(int));
-	for (i = 0; i < job->node_tasks; i ++) {
+	task_socks = xmalloc(2 * step->node_tasks * sizeof(int));
+	for (i = 0; i < step->node_tasks; i ++) {
 		socketpair(AF_UNIX, SOCK_STREAM, 0, &task_socks[i * 2]);
 		/* this must be delayed after the tasks have been forked */
 /* 		close(TASK_PMI_SOCK(i)); */
@@ -404,14 +404,14 @@ _setup_stepd_kvs(char ***env)
 }
 
 extern int
-pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env)
+pmi2_setup_stepd(const stepd_step_rec_t *step, char ***env)
 {
 	int rc;
 
 	run_in_stepd = true;
 
 	/* job info */
-	rc = _setup_stepd_job_info(job, env);
+	rc = _setup_stepd_job_info(step, env);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -421,7 +421,7 @@ pmi2_setup_stepd(const stepd_step_rec_t *job, char ***env)
 		return rc;
 
 	/* sockets */
-	rc = _setup_stepd_sockets(job, env);
+	rc = _setup_stepd_sockets(step, env);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 

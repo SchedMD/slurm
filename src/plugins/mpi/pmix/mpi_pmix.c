@@ -211,16 +211,16 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
+extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 {
 	int ret;
 	pmixp_debug_hang(0);
 	PMIXP_DEBUG("start");
 
-	if (job->batch)
+	if (step->batch)
 		return SLURM_SUCCESS;
 
-	if (SLURM_SUCCESS != (ret = pmixp_stepd_init(job, env))) {
+	if (SLURM_SUCCESS != (ret = pmixp_stepd_init(step, env))) {
 		PMIXP_ERROR("pmixp_stepd_init() failed");
 		goto err_ext;
 	}
@@ -232,7 +232,8 @@ extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
 
 err_ext:
 	/* Abort the whole job if error! */
-	slurm_kill_job_step(job->step_id.job_id, job->step_id.step_id, SIGKILL);
+	slurm_kill_job_step(step->step_id.job_id,
+			    step->step_id.step_id, SIGKILL);
 	return ret;
 }
 

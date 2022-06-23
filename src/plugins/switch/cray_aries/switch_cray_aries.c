@@ -412,12 +412,12 @@ unpack_error:
  * switch functions for job initiation
  */
 
-extern int switch_p_job_preinit(stepd_step_rec_t *job)
+extern int switch_p_job_preinit(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_init(stepd_step_rec_t *job)
+extern int switch_p_job_init(stepd_step_rec_t *step)
 {
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
@@ -744,7 +744,7 @@ extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_postfini(stepd_step_rec_t *job)
+extern int switch_p_job_postfini(stepd_step_rec_t *step)
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	int rc;
@@ -868,7 +868,7 @@ extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
 /*
  * Functions for suspend/resume support
  */
-extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
+extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *step)
 {
 #if _DEBUG
 	info("switch_p_job_step_pre_suspend(%ps)", &job->step_id);
@@ -895,7 +895,7 @@ extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_post_suspend(stepd_step_rec_t *job)
+extern int switch_p_job_step_post_suspend(stepd_step_rec_t *step)
 {
 #if _DEBUG
 	info("switch_p_job_step_post_suspend(%ps)", &job->step_id);
@@ -919,7 +919,7 @@ extern int switch_p_job_step_post_suspend(stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
+extern int switch_p_job_step_pre_resume(stepd_step_rec_t *step)
 {
 #if _DEBUG
 	info("switch_p_job_step_pre_resume(%ps)", &job->step_id);
@@ -946,7 +946,7 @@ extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_post_resume(stepd_step_rec_t *job)
+extern int switch_p_job_step_post_resume(stepd_step_rec_t *step)
 {
 #if _DEBUG
 	info("switch_p_job_step_post_resume(%ps)", &job->step_id);

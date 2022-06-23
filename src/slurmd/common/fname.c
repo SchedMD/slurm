@@ -54,14 +54,14 @@
 #include "src/common/xstring.h"
 
 static void _batch_path_check(char **p, char **q, char **name,
-			      unsigned int wid, stepd_step_rec_t *job,
+			      unsigned int wid, stepd_step_rec_t *step,
 			      int taskid);
 static char * _create_batch_fname(char *name, char *path,
-				  stepd_step_rec_t *job, int taskid);
-static char * _create_step_fname(char *name, char *path, stepd_step_rec_t *job,
+				  stepd_step_rec_t *step, int taskid);
+static char * _create_step_fname(char *name, char *path, stepd_step_rec_t *step,
 				 int taskid);
 static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
-			     bool double_p, stepd_step_rec_t *job, int taskid,
+			     bool double_p, stepd_step_rec_t *step, int taskid,
 			     int offset);
 
 /*
@@ -71,7 +71,8 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 
 /* Create an IO filename from job parameters and the filename format
  * sent from client. Used by slurmstepd. */
-extern char *fname_create(stepd_step_rec_t *job, const char *format, int taskid)
+extern char *fname_create(stepd_step_rec_t *step,
+			  const char *format, int taskid)
 {
 	char *name = NULL, *orig;
 	int id;
@@ -86,7 +87,7 @@ extern char *fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 	/* If format doesn't specify an absolute pathname, use cwd
 	 */
 	if (orig[0] != '/') {
-		xstrcat(name, job->cwd);
+		xstrcat(name, step->cwd);
 		if (esc) {
 			xstrcat(name, esc);
 			goto fini;
@@ -102,10 +103,10 @@ extern char *fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 		goto fini;
 	}
 
-	if (job->batch)
-		name = _create_batch_fname(name, orig, job, taskid);
+	if (step->batch)
+		name = _create_batch_fname(name, orig, step, taskid);
 	else
-		name = _create_step_fname(name, orig, job, taskid);
+		name = _create_step_fname(name, orig, step, taskid);
 
 fini:	xfree(esc);
 	xfree(orig);
@@ -116,7 +117,7 @@ fini:	xfree(esc);
  * sent from client. Used by slurmd for prolog errors. */
 extern char *fname_create2(batch_job_launch_msg_t *req)
 {
-	stepd_step_rec_t job;
+	stepd_step_rec_t step;
 	char *esc, *name = NULL, *orig = NULL;
 
 	if (req->std_err)
@@ -146,23 +147,23 @@ extern char *fname_create2(batch_job_launch_msg_t *req)
 		goto fini;
 	}
 
-	memset(&job, 0, sizeof(stepd_step_rec_t));
-	job.array_job_id	= req->array_job_id;
-	job.array_task_id	= req->array_task_id;
-	job.step_id.job_id = req->job_id;
-//	job->nodeid		= TBD;
-	job.step_id.step_id = SLURM_BATCH_SCRIPT;
-	job.step_id.step_het_comp = NO_VAL;
-	job.uid			= req->uid;
-	job.user_name		= req->user_name;
-	name = _create_batch_fname(name, orig, &job, 0);
+	memset(&step, 0, sizeof(stepd_step_rec_t));
+	step.array_job_id	= req->array_job_id;
+	step.array_task_id	= req->array_task_id;
+	step.step_id.job_id = req->job_id;
+//	step.nodeid		= TBD;
+	step.step_id.step_id = SLURM_BATCH_SCRIPT;
+	step.step_id.step_het_comp = NO_VAL;
+	step.uid			= req->uid;
+	step.user_name		= req->user_name;
+	name = _create_batch_fname(name, orig, &step, 0);
 
 fini:	xfree(esc);
 	xfree(orig);
 	return name;
 }
 
-static char *_create_batch_fname(char *name, char *path, stepd_step_rec_t *job,
+static char *_create_batch_fname(char *name, char *path, stepd_step_rec_t *step,
 				 int taskid)
 {
 	unsigned int wid   = 0;
@@ -190,7 +191,7 @@ static char *_create_batch_fname(char *name, char *path, stepd_step_rec_t *job,
 					break;
 			}
 
-			_batch_path_check(&p, &q, &name, wid, job, taskid);
+			_batch_path_check(&p, &q, &name, wid, step, taskid);
 			wid = 0;
 		} else
 			p++;
@@ -202,7 +203,7 @@ static char *_create_batch_fname(char *name, char *path, stepd_step_rec_t *job,
 	return name;
 }
 
-static char *_create_step_fname(char *name, char *path, stepd_step_rec_t *job,
+static char *_create_step_fname(char *name, char *path, stepd_step_rec_t *step,
 				int taskid)
 {
 
@@ -233,7 +234,7 @@ static char *_create_step_fname(char *name, char *path, stepd_step_rec_t *job,
 
 			}
 			_step_path_check(&p, &q, &name, wid, double_p,
-					 job, taskid, str_offset);
+					 step, taskid, str_offset);
 			wid = 0;
 		} else
 			p++;
@@ -253,7 +254,7 @@ static char *_create_step_fname(char *name, char *path, stepd_step_rec_t *job,
  *
  */
 static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
-			     bool double_p, stepd_step_rec_t *job, int taskid,
+			     bool double_p, stepd_step_rec_t *step, int taskid,
 			     int offset)
 {
 	switch (**p) {
@@ -264,8 +265,8 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 	case 't':  /* '%t' => taskid         */
 		xmemcat(*name, *q, *p - offset);
 		if (!double_p) {
-			if (job->het_job_task_offset != NO_VAL)
-				taskid += job->het_job_task_offset;
+			if (step->het_job_task_offset != NO_VAL)
+				taskid += step->het_job_task_offset;
 			xstrfmtcat(*name, "%0*u", wid, taskid);
 			(*p)++;
 		}
@@ -274,7 +275,7 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 	case 'n':  /* '%n' => nodeid         */
 		xmemcat(*name, *q, *p - offset);
 		if (!double_p) {
-			xstrfmtcat(*name, "%0*u", wid, job->nodeid);
+			xstrfmtcat(*name, "%0*u", wid, step->nodeid);
 			(*p)++;
 		}
 		*q = (*p)++;
@@ -288,11 +289,11 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
 		*q = (*p)++;
 		break;
 	case 'u':  /* '%u' => user name      */
-		if (!job->user_name)
-			job->user_name = uid_to_string(job->uid);
+		if (!step->user_name)
+			step->user_name = uid_to_string(step->uid);
 		xmemcat(*name, *q, *p - 1);
 		if (!double_p) {
-			xstrfmtcat(*name, "%s", job->user_name);
+			xstrfmtcat(*name, "%s", step->user_name);
 			(*p)++;
 		}
 		*q = (*p)++;
@@ -308,7 +309,7 @@ static void _step_path_check(char **p, char **q, char **name, unsigned int wid,
  * src/srun/libsrun/fname.c).
  */
 static void _batch_path_check(char **p, char **q, char **name,
-			      unsigned int wid, stepd_step_rec_t *job,
+			      unsigned int wid, stepd_step_rec_t *step,
 			      int taskid)
 {
 
@@ -316,29 +317,29 @@ static void _batch_path_check(char **p, char **q, char **name,
 	case 'a':  /* '%a' => array task id   */
 		xmemcat(*name, *q, *p - 1);
 		xstrfmtcat(*name, "%0*u", wid,
-			   job->array_task_id);
+			   step->array_task_id);
 		*q = ++(*p);
 		break;
 	case 'A':  /* '%A' => array master job id */
 		xmemcat(*name, *q, *p - 1);
-		if (job->array_task_id == NO_VAL)
-			xstrfmtcat(*name, "%0*u", wid, job->step_id.job_id);
+		if (step->array_task_id == NO_VAL)
+			xstrfmtcat(*name, "%0*u", wid, step->step_id.job_id);
 		else
-			xstrfmtcat(*name, "%0*u",wid, job->array_job_id);
+			xstrfmtcat(*name, "%0*u",wid, step->array_job_id);
 		*q = ++(*p);
 		break;
 	case 'J':  /* '%J' => jobid.stepid */
 	case 'j':  /* '%j' => jobid        */
 		xmemcat(*name, *q, *p - 1);
-		xstrfmtcat(*name, "%0*u", wid, job->step_id.job_id);
+		xstrfmtcat(*name, "%0*u", wid, step->step_id.job_id);
 		if ((**p == 'J') &&
-		    (job->step_id.step_id != SLURM_BATCH_SCRIPT))
-			xstrfmtcat(*name, ".%u", job->step_id.step_id);
+		    (step->step_id.step_id != SLURM_BATCH_SCRIPT))
+			xstrfmtcat(*name, ".%u", step->step_id.step_id);
 		*q = ++(*p);
 		break;
 	case 'n':  /* '%n' => nodeid         */
 		xmemcat(*name, *q, *p - 1);
-		xstrfmtcat(*name, "%0*u", wid, job->nodeid);
+		xstrfmtcat(*name, "%0*u", wid, step->nodeid);
 		*q = ++(*p);
 		break;
 	case 'N':  /* '%N' => node name      */
@@ -348,10 +349,10 @@ static void _batch_path_check(char **p, char **q, char **name,
 		break;
 	case 's':  /* '%s' => step id        */
 		xmemcat(*name, *q, *p - 1);
-		if (job->step_id.step_id == SLURM_BATCH_SCRIPT)
+		if (step->step_id.step_id == SLURM_BATCH_SCRIPT)
 			xstrcat(*name, "batch");
 		else
-			xstrfmtcat(*name, "%0*u", wid, job->step_id.step_id);
+			xstrfmtcat(*name, "%0*u", wid, step->step_id.step_id);
 		*q = ++(*p);
 		break;
 	case 't':  /* '%t' => taskid         */
@@ -360,15 +361,15 @@ static void _batch_path_check(char **p, char **q, char **name,
 		*q = ++(*p);
 		break;
 	case 'u':  /* '%u' => user name      */
-		if (!job->user_name)
-			job->user_name = uid_to_string(job->uid);
+		if (!step->user_name)
+			step->user_name = uid_to_string(step->uid);
 		xmemcat(*name, *q, *p - 1);
-		xstrfmtcat(*name, "%s", job->user_name);
+		xstrfmtcat(*name, "%s", step->user_name);
 		*q = ++(*p);
 		break;
 	case 'x':  /* '%x' => job name       */
 		xmemcat(*name, *q, *p - 1);
-		xstrfmtcat(*name, "%s", getenvp(job->env, "SLURM_JOB_NAME"));
+		xstrfmtcat(*name, "%s", getenvp(step->env, "SLURM_JOB_NAME"));
 		*q = ++(*p);
 		break;
 	default:

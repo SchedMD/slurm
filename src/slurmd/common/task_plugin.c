@@ -60,17 +60,17 @@ typedef struct slurmd_task_ops {
 	int	(*slurmd_suspend_job)	    (uint32_t job_id);
 	int	(*slurmd_resume_job)	    (uint32_t job_id);
 
-	int	(*pre_setuid)		    (stepd_step_rec_t *job);
-	int	(*pre_set_affinity)	    (stepd_step_rec_t *job,
+	int	(*pre_setuid)		    (stepd_step_rec_t *step);
+	int	(*pre_set_affinity)	    (stepd_step_rec_t *step,
 					     uint32_t node_tid);
-	int	(*set_affinity)		    (stepd_step_rec_t *job,
+	int	(*set_affinity)		    (stepd_step_rec_t *step,
 					     uint32_t node_tid);
-	int	(*post_set_affinity)	    (stepd_step_rec_t *job,
+	int	(*post_set_affinity)	    (stepd_step_rec_t *step,
 					     uint32_t node_tid);
-	int	(*pre_launch)		    (stepd_step_rec_t *job);
-	int	(*post_term)		    (stepd_step_rec_t *job,
+	int	(*pre_launch)		    (stepd_step_rec_t *step);
+	int	(*post_term)		    (stepd_step_rec_t *step,
 					     stepd_step_task_info_t *task);
-	int	(*post_step)		    (stepd_step_rec_t *job);
+	int	(*post_step)		    (stepd_step_rec_t *step);
 	int	(*add_pid)	    	    (pid_t pid);
 } slurmd_task_ops_t;
 
@@ -304,7 +304,7 @@ extern int task_g_slurmd_resume_job(uint32_t job_id)
  *
  * RET - slurm error code
  */
-extern int task_g_pre_setuid(stepd_step_rec_t *job)
+extern int task_g_pre_setuid(stepd_step_rec_t *step)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -313,7 +313,7 @@ extern int task_g_pre_setuid(stepd_step_rec_t *job)
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].pre_setuid))(job);
+		rc = (*(ops[i].pre_setuid))(step);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
@@ -330,7 +330,7 @@ extern int task_g_pre_setuid(stepd_step_rec_t *job)
  *
  * RET - slurm error code
  */
-extern int task_g_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
+extern int task_g_pre_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -339,7 +339,7 @@ extern int task_g_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].pre_set_affinity))(job, node_tid);
+		rc = (*(ops[i].pre_set_affinity))(step, node_tid);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
@@ -356,7 +356,7 @@ extern int task_g_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
  *
  * RET - slurm error code
  */
-extern int task_g_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
+extern int task_g_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -365,7 +365,7 @@ extern int task_g_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].set_affinity))(job, node_tid);
+		rc = (*(ops[i].set_affinity))(step, node_tid);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
@@ -382,7 +382,7 @@ extern int task_g_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
  *
  * RET - slurm error code
  */
-extern int task_g_post_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
+extern int task_g_post_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -391,7 +391,7 @@ extern int task_g_post_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].post_set_affinity))(job, node_tid);
+		rc = (*(ops[i].post_set_affinity))(step, node_tid);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
@@ -408,7 +408,7 @@ extern int task_g_post_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
  *
  * RET - slurm error code
  */
-extern int task_g_pre_launch(stepd_step_rec_t *job)
+extern int task_g_pre_launch(stepd_step_rec_t *step)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -417,7 +417,7 @@ extern int task_g_pre_launch(stepd_step_rec_t *job)
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].pre_launch))(job);
+		rc = (*(ops[i].pre_launch))(step);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
@@ -434,7 +434,7 @@ extern int task_g_pre_launch(stepd_step_rec_t *job)
  *
  * RET - slurm error code
  */
-extern int task_g_post_term(stepd_step_rec_t *job,
+extern int task_g_post_term(stepd_step_rec_t *step,
 		     stepd_step_task_info_t *task)
 {
 	int i, rc = SLURM_SUCCESS;
@@ -444,7 +444,7 @@ extern int task_g_post_term(stepd_step_rec_t *job,
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].post_term))(job, task);
+		rc = (*(ops[i].post_term))(step, task);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
@@ -461,7 +461,7 @@ extern int task_g_post_term(stepd_step_rec_t *job,
  *
  * RET - slurm error code
  */
-extern int task_g_post_step(stepd_step_rec_t *job)
+extern int task_g_post_step(stepd_step_rec_t *step)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -470,7 +470,7 @@ extern int task_g_post_step(stepd_step_rec_t *job)
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
-		rc = (*(ops[i].post_step))(job);
+		rc = (*(ops[i].post_step))(step);
 		if (rc != SLURM_SUCCESS) {
 			debug("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
@@ -508,7 +508,7 @@ extern int task_g_add_pid(pid_t pid)
 	return (rc);
 }
 
-extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
+extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
 				   int statval, uint32_t node_tid)
 {
 #if defined(__APPLE__)
@@ -517,7 +517,7 @@ extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
 	char *bind_type, *action, *status, *units;
 	char mstr[CPU_SET_HEX_STR_SIZE];
 
-	if (!(job->cpu_bind_type & CPU_BIND_VERBOSE))
+	if (!(step->cpu_bind_type & CPU_BIND_VERBOSE))
 		return;
 
 	if (statval)
@@ -525,35 +525,35 @@ extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
 	else
 		status = "";
 
-	if (job->cpu_bind_type & CPU_BIND_NONE) {
+	if (step->cpu_bind_type & CPU_BIND_NONE) {
 		action = "";
 		units  = "";
 		bind_type = "NONE";
 	} else {
 		action = " set";
-		if (job->cpu_bind_type & CPU_BIND_TO_THREADS)
+		if (step->cpu_bind_type & CPU_BIND_TO_THREADS)
 			units = "-threads";
-		else if (job->cpu_bind_type & CPU_BIND_TO_CORES)
+		else if (step->cpu_bind_type & CPU_BIND_TO_CORES)
 			units = "-cores";
-		else if (job->cpu_bind_type & CPU_BIND_TO_SOCKETS)
+		else if (step->cpu_bind_type & CPU_BIND_TO_SOCKETS)
 			units = "-sockets";
-		else if (job->cpu_bind_type & CPU_BIND_TO_LDOMS)
+		else if (step->cpu_bind_type & CPU_BIND_TO_LDOMS)
 			units = "-ldoms";
 		else
 			units = "";
-		if (job->cpu_bind_type & CPU_BIND_RANK) {
+		if (step->cpu_bind_type & CPU_BIND_RANK) {
 			bind_type = "RANK";
-		} else if (job->cpu_bind_type & CPU_BIND_MAP) {
+		} else if (step->cpu_bind_type & CPU_BIND_MAP) {
 			bind_type = "MAP ";
-		} else if (job->cpu_bind_type & CPU_BIND_MASK) {
+		} else if (step->cpu_bind_type & CPU_BIND_MASK) {
 			bind_type = "MASK";
-		} else if (job->cpu_bind_type & CPU_BIND_LDRANK) {
+		} else if (step->cpu_bind_type & CPU_BIND_LDRANK) {
 			bind_type = "LDRANK";
-		} else if (job->cpu_bind_type & CPU_BIND_LDMAP) {
+		} else if (step->cpu_bind_type & CPU_BIND_LDMAP) {
 			bind_type = "LDMAP ";
-		} else if (job->cpu_bind_type & CPU_BIND_LDMASK) {
+		} else if (step->cpu_bind_type & CPU_BIND_LDMASK) {
 			bind_type = "LDMASK";
-		} else if (job->cpu_bind_type & (~CPU_BIND_VERBOSE)) {
+		} else if (step->cpu_bind_type & (~CPU_BIND_VERBOSE)) {
 			bind_type = "UNK ";
 		} else {
 			action = "";
@@ -564,10 +564,10 @@ extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
 	fprintf(stderr, "cpu-bind%s=%s - "
 			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
 			units, bind_type,
-			job->node_name,
-			job->task[node_tid]->gtid,
+			step->node_name,
+			step->task[node_tid]->gtid,
 			node_tid,
-			job->task[node_tid]->pid,
+			step->task[node_tid]->pid,
 			task_cpuset_to_str(mask, mstr),
 			action,
 			status);

@@ -2,7 +2,7 @@
  *  multi_prog.c - Find the argv array for each task when multi-prog is enabled.
  *
  *  NOTE: This code could be moved into the API if desired. That would mean the
- *  logic would be executed once per job instead of once per task. This would
+ *  logic would be executed once per step instead of once per task. This would
  *  require substantial modifications to the srun, slurmd, slurmstepd, and
  *  communications logic; so we'll stick with the simple solution for now.
  *****************************************************************************
@@ -312,12 +312,12 @@ fail:
 
 /*
  * Parse an MPMD file and determine count and layout of each task for use
- * with Cray systems. Builds the mpmd_set structure in the job record.
+ * with Cray systems. Builds the mpmd_set structure in the step record.
  *
- * IN/OUT job - job step details, builds mpmd_set structure
+ * IN/OUT step - job step details, builds mpmd_set structure
  * IN gtid - Array of global task IDs, indexed by node_id and task
  */
-extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
+extern void multi_prog_parse(stepd_step_rec_t *step, uint32_t **gtid)
 {
 	int i, j, line_num = 0, rank_id, total_ranks = 0;
 	char *line = NULL, *local_data = NULL;
@@ -333,11 +333,11 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 	hostlist_t hl;
 	uint32_t jobid;
 
-	tmp_args = xmalloc(sizeof(char *) * job->ntasks);
-	tmp_cmd = xmalloc(sizeof(char *) * job->ntasks);
-	node_id2nid = xmalloc(sizeof(uint32_t) * job->nnodes);
-	ranks_node_id = xmalloc(sizeof(uint32_t) * job->ntasks);
-	local_data = xstrdup(job->argv[1]);
+	tmp_args = xmalloc(sizeof(char *) * step->ntasks);
+	tmp_cmd = xmalloc(sizeof(char *) * step->ntasks);
+	node_id2nid = xmalloc(sizeof(uint32_t) * step->nnodes);
+	ranks_node_id = xmalloc(sizeof(uint32_t) * step->ntasks);
+	local_data = xstrdup(step->argv[1]);
 	while (1) {
 		if (line_num)
 			line = strtok_r(NULL, "\n", &save_ptr);
@@ -361,7 +361,7 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 			while ((one_rank = hostlist_pop(hl))) {
 				rank_id = strtol(one_rank, &end_ptr, 10);
 				if ((end_ptr[0] != '\0') || (rank_id < 0) ||
-				    (rank_id >= job->ntasks)) {
+				    (rank_id >= step->ntasks)) {
 					free(one_rank);
 					hostlist_destroy(hl);
 					goto fail;
@@ -423,7 +423,7 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 		while ((one_rank = hostlist_pop(hl))) {
 			rank_id = strtol(one_rank, &end_ptr, 10);
 			if ((end_ptr[0] != '\0') || (rank_id < 0) ||
-			    (rank_id >= job->ntasks)) {
+			    (rank_id >= step->ntasks)) {
 				free(one_rank);
 				hostlist_destroy(hl);
 				goto fail;
@@ -442,17 +442,17 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 		if (line_break)
 			last_rank_spec = rank_spec;
 	}
-	if (total_ranks != job->ntasks)
+	if (total_ranks != step->ntasks)
 		goto fail;
 
-	if (job->msg->complete_nodelist &&
-	    ((hl = hostlist_create(job->msg->complete_nodelist)))) {
+	if (step->msg->complete_nodelist &&
+	    ((hl = hostlist_create(step->msg->complete_nodelist)))) {
 		i = 0;
 		while ((one_rank = hostlist_shift(hl))) {
-			if (i >= job->nnodes) {
+			if (i >= step->nnodes) {
 				error("MPMD more nodes in nodelist than count "
-				      "(cnt:%u nodelist:%s)", job->nnodes,
-				      job->msg->complete_nodelist);
+				      "(cnt:%u nodelist:%s)", step->nnodes,
+				      step->msg->complete_nodelist);
 			}
 			for (j = 0; one_rank[j] && !isdigit(one_rank[j]); j++)
 				;
@@ -462,13 +462,13 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 		hostlist_destroy(hl);
 	}
 
-	for (i = 0; i < job->nnodes; i++) {
-		if (!job->task_cnts) {
-			error("MPMD job->task_cnts is NULL");
+	for (i = 0; i < step->nnodes; i++) {
+		if (!step->task_cnts) {
+			error("MPMD step->task_cnts is NULL");
 			break;
 		}
-		if (!job->task_cnts[i]) {
-			error("MPMD job->task_cnts[%d] is NULL", i);
+		if (!step->task_cnts[i]) {
+			error("MPMD step->task_cnts[%d] is NULL", i);
 			break;
 		}
 		if (!gtid) {
@@ -479,80 +479,80 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 			error("MPMD gtid[%d] is NULL", i);
 			break;
 		}
-		for (j = 0; j < job->task_cnts[i]; j++) {
-			if (gtid[i][j] >= job->ntasks) {
+		for (j = 0; j < step->task_cnts[i]; j++) {
+			if (gtid[i][j] >= step->ntasks) {
 				error("MPMD gtid[%d][%d] is invalid (%u >= %u)",
-				      i, j, gtid[i][j], job->ntasks);
+				      i, j, gtid[i][j], step->ntasks);
 				break;
 			}
 			ranks_node_id[gtid[i][j]] = i;
 		}
 	}
 
-	job->mpmd_set = xmalloc(sizeof(mpmd_set_t));
+	step->mpmd_set = xmalloc(sizeof(mpmd_set_t));
 
-	if (job->het_job_id && (job->het_job_id != NO_VAL))
-		jobid = job->het_job_id;
+	if (step->het_job_id && (step->het_job_id != NO_VAL))
+		jobid = step->het_job_id;
 	else
-		jobid = job->step_id.job_id;
+		jobid = step->step_id.job_id;
 
-	job->mpmd_set->apid      = SLURM_ID_HASH(jobid, job->step_id.step_id);
-	job->mpmd_set->args      = xmalloc(sizeof(char *) * job->ntasks);
-	job->mpmd_set->command   = xmalloc(sizeof(char *) * job->ntasks);
-	job->mpmd_set->first_pe  = xmalloc(sizeof(int) * job->ntasks);
-	job->mpmd_set->start_pe  = xmalloc(sizeof(int) * job->ntasks);
-	job->mpmd_set->total_pe  = xmalloc(sizeof(int) * job->ntasks);
-	job->mpmd_set->placement = xmalloc(sizeof(int) * job->ntasks);
-	for (i = 0, j = 0; i < job->ntasks; i++) {
-		job->mpmd_set->placement[i] = node_id2nid[ranks_node_id[i]];
+	step->mpmd_set->apid      = SLURM_ID_HASH(jobid, step->step_id.step_id);
+	step->mpmd_set->args      = xmalloc(sizeof(char *) * step->ntasks);
+	step->mpmd_set->command   = xmalloc(sizeof(char *) * step->ntasks);
+	step->mpmd_set->first_pe  = xmalloc(sizeof(int) * step->ntasks);
+	step->mpmd_set->start_pe  = xmalloc(sizeof(int) * step->ntasks);
+	step->mpmd_set->total_pe  = xmalloc(sizeof(int) * step->ntasks);
+	step->mpmd_set->placement = xmalloc(sizeof(int) * step->ntasks);
+	for (i = 0, j = 0; i < step->ntasks; i++) {
+		step->mpmd_set->placement[i] = node_id2nid[ranks_node_id[i]];
 		if (i == 0) {
-			job->mpmd_set->num_cmds++;
-			if (ranks_node_id[i] == job->nodeid)
-				job->mpmd_set->first_pe[j] = i;
+			step->mpmd_set->num_cmds++;
+			if (ranks_node_id[i] == step->nodeid)
+				step->mpmd_set->first_pe[j] = i;
 			else
-				job->mpmd_set->first_pe[j] = -1;
-			job->mpmd_set->args[j] = xstrdup(tmp_args[i]);
-			job->mpmd_set->command[j] = xstrdup(tmp_cmd[i]);
-			job->mpmd_set->start_pe[j] = i;
-			job->mpmd_set->total_pe[j]++;
+				step->mpmd_set->first_pe[j] = -1;
+			step->mpmd_set->args[j] = xstrdup(tmp_args[i]);
+			step->mpmd_set->command[j] = xstrdup(tmp_cmd[i]);
+			step->mpmd_set->start_pe[j] = i;
+			step->mpmd_set->total_pe[j]++;
 		} else if (!xstrcmp(tmp_cmd[i-1],  tmp_cmd[i]) &&
 			   !xstrcmp(tmp_args[i-1], tmp_args[i]) &&
 			   !xstrchr(tmp_args[i-1], '%')) {
-			if ((ranks_node_id[i] == job->nodeid) &&
-			    (job->mpmd_set->first_pe[j] == -1))
-				job->mpmd_set->first_pe[j] = i;
-			job->mpmd_set->total_pe[j]++;
+			if ((ranks_node_id[i] == step->nodeid) &&
+			    (step->mpmd_set->first_pe[j] == -1))
+				step->mpmd_set->first_pe[j] = i;
+			step->mpmd_set->total_pe[j]++;
 		} else {
 			j++;
-			if (ranks_node_id[i] == job->nodeid)
-				job->mpmd_set->first_pe[j] = i;
+			if (ranks_node_id[i] == step->nodeid)
+				step->mpmd_set->first_pe[j] = i;
 			else
-				job->mpmd_set->first_pe[j] = -1;
-			job->mpmd_set->num_cmds++;
-			job->mpmd_set->args[j] = xstrdup(tmp_args[i]);
-			job->mpmd_set->command[j] = xstrdup(tmp_cmd[i]);
-			job->mpmd_set->start_pe[j] = i;
-			job->mpmd_set->total_pe[j]++;
+				step->mpmd_set->first_pe[j] = -1;
+			step->mpmd_set->num_cmds++;
+			step->mpmd_set->args[j] = xstrdup(tmp_args[i]);
+			step->mpmd_set->command[j] = xstrdup(tmp_cmd[i]);
+			step->mpmd_set->start_pe[j] = i;
+			step->mpmd_set->total_pe[j]++;
 		}
 	}
 #if _DEBUG
-	info("MPMD Apid:%"PRIu64"", job->mpmd_set->apid);
-	info("MPMD NumPEs:%u", job->ntasks);		/* Total rank count */
-	info("MPMD NumPEsHere:%u", job->node_tasks);	/* Node's rank count */
-	info("MPMD NumCmds:%d", job->mpmd_set->num_cmds);
-	for (i = 0; i < job->mpmd_set->num_cmds; i++) {
+	info("MPMD Apid:%"PRIu64"", step->mpmd_set->apid);
+	info("MPMD NumPEs:%u", step->ntasks);		/* Total rank count */
+	info("MPMD NumPEsHere:%u", step->node_tasks);	/* Node's rank count */
+	info("MPMD NumCmds:%d", step->mpmd_set->num_cmds);
+	for (i = 0; i < step->mpmd_set->num_cmds; i++) {
 		info("MPMD Cmd:%s Args:%s FirstPE:%d StartPE:%d TotalPEs:%d ",
-		     job->mpmd_set->command[i],  job->mpmd_set->args[i],
-		     job->mpmd_set->first_pe[i], job->mpmd_set->start_pe[i],
-		     job->mpmd_set->total_pe[i]);
+		     step->mpmd_set->command[i],  step->mpmd_set->args[i],
+		     step->mpmd_set->first_pe[i], step->mpmd_set->start_pe[i],
+		     step->mpmd_set->total_pe[i]);
 	}
-	for (i = 0; i < job->ntasks; i++) {
+	for (i = 0; i < step->ntasks; i++) {
 		info("MPMD Placement[%d]:nid%5.5d",
-		     i, job->mpmd_set->placement[i]);
+		     i, step->mpmd_set->placement[i]);
 	}
 #endif
 
-fini:	for (i = 0; i < job->ntasks; i++) {
+fini:	for (i = 0; i < step->ntasks; i++) {
 		xfree(tmp_args[i]);
 		xfree(tmp_cmd[i]);
 	}
@@ -567,28 +567,28 @@ fail:	error("Invalid MPMD configuration line %d", line_num);
 	goto fini;
 }
 
-/* Free memory associated with a job's MPMD data structure built by
+/* Free memory associated with a step's MPMD data structure built by
  * multi_prog_parse() and used for Cray system. */
-extern void mpmd_free(stepd_step_rec_t *job)
+extern void mpmd_free(stepd_step_rec_t *step)
 {
 	int i;
 
-	if (!job->mpmd_set)
+	if (!step->mpmd_set)
 		return;
 
-	if (job->mpmd_set->args) {
-		for (i = 0; i < job->ntasks; i++)
-			xfree(job->mpmd_set->args[i]);
-		xfree(job->mpmd_set->args);
+	if (step->mpmd_set->args) {
+		for (i = 0; i < step->ntasks; i++)
+			xfree(step->mpmd_set->args[i]);
+		xfree(step->mpmd_set->args);
 	}
-	if (job->mpmd_set->command) {
-		for (i = 0; i < job->ntasks; i++)
-			xfree(job->mpmd_set->command[i]);
-		xfree(job->mpmd_set->command);
+	if (step->mpmd_set->command) {
+		for (i = 0; i < step->ntasks; i++)
+			xfree(step->mpmd_set->command[i]);
+		xfree(step->mpmd_set->command);
 	}
-	xfree(job->mpmd_set->first_pe);
-	xfree(job->mpmd_set->placement);
-	xfree(job->mpmd_set->start_pe);
-	xfree(job->mpmd_set->total_pe);
-	xfree(job->mpmd_set);
+	xfree(step->mpmd_set->first_pe);
+	xfree(step->mpmd_set->placement);
+	xfree(step->mpmd_set->start_pe);
+	xfree(step->mpmd_set->total_pe);
+	xfree(step->mpmd_set);
 }

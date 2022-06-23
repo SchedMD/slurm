@@ -145,7 +145,7 @@ int remove_spool_files(uint64_t apid)
 /*
  * Set job environment variables used by LLI and PMI
  */
-int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job)
+int set_job_env(stepd_step_rec_t *step, slurm_cray_jobinfo_t *sw_job)
 {
 	int rc, i;
 	char *buff = NULL, *resv_ports = NULL, *tmp = NULL;

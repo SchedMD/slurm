@@ -167,11 +167,11 @@ extern int task_p_slurmd_resume_job (uint32_t job_id)
  * task_p_pre_setuid() is called before setting the UID for the
  * user to launch his jobs.
  */
-extern int task_p_pre_setuid (stepd_step_rec_t *job)
+extern int task_p_pre_setuid (stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
 
-	cpu_freq_cpuset_validate(job);
+	cpu_freq_cpuset_validate(step);
 
 	return rc;
 }
@@ -195,36 +195,36 @@ static void _numa_set_preferred(nodemask_t *new_mask)
  *	It is followed by TaskProlog program (from slurm.conf) and
  *	--task-prolog (from srun command line).
  */
-extern int task_p_pre_launch (stepd_step_rec_t *job)
+extern int task_p_pre_launch (stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
 	char tmp_str[128];
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
-		slurm_sprint_cpu_bind_type(tmp_str, job->cpu_bind_type);
+		slurm_sprint_cpu_bind_type(tmp_str, step->cpu_bind_type);
 
 		debug("affinity %ps, task:%u bind:%s",
-		      &job->step_id, job->envtp->procid, tmp_str);
+		      &step->step_id, step->envtp->procid, tmp_str);
 	}
 
 #ifdef HAVE_NUMA
-	if (job->mem_bind_type && (numa_available() >= 0)) {
+	if (step->mem_bind_type && (numa_available() >= 0)) {
 		nodemask_t new_mask, cur_mask;
 
 		cur_mask = numa_get_membind();
-		if ((job->mem_bind_type & MEM_BIND_NONE) ||
-		    (job->mem_bind_type == MEM_BIND_SORT) ||
-		    (job->mem_bind_type == MEM_BIND_VERBOSE)) {
+		if ((step->mem_bind_type & MEM_BIND_NONE) ||
+		    (step->mem_bind_type == MEM_BIND_SORT) ||
+		    (step->mem_bind_type == MEM_BIND_VERBOSE)) {
 			/* Do nothing */
-		} else if (get_memset(&new_mask, job)) {
-			if (job->mem_bind_type & MEM_BIND_PREFER)
+		} else if (get_memset(&new_mask, step)) {
+			if (step->mem_bind_type & MEM_BIND_PREFER)
 				_numa_set_preferred(&new_mask);
 			else
 				numa_set_membind(&new_mask);
 			cur_mask = new_mask;
 		} else
 			rc = SLURM_ERROR;
-		slurm_chk_memset(&cur_mask, job);
+		slurm_chk_memset(&cur_mask, step);
 	}
 #endif
 
@@ -235,7 +235,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
  * task_p_pre_set_affinity() is called prior to exec of application task.
  * Runs in privileged mode.
  */
-extern int task_p_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
+extern int task_p_pre_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 {
 	return SLURM_SUCCESS;
 }
@@ -244,23 +244,23 @@ extern int task_p_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
  * task_p_set_affinity() is called prior to exec of application task.
  * Runs in privileged mode.
  */
-extern int task_p_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
+extern int task_p_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 {
 	int rc = SLURM_SUCCESS;
 	cpu_set_t new_mask, cur_mask;
-	pid_t mypid  = job->task[node_tid]->pid;
+	pid_t mypid  = step->task[node_tid]->pid;
 
-	if (!job->cpu_bind_type)
+	if (!step->cpu_bind_type)
 		return SLURM_SUCCESS;
 
 	slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
-	if (get_cpuset(&new_mask, job, node_tid) &&
-	    (!(job->cpu_bind_type & CPU_BIND_NONE))) {
+	if (get_cpuset(&new_mask, step, node_tid) &&
+	    (!(step->cpu_bind_type & CPU_BIND_NONE))) {
 		reset_cpuset(&new_mask, &cur_mask);
 		rc = slurm_setaffinity(mypid, sizeof(new_mask), &new_mask);
 		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
 	}
-	task_slurm_chkaffinity(rc ? &cur_mask : &new_mask, job, rc, node_tid);
+	task_slurm_chkaffinity(rc ? &cur_mask : &new_mask, step, rc, node_tid);
 	return rc;
 }
 
@@ -268,7 +268,7 @@ extern int task_p_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
  * task_p_post_set_affinity is called prior to exec of application task.
  * Runs in privileged mode.
  */
-extern int task_p_post_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
+extern int task_p_post_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 {
 	return SLURM_SUCCESS;
 }
@@ -278,9 +278,10 @@ extern int task_p_post_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
  *	It is preceded by --task-epilog (from srun command line)
  *	followed by TaskEpilog program (from slurm.conf).
  */
-extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task)
+extern int task_p_post_term (stepd_step_rec_t *step,
+			     stepd_step_task_info_t *task)
 {
-	debug("affinity %ps, task %d", &job->step_id, task->id);
+	debug("affinity %ps, task %d", &step->step_id, task->id);
 
 	return SLURM_SUCCESS;
 }
@@ -289,7 +290,7 @@ extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task
  * task_p_post_step() is called after termination of the step
  * (all the task)
  */
-extern int task_p_post_step (stepd_step_rec_t *job)
+extern int task_p_post_step (stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
 }

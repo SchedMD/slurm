@@ -219,7 +219,7 @@ static uint64_t kmem_limit_in_bytes(uint64_t mlb)
 	return allowed_kmem_space;
 }
 
-static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
+static int _memcg_initialize(stepd_step_rec_t *step, uint64_t mem_limit,
 			     bool is_step)
 {
 	uint64_t mlb = mem_limit_in_bytes(mem_limit, true);
@@ -287,17 +287,17 @@ static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_memory_create(stepd_step_rec_t *job)
+extern int task_cgroup_memory_create(stepd_step_rec_t *step)
 {
 	pid_t pid;
 
-	if (cgroup_g_step_create(CG_MEMORY, job) != SLURM_SUCCESS)
+	if (cgroup_g_step_create(CG_MEMORY, step) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	/* Set the associated memory limits for the job and for the step. */
-	if (_memcg_initialize(job, job->job_mem, false) != SLURM_SUCCESS)
+	if (_memcg_initialize(step, step->job_mem, false) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	if (_memcg_initialize(job, job->step_mem, true) != SLURM_SUCCESS)
+	if (_memcg_initialize(step, step->step_mem, true) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	if (cgroup_g_step_start_oom_mgr() == SLURM_SUCCESS)
@@ -308,7 +308,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	return cgroup_g_step_addto(CG_MEMORY, &pid, 1);
 }
 
-extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
+extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *results;
 	int rc = SLURM_SUCCESS;
@@ -316,7 +316,7 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 	if (!oom_mgr_started)
 		return SLURM_SUCCESS;
 
-	results = cgroup_g_step_stop_oom_mgr(job);
+	results = cgroup_g_step_stop_oom_mgr(step);
 
 	if (results == NULL)
 		return SLURM_ERROR;
@@ -327,27 +327,27 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 		 * limit has reached the value in memory.memsw.limit_in_bytes.
 		 */
 		info("%ps hit memory+swap limit at least once during execution. This may or may not result in some failure.",
-		     &job->step_id);
+		     &step->step_id);
 	} else if (results->step_mem_failcnt > 0) {
 		/*
 		 * reports the number of times that the memory limit has reached
 		 * the value set in memory.limit_in_bytes.
 		 */
 		info("%ps hit memory limit at least once during execution. This may or may not result in some failure.",
-		     &job->step_id);
+		     &step->step_id);
 	}
 
 	if (results->job_memsw_failcnt > 0) {
 		info("%ps hit memory+swap limit at least once during execution. This may or may not result in some failure.",
-		     &job->step_id);
+		     &step->step_id);
 	} else if (results->job_mem_failcnt > 0) {
 		info("%ps hit memory limit at least once during execution. This may or may not result in some failure.",
-		     &job->step_id);
+		     &step->step_id);
 	}
 
 	if (results->oom_kill_cnt) {
 		error("Detected %"PRIu64" oom-kill event(s) in %ps. Some of your processes may have been killed by the cgroup out-of-memory handler.",
-		      results->oom_kill_cnt, &job->step_id);
+		      results->oom_kill_cnt, &step->step_id);
 		rc = ENOMEM;
 	}
 
@@ -356,10 +356,10 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 	return rc;
 }
 
-extern int task_cgroup_memory_add_pid(stepd_step_rec_t *job, pid_t pid,
+extern int task_cgroup_memory_add_pid(stepd_step_rec_t *step, pid_t pid,
 				      uint32_t taskid)
 {
-	return cgroup_g_task_addto(CG_MEMORY, job, pid, taskid);
+	return cgroup_g_task_addto(CG_MEMORY, step, pid, taskid);
 }
 
 extern int task_cgroup_memory_add_extern_pid(pid_t pid)

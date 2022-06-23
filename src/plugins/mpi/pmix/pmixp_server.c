@@ -366,13 +366,13 @@ pmixp_p2p_data_t _direct_proto = {
 
 static volatile int _was_initialized = 0;
 
-int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
+int pmixp_stepd_init(const stepd_step_rec_t *step, char ***env)
 {
 	char *path;
 	int fd, rc;
 
-	if (SLURM_SUCCESS != (rc = pmixp_info_set(job, env))) {
-		PMIXP_ERROR("pmixp_info_set(job, env) failed");
+	if (SLURM_SUCCESS != (rc = pmixp_info_set(step, env))) {
+		PMIXP_ERROR("pmixp_info_set(step, env) failed");
 		goto err_info;
 	}
 

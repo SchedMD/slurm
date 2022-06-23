@@ -118,13 +118,13 @@ static int _create_mpi_dir(const char *spool)
 /*
  * Create the application-specific directory under the Cray MPI directory
  */
-static int _create_app_dir(const stepd_step_rec_t *job, const char *spool)
+static int _create_app_dir(const stepd_step_rec_t *step, const char *spool)
 {
 	xfree(appdir);
 	// Format the directory name
 	appdir = xstrdup_printf("%s/%s/%u.%u",
 				spool, MPI_CRAY_DIR,
-				job->step_id.job_id, job->step_id.step_id);
+				step->step_id.job_id, step->step_id.step_id);
 
 	// Create the directory
 	if ((mkdir(appdir, 0700) == -1) && (errno != EEXIST)) {
@@ -134,7 +134,7 @@ static int _create_app_dir(const stepd_step_rec_t *job, const char *spool)
 	}
 
 	// Change directory owner
-	if (chown(appdir, job->uid, job->gid) == -1) {
+	if (chown(appdir, step->uid, step->gid) == -1) {
 		error("%s: Couldn't change directory %s owner: %m",
 		      plugin_type, appdir);
 		goto error;
@@ -232,17 +232,17 @@ static int _rmdir_recursive(char *path)
 	return SLURM_SUCCESS;
 }
 
-extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)
+extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 {
 	/* do the node_name substitution once */
 	char *spool = slurm_conf_expand_slurmd_path(slurm_conf.slurmd_spooldir,
-						    job->node_name,
-						    job->node_name);
+						    step->node_name,
+						    step->node_name);
 
 	// Set up spool directory and apinfo
 	if (_create_mpi_dir(spool) == SLURM_ERROR ||
-	    _create_app_dir(job, spool) == SLURM_ERROR ||
-	    create_apinfo(job) == SLURM_ERROR) {
+	    _create_app_dir(step, spool) == SLURM_ERROR ||
+	    create_apinfo(step) == SLURM_ERROR) {
 		xfree(spool);
 		return SLURM_ERROR;
 	}

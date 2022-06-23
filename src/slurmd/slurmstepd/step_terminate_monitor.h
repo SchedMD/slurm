@@ -47,7 +47,7 @@
  * If step_terminate_monitor_stop() is called before the time runs
  * out, the external program will not be called.
  */
-void step_terminate_monitor_start(stepd_step_rec_t *job);
+void step_terminate_monitor_start(stepd_step_rec_t *step);
 
 /*
  * Stop the timer in the step terminate monitor pthread, and kill

@@ -134,18 +134,18 @@ extern uint64_t debug_flags;
  **********************************************************/
 // Implemented in pe_info.c
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-extern int build_alpsc_pe_info(stepd_step_rec_t *job,
+extern int build_alpsc_pe_info(stepd_step_rec_t *step,
 			       alpsc_peInfo_t *alpsc_pe_info, int *cmd_index);
 extern void free_alpsc_pe_info(alpsc_peInfo_t *alpsc_pe_info);
 #endif
 
 // Implemented in gpu.c
-extern int setup_gpu(stepd_step_rec_t *job);
-extern int reset_gpu(stepd_step_rec_t *job);
+extern int setup_gpu(stepd_step_rec_t *step);
+extern int reset_gpu(stepd_step_rec_t *step);
 
 // Implemented in scaling.c
-extern int get_cpu_scaling(stepd_step_rec_t *job);
-extern int get_mem_scaling(stepd_step_rec_t *job);
+extern int get_cpu_scaling(stepd_step_rec_t *step);
+extern int get_mem_scaling(stepd_step_rec_t *step);
 
 // Implemented in util.c
 extern int list_str_to_array(char *list, int *cnt, int32_t **numbers);
@@ -154,13 +154,13 @@ extern void alpsc_debug(const char *file, int line, const char *func,
 			char **err_msg);
 extern int remove_spool_files(uint64_t apid);
 extern int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid);
-extern int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job);
+extern int set_job_env(stepd_step_rec_t *step, slurm_cray_jobinfo_t *sw_job);
 
 extern void print_jobinfo(slurm_cray_jobinfo_t *job);
 
 // Implemented in iaa.c
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-extern int write_iaa_file(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job,
+extern int write_iaa_file(stepd_step_rec_t *step, slurm_cray_jobinfo_t *sw_job,
 		   int *ptags, int num_ptags, alpsc_peInfo_t *alpsc_pe_info);
 extern void unlink_iaa_file(slurm_cray_jobinfo_t *job);
 

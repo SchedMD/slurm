@@ -70,13 +70,13 @@ extern void tres_freq_recv_info(int fd);
  * Validate the TRES frequency to set
  * Called from task cpuset code
  */
-extern void tres_freq_cpuset_validate(stepd_step_rec_t *job);
+extern void tres_freq_cpuset_validate(stepd_step_rec_t *step);
 
 /*
  * Validate the cpus and select the frequency to set
  * Called from task cgroup code
  */
-extern void tres_freq_cgroup_validate(stepd_step_rec_t *job,
+extern void tres_freq_cgroup_validate(stepd_step_rec_t *step,
 				      char *step_alloc_cores);
 
 #if 0
@@ -122,12 +122,12 @@ cpu_freq_to_string(char *buf, int buf_size, uint32_t cpu_freq);
 /*
  * set TRES frequency values
  */
-extern void tres_freq_set(stepd_step_rec_t *job);
+extern void tres_freq_set(stepd_step_rec_t *step);
 
 /*
  * reset TRES frequency values after suspend/resume
  */
-extern void tres_freq_reset(stepd_step_rec_t *job);
+extern void tres_freq_reset(stepd_step_rec_t *step);
 
 #if 0
 /*

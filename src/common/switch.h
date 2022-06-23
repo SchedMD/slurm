@@ -210,7 +210,7 @@ extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
  * that needs to be performed in the same process as switch_g_job_fini()
  *
  */
-extern int switch_g_job_preinit(stepd_step_rec_t *job);
+extern int switch_g_job_preinit(stepd_step_rec_t *step);
 
 /*
  * initialize switch_g on node for job. This function is run from the
@@ -219,7 +219,7 @@ extern int switch_g_job_preinit(stepd_step_rec_t *job);
  * than the process executing switch_g_job_fini() [e.g. QsNet])
  *
  */
-extern int switch_g_job_init(stepd_step_rec_t *job);
+extern int switch_g_job_init(stepd_step_rec_t *step);
 
 /*
  * Determine if a job can be suspended
@@ -300,7 +300,7 @@ extern int switch_g_job_fini(dynamic_plugin_data_t *jobinfo);
  * that need to be run with root privileges should be run from this
  * function.
  */
-extern int switch_g_job_postfini(stepd_step_rec_t *job);
+extern int switch_g_job_postfini(stepd_step_rec_t *step);
 
 /*
  * attach process to switch_g_job
@@ -318,21 +318,21 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
 /*
  * Do job-step-related pre-suspend actions
  */
-extern int switch_g_job_step_pre_suspend(stepd_step_rec_t *job);
+extern int switch_g_job_step_pre_suspend(stepd_step_rec_t *step);
 
 /*
  * Do job-step-related post-suspend actions
  */
-extern int switch_g_job_step_post_suspend(stepd_step_rec_t *job);
+extern int switch_g_job_step_post_suspend(stepd_step_rec_t *step);
 
 /*
  * Do job-step-related pre-resume actions
  */
-extern int switch_g_job_step_pre_resume(stepd_step_rec_t *job);
+extern int switch_g_job_step_pre_resume(stepd_step_rec_t *step);
 
 /*
  * Do job-step-related post-resume actions
  */
-extern int switch_g_job_step_post_resume(stepd_step_rec_t *job);
+extern int switch_g_job_step_post_resume(stepd_step_rec_t *step);
 
 #endif /* _SWITCH_H */

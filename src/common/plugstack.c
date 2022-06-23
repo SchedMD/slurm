@@ -780,7 +780,7 @@ struct spank_stack *spank_stack_init(enum spank_context_type context)
 	return stack;
 }
 
-int _spank_init(enum spank_context_type context, stepd_step_rec_t * job)
+int _spank_init(enum spank_context_type context, stepd_step_rec_t *step)
 {
 	struct spank_stack *stack;
 
@@ -788,50 +788,50 @@ int _spank_init(enum spank_context_type context, stepd_step_rec_t * job)
 		return (-1);
 	global_spank_stack = stack;
 
-	return (_do_call_stack(stack, SPANK_INIT, job, -1));
+	return (_do_call_stack(stack, SPANK_INIT, step, -1));
 }
 
 static int spank_stack_post_opt (struct spank_stack * stack,
-				 stepd_step_rec_t *job)
+				 stepd_step_rec_t *step)
 {
 	/*
 	 *  Get any remote options from job launch message:
 	 */
-	_spank_stack_get_remote_options(stack, job->options);
+	_spank_stack_get_remote_options(stack, step->options);
 
 	/*
 	 *  Get any remote option passed thru environment
 	 */
-	_spank_stack_get_remote_options_env(stack, job->env);
+	_spank_stack_get_remote_options_env(stack, step->env);
 
 	/*
 	 * Now clear any remaining options passed through environment
 	 */
-	spank_clear_remote_options_env (job->env);
+	spank_clear_remote_options_env(step->env);
 
 	/*
 	 *  Now that all options have been processed, we can
 	 *   call the post_opt handlers here in remote context.
 	 */
-	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, job, -1));
+	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, step, -1));
 
 }
 
-static int spank_init_remote (stepd_step_rec_t *job)
+static int spank_init_remote (stepd_step_rec_t *step)
 {
-	if (_spank_init (S_TYPE_REMOTE, job) < 0)
+	if (_spank_init (S_TYPE_REMOTE, step) < 0)
 		return (-1);
 
 	/*
 	 * _spank_init initializes global_spank_stack
 	 */
-	return (spank_stack_post_opt (global_spank_stack, job));
+	return (spank_stack_post_opt (global_spank_stack, step));
 }
 
-int spank_init (stepd_step_rec_t * job)
+int spank_init(stepd_step_rec_t *step)
 {
-	if (job)
-		return spank_init_remote (job);
+	if (step)
+		return spank_init_remote(step);
 	else
 		return _spank_init (S_TYPE_LOCAL, NULL);
 }
@@ -860,9 +860,9 @@ int spank_init_post_opt (void)
 	return (_do_call_stack(stack, SPANK_INIT_POST_OPT, NULL, -1));
 }
 
-int spank_user(stepd_step_rec_t * job)
+int spank_user(stepd_step_rec_t *step)
 {
-	return (_do_call_stack(global_spank_stack, STEP_USER_INIT, job, -1));
+	return (_do_call_stack(global_spank_stack, STEP_USER_INIT, step, -1));
 }
 
 int spank_local_user(struct spank_launcher_job_info *job)
@@ -870,24 +870,28 @@ int spank_local_user(struct spank_launcher_job_info *job)
 	return (_do_call_stack(global_spank_stack, LOCAL_USER_INIT, job, -1));
 }
 
-int spank_task_privileged(stepd_step_rec_t *job, int taskid)
+int spank_task_privileged(stepd_step_rec_t *step, int taskid)
 {
-	return (_do_call_stack(global_spank_stack, STEP_TASK_INIT_PRIV, job, taskid));
+	return (_do_call_stack(global_spank_stack, STEP_TASK_INIT_PRIV,
+			       step, taskid));
 }
 
-int spank_user_task(stepd_step_rec_t * job, int taskid)
+int spank_user_task(stepd_step_rec_t *step, int taskid)
 {
-	return (_do_call_stack(global_spank_stack, STEP_USER_TASK_INIT, job, taskid));
+	return (_do_call_stack(global_spank_stack, STEP_USER_TASK_INIT,
+			       step, taskid));
 }
 
-int spank_task_post_fork(stepd_step_rec_t * job, int taskid)
+int spank_task_post_fork(stepd_step_rec_t *step, int taskid)
 {
-	return (_do_call_stack(global_spank_stack, STEP_TASK_POST_FORK, job, taskid));
+	return (_do_call_stack(global_spank_stack, STEP_TASK_POST_FORK,
+			       step, taskid));
 }
 
-int spank_task_exit(stepd_step_rec_t * job, int taskid)
+int spank_task_exit(stepd_step_rec_t *step, int taskid)
 {
-	return (_do_call_stack(global_spank_stack, STEP_TASK_EXIT, job, taskid));
+	return (_do_call_stack(global_spank_stack, STEP_TASK_EXIT,
+			       step, taskid));
 }
 
 int spank_slurmd_exit (void)
@@ -899,9 +903,9 @@ int spank_slurmd_exit (void)
 	return (rc);
 }
 
-int spank_fini(stepd_step_rec_t * job)
+int spank_fini(stepd_step_rec_t *step)
 {
-	int rc = _do_call_stack(global_spank_stack, SPANK_EXIT, job, -1);
+	int rc = _do_call_stack(global_spank_stack, SPANK_EXIT, step, -1);
 
 	spank_stack_destroy (global_spank_stack);
 	global_spank_stack = NULL;
@@ -1740,15 +1744,15 @@ static int tasks_execd (spank_t spank)
 }
 
 static spank_err_t
-_global_to_local_id(stepd_step_rec_t *job, uint32_t gid, uint32_t *p2uint32)
+_global_to_local_id(stepd_step_rec_t *step, uint32_t gid, uint32_t *p2uint32)
 {
 	int i;
 	*p2uint32 = (uint32_t) -1;
-	if ((job == NULL) || (gid >= job->ntasks))
+	if (!step || (gid >= step->ntasks))
 		return (ESPANK_BAD_ARG);
-	for (i = 0; i < job->node_tasks; i++) {
-		if (job->task[i]->gtid == gid) {
-			*p2uint32 = job->task[i]->id;
+	for (i = 0; i < step->node_tasks; i++) {
+		if (step->task[i]->gtid == gid) {
+			*p2uint32 = step->task[i]->id;
 			return (ESPANK_SUCCESS);
 		}
 	}
@@ -2247,7 +2251,7 @@ spank_err_t spank_getenv(spank_t spank, const char *var, char *buf,
 spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 			 int overwrite)
 {
-	stepd_step_rec_t * job;
+	stepd_step_rec_t *step;
 	spank_err_t err = spank_env_access_check (spank);
 
 	if (err != ESPANK_SUCCESS)
@@ -2256,12 +2260,12 @@ spank_err_t spank_setenv(spank_t spank, const char *var, const char *val,
 	if ((var == NULL) || (val == NULL))
 		return (ESPANK_BAD_ARG);
 
-	job = spank->job;
+	step = spank->job;
 
-	if (getenvp(job->env, var) && !overwrite)
+	if (getenvp(step->env, var) && !overwrite)
 		return (ESPANK_ENV_EXISTS);
 
-	if (setenvf(&job->env, var, "%s", val) < 0)
+	if (setenvf(&step->env, var, "%s", val) < 0)
 		return (ESPANK_ERROR);
 
 	return (ESPANK_SUCCESS);

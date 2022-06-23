@@ -260,7 +260,7 @@ extern int cgroup_g_system_destroy(cgroup_ctl_type_t sub);
  * IN job - Step record which is used to create the path in the hierarchy.
  * RET SLURM_SUCCESS if creation was successful, SLURM_ERROR otherwise.
  */
-extern int cgroup_g_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job);
+extern int cgroup_g_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *step);
 
 /*
  * Given a controller, add the specified pids to cgroup.procs of the step. Note
@@ -366,7 +366,7 @@ extern int cgroup_g_step_start_oom_mgr(void);
  * IN job - Step record.
  * RET cgroup_oom_t - Struct containing the oom information for this step.
  */
-extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *job);
+extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step);
 
 /*
  * Add a task_X directories to the specified controllers of this step and
@@ -380,7 +380,7 @@ extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *job);
  * RET SLURM_SUCCESS if the task was succesfully created and the pid added to
  *     all accounting controllers.
  */
-extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *step,
 			       pid_t pid, uint32_t task_id);
 
 /*

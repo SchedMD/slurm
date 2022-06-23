@@ -74,7 +74,7 @@ extern int slurm_proctrack_fini(void);
  *
  * Returns a Slurm errno.
  */
-extern int proctrack_g_create(stepd_step_rec_t *job);
+extern int proctrack_g_create(stepd_step_rec_t *step);
 
 /*
  * Add a process to the specified container
@@ -85,7 +85,7 @@ extern int proctrack_g_create(stepd_step_rec_t *job);
  *
  * Returns a Slurm errno.
  */
-extern int proctrack_g_add(stepd_step_rec_t *job, pid_t pid);
+extern int proctrack_g_add(stepd_step_rec_t *step, pid_t pid);
 
 /*
  * Signal all processes within a container
