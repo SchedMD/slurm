@@ -77,6 +77,7 @@ static int _dump_part(data_t *p, partition_info_t *part)
 
 	data_set_int(data_key_set(d, "default_memory_per_cpu"),
 		     part->def_mem_per_cpu);
+
 	if (part->default_time == INFINITE)
 		data_set_int(data_key_set(d, "default_time_limit"), -1);
 	if (part->default_time == NO_VAL)
