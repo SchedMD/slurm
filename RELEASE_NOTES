@@ -28,6 +28,8 @@ HIGHLIGHTS
  -- burst_buffer/lua - pass the job's UID and GID to slurm_bb_pre_run,
     slurm_bb_data_in, slurm_bb_post_run, and slurm_bb_data_out in
     burst_buffer.lua.
+ -- Change cloud nodes to show by default. PrivateData=cloud is no longer
+    needed.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -36,6 +38,7 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- sacctmgr - no longer force updates to the AdminComment, Comment, or
     SystemComment to lower-case.
+ -- sinfo - Add -F/--future option to sinfo to display future nodes.
 
 API CHANGES
 ===========

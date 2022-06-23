@@ -97,6 +97,7 @@ extern void parse_command_line(int argc, char **argv)
 		{"dead",      no_argument,       0, 'd'},
 		{"exact",     no_argument,       0, 'e'},
 		{"federation",no_argument,       0, OPT_LONG_FEDR},
+		{"future",    no_argument,       0, 'F'},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
 		{"hide",      no_argument,       0, OPT_LONG_HIDE},
 		{"iterate",   required_argument, 0, 'i'},
@@ -136,6 +137,8 @@ extern void parse_command_line(int argc, char **argv)
 	}
 	if (getenv("SINFO_FEDERATION"))
 		params.federation_flag = true;
+	if (getenv("SINFO_FUTURE"))
+		params.future_flag = true;
 	if (getenv("SINFO_LOCAL"))
 		params.local = true;
 	if ( ( env_val = getenv("SINFO_PARTITION") ) ) {
@@ -161,7 +164,7 @@ extern void parse_command_line(int argc, char **argv)
 	}
 
 	while ((opt_char = getopt_long(argc, argv,
-				       "adehi:lM:n:No:O:p:rRsS:t:TvV",
+				       "adeFhi:lM:n:No:O:p:rRsS:t:TvV",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -180,6 +183,9 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case (int)'e':
 			params.exact_match = true;
+			break;
+		case (int)'F':
+			params.future_flag = true;
 			break;
 		case (int)'h':
 			params.no_header = true;
@@ -1427,6 +1433,7 @@ Usage: sinfo [OPTIONS]\n\
   -d, --dead                 show only non-responding nodes\n\
   -e, --exact                group nodes only on exact match of configuration\n\
       --federation           Report federated information if a member of one\n\
+  -F, --future               Report information about nodes in \"FUTURE\" state.    \n\
   -h, --noheader             no headers on output\n\
   --hide                     do not show hidden or non-accessible partitions\n\
   -i, --iterate=seconds      specify an iteration period\n\

@@ -1037,8 +1037,7 @@ enum node_states {
 #define PRIVATE_DATA_ACCOUNTS     SLURM_BIT(5) /* accounting account data is
 						* private */
 #define PRIVATE_DATA_RESERVATIONS SLURM_BIT(6) /* reservation data is private */
-#define PRIVATE_CLOUD_NODES       SLURM_BIT(7) /* hide powered down nodes in
-						* cloud */
+/* SLURM_BIT(7) Available 2 versions after 23.02 */
 #define PRIVATE_DATA_EVENTS       SLURM_BIT(8) /* events are private */
 
 #define PRIORITY_RESET_NONE	0x0000	/* never clear */

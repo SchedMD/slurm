@@ -4082,11 +4082,6 @@ extern void private_data_string(uint16_t private_data, char *str, int str_len)
 			strcat(str, ",");
 		strcat(str, "accounts"); //9 len
 	}
-	if (private_data & PRIVATE_CLOUD_NODES) {
-		if (str[0])
-			strcat(str, ",");
-		strcat(str, "cloud"); //6 len
-	}
 	if (private_data & PRIVATE_DATA_EVENTS) {
 		if (str[0])
 			strcat(str, ",");
