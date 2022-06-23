@@ -604,9 +604,16 @@ char *auth_p_token_generate(const char *username, int lifespan)
 	time_t now = time(NULL);
 	jwt_t *jwt;
 	char *token, *xtoken;
+	long grant_time = now + lifespan;
 
 	if (!key) {
 		error("%s: cannot issue tokens, no key loaded", __func__);
+		return NULL;
+	}
+
+	if ((lifespan >= NO_VAL) || (lifespan <= 0) || (grant_time <= 0)) {
+		error("%s: cannot issue token: requested lifespan %ds not supported",
+		      __func__, lifespan);
 		return NULL;
 	}
 
@@ -619,7 +626,7 @@ char *auth_p_token_generate(const char *username, int lifespan)
 		error("%s: jwt_add_grant_int failure", __func__);
 		goto fail;
 	}
-	if (jwt_add_grant_int(jwt, "exp", now + lifespan)) {
+	if (jwt_add_grant_int(jwt, "exp", grant_time)) {
 		error("%s: jwt_add_grant_int failure", __func__);
 		goto fail;
 	}
