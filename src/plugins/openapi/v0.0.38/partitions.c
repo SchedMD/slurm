@@ -151,6 +151,8 @@ static int _dump_part(data_t *p, partition_info_t *part)
 			data_set_string(data_list_append(pm), "requeue");
 		if (part->preempt_mode & PREEMPT_MODE_GANG)
 			data_set_string(data_list_append(pm), "gang_schedule");
+		if (part->preempt_mode & PREEMPT_MODE_WITHIN)
+			data_set_string(data_list_append(pm), "within");
 	}
 
 	data_set_int(data_key_set(d, "priority_job_factor"),
