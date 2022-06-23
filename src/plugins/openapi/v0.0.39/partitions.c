@@ -83,7 +83,7 @@ static int _dump_part(data_t *p, partition_info_t *part)
 		data_set_null(data_key_set(d, "default_time_limit"));
 	else
 		data_set_int(data_key_set(d, "default_time_limit"),
-			     part->def_mem_per_cpu);
+			     part->default_time);
 
 	data_set_string(data_key_set(d, "denied_accounts"),
 			part->deny_accounts);

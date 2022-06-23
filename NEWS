@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Do not clear the job's requested QOS (qos_id) when ineligible due to QOS.
  -- Emit error and add fail-safe when job's qos_id changes unexpectedly.
  -- Fix timeout value in log.
+ -- openapi/v0.0.38 - fix setting of DefaultTime when dumping a partition.
 
 * Changes in Slurm 22.05.2
 ==========================
