@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
     underflow error messages.
  -- Fix issue where a job requesting --ntasks and --nodes could be wrongly
     rejected when spanning heterogeneous nodes.
+ -- openapi/v0.0.38 - detect when partition PreemptMode is disabled
 
 * Changes in Slurm 22.05.2
 ==========================
