@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
     the job_submit/lua plugin.
  -- openapi/dbv0.0.38 - reject and error on invalid flag values in well defined
     flag fields.
+ -- openapi/dbv0.0.38 - correct QOS flag modifications request being silently
+    ignored.
 
 * Changes in Slurm 22.05.2
 ==========================
