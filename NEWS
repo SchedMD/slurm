@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - add QOS flag to handle partition PreemptMode=within
  -- Add total_cpus and total_nodes values to the partition list in
     the job_submit/lua plugin.
+ -- openapi/dbv0.0.38 - reject and error on invalid flag values in well defined
+    flag fields.
 
 * Changes in Slurm 22.05.2
 ==========================
