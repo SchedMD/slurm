@@ -58,7 +58,7 @@ typedef struct slurm_mpi_ops {
 	uint32_t (*plugin_id);
 	int (*client_fini)(mpi_plugin_client_state_t *state);
 	mpi_plugin_client_state_t *(*client_prelaunch)(
-		const mpi_plugin_client_info_t *job, char ***env);
+		const mpi_step_info_t *mpi_step, char ***env);
 	s_p_hashtbl_t *(*conf_get)(void);
 	List (*conf_get_printable)(void);
 	void (*conf_options)(s_p_options_t **full_options,
@@ -145,22 +145,22 @@ static void _log_step_rec(const stepd_step_rec_t *step)
 	log_flag(MPI, "--------------");
 }
 
-static void _log_mpi_rec(const mpi_plugin_client_info_t *job)
+static void _log_mpi_rec(const mpi_step_info_t *mpi_step)
 {
 	slurm_step_layout_t *layout;
 
-	xassert(job);
+	xassert(mpi_step);
 
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_MPI))
 		return;
 
 	log_flag(MPI, "----------------------");
-	log_flag(MPI, "MPI_PLUGIN_CLIENT_INFO");
-	log_flag(MPI, "%ps", &job->step_id);
-	if ((job->het_job_id != 0) && (job->het_job_id != NO_VAL)) {
-		log_flag(MPI, "het_job_id:%u", job->het_job_id);
+	log_flag(MPI, "MPI_STEP_INFO");
+	log_flag(MPI, "%ps", &mpi_step->step_id);
+	if ((mpi_step->het_job_id != 0) && (mpi_step->het_job_id != NO_VAL)) {
+		log_flag(MPI, "het_job_id:%u", mpi_step->het_job_id);
 	}
-	if ((layout = job->step_layout)) {
+	if ((layout = mpi_step->step_layout)) {
 		log_flag(MPI, "node_cnt:%u task_cnt:%u", layout->node_cnt,
 			 layout->task_cnt);
 		log_flag(MPI, "node_list:%s", layout->node_list);
@@ -539,20 +539,20 @@ extern int mpi_g_client_init(char **mpi_type)
 }
 
 extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
-	const mpi_plugin_client_info_t *job, char ***env)
+	const mpi_step_info_t *mpi_step, char ***env)
 {
 	mpi_plugin_client_state_t *state;
 
-	xassert(job);
+	xassert(mpi_step);
 	xassert(env);
 	xassert(g_context);
 	xassert(ops);
 
 	log_flag(MPI, "%s: Details before call:", __func__);
 	_log_env(*env);
-	_log_mpi_rec(job);
+	_log_mpi_rec(mpi_step);
 
-	state = (*(ops[0].client_prelaunch))(job, env);
+	state = (*(ops[0].client_prelaunch))(mpi_step, env);
 
 	log_flag(MPI, "%s: Environment after call:", __func__);
 	_log_env(*env);

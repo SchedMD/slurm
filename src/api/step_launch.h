@@ -89,7 +89,7 @@ struct step_launch_state {
 
 	slurm_step_layout_t *layout; /* a pointer into the ctx
 					step_resp, do not free */
-	mpi_plugin_client_info_t mpi_info[1];
+	mpi_step_info_t mpi_step[1];
 	mpi_plugin_client_state_t *mpi_state;
 	int mpi_rc;
 

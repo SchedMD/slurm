@@ -265,7 +265,7 @@ extern int mpi_p_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
 }
 
 extern mpi_plugin_client_state_t *
-mpi_p_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
+mpi_p_client_prelaunch(const mpi_step_info_t *mpi_step, char ***env)
 {
 	static pthread_mutex_t setup_mutex = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_cond_t setup_cond  = PTHREAD_COND_INITIALIZER;
@@ -280,11 +280,12 @@ mpi_p_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
 	}
 
 	PMIXP_DEBUG("setup process mapping in srun");
-	if ((job->het_job_id == NO_VAL) || (job->het_job_task_offset == 0)) {
-		nnodes = job->step_layout->node_cnt;
-		ntasks = job->step_layout->task_cnt;
-		task_cnt = job->step_layout->tasks;
-		tids = job->step_layout->tids;
+	if ((mpi_step->het_job_id == NO_VAL) ||
+	    (mpi_step->het_job_task_offset == 0)) {
+		nnodes = mpi_step->step_layout->node_cnt;
+		ntasks = mpi_step->step_layout->task_cnt;
+		task_cnt = mpi_step->step_layout->tasks;
+		tids = mpi_step->step_layout->tids;
 		process_mapping = pack_process_mapping(nnodes, ntasks,
 						       task_cnt, tids);
 		slurm_mutex_lock(&setup_mutex);

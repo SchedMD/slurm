@@ -163,13 +163,13 @@ static void _rebuild_mpi_layout(slurm_step_ctx_t *ctx,
 		return;
 
 	if (params->het_job_id && (params->het_job_id != NO_VAL))
-		ctx->launch_state->mpi_info->het_job_id = params->het_job_id;
+		ctx->launch_state->mpi_step->het_job_id = params->het_job_id;
 
-	ctx->launch_state->mpi_info->het_job_task_offset =
+	ctx->launch_state->mpi_step->het_job_task_offset =
 		params->het_job_task_offset;
 	new_step_layout = xmalloc(sizeof(slurm_step_layout_t));
-	orig_step_layout = ctx->launch_state->mpi_info->step_layout;
-	ctx->launch_state->mpi_info->step_layout = new_step_layout;
+	orig_step_layout = ctx->launch_state->mpi_step->step_layout;
+	ctx->launch_state->mpi_step->step_layout = new_step_layout;
 	if (orig_step_layout->front_end) {
 		new_step_layout->front_end =
 			xstrdup(orig_step_layout->front_end);
@@ -233,7 +233,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 
 	mpi_env = xmalloc(sizeof(char *));  /* Needed for setenvf used by MPI */
 	if ((ctx->launch_state->mpi_state =
-	     mpi_g_client_prelaunch(ctx->launch_state->mpi_info, &mpi_env))
+	     mpi_g_client_prelaunch(ctx->launch_state->mpi_step, &mpi_env))
 	    == NULL) {
 		slurm_seterrno(SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED);
 		return SLURM_ERROR;
@@ -923,12 +923,12 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->resp_port = NULL;
 	sls->abort = false;
 	sls->abort_action_taken = false;
-	/* NOTE: No malloc() of sls->mpi_info required */
-	memcpy(&sls->mpi_info->step_id, &ctx->step_req->step_id,
-	       sizeof(sls->mpi_info->step_id));
-	sls->mpi_info->het_job_id = NO_VAL;
-	sls->mpi_info->het_job_task_offset = NO_VAL;
-	sls->mpi_info->step_layout = layout;
+	/* NOTE: No malloc() of sls->mpi_step required */
+	memcpy(&sls->mpi_step->step_id, &ctx->step_req->step_id,
+	       sizeof(sls->mpi_step->step_id));
+	sls->mpi_step->het_job_id = NO_VAL;
+	sls->mpi_step->het_job_task_offset = NO_VAL;
+	sls->mpi_step->step_layout = layout;
 	sls->mpi_state = NULL;
 	slurm_mutex_init(&sls->lock);
 	slurm_cond_init(&sls->cond, NULL);
@@ -955,7 +955,7 @@ void step_launch_state_alter(slurm_step_ctx_t *ctx)
 	bit_realloc(sls->tasks_exited, layout->task_cnt);
 	bit_realloc(sls->node_io_error, layout->node_cnt);
 	xrealloc(sls->io_deadline, sizeof(time_t) * layout->node_cnt);
-	sls->layout = sls->mpi_info->step_layout = layout;
+	sls->layout = sls->mpi_step->step_layout = layout;
 
 	for (ii = 0; ii < layout->node_cnt; ii++) {
 		sls->io_deadline[ii] = (time_t)NO_VAL;
@@ -1177,8 +1177,8 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	void (*task_finish)(task_exit_msg_t *);
 	int i;
 
-	if ((msg->step_id.job_id != sls->mpi_info->step_id.job_id) ||
-	    (msg->step_id.step_id != sls->mpi_info->step_id.step_id)) {
+	if ((msg->step_id.job_id != sls->mpi_step->step_id.job_id) ||
+	    (msg->step_id.step_id != sls->mpi_step->step_id.step_id)) {
 		debug("Received MESSAGE_TASK_EXIT from wrong job: %ps",
 		      &msg->step_id);
 		return;

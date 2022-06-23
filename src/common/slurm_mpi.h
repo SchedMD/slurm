@@ -63,7 +63,7 @@ typedef struct {
 	uint32_t het_job_task_offset; /* Hetjob task offset or NO_VAL */
 	slurm_step_id_t step_id; /* Current step id (or NO_VAL) */
 	slurm_step_layout_t *step_layout;
-} mpi_plugin_client_info_t;
+} mpi_step_info_t;
 
 typedef struct {
 	slurm_addr_t *client;
@@ -138,7 +138,7 @@ extern int mpi_g_client_init(char **mpi_type);
  * mpi_g_client_fini().
  */
 extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
-	const mpi_plugin_client_info_t *job, char ***env);
+	const mpi_step_info_t *mpi_step, char ***env);
 
 /* Call the plugin mpi_p_client_fini() function. */
 extern int mpi_g_client_fini(mpi_plugin_client_state_t *state);

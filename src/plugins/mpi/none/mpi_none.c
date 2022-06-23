@@ -90,7 +90,7 @@ extern int mpi_p_slurmstepd_task(const mpi_plugin_task_info_t*job, char ***env)
 }
 
 extern mpi_plugin_client_state_t *
-mpi_p_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
+mpi_p_client_prelaunch(const mpi_step_info_t *mpi_step, char ***env)
 {
 	debug("Using mpi/none");
 	/* only return NULL on error */

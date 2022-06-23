@@ -137,13 +137,13 @@ extern int mpi_p_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)
  */
 
 extern mpi_plugin_client_state_t *
-mpi_p_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
+mpi_p_client_prelaunch(mpi_step_info_t *mpi_step, char ***env)
 {
 	int rc;
 
 	debug("mpi/pmi2: client_prelaunch");
 
-	rc = pmi2_setup_srun(job, env);
+	rc = pmi2_setup_srun(mpi_step, env);
 	if (rc != SLURM_SUCCESS) {
 		return NULL;
 	}
