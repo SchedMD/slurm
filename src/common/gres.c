@@ -128,7 +128,7 @@ typedef struct slurm_gres_ops {
 						  bitstr_t *gres_bit_alloc,
 						  uint64_t gres_cnt,
 						  gres_internal_flags_t flags);
-	void		(*task_set_env)		( char ***step_env_ptr,
+	void		(*task_set_env)		( char ***task_env_ptr,
 						  bitstr_t *gres_bit_alloc,
 						  uint64_t gres_cnt,
 						  bitstr_t *usable_gres,

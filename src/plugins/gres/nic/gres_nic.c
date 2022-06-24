@@ -198,13 +198,13 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
  * Reset environment variables as appropriate for a job (i.e. this one task)
  * based upon the job step's GRES state and assigned CPUs.
  */
-extern void gres_p_task_set_env(char ***step_env_ptr,
+extern void gres_p_task_set_env(char ***task_env_ptr,
 				bitstr_t *gres_bit_alloc,
 				uint64_t gres_cnt,
 				bitstr_t *usable_gres,
 				gres_internal_flags_t flags)
 {
-	_set_env(step_env_ptr, gres_bit_alloc, usable_gres,
+	_set_env(task_env_ptr, gres_bit_alloc, usable_gres,
 		 true, false, flags);
 }
 
