@@ -203,6 +203,9 @@ static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 	qos = xmalloc(sizeof(slurmdb_qos_rec_t));
 	slurmdb_init_qos_rec(qos, false, NO_VAL);
 
+	/* force to off instead of NO_VAL */
+	qos->preempt_mode = PREEMPT_MODE_OFF;
+
 	if (parse(PARSE_QOS, qos, data, args->errors, &penv)) {
 		slurmdb_destroy_qos_rec(qos);
 		return DATA_FOR_EACH_FAIL;

@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
     flag fields.
  -- openapi/dbv0.0.38 - correct QOS flag modifications request being silently
     ignored.
+ -- openapi/dbv0.0.38 - correct QOS preempt_mode flag requests being silently
+    ignored.
 
 * Changes in Slurm 22.05.2
 ==========================
