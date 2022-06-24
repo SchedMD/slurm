@@ -64,7 +64,7 @@
 
 #include "read_jcconf.h"
 
-static int _create_ns(uint32_t job_id, uid_t uid, bool remount);
+static int _create_ns(uint32_t job_id, uid_t uid);
 static int _delete_ns(uint32_t job_id);
 
 #if defined (__APPLE__)
@@ -391,7 +391,7 @@ static int _rm_data(const char *path, const struct stat *st_buf,
 	return rc;
 }
 
-static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
+static int _create_ns(uint32_t job_id, uid_t uid)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
@@ -417,7 +417,7 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 		error("%s: mkdir %s failed: %s",
 		      __func__, job_mount, strerror(errno));
 		return -1;
-	} else if (!remount && rc && errno == EEXIST) {
+	} else if (rc && errno == EEXIST) {
 		/*
 		 * This is coming from sbcast likely,
 		 * exit as success
@@ -448,13 +448,9 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 
 	fd = open(ns_holder, O_CREAT|O_RDWR, S_IRWXU);
 	if (fd == -1) {
-		if (!remount) {
-			error("%s: open failed %s: %s",
-			      __func__, ns_holder, strerror(errno));
-			rc = -1;
-		} else
-			debug3("ignoring wrong ns_holder path %s: %m",
-			       ns_holder);
+		error("%s: open failed %s: %s",
+		      __func__, ns_holder, strerror(errno));
+		rc = -1;
 		goto exit2;
 	}
 	close(fd);
@@ -493,7 +489,7 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 	}
 
 	rc = mkdir(src_bind, 0700);
-	if (rc && (!remount || errno != EEXIST)) {
+	if (rc && (errno != EEXIST)) {
 		error("%s: mkdir failed %s, %s",
 		      __func__, src_bind, strerror(errno));
 		goto exit2;
@@ -568,14 +564,12 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 		 * this happens when restarting the slurmd, the ownership should
 		 * already be correct here.
 		 */
-		if (!remount) {
-			rc = chown(src_bind, uid, -1);
-			if (rc) {
-				error("%s: chown failed for %s: %s",
-				      __func__, src_bind, strerror(errno));
-				rc = -1;
-				goto child_exit;
-			}
+		rc = chown(src_bind, uid, -1);
+		if (rc) {
+			error("%s: chown failed for %s: %s",
+			      __func__, src_bind, strerror(errno));
+			rc = -1;
+			goto child_exit;
 		}
 
 		/*
@@ -812,7 +806,7 @@ extern int container_p_delete(uint32_t job_id)
 
 extern int container_p_stepd_create(uint32_t job_id, uid_t uid)
 {
-	return _create_ns(job_id, uid, false);
+	return _create_ns(job_id, uid);
 }
 
 extern int container_p_stepd_delete(uint32_t job_id)
