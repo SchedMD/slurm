@@ -774,7 +774,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 	if (step->batch || (step->step_id.step_id == SLURM_INTERACTIVE_STEP)) {
 		gres_g_job_set_env(step, 0);
 	} else if (msg->msg_type == REQUEST_LAUNCH_TASKS) {
-		gres_g_step_set_env(&step->env, step->step_gres_list);
+		gres_g_step_set_env(step);
 	}
 
 	/*
