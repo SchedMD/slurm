@@ -87,7 +87,8 @@ extern int container_g_restore(char * dir_name, bool recover);
 extern void container_g_reconfig(void);
 
 /* Create a container for the specified job, actions run in slurmstepd */
-extern int container_g_stepd_create(uint32_t job_id, uid_t uid);
+extern int container_g_stepd_create(uint32_t job_id, uid_t uid,
+				    stepd_step_rec_t *step);
 
 /* Delete the container for the specified job, actions run in slurmstepd */
 extern int container_g_stepd_delete(uint32_t job_id);
