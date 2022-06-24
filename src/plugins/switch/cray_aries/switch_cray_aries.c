@@ -421,13 +421,13 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 {
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
-	slurm_cray_jobinfo_t *sw_job = job->switch_job ?
-		(slurm_cray_jobinfo_t *)job->switch_job->data : NULL;
+	slurm_cray_jobinfo_t *sw_job = step->switch_job ?
+		(slurm_cray_jobinfo_t *)step->switch_job->data : NULL;
 	int rc, num_ptags;
 	int exclusive = 0, mem_scaling = 100, cpu_scaling = 100;
 	int *ptags = NULL;
 	char *err_msg = NULL;
-	uint64_t cont_id = job->cont_id;
+	uint64_t cont_id = step->cont_id;
 	alpsc_peInfo_t alpsc_pe_info = {-1, -1, -1, -1, NULL, NULL, NULL};
 	int cmd_index = 0;
 #ifdef HAVE_NATIVE_CRAY
@@ -448,31 +448,31 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 
 #ifdef HAVE_CRAY_NETWORK
 	/* No PAGG job containers; uid used instead to configure network */
-	cont_id = (uint64_t)job->uid;
+	cont_id = (uint64_t)step->uid;
 #endif
 
 	if (!sw_job || (sw_job->magic == CRAY_NULL_JOBINFO_MAGIC)) {
-		CRAY_DEBUG("job->switch_job was NULL");
+		CRAY_DEBUG("step->switch_job was NULL");
 		return SLURM_SUCCESS;
 	}
 
-	xassert(job->msg);
+	xassert(step->msg);
 	xassert(sw_job->magic == CRAY_JOBINFO_MAGIC);
 
 #ifdef HAVE_NATIVE_CRAY
 	// Attach to the cncu container
-	if (job->het_job_id && (job->het_job_id != NO_VAL))
-		jobid = job->het_job_id;
+	if (step->het_job_id && (step->het_job_id != NO_VAL))
+		jobid = step->het_job_id;
 	else
-		jobid = job->step_id.job_id;
-	rc = alpsc_attach_cncu_container(&err_msg, jobid, job->cont_id);
+		jobid = step->step_id.job_id;
+	rc = alpsc_attach_cncu_container(&err_msg, jobid, step->cont_id);
 	ALPSC_CN_DEBUG("alpsc_attach_cncu_container");
 	if (rc != 1) {
 		return SLURM_ERROR;
 	}
 
 	// Create the apid directory
-	rc = create_apid_dir(sw_job->apid, job->uid, job->gid);
+	rc = create_apid_dir(sw_job->apid, step->uid, step->gid);
 	if (rc != SLURM_SUCCESS) {
 		return rc;
 	}
@@ -489,7 +489,7 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 	/*
 	 * Fill in the alpsc_pe_info structure
 	 */
-	rc = build_alpsc_pe_info(job, &alpsc_pe_info, &cmd_index);
+	rc = build_alpsc_pe_info(step, &alpsc_pe_info, &cmd_index);
 	if (rc != SLURM_SUCCESS) {
 		return rc;
 	}
@@ -524,11 +524,11 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 		 * non-exclusive jobs.
 		 */
 
-		cpu_scaling = get_cpu_scaling(job);
+		cpu_scaling = get_cpu_scaling(step);
 		if (cpu_scaling == -1)
 			return SLURM_ERROR;
 
-		mem_scaling = get_mem_scaling(job);
+		mem_scaling = get_mem_scaling(step);
 		if (mem_scaling == -1)
 			return SLURM_ERROR;
 	}
@@ -561,7 +561,7 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	// Write the IAA file
-	rc = write_iaa_file(job, sw_job, sw_job->ptags, sw_job->num_ptags,
+	rc = write_iaa_file(step, sw_job, sw_job->ptags, sw_job->num_ptags,
 			    &alpsc_pe_info);
 	if (rc != SLURM_SUCCESS) {
 		free_alpsc_pe_info(&alpsc_pe_info);
@@ -575,7 +575,7 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 	 * configure the appropriate access permission in the kernel.
 	 */
 	access = ALPSC_NET_PERF_CTR_NONE;
-	select_g_select_jobinfo_get(job->msg->select_jobinfo,
+	select_g_select_jobinfo_get(step->msg->select_jobinfo,
 		SELECT_JOBDATA_NETWORK, &npc);
 	CRAY_DEBUG("network performance counters SELECT_JOBDATA_NETWORK %s",
 		npc);
@@ -585,7 +585,7 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 		access = ALPSC_NET_PERF_CTR_BLADE;
 	}
 	if (access != ALPSC_NET_PERF_CTR_NONE) {
-		rc = alpsc_set_perf_ctr_perms(&err_msg, job->cont_id, access);
+		rc = alpsc_set_perf_ctr_perms(&err_msg, step->cont_id, access);
 		ALPSC_CN_DEBUG("alpsc_set_perf_ctr_perms");
 		if (rc != 1) {
 			free_alpsc_pe_info(&alpsc_pe_info);
@@ -643,7 +643,7 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 	/*
 	 * Write some environment variables used by LLI and PMI
 	 */
-	rc = set_job_env(job, sw_job);
+	rc = set_job_env(step, sw_job);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -652,11 +652,11 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 	 * Query the generic resources to see if the GPU should be allocated
 	 */
 
-	rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
+	rc = gres_get_step_info(step->step_gres_list, "gpu", 0,
 				GRES_STEP_DATA_COUNT, &gpu_cnt);
 	CRAY_INFO("gres_cnt: %d %"PRIu64, rc, gpu_cnt);
 	if (gpu_cnt > 0)
-		setup_gpu(job);
+		setup_gpu(step);
 
 	/*
 	 * Set the Job's APID
@@ -749,7 +749,7 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	int rc;
 	char *err_msg = NULL;
-	uid_t pgid = job->jmgr_pid;
+	uid_t pgid = step->jmgr_pid;
 #ifdef HAVE_NATIVE_CRAY
         uint64_t gpu_cnt = 0;
 #endif
@@ -757,8 +757,8 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 
 	START_TIMER;
 
-	if (!job->switch_job) {
-		CRAY_DEBUG("job->switch_job was NULL");
+	if (!step->switch_job) {
+		CRAY_DEBUG("step->switch_job was NULL");
 	}
 
 	/*
@@ -769,7 +769,7 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 		kill(-pgid, SIGKILL);
 	} else
 		CRAY_INFO("%ps: Bad pid value %lu",
-			  &job->step_id, (unsigned long) pgid);
+			  &step->step_id, (unsigned long) pgid);
 	/*
 	 * Clean-up
 	 *
@@ -781,10 +781,10 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 
 #ifdef HAVE_NATIVE_CRAY
 	// Set the proxy back to the default state.
-	rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
+	rc = gres_get_step_info(step->step_gres_list, "gpu", 0,
 				GRES_STEP_DATA_COUNT, &gpu_cnt);
 	if (gpu_cnt > 0) {
-		reset_gpu(job);
+		reset_gpu(step);
 	}
 #endif
 	if (!lustre_no_flush) {
@@ -874,15 +874,15 @@ extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *step)
 	info("switch_p_job_step_pre_suspend(%ps)", &job->step_id);
 #endif
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
-	slurm_cray_jobinfo_t *jobinfo = job->switch_job ?
-		(slurm_cray_jobinfo_t *)job->switch_job->data : NULL;
+	slurm_cray_jobinfo_t *jobinfo = step->switch_job ?
+		(slurm_cray_jobinfo_t *)step->switch_job->data : NULL;
 	char *err_msg = NULL;
 	int rc;
 	DEF_TIMERS;
 
 	START_TIMER;
 
-	rc = alpsc_pre_suspend(&err_msg, job->cont_id, jobinfo->ptags,
+	rc = alpsc_pre_suspend(&err_msg, step->cont_id, jobinfo->ptags,
 			       jobinfo->num_ptags, SUSPEND_TIMEOUT_MSEC);
 	ALPSC_CN_DEBUG("alpsc_pre_suspend");
 	if (rc != 1) {
@@ -898,7 +898,7 @@ extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *step)
 extern int switch_p_job_step_post_suspend(stepd_step_rec_t *step)
 {
 #if _DEBUG
-	info("switch_p_job_step_post_suspend(%ps)", &job->step_id);
+	info("switch_p_job_step_post_suspend(%ps)", &step->step_id);
 #endif
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	char *err_msg = NULL;
@@ -907,7 +907,7 @@ extern int switch_p_job_step_post_suspend(stepd_step_rec_t *step)
 
 	START_TIMER;
 
-	rc = alpsc_post_suspend(&err_msg, job->cont_id);
+	rc = alpsc_post_suspend(&err_msg, step->cont_id);
 	ALPSC_CN_DEBUG("alpsc_post_suspend");
 	if (rc != 1) {
 		return SLURM_ERROR;
@@ -922,18 +922,18 @@ extern int switch_p_job_step_post_suspend(stepd_step_rec_t *step)
 extern int switch_p_job_step_pre_resume(stepd_step_rec_t *step)
 {
 #if _DEBUG
-	info("switch_p_job_step_pre_resume(%ps)", &job->step_id);
+	info("switch_p_job_step_pre_resume(%ps)", &step->step_id);
 #endif
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
-	slurm_cray_jobinfo_t *jobinfo = job->switch_job ?
-		(slurm_cray_jobinfo_t *)job->switch_job->data : NULL;
+	slurm_cray_jobinfo_t *jobinfo = step->switch_job ?
+		(slurm_cray_jobinfo_t *)step->switch_job->data : NULL;
 	char *err_msg = NULL;
 	int rc;
 	DEF_TIMERS;
 
 	START_TIMER;
 
-	rc = alpsc_pre_resume(&err_msg, job->cont_id, jobinfo->ptags,
+	rc = alpsc_pre_resume(&err_msg, step->cont_id, jobinfo->ptags,
 			       jobinfo->num_ptags);
 	ALPSC_CN_DEBUG("alpsc_pre_resume");
 	if (rc != 1) {
@@ -949,7 +949,7 @@ extern int switch_p_job_step_pre_resume(stepd_step_rec_t *step)
 extern int switch_p_job_step_post_resume(stepd_step_rec_t *step)
 {
 #if _DEBUG
-	info("switch_p_job_step_post_resume(%ps)", &job->step_id);
+	info("switch_p_job_step_post_resume(%ps)", &step->step_id);
 #endif
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	char *err_msg = NULL;
@@ -958,7 +958,7 @@ extern int switch_p_job_step_post_resume(stepd_step_rec_t *step)
 
 	START_TIMER;
 
-	rc = alpsc_post_resume(&err_msg, job->cont_id);
+	rc = alpsc_post_resume(&err_msg, step->cont_id);
 	ALPSC_CN_DEBUG("alpsc_post_resume");
 	if (rc != 1) {
 		return SLURM_ERROR;

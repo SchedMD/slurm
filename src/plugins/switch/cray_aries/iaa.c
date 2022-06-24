@@ -65,15 +65,15 @@ int write_iaa_file(stepd_step_rec_t *step, slurm_cray_jobinfo_t *sw_job,
 		}
 
 		// chown the file to the job user
-		rc = chown(fname, job->uid, job->gid);
+		rc = chown(fname, step->uid, step->gid);
 		if (rc == -1) {
 			CRAY_ERR("chown(%s, %d, %d) failed: %m",
-				 fname, (int)job->uid, (int)job->gid);
+				 fname, (int)step->uid, (int)step->gid);
 			break;
 		}
 
 		// Write the environment variable
-		rc = env_array_overwrite(&job->env, CRAY_IAA_INFO_FILE_ENV,
+		rc = env_array_overwrite(&step->env, CRAY_IAA_INFO_FILE_ENV,
 					 fname);
 		if (rc == 0) {
 			CRAY_ERR("Failed to set env variable %s",

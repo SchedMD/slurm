@@ -73,11 +73,11 @@ int build_alpsc_pe_info(stepd_step_rec_t *step,
 
 	// Sanity check everything here so we don't need to
 	// do it everywhere else
-	if (job == NULL) {
+	if (step == NULL) {
 		CRAY_ERR("NULL job pointer");
 		return SLURM_ERROR;
-	} else if (job->ntasks < 1) {
-		CRAY_ERR("Not enough tasks %d", job->ntasks);
+	} else if (step->ntasks < 1) {
+		CRAY_ERR("Not enough tasks %d", step->ntasks);
 		return SLURM_ERROR;
 	} else if (alpsc_pe_info == NULL) {
 		CRAY_ERR("NULL alpsc_pe_info");
@@ -85,43 +85,43 @@ int build_alpsc_pe_info(stepd_step_rec_t *step,
 	} else if (cmd_index == NULL) {
 		CRAY_ERR("NULL cmd_index");
 		return SLURM_ERROR;
-	} else if (job->flags & LAUNCH_MULTI_PROG) {
-		if (job->mpmd_set == NULL) {
+	} else if (step->flags & LAUNCH_MULTI_PROG) {
+		if (step->mpmd_set == NULL) {
 			CRAY_ERR("MPMD launch but no mpmd_set");
 			return SLURM_ERROR;
-		} else if (job->mpmd_set->first_pe == NULL) {
+		} else if (step->mpmd_set->first_pe == NULL) {
 			CRAY_ERR("NULL first_pe");
 			return SLURM_ERROR;
-		} else if (job->mpmd_set->start_pe == NULL) {
+		} else if (step->mpmd_set->start_pe == NULL) {
 			CRAY_ERR("NULL start_pe");
 			return SLURM_ERROR;
-		} else if (job->mpmd_set->total_pe == NULL) {
+		} else if (step->mpmd_set->total_pe == NULL) {
 			CRAY_ERR("NULL total_pe");
 			return SLURM_ERROR;
-		} else if (job->mpmd_set->placement == NULL) {
+		} else if (step->mpmd_set->placement == NULL) {
 			CRAY_ERR("NULL placement");
 			return SLURM_ERROR;
-		} else if (job->mpmd_set->num_cmds < 1) {
+		} else if (step->mpmd_set->num_cmds < 1) {
 			CRAY_ERR("Not enough commands %d",
-				 job->mpmd_set->num_cmds);
+				 step->mpmd_set->num_cmds);
 			return SLURM_ERROR;
 		}
 	}
 
-	if (_setup_local_step_rec(&step_rec, job) != SLURM_SUCCESS)
+	if (_setup_local_step_rec(&step_rec, step) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	// Fill in the structure
 	alpsc_pe_info->totalPEs = step_rec.ntasks;
-	alpsc_pe_info->firstPeHere = _get_first_pe(job);
-	alpsc_pe_info->pesHere = job->node_tasks;
-	alpsc_pe_info->peDepth = job->cpus_per_task;
+	alpsc_pe_info->firstPeHere = _get_first_pe(step);
+	alpsc_pe_info->pesHere = step->node_tasks;
+	alpsc_pe_info->peDepth = step->cpus_per_task;
 	alpsc_pe_info->peNidArray = _get_pe_nid_map(&step_rec);
 	alpsc_pe_info->peCmdMapArray = _get_cmd_map(&step_rec);
 	alpsc_pe_info->nodeCpuArray = _get_node_cpu_map(&step_rec);
 
 	// Get the command index
-	*cmd_index = _get_cmd_index(job);
+	*cmd_index = _get_cmd_index(step);
 
 	/* Clean up */
 	_free_local_step_rec(&step_rec);
@@ -147,9 +147,9 @@ static int _setup_local_step_rec(local_step_rec_t *step_rec,
 {
 	int cnt = 0, rc;
 	xassert(step_rec);
-	xassert(job);
+	xassert(step);
 
-	if ((job->het_job_id != NO_VAL) && !job->het_job_tids) {
+	if ((step->het_job_id != NO_VAL) && !step->het_job_tids) {
 		/* het_job_tids == NULL if request from pre-v19.05 srun */
 		CRAY_ERR("Old version of srun does not support heterogeneous jobs");
 		return SLURM_ERROR;
@@ -157,20 +157,20 @@ static int _setup_local_step_rec(local_step_rec_t *step_rec,
 
 	memset(step_rec, 0, sizeof(local_step_rec_t));
 
-	step_rec->stepd_step_rec = job;
+	step_rec->stepd_step_rec = step;
 
-	if (job->het_job_offset != NO_VAL) {
-		step_rec->nnodes = job->het_job_nnodes;
-		step_rec->ntasks = job->het_job_ntasks;
-		step_rec->nodelist = job->het_job_node_list;
-		step_rec->tasks_to_launch = job->het_job_task_cnts;
-		step_rec->tids = job->het_job_tids;
+	if (step->het_job_offset != NO_VAL) {
+		step_rec->nnodes = step->het_job_nnodes;
+		step_rec->ntasks = step->het_job_ntasks;
+		step_rec->nodelist = step->het_job_node_list;
+		step_rec->tasks_to_launch = step->het_job_task_cnts;
+		step_rec->tids = step->het_job_tids;
 	} else {
-		step_rec->nnodes = job->nnodes;
-		step_rec->ntasks = job->ntasks;
-		step_rec->nodelist = job->msg->complete_nodelist;
-		step_rec->tasks_to_launch = job->msg->tasks_to_launch;
-		step_rec->tids = job->msg->global_task_ids;
+		step_rec->nnodes = step->nnodes;
+		step_rec->ntasks = step->ntasks;
+		step_rec->nodelist = step->msg->complete_nodelist;
+		step_rec->tasks_to_launch = step->msg->tasks_to_launch;
+		step_rec->tids = step->msg->global_task_ids;
 	}
 
 	// Convert the node list to an array of nids
@@ -203,13 +203,13 @@ static int _get_first_pe(stepd_step_rec_t *step)
 	uint32_t taskid = 0;
 	uint32_t offset = 0;
 
-	if (job->het_job_task_offset != NO_VAL)
-		offset = job->het_job_task_offset;
+	if (step->het_job_task_offset != NO_VAL)
+		offset = step->het_job_task_offset;
 
-	first_pe = offset + job->task[0]->gtid;
+	first_pe = offset + step->task[0]->gtid;
 
-	for (i = 1; i < job->node_tasks; i++) {
-		taskid = offset + job->task[i]->gtid;
+	for (i = 1; i < step->node_tasks; i++) {
+		taskid = offset + step->task[i]->gtid;
 		if (taskid < first_pe)
 			first_pe = taskid;
 	}
@@ -315,7 +315,7 @@ static int *_get_pe_nid_map(local_step_rec_t *step_rec)
 		}
 
 		// If this is LAM/MPI only one task per node is launched,
-		// NOT job->ntasks. So fill in the rest of the tasks
+		// NOT step->ntasks. So fill in the rest of the tasks
 		// assuming a block distribution
 		if ((tasks_to_launch_sum == step_rec->nnodes) &&
 		    (step_rec->nnodes < step_rec->ntasks)) {
@@ -368,19 +368,19 @@ static int _get_cmd_index(stepd_step_rec_t *step)
 {
 	int cmd_index;
 
-	if (job->mpmd_set && job->mpmd_set->first_pe) {
+	if (step->mpmd_set && step->mpmd_set->first_pe) {
 		// Use the first index found in the list
-		for (cmd_index = 0; cmd_index < job->mpmd_set->num_cmds;
+		for (cmd_index = 0; cmd_index < step->mpmd_set->num_cmds;
 		     cmd_index++) {
-			if (job->mpmd_set->first_pe[cmd_index] != -1) {
+			if (step->mpmd_set->first_pe[cmd_index] != -1) {
 				return cmd_index;
 			}
 		}
 		// If we've made it here we didn't find any on this node
 		CRAY_ERR("No command found on this node");
 		return -1;
-	} else if (job->het_job_offset != NO_VAL) {
-		return job->het_job_offset;
+	} else if (step->het_job_offset != NO_VAL) {
+		return step->het_job_offset;
 	}
 
 	// Not an MPMD job, the one command has index 0

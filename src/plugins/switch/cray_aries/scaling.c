@@ -69,16 +69,16 @@ int get_cpu_scaling(stepd_step_rec_t *step)
 	 * If the submission didn't come from srun (API style)
 	 * perhaps they didn't fill in things correctly.
 	 */
-	if (!job->cpus_per_task) {
-		job->cpus_per_task = 1;
+	if (!step->cpus_per_task) {
+		step->cpus_per_task = 1;
 	}
 
 	/*
 	 * Determine number of CPUs requested for the step
 	 */
-	num_app_cpus = job->cpus;
+	num_app_cpus = step->cpus;
 	if (num_app_cpus <= 0) {
-		num_app_cpus = job->node_tasks * job->cpus_per_task;
+		num_app_cpus = step->node_tasks * step->cpus_per_task;
 		if (num_app_cpus <= 0) {
 			CRAY_ERR("num_app_cpus <= 0: %d", num_app_cpus);
 			return -1;
@@ -121,13 +121,13 @@ int get_mem_scaling(stepd_step_rec_t *step)
 	}
 
 	// Find the memory scaling factor
-	if (job->step_mem == 0) {
+	if (step->step_mem == 0) {
 		// step_mem of 0 indicates no memory limit,
 		// divide to handle multiple --mem 0 steps per node
 		mem_scaling = MAX_SCALING / MAX_STEPS_PER_NODE;
 	} else {
 		// Convert step_mem to kB, then find percentage of total
-		mem_scaling = (uint64_t)job->step_mem * 1024 * 100 / total_mem;
+		mem_scaling = (uint64_t)step->step_mem * 1024 * 100 / total_mem;
 	}
 
 	// Make sure it's within boundaries
