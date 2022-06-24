@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix timeout value in log.
  -- openapi/v0.0.38 - fix setting of DefaultTime when dumping a partition.
  -- openapi/dbv0.0.38 - correct parsing association QOS field.
+ -- Fix LaunchParameters=mpir_use_nodeaddr.
 
 * Changes in Slurm 22.05.2
 ==========================
