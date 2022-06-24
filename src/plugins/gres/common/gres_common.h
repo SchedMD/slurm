@@ -75,12 +75,7 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 				   List *gres_devices);
 
 /* set the environment for a job/step with the appropriate values */
-extern void common_gres_set_env(List gres_devices, char ***env_ptr,
-				bitstr_t *usable_gres, char *prefix,
-				bitstr_t *bit_alloc,
-				char **local_list, char **global_list,
-				bool is_task, bool is_job, int *global_id,
-				gres_internal_flags_t flags, bool use_dev_num);
+extern void common_gres_set_env(common_gres_env_t *gres_env);
 
 /* Send GRES information to slurmstepd via a buffer */
 extern void common_send_stepd(buf_t *buffer, List gres_devices);

@@ -89,26 +89,24 @@ static char	gres_name[]		= "nic";
 
 static List gres_devices = NULL;
 
-static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
-		     bitstr_t *usable_gres,
-		     bool is_task, bool is_job, gres_internal_flags_t flags)
+static void _set_env(common_gres_env_t *gres_env)
 {
-	char *global_list = NULL, *local_list = NULL, *slurm_env_var = NULL;
+	char *slurm_env_var = NULL;
 
-	if (is_job)
+	if (gres_env->is_job)
 			slurm_env_var = "SLURM_JOB_NICS";
 	else
 			slurm_env_var = "SLURM_STEP_NICS";
+
+	gres_env->prefix = "mlx4_";
+	gres_env->use_dev_num = true;
 
 	/*
 	 * Set use_dev_num=true so number at end of device file is used as the
 	 * global index, rather than an index relative to the total number of
 	 * NICs
 	 */
-	common_gres_set_env(gres_devices, env_ptr,
-			    usable_gres, "mlx4_", gres_bit_alloc,
-			    &local_list, &global_list, is_task, is_job, NULL,
-			    flags, true);
+	common_gres_set_env(gres_env);
 
 	/*
 	 * Set environment variables if GRES is found. Otherwise, unset
@@ -116,19 +114,21 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	 * This is useful for jobs and steps that request --gres=none within an
 	 * existing job allocation with GRES.
 	 */
-	if (global_list) {
-		env_array_overwrite(env_ptr, slurm_env_var, global_list);
-		xfree(global_list);
+	if (gres_env->global_list) {
+		env_array_overwrite(gres_env->env_ptr, slurm_env_var,
+				    gres_env->global_list);
+		xfree(gres_env->global_list);
 	} else {
-		unsetenvp(*env_ptr, slurm_env_var);
+		unsetenvp(*gres_env->env_ptr, slurm_env_var);
 	}
 
-	if (local_list) {
+	if (gres_env->local_list) {
 		env_array_overwrite(
-			env_ptr, "OMPI_MCA_btl_openib_if_include", local_list);
-		xfree(local_list);
+			gres_env->env_ptr, "OMPI_MCA_btl_openib_if_include",
+			gres_env->local_list);
+		xfree(gres_env->local_list);
 	} else {
-		unsetenvp(*env_ptr, "OMPI_MCA_btl_openib_if_include");
+		unsetenvp(*gres_env->env_ptr, "OMPI_MCA_btl_openib_if_include");
 	}
 }
 
@@ -177,8 +177,16 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 			       uint64_t gres_cnt,
 			       gres_internal_flags_t flags)
 {
-	_set_env(job_env_ptr, gres_bit_alloc, NULL,
-		 false, true, flags);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = job_env_ptr,
+		.flags = flags,
+		.gres_cnt = gres_cnt,
+		.gres_devices = gres_devices,
+		.is_job = true,
+	};
+
+	_set_env(&gres_env);
 }
 
 /*
@@ -190,8 +198,15 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 				uint64_t gres_cnt,
 				gres_internal_flags_t flags)
 {
-	_set_env(step_env_ptr, gres_bit_alloc, NULL,
-		 false, false, flags);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = step_env_ptr,
+		.flags = flags,
+		.gres_cnt = gres_cnt,
+		.gres_devices = gres_devices,
+	};
+
+	_set_env(&gres_env);
 }
 
 /*
@@ -204,8 +219,17 @@ extern void gres_p_task_set_env(char ***task_env_ptr,
 				bitstr_t *usable_gres,
 				gres_internal_flags_t flags)
 {
-	_set_env(task_env_ptr, gres_bit_alloc, usable_gres,
-		 true, false, flags);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = task_env_ptr,
+		.flags = flags,
+		.gres_cnt = gres_cnt,
+		.gres_devices = gres_devices,
+		.is_task = true,
+		.usable_gres = usable_gres,
+	};
+
+	_set_env(&gres_env);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor*/
