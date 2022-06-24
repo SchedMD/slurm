@@ -419,9 +419,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 		 * generate invalid memory references.
 		 */
 		step->envtp->env = env_array_copy((const char **) step->env);
-		gres_g_task_set_env(&step->envtp->env, step->step_gres_list,
-				    step->accel_bind_type, step->tres_bind,
-				    local_proc_id);
+		gres_g_task_set_env(step, local_proc_id);
 		tmp_env = step->env;
 		step->env = step->envtp->env;
 		env_array_free(tmp_env);
