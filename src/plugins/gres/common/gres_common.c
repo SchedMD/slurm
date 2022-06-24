@@ -529,6 +529,8 @@ extern void gres_common_gpu_set_env(common_gres_env_t *gres_env)
 	else
 		slurm_env_var = "SLURM_STEP_GPUS";
 
+	gres_env->prefix = "";
+
 	common_gres_set_env(gres_env);
 
 	/*

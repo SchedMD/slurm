@@ -154,6 +154,11 @@ static void _set_env(common_gres_env_t *gres_env)
 	char perc_str[64];
 	uint64_t count_on_dev, percentage;
 
+	gres_env->global_id = -1;
+	gres_env->gres_conf_flags = GRES_CONF_ENV_NVML;
+	gres_env->gres_devices = gres_devices;
+	gres_env->prefix = "";
+
 	gres_common_gpu_set_env(gres_env);
 
 	/*
@@ -199,17 +204,8 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 		.bit_alloc = gres_bit_alloc,
 		.env_ptr = job_env_ptr,
 		.flags = flags,
-		.global_id = -1,
-		.global_list = NULL,
 		.gres_cnt = gres_per_node,
-		.gres_conf_flags = GRES_CONF_ENV_NVML,
-		.gres_devices = gres_devices,
 		.is_job = true,
-		.is_task = false,
-		.local_list = NULL,
-		.prefix = "",
-		.usable_gres = NULL,
-		.use_dev_num = false,
 	};
 
 	_set_env(&gres_env);
@@ -228,17 +224,7 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 		.bit_alloc = gres_bit_alloc,
 		.env_ptr = step_env_ptr,
 		.flags = flags,
-		.global_id = -1,
-		.global_list = NULL,
 		.gres_cnt = gres_per_node,
-		.gres_conf_flags = GRES_CONF_ENV_NVML,
-		.gres_devices = gres_devices,
-		.is_job = false,
-		.is_task = false,
-		.local_list = NULL,
-		.prefix = "",
-		.usable_gres = NULL,
-		.use_dev_num = false,
 	};
 
 	_set_env(&gres_env);
@@ -258,17 +244,9 @@ extern void gres_p_task_set_env(char ***task_env_ptr,
 		.bit_alloc = gres_bit_alloc,
 		.env_ptr = task_env_ptr,
 		.flags = flags,
-		.global_id = -1,
-		.global_list = NULL,
 		.gres_cnt = gres_per_node,
-		.gres_conf_flags = GRES_CONF_ENV_NVML,
-		.gres_devices = gres_devices,
-		.is_job = false,
 		.is_task = true,
-		.local_list = NULL,
-		.prefix = "",
 		.usable_gres = usable_gres,
-		.use_dev_num = false,
 	};
 
 	_set_env(&gres_env);
