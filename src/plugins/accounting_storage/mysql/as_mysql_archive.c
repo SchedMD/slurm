@@ -4532,27 +4532,27 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 	case PURGE_EVENT:
 		purge_attr = arch_cond->purge_event;
 		sql_table  = event_table;
-		col_name   = event_req_inx[EVENT_REQ_START];
+		col_name   = event_req_inx[EVENT_REQ_END];
 		break;
 	case PURGE_SUSPEND:
 		purge_attr = arch_cond->purge_suspend;
 		sql_table  = suspend_table;
-		col_name   = suspend_req_inx[SUSPEND_REQ_START];
+		col_name   = suspend_req_inx[SUSPEND_REQ_END];
 		break;
 	case PURGE_RESV:
 		purge_attr = arch_cond->purge_resv;
 		sql_table  = resv_table;
-		col_name   = step_req_inx[STEP_REQ_START];
+		col_name   = step_req_inx[STEP_REQ_END];
 		break;
 	case PURGE_JOB:
 		purge_attr = arch_cond->purge_job;
 		sql_table  = job_table;
-		col_name   = job_req_inx[JOB_REQ_SUBMIT];
+		col_name   = job_req_inx[JOB_REQ_END];
 		break;
 	case PURGE_STEP:
 		purge_attr = arch_cond->purge_step;
 		sql_table  = step_table;
-		col_name   = step_req_inx[STEP_REQ_START];
+		col_name   = step_req_inx[STEP_REQ_END];
 		break;
 	case PURGE_TXN:
 		purge_attr = arch_cond->purge_txn;
