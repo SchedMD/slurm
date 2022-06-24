@@ -4605,7 +4605,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		}
 
 		purge_attr = arch_cond->purge_usage;
-		col_name   = usage_req_inx[USAGE_START];
+		col_name   = usage_req_inx[USAGE_MOD_TIME];
 		break;
 	case PURGE_CLUSTER_USAGE:
 		period = usage_info >> 16;
@@ -4627,7 +4627,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		}
 
 		purge_attr = arch_cond->purge_usage;
-		col_name   = cluster_req_inx[CLUSTER_START];
+		col_name   = cluster_req_inx[CLUSTER_MOD_TIME];
 		break;
 	default:
 		fatal("Unknown purge type: %d", purge_type);
