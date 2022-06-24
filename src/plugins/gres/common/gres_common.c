@@ -321,8 +321,8 @@ extern void common_gres_set_env(common_gres_env_t *gres_env)
 			}
 		}
 
-		if (gres_env->global_id && !set_global_id) {
-			*gres_env->global_id = gres_device->dev_num;
+		if (!set_global_id) {
+			gres_env->global_id = gres_device->dev_num;
 			set_global_id = true;
 		}
 

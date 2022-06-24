@@ -163,7 +163,7 @@ static void _set_env(common_gres_env_t *gres_env)
 	 * existing job allocation with GRES.
 	 */
 	if (gres_env->gres_cnt && shared_info) {
-		count_on_dev = _get_dev_count(*gres_env->global_id);
+		count_on_dev = _get_dev_count(gres_env->global_id);
 		if (count_on_dev > 0) {
 			percentage = (gres_env->gres_cnt * 100) / count_on_dev;
 			percentage = MAX(percentage, 1);
@@ -195,12 +195,11 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 			       uint64_t gres_per_node,
 			       gres_internal_flags_t flags)
 {
-	int global_id = -1;
 	common_gres_env_t gres_env = {
 		.bit_alloc = gres_bit_alloc,
 		.env_ptr = job_env_ptr,
 		.flags = flags,
-		.global_id = &global_id,
+		.global_id = -1,
 		.global_list = NULL,
 		.gres_cnt = gres_per_node,
 		.gres_conf_flags = GRES_CONF_ENV_NVML,
@@ -225,12 +224,11 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 				uint64_t gres_per_node,
 				gres_internal_flags_t flags)
 {
-	int global_id = -1;
 	common_gres_env_t gres_env = {
 		.bit_alloc = gres_bit_alloc,
 		.env_ptr = step_env_ptr,
 		.flags = flags,
-		.global_id = &global_id,
+		.global_id = -1,
 		.global_list = NULL,
 		.gres_cnt = gres_per_node,
 		.gres_conf_flags = GRES_CONF_ENV_NVML,
@@ -256,12 +254,11 @@ extern void gres_p_task_set_env(char ***task_env_ptr,
 				uint64_t gres_per_node,
 				gres_internal_flags_t flags)
 {
-	int global_id = -1;
 	common_gres_env_t gres_env = {
 		.bit_alloc = gres_bit_alloc,
 		.env_ptr = task_env_ptr,
 		.flags = flags,
-		.global_id = &global_id,
+		.global_id = -1,
 		.global_list = NULL,
 		.gres_cnt = gres_per_node,
 		.gres_conf_flags = GRES_CONF_ENV_NVML,

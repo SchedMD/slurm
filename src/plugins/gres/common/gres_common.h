@@ -50,7 +50,7 @@ typedef struct {
 	bitstr_t *bit_alloc;
 	char ***env_ptr;
 	gres_internal_flags_t flags;
-	int *global_id;
+	int global_id;
 	char *global_list;
 	uint64_t gres_cnt;
 	uint32_t gres_conf_flags;
