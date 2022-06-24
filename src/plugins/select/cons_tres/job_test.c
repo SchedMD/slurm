@@ -1491,7 +1491,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			    avail_res_t **avail_res_array, uint16_t cr_type,
 			    bool prefer_alloc_nodes, bool first_pass)
 {
-	int       *switch_cpu_cnt = NULL;	/* total CPUs on switch */
 	List      *switch_gres = NULL;		/* available GRES on switch */
 	bitstr_t **switch_node_bitmap = NULL;	/* nodes on this switch */
 	int       *switch_node_cnt = NULL;	/* total nodes on switch */
@@ -1652,7 +1651,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	 * Identify the highest level switch to be used.
 	 * Note that nodes can be on multiple non-overlapping switches.
 	 */
-	switch_cpu_cnt     = xcalloc(switch_record_cnt, sizeof(int));
 	switch_gres        = xcalloc(switch_record_cnt, sizeof(List));
 	switch_node_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
 	switch_node_cnt    = xcalloc(switch_record_cnt, sizeof(int));
@@ -2090,7 +2088,6 @@ fini:
 	FREE_NULL_BITMAP(req2_nodes_bitmap);
 	FREE_NULL_BITMAP(best_nodes_bitmap);
 	xfree(avail_cpu_per_node);
-	xfree(switch_cpu_cnt);
 	xfree(switch_gres);
 	if (switch_node_bitmap) {
 		for (i = 0; i < switch_record_cnt; i++)
