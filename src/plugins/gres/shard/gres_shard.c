@@ -151,10 +151,24 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 			       uint64_t gres_per_node,
 			       gres_internal_flags_t flags)
 {
-	gres_common_gpu_set_env(job_env_ptr, gres_bit_alloc, NULL,
-				gres_per_node,
-				false, true, flags,
-				node_flags, gres_devices, NULL);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = job_env_ptr,
+		.flags = flags,
+		.global_id = NULL,
+		.global_list = NULL,
+		.gres_cnt = gres_per_node,
+		.gres_conf_flags = node_flags,
+		.gres_devices = gres_devices,
+		.is_job = true,
+		.is_task = false,
+		.local_list = NULL,
+		.prefix = "",
+		.usable_gres = NULL,
+		.use_dev_num = false,
+	};
+
+	gres_common_gpu_set_env(&gres_env);
 }
 
 /*
@@ -166,10 +180,24 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 				uint64_t gres_per_node,
 				gres_internal_flags_t flags)
 {
-	gres_common_gpu_set_env(step_env_ptr, gres_bit_alloc, NULL,
-				gres_per_node,
-				false, false, flags,
-				node_flags, gres_devices, NULL);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = step_env_ptr,
+		.flags = flags,
+		.global_id = NULL,
+		.global_list = NULL,
+		.gres_cnt = gres_per_node,
+		.gres_conf_flags = node_flags,
+		.gres_devices = gres_devices,
+		.is_job = false,
+		.is_task = false,
+		.local_list = NULL,
+		.prefix = "",
+		.usable_gres = NULL,
+		.use_dev_num = false,
+	};
+
+	gres_common_gpu_set_env(&gres_env);
 }
 
 /*
@@ -182,10 +210,24 @@ extern void gres_p_task_set_env(char ***task_env_ptr,
 				uint64_t gres_per_node,
 				gres_internal_flags_t flags)
 {
-	gres_common_gpu_set_env(
-		task_env_ptr, gres_bit_alloc, usable_gres, gres_per_node,
-		true, false, flags,
-		node_flags, gres_devices, NULL);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = task_env_ptr,
+		.flags = flags,
+		.global_id = NULL,
+		.global_list = NULL,
+		.gres_cnt = gres_per_node,
+		.gres_conf_flags = node_flags,
+		.gres_devices = gres_devices,
+		.is_job = false,
+		.is_task = true,
+		.local_list = NULL,
+		.prefix = "",
+		.usable_gres = usable_gres,
+		.use_dev_num = false,
+	};
+
+	gres_common_gpu_set_env(&gres_env);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */

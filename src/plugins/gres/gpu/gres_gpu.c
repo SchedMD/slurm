@@ -52,6 +52,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/env.h"
 #include "src/common/gpu.h"
@@ -93,6 +94,8 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 static char	*gres_name		= "gpu";
 static List	gres_devices		= NULL;
 static uint32_t	node_flags		= 0;
+static int tres_mem_pos = -1;
+static int tres_util_pos = -1;
 
 extern void gres_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
@@ -781,7 +784,20 @@ static List _get_system_gpu_list_fake(void)
 
 extern int init(void)
 {
+	slurmdb_tres_rec_t tres_rec;
+
 	debug("loaded");
+
+	if (!running_in_slurmstepd())
+		return SLURM_SUCCESS;
+
+	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+	tres_rec.type = "gres";
+	tres_rec.name = "gpumem";
+	tres_mem_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+	tres_rec.type = "gres";
+	tres_rec.name = "gpuutil";
+	tres_util_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 
 	return SLURM_SUCCESS;
 }
@@ -873,9 +889,24 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 			       uint64_t gres_cnt,
 			       gres_internal_flags_t flags)
 {
-	gres_common_gpu_set_env(job_env_ptr, gres_bit_alloc, NULL, gres_cnt,
-				false, true, flags,
-				node_flags, gres_devices, NULL);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = job_env_ptr,
+		.flags = flags,
+		.global_id = NULL,
+		.global_list = NULL,
+		.gres_cnt = gres_cnt,
+		.gres_conf_flags = node_flags,
+		.gres_devices = gres_devices,
+		.is_job = true,
+		.is_task = false,
+		.local_list = NULL,
+		.prefix = "",
+		.usable_gres = NULL,
+		.use_dev_num = false,
+	};
+
+	gres_common_gpu_set_env(&gres_env);
 }
 
 /*
@@ -887,9 +918,24 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 				uint64_t gres_cnt,
 				gres_internal_flags_t flags)
 {
-	gres_common_gpu_set_env(step_env_ptr, gres_bit_alloc, NULL, gres_cnt,
-				false, false, flags,
-				node_flags, gres_devices, NULL);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = step_env_ptr,
+		.flags = flags,
+		.global_id = NULL,
+		.global_list = NULL,
+		.gres_cnt = gres_cnt,
+		.gres_conf_flags = node_flags,
+		.gres_devices = gres_devices,
+		.is_job = false,
+		.is_task = false,
+		.local_list = NULL,
+		.prefix = "",
+		.usable_gres = NULL,
+		.use_dev_num = false,
+	};
+
+	gres_common_gpu_set_env(&gres_env);
 }
 
 /*
@@ -902,10 +948,24 @@ extern void gres_p_task_set_env(char ***task_env_ptr,
 				bitstr_t *usable_gres,
 				gres_internal_flags_t flags)
 {
-	gres_common_gpu_set_env(
-		task_env_ptr, gres_bit_alloc, usable_gres, gres_cnt,
-		true, false, flags,
-		node_flags, gres_devices, NULL);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = task_env_ptr,
+		.flags = flags,
+		.global_id = NULL,
+		.global_list = NULL,
+		.gres_cnt = gres_cnt,
+		.gres_conf_flags = node_flags,
+		.gres_devices = gres_devices,
+		.is_job = false,
+		.is_task = true,
+		.local_list = NULL,
+		.prefix = "",
+		.usable_gres = usable_gres,
+		.use_dev_num = false,
+	};
+
+	gres_common_gpu_set_env(&gres_env);
 }
 
 /* Send GPU-specific GRES information to slurmstepd via a buffer */

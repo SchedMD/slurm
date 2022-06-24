@@ -46,6 +46,23 @@
 #include "src/common/list.h"
 #include "src/common/cgroup.h"
 
+typedef struct {
+	bitstr_t *bit_alloc;
+	char ***env_ptr;
+	gres_internal_flags_t flags;
+	int *global_id;
+	char *global_list;
+	uint64_t gres_cnt;
+	uint32_t gres_conf_flags;
+	List gres_devices;
+	bool is_job;
+	bool is_task;
+	char *local_list;
+	char *prefix;
+	bitstr_t *usable_gres;
+	bool use_dev_num;
+} common_gres_env_t;
+
 /*
  * Common validation for what was read in from the gres.conf.
  * IN gres_conf_list
@@ -90,12 +107,7 @@ extern void print_gres_list_parsable(List gres_list);
 /*
  * Set the appropriate env variables for all gpu like gres.
  */
-extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
-				    bitstr_t *usable_gres, uint64_t gres_cnt,
-				    bool is_task, bool is_job,
-				    gres_internal_flags_t flags,
-				    uint32_t gres_conf_flags,
-				    List gres_devices, int *global_id);
+extern void gres_common_gpu_set_env(common_gres_env_t *gres_env);
 
 /*
  * Set environment variables as appropriate for a job's prolog or epilog based
