@@ -446,10 +446,6 @@ SrunEpilog and TaskEpilog.</li>
 Global Task IDs running on this node. Zero origin and comma separated.
 Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
 
-<li><b>SLURM_JOB_CPUS_PER_NODE</b>
-Count of processors available per node. Available in SrunProlog, TaskProlog,
-SrunEpilog and TaskEpilog.</li>
-
 <li><b>SLURM_JOB_ACCOUNT</b>
 Account name used for the job.
 Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld
@@ -458,6 +454,10 @@ SrunEpilog and TaskEpilog.</li>
 <li><b>SLURM_JOB_CONSTRAINTS</b>
 Features required to run the job.
 Available in Prolog, PrologSlurmctld and EpilogSlurmctld only.</li>
+
+<li><b>SLURM_JOB_CPUS_PER_NODE</b>
+Count of processors available per node. Available in SrunProlog, TaskProlog,
+SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_JOB_DERIVED_EC</b>
 The highest exit code of all of the job steps.
