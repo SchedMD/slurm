@@ -10038,12 +10038,13 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 		}
 		gres_slurmd_conf->cpus_bitmap = cpu_aff;
 	}
-	gres_slurmd_conf->config_flags = flags;
 
 	/* Set default env flags, if necessary */
 	if ((flags & GRES_CONF_ENV_DEF) &&
 	    ((flags & GRES_CONF_ENV_SET) != GRES_CONF_ENV_SET))
 		flags |= GRES_CONF_ENV_SET;
+
+	gres_slurmd_conf->config_flags = flags;
 
 	if (device_file) {
 		hostlist_t hl = hostlist_create(device_file);
