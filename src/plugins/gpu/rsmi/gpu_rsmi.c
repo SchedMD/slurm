@@ -842,26 +842,32 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 	// Loop through all the GPUs on the system and add to gres_list_system
 	for (i = 0; i < device_count; ++i) {
 		unsigned int minor_number = 0;
-		char *device_file = NULL, *links = NULL;
 		char device_name[RSMI_STRING_BUFFER_SIZE] = {0};
 		char device_brand[RSMI_STRING_BUFFER_SIZE] = {0};
 		rsmiPciInfo_t pci_info;
 		uint64_t uuid = 0;
-		bitstr_t *cpu_aff_mac_bitstr = _rsmi_get_device_cpu_mask(i);
 		char *cpu_aff_mac_range = NULL;
-		char *cpu_aff_abs_range = NULL;
+		gres_slurmd_conf_t gres_slurmd_conf = {
+			.config_flags = GRES_CONF_ENV_RSMI,
+			.count = 1,
+			.cpu_cnt = node_config->cpu_cnt,
+			.cpus_bitmap = _rsmi_get_device_cpu_mask(i),
+			.name = "gpu",
+		};
 
-		if (cpu_aff_mac_bitstr) {
-			cpu_aff_mac_range = bit_fmt_full(cpu_aff_mac_bitstr);
+		if (gres_slurmd_conf.cpus_bitmap) {
+			cpu_aff_mac_range = bit_fmt_full(
+				gres_slurmd_conf.cpus_bitmap);
 
 			/*
 			 * Convert cpu range str from machine to abstract(slurm)
 			 * format
 			 */
 			if (node_config->xcpuinfo_mac_to_abs(
-				    cpu_aff_mac_range, &cpu_aff_abs_range)) {
+				    cpu_aff_mac_range,
+				    &gres_slurmd_conf.cpus)) {
 				error("Conversion from machine to abstract failed");
-				FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
+				FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
 				xfree(cpu_aff_mac_range);
 				continue;
 			}
@@ -876,9 +882,11 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		_rsmi_get_device_unique_id(i, &uuid);
 
 		/* Use links to record PCI bus ID order */
-		links = gres_links_create_empty(i, device_count);
+		gres_slurmd_conf.links =
+			gres_links_create_empty(i, device_count);
 
-		xstrfmtcat(device_file, "/dev/dri/renderD%u", minor_number);
+		xstrfmtcat(gres_slurmd_conf.file,
+			   "/dev/dri/renderD%u", minor_number);
 
 		debug2("GPU index %u:", i);
 		debug2("    Name: %s", device_name);
@@ -887,31 +895,29 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		debug2("    PCI Domain/Bus/Device/Function: %u:%u:%u.%u",
 		       pci_info.domain,
 		       pci_info.bus, pci_info.device, pci_info.function);
-		debug2("    Links: %s", links);
-		debug2("    Device File (minor number): %s", device_file);
+		debug2("    Links: %s", gres_slurmd_conf.links);
+		debug2("    Device File (minor number): %s",
+			gres_slurmd_conf.file);
 		if (minor_number != i+128)
 			debug("Note: GPU index %u is different from minor # %u",
 			      i, minor_number);
 		debug2("    CPU Affinity Range - Machine: %s",
 		       cpu_aff_mac_range);
 		debug2("    Core Affinity Range - Abstract: %s",
-		       cpu_aff_abs_range);
+		       gres_slurmd_conf.cpus);
 
 		// Print out possible memory frequencies for this device
 		_rsmi_print_freqs(i, LOG_LEVEL_DEBUG2);
 
-		add_gres_to_list(gres_list_system, "gpu", 1,
-				 node_config->cpu_cnt,
-				 cpu_aff_abs_range,
-				 cpu_aff_mac_bitstr,
-				 device_file, device_brand, links, NULL,
-				 GRES_CONF_ENV_RSMI);
+		gres_slurmd_conf.type_name = device_brand;
 
-		FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
+		add_gres_to_list(gres_list_system, &gres_slurmd_conf);
+
+		FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
 		xfree(cpu_aff_mac_range);
-		xfree(cpu_aff_abs_range);
-		xfree(device_file);
-		xfree(links);
+		xfree(gres_slurmd_conf.cpus);
+		xfree(gres_slurmd_conf.file);
+		xfree(gres_slurmd_conf.links);
 	}
 
 	info("%u GPU system device(s) detected", device_count);

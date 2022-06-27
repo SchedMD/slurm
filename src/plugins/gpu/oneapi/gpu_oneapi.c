@@ -1004,10 +1004,8 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 	ze_result_t oneapi_rc;
 	uint32_t gpu_num = MAX_GPU_NUM;
 	unsigned long cpu_set[CPU_SET_SIZE] = {0};
-	bitstr_t *cpu_aff_mac_bitstr = NULL;
 	char *cpu_aff_mac_range = NULL;
 	char *cpu_aff_abs_range = NULL;
-	char *links = NULL;
 	int i;
 
 	List gres_list_system = list_create(destroy_gres_slurmd_conf);
@@ -1021,6 +1019,13 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 
 	/* Loop all of GPU device handles */
 	for (i = 0; i < gpu_num; i++) {
+		gres_slurmd_conf_t gres_slurmd_conf = {
+			.config_flags = GRES_CONF_ENV_ONEAPI,
+			.count = 1,
+			.cpu_cnt = node_config->cpu_cnt,
+			.name = "gpu",
+		};
+
 		/* Get PCI properties */
 		zes_handle = (zes_device_handle_t)all_devices[i];
 		oneapi_rc = zesDevicePciGetProperties(zes_handle, &pci);
@@ -1051,11 +1056,12 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 		}
 
 		/* Convert from cpu bitmask to slurm bitstr_t (machine fmt) */
-		cpu_aff_mac_bitstr = bit_alloc(MAX_CPUS);
-		_set_cpu_set_bitstr(cpu_aff_mac_bitstr, cpu_set, CPU_SET_SIZE);
+		gres_slurmd_conf.cpus_bitmap = bit_alloc(MAX_CPUS);
+		_set_cpu_set_bitstr(gres_slurmd_conf.cpus_bitmap,
+				    cpu_set, CPU_SET_SIZE);
 
 		/* Convert from bitstr_t to cpu range str */
-		cpu_aff_mac_range = bit_fmt_full(cpu_aff_mac_bitstr);
+		cpu_aff_mac_range = bit_fmt_full(gres_slurmd_conf.cpus_bitmap);
 
 		/*
 		 * Convert cpu range str from machine to abstract (slurm) format
@@ -1063,23 +1069,23 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 		if (node_config->xcpuinfo_mac_to_abs(cpu_aff_mac_range,
 						     &cpu_aff_abs_range)) {
 			error("Conversion from machine to abstract failed");
-			FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
+			FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
 			xfree(cpu_aff_mac_range);
 			continue;
 		}
 
 		/* Use links to record PCI bus ID order */
-		links = gres_links_create_empty(i, gpu_num);
+		gres_slurmd_conf.links = gres_links_create_empty(i, gpu_num);
 
 		/* Get device properties */
 		oneapi_rc = zeDeviceGetProperties(all_devices[i],
 						  &device_props);
 		if (oneapi_rc != ZE_RESULT_SUCCESS) {
 			info("Failed to get device property: 0x%x", oneapi_rc);
-			FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
+			FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
 			xfree(cpu_aff_mac_range);
 			xfree(cpu_aff_abs_range);
-			xfree(links);
+			xfree(gres_slurmd_conf.links);
 			continue;
 		}
 
@@ -1089,7 +1095,7 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 		debug2("    PCI Domain/Bus/Device/Function: %u:%u:%u:%u",
 			pci.address.domain, pci.address.bus,
 			pci.address.device, pci.address.function);
-		debug2("    Links: %s", links);
+		debug2("    Links: %s", gres_slurmd_conf.links);
 		debug2("    Device File: %s", device_file);
 		debug2("    CPU Affinity Range - Machine: %s",
 			cpu_aff_mac_range);
@@ -1099,17 +1105,16 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 		/* Print out possible frequencies for this device */
 		_oneapi_print_freqs(all_devices[i], LOG_LEVEL_DEBUG2);
 
-		/* Add the GPU to list */
-		add_gres_to_list(gres_list_system, "gpu", 1,
-				 node_config->cpu_cnt, NULL,
-				 cpu_aff_mac_bitstr, device_file,
-				 device_props.name, links,
-				 NULL, GRES_CONF_ENV_ONEAPI);
+		gres_slurmd_conf.type_name = device_props.name;
+		gres_slurmd_conf.file = device_file;
 
-		FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
+		/* Add the GPU to list */
+		add_gres_to_list(gres_list_system, &gres_slurmd_conf);
+
+		FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
 		xfree(cpu_aff_mac_range);
-		xfree(cpu_aff_abs_range);
-		xfree(links);
+		xfree(gres_slurmd_conf.cpus);
+		xfree(gres_slurmd_conf.links);
 	}
 
 	return gres_list_system;

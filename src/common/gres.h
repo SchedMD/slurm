@@ -1058,11 +1058,8 @@ extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env,
  * Creates a gres_slurmd_conf_t record to add to a list of gres_slurmd_conf_t
  * records
  */
-extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
-			     int cpu_cnt, char *cpu_aff_abs_range,
-			     bitstr_t *cpu_aff_mac_bitstr, char *device_file,
-			     char *type, char *links, char *unique_id,
-			     uint32_t flags);
+extern void add_gres_to_list(List gres_list,
+			     gres_slurmd_conf_t *gres_slurmd_conf_in);
 
 extern int gres_find_id(void *x, void *key);
 

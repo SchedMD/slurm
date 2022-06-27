@@ -1897,7 +1897,11 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
 			 uint32_t cpu_count)
 {
 	gres_slurmd_conf_t *match;
-	uint32_t flags;
+	gres_slurmd_conf_t gres_slurmd_conf = {
+		.cpu_cnt = cpu_count,
+		.name = gres_ctx->gres_name,
+		.type_name = type_name,
+	};
 
 	/* If slurm.conf count is initially 0, don't waste time on it */
 	if (count == 0)
@@ -1958,14 +1962,15 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
 	 */
 
 	/* Set default env flags, and allow AutoDetect to override */
-	flags = 0;
 	if (!xstrcasecmp(gres_ctx->gres_name, "gpu"))
-		flags |= (GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF);
+		gres_slurmd_conf.config_flags |=
+			(GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF);
 	if (gres_ctx->config_flags & GRES_CONF_COUNT_ONLY)
-		flags |= GRES_CONF_COUNT_ONLY;
+		gres_slurmd_conf.config_flags |= GRES_CONF_COUNT_ONLY;
 
-	add_gres_to_list(new_list, gres_ctx->gres_name, count, cpu_count,
-			 NULL, NULL, NULL, type_name, NULL, NULL, flags);
+	gres_slurmd_conf.count = count;
+
+	add_gres_to_list(new_list, &gres_slurmd_conf);
 }
 
 /*
@@ -9996,11 +10001,8 @@ extern char *gres_flags2str(uint32_t config_flags)
  * Creates a gres_slurmd_conf_t record to add to a list of gres_slurmd_conf_t
  * records
  */
-extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
-			     int cpu_cnt, char *cpu_aff_abs_range,
-			     bitstr_t *cpu_aff_mac_bitstr, char *device_file,
-			     char *type, char *links, char *unique_id,
-			     uint32_t flags)
+extern void add_gres_to_list(List gres_list,
+			     gres_slurmd_conf_t *gres_slurmd_conf_in)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	bool use_empty_first_record = false;
@@ -10016,53 +10018,54 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 		use_empty_first_record = true;
 	else
 		gres_slurmd_conf = xmalloc(sizeof(gres_slurmd_conf_t));
-	gres_slurmd_conf->cpu_cnt = cpu_cnt;
-	if (cpu_aff_mac_bitstr) {
-		bitstr_t *cpu_aff = bit_copy(cpu_aff_mac_bitstr);
+	gres_slurmd_conf->cpu_cnt = gres_slurmd_conf_in->cpu_cnt;
+	if (gres_slurmd_conf_in->cpus_bitmap) {
+		bitstr_t *cpu_aff = bit_copy(gres_slurmd_conf_in->cpus_bitmap);
 
 		/*
 		 * Size down (or possibly up) cpus_bitmap, if necessary, so that
 		 * the size of cpus_bitmap for system-detected devices matches
 		 * the size of cpus_bitmap for configured devices.
 		 */
-		if (bit_size(cpu_aff) != cpu_cnt) {
+		if (bit_size(cpu_aff) != gres_slurmd_conf_in->cpu_cnt) {
 			/* Calculate minimum size to hold CPU affinity */
 			int64_t size = bit_fls(cpu_aff) + 1;
-			if (size > cpu_cnt) {
+			if (size > gres_slurmd_conf_in->cpu_cnt) {
 				char *cpu_str = bit_fmt_hexmask_trim(cpu_aff);
 				fatal("This CPU affinity bitmask (%s) does not fit within the CPUs configured for this node (%d). Make sure that the node's CPU count is configured correctly.",
-				      cpu_str, cpu_cnt);
+				      cpu_str, gres_slurmd_conf_in->cpu_cnt);
 				xfree(cpu_str);
 			}
-			bit_realloc(cpu_aff, cpu_cnt);
+			bit_realloc(cpu_aff, gres_slurmd_conf_in->cpu_cnt);
 		}
 		gres_slurmd_conf->cpus_bitmap = cpu_aff;
 	}
 
 	/* Set default env flags, if necessary */
-	if ((flags & GRES_CONF_ENV_DEF) &&
-	    ((flags & GRES_CONF_ENV_SET) != GRES_CONF_ENV_SET))
-		flags |= GRES_CONF_ENV_SET;
+	if ((gres_slurmd_conf_in->config_flags & GRES_CONF_ENV_DEF) &&
+	    ((gres_slurmd_conf_in->config_flags & GRES_CONF_ENV_SET) !=
+	     GRES_CONF_ENV_SET))
+		gres_slurmd_conf_in->config_flags |= GRES_CONF_ENV_SET;
 
-	gres_slurmd_conf->config_flags = flags;
+	gres_slurmd_conf->config_flags = gres_slurmd_conf_in->config_flags;
 
-	if (device_file) {
-		hostlist_t hl = hostlist_create(device_file);
+	if (gres_slurmd_conf_in->file) {
+		hostlist_t hl = hostlist_create(gres_slurmd_conf_in->file);
 		gres_slurmd_conf->config_flags |= GRES_CONF_HAS_FILE;
 		if (hostlist_count(hl) > 1)
 			gres_slurmd_conf->config_flags |= GRES_CONF_HAS_MULT;
 		hostlist_destroy(hl);
 	}
-	if (type)
+	if (gres_slurmd_conf_in->type_name)
 		gres_slurmd_conf->config_flags |= GRES_CONF_HAS_TYPE;
-	gres_slurmd_conf->cpus = xstrdup(cpu_aff_abs_range);
-	gres_slurmd_conf->type_name = xstrdup(type);
-	gres_slurmd_conf->name = xstrdup(name);
-	gres_slurmd_conf->file = xstrdup(device_file);
-	gres_slurmd_conf->links = xstrdup(links);
-	gres_slurmd_conf->unique_id = xstrdup(unique_id);
-	gres_slurmd_conf->count = device_cnt;
-	gres_slurmd_conf->plugin_id = gres_build_id(name);
+	gres_slurmd_conf->cpus = xstrdup(gres_slurmd_conf_in->cpus);
+	gres_slurmd_conf->type_name = xstrdup(gres_slurmd_conf_in->type_name);
+	gres_slurmd_conf->name = xstrdup(gres_slurmd_conf_in->name);
+	gres_slurmd_conf->file = xstrdup(gres_slurmd_conf_in->file);
+	gres_slurmd_conf->links = xstrdup(gres_slurmd_conf_in->links);
+	gres_slurmd_conf->unique_id = xstrdup(gres_slurmd_conf_in->unique_id);
+	gres_slurmd_conf->count = gres_slurmd_conf_in->count;
+	gres_slurmd_conf->plugin_id = gres_build_id(gres_slurmd_conf_in->name);
 	if (!use_empty_first_record)
 		list_append(gres_list, gres_slurmd_conf);
 	list_iterator_destroy(itr);

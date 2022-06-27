@@ -1294,20 +1294,21 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		char uuid[NVML_DEVICE_UUID_BUFFER_SIZE] = {0};
 		unsigned int minor_number = 0;
 		unsigned long cpu_set[CPU_SET_SIZE] = {0};
-		bitstr_t *cpu_aff_mac_bitstr = NULL;
 		char *cpu_aff_mac_range = NULL;
-		char *cpu_aff_abs_range = NULL;
 		char *device_file = NULL;
 		char *nvlinks = NULL;
 		char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
 		bool mig_mode = false;
+		gres_slurmd_conf_t gres_slurmd_conf = {
+			.config_flags = GRES_CONF_ENV_NVML,
+			.count = 1,
+			.cpu_cnt = node_config->cpu_cnt,
+			.name = "gpu",
+		};
 
 		if (!_nvml_get_handle(i, &device)) {
 			error("Creating null GRES GPU record");
-			add_gres_to_list(gres_list_system, "gpu", 1,
-					 node_config->cpu_cnt, NULL, NULL,
-					 NULL, NULL, NULL, NULL,
-					 GRES_CONF_ENV_NVML);
+			add_gres_to_list(gres_list_system, &gres_slurmd_conf);
 			continue;
 		}
 
@@ -1328,17 +1329,18 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		_nvml_get_device_affinity(&device, CPU_SET_SIZE, cpu_set);
 
 		// Convert from nvml cpu bitmask to slurm bitstr_t (machine fmt)
-		cpu_aff_mac_bitstr = bit_alloc(MAX_CPUS);
-		_set_cpu_set_bitstr(cpu_aff_mac_bitstr, cpu_set, CPU_SET_SIZE);
+		gres_slurmd_conf.cpus_bitmap = bit_alloc(MAX_CPUS);
+		_set_cpu_set_bitstr(gres_slurmd_conf.cpus_bitmap,
+				    cpu_set, CPU_SET_SIZE);
 
 		// Convert from bitstr_t to cpu range str
-		cpu_aff_mac_range = bit_fmt_full(cpu_aff_mac_bitstr);
+		cpu_aff_mac_range = bit_fmt_full(gres_slurmd_conf.cpus_bitmap);
 
 		// Convert cpu range str from machine to abstract(slurm) format
 		if (node_config->xcpuinfo_mac_to_abs(cpu_aff_mac_range,
-						     &cpu_aff_abs_range)) {
+						     &gres_slurmd_conf.cpus)) {
 			error("    Conversion from machine to abstract failed");
-			FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
+			FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
 			xfree(cpu_aff_mac_range);
 			continue;
 		}
@@ -1361,7 +1363,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		debug2("    CPU Affinity Range - Machine: %s",
 		       cpu_aff_mac_range);
 		debug2("    Core Affinity Range - Abstract: %s",
-		       cpu_aff_abs_range);
+		       gres_slurmd_conf.cpus);
 		debug2("    MIG mode: %s", mig_mode ? "enabled" : "disabled");
 
 		if (mig_mode) {
@@ -1420,36 +1422,35 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 				 * support NVLinks. CPU affinity, CPU count, and
 				 * device name will be the same as non-MIG GPU.
 				 */
-				add_gres_to_list(gres_list_system, "gpu", 1,
-						 node_config->cpu_cnt,
-						 cpu_aff_abs_range,
-						 cpu_aff_mac_bitstr,
-						 nvml_mig.files,
-						 nvml_mig.profile_name,
-						 nvml_mig.links,
-						 nvml_mig.unique_id,
-						 GRES_CONF_ENV_NVML);
+				gres_slurmd_conf.file = nvml_mig.files;
+				gres_slurmd_conf.links = nvml_mig.links;
+				gres_slurmd_conf.type_name =
+					nvml_mig.profile_name;
+				gres_slurmd_conf.unique_id = nvml_mig.unique_id;
+
+				add_gres_to_list(gres_list_system,
+						 &gres_slurmd_conf);
+
 				_free_nvml_mig_members(&nvml_mig);
 			}
 			xfree(tmp_device_name);
 #endif
 		} else {
-			add_gres_to_list(gres_list_system, "gpu", 1,
-					 node_config->cpu_cnt,
-					 cpu_aff_abs_range,
-					 cpu_aff_mac_bitstr, device_file,
-					 device_name, nvlinks, NULL,
-					 GRES_CONF_ENV_NVML);
+			gres_slurmd_conf.file = device_file;
+			gres_slurmd_conf.links = nvlinks;
+			gres_slurmd_conf.type_name = device_name;
+
+			add_gres_to_list(gres_list_system, &gres_slurmd_conf);
 		}
 
 		// Print out possible memory frequencies for this device
 		_nvml_print_freqs(&device, LOG_LEVEL_DEBUG2);
 
-		FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
+		FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
 		xfree(cpu_aff_mac_range);
-		xfree(cpu_aff_abs_range);
-		xfree(nvlinks);
-		xfree(device_file);
+		xfree(gres_slurmd_conf.cpus);
+		xfree(gres_slurmd_conf.links);
+		xfree(gres_slurmd_conf.file);
 	}
 
 	/*
