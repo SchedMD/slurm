@@ -59,13 +59,14 @@
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
 #include "src/common/stepd_api.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #include "read_jcconf.h"
 
-static int _create_ns(uint32_t job_id, uid_t uid);
+static int _create_ns(uint32_t job_id, uid_t uid, stepd_step_rec_t *step);
 static int _delete_ns(uint32_t job_id);
 
 #if defined (__APPLE__)
@@ -405,7 +406,7 @@ static int _rm_data(const char *path, const struct stat *st_buf,
 	return rc;
 }
 
-static int _create_ns(uint32_t job_id, uid_t uid)
+static int _create_ns(uint32_t job_id, uid_t uid, stepd_step_rec_t *step)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
@@ -413,6 +414,7 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 	char *result = NULL;
 	int fd;
 	int rc = 0;
+	bool user_name_set = 0;
 	sem_t *sem1 = NULL;
 	sem_t *sem2 = NULL;
 	pid_t cpid;
@@ -474,14 +476,41 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 			.status = &rc,
 		};
 		run_command_args.env = env_array_create();
+		if (step->het_job_id && (step->het_job_id != NO_VAL))
+			env_array_overwrite_fmt(&run_command_args.env,
+						"SLURM_HET_JOB_ID", "%u",
+						step->het_job_id);
+		env_array_overwrite_fmt(&run_command_args.env,
+					"SLURM_JOB_GID", "%u",
+					step->gid);
 		env_array_overwrite_fmt(&run_command_args.env,
 					"SLURM_JOB_ID", "%u", job_id);
+
 		env_array_overwrite_fmt(&run_command_args.env,
 					"SLURM_JOB_MOUNTPOINT_SRC", "%s",
 					src_bind);
 		env_array_overwrite_fmt(&run_command_args.env,
+					"SLURM_JOB_UID", "%u",
+					step->uid);
+		if (!step->user_name) {
+			step->user_name = uid_to_string(step->uid);
+			user_name_set = true;
+		}
+		env_array_overwrite_fmt(&run_command_args.env,
+					"SLURM_JOB_USER", "%s",
+					step->user_name);
+		if (user_name_set)
+			xfree(step->user_name);
+		if (step->cwd)
+			env_array_overwrite_fmt(&run_command_args.env,
+						"SLURM_JOB_WORK_DIR", "%s",
+						step->cwd);
+		env_array_overwrite_fmt(&run_command_args.env,
 					"SLURM_CONF", "%s",
 					slurm_conf.slurm_conf);
+		env_array_overwrite_fmt(&run_command_args.env,
+					"SLURM_NODE_ALIASES", "%s",
+					step->alias_list);
 		env_array_overwrite_fmt(&run_command_args.env,
 					"SLURMD_NODENAME", "%s",
 					conf->node_name);
@@ -815,7 +844,7 @@ extern int container_p_delete(uint32_t job_id)
 extern int container_p_stepd_create(uint32_t job_id, uid_t uid,
 				    stepd_step_rec_t *step)
 {
-	return _create_ns(job_id, uid);
+	return _create_ns(job_id, uid, step);
 }
 
 extern int container_p_stepd_delete(uint32_t job_id)
