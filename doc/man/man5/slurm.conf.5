@@ -2469,7 +2469,6 @@ will the suspended jobs will be resumed by the Gang scheduler.
 .br
 \fBNOTE:\fR Suspended jobs will not release GRES. Higher priority jobs will not
 be able to preempt to gain access to GRES.
-.RE
 .IP
 
 .TP
@@ -2477,6 +2476,7 @@ be able to preempt to gain access to GRES.
 For \fBPreemptType=preempt/qos\fR, allow jobs within the same qos to preempt
 one another. While this can be set globally here, it is recommend that this
 only be set directly on a relevant subset of the system qos values instead. 
+.RE
 .IP
 
 .TP
