@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix logic estimating when a job can start based on ANY_NODES / LICENSE_ONLY
     reservations that could lead to an infinite loop in backfill.
  -- Fix a segfault that may happen on gpu configured as no_consume.
+ -- Fix regression which prevented a cons_tres gpu job to be submitted to a
+    cons_tres cluster from a non-con_tres cluster.
 
 * Changes in Slurm 21.08.8-2
 ============================
