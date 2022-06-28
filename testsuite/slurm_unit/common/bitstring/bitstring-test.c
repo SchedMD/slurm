@@ -99,6 +99,33 @@ main(int argc, char *argv[])
 
 		bit_free(bs1);
 		bit_free(bs2);
+
+		bs1 = bit_alloc(32);
+		bs2 = bit_alloc(33);
+		bit_set_all(bs2);
+		bit_and(bs2, bs1);
+		TEST(!bit_test(bs2, 31), "diff size and");
+		TEST(bit_test(bs2, 32), "diff size and");
+		bit_clear(bs2, 32);
+		bit_not(bs1);
+		bit_or(bs2, bs1);
+		TEST(!bit_test(bs2, 32), "diff size or");
+
+		bit_set_all(bs2);
+		bit_set_all(bs1);
+		bit_and_not(bs2, bs1);
+		TEST(!bit_test(bs2, 31), "diff size and_not");
+		TEST(bit_test(bs2, 32), "diff size and_not");
+
+		bit_set_all(bs2);
+		bit_clear(bs2, 32);
+		bit_not(bs1);
+		bit_or_not(bs2, bs1);
+		TEST(bit_test(bs2, 31), "diff size and_not");
+		TEST(!bit_test(bs2, 32), "diff size and_not");
+
+		bit_free(bs1);
+		bit_free(bs2);
 	}
 
 	note("testing bit selection");
