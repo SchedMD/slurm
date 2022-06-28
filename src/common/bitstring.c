@@ -709,8 +709,14 @@ bit_and(bitstr_t *b1, bitstr_t *b2)
 	_assert_bitstr_valid(b2);
 
 	bit_cnt = MIN(_bitstr_bits(b1), _bitstr_bits(b2));
-	for (bit = 0; bit < bit_cnt; bit += sizeof(bitstr_t)*8)
+	for (bit = 0; (bit + BITSTR_WORD_SIZE) <= bit_cnt;
+	     bit += BITSTR_WORD_SIZE)
 		b1[_bit_word(bit)] &= b2[_bit_word(bit)];
+
+	if (bit < bit_cnt) {
+		uint64_t mask = ~(_bit_nmask(bit_cnt));
+		b1[_bit_word(bit)] &= (b2[_bit_word(bit)] | mask);
+	}
 }
 
 /*
@@ -726,8 +732,14 @@ void bit_and_not(bitstr_t *b1, bitstr_t *b2)
 	_assert_bitstr_valid(b2);
 
 	bit_cnt = MIN(_bitstr_bits(b1), _bitstr_bits(b2));
-	for (bit = 0; bit < bit_cnt; bit += sizeof(bitstr_t)*8)
+	for (bit = 0; (bit + BITSTR_WORD_SIZE) <= bit_cnt;
+	     bit += BITSTR_WORD_SIZE)
 		b1[_bit_word(bit)] &= ~b2[_bit_word(bit)];
+
+	if (bit < bit_cnt) {
+		uint64_t mask = _bit_nmask(bit_cnt);
+		b1[_bit_word(bit)] &= ~(b2[_bit_word(bit)] & mask);
+	}
 }
 
 /*
@@ -759,8 +771,14 @@ bit_or(bitstr_t *b1, bitstr_t *b2)
 	_assert_bitstr_valid(b2);
 
 	bit_cnt = MIN(_bitstr_bits(b1), _bitstr_bits(b2));
-	for (bit = 0; bit < bit_cnt; bit += sizeof(bitstr_t)*8)
+	for (bit = 0; (bit + BITSTR_WORD_SIZE) <= bit_cnt;
+	     bit += BITSTR_WORD_SIZE)
 		b1[_bit_word(bit)] |= b2[_bit_word(bit)];
+
+	if (bit < bit_cnt) {
+		uint64_t mask = _bit_nmask(bit_cnt);
+		b1[_bit_word(bit)] |= (b2[_bit_word(bit)] & mask);
+	}
 }
 
 /*
@@ -776,8 +794,14 @@ void bit_or_not(bitstr_t *b1, bitstr_t *b2)
 	_assert_bitstr_valid(b2);
 
 	bit_cnt = MIN(_bitstr_bits(b1), _bitstr_bits(b2));
-	for (bit = 0; bit < bit_cnt; bit += sizeof(bitstr_t)*8)
+	for (bit = 0; (bit + BITSTR_WORD_SIZE) <= bit_cnt;
+	     bit += BITSTR_WORD_SIZE)
 		b1[_bit_word(bit)] |= ~b2[_bit_word(bit)];
+
+	if (bit < bit_cnt) {
+		uint64_t mask = ~(_bit_nmask(bit_cnt));
+		b1[_bit_word(bit)] |= ~(b2[_bit_word(bit)] | mask);
+	}
 }
 
 /*
