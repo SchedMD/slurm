@@ -87,6 +87,8 @@ typedef bitstr_t bitoff_t;
 /* bitstr_t signature in first word */
 #define BITSTR_MAGIC 		0x42434445
 
+/* word size */
+#define BITSTR_WORD_SIZE	(sizeof(bitstr_t) * 8)
 /* max bit position in word */
 #define BITSTR_MAXPOS		(sizeof(bitstr_t)*8 - 1)
 
