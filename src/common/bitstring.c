@@ -409,7 +409,7 @@ bit_ffc(bitstr_t *b)
 		int32_t word = _bit_word(bit);
 
 		if (b[word] == BITSTR_MAXVAL) {
-			bit += sizeof(bitstr_t)*8;
+			bit += BITSTR_WORD_SIZE;
 			continue;
 		}
 		while (bit < _bitstr_bits(b) && _bit_word(bit) == word) {
@@ -548,7 +548,7 @@ bit_ffs(bitstr_t *b)
 		int32_t word = _bit_word(bit);
 
 		if (b[word] == 0) {
-			bit += sizeof(bitstr_t)*8;
+			bit += BITSTR_WORD_SIZE;
 			continue;
 		}
 #if HAVE___BUILTIN_CLZLL && (defined SLURM_BIGENDIAN)
@@ -600,7 +600,7 @@ bit_fls(bitstr_t *b)
 	while (bit >= 0 && value == -1) {	/* test whole words */
 		word = _bit_word(bit);
 		if (b[word] == 0) {
-			bit -= sizeof(bitstr_t) * 8;
+			bit -= BITSTR_WORD_SIZE;
 			continue;
 		}
 #if HAVE___BUILTIN_CTZLL && (defined SLURM_BIGENDIAN)
@@ -653,11 +653,11 @@ bit_super_set(bitstr_t *b1, bitstr_t *b2)
 	_assert_bitstr_valid(b2);
 	xassert(_bitstr_bits(b1) == _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t) * 8) {
+	for (bit = 0; bit < _bitstr_bits(b1); bit += BITSTR_WORD_SIZE) {
 		if (b1[_bit_word(bit)] != (b1[_bit_word(bit)] &
 		                           b2[_bit_word(bit)])) {
 			bitstr_t mask;
-			if ((bit + sizeof(bitstr_t) * 8) <= _bitstr_bits(b1))
+			if ((bit + BITSTR_WORD_SIZE) <= _bitstr_bits(b1))
 				return 0;
 			mask = _bit_nmask(_bitstr_bits(b1));
 			if ((b1[_bit_word(bit)] & mask) != (b1[_bit_word(bit)] &
@@ -685,7 +685,7 @@ bit_equal(bitstr_t *b1, bitstr_t *b2)
 	if (_bitstr_bits(b1) != _bitstr_bits(b2))
 		return 0;
 
-	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8) {
+	for (bit = 0; bit < _bitstr_bits(b1); bit += BITSTR_WORD_SIZE) {
 		if (b1[_bit_word(bit)] != b2[_bit_word(bit)])
 			return 0;
 	}
@@ -753,7 +753,7 @@ bit_not(bitstr_t *b)
 
 	_assert_bitstr_valid(b);
 
-	for (bit = 0; bit < _bitstr_bits(b); bit += sizeof(bitstr_t)*8)
+	for (bit = 0; bit < _bitstr_bits(b); bit += BITSTR_WORD_SIZE)
 		b[_bit_word(bit)] = ~b[_bit_word(bit)];
 }
 
@@ -865,12 +865,12 @@ bit_set_count(bitstr_t *b)
 {
 	int32_t count = 0;
 	bitoff_t bit, bit_cnt;
-	int32_t word_size = sizeof(bitstr_t) * 8;
 
 	_assert_bitstr_valid(b);
 
 	bit_cnt = _bitstr_bits(b);
-	for (bit = 0; (bit + word_size) <= bit_cnt; bit += word_size) {
+	for (bit = 0; (bit + BITSTR_WORD_SIZE) <= bit_cnt;
+	     bit += BITSTR_WORD_SIZE) {
 		count += hweight(b[_bit_word(bit)]);
 	}
 	if (bit < bit_cnt) {
@@ -892,7 +892,6 @@ bit_set_count_range(bitstr_t *b, int32_t start, int32_t end)
 {
 	int32_t count = 0, eow;
 	bitoff_t bit;
-	const int32_t word_size = sizeof(bitstr_t) * 8;
 
 	_assert_bitstr_valid(b);
 	_assert_bit_valid(b,start);
@@ -912,7 +911,7 @@ bit_set_count_range(bitstr_t *b, int32_t start, int32_t end)
 		count += hweight(b[_bit_word(bit)] & mask);
 		bit = eow;
 	}
-	for (; (bit + word_size) <= end ; bit += word_size) {
+	for (; (bit + BITSTR_WORD_SIZE) <= end ; bit += BITSTR_WORD_SIZE) {
 		count += hweight(b[_bit_word(bit)]);
 	}
 	if (bit < end) {
@@ -928,15 +927,14 @@ static int32_t _bit_overlap_internal(bitstr_t *b1, bitstr_t *b2, bool count_it)
 	int32_t count = 0;
 	int64_t anded;
 	bitoff_t bit, bit_cnt;
-	int32_t word_size = sizeof(bitstr_t) * 8;
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
 	xassert(_bitstr_bits(b1) == _bitstr_bits(b2));
 
 	bit_cnt = _bitstr_bits(b1);
-	for (bit = 0; bit < bit_cnt; bit += word_size) {
-		if ((bit + word_size - 1) >= bit_cnt)
+	for (bit = 0; bit < bit_cnt; bit += BITSTR_WORD_SIZE) {
+		if ((bit + BITSTR_WORD_SIZE - 1) >= bit_cnt)
 			break;
 		anded = b1[_bit_word(bit)] & b2[_bit_word(bit)];
 		if (count_it)
@@ -1115,7 +1113,6 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
 {
 	bitoff_t bit = 0, new_bits, count = 0;
 	bitstr_t *new;
-	int32_t word_size = sizeof(bitstr_t) * 8;
 
 	_assert_bitstr_valid(b);
 
@@ -1130,16 +1127,16 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
 		int32_t word = _bit_word(bit);
 
 		if (b[word] == 0) {
-			bit += word_size;
+			bit += BITSTR_WORD_SIZE;
 			continue;
 		}
 
 		new_bits = hweight(b[word]);
 		if (((count + new_bits) <= nbits) &&
-		    ((bit + word_size - 1) < _bitstr_bits(b))) {
+		    ((bit + BITSTR_WORD_SIZE - 1) < _bitstr_bits(b))) {
 			new[word] = b[word];
 			count += new_bits;
-			bit += word_size;
+			bit += BITSTR_WORD_SIZE;
 			continue;
 		}
 		while ((bit < _bitstr_bits(b)) && (count < nbits)) {
@@ -1173,7 +1170,7 @@ char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 	for (bit = 0; bit < _bitstr_bits(b); ) {
 		word = _bit_word(bit);
 		if (b[word] == 0) {
-			bit += sizeof(bitstr_t)*8;
+			bit += BITSTR_WORD_SIZE;
 			continue;
 		}
 
@@ -1218,7 +1215,7 @@ char *bit_fmt_full(bitstr_t *b)
 	for (bit = 0; bit < _bitstr_bits(b); ) {
 		word = _bit_word(bit);
 		if (b[word] == 0) {
-			bit += sizeof(bitstr_t)*8;
+			bit += BITSTR_WORD_SIZE;
 			continue;
 		}
 
@@ -1258,7 +1255,7 @@ char *bit_fmt_range(bitstr_t *b, int offset, int len)
 	for (bit = offset; bit < fini_bit; ) {
 		word = _bit_word(bit);
 		if (b[word] == 0) {
-			bit += sizeof(bitstr_t) * 8;
+			bit += BITSTR_WORD_SIZE;
 			continue;
 		}
 
@@ -1447,7 +1444,7 @@ int32_t *bitstr2inx(bitstr_t *b)
 	for (bit = 0; bit < _bitstr_bits(b); ) {
 		/* skip past empty words */
 		if (!b[_bit_word(bit)]) {
-			bit += sizeof(bitstr_t) * 8;
+			bit += BITSTR_WORD_SIZE;
 			continue;
 		}
 
@@ -1472,7 +1469,6 @@ static char *_bit_fmt_hexmask(bitstr_t *bitmap, bool trim_output)
 {
 	char *retstr, *ptr;
 	char current;
-	const int32_t word_size = sizeof(bitstr_t) * 8;
 	bitoff_t i, j, word;
 	bitoff_t bitsize;
 
@@ -1495,7 +1491,7 @@ static char *_bit_fmt_hexmask(bitstr_t *bitmap, bool trim_output)
 	ptr = &retstr[charsize + 1];
 
 	for (i = 0; i < bitsize;) {
-		if (i + word_size <= bitsize) {
+		if (i + BITSTR_WORD_SIZE <= bitsize) {
 			word = _bit_word(i);
 			for (j = 0; j < sizeof(bitstr_t); j++) {
 				uint8_t idx = ((uint8_t *)(&(bitmap[word])))[j];
@@ -1504,7 +1500,7 @@ static char *_bit_fmt_hexmask(bitstr_t *bitmap, bool trim_output)
 				*ptr = hexmask_lookup[idx][0];
 				ptr--;
 			}
-			i += word_size;
+			i += BITSTR_WORD_SIZE;
 		} else {
 			current = 0;
 			if (                 bit_test(bitmap,i++))

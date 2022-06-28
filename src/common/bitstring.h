@@ -90,7 +90,7 @@ typedef bitstr_t bitoff_t;
 /* word size */
 #define BITSTR_WORD_SIZE	(sizeof(bitstr_t) * 8)
 /* max bit position in word */
-#define BITSTR_MAXPOS		(sizeof(bitstr_t)*8 - 1)
+#define BITSTR_MAXPOS		(BITSTR_WORD_SIZE - 1)
 
 /* compat with Vixie macros */
 bitstr_t *bit_alloc(bitoff_t nbits);
