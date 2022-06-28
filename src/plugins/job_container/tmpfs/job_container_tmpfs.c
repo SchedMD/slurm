@@ -80,12 +80,6 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
 static bool force_rm = true;
-List legacy_jobs;
-
-typedef struct {
-	uint32_t job_id;
-	uint16_t protocol_version;
-} legacy_job_info_t;
 
 static int _create_paths(uint32_t job_id,
 			 char *job_mount,
@@ -189,20 +183,6 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-static int _legacy_fini(void *x, void *arg) {
-	char job_mount[PATH_MAX];
-	legacy_job_info_t *job = (legacy_job_info_t *)x;
-
-	if (_create_paths(job->job_id, job_mount, NULL, NULL)
-	    != SLURM_SUCCESS)
-		return SLURM_ERROR;
-
-	if (umount2(job_mount, MNT_DETACH))
-		debug2("umount2: %s failed: %s", job_mount, strerror(errno));
-
-	return SLURM_SUCCESS;
-}
-
 /*
  * fini() is called when the plugin is removed. Clear any allocated
  *	storage here.
@@ -220,13 +200,6 @@ extern int fini(void)
 		close(step_ns_fd);
 		step_ns_fd = -1;
 	}
-
-	if (!legacy_jobs)
-		return SLURM_SUCCESS;
-
-	rc = list_for_each(legacy_jobs, _legacy_fini, NULL);
-
-	FREE_NULL_LIST(legacy_jobs);
 
 	return rc;
 }
