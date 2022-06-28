@@ -203,6 +203,11 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	if (cleanup)
 		goto done;
 
+	if (!step) {
+		error("%s: step is NULL, skipping cleanup", __func__);
+		goto done;
+	}
+
 	if (!only_mem) {
 		if (step->batch)
 			batch_finish(step, rc); /* sends batch complete message */
