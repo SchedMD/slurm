@@ -39,10 +39,10 @@
 #include "select_cons_tres.h"
 
 /*
- * _can_job_run_on_node - Given the job requirements, determine which
- *                        resources from the given node (if any) can be
- *                        allocated to this job. Returns a structure identifying
- *                        the resources available for allocation to this job.
+ * can_job_run_on_node - Given the job requirements, determine which
+ *                       resources from the given node (if any) can be
+ *                       allocated to this job. Returns a structure identifying
+ *                       the resources available for allocation to this job.
  *       NOTE: This process does NOT support overcommitting resources
  *
  * IN job_ptr       - pointer to job requirements
