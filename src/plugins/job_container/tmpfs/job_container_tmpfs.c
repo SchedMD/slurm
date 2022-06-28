@@ -292,7 +292,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 	return rc;
 }
 
-static int _mount_private_tmp(char *path, uid_t uid)
+static int _mount_private_dirs(char *path, uid_t uid)
 {
 	char mount_path[PATH_MAX];
 	char *buffer = NULL, *save_ptr = NULL, *token;
@@ -311,7 +311,7 @@ static int _mount_private_tmp(char *path, uid_t uid)
 		if (len > PATH_MAX || len < 0) {
 			error("%s: Unable to build mount path for %m",
 			      __func__);
-			goto private_tmp_exit;
+			goto private_mounts_exit;
 		}
 		for (char *t = mount_path + strlen(path) + 1; *t; t++) {
 			if (*t == '/')
@@ -321,24 +321,24 @@ static int _mount_private_tmp(char *path, uid_t uid)
 		if (rc && errno != EEXIST) {
 			error("%s: Failed to create %s, %m",
 			      __func__, mount_path);
-			goto private_tmp_exit;
+			goto private_mounts_exit;
 		}
 		rc = chown(mount_path, uid, -1);
 		if (rc) {
 			error("%s: chown failed for %s: %m",
 			      __func__, mount_path);
-			goto private_tmp_exit;
+			goto private_mounts_exit;
 		}
 		if (mount(mount_path, token, NULL, MS_BIND, NULL)) {
 			error("%s: %s mount failed, %m", __func__, token);
 			rc = -1;
-			goto private_tmp_exit;
+			goto private_mounts_exit;
 		}
 		token = strtok_r(NULL, ",", &save_ptr);
 	}
 #endif
 
-private_tmp_exit:
+private_mounts_exit:
 	xfree(buffer);
 	return rc;
 }
@@ -555,7 +555,7 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 		 * Now we have a persistent mount namespace.
 		 * Mount private directories inside the namespace.
 		 */
-		if (_mount_private_tmp(src_bind, uid) == -1) {
+		if (_mount_private_dirs(src_bind, uid) == -1) {
 			rc = -1;
 			goto child_exit;
 		}
