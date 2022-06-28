@@ -292,19 +292,55 @@ extern int container_p_restore(char *dir_name, bool recover)
 	return rc;
 }
 
-static int _mount_private_tmp(char *path)
+static int _mount_private_tmp(char *path, uid_t uid)
 {
+	char mount_path[PATH_MAX];
+	char *buffer = NULL, *save_ptr = NULL, *token;
+	int rc = 0, len;
+
 	if (!path) {
-		error("%s: cannot mount /tmp", __func__);
+		error("%s: no path to private directories specified.",
+		      __func__);
 		return -1;
 	}
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
-	if (mount(path, "/tmp", NULL, MS_BIND, NULL)) {
-		error("%s: /tmp mount failed: %m", __func__);
-		return -1;
+	buffer = xstrdup(jc_conf->dirs);
+	token = strtok_r(buffer, ",", &save_ptr);
+	while (token) {
+		len = snprintf(mount_path, PATH_MAX, "%s/%s", path, token);
+		if (len > PATH_MAX || len < 0) {
+			error("%s: Unable to build mount path for %m",
+			      __func__);
+			goto private_tmp_exit;
+		}
+		for (char *t = mount_path + strlen(path) + 1; *t; t++) {
+			if (*t == '/')
+				*t = '_';
+		}
+		rc = mkdir(mount_path, 0700);
+		if (rc && errno != EEXIST) {
+			error("%s: Failed to create %s, %m",
+			      __func__, mount_path);
+			goto private_tmp_exit;
+		}
+		rc = chown(mount_path, uid, -1);
+		if (rc) {
+			error("%s: chown failed for %s: %m",
+			      __func__, mount_path);
+			goto private_tmp_exit;
+		}
+		if (mount(mount_path, token, NULL, MS_BIND, NULL)) {
+			error("%s: %s mount failed, %m", __func__, token);
+			rc = -1;
+			goto private_tmp_exit;
+		}
+		token = strtok_r(NULL, ",", &save_ptr);
 	}
 #endif
-	return 0;
+
+private_tmp_exit:
+	xfree(buffer);
+	return rc;
 }
 
 static int _mount_private_shm(void)
@@ -517,9 +553,9 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 #endif
 		/*
 		 * Now we have a persistent mount namespace.
-		 * Mount private /tmp inside the namespace.
+		 * Mount private directories inside the namespace.
 		 */
-		if (_mount_private_tmp(src_bind) == -1) {
+		if (_mount_private_tmp(src_bind, uid) == -1) {
 			rc = -1;
 			goto child_exit;
 		}

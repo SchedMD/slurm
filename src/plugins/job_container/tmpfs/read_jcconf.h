@@ -40,6 +40,8 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 
+#define SLURM_TMPFS_DEF_DIRS "/tmp"
+
 /*
  * Slurm namespace job container plugin initialization
  * parameters
@@ -47,6 +49,7 @@
 typedef struct slurm_jc_conf {
 	bool auto_basepath;
 	char *basepath;
+	char *dirs;
 	char *initscript;
 } slurm_jc_conf_t;
 

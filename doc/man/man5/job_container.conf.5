@@ -56,6 +56,11 @@ to mount and unmount the private directories for the job.
 .IP
 
 .TP
+\fBDirs\fR
+A list of directories separated with commas to create private directories for.
+This parameter is optional and if not specified it defaults to "/tmp".
+
+.TP
 \fBInitScript\fR
 Specify fully qualified pathname of an optional initialization script. This
 script is run before the namespace construction of a job. It can be used to
@@ -96,6 +101,16 @@ NodeName=gpu[1\-10] BasePath=/var/nvme/storage InitScript=/etc/slurm/init.sh
 ###
 AutoBasePath=true
 BasePath=/var/nvme/storage
+.fi
+
+.nf
+###
+# Sample job_container.conf file 3
+# Define 1 basepath that will be on all nodes, automatically created, with
+#     /tmp and /var/tmp as private mounts.
+###
+AutoBasePath=true
+BasePath=/var/nvme/storage Dirs=/tmp,/var/tmp
 .fi
 
 .TP

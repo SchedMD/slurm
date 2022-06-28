@@ -59,6 +59,7 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 	static s_p_options_t ns_options[] = {
 		{"AutoBasePath", S_P_BOOLEAN},
 		{"BasePath", S_P_STRING},
+		{"Dirs", S_P_STRING},
 		{"InitScript", S_P_STRING},
 		{NULL}
 	};
@@ -93,6 +94,9 @@ static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
 
 	if (s_p_get_boolean(&slurm_jc_conf.auto_basepath, "AutoBasePath", tbl))
 		auto_basepath_set = true;
+
+	if (!s_p_get_string(&slurm_jc_conf.dirs, "Dirs", tbl))
+		debug3("empty Dirs detected");
 
 	if (!s_p_get_string(&slurm_jc_conf.initscript, "InitScript", tbl))
 		debug3("empty init script detected");
@@ -138,6 +142,7 @@ static int _read_slurm_jc_conf(void)
 	static s_p_options_t options[] = {
 		{"AutoBasePath", S_P_BOOLEAN},
 		{"BasePath", S_P_ARRAY, _parse_jc_conf_internal, NULL},
+		{"Dirs", S_P_STRING},
 		{"NodeName", S_P_ARRAY, _parse_jc_conf, NULL},
 		{NULL}
 	};
@@ -165,6 +170,10 @@ static int _read_slurm_jc_conf(void)
 		s_p_get_boolean(&slurm_jc_conf.auto_basepath,
 				"AutoBasePath", tbl);
 
+	if (!slurm_jc_conf.dirs &&
+	    !s_p_get_string(&slurm_jc_conf.dirs, "Dirs", tbl))
+		slurm_jc_conf.dirs = xstrdup(SLURM_TMPFS_DEF_DIRS);
+
 	if (!slurm_jc_conf.basepath) {
 		error("Configuration for this node not found in %s",
 		      tmpfs_conf_file);
@@ -187,6 +196,9 @@ extern slurm_jc_conf_t *get_slurm_jc_conf(void)
 		rc = _read_slurm_jc_conf();
 		if (rc == SLURM_ERROR)
 			return NULL;
+
+		xassert(slurm_jc_conf.dirs);
+
 		slurm_jc_conf_inited = true;
 	}
 
@@ -198,6 +210,7 @@ extern void free_jc_conf(void)
 	if (slurm_jc_conf_inited) {
 		xfree(slurm_jc_conf.basepath);
 		xfree(slurm_jc_conf.initscript);
+		xfree(slurm_jc_conf.dirs);
 	}
 	return;
 }
