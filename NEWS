@@ -92,6 +92,8 @@ documents those changes that are of interest to users and administrators.
  -- srun --slurmd-debug option is now only allowed for root and SlurmUser
  -- Change 'scontrol requeue' behavior for scron jobs to use cronspec to
     determine the next start time.
+ -- serializer/url-encoded - interpet query keys without a value (flags) to be
+    true instead of NULL.
 
 * Changes in Slurm 22.05.6
 ==========================

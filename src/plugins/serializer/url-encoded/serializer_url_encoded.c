@@ -99,11 +99,19 @@ static int _handle_new_key_char(data_t *d, char **key, char **buffer,
 		/* example: &test=value */
 	} else if (*key == NULL && *buffer != NULL) {
 		/*
-		 * example: test&test=value
-		 * existing buffer, assume null value.
+		 * example: test1&test2=value
+		 * only buffer given but not key value. Assume that the buffer
+		 * is instead the key and this is the user providing a flag
+		 * input which will be parsed as being true.
+		 *
+		 * The behavior is not yet standardised by OpenAPI:
+		 *  https://github.com/OAI/OpenAPI-Specification/issues/1782
+		 *
+		 * RFC3986 provides an example of "key=value" but leaves
+		 * the flag values ambiguous.
 		 */
 		data_t *c = data_key_set(d, *buffer);
-		data_set_null(c);
+		data_set_bool(c, true);
 		xfree(*buffer);
 		*buffer = NULL;
 	} else if (*key != NULL && *buffer == NULL) {
