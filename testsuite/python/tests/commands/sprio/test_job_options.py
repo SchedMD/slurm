@@ -55,8 +55,8 @@ def test_long(queued_job, default_partition):
 
     user_name = atf.get_user_name()
     output = atf.run_command_output(f"sprio --long -j {queued_job}", fatal=True)
-    assert re.search(r'JOBID\s+PARTITION\s+USER\s+PRIORITY\s+SITE.*ASSOC.*PARTITION.*QOS', output) is not None
-    assert re.search(fr'{queued_job}\s+{default_partition}\s+{user_name}(?:\s+\d+){{8,}}', output) is not None
+    assert re.search(r'JOBID\s+PARTITION\s+USER\s+ACCOUNT\s+PRIORITY\s+SITE\s+AGE\s+ASSOC\s+FAIRSHARE\s+JOBSIZE\s+PARTITION\s+QOSNAME\s+QOS\s+NICE\s+TRES[\r\n]', output) is not None
+    assert re.search(fr'{queued_job}\s+{default_partition}\s+{user_name}\s+\S+(?:\s+\d+){{7,}}\s+\S+(?:\s+\d+){{2,}}\s*\S*', output) is not None
 
 
 def test_norm(queued_job, default_partition):
