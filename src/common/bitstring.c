@@ -677,7 +677,7 @@ bit_super_set(bitstr_t *b1, bitstr_t *b2)
 extern int
 bit_equal(bitstr_t *b1, bitstr_t *b2)
 {
-	bitoff_t bit;
+	bitoff_t bit, bit_cnt;
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
@@ -685,8 +685,16 @@ bit_equal(bitstr_t *b1, bitstr_t *b2)
 	if (_bitstr_bits(b1) != _bitstr_bits(b2))
 		return 0;
 
-	for (bit = 0; bit < _bitstr_bits(b1); bit += BITSTR_WORD_SIZE) {
+	bit_cnt = _bitstr_bits(b1);
+
+	for (bit = 0; (bit + BITSTR_WORD_SIZE) <= bit_cnt;
+	     bit += BITSTR_WORD_SIZE) {
 		if (b1[_bit_word(bit)] != b2[_bit_word(bit)])
+			return 0;
+	}
+	if (bit < bit_cnt) {
+		uint64_t mask = _bit_nmask(bit_cnt);
+		if ((b1[_bit_word(bit)] & ~b2[_bit_word(bit)]) & mask)
 			return 0;
 	}
 
