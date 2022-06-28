@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
     needed.
  -- Add -F/--future option to sinfo to display future nodes.
  -- openapi/dbv0.0.39 - resolve job user from uid when user is not provided.
+ -- sacct/sinfo/squeue - use openapi/[db]v0.0.39 for --json and --yaml modes.
 
 * Changes in Slurm 22.05.3
 ==========================
