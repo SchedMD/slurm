@@ -299,10 +299,6 @@ static int _mount_private_tmp(char *path)
 		return -1;
 	}
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
-	if (mount(NULL, "/", NULL, MS_PRIVATE|MS_REC, NULL)) {
-		error("%s: making root private: failed: %m", __func__);
-		return -1;
-	}
 	if (mount(path, "/tmp", NULL, MS_BIND, NULL)) {
 		error("%s: /tmp mount failed: %m", __func__);
 		return -1;
@@ -512,6 +508,13 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 			goto child_exit;
 		}
 
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+		/* Set root filesystem to private */
+		if (mount(NULL, "/", NULL, MS_PRIVATE|MS_REC, NULL)) {
+			error("%s: Failed to make root private: %m", __func__);
+			return -1;
+		}
+#endif
 		/*
 		 * Now we have a persistent mount namespace.
 		 * Mount private /tmp inside the namespace.
