@@ -210,6 +210,19 @@ main(int argc, char *argv[])
 		bit_free(bs);
 	}
 
+	note("Testing bit_equal");
+	{
+		bitstr_t *bs1 = bit_alloc(32);
+		bitstr_t *bs2 = bit_alloc(32);
+		bit_nset(bs1, 0, 31);
+		bit_not(bs2);
+		TEST(bit_equal(bs1, bs2), "bit_equal");
+
+		bit_free(bs1);
+		bit_free(bs2);
+
+	}
+
 	note("Testing bit_unfmt");
 	{
 		bitstr_t *bs = bit_alloc(1024);
