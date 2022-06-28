@@ -642,7 +642,7 @@ bit_fill_gaps(bitstr_t *b)
 }
 
 /*
- * return 1 if all bits set in b1 are also set in b2, 0 0therwise
+ * return 1 if all bits set in b1 are also set in b2, 0 otherwise
  */
 int
 bit_super_set(bitstr_t *b1, bitstr_t *b2)
