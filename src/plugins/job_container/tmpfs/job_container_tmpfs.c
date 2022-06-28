@@ -304,7 +304,7 @@ static int _mount_private_tmp(char *path)
 		      __func__, strerror(errno));
 		return -1;
 	}
-	if (mount(path, "/tmp", NULL, MS_BIND|MS_REC, NULL)) {
+	if (mount(path, "/tmp", NULL, MS_BIND, NULL)) {
 		error("%s: /tmp mount failed, %s",
 		      __func__, strerror(errno));
 		return -1;
