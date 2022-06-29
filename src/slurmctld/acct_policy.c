@@ -4459,19 +4459,22 @@ static void _get_accrue_limits(job_record_t *job_ptr,
 	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
 	xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
 
-	if (job_ptr->qos_ptr)
+	if (job_ptr->qos_ptr) {
 		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
 				       job_ptr->qos_ptr->grp_jobs_accrue,
 				       job_ptr->qos_ptr->usage->accrue_cnt);
-	if (used_limits_acct)
-		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
-				       job_ptr->qos_ptr->max_jobs_accrue_pa,
-				       used_limits_acct->accrue_cnt);
+		if (used_limits_acct)
+			_get_accrue_create_cnt(
+				max_jobs_accrue_ptr, create_cnt_ptr,
+				job_ptr->qos_ptr->max_jobs_accrue_pa,
+				used_limits_acct->accrue_cnt);
 
-	if (used_limits_user)
-		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
-				       job_ptr->qos_ptr->max_jobs_accrue_pu,
-				       used_limits_user->accrue_cnt);
+		if (used_limits_user)
+			_get_accrue_create_cnt(
+				max_jobs_accrue_ptr, create_cnt_ptr,
+				job_ptr->qos_ptr->max_jobs_accrue_pu,
+				used_limits_user->accrue_cnt);
+	}
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
