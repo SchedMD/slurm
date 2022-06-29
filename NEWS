@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     rejected when spanning heterogeneous nodes.
  -- openapi/v0.0.38 - detect when partition PreemptMode is disabled
  -- openapi/v0.0.38 - add QOS flag to handle partition PreemptMode=within
+ -- Add total_cpus and total_nodes values to the partition list in
+    the job_submit/lua plugin.
 
 * Changes in Slurm 22.05.2
 ==========================

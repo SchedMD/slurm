@@ -1122,6 +1122,10 @@ static int _part_rec_field(const part_record_t *part_ptr, const char *name)
 		lua_pushstring(L, part_ptr->qos_char);
 	} else if (!xstrcmp(name, "state_up")) {
 		lua_pushnumber(L, part_ptr->state_up);
+	} else if (!xstrcmp(name, "total_cpus")) {
+		lua_pushnumber(L, part_ptr->total_cpus);
+	} else if (!xstrcmp(name, "total_nodes")) {
+		lua_pushnumber(L, part_ptr->total_nodes);
 	} else {
 		lua_pushnil(L);
 	}
