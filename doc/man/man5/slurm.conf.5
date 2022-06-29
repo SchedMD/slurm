@@ -2576,8 +2576,9 @@ The keywords below have no associated value
 .RS
 .TP 17
 \fBACCRUE_ALWAYS\fR
-If set, priority age factor will be increased despite job dependencies
-or holds.
+If set, priority age factor will be increased despite job ineligibility due to
+either dependencies, holds or begin time in the future. Accrue limits are
+ignored.
 .IP
 
 .TP

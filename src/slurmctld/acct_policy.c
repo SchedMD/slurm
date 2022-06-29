@@ -4447,10 +4447,150 @@ job_failed:
 	return false;
 }
 
+static void _get_accrue_limits(job_record_t *job_ptr,
+			       slurmdb_used_limits_t *used_limits_acct,
+			       slurmdb_used_limits_t *used_limits_user,
+			       uint32_t *max_jobs_accrue_ptr,
+			       int *create_cnt_ptr)
+{
+	slurmdb_assoc_rec_t *assoc_ptr;
+	bool parent = false;
+
+	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
+	xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
+
+	if (job_ptr->qos_ptr)
+		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
+				       job_ptr->qos_ptr->grp_jobs_accrue,
+				       job_ptr->qos_ptr->usage->accrue_cnt);
+	if (used_limits_acct)
+		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
+				       job_ptr->qos_ptr->max_jobs_accrue_pa,
+				       used_limits_acct->accrue_cnt);
+
+	if (used_limits_user)
+		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
+				       job_ptr->qos_ptr->max_jobs_accrue_pu,
+				       used_limits_user->accrue_cnt);
+
+	assoc_ptr = job_ptr->assoc_ptr;
+	while (assoc_ptr) {
+		if (*max_jobs_accrue_ptr != INFINITE)
+			break;
+
+		_get_accrue_create_cnt(max_jobs_accrue_ptr, create_cnt_ptr,
+				       assoc_ptr->grp_jobs_accrue,
+				       assoc_ptr->usage->accrue_cnt);
+		/*
+		 * We don't need to look at the regular limits for
+		 * parents since we have pre-propogated them, so just
+		 * continue with the next parent
+		 */
+		if (!parent)
+			_get_accrue_create_cnt(max_jobs_accrue_ptr,
+					       create_cnt_ptr,
+					       assoc_ptr->max_jobs_accrue,
+					       assoc_ptr->usage->accrue_cnt);
+
+		/* now go up the hierarchy */
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+		parent = true;
+	}
+
+}
+
+static void _handle_add_accrue(job_record_t *job_ptr,
+			       slurmdb_used_limits_t *used_limits_acct,
+			       slurmdb_used_limits_t *used_limits_user,
+			       uint32_t max_jobs_accrue,
+			       int create_cnt,
+			       time_t now)
+{
+	struct job_details *details_ptr = job_ptr->details;
+	job_record_t *old_job_ptr;
+
+	/* No limit (or there is space to accrue) */
+	if ((max_jobs_accrue == INFINITE) ||
+	    (create_cnt && (!job_ptr->array_recs ||
+			    !job_ptr->array_recs->task_cnt))) {
+		if (!details_ptr->accrue_time &&
+		    job_ptr->details->begin_time) {
+			/*
+			 * If no limit and begin_time hasn't happened yet
+			 * then set accrue_time to now.
+			 */
+			details_ptr->accrue_time =
+				((max_jobs_accrue == INFINITE) &&
+				 details_ptr->begin_time) ?
+				details_ptr->begin_time : time(NULL);
+
+			/*
+			 * If we have an array here and no limit we want to add
+			 * all the tasks in the array.
+			 */
+			if (job_ptr->array_recs &&
+			    job_ptr->array_recs->task_cnt)
+				create_cnt = job_ptr->array_recs->task_cnt;
+			else
+				create_cnt = 1;
+
+			_add_accrue_time_internal(job_ptr->assoc_ptr,
+						  job_ptr->qos_ptr,
+						  used_limits_acct,
+						  used_limits_user,
+						  create_cnt);
+		}
+
+		return;
+	}
+
+	/* Looks like we are at the limit */
+	if (!create_cnt) {
+		log_flag(ACCRUE, "%s: %pJ can't accrue, we are over a limit",
+			 __func__, job_ptr);
+		return;
+	}
+
+	create_cnt = MIN(create_cnt, job_ptr->array_recs->task_cnt);
+
+	/* How many can we spin off? */
+	for (int i = 0; i < create_cnt; i++) {
+		/*
+		 * After we split off the old_job_ptr is what we want to alter
+		 * as the job_ptr returned from job_array_post_sched will be the
+		 * master job_ptr for the array and we will use that to split
+		 * more off if needed.
+		 */
+		old_job_ptr = job_ptr;
+
+		job_array_pre_sched(job_ptr);
+		job_ptr = job_array_post_sched(job_ptr);
+
+		details_ptr = old_job_ptr->details;
+		if (!details_ptr) {
+			fatal_abort("%s: no details after split", __func__);
+			return;
+		}
+		details_ptr->accrue_time = now;
+		log_flag(ACCRUE, "%pJ is now accruing time %ld",
+			 old_job_ptr, now);
+	}
+
+	/*
+	 * Here we are ok to use all the same pointers from the main job_ptr as
+	 * an array will always have the same pointers.  If this ever changes in
+	 * the future some how we will need to address it.
+	 */
+	_add_accrue_time_internal(job_ptr->assoc_ptr,
+				  job_ptr->qos_ptr,
+				  used_limits_acct,
+				  used_limits_user,
+				  create_cnt);
+}
+
 extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 					  bool assoc_mgr_locked)
 {
-	job_record_t *old_job_ptr;
 	slurmdb_qos_rec_t *qos_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	struct job_details *details_ptr;
@@ -4458,9 +4598,8 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	slurmdb_used_limits_t *used_limits_user = NULL;
 
 	uint32_t max_jobs_accrue = INFINITE;
-	int create_cnt = 0, i, rc = SLURM_SUCCESS;
+	int create_cnt = 0, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
-	bool parent = false;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
@@ -4499,15 +4638,16 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	if (!details_ptr->accrue_time && !IS_JOB_PENDING(job_ptr))
 		return SLURM_SUCCESS;
 
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
 		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
 		      __func__, job_ptr);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto endit;
 	}
-
-	if (!assoc_mgr_locked)
-		assoc_mgr_lock(&locks);
 
 	qos_ptr = job_ptr->qos_ptr;
 	if (qos_ptr) {
@@ -4553,119 +4693,11 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 	} else if (!IS_JOB_PENDING(job_ptr))
 		goto endit;
 
-	if (qos_ptr)
-		_get_accrue_create_cnt(&max_jobs_accrue, &create_cnt,
-				       qos_ptr->grp_jobs_accrue,
-				       qos_ptr->usage->accrue_cnt);
-	if (used_limits_acct)
-		_get_accrue_create_cnt(&max_jobs_accrue, &create_cnt,
-				       qos_ptr->max_jobs_accrue_pa,
-				       used_limits_acct->accrue_cnt);
+	_get_accrue_limits(job_ptr, used_limits_acct, used_limits_user,
+			   &max_jobs_accrue, &create_cnt);
 
-	if (used_limits_user)
-		_get_accrue_create_cnt(&max_jobs_accrue, &create_cnt,
-				       qos_ptr->max_jobs_accrue_pu,
-				       used_limits_user->accrue_cnt);
-
-	assoc_ptr = job_ptr->assoc_ptr;
-	while (assoc_ptr) {
-		if (max_jobs_accrue != INFINITE)
-			break;
-
-		_get_accrue_create_cnt(&max_jobs_accrue, &create_cnt,
-				       assoc_ptr->grp_jobs_accrue,
-				       assoc_ptr->usage->accrue_cnt);
-		/* We don't need to look at the regular limits for
-		 * parents since we have pre-propogated them, so just
-		 * continue with the next parent
-		 */
-		if (!parent)
-			_get_accrue_create_cnt(&max_jobs_accrue, &create_cnt,
-					       assoc_ptr->max_jobs_accrue,
-					       assoc_ptr->usage->accrue_cnt);
-
-		/* now go up the hierarchy */
-		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
-		parent = true;
-	}
-
-	/* No limit (or there is space to accrue) */
-	if ((max_jobs_accrue == INFINITE) ||
-	    (create_cnt && (!job_ptr->array_recs ||
-			    !job_ptr->array_recs->task_cnt))) {
-		if (!details_ptr->accrue_time &&
-		    job_ptr->details->begin_time) {
-			/*
-			 * If no limit and begin_time hasn't happened yet
-			 * then set accrue_time to now.
-			 */
-			details_ptr->accrue_time =
-				((max_jobs_accrue == INFINITE) &&
-				 details_ptr->begin_time) ?
-				details_ptr->begin_time : time(NULL);
-
-			/*
-			 * If we have an array here and no limit we want to add
-			 * all the tasks in the array.
-			 */
-			if (job_ptr->array_recs &&
-			    job_ptr->array_recs->task_cnt)
-				create_cnt = job_ptr->array_recs->task_cnt;
-			else
-				create_cnt = 1;
-
-			_add_accrue_time_internal(job_ptr->assoc_ptr,
-						  qos_ptr,
-						  used_limits_acct,
-						  used_limits_user,
-						  create_cnt);
-		}
-
-		goto endit;
-	}
-
-	/* Looks like we are at the limit */
-	if (!create_cnt) {
-		log_flag(ACCRUE, "%s: %pJ can't accrue, we are over a limit",
-			 __func__, job_ptr);
-		goto endit;
-	}
-
-	create_cnt = MIN(create_cnt, job_ptr->array_recs->task_cnt);
-
-	/* How many can we spin off? */
-	for (i = 0; i < create_cnt; i++) {
-		/*
-		 * After we split off the old_job_ptr is what we want to alter
-		 * as the job_ptr returned from job_array_post_sched will be the
-		 * master job_ptr for the array and we will use that to split
-		 * more off if needed.
-		 */
-		old_job_ptr = job_ptr;
-
-		job_array_pre_sched(job_ptr);
-		job_ptr = job_array_post_sched(job_ptr);
-
-		details_ptr = old_job_ptr->details;
-		if (!details_ptr) {
-			fatal_abort("%s: no details after split", __func__);
-			goto endit;
-		}
-		details_ptr->accrue_time = now;
-		log_flag(ACCRUE, "%pJ is now accruing time %ld",
-			 old_job_ptr, now);
-	}
-
-	/*
-	 * Here we are ok to use all the same pointers from the main job_ptr as
-	 * an array will always have the same pointers.  If this ever changes in
-	 * the future some how we will need to address it.
-	 */
-	_add_accrue_time_internal(job_ptr->assoc_ptr,
-				  qos_ptr,
-				  used_limits_acct,
-				  used_limits_user,
-				  create_cnt);
+	_handle_add_accrue(job_ptr, used_limits_acct, used_limits_user,
+			   max_jobs_accrue, create_cnt, now);
 
 endit:
 
@@ -4684,29 +4716,52 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 	slurmdb_used_limits_t *used_limits_user = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
-	int job_cnt;
+	int create_cnt = 0;
+	uint32_t max_jobs_accrue = INFINITE;
+	struct job_details *details_ptr = job_ptr->details;
+	time_t now = time(NULL);
+
+	/*
+	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
+	 * submit_time (Not begin). Accrue limits don't work with this flag.
+	 */
+	if (slurm_conf.priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
+		return;
 
 	/* check to see if we are enforcing limits */
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return;
 
-	/* If Job is held or dependent don't accrue time */
-	if (!job_ptr->priority || (job_ptr->bit_flags & JOB_DEPENDENT))
+	/*
+	 * If the job is not eligible because it is either held, dependent or
+	 * because its begin time is in the future don't accrue time.
+	 */
+	if (!job_ptr->priority || (job_ptr->bit_flags & JOB_DEPENDENT) ||
+	    (details_ptr &&
+	     (details_ptr->begin_time && (details_ptr->begin_time > now)))) {
+		/*
+		 * If the job was previously accruing time (for example,
+		 * ACCRUE_ALWAYS could have been on or not having
+		 * ACCOUTING_ENFORCE_LIMITS), we need to remove the accrue_time.
+		 */
+		if (details_ptr)
+			details_ptr->accrue_time = 0;
 		return;
+	}
 
 	/* Job has to be pending to accrue time. */
 	if (!IS_JOB_PENDING(job_ptr))
 		return;
 
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
 		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
 		      __func__, job_ptr);
-		return;
+		goto endit;
 	}
-
-	if (!assoc_mgr_locked)
-		assoc_mgr_lock(&locks);
 
 	qos_ptr = job_ptr->qos_ptr;
 	if (qos_ptr) {
@@ -4718,20 +4773,12 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 				job_ptr->user_id);
 	}
 
-	/*
-	 * Normally only single jobs come in here, but if we don't have any
-	 * limits the array itself comes in so we need to add it all.
-	 */
-	if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
-		job_cnt = job_ptr->array_recs->task_cnt;
-	else
-		job_cnt = 1;
+	_get_accrue_limits(job_ptr, used_limits_acct, used_limits_user,
+			   &max_jobs_accrue, &create_cnt);
+	_handle_add_accrue(job_ptr, used_limits_acct, used_limits_user,
+			   max_jobs_accrue, create_cnt, now);
 
-	_add_accrue_time_internal(assoc_ptr,
-				  qos_ptr,
-				  used_limits_acct,
-				  used_limits_user,
-				  job_cnt);
+endit:
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 }
@@ -4745,6 +4792,13 @@ extern void acct_policy_remove_accrue_time(job_record_t *job_ptr,
 	slurmdb_used_limits_t *used_limits_user = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
 	int job_cnt;
+
+	/*
+	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
+	 * submit_time (Not begin).  Accrue limits don't work with this flag.
+	 */
+	if (slurm_conf.priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS)
+		return;
 
 	/* check to see if we are enforcing limits */
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
@@ -4814,15 +4868,15 @@ extern uint32_t acct_policy_get_prio_thresh(job_record_t *job_ptr,
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return 0;
 
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
 		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
 		      __func__, job_ptr);
-		return 0;
+		goto endit;
 	}
-
-	if (!assoc_mgr_locked)
-		assoc_mgr_lock(&locks);
 
 	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
@@ -4834,6 +4888,7 @@ extern uint32_t acct_policy_get_prio_thresh(job_record_t *job_ptr,
 
 	_get_prio_thresh(&prio_thresh, assoc_ptr->min_prio_thresh);
 
+endit:
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 

@@ -386,8 +386,7 @@ extern int job_fail_qos(job_record_t *job_ptr, const char *func_name)
 
 		if (job_ptr->details) {
 			/* reset the job */
-			job_ptr->details->accrue_time = 0;
-			job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
+			acct_policy_remove_accrue_time(job_ptr, false);
 			job_ptr->details->begin_time = 0;
 			/* Update job with new begin_time. */
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
@@ -406,12 +405,6 @@ extern int job_fail_qos(job_record_t *job_ptr, const char *func_name)
 		 */
 		if (!job_ptr->db_index)
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-
-		/*
-		 * Don't call acct_policy_remove_accrue_time() here, the cnt on
-		 * parent associations will be handled correctly by the removal
-		 * of the association.
-		 */
 
 		/*
 		 * Clear ptrs so that only qos usage is removed. Otherwise

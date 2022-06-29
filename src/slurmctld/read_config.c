@@ -3116,7 +3116,7 @@ static void _restore_job_accounting(void)
 			} else if (IS_JOB_PENDING(job_ptr) &&
 				   job_ptr->details &&
 				   job_ptr->details->accrue_time)
-				acct_policy_add_accrue_time(job_ptr, true);
+				acct_policy_add_accrue_time(job_ptr, false);
 		}
 
 		license_list = license_validate(job_ptr->licenses, false, false,
