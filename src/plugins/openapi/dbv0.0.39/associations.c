@@ -186,15 +186,16 @@ static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
 	rc = db_query_list(errors, auth, &removed, slurmdb_associations_remove,
 			   assoc_cond);
 	if (rc) {
-		(void) resp_error(errors, rc, "unable to remove associations",
-				  NULL);
+		(void) resp_error(errors, rc, "remove associations failed",
+				  "slurmdb_associations_remove");
 	} else if (only_one && list_count(removed) > 1) {
 		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
 				"ambiguous request: More than 1 association would have been deleted.",
-				NULL);
+				"slurmdb_associations_remove");
 	} else if (list_for_each(removed, _foreach_delete_assoc, drem) < 0) {
 		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				"unable to delete associations", NULL);
+				"unable to list deleted associations",
+				"_foreach_delete_assoc");
 	} else if (!rc) {
 		rc = db_query_commit(errors, auth);
 	}
