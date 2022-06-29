@@ -1220,6 +1220,48 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
+static void _add_planned_time(local_cluster_usage_t *c_usage, time_t start,
+			      time_t eligible, uint32_t array_pending,
+			      uint32_t row_rcpu)
+{
+	int loc_seconds = 0;
+
+	if (!start || (start >= c_usage->start)) {
+		int temp_end = start;
+		int temp_start = eligible;
+		if (c_usage->start > temp_start)
+			temp_start = c_usage->start;
+		if (!temp_end || (c_usage->end < temp_end))
+			temp_end = c_usage->end;
+		loc_seconds = (temp_end - temp_start);
+		if (loc_seconds > 0) {
+			/*
+                       * If we have pending jobs in an array
+                       * they haven't been inserted into the
+                       * database yet as proper job records,
+                       * so handle them here.
+                       */
+			if (array_pending)
+				loc_seconds *= array_pending;
+
+			/* info("%d assoc %d reserved " */
+			/*      "(%d)(%d-%d) * %d * %d = %d " */
+			/*      "to %d", */
+			/*      job_id, */
+			/*      assoc_id, */
+			/*      temp_end - temp_start, */
+			/*      temp_end, temp_start, */
+			/*      row_rcpu, */
+			/*      array_pending, */
+			/*      loc_seconds, */
+			/*      row_rcpu); */
+
+			_add_time_tres(c_usage->loc_tres, TIME_RESV, TRES_CPU,
+				       loc_seconds * (uint64_t) row_rcpu, 0);
+		}
+	}
+}
+
 extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				  char *cluster_name,
 				  time_t start, time_t end,
@@ -1643,44 +1685,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			 */
 			_transfer_loc_tres(&loc_tres, a_usage);
 
-			/* now reserved time */
-			if (!row_start || (row_start >= c_usage->start)) {
-				int temp_end = row_start;
-				int temp_start = row_eligible;
-				if (c_usage->start > temp_start)
-					temp_start = c_usage->start;
-				if (!temp_end || (c_usage->end < temp_end))
-					temp_end = c_usage->end;
-				loc_seconds = (temp_end - temp_start);
-				if (loc_seconds > 0) {
-					/*
-					 * If we have pending jobs in an array
-					 * they haven't been inserted into the
-					 * database yet as proper job records,
-					 * so handle them here.
-					 */
-					if (array_pending)
-						loc_seconds *= array_pending;
-
-					/* info("%d assoc %d reserved " */
-					/*      "(%d)(%d-%d) * %d * %d = %d " */
-					/*      "to %d", */
-					/*      job_id, */
-					/*      assoc_id, */
-					/*      temp_end - temp_start, */
-					/*      temp_end, temp_start, */
-					/*      row_rcpu, */
-					/*      array_pending, */
-					/*      loc_seconds, */
-					/*      row_rcpu); */
-
-					_add_time_tres(c_usage->loc_tres,
-						       TIME_RESV, TRES_CPU,
-						       loc_seconds *
-						       (uint64_t) row_rcpu,
-						       0);
-				}
-			}
+			_add_planned_time(c_usage, row_start, row_eligible,
+					  array_pending, row_rcpu);
 		}
 		mysql_free_result(result);
 
