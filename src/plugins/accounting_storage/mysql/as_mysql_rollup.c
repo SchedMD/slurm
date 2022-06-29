@@ -1564,10 +1564,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			/* first figure out the reservation */
 			if (resv_id) {
-				if (seconds <= 0) {
-					_transfer_loc_tres(&loc_tres, a_usage);
-					continue;
-				}
 				/*
 				 * Since we have already added the entire
 				 * reservation as used time on the cluster we
@@ -1593,6 +1589,19 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					 */
 					if (r_usage->id != resv_id)
 						continue;
+
+					if (r_usage->flags &
+					    RESERVE_FLAG_IGN_JOBS) {
+						_add_planned_time(
+							c_usage,
+							MIN(row_start,
+							    r_usage->end),
+							MAX(row_eligible,
+							    r_usage->start),
+							array_pending,
+							row_rcpu);
+					}
+
 					temp_end = row_end;
 					temp_start = row_start;
 					if (r_usage->start > temp_start)
