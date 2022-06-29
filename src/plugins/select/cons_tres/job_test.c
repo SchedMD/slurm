@@ -3375,10 +3375,6 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	} else if ((job_ptr->details->max_nodes == 1) &&
 		   (job_ptr->details->num_tasks != 0)) {
 		ntasks_per_node = job_ptr->details->num_tasks;
-	} else if (job_ptr->details->max_nodes) {
-		ntasks_per_node = (job_ptr->details->num_tasks +
-				   job_ptr->details->max_nodes - 1) /
-				  job_ptr->details->max_nodes;
 	}
 	min_cpus_per_node = ntasks_per_node * job_ptr->details->cpus_per_task;
 	if (avail_res->avail_cpus < min_cpus_per_node) {
