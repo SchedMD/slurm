@@ -172,14 +172,19 @@ static int _dump_part(data_t *p, partition_info_t *part)
 		data_set_int(data_key_set(d, "over_time_limit"),
 			     part->over_time_limit);
 
-	if (part->preempt_mode == PREEMPT_MODE_OFF)
+	if ((part->preempt_mode == PREEMPT_MODE_OFF) ||
+	    (part->preempt_mode == NO_VAL16)) {
 		data_set_string(data_list_append(pm), "disabled");
-	if (part->preempt_mode & PREEMPT_MODE_SUSPEND)
-		data_set_string(data_list_append(pm), "suspend");
-	if (part->preempt_mode & PREEMPT_MODE_REQUEUE)
-		data_set_string(data_list_append(pm), "requeue");
-	if (part->preempt_mode & PREEMPT_MODE_GANG)
-		data_set_string(data_list_append(pm), "gang_schedule");
+	} else {
+		if (part->preempt_mode & PREEMPT_MODE_SUSPEND)
+			data_set_string(data_list_append(pm), "suspend");
+		if (part->preempt_mode & PREEMPT_MODE_REQUEUE)
+			data_set_string(data_list_append(pm), "requeue");
+		if (part->preempt_mode & PREEMPT_MODE_GANG)
+			data_set_string(data_list_append(pm), "gang_schedule");
+		if (part->preempt_mode & PREEMPT_MODE_WITHIN)
+			data_set_string(data_list_append(pm), "within");
+	}
 
 	data_set_int(data_key_set(d, "priority_job_factor"),
 		     part->priority_job_factor);
