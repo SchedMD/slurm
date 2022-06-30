@@ -103,12 +103,12 @@ subtest {[regexp "$jobid2\\s+\\S+\\s+$number" $output]} "Verify $soption option 
 set soption "--long"
 set output [run_command_output -fail "$sprio $soption -j $jobid2"]
 subtest {[regexp "JOBID PARTITION     USER  ACCOUNT   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION    QOSNAME        QOS        NICE                 TRES" $output]} "Verify $soption option shows the right header"
-subtest {[regexp "$jobid2\\s+\\S+\\s+\\S+\\s+\\S+\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+\\S+\\s+$number\\s+$number\\s*\$" $output]} "Verify $soption option shows the right values"
+subtest {[regexp "$jobid2\\s+\\S+\\s+\\S+\\s+\\S+\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+\\S+\\s+$number\\s+$number\\s*\\S*\\s*\$" $output]} "Verify $soption option shows the right values"
 
 set soption "-l"
 set output [run_command_output -fail "$sprio $soption -j $jobid2"]
 subtest {[regexp "JOBID PARTITION     USER  ACCOUNT   PRIORITY       SITE        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION    QOSNAME        QOS        NICE                 TRES" $output]} "Verify $soption option shows the right header"
-subtest {[regexp "$jobid2\\s+\\S+\\s+\\S+\\s+\\S+\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+\\S+\\s+$number\\s+$number\\s*\$" $output]} "Verify $soption option shows the right values"
+subtest {[regexp "$jobid2\\s+\\S+\\s+\\S+\\s+\\S+\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+$number\\s+\\S+\\s+$number\\s+$number\\s*\\S*\\s*\$" $output]} "Verify $soption option shows the right values"
 
 set soption "--norm"
 set output [run_command_output -fail "$sprio $soption -j $jobid2"]
