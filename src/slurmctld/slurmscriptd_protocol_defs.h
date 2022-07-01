@@ -52,6 +52,7 @@ typedef enum {
 	SLURMSCRIPTD_MAIL,
 	SLURMSCRIPTD_POWER,
 	SLURMSCRIPTD_PROLOG,
+	SLURMSCRIPTD_RESV,
 } script_type_t;
 
 typedef struct {

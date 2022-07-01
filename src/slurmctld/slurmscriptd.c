@@ -776,6 +776,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
 	case SLURMSCRIPTD_MAIL:
 	case SLURMSCRIPTD_PROLOG:
+	case SLURMSCRIPTD_RESV:
 		/*
 		 * script_msg->timeout is in seconds but
 		 * run_command_args.max_wait expects milliseconds.
@@ -876,6 +877,7 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 	switch (script_complete->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
 	case SLURMSCRIPTD_MAIL:
+	case SLURMSCRIPTD_RESV:
 		break; /* Nothing more to do */
 	case SLURMSCRIPTD_EPILOG:
 		prep_epilog_slurmctld_callback(script_complete->status,
@@ -1306,6 +1308,26 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 
 	/* Don't free argv[0], since we did not xstrdup that. */
 	xfree(run_script_msg.argv);
+}
+
+extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
+				  uint32_t timeout, char *script_name)
+{
+	run_script_msg_t run_script_msg;
+
+	memset(&run_script_msg, 0, sizeof(run_script_msg));
+
+	/* Init run_script_msg */
+	run_script_msg.argc = argc;
+	run_script_msg.argv = argv;
+	run_script_msg.script_name = script_name;
+	run_script_msg.script_path = script_path;
+	run_script_msg.script_type = SLURMSCRIPTD_RESV;
+	run_script_msg.timeout = timeout;
+
+	/* Send message; wait for response */
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
+			      &run_script_msg, false, NULL, NULL);
 }
 
 extern void slurmscriptd_update_debug_flags(uint64_t debug_flags)
