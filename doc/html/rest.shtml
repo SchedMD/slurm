@@ -255,9 +255,7 @@ configured in your slurm.conf for slurmrestd.</p>
 <a class="slurm_link" href="#local_auth"></a>
 </h2>
 <p>slurmrestd supports using UNIX domain sockets to have the kernel
-authenticate local users. slurmrestd must be run as SlurmUser or root to allow
-multiple different users at the same time but it is not required if users wish
-to run as only themselves.  By default, slurmrestd will not start as root or
+authenticate local users. By default, slurmrestd will not start as root or
 SlurmUser or if the user's primary group belongs to root or SlurmUser.
 Slurmrestd must be located in the Munge security domain in order to function
 and communicate with Slurm in local authentication mode.
@@ -295,6 +293,6 @@ internal tool</a> used for testing and training. It uses
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 01 June 2022</p>
+<p style="text-align:center;">Last modified 01 July 2022</p>
 
 <!--#include virtual="footer.txt"-->
