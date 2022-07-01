@@ -965,6 +965,7 @@ typedef struct {
 static data_for_each_cmd_t _for_each_parse_flag(data_t *data, void *arg)
 {
 	for_each_parse_flag_t *args = arg;
+	bool found_a_match = false;
 
 	xassert(args->magic == MAGIC_FOREACH_PARSE_FLAGS);
 
@@ -974,6 +975,9 @@ static data_for_each_cmd_t _for_each_parse_flag(data_t *data, void *arg)
 	for (const parser_enum_t *f = (NULL + args->parse->field_offset);
 	     f->type; f++) {
 		bool match = !xstrcasecmp(data_get_string(data), f->string);
+
+		if (match)
+			found_a_match = true;
 
 		if (f->type == PARSER_ENUM_FLAG_BIT) {
 			const size_t b = f->size;
@@ -1034,6 +1038,12 @@ static data_for_each_cmd_t _for_each_parse_flag(data_t *data, void *arg)
 				      b);
 		} else
 			fatal("%s: unexpect type", __func__);
+	}
+
+	if (!found_a_match) {
+		resp_error(args->errors, ESLURM_REST_FAIL_PARSING,
+			   "Unknown flag", args->parse->key);
+		return DATA_FOR_EACH_FAIL;
 	}
 
 	return DATA_FOR_EACH_CONT;
