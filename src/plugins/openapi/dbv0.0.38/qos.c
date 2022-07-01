@@ -203,6 +203,9 @@ static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 	qos = xmalloc(sizeof(slurmdb_qos_rec_t));
 	slurmdb_init_qos_rec(qos, false, NO_VAL);
 
+	/* force to off instead of NO_VAL */
+	qos->preempt_mode = PREEMPT_MODE_OFF;
+
 	if (parse(PARSE_QOS, qos, data, args->errors, &penv)) {
 		slurmdb_destroy_qos_rec(qos);
 		return DATA_FOR_EACH_FAIL;
@@ -248,6 +251,11 @@ static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 		debug("%s: adding qos request: name=%s description=%s",
 		      __func__, qos->name, qos->description);
 
+		/* always tag flags for ADD when adding new QOS */
+		if (qos->flags & QOS_FLAG_BASE)
+			qos->flags = (qos->flags & QOS_FLAG_BASE) |
+				QOS_FLAG_ADD;
+
 		list_append(qos_add_list, qos);
 		rc = db_query_rc(args->errors, args->auth, qos_add_list,
 				 slurmdb_qos_add);
@@ -268,8 +276,44 @@ static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 		if (qos->id)
 			xassert(qos_found->id == qos->id);
 
-		rc = db_modify_rc(args->errors, args->auth, &cond, qos,
-				  slurmdb_qos_modify);
+		/* must tell slurmdbd which flags to change */
+		if ((qos_found->flags & QOS_FLAG_BASE) !=
+		    (qos->flags & QOS_FLAG_BASE)) {
+			uint32_t rem =
+				(qos_found->flags & QOS_FLAG_BASE) &
+				~((qos_found->flags & QOS_FLAG_BASE) &
+				  (qos->flags & QOS_FLAG_BASE));
+			uint32_t add =
+				(qos->flags & QOS_FLAG_BASE) & ~rem;
+
+			rc = SLURM_SUCCESS;
+
+			debug4("%s: QOS %s flags changing from 0x%x to 0x%x",
+			       __func__, qos->name,
+			       (qos_found->flags & QOS_FLAG_BASE),
+			       (qos->flags & QOS_FLAG_BASE));
+
+			if (add) {
+				debug5("%s: adding QOS flags 0x%x to QOS %s",
+				       __func__, add, qos->name);
+				qos->flags = add | QOS_FLAG_ADD;
+				rc = db_modify_rc(args->errors, args->auth,
+						  &cond, qos,
+						  slurmdb_qos_modify);
+			}
+			if (!rc && rem) {
+				debug5("%s: removing QOS flags 0x%x to QOS %s",
+				       __func__, add, qos->name);
+				qos->flags = rem | QOS_FLAG_REMOVE;
+				rc = db_modify_rc(args->errors, args->auth,
+						  &cond, qos,
+						  slurmdb_qos_modify);
+			}
+			xassert(add || rem);
+		} else {
+			rc = db_modify_rc(args->errors, args->auth, &cond, qos,
+					  slurmdb_qos_modify);
+		}
 	}
 
 	FREE_NULL_LIST(qos_list);
