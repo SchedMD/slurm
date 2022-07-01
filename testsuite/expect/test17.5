@@ -128,6 +128,13 @@ set job_id [submit_job -fail "-N1 --output=$file_out_j --error=$file_err_j -t1 $
 test_job_output_files $job_id "$test_dir/output.j.$job_id" "$test_dir/error.j.$job_id"
 
 #
+# Perform previous test using environment variables
+#
+run_command "$bin_rm $test_dir/output.j.$job_id $test_dir/error.j.$job_id"
+set job_id [submit_job -fail -env "SBATCH_OUTPUT=$file_out_j SBATCH_ERROR=$file_err_j" "-N1 -t1 $file_in"]
+test_job_output_files $job_id "$test_dir/output.j.$job_id" "$test_dir/error.j.$job_id"
+
+#
 # Spawn a shell via sbatch that uses stdout/err with %u in their names
 #
 set job_id [submit_job -fail "-N1 --output=$file_out_u --error=$file_err_u -t1 $file_in"]
