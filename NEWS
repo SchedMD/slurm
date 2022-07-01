@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     ignored.
  -- accounting_storage/mysql - allow QOS preempt_mode flag updates when GANG
     mode is requested.
+ -- openapi/dbv0.0.38 - correct QOS flag modifications request being silently
+    ignored.
 
 * Changes in Slurm 22.05.2
 ==========================
