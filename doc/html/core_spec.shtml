@@ -108,7 +108,7 @@ count of hyperthreads, then hyperthreads rather than cores will be reserved for
 system use.</p>
 
 <p>If users are to be granted the right to control the number of specialized
-cores for their job, the configuration parameter <i>AllowSpecResourceUsage</i>
+cores for their job, the configuration parameter <i>AllowSpecResourcesUsage</i>
 must be set to a value of <i>1</i>.</p>
 
 <p style="text-align:center;">Last modified 18 March 2022</p>
