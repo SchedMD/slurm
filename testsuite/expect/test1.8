@@ -114,10 +114,17 @@ expect {
 testproc test_srun_output
 
 #
-# Test environment variables for srun -i/-e/-o
+# Test environment variables for srun -i/-e/-o (legacy)
 #
 run_command "$bin_rm $file_out $file_err"
 run_command "SLURM_STDINMODE=$file_in SLURM_STDOUTMODE=$file_out SLURM_STDERRMODE=$file_err $srun -t1 $bin_bash"
+testproc test_srun_output
+
+#
+# Test new environment variables for srun -i/-e/-o
+#
+run_command "$bin_rm $file_out $file_err"
+run_command "SRUN_INPUT=$file_in SRUN_OUTPUT=$file_out SRUN_ERROR=$file_err $srun -t1 $bin_bash"
 testproc test_srun_output
 
 #
