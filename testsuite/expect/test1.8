@@ -114,6 +114,13 @@ expect {
 testproc test_srun_output
 
 #
+# Test environment variables for srun -i/-e/-o
+#
+run_command "$bin_rm $file_out $file_err"
+run_command "SLURM_STDINMODE=$file_in SLURM_STDOUTMODE=$file_out SLURM_STDERRMODE=$file_err $srun -t1 $bin_bash"
+testproc test_srun_output
+
+#
 # Spawn a program to run for a while with no input, output or error
 #
 spawn $srun --input=none --output=none --error=none -t1 -N1 $bin_head $file_in
