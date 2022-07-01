@@ -22,8 +22,6 @@ documents those changes that are of interest to users and administrators.
     the job_submit/lua plugin.
  -- openapi/dbv0.0.38 - reject and error on invalid flag values in well defined
     flag fields.
- -- openapi/dbv0.0.38 - correct QOS flag modifications request being silently
-    ignored.
  -- openapi/dbv0.0.38 - correct QOS preempt_mode flag requests being silently
     ignored.
  -- accounting_storage/mysql - allow QOS preempt_mode flag updates when GANG
