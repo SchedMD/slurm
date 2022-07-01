@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "June 2022" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "July 2022" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -2678,7 +2678,10 @@ sacctmgr has the capability to load and dump Slurm association data to and
 from a file.  This method can easily add a new cluster or copy an
 existing cluster's associations into a new cluster with similar
 accounts. Each file contains Slurm association data for a single
-cluster.  Comments can be put into the file with the # character.
+cluster. Be aware that QOS information is not currently included in the
+information that can be dumped to a file. QOS information can be retrieved
+and loaded using the REST API or it must be transferred to a new cluster
+manually. Comments can be put into the file with the # character.
 Each line of information must begin with one of the four titles; \fBCluster\fP,
 \fBParent\fP, \fBAccount\fP or \fBUser\fP. Following the title is a space,
 dash, space, entity value, then specifications. Specifications are colon
