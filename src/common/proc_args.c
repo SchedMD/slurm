@@ -488,6 +488,9 @@ _str_to_nodes(const char *num_str, char **leftover)
 	}
 	*leftover = endptr;
 
+	if ((num < 0) || (num > INT_MAX))
+		return -1;
+
 	return (int)num;
 }
 
