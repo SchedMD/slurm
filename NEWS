@@ -280,6 +280,7 @@ documents those changes that are of interest to users and administrators.
     is set, library directores transmitted will overwrite pre-existing libraries
     that were previously transmitted.
  -- hpe/slingshot - Add support for user requestible job VNIs.
+ -- hpe/slingshot - Add support for user requestible single node vnis.
 
 * Changes in Slurm 22.05.9
 ==========================

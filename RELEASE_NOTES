@@ -139,6 +139,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     adopted processes.
  -- Update SwitchParameters=job_vni to enable/disable creating job VNIs for all
     jobs, or when a user requests them.
+ -- Update SwitchParameters=single_node_vni to enable/disable creating single
+    node vnis for all jobs, or when a user requests them.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -191,6 +193,8 @@ COMMAND CHANGES (see man pages for details)
     --nodes=20,40,60,80,100) which can simplify the syntax when the job needs
     to scale by a certain "chunk" size.
  -- srun - add user requestible vnis with '--network=job_vni' option.
+ -- srun - add user requestible single node vnis with the
+    '--network=single_node_vni' option.
 
 API CHANGES
 ===========

@@ -136,11 +136,16 @@ typedef struct slingshot_limits_set {
  * 'SwitchParameters' slurm.conf variable
  */
 typedef struct slingshot_config {
-	bool single_node_vni;           /* Allocate VNIs for single-node apps */
+	uint8_t single_node_vni;        /* Allocate VNIs for single-node apps */
 	uint8_t job_vni;                /* Allocate extra VNI per-job */
 	uint32_t tcs;                   /* Bitmap of default traffic classes */
 	slingshot_limits_set_t limits;  /* Set of NIC resource limits */
 } slingshot_config_t;
+
+/* Values for slingshot_config_t.single_node_vni */
+#define SLINGSHOT_SN_VNI_NONE   0  /* No VNIs allocated for single-node apps */
+#define SLINGSHOT_SN_VNI_ALL    1  /* All single-node apps get a VNI */
+#define SLINGSHOT_SN_VNI_USER   2  /* srun --network=single_node_vni */
 
 /* Values for slingshot_config_t.job_vni */
 #define SLINGSHOT_JOB_VNI_NONE   0  /* No job VNIs allocated */

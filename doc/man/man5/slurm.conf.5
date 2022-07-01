@@ -5505,8 +5505,16 @@ BEST_EFFORT.
 .IP
 
 .TP
-\fBsingle_node_vni\fR
-Allocate a VNI for single node job steps.
+\fBsingle_node_vni\fR=<\fIall\fR|\fIuser\fR|\fInone\fR>
+If set to 'all', allocate a VNI for all job steps (by default, no VNI will be
+allocated for single-node job steps).
+If set to 'user', allocate a VNI for single-node job steps using the \fBsrun\fR
+\fB\-\-network=single_node_vni\fR option or \fBSLURM_NETWORK=single_node_vni\fR
+environment variable.
+If set to 'none' (or if \fBsingle_node_vni\fR is not set), do not allocate any
+VNI for single-node job steps.
+For backwards compatibility, setting \fBsingle_node_vni\fR with no argument is
+equivalent to 'all'.
 .IP
 
 .TP
