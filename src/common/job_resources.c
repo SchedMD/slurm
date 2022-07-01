@@ -1696,49 +1696,6 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 }
 
 /*
- * Remove job from full-length core_bitmap
- * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
- * IN bits_per_node - bits per node in the full_bitmap
- * RET 1 on success, 0 otherwise
- */
-extern void remove_job_from_cores(job_resources_t *job_resrcs_ptr,
-				  bitstr_t **full_core_bitmap,
-				  const uint16_t *bits_per_node)
-{
-	int full_node_inx = 0, job_node_cnt;
-	int job_bit_inx  = 0, full_bit_inx  = 0, i;
-
-	if (!job_resrcs_ptr->core_bitmap)
-		return;
-
-	/* add the job to the row_bitmap */
-	if (*full_core_bitmap == NULL) {
-		uint32_t size = 0;
-		for (i = 0; i < node_record_count; i++)
-			size += bits_per_node[i];
-		*full_core_bitmap = bit_alloc(size);
-	}
-
-	job_node_cnt = bit_set_count(job_resrcs_ptr->node_bitmap);
-	for (full_node_inx = bit_ffs(job_resrcs_ptr->node_bitmap);
-	     job_node_cnt > 0; full_node_inx++) {
-		if (bit_test(job_resrcs_ptr->node_bitmap, full_node_inx)) {
-			full_bit_inx = cr_node_cores_offset[full_node_inx];
-			for (i = 0; i < bits_per_node[full_node_inx]; i++) {
-				if ((job_resrcs_ptr->whole_node != 1) &&
-				    !bit_test(job_resrcs_ptr->core_bitmap,
-					      job_bit_inx + i))
-					continue;
-				bit_clear(*full_core_bitmap, full_bit_inx + i);
-			}
-			job_bit_inx += bits_per_node[full_node_inx];
-			job_node_cnt --;
-		}
-	}
-}
-
-/*
  * Given a job pointer and a global node index, return the index of that
  * node in the job_resrcs_ptr->cpus. Return -1 if invalid
  */

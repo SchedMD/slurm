@@ -73,7 +73,6 @@ extern void job_res_add_cores(job_resources_t *job_resrcs_ptr,
  * IN r_ptr - row we are trying to fit
  *            IN/OUT r_ptr->node_bitmap - bitmap array (one per node) of
  *                                        available cores, allocated as needed
- * NOTE: Patterned after remove_job_from_cores() in src/common/job_resources.c
  */
 extern void job_res_rm_cores(job_resources_t *job_resrcs_ptr,
 			     part_row_data_t *r_ptr);
