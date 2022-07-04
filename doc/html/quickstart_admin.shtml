@@ -657,9 +657,19 @@ months. A list of most recent major Slurm releases is shown below.</p>
 <li>22.05.x (Released May 2022)</li>
 </ul>
 
-<p>Slurm's MPI libraries may also change if the major release number changes,
-requiring applications be re-linked (behavior may vary depending upon
-the MPI implementation used and the specific Slurm changes between releases).
+<p>Slurm's PMI-1 and PMI-2 libraries could change their APIs on a major release,
+requiring applications linked to these libraries to be relinked. This is a rare
+situation though and in the event it did happen, it would be announced in the
+RELEASE_NOTES, so you should generally not need to relink or recompile your
+applications. This includes OpenMPI, MPICH and MVAPICH2 stacks when compiled
+with Slurm support and against Slurm's PMI libraries. There is one exception
+when MPICH is compiled to be integrated with Slurm but not against
+any of our libraries. In that case the 'mpiexec.hydra' command generated is
+linked against our Slurm API since it uses some of our functions to get
+information from the job. The problem is that they link against our versioned
+public API (libslurm.so.xyz) instead of against the generic one (libslurm.so.0).
+At the moment any release change in this kind of MPICH installation will
+imply the need to rebuild the stack.
 Locally developed Slurm plugins may also require modification.
 Slurm daemons will support RPCs and state files from the two previous major
 releases (e.g. a version 22.05.x SlurmDBD will support slurmctld daemons and
@@ -743,10 +753,16 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p>The libslurm.so version is increased every major release.
-So things like MPI libraries with Slurm integration should be recompiled.
-Sometimes it works to just symlink the old .so name(s) to the new one, but this
-has no guarantee of working.</p>
+<p>Slurm's API library (libslurm.so) increases its version number every major
+release, so any application linked directly against a specific Slurm API
+(and not the symlink) should be recompiled. Sometimes it works to just symlink
+the old .so name(s) to the new one, but this has no guarantee of working if
+internal symbols have changed in the new release. This is not the case for
+applications linked against Slurm's PMI-1 or PMI-2 libraries. PMI-1 is linked
+against a special unversioned library (libslurm_pmi.so) and PMI-2
+doesn't add any reference to the Slurm API. If any disrupting change to these
+API libraries happens in a major release, it will be properly noted in the
+RELEASE_NOTES.</p>
 
 <p><b>Be mindful of your configured SlurmdTimeout and SlurmctldTimeout values</b>.
 If the Slurm daemons are down for longer than the specified timeout during an
@@ -825,6 +841,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 19 May 2022</p>
+<p style="text-align:center;">Last modified 04 Jul 2022</p>
 
 <!--#include virtual="footer.txt"-->
