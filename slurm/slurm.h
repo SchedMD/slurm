@@ -1738,7 +1738,7 @@ typedef struct job_info {
 	char *cluster_features;	/* comma separated list of required cluster
 				 * features */
 	char *command;		/* command to be executed, built from submitted
-				 * job's argv and NULL for salloc command */
+				 * job's argv */
 	char *comment;		/* arbitrary comment */
 	char *container;	/* OCI Container bundle path */
 	char *container_id;	/* OCI Container ID */

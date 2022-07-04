@@ -820,6 +820,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		return -1;
 
 	desc->wait_all_nodes = saopt.wait_all_nodes;
+	desc->argv = command_argv;
+	desc->argc = command_argc;
 
 	return 0;
 }
