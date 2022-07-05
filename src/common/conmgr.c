@@ -1945,11 +1945,9 @@ extern int con_mgr_create_sockets(con_mgr_t *mgr, list_t *hostports,
 	return rc;
 }
 
-extern void con_mgr_request_shutdown(con_mgr_fd_t *con)
+extern void con_mgr_request_shutdown(con_mgr_t *mgr)
 {
-	con_mgr_t *mgr = con->mgr;
-
-	_check_magic_fd(con);
+	_check_magic_mgr(mgr);
 
 	log_flag(NET, "%s: shutdown requested", __func__);
 

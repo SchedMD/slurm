@@ -313,8 +313,8 @@ extern int con_mgr_run(con_mgr_t *mgr);
 
 /*
  * Notify conmgr to shutdown
- * IN con connection manager connection struct
+ * IN mgr connection manager ptr
  */
-extern void con_mgr_request_shutdown(con_mgr_fd_t *con);
+extern void con_mgr_request_shutdown(con_mgr_t *mgr);
 
 #endif /* SLURMRESTD_CONMGR_H */
