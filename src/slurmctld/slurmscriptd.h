@@ -100,6 +100,9 @@ extern void slurmscriptd_run_power(char *script_path, char *hosts,
 				   char *script_name, uint32_t timeout,
 				   char *tmp_file_env_name, char *tmp_file_str);
 
+extern int slurmscriptd_run_reboot(char *script_path, uint32_t argc,
+				   char **argv);
+
 extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
 				  uint32_t timeout, char *script_name);
 

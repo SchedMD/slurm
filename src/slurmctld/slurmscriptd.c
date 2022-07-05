@@ -776,6 +776,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
 	case SLURMSCRIPTD_MAIL:
 	case SLURMSCRIPTD_PROLOG:
+	case SLURMSCRIPTD_REBOOT:
 	case SLURMSCRIPTD_RESV:
 		/*
 		 * script_msg->timeout is in seconds but
@@ -877,6 +878,7 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 	switch (script_complete->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
 	case SLURMSCRIPTD_MAIL:
+	case SLURMSCRIPTD_REBOOT:
 	case SLURMSCRIPTD_RESV:
 		break; /* Nothing more to do */
 	case SLURMSCRIPTD_EPILOG:
@@ -1308,6 +1310,29 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 
 	/* Don't free argv[0], since we did not xstrdup that. */
 	xfree(run_script_msg.argv);
+}
+
+extern int slurmscriptd_run_reboot(char *script_path, uint32_t argc,
+				   char **argv)
+{
+	int status;
+
+	run_script_msg_t run_script_msg;
+
+	memset(&run_script_msg, 0, sizeof(run_script_msg));
+
+	/* Init run_script_msg */
+	run_script_msg.argc = argc;
+	run_script_msg.argv = argv;
+	run_script_msg.script_name = "RebootProgram";
+	run_script_msg.script_path = script_path;
+	run_script_msg.script_type = SLURMSCRIPTD_REBOOT;
+
+	/* Send message; wait for response */
+	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
+				       &run_script_msg, true, NULL, NULL);
+
+	return status;
 }
 
 extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
