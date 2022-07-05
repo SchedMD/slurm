@@ -2343,7 +2343,7 @@ extern int retry_list_size(void)
 static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 {
 	char *argv[4], *pname;
-	pid_t child;
+	uint32_t argc;
 	int rc, status = 0;
 	reboot_msg_t *reboot_msg = agent_arg_ptr->msg_args;
 
@@ -2363,32 +2363,26 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 		argv[0] = slurm_conf.reboot_program;
 	argv[1] = hostlist_deranged_string_xmalloc(agent_arg_ptr->hostlist);
 	if (reboot_msg && reboot_msg->features) {
+		argc = 4;
 		argv[2] = reboot_msg->features;
 		argv[3] = NULL;
-	} else
-		argv[2] = NULL;
-
-	child = fork();
-	if (child == 0) {
-		closeall(0);
-		(void) setpgid(0, 0);
-		(void) execv(slurm_conf.reboot_program, argv);
-		_exit(1);
-	} else if (child < 0) {
-		error("fork: %m");
 	} else {
-		(void) waitpid(child, &status, 0);
-		if (WIFEXITED(status)) {
-			rc = WEXITSTATUS(status);
-			if (rc != 0) {
-				error("RebootProgram exit status of %d",
-				      rc);
-			}
-		} else if (WIFSIGNALED(status)) {
-			error("RebootProgram signaled: %s",
-			      strsignal(WTERMSIG(status)));
-		}
+		argc = 3;
+		argv[2] = NULL;
 	}
+
+	status = slurmscriptd_run_reboot(slurm_conf.reboot_program, argc, argv);
+	if (WIFEXITED(status)) {
+		rc = WEXITSTATUS(status);
+		if (rc != 0) {
+			error("RebootProgram exit status of %d",
+			      rc);
+		}
+	} else if (WIFSIGNALED(status)) {
+		error("RebootProgram signaled: %s",
+		      strsignal(WTERMSIG(status)));
+	}
+
 	xfree(argv[1]);
 }
 
