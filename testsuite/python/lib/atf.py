@@ -2448,7 +2448,6 @@ else:
 
 properties['test-user'] = pwd.getpwuid(os.getuid()).pw_name
 properties['auto-config'] = False
-properties['include-expect'] = False
 
 # Instantiate a nodes dictionary. These are populated in require_slurm_running.
 nodes = {}
