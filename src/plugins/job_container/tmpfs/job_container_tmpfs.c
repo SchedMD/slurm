@@ -307,6 +307,11 @@ static int _mount_private_dirs(char *path, uid_t uid)
 	buffer = xstrdup(jc_conf->dirs);
 	token = strtok_r(buffer, ",", &save_ptr);
 	while (token) {
+		/* skip /dev/shm, this is handled elsewhere */
+		if (!xstrcmp(token, "/dev/shm")) {
+			token = strtok_r(NULL, ",", &save_ptr);
+			continue;
+		}
 		len = snprintf(mount_path, PATH_MAX, "%s/%s", path, token);
 		if (len > PATH_MAX || len < 0) {
 			error("%s: Unable to build mount path for %m",
@@ -345,17 +350,25 @@ private_mounts_exit:
 
 static int _mount_private_shm(void)
 {
+	char *loc = NULL;
 	int rc = 0;
 
+	/* return early if "/dev/shm" is not in the mount list */
+	if (!(loc = xstrcasestr(jc_conf->dirs, "/dev/shm")))
+		return rc;
+	if (!((loc[8] == ',') || (loc[8] == 0)))
+		return rc;
+
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+	/* handle mounting a new /dev/shm */
 	rc = umount("/dev/shm");
 	if (rc && errno != EINVAL) {
 		error("%s: umount /dev/shm failed: %m", __func__);
 		return rc;
 	}
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	rc = mount("tmpfs", "/dev/shm", "tmpfs", 0, NULL);
 	if (rc) {
-		error("%s: mounting private /dev/shm failed: %m", __func__);
+		error("%s: /dev/shm mount failed: %m", __func__);
 		return -1;
 	}
 #endif

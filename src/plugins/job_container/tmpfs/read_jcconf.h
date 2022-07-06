@@ -40,7 +40,7 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 
-#define SLURM_TMPFS_DEF_DIRS "/tmp"
+#define SLURM_TMPFS_DEF_DIRS "/tmp,/dev/shm"
 
 /*
  * Slurm namespace job container plugin initialization
