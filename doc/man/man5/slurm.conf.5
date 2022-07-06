@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "June 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "July 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1711,19 +1711,62 @@ The default value is 1.
 
 .TP
 \fBJobSubmitPlugins\fR
-A comma\-delimited list of job submission plugins to be used.
-The specified plugins will be executed in the order listed.
 These are intended to be site\-specific plugins which can be used to set
-default job parameters and/or logging events.
-Sample plugins available in the distribution include "all_partitions",
-"defaults", "logging", "lua", and "partition".
-For examples of use, see the Slurm code in "src/plugins/job_submit" and
-"contribs/lua/job_submit*.lua" then modify the code to satisfy your needs.
-Slurm can be configured to use multiple job_submit plugins if desired,
-however the lua plugin will only execute one lua script named "job_submit.lua"
-located in the default script directory (typically the subdirectory "etc" of
-the installation directory).
-No job submission plugins are used by default.
+default job parameters and/or logging events. Slurm can be configured to use
+multiple job_submit plugins if desired, which must be specified as a
+comma\-delimited list and will be executed in the order listed.
+.nf
+e.g. for multiple job_submit plugin configuration:
+JobSubmitPlugins=lua,require_timelimit
+.fi
+Take a look at <https://slurm.schedmd.com/job_submit_plugins.html> for further
+plugin implementation details. No job submission plugins are used by default.
+Currently available plugins are:
+.IP
+.RS
+.TP 24
+\fBall_partitions\fR
+Set default partition to all partitions on the cluster.
+.IP
+
+.TP
+\fBdefaults\fR
+Set default values for job submission or modify requests.
+.IP
+
+.TP
+\fBlogging\fR
+Log select job submission and modification parameters.
+.IP
+
+.TP
+\fBlua\fR
+Execute a Lua script implementing site's own job_submit logic. Only one Lua
+script will be executed. It must be named "job_submit.lua" and must be located
+in the default configuration directory (typically the subdirectory "etc" of the
+installation directory). Sample Lua scripts can be found with the Slurm
+distribution, in the directory contribs/lua.
+.IP
+
+.TP
+\fBpartition\fR
+Set a job's default partition based upon job submission parameters and
+available partitions.
+.IP
+
+.TP
+\fBpbs\fR
+Translate PBS job submission options to Slurm equivalent (if possible).
+.IP
+
+.TP
+\fBrequire_timelimit\fR
+Force job submissions to specify a timelimit.
+.RE
+.IP
+
+\fBNOTE\fR: For examples of use see the Slurm code in "src/plugins/job_submit"
+and "contribs/lua/job_submit*.lua" then modify the code to satisfy your needs.
 .IP
 
 .TP
