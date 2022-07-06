@@ -2362,7 +2362,7 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 	else
 		argv[0] = slurm_conf.reboot_program;
 	argv[1] = hostlist_deranged_string_xmalloc(agent_arg_ptr->hostlist);
-	if (reboot_msg->features) {
+	if (reboot_msg && reboot_msg->features) {
 		argv[2] = reboot_msg->features;
 		argv[3] = NULL;
 	} else

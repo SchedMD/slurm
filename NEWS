@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
     ignored.
  -- sacct/sinfo/squeue - use openapi/[db]v0.0.38 for --json and --yaml modes.
  -- Improve error messages when using configless and fetching the config fails.
+ -- Fix segfault when reboot_from_controller is configured and scontrol reboot
+    is used.
 
 * Changes in Slurm 22.05.2
 ==========================
