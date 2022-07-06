@@ -300,13 +300,11 @@ static int _mount_private_tmp(char *path)
 	}
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 	if (mount(NULL, "/", NULL, MS_PRIVATE|MS_REC, NULL)) {
-		error("%s: making root private: failed: %s",
-		      __func__, strerror(errno));
+		error("%s: making root private: failed: %m", __func__);
 		return -1;
 	}
 	if (mount(path, "/tmp", NULL, MS_BIND, NULL)) {
-		error("%s: /tmp mount failed, %s",
-		      __func__, strerror(errno));
+		error("%s: /tmp mount failed: %m", __func__);
 		return -1;
 	}
 #endif
@@ -319,15 +317,13 @@ static int _mount_private_shm(void)
 
 	rc = umount("/dev/shm");
 	if (rc && errno != EINVAL) {
-		error("%s: umount /dev/shm failed: %s\n",
-		      __func__, strerror(errno));
+		error("%s: umount /dev/shm failed: %m", __func__);
 		return rc;
 	}
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 	rc = mount("tmpfs", "/dev/shm", "tmpfs", 0, NULL);
 	if (rc) {
-		error("%s: mounting private /dev/shm failed: %s\n",
-		      __func__, strerror(errno));
+		error("%s: mounting private /dev/shm failed: %m", __func__);
 		return -1;
 	}
 #endif
@@ -356,9 +352,8 @@ static int _rm_data(const char *path, const struct stat *st_buf,
 					"%s: Unreadable directory: %s",
 					__func__, path);
 
-		log_var(log_lvl,
-				"%s: could not remove path: %s: %s",
-				__func__, path, strerror(errno));
+		log_var(log_lvl, "%s: could not remove path: %s: %m",
+			__func__, path);
 	}
 
 	return rc;
@@ -387,8 +382,7 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 
 	rc = mkdir(job_mount, 0700);
 	if (rc && errno != EEXIST) {
-		error("%s: mkdir %s failed: %s",
-		      __func__, job_mount, strerror(errno));
+		error("%s: mkdir %s failed: %m", __func__, job_mount);
 		return -1;
 	} else if (rc && errno == EEXIST) {
 		/*
@@ -408,21 +402,18 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 	 * flags.
 	 */
 	if (mount(job_mount, job_mount, "xfs", MS_BIND, NULL)) {
-		error("%s: Initial base mount failed, %s",
-		      __func__, strerror(errno));
+		error("%s: Initial base mount failed: %m", __func__);
 		return SLURM_ERROR;
 	}
 	if (mount(job_mount, job_mount, "xfs", MS_PRIVATE | MS_REC, NULL)) {
-		error("%s: Initial base mount failed, %s",
-		      __func__, strerror(errno));
+		error("%s: Initial base mount failed: %m", __func__);
 		return SLURM_ERROR;
 	}
 #endif
 
 	fd = open(ns_holder, O_CREAT|O_RDWR, S_IRWXU);
 	if (fd == -1) {
-		error("%s: open failed %s: %s",
-		      __func__, ns_holder, strerror(errno));
+		error("%s: open failed %s: %m", __func__, ns_holder);
 		rc = -1;
 		goto exit2;
 	}
@@ -463,15 +454,14 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 
 	rc = mkdir(src_bind, 0700);
 	if (rc && (errno != EEXIST)) {
-		error("%s: mkdir failed %s, %s",
-		      __func__, src_bind, strerror(errno));
+		error("%s: mkdir failed %s, %m", __func__, src_bind);
 		goto exit2;
 	}
 
 	sem1 = mmap(NULL, sizeof(*sem1), PROT_READ|PROT_WRITE,
 		    MAP_SHARED|MAP_ANONYMOUS, -1, 0);
 	if (sem1 == MAP_FAILED) {
-		error("%s: mmap failed: %s", __func__, strerror(errno));
+		error("%s: mmap failed: %m", __func__);
 		rc = -1;
 		goto exit2;
 	}
@@ -479,7 +469,7 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 	sem2 = mmap(NULL, sizeof(*sem2), PROT_READ|PROT_WRITE,
 		    MAP_SHARED|MAP_ANONYMOUS, -1, 0);
 	if (sem2 == MAP_FAILED) {
-		error("%s: mmap failed: %s", __func__, strerror(errno));
+		error("%s: mmap failed: %m", __func__);
 		sem_destroy(sem1);
 		munmap(sem1, sizeof(*sem1));
 		rc = -1;
@@ -488,19 +478,19 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 
 	rc = sem_init(sem1, 1, 0);
 	if (rc) {
-		error("%s: sem_init: %s", __func__, strerror(errno));
+		error("%s: sem_init: %m", __func__);
 		goto exit1;
 	}
 	rc = sem_init(sem2, 1, 0);
 	if (rc) {
-		error("%s: sem_init: %s", __func__, strerror(errno));
+		error("%s: sem_init: %m", __func__);
 		goto exit1;
 	}
 
 	cpid = fork();
 
 	if (cpid == -1) {
-		error("%s: fork Failed: %s\n", __func__, strerror(errno));
+		error("%s: fork Failed: %m", __func__);
 		rc = -1;
 		goto exit1;
 	}
@@ -508,18 +498,16 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 	if (cpid == 0) {
 		rc = unshare(CLONE_NEWNS);
 		if (rc) {
-			error("%s: %s", __func__, strerror(errno));
+			error("%s: %m", __func__);
 			goto child_exit;
 		}
 		if (sem_post(sem1) < 0) {
-			error("%s: sem_post failed: %s",
-			      __func__, strerror(errno));
+			error("%s: sem_post failed: %m", __func__);
 			rc = -1;
 			goto child_exit;
 		}
 		if (sem_wait(sem2) < 0) {
-			error("%s: sem_wait failed %s",
-			      __func__, strerror(errno));
+			error("%s: sem_wait failed %m", __func__);
 			rc = -1;
 			goto child_exit;
 		}
@@ -539,8 +527,8 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 		 */
 		rc = chown(src_bind, uid, -1);
 		if (rc) {
-			error("%s: chown failed for %s: %s",
-			      __func__, src_bind, strerror(errno));
+			error("%s: chown failed for %s: %m",
+			      __func__, src_bind);
 			rc = -1;
 			goto child_exit;
 		}
@@ -553,8 +541,7 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 		 */
 		rc = umount2(job_mount, MNT_DETACH);
 		if (rc) {
-			error("%s: umount2 failed: %s",
-			      __func__, strerror(errno));
+			error("%s: umount2 failed: %m", __func__);
 			goto child_exit;
 		}
 	child_exit:
@@ -575,8 +562,7 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 		char proc_path[PATH_MAX];
 
 		if (sem_wait(sem1) < 0) {
-			error("%s: sem_Wait failed: %s",
-			      __func__, strerror(errno));
+			error("%s: sem_Wait failed: %m", __func__);
 			rc = -1;
 			goto exit1;
 		}
@@ -596,17 +582,15 @@ static int _create_ns(uint32_t job_id, uid_t uid)
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 		rc = mount(proc_path, ns_holder, NULL, MS_BIND, NULL);
 		if (rc) {
-			error("%s: ns base mount failed: %s",
-			      __func__, strerror(errno));
+			error("%s: ns base mount failed: %m", __func__);
 			if (sem_post(sem2) < 0)
-				error("%s: Could not release semaphore: %s",
-				      __func__, strerror(errno));
+				error("%s: Could not release semaphore: %m",
+				      __func__);
 			goto exit1;
 		}
 #endif
 		if (sem_post(sem2) < 0) {
-			error("%s: sem_post failed: %s",
-			      __func__, strerror(errno));
+			error("%s: sem_post failed: %m", __func__);
 			goto exit1;
 		}
 
@@ -630,8 +614,8 @@ exit2:
 		/* cleanup the job mount */
 		force_rm = true;
 		if (nftw(job_mount, _rm_data, 64, FTW_DEPTH|FTW_PHYS) < 0) {
-			error("%s: Directory traversal failed: %s: %s",
-			      __func__, job_mount, strerror(errno));
+			error("%s: Directory traversal failed: %s: %m",
+			      __func__, job_mount);
 			return SLURM_ERROR;
 		}
 		umount2(job_mount, MNT_DETACH);
@@ -658,7 +642,7 @@ extern int container_p_join_external(uint32_t job_id)
 	if (step_ns_fd == -1) {
 		step_ns_fd = open(ns_holder, O_RDONLY);
 		if (step_ns_fd == -1)
-			error("%s: %s", __func__, strerror(errno));
+			error("%s: %m", __func__);
 	}
 
 	return step_ns_fd;
@@ -695,16 +679,14 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	/* This is called on the slurmd so we can't use ns_fd. */
 	fd = open(ns_holder, O_RDONLY);
 	if (fd == -1) {
-		error("%s: open failed for %s: %s",
-		      __func__, ns_holder, strerror(errno));
+		error("%s: open failed for %s: %m", __func__, ns_holder);
 		return SLURM_ERROR;
 	}
 
 	rc = setns(fd, CLONE_NEWNS);
 	if (rc) {
-		error("%s: setns failed for %s: %s",
-		      __func__, ns_holder, strerror(errno));
-		/* closed after strerror(errno) */
+		error("%s: setns failed for %s: %m", __func__, ns_holder);
+		/* closed after error() */
 		close(fd);
 		return SLURM_ERROR;
 	} else {
@@ -739,11 +721,11 @@ static int _delete_ns(uint32_t job_id)
 	rc = umount2(ns_holder, MNT_DETACH);
 	if (rc) {
 		if (errno == EINVAL) {
-			debug2("%s: umount2 %s failed: %s",
-			       __func__, ns_holder, strerror(errno));
+			debug2("%s: umount2 %s failed: %m",
+			       __func__, ns_holder);
 		} else {
-			error("%s: umount2 %s failed: %s",
-			      __func__, ns_holder, strerror(errno));
+			error("%s: umount2 %s failed: %m",
+			      __func__, ns_holder);
 			return SLURM_ERROR;
 		}
 	}
@@ -760,13 +742,13 @@ static int _delete_ns(uint32_t job_id)
 	 */
 	force_rm = false;
 	if (nftw(job_mount, _rm_data, 64, FTW_DEPTH|FTW_PHYS) < 0) {
-		error("%s: Directory traversal failed: %s: %s",
-		      __func__, job_mount, strerror(errno));
+		error("%s: Directory traversal failed: %s: %m",
+		      __func__, job_mount);
 		return SLURM_ERROR;
 	}
 
 	if (umount2(job_mount, MNT_DETACH))
-		debug2("umount2: %s failed: %s", job_mount, strerror(errno));
+		debug2("umount2: %s failed: %m", job_mount);
 	rmdir(job_mount);
 
 	return SLURM_SUCCESS;
