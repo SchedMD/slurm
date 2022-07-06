@@ -48,8 +48,8 @@
 
 #include "src/squeue/squeue.h"
 
-#define TARGET "/slurm/v0.0.37/jobs/"
-#define PLUGIN "openapi/v0.0.37"
+#define TARGET "/slurm/v0.0.38/jobs/"
+#define PLUGIN "openapi/v0.0.38"
 
 openapi_handler_t dump_job = NULL;
 

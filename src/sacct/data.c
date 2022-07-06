@@ -46,8 +46,8 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
-#define TARGET "/slurmdb/v0.0.37/jobs/"
-#define PLUGIN "openapi/dbv0.0.37"
+#define TARGET "/slurmdb/v0.0.38/jobs/"
+#define PLUGIN "openapi/dbv0.0.38"
 #define MAGIC_AUTH ((void *)0xd2ad8e8f)
 
 openapi_handler_t dump_job = NULL;

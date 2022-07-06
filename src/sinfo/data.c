@@ -48,8 +48,8 @@
 
 #include "src/sinfo/sinfo.h"
 
-#define TARGET "/slurm/v0.0.37/nodes/"
-#define PLUGIN "openapi/v0.0.37"
+#define TARGET "/slurm/v0.0.38/nodes/"
+#define PLUGIN "openapi/v0.0.38"
 
 openapi_handler_t dump_nodes = NULL;
 int dump_tag = -1;

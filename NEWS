@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
     mode is requested.
  -- openapi/dbv0.0.38 - correct QOS flag modifications request being silently
     ignored.
+ -- sacct/sinfo/squeue - use openapi/[db]v0.0.38 for --json and --yaml modes.
 
 * Changes in Slurm 22.05.2
 ==========================
