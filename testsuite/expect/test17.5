@@ -60,18 +60,26 @@ make_bash_script $file_in "
 
 set user_name [get_my_user_name]
 
+proc test_job_output_files {job_id file_out file_err} {
+	#
+	# Wait for job to complete
+	#
+	wait_for_job -fail $job_id "DONE"
+
+	#
+	# Check for desired output
+	#
+	subtest {![wait_for_file $file_out]} "Check for file $file_out"
+	subtest {![wait_for_file $file_err]} "Check for file $file_err"
+}
+
 #
 # Spawn a sbatch command to verify that the default output file is
 # created and contain the correct contents
 #
 set job_id [submit_job -fail "-t1 -N1 $file_in"]
-
-#
-# Wait for job to complete
-#
 set def_out "slurm-$job_id\.out"
-wait_for_job -fail $job_id "DONE"
-wait_for_file -fail $def_out
+test_job_output_files $job_id $def_out $def_out
 
 #
 # Check for desired output
@@ -111,53 +119,26 @@ subtest {[regexp "$sleep_error_message" $output] ||
 # Spawn a shell via sbatch that uses literal %% in their file names
 #
 set job_id [submit_job -fail "-N1 --output=$file_out_perc --error=$file_err_perc -t1 $file_in"]
-
-#
-# Wait for job to complete
-#
-wait_for_job -fail $job_id "DONE"
-
-#
-# Check for desired output
-#
-subtest {[wait_for_file $file_out_perc_result] == 0} "Check for file format of %% in stdout"
-subtest {[wait_for_file $file_err_perc_result] == 0} "Check for file format of %% in stderr"
+test_job_output_files $job_id $file_out_perc_result $file_err_perc_result
 
 #
 # Spawn a shell via sbatch that uses stdout/err with %j in their names
 #
 set job_id [submit_job -fail "-N1 --output=$file_out_j --error=$file_err_j -t1 $file_in"]
+test_job_output_files $job_id "$test_dir/output.j.$job_id" "$test_dir/error.j.$job_id"
 
 #
-# Wait for job to complete
+# Perform previous test using environment variables
 #
-wait_for_job -fail $job_id "DONE"
-
-#
-# Check for desired output
-#
-set file_out_j_glob "$test_dir/output.j.$job_id"
-set file_err_j_glob "$test_dir/error.j.$job_id"
-subtest {[wait_for_file $file_out_j_glob] == 0} "Check for file format of %j in stdout"
-subtest {[wait_for_file $file_err_j_glob] == 0} "Check for file format of %j in stderr"
+run_command "$bin_rm $test_dir/output.j.$job_id $test_dir/error.j.$job_id"
+set job_id [submit_job -fail -env "SBATCH_OUTPUT=$file_out_j SBATCH_ERROR=$file_err_j" "-N1 -t1 $file_in"]
+test_job_output_files $job_id "$test_dir/output.j.$job_id" "$test_dir/error.j.$job_id"
 
 #
 # Spawn a shell via sbatch that uses stdout/err with %u in their names
 #
 set job_id [submit_job -fail "-N1 --output=$file_out_u --error=$file_err_u -t1 $file_in"]
-
-#
-# Wait for job to complete
-#
-wait_for_job -fail $job_id "DONE"
-
-#
-# Check for desired output
-#
-set file_out_u_glob  "$test_dir/output.$user_name"
-set file_err_u_glob  "$test_dir/error.$user_name"
-subtest {[wait_for_file $file_out_u_glob] == 0} "Check for file format of %u in stdout"
-subtest {[wait_for_file $file_err_u_glob] == 0} "Check for file format of %u in stderr"
+test_job_output_files $job_id "$test_dir/output.$user_name" "$test_dir/error.$user_name"
 
 #
 # Spawn a program to run for a while with no output or error

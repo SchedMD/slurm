@@ -36,7 +36,7 @@ set file_in     "$test_dir/input"
 set file_out    "$test_dir/output"
 set file_err    "$test_dir/error"
 
-set login_grp_info       ""
+set login_grp_info       [get_my_id]
 set job_grp_info         ""
 set got_job_grps         0
 set got_login_grps       0
@@ -50,6 +50,49 @@ exec echo "$bin_id"         >$file_in
 exec echo "$bin_sleep aaa" >>$file_in
 exec echo "exit 0"         >>$file_in
 exec $bin_chmod 700 $file_in
+
+proc test_srun_output {} {
+	global file_out file_err bin_cat sleep_error_message login_grp_info
+
+	#
+	# Check user id and group id in stdout
+	#
+	wait_for_file -fail $file_out
+	spawn $bin_cat $file_out
+	expect {
+		-re "(uid=.*\n)" {
+			set job_grp_info $expect_out(1,string)
+			set got_job_grps 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$got_job_grps != 0} "User and group ID should be seen in stdout"
+	subtest {$login_grp_info eq $job_grp_info} "Login information should match that of the test user"
+
+	#
+	# Check for sleep input specification error in stderr
+	#
+	wait_for_file -fail $file_err
+	spawn $bin_cat $file_err
+	expect {
+		-re "$sleep_error_message" {
+			log_debug "No worries, this error is expected"
+			set got_sleep_err 1
+			exp_continue
+		}
+		-re "Specify time as a positive integer.*\n" {
+			set got_sleep_err 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$got_sleep_err != 0} "Stderr should show sleep error message"
+}
 
 #
 # Spawn a shell via srun that uses stdin/out/err and confirm their contents
@@ -68,47 +111,14 @@ expect {
 	}
 }
 
-#
-# Check user id and group id in stdout
-#
-
-set login_grp_info [get_my_id]
-
-wait_for_file -fail $file_out
-spawn $bin_cat $file_out
-expect {
-	-re "(uid=.*\n)" {
-		set job_grp_info $expect_out(1,string)
-		set got_job_grps 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-subtest {$got_job_grps != 0} "User and group ID should be seen in stdout"
-subtest {$login_grp_info eq $job_grp_info} "Login information should match that of the test user"
+testproc test_srun_output
 
 #
-# Check for sleep input specification error in stderr
+# Test environment variables for srun -i/-e/-o
 #
-wait_for_file -fail $file_err
-spawn $bin_cat $file_err
-expect {
-	-re "$sleep_error_message" {
-		log_debug "No worries, this error is expected"
-		set got_sleep_err 1
-		exp_continue
-	}
-	-re "Specify time as a positive integer.*\n" {
-		set got_sleep_err 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-subtest {$got_sleep_err != 0} "Stderr should show sleep error message"
+run_command "$bin_rm $file_out $file_err"
+run_command "SLURM_STDINMODE=$file_in SLURM_STDOUTMODE=$file_out SLURM_STDERRMODE=$file_err $srun -t1 $bin_bash"
+testproc test_srun_output
 
 #
 # Spawn a program to run for a while with no input, output or error
