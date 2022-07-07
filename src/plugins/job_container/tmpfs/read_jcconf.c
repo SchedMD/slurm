@@ -75,11 +75,6 @@ static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
 	s_p_hashtbl_t *tbl = _create_ns_hashtbl();
 	s_p_parse_line(tbl, *leftover, leftover);
 	if (value) {
-		if (!xstrcmp(value, "/tmp") ||
-		    !xstrncmp(value, "/tmp/", 5) ||
-		    !xstrcmp(value, "/dev/shm") ||
-		    !xstrncmp(value, "/dev/shm/", 9))
-			fatal("Cannot use /tmp or /dev/shm as BasePath");
 		slurm_jc_conf.basepath = xstrdup(value);
 	} else if (!s_p_get_string(&slurm_jc_conf.basepath, "BasePath", tbl)) {
 		fatal("empty basepath detected, please verify %s is correct",
@@ -192,12 +187,25 @@ extern slurm_jc_conf_t *get_slurm_jc_conf(void)
 {
 	int rc;
 	if (!slurm_jc_conf_inited) {
+		char *save_ptr = NULL, *token, *buffer;
 		memset(&slurm_jc_conf, 0, sizeof(slurm_jc_conf_t));
 		rc = _read_slurm_jc_conf();
 		if (rc == SLURM_ERROR)
 			return NULL;
 
 		xassert(slurm_jc_conf.dirs);
+
+		/* BasePath cannot be in "Dirs" */
+		buffer = xstrdup(slurm_jc_conf.dirs);
+		token = strtok_r(buffer, ",", &save_ptr);
+		while (token) {
+			char *found = xstrstr(token, slurm_jc_conf.basepath);
+			if (found == token)
+				fatal("BasePath(%s) cannot also be in Dirs.",
+				      slurm_jc_conf.basepath);
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(buffer);
 
 		slurm_jc_conf_inited = true;
 	}
