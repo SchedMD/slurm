@@ -80,7 +80,7 @@ the installation directory).</p>
 
 <h2 id="api">API Functions<a class="slurm_link" href="#api"></a></h2>
 <p>All of the following functions are required. Functions which are not
-implemented must be stubbed.
+implemented must be stubbed.</p>
 
 <p class="commandline">int init(void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
@@ -172,6 +172,22 @@ cli_filter_p_post_submit().<br>
 <span class="commandline">stepid</span>
 (input) step id of the job if appropriate, NO_VAL otherwise<br>
 
-<p style="text-align:center;">Last modified 29 June 2021</p>
+<h2 id="lua">LUA Interface<a class="slurm_link" href="#lua"></a></h2>
+<p>Setting <b>CliFilterPlugins=cli_filter/lua</b> in slurm.conf will allow
+you to implement the API functions mentioned using Lua language. The file must
+be named "cli_filter.lua" and, similar to the job_submit plugin, it must be
+located in the default configuration directory (typically the subdirectory
+"etc" of the installation).
+An example is provided within the source code
+<a href="https://github.com/SchedMD/slurm/blob/master/etc/cli_filter.lua.example">
+here</a>.</p>
+
+<p><b>NOTE</b>: Although available options are defined in the struct
+<span class="commandline">slurm_opt_t</span> within
+<i>src/common/slurm_opt.h</i>, some options might be renamed. The provided
+example shows a way of displaying the configured options by using
+<span class="commandline">slurm.json_cli_options(options)</span>.</p>
+
+<p style="text-align:center;">Last modified 7 July 2022</p>
 
 <!--#include virtual="footer.txt"-->
