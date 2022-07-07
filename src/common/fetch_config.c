@@ -112,8 +112,9 @@ static void _fetch_child(List controllers, uint32_t flags)
 	_init_minimal_conf_server_config(controllers);
 	config = fetch_config_from_controller(flags);
 
+
 	if (!config) {
-		error("%s: failed to fetch remote configs", __func__);
+		error("%s: failed to fetch remote configs: %m", __func__);
 		safe_write(to_parent[1], &len, sizeof(int));
 		_exit(1);
 	}

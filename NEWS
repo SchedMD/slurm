@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - correct QOS flag modifications request being silently
     ignored.
  -- sacct/sinfo/squeue - use openapi/[db]v0.0.38 for --json and --yaml modes.
+ -- Improve error messages when using configless and fetching the config fails.
 
 * Changes in Slurm 22.05.2
 ==========================
