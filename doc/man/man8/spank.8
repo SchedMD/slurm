@@ -1,4 +1,4 @@
-.TH SPANK "8" "Slurm Component" "October 2021" "Slurm Component"
+.TH SPANK "8" "Slurm Component" "July 2022" "Slurm Component"
 
 .SH "NAME"
 \fBSPANK\fR \- Slurm Plug\-in Architecture for Node and job (K)control
@@ -442,6 +442,10 @@ the plugin for runtime configuration.  Comments are preceded with '#'
 and extend to the end of the line.  If the configuration file
 is missing or empty, it will simply be ignored.
 .LP
+\fBNOTE\fR: The \fBSPANK\fR plugins need to be installed on the machines that
+execute slurmd (compute nodes) as well as on the machines that execute job
+allocation utilities such as salloc, sbatch, etc (login nodes).
+.LP
 The format of each non\-comment line in the configuration file is:
 \fB
 .nf
@@ -453,8 +457,8 @@ The format of each non\-comment line in the configuration file is:
 .fi
 Tells \fBslurmd\fR to load the plugin \fBtest.so\fR passing no arguments.
 If a \fBSPANK\fR plugin is \fIrequired\fR, then failure of any of the
-plugin's functions will cause \fBslurmd\fR to terminate the job, while
-\fIoptional\fR plugins only cause a warning.
+plugin's functions will cause \fBslurmd\fR, or the job allocator command to
+terminate the job, while \fIoptional\fR plugins only cause a warning.
 .LP
 If a fully\-qualified path is not specified for a plugin, then the
 currently configured \fIPluginDir\fR in \fBslurm.conf\fR(5) is searched.
