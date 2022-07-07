@@ -8,11 +8,12 @@ job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
 \fBjob_container.conf\fP is an ASCII file which defines parameters used by
 Slurm's job_container/tmpfs plugin. The plugin reads the
 job_container.conf file to find out the configuration settings. Based on them it
-constructs a private mount namespace for the job and mounts /tmp and
-/dev/shm inside it. This gives the job a private view of /tmp and
-/dev/shm. /tmp is mounted inside a location that is specified as 'BasePath' in
-job_container.conf file. To make use of this plugin, 'PrologFlags=Contain' must
-be present in your \fBslurm.conf\fP file.
+constructs a private mount namespace for the job and mounts a list of
+directories (defaults to /tmp and /dev/shm) inside it. This gives the job a
+private view of these directories.  These paths are mounted inside the location
+specified by 'BasePath' in the \fBjob_container.conf\fR file. To make use of
+this plugin, 'PrologFlags=Contain' must be present in your \fBslurm.conf\fP
+file.
 
 The file will always be located in the same directory as the \fBslurm.conf\fR.
 
@@ -44,21 +45,24 @@ This parameter is optional.
 
 .TP
 \fBBasePath\fR
-Specify the \fIPATH\fR that the tmpfs plugin should use to mount private /tmp
-to. This path must be readable and writable by the plugin. The plugin also
-constructs a directory for each job inside this path, which is then used for
-mounting. The \fBBasePath\fR gets mounted as 'private' during slurmd start
+Specify the \fIPATH\fR that the tmpfs plugin should use as a base to mount the
+private directories. This path must be readable and writable by the plugin. The
+plugin constructs a directory for each job inside this path, which is then used
+for mounting. The \fBBasePath\fR gets mounted as 'private' during slurmd start
 and remains mounted until shutdown.
 
-\fBNOTE\fR: The \fBBasePath\fR parameter should not be configured to use
-/tmp or /dev/shm. Using these directories will cause conflicts when trying
-to mount and unmount the private directories for the job.
+\fBNOTE\fR: The \fBBasePath\fR parameter cannot be set to any of
+the paths specified by \fBDirs\fR. Using these directories will cause conflicts
+when trying to mount and unmount the private directories for the job.
 .IP
 
 .TP
 \fBDirs\fR
-A list of directories separated with commas to create private directories for.
+A list of mount points separated with commas to create private mounts for.
 This parameter is optional and if not specified it defaults to "/tmp,/dev/shm".
+
+\fBNOTE\fR: /dev/shm has special handling, and instead of a bind mount is always
+a fresh tmpfs filesystem.
 
 .TP
 \fBInitScript\fR
