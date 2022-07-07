@@ -310,8 +310,8 @@ cleanup:
 	return rc ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
 }
 
-static int _update_assocations(const char *context_id, data_t *query,
-			       data_t *resp, void *auth, bool commit)
+static int _update_associations(const char *context_id, data_t *query,
+				data_t *resp, void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -383,8 +383,8 @@ extern int op_handler_associations(const char *context_id,
 	if (method == HTTP_REQUEST_GET)
 		rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, false);
 	else if (method == HTTP_REQUEST_POST)
-		rc = _update_assocations(context_id, query, resp, auth,
-					 (tag != CONFIG_OP_TAG));
+		rc = _update_associations(context_id, query, resp, auth,
+					  (tag != CONFIG_OP_TAG));
 	else if (method == HTTP_REQUEST_DELETE)
 		rc = _delete_assoc(resp, auth, errors, assoc_cond, false);
 
