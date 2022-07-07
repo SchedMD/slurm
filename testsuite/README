@@ -6,17 +6,46 @@ The unified test-runner allows all (3) regression testsuites to be run with
 a single command (run-tests). This can include the unit testsuite, the
 expect testsuite and the python testsuite.
 
+Quick Start:
+
+* Configure, build, install and start Slurm
+* cp BUILDDIR/testsuite/testsuite.conf.sample SRCDIR/testsuite/testsuite.conf
+* cd SRCDIR/testsuite
+* ./run-tests
+
 To run the testsuites using the unified test-runner:
 
 * Slurm must first be installed, configured and running.
-* Running make install will create a testsuite/testsuite.conf file in your
-  build directory having populated some basic defaults for the testsuite.
-  Review and edit testsuite.conf if necessary.
-* If your build directory is separate from your source directory, you will
-  need to set the SLURM_TESTSUITE_CONF environment variable to the full path
-  of your testsuite.conf before executing the unified test-runner.
+* The testsuites requires the existence of a testsuite.conf file.
+  Running configure will have created a sample configuration file in your
+  build directory (BUILDDIR/testsuite/testsuite.conf.sample) which can be
+  used as a starting point for this file. By default, the testsuite.conf file
+  is expected to be found in the testsuite subdirectory of your source
+  directory (SRCDIR/testsuite/testsuite.conf).
+  If placed elsewhere, you must set the SLURM_TESTSUITE_CONF environment
+  variable to the full path of your testsuite.conf file.
+  Review and edit testsuite.conf as necessary.
 * pytest (pytest-3) must be installed in order to run the python testsuite.
 * expect must be installed in order to run the expect testsuite.
 * If perldoc is installed, ./run-tests --man can be used to display a man page
   for the test-runner.
-* Execute run-tests with the desired options to run the testsuites
+* Execute run-tests with the desired options to run the testsuites.
+
+testsuite.conf:
+
+The testsuite.conf configuration file contains parameters in the form:
+"Parameter = Value" similar to parameter format in slurm.conf.
+Supported parameters include:
+
+SlurmSourceDir:  Slurm Source Directory (contains configure.ac and the src directory)
+SlurmBuildDir:   Slurm Build Directory (where you ran configure and make from)
+SlurmInstallDir: Slurm Installation Directory (value of --prefix configure option)
+SlurmConfigDir:  Slurm Configuration Directory (compiled-in location of slurm.conf)
+
+Tips:
+
+* the include and exclude filters use (perl 5) regular expressions
+* e.g. to run expect test1.1 use: run-tests -i expect/test1.1$
+* to run just the unit tests, use: run-tests -i unit
+* to run just the expect tests, use: run-tests -i expect
+* to run just the python tests, use: run-tests -i python

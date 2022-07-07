@@ -28,17 +28,6 @@ def pytest_addoption(parser):
     config_group = parser.getgroup('config mode')
     config_group.addoption('--auto-config', action='store_true', help="the slurm configuration will be altered as needed by the test")
     config_group.addoption('--local-config', action='store_false', dest='auto_config', help="the slurm configuration will not be altered")
-    parser.addoption('--include-expect', action='store_true', help="include the expect tests")
-
-
-def pytest_generate_tests(metafunc):
-    if "test_id" in metafunc.fixturenames:
-        if metafunc.config.getoption('--include-expect'):
-            expect_test_dir = str(pathlib.Path(__file__).resolve().parent.parent / 'expect')
-            test_ids = sorted([match.group(1) for f in os.listdir(expect_test_dir) if (match := re.search(r'^test([1-9]?[0-9]\.[0-9]*)$', f))])
-            metafunc.parametrize("test_id", test_ids)
-        else:
-            metafunc.parametrize("test_id", [])
 
 
 def color_log_level(level, **color_kwargs):
@@ -63,9 +52,6 @@ def session_setup(request):
 
     # Set the auto-config property from the option
     atf.properties['auto-config'] = request.config.getoption("--auto-config")
-
-    # Set the include-expect property from the option
-    atf.properties['include-expect'] = request.config.getoption("--include-expect")
 
     # Customize logging level colors
     color_log_level(logging.CRITICAL, red=True, bold=True)
