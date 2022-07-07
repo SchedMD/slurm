@@ -60,6 +60,8 @@ $ENV{ANSI_COLORS_DISABLED}++ unless -t STDOUT;
 my %config = ();
 $config{slurmsourcedir} = abs_path("$Bin/..");
 $config{slurmbuilddir} = $config{slurmsourcedir};
+$config{slurminstalldir} = '/usr/local';
+$config{slurmconfigdir} = "$config{slurminstalldir}/etc";
 
 # Override configuration parameters with parameters from testsuite.conf
 my $testsuite_config_file = defined $ENV{SLURM_TESTSUITE_CONF} ? $ENV{SLURM_TESTSUITE_CONF} : "$Bin/testsuite.conf";
@@ -67,6 +69,7 @@ open CONFIG_FILE, $testsuite_config_file or die "Unable to open testsuite.conf (
 foreach my $line (<CONFIG_FILE>) {
     if ($line =~ /^\s*(\S+)\s*=\s*(\S+)\s*$/) {
         my ($parameter_name, $parameter_value) = (lc $1, $2);
+        $parameter_value =~ s/\$\{prefix}/$config{slurminstalldir}/;
         $config{$parameter_name} = $parameter_value;
     }
 }

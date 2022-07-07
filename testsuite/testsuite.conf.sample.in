@@ -8,4 +8,4 @@ SlurmBuildDir=@abs_top_builddir@
 SlurmInstallDir=@prefix@
 
 # Slurm Configuration Directory (compiled-in location of slurm.conf)
-SlurmConfigDir=@prefix@/etc
+SlurmConfigDir=@sysconfdir@
