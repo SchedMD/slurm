@@ -31,10 +31,15 @@ parameters.</li>
 <li><b>lua</b> &mdash; Interface to <a href="http://www.lua.org">Lua</a> scripts
 implementing these functions (actually a slight variation of them). Sample Lua
 scripts can be found with the Slurm distribution in the directory
-<i>contribs/lua</i>. The default installation location of the Lua scripts is
-the same location as the Slurm configuration file, <i>slurm.conf</i>.</li>
+<i>contribs/lua</i>. The Lua script must be named "job_submit.lua" and must
+be located in the default configuration directory (typically the subdirectory
+"etc" of the installation directory).</li>
 <li><b>partition</b> &mdash; Sets a job's default partition based upon job
 submission parameters and available partitions.</li>
+<li><b>pbs</b> &mdash; Translate PBS job submission options to Slurm equivalent
+(if possible).</li>
+<li><b>require_timelimit</b> &mdash; Force job submissions to specify a
+timelimit.</li>
 </ul>
 
 <p><span class="commandline">const uint32_t plugin_version</span><br>
@@ -301,6 +306,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 11 April 2022</p>
+<p style="text-align:center;">Last modified 08 July 2022</p>
 
 <!--#include virtual="footer.txt"-->
