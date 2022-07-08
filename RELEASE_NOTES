@@ -32,9 +32,13 @@ HIGHLIGHTS
     needed.
  -- sreport - Count planned (FKA reserved) time for jobs running in IGNORE_JOBS
     reservations. Previously was lumped into IDLE time.
+ -- job_container/tmpfs - Support running with an arbitrary list of private
+    mount points (/tmp and /dev/shm are the default, but not required).
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
+ - job_container.conf - Added "Dirs" option to list desired private mount
+   points.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

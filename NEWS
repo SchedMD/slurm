@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
     from cmd.
  -- sreport - Count planned (FKA reserved) time for jobs running in IGNORE_JOBS
     reservations. Previously was lumped into IDLE time.
+ -- job_container/tmpfs - support running with an arbitrary list of private
+    mount points (/tmp and /dev/shm are nolonger required, but are the default).
 
 * Changes in Slurm 22.05.3
 ==========================
