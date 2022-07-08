@@ -307,38 +307,16 @@ if ($pytest_available) {
 
     # Obtain a list of python tests to run via pytest
     my @python_tests = ();
-    $output = `pytest-3 --collect-only tests 2>&1`;
+    $output = `pytest-3 --collect-only -q tests 2>&1`;
     $rc = $? >> 8;
     if ($rc) {
         die "Unable to obtain list of python tests to run: $output\n";
     }
 
     # Parse the collected test output
-    my ($package, $module, $class, $function) = ('', '', '', '');;
     foreach my $line (split /\n/, $output) {
-        if ($line =~ /^<Module ([^>]*)>$/) {
-            #push @python_tests, $1;
-            $module = $1;
-            $package = '';
-            $class = '';
-        }
-        elsif ($line =~ /^<Package $Bin\/python\/([^>]*)>$/) {
-            $package = $1;
-        }
-        elsif ($line =~ /^  <Module ([^>]*)>/) {
-            #push @python_tests, "$package/$1";
-            $module = $1;
-            $class = '';
-        }
-        elsif ($line =~ /<Class ([^>]*)>/) {
-            $class = $1;
-        }
-        elsif ($line =~ /<Function ([^>]*)>/) {
-            my $test = $package ? "$package/$module" : $module;
-            $test .= "::$class" if $class;
-            $test .= "::$1";
-            next if $module =~ /test_expect\.py/;
-            push @python_tests, $test;
+        if ($line =~ m%^tests/.*test_\S+\.py::.*test_\S+$%) {
+            push @python_tests, $line;
         }
     }
     #use Data::Dumper;
