@@ -5761,6 +5761,13 @@ static void _validate_memory_options(slurm_opt_t *opt)
 		    slurm_option_set_by_env(opt, LONG_OPT_MEM_PER_GPU)) > 1) {
 		fatal("SLURM_MEM_PER_CPU, SLURM_MEM_PER_GPU, and SLURM_MEM_PER_NODE are mutually exclusive.");
 	}
+
+	if (!(slurm_conf.select_type_param & CR_MEMORY) && opt->verbose) {
+		if (slurm_option_isset(opt, "mem-per-cpu"))
+			info("Configured SelectTypeParameters doesn't treat memory as a consumable resource. In this case value of --mem-per-cpu is only used to eliminate nodes with lower configured RealMemory value.");
+		else if (slurm_option_isset(opt, "mem-per-gpu"))
+			info("Configured SelectTypeParameters doesn't treat memory as a consumable resource. In this case value of --mem-per-gpu is ignored.");
+	}
 }
 
 static void _validate_threads_per_core_option(slurm_opt_t *opt)
