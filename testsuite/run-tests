@@ -60,6 +60,8 @@ $ENV{ANSI_COLORS_DISABLED}++ unless -t STDOUT;
 my %config = ();
 $config{slurmsourcedir} = abs_path("$Bin/..");
 $config{slurmbuilddir} = $config{slurmsourcedir};
+$config{slurminstalldir} = '/usr/local';
+$config{slurmconfigdir} = "$config{slurminstalldir}/etc";
 
 # Override configuration parameters with parameters from testsuite.conf
 my $testsuite_config_file = defined $ENV{SLURM_TESTSUITE_CONF} ? $ENV{SLURM_TESTSUITE_CONF} : "$Bin/testsuite.conf";
@@ -67,6 +69,7 @@ open CONFIG_FILE, $testsuite_config_file or die "Unable to open testsuite.conf (
 foreach my $line (<CONFIG_FILE>) {
     if ($line =~ /^\s*(\S+)\s*=\s*(\S+)\s*$/) {
         my ($parameter_name, $parameter_value) = (lc $1, $2);
+        $parameter_value =~ s/\$\{prefix}/$config{slurminstalldir}/;
         $config{$parameter_name} = $parameter_value;
     }
 }
@@ -304,38 +307,16 @@ if ($pytest_available) {
 
     # Obtain a list of python tests to run via pytest
     my @python_tests = ();
-    $output = `pytest-3 --collect-only tests 2>&1`;
+    $output = `pytest-3 --collect-only -q tests 2>&1`;
     $rc = $? >> 8;
     if ($rc) {
         die "Unable to obtain list of python tests to run: $output\n";
     }
 
     # Parse the collected test output
-    my ($package, $module, $class, $function) = ('', '', '', '');;
     foreach my $line (split /\n/, $output) {
-        if ($line =~ /^<Module ([^>]*)>$/) {
-            #push @python_tests, $1;
-            $module = $1;
-            $package = '';
-            $class = '';
-        }
-        elsif ($line =~ /^<Package $Bin\/python\/([^>]*)>$/) {
-            $package = $1;
-        }
-        elsif ($line =~ /^  <Module ([^>]*)>/) {
-            #push @python_tests, "$package/$1";
-            $module = $1;
-            $class = '';
-        }
-        elsif ($line =~ /<Class ([^>]*)>/) {
-            $class = $1;
-        }
-        elsif ($line =~ /<Function ([^>]*)>/) {
-            my $test = $package ? "$package/$module" : $module;
-            $test .= "::$class" if $class;
-            $test .= "::$1";
-            next if $module =~ /test_expect\.py/;
-            push @python_tests, $test;
+        if ($line =~ m%^tests/.*test_\S+\.py::.*test_\S+$%) {
+            push @python_tests, $line;
         }
     }
     #use Data::Dumper;
