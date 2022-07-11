@@ -510,7 +510,7 @@ _build_job_list( char* str )
 	if ( str == NULL)
 		return NULL;
 
-	my_list = list_create(NULL);
+	my_list = list_create(xfree_ptr);
 	my_job_list = xstrdup(str);
 	job = strtok_r(my_job_list, ",", &tmp_char);
 	while (job) {
