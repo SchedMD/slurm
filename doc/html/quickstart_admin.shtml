@@ -657,28 +657,6 @@ months. A list of most recent major Slurm releases is shown below.</p>
 <li>22.05.x (Released May 2022)</li>
 </ul>
 
-<p>Slurm's PMI-1 and PMI-2 libraries could change their APIs on a major release,
-requiring applications linked to these libraries to be relinked. This is a rare
-situation though and in the event it did happen, it would be announced in the
-RELEASE_NOTES, so you should generally not need to relink or recompile your
-applications. This includes OpenMPI, MPICH and MVAPICH2 stacks when compiled
-with Slurm support and against Slurm's PMI libraries. There is one exception
-when MPICH is compiled to be integrated with Slurm but not against
-any of our libraries. In that case the 'mpiexec.hydra' command generated is
-linked against our Slurm API since it uses some of our functions to get
-information from the job. The problem is that they link against our versioned
-public API (libslurm.so.xyz) instead of against the generic one (libslurm.so.0).
-At the moment any release change in this kind of MPICH installation will
-imply the need to rebuild the stack.
-Locally developed Slurm plugins may also require modification.
-Slurm daemons will support RPCs and state files from the two previous major
-releases (e.g. a version 22.05.x SlurmDBD will support slurmctld daemons and
-commands with a version of 22.05.x, 21.08.x or 20.11.x).
-This means that upgrading at least once each year is recommended.
-Otherwise, intermediate upgrades will be required to preserve state information.
-Changes in the mainenance release number generally represent only bug fixes,
-but may also include minor enhancements.</p>
-
 <p>If the SlurmDBD daemon is used, it must be at the same or higher major
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
@@ -753,16 +731,45 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p>Slurm's API library (libslurm.so) increases its version number every major
-release, so any application linked directly against a specific Slurm API
-(and not the symlink) should be recompiled. Sometimes it works to just symlink
-the old .so name(s) to the new one, but this has no guarantee of working if
-internal symbols have changed in the new release. This is not the case for
-applications linked against Slurm's PMI-1 or PMI-2 libraries. PMI-1 is linked
-against a special unversioned library (libslurm_pmi.so) and PMI-2
-doesn't add any reference to the Slurm API. If any disrupting change to these
-API libraries happens in a major release, it will be properly noted in the
-RELEASE_NOTES.</p>
+<p>Slurm's main public API library (libslurm.so.X.0.0) increases its version
+number with every major release, so any application linked against it should be
+recompiled after an upgrade. This includes locally developed Slurm plugins.</p>
+
+<p>If you have built your own version of Slurm plugins, besides having to
+recompile them, they will likely need modification to support the new version
+of Slurm. It is common for plugins to add new functions and function arguments
+during major updates. See the RELEASE_NOTES file for details about these
+changes.</p>
+
+<p>Slurm's PMI-1 (libpmi.so.0.0.0) and PMI-2 (libpmi2.so.0.0.0) public API
+libraries do not change between releases and are meant to be permanently
+fixed. This means that linking against either of them will not require you
+to recompile the application after a Slurm upgrade, except in the unlikely
+event that one of them changes. It is unlikely because these libraries must
+be compatible with any other PMI-1 and PMI-2 implementations. If there was a
+change, it would be announced in the RELEASE_NOTES and would only happen on
+a major release.</p>
+
+<p>As an example, MPI stacks like OpenMPI and MVAPICH2 link against Slurm's
+PMI-1 and/or PMI-2 API, but not against our main public API. This means that at
+the time of writting this documentation, you don't need to recompile these
+stacks after a Slurm upgrade. One known exception is MPICH. When MPICH is
+compiled with Slurm support and with the Hydra Process Manager, it will use
+the Slurm API to obtain job information. This link means you will need to
+recompile the MPICH stack after an upgrade.</p>
+
+<p>One easy way to know if an application requires a recompile is to inspect all
+of its ELF files with 'ldd' and grep for 'slurm'. If you see a versioned
+'libslurm.so.x.y.z' reference, then the application will likely need to be
+recompiled.</p>
+
+<p>Slurm daemons will support RPCs and state files from the two previous major
+releases (e.g. a version 22.05.x SlurmDBD will support slurmctld daemons and
+commands with a version of 22.05.x, 21.08.x or 20.11.x).
+This means that upgrading at least once each year is recommended.
+Otherwise, intermediate upgrades will be required to preserve state information.
+Changes in the mainenance release number generally only include bug fixes,
+but may also include other minor enhancements.</p>
 
 <p><b>Be mindful of your configured SlurmdTimeout and SlurmctldTimeout values</b>.
 If the Slurm daemons are down for longer than the specified timeout during an
@@ -807,11 +814,6 @@ than using systemd when performing an upgrade.</li>
 basis after the slurmctld daemon(s) are upgraded, but do make sure their down
 time is below the SlurmdTimeout value.</p>
 
-<p>If you have built your own version of Slurm plugins, they will likely
-need modification to support a new version of Slurm. It is common for plugins
-to add new functions and function arguments during major updates.
-See the RELEASE_NOTES file for details.</p>
-
 <p><b>NOTE</b>: In the beginning of 2021, a version of Slurm was added to the
 EPEL repository. This version is not supported or maintained by SchedMD, and is
 not currently recommend for customer use. Unfortunately, this inclusion could
@@ -841,6 +843,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 04 Jul 2022</p>
+<p style="text-align:center;">Last modified 14 Jul 2022</p>
 
 <!--#include virtual="footer.txt"-->
