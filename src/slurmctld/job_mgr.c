@@ -15460,7 +15460,8 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 			bit_set(tmp_node_bitmap, i);
 		}
 		kill_req = create_kill_job_msg(job_ptr, protocol_version);
-		kill_req->nodes		= bitmap2node_name(tmp_node_bitmap);
+		kill_req->nodes = bitmap2node_name_sortable(tmp_node_bitmap,
+							    false);
 		agent_info = xmalloc(sizeof(agent_arg_t));
 		agent_info->node_count	= bit_set_count(tmp_node_bitmap);
 		agent_info->retry	= 1;
