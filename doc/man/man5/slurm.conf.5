@@ -7086,26 +7086,33 @@ variable set to different values on each compute node. Available in
 .TP
 \fBSLURM_JOB_ACCOUNT\fR
 Account name used for the job.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
+.IP
+
+.TP
+\fBSLURM_JOB_COMMENT\fR
+Comment added to the job.
+Available in \fBProlog\fR, \fBPrologSlurmctld\fR, \fBEpilog\fR and
+\fBEpilogSlurmctld\fR.
 .IP
 
 .TP
 \fBSLURM_JOB_CONSTRAINTS\fR
 Features required to run the job.
-Available in \fBProlog\fR, \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
+Available in \fBProlog\fR, \fBPrologSlurmctld\fR, \fBEpilog\fR and
+\fBEpilogSlurmctld\fR.
 .IP
 
 .TP
 \fBSLURM_JOB_DERIVED_EC\fR
 The highest exit code of all of the job steps.
-Available in \fBEpilogSlurmctld\fR.
+Available in \fBEpilog\fR and \fBEpilogSlurmctld\fR.
 .IP
 
 .TP
 \fBSLURM_JOB_EXIT_CODE\fR
 The exit code of the job script (or salloc). The value is the status
 as returned by the wait() system call (See wait(2))
-Available in \fBEpilogSlurmctld\fR.
+Available in \fBEpilog\fR and \fBEpilogSlurmctld\fR.
 .IP
 
 .TP
@@ -7114,7 +7121,7 @@ The exit code of the job script (or salloc). The value has the format
 <exit>:<sig>. The first number is the exit code, typically as set by the
 exit() function. The second number of the signal that caused the process to
 terminate if it was terminated by a signal.
-Available in \fBEpilogSlurmctld\fR.
+Available in \fBEpilog\fR and \fBEpilogSlurmctld\fR.
 .IP
 
 .TP
@@ -7161,7 +7168,8 @@ Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_JOB_PARTITION\fR
 Partition that job runs in.
-Available in \fBProlog\fR, \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
+Available in \fBProlog\fR, \fBPrologSlurmctld\fR, \fBEpilog\fR and
+\fBEpilogSlurmctld\fR.
 .IP
 
 .TP
