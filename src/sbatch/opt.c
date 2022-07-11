@@ -768,12 +768,6 @@ static bool _opt_verify(void)
 		opt.nodes_set = true;
 	}
 
-	if ((opt.ntasks_per_node > 0) && (!opt.ntasks_set) &&
-	    ((opt.max_nodes == 0) || (opt.min_nodes == opt.max_nodes))) {
-		opt.ntasks = opt.min_nodes * opt.ntasks_per_node;
-		opt.ntasks_set = 1;
-	}
-
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 

@@ -1227,11 +1227,11 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 					cpus_per_task);
 
 	if (step_layout_req.num_tasks) {
-		env_array_append_fmt(dest, "SLURM_NTASKS", "%u",
-				     step_layout_req.num_tasks);
+		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u",
+					step_layout_req.num_tasks);
 		/* keep around for old scripts */
-		env_array_append_fmt(dest, "SLURM_NPROCS", "%u",
-				     step_layout_req.num_tasks);
+		env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u",
+					step_layout_req.num_tasks);
 	} else {
 		step_layout_req.num_tasks = num_cpus / cpus_per_task;
 	}
