@@ -163,6 +163,16 @@ static const struct luaL_Reg slurm_functions [] = {
 	{ NULL, NULL }
 };
 
+static void _register_slurm_output_errtab(lua_State *L)
+{
+	int i;
+
+	for (i = 0; i < slurm_errtab_size; i++) {
+		lua_pushnumber(L, slurm_errtab[i].xe_number);
+		lua_setfield(L, -2, slurm_errtab[i].xe_name);
+	}
+}
+
 static void _register_slurm_output_functions(lua_State *L)
 {
 	char *unpack_str;
@@ -227,22 +237,7 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "FAILURE");
 	lua_pushnumber(L, SLURM_SUCCESS);
 	lua_setfield(L, -2, "SUCCESS");
-	lua_pushnumber(L, ESLURM_ACCESS_DENIED);
-	lua_setfield(L, -2, "ESLURM_ACCESS_DENIED");
-	lua_pushnumber(L, ESLURM_ACCOUNTING_POLICY);
-	lua_setfield(L, -2, "ESLURM_ACCOUNTING_POLICY");
-	lua_pushnumber(L, ESLURM_INVALID_ACCOUNT);
-	lua_setfield(L, -2, "ESLURM_INVALID_ACCOUNT");
-	lua_pushnumber(L, ESLURM_INVALID_LICENSES);
-	lua_setfield(L, -2, "ESLURM_INVALID_LICENSES");
-	lua_pushnumber(L, ESLURM_INVALID_NODE_COUNT);
-	lua_setfield(L, -2, "ESLURM_INVALID_NODE_COUNT");
-	lua_pushnumber(L, ESLURM_INVALID_TIME_LIMIT);
-	lua_setfield(L, -2, "ESLURM_INVALID_TIME_LIMIT");
-	lua_pushnumber(L, ESLURM_JOB_MISSING_SIZE_SPECIFICATION);
-	lua_setfield(L, -2, "ESLURM_JOB_MISSING_SIZE_SPECIFICATION");
-	lua_pushnumber(L, ESLURM_MISSING_TIME_LIMIT);
-	lua_setfield(L, -2, "ESLURM_MISSING_TIME_LIMIT");
+	_register_slurm_output_errtab(L);
 
 	/*
 	 * Other definitions needed to interpret data
