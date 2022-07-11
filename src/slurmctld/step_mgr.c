@@ -1345,7 +1345,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				mem_blocked_cpus += (total_cpus - avail_cpus);
 			} else {
 				mem_blocked_cpus += (total_cpus - avail_cpus);
-				max_rem_nodes--;
 				first_step_node = false;
 			}
 		}
@@ -1458,6 +1457,10 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	} else {
 		nodes_picked = bit_alloc(bit_size(nodes_avail));
 	}
+
+	/* If gres_per_step then filter nodes_avail to nodes that fill req */
+	gres_ctld_step_test_per_step(step_gres_list, job_ptr,
+				     nodes_avail, step_spec->min_nodes);
 
 	/*
 	 * In case we are in relative mode, do not look for idle nodes

@@ -9423,7 +9423,6 @@ extern void gres_step_state_log(List gres_list, uint32_t job_id,
 	list_iterator_destroy(gres_iter);
 }
 
-
 /*
  * Return TRUE if this plugin ID consumes GRES count > 1 for a single device
  * file (e.g. MPS)

@@ -2980,3 +2980,124 @@ extern char *gres_ctld_gres_2_tres_str(List gres_list, bool locked)
 
 	return tres_str;
 }
+
+/*
+ * If a step gres request used gres_per_step it must be tested more than just in
+ * gres_ctld_step_test. This function only acts when gres_per_step is used
+ * IN step_gres_list  - step's requested GRES data structure
+ * IN job_ptr - Job data
+ * IN/OUT nodes_avail - Bitstring of nodes available for this step to use
+ * IN min_nodes - minimum nodes required for this step
+ */
+extern void gres_ctld_step_test_per_step(List step_gres_list,
+					 job_record_t *job_ptr,
+					 bitstr_t *nodes_avail,
+					 int min_nodes)
+{
+	ListIterator step_gres_iter;
+	gres_state_t *gres_state_step;
+	slurm_step_id_t tmp_step_id;
+	foreach_gres_cnt_t foreach_gres_cnt;
+	bitstr_t *node_bitmap = job_ptr->job_resrcs->node_bitmap;
+	int i_first, i_last;
+
+	if (!step_gres_list)
+		return;
+	if (!job_ptr->gres_list_alloc)
+		return;
+
+	(void) gres_init();
+
+	i_first = bit_ffs(node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(node_bitmap);
+	else
+		i_last = -2;
+
+	tmp_step_id.job_id = job_ptr->job_id;
+	tmp_step_id.step_het_comp = NO_VAL;
+	tmp_step_id.step_id = NO_VAL;
+
+	memset(&foreach_gres_cnt, 0, sizeof(foreach_gres_cnt));
+	foreach_gres_cnt.ignore_alloc = false;
+	foreach_gres_cnt.step_id = &tmp_step_id;
+
+	step_gres_iter = list_iterator_create(step_gres_list);
+	while ((gres_state_step = list_next(step_gres_iter))) {
+		gres_key_t job_search_key;
+		int32_t *gres_cnts;
+		int gres_req, limit;
+		bitstr_t *nodes_picked;
+		gres_step_state_t *gres_ss = gres_state_step->gres_data;
+
+		if (!gres_ss->gres_per_step)
+			continue;
+
+		gres_req = gres_ss->gres_per_step;
+		limit = (gres_req + min_nodes - 1) / min_nodes;
+
+		job_search_key.config_flags = gres_state_step->config_flags;
+		job_search_key.plugin_id = gres_state_step->plugin_id;
+		if (gres_ss->type_name)
+			job_search_key.type_id = gres_ss->type_id;
+		else
+			job_search_key.type_id = NO_VAL;
+
+		foreach_gres_cnt.job_search_key = &job_search_key;
+
+		nodes_picked = bit_alloc(bit_size(nodes_avail));
+		gres_cnts = xcalloc(job_ptr->node_cnt, sizeof(uint64_t));
+		for (int node_inx = 0; node_inx < job_ptr->node_cnt; node_inx++)
+			gres_cnts[node_inx] = NO_VAL;
+
+		/*
+		 * Select nodes until enough gres has been allocated.
+		 * Starting with nodes that have an equal share available each,
+		 */
+		while (limit >= 0) {
+			int next_smallest = -1;
+			for (int i = i_first, node_inx = -1; i <= i_last; i++) {
+				if (!bit_test(node_bitmap, i))
+					continue;
+				node_inx++;
+				if (!bit_test(nodes_avail, i) ||
+				    bit_test(nodes_picked, i))
+					continue;
+
+				/* Only calculate gres cnt once */
+				if (gres_cnts[node_inx] == NO_VAL) {
+					job_search_key.node_offset = node_inx;
+					foreach_gres_cnt.gres_cnt = INFINITE64;
+					(void) list_for_each(
+						job_ptr->gres_list_alloc,
+						_step_get_gres_cnt,
+						&foreach_gres_cnt);
+					gres_cnts[node_inx] =
+						foreach_gres_cnt.gres_cnt;
+				}
+
+				if (gres_cnts[node_inx] >= limit) {
+					bit_set(nodes_picked, i);
+					gres_req -= gres_cnts[node_inx];
+				} else if (gres_cnts[node_inx] >
+					   next_smallest) {
+					next_smallest = gres_cnts[node_inx];
+				}
+
+				if ((gres_req <= 0) &&
+				    (bit_set_count(nodes_picked) >=
+				     min_nodes)) {
+					bit_and(nodes_avail, nodes_picked);
+					next_smallest = -1; /* exit loop */
+					break;
+				}
+			}
+			limit = next_smallest;
+		}
+		FREE_NULL_BITMAP(nodes_picked);
+		xfree(gres_cnts);
+	}
+	list_iterator_destroy(step_gres_iter);
+
+	return;
+}

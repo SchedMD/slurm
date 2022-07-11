@@ -207,6 +207,19 @@ extern uint64_t gres_ctld_step_test(List step_gres_list, List job_gres_list,
 				    int *err_code);
 
 /*
+ * If a step gres request used gres_per_step it must be tested more than just in
+ * gres_ctld_step_test. This function only acts when gres_per_step is used
+ * IN step_gres_list  - step's requested GRES data structure
+ * IN job_ptr - Job data
+ * IN/OUT nodes_avail - Bitstring of nodes available for this step to use
+ * IN min_nodes - minimum nodes required for this step
+ */
+extern void gres_ctld_step_test_per_step(List step_gres_list,
+					 job_record_t *job_ptr,
+					 bitstr_t *nodes_avail,
+					 int min_nodes);
+
+/*
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
  *		gres_step_state_validate()
