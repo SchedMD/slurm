@@ -52,6 +52,7 @@ $verbose -= $quiet;
 my ($cmd, $output, $rc);
 my %summary = ('Passed' => 0, 'Failed' => 0, 'Errored' => 0, 'Skipped' => 0);
 my $exit_tests = 0;
+my @failed_tests = ();
 
 # Avoid using colors unless writing stdout to a terminal
 $ENV{ANSI_COLORS_DISABLED}++ unless -t STDOUT;
@@ -123,6 +124,7 @@ sub print_test_status {
     else {
         if ($verbose >= -1) {
             print color('red'), uc $test_status, color('reset'), "\n";
+            push @failed_tests, $test_name;
         }
     }
 
@@ -404,14 +406,17 @@ my $percent = $run_count ? $pass_count * 100 / $run_count : 0;
 
 print "\n";
 printf "%d test%s passed (%0.01f%%)\n", $pass_count, $pass_count == 1 ? '' : 's', $percent;
-if ($error_count) {
-    printf "%d test%s had errors\n", $error_count, $error_count == 1 ? '' : 's';
-}
-if ($fail_count) {
-    printf "%d test%s had failures\n", $fail_count, $fail_count == 1 ? '' : 's';
-}
 if ($skip_count) {
     printf "%d test%s were skipped\n", $skip_count, $skip_count == 1 ? '' : 's';
+}
+if ($fail_count + $error_count) {
+    printf "%d test%s had failures\n", $fail_count + $error_count, $fail_count + $error_count == 1 ? '' : 's';
+}
+if ($fail_count + $error_count) {
+    print "Failed tests:\n";
+    foreach my $test_name (@failed_tests) {
+        printf "  $test_name\n";
+    }
 }
 
 ##############################################################################
