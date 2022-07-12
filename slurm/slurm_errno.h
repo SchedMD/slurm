@@ -336,6 +336,16 @@ typedef enum {
 	ESLURM_CONTAINER_NOT_CONFIGURED = 10000,
 } slurm_err_t;
 
+/* Type for error string table entries */
+typedef struct {
+	int xe_number;
+	char *xe_name;
+	char *xe_message;
+} slurm_errtab_t;
+
+extern slurm_errtab_t slurm_errtab[];
+extern unsigned int slurm_errtab_size;
+
 /* look up an errno value */
 char * slurm_strerror(int errnum);
 

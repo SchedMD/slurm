@@ -53,13 +53,6 @@
 
 #include "slurm/slurm_errno.h"
 
-/* Type for error string table entries */
-typedef struct {
-	int xe_number;
-	char *xe_name;
-	char *xe_message;
-} slurm_errtab_t;
-
 /* Add new error values to slurm/slurm_errno.h, and their descriptions to this table */
 slurm_errtab_t slurm_errtab[] = {
 	{0, "SLURM_SUCCESS", "No error"},
@@ -844,6 +837,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Container support is not configured"},
 };
 
+unsigned int slurm_errtab_size = sizeof(slurm_errtab) / sizeof(slurm_errtab_t);
+
 /*
  * Linear search through table of errno values and strings,
  * returns NULL on error, string on success.
@@ -853,7 +848,7 @@ static char *_lookup_slurm_api_errtab(int errnum)
 	char *res = NULL;
 	int i;
 
-	for (i = 0; i < sizeof(slurm_errtab) / sizeof(slurm_errtab_t); i++) {
+	for (i = 0; i < slurm_errtab_size; i++) {
 		if (slurm_errtab[i].xe_number == errnum) {
 			res = slurm_errtab[i].xe_message;
 			break;
