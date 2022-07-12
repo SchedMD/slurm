@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "February 2022" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "July 2022" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -171,6 +171,9 @@ file.
 NOTE: Drain a node before changing the count of records with \fBFile\fR
 parameters (e.g. if you want to add or remove GPUs from a node's configuration).
 Failure to do so will result in any job using those GRES being aborted.
+
+NOTE: When specifying \fBFile\fR, \fBCount\fR is limited in size
+(currently 1024) for each node.
 .IP
 
 .TP
@@ -333,7 +336,6 @@ the example below.
 An optional arbitrary string identifying the type of generic resource.
 For example, this might be used to identify a specific model of GPU, which users
 can then specify in a job request.
-If \fBType\fR is specified, then \fBCount\fR is limited in size (currently 1024).
 A restart of the \fBslurmctld\fR and \fBslurmd\fR daemons is required for changes
 to the \fBType\fR option to take effect.
 
