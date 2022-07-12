@@ -243,6 +243,11 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt);
 extern void build_all_frontend_info (bool is_slurmd_context);
 
 /*
+ * Build a node's node_spec_bitmap and core_spec_cnt from it's cpu_spec_list.
+ */
+extern int build_node_spec_bitmap(node_record_t *node_ptr);
+
+/*
  * Expand a nodeline's node names, host names, addrs, ports into separate nodes.
  */
 extern void expand_nodeline_info(slurm_conf_node_t *node_ptr,

@@ -432,6 +432,54 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	}
 }
 
+extern int build_node_spec_bitmap(node_record_t *node_ptr)
+{
+	uint32_t size;
+	int *cpu_spec_array;
+	int i;
+
+	if (node_ptr->threads == 0) {
+		error("Node %s has invalid thread per core count (%u)",
+		      node_ptr->name, node_ptr->threads);
+		return SLURM_ERROR;
+	}
+
+	if (!node_ptr->cpu_spec_list)
+		return SLURM_SUCCESS;
+	size = node_ptr->tot_cores;
+	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
+	node_ptr->node_spec_bitmap = bit_alloc(size);
+	bit_set_all(node_ptr->node_spec_bitmap);
+
+	/* remove node's specialized cpus now */
+	cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);
+	i = 0;
+	while (cpu_spec_array[i] != -1) {
+		int start = (cpu_spec_array[i] / node_ptr->threads);
+		int end = (cpu_spec_array[i + 1] / node_ptr->threads);
+		if (start > size) {
+			error("%s: Specialized CPUs id start above the configured limit.",
+			      __func__);
+			break;
+		}
+
+		if (end > size) {
+			error("%s: Specialized CPUs id end above the configured limit",
+			      __func__);
+			end = size;
+		}
+		/*
+		 * We need to test to make sure we have these bits in this map.
+		 * If the node goes from 12 cpus to 6 like scenario.
+		 */
+		bit_nclear(node_ptr->node_spec_bitmap, start, end);
+		i += 2;
+	}
+	node_ptr->core_spec_cnt = bit_clear_count(node_ptr->node_spec_bitmap);
+	xfree(cpu_spec_array);
+	return SLURM_SUCCESS;
+}
+
 /*
  * Expand a nodeline's node names, host names, addrs, ports into separate nodes.
  */
