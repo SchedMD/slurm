@@ -100,6 +100,7 @@ int set_user_limits(stepd_step_rec_t *step)
 	slurm_rlimits_info_t *rli;
 	struct rlimit r;
 	rlim_t task_mem_bytes;
+	int rlimit_rc;
 
 	if (getrlimit(RLIMIT_CPU, &r) == 0) {
 		if (r.rlim_max != RLIM_INFINITY) {
@@ -123,8 +124,8 @@ int set_user_limits(stepd_step_rec_t *step)
 	 * node and not per process, but hopefully this is better than
 	 * nothing).  */
 #ifdef RLIMIT_RSS
-	if ((task_mem_bytes) && (getrlimit(RLIMIT_RSS, &r) == 0) &&
-	    (r.rlim_max > task_mem_bytes)) {
+	rlimit_rc = getrlimit(RLIMIT_RSS, &r);
+	if ((task_mem_bytes) && !rlimit_rc && (r.rlim_max > task_mem_bytes)) {
 		r.rlim_max =  r.rlim_cur = task_mem_bytes;
 		if (setrlimit(RLIMIT_RSS, &r)) {
 			/* Indicates that limit has already been exceeded */
@@ -132,16 +133,22 @@ int set_user_limits(stepd_step_rec_t *step)
 			      step->step_mem);
 		} else
 			debug2("Set task rss(%"PRIu64" MB)", step->step_mem);
-#if 0
-		getrlimit(RLIMIT_RSS, &r);
-		info("task RSS limits: %u %u", r.rlim_cur, r.rlim_max);
-#endif
+		if (get_log_level() >= LOG_LEVEL_DEBUG2) {
+			getrlimit(RLIMIT_RSS, &r);
+			debug2("Task RSS limits from getrlimit: rlim_cur:%lu rlim_max:%lu",
+			       r.rlim_cur, r.rlim_max);
+		}
+	} else if (rlimit_rc) {
+		error("getrlimit(RLIMIT_RSS,..) failed with %m");
+	} else {
+		debug2("Not setting task rss rlimit, task bytes: %lu, rlimit_max: %lu",
+		       task_mem_bytes, r.rlim_max);
 	}
 #endif
 
 #ifdef SLURM_RLIMIT_VSIZE
-	if ((task_mem_bytes) && slurm_conf.vsize_factor &&
-	    (getrlimit(SLURM_RLIMIT_VSIZE, &r) == 0) &&
+	rlimit_rc = getrlimit(SLURM_RLIMIT_VSIZE, &r);
+	if ((task_mem_bytes) && slurm_conf.vsize_factor && !rlimit_rc &&
 	    (r.rlim_max > task_mem_bytes)) {
 		r.rlim_max = task_mem_bytes * (slurm_conf.vsize_factor / 100.0);
 		r.rlim_cur = r.rlim_max;
@@ -151,10 +158,16 @@ int set_user_limits(stepd_step_rec_t *step)
 			      SLURM_RLIMIT_VNAME, step->step_mem);
 		} else
 			debug2("Set task vsize(%"PRIu64" MB)", step->step_mem);
-#if 0
-		getrlimit(SLURM_RLIMIT_VSIZE, &r);
-		info("task VSIZE limits:   %u %u", r.rlim_cur, r.rlim_max);
-#endif
+		if (get_log_level() >= LOG_LEVEL_DEBUG2) {
+			getrlimit(SLURM_RLIMIT_VSIZE, &r);
+			debug2("task VSIZE limits: rlim_cur:%lu rlim_max:%lu",
+			       r.rlim_cur, r.rlim_max);
+		}
+	} else if (rlimit_rc) {
+		error("getrlimit(SLURM_RLIMIT_VSIZE,,..) failed with %m");
+	} else {
+		debug2("Not setting task vsize rlimit, task bytes: %lu, rlimit_max: %lu",
+		       task_mem_bytes, r.rlim_max);
 	}
 #endif
 
