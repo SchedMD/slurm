@@ -371,7 +371,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Immediate execution impossible. "
 	  "Individual job submission scheduling attempts deferred"},
 	{ ESLURM_CONFIGLESS_DISABLED,
-	  "ConfigLess mode is disabled"				},
+	  "ConfigLess mode is disabled in slurm configuration."	},
 	{ ESLURM_ENVIRONMENT_MISSING,
 	  "Environment is missing in job"			},
 	{ ESLURM_RESERVATION_NO_SKIP,
