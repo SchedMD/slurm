@@ -57,6 +57,9 @@
 
 #include "src/plugins/openapi/dbv0.0.38/api.h"
 
+/* typedef for adding a function to add a char* to a List */
+typedef int (*add_list_t) (List char_list, char *values);
+
 #define MAGIC_FOREACH_JOB 0xf8aefef3
 typedef struct {
 	int magic;
@@ -104,7 +107,7 @@ data_for_each_cmd_t _foreach_list_entry(data_t *data, void *arg)
 }
 
 static int _parse_csv_list(data_t *src, const char *key, List *list,
-			   data_t *errors)
+			   data_t *errors, add_list_t add_to)
 {
 	if (!*list)
 		*list = list_create(xfree_ptr);
@@ -122,7 +125,7 @@ static int _parse_csv_list(data_t *src, const char *key, List *list,
 		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
 				  "format must be a string", key);
 
-	if (slurm_addto_char_list(*list, data_get_string(src)) < 1)
+	if (add_to(*list, data_get_string(src)) < 1)
 		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
 				  "Unable to parse CSV list", key);
 
@@ -159,21 +162,74 @@ static const flag_t flags[] = {
 typedef struct {
 	char *field;
 	int offset;
+	add_list_t add_to;
 } csv_list_t;
 static const csv_list_t csv_lists[] = {
-	{ "account", offsetof(slurmdb_job_cond_t, acct_list) },
-	{ "association", offsetof(slurmdb_job_cond_t, associd_list) },
-	{ "cluster", offsetof(slurmdb_job_cond_t, cluster_list) },
-	{ "constraints", offsetof(slurmdb_job_cond_t, constraint_list) },
-	{ "format", offsetof(slurmdb_job_cond_t, format_list) },
-	{ "groups", offsetof(slurmdb_job_cond_t, groupid_list) },
-	{ "job_name", offsetof(slurmdb_job_cond_t, jobname_list) },
-	{ "partition", offsetof(slurmdb_job_cond_t, partition_list) },
-	{ "qos", offsetof(slurmdb_job_cond_t, qos_list) },
-	{ "reason", offsetof(slurmdb_job_cond_t, reason_list) },
-	{ "reservation", offsetof(slurmdb_job_cond_t, resv_list) },
-	{ "state", offsetof(slurmdb_job_cond_t, state_list) },
-	{ "wckey", offsetof(slurmdb_job_cond_t, wckey_list) },
+	{
+		"account",
+		offsetof(slurmdb_job_cond_t, acct_list),
+		slurm_addto_char_list
+	},
+	{
+		"association",
+		offsetof(slurmdb_job_cond_t, associd_list),
+		slurm_addto_char_list
+	},
+	{
+		"cluster",
+		offsetof(slurmdb_job_cond_t, cluster_list),
+		slurm_addto_char_list
+	},
+	{
+		"constraints",
+		offsetof(slurmdb_job_cond_t, constraint_list),
+		slurm_addto_char_list
+	},
+	{
+		"format",
+		offsetof(slurmdb_job_cond_t, format_list),
+		slurm_addto_char_list
+	},
+	{
+		"groups",
+		offsetof(slurmdb_job_cond_t, groupid_list),
+		slurm_addto_char_list
+	},
+	{
+		"job_name",
+		offsetof(slurmdb_job_cond_t, jobname_list),
+		slurm_addto_char_list
+	},
+	{
+		"partition",
+		offsetof(slurmdb_job_cond_t, partition_list),
+		slurm_addto_char_list
+	},
+	{
+		"qos",
+		offsetof(slurmdb_job_cond_t, qos_list),
+		slurm_addto_char_list
+	},
+	{
+		"reason",
+		offsetof(slurmdb_job_cond_t, reason_list),
+		slurm_addto_char_list
+	},
+	{
+		"reservation",
+		offsetof(slurmdb_job_cond_t, resv_list),
+		slurm_addto_char_list
+	},
+	{
+		"state",
+		offsetof(slurmdb_job_cond_t, state_list),
+		slurm_addto_char_list
+	},
+	{
+		"wckey",
+		offsetof(slurmdb_job_cond_t, wckey_list),
+		slurm_addto_char_list
+	},
 };
 
 static data_for_each_cmd_t _foreach_step(data_t *data, void *arg)
@@ -330,7 +386,8 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 			List *list = (((void *) args->job_cond) +
 				      csv_lists[i].offset);
 
-			if (_parse_csv_list(data, key, list, errors))
+			if (_parse_csv_list(data, key, list, errors,
+					    csv_lists[i].add_to))
 				return DATA_FOR_EACH_FAIL;
 
 			return DATA_FOR_EACH_CONT;
