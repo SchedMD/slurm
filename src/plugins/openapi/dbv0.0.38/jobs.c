@@ -36,6 +36,8 @@
 
 #include "config.h"
 
+#include <ctype.h>
+#include <limits.h>
 #include <stdint.h>
 
 #include "slurm/slurm.h"
@@ -132,6 +134,53 @@ static int _parse_csv_list(data_t *src, const char *key, List *list,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Convert job state to numeric job state
+ * The return value is the same as slurm_addto_char_list():
+ *   the number of items added (zero on failure)
+ */
+static int _add_list_job_state(List char_list, char *values)
+{
+	int rc = 0;
+	char *last = NULL, *vdup, *value;
+
+	vdup = xstrdup(values);
+	value = strtok_r(vdup, ",", &last);
+	while (value) {
+		char *id_str;
+		uint32_t id = NO_VAL;
+
+		if (isdigit(value[0])) {
+			errno = 0;
+			id = slurm_atoul(value);
+			/*
+			 * Since zero is a valid value, we have to check if
+			 * errno is also set to know if it was an error.
+			 */
+			if ((!id && errno) || (id == ULONG_MAX))
+				break;
+		} else {
+			if ((id = job_state_num(value)) == NO_VAL)
+				break;
+			else
+				id = JOB_STATE_BASE & id;
+		}
+
+		if ((id < JOB_PENDING) || (id >= JOB_END)) {
+			break;
+		}
+
+		id_str = xstrdup_printf("%u", id);
+		rc = slurm_addto_char_list(char_list, id_str);
+		xfree(id_str);
+
+		value = strtok_r(NULL, ",", &last);
+	}
+	xfree(vdup);
+
+	return rc;
+}
+
 typedef struct {
 	char *field;
 	int offset;
@@ -223,7 +272,7 @@ static const csv_list_t csv_lists[] = {
 	{
 		"state",
 		offsetof(slurmdb_job_cond_t, state_list),
-		slurm_addto_char_list
+		_add_list_job_state
 	},
 	{
 		"wckey",
