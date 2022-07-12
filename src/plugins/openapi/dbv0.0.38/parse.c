@@ -256,7 +256,7 @@ static const parser_t parse_assoc[] = {
 	/* skip parent_id */
 	_add_parse(STRING, partition, "partition"),
 	_add_parse(UINT32, priority, "priority"),
-	_add_parse(QOS_STR_LIST, qos_list, "qos"),
+	_add_parse(QOS_ID_LIST, qos_list, "qos"),
 	/* skip rgt */
 	_add_parse(UINT32, shares_raw, "shares_raw"),
 	/* slurmdbd should never set uid - it should always be zero */
