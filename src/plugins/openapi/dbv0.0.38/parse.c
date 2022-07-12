@@ -1323,6 +1323,72 @@ static int _dump_qos_str_list(const parser_t *const parse, void *obj,
 	return SLURM_SUCCESS;
 }
 
+#define MAGIC_FOREACH_PARSE_QOS_ID 0xabaa2c19
+typedef struct {
+	int magic;
+	List qos_list;
+	List g_qos_list;
+	data_t *errors;
+} for_each_parse_qos_id_t;
+
+static data_for_each_cmd_t _for_each_parse_qos_id(data_t *data, void *arg)
+{
+	data_for_each_cmd_t rc;
+	for_each_parse_qos_id_t *args = arg;
+	data_t *name;
+
+	xassert(args->magic == MAGIC_FOREACH_PARSE_QOS_ID);
+
+	rc = _parse_qos_common(data, &name);
+	if (rc != DATA_FOR_EACH_CONT)
+		return rc;
+
+	if (slurmdb_addto_qos_char_list(args->qos_list, args->g_qos_list,
+					data_get_string(name), 0) > 0) {
+		return DATA_FOR_EACH_CONT;
+	} else {
+		resp_error(args->errors, ESLURM_REST_FAIL_PARSING,
+			   "QOS name to ID conversion failed",
+			   data_get_string(name));
+
+		return DATA_FOR_EACH_FAIL;
+	}
+}
+
+#define EMPTY_QOS_ID_ENTRY "\'\'"
+static int _parse_qos_id_list(const parser_t *const parse, void *obj,
+			      data_t *src, data_t *errors,
+			      const parser_env_t *penv)
+{
+	List *qos_list = (((void *)obj) + parse->field_offset);
+	for_each_parse_qos_id_t args = {
+		.magic = MAGIC_FOREACH_PARSE_QOS_ID,
+		.errors = errors,
+		.g_qos_list = penv->g_qos_list,
+	};
+
+	xassert(penv->g_qos_list);
+
+	if (!*qos_list)
+		*qos_list = list_create(xfree_ptr);
+
+	args.qos_list = *qos_list;
+
+	if (data_list_for_each(src, _for_each_parse_qos_id, &args) < 0)
+		return ESLURM_REST_FAIL_PARSING;
+
+	if (list_is_empty(*qos_list)) {
+		/*
+		 * If the QOS list is empty, then we need to set this special
+		 * entry to notify slurmdbd that this is explicilty empty and
+		 * not a no change request
+		 */
+		list_append(*qos_list, EMPTY_QOS_ID_ENTRY);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 #define MAGIC_FOREACH_QOS_PREEMPT_LIST 0xa8eb1313
 typedef struct {
 	int magic;
@@ -2888,6 +2954,7 @@ const parser_funcs_t funcs[] = {
 	_add_func(_parse_flags, _dump_flags, PARSE_FLAGS),
 	_add_func(_parse_qos_str_id, _dump_qos_str_id, PARSE_QOS_ID),
 	_add_func(_parse_qos_str_list, _dump_qos_str_list, PARSE_QOS_STR_LIST),
+	_add_func(_parse_qos_id_list, _dump_qos_str_list, PARSE_QOS_ID_LIST),
 	_add_func(_parse_qos_preempt_list, _dump_qos_preempt_list,
 		  PARSE_QOS_PREEMPT_LIST),
 	_add_func(_parse_tres, _dump_tres, PARSE_TRES),
