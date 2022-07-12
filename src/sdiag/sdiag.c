@@ -53,7 +53,7 @@
 /********************
  * Global Variables *
  ********************/
-struct sdiag_parameters params;
+struct sdiag_parameters params = {0};
 
 stats_info_response_msg_t *buf;
 uint32_t *rpc_type_ave_time = NULL, *rpc_user_ave_time = NULL;
