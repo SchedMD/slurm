@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- sacct - Rename 'Reserved' field to 'Planned' to match sreport and the
     nomenclature of the 'Planned' node.
  -- oci.conf: Add %U as OCI pattern replacement to numeric user id.
+ -- cli_filter/lua, jobcomp/lua, job_submit/lua - expose all Slurm error codes.
 
 * Changes in Slurm 22.05.3
 ==========================
