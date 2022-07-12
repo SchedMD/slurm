@@ -438,9 +438,9 @@ extern int build_node_spec_bitmap(node_record_t *node_ptr)
 	int *cpu_spec_array;
 	int i;
 
-	if (node_ptr->threads == 0) {
+	if (node_ptr->tpc == 0) {
 		error("Node %s has invalid thread per core count (%u)",
-		      node_ptr->name, node_ptr->threads);
+		      node_ptr->name, node_ptr->tpc);
 		return SLURM_ERROR;
 	}
 
@@ -455,8 +455,8 @@ extern int build_node_spec_bitmap(node_record_t *node_ptr)
 	cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);
 	i = 0;
 	while (cpu_spec_array[i] != -1) {
-		int start = (cpu_spec_array[i] / node_ptr->threads);
-		int end = (cpu_spec_array[i + 1] / node_ptr->threads);
+		int start = (cpu_spec_array[i] / node_ptr->tpc);
+		int end = (cpu_spec_array[i + 1] / node_ptr->tpc);
 		if (start > size) {
 			error("%s: Specialized CPUs id start above the configured limit.",
 			      __func__);
