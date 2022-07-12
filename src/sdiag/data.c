@@ -1,9 +1,8 @@
-/****************************************************************************\
- *  sdiag.h - Utility for getting information about slurmctld behaviour
+/*****************************************************************************\
+ *  data.c - data functions for sdiag
  *****************************************************************************
- *  Copyright (C) 2019 UT-Battelle, LLC
- *  Produced at Oak Ridge National Laboratory, June 2019
- *  Written by Matt Ezell <ezellma@ornl.gov>
+ *  Copyright (C) 2022 SchedMD LLC
+ *  Written by Nathan Rini <nate@schedmd.com>.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -35,26 +34,72 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SDIAG_H
-#define _SDIAG_H
+#include "config.h"
 
-struct sdiag_parameters {
-	int mode;
-	int sort;
-	List clusters;
-	char *mimetype; /* --yaml or --json */
-};
+#include "slurm/slurm.h"
 
-typedef enum {
-	SORT_COUNT,
-	SORT_ID,
-	SORT_TIME,
-	SORT_TIME2,
-} sdiag_sort_types_t;
+#include "src/common/fd.h"
+#include "src/common/log.h"
+#include "src/common/openapi.h"
+#include "src/common/parse_time.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
-/********************
- * Global Variables *
- ********************/
-extern struct sdiag_parameters params;
+#include "src/sdiag/sdiag.h"
 
-#endif
+#define TARGET "/slurm/v0.0.39/diag/"
+#define PLUGIN "openapi/v0.0.39"
+
+openapi_handler_t dump_diag = NULL;
+
+extern void *openapi_get_db_conn(void *ctxt)
+{
+	fatal("%s should never be called in sdiag", __func__);
+}
+
+extern int bind_operation_handler(const char *str_path,
+				  openapi_handler_t callback, int callback_tag)
+{
+	debug3("%s: binding %s to 0x%"PRIxPTR,
+	       __func__, str_path, (uintptr_t) callback);
+
+	if (!xstrcmp(str_path, TARGET))
+		dump_diag = callback;
+
+	return SLURM_SUCCESS;
+}
+
+extern int unbind_operation_handler(openapi_handler_t callback)
+{
+	/* no-op */
+	return SLURM_SUCCESS;
+}
+
+extern int dump_data(int argc, char **argv)
+{
+	openapi_t *oas = NULL;
+	data_t *resp = data_new();
+	char *out = NULL;
+	char *ctxt;
+
+	if (init_openapi(&oas, PLUGIN, NULL))
+		fatal("unable to load openapi plugins");
+
+	ctxt = fd_resolve_path(STDIN_FILENO);
+
+	dump_diag(ctxt, HTTP_REQUEST_GET, NULL, NULL, 0, resp, NULL);
+
+	data_g_serialize(&out, resp, params.mimetype, DATA_SER_FLAGS_PRETTY);
+
+	printf("%s", out);
+
+#ifdef MEMORY_LEAK_DEBUG
+	xfree(ctxt);
+	xfree(out);
+	FREE_NULL_DATA(resp);
+	destroy_openapi(oas);
+#endif /* MEMORY_LEAK_DEBUG */
+
+	return SLURM_SUCCESS;
+}

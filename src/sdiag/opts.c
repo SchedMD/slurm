@@ -40,12 +40,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "src/common/data.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
 
 #include "sdiag.h"
 
 #define OPT_LONG_USAGE 0x101
+#define OPT_LONG_JSON 0x102
+#define OPT_LONG_YAML 0x103
 
 static void  _help( void );
 static void  _usage( void );
@@ -80,6 +83,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"sort-by-time2",no_argument,	0,	'T'},
 		{"usage",	no_argument,	0,	OPT_LONG_USAGE},
 		{"version",     no_argument,	0,	'V'},
+		{"json", no_argument, 0, OPT_LONG_JSON},
+		{"yaml", no_argument, 0, OPT_LONG_YAML},
 		{NULL,		0,		0,	0}
 	};
 
@@ -133,6 +138,14 @@ extern void parse_command_line(int argc, char **argv)
 				_usage();
 				exit(0);
 				break;
+			case OPT_LONG_JSON:
+				params.mimetype = MIME_TYPE_JSON;
+				(void) data_init(MIME_TYPE_JSON_PLUGIN, NULL);
+				break;
+			case OPT_LONG_YAML:
+				params.mimetype = MIME_TYPE_YAML;
+				(void) data_init(MIME_TYPE_YAML_PLUGIN, NULL);
+				break;
 		}
 	}
 
@@ -161,6 +174,8 @@ Usage: sdiag [OPTIONS]\n\
   -t, --sort-by-time  sort RPCs by total run time\n\
   -T, --sort-by-time2 sort RPCs by average run time\n\
   -V, --version       display current version number\n\
+  --json              Produce JSON output\n\
+  --yaml              Produce YAML output\n\
 \nHelp options:\n\
   --help          show this help message\n\
   --usage         display brief usage message\n");

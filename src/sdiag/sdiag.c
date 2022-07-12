@@ -60,6 +60,7 @@ uint32_t *rpc_type_ave_time = NULL, *rpc_user_ave_time = NULL;
 
 static int  _print_stats(void);
 static void _sort_rpc(void);
+extern int dump_data(int argc, char **argv);
 
 stats_info_request_msg_t req;
 
@@ -71,6 +72,15 @@ int main(int argc, char **argv)
 
 	slurm_conf_init(NULL);
 	parse_command_line(argc, argv);
+
+	if (params.mimetype) {
+		if (params.mode == STAT_COMMAND_GET)
+			exit(dump_data(argc, argv));
+		else if (params.mode == STAT_COMMAND_RESET)
+			fatal("Reset not supported by JSON/YAML mode");
+		else
+			fatal("Invalid mode requested");
+	}
 
 	if (params.mode == STAT_COMMAND_RESET) {
 		req.command_id = STAT_COMMAND_RESET;
