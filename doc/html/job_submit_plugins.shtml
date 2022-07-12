@@ -176,20 +176,9 @@ Job submission accepted by plugin.<br>
 Job submission rejected due to error (Deprecated in 19.05).<br>
 <span class="commandline">slurm.ERROR</span> &mdash;
 Job submission rejected due to error.<br>
-<span class="commandline">slurm.ESLURM_ACCESS_DENIED</span> &mdash;
-Job submission rejected due to access denied.<br>
-<span class="commandline">slurm.ESLURM_ACCOUNTING_POLICY</span> &mdash;
-Job submission rejected due to accounting policy.<br>
-<span class="commandline">slurm.ESLURM_INVALID_ACCOUNT</span> &mdash;
-Job submission rejected due to invalid account.<br>
-<span class="commandline">slurm.ESLURM_INVALID_LICENSES</span> &mdash;
-Job submission rejected due to access licenses.<br>
-<span class="commandline">slurm.ESLURM_INVALID_TIME_LIMIT</span> &mdash;
-Job submission rejected due to invalid time limit.<br>
-<span class="commandline">slurm.ESLURM_JOB_MISSING_SIZE_SPECIFICATION</span> &mdash;
-Job submission rejected due to missing size specification.<br>
-<span class="commandline">slurm.ESLURM_MISSING_TIME_LIMIT</span> &mdash;
-Job submission rejected due to missing time limit.<br>
+<span class="commandline">slurm.ESLURM_*</span> &mdash;
+Job submission rejected due to error as defined by
+<i>slurm/slurm_errno.h</i> and <i>src/common/slurm_errno.c</i>.<br>
 
 <p class="commandline">
 int slurm_job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
