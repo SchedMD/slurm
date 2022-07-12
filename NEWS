@@ -48,6 +48,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue in the api/step_io message writing logic leading to incorrect
     behavior in API consuming clients like srun or sattach, including a segfault
     when freeing IO buffers holding traffic from the tasks to the client.
+ -- openapi/dbv0.0.38 - avoid job queries getting rejected when cluster is not
+    provided by client.
 
 * Changes in Slurm 22.05.2
 ==========================

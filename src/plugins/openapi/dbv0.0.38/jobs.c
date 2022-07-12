@@ -401,6 +401,16 @@ static int _dump_jobs(const char *context_id, http_request_method_t method,
 	};
 	List jobs = NULL;
 
+	/* set cluster by default if not specified */
+	if (job_cond &&
+	    (!job_cond->cluster_list ||
+	     list_is_empty(job_cond->cluster_list))) {
+		FREE_NULL_LIST(job_cond->cluster_list);
+		job_cond->cluster_list = list_create(xfree_ptr);
+		list_append(job_cond->cluster_list,
+			    xstrdup(slurm_conf.cluster_name));
+	}
+
 	if (!db_query_list(errors, auth, &jobs, slurmdb_jobs_get, job_cond) &&
 	    !db_query_list(errors, auth, &args.assoc_list,
 			   slurmdb_associations_get, &assoc_cond) &&
