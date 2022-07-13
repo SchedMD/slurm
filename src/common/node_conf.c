@@ -682,10 +682,9 @@ extern config_record_t *create_config_record(void)
 /*
  * Convert CPU list to reserve whole cores
  * OUT:
- *	node_ptr->node_spec_bitmap
  *	node_ptr->cpu_spec_list
  */
-static int _convert_cpu_spec_list(node_record_t *node_ptr, uint32_t tot_cores)
+static int _convert_cpu_spec_list(node_record_t *node_ptr)
 {
 	int i;
 	bitstr_t *cpu_spec_bitmap;
@@ -707,7 +706,7 @@ static int _convert_cpu_spec_list(node_record_t *node_ptr, uint32_t tot_cores)
 	}
 
 	/* Expand CPU bitmap to reserve whole cores */
-	for (i = 0; i < tot_cores; i++) {
+	for (i = 0; i < node_ptr->tot_cores; i++) {
 		if (bit_test(node_ptr->node_spec_bitmap, i)) {
 			/* typecast to int to avoid coverity error */
 			bit_nset(cpu_spec_bitmap,
@@ -769,7 +768,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	if (node_ptr->cpu_spec_list) {
 		if (node_ptr->tpc > 1) {
-			_convert_cpu_spec_list(node_ptr, node_ptr->tot_cores);
+			_convert_cpu_spec_list(node_ptr);
 		} else {
 			node_ptr->node_spec_bitmap = bit_alloc(node_ptr->cpus);
 			if (bit_unfmt(node_ptr->node_spec_bitmap,
