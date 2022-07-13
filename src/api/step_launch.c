@@ -1255,7 +1255,7 @@ static void
 _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 {
 	srun_node_fail_msg_t *nf = fail_msg->data;
-	hostset_t fail_nodes, all_nodes;
+	hostlist_t fail_nodes, all_nodes;
 	hostlist_iterator_t fail_itr;
 	int num_node_ids;
 	int *node_ids;
@@ -1264,20 +1264,20 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 
 	error("Node failure on %s", nf->nodelist);
 
-	fail_nodes = hostset_create(nf->nodelist);
-	fail_itr = hostset_iterator_create(fail_nodes);
-	num_node_ids = hostset_count(fail_nodes);
+	fail_nodes = hostlist_create(nf->nodelist);
+	fail_itr = hostlist_iterator_create(fail_nodes);
+	num_node_ids = hostlist_count(fail_nodes);
 	node_ids = xcalloc(num_node_ids, sizeof(int));
 
 	slurm_mutex_lock(&sls->lock);
-	all_nodes = hostset_create(sls->layout->node_list);
+	all_nodes = hostlist_create(sls->layout->node_list);
 	/* find the index number of each down node */
 	for (i = 0; i < num_node_ids; i++) {
 #ifdef HAVE_FRONT_END
 		node_id = 0;
 #else
 		char *node = hostlist_next(fail_itr);
-		node_id = node_ids[i] = hostset_find(all_nodes, node);
+		node_id = node_ids[i] = hostlist_find(all_nodes, node);
 		if (node_id < 0) {
 			error(  "Internal error: bad SRUN_NODE_FAIL message. "
 				"Node %s not part of this job step", node);
@@ -1308,8 +1308,8 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 
 	xfree(node_ids);
 	hostlist_iterator_destroy(fail_itr);
-	hostset_destroy(fail_nodes);
-	hostset_destroy(all_nodes);
+	hostlist_destroy(fail_nodes);
+	hostlist_destroy(all_nodes);
 }
 
 /*
@@ -1323,7 +1323,7 @@ static void
 _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 {
 	srun_step_missing_msg_t *step_missing = missing_msg->data;
-	hostset_t fail_nodes, all_nodes;
+	hostlist_t fail_nodes, all_nodes;
 	hostlist_iterator_t fail_itr;
 	char *node;
 	int num_node_ids;
@@ -1344,15 +1344,15 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 				    _check_io_timeout, sls);
 	}
 
-	fail_nodes = hostset_create(step_missing->nodelist);
-	fail_itr = hostset_iterator_create(fail_nodes);
-	num_node_ids = hostset_count(fail_nodes);
+	fail_nodes = hostlist_create(step_missing->nodelist);
+	fail_itr = hostlist_iterator_create(fail_nodes);
+	num_node_ids = hostlist_count(fail_nodes);
 
-	all_nodes = hostset_create(sls->layout->node_list);
+	all_nodes = hostlist_create(sls->layout->node_list);
 
 	for (i = 0; i < num_node_ids; i++) {
 		node = hostlist_next(fail_itr);
-		node_id = hostset_find(all_nodes, node);
+		node_id = hostlist_find(all_nodes, node);
 		if (node_id < 0) {
 			error("Internal error: bad SRUN_STEP_MISSING message. "
 			      "Node %s not part of this job step", node);
@@ -1431,8 +1431,8 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 	slurm_mutex_unlock(&sls->lock);
 
 	hostlist_iterator_destroy(fail_itr);
-	hostset_destroy(fail_nodes);
-	hostset_destroy(all_nodes);
+	hostlist_destroy(fail_nodes);
+	hostlist_destroy(all_nodes);
 }
 
 /* This RPC typically used to send a signal an external program that

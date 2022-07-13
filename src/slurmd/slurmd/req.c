@@ -453,7 +453,7 @@ rwfail:
 static int
 _send_slurmstepd_init(int fd, int type, void *req,
 		      slurm_addr_t *cli, slurm_addr_t *self,
-		      hostset_t step_hset, uint16_t protocol_version)
+		      hostlist_t step_hset, uint16_t protocol_version)
 {
 	int len = 0;
 	buf_t *buffer = NULL;
@@ -507,8 +507,8 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	} else {
 #ifndef HAVE_FRONT_END
 		int count;
-		count = hostset_count(step_hset);
-		rank = hostset_find(step_hset, conf->node_name);
+		count = hostlist_count(step_hset);
+		rank = hostlist_find(step_hset, conf->node_name);
 		reverse_tree_info(rank, count, REVERSE_TREE_WIDTH,
 				  &parent_rank, &children,
 				  &depth, &max_depth);
@@ -525,7 +525,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 			int rc;
 			/* Find the slurm_addr_t of this node's parent slurmd
 			 * in the step host list */
-			parent_alias = hostset_nth(step_hset, parent_rank);
+			parent_alias = hostlist_nth(step_hset, parent_rank);
 			rc = slurm_conf_get_addr(parent_alias, &parent_addr, 0);
 			if (rc != SLURM_SUCCESS)
 				error("%s: failed getting address for parent NodeName %s (parent rank %d)",
@@ -657,7 +657,7 @@ rwfail:
 static int
 _forkexec_slurmstepd(uint16_t type, void *req,
 		     slurm_addr_t *cli, slurm_addr_t *self,
-		     const hostset_t step_hset, uint16_t protocol_version)
+		     const hostlist_t step_hset, uint16_t protocol_version)
 {
 	pid_t pid;
 	int to_stepd[2] = {-1, -1};
@@ -948,12 +948,12 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id_in,
  */
 static int _check_job_credential(launch_tasks_request_msg_t *req,
 				 uid_t auth_uid, gid_t auth_gid,
-				 int node_id, hostset_t *step_hset,
+				 int node_id, hostlist_t *step_hset,
 				 uint16_t protocol_version,
 				 bool super_user)
 {
 	slurm_cred_arg_t *arg;
-	hostset_t	s_hset = NULL;
+	hostlist_t	s_hset = NULL;
 	int		host_index = -1;
 	slurm_cred_t    *cred = req->cred;
 	uint32_t	jobid = req->step_id.job_id;
@@ -1023,14 +1023,14 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	/*
 	 * Check that credential is valid for this host
 	 */
-	if (!(s_hset = hostset_create(arg->step_hostlist))) {
+	if (!(s_hset = hostlist_create(arg->step_hostlist))) {
 		error("Unable to parse credential hostlist: `%s'",
 		      arg->step_hostlist);
 		goto fail;
 	}
 
-	if (!hostset_within(s_hset, conf->node_name)) {
-		error("Invalid %ps credential for user %u: host %s not in hostset %s",
+	if (hostlist_find(s_hset, conf->node_name) == -1) {
+		error("Invalid %ps credential for user %u: host %s not in hostlist %s",
 		      &arg->step_id, arg->uid, conf->node_name,
 		      arg->step_hostlist);
 		goto fail;
@@ -1044,16 +1044,16 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 #ifdef HAVE_FRONT_END
 		host_index = 0;	/* It is always 0 for front end systems */
 #else
-		hostset_t j_hset;
+		hostlist_t j_hset;
 		/* Determine the CPU count based upon this node's index into
 		 * the _job's_ allocation (job's hostlist and core_bitmap) */
-		if (!(j_hset = hostset_create(arg->job_hostlist))) {
+		if (!(j_hset = hostlist_create(arg->job_hostlist))) {
 			error("Unable to parse credential hostlist: `%s'",
 			      arg->job_hostlist);
 			goto fail;
 		}
-		host_index = hostset_find(j_hset, conf->node_name);
-		hostset_destroy(j_hset);
+		host_index = hostlist_find(j_hset, conf->node_name);
+		hostlist_destroy(j_hset);
 
 		if ((host_index < 0) || (host_index >= arg->job_nhosts)) {
 			error("job cr credential invalid host_index %d for job %u",
@@ -1176,7 +1176,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 
 fail:
 	if (s_hset)
-		hostset_destroy(s_hset);
+		hostlist_destroy(s_hset);
 	*step_hset = NULL;
 	slurm_cred_unlock_args(cred);
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
@@ -1414,7 +1414,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	slurm_addr_t self;
 	slurm_addr_t *cli = &msg->orig_addr;
-	hostset_t step_hset = NULL;
+	hostlist_t step_hset = NULL;
 	job_mem_limits_t *job_limits_ptr;
 	int node_id = 0;
 	bitstr_t *numa_bitmap = NULL;
@@ -1638,7 +1638,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 done:
 	if (step_hset)
-		hostset_destroy(step_hset);
+		hostlist_destroy(step_hset);
 
 	if (slurm_send_rc_err_msg(msg, errnum, errmsg) < 0) {
 		error("%s: unable to send return code to address:port=%pA msg_type=%u: %m",
@@ -2140,18 +2140,18 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 #ifdef HAVE_FRONT_END
 		host_index = 0;	/* It is always 0 for front end systems */
 #else
-		hostset_t j_hset;
+		hostlist_t j_hset;
 		/*
 		 * Determine need to setup X11 based upon this node's index into
 		 * the _job's_ allocation
 		 */
 		if (req->x11 & X11_FORWARD_ALL) {
 			;	/* Don't need host_index */
-		} else if (!(j_hset = hostset_create(req->nodes))) {
+		} else if (!(j_hset = hostlist_create(req->nodes))) {
 			error("Unable to parse hostlist: `%s'", req->nodes);
 		} else {
-			host_index = hostset_find(j_hset, conf->node_name);
-			hostset_destroy(j_hset);
+			host_index = hostlist_find(j_hset, conf->node_name);
+			hostlist_destroy(j_hset);
 		}
 #endif
 
@@ -2202,7 +2202,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		 * silently terminate.
 		 */
 	} else {
-		hostset_t step_hset = hostset_create(req->nodes);
+		hostlist_t step_hset = hostlist_create(req->nodes);
 		int rc;
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
@@ -2220,7 +2220,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		}
 
 		if (step_hset)
-			hostset_destroy(step_hset);
+			hostlist_destroy(step_hset);
 	}
 
 	for (i = 0; i < req->nnodes; i++)
@@ -2550,7 +2550,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
-				  (hostset_t)NULL, SLURM_PROTOCOL_VERSION);
+				  (hostlist_t)NULL, SLURM_PROTOCOL_VERSION);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
 
 	_launch_complete_add(req->job_id, true);

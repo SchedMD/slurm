@@ -1059,7 +1059,7 @@ void format_core_allocs(slurm_cred_t *credential, char *node_name,
 {
 	slurm_cred_arg_t *cred = credential->arg;
 	bitstr_t	*job_core_bitmap, *step_core_bitmap;
-	hostset_t	hset = NULL;
+	hostlist_t	hset = NULL;
 	int		host_index = -1;
 	uint32_t	i, j, i_first_bit=0, i_last_bit=0;
 	uint32_t	job_cpu_cnt = 0, step_cpu_cnt = 0;
@@ -1067,22 +1067,22 @@ void format_core_allocs(slurm_cred_t *credential, char *node_name,
 	xassert(cred);
 	xassert(job_alloc_cores);
 	xassert(step_alloc_cores);
-	if (!(hset = hostset_create(cred->job_hostlist))) {
-		error("Unable to create job hostset: `%s'",
+	if (!(hset = hostlist_create(cred->job_hostlist))) {
+		error("Unable to create job hostlist: `%s'",
 		      cred->job_hostlist);
 		return;
 	}
 #ifdef HAVE_FRONT_END
 	host_index = 0;
 #else
-	host_index = hostset_find(hset, node_name);
+	host_index = hostlist_find(hset, node_name);
 #endif
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
 		      host_index, cred->step_id.job_id);
 		error("Host %s not in hostlist %s",
 		      node_name, cred->job_hostlist);
-		hostset_destroy(hset);
+		hostlist_destroy(hset);
 		return;
 	}
 	host_index++;	/* change from 0-origin to 1-origin */
@@ -1136,7 +1136,7 @@ void format_core_allocs(slurm_cred_t *credential, char *node_name,
 	*step_alloc_cores = _core_format(step_core_bitmap);
 	FREE_NULL_BITMAP(job_core_bitmap);
 	FREE_NULL_BITMAP(step_core_bitmap);
-	hostset_destroy(hset);
+	hostlist_destroy(hset);
 }
 
 /*
@@ -1149,7 +1149,7 @@ extern void get_cred_gres(slurm_cred_t *credential, char *node_name,
 			  List *job_gres_list, List *step_gres_list)
 {
 	slurm_cred_arg_t *cred = credential->arg;
-	hostset_t	hset = NULL;
+	hostlist_t	hset = NULL;
 	int		host_index = -1;
 
 	xassert(cred);
@@ -1161,17 +1161,17 @@ extern void get_cred_gres(slurm_cred_t *credential, char *node_name,
 	if ((cred->job_gres_list == NULL) && (cred->step_gres_list == NULL))
 		return;
 
-	if (!(hset = hostset_create(cred->job_hostlist))) {
-		error("Unable to create job hostset: `%s'",
+	if (!(hset = hostlist_create(cred->job_hostlist))) {
+		error("Unable to create job hostlist: `%s'",
 		      cred->job_hostlist);
 		return;
 	}
 #ifdef HAVE_FRONT_END
 	host_index = 0;
 #else
-	host_index = hostset_find(hset, node_name);
+	host_index = hostlist_find(hset, node_name);
 #endif
-	hostset_destroy(hset);
+	hostlist_destroy(hset);
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
 		      host_index, cred->step_id.job_id);
