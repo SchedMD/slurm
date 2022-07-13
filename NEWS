@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     node15 and node052) or with dynamic nodes which can register in any order.
  -- job_container/tmpfs - Prevent reading the plugin config multiple times per
     step.
+ -- Fix wrong attempt of gres binding for gres w/out cores defined.
 
 * Changes in Slurm 22.05.3
 ==========================
