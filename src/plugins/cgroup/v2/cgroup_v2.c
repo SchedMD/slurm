@@ -55,7 +55,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/daemonize.h"
-#include "src/common/cgroup.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/plugins/cgroup/common/cgroup_common.h"
@@ -891,6 +890,9 @@ extern int init(void)
 		if (_init_stepd_system_scope(getpid()) != SLURM_SUCCESS)
 			return SLURM_ERROR;
 	}
+
+	/* In cgroup/v2 the entire cgroup tree is owned by root. */
+	slurm_cgroup_conf.root_owned_cgroups = true;
 
 	/*
 	 * If we're slurmd we're all set and able to constrain things, i.e.

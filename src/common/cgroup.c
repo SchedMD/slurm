@@ -158,6 +158,7 @@ static void _clear_slurm_cgroup_conf()
 	xfree(slurm_cgroup_conf.cgroup_plugin);
 	slurm_cgroup_conf.ignore_systemd = false;
 	slurm_cgroup_conf.ignore_systemd_on_failure = false;
+	slurm_cgroup_conf.root_owned_cgroups = true;
 }
 
 static void _pack_cgroup_conf(buf_t *buffer)
@@ -200,6 +201,8 @@ static void _pack_cgroup_conf(buf_t *buffer)
 
 	packbool(slurm_cgroup_conf.ignore_systemd, buffer);
 	packbool(slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
+
+	packbool(slurm_cgroup_conf.root_owned_cgroups, buffer);
 }
 
 static int _unpack_cgroup_conf(buf_t *buffer)
@@ -248,6 +251,8 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
 
+	safe_unpackbool(&slurm_cgroup_conf.root_owned_cgroups, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -286,6 +291,7 @@ static void _read_slurm_cgroup_conf(void)
 		{"CgroupPlugin", S_P_STRING},
 		{"IgnoreSystemd", S_P_BOOLEAN},
 		{"IgnoreSystemdOnFailure", S_P_BOOLEAN},
+		{"RootOwnedCgroups", S_P_BOOLEAN},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL, *tmp_str;
@@ -420,6 +426,9 @@ static void _read_slurm_cgroup_conf(void)
 			    &slurm_cgroup_conf.ignore_systemd_on_failure,
 			    "IgnoreSystemdOnFailure", tbl)))
 			slurm_cgroup_conf.ignore_systemd_on_failure = false;
+
+		(void) s_p_get_boolean(&slurm_cgroup_conf.root_owned_cgroups,
+				       "RootOwnedCgroups", tbl);
 
 		s_p_hashtbl_destroy(tbl);
 	}

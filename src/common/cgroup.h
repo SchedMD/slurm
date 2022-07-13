@@ -183,6 +183,8 @@ typedef struct {
 
 	bool ignore_systemd;
 	bool ignore_systemd_on_failure;
+
+	bool root_owned_cgroups;
 } cgroup_conf_t;
 
 
