@@ -90,6 +90,7 @@ int node_record_count = 0;		/* count in node_record_table_ptr */
 int last_node_index = -1;		/* index of last node in tabe */
 uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
+bool spec_cores_first = false;
 
 /* Local function definitions */
 static void _delete_config_record(void);
@@ -1037,6 +1038,10 @@ extern void init_node_conf(void)
 		config_list    = list_create (_list_delete_config);
 		front_end_list = list_create (destroy_frontend);
 	}
+	if (xstrcasestr(slurm_conf.sched_params, "spec_cores_first"))
+		spec_cores_first = true;
+	else
+		spec_cores_first = false;
 }
 
 
