@@ -482,6 +482,57 @@ extern int build_node_spec_bitmap(node_record_t *node_ptr)
 }
 
 /*
+ * Select cores and CPUs to be reserved for core specialization.
+ */
+static void _select_spec_cores(node_record_t *node_ptr)
+{
+	int spec_cores, res_core, res_sock, res_off;
+	int from_core, to_core, incr_core, from_sock, to_sock, incr_sock;
+	bitstr_t *cpu_spec_bitmap;
+
+	spec_cores = node_ptr->core_spec_cnt;
+
+	cpu_spec_bitmap = bit_alloc(node_ptr->cpus);
+	node_ptr->node_spec_bitmap = bit_alloc(node_ptr->tot_cores);
+	bit_set_all(node_ptr->node_spec_bitmap);
+
+	if (spec_cores_first) {
+		from_core = 0;
+		to_core   = node_ptr->cores;
+		incr_core = 1;
+		from_sock = 0;
+		to_sock   = node_ptr->tot_sockets;
+		incr_sock = 1;
+	} else {
+		from_core = node_ptr->cores - 1;
+		to_core   = -1;
+		incr_core = -1;
+		from_sock = node_ptr->tot_sockets - 1;
+		to_sock   = -1;
+		incr_sock = -1;
+	}
+	for (res_core = from_core;
+	     (spec_cores && (res_core != to_core)); res_core += incr_core) {
+		for (res_sock = from_sock;
+		     (spec_cores && (res_sock != to_sock));
+		      res_sock += incr_sock) {
+			int thread_off;
+			thread_off = ((res_sock * node_ptr->cores) + res_core) *
+				      node_ptr->tpc;
+			bit_nset(cpu_spec_bitmap, thread_off,
+				 thread_off + node_ptr->tpc - 1);
+			res_off = (res_sock * node_ptr->cores) + res_core;
+			bit_clear(node_ptr->node_spec_bitmap, res_off);
+			spec_cores--;
+		}
+	}
+
+	node_ptr->cpu_spec_list = bit_fmt_full(cpu_spec_bitmap);
+	FREE_NULL_BITMAP(cpu_spec_bitmap);
+
+	return;
+}
+/*
  * Expand a nodeline's node names, host names, addrs, ports into separate nodes.
  */
 extern void expand_nodeline_info(slurm_conf_node_t *node_ptr, config_record_t
@@ -758,6 +809,8 @@ static void _init_node_record(node_record_t *node_ptr,
 		build_node_spec_bitmap(node_ptr);
 		if (node_ptr->tpc > 1)
 			_convert_cpu_spec_list(node_ptr);
+	} else if (node_ptr->core_spec_cnt) {
+		_select_spec_cores(node_ptr);
 	}
 
 	node_ptr->cpus_efctv = node_ptr->cpus -
