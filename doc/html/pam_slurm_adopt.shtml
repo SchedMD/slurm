@@ -65,8 +65,42 @@ locked out of a node while the shared filesystem is mounting or down.</p>
 proctrack/cgroup or the proctrack/cray_aries proctrack plugin.
 The pam_systemd module will conflict with pam_slurm_adopt, so you need to
 disable it in all files that are included in sshd or system-auth (e.g.
-password-auth, common-session, etc.). You should also stop and mask
-systemd-logind. You must also make sure a different PAM
+password-auth, common-session, etc.).</p>
+
+<p>If you need the user management features from pam_systemd, such as
+handling user runtime directory /run/user/$UID, you can have the prolog script
+run 'loginctl enable-linger $SLURM_JOB_USER' and the epilog script disable
+it again (after making sure there are no other jobs from this user on the node)
+by running 'loginctl disable-linger $SLURM_JOB_USER'. You will also need to
+export the XDG_* environment variables if your software requires them.
+You can see an example of prolog and epilog scripts here:</p>
+
+Prolog:
+<pre>
+loginctl enable-linger $SLURM_JOB_USER
+exit 0
+</pre>
+TaskProlog:
+<pre>
+echo "export XDG_RUNTIME_DIR=/run/user/$SLURM_JOB_UID"
+echo "export XDG_SESSION_ID=$(&lt;/proc/self/sessionid)"
+echo "export XDG_SESSION_TYPE=tty"
+echo "export XDG_SESSION_CLASS=user"
+</pre>
+Epilog:
+<pre>
+#Only disable linger if this is the last job running for this user.
+O_P=0
+for pid in $(scontrol listpids | awk -v jid=$SLURM_JOB_ID 'NR!=1 { if ($2 != jid && $1 != "-1"){print $1} }'); do
+        ps --noheader -o euser p $pid | grep -q $SLURM_JOB_USER || O_P=1
+done
+if [ $O_P -eq 0 ]; then
+        loginctl disable-linger $SLURM_JOB_USER
+fi
+exit 0
+</pre>
+
+<p>You must also make sure a different PAM
 module isn't short-circuiting the account stack before it gets to
 pam_slurm_adopt.so. From the example above, the following two lines have been
 commented out in the included password-auth file:</p>
@@ -446,6 +480,6 @@ break process adoption with pam_slurm_adopt.</p>
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 6 April 2022</p>
+<p style="text-align:center;">Last modified 12 July 2022</p>
 
 <!--#include virtual="footer.txt"-->
