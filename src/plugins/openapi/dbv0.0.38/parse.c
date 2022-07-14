@@ -256,7 +256,7 @@ static const parser_t parse_assoc[] = {
 	/* skip parent_id */
 	_add_parse(STRING, partition, "partition"),
 	_add_parse(UINT32, priority, "priority"),
-	_add_parse(QOS_STR_LIST, qos_list, "qos"),
+	_add_parse(QOS_ID_LIST, qos_list, "qos"),
 	/* skip rgt */
 	_add_parse(UINT32, shares_raw, "shares_raw"),
 	/* slurmdbd should never set uid - it should always be zero */
@@ -1152,30 +1152,43 @@ typedef struct {
 	data_t *errors;
 } for_each_parse_qos_t;
 
-static data_for_each_cmd_t _for_each_parse_qos(data_t *data, void *arg)
+static data_for_each_cmd_t _parse_qos_common(data_t *data,
+					     data_t **name)
 {
-	for_each_parse_qos_t *args = arg;
-	data_t *name;
-
-	xassert(args->magic == MAGIC_FOREACH_PARSE_QOS);
+	xassert(name);
 
 	switch (data_get_type(data)) {
 	case DATA_TYPE_STRING:
-		name = data;
+		*name = data;
 		break;
 	case DATA_TYPE_DICT:
 		/*
 		 * Note: we ignore everything but name for loading QOS into an
 		 * qos_list as that is the only field accepted
 		 */
-		if (!(name = data_key_get(data, "name")) ||
-		    data_convert_type(name, DATA_TYPE_STRING) !=
+		if (!(*name = data_key_get(data, "name")) ||
+		    data_convert_type(*name, DATA_TYPE_STRING) !=
 			    DATA_TYPE_STRING)
 			return DATA_FOR_EACH_FAIL;
 		break;
 	default:
 		return DATA_FOR_EACH_FAIL;
 	}
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static data_for_each_cmd_t _for_each_parse_qos(data_t *data, void *arg)
+{
+	data_for_each_cmd_t rc;
+	for_each_parse_qos_t *args = arg;
+	data_t *name;
+
+	xassert(args->magic == MAGIC_FOREACH_PARSE_QOS);
+
+	rc = _parse_qos_common(data, &name);
+	if (rc != DATA_FOR_EACH_CONT)
+		return rc;
 
 	(void)list_append(args->qos_list, xstrdup(data_get_string(name)));
 
@@ -1307,6 +1320,72 @@ static int _dump_qos_str_list(const parser_t *const parse, void *obj,
 	}
 
 	FREE_NULL_LIST(qos_list_names);
+	return SLURM_SUCCESS;
+}
+
+#define MAGIC_FOREACH_PARSE_QOS_ID 0xabaa2c19
+typedef struct {
+	int magic;
+	List qos_list;
+	List g_qos_list;
+	data_t *errors;
+} for_each_parse_qos_id_t;
+
+static data_for_each_cmd_t _for_each_parse_qos_id(data_t *data, void *arg)
+{
+	data_for_each_cmd_t rc;
+	for_each_parse_qos_id_t *args = arg;
+	data_t *name;
+
+	xassert(args->magic == MAGIC_FOREACH_PARSE_QOS_ID);
+
+	rc = _parse_qos_common(data, &name);
+	if (rc != DATA_FOR_EACH_CONT)
+		return rc;
+
+	if (slurmdb_addto_qos_char_list(args->qos_list, args->g_qos_list,
+					data_get_string(name), 0) > 0) {
+		return DATA_FOR_EACH_CONT;
+	} else {
+		resp_error(args->errors, ESLURM_REST_FAIL_PARSING,
+			   "QOS name to ID conversion failed",
+			   data_get_string(name));
+
+		return DATA_FOR_EACH_FAIL;
+	}
+}
+
+#define EMPTY_QOS_ID_ENTRY "\'\'"
+static int _parse_qos_id_list(const parser_t *const parse, void *obj,
+			      data_t *src, data_t *errors,
+			      const parser_env_t *penv)
+{
+	List *qos_list = (((void *)obj) + parse->field_offset);
+	for_each_parse_qos_id_t args = {
+		.magic = MAGIC_FOREACH_PARSE_QOS_ID,
+		.errors = errors,
+		.g_qos_list = penv->g_qos_list,
+	};
+
+	xassert(penv->g_qos_list);
+
+	if (!*qos_list)
+		*qos_list = list_create(xfree_ptr);
+
+	args.qos_list = *qos_list;
+
+	if (data_list_for_each(src, _for_each_parse_qos_id, &args) < 0)
+		return ESLURM_REST_FAIL_PARSING;
+
+	if (list_is_empty(*qos_list)) {
+		/*
+		 * If the QOS list is empty, then we need to set this special
+		 * entry to notify slurmdbd that this is explicilty empty and
+		 * not a no change request
+		 */
+		list_append(*qos_list, EMPTY_QOS_ID_ENTRY);
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -2875,6 +2954,7 @@ const parser_funcs_t funcs[] = {
 	_add_func(_parse_flags, _dump_flags, PARSE_FLAGS),
 	_add_func(_parse_qos_str_id, _dump_qos_str_id, PARSE_QOS_ID),
 	_add_func(_parse_qos_str_list, _dump_qos_str_list, PARSE_QOS_STR_LIST),
+	_add_func(_parse_qos_id_list, _dump_qos_str_list, PARSE_QOS_ID_LIST),
 	_add_func(_parse_qos_preempt_list, _dump_qos_preempt_list,
 		  PARSE_QOS_PREEMPT_LIST),
 	_add_func(_parse_tres, _dump_tres, PARSE_TRES),

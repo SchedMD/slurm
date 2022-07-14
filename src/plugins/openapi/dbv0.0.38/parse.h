@@ -79,6 +79,7 @@ typedef enum {
 	PARSE_QOS_PREEMPT_LIST, /* slurmdb_qos_rec_t->preempt_bitstr & preempt_list */
 	PARSE_QOS, /* slurmdb_qos_rec_t* */
 	PARSE_QOS_STR_LIST, /* List of char* of QOS names */
+	PARSE_QOS_ID_LIST, /* List of char* of QOS ids */
 	PARSE_RPC_ID, /* slurmdbd_msg_type_t */
 	PARSE_SELECT_PLUGIN_ID, /* int (SELECT_PLUGIN_*) -> string */
 	PARSE_STATS_REC_ARRAY, /* array of slurmdb_stats_rec_t* */
