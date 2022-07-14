@@ -723,7 +723,7 @@ extern int send_registration_msg(uint32_t status)
 	int ret_val = SLURM_SUCCESS;
 	slurm_msg_t req, resp_msg;
 	slurm_node_registration_status_msg_t *msg =
-		xmalloc (sizeof (slurm_node_registration_status_msg_t));
+		xmalloc(sizeof(slurm_node_registration_status_msg_t));
 
 	slurm_msg_t_init(&req);
 	slurm_msg_t_init(&resp_msg);
@@ -732,7 +732,7 @@ extern int send_registration_msg(uint32_t status)
 		msg->flags |= SLURMD_REG_FLAG_RESP;
 
 	_fill_registration_msg(msg);
-	msg->status  = status;
+	msg->status = status;
 
 	req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 	req.data = msg;
@@ -790,7 +790,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	if (res_abs_cpus[0] == '\0')
 		msg->cpu_spec_list = NULL;
 	else
-		msg->cpu_spec_list = xstrdup (res_abs_cpus);
+		msg->cpu_spec_list = xstrdup(res_abs_cpus);
 	msg->real_memory = conf->real_memory_size;
 	msg->tmp_disk    = conf->tmp_disk_space;
 	msg->hash_val = slurm_conf.hash_val;
@@ -2627,7 +2627,7 @@ static int _core_spec_init(void)
 			bool cpu_in_spec = bit_test(res_mac_bitmap, i);
 			if (slurmd_off_spec != cpu_in_spec) {
 				CPU_SET(i, &mask);
-}
+			}
 		}
 		bit_free(res_mac_bitmap);
 
