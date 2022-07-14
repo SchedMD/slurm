@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve error messages when using configless and fetching the config fails.
  -- Fix segfault when reboot_from_controller is configured and scontrol reboot
     is used.
+ -- Fix regression which prevented a cons_tres gpu job to be submitted to a
+    cons_tres cluster from a non-con_tres cluster.
 
 * Changes in Slurm 22.05.2
 ==========================
@@ -407,6 +409,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix logic estimating when a job can start based on ANY_NODES / LICENSE_ONLY
     reservations that could lead to an infinite loop in backfill.
  -- Fix a segfault that may happen on gpu configured as no_consume.
+ -- Fix regression which prevented a cons_tres gpu job to be submitted to a
+    cons_tres cluster from a non-con_tres cluster.
 
 * Changes in Slurm 21.08.8-2
 ============================

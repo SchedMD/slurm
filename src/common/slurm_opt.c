@@ -5925,8 +5925,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 						 bool set_defaults)
 {
 	job_desc_msg_t *job_desc = xmalloc_nz(sizeof(*job_desc));
-	List tmp_gres_list = NULL;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	slurm_init_job_desc_msg(job_desc);
 
@@ -6222,23 +6221,32 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 		job_desc->x11_target_port = opt_local->x11_target_port;
 	}
 
-	rc = gres_job_state_validate(job_desc->cpus_per_tres,
-				     job_desc->tres_freq,
-				     job_desc->tres_per_job,
-				     job_desc->tres_per_node,
-				     job_desc->tres_per_socket,
-				     job_desc->tres_per_task,
-				     job_desc->mem_per_tres,
-				     &job_desc->num_tasks,
-				     &job_desc->min_nodes,
-				     &job_desc->max_nodes,
-				     &job_desc->ntasks_per_node,
-				     &job_desc->ntasks_per_socket,
-				     &job_desc->sockets_per_node,
-				     &job_desc->cpus_per_task,
-				     &job_desc->ntasks_per_tres,
-				     &tmp_gres_list);
-	FREE_NULL_LIST(tmp_gres_list);
+	/*
+	 * If clusters is used we can't validate GRES, since the running
+	 * configuration may be using different SelectType than destination
+	 * cluster. Validation is still performed on slurmctld.
+	 */
+	if (!opt_local->clusters) {
+		List tmp_gres_list = NULL;
+		rc = gres_job_state_validate(job_desc->cpus_per_tres,
+					     job_desc->tres_freq,
+					     job_desc->tres_per_job,
+					     job_desc->tres_per_node,
+					     job_desc->tres_per_socket,
+					     job_desc->tres_per_task,
+					     job_desc->mem_per_tres,
+					     &job_desc->num_tasks,
+					     &job_desc->min_nodes,
+					     &job_desc->max_nodes,
+					     &job_desc->ntasks_per_node,
+					     &job_desc->ntasks_per_socket,
+					     &job_desc->sockets_per_node,
+					     &job_desc->cpus_per_task,
+					     &job_desc->ntasks_per_tres,
+					     &tmp_gres_list);
+		FREE_NULL_LIST(tmp_gres_list);
+	}
+
 	if (rc) {
 		error("%s", slurm_strerror(rc));
 		return NULL;
