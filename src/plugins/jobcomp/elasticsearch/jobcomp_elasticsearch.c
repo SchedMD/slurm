@@ -689,6 +689,10 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 				job_ptr->details->exc_nodes);
 	}
 
+	if (job_ptr->details && job_ptr->details->features)
+		data_set_string(data_key_set(record, "features"),
+				job_ptr->details->features);
+
 	if (time_limit != INFINITE) {
 		data_set_int(data_key_set(record, "time_limit"),
 			     (time_limit * 60));
