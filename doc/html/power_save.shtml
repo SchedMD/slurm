@@ -65,6 +65,10 @@ The program executes as <i>SlurmUser</i> (as configured in
 The argument to the program will be the names of nodes to
 be removed from power savings mode (using Slurm's hostlist
 expression format).
+A job to node mapping is available in JSON format by reading the temporary file
+specified by the <b>SLURM_RESUME_FILE</b> environment variable.
+This file should be used at the beginning of <b>ResumeProgram</b> - see the
+<a href=#tolerance>Fault Tolerance</a> section for more details.
 This program may use the <i>scontrol show node</i> command
 to ensure that a node has booted and the <i>slurmd</i>
 daemon started.
@@ -224,6 +228,12 @@ the event will be logged and <i>slurmctld</i> will exit in order to
 permit another <i>slurmctld</i> daemon to be initiated.
 Any spawned <b>SuspendProgram</b> or <b>ResumeProgram</b> will continue to run.
 </p>
+<p>
+When the slurmctld daemon shuts down, any <b>SLURM_RESUME_FILE</b>
+temporary files are no longer available, even once slurmctld restarts.
+Therefore, <b>ResumeProgram</b> should use <b>SLURM_RESUME_FILE</b> within
+ten seconds of starting to guarantee that it still exists.
+</p>
 
 <h2 id="images">Booting Different Images
 <a class="slurm_link" href="#images"></a>
@@ -238,6 +248,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 24 May 2022</p>
+<p style="text-align:center;">Last modified 14 July 2022</p>
 
 <!--#include virtual="footer.txt"-->
