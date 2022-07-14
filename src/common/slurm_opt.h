@@ -205,10 +205,6 @@ typedef struct {
  * options only processed by sbatch
  */
 typedef struct {
-	/* batch script argv and argc, if provided on the command line */
-	int script_argc;
-	char **script_argv;
-
 	char *array_inx;		/* --array			*/
 	char *batch_features;		/* --batch			*/
 	char *export_file;		/* --export-file=file		*/

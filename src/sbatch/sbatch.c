@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 	if (script_body == NULL)
 		exit(error_exit);
 
-	het_job_argc = argc - sbopt.script_argc;
+	het_job_argc = argc - opt.argc;
 	het_job_argv = argv;
 	for (het_job_inx = 0; !het_job_fini; het_job_inx++) {
 		bool more_het_comps = false;
@@ -460,8 +460,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->env_size = envcount(desc->environment);
 
-	desc->argc     = sbopt.script_argc;
-	desc->argv     = sbopt.script_argv;
+	desc->argc     = opt.argc;
+	desc->argv     = opt.argv;
 	desc->std_err  = xstrdup(opt.efname);
 	desc->std_in   = xstrdup(opt.ifname);
 	desc->std_out  = xstrdup(opt.ofname);

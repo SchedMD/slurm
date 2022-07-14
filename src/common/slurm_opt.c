@@ -605,8 +605,8 @@ static int arg_set_data_argv(slurm_opt_t *opt, const data_t *arg,
 {
 	int argc = data_get_list_length(arg);
 	char **argv = xcalloc(argc, sizeof(char *));
-	opt->sbatch_opt->script_argc = argc;
-	opt->sbatch_opt->script_argv = argv;
+	opt->argc = argc;
+	opt->argv = argv;
 	/* argv will be advanced by _parse_argv */
 	data_list_for_each_const(arg, _parse_argv, &argv);
 	return SLURM_SUCCESS;
@@ -614,17 +614,15 @@ static int arg_set_data_argv(slurm_opt_t *opt, const data_t *arg,
 static char *arg_get_argv(slurm_opt_t *opt)
 {
 	char *argv_string = NULL;
-	for (int i = 0; i < opt->sbatch_opt->script_argc; i++)
+	for (int i = 0; i < opt->argc; i++)
 		xstrfmtcat(argv_string, " %s",
-			   opt->sbatch_opt->script_argv[i]);
+			   opt->argv[i]);
 	return argv_string;
 }
 static void arg_reset_argv(slurm_opt_t *opt)
 {
-	if (opt->sbatch_opt) {
-		xfree(opt->sbatch_opt->script_argv);
-		opt->sbatch_opt->script_argc = 0;
-	}
+	xfree(opt->argv);
+	opt->argc = 0;
 }
 static slurm_cli_opt_t slurm_opt_argv = {
 	.name = "argv",

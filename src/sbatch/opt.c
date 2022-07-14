@@ -324,24 +324,23 @@ extern char *process_options_first_pass(int argc, char **argv)
 		int i;
 		char **leftover;
 
-		sbopt.script_argc = local_argc - optind;
+		opt.argc = local_argc - optind;
 		leftover = local_argv + optind;
-		sbopt.script_argv = xmalloc((sbopt.script_argc + 1)
-						 * sizeof(char *));
-		for (i = 0; i < sbopt.script_argc; i++)
-			sbopt.script_argv[i] = xstrdup(leftover[i]);
-		sbopt.script_argv[i] = NULL;
+		opt.argv = xmalloc((opt.argc + 1) * sizeof(char *));
+		for (i = 0; i < opt.argc; i++)
+			opt.argv[i] = xstrdup(leftover[i]);
+		opt.argv[i] = NULL;
 	}
-	if (sbopt.script_argc > 0) {
+	if (opt.argc > 0) {
 		char *fullpath;
-		char *cmd       = sbopt.script_argv[0];
+		char *cmd       = opt.argv[0];
 		int  mode       = R_OK;
 
 		if ((fullpath = search_path(opt.chdir, cmd, false, mode, false))) {
-			xfree(sbopt.script_argv[0]);
-			sbopt.script_argv[0] = fullpath;
+			xfree(opt.argv[0]);
+			opt.argv[0] = fullpath;
 		}
-		script_file = sbopt.script_argv[0];
+		script_file = opt.argv[0];
 	}
 
 	xfree(local_argv);
@@ -773,8 +772,8 @@ static bool _opt_verify(void)
 
 	if (!opt.job_name && sbopt.wrap)
 		opt.job_name = xstrdup("wrap");
-	else if (!opt.job_name && (sbopt.script_argc > 0))
-		opt.job_name = base_name(sbopt.script_argv[0]);
+	else if (!opt.job_name && (opt.argc > 0))
+		opt.job_name = base_name(opt.argv[0]);
 	if (opt.job_name)
 		setenv("SLURM_JOB_NAME", opt.job_name, 1);
 

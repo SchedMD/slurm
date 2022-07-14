@@ -77,13 +77,8 @@ char *cli_filter_json_set_options(slurm_opt_t *options)
 		xfree(sname);
 	}
 
-	if (options->sbatch_opt) {
-		argv = options->sbatch_opt->script_argv;
-		argc = options->sbatch_opt->script_argc;
-	} else {
-		argv = options->argv;
-		argc = options->argc;
-	}
+	argv = options->argv;
+	argc = options->argc;
 
 	dargv = data_set_list(data_key_set(d, "argv"));
 	for (char **ptr = argv; ptr && *ptr && ptr - argv < argc; ptr++)
