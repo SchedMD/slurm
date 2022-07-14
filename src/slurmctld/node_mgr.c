@@ -2699,13 +2699,28 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 	}
 
-	if (reg_msg->cpu_spec_list && !node_ptr->cpu_spec_list) {
-		xfree(node_ptr->cpu_spec_list);
+	if (reg_msg->cpu_spec_list) {
+		bitstr_t *node_spec_bitmap_old = node_ptr->node_spec_bitmap;
+		char *cpu_spec_list_old = node_ptr->cpu_spec_list;
+
+		node_ptr->node_spec_bitmap = NULL;
 		node_ptr->cpu_spec_list = reg_msg->cpu_spec_list;
 		reg_msg->cpu_spec_list = NULL;	/* Nothing left to free */
 
 		if (build_node_spec_bitmap(node_ptr) != SLURM_SUCCESS)
 			error_code = EINVAL;
+		else if (!bit_equal(node_spec_bitmap_old,
+				    node_ptr->node_spec_bitmap)) {
+			debug("Node %s has different spec CPUs than expected (%s, %s)",
+			      reg_msg->node_name, cpu_spec_list_old,
+			      node_ptr->cpu_spec_list);
+			error_code = EINVAL;
+			if (reason_down)
+				xstrcat(reason_down, ", ");
+			xstrcat(reason_down, "CoreSpec differ");
+		}
+		xfree(cpu_spec_list_old);
+		FREE_NULL_BITMAP(node_spec_bitmap_old);
 	}
 
 	xfree(node_ptr->arch);
