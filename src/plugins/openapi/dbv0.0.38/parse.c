@@ -1152,30 +1152,43 @@ typedef struct {
 	data_t *errors;
 } for_each_parse_qos_t;
 
-static data_for_each_cmd_t _for_each_parse_qos(data_t *data, void *arg)
+static data_for_each_cmd_t _parse_qos_common(data_t *data,
+					     data_t **name)
 {
-	for_each_parse_qos_t *args = arg;
-	data_t *name;
-
-	xassert(args->magic == MAGIC_FOREACH_PARSE_QOS);
+	xassert(name);
 
 	switch (data_get_type(data)) {
 	case DATA_TYPE_STRING:
-		name = data;
+		*name = data;
 		break;
 	case DATA_TYPE_DICT:
 		/*
 		 * Note: we ignore everything but name for loading QOS into an
 		 * qos_list as that is the only field accepted
 		 */
-		if (!(name = data_key_get(data, "name")) ||
-		    data_convert_type(name, DATA_TYPE_STRING) !=
+		if (!(*name = data_key_get(data, "name")) ||
+		    data_convert_type(*name, DATA_TYPE_STRING) !=
 			    DATA_TYPE_STRING)
 			return DATA_FOR_EACH_FAIL;
 		break;
 	default:
 		return DATA_FOR_EACH_FAIL;
 	}
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static data_for_each_cmd_t _for_each_parse_qos(data_t *data, void *arg)
+{
+	data_for_each_cmd_t rc;
+	for_each_parse_qos_t *args = arg;
+	data_t *name;
+
+	xassert(args->magic == MAGIC_FOREACH_PARSE_QOS);
+
+	rc = _parse_qos_common(data, &name);
+	if (rc != DATA_FOR_EACH_CONT)
+		return rc;
 
 	(void)list_append(args->qos_list, xstrdup(data_get_string(name)));
 
