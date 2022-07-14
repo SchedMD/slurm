@@ -750,7 +750,7 @@ static int _convert_cpu_spec_list(node_record_t *node_ptr)
 			/* typecast to int to avoid coverity error */
 			bit_nset(cpu_spec_bitmap,
 				 (i * (int) node_ptr->tpc),
-				 ((i+1) * (int) node_ptr->tpc) - 1);
+				 ((i + 1) * (int) node_ptr->tpc) - 1);
 		}
 	}
 	xfree(node_ptr->cpu_spec_list);
