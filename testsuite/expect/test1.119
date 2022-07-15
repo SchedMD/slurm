@@ -51,12 +51,6 @@ set sockets_per_node [list [get_node_param [lindex $nodes 0] "Sockets"] \
 log_debug "`[lindex $nodes 0]` Sockets per node: [lindex $sockets_per_node 0]"
 log_debug "`[lindex $nodes 1]` Sockets per node: [lindex $sockets_per_node 1]"
 
-# TODO: Currently --ntasks-per-gpu does not work great when GPU nodes have
-#	multiple sockets. See Bug 12661 and remove skip when fixed.
-if {[lindex $sockets_per_node 0] != 1 || [lindex $sockets_per_node 1] != 1} {
-	skip "--ntasks-per-node does not yet work well on multi-socket GPU nodes"
-}
-
 if {[lindex $sockets_per_node 0] != [lindex $sockets_per_node 1]} {
 	skip "Nodes `[lindex $nodes 0]` and `[lindex $nodes 1]` must have the same # of sockets"
 }
