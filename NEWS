@@ -65,6 +65,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression which prevented a cons_tres gpu job to be submitted to a
     cons_tres cluster from a non-con_tres cluster.
  -- openapi/dbv0.0.38 - correct association QOS list parsing for updates.
+ -- Fix rollup incorrectly divying up unused reservation time between
+    associations.
 
 * Changes in Slurm 22.05.2
 ==========================
