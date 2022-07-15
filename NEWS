@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
     reservations. Previously was lumped into IDLE time.
  -- job_container/tmpfs - support running with an arbitrary list of private
     mount points (/tmp and /dev/shm are nolonger required, but are the default).
+ -- sacct - Rename 'Reserved' field to 'Planned' to match sreport and the
+    nomenclature of the 'Planned' node.
 
 * Changes in Slurm 22.05.3
 ==========================

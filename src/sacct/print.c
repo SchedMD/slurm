@@ -1645,10 +1645,10 @@ extern void print_fields(type_t type, void *object)
 					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
-		case PRINT_RESV:
+		case PRINT_PLANNED:
 			/*
 			 * If eligible is 0 or -1, then the job was never
-			 * eligible to run, so reserved time is 0.
+			 * eligible to run, so planned time is 0.
 			 */
 			switch(type) {
 			case JOB:
@@ -1667,10 +1667,10 @@ extern void print_fields(type_t type, void *object)
 					     (uint64_t)tmp_int,
 					     (curr_inx == field_count));
 			break;
-		case PRINT_RESV_CPU:
+		case PRINT_PLANNED_CPU:
 			/*
 			 * If eligible is 0 or -1, then the job was never
-			 * eligible to run, so reserved time is 0.
+			 * eligible to run, so planned time is 0.
 			 */
 			switch(type) {
 			case JOB:
@@ -1692,10 +1692,10 @@ extern void print_fields(type_t type, void *object)
 					     (uint64_t)tmp_int,
 					     (curr_inx == field_count));
 			break;
-		case PRINT_RESV_CPU_RAW:
+		case PRINT_PLANNED_CPU_RAW:
 			/*
 			 * If eligible is 0 or -1, then the job was never
-			 * eligible to run, so reserved time is 0.
+			 * eligible to run, so planned time is 0.
 			 */
 			switch(type) {
 			case JOB:
