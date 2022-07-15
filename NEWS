@@ -78,6 +78,7 @@ documents those changes that are of interest to users and administrators.
  -- Update rsmi detection to handle new default library location.
  -- Fix header inclusion from slurmstepd manager code leading to multiple
     definition errors when linking --without-shared-libslurm.
+ -- oci.conf: Add %U as OCI pattern replacement to numeric user id.
 
 * Changes in Slurm 22.05.2
 ==========================

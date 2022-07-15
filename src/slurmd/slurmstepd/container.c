@@ -149,6 +149,9 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 				xstrfmtcatat(buffer, &offset, "%s",
 					     step->user_name);
 				break;
+			case 'U':
+				xstrfmtcatat(buffer, &offset, "%u", step->uid);
+				break;
 			default:
 				fatal("%s: unexpected replacement character: %c",
 				      __func__, *b);
