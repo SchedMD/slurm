@@ -83,64 +83,65 @@ result in a thread using CPU time inside of the job and slower response of
 Slurm to catch when container execution is complete.
 </p>
 <p>
-The examples provided have been tested to work but are only suggestions.
-The "--root" directory is set as "/tmp/" to avoid certain permission issues
-but should be changed to a secured and dedicated directory for a production
-cluster.
+The examples provided have been tested to work but are only suggestions. Sites
+are expected to ensure that the resultant root directory used will be secure
+from cross user viewing and modifications. The examples provided point to
+"/run/user/%U" where %U will be replaced with the numeric user id which should
+be created and managed by systemd independently of Slurm.
 </p>
 
 <ul>
 <li>runc using create/start:
 <pre>
-RunTimeQuery="runc --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
-RunTimeCreate="runc --rootless=true --root=/tmp/ create %n.%u.%j.%s.%t -b %b"
-RunTimeStart="runc --rootless=true --root=/tmp/ start %n.%u.%j.%s.%t"
-RunTimeKill="runc --rootless=true --root=/tmp/ kill -a %n.%u.%j.%s.%t"
-RunTimeDelete="runc --rootless=true --root=/tmp/ delete --force %n.%u.%j.%s.%t"
+RunTimeQuery="runc --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
+RunTimeCreate="runc --rootless=true --root=/run/user/%U/ create %n.%u.%j.%s.%t -b %b"
+RunTimeStart="runc --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
+RunTimeKill="runc --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
+RunTimeDelete="runc --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
 </pre></li>
 
 <li>runc using run (suggested):
 <pre>
-RunTimeQuery="runc --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
-RunTimeQuery="runc --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
-RunTimeKill="runc --rootless=true --root=/tmp/ kill -a %n.%u.%j.%s.%t"
-RunTimeDelete="runc --rootless=true --root=/tmp/ delete --force %n.%u.%j.%s.%t"
-RunTimeRun="runc --rootless=true --root=/tmp/ run %n.%u.%j.%s.%t -b %b"
+RunTimeQuery="runc --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
+RunTimeQuery="runc --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
+RunTimeKill="runc --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
+RunTimeDelete="runc --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
+RunTimeRun="runc --rootless=true --root=/run/user/%U/ run %n.%u.%j.%s.%t -b %b"
 </pre></li>
 
 <li>crun using create/start:
 <pre>
-RunTimeQuery="crun --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
-RunTimeKill="crun --rootless=true --root=/tmp/ kill -a %n.%u.%j.%s.%t"
-RunTimeDelete="crun --rootless=true --root=/tmp/ delete --force %n.%u.%j.%s.%t"
-RunTimeCreate="crun --rootless=true --root=/tmp/ create --bundle %b %n.%u.%j.%s.%t"
-RunTimeStart="crun --rootless=true --root=/tmp/ start %n.%u.%j.%s.%t"
+RunTimeQuery="crun --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
+RunTimeKill="crun --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
+RunTimeDelete="crun --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
+RunTimeCreate="crun --rootless=true --root=/run/user/%U/ create --bundle %b %n.%u.%j.%s.%t"
+RunTimeStart="crun --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
 </pre></li>
 
 <li>crun using run (suggested):
 <pre>
-RunTimeQuery="crun --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
-RunTimeKill="crun --rootless=true --root=/tmp/ kill -a %n.%u.%j.%s.%t"
-RunTimeDelete="crun --rootless=true --root=/tmp/ delete --force %n.%u.%j.%s.%t"
-RunTimeRun="crun --rootless=true --root=/tmp/ run --bundle %b %n.%u.%j.%s.%t"
+RunTimeQuery="crun --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
+RunTimeKill="crun --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
+RunTimeDelete="crun --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
+RunTimeRun="crun --rootless=true --root=/run/user/%U/ run --bundle %b %n.%u.%j.%s.%t"
 </pre></li>
 
 <li>nvidia-container-runtime using create/start:
 <pre>
-RunTimeQuery="nvidia-container-runtime --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
-RunTimeCreate="nvidia-container-runtime --rootless=true --root=/tmp/ create %n.%u.%j.%s.%t -b %b"
-RunTimeStart="nvidia-container-runtime --rootless=true --root=/tmp/ start %n.%u.%j.%s.%t"
-RunTimeKill="nvidia-container-runtime --rootless=true --root=/tmp/ kill -a %n.%u.%j.%s.%t"
-RunTimeDelete="nvidia-container-runtime --rootless=true --root=/tmp/ delete --force %n.%u.%j.%s.%t"
+RunTimeQuery="nvidia-container-runtime --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
+RunTimeCreate="nvidia-container-runtime --rootless=true --root=/run/user/%U/ create %n.%u.%j.%s.%t -b %b"
+RunTimeStart="nvidia-container-runtime --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
+RunTimeKill="nvidia-container-runtime --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
+RunTimeDelete="nvidia-container-runtime --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
 </pre></li>
 
 <li>nvidia-container-runtime using run (suggested):
 <pre>
-RunTimeQuery="nvidia-container-runtime --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
-RunTimeQuery="nvidia-container-runtime --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
-RunTimeKill="nvidia-container-runtime --rootless=true --root=/tmp/ kill -a %n.%u.%j.%s.%t"
-RunTimeDelete="nvidia-container-runtime --rootless=true --root=/tmp/ delete --force %n.%u.%j.%s.%t"
-RunTimeRun="nvidia-container-runtime --rootless=true --root=/tmp/ run %n.%u.%j.%s.%t -b %b"
+RunTimeQuery="nvidia-container-runtime --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
+RunTimeQuery="nvidia-container-runtime --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
+RunTimeKill="nvidia-container-runtime --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
+RunTimeDelete="nvidia-container-runtime --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
+RunTimeRun="nvidia-container-runtime --rootless=true --root=/run/user/%U/ run %n.%u.%j.%s.%t -b %b"
 </pre></li>
 
 <li>hpcng singularity v3.8.0:
@@ -229,7 +230,7 @@ different container solutions:</p>
 	<ul>
 	<li>
 	debootstrap:
-	<pre>sudo debootstrap stable /tmp/image/rootfs http://deb.debian.org/debian/</pre>
+	<pre>sudo debootstrap stable /run/user/%U/image/rootfs http://deb.debian.org/debian/</pre>
 	</li>
 
 	<li>
@@ -254,7 +255,7 @@ Configuring a Bundle for Runtime to execute:
 	to generate a config.json:
 		<ul>
 		<li>
-		<pre>cd /tmp/image
+		<pre>cd /run/user/%U/image
 runc --rootless=true spec</pre>
 		</li>
 
@@ -315,7 +316,7 @@ index 14f7ad3..c48acb9 100644
 	Use <a href="https://github.com/opencontainers/umoci">umoci</a> and
 	skopeo to generate a full image:
 	<pre>
-cd /tmp/
+cd /run/user/%U/
 skopeo copy docker://alpine:latest oci:alpine:latest
 umoci unpack --rootless --image alpine alpine</pre>
 	</li>
@@ -324,8 +325,8 @@ umoci unpack --rootless --image alpine alpine</pre>
 	Use <a href="https://sylabs.io/guides/3.1/user-guide/oci_runtime.html">
 	singularity</a> to generate a full image:
 	<pre>
-sudo singularity sif dump alpine /tmp/alpine.sif
-sudo singularity oci mount /tmp/alpine.sif /tmp/image/</pre>
+sudo singularity sif dump alpine /run/user/%U/alpine.sif
+sudo singularity oci mount /run/user/%U/alpine.sif /run/user/%U/image/</pre>
 	</li>
 	</ul>
 </ul>
@@ -536,6 +537,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 5 August 2021</p>
+<p style="text-align:center;">Last modified 27 July 2022</p>
 
 <!--#include virtual="footer.txt"-->
