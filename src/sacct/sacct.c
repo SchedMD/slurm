@@ -121,7 +121,7 @@ print_field_t fields[] = {
 	{8,  "ReservationId",  print_fields_uint, PRINT_RESERVATION_ID},
 	{10, "Reserved", print_fields_time_from_secs, PRINT_RESV},
 	{10, "ResvCPU", print_fields_time_from_secs, PRINT_RESV_CPU},
-	{10, "ResvCPURAW", print_fields_uint, PRINT_RESV_CPU},
+	{10, "ResvCPURAW", print_fields_uint, PRINT_RESV_CPU_RAW},
 	{19, "Start", print_fields_date, PRINT_START},
 	{10, "State", print_fields_str, PRINT_STATE},
 	{19, "Submit", print_fields_date, PRINT_SUBMIT},
