@@ -240,79 +240,34 @@ different container solutions:</p>
 
 	<li>
 	docker:
-	<pre>docker pull alpine
+	<pre>
+mkdir -p ~/oci_images/alpine/rootfs
+cd ~/oci_images/
+docker pull alpine
 docker create --name alpine alpine
-docker export alpine | tar -C /image/rootfs/ -xf -
+docker export alpine | tar -C ~/oci_images/alpine/rootfs -xf -
 docker rm alpine</pre>
 	</li>
 	</ul>
 </li>
-
 <li>
-Configuring a Bundle for Runtime to execute:
+	Configuring a Bundle for Runtime to execute:
 	<ul>
 	<li>Use <a href="https://github.com/opencontainers/runc">runc</a>
 	to generate a config.json:
-		<ul>
-		<li>
-		<pre>cd /run/user/%U/image
-runc --rootless=true spec</pre>
-		</li>
-
-		<li>
-		The generated config.json from runc (currently) needs to be
-		modifed for rootless:
-		<pre>
-diff --git a/config.json.orig b/config.json
-index 14f7ad3..c48acb9 100644
---- a/config.json.orig
-+++ b/config.json
-@@ -81,8 +81,7 @@
-                                "noexec",
-                                "newinstance",
-                                "ptmxmode=0666",
--                               "mode=0620",
--                               "gid=5"
-+                               "mode=0620"
-                        ]
-                },
-                {
-@@ -132,6 +131,20 @@
-                }
-        ],
-        "linux": {
-+               "uidMappings": [
-+                       {
-+                               "containerID": 0,
-+                               "hostID": 1000,
-+                               "size": 1
-+                       }
-+               ],
-+               "gidMappings": [
-+                       {
-+                               "containerID": 0,
-+                               "hostID": 1000,
-+                               "size": 1
-+                       }
-+               ],
-                "resources": {
-                        "devices": [
-                                {
-@@ -155,6 +168,9 @@
-                        },
-                        {
-                                "type": "mount"
-+                       },
-+                       {
-+                               "type": "user"
-                        }
-                ],
-                "maskedPaths": [</pre>
-		</li>
-		</ul>
 	</li>
-
 	<li>
+	<pre>cd ~/oci_images/alpine
+runc spec --rootless
+	</pre>
+	</li>
+	<li>Test running image:</li>
+	<pre>
+srun --container ~/oci_images/alpine/ uptime</pre>
+	</li>
+	</ul>
+</li>
+<li>
 	Use <a href="https://github.com/opencontainers/umoci">umoci</a> and
 	skopeo to generate a full image:
 	<pre>
