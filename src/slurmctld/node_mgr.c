@@ -2492,7 +2492,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	char *orig_features = NULL, *orig_features_act = NULL;
 	uint32_t node_flags;
 	time_t now = time(NULL);
-	bool orig_node_avail, was_invalid_reg, was_powering_up = false;
+	bool orig_node_avail;
+	bool was_invalid_reg, was_powering_up = false, was_powered_down = false;
 	static uint32_t cr_flag = NO_VAL;
 	static int node_features_cnt = 0;
 	int sockets1, sockets2;	/* total sockets on node */
@@ -2752,7 +2753,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	    IS_NODE_POWERING_UP(node_ptr) ||
 	    IS_NODE_POWERING_DOWN(node_ptr) ||
 	    IS_NODE_POWERED_DOWN(node_ptr)) {
-		bool was_powered_down = IS_NODE_POWERED_DOWN(node_ptr);
+		was_powered_down = IS_NODE_POWERED_DOWN(node_ptr);
 
 		info("Node %s now responding", node_ptr->name);
 
@@ -2802,7 +2803,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			error("Setting node %s state to INVAL with reason:%s",
 			       reg_msg->node_name, reason_down);
 
-			if (was_powering_up)
+			if (was_powering_up || was_powered_down)
 				kill_running_job_by_node_name(node_ptr->name);
 		}
 
