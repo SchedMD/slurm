@@ -2133,8 +2133,9 @@ next_task:
 			continue;
 		}
 
-		log_flag(BACKFILL, "test for %pJ Prio=%u Partition=%s",
-			 job_ptr, job_ptr->priority, job_ptr->part_ptr->name);
+		log_flag(BACKFILL, "test for %pJ Prio=%u Partition=%s Reservation=%s",
+			 job_ptr, job_ptr->priority, job_ptr->part_ptr->name,
+			 job_ptr->resv_ptr ? job_ptr->resv_ptr->name : "NONE");
 
 		/* Test to see if we've exceeded any per user/partition limit */
 		if (_job_exceeds_max_bf_param(job_ptr, orig_sched_start))
