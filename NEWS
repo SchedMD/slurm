@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix segfault when slurmd reports less than configured gres with links after
     a slurmctld restart.
  -- Fix TRES counts after node is deleted using scontrol.
+ -- sched/backfill - properly handle multi-reservation HetJobs.
 
 * Changes in Slurm 22.05.3
 ==========================

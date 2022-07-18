@@ -149,6 +149,7 @@ typedef struct {
 	job_record_t *job_ptr;
 	time_t latest_start;		/* Time when expected to start */
 	part_record_t *part_ptr;
+	slurmctld_resv_t *resv_ptr;
 } het_job_rec_t;
 
 typedef struct {
@@ -3491,7 +3492,7 @@ static time_t _het_job_start_find(job_record_t *job_ptr)
 /*
  * Record the earliest that a hetjob component can start. If it can be
  * started in multiple partitions, we only record the earliest start time
- * for the job in any partition.
+ * for the job in any partition and reservation.
  */
 static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			       uint32_t comp_time_limit)
@@ -3522,12 +3523,14 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			} else if (rec) {
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
+				rec->resv_ptr = job_ptr->resv_ptr;
 			} else {
 				rec = xmalloc(sizeof(het_job_rec_t));
 				rec->job_id = job_ptr->job_id;
 				rec->job_ptr = job_ptr;
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
+				rec->resv_ptr = job_ptr->resv_ptr;
 				list_append(map->het_job_rec_list, rec);
 			}
 		} else {
@@ -3536,6 +3539,7 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			rec->job_ptr = job_ptr;
 			rec->latest_start = latest_start;
 			rec->part_ptr = job_ptr->part_ptr;
+			rec->resv_ptr = job_ptr->resv_ptr;
 
 			map = xmalloc(sizeof(het_job_map_t));
 			map->comp_time_limit = comp_time_limit;
@@ -3624,6 +3628,10 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 
 		job_ptr = rec->job_ptr;
 		job_ptr->part_ptr = rec->part_ptr;
+		if (rec->resv_ptr) {
+			job_ptr->resv_ptr = rec->resv_ptr;
+			job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
+		}
 		selected_node_cnt = job_ptr->node_cnt_wag;
 		memcpy(tres_req_cnt, job_ptr->tres_req_cnt,
 		       slurmctld_tres_size);
@@ -3716,6 +3724,10 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 		bool reset_time = false;
 		job_ptr = rec->job_ptr;
 		job_ptr->part_ptr = rec->part_ptr;
+		if (rec->resv_ptr) {
+			job_ptr->resv_ptr = rec->resv_ptr;
+			job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
+		}
 
 		/*
 		 * Identify the nodes which this job can use
