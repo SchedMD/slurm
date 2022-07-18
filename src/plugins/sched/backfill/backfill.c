@@ -1744,6 +1744,7 @@ static void _attempt_backfill(void)
 	time_t tmp_preempt_start_time = 0;
 	bool tmp_preempt_in_progress = false;
 	bitstr_t *tmp_bitmap = NULL;
+	bool state_changed_break = false;
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock =
 		{ NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
@@ -1915,6 +1916,7 @@ static void _attempt_backfill(void)
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
+				state_changed_break = true;
 				break;
 			}
 			/* Reset backfill scheduling timers, resume testing */
@@ -2264,6 +2266,7 @@ next_task:
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
+				state_changed_break = true;
 				break;
 			}
 
@@ -3023,7 +3026,7 @@ skip_start:
 	}
 
 	_het_job_deadlock_fini();
-	if (!bf_hetjob_immediate &&
+	if (!bf_hetjob_immediate && !state_changed_break &&
 	    (!max_backfill_jobs_start ||
 	     (job_start_cnt < max_backfill_jobs_start)))
 		_het_job_start_test(node_space, 0);
