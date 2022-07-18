@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Make advanced reservation flag MAINT not replace nodes, similar to
     STATIC_ALLOC
  -- NVML - Add usage gathering for Nvidia gpus.
+ -- node_features plugins - invalid users specified for AllowUserBoot will now
+    result in fatal() rather than just an error.
 
 * Changes in Slurm 22.05.3
 ==========================

@@ -115,7 +115,7 @@ static void _make_uid_array(char *uid_str)
 	tok = strtok_r(tmp_str, ",", &save_ptr);
 	while (tok) {
 		if (uid_from_string(tok, &allowed_uid[allowed_uid_cnt++]) < 0)
-			error("helpers.conf: Invalid AllowUserBoot: %s", tok);
+			fatal("helpers.conf: Invalid AllowUserBoot: %s", tok);
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp_str);
