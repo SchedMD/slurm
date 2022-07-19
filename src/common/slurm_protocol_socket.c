@@ -451,7 +451,7 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 
 		rc = recv(fd, &buffer[recvlen], (size - recvlen), flags);
 		if (rc < 0)  {
-			if (errno == EINTR)
+			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
 			else {
 				debug("%s at %d of %zu, recv error: %m",
