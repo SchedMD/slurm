@@ -76,6 +76,7 @@ typedef struct slurm_cred_context   * slurm_cred_ctx_t;
 typedef enum {
 	CRED_DATA_JOB_GRES_LIST = 1,
 	CRED_DATA_JOB_ALIAS_LIST,
+	CRED_DATA_STEP_GRES_LIST,
 } cred_data_enum_t;
 
 /*

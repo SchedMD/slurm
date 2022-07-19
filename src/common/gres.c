@@ -9620,7 +9620,7 @@ extern void gres_g_send_stepd(int fd, slurm_msg_t *msg)
 		launch_tasks_request_msg_t *job =
 			(launch_tasks_request_msg_t *)msg->data;
 		/* Send the merged slurm.conf/gres.conf and autodetect data */
-		if (job->accel_bind_type || job->tres_bind || job->tres_freq) {
+		if (slurm_cred_get(job->cred, CRED_DATA_STEP_GRES_LIST)) {
 			len = get_buf_offset(gres_conf_buf);
 			safe_write(fd, &len, sizeof(len));
 			safe_write(fd, get_buf_data(gres_conf_buf), len);
@@ -9657,8 +9657,9 @@ extern void gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 	if (msg->msg_type != REQUEST_BATCH_JOB_LAUNCH) {
 		launch_tasks_request_msg_t *job =
 			(launch_tasks_request_msg_t *)msg->data;
+
 		/* Recv the merged slurm.conf/gres.conf and autodetect data */
-		if (job->accel_bind_type || job->tres_bind || job->tres_freq) {
+		if (slurm_cred_get(job->cred, CRED_DATA_STEP_GRES_LIST)) {
 			safe_read(fd, &len, sizeof(int));
 
 			buffer = init_buf(len);

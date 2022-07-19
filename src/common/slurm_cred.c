@@ -708,6 +708,9 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
 	case CRED_DATA_JOB_ALIAS_LIST:
 		rc = (void *) cred->arg->job_alias_list;
 		break;
+	case CRED_DATA_STEP_GRES_LIST:
+		rc = (void *) cred->arg->step_gres_list;
+		break;
 	default:
 		error("%s: Invalid arg type requested (%d)", __func__,
 		      cred_data_type);
