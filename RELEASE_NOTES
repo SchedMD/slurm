@@ -30,6 +30,8 @@ HIGHLIGHTS
     burst_buffer.lua.
  -- Change cloud nodes to show by default. PrivateData=cloud is no longer
     needed.
+ -- sreport - Count planned (FKA reserved) time for jobs running in IGNORE_JOBS
+    reservations. Previously was lumped into IDLE time.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

@@ -1220,6 +1220,35 @@ static int _setup_resv_usage(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
+static void _add_planned_time(local_cluster_usage_t *c_usage, time_t job_start,
+			      time_t job_eligible, uint32_t array_pending,
+			      uint32_t row_rcpu)
+{
+	int eligible_start, eligible_end, loc_seconds = 0;
+
+	if (!c_usage || (job_start && (job_start < c_usage->start)))
+		return;
+
+	eligible_start = MAX(job_eligible, c_usage->start);
+	eligible_end = job_start ? MIN(job_start, c_usage->end) : c_usage->end;
+	loc_seconds = (eligible_end - eligible_start);
+
+	if (loc_seconds <= 0)
+		return;
+
+	/*
+	* If we have pending jobs in an array
+	* they haven't been inserted into the
+	* database yet as proper job records,
+	* so handle them here.
+	*/
+	if (array_pending)
+		loc_seconds *= array_pending;
+
+	_add_time_tres(c_usage->loc_tres, TIME_RESV, TRES_CPU,
+		       loc_seconds * (uint64_t) row_rcpu, 0);
+}
+
 extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				  char *cluster_name,
 				  time_t start, time_t end,
@@ -1535,10 +1564,6 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			/* first figure out the reservation */
 			if (resv_id) {
-				if (seconds <= 0) {
-					_transfer_loc_tres(&loc_tres, a_usage);
-					continue;
-				}
 				/*
 				 * Since we have already added the entire
 				 * reservation as used time on the cluster we
@@ -1564,6 +1589,19 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 					 */
 					if (r_usage->id != resv_id)
 						continue;
+
+					if (r_usage->flags &
+					    RESERVE_FLAG_IGN_JOBS) {
+						_add_planned_time(
+							c_usage,
+							MIN(row_start,
+							    r_usage->end),
+							MAX(row_eligible,
+							    r_usage->start),
+							array_pending,
+							row_rcpu);
+					}
+
 					temp_end = row_end;
 					temp_start = row_start;
 					if (r_usage->start > temp_start)
@@ -1610,17 +1648,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 				continue;
 			}
 
-			/*
-			 * only record time for the clusters that have
-			 * registered.  This continue should rarely if
-			 * ever happen.
-			 */
-			if (!c_usage) {
-				_transfer_loc_tres(&loc_tres, a_usage);
-				continue;
-			}
-
-			if (row_start && (seconds > 0)) {
+			if (c_usage && row_start && (seconds > 0)) {
 				/* info("%d assoc %d adds " */
 				/*      "(%d)(%d-%d) * %d = %d " */
 				/*      "to %d", */
@@ -1643,44 +1671,8 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 			 */
 			_transfer_loc_tres(&loc_tres, a_usage);
 
-			/* now reserved time */
-			if (!row_start || (row_start >= c_usage->start)) {
-				int temp_end = row_start;
-				int temp_start = row_eligible;
-				if (c_usage->start > temp_start)
-					temp_start = c_usage->start;
-				if (!temp_end || (c_usage->end < temp_end))
-					temp_end = c_usage->end;
-				loc_seconds = (temp_end - temp_start);
-				if (loc_seconds > 0) {
-					/*
-					 * If we have pending jobs in an array
-					 * they haven't been inserted into the
-					 * database yet as proper job records,
-					 * so handle them here.
-					 */
-					if (array_pending)
-						loc_seconds *= array_pending;
-
-					/* info("%d assoc %d reserved " */
-					/*      "(%d)(%d-%d) * %d * %d = %d " */
-					/*      "to %d", */
-					/*      job_id, */
-					/*      assoc_id, */
-					/*      temp_end - temp_start, */
-					/*      temp_end, temp_start, */
-					/*      row_rcpu, */
-					/*      array_pending, */
-					/*      loc_seconds, */
-					/*      row_rcpu); */
-
-					_add_time_tres(c_usage->loc_tres,
-						       TIME_RESV, TRES_CPU,
-						       loc_seconds *
-						       (uint64_t) row_rcpu,
-						       0);
-				}
-			}
+			_add_planned_time(c_usage, row_start, row_eligible,
+					  array_pending, row_rcpu);
 		}
 		mysql_free_result(result);
 

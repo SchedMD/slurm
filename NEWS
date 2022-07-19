@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- sdiag - Add --json and --yaml arguments.
  -- Cgroupv2 plugin will not show "Controller is not enabled" error when started
     from cmd.
+ -- sreport - Count planned (FKA reserved) time for jobs running in IGNORE_JOBS
+    reservations. Previously was lumped into IDLE time.
 
 * Changes in Slurm 22.05.3
 ==========================
