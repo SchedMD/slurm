@@ -497,11 +497,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	/* Do this last so you don't worry too much about the users
 	   limits including the slurmstepd in with it.
 	*/
-	if (set_user_limits(step) < 0) {
-		debug("Unable to set user limits");
-		log_fini();
-		_exit(5);
-	}
+	set_user_limits(step);
 
 	/*
 	 * If argv[0] ends with '/' it indicates that srun was called with

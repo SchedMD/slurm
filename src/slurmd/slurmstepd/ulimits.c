@@ -85,7 +85,7 @@ static int _set_limit(char **env, slurm_rlimits_info_t *rli);
  * Run as normal user to disable setuid() and permit a core file to be written.
  */
 
-int set_user_limits(stepd_step_rec_t *step)
+extern void set_user_limits(stepd_step_rec_t *step)
 {
 #ifdef RLIMIT_AS
 #define SLURM_RLIMIT_VSIZE RLIMIT_AS
@@ -170,8 +170,6 @@ int set_user_limits(stepd_step_rec_t *step)
 		       task_mem_bytes, r.rlim_max);
 	}
 #endif
-
-	return SLURM_SUCCESS;
 }
 
 /*
