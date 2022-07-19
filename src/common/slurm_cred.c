@@ -694,12 +694,6 @@ slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred)
 }
 
 /*
- * Return a pointer specific field from a job credential
- * cred IN - job credential
- * cred_arg_type in - Field desired
- * RET - pointer to the information of interest (NOT COPIED), NULL on error
- */
-/*
  * FIXME: for correct thread-safety, this should hold a read lock,
  * and force callers to release through slurm_cred_unlock_args().
  */
