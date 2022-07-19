@@ -693,10 +693,6 @@ slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred)
 	return cred->arg;
 }
 
-/*
- * FIXME: for correct thread-safety, this should hold a read lock,
- * and force callers to release through slurm_cred_unlock_args().
- */
 extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
 {
 	void *rc = NULL;
