@@ -1849,7 +1849,7 @@ skip_start:
 			job_ptr->state_reason = WAIT_FED_JOB_LOCK;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
-			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u. Partition=%s.",
+			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u. Partition=%s. Couldn't get federation job lock.",
 				     job_ptr,
 				     job_state_string(job_ptr->job_state),
 				     job_reason_string(job_ptr->state_reason),
