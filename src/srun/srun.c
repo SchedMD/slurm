@@ -873,8 +873,8 @@ static int _foreach_set_node_alias(void *x, void *arg)
 	    job->step_ctx &&
 	    job->step_ctx->step_resp &&
 	    job->step_ctx->step_resp->cred &&
-	    (alias_list = slurm_cred_get_arg(job->step_ctx->step_resp->cred,
-					     CRED_ARG_JOB_ALIAS_LIST)))
+	    (alias_list = slurm_cred_get(job->step_ctx->step_resp->cred,
+					 CRED_DATA_JOB_ALIAS_LIST)))
 		set_nodes_alias(alias_list);
 
 	return SLURM_SUCCESS;

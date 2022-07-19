@@ -1386,8 +1386,8 @@ static int _set_node_alias(launch_tasks_request_msg_t *req)
 	char *alias_list = NULL;
 
 	if (req->cred &&
-	    (alias_list = slurm_cred_get_arg(req->cred,
-					     CRED_ARG_JOB_ALIAS_LIST)) &&
+	    (alias_list = slurm_cred_get(req->cred,
+					 CRED_DATA_JOB_ALIAS_LIST)) &&
 	    set_nodes_alias(alias_list)) {
 		error("Failed to process alias_list: '%s'", alias_list);
 		return SLURM_ERROR;
@@ -1527,8 +1527,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			error("container_g_create(%u): %m", req->step_id.job_id);
 
 		memset(&job_env, 0, sizeof(job_env));
-		job_gres_list = (List) slurm_cred_get_arg(req->cred,
-							  CRED_ARG_JOB_GRES_LIST);
+		job_gres_list = (List) slurm_cred_get(req->cred,
+						      CRED_DATA_JOB_GRES_LIST);
 		gres_prep_env_list = gres_g_prep_build_env(
 			job_gres_list, req->complete_nodelist);
 		gres_g_prep_set_env(&job_env.gres_job_env,
@@ -2471,8 +2471,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
 		memset(&job_env, 0, sizeof(job_env));
-		job_gres_list = (List) slurm_cred_get_arg(req->cred,
-							  CRED_ARG_JOB_GRES_LIST);
+		job_gres_list = (List) slurm_cred_get(req->cred,
+						      CRED_DATA_JOB_GRES_LIST);
 		gres_prep_env_list = gres_g_prep_build_env(job_gres_list,
 							   req->nodes);
 		gres_g_prep_set_env(&job_env.gres_job_env,

@@ -693,23 +693,24 @@ slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred)
 	return cred->arg;
 }
 
-extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
+extern void *slurm_cred_get(slurm_cred_t *cred,
+			    cred_data_enum_t cred_data_type)
 {
 	void *rc = NULL;
 
 	xassert(cred != NULL);
 
 	slurm_rwlock_rdlock(&cred->mutex);
-	switch (cred_arg_type) {
-	case CRED_ARG_JOB_GRES_LIST:
+	switch (cred_data_type) {
+	case CRED_DATA_JOB_GRES_LIST:
 		rc = (void *) cred->arg->job_gres_list;
 		break;
-	case CRED_ARG_JOB_ALIAS_LIST:
+	case CRED_DATA_JOB_ALIAS_LIST:
 		rc = (void *) cred->arg->job_alias_list;
 		break;
 	default:
 		error("%s: Invalid arg type requested (%d)", __func__,
-		      cred_arg_type);
+		      cred_data_type);
 
 	}
 	slurm_rwlock_unlock(&cred->mutex);

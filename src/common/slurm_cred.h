@@ -72,9 +72,11 @@
  */
 typedef struct slurm_cred_context   * slurm_cred_ctx_t;
 
-/* Used by slurm_cred_get_arg() */
-#define CRED_ARG_JOB_GRES_LIST 1
-#define CRED_ARG_JOB_ALIAS_LIST 2
+/* Used by slurm_cred_get() */
+typedef enum {
+	CRED_DATA_JOB_GRES_LIST = 1,
+	CRED_DATA_JOB_ALIAS_LIST,
+} cred_data_enum_t;
 
 /*
  * Initialize current process for slurm credential creation.
@@ -245,10 +247,11 @@ extern slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred);
 /*
  * Return a pointer specific field from a job credential
  * cred IN - job credential
- * cred_arg_type in - Field desired
+ * cred_data_type in - Field desired
  * RET - pointer to the information of interest, NULL on error
  */
-extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type);
+extern void *slurm_cred_get(slurm_cred_t *cred,
+			    cred_data_enum_t cred_data_type);
 
 /*
  * Return index in rep_count array corresponding to absolute node index
