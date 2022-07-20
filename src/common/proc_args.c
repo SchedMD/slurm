@@ -439,6 +439,9 @@ uint64_t str_to_mbytes(const char *arg)
 	else
 		return NO_VAL64;
 
+	if (result < 0)
+		return NO_VAL64;
+
 	return (uint64_t) result;
 }
 
@@ -484,6 +487,9 @@ _str_to_nodes(const char *num_str, char **leftover)
 		endptr++;
 	}
 	*leftover = endptr;
+
+	if ((num < 0) || (num > INT_MAX))
+		return -1;
 
 	return (int)num;
 }
@@ -1354,10 +1360,10 @@ extern int parse_int(const char *name, const char *val, bool positive)
 	    (positive && (result <= 0L))) {
 		error ("Invalid numeric value \"%s\" for %s.", val, name);
 		exit(1);
-	} else if (result == LONG_MAX) {
+	} else if (result >= INT_MAX) {
 		error ("Numeric argument (%ld) to big for %s.", result, name);
 		exit(1);
-	} else if (result == LONG_MIN) {
+	} else if (result <= INT_MIN) {
 		error ("Numeric argument (%ld) to small for %s.", result, name);
 		exit(1);
 	}
