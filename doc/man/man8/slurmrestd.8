@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "April 2022" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "July 2022" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -92,17 +92,6 @@ The following environment variables can be used to override settings
 compiled into slurmctld.
 
 .TP
-\fBDISABLE_UNSHARE_SYSV\fR
-Disables unsharing the SYSV namespace.
-.IP
-
-.TP
-\fBDISABLE_USER_CHECK\fR
-Disables check that slurmrestd is not running as root or SlurmUser, or with the
-root or SlurmUser's primary group.
-.IP
-
-.TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
 .IP
@@ -134,7 +123,25 @@ Comma\-delimited list of OpenAPI plugins to load. See \fB\-s\fR
 
 .TP
 \fBSLURMRESTD_SECURITY\fR
-Control slurmrestd security functionality.
+Control slurmrestd security functionality using the following comma\-delimited
+values:
+.IP
+.RS
+.TP
+\fBdisable_unshare_files\fR
+Disables unsharing file descriptors with parent process.
+.IP
+
+.TP
+\fBdisable_unshare_sysv\fR
+Disables unsharing the SYSV namespace.
+.IP
+
+.TP
+\fBdisable_user_check\fR
+Disables check that slurmrestd is not running as root or SlurmUser, or with the
+root or SlurmUser's primary group.
+.RE
 .IP
 
 .SH "SIGNALS"
