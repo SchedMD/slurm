@@ -104,6 +104,10 @@ static void _on_finish_wrapper(con_mgr_t *mgr, con_mgr_fd_t *con,
 			       con_mgr_work_type_t type,
 			       con_mgr_work_status_t status, const char *tag,
 			       void *arg);
+static void _deferred_write_fd(con_mgr_t *mgr, con_mgr_fd_t *con,
+			  con_mgr_work_type_t type,
+			  con_mgr_work_status_t status, const char *tag,
+			  void *arg);
 
 typedef void (*on_poll_event_t)(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 				short revents);
@@ -257,6 +261,7 @@ static void _connection_fd_delete(void *x)
 	FREE_NULL_BUFFER(con->out);
 	FREE_NULL_LIST(con->work);
 	FREE_NULL_LIST(con->write_complete_work);
+	FREE_NULL_LIST(con->deferred_out);
 	xfree(con->name);
 	xfree(con->unix_socket);
 
@@ -525,6 +530,7 @@ static con_mgr_fd_t *_add_connection(
 		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
 		.type = type,
+		.deferred_out = list_create((ListDelF) free_buf),
 	};
 
 	if (!is_listen) {
@@ -1986,32 +1992,102 @@ static void _listen_accept(con_mgr_t *mgr, con_mgr_fd_t *con,
 	}
 }
 
+static void _deferred_write_fd(con_mgr_t *mgr, con_mgr_fd_t *con,
+			       con_mgr_work_type_t type,
+			       con_mgr_work_status_t status, const char *tag,
+			       void *arg)
+{
+	/*
+	 * make sure to trigger a write as the deferred buffers will get
+	 * written first before anything else to maintain order.
+	 */
+
+	(void) con_mgr_queue_write_fd(con, NULL, 0);
+}
+
+static int _for_each_deferred_write(void *x, void *arg)
+{
+	buf_t *buf = x;
+	con_mgr_fd_t *con = arg;
+	_check_magic_fd(con);
+
+	(void) con_mgr_queue_write_fd(con, get_buf_data(buf),
+				  get_buf_offset(buf));
+
+	return SLURM_SUCCESS;
+}
+
 extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 				  const size_t bytes)
 {
-	/* Grow buffer as needed to handle the outgoing data */
-	if (remaining_buf(con->out) < bytes) {
-		int need = bytes - remaining_buf(con->out);
+	_check_magic_fd(con);
 
-		if ((need + size_buf(con->out)) >= MAX_BUF_SIZE) {
-			error("%s: [%s] out of buffer space.",
-			      __func__, con->name);
+	if (list_count(con->deferred_out)) {
+		/* handle deferred first */
+		list_t *deferred = list_create((ListDelF) free_buf);
+		list_transfer(deferred, con->deferred_out);
 
-			return SLURM_ERROR;
-		}
+		(void) list_for_each_ro(deferred, _for_each_deferred_write,
+					con);
 
-		grow_buf(con->out, need);
+		FREE_NULL_LIST(deferred);
 	}
 
-	memmove((get_buf_data(con->out) + get_buf_offset(con->out)), buffer,
-		bytes);
-	con->out->processed += bytes;
+	if (!bytes) {
+		log_flag(NET, "%s: [%s] write 0 bytes ignored",
+			 __func__, con->name);
+		return SLURM_SUCCESS;
+	}
 
-	log_flag(NET, "%s: [%s] queued %zu/%u bytes in outgoing buffer",
-		 __func__, con->name, bytes, get_buf_offset(con->out));
+	if (con->has_work) {
+		/* Grow buffer as needed to handle the outgoing data */
+		if (remaining_buf(con->out) < bytes) {
+			int need = bytes - remaining_buf(con->out);
+
+			if ((need + size_buf(con->out)) >= MAX_BUF_SIZE) {
+				error("%s: [%s] out of buffer space.",
+				      __func__, con->name);
+
+				return SLURM_ERROR;
+			}
+
+			grow_buf(con->out, need);
+		}
+
+		memmove((get_buf_data(con->out) + get_buf_offset(con->out)), buffer,
+			bytes);
+
+		log_flag_hex(NET_RAW,
+			     (get_buf_data(con->out) + get_buf_offset(con->out)), bytes,
+			     "%s: queued up write", __func__);
+
+		con->out->processed += bytes;
+
+		log_flag(NET, "%s: [%s] queued %zu/%u bytes in outgoing buffer",
+			 __func__, con->name, bytes, get_buf_offset(con->out));
+	} else {
+		/* we must ensure that all deferred writes maintain
+		 * their order or rpcs may get sliced.
+		 */
+		buf_t *buf = init_buf(bytes);
+
+		/* TODO: would be nice to avoid this copy */
+		memmove(get_buf_data(buf), buffer, bytes);
+		set_buf_offset(buf, bytes);
+
+		log_flag(NET, "%s: [%s] deferred write of %zu bytes queued",
+			 __func__, con->name, bytes);
+
+		log_flag_hex(NET_RAW, get_buf_data(buf), get_buf_offset(buf),
+			     "%s: queuing up deferred write", __func__);
+
+		list_append(con->deferred_out, buf);
+
+		_add_work(false, con->mgr, con, _deferred_write_fd,
+			  CONMGR_WORK_TYPE_CONNECTION_FIFO, NULL, __func__);
+	}
 
 	_signal_change(con->mgr, false);
-
 	return SLURM_SUCCESS;
 }
 

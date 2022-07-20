@@ -189,6 +189,8 @@ struct con_mgr_fd_s {
 	buf_t *in;
 	/* has on_data already tried to parse data */
 	bool on_data_tried;
+	/* list of buf_t to write (in order) */
+	list_t *deferred_out;
 	/* buffer holding out going to be written data */
 	buf_t *out;
 	/* this is a socket fd */
@@ -355,7 +357,6 @@ extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr,
 
 /*
  * Write binary data to connection (from callback).
- * NOTE: only call from within a callback
  * NOTE: type=CON_TYPE_RAW only
  * IN con connection manager connection struct
  * IN buffer pointer to buffer
@@ -367,7 +368,6 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 
 /*
  * Write packed msg to connection (from callback).
- * NOTE: only call from within a callback
  * NOTE: type=CON_TYPE_RPC only
  * IN con conmgr connection ptr
  * IN msg message to send
