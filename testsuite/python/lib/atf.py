@@ -1896,23 +1896,25 @@ def require_nodes(requested_node_count, requirements_list=[]):
                         augmentation_dict['CoresPerSocket'] = math.ceil(parameter_value / sockets)
             elif parameter_name == 'Gres':
                 if parameter_name.lower() in lower_node_dict:
-                    if match := re.search(r'^(\w+):(\d+)$', parameter_value):
-                        (required_gres_name, required_gres_value) = (match.group(1), match.group(2))
-                    else:
-                        log_die("Gres requirement must be of the form <name>:<count>")
-                    if match := re.search(rf"{required_gres_name}:(\d+)", lower_node_dict[parameter_name.lower()]):
-                        if match.group(1) < required_gres_value:
+                    gres_list = parameter_value.split(',')
+                    for gres_value in gres_list:
+                        if match := re.search(r'^(\w+):(\d+)$', gres_value):
+                            (required_gres_name, required_gres_value) = (match.group(1), match.group(2))
+                        else:
+                            log_die("Gres requirement must be of the form <name>:<count>")
+                        if match := re.search(rf"{required_gres_name}:(\d+)", lower_node_dict[parameter_name.lower()]):
+                            if match.group(1) < required_gres_value:
+                                if node_qualifies:
+                                    node_qualifies = False
+                                    nonqualifying_node_count += 1
+                                if nonqualifying_node_count == 1:
+                                    augmentation_dict[parameter_name] = gres_value
+                        else:
                             if node_qualifies:
                                 node_qualifies = False
                                 nonqualifying_node_count += 1
                             if nonqualifying_node_count == 1:
-                                augmentation_dict[parameter_name] = parameter_value
-                    else:
-                        if node_qualifies:
-                            node_qualifies = False
-                            nonqualifying_node_count += 1
-                        if nonqualifying_node_count == 1:
-                            augmentation_dict[parameter_name] = parameter_value
+                                augmentation_dict[parameter_name] = gres_value
                 else:
                     if node_qualifies:
                         node_qualifies = False

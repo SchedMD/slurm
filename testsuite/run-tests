@@ -370,16 +370,18 @@ if ($pytest_available) {
             if ($subtest_class_name ne '') { $subtest_class_name =~ s/.*\.//; }
             if (index($subtest_file_name, $subtest_class_name) == -1) {
                 $subtest_fqn = "${subtest_file_name}::${subtest_class_name}::${subtest_function_name}";
-            }
-            else {
+            } else {
                 $subtest_fqn = "${subtest_file_name}::${subtest_function_name}";
             }
             if ($testcase =~ /<failure/) {
                 $subtest_status = 'Failed';
                 $test_status = 'Failed';
                 $subtest_message = $1 if $testcase =~ m%message="([^"]+)"%;
-            }
-            elsif ($testcase =~ /<skipped/) {
+            } elsif ($testcase =~ /<error/) {
+                $subtest_status = 'Errored';
+                $test_status = 'Errored';
+                $subtest_message = $1 if $testcase =~ m%message="([^"]+)"%;
+            } elsif ($testcase =~ /<skipped/) {
                 $subtest_status = 'Skipped';
                 $test_status = 'Skipped' if $test_status eq 'Passed';
                 $subtest_message = $1 if $testcase =~ m%message="([^"]+)"%;
