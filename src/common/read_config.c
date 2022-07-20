@@ -2368,7 +2368,7 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 
 /*
  * slurm_conf_get_aliases - Return all the nodes NodeName value
- * associated to a given NodeHostname (usefull in case of multiple-slurmd
+ * associated to a given NodeHostname (useful in case of multiple-slurmd
  * to get the list of virtual nodes associated with a real node)
  *
  * NOTE: Call xfree() to release returned value's memory.
