@@ -2150,12 +2150,39 @@ cleanup:
 	return rc;
 }
 
+static void _deferred_close_fd(con_mgr_t *mgr, con_mgr_fd_t *con,
+			       con_mgr_work_type_t type,
+			       con_mgr_work_status_t status,
+			       const char *tag, void *arg)
+{
+	slurm_mutex_lock(&mgr->mutex);
+	if (con->has_work) {
+		slurm_mutex_unlock(&mgr->mutex);
+		con_mgr_queue_close_fd(con);
+	} else {
+		_close_con(true, con);
+		slurm_mutex_unlock(&mgr->mutex);
+	}
+}
+
 extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
 {
-	xassert(con->has_work);
-
 	_check_magic_fd(con);
-	_close_con(false, con);
+
+	slurm_mutex_lock(&con->mgr->mutex);
+	if (!con->has_work) {
+		/*
+		 * Defer request to close connection until connection is no
+		 * longer actively doing work as closing connection would change
+		 * several variables guarenteed to not change while work is
+		 * active.
+		 */
+		_add_work(true, con->mgr, con, _deferred_close_fd,
+			  CONMGR_WORK_TYPE_CONNECTION_FIFO, NULL, __func__);
+	} else {
+		_close_con(true, con);
+	}
+	slurm_mutex_unlock(&con->mgr->mutex);
 }
 
 typedef struct {

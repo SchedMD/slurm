@@ -377,7 +377,6 @@ extern int con_mgr_queue_write_msg(con_mgr_fd_t *con, slurm_msg_t *msg);
 
 /*
  * Request soft close of connection
- * NOTE: only call from within a callback
  * IN con connection manager connection struct
  * RET SLURM_SUCCESS or error
  */
