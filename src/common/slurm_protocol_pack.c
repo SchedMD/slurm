@@ -12416,7 +12416,6 @@ static int _unpack_each_container_id(void **object, uint16_t protocol_version,
 static int _unpack_container_id_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	container_id_response_msg_t *msg = xmalloc(sizeof(*msg));
-
 	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
@@ -12430,6 +12429,155 @@ static int _unpack_container_id_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 unpack_error:
 	slurm_free_container_id_response_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_container_state_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_state_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		packstr(msg->oci_version, buffer);
+		packstr(msg->id, buffer);
+		pack32(msg->status, buffer);
+		pack32(msg->pid, buffer);
+		packstr(msg->bundle, buffer);
+		pack_key_pair_list(msg->annotations, smsg->protocol_version,
+				   buffer);
+	}
+}
+
+static int _unpack_container_state_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_state_msg_t *msg = slurm_create_container_state_msg();
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->oci_version, buffer);
+		safe_unpackstr(&msg->id, buffer);
+		safe_unpack32(&msg->status, buffer);
+		safe_unpack32(&msg->pid, buffer);
+		safe_unpackstr(&msg->bundle, buffer);
+		if (unpack_key_pair_list((void **) &msg->annotations,
+					 smsg->protocol_version, buffer))
+			goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_destroy_container_state_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_container_signal_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_signal_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->signal, buffer);
+	}
+}
+
+static int _unpack_container_signal_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_signal_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->signal, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_container_delete_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_delete_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		packbool(msg->force, buffer);
+	}
+}
+
+static int _unpack_container_delete_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_delete_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackbool(&msg->force, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_container_started_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_started_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->rc, buffer);
+		pack_step_id(&msg->step, buffer, smsg->protocol_version);
+	}
+}
+
+static int _unpack_container_started_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_started_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->rc, buffer);
+		if (unpack_step_id_members(&msg->step, buffer,
+					   smsg->protocol_version))
+			goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_container_exec_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_exec_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		packstr(msg->args, buffer);
+		packstr(msg->env, buffer);
+	}
+}
+
+static int _unpack_container_exec_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_exec_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->args, buffer);
+		safe_unpackstr(&msg->env, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_destroy_container_exec_msg(msg);
 	smsg->data = NULL;
 	return SLURM_ERROR;
 }
@@ -12575,6 +12723,9 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_FED_INFO:
 	case SRUN_PING:
+	case REQUEST_CONTAINER_START:
+	case REQUEST_CONTAINER_STATE:
+	case REQUEST_CONTAINER_PTY:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -12769,6 +12920,10 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_prolog_launch_msg((prolog_launch_msg_t *)
 					msg->data, buffer, msg->protocol_version);
 		break;
+	case RESPONSE_CONTAINER_PTY:
+	case RESPONSE_CONTAINER_KILL:
+	case RESPONSE_CONTAINER_DELETE:
+	case RESPONSE_CONTAINER_EXEC:
 	case RESPONSE_PROLOG_EXECUTING:
 	case RESPONSE_JOB_READY:
 	case RESPONSE_SLURM_RC:
@@ -13043,6 +13198,21 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	case RESPONSE_UPDATE_CRONTAB:
 		_pack_crontab_update_response_msg(msg, buffer);
 		break;
+	case RESPONSE_CONTAINER_STATE:
+		_pack_container_state_msg(msg, buffer);
+		break;
+	case REQUEST_CONTAINER_KILL:
+		_pack_container_signal_msg(msg, buffer);
+		break;
+	case REQUEST_CONTAINER_DELETE:
+		_pack_container_delete_msg(msg, buffer);
+		break;
+	case RESPONSE_CONTAINER_START:
+		_pack_container_started_msg(msg, buffer);
+		break;
+	case REQUEST_CONTAINER_EXEC:
+		_pack_container_exec_msg(msg, buffer);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -13208,6 +13378,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_BURST_BUFFER_INFO:
 	case REQUEST_FED_INFO:
 	case SRUN_PING:
+	case REQUEST_CONTAINER_START:
+	case REQUEST_CONTAINER_STATE:
+	case REQUEST_CONTAINER_PTY:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
@@ -13418,6 +13591,10 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 					       & (msg->data),
 					       buffer, msg->protocol_version);
 		break;
+	case RESPONSE_CONTAINER_PTY:
+	case RESPONSE_CONTAINER_KILL:
+	case RESPONSE_CONTAINER_DELETE:
+	case RESPONSE_CONTAINER_EXEC:
 	case RESPONSE_PROLOG_EXECUTING:
 	case RESPONSE_JOB_READY:
 	case RESPONSE_SLURM_RC:
@@ -13746,6 +13923,21 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case RESPONSE_UPDATE_CRONTAB:
 		rc = _unpack_crontab_update_response_msg(msg, buffer);
+		break;
+	case RESPONSE_CONTAINER_STATE:
+		rc = _unpack_container_state_msg(msg, buffer);
+		break;
+	case REQUEST_CONTAINER_KILL:
+		rc = _unpack_container_signal_msg(msg, buffer);
+		break;
+	case REQUEST_CONTAINER_DELETE:
+		rc = _unpack_container_delete_msg(msg, buffer);
+		break;
+	case RESPONSE_CONTAINER_START:
+		rc = _unpack_container_started_msg(msg, buffer);
+		break;
+	case REQUEST_CONTAINER_EXEC:
+		rc = _unpack_container_exec_msg(msg, buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);

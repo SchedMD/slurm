@@ -1144,6 +1144,63 @@ extern void slurm_free_update_step_msg(step_update_request_msg_t * msg)
 	}
 }
 
+extern container_state_msg_t *slurm_create_container_state_msg(void)
+{
+	container_state_msg_t *msg = xmalloc(sizeof(*msg));
+	msg->status = CONTAINER_ST_UNKNOWN;
+	msg->pid = NO_VAL;
+	msg->annotations = list_create(destroy_config_key_pair);
+
+	return msg;
+}
+
+extern void slurm_destroy_container_state_msg(container_state_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->oci_version);
+	xfree(msg->id);
+	msg->status = CONTAINER_ST_INVALID;
+	xfree(msg->bundle);
+	FREE_NULL_LIST(msg->annotations);
+	xfree(msg);
+}
+
+extern void slurm_destroy_container_exec_msg(container_exec_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->args);
+	xfree(msg->env);
+	xfree(msg);
+}
+
+extern const char *slurm_container_status_to_str(
+	container_state_msg_status_t status)
+{
+	static const struct {
+		int msg;
+		char *status;
+	} status_str[] = {
+		{ CONTAINER_ST_INVALID, "INVALID" },
+		{ CONTAINER_ST_UNKNOWN, "UNKNOWN" },
+		{ CONTAINER_ST_CREATING, "CREATING" },
+		{ CONTAINER_ST_CREATED, "CREATED" },
+		{ CONTAINER_ST_STARTING, "STARTING" },
+		{ CONTAINER_ST_RUNNING, "RUNNING" },
+		{ CONTAINER_ST_STOPPING, "STOPPING" },
+		{ CONTAINER_ST_STOPPED, "STOPPED" },
+	};
+
+	for (int i = 0; i < ARRAY_SIZE(status_str); i++)
+		if (status == status_str[i].msg)
+			return status_str[i].status;
+
+	return "UNKNOWN";
+}
+
 extern void slurm_destroy_selected_step(void *object)
 {
 	slurm_selected_step_t *step = (slurm_selected_step_t *)object;
@@ -5549,6 +5606,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_FILE_BCAST:
 		slurm_free_file_bcast_msg(data);
 		break;
+	case RESPONSE_CONTAINER_PTY:
+	case RESPONSE_CONTAINER_KILL:
+	case RESPONSE_CONTAINER_DELETE:
+	case RESPONSE_CONTAINER_EXEC:
+		slurm_free_return_code_msg(data);
+		break;
 	case RESPONSE_SLURM_RC_MSG:
 		slurm_free_return_code2_msg(data);
 		break;
@@ -5562,6 +5625,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SET_SCHEDLOG_LEVEL:
 		slurm_free_set_debug_level_msg(data);
 		break;
+	case REQUEST_CONTAINER_PTY:
+	case REQUEST_CONTAINER_START:
+	case REQUEST_CONTAINER_STATE:
 	case REQUEST_PING:
 	case REQUEST_RECONFIGURE:
 	case REQUEST_CONTROL:
@@ -5715,6 +5781,18 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_STEP_BY_CONTAINER_ID:
 		slurm_free_container_id_response_msg(data);
+		break;
+	case RESPONSE_CONTAINER_STATE:
+		slurm_destroy_container_state_msg(data);
+		break;
+	case REQUEST_CONTAINER_EXEC:
+		slurm_destroy_container_exec_msg(data);
+		break;
+	case REQUEST_CONTAINER_KILL:
+	case REQUEST_CONTAINER_DELETE:
+	case RESPONSE_CONTAINER_START:
+		/* struct has no members that need to be freed */
+		xfree_ptr(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);
@@ -6243,6 +6321,30 @@ rpc_num2string(uint16_t opcode)
 		return "SLURMSCRIPTD_REQUEST_UPDATE_LOG";
 	case SLURMSCRIPTD_SHUTDOWN:
 		return "SLURMSCRIPTD_SHUTDOWN";
+	case REQUEST_CONTAINER_START:
+		return "REQUEST_CONTAINER_START";
+	case RESPONSE_CONTAINER_START:
+		return "RESPONSE_CONTAINER_START";
+	case REQUEST_CONTAINER_PTY:
+		return "REQUEST_CONTAINER_PTY";
+	case RESPONSE_CONTAINER_PTY:
+		return "RESPONSE_CONTAINER_PTY";
+	case REQUEST_CONTAINER_EXEC:
+		return "REQUEST_CONTAINER_EXEC";
+	case RESPONSE_CONTAINER_EXEC:
+		return "RESPONSE_CONTAINER_EXEC";
+	case REQUEST_CONTAINER_KILL:
+		return "REQUEST_CONTAINER_KILL";
+	case RESPONSE_CONTAINER_KILL:
+		return "RESPONSE_CONTAINER_KILL";
+	case REQUEST_CONTAINER_DELETE:
+		return "REQUEST_CONTAINER_DELETE";
+	case RESPONSE_CONTAINER_DELETE:
+		return "RESPONSE_CONTAINER_DELETE";
+	case REQUEST_CONTAINER_STATE:
+		return "REQUEST_CONTAINER_STATE";
+	case RESPONSE_CONTAINER_STATE:
+		return "RESPONSE_CONTAINER_STATE";
 	default:
 		(void) snprintf(buf, sizeof(buf), "%u", opcode);
 		return buf;

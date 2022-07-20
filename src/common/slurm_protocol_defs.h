@@ -468,6 +468,20 @@ typedef enum {
 	SLURMSCRIPTD_REQUEST_UPDATE_DEBUG_FLAGS,
 	SLURMSCRIPTD_REQUEST_UPDATE_LOG,
 	SLURMSCRIPTD_SHUTDOWN,
+
+	/* scrun specific RPCs */
+	REQUEST_CONTAINER_START = 12001, /* empty */
+	RESPONSE_CONTAINER_START, /* container_started_msg_t */
+	REQUEST_CONTAINER_PTY, /* empty */
+	RESPONSE_CONTAINER_PTY, /* return_code_msg_t */
+	REQUEST_CONTAINER_EXEC, /* container_exec_msg_t */
+	RESPONSE_CONTAINER_EXEC, /* return_code_msg_t */
+	REQUEST_CONTAINER_KILL, /* container_signal_msg_t */
+	RESPONSE_CONTAINER_KILL, /* return_code_msg_t */
+	REQUEST_CONTAINER_DELETE, /* container_delete_msg_t */
+	RESPONSE_CONTAINER_DELETE, /* return_code_msg_t */
+	REQUEST_CONTAINER_STATE, /* empty */
+	RESPONSE_CONTAINER_STATE, /* return_code_msg_t */
 } slurm_msg_type_t;
 
 /*****************************************************************************\
@@ -1407,6 +1421,106 @@ typedef struct {
 } accounting_update_msg_t;
 
 typedef slurm_conf_t slurm_ctl_conf_info_msg_t;
+
+/*****************************************************************************\
+ *      Container RPCs
+\*****************************************************************************/
+
+typedef enum {
+	CONTAINER_ST_INVALID = 0,
+	/*
+	 * UNKNOWN: initial state
+	 */
+	CONTAINER_ST_UNKNOWN = 0xae00,
+	/*
+	 * CREATING:
+	 * Official OCI state.
+	 *
+	 * waiting for pty allocation
+	 * waiting for srun exec process to be ready
+	 * waiting for job allocation
+	 * waiting for staging plugin push to complete
+	 */
+	CONTAINER_ST_CREATING,
+	/*
+	 * CREATED:
+	 * Official OCI state.
+	 *
+	 * job allocated (no steps yet)
+	 * staging plugin push done
+	 */
+	CONTAINER_ST_CREATED,
+	/*
+	 * STARTING:
+	 * waiting for srun to start step
+	 */
+	CONTAINER_ST_STARTING,
+	/*
+	 * RUNNING:
+	 * Official OCI state.
+	 *
+	 * job allocated and step started
+	 */
+	CONTAINER_ST_RUNNING,
+	/*
+	 * STOPPING:
+	 * waiting for step to end
+	 * waiting for staging plugin pull to complete
+	 * waiting for job to end
+	 */
+	CONTAINER_ST_STOPPING,
+	/*
+	 * STOPPED:
+	 * Official OCI state
+	 *
+	 * job and step complete
+	 * staging plugin pull complete
+	 * anchor exits here
+	 */
+	CONTAINER_ST_STOPPED,
+	CONTAINER_ST_MAX /* place holder */
+} container_state_msg_status_t;
+
+extern const char *slurm_container_status_to_str(
+	container_state_msg_status_t status);
+
+typedef struct {
+	/* every field required by OCI runtime-spec v1.0.2 state query */
+	char *oci_version;
+	char *id; /* container-id */
+	container_state_msg_status_t status; /* current status */
+	uint32_t pid; /* pid of anchor process */
+	char *bundle; /* path to OCI container bundle */
+	list_t *annotations; /* List of config_key_pair_t */
+} container_state_msg_t;
+
+/*
+ * Create and init new container state message
+ * RET ptr to message (must free with slurm_destroy_container_state_msg())
+ */
+extern container_state_msg_t *slurm_create_container_state_msg();
+extern void slurm_destroy_container_state_msg(container_state_msg_t *msg);
+
+typedef struct {
+	uint32_t signal;
+} container_signal_msg_t;
+
+typedef struct {
+	bool force;
+} container_delete_msg_t;
+
+typedef struct {
+	uint32_t rc;
+	slurm_step_id_t step;
+} container_started_msg_t;
+
+typedef struct {
+	char *args;
+	char *env;
+} container_exec_msg_t;
+
+extern void slurm_destroy_container_exec_msg(container_exec_msg_t *msg);
+
 /*****************************************************************************\
  *	SLURM MESSAGE INITIALIZATION
 \*****************************************************************************/
