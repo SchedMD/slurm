@@ -16,7 +16,7 @@ def compiled_program(tmp_path):
     return test_program
 
 
-@pytest.mark.parametrize("test_case", list(range(1,5)))
+@pytest.mark.parametrize("test_case", list(range(1,6)))
 def test_route_topology(compiled_program, test_case):
     """Test the route/topology plugin"""
     cwd = str(pathlib.Path(__file__).resolve().parent)
