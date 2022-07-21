@@ -10865,15 +10865,17 @@ static void _pack_job_array_resp_msg(job_array_resp_msg_t *msg, buf_t *buffer,
 {
 	uint32_t i, cnt = 0;
 
-	if (!msg) {
-		pack32(cnt, buffer);
-		return;
-	}
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!msg) {
+			pack32(cnt, buffer);
+			return;
+		}
 
-	pack32(msg->job_array_count, buffer);
-	for (i = 0; i < msg->job_array_count; i++) {
-		pack32(msg->error_code[i], buffer);
-		packstr(msg->job_array_id[i], buffer);
+		pack32(msg->job_array_count, buffer);
+		for (i = 0; i < msg->job_array_count; i++) {
+			pack32(msg->error_code[i], buffer);
+			packstr(msg->job_array_id[i], buffer);
+		}
 	}
 }
 static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, buf_t *buffer,
