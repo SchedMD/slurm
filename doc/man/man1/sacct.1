@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "February 2022" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "July 2022" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -256,7 +256,7 @@ Account             AdminComment        AllocCPUS           AllocNodes
 AllocTRES           AssocID             AveCPU              AveCPUFreq
 AveDiskRead         AveDiskWrite        AvePages            AveRSS
 AveVMSize           BlockID             Cluster             Comment
-Constraints         Container           ConsumedEnergy      ConsumedEnergyRaw
+Constraints         ConsumedEnergy      ConsumedEnergyRaw   Container
 CPUTime             CPUTimeRAW          DBIndex             DerivedExitCode
 Elapsed             ElapsedRaw          Eligible            End
 ExitCode            Flags               GID                 Group
@@ -266,13 +266,13 @@ MaxDiskWriteNode    MaxDiskWriteTask    MaxPages            MaxPagesNode
 MaxPagesTask        MaxRSS              MaxRSSNode          MaxRSSTask
 MaxVMSize           MaxVMSizeNode       MaxVMSizeTask       McsLabel
 MinCPU              MinCPUNode          MinCPUTask          NCPUS
-NNodes              NodeList            NTasks              Priority
-Partition           QOS                 QOSRAW              Reason
-ReqCPUFreq          ReqCPUFreqMin       ReqCPUFreqMax       ReqCPUFreqGov
+NNodes              NodeList            NTasks              Partition
+Priority            QOS                 QOSRAW              Reason
+ReqCPUFreq          ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin
 ReqCPUS             ReqMem              ReqNodes            ReqTRES
 Reservation         ReservationId       Reserved            ResvCPU
 ResvCPURAW          Start               State               Submit
-SubmitLine          Suspended           SystemCPU           SystemComment
+SubmitLine          Suspended           SystemComment       SystemCPU
 Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
 TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
 TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve
@@ -547,6 +547,16 @@ Print all fields listed below.
 .IP
 
 .TP
+\f3Account\fP
+Account the job ran under.
+.IP
+
+.TP
+\f3AdminComment\fP
+Comment string made by an admin.
+.IP
+
+.TP
 \f3AllocCPUs\fP
 Count of allocated CPUs. Equivalent to \f3NCPUS\fP.
 .IP
@@ -564,11 +574,6 @@ For more details see AccountingStorageTRES in slurm.conf.
 
 NOTE: When a generic resource is configured with the no_consume flag,
 the allocation will be printed with a zero.
-.IP
-
-.TP
-\f3Account\fP
-Account the job ran under.
 .IP
 
 .TP
@@ -625,7 +630,20 @@ specialized \f3sjobexitmod\fP command.
 .IP
 
 .TP
+\f3Constraints\fP
+Job's constraints/features.
+.IP
+
+.TP
 \f3ConsumedEnergy\fP
+Total energy consumed by all tasks in job, in joules.
+Value may include a unit prefix (K,M,G,T,P).
+Note: Only in case of exclusive job allocation this value
+reflects the jobs' real energy consumption.
+.IP
+
+.TP
+\f3ConsumedEnergyRaw\fP
 Total energy consumed by all tasks in job, in joules.
 Note: Only in case of exclusive job allocation this value
 reflects the jobs' real energy consumption.
@@ -644,6 +662,11 @@ Time used (Elapsed time * CPU count) by a job or step in HH:MM:SS format.
 .TP
 \f3CPUTimeRAW\fP
 Time used (Elapsed time * CPU count) by a job or step in cpu\-seconds.
+.IP
+
+.TP
+\f3DBIndex\fP
+Row index of the job in the job table.
 .IP
 
 .TP
@@ -692,6 +715,11 @@ seconds
 .IP
 
 .TP
+\f3ElapsedRaw\fP
+The job's elapsed time.
+.IP
+
+.TP
 \f3Eligible\fP
 When the job became eligible to run. In the same format as \f3End\fP.
 .IP
@@ -707,6 +735,11 @@ unless changed through the SLURM_TIME_FORMAT environment variable.
 The exit code returned by the job script or salloc, typically as set
 by the exit() function.  Following the colon is the signal that caused
 the process to terminate if it was terminated by a signal.
+.IP
+
+.TP
+\f3Flags\fP
+Job flags. Current flags are SchedSubmit, SchedMain, SchedBackfill.
 .IP
 
 .TP
@@ -843,6 +876,11 @@ The task ID where the maxvmsize occurred.
 .IP
 
 .TP
+\f3McsLabel\fP
+MCS label of job.
+.IP
+
+.TP
 \f3MinCPU\fP
 Minimum (system + user) CPU time of all tasks in job.
 .IP
@@ -863,14 +901,14 @@ Total number of CPUs allocated to the job.  Equivalent to \f3AllocCPUS\fP.
 .IP
 
 .TP
-\f3NodeList\fP
-List of nodes in job/step.
-.IP
-
-.TP
 \f3NNodes\fP
 Number of nodes in a job or step.  If the job is running, or ran, this count
 will be the number allocated, else the number will be the number requested.
+.IP
+
+.TP
+\f3NodeList\fP
+List of nodes in job/step.
 .IP
 
 .TP
@@ -879,13 +917,13 @@ Total number of tasks in a job or step.
 .IP
 
 .TP
-\f3Priority\fP
-Slurm priority.
+\f3Partition\fP
+Identifies the partition on which the job ran.
 .IP
 
 .TP
-\f3Partition\fP
-Identifies the partition on which the job ran.
+\f3Priority\fP
+Slurm priority.
 .IP
 
 .TP
@@ -1021,6 +1059,11 @@ as \f2Elapsed\fP.
 .IP
 
 .TP
+\f3SystemComment\fP
+Comment string made by the system.
+.IP
+
+.TP
 \f3SystemCPU\fP
 The amount of system CPU time used by the job or job step. Format
 is the same as \f3Elapsed\fP.
@@ -1151,6 +1194,11 @@ Workload  Characterization  Key.   Arbitrary  string for grouping orthogonal acc
 .TP
 \f3WCKeyID\fP
 Reference to the wckey.
+.IP
+
+.TP
+\f3WorkDir\fP
+Working directory of job.
 .IP
 
 
