@@ -137,6 +137,7 @@ typedef struct {
 	int resp_array_size;
 	uint32_t *resp_array_rc;
 	bitstr_t **resp_array_task_id;
+	char **err_msg;
 } resp_array_struct_t;
 
 typedef struct {
@@ -12002,7 +12003,7 @@ extern bool permit_job_shrink(void)
 }
 
 static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
-		       uid_t uid)
+		       uid_t uid, char **err_msg)
 {
 	int error_code = SLURM_SUCCESS;
 	enum job_state_reason fail_reason;
@@ -12116,7 +12117,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		job_specs->user_id = job_ptr->user_id;
 	}
 	error_code = job_submit_plugin_modify(job_specs, job_ptr,
-					      (uint32_t) uid);
+					      (uint32_t) uid, err_msg);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 	error_code = node_features_g_job_valid(job_specs->features);
@@ -14408,6 +14409,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	job_record_t *job_ptr;
 	char *hostname = auth_g_get_host(msg->auth_cred);
+	char *err_msg = NULL;
 	int rc;
 
 	xfree(job_specs->job_id_str);
@@ -14428,10 +14430,10 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 			job_specs->array_bitmap =
 				bit_copy(job_ptr->array_recs->task_id_bitmap);
 
-		rc = _update_job(job_ptr, job_specs, uid);
+		rc = _update_job(job_ptr, job_specs, uid, &err_msg);
 	}
 	if (send_msg && rc != ESLURM_JOB_SETTING_DB_INX)
-		slurm_send_rc_msg(msg, rc);
+		slurm_send_rc_err_msg(msg, rc, err_msg);
 	xfree(job_specs->job_id_str);
 
 	return rc;
@@ -14461,9 +14463,10 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	int len, rc = SLURM_SUCCESS, rc2;
 	char *end_ptr, *tok, *tmp = NULL;
 	char *job_id_str;
+	char *err_msg = NULL;
 	resp_array_struct_t *resp_array = NULL;
 	job_array_resp_msg_t *resp_array_msg = NULL;
-	return_code_msg_t rc_msg;
+	return_code2_msg_t rc_msg;
 
 	job_id_str = job_specs->job_id_str;
 
@@ -14497,7 +14500,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 					      __func__, job_ptr);
 					continue;
 				}
-				rc = _update_job(het_job, job_specs, uid);
+				rc = _update_job(het_job, job_specs, uid,
+						 &err_msg);
 			}
 			list_iterator_destroy(iter);
 			goto reply;
@@ -14508,7 +14512,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		     ((job_ptr->array_task_id != NO_VAL) &&
 		      (job_ptr->array_job_id  != job_id)))) {
 			/* This is a regular job or single task of job array */
-			rc = _update_job(job_ptr, job_specs, uid);
+			rc = _update_job(job_ptr, job_specs, uid, &err_msg);
 			goto reply;
 		}
 
@@ -14518,7 +14522,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			if (job_ptr->array_recs->task_id_bitmap)
 				job_specs->array_bitmap = bit_copy(
 					job_ptr->array_recs->task_id_bitmap);
-			rc2 = _update_job(job_ptr, job_specs, uid);
+			rc2 = _update_job(job_ptr, job_specs, uid, &err_msg);
 			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
 				rc = rc2;
 				goto reply;
@@ -14536,7 +14540,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = _update_job(job_ptr, job_specs, uid);
+				rc2 = _update_job(job_ptr, job_specs, uid,
+						  &err_msg);
 				if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
 					rc = rc2;
 					goto reply;
@@ -14561,7 +14566,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		}
-		rc = _update_job(job_ptr, job_specs, uid);
+		rc = _update_job(job_ptr, job_specs, uid, &err_msg);
 		goto reply;
 	}
 
@@ -14606,7 +14611,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			/* Update the record with all pending tasks */
 			job_specs->array_bitmap =
 				bit_copy(job_ptr->array_recs->task_id_bitmap);
-			rc2 = _update_job(job_ptr, job_specs, uid);
+			rc2 = _update_job(job_ptr, job_specs, uid, &err_msg);
 			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
 				rc = rc2;
 				goto reply;
@@ -14658,7 +14663,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			continue;
 		}
 
-		rc2 = _update_job(job_ptr, job_specs, uid);
+		rc2 = _update_job(job_ptr, job_specs, uid, &err_msg);
 		if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
 			rc = rc2;
 			goto reply;
@@ -14674,8 +14679,9 @@ reply:
 			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
 			resp_msg.data      = resp_array_msg;
 		} else {
-			resp_msg.msg_type  = RESPONSE_SLURM_RC;
+			resp_msg.msg_type  = RESPONSE_SLURM_RC_MSG;
 			rc_msg.return_code = rc;
+			rc_msg.err_msg = err_msg;
 			resp_msg.data      = &rc_msg;
 		}
 		slurm_send_node_msg(msg->conn_fd, &resp_msg);

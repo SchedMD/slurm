@@ -59,7 +59,7 @@ typedef struct slurm_submit_ops {
 	int (*submit)(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		      char **err_msg);
 	int (*modify)(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-		      uint32_t submit_uid);
+		      uint32_t submit_uid, char **err_msg);
 } slurm_submit_ops_t;
 
 /*
@@ -247,7 +247,8 @@ extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
  */
 extern int job_submit_plugin_modify(job_desc_msg_t *job_desc,
 				    job_record_t *job_ptr,
-				    uint32_t submit_uid)
+				    uint32_t submit_uid,
+				    char **err_msg)
 {
 	DEF_TIMERS;
 	int i, rc;
@@ -265,7 +266,7 @@ extern int job_submit_plugin_modify(job_desc_msg_t *job_desc,
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].modify))(job_desc, job_ptr, submit_uid);
+		rc = (*(ops[i].modify))(job_desc, job_ptr, submit_uid, err_msg);
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2("job_submit_plugin_modify");
 

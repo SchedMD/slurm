@@ -121,7 +121,7 @@ tryagain:
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		*resp = (job_array_resp_msg_t *) resp_msg.data;
 		break;
-	case RESPONSE_SLURM_RC:
+	case RESPONSE_SLURM_RC_MSG:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		if (rc)
 			slurm_seterrno(rc);

@@ -349,7 +349,7 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid)
 
 /* Lua script hook called for "modify job" event. */
 extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-		      uint32_t submit_uid)
+		      uint32_t submit_uid, char **err_msg)
 {
 	/* Locks: Read config, write job, read node, read partition
 	 * HAVE BEEN SET ON ENTRY TO THIS FUNCTION */

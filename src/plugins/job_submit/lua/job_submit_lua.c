@@ -1380,7 +1380,7 @@ out:	slurm_mutex_unlock (&lua_lock);
 
 /* Lua script hook called for "modify job" event. */
 extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
-		      uint32_t submit_uid)
+		      uint32_t submit_uid, char **err_msg)
 {
 	int rc;
 	slurm_mutex_lock (&lua_lock);
@@ -1425,9 +1425,8 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	slurm_lua_stack_dump(
 		"job_submit/lua", "job_modify, after lua_pcall", L);
 	if (user_msg) {
-		error("Use of log.user() in job_modify is not supported. "
-		      "Message discarded: (\"%s\")", user_msg);
-		xfree(user_msg);
+		*err_msg = user_msg;
+		user_msg = NULL;
 	}
 
 out:	slurm_mutex_unlock (&lua_lock);

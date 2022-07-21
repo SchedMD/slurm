@@ -85,6 +85,7 @@ extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
  */
 extern int job_submit_plugin_modify(job_desc_msg_t *job_desc,
 				    job_record_t *job_ptr,
-				    uint32_t submit_uid);
+				    uint32_t submit_uid,
+				    char **err_msg);
 
 #endif /* !_JOB_SUBMIT_H */
