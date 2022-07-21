@@ -17,6 +17,10 @@ function _find_in_str(str, arg)
 end
 
 function _log_user_and_debug(fmt, ...)
+--[[Different messages logged to end user should be associated
+    unique return code, to make those properly displayed in case
+    of modification of array job.
+  ]]--
 --[[Implicit definition of arg was removed in Lua 5.2]]--
 	local arg = {...}
 	slurm.log_user(fmt, unpack(arg))
