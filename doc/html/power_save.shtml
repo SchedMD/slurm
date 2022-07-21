@@ -65,6 +65,10 @@ The program executes as <i>SlurmUser</i> (as configured in
 The argument to the program will be the names of nodes to
 be removed from power savings mode (using Slurm's hostlist
 expression format).
+A job to node mapping is available in JSON format by reading the temporary file
+specified by the <b>SLURM_RESUME_FILE</b> environment variable.
+This file should be used at the beginning of <b>ResumeProgram</b> - see the
+<a href=#tolerance>Fault Tolerance</a> section for more details.
 This program may use the <i>scontrol show node</i> command
 to ensure that a node has booted and the <i>slurmd</i>
 daemon started.
@@ -74,9 +78,7 @@ the node will be placed in a DOWN state and the job requesting
 the node will be requeued. If the node isn't actually rebooted
 (i.e. when multiple-slurmd is configured) you can start slurmd
 with the "-b" option to report the node boot time as now.
-For reasons of reliability, <b>ResumeProgram</b> may execute
-more than once for a node when the <b>slurmctld</b> daemon
-crashes and is restarted.</li>
+</li>
 
 <li><b>SuspendTimeout</b>:
 Maximum time permitted (in second) between when a node suspend request
@@ -217,27 +219,21 @@ behavior on a per-job basis and a system-wide default can be set with the
 </h2>
 
 <p>If the <i>slurmctld</i> daemon is terminated gracefully, it will
-wait up to <b>SuspendTimeout</b> or <b>ResumeTimeout</b> (whichever
-is larger) for any spawned <b>SuspendProgram</b> or
-<b>ResumeProgram</b> to terminate before the daemon terminates.
+wait up to ten seconds (or the maximum of <b>SuspendTimeout</b> or
+<b>ResumeTimeout</b> if less than ten seconds) for any spawned
+<b>SuspendProgram</b> or <b>ResumeProgram</b> to terminate before the daemon
+terminates.
 If the spawned program does not terminate within that time period,
 the event will be logged and <i>slurmctld</i> will exit in order to
 permit another <i>slurmctld</i> daemon to be initiated.
-Synchronization problems could also occur when the <i>slurmctld</i>
-daemon crashes (a rare event) and is restarted. </p>
-
-<p>In either event, the newly initiated <i>slurmctld</i> daemon (or
-the backup server) will recover saved node state information that
-may not accurately describe the actual node state.
-In the case of a failed <b>SuspendProgram</b>, the negative impact is
-limited to increased power consumption, so no special action is
-currently taken to execute <b>SuspendProgram</b> multiple times in
-order to ensure the node is in a reduced power mode.
-The case of a failed <b>ResumeProgram</b> is more serious in that the
-node could be placed into a DOWN state and/or jobs could fail.
-In order to minimize this risk, when the <i>slurmctld</i> daemon is
-started and node which should be allocated to a job fails to respond,
-the <b>ResumeProgram</b> will be executed (possibly for a second time).</p>
+Any spawned <b>SuspendProgram</b> or <b>ResumeProgram</b> will continue to run.
+</p>
+<p>
+When the slurmctld daemon shuts down, any <b>SLURM_RESUME_FILE</b>
+temporary files are no longer available, even once slurmctld restarts.
+Therefore, <b>ResumeProgram</b> should use <b>SLURM_RESUME_FILE</b> within
+ten seconds of starting to guarantee that it still exists.
+</p>
 
 <h2 id="images">Booting Different Images
 <a class="slurm_link" href="#images"></a>
@@ -252,6 +248,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 24 May 2022</p>
+<p style="text-align:center;">Last modified 14 July 2022</p>
 
 <!--#include virtual="footer.txt"-->
