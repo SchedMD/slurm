@@ -141,7 +141,6 @@ extern void packbuf(buf_t *source, buf_t *buffer);
 extern void packmem(void *valp, uint32_t size_val, buf_t *buffer);
 extern int unpackmem_ptr(char **valp, uint32_t *size_valp, buf_t *buffer);
 extern int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer);
-extern int unpackmem_malloc(char **valp, uint32_t *size_valp, buf_t *buffer);
 
 extern int unpackstr_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer);
 extern int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp,
@@ -267,13 +266,6 @@ extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 		goto unpack_error;			\
 } while (0)
 
-#define safe_unpackmem_malloc(valp,size_valp,buf) do {	\
-	xassert(sizeof(*size_valp) == sizeof(uint32_t));\
-	xassert(buf->magic == BUF_MAGIC);		\
-	if (unpackmem_malloc(valp,size_valp,buf))	\
-		goto unpack_error;			\
-} while (0)
-
 #define packstr(str,buf) do {				\
 	uint32_t _size = 0;				\
 	if((char *)str != NULL)				\
@@ -335,12 +327,6 @@ extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 	*inx = bitstr2inx(b);				\
 	FREE_NULL_BITMAP(b);				\
 } while (0)
-
-#define unpackstr_malloc	                        \
-        unpackmem_malloc
-
-#define safe_unpackstr_malloc	                        \
-        safe_unpackmem_malloc
 
 #define safe_unpackstr(valp, buf) do {				\
 	uint32_t size_valp;					\

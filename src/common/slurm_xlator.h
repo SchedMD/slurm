@@ -304,7 +304,6 @@
 #define	packmem			slurm_packmem
 #define	unpackmem_ptr		slurm_unpackmem_ptr
 #define	unpackmem_xmalloc	slurm_unpackmem_xmalloc
-#define	unpackmem_malloc	slurm_unpackmem_malloc
 #define	unpackstr_xmalloc	slurm_unpackstr_xmalloc
 #define	unpackstr_xmalloc_escaped slurm_unpackstr_xmalloc_escaped
 #define	unpackstr_xmalloc_chooser slurm_unpackstr_xmalloc_chooser

@@ -98,7 +98,6 @@ strong_alias(unpack32_array,	slurm_unpack32_array);
 strong_alias(packmem,		slurm_packmem);
 strong_alias(unpackmem_ptr,	slurm_unpackmem_ptr);
 strong_alias(unpackmem_xmalloc,	slurm_unpackmem_xmalloc);
-strong_alias(unpackmem_malloc,	slurm_unpackmem_malloc);
 strong_alias(unpackstr_xmalloc, slurm_unpackstr_xmalloc);
 strong_alias(unpackstr_xmalloc_escaped, slurm_unpackstr_xmalloc_escaped);
 strong_alias(unpackstr_xmalloc_chooser, slurm_unpackstr_xmalloc_chooser);
@@ -889,47 +888,6 @@ int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 		if (remaining_buf(buffer) < *size_valp)
 			return SLURM_ERROR;
 		*valp = xmalloc_nz(*size_valp);
-		memcpy(*valp, &buffer->head[buffer->processed],
-		       *size_valp);
-		buffer->processed += *size_valp;
-	} else
-		*valp = NULL;
-	return SLURM_SUCCESS;
-}
-
-/*
- * Given a buffer containing a network byte order 16-bit integer,
- * and an arbitrary data string, copy the data string into the location
- * specified by valp.  Also return the sizes of 'valp' in bytes.
- * Adjust buffer counters.
- * NOTE: valp is set to point into a newly created buffer,
- *	the caller is responsible for calling free() on *valp
- *	if non-NULL (set to NULL on zero size buffer value)
- */
-int unpackmem_malloc(char **valp, uint32_t *size_valp, buf_t *buffer)
-{
-	uint32_t ns;
-
-	if (remaining_buf(buffer) < sizeof(ns))
-		return SLURM_ERROR;
-
-	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohl(ns);
-	buffer->processed += sizeof(ns);
-
-	if (*size_valp > MAX_PACK_MEM_LEN) {
-		error("%s: Buffer to be unpacked is too large (%u > %u)",
-		      __func__, *size_valp, MAX_PACK_MEM_LEN);
-		return SLURM_ERROR;
-	}
-	else if (*size_valp > 0) {
-		if (remaining_buf(buffer) < *size_valp)
-			return SLURM_ERROR;
-		*valp = malloc(*size_valp);
-		if (*valp == NULL) {
-			log_oom(__FILE__, __LINE__, __func__);
-			abort();
-		}
 		memcpy(*valp, &buffer->head[buffer->processed],
 		       *size_valp);
 		buffer->processed += *size_valp;
