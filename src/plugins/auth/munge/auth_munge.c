@@ -105,6 +105,7 @@ typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	int magic;         /* magical munge validity magic                   */
 	char   *m_str;     /* munged string                                  */
+	bool m_xstr;       /* set if m_str allocated by xmalloc, not malloc  */
 	struct in_addr addr; /* IP addr where cred was encoded               */
 	bool    verified;  /* true if this cred has been verified            */
 	uid_t   uid;       /* UID. valid only if verified == true            */
@@ -203,6 +204,7 @@ auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data, int dlen)
 	cred->magic = MUNGE_MAGIC;
 	cred->verified = false;
 	cred->m_str    = NULL;
+	cred->m_xstr = false;
 	cred->data = NULL;
 	cred->dlen = 0;
 
@@ -259,8 +261,11 @@ int auth_p_destroy(auth_credential_t *cred)
 	xassert(cred->magic == MUNGE_MAGIC);
 
 	/* Note: Munge cred string not encoded with xmalloc() */
-	if (cred->m_str)
+	if (cred->m_xstr)
+		xfree(cred->m_str);
+	else if (cred->m_str)
 		free(cred->m_str);
+
 	if (cred->data)
 		free(cred->data);
 
@@ -463,9 +468,9 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 		cred = xmalloc(sizeof(*cred));
 		cred->magic = MUNGE_MAGIC;
 		cred->verified = false;
-		cred->m_str = NULL;
+		cred->m_xstr = true;
 
-		safe_unpackstr_malloc(&cred->m_str, &size, buf);
+		safe_unpackstr_xmalloc(&cred->m_str, &size, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);
