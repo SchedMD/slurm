@@ -267,11 +267,11 @@ MaxPagesTask        MaxRSS              MaxRSSNode          MaxRSSTask
 MaxVMSize           MaxVMSizeNode       MaxVMSizeTask       McsLabel
 MinCPU              MinCPUNode          MinCPUTask          NCPUS
 NNodes              NodeList            NTasks              Partition
-Priority            QOS                 QOSRAW              Reason
-ReqCPUFreq          ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin
-ReqCPUS             ReqMem              ReqNodes            ReqTRES
-Reservation         ReservationId       Reserved            ResvCPU
-ResvCPURAW          Start               State               Submit
+Planned             PlannedCPU          PlannedCPURAW       Priority
+QOS                 QOSRAW              Reason              ReqCPUFreq
+ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin       ReqCPUS
+ReqMem              ReqNodes            ReqTRES             Reservation
+ReservationId       Start               State               Submit
 SubmitLine          Suspended           SystemComment       SystemCPU
 Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
 TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
@@ -922,6 +922,25 @@ Identifies the partition on which the job ran.
 .IP
 
 .TP
+\f3Planned\fP
+How much wall clock time was used as planned time for this job.  This is
+derived from how long a job was waiting from eligible time to when it
+actually started.  Format is the same as \f3Elapsed\fP.
+.IP
+
+.TP
+\f3PlannedCPU\fP
+How many CPU seconds were used as planned time for this job.  Format is
+the same as \f3Elapsed\fP.
+.IP
+
+.TP
+\f3PlannedCPURAW\fP
+How many CPU seconds were used as planned time for this job.  Format is
+in processor seconds.
+.IP
+
+.TP
 \f3Priority\fP
 Slurm priority.
 .IP
@@ -992,25 +1011,6 @@ Reservation Name.
 .TP
 \f3ReservationId\fP
 Reservation Id.
-.IP
-
-.TP
-\f3Reserved\fP
-How much wall clock time was used as reserved time for this job.  This is
-derived from how long a job was waiting from eligible time to when it
-actually started.  Format is the same as \f3Elapsed\fP.
-.IP
-
-.TP
-\f3ResvCPU\fP
-How many CPU seconds were used as reserved time for this job.  Format is
-the same as \f3Elapsed\fP.
-.IP
-
-.TP
-\f3ResvCPURAW\fP
-How many CPU seconds were used as reserved time for this job.  Format is
-in processor seconds.
 .IP
 
 .TP
