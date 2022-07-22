@@ -4969,8 +4969,12 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 			debug("Reservation feature list: %s", buf);
 	} else {
 		if (job_ptr->job_id) {
-			info("%pJ has invalid feature list: %s",
-			     job_ptr, buf);
+			if (can_reboot)
+				info("%pJ has invalid feature list: %s",
+				     job_ptr, buf);
+			else
+				info("%pJ has invalid feature list (%s) or the features are not active and this user cannot reboot to update node features",
+				     job_ptr, buf);
 		} else {
 			info("Reservation has invalid feature list: %s", buf);
 		}
