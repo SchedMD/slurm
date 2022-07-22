@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "May 2022" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "July 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -2319,12 +2319,20 @@ Nodes and/or Licenses.
 \fBNodes\fR=<\fIname\fR>
 Identify the node(s) to be reserved. Multiple node names
 may be specified using simple node range expressions (e.g. "Nodes=lx[10\-20]").
-Specify a blank data value to remove all nodes from a reservation: "Nodes=".
+When using \fBNodes\fR to specify more or fewer nodes, \fBNodeCnt\fR will be
+updated to honor the new number of nodes. However, when setting an empty
+list ("Nodes="), the nodelist will be filled with random nodes to
+fulfill the previous nodecnt and the \fISPEC_NODES\fR flag will be removed.
 A new reservation must specify one or more resource to be included: NodeCnt,
 Nodes and/or Licenses. A specification of "ALL" will reserve all nodes. Set
 \fIFlags=PART_NODES\fP and \fIPartitionName=\fP in order for changes in the
 nodes associated with a partition to also be reflected in the nodes associated
 with a reservation.
+
+\fBNOTE\fR: When updating a reservation, if Nodes and Nodecnt are set
+simultaneously, nodecnt will always be honored. The reservation will get a
+subset of nodes if nodes > nodecnt, or it will add extra nodes to the list
+when nodes < nodecnt.
 .IP
 
 .TP
