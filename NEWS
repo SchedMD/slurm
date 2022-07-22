@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
     when freeing IO buffers holding traffic from the tasks to the client.
  -- openapi/dbv0.0.38 - avoid job queries getting rejected when cluster is not
     provided by client.
+ -- openapi/dbv0.0.38 - accept job state filter as verbose names instead of
+    only numeric state ids.
 
 * Changes in Slurm 22.05.2
 ==========================
