@@ -580,14 +580,6 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 
 	fclose(stat_fp);
 
-	if (acct_gather_filesystem_g_get_data(prec->tres_data) < 0) {
-		log_flag(JAG, "problem retrieving filesystem data");
-	}
-
-	if (acct_gather_interconnect_g_get_data(prec->tres_data) < 0) {
-		log_flag(JAG, "problem retrieving interconnect data");
-	}
-
 	/* Remove shared data from rss */
 	if (no_share_data) {
 		xfree(proc_file);
@@ -902,6 +894,14 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 		 */
 		memcpy(&tmp_prec, prec, sizeof(*prec));
 		prec = &tmp_prec;
+
+		if (acct_gather_filesystem_g_get_data(prec->tres_data) < 0) {
+			log_flag(JAG, "problem retrieving filesystem data");
+		}
+
+		if (acct_gather_interconnect_g_get_data(prec->tres_data) < 0) {
+			log_flag(JAG, "problem retrieving interconnect data");
+		}
 
 		/*
 		 * Only jobacct_gather/cgroup uses prec_extra, and we want to
