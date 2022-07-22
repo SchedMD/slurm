@@ -3256,6 +3256,7 @@ typedef struct {
 	uint32_t  job_array_count;
 	char    **job_array_id; /* Note: The string may be truncated */
 	uint32_t *error_code;
+	char **err_msg;
 } job_array_resp_msg_t;
 
 /* Association manager state running in the slurmctld */

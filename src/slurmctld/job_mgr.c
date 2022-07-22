@@ -237,7 +237,7 @@ static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 static void _remove_defunct_batch_dirs(List batch_dirs);
 static void _remove_job_hash(job_record_t *job_ptr, job_hash_type_t type);
 static void _resp_array_add(resp_array_struct_t **resp, job_record_t *job_ptr,
-			    uint32_t rc);
+			    uint32_t rc, char *err_msg);
 static void _resp_array_add_id(resp_array_struct_t **resp, uint32_t job_id,
 			       uint32_t task_id, uint32_t rc);
 static void _resp_array_free(resp_array_struct_t *resp);
@@ -432,7 +432,7 @@ extern int job_fail_qos(job_record_t *job_ptr, const char *func_name)
  */
 /* Add job record to resp_array_struct_t, free with _resp_array_free() */
 static void _resp_array_add(resp_array_struct_t **resp, job_record_t *job_ptr,
-			    uint32_t rc)
+			    uint32_t rc, char *err_msg)
 {
 	resp_array_struct_t *loc_resp;
 	int array_size;
@@ -454,10 +454,13 @@ static void _resp_array_add(resp_array_struct_t **resp, job_record_t *job_ptr,
 		loc_resp = xmalloc(sizeof(resp_array_struct_t));
 		loc_resp->resp_array_cnt  = 0;
 		loc_resp->resp_array_size = 10;
-		xrealloc(loc_resp->resp_array_rc,
-			 (sizeof(uint32_t) * loc_resp->resp_array_size));
-		xrealloc(loc_resp->resp_array_task_id,
-			 (sizeof(bitstr_t *) * loc_resp->resp_array_size));
+		xrecalloc(loc_resp->resp_array_rc, loc_resp->resp_array_size,
+			  sizeof(uint32_t));
+		xrecalloc(loc_resp->resp_array_task_id,
+			  loc_resp->resp_array_size,
+			  sizeof(bitstr_t *));
+		xrecalloc(loc_resp->err_msg, loc_resp->resp_array_size,
+			  sizeof(char *));
 		*resp = loc_resp;
 	} else {
 		loc_resp = *resp;
@@ -498,13 +501,17 @@ static void _resp_array_add(resp_array_struct_t **resp, job_record_t *job_ptr,
 	if (loc_resp->resp_array_cnt >= loc_resp->resp_array_size) {
 		/* Need to grow the table size */
 		loc_resp->resp_array_size += 10;
-		xrealloc(loc_resp->resp_array_rc,
-			 (sizeof(uint32_t) * loc_resp->resp_array_size));
-		xrealloc(loc_resp->resp_array_task_id,
-			 (sizeof(bitstr_t *) * loc_resp->resp_array_size));
+		xrecalloc(loc_resp->resp_array_rc, loc_resp->resp_array_size,
+			  sizeof(uint32_t));
+		xrecalloc(loc_resp->resp_array_task_id,
+			  loc_resp->resp_array_size,
+			  sizeof(bitstr_t *));
+		xrecalloc(loc_resp->err_msg, loc_resp->resp_array_size,
+			  sizeof(bitstr_t *));
 	}
 
 	loc_resp->resp_array_rc[loc_resp->resp_array_cnt] = rc;
+	loc_resp->err_msg[loc_resp->resp_array_cnt] = xstrdup(err_msg);
 	if (job_ptr->array_task_id != NO_VAL) {
 		loc_resp->resp_array_task_id[loc_resp->resp_array_cnt] =
 			bit_alloc(max_array_size);
@@ -539,7 +546,7 @@ static void _resp_array_add_id(resp_array_struct_t **resp, uint32_t job_id,
 	job_ptr.array_job_id = job_id;
 	job_ptr.array_task_id = task_id;
 	job_ptr.array_recs = NULL;
-	_resp_array_add(resp, &job_ptr, rc);
+	_resp_array_add(resp, &job_ptr, rc, NULL);
 }
 
 /* Free resp_array_struct_t built by _resp_array_add() */
@@ -548,8 +555,11 @@ static void _resp_array_free(resp_array_struct_t *resp)
 	int i;
 
 	if (resp) {
-		for (i = 0; i < resp->resp_array_cnt; i++)
+		for (i = 0; i < resp->resp_array_cnt; i++) {
 			FREE_NULL_BITMAP(resp->resp_array_task_id[i]);
+			xfree(resp->err_msg[i]);
+		}
+		xfree(resp->err_msg);
 		xfree(resp->resp_array_task_id);
 		xfree(resp->resp_array_rc);
 		xfree(resp);
@@ -574,6 +584,7 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 	msg->job_array_count = resp->resp_array_cnt;
 	msg->job_array_id = xcalloc(resp->resp_array_cnt, sizeof(char *));
 	msg->error_code = xcalloc(resp->resp_array_cnt, sizeof(uint32_t));
+	msg->err_msg = xcalloc(resp->resp_array_cnt, sizeof(char *));
 	for (i = 0; i < resp->resp_array_cnt; i++) {
 		low = -1;
 		for (j = 0; j < resp->resp_array_cnt; j++) {
@@ -586,6 +597,7 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 		ffs[low] = -1;
 
 		msg->error_code[i] = resp->resp_array_rc[low];
+		msg->err_msg[i] = xstrdup(resp->err_msg[low]);
 		bit_fmt(task_str, ARRAY_ID_BUF_SIZE,
 			resp->resp_array_task_id[low]);
 		if (strlen(task_str) >= ARRAY_ID_BUF_SIZE - 2) {
@@ -14527,7 +14539,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				rc = rc2;
 				goto reply;
 			}
-			_resp_array_add(&resp_array, job_ptr, rc2);
+			_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
+			xfree(err_msg);
 		}
 
 		/* Update all tasks of this job array */
@@ -14546,7 +14559,9 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 					rc = rc2;
 					goto reply;
 				}
-				_resp_array_add(&resp_array, job_ptr, rc2);
+				_resp_array_add(&resp_array, job_ptr, rc2,
+						err_msg);
+				xfree(err_msg);
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
@@ -14616,7 +14631,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 				rc = rc2;
 				goto reply;
 			}
-			_resp_array_add(&resp_array, job_ptr, rc2);
+			_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
+			xfree(err_msg);
 			bit_and_not(array_bitmap, job_specs->array_bitmap);
 		} else {
 			/* Need to split out tasks to separate job records */
@@ -14668,7 +14684,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			rc = rc2;
 			goto reply;
 		}
-		_resp_array_add(&resp_array, job_ptr, rc2);
+		_resp_array_add(&resp_array, job_ptr, rc2, err_msg);
+		xfree(err_msg);
 	}
 
 reply:
@@ -16828,7 +16845,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			/* This is a job array */
 			job_ptr_done = job_ptr;
 			rc2 = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
-			_resp_array_add(&resp_array, job_ptr, rc2);
+			_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 		}
 
 		/* Suspend all tasks of this job array */
@@ -16842,7 +16859,8 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _job_suspend(job_ptr, sus_ptr->op,
 						   indf_susp);
-				_resp_array_add(&resp_array, job_ptr, rc2);
+				_resp_array_add(&resp_array, job_ptr, rc2,
+						NULL);
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
@@ -16877,7 +16895,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 			continue;
 		}
 		rc2 = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
-		_resp_array_add(&resp_array, job_ptr, rc2);
+		_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 	}
 
 reply:
@@ -17300,7 +17318,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 			/* This is a job array */
 			job_ptr_done = job_ptr;
 			rc2 = _job_requeue(uid, job_ptr, preempt, flags);
-			_resp_array_add(&resp_array, job_ptr, rc2);
+			_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 		}
 
 		/* Requeue all tasks of this job array */
@@ -17313,7 +17331,8 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
 				rc2 = _job_requeue(uid, job_ptr, preempt,flags);
-				_resp_array_add(&resp_array, job_ptr, rc2);
+				_resp_array_add(&resp_array, job_ptr, rc2,
+						NULL);
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
@@ -17349,7 +17368,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		}
 
 		rc2 = _job_requeue(uid, job_ptr, preempt, flags);
-		_resp_array_add(&resp_array, job_ptr, rc2);
+		_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 	}
 
 reply:

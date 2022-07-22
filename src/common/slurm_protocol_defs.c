@@ -1727,10 +1727,13 @@ extern void slurm_free_job_array_resp(job_array_resp_msg_t *msg)
 
 	if (msg) {
 		if (msg->job_array_id) {
-			for (i = 0; i < msg->job_array_count; i++)
+			for (i = 0; i < msg->job_array_count; i++) {
 				xfree(msg->job_array_id[i]);
+				xfree(msg->err_msg[i]);
+			}
 			xfree(msg->job_array_id);
 		}
+		xfree(msg->err_msg);
 		xfree(msg->error_code);
 		xfree(msg);
 	}
