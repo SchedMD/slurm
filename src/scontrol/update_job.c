@@ -1199,16 +1199,29 @@ extern int scontrol_update_job(int argc, char **argv)
 				}
 			} else if (resp) {
 				for (i = 0; i < resp->job_array_count; i++) {
-					if ((resp->error_code[i] == SLURM_SUCCESS)
-					    && (resp->job_array_count == 1))
+					if (!resp->error_code[i] &&
+					    !resp->err_msg[i])
 						continue;
+					else if (!resp->error_code[i] &&
+						 resp->err_msg[i] &&
+						 !quiet_flag) {
+						fprintf(stdout, "%s: %s\n",
+							resp->job_array_id[i],
+							resp->err_msg[i]);
+						continue;
+					}
 					exit_code = 1;
 					if (quiet_flag == 1)
 						continue;
-					fprintf(stderr, "%s: %s\n",
+					fprintf(stderr, "%s: %s",
 						resp->job_array_id[i],
 						slurm_strerror(resp->
 							       error_code[i]));
+					if (resp->err_msg[i])
+						fprintf(stderr, " (%s)\n",
+							resp->err_msg[i]);
+					else
+						fprintf(stderr, "\n");
 				}
 				slurm_free_job_array_resp(resp);
 				resp = NULL;
