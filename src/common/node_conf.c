@@ -1499,3 +1499,11 @@ extern void node_conf_set_all_active_bits(bitstr_t *b)
 	for (int i = 0; next_node(&i); i++)
 		bit_set(b, i);
 }
+
+extern int node_conf_get_active_node_count(void)
+{
+	int node_count = 0;
+	for (int i = 0; next_node(&i); i++)
+		node_count++;
+	return node_count;
+}

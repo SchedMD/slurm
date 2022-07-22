@@ -2148,6 +2148,8 @@ extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 	/* FIXME: this should work off the product of TRESBillingWeights */
 	if (weight_js) {
 		uint32_t cpu_cnt = 0, min_nodes = 1;
+		int node_count = node_conf_get_active_node_count();
+
 		/* On the initial run of this we don't have total_cpus
 		   so go off the requesting.  After the first shot
 		   total_cpus should be filled in.
@@ -2168,7 +2170,7 @@ extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 			job_ptr->prio_factors->priority_js =
 				(double)min_nodes *
 				(double)cluster_cpus /
-				(double)node_record_count;
+				(double)node_count;
 			if (cpu_cnt > job_ptr->prio_factors->priority_js) {
 				job_ptr->prio_factors->priority_js =
 					(double)cpu_cnt;
@@ -2188,8 +2190,8 @@ extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 			}
 		} else if (slurm_conf.priority_favor_small) {
 			job_ptr->prio_factors->priority_js =
-				(double)(node_record_count - min_nodes)
-				/ (double)node_record_count;
+				(double) (node_count - min_nodes) /
+				(double) node_count;
 			if (cpu_cnt) {
 				job_ptr->prio_factors->priority_js +=
 					(double)(cluster_cpus - cpu_cnt)
@@ -2198,7 +2200,7 @@ extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 			}
 		} else {	/* favor large */
 			job_ptr->prio_factors->priority_js =
-				(double)min_nodes / (double)node_record_count;
+				(double) min_nodes / (double) node_count;
 			if (cpu_cnt) {
 				job_ptr->prio_factors->priority_js +=
 					(double)cpu_cnt / (double)cluster_cpus;

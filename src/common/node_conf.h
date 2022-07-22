@@ -483,4 +483,11 @@ extern bitstr_t *node_conf_get_active_bitmap(void);
  */
 extern void node_conf_set_all_active_bits(bitstr_t *b);
 
+/*
+ * Count all active nodes.
+ *
+ * node_record_table_ptr may have NULL slots in it, so only count non-null nodes
+ */
+extern int node_conf_get_active_node_count(void);
+
 #endif /* !_HAVE_NODE_CONF_H */

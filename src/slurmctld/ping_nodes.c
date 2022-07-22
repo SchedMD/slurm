@@ -430,7 +430,7 @@ extern void run_health_check(void)
 		cycle_start_time = now;
 		/* Determine how many nodes we want to test on each call of
 		 * run_health_check() to spread out the work. */
-		node_limit = (node_record_count * 2) /
+		node_limit = (node_conf_get_active_node_count() * 2) /
 		             slurm_conf.health_check_interval;
 		node_limit = MAX(node_limit, 10);
 	}

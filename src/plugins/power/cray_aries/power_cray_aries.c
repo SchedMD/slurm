@@ -1483,7 +1483,7 @@ static void _rebalance_node_power(void)
 		red1 = MAX(red1, red2);
 		node_num = node_power_lower_cnt + node_power_same_cnt;
 		if (node_num == 0)
-			node_num = node_record_count;
+			node_num = node_conf_get_active_node_count();
 		red1 /= node_num;
 		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			if (IS_NODE_DOWN(node_ptr))

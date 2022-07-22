@@ -316,7 +316,7 @@ static void _find_desc_switches(int sw)
 static void _validate_switches(void)
 {
 	slurm_conf_switches_t *ptr, **ptr_array;
-	int depth, i, j;
+	int depth, i, j, node_count;
 	switch_record_t *switch_ptr, *prior_ptr;
 	hostlist_t hl, invalid_hl = NULL;
 	char *child, *buf;
@@ -471,13 +471,14 @@ static void _validate_switches(void)
 	}
 	FREE_NULL_BITMAP(multi_homed_bitmap);
 
+	node_count = node_conf_get_active_node_count();
 	/* Create array of indexes of children of each switch,
 	 * and see if any switch can reach all nodes */
 	for (i = 0; i < switch_record_cnt; i++) {
 		if (switch_record_table[i].level != 0) {
 			_find_child_switches(i);
 		}
-		if (node_record_count ==
+		if (node_count ==
 			bit_set_count(switch_record_table[i].node_bitmap)) {
 			have_root = true;
 		}
