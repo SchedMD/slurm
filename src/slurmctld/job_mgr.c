@@ -6498,8 +6498,8 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 		    != SLURM_SUCCESS)
 			goto fini;
 
-		if ((rc = part_policy_valid_qos(part_ptr, qos_ptr, NULL))
-		    != SLURM_SUCCESS)
+		if ((rc = part_policy_valid_qos(part_ptr, qos_ptr, submit_uid,
+						NULL)) != SLURM_SUCCESS)
 			goto fini;
 	}
 

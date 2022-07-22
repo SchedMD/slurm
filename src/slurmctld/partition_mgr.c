@@ -2291,12 +2291,14 @@ extern int part_policy_valid_acct(part_record_t *part_ptr, char *acct,
  * Validate a job's QOS against the partition's AllowQOS or DenyQOS parameters.
  * IN part_ptr - Partition pointer
  * IN qos_ptr - QOS pointer
+ * IN submit_uid - uid of user issuing the request
  * in job_ptr - Job pointer or NULL. If set and job can not run, then set the
  *		job's state_desc and state_reason fields
  * RET SLURM_SUCCESS or error code
  */
 extern int part_policy_valid_qos(part_record_t *part_ptr,
 				 slurmdb_qos_rec_t *qos_ptr,
+				 uid_t submit_uid,
 				 job_record_t *job_ptr)
 {
 	char *tmp_err = NULL;
@@ -2307,7 +2309,8 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 			xstrfmtcat(tmp_err,
 				   "Job's QOS not known, so it can't use this partition (%s allows %s)",
 				   part_ptr->name, part_ptr->allow_qos);
-			info("%s: %s", __func__, tmp_err);
+			info("%s: %s (%pJ submit_uid=%d)",
+			     __func__, tmp_err, job_ptr, submit_uid);
 			if (job_ptr) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_desc = tmp_err;
@@ -2326,7 +2329,8 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 				   "Job's QOS not permitted to use this partition (%s allows %s not %s)",
 				   part_ptr->name, part_ptr->allow_qos,
 				   qos_ptr->name);
-			info("%s: %s", __func__, tmp_err);
+			info("%s: %s (%pJ submit_uid=%d)",
+			     __func__, tmp_err, job_ptr, submit_uid);
 			if (job_ptr) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_desc = tmp_err;
@@ -2352,7 +2356,8 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 				   "Job's QOS not permitted to use this partition (%s denies %s including %s)",
 				   part_ptr->name, part_ptr->deny_qos,
 				   qos_ptr->name);
-			info("%s: %s", __func__, tmp_err);
+			info("%s: %s (%pJ submit_uid=%d)",
+			     __func__, tmp_err, job_ptr, submit_uid);
 			if (job_ptr) {
 				xfree(job_ptr->state_desc);
 				job_ptr->state_desc = tmp_err;

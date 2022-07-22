@@ -2012,7 +2012,8 @@ static void _attempt_backfill(void)
 			qos_part_blocked_until = 0;
 
 		if (part_policy_valid_qos(job_ptr->part_ptr, job_ptr->qos_ptr,
-					  job_ptr) != SLURM_SUCCESS) {
+					  job_ptr->user_id, job_ptr) !=
+					  SLURM_SUCCESS) {
 			assoc_mgr_unlock(&qos_read_lock);
 			continue;
 		}

@@ -2347,7 +2347,9 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	if (job_ptr->qos_ptr)
 		qos_flags = job_ptr->qos_ptr->flags;
 	if ((error_code = part_policy_valid_qos(job_ptr->part_ptr,
-				job_ptr->qos_ptr, job_ptr)) != SLURM_SUCCESS) {
+						job_ptr->qos_ptr,
+						job_ptr->user_id, job_ptr)) !=
+						SLURM_SUCCESS) {
 		assoc_mgr_unlock(&qos_read_lock);
 		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
