@@ -272,7 +272,7 @@ static void _set_bsub_options(int argc, char **argv) {
 static void _set_pbs_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-	char *pbs_opt_string = "+a:A:c:C:e:hIj:J:k:l:m:M:N:o:p:q:r:S:t:u:v:VW:z";
+	char *pbs_opt_string = "+a:A:c:C:d:e:hIj:J:k:l:m:M:N:o:p:q:r:S:t:u:v:VW:w:z";
 
 	struct option pbs_long_options[] = {
 		{"start_time", required_argument, 0, 'a'},
@@ -325,6 +325,11 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'c':
 			break;
 		case 'C':
+			break;
+		case 'w':
+		case 'd':
+			xlate_val = 'D';
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'h':
 			xlate_val = 'H';

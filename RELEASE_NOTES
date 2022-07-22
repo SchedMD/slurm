@@ -55,6 +55,7 @@ COMMAND CHANGES (see man pages for details)
     nomenclature of the 'Planned' node.
  -- scontrol - advanced reservation flag MAINT will no longer replace nodes,
     similar to STATIC_ALLOC
+ -- sbatch - add parsing for #PBS -d and #PBS -w.
 
 API CHANGES
 ===========

@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
     result in fatal() rather than just an error.
  -- job_container/tmpfs - Set more environment variables in InitScript.
  -- Make all cgroup directories created by Slurm owned by root.
+ -- sbatch - add parsing of #PBS -d and #PBS -w.
 
 * Changes in Slurm 22.05.4
 ==========================
