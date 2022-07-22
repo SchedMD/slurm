@@ -4447,6 +4447,14 @@ Memory is a consumable resource.
 NOTE: This implies \fIOverSubscribe=YES\fR or \fIOverSubscribe=FORCE\fR for
 all partitions.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
+.IP
+
+.TP
+\fBNOTE:\fR If memory isn't configured as a consumable resource (CR_CPU,
+CR_Core or CR_Socket without _Memory) memory can be oversubscribed. In this
+case the \fI--mem\fR option is only used to filter out nodes with lower
+configured memory and does not take running jobs into account. For instance,
+two jobs requesting all the memory of a node can run at the same time.
 .RE
 .IP
 
