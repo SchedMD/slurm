@@ -10865,7 +10865,18 @@ static void _pack_job_array_resp_msg(job_array_resp_msg_t *msg, buf_t *buffer,
 {
 	uint32_t i, cnt = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		if (!msg) {
+			pack32(cnt, buffer);
+			return;
+		}
+
+		pack32(msg->job_array_count, buffer);
+		for (i = 0; i < msg->job_array_count; i++) {
+			pack32(msg->error_code[i], buffer);
+			packstr(msg->job_array_id[i], buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!msg) {
 			pack32(cnt, buffer);
 			return;
@@ -10884,7 +10895,21 @@ static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, buf_t *buffer
 	job_array_resp_msg_t *resp;
 	uint32_t i, uint32_tmp;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		resp = xmalloc(sizeof(job_array_resp_msg_t));
+		safe_unpack32(&resp->job_array_count, buffer);
+		if (resp->job_array_count > NO_VAL)
+			goto unpack_error;
+		safe_xcalloc(resp->error_code, resp->job_array_count,
+			     sizeof(uint32_t));
+		safe_xcalloc(resp->job_array_id, resp->job_array_count,
+			     sizeof(char *));
+		for (i = 0; i < resp->job_array_count; i++) {
+			safe_unpack32(&resp->error_code[i], buffer);
+			safe_unpackstr_xmalloc(&resp->job_array_id[i],
+					       &uint32_tmp, buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		resp = xmalloc(sizeof(job_array_resp_msg_t));
 		safe_unpack32(&resp->job_array_count, buffer);
 		if (resp->job_array_count > NO_VAL)
