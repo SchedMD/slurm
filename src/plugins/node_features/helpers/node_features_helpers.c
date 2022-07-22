@@ -827,6 +827,8 @@ extern bool node_features_p_user_update(uid_t uid)
 		if (allowed_uid[i] == uid)
 			return true;
 	}
+	log_flag(NODE_FEATURES, "UID %u is not allowed to update node features",
+		 uid);
 
 	return false;
 }
