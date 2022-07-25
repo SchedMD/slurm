@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "June 2022" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "July 2022" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -1361,7 +1361,7 @@ verbosely report binding before task runs
 
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIsize\fR>[\fIunits\fR]
-Minimum memory required per allocated CPU.
+Minimum memory required per usable allocated CPU.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
 The default value is \fBDefMemPerCPU\fR and the maximum value is
@@ -1390,6 +1390,51 @@ This could happen if \fB\-\-mem\-per\-cpu\fR is used with the
 \fB\-\-exclusive\fR option for a job allocation and \fB\-\-mem\-per\-cpu\fR
 times the number of CPUs on a node is greater than the total memory of that
 node.
+
+\fBNOTE:\fR This applies to \fBusable\fR allocated CPUs in a job allocation.
+This is important when more than one thread per core is configured.
+If a job requests \-\-threads\-per\-core with fewer threads on a core than
+exist on the core (or \-\-hint=nomultithread which implies
+\-\-threads\-per\-core=1), the job will be unable to use those extra threads on
+the core and those threads will not be included in the memory per CPU
+calculation. But if the job has access to all threads on the core, those threads
+will be included in the memory per CPU calculation even if the job did not
+explicitly request those threads.
+
+In the following examples, each core has two threads.
+
+In this first example, two tasks can run on separate hyperthreads
+in the same core because \-\-threads\-per\-core is not used. The
+third task uses both threads of the second core. The allocated
+memory per cpu includes all threads:
+
+.nf
+.ft B
+$ salloc \-n3 \-\-mem\-per\-cpu=100
+salloc: Granted job allocation 17199
+$ sacct \-j $SLURM_JOB_ID \-X \-o jobid%7,reqtres%35,alloctres%35
+  JobID                             ReqTRES                           AllocTRES
+\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+  17199     billing=3,cpu=3,mem=300M,node=1     billing=4,cpu=4,mem=400M,node=1
+.ft
+.fi
+
+In this second example, because of \-\-threads\-per\-core=1, each
+task is allocated an entire core but is only able to use one
+thread per core. Allocated CPUs includes all threads on each
+core. However, allocated memory per cpu includes only the
+usable thread in each core.
+
+.nf
+.ft B
+$ salloc \-n3 \-\-mem\-per\-cpu=100 \-\-threads\-per\-core=1
+salloc: Granted job allocation 17200
+$ sacct \-j $SLURM_JOB_ID \-X \-o jobid%7,reqtres%35,alloctres%35
+  JobID                             ReqTRES                           AllocTRES
+\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+  17200     billing=3,cpu=3,mem=300M,node=1     billing=6,cpu=6,mem=300M,node=1
+.ft
+.fi
 .IP
 
 .TP
