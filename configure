@@ -23423,14 +23423,20 @@ fi
 
 
 
-  _x_ac_rsmi_dir="/opt/rocm/rocm_smi"
+
+  # /opt/rocm is the current default location.
+  # /opt/rocm/rocm_smi was the default location for before to 5.2.0
+  # We will use a for loop to check for both.
+  # Unless _x_ac_rsmi_dirs is overwritten with --with-rsmi
+  declare -a _x_ac_rsmi_dirs=("/opt/rocm" "/opt/rocm/rocm_smi")
+
 
 # Check whether --with-rsmi was given.
 if test ${with_rsmi+y}
 then :
   withval=$with_rsmi; if test "x$with_rsmi" != xno && test "x$with_rsmi" != xyes
 then :
-  _x_ac_rsmi_dir="$with_rsmi"
+  _x_ac_rsmi_dirs=("$with_rsmi")
 fi
 fi
 
@@ -23441,15 +23447,16 @@ printf "%s\n" "$as_me: WARNING: support for rsmi disabled" >&2;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether RSMI/ROCm in installed in this system" >&5
 printf %s "checking whether RSMI/ROCm in installed in this system... " >&6; }
-    # /opt/rocm/rocm_smi/ is the default location. Check for RSMI header and library in the default location
+    # Check for RSMI header and library in the default location
     # or in the location specified during configure
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: " >&5
 printf "%s\n" "" >&6; }
-    cppflags_save="$CPPFLAGS"
-    ldflags_save="$LDFLAGS"
-    CPPFLAGS="-I$_x_ac_rsmi_dir/include $CPPFLAGS"
-    LDFLAGS="-L$_x_ac_rsmi_dir/lib $LDFLAGS"
-    ac_fn_c_check_header_compile "$LINENO" "rocm_smi/rocm_smi.h" "ac_cv_header_rocm_smi_rocm_smi_h" "$ac_includes_default"
+    for _x_ac_rsmi_dir in "${_x_ac_rsmi_dirs[@]}"; do
+      cppflags_save="$CPPFLAGS"
+      ldflags_save="$LDFLAGS"
+      CPPFLAGS="-I$_x_ac_rsmi_dir/include $CPPFLAGS"
+      LDFLAGS="-L$_x_ac_rsmi_dir/lib $LDFLAGS"
+      ac_fn_c_check_header_compile "$LINENO" "rocm_smi/rocm_smi.h" "ac_cv_header_rocm_smi_rocm_smi_h" "$ac_includes_default"
 if test "x$ac_cv_header_rocm_smi_rocm_smi_h" = xyes
 then :
   ac_rsmi_h=yes
@@ -23457,7 +23464,7 @@ else $as_nop
   ac_rsmi_h=no
 fi
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rsmi_init in -lrocm_smi64" >&5
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rsmi_init in -lrocm_smi64" >&5
 printf %s "checking for rsmi_init in -lrocm_smi64... " >&6; }
 if test ${ac_cv_lib_rocm_smi64_rsmi_init+y}
 then :
@@ -23499,7 +23506,7 @@ else $as_nop
   ac_rsmi_l=no
 fi
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rsmi_dev_drm_render_minor_get in -lrocm_smi64" >&5
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rsmi_dev_drm_render_minor_get in -lrocm_smi64" >&5
 printf %s "checking for rsmi_dev_drm_render_minor_get in -lrocm_smi64... " >&6; }
 if test ${ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get+y}
 then :
@@ -23541,18 +23548,25 @@ else $as_nop
   ac_rsmi_version=no
 fi
 
-    CPPFLAGS="$cppflags_save"
-    LDFLAGS="$ldflags_save"
-    if test "$ac_rsmi_l" = "yes" && test "$ac_rsmi_h" = "yes"; then
-      if test "$ac_rsmi_version" = "yes"; then
-        RSMI_LDFLAGS="-L$_x_ac_rsmi_dir/lib"
-        RSMI_LIBS="-lrocm_smi64"
-        RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include"
-        ac_rsmi="yes"
+      CPPFLAGS="$cppflags_save"
+      LDFLAGS="$ldflags_save"
+      if test "$ac_rsmi_l" = "yes" && test "$ac_rsmi_h" = "yes"; then
+        if test "$ac_rsmi_version" = "yes"; then
+          RSMI_LDFLAGS="-L$_x_ac_rsmi_dir/lib"
+          RSMI_LIBS="-lrocm_smi64"
+          RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include"
+          ac_rsmi="yes"
 
 printf "%s\n" "#define HAVE_RSMI 1" >>confdefs.h
 
-      else
+          break;
+        fi
+      fi
+    done
+
+    # Only print errors/wanrings if both _x_ac_rsmi_dirs don't work
+    if test "$ac_rsmi_l" = "yes" && test "$ac_rsmi_h" = "yes"; then
+      if test "$ac_rsmi_version" != "yes"; then
         if test -z "$with_rsmi"; then
           { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: upgrade to newer version of ROCm/rsmi" >&5
 printf "%s\n" "$as_me: WARNING: upgrade to newer version of ROCm/rsmi" >&2;}

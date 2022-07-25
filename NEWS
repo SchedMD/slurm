@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
     associations.
  -- slurmrestd - add SLURMRESTD_SECURITY=disable_unshare_files environment
     variable.
+ -- Update rsmi detection to handle new default library location.
 
 * Changes in Slurm 22.05.2
 ==========================
