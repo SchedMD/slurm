@@ -36,6 +36,7 @@
 
 #include <dlfcn.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/gpu.h"
 #include "src/common/plugin.h"
 
@@ -49,6 +50,7 @@ typedef struct slurm_ops {
 	char   *(*test_cpu_conv)	(char *cpu_range);
 	int     (*energy_read)          (uint32_t dv_ind, gpu_status_t *gpu);
 	void    (*get_device_count)     (unsigned int *device_count);
+	int (*usage_read) (pid_t pid, acct_gather_data_t *data);
 
 } slurm_ops_t;
 
@@ -64,6 +66,7 @@ static const char *syms[] = {
 	"gpu_p_test_cpu_conv",
 	"gpu_p_energy_read",
 	"gpu_p_get_device_count",
+	"gpu_p_usage_read",
 };
 
 /* Local variables */
@@ -169,6 +172,29 @@ extern int gpu_plugin_fini(void)
 	return rc;
 }
 
+extern void gpu_get_tres_pos(int *gpumem_pos, int *gpuutil_pos)
+{
+	static int loc_gpumem_pos = -1;
+	static int loc_gpuutil_pos = -1;
+	static bool inited = false;
+
+	if (!inited) {
+		slurmdb_tres_rec_t tres_rec;
+
+		memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+		tres_rec.type = "gres";
+		tres_rec.name = "gpuutil";
+		loc_gpuutil_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+		tres_rec.name = "gpumem";
+		loc_gpumem_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+	}
+
+	if (gpumem_pos)
+		*gpumem_pos = loc_gpumem_pos;
+	if (gpuutil_pos)
+		*gpuutil_pos = loc_gpuutil_pos;
+}
+
 extern void gpu_g_reconfig(void)
 {
 	if (gpu_plugin_init() < 0)
@@ -218,4 +244,12 @@ extern void gpu_g_get_device_count(unsigned int *device_count)
 	if (gpu_plugin_init() < 0)
 		return;
 	(*(ops.get_device_count))(device_count);
+}
+
+extern int gpu_g_usage_read(pid_t pid, acct_gather_data_t *data)
+{
+	if (gpu_plugin_init() < 0)
+		return SLURM_ERROR;
+	return (*(ops.usage_read))(pid, data);
+
 }

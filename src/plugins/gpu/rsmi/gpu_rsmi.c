@@ -1013,3 +1013,8 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 
 	return SLURM_SUCCESS;
 }
+
+extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
+{
+	return SLURM_SUCCESS;
+}

@@ -41,9 +41,11 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/cgroup.h"
 #include "src/common/gpu.h"
 #include "src/common/gres.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
