@@ -922,7 +922,6 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 
 			last_taskid = jobacct->id.taskid;
 			(*(callbacks->prec_extra))(prec, jobacct->id.taskid);
-			_print_jag_prec(prec);
 		}
 
 		log_flag(JAG, "pid:%u ppid:%u %s:%" PRIu64 " B",
@@ -969,6 +968,8 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 				 jobacct->energy.ave_watts);
 			energy_counted = 1;
 		}
+
+		_print_jag_prec(prec);
 
 		/* tally their usage */
 		for (i = 0; i < jobacct->tres_count; i++) {
