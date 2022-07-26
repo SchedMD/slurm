@@ -488,6 +488,7 @@ static int _init_tres(jag_prec_t *prec, void *empty)
 {
 	/* Initialize read/writes */
 	for (int i = 0; i < prec->tres_count; i++) {
+		prec->tres_data[i].last_time = 0;
 		prec->tres_data[i].num_reads = INFINITE64;
 		prec->tres_data[i].num_writes = INFINITE64;
 		prec->tres_data[i].size_read = INFINITE64;

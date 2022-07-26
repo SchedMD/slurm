@@ -98,6 +98,9 @@ const char plugin_name[] = "GPU NVML plugin";
 const char	plugin_type[]		= "gpu/nvml";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
+static int gpumem_pos = -1;
+static int gpuutil_pos = -1;
+
 /*
  * Converts a cpu_set returned from the NVML API into a Slurm bitstr_t
  *
@@ -1474,6 +1477,10 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 
 extern int init(void)
 {
+	if (running_in_slurmstepd()) {
+		gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
+	}
+
 	debug("%s: %s loaded", __func__, plugin_name);
 
 	return SLURM_SUCCESS;
@@ -1626,5 +1633,124 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 
 extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 {
+	nvmlReturn_t rc;
+	unsigned int device_count = 0;
+
+	if ((gpuutil_pos == -1) || (gpumem_pos == -1)) {
+		error("no gpu utilization TRES! This should never happen");
+		return SLURM_ERROR;
+	}
+	_nvml_init();
+	gpu_p_get_device_count(&device_count);
+
+	data[gpuutil_pos].size_read = 0;
+	data[gpumem_pos].size_read = 0;
+	for (int i = 0; i < device_count; i++) {
+		nvmlDevice_t device;
+		nvmlProcessUtilizationSample_t *proc_util;
+		unsigned int cnt = 0, gcnt = 0, ccnt = 0;
+		nvmlProcessInfo_t *proc_info;
+
+		if (!_nvml_get_handle(i, &device))
+			continue;
+
+		/*
+		 * Sending NULL will fill in cnt with the number of processes
+		 * so we can use that to allocate the array correctly
+		 * afterwards. A rc of NVML_SUCCESS means no processes yet.
+		 */
+		rc = nvmlDeviceGetProcessUtilization(
+			device, NULL, &cnt, data[gpuutil_pos].last_time);
+		if (rc == NVML_SUCCESS || !cnt)
+			continue;
+
+		if (rc != NVML_ERROR_INSUFFICIENT_SIZE)
+			return SLURM_ERROR;
+
+		proc_util = xcalloc(cnt, sizeof(*proc_util));
+		rc = nvmlDeviceGetProcessUtilization(
+			device, proc_util, &cnt, data[gpuutil_pos].last_time);
+
+		if (rc == NVML_ERROR_NOT_FOUND) {
+			debug2("Couldn't find pid %d, probably hasn't started yet or has already finished",
+			       pid);
+			xfree(proc_util);
+			continue;
+		} else if (rc != NVML_SUCCESS) {
+			error("NVML: Failed to get usage(%d): %s",
+			      rc, nvmlErrorString(rc));
+			xfree(proc_util);
+			return SLURM_ERROR;
+		}
+
+		for (int j = 0; j < cnt; j++) {
+			if (proc_util[j].pid != pid)
+				continue;
+			data[gpuutil_pos].last_time = proc_util[j].timeStamp;
+			data[gpuutil_pos].size_read += proc_util[j].smUtil;
+			break;
+		}
+		xfree(proc_util);
+
+		/*
+		 * Get the number of Graphics and Compute processes. If there
+		 * are no processes *cnt will be 0 and rc == NVML_SUCCESS, if
+		 * there are processes *cnt will be set and rc ==
+		 * NVML_ERROR_INSUFFICIENT_SIZE
+		 */
+		rc = nvmlDeviceGetGraphicsRunningProcesses(
+			device, &gcnt, NULL);
+		if ((rc != NVML_SUCCESS) &&
+		    (rc != NVML_ERROR_INSUFFICIENT_SIZE))
+			return SLURM_ERROR;
+
+		rc = nvmlDeviceGetComputeRunningProcesses(
+			device, &ccnt, NULL);
+		if ((rc != NVML_SUCCESS) &&
+		    (rc != NVML_ERROR_INSUFFICIENT_SIZE))
+			return SLURM_ERROR;
+
+		/*
+		 * This is how we get the memory in bytes instead of precentage
+		 */
+		proc_info = xcalloc(gcnt+ccnt, sizeof(*proc_info));
+		if (gcnt) {
+			rc = nvmlDeviceGetGraphicsRunningProcesses(
+				device, &gcnt, proc_info);
+			if (rc != NVML_SUCCESS) {
+				error("NVML: Failed to get Graphics running procs(%d): %s",
+				      rc, nvmlErrorString(rc));
+				xfree(proc_info);
+				return SLURM_ERROR;
+			}
+		}
+
+		if (ccnt) {
+			rc = nvmlDeviceGetComputeRunningProcesses(
+				device, &ccnt, proc_info + gcnt);
+			if (rc != NVML_SUCCESS) {
+				error("NVML: Failed to get Compute running procs(%d): %s",
+				      rc, nvmlErrorString(rc));
+				xfree(proc_info);
+				return SLURM_ERROR;
+			}
+		}
+
+		for (int j = gcnt; j < ccnt; j++) {
+			if (proc_info[j].pid != pid)
+				continue;
+			/* Store MB usedGpuMemory is in bytes */
+			data[gpumem_pos].size_read +=
+				proc_info[j].usedGpuMemory;
+			break;
+		}
+		xfree(proc_info);
+
+		log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu",
+			 pid,
+			 data[gpuutil_pos].size_read,
+			 data[gpumem_pos].size_read / 1048576);
+	}
+
 	return SLURM_SUCCESS;
 }

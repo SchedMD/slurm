@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/elasticsearch - post non-NULL but empty string fields.
  -- Make advanced reservation flag MAINT not replace nodes, similar to
     STATIC_ALLOC
+ -- NVML - Add usage gathering for Nvidia gpus.
 
 * Changes in Slurm 22.05.3
 ==========================

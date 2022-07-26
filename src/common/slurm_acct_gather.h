@@ -45,6 +45,7 @@
 #include "slurm_acct_gather_profile.h"
 
 typedef struct acct_gather_data {
+	uint64_t last_time; /* holder for last time data was read */
 	uint64_t	num_reads;  /* count of reads */
 	uint64_t	num_writes; /* count of writes */
 	uint64_t	size_read;  /* raw amount read (in) */
