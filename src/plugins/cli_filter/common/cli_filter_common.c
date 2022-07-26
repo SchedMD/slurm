@@ -80,9 +80,9 @@ char *cli_filter_json_set_options(slurm_opt_t *options)
 	if (options->sbatch_opt) {
 		argv = options->sbatch_opt->script_argv;
 		argc = options->sbatch_opt->script_argc;
-	} else if (options->srun_opt) {
-		argv = options->srun_opt->argv;
-		argc = options->srun_opt->argc;
+	} else {
+		argv = options->argv;
+		argc = options->argc;
 	}
 
 	dargv = data_set_list(data_key_set(d, "argv"));

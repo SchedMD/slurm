@@ -179,9 +179,9 @@ static int _setup_option_field_argv(lua_State *st, slurm_opt_t *opt)
 	if (opt->sbatch_opt) {
 		argv = opt->sbatch_opt->script_argv;
 		argc = opt->sbatch_opt->script_argc;
-	} else if (opt->srun_opt) {
-		argv = opt->srun_opt->argv;
-		argc = opt->srun_opt->argc;
+	} else {
+		argv = opt->argv;
+		argc = opt->argc;
 	}
 
 	return _setup_stringarray(st, argc, argv);

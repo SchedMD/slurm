@@ -264,9 +264,9 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->account = xstrdup(opt.account);
 	opt_dup->acctg_freq = xstrdup(opt.acctg_freq);
 	opt_dup->srun_opt->alloc_nodelist = xstrdup(sropt.alloc_nodelist);
-	opt_dup->srun_opt->argv = xmalloc(sizeof(char *) * sropt.argc);
-	for (i = 0; i < sropt.argc; i++)
-		opt_dup->srun_opt->argv[i] = xstrdup(sropt.argv[i]);
+	opt_dup->argv = xmalloc(sizeof(char *) * opt.argc);
+	for (i = 0; i < opt.argc; i++)
+		opt_dup->argv[i] = xstrdup(opt.argv[i]);
 	sropt.bcast_file = NULL;	/* Moved by memcpy */
 	opt.burst_buffer = NULL;	/* Moved by memcpy */
 	opt_dup->c_constraint = xstrdup(opt.c_constraint);
@@ -790,14 +790,14 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 
-	sropt.argc = 0;
+	opt.argc = 0;
 	if (optind < argc) {
 		rest = argv + optind;
-		while ((rest[sropt.argc] != NULL) && strcmp(rest[sropt.argc], ":"))
-			sropt.argc++;
+		while ((rest[opt.argc] != NULL) && strcmp(rest[opt.argc], ":"))
+			opt.argc++;
 	}
 
-	command_args = sropt.argc;
+	command_args = opt.argc;
 
 	if (!prev_mpi && het_comp_number &&
 	    xstrcmp(sropt.mpi_type, slurm_conf.mpi_default)) {
@@ -820,15 +820,15 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 
 	/* make sure we have allocated things correctly */
 	if (command_args)
-		xassert((command_pos + command_args) <= sropt.argc);
+		xassert((command_pos + command_args) <= opt.argc);
 
-	for (i = command_pos; i < sropt.argc; i++) {
+	for (i = command_pos; i < opt.argc; i++) {
 		if (!rest || !rest[i-command_pos])
 			break;
-		sropt.argv[i] = xstrdup(rest[i-command_pos]);
-		// info("argv[%d]='%s'", i, sropt.argv[i]);
+		// info("argv[%d]='%s'", i, opt.argv[i]);
+		opt.argv[i] = xstrdup(rest[i-command_pos]);
 	}
-	sropt.argv[i] = NULL;	/* End of argv's (for possible execv) */
+	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (getenv("SLURM_TEST_EXEC") ||
 	    xstrstr(slurm_conf.launch_params, "test_exec"))
@@ -874,14 +874,14 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	(void) launch_g_handle_multi_prog_verify(command_pos, &opt);
 
 	if (!sropt.multi_prog && (sropt.test_exec || sropt.bcast_flag) &&
-	    sropt.argv && sropt.argv[command_pos]) {
+	    opt.argv && opt.argv[command_pos]) {
 
-		if ((fullpath = search_path(opt.chdir, sropt.argv[command_pos],
+		if ((fullpath = search_path(opt.chdir, opt.argv[command_pos],
 					    true, X_OK, true))) {
-			xfree(sropt.argv[command_pos]);
-			sropt.argv[command_pos] = fullpath;
+			xfree(opt.argv[command_pos]);
+			opt.argv[command_pos] = fullpath;
 		} else {
-			fatal("Can not execute %s", sropt.argv[command_pos]);
+			fatal("Can not execute %s", opt.argv[command_pos]);
 		}
 	}
 }
@@ -1022,9 +1022,9 @@ static bool _opt_verify(void)
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 
-	if ((sropt.argc > 0) && xstrcmp(sropt.argv[0], ":")) {
+	if ((opt.argc > 0) && xstrcmp(opt.argv[0], ":")) {
 		xfree(sropt.cmd_name);
-		sropt.cmd_name = base_name(sropt.argv[0]);
+		sropt.cmd_name = base_name(opt.argv[0]);
 	}
 
 	if (opt.exclude && !_valid_node_list(&opt.exclude))

@@ -563,7 +563,7 @@ extern int launch_p_setup_srun_opt(char **rest, slurm_opt_t *opt_local)
 	 * We need to do +2 here just in case multi-prog is needed
 	 * (we add an extra argv on so just make space for it).
 	 */
-	srun_opt->argv = xmalloc((srun_opt->argc + 2) * sizeof(char *));
+	opt_local->argv = xmalloc((opt_local->argc + 2) * sizeof(char *));
 
 	return 0;
 }
@@ -575,12 +575,12 @@ extern int launch_p_handle_multi_prog_verify(int command_pos,
 	xassert(srun_opt);
 
 	if (srun_opt->multi_prog) {
-		if (srun_opt->argc < 1) {
+		if (opt_local->argc < 1) {
 			error("configuration file not specified");
 			exit(error_exit);
 		}
-		_load_multi(&srun_opt->argc, srun_opt->argv);
-		if (verify_multi_name(srun_opt->argv[command_pos], opt_local))
+		_load_multi(&opt_local->argc, opt_local->argv);
+		if (verify_multi_name(opt_local->argv[command_pos], opt_local))
 			exit(error_exit);
 		return 1;
 	} else
@@ -729,8 +729,8 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 
 	launch_params.gid = opt_local->gid;
 	launch_params.alias_list = job->alias_list;
-	launch_params.argc = srun_opt->argc;
-	launch_params.argv = srun_opt->argv;
+	launch_params.argc = opt_local->argc;
+	launch_params.argv = opt_local->argv;
 	launch_params.multi_prog = srun_opt->multi_prog ? true : false;
 	launch_params.container = xstrdup(opt_local->container);
 	launch_params.cwd = opt_local->chdir;

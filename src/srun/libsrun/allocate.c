@@ -725,9 +725,9 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	if (!j->name)
 		j->name = xstrdup(srun_opt->cmd_name);
 
-	if (srun_opt->argc > 0) {
-		j->argc = srun_opt->argc;
-		j->argv = srun_opt->argv;
+	if (opt_local->argc > 0) {
+		j->argc = opt_local->argc;
+		j->argv = opt_local->argv;
 	}
 
 	j->container = xstrdup(opt_local->container);

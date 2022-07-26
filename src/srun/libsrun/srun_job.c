@@ -521,20 +521,17 @@ extern srun_job_t *job_create_allocation(
 
 static void _copy_args(List missing_argc_list, slurm_opt_t *opt_master)
 {
-	srun_opt_t *srun_master = opt_master->srun_opt;
 	ListIterator iter;
 	slurm_opt_t *opt_local;
 	int i;
-	xassert(srun_master);
 
 	iter = list_iterator_create(missing_argc_list);
 	while ((opt_local = list_next(iter))) {
-		srun_opt_t *srun_opt = opt_local->srun_opt;
-		xassert(srun_opt);
-		srun_opt->argc = srun_master->argc;
-		srun_opt->argv = xmalloc(sizeof(char *) * (srun_opt->argc+1));
-		for (i = 0; i < srun_opt->argc; i++)
-			srun_opt->argv[i] = xstrdup(srun_master->argv[i]);
+		opt_local->argc = opt_master->argc;
+		opt_local->argv = xmalloc(sizeof(char *) *
+					  (opt_local->argc + 1));
+		for (i = 0; i < opt_local->argc; i++)
+			opt_local->argv[i] = xstrdup(opt_master->argv[i]);
 		list_remove(iter);
 	}
 	list_iterator_destroy(iter);
@@ -560,7 +557,7 @@ static void _het_grp_test(List opt_list)
 		while ((opt_local = list_next(iter))) {
 			srun_opt_t *srun_opt = opt_local->srun_opt;
 			xassert(srun_opt);
-			if (srun_opt->argc == 0)
+			if (opt_local->argc == 0)
 				list_append(missing_argv_list, opt_local);
 			else
 				_copy_args(missing_argv_list, opt_local);
@@ -1403,8 +1400,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 #endif
 		if (slurm_option_set_by_cli(&opt, 'J'))
 			setenvfs("SLURM_JOB_NAME=%s", opt.job_name);
-		else if (!slurm_option_set_by_env(&opt, 'J') && sropt.argc)
-			setenvfs("SLURM_JOB_NAME=%s", sropt.argv[0]);
+		else if (!slurm_option_set_by_env(&opt, 'J') && opt.argc)
+			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
 
 		if (opt_list) {
 			job_resp_list = allocate_het_job_nodes(handle_signals);
@@ -1782,8 +1779,8 @@ static int _call_spank_local_user(srun_job_t *job, slurm_opt_t *opt_local)
 	struct spank_launcher_job_info info[1];
 	xassert(srun_opt);
 
-	info->argc = srun_opt->argc;
-	info->argv = srun_opt->argv;
+	info->argc = opt_local->argc;
+	info->argv = opt_local->argv;
 	info->gid	= opt_local->gid;
 	info->jobid	= job->step_id.job_id;
 	info->stepid	= job->step_id.step_id;
@@ -1937,8 +1934,8 @@ static int _run_srun_script (srun_job_t *job, char *script)
 		 */
 		args = xmalloc(sizeof(char *) * 1024);
 		args[0] = script;
-		for (i = 0; i < sropt.argc; i++) {
-			args[i+1] = sropt.argv[i];
+		for (i = 0; i < opt.argc; i++) {
+			args[i+1] = opt.argv[i];
 		}
 		args[i+1] = NULL;
 		execv(script, args);

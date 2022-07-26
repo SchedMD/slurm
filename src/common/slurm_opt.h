@@ -234,9 +234,6 @@ typedef struct {
  * options only processed by srun
  */
 typedef struct {
-	int argc;			/* length of argv array		*/
-	char **argv;			/* left over on command line	*/
-
 	uint16_t accel_bind_type;	/* --accel-bind			*/
 	char *alloc_nodelist;		/* grabbed from the environment	*/
 	char *bcast_exclude;		/* --bcast-exclude */
@@ -302,6 +299,8 @@ typedef struct {
 	void (*help_func)(void);	/* Print --help info		*/
 	void (*usage_func)(void);	/* Print --usage info		*/
 
+	int argc;			/* command/script argc		*/
+	char **argv;			/* command/script argv		*/
 	char *burst_buffer;		/* --bb				*/
 	char *burst_buffer_file;	/* --bbf			*/
 	char *clusters;			/* cluster to run this on. */

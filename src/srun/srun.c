@@ -734,7 +734,7 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	char *sep = NULL, *tmp = NULL;
 	xassert(srun_opt);
 
-	if ((srun_opt->argc == 0) || (srun_opt->argv[0] == NULL))
+	if ((opt_local->argc == 0) || (opt_local->argv[0] == NULL))
 		fatal("No command name to broadcast");
 
 	params = xmalloc(sizeof(struct bcast_parameters));
@@ -779,7 +779,7 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	else
 		params->selected_step->het_job_offset = NO_VAL;
 	params->flags |= BCAST_FLAG_PRESERVE;
-	params->src_fname = xstrdup(srun_opt->argv[0]);
+	params->src_fname = xstrdup(opt_local->argv[0]);
 	params->timeout = 0;
 	params->verbose = 0;
 
@@ -787,8 +787,8 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 		fatal("Failed to broadcast '%s'. Step launch aborted.",
 		      params->src_fname);
 
-	xfree(srun_opt->argv[0]);
-	srun_opt->argv[0] = xstrdup(params->dst_fname);
+	xfree(opt_local->argv[0]);
+	opt_local->argv[0] = xstrdup(params->dst_fname);
 
 	slurm_destroy_selected_step(params->selected_step);
 	xfree(params->dst_fname);
