@@ -165,7 +165,14 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
  */
 static void _nvml_init(void)
 {
+	static bool inited = false;
 	nvmlReturn_t nvml_rc;
+
+	if (inited)
+		return;
+
+	inited = true;
+
 	DEF_TIMERS;
 	START_TIMER;
 	nvml_rc = nvmlInit();
