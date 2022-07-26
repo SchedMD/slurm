@@ -1387,7 +1387,18 @@ static int _handle_connection(void *x, void *arg)
 			/* arg should only be set if after on_connection() */
 			xassert(!con->arg);
 		}
+	}
 
+	if (!list_is_empty(con->work) || !list_is_empty(con->write_complete_work)) {
+		log_flag(NET, "%s: [%s] outstanding work for connection output_fd=%d work=%u write_complete_work=%u",
+			 __func__, con->name, con->output_fd,
+			 list_count(con->work),
+			 list_count(con->write_complete_work));
+
+		/*
+		 * Must finish all outstanding work before deletion.
+		 * Work must have been added by on_finish()
+		 */
 		return 0;
 	}
 
