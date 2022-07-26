@@ -264,7 +264,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->account = xstrdup(opt.account);
 	opt_dup->acctg_freq = xstrdup(opt.acctg_freq);
 	opt_dup->srun_opt->alloc_nodelist = xstrdup(sropt.alloc_nodelist);
-	opt_dup->argv = xmalloc(sizeof(char *) * opt.argc);
+	opt_dup->argv = xcalloc(sizeof(char *), opt.argc);
 	for (i = 0; i < opt.argc; i++)
 		opt_dup->argv[i] = xstrdup(opt.argv[i]);
 	sropt.bcast_file = NULL;	/* Moved by memcpy */
