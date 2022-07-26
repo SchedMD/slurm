@@ -99,7 +99,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/x11_util.c"
+#include "src/common/x11_util.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 

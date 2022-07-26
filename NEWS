@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - add SLURMRESTD_SECURITY=disable_unshare_files environment
     variable.
  -- Update rsmi detection to handle new default library location.
+ -- Fix header inclusion from slurmstepd manager code leading to multiple
+    definition errors when linking --without-shared-libslurm.
 
 * Changes in Slurm 22.05.2
 ==========================
