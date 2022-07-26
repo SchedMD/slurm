@@ -1351,6 +1351,26 @@ static int _handle_connection(void *x, void *arg)
 		return 0;
 	}
 
+	/*
+	 * Close out the incoming to avoid any new work coming into the
+	 * connection.
+	 */
+	if (con->input_fd != -1) {
+		log_flag(NET, "%s: [%s] closing incoming on connection input_fd=%d",
+			 __func__, con->name, con->input_fd);
+
+		if (close(con->input_fd) == -1)
+			log_flag(NET, "%s: [%s] unable to close input fd %d: %m",
+				 __func__, con->name, con->input_fd);
+
+		/* if there is only 1 fd: forget it too */
+		if (con->input_fd == con->output_fd)
+			con->output_fd = -1;
+
+		/* forget invalid fd */
+		con->input_fd = -1;
+	}
+
 	if (!con->is_listen && con->arg) {
 		log_flag(NET, "%s: [%s] queuing up on_finish",
 			 __func__, con->name);
@@ -1378,19 +1398,6 @@ static int _handle_connection(void *x, void *arg)
 	log_flag(NET, "%s: [%s] closing connection input_fd=%d output_fd=%d",
 		 __func__, con->name, con->input_fd, con->output_fd);
 
-	/* close any open file descriptors */
-	if (con->input_fd != -1) {
-		if (close(con->input_fd) == -1)
-			log_flag(NET, "%s: [%s] unable to close input fd %d: %m",
-				 __func__, con->name, con->input_fd);
-
-		/* if there is only 1 fd: forget it too */
-		if (con->input_fd == con->output_fd)
-			con->output_fd = -1;
-
-		/* forget invalid fd */
-		con->input_fd = -1;
-	}
 	if (con->output_fd != -1) {
 		if (close(con->output_fd) == -1)
 			log_flag(NET, "%s: [%s] unable to close output fd %d: %m",
