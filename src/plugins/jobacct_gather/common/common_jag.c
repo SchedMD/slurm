@@ -47,6 +47,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/assoc_mgr.h"
+#include "src/common/gpu.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -580,6 +581,8 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 
 	fclose(stat_fp);
 
+	gpu_g_usage_read(pid, prec->tres_data);
+
 	/* Remove shared data from rss */
 	if (no_share_data) {
 		xfree(proc_file);
@@ -664,6 +667,8 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		FIELD_CPUFREQ,
 		FIELD_CPUTIME,
 		FIELD_CPUUTIL,
+		FIELD_GPUMEM,
+		FIELD_GPUUTIL,
 		FIELD_RSS,
 		FIELD_VMSIZE,
 		FIELD_PAGES,
@@ -676,6 +681,8 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		{ "CPUFrequency", PROFILE_FIELD_UINT64 },
 		{ "CPUTime", PROFILE_FIELD_DOUBLE },
 		{ "CPUUtilization", PROFILE_FIELD_DOUBLE },
+		{ "GPUMemMB", PROFILE_FIELD_UINT64 },
+		{ "GPUUtilization", PROFILE_FIELD_DOUBLE },
 		{ "RSS", PROFILE_FIELD_UINT64 },
 		{ "VMSize", PROFILE_FIELD_UINT64 },
 		{ "Pages", PROFILE_FIELD_UINT64 },
@@ -685,6 +692,8 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	};
 
 	static int64_t profile_gid = -1;
+	static int gpumem_pos = -1;
+	static int gpuutil_pos = -1;
 	double et;
 	union {
 		double d;
@@ -692,8 +701,10 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	} data[FIELD_CNT];
 	char str[256];
 
-	if (profile_gid == -1)
+	if (profile_gid == -1) {
 		profile_gid = acct_gather_profile_g_create_group("Tasks");
+		gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
+	}
 
 	/* Create the dataset first */
 	if (jobacct->dataset_id < 0) {
@@ -725,6 +736,7 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	if (!jobacct->last_time) {
 		data[FIELD_CPUTIME].d = 0;
 		data[FIELD_CPUUTIL].d = 0.0;
+		data[FIELD_GPUUTIL].d = 0.0;
 		data[FIELD_READ].d = 0.0;
 		data[FIELD_WRITE].d = 0.0;
 	} else {
@@ -764,6 +776,16 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		/* Profile disk as MB */
 		data[FIELD_READ].d /= 1048576.0;
 		data[FIELD_WRITE].d /= 1048576.0;
+
+		if (gpumem_pos != -1) {
+			/* Profile gpumem as MB */
+			data[FIELD_GPUMEM].u64 =
+				jobacct->tres_usage_in_tot[gpumem_pos] /
+				1048576;
+			data[FIELD_GPUUTIL].u64 =
+				jobacct->tres_usage_in_tot[gpuutil_pos];
+;
+		}
 	}
 
 	log_flag(PROFILE, "PROFILE-Task: %s",
