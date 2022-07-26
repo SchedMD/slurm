@@ -7,7 +7,7 @@
 temporary file system space.</p>
 
 <p>When enabled on the cluster, each job will have its own /tmp and /dev/shm
-directory, seperate from every other job as well as the system.  These are
+directory, separate from every other job as well as the system. These are
 mapped in the job as "/tmp" and "/dev/shm".</p>
 
 <h2 id="installation">Installation
