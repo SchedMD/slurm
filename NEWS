@@ -198,6 +198,7 @@ documents those changes that are of interest to users and administrators.
     reservation is done.
  -- Change srun/salloc to wait indefinitely for their allocations to be ready.
  -- Do not attempt to "fix" malformed input to 'scontrol show hostlist'.
+ -- RSMI - Add usage gathering for AMD gpus (requires ROCM 5.5+).
 
 * Changes in Slurm 22.05.7
 ==========================

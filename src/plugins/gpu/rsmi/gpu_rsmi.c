@@ -111,9 +111,16 @@ const char plugin_name[] = "GPU RSMI plugin";
 const char	plugin_type[]		= "gpu/rsmi";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
+static int gpumem_pos = -1;
+static int gpuutil_pos = -1;
+
 extern int init(void)
 {
 	rsmi_init(0);
+
+	if (running_in_slurmstepd()) {
+		gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
+	}
 
 	debug("%s: %s loaded", __func__, plugin_name);
 
@@ -1013,5 +1020,35 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 
 extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 {
+	const char *status_string;
+	rsmi_process_info_t proc = {0};
+	rsmi_status_t rc;
+
+	if ((gpuutil_pos == -1) || (gpumem_pos == -1)) {
+		error("no gpu utilization TRES! This should never happen");
+		return SLURM_ERROR;
+	}
+
+	rc = rsmi_compute_process_info_by_pid_get(pid, &proc);
+
+	if (rc == RSMI_STATUS_NOT_FOUND) {
+		debug2("Couldn't find pid %d, probably hasn't started yet or has already finished",
+		       pid);
+		return SLURM_SUCCESS;
+	} else if (rc != RSMI_STATUS_SUCCESS) {
+		(void) rsmi_status_string(rc, &status_string);
+		error("RSMI: Failed to get usage(%d): %s", rc, status_string);
+		return SLURM_ERROR;
+	}
+
+	data[gpuutil_pos].size_read = proc.cu_occupancy;
+
+	data[gpumem_pos].size_read = proc.vram_usage;
+
+	log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu",
+		 pid,
+		 data[gpuutil_pos].size_read,
+		 data[gpumem_pos].size_read / 1048576);
+
 	return SLURM_SUCCESS;
 }
