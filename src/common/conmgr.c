@@ -1362,6 +1362,7 @@ static int _handle_connection(void *x, void *arg)
 				  "on_finish");
 			/* on_finish must free arg */
 			con->arg = NULL;
+			return 0;
 		} else {
 			/* arg should only be set if after on_connection() */
 			xassert(!con->arg);
