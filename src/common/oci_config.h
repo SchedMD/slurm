@@ -48,6 +48,8 @@ typedef struct {
 	char *runtime_query; /* OCI runtime pattern to execute query */
 	char *runtime_run; /* OCI runtime pattern to execute run */
 	char *runtime_start; /* OCI runtime pattern to execute start */
+	char *srun_path; /* path to srun */
+	char **srun_args; /* arguments for srun (last entry is NULL) */
 } oci_conf_t;
 
 extern int get_oci_conf(oci_conf_t **oci);

@@ -59,6 +59,8 @@ static s_p_options_t options[] = {
 	{"RunTimeQuery", S_P_STRING},
 	{"RunTimeRun", S_P_STRING},
 	{"RunTimeStart", S_P_STRING},
+	{"SrunPath", S_P_STRING},
+	{"SrunArgs", S_P_ARRAY},
 	{NULL}
 };
 
@@ -70,6 +72,8 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	oci_conf_t *oci = NULL;
 	char *conf_path = get_extra_conf_path(OCI_CONF);
 	char *disable_hooks = NULL;
+	char **srun_args = NULL;
+	int srun_args_count = 0;
 
 	if ((stat(conf_path, &buf) == -1)) {
 		error("No %s file", OCI_CONF);
@@ -93,6 +97,17 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	(void) s_p_get_string(&oci->runtime_query, "RunTimeQuery", tbl);
 	(void) s_p_get_string(&oci->runtime_run, "RunTimeRun", tbl);
 	(void) s_p_get_string(&oci->runtime_start, "RunTimeStart", tbl);
+	(void) s_p_get_string(&oci->srun_path, "SrunPath", tbl);
+	(void) s_p_get_array((void ***) &srun_args, &srun_args_count,
+			     "SrunArgs", tbl);
+
+	if (srun_args_count) {
+		oci->srun_args = xcalloc((srun_args_count + 1),
+					 sizeof(*oci->srun_args));
+
+		for (int i = 0; i < srun_args_count; i++)
+			oci->srun_args[i] = xstrdup(srun_args[i]);
+	}
 
 	if (disable_hooks) {
 		char *ptr1 = NULL, *ptr2 = NULL;
@@ -161,6 +176,10 @@ extern void free_oci_conf(oci_conf_t *oci)
 	xfree(oci->runtime_query);
 	xfree(oci->runtime_run);
 	xfree(oci->runtime_start);
+	xfree(oci->srun_path);
+	for (int i = 0; oci->srun_args && oci->srun_args[i]; i++)
+		xfree(oci->srun_args[i]);
+	xfree(oci->srun_args);
 
 	if (oci->disable_hooks) {
 		for (int i = 0; oci->disable_hooks[i]; i++)
