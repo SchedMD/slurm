@@ -209,7 +209,7 @@ extern void gpu_common_get_nearest_freq(unsigned int *freq,
 	}
 
 	/* check for frequency, and round up if no exact match */
-	for (i = 0; i < freqs_size - 1;) {
+	for (i = 0; i < freqs_size;) {
 		if (*freq == freqs[i]) {
 			/* No change necessary */
 			debug2("No change necessary. Freq: %u MHz", *freq);
