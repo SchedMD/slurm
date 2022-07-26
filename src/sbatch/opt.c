@@ -301,7 +301,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 
 	/* Remove hetjob separator and capture all options of interest from
 	 * all job components (e.g. "sbatch -N1 -v : -N2 -v tmp" -> "-vv") */
-	local_argv = xmalloc(sizeof(char *) * argc);
+	local_argv = xcalloc(argc, sizeof(char *));
 	for (i = 0; i < argc; i++) {
 		if (xstrcmp(argv[i], ":"))
 			local_argv[local_argc++] = argv[i];
@@ -326,7 +326,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 
 		opt.argc = local_argc - optind;
 		leftover = local_argv + optind;
-		opt.argv = xmalloc((opt.argc + 1) * sizeof(char *));
+		opt.argv = xcalloc((opt.argc + 1), sizeof(char *));
 		for (i = 0; i < opt.argc; i++)
 			opt.argv[i] = xstrdup(leftover[i]);
 		opt.argv[i] = NULL;
