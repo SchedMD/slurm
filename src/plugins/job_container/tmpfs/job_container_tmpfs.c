@@ -576,14 +576,21 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			rc = -1;
 			goto child_exit;
 		}
-
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
-		/* Set root filesystem to private */
-		if (mount(NULL, "/", NULL, MS_PRIVATE|MS_REC, NULL)) {
-			error("%s: Failed to make root private: %m", __func__);
-			return -1;
+		/* Set root filesystem to shared */
+		if (mount(NULL, "/", NULL, MS_SHARED | MS_REC, NULL)) {
+			error("%s: Failed to make root shared: %m", __func__);
+			rc = -1;
+			goto child_exit;
+		}
+		/* Set root filesystem to slave */
+		if (mount(NULL, "/", NULL, MS_SLAVE | MS_REC, NULL)) {
+			error("%s: Failed to make root slave: %m", __func__);
+			rc = -1;
+			goto child_exit;
 		}
 #endif
+
 		/*
 		 * Now we have a persistent mount namespace.
 		 * Mount private directories inside the namespace.
