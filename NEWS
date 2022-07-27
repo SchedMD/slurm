@@ -80,6 +80,8 @@ documents those changes that are of interest to users and administrators.
     allocated.
  -- Improve scheduling performance for dynamic nodes and nodes with features by
     consolidating like config records.
+ -- Expose argc and entire argv to job_submit and cli_filter plugins for jobs
+    submitted via salloc/srun or sbatch <script> (not via --wrap).
 
 * Changes in Slurm 22.05.6
 ==========================
