@@ -43,6 +43,7 @@
 #include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/oci_config.h"
+#include "src/common/read_config.h"
 #include "src/common/run_command.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -657,8 +658,10 @@ static data_t *_get_container_state()
 
 	if (serialize_g_string_to_data(&state, out, strlen(out),
 				       MIME_TYPE_JSON)) {
-		error("%s: unable to parse JSON: %s",
+		error("%s: unable to parse container state: %s",
 		      __func__, out);
+		log_flag_hex(STEPS, out, strlen(out),
+			     "unable to parse container state response");
 	}
 
 	xfree(out);
