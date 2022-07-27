@@ -1935,9 +1935,9 @@ static int _run_srun_script (srun_job_t *job, char *script)
 		args = xmalloc(sizeof(char *) * 1024);
 		args[0] = script;
 		for (i = 0; i < opt.argc; i++) {
-			args[i+1] = opt.argv[i];
+			args[i + 1] = opt.argv[i];
 		}
-		args[i+1] = NULL;
+		args[i + 1] = NULL;
 		execv(script, args);
 		error("Failed to execute srun prolog/epilog script: %m");
 		_exit(127);
