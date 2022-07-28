@@ -69,6 +69,9 @@ Source:		%{slurm_source_dir}.tar.bz2
 %global _hardened_cflags "-Wl,-z,lazy"
 %global _hardened_ldflags "-Wl,-z,lazy"
 
+# Disable Link Time Optimization (LTO)
+%define _lto_cflags %{nil}
+
 Requires: munge
 
 %{?systemd_requires}
