@@ -151,14 +151,16 @@ static int _add_list_job_state(List char_list, char *values)
 		uint32_t id = NO_VAL;
 
 		if (isdigit(value[0])) {
+			unsigned long id_ul;
 			errno = 0;
-			id = slurm_atoul(value);
+			id_ul = slurm_atoul(value);
 			/*
 			 * Since zero is a valid value, we have to check if
 			 * errno is also set to know if it was an error.
 			 */
-			if ((!id && errno) || (id == ULONG_MAX))
+			if ((!id_ul && errno) || (id_ul == ULONG_MAX))
 				break;
+			id = (uint32_t) id_ul;
 		} else {
 			if ((id = job_state_num(value)) == NO_VAL)
 				break;
