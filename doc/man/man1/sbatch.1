@@ -274,6 +274,10 @@ Only nodes having features matching the job constraints will be used to
 satisfy the request.
 Multiple constraints may be specified with AND, OR, matching OR,
 resource counts, etc. (some operators are not supported on all system types).
+
+\fBNOTE\fR: If features that are part of the node_features/helpers plugin are
+requested, then only the \fBSingle Name\fR and \fBAND\fR options are supported.
+
 Supported \fB\-\-constraint\fR options include:
 .IP
 .PD 1
