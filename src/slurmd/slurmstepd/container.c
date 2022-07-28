@@ -861,7 +861,6 @@ extern void container_run(stepd_step_rec_t *step,
 
 extern void cleanup_container(stepd_step_rec_t *step)
 {
-	char *jconfig = NULL;
 
 	if (!oci_conf) {
 		debug("%s: OCI Container not configured. Ignoring %pS requested container: %s",
@@ -869,15 +868,19 @@ extern void cleanup_container(stepd_step_rec_t *step)
 		return;
 	}
 
-	xstrfmtcat(jconfig, "%s/config.json", step->cwd);
+	if (!oci_conf->disable_cleanup) {
+		char *jconfig = NULL;
 
-	if (unlink(jconfig) < 0)
-		error("unlink(%s): %m", jconfig);
+		xstrfmtcat(jconfig, "%s/config.json", step->cwd);
 
-	xfree(jconfig);
+		if (unlink(jconfig) < 0)
+			error("unlink(%s): %m", jconfig);
 
-	if (rmdir(step->cwd))
-		error("rmdir(%s): %m", jconfig);
+		xfree(jconfig);
+
+		if (rmdir(step->cwd))
+			error("rmdir(%s): %m", jconfig);
+	}
 
 	_kill_container();
 

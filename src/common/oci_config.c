@@ -61,6 +61,7 @@ static s_p_options_t options[] = {
 	{"RunTimeStart", S_P_STRING},
 	{"SrunPath", S_P_STRING},
 	{"SrunArgs", S_P_ARRAY},
+	{"DisableCleanup", S_P_BOOLEAN},
 	{NULL}
 };
 
@@ -100,6 +101,7 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	(void) s_p_get_string(&oci->srun_path, "SrunPath", tbl);
 	(void) s_p_get_array((void ***) &srun_args, &srun_args_count,
 			     "SrunArgs", tbl);
+	(void) s_p_get_boolean(&oci->disable_cleanup, "DisableCleanup", tbl);
 
 	if (srun_args_count) {
 		oci->srun_args = xcalloc((srun_args_count + 1),

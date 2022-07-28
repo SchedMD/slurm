@@ -50,6 +50,7 @@ typedef struct {
 	char *runtime_start; /* OCI runtime pattern to execute start */
 	char *srun_path; /* path to srun */
 	char **srun_args; /* arguments for srun (last entry is NULL) */
+	bool disable_cleanup; /* disable removing any generated files */
 } oci_conf_t;
 
 extern int get_oci_conf(oci_conf_t **oci);
