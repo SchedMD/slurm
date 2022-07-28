@@ -168,7 +168,7 @@ static int _add_list_job_state(List char_list, char *values)
 				id = JOB_STATE_BASE & id;
 		}
 
-		if ((id < JOB_PENDING) || (id >= JOB_END)) {
+		if (id >= JOB_END) {
 			break;
 		}
 
