@@ -66,7 +66,7 @@
 
 #include "read_jcconf.h"
 
-static int _create_ns(uint32_t job_id, uid_t uid, stepd_step_rec_t *step);
+static int _create_ns(uint32_t job_id, stepd_step_rec_t *step);
 static int _delete_ns(uint32_t job_id);
 
 #if defined (__APPLE__)
@@ -406,7 +406,7 @@ static int _rm_data(const char *path, const struct stat *st_buf,
 	return rc;
 }
 
-static int _create_ns(uint32_t job_id, uid_t uid, stepd_step_rec_t *step)
+static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
@@ -598,7 +598,7 @@ static int _create_ns(uint32_t job_id, uid_t uid, stepd_step_rec_t *step)
 		 * Now we have a persistent mount namespace.
 		 * Mount private directories inside the namespace.
 		 */
-		if (_mount_private_dirs(src_bind, uid) == -1) {
+		if (_mount_private_dirs(src_bind, step->uid) == -1) {
 			rc = -1;
 			goto child_exit;
 		}
@@ -607,7 +607,7 @@ static int _create_ns(uint32_t job_id, uid_t uid, stepd_step_rec_t *step)
 		 * this happens when restarting the slurmd, the ownership should
 		 * already be correct here.
 		 */
-		rc = chown(src_bind, uid, -1);
+		rc = chown(src_bind, step->uid, -1);
 		if (rc) {
 			error("%s: chown failed for %s: %m",
 			      __func__, src_bind);
@@ -841,10 +841,9 @@ extern int container_p_delete(uint32_t job_id)
 	return SLURM_SUCCESS;
 }
 
-extern int container_p_stepd_create(uint32_t job_id, uid_t uid,
-				    stepd_step_rec_t *step)
+extern int container_p_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
 {
-	return _create_ns(job_id, uid, step);
+	return _create_ns(job_id, step);
 }
 
 extern int container_p_stepd_delete(uint32_t job_id)

@@ -978,7 +978,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 #else
 	jobid = step->step_id.job_id;
 #endif
-	if (container_g_stepd_create(jobid, step->uid, step)) {
+	if (container_g_stepd_create(jobid, step)) {
 		error("%s: container_g_stepd_create(%u): %m", __func__, jobid);
 		return SLURM_ERROR;
 	}

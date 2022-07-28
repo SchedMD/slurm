@@ -55,8 +55,8 @@ typedef struct job_container_ops {
 	int	(*container_p_delete)	(uint32_t job_id);
 	int	(*container_p_restore)	(char *dir_name, bool recover);
 	void	(*container_p_reconfig)	(void);
-	int	(*container_p_stepd_create)	(uint32_t job_id, uid_t uid,
-						 stepd_step_rec_t *step);
+	int	(*container_p_stepd_create)	(uint32_t job_id,
+					         stepd_step_rec_t *step);
 	int	(*container_p_stepd_delete)	(uint32_t job_id);
 
 } job_container_ops_t;
@@ -296,8 +296,7 @@ extern void container_g_reconfig(void)
 }
 
 /* Create a container for the specified job, actions run in slurmstepd */
-extern int container_g_stepd_create(uint32_t job_id, uid_t uid,
-				    stepd_step_rec_t *step)
+extern int container_g_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -306,7 +305,7 @@ extern int container_g_stepd_create(uint32_t job_id, uid_t uid,
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].container_p_stepd_create))(job_id, uid, step);
+		rc = (*(ops[i].container_p_stepd_create))(job_id, step);
 	}
 
 	return rc;
