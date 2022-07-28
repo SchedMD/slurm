@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
  -- cli_filter/lua, jobcomp/lua, job_submit/lua - expose all Slurm error codes.
  -- jobcomp/elasticsearch - expose features field.
  -- jobcomp/elasticsearch - post non-NULL but empty string fields.
+ -- Make advanced reservation flag MAINT not replace nodes, similar to
+    STATIC_ALLOC
 
 * Changes in Slurm 22.05.3
 ==========================

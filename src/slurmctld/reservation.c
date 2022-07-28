@@ -3996,7 +3996,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	    (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&
 	     (resv_ptr->node_cnt > 1)) ||
 	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
-	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
+	    (resv_ptr->flags & RESERVE_FLAG_STATIC) ||
+	    (resv_ptr->flags & RESERVE_FLAG_MAINT))
 		return;
 
 	if ((resv_ptr->flags & RESERVE_FLAG_REPLACE) ||
@@ -5527,7 +5528,8 @@ extern void job_claim_resv(job_record_t *job_ptr)
 	     (resv_ptr->node_cnt > 1)) ||
 	    !(resv_ptr->flags & RESERVE_FLAG_REPLACE) ||
 	    (resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
-	    (resv_ptr->flags & RESERVE_FLAG_STATIC))
+	    (resv_ptr->flags & RESERVE_FLAG_STATIC) ||
+	    (resv_ptr->flags & RESERVE_FLAG_MAINT))
 		return;
 
 	_resv_node_replace(resv_ptr);

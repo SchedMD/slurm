@@ -2445,7 +2445,8 @@ See \fIANY_NODES\fR.
 \fBMAINT\fR
 Maintenance mode, receives special accounting treatment.
 This reservation is permitted to use resources that are already in another
-reservation.
+reservation. The MAINT flag behaves similar to STATIC_ALLOC (see below) in
+that it will not replace nodes once they are set.
 .IP
 
 .TP

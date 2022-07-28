@@ -47,6 +47,8 @@ COMMAND CHANGES (see man pages for details)
  -- sinfo - Add -F/--future option to sinfo to display future nodes.
  -- sacct - Rename 'Reserved' field to 'Planned' to match sreport and the
     nomenclature of the 'Planned' node.
+ -- scontrol - advanced reservation flag MAINT will no longer replace nodes,
+    similar to STATIC_ALLOC
 
 API CHANGES
 ===========
