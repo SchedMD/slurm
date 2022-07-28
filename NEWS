@@ -79,6 +79,16 @@ documents those changes that are of interest to users and administrators.
  -- Update rsmi detection to handle new default library location.
  -- Fix header inclusion from slurmstepd manager code leading to multiple
     definition errors when linking --without-shared-libslurm.
+ -- slurm.spec - explicitly disable Link Time Optimization (LTO) to avoid
+    linking errors on systems where LTO-related RPM macros are enabled by
+    default and the binutils version has a bug.
+ -- Fix issue in the api/step_io message writing logic leading to incorrect
+    behavior in API consuming clients like srun or sattach, including a segfault
+    when freeing IO buffers holding traffic from the tasks to the client.
+ -- openapi/dbv0.0.38 - avoid job queries getting rejected when cluster is not
+    provided by client.
+ -- openapi/dbv0.0.38 - accept job state filter as verbose names instead of
+    only numeric state ids.
 
 * Changes in Slurm 22.05.2
 ==========================
