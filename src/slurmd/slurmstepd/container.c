@@ -78,6 +78,16 @@ static char *run_argv[] = {
 static char *start_argv[] = {
 	"/bin/sh", "-c", "echo 'start disabled'; exit 1", NULL };
 
+static void _dump_command_args(run_command_args_t *args, const char *caller)
+{
+	if (get_log_level() < LOG_LEVEL_DEBUG3)
+		return;
+
+	for (int i = 0; args->script_argv[i]; i++)
+		debug3("%s: command argv[%d]=%s",
+		       caller, i, args->script_argv[i]);
+}
+
 static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 			       int task_id, char *rootfs_path, char **cmd_args)
 {
@@ -632,6 +642,7 @@ static data_t *_get_container_state()
 	};
 
 	/* request container get deleted if known at all any more */
+	_dump_command_args(&run_command_args, __func__);
 	out = run_command(&run_command_args);
 	debug("%s: RunTimeQuery rc:%u output:%s", __func__, rc, out);
 
@@ -723,6 +734,7 @@ static void _kill_container()
 		run_command_args.script_path = delete_argv[0];
 		run_command_args.script_type = "RunTimeDelete";
 		run_command_args.status = &delete_status;
+		_dump_command_args(&run_command_args, __func__);
 		out = run_command(&run_command_args);
 		debug("%s: RunTimeDelete rc:%u output:%s",
 		      __func__, delete_status, out);
@@ -750,6 +762,7 @@ static void _create_start(stepd_step_rec_t *step,
 	run_command_args.script_argv = create_argv;
 	run_command_args.script_path = create_argv[0];
 	run_command_args.script_type = "RunTimeCreate";
+	_dump_command_args(&run_command_args, __func__);
 	out = run_command(&run_command_args);
 	debug("%s: RunTimeCreate rc:%u output:%s", __func__, rc, out);
 	xfree(out);
@@ -790,6 +803,7 @@ static void _create_start(stepd_step_rec_t *step,
 	run_command_args.script_argv = start_argv;
 	run_command_args.script_path = start_argv[0];
 	run_command_args.script_type = "RunTimeStart";
+	_dump_command_args(&run_command_args, __func__);
 	out = run_command(&run_command_args);
 	debug("%s: RunTimeStart rc:%u output:%s", __func__, rc, out);
 	xfree(out);
