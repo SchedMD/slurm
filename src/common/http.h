@@ -137,22 +137,4 @@ extern const char *get_http_method_string(const http_request_method_t method);
 extern data_t *parse_url_path(const char *path, bool convert_types,
 			      bool allow_templates);
 
-typedef struct {
-	const char *host;
-	const char *port; /* port as string for later parsing */
-} parsed_host_port_t;
-
-/*
- * Parse a combined host:port string into host and port
- * IN str host:port string for parsing
- * OUT parsed will be populated with strings (must xfree())
- * RET SLURM_SUCCESS or error
- */
-extern parsed_host_port_t *parse_host_port(const char *str);
-
-/*
- * Free parsed_host_port_t returned from parse_host_port()
- */
-extern void free_parse_host_port(parsed_host_port_t *parsed);
-
 #endif /* SLURM_HTTP_H */

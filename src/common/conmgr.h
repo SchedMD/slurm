@@ -92,6 +92,26 @@ typedef struct {
 	con_mgr_on_connection_finish on_finish;
 } con_mgr_events_t;
 
+typedef struct {
+	const char *host;
+	const char *port; /* port as string for later parsing */
+} parsed_host_port_t;
+
+typedef struct {
+	/*
+	 * Parse a combined host:port string into host and port
+	 * IN str host:port string for parsing
+	 * OUT parsed will be populated with strings (must xfree())
+	 * RET SLURM_SUCCESS or error
+	 */
+	parsed_host_port_t *(*parse)(const char *str);
+
+	/*
+	 * Free parsed_host_port_t returned from parse_host_port_t()
+	 */
+	void (*free_parse)(parsed_host_port_t *parsed);
+} con_mgr_callbacks_t;
+
 /*
  * Connection tracking structure
  *
@@ -196,6 +216,9 @@ struct con_mgr_s {
 	/* First observed error */
 	int error;
 
+	/* functions to handle host/port parsing */
+	con_mgr_callbacks_t callbacks;
+
 	pthread_mutex_t mutex;
 	/* called after events or changes to wake up _watch */
 	pthread_cond_t cond;
@@ -205,9 +228,10 @@ struct con_mgr_s {
  * create and init a connection manager
  * only call once!
  * IN thread_count - number of threads to create
+ * IN callbacks - struct containing function pointers
  * RET SLURM_SUCCESS or error
  */
-extern con_mgr_t *init_con_mgr(int thread_count);
+extern con_mgr_t *init_con_mgr(int thread_count, con_mgr_callbacks_t callbacks);
 extern void free_con_mgr(con_mgr_t *mgr);
 
 /*

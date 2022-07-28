@@ -212,13 +212,14 @@ try_again:
 	}
 }
 
-extern con_mgr_t *init_con_mgr(int thread_count)
+extern con_mgr_t *init_con_mgr(int thread_count, con_mgr_callbacks_t callbacks)
 {
 	con_mgr_t *mgr = xmalloc(sizeof(*mgr));
 
 	mgr->magic = MAGIC_CON_MGR;
 	mgr->connections = list_create(NULL);
 	mgr->listen = list_create(NULL);
+	mgr->callbacks = callbacks;
 
 	slurm_mutex_init(&mgr->mutex);
 	slurm_cond_init(&mgr->cond, NULL);
@@ -1845,7 +1846,7 @@ static int _create_socket(void *x, void *arg)
 			unixsock);
 	} else {
 		/* split up host and port */
-		if (!(parsed_hp = parse_host_port(hostport)))
+		if (!(parsed_hp = init->mgr->callbacks.parse(hostport)))
 			fatal("%s: Unable to parse %s", __func__, hostport);
 
 		/* resolve out the host and port if provided */
@@ -1904,7 +1905,7 @@ static int _create_socket(void *x, void *arg)
 	}
 
 	freeaddrinfo(addrlist);
-	free_parse_host_port(parsed_hp);
+	init->mgr->callbacks.free_parse(parsed_hp);
 
 	return rc;
 }

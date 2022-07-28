@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - Prevent reading the plugin config multiple times per
     step.
  -- Fix wrong attempt of gres binding for gres w/out cores defined.
+ -- Fix build to work with '--without-shared-libslurm' configure flag.
 
 * Changes in Slurm 22.05.3
 ==========================
