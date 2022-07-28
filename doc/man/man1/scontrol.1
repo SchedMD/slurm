@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "July 2022" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "August 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -368,9 +368,12 @@ is restarted or \fBscontrol reconfigure\fR is executed).
 \fBsetdebugflags\fR [+|\-]<\fIFLAG\fR>
 Add or remove DebugFlags of the slurmctld daemon.
 See "man slurm.conf" for a list of supported DebugFlags.
-NOTE: Changing the value of some DebugFlags will have no effect without
+
+\fBNOTE\fR: Changing the value of some DebugFlags will have no effect without
 restarting the slurmctld daemon, which would set DebugFlags based upon the
-contents of the slurm.conf configuration file.
+contents of the slurm.conf configuration file or the \fBSLURM_DEBUG_FLAGS\fR
+environment variable. The environment variable takes precedence over the
+setting in the slurm.conf.
 .IP
 
 .TP
@@ -2708,6 +2711,13 @@ The location of the Slurm configuration file.
 \fBSLURM_CONF_OUT\fR
 When running 'write config', the location of the Slurm configuration file to be
 written.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for scontrol to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
 .IP
 
 .TP

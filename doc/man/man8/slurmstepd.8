@@ -1,4 +1,4 @@
-.TH slurmstepd "8" "Slurm Component" "March 2020" "Slurm Component"
+.TH slurmstepd "8" "Slurm Component" "August 2022" "Slurm Component"
 
 .SH "NAME"
 slurmstepd \- The job step manager for Slurm.
@@ -11,6 +11,17 @@ and terminates when the job step does.
 It is responsible for managing input and output (stdin, stdout and stderr)
 for the job step along with its accounting and signal processing.
 \fBslurmstepd\fR should not be initiated by users or system administrators.
+
+.SH "ENVIRONMENT VARIABLES:
+The following environment variables can be used to override settings
+compiled into slurmstepd.
+
+.TP 20
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for slurmstepd to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
+.IP
 
 .SH "SIGNALS"
 

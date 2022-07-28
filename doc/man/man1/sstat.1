@@ -1,4 +1,4 @@
-.TH sstat "1" "Slurm Commands" "February 2022" "Slurm Commands"
+.TH sstat "1" "Slurm Commands" "August 2022" "Slurm Commands"
 
 .SH "NAME"
 sstat \- Display the status information of a running job/step.
@@ -338,6 +338,13 @@ environment variables, along with their corresponding options, are listed below.
 .TP 20
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for sstat to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
 .IP
 
 .SH "EXAMPLES"
