@@ -246,14 +246,14 @@ static int _load_pending_jobs(void)
 		log_flag(ESEARCH, "%s: Loaded %u jobs from state file",
 			 plugin_type, job_cnt);
 	}
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	xfree(state_file);
 
 	return rc;
 
 unpack_error:
 	error("%s: Error unpacking file %s", plugin_type, state_file);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	xfree(state_file);
 	return SLURM_ERROR;
 }
@@ -456,7 +456,7 @@ static int _save_state(void)
 	xfree(new_file);
 	slurm_mutex_unlock(&save_lock);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return rc;
 }
@@ -700,7 +700,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	if ((script = get_job_script(job_ptr)))
 		data_set_string(data_key_set(record, "script"),
 				get_buf_data(script));
-	free_buf(script);
+	FREE_NULL_BUFFER(script);
 
 	if (job_ptr->assoc_ptr) {
 		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
