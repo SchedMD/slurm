@@ -895,6 +895,7 @@ static bool _opt_verify(void)
 	bool verified = true;
 	hostlist_t hl = NULL;
 	int hl_cnt = 0;
+	bool mpack_reset_nodes = false;
 
 	validate_options_salloc_sbatch_srun(&opt);
 
@@ -914,8 +915,12 @@ static bool _opt_verify(void)
 	 * number if the allocation is homogeneous.
 	 */
 	if ((opt.distribution & SLURM_DIST_PACK_NODES) &&
-	    slurm_option_set_by_env(&opt, 'N'))
+	    slurm_option_set_by_env(&opt, 'N')) {
 		opt.min_nodes = 1;
+		if (opt.verbose)
+			info("Reseting -N set by environment variable because of -mpack");
+		mpack_reset_nodes = true;
+	}
 
 
 	/*
@@ -1285,10 +1290,15 @@ static bool _opt_verify(void)
 
 		if ((opt.ntasks_per_node != NO_VAL) && opt.min_nodes &&
 		    (opt.ntasks_per_node != (opt.ntasks / opt.min_nodes))) {
-			if (opt.ntasks > opt.ntasks_per_node)
+			if ((opt.ntasks > opt.ntasks_per_node) &&
+			    !mpack_reset_nodes)
 				info("Warning: can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u with the number of requested nodes %u. Ignoring --ntasks-per-node.",
 				     opt.ntasks_per_node, opt.ntasks,
 				     opt.min_nodes);
+			else if (opt.ntasks > opt.ntasks_per_node)
+				info("Warning: can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u and -mpack, which forces min number of nodes to 1",
+				     opt.ntasks_per_node, opt.ntasks);
+
 			slurm_option_reset(&opt, "ntasks-per-node");
 		}
 
