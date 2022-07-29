@@ -425,7 +425,7 @@ static void _do_power_work(time_t now)
 		data_set_string_own(data_key_set(job_node_data, "nodes"),
 				    nodes);
 
-		/* No more jobs to power up, remove job from list */
+		/* No more nodes to power up, remove job from list */
 		if (!bit_overlap_any(need_resume_bitmap, job_ptr->node_bitmap))
 			list_delete_item(iter);
 
