@@ -407,8 +407,16 @@ main (int argc, char **argv)
 		error("Unable to remove pidfile `%s': %m",
 		      conf->pidfile);
 
-	run_command_shutdown();
 	_wait_for_all_threads(120);
+	/*
+	 * run_command_shutdown() will kill any scripts started with
+	 * run_command() including the prolog and epilog.
+	 * Call run_command_shutdown() *after* waiting for threads to complete
+	 * to give prolog and epilog scrripts a chance to finish,
+	 * otherwise jobs will fail and the node will be drained due to prolog
+	 * failure.
+	 */
+	run_command_shutdown();
 	_slurmd_fini();
 	_destroy_conf();
 	slurm_cred_fini();	/* must be after _destroy_conf() */
