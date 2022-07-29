@@ -618,36 +618,32 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		}
 	}
 
-	if (job_ptr->details
-	    && (job_ptr->details->work_dir && job_ptr->details->work_dir[0])) {
+	if (job_ptr->details && job_ptr->details->work_dir) {
 		data_set_string(data_key_set(record, "work_dir"),
 				job_ptr->details->work_dir);
 	}
 
-	if (job_ptr->details
-	    && (job_ptr->details->std_err && job_ptr->details->std_err[0])) {
+	if (job_ptr->details && job_ptr->details->std_err) {
 		data_set_string(data_key_set(record, "std_err"),
 				job_ptr->details->std_err);
 	}
 
-	if (job_ptr->details
-	    && (job_ptr->details->std_in && job_ptr->details->std_in[0])) {
+	if (job_ptr->details && job_ptr->details->std_in) {
 		data_set_string(data_key_set(record, "std_in"),
 				job_ptr->details->std_in);
 	}
 
-	if (job_ptr->details
-	    && (job_ptr->details->std_out && job_ptr->details->std_out[0])) {
+	if (job_ptr->details && job_ptr->details->std_out) {
 		data_set_string(data_key_set(record, "std_out"),
 				job_ptr->details->std_out);
 	}
 
-	if (job_ptr->assoc_ptr != NULL) {
+	if (job_ptr->assoc_ptr && job_ptr->assoc_ptr->cluster) {
 		data_set_string(data_key_set(record, "cluster"),
 				job_ptr->assoc_ptr->cluster);
 	}
 
-	if (job_ptr->qos_ptr != NULL) {
+	if (job_ptr->qos_ptr && job_ptr->qos_ptr->name) {
 		data_set_string(data_key_set(record, "qos"),
 				job_ptr->qos_ptr->name);
 	}
@@ -675,16 +671,12 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 			     job_ptr->details->cpus_per_task);
 	}
 
-	if (job_ptr->details
-	    && (job_ptr->details->orig_dependency
-		&& job_ptr->details->orig_dependency[0])) {
+	if (job_ptr->details && job_ptr->details->orig_dependency) {
 		data_set_string(data_key_set(record, "orig_dependency"),
 				job_ptr->details->orig_dependency);
 	}
 
-	if (job_ptr->details
-	    && (job_ptr->details->exc_nodes
-		&& job_ptr->details->exc_nodes[0])) {
+	if (job_ptr->details && job_ptr->details->exc_nodes) {
 		data_set_string(data_key_set(record, "excluded_nodes"),
 				job_ptr->details->exc_nodes);
 	}
@@ -698,31 +690,31 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 			     (time_limit * 60));
 	}
 
-	if (job_ptr->name && job_ptr->name[0]) {
+	if (job_ptr->name) {
 		data_set_string(data_key_set(record, "job_name"),
 				job_ptr->name);
 	}
 
-	if (job_ptr->resv_name && job_ptr->resv_name[0]) {
+	if (job_ptr->resv_name) {
 		data_set_string(data_key_set(record, "reservation_name"),
 				job_ptr->resv_name);
 	}
 
-	if (job_ptr->wckey && job_ptr->wckey[0]) {
+	if (job_ptr->wckey) {
 		data_set_string(data_key_set(record, "wc_key"), job_ptr->wckey);
 	}
 
-	if (job_ptr->tres_fmt_req_str && job_ptr->tres_fmt_req_str[0]) {
+	if (job_ptr->tres_fmt_req_str) {
 		data_set_string(data_key_set(record, "tres_req"),
 				job_ptr->tres_fmt_req_str);
 	}
 
-	if (job_ptr->tres_fmt_alloc_str && job_ptr->tres_fmt_alloc_str[0]) {
+	if (job_ptr->tres_fmt_alloc_str) {
 		data_set_string(data_key_set(record, "tres_alloc"),
 				job_ptr->tres_fmt_alloc_str);
 	}
 
-	if (job_ptr->account && job_ptr->account[0]) {
+	if (job_ptr->account) {
 		data_set_string(data_key_set(record, "account"),
 				job_ptr->account);
 	}

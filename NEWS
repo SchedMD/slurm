@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- oci.conf: Add %U as OCI pattern replacement to numeric user id.
  -- cli_filter/lua, jobcomp/lua, job_submit/lua - expose all Slurm error codes.
  -- jobcomp/elasticsearch - expose features field.
+ -- jobcomp/elasticsearch - post non-NULL but empty string fields.
 
 * Changes in Slurm 22.05.3
 ==========================
