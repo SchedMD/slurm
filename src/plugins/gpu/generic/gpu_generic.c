@@ -130,3 +130,8 @@ extern void gpu_p_get_device_count(unsigned int *device_count)
 {
 	return;
 }
+
+extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
+{
+	return SLURM_SUCCESS;
+}

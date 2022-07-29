@@ -3642,6 +3642,7 @@ extern char *slurmdb_make_tres_string_from_simple(
 							 convert_flags);
 				xstrfmtcat(tres_str, "%s", outbuf);
 			} else if ((tres_rec->id == TRES_MEM) ||
+				   !xstrcasecmp(tres_rec->name, "gpumem") ||
 				   !xstrcasecmp(tres_rec->type, "bb")) {
 				char outbuf[FORMAT_STRING_SIZE];
 				convert_num_unit((double)count, outbuf,

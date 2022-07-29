@@ -52,6 +52,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/env.h"
 #include "src/common/gpu.h"
@@ -93,6 +94,8 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 static char	*gres_name		= "gpu";
 static List	gres_devices		= NULL;
 static uint32_t	node_flags		= 0;
+static int tres_mem_pos = -1;
+static int tres_util_pos = -1;
 
 extern void gres_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
@@ -420,7 +423,8 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 	while ((gres_slurmd_conf = list_next(itr))) {
 		int i;
 		hostlist_t hl;
-		char *hl_name;
+		char *hl_name, *tmp_file;
+		int count = gres_slurmd_conf->count;
 
 		if (!gres_slurmd_conf->count)
 			continue;
@@ -440,21 +444,15 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 			list_append(gres_list_conf_single, gres_slurmd_conf);
 			continue;
 		} else if (!gres_slurmd_conf->file) {
+			gres_slurmd_conf->count = 1;
 			/*
 			 * Split this record into multiple single-GPU records
 			 * and add them to the single-GPU GRES list
 			 */
-			for (i = 0; i < gres_slurmd_conf->count; i++)
+			for (i = 0; i < count; i++)
 				add_gres_to_list(gres_list_conf_single,
-						 gres_slurmd_conf->name, 1,
-						 gres_slurmd_conf->cpu_cnt,
-						 gres_slurmd_conf->cpus,
-						 gres_slurmd_conf->cpus_bitmap,
-						 gres_slurmd_conf->file,
-						 gres_slurmd_conf->type_name,
-						 gres_slurmd_conf->links,
-						 gres_slurmd_conf->unique_id,
-						 gres_slurmd_conf->config_flags);
+						 gres_slurmd_conf);
+			gres_slurmd_conf->count = count;
 			continue;
 		}
 
@@ -463,23 +461,22 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 		 * Break down record into individual devices.
 		 */
 		hl = hostlist_create(gres_slurmd_conf->file);
+		tmp_file = gres_slurmd_conf->file;
 		while ((hl_name = hostlist_shift(hl))) {
+			gres_slurmd_conf->count = 1;
+			gres_slurmd_conf->file = hl_name;
 			/*
 			 * Split this record into multiple single-GPU,
 			 * single-file records and add to single-GPU GRES list
 			 */
 			add_gres_to_list(gres_list_conf_single,
-					 gres_slurmd_conf->name, 1,
-					 gres_slurmd_conf->cpu_cnt,
-					 gres_slurmd_conf->cpus,
-					 gres_slurmd_conf->cpus_bitmap, hl_name,
-					 gres_slurmd_conf->type_name,
-					 gres_slurmd_conf->links,
-					 gres_slurmd_conf->unique_id,
-					 gres_slurmd_conf->config_flags);
+					 gres_slurmd_conf);
 			free(hl_name);
+			gres_slurmd_conf->file = NULL;
 		}
 		hostlist_destroy(hl);
+		gres_slurmd_conf->count = count;
+		gres_slurmd_conf->file = tmp_file;
 	}
 	list_iterator_destroy(itr);
 
@@ -660,15 +657,11 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 		char *save_ptr = NULL;
 		char *tok;
 		int i = 0;
-		int cpu_count = 0;
-		char *cpu_range = NULL;
-		char *device_file = NULL;
-		char *type = NULL;
-		char *links = NULL;
-		char *unique_id = NULL;
-		char *flags_str = NULL;
-		uint32_t flags = 0;
-		bitstr_t *cpu_aff_mac_bitstr = NULL;
+		gres_slurmd_conf_t gres_slurmd_conf = {
+			.count = 1,
+			.name = "gpu",
+		};
+
 		line_number++;
 
 		/*
@@ -695,29 +688,31 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 
 			switch (i) {
 			case 0:
-				type = xstrdup(tok);
+				gres_slurmd_conf.type_name = xstrdup(tok);
 				break;
 			case 1:
-				cpu_count = atoi(tok);
+				gres_slurmd_conf.cpu_cnt = atoi(tok);
 				break;
 			case 2:
 				if (tok[0] == '~')
 					// accommodate special tests
-					cpu_range = gpu_g_test_cpu_conv(tok);
+					gres_slurmd_conf.cpus =
+						gpu_g_test_cpu_conv(tok);
 				else
-					cpu_range = xstrdup(tok);
+					gres_slurmd_conf.cpus = xstrdup(tok);
 				break;
 			case 3:
-				links = xstrdup(tok);
+				gres_slurmd_conf.links = xstrdup(tok);
 				break;
 			case 4:
-				device_file = xstrdup(tok);
+				gres_slurmd_conf.file = xstrdup(tok);
 				break;
 			case 5:
-				unique_id = xstrdup(tok);
+				gres_slurmd_conf.unique_id = xstrdup(tok);
 				break;
 			case 6:
-				flags_str = xstrdup(tok);
+				gres_slurmd_conf.config_flags =
+					gres_flags_parse(tok, NULL, NULL);
 				break;
 			default:
 				error("Malformed line: too many data fields");
@@ -731,24 +726,21 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 			error("Line #%d in fake_gpus.conf failed to parse! Make sure that the line has no empty tokens and that the format is <type>|<sys_cpu_count>|<cpu_range>|<links>|<device_file>[|<unique_id>[|<flags>]]",
 			      line_number);
 
-		cpu_aff_mac_bitstr = bit_alloc(cpu_count);
-		if (bit_unfmt(cpu_aff_mac_bitstr, cpu_range))
+		gres_slurmd_conf.cpus_bitmap =
+			bit_alloc(gres_slurmd_conf.cpu_cnt);
+		if (bit_unfmt(gres_slurmd_conf.cpus_bitmap,
+			      gres_slurmd_conf.cpus))
 			fatal("bit_unfmt() failed for CPU range: %s",
-			      cpu_range);
-
-		flags = gres_flags_parse(flags_str, NULL, NULL);
+			      gres_slurmd_conf.cpus);
 
 		// Add the GPU specified by the parsed line
-		add_gres_to_list(gres_list_system, "gpu", 1, cpu_count,
-				 cpu_range, cpu_aff_mac_bitstr, device_file,
-				 type, links, unique_id, flags);
-		FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
-		xfree(cpu_range);
-		xfree(device_file);
-		xfree(type);
-		xfree(links);
-		xfree(unique_id);
-		xfree(flags_str);
+		add_gres_to_list(gres_list_system, &gres_slurmd_conf);
+		FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
+		xfree(gres_slurmd_conf.cpus);
+		xfree(gres_slurmd_conf.file);
+		xfree(gres_slurmd_conf.type_name);
+		xfree(gres_slurmd_conf.links);
+		xfree(gres_slurmd_conf.unique_id);
 	}
 	fclose(f);
 }
@@ -781,7 +773,20 @@ static List _get_system_gpu_list_fake(void)
 
 extern int init(void)
 {
+	slurmdb_tres_rec_t tres_rec;
+
 	debug("loaded");
+
+	if (!running_in_slurmstepd())
+		return SLURM_SUCCESS;
+
+	memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+	tres_rec.type = "gres";
+	tres_rec.name = "gpumem";
+	tres_mem_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+	tres_rec.type = "gres";
+	tres_rec.name = "gpuutil";
+	tres_util_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 
 	return SLURM_SUCCESS;
 }
@@ -873,9 +878,17 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 			       uint64_t gres_cnt,
 			       gres_internal_flags_t flags)
 {
-	gres_common_gpu_set_env(job_env_ptr, gres_bit_alloc, NULL, gres_cnt,
-				false, true, flags,
-				node_flags, gres_devices, NULL);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = job_env_ptr,
+		.flags = flags,
+		.gres_cnt = gres_cnt,
+		.gres_conf_flags = node_flags,
+		.gres_devices = gres_devices,
+		.is_job = true,
+	};
+
+	gres_common_gpu_set_env(&gres_env);
 }
 
 /*
@@ -887,25 +900,40 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 				uint64_t gres_cnt,
 				gres_internal_flags_t flags)
 {
-	gres_common_gpu_set_env(step_env_ptr, gres_bit_alloc, NULL, gres_cnt,
-				false, false, flags,
-				node_flags, gres_devices, NULL);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = step_env_ptr,
+		.flags = flags,
+		.gres_cnt = gres_cnt,
+		.gres_conf_flags = node_flags,
+		.gres_devices = gres_devices,
+	};
+
+	gres_common_gpu_set_env(&gres_env);
 }
 
 /*
  * Reset environment variables as appropriate for a job (i.e. this one task)
  * based upon the job step's GRES state and assigned CPUs.
  */
-extern void gres_p_task_set_env(char ***step_env_ptr,
+extern void gres_p_task_set_env(char ***task_env_ptr,
 				bitstr_t *gres_bit_alloc,
 				uint64_t gres_cnt,
 				bitstr_t *usable_gres,
 				gres_internal_flags_t flags)
 {
-	gres_common_gpu_set_env(
-		step_env_ptr, gres_bit_alloc, usable_gres, gres_cnt,
-		true, false, flags,
-		node_flags, gres_devices, NULL);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = task_env_ptr,
+		.flags = flags,
+		.gres_cnt = gres_cnt,
+		.gres_conf_flags = node_flags,
+		.gres_devices = gres_devices,
+		.is_task = true,
+		.usable_gres = usable_gres,
+	};
+
+	gres_common_gpu_set_env(&gres_env);
 }
 
 /* Send GPU-specific GRES information to slurmstepd via a buffer */

@@ -149,18 +149,17 @@ static uint64_t _get_dev_count(int global_id)
 	return count;
 }
 
-static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
-		     bitstr_t *usable_gres, uint64_t gres_per_node,
-		     bool is_task, bool is_job, gres_internal_flags_t flags)
+static void _set_env(common_gres_env_t *gres_env)
 {
 	char perc_str[64];
 	uint64_t count_on_dev, percentage;
-	int global_id = -1;
 
-	gres_common_gpu_set_env(env_ptr, gres_bit_alloc,
-				usable_gres, gres_per_node,
-				is_task, is_job, flags, GRES_CONF_ENV_NVML,
-				gres_devices, &global_id);
+	gres_env->global_id = -1;
+	gres_env->gres_conf_flags = GRES_CONF_ENV_NVML;
+	gres_env->gres_devices = gres_devices;
+	gres_env->prefix = "";
+
+	gres_common_gpu_set_env(gres_env);
 
 	/*
 	 * Set environment variables if GRES is found. Otherwise, unset
@@ -168,25 +167,27 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	 * This is useful for jobs and steps that request --gres=none within an
 	 * existing job allocation with GRES.
 	 */
-	if (gres_per_node && shared_info) {
-		count_on_dev = _get_dev_count(global_id);
+	if (gres_env->gres_cnt && shared_info) {
+		count_on_dev = _get_dev_count(gres_env->global_id);
 		if (count_on_dev > 0) {
-			percentage = (gres_per_node * 100) / count_on_dev;
+			percentage = (gres_env->gres_cnt * 100) / count_on_dev;
 			percentage = MAX(percentage, 1);
 		} else
 			percentage = 0;
 		snprintf(perc_str, sizeof(perc_str), "%"PRIu64, percentage);
-		env_array_overwrite(env_ptr,
+		env_array_overwrite(gres_env->env_ptr,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
 				    perc_str);
-	} else if (gres_per_node) {
+	} else if (gres_env->gres_cnt) {
 		error("shared_info list is NULL");
-		snprintf(perc_str, sizeof(perc_str), "%"PRIu64, gres_per_node);
-		env_array_overwrite(env_ptr,
+		snprintf(perc_str, sizeof(perc_str), "%"PRIu64,
+			 gres_env->gres_cnt);
+		env_array_overwrite(gres_env->env_ptr,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
 				    perc_str);
 	} else {
-		unsetenvp(*env_ptr, "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE");
+		unsetenvp(*gres_env->env_ptr,
+			  "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE");
 	}
 }
 
@@ -199,8 +200,15 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 			       uint64_t gres_per_node,
 			       gres_internal_flags_t flags)
 {
-	_set_env(job_env_ptr, gres_bit_alloc, NULL, gres_per_node,
-		false, true, flags);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = job_env_ptr,
+		.flags = flags,
+		.gres_cnt = gres_per_node,
+		.is_job = true,
+	};
+
+	_set_env(&gres_env);
 }
 
 /*
@@ -212,22 +220,36 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 				uint64_t gres_per_node,
 				gres_internal_flags_t flags)
 {
-	_set_env(step_env_ptr, gres_bit_alloc, NULL, gres_per_node,
-		 false, false, flags);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = step_env_ptr,
+		.flags = flags,
+		.gres_cnt = gres_per_node,
+	};
+
+	_set_env(&gres_env);
 }
 
 /*
  * Reset environment variables as appropriate for a job (i.e. this one task)
  * based upon the job step's GRES state and assigned CPUs.
  */
-extern void gres_p_task_set_env(char ***step_env_ptr,
+extern void gres_p_task_set_env(char ***task_env_ptr,
 				bitstr_t *gres_bit_alloc,
 				bitstr_t *usable_gres,
 				uint64_t gres_per_node,
 				gres_internal_flags_t flags)
 {
-	_set_env(step_env_ptr, gres_bit_alloc, usable_gres, gres_per_node,
-		 true, false, flags);
+	common_gres_env_t gres_env = {
+		.bit_alloc = gres_bit_alloc,
+		.env_ptr = task_env_ptr,
+		.flags = flags,
+		.gres_cnt = gres_per_node,
+		.is_task = true,
+		.usable_gres = usable_gres,
+	};
+
+	_set_env(&gres_env);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */

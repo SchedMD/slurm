@@ -4437,6 +4437,14 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		xstrfmtcat(conf->accounting_storage_tres,
 			   ",%s", DEFAULT_ACCOUNTING_TRES);
 
+	/*
+	 * If we are tracking gres/gpu also add the usage tres to the mix
+	 */
+	if (xstrcasestr(conf->accounting_storage_tres, "gres/gpu"))
+		xstrcat(conf->accounting_storage_tres,
+			",gres/gpuutil,gres/gpumem");
+
+
 	if (s_p_get_string(&temp_str, "AccountingStorageEnforce", hashtbl)) {
 		if (_validate_accounting_storage_enforce(temp_str, conf)) {
 			error("AccountingStorageEnforce invalid: %s",

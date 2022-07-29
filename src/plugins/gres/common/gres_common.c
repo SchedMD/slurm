@@ -242,12 +242,7 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 	return rc;
 }
 
-extern void common_gres_set_env(List gres_devices, char ***env_ptr,
-				bitstr_t *usable_gres, char *prefix,
-				bitstr_t *bit_alloc,
-				char **local_list, char **global_list,
-				bool is_task, bool is_job, int *global_id,
-				gres_internal_flags_t flags, bool use_dev_num)
+extern void common_gres_set_env(common_gres_env_t *gres_env)
 {
 	bool use_local_dev_index = gres_use_local_device_index();
 	bool set_global_id = false;
@@ -259,19 +254,19 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	bool device_considered = false;
 	int local_inx = 0;
 
-	if (!gres_devices)
+	xassert(gres_env);
+
+	if (!gres_env->gres_devices)
 		return;
 
 	/* If we are setting task env but don't have usable_gres, just exit */
-	if (is_task && !usable_gres)
+	if (gres_env->is_task && !gres_env->usable_gres)
 		return;
 
-	xassert(global_list);
-	xassert(local_list);
 	/* is_task and is_job can't both be true */
-	xassert(!(is_task && is_job));
+	xassert(!(gres_env->is_task && gres_env->is_job));
 
-	if (!bit_alloc) {
+	if (!gres_env->bit_alloc) {
 		/*
 		 * The gres.conf file must identify specific device files
 		 * in order to set the CUDA_VISIBLE_DEVICES env var
@@ -279,11 +274,11 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		return;
 	}
 
-	itr = list_iterator_create(gres_devices);
+	itr = list_iterator_create(gres_env->gres_devices);
 	while ((gres_device = list_next(itr))) {
 		int index;
 		int global_env_index;
-		if (!bit_test(bit_alloc, gres_device->index))
+		if (!bit_test(gres_env->bit_alloc, gres_device->index))
 			continue;
 
 		/* Track physical devices if MultipleFiles is used */
@@ -304,7 +299,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		 * they enumerate on the PCI bus, and this isn't always
 		 * the same order as the device file names
 		 */
-		if (use_dev_num)
+		if (gres_env->use_dev_num)
 			global_env_index = gres_device->dev_num;
 		else
 			global_env_index = gres_device->index;
@@ -312,8 +307,8 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		index = use_local_dev_index ?
 			local_inx++ : global_env_index;
 
-		if (is_task) {
-			if (!bit_test(usable_gres,
+		if (gres_env->is_task) {
+			if (!bit_test(gres_env->usable_gres,
 				      use_local_dev_index ?
 				      index : gres_device->index)) {
 				/*
@@ -326,8 +321,8 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			}
 		}
 
-		if (global_id && !set_global_id) {
-			*global_id = gres_device->dev_num;
+		if (!set_global_id) {
+			gres_env->global_id = gres_device->dev_num;
 			set_global_id = true;
 		}
 
@@ -337,12 +332,12 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		 */
 		if (gres_device->unique_id)
 			xstrfmtcat(new_local_list, "%s%s%s", local_prefix,
-				   prefix, gres_device->unique_id);
+				   gres_env->prefix, gres_device->unique_id);
 		else
 			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
-				   prefix, index);
+				   gres_env->prefix, index);
 		xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
-			   prefix, global_env_index);
+			   gres_env->prefix, global_env_index);
 
 		local_prefix = ",";
 		global_prefix = ",";
@@ -351,25 +346,26 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	list_iterator_destroy(itr);
 
 	if (new_global_list) {
-		xfree(*global_list);
-		*global_list = new_global_list;
+		xfree(gres_env->global_list);
+		gres_env->global_list = new_global_list;
 	}
 	if (new_local_list) {
-		xfree(*local_list);
-		*local_list = new_local_list;
+		xfree(gres_env->local_list);
+		gres_env->local_list = new_local_list;
 	}
 
-	if (flags & GRES_INTERNAL_FLAG_VERBOSE) {
+	if (gres_env->flags & GRES_INTERNAL_FLAG_VERBOSE) {
 		char *usable_str;
 		char *alloc_str;
-		if (usable_gres)
-			usable_str = bit_fmt_hexmask_trim(usable_gres);
+		if (gres_env->usable_gres)
+			usable_str = bit_fmt_hexmask_trim(
+				gres_env->usable_gres);
 		else
 			usable_str = xstrdup("NULL");
-		alloc_str = bit_fmt_hexmask_trim(bit_alloc);
+		alloc_str = bit_fmt_hexmask_trim(gres_env->bit_alloc);
 		fprintf(stderr, "gpu-bind: usable_gres=%s; bit_alloc=%s; local_inx=%d; global_list=%s; local_list=%s\n",
-			usable_str, alloc_str, local_inx, *global_list,
-			*local_list);
+			usable_str, alloc_str, local_inx, gres_env->global_list,
+			gres_env->local_list);
 		xfree(alloc_str);
 		xfree(usable_str);
 	}
@@ -524,24 +520,18 @@ extern void print_gres_list_parsable(List gres_list)
 	_print_gres_list_helper(gres_list, LOG_LEVEL_INFO, true);
 }
 
-extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
-				    bitstr_t *usable_gres, uint64_t gres_cnt,
-				    bool is_task, bool is_job,
-				    gres_internal_flags_t flags,
-				    uint32_t gres_conf_flags,
-				    List gres_devices, int *global_id)
+extern void gres_common_gpu_set_env(common_gres_env_t *gres_env)
 {
-	char *global_list = NULL, *local_list = NULL, *slurm_env_var = NULL;
+	char *slurm_env_var;
 
-	if (is_job)
+	if (gres_env->is_job)
 		slurm_env_var = "SLURM_JOB_GPUS";
 	else
 		slurm_env_var = "SLURM_STEP_GPUS";
 
-	common_gres_set_env(gres_devices, env_ptr,
-			    usable_gres, "", gres_bit_alloc,
-			    &local_list, &global_list, is_task, is_job, global_id,
-			    flags, false);
+	gres_env->prefix = "";
+
+	common_gres_set_env(gres_env);
 
 	/*
 	 * Set environment variables if GRES is found. Otherwise, unset
@@ -551,45 +541,51 @@ extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	 * Do not unset envs that could have already been set by an allocated
 	 * sharing GRES (GPU).
 	 */
-	if (gres_cnt) {
-		char *gpus_on_node = xstrdup_printf("%"PRIu64, gres_cnt);
-		env_array_overwrite(env_ptr, "SLURM_GPUS_ON_NODE",
+	if (gres_env->gres_cnt) {
+		char *gpus_on_node = xstrdup_printf("%"PRIu64,
+						    gres_env->gres_cnt);
+		env_array_overwrite(gres_env->env_ptr, "SLURM_GPUS_ON_NODE",
 				    gpus_on_node);
 		xfree(gpus_on_node);
-	} else if (!(flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
-		unsetenvp(*env_ptr, "SLURM_GPUS_ON_NODE");
+	} else if (!(gres_env->flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
+		unsetenvp(*gres_env->env_ptr, "SLURM_GPUS_ON_NODE");
 	}
 
-	if (global_list) {
-		env_array_overwrite(env_ptr, slurm_env_var, global_list);
-		xfree(global_list);
-	} else if (!(flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
-		unsetenvp(*env_ptr, slurm_env_var);
+	if (gres_env->global_list) {
+		env_array_overwrite(gres_env->env_ptr, slurm_env_var,
+				    gres_env->global_list);
+		xfree(gres_env->global_list);
+	} else if (!(gres_env->flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
+		unsetenvp(*gres_env->env_ptr, slurm_env_var);
 	}
 
-	if (local_list) {
-		if (gres_conf_flags & GRES_CONF_ENV_NVML)
-			env_array_overwrite(env_ptr, "CUDA_VISIBLE_DEVICES",
-					    local_list);
-		if (gres_conf_flags & GRES_CONF_ENV_RSMI)
-			env_array_overwrite(env_ptr, "ROCR_VISIBLE_DEVICES",
-					    local_list);
-		if (gres_conf_flags & GRES_CONF_ENV_ONEAPI)
-			env_array_overwrite(env_ptr, "ZE_AFFINITY_MASK",
-					    local_list);
-		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
-			env_array_overwrite(env_ptr, "GPU_DEVICE_ORDINAL",
-					    local_list);
-		xfree(local_list);
-	} else if (!(flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
-		if (gres_conf_flags & GRES_CONF_ENV_NVML)
-			unsetenvp(*env_ptr, "CUDA_VISIBLE_DEVICES");
-		if (gres_conf_flags & GRES_CONF_ENV_RSMI)
-			unsetenvp(*env_ptr, "ROCR_VISIBLE_DEVICES");
-		if (gres_conf_flags & GRES_CONF_ENV_ONEAPI)
-			unsetenvp(*env_ptr, "ZE_AFFINITY_MASK");
-		if (gres_conf_flags & GRES_CONF_ENV_OPENCL)
-			unsetenvp(*env_ptr, "GPU_DEVICE_ORDINAL");
+	if (gres_env->local_list) {
+		if (gres_env->gres_conf_flags & GRES_CONF_ENV_NVML)
+			env_array_overwrite(gres_env->env_ptr,
+					    "CUDA_VISIBLE_DEVICES",
+					    gres_env->local_list);
+		if (gres_env->gres_conf_flags & GRES_CONF_ENV_RSMI)
+			env_array_overwrite(gres_env->env_ptr,
+					    "ROCR_VISIBLE_DEVICES",
+					    gres_env->local_list);
+		if (gres_env->gres_conf_flags & GRES_CONF_ENV_ONEAPI)
+			env_array_overwrite(gres_env->env_ptr,
+					    "ZE_AFFINITY_MASK",
+					    gres_env->local_list);
+		if (gres_env->gres_conf_flags & GRES_CONF_ENV_OPENCL)
+			env_array_overwrite(gres_env->env_ptr,
+					    "GPU_DEVICE_ORDINAL",
+					    gres_env->local_list);
+		xfree(gres_env->local_list);
+	} else if (!(gres_env->flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
+		if (gres_env->gres_conf_flags & GRES_CONF_ENV_NVML)
+			unsetenvp(*gres_env->env_ptr, "CUDA_VISIBLE_DEVICES");
+		if (gres_env->gres_conf_flags & GRES_CONF_ENV_RSMI)
+			unsetenvp(*gres_env->env_ptr, "ROCR_VISIBLE_DEVICES");
+		if (gres_env->gres_conf_flags & GRES_CONF_ENV_ONEAPI)
+			unsetenvp(*gres_env->env_ptr, "ZE_AFFINITY_MASK");
+		if (gres_env->gres_conf_flags & GRES_CONF_ENV_OPENCL)
+			unsetenvp(*gres_env->env_ptr, "GPU_DEVICE_ORDINAL");
 	}
 }
 
