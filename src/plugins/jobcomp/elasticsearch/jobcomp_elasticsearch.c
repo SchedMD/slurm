@@ -618,112 +618,88 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		}
 	}
 
-	if (job_ptr->details && job_ptr->details->work_dir) {
+	if (job_ptr->details && job_ptr->details->work_dir)
 		data_set_string(data_key_set(record, "work_dir"),
 				job_ptr->details->work_dir);
-	}
 
-	if (job_ptr->details && job_ptr->details->std_err) {
+	if (job_ptr->details && job_ptr->details->std_err)
 		data_set_string(data_key_set(record, "std_err"),
 				job_ptr->details->std_err);
-	}
 
-	if (job_ptr->details && job_ptr->details->std_in) {
+	if (job_ptr->details && job_ptr->details->std_in)
 		data_set_string(data_key_set(record, "std_in"),
 				job_ptr->details->std_in);
-	}
 
-	if (job_ptr->details && job_ptr->details->std_out) {
+	if (job_ptr->details && job_ptr->details->std_out)
 		data_set_string(data_key_set(record, "std_out"),
 				job_ptr->details->std_out);
-	}
 
-	if (job_ptr->assoc_ptr && job_ptr->assoc_ptr->cluster) {
+	if (job_ptr->assoc_ptr && job_ptr->assoc_ptr->cluster)
 		data_set_string(data_key_set(record, "cluster"),
 				job_ptr->assoc_ptr->cluster);
-	}
 
-	if (job_ptr->qos_ptr && job_ptr->qos_ptr->name) {
+	if (job_ptr->qos_ptr && job_ptr->qos_ptr->name)
 		data_set_string(data_key_set(record, "qos"),
 				job_ptr->qos_ptr->name);
-	}
 
-	if (job_ptr->details && (job_ptr->details->num_tasks != NO_VAL)) {
+	if (job_ptr->details && (job_ptr->details->num_tasks != NO_VAL))
 		data_set_int(data_key_set(record, "ntasks"),
 			     job_ptr->details->num_tasks);
-	}
 
-	if (job_ptr->details
-	    && (job_ptr->details->ntasks_per_node != NO_VAL16)) {
+	if (job_ptr->details && (job_ptr->details->ntasks_per_node != NO_VAL16))
 		data_set_int(data_key_set(record, "ntasks_per_node"),
 			     job_ptr->details->ntasks_per_node);
-	}
 
-	if (job_ptr->details
-	    && (job_ptr->details->ntasks_per_tres != NO_VAL16)) {
+	if (job_ptr->details && (job_ptr->details->ntasks_per_tres != NO_VAL16))
 		data_set_int(data_key_set(record, "ntasks_per_tres"),
 			     job_ptr->details->ntasks_per_tres);
-	}
 
-	if (job_ptr->details
-	    && (job_ptr->details->cpus_per_task != NO_VAL16)) {
+	if (job_ptr->details && (job_ptr->details->cpus_per_task != NO_VAL16))
 		data_set_int(data_key_set(record, "cpus_per_task"),
 			     job_ptr->details->cpus_per_task);
-	}
 
-	if (job_ptr->details && job_ptr->details->orig_dependency) {
+	if (job_ptr->details && job_ptr->details->orig_dependency)
 		data_set_string(data_key_set(record, "orig_dependency"),
 				job_ptr->details->orig_dependency);
-	}
 
-	if (job_ptr->details && job_ptr->details->exc_nodes) {
+	if (job_ptr->details && job_ptr->details->exc_nodes)
 		data_set_string(data_key_set(record, "excluded_nodes"),
 				job_ptr->details->exc_nodes);
-	}
 
 	if (job_ptr->details && job_ptr->details->features)
 		data_set_string(data_key_set(record, "features"),
 				job_ptr->details->features);
 
-	if (time_limit != INFINITE) {
+	if (time_limit != INFINITE)
 		data_set_int(data_key_set(record, "time_limit"),
 			     (time_limit * 60));
-	}
 
-	if (job_ptr->name) {
+	if (job_ptr->name)
 		data_set_string(data_key_set(record, "job_name"),
 				job_ptr->name);
-	}
 
-	if (job_ptr->resv_name) {
+	if (job_ptr->resv_name)
 		data_set_string(data_key_set(record, "reservation_name"),
 				job_ptr->resv_name);
-	}
 
-	if (job_ptr->wckey) {
+	if (job_ptr->wckey)
 		data_set_string(data_key_set(record, "wc_key"), job_ptr->wckey);
-	}
 
-	if (job_ptr->tres_fmt_req_str) {
+	if (job_ptr->tres_fmt_req_str)
 		data_set_string(data_key_set(record, "tres_req"),
 				job_ptr->tres_fmt_req_str);
-	}
 
-	if (job_ptr->tres_fmt_alloc_str) {
+	if (job_ptr->tres_fmt_alloc_str)
 		data_set_string(data_key_set(record, "tres_alloc"),
 				job_ptr->tres_fmt_alloc_str);
-	}
 
-	if (job_ptr->account) {
+	if (job_ptr->account)
 		data_set_string(data_key_set(record, "account"),
 				job_ptr->account);
-	}
 
-	script = get_job_script(job_ptr);
-	if (script) {
+	if ((script = get_job_script(job_ptr)))
 		data_set_string(data_key_set(record, "script"),
 				get_buf_data(script));
-	}
 	free_buf(script);
 
 	if (job_ptr->assoc_ptr) {
