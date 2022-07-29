@@ -218,7 +218,7 @@ static int _load_pending_jobs(void)
 	int i, rc = SLURM_SUCCESS;
 	char *saved_data = NULL, *state_file = NULL, *job_data = NULL;
 	uint32_t data_size, job_cnt = 0, tmp32 = 0;
-	buf_t *buffer;
+	buf_t *buffer = NULL;
 	struct job_node *jnode;
 
 	xstrfmtcat(state_file, "%s/%s",
@@ -481,7 +481,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	char usr_str[32], grp_str[32], start_str[32], end_str[32], time_str[32];
 	char *state_string = NULL;
 	char *exit_code_str = NULL, *derived_ec_str = NULL;
-	buf_t *script;
+	buf_t *script = NULL;
 	enum job_states job_state;
 	int i, tmp_int, tmp_int2;
 	time_t elapsed_time;
