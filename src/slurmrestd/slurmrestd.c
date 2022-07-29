@@ -118,7 +118,7 @@ static void _parse_env(void)
 	char *buffer = NULL;
 
 	if ((buffer = getenv("SLURMRESTD_DEBUG")) != NULL) {
-		debug_level = atoi(buffer);
+		debug_level = log_string2num(buffer);
 
 		if (debug_level <= 0)
 			fatal("Invalid env SLURMRESTD_DEBUG: %s", buffer);
