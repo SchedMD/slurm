@@ -62,7 +62,7 @@ proc mod_state { state reason } {
 proc check_step { num } {
 	global sacct job_id
 
-	set output [run_command_output -fail "$sacct --job=$job_id\.batch -D --start=today --noheader --format=jobid -P"]
+	set output [run_command_output -fail "$sacct --job=$job_id\.batch -D --start=now-15minutes --noheader --format=jobid -P"]
 	set steps [regexp -all "batch" $output]
 
 	subtest {$num == $steps} "Check number of steps" "$steps != $num"
@@ -75,7 +75,7 @@ proc check_sacct_states {states} {
 	# This test will requeue jobs making those jobs be eligible in the
 	# future from sacct's perspective.  Since sacct only shows eligible
 	# jobs we have to specify end in the future.
-	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=today --end=tomorrow --noheader -o JobID,State"]
+	set output [run_command_output -fail "$sacct --job=$job_id --duplicates --parsable2 --start=now-15minutes --end=tomorrow --noheader -o JobID,State"]
 	# NOTE: Skip "extern" job container optionally spawned by "PrologFlags=contain"
 	set state_num [regexp -all "\[0-9_\]+(\.(?!extern)\[a-z\]+)*\\|$states" $output]
 
