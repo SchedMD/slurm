@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "July 2022" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "August 2022" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -19,6 +19,11 @@ analysis.  The \f3sacct\fP command displays information on jobs, job
 steps, status, and exitcodes by default.  You can tailor the output
 with the use of the \f3\-\-format=\fP option to specify the fields to
 be shown.
+.PP
+Job records consist of a primary entry for the job as a whole as well as
+entries for job steps. The Job Launch page has a more detailed description
+of each type of job step.
+<https://slurm.schedmd.com/job_launch.html#job_record>
 .PP
 For the root user, the \f3sacct\fP command displays job accounting
 data for all users, although there are options to filter the output to
