@@ -1791,7 +1791,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 	if (mem_swap_events) {
 		if ((ptr = xstrstr(mem_swap_events, "fail"))) {
 			if (sscanf(ptr, "fail %"PRIu64, &job_swkills) != 1)
-				error("Cannot read step's fail counter from memory.swap.events file.");
+				error("Cannot read job's fail counter from memory.swap.events file.");
 		}
 		xfree(mem_swap_events);
 	}

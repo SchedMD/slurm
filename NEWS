@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
     seconds before timing out and killing prolog and epilog scripts.
  -- GPU - Fix checking frequencies to check them all and not skip the last one.
  -- GPU - Fix logic to set frequencies properly when handling multiple GPUs.
+ -- cgroup/v2 - Fix typo in error message.
 
 * Changes in Slurm 22.05.2
 ==========================
