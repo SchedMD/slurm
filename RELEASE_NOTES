@@ -38,6 +38,8 @@ HIGHLIGHTS
  -- Make all cgroup directories created by Slurm owned by root. This was the
     behavior in cgroup/v2 but not in cgroup/v1 where by default the step
     directories ownership were set to the user and group of the job.
+ -- accounting_storage/mysql - change purge/archive to calculate record ages
+    based on end time, rather than start or submission times.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
