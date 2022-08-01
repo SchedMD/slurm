@@ -1752,7 +1752,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 		      int_cg[CG_LEVEL_STEP_USER].path);
 
 	if (mem_events) {
-		if ((ptr = xstrstr(mem_events, "oom_kill"))) {
+		if ((ptr = xstrstr(mem_events, "oom_kill "))) {
 			if (sscanf(ptr, "oom_kill %"PRIu64, &step_kills) != 1)
 				error("Cannot read step's oom_kill counter from memory.events file.");
 		}
@@ -1760,7 +1760,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 	}
 
 	if (mem_swap_events) {
-		if ((ptr = xstrstr(mem_swap_events, "fail"))) {
+		if ((ptr = xstrstr(mem_swap_events, "fail "))) {
 			if (sscanf(ptr, "fail %"PRIu64, &step_swkills) != 1)
 				error("Cannot read step's fail counter from memory.swap.events file.");
 		}
@@ -1781,7 +1781,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 
 
 	if (mem_events) {
-		if ((ptr = xstrstr(mem_events, "oom_kill"))) {
+		if ((ptr = xstrstr(mem_events, "oom_kill "))) {
 			if (sscanf(ptr, "oom_kill %"PRIu64, &job_kills) != 1)
 				error("Cannot read job's oom_kill counter from memory.events file.");
 		}
@@ -1789,7 +1789,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 	}
 
 	if (mem_swap_events) {
-		if ((ptr = xstrstr(mem_swap_events, "fail"))) {
+		if ((ptr = xstrstr(mem_swap_events, "fail "))) {
 			if (sscanf(ptr, "fail %"PRIu64, &job_swkills) != 1)
 				error("Cannot read job's fail counter from memory.swap.events file.");
 		}
