@@ -62,5 +62,6 @@ autom4te.cache
 /testsuite/expect/globals.*
 !/testsuite/expect/globals.local.sample.in
 /testsuite/expect/*.log*
+/testsuite/log
 /testsuite/python/pytest.ini
 TAGS

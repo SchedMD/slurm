@@ -28,9 +28,9 @@ sleep 1000""")
     child.expect('WAITING')
     time.sleep(1)
     atf.run_command(f"kill -INT {child.pid}")
-    assert child.expect("srun: interrupt") == 0, f"srun failed to process command (kill -INT {child.pid})"
+    assert child.expect(["srun: interrupt", pexpect.EOF, pexpect.TIMEOUT]) == 0, f"srun failed to process command (kill -INT {child.pid})"
     atf.run_command(f"scancel {step_id}")
-    assert child.expect("Force Terminated job") == 0, f"srun failed to process command (scancel {step_id})"
+    assert child.expect(["Job step aborted", pexpect.EOF, pexpect.TIMEOUT]) == 0, f"srun failed to process command (scancel {step_id})"
     child.close()
 
     child = pexpect.spawn(f"srun -v -N1 --unbuffered --quit-on-interrupt {file_in}")
@@ -39,4 +39,4 @@ sleep 1000""")
     child.expect('WAITING')
     time.sleep(1)
     atf.run_command(f"kill -INT {child.pid}")
-    assert child.expect("task 0: Killed") == 0, "Did not get message (task 0: Killed) from srun"
+    assert child.expect(["task 0: Killed", pexpect.EOF, pexpect.TIMEOUT]) == 0, "Did not get message (task 0: Killed) from srun"
