@@ -227,8 +227,7 @@ are (int *, char ***).
 .IP
 
 .LP
-See \fBspank.h\fR for more details, and \fBEXAMPLES\fR below for an example
-of \fBspank_get_item\fR usage.
+See \fBspank.h\fR for more details.
 .LP
 \fBSPANK\fR functions in the \fBlocal\fB and \fBallocator\fR environment should
 use the \fBgetenv\fR, \fBsetenv\fR, and \fBunsetenv\fR functions to view and
@@ -274,8 +273,7 @@ These functions are available from \fBlocal\fR context only.
 .fi
 
 .LP
-See \fBspank.h\fR for more information, and \fBEXAMPLES\fR below for an example
-for \fBspank_getenv\fR usage.
+See \fBspank.h\fR for more information.
 .LP
 Many of the described \fBSPANK\fR functions available to plugins return
 errors via the \fBspank_err_t\fR error type. On success, the return value
@@ -409,7 +407,6 @@ On the remote side, options and their arguments are registered just
 after \fBSPANK\fR plugins are loaded and before the \fBspank_init\fR
 handler is called. This allows plugins to modify behavior of all plugin
 functionality based on the value of user\-provided options.
-(See EXAMPLES below for a plugin that registers an option with \fBSlurm\fR).
 .LP
 As an alternative to use of an option callback and global variable,
 plugins can use the \fBspank_option_getopt\fR option to check for
@@ -534,201 +531,6 @@ sbatch @slurm_spank_exit                 @allocator @0        @no          @no
 \fBNOTE\fR: The behavior for \fBProctrackType=proctrack/pgid\fR may result in
 timeouts for \fBslurm_spank_task_post_fork\fR with \fBremote\fR context on
 failure.
-
-.SH "EXAMPLE: renice.so"
-
-.TP
-\fB/etc/slurm/plugstack.conf\fR:
-This example plugstack.conf file shows a configuration that activates the
-renice.so \fBSPANK\fR plugin.
-.IP
-.nf
-#
-# SPANK config file
-#
-# required?       plugin                     parameters
-#
-optional          /usr/lib/SPANK_renice.so   min_prio=\-10
-.fi
-
-.TP
-\fB/usr/local/src/renice.c\fR:
-A sample \fBSPANK\fR plugin to modify the nice value of job tasks. This plugin
-adds a \-\-renice=[prio] option to \fBsrun\fR which users can use to set the
-priority of all remote tasks. Priority may also be specified via a SLURM_RENICE
-environment variable. A minimum priority may be established via a "min_prio"
-parameter in \fBplugstack.conf\fR.
-.IP
-.nf
-#include <sys/types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/resource.h>
-
-#include <slurm/spank.h>
-
-/*
- * All spank plugins must define this macro for the
- * Slurm plugin loader.
- */
-SPANK_PLUGIN(renice, 1);
-
-#define PRIO_ENV_VAR "SLURM_RENICE"
-#define PRIO_NOT_SET \-1
-
-/*
- * Minimum allowable value for priority. May be
- * set globally via plugin option min_prio=<prio>
- */
-static int min_prio = \-20;
-
-static int prio = PRIO_NOT_SET;
-
-static int _renice_opt_process(int val, const char *optarg, int remote);
-static int _str2prio(const char *str, int *p2int);
-
-/*
- *  Provide a \-\-renice=[prio] option to srun:
- */
-struct spank_option spank_options[] =
-{
-    {
-        "renice",
-        "[prio]",
-        "Re\-nice job tasks to priority [prio].",
-        2,
-        0,
-        _renice_opt_process
-    },
-    SPANK_OPTIONS_TABLE_END
-};
-
-/*
- *  Called from both srun and slurmd.
- */
-int slurm_spank_init(spank_t sp, int ac, char **av)
-{
-    int i;
-
-    /* Don't do anything in sbatch/salloc */
-    if (spank_context () == S_CTX_ALLOCATOR)
-        return ESPANK_SUCCESS;
-
-    for (i = 0; i < ac; i++) {
-        if (!strncmp("min_prio=", av[i], 9)) {
-            const char *optarg = av[i] + 9;
-
-            if (_str2prio(optarg, &min_prio))
-                slurm_error ("Ignoring invalid min_prio value: %s", av[i]);
-        } else {
-            slurm_error ("renice: Invalid option: %s", av[i]);
-        }
-    }
-
-    if (!spank_remote(sp))
-        slurm_verbose("renice: min_prio = %d", min_prio);
-
-    return ESPANK_SUCCESS;
-}
-
-int slurm_spank_task_post_fork(spank_t sp, int ac, char **av)
-{
-    int rc;
-    pid_t pid;
-    int taskid;
-
-    if (prio == PRIO_NOT_SET) {
-        /* See if SLURM_RENICE env var is set by user */
-        char val[1024];
-
-        rc = spank_getenv(sp, PRIO_ENV_VAR, val, sizeof(val));
-
-        if (rc)
-            return rc;
-
-        rc = _str2prio(val, &prio);
-
-        if (rc) {
-            slurm_error("Bad value for %s: %s", PRIO_ENV_VAR, optarg);
-            return rc;
-        }
-
-        if (prio < min_prio) {
-            slurm_error("%s=%d not allowed, using min=%d",
-                        PRIO_ENV_VAR, prio, min_prio);
-        }
-    }
-
-    if (prio < min_prio)
-        prio = min_prio;
-
-    spank_get_item(sp, S_TASK_GLOBAL_ID, &taskid);
-    spank_get_item(sp, S_TASK_PID, &pid);
-
-    slurm_info("re\-nicing task%d pid %d to %d", taskid, (int) pid, prio);
-
-    if (setpriority(PRIO_PROCESS, (int) pid, (int) prio)) {
-        slurm_error("setpriority: %m");
-        return ESPANK_ERROR;
-    }
-
-    return ESPANK_SUCCESS;
-}
-
-static int _str2prio(const char *str, int *p2int)
-{
-    long l;
-    char *p = NULL;
-
-    if (!str || str[0] == '\\0')
-        return ESPANK_BAD_ARG;
-
-    l = strtol(str, &p, 10);
-
-    if (!p || (*p != '\\0'))
-        return ESPANK_BAD_ARG;
-
-    if ((l < \-20) || (l > 20)) {
-        slurm_error("Specify value between \-20 and 20");
-        return ESPANK_BAD_ARG;
-    }
-
-    *p2int = (int) l;
-
-    return ESPANK_SUCCESS;
-}
-
-static int _renice_opt_process(int val, const char *optarg, int remote)
-{
-    int rc;
-
-    if (optarg == NULL) {
-        slurm_error("renice: invalid NULL argument!");
-        return ESPANK_BAD_ARG;
-    }
-
-    if ((rc = _str2prio(optarg, &prio))) {
-        slurm_error("Bad value for \-\-renice: %s", optarg);
-        return rc;
-    }
-
-    if (prio < min_prio) {
-        slurm_error("\-\-renice=%d not allowed, will use min=%d",
-                    prio, min_prio);
-    }
-
-    return ESPANK_SUCCESS;
-}
-.fi
-
-.TP
-\fBCompile command\fR:
-.IP
-.nf
-# gcc \-ggdb3 \-I${SLURM_PATH}/include/ \-fPIC \-shared \-o /usr/lib/SPANK_renice.so /usr/local/src/renice.c
-.fi
 
 .SH "COPYING"
 Portions copyright (C) 2010\-2022 SchedMD LLC.
