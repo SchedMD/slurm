@@ -336,7 +336,8 @@ extern char *process_options_first_pass(int argc, char **argv)
 		char *cmd       = opt.argv[0];
 		int  mode       = R_OK;
 
-		if ((fullpath = search_path(opt.chdir, cmd, false, mode, false))) {
+		if ((fullpath = search_path(opt.chdir, cmd, false, mode,
+					    false))) {
 			xfree(opt.argv[0]);
 			opt.argv[0] = fullpath;
 		}
