@@ -528,7 +528,7 @@ static void _copy_args(List missing_argc_list, slurm_opt_t *opt_master)
 	iter = list_iterator_create(missing_argc_list);
 	while ((opt_local = list_next(iter))) {
 		opt_local->argc = opt_master->argc;
-		opt_local->argv = xmalloc(sizeof(char *) *
+		opt_local->argv = xcalloc(sizeof(char *),
 					  (opt_local->argc + 1));
 		for (i = 0; i < opt_local->argc; i++)
 			opt_local->argv[i] = xstrdup(opt_master->argv[i]);
