@@ -552,8 +552,9 @@ Account the job ran under.
 .IP
 
 .TP
-\f3AdminComment\fP
-Comment string made by an admin.
+\fBAdminComment\fR
+A comment string on a job that must be set by an administrator, the SlurmUser
+or root.
 .IP
 
 .TP
@@ -617,6 +618,11 @@ Average Virtual Memory size of all tasks in job.
 .IP
 
 .TP
+\fBBlockID\fR
+The name of the block to be used (used with Blue Gene systems).
+.IP
+
+.TP
 \f3Cluster\fP
 Cluster name.
 .IP
@@ -630,23 +636,23 @@ specialized \f3sjobexitmod\fP command.
 .IP
 
 .TP
-\f3Constraints\fP
-Job's constraints/features.
+\fBConstraints\fR
+Feature(s) the job requested as a constraint.
 .IP
 
 .TP
-\f3ConsumedEnergy\fP
-Total energy consumed by all tasks in job, in joules.
+\fBConsumedEnergy\fR
+Total energy consumed by all tasks in a job, in joules.
 Value may include a unit prefix (K,M,G,T,P).
-Note: Only in case of exclusive job allocation this value
-reflects the jobs' real energy consumption.
+Note: Only in the case of an exclusive job allocation does this value
+reflect the job's real energy consumption.
 .IP
 
 .TP
-\f3ConsumedEnergyRaw\fP
-Total energy consumed by all tasks in job, in joules.
-Note: Only in case of exclusive job allocation this value
-reflects the jobs' real energy consumption.
+\fBConsumedEnergyRaw\fR
+Total energy consumed by all tasks in a job, in joules.
+Note: Only in the case of an exclusive job allocation does this value
+reflect the job's real energy consumption.
 .IP
 
 .TP
@@ -665,8 +671,8 @@ Time used (Elapsed time * CPU count) by a job or step in cpu\-seconds.
 .IP
 
 .TP
-\f3DBIndex\fP
-Row index of the job in the job table.
+\fBDBIndex\fR
+Unique database index for entries in the job table.
 .IP
 
 .TP
@@ -715,8 +721,8 @@ seconds
 .IP
 
 .TP
-\f3ElapsedRaw\fP
-The job's elapsed time.
+\fBElapsedRaw\fR
+The job's elapsed time in seconds.
 .IP
 
 .TP
@@ -738,7 +744,7 @@ the process to terminate if it was terminated by a signal.
 .IP
 
 .TP
-\f3Flags\fP
+\fBFlags\fR
 Job flags. Current flags are SchedSubmit, SchedMain, SchedBackfill.
 .IP
 
@@ -876,8 +882,9 @@ The task ID where the maxvmsize occurred.
 .IP
 
 .TP
-\f3McsLabel\fP
-MCS label of job.
+\fBMCSLabel\fR
+Multi-Category Security (MCS) label associated with the job.
+Added to a job when the MCSPlugin is enabled in the slurm.conf.
 .IP
 
 .TP
@@ -953,6 +960,13 @@ Name of Quality of Service.
 .TP
 \f3QOSRAW\fP
 Numeric id of Quality of Service.
+.IP
+
+.TP
+\fBReason\fR
+The last reason a job was blocked from running for something other than
+Priority or Resources. This will be saved in the database even if the job
+ran to completion.
 .IP
 
 .TP
@@ -1059,8 +1073,9 @@ as \f2Elapsed\fP.
 .IP
 
 .TP
-\f3SystemComment\fP
-Comment string made by the system.
+\fBSystemComment\fR
+The job's comment string that is typically set by a plugin.
+Can only be modified by a Slurm administrator.
 .IP
 
 .TP
@@ -1163,6 +1178,21 @@ Task for which each maximum TRES usage out occurred.
 .IP
 
 .TP
+\fBTresUsageOutMin\fR
+Tres minimum usage out by all tasks in job.
+.IP
+
+.TP
+\fBTresUsageOutMinNode\fR
+Node for which each minimum TRES usage out occurred.
+.IP
+
+.TP
+\fBTresUsageOutMinTask\fR
+Task for which each minimum TRES usage out occurred.
+.IP
+
+.TP
 \f3TresUsageOutTot\fP
 Tres total usage out by all tasks in job.
 .IP
@@ -1197,10 +1227,9 @@ Reference to the wckey.
 .IP
 
 .TP
-\f3WorkDir\fP
-Working directory of job.
+\fBWorkDir\fR
+The directory used by the job to execute commands.
 .IP
-
 
 .SH "JOB STATE CODES"
 
