@@ -476,7 +476,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line 6 ******/
-	if (IS_JOB_PENDING(job_ptr))
+	if (IS_JOB_PENDING(job_ptr) || !job_ptr->start_time)
 		run_time = 0;
 	else if (IS_JOB_SUSPENDED(job_ptr))
 		run_time = job_ptr->pre_sus_time;
