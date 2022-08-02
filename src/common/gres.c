@@ -487,6 +487,27 @@ static slurm_gres_context_t *_find_context_by_id(uint32_t plugin_id)
 	return NULL;
 }
 
+static void _track_file_countonly(slurm_gres_context_t *gres_ctx,
+				  const char *syms[], const int n_syms)
+{
+	/* If the GRES has a file load the track_file plugin to handle that */
+	if (gres_ctx->config_flags & GRES_CONF_HAS_FILE) {
+		char *plugin_name = "gres/track_file";
+
+		gres_ctx->cur_plugin = plugin_load_and_link(
+			plugin_name, n_syms, syms,
+			(void **) &gres_ctx->ops);
+
+		if (gres_ctx->cur_plugin != PLUGIN_INVALID_HANDLE)
+			return;
+
+		if (errno != EPLUGIN_NOTFOUND) {
+			error("Couldn't load specified plugin name for %s: %s",
+			      plugin_name, plugin_strerror(errno));
+			return;
+		}
+	}
+}
 
 static int _load_plugin(slurm_gres_context_t *gres_ctx)
 {
@@ -514,6 +535,7 @@ static int _load_plugin(slurm_gres_context_t *gres_ctx)
 	if (gres_ctx->config_flags & GRES_CONF_COUNT_ONLY) {
 		debug("Plugin of type %s only tracks gres counts",
 		      gres_ctx->gres_type);
+		_track_file_countonly(gres_ctx, syms, n_syms);
 		return SLURM_SUCCESS;
 	}
 
@@ -547,6 +569,7 @@ static int _load_plugin(slurm_gres_context_t *gres_ctx)
 		debug("Cannot find plugin of type %s, just track gres counts",
 		      gres_ctx->gres_type);
 		gres_ctx->config_flags |= GRES_CONF_COUNT_ONLY;
+		_track_file_countonly(gres_ctx, syms, n_syms);
 		return SLURM_ERROR;
 	}
 
