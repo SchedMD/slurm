@@ -102,9 +102,7 @@ static void *_safe_signal_while_allocating(void *in_data)
 
 	debug("Got signal %d", signo);
 	xfree(in_data);
-
 	if (pending_job_id != 0) {
-		info("Job allocation %u has been revoked", pending_job_id);
 		slurm_complete_job(pending_job_id, 128 + signo);
 	}
 
@@ -407,6 +405,9 @@ extern resource_allocation_response_msg_t *
 							 opt_local->immediate,
 							 _set_pending_job_id);
 		if (destroy_job) {
+			if (pending_job_id != 0)
+				info("Job allocation %u has been revoked",
+				     pending_job_id);
 			/* cancelled by signal */
 			break;
 		} else if (!resp && !_retry()) {
@@ -565,6 +566,9 @@ List allocate_het_job_nodes(bool handle_signals)
 				 first_opt->immediate, _set_pending_job_id);
 		if (destroy_job) {
 			/* cancelled by signal */
+			if (pending_job_id != 0)
+				info("Job allocation %u has been revoked",
+				     pending_job_id);
 			break;
 		} else if (!job_resp_list && !_retry()) {
 			break;
