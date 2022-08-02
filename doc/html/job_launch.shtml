@@ -147,7 +147,37 @@ nodes that the job is to be ended. The <b>slurmd</b> daemon does the following:
 <li>Send an epilog_complete RPC to the <b>slurmctld</b> daemon</li>
 </ol>
 
+<h2 id="job_record">Job Accounting Records
+<a class="slurm_link" href="#job_record"></a>
+</h2>
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p>When Slurm is configured to use SlurmDBD to store job records (i.e.
+<i>AccountingStorageType=accounting_storage=slurmdbd</i>), there are multiple
+records that get stored for each job. There is a record for the job as a
+whole as well as entries for the following types of job steps:
+<ul>
+<li><b>extern step</b> &mdash; A step created for each job as long as you have
+<i>PrologFlags=contain</i> in your slurm.conf. Each node in the job will
+have a slurmstepd process created for the extern step.
+<a href=pam_slurm_adopt.html>pam_slurm_adopt</a> uses this step to contain
+external connections.</li>
+<li><b>batch step</b> &mdash; A step created for jobs that were submitted with
+sbatch. The batch host, or the primary node for the job, will run an instance
+of slurmstepd for the batch step, which is used to run the script provided
+to sbatch.</li>
+<li><b>interactive step</b> &mdash; A step created for jobs that were
+submitted with salloc when <i>LaunchParameters=use_interactive_step</i> is
+configured in your slurm.conf. The node on which you have the interactive
+shell will run an instance of slurmstepd to run the shell or the command
+provided to salloc.</li>
+<li><b>normal step</b> &mdash; A job can have multiple normal steps, which will
+appear in sacct as &lt;<b>job_id</b>&gt;.&lt;<b>step_id</b>&gt;. These steps
+are created when srun is called from inside the job and the slurmstepd created
+will run the command passed to srun. Each step will have one instance of
+slurmstepd created per node in the step and each instance of slurmstepd can
+run multiple tasks in the same step.</li>
+</ul>
+
+<p style="text-align:center;">Last modified 1 August 2022</p>
 
 <!--#include virtual="footer.txt"-->
