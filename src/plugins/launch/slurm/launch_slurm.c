@@ -563,7 +563,7 @@ extern int launch_p_setup_srun_opt(char **rest, slurm_opt_t *opt_local)
 	 * We need to do +2 here just in case multi-prog is needed
 	 * (we add an extra argv on so just make space for it).
 	 */
-	opt_local->argv = xmalloc((opt_local->argc + 2) * sizeof(char *));
+	opt_local->argv = xcalloc((opt_local->argc + 2), sizeof(char *));
 
 	return 0;
 }
