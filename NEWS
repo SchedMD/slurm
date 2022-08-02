@@ -54,6 +54,9 @@ documents those changes that are of interest to users and administrators.
     only numeric state ids.
  -- Fix regression in 22.05.0rc1: if slurmd shuts down while a prolog is
     running, the job is cancelled and the node is drained.
+ -- Wait up to PrologEpilogTimeout before shutting down slurmd to allow prolog
+    and epilog scripts to complete or timeout. Previously, slurmd waited 120
+    seconds before timing out and killing prolog and epilog scripts.
 
 * Changes in Slurm 22.05.2
 ==========================
