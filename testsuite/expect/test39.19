@@ -51,7 +51,7 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types batch_gpus } 
 	# can take longer.
 	wait_for_command_match -fail "$sacct -X -n -o ReqTRES --parsable2 -j $job_id" "gres/gpu"
 
-	set output [run_command_output -fail "$sacct --job=$job_id --parsable2 --start=today --format JobID,ReqTRES,AllocTRES --noheader"]
+	set output [run_command_output -fail "$sacct --job=$job_id --parsable2 --start=now-15minutes --format JobID,ReqTRES,AllocTRES --noheader"]
 	set job_tres_dict [dict create]
 	foreach line [split $output "\n"] {
 		lassign [split $line "|"] JobID ReqTRES AllocTRES
