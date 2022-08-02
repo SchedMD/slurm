@@ -91,7 +91,6 @@
 const char plugin_name[] = "Gres GPU plugin";
 const char	plugin_type[]		= "gres/gpu";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
-static char	*gres_name		= "gpu";
 static List	gres_devices		= NULL;
 static uint32_t	node_flags		= 0;
 static int tres_mem_pos = -1;
@@ -850,7 +849,7 @@ extern int gres_p_node_config_load(List gres_conf_list,
 		}
 	}
 
-	rc = common_node_config_load(gres_conf_list, gres_name, node_config,
+	rc = common_node_config_load(gres_conf_list, node_config,
 				     &gres_devices);
 
 	/*

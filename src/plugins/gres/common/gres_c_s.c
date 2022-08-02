@@ -439,8 +439,7 @@ extern void gres_c_s_fini(void)
 extern int gres_c_s_init_share_devices(List gres_conf_list,
 				       List *share_devices,
 				       node_config_load_t *config,
-				       char *sharing_name,
-				       char *shared_name)
+				       char *sharing_name)
 {
 	int rc = SLURM_SUCCESS;
 	List sharing_conf_list, shared_conf_list;
@@ -476,26 +475,25 @@ extern int gres_c_s_init_share_devices(List gres_conf_list,
 
 	/* Now move SHARED records to new List, each with unique device file */
 	shared_conf_list = _build_shared_list(
-		gres_conf_list, shared_name);
+		gres_conf_list, config->gres_name);
 
 	/*
 	 * Merge SHARED records back to original list, updating and reordering
 	 * as needed.
 	 */
 	rc = _merge_lists(gres_conf_list, sharing_conf_list, shared_conf_list,
-			  shared_name);
+			  config->gres_name);
 	FREE_NULL_LIST(sharing_conf_list);
 	FREE_NULL_LIST(shared_conf_list);
 	if (rc != SLURM_SUCCESS)
 		fatal("failed to merge SHARED and SHARING configuration");
 
-	rc = common_node_config_load(gres_conf_list, shared_name, config,
-				     share_devices);
+	rc = common_node_config_load(gres_conf_list, config, share_devices);
 	if (rc != SLURM_SUCCESS)
 		fatal("failed to load configuration");
 	if (!_build_shared_dev_info(gres_conf_list) && gres_conf_list)
 		(void) list_delete_all(gres_conf_list, _remove_shared_recs,
-				       shared_name);
+				       config->gres_name);
 
 	log_var(log_lvl, "Final gres.conf list:");
 	print_gres_list(gres_conf_list, log_lvl);

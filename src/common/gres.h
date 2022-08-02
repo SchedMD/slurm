@@ -172,6 +172,8 @@ typedef struct gres_slurmd_conf {
 typedef struct {
 	/* How many CPUs there are configured on the node */
 	uint32_t cpu_cnt;
+	/* Name of GRES */
+	char *gres_name;
 	/* True if called in the slurmd */
 	bool in_slurmd;
 	/* A pointer to the mac_to_abs function */

@@ -2373,6 +2373,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	for (i = 0; i < gres_context_cnt; i++) {
 		if (gres_context[i].ops.node_config_load == NULL)
 			continue;	/* No plugin */
+		node_conf.gres_name = gres_context[i].gres_name;
 		rc2 = (*(gres_context[i].ops.node_config_load))(gres_conf_list,
 								&node_conf);
 		if (rc == SLURM_SUCCESS)

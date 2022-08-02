@@ -70,7 +70,7 @@ typedef struct {
  * IN config
  * OUT gres_devices
  */
-extern int common_node_config_load(List gres_conf_list, char *gres_name,
+extern int common_node_config_load(List gres_conf_list,
 				   node_config_load_t *config,
 				   List *gres_devices);
 

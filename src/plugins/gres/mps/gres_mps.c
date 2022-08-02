@@ -91,7 +91,6 @@ const char plugin_name[] = "Gres MPS plugin";
 const char	plugin_type[]		= "gres/mps";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
-static char	*gres_name		= "mps";
 static List	gres_devices		= NULL;
 
 extern int init(void)
@@ -118,7 +117,7 @@ extern int gres_p_node_config_load(List gres_conf_list,
 				   node_config_load_t *config)
 {
 	return gres_c_s_init_share_devices(
-		gres_conf_list, &gres_devices, config, "gpu", gres_name);
+		gres_conf_list, &gres_devices, config, "gpu");
 }
 
 /* Given a global device ID, return its gres/mps count */

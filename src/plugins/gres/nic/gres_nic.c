@@ -85,8 +85,6 @@ const char	plugin_name[]		= "Gres NIC plugin";
 const char	plugin_type[]		= "gres/nic";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
-static char	gres_name[]		= "nic";
-
 static List gres_devices = NULL;
 
 static void _set_env(common_gres_env_t *gres_env)
@@ -159,8 +157,7 @@ extern int gres_p_node_config_load(List gres_conf_list,
 	if (gres_devices)
 		return rc;
 
-	rc = common_node_config_load(gres_conf_list, gres_name, config,
-				     &gres_devices);
+	rc = common_node_config_load(gres_conf_list, config, &gres_devices);
 
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);

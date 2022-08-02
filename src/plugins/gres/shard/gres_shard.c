@@ -124,7 +124,7 @@ extern int gres_p_node_config_load(List gres_conf_list,
 				   node_config_load_t *config)
 {
 	int rc = gres_c_s_init_share_devices(
-		gres_conf_list, &gres_devices, config, "gpu", "shard");
+		gres_conf_list, &gres_devices, config, "gpu");
 
 	if (rc != SLURM_SUCCESS)
 		return rc;

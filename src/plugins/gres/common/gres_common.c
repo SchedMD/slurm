@@ -144,7 +144,7 @@ static gres_device_t *_init_gres_device(int index, char *one_name,
  * IN config
  * OUT gres_devices
  */
-extern int common_node_config_load(List gres_conf_list, char *gres_name,
+extern int common_node_config_load(List gres_conf_list,
 				   node_config_load_t *config,
 				   List *gres_devices)
 {
@@ -166,7 +166,7 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 
 		if (!(gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE) ||
 		    !gres_slurmd_conf->file ||
-		    xstrcmp(gres_slurmd_conf->name, gres_name))
+		    xstrcmp(gres_slurmd_conf->name, config->gres_name))
 			continue;
 
 		if (!(hl = hostlist_create(gres_slurmd_conf->file))) {
@@ -206,7 +206,7 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 			    list_find_first(names_list, _match_name_list,
 					    one_name)) {
 				error("%s duplicate device file name (%s)",
-				      gres_name, one_name);
+				      config->gres_name, one_name);
 				rc = SLURM_ERROR;
 			}
 
@@ -231,7 +231,7 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 			if (gres_device->dev_num == -1)
 				gres_device->dev_num = ++max_dev_num;
 			log_flag(GRES, "%s device number %d(%s):%s",
-				 gres_name, gres_device->dev_num,
+				 config->gres_name, gres_device->dev_num,
 				 gres_device->path,
 				 dev_id_str);
 			xfree(dev_id_str);
