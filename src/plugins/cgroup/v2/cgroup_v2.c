@@ -133,8 +133,8 @@ static char *_get_self_cg_path()
 	char *buf, *start = NULL, *p, *ret = NULL;
 	size_t sz;
 
-	if (common_file_read_content("/proc/self/cgroup", &buf, &sz)
-	    != SLURM_SUCCESS)
+	if (common_file_read_content("/proc/self/cgroup", &buf, &sz) !=
+	    SLURM_SUCCESS)
 		fatal("cannot read /proc/self/cgroup contents: %m");
 
 	/*
@@ -775,8 +775,8 @@ static int _migrate_to_stepd_scope()
 	 */
 	invoc_id = "";
 
-	if (_get_controllers(stepd_scope_path, int_cg_ns.avail_controllers)
-	    != SLURM_SUCCESS)
+	if (_get_controllers(stepd_scope_path, int_cg_ns.avail_controllers) !=
+	    SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	if (_enable_subtree_control(stepd_scope_path,
@@ -1088,8 +1088,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 		rc = SLURM_ERROR;
 		goto endit;
 	}
-	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_STEP_USER])
-	    != SLURM_SUCCESS) {
+	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_STEP_USER]) !=
+	    SLURM_SUCCESS) {
 		common_cgroup_destroy(&int_cg[CG_LEVEL_STEP_USER]);
 		error("unable to instantiate step %ps user procs cgroup",
 		      &step->step_id);
@@ -1112,8 +1112,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 		rc = SLURM_ERROR;
 		goto endit;
 	}
-	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_STEP_SLURM])
-	    != SLURM_SUCCESS) {
+	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_STEP_SLURM]) !=
+	    SLURM_SUCCESS) {
 		common_cgroup_destroy(&int_cg[CG_LEVEL_STEP_SLURM]);
 		error("unable to instantiate step %ps slurm procs cgroup",
 		      &step->step_id);
@@ -1973,11 +1973,13 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 
 	if (cpu_stat) {
 		ptr = xstrstr(cpu_stat, "user_usec");
-		if (ptr && (sscanf(ptr, "user_usec %"PRIu64, &stats->usec) != 1))
+		if (ptr &&
+		    (sscanf(ptr, "user_usec %"PRIu64, &stats->usec) != 1))
 			error("Cannot parse user_sec field in cpu.stat file");
 
 		ptr = xstrstr(cpu_stat, "system_usec");
-		if (ptr && (sscanf(ptr, "system_usec %"PRIu64, &stats->ssec) != 1))
+		if (ptr &&
+		    (sscanf(ptr, "system_usec %"PRIu64, &stats->ssec) != 1))
 			error("Cannot parse system_usec field in cpu.stat file");
 		xfree(cpu_stat);
 	}
@@ -1997,7 +1999,8 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	 */
 	if (memory_stat) {
 		ptr = xstrstr(memory_stat, "anon");
-		if (ptr && (sscanf(ptr, "anon %"PRIu64, &stats->total_rss) != 1))
+		if (ptr &&
+		    (sscanf(ptr, "anon %"PRIu64, &stats->total_rss) != 1))
 			error("Cannot parse anon field in memory.stat file");
 
 		ptr = xstrstr(memory_stat, "anon_thp");
