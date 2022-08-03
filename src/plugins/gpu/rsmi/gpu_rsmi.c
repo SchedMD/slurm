@@ -565,6 +565,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	for (i = 0; i < gpu_len; i++) {
 		char *sep = "";
 		uint64_t mem_bitmask = 0, gpu_bitmask = 0;
+		unsigned int gpu_freq = gpu_freq_num, mem_freq = mem_freq_num;
 
 		// Only check the global GPU bitstring if not using cgroups
 		if (!cgroups_active && !bit_test(gpus, i)) {
@@ -574,8 +575,8 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		count++;
 
 		debug2("Setting frequency of RSMI device %u", i);
-		_rsmi_get_nearest_freqs(i, &mem_freq_num, &mem_bitmask,
-					&gpu_freq_num, &gpu_bitmask);
+		_rsmi_get_nearest_freqs(i, &mem_freq, &mem_bitmask,
+					&gpu_freq, &gpu_bitmask);
 
 		debug2("Memory frequency before set: %u",
 		       _rsmi_get_mem_freq(i));
@@ -587,13 +588,12 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		debug2("Graphics frequency after set: %u",
 		       _rsmi_get_gfx_freq(i));
 
-		if (mem_freq_num) {
-			xstrfmtcat(tmp, "%smemory_freq:%u", sep, mem_freq_num);
+		if (mem_freq) {
+			xstrfmtcat(tmp, "%smemory_freq:%u", sep, mem_freq);
 			sep = ",";
 		}
-		if (gpu_freq_num) {
-			xstrfmtcat(tmp, "%sgraphics_freq:%u", sep,
-				   gpu_freq_num);
+		if (gpu_freq) {
+			xstrfmtcat(tmp, "%sgraphics_freq:%u", sep, gpu_freq);
 		}
 
 		if (freq_set) {

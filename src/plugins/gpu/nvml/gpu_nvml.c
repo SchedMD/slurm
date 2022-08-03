@@ -642,6 +642,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	for (i = 0; i < gpu_len; i++) {
 		char *sep = "";
 		nvmlDevice_t device;
+		unsigned int gpu_freq = gpu_freq_num, mem_freq = mem_freq_num;
 
 		// Only check the global GPU bitstring if not using cgroups
 		if (!cgroups_active && !bit_test(gpus, i)) {
@@ -653,25 +654,24 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		if (!_nvml_get_handle(i, &device))
 			continue;
 		debug2("Setting frequency of NVML device %u", i);
-		_nvml_get_nearest_freqs(&device, &mem_freq_num, &gpu_freq_num);
+		_nvml_get_nearest_freqs(&device, &mem_freq, &gpu_freq);
 
 		debug2("Memory frequency before set: %u",
 		       _nvml_get_mem_freq(&device));
 		debug2("Graphics frequency before set: %u",
 		       _nvml_get_gfx_freq(&device));
-		freq_set = _nvml_set_freqs(&device, mem_freq_num, gpu_freq_num);
+		freq_set = _nvml_set_freqs(&device, mem_freq, gpu_freq);
 		debug2("Memory frequency after set: %u",
 		       _nvml_get_mem_freq(&device));
 		debug2("Graphics frequency after set: %u",
 		       _nvml_get_gfx_freq(&device));
 
-		if (mem_freq_num) {
-			xstrfmtcat(tmp, "%smemory_freq:%u", sep, mem_freq_num);
+		if (mem_freq) {
+			xstrfmtcat(tmp, "%smemory_freq:%u", sep, mem_freq);
 			sep = ",";
 		}
-		if (gpu_freq_num) {
-			xstrfmtcat(tmp, "%sgraphics_freq:%u", sep,
-				   gpu_freq_num);
+		if (gpu_freq) {
+			xstrfmtcat(tmp, "%sgraphics_freq:%u", sep, gpu_freq);
 		}
 
 		if (freq_set) {
