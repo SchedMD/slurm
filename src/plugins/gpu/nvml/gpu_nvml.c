@@ -886,7 +886,7 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 	unsigned int i;
 	nvmlReturn_t nvml_rc;
 	nvmlEnableState_t is_active;
-	int *links = xmalloc(sizeof(int) * device_count);
+	int *links = xcalloc(device_count, sizeof(int));
 	char *links_str = NULL, *sep = "";
 
 	// Initialize links, xmalloc() initialized the array to 0 or NVLINK_NONE
@@ -1280,7 +1280,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	debug2("Device count: %d", device_count);
 
 	// Create a device index --> PCI Bus ID lookup table
-	device_lut = xmalloc(sizeof(char *) * device_count);
+	device_lut = xcalloc(device_count, sizeof(char *));
 
 	/*
 	 * Loop through to create device to PCI busId lookup table
