@@ -221,6 +221,15 @@ main(int argc, char *argv[])
 		bit_free(bs1);
 		bit_free(bs2);
 
+		bs1 = bit_alloc(10);
+		bs2 = bit_alloc(10);
+		bit_set(bs1, 0);
+		bit_nset(bs1, 3, 9);
+		bit_nset(bs2, 0, 9);
+		TEST(!bit_equal(bs1, bs2), "not bit_equal");
+
+		bit_free(bs1);
+		bit_free(bs2);
 	}
 
 	note("Testing bit_unfmt");
