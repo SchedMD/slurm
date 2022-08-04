@@ -166,83 +166,24 @@ static void _match_masks_to_ldom(const uint32_t maxtasks, bitstr_t **masks)
  */
 void batch_bind(batch_job_launch_msg_t *req)
 {
-	bitstr_t *req_map, *hw_map;
-	uint16_t sockets = 0, cores = 0, num_cpus;
+	bitstr_t *hw_map;
 	int task_cnt = 0;
-	int job_node_id;
-	int start;
-	slurm_cred_arg_t *arg = slurm_cred_get_args(req->cred);
-
-	job_node_id = nodelist_find(arg->job_hostlist, conf->node_name);
-	if ((job_node_id < 0) || (job_node_id > arg->job_nhosts)) {
-		error("%s: missing node %s in job credential (%s)",
-		      __func__, conf->node_name, arg->job_hostlist);
-		slurm_cred_unlock_args(req->cred);
-		return;
-	}
-
-	start = _get_local_node_info(arg, job_node_id, &sockets, &cores);
-	if ((sockets * cores) == 0) {
-		error("%s: socket and core count both zero", __func__);
-		slurm_cred_unlock_args(req->cred);
-		return;
-	}
-
-	num_cpus  = MIN((sockets * cores),
-			(conf->sockets * conf->cores));
-	req_map = (bitstr_t *) bit_alloc(num_cpus);
-	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 
 #ifdef HAVE_FRONT_END
 {
 	/* Since the front-end nodes are a shared resource, we limit each job
 	 * to one CPU based upon monotonically increasing sequence number */
 	static int last_id = 0;
+	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 	bit_set(hw_map, ((last_id++) % conf->block_map_size));
 	task_cnt = 1;
-
-	/*
-	 * This is here to make sure we use the 'start' variable to avoid
-	 * compiling issues.
-	 */
-	debug5("Start is %d", start);
 }
 #else
 {
-	char *str;
-	int t, p;
-
-	/* Transfer core_bitmap data to local req_map.
-	 * The MOD function handles the case where fewer processes
-	 * physically exist than are configured (slurmd is out of
-	 * sync with the slurmctld daemon). */
-	for (p = 0; p < (sockets * cores); p++) {
-		if (bit_test(arg->job_core_bitmap, start + p))
-			bit_set(req_map, (p % num_cpus));
-	}
-
-	str = (char *)bit_fmt_hexmask(req_map);
-	debug3("job %u core mask from slurmctld: %s",
-	       req->job_id, str);
-	xfree(str);
-
-	for (p = 0; p < num_cpus; p++) {
-		if (bit_test(req_map, p) == 0)
-			continue;
-		/* core_bitmap does not include threads, so we
-		 * add them here but limit them to what the job
-		 * requested */
-		for (t = 0; t < conf->threads; t++) {
-			uint16_t pos = p * conf->threads + t;
-			if (pos >= conf->block_map_size) {
-				info("more resources configured than exist");
-				p = num_cpus;
-				break;
-			}
-			bit_set(hw_map, pos);
-			task_cnt++;
-		}
-	}
+	uint16_t sockets = 0, cores = 0, threads = 0;
+	hw_map = _get_avail_map(req->cred, &sockets, &cores, &threads);
+	if (hw_map)
+		task_cnt = bit_set_count(hw_map);
 }
 #endif
 	if (task_cnt) {
@@ -269,8 +210,6 @@ void batch_bind(batch_job_launch_msg_t *req)
 		      req->job_id);
 	}
 	FREE_NULL_BITMAP(hw_map);
-	FREE_NULL_BITMAP(req_map);
-	slurm_cred_unlock_args(req->cred);
 }
 
 static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
