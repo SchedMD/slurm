@@ -55,9 +55,8 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 			 int *whole_node_cnt, int *whole_socket_cnt,
 			 int *whole_core_cnt, int *whole_thread_cnt,
 			 int *part_socket_cnt, int *part_core_cnt);
-static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
-				uint16_t *hw_sockets, uint16_t *hw_cores,
-				uint16_t *hw_threads);
+static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
+				uint16_t *hw_cores, uint16_t *hw_threads);
 static int _get_local_node_info(slurm_cred_arg_t *arg, int job_node_id,
 				uint16_t *sockets, uint16_t *cores);
 
@@ -693,7 +692,7 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 	*part_socket_cnt  = 0;
 	*part_core_cnt    = 0;
 
-	alloc_bitmap = _get_avail_map(req, &sockets, &cores, &threads);
+	alloc_bitmap = _get_avail_map(req->cred, &sockets, &cores, &threads);
 	if (!alloc_bitmap)
 		return NULL;
 
@@ -780,16 +779,15 @@ static char *_alloc_mask(launch_tasks_request_msg_t *req,
 
 /*
  * Given a job step request, return an equivalent local bitmap for this node
- * IN req          - The job step launch request
+ * IN cred         - The job step launch request credential
  * OUT hw_sockets  - number of actual sockets on this node
  * OUT hw_cores    - number of actual cores per socket on this node
  * OUT hw_threads  - number of actual threads per core on this node
  * RET: bitmap of processors available to this job step on this node
  *      OR NULL on error
  */
-static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
-				uint16_t *hw_sockets, uint16_t *hw_cores,
-				uint16_t *hw_threads)
+static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
+				uint16_t *hw_cores, uint16_t *hw_threads)
 {
 	bitstr_t *req_map, *hw_map;
 	uint16_t p, t, new_p, num_cpus, sockets, cores;
@@ -797,19 +795,18 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	int start;
 	char *str;
 	int spec_thread_cnt = 0;
-	slurm_cred_arg_t *arg = slurm_cred_get_args(req->cred);
+	slurm_cred_arg_t *arg = slurm_cred_get_args(cred);
 
 	*hw_sockets = conf->sockets;
 	*hw_cores   = conf->cores;
 	*hw_threads = conf->threads;
-
 	/* we need this node's ID in relation to the whole
 	 * job allocation, not just this jobstep */
 	job_node_id = nodelist_find(arg->job_hostlist, conf->node_name);
 	if ((job_node_id < 0) || (job_node_id > arg->job_nhosts)) {
 		error("%s: missing node %s in job credential (%s)",
 		      __func__, conf->node_name, arg->job_hostlist);
-		slurm_cred_unlock_args(req->cred);
+		slurm_cred_unlock_args(cred);
 		return NULL;
 	}
 	start = _get_local_node_info(arg, job_node_id, &sockets, &cores);
@@ -831,7 +828,7 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 
 	str = (char *)bit_fmt_hexmask(req_map);
 	debug3("%ps core mask from slurmctld: %s",
-	       &req->step_id, str);
+	       &arg->step_id, str);
 	xfree(str);
 
 	for (p = 0; p < num_cpus; p++) {
@@ -852,10 +849,10 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 		}
 	}
 
-	if ((req->job_core_spec != NO_VAL16) &&
-	    (req->job_core_spec &  CORE_SPEC_THREAD)  &&
-	    (req->job_core_spec != CORE_SPEC_THREAD)) {
-		spec_thread_cnt = req->job_core_spec & (~CORE_SPEC_THREAD);
+	if ((arg->job_core_spec != NO_VAL16) &&
+	    (arg->job_core_spec &  CORE_SPEC_THREAD)  &&
+	    (arg->job_core_spec != CORE_SPEC_THREAD)) {
+		spec_thread_cnt = arg->job_core_spec & (~CORE_SPEC_THREAD);
 	}
 	if (spec_thread_cnt) {
 		/* Skip specialized threads as needed */
@@ -882,11 +879,11 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 
 	str = (char *)bit_fmt_hexmask(hw_map);
 	debug3("%ps CPU final mask for local node: %s",
-	       &req->step_id, str);
+	       &arg->step_id, str);
 	xfree(str);
 
 	FREE_NULL_BITMAP(req_map);
-	slurm_cred_unlock_args(req->cred);
+	slurm_cred_unlock_args(cred);
 	return hw_map;
 }
 
@@ -1017,7 +1014,8 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 
 	info ("_task_layout_lllp_cyclic ");
 
-	avail_map = _get_avail_map(req, &hw_sockets, &hw_cores, &hw_threads);
+	avail_map = _get_avail_map(req->cred, &hw_sockets, &hw_cores,
+				   &hw_threads);
 	if (!avail_map)
 		return SLURM_ERROR;
 
@@ -1224,7 +1222,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 
 	info("_task_layout_lllp_block ");
 
-	avail_map = _get_avail_map(req, &hw_sockets, &hw_cores, &hw_threads);
+	avail_map = _get_avail_map(req->cred, &hw_sockets, &hw_cores,
+				   &hw_threads);
 	if (!avail_map) {
 		return SLURM_ERROR;
 	}
