@@ -100,6 +100,8 @@ documents those changes that are of interest to users and administrators.
  -- Wait up to PrologEpilogTimeout before shutting down slurmd to allow prolog
     and epilog scripts to complete or timeout. Previously, slurmd waited 120
     seconds before timing out and killing prolog and epilog scripts.
+ -- GPU - Fix checking frequencies to check them all and not skip the last one.
+ -- GPU - Fix logic to set frequencies properly when handling multiple GPUs.
 
 * Changes in Slurm 22.05.2
 ==========================
