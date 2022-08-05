@@ -694,7 +694,7 @@ bit_equal(bitstr_t *b1, bitstr_t *b2)
 	}
 	if (bit < bit_cnt) {
 		uint64_t mask = _bit_nmask(bit_cnt);
-		if ((b1[_bit_word(bit)] & ~b2[_bit_word(bit)]) & mask)
+		if ((b1[_bit_word(bit)] ^ b2[_bit_word(bit)]) & mask)
 			return 0;
 	}
 
