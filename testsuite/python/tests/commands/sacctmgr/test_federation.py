@@ -574,7 +574,7 @@ def test_add_max_clusters_federation():
 
     atf.run_command(f"sacctmgr -i modify federation {federation1} set clusters=", user=atf.properties['slurm-user'])
 
-    output = atf.run_command_output(f"sacctmgr -i add cluster {cluster_string} federation={federation1}", user=atf.properties['slurm-user'])
+    output = atf.run_command_output(f"sacctmgr -i add cluster {cluster_string} federation={federation1}", user=atf.properties['slurm-user'], timeout=300)
     assert first_match(r'Adding Cluster\(s\)', output)
     for cluster in cluster_list:
         assert next_match(rf"(?m)^ +Name += +{cluster}")
