@@ -1052,12 +1052,15 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 	}
 
 	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
+		int rc2 = errno;
+
 		/* peer may have not been resolved already */
 		if (!peer)
 			peer = fd_resolve_peer(fd);
 
-		error("%s: [%s] auth_g_unpack: %s has authentication error: %m",
-		      __func__, peer, rpc_num2string(header.msg_type));
+		error("%s: [%s] auth_g_unpack: %s has authentication error: %s",
+		      __func__, peer, rpc_num2string(header.msg_type),
+		      slurm_strerror(rc2));
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
