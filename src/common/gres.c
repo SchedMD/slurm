@@ -3551,8 +3551,11 @@ static void _sync_node_shared_to_sharing(gres_state_t *sharing_gres_state_node)
 
 	sharing_cnt = sharing_gres_ns->gres_cnt_avail;
 	if (shared_gres_ns->gres_bit_alloc) {
-		if (sharing_cnt == bit_size(shared_gres_ns->gres_bit_alloc))
-			return;		/* No change for gres/'shared' */
+		if ((sharing_cnt == bit_size(shared_gres_ns->gres_bit_alloc)) &&
+		    (sharing_cnt == shared_gres_ns->topo_cnt)) {
+			debug3("No change for gres/'shared'");
+			return;
+		}
 	}
 
 	if (sharing_cnt == 0)

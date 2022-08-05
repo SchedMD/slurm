@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - Fix qos list/preempt not being parsed correctly.
  -- Fix dynamic nodes registrations mapping previously assigned nodes.
  -- Remove unnecessarily limit on count of 'shared' gres.
+ -- Fix shared gres on CLOUD nodes not properly initializing.
 
 * Changes in Slurm 22.05.2
 ==========================
