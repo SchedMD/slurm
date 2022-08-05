@@ -106,6 +106,8 @@ documents those changes that are of interest to users and administrators.
  -- GPU - Fix logic to set frequencies properly when handling multiple GPUs.
  -- cgroup/v2 - Fix typo in error message.
  -- cgroup/v2 - More robust pattern search for events.
+ -- Fix slurm_spank_job_[prolog|epilog] failures being masked if a Prolog or
+    Epilog script is defined (regression in 22.05.0rc1).
 
 * Changes in Slurm 22.05.2
 ==========================
