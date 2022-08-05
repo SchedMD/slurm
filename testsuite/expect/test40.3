@@ -35,7 +35,7 @@ set job_id         0
 # Validate the job, batch step and step 0 of a job have the proper MPS counts
 # No step to test if step_mps == -1
 #
-# NOTE: AllocGRES and ReqGRES values for all steps (including batch step)
+# NOTE: AllocTRES and ReqTRES values for all steps (including batch step)
 #	are reported based upon the job specification
 #
 proc test_acct { job_id job_mps step_mps req_mps have_mps_types batch_mps } {
@@ -133,7 +133,7 @@ proc test_acct { job_id job_mps step_mps req_mps have_mps_types batch_mps } {
 # Validate the job, batch step and step 0 of a job have the proper MPS counts
 # No step to test if step_mps == -1
 #
-# NOTE: AllocGRES and ReqGRES values for all steps (including batch step)
+# NOTE: AllocTRES and ReqTRES values for all steps (including batch step)
 #	are reported based upon the job specification
 #
 proc test_out_file { file_out target } {

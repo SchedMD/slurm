@@ -1303,10 +1303,10 @@ extern void parse_command_line(int argc, char **argv)
 		}
 
 		if (!xstrcasecmp("AllocGRES", start)) {
-			fatal("AllocGRES is deprecated, please use AllocTRES");
+			fatal("AllocGRES has been removed, please use AllocTRES");
 		}
 		if (!xstrcasecmp("ReqGRES", start)) {
-			fatal("ReqGRES is deprecated, please use ReqTRES");
+			fatal("ReqGRES has been removed, please use ReqTRES");
 		}
 		error("Invalid field requested: \"%s\"", start);
 		exit(1);
