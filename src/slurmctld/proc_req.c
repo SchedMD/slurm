@@ -2731,6 +2731,7 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 	node_ptr = find_node_record2(reg_msg->node_name);
 	if (node_ptr == NULL) {
 		int i;
+		time_t now;
 
 		debug2("finding available dynamic future node for %s",
 		       reg_msg->node_name);
@@ -2773,10 +2774,16 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 				node_ptr,
 				comm_name ? comm_name : hostname,
 				hostname);
+			now = time(NULL);
+			node_ptr->node_state = NODE_STATE_IDLE;
 			node_ptr->node_state |= NODE_STATE_DYNAMIC_FUTURE;
+			node_ptr->last_response = now;
 
 			bit_clear(future_node_bitmap, node_ptr->index);
 			xfree(comm_name);
+
+			clusteracct_storage_g_node_up(acct_db_conn, node_ptr,
+						      now);
 
 			break;
 		}
