@@ -800,6 +800,13 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 i, cpus_per_gres, cpus_per_core);
 			req_cpus = MAX(req_cpus, i);
 		}
+		/*
+		 * Ensure that the number required cores is at least equal to
+		 * the number of required sockets.
+		 */
+		if (req_cpus < sock_cnt) {
+			req_cpus = sock_cnt;
+		}
 
 		if (req_cpus > avail_cores_tot) {
 			log_flag(SELECT_TYPE, "Job cannot run on node required CPUs:%d > aval_cores_tot:%d",
