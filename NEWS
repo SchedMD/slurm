@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- NVML - Add usage gathering for Nvidia gpus.
  -- node_features plugins - invalid users specified for AllowUserBoot will now
     result in fatal() rather than just an error.
+ -- job_container/tmpfs - Set more environment variables in InitScript.
 
 * Changes in Slurm 22.05.3
 ==========================

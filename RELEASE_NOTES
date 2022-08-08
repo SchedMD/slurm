@@ -34,6 +34,7 @@ HIGHLIGHTS
     reservations. Previously was lumped into IDLE time.
  -- job_container/tmpfs - Support running with an arbitrary list of private
     mount points (/tmp and /dev/shm are the default, but not required).
+ -- job_container/tmpfs - Set more environment variables in InitScript.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -54,3 +55,5 @@ COMMAND CHANGES (see man pages for details)
 
 API CHANGES
 ===========
+ -- job_container plugins - container_p_stepd_create() function signature
+    replaced uint32_t uid with stepd_step_rec_t* step.
