@@ -97,7 +97,6 @@ typedef struct {
 	List node_gres_list;
 } foreach_gres_filter_t;
 
-
 static void _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs);
 static int _step_partial_comp(step_record_t *step_ptr,
@@ -1261,15 +1260,16 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				test_mem_per_gres = true;
 
 			/* ignore current step allocations */
-			gres_cpus = gres_step_test(step_gres_list,
-						   job_ptr->gres_list_alloc,
-						   node_inx,
-						   first_step_node,
-						   cpus_per_task,
-						   max_rem_nodes, true,
-						   job_ptr->job_id, NO_VAL,
-						   test_mem_per_gres,
-						   job_resrcs_ptr, &err_code);
+			gres_cpus = gres_ctld_step_test(
+				step_gres_list,
+				job_ptr->gres_list_alloc,
+				node_inx,
+				first_step_node,
+				cpus_per_task,
+				max_rem_nodes, true,
+				job_ptr->job_id, NO_VAL,
+				test_mem_per_gres,
+				job_resrcs_ptr, &err_code);
 			total_cpus = MIN(total_cpus, gres_cpus);
 
 			/*
@@ -1277,17 +1277,17 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			 * not --overlap=force
 			 */
 			if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
-				gres_cpus =
-					gres_step_test(step_gres_list,
-						       job_ptr->gres_list_alloc,
-						       node_inx,
-						       first_step_node,
-						       cpus_per_task,
-						       max_rem_nodes, false,
-						       job_ptr->job_id, NO_VAL,
-						       test_mem_per_gres,
-						       job_resrcs_ptr,
-						       &err_code);
+				gres_cpus = gres_ctld_step_test(
+					step_gres_list,
+					job_ptr->gres_list_alloc,
+					node_inx,
+					first_step_node,
+					cpus_per_task,
+					max_rem_nodes, false,
+					job_ptr->job_id, NO_VAL,
+					test_mem_per_gres,
+					job_resrcs_ptr,
+					&err_code);
 			}
 			if (gres_cpus < avail_cpus) {
 				log_flag(STEPS, "%s: %pJ Usable CPUs for GRES %"PRIu64" from %d previously available",
@@ -3663,16 +3663,17 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			else
 				ignore_alloc = false;
 
-			gres_cpus = gres_step_test(step_ptr->gres_list_req,
-						   job_ptr->gres_list_alloc,
-						   job_node_offset,
-						   first_step_node,
-						   step_ptr->cpus_per_task,
-						   rem_nodes, ignore_alloc,
-						   job_ptr->job_id,
-						   step_ptr->step_id.step_id,
-						   test_mem_per_gres,
-						   job_resrcs_ptr, &err_code);
+			gres_cpus = gres_ctld_step_test(
+				step_ptr->gres_list_req,
+				job_ptr->gres_list_alloc,
+				job_node_offset,
+				first_step_node,
+				step_ptr->cpus_per_task,
+				rem_nodes, ignore_alloc,
+				job_ptr->job_id,
+				step_ptr->step_id.step_id,
+				test_mem_per_gres,
+				job_resrcs_ptr, &err_code);
 			if (usable_cpus > gres_cpus)
 				usable_cpus = gres_cpus;
 			if (usable_cpus <= 0) {

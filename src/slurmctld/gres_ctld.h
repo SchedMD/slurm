@@ -179,6 +179,34 @@ extern void gres_ctld_set_node_tres_cnt(List gres_list,
 					bool locked);
 
 /*
+ * Determine how many cores of a job's allocation can be allocated to a step
+ *	on a specific node
+ * IN job_gres_list - a running job's allocated gres info
+ * IN/OUT step_gres_list - a pending job step's gres requirements
+ * IN node_offset - index into the job's node allocation
+ * IN first_step_node - true if this is node zero of the step (do initing)
+ * IN cpus_per_task - number of CPUs required per task
+ * IN max_rem_nodes - maximum nodes remaining for step (including this one)
+ * IN ignore_alloc - if set ignore resources already allocated to running steps
+ * IN job_id, step_id - ID of the step being allocated.
+ * IN test_mem - true if we should test if mem_per_gres would exceed a limit.
+ * IN job_resrcs_ptr - pointer to this job's job_resources_t; used to know
+ *                     how much of the job's memory is available.
+ * OUT err_code - If an error occurred, set this to tell the caller why the
+ *                error happend.
+ * RET Count of available cores on this node (sort of):
+ *     NO_VAL64 if no limit or 0 if node is not usable
+ */
+extern uint64_t gres_ctld_step_test(List step_gres_list, List job_gres_list,
+				    int node_offset, bool first_step_node,
+				    uint16_t cpus_per_task, int max_rem_nodes,
+				    bool ignore_alloc,
+				    uint32_t job_id, uint32_t step_id,
+				    bool test_mem,
+				    job_resources_t *job_resrcs_ptr,
+				    int *err_code);
+
+/*
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
  *		gres_step_state_validate()

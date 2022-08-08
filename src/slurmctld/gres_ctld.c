@@ -53,6 +53,13 @@ typedef struct {
 	slurm_step_id_t tmp_step_id;
 } foreach_step_alloc_t;
 
+typedef struct {
+	uint64_t gres_cnt;
+	bool ignore_alloc;
+	gres_key_t *job_search_key;
+	slurm_step_id_t *step_id;
+} foreach_gres_cnt_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -2683,6 +2690,231 @@ extern char *gres_ctld_gres_on_node_as_tres(List job_gres_list,
 		assoc_mgr_unlock(&locks);
 
 	return tres_str;
+}
+
+static uint64_t _step_test(gres_step_state_t *gres_ss, bool first_step_node,
+			   uint16_t cpus_per_task, int max_rem_nodes,
+			   bool ignore_alloc, uint64_t gres_cnt, bool test_mem,
+			   int node_offset, slurm_step_id_t *step_id,
+			   job_resources_t *job_resrcs_ptr, int *err_code)
+{
+	uint64_t core_cnt, min_gres = 1, task_cnt;
+
+	xassert(gres_ss);
+
+	if (!gres_cnt)
+		return 0;
+
+	if (first_step_node) {
+		gres_ss->gross_gres = 0;
+		gres_ss->total_gres = 0;
+	}
+	if (gres_ss->gres_per_node)
+		min_gres = gres_ss-> gres_per_node;
+	if (gres_ss->gres_per_socket)
+		min_gres = MAX(min_gres, gres_ss->gres_per_socket);
+	if (gres_ss->gres_per_task)
+		min_gres = MAX(min_gres, gres_ss->gres_per_task);
+	if (gres_ss->gres_per_step &&
+	    (gres_ss->gres_per_step > gres_ss->total_gres) &&
+	    (max_rem_nodes == 1)) {
+		uint64_t gres_per_step = gres_ss->gres_per_step;
+		if (ignore_alloc)
+			gres_per_step -= gres_ss->gross_gres;
+		else
+			gres_per_step -= gres_ss->total_gres;
+		min_gres = MAX(min_gres, gres_per_step);
+	}
+
+	if (gres_cnt != NO_VAL64) {
+		if (min_gres > gres_cnt) {
+			core_cnt = 0;
+		} else if (gres_ss->gres_per_task) {
+			task_cnt = (gres_cnt + gres_ss->gres_per_task - 1)
+				/ gres_ss->gres_per_task;
+			core_cnt = task_cnt * cpus_per_task;
+		} else
+			core_cnt = NO_VAL64;
+	} else {
+		gres_cnt = 0;
+		core_cnt = NO_VAL64;
+	}
+
+	/* Test if there is enough memory available to run the step. */
+	if (test_mem && core_cnt && gres_cnt && gres_ss->mem_per_gres &&
+	    (gres_ss->mem_per_gres != NO_VAL64)) {
+		uint64_t mem_per_gres, mem_req, mem_avail;
+
+		mem_per_gres = gres_ss->mem_per_gres;
+		mem_req = min_gres * mem_per_gres;
+		mem_avail = job_resrcs_ptr->memory_allocated[node_offset];
+		if (!ignore_alloc)
+			mem_avail -= job_resrcs_ptr->memory_used[node_offset];
+
+		if (mem_avail < mem_req) {
+			log_flag(STEPS, "%s: JobId=%u: Usable memory on node: %"PRIu64" is less than requested %"PRIu64", skipping the node",
+				 __func__, step_id->job_id, mem_avail,
+				 mem_req);
+			core_cnt = 0;
+			*err_code = ESLURM_INVALID_TASK_MEMORY;
+		}
+	}
+
+	if (core_cnt != 0) {
+		if (ignore_alloc)
+			gres_ss->gross_gres += gres_cnt;
+		else
+			gres_ss->total_gres += gres_cnt;
+	}
+
+	return core_cnt;
+}
+
+static int _step_get_gres_cnt(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = (gres_state_t *)x;
+	foreach_gres_cnt_t *foreach_gres_cnt = (foreach_gres_cnt_t *)arg;
+	gres_job_state_t *gres_js;
+	gres_key_t *job_search_key = foreach_gres_cnt->job_search_key;
+	bool ignore_alloc = foreach_gres_cnt->ignore_alloc;
+	slurm_step_id_t *step_id = foreach_gres_cnt->step_id;
+	int node_offset = job_search_key->node_offset;
+
+	/* This isn't the gres we are looking for */
+	if (!gres_find_job_by_key_with_cnt(gres_state_job, job_search_key))
+		return 0;
+
+	/* This is the first time we have found a matching GRES. */
+	if (foreach_gres_cnt->gres_cnt == INFINITE64)
+		foreach_gres_cnt->gres_cnt = 0;
+
+	gres_js = gres_state_job->gres_data;
+
+	if (gres_js->total_gres == NO_CONSUME_VAL64) {
+		foreach_gres_cnt->gres_cnt = NO_CONSUME_VAL64;
+		return -1;
+	}
+
+	if ((node_offset >= gres_js->node_cnt)) {
+		error("gres/%s: %s %ps node offset invalid (%d >= %u)",
+		      gres_state_job->gres_name, __func__, step_id,
+		      node_offset, gres_js->node_cnt);
+		foreach_gres_cnt->gres_cnt = 0;
+		return -1;
+	}
+	if (!gres_id_shared(job_search_key->config_flags) &&
+	    gres_js->gres_bit_alloc &&
+	    gres_js->gres_bit_alloc[node_offset]) {
+		foreach_gres_cnt->gres_cnt += bit_set_count(
+			gres_js->gres_bit_alloc[node_offset]);
+		if (!ignore_alloc &&
+		    gres_js->gres_bit_step_alloc &&
+		    gres_js->gres_bit_step_alloc[node_offset]) {
+			foreach_gres_cnt->gres_cnt -=
+				bit_set_count(gres_js->
+					      gres_bit_step_alloc[node_offset]);
+		}
+	} else if (gres_js->gres_cnt_node_alloc &&
+		   gres_js->gres_cnt_step_alloc) {
+		foreach_gres_cnt->gres_cnt +=
+			gres_js->gres_cnt_node_alloc[node_offset];
+		if (!ignore_alloc) {
+			foreach_gres_cnt->gres_cnt -= gres_js->
+				gres_cnt_step_alloc[node_offset];
+		}
+	} else {
+		debug3("gres/%s:%s: %s %ps gres_bit_alloc and gres_cnt_node_alloc are NULL",
+		       gres_state_job->gres_name, gres_js->type_name,
+		       __func__, step_id);
+		foreach_gres_cnt->gres_cnt = NO_VAL64;
+		return -1;
+	}
+	return 0;
+}
+
+extern uint64_t gres_ctld_step_test(List step_gres_list, List job_gres_list,
+				    int node_offset, bool first_step_node,
+				    uint16_t cpus_per_task, int max_rem_nodes,
+				    bool ignore_alloc,
+				    uint32_t job_id, uint32_t step_id,
+				    bool test_mem,
+				    job_resources_t *job_resrcs_ptr,
+				    int *err_code)
+{
+	uint64_t core_cnt, tmp_cnt;
+	ListIterator step_gres_iter;
+	gres_state_t *gres_state_step;
+	gres_step_state_t *gres_ss = NULL;
+	slurm_step_id_t tmp_step_id;
+	foreach_gres_cnt_t foreach_gres_cnt;
+
+	if (step_gres_list == NULL)
+		return NO_VAL64;
+	if (job_gres_list == NULL)
+		return 0;
+
+	if (cpus_per_task == 0)
+		cpus_per_task = 1;
+	core_cnt = NO_VAL64;
+	(void) gres_init();
+	*err_code = SLURM_SUCCESS;
+
+	tmp_step_id.job_id = job_id;
+	tmp_step_id.step_het_comp = NO_VAL;
+	tmp_step_id.step_id = step_id;
+
+	memset(&foreach_gres_cnt, 0, sizeof(foreach_gres_cnt));
+	foreach_gres_cnt.ignore_alloc = ignore_alloc;
+	foreach_gres_cnt.step_id = &tmp_step_id;
+
+	step_gres_iter = list_iterator_create(step_gres_list);
+	while ((gres_state_step = (gres_state_t *) list_next(step_gres_iter))) {
+		gres_key_t job_search_key;
+
+		gres_ss = (gres_step_state_t *)gres_state_step->gres_data;
+		job_search_key.config_flags = gres_state_step->config_flags;
+		job_search_key.plugin_id = gres_state_step->plugin_id;
+		if (gres_ss->type_name)
+			job_search_key.type_id = gres_ss->type_id;
+		else
+			job_search_key.type_id = NO_VAL;
+
+		job_search_key.node_offset = node_offset;
+
+		foreach_gres_cnt.job_search_key = &job_search_key;
+		foreach_gres_cnt.gres_cnt = INFINITE64;
+
+		(void)list_for_each(job_gres_list, _step_get_gres_cnt,
+				    &foreach_gres_cnt);
+
+		if (foreach_gres_cnt.gres_cnt == INFINITE64) {
+			log_flag(GRES, "%s: Job lacks GRES (%s:%s) required by the step",
+				 __func__, gres_state_step->gres_name,
+				 gres_ss->type_name);
+			core_cnt = 0;
+			break;
+		}
+
+		if (foreach_gres_cnt.gres_cnt == NO_CONSUME_VAL64) {
+			core_cnt = NO_VAL64;
+			break;
+		}
+
+		tmp_cnt = _step_test(gres_ss, first_step_node,
+				     cpus_per_task, max_rem_nodes,
+				     ignore_alloc, foreach_gres_cnt.gres_cnt,
+				     test_mem, node_offset,
+				     &tmp_step_id,
+				     job_resrcs_ptr, err_code);
+		if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))
+			core_cnt = tmp_cnt;
+
+		if (core_cnt == 0)
+			break;
+	}
+	list_iterator_destroy(step_gres_iter);
+
+	return core_cnt;
 }
 
 extern char *gres_ctld_gres_2_tres_str(List gres_list, bool locked)
