@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix slurmctlds in a federation not recovering a lost connection until a
     slurmctld restart or a federation update.
+ -- Fix incorrectly rejecting jobs that request GRES on multiple sockets and
+    --gres-flags=enforce-binding.
 
 * Changes in Slurm 22.05.6
 ==========================

@@ -542,26 +542,6 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	    !job_ptr->cpus_per_tres)
 		num_tasks = MIN(num_tasks, details_ptr->ntasks_per_node);
 
-	if (cpus_per_task < 2) {
-		avail_cpus = num_tasks;
-	} else if ((ntasks_per_core == 1) &&
-		   (cpus_per_task > threads_per_core)) {
-		/* find out how many cores a task will use */
-		int task_cores = (cpus_per_task + threads_per_core - 1) /
-			threads_per_core;
-		int task_cpus  = task_cores * threads_per_core;
-		/* find out how many tasks can fit on a node */
-		int tasks = avail_cpus / task_cpus;
-		/* how many cpus the job would use on the node */
-		avail_cpus = tasks * task_cpus;
-		/* subtract out the extra cpus. */
-		avail_cpus -= (tasks * (task_cpus - cpus_per_task));
-	} else {
-		j = avail_cpus / cpus_per_task;
-		num_tasks = MIN(num_tasks, j);
-		avail_cpus = num_tasks * cpus_per_task;
-	}
-
 	/*
 	 * If there's an auto adjustment then use the max between the required
 	 * CPUs according to required task number, or to the autoadjustment.
