@@ -2648,6 +2648,12 @@ If set, only the specified node will log when the job or step are killed
 by a signal.
 .IP
 
+.TP
+\fBSLURM_UMASK\fR
+If defined, Slurm will use the defined \fIumask\fR to set permissions when
+creating the output/error files for the job.
+.IP
+
 .SH "OUTPUT ENVIRONMENT VARIABLES"
 .PP
 The Slurm controller will set the following variables in the environment of
