@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.4
 ==========================
+ -- Fix return code from salloc when the job is revoked prior to executing user
+    command.
 
 * Changes in Slurm 22.05.3
 ==========================
