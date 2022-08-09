@@ -164,8 +164,9 @@ of file names specified or not set (the default value is the number of files
 specified).
 The exception to this is MPS/Sharding. For either of these GRES, each GPU would be identified by device
 file using the \fBFile\fR parameter and \fBCount\fR would specify the number of
-entries that would correspond to that GPU (typically 100 or some multiple of
-100).
+entries that would correspond to that GPU. For MPS, typically 100 or some
+multiple of 100. For Sharding typically the maximum number of jobs that could
+simultaneously share that GPU.
 
 If using a card with Multi-Instance GPU functionality, use \fBMultipleFiles\fR
 instead. \fBFile\fR and \fBMultipleFiles\fR are mutually exclusive.

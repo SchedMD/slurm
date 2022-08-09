@@ -2554,7 +2554,8 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			      __func__, tmp_name, node_name);
 			config_flags |= GRES_CONF_HAS_FILE;
 		}
-		if (new_has_file && (count64 > MAX_GRES_BITMAP)) {
+		if (new_has_file && (count64 > MAX_GRES_BITMAP) &&
+		    !gres_id_shared(config_flags)) {
 			/*
 			 * Avoid over-subscribing memory with
 			 * huge bitmaps
