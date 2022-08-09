@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "May 2022" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "August 2022" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -171,6 +171,13 @@ compiled into slurmd.
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.  This is overridden by
 explicitly naming a configuration file on the command line.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for slurmd to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
 .IP
 
 .SH "SIGNALS"

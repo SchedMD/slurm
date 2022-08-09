@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "July 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "August 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -858,6 +858,12 @@ Defines specific subsystems which should provide more detailed event logging.
 Multiple subsystems can be specified with comma separators.
 Most DebugFlags will result in verbose\-level logging for the identified
 subsystems, and could impact performance.
+
+\fBNOTE\fR: You can also set debug flags by having the \fBSLURM_DEBUG_FLAGS\fR
+environment variable defined with the desired flags when the process (client
+command, daemon, etc.) is started.
+The environment variable takes precedence over the setting in the slurm.conf.
+
 Valid subsystems available include:
 .IP
 .RS

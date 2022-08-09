@@ -1,4 +1,4 @@
-.TH sbcast "1" "Slurm Commands" "February 2021" "Slurm Commands"
+.TH sbcast "1" "Slurm Commands" "August 2022" "Slurm Commands"
 
 .SH "NAME"
 sbcast \- transmit a file to the nodes allocated to a Slurm job.
@@ -169,6 +169,13 @@ these settings.)
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for sbcast to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
 .IP
 
 .SH "AUTHORIZATION"

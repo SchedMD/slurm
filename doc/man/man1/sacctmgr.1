@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "July 2022" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "August 2022" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -3098,6 +3098,13 @@ environment variables, along with their corresponding options, are listed below.
 .TP 20
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.IP
+
+.TP
+\fBSLURM_DEBUG_FLAGS\fR
+Specify debug flags for sacctmgr to use. See DebugFlags in the
+\fBslurm.conf\fR(5) man page for a full list of flags. The environment
+variable takes precedence over the setting in the slurm.conf.
 .IP
 
 .SH "EXAMPLES"
