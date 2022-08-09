@@ -98,4 +98,41 @@ typedef void (*plugrack_foreach_t)(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg);
 extern void plugrack_foreach(plugrack_t *rack, plugrack_foreach_t f, void *arg);
 
+#define PLUGINS_MAGIC 0x3ddfdab5
+typedef struct {
+	int magic;
+	/* array of pointer to function ptr structs */
+	void **functions;
+	plugin_handle_t *handles;
+	char **types;
+	size_t count;
+	plugrack_t *rack;
+} plugins_t;
+
+/*
+ * Load a given list of plugins
+ * IN/OUT plugins_ptr - ptr to ptr of plugins to populate.
+ * 	*ptr may be NULL or will use existing plugins
+ * IN major_type - major type of plugin
+ * IN plugin_list - comma delimited list of plugins
+ * IN listf - callback on each possible plugin if plugin_list="list"
+ * RET SLURM_SUCCESS or error
+ */
+extern int load_plugins(plugins_t **plugins_ptr, const char *major_type,
+			const char *plugin_list, plugrack_foreach_t listf,
+			const char **syms, size_t syms_count);
+/*
+ * unload and release a given list of plugins
+ *
+ * Call FREE_NULL_PLUGINS() instead
+ */
+extern void unload_plugins(plugins_t *plugins);
+
+#define FREE_NULL_PLUGINS(_X)               \
+	do {                                \
+		if (_X)                     \
+			unload_plugins(_X); \
+		_X = NULL;                  \
+	} while (0)
+
 #endif /*__PLUGRACK_H__*/
