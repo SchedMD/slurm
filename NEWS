@@ -111,6 +111,7 @@ documents those changes that are of interest to users and administrators.
     Epilog script is defined (regression in 22.05.0rc1).
  -- When a job requested nodes and can't immediately start, only report to
     the user (squeue/scontrol et al) if nodes are down in the requested list.
+ -- openapi/dbv0.0.38 - Fix qos list/preempt not being parsed correctly.
 
 * Changes in Slurm 22.05.2
 ==========================
