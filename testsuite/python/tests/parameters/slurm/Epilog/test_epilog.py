@@ -24,11 +24,10 @@ def test_epilog(tmp_path):
 exit 0
 """)
     atf.set_config_parameter('Epilog', epilog)
-    atf.run_command("scontrol reconfigure", user=atf.properties['slurm-user'], fatal=True)
 
     # Verify epilog ran by checking for the file creation
     atf.run_job(f"-t1 true", fatal=True)
     assert atf.wait_for_file(touched_file), f"File ({touched_file}) was not created"
 
     # Verify that the child processes of the epilog have been killed off
-    assert atf.run_command_exit(f"pgrep {sleep_symlink}", xfail=True) != 0, "Process ({sleep_symlink}) should have been killed"
+    assert atf.run_command_exit(f"pgrep -f {sleep_symlink}", xfail=True) != 0, "Process ({sleep_symlink}) should have been killed"
