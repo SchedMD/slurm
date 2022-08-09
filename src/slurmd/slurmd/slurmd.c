@@ -710,6 +710,8 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 		 */
 		if ((conf->dynamic_type == DYN_NODE_FUTURE) &&
 		    resp->node_name) {
+			debug2("dynamic node response %s -> %s",
+			       conf->node_name, resp->node_name);
 			xfree(conf->node_name);
 			conf->node_name = xstrdup(resp->node_name);
 		}

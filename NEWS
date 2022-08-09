@@ -112,6 +112,7 @@ documents those changes that are of interest to users and administrators.
  -- When a job requested nodes and can't immediately start, only report to
     the user (squeue/scontrol et al) if nodes are down in the requested list.
  -- openapi/dbv0.0.38 - Fix qos list/preempt not being parsed correctly.
+ -- Fix dynamic nodes registrations mapping previously assigned nodes.
 
 * Changes in Slurm 22.05.2
 ==========================

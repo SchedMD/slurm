@@ -2743,6 +2743,10 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 	node_ptr = find_node_record2(reg_msg->node_name);
 	if (node_ptr == NULL) {
 		int i;
+		time_t now;
+
+		debug2("finding available dynamic future node for %s",
+		       reg_msg->node_name);
 
 		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			slurm_addr_t addr;
@@ -2782,16 +2786,28 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 				node_ptr,
 				comm_name ? comm_name : hostname,
 				hostname);
+			now = time(NULL);
+			node_ptr->node_state = NODE_STATE_IDLE;
 			node_ptr->node_state |= NODE_STATE_DYNAMIC_FUTURE;
+			node_ptr->last_response = now;
 
 			bit_clear(future_node_bitmap, node_ptr->index);
 			xfree(comm_name);
 
+			clusteracct_storage_g_node_up(acct_db_conn, node_ptr,
+						      now);
+
 			break;
 		}
+	} else {
+		debug2("found existing node %s for dynamic future node registration",
+		       reg_msg->node_name);
 	}
 
 	if (node_ptr) {
+		debug2("dynamic future node %s/%s/%s assigned to node %s",
+		       reg_msg->node_name, node_ptr->node_hostname,
+		       node_ptr->comm_name, node_ptr->name);
 		/*
 		 * We always need to send the hostname back to the slurmd. In
 		 * case the slurmd already registered and we found the node_ptr
