@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix a segfault that may happen on gpu configured as no_consume.
  -- Fix regression which prevented a cons_tres gpu job to be submitted to a
     cons_tres cluster from a non-con_tres cluster.
+ -- select/linear - fix regression introduced in 21.08.6 which prevented step
+    requests with --threads-per-core or --hint=nomultithread from being created.
 
 * Changes in Slurm 21.08.8-2
 ============================
