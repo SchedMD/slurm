@@ -6671,7 +6671,7 @@ static void *_fork_script(void *x)
 	else
 		timeout *= 1000;
 	if (run_command_waitpid_timeout(args->script, cpid, &status,
-					timeout,
+					timeout, 0, 0,
 					NULL) == -1) {
 		/*
 		 * waitpid returned an error and set errno;

@@ -325,7 +325,7 @@ extern char *run_command(run_command_args_t *args)
 			killpg(cpid, SIGTERM);
 		wait_str = xstrdup_printf("SIGTERM %s", args->script_type);
 		run_command_waitpid_timeout(wait_str, cpid, args->status,
-					    10, NULL);
+					    10, 0, args->tid, NULL);
 		xfree(wait_str);
 		close(pfd[0]);
 		slurm_mutex_lock(&proc_count_mutex);
@@ -347,7 +347,7 @@ extern char *run_command(run_command_args_t *args)
  */
 extern int run_command_waitpid_timeout(
 	const char *name, pid_t pid, int *pstatus, int timeout_ms,
-	bool *timed_out)
+	int elapsed_ms, pthread_t tid, bool *timed_out)
 {
 	int max_delay = 1000;		 /* max delay between waitpid calls */
 	int delay = 10;			 /* initial delay */

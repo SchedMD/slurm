@@ -110,6 +110,8 @@ extern char *run_command(run_command_args_t *run_command_args);
  *  pid IN - child on which to call waitpid(2)
  *  pstatus OUT - pointer to integer status
  *  timeout_ms IN - timeout in milliseconds
+ *  elapsed_ms IN - already elapsed time in milliseconds
+ *  tid IN - thread ID of the calling process - only set if using track_script
  *  timed_out OUT - If not NULL, then set to true if waitpid() did not return
  *                  successfully after timeout_ms milliseconds.
  *
@@ -117,6 +119,7 @@ extern char *run_command(run_command_args_t *run_command_args);
  */
 extern int run_command_waitpid_timeout(
 	const char *name, pid_t pid, int *pstatus, int timeout_ms,
+	int elapsed_ms, pthread_t tid,
 	bool *timed_out);
 
 #endif	/* __RUN_COMMAND_H__ */
