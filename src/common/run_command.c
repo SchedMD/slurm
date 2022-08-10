@@ -321,12 +321,21 @@ extern char *run_command(run_command_args_t *args)
 			}
 		}
 		/* Only send SIGTERM if the script isn't exiting normally. */
-		if (send_terminate)
+		if (send_terminate) {
 			killpg(cpid, SIGTERM);
-		wait_str = xstrdup_printf("SIGTERM %s", args->script_type);
-		run_command_waitpid_timeout(wait_str, cpid, args->status,
-					    10, 0, args->tid, NULL);
-		xfree(wait_str);
+			wait_str = xstrdup_printf("SIGTERM %s",
+						  args->script_type);
+			run_command_waitpid_timeout(wait_str, cpid,
+						    args->status, 10, 0,
+						    args->tid, NULL);
+			xfree(wait_str);
+		} else {
+			run_command_waitpid_timeout(args->script_type,
+						    cpid, args->status,
+						    args->max_wait,
+						    _tot_wait(&tstart),
+						    args->tid, args->timed_out);
+		}
 		close(pfd[0]);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
@@ -357,6 +366,7 @@ extern int run_command_waitpid_timeout(
 
 	if (timeout_ms <= 0 || timeout_ms == NO_VAL16)
 		options = 0;
+	timeout_ms -= elapsed_ms;
 
 	while ((rc = waitpid (pid, pstatus, options)) <= 0) {
 		if (rc < 0) {
@@ -364,6 +374,19 @@ extern int run_command_waitpid_timeout(
 				continue;
 			error("waitpid: %m");
 			return -1;
+		} else if (command_shutdown) {
+			error("%s: killing %s on shutdown",
+			      __func__, name);
+			killpg(pid, SIGKILL);
+			options = 0;
+		} else if (tid && track_script_killed(tid, 0, false)) {
+			/*
+			 * Pass zero as the status to track_script_killed() to
+			 * know if this script exists in track_script and bail
+			 * if it does not.
+			 */
+			killpg(pid, SIGKILL);
+			options = 0;
 		} else if (timeout_ms <= 0) {
 			error("%s%stimeout after %d ms: killing pgid %d",
 			      name != NULL ? name : "",
