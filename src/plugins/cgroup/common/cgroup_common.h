@@ -49,6 +49,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/cgroup.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"

@@ -35,6 +35,9 @@ HIGHLIGHTS
  -- job_container/tmpfs - Support running with an arbitrary list of private
     mount points (/tmp and /dev/shm are the default, but not required).
  -- job_container/tmpfs - Set more environment variables in InitScript.
+ -- Make all cgroup directories created by Slurm owned by root. This was the
+    behavior in cgroup/v2 but not in cgroup/v1 where by default the step
+    directories ownership were set to the user and group of the job.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

@@ -55,7 +55,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/daemonize.h"
-#include "src/common/cgroup.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/plugins/cgroup/common/cgroup_common.h"
@@ -892,6 +891,9 @@ extern int init(void)
 			return SLURM_ERROR;
 	}
 
+	/* In cgroup/v2 the entire cgroup tree is owned by root. */
+	slurm_cgroup_conf.root_owned_cgroups = true;
+
 	/*
 	 * If we're slurmd we're all set and able to constrain things, i.e.
 	 * CoreSpec* and MemSpec*.
@@ -1154,19 +1156,14 @@ endit:
  */
 extern int cgroup_p_step_addto(cgroup_ctl_type_t ctl, pid_t *pids, int npids)
 {
-	stepd_step_rec_t fake_job;
 	int rc = SLURM_SUCCESS;
 	pid_t stepd_pid = getpid();
-
-	/* cgroups in v2 are always owned by root. */
-	fake_job.uid = 0;
-	fake_job.gid = 0;
 
 	for (int i = 0; i < npids; i++) {
 		/* Ignore any possible movement of slurmstepd */
 		if (pids[i] == stepd_pid)
 			continue;
-		if (cgroup_p_task_addto(ctl, &fake_job, pids[i],
+		if (cgroup_p_task_addto(ctl, NULL, pids[i],
 					task_special_id) != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 	}
@@ -1824,8 +1821,6 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 {
 	task_cg_info_t *task_cg_info;
 	char *task_cg_path = NULL;
-	uid_t uid = step->uid;
-	gid_t gid = step->gid;
 	bool need_to_add = false;
 
 	/* Ignore any possible movement of slurmstepd */
@@ -1855,8 +1850,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 				   int_cg[CG_LEVEL_STEP_USER].name, task_id);
 
 		if (common_cgroup_create(&int_cg_ns, &task_cg_info->task_cg,
-					 task_cg_path, uid, gid) !=
-		    SLURM_SUCCESS) {
+					 task_cg_path, 0, 0) != SLURM_SUCCESS) {
 			if (task_id == task_special_id)
 				error("unable to create task_special cgroup");
 			else

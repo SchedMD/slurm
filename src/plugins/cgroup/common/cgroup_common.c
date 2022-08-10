@@ -492,7 +492,8 @@ extern int common_cgroup_instantiate(xcgroup_t *cg)
 	umask(omask);
 
 	/* change cgroup ownership as requested */
-	if (chown(file_path, uid, gid)) {
+	if (!slurm_cgroup_conf.root_owned_cgroups &&
+	    chown(file_path, uid, gid)) {
 		error("%s: unable to chown %d:%d cgroup '%s' : %m",
 		      __func__, uid, gid, file_path);
 		return fstatus;

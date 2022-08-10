@@ -44,7 +44,6 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/bitstring.h"
-#include "src/common/cgroup.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/slurm_jobacct_gather.h"
