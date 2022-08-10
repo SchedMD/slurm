@@ -150,13 +150,7 @@ typedef struct {
 		.required = req,                                              \
 		.type = PARSE_##mtype,                                        \
 	}
-/* only use add_parser_qos_preempt() with slurmdb_qos_rec_t */
-#define add_parser_qos_preempt(req, path)                                     \
-	{                                                                     \
-		.key = path,                                                  \
-		.required = req,                                              \
-		.type = PARSE_QOS_PREEMPT_LIST,                               \
-	}
+
 /*
  * flags are a special exception that just passed the flags_array as the
  * field_offset since the array actually has all of the flag offsets in the
@@ -529,8 +523,7 @@ static const parser_t parse_qos[] = {
 	_add_parse(UINT32, min_prio_thresh, "limits/min/priority_threshold"),
 	_add_parse(TRES_LIST, min_tres_pj, "limits/min/tres/per/job"),
 	/* skipping min_tres_pj_ctld (not packed) */
-	add_parser_qos_preempt(false, "preempt/list"),
-	/* skip preempt_list (only for ops) */
+	_add_parse(QOS_PREEMPT_LIST, preempt_list, "preempt/list"),
 	add_parser_flags(parser_qos_preempt_flags, false, "preempt/mode"),
 	_add_parse(UINT32, preempt_exempt_time, "preempt/exempt_time"),
 	_add_parse(UINT32, priority, "priority"),
@@ -1389,59 +1382,6 @@ static int _parse_qos_id_list(const parser_t *const parse, void *obj,
 	return SLURM_SUCCESS;
 }
 
-#define MAGIC_FOREACH_QOS_PREEMPT_LIST 0xa8eb1313
-typedef struct {
-	int magic;
-	data_t *errors;
-	List qos_list;
-	const parser_env_t *penv;
-} foreach_parse_qos_preempt_list_t;
-
-static data_for_each_cmd_t _foreach_parse_qos_preempt_list(data_t *data,
-							   void *arg)
-{
-	foreach_parse_qos_preempt_list_t *args = arg;
-
-	xassert(args->magic == MAGIC_FOREACH_QOS_PREEMPT_LIST);
-
-	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
-		return DATA_FOR_EACH_FAIL;
-
-	list_append(args->qos_list, xstrdup(data_get_string(data)));
-	return DATA_FOR_EACH_CONT;
-}
-
-static int _parse_qos_preempt_list(const parser_t *const parse, void *obj,
-				   data_t *src, data_t *errors,
-				   const parser_env_t *penv)
-{
-#ifndef NDEBUG
-	bitstr_t **preempt_bitstr =
-		(((void *)obj) + offsetof(slurmdb_qos_rec_t, preempt_bitstr));
-#endif
-	List *preempt_list =
-		(((void *)obj) + offsetof(slurmdb_qos_rec_t, preempt_list));
-	foreach_parse_qos_preempt_list_t args = {
-		.magic = MAGIC_FOREACH_QOS_PREEMPT_LIST,
-		.penv = penv,
-		.qos_list = list_create(xfree_ptr),
-	};
-
-	xassert(!parse->field_offset);
-	xassert(!*preempt_bitstr);
-
-	if ((data_get_type(src) != DATA_TYPE_LIST) ||
-	    (data_list_for_each(src, _foreach_parse_qos_preempt_list, &args) <
-	     0)) {
-		FREE_NULL_LIST(args.qos_list);
-		return ESLURM_REST_FAIL_PARSING;
-	}
-
-	*preempt_list = args.qos_list;
-
-	return SLURM_SUCCESS;
-}
-
 static int _dump_qos_preempt_list(const parser_t *const parse, void *obj,
 				  data_t *dst, const parser_env_t *penv)
 {
@@ -1453,7 +1393,6 @@ static int _dump_qos_preempt_list(const parser_t *const parse, void *obj,
 		(((void *)obj) + offsetof(slurmdb_qos_rec_t, preempt_list));
 #endif
 
-	xassert(!parse->field_offset);
 	xassert(!*preempt_list);
 	xassert(penv->g_qos_list);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
@@ -2980,7 +2919,7 @@ const parser_funcs_t funcs[] = {
 	_add_func(_parse_qos_str_id, _dump_qos_str_id, PARSE_QOS_ID),
 	_add_func(_parse_qos_str_list, _dump_qos_str_list, PARSE_QOS_STR_LIST),
 	_add_func(_parse_qos_id_list, _dump_qos_str_list, PARSE_QOS_ID_LIST),
-	_add_func(_parse_qos_preempt_list, _dump_qos_preempt_list,
+	_add_func(_parse_qos_id_list, _dump_qos_preempt_list,
 		  PARSE_QOS_PREEMPT_LIST),
 	_add_func(_parse_tres, _dump_tres, PARSE_TRES),
 	_add_func(_parse_tres_list, _dump_tres_list, PARSE_TRES_LIST),

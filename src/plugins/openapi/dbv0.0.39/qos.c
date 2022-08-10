@@ -174,6 +174,7 @@ static int _delete_qos(data_t *resp, void *auth, data_t *errors,
 typedef struct {
 	int magic;
 	List g_tres_list;
+	List g_qos_list;
 	data_t *errors;
 	rest_auth_context_t *auth;
 } foreach_update_qos_t;
@@ -186,6 +187,7 @@ static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 	parser_env_t penv = {
 		.auth = args->auth,
 		.g_tres_list = args->g_tres_list,
+		.g_qos_list = args->g_qos_list,
 	};
 	int rc;
 	List qos_list = NULL;
@@ -298,6 +300,7 @@ static int _update_qos(const char *context_id, data_t *query, data_t *resp,
 		.auth = auth,
 		.errors = errors,
 	};
+	slurmdb_qos_cond_t qos_cond = { 0 };
 	slurmdb_tres_cond_t tres_cond = {
 		.with_deleted = 1,
 	};
@@ -308,6 +311,8 @@ static int _update_qos(const char *context_id, data_t *query, data_t *resp,
 		      __func__, context_id);
 	} else if (!(rc = db_query_list(errors, auth, &args.g_tres_list,
 					slurmdb_tres_get, &tres_cond)) &&
+		   !(rc = db_query_list(errors, auth, &args.g_qos_list,
+					slurmdb_qos_get, &qos_cond)) &&
 		   (data_list_for_each(dqos, _foreach_update_qos, &args) < 0)) {
 		if (!rc)
 			rc = ESLURM_REST_INVALID_QUERY;
