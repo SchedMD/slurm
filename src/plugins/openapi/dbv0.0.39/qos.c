@@ -307,8 +307,8 @@ static int _update_qos(const char *context_id, data_t *query, data_t *resp,
 		debug("%s: [%s] ignoring empty or non-existant QOS array",
 		      __func__, context_id);
 	} else if (!(rc = db_query_list(errors, auth, &args.g_tres_list,
-				 slurmdb_tres_get, &tres_cond)) &&
-	    (data_list_for_each(dqos, _foreach_update_qos, &args) < 0)) {
+					slurmdb_tres_get, &tres_cond)) &&
+		   (data_list_for_each(dqos, _foreach_update_qos, &args) < 0)) {
 		if (!rc)
 			rc = ESLURM_REST_INVALID_QUERY;
 	} else if (commit) {
