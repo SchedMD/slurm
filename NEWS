@@ -48,6 +48,9 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - Set more environment variables in InitScript.
  -- Make all cgroup directories created by Slurm owned by root.
 
+* Changes in Slurm 22.05.4
+==========================
+
 * Changes in Slurm 22.05.3
 ==========================
  -- job_container/tmpfs - cleanup containers even when the .ns file isn't
