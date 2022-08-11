@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 22.05.4
+==========================
+
 * Changes in Slurm 22.05.3
 ==========================
  -- job_container/tmpfs - cleanup containers even when the .ns file isn't
