@@ -56,40 +56,36 @@ typedef struct con_mgr_fd_s con_mgr_fd_t;
 typedef struct con_mgr_s con_mgr_t;
 
 /*
- * Call back for new connection for setup
- *
- * IN fd file descriptor of new connection
- * RET arg ptr to hand to
- */
-typedef void *(*con_mgr_on_new_connection_t)(con_mgr_fd_t *con);
-
-/*
- * Call back when there is data ready in "in" buffer
- * This may be called several times in the same connection.
- *
- * IN con connection handler
- * IN arg ptr to be handed return of con_mgr_on_new_connection_t().
- * RET SLURM_SUCCESS or error to kill connection
- */
-typedef int (*con_mgr_on_connection_data_t)(con_mgr_fd_t *con, void *arg);
-
-/*
- * Call back when connection ended.
- * Called once per connection.
- *
- * IN arg ptr to be handed return of con_mgr_on_new_connection_t().
- * 	must free arg as required.
- */
-typedef void (*con_mgr_on_connection_finish)(void *arg);
-
-/*
  * Struct of call backs to call on events
  * of a given connection.
  */
 typedef struct {
-	con_mgr_on_new_connection_t on_connection;
-	con_mgr_on_connection_data_t on_data;
-	con_mgr_on_connection_finish on_finish;
+	/*
+	 * Call back for new connection for setup
+	 *
+	 * IN fd file descriptor of new connection
+	 * RET arg ptr to hand to
+	 */
+	void *(*on_connection)(con_mgr_fd_t *con);
+
+	/*
+	 * Call back when there is data ready in "in" buffer
+	 * This may be called several times in the same connection.
+	 *
+	 * IN con connection handler
+	 * IN arg ptr to be handed return of con_mgr_on_new_connection_t().
+	 * RET SLURM_SUCCESS or error to kill connection
+	 */
+	int (*on_data)(con_mgr_fd_t *con, void *arg);
+
+	/*
+	 * Call back when connection ended.
+	 * Called once per connection.
+	 *
+	 * IN arg ptr to be handed return of con_mgr_on_new_connection_t().
+	 * 	must free arg as required.
+	 */
+	void (*on_finish)(void *arg);
 } con_mgr_events_t;
 
 typedef struct {
