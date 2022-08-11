@@ -1570,6 +1570,9 @@ static int _foreach_gres_conf(void *x, void *arg)
 	if (gres_slurmd_conf->config_flags & GRES_CONF_COUNT_ONLY)
 		gres_ctx->config_flags |= GRES_CONF_COUNT_ONLY;
 
+	if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE)
+		gres_ctx->config_flags |= GRES_CONF_HAS_FILE;
+
 	if (gres_slurmd_conf->config_flags & GRES_CONF_ONE_SHARING)
 		gres_ctx->config_flags |= GRES_CONF_ONE_SHARING;
 	/*
