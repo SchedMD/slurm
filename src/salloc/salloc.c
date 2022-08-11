@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 	int retries = 0;
 	pid_t pid  = getpid();
 	pid_t tpgid = 0;
-	pid_t rc_pid = 0;
+	pid_t rc_pid = -1;
 	int i, j, rc = 0;
 	uint32_t num_tasks = 0;
 	bool het_job_fini = false;
