@@ -307,7 +307,7 @@ as listed below with examples following that:</p>
 <ol>
 <li>No MPS configuration: The count of gres/mps elements defined in the
 <I>slurm.conf</I> will be evenly distributed across all GPUs configured on the
-node. For the example, "NodeName=tux[1-16] Gres=gpu:2,mps:200" will configure
+node. For example, "NodeName=tux[1-16] Gres=gpu:2,mps:200" will configure
 a count of 100 gres/mps resources on each of the two GPUs.</li>
 <li>MPS configuration includes only the <I>Name</I> and <I>Count</I> parameters:
 The count of gres/mps elements will be evenly distributed across all GPUs
@@ -511,7 +511,7 @@ as listed below with examples following that:</p>
 <ol>
 <li>No Shard configuration: The count of gres/shard elements defined in the
 <I>slurm.conf</I> will be evenly distributed across all GPUs configured on the
-node. For the example, "NodeName=tux[1-16] Gres=gpu:2,shard:64" will configure
+node. For example, "NodeName=tux[1-16] Gres=gpu:2,shard:64" will configure
 a count of 32 gres/shard resources on each of the two GPUs.</li>
 <li>Shard configuration includes only the <I>Name</I> and <I>Count</I> parameters:
 The count of gres/shard elements will be evenly distributed across all GPUs
