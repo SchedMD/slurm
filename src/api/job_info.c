@@ -139,52 +139,61 @@ static void _free_node_info(void)
 static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
 			  char *fname)
 {
-	char *ptr, *tmp, *tmp2 = NULL, *user;
+	char *q, *p, *tmp, *tmp2 = NULL, *user;
 
 	tmp = xstrdup(fname);
-	while ((ptr = strstr(tmp, "%A"))) {	/* Array job ID */
-		ptr[0] = '\0';
-		if (job_ptr->array_task_id == NO_VAL) {
-			/* Not a job array */
-			xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->job_id, ptr+2);
-		} else {
-			xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->array_job_id,
-				   ptr+2);
+	q = p  = tmp;
+	while (*p != '\0') {
+		if (*p == '%') {
+			switch (*(p + 1)) {
+				case 'A': /* Array job ID */
+					xmemcat(tmp2, q, p);
+					q = p + 2;
+					if (job_ptr->array_task_id == NO_VAL) {
+						/* Not a job array */
+						xstrfmtcat(tmp2, "%u",
+							   job_ptr->job_id);
+					} else {
+						xstrfmtcat(tmp2, "%u",
+							job_ptr->array_job_id);
+					}
+					break;
+				case 'a': /* Array task ID */
+					xmemcat(tmp2, q, p);
+					xstrfmtcat(tmp2, "%u",
+						   job_ptr->array_task_id);
+					q = p + 2;
+					break;
+				case 'j': /* Job ID */
+					xmemcat(tmp2, q, p);
+					xstrfmtcat(tmp2, "%u",
+						   job_ptr->job_id);
+					q = p + 2;
+					break;
+				case 'u': /* User name */
+					xmemcat(tmp2, q, p);
+					user = uid_to_string(
+						(uid_t) job_ptr->user_id);
+					xstrfmtcat(tmp2, "%s", user);
+					xfree(user);
+					q = p + 2;
+					break;
+			}
 		}
-		xfree(tmp);	/* transfer the results */
-		tmp = tmp2;
-		tmp2 = NULL;
+		p++;
 	}
-	while ((ptr = strstr(tmp, "%a"))) {	/* Array task ID */
-		ptr[0] = '\0';
-		xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->array_task_id, ptr+2);
-		xfree(tmp);	/* transfer the results */
-		tmp = tmp2;
-		tmp2 = NULL;
-	}
-	while ((ptr = strstr(tmp, "%j"))) {	/* Job ID */
-		ptr[0] = '\0';
-		xstrfmtcat(tmp2, "%s%u%s", tmp, job_ptr->job_id, ptr+2);
-		xfree(tmp);	/* transfer the results */
-		tmp = tmp2;
-		tmp2 = NULL;
-	}
-	while ((ptr = strstr(tmp, "%u"))) {	/* User name */
-		ptr[0] = '\0';
-		user = uid_to_string((uid_t) job_ptr->user_id);
-		xstrfmtcat(tmp2, "%s%s%s", tmp, user, ptr+2);
-		xfree(user);
-		xfree(tmp);	/* transfer the results */
-		tmp = tmp2;
-		tmp2 = NULL;
-	}
-	xstrsubstituteall(tmp, "%x", job_ptr->name);	/* Job name */
-
-	if (tmp[0] == '/')
-		snprintf(buf, buf_size, "%s", tmp);
-	else
-		snprintf(buf, buf_size, "%s/%s", job_ptr->work_dir, tmp);
 	xfree(tmp);
+	if (p != q)
+		xmemcat(tmp2, q, p);
+
+	xfree(tmp);
+	xstrsubstituteall(tmp2, "%x", job_ptr->name);	/* Job name */
+
+	if (tmp2[0] == '/')
+		snprintf(buf, buf_size, "%s", tmp2);
+	else
+		snprintf(buf, buf_size, "%s/%s", job_ptr->work_dir, tmp2);
+	xfree(tmp2);
 }
 
 /* Given a job record pointer, return its stderr path in buf */
