@@ -172,6 +172,7 @@ typedef struct slurm_gres_context {
 	char *		gres_name_colon;	/* name + colon (e.g. "gpu:") */
 	int		gres_name_colon_len;	/* size of gres_name_colon */
 	char *		gres_type;		/* plugin name (e.g. "gres/gpu") */
+	List np_gres_devices; /* list of devices when we don't have a plugin */
 	slurm_gres_ops_t ops;			/* pointers to plugin symbols */
 	uint32_t	plugin_id;		/* key for searches */
 	plugrack_t	*plugin_list;		/* plugrack info */
@@ -489,7 +490,6 @@ static slurm_gres_context_t *_find_context_by_id(uint32_t plugin_id)
 	return NULL;
 }
 
-
 static int _load_plugin(slurm_gres_context_t *gres_ctx)
 {
 	/*
@@ -581,6 +581,7 @@ static int _unload_plugin(slurm_gres_context_t *gres_ctx)
 	xfree(gres_ctx->gres_name);
 	xfree(gres_ctx->gres_name_colon);
 	xfree(gres_ctx->gres_type);
+	FREE_NULL_LIST(gres_ctx->np_gres_devices);
 
 	return rc;
 }
@@ -2069,6 +2070,7 @@ static void _pack_gres_context(slurm_gres_context_t *gres_ctx, buf_t *buffer)
 	packstr(gres_ctx->gres_name_colon, buffer);
 	pack32((uint32_t)gres_ctx->gres_name_colon_len, buffer);
 	packstr(gres_ctx->gres_type, buffer);
+	gres_send_stepd(buffer, gres_ctx->np_gres_devices);
 	/* gres_ctx->ops: DON'T PACK will be filled in on the other side */
 	pack32(gres_ctx->plugin_id, buffer);
 	/* gres_ctx->plugin_list: DON'T PACK will be filled in on the other
@@ -2087,6 +2089,7 @@ static int _unpack_gres_context(slurm_gres_context_t *gres_ctx, buf_t *buffer)
 	safe_unpack32(&uint32_tmp, buffer);
 	gres_ctx->gres_name_colon_len = (int)uint32_tmp;
 	safe_unpackstr_xmalloc(&gres_ctx->gres_type, &uint32_tmp, buffer);
+	gres_recv_stepd(buffer, &gres_ctx->np_gres_devices);
 	/* gres_ctx->ops: filled in later with _load_plugin() */
 	safe_unpack32(&gres_ctx->plugin_id, buffer);
 	/* gres_ctx->plugin_list: filled in later with _load_plugin() */
@@ -2550,14 +2553,19 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	_merge_config(&node_conf, gres_conf_list, gres_list);
 
 	for (i = 0; i < gres_context_cnt; i++) {
-		if (gres_context[i].ops.node_config_load == NULL)
-			continue;	/* No plugin */
 		node_conf.gres_name = gres_context[i].gres_name;
-		rc2 = (*(gres_context[i].ops.node_config_load))(gres_conf_list,
-								&node_conf);
+		if (gres_context[i].ops.node_config_load)
+			rc2 = (*(gres_context[i].ops.node_config_load))(
+				gres_conf_list, &node_conf);
+		else if (gres_context[i].config_flags & GRES_CONF_HAS_FILE) {
+			rc2 = gres_node_config_load(
+				gres_conf_list, &node_conf,
+				&gres_context[i].np_gres_devices);
+		} else
+			continue;
+
 		if (rc == SLURM_SUCCESS)
 			rc = rc2;
-
 	}
 
 	/* Postprocess gres_conf_list after all plugins' node_config_load */
@@ -7808,9 +7816,11 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 	 * Initialize each device to deny.
 	 */
 	for (j = 0; j < gres_context_cnt; j++) {
-		if (!gres_context[j].ops.get_devices)
-			continue;
-		gres_devices = (*(gres_context[j].ops.get_devices))();
+		if (!gres_context[j].ops.get_devices){
+			gres_devices = gres_context[j].np_gres_devices;
+		} else {
+			gres_devices = (*(gres_context[j].ops.get_devices))();
+		}
 		if (!gres_devices || !list_count(gres_devices))
 			continue;
 		dev_itr = list_iterator_create(gres_devices);
@@ -7848,11 +7858,13 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 		};
 		(void) list_for_each(gres_list, _accumulate_gres_device, &args);
 
-		if (!gres_bit_alloc ||
-		    !gres_context[j].ops.get_devices)
+		if (!gres_bit_alloc)
 			continue;
-
-		gres_devices = (*(gres_context[j].ops.get_devices))();
+		if (!gres_context[j].ops.get_devices){
+			gres_devices = gres_context[j].np_gres_devices;
+		} else {
+			gres_devices = (*(gres_context[j].ops.get_devices))();
+		}
 		if (!gres_devices) {
 			error("We should had got gres_devices, but for some reason none were set in the plugin.");
 			continue;
@@ -9681,7 +9693,6 @@ extern void gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 			FREE_NULL_BUFFER(buffer);
 		}
 	}
-
 	slurm_mutex_unlock(&gres_context_lock);
 
 	/* Set debug flags and init_run only */
@@ -9932,7 +9943,6 @@ extern void destroy_gres_slurmd_conf(void *x)
 	xfree(p->unique_id);
 	xfree(p);
 }
-
 
 /*
  * Convert GRES config_flags to a string. The pointer returned references local
