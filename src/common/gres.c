@@ -2260,14 +2260,6 @@ static void _free_name_list(void *x)
 	free(x);
 }
 
-/* List helper function for gres_node_config_load */
-static int _match_name_list(void *x, void *key)
-{
-	if (!xstrcmp(x, key))
-		return 1;	/* duplicate file name */
-	return 0;
-}
-
 /* Fills major and minor information for a gres_device_t dev */
 static int _set_gres_device_desc(gres_device_t *dev)
 {
@@ -2396,7 +2388,8 @@ extern int gres_node_config_load(List gres_conf_list,
 				continue;
 
 			if ((rc == SLURM_SUCCESS) &&
-			    list_find_first(names_list, _match_name_list,
+			    list_find_first(names_list,
+					    slurm_find_char_exact_in_list,
 					    one_name)) {
 				error("%s duplicate device file name (%s)",
 				      config->gres_name, one_name);
