@@ -65,6 +65,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.39 - add submission of job->prefer value.
  -- Fix tasks binding to GPUs when using --ntasks-per-gpu and GPUs have
     different core/socket affinity.
+ -- Add support for padding StdOut/StdErr/StdIn format specifiers to scontrol
+    show job.
 
 * Changes in Slurm 22.05.5
 ==========================

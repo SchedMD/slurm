@@ -140,47 +140,71 @@ static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
 			  char *fname)
 {
 	char *q, *p, *tmp, *tmp2 = NULL, *user;
+	unsigned int wid, offset;
 
 	tmp = xstrdup(fname);
 	q = p  = tmp;
 	while (*p != '\0') {
 		if (*p == '%') {
-			switch (*(p + 1)) {
+			offset = 1;
+			wid = 0;
+			if (*(p + 1) == '%') {
+				p++;
+				xmemcat(tmp2, q, p);
+				q = ++p;
+				continue;
+			}
+			if (isdigit(*(p + 1))) {
+				unsigned long in_width = 0;
+				if ((in_width = strtoul(p + 1, &p, 10)) > 9) {
+					/* Remove % and double digit 10 */
+					wid = 10;
+					offset = 3;
+				} else {
+					wid = (unsigned int)in_width;
+					offset = 2;
+				}
+				if (*p == '\0')
+					break;
+			} else
+				p++;
+
+			switch (*p) {
 				case 'A': /* Array job ID */
-					xmemcat(tmp2, q, p);
-					q = p + 2;
+					xmemcat(tmp2, q, p - offset);
+					q = p + 1;
 					if (job_ptr->array_task_id == NO_VAL) {
 						/* Not a job array */
-						xstrfmtcat(tmp2, "%u",
+						xstrfmtcat(tmp2, "%0*u", wid,
 							   job_ptr->job_id);
 					} else {
-						xstrfmtcat(tmp2, "%u",
+						xstrfmtcat(tmp2, "%0*u", wid,
 							job_ptr->array_job_id);
 					}
 					break;
 				case 'a': /* Array task ID */
-					xmemcat(tmp2, q, p);
-					xstrfmtcat(tmp2, "%u",
+					xmemcat(tmp2, q, p - offset);
+					xstrfmtcat(tmp2, "%0*u", wid,
 						   job_ptr->array_task_id);
-					q = p + 2;
+					q = p + 1;
 					break;
 				case 'j': /* Job ID */
-					xmemcat(tmp2, q, p);
-					xstrfmtcat(tmp2, "%u",
+					xmemcat(tmp2, q, p - offset);
+					xstrfmtcat(tmp2, "%0*u", wid,
 						   job_ptr->job_id);
-					q = p + 2;
+					q = p + 1;
 					break;
 				case 'u': /* User name */
-					xmemcat(tmp2, q, p);
+					xmemcat(tmp2, q, p - offset);
 					user = uid_to_string(
 						(uid_t) job_ptr->user_id);
 					xstrfmtcat(tmp2, "%s", user);
 					xfree(user);
-					q = p + 2;
+					q = p + 1;
 					break;
 			}
-		}
-		p++;
+		} else
+			p++;
 	}
 	xfree(tmp);
 	if (p != q)
