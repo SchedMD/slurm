@@ -1591,12 +1591,17 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		else
 			xstrcat(*extra, " where (");
 
+		xstrfmtcat(*extra,
+			   "(CONVERT(SUBSTRING_INDEX(t1.tres_alloc,'%d=',-1),"
+			   "UNSIGNED INTEGER)",
+			   TRES_CPU);
+
 		if (job_cond->cpus_max) {
-			xstrfmtcat(*extra, "(t1.ext_1 between %u and %u))",
+			xstrfmtcat(*extra, " between %u and %u))",
 				   job_cond->cpus_min, job_cond->cpus_max);
 
 		} else {
-			xstrfmtcat(*extra, "(t1.ext_1='%u'))",
+			xstrfmtcat(*extra, "='%u'))",
 				   job_cond->cpus_min);
 
 		}
