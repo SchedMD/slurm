@@ -254,7 +254,7 @@ extern void gres_p_task_set_env(char ***task_env_ptr,
 /* Send GRES information to slurmstepd on the specified file descriptor */
 extern void gres_p_send_stepd(buf_t *buffer)
 {
-	common_send_stepd(buffer, gres_devices);
+	gres_send_stepd(buffer, gres_devices);
 
 	gres_c_s_send_stepd(buffer);
 
@@ -264,7 +264,7 @@ extern void gres_p_send_stepd(buf_t *buffer)
 /* Receive GRES information from slurmd on the specified file descriptor */
 extern void gres_p_recv_stepd(buf_t *buffer)
 {
-	common_recv_stepd(buffer, &gres_devices);
+	gres_recv_stepd(buffer, &gres_devices);
 
 	gres_c_s_recv_stepd(buffer);
 

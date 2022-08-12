@@ -157,7 +157,7 @@ extern int gres_p_node_config_load(List gres_conf_list,
 	if (gres_devices)
 		return rc;
 
-	rc = common_node_config_load(gres_conf_list, config, &gres_devices);
+	rc = gres_node_config_load(gres_conf_list, config, &gres_devices);
 
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
@@ -232,13 +232,13 @@ extern void gres_p_task_set_env(char ***task_env_ptr,
 /* Send GRES information to slurmstepd on the specified file descriptor*/
 extern void gres_p_send_stepd(buf_t *buffer)
 {
-	common_send_stepd(buffer, gres_devices);
+	gres_send_stepd(buffer, gres_devices);
 }
 
 /* Receive GRES information from slurmd on the specified file descriptor */
 extern void gres_p_recv_stepd(buf_t *buffer)
 {
-	common_recv_stepd(buffer, &gres_devices);
+	gres_recv_stepd(buffer, &gres_devices);
 }
 
 /*

@@ -476,6 +476,12 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 			       uint16_t accel_bind_type, char *tres_bind_str,
 			       int local_proc_id, pid_t pid);
 
+/* Pack GRES devices information into a buffer */
+extern void gres_send_stepd(buf_t *buffer, List gres_devices);
+
+/* Unpack GRES devices information from a buffer */
+extern void gres_recv_stepd(buf_t *buffer, List *gres_devices);
+
 /* Send GRES information to slurmstepd on the specified file descriptor */
 extern void gres_g_send_stepd(int fd, slurm_msg_t *msg);
 
@@ -509,6 +515,18 @@ extern int gres_get_gres_cnt(void);
  * slurm.conf file is read and the initial GRES records are built by
  * gres_init(). */
 extern void gres_add(char *gres_name);
+
+/*
+ * Loads into gres_devices the list of gres_device_t in gres_conf_list that
+ * correspond to gres_name. It also initializes the gres_devices.
+ * IN gres_name
+ * IN config
+ * OUT gres_devices
+ */
+extern int gres_node_config_load(List gres_conf_list,
+				 node_config_load_t *config,
+				 List *gres_devices);
+
 
 /*
  * Unpack this node's configuration from a buffer (built/packed by slurmd)

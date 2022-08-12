@@ -488,7 +488,8 @@ extern int gres_c_s_init_share_devices(List gres_conf_list,
 	if (rc != SLURM_SUCCESS)
 		fatal("failed to merge SHARED and SHARING configuration");
 
-	rc = common_node_config_load(gres_conf_list, config, share_devices);
+	rc = gres_node_config_load(gres_conf_list, config, share_devices);
+
 	if (rc != SLURM_SUCCESS)
 		fatal("failed to load configuration");
 	if (!_build_shared_dev_info(gres_conf_list) && gres_conf_list)

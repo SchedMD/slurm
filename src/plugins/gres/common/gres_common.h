@@ -63,25 +63,8 @@ typedef struct {
 	bool use_dev_num;
 } common_gres_env_t;
 
-/*
- * Common validation for what was read in from the gres.conf.
- * IN gres_conf_list
- * IN gres_name
- * IN config
- * OUT gres_devices
- */
-extern int common_node_config_load(List gres_conf_list,
-				   node_config_load_t *config,
-				   List *gres_devices);
-
 /* set the environment for a job/step with the appropriate values */
 extern void common_gres_set_env(common_gres_env_t *gres_env);
-
-/* Send GRES information to slurmstepd via a buffer */
-extern void common_send_stepd(buf_t *buffer, List gres_devices);
-
-/* Receive GRES information from slurmd via a buffer */
-extern void common_recv_stepd(buf_t *buffer, List *gres_devices);
 
 /*
  * A one-liner version of _print_gres_conf_full()

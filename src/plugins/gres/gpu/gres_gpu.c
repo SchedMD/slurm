@@ -849,8 +849,7 @@ extern int gres_p_node_config_load(List gres_conf_list,
 		}
 	}
 
-	rc = common_node_config_load(gres_conf_list, node_config,
-				     &gres_devices);
+	rc = gres_node_config_load(gres_conf_list, node_config, &gres_devices);
 
 	/*
 	 * See what envs the gres_slurmd_conf records want to set (if one
@@ -938,7 +937,7 @@ extern void gres_p_task_set_env(char ***task_env_ptr,
 /* Send GPU-specific GRES information to slurmstepd via a buffer */
 extern void gres_p_send_stepd(buf_t *buffer)
 {
-	common_send_stepd(buffer, gres_devices);
+	gres_send_stepd(buffer, gres_devices);
 
 	pack32(node_flags, buffer);
 }
@@ -946,7 +945,7 @@ extern void gres_p_send_stepd(buf_t *buffer)
 /* Receive GPU-specific GRES information from slurmd via a buffer */
 extern void gres_p_recv_stepd(buf_t *buffer)
 {
-	common_recv_stepd(buffer, &gres_devices);
+	gres_recv_stepd(buffer, &gres_devices);
 
 	safe_unpack32(&node_flags, buffer);
 
