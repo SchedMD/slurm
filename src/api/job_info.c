@@ -202,6 +202,11 @@ static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
 					xfree(user);
 					q = p + 1;
 					break;
+				case 'x':
+					xmemcat(tmp2, q, p - offset);
+					xstrfmtcat(tmp2, "%s", job_ptr->name);
+					q = p + 1;
+					break;
 			}
 		} else
 			p++;
@@ -209,9 +214,6 @@ static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
 	xfree(tmp);
 	if (p != q)
 		xmemcat(tmp2, q, p);
-
-	xfree(tmp);
-	xstrsubstituteall(tmp2, "%x", job_ptr->name);	/* Job name */
 
 	if (tmp2[0] == '/')
 		snprintf(buf, buf_size, "%s", tmp2);
