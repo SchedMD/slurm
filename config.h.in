@@ -277,6 +277,9 @@
 /* Define to 1 if you have the `strsignal' function. */
 #undef HAVE_STRSIGNAL
 
+/* Define to 1 if the system has the type `struct cxi_rsrc_use'. */
+#undef HAVE_STRUCT_CXI_RSRC_USE
+
 /* Define to 1 if you have the `sysctlbyname' function. */
 #undef HAVE_SYSCTLBYNAME
 

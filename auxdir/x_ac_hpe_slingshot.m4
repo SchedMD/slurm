@@ -51,6 +51,12 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
 
       if test "$ac_hpe_ss_h" = "yes"; then
         ac_hpe_ss="yes"
+        AC_CHECK_TYPES([struct cxi_rsrc_use], [], [],
+                       [
+                        #include <stddef.h>
+                        #include <sys/types.h>
+                        #include <libcxi/libcxi.h>
+                       ])
 	AC_SUBST(HPE_SLINGSHOT_CFLAGS)
 	AC_DEFINE_UNQUOTED(HPE_SLINGSHOT_LIB, "$_x_ac_hpe_ss_dir/lib64/libcxi.so", [Full path of libcxi.so])
         break;

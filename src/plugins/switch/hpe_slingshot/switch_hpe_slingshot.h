@@ -57,7 +57,7 @@
 #define SLINGSHOT_CXI_LIB_VERSION_ENV "SLURM_SLINGSHOT_CXI_VERSION"
 
 /* Suffix of versioned CXI library functions if environment variable not set */
-#define SLINGSHOT_CXI_LIB_VERSION "LIBCXI_1.0"
+#define SLINGSHOT_CXI_LIB_VERSION ""
 
 /* Min/max VNI values */
 #define SLINGSHOT_VNI_MIN 0

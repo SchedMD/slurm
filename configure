@@ -2400,6 +2400,63 @@ printf "%s\n" "$ac_res" >&6; }
 
 } # ac_fn_check_decl
 
+# ac_fn_c_check_type LINENO TYPE VAR INCLUDES
+# -------------------------------------------
+# Tests whether TYPE exists after having included INCLUDES, setting cache
+# variable VAR accordingly.
+ac_fn_c_check_type ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
+printf %s "checking for $2... " >&6; }
+if eval test \${$3+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  eval "$3=no"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main (void)
+{
+if (sizeof ($2))
+	 return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main (void)
+{
+if (sizeof (($2)))
+	    return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+else $as_nop
+  eval "$3=yes"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+eval ac_res=\$$3
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+
+} # ac_fn_c_check_type
+
 # ac_fn_c_compute_int LINENO EXPR VAR INCLUDES
 # --------------------------------------------
 # Tries to find the compile-time value of EXPR in a program that includes
@@ -26331,6 +26388,20 @@ fi
 
       if test "$ac_hpe_ss_h" = "yes"; then
         ac_hpe_ss="yes"
+        ac_fn_c_check_type "$LINENO" "struct cxi_rsrc_use" "ac_cv_type_struct_cxi_rsrc_use" "
+                        #include <stddef.h>
+                        #include <sys/types.h>
+                        #include <libcxi/libcxi.h>
+
+"
+if test "x$ac_cv_type_struct_cxi_rsrc_use" = xyes
+then :
+
+printf "%s\n" "#define HAVE_STRUCT_CXI_RSRC_USE 1" >>confdefs.h
+
+
+fi
+
 
 
 printf "%s\n" "#define HPE_SLINGSHOT_LIB \"$_x_ac_hpe_ss_dir/lib64/libcxi.so\"" >>confdefs.h

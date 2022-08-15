@@ -53,6 +53,14 @@ static bool cxi_avail = false;
 static struct cxil_dev **cxi_devs = NULL;
 static int cxi_ndevs = 0;
 
+/* Define struct not defined in earlier versions of libcxi */
+#ifndef HAVE_STRUCT_CXI_RSRC_USE
+#define CXI_RSRC_TYPE_MAX 8
+struct cxi_rsrc_use {
+	uint16_t in_use[CXI_RSRC_TYPE_MAX];
+};
+#endif
+
 /* Function pointers loaded from libcxi */
 static int (*cxil_get_device_list_p)(struct cxil_device_list **);
 static int (*cxil_get_svc_list_p)(struct cxil_dev *dev,
@@ -61,14 +69,18 @@ static int (*cxil_open_device_p)(uint32_t, struct cxil_dev **);
 static int (*cxil_alloc_svc_p)(struct cxil_dev *, struct cxi_svc_desc *,
 	struct cxi_svc_fail_info *);
 static int (*cxil_destroy_svc_p)(struct cxil_dev *, unsigned int);
+#if HAVE_STRUCT_CXI_RSRC_USE
+static int (*cxil_get_svc_rsrc_use_p)(struct cxil_dev *, unsigned int,
+				      struct cxi_rsrc_use *);
+#endif
 
 
 #define LOOKUP_SYM(_lib, x) \
 do { \
 	x ## _p = dlsym(_lib, #x); \
 	if (x ## _p == NULL) { \
-		error("Error loading symbol %s: %s", #x, dlerror()); \
-		return false; \
+		log_flag(SWITCH, "Error loading symbol: %s (skipped)", \
+			 dlerror()); \
 	} \
 } while (0)
 
@@ -79,7 +91,9 @@ static bool _load_cxi_funcs(void *lib)
 	LOOKUP_SYM(lib, cxil_open_device);
 	LOOKUP_SYM(lib, cxil_alloc_svc);
 	LOOKUP_SYM(lib, cxil_destroy_svc);
-
+#if HAVE_STRUCT_CXI_RSRC_USE
+	LOOKUP_SYM(lib, cxil_get_svc_rsrc_use);
+#endif
 	return true;
 }
 
@@ -114,17 +128,19 @@ static void _print_devinfo(int dev, struct cxil_devinfo *info)
 }
 
 /*
- * Subtract the reserved limit for this system service from the
- * max value for this limit specified in the device info;
- * this will be used as the max value for the device
+ * Subtract MAX(reserved limit, current in_use value) for this system service
+ * from the max value for this limit specified in the device info;
+ * this will be used as the max value for the device that users can request
  */
 static void _adjust_limit(const char *name, int dev, int svc,
-			  struct cxi_limits *lim, uint16_t *devmax)
+			  struct cxi_limits *lim, uint16_t in_use,
+			  uint16_t *devmax)
 {
 	uint16_t oldmax = *devmax;
-	*devmax -= lim->res;
-	log_flag(SWITCH, "CXI dev/svc[%d][%d]: limits.%s.res %hu (old/new max %hu %hu)",
-		 dev, svc, name, lim->res, oldmax, *devmax);
+	uint16_t adjust = MAX(lim->res, in_use);
+	*devmax -= adjust;
+	log_flag(SWITCH, "CXI dev/svc[%d][%d]: limits.%s.res/in_use %hu %hu (old/new max %hu %hu)",
+		 dev, svc, name, lim->res, in_use, oldmax, *devmax);
 }
 
 /*
@@ -147,20 +163,48 @@ static bool _adjust_dev_limits(int dev, struct cxil_devinfo *devinfo)
 	}
 	for (svc = 0; svc < list->count; svc++) {
 		struct cxi_rsrc_limits *lim;
+		struct cxi_rsrc_use usage = { 0 };
+
 		if (!list->descs[svc].is_system_svc) {
 			num_svc++;
 			continue;
 		}
 		num_system_svc++;
+#if HAVE_STRUCT_CXI_RSRC_USE
+		if ((rc = cxil_get_svc_rsrc_use_p(cxi_devs[dev],
+						  list->descs[svc].svc_id,
+						  &usage))) {
+			error("Could not get resource usage for CXI device[%d] dev_id=%d (%s) svc_id=%d: %d",
+				dev, devinfo->dev_id, devinfo->device_name,
+				list->descs[svc].svc_id, rc);
+			// in_use value will be 0
+		}
+#endif
 		lim = &list->descs[svc].limits;
-		_adjust_limit("ptes", dev, svc, &lim->ptes, &devinfo->num_ptes);
-		_adjust_limit("txqs", dev, svc, &lim->txqs, &devinfo->num_txqs);
-		_adjust_limit("tgqs", dev, svc, &lim->tgqs, &devinfo->num_tgqs);
-		_adjust_limit("eqs", dev, svc, &lim->eqs, &devinfo->num_eqs);
-		_adjust_limit("cts", dev, svc, &lim->cts, &devinfo->num_cts);
-		_adjust_limit("acs", dev, svc, &lim->acs, &devinfo->num_acs);
-		_adjust_limit("tles", dev, svc, &lim->tles, &devinfo->num_tles);
-		_adjust_limit("les", dev, svc, &lim->les, &devinfo->num_les);
+		_adjust_limit("ptes", dev, svc, &lim->ptes,
+				usage.in_use[CXI_RSRC_TYPE_PTE],
+				&devinfo->num_ptes);
+		_adjust_limit("txqs", dev, svc, &lim->txqs,
+				usage.in_use[CXI_RSRC_TYPE_TXQ],
+				&devinfo->num_txqs);
+		_adjust_limit("tgqs", dev, svc, &lim->tgqs,
+				usage.in_use[CXI_RSRC_TYPE_TGQ],
+				&devinfo->num_tgqs);
+		_adjust_limit("eqs", dev, svc, &lim->eqs,
+				usage.in_use[CXI_RSRC_TYPE_EQ],
+				&devinfo->num_eqs);
+		_adjust_limit("cts", dev, svc, &lim->cts,
+				usage.in_use[CXI_RSRC_TYPE_CT],
+				&devinfo->num_cts);
+		_adjust_limit("acs", dev, svc, &lim->acs,
+				usage.in_use[CXI_RSRC_TYPE_LE],
+				&devinfo->num_acs);
+		_adjust_limit("tles", dev, svc, &lim->tles,
+				usage.in_use[CXI_RSRC_TYPE_TLE],
+				&devinfo->num_tles);
+		_adjust_limit("les", dev, svc, &lim->les,
+				usage.in_use[CXI_RSRC_TYPE_AC],
+				&devinfo->num_les);
 	}
 	log_flag(SWITCH, "CXI services=%d system=%d user=%d",
 		 list->count, num_system_svc, num_svc);
