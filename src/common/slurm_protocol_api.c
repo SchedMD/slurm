@@ -1315,7 +1315,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		if (!peer)
 			peer = fd_resolve_peer(fd);
 
-		error("%s: [%s] Invalid Protocol Version %u from uid=%d: %m",
+		error("%s: [%s] Invalid Protocol Version %u from uid=%u: %m",
 		      __func__, peer, header.version, uid);
 
 		free_buf(buffer);
@@ -1699,7 +1699,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		if (!peer)
 			peer = fd_resolve_peer(fd);
 
-		error("%s: [%s] Invalid Protocol Version %u from uid=%d: %m",
+		error("%s: [%s] Invalid Protocol Version %u from uid=%u: %m",
 		      __func__, peer, header.version, uid);
 
 		free_buf(buffer);

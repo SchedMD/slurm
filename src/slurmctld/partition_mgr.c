@@ -1960,8 +1960,8 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 				xrealloc(buf, buflen);
 				continue;
 			}
-			error("%s: Could not find passwd entry for uid %ld",
-			      __func__, (long) run_uid);
+			error("%s: Could not find passwd entry for uid %u",
+			      __func__, run_uid);
 			xfree(buf);
 			goto fini;
 		}
@@ -1992,8 +1992,8 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 				xrealloc(grp_buffer, buflen);
 				continue;
 			}
-			error("%s: Could not find group with gid %ld",
-			      __func__, (long) pwd.pw_gid);
+			error("%s: Could not find group with gid %u",
+			      __func__, pwd.pw_gid);
 			xfree(buf);
 			xfree(grp_buffer);
 			goto fini;
@@ -2309,7 +2309,7 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 			xstrfmtcat(tmp_err,
 				   "Job's QOS not known, so it can't use this partition (%s allows %s)",
 				   part_ptr->name, part_ptr->allow_qos);
-			info("%s: %s (%pJ submit_uid=%d)",
+			info("%s: %s (%pJ submit_uid=%u)",
 			     __func__, tmp_err, job_ptr, submit_uid);
 			if (job_ptr) {
 				xfree(job_ptr->state_desc);
@@ -2329,7 +2329,7 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 				   "Job's QOS not permitted to use this partition (%s allows %s not %s)",
 				   part_ptr->name, part_ptr->allow_qos,
 				   qos_ptr->name);
-			info("%s: %s (%pJ submit_uid=%d)",
+			info("%s: %s (%pJ submit_uid=%u)",
 			     __func__, tmp_err, job_ptr, submit_uid);
 			if (job_ptr) {
 				xfree(job_ptr->state_desc);
@@ -2356,7 +2356,7 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 				   "Job's QOS not permitted to use this partition (%s denies %s including %s)",
 				   part_ptr->name, part_ptr->deny_qos,
 				   qos_ptr->name);
-			info("%s: %s (%pJ submit_uid=%d)",
+			info("%s: %s (%pJ submit_uid=%u)",
 			     __func__, tmp_err, job_ptr, submit_uid);
 			if (job_ptr) {
 				xfree(job_ptr->state_desc);

@@ -886,9 +886,8 @@ _handle_terminate(int fd, stepd_step_rec_t *step, uid_t uid)
 	uint32_t i;
 
 	if (uid != step->uid && !_slurm_authorized_user(uid)) {
-		debug("terminate req from uid %ld for %ps "
-		      "owned by uid %ld",
-		      (long)uid, &step->step_id, (long)step->uid);
+		debug("terminate req from uid %u for %ps owned by uid %u",
+		      uid, &step->step_id, step->uid);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
@@ -991,8 +990,8 @@ _handle_attach(int fd, stepd_step_rec_t *step, uid_t uid)
 	 * call, so only _slurm_authorized_user is allowed.
 	 */
 	if (!_slurm_authorized_user(uid)) {
-		error("uid %ld attempt to attach to %ps owned by %ld",
-		      (long) uid, &step->step_id, (long)step->uid);
+		error("uid %u attempt to attach to %ps owned by %u",
+		      uid, &step->step_id, step->uid);
 		rc = EPERM;
 		goto done;
 	}
@@ -1540,12 +1539,12 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
-	debug("_handle_suspend for %ps uid:%ld core_spec:%u",
-	      &step->step_id, (long)uid, job_core_spec);
+	debug("_handle_suspend for %ps uid:%u core_spec:%u",
+	      &step->step_id, uid, job_core_spec);
 
 	if (!_slurm_authorized_user(uid)) {
-		debug("job step suspend request from uid %ld for %ps ",
-		      (long)uid, &step->step_id);
+		debug("job step suspend request from uid %u for %ps",
+		      uid, &step->step_id);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
@@ -1619,12 +1618,12 @@ _handle_resume(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
-	debug("_handle_resume for %ps uid:%ld core_spec:%u",
-	      &step->step_id, (long)uid, job_core_spec);
+	debug("_handle_resume for %ps uid:%u core_spec:%u",
+	      &step->step_id, uid, job_core_spec);
 
 	if (!_slurm_authorized_user(uid)) {
-		debug("job step resume request from uid %ld for %ps ",
-		      (long)uid, &step->step_id);
+		debug("job step resume request from uid %u for %ps",
+		      uid, &step->step_id);
 		rc = -1;
 		errnum = EPERM;
 		goto done;
@@ -1941,8 +1940,8 @@ _handle_reconfig(int fd, stepd_step_rec_t *step, uid_t uid)
 	int errnum = 0;
 
 	if (!_slurm_authorized_user(uid)) {
-		debug("job step reconfigure request from uid %ld for %ps",
-		      (long)uid, &step->step_id);
+		debug("job step reconfigure request from uid %u for %ps",
+		      uid, &step->step_id);
 		rc = -1;
 		errnum = EPERM;
 		goto done;

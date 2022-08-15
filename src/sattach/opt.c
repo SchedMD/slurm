@@ -403,8 +403,8 @@ static void _opt_list()
 	info("job ID         : %u", opt.selected_step->step_id.job_id);
 	info("step ID        : %u", opt.selected_step->step_id.step_id);
 	info("user           : `%s'", opt.user);
-	info("uid            : %ld", (long) opt.uid);
-	info("gid            : %ld", (long) opt.gid);
+	info("uid            : %u", opt.uid);
+	info("gid            : %u", opt.gid);
 	info("verbose        : %d", opt.verbose);
 }
 
