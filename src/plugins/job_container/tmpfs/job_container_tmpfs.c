@@ -55,6 +55,7 @@
 #include "src/common/slurm_xlator.h"
 
 #include "src/common/env.h"
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
@@ -233,45 +234,24 @@ extern int container_p_restore(char *dir_name, bool recover)
 
 	if (jc_conf->auto_basepath) {
 		int fstatus;
-		char *mnt_point, *p;
-		mode_t omask;
+		mode_t omask = umask(S_IWGRP | S_IWOTH);
 
-		omask = umask(S_IWGRP | S_IWOTH);
-
-		fstatus = mkdir(jc_conf->basepath, 0755);
-		if (fstatus && errno != EEXIST) {
-			if (jc_conf->basepath[0] != '/') {
-				debug("unable to create ns directory '%s' : does not start with '/'",
-				      jc_conf->basepath);
-				umask(omask);
-				return SLURM_ERROR;
-			}
-			mnt_point = xstrdup(jc_conf->basepath);
-			p = mnt_point;
-			while ((p = xstrchr(p+1, '/')) != NULL) {
-				*p = '\0';
-				fstatus = mkdir(mnt_point, 0755);
-				if (fstatus && errno != EEXIST) {
-					debug("unable to create ns required directory '%s'",
-					      mnt_point);
-					xfree(mnt_point);
-					umask(omask);
-					return SLURM_ERROR;
-				}
-				*p='/';
-			}
-			xfree(mnt_point);
-			fstatus = mkdir(jc_conf->basepath, 0755);
-		}
-
-		if (fstatus && errno != EEXIST) {
-			debug("unable to create ns directory '%s' : %m",
-			      jc_conf->basepath);
+		if (jc_conf->basepath[0] != '/') {
+			debug("%s: unable to create ns directory '%s' : does not start with '/'",
+			      __func__, jc_conf->basepath);
 			umask(omask);
 			return SLURM_ERROR;
 		}
-		umask(omask);
 
+		if ((fstatus = mkdirpath(jc_conf->basepath, 0755))) {
+			debug("%s: unable to create ns directory '%s' : %s",
+			      __func__, jc_conf->basepath,
+			      slurm_strerror(fstatus));
+			umask(omask);
+			return SLURM_ERROR;
+		}
+
+		umask(omask);
 	}
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
