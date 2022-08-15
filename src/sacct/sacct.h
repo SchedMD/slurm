@@ -203,11 +203,11 @@ typedef struct {
 	int opt_completion;	/* --completion */
 	bool opt_federation;	/* --federation */
 	char *opt_field_list;	/* --fields= */
-	int opt_gid;		/* running persons gid */
+	gid_t opt_gid;		/* running persons gid */
 	int opt_help;		/* --help */
 	bool opt_local;		/* --local */
 	int opt_noheader;	/* can only be cleared */
-	int opt_uid;		/* running persons uid */
+	uid_t opt_uid;		/* running persons uid */
 	int units;		/* --units*/
 	bool use_local_uid;	/* --use-local-uid */
 	char *mimetype;         /* --yaml or --json */
