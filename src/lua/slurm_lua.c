@@ -682,9 +682,7 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 	}
 	debug3("%s: %s: loading Lua script: %s", __func__, plugin, script_path);
 
-	/*
-	 *  Initilize lua
-	 */
+	/* Initialize lua */
 	if (!(new = luaL_newstate())) {
 		error("%s: %s: luaL_newstate() failed to allocate.",
 		      plugin, __func__);
