@@ -83,6 +83,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/port_mgr.h"
+#include "src/slurmctld/power_save.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
@@ -1868,6 +1869,8 @@ int read_slurm_conf(int recover, bool reconfig)
 		fatal("Failed to reconfigure mcs plugin");
 
 	_set_response_cluster_rec();
+
+	config_power_mgr();
 
 	slurm_conf.last_update = time(NULL);
 end_it:

@@ -100,7 +100,6 @@ bool power_save_debug = false;
 int suspend_rate, resume_rate, max_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL, *resume_fail_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
-time_t last_config = (time_t) 0;
 time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
 uint16_t slurmd_timeout;
 static bool idle_on_node_suspend = false;
@@ -915,10 +914,7 @@ static int _init_power_config(void)
 	int rc;
 	char *tmp_ptr;
 	bool partition_suspend_time_set = false;
-	slurmctld_lock_t init_config_locks = {
-		.conf = READ_LOCK, .node = WRITE_LOCK, .part = READ_LOCK };
 
-	last_config = slurm_conf.last_update;
 	last_work_scan  = 0;
 	last_log	= 0;
 	suspend_rate = slurm_conf.suspend_rate;
@@ -955,9 +951,7 @@ static int _init_power_config(void)
 			       NULL, 10);
 	}
 
-	lock_slurmctld(init_config_locks);
 	power_save_set_timeouts(&partition_suspend_time_set);
-	unlock_slurmctld(init_config_locks);
 
 	if ((slurm_conf.suspend_time == INFINITE) &&
 	    !partition_suspend_time_set) { /* not an error */
@@ -1044,28 +1038,33 @@ static bool _valid_prog(char *file_name)
 extern void config_power_mgr(void)
 {
 	slurm_mutex_lock(&power_mutex);
-	if (!power_save_config) {
-		if (!_init_power_config())
-			power_save_enabled = true;
-		if (!power_save_enabled && node_features_g_node_power()) {
+	if (_init_power_config()) {
+		if (power_save_enabled) {
+			/* transition from enabled to disabled */
+			info("power_save mode has been disabled due to configuration changes");
+		}
+		power_save_enabled = false;
+		if (node_features_g_node_power()) {
 			fatal("PowerSave required with NodeFeatures plugin, but not fully configured (SuspendProgram, ResumeProgram and SuspendTime all required)");
 		}
-
-		power_save_config = true;
+	} else {
+		power_save_enabled = true;
 	}
+	power_save_config = true;
 	slurm_cond_signal(&power_cond);
 	slurm_mutex_unlock(&power_mutex);
 }
 
 /*
  * start_power_mgr - Start power management thread as needed. The thread
- *	terminates automatically at slurmctld shutdown time.
+ *	terminates automatically at slurmctld shutdown time or on config change
+ *	disabling power_save mode.
  * IN thread_id - pointer to thread ID of the started pthread.
  */
 extern void start_power_mgr(pthread_t *thread_id)
 {
 	slurm_mutex_lock(&power_mutex);
-	if (power_save_started) {     /* Already running */
+	if (power_save_started || !power_save_enabled) {
 		slurm_mutex_unlock(&power_mutex);
 		return;
 	}
@@ -1135,10 +1134,6 @@ static void *_init_power_save(void *arg)
 		error("%s: cannot set my name to %s %m", __func__, "powersave");
 	}
 #endif
-	if (!power_save_enabled) {
-		debug("power_save mode not enabled");
-		goto fini;
-	}
 
 	/*
 	 * Build up resume_job_list list in case shut down before resuming
@@ -1157,11 +1152,9 @@ static void *_init_power_save(void *arg)
 
 		_reap_procs();
 
-		if (last_config != slurm_conf.last_update) {
-			if (_init_power_config()) {
-				info("power_save mode has been disabled due to configuration changes");
-				goto fini;
-			}
+		if (!power_save_enabled) {
+			debug("power_save mode not enabled, stopping power_save thread");
+			goto fini;
 		}
 
 		now = time(NULL);

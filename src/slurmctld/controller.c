@@ -733,8 +733,6 @@ int main(int argc, char **argv)
 			fatal("failed to initialize power management plugin");
 		if (slurm_mcs_init() != SLURM_SUCCESS)
 			fatal("failed to initialize mcs plugin");
-		/* Must be called after reading in nodes, parts */
-		config_power_mgr();
 
 		/*
 		 * create attached thread to process RPCs
