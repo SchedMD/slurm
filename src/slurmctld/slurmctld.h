@@ -725,6 +725,7 @@ struct job_record {
 					   option */
 	char *comment;			/* arbitrary comment */
 	char *container;		/* OCI container bundle path */
+	char *container_id;		/* OCI container id */
 	uint32_t cpu_cnt;		/* current count of CPUs held
 					 * by the job, decremented while job is
 					 * completing */

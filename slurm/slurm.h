@@ -1552,6 +1552,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
 				 * 0 otherwise,default=0 */
 	char *container;	/* OCI container bundle */
+	char *container_id;	/* OCI container ID */
 	uint16_t core_spec;	/* specialized core/thread count,
 				 * see CORE_SPEC_THREAD */
 	char *cpu_bind;		/* binding map for map/mask_cpu - This

@@ -1014,6 +1014,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->clusters);
 		xfree(msg->comment);
 		xfree(msg->container);
+		xfree(msg->container_id);
 		xfree(msg->cpu_bind);
 		xfree(msg->cpus_per_tres);
 		free_cron_entry(msg->crontab_entry);

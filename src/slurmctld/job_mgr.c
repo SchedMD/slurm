@@ -1417,6 +1417,7 @@ static int _dump_job_state(void *object, void *arg)
 	pack32(dump_job_ptr->assoc_id, buffer);
 	packstr(dump_job_ptr->batch_features, buffer);
 	packstr(dump_job_ptr->container, buffer);
+	packstr(dump_job_ptr->container_id, buffer);
 	pack32(dump_job_ptr->delay_boot, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
@@ -1595,7 +1596,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	uint16_t wait_all_nodes, warn_flags = 0, warn_signal, warn_time;
 	acct_policy_limit_set_t limit_set;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
-	char *container = NULL;
+	char *container = NULL, *container_id = NULL;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -1656,6 +1657,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpackstr_xmalloc(&batch_features, &name_len, buffer);
 		safe_unpackstr_xmalloc(&container, &name_len, buffer);
+		safe_unpackstr_xmalloc(&container_id, &name_len, buffer);
 		safe_unpack32(&delay_boot, buffer);
 		safe_unpack32(&job_id, buffer);
 
@@ -2410,6 +2412,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	job_ptr->alloc_sid    = alloc_sid;
 	job_ptr->assoc_id     = assoc_id;
 	job_ptr->container = container;
+	job_ptr->container_id = container_id;
 	job_ptr->delay_boot   = delay_boot;
 	xfree(job_ptr->admin_comment);
 	job_ptr->admin_comment = admin_comment;
@@ -4561,8 +4564,9 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	if (job_specs->tres_per_task)
 		debug3("   TRES_per_task=%s", job_specs->tres_per_task);
 
-	if (job_specs->container)
-		debug3("   container=%s", job_specs->container);
+	if (job_specs->container || job_specs->container_id)
+		debug3("   container=%s container-id=%s",
+		       job_specs->container, job_specs->container_id);
 
 	select_g_select_jobinfo_sprint(job_specs->select_jobinfo,
 				       buf, sizeof(buf), SELECT_PRINT_MIXED);
@@ -4717,6 +4721,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->clusters = xstrdup(job_ptr->clusters);
 	job_ptr_pend->comment = xstrdup(job_ptr->comment);
 	job_ptr_pend->container = xstrdup(job_ptr->container);
+	job_ptr_pend->container_id = xstrdup(job_ptr->container_id);
 
 	job_ptr_pend->fed_details = _dup_job_fed_details(job_ptr->fed_details);
 
@@ -8500,6 +8505,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->restart_cnt = job_desc->restart_cnt;
 	job_ptr->comment    = xstrdup(job_desc->comment);
 	job_ptr->container = xstrdup(job_desc->container);
+	job_ptr->container_id = xstrdup(job_desc->container_id);
 	job_ptr->admin_comment = xstrdup(job_desc->admin_comment);
 
 	if (job_desc->kill_on_node_fail != NO_VAL16)
@@ -17978,6 +17984,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->clusters          = xstrdup(job_ptr->clusters);
 	job_desc->comment           = xstrdup(job_ptr->comment);
 	job_desc->container = xstrdup(job_ptr->container);
+	job_desc->container_id = xstrdup(job_ptr->container_id);
 	job_desc->contiguous        = details->contiguous;
 	job_desc->core_spec         = details->core_spec;
 	job_desc->cpu_bind          = xstrdup(details->cpu_bind);

@@ -5653,6 +5653,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		packstr(job_desc_ptr->clusters, buffer);
 		pack16(job_desc_ptr->contiguous, buffer);
 		packstr(job_desc_ptr->container, buffer);
+		packstr(job_desc_ptr->container_id, buffer);
 		pack16(job_desc_ptr->core_spec, buffer);
 		pack32(job_desc_ptr->task_dist, buffer);
 		pack16(job_desc_ptr->kill_on_node_fail, buffer);
@@ -6110,6 +6111,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpackstr(&job_desc_ptr->clusters, buffer);
 		safe_unpack16(&job_desc_ptr->contiguous, buffer);
 		safe_unpackstr(&job_desc_ptr->container, buffer);
+		safe_unpackstr(&job_desc_ptr->container_id, buffer);
 		safe_unpack16(&job_desc_ptr->core_spec, buffer);
 		safe_unpack32(&job_desc_ptr->task_dist, buffer);
 		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
