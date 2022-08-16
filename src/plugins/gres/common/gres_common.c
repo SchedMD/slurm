@@ -186,8 +186,10 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 
 				if (!(gres_device = _init_gres_device(
 					      index, one_name,
-					      gres_slurmd_conf->unique_id)))
+					      gres_slurmd_conf->unique_id))) {
+					free(one_name);
 					continue;
+				}
 
 				if (gres_device->dev_num > max_dev_num)
 					max_dev_num = gres_device->dev_num;
@@ -199,8 +201,11 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 			 * Don't check for file duplicates or increment the
 			 * device bitmap index if this is a MultipleFiles GRES
 			 */
-			if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_MULT)
+			if (gres_slurmd_conf->config_flags &
+			    GRES_CONF_HAS_MULT) {
+				free(one_name);
 				continue;
+			}
 
 			if ((rc == SLURM_SUCCESS) &&
 			    list_find_first(names_list, _match_name_list,
