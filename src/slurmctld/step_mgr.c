@@ -449,6 +449,7 @@ extern void free_step_record(void *x)
 	resv_port_free(step_ptr);
 
 	xfree(step_ptr->container);
+	xfree(step_ptr->container_id);
 	xfree(step_ptr->host);
 	xfree(step_ptr->name);
 	slurm_step_layout_destroy(step_ptr->step_layout);
@@ -562,8 +563,9 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		debug3("   TRES_per_socket=%s", step_spec->tres_per_socket);
 	if (step_spec->tres_per_task)
 		debug3("   TRES_per_task=%s", step_spec->tres_per_task);
-	if (step_spec->container)
-		debug3("   Container=%s", step_spec->container);
+	if (step_spec->container || step_spec->container_id)
+		debug3("   Container=%s ContainerID=%s",
+		       step_spec->container, step_spec->container_id);
 }
 
 /*
@@ -3201,6 +3203,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	}
 
 	step_ptr->container = xstrdup(step_specs->container);
+	step_ptr->container_id = xstrdup(step_specs->container_id);
 	step_ptr->gres_list_req = step_gres_list;
 	step_gres_list      = (List) NULL;
 	gres_step_state_log(step_ptr->gres_list_req, job_ptr->job_id,
@@ -4483,6 +4486,7 @@ extern int dump_job_step_state(void *x, void *arg)
 	pack16(step_ptr->port, buffer);
 	pack16(step_ptr->cpus_per_task, buffer);
 	packstr(step_ptr->container, buffer);
+	packstr(step_ptr->container_id, buffer);
 	pack16(step_ptr->resv_port_cnt, buffer);
 	pack16(step_ptr->state, buffer);
 	pack16(step_ptr->start_protocol_ver, buffer);
@@ -4577,8 +4581,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	uint64_t pn_min_memory;
 	uint64_t *memory_allocated = NULL;
 	time_t start_time, pre_sus_time, tot_sus_time;
-	char *host = NULL, *container = NULL, *core_job = NULL;
-	char *submit_line = NULL;
+	char *host = NULL, *container = NULL, *container_id = NULL;
+	char *core_job = NULL, *submit_line = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
 	char *cpus_per_tres = NULL, *mem_per_tres = NULL, *tres_bind = NULL;
@@ -4831,6 +4835,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	memcpy(&step_ptr->step_id, &step_id, sizeof(step_ptr->step_id));
 
 	step_ptr->container = container;
+	step_ptr->container_id = container;
 	step_ptr->cpu_count    = cpu_count;
 	step_ptr->cpus_per_task= cpus_per_task;
 	step_ptr->cyclic_alloc = cyclic_alloc;
@@ -5316,6 +5321,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
 	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->container = xstrdup(job_ptr->container);
+	step_ptr->container_id = xstrdup(job_ptr->container_id);
 
 #ifndef HAVE_FRONT_END
 	if (node_name2bitmap(job_ptr->batch_host, false,
@@ -5401,6 +5407,7 @@ static step_record_t *_build_interactive_step(
 	step_ptr->step_id.step_id = SLURM_INTERACTIVE_STEP;
 	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->container = xstrdup(job_ptr->container);
+	step_ptr->container_id = xstrdup(job_ptr->container_id);
 
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;

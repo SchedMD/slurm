@@ -988,6 +988,7 @@ typedef struct {
 	uint32_t magic;			/* magic cookie to test data integrity */
 					/* DO NOT ALPHABETIZE */
 	char *container;		/* OCI Container bundle path */
+	char *container_id;		/* OCI Container ID */
 	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
 					 * step relative to job's nodes,
 					 * see src/common/job_resources.h */
