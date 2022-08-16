@@ -3838,6 +3838,7 @@ static int _pack_ctld_job_step_info(void *x, void *arg)
 
 		packstr(slurm_conf.cluster_name, buffer);
 		packstr(step_ptr->container, buffer);
+		packstr(step_ptr->container_id, buffer);
 		if (step_ptr->job_ptr->part_ptr)
 			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
 		else
@@ -4606,6 +4607,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&port, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
 		safe_unpackstr(&container, buffer);
+		safe_unpackstr(&container_id, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
 		safe_unpack16(&state, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);
