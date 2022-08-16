@@ -423,6 +423,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->array_inx = sbopt.array_inx;
 	desc->batch_features = sbopt.batch_features;
 	desc->container = xstrdup(opt.container);
+	xfree(desc->container_id);
+	desc->container_id = xstrdup(opt.container_id);
 
 	desc->wait_all_nodes = sbopt.wait_all_nodes;
 

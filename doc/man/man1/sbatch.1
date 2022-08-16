@@ -367,6 +367,11 @@ Absolute path to OCI container bundle.
 .IP
 
 .TP
+\fB\-\-container-id\fR=<\fIcontainer_id\fR>
+Unique name for OCI container.
+.IP
+
+.TP
 \fB\-\-contiguous\fR
 If set, then the allocated nodes must form a contiguous set.
 
@@ -2384,6 +2389,11 @@ Same as \fB\-\-container\fR.
 .IP
 
 .TP
+\fBSBATCH_CONTAINER_ID\fR
+Same as \fB\-\-container-id\fR.
+.IP
+
+.TP
 \fBSBATCH_CORE_SPEC\fR
 Same as \fB\-\-core\-spec\fR
 .IP
@@ -2746,6 +2756,12 @@ Only set if the \fB\-\-cpus\-per\-task\fR option is specified.
 \fBSLURM_CONTAINER\fR
 OCI Bundle for job.
 Only set if \-\-container\fR is specified.
+.IP
+
+.TP
+\fBSLURM_CONTAINER_ID\fR
+OCI id for job.
+Only set if \fB\-\-container-id\fR is specified.
 .IP
 
 .TP

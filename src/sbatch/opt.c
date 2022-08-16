@@ -184,6 +184,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
   { "SBATCH_CONTAINER", LONG_OPT_CONTAINER },
+  { "SBATCH_CONTAINER_ID", LONG_OPT_CONTAINER_ID },
   { "SBATCH_CONSTRAINT", 'C' },
   { "SBATCH_CORE_SPEC", 'S' },
   { "SBATCH_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
@@ -682,6 +683,8 @@ static bool _opt_verify(void)
 
 	if (opt.container && !getenv("SLURM_CONTAINER"))
 		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
+	if (opt.container && !getenv("SLURM_CONTAINER_ID"))
+		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
 
 	/*
 	 * NOTE: this burst_buffer_file processing is intentionally different
@@ -1185,6 +1188,7 @@ static void _help(void)
 "                              Name of 'all' will submit to run on all clusters.\n"
 "                              NOTE: SlurmDBD must up.\n"
 "      --container             Path to OCI container bundle\n"
+"      --container-id          OCI container ID\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|arbitrary)\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
