@@ -985,6 +985,17 @@ static slurm_cli_opt_t slurm_opt_container = {
 	.reset_func = arg_reset_container,
 };
 
+COMMON_STRING_OPTION(container_id);
+static slurm_cli_opt_t slurm_opt_container_id = {
+	.name = "container-id",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CONTAINER_ID,
+	.set_func = arg_set_container_id,
+	.set_func_data = arg_set_data_container_id,
+	.get_func = arg_get_container_id,
+	.reset_func = arg_reset_container_id,
+};
+
 COMMON_STRING_OPTION_SET(context);
 COMMON_STRING_OPTION_SET_DATA(context);
 COMMON_STRING_OPTION_GET(context);
@@ -5066,6 +5077,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_comment,
 	&slurm_opt_compress,
 	&slurm_opt_container,
+	&slurm_opt_container_id,
 	&slurm_opt_context,
 	&slurm_opt_contiguous,
 	&slurm_opt_constraint,
@@ -5960,6 +5972,8 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 		job_desc->contiguous = opt_local->contiguous;
 	else
 		job_desc->contiguous = NO_VAL16;
+
+	job_desc->container_id = xstrdup(opt_local->container_id);
 
 	if (opt_local->core_spec != NO_VAL16)
 		job_desc->core_spec = opt_local->core_spec;
