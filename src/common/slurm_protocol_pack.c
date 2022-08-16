@@ -3363,6 +3363,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpack32(&job->assoc_id, buffer);
 		safe_unpackstr(&job->container, buffer);
+		safe_unpackstr(&job->container_id, buffer);
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->job_id, buffer);
 		safe_unpack32(&job->user_id, buffer);

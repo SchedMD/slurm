@@ -1066,9 +1066,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line (optional) ******/
-	if (job_ptr->container) {
+	if (job_ptr->container || job_ptr->container_id) {
 		xstrcat(out, line_end);
-		xstrfmtcat(out, "Container=%s", job_ptr->container);
+		xstrfmtcat(out, "Container=%s ContainerID=%s",
+			   job_ptr->container, job_ptr->container_id);
 	}
 
 	/****** Line (optional) ******/
