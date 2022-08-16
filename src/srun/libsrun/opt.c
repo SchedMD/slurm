@@ -615,6 +615,7 @@ env_vars_t env_vars[] = {
   { "SLURM_WORKING_DIR", 'D' },
   { "SLURMD_DEBUG", LONG_OPT_SLURMD_DEBUG },
   { "SRUN_CONTAINER", LONG_OPT_CONTAINER },
+  { "SRUN_CONTAINER_ID", LONG_OPT_CONTAINER_ID },
   { "SLURM_DEBUG", 'v'},
   { "SRUN_ERROR", 'e' },
   { "SRUN_INPUT", 'i' },
@@ -773,6 +774,8 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 
 	if (opt.container && !getenv("SLURM_CONTAINER"))
 		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
+	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
+		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
 
 #ifdef HAVE_NATIVE_CRAY
 	/* only fatal on the allocation */
@@ -1534,6 +1537,7 @@ static void _help(void)
 "      --comment=name          arbitrary comment\n"
 "      --compress[=library]    data compression library used with --bcast\n"
 "      --container             Path to OCI container bundle\n"
+"      --container-id          OCI container ID\n"
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "  -d, --dependency=type:jobid[:time] defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"

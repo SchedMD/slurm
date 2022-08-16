@@ -388,6 +388,11 @@ Absolute path to OCI container bundle.
 .IP
 
 .TP
+\fB\-\-container-id\fR=<\fIcontainer_id\fR>
+Unique name for OCI container.
+.IP
+
+.TP
 \fB\-\-contiguous\fR
 If set, then the allocated nodes must form a contiguous set.
 
@@ -3641,6 +3646,11 @@ Same as \fB\-\-container\fR.
 .IP
 
 .TP
+\fBSRUN_CONTAINER_ID\fR
+Same as \fB\-\-container-id\fR.
+.IP
+
+.TP
 \fBSRUN_EXPORT_ENV\fR
 Same as \fB\-\-export\fR, and will override any setting for
 \fBSLURM_EXPORT_ENV\fR.
@@ -3897,6 +3907,12 @@ srun communication port.
 \fBSLURM_CONTAINER\fR
 OCI Bundle for job.
 Only set if \fB\-\-container\fR is specified.
+.IP
+
+.TP
+\fBSLURM_CONTAINER_ID\fR
+OCI id for job.
+Only set if \fB\-\-container_id\fR is specified.
 .IP
 
 .TP

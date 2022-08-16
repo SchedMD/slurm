@@ -732,6 +732,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	}
 
 	j->container = xstrdup(opt_local->container);
+	j->container_id = xstrdup(opt_local->container_id);
 
 	if (srun_opt->cpu_bind)
 		j->cpu_bind = xstrdup(srun_opt->cpu_bind);
