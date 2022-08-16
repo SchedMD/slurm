@@ -404,6 +404,8 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->user_id = opt_local->uid;
 
 	step_req->container = xstrdup(opt_local->container);
+	xfree(step_req->container_id);
+	step_req->container_id = xstrdup(opt_local->container_id);
 
 	rc = gres_step_state_validate(step_req->cpus_per_tres,
 				     step_req->tres_per_step,
