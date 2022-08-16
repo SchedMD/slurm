@@ -135,7 +135,7 @@ exec $bin_cc -O ${file_prog_get}.c -o $file_prog_get
 exec $bin_chmod 700 $file_prog_get
 
 
-log_info "Testing limits propagation submiting with srun"
+log_info "Testing limits propagation submitting with srun"
 make_bash_script $file_in "
   ulimit -c $limit_core || exit 1
   ulimit -f $limit_fsize || exit 1
