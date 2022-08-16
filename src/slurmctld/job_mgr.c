@@ -1634,7 +1634,242 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	memset(&limit_set, 0, sizeof(limit_set));
 	limit_set.tres = xcalloc(slurmctld_tres_cnt, sizeof(uint16_t));
 
-	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpack32(&array_job_id, buffer);
+		safe_unpack32(&array_task_id, buffer);
+
+		/* Job Array record */
+		safe_unpack32(&task_id_size, buffer);
+		if (task_id_size != NO_VAL) {
+			if (task_id_size) {
+				safe_unpackstr_xmalloc(&task_id_str, &name_len,
+						       buffer);
+			}
+			safe_unpack32(&array_flags, buffer);
+			safe_unpack32(&max_run_tasks, buffer);
+			safe_unpack32(&tot_run_tasks, buffer);
+			safe_unpack32(&min_exit_code, buffer);
+			safe_unpack32(&max_exit_code, buffer);
+			safe_unpack32(&tot_comp_tasks, buffer);
+		}
+
+		safe_unpack32(&assoc_id, buffer);
+		safe_unpackstr_xmalloc(&batch_features, &name_len, buffer);
+		safe_unpackstr_xmalloc(&container, &name_len, buffer);
+		safe_unpack32(&delay_boot, buffer);
+		safe_unpack32(&job_id, buffer);
+
+		/* validity test as possible */
+		if (job_id == 0) {
+			verbose("Invalid job_id %u", job_id);
+			goto unpack_error;
+		}
+
+		job_ptr = find_job_record(job_id);
+		if (job_ptr == NULL) {
+			job_ptr = _create_job_record(1);
+			if (!job_ptr) {
+				error("Create job entry failed for JobId=%u",
+				      job_id);
+				goto unpack_error;
+			}
+			job_ptr->job_id = job_id;
+			job_ptr->array_job_id = array_job_id;
+			job_ptr->array_task_id = array_task_id;
+		}
+
+		safe_unpack32(&user_id, buffer);
+		safe_unpack32(&group_id, buffer);
+		safe_unpack32(&time_limit, buffer);
+		safe_unpack32(&time_min, buffer);
+		safe_unpack32(&priority, buffer);
+		safe_unpack32(&alloc_sid, buffer);
+		safe_unpack32(&total_cpus, buffer);
+		safe_unpack32(&total_nodes, buffer);
+		safe_unpack32(&cpu_cnt, buffer);
+		safe_unpack32(&exit_code, buffer);
+		safe_unpack32(&derived_ec, buffer);
+		safe_unpack64(&db_index, buffer);
+		safe_unpack32(&resv_id, buffer);
+		safe_unpack32(&next_step_id, buffer);
+		safe_unpack32(&het_job_id, buffer);
+		safe_unpackstr_xmalloc(&het_job_id_set, &name_len, buffer);
+		safe_unpack32(&het_job_offset, buffer);
+		safe_unpack32(&qos_id, buffer);
+		safe_unpack32(&req_switch, buffer);
+		safe_unpack32(&wait4switch, buffer);
+		safe_unpack32(&profile, buffer);
+		safe_unpack32(&db_flags, buffer);
+
+		safe_unpack_time(&last_sched_eval, buffer);
+		safe_unpack_time(&preempt_time, buffer);
+		safe_unpack_time(&start_time, buffer);
+		safe_unpack_time(&end_time, buffer);
+		safe_unpack_time(&end_time_exp, buffer);
+		safe_unpack_time(&suspend_time, buffer);
+		safe_unpack_time(&pre_sus_time, buffer);
+		safe_unpack_time(&resize_time, buffer);
+		safe_unpack_time(&tot_sus_time, buffer);
+		safe_unpack_time(&deadline, buffer);
+
+		safe_unpack32(&site_factor, buffer);
+		safe_unpack16(&direct_set_prio, buffer);
+		safe_unpack32(&job_state, buffer);
+		safe_unpack16(&kill_on_node_fail, buffer);
+		safe_unpack16(&batch_flag, buffer);
+		safe_unpack16(&mail_type, buffer);
+		safe_unpack32(&state_reason, buffer);
+		safe_unpack32(&state_reason_prev_db, buffer);
+		safe_unpack8 (&reboot, buffer);
+		safe_unpack16(&restart_cnt, buffer);
+		safe_unpack16(&wait_all_nodes, buffer);
+		safe_unpack16(&warn_flags, buffer);
+		safe_unpack16(&warn_signal, buffer);
+		safe_unpack16(&warn_time, buffer);
+
+		_unpack_acct_policy_limit_members(&limit_set, buffer,
+						  protocol_version);
+
+		safe_unpackstr_xmalloc(&state_desc, &name_len, buffer);
+		safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
+
+		safe_unpack16(&alloc_resp_port, buffer);
+		safe_unpack16(&other_port, buffer);
+		safe_unpack8(&power_flags, buffer);
+		safe_unpack16(&start_protocol_ver, buffer);
+		safe_unpackdouble(&billable_tres, buffer);
+
+		if (job_state & JOB_COMPLETING) {
+			safe_unpackstr_xmalloc(&nodes_completing,
+					       &name_len, buffer);
+		}
+		if (state_reason == WAIT_PROLOG) {
+			safe_unpackstr_xmalloc(&nodes_pr, &name_len, buffer);
+		}
+		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+		if (partition == NULL) {
+			error("No partition for JobId=%u", job_id);
+			goto unpack_error;
+		}
+		part_ptr = find_part_record (partition);
+		if (part_ptr == NULL) {
+			char *err_part = NULL;
+			part_ptr_list = get_part_list(partition, &err_part);
+			if (part_ptr_list) {
+				part_ptr = list_peek(part_ptr_list);
+				if (list_count(part_ptr_list) == 1)
+					FREE_NULL_LIST(part_ptr_list);
+			} else {
+				verbose("Invalid partition (%s) for JobId=%u",
+					err_part, job_id);
+				xfree(err_part);
+				/* not fatal error, partition could have been
+				 * removed, reset_job_bitmaps() will clean-up
+				 * this job */
+			}
+		}
+
+		safe_unpackstr_xmalloc(&name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&user_name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&wckey, &name_len, buffer);
+		safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
+		safe_unpackstr_xmalloc(&account, &name_len, buffer);
+		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
+		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
+		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
+		safe_unpackstr_xmalloc(&network, &name_len, buffer);
+		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
+		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
+		safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
+		safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
+		safe_unpackstr_xmalloc(&batch_host, &name_len, buffer);
+		safe_unpackstr_xmalloc(&burst_buffer, &name_len, buffer);
+		safe_unpackstr_xmalloc(&burst_buffer_state, &name_len, buffer);
+		safe_unpackstr_xmalloc(&system_comment, &name_len, buffer);
+
+		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
+						   protocol_version))
+			goto unpack_error;
+		if (unpack_job_resources(&job_resources, buffer,
+					 protocol_version))
+			goto unpack_error;
+
+		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
+				     buffer);
+
+		if (gres_job_state_unpack(&gres_list_req, buffer, job_id,
+					  protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		gres_job_state_log(gres_list_req, job_id);
+
+		if (gres_job_state_unpack(&gres_list_alloc, buffer,
+					  job_id, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		gres_job_state_log(gres_list_alloc, job_id);
+
+		safe_unpack16(&details, buffer);
+		if ((details == DETAILS_FLAG) &&
+		    (_load_job_details(job_ptr, buffer, protocol_version))) {
+			job_ptr->job_state = JOB_FAILED;
+			job_ptr->exit_code = 1;
+			job_ptr->state_reason = FAIL_SYSTEM;
+			xfree(job_ptr->state_desc);
+			job_ptr->end_time = now;
+			goto unpack_error;
+		}
+		safe_unpack16(&step_flag, buffer);
+
+		while (step_flag == STEP_FLAG) {
+			/*
+			 * No need to put these into accounting if they
+			 * haven't been since all information will be
+			 * put in when the job is finished.
+			 */
+			if ((error_code = load_step_state(job_ptr, buffer,
+							  protocol_version)))
+				goto unpack_error;
+			safe_unpack16(&step_flag, buffer);
+		}
+		safe_unpack64(&job_ptr->bit_flags, buffer);
+		job_ptr->bit_flags &= ~BACKFILL_TEST;
+		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
+		safe_unpackstr_xmalloc(&tres_alloc_str,
+				       &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_fmt_alloc_str,
+				       &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_req_str, &name_len, buffer);
+		safe_unpackstr_xmalloc(&tres_fmt_req_str, &name_len, buffer);
+		safe_unpackstr_xmalloc(&clusters, &name_len, buffer);
+		if ((error_code = _load_job_fed_details(&job_fed_details,
+							buffer,
+							protocol_version)))
+			goto unpack_error;
+
+		safe_unpackstr_xmalloc(&job_ptr->origin_cluster, &name_len,
+				       buffer);
+
+		safe_unpackstr_xmalloc(&job_ptr->cpus_per_tres, &name_len,
+				       buffer);
+		safe_unpackstr_xmalloc(&job_ptr->mem_per_tres, &name_len,
+				       buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_bind, &name_len,
+				       buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_freq, &name_len,
+				       buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_per_job, &name_len,
+				       buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_per_node, &name_len,
+				       buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_per_socket, &name_len,
+				       buffer);
+		safe_unpackstr_xmalloc(&job_ptr->tres_per_task, &name_len,
+				       buffer);
+
+		safe_unpackstr_xmalloc(&job_ptr->selinux_context, &name_len,
+				       buffer);
+	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
 
