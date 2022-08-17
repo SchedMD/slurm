@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
     show job.
 --  Fix sacctmgr qos filter to properly select assocs by qos inheritance rules.
  -- Prevent slurmctld from starting with invalid jobcomp plugin.
+ -- Fix `sinfo -i` and interactive `scontrol> show node` replies for nodes
+    going from powering down to powered down state.
 
 * Changes in Slurm 22.05.5
 ==========================

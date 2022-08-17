@@ -273,6 +273,7 @@ static void _do_power_work(time_t now)
 	ListIterator iter;
 	bitstr_t *job_power_node_bitmap;
 	uint32_t *job_id_ptr;
+	bool nodes_updated = false;
 
 	if (last_work_scan == 0) {
 		if (exc_nodes && (_parse_exc_nodes() != SLURM_SUCCESS))
@@ -454,6 +455,7 @@ static void _do_power_work(time_t now)
 
 			clusteracct_storage_g_node_up(acct_db_conn, node_ptr,
 						      now);
+			nodes_updated = true;
 		}
 
 		/* Suspend nodes as appropriate */
@@ -505,6 +507,7 @@ static void _do_power_work(time_t now)
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 			}
+			nodes_updated = true;
 		}
 
 		if (IS_NODE_POWERING_DOWN(node_ptr) &&
@@ -533,6 +536,7 @@ static void _do_power_work(time_t now)
 				acct_db_conn, node_ptr, now,
 				"Powered down after SuspendTimeout",
 				node_ptr->reason_uid);
+			nodes_updated = true;
 		}
 
 		/*
@@ -573,6 +577,7 @@ static void _do_power_work(time_t now)
 				}
 				bit_set(failed_node_bitmap, node_ptr->index);
 			}
+			nodes_updated = true;
 		}
 	}
 	FREE_NULL_BITMAP(avoid_node_bitmap);
@@ -590,8 +595,7 @@ static void _do_power_work(time_t now)
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
 		FREE_NULL_BITMAP(sleep_node_bitmap);
-		/* last_node_update could be changed already by another thread!
-		last_node_update = now; */
+		nodes_updated = true;
 	}
 
 	if (wake_node_bitmap) {
@@ -611,8 +615,7 @@ static void _do_power_work(time_t now)
 		xfree(nodes);
 		xfree(json);
 		FREE_NULL_BITMAP(wake_node_bitmap);
-		/* last_node_update could be changed already by another thread!
-		last_node_update = now; */
+		nodes_updated = true;
 	}
 
 	if (failed_node_bitmap) {
@@ -624,7 +627,11 @@ static void _do_power_work(time_t now)
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
 		FREE_NULL_BITMAP(failed_node_bitmap);
+		nodes_updated = true;
 	}
+
+	if (nodes_updated)
+		last_node_update = time(NULL);
 
 	FREE_NULL_DATA(resume_json_data);
 	FREE_NULL_BITMAP(job_power_node_bitmap);
