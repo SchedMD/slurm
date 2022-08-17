@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
-#          Test that switch windows in uses are not re-used.
+#          Test that switch windows in use are not re-used.
 ############################################################################
 # Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -37,79 +37,33 @@ source ./globals
 # windows_used        - switch windows to use per job step
 # step_delay          - run time of persistent job step (seconds)
 #
-log_user 0
-set step_delay 0
-spawn $scontrol show config
-expect {
-	-re "switch/none" {
-		set windows_per_node 0
-		set windows_iterations 5
-		set windows_used 4
-		set step_delay 10
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {$step_delay == 0} {
-	skip "Not running compatible switch, this test is not applicable"
-}
 
-#
-# Submit a slurm allocate job, then run a bunch of job
-# steps within that allocation
-#
-set timeout $max_job_delay
+set windows_per_node 0
+set windows_iterations 5
+set windows_used 4
+set step_delay 10
 set job_id 0
-set matches 0
 
-spawn $salloc -N1 --verbose -t2 $bin_bash
-expect -re "Granted job allocation ($number)"
-set job_id $expect_out(1,string)
-reset_bash_prompt
+if {[get_config_param "SwitchType"] ne "switch/none"} {
+	skip "This test requires SwitchType = switch/none"
+}
 
-# start initial job step to claim some switch windows
-expect -re $test_prompt
-send "$srun -N1 -O -n$windows_used $bin_sleep $step_delay &\r"
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
+# Spawn an salloc job (with --no-shell) and obtain the job id
+set salloc_output [run_command_output -fail "$salloc -N1 -t2 -v --no-shell"]
+if {![regexp {Granted job allocation (\d+)} $salloc_output - job_id]} {
+    fail "Allocation not granted ($output)"
+}
+
+# Start initial job step to claim some switch windows
+run_command -fail "nohup $srun --jobid $job_id -N1 -O -n$windows_used -N6 --immediate $bin_sleep $step_delay &"
 
 # start more job steps to check see if any switch window conflicts occur
 for {set inx 0} {$inx < $windows_iterations} {incr inx} {
-        expect {
-                -re "error" {
-                        fail "Some error occurred"
-                }
-		-re $test_prompt {
-			log_debug "Spawning step $inx"
-			send "$srun -N1 -O -n$windows_used true\r"
-		}
-		timeout {
-			fail "salloc not responding"
-		}
-		eof {
-			fail "srun aborted"
-		}
-	}
-}
-
-# wait for initial job step to complete
-expect -re $test_prompt
-log_debug "(sleeping for $step_delay seconds, for job step zero to complete)"
-exec $bin_sleep $step_delay
-send "exit\r"
-
-expect {
-	-re "error" {
-		fail "Some error occurred"
-	}
-	timeout {
-		fail "salloc not responding"
-	}
-	eof {
-		wait
-	}
+	run_command -fail "$srun --jobid $job_id -N1 -O -n$windows_used true"
 }
