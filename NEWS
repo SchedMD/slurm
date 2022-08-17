@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix return code from salloc when the job is revoked prior to executing user
     command.
+ -- Fix minor memory leak when dealing with gres with multiple files.
 
 * Changes in Slurm 22.05.3
 ==========================
