@@ -93,7 +93,6 @@ Waittime=0
 #SchedulerTimeSlice=30
 SchedulerType=sched/backfill
 SelectType=select/cons_tres
-SelectTypeParameters=CR_Core
 #
 #
 # JOB PRIORITY
