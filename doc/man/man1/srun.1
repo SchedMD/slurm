@@ -885,8 +885,12 @@ job allocations.
 
 Specify alternate distribution methods for remote processes.
 For job allocation, this sets environment variables that will be used by
-subsequent srun requests and also affects which cores will be selected for
-job allocation.
+subsequent srun requests. Task distribution affects job allocation at the
+last stage of the evaluation of available resources by the cons_res and
+cons_tres plugins. Consequently, other options (e.g. \-\-ntasks\-per\-node,
+\-\-cpus\-per\-task) may affect resource selection prior to task distribution.
+To ensure a specific task distribution jobs should have access to whole
+nodes, for instance by using the \-\-exclusive flag.
 
 This option controls the distribution of tasks to the nodes on which
 resources have been allocated, and the distribution of those resources
