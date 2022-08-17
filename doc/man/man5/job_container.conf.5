@@ -1,4 +1,4 @@
-.TH "job_container.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
+.TH "job_container.conf" "5" "Slurm Configuration File" "August 2022" "Slurm Configuration File"
 
 .SH "NAME"
 job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
@@ -11,8 +11,16 @@ job_container.conf file to find out the configuration settings. Based on them it
 constructs a private mount namespace for the job and mounts /tmp and
 /dev/shm inside it. This gives the job a private view of /tmp and
 /dev/shm. /tmp is mounted inside a location that is specified as 'BasePath' in
-job_container.conf file. To make use of this plugin, 'PrologFlags=Contain' must
-be present in your \fBslurm.conf\fP file.
+job_container.conf file.
+When the job completes, the private namespaces are unmounted, and all
+files therein are automatically removed.
+To make use of this plugin, 'PrologFlags=Contain' must also be present in
+your \fBslurm.conf\fP file, as shown:
+
+.nf
+JobContainerType=job_container/tmpfs
+PrologFlags=Contain
+.fi
 
 The file will always be located in the same directory as the \fBslurm.conf\fR.
 
@@ -108,13 +116,15 @@ job_container/tmpfs plugin.
 # Slurm configuration need to use job_container/tmpfs plugin
 ###
 JobContainerType=job_container/tmpfs
+PrologFlags=Contain
 .fi
 
 .SH "NOTES"
 .LP
 If any parameters in job_container.conf are changed while slurm is running, then
 slurmd on the respective nodes will need to be
-restarted for changes to take effect. Additionally this can be disruptive to
+restarted for changes to take effect (scontrol reconfigure is not sufficient).
+Additionally this can be disruptive to
 jobs already running on the node. So care must be taken to make sure no jobs
 are running if any changes to job_container.conf are deployed.
 
