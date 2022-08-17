@@ -64,19 +64,6 @@ function get_radio_value(form)
   }
 }
 
-// When generating SelectTypeParameters return the parameters that
-// correspond to the checked select_type
-function get_select_type_params()
-{
-  if ((document.config.select_type[0].checked) ||	// cons_res or
-      (document.config.select_type[1].checked)) {	// cray
-    return get_radio_field_skipfirst("SelectTypeParameters",
-    					document.config.cons_res_params)
-  } else {
-    return "#SelectTypeParameters="
-  }
-}
-
 function hide_box()
 {
    var popup = document.getElementById('out_box');
@@ -175,7 +162,6 @@ function displayfile()
    "#SchedulerTimeSlice=30 <br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +
    "SelectType=select/" + get_radio_value(document.config.select_type) + "<br>" +
-   get_select_type_params() + "<br>" +
    "# <br>" +
    "# <br>" +
    "# JOB PRIORITY <br>" +
@@ -485,38 +471,6 @@ trackable resources<br />
 <input type="radio" name="select_type" value="linear">
 <B>Linear</B>: Node-base
 resource allocation, does not manage individual processor allocation<BR>
-<DL>
-<DT><B>SelectTypeParameters</B> (Not supported by <I>SelectType=select/linear</I>):
-    <DD> Note: The -E extension for sockets, cores, and threads
-	are ignored within the node allocation mechanism
-	when CR_CPU or CR_CPU_MEMORY is selected.
-	They are considered to compute the total number of
-	tasks when -n is not specified
-    <DD> Note: CR_MEMORY assumes MaxShare value of one of higher
-<DT> <input type="radio" name="cons_res_params" value="CR_CPU">
-    <B>CR_CPU</B>:
-    CPUs as consumable resources.
-    <DD> No notion of sockets, cores, or threads.
-    On a multi-core system, cores will be considered CPUs.
-    On a multi-core/hyperthread system, threads will be considered CPUs.
-    On a single-core systems CPUs are CPUs. ;-)
-<DT> <input type="radio" name="cons_res_params" value="CR_Socket">
-    <B>CR_Socket</B>: Sockets as a consumable resource.
-<DT> <input type="radio" name="cons_res_params" value="CR_Core" checked>
-    <B>CR_Core</B>: (default) Cores as a consumable resource.
-<DT> <input type="radio" name="cons_res_params" value="CR_Memory">
-    <B>CR_Memory</B>: Memory as a consumable resource.
-    <DD> Note: CR_Memory assumes MaxShare value of one of higher
-<DT> <input type="radio" name="cons_res_params" value="CR_CPU_Memory">
-    <B>CR_CPU_Memory</B>:
-    CPU and Memory as consumable resources.
-<DT> <input type="radio" name="cons_res_params" value="CR_Socket_Memory">
-    <B>CR_Socket_Memory</B>:
-    Socket and Memory as consumable resources.
-<DT> <input type="radio" name="cons_res_params" value="CR_Core_Memory">
-    <B>CR_Core_Memory</B>:
-    Core and Memory as consumable resources.
-</DL>
 <P>
 
 <H2>Task Launch</H2>
