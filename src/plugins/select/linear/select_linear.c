@@ -464,6 +464,10 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	job_resrcs_ptr->nodes = bitmap2node_name(bitmap);
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
+	job_resrcs_ptr->threads_per_core =
+		job_ptr->details->mc_ptr->threads_per_core;
+	job_resrcs_ptr->cr_type = cr_type;
+
 	if (build_job_resources(job_resrcs_ptr))
 		error("_build_select_struct: build_job_resources: %m");
 
@@ -2459,6 +2463,10 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 	new_job_resrcs_ptr->node_bitmap = tmp_bitmap;
 	new_job_resrcs_ptr->nodes = bitmap2node_name(new_job_resrcs_ptr->
 						     node_bitmap);
+	new_job_resrcs_ptr->threads_per_core =
+		to_job_resrcs_ptr->threads_per_core;
+	new_job_resrcs_ptr->cr_type = to_job_resrcs_ptr->cr_type;
+
 	build_job_resources(new_job_resrcs_ptr);
 	to_job_ptr->total_cpus = 0;
 
