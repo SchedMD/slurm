@@ -81,6 +81,19 @@ The NodeName specification can use a Slurm hostlist specification as shown in
 the example below. This parameter is optional.
 .IP
 
+.SH "NOTES"
+.LP
+If any parameters in job_container.conf are changed while slurm is running, then
+slurmd on the respective nodes will need to be
+restarted for changes to take effect (scontrol reconfigure is not sufficient).
+Additionally this can be disruptive to
+jobs already running on the node. So care must be taken to make sure no jobs
+are running if any changes to job_container.conf are deployed.
+
+Restarting slurmd is safe and non\-disruptive to running jobs, as long as
+job_container.conf is not changed between restarts in which case above point
+applies.
+
 .SH "EXAMPLE"
 .TP
 \fB/etc/slurm/job_container.conf\fR:
@@ -118,20 +131,6 @@ job_container/tmpfs plugin.
 JobContainerType=job_container/tmpfs
 PrologFlags=Contain
 .fi
-
-.SH "NOTES"
-.LP
-If any parameters in job_container.conf are changed while slurm is running, then
-slurmd on the respective nodes will need to be
-restarted for changes to take effect (scontrol reconfigure is not sufficient).
-Additionally this can be disruptive to
-jobs already running on the node. So care must be taken to make sure no jobs
-are running if any changes to job_container.conf are deployed.
-
-Restarting slurmd is safe and non\-disruptive to running jobs, as long as
-job_container.conf is not changed between restarts in which case above point
-applies.
-
 
 .SH "COPYING"
 Copyright (C) 2021 Regents of the University of California
