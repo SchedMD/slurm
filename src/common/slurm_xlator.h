@@ -178,6 +178,10 @@
 #define	hostset_destroy		slurm_hostset_destroy
 #define	hostset_find		slurm_hostset_find
 #define	hostset_insert		slurm_hostset_insert
+#define hostset_deranged_string_xmalloc \
+				slurm_hostset_deranged_string_xmalloc
+#define hostset_ranged_string_xmalloc \
+				slurm_hostset_ranged_string_xmalloc
 #define	hostset_shift		slurm_hostset_shift
 #define	hostset_shift_range	slurm_hostset_shift_range
 #define	hostset_within		slurm_hostset_within

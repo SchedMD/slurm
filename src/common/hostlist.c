@@ -3680,6 +3680,16 @@ ssize_t hostset_deranged_string(hostset_t set, size_t n, char *buf)
 	return hostlist_deranged_string(set->hl, n, buf);
 }
 
+char *hostset_deranged_string_xmalloc(hostset_t set)
+{
+	return hostlist_deranged_string_xmalloc(set->hl);
+}
+
+char *hostset_ranged_string_xmalloc(hostset_t set)
+{
+	return hostlist_ranged_string_xmalloc(set->hl);
+}
+
 char * hostset_nth(hostset_t set, int n)
 {
 	return hostlist_nth(set->hl, n);
