@@ -8,6 +8,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor memory leak when dealing with gres with multiple files.
  -- Fix printing for no_consume gres in scontrol show job.
  -- sinfo - Fix truncation of very large values when outputting memory.
+ -- Fix multi-node step launch failure when nodes in the controller aren't in
+    natural order. This can happen with inconsistent node naming (such as
+    node15 and node052) or with dynamic nodes which can register in any order.
 
 * Changes in Slurm 22.05.3
 ==========================
