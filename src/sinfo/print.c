@@ -713,10 +713,10 @@ int _print_memory(sinfo_data_t * sinfo_data, int width,
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
-		_build_min_max_32_string(id, FORMAT_STRING_SIZE,
-				      sinfo_data->min_mem,
-				      sinfo_data->max_mem,
-				      false, false);
+		_build_free_mem_min_max_64(id, FORMAT_STRING_SIZE,
+					   sinfo_data->min_mem,
+					   sinfo_data->max_mem,
+					   false);
 		_print_str(id, width, right_justify, true);
 	} else
 		_print_str("MEMORY", width, right_justify, true);
