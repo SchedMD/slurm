@@ -47,9 +47,10 @@ function slurm_cli_pre_submit(options, pack_offset)
 		then
 			slurm.log_info("srun allowed for uid: %s", options["uid"])
 		else
-			if options["pty"] == "set"
+			local time_limit_in_minutes = slurm.time_str2mins(options["time"])
+			if options["pty"] == "set" and time_limit_in_minutes > (4 * 60)
 			then
-				slurm.log_error("Use of srun with --pty is forbidden for uid: %s", options["uid"])
+				slurm.log_error("Use of srun with --pty is forbidden for uid: %s for time longer than 4h", options["uid"])
 				return slurm.ERROR
 			end
 		end
