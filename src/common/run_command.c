@@ -309,6 +309,7 @@ extern char *run_command(run_command_args_t *args)
 			} else if (i < 0) {
 				if (errno == EAGAIN)
 					continue;
+				send_terminate = false;
 				error("%s: read(%s): %m", __func__,
 				      args->script_path);
 				break;
