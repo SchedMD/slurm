@@ -232,6 +232,9 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	secs2time_str(completing_time, time_str, sizeof(time_str));
 	fprintf(stdout, "CompletingTime=%s ", time_str);
 
+	/* Sort the hostlists */
+	hostlist_sort(comp_nodes);
+	hostlist_sort(down_nodes);
 	node_buf = hostlist_ranged_string_xmalloc(comp_nodes);
 	if (node_buf && node_buf[0])
 		fprintf(stdout, "Nodes(COMPLETING)=%s ", node_buf);

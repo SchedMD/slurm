@@ -372,6 +372,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	time_t run_time;
 	uint32_t min_nodes, max_nodes = 0;
 	char *nodelist = "NodeList";
+	char *sorted_nodelist = NULL;
 	bitstr_t *cpu_bitmap;
 	char *host;
 	int sock_inx, sock_reps, last;
@@ -612,7 +613,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, line_end);
 
 	/****** Line 13 ******/
-	xstrfmtcat(out, "%s=%s", nodelist, job_ptr->nodes);
+	sorted_nodelist = slurm_sort_node_list_str(job_ptr->nodes);
+	xstrfmtcat(out, "%s=%s", nodelist, sorted_nodelist);
+	xfree(sorted_nodelist);
 
 	if (job_ptr->sched_nodes)
 		xstrfmtcat(out, " Sched%s=%s", nodelist, job_ptr->sched_nodes);
