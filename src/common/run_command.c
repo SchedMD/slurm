@@ -247,7 +247,6 @@ extern char *run_command(run_command_args_t *args)
 		slurm_mutex_unlock(&proc_count_mutex);
 	} else if (!args->turnoff_output) {
 		bool send_terminate = true;
-		char *wait_str;
 		struct pollfd fds;
 		struct timeval tstart;
 		resp_size = 1024;
@@ -323,14 +322,14 @@ extern char *run_command(run_command_args_t *args)
 		}
 		/* Only send SIGTERM if the script isn't exiting normally. */
 		if (send_terminate) {
-			killpg(cpid, SIGTERM);
-			wait_str = xstrdup_printf("SIGTERM %s",
-						  args->script_type);
-			run_command_waitpid_timeout(wait_str, cpid,
-						    args->status, 10, 0,
-						    args->tid, NULL);
-			xfree(wait_str);
+			killpg(cpid, SIGKILL);
+			waitpid(cpid, args->status, 0);
 		} else {
+			/*
+			 * If the STDOUT is closed from the script we may reach
+			 * this point without any input in pfd[0], so just wait
+			 * for the process here until args->max_wait.
+			 */
 			run_command_waitpid_timeout(args->script_type,
 						    cpid, args->status,
 						    args->max_wait,
