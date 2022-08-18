@@ -707,6 +707,18 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 	return 0;
 }
 
+extern char *slurm_sort_node_list_str(char *node_list)
+{
+	char *sorted_node_list;
+	hostset_t hs;
+
+	hs = hostset_create(node_list);
+	sorted_node_list = hostset_ranged_string_xmalloc(hs);
+	hostset_destroy(hs);
+
+	return sorted_node_list;
+}
+
 extern slurm_selected_step_t *slurm_parse_step_str(char *name)
 {
 	slurm_selected_step_t *selected_step;

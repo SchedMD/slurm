@@ -1443,6 +1443,14 @@ extern int slurm_find_char_in_list(void *x, void *key);
 extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(void *, void *);
 
+/*
+ * Sort an unordered node_list string and remove duplicate node names.
+ *
+ * Returns an xmalloc'd node_list that is sorted.
+ * Caller must xfree() return value.
+ */
+extern char *slurm_sort_node_list_str(char *node_list);
+
 extern slurm_selected_step_t *slurm_parse_step_str(char *name);
 
 extern resource_allocation_response_msg_t *
