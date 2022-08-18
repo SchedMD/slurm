@@ -96,41 +96,33 @@ applies.
 
 .SH "EXAMPLE"
 .TP
-\fB/etc/slurm/job_container.conf\fR:
-.IP
-.nf
-###
-# Sample job_container.conf file 1
-# Define 2 basepaths
-# The first will only be on largemem[1\-2] and it will automatically created.
-# The second will only be on gpu[1\-10], will be expected to exist and will run
-#     an initscript before each job.
-###
-NodeName=largemem[1\-2] AutoBasePath=true BasePath=/var/nvme/storage
-NodeName=gpu[1\-10] BasePath=/var/nvme/storage InitScript=/etc/slurm/init.sh
-.fi
-
-.nf
-###
-# Sample job_container.conf file 2
-# Define 1 basepath that will be on all nodes and automatically created.
-###
-AutoBasePath=true
-BasePath=/var/nvme/storage
-.fi
-
-.TP
 \fB/etc/slurm/slurm.conf\fR:
 These are the entries required in \fBslurm.conf\fR to activate the
 job_container/tmpfs plugin.
 .IP
 .nf
-###
-# Slurm configuration need to use job_container/tmpfs plugin
-###
 JobContainerType=job_container/tmpfs
 PrologFlags=Contain
 .fi
+
+.TP
+\fB/etc/slurm/job_container.conf\fR:
+The first sample file will define 1 basepath for all nodes and it will be
+automatically created.
+.nf
+AutoBasePath=true
+BasePath=/var/nvme/storage
+.fi
+
+The second sample file will define 2 basepaths.
+The first will only be on largemem[1\-2] and it will be automatically created.
+The second will only be on gpu[1\-10], will be expected to exist and will run
+an initscript before each job.
+.nf
+NodeName=largemem[1\-2] AutoBasePath=true BasePath=/var/nvme/storage_a
+NodeName=gpu[1\-10] BasePath=/var/nvme/storage_b InitScript=/etc/slurm/init.sh
+.fi
+.IP
 
 .SH "COPYING"
 Copyright (C) 2021 Regents of the University of California
@@ -154,4 +146,5 @@ details.
 
 .SH "SEE ALSO"
 .LP
+
 \fBslurm.conf\fR(5)
