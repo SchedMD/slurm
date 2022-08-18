@@ -364,6 +364,7 @@ extern int run_command_waitpid_timeout(
 	int rc;
 	int options = WNOHANG;
 	int save_timeout_ms = timeout_ms;
+	bool killed_pg = false;
 
 	if (timeout_ms <= 0 || timeout_ms == NO_VAL16)
 		options = 0;
@@ -379,6 +380,7 @@ extern int run_command_waitpid_timeout(
 			error("%s: killing %s on shutdown",
 			      __func__, name);
 			killpg(pid, SIGKILL);
+			killed_pg = true;
 			options = 0;
 		} else if (tid && track_script_killed(tid, 0, false)) {
 			/*
@@ -387,6 +389,7 @@ extern int run_command_waitpid_timeout(
 			 * if it does not.
 			 */
 			killpg(pid, SIGKILL);
+			killed_pg = true;
 			options = 0;
 		} else if (timeout_ms <= 0) {
 			error("%s%stimeout after %d ms: killing pgid %d",
@@ -394,6 +397,7 @@ extern int run_command_waitpid_timeout(
 			      name != NULL ? ": " : "",
 			      save_timeout_ms, pid);
 			killpg(pid, SIGKILL);
+			killed_pg = true;
 			options = 0;
 			if (timed_out)
 				*timed_out = true;
@@ -404,6 +408,7 @@ extern int run_command_waitpid_timeout(
 		}
 	}
 
-	killpg(pid, SIGKILL);  /* kill children too */
+	if (!killed_pg)
+		killpg(pid, SIGKILL);  /* kill children too */
 	return rc;
 }
