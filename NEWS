@@ -7,8 +7,6 @@ documents those changes that are of interest to users and administrators.
     command.
  -- Fix minor memory leak when dealing with gres with multiple files.
  -- Fix printing for no_consume gres in scontrol show job.
- -- sinfo - Fix truncation of very large values when outputting memory and
-    temporary disk values.
 
 * Changes in Slurm 22.05.3
 ==========================
