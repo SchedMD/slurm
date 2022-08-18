@@ -1128,7 +1128,7 @@ static void *_init_power_save(void *arg)
         /* Locks: Write jobs and nodes */
         slurmctld_lock_t node_write_lock = {
                 NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-	time_t now, boot_time = 0, last_power_scan = 0;
+	time_t now, last_power_scan = 0;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "powersave", NULL, NULL, NULL) < 0) {
@@ -1165,9 +1165,6 @@ static void *_init_power_save(void *arg)
 		}
 
 		now = time(NULL);
-		if (boot_time == 0)
-			boot_time = now;
-
 		if ((now >= (last_power_scan + power_save_min_interval)) &&
 		    ((last_node_update >= last_power_scan) ||
 		     (now >= (last_power_scan + power_save_interval)))) {
