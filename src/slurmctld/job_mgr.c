@@ -19001,5 +19001,8 @@ extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap)
 	if (node_inx == -1)
 		return -1;
 
+	if (!bit_test(node_bitmap, node_inx))
+		return -1;
+
 	return bit_set_count_range(node_bitmap, 0, node_inx);
 }
