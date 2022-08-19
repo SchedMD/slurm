@@ -65,6 +65,7 @@
 #define OPT_LONG_FLAGS		0x108
 #define OPT_LONG_BURST_BUFFER	0x109
 #define OPT_LONG_DRAINING 0x10a
+#define OPT_LONG_AUTOCOMP	0x10b
 
 /* getopt_long options, integers but not characters */
 
@@ -87,6 +88,7 @@ extern void parse_command_line(int argc, char **argv)
 	uid_t some_uid;
 	long tmp_l;
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"primary_slurmctld_failure",           no_argument, 0, 'a'},
 		{"primary_slurmctld_resumed_operation", no_argument, 0, 'A'},
 		{"primary_slurmctld_resumed_control",   no_argument, 0, 'b'},
@@ -295,6 +297,10 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case (int) OPT_LONG_DRAINING:
 			params.node_draining = true;
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
 			break;
 		}
 	}

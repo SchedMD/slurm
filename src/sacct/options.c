@@ -59,6 +59,7 @@
 #define OPT_LONG_ENV       0x108
 #define OPT_LONG_JSON      0x109
 #define OPT_LONG_YAML      0x110
+#define OPT_LONG_AUTOCOMP  0x111
 
 #define JOB_HASH_SIZE 1000
 
@@ -578,6 +579,7 @@ extern void parse_command_line(int argc, char **argv)
 	bool set;
 
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
                 {"allusers",       no_argument,       0,    'a'},
                 {"accounts",       required_argument, 0,    'A'},
                 {"allocations",    no_argument,       0,    'X'},
@@ -930,6 +932,10 @@ extern void parse_command_line(int argc, char **argv)
 		case OPT_LONG_YAML:
 			params.mimetype = MIME_TYPE_YAML;
 			data_init(MIME_TYPE_YAML_PLUGIN, NULL);
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
 			break;
 		case ':':
 		case '?':	/* getopt() has explained it */

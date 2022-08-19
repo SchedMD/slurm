@@ -83,13 +83,18 @@
 
 static void _help(void);
 static void _usage(void);
+static void _autocomplete(const char *query);
 
 /*---- global variables, defined in opt.h ----*/
 int	error_exit = 1;
 int	immediate_exit = 1;
 srun_opt_t sropt;
-slurm_opt_t opt =
-	{ .srun_opt = &sropt, .help_func = _help, .usage_func = _usage };
+slurm_opt_t opt = {
+	.srun_opt = &sropt,
+	.help_func = _help,
+	.usage_func = _usage,
+	.autocomplete_func = _autocomplete,
+};
 List 	opt_list = NULL;
 int	pass_number = 0;
 time_t	srun_begin_time = 0;
@@ -1482,6 +1487,17 @@ extern int   spank_unset_job_env(const char *name)
 static bool _under_parallel_debugger (void)
 {
 	return (MPIR_being_debugged != 0);
+}
+
+static void _autocomplete(const char *query)
+{
+	char *opt_string = NULL;
+	struct option *optz = slurm_option_table_create(&opt, &opt_string);
+
+	suggest_completion(optz, query);
+
+	xfree(opt_string);
+	slurm_option_table_destroy(optz);
 }
 
 static void _usage(void)

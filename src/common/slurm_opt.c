@@ -36,6 +36,7 @@
 
 #include "config.h"
 
+#include <ctype.h>
 #include <getopt.h>
 #include <sys/param.h>
 
@@ -656,6 +657,31 @@ static slurm_cli_opt_t slurm_opt_bbf = {
 	.set_func_data = arg_set_data_burst_buffer_file,
 	.get_func = arg_get_burst_buffer_file,
 	.reset_func = arg_reset_burst_buffer_file,
+};
+
+static int arg_set_autocomplete(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->autocomplete_func)
+		(opt->autocomplete_func)(arg);
+
+	exit(0);
+	return SLURM_SUCCESS;
+}
+static char *arg_get_autocomplete(slurm_opt_t *opt)
+{
+	return NULL; /* no op */
+}
+static void arg_reset_autocomplete(slurm_opt_t *opt)
+{
+	/* no op */
+}
+static slurm_cli_opt_t slurm_opt_autocomplete = {
+	.name = "autocomplete",
+	.has_arg = required_argument,
+	.val = LONG_OPT_COMPLETE_FLAG,
+	.set_func = arg_set_autocomplete,
+	.get_func = arg_get_autocomplete,
+	.reset_func = arg_reset_autocomplete,
 };
 
 static int arg_set_bcast(slurm_opt_t *opt, const char *arg)
@@ -5070,6 +5096,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_alloc_nodelist,
 	&slurm_opt_array,
 	&slurm_opt_argv,
+	&slurm_opt_autocomplete,
 	&slurm_opt_batch,
 	&slurm_opt_bcast,
 	&slurm_opt_bcast_exclude,
@@ -6293,4 +6320,57 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	}
 
 	return job_desc;
+}
+
+/*
+ * Compatible with shell/bash completions.
+ */
+extern void suggest_completion(struct option *opts, const char *query)
+{
+	char *suggest = NULL, *flag = NULL, *suffix = NULL;
+	bool query_short = false, query_long = false;
+	int i = 0;
+	char ifs = '\n';
+
+	/* Bail on invalid input. */
+	if ((!opts) || (!query) || (query[0] == '\0'))
+		return;
+
+	/*
+	 * It is desirable to be able to query just for short or long flags.
+	 * Being able to query both flag types under certain circumstances
+	 * allows flexibility and convenience.
+	 */
+	query_short = (query[0] == '-') || isalpha(query[0]);
+	query_long = (strlen(query) > 1) || isalpha(query[0]);
+
+	for (i = 0; opts[i].name || opts[i].val; i++) {
+		/* Handle short flags */
+		if (isalpha(opts[i].val) && query_short) {
+			flag = xstrdup_printf("-%c", (char)opts[i].val);
+			if (xstrstr(flag, query))
+				xstrfmtcat(suggest, "%s%c", flag, ifs);
+
+			xfree(flag);
+		}
+
+		/* Handle long flags */
+		if (opts[i].name && query_long) {
+			if (opts[i].has_arg)
+				suffix = "=";
+			else
+				suffix = "";
+
+			flag = xstrdup_printf("--%s%s", opts[i].name, suffix);
+			if (xstrstr(flag, query))
+				xstrfmtcat(suggest, "%s%c", flag, ifs);
+
+			xfree(flag);
+		}
+	}
+
+	if (suggest)
+		fprintf(stdout, "%s\n", suggest);
+
+	xfree(suggest);
 }

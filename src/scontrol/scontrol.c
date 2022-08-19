@@ -51,6 +51,7 @@
 #define OPT_LONG_LOCAL   0x103
 #define OPT_LONG_SIBLING 0x104
 #define OPT_LONG_FEDR    0x105
+#define OPT_LONG_AUTOCOMP 0x106
 
 /* Global externs from scontrol.h */
 char *command_name;
@@ -103,6 +104,7 @@ int main(int argc, char **argv)
 
 	int option_index;
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"all",      0, 0, 'a'},
 		{"cluster",  1, 0, 'M'},
 		{"clusters", 1, 0, 'M'},
@@ -218,6 +220,10 @@ int main(int argc, char **argv)
 		case (int)'V':
 			_print_version();
 			exit(exit_code);
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
 			break;
 		default:
 			exit_code = 1;

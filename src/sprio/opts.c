@@ -58,6 +58,7 @@
 #define OPT_LONG_LOCAL     0x102
 #define OPT_LONG_SIBLING   0x103
 #define OPT_LONG_FEDR      0x104
+#define OPT_LONG_AUTOCOMP  0x105
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -103,6 +104,7 @@ parse_command_line( int argc, char* *argv )
 	bool override_format_env = false;
 
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"noheader",   no_argument,       0, 'h'},
 		{"jobs",       optional_argument, 0, 'j'},
 		{"long",       no_argument,       0, 'l'},
@@ -205,6 +207,10 @@ parse_command_line( int argc, char* *argv )
 		case OPT_LONG_USAGE:
 			_usage();
 			exit(0);
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
+			break;
 		}
 	}
 

@@ -94,6 +94,7 @@ documents those changes that are of interest to users and administrators.
     determine the next start time.
  -- serializer/url-encoded - interpet query keys without a value (flags) to be
     true instead of NULL.
+ -- Add --autocomplete= option to all client commands.
 
 * Changes in Slurm 22.05.6
 ==========================

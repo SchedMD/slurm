@@ -85,11 +85,16 @@
 
 static void _help(void);
 static void _usage(void);
+static void _autocomplete(const char *query);
 
 /*---- global variables, defined in opt.h ----*/
 sbatch_opt_t sbopt;
-slurm_opt_t opt =
-	{ .sbatch_opt = &sbopt, .help_func = _help, .usage_func = _usage };
+slurm_opt_t opt = {
+	.sbatch_opt = &sbopt,
+	.help_func = _help,
+	.usage_func = _usage,
+	.autocomplete_func = _autocomplete,
+};
 sbatch_env_t het_job_env;
 int   error_exit = 1;
 bool  is_het_job = false;
@@ -1109,6 +1114,17 @@ static void _fullpath(char **filename, const char *cwd)
 	xstrcat(ptr, *filename);
 	xfree(*filename);
 	*filename = ptr;
+}
+
+static void _autocomplete(const char *query)
+{
+	char *opt_string = NULL;
+	struct option *optz = slurm_option_table_create(&opt, &opt_string);
+
+	suggest_completion(optz, query);
+
+	xfree(opt_string);
+	slurm_option_table_destroy(optz);
 }
 
 static void _usage(void)

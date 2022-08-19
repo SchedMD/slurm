@@ -68,6 +68,7 @@
 #define OPT_LONG_WCKEY   0x103
 #define OPT_LONG_SIBLING 0x104
 #define OPT_LONG_ME      0x105
+#define OPT_LONG_AUTOCOMP 0x106
 
 /* forward declarations of static functions
  *
@@ -337,6 +338,7 @@ static void _opt_args(int argc, char **argv)
 	char **rest = NULL;
 	int opt_char, option_index;
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"account",	required_argument, 0, 'A'},
 		{"batch",	no_argument,       0, 'b'},
 		{"ctld",	no_argument,	   0, OPT_LONG_CTLD},
@@ -448,6 +450,10 @@ static void _opt_args(int argc, char **argv)
 		case OPT_LONG_USAGE:
 			_usage();
 			exit(0);
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
+			break;
 		}
 	}
 

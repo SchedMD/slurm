@@ -49,6 +49,7 @@
 #define OPT_LONG_USAGE 0x101
 #define OPT_LONG_JSON 0x102
 #define OPT_LONG_YAML 0x103
+#define OPT_LONG_AUTOCOMP 0x104
 
 static void  _help( void );
 static void  _usage( void );
@@ -73,6 +74,7 @@ extern void parse_command_line(int argc, char **argv)
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"all",		no_argument,	0,	'a'},
 		{"help",	no_argument,	0,	'h'},
 		{"reset",	no_argument,	0,	'r'},
@@ -145,6 +147,10 @@ extern void parse_command_line(int argc, char **argv)
 			case OPT_LONG_YAML:
 				params.mimetype = MIME_TYPE_YAML;
 				(void) data_init(MIME_TYPE_YAML_PLUGIN, NULL);
+				break;
+			case OPT_LONG_AUTOCOMP:
+				suggest_completion(long_options, optarg);
+				exit(0);
 				break;
 		}
 	}

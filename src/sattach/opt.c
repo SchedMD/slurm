@@ -63,6 +63,7 @@
 #define LONG_OPT_OUT_FILTER    0x103
 #define LONG_OPT_ERR_FILTER    0x104
 #define LONG_OPT_PTY           0x105
+#define OPT_LONG_AUTOCOMP      0x106
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -237,6 +238,7 @@ void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"help", 	no_argument,       0, 'h'},
 		{"label",       no_argument,       0, 'l'},
 		{"quiet",       no_argument,       0, 'Q'},
@@ -317,6 +319,10 @@ void set_options(const int argc, char **argv)
 			error("--pty not currently supported on this system "
 			      "type");
 #endif
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
 			break;
 		default:
 			error("Unrecognized command line parameter %c",

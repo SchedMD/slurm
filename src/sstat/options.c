@@ -43,6 +43,7 @@
 
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_NOCONVERT 0x100
+#define OPT_LONG_AUTOCOMP  0x101
 
 void _help_fields_msg(void);
 void _help_msg(void);
@@ -189,6 +190,7 @@ void parse_command_line(int argc, char **argv)
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"allsteps", 0, 0, 'a'},
 		{"helpformat", 0, 0, 'e'},
 		{"help", 0, 0, 'h'},
@@ -263,6 +265,10 @@ void parse_command_line(int argc, char **argv)
 
 		case 'V':
 			print_slurm_version();
+			exit(0);
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
 			exit(0);
 			break;
 		case ':':

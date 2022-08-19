@@ -78,11 +78,16 @@
 
 static void _help(void);
 static void _usage(void);
+static void _autocomplete(const char *query);
 
 /*---- global variables, defined in opt.h ----*/
 salloc_opt_t saopt;
-slurm_opt_t opt =
-	{ .salloc_opt = &saopt, .help_func = _help, .usage_func = _usage };
+slurm_opt_t opt = {
+	.salloc_opt = &saopt,
+	.help_func = _help,
+	.usage_func = _usage,
+	.autocomplete_func = _autocomplete,
+};
 int error_exit = 1;
 bool first_pass = true;
 int immediate_exit = 1;
@@ -799,6 +804,17 @@ extern int   spank_unset_job_env(const char *name)
 	}
 
 	return 0;	/* not found */
+}
+
+static void _autocomplete(const char *query)
+{
+	char *opt_string = NULL;
+	struct option *optz = slurm_option_table_create(&opt, &opt_string);
+
+	suggest_completion(optz, query);
+
+	xfree(opt_string);
+	slurm_option_table_destroy(optz);
 }
 
 static void _usage(void)

@@ -59,6 +59,7 @@
 #define OPT_LONG_HELP      0x101
 #define OPT_LONG_USAGE     0x102
 #define OPT_LONG_SEND_LIBS 0x103
+#define OPT_LONG_AUTOCOMP  0x104
 
 
 /* getopt_long options, integers but not characters */
@@ -78,6 +79,7 @@ extern void parse_command_line(int argc, char **argv)
 	int opt_char, ret;
 	int option_index;
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"compress",  optional_argument, 0, 'C'},
 		{"exclude",   required_argument, 0, OPT_LONG_EXCLUDE},
 		{"fanout",    required_argument, 0, 'F'},
@@ -198,6 +200,10 @@ extern void parse_command_line(int argc, char **argv)
 		case (int) OPT_LONG_USAGE:
 			_usage();
 			exit(0);
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
+			break;
 		}
 	}
 

@@ -46,6 +46,8 @@
 #include "src/common/proc_args.h"
 #include "src/common/strlcpy.h"
 
+#define OPT_LONG_AUTOCOMP 0x100
+
 char *command_name;
 int exit_code;		/* sacctmgr's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
@@ -86,6 +88,7 @@ int main(int argc, char **argv)
 	uint16_t persist_conn_flags = 0;
 
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"help",     0, 0, 'h'},
 		{"usage",    0, 0, 'h'},
 		{"immediate",0, 0, 'i'},
@@ -156,6 +159,10 @@ int main(int argc, char **argv)
 		case (int)'V':
 			_print_version();
 			exit(exit_code);
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
 			break;
 		default:
 			exit_code = 1;

@@ -57,6 +57,8 @@
 
 #include "scrontab.h"
 
+#define OPT_LONG_AUTOCOMP 0x100
+
 static void _usage(void);
 
 decl_static_data(default_crontab_txt);
@@ -90,34 +92,49 @@ static void _usage(void)
 static void _parse_args(int argc, char **argv)
 {
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	int c = 0;
+	int c = 0, option_index = 0;
+
+	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
+		/* invalid option definition; needed for suggest_completion() */
+		{NULL, no_argument, 0, 'e'},
+		{NULL, no_argument, 0, 'l'},
+		{NULL, no_argument, 0, 'r'},
+		{NULL, required_argument, 0, 'u'},
+		{NULL, no_argument, 0, 'v'},
+		{NULL, 0, 0, 0}};
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	uid = getuid();
 	gid = getgid();
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "elru:v")) != -1) {
+	while ((c = getopt_long(argc, argv, "elru:v",
+				long_options, &option_index)) != -1) {
 		switch (c) {
-		case 'e':
+		case (int)'e':
 			if (!isatty(STDIN_FILENO))
 				fatal("Standard input is not a TTY");
 			edit_only = true;
 			break;
-		case 'l':
+		case (int)'l':
 			list_only = true;
 			break;
-		case 'r':
+		case (int)'r':
 			remove_only = true;
 			break;
-		case 'u':
+		case (int)'u':
 			if (uid_from_string(optarg, &uid))
 				fatal("Could not find user %s", optarg);
 			gid = gid_from_uid(uid);
 			break;
-		case 'v':
+		case (int)'v':
 			logopt.stderr_level++;
 			log_alter(logopt, 0, NULL);
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
 			break;
 		default:
 			_usage();

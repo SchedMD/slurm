@@ -51,6 +51,7 @@
 
 #define OPT_LONG_LOCAL		0x101
 #define OPT_LONG_FEDR		0x102
+#define OPT_LONG_AUTOCOMP	0x103
 
 char *command_name;
 int exit_code;		/* sreport's exit code, =1 on any error at any time */
@@ -94,6 +95,7 @@ main (int argc, char **argv)
 	int option_index;
 	uint16_t persist_conn_flags = 0;
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"all_clusters", 0, 0, 'a'},
 		{"cluster",  1, 0, 'M'},
 		{"federation", no_argument, 0, OPT_LONG_FEDR},
@@ -197,6 +199,10 @@ main (int argc, char **argv)
 		case (int)'V':
 			_print_version();
 			exit(exit_code);
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
 			break;
 		default:
 			fprintf(stderr, "getopt error, returned %c\n",

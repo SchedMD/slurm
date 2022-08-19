@@ -83,6 +83,7 @@ enum {
 	LONG_OPT_BURST_BUFFER_SPEC,
 	LONG_OPT_CLUSTER,
 	LONG_OPT_CLUSTER_CONSTRAINT,
+	LONG_OPT_COMPLETE_FLAG,
 	LONG_OPT_COMMENT,
 	LONG_OPT_COMPRESS,
 	LONG_OPT_CONTAINER,
@@ -294,6 +295,7 @@ typedef struct {
 
 	void (*help_func)(void);	/* Print --help info		*/
 	void (*usage_func)(void);	/* Print --usage info		*/
+	void (*autocomplete_func)(const char *); /* Print --autocomplete= info*/
 
 	int argc;			/* command/script argc		*/
 	char **argv;			/* command/script argv		*/
@@ -564,5 +566,10 @@ extern char *slurm_option_get_argv_str(const int argc, char **argv);
  */
 extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 						 bool set_defaults);
+
+/*
+ * Compatible with shell/bash completions.
+ */
+extern void suggest_completion(struct option *opts, const char *query);
 
 #endif	/* _SLURM_OPT_H_ */

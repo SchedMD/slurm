@@ -61,6 +61,7 @@
 #define OPT_LONG_FEDR      0x105
 #define OPT_LONG_JSON      0x106
 #define OPT_LONG_YAML      0x107
+#define OPT_LONG_AUTOCOMP  0x108
 
 /* FUNCTIONS */
 static List  _build_state_list( char* str );
@@ -93,6 +94,7 @@ extern void parse_command_line(int argc, char **argv)
 	bool opt_a_set = false, opt_p_set = false;
 	bool env_a_set = false, env_p_set = false;
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"all",       no_argument,       0, 'a'},
 		{"dead",      no_argument,       0, 'd'},
 		{"exact",     no_argument,       0, 'e'},
@@ -307,6 +309,10 @@ extern void parse_command_line(int argc, char **argv)
 		case OPT_LONG_YAML:
 			params.mimetype = MIME_TYPE_YAML;
 			data_init(MIME_TYPE_YAML_PLUGIN, NULL);
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
 			break;
 		}
 	}

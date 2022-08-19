@@ -68,6 +68,7 @@
 #define OPT_LONG_ME           0x109
 #define OPT_LONG_JSON         0x110
 #define OPT_LONG_YAML         0x111
+#define OPT_LONG_AUTOCOMP     0x112
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -100,6 +101,7 @@ parse_command_line( int argc, char* *argv )
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
+		{"autocomplete", required_argument, 0, OPT_LONG_AUTOCOMP},
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
 		{"array",      no_argument,       0, 'r'},
@@ -362,6 +364,10 @@ parse_command_line( int argc, char* *argv )
 		case OPT_LONG_YAML:
 			params.mimetype = MIME_TYPE_YAML;
 			data_init(MIME_TYPE_YAML_PLUGIN, NULL);
+			break;
+		case OPT_LONG_AUTOCOMP:
+			suggest_completion(long_options, optarg);
+			exit(0);
 			break;
 		}
 	}
