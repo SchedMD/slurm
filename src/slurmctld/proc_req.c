@@ -165,6 +165,12 @@ extern diag_stats_t slurmctld_diag_stats;
 static __thread bool drop_priv = false;
 #endif
 
+typedef struct {
+	uid_t uid;
+	const char *id;
+	list_t *step_list;
+} find_job_by_container_id_args_t;
+
 extern void record_rpc_stats(slurm_msg_t *msg, long delta)
 {
 	slurm_mutex_lock(&rpc_mutex);
@@ -3381,6 +3387,104 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 		pthread_kill(slurmctld_config.thread_id_sig, SIGABRT);
 }
 
+static int _find_stepid_by_container_id(void *x, void *arg)
+{
+	find_job_by_container_id_args_t *args = arg;
+	step_record_t *step_ptr = x;
+	slurm_step_id_t *step_id;
+
+	if (xstrcmp(args->id, step_ptr->container_id))
+		return SLURM_SUCCESS;
+
+	step_id = xmalloc(sizeof(*step_id));
+	*step_id = step_ptr->step_id;
+
+	list_append(args->step_list, step_id);
+
+	return SLURM_SUCCESS;
+}
+
+static int _find_stepid_by_userid(void *x, void *arg)
+{
+	find_job_by_container_id_args_t *args = arg;
+	job_record_t *job_ptr = x;
+
+	if ((args->uid != SLURM_AUTH_NOBODY) &&
+	    (args->uid != job_ptr->user_id)) {
+		/* skipping per non-matching user */
+		return SLURM_SUCCESS;
+	}
+
+	/* walk steps for matching container_id */
+	if (list_for_each_ro(job_ptr->step_list, _find_stepid_by_container_id,
+			     args) < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+static void _find_stepids_by_container_id(uid_t uid, const char *id,
+					  list_t **step_list)
+{
+	slurmctld_lock_t job_read_lock =
+		{ .conf = READ_LOCK, .job = READ_LOCK };
+	find_job_by_container_id_args_t args = { .uid = uid, .id = id };
+	DEF_TIMERS;
+
+	xassert(id && id[0]);
+
+	if (!*step_list)
+		*step_list = list_create((ListDelF) slurm_free_step_id);
+	args.step_list = *step_list;
+
+	START_TIMER;
+	lock_slurmctld(job_read_lock);
+	list_for_each_ro(job_list, _find_stepid_by_userid, &args);
+	unlock_slurmctld(job_read_lock);
+	END_TIMER2(__func__);
+}
+
+static void _slurm_rpc_step_by_container_id(slurm_msg_t *msg)
+{
+	container_id_request_msg_t *req = msg->data;
+	container_id_response_msg_t resp = {0};
+	int rc = SLURM_UNEXPECTED_MSG_ERROR;
+
+	log_flag(PROTOCOL, "%s: got REQUEST_STEP_BY_CONTAINER_ID from %s auth_uid=%u flags=0x%x uid=%u container_id=%s",
+		 __func__, (msg->auth_uid_set ? "validated" : "suspect"),
+		 msg->auth_uid, req->show_flags, req->uid, req->container_id);
+
+	if (!msg->auth_uid_set) {
+		/* this should never happen? */
+		rc = ESLURM_AUTH_CRED_INVALID;
+	} else if ((msg->auth_uid != req->uid) &&
+		   !validate_super_user(msg->auth_uid)) {
+		error("%s: Security violation: REQUEST_STEP_BY_CONTAINER_ID from uid=%u for uid=%u",
+		      __func__, msg->auth_uid, req->uid);
+		rc = ESLURM_USER_ID_MISSING;
+	} else if (!req->container_id || !req->container_id[0]) {
+		rc = ESLURM_INVALID_CONTAINER_ID;
+	} else {
+		slurm_msg_t response_msg;
+
+		response_init(&response_msg, msg, RESPONSE_STEP_BY_CONTAINER_ID,
+			      &resp);
+		response_msg.restrict_uid = msg->auth_uid;
+		response_msg.restrict_uid_set = true;
+		response_msg.data_size = sizeof(resp);
+
+		if (req->container_id && req->container_id[0])
+			_find_stepids_by_container_id(req->uid,
+						      req->container_id,
+						      &resp.steps);
+
+		(void) slurm_send_node_msg(msg->conn_fd, &response_msg);
+		return;
+	}
+
+	slurm_send_rc_msg(msg, rc);
+}
+
 /* _slurm_rpc_step_complete - process step completion RPC to note the
  *      completion of a job step on at least some nodes.
  *	If the job step is complete, it may
@@ -6411,6 +6515,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_BURST_BUFFER_INFO,
 		.func = _slurm_rpc_burst_buffer_info,
+	},{
+		.msg_type = REQUEST_STEP_BY_CONTAINER_ID,
+		.func = _slurm_rpc_step_by_container_id,
 	},{
 		.msg_type = REQUEST_STEP_COMPLETE,
 		.func = _slurm_rpc_step_complete,

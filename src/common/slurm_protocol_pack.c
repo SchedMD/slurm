@@ -12289,6 +12289,95 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_container_id_request_msg(const slurm_msg_t *smsg,
+					   buf_t *buffer)
+{
+	container_id_request_msg_t *msg = smsg->data;
+	xassert(msg);
+
+	if (smsg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		pack16(msg->show_flags, buffer);
+		packstr(msg->container_id, buffer);
+		pack32(msg->uid, buffer);
+	}
+}
+
+static int _unpack_container_id_request_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_id_request_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpack16(&msg->show_flags, buffer);
+		safe_unpackstr(&msg->container_id, buffer);
+		safe_unpack32(&msg->uid, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_container_id_request_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_each_container_id_step(void *object,
+					 uint16_t protocol_version,
+					 buf_t *buffer)
+{
+	slurm_step_id_t *step = object;
+	pack_step_id(step, buffer, protocol_version);
+}
+
+static void _pack_container_id_response_msg(const slurm_msg_t *smsg,
+					    buf_t *buffer)
+{
+	container_id_response_msg_t *msg = smsg->data;
+	xassert(msg);
+
+	if (smsg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		(void) slurm_pack_list(msg->steps,
+				       _pack_each_container_id_step,
+				       buffer, smsg->protocol_version);
+	}
+}
+
+static int _unpack_each_container_id(void **object, uint16_t protocol_version,
+				     buf_t *buffer)
+{
+	slurm_step_id_t *step = xmalloc(sizeof(*step));
+
+	if (unpack_step_id_members(step, buffer, protocol_version)) {
+		slurm_free_step_id(step);
+		return SLURM_ERROR;
+	}
+
+	*object = step;
+
+	return SLURM_SUCCESS;
+}
+
+static int _unpack_container_id_response_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	container_id_response_msg_t *msg = xmalloc(sizeof(*msg));
+
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		if (slurm_unpack_list(&msg->steps, _unpack_each_container_id,
+				      (ListDelF) slurm_free_step_id, buffer,
+				      smsg->protocol_version))
+			goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_container_id_response_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
 /* pack_msg
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
@@ -12537,6 +12626,12 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_job_step_info_req_msg((job_step_info_request_msg_t
 					     *) msg->data, buffer,
 					    msg->protocol_version);
+		break;
+	case REQUEST_STEP_BY_CONTAINER_ID:
+		_pack_container_id_request_msg(msg, buffer);
+		break;
+	case RESPONSE_STEP_BY_CONTAINER_ID:
+		_pack_container_id_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_INFO:
 		_pack_job_info_request_msg((job_info_request_msg_t *)
@@ -12943,6 +13038,12 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 						 **)
 						& (msg->data), buffer,
 						msg->protocol_version);
+		break;
+	case REQUEST_STEP_BY_CONTAINER_ID:
+		rc = _unpack_container_id_request_msg(msg, buffer);
+		break;
+	case RESPONSE_STEP_BY_CONTAINER_ID:
+		rc = _unpack_container_id_response_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_INFO:
 		rc = _unpack_job_info_msg((job_info_msg_t **) & (msg->data),

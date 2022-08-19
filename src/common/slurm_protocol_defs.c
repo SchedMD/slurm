@@ -1181,6 +1181,26 @@ extern void slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg)
 	}
 }
 
+extern void slurm_free_container_id_request_msg(
+	container_id_request_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->container_id);
+	xfree(msg);
+}
+
+extern void slurm_free_container_id_response_msg(
+	container_id_response_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	FREE_NULL_LIST(msg->steps);
+	xfree(msg);
+}
+
 extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg)
 {
 	if (msg) {
@@ -5692,6 +5712,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case RESPONSE_UPDATE_CRONTAB:
 		slurm_free_crontab_update_response_msg(data);
+		break;
+	case REQUEST_STEP_BY_CONTAINER_ID:
+		slurm_free_container_id_request_msg(data);
+		break;
+	case RESPONSE_STEP_BY_CONTAINER_ID:
+		slurm_free_container_id_response_msg(data);
 		break;
 	default:
 		error("invalid type trying to be freed %u", type);

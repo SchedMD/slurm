@@ -370,8 +370,8 @@ typedef enum {
 	REQUEST_CANCEL_JOB_STEP,
 	DEFUNCT_RPC_5006,
 	REQUEST_UPDATE_JOB_STEP,
-	DEFUNCT_RPC_5008,
-	DEFUNCT_RPC_5009,
+	REQUEST_STEP_BY_CONTAINER_ID,
+	RESPONSE_STEP_BY_CONTAINER_ID,
 	DEFUNCT_RPC_5010,		/* 5010 */
 	DEFUNCT_RPC_5011,
 	DEFUNCT_RPC_5012,
@@ -661,6 +661,16 @@ typedef struct job_info_request_msg {
 	List   job_ids;		/* Optional list of job_ids, otherwise show all
 				 * jobs. */
 } job_info_request_msg_t;
+
+typedef struct {
+	uint16_t show_flags;
+	char *container_id;
+	uint32_t uid; /* optional filter by UID */
+} container_id_request_msg_t;
+
+typedef struct {
+	list_t *steps; /* list of slurm_step_id_t* */
+} container_id_response_msg_t;
 
 typedef struct job_step_info_request_msg {
 	time_t last_update;
@@ -1489,6 +1499,10 @@ extern void slurm_free_return_code_msg(return_code_msg_t * msg);
 extern void slurm_free_return_code2_msg(return_code2_msg_t *msg);
 extern void slurm_free_reroute_msg(reroute_msg_t *msg);
 extern void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg);
+extern void slurm_free_container_id_request_msg(
+	container_id_request_msg_t *msg);
+extern void slurm_free_container_id_response_msg(
+	container_id_response_msg_t *msg);
 extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg);
 extern void slurm_free_job_step_info_request_msg(
 		job_step_info_request_msg_t *msg);
