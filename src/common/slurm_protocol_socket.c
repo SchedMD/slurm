@@ -451,9 +451,11 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 
 		rc = recv(fd, &buffer[recvlen], (size - recvlen), flags);
 		if (rc < 0)  {
-			if ((errno == EINTR) || (errno == EAGAIN))
+			if ((errno == EINTR) || (errno == EAGAIN)) {
+				log_flag(NET, "%s: recv(fd:%d) got %m. retrying.",
+					 __func__, fd);
 				continue;
-			else {
+			} else {
 				debug("%s at %d of %zu, recv error: %m",
 				      __func__, recvlen, size);
 				slurm_seterrno(
