@@ -2425,9 +2425,9 @@ static int _restore_node_state(int recover,
 	}
 
 	if (hs) {
-		char node_names[128];
-		hostset_ranged_string(hs, sizeof(node_names), node_names);
+		char *node_names = hostset_ranged_string_xmalloc(hs);
 		info("Cleared POWER_SAVE flag from nodes %s", node_names);
+		xfree(node_names);
 		hostset_destroy(hs);
 		hs = NULL;
 	}
@@ -2442,10 +2442,10 @@ static int _restore_node_state(int recover,
 			hs = hostset_create(node_ptr->name);
 	}
 	if (hs) {
-		char node_names[128];
-		hostset_ranged_string(hs, sizeof(node_names), node_names);
+		char *node_names = hostset_ranged_string_xmalloc(hs);
 		error("Nodes added to configuration (%s)", node_names);
 		error("Reboot of all slurm daemons is recommended");
+		xfree(node_names);
 		hostset_destroy(hs);
 	}
 
@@ -3174,7 +3174,6 @@ static int _compare_hostnames(node_record_t **old_node_table,
 			      int node_count)
 {
 	int cc;
-	int set_size;
 	char *old_ranged;
 	char *ranged;
 	hostset_t old_set;
@@ -3196,13 +3195,8 @@ static int _compare_hostnames(node_record_t **old_node_table,
 		if (node_table && node_table[cc])
 			hostset_insert(set, node_table[cc]->name);
 
-	set_size = HOST_NAME_MAX * node_count + node_count + 1;
-
-	old_ranged = xmalloc(set_size);
-	ranged = xmalloc(set_size);
-
-	hostset_ranged_string(old_set, set_size, old_ranged);
-	hostset_ranged_string(set, set_size, ranged);
+	old_ranged = hostset_ranged_string_xmalloc(old_set);
+	ranged = hostset_ranged_string_xmalloc(set);
 
 	if (hostset_count(old_set) != hostset_count(set)) {
 		error("%s: node count has changed before reconfiguration "

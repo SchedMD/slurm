@@ -684,8 +684,7 @@ static void _build_full_nid_string(void)
 		error("%s: No nodes found", __func__);
 		return;
 	}
-	tmp_str = xmalloc(node_record_count * 6 + 2);
-	(void) hostset_ranged_string(hs, num_ent * 6, tmp_str);
+	tmp_str = hostset_ranged_string_xmalloc(hs);
 	hostset_destroy(hs);
 	if ((sep = strrchr(tmp_str, ']')))
 		sep[0] = '\0';

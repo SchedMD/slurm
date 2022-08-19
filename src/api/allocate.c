@@ -664,15 +664,17 @@ extern int slurm_het_job_will_run(List job_req_list)
 
 
 	if (rc == SLURM_SUCCESS) {
-		char node_list[1028] = "";
+		char *node_list = NULL;
 
 		if (hs)
-			hostset_ranged_string(hs, sizeof(node_list), node_list);
+			node_list = hostset_ranged_string_xmalloc(hs);
 		slurm_make_time_str(&first_start, buf, sizeof(buf));
 		info("Job %u to start at %s using %u processors on %s",
 		     first_job_id, buf, tot_proc_count, node_list);
 		if (job_list)
 			info("  Preempts: %s", job_list);
+
+		xfree(node_list);
 	}
 
 	if (hs)

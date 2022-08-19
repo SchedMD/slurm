@@ -18715,7 +18715,6 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 			job_record_t *het_job = NULL;
 			ListIterator iter;
 			hostset_t hs = NULL;
-			int hs_len = 0;
 			iter = list_iterator_create(job_ptr->het_job_list);
 			while ((het_job = list_next(iter))) {
 				if (job_ptr->het_job_id !=
@@ -18737,12 +18736,10 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 				} else {
 					hs = hostset_create(het_job->nodes);
 				}
-				hs_len += strlen(het_job->nodes) + 2;
 			}
 			list_iterator_destroy(iter);
 			if (hs) {
-				char *buf = xmalloc(hs_len);
-				(void) hostset_ranged_string(hs, hs_len, buf);
+				char *buf = hostset_ranged_string_xmalloc(hs);
 				/* Support for old hetjob terminology. */
 				setenvf(&my_env, "SLURM_PACK_JOB_NODELIST",
 					"%s", buf);

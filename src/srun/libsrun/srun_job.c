@@ -1015,7 +1015,7 @@ static char *_compress_het_job_nodelist(List used_resp_list)
 	char *aliases = NULL, *save_ptr = NULL, *tok, *tmp;
 	char *het_job_nodelist = NULL, *node_name;
 	hostset_t hs;
-	int cnt, i, j, k, len = 0;
+	int cnt, i, j, k;
 	uint16_t *cpus;
 	uint32_t *reps, cpu_inx;
 	bool have_aliases = false;
@@ -1030,7 +1030,6 @@ static char *_compress_het_job_nodelist(List used_resp_list)
 	while ((resp = list_next(resp_iter))) {
 		if (!resp->node_list)
 			continue;
-		len += strlen(resp->node_list);
 		hostset_insert(hs, resp->node_list);
 		het_job_resp = xmalloc(sizeof(het_job_resp_struct_t));
 		het_job_resp->node_cnt = resp->node_cnt;
@@ -1073,9 +1072,7 @@ static char *_compress_het_job_nodelist(List used_resp_list)
 	}
 	list_iterator_destroy(resp_iter);
 
-	len += (cnt + 16);
-	het_job_nodelist = xmalloc(len);
-	(void) hostset_ranged_string(hs, len, het_job_nodelist);
+	het_job_nodelist = hostset_ranged_string_xmalloc(hs);
 
 	cpu_inx = 0;
 	cnt = hostset_count(hs);

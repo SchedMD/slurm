@@ -744,10 +744,10 @@ extern int load_all_node_state ( bool state_only )
 
 fini:	info("Recovered state of %d nodes", node_cnt);
 	if (hs) {
-		char node_names[128];
-		hostset_ranged_string(hs, sizeof(node_names), node_names);
+		char *node_names = hostset_ranged_string_xmalloc(hs);
 		info("Cleared POWER_SAVE flag from nodes %s", node_names);
 		hostset_destroy(hs);
+		xfree(node_names);
 	}
 
 	if (down_nodes) {
