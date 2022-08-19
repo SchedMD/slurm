@@ -132,15 +132,15 @@ static void _print_devinfo(int dev, struct cxil_devinfo *info)
  * from the max value for this limit specified in the device info;
  * this will be used as the max value for the device that users can request
  */
-static void _adjust_limit(const char *name, int dev, int svc,
-			  struct cxi_limits *lim, uint16_t in_use,
-			  uint16_t *devmax)
+static void _adjust_limit(int rsrc, int dev, int svc, struct cxi_limits *lim,
+			  uint16_t *in_use, uint16_t *devmax)
 {
 	uint16_t oldmax = *devmax;
-	uint16_t adjust = MAX(lim->res, in_use);
+	uint16_t adjust = MAX(lim[rsrc].res, in_use[rsrc]);
 	*devmax -= adjust;
 	log_flag(SWITCH, "CXI dev/svc[%d][%d]: limits.%s.res/in_use %hu %hu (old/new max %hu %hu)",
-		 dev, svc, name, lim->res, in_use, oldmax, *devmax);
+		 dev, svc, cxi_rsrc_type_strs[rsrc], lim[rsrc].res,
+		 in_use[rsrc], oldmax, *devmax);
 }
 
 /*
@@ -157,13 +157,13 @@ static bool _adjust_dev_limits(int dev, struct cxil_devinfo *devinfo)
 	if (!cxi_devs[dev])
 		return true;
 	if ((rc = cxil_get_svc_list_p(cxi_devs[dev], &list))) {
-		error("Could not get service list for CXI device[%d] dev_id=%d (%s): %d",
-			dev, devinfo->dev_id, devinfo->device_name, rc);
+		error("Could not get service list for CXI dev_id=%d (%s): %s",
+		      devinfo->dev_id, devinfo->device_name, strerror(-rc));
 		return false;
 	}
 	for (svc = 0; svc < list->count; svc++) {
-		struct cxi_rsrc_limits *lim;
 		struct cxi_rsrc_use usage = { 0 };
+		struct cxi_limits *lim;
 
 		if (!list->descs[svc].is_system_svc) {
 			num_svc++;
@@ -174,37 +174,29 @@ static bool _adjust_dev_limits(int dev, struct cxil_devinfo *devinfo)
 		if ((rc = cxil_get_svc_rsrc_use_p(cxi_devs[dev],
 						  list->descs[svc].svc_id,
 						  &usage))) {
-			error("Could not get resource usage for CXI device[%d] dev_id=%d (%s) svc_id=%d: %d",
-				dev, devinfo->dev_id, devinfo->device_name,
-				list->descs[svc].svc_id, rc);
+			error("Could not get resource usage for CXI dev_id=%d (%s) svc_id=%d: %s",
+			      devinfo->dev_id, devinfo->device_name,
+			      list->descs[svc].svc_id, strerror(-rc));
 			// in_use value will be 0
 		}
 #endif
-		lim = &list->descs[svc].limits;
-		_adjust_limit("ptes", dev, svc, &lim->ptes,
-				usage.in_use[CXI_RSRC_TYPE_PTE],
-				&devinfo->num_ptes);
-		_adjust_limit("txqs", dev, svc, &lim->txqs,
-				usage.in_use[CXI_RSRC_TYPE_TXQ],
-				&devinfo->num_txqs);
-		_adjust_limit("tgqs", dev, svc, &lim->tgqs,
-				usage.in_use[CXI_RSRC_TYPE_TGQ],
-				&devinfo->num_tgqs);
-		_adjust_limit("eqs", dev, svc, &lim->eqs,
-				usage.in_use[CXI_RSRC_TYPE_EQ],
-				&devinfo->num_eqs);
-		_adjust_limit("cts", dev, svc, &lim->cts,
-				usage.in_use[CXI_RSRC_TYPE_CT],
-				&devinfo->num_cts);
-		_adjust_limit("acs", dev, svc, &lim->acs,
-				usage.in_use[CXI_RSRC_TYPE_LE],
-				&devinfo->num_acs);
-		_adjust_limit("tles", dev, svc, &lim->tles,
-				usage.in_use[CXI_RSRC_TYPE_TLE],
-				&devinfo->num_tles);
-		_adjust_limit("les", dev, svc, &lim->les,
-				usage.in_use[CXI_RSRC_TYPE_AC],
-				&devinfo->num_les);
+		lim = list->descs[svc].limits.type;
+		_adjust_limit(CXI_RSRC_TYPE_PTE, dev, svc, lim,
+			      usage.in_use, &devinfo->num_ptes);
+		_adjust_limit(CXI_RSRC_TYPE_TXQ, dev, svc, lim,
+			      usage.in_use, &devinfo->num_txqs);
+		_adjust_limit(CXI_RSRC_TYPE_TGQ, dev, svc, lim,
+			      usage.in_use, &devinfo->num_tgqs);
+		_adjust_limit(CXI_RSRC_TYPE_EQ, dev, svc, lim,
+			      usage.in_use, &devinfo->num_eqs);
+		_adjust_limit(CXI_RSRC_TYPE_CT, dev, svc, lim,
+			      usage.in_use, &devinfo->num_cts);
+		_adjust_limit(CXI_RSRC_TYPE_LE, dev, svc, lim,
+			      usage.in_use, &devinfo->num_acs);
+		_adjust_limit(CXI_RSRC_TYPE_TLE, dev, svc, lim,
+			      usage.in_use, &devinfo->num_tles);
+		_adjust_limit(CXI_RSRC_TYPE_AC, dev, svc, lim,
+			      usage.in_use, &devinfo->num_les);
 	}
 	log_flag(SWITCH, "CXI services=%d system=%d user=%d",
 		 list->count, num_system_svc, num_svc);
@@ -222,8 +214,8 @@ static bool _create_cxi_devs(slingshot_jobinfo_t *job)
 	int dev, rc;
 
 	if ((rc = cxil_get_device_list_p(&list))) {
-		error("Could not get a list of the CXI devices: %d %d",
-		      rc, errno);
+		error("Could not get a list of the CXI devices: %s",
+		      strerror(-rc));
 		return false;
 	}
 
@@ -240,8 +232,8 @@ static bool _create_cxi_devs(slingshot_jobinfo_t *job)
 	for (dev = 0; dev < cxi_ndevs; dev++) {
 		struct cxil_devinfo *info = &list->info[dev];
 		if ((rc = cxil_open_device_p(info->dev_id, &cxi_devs[dev]))) {
-			error("Could not open CXI device[%d] dev_id=%d (%s): %d",
-			      dev, info->dev_id, info->device_name, rc);
+			error("Could not open CXI device dev_id=%d (%s): %s",
+			      info->dev_id, info->device_name, strerror(-rc));
 			cxi_devs[dev] = NULL;
 			continue;
 		}
@@ -340,21 +332,21 @@ static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
 	 * otherwise use the number of CPUs for this step
 	 */
 	cpus = job->depth ? job->depth : step_cpus;
-	desc->limits.txqs = _set_desc_limits("txqs", &job->limits.txqs,
+	desc->limits.txqs = _set_desc_limits("TXQs", &job->limits.txqs,
 					     devinfo->num_txqs, cpus);
-	desc->limits.tgqs = _set_desc_limits("tgqs", &job->limits.tgqs,
+	desc->limits.tgqs = _set_desc_limits("TGQs", &job->limits.tgqs,
 					     devinfo->num_tgqs, cpus);
-	desc->limits.eqs = _set_desc_limits("eqs", &job->limits.eqs,
+	desc->limits.eqs = _set_desc_limits("EQs", &job->limits.eqs,
 					     devinfo->num_eqs, cpus);
-	desc->limits.cts = _set_desc_limits("cts", &job->limits.cts,
+	desc->limits.cts = _set_desc_limits("CTs", &job->limits.cts,
 					     devinfo->num_cts, cpus);
-	desc->limits.tles = _set_desc_limits("tles", &job->limits.tles,
+	desc->limits.tles = _set_desc_limits("TLEs", &job->limits.tles,
 					     devinfo->num_tles, cpus);
-	desc->limits.ptes = _set_desc_limits("ptes", &job->limits.ptes,
+	desc->limits.ptes = _set_desc_limits("PTEs", &job->limits.ptes,
 					     devinfo->num_ptes, cpus);
-	desc->limits.les = _set_desc_limits("les", &job->limits.les,
+	desc->limits.les = _set_desc_limits("LEs", &job->limits.les,
 					     devinfo->num_les, cpus);
-	desc->limits.acs = _set_desc_limits("acs", &job->limits.acs,
+	desc->limits.acs = _set_desc_limits("ACs", &job->limits.acs,
 					     devinfo->num_acs, cpus);
 
 	/* Differentiates system and user services */
@@ -685,8 +677,8 @@ extern bool slingshot_destroy_services(slingshot_jobinfo_t *job,
 
 		int rc = cxil_destroy_svc_p(dev, svc_id);
 		if (rc) {
-			error("Failed to destroy CXI Service ID %d (%s): %d",
-			      svc_id, devname, rc);
+			error("Failed to destroy CXI Service ID %d (%s): %s",
+			      svc_id, devname, strerror(-rc));
 			retval = false;
 		}
 	}
@@ -713,67 +705,23 @@ static void _alloc_fail_info(const struct cxil_dev *dev,
 			     const struct cxi_svc_desc *desc,
 			     const struct cxi_svc_fail_info *fail_info)
 {
-	error("Slingshot service allocation failed on %s",
-	      dev->info.device_name);
-
 	for (int rsrc = 0; rsrc < CXI_RSRC_TYPE_MAX; rsrc++) {
-		char *rsrc_str = NULL;
-		int rsrc_req = 0;
+		const char *rsrc_str = cxi_rsrc_type_strs[rsrc];
+		int rsrc_res = desc->limits.type[rsrc].res;
+		int rsrc_max = desc->limits.type[rsrc].max;
 
-		switch (rsrc) {
-		case CXI_RSRC_TYPE_PTE:
-			rsrc_str = "portal table entries";
-			rsrc_req = desc->limits.ptes.res;
-			break;
-		case CXI_RSRC_TYPE_TXQ:
-			rsrc_str = "transmit command queues";
-			rsrc_req = desc->limits.txqs.res;
-			break;
-		case CXI_RSRC_TYPE_TGQ:
-			rsrc_str = "target command queues";
-			rsrc_req = desc->limits.tgqs.res;
-			break;
-		case CXI_RSRC_TYPE_EQ:
-			rsrc_str = "event queues";
-			rsrc_req = desc->limits.eqs.res;
-			break;
-		case CXI_RSRC_TYPE_CT:
-			rsrc_str = "counters";
-			rsrc_req = desc->limits.cts.res;
-			break;
-		case CXI_RSRC_TYPE_LE:
-			rsrc_str = "list entries";
-			rsrc_req = desc->limits.les.res;
-			break;
-		case CXI_RSRC_TYPE_TLE:
-			rsrc_str = "trigger list entries";
-			rsrc_req = desc->limits.tles.res;
-			break;
-		case CXI_RSRC_TYPE_AC:
-			rsrc_str = "addressing contexts";
-			rsrc_req = desc->limits.acs.res;
-			break;
-		case CXI_RSRC_TYPE_MAX:
-		default:
-			rsrc_str = "invalid resource";
-			break;
-		}
-
-		if (rsrc_req > fail_info->rsrc_avail[rsrc])
-			error("Only %d %s available on %s (requested %d)",
-			      fail_info->rsrc_avail[rsrc], rsrc_str,
-			      dev->info.device_name, rsrc_req);
+		if (rsrc_res > fail_info->rsrc_avail[rsrc])
+			error("%s: allocation failed: max/available/requested %d %d %d",
+			      rsrc_str, rsrc_max, fail_info->rsrc_avail[rsrc],
+			      rsrc_res);
 	}
 
 	if (fail_info->no_le_pools)
-		error("No list entry pools available on %s",
-		      dev->info.device_name);
+		error("No LE pools available on %s", dev->info.device_name);
 	if (fail_info->no_tle_pools)
-		error("No trigger list entry pools available on %s",
-		      dev->info.device_name);
+		error("No TLE pools available on %s", dev->info.device_name);
 	if (fail_info->no_cntr_pools)
-		error("No counter pools available on %s",
-		      dev->info.device_name);
+		error("No CNTR pools available on %s", dev->info.device_name);
 }
 
 /*
@@ -820,6 +768,8 @@ extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
 
 		int svc_id = cxil_alloc_svc_p(dev, &desc, &failinfo);
 		if (svc_id < 0) {
+			error("Slingshot service allocation failed on %s: %s",
+			      dev->info.device_name, strerror(-svc_id));
 			_alloc_fail_info(dev, &desc, &failinfo);
 			goto error;
 		}
