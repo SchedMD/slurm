@@ -544,4 +544,16 @@ char * hostset_nth(hostset_t set, int n);
  */
 ssize_t hostset_ranged_string(hostset_t set, size_t n, char *buf);
 
+/*
+ * hostset equivalent to hostlist_deranged_string_xmalloc()
+ * Caller must use xfree() to release memory
+ */
+char *hostset_deranged_string_xmalloc(hostset_t set);
+
+/*
+ * hostset equivalent to hostlist_ranged_string_xmalloc()
+ * Caller must use xfree() to release memory
+ */
+char *hostset_ranged_string_xmalloc(hostset_t set);
+
 #endif /* !_HOSTLIST_H */

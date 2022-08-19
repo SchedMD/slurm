@@ -1394,7 +1394,7 @@ alloc_job:
 
 	job_res                   = create_job_resources();
 	job_res->node_bitmap      = bit_copy(node_bitmap);
-	job_res->nodes            = bitmap2node_name(node_bitmap);
+	job_res->nodes = bitmap2node_name_sortable(node_bitmap, false);
 	job_res->nhosts           = n;
 	job_res->ncpus            = job_res->nhosts;
 	job_res->threads_per_core = job_ptr->details->mc_ptr->threads_per_core;

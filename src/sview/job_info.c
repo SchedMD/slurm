@@ -1218,7 +1218,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 	if (!job_ptr->nodes || IS_JOB_PENDING(job_ptr) ||
 	    !xstrcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(running_char,"00:00:00");
-		nodes = "waiting...";
+		nodes = xstrdup("waiting...");
 	} else {
 		if (IS_JOB_SUSPENDED(job_ptr))
 			now_time = job_ptr->pre_sus_time;
@@ -1238,7 +1238,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 		suspend_secs = (time(NULL) - job_ptr->start_time) - now_time;
 		secs2time_str(now_time, running_char, sizeof(running_char));
 
-		nodes = sview_job_info_ptr->nodes;
+		nodes = slurm_sort_node_list_str(sview_job_info_ptr->nodes);
 	}
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -1851,6 +1851,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_WORKDIR),
 				   job_ptr->work_dir);
 
+	xfree(nodes);
 }
 
 static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
@@ -2117,7 +2118,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	if (!job_ptr->nodes || IS_JOB_PENDING(job_ptr) ||
 	    !xstrcasecmp(job_ptr->nodes,"waiting...")) {
 		sprintf(tmp_time_run,"00:00:00");
-		tmp_nodes = "waiting...";
+		tmp_nodes = xstrdup("waiting...");
 	} else {
 		if (IS_JOB_SUSPENDED(job_ptr))
 			now_time = job_ptr->pre_sus_time;
@@ -2136,7 +2137,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		}
 		suspend_secs = (time(NULL) - job_ptr->start_time) - now_time;
 		secs2time_str(now_time, tmp_time_run, sizeof(tmp_time_run));
-		tmp_nodes = sview_job_info_ptr->nodes;
+		tmp_nodes = slurm_sort_node_list_str(sview_job_info_ptr->nodes);
 	}
 
 	if (job_ptr->max_nodes > 0)
@@ -2395,13 +2396,19 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 					  iter);
 	}
 
+	xfree(tmp_nodes);
+
 	return;
 }
 
 static void _get_step_nodelist(job_step_info_t *step_ptr, char *buf,
 			       int buf_size)
 {
-	snprintf(buf, buf_size, "%s", step_ptr->nodes);
+	char *sorted_nodelist;
+
+	sorted_nodelist = slurm_sort_node_list_str(step_ptr->nodes);
+	snprintf(buf, buf_size, "%s", sorted_nodelist);
+	xfree(sorted_nodelist);
 }
 
 static int _id_from_stepstr(char *str) {
