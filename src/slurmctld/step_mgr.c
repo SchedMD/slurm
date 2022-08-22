@@ -3502,9 +3502,9 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 #endif
 
 		/* find out the position in the job */
-		pos = bit_get_pos_num(job_resrcs_ptr->node_bitmap, i);
-		if (pos == -1)
+		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			return NULL;
+		pos = bit_set_count_range(job_resrcs_ptr->node_bitmap, 0, i);
 		if (pos >= job_resrcs_ptr->nhosts)
 			fatal("%s: node index bad", __func__);
 
