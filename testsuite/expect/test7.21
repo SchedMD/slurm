@@ -37,6 +37,12 @@ set orig_spank_conf "$test_dir/orig_conf"
 set new_spank_conf  "$test_dir/new_conf"
 set spank_out       "$test_dir/spank.out"
 
+# TODO: Remove this precondition check once 21.08 is no longer supported
+regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
+if {$major < 22} {
+        skip "This test is disabled in Slurm versions older than 22.05 (see bug 11829 and 13967)"
+}
+
 if {![is_super_user]} {
 	skip "This test must be run as SlurmUser"
 }
