@@ -78,12 +78,6 @@ proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
 	}
 }
 
-# TODO: Remove this precondition check once 20.02 is no longer supported
-regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
-if {$major < 21 && $minor < 11} {
-	skip "This test is disabled in Slurm versions older than 20.11 (see bug 11771)"
-}
-
 if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
