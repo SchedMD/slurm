@@ -2203,9 +2203,6 @@ slurm_bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
 bitoff_t
 slurm_bit_get_bit_num(bitstr_t *b, int pos)
 
-int
-slurm_bit_get_pos_num(bitstr_t *b, bitoff_t pos)
-
 void
 slurm_bit_DESTROY(bitstr_t *b)
 	CODE:

@@ -159,7 +159,6 @@ void    bit_copybits(bitstr_t *dest, bitstr_t *src);
 bitstr_t *bit_copy(bitstr_t *b);
 bitstr_t *bit_pick_cnt(bitstr_t *b, bitoff_t nbits);
 bitoff_t bit_get_bit_num(bitstr_t *b, int32_t pos);
-int32_t	bit_get_pos_num(bitstr_t *b, bitoff_t pos);
 
 /*
  * Move all set bits to the beginning of the bitstring
