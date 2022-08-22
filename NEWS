@@ -61,6 +61,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix multi-node step launch failure when nodes in the controller aren't in
     natural order. This can happen with inconsistent node naming (such as
     node15 and node052) or with dynamic nodes which can register in any order.
+ -- job_container/tmpfs - Prevent reading the plugin config multiple times per
+    step.
 
 * Changes in Slurm 22.05.3
 ==========================
