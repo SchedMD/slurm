@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
  -- sbatch - add parsing of #PBS -d and #PBS -w.
  -- Avoid network receive error on heavily loaded machines where the network
     operation can be restarted.
+ -- Deprecate AllowedKmemSpace, ConstrainKmemSpace, MaxKmemPercent, and
+    MinKmemSpace.
 
 * Changes in Slurm 22.05.4
 ==========================

@@ -45,6 +45,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
    points.
  -- node_features plugins - invalid users specified for AllowUserBoot will now
     result in fatal() rather than just an error.
+ -- Deprecate AllowedKmemSpace, ConstrainKmemSpace, MaxKmemPercent, and
+    MinKmemSpace.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

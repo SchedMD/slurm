@@ -297,6 +297,7 @@ static void _read_slurm_cgroup_conf(void)
 	char *conf_path = NULL, *tmp_str;
 	struct stat buf;
 	size_t sz;
+	bool kmem_deprecate_msg = false;
 
 	/* Get the cgroup.conf path and validate the file */
 	conf_path = get_extra_conf_path("cgroup.conf");
@@ -370,19 +371,31 @@ static void _read_slurm_cgroup_conf(void)
 		 * version 4, and RedHat/CentOS 6 and 7, which leaks slab
 		 * caches, eventually causing the machine to be unable to create
 		 * new cgroups.
+		 *
+		 * kmem.limit_in_bytes is deprecated in the linux kernel
+		 * and is not used in cgroup v2, so we are deprecating
+		 * ConstrainKmemSpace and related parameters.
 		 */
 		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_kmem_space,
 				     "ConstrainKmemSpace", tbl))
 			slurm_cgroup_conf.constrain_kmem_space = false;
+		else
+			kmem_deprecate_msg = true;
 
-		(void) s_p_get_float(&slurm_cgroup_conf.allowed_kmem_space,
-				     "AllowedKmemSpace", tbl);
+		if (s_p_get_float(&slurm_cgroup_conf.allowed_kmem_space,
+				  "AllowedKmemSpace", tbl))
+			kmem_deprecate_msg = true;
 
-		(void) s_p_get_float(&slurm_cgroup_conf.max_kmem_percent,
-				     "MaxKmemPercent", tbl);
+		if (s_p_get_float(&slurm_cgroup_conf.max_kmem_percent,
+				  "MaxKmemPercent", tbl))
+			kmem_deprecate_msg = true;
 
-		(void) s_p_get_uint64 (&slurm_cgroup_conf.min_kmem_space,
-				       "MinKmemSpace", tbl);
+		if (s_p_get_uint64(&slurm_cgroup_conf.min_kmem_space,
+				   "MinKmemSpace", tbl))
+			kmem_deprecate_msg = true;
+
+		if (kmem_deprecate_msg && running_in_daemon())
+			error("AllowedKmemSpace, ConstrainKmemSpace, MaxKmemPercent, and MinKmemSpace are deprecated, and will be removed in a future release");
 
 		(void) s_p_get_float(&slurm_cgroup_conf.allowed_swap_space,
 				     "AllowedSwapSpace", tbl);

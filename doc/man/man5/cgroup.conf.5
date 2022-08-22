@@ -70,16 +70,6 @@ The following cgroup.conf parameters are defined to control the behavior
 of this particular plugin:
 
 .TP
-\fBAllowedKmemSpace\fR=<number>
-Only for cgroup/v1.
-Constrain the job cgroup kernel memory to this amount of the allocated memory,
-specified in bytes. The \fBAllowedKmemSpace\fR must be between the upper and
-lower memory limits, specified by \fBMaxKmemPercent\fR and \fBMinKmemSpace\fR,
-respectively. If \fBAllowedKmemSpace\fR goes beyond the upper or lower limit,
-it will be reset to that upper or lower limit, whichever has been exceeded.
-.IP
-
-.TP
 \fBAllowedRAMSpace\fR=<number>
 Constrain the job/step cgroup RAM to this percentage of the allocated memory.
 The percentage supplied may be expressed as floating point number, e.g. 101.5.
@@ -124,17 +114,6 @@ The default value is "no".
 If configured to "yes" then constrain the job's allowed devices based on GRES
 allocated resources. It uses the devices subsystem for that.
 The default value is "no".
-.IP
-
-.TP
-\fBConstrainKmemSpace\fR=<yes|no>
-Only for cgroup/v1.
-If configured to "yes" then constrain the job's Kmem RAM usage in addition to
-RAM usage. Only takes effect if \fBConstrainRAMSpace\fR is set to "yes". If
-enabled, the job's Kmem limit will be assigned the value of
-\fBAllowedKmemSpace\fR or the value coming from \fBMaxKmemPercent\fR.
-The default value is "no" which will leave Kmem setting untouched by Slurm.
-Also see \fBAllowedKmemSpace\fR, \fBMaxKmemPercent\fR.
 .IP
 
 .TP
@@ -194,16 +173,6 @@ The default value is 100.
 .IP
 
 .TP
-\fBMaxKmemPercent\fR=\fIPERCENT\fR
-Only for cgroup/v1.
-Set an upper bound in percent of total RAM as the maximum Kmem for a job. The
-\fIPERCENT\fR may be an arbitrary floating point number, however, the product
-of \fBMaxKmemPercent\fR and job requested memory has to fall between
-\fBMinKmemSpace\fR and job requested memory, otherwise the boundary value is
-used. The default value is 100.
-.IP
-
-.TP
 \fBMemorySwappiness\fR=<number>
 Only for cgroup/v1.
 Configure the kernel's priority for swapping out anonymous pages (such as
@@ -213,13 +182,6 @@ out program data. A value of 100 gives equal priority to swapping out file
 cache or anonymous pages. If not set, then the kernel's default swappiness
 value will be used. \fBConstrainSwapSpace\fR
 must be set to \fByes\fR in order for this parameter to be applied.
-.IP
-
-.TP
-\fBMinKmemSpace\fR=<number>
-Only for cgroup/v1.
-Set a lower bound (in MB) on the memory limits defined by
-\fBAllowedKmemSpace\fR. The default limit is 30M.
 .IP
 
 .TP
@@ -256,7 +218,6 @@ CgroupAutomount=yes
 CgroupMountpoint=/sys/fs/cgroup
 ConstrainCores=yes
 ConstrainDevices=yes
-ConstrainKmemSpace=no        #avoid known Kernel issues
 ConstrainRAMSpace=yes
 ConstrainSwapSpace=yes
 .fi
