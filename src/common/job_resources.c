@@ -1672,7 +1672,7 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 					     int node_inx)
 {
-	int first_inx, i, node_offset;
+	int node_offset;
 
 	/* Test for error cases */
 	if (!job_resrcs_ptr || !job_resrcs_ptr->node_bitmap) {
@@ -1699,12 +1699,8 @@ extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 	if (job_resrcs_ptr->nhosts == 1)
 		return 0;
 
-	/* Scan bitmap, convert node_inx to node_cnt within job's allocation */
-	first_inx = bit_ffs(job_resrcs_ptr->node_bitmap);
-	for (i = first_inx, node_offset = -1; i <= node_inx; i++) {
-		if (bit_test(job_resrcs_ptr->node_bitmap, i))
-			node_offset++;
-	}
+	node_offset = bit_set_count_range(job_resrcs_ptr->node_bitmap, 0,
+					  node_inx);
 
 	if (node_offset >= job_resrcs_ptr->nhosts) {
 		error("%s: Found %d of %d nodes", __func__,

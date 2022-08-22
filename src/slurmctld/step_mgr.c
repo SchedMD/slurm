@@ -3965,7 +3965,7 @@ static int _kill_step_on_node(void *x, void *arg)
 	kill_step_on_node_args_t *args = (kill_step_on_node_args_t *) arg;
 	int step_node_inx = 0;
 	int bit_position = args->node_ptr->index;
-	int i_first, i_last, rem = 0;
+	int rem = 0;
 	uint32_t step_rc = 0;
 	step_complete_msg_t req;
 
@@ -3975,14 +3975,8 @@ static int _kill_step_on_node(void *x, void *arg)
 		return 0;
 
 	/* Remove step allocation from the job's allocation */
-	i_first = bit_ffs(step_ptr->step_node_bitmap);
-	i_last = bit_fls(step_ptr->step_node_bitmap);
-	for (int i = i_first; i <= i_last; i++) {
-		if (i == bit_position)
-			break;
-		if (bit_test(step_ptr->step_node_bitmap, i))
-			step_node_inx++;
-	}
+	step_node_inx = bit_set_count_range(step_ptr->step_node_bitmap, 0,
+					    bit_position);
 
 	memset(&req, 0, sizeof(step_complete_msg_t));
 	memcpy(&req.step_id, &step_ptr->step_id, sizeof(req.step_id));
