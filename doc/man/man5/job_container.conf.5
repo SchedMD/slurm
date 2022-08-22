@@ -1,4 +1,4 @@
-.TH "job_container.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
+.TH "job_container.conf" "5" "Slurm Configuration File" "August 2022" "Slurm Configuration File"
 
 .SH "NAME"
 job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
@@ -11,9 +11,16 @@ job_container.conf file to find out the configuration settings. Based on them it
 constructs a private mount namespace for the job and mounts a list of
 directories (defaults to /tmp and /dev/shm) inside it. This gives the job a
 private view of these directories.  These paths are mounted inside the location
-specified by 'BasePath' in the \fBjob_container.conf\fR file. To make use of
-this plugin, 'PrologFlags=Contain' must be present in your \fBslurm.conf\fP
-file.
+specified by 'BasePath' in the \fBjob_container.conf\fR file.
+When the job completes, the private namespaces are unmounted, and all
+files therein are automatically removed.
+To make use of this plugin, 'PrologFlags=Contain' must also be present in
+your \fBslurm.conf\fR file, as shown:
+
+.nf
+JobContainerType=job_container/tmpfs
+PrologFlags=Contain
+.fi
 
 The file will always be located in the same directory as the \fBslurm.conf\fR.
 
@@ -83,58 +90,12 @@ The NodeName specification can use a Slurm hostlist specification as shown in
 the example below. This parameter is optional.
 .IP
 
-.SH "EXAMPLE"
-.TP
-\fB/etc/slurm/job_container.conf\fR:
-.IP
-.nf
-###
-# Sample job_container.conf file 1
-# Define 2 basepaths
-# The first will only be on largemem[1\-2] and it will automatically created.
-# The second will only be on gpu[1\-10], will be expected to exist and will run
-#     an initscript before each job.
-###
-NodeName=largemem[1\-2] AutoBasePath=true BasePath=/var/nvme/storage
-NodeName=gpu[1\-10] BasePath=/var/nvme/storage InitScript=/etc/slurm/init.sh
-.fi
-
-.nf
-###
-# Sample job_container.conf file 2
-# Define 1 basepath that will be on all nodes and automatically created.
-###
-AutoBasePath=true
-BasePath=/var/nvme/storage
-.fi
-
-.nf
-###
-# Sample job_container.conf file 3
-# Define 1 basepath that will be on all nodes, automatically created, with
-#     /tmp and /var/tmp as private mounts.
-###
-AutoBasePath=true
-BasePath=/var/nvme/storage Dirs=/tmp,/var/tmp
-.fi
-
-.TP
-\fB/etc/slurm/slurm.conf\fR:
-These are the entries required in \fBslurm.conf\fR to activate the
-job_container/tmpfs plugin.
-.IP
-.nf
-###
-# Slurm configuration need to use job_container/tmpfs plugin
-###
-JobContainerType=job_container/tmpfs
-.fi
-
 .SH "NOTES"
 .LP
 If any parameters in job_container.conf are changed while slurm is running, then
 slurmd on the respective nodes will need to be
-restarted for changes to take effect. Additionally this can be disruptive to
+restarted for changes to take effect (scontrol reconfigure is not sufficient).
+Additionally this can be disruptive to
 jobs already running on the node. So care must be taken to make sure no jobs
 are running if any changes to job_container.conf are deployed.
 
@@ -142,6 +103,42 @@ Restarting slurmd is safe and non\-disruptive to running jobs, as long as
 job_container.conf is not changed between restarts in which case above point
 applies.
 
+.SH "EXAMPLE"
+.TP
+\fB/etc/slurm/slurm.conf\fR:
+These are the entries required in \fBslurm.conf\fR to activate the
+job_container/tmpfs plugin.
+.IP
+.nf
+JobContainerType=job_container/tmpfs
+PrologFlags=Contain
+.fi
+
+.TP
+\fB/etc/slurm/job_container.conf\fR:
+The first sample file will define 1 basepath for all nodes and it will be
+automatically created.
+.nf
+AutoBasePath=true
+BasePath=/var/nvme/storage
+.fi
+
+The second sample file will define 2 basepaths.
+The first will only be on largemem[1\-2] and it will be automatically created.
+The second will only be on gpu[1\-10], will be expected to exist and will run
+an initscript before each job.
+.nf
+NodeName=largemem[1\-2] AutoBasePath=true BasePath=/var/nvme/storage_a
+NodeName=gpu[1\-10] BasePath=/var/nvme/storage_b InitScript=/etc/slurm/init.sh
+.fi
+
+The third sample file will Define 1 basepath that will be on all nodes,
+automatically created, with /tmp and /var/tmp as private mounts.
+.nf
+AutoBasePath=true
+BasePath=/var/nvme/storage Dirs=/tmp,/var/tmp
+.fi
+.IP
 
 .SH "COPYING"
 Copyright (C) 2021 Regents of the University of California
@@ -165,4 +162,5 @@ details.
 
 .SH "SEE ALSO"
 .LP
+
 \fBslurm.conf\fR(5)
