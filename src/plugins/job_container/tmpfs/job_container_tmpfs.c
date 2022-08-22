@@ -199,6 +199,12 @@ extern int init(void)
 	      plugin_name);
 #endif
 
+	if (!get_slurm_jc_conf()) {
+		error("%s: Configuration not read correctly: Does '%s' not exist?",
+		      plugin_type, tmpfs_conf_file);
+		return SLURM_ERROR;
+	}
+
 	debug("%s loaded", plugin_name);
 
 	return SLURM_SUCCESS;
