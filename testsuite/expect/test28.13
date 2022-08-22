@@ -29,12 +29,6 @@ source ./globals
 set file_script "$test_dir/script"
 set job_id      0
 
-# TODO: Remove this precondition check once 20.11 is no longer supported
-regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
-if {$major < 21} {
-	skip "This test is disabled in Slurm versions older than 21.08 (see bugs 11773 and 10254)"
-}
-
 proc cleanup {} {
 	global job_id
 

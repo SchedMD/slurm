@@ -48,10 +48,6 @@ proc cleanup {} {
 	cancel_job $job_id_list
 }
 
-if {![regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release]} {
-	fail "Unable to get SLURM_VERSION"
-}
-
 #
 # Request more GPUs per node than exist on a single node
 #
@@ -75,11 +71,7 @@ if {[regexp "Submitted batch job ($number)" $output - job_id]} {
 # Specify inconsistent --cpus-per-task and --gpus-per-task/--cpus-per-gpu
 #
 set output [run_command_output -xfail -subtest "$sbatch --gpus-per-task=1 --cpus-per-gpu=1 --cpus-per-task=2 -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
-if {$major < 21} {
-	subtest {[regexp "sbatch: error: Batch job submission failed: Invalid generic resource \\(gres\\) specification" $output]} "Job should be rejected at submit time"
-} else {
-	subtest {[regexp "sbatch: error: --cpus-per-gpu is mutually exclusive with --cpus-per-task" $output]} "Job should be rejected at submit time"
-}
+subtest {[regexp "sbatch: error: --cpus-per-gpu is mutually exclusive with --cpus-per-task" $output]} "Job should be rejected at submit time"
 if {[regexp "Submitted batch job ($number)" $output - job_id]} {
 	lappend job_id_list $job_id
 }
@@ -106,11 +98,7 @@ if {[regexp "Submitted batch job ($number)" $output - job_id]} {
 # Specify inconsistent tasks per node (variation of test 4)
 #
 set output [run_command_output -xfail -subtest "$sbatch --gpus-per-task=1 --gpus-per-node=2 --ntasks-per-node=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
-if {$major < 21} {
-	subtest {[regexp "sbatch: error: Batch job submission failed: Invalid generic resource \\(gres\\) specification" $output]} "Job should be rejected at submit time"
-} else {
-	subtest {[regexp "sbatch: error: Failed to validate job spec. Based on --gres=gpu/--gpus-per-node and --gpus-per-task requested number of tasks per node differ from --ntasks-per-node." $output]} "Job should be rejected at submit time"
-}
+subtest {[regexp "sbatch: error: Failed to validate job spec. Based on --gres=gpu/--gpus-per-node and --gpus-per-task requested number of tasks per node differ from --ntasks-per-node." $output]} "Job should be rejected at submit time"
 if {[regexp "Submitted batch job ($number)" $output - job_id]} {
 	lappend job_id_list $job_id
 }
