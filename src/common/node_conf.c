@@ -692,22 +692,9 @@ static int _convert_cpu_spec_list(node_record_t *node_ptr)
 	/* create CPU bitmap from input CPU list */
 	cpu_spec_bitmap = bit_alloc(node_ptr->cpus);
 
-	if (bit_unfmt(cpu_spec_bitmap, node_ptr->cpu_spec_list)) {
-		error("CpuSpecList is invalid");
-	}
-
-	node_ptr->node_spec_bitmap = bit_alloc(tot_cores);
-
-	/* Create core spec bitmap from CPU bitmap */
-	for (i = 0; i < node_ptr->cpus; i++) {
-		if (bit_test(cpu_spec_bitmap, i))
-			bit_set(node_ptr->node_spec_bitmap,
-				(i / (node_ptr->tpc)));
-	}
-
 	/* Expand CPU bitmap to reserve whole cores */
 	for (i = 0; i < node_ptr->tot_cores; i++) {
-		if (bit_test(node_ptr->node_spec_bitmap, i)) {
+		if (!bit_test(node_ptr->node_spec_bitmap, i)) {
 			/* typecast to int to avoid coverity error */
 			bit_nset(cpu_spec_bitmap,
 				 (i * (int) node_ptr->tpc),
@@ -767,19 +754,9 @@ static void _init_node_record(node_record_t *node_ptr,
 
 	node_ptr->cpu_spec_list = xstrdup(config_ptr->cpu_spec_list);
 	if (node_ptr->cpu_spec_list) {
-		if (node_ptr->tpc > 1) {
+		build_node_spec_bitmap(node_ptr);
+		if (node_ptr->tpc > 1)
 			_convert_cpu_spec_list(node_ptr);
-		} else {
-			node_ptr->node_spec_bitmap = bit_alloc(node_ptr->cpus);
-			if (bit_unfmt(node_ptr->node_spec_bitmap,
-				      node_ptr->cpu_spec_list)) {
-				error("CpuSpecList is invalid");
-			}
-		}
-		node_ptr->core_spec_cnt = bit_set_count(
-			node_ptr->node_spec_bitmap);
-		/* node_spec_bitmap is not set on spec cores. */
-		bit_not(node_ptr->node_spec_bitmap);
 	}
 
 	node_ptr->cpus_efctv = node_ptr->cpus -
