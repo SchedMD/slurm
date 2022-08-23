@@ -2509,15 +2509,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		}
 	}
 
-
-	if (req_nodes_bitmap &&
-	    (!bit_super_set(req_nodes_bitmap, avail_nodes_bitmap))) {
-		info("%pJ requires nodes not available on any switch",
-		     job_ptr);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-
 	/* Add additional resources for already required leaf switches */
 	if (req_nodes_bitmap || req2_nodes_bitmap) {
 		for (i = 0; i < switch_record_cnt; i++) {
