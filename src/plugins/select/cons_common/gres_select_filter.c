@@ -630,10 +630,10 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				sock_cnt++;
 			}
 
-			if ((max_gres && (max_gres >= cnt_avail_total)) ||
-			    (gres_js->gres_per_node &&
-			     (cnt_avail_total >= gres_js->gres_per_node) &&
-			     !sock_gres->cnt_any_sock)) {
+			if (!sock_gres->cnt_any_sock &&
+			    ((max_gres && (max_gres >= cnt_avail_total)) ||
+			     (gres_js->gres_per_node &&
+			      (cnt_avail_total >= gres_js->gres_per_node)))) {
 				/*
 				 * Sufficient gres will leave remaining CPUs as
 				 * !req_sock. We do this only when we
