@@ -4661,8 +4661,8 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 			rc = _archive_table(purge_type, mysql_conn,
 					    cluster_name, col_name, tmp_end,
 					    arch_cond->archive_dir,
-					    tmp_archive_period,
-					    sql_table, usage_info);
+					    tmp_archive_period, sql_table,
+					    usage_info);
 			if (!rc) { /* no records archived */
 				error("%s: No records archived for %s before %ld but we found some records",
 				      __func__, sql_table, tmp_end);
