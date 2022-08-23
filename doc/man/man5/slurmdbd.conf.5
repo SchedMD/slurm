@@ -617,7 +617,8 @@ coordinator of, but can only see themselves when listing users.
 
 .TP
 \fBPurgeEventAfter\fR
-Events happening on the cluster over this age are purged from the database.
+Events are purged from the database after this amount of time has passed since
+they ended.
 This includes node down times and such.
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
@@ -631,7 +632,8 @@ If not set (default), then event records are never purged.
 
 .TP
 \fBPurgeJobAfter\fR
-Individual job records over this age are purged from the database.
+Individual job records are purged from the database after this amount of time
+has passed since they ended.
 Aggregated information will be preserved to "PurgeUsageAfter".
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
@@ -645,7 +647,8 @@ If not set (default), then job records are never purged.
 
 .TP
 \fBPurgeResvAfter\fR
-Individual reservation records over this age are purged from the database.
+Individual reservation records are purged from the database after this amount
+of time has passed since they ended.
 Aggregated information will be preserved to "PurgeUsageAfter".
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
@@ -659,7 +662,8 @@ If not set (default), then reservation records are never purged.
 
 .TP
 \fBPurgeStepAfter\fR
-Individual job step records over this age are purged from the database.
+Individual job step records are purged from the database after this amount of
+time has passed since they ended.
 Aggregated information will be preserved to "PurgeUsageAfter".
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
@@ -673,8 +677,8 @@ If not set (default), then job step records are never purged.
 
 .TP
 \fBPurgeSuspendAfter\fR
-Records of individual suspend times for jobs over this age are purged from the
-database.
+Individual job suspend records are purged from the database after this amount
+of time has passed since they ended.
 Aggregated information will be preserved to "PurgeUsageAfter".
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
@@ -688,7 +692,8 @@ If not set (default), then suspend records are never purged.
 
 .TP
 \fBPurgeTXNAfter\fR
-Records of individual transaction times for transactions over this age are purged from the database.
+Individual transaction records are purged from the database after this amount
+of time has passed since they occured.
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
@@ -701,8 +706,8 @@ If not set (default), then transaction records are never purged.
 
 .TP
 \fBPurgeUsageAfter\fR
-Usage Records (Cluster, Association and WCKey) over this age are purged from the
-database.
+Usage records (Cluster, Association and WCKey) are purged from the database
+after this amount of time has passed since they were created or last modified.
 The time is a numeric value and is a number of months.  If you want to purge
 more often you can include "hours", or "days" behind the numeric value to get
 those more frequent purges (i.e. a value of "12hours" would purge
