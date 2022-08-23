@@ -1418,6 +1418,12 @@ extern void init_job_conf(void);
 extern void init_node_conf(void);
 
 /*
+ * consolidate_config_list
+ * Try to combine duplicate config records.
+ */
+extern void consolidate_config_list(void);
+
+/*
  * init_part_conf - initialize the default partition configuration values
  *	and create a (global) partition list.
  * this should be called before creating any partition entries.

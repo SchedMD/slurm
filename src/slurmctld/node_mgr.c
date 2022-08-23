@@ -793,6 +793,61 @@ int list_compare_config (void *config_entry1, void *config_entry2)
 	return (weight1 - weight2);
 }
 
+static bool _is_dup_config_record(config_record_t *c1, config_record_t *c2)
+{
+	if (c1 == c2)
+		return false; /* This is the same pointer - ignore */
+
+	if ((c1->boards == c2->boards) &&
+	    (c1->core_spec_cnt == c2->core_spec_cnt) &&
+	    (c1->cores == c2->cores) &&
+	    (c1->cpu_bind == c2->cpu_bind) &&
+	    (!xstrcmp(c1->cpu_spec_list, c2->cpu_spec_list)) &&
+	    (c1->cpus == c2->cpus) &&
+	    (!xstrcmp(c1->feature, c2->feature)) &&
+	    (!xstrcmp(c1->gres, c2->gres)) &&
+	    (c1->mem_spec_limit == c2->mem_spec_limit) &&
+	    (c1->real_memory == c2->real_memory) &&
+	    (c1->threads == c2->threads) &&
+	    (c1->tmp_disk == c2->tmp_disk) &&
+	    (c1->tot_sockets == c2->tot_sockets) &&
+	    (!xstrcmp(c1->tres_weights_str, c2->tres_weights_str)) &&
+	    (c1->weight == c2->weight)) {
+		/* duplicate records */
+		return true;
+	}
+
+	return false;
+}
+
+static void _combine_dup_config_records(config_record_t *curr_rec)
+{
+	bool changed = false;
+	config_record_t *config_ptr;
+	ListIterator iter;
+
+	iter = list_iterator_create(config_list);
+	while ((config_ptr = list_next(iter))) {
+		if (!_is_dup_config_record(curr_rec, config_ptr))
+			continue;
+
+		changed = true;
+		bit_or(curr_rec->node_bitmap, config_ptr->node_bitmap);
+		list_delete_item(iter);
+	}
+	list_iterator_destroy(iter);
+
+	if (!changed)
+		return;
+
+	xfree(curr_rec->nodes);
+	curr_rec->nodes = bitmap2node_name(curr_rec->node_bitmap);
+	debug("Consolidated duplicate config records into %s", curr_rec->nodes);
+
+	/* Update each node_ptr in node_bitmap */
+	_update_config_ptr(curr_rec->node_bitmap, curr_rec);
+}
+
 static bool _node_is_hidden(node_record_t *node_ptr,
 			    pack_node_info_t *pack_info)
 {
@@ -4465,6 +4520,21 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 			node_ptr->config_ptr->tot_sockets,
 			slurm_conf.conf_flags & CTL_CONF_OR, NULL);
 	}
+}
+
+extern void consolidate_config_list(void)
+{
+	config_record_t *curr_rec;
+	ListIterator iter;
+
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+
+	/* Use list iterator because we are changing the list */
+	iter = list_iterator_create(config_list);
+	while ((curr_rec = list_next(iter))) {
+		_combine_dup_config_records(curr_rec);
+	}
+	list_iterator_destroy(iter);
 }
 
 extern int create_nodes(char *nodeline, char **err_msg)
