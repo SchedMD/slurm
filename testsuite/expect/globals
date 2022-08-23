@@ -372,7 +372,7 @@ set no_delim_slash       "\[^(,:/\r\n\]"
 # The second **optional** group matches GRES type.
 # The third group matches GRES count.
 # Test out the regex here: https://regex101.com/r/FlNYKM/7
-set gres_regex "($no_delim_slash*):($no_delim*)?:?($no_delim*)"
+set gres_regex "($no_delim_slash*):($no_delim*)?:($no_delim*)?:?($no_delim*)"
 
 #basic #defines in slurm.h
 set NO_VAL 0xfffffffe
@@ -5033,11 +5033,14 @@ proc get_gres_count { gres_name {node_list ""} } {
 
 proc count_gres { gres_param } {
 	global gres_regex
-
 	set gres_dict [dict create]
 	foreach gres [split $gres_param ","] {
-		if {[regexp $gres_regex $gres {} name type count] == 1} {
-			if {$count eq ""} { set count $type }
+		if {[regexp $gres_regex $gres {} name type nc count] == 1} {
+			if {$nc eq ""} {
+				set count $type
+			} elseif {$count eq ""} {
+				set count $nc
+			}
 
 			if {[dict exists $gres_dict $name]} {
 				dict set gres_dict $name [expr [dict get $gres_dict $name] + $count]
@@ -5049,6 +5052,49 @@ proc count_gres { gres_param } {
 	return $gres_dict
 }
 
+################################################################
+#
+# NAME
+#	count_consumable_gres - returns a dict of GRES names and their total
+#				consumable counts
+#
+# SYNOPSIS
+#	count_gres gres_param
+#
+# DESCRIPTION
+#	Parses a GRES parameter string typically obtained from nodes or
+#	jobs info, and returns a dict of GRES names and their count
+#	aggregating all the types of each GRES.
+#
+# RETURN VALUE
+#	A dict of GRES names and their count aggregating all types of
+#	each GRES.
+#
+################################################################
+
+proc count_consumable_gres { gres_param } {
+	global gres_regex
+
+	set gres_dict [dict create]
+	foreach gres [split $gres_param ","] {
+		if {[regexp $gres_regex $gres {} name type nc count] == 1} {
+			if {$type eq "no_consume" || $nc eq "no_consume"} {
+				continue
+			} elseif {$nc eq ""} {
+				set count $type
+			} elseif {$count eq ""} {
+				set count $nc
+			}
+
+			if {[dict exists $gres_dict $name]} {
+				dict set gres_dict $name [expr [dict get $gres_dict $name] + $count]
+			} else {
+				dict set gres_dict $name $count
+			}
+		}
+	}
+	return $gres_dict
+}
 
 ################################################################
 #
@@ -6261,7 +6307,7 @@ proc submit_job args {
 proc check_exclusive_gres { job_id node_name } {
 	# Check all GRES of the node were allocated on the job
 	set gres_dict_job  [count_gres [get_job_param  $job_id "JOB_GRES"]]
-	set gres_dict_node [count_gres [get_node_param $node_name "Gres"]]
+	set gres_dict_node [count_consumable_gres [get_node_param $node_name "Gres"]]
 
 	dict for {gres_name gres_count} $gres_dict_node {
 		# We don't want mps to be allocated with --exclusive
