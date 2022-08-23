@@ -1351,7 +1351,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 	}
 
-	if (gres_invalid_nodes >= step_spec->min_nodes) {
+	if (gres_invalid_nodes >
+	    (job_resrcs_ptr->nhosts - step_spec->min_nodes)) {
 		*return_code = ESLURM_INVALID_GRES;
 		log_flag(STEPS, "%s: Never able to satisfy the GRES request for this step",
 			 __func__);
