@@ -822,9 +822,10 @@ typedef enum {
 } purge_type_t;
 
 static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
-			       char *cluster_name, time_t period_end,
-			       char *arch_dir, uint32_t archive_period,
-			       char *sql_table, uint32_t usage_info);
+			       char *cluster_name, char *col_name,
+			       time_t period_end, char *arch_dir,
+			       uint32_t archive_period, char *sql_table,
+			       uint32_t usage_info);
 
 static uint32_t high_buffer_size = (1024 * 1024);
 
@@ -4323,9 +4324,10 @@ static char *_load_cluster_usage(uint16_t rpc_version, buf_t *buffer,
 
 /* returns count of events archived or SLURM_ERROR on error */
 static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
-			       char *cluster_name, time_t period_end,
-			       char *arch_dir, uint32_t archive_period,
-			       char *sql_table, uint32_t usage_info)
+			       char *cluster_name, char *col_name,
+			       time_t period_end, char *arch_dir,
+			       uint32_t archive_period, char *sql_table,
+			       uint32_t usage_info)
 {
 	MYSQL_RES *result = NULL;
 	char *cols = NULL, *query = NULL;
@@ -4372,33 +4374,32 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	switch (type) {
 	case PURGE_TXN:
 		query = xstrdup_printf("select %s from \"%s\" where "
-				       "timestamp <= %ld && cluster='%s' "
-				       "order by timestamp asc LIMIT %d",
-				       cols, sql_table,
-				       period_end, cluster_name,
-				       MAX_PURGE_LIMIT);
+				       "%s <= %ld && cluster='%s' "
+				       "order by %s asc LIMIT %d",
+				       cols, sql_table, col_name, period_end,
+				       cluster_name, col_name, MAX_PURGE_LIMIT);
 		break;
 	case PURGE_USAGE:
 	case PURGE_CLUSTER_USAGE:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
-				       "time_start <= %ld "
-				       "order by time_start asc LIMIT %d",
-				       cols, cluster_name, sql_table,
-				       period_end, MAX_PURGE_LIMIT);
+				       "%s <= %ld "
+				       "order by %s asc LIMIT %d",
+				       cols, cluster_name, sql_table, col_name,
+				       period_end, col_name, MAX_PURGE_LIMIT);
 		break;
 	case PURGE_JOB:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
-				       "time_submit <= %ld && time_end != 0 "
-				       "order by time_submit asc LIMIT %d",
-				       cols, cluster_name, job_table,
-				       period_end, MAX_PURGE_LIMIT);
+				       "%s <= %ld && time_end != 0 "
+				       "order by %s asc LIMIT %d",
+				       cols, cluster_name, job_table, col_name,
+				       period_end, col_name, MAX_PURGE_LIMIT);
 		break;
 	default:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
-				       "time_start <= %ld && time_end != 0 "
-				       "order by time_start asc LIMIT %d",
-				       cols, cluster_name, sql_table,
-				       period_end, MAX_PURGE_LIMIT);
+				       "%s <= %ld && time_end != 0 "
+				       "order by %s asc LIMIT %d",
+				       cols, cluster_name, sql_table, col_name,
+				       period_end, col_name, MAX_PURGE_LIMIT);
 		break;
 	}
 
@@ -4665,7 +4666,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		/* Do archive */
 		if (SLURMDB_PURGE_ARCHIVE_SET(purge_attr)) {
 			rc = _archive_table(purge_type, mysql_conn,
-					    cluster_name, tmp_end,
+					    cluster_name, col_name, tmp_end,
 					    arch_cond->archive_dir,
 					    tmp_archive_period,
 					    sql_table, usage_info);
