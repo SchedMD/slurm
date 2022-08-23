@@ -93,6 +93,9 @@
 #define DEFAULT_NODE_REG_MEM_PERCENT 100.0
 #define DEFAULT_CLOUD_REG_MEM_PERCENT 90.0
 
+static bool config_list_update = false;
+static pthread_mutex_t config_list_update_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 typedef struct {
 	uid_t uid;
 	part_record_t **visible_parts;
@@ -213,6 +216,13 @@ int dump_all_node_state ( void )
 	FREE_NULL_BUFFER(buffer);
 	END_TIMER2("dump_all_node_state");
 	return error_code;
+}
+
+static void _queue_consolidate_config_list(void)
+{
+	slurm_mutex_lock(&config_list_update_mutex);
+	config_list_update = true;
+	slurm_mutex_unlock(&config_list_update_mutex);
 }
 
 /*
@@ -472,6 +482,7 @@ extern int load_all_node_state ( bool state_only )
 				 * want to use the gres_list from state.
 				 */
 				FREE_NULL_LIST(node_ptr->gres_list);
+				_queue_consolidate_config_list();
 			}
 		}
 
@@ -1968,6 +1979,8 @@ config_record_t *_dup_config(config_record_t *config_ptr)
 	new_config_ptr->weight      = config_ptr->weight;
 	new_config_ptr->feature     = xstrdup(config_ptr->feature);
 	new_config_ptr->gres        = xstrdup(config_ptr->gres);
+
+	_queue_consolidate_config_list();
 
 	return new_config_ptr;
 }
@@ -4522,19 +4535,33 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 	}
 }
 
-extern void consolidate_config_list(void)
+extern void consolidate_config_list(bool is_locked, bool force)
 {
 	config_record_t *curr_rec;
 	ListIterator iter;
+	slurmctld_lock_t node_write_lock = { .node = WRITE_LOCK };
 
-	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	if (is_locked)
+		xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
-	/* Use list iterator because we are changing the list */
-	iter = list_iterator_create(config_list);
-	while ((curr_rec = list_next(iter))) {
-		_combine_dup_config_records(curr_rec);
+	slurm_mutex_lock(&config_list_update_mutex);
+	if (force || config_list_update) {
+		if (!is_locked)
+			lock_slurmctld(node_write_lock);
+
+		config_list_update = false;
+
+		/* Use list iterator because we are changing the list */
+		iter = list_iterator_create(config_list);
+		while ((curr_rec = list_next(iter))) {
+			_combine_dup_config_records(curr_rec);
+		}
+		list_iterator_destroy(iter);
+
+		if (!is_locked)
+			unlock_slurmctld(node_write_lock);
 	}
-	list_iterator_destroy(iter);
+	slurm_mutex_unlock(&config_list_update_mutex);
 }
 
 extern int create_nodes(char *nodeline, char **err_msg)
@@ -4592,6 +4619,8 @@ extern int create_nodes(char *nodeline, char **err_msg)
 		update_feature_list(active_feature_list, config_ptr->feature,
 				    config_ptr->node_bitmap);
 	}
+
+	_queue_consolidate_config_list();
 
 	set_cluster_tres(false);
 	_update_parts();
@@ -4688,6 +4717,8 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	node_ptr->features_act = xstrdup(node_ptr->config_ptr->feature);
 	update_feature_list(active_feature_list, node_ptr->features_act,
 			    config_ptr->node_bitmap);
+
+	_queue_consolidate_config_list();
 
 	/* Handle DOWN and DRAIN, otherwise make the node idle */
 	if ((state_val == NODE_STATE_DOWN) ||

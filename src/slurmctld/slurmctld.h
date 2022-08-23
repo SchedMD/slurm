@@ -109,6 +109,10 @@
 #define TRIGGER_INTERVAL 15
 #endif
 
+#ifndef UPDATE_CONFIG_LIST_TIMEOUT
+#define UPDATE_CONFIG_LIST_TIMEOUT 60
+#endif
+
 /* Report current node accounting state every PERIODIC_NODE_ACCT seconds */
 #ifndef PERIODIC_NODE_ACCT
 #define PERIODIC_NODE_ACCT 300
@@ -1420,8 +1424,11 @@ extern void init_node_conf(void);
 /*
  * consolidate_config_list
  * Try to combine duplicate config records.
+ *
+ * IN is_locked - whether NODE_WRITE_LOCK is set or not.
+ * IN bool - whether to do consolidate regardless of a queued event.
  */
-extern void consolidate_config_list(void);
+extern void consolidate_config_list(bool is_locked, bool force);
 
 /*
  * init_part_conf - initialize the default partition configuration values

@@ -1880,6 +1880,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	_set_response_cluster_rec();
 
 	config_power_mgr();
+	consolidate_config_list(true, true);
 
 	slurm_conf.last_update = time(NULL);
 end_it:

@@ -1973,6 +1973,7 @@ static void _queue_reboot_msg(void)
 static void *_slurmctld_background(void *no_data)
 {
 	static time_t last_sched_time;
+	static time_t last_config_list_update_time;
 	static time_t last_full_sched_time;
 	static time_t last_checkpoint_time;
 	static time_t last_group_time;
@@ -2038,6 +2039,7 @@ static void *_slurmctld_background(void *no_data)
 	last_no_resp_msg_time = last_resv_time = last_ctld_bu_ping = now;
 	last_uid_update = now;
 	last_acct_gather_node_time = last_ext_sensors_time = now;
+	last_config_list_update_time = now;
 
 
 	last_ping_srun_time = now;
@@ -2281,6 +2283,12 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(job_write_lock2);
 			schedule(full_queue);
 			set_job_elig_time();
+		}
+
+		if (difftime(now, last_config_list_update_time) >=
+		    UPDATE_CONFIG_LIST_TIMEOUT) {
+			last_config_list_update_time = now;
+			consolidate_config_list(false, false);
 		}
 
 		if (slurm_conf.slurmctld_timeout &&
