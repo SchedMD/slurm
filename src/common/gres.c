@@ -4170,7 +4170,7 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 	gres_node_state_t *gres_ns;
 	bitstr_t *done_topo, *core_map;
 	uint64_t gres_sum;
-	char *sep = "", *suffix, *sock_info = NULL, *sock_str;
+	char *sep = "", *suffix, *sock_info = NULL, *sock_str, *no_consume_str;
 	int c, i, j;
 
 	xassert(gres_str);
@@ -4183,6 +4183,7 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 			continue;	/* Node has none of this GRES */
 
 		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
+		no_consume_str = gres_ns->no_consume ? ":no_consume" : "";
 		if (gres_ns->topo_cnt &&
 		    gres_ns->gres_cnt_avail) {
 			done_topo = bit_alloc(gres_ns->topo_cnt);
@@ -4232,16 +4233,18 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 				suffix = _get_suffix(&gres_sum);
 				if (gres_ns->topo_type_name[i]) {
 					xstrfmtcat(*gres_str,
-						   "%s%s:%s:%"PRIu64"%s%s", sep,
+						   "%s%s:%s%s:%"PRIu64"%s%s", sep,
 						   gres_context[c].gres_name,
 						   gres_ns->
 						   topo_type_name[i],
-						   gres_sum, suffix, sock_str);
+						   no_consume_str, gres_sum,
+						   suffix, sock_str);
 				} else {
 					xstrfmtcat(*gres_str,
-						   "%s%s:%"PRIu64"%s%s", sep,
+						   "%s%s%s:%"PRIu64"%s%s", sep,
 						   gres_context[c].gres_name,
-						   gres_sum, suffix, sock_str);
+						   no_consume_str, gres_sum,
+						   suffix, sock_str);
 				}
 				xfree(sock_info);
 				sep = ",";
@@ -4252,18 +4255,18 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 			for (i = 0; i < gres_ns->type_cnt; i++) {
 				gres_sum = gres_ns->type_cnt_avail[i];
 				suffix = _get_suffix(&gres_sum);
-				xstrfmtcat(*gres_str, "%s%s:%s:%"PRIu64"%s",
+				xstrfmtcat(*gres_str, "%s%s:%s%s:%"PRIu64"%s",
 					   sep, gres_context[c].gres_name,
 					   gres_ns->type_name[i],
-					   gres_sum, suffix);
+					   no_consume_str, gres_sum, suffix);
 				sep = ",";
 			}
 		} else if (gres_ns->gres_cnt_avail) {
 			gres_sum = gres_ns->gres_cnt_avail;
 			suffix = _get_suffix(&gres_sum);
-			xstrfmtcat(*gres_str, "%s%s:%"PRIu64"%s",
+			xstrfmtcat(*gres_str, "%s%s%s:%"PRIu64"%s",
 				   sep, gres_context[c].gres_name,
-				   gres_sum, suffix);
+				   no_consume_str, gres_sum, suffix);
 			sep = ",";
 		}
 	}
