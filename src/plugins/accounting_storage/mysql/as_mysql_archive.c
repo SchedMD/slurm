@@ -4387,13 +4387,6 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 				       cols, cluster_name, sql_table, col_name,
 				       period_end, col_name, MAX_PURGE_LIMIT);
 		break;
-	case PURGE_JOB:
-		query = xstrdup_printf("select %s from \"%s_%s\" where "
-				       "%s <= %ld && time_end != 0 "
-				       "order by %s asc LIMIT %d",
-				       cols, cluster_name, job_table, col_name,
-				       period_end, col_name, MAX_PURGE_LIMIT);
-		break;
 	default:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "%s <= %ld && time_end != 0 "
