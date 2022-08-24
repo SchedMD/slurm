@@ -2528,7 +2528,7 @@ proc wait_for_part_done args {
 # OPTIONS
 #	-timeout <integer_number>
 #		time in seconds to wait for the job step to be found before
-#		timing out (default is 360)
+#		timing out (default is 30)
 #	-pollinterval <integer_number>
 #		time in seconds between each step existence check (default is 1)
 #
@@ -2544,7 +2544,7 @@ proc wait_for_part_done args {
 proc wait_for_step args {
 	global scontrol
 
-	set timeout       360
+	set timeout       30
 	set poll_interval 1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
