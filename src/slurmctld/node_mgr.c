@@ -2617,14 +2617,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	}
 
 	if (reg_msg->features_avail || reg_msg->features_active) {
-		char *sep = "";
 		orig_features = xstrdup(node_ptr->features);
-		if (orig_features && orig_features[0])
-			sep = ",";
-		if (reg_msg->features_avail) {
-			xstrfmtcat(orig_features, "%s%s", sep,
-				   reg_msg->features_avail);
-		}
 		if (node_ptr->features_act)
 			orig_features_act = xstrdup(node_ptr->features_act);
 		else
@@ -2641,9 +2634,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 					reg_msg->features_avail,
 					orig_features, orig_features,
 					node_ptr->index);
-		(void) update_node_avail_features(node_ptr->name,
-						  node_ptr->features,
-						  FEATURE_MODE_IND);
+		/* Only update if there was a change */
+		if (xstrcmp(node_ptr->features, orig_features))
+			(void) update_node_avail_features(node_ptr->name,
+							  node_ptr->features,
+							  FEATURE_MODE_IND);
 	}
 	if (reg_msg->features_active) {
 		char *tmp_feature;
