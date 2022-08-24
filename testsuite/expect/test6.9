@@ -57,14 +57,8 @@ set job_id [submit_job -fail "--output=/dev/null --error=/dev/null --mem=20 --jo
 wait_for_job -fail $job_id RUNNING
 
 # Wait for job steps to begin
-set steps_running false
-wait_for -fail -timeout 5 {$steps_running} {
-	set output [run_command_output -fail "$squeue --noheader --steps --format='%i'"]
-	if {[regexp "$job_id\.0" $output] &&
-	    [regexp "$job_id\.1" $output]} {
-		set steps_running true
-	}
-}
+wait_for_step "$job_id.0"
+wait_for_step "$job_id.1"
 
 #
 # Kill single job steps individually
