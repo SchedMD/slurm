@@ -2185,7 +2185,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			rc = SLURM_ERROR;
 			goto fini;
 		}
-		req_nodes_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
+		req_nodes_bitmap = job_ptr->details->req_node_bitmap;
 	}
 
 	/*
@@ -2652,7 +2652,6 @@ fini:
 	FREE_NULL_LIST(best_gres);
 	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(avail_nodes_bitmap);
-	FREE_NULL_BITMAP(req_nodes_bitmap);
 	FREE_NULL_BITMAP(req2_nodes_bitmap);
 	FREE_NULL_BITMAP(best_nodes_bitmap);
 	xfree(avail_cpu_per_node);
