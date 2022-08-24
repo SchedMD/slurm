@@ -3802,7 +3802,64 @@ static int _pack_ctld_job_step_info(void *x, void *arg)
 	cpu_cnt = step_ptr->cpu_count;
 #endif
 
-	if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (args->proto_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		pack32(step_ptr->job_ptr->array_job_id, buffer);
+		pack32(step_ptr->job_ptr->array_task_id, buffer);
+
+		pack_step_id(&step_ptr->step_id, buffer, args->proto_version);
+
+		pack32(step_ptr->job_ptr->user_id, buffer);
+		pack32(cpu_cnt, buffer);
+		pack32(step_ptr->cpu_freq_min, buffer);
+		pack32(step_ptr->cpu_freq_max, buffer);
+		pack32(step_ptr->cpu_freq_gov, buffer);
+		pack32(task_cnt, buffer);
+		if (step_ptr->step_layout)
+			pack32(step_ptr->step_layout->task_dist, buffer);
+		else
+			pack32((uint32_t) SLURM_DIST_UNKNOWN, buffer);
+		pack32(step_ptr->time_limit, buffer);
+		pack32(step_ptr->state, buffer);
+		pack32(step_ptr->srun_pid, buffer);
+
+		pack_time(step_ptr->start_time, buffer);
+		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
+			run_time = step_ptr->pre_sus_time;
+		} else {
+			begin_time = MAX(step_ptr->start_time,
+					 step_ptr->job_ptr->suspend_time);
+			run_time = step_ptr->pre_sus_time +
+				difftime(time(NULL), begin_time);
+		}
+		pack_time(run_time, buffer);
+
+		packstr(slurm_conf.cluster_name, buffer);
+		packstr(step_ptr->container, buffer);
+		if (step_ptr->job_ptr->part_ptr)
+			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
+		else
+			packstr(step_ptr->job_ptr->partition, buffer);
+		packstr(step_ptr->host, buffer);
+		packstr(step_ptr->resv_ports, buffer);
+		packstr(node_list, buffer);
+		packstr(step_ptr->name, buffer);
+		packstr(step_ptr->network, buffer);
+		pack_bit_str_hex(pack_bitstr, buffer);
+		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
+					     args->proto_version);
+		packstr(step_ptr->tres_fmt_alloc_str, buffer);
+		pack16(step_ptr->start_protocol_ver, buffer);
+
+		packstr(step_ptr->cpus_per_tres, buffer);
+		packstr(step_ptr->mem_per_tres, buffer);
+		packstr(step_ptr->submit_line, buffer);
+		packstr(step_ptr->tres_bind, buffer);
+		packstr(step_ptr->tres_freq, buffer);
+		packstr(step_ptr->tres_per_step, buffer);
+		packstr(step_ptr->tres_per_node, buffer);
+		packstr(step_ptr->tres_per_socket, buffer);
+		packstr(step_ptr->tres_per_task, buffer);
+	} else if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 
