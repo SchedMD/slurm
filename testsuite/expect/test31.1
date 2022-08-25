@@ -32,9 +32,15 @@ set proc             ""
 set run_host         ""
 set make_file        0
 set pcmd_prog        "/opt/cray/nodehealth/default/bin/pcmd"
+set file_dir         "/tmp"
 
 # Use PID to avoid issues with ps aux killall
 set test_pid         [pid]
+
+set run_host         [get_nodes_by_request]
+if { [llength $run_host] != 1 } {
+	skip "This test need to be able to submit jobs"
+}
 
 if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	set make_file 1
@@ -204,27 +210,6 @@ proc run_job { file_type program_name conf_change task_pro} {
 set config_dir [get_conf_path]
 set config_file $config_dir/slurm.conf
 save_conf $config_file
-
-set get_name 0
-spawn $srun -t1 -l $bin_printenv SLURMD_NODENAME
-expect {
-	-re "0: *($re_word_str)" {
-		set run_host $expect_out(1,string)
-		set get_name 1
-		exp_continue
-	}
-	timeout {
-		fail "Did not get run_host"
-	}
-	eof {
-		wait
-	}
-}
-
-set file_dir "/tmp"
-if {$get_name != 1} {
-	fail "Did not get run_host"
-}
 
 #
 # Test srun --task-epilog
