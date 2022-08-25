@@ -6096,7 +6096,7 @@ static int
 _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		     uint16_t protocol_version)
 {
-	uint32_t uint32_tmp, start;
+	uint32_t uint32_tmp, start, script_len;
 	job_desc_msg_t *job_desc_ptr = NULL;
 
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
@@ -6175,10 +6175,10 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		    != job_desc_ptr->spank_job_env_size)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
-				       &uint32_tmp, buffer);
+				       &script_len, buffer);
 
 		job_desc_ptr->script_hash.type = HASH_PLUGIN_K12;
-		(void) hash_g_compute(job_desc_ptr->script, uint32_tmp,
+		(void) hash_g_compute(job_desc_ptr->script, script_len,
 				      NULL, 0, &job_desc_ptr->script_hash);
 
 		safe_unpackstr_array(&job_desc_ptr->argv,
@@ -6366,10 +6366,10 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		    != job_desc_ptr->spank_job_env_size)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
-				       &uint32_tmp, buffer);
+				       &script_len, buffer);
 
 		job_desc_ptr->script_hash.type = HASH_PLUGIN_K12;
-		(void) hash_g_compute(job_desc_ptr->script, uint32_tmp,
+		(void) hash_g_compute(job_desc_ptr->script, script_len,
 				      NULL, 0, &job_desc_ptr->script_hash);
 
 		safe_unpackstr_array(&job_desc_ptr->argv,
@@ -6580,10 +6580,10 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		    != job_desc_ptr->spank_job_env_size)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
-				       &uint32_tmp, buffer);
+				       &script_len, buffer);
 
 		job_desc_ptr->script_hash.type = HASH_PLUGIN_K12;
-		(void) hash_g_compute(job_desc_ptr->script, uint32_tmp,
+		(void) hash_g_compute(job_desc_ptr->script, script_len,
 				      NULL, 0, &job_desc_ptr->script_hash);
 
 		safe_unpackstr_array(&job_desc_ptr->argv,
