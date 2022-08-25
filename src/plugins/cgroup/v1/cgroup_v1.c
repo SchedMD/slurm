@@ -112,6 +112,8 @@ typedef struct {
 	uint32_t taskid;
 } task_cg_info_t;
 
+extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f);
+
 static int _step_destroy_internal(cgroup_ctl_type_t sub, bool root_locked);
 
 static int _cgroup_init(cgroup_ctl_type_t sub)
@@ -1313,13 +1315,16 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 
 	results = xmalloc(sizeof(*results));
 
-	results->step_memsw_failcnt = _failcnt(
-		&int_cg[CG_MEMORY][CG_LEVEL_STEP],
-		"memory.memsw.failcnt");
+	if (cgroup_p_has_feature(CG_MEMCG_SWAP)) {
+		results->step_memsw_failcnt = _failcnt(
+			&int_cg[CG_MEMORY][CG_LEVEL_STEP],
+			"memory.memsw.failcnt");
+		results->job_memsw_failcnt = _failcnt(
+			&int_cg[CG_MEMORY][CG_LEVEL_JOB],
+			"memory.memsw.failcnt");
+	}
 	results->step_mem_failcnt = _failcnt(&int_cg[CG_MEMORY][CG_LEVEL_STEP],
 					     "memory.failcnt");
-	results->job_memsw_failcnt = _failcnt(&int_cg[CG_MEMORY][CG_LEVEL_JOB],
-					      "memory.memsw.failcnt");
 	results->job_mem_failcnt = _failcnt(&int_cg[CG_MEMORY][CG_LEVEL_JOB],
 					    "memory.failcnt");
 

@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     (for the prolog) and the node being drained.
  -- cgroup/v1 - Make a static variable to remove potential redundant checking
     for if the system has swap or not.
+ -- cgroup/v1 - Add check for swap when running OOM check after task
+    termination.
 
 * Changes in Slurm 22.05.3
 ==========================
