@@ -159,7 +159,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	change_pro_epi $file_type $program_name $conf_change $task_pro
 
 	# Wait for NFS file propagation as needed
-	$bin_sleep 10
+	sleep 10
 
 	# Update config file
 	reconfigure -fail

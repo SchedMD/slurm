@@ -183,7 +183,7 @@ proc sbatch { mfed error } {
 		fail "Batch submit failure"
 	}
 
-	$bin_sleep 3
+	sleep 3
 	return $job_id
 }
 
