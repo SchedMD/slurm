@@ -373,6 +373,12 @@ extern int job_defaults_unpack(void **out, uint16_t protocol_version,
 extern int set_nodes_alias(const char *alias_list);
 
 /*
+ * slurm_conf_init_stepd - Since the stepd does not read in the file and
+ * receives it from the slurm we need to call a different function to do this.
+ */
+extern void slurm_conf_init_stepd(void);
+
+/*
  * slurm_conf_init - load the slurm configuration from the a file.
  * IN file_name - name of the slurm configuration file to be read
  *	If file_name is NULL, then this routine tries to use

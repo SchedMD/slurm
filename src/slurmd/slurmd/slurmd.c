@@ -1160,6 +1160,7 @@ static void _build_conf_buf(void)
 	FREE_NULL_BUFFER(conf->buf);
 	conf->buf = init_buf(0);
 	pack_slurmd_conf_lite(conf, conf->buf);
+	pack_slurm_conf_lite(conf->buf);
 	if (assoc_mgr_tres_list) {
 		assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 		assoc_mgr_lock(&locks);

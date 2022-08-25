@@ -124,7 +124,6 @@ main (int argc, char **argv)
 	if (_process_cmdline (argc, argv) < 0)
 		fatal ("Error in slurmstepd command line");
 
-	slurm_conf_init(NULL);
 	run_command_init();
 
 	xsignal_block(slurmstepd_blocked_signals);
@@ -135,13 +134,13 @@ main (int argc, char **argv)
 
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
+	/* Receive job parameters from the slurmd */
+	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg);
+
 	if (select_g_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
 		fatal( "failed to initialize authentication plugin" );
-
-	/* Receive job parameters from the slurmd */
-	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg);
 
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
@@ -323,6 +322,11 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 	if (rc == SLURM_ERROR)
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
 
+	rc = unpack_slurm_conf_lite_no_alloc(buffer);
+	if (rc == SLURM_ERROR)
+		fatal("slurmstepd: problem with unpack of slurm_conf");
+	slurm_conf_init_stepd();
+
 	if (slurm_unpack_list(&tmp_list,
 			      slurmdb_unpack_tres_rec,
 			      slurmdb_destroy_tres_rec,
@@ -431,7 +435,6 @@ static int _handle_spank_mode (int argc, char **argv)
 	log_init(prefix, lopts, LOG_DAEMON, NULL);
 	xfree(prefix);
 
-	slurm_conf_init(NULL);
 	/*
 	 *  When we are started from slurmd, a lightweight config is
 	 *   sent over the stdin fd. If we are able to read this conf
@@ -580,6 +583,10 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("Failed to read cgroup conf from slurmd");
 
 	slurm_conf.slurmd_port = conf->port;
+	xfree(slurm_conf.slurmd_spooldir);
+	slurm_conf.slurmd_spooldir = xstrdup(conf->spooldir);
+	slurm_conf.slurmd_syslog_debug = conf->syslog_debug;
+
 	setenvf(NULL, "SLURMD_NODENAME", "%s", conf->node_name);
 	/* receive acct_gather conf from slurmd */
 	if (acct_gather_read_conf(sock) != SLURM_SUCCESS)

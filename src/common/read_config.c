@@ -3454,6 +3454,26 @@ extern int set_nodes_alias(const char *alias_list)
 	return rc;
 }
 
+extern void slurm_conf_init_stepd(void)
+{
+	xassert(running_in_slurmstepd());
+	if (slurm_conf.propagate_rlimits_except) {
+		if ((parse_rlimits(slurm_conf.propagate_rlimits_except,
+				   NO_PROPAGATE_RLIMITS)) < 0) {
+			error("Bad PropagateResourceLimitsExcept: %s",
+			      slurm_conf.propagate_rlimits_except);
+			return;
+		}
+	} else if ((parse_rlimits(slurm_conf.propagate_rlimits,
+				  PROPAGATE_RLIMITS)) < 0) {
+		error("Bad PropagateResourceLimits: %s",
+		      slurm_conf.propagate_rlimits);
+		return;
+	}
+
+	conf_initialized = true;
+}
+
 /*
  * slurm_conf_init - load the slurm configuration from the a file.
  * IN file_name - name of the slurm configuration file to be read

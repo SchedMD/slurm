@@ -2760,6 +2760,11 @@ typedef struct reservation_name_msg {
 #define LOG_FMT_SHORT           5
 #define LOG_FMT_THREAD_ID       6
 
+/*
+ * If adding to slurm_conf_t contents that need to be used in the slurmstepd
+ * please remember to add those to [un]pack_slurm_conf_lite() in
+ * src/slurmd/common/slurmstepd_init.[h|c]
+ */
 typedef struct {
 	time_t last_update;	/* last update time of the build parameters */
 	char *accounting_storage_tres; /* list of tres */
