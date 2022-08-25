@@ -38,16 +38,16 @@ the same version of Slurm.</p>
 
 <p>A plugin must define and export the following symbols:</p>
 <ul>
-<li><span class="commandline">char plugin_type[]<br>
-</span> a unique, short, formatted string to identify the plugin's purpose as
+<li><span class="commandline">char plugin_type[]</span><br>
+A unique, short, formatted string to identify the plugin's purpose as
 described above. A &quot;null&quot; plugin (i.e., one that implements the desired
 API as stubs) should have a minor type of &quot;none.&quot;</li>
-<li><span class="commandline">char plugin_name[]<br>
-</span> a free-form string that identifies the plugin in human-readable terms,
+<li><span class="commandline">char plugin_name[]</span><br>
+A free-form string that identifies the plugin in human-readable terms,
 such as &quot;Kerberos authentication.&quot; Slurm will use this string to identify
 the plugin to end users.</li>
-<li><span class="commandline">const uint32_t plugin_version<br>
-</span> identifies the version of Slurm used to build this plugin and
+<li><span class="commandline">const uint32_t plugin_version</span><br>
+Identifies the version of Slurm used to build this plugin and
 any attempt to load the plugin from a different version of Slurm will result
 in an error.
 The micro version is not considered for SPANK plugins.</li>
