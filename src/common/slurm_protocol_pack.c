@@ -2498,7 +2498,7 @@ static int _unpack_job_step_create_request_msg(
 		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
 		safe_unpackstr(&tmp_ptr->tres_per_socket, buffer);
 		safe_unpackstr(&tmp_ptr->tres_per_task, buffer);
-	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
