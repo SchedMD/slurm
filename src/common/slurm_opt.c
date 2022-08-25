@@ -5973,6 +5973,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	else
 		job_desc->contiguous = NO_VAL16;
 
+	job_desc->container = xstrdup(opt_local->container);
 	job_desc->container_id = xstrdup(opt_local->container_id);
 
 	if (opt_local->core_spec != NO_VAL16)
