@@ -6174,7 +6174,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		if (envcount(job_desc_ptr->spank_job_env)
 		    != job_desc_ptr->spank_job_env_size)
 			goto unpack_error;
-		safe_unpackstr(&job_desc_ptr->script, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->script,
+				       &uint32_tmp, buffer);
 
 		job_desc_ptr->script_hash.type = HASH_PLUGIN_K12;
 		(void) hash_g_compute(job_desc_ptr->script, uint32_tmp,
