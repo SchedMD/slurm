@@ -76,25 +76,11 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 		run_command -fail "$bin_echo $arg=$test_dir/$pro_epi_prog > $test_dir/$inc_slurm"
 	}
 
-	set make_ln 0
 	file delete $test_dir/$program_name
-	spawn $bin_bash -c "$bin_ln -sv $bin_sleep $test_dir/$program_name"
-	expect {
-		-re "$program_name" {
-			set make_ln 1
-			exp_continue
-		}
-		timeout {
-			fail "There was a problem creating the link"
-		}
-		eof {
-			wait
-		}
-	}
 
-	if {$make_ln != 1} {
-		fail "Link was not created"
-	}
+	# We need the full path of bin_sleep to create the link
+	set bin_sleep_path [lindex [auto_execok sleep] 0]
+	run_command -fail "$bin_bash -c '$bin_ln -sv $bin_sleep_path $test_dir/$program_name'"
 
 	run_command -fail "$bin_echo '#!$bin_bash\n' > $test_dir/$pro_epi_prog"
 	if {$make_file == 1} {
