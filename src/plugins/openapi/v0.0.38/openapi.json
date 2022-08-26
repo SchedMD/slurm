@@ -2359,7 +2359,7 @@
           },
           "time_limit": {
             "type": "integer",
-            "description": "Step time limit."
+            "description": "Step time limit in minutes."
           },
           "time_minimum": {
             "type": "integer",
