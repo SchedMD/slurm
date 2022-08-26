@@ -64,7 +64,7 @@ The specialized cores will be selected in the following order:</p>
 <li>socket: 0 core: 0</li>
 </ol>
 
-<p>Slurm can be configured to specialize the last, rather than the first cores
+<p>Slurm can be configured to specialize the first, rather than the last cores
 by configuring SchedulerParameters=spec_cores_first. In that case,
 the first core selected will be the lowest numbered core on the lowest
 numbered socket.
@@ -111,6 +111,6 @@ system use.</p>
 cores for their job, the configuration parameter <i>AllowSpecResourcesUsage</i>
 must be set to a value of <i>1</i>.</p>
 
-<p style="text-align:center;">Last modified 18 March 2022</p>
+<p style="text-align:center;">Last modified 26 August 2022</p>
 
 <!--#include virtual="footer.txt"-->
