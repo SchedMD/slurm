@@ -223,7 +223,7 @@ def run_command_exit(command, **run_command_kwargs):
     return results['exit_code']
 
 
-def repeat_until(callable, condition, timeout=5, poll_interval=None, fatal=False):
+def repeat_until(callable, condition, timeout=15, poll_interval=None, fatal=False):
     """Repeats a callable until a condition is met or it times out.
 
     The callable returns an object that the condition operates on.
@@ -234,7 +234,7 @@ def repeat_until(callable, condition, timeout=5, poll_interval=None, fatal=False
         condition (callable): A callable object that returns a boolean. This
             function will return True when the condition call returns True.
         timeout (integer): If timeout number of seconds expires before the
-            condition is met, return False.
+            condition is met, return False. The default timeout is 15 seconds.
         poll_interval (float): Number of seconds to wait between condition
             polls. This may be a decimal fraction. The default poll interval
             depends on the timeout used, but varies between .1 and 1 seconds.
@@ -450,7 +450,7 @@ def stop_slurm(quiet=False):
     run_command("scontrol shutdown", user=properties['slurm-user'], quiet=quiet)
 
     # Verify that slurmctld is not running
-    if not repeat_until(lambda : pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"), lambda pids: len(pids) == 0, timeout=10):
+    if not repeat_until(lambda : pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"), lambda pids: len(pids) == 0):
         log_die("Slurmctld is still running")
 
     # Build list of slurmds
@@ -463,7 +463,7 @@ def stop_slurm(quiet=False):
             slurmd_list.extend(node_range_to_list(node_name_expression))
 
     # Verify that slurmds are not running
-    if not repeat_until(lambda : pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"), lambda pids: len(pids) == 0, timeout=15):
+    if not repeat_until(lambda : pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"), lambda pids: len(pids) == 0):
         pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd")
         run_command(f"pgrep -f {properties['slurm-sbin-dir']}/slurmd -a", quiet=quiet)
         log_die(f"Some slurmds are still running ({pids})")
@@ -1063,7 +1063,7 @@ def cancel_all_jobs(fatal=True, timeout=5, quiet=False):
     if results['exit_code'] != 0 and results['exit_code'] != 60:
         log_die(f"Failure cancelling jobs: {results['stderr']}")
 
-    # Currently inherits 5 second timeout from repeat_until
+    # Inherits timeout from repeat_until
     return repeat_command_until(f"squeue -u {user_name} --noheader", lambda results: results['stdout'] == '', fatal=fatal, timeout=timeout, quiet=quiet)
 
 
@@ -1999,7 +1999,8 @@ def wait_for_file(file_name, **repeat_until_kwargs):
     """Waits for the specified file to be present.
 
     This function waits up to timeout seconds for the file to be present,
-    polling every poll interval seconds.
+    polling every poll interval seconds. The default timeout and poll_interval
+    are inherited from repeat_until.
 
     Args*:
         file_name (string): The file name.
