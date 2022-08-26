@@ -2427,54 +2427,6 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 	return false;
 }
 
-static int _build_node_spec_bitmap(node_record_t *node_ptr)
-{
-	uint32_t size;
-	int *cpu_spec_array;
-	int i;
-
-	if (node_ptr->threads == 0) {
-		error("Node %s has invalid thread per core count (%u)",
-		      node_ptr->name, node_ptr->threads);
-		return SLURM_ERROR;
-	}
-
-	if (!node_ptr->cpu_spec_list)
-		return SLURM_SUCCESS;
-	size = node_ptr->tot_cores;
-	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
-	node_ptr->node_spec_bitmap = bit_alloc(size);
-	bit_set_all(node_ptr->node_spec_bitmap);
-
-	/* remove node's specialized cpus now */
-	cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);
-	i = 0;
-	while (cpu_spec_array[i] != -1) {
-		int start = (cpu_spec_array[i] / node_ptr->threads);
-		int end = (cpu_spec_array[i + 1] / node_ptr->threads);
-		if (start > size) {
-			error("%s: Specialized CPUs id start above the configured limit.",
-			      __func__);
-			break;
-		}
-
-		if (end > size) {
-			error("%s: Specialized CPUs id end above the configured limit",
-			      __func__);
-			end = size;
-		}
-		/*
-		 * We need to test to make sure we have these bits in this map.
-		 * If the node goes from 12 cpus to 6 like scenario.
-		 */
-		bit_nclear(node_ptr->node_spec_bitmap, start, end);
-		i += 2;
-	}
-	node_ptr->core_spec_cnt = bit_clear_count(node_ptr->node_spec_bitmap);
-	xfree(cpu_spec_array);
-	return SLURM_SUCCESS;
-}
-
 extern int update_node_record_acct_gather_data(
 	acct_gather_node_resp_msg_t *msg)
 {
@@ -2540,7 +2492,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	char *orig_features = NULL, *orig_features_act = NULL;
 	uint32_t node_flags;
 	time_t now = time(NULL);
-	bool orig_node_avail, was_invalid_reg, was_powering_up = false;
+	bool orig_node_avail;
+	bool was_invalid_reg, was_powering_up = false, was_powered_down = false;
 	static uint32_t cr_flag = NO_VAL;
 	static int node_features_cnt = 0;
 	int sockets1, sockets2;	/* total sockets on node */
@@ -2747,13 +2700,28 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 	}
 
-	if (reg_msg->cpu_spec_list && !node_ptr->cpu_spec_list) {
-		xfree(node_ptr->cpu_spec_list);
+	if (reg_msg->cpu_spec_list) {
+		bitstr_t *node_spec_bitmap_old = node_ptr->node_spec_bitmap;
+		char *cpu_spec_list_old = node_ptr->cpu_spec_list;
+
+		node_ptr->node_spec_bitmap = NULL;
 		node_ptr->cpu_spec_list = reg_msg->cpu_spec_list;
 		reg_msg->cpu_spec_list = NULL;	/* Nothing left to free */
 
-		if (_build_node_spec_bitmap(node_ptr) != SLURM_SUCCESS)
+		if (build_node_spec_bitmap(node_ptr) != SLURM_SUCCESS)
 			error_code = EINVAL;
+		else if (!bit_equal(node_spec_bitmap_old,
+				    node_ptr->node_spec_bitmap)) {
+			debug("Node %s has different spec CPUs than expected (%s, %s)",
+			      reg_msg->node_name, cpu_spec_list_old,
+			      node_ptr->cpu_spec_list);
+			error_code = EINVAL;
+			if (reason_down)
+				xstrcat(reason_down, ", ");
+			xstrcat(reason_down, "CoreSpec differ");
+		}
+		xfree(cpu_spec_list_old);
+		FREE_NULL_BITMAP(node_spec_bitmap_old);
 	}
 
 	xfree(node_ptr->arch);
@@ -2785,7 +2753,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	    IS_NODE_POWERING_UP(node_ptr) ||
 	    IS_NODE_POWERING_DOWN(node_ptr) ||
 	    IS_NODE_POWERED_DOWN(node_ptr)) {
-		bool was_powered_down = IS_NODE_POWERED_DOWN(node_ptr);
+		was_powered_down = IS_NODE_POWERED_DOWN(node_ptr);
 
 		info("Node %s now responding", node_ptr->name);
 
@@ -2835,7 +2803,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			error("Setting node %s state to INVAL with reason:%s",
 			       reg_msg->node_name, reason_down);
 
-			if (was_powering_up)
+			if (was_powering_up || was_powered_down)
 				kill_running_job_by_node_name(node_ptr->name);
 		}
 
