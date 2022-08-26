@@ -185,24 +185,15 @@ static void _node_record_hash_identity (void* item, const char** key,
  */
 hostlist_t bitmap2hostlist (bitstr_t *bitmap)
 {
-	int i, first, last;
 	hostlist_t hl;
+	node_record_t *node_ptr;
 
 	if (bitmap == NULL)
 		return NULL;
 
-	first = bit_ffs(bitmap);
-	if (first == -1)
-		return NULL;
-
-	last  = bit_fls(bitmap);
 	hl = hostlist_create(NULL);
-	for (i = first; i <= last; i++) {
-		if (bit_test(bitmap, i) == 0)
-			continue;
-		if (!node_record_table_ptr[i])
-			continue;
-		hostlist_push_host(hl, node_record_table_ptr[i]->name);
+	for (int i = 0; (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
+		hostlist_push_host(hl, node_ptr->name);
 	}
 	return hl;
 
@@ -1465,6 +1456,30 @@ extern node_record_t *next_node(int *index)
 			return NULL;
 		if (*index > last_node_index)
 			return NULL;
+	}
+
+	xassert(node_record_table_ptr[*index]->index == *index);
+
+	return node_record_table_ptr[*index];
+}
+
+extern node_record_t *next_node_bitmap(bitstr_t *bitmap, int *index)
+{
+	xassert(index);
+
+	if (*index >= node_record_count)
+		return NULL;
+
+	xassert(bitmap);
+	xassert(bit_size(bitmap) == node_record_count);
+
+	while (true) {
+		*index = bit_ffs_from_bit(bitmap, *index);
+		if (*index == -1)
+			return NULL;
+		if (node_record_table_ptr[*index])
+			break;
+		(*index)++;  /* Skip blank entries */
 	}
 
 	xassert(node_record_table_ptr[*index]->index == *index);

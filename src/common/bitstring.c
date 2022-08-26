@@ -533,18 +533,26 @@ bit_nffs(bitstr_t *b, int32_t n)
 }
 
 /*
- * Find first bit set in b.
+ * Find first bit set in b from an offset.
  *   b (IN)		bitstring to search
- *   RETURN 		resulting bit position (-1 if none found)
+ *   bit (IN)		bit to start the search at
+ *   RETURN		resulting bit position (-1 if none found)
  */
-bitoff_t
-bit_ffs(bitstr_t *b)
+bitoff_t bit_ffs_from_bit(bitstr_t *b, bitoff_t bit)
 {
-	bitoff_t bit = 0, value = -1;
+	bitoff_t value = -1;
 
 	_assert_bitstr_valid(b);
 
-	while (bit < _bitstr_bits(b) && value == -1) {
+	while ((bit % (sizeof(bitstr_t) * 8)) && (bit < _bitstr_bits(b))) {
+		if (bit_test(b, bit)) {
+			value = bit;
+			break;
+		}
+		bit++;
+	}
+
+	while ((bit < _bitstr_bits(b)) && (value == -1)) {
 		int32_t word = _bit_word(bit);
 
 		if (b[word] == 0) {
@@ -569,6 +577,16 @@ bit_ffs(bitstr_t *b)
 		return value;
 	else
 		return -1;
+}
+
+/*
+ * Find first bit set in b.
+ *   b (IN)		bitstring to search
+ *   RETURN 		resulting bit position (-1 if none found)
+ */
+bitoff_t bit_ffs(bitstr_t *b)
+{
+	return bit_ffs_from_bit(b, 0);
 }
 
 /*

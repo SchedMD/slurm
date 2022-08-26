@@ -1893,25 +1893,20 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 					     gres_mc_data_t *tres_mc_ptr)
 {
 	uint32_t **tasks_per_node_socket;
-	int i, i_first, i_last, j, node_cnt, job_node_inx = 0;
+	int j, node_cnt, job_node_inx = 0;
 	int c, s, core_offset;
 	int cpus_per_task = 1, cpus_per_node, cpus_per_core;
 	int task_per_node_limit = 0;
 	int32_t rem_tasks, excess_tasks;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
+	node_record_t *node_ptr;
 
 	rem_tasks = tres_mc_ptr->ntasks_per_job;
 	node_cnt = bit_size(job_res->node_bitmap);
 	tasks_per_node_socket = xcalloc(node_cnt, sizeof(uint32_t *));
-	i_first = bit_ffs(job_res->node_bitmap);
-	if (i_first != -1)
-		i_last  = bit_fls(job_res->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
+	for (int i = 0; (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
+	     i++) {
 		int tasks_per_node = 0;
-		if (!bit_test(job_res->node_bitmap, i))
-			continue;
 		if (get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 					  &cores_per_socket_cnt)) {
 			error("%s: failed to get socket/core count", __func__);
@@ -1956,7 +1951,7 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 		}
 		core_offset = get_job_resources_offset(job_res, job_node_inx++,
 						       0, 0);
-		cpus_per_core = node_record_table_ptr[i]->tpc;
+		cpus_per_core = node_ptr->tpc;
 		for (s = 0; s < sock_cnt; s++) {
 			int tasks_per_socket = 0, tpc, skip_cores = 0;
 			for (c = 0; c < cores_per_socket_cnt; c++) {
@@ -2020,9 +2015,10 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 		}
 	}
 	while ((rem_tasks > 0) && overcommit) {
-		for (i = i_first; (rem_tasks > 0) && (i <= i_last); i++) {
-			if (!bit_test(job_res->node_bitmap, i))
-				continue;
+		for (int i = 0;
+		     ((rem_tasks > 0) &&
+		      next_node_bitmap(job_res->node_bitmap, &i));
+		     i++) {
 			for (s = 0; (rem_tasks > 0) && (s < sock_cnt); s++) {
 				for (c = 0; c < cores_per_socket_cnt; c++) {
 					j = (s * cores_per_socket_cnt) + c;
@@ -2127,29 +2123,22 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 	sock_gres_t *sock_gres;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
-	int i, i_first, i_last, node_inx = -1, gres_cnt;
+	int i, node_inx = -1, gres_cnt;
 	int node_cnt, rem_node_cnt;
 	int job_fini = -1;	/* -1: not applicable, 0: more work, 1: fini */
 	uint32_t **tasks_per_node_socket = NULL;
 	int rc = SLURM_SUCCESS;
+	node_record_t *node_ptr;
 
 	if (!job_res || !job_res->node_bitmap)
 		return SLURM_ERROR;
 
 	node_cnt = bit_size(job_res->node_bitmap);
 	rem_node_cnt = bit_set_count(job_res->node_bitmap);
-	i_first = bit_ffs(job_res->node_bitmap);
-	if (i_first != -1)
-		i_last  = bit_fls(job_res->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		node_record_t *node_ptr;
-		if (!bit_test(job_res->node_bitmap, i))
-			continue;
+	for (i = 0; (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
+	     i++) {
 		sock_gres_iter =
 			list_iterator_create(sock_gres_list[++node_inx]);
-		node_ptr = node_record_table_ptr[i];
 		while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))){
 			gres_js = sock_gres->gres_state_job->gres_data;
 			gres_ns = sock_gres->gres_state_node->gres_data;
@@ -2171,7 +2160,9 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 				gres_js->gres_cnt_node_select =
 					xcalloc(node_cnt, sizeof(uint64_t));
 			}
-			if (i == i_first)	/* Reinitialize counter */
+
+			/* Reinitialize counter */
+			if (i == bit_ffs(job_res->node_bitmap))
 				gres_js->total_gres = 0;
 
 			if (gres_ns->topo_cnt == 0) {
@@ -2261,9 +2252,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 		 * sockets and are thus generally less desirable to use.
 		 */
 		node_inx = -1;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(job_res->node_bitmap, i))
-				continue;
+		for (i = 0; next_node_bitmap(job_res->node_bitmap, &i); i++) {
 			sock_gres_iter = list_iterator_create(
 				sock_gres_list[++node_inx]);
 			while ((sock_gres = (sock_gres_t *)

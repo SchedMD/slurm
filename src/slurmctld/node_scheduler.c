@@ -169,7 +169,6 @@ static uint16_t _get_ntasks_per_core(struct job_details *details)
  */
 extern void allocate_nodes(job_record_t *job_ptr)
 {
-	int i;
 	node_record_t *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
 	bool has_dynamic_norm = false;
@@ -185,10 +184,8 @@ extern void allocate_nodes(job_record_t *job_ptr)
 		sched_update = slurm_conf.last_update;
 	}
 
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
-			continue;
-
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		if (IS_NODE_DYNAMIC_FUTURE(node_ptr))
 			has_cloud = true;
 
@@ -232,7 +229,6 @@ extern void allocate_nodes(job_record_t *job_ptr)
 /* Set a job's alias_list string */
 extern void set_job_alias_list(job_record_t *job_ptr)
 {
-	int i;
 	node_record_t *node_ptr;
 	static bool cloud_dns = false;
 	static time_t sched_update = 0;
@@ -251,10 +247,8 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 	if (cloud_dns)
 		return;
 
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (!bit_test(job_ptr->node_bitmap, node_ptr->index))
-			continue;
-
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		if (IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
 		    IS_NODE_DYNAMIC_NORM(node_ptr) ||
 		    IS_NODE_CLOUD(node_ptr)) {
@@ -288,7 +282,7 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			     bool suspended, bool preempted)
 {
-	int i, i_first, i_last, node_count = 0;
+	int node_count = 0;
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
 	int down_node_cnt = 0;
@@ -351,12 +345,9 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 				front_end_ptr->node_state = NODE_STATE_IDLE |
 							    state_flags;
 			}
-			for (i = 0; (node_ptr = next_node(&i)); i++) {
-				if (!bit_test(job_ptr->node_bitmap,
-					      node_ptr->index))
-					continue;
-				node_ptr =
-					node_record_table_ptr[node_ptr->index];
+			for (int i = 0; (node_ptr = next_node_bitmap(
+					     job_ptr->node_bitmap, &i));
+			     i++) {
 				make_node_comp(node_ptr, job_ptr, suspended);
 				set_fe_comp = true;
 			}
@@ -376,15 +367,8 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		build_cg_bitmap(job_ptr);
 	use_protocol_version = SLURM_PROTOCOL_VERSION;
 
-	i_first = bit_ffs(job_ptr->node_bitmap_cg);
-	if (i_first >= 0)
-		i_last = bit_fls(job_ptr->node_bitmap_cg);
-	else
-		i_last = i_first - 1;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_ptr->node_bitmap_cg, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(job_ptr->node_bitmap_cg, &i)); i++) {
 		/* Sync up conditionals with make_node_comp() */
 		if (IS_NODE_DOWN(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
@@ -426,17 +410,11 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			    !job_ptr->epilog_running)
 				cleanup_completing(job_ptr);
 
-			i_first = bit_ffs(job_ptr->node_bitmap_cg);
-			if (i_first >= 0)
-				i_last = bit_fls(job_ptr->node_bitmap_cg);
-			else
-				i_last = i_first - 1;
-			for (int i = i_first; i <= i_last; i++) {
-				if (!bit_test(job_ptr->node_bitmap_cg, i))
-					continue;
-				job_epilog_complete(
-					job_ptr->job_id,
-					node_record_table_ptr[i]->name, 0);
+			for (int i = 0; (node_ptr = next_node_bitmap(
+						 job_ptr->node_bitmap_cg, &i));
+			     i++) {
+				job_epilog_complete(job_ptr->job_id,
+						    node_ptr->name, 0);
 			}
 		}
 
@@ -1469,21 +1447,15 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 static void _sync_node_weight(struct node_set *node_set_ptr, int node_set_size)
 {
-	int i, i_first, i_last, s;
 	node_record_t *node_ptr;
 
-	for (s = 0; s < node_set_size; s++) {
+	for (int s = 0; s < node_set_size; s++) {
 		if (!node_set_ptr[s].my_bitmap)
 			continue;	/* No nodes in this set */
-		i_first = bit_ffs(node_set_ptr[s].my_bitmap);
-		if (i_first >= 0)
-			i_last = bit_fls(node_set_ptr[s].my_bitmap);
-		else
-			i_last = i_first - 1;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(node_set_ptr[s].my_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(node_set_ptr[s].my_bitmap,
+						  &i));
+		     i++) {
 			node_ptr->sched_weight = node_set_ptr[s].sched_weight;
 		}
 	}
@@ -2243,8 +2215,8 @@ static void _end_null_job(job_record_t *job_ptr)
 static List _handle_exclusive_gres(job_record_t *job_ptr,
 				   bitstr_t *select_bitmap, bool test_only)
 {
-	int i_first, i_last;
 	List post_list = NULL;
+	node_record_t *node_ptr;
 
 	if (test_only || !gres_get_gres_cnt())
 		return NULL;
@@ -2256,20 +2228,11 @@ static List _handle_exclusive_gres(job_record_t *job_ptr,
 	    !(job_ptr->details->whole_node == 1))
 		return NULL;
 
-	i_first = bit_ffs(select_bitmap);
-	if (i_first != -1)
-		i_last = bit_fls(select_bitmap);
-	else
-		i_last = -2;
-
-	for (int i = i_first; i <= i_last; i++) {
-		if (!bit_test(select_bitmap, i))
-			continue;
-		gres_ctld_job_select_whole_node(
-			&post_list,
-			node_record_table_ptr[i]->gres_list,
-			job_ptr->job_id,
-			node_record_table_ptr[i]->name);
+	for (int i = 0; (node_ptr = next_node_bitmap(select_bitmap, &i)); i++) {
+		gres_ctld_job_select_whole_node(&post_list,
+						node_ptr->gres_list,
+						job_ptr->job_id,
+						node_ptr->name);
 	}
 
 	return post_list;
@@ -2951,7 +2914,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	slurm_cred_arg_t cred_arg;
 	bool sign_cred = false;
 #ifndef HAVE_FRONT_END
-	int i;
+	node_record_t *node_ptr;
 #endif
 
 	xassert(job_ptr);
@@ -2967,13 +2930,10 @@ extern void launch_prolog(job_record_t *job_ptr)
 	if (protocol_version > job_ptr->front_end_ptr->protocol_version)
 		protocol_version = job_ptr->front_end_ptr->protocol_version;
 #else
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		if (protocol_version >
-		    node_record_table_ptr[i]->protocol_version)
-			protocol_version =
-				node_record_table_ptr[i]->protocol_version;
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
+		if (protocol_version > node_ptr->protocol_version)
+			protocol_version = node_ptr->protocol_version;
 	}
 #endif
 
@@ -3277,7 +3237,6 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 extern int job_req_node_filter(job_record_t *job_ptr,
 			       bitstr_t *avail_bitmap, bool test_only)
 {
-	int i;
 	struct job_details *detail_ptr = job_ptr->details;
 	multi_core_data_t *mc_ptr;
 	node_record_t *node_ptr;
@@ -3290,10 +3249,7 @@ extern int job_req_node_filter(job_record_t *job_ptr,
 	}
 
 	mc_ptr = detail_ptr->mc_ptr;
-	for (i = 0; i < node_record_count; i++) {
-		if (!bit_test(avail_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node_bitmap(avail_bitmap, &i)); i++) {
 		if ((detail_ptr->pn_min_cpus  > node_ptr->cpus)   ||
 		    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
 		     node_ptr->real_memory) 			    ||
@@ -4295,7 +4251,6 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
  */
 extern void re_kill_job(job_record_t *job_ptr)
 {
-	int i;
 	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
 	hostlist_t kill_hostlist;
@@ -4343,12 +4298,12 @@ extern void re_kill_job(job_record_t *job_ptr)
 	if (job_ptr->batch_host &&
 	    (front_end_ptr = find_front_end_record(job_ptr->batch_host))) {
 		agent_args->protocol_version = front_end_ptr->protocol_version;
-		if (IS_NODE_DOWN(front_end_ptr)) {
-			for (i = 0; (node_ptr = next_node(&i)); i++) {
-				if ((job_ptr->node_bitmap_cg == NULL) ||
-				    (!bit_test(job_ptr->node_bitmap_cg,
-					       node_ptr->index)))
-					continue;
+		if (IS_NODE_DOWN(front_end_ptr) &&
+		    job_ptr->node_bitmap_cg) {
+			for (int i = 0;
+			     (node_ptr =
+				next_node_bitmap(job_ptr->node_bitmap_cg, &i));
+			     i++) {
 				bit_clear(job_ptr->node_bitmap_cg,
 					  node_ptr->index);
 				job_update_tres_cnt(job_ptr, node_ptr->index);
@@ -4371,31 +4326,34 @@ extern void re_kill_job(job_record_t *job_ptr)
 		}
 	}
 #else
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if ((job_ptr->node_bitmap_cg == NULL) ||
-		    (bit_test(job_ptr->node_bitmap_cg, node_ptr->index) == 0)) {
-			continue;
-		} else if (IS_NODE_DOWN(node_ptr)) {
-			/* Consider job already completed */
-			bit_clear(job_ptr->node_bitmap_cg, node_ptr->index);
-			job_update_tres_cnt(job_ptr, node_ptr->index);
-			if (node_ptr->comp_job_cnt)
-				(node_ptr->comp_job_cnt)--;
-			if ((job_ptr->node_cnt > 0) &&
-			    ((--job_ptr->node_cnt) == 0)) {
-				cleanup_completing(job_ptr);
-				batch_requeue_fini(job_ptr);
-				last_node_update = time(NULL);
+	if (job_ptr->node_bitmap_cg) {
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap_cg, &i));
+		     i++) {
+			if (IS_NODE_DOWN(node_ptr)) {
+				/* Consider job already completed */
+				bit_clear(job_ptr->node_bitmap_cg,
+					  node_ptr->index);
+				job_update_tres_cnt(job_ptr, node_ptr->index);
+				if (node_ptr->comp_job_cnt)
+					(node_ptr->comp_job_cnt)--;
+				if ((job_ptr->node_cnt > 0) &&
+				    ((--job_ptr->node_cnt) == 0)) {
+					cleanup_completing(job_ptr);
+					batch_requeue_fini(job_ptr);
+					last_node_update = time(NULL);
+				}
+			} else if (!IS_NODE_NO_RESPOND(node_ptr)) {
+				(void)hostlist_push_host(kill_hostlist,
+							 node_ptr->name);
+				if (agent_args->protocol_version >
+				    node_ptr->protocol_version)
+					agent_args->protocol_version =
+						node_ptr->protocol_version;
+				hostlist_push_host(agent_args->hostlist,
+						   node_ptr->name);
+				agent_args->node_count++;
 			}
-		} else if (!IS_NODE_NO_RESPOND(node_ptr)) {
-			(void)hostlist_push_host(kill_hostlist, node_ptr->name);
-			if (agent_args->protocol_version >
-			    node_ptr->protocol_version)
-				agent_args->protocol_version =
-					node_ptr->protocol_version;
-			hostlist_push_host(agent_args->hostlist,
-					   node_ptr->name);
-			agent_args->node_count++;
 		}
 	}
 #endif

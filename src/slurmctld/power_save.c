@@ -212,7 +212,6 @@ static int _pick_exc_nodes(void *x, void *arg)
 	bitstr_t **orig_exc_nodes = (bitstr_t **) arg;
 	exc_node_partital_t *ext_part_struct = (exc_node_partital_t *) x;
 	bitstr_t *exc_node_cnt_bitmap;
-	int i, i_first, i_last;
 	int avail_node_cnt, exc_node_cnt;
 	node_record_t *node_ptr;
 
@@ -222,18 +221,14 @@ static int _pick_exc_nodes(void *x, void *arg)
 		exc_node_cnt_bitmap =
 			bit_copy(ext_part_struct->exc_node_cnt_bitmap);
 	} else {
-		i = bit_size(ext_part_struct->exc_node_cnt_bitmap);
-		exc_node_cnt_bitmap = bit_alloc(i);
-		i_first = bit_ffs(ext_part_struct->exc_node_cnt_bitmap);
-		if (i_first >= 0)
-			i_last = bit_fls(ext_part_struct->exc_node_cnt_bitmap);
-		else
-			i_last = i_first - 1;
+		exc_node_cnt_bitmap = bit_alloc(
+			bit_size(ext_part_struct->exc_node_cnt_bitmap));
 		exc_node_cnt = ext_part_struct->exc_node_cnt;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(ext_part_struct->exc_node_cnt_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (int i = 0;
+		     (node_ptr =
+		      next_node_bitmap(ext_part_struct->exc_node_cnt_bitmap,
+				       &i));
+		     i++) {
 			if (!IS_NODE_IDLE(node_ptr)			||
 			    IS_NODE_COMPLETING(node_ptr)		||
 			    IS_NODE_DOWN(node_ptr)			||
@@ -366,7 +361,6 @@ static void _do_power_work(time_t now)
 
 	iter = list_iterator_create(resume_job_list);
 	while ((job_id_ptr = list_next(iter))) {
-		int i, i_first, i_last;
 		char *nodes;
 		job_record_t *job_ptr;
 		data_t *job_node_data;
@@ -401,14 +395,7 @@ static void _do_power_work(time_t now)
 		need_resume_bitmap = bit_copy(job_ptr->node_bitmap);
 		bit_and(need_resume_bitmap, power_node_bitmap);
 
-		i_first = bit_ffs(need_resume_bitmap);
-		if (i_first >= 0)
-			i_last = bit_fls(need_resume_bitmap);
-		else
-			i_last = i_first - 1;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(need_resume_bitmap, i))
-				continue;
+		for (int i = 0; next_node_bitmap(need_resume_bitmap, &i); i++) {
 			if ((resume_rate == 0) || (resume_cnt < resume_rate)) {
 				resume_cnt++;
 				resume_cnt_f++;
@@ -864,7 +851,6 @@ static int _set_partition_options(void *x, void *arg)
 	part_record_t *part_ptr = (part_record_t *)x;
 	node_record_t *node_ptr;
 	bool *suspend_time_set = (bool *)arg;
-	int i;
 
 	if (suspend_time_set &&
 	    (part_ptr->suspend_time != INFINITE) &&
@@ -877,10 +863,8 @@ static int _set_partition_options(void *x, void *arg)
 	if (part_ptr->suspend_timeout != NO_VAL16)
 		max_timeout = MAX(max_timeout, part_ptr->resume_timeout);
 
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (!bit_test(part_ptr->node_bitmap, node_ptr->index))
-			continue;
-
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(part_ptr->node_bitmap, &i)); i++) {
 		if (node_ptr->suspend_time == NO_VAL)
 			node_ptr->suspend_time = part_ptr->suspend_time;
 		else if (part_ptr->suspend_time != NO_VAL)

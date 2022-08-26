@@ -1348,7 +1348,6 @@ static void _set_node_caps(void)
  * usage. */
 static void _level_power_by_job(void)
 {
-	int i, i_first, i_last;
 	job_record_t *job_ptr;
 	ListIterator job_iterator;
 	node_record_t *node_ptr;
@@ -1367,14 +1366,9 @@ static void _level_power_by_job(void)
 		min_watts = INFINITE;
 		total_watts = 0;
 		total_nodes = 0;
-		i_first = bit_ffs(job_ptr->node_bitmap);
-		if (i_first < 0)
-			continue;
-		i_last = bit_fls(job_ptr->node_bitmap);
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+		     i++) {
 			if (!node_ptr->power)
 				continue;
 			if (node_ptr->power->state != 1)/*Not ready, no change*/
@@ -1395,10 +1389,9 @@ static void _level_power_by_job(void)
 		log_flag(POWER, "%s: leveling power caps for %pJ (node_cnt:%u min:%u max:%u ave:%u)",
 			 __func__, job_ptr, total_nodes, min_watts, max_watts,
 			 ave_watts);
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+		     i++) {
 			if (!node_ptr->power)
 				continue;
 			if (node_ptr->power->state != 1)/*Not ready, no change*/

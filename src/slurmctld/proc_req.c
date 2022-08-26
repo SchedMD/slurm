@@ -5326,7 +5326,6 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 {
 	int rc;
 #ifndef HAVE_FRONT_END
-	int i;
 	node_record_t *node_ptr;
 	reboot_msg_t *reboot_msg = (reboot_msg_t *)msg->data;
 	char *nodelist = NULL;
@@ -5362,9 +5361,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	}
 
 	lock_slurmctld(node_write_lock);
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (!bit_test(bitmap, node_ptr->index))
-			continue;
+	for (int i = 0; (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_REBOOT_REQUESTED(node_ptr) ||
 		    IS_NODE_REBOOT_ISSUED(node_ptr) ||

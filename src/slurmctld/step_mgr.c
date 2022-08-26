@@ -133,19 +133,12 @@ static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
 			 uint32_t *usable_cpu_cnt)
 {
 	int rem_cpus = step_min_cpus;
-	int first_bit, last_bit, i;
 
 	if (!node_bitmap)
 		return rem_cpus;
 	xassert(usable_cpu_cnt);
-	first_bit = bit_ffs(node_bitmap);
-	if (first_bit >= 0)
-		last_bit = bit_fls(node_bitmap);
-	else
-		last_bit = first_bit - 1;
-	for (i = first_bit; i <= last_bit; i++) {
-		if (!bit_test(node_bitmap, i))
-			continue;
+
+	for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
 		if (usable_cpu_cnt[i] >= rem_cpus)
 			return 0;
 		rem_cpus -= usable_cpu_cnt[i];
@@ -652,7 +645,7 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 		       slurm_msg_type_t msg_type)
 {
 #ifndef HAVE_FRONT_END
-	int i, i_first, i_last;
+	node_record_t *node_ptr;
 #endif
 	signal_tasks_msg_t *signal_tasks_msg;
 	agent_arg_t *agent_args = NULL;
@@ -676,20 +669,13 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 	agent_args->node_count = 1;
 #else
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	i_first = bit_ffs(step_ptr->step_node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(step_ptr->step_node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-			continue;
-		if (agent_args->protocol_version >
-		    node_record_table_ptr[i]->protocol_version)
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(step_ptr->step_node_bitmap, &i));
+	     i++) {
+		if (agent_args->protocol_version > node_ptr->protocol_version)
 			agent_args->protocol_version =
-				node_record_table_ptr[i]->protocol_version;
-		hostlist_push_host(agent_args->hostlist,
-				   node_record_table_ptr[i]->name);
+				node_ptr->protocol_version;
+		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 	}
 #endif
@@ -837,7 +823,6 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 {
 	bitstr_t *picked_node_bitmap = NULL;
 	int *usable_cpu_array;
-	int first_bit, last_bit;
 	int cpu_target;	/* Target number of CPUs per allocated node */
 	int rem_nodes, rem_cpus, save_rem_nodes, save_rem_cpus;
 	int i;
@@ -856,14 +841,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 	usable_cpu_array = xcalloc(cpu_target, sizeof(int));
 	rem_nodes = node_cnt;
 	rem_cpus  = cpu_cnt;
-	first_bit = bit_ffs(nodes_bitmap);
-	if (first_bit >= 0)
-		last_bit  = bit_fls(nodes_bitmap);
-	else
-		last_bit = first_bit - 1;
-	for (i = first_bit; i <= last_bit; i++) {
-		if (!bit_test(nodes_bitmap, i))
-			continue;
+	for (i = 0; next_node_bitmap(nodes_bitmap, &i); i++) {
 		if (usable_cpu_cnt[i] < cpu_target) {
 			usable_cpu_array[usable_cpu_cnt[i]]++;
 			continue;
@@ -906,9 +884,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 	rem_cpus  = save_rem_cpus;
 
 	/* Pick nodes with CPU counts below original target */
-	for (i = first_bit; i <= last_bit; i++) {
-		if (!bit_test(nodes_bitmap, i))
-			continue;
+	for (i = 0; next_node_bitmap(nodes_bitmap, &i); i++) {
 		if (usable_cpu_cnt[i] >= cpu_target)
 			continue;	/* already picked */
 		if (usable_cpu_array[usable_cpu_cnt[i]] == 0)
@@ -988,7 +964,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  dynamic_plugin_data_t *select_jobinfo,
 				  int *return_code)
 {
-	int node_inx, first_bit, last_bit;
 	node_record_t *node_ptr;
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *select_nodes_avail = NULL;
@@ -1001,7 +976,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
 	uint64_t gres_cpus;
-	int i_first, i_last;
 	bool first_step_node = true;
 
 	xassert(job_resrcs_ptr);
@@ -1103,15 +1077,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		step_spec->pn_min_memory = 0;	/* clear MEM_PER_CPU flag */
 
 	if (job_ptr->next_step_id == 0) {
-		i_first = bit_ffs(job_ptr->node_bitmap);
-		if (i_first >= 0)
-			i_last  = bit_fls(job_ptr->node_bitmap);
-		else
-			i_last = -2;
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+		     i++) {
 			if (IS_NODE_POWERED_DOWN(node_ptr) ||
 			    IS_NODE_FUTURE(node_ptr) ||
 			    IS_NODE_NO_RESPOND(node_ptr)) {
@@ -1145,14 +1113,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	}
 
 	usable_cpu_cnt = xcalloc(node_record_count, sizeof(uint32_t));
-	first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
-	if (first_bit >= 0)
-		last_bit  = bit_fls(job_resrcs_ptr->node_bitmap);
-	else
-		last_bit = -2;
-	for (i = first_bit, node_inx = -1; i <= last_bit; i++) {
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
-			continue;
+	for (int i = 0, node_inx = -1;
+	     next_node_bitmap(job_resrcs_ptr->node_bitmap, &i); i++) {
 		node_inx++;
 		if (!bit_test(nodes_avail, i))
 			continue;	/* node now DOWN */
@@ -1780,15 +1742,9 @@ cleanup:
 		nodes_picked = bit_copy(up_node_bitmap);
 		bit_not(nodes_picked);
 		bit_and(nodes_picked, job_ptr->node_bitmap);
-		first_bit = bit_ffs(nodes_picked);
-		if (first_bit == -1)
-			last_bit = -2;
-		else
-			last_bit = bit_fls(nodes_picked);
-		for (i = first_bit; i <= last_bit; i++) {
-			if (!bit_test(nodes_picked, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (i = 0; (node_ptr = next_node_bitmap(
+				     job_resrcs_ptr->node_bitmap, &i));
+		     i++) {
 			if (!IS_NODE_NO_RESPOND(node_ptr)) {
 				*return_code = ESLURM_NODES_BUSY;
 				break;
@@ -1817,10 +1773,10 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpus &&
 	    job_ptr->job_resrcs->node_bitmap) {
 		int node_inx = -1;
-		for (i = 0; (node_ptr = next_node(&i)); i++) {
-			if (!bit_test(job_ptr->job_resrcs->node_bitmap,
-				      node_ptr->index))
-				continue;
+		for (i = 0;
+		     (node_ptr = next_node_bitmap(
+			job_ptr->job_resrcs->node_bitmap, &i));
+		     i++) {
 			node_inx++;
 			if (!bit_test(job_ptr->node_bitmap, node_ptr->index) ||
 			    !bit_test(bitmap, node_ptr->index)) {
@@ -1834,9 +1790,7 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 		}
 	} else {
 		error("%pJ lacks cpus array", job_ptr);
-		for (i = 0; (node_ptr = next_node(&i)); i++) {
-			if (!bit_test(bitmap, node_ptr->index))
-				continue;
+		for (i = 0; (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
 			sum += node_ptr->config_ptr->cpus;
 		}
 	}
@@ -2185,8 +2139,8 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+	node_record_t *node_ptr;
 	int cpus_alloc, cpus_alloc_mem, cpu_array_inx = 0;
-	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1, node_cnt = 0;
 	bool first_step_node = true, pick_step_cores = true;
 	bool all_job_mem = false;
@@ -2201,9 +2155,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	if (step_ptr->step_layout == NULL)	/* batch step */
 		return rc;
 
-	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
-	i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
-	if (i_first == -1)	/* empty bitmap */
+	if (!bit_set_count(job_resrcs_ptr->node_bitmap))
 		return rc;
 
 	if (step_ptr->threads_per_core &&
@@ -2242,15 +2194,14 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
-	for (i_node = i_first; i_node <= i_last; i_node++) {
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
+	     i++) {
 		uint64_t gres_step_node_mem_alloc = 0;
 		uint16_t vpus;
 		bitstr_t *unused_core_bitmap;
-
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
-			continue;
 		job_node_inx++;
-		if (!bit_test(step_ptr->step_node_bitmap, i_node))
+		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
@@ -2274,7 +2225,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			node_cnt = 0;
 		}
 
-		vpus = node_record_table_ptr[i_node]->tpc;
+		vpus = node_ptr->tpc;
 		if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc_mem = cpus_alloc =
 				job_resrcs_ptr->cpus[job_node_inx];
@@ -2355,14 +2306,13 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 					  !(step_ptr->flags &
 					    SSF_OVERLAP_FORCE),
 					  &gres_step_node_mem_alloc,
-					  node_record_table_ptr[i_node]->
-					  gres_list,
+					  node_ptr->gres_list,
 					  unused_core_bitmap);
 		FREE_NULL_BITMAP(unused_core_bitmap);
 		if (rc != SLURM_SUCCESS) {
 			log_flag(STEPS, "unable to allocate step GRES for job node %d (%s): %s",
 				 job_node_inx,
-				 node_record_table_ptr[i_node]->name,
+				 node_ptr->name,
 				 slurm_strerror(rc));
 			break;
 		}
@@ -2416,8 +2366,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			 * TODO: move cpus_per_core to slurm_step_layout_t
 			 */
 			if (!_use_one_thread_per_core(step_ptr) &&
-			    (!(node_record_table_ptr[i_node]->cpus ==
-			       (node_record_table_ptr[i_node]->tot_cores)))) {
+			    (!(node_ptr->cpus == node_ptr->tot_cores))) {
 				multi_core_data_t *mc_ptr;
 				mc_ptr = job_ptr->details->mc_ptr;
 				if (step_ptr->threads_per_core != NO_VAL16)
@@ -2427,19 +2376,17 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 					cpus_per_core =
 						mc_ptr->threads_per_core;
 				else {
-					node_record_t *n_ptr;
-					n_ptr = node_record_table_ptr[i_node];
-					cpus_per_core = n_ptr->threads;
+					cpus_per_core = node_ptr->threads;
 				}
 			}
 			if ((rc = _pick_step_cores(step_ptr, job_resrcs_ptr,
 						   job_node_inx,
 						   step_ptr->step_layout->
 						   tasks[step_node_inx],
-						   cpus_per_core, i_node))) {
+						   cpus_per_core, i))) {
 				log_flag(STEPS, "unable to pick step cores for job node %d (%s): %s",
 					 job_node_inx,
-					 node_record_table_ptr[i_node]->name,
+					 node_ptr->name,
 					 slurm_strerror(rc));
 				break;
 			}
@@ -2450,12 +2397,12 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		if (step_ptr->flags & SSF_OVERLAP_FORCE)
 			log_flag(STEPS, "step alloc on job node %d (%s); does not count against job allocation",
 				 job_node_inx,
-				 node_record_table_ptr[i_node]->name);
+				 node_ptr->name);
 
 		else
 			log_flag(STEPS, "step alloc on job node %d (%s) used %u of %u CPUs",
 				 job_node_inx,
-				 node_record_table_ptr[i_node]->name,
+				 node_ptr->name,
 				 job_resrcs_ptr->cpus_used[job_node_inx],
 				 job_resrcs_ptr->cpus[job_node_inx]);
 
@@ -2521,9 +2468,9 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int cpus_alloc;
-	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 	uint16_t req_tpc = NO_VAL16;
+	node_record_t *node_ptr;
 
 	xassert(job_resrcs_ptr);
 	if (!job_resrcs_ptr) {
@@ -2538,9 +2485,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	if (step_ptr->step_layout == NULL)	/* batch step */
 		return;
 
-	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
-	i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
-	if (i_first == -1)	/* empty bitmap */
+	if (!bit_set_count(job_resrcs_ptr->node_bitmap))
 		return;
 
 	if (step_ptr->memory_allocated && _is_mem_resv() &&
@@ -2557,11 +2502,11 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		 (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16))
 		req_tpc = job_ptr->details->mc_ptr->threads_per_core;
 
-	for (i_node = i_first; i_node <= i_last; i_node++) {
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
-			continue;
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
+	     i++) {
 		job_node_inx++;
-		if (!bit_test(step_ptr->step_node_bitmap, i_node))
+		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
@@ -2570,7 +2515,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		if (step_ptr->flags & SSF_OVERLAP_FORCE) {
 			log_flag(STEPS, "step dealloc on job node %d (%s); did not count against job allocation",
 				 job_node_inx,
-				 node_record_table_ptr[i_node]->name);
+				 node_ptr->name);
 			continue; /* Next node */
 		}
 
@@ -2578,7 +2523,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
 		else {
 			uint16_t cpus_per_task = step_ptr->cpus_per_task;
-			uint16_t vpus = node_record_table_ptr[i_node]->tpc;
+			uint16_t vpus = node_ptr->tpc;
 
 			cpus_alloc =
 				step_ptr->step_layout->tasks[step_node_inx] *
@@ -2620,7 +2565,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 				log_flag(STEPS, "Deallocating %"PRIu64"MB of memory on node %d (%s) now used: %"PRIu64" of %"PRIu64,
 					 mem_use,
 					 job_node_inx,
-					 node_record_table_ptr[i_node]->name,
+					 node_ptr->name,
 					 job_resrcs_ptr->
 					 memory_used[job_node_inx],
 					 job_resrcs_ptr->
@@ -2632,7 +2577,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			}
 		}
 		log_flag(STEPS, "step dealloc on job node %d (%s) used: %u of %u CPUs",
-			 job_node_inx, node_record_table_ptr[i_node]->name,
+			 job_node_inx, node_ptr->name,
 			 job_resrcs_ptr->cpus_used[job_node_inx],
 			 job_resrcs_ptr->cpus[job_node_inx]);
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
@@ -2734,7 +2679,6 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 {
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	node_record_t *node_ptr;
-	int i, i_first, i_last;
 	uint32_t bind_bits, bind_to_bits, node_bind = NO_VAL;
 	bool node_fail = false;
 
@@ -2761,15 +2705,9 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 	 * Set job's cpu_bind to the node's cpu_bind if all of the job's
 	 * allocated nodes have the same cpu_bind (or it is not set)
 	 */
-	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
-	if (i_first == -1)
-		i_last = -2;
-	else
-		i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
+	     i++) {
 		if (node_bind == NO_VAL) {
 			if (node_ptr->cpu_bind != 0)
 				node_bind = node_ptr->cpu_bind;
@@ -3502,16 +3440,16 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	slurm_step_layout_req_t step_layout_req;
 	uint64_t gres_cpus;
 	int cpu_inx = -1, cpus_task_inx = -1;
-	int i, usable_cpus, usable_mem, rem_nodes;
+	int usable_cpus, usable_mem, rem_nodes;
 	int set_nodes = 0/* , set_tasks = 0 */;
 	int pos = -1, job_node_offset = -1;
-	int first_bit, last_bit;
 	uint32_t cpu_count_reps[node_count];
 	uint32_t cpus_task_reps[node_count];
 	uint32_t cpus_task = 0;
 	uint16_t ntasks_per_core = 0;
 	uint16_t ntasks_per_socket = 0;
 	bool first_step_node = true;
+	node_record_t *node_ptr;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -3544,191 +3482,171 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 
 	/* build cpus-per-node arrays for the subset of nodes used by step */
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
-	first_bit = bit_ffs(job_ptr->node_bitmap);
-	if (first_bit >= 0)
-		last_bit = bit_fls(job_ptr->node_bitmap);
-	else
-		last_bit = -2;
-	for (i = first_bit; i <= last_bit; i++) {
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		uint16_t cpus, cpus_used;
 		bool test_mem_per_gres = false;
 		bool ignore_alloc;
 		int err_code = SLURM_SUCCESS;
+		node_record_t *node_ptr;
 
-		if (!bit_test(job_ptr->node_bitmap, i))
-			continue;
 		job_node_offset++;
-		if (bit_test(step_ptr->step_node_bitmap, i)) {
-			node_record_t *node_ptr =
-				node_record_table_ptr[i];
+		if (!bit_test(step_ptr->step_node_bitmap, i))
+			continue;
+		node_ptr = node_record_table_ptr[i];
 
 #ifndef HAVE_FRONT_END
-			if (step_ptr->start_protocol_ver >
-			    node_ptr->protocol_version)
-				step_ptr->start_protocol_ver =
-					node_ptr->protocol_version;
+		if (step_ptr->start_protocol_ver > node_ptr->protocol_version)
+			step_ptr->start_protocol_ver =
+				node_ptr->protocol_version;
 #endif
 
-			/* find out the position in the job */
-			pos = bit_get_pos_num(job_resrcs_ptr->node_bitmap, i);
-			if (pos == -1)
-				return NULL;
-			if (pos >= job_resrcs_ptr->nhosts)
-				fatal("%s: node index bad", __func__);
+		/* find out the position in the job */
+		pos = bit_get_pos_num(job_resrcs_ptr->node_bitmap, i);
+		if (pos == -1)
+			return NULL;
+		if (pos >= job_resrcs_ptr->nhosts)
+			fatal("%s: node index bad", __func__);
 
-			cpus = job_resrcs_ptr->cpus[pos];
-			cpus_used = job_resrcs_ptr->cpus_used[pos];
+		cpus = job_resrcs_ptr->cpus[pos];
+		cpus_used = job_resrcs_ptr->cpus_used[pos];
+		/*
+		 * Here we are trying to figure out the number
+		 * of cpus available if we only want to run 1
+		 * thread per core.
+		 */
+		if (_use_one_thread_per_core(step_ptr)) {
+			uint16_t threads;
+			threads = node_ptr->config_ptr->threads;
+
+			cpus /= threads;
+			cpus_used /= threads;
+			cpus_per_task_array[0] = cpus_per_task;
+			cpus_task_reps[0] = node_count;
+		} else {
 			/*
-			 * Here we are trying to figure out the number
-			 * of cpus available if we only want to run 1
-			 * thread per core.
+			 * Here we are trying to figure out how many
+			 * CPUs each task really needs. This really
+			 * only becomes an issue if the job requested
+			 * ntasks_per_core|socket=1. We just increase
+			 * the number of cpus_per_task to the thread
+			 * count. Since the system could be
+			 * heterogeneous, we needed to make this an
+			 * array.
 			 */
-			if (_use_one_thread_per_core(step_ptr)) {
-				uint16_t threads;
-				threads = node_ptr->config_ptr->threads;
+			uint16_t threads_per_core;
+			multi_core_data_t *mc_ptr = NULL;
 
-				cpus /= threads;
-				cpus_used /= threads;
-				cpus_per_task_array[0] = cpus_per_task;
-				cpus_task_reps[0] = node_count;
-			} else {
-				/*
-				 * Here we are trying to figure out how many
-				 * CPUs each task really needs. This really
-				 * only becomes an issue if the job requested
-				 * ntasks_per_core|socket=1. We just increase
-				 * the number of cpus_per_task to the thread
-				 * count. Since the system could be
-				 * heterogeneous, we needed to make this an
-				 * array.
-				 */
-				uint16_t threads_per_core;
-				multi_core_data_t *mc_ptr = NULL;
+			if (job_ptr->details)
+				mc_ptr = job_ptr->details->mc_ptr;
 
-				if (job_ptr->details)
-					mc_ptr = job_ptr->details->mc_ptr;
-
-				if (step_ptr->threads_per_core != NO_VAL16)
-					threads_per_core =
-						step_ptr->threads_per_core;
-				else if (mc_ptr &&
-					 (mc_ptr->threads_per_core != NO_VAL16))
-					threads_per_core =
-						mc_ptr->threads_per_core;
-				else
-					threads_per_core =
-						node_ptr->config_ptr->threads;
-				if (ntasks_per_socket == 1) {
-					uint16_t threads_per_socket;
-					threads_per_socket =
-						node_ptr->config_ptr->cores;
-					threads_per_socket *= threads_per_core;
-
-					if (cpus_per_task < threads_per_socket)
-						cpus_task = threads_per_socket;
-				} else if ((ntasks_per_core == 1) &&
-					   (cpus_per_task < threads_per_core))
-					cpus_task = threads_per_core;
-				else
-					cpus_task = cpus_per_task;
-
-				if ((cpus_task_inx == -1) ||
-				    (cpus_per_task_array[cpus_task_inx] !=
-				     cpus_task)) {
-					cpus_task_inx++;
-					cpus_per_task_array[cpus_task_inx] =
-						cpus_task;
-					cpus_task_reps[cpus_task_inx] = 1;
-				} else
-					cpus_task_reps[cpus_task_inx]++;
-			}
-
-			if (step_ptr->flags & SSF_OVERLAP_FORCE)
-				usable_cpus = cpus;
+			if (step_ptr->threads_per_core != NO_VAL16)
+				threads_per_core = step_ptr->threads_per_core;
+			else if (mc_ptr &&
+				 (mc_ptr->threads_per_core != NO_VAL16))
+				threads_per_core = mc_ptr->threads_per_core;
 			else
-				usable_cpus = cpus - cpus_used;
+				threads_per_core =
+					node_ptr->config_ptr->threads;
+			if (ntasks_per_socket == 1) {
+				uint16_t threads_per_socket;
+				threads_per_socket =
+					node_ptr->config_ptr->cores;
+				threads_per_socket *= threads_per_core;
 
-			if (usable_cpus <= 0)
-				continue;
-
-			if ((step_ptr->pn_min_memory & MEM_PER_CPU) &&
-			    _is_mem_resv()) {
-				uint64_t mem_use = step_ptr->pn_min_memory;
-				mem_use &= (~MEM_PER_CPU);
-				usable_mem =
-					job_resrcs_ptr->memory_allocated[pos] -
-					job_resrcs_ptr->memory_used[pos];
-				usable_mem /= mem_use;
-				usable_cpus = MIN(usable_cpus, usable_mem);
-			} else if ((!step_ptr->pn_min_memory) &&
-				   _is_mem_resv()) {
-				test_mem_per_gres = true;
-			}
-
-			if (step_ptr->flags & SSF_OVERLAP_FORCE)
-				ignore_alloc = true;
+				if (cpus_per_task < threads_per_socket)
+					cpus_task = threads_per_socket;
+			} else if ((ntasks_per_core == 1) &&
+				   (cpus_per_task < threads_per_core))
+				cpus_task = threads_per_core;
 			else
-				ignore_alloc = false;
+				cpus_task = cpus_per_task;
 
-			gres_cpus = gres_ctld_step_test(
-				step_ptr->gres_list_req,
-				job_ptr->gres_list_alloc,
-				job_node_offset,
-				first_step_node,
-				step_ptr->cpus_per_task,
-				rem_nodes, ignore_alloc,
-				job_ptr->job_id,
-				step_ptr->step_id.step_id,
-				test_mem_per_gres,
-				job_resrcs_ptr, &err_code);
-			if (usable_cpus > gres_cpus)
-				usable_cpus = gres_cpus;
-			if (usable_cpus <= 0) {
-				error("%s: no usable CPUs", __func__);
-				return NULL;
-			}
-			debug3("step_layout cpus = %d pos = %d",
-			       usable_cpus, pos);
-
-			if ((cpu_inx == -1) ||
-			    (cpus_per_node[cpu_inx] != usable_cpus)) {
-				cpu_inx++;
-
-				cpus_per_node[cpu_inx] = usable_cpus;
-				cpu_count_reps[cpu_inx] = 1;
+			if ((cpus_task_inx == -1) ||
+			    (cpus_per_task_array[cpus_task_inx] != cpus_task)) {
+				cpus_task_inx++;
+				cpus_per_task_array[cpus_task_inx] = cpus_task;
+				cpus_task_reps[cpus_task_inx] = 1;
 			} else
-				cpu_count_reps[cpu_inx]++;
-			set_nodes++;
-			first_step_node = false;
-			rem_nodes--;
+				cpus_task_reps[cpus_task_inx]++;
+		}
+
+		if (step_ptr->flags & SSF_OVERLAP_FORCE)
+			usable_cpus = cpus;
+		else
+			usable_cpus = cpus - cpus_used;
+
+		if (usable_cpus <= 0)
+			continue;
+
+		if ((step_ptr->pn_min_memory & MEM_PER_CPU) && _is_mem_resv()) {
+			uint64_t mem_use = step_ptr->pn_min_memory;
+			mem_use &= (~MEM_PER_CPU);
+			usable_mem = job_resrcs_ptr->memory_allocated[pos] -
+				     job_resrcs_ptr->memory_used[pos];
+			usable_mem /= mem_use;
+			usable_cpus = MIN(usable_cpus, usable_mem);
+		} else if ((!step_ptr->pn_min_memory) && _is_mem_resv()) {
+			test_mem_per_gres = true;
+		}
+
+		if (step_ptr->flags & SSF_OVERLAP_FORCE)
+			ignore_alloc = true;
+		else
+			ignore_alloc = false;
+
+		gres_cpus = gres_ctld_step_test(
+			step_ptr->gres_list_req, job_ptr->gres_list_alloc,
+			job_node_offset, first_step_node,
+			step_ptr->cpus_per_task, rem_nodes, ignore_alloc,
+			job_ptr->job_id, step_ptr->step_id.step_id,
+			test_mem_per_gres, job_resrcs_ptr, &err_code);
+		if (usable_cpus > gres_cpus)
+			usable_cpus = gres_cpus;
+		if (usable_cpus <= 0) {
+			error("%s: no usable CPUs", __func__);
+			return NULL;
+		}
+		debug3("step_layout cpus = %d pos = %d", usable_cpus, pos);
+
+		if ((cpu_inx == -1) ||
+		    (cpus_per_node[cpu_inx] != usable_cpus)) {
+			cpu_inx++;
+
+			cpus_per_node[cpu_inx] = usable_cpus;
+			cpu_count_reps[cpu_inx] = 1;
+		} else
+			cpu_count_reps[cpu_inx]++;
+		set_nodes++;
+		first_step_node = false;
+		rem_nodes--;
 
 #if 0
+		/*
+		 * FIXME: on a heterogeneous system running the
+		 * select/linear plugin we could get a node that doesn't
+		 * have as many CPUs as we decided we needed for each
+		 * task. This would result in not getting a task for
+		 * the node we selected. This is usually in error. This
+		 * only happens when the person doesn't specify how many
+		 * cpus_per_task they want, and we have to come up with
+		 * a number, in this case it is wrong.
+		 */
+		if (cpus_per_task > 0) {
+			set_tasks +=
+				(uint16_t)usable_cpus / cpus_per_task;
+		} else {
 			/*
-			 * FIXME: on a heterogeneous system running the
-			 * select/linear plugin we could get a node that doesn't
-			 * have as many CPUs as we decided we needed for each
-			 * task. This would result in not getting a task for
-			 * the node we selected. This is usually in error. This
-			 * only happens when the person doesn't specify how many
-			 * cpus_per_task they want, and we have to come up with
-			 * a number, in this case it is wrong.
+			 * Since cpus_per_task is 0, we just add the
+			 * count of CPUs available for this job
 			 */
-			if (cpus_per_task > 0) {
-				set_tasks +=
-					(uint16_t)usable_cpus / cpus_per_task;
-			} else {
-				/*
-				 * Since cpus_per_task is 0, we just add the
-				 * count of CPUs available for this job
-				 */
-				set_tasks += usable_cpus;
-			}
-			info("usable_cpus is %d and set_tasks %d %d",
-			     usable_cpus, set_tasks, cpus_per_task);
-#endif
-			if (set_nodes == node_count)
-				break;
+			set_tasks += usable_cpus;
 		}
+		info("usable_cpus is %d and set_tasks %d %d",
+		     usable_cpus, set_tasks, cpus_per_task);
+#endif
+		if (set_nodes == node_count)
+			break;
 	}
 
 	/* if (set_tasks < num_tasks) { */
@@ -4788,22 +4706,18 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		    job_ptr->job_resrcs->nodes, false,
 		    &job_ptr->job_resrcs->node_bitmap) == SLURM_SUCCESS) &&
 	    job_ptr->job_resrcs->node_bitmap) {
-		int job_node_inx = -1, step_node_inx = -1, i_first, i_last;
+		int job_node_inx = -1, step_node_inx = -1;
 		job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 		uint64_t mem_use;
-
-		i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
-		if (i_first == -1)	/* empty bitmap */
+		if (!bit_set_count(job_resrcs_ptr->node_bitmap))
 			goto unpack_error;
-		i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
 
 		memory_allocated = xcalloc(step_layout->node_cnt,
 					   sizeof(uint64_t));
-		for (int i_node = i_first; i_node <= i_last; i_node++) {
-			if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
-				continue;
+		for (int i = 0;
+		     next_node_bitmap(job_resrcs_ptr->node_bitmap, &i); i++) {
 			job_node_inx++;
-			if (!bit_test(step_ptr->step_node_bitmap, i_node))
+			if (!bit_test(step_ptr->step_node_bitmap, i))
 				continue;
 			step_node_inx++;
 			if (job_node_inx >= job_resrcs_ptr->nhosts)
@@ -4976,7 +4890,7 @@ unpack_error:
 static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 {
 #ifndef HAVE_FRONT_END
-	int i;
+	node_record_t *node_ptr;
 #endif
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	kill_job_msg_t *kill_step;
@@ -5013,17 +4927,17 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 #else
 	if (step_ptr->step_node_bitmap) {
 		agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-		for (i = 0; i < node_record_count; i++) {
-			if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-				continue;
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(step_ptr->step_node_bitmap,
+						  &i));
+		     i++) {
 			if (agent_args->protocol_version >
-			    node_record_table_ptr[i]->protocol_version) {
+			    node_ptr->protocol_version) {
 				agent_args->protocol_version =
-					node_record_table_ptr[i]->
-					protocol_version;
+					node_ptr->protocol_version;
 			}
 			hostlist_push_host(agent_args->hostlist,
-					   node_record_table_ptr[i]->name);
+					   node_ptr->name);
 			agent_args->node_count++;
 		}
 	} else {

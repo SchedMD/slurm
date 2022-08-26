@@ -687,7 +687,6 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
 	uint32_t job_id;
 	char *sep1;
 	char *resp = NULL;
-	int i, i_first, i_last;
 	int fail_cnt = 0;
 	int state_flags;
 
@@ -719,15 +718,9 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
 
 	xstrfmtcat(resp, "%s ENOERROR ", SLURM_VERSION_STRING);
 	if ((state_flags & FAILING_NODES) && job_ptr->node_bitmap) {
-		i_first = bit_ffs(job_ptr->node_bitmap);
-		if (i_first == -1)
-			i_last = -2;
-		else
-			i_last = bit_fls(job_ptr->node_bitmap);
-		for (i = i_first; i <= i_last; i++) {
-			if (!bit_test(job_ptr->node_bitmap, i))
-				continue;
-			node_ptr = node_record_table_ptr[i];
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+		     i++) {
 			if (!IS_NODE_FAIL(node_ptr))
 				continue;
 			fail_cnt++;
@@ -743,7 +736,7 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
 		job_fail_ptr = list_find_first(job_fail_list, _job_fail_find,
 					       &job_id);
 		if (job_fail_ptr && _valid_job_ptr(job_fail_ptr)) {
-			for (i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
+			for (int i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
 				/* Format: nodename number_of_cpus state */
 				xstrfmtcat(resp, "%s %u %u ",
 					   job_fail_ptr->fail_node_names[i],
@@ -1527,7 +1520,6 @@ extern char *show_job(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version)
 	char *sep1;
 	char *resp = NULL, *failing_nodes = NULL;
 	int failing_cnt = 0;
-	int i, i_first, i_last;
 
 	sep1 = cmd_ptr + 15;
 	job_id = atoi(sep1);
@@ -1558,15 +1550,8 @@ extern char *show_job(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version)
 	xstrfmtcat(resp, "%s ENOERROR ", SLURM_VERSION_STRING);
 
 	job_ptr = job_fail_ptr->job_ptr;
-	i_first = bit_ffs(job_ptr->node_bitmap);
-	if (i_first == -1)
-		i_last = -2;
-	else
-		i_last = bit_fls(job_ptr->node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_ptr->node_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];;
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
 		if (!IS_NODE_FAIL(node_ptr))
 			continue;
 		failing_cnt++;
@@ -1578,7 +1563,7 @@ extern char *show_job(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version)
 	xstrfmtcat(resp, "FAIL_NODE_CNT %u ",
 		   job_fail_ptr->fail_node_cnt + failing_cnt);
 	if (job_fail_ptr->fail_node_cnt) {
-		for (i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
+		for (int i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
 			xstrfmtcat(resp, "%s %u ",
 					   job_fail_ptr->fail_node_names[i],
 					   job_fail_ptr->fail_node_cpus[i]);

@@ -1656,8 +1656,7 @@ extern bool node_features_p_node_power(void)
 extern int node_features_p_node_update(char *active_features,
 				       bitstr_t *node_bitmap)
 {
-	int i, i_first, i_last;
-	int rc = SLURM_SUCCESS, numa_inx = -1;
+	int i, rc = SLURM_SUCCESS, numa_inx = -1;
 	int mcdram_inx = 0;
 	uint64_t mcdram_size;
 	node_record_t *node_ptr;
@@ -1696,22 +1695,7 @@ extern int node_features_p_node_update(char *active_features,
 		mcdram_inx = -1;
 	}
 
-	xassert(node_bitmap);
-	i_first = bit_ffs(node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(node_bitmap);
-	else
-		i_last = i_first - 1;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(node_bitmap, i))
-			continue;
-		if (i >= node_record_count) {
-			error("%s: Invalid node index (%d >= %d)",
-			      __func__, i, node_record_count);
-			rc = SLURM_ERROR;
-			break;
-		}
-		node_ptr = node_record_table_ptr[i];
+	for (i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		if ((numa_inx >= 0) && cpu_bind[numa_inx])
 			node_ptr->cpu_bind = cpu_bind[numa_inx];
 		if (mcdram_per_node && (mcdram_inx >= 0)) {

@@ -6283,22 +6283,13 @@ extern int gres_job_revalidate2(uint32_t job_id, List job_gres_list,
 {
 	node_record_t *node_ptr;
 	int rc = SLURM_SUCCESS;
-	int i_first, i_last, i;
 	int node_inx = -1;
 
 	if (!job_gres_list || !node_bitmap ||
 	    !_job_has_gres_bits(job_gres_list))
 		return SLURM_SUCCESS;
 
-	i_first = bit_ffs(node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(node_bitmap, i))
-			continue;
-		node_ptr = node_record_table_ptr[i];
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		node_inx++;
 		if (!_validate_node_gres_cnt(job_id, job_gres_list, node_inx,
 					     node_ptr->gres_list,

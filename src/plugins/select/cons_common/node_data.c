@@ -93,8 +93,8 @@ extern node_use_record_t *node_data_dup_use(
 	node_use_record_t *orig_ptr, bitstr_t *node_map)
 {
 	node_use_record_t *new_use_ptr, *new_ptr;
+	node_record_t *node_ptr;
 	List gres_list;
-	int i, i_first, i_last;
 
 	if (orig_ptr == NULL)
 		return NULL;
@@ -102,26 +102,16 @@ extern node_use_record_t *node_data_dup_use(
 	new_use_ptr = xcalloc(node_record_count, sizeof(node_use_record_t));
 	new_ptr = new_use_ptr;
 
-	if (node_map) {
-		i_first = bit_ffs(node_map);
-		if (i_first != -1)
-			i_last = bit_fls(node_map) + 1;
-		else
-			i_last = -1;
-	} else {
-		i_first = 0;
-		i_last = node_record_count;
-	}
-
-	for (i = i_first; i < i_last; i++) {
-		if (node_map && !bit_test(node_map, i))
-			continue;
+	for (int i = 0;
+	     (node_ptr =
+	      (node_map ? next_node_bitmap(node_map, &i) : next_node(&i)));
+	     i++) {
 		new_ptr[i].node_state   = orig_ptr[i].node_state;
 		new_ptr[i].alloc_memory = orig_ptr[i].alloc_memory;
 		if (orig_ptr[i].gres_list)
 			gres_list = orig_ptr[i].gres_list;
 		else
-			gres_list = node_record_table_ptr[i]->gres_list;
+			gres_list = node_ptr->gres_list;
 		new_ptr[i].gres_list = gres_node_state_list_dup(gres_list);
 	}
 	return new_use_ptr;

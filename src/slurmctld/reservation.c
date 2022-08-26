@@ -1756,7 +1756,7 @@ inval:
  * RET SLURM_SUCCESS or error code */
 static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 {
-	int i, i_first, i_last, j, node_inx;
+	int i, j, node_inx;
 	int c, core_offset_local, core_offset_global, core_end, core_set;
 
 	if (!resv_ptr->core_resrcs || resv_ptr->core_bitmap ||
@@ -1785,14 +1785,8 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 	}
 
 	_create_cluster_core_bitmap(&resv_ptr->core_bitmap);
-	i_first = bit_ffs(resv_ptr->core_resrcs->node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(resv_ptr->core_resrcs->node_bitmap);
-	else
-		i_last = i_first - 1;
-	for (i = i_first, node_inx = -1; i <= i_last; i++) {
-		if (!bit_test(resv_ptr->core_resrcs->node_bitmap, i))
-			continue;
+	for (i = 0, node_inx = -1;
+	     next_node_bitmap(resv_ptr->core_resrcs->node_bitmap, &i); i++) {
 		node_inx++;
 		core_offset_global = cr_get_coremap_offset(i);
 		core_end = cr_get_coremap_offset(i + 1);
@@ -1826,12 +1820,12 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
  * changing. */
 static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
 {
-	int i, i_first, i_last, j, node_inx, rc;
+	int j, node_inx, rc;
 	int c, core_offset_local, core_offset_global, core_end;
 
 	if (!resv_ptr->core_bitmap || resv_ptr->core_resrcs ||
 	    !resv_ptr->node_bitmap ||
-	    ((i_first = bit_ffs(resv_ptr->node_bitmap)) == -1))
+	    !bit_set_count(resv_ptr->node_bitmap))
 		return;
 
 	resv_ptr->core_resrcs = create_job_resources();
@@ -1848,10 +1842,7 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
 
 	core_offset_local = -1;
 	node_inx = -1;
-	i_last = bit_fls(resv_ptr->node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(resv_ptr->node_bitmap, i))
-			continue;
+	for (int i = 0; next_node_bitmap(resv_ptr->node_bitmap, &i); i++) {
 		node_inx++;
 		core_offset_global = cr_get_coremap_offset(i);
 		core_end = cr_get_coremap_offset(i + 1);
@@ -1883,7 +1874,6 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		       bool internal, uint16_t protocol_version)
 {
 	time_t now = time(NULL), start_relative, end_relative;
-	int i_first, i_last, i;
 	int offset_start, offset_end;
 	uint32_t i_cnt;
 	node_record_t *node_ptr;
@@ -1959,15 +1949,13 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 				core_resrcs = resv_ptr->core_resrcs;
 				i_cnt = bit_set_count(core_resrcs->node_bitmap);
 				pack32(i_cnt, buffer);
-				i_first = bit_ffs(core_resrcs->node_bitmap);
-				i_last  = bit_fls(core_resrcs->node_bitmap);
-				for (i = i_first; i <= i_last; i++) {
-					if (!bit_test(core_resrcs->node_bitmap,
-						      i))
-						continue;
+				for (int i = 0;
+				     (node_ptr =
+				      next_node_bitmap(core_resrcs->node_bitmap,
+						       &i));
+				     i++) {
 					offset_start = cr_get_coremap_offset(i);
 					offset_end = cr_get_coremap_offset(i+1);
-					node_ptr = node_record_table_ptr[i];
 					packstr(node_ptr->name, buffer);
 					core_str = bit_fmt_range(
 						resv_ptr->core_bitmap,
@@ -2215,7 +2203,6 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			  slurmctld_resv_t *old_resv_ptr)
 {
-	int i;
 	uint64_t cpu_cnt = 0;
 	node_record_t *node_ptr;
 	char start_time[32], end_time[32], tmp_msd[40];
@@ -2226,9 +2213,9 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	    resv_ptr->node_bitmap) {
 		resv_ptr->core_cnt = 0;
 
-		for (i = 0; (node_ptr = next_node(&i)); i++) {
-			if (!bit_test(resv_ptr->node_bitmap, node_ptr->index))
-				continue;
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(resv_ptr->node_bitmap, &i));
+		     i++) {
 			resv_ptr->core_cnt += node_ptr->tot_cores;
 			cpu_cnt += node_ptr->cpus;
 		}
@@ -2237,13 +2224,13 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			bit_set_count(resv_ptr->core_bitmap);
 
 		if (resv_ptr->node_bitmap) {
-			for (i = 0; i < node_record_count; i++) {
+			for (int i = 0;
+			     (node_ptr = next_node_bitmap(resv_ptr->node_bitmap,
+							  &i));
+			     i++) {
 				int offset, core;
 				uint32_t cores, threads;
-				if (!bit_test(resv_ptr->node_bitmap, i))
-					continue;
 
-				node_ptr = node_record_table_ptr[i];
 				cores = node_ptr->tot_cores;
 				threads = node_ptr->threads;
 
@@ -7057,7 +7044,6 @@ extern bool job_uses_max_start_delay_resv(job_record_t *job_ptr)
 static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 			     uint32_t flags, bool reset_all)
 {
-	int i, i_first, i_last;
 	node_record_t *node_ptr;
 	uint32_t old_state;
 	bitstr_t *maint_node_bitmap = NULL;
@@ -7071,8 +7057,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 		return;
 	}
 
-	i_first = bit_ffs(resv_ptr->node_bitmap);
-	if (i_first < 0) {
+	if (!bit_set_count(resv_ptr->node_bitmap)) {
 		if ((resv_ptr->flags & RESERVE_FLAG_ANY_NODES) == 0) {
 			error("%s: reservation %s includes no nodes",
 			      __func__, resv_ptr->name);
@@ -7096,13 +7081,8 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 		list_iterator_destroy(iter);
 	}
 
-	i_last  = bit_fls(resv_ptr->node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(resv_ptr->node_bitmap, i))
-			continue;
-
-		if (!(node_ptr = node_record_table_ptr[i]))
-			continue;
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(resv_ptr->node_bitmap, &i)); i++) {
 		old_state = node_ptr->node_state;
 		if (resv_ptr->ctld_flags & RESV_CTLD_NODE_FLAGS_SET)
 			node_ptr->node_state |= flags;
