@@ -68,7 +68,7 @@ wait_for_job -fail ${job_id}_0 "RUNNING"
 
 set inx 0
 while { $inx < 10 } {
-	$bin_sleep 9
+	sleep 9
 	set run_count 0
 	spawn $scontrol show job $job_id
 	expect {

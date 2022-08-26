@@ -98,6 +98,6 @@ if [cancel_job $job_id] {
 set sleep_time $min_job_age
 incr sleep_time 10
 log_info "Waiting for $sleep_time seconds for the jobs to be purged from the controller"
-$bin_sleep $sleep_time
+sleep $sleep_time
 set output [run_command_output -xfail -fail "$scontrol show job $job_id"]
 subtest {[regexp "Invalid job id specified" $output]} "Verify that the job isn't in the controller anymore"

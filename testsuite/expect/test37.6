@@ -78,7 +78,7 @@ proc modify {job_id constraint reg_ex error_message} {
 		fail "Didn't match regex ($reg_ex: $matches)"
 	}
 
-	$bin_sleep 3
+	sleep 3
 }
 
 proc modify_with_clusters {job_id constraint reg_ex error_message} {
@@ -103,7 +103,7 @@ proc modify_with_clusters {job_id constraint reg_ex error_message} {
 		fail "Didn't match regex ($reg_ex: $matches)"
 	}
 
-	$bin_sleep 3
+	sleep 3
 }
 
 proc sbatch {my_sbatch script constraint args} {
@@ -133,7 +133,7 @@ proc sbatch {my_sbatch script constraint args} {
 		fail "Batch submit failure"
 	}
 
-	$bin_sleep 3
+	sleep 3
 	return $job_id
 }
 

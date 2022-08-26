@@ -485,7 +485,7 @@ set ji2 [sbatch]
 set o2 [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
 set ji3 [sbatch]
 
-$bin_sleep 2
+sleep 2
 
 if { [string match $o0 $fedc1] } {
 	set reg1 "(JobId=($ji0|$ji3) JobName=test37\\.9\\.in\\s+\\n)"

@@ -32,9 +32,15 @@ set proc             ""
 set run_host         ""
 set make_file        0
 set pcmd_prog        "/opt/cray/nodehealth/default/bin/pcmd"
+set file_dir         "/tmp"
 
 # Use PID to avoid issues with ps aux killall
 set test_pid         [pid]
+
+set run_host         [get_nodes_by_request]
+if { [llength $run_host] != 1 } {
+	skip "This test need to be able to submit jobs"
+}
 
 if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	set make_file 1
@@ -67,41 +73,27 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 	global bin_sleep
 
 	if {$conf_change == 0} {
-		exec $bin_echo $arg=$test_dir/$pro_epi_prog > $test_dir/$inc_slurm
+		run_command -fail "$bin_echo $arg=$test_dir/$pro_epi_prog > $test_dir/$inc_slurm"
 	}
 
-	set make_ln 0
-	exec $bin_rm -f $test_dir/$program_name
-	spawn $bin_bash -c "$bin_ln -sv $bin_sleep $test_dir/$program_name"
-	expect {
-		-re "$program_name" {
-			set make_ln 1
-			exp_continue
-		}
-		timeout {
-			fail "There was a problem creating the link"
-		}
-		eof {
-			wait
-		}
-	}
+	file delete $test_dir/$program_name
 
-	if {$make_ln != 1} {
-		fail "Link was not created"
-	}
+	# We need the full path of bin_sleep to create the link
+	set bin_sleep_path [lindex [auto_execok sleep] 0]
+	run_command -fail "$bin_bash -c '$bin_ln -sv $bin_sleep_path $test_dir/$program_name'"
 
-	exec $bin_echo "#!$bin_bash\n" > $test_dir/$pro_epi_prog
+	run_command -fail "$bin_echo '#!$bin_bash\n' > $test_dir/$pro_epi_prog"
 	if {$make_file == 1} {
-		exec $bin_echo "touch $file_dir/$arg.$test_name.txt" >> $test_dir/$pro_epi_prog
+		run_command -fail "$bin_echo 'touch $file_dir/$arg.$test_name.txt' >> $test_dir/$pro_epi_prog"
 	}
 
 	# task prologs are ran with fork_wait so don't do the sleep
 	if {!$task_pro} {
-		exec $bin_echo "$test_dir/$program_name 1000&" >> $test_dir/$pro_epi_prog
+		run_command -fail "$bin_echo '$test_dir/$program_name 1000&' >> $test_dir/$pro_epi_prog"
 	}
-	exec $bin_echo "exit 0" >> $test_dir/$pro_epi_prog
 
-	exec $bin_chmod 700 $test_dir/$pro_epi_prog
+	run_command -fail "$bin_echo 'exit 0' >> $test_dir/$pro_epi_prog"
+	run_command -fail "$bin_chmod 700 $test_dir/$pro_epi_prog"
 }
 
 proc check_file { file_name } {
@@ -147,7 +139,7 @@ proc check_proc {program_name} {
 		}
 	}
 	if {$proc_exist == 1} {
-		exec killall -9 $program_name
+		run_command -fail "killall -9 $program_name"
 		fail "$program_name should have been killed"
 	}
 }
@@ -159,7 +151,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	change_pro_epi $file_type $program_name $conf_change $task_pro
 
 	# Wait for NFS file propagation as needed
-	$bin_sleep 10
+	sleep 10
 
 	# Update config file
 	reconfigure -fail
@@ -195,7 +187,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	}
 
 	# Remove link
-	exec $bin_rm -rf $test_dir/$program_name
+	file delete $test_dir/$program_name
 }
 
 #
@@ -204,27 +196,6 @@ proc run_job { file_type program_name conf_change task_pro} {
 set config_dir [get_conf_path]
 set config_file $config_dir/slurm.conf
 save_conf $config_file
-
-set get_name 0
-spawn $srun -t1 -l $bin_printenv SLURMD_NODENAME
-expect {
-	-re "0: *($re_word_str)" {
-		set run_host $expect_out(1,string)
-		set get_name 1
-		exp_continue
-	}
-	timeout {
-		fail "Did not get run_host"
-	}
-	eof {
-		wait
-	}
-}
-
-set file_dir "/tmp"
-if {$get_name != 1} {
-	fail "Did not get run_host"
-}
 
 #
 # Test srun --task-epilog
@@ -261,7 +232,7 @@ if {$make_file == 1} {
 check_proc srun--task-epilog_${test_name}_${test_pid}
 
 # Remove link
-exec $bin_rm -rf $test_dir/srun--task-epilog_${test_name}_${test_pid}
+file delete $test_dir/srun--task-epilog_${test_name}_${test_pid}
 
 #
 # Task Prolog Test
@@ -311,10 +282,10 @@ if {$make_file == 1} {
 	check_file srun-task-prolog.$test_name.txt
 
 	# Remove link
-	exec $bin_rm -rf $test_dir/srun--task-prolog_$test_name
+	file delete $bin_rm -rf $test_dir/srun--task-prolog_$test_name
 
 	# Add a line in the slurm.conf file to include the epilogs and prologs
-	exec $bin_echo include $test_dir/$inc_slurm >> $config_dir/slurm.conf
+	run_command -fail "$bin_echo include $test_dir/$inc_slurm >> $config_dir/slurm.conf"
 
 	#
 	# Test TaskProlog
@@ -323,7 +294,7 @@ if {$make_file == 1} {
 
 } else {
 	# Add a line in the slurm.conf file to include the epilogs and prologs
-	exec $bin_echo include $test_dir/$inc_slurm >> $config_dir/slurm.conf
+	run_command -fail "$bin_echo include $test_dir/$inc_slurm >> $config_dir/slurm.conf"
 }
 
 ###############Epilog Test###############
