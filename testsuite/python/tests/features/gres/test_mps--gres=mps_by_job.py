@@ -71,7 +71,7 @@ def test_gres_mps_option_job():
     job_id1 = atf.submit_job(f"--gres=craynetwork:0 --gres=mps:{mps_fail_cnt} -N{node_count} -t1 -o {file_out1} -J 'test_job' {file_in}")
     assert job_id1 != 0, "Job 1 failed to submit"
 
-    atf.repeat_command_until(f"scontrol show job {job_id1}", lambda results: re.search(r"Reason=.*AssocMaxGRESPerJob", results['stdout']), fatal=True, timeout=10)
+    atf.repeat_command_until(f"scontrol show job {job_id1}", lambda results: re.search(r"Reason=.*AssocMaxGRESPerJob", results['stdout']), fatal=True)
 
     output = atf.run_command_output(f"scontrol show job {job_id1}")
     assert output is not None, "scontrol output required"
