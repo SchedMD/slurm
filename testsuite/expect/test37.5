@@ -79,7 +79,7 @@ proc cancel_federation_jobs { } {
 			wait
 		}
 	}
-	$bin_sleep 5
+	sleep 5
 }
 
 proc cleanup { } {
@@ -280,7 +280,7 @@ proc check_restart_cnt { file cnt } {
 	global bin_grep bin_sleep
 
 	# wait for prolog, etc. to finish
-	$bin_sleep 5
+	sleep 5
 
 	set match 0
 	spawn $bin_grep "SLURM_RESTART_COUNT" $file
@@ -660,7 +660,7 @@ if {$pend_cluster eq ""} {
 }
 
 # Give time for states to be updated in the db.
-$bin_sleep $dbd_delay
+sleep $dbd_delay
 
 # Check to see if the job state is PENDING after the requeue
 # federation will requeue job on all clusters
@@ -725,7 +725,7 @@ if {$pend_cluster eq ""} {
 }
 
 # Give time for states to be updated in the db.
-$bin_sleep $dbd_delay
+sleep $dbd_delay
 
 # Check to see if the job state is PENDING after the requeue
 # federation will requeue job on all clusters
@@ -795,7 +795,7 @@ if {$pend_cluster eq ""} {
 }
 
 # Give time for states to be updated in the db.
-$bin_sleep $dbd_delay
+sleep $dbd_delay
 
 # Check to see if the job state is PENDING after the requeue
 # federation will requeue job on all clusters
@@ -878,7 +878,7 @@ if {$run_cluster eq ""} {
 # and remote job. If it knows that the job is running on the remote, then it
 # will only send the request to the remote and wait for it to report back that
 # the job is gone.
-$bin_sleep 2
+sleep 2
 
 log_info "$run_cluster is running job"
 
@@ -908,7 +908,7 @@ if {$pend_cluster eq ""} {
 }
 
 # Give time for states to be updated in the db.
-$bin_sleep $dbd_delay
+sleep $dbd_delay
 
 check_dbd_states $job_id REVOKED $origin_cluster 1
 check_dbd_states $job_id PENDING $origin_cluster 1
@@ -984,7 +984,7 @@ if {$pend_cluster eq ""} {
 check_hold $job_id
 
 # Give time for states to be updated in the db.
-$bin_sleep $dbd_delay
+sleep $dbd_delay
 
 check_ctl_state $job_id PENDING $origin_cluster
 check_dbd_states $job_id REVOKED $origin_cluster 1
@@ -1044,7 +1044,7 @@ if {$run_cluster eq ""} {
 check_hold $job_id
 
 # Give time for states to be updated in the db.
-$bin_sleep $dbd_delay
+sleep $dbd_delay
 
 check_ctl_state $job_id PENDING $origin_cluster
 check_dbd_states $job_id REVOKED $origin_cluster 1
@@ -1134,7 +1134,7 @@ check_hold $job_id
 check_ctl_state $job_id SPECIAL_EXIT $origin_cluster
 
 # Give time for states to be updated in the db.
-$bin_sleep $dbd_delay
+sleep $dbd_delay
 
 check_dbd_states $job_id REVOKED $origin_cluster 1
 check_dbd_states $job_id PENDING $origin_cluster 1
@@ -1193,7 +1193,7 @@ check_hold $job_id
 check_ctl_state $job_id SPECIAL_EXIT $origin_cluster
 
 # Give time for states to be updated in the db.
-$bin_sleep $dbd_delay
+sleep $dbd_delay
 
 check_dbd_states $job_id REVOKED $origin_cluster 1
 check_dbd_states $job_id PENDING $origin_cluster 1
@@ -1281,7 +1281,7 @@ if {$requeue_exit_num ne "(null)"} {
 	}
 
 	# Give time for states to be updated in the db.
-	$bin_sleep $dbd_delay
+	sleep $dbd_delay
 	check_dbd_states $job_id REQUEUED $origin_cluster 1
 	check_dbd_states $job_id PENDING $origin_cluster 1
 	#check_dbd_states $job_id REVOKED $run_cluster 1
@@ -1341,7 +1341,7 @@ if {$requeue_exit_num ne "(null)"} {
 
 	check_exit_hold $job_id
 	# Give time for states to be updated in the db.
-	$bin_sleep $dbd_delay
+	sleep $dbd_delay
 
 	check_ctl_state $job_id SPECIAL_EXIT $origin_cluster
 	check_dbd_states $job_id REQUEUED $origin_cluster 1

@@ -130,7 +130,7 @@ proc sbatch { } {
 		fail "Batch submit failure"
 	}
 
-	$bin_sleep 2
+	sleep 2
 
 	return $job_id
 }
