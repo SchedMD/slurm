@@ -534,6 +534,9 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INSUFFICIENT_GRES,
 	  "ESLURM_INSUFFICIENT_GRES",
 	  "Insufficient GRES available in allocation"		},
+	{ ESLURM_INVALID_CONTAINER_ID,
+	  "ESLURM_INVALID_CONTAINER_ID",
+	  "Invalid container id specified"			},
 
 	/* SPANK errors */
 	{ ESPANK_ERROR,
