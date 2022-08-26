@@ -749,7 +749,7 @@ test29.8   Validate that the MaxSpareNodeCount is enforced
 
 test31.#   Test of Slurm Epilog and Prolog.
 ===========================================
-test31.1   Validate proper epilog and prolog child process management.
+test31.1   DEFUNCT (moved to python)
 test31.2   Validate that job is set to requeue held state at prolog failure.
 test31.3   Validate Prolog and Epilog Environment Variables.
 
