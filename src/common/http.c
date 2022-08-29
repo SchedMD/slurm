@@ -302,15 +302,3 @@ extern http_request_method_t get_http_method(const char *str)
 		return HTTP_REQUEST_TRACE;
 	return HTTP_REQUEST_INVALID;
 }
-
-/* parse according to rfc8820 & rfc3986 */
-extern parsed_host_port_t *parse_host_port(const char *str)
-{
-	fatal_abort("code stub");
-	return NULL;
-}
-
-extern void free_parse_host_port(parsed_host_port_t *parsed)
-{
-	fatal_abort("code stub");
-}
