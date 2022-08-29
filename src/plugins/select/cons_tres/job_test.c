@@ -2114,14 +2114,17 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	int       *switch_cpu_cnt = NULL;	/* total CPUs on switch */
 	List      *switch_gres = NULL;		/* available GRES on switch */
 	bitstr_t **switch_node_bitmap = NULL;	/* nodes on this switch */
+	bitstr_t **start_switch_node_bitmap = NULL;
 	int       *switch_node_cnt = NULL;	/* total nodes on switch */
 	int       *switch_required = NULL;	/* set if has required node */
+	int *req_switch_required = NULL;
 	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
 	bitstr_t  *req_nodes_bitmap   = NULL;	/* required node bitmap */
 	bitstr_t  *req2_nodes_bitmap  = NULL;	/* required+lowest prio nodes */
 	bitstr_t  *best_nodes_bitmap  = NULL;	/* required+low prio nodes */
+	bitstr_t *start_node_map = NULL;
 	int i, j, rc = SLURM_SUCCESS;
-	int best_cpu_cnt = 0, best_node_cnt = 0, req_node_cnt = 0;
+	int best_cpu_cnt, best_node_cnt, req_node_cnt = 0;
 	List best_gres = NULL;
 	switch_record_t *switch_ptr;
 	List node_weight_list = NULL;
@@ -2129,18 +2132,19 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	ListIterator iter;
 	node_record_t *node_ptr;
 	uint16_t avail_cpus = 0;
-	int64_t rem_max_cpus;
-	int rem_cpus, rem_nodes; /* remaining resources desired */
+	int64_t rem_max_cpus, start_rem_max_cpus;
+	int rem_cpus, start_rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	bool enforce_binding = false;
 	struct job_details *details_ptr = job_ptr->details;
-	bool gres_per_job, sufficient = false;
+	bool gres_per_job, sufficient;
 	uint16_t *avail_cpu_per_node = NULL;
 	uint32_t *switches_dist= NULL;
 	time_t time_waiting = 0;
 	int top_switch_inx = -1;
 	uint64_t top_switch_lowest_weight = 0;
 	int prev_rem_nodes;
+	uint32_t org_max_nodes = max_nodes;
 
 	if (job_ptr->req_switch) {
 		time_t     time_now;
@@ -2253,8 +2257,10 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	switch_cpu_cnt     = xcalloc(switch_record_cnt, sizeof(int));
 	switch_gres        = xcalloc(switch_record_cnt, sizeof(List));
 	switch_node_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
+	start_switch_node_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
 	switch_node_cnt    = xcalloc(switch_record_cnt, sizeof(int));
 	switch_required    = xcalloc(switch_record_cnt, sizeof(int));
+	req_switch_required = xcalloc(switch_record_cnt, sizeof(int));
 
 	for (i = 0, switch_ptr = switch_record_table; i < switch_record_cnt;
 	     i++, switch_ptr++) {
@@ -2324,6 +2330,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		}
 	}
 
+	start_rem_cpus = rem_cpus;
+	start_rem_max_cpus = rem_max_cpus;
 	if (req_nodes_bitmap) {
 		bit_and(node_map, req_nodes_bitmap);
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
@@ -2340,6 +2348,13 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		}
 	}
 
+	start_node_map = bit_copy(node_map);
+	memcpy(req_switch_required, switch_required,
+	       switch_record_cnt * sizeof(int));
+	for (i = 0; i < switch_record_cnt; i++)
+		start_switch_node_bitmap[i] = bit_copy(switch_node_bitmap[i]);
+
+try_again:
 	/*
 	 * Identify the best set of nodes (i.e. nodes with the lowest weight,
 	 * in addition to the required nodes) that can be used to satisfy the
@@ -2348,6 +2363,9 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	 * usually identify more nodes than required to satisfy the request.
 	 * Later logic selects from those nodes to get the best topology.
 	 */
+	sufficient = false;
+	best_node_cnt = 0;
+	best_cpu_cnt = 0;
 	best_nodes_bitmap = bit_alloc(node_record_count);
 	iter = list_iterator_create(node_weight_list);
 	while (!sufficient && (nw = list_next(iter))) {
@@ -2368,7 +2386,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 
 		for (i = 0; (node_ptr = next_node_bitmap(nw->node_bitmap, &i));
 		     i++) {
-			if (avail_cpu_per_node[i])
+			if (req_nodes_bitmap && bit_test(req_nodes_bitmap, i))
 				continue;	/* Required node */
 			if (!bit_test(switch_node_bitmap[top_switch_inx], i))
 				continue;
@@ -2390,13 +2408,11 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			}
 		}
 
-		sufficient = (best_cpu_cnt >= rem_cpus) &&
-			     _enough_nodes(best_node_cnt, rem_nodes,
-					   min_nodes, req_nodes);
-		if (sufficient && gres_per_job) {
-			sufficient = gres_sched_sufficient(
-				job_ptr->gres_list_req, best_gres);
-		}
+		sufficient = ((best_node_cnt >= rem_nodes) &&
+			      (best_cpu_cnt >= rem_cpus) &&
+			      (!gres_per_job ||
+			       gres_sched_sufficient(job_ptr->gres_list_req,
+						     best_gres)));
 	}
 	list_iterator_destroy(iter);
 
@@ -2642,6 +2658,35 @@ fini:
 			 * Allocation is for more than requested number of
 			 * switches.
 			 */
+			if ((req_nodes > min_nodes) && best_nodes_bitmap) {
+				/* TRUE only for !gres_per_job */
+				req_nodes--;
+				rem_nodes = req_nodes;
+				rem_nodes -= req_node_cnt;
+				min_rem_nodes = min_nodes;
+				min_rem_nodes -= req_node_cnt;
+				max_nodes = org_max_nodes;
+				max_nodes -= req_node_cnt;
+				rem_cpus = start_rem_cpus;
+				rem_max_cpus = start_rem_max_cpus;
+				xfree(switches_dist);
+				bit_copybits(node_map, start_node_map);
+				memcpy(switch_required, req_switch_required,
+				       switch_record_cnt * sizeof(int));
+				memset(avail_cpu_per_node, 0,
+				       node_record_count * sizeof(uint16_t));
+				for (i = 0; i < switch_record_cnt; i++)
+					bit_copybits(
+						switch_node_bitmap[i],
+						start_switch_node_bitmap[i]);
+				FREE_NULL_BITMAP(avail_nodes_bitmap);
+				FREE_NULL_BITMAP(req2_nodes_bitmap);
+				FREE_NULL_BITMAP(best_nodes_bitmap);
+				FREE_NULL_LIST(best_gres);
+				log_flag(SELECT_TYPE, "%pJ goto try_again req_nodes %d",
+					 job_ptr, req_nodes);
+				goto try_again;
+			}
 			job_ptr->best_switch = false;
 			debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
 				job_ptr, time_waiting, job_ptr->req_switch,
@@ -2656,6 +2701,7 @@ fini:
 	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req2_nodes_bitmap);
 	FREE_NULL_BITMAP(best_nodes_bitmap);
+	FREE_NULL_BITMAP(start_node_map);
 	xfree(avail_cpu_per_node);
 	xfree(switch_cpu_cnt);
 	xfree(switch_gres);
@@ -2664,8 +2710,14 @@ fini:
 			FREE_NULL_BITMAP(switch_node_bitmap[i]);
 		xfree(switch_node_bitmap);
 	}
+	if (start_switch_node_bitmap) {
+		for (i = 0; i < switch_record_cnt; i++)
+			FREE_NULL_BITMAP(start_switch_node_bitmap[i]);
+		xfree(start_switch_node_bitmap);
+	}
 	xfree(switch_node_cnt);
 	xfree(switch_required);
+	xfree(req_switch_required);
 	xfree(switches_dist);
 	return rc;
 }
