@@ -2557,30 +2557,32 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	/* Add additional resources as required from additional leaf switches */
 	prev_rem_nodes = rem_nodes + 1;
 	while (1) {
+		int best_switch_inx = -1;
 		if (prev_rem_nodes == rem_nodes)
 			break; 	/* Stalled */
 		prev_rem_nodes = rem_nodes;
 
-		top_switch_inx = -1;
 		for (i = 0; i < switch_record_cnt; i++) {
 			if (switch_required[i] || !switch_node_bitmap[i] ||
 			    (switch_record_table[i].level != 0))
 				continue;
 			_topo_choose_best_switch(switches_dist, switch_node_cnt,
-						 rem_nodes, i, &top_switch_inx);
+						 rem_nodes, i,
+						 &best_switch_inx);
 
 		}
-		if (top_switch_inx == -1)
+		if (best_switch_inx == -1)
 			break;
 
-		_topo_add_dist(switches_dist, top_switch_inx);
+		_topo_add_dist(switches_dist, best_switch_inx);
 		/*
 		 * NOTE: Ideally we would add nodes in order of resource
 		 * availability rather than in order of bitmap position, but
 		 * that would add even more complexity and overhead.
 		 */
 		for (i = 0;
-		     next_node_bitmap(switch_node_bitmap[top_switch_inx], &i) &&
+		     next_node_bitmap(
+			     switch_node_bitmap[best_switch_inx], &i) &&
 		     (max_nodes > 0);
 		     i++) {
 			if (bit_test(node_map, i) || !avail_cpu_per_node[i])
@@ -2609,7 +2611,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				goto fini;
 			}
 		}
-		switch_node_cnt[top_switch_inx] = 0;	/* Used all */
+		switch_node_cnt[best_switch_inx] = 0;	/* Used all */
 	}
 	if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
 	    (!gres_per_job ||
