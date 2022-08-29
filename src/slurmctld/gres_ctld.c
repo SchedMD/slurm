@@ -857,20 +857,20 @@ extern int gres_ctld_job_select_whole_node(
 		job_search_key.config_flags = gres_state_node->config_flags;
 		job_search_key.plugin_id = gres_state_node->plugin_id;
 
-		if (!gres_ns->type_cnt) {
-			job_search_key.type_id = 0;
+		/* Add the non-typed one first/always */
+		job_search_key.type_id = 0;
+		_job_select_whole_node_internal(
+			&job_search_key, gres_ns,
+			-1, gres_state_node->gres_name, *job_gres_list);
+
+		/* Then add the typed ones if any */
+		for (int j = 0; j < gres_ns->type_cnt; j++) {
+			job_search_key.type_id = gres_build_id(
+				gres_ns->type_name[j]);
 			_job_select_whole_node_internal(
 				&job_search_key, gres_ns,
-				-1, gres_state_node->gres_name, *job_gres_list);
-		} else {
-			for (int j = 0; j < gres_ns->type_cnt; j++) {
-				job_search_key.type_id = gres_build_id(
-					gres_ns->type_name[j]);
-				_job_select_whole_node_internal(
-					&job_search_key, gres_ns,
-					j, gres_state_node->gres_name,
-					*job_gres_list);
-			}
+				j, gres_state_node->gres_name,
+				*job_gres_list);
 		}
 	}
 	list_iterator_destroy(node_gres_iter);
@@ -1037,6 +1037,11 @@ extern int gres_ctld_job_alloc_whole_node(
 		job_search_key.config_flags = gres_state_node->config_flags;
 		job_search_key.plugin_id = gres_state_node->plugin_id;
 
+		/*
+		 * This check is needed and different from the one in
+		 * gres_ctld_job_select_whole_node(). _job_alloc() handles all
+		 * the heavy lifting later on to make this all correct.
+		 */
 		if (!gres_ns->type_cnt) {
 			job_search_key.type_id = 0;
 			rc2 = _job_alloc_whole_node_internal(

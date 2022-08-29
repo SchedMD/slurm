@@ -8050,10 +8050,8 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
 		job_search_key.config_flags = gres_state_step->config_flags;
 		job_search_key.plugin_id = gres_state_step->plugin_id;
-		if (gres_ss->type_id == 0)
-			job_search_key.type_id = NO_VAL;
-		else
-			job_search_key.type_id = gres_ss->type_id;
+		job_search_key.type_id = gres_ss->type_id;
+
 		gres_state_job = list_find_first(job_gres_list_req,
 						 gres_find_job_by_key,
 						 &job_search_key);
