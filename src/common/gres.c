@@ -8108,10 +8108,14 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 		    gres_ss->gres_per_node &&
 		    (gres_js->gres_per_node <
 		     gres_ss->gres_per_node)) {
-			xstrfmtcat(msg, "Step requested gres_per_node=%s:%"PRIu64" is more than the job's gres_per_node=%s:%"PRIu64,
+			xstrfmtcat(msg, "Step requested gres_per_node=%s:%s%s%"PRIu64" is more than the job's gres_per_node=%s:%s%s%"PRIu64,
 				   gres_state_step->gres_name,
+				   gres_ss->type_name ? gres_ss->type_name : "",
+				   gres_ss->type_name ? ":" : "",
 				   gres_ss->gres_per_node,
 				   gres_state_job->gres_name,
+				   gres_js->type_name ? gres_js->type_name : "",
+				   gres_js->type_name ? ":" : "",
 				   gres_js->gres_per_node);
 			*rc = ESLURM_INVALID_GRES;
 			break;
