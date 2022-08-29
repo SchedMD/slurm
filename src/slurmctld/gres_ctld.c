@@ -129,8 +129,8 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 	job_search_key.type_id = type_id;
 
 	if (!(gres_state_job = list_find_first(job_gres_list_alloc,
-					     gres_find_job_by_key_exact_type,
-					     &job_search_key))) {
+					       gres_find_job_by_key_exact_type,
+					       &job_search_key))) {
 		gres_js = xmalloc(sizeof(*gres_js));
 		gres_js->type_id = type_id;
 		gres_js->type_name = xstrdup(type_name);
@@ -234,11 +234,11 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 
 	if (!gres_js->gres_bit_alloc) {
 		gres_js->gres_bit_alloc = xcalloc(node_cnt,
-						       sizeof(bitstr_t *));
+						  sizeof(bitstr_t *));
 	}
 	if (!gres_js->gres_cnt_node_alloc) {
 		gres_js->gres_cnt_node_alloc = xcalloc(node_cnt,
-							    sizeof(uint64_t));
+						       sizeof(uint64_t));
 	}
 
 	/*
@@ -736,8 +736,8 @@ static int _job_alloc_whole_node_internal(
 	}
 
 	if (!(gres_state_job = list_find_first(job_gres_list,
-					     gres_find_job_by_key,
-					     job_search_key))) {
+					       gres_find_job_by_key,
+					       job_search_key))) {
 		error("%s: This should never happen, we couldn't find the gres %u:%u",
 		      __func__,
 		      job_search_key->plugin_id,
@@ -772,8 +772,8 @@ static void _job_select_whole_node_internal(
 	gres_job_state_t *gres_js;
 
 	if (!(gres_state_job = list_find_first(job_gres_list,
-					     gres_find_job_by_key,
-					     job_search_key))) {
+					       gres_find_job_by_key,
+					       job_search_key))) {
 		gres_js = xmalloc(sizeof(gres_job_state_t));
 		gres_state_job = gres_create_state(job_search_key,
 						   GRES_STATE_SRC_KEY_PTR,
@@ -2165,8 +2165,8 @@ static gres_step_state_t *_step_get_alloc_gres_ptr(List step_gres_list_alloc,
 	step_search_key.type_id = gres_js->type_id;
 
 	if (!(gres_state_step = list_find_first(step_gres_list_alloc,
-					      gres_find_step_by_key,
-					      &step_search_key))) {
+						gres_find_step_by_key,
+						&step_search_key))) {
 		gres_ss = xmalloc(sizeof(*gres_ss));
 		gres_ss->type_id = gres_js->type_id;
 		gres_ss->type_name = xstrdup(gres_js->type_name);
