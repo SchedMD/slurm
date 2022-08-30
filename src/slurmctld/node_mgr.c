@@ -4665,6 +4665,7 @@ static int _delete_node(char *name)
 
 	_remove_node_from_features(node_ptr);
 
+	xhash_pop_str(node_hash_table, node_ptr->name);
 	delete_node_record(node_ptr);
 	slurm_conf_remove_node(name);
 
@@ -4718,7 +4719,6 @@ extern int delete_nodes(char *names, char **err_msg)
 	}
 
 	if (one_success) {
-		rehash_node();
 		_update_parts();
 		select_g_reconfigure();
 	}
