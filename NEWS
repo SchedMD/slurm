@@ -69,6 +69,7 @@ documents those changes that are of interest to users and administrators.
     step.
  -- Fix wrong attempt of gres binding for gres w/out cores defined.
  -- Fix build to work with '--without-shared-libslurm' configure flag.
+ -- Fix power_save mode when repeatedly configuring too fast.
 
 * Changes in Slurm 22.05.3
 ==========================
