@@ -8693,9 +8693,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	    (detail_ptr->num_tasks != 0)) {
 		if (detail_ptr->min_nodes == 0)
 			detail_ptr->min_nodes = 1;
-		detail_ptr->max_nodes =
-			MIN(node_conf_get_active_node_count(),
-			    detail_ptr->num_tasks);
+		detail_ptr->max_nodes = MIN(active_node_record_count,
+					    detail_ptr->num_tasks);
 	}
 
 	job_ptr->selinux_context = xstrdup(job_desc->selinux_context);

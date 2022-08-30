@@ -2148,7 +2148,7 @@ extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 	/* FIXME: this should work off the product of TRESBillingWeights */
 	if (weight_js) {
 		uint32_t cpu_cnt = 0, min_nodes = 1;
-		int node_count = node_conf_get_active_node_count();
+		int node_count = active_node_record_count;
 
 		/* On the initial run of this we don't have total_cpus
 		   so go off the requesting.  After the first shot
