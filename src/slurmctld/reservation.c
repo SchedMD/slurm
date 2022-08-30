@@ -2638,6 +2638,15 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 	}
 
+	if (((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
+	     (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) &&
+	    ((resv_desc_ptr->flags & RESERVE_FLAG_STATIC) ||
+	     (resv_desc_ptr->flags & RESERVE_FLAG_MAINT))) {
+		info("REPLACE and REPLACE_DOWN flags cannot be used with STATIC_ALLOC or MAINT flags");
+		rc = ESLURM_NOT_SUPPORTED;
+		goto bad_parse;
+	}
+
 	if (resv_desc_ptr->partition) {
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
