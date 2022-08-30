@@ -543,7 +543,7 @@ bitoff_t bit_ffs_from_bit(bitstr_t *b, bitoff_t bit)
 
 	_assert_bitstr_valid(b);
 
-	while ((bit % (sizeof(bitstr_t) * 8)) && (bit < _bitstr_bits(b))) {
+	while ((bit % BITSTR_WORD_SIZE) && (bit < _bitstr_bits(b))) {
 		if (bit_test(b, bit)) {
 			value = bit;
 			break;
