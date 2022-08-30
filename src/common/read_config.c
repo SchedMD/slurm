@@ -3456,7 +3456,6 @@ extern int set_nodes_alias(const char *alias_list)
 
 extern void slurm_conf_init_stepd(void)
 {
-	xassert(running_in_slurmstepd());
 	if (slurm_conf.propagate_rlimits_except) {
 		if ((parse_rlimits(slurm_conf.propagate_rlimits_except,
 				   NO_PROPAGATE_RLIMITS)) < 0) {
