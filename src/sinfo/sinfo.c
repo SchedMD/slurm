@@ -410,9 +410,9 @@ static List _query_server(bool clear_old)
 						     SELECT_NODEDATA_SUBCNT,
 						     NODE_STATE_ALLOCATED,
 						     &alloc_cpus);
-			idle_cpus = node_ptr->cpus - alloc_cpus;
+			idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
 
-			if (idle_cpus && (idle_cpus != node_ptr->cpus)) {
+			if (idle_cpus && (idle_cpus != node_ptr->cpus_efctv)) {
 				node_ptr->node_state &= NODE_STATE_FLAGS;
 				node_ptr->node_state |= NODE_STATE_MIXED;
 			}
@@ -479,9 +479,9 @@ static void *_load_job_prio_thread(void *args)
 						     SELECT_NODEDATA_SUBCNT,
 						     NODE_STATE_ALLOCATED,
 						     &alloc_cpus);
-			idle_cpus = node_ptr->cpus - alloc_cpus;
+			idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
 
-			if (idle_cpus && (idle_cpus != node_ptr->cpus)) {
+			if (idle_cpus && (idle_cpus != node_ptr->cpus_efctv)) {
 				node_ptr->node_state &= NODE_STATE_FLAGS;
 				node_ptr->node_state |= NODE_STATE_MIXED;
 			}

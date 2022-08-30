@@ -217,7 +217,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	uint16_t alloc_cpus = 0;
 	uint64_t alloc_memory = 0;
 	node_info_t *node_ptr = sview_node_info_ptr->node_ptr;
-	int idle_cpus = node_ptr->cpus;
+	int idle_cpus = node_ptr->cpus_efctv;
 	char *node_alloc_tres = NULL;
 	GtkTreeStore *treestore =
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
@@ -548,7 +548,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 				     NODE_STATE_ALLOCATED,
 				     &alloc_cpus);
 
-	idle_cpus = node_ptr->cpus - alloc_cpus;
+	idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
 	convert_num_unit((float)alloc_cpus, tmp_used_cpus,
 			 sizeof(tmp_used_cpus), UNIT_NONE, NO_VAL,
 			 working_sview_config.convert_flags);
@@ -569,7 +569,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	if (IS_NODE_DRAIN(node_ptr)) {
 		/* don't worry about mixed since the
 		 * whole node is being drained. */
-	} else if (idle_cpus && (idle_cpus != node_ptr->cpus)) {
+	} else if (idle_cpus && (idle_cpus != node_ptr->cpus_efctv)) {
 		node_ptr->node_state &= NODE_STATE_FLAGS;
 		node_ptr->node_state |= NODE_STATE_MIXED;
 	}
@@ -1020,7 +1020,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 			node_ptr = &(g_node_info_ptr->node_array[i]);
 			if (!node_ptr->name || (node_ptr->name[0] == '\0'))
 				continue;	/* bad node */
-			idle_cpus = node_ptr->cpus;
+			idle_cpus = node_ptr->cpus_efctv;
 
 			slurm_get_select_nodeinfo(
 				node_ptr->select_nodeinfo,
@@ -1033,7 +1033,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 				/* don't worry about mixed since the
 				   whole node is being drained. */
 			} else if (idle_cpus &&
-				   (idle_cpus != node_ptr->cpus)) {
+				   (idle_cpus != node_ptr->cpus_efctv)) {
 				node_ptr->node_state &= NODE_STATE_FLAGS;
 				node_ptr->node_state |= NODE_STATE_MIXED;
 			}
@@ -1803,7 +1803,8 @@ display_it:
 				 != node_ptr->node_state) {
 				if (IS_NODE_MIXED(node_ptr)) {
 					uint16_t alloc_cnt = 0;
-					uint16_t idle_cnt = node_ptr->cpus;
+					uint16_t idle_cnt =
+						node_ptr->cpus_efctv;
 					select_g_select_nodeinfo_get(
 						node_ptr->select_nodeinfo,
 						SELECT_NODEDATA_SUBCNT,

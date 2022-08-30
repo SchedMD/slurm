@@ -190,9 +190,9 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 				  SELECT_NODEDATA_SUBCNT,
 				  NODE_STATE_ALLOCATED,
 				  &alloc_cpus);
-	idle_cpus = node_ptr->cpus - alloc_cpus;
+	idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
 
-	if (idle_cpus  && (idle_cpus != node_ptr->cpus)) {
+	if (idle_cpus  && (idle_cpus != node_ptr->cpus_efctv)) {
 		my_state &= NODE_STATE_FLAGS;
 		my_state |= NODE_STATE_MIXED;
 	}
@@ -495,7 +495,7 @@ static void _set_node_mixed(node_info_msg_t *resp)
 		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 					     SELECT_NODEDATA_SUBCNT,
 					     NODE_STATE_ALLOCATED, &used_cpus);
-		if ((used_cpus != 0) && (used_cpus != node_ptr->cpus)) {
+		if (used_cpus && (used_cpus != node_ptr->cpus_efctv)) {
 			node_ptr->node_state &= NODE_STATE_FLAGS;
 			node_ptr->node_state |= NODE_STATE_MIXED;
 		}
