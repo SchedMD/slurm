@@ -137,7 +137,7 @@ static void *_libpmix_open(void)
 #elif defined PMIXP_V4_LIBPATH
 	xstrfmtcat(full_path, "%s/", PMIXP_V4_LIBPATH);
 #endif
-	xstrfmtcat(full_path, "libpmix.so");
+	xstrfmtcat(full_path, "libpmix.so.2");
 
 	lib_plug = dlopen(full_path, RTLD_LAZY | RTLD_GLOBAL);
 	xfree(full_path);

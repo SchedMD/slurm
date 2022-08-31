@@ -169,7 +169,7 @@ static int _load_ucx_lib()
 	 * we have from autoconf
 	 */
 	char *full_path = NULL;
-	xstrfmtcat(full_path, "%s/libucp.so", PMIXP_UCX_LIBPATH);
+	xstrfmtcat(full_path, "%s/libucp.so.0", PMIXP_UCX_LIBPATH);
 	_ucx_lib_handler = dlopen(full_path, RTLD_LAZY | RTLD_GLOBAL);
 	xfree(full_path);
 	if (_ucx_lib_handler) {
@@ -180,7 +180,7 @@ static int _load_ucx_lib()
 	 * known by dynamic linker.
 	 */
 #endif
-	_ucx_lib_handler = dlopen("libucp.so", RTLD_LAZY | RTLD_GLOBAL);
+	_ucx_lib_handler = dlopen("libucp.so.0", RTLD_LAZY | RTLD_GLOBAL);
 	if (!_ucx_lib_handler) {
 		char *err = dlerror();
 		PMIXP_ERROR("Cannot open UCX lib: %s", (err) ? err : "unknown");
