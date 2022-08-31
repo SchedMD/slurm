@@ -308,7 +308,8 @@ static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 			    pid_t pid, tres_bind_t *tres_bind,
 			    bitstr_t **usable_gres_ptr,
-			    bitstr_t *gres_bit_alloc,  bool get_devices);
+			    bitstr_t *gres_bit_alloc,  bool get_devices,
+			    stepd_step_rec_t *step);
 
 extern uint32_t gres_build_id(char *name)
 {
@@ -8768,6 +8769,22 @@ static void _translate_step_to_global_device_index(bitstr_t **usable_gres,
 	*usable_gres = tmp;
 }
 
+bitstr_t *cpu_set_to_bit_str(cpu_set_t *cpu_set, int cpu_count)
+{
+	bitstr_t *cpu_bitstr = bit_alloc(cpu_count);
+
+	if (cpu_set) {
+		for (int i = 0; i < cpu_count; i++)
+			if (CPU_ISSET(i, cpu_set))
+				bit_set(cpu_bitstr, i);
+	} else {
+		bit_set_all(cpu_bitstr);
+	}
+
+	return cpu_bitstr;
+
+}
+
 /*
  * Given a GRES context index, return a bitmap representing those GRES
  * which are available from the CPUs current allocated to this process.
@@ -8853,61 +8870,120 @@ static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
 #endif
 }
 
-/*
- * If ntasks_per_gres is > 0, modify usable_gres so that this task can only use
- * one GPU. This will make it so only one GPU can be bound to this task later
- * on. Use local_proc_id (task rank) and ntasks_per_gres to determine which GPU
- * to bind to. Assign out tasks to GPUs in a block-like distribution.
- * TODO: This logic needs improvement when tasks and GPUs span sockets.
- *
- * IN/OUT - usable_gres
- * IN - ntasks_per_gres
- * IN - local_proc_id
- */
-static void _filter_usable_gres(bitstr_t *usable_gres, int ntasks_per_gres,
-				int local_proc_id)
+
+/* Select the best available gres from gres_slots */
+static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
+				bitstr_t *gres_slots, bitstr_t *gres_bit_alloc,
+				int plugin_id)
 {
-	int gpu_count, n, idx;
-	char *str;
-	if (ntasks_per_gres <= 0)
-		return;
+	gres_slurmd_conf_t *gres_slurmd_conf;
+	int start, end, gres_inx = 0, best_slot = -1;
+	bool overlap = false;
+	bitstr_t *task_cpus_bitmap = cpu_set_to_bit_str(
+		task_cpu_set,
+		((gres_slurmd_conf_t *)list_peek(gres_conf_list))->cpu_cnt);
+	ListIterator iter = list_iterator_create(gres_conf_list);
 
-	/* # of GPUs this task has an affinity to */
-	gpu_count = bit_set_count(usable_gres);
+	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
+		if (gres_slurmd_conf->plugin_id != plugin_id)
+			continue;
 
-	str = bit_fmt_hexmask_trim(usable_gres);
-	log_flag(GRES, "%s: local_proc_id = %d; usable_gres (ALL): %s",
-		 __func__, local_proc_id, str);
-	xfree(str);
+		start = gres_inx * ntasks_per_gres;
+		gres_inx += gres_slurmd_conf->count;
+		end = gres_inx * ntasks_per_gres;
 
-	/* No need to filter if no usable_gres or already only 1 to use */
-	if ((gpu_count == 0) || (gpu_count == 1)) {
-		log_flag(GRES, "%s: (task %d) No need to filter since usable_gres count is 0 or 1",
+		if (!bit_set_count_range(gres_slots, start, end))
+			continue;
+
+		if (gres_slurmd_conf->cpus_bitmap) {
+			if (bit_super_set(task_cpus_bitmap,
+					  gres_slurmd_conf->cpus_bitmap)) {
+				best_slot = bit_ffs_from_bit(gres_slots, start);
+				break;
+			}
+
+			if (overlap)
+				continue;
+
+			if (bit_overlap_any(task_cpus_bitmap,
+					    gres_slurmd_conf->cpus_bitmap)) {
+				best_slot = bit_ffs_from_bit(gres_slots, start);
+				overlap = true;
+				continue;
+			}
+		}
+
+		if (best_slot == -1)
+			best_slot = bit_ffs_from_bit(gres_slots, start);
+	}
+	list_iterator_destroy(iter);
+	bit_clear(gres_slots, best_slot);
+	return (best_slot / ntasks_per_gres);
+}
+
+/*
+ * Given the cpu affinity of all tasks, return a bitmap binding a single gres to
+ * this task.
+ */
+static bitstr_t *_get_single_usable_gres(int context_inx,
+					 int ntasks_per_gres,
+					 int local_proc_id,
+					 cpu_set_t *task_cpu_set,
+					 bitstr_t *gres_bit_alloc)
+{
+	int idx = 0;
+	bitstr_t *usable_gres = NULL;
+	bitstr_t *gres_slots = NULL;
+
+	/* No need to select gres if there is only 1 to use */
+	if (bit_set_count(gres_bit_alloc) <= 1) {
+		log_flag(GRES, "%s: (task %d) No need to select single gres since count is 0 or 1",
 			 __func__, local_proc_id);
-		return;
+		return bit_copy(gres_bit_alloc);;
 	}
 
-	/* Map task rank to one of the GPUs (block distribution) */
-	n = (local_proc_id / ntasks_per_gres) % gpu_count;
-	/* Find the nth set bit in usable_gres */
-	idx = bit_get_bit_num(usable_gres, n);
-
-	log_flag(GRES, "%s: local_proc_id = %d; n = %d; ntasks_per_gres = %d; idx = %d",
-		 __func__, local_proc_id, n, ntasks_per_gres, idx);
-
-	if (idx == -1) {
-		error("%s: (task %d) usable_gres did not have >= %d set GPUs, so can't do a single bind on set GPU #%d. Defaulting back to the original usable_gres.",
-		      __func__, local_proc_id, n + 1, n);
-		return;
+	/*
+	 * Create bitmap called gres_slots. This represents the available slots
+	 * for tasks on that gres based off of ntasks_per_gres and if that gres
+	 * is allocated to the step.
+	 */
+	if (ntasks_per_gres == 1)
+		gres_slots = bit_copy(gres_bit_alloc);
+	else {
+		gres_slots = bit_alloc(bit_size(gres_bit_alloc) *
+				       ntasks_per_gres);
+		for (int i = -1;
+		     (i = bit_ffs_from_bit(gres_bit_alloc, i + 1)) >= 0;) {
+			bit_nset(gres_slots, i * ntasks_per_gres,
+				 (((i + 1) * ntasks_per_gres) - 1));
+		}
 	}
+
+	/*
+	 * To ensure no task gets more than ntasks_per_gres, here we one by one,
+	 * select an available gres_slot for each task and clear a gres_slot.
+	 * Once we reach the current task we can take the gres assignment and
+	 * quit the loop
+	 */
+	for (int i = 0; i <= local_proc_id; i++) {
+		idx = _assign_gres_to_task(task_cpu_set, ntasks_per_gres,
+					   gres_slots, gres_bit_alloc,
+					   gres_context[context_inx].plugin_id);
+	}
+	FREE_NULL_BITMAP(gres_slots);
 
 	/* Return a bitmap with this as the only usable GRES */
-	bit_clear_all(usable_gres);
+	usable_gres = bit_alloc(bit_size(gres_bit_alloc));
 	bit_set(usable_gres, idx);
-	str = bit_fmt_hexmask_trim(usable_gres);
-	log_flag(GRES, "%s: local_proc_id = %d; usable_gres (single filter): %s",
-		 __func__, local_proc_id, str);
-	xfree(str);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES){
+		char *usable_gres_str = bit_fmt_hexmask_trim(usable_gres);
+		log_flag(GRES, "%s: local_proc_id = %d; usable_gres: %s",
+			__func__, local_proc_id, usable_gres_str);
+		xfree(usable_gres_str);
+	}
+
+	return usable_gres;
 }
 
 /*
@@ -9194,12 +9270,16 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 			usable_gres = _get_usable_gres_map_or_mask(
 				tres_bind->mask_gpu, proc_id, gres_bit_alloc,
 				false, get_devices);
+		} else if (tres_bind->bind_gpu &&
+			   tres_bind->tasks_per_gres) {
+			usable_gres = _get_single_usable_gres(
+				context_inx, tres_bind->tasks_per_gres, proc_id,
+				step->task[proc_id]->cpu_set, gres_bit_alloc);
+			if (!get_devices && gres_use_local_device_index())
+				bit_consolidate(usable_gres);
 		} else if (tres_bind->bind_gpu) {
 			usable_gres = _get_usable_gres_cpu_affinity(
 				context_inx, pid, gres_bit_alloc);
-			_filter_usable_gres(usable_gres,
-					    tres_bind->tasks_per_gres,
-					    proc_id);
 			if (!get_devices && gres_use_local_device_index())
 				bit_consolidate(usable_gres);
 		} else if (tres_bind->gpus_per_task) {
