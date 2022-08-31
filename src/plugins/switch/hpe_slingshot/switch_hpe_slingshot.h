@@ -65,7 +65,7 @@
 #define SLINGSHOT_VNIS    4     /* Max VNIs/service */
 
 /* Default state values if not configured */
-#define SLINGSHOT_VNI_MIN_DEF 32768
+#define SLINGSHOT_VNI_MIN_DEF 1024
 #define SLINGSHOT_VNI_MAX_DEF 65535
 
 /* Number of Slingshot VNI "PIDs"/device */

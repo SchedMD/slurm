@@ -419,7 +419,6 @@ static void _print_limits(slingshot_limits_set_t *limits)
  */
 extern bool slingshot_setup_config(const char *switch_params)
 {
-	bool vni_set = false;
 	char *params = NULL, *token, *save_ptr = NULL;
 	const char vnis[] = "vnis";
 	const size_t size_vnis = sizeof(vnis) - 1;
@@ -429,6 +428,9 @@ extern bool slingshot_setup_config(const char *switch_params)
 	const size_t size_job_vni = sizeof(job_vni) - 1;
 	const char single_node_vni[] = "single_node_vni";
 	const size_t size_single_node_vni = sizeof(single_node_vni) - 1;
+	/* Use min/max in state file if SwitchParameters not set */
+	uint16_t vni_min = slingshot_state.vni_min;
+	uint16_t vni_max = slingshot_state.vni_max;
 
 	log_flag(SWITCH, "switch_params=%s", switch_params);
 	/*
@@ -458,20 +460,21 @@ extern bool slingshot_setup_config(const char *switch_params)
 	 */
 
 	_config_defaults();
-	if (!switch_params)
+	if (!switch_params) {
+		if (!_setup_vni_table(vni_min, vni_max))
+			goto err;
 		goto out;
+	}
 
 	params = xstrdup(switch_params);
 	for (token = strtok_r(params, ",", &save_ptr); token;
 		token = strtok_r(NULL, ",", &save_ptr)) {
 		if (!xstrncasecmp(token, vnis, size_vnis)) {
-			uint16_t min, max;
-			if (!_config_vnis(token, &min, &max))
+			if (!_config_vnis(token, &vni_min, &vni_max))
 				goto err;
 			/* See if any incompatible changes in VNI range */
-			if (!_setup_vni_table(min, max))
+			if (!_setup_vni_table(vni_min, vni_max))
 				goto err;
-			vni_set = true;
 		} else if (!xstrncasecmp(token, tcs, size_tcs)) {
 			if (!_config_tcs(token))
 				goto err;
@@ -489,9 +492,6 @@ extern bool slingshot_setup_config(const char *switch_params)
 	}
 
 out:
-	if (!vni_set)
-		fatal("Need at least SwitchParameters=vnis=... set");
-
 	debug("single_node_vni=%d job_vni=%d tcs=%#x",
 	      slingshot_config.single_node_vni, slingshot_config.job_vni,
 	      slingshot_config.tcs);
