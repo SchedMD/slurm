@@ -1806,7 +1806,6 @@ the preemptor ends.
 
 \fBNOTE:\fR Suspended jobs will not release GRES. Higher priority jobs will not
 be able to preempt to gain access to GRES.
-.RE
 .IP
 
 .TP
@@ -1814,6 +1813,7 @@ be able to preempt to gain access to GRES.
 Allows for preemption between jobs sharing the same qos. By default,
 \fBPreemptType=preempt/qos\fR will only consider jobs to be eligible for
 preemption if they do not share the same qos value.
+.RE
 .IP
 
 .TP
