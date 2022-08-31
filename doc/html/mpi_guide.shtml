@@ -327,7 +327,7 @@ PMI-1 is not recommended and should be deprecated soon.</p>
 allocation of 10 nodes using Slurm's PMI-2 library installed from contribs:</p>
 <pre>
 $ salloc -N10 --exclusive
-$ export I_MPI_LIBRARY=/path/to/slurm/lib/libpmi2.so
+$ export I_MPI_PMI_LIBRARY=/path/to/slurm/lib/libpmi2.so
 $ mpirun -np &lt;num_procs&gt; user_app.bin
 </pre>
 
@@ -344,7 +344,7 @@ features. This can be done with <i>sbatch</i> or <i>salloc</i> commands:</p>
 
 <pre>
 $ salloc -N10 --exclusive
-$ export I_MPI_LIBRARY=/path/to/slurm/lib/libpmi2.so
+$ export I_MPI_PMI_LIBRARY=/path/to/slurm/lib/libpmi2.so
 $ srun user_app.bin</i>
 </pre>
 
@@ -594,6 +594,6 @@ and/or PMI-2 libraries and if their APIs ever changed. These should not change
 often but if it were to happen, it would be noted in Slurm's RELEASE_NOTES
 file.</p>
 
-<p style="text-align:center;">Last modified 27 July 2022</p>
+<p style="text-align:center;">Last modified 31 August 2022</p>
 
 <!--#include virtual="footer.txt"-->
