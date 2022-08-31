@@ -164,7 +164,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *step)
 	}
 
 	/* Allow or deny access to devices according to job GRES permissions. */
-	device_list = gres_g_get_devices(job_gres_list, true, 0, NULL, 0, 0);
+	device_list = gres_g_get_devices(job_gres_list, true, 0, NULL, 0, 0,
+					 step);
 
 	if (device_list) {
 		int tmp;
@@ -189,7 +190,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *step)
 		 * for the step.
 		 */
 		device_list = gres_g_get_devices(step_gres_list, false, 0, NULL,
-						 0, 0);
+						 0, 0, step);
 
 		if (device_list) {
 			int tmp;
@@ -246,7 +247,7 @@ extern int task_cgroup_devices_constrain(stepd_step_rec_t *step, pid_t pid,
 	 */
 	device_list = gres_g_get_devices(step->step_gres_list, false,
 					 step->accel_bind_type, step->tres_bind,
-					 taskid, pid);
+					 taskid, pid, step);
 	if (device_list) {
 		int tmp;
 

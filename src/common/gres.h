@@ -481,7 +481,8 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
  */
 extern List gres_g_get_devices(List gres_list, bool is_job,
 			       uint16_t accel_bind_type, char *tres_bind_str,
-			       int local_proc_id, pid_t pid);
+			       int local_proc_id, pid_t pid,
+			       stepd_step_rec_t *step);
 
 /* Pack GRES devices information into a buffer */
 extern void gres_send_stepd(buf_t *buffer, List gres_devices);
