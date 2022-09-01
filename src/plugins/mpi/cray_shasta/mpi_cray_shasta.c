@@ -88,9 +88,17 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /* Environment variables available for applications */
 #define PALS_APID_ENV "PALS_APID"
 #define PALS_APINFO_ENV "PALS_APINFO"
-#define PALS_RANKID_ENV "PALS_RANKID"
+#define PALS_LOCAL_RANKID_ENV "PALS_LOCAL_RANKID"
 #define PALS_NODEID_ENV "PALS_NODEID"
+#define PALS_RANKID_ENV "PALS_RANKID"
 #define PALS_SPOOL_DIR_ENV "PALS_SPOOL_DIR"
+
+#define PMI_JOBID_ENV "PMI_JOBID"
+#define PMI_LOCAL_RANK_ENV "PMI_LOCAL_RANK"
+#define PMI_LOCAL_SIZE_ENV "PMI_LOCAL_SIZE"
+#define PMI_RANK_ENV "PMI_RANK"
+#define PMI_SIZE_ENV "PMI_SIZE"
+#define PMI_UNIVERSE_SIZE_ENV "PMI_UNIVERSE_SIZE"
 
 /* GLOBAL vars */
 char *appdir = NULL; // Application-specific spool directory
@@ -258,10 +266,23 @@ extern int mpi_p_slurmstepd_task(const mpi_task_info_t *mpi_task, char ***env)
 	env_array_overwrite_fmt(env, PALS_APID_ENV, "%u.%u",
 				mpi_task->step_id.job_id,
 				mpi_task->step_id.step_id);
-	env_array_overwrite_fmt(env, PALS_RANKID_ENV, "%u", mpi_task->gtaskid);
-	env_array_overwrite_fmt(env, PALS_NODEID_ENV, "%u", mpi_task->nodeid);
-	env_array_overwrite_fmt(env, PALS_SPOOL_DIR_ENV, "%s", appdir);
 	env_array_overwrite_fmt(env, PALS_APINFO_ENV, "%s", apinfo);
+	env_array_overwrite_fmt(env, PALS_LOCAL_RANKID_ENV, "%u",
+				mpi_task->ltaskid);
+	env_array_overwrite_fmt(env, PALS_NODEID_ENV, "%u", mpi_task->nodeid);
+	env_array_overwrite_fmt(env, PALS_RANKID_ENV, "%u", mpi_task->gtaskid);
+	env_array_overwrite_fmt(env, PALS_SPOOL_DIR_ENV, "%s", appdir);
+
+	env_array_overwrite_fmt(env, PMI_JOBID_ENV, "%u",
+				mpi_task->step_id.job_id);
+	env_array_overwrite_fmt(env, PMI_LOCAL_RANK_ENV, "%u",
+				mpi_task->ltaskid);
+	env_array_overwrite_fmt(env, PMI_LOCAL_SIZE_ENV, "%u",
+				mpi_task->ltasks);
+	env_array_overwrite_fmt(env, PMI_RANK_ENV, "%u", mpi_task->gtaskid);
+	env_array_overwrite_fmt(env, PMI_SIZE_ENV, "%u", mpi_task->ntasks);
+	env_array_overwrite_fmt(env, PMI_UNIVERSE_SIZE_ENV, "%u",
+				mpi_task->ntasks);
 
 	_set_pmi_port(env);
 
