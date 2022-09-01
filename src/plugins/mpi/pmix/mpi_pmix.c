@@ -128,14 +128,12 @@ static void *_libpmix_open(void)
 	void *lib_plug = NULL;
 	char *full_path = NULL;
 
-#ifdef PMIXP_V1_LIBPATH
-	xstrfmtcat(full_path, "%s/", PMIXP_V1_LIBPATH);
-#elif defined PMIXP_V2_LIBPATH
-	xstrfmtcat(full_path, "%s/", PMIXP_V2_LIBPATH);
-#elif defined PMIXP_V3_LIBPATH
-	xstrfmtcat(full_path, "%s/", PMIXP_V3_LIBPATH);
-#elif defined PMIXP_V4_LIBPATH
-	xstrfmtcat(full_path, "%s/", PMIXP_V4_LIBPATH);
+	/*
+	 * x_ac_pmix.m4 determines if we should use full path or relative path
+	 * Note that this implies no fall-through to relative libraries
+	 */
+#ifdef PMIXP_LIBPATH
+	xstrfmtcat(full_path, "%s/", PMIXP_LIBPATH);
 #endif
 	xstrfmtcat(full_path, "libpmix.so.2");
 
