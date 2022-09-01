@@ -53,6 +53,7 @@ static void _config_defaults(void)
 	slingshot_config.single_node_vni = SLINGSHOT_SN_VNI_NONE;
 	slingshot_config.job_vni = SLINGSHOT_JOB_VNI_NONE;
 	slingshot_config.tcs = SLINGSHOT_TC_DEFAULT;
+	slingshot_config.flags = SLINGSHOT_FLAGS_DEFAULT;
 
 	slingshot_config.limits.txqs.max = SLINGSHOT_TXQ_MAX;
 	slingshot_config.limits.tgqs.max = SLINGSHOT_TGQ_MAX;
@@ -428,6 +429,10 @@ extern bool slingshot_setup_config(const char *switch_params)
 	const size_t size_job_vni = sizeof(job_vni) - 1;
 	const char single_node_vni[] = "single_node_vni";
 	const size_t size_single_node_vni = sizeof(single_node_vni) - 1;
+	const char adjust_limits[] = "adjust_limits";
+	const size_t size_adjust_limits = sizeof(adjust_limits) - 1;
+	const char no_adjust_limits[] = "no_adjust_limits";
+	const size_t size_no_adjust_limits = sizeof(no_adjust_limits) - 1;
 	/* Use min/max in state file if SwitchParameters not set */
 	uint16_t vni_min = slingshot_state.vni_min;
 	uint16_t vni_max = slingshot_state.vni_max;
@@ -444,6 +449,9 @@ extern bool slingshot_setup_config(const char *switch_params)
 	 *   job_vni=<all,none,user>: allocate additional VNI per-job for
 	 *     all jobs, no jobs, or only on user request
 	 *     (via srun --network=job_vni)
+	 *   {no_}adjust_limits: {don't} adjust resource reservations
+	 *     for each NIC by subtracting resources already
+	 *     used/reserved by system services
 	 *   def_<NIC_resource>: default per-thread value for resource
 	 *   res_<NIC_resource>: reserved value for resource
 	 *   max_<NIC_resource>: maximum value for resource
@@ -485,6 +493,13 @@ extern bool slingshot_setup_config(const char *switch_params)
 					 size_single_node_vni)) {
 			if (!_config_single_node_vni(token))
 				goto err;
+		} else if (!xstrncasecmp(token, adjust_limits,
+					 size_adjust_limits)) {
+			slingshot_config.flags |= SLINGSHOT_FLAGS_ADJUST_LIMITS;
+		} else if (!xstrncasecmp(token, no_adjust_limits,
+					 size_no_adjust_limits)) {
+			slingshot_config.flags &=
+					~(SLINGSHOT_FLAGS_ADJUST_LIMITS);
 		} else {
 			if (!_config_limits(token, &slingshot_config.limits))
 				goto err;
@@ -492,9 +507,9 @@ extern bool slingshot_setup_config(const char *switch_params)
 	}
 
 out:
-	debug("single_node_vni=%d job_vni=%d tcs=%#x",
+	debug("single_node_vni=%d job_vni=%d tcs=%#x flags=%#x",
 	      slingshot_config.single_node_vni, slingshot_config.job_vni,
-	      slingshot_config.tcs);
+	      slingshot_config.tcs, slingshot_config.flags);
 	_print_limits(&slingshot_config.limits);
 
 	xfree(params);
@@ -695,8 +710,9 @@ static bool _setup_network_params(const char *network_params,
 
 	log_flag(SWITCH, "network_params=%s", network_params);
 
-	/* First, copy limits from slingshot_config to job */
+	/* First, copy limits and flags from slingshot_config to job */
 	job->limits = slingshot_config.limits;
+	job->flags = slingshot_config.flags;
 
 	/* Then get configured job VNI setting */
 	if (slingshot_config.job_vni == SLINGSHOT_JOB_VNI_ALL)
@@ -716,6 +732,8 @@ static bool _setup_network_params(const char *network_params,
 	 *   depth: value to be used for threads-per-rank
 	 *   job_vni: allocate a job VNI for this job
 	 *   single_node_vni: allocate a VNI for this job even if single-node
+	 *   {no_}adjust_limits: {don't} adjust resource limit reservations
+	 *     by subtracting system service reserved/used values
 	 *   def_<NIC_resource>: default per-thread value for resource
 	 *   res_<NIC_resource>: reserved value for resource
 	 *   max_<NIC_resource>: maximum value for resource
@@ -730,6 +748,10 @@ static bool _setup_network_params(const char *network_params,
 	size_t job_vni_siz = sizeof(job_vni_str) - 1;
 	char single_node_vni_str[] = "single_node_vni";
 	size_t single_node_vni_siz = sizeof(single_node_vni_str) - 1;
+	char adjust_limits_str[] = "adjust_limits";
+	size_t adjust_limits_siz = sizeof(adjust_limits_str) - 1;
+	char no_adjust_limits_str[] = "no_adjust_limits";
+	size_t no_adjust_limits_siz = sizeof(no_adjust_limits_str) - 1;
 	for (token = strtok_r(params, ",", &save_ptr); token;
 		token = strtok_r(NULL, ",", &save_ptr)) {
 		if (!xstrncmp(token, depth_str, depth_siz)) {
@@ -756,6 +778,12 @@ static bool _setup_network_params(const char *network_params,
 				goto err;
 			} else
 				*single_node_vni = true;
+		} else if (!xstrncmp(token, adjust_limits_str,
+				     adjust_limits_siz)) {
+			job->flags |= SLINGSHOT_FLAGS_ADJUST_LIMITS;
+		} else if (!xstrncmp(token, no_adjust_limits_str,
+				     no_adjust_limits_siz)) {
+			job->flags &= ~(SLINGSHOT_FLAGS_ADJUST_LIMITS);
 		} else if (!_config_limits(token, &job->limits))
 			goto err;
 	}

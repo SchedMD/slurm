@@ -139,6 +139,7 @@ typedef struct slingshot_config {
 	uint8_t single_node_vni;        /* Allocate VNIs for single-node apps */
 	uint8_t job_vni;                /* Allocate extra VNI per-job */
 	uint32_t tcs;                   /* Bitmap of default traffic classes */
+	uint32_t flags;                 /* Bitmap of configuration flags */
 	slingshot_limits_set_t limits;  /* Set of NIC resource limits */
 } slingshot_config_t;
 
@@ -177,6 +178,7 @@ typedef struct slingshot_jobinfo {
 	uint32_t num_profiles; /* Number of communication profiles */
 	pals_comm_profile_t *profiles; /* List of communication profiles */
 	bitstr_t *vni_pids;    /* Set of Slingshot job VNI allocated PIDs */
+	uint32_t flags;        /* Configuration flags */
 } slingshot_jobinfo_t;
 
 /* Slingshot traffic classes (bitmap) */
@@ -186,6 +188,15 @@ typedef struct slingshot_jobinfo {
 #define SLINGSHOT_TC_BEST_EFFORT      0x8
 #define SLINGSHOT_TC_DEFAULT          (SLINGSHOT_TC_LOW_LATENCY | \
 				       SLINGSHOT_TC_BEST_EFFORT)
+
+/* Values for slingshot_jobinfo_t.flags */
+/*
+ * If SLINGSHOT_FLAGS_ADJUST_LIMITS is set (default), slurmd will adjust
+ * resource limit reservations by subtracting system service reserved/used
+ * resources
+ */
+#define SLINGSHOT_FLAGS_ADJUST_LIMITS 0x1
+#define SLINGSHOT_FLAGS_DEFAULT SLINGSHOT_FLAGS_ADJUST_LIMITS
 
 /* Environment variables set for applications */
 #define SLINGSHOT_SVC_IDS_ENV         "SLINGSHOT_SVC_IDS"
@@ -206,7 +217,7 @@ extern bool slingshot_setup_job_step(slingshot_jobinfo_t *job, int node_cnt,
 extern void slingshot_free_job_step(slingshot_jobinfo_t *job);
 extern void slingshot_free_job(uint32_t job_id);
 /* setup_nic.c */
-extern bool slingshot_open_cxi_lib(void);
+extern bool slingshot_open_cxi_lib(slingshot_jobinfo_t *job);
 extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
 				      uint16_t step_cpus, uint32_t job_id);
 extern bool slingshot_destroy_services(slingshot_jobinfo_t *job,

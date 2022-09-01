@@ -216,7 +216,7 @@ static bool _adjust_dev_limits(int dev, struct cxil_devinfo *devinfo)
 /*
  * Set up basic access to the CXI devices in the daemon
  */
-static bool _create_cxi_devs(void)
+static bool _create_cxi_devs(slingshot_jobinfo_t *job)
 {
 	struct cxil_device_list *list;
 	int dev, rc;
@@ -248,8 +248,12 @@ static bool _create_cxi_devs(void)
 		/* Only done in debug mode */
 		if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH)
 			_print_devinfo(dev, &cxi_devs[dev]->info);
-		/* Adjust max resource available due to system services */
-		_adjust_dev_limits(dev, &cxi_devs[dev]->info);
+		/*
+		 * If configured, adjust max NIC resources available
+		 * by subtracting system service reserved/used values
+		 */
+		if (job->flags & SLINGSHOT_FLAGS_ADJUST_LIMITS)
+			_adjust_dev_limits(dev, &cxi_devs[dev]->info);
 	}
 
 	return true;
@@ -361,7 +365,7 @@ static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
  * Open the Slingshot CXI library; set up functions and set cxi_avail
  * if successful (default is 'false')
  */
-extern bool slingshot_open_cxi_lib(void)
+extern bool slingshot_open_cxi_lib(slingshot_jobinfo_t *job)
 {
 	if (!(cxi_handle = dlopen(HPE_SLINGSHOT_LIB,
 				  RTLD_LAZY | RTLD_GLOBAL))) {
@@ -373,7 +377,7 @@ extern bool slingshot_open_cxi_lib(void)
 	if (!_load_cxi_funcs(cxi_handle))
 		goto out;
 
-	if (!_create_cxi_devs())
+	if (!_create_cxi_devs(job))
 		goto out;
 
 	cxi_avail = true;
@@ -787,7 +791,7 @@ extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
 	xassert(job);
 
 	/* dlopen() libcxi and query CXI devices */
-	slingshot_open_cxi_lib();
+	slingshot_open_cxi_lib(job);
 
 	/* Just return true if CXI not available or no VNIs to set up */
 	if (!cxi_avail || !job->num_vnis) {

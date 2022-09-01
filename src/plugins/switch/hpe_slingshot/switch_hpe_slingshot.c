@@ -484,6 +484,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 	pack32(jobinfo->version, buffer);
 	pack16_array(jobinfo->vnis, jobinfo->num_vnis, buffer);
 	pack32(jobinfo->tcs, buffer);
+	pack32(jobinfo->flags, buffer);
 	_pack_slingshot_limits(&jobinfo->limits.txqs, buffer);
 	_pack_slingshot_limits(&jobinfo->limits.tgqs, buffer);
 	_pack_slingshot_limits(&jobinfo->limits.eqs, buffer);
@@ -531,6 +532,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 
 	safe_unpack16_array(&jobinfo->vnis, &jobinfo->num_vnis, buffer);
 	safe_unpack32(&jobinfo->tcs, buffer);
+	safe_unpack32(&jobinfo->flags, buffer);
 	if (!_unpack_slingshot_limits(&jobinfo->limits.txqs, buffer) ||
 	    !_unpack_slingshot_limits(&jobinfo->limits.tgqs, buffer) ||
 	    !_unpack_slingshot_limits(&jobinfo->limits.eqs, buffer) ||
