@@ -152,7 +152,6 @@ strong_alias(bit_noc,		slurm_bit_noc);
 strong_alias(bit_nffs,		slurm_bit_nffs);
 strong_alias(bit_copybits,	slurm_bit_copybits);
 strong_alias(bit_get_bit_num,	slurm_bit_get_bit_num);
-strong_alias(bit_get_pos_num,	slurm_bit_get_pos_num);
 
 #ifdef SLURM_BIGENDIAN
 static const char* hexmask_lookup[256] = {
@@ -1765,40 +1764,6 @@ bit_get_bit_num(bitstr_t *b, int32_t pos)
 		bit = -1;
 
 	return bit;
-}
-
-/* Find want nth the bit pos is set in bitstr b.
- *   b (IN)             bitstring to search
- *   pos (IN)           bit to search to
- *   RETURN             number bit is set in bitstring (-1 on error)
- */
-
-int32_t
-bit_get_pos_num(bitstr_t *b, bitoff_t pos)
-{
-	bitoff_t bit;
-	int32_t cnt = -1;
-#ifndef NDEBUG
-	bitoff_t bit_cnt;
-#endif
-
-	_assert_bitstr_valid(b);
-#ifndef NDEBUG
-	bit_cnt = _bitstr_bits(b);
-	xassert(pos <= bit_cnt);
-#endif
-
-	if (!bit_test(b, pos)) {
-		error("bit %"BITSTR_FMT" not set", pos);
-		return cnt;
-	}
-	for (bit = 0; bit <= pos; bit++) {
-		if (bit_test(b, bit)) {	/* we got one */
-			cnt++;
-		}
-	}
-
-	return cnt;
 }
 
 void bit_consolidate(bitstr_t *b)

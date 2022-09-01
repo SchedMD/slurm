@@ -114,7 +114,6 @@
 #define bit_nffs		slurm_bit_nffs
 #define bit_copybits		slurm_bit_copybits
 #define	bit_get_bit_num		slurm_bit_get_bit_num
-#define	bit_get_pos_num		slurm_bit_get_pos_num
 
 /* fd.[ch] functions */
 #define closeall		slurm_closeall
