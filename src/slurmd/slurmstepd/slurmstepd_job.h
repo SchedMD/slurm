@@ -78,6 +78,7 @@ typedef enum {
 typedef struct {
 	pthread_mutex_t mutex;	    /* mutex to protect task state          */
 	stepd_step_task_state_t state;  /* task state                       */
+	cpu_set_t *cpu_set;
 
 	int             id;	    /* local task id                        */
 	uint32_t        gtid;	    /* global task id                       */

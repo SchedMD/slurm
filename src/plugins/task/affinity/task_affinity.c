@@ -163,6 +163,20 @@ extern int task_p_slurmd_resume_job (uint32_t job_id)
 	return SLURM_SUCCESS;
 }
 
+static void _calc_cpu_affinity(stepd_step_rec_t *step)
+{
+	if (!step->cpu_bind_type)
+		return;
+
+	for (int i = 0; i < step->node_tasks; i++) {
+		step->task[i]->cpu_set = xmalloc(sizeof(cpu_set_t));
+		if (!get_cpuset(step->task[i]->cpu_set, step, i))
+			xfree(step->task[i]->cpu_set);
+		else
+			reset_cpuset(step->task[i]->cpu_set);
+	}
+}
+
 /*
  * task_p_pre_setuid() is called before setting the UID for the
  * user to launch his jobs.
@@ -170,7 +184,7 @@ extern int task_p_slurmd_resume_job (uint32_t job_id)
 extern int task_p_pre_setuid (stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
-
+	_calc_cpu_affinity(step);
 	cpu_freq_cpuset_validate(step);
 
 	return rc;
@@ -247,20 +261,21 @@ extern int task_p_pre_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 extern int task_p_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 {
 	int rc = SLURM_SUCCESS;
-	cpu_set_t new_mask, cur_mask;
+	cpu_set_t *new_mask = step->task[node_tid]->cpu_set;
+	cpu_set_t current_cpus;
 	pid_t mypid  = step->task[node_tid]->pid;
 
-	if (!step->cpu_bind_type)
-		return SLURM_SUCCESS;
+	if (new_mask)
+		rc = slurm_setaffinity(mypid, sizeof(*new_mask), new_mask);
 
-	slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
-	if (get_cpuset(&new_mask, step, node_tid) &&
-	    (!(step->cpu_bind_type & CPU_BIND_NONE))) {
-		reset_cpuset(&new_mask, &cur_mask);
-		rc = slurm_setaffinity(mypid, sizeof(new_mask), &new_mask);
-		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
+	/* Log affinity status to stderr */
+	if (!new_mask || (rc != SLURM_SUCCESS)) {
+		slurm_getaffinity(mypid, sizeof(current_cpus), &current_cpus);
+		task_slurm_chkaffinity(&current_cpus, step, rc, node_tid);
+	} else {
+		task_slurm_chkaffinity(new_mask, step, rc, node_tid);
 	}
-	task_slurm_chkaffinity(rc ? &cur_mask : &new_mask, step, rc, node_tid);
+
 	return rc;
 }
 

@@ -103,7 +103,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 	CPU_ZERO(mask);
 
 	if (step->cpu_bind_type & CPU_BIND_NONE) {
-		return true;
+		return false;
 	}
 
 	if (step->cpu_bind_type & CPU_BIND_RANK) {
@@ -285,21 +285,23 @@ static bool _is_power_cpu(void)
  * the CPU mask has gaps for the unused threads (different from Intel
  * processors) which need to be skipped over in the mask used in the
  * set system call. */
-void reset_cpuset(cpu_set_t *new_mask, cpu_set_t *cur_mask)
+void reset_cpuset(cpu_set_t *new_mask)
 {
-	cpu_set_t full_mask, newer_mask;
+	cpu_set_t full_mask, newer_mask, cur_mask;
 	int cur_offset, new_offset = 0, last_set = -1;
 
 	if (!_is_power_cpu())
 		return;
 
+	slurm_getaffinity(0, sizeof(cur_mask), &cur_mask);
+
 	if (slurm_getaffinity(1, sizeof(full_mask), &full_mask)) {
 		/* Try to get full CPU mask from process init */
 		CPU_ZERO(&full_mask);
 #ifdef __FreeBSD__
-		CPU_OR(&full_mask, cur_mask);
+		CPU_OR(&full_mask, &cur_mask);
 #else
-		CPU_OR(&full_mask, &full_mask, cur_mask);
+		CPU_OR(&full_mask, &full_mask, &cur_mask);
 #endif
 	}
 	CPU_ZERO(&newer_mask);
