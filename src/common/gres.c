@@ -8791,21 +8791,11 @@ bitstr_t *cpu_set_to_bit_str(cpu_set_t *cpu_set, int cpu_count)
  * This function only works with task/cgroup and constrained devices or
  * if the job step has access to the entire node's resources.
  */
-static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
-					       pid_t pid,
-					       bitstr_t *gres_bit_alloc)
+static bitstr_t *_get_closest_usable_gres(int context_inx,
+					  bitstr_t *gres_bit_alloc,
+					  cpu_set_t *task_cpu_set)
 {
-#if defined(__APPLE__)
-	return NULL;
-#else
-#ifdef __NetBSD__
-	// On NetBSD, cpuset_t is an opaque data type
-	cpuset_t *mask = cpuset_create();
-#else
-	cpu_set_t mask;
-#endif
-	bitstr_t *usable_gres = NULL;
-	int i, i_last, rc;
+	bitstr_t *usable_gres = NULL, *task_cpus_bitmap = NULL;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int gres_inx = 0;
@@ -8816,18 +8806,9 @@ static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
 		return NULL;
 	}
 
-	CPU_ZERO(&mask);
-#ifdef __FreeBSD__
-	rc = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid ? pid : -1,
-				sizeof(mask), &mask);
-#else
-	rc = sched_getaffinity(pid, sizeof(mask), &mask);
-#endif
-	if (rc) {
-		error("sched_getaffinity error: %m");
-		return usable_gres;
-	}
-
+	task_cpus_bitmap = cpu_set_to_bit_str(
+		task_cpu_set,
+		((gres_slurmd_conf_t *)list_peek(gres_conf_list))->cpu_cnt);
 	bitmap_size = bit_size(gres_bit_alloc);
 	usable_gres = bit_alloc(bitmap_size);
 	iter = list_iterator_create(gres_conf_list);
@@ -8841,33 +8822,20 @@ static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
 			      gres_slurmd_conf->count, bitmap_size);
 			continue;
 		}
-		if (!gres_slurmd_conf->cpus_bitmap) {
+		if (!gres_slurmd_conf->cpus_bitmap ||
+		    bit_overlap_any(gres_slurmd_conf->cpus_bitmap,
+				    task_cpus_bitmap)) {
 			bit_nset(usable_gres, gres_inx,
 				 gres_inx + gres_slurmd_conf->count - 1);
-		} else {
-			i_last = bit_fls(gres_slurmd_conf->cpus_bitmap);
-			for (i = 0; i <= i_last; i++) {
-				if (!bit_test(gres_slurmd_conf->cpus_bitmap, i))
-					continue;
-				if (!CPU_ISSET(i, &mask))
-					continue;
-				bit_nset(usable_gres, gres_inx,
-					 gres_inx + gres_slurmd_conf->count -1);
-				break;
-			}
 		}
 		gres_inx += gres_slurmd_conf->count;
 	}
 	list_iterator_destroy(iter);
-
-#ifdef __NetBSD__
-	cpuset_destroy(mask);
-#endif
+	FREE_NULL_BITMAP(task_cpus_bitmap);
 
 	bit_and(usable_gres, gres_bit_alloc);
 
 	return usable_gres;
-#endif
 }
 
 
@@ -9278,8 +9246,9 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 			if (!get_devices && gres_use_local_device_index())
 				bit_consolidate(usable_gres);
 		} else if (tres_bind->bind_gpu) {
-			usable_gres = _get_usable_gres_cpu_affinity(
-				context_inx, pid, gres_bit_alloc);
+			usable_gres = _get_closest_usable_gres(
+				context_inx, gres_bit_alloc,
+				step->task[proc_id]->cpu_set);
 			if (!get_devices && gres_use_local_device_index())
 				bit_consolidate(usable_gres);
 		} else if (tres_bind->gpus_per_task) {
@@ -9298,8 +9267,9 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 			return SLURM_ERROR;
 	} else if (!xstrcmp(gres_name, "nic")) {
 		if (tres_bind->bind_nic) {
-			usable_gres = _get_usable_gres_cpu_affinity(
-				context_inx, pid, gres_bit_alloc);
+			usable_gres = _get_closest_usable_gres(
+				context_inx, gres_bit_alloc,
+				step->task[proc_id]->cpu_set);
 			if (!get_devices && gres_use_local_device_index())
 				bit_consolidate(usable_gres);
 		}
