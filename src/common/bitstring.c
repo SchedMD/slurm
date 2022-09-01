@@ -540,29 +540,53 @@ bit_nffs(bitstr_t *b, int32_t n)
 bitoff_t bit_ffs_from_bit(bitstr_t *b, bitoff_t bit)
 {
 	bitoff_t value = -1;
+	int32_t word;
+#if (HAVE___BUILTIN_CLZLL && (defined SLURM_BIGENDIAN)) || \
+    (HAVE___BUILTIN_CTZLL && (!defined SLURM_BIGENDIAN))
+	bitstr_t bitstr_word;
 
 	_assert_bitstr_valid(b);
-
-	while ((bit % BITSTR_WORD_SIZE) && (bit < _bitstr_bits(b))) {
-		if (bit_test(b, bit)) {
-			value = bit;
-			break;
-		}
-		bit++;
+	if ((bit % BITSTR_WORD_SIZE) && (bit < _bitstr_bits(b))) {
+		bitstr_t mask = ~_bit_nmask(bit);
+		bit -= (bit % BITSTR_WORD_SIZE);
+		word = _bit_word(bit);
+		bitstr_word = b[word] & mask;
+		goto test_word;
 	}
 
 	while ((bit < _bitstr_bits(b)) && (value == -1)) {
-		int32_t word = _bit_word(bit);
 
-		if (b[word] == 0) {
+		word = _bit_word(bit);
+		bitstr_word = b[word];
+test_word:
+		if (bitstr_word == 0) {
 			bit += BITSTR_WORD_SIZE;
 			continue;
 		}
 #if HAVE___BUILTIN_CLZLL && (defined SLURM_BIGENDIAN)
-		value = bit + __builtin_clzll(b[word]);
+		value = bit + __builtin_clzll(bitstr_word);
 #elif HAVE___BUILTIN_CTZLL && (!defined SLURM_BIGENDIAN)
-		value = bit + __builtin_ctzll(b[word]);
+		value = bit + __builtin_ctzll(bitstr_word);
+#endif
+	}
+
+	if (value < _bitstr_bits(b))
+		return value;
+	else
+		return -1;
 #else
+	_assert_bitstr_valid(b);
+	if ((bit % BITSTR_WORD_SIZE) && (bit < _bitstr_bits(b)) &&
+	    (b[_bit_word(bit)] == 0)) {
+		bit += BITSTR_WORD_SIZE;
+		bit -= (bit % BITSTR_WORD_SIZE);
+	}
+	while ((bit < _bitstr_bits(b)) && (value == -1)) {
+		word = _bit_word(bit);
+		if (b[word] == 0) {
+			bit += BITSTR_WORD_SIZE;
+			continue;
+		}
 		while (bit < _bitstr_bits(b) && _bit_word(bit) == word) {
 			if (bit_test(b, bit)) {
 				value = bit;
@@ -570,12 +594,9 @@ bitoff_t bit_ffs_from_bit(bitstr_t *b, bitoff_t bit)
 			}
 			bit++;
 		}
-#endif
 	}
-	if (value < _bitstr_bits(b))
-		return value;
-	else
-		return -1;
+	return value;
+#endif
 }
 
 /*
