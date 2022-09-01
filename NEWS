@@ -98,6 +98,7 @@ documents those changes that are of interest to users and administrators.
     features.
  -- Fix occasional slurmctld crash or hang in backfill due to invalid pointers.
  -- Fix segfault on Cray machines if cgroup cpuset is used in cgroup/v1.
+ -- Fix node state reporting when using specialized cores
 
 * Changes in Slurm 22.05.3
 ==========================
