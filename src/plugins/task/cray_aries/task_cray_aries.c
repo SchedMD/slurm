@@ -371,10 +371,10 @@ extern int task_p_pre_launch (stepd_step_rec_t *step)
 }
 
 /*
- * task_p_pre_set_affinity() is called prior to exec of application task.
+ * task_p_pre_launch_priv() is called prior to exec of application task.
  * Runs in privileged mode.
  */
-extern int task_p_pre_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
+extern int task_p_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid)
 {
 	int rc = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -394,23 +394,6 @@ extern int task_p_pre_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 	return rc;
 }
 
-/*
- * task_p_set_affinity is called prior to exec of application task.
- * Runs in privileged mode.
- */
-extern int task_p_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
-{
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_p_post_set_affinity is called prior to exec of application task.
- * Runs in privileged mode.
- */
-extern int task_p_post_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
-{
-	return SLURM_SUCCESS;
-}
 /*
  * task_term() is called after termination of application task.
  *	It is preceded by --task-epilog (from srun command line)

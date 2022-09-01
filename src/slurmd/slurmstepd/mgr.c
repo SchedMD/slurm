@@ -1962,20 +1962,8 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 		 * Affinity must be set after cgroup is set, or moving pids from
 		 * one cgroup to another will reset affinity.
 		 */
-		if (task_g_pre_set_affinity(step, i) < 0) {
-			error("task_g_pre_set_affinity: %m");
-			rc = SLURM_ERROR;
-			goto fail2;
-		}
-
-		if (task_g_set_affinity(step, i) < 0) {
+		if (task_g_pre_launch_priv(step, i) < 0) {
 			error("task_g_set_affinity: %m");
-			rc = SLURM_ERROR;
-			goto fail2;
-		}
-
-		if (task_g_post_set_affinity(step, i) < 0) {
-			error("task_g_post_set_affinity: %m");
 			rc = SLURM_ERROR;
 			goto fail2;
 		}

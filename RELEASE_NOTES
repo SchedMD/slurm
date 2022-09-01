@@ -77,3 +77,6 @@ API CHANGES
     with stepd_step_rec_t* step.
  -- cgroup plugins - task_cgroup_devices_constrain() function signature removed
     pid_t pid.
+ -- task plugins - replace task_p_pre_set_affinity(), task_p_set_affinity(), and
+    task_p_post_set_affinity() with task_p_pre_launch_priv() like it was back in
+    slurm 20.11.
