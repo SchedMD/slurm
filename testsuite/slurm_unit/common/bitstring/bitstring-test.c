@@ -312,6 +312,27 @@ main(int argc, char *argv[])
 		bit_free(bs);
 	}
 
+	note("Testing bit_ffs_from_bit");
+	{
+		bitstr_t *bs = bit_alloc(256);
+		bit_set(bs,0);
+		bit_set(bs,2);
+		bit_set(bs,63);
+		bit_set(bs,64);
+		TEST(bit_ffs_from_bit(bs,0) == 0, "bit_ffs_from_bit");
+		TEST(bit_ffs_from_bit(bs,1) == 2, "bit_ffs_from_bit");
+		TEST(bit_ffs_from_bit(bs,2) == 2, "bit_ffs_from_bit");
+		TEST(bit_ffs_from_bit(bs,3) == 63, "bit_ffs_from_bit");
+		TEST(bit_ffs_from_bit(bs,63) == 63, "bit_ffs_from_bit");
+		TEST(bit_ffs_from_bit(bs,64) == 64, "bit_ffs_from_bit");
+		TEST(bit_ffs_from_bit(bs,65) == -1, "bit_ffs_from_bit");
+
+		bit_clear_all(bs);
+		bit_set(bs, 130);
+		TEST(bit_ffs_from_bit(bs,1) == 130, "bit_ffs_from_bit");
+
+		bit_free(bs);
+	}
 	totals();
 	return failed;
 }
