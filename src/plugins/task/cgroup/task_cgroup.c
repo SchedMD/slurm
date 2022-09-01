@@ -214,9 +214,7 @@ extern int task_p_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 extern int task_p_post_set_affinity(stepd_step_rec_t *step, uint32_t node_tid)
 {
 	if (use_devices)
-		return task_cgroup_devices_constrain(step,
-						     step->task[node_tid]->pid,
-						     node_tid);
+		return task_cgroup_devices_constrain(step, node_tid);
 	return SLURM_SUCCESS;
 }
 

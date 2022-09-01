@@ -73,3 +73,7 @@ API CHANGES
 ===========
  -- job_container plugins - container_p_stepd_create() function signature
     replaced uint32_t uid with stepd_step_rec_t* step.
+ -- gres plugins - gres_g_get_devices() function signature replaced pid_t pid
+    with stepd_step_rec_t* step.
+ -- cgroup plugins - task_cgroup_devices_constrain() function signature removed
+    pid_t pid.
