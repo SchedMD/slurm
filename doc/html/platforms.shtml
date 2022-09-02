@@ -14,10 +14,12 @@ Currently supported distributions include:
 <li>Debian 11 (Bullseye)</li>
 <li>RedHat Enterprise Linux 7 (RHEL7), CentOS 7, Scientific Linux 7</li>
 <li>RedHat Enterprise Linux 8 (RHEL8) and RHEL8 derivatives</li>
+<li>RedHat Enterprise Linux 9 (RHEL9) and RHEL9 derivatives</li>
 <li>SUSE Linux Enterprise Server (SLES) 12</li>
 <li>SUSE Linux Enterprise Server (SLES) 15</li>
 <li>Ubuntu 18.04</li>
 <li>Ubuntu 20.04</li>
+<li>Ubuntu 22.04</li>
 </ul>
 </li>
 <li><b>NetBSD</b> &mdash; Limited support, not actively tested.</li>
@@ -47,6 +49,6 @@ Specific plugins have been developed for:</p>
 <li>gres/mps &mdash; NVIDIA CUDA Multi-Process Service provides ways to share GPUs between multiple compute processes</li>
 </ul>
 
-<p style="text-align:center;">Last modified 27 April 2022</p>
+<p style="text-align:center;">Last modified 01 September 2022</p>
 
 <!--#include virtual="footer.txt"-->
