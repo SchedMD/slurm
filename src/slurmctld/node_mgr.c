@@ -4881,6 +4881,7 @@ extern int delete_nodes(char *names, char **err_msg)
 
 	if (one_success) {
 		rehash_node();
+		set_cluster_tres(false);
 		_update_parts();
 		select_g_reconfigure();
 	}
