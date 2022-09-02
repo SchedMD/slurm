@@ -2804,8 +2804,10 @@ extern int slurm_conf_get_res_spec_info(const char *node_name,
 	p = node_to_host_hashtbl[idx];
 	while (p) {
 		if (xstrcmp(p->alias, node_name) == 0) {
-			if (core_spec_cnt)
+			if (core_spec_cnt) {
+				xfree(*cpu_spec_list);
 				*cpu_spec_list = xstrdup(p->cpu_spec_list);
+			}
 			if (core_spec_cnt)
 				*core_spec_cnt  = p->core_spec_cnt;
 			if (mem_spec_limit)
