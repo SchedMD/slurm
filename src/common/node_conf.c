@@ -86,7 +86,10 @@ time_t last_node_update = (time_t) 0;	/* time of last update */
 node_record_t **node_record_table_ptr = NULL;	/* node records */
 xhash_t* node_hash_table = NULL;
 int node_record_table_size = 0;		/* size of node_record_table_ptr */
-int node_record_count = 0;		/* count in node_record_table_ptr */
+int node_record_count = 0;		/* number of node slots in
+					 * node_record_table_ptr */
+int active_node_record_count = 0;	/* non-null node count in
+					 * node_record_table_ptr */
 int last_node_index = -1;		/* index of last node in tabe */
 uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
@@ -868,6 +871,7 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 	node_ptr->index = index;
 	node_ptr->name = xstrdup(node_name);
 	xhash_add(node_hash_table, node_ptr);
+	active_node_record_count++;
 
 	_init_node_record(node_ptr, config_ptr);
 
@@ -934,6 +938,7 @@ extern void insert_node_record(node_record_t *node_ptr)
 		node_ptr->index = i;
 		bit_set(node_ptr->config_ptr->node_bitmap, node_ptr->index);
 		xhash_add(node_hash_table, node_ptr);
+		active_node_record_count++;
 
 		/* re-add node to conf node hash tables */
 		slurm_reset_alias(node_ptr->name,
@@ -963,6 +968,7 @@ extern void delete_node_record(node_record_t *node_ptr)
 		if (i < 0)
 			last_node_index = -1;
 	}
+	active_node_record_count--;
 
 	_delete_node_config_ptr(node_ptr);
 
@@ -1498,12 +1504,4 @@ extern void node_conf_set_all_active_bits(bitstr_t *b)
 {
 	for (int i = 0; next_node(&i); i++)
 		bit_set(b, i);
-}
-
-extern int node_conf_get_active_node_count(void)
-{
-	int node_count = 0;
-	for (int i = 0; next_node(&i); i++)
-		node_count++;
-	return node_count;
 }

@@ -471,7 +471,7 @@ static void _validate_switches(void)
 	}
 	FREE_NULL_BITMAP(multi_homed_bitmap);
 
-	node_count = node_conf_get_active_node_count();
+	node_count = active_node_record_count;
 	/* Create array of indexes of children of each switch,
 	 * and see if any switch can reach all nodes */
 	for (i = 0; i < switch_record_cnt; i++) {

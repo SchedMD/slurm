@@ -188,7 +188,10 @@ struct node_record {
 					 * scheduling purposes. */
 };
 extern node_record_t **node_record_table_ptr;  /* ptr to node records */
-extern int node_record_count;		/* count in node_record_table_ptr */
+extern int node_record_count;		/* number of node slots
+					 * node_record_table_ptr */
+extern int active_node_record_count;	/* non-null node count in
+					 * node_record_table_ptr */
 extern xhash_t* node_hash_table;	/* hash table for node records */
 extern time_t last_node_update;		/* time of last node record update */
 
@@ -482,12 +485,5 @@ extern bitstr_t *node_conf_get_active_bitmap(void);
  * bits.
  */
 extern void node_conf_set_all_active_bits(bitstr_t *b);
-
-/*
- * Count all active nodes.
- *
- * node_record_table_ptr may have NULL slots in it, so only count non-null nodes
- */
-extern int node_conf_get_active_node_count(void);
 
 #endif /* !_HAVE_NODE_CONF_H */
