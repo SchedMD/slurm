@@ -278,7 +278,14 @@ typedef struct gres_job_state {
 					 * Used without GRES files */
 
 	/* Allocated resources details */
-	uint64_t total_gres;		/* Count of allocated GRES to job */
+	/*
+	 * total_gres - During resource selection (in the select plugin), this
+	 *              is used to know how many available GRES are on the nodes
+	 *              that are selected for the job. Once the nodes for the
+	 *              job are selected, this is changed to the count of this
+	 *              GRES allocated to the job.
+	 */
+	uint64_t total_gres;
 	uint32_t node_cnt;		/* 0 if no_consume */
 	bitstr_t **gres_bit_alloc;	/* Per node GRES allocated,
 					 * Used with GRES files */
