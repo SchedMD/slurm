@@ -71,6 +71,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent slurmctld from starting with invalid jobcomp plugin.
  -- Fix `sinfo -i` and interactive `scontrol> show node` replies for nodes
     going from powering down to powered down state.
+ -- auth/jwt - support Azure (among other) JWKS files by preferring x5c field
+    over locally reconstructing an RSA256 key file.
 
 * Changes in Slurm 22.05.5
 ==========================
