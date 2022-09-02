@@ -528,7 +528,7 @@ and TaskEpilog.</li>
 Reservation requested for the job.
 Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
 
-<li><b>SLURM_RESTART_COUNT</b>
+<li><b>SLURM_JOB_RESTART_COUNT</b>
 Number of times the job has been restarted.
 Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
 
@@ -582,6 +582,11 @@ SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
 <li><b>SLURM_PROCID</b>
 The MPI rank (or relative process ID) of the current process. Available in
 SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
+<li><b>SLURM_RESTART_COUNT</b>
+Number of times the job has been restarted. This is only set if the job
+has been restarted at least once. Available in SrunProlog, TaskProlog,
+SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_RLIMIT_AS</b>
 Resource limit on the job's address space. Available in SrunProlog,
@@ -713,6 +718,6 @@ canceled.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 11 July 2022</p>
+<p style="text-align:center;">Last modified 23 August 2022</p>
 
 <!--#include virtual="footer.txt"-->
