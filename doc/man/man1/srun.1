@@ -341,7 +341,7 @@ be used to specify that two nodes must be allocated from nodes with the feature
 of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
 
-\fBNOTE:\fR This construct does not support multiple Intel KNL NUMA or MCDRAM
+\fBNOTE\fR: This construct does not support multiple Intel KNL NUMA or MCDRAM
 modes. For example, while \fB\-\-constraint="[(knl&quad)*2&(knl&hemi)*4]"\fR is
 not supported, \fB\-\-constraint="[haswell*2&(knl&hemi)*4]"\fR is supported.
 Specification of multiple KNL modes requires the use of a heterogeneous job.
@@ -359,7 +359,7 @@ either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
 The same request without the brackets will try to find a single node that
 meets those requirements.
 
-\fBNOTE:\fR Brackets are only reserved for \fBMultiple Counts\fR and
+\fBNOTE\fR: Brackets are only reserved for \fBMultiple Counts\fR and
 \fBMatching OR\fR syntax.
 AND operators require a count for each feature inside square brackets
 (i.e. "[quad*2&hemi*1]"). Slurm will only allow a single set of bracketed
@@ -970,12 +970,12 @@ requested and be one per line or comma separated.  If specifying a
 task count (\fB\-n\fR, \fB\-\-ntasks\fR=<\fInumber\fR>), your tasks
 will be laid out on the nodes in the order of the file.
 .br
-\fBNOTE:\fR The arbitrary distribution option on a job allocation only
+\fBNOTE\fR: The arbitrary distribution option on a job allocation only
 controls the nodes to be allocated to the job and not the allocation of
 CPUs on those nodes. This option is meant primarily to control a job step's
 task layout in an existing job allocation for the srun command.
 .br
-\fBNOTE:\fR If the number of tasks is given and a list of requested nodes is
+\fBNOTE\fR: If the number of tasks is given and a list of requested nodes is
 also given, the number of nodes used from that list will be reduced to match
 that of the number of tasks if the number of nodes in the list is greater than
 the number of tasks.
@@ -1854,7 +1854,7 @@ This could happen if \fB\-\-mem\-per\-cpu\fR is used with the
 times the number of CPUs on a node is greater than the total memory of that
 node.
 
-\fBNOTE:\fR This applies to \fBusable\fR allocated CPUs in a job allocation.
+\fBNOTE\fR: This applies to \fBusable\fR allocated CPUs in a job allocation.
 This is important when more than one thread per core is configured.
 If a job requests \-\-threads\-per\-core with fewer threads on a core than
 exist on the core (or \-\-hint=nomultithread which implies
