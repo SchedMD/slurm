@@ -1759,7 +1759,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	part_res_record_t *p_ptr;
 	node_record_t *node_ptr = NULL;
 	int i, n;
-	uint32_t alloc_cpus, alloc_cores, total_node_cores;
+	uint32_t alloc_cpus, alloc_cores, total_node_cores, efctv_node_cores;
 	bitstr_t **alloc_core_bitmap = NULL;
 	List gres_list;
 
@@ -1832,13 +1832,23 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 			total_node_cores = end - start;
 		}
+		efctv_node_cores = total_node_cores - node_ptr->core_spec_cnt;
 
 		/*
-		 * Administrator could resume suspended jobs and oversubscribe
-		 * cores, avoid reporting more cores in use than configured
+		 * Avoid reporting more cores in use than configured.
+		 *
+		 * This could happen if an administrator resumes suspended jobs
+		 * and thus oversubscribes cores.
+		 *
+		 * Or, if a job requests specialized CPUs (with --core-spec or
+		 * --thread-spec), then --exclusive is implied, so all the CPUs
+		 *  on the node are allocated (even if the job does not have
+		 *  access to all of those CPUs). However, specialized CPUs are
+		 *  not counted in configured CPUs, so we need to subtract
+		 *  those from allocated CPUs.
 		 */
-		if (alloc_cores > total_node_cores)
-			alloc_cpus = total_node_cores;
+		if (alloc_cores > efctv_node_cores)
+			alloc_cpus = efctv_node_cores;
 		else
 			alloc_cpus = alloc_cores;
 
