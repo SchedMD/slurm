@@ -164,7 +164,8 @@ then the job will also fail.</p>
 <li>Go to the directory containing the OCI Container bundle:
 <pre>cd $ABS_PATH_TO_BUNDLE</pre></li>
 
-<li>Execute OCI Container runtime:
+<li>Execute OCI Container runtime (You can find a few examples on how to build
+a bundle <a href="#bundle">below</a>):
 <pre>$OCIRunTime $ARGS create test --bundle $PATH_TO_BUNDLE</pre>
 <pre>$OCIRunTime $ARGS start test</pre>
 <pre>$OCIRunTime $ARGS kill test</pre>
@@ -247,7 +248,7 @@ docker rm alpine</pre>
 	</ul>
 
 	<li>
-	Configuring a Bundle for Runtime to execute:
+	Configure a bundle for runtime to execute:
 	<ul>
 	    <li>Use <a href="https://github.com/opencontainers/runc">runc</a>
 	    to generate a config.json:
@@ -482,6 +483,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 5 August 2021</p>
+<p style="text-align:center;">Last modified 21 September 2022</p>
 
 <!--#include virtual="footer.txt"-->
