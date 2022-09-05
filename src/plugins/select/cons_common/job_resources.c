@@ -133,6 +133,11 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 			use_core_array = core_array[0];
 		}
 
+		/*
+		 * This segment properly handles the core counts when whole
+		 * nodes are allocated, including when explicitly requesting
+		 * specialized cores.
+		 */
 		if (job_resrcs_ptr->whole_node == 1) {
 			if (!use_core_array) {
 				if (type != HANDLE_JOB_RES_TEST)
