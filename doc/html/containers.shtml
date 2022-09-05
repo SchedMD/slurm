@@ -227,7 +227,7 @@ different container solutions:</p>
 	<ul>
 	<li>
 	debootstrap:
-	<pre>sudo debootstrap stable /tmp/image/rootfs http://deb.debian.org/debian/</pre>
+	<pre>sudo debootstrap stable /image/rootfs http://deb.debian.org/debian/</pre>
 	</li>
 
 	<li>
@@ -252,7 +252,7 @@ Configuring a Bundle for Runtime to execute:
 	<li>Use <a href="https://github.com/opencontainers/runc">runc</a>
 	to generate a config.json:
 		<pre>
-cd /tmp/image
+cd /image
 runc --rootless=true spec --rootless</pre>
 	</li>
 
@@ -260,7 +260,7 @@ runc --rootless=true spec --rootless</pre>
 	Use <a href="https://github.com/opencontainers/umoci">umoci</a> and
 	skopeo to generate a full image:
 	<pre>
-cd /tmp/
+cd /image/
 skopeo copy docker://alpine:latest oci:alpine:latest
 umoci unpack --rootless --image alpine alpine</pre>
 	</li>
@@ -269,8 +269,8 @@ umoci unpack --rootless --image alpine alpine</pre>
 	Use <a href="https://sylabs.io/guides/3.1/user-guide/oci_runtime.html">
 	singularity</a> to generate a full image:
 	<pre>
-sudo singularity sif dump alpine /tmp/alpine.sif
-sudo singularity oci mount /tmp/alpine.sif /tmp/image/</pre>
+sudo singularity sif dump alpine /image/alpine.sif
+sudo singularity oci mount /image/alpine.sif /image/</pre>
 	</li>
 	</ul>
 </ul>
