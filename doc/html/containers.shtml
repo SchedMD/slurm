@@ -102,7 +102,6 @@ RunTimeDelete="runc --rootless=true --root=/tmp/ delete --force %n.%u.%j.%s.%t"
 <li>runc using run (suggested):
 <pre>
 RunTimeQuery="runc --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
-RunTimeQuery="runc --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
 RunTimeKill="runc --rootless=true --root=/tmp/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="runc --rootless=true --root=/tmp/ delete --force %n.%u.%j.%s.%t"
 RunTimeRun="runc --rootless=true --root=/tmp/ run %n.%u.%j.%s.%t -b %b"
@@ -136,7 +135,6 @@ RunTimeDelete="nvidia-container-runtime --rootless=true --root=/tmp/ delete --fo
 
 <li>nvidia-container-runtime using run (suggested):
 <pre>
-RunTimeQuery="nvidia-container-runtime --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
 RunTimeQuery="nvidia-container-runtime --rootless=true --root=/tmp/ state %n.%u.%j.%s.%t"
 RunTimeKill="nvidia-container-runtime --rootless=true --root=/tmp/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="nvidia-container-runtime --rootless=true --root=/tmp/ delete --force %n.%u.%j.%s.%t"
