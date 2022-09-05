@@ -239,6 +239,7 @@ different container solutions:</p>
 	docker:
 	<pre>docker pull alpine
 docker create --name alpine alpine
+mkdir -p /image/rootfs/
 docker export alpine | tar -C /image/rootfs/ -xf -
 docker rm alpine</pre>
 	</li>
