@@ -220,59 +220,60 @@ Filesystem Bundle</a>
 </p>
 
 <p>Here are instructions on how to generate a container using a few
-different container solutions:</p>
+alternative container solutions:</p>
 
 <ul>
-<li>Use an existing tool to create a filesystem image in /image/rootfs:
+    <li>Create an image and prepare it for use with runc:
+    <ol>
+	<li>
+	Use an existing tool to create a filesystem image in /image/rootfs:
 	<ul>
-	<li>
-	debootstrap:
-	<pre>sudo debootstrap stable /image/rootfs http://deb.debian.org/debian/</pre>
-	</li>
-
-	<li>
-	yum:
-	<pre>sudo yum --config /etc/yum.conf --installroot=/image/rootfs/ --nogpgcheck --releasever=${CENTOS_RELEASE} -y</pre>
-	</li>
-
-	<li>
-	docker:
-	<pre>docker pull alpine
+	    <li>
+		debootstrap:
+		<pre>sudo debootstrap stable /image/rootfs http://deb.debian.org/debian/</pre>
+	    </li>
+	    <li>
+		yum:
+		<pre>sudo yum --config /etc/yum.conf --installroot=/image/rootfs/ --nogpgcheck --releasever=${CENTOS_RELEASE} -y</pre>
+	    </li>
+	    <li>
+		docker:
+		<pre>docker pull alpine
 docker create --name alpine alpine
 mkdir -p /image/rootfs/
 docker export alpine | tar -C /image/rootfs/ -xf -
 docker rm alpine</pre>
-	</li>
+	    </li>
 	</ul>
-</li>
-
-<li>
-Configuring a Bundle for Runtime to execute:
-	<ul>
-	<li>Use <a href="https://github.com/opencontainers/runc">runc</a>
-	to generate a config.json:
-		<pre>
-cd /image
-runc --rootless=true spec --rootless</pre>
-	</li>
 
 	<li>
-	Use <a href="https://github.com/opencontainers/umoci">umoci</a> and
-	skopeo to generate a full image:
-	<pre>
+	Configuring a Bundle for Runtime to execute:
+	<ul>
+	    <li>Use <a href="https://github.com/opencontainers/runc">runc</a>
+	    to generate a config.json:
+	    <pre>
+cd /image
+runc --rootless=true spec --rootless</pre>
+	    </li>
+	</ul>
+    </ol>
+    </li>
+
+    <li>Use <a href="https://github.com/opencontainers/umoci">umoci</a>
+    and skopeo to generate a full image:
+    <pre>
 cd /image/
 skopeo copy docker://alpine:latest oci:alpine:latest
 umoci unpack --rootless --image alpine alpine</pre>
-	</li>
+    </li>
 
-	<li>
-	Use <a href="https://sylabs.io/guides/3.1/user-guide/oci_runtime.html">
-	singularity</a> to generate a full image:
-	<pre>
+    <li>
+    Use <a href="https://sylabs.io/guides/3.1/user-guide/oci_runtime.html">
+    singularity</a> to generate a full image:
+    <pre>
 sudo singularity sif dump alpine /image/alpine.sif
 sudo singularity oci mount /image/alpine.sif /image/</pre>
-	</li>
-	</ul>
+    </li>
 </ul>
 
 <h2 id="plugin">Container support via Plugin
