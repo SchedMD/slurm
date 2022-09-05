@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "August 2022" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "September 2022" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -333,6 +333,9 @@ of "rack1" and four nodes must be allocated from nodes with the feature
 modes. For example, while \fB\-\-constraint="[(knl&quad)*2&(knl&hemi)*4]"\fR is
 not supported, \fB\-\-constraint="[haswell*2&(knl&hemi)*4]"\fR is supported.
 Specification of multiple KNL modes requires the use of a heterogeneous job.
+
+\fBNOTE\fR: Multiple Counts can cause jobs to be allocated with a non-optimal
+network layout.
 .IP
 
 .TP
