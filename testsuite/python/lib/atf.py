@@ -24,18 +24,6 @@ import traceback
 # ATF module functions
 ##############################################################################
 
-def log_die(message):
-    """Logs a critical message and exits with a non-zero exit code.
-
-    While assert should be used to verify expected test conditions in tests,
-    this function may be used to invoke a failure for failed setup conditions
-    and operations in tests, library functions and scripts.
-    """
-
-    logging.critical(message)
-    sys.exit(1)
-
-
 def node_range_to_list(node_expression):
     """Converts a node range expression into a list of node names.
 
@@ -174,8 +162,9 @@ def run_command(command, fatal=False, timeout=60, quiet=False, chdir=None, user=
             message += f" {stdout}"
 
     if message != '':
+        message = message.rstrip()
         if fatal:
-            log_die(message)
+            pytest.fail(message)
         elif not quiet:
             logging.warning(message)
 
@@ -261,7 +250,7 @@ def repeat_until(callable, condition, timeout=15, poll_interval=None, fatal=Fals
         time.sleep(poll_interval)
 
     if fatal:
-        log_die(f"Condition was not met within the {timeout} second timeout")
+        pytest.fail(f"Condition was not met within the {timeout} second timeout")
     else:
         return False
 
@@ -336,11 +325,11 @@ def start_slurmctld(clean=False, quiet=False):
             command += " -c -i"
         results = run_command(command, user=properties['slurm-user'], quiet=quiet)
         if results['exit_code'] != 0:
-            log_die(f"Unable to start slurmctld (rc={results['exit_code']}): {results['stderr']}")
+            pytest.fail(f"Unable to start slurmctld (rc={results['exit_code']}): {results['stderr']}")
 
         # Verify that slurmctld is running
         if not repeat_command_until("scontrol ping", lambda results: re.search(r'is UP', results['stdout'])):
-            log_die(f"Slurmctld is not running")
+            pytest.fail(f"Slurmctld is not running")
 
 
 def start_slurm(clean=False, quiet=False):
@@ -367,11 +356,11 @@ def start_slurm(clean=False, quiet=False):
             # Start slurmdbd
             results = run_command(f"{properties['slurm-sbin-dir']}/slurmdbd", user=properties['slurm-user'], quiet=quiet)
             if results['exit_code'] != 0:
-                log_die(f"Unable to start slurmdbd (rc={results['exit_code']}): {results['stderr']}")
+                pytest.fail(f"Unable to start slurmdbd (rc={results['exit_code']}): {results['stderr']}")
 
             # Verify that slurmdbd is running
             if not repeat_command_until("sacctmgr show cluster", lambda results: results['exit_code'] == 0):
-                log_die(f"Slurmdbd is not running")
+                pytest.fail(f"Slurmdbd is not running")
 
     # Start slurmctld
     start_slurmctld(clean, quiet)
@@ -380,7 +369,7 @@ def start_slurm(clean=False, quiet=False):
     slurmd_list = []
     output = run_command_output(f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf", user=properties['slurm-user'], quiet=quiet)
     if not output:
-        log_die("Unable to determine the slurmd node names")
+        pytest.fail("Unable to determine the slurmd node names")
     for node_name_expression in output.rstrip().split('\n'):
         if node_name_expression != 'DEFAULT':
             slurmd_list.extend(node_range_to_list(node_name_expression))
@@ -394,11 +383,11 @@ def start_slurm(clean=False, quiet=False):
             # Start slurmd
             results = run_command(f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}", user='root', quiet=quiet)
             if results['exit_code'] != 0:
-                log_die(f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}")
+                pytest.fail(f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}")
 
             # Verify that the slurmd is running
             if run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
-                log_die(f"Slurmd -N {slurmd_name} is not running")
+                pytest.fail(f"Slurmd -N {slurmd_name} is not running")
 
 
 def stop_slurmctld(quiet=False):
@@ -418,7 +407,7 @@ def stop_slurmctld(quiet=False):
 
     # Verify that slurmctld is not running
     if not repeat_until(lambda : pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"), lambda pids: len(pids) == 0):
-        log_die("Slurmctld is still running")
+        pytest.fail("Slurmctld is still running")
 
 
 def stop_slurm(quiet=False):
@@ -444,20 +433,20 @@ def stop_slurm(quiet=False):
 
         # Verify that slurmdbd is not running (we might have to wait for rollups to complete)
         if not repeat_until(lambda : pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmdbd"), lambda pids: len(pids) == 0, timeout=60):
-            log_die("Slurmdbd is still running")
+            pytest.fail("Slurmdbd is still running")
 
     # Stop slurmctld and slurmds
     run_command("scontrol shutdown", user=properties['slurm-user'], quiet=quiet)
 
     # Verify that slurmctld is not running
     if not repeat_until(lambda : pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmctld"), lambda pids: len(pids) == 0):
-        log_die("Slurmctld is still running")
+        pytest.fail("Slurmctld is still running")
 
     # Build list of slurmds
     slurmd_list = []
     output = run_command_output(f"perl -nle 'print $1 if /^NodeName=(\\S+)/' {properties['slurm-config-dir']}/slurm.conf", quiet=quiet)
     if not output:
-        log_die("Unable to determine the slurmd node names")
+        pytest.fail("Unable to determine the slurmd node names")
     for node_name_expression in output.rstrip().split('\n'):
         if node_name_expression != 'DEFAULT':
             slurmd_list.extend(node_range_to_list(node_name_expression))
@@ -466,7 +455,7 @@ def stop_slurm(quiet=False):
     if not repeat_until(lambda : pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"), lambda pids: len(pids) == 0):
         pids = pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd")
         run_command(f"pgrep -f {properties['slurm-sbin-dir']}/slurmd -a", quiet=quiet)
-        log_die(f"Some slurmds are still running ({pids})")
+        pytest.fail(f"Some slurmds are still running ({pids})")
 
 
 def restart_slurmctld(clean=False, quiet=False):
@@ -613,7 +602,7 @@ def get_config(live=True, source='slurm', quiet=False):
         elif source == 'slurmdbd' or source == 'dbd' or source == 'sacctmgr':
             command = 'sacctmgr'
         else:
-            log_die(f"Invalid live source value ({source})")
+            pytest.fail(f"Invalid live source value ({source})")
 
         output = run_command_output(f"{command} show config", fatal=True, quiet=quiet)
 
@@ -1040,7 +1029,7 @@ def cancel_jobs(job_list, timeout=5, poll_interval=.1, fatal=False, quiet=False)
         status = wait_for_job_state(job_id, 'DONE', timeout=timeout, poll_interval=poll_interval, fatal=fatal, quiet=quiet)
         if not status:
             if fatal:
-                log_die(f"Job ({job_id}) was not cancelled within the {timeout} second timeout")
+                pytest.fail(f"Job ({job_id}) was not cancelled within the {timeout} second timeout")
             return status
 
     return True
@@ -1061,7 +1050,7 @@ def cancel_all_jobs(fatal=True, timeout=5, quiet=False):
     results = run_command(f"scancel -u {user_name}", quiet=quiet)
     # Have to account for het scancel bug until bug 11806 is fixed
     if results['exit_code'] != 0 and results['exit_code'] != 60:
-        log_die(f"Failure cancelling jobs: {results['stderr']}")
+        pytest.fail(f"Failure cancelling jobs: {results['stderr']}")
 
     # Inherits timeout from repeat_until
     return repeat_command_until(f"squeue -u {user_name} --noheader", lambda results: results['stdout'] == '', fatal=fatal, timeout=timeout, quiet=quiet)
@@ -1190,7 +1179,7 @@ def get_node_parameter(node_name, parameter_name, default=None, live=True):
     if node_name in nodes_dict:
         node_dict = nodes_dict[node_name]
     else:
-        log_die(f"Node ({node_name}) was not found in the node configuration")
+        pytest.fail(f"Node ({node_name}) was not found in the node configuration")
 
     if parameter_name in node_dict:
         return node_dict[parameter_name]
@@ -1296,7 +1285,7 @@ def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
             break
 
     if not found_node_name:
-        log_die(f"Invalid node specified in set_node_parameter(). Node ({node_name}) does not exist")
+        pytest.fail(f"Invalid node specified in set_node_parameter(). Node ({node_name}) does not exist")
 
     # Write the config file back out with the modifications
     backup_config_file('slurm')
@@ -1601,7 +1590,7 @@ def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
     if job_id in jobs_dict:
         job_dict = jobs_dict[job_id]
     else:
-        log_die(f"Job ({job_id}) was not found in the job configuration")
+        pytest.fail(f"Job ({job_id}) was not found in the job configuration")
 
     if parameter_name in job_dict:
         return job_dict[parameter_name]
@@ -1644,7 +1633,7 @@ def wait_for_job_state(job_id, desired_job_state, timeout=5, poll_interval=None,
     ]:
         message = f"The specified desired job state ({desired_job_state}) is not supported"
         if fatal:
-            log_die(message)
+            pytest.fail(message)
         else:
             logging.warning(message)
             return False
@@ -1687,7 +1676,7 @@ def wait_for_job_state(job_id, desired_job_state, timeout=5, poll_interval=None,
             else:
                 message = f"Job ({job_id}) is in state {job_state}, but we wanted {desired_job_state}"
                 if fatal:
-                    log_die(message)
+                    pytest.fail(message)
                 else:
                     logging.warning(message)
                     return False
@@ -1711,7 +1700,7 @@ def wait_for_job_state(job_id, desired_job_state, timeout=5, poll_interval=None,
 
     message = f"Job ({job_id}) did not reach the {desired_job_state} state within the {timeout} second timeout"
     if fatal:
-        log_die(message)
+        pytest.fail(message)
     else:
         logging.warning(message)
         return False
@@ -1903,7 +1892,7 @@ def require_nodes(requested_node_count, requirements_list=[]):
                         if match := re.search(r'^(\w+):(\d+)$', gres_value):
                             (required_gres_name, required_gres_value) = (match.group(1), match.group(2))
                         else:
-                            log_die("Gres requirement must be of the form <name>:<count>")
+                            pytest.fail("Gres requirement must be of the form <name>:<count>")
                         if match := re.search(rf"{required_gres_name}:(\d+)", lower_node_dict[parameter_name.lower()]):
                             if match.group(1) < required_gres_value:
                                 if node_qualifies:
@@ -1924,7 +1913,7 @@ def require_nodes(requested_node_count, requirements_list=[]):
                     if nonqualifying_node_count == 1:
                         augmentation_dict[parameter_name] = parameter_value
             else:
-                log_die(f"{parameter_name} is not a supported requirement type")
+                pytest.fail(f"{parameter_name} is not a supported requirement type")
         if node_qualifies:
             qualifying_node_count += 1
             if first_qualifying_node_name == '':
@@ -2031,10 +2020,10 @@ def backup_accounting_database():
 
     mysqldump_path = shutil.which('mysqldump')
     if mysqldump_path is None:
-        log_die("Unable to backup the accounting database. mysqldump was not found in your path")
+        pytest.fail("Unable to backup the accounting database. mysqldump was not found in your path")
     mysql_path = shutil.which('mysql')
     if mysql_path is None:
-        log_die("Unable to backup the accounting database. mysql was not found in your path")
+        pytest.fail("Unable to backup the accounting database. mysql was not found in your path")
 
     sql_dump_file = f"{str(module_tmp_path / '../../slurm_acct_db.sql')}"
 
@@ -2098,7 +2087,7 @@ def restore_accounting_database():
 
     mysql_path = shutil.which('mysql')
     if mysql_path is None:
-        log_die("Unable to restore the accounting database. mysql was not found in your path")
+        pytest.fail("Unable to restore the accounting database. mysql was not found in your path")
 
     slurmdbd_dict = get_config(live=False, source='slurmdbd', quiet=True)
     database_host, database_port, database_name, database_user, database_password = (slurmdbd_dict.get(key) for key in ['StorageHost', 'StoragePort', 'StorageLoc', 'StorageUser', 'StoragePass'])
@@ -2232,7 +2221,7 @@ def get_partition_parameter(partition_name, parameter_name, default=None):
     if partition_name in partitions_dict:
         partition_dict = partitions_dict[partition_name]
     else:
-        log_die(f"Partition ({partition_name}) was not found in the partition configuration")
+        pytest.fail(f"Partition ({partition_name}) was not found in the partition configuration")
 
     if parameter_name in partition_dict:
         return partition_dict[parameter_name]
@@ -2309,7 +2298,7 @@ def set_partition_parameter(partition_name, new_parameter_name, new_parameter_va
             break
 
     if not found_partition_name:
-        log_die(f"Invalid partition name specified in set_partition_parameter(). Partition {partition_name} does not exist")
+        pytest.fail(f"Invalid partition name specified in set_partition_parameter(). Partition {partition_name} does not exist")
 
     # Write the config file back out with the modifications
     backup_config_file('slurm')
@@ -2406,7 +2395,7 @@ testsuite_config = {}
 # can be overridden with the SLURM_TESTSUITE_CONF environment variable.
 testsuite_config_file = os.getenv('SLURM_TESTSUITE_CONF', f"{testsuite_base_dir}/testsuite.conf")
 if not os.path.isfile(testsuite_config_file):
-    log_die(f"The unified testsuite configuration file (testsuite.conf) was not found. This file can be created from a copy of the autogenerated sample found in BUILDDIR/testsuite/testsuite.conf.sample. By default, this file is expected to be found in SRCDIR/testsuite ({testsuite_base_dir}). If placed elsewhere, set the SLURM_TESTSUITE_CONF environment variable to the full path of your testsuite.conf file.")
+    pytest.fail(f"The unified testsuite configuration file (testsuite.conf) was not found. This file can be created from a copy of the autogenerated sample found in BUILDDIR/testsuite/testsuite.conf.sample. By default, this file is expected to be found in SRCDIR/testsuite ({testsuite_base_dir}). If placed elsewhere, set the SLURM_TESTSUITE_CONF environment variable to the full path of your testsuite.conf file.")
 with open(testsuite_config_file, 'r') as f:
     for line in f.readlines():
         if match := re.search(rf"^\s*(\w+)\s*=\s*(.*)$", line):
@@ -2436,7 +2425,7 @@ if slurm_conf_path := os.getenv('SLURM_CONF'):
 properties['slurm-user'] = 'root'
 slurm_config_file = f"{properties['slurm-config-dir']}/slurm.conf"
 if not os.path.isfile(slurm_config_file):
-    log_die(f"The python testsuite was expecting your slurm.conf to be found in {properties['slurm-config-dir']}. Please create it or use the SLURM_CONF environment variable to indicate its location.")
+    pytest.fail(f"The python testsuite was expecting your slurm.conf to be found in {properties['slurm-config-dir']}. Please create it or use the SLURM_CONF environment variable to indicate its location.")
 if os.access(slurm_config_file, os.R_OK):
     with open(slurm_config_file, 'r') as f:
         for line in f.readlines():
@@ -2446,7 +2435,7 @@ else:
     # slurm.conf is not readable as test-user. We will try reading it as root
     results = run_command(f"grep -i SlurmUser {slurm_config_file}", user='root', quiet=True)
     if results['exit_code'] == 0:
-        log_die(f"Unable to read {slurm_config_file}")
+        pytest.fail(f"Unable to read {slurm_config_file}")
     for line in results['stdout'].splitlines():
         if match := re.search(rf"^\s*(?i:SlurmUser)\s*=\s*(.*)$", line):
             properties['slurm-user'] = match.group(1)
