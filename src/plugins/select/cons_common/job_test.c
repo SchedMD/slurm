@@ -533,8 +533,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 
 	/* If successful, sync up the avail_core with the node_map */
 	if (rc == SLURM_SUCCESS) {
-		int n, start;
-
+		int n;
 		if (is_cons_tres) {
 			for (n = 0; n < bit_size(node_bitmap); n++) {
 				if (!avail_res_array[n] ||
@@ -542,9 +541,9 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 					FREE_NULL_BITMAP(avail_core[n]);
 			}
 		} else if (bit_set_count(node_bitmap)) {
-			start = 0;
+			int start = 0, last = bit_fls(node_bitmap);
 			for (n = 0; next_node_bitmap(node_bitmap, &n); n++) {
-				if (!avail_res_array[n])
+				if ((n != last) && !avail_res_array[n])
 					continue;
 				if (cr_get_coremap_offset(n) != start)
 					bit_nclear(
@@ -552,9 +551,6 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 						(cr_get_coremap_offset(n)) - 1);
 				start = cr_get_coremap_offset(n + 1);
 			}
-			if (cr_get_coremap_offset(n) != start)
-				bit_nclear(*avail_core, start,
-					   cr_get_coremap_offset(n) - 1);
 		}
 	}
 	core_array_log("_select_nodes/sync_cores", node_bitmap, avail_core);
