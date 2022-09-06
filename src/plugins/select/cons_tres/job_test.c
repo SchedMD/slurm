@@ -576,9 +576,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		}
 	}
 
-	for (i = 0; i < node_record_count; i++) { /* For each node */
-		if (!node_record_table_ptr[i])
-			continue;
+	for (i = 0; next_node(&i); i++) { /* For each node */
 		if ((consec_index + 1) >= consec_size) {
 			consec_size *= 2;
 			xrecalloc(consec_cpus, consec_size, sizeof(int));
@@ -3180,7 +3178,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 	 * incrementally remove nodes with low resource counts (sum of CPU and
 	 * GPU count if using GPUs, otherwise the CPU count) and retry
 	 */
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0; next_node(&i); i++) {
 		if (avail_res_array[i]) {
 			most_res = MAX(most_res,
 				       avail_res_array[i]->avail_res_cnt);

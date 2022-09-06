@@ -189,7 +189,7 @@ static void _free_avail_res_array(avail_res_t **avail_res_array)
 	if (!avail_res_array)
 		return;
 
-	for (n = 0; n < node_record_count; n++)
+	for (n = 0; next_node(&n); n++)
 		common_free_avail_res(avail_res_array[n]);
 	xfree(avail_res_array);
 }

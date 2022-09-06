@@ -445,9 +445,7 @@ extern void run_health_check(void)
 	check_agent_args->retry = 0;
 	check_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	check_agent_args->hostlist = hostlist_create(NULL);
-	for (; base_node_loc < node_record_count; base_node_loc++) {
-		if (!(node_ptr = node_record_table_ptr[base_node_loc]))
-			continue;
+	for (; (node_ptr = next_node(&base_node_loc)); base_node_loc++) {
 		if (run_cyclic &&
 		    (node_test_cnt++ >= node_limit))
 				break;

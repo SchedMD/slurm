@@ -375,7 +375,7 @@ static int _eval_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 	rem_nodes = MAX(min_nodes, req_nodes);
 	min_rem_nodes = min_nodes;
 
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0; next_node(&i); i++) {
 		if (req_map)
 			required_node = bit_test(req_map, i);
 		else
@@ -1966,7 +1966,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 
 	/* This nodeset didn't work. To avoid a possible knapsack problem,
 	 * incrementally remove nodes with low cpu counts and retry */
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0; next_node(&i); i++) {
 		if (avail_res_array[i]) {
 			most_cpus = MAX(most_cpus,
 					avail_res_array[i]->avail_cpus);

@@ -67,10 +67,10 @@ static bitstr_t *_create_core_bitmap(int node_inx)
 		xassert(!node_inx);
 
 		if (sys_core_size == NO_VAL) {
+			node_record_t *node_ptr;
 			sys_core_size = 0;
-			for (int i = 0; i < node_record_count; i++)
-				sys_core_size +=
-					node_record_table_ptr[i]->tot_cores;
+			for (int i = 0; (node_ptr = next_node(&i)); i++)
+				sys_core_size += node_ptr->tot_cores;
 		}
 		return bit_alloc(sys_core_size);
 	}
@@ -158,19 +158,18 @@ static void _log_tres_state(node_use_record_t *node_usage,
 			    part_res_record_t *part_record_ptr)
 {
 #if _DEBUG
+	node_record_t *node_ptr;
 	part_res_record_t *p_ptr;
 	part_row_data_t *row;
 	char *core_str;
 	int i;
 
-	for (i = 0; i < node_record_count; i++) {
-		if (!node_record_table_ptr[i])
-			continue;;
+	for (i = 0; (node_ptr = next_node, &i)); i++) {
 		info("Node:%s State:%s AllocMem:%"PRIu64" of %"PRIu64,
-		     node_record_table_ptr[i]->name,
+		     node_ptr[i]->name,
 		     _node_state_str(node_usage[i].node_state),
 		     node_usage[i].alloc_memory,
-		     node_record_table_ptr[i]->real_memory);
+		     node_ptr[i]->real_memory);
 	}
 
 	for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {

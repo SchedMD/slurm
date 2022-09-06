@@ -45,7 +45,7 @@ extern void node_data_destroy(node_use_record_t *node_usage)
 	int i;
 
 	if (node_usage) {
-		for (i = 0; i < node_record_count; i++) {
+		for (i = 0; next_node(&i); i++) {
 			FREE_NULL_LIST(node_usage[i].gres_list);
 		}
 		xfree(node_usage);

@@ -295,7 +295,7 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(core_bitmap, i))
 			continue;
-		for (j = node_inx; j < node_record_count; j++) {
+		for (j = node_inx; next_node(&j); j++) {
 			if (i < cr_get_coremap_offset(j+1)) {
 				node_inx = j;
 				i = cr_get_coremap_offset(j+1) - 1;

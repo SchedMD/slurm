@@ -1645,7 +1645,7 @@ extern void add_job_to_cores(job_resources_t *job_resrcs_ptr,
 	/* add the job to the row_bitmap */
 	if (*full_core_bitmap == NULL) {
 		uint32_t size = 0;
-		for (i = 0; i < node_record_count; i++)
+		for (i = 0; next_node(&i); i++)
 			size += bits_per_node[i];
 		*full_core_bitmap = bit_alloc(size);
 	}

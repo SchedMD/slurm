@@ -1776,10 +1776,9 @@ extern int select_p_select_nodeinfo_set_all(void)
 		}
 	}
 
-	for (n = 0; n < node_record_count; n++) {
+	for (n = 0; (node_ptr = next_node(&n)); n++) {
 		select_nodeinfo_t *nodeinfo = NULL;
-		if (!(node_ptr = node_record_table_ptr[n]))
-			continue;
+
 		/*
 		 * We have to use the '_g_' here to make sure we get the
 		 * correct data to work on.  i.e. select/cray calls this plugin

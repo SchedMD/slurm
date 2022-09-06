@@ -740,7 +740,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		rem_nodes = min_nodes;
 
 	avail_cpu_cnt = xcalloc(node_record_count, sizeof(int));
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0; next_node(&i); i++) {
 		if (bit_test(bitmap, i)) {
 			avail_cpu_cnt[i] = _get_avail_cpus(job_ptr, i);
 			if (++total_node_cnt == 1)
@@ -817,7 +817,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		while ((max_nodes > 0) &&
 		       ((rem_nodes > 0) || (rem_cpus > 0))) {
 			int high_cpu_cnt = 0, high_cpu_inx = -1;
-			for (i = 0; i < node_record_count; i++) {
+			for (i = 0; next_node(&i); i++) {
 				if (high_cpu_cnt > avail_cpu_cnt[i])
 					continue;
 				if (bit_test(bitmap, i))
@@ -1685,7 +1685,7 @@ static int _job_test_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* phase 2: calculate CPU resources for each switch */
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0; next_node(&i); i++) {
 		avail_cpus = _get_avail_cpus(job_ptr, i);
 		for (j = 0; j < switch_record_cnt; j++) {
 			if (bit_test(switches_bitmap[j], i)) {
@@ -1975,7 +1975,7 @@ static int _job_test_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* phase 2: accumulate all cpu resources for each switch */
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0; next_node(&i); i++) {
 		avail_cpus = _get_avail_cpus(job_ptr, i);
 		for (j=0; j<switch_record_cnt; j++) {
 			if (bit_test(switches_bitmap[j], i)) {
@@ -2826,7 +2826,7 @@ static void _free_cr(struct cr_record *cr_ptr)
 	if (cr_ptr == NULL)
 		return;
 
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0; next_node(&i); i++) {
 		part_cr_ptr1 = cr_ptr->nodes[i].parts;
 		while (part_cr_ptr1) {
 			part_cr_ptr2 = part_cr_ptr1->next;
