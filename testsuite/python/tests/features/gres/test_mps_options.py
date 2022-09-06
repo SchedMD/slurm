@@ -25,7 +25,7 @@ def setup():
     atf.require_config_parameter_includes('GresTypes', 'mps')
     atf.require_tty(0)
     atf.require_config_parameter('Name', {'gpu': {'File': '/dev/tty0'}, 'mps': {'Count': 100}}, source='gres')
-    atf.require_nodes(2, [('Gres',f"gpu:1,mps:{mps_cnt}")])
+    atf.require_nodes(2, [('Gres', f"gpu:1,mps:{mps_cnt}"), ('CPUs', 6)])
     atf.require_slurm_running()
 
 
@@ -118,6 +118,10 @@ def test_three_parallel_consumption_sbatch(mps_nodes, file_in_1a):
     file_in2    = atf.module_tmp_path / "input2"
     file_out1   = atf.module_tmp_path / "output1"
 
+    # Using -c6 for the job and -c2 for the steps to avoid issues if nodes have
+    # HT. As Slurm allocates by Cores, with HT steps will allocate 2 CPUs even
+    # if only 1 is requested, so the 3 steps won't run in parallel due lack of
+    # CPUs instead of lack of MPS (that it's what we want to test).
     atf.make_bash_script(file_in2, f"""
     srun --mem=0 -c2 --exact --gres=mps:{step_mps} {file_in_1a} &
     srun --mem=0 -c2 --exact --gres=mps:{step_mps} {file_in_1a} &
