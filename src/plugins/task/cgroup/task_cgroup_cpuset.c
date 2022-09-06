@@ -113,6 +113,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 
 	cgroup_init_limits(&limits);
 	limits.allow_mems = slurm_limits->allow_mems;
+	limits.step = job;
 
 	/* User constrain */
 	limits.allow_cores = xstrdup_printf(

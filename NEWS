@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak when attempting to update a job's features with invalid
     features.
  -- Fix occasional slurmctld crash or hang in backfill due to invalid pointers.
+ -- Fix segfault on Cray machines if cgroup cpuset is used in cgroup/v1.
 
 * Changes in Slurm 22.05.3
 ==========================
