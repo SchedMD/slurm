@@ -1049,6 +1049,10 @@ extern void start_power_mgr(pthread_t *thread_id)
 {
 	slurm_mutex_lock(&power_mutex);
 	if (power_save_started || !power_save_enabled) {
+		if (!power_save_enabled && *thread_id) {
+			pthread_join(*thread_id, NULL);
+			*thread_id = 0;
+		}
 		slurm_mutex_unlock(&power_mutex);
 		return;
 	}
