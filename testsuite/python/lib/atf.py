@@ -1616,7 +1616,7 @@ def wait_for_job_state(job_id, desired_job_state, timeout=5, poll_interval=None,
     to the timeout for the specified job state to be reached.
 
     Supported target states include:
-        DONE, PENDING, PREEMPTED, RUNNING, SPECIAL_EXIT, SUSPENDED
+        COMPLETING, DONE, PENDING, PREEMPTED, RUNNING, SPECIAL_EXIT, SUSPENDED
 
     Some of the supported job states are aggregate states, and may be satisfied
     by multiple discrete states. Some logic is built-in to fail if a job
@@ -1634,6 +1634,7 @@ def wait_for_job_state(job_id, desired_job_state, timeout=5, poll_interval=None,
 
     # Verify the desired state is supported
     if desired_job_state not in [
+        'COMPLETING',
         'DONE',
         'PENDING',
         'PREEMPTED',
@@ -1691,6 +1692,7 @@ def wait_for_job_state(job_id, desired_job_state, timeout=5, poll_interval=None,
                     logging.warning(message)
                     return False
         elif job_state in [
+            'COMPLETING',
             'PENDING',
             'PREEMPTED',
             'RUNNING',
