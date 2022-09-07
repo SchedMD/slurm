@@ -177,12 +177,10 @@ test1.38   Test srun handling of SIGINT to get task status or kill the job
 test1.39   Test of linux light-weight core files.
 test1.40   Test of job account (--account option).
 test1.41   Validate Slurm debugger infrastructure (--debugger-test option).
-test1.42   DEFUNCT
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.
 test1.45   Test srun option --preserve-env
 test1.46   Test srun option --kill-on-bad-exit
-test1.47   DEFUNCT
 test1.48   Test of srun mail options (--mail-type and --mail-user options).
 test1.49   Test of srun task-prolog and task-epilog options.
 test1.50   Test of running non-existent job, confirm timely termination.
@@ -192,7 +190,6 @@ test1.53   Test of --signal option.
 test1.54   Test of MPMD (--multi-prog option).
 test1.55   Verify srun behaves when its controlling terminal disappears.
 test1.56   Test buffered standard IO with really long lines
-test1.57   DEFUNCT
 test1.58   Test of srun --jobid for an existing job allocation
 test1.59   Test of hostfile logic for job steps
 test1.60   Test of labelling output when writing a file per task or per node
@@ -239,7 +236,6 @@ test1.94   Test of PMI2 task spawn logic
 test1.95   Basic UPC (Unified Parallel C) test via srun.
 test1.96   Basic SHMEM test via srun.
 test1.97   Test that --ntask-per-node and -c options are enforced
-test1.98   DEFUNCT
 test1.99   Validate that SrunPortRange is enforced when using srun
 test1.100  Test of pack/nopack task distribution.
 test1.101  Test of --bcast option.
@@ -548,7 +544,6 @@ test17.11  Test of oversubscribe and contiguous options, also uses --hold option
 test17.12  Verify node configuration specification (--constraint option)
 test17.13  Verify the appropriate job environment variables are set
 test17.14  Verify that user environment variables are propagated to the job
-test17.15  DEFUNCT
 test17.16  Verify that command line arguments get forwarded to job script
 test17.17  Confirm that oversubscribe flags are respected  (--nodelist and
 	   --oversubscribe options)
@@ -749,7 +744,6 @@ test29.8   Validate that the MaxSpareNodeCount is enforced
 
 test31.#   Test of Slurm Epilog and Prolog.
 ===========================================
-test31.1   DEFUNCT (moved to python)
 test31.2   Validate that job is set to requeue held state at prolog failure.
 test31.3   Validate Prolog and Epilog Environment Variables.
 
@@ -872,7 +866,6 @@ test40.3   Test accounting for MPS resources with various allocation options
 test40.4   Test MPS resource limits with various allocation options
 test40.5   Increase size of job with allocated MPS
 test40.6   Decrease size of job with allocated MPS
-test40.7   DEFUNCT
 test40.8   Simple CUDA MPS test
 
 test41.#   Testing of slurmrestd
