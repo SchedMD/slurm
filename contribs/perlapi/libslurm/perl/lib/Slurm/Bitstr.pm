@@ -178,7 +178,7 @@ Given a bit string, allocate and return a binary string in the form of:
                              |     |
                             MSB   LSB
 
-=head3 $rc = $bitmap->unfmt_binmask($str);			    
+=head3 $rc = $bitmap->unfmt_binmask($str);
 
 Give a bin mask string "0001010\0", convert to a bit string.
                         ^     ^

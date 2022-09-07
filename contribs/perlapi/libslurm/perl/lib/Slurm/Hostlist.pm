@@ -33,7 +33,7 @@ The Slurm::Hostlist class is a wrapper of the hostlist functions in libslurm. Th
 
 =head2 $hl = Slurm::Hostlist::new($str);
 
-Create a new hostlist from a string representation. Returns an opaque hostlist object. This is a B<CLASS METHOD>. 
+Create a new hostlist from a string representation. Returns an opaque hostlist object. This is a B<CLASS METHOD>.
 
 The string representation ($str) may contain one or more hostnames or bracketed hostlists separated by either `,' or whitespace. A bracketed hostlist is denoted by a common prefix followed by a list of numeric ranges contained within brackets: e.g. "tux[0-5,12,20-25]".
 
@@ -53,7 +53,7 @@ Returns -1 if host is not found.
 
 =head2 $cnt = $hl->push($hosts);
 
-Push a string representation of hostnames onto a hostlist. The $hosts argument may take the same form as in create(). 
+Push a string representation of hostnames onto a hostlist. The $hosts argument may take the same form as in create().
 
 Returns the number of hostnames inserted into the list,
 

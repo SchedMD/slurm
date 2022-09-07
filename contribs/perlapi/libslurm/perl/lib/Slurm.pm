@@ -12,7 +12,7 @@ use Slurm::Constant;
 sub import {
     # export constants
     Slurm::Constant->import2() if grep(/^:constant$/, @_) || grep(/^:all$/, @_);
-    
+
     # export job/node state testing macros
     my $callpkg = caller(0);
     {
@@ -109,9 +109,9 @@ Then call the desired functions:
     $resp = $slurm->load_jobs();
 
 In the following L</"METHODS"> section, if a parameter is omitted, it will be listed as "param=val" , where "val" is the default value of the parameter.
-    
+
 =head2 DATA STRUCTURES
-    
+
 Typically, C structures are converted to (maybe blessed) Perl hash references, with field names as hash keys. Arrays in C are converted to arrays in Perl. For example, there is a structure C<job_info_msg_t>:
 
     typedef struct job_info_msg {
@@ -131,7 +131,7 @@ This will be converted to a hash reference with the following structure:
     }
 
 Note the missing of the C<record_count> field in the hash. It can be derived from the number of elements in array C<job_array>.
-    
+
 To pass parameters to the API functions, use the corresponding hash references, for example:
 
     $rc = $slurm->update_node({node_names => 'node[0-7]', node_state => NODE_STATE_DRAIN});
@@ -143,7 +143,7 @@ Please see C<E<lt>slurm/slurm.hE<gt>> for the definition of the structures.
 The enumerations and macro definitions are available in the Slurm package. If ':constant' is given when using the Slurm package, the constants will be exported to the calling package.
 
 Please see L<Slurm::Constant> for the available constants.
-    
+
 =head1 METHODS
 
 =head2 CONSTRUCTOR/DESTRUCTOR
@@ -157,12 +157,12 @@ Create a Slurm object. For now the object is just a hash reference with no membe
 =item * IN $conf_file: the Slurm configuration file. If omitted, the default Slurm configuration file will be used (file specified by environment variable SLURM_CONF or the file slurm.conf under directory specified in compile time).
 
 =item * RET: blessed opaque Slurm object. On error C<undef> is returned.
-    
+
 =back
 
 
-    
-    
+
+
 =head2 ERROR INFORMATION FUNCTIONS
 
 =head3 $errno = $slurm->get_errno();
@@ -173,7 +173,7 @@ Get the error number associated with last operation.
 
 =item * RET: error number associated with last operation.
 
-=back    
+=back
 
 =head3 $str = $slurm->strerror($errno=0)
 
@@ -182,14 +182,14 @@ Get the string describing the specified error number.
 =over 2
 
 =item * IN $errno: error number. If omitted or 0, the error number returned by C<$slurm->get_errno()> will be used.
-    
+
 =item * RET: error string.
 
-=back    
+=back
 
 
 
-    
+
 =head2 ENTITY STATE/REASON/FLAG/TYPE STRING FUNCTIONS
 
 =head3 $str = $slurm->preempt_mode_string($mode_num);
@@ -199,10 +199,10 @@ Get the string describing the specified preemt mode number.
 =over 2
 
 =item * IN $mode_num: preempt mode number.
-    
+
 =item * RET: preempt mode string.
 
-=back    
+=back
 
 =head3 $num = $slurm->preempt_mode_num($mode_str);
 
@@ -211,10 +211,10 @@ Get the preempt mode number of the specified preempt mode string.
 =over 2
 
 =item * IN $mode_str: preempt mode string.
-    
+
 =item * RET: preempt mode number.
 
-=back    
+=back
 
 =head3 $str = $slurm->job_reason_string($num);
 
@@ -223,10 +223,10 @@ Get the string representation of the specified job state reason number.
 =over 2
 
 =item * IN $num: job reason number.
-    
+
 =item * RET: job reason string.
 
-=back    
+=back
 
 =head3 $str = $slurm->job_state_string($num);
 
@@ -235,10 +235,10 @@ Get the string representation of the specified job state number.
 =over 2
 
 =item * IN $num: job state number.
-    
+
 =item * RET: job state string.
 
-=back    
+=back
 
 =head3 $str = $slurm->job_state_string_compact($num);
 
@@ -247,10 +247,10 @@ Get the compact string representation of the specified job state number.
 =over 2
 
 =item * IN $num: job state number.
-    
+
 =item * RET: compact job state string.
 
-=back    
+=back
 
 =head3 $num = $slurm->job_state_num($str);
 
@@ -259,10 +259,10 @@ Get the job state number of the specified (compact) job state string.
 =over 2
 
 =item * IN $str: job state string.
-    
+
 =item * RET: job state number.
 
-=back    
+=back
 
 =head3 $str = $slurm->reservation_flags_string($flags);
 
@@ -271,10 +271,10 @@ Get the string representation of the specified reservation flags.
 =over 2
 
 =item * IN $num: reservation flags number.
-    
+
 =item * RET: reservation flags string.
 
-=back    
+=back
 
 =head3 $str = $slurm->node_state_string($num);
 
@@ -283,10 +283,10 @@ Get the string representation of the specified node state number.
 =over 2
 
 =item * IN $num: node state number.
-    
+
 =item * RET: node state string.
 
-=back    
+=back
 
 =head3 $str = $slurm->node_state_string_compact($num);
 
@@ -295,10 +295,10 @@ Get the compact string representation of the specified node state number.
 =over 2
 
 =item * IN $num: node state number.
-    
+
 =item * RET: compact node state string.
 
-=back    
+=back
 
 =head3 $str = $slurm->private_data_string($num);
 
@@ -307,10 +307,10 @@ Get the string representation of the specified private data type.
 =over 2
 
 =item * IN $num: private data type number.
-    
+
 =item * RET: private data type string.
 
-=back    
+=back
 
 =head3 $str = $slurm->accounting_enforce_string($num);
 
@@ -319,13 +319,13 @@ Get the string representation of the specified accounting enforce type.
 =over 2
 
 =item * IN $num: accounting enforce type number.
-    
+
 =item * RET: accounting enforce type string.
 
-=back    
+=back
 
 
-    
+
 
 =head2 RESOURCE ALLOCATION FUNCTIONS
 
@@ -338,24 +338,24 @@ Allocate resources for a job request. If the requested resources are not immedia
 =item * IN $job_desc: description of resource allocation request, with structure of C<job_desc_msg_t>.
 
 =item * RET: response to request, with structure of C<resource_allocation_response_msg_t>.  This only represents a job allocation if resources are immediately available.  Otherwise it just contains the job id of the enqueued job request. On failure C<undef> is returned.
-    
-=back    
+
+=back
 
 =head3 $resp = $slurm->allocate_resources_blocking($job_desc, $timeout=0, $pending_callbacks=undef);
 
 Allocate resources for a job request.  This call will block until the allocation is granted, or the specified timeout limit is reached.
-    
+
 =over 2
 
 =item * IN $job_desc: description of resource allocation request, with structure of C<job_desc_msg_t>.
 
-=item * IN $timeout: amount of time, in seconds, to wait for a response before giving up. A timeout of zero will wait indefinitely.    
+=item * IN $timeout: amount of time, in seconds, to wait for a response before giving up. A timeout of zero will wait indefinitely.
 
 =item * IN $pending_callbacks: If the allocation cannot be granted immediately, the controller will put the job in the PENDING state.  If
 pending callback is given, it will be called with the job id of the pending job as the sole parameter.
-    
+
 =item * RET: allcation response, with structure of C<resource_allocation_response_msg_t>. On failure C<undef> is returned, with errno set.
-    
+
 =back
 
 =head3 $resp = $slurm->allocatiion_lookup($job_id);
@@ -366,7 +366,7 @@ Retrieve info for an existing resource allocation.
 
 =item * IN $job_id: job allocation identifier.
 
-=item * RET: job allocation info, with structure of C<resource_allocation_response_msg_t>. On failure C<undef> is returned with errno set.    
+=item * RET: job allocation info, with structure of C<resource_allocation_response_msg_t>. On failure C<undef> is returned with errno set.
 
 =back
 
@@ -381,21 +381,21 @@ Read a specified Slurm hostfile. The file must contain a list of Slurm NodeNames
 =item * IN $n: number of NodeNames required.
 
 =item * RET: a string representing the hostlist. Returns NULL if there are fewer than $n hostnames in the file, or if an error occurs.
-    
+
 =back
-    
+
 =head3 $msg_thr = $slurm->allocation_msg_thr_create($port, $callbacks);
 
 Startup a message handler talking with the controller dealing with messages from the controller during an allocation.
 
 =over 2
-    
+
 =item * OUT $port: port we are listening for messages on from the controller.
-    
+
 =item * IN $callbacks: callbacks for different types of messages, with structure of C<slurm_allocation_callbacks_t>.
-    
+
 =item * RET: opaque object of C<allocation_msg_thread_t *>,  or NULL on failure.
-    
+
 =back
 
 =head3 $slurm->allocation_msg_thr_destroy($msg_thr);
@@ -403,21 +403,21 @@ Startup a message handler talking with the controller dealing with messages from
 Shutdown the message handler talking with the controller dealing with messages from the controller during an allocation.
 
 =over 2
-    
+
 =item * IN $msg_thr: opaque object of C<allocation_msg_thread_t> pointer.
-    
+
 =back
 
 =head3 $resp = $slurm->submit_batch_job($job_desc_msg);
 
 Issue RPC to submit a job for later execution.
 
-=over 2    
+=over 2
 
 =item * IN $job_desc_msg: description of batch job request, with structure of C<job_desc_msg_t>.
-    
+
 =item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
-    
+
 =back
 
 =head3 $rc = $slurm->job_will_run($job_desc_msg);
@@ -425,11 +425,11 @@ Issue RPC to submit a job for later execution.
 Determine if a job would execute immediately if submitted now.
 
 =over 2
-    
+
 =item * IN $job_desc_msg: description of resource allocation request, with structure of C<job_desc_msg_t>.
-    
+
 =item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
-    
+
 =back
 
 =head3 $resp = $slurm->sbcast_lookup($job_id);
@@ -437,16 +437,16 @@ Determine if a job would execute immediately if submitted now.
 Retrieve info for an existing resource allocation including a credential needed for sbcast.
 
 =over 2
-    
+
 =item * IN $jobid: job allocation identifier.
-    
+
 =item * RET: job allocation information includeing a credential for sbcast, with structure of C<job_sbcast_cred_msg_t>. On failure C<undef> is returned with errno set.
-    
+
 =back
 
 
 
-    
+
 =head2 JOB/STEP SIGNALING FUNCTIONS
 
 =head3 $rc = $slurm->kill_job($job_id, $signal, $batch_flag=0);
@@ -454,66 +454,66 @@ Retrieve info for an existing resource allocation including a credential needed 
 Send the specified signal to all steps of an existing job.
 
 =over 2
-    
+
 =item * IN $job_id: the job's id.
-    
+
 =item * IN $signal: signal number.
-    
+
 =item * IN $batch_flag: 1 to signal batch shell only, otherwise 0.
-    
+
 =item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
-    
+
 =back
-    
+
 =head3 $rc = $slurm->kill_job_step($job_id, $step_id, $signal);
 
 Send the specified signal to an existing job step.
 
 =over 2
-    
+
 =item * IN $job_id: the job's id.
-    
+
 =item * IN $step_id: the job step's id.
-    
+
 =item * IN $signal: signal number.
-    
+
 =item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
-    
+
 =back
-    
+
 =head3 $rc = $slurm->signal_job($job_id, $signal);
 
 Send the specified signal to all steps of an existing job.
 
 =over 2
-    
+
 =item * IN $job_id: the job's id.
-    
+
 =item * IN $signal: signal number.
-    
+
 =item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
-    
+
 =back
-    
+
 =head3 $rc = $slurm->signal_job_step($job_id, $step_id, $signal);
 
 Send the specified signal to an existing job step.
 
 =over 2
-    
+
 =item * IN $job_id: the job's id.
-    
+
 =item * IN $step_id: the job step's id.
-    
+
 =item * IN $signal: signal number.
-    
+
 =item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
-    
+
 =back
-    
 
 
-    
+
+
 =head2 JOB/STEP COMPLETION FUNCTIONS
 
 =head3 $rc = $slurm->complete_job($job_id, $job_rc=0);
@@ -521,59 +521,59 @@ Send the specified signal to an existing job step.
 Note the completion of a job and all of its steps.
 
 =over 2
-    
+
 =item * IN $job_id: the job's id.
-    
+
 =item * IN $job_rc: the highest exit code of any task of the job.
-    
+
 =item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
-    
+
 =back
 
 =head3 $rc = $slurm->terminate_job_step($job_id, $step_id);
 
 Terminates a job step by sending a REQUEST_TERMINATE_TASKS rpc to all slurmd of a job step, and then calls slurm_complete_job_step() after verifying that all nodes in the job step no longer have running tasks from the job step.  (May take over 35 seconds to return.)
 
-=over 2    
+=over 2
 
 =item * IN $job_id: the job's id.
-    
+
 =item * IN $step_id: the job step's id - use SLURM_BATCH_SCRIPT as the step_id to terminate a job's batch script.
-    
+
 =item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
-    
+
 =back
 
 
 
-    
+
 =head2 Slurm TASK SPAWNING FUNCTIONS
 
 =head3 $ctx = $slurm->step_ctx_create($params);
 
-Create a job step and its context. 
+Create a job step and its context.
 
 =over 2
 
 =item * IN $params: job step parameters, with structure of C<slurm_step_ctx_params_t>.
-    
+
 =item * RET: the step context. On failure C<undef> is returned with errno set.
 
-=back    
+=back
 
 =head3 $ctx = $slurm->step_ctx_create_no_alloc($params);
 
-Create a job step and its context without getting an allocation. 
+Create a job step and its context without getting an allocation.
 
 =over 2
 
 =item * IN $params: job step parameters, with structure of C<slurm_step_ctx_params_t>..
-    
+
 =item * IN $step_id: fake job step id.
-    
+
 =item * RET: the step context. On failure C<undef> is returned with errno set.
 
-=back    
+=back
 
 
 
@@ -588,14 +588,14 @@ Get the Slurm API's version number.
 
 =item * RET: a three element list of the major, minor, and micro version number.
 
-=back    
+=back
 
 =head3 $resp = $slurm->load_ctl_conf($update_time=0);
 
 Issue RPC to get Slurm control configuration information if changed.
 
 =over 2
-    
+
 =item * IN $update_time: time of current configuration data.
 
 =item * RET: Slurm configuration data, with structure of C<slurm_ctl_t>. On failure C<undef> is returned with errno set.
@@ -607,9 +607,9 @@ Issue RPC to get Slurm control configuration information if changed.
 Output the contents of Slurm control configuration message as loaded using C<load_ctl_conf()>.
 
 =over 2
-    
+
 =item * IN $out: file to write to.
-    
+
 =item * IN $conf: Slurm control configuration, with structure of C<slurm_conf_t>.
 
 =back
@@ -619,12 +619,12 @@ Output the contents of Slurm control configuration message as loaded using C<loa
 Put the Slurm configuration data into a List of opaque data type C<config_key_pair_t>.
 
 =over 2
-    
+
 =item * IN $conf: Slurm control configuration, with structure of C<slurm_conf_t>.
-    
+
 =item * RET: List of opaque data type C<config_key_pair_t>.
 
-=back    
+=back
 
 =head3 $resp = $slurm->load_slurmd_status();
 
@@ -632,51 +632,51 @@ Issue RPC to get the status of slurmd daemon on this machine.
 
 =over 2
 
-=item * RET: slurmd status info, with structure of C<slurmd_status_t>. On failure C<undef> is returned with errno set.    
+=item * RET: slurmd status info, with structure of C<slurmd_status_t>. On failure C<undef> is returned with errno set.
 
-=back    
+=back
 
 =head3 $slurm->print_slurmd_status($out, $slurmd_status);
 
 Output the contents of slurmd status message as loaded using C<load_slurmd_status()>.
 
 =over 2
-    
+
 =item * IN $out: file to write to.
-    
+
 =item * IN $slurmd_status: slurmd status info, with structure of C<slurmd_status_t>.
 
-=back    
+=back
 
 =head3 $slurm->print_key_pairs($out, $key_pairs, $title);
 
 Output the contents of key_pairs which is a list of opaque data type C<config_key_pair_t>.
 
 =over 2
-    
+
 =item * IN $out: file to write to.
-    
+
 =item * IN $key_pairs: List containing key pairs to be printed.
-    
+
 =item * IN $title: title of key pair list.
 
-=back    
+=back
 
 =head3 $rc = $slurm->update_step($step_msg);
 
 Update the time limit of a job step.
 
 =over 2
-    
+
 =item * IN $step_msg: step update messasge descriptor, with structure of C<step_update_request_msg_t>.
-    
+
 =item * RET: 0 or -1 on error.
 
-=back    
+=back
 
 
 
-    
+
 =head2 SLURM JOB RESOURCES READ/PRINT FUNCTIONS
 
 =head3 $num = $slurm->job_cpus_allocated_on_node_id($job_res, $node_id);
@@ -684,28 +684,28 @@ Update the time limit of a job step.
 Get the number of cpus allocated to a job on a node by node id.
 
 =over 2
-    
+
 =item * IN $job_res: job resources data, with structure of C<job_resources_t>.
-    
+
 =item * IN $node_id: zero-origin node id in allocation.
-    
+
 =item * RET: number of CPUs allocated to job on this node or -1 on error.
 
-=back    
+=back
 
 =head3 $num = $slurm->job_cpus_allocated_on_node($job_res, $node_name);
 
 Get the number of cpus allocated to a job on a node by node name.
 
 =over 2
-    
+
 =item * IN $job_res: job resources data, with structure of C<job_resources_t>.
-    
+
 =item * IN $node_name: name of node.
-    
+
 =item * RET: number of CPUs allocated to job on this node or -1 on error.
 
-=back    
+=back
 
 
 
@@ -717,87 +717,87 @@ Get the number of cpus allocated to a job on a node by node name.
 Get the expected end time for a given slurm job.
 
 =over 2
-    
+
 =item * IN $jobid: Slurm job id.
-    
+
 =item * RET: scheduled end time for the job. On failure C<undef> is returned with errno set.
 
-=back    
+=back
 
 =head3 $secs = $slurm->get_rem_time($job_id);
 
 Get the expected time remaining for a given job.
 
 =over 2
-    
+
 =item * IN $jobid: Slurm job id.
-    
+
 =item * RET: remaining time in seconds or -1 on error.
 
 =back
-    
+
 =head3 $rc = $slurm->job_node_ready($job_id);
 
 Report if nodes are ready for job to execute now.
 
 =over 2
-    
+
 =item * IN $job_id: Slurm job id.
-    
-=item * RET: 
+
+=item * RET:
 
 =over 2
 
 =item * READY_JOB_FATAL: fatal error
-    
+
 =item * READY_JOB_ERROR: ordinary error
-    
+
 =item * READY_NODE_STATE: node is ready
-    
+
 =item * READY_JOB_STATE: job is ready to execute
 
-=back    
+=back
 
-=back    
+=back
 
 =head3 $resp = $slurm->load_job($job_id, $show_flags=0);
 
 Issue RPC to get job information for one job ID.
 
-=over 2    
+=over 2
 
 =item * IN $job_id: ID of job we want information about.
-    
+
 =item * IN $show_flags: job filtering options.
-    
+
 =item * RET: job information, with structure of C<job_info_msg_t>. On failure C<undef> is returned with errno set.
 
-=back    
+=back
 
 =head3 $resp = $slurm->load_jobs($update_time=0, $show_flags=0);
 
 Issue RPC to get all Slurm job information if changed.
 
-=over 2    
+=over 2
 
 =item * IN $update_time: time of current job information data.
-    
+
 =item * IN $show_flags: job filtering options.
-    
+
 =item * RET: job information, with structure of C<job_info_msg_t>. On failure C<undef> is returned with errno set.
 
-=back    
+=back
 
 =head3 $rc = $slurm->notify_job($job_id, $message);
 
 Send message to the job's stdout, usable only by user root.
 
 =over 2
-    
+
 =item * IN $job_id: Slurm job id or 0 for all jobs.
 
 =item * IN $message: arbitrary message.
-    
+
 =item * RET: 0 or -1 on error.
 
 =back
@@ -807,70 +807,70 @@ Send message to the job's stdout, usable only by user root.
 Issue RPC to get the Slurm job ID of a given process ID on this machine.
 
 =over 2
-    
+
 =item * IN $job_pid: process ID of interest on this machine.
-    
+
 =item * RET: corresponding job ID. On failure C<undef> is returned.
 
-=back    
-    
+=back
+
 =head3 $slurm->print_job_info($out, $job_info, $one_liner=0);
 
 Output information about a specific Slurm job based upon message as loaded using C<load_jobs()>.
 
 =over 2
-    
+
 =item * IN $out: file to write to.
-    
+
 =item * IN $job_info: an individual job information record, with structure of C<job_info_t>.
-    
+
 =item * IN $one_liner: print as a single line if true.
-    
+
 =back
 
 =head3 $slurm->print_job_info_msg($out, $job_info_msg, $one_liner=0);
 
 Output information about all Slurm jobs based upon message as loaded using C<load_jobs()>.
 
-=over 2    
+=over 2
 
 =item * IN $out: file to write to.
-    
+
 =item * IN $job_info_msg: job information message, with structure of C<job_info_msg_t>.
-    
+
 =item * IN $one_liner: print as a single line if true.
 
-=back    
+=back
 
 =head3 $str = $slurm->sprint_job_info($job_info, $one_liner=0);
 
 Output information about a specific Slurm job based upon message as loaded using C<load_jobs()>.
 
 =over 2
-    
+
 =item * IN $job_info: an individual job information record, with structure of C<job_info_t>.
-    
+
 =item * IN $one_liner: print as a single line if true.
-    
+
 =item * RET: string containing formatted output.
 
-=back    
-    
+=back
+
 =head3 $rc = $slurm->update_job($job_info);
 
 Issue RPC to a job's configuration per request only usable by user root or (for some parameters) the job's owner.
 
 =over 2
-    
+
 =item * IN $job_info: description of job updates, with structure of C<job_desc_msg_t>.
-    
+
 =item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
 
 =back
 
 
-    
-    
+
+
 =head2 SLURM JOB STEP CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 
 =head3 $resp = $slurm->get_job_steps($update_time=0, $job_id=NO_VAL, $step_id=NO_VAL, $show_flags=0);
@@ -878,60 +878,60 @@ Issue RPC to a job's configuration per request only usable by user root or (for 
 Issue RPC to get specific slurm job step configuration information if changed since update_time.
 
 =over 2
-    
+
 =item * IN $update_time: time of current configuration data.
-    
+
 =item * IN $job_id: get information for specific job id, NO_VAL for all jobs.
-    
+
 =item * IN $step_id: get information for specific job step id, NO_VAL for all job steps.
-    
+
 =item * IN $show_flags: job step filtering options.
-    
+
 =item * RET: job step information, with structure of C<job_step_info_response_msg_t>. On failure C<undef> is returned with errno set.
 
-=back    
+=back
 
 =head3 $slurm->print_job_step_info_msg($out, $step_info_msg, $one_liner);
 
 Output information about all Slurm job steps based upon message as loaded using C<get_job_steps()>.
 
 =over 2
-    
+
 =item * IN $out: file to write to.
-    
+
 =item * IN $step_info_msg: job step information message, with structure of C<job_step_info_response_msg_t>.
-    
+
 =item * IN $one_liner: print as a single line if true.
 
-=back    
+=back
 
 =head3 $slurm->print_job_step_info($out, $step_info, $one_liner);
 
 Output information about a specific Slurm job step based upon message as loaded using C<get_job_steps()>.
 
 =over 2
-    
+
 =item * IN $out: file to write to.
-    
+
 =item * IN $step_info: job step information, with structure of C<job_step_info_t>.
-    
+
 =item * IN $one_liner: print as a single line if true.
 
-=back    
+=back
 
 =head3 $str = $slurm->sprint_job_step_info($step_info, $one_liner);
 
 Output information about a specific Slurm job step based upon message as loaded using C<get_job_steps()>.
 
 =over 2
-    
+
 =item * IN $step_info: job step information, with structure of C<job_step_info_t>.
-    
+
 =item * IN $one_liner: print as a single line if true.
 
 =item * RET: string containing formatted output.
-    
-=back    
+
+=back
 
 =head3 $layout = $slurm->job_step_layout_get($job_id, $step_id);
 
@@ -945,43 +945,43 @@ Get the layout structure for a particular job step.
 
 =item * RET: layout of the job step, with structure of C<slurm_step_layout_t>. On failure C<undef> is returned with errno set.
 
-=back    
+=back
 
 =head3 $resp = $slurm->job_step_stat($job_id, $step_id, $nodelist=undef);
 
 Get status of a current step.
 
-=over 2    
+=over 2
 
 =item * IN $job_id : Slurm job ID.
-    
+
 =item * IN $step_id: Slurm step ID.
-    
+
 =item * IN $nodelist: nodes to check status of step. If omitted, all nodes in step are used.
 
 =item * RET: response of step status, with structure of C<job_step_stat_response_msg_t>. On failure C<undef> is returned.
 
 =back
-    
+
 =head3 $resp = $slurm->job_step_get_pids($job_id, $step_id, $nodelist);
-    
+
 Get the complete list of pids for a given job step.
 
-=over 2    
+=over 2
 
 =item * IN $job_id: Slurm job ID.
-    
+
 =item * IN $step_id: Slurm step ID.
 
 =item * IN $nodelist: nodes to check pids of step. If omitted, all nodes in step are used.
-    
+
 =item * RET: response of pids information, with structure of C<job_step_pids_response_msg_t>. On failure C<undef> is returned.
 
-=back    
+=back
 
 
 
-    
+
 =head2 SLURM NODE CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 
 =head3 $resp = $slurm->load_node($update_time=0, $show_flags=0);
@@ -996,7 +996,7 @@ Issue RPC to get all node configuration information if changed.
 
 =item * RET: response hash reference with structure of C<node_info_msg_t>. On failure C<undef> is returned with errno set.
 
-=back    
+=back
 
 =head3 $slurm->print_node_info_msg($out, $node_info_msg, $one_liner=0);
 
@@ -1010,21 +1010,21 @@ Output information about all Slurm nodes based upon message as loaded using C<lo
 
 =item * IN $one_liner: if true, each node info will be printed as a single line.
 
-=back    
+=back
 
 =head3 $slurm->print_node_table($out, $node_info, $one_liner=0);
 
 Output information about a specific Slurm node based upon message as loaded using C<load_node()>.
 
 =over 2
-    
+
 =item * IN $out: FILE handle to write to.
 
 =item * IN $node_info: an individual node information record with structure of C<node_info_t>.
 
 =item * IN $one_liner: whether to print as a single line.
 
-=back    
+=back
 
 =head3 $str = $slurm->sprint_node_table($node_info, $one_liner=0);
 
@@ -1039,7 +1039,7 @@ Output information about a specific Slurm node based upon message as loaded usin
 =item * RET: string containing formatted output on success, C<undef> on failure.
 
 =back
-    
+
 =head3 $rc = $slurm->update_node($node_info);
 
 Issue RPC to modify a node's configuration per request, only usable by user root.
@@ -1050,26 +1050,26 @@ Issue RPC to modify a node's configuration per request, only usable by user root
 
 =item * RET: 0 on success, -1 on failure with errno set.
 
-=back    
+=back
 
 
-    
+
 
 =head2 SLURM SWITCH TOPOLOGY CONFIGURATION READ/PRINT FUNCTIONS
 
 =head3 $resp = $slurm->load_topo();
 
-Issue RPC to get all switch topology configuration information. 
+Issue RPC to get all switch topology configuration information.
 
 =over 2
 
 =item * RET: response hash reference with structure of C<topo_info_response_msg_t>. On failure C<undef> is returned with errno set.
 
 =back
-    
+
 =head3 $slurm->print_topo_info_msg($out, $topo_info_msg, $one_liner=0);
 
-Output information about all switch topology configuration information based upon message as loaded using C<load_topo()>. 
+Output information about all switch topology configuration information based upon message as loaded using C<load_topo()>.
 
 =over 2
 
@@ -1102,7 +1102,7 @@ Output information about a specific Slurm topology record based upon message as 
 
 =head3 $rc = $slurm->get_select_nodeinfo($nodeinfo, $data_type, $state, $data);
 
-Get data from a select node credential. 
+Get data from a select node credential.
 
 
 =over 2
@@ -1114,9 +1114,9 @@ Get data from a select node credential.
 =over 2
 
 =item * TODO: enumerate data type and returned value.
-    
-=back    
-    
+
+=back
+
 =item * IN $state: state of node query.
 
 =item * OUT $data: the data got.
@@ -1140,7 +1140,7 @@ Issue RPC to get all Slurm partition configuration information if changed.
 =item * IN $show_flags: partitions filtering options.
 
 =item * RET: response hash reference with structure of C<partition_info_msg_t>.
-    
+
 =back
 
 =head3 $slurm->print_partition_info_msg($out, $part_info_msg, $one_liner=0);
@@ -1173,7 +1173,7 @@ Output information about a specific Slurm partition based upon message as loaded
 
 =head3 $str = $slurm->sprint_partition_info($part_info, $one_liner=0);
 
-Output information about a specific Slurm partition based upon message as loaded using C<load_reservations()>. 
+Output information about a specific Slurm partition based upon message as loaded using C<load_reservations()>.
 
 =over 2
 
@@ -1182,19 +1182,19 @@ Output information about a specific Slurm partition based upon message as loaded
 =item * IN $one_liner: print as a single line if true.
 
 =item * RET: string containing formatted output. On failure C<undef> is returned.
-    
+
 =back
 
 =head3 $rc = $slurm->create_partition($part_info);
 
-Create a new partition, only usable by user root. 
+Create a new partition, only usable by user root.
 
 =over 2
 
 =item * IN $part_info: description of partition configuration with structure of C<update_part_msg_t>.
 
 =item * RET: 0 on success, -1 on failure with errno set.
-    
+
 =back
 
 =head3 $rc = $slurm->update_partition($part_info);
@@ -1206,7 +1206,7 @@ Issue RPC to update a partition's configuration per request, only usable by user
 =item * IN $part_info: description of partition updates with structure of C<update_part_msg_t>.
 
 =item * RET: 0 on success, -1 on failure with errno set.
-    
+
 =back
 
 =head3 $rc = $slurm->delete_partition($part_info)
@@ -1218,7 +1218,7 @@ Issue RPC to delete a partition, only usable by user root.
 =item * IN $part_info: description of partition to delete, with structure of C<delete_part_msg_t>.
 
 =item * RET: 0 on success, -1 on failure with errno set.
-    
+
 =back
 
 
@@ -1236,7 +1236,7 @@ Create a new reservation, only usable by user root.
 =item * IN $resv_info: description of reservation, with structure of C<resv_desc_msg_t>.
 
 =item * RET: name of reservation created. On failure C<undef> is returned with errno set.
-    
+
 =back
 
 =head3 $rc = $slurm->update_reservation($resv_info);
@@ -1248,19 +1248,19 @@ Modify an existing reservation, only usable by user root.
 =item * IN $resv_info: description of reservation, with structure of C<resv_desc_msg_t>.
 
 =item * RET: error code.
-    
+
 =back
 
 =head3 $rc = $slurm->delete_reservation($resv_info);
 
-Issue RPC to delete a reservation, only usable by user root. 
+Issue RPC to delete a reservation, only usable by user root.
 
 =over 2
 
 =item * IN $resv_info: description of reservation to delete, with structure of C<reservation_name_msg_t>.
 
 =item * RET: error code
-    
+
 =back
 
 =head3 $resp = $slurm->load_reservations($update_time=0);
@@ -1272,7 +1272,7 @@ Issue RPC to get all Slurm reservation configuration information if changed.
 =item * IN $update_time: time of current configuration data.
 
 =item * RET: response of reservation information, with structure of C<reserve_info_msg_t>. On failure C<undef> is returned with errno set.
-    
+
 =back
 
 =head3 $slurm->print_reservation_info_msg($out, $resv_info_msg, $one_liner=0);
@@ -1314,12 +1314,12 @@ Output information about a specific Slurm reservation based upon message as load
 =item * IN $one_liner: print as a single line if true.
 
 =item * RET: string containing formatted output. On failure C<undef> is returned.
-    
+
 =back
 
 
 
-    
+
 =head2 SLURM PING/RECONFIGURE/SHUTDOWN FUNCTIONS
 
 =head3 $rc = $slurm->ping($primary);
@@ -1331,7 +1331,7 @@ Issue RPC to ping Slurm controller (slurmctld).
 =item * IN primary: 1 for primary controller, 2 for secondary controller.
 
 =item * RET: error code.
-    
+
 =back
 
 =head3 $rc = $slurm->reconfigure()
@@ -1341,7 +1341,7 @@ Issue RPC to have Slurm controller (slurmctld) reload its configuration file.
 =over 2
 
 =item * RET: error code.
-    
+
 =back
 
 =head3 $rc = $slurm->shutdown($options);
@@ -1363,17 +1363,17 @@ Issue RPC to have Slurm controller (slurmctld) cease operations, both the primar
 =back
 
 =item * RET: error code.
-    
+
 =back
 
 =head3 $rc = $slurm->takeover();
 
-Issue RPC to have Slurm backup controller take over the primary controller. REQUEST_CONTROL is sent by the backup to the primary controller to take control. 
+Issue RPC to have Slurm backup controller take over the primary controller. REQUEST_CONTROL is sent by the backup to the primary controller to take control.
 
 =over 2
 
 =item * RET: error code.
-    
+
 =back
 
 =head3 $rc = $slurm->set_debug_level($debug_level)
@@ -1385,24 +1385,24 @@ Issue RPC to set slurm controller debug level.
 =item * IN $debug_level: requested debug level.
 
 =item * RET: 0 on success, -1 on error with errno set.
-    
+
 =back
 
 =head3 $rc = $slurm->set_schedlog_level($schedlog_level);
 
 Issue RPC to set slurm scheduler log level.
-    
+
 =over 2
 
 =item * schedlog_level: requested scheduler log level.
 
 =item * RET: 0 on success, -1 on error with errno set.
-    
+
 =back
 
 
 
-    
+
 =head2 SLURM JOB SUSPEND FUNCTIONS
 
 =head3 $rc = $slurm->suspend($job_id);
@@ -1413,7 +1413,7 @@ Suspend execution of a job.
 
 =item * IN $job_id: job on which top perform operation.
 
-=item * RET: error code.    
+=item * RET: error code.
 
 =back
 
@@ -1426,7 +1426,7 @@ Resume execution of a previously suspended job.
 =item * IN $job_id: job on which to perform operation.
 
 =item * RET: error code.
-    
+
 =back
 
 =head3 $rc = $slurm->requeue($job_id);
@@ -1442,7 +1442,7 @@ Re-queue a batch job, if already running then terminate it first.
 =back
 
 
-    
+
 
 =head2 SLURM TRIGGER FUNCTIONS
 
@@ -1460,7 +1460,7 @@ Set an event trigger.
 
 =head3 $rc = $slurm->clear_trigger($trigger_info);
 
-Clear an existing event trigger. 
+Clear an existing event trigger.
 
 =over 2
 
@@ -1477,12 +1477,12 @@ Get all event trigger information.
 =over 2
 
 =item * RET: hash reference with structure of C<trigger_info_msg_t>. On failure C<undef> is returned with errno set.
-    
+
 =back
 
 
-    
-    
+
+
 =head2 JOB/NODE STATE TESTING FUNCTIONS
 
 The following are functions to test job/node state, based on the macros defined in F<src/common/slurm_protocol_defs.h>. The functions take a parameter of a hash reference of a job/node, and return a boolean value. For job, $job->{job_state} is tested. For node, $node->{node_state} is tested.
@@ -1493,7 +1493,7 @@ The following are functions to test job/node state, based on the macros defined 
 
 =head3 $cond = IS_JOB_SUSPENDED($job);
 
-=head3 $cond = IS_JOB_COMPLETE($job); 
+=head3 $cond = IS_JOB_COMPLETE($job);
 
 =head3 $cond = IS_JOB_CANCELLED($job);
 
@@ -1549,7 +1549,7 @@ The following are functions to test job/node state, based on the macros defined 
 
 
 
-    
+
 =head1 EXPORT
 
 The job/node state testing functions are exported by default.

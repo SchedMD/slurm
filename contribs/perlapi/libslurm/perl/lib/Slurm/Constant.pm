@@ -278,19 +278,19 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =over 2
 
-=item * PRIORITY_RESET_NONE       0x0000        
+=item * PRIORITY_RESET_NONE       0x0000
 
-=item * PRIORITY_RESET_NOW        0x0001        
+=item * PRIORITY_RESET_NOW        0x0001
 
-=item * PRIORITY_RESET_DAILY      0x0002        
+=item * PRIORITY_RESET_DAILY      0x0002
 
-=item * PRIORITY_RESET_WEEKLY     0x0003        
+=item * PRIORITY_RESET_WEEKLY     0x0003
 
-=item * PRIORITY_RESET_MONTHLY    0x0004        
+=item * PRIORITY_RESET_MONTHLY    0x0004
 
-=item * PRIORITY_RESET_QUARTERLY  0x0005        
+=item * PRIORITY_RESET_QUARTERLY  0x0005
 
-=item * PRIORITY_RESET_YEARLY     0x0006        
+=item * PRIORITY_RESET_YEARLY     0x0006
 
 =back
 
@@ -298,11 +298,11 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =over 2
 
-=item * PROP_PRIO_OFF             0x0000        
+=item * PROP_PRIO_OFF             0x0000
 
-=item * PROP_PRIO_ON              0x0001        
+=item * PROP_PRIO_ON              0x0001
 
-=item * PROP_PRIO_NICER           0x0002        
+=item * PROP_PRIO_NICER           0x0002
 
 =back
 
@@ -473,21 +473,21 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =over 2
 
-=item * JOB_PENDING        0        
+=item * JOB_PENDING        0
 
-=item * JOB_RUNNING        1        
+=item * JOB_RUNNING        1
 
-=item * JOB_SUSPENDED      2        
+=item * JOB_SUSPENDED      2
 
-=item * JOB_COMPLETE       3        
+=item * JOB_COMPLETE       3
 
-=item * JOB_CANCELLED      4        
+=item * JOB_CANCELLED      4
 
-=item * JOB_FAILED         5        
+=item * JOB_FAILED         5
 
-=item * JOB_TIMEOUT        6        
+=item * JOB_TIMEOUT        6
 
-=item * JOB_NODE_FAIL      7        
+=item * JOB_NODE_FAIL      7
 
 =item * JOB_PREEMPTED      8
 
@@ -501,13 +501,13 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =over 2
 
-=item * WAIT_NO_REASON               0        
+=item * WAIT_NO_REASON               0
 
-=item * WAIT_PRIORITY                1        
+=item * WAIT_PRIORITY                1
 
 =item * WAIT_DEPENDENCY              2
 
-=item * WAIT_RESOURCES               3        
+=item * WAIT_RESOURCES               3
 
 =item * WAIT_PART_NODE_LIMIT         4
 
@@ -759,7 +759,7 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =over 2
 
-=item * SLURM_DIST_CYCLIC               1        
+=item * SLURM_DIST_CYCLIC               1
 
 =item * SLURM_DIST_BLOCK                2
 
@@ -785,21 +785,21 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =over 2
 
-=item * CPU_BIND_VERBOSE            0x01 
+=item * CPU_BIND_VERBOSE            0x01
 
-=item * CPU_BIND_TO_THREADS         0x02 
+=item * CPU_BIND_TO_THREADS         0x02
 
-=item * CPU_BIND_TO_CORES           0x04 
+=item * CPU_BIND_TO_CORES           0x04
 
-=item * CPU_BIND_TO_SOCKETS         0x08 
+=item * CPU_BIND_TO_SOCKETS         0x08
 
-=item * CPU_BIND_TO_LDOMS           0x10 
+=item * CPU_BIND_TO_LDOMS           0x10
 
-=item * CPU_BIND_NONE               0x20 
+=item * CPU_BIND_NONE               0x20
 
-=item * CPU_BIND_RANK               0x40 
+=item * CPU_BIND_RANK               0x40
 
-=item * CPU_BIND_MAP                0x80 
+=item * CPU_BIND_MAP                0x80
 
 =item * CPU_BIND_MASK               0x100
 
@@ -1240,7 +1240,7 @@ head2 SLURM ERRNO
 
 =back
 
-=head2 
+=head2
 
 =head1 SEE ALSO
 
