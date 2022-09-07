@@ -1119,7 +1119,6 @@ total_return:
 			peer = fd_resolve_peer(fd);
 
 		error("%s: [%s] %s", __func__, peer, slurm_strerror(rc));
-		rc = -1;
 		usleep(10000);	/* Discourage brute force attack */
 	} else {
 		rc = 0;
