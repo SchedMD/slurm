@@ -415,7 +415,8 @@ static void _validate_options( void )
 	      params.bu_ctld_as_ctrl  + params.pri_dbd_fail  +
 	      params.pri_dbd_res_op  + params.pri_db_fail  +
 	      params.pri_db_res_op) == 0)) {
-		error("You must specify a trigger (--down, --up, "
+		error("You must specify a trigger (--down, --up,\n"
+		      "--drained, --fail, --idle,\n"
 			"--reconfig, --time, --fini, --burst_buffer,\n"
 			"--primary_slurmctld_failure,\n"
 			"--primary_slurmctld_resumed_operation,\n"
