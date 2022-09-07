@@ -71,8 +71,8 @@ struct strigger_parameters {
 	bool     node_down;
 	bool     node_drained;
 	char *   node_id;
-	bool     node_fail;
 	bool     node_idle;
+	bool node_fail;
 	bool     node_up;
 	int      offset;
 	char *   program;
