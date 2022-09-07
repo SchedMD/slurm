@@ -2312,11 +2312,12 @@ Job name.
 
 .PP
 A number placed between the percent character and format specifier may be
-used to zero\-pad the result in the IO filename. This number is ignored if
-the format specifier corresponds to  non\-numeric data (%N for example).
-
-Some examples of how the format string may be used for a 4 task job step
-with a Job ID of 128 and step id of 0 are included below:
+used to zero\-pad the result in the IO filename to at minimum of specified
+numbers. This number is ignored if the format specifier corresponds to
+non\-numeric data (%N for example). The maximal number is 10, if a value greater
+than 10 is used the result is padding up to 10 characters.
+Some examples of how the format string may be used for a 4 task job step with a
+JobID of 128 and step id of 0 are included below:
 
 .TP 15
 job%J.out
@@ -2329,7 +2330,7 @@ job0128.out
 .IP
 
 .TP
-job%j\-%2t.out
+job%2j\-%2t.out
 job128\-00.out, job128\-01.out, ...
 .IP
 
