@@ -9,12 +9,23 @@ import time
 
 epilog_timeout = 10
 
+# TODO: Temporary debug variable to troubleshoot bug 14466 (remove once fixed)
+srun_ran_successfully = False
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_auto_config("wants to set the Epilog")
     atf.require_config_parameter('PrologEpilogTimeout', epilog_timeout)
     atf.require_slurm_running()
+
+    # TODO: Temporary debug to troubleshoot bug 14466 (remove once fixed)
+    yield
+    if not srun_ran_successfully:
+        atf.run_command("scontrol show partition")
+        atf.run_command("sinfo")
+        atf.run_command("scontrol show node")
+
 
 def test_epilog(tmp_path):
     """Test Epilog"""
@@ -31,6 +42,11 @@ exit 0
 
     # Verify that the epilog ran by checking for the file creation
     job_id = atf.run_job_id(f"-t1 true", fatal=True)
+
+    # TODO: Temporary debug mechanics to troubleshoot bug 14466 (remove once fixed)
+    global srun_ran_successfully
+    srun_ran_successfully = True
+
     assert atf.wait_for_file(touched_file), f"File ({touched_file}) was not created"
 
     # The child (sleep) should continue running after the epilog exits until the epilog timeout
