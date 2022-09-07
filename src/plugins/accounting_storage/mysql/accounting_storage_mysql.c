@@ -65,6 +65,21 @@
 #include "as_mysql_user.h"
 #include "as_mysql_wckey.h"
 
+#include "src/slurmdbd/proc_req.h"
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern pthread_mutex_t registered_lock __attribute__((weak_import));
+extern List registered_clusters __attribute__((weak_import));
+#else
+pthread_mutex_t registered_lock;
+List registered_clusters;
+#endif
+
+
 List as_mysql_cluster_list = NULL;
 /* This total list is only used for converting things, so no
    need to keep it upto date even though it lives until the
@@ -2756,6 +2771,24 @@ error:
 	return SLURM_ERROR;
 }
 
+static int _send_ctld_update(void *x, void *arg)
+{
+	slurmdbd_conn_t *db_conn = x;
+	List update_list = arg;
+
+	if (db_conn->conn->flags & PERSIST_FLAG_EXT_DBD)
+		return 0;
+
+	(void) slurmdb_send_accounting_update(
+		update_list,
+		db_conn->conn->cluster_name,
+		db_conn->conn->rem_host,
+		db_conn->conn->rem_port,
+		db_conn->conn->version);
+
+	return 0;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -2959,33 +2992,14 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 	}
 
 	if (commit && list_count(update_list)) {
-		char *query = NULL;
-		MYSQL_RES *result = NULL;
-		MYSQL_ROW row;
 		ListIterator itr = NULL;
 		slurmdb_update_object_t *object = NULL;
 
-		xstrfmtcat(query, "select control_host, control_port, "
-			   "name, rpc_version, flags "
-			   "from %s where deleted=0 && control_port != 0",
-			   cluster_table);
-		if (!(result = mysql_db_query_ret(
-			      mysql_conn, query, 0))) {
-			xfree(query);
-			goto skip;
-		}
-		xfree(query);
-		while ((row = mysql_fetch_row(result))) {
-			if (slurm_atoul(row[4]) & CLUSTER_FLAG_EXT)
-				continue;
-			(void) slurmdb_send_accounting_update(
-				update_list,
-				row[2], row[0],
-				slurm_atoul(row[1]),
-				slurm_atoul(row[3]));
-		}
-		mysql_free_result(result);
-	skip:
+		slurm_mutex_lock(&registered_lock);
+		(void) list_for_each(registered_clusters,
+				     _send_ctld_update, update_list);
+		slurm_mutex_unlock(&registered_lock);
+
 		(void) assoc_mgr_update(update_list, 0);
 
 		slurm_rwlock_wrlock(&as_mysql_cluster_list_lock);
