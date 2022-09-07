@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
+#include "src/common/uid.h"
 #include "src/common/xstring.h"
 
 static uint32_t tres_cnt = 0;
@@ -134,11 +135,14 @@ static int _print_used_user_limit(slurmdb_used_limits_t *used_limit,
 				  slurmdb_qos_rec_t *qos_rec)
 {
 	char *new_line_char = one_liner ? " " : "\n        ";
+	char *user_name = uid_to_string(used_limit->uid);
 
-	printf("%s%d%s",
+	printf("%s%s(%d)%s",
 	       one_liner ? " " : "\n      ",
+	       user_name,
 	       used_limit->uid,
 	       one_liner ? "={" : new_line_char);
+	xfree(user_name);
 
 	printf("MaxJobsPU=");
 	if (qos_rec->max_jobs_pu != INFINITE)
