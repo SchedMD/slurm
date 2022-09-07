@@ -464,6 +464,8 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * TRIGGER_TYPE_PRI_DB_RES_OP      0x00080000
 
+=item * TRIGGER_TYPE_BURST_BUFFER       0x00100000
+
 =back
 
 
