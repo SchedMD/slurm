@@ -1468,6 +1468,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		if (state_val != NO_VAL) {
 			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			if (state_val == NODE_RESUME) {
+				trigger_node_resume(node_ptr);
 				if (IS_NODE_IDLE(node_ptr) &&
 				    (IS_NODE_DRAIN(node_ptr) ||
 				     IS_NODE_FAIL(node_ptr))) {
@@ -1613,6 +1614,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					kill_running_job_by_node_name(
 								this_node_name);
 				}
+				trigger_node_draining(node_ptr);
 				bit_clear (avail_node_bitmap, node_ptr->index);
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
@@ -2265,6 +2267,7 @@ static void _drain_node(node_record_t *node_ptr, char *reason,
 		return;
 	}
 
+	trigger_node_draining(node_ptr);
 	node_ptr->node_state |= NODE_STATE_DRAIN;
 	bit_clear(avail_node_bitmap, node_ptr->index);
 	info("drain_nodes: node %s state set to DRAIN",
@@ -3992,11 +3995,13 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
-	if ((node_ptr->run_job_cnt  == 0) &&
-	    (node_ptr->comp_job_cnt == 0)) {
+	if (!node_ptr->run_job_cnt && !node_ptr->comp_job_cnt) {
 		node_ptr->last_busy = now;
 		bit_set(idle_node_bitmap, node_ptr->index);
-		if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
+	}
+	if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
+		trigger_node_draining(node_ptr);
+		if (!node_ptr->run_job_cnt && !node_ptr->comp_job_cnt) {
 			trigger_node_drained(node_ptr);
 			clusteracct_storage_g_node_down(
 				acct_db_conn,
@@ -4157,19 +4162,21 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 	else
 		make_node_avail(node_ptr);
 
-	if ((IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) &&
-	    (node_ptr->run_job_cnt == 0) && (node_ptr->comp_job_cnt == 0)) {
-		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
-		bit_set(idle_node_bitmap, node_ptr->index);
-		debug3("%s: %pJ node %s is DRAINED",
-		       __func__, job_ptr, node_ptr->name);
-		node_ptr->last_busy = now;
-		trigger_node_drained(node_ptr);
-		if (!IS_NODE_REBOOT_REQUESTED(node_ptr) &&
-		    !IS_NODE_REBOOT_ISSUED(node_ptr))
-			clusteracct_storage_g_node_down(acct_db_conn,
-			                                node_ptr, now, NULL,
-			                                slurm_conf.slurm_user_id);
+	if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
+		trigger_node_draining(node_ptr);
+		if (!node_ptr->run_job_cnt && !node_ptr->comp_job_cnt) {
+			node_ptr->node_state = NODE_STATE_IDLE | node_flags;
+			bit_set(idle_node_bitmap, node_ptr->index);
+			debug3("%s: %pJ node %s is DRAINED",
+			       __func__, job_ptr, node_ptr->name);
+			node_ptr->last_busy = now;
+			trigger_node_drained(node_ptr);
+			if (!IS_NODE_REBOOT_REQUESTED(node_ptr) &&
+			    !IS_NODE_REBOOT_ISSUED(node_ptr))
+				clusteracct_storage_g_node_down(
+					acct_db_conn, node_ptr, now,
+					NULL, slurm_conf.slurm_user_id);
+		}
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&

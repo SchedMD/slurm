@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
     MinKmemSpace.
  -- accounting_storage/mysql - change purge/archive to calculate record ages
     based on end time, rather than start or submission times.
+ -- Add strigger --draining and -R/--resume options.
 
 * Changes in Slurm 22.05.4
 ==========================

@@ -3210,6 +3210,8 @@ typedef struct stats_info_response_msg {
 #define TRIGGER_TYPE_PRI_DB_FAIL        SLURM_BIT(18)
 #define TRIGGER_TYPE_PRI_DB_RES_OP      SLURM_BIT(19)
 #define TRIGGER_TYPE_BURST_BUFFER       SLURM_BIT(20)
+#define TRIGGER_TYPE_DRAINING           SLURM_BIT(21)
+#define TRIGGER_TYPE_RESUME             SLURM_BIT(22)
 
 
 typedef struct trigger_info {

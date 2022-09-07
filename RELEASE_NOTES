@@ -62,6 +62,7 @@ COMMAND CHANGES (see man pages for details)
  -- sbatch - add parsing for #PBS -d and #PBS -w.
  -- scontrol show assoc_mgr will show username(uid) instead of uid in
     QoS section.
+ -- Add strigger --draining and -R/--resume options.
 
 API CHANGES
 ===========

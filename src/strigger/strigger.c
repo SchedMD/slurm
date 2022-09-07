@@ -158,6 +158,10 @@ static int _set_trigger(void)
 		ti.trig_type |= TRIGGER_TYPE_IDLE;
 	if (params.node_up)
 		ti.trig_type |= TRIGGER_TYPE_UP;
+	if (params.node_draining)
+		ti.trig_type |= TRIGGER_TYPE_DRAINING;
+	if (params.node_resume)
+		ti.trig_type |= TRIGGER_TYPE_RESUME;
 	if (params.reconfig)
 		ti.trig_type |= TRIGGER_TYPE_RECONFIG;
 	if (params.pri_ctld_fail) {
@@ -295,6 +299,20 @@ static int _get_trigger(void)
 					!= TRIGGER_RES_TYPE_FRONT_END)) ||
 			    (trig_msg->trigger_array[i].trig_type
 					!= TRIGGER_TYPE_UP))
+				continue;
+		}
+		if (params.node_draining) {
+			if ((trig_msg->trigger_array[i].res_type !=
+				    TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+				    TRIGGER_TYPE_DRAINING))
+				continue;
+		}
+		if (params.node_resume) {
+			if ((trig_msg->trigger_array[i].res_type !=
+				    TRIGGER_RES_TYPE_NODE) ||
+			    (trig_msg->trigger_array[i].trig_type !=
+				    TRIGGER_TYPE_RESUME))
 				continue;
 		}
 		if (params.time_limit) {

@@ -62,6 +62,8 @@ extern void trigger_node_down(node_record_t *node_ptr);
 extern void trigger_node_drained(node_record_t *node_ptr);
 extern void trigger_node_failing(node_record_t *node_ptr);
 extern void trigger_node_up(node_record_t *node_ptr);
+extern void trigger_node_draining(node_record_t *node_ptr);
+extern void trigger_node_resume(node_record_t *node_ptr);
 extern void trigger_reconfig(void);
 extern void trigger_primary_ctld_fail(void);
 extern void trigger_primary_ctld_res_op(void);

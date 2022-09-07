@@ -3174,6 +3174,10 @@ extern char *trigger_type(uint32_t trig_type)
 		return "primary_database_resumed_operation";
 	else if (trig_type == TRIGGER_TYPE_BURST_BUFFER)
 		return "burst_buffer";
+	else if (trig_type == TRIGGER_TYPE_DRAINING)
+		return "draining";
+	else if (trig_type == TRIGGER_TYPE_RESUME)
+		return "resume";
 	else
 		return "unknown";
 }

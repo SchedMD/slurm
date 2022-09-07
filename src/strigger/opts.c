@@ -64,6 +64,7 @@
 #define OPT_LONG_FRONT_END	0x107
 #define OPT_LONG_FLAGS		0x108
 #define OPT_LONG_BURST_BUFFER	0x109
+#define OPT_LONG_DRAINING 0x10a
 
 /* getopt_long options, integers but not characters */
 
@@ -125,6 +126,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"set",       no_argument,       0, OPT_LONG_SET},
 		{"usage",     no_argument,       0, OPT_LONG_USAGE},
 		{"user",      required_argument, 0, OPT_LONG_USER},
+		{"draining", no_argument, 0, OPT_LONG_DRAINING},
+		{"resume", no_argument, 0, 'R'},
 		{NULL,        0,                 0, 0}
 	};
 
@@ -132,7 +135,7 @@ extern void parse_command_line(int argc, char **argv)
 
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv,
-				       "aAbBcCdDeFfgGhHi:Ij:M:n::No:p:QrtuvV",
+				       "aAbBcCdDeFfgGhHi:Ij:M:n::No:p:QrRtuvV",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -237,6 +240,9 @@ extern void parse_command_line(int argc, char **argv)
 		case (int)'r':
 			params.reconfig = true;
 			break;
+		case (int)'R':
+			params.node_resume = true;
+			break;
 		case (int)'t':
 			params.time_limit = true;
 			break;
@@ -287,6 +293,9 @@ extern void parse_command_line(int argc, char **argv)
 			}
 			params.user_id = (uint32_t) some_uid;
 			break;
+		case (int) OPT_LONG_DRAINING:
+			params.node_draining = true;
+			break;
 		}
 	}
 
@@ -315,6 +324,7 @@ static void _init_options( void )
 	params.no_header    = false;
 	params.node_down    = false;
 	params.node_drained = false;
+	params.node_draining = false;
 	params.node_fail    = false;
 	params.node_idle    = false;
 	params.trigger_id   = 0;
@@ -325,6 +335,7 @@ static void _init_options( void )
 	params.pri_db_res_op = false;
 	params.job_id       = 0;
 	params.node_id      = NULL;
+	params.node_resume = false;
 	params.offset       = 0;
 	params.program      = NULL;
 	params.quiet        = false;
@@ -339,32 +350,34 @@ static void _init_options( void )
 static void _print_options( void )
 {
 	verbose("-----------------------------");
-	verbose("set          = %s", params.mode_set ? "true" : "false");
-	verbose("get          = %s", params.mode_get ? "true" : "false");
-	verbose("clear        = %s", params.mode_clear ? "true" : "false");
-	verbose("burst_buffer = %s", params.burst_buffer ? "true" : "false");
-	verbose("flags        = %u", params.flags);
-	verbose("front_end    = %s", params.front_end ? "true" : "false");
-	verbose("job_id       = %u", params.job_id);
-	verbose("job_fini     = %s", params.job_fini ? "true" : "false");
-	verbose("no_header    = %s", params.no_header ? "true" : "false");
-	verbose("node_down    = %s", params.node_down ? "true" : "false");
-	verbose("node_drained = %s", params.node_drained ? "true" : "false");
-	verbose("node_fail    = %s", params.node_fail ? "true" : "false");
-	verbose("node_idle    = %s", params.node_idle ? "true" : "false");
-	verbose("node_up      = %s", params.node_up ? "true" : "false");
-	verbose("node         = %s", params.node_id);
-	verbose("offset       = %d secs", params.offset);
-	verbose("program      = %s", params.program);
-	verbose("quiet        = %s", params.quiet ? "true" : "false");
-	verbose("reconfig     = %s", params.reconfig ? "true" : "false");
-	verbose("time_limit   = %s", params.time_limit ? "true" : "false");
-	verbose("trigger_id   = %u", params.trigger_id);
+	verbose("set           = %s", params.mode_set ? "true" : "false");
+	verbose("get           = %s", params.mode_get ? "true" : "false");
+	verbose("clear         = %s", params.mode_clear ? "true" : "false");
+	verbose("burst_buffer  = %s", params.burst_buffer ? "true" : "false");
+	verbose("flags         = %u", params.flags);
+	verbose("front_end     = %s", params.front_end ? "true" : "false");
+	verbose("job_id        = %u", params.job_id);
+	verbose("job_fini      = %s", params.job_fini ? "true" : "false");
+	verbose("no_header     = %s", params.no_header ? "true" : "false");
+	verbose("node_down     = %s", params.node_down ? "true" : "false");
+	verbose("node_drained  = %s", params.node_drained ? "true" : "false");
+	verbose("node_draining = %s", params.node_draining ? "true" : "false");
+	verbose("node_fail     = %s", params.node_fail ? "true" : "false");
+	verbose("node_idle     = %s", params.node_idle ? "true" : "false");
+	verbose("node_up       = %s", params.node_up ? "true" : "false");
+	verbose("node          = %s", params.node_id);
+	verbose("offset        = %d secs", params.offset);
+	verbose("program       = %s", params.program);
+	verbose("quiet         = %s", params.quiet ? "true" : "false");
+	verbose("reconfig      = %s", params.reconfig ? "true" : "false");
+	verbose("resume        = %s", params.node_resume ? "true" : "false");
+	verbose("time_limit    = %s", params.time_limit ? "true" : "false");
+	verbose("trigger_id    = %u", params.trigger_id);
 	if (params.user_id == NO_VAL)
-		verbose("user_id      = N/A");
+		verbose("user_id       = N/A");
 	else
-		verbose("user_id      = %u", params.user_id);
-	verbose("verbose      = %d", params.verbose);
+		verbose("user_id       = %u", params.user_id);
+	verbose("verbose       = %d", params.verbose);
 	verbose("primary_slurmctld_failure            = %s",
 		params.pri_ctld_fail ? "true" : "false");
 	verbose("primary_slurmctld_resumed_operation  = %s",
@@ -408,27 +421,14 @@ static void _validate_options( void )
 	    ((params.node_down + params.node_drained + params.node_fail +
 	      params.node_idle + params.node_up + params.reconfig +
 	      params.job_fini  + params.time_limit +
-	      params.burst_buffer +
+	      params.node_draining + params.node_resume + params.burst_buffer +
      	      params.pri_ctld_fail  + params.pri_ctld_res_op  +
 	      params.pri_ctld_res_ctrl  + params.pri_ctld_acct_buffer_full  +
  	      params.bu_ctld_fail + params.bu_ctld_res_op  +
 	      params.bu_ctld_as_ctrl  + params.pri_dbd_fail  +
 	      params.pri_dbd_res_op  + params.pri_db_fail  +
 	      params.pri_db_res_op) == 0)) {
-		error("You must specify a trigger (--down, --up,\n"
-		      "--drained, --fail, --idle,\n"
-			"--reconfig, --time, --fini, --burst_buffer,\n"
-			"--primary_slurmctld_failure,\n"
-			"--primary_slurmctld_resumed_operation,\n"
-			"--primary_slurmctld_resumed_control,\n"
-	  		"--primary_slurmctld_acct_buffer_full,\n"
-			"--backup_slurmctld_failure,\n"
-			"--backup_slurmctld_resumed_operation,\n"
-			"--backup_slurmctld_as_ctrl,\n"
-			"--primary_slurmdbd_failure,\n"
-			"--primary_slurmdbd_resumed_operation,\n"
-			"--primary_database_failure, or \n"
-			"--primary_database_resumed_operation)\n");
+		error("You must specify a trigger");
 		exit(1);
 	}
 
@@ -508,6 +508,8 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
                       trigger event when backup slurmctld assumed control\n\
   -d, --down          trigger event when node goes DOWN\n\
   -D, --drained       trigger event when node becomes DRAINED\n\
+  --draining          trigger event when node is DRAINING but not already\n\
+                      DRAINED\n\
   -e, --primary_slurmctld_acct_buffer_full\n\
                       trigger event when primary slurmctld acct buffer full\n\
   -F, --fail          trigger event when node is expected to FAIL\n\
@@ -536,6 +538,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
   -p, --program=path  pathname of program to execute when triggered\n\
   -Q, --quiet         quiet mode (suppress informational messages)\n\
   -r, --reconfig      trigger event on configuration changes\n\
+  -R, --resume        trigger event when node is set to RESUME state\n\
   -t, --time          trigger event on job's time limit\n\
   -u, --up            trigger event when node returned to service from DOWN \n\
                       state\n\
