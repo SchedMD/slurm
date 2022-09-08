@@ -705,6 +705,7 @@ int main(int argc, char **argv)
 			}
 		}
 
+		slurm_persist_conn_recv_server_init();
 		info("Running as primary controller");
 		_run_primary_prog(true);
 		control_time = time(NULL);
@@ -816,6 +817,7 @@ int main(int argc, char **argv)
 		acct_storage_g_close_connection(&acct_db_conn);
 		slurm_acct_storage_fini();
 
+		slurm_persist_conn_recv_server_fini();
 		/*
 		 * join the power save thread after saving all state
 		 * since it could wait a while waiting for spawned

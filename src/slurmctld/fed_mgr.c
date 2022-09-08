@@ -2816,7 +2816,6 @@ extern int fed_mgr_init(void *db_conn)
 		remote_dep_job_list = list_create(_destroy_dep_job);
 	slurm_mutex_unlock(&dep_job_list_mutex);
 
-	slurm_persist_conn_recv_server_init();
 	_spawn_threads();
 
 	if (running_cache) {
@@ -2937,8 +2936,6 @@ extern int fed_mgr_fini(void)
 	 * connection won't be pointing to bad memory. */
 	_leave_federation();
 	unlock_slurmctld(fed_write_lock);
-
-	slurm_persist_conn_recv_server_fini();
 
 	if (agent_thread_id)
 		pthread_join(agent_thread_id, NULL);
