@@ -3017,20 +3017,12 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 		error("update cluster: %m to %s at %s(%hu)",
 		      cluster, host, port);
 		rc = SLURM_ERROR;
-	}
+	} else
+		rc = slurm_get_return_code(resp.msg_type, resp.data);
+
 	if (resp.auth_cred)
 		auth_g_destroy(resp.auth_cred);
 
-	switch (resp.msg_type) {
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *)resp.data)->return_code;
-		break;
-	default:
-		if (rc != SLURM_ERROR)
-			error("Unknown response message %u", resp.msg_type);
-		rc = SLURM_ERROR;
-		break;
-	}
 	slurm_free_return_code_msg(resp.data);
 
 	//info("got rc of %d", rc);
