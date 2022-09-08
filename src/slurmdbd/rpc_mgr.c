@@ -137,6 +137,8 @@ static void _connection_fini_callback(void *arg)
 	slurmdbd_conn_t *conn = (slurmdbd_conn_t *) arg;
 	bool stay_locked = false;
 
+	slurm_persist_conn_destroy(conn->conn_send);
+	conn->conn_send = NULL;
 	if (conn->conn->rem_port) {
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;

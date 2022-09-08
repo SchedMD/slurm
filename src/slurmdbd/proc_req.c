@@ -163,8 +163,41 @@ static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 		}
 	}
 	list_iterator_destroy(itr);
-	if (!slurmdbd_conn)
+	if (!slurmdbd_conn) {
+		/* This version check can go away 2 versions after 23.02 */
+		if (db_conn->conn->version >= SLURM_23_02_PROTOCOL_VERSION) {
+			db_conn->conn_send =
+				xmalloc(sizeof(slurm_persist_conn_t));
+			db_conn->conn_send->cluster_name =
+				xstrdup(db_conn->conn->cluster_name);
+			db_conn->conn_send->fd = PERSIST_CONN_NOT_INITED;
+			db_conn->conn_send->persist_type =
+				PERSIST_TYPE_ACCT_UPDATE;
+			db_conn->conn_send->my_port = slurmdbd_conf->dbd_port;
+			db_conn->conn_send->rem_host =
+				xstrdup(db_conn->conn->rem_host);
+			db_conn->conn_send->rem_port = db_conn->conn->rem_port;
+			db_conn->conn_send->version = db_conn->conn->version;
+			db_conn->conn_send->shutdown = &shutdown_time;
+			/* we want timeout to be zero */
+			db_conn->conn_send->timeout = 0;
+			db_conn->conn_send->r_uid = SLURM_AUTH_UID_ANY;
+			db_conn->conn_send->flags |= PERSIST_FLAG_RECONNECT;
+			/*
+			 * We can't open a pipe back to the slurmctld right
+			 * now, the slurmctld might just be starting up and the
+			 * rpc_mgr might not be listening yet, so we will handle
+			 * this in the mysql plugin on the first commit.
+			 */
+			/* if (slurm_persist_conn_open(db_conn->conn_send) != */
+			/*     SLURM_SUCCESS) { */
+			/* 	error("persist_conn_send: Unable to open connection to cluster %s who is actively talking to us.", */
+			/* 	      db_conn->conn->cluster_name); */
+			/* } */
+		}
+
 		list_append(registered_clusters, db_conn);
+	}
 	slurm_mutex_unlock(&registered_lock);
 }
 

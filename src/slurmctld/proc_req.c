@@ -5754,7 +5754,18 @@ static int _process_persist_conn(void *arg,
 	msg.msg_type = persist_msg->msg_type;
 	msg.data = persist_msg->data;
 
-	slurmctld_req(&msg);
+	if (persist_conn->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
+		if (msg.msg_type == ACCOUNTING_UPDATE_MSG) {
+			DEF_TIMERS;
+			START_TIMER;
+			_slurm_rpc_accounting_update_msg(&msg);
+			record_rpc_stats(&msg, DELTA_TIMER);
+			END_TIMER;
+		} else {
+			slurm_send_rc_msg(&msg, EINVAL);
+		}
+	} else
+		slurmctld_req(&msg);
 
 	return SLURM_SUCCESS;
 }
@@ -5821,7 +5832,11 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	if (persist_init->persist_type == PERSIST_TYPE_FED)
 		rc = fed_mgr_add_sibling_conn(persist_conn, &comment);
-	else
+	else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
+		persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
+		slurm_persist_conn_recv_thread_init(
+			persist_conn, -1, persist_conn);
+	} else
 		rc = SLURM_ERROR;
 end_it:
 

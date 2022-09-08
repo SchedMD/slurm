@@ -38,6 +38,7 @@
 #ifndef _SLURMDB_DEFS_H
 #define _SLURMDB_DEFS_H
 
+#include "src/common/slurm_persist_conn.h"
 #include "slurm/slurmdb.h"
 
 /* Defined purge macros */
@@ -176,6 +177,15 @@ extern char *slurmdb_purge_string(uint32_t purge, char *string, int len,
 				  bool with_archive);
 extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 				       char *names, int option);
+/*
+ * send_accounting_update_persist
+ * - Send accounting update to a slurmctld over a persistent connection
+ * IN update_list: updates to send
+ * IN persist_conn: connection to send things on
+ * RET: error code
+ */
+extern int slurmdb_send_accounting_update_persist(
+	List update_list, slurm_persist_conn_t *persist_conn);
 extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 					  char *host, uint16_t port,
 					  uint16_t rpc_version);

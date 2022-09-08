@@ -2927,6 +2927,44 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 	return count;
 }
 
+extern int slurmdb_send_accounting_update_persist(
+	List update_list, slurm_persist_conn_t *persist_conn)
+{
+	slurm_msg_t req = {0}, resp = {0};
+	accounting_update_msg_t msg = {0};
+	int rc;
+
+	xassert(persist_conn);
+
+	if (persist_conn->fd == PERSIST_CONN_NOT_INITED) {
+		if (slurm_persist_conn_open(persist_conn) !=
+		    SLURM_SUCCESS) {
+			error("slurmdb_send_accounting_update_persist: Unable to open connection to registered cluster %s.",
+			      persist_conn->cluster_name);
+		}
+	}
+
+	msg.update_list = update_list;
+	msg.rpc_version = req.protocol_version = persist_conn->version;
+	req.msg_type = ACCOUNTING_UPDATE_MSG;
+	req.conn = persist_conn;
+	req.data = &msg;
+
+	rc = slurm_send_recv_msg(0, &req, &resp, 0);
+
+	if (rc != SLURM_SUCCESS) {
+		error("update cluster: %m to %s at %s(%hu)",
+		      persist_conn->cluster_name,
+		      persist_conn->rem_host,
+		      persist_conn->rem_port);
+	} else {
+		rc = slurm_get_return_code(resp.msg_type, resp.data);
+		slurm_free_return_code_msg(resp.data);
+	}
+	//info("got rc of %d", rc);
+	return rc;
+}
+
 /*
  * send_accounting_update - send update to controller of cluster
  * IN update_list: updates to send

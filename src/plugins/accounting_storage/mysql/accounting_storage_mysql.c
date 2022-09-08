@@ -2779,12 +2779,18 @@ static int _send_ctld_update(void *x, void *arg)
 	if (db_conn->conn->flags & PERSIST_FLAG_EXT_DBD)
 		return 0;
 
-	(void) slurmdb_send_accounting_update(
-		update_list,
-		db_conn->conn->cluster_name,
-		db_conn->conn->rem_host,
-		db_conn->conn->rem_port,
-		db_conn->conn->version);
+	/* This check can be removed 2 versions after 23.02 */
+	if (db_conn->conn_send) {
+		xassert(db_conn->conn_send);
+		(void) slurmdb_send_accounting_update_persist(
+			update_list, db_conn->conn_send);
+	} else
+		(void) slurmdb_send_accounting_update(
+			update_list,
+			db_conn->conn->cluster_name,
+			db_conn->conn->rem_host,
+			db_conn->conn->rem_port,
+			db_conn->conn->version);
 
 	return 0;
 }
