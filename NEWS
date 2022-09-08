@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix power_save mode when repeatedly configuring too fast.
  -- Fix sacct -I option.
  -- Prevent jobs from being scheduled on future nodes.
+ -- Fix memory leak in slurmd happening on reconfigure when CPUSpecList used.
 
 * Changes in Slurm 22.05.3
 ==========================
