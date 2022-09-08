@@ -1466,16 +1466,20 @@ extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f)
 	struct stat st;
 	int rc;
 	char *memsw_filepath = NULL;
+	static int swap_enabled = -1;
 
 	/* Check if swap constrain capability is enabled in this system. */
 	switch (f) {
 	case CG_MEMCG_SWAP:
-		xstrfmtcat(memsw_filepath,
-			   "%s/memory/memory.memsw.limit_in_bytes",
-			   slurm_cgroup_conf.cgroup_mountpoint);
-		rc = stat(memsw_filepath, &st);
-		xfree(memsw_filepath);
-		return (rc == 0);
+		if (swap_enabled == -1) {
+			xstrfmtcat(memsw_filepath,
+				   "%s/memory/memory.memsw.limit_in_bytes",
+				   slurm_cgroup_conf.cgroup_mountpoint);
+			rc = stat(memsw_filepath, &st);
+			xfree(memsw_filepath);
+			return (swap_enabled = (rc == 0));
+		} else
+			return swap_enabled;
 	default:
 		break;
 	}

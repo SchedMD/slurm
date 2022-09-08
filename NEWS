@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 22.05.0rc1 where a prolog or epilog that redirected stdout
     to a file could get erroneously killed, resulting in job launch failure
     (for the prolog) and the node being drained.
+ -- cgroup/v1 - Make a static variable to remove potential redundant checking
+    for if the system has swap or not.
 
 * Changes in Slurm 22.05.3
 ==========================
