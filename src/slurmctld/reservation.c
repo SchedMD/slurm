@@ -2820,9 +2820,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 					rc = ESLURM_INVALID_CORE_CNT;
 					goto bad_parse;
 				}
-			log_flag(RESERVATION, "%s: Requesting %d cores for node_list %d",
-				 __func__, resv_desc_ptr->core_cnt[nodeinx],
-				 nodeinx);
+				log_flag(RESERVATION, "%s: Requesting %d cores for node_list %d",
+					 __func__,
+					 resv_desc_ptr->core_cnt[nodeinx],
+					 nodeinx);
 				nodeinx++;
 			}
 			rc = _select_nodes(resv_desc_ptr, &part_ptr,
