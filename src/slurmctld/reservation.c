@@ -2552,7 +2552,7 @@ static bitstr_t *_get_update_node_bitmap(slurmctld_resv_t *resv_ptr,
 }
 
 /* Create a resource reservation */
-extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
+extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 {
 	int i, j, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
@@ -2627,12 +2627,16 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (resv_desc_ptr->node_list) {
 			info("%s: REPLACE or REPLACE_DOWN flags should be used with the NodeCnt reservation option; do not specify Nodes",
 				__func__);
+			if (err_msg)
+				*err_msg = xstrdup("REPLACE or REPLACE_DOWN flags should be used with the NodeCnt reservation option; do not specify Nodes");
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto bad_parse;
 		}
 		if (resv_desc_ptr->core_cnt) {
 			info("%s: REPLACE or REPLACE_DOWN flags should be used with the NodeCnt reservation option; do not specify CoreCnt",
 				__func__);
+			if (err_msg)
+				*err_msg = xstrdup("REPLACE or REPLACE_DOWN flags should be used with the NodeCnt reservation option; do not specify CoreCnt");
 			rc = ESLURM_INVALID_CPU_COUNT;
 			goto bad_parse;
 		}
@@ -2643,6 +2647,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	    ((resv_desc_ptr->flags & RESERVE_FLAG_STATIC) ||
 	     (resv_desc_ptr->flags & RESERVE_FLAG_MAINT))) {
 		info("REPLACE and REPLACE_DOWN flags cannot be used with STATIC_ALLOC or MAINT flags");
+		if (err_msg)
+			*err_msg = xstrdup("REPLACE and REPLACE_DOWN flags cannot be used with STATIC_ALLOC or MAINT flags");
 		rc = ESLURM_NOT_SUPPORTED;
 		goto bad_parse;
 	}
@@ -2722,6 +2728,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_TIME_FLOAT) &&
 	    (resv_desc_ptr->flags & RESERVE_REOCCURING)) {
 		info("Reservation request has mutually exclusive flags. Repeating floating reservations are not supported.");
+		if (err_msg)
+			*err_msg = xstrdup("Reservation request has mutually exclusive flags. Repeating floating reservations are not supported.");
 		rc = ESLURM_NOT_SUPPORTED;
 		goto bad_parse;
 	}
