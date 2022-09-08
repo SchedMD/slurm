@@ -3024,7 +3024,6 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 	switch (resp.msg_type) {
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *)resp.data)->return_code;
-		slurm_free_return_code_msg(resp.data);
 		break;
 	default:
 		if (rc != SLURM_ERROR)
@@ -3032,6 +3031,8 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 		rc = SLURM_ERROR;
 		break;
 	}
+	slurm_free_return_code_msg(resp.data);
+
 	//info("got rc of %d", rc);
 	return rc;
 }
