@@ -154,6 +154,13 @@ static int _tot_wait (struct timeval *start_time)
 	return msec_delay;
 }
 
+static void _kill_pg(pid_t pid)
+{
+	killpg(pid, SIGTERM);
+	usleep(10000);
+	killpg(pid, SIGKILL);
+}
+
 extern char *run_command(run_command_args_t *args)
 {
 	int i, new_wait, resp_size = 0, resp_offset = 0;
@@ -320,9 +327,9 @@ extern char *run_command(run_command_args_t *args)
 				}
 			}
 		}
-		/* Only send SIGTERM if the script isn't exiting normally. */
+		/* Kill immediately if the script isn't exiting normally. */
 		if (send_terminate) {
-			killpg(cpid, SIGKILL);
+			_kill_pg(cpid);
 			waitpid(cpid, args->status, 0);
 		} else {
 			/*
@@ -378,7 +385,7 @@ extern int run_command_waitpid_timeout(
 		} else if (command_shutdown) {
 			error("%s: killing %s on shutdown",
 			      __func__, name);
-			killpg(pid, SIGKILL);
+			_kill_pg(pid);
 			killed_pg = true;
 			options = 0;
 		} else if (tid && track_script_killed(tid, 0, false)) {
@@ -387,7 +394,7 @@ extern int run_command_waitpid_timeout(
 			 * know if this script exists in track_script and bail
 			 * if it does not.
 			 */
-			killpg(pid, SIGKILL);
+			_kill_pg(pid);
 			killed_pg = true;
 			options = 0;
 		} else if (timeout_ms <= 0) {
@@ -395,7 +402,7 @@ extern int run_command_waitpid_timeout(
 			      name != NULL ? name : "",
 			      name != NULL ? ": " : "",
 			      save_timeout_ms, pid);
-			killpg(pid, SIGKILL);
+			_kill_pg(pid);
 			killed_pg = true;
 			options = 0;
 			if (timed_out)
@@ -408,6 +415,6 @@ extern int run_command_waitpid_timeout(
 	}
 
 	if (!killed_pg)
-		killpg(pid, SIGKILL);  /* kill children too */
+		_kill_pg(pid); /* kill children too */
 	return rc;
 }
