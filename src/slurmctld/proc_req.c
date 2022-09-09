@@ -5292,7 +5292,8 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	 * unresponsive in the mean time.  Throttling this to only 1 update at a
 	 * time should minimize this situation.
 	 */
-	_throttle_start(&active_rpc_cnt);
+	if (!msg->conn)
+		_throttle_start(&active_rpc_cnt);
 	if (update_ptr->update_list && list_count(update_ptr->update_list)) {
 		slurmdb_update_object_t *object;
 
@@ -5312,7 +5313,8 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 
 		rc = assoc_mgr_update(update_ptr->update_list, 0);
 	}
-	_throttle_fini(&active_rpc_cnt);
+	if (!msg->conn)
+		_throttle_fini(&active_rpc_cnt);
 
 	END_TIMER2("_slurm_rpc_accounting_update_msg");
 
