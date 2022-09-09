@@ -731,7 +731,8 @@ static int _init_slurmd_system_scope()
 			log_flag(CGROUP, "Could not create scope through systemd, doing it manually as IgnoreSystemdOnFailure is set in cgroup.conf");
 			return _init_new_scope(stepd_scope_path);
 		} else {
-			error("cannot initialize cgroup directory for stepds");
+			error("cannot initialize cgroup directory for stepds: if the scope %s already exists it means the associated cgroup directories disappeared and the scope entered in a failed state. You should investigate why the scope lost its cgroup directories and possibly use the 'systemd reset-failed' command to fix this inconsistent systemd state.",
+			      stepd_scope_path);
 			return SLURM_ERROR;
 		}
 	}
