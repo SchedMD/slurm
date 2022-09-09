@@ -56,6 +56,7 @@ with Slurm are provided below.
 <li><a href="#intel_mpi">Intel-MPI</a></li>
 <li><a href="#mpich">MPICH</a></li>
 <li><a href="#mvapich2">MVAPICH2</a></li>
+<li><a href="#hpe_cray_pmi">HPE Cray PMI Support</a></li>
 </ul></p>
 <hr size=4 width="100%">
 
@@ -594,6 +595,36 @@ and/or PMI-2 libraries and if their APIs ever changed. These should not change
 often but if it were to happen, it would be noted in Slurm's RELEASE_NOTES
 file.</p>
 
-<p style="text-align:center;">Last modified 31 August 2022</p>
+<h2 id="hpe_cray_pmi">
+<b>HPE Cray PMI support</b>
+<a class="slurm_link" href="#hpe_cray_pmi"></a>
+</h2>
+
+<p>Slurm comes by default with a Cray PMI vendor-specific plugin which provides
+compatibility with the HPE Cray Programming Environment's PMI. It is intended to
+be used in applications built with this environment on HPE Cray machines.</p>
+<p>The plugin is named <i>cray_shasta</i> (Shasta was the first Cray
+architecture this plugin supported) and built by default in all Slurm
+installations. Its availability is shown by running the following command:</p>
+
+<pre>
+$ srun --mpi=list
+MPI plugin types are...
+	cray_shasta
+	none
+</pre>
+
+<p>The Cray PMI plugin will use some reserved ports for its communication. These
+ports are configurable by using <i>--resv-ports</i> option on the command line
+with <b>srun</b>, or by setting <i>MpiParams=ports</i>=[<i>port_range</i>]
+in your slurm.conf. The first port listed in this option will be used as the
+PMI control port, defined by Cray as the <b>PMI_CONTROL_PORT</b> environment
+variable. There cannot be more than one application launched in the same node
+using the same <b>PMI_CONTROL_PORT</b>.</p>
+
+<p>This plugin does not support MPMD/heterogeneous jobs and it requires
+<i>libpals >= 0.2.8</i>.</p>
+
+<p style="text-align:center;">Last modified 13 September 2022</p>
 
 <!--#include virtual="footer.txt"-->
