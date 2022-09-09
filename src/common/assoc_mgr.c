@@ -3582,6 +3582,69 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern int assoc_mgr_update_object(void *x, void *arg)
+{
+	slurmdb_update_object_t *object = x;
+	bool locked = *(bool *)arg;
+	int rc = SLURM_SUCCESS;
+
+	if (!object->objects || !list_count(object->objects))
+		return rc;
+
+	switch(object->type) {
+	case SLURMDB_MODIFY_USER:
+	case SLURMDB_ADD_USER:
+	case SLURMDB_REMOVE_USER:
+	case SLURMDB_ADD_COORD:
+	case SLURMDB_REMOVE_COORD:
+		rc = assoc_mgr_update_users(object, locked);
+		break;
+	case SLURMDB_ADD_ASSOC:
+	case SLURMDB_MODIFY_ASSOC:
+	case SLURMDB_REMOVE_ASSOC:
+	case SLURMDB_REMOVE_ASSOC_USAGE:
+		rc = assoc_mgr_update_assocs(object, locked);
+		break;
+	case SLURMDB_ADD_QOS:
+	case SLURMDB_MODIFY_QOS:
+	case SLURMDB_REMOVE_QOS:
+	case SLURMDB_REMOVE_QOS_USAGE:
+		rc = assoc_mgr_update_qos(object, locked);
+		break;
+	case SLURMDB_ADD_WCKEY:
+	case SLURMDB_MODIFY_WCKEY:
+	case SLURMDB_REMOVE_WCKEY:
+		rc = assoc_mgr_update_wckeys(object, locked);
+		break;
+	case SLURMDB_ADD_RES:
+	case SLURMDB_MODIFY_RES:
+	case SLURMDB_REMOVE_RES:
+		rc = assoc_mgr_update_res(object, locked);
+		break;
+	case SLURMDB_ADD_CLUSTER:
+	case SLURMDB_REMOVE_CLUSTER:
+		/*
+		 * These are used in the accounting_storage
+		 * plugins for rollback purposes, just skip here.
+		 */
+		break;
+	case SLURMDB_ADD_TRES:
+		rc = assoc_mgr_update_tres(object, locked);
+		break;
+	case SLURMDB_UPDATE_FEDS:
+		/* Only handled in the slurmctld. */
+		break;
+	case SLURMDB_UPDATE_NOTSET:
+	default:
+		error("unknown type set in update_object: %d",
+		      object->type);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
+}
+
 /*
  * assoc_mgr_update - update the association manager
  * IN update_list: updates to perform
@@ -3597,58 +3660,7 @@ extern int assoc_mgr_update(List update_list, bool locked)
 	xassert(update_list);
 	itr = list_iterator_create(update_list);
 	while ((object = list_next(itr))) {
-		if (!object->objects || !list_count(object->objects))
-			continue;
-
-		switch(object->type) {
-		case SLURMDB_MODIFY_USER:
-		case SLURMDB_ADD_USER:
-		case SLURMDB_REMOVE_USER:
-		case SLURMDB_ADD_COORD:
-		case SLURMDB_REMOVE_COORD:
-			rc = assoc_mgr_update_users(object, locked);
-			break;
-		case SLURMDB_ADD_ASSOC:
-		case SLURMDB_MODIFY_ASSOC:
-		case SLURMDB_REMOVE_ASSOC:
-		case SLURMDB_REMOVE_ASSOC_USAGE:
-			rc = assoc_mgr_update_assocs(object, locked);
-			break;
-		case SLURMDB_ADD_QOS:
-		case SLURMDB_MODIFY_QOS:
-		case SLURMDB_REMOVE_QOS:
-		case SLURMDB_REMOVE_QOS_USAGE:
-			rc = assoc_mgr_update_qos(object, locked);
-			break;
-		case SLURMDB_ADD_WCKEY:
-		case SLURMDB_MODIFY_WCKEY:
-		case SLURMDB_REMOVE_WCKEY:
-			rc = assoc_mgr_update_wckeys(object, locked);
-			break;
-		case SLURMDB_ADD_RES:
-		case SLURMDB_MODIFY_RES:
-		case SLURMDB_REMOVE_RES:
-			rc = assoc_mgr_update_res(object, locked);
-			break;
-		case SLURMDB_ADD_CLUSTER:
-		case SLURMDB_REMOVE_CLUSTER:
-			/* These are used in the accounting_storage
-			   plugins for rollback purposes, just skip here.
-			*/
-			break;
-		case SLURMDB_ADD_TRES:
-			rc = assoc_mgr_update_tres(object, locked);
-			break;
-		case SLURMDB_UPDATE_FEDS:
-			/* Only handled in the slurmctld. */
-			break;
-		case SLURMDB_UPDATE_NOTSET:
-		default:
-			error("unknown type set in "
-			      "update_object: %d",
-			      object->type);
-			break;
-		}
+		assoc_mgr_update_object(object, &locked);
 	}
 	list_iterator_destroy(itr);
 	return rc;
