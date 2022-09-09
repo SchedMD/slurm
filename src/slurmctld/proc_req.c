@@ -5259,7 +5259,6 @@ static void _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 
 static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 {
-	static int active_rpc_cnt = 0;
 	int rc = SLURM_SUCCESS;
 	accounting_update_msg_t *update_ptr =
 		(accounting_update_msg_t *) msg->data;
@@ -5297,27 +5296,10 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	 */
 	slurm_send_rc_msg(msg, rc);
 
-	/*
-	 * We only want one of these running at a time or we could get some
-	 * interesting locking scenarios.  Meaning we could get into a situation
-	 * if multiple were running to have both the assoc_mgr locks locked in
-	 * one threads as well as the slurmctld locks locked and then waiting of
-	 * the assoc_mgr locks in another.  Usually this wouldn't be an issue
-	 * though some systems looking up user names could be fairly heavy.  If
-	 * you are looking for hundreds you could make the slurmctld
-	 * unresponsive in the mean time.  Throttling this to only 1 update at a
-	 * time should minimize this situation.
-	 */
-	if (!msg->conn)
-		_throttle_start(&active_rpc_cnt);
-
 	/* Signal acct_update_thread to process list */
 	slurm_mutex_lock(&slurmctld_config.acct_update_lock);
 	slurm_cond_broadcast(&slurmctld_config.acct_update_cond);
 	slurm_mutex_unlock(&slurmctld_config.acct_update_lock);
-
-	if (!msg->conn)
-		_throttle_fini(&active_rpc_cnt);
 
 	END_TIMER2("_slurm_rpc_accounting_update_msg");
 
