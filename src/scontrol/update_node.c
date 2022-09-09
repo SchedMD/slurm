@@ -152,7 +152,9 @@ scontrol_update_node (int argc, char **argv)
 			node_msg.reason = reason_str;
 			update_cnt++;
 		} else if (!xstrncasecmp(tag, "ResumeAfter", MAX(tag_len, 1))) {
-			if (parse_uint32(val, &node_msg.resume_after)) {
+			if (!xstrcmp(val, "-1")) {
+			    node_msg.resume_after = INFINITE;
+			} else if (parse_uint32(val, &node_msg.resume_after)) {
 				exit_code = 1;
 				error("Invalid value %s for ResumeAfter",
 				      argv[i]);

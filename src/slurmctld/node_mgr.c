@@ -255,6 +255,7 @@ static void _dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer)
 	pack32  (dump_node_ptr->tmp_disk, buffer);
 	pack32  (dump_node_ptr->reason_uid, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
+	pack_time(dump_node_ptr->resume_after, buffer);
 	pack_time(dump_node_ptr->boot_req_time, buffer);
 	pack_time(dump_node_ptr->power_save_req_time, buffer);
 	pack_time(dump_node_ptr->last_response, buffer);
@@ -309,7 +310,7 @@ extern int load_all_node_state ( bool state_only )
 	uint32_t tmp_disk, name_len, weight = 0;
 	uint32_t reason_uid = NO_VAL;
 	time_t boot_req_time = 0, reason_time = 0, last_response = 0;
-	time_t power_save_req_time = 0;
+	time_t power_save_req_time = 0, resume_after = 0;
 
 	/*
 	 * cpu_spec_list and core_spec_cnt are only restored for dynamic nodes,
@@ -392,6 +393,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack32(&tmp_disk, buffer);
 			safe_unpack32(&reason_uid, buffer);
 			safe_unpack_time(&reason_time, buffer);
+			safe_unpack_time(&resume_after, buffer);
 			safe_unpack_time(&boot_req_time, buffer);
 			safe_unpack_time(&power_save_req_time, buffer);
 			safe_unpack_time(&last_response, buffer);
@@ -750,6 +752,11 @@ extern int load_all_node_state ( bool state_only )
 					down_nodes = hostlist_create(
 							node_name);
 			}
+
+			if (resume_after &&
+			    (IS_NODE_DOWN(node_ptr) ||
+			     IS_NODE_DRAINED(node_ptr)))
+				node_ptr->resume_after = resume_after;
 
 			node_ptr->last_response = last_response;
 			node_ptr->boot_req_time = boot_req_time;
@@ -1418,7 +1425,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	node_record_t *node_ptr = NULL;
 	char *this_node_name = NULL, *tmp_feature, *orig_features_act = NULL;
 	hostlist_t host_list, hostaddr_list = NULL, hostname_list = NULL;
-	uint32_t base_state = 0, node_flags, state_val;
+	uint32_t base_state = 0, node_flags, state_val, resume_after = NO_VAL;
 	time_t now = time(NULL);
 
 	if (update_node_msg->node_names == NULL ) {
@@ -1606,12 +1613,47 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					xstrdup(update_node_msg->comment);
 		}
 
-		/* No accounting update if node state and reason are unchange */
+		if ((update_node_msg->resume_after != NO_VAL) &&
+		    ((update_node_msg->node_state == NODE_STATE_DOWN) ||
+		     (update_node_msg->node_state == NODE_STATE_DRAIN))) {
+			if (update_node_msg->resume_after == INFINITE)
+				resume_after = 0;
+			else
+				resume_after =
+					now + update_node_msg->resume_after;
+		}
+
 		state_val = update_node_msg->node_state;
-		if (_equivalent_node_state(node_ptr, state_val) &&
-		    !xstrcmp(node_ptr->reason, update_node_msg->reason)) {
-			free(this_node_name);
-			continue;
+		if (_equivalent_node_state(node_ptr, state_val)) {
+			/* Update resume time if another equivalent update */
+			if (resume_after != NO_VAL) {
+				node_ptr->resume_after = resume_after;
+				info("update_node: node %s will be resumed on %lu",
+				     this_node_name, node_ptr->resume_after);
+			}
+
+			/*
+			 * No accounting update if node state and reason are
+			 * unchanged
+			 */
+			if(!xstrcmp(node_ptr->reason,
+				    update_node_msg->reason)) {
+				free(this_node_name);
+				continue;
+			}
+		} else if (resume_after != NO_VAL) {
+			/* Set resume time for the 1st time */
+			node_ptr->resume_after = resume_after;
+			info("update_node: node %s will be resumed on %lu",
+			     this_node_name, node_ptr->resume_after);
+		} else if (node_ptr->resume_after) {
+			/*
+			 * Reset resume time if the state updates to another
+			 * different from down or drain
+			 */
+			node_ptr->resume_after = 0;
+			info("update_node: ResumeAfter reset for node %s after a state change",
+			     this_node_name);
 		}
 
 		if ((update_node_msg -> reason) &&
@@ -3055,6 +3097,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 				node_ptr->last_busy = now;
 			}
 			node_ptr->next_state = NO_VAL;
+			node_ptr->resume_after = 0;
 			bit_clear(rs_node_bitmap, node_ptr->index);
 
 			info("node %s returned to service",
@@ -3625,6 +3668,7 @@ static void _node_did_resp(node_record_t *node_ptr)
 	      !xstrcmp(node_ptr->reason, "Not responding")))) {
 		node_ptr->last_busy = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
+		node_ptr->resume_after = 0;
 		info("node_did_resp: node %s returned to service",
 		     node_ptr->name);
 		trigger_node_up(node_ptr);
