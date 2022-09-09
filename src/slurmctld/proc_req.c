@@ -5257,29 +5257,6 @@ static void _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
-static int _accounting_update_msg_for_each(void *x, void *arg)
-{
-	slurmdb_update_object_t *object = x;
-	int rc = SLURM_SUCCESS;
-	bool locked = false;
-
-	switch (object->type) {
-	case SLURMDB_UPDATE_FEDS:
-#if HAVE_SYS_PRCTL_H
-		if (prctl(PR_SET_NAME, "fedmgr", NULL, NULL, NULL) < 0){
-			error("%s: cannot set my name to %s %m",
-			      __func__, "fedmgr");
-		}
-#endif
-		fed_mgr_update_feds(object);
-		break;
-	default:
-		rc = assoc_mgr_update_object(x, &locked);
-	}
-
-	return rc;
-}
-
 static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
@@ -5301,12 +5278,23 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 		return;
 	}
 
-	/* Send message back to the caller letting him know we got it.
-	   There is no need to wait since the end result would be the
-	   same if we wait or not since the update has already
-	   happened in the database.
-	*/
+	/*
+	 * Before we send an rc we are transfering the update_list to a common
+	 * list to avoid the potential of messages from the dbd getting out of
+	 * order. The list lock here should protect us here as we only access
+	 * this list in list_transfer and list_delete_all.
+	 */
+	xassert(slurmctld_config.acct_update_list);
+	list_transfer(slurmctld_config.acct_update_list,
+		      update_ptr->update_list);
 
+	/*
+	 * Send message back to the caller letting him know we got it.
+	 * Since we have the update list in the order we got it we should be
+	 * good to respond.  There should be no need to wait since the end
+	 * result would be the same if we wait or not since the update has
+	 * already happened in the database.
+	 */
 	slurm_send_rc_msg(msg, rc);
 
 	/*
@@ -5323,9 +5311,10 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	if (!msg->conn)
 		_throttle_start(&active_rpc_cnt);
 
-	(void) list_for_each(update_ptr->update_list,
-			     _accounting_update_msg_for_each,
-			     NULL);
+	/* Signal acct_update_thread to process list */
+	slurm_mutex_lock(&slurmctld_config.acct_update_lock);
+	slurm_cond_broadcast(&slurmctld_config.acct_update_cond);
+	slurm_mutex_unlock(&slurmctld_config.acct_update_lock);
 
 	if (!msg->conn)
 		_throttle_fini(&active_rpc_cnt);

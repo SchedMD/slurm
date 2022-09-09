@@ -244,6 +244,7 @@ static int          _init_tres(void);
 static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char **argv);
 static void *       _purge_files_thread(void *no_data);
+static void *_acct_update_thread(void *no_data);
 static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _restore_job_dependencies(void);
@@ -767,6 +768,13 @@ int main(int argc, char **argv)
 		slurm_thread_create(&slurmctld_config.thread_id_purge_files,
 				    _purge_files_thread, NULL);
 
+		/*
+		 * create attached thread for purging completed job files
+		 */
+		slurm_thread_create(&slurmctld_config.thread_id_acct_update,
+				    _acct_update_thread, NULL);
+
+
 		if (sched_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
 		/*
@@ -788,10 +796,15 @@ int main(int argc, char **argv)
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
+		slurm_mutex_lock(&slurmctld_config.acct_update_lock);
+		slurm_cond_broadcast(&slurmctld_config.acct_update_cond);
+		slurm_mutex_unlock(&slurmctld_config.acct_update_lock);
+		pthread_join(slurmctld_config.thread_id_acct_update, NULL);
 		slurmctld_config.thread_id_purge_files = (pthread_t) 0;
 		slurmctld_config.thread_id_sig  = (pthread_t) 0;
 		slurmctld_config.thread_id_rpc  = (pthread_t) 0;
 		slurmctld_config.thread_id_save = (pthread_t) 0;
+		slurmctld_config.thread_id_acct_update = (pthread_t) 0;
 
 		/* kill all scripts running by the slurmctld */
 		track_script_flush();
@@ -918,6 +931,7 @@ int main(int argc, char **argv)
 	/* purge remaining data structures */
 	group_cache_purge();
 	license_free();
+	FREE_NULL_LIST(slurmctld_config.acct_update_list);
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	slurm_cred_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
@@ -1062,6 +1076,11 @@ static void  _init_config(void)
 	}
 
 	memset(&slurmctld_config, 0, sizeof(slurmctld_config_t));
+	FREE_NULL_LIST(slurmctld_config.acct_update_list);
+	slurmctld_config.acct_update_list =
+		list_create(slurmdb_destroy_update_object);
+	slurm_mutex_init(&slurmctld_config.acct_update_lock);
+	slurm_cond_init(&slurmctld_config.acct_update_cond, NULL);
 	slurm_cond_init(&slurmctld_config.backup_finish_cond, NULL);
 	slurmctld_config.boot_time      = time(NULL);
 	slurmctld_config.daemonize      = DEFAULT_DAEMONIZE;
@@ -3527,6 +3546,45 @@ static void *_purge_files_thread(void *no_data)
 		}
 	}
 	slurm_mutex_unlock(&purge_thread_lock);
+	return NULL;
+}
+
+static int _acct_update_list_for_each(void *x, void *arg)
+{
+	slurmdb_update_object_t *object = x;
+	bool locked = false;
+
+	switch (object->type) {
+	case SLURMDB_UPDATE_FEDS:
+#if HAVE_SYS_PRCTL_H
+		if (prctl(PR_SET_NAME, "fedmgr", NULL, NULL, NULL) < 0){
+			error("%s: cannot set my name to %s %m",
+			      __func__, "fedmgr");
+		}
+#endif
+		fed_mgr_update_feds(object);
+		break;
+	default:
+		(void) assoc_mgr_update_object(x, &locked);
+	}
+
+	/* Always delete it */
+	return 1;
+}
+
+static void *_acct_update_thread(void *no_data)
+{
+	slurm_mutex_lock(&slurmctld_config.acct_update_lock);
+	while (!slurmctld_config.shutdown_time) {
+		slurm_cond_wait(&slurmctld_config.acct_update_cond,
+				&slurmctld_config.acct_update_lock);
+
+		(void) list_delete_all(slurmctld_config.acct_update_list,
+				       _acct_update_list_for_each,
+				       NULL);
+	}
+	slurm_mutex_unlock(&slurmctld_config.acct_update_lock);
+
 	return NULL;
 }
 

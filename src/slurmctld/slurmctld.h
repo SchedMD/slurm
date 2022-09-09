@@ -131,6 +131,9 @@
 \*****************************************************************************/
 
 typedef struct slurmctld_config {
+	List acct_update_list;
+	pthread_cond_t acct_update_cond;
+	pthread_mutex_t acct_update_lock;
 	pthread_cond_t backup_finish_cond; /* use thread_count_lock */
 	time_t	boot_time;
 	int	daemonize;
@@ -145,6 +148,7 @@ typedef struct slurmctld_config {
 	slurm_cred_ctx_t cred_ctx;
 	pthread_cond_t thread_count_cond;
 	pthread_mutex_t thread_count_lock;
+	pthread_t thread_id_acct_update;
 	pthread_t thread_id_main;
 	pthread_t thread_id_save;
 	pthread_t thread_id_sig;
