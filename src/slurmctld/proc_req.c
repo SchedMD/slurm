@@ -5257,6 +5257,29 @@ static void _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
+static int _accounting_update_msg_for_each(void *x, void *arg)
+{
+	slurmdb_update_object_t *object = x;
+	int rc = SLURM_SUCCESS;
+	bool locked = false;
+
+	switch (object->type) {
+	case SLURMDB_UPDATE_FEDS:
+#if HAVE_SYS_PRCTL_H
+		if (prctl(PR_SET_NAME, "fedmgr", NULL, NULL, NULL) < 0){
+			error("%s: cannot set my name to %s %m",
+			      __func__, "fedmgr");
+		}
+#endif
+		fed_mgr_update_feds(object);
+		break;
+	default:
+		rc = assoc_mgr_update_object(x, &locked);
+	}
+
+	return rc;
+}
+
 static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
@@ -5299,25 +5322,11 @@ static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 	 */
 	if (!msg->conn)
 		_throttle_start(&active_rpc_cnt);
-	if (update_ptr->update_list && list_count(update_ptr->update_list)) {
-		slurmdb_update_object_t *object;
 
-		slurmdb_update_type_t fed_type = SLURMDB_UPDATE_FEDS;
-		if ((object = list_find_first(
-			     update_ptr->update_list,
-			     slurmdb_find_update_object_in_list,
-			     &fed_type))) {
-#if HAVE_SYS_PRCTL_H
-			if (prctl(PR_SET_NAME, "fedmgr", NULL, NULL, NULL) < 0){
-				error("%s: cannot set my name to %s %m",
-				      __func__, "fedmgr");
-			}
-#endif
-			fed_mgr_update_feds(object);
-		}
+	(void) list_for_each(update_ptr->update_list,
+			     _accounting_update_msg_for_each,
+			     NULL);
 
-		rc = assoc_mgr_update(update_ptr->update_list, 0);
-	}
 	if (!msg->conn)
 		_throttle_fini(&active_rpc_cnt);
 
