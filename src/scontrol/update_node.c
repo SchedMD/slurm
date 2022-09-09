@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "slurm/slurm.h"
+#include "src/common/proc_args.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/uid.h"
 
@@ -127,39 +128,8 @@ scontrol_update_node (int argc, char **argv)
 			node_msg.gres = val;
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "Weight", MAX(tag_len,1)) == 0) {
-			/* Logic borrowed from function _handle_uint32 */
-			char *endptr;
-			unsigned long num;
-			errno = 0;
-			num = strtoul(val, &endptr, 0);
-			if ((endptr[0] == 'k') || (endptr[0] == 'K')) {
-				num *= 1024;
-				endptr++;
-			}
-			if ((num == 0 && errno == EINVAL)
-        		            || (*endptr != '\0')) {
-				if ((xstrcasecmp(val, "UNLIMITED") == 0) ||
-				    (xstrcasecmp(val, "INFINITE")  == 0)) {
-					num = INFINITE;
-				} else {
-					error("Weight value (%s) is not a "
-					      "valid number", val);
-					break;
-				}
-			} else if (errno == ERANGE) {
-				error("Weight value (%s) is out of range",
-				      val);
+			if (parse_uint32(val, &node_msg.weight))
 				break;
-			} else if (val[0] == '-') {
-				error("Weight value (%s) is less than zero",
-				      val);
-				break;
-			} else if (num > 0xfffffff0) {
-				error("Weight value (%s) is greater than %u",
-					val, 0xfffffff0);
-				break;
-			}
-			node_msg.weight = num;
 			update_cnt++;
 		} else if (!xstrncasecmp(tag, "Comment", MAX(tag_len, 2))) {
 			node_msg.comment = val;
