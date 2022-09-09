@@ -471,7 +471,7 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 		error("_build_select_struct: build_job_resources: %m");
 
 	for (int i = 0, j = 0, k = -1;
-	     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i)); i++) {
+	     (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
 		node_cpus = _get_total_cpus(i);
 		job_resrcs_ptr->cpus[j] = node_cpus;
 		if ((k == -1) ||
