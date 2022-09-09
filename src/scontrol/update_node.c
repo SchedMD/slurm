@@ -151,6 +151,14 @@ scontrol_update_node (int argc, char **argv)
 
 			node_msg.reason = reason_str;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "ResumeAfter", MAX(tag_len, 1))) {
+			if (parse_uint32(val, &node_msg.resume_after)) {
+				exit_code = 1;
+				error("Invalid value %s for ResumeAfter",
+				      argv[i]);
+				return -1;
+			}
+			update_cnt++;
 		} else if (xstrncasecmp(tag, "State", MAX(tag_len, 1)) == 0) {
 			if (xstrncasecmp(val, "NoResp",
 				        MAX(val_len, 3)) == 0) {
@@ -245,6 +253,14 @@ scontrol_update_node (int argc, char **argv)
 		exit_code = 1;
 		fprintf(stderr, "You must specify a reason when DOWNING or "
 			"DRAINING a node. Request denied\n");
+		goto done;
+	}
+
+	if ((node_msg.resume_after != NO_VAL) &&
+	    (node_msg.node_state != NODE_STATE_DOWN) &&
+	    (node_msg.node_state != NODE_STATE_DRAIN)) {
+		exit_code = 1;
+		fprintf(stderr, "You can only specify a resume time when DOWNING or DRAINING a node. Request denied\n");
 		goto done;
 	}
 

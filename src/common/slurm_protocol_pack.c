@@ -951,6 +951,7 @@ _pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
 		packstr(msg->node_names, buffer);
 		pack32(msg->node_state, buffer);
 		packstr(msg->reason, buffer);
+		pack32(msg->resume_after, buffer);
 		pack32(msg->weight, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->comment, buffer);
@@ -992,6 +993,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->node_names, buffer);
 		safe_unpack32(&tmp_ptr->node_state, buffer);
 		safe_unpackstr(&tmp_ptr->reason, buffer);
+		safe_unpack32(&tmp_ptr->resume_after, buffer);
 		safe_unpack32(&tmp_ptr->weight, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->comment, buffer);

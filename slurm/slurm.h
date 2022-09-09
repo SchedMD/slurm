@@ -3081,6 +3081,8 @@ typedef struct slurm_update_node_msg {
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	uint32_t reason_uid;	/* user ID of sending (needed if user
 				 * root is sending message) */
+	uint32_t resume_after;	/* automatically resume DOWN or DRAINED node
+				 * after this amount of seconds */
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
 
