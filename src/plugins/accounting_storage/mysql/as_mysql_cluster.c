@@ -1150,12 +1150,17 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		else
 			xstrcat(extra, " where (");
 
+		xstrfmtcat(extra,
+			   "(CONVERT(SUBSTRING_INDEX(tres,'%d=',-1),"
+			   "UNSIGNED INTEGER)",
+			   TRES_CPU);
+
 		if (event_cond->cpus_max) {
-			xstrfmtcat(extra, "count between %u and %u)",
+			xstrfmtcat(extra, " between %u and %u))",
 				   event_cond->cpus_min, event_cond->cpus_max);
 
 		} else {
-			xstrfmtcat(extra, "count='%u')",
+			xstrfmtcat(extra, "='%u'))",
 				   event_cond->cpus_min);
 
 		}

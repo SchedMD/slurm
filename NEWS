@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacct -I option.
  -- Prevent jobs from being scheduled on future nodes.
  -- Fix memory leak in slurmd happening on reconfigure when CPUSpecList used.
+ -- Fix sacctmgr show event [min|max]cpus.
 
 * Changes in Slurm 22.05.3
 ==========================
