@@ -171,9 +171,9 @@ def main(argv=None):
             body = sections[2]
             footer = ''.join(sections[3:])
 
-            fatals = re.findall(r'(?ms)^\[[^\]]+\][ \[]+Fatal[ \]:]+(.*?) \(fail[^\)]+\)$', body)
-            errors = re.findall(r'(?ms)^\[[^\]]+\][ \[]+Error[ \]:]+(.*?) \(subfail[^\)]+\)$', body)
-            warnings = re.findall(r'(?ms)^\[[^\]]+\][ \[]+Warning[ \]:]+((?:(?!Warning).)*) \((?:sub)?skip[^\)]+\)$', body)
+            fatals = re.findall(r'(?ms)\[[^\]]+\][ \[]+Fatal[ \]:]+(.*?) \(fail[^\)]+\)$', body)
+            errors = re.findall(r'(?ms)\[[^\]]+\][ \[]+Error[ \]:]+(.*?) \(subfail[^\)]+\)$', body)
+            warnings = re.findall(r'(?ms)\[[^\]]+\][ \[]+Warning[ \]:]+((?:(?!Warning).)*) \((?:sub)?skip[^\)]+\)$', body)
             if fatals:
                 test_dict['reason'] = fatals[0]
             elif errors:
