@@ -3654,15 +3654,11 @@ extern int assoc_mgr_update_object(void *x, void *arg)
 extern int assoc_mgr_update(List update_list, bool locked)
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator itr = NULL;
-	slurmdb_update_object_t *object = NULL;
 
 	xassert(update_list);
-	itr = list_iterator_create(update_list);
-	while ((object = list_next(itr))) {
-		assoc_mgr_update_object(object, &locked);
-	}
-	list_iterator_destroy(itr);
+	(void) list_for_each(update_list,
+			     assoc_mgr_update_object,
+			     &locked);
 	return rc;
 }
 
