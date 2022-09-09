@@ -154,6 +154,13 @@ static int _tot_wait (struct timeval *start_time)
 	return msec_delay;
 }
 
+static void _kill_pg(pid_t pid)
+{
+	killpg(pid, SIGTERM);
+	usleep(10000);
+	killpg(pid, SIGKILL);
+}
+
 extern char *run_command(run_command_args_t *args)
 {
 	int i, new_wait, resp_size = 0, resp_offset = 0;
@@ -247,7 +254,6 @@ extern char *run_command(run_command_args_t *args)
 		slurm_mutex_unlock(&proc_count_mutex);
 	} else if (!args->turnoff_output) {
 		bool send_terminate = true;
-		char *wait_str;
 		struct pollfd fds;
 		struct timeval tstart;
 		resp_size = 1024;
@@ -309,6 +315,7 @@ extern char *run_command(run_command_args_t *args)
 			} else if (i < 0) {
 				if (errno == EAGAIN)
 					continue;
+				send_terminate = false;
 				error("%s: read(%s): %m", __func__,
 				      args->script_path);
 				break;
@@ -320,13 +327,22 @@ extern char *run_command(run_command_args_t *args)
 				}
 			}
 		}
-		/* Only send SIGTERM if the script isn't exiting normally. */
-		if (send_terminate)
-			killpg(cpid, SIGTERM);
-		wait_str = xstrdup_printf("SIGTERM %s", args->script_type);
-		run_command_waitpid_timeout(wait_str, cpid, args->status,
-					    10, NULL);
-		xfree(wait_str);
+		/* Kill immediately if the script isn't exiting normally. */
+		if (send_terminate) {
+			_kill_pg(cpid);
+			waitpid(cpid, args->status, 0);
+		} else {
+			/*
+			 * If the STDOUT is closed from the script we may reach
+			 * this point without any input in pfd[0], so just wait
+			 * for the process here until args->max_wait.
+			 */
+			run_command_waitpid_timeout(args->script_type,
+						    cpid, args->status,
+						    args->max_wait,
+						    _tot_wait(&tstart),
+						    args->tid, args->timed_out);
+		}
 		close(pfd[0]);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
@@ -347,16 +363,18 @@ extern char *run_command(run_command_args_t *args)
  */
 extern int run_command_waitpid_timeout(
 	const char *name, pid_t pid, int *pstatus, int timeout_ms,
-	bool *timed_out)
+	int elapsed_ms, pthread_t tid, bool *timed_out)
 {
 	int max_delay = 1000;		 /* max delay between waitpid calls */
 	int delay = 10;			 /* initial delay */
 	int rc;
 	int options = WNOHANG;
 	int save_timeout_ms = timeout_ms;
+	bool killed_pg = false;
 
 	if (timeout_ms <= 0 || timeout_ms == NO_VAL16)
 		options = 0;
+	timeout_ms -= elapsed_ms;
 
 	while ((rc = waitpid (pid, pstatus, options)) <= 0) {
 		if (rc < 0) {
@@ -364,12 +382,28 @@ extern int run_command_waitpid_timeout(
 				continue;
 			error("waitpid: %m");
 			return -1;
+		} else if (command_shutdown) {
+			error("%s: killing %s on shutdown",
+			      __func__, name);
+			_kill_pg(pid);
+			killed_pg = true;
+			options = 0;
+		} else if (tid && track_script_killed(tid, 0, false)) {
+			/*
+			 * Pass zero as the status to track_script_killed() to
+			 * know if this script exists in track_script and bail
+			 * if it does not.
+			 */
+			_kill_pg(pid);
+			killed_pg = true;
+			options = 0;
 		} else if (timeout_ms <= 0) {
 			error("%s%stimeout after %d ms: killing pgid %d",
 			      name != NULL ? name : "",
 			      name != NULL ? ": " : "",
 			      save_timeout_ms, pid);
-			killpg(pid, SIGKILL);
+			_kill_pg(pid);
+			killed_pg = true;
 			options = 0;
 			if (timed_out)
 				*timed_out = true;
@@ -380,6 +414,7 @@ extern int run_command_waitpid_timeout(
 		}
 	}
 
-	killpg(pid, SIGKILL);  /* kill children too */
+	if (!killed_pg)
+		_kill_pg(pid); /* kill children too */
 	return rc;
 }

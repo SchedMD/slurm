@@ -73,6 +73,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacct -I option.
  -- Prevent jobs from being scheduled on future nodes.
  -- Fix memory leak in slurmd happening on reconfigure when CPUSpecList used.
+ -- Fix sacctmgr show event [min|max]cpus.
+ -- Fix regression in 22.05.0rc1 where a prolog or epilog that redirected stdout
+    to a file could get erroneously killed, resulting in job launch failure
+    (for the prolog) and the node being drained.
 
 * Changes in Slurm 22.05.3
 ==========================

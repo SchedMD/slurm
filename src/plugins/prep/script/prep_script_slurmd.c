@@ -408,7 +408,7 @@ static int _run_spank_job_script(const char *mode, char **env, uint32_t job_id)
 		timeout = -1;
 	else
 		timeout = slurm_conf.prolog_epilog_timeout * 1000;
-	if (run_command_waitpid_timeout(mode, cpid, &status, timeout,
+	if (run_command_waitpid_timeout(mode, cpid, &status, timeout, 0, 0,
 					&timed_out) < 0) {
 		/*
 		 * waitpid returned an error and set errno;
