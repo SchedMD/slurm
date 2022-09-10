@@ -841,6 +841,15 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DATA_TOO_LARGE,
 	  "ESLURM_DATA_TOO_LARGE",
 	  "DATA too large to handle"},
+	{ ESLURM_DATA_FLAGS_INVALID_TYPE,
+	  "ESLURM_DATA_FLAGS_INVALID_TYPE",
+	  "Data parser expects flags to be a list"},
+	{ ESLURM_DATA_FLAGS_INVALID,
+	  "ESLURM_DATA_FLAGS_INVALID",
+	  "Data parser unable to parse invalid flag"},
+	{ ESLURM_DATA_EXPECTED_LIST,
+	  "ESLURM_DATA_EXPECTED_LIST",
+	  "Data parser expected a list"},
 
 	/* container  errors */
 	{ ESLURM_CONTAINER_NOT_CONFIGURED,
