@@ -597,6 +597,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushnumber(L, job_desc->het_job_offset);
 	} else if (!xstrcmp(name, "partition")) {
 		lua_pushstring(L, job_desc->partition);
+	} else if (!xstrcmp(name, "prefer")) {
+		lua_pushstring(L, job_desc->prefer);
 	} else if (!xstrcmp(name, "power_flags")) {
 		lua_pushnumber(L, job_desc->power_flags);
 	} else if (!xstrcmp(name, "pn_min_cpus")) {
@@ -887,6 +889,11 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->partition);
 		if (strlen(value_str))
 			job_desc->partition = xstrdup(value_str);
+	} else if (!xstrcmp(name, "prefer")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->prefer);
+		if (strlen(value_str))
+			job_desc->prefer = xstrdup(value_str);
 	} else if (!xstrcmp(name, "power_flags")) {
 		job_desc->power_flags = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "pn_min_cpus")) {

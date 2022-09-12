@@ -83,6 +83,7 @@ documents those changes that are of interest to users and administrators.
     for if the system has swap or not.
  -- cgroup/v1 - Add check for swap when running OOM check after task
     termination.
+ -- job_submit/lua - add --prefer support
 
 * Changes in Slurm 22.05.3
 ==========================
