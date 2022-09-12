@@ -2930,7 +2930,8 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 extern int slurmdb_send_accounting_update_persist(
 	List update_list, slurm_persist_conn_t *persist_conn)
 {
-	slurm_msg_t req = {0}, resp = {0};
+	slurm_msg_t req;
+	slurm_msg_t resp;
 	accounting_update_msg_t msg = {0};
 	int rc;
 
@@ -2946,10 +2947,12 @@ extern int slurmdb_send_accounting_update_persist(
 
 	msg.update_list = update_list;
 	msg.rpc_version = req.protocol_version = persist_conn->version;
+	slurm_msg_t_init(&req);
 	req.msg_type = ACCOUNTING_UPDATE_MSG;
 	req.conn = persist_conn;
 	req.data = &msg;
 
+	/* resp is inited in slurm_send_recv_msg */
 	rc = slurm_send_recv_msg(0, &req, &resp, 0);
 
 	if (rc != SLURM_SUCCESS) {
