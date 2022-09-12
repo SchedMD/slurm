@@ -642,7 +642,7 @@ single srun command (e.g.
 <p>The sattach command can only be used to attach to a single component of
 a heterogeneous job at a time.</p>
 
-<p>License requests only work correctly when made on the first component
+<p>License requests are only allowed on the first component
 job (e.g.
 "sbatch -L ansys:2 : script.sh").<p>
 

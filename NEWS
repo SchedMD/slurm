@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
     based on end time, rather than start or submission times.
  -- Add strigger --draining and -R/--resume options.
  -- Allow updating SLURM_NTASKS environment variable (from scontrol update job).
+ -- Limit het job license requests to the leader job only.
 
 * Changes in Slurm 22.05.4
 ==========================

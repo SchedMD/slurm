@@ -1313,8 +1313,8 @@ To submit jobs using remote licenses, those served by the slurmdbd, specify
 the name of the server providing the licenses.
 For example "\-\-license=nastran@slurmdb:12".
 
-\fBNOTE\fR: When submitting heterogeneous jobs, license requests only work
-correctly when made on the first component job.
+\fBNOTE\fR: When submitting heterogeneous jobs, license requests
+may only be made on the first component job.
 For example "sbatch \-L ansys:2 : script.sh".
 .IP
 

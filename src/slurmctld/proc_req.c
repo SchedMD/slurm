@@ -1148,7 +1148,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 		/* Locks are for job_submit plugin use */
 		job_desc_msg->het_job_offset = het_job_offset;
 		error_code = validate_job_create_req(job_desc_msg, msg->auth_uid,
-						     &job_submit_user_msg[inx++]);
+						     &job_submit_user_msg[inx]);
 		if (error_code)
 			break;
 
@@ -1164,6 +1164,17 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 			 */
 			job_desc_msg->mail_type = 0;
 			xfree(job_desc_msg->mail_user);
+
+			/* license request allowed only on leader */
+			if (job_desc_msg->licenses) {
+				xstrfmtcat(job_submit_user_msg[inx],
+					   "%slicense request allowed only on leader job",
+					   job_submit_user_msg[inx] ? "\n" : "");
+				error("REQUEST_HET_JOB_ALLOCATION from uid=%u, license request on non-leader job",
+				      msg->auth_uid);
+				error_code = ESLURM_INVALID_LICENSES;
+				break;
+			}
 		}
 		job_desc_msg->het_job_offset = het_job_offset;
 		error_code = job_allocate(job_desc_msg, false, false, NULL,
@@ -1189,6 +1200,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 		job_ptr->het_job_id     = het_job_id;
 		job_ptr->het_job_offset = het_job_offset++;
 		list_append(submit_job_list, job_ptr);
+		inx++;
 	}
 	list_iterator_destroy(iter);
 
@@ -3851,6 +3863,19 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		}
 
 		if (error_code != SLURM_SUCCESS) {
+			reject_job = true;
+			break;
+		}
+
+		/* license request allowed only on leader */
+		if (het_job_offset && job_desc_msg->licenses) {
+			xstrfmtcat(job_submit_user_msg,
+				   "%s%d: license request allowed only on leader job",
+				   job_submit_user_msg ? "\n" : "",
+				   het_job_offset);
+			error("REQUEST_SUBMIT_BATCH_HET_JOB from uid=%u, license request on non-leader job",
+			      msg->auth_uid);
+			error_code = ESLURM_INVALID_LICENSES;
 			reject_job = true;
 			break;
 		}
