@@ -39,7 +39,7 @@ noinst_LTLIBRARIES = libopenapi_ref.la
 
 openapi_dbv0_0_39_la_SOURCES = \
 	accounts.c associations.c api.h api.c cluster.c \
-	config.c diag.c jobs.c qos.c parse.c parse.h \
+	config.c diag.c jobs.c qos.c \
 	tres.c users.c wckeys.c
 
 openapi_dbv0_0_39_la_LDFLAGS = $(PLUGIN_FLAGS)

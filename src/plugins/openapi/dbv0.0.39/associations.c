@@ -34,13 +34,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
-#include <stdint.h>
-
-#include "slurm/slurm.h"
-#include "slurm/slurmdb.h"
-
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
@@ -57,10 +50,18 @@
 
 #include "src/plugins/openapi/dbv0.0.39/api.h"
 
+#define FOREACH_ASSOC_MAGIC 0x13113114
+
 typedef struct {
 	size_t offset;
 	char *parameter;
 } assoc_parameter_t;
+
+typedef struct {
+	int magic; /* FOREACH_ASSOC_MAGIC */
+	ctxt_t *ctxt;
+	data_t *dassocs;
+} foreach_assoc_t;
 
 static const assoc_parameter_t assoc_parameters[] = {
 	{
@@ -81,28 +82,25 @@ static const assoc_parameter_t assoc_parameters[] = {
 	},
 };
 
-static int _populate_assoc_cond(data_t *errors, data_t *query,
-				slurmdb_assoc_cond_t *assoc_cond)
+static int _populate_assoc_cond(ctxt_t *ctxt, slurmdb_assoc_cond_t *assoc_cond)
 {
-	if (!query)
+	if (!ctxt->query)
 		return SLURM_SUCCESS;
 
 	for (int i = 0; i < ARRAY_SIZE(assoc_parameters); i++) {
 		char *value = NULL;
 		const assoc_parameter_t *ap = &assoc_parameters[i];
 		List *list = ((void *) assoc_cond) + ap->offset;
-		int rc = data_retrieve_dict_path_string(query, ap->parameter,
-							&value);
+		int rc = data_retrieve_dict_path_string(ctxt->query,
+							ap->parameter, &value);
 
 		if (rc == ESLURM_DATA_PATH_NOT_FOUND) {
 			/* parameter not in query */
 			continue;
 		} else if (rc) {
-			char *err = xstrdup_printf("Invalid format for query parameter %s",
-						   ap->parameter);
-			rc = resp_error(errors, rc, err, "HTTP query");
-			xfree(err);
-			return rc;
+			return resp_error(ctxt, rc, __func__,
+					"Invalid format for query parameter %s",
+					ap->parameter);
 		}
 
 		*list = list_create(xfree_ptr);
@@ -124,85 +122,79 @@ static int _foreach_delete_assoc(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _dump_assoc_cond(data_t *resp, void *auth, data_t *errors,
-			    slurmdb_assoc_cond_t *cond, bool only_one)
+static int _foreach_assoc(void *x, void *arg)
 {
-	int rc = SLURM_SUCCESS;
-	List assoc_list = NULL;
-	List tres_list = NULL;
-	List qos_list = NULL;
-	slurmdb_qos_cond_t qos_cond = {
-		.with_deleted = 1,
-	};
-	slurmdb_tres_cond_t tres_cond = {
-		.with_deleted = 1,
-	};
+	int rc;
+	slurmdb_assoc_rec_t *assoc = x;
+	foreach_assoc_t *args = arg;
 
-	if (!(rc = db_query_list(errors, auth, &assoc_list,
-				 slurmdb_associations_get, cond)) &&
-	    !(rc = db_query_list(errors, auth, &tres_list, slurmdb_tres_get,
-				 &tres_cond)) &&
-	    !(rc = db_query_list(errors, auth, &qos_list, slurmdb_qos_get,
-				 &qos_cond))) {
-		ListIterator itr = list_iterator_create(assoc_list);
-		data_t *dassocs = data_set_list(
-			data_key_set(resp, "associations"));
-		slurmdb_assoc_rec_t *assoc;
-		parser_env_t penv = {
-			.g_tres_list = tres_list,
-			.g_qos_list = qos_list,
-			.g_assoc_list = assoc_list,
-		};
+	xassert(args->magic == FOREACH_ASSOC_MAGIC);
+	xassert(args->ctxt->magic == MAGIC_CTXT);
 
-		if (only_one && list_count(assoc_list) > 1) {
-			rc = resp_error(
-				errors, ESLURM_REST_INVALID_QUERY,
-				"Ambiguous request: More than 1 association would have been dumped.",
-				NULL);
-		}
-
-		while (!rc && (assoc = list_next(itr)))
-			rc = dump(PARSE_ASSOC, assoc,
-				  data_set_dict(data_list_append(dassocs)),
-				  &penv);
-
-		list_iterator_destroy(itr);
+	if ((rc = DATA_DUMP(args->ctxt->parser, ASSOC, *assoc,
+			    data_list_append(args->dassocs)))) {
+		resp_error(args->ctxt, rc, __func__,
+			   "Unable to dump association id#%u account=%s cluster=%s partition=%s user=%s",
+			   assoc->id, assoc->acct, assoc->cluster,
+			   assoc->partition, assoc->user);
+		return SLURM_ERROR;
 	}
 
-	FREE_NULL_LIST(assoc_list);
-	FREE_NULL_LIST(tres_list);
-	FREE_NULL_LIST(qos_list);
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 
-static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
-			 slurmdb_assoc_cond_t *assoc_cond, bool only_one)
+static void _dump_assoc_cond(ctxt_t *ctxt, slurmdb_assoc_cond_t *cond,
+			     bool only_one)
+{
+	List assoc_list = NULL;
+	foreach_assoc_t args = {
+		.magic = FOREACH_ASSOC_MAGIC,
+		.ctxt = ctxt,
+	};
+
+	xassert(!data_key_get(ctxt->resp, "associations"));
+
+	if (db_query_list(ctxt, &assoc_list, slurmdb_associations_get, cond))
+		goto cleanup;
+
+	xassert(!data_key_get(ctxt->resp, "associations"));
+	args.dassocs = data_set_list(data_key_set(ctxt->resp, "associations"));
+
+	if (only_one && (list_count(assoc_list) > 1)) {
+		resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_QUERY, __func__,
+			   "Ambiguous request: More than 1 association would have been dumped.");
+		goto cleanup;
+	}
+
+	(void) list_for_each(assoc_list, _foreach_assoc, &args);
+
+cleanup:
+	FREE_NULL_LIST(assoc_list);
+}
+
+static void _delete_assoc(ctxt_t *ctxt, slurmdb_assoc_cond_t *assoc_cond,
+			  bool only_one)
 {
 	int rc = SLURM_SUCCESS;
 	List removed = NULL;
-	data_t *drem = data_set_list(data_key_set(resp, "removed_associations"));
+	data_t *drem =
+		data_set_list(data_key_set(ctxt->resp, "removed_associations"));
 
-	rc = db_query_list(errors, auth, &removed, slurmdb_associations_remove,
+	rc = db_query_list(ctxt, &removed, slurmdb_associations_remove,
 			   assoc_cond);
 	if (rc) {
-		(void) resp_error(errors, rc, "remove associations failed",
-				  "slurmdb_associations_remove");
+		resp_error(ctxt, rc, __func__, "remove associations failed");
 	} else if (only_one && list_count(removed) > 1) {
-		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				"ambiguous request: More than 1 association would have been deleted.",
-				"slurmdb_associations_remove");
+		resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_MODIFY, __func__,
+				"ambiguous request: More than 1 association would have been deleted.");
 	} else if (list_for_each(removed, _foreach_delete_assoc, drem) < 0) {
-		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				"unable to list deleted associations",
-				"_foreach_delete_assoc");
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "unable to list deleted associations");
 	} else if (!rc) {
-		rc = db_query_commit(errors, auth);
+		db_query_commit(ctxt);
 	}
 
 	FREE_NULL_LIST(removed);
-
-	return rc;
 }
 
 /* Turn *dst into a TRES string that will turn submitted *dst to match mod */
@@ -260,16 +252,6 @@ static void _diff_tres(char **dst, char *mod)
 	FREE_NULL_LIST(dst_list);
 	FREE_NULL_LIST(mod_list);
 }
-
-#if SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(23, 2, 0)
-// TODO: remove in 23.02 as already defined in macros.h
-#define SWAP(x, y)              \
-do {                            \
-	__typeof__(x) b = x;    \
-	x = y;                  \
-	y = b;                  \
-} while (0)
-#endif
 
 /*
  * Create a diff of the current association and the requested destination state.
@@ -372,96 +354,54 @@ static slurmdb_assoc_rec_t *_diff_assoc(slurmdb_assoc_rec_t *assoc,
 	return assoc;
 }
 
-#define MAGIC_FOREACH_UP_ASSOC 0xbaed2a12
-typedef struct {
-	int magic;
-	List tres_list;
-	List qos_list;
-	data_t *errors;
-	rest_auth_context_t *auth;
-} foreach_update_assoc_t;
-
-static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
+static int _foreach_update_assoc(void *x, void *arg)
 {
-	foreach_update_assoc_t *args = arg;
-	data_t *errors = args->errors;
-	slurmdb_assoc_rec_t *assoc = NULL;
-	parser_env_t penv = {
-		.g_tres_list = args->tres_list,
-		.g_qos_list = args->qos_list,
-		.auth = args->auth,
-	};
 	int rc;
+	ctxt_t *ctxt = arg;
+	slurmdb_assoc_rec_t *assoc = x;
+	slurmdb_assoc_cond_t cond = {
+		/* all values are symlinks so don't double free */
+		.acct_list = list_create(NULL),
+		.cluster_list = list_create(NULL),
+		.partition_list = list_create(NULL),
+		.user_list = list_create(NULL),
+	};
 	List assoc_list = NULL;
-	slurmdb_assoc_cond_t cond = {0};
-	data_t *query_errors = data_new();
 
-	xassert(args->magic == MAGIC_FOREACH_UP_ASSOC);
+	xassert(ctxt->magic == MAGIC_CTXT);
 
-	if (data_get_type(data) != DATA_TYPE_DICT) {
-		resp_error(errors, ESLURM_REST_INVALID_QUERY,
-			   "Associations must be a list of dictionaries", NULL);
-		rc = DATA_FOR_EACH_FAIL;
-		goto cleanup;
-	}
+	/*
+	 * slurmdbd will treat an empty list as a wildcard so we must place
+	 * empty string values to for unset fields
+	 */
+	list_append(cond.acct_list, (assoc->acct ? assoc->acct : ""));
+	list_append(cond.cluster_list, (assoc->cluster ? assoc->cluster : ""));
+	list_append(cond.partition_list,
+		    (assoc->partition ? assoc->partition : ""));
+	list_append(cond.user_list, (assoc->user ? assoc->user : ""));
 
-	assoc = xmalloc(sizeof(*assoc));
-	slurmdb_init_assoc_rec(assoc, false);
+	/* first query is an existence check and we don't care about errors */
+	if ((rc = db_query_list(ctxt, &assoc_list, slurmdb_associations_get,
+				&cond)) ||
+	    !assoc_list || list_is_empty(assoc_list)) {
+		debug("%s: [%s] adding association request: acct=%s cluster=%s partition=%s user=%s existence_check[%d]:%s",
+		      __func__, ctxt->id, assoc->acct, assoc->cluster,
+		      assoc->partition, assoc->user, rc, slurm_strerror(rc));
 
-	if (parse(PARSE_ASSOC, assoc, data, args->errors, &penv)) {
-		rc = DATA_FOR_EACH_FAIL;
-		goto cleanup;
-	}
-
-	cond.acct_list = list_create(NULL);
-	cond.cluster_list = list_create(NULL);
-	cond.partition_list = list_create(NULL);
-	cond.user_list = list_create(NULL);
-
-	if (assoc->acct)
-		list_append(cond.acct_list, assoc->acct);
-	else
-		list_append(cond.acct_list, "");
-
-	if (assoc->cluster)
-		list_append(cond.cluster_list, assoc->cluster);
-	else
-		list_append(cond.cluster_list, "");
-
-	if (assoc->partition)
-		list_append(cond.partition_list, assoc->partition);
-	else
-		list_append(cond.partition_list, "");
-
-	if (assoc->user)
-		list_append(cond.user_list, assoc->user);
-	else
-		list_append(cond.user_list, "");
-
-	if ((rc = db_query_list(query_errors, args->auth, &assoc_list,
-				 slurmdb_associations_get, &cond)) ||
-	    list_is_empty(assoc_list)) {
 		FREE_NULL_LIST(assoc_list);
-		assoc_list = list_create(slurmdb_destroy_assoc_rec);
+		/* avoid double free of assoc */
+		assoc_list = list_create(NULL);
 		list_append(assoc_list, assoc);
-
-		debug("%s: adding association request: acct=%s cluster=%s partition=%s user=%s",
-		      __func__, assoc->acct, assoc->cluster, assoc->partition,
-		      assoc->user);
-
-		assoc = NULL;
-		rc = db_query_rc(errors, args->auth, assoc_list,
-				 slurmdb_associations_add);
+		db_query_rc(ctxt, assoc_list, slurmdb_associations_add);
 	} else if (list_count(assoc_list) > 1) {
-		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				"ambiguous modify request",
-				"slurmdb_associations_get");
+		rc = resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_MODIFY, __func__,
+				"ambiguous association modify request");
 	} else {
 		slurmdb_assoc_rec_t *diff_assoc;
 
-		debug("%s: modifying association request: acct=%s cluster=%s partition=%s user=%s",
-		      __func__, assoc->acct, assoc->cluster, assoc->partition,
-		      assoc->user);
+		debug("%s: [%s] modifying association request: acct=%s cluster=%s partition=%s user=%s",
+		      __func__, ctxt->id, assoc->acct, assoc->cluster,
+		      assoc->partition, assoc->user);
 
 		/*
 		 * slurmdb requires that the modify request will be a list of
@@ -469,62 +409,45 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 		 */
 		diff_assoc = _diff_assoc(list_pop(assoc_list), assoc);
 
-		rc = db_modify_rc(errors, args->auth, &cond, diff_assoc,
+		rc = db_modify_rc(ctxt, &cond, diff_assoc,
 				  slurmdb_associations_modify);
 
 		slurmdb_destroy_assoc_rec(diff_assoc);
 	}
-
-cleanup:
 
 	FREE_NULL_LIST(assoc_list);
 	FREE_NULL_LIST(cond.acct_list);
 	FREE_NULL_LIST(cond.cluster_list);
 	FREE_NULL_LIST(cond.partition_list);
 	FREE_NULL_LIST(cond.user_list);
-	FREE_NULL_DATA(query_errors);
-	slurmdb_destroy_assoc_rec(assoc);
 
-	return rc ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
+	return rc ? SLURM_ERROR : SLURM_SUCCESS;
 }
 
-static int _update_associations(const char *context_id, data_t *query,
-				data_t *resp, void *auth, bool commit)
+static void _update_associations(ctxt_t *ctxt, bool commit)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
-	slurmdb_tres_cond_t tres_cond = {
-		.with_deleted = 1,
-	};
-	slurmdb_qos_cond_t qos_cond = {
-		.with_deleted = 1,
-	};
-	foreach_update_assoc_t args = {
-		.magic = MAGIC_FOREACH_UP_ASSOC,
-		.auth = auth,
-		.errors = errors,
-	};
-	data_t *dassoc = get_query_key_list("associations", errors, query);
+	data_t *parent_path = NULL;
+	data_t *dassoc = get_query_key_list("associations", ctxt, &parent_path);
+	List assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
 	if (!dassoc) {
-		debug("%s: [%s] ignoring empty or non-existant users array",
-		      __func__, context_id);
-	} else if ((rc = db_query_list(errors, auth, &args.tres_list,
-				       slurmdb_tres_get, &tres_cond))) {
-		/* rc already set - do nothing */
-	} else if ((rc = db_query_list(errors, auth, &args.qos_list,
-				       slurmdb_qos_get, &qos_cond))) {
-		/* rc already set - do nothing */
-	} else if (data_list_for_each(dassoc, _foreach_update_assoc, &args) <
-		   0) {
-		rc = ESLURM_REST_INVALID_QUERY;
-	} else if (commit)
-		rc = db_query_commit(errors, auth);
+		resp_warn(ctxt, __func__,
+			  "ignoring empty or non-existant associations array");
+		goto cleanup;
+	}
 
-	FREE_NULL_LIST(args.tres_list);
-	FREE_NULL_LIST(args.qos_list);
+	if (DATA_PARSE(ctxt->parser, ASSOC_LIST, assoc_list, dassoc,
+		       parent_path))
+		goto cleanup;
 
-	return rc;
+	if (list_for_each(assoc_list, _foreach_update_assoc, ctxt) < 0)
+		goto cleanup;
+
+	if (commit)
+		db_query_commit(ctxt);
+
+cleanup:
+	FREE_NULL_LIST(assoc_list);
 }
 
 static int op_handler_association(const char *context_id,
@@ -532,19 +455,24 @@ static int op_handler_association(const char *context_id,
 				  data_t *parameters, data_t *query, int tag,
 				  data_t *resp, void *auth)
 {
-	int rc;
-	data_t *errors = populate_response_format(resp);
 	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
 
-	if ((rc = _populate_assoc_cond(errors, query, assoc_cond)))
+	if (ctxt->rc && _populate_assoc_cond(ctxt, assoc_cond))
 		/* no-op - already logged */;
-	if (method == HTTP_REQUEST_GET)
-		rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, true);
+	else if (method == HTTP_REQUEST_GET)
+		_dump_assoc_cond(ctxt, assoc_cond, true);
 	else if (method == HTTP_REQUEST_DELETE)
-		rc = _delete_assoc(resp, auth, errors, assoc_cond, true);
+		_delete_assoc(ctxt, assoc_cond, true);
+	else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+	}
 
 	slurmdb_destroy_assoc_cond(assoc_cond);
-	return rc;
+	return fini_connection(ctxt);
 }
 
 extern int op_handler_associations(const char *context_id,
@@ -552,22 +480,26 @@ extern int op_handler_associations(const char *context_id,
 				   data_t *parameters, data_t *query, int tag,
 				   data_t *resp, void *auth)
 {
-	int rc;
-	data_t *errors = populate_response_format(resp);
 	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
 
-	if ((rc = _populate_assoc_cond(errors, query, assoc_cond)))
+	if (ctxt->rc || _populate_assoc_cond(ctxt, assoc_cond))
 		/* no-op - already logged */;
-	if (method == HTTP_REQUEST_GET)
-		rc = _dump_assoc_cond(resp, auth, errors, assoc_cond, false);
+	else if (method == HTTP_REQUEST_GET)
+		_dump_assoc_cond(ctxt, assoc_cond, false);
 	else if (method == HTTP_REQUEST_POST)
-		rc = _update_associations(context_id, query, resp, auth,
-					  (tag != CONFIG_OP_TAG));
+		_update_associations(ctxt, (tag != CONFIG_OP_TAG));
 	else if (method == HTTP_REQUEST_DELETE)
-		rc = _delete_assoc(resp, auth, errors, assoc_cond, false);
+		_delete_assoc(ctxt, assoc_cond, false);
+	else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+	}
 
 	slurmdb_destroy_assoc_cond(assoc_cond);
-	return rc;
+	return fini_connection(ctxt);
 }
 
 extern void init_op_associations(void)

@@ -34,13 +34,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
-#include <stdint.h>
-
-#include "slurm/slurm.h"
-#include "slurm/slurmdb.h"
-
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
@@ -73,35 +66,39 @@ static int _op_handler_config(const char *context_id,
 			      data_t *query, int tag, data_t *resp,
 			      void *auth)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
 
-	if ((method != HTTP_REQUEST_GET) && (method != HTTP_REQUEST_POST))
-		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				  "invalid method requested", NULL);
+	if (ctxt->rc)
+		goto cleanup;
 
-	for (int i = 0; (!rc) && (i < ARRAY_SIZE(ops)); i++) {
-		int rc2 = ops[i](context_id, method, parameters, query, tag,
-				 resp, auth);
-
-		/*
-		 * ignore empty results as there may simply be nothing
-		 * there to dump.
-		 **/
-		if (rc2 != ESLURM_REST_EMPTY_RESULT)
-			rc = rc2;
+	if ((method != HTTP_REQUEST_GET) && (method != HTTP_REQUEST_POST)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+		goto cleanup;
 	}
 
-	if (method == HTTP_REQUEST_POST) {
-		if (!rc)
-			rc = db_query_commit(errors, auth);
-		else
-			rc = resp_error(errors, rc,
-					"refusing to commit after error",
-					NULL);
+	for (int i = 0; (i < ARRAY_SIZE(ops)); i++) {
+		int rc = ops[i](context_id, method, parameters, query, tag,
+				resp, auth);
+
+		/* Ignore empty results */
+		if (rc == ESLURM_REST_EMPTY_RESULT)
+			rc = SLURM_SUCCESS;
+
+		if (rc) {
+			if (!ctxt->rc)
+				ctxt->rc = rc;
+			break;
+		}
 	}
 
-	return rc;
+	if (!ctxt->rc && (method == HTTP_REQUEST_POST))
+		db_query_commit(ctxt);
+
+cleanup:
+	return fini_connection(ctxt);
 }
 
 extern void init_op_config(void)

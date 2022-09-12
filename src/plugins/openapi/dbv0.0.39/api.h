@@ -37,33 +37,66 @@
 #ifndef SLURMRESTD_OPENAPI_DB_V0039
 #define SLURMRESTD_OPENAPI_DB_V0039
 
-#include "config.h"
-
-#include "slurm/slurm.h"
-#include "slurm/slurmdb.h"
-
 #include "src/common/data.h"
+#include "src/common/http.h"
 
-#include "src/plugins/openapi/dbv0.0.39/parse.h"
+#include "src/interfaces/data_parser.h"
+#include "src/interfaces/openapi.h"
 
+#define DATA_VERSION "v0.0.39"
+#define DATA_PLUGIN "data_parser/" DATA_VERSION
 #define CONFIG_OP_TAG 0xfffffffe
+#define MAGIC_CTXT 0xaffb0ffe
+
+typedef struct {
+	int magic; /* MAGIC_CTXT */
+	int rc;
+	data_t *errors;
+	data_t *warnings;
+	data_parser_t *parser;
+	const char *id; /* string identifying client (usually IP) */
+	void *db_conn;
+	http_request_method_t method;
+	data_t *parameters;
+	data_t *query;
+	data_t *resp;
+} ctxt_t;
 
 /*
- * Fill out boilerplate for every data response
- * RET ptr to errors dict
+ * Initiate connection context.
+ *
+ * This function is expected to be called in the callback handlers from
+ * operations router. It will setup everything required for handling the client
+ * request including tracking errors and warnings.
+ *
+ * IN context_id - string ident for client
+ * IN method - HTTP method of request
+ * IN parameters - data list of client supplied HTTP parameters
+ * IN query - data list of client supplied HTTP querys
+ * IN tag - callback assigned tag
+ * IN auth - auth ptr reference
  */
-extern data_t *populate_response_format(data_t *resp);
+extern ctxt_t *init_connection(const char *context_id,
+			       http_request_method_t method, data_t *parameters,
+			       data_t *query, int tag, data_t *resp,
+			       void *auth);
+
+/* provides RC for connection and releases connection context */
+extern int fini_connection(ctxt_t *ctxt);
 
 /*
- * Add a response error to errors
- * IN errors - data list to append a new error
+ * Add a response error
+ * IN ctxt - connection context
  * IN why - description of error or NULL
  * IN error_code - Error number
  * IN source - Where the error was generated
  * RET value of error_code
  */
-extern int resp_error(data_t *errors, int error_code, const char *why,
-		      const char *source);
+extern int resp_error(ctxt_t *ctxt, int error_code, const char *source,
+		      const char *why, ...)
+	__attribute__((format(printf, 4, 5)));
+extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
+	__attribute__((format(printf, 3, 4)));
 
 /* ------------ generic typedefs for slurmdbd queries --------------- */
 
@@ -86,98 +119,99 @@ typedef List (*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
  * Macro helper for Query database API for List output.
  * Converts the function name to string.
  */
-#define db_query_list(errors, auth, list, func, cond)                        \
-	db_query_list_funcname(errors, auth, list, \
-			       (db_list_query_func_t)func, cond, #func)
+#define db_query_list(ctxt, list, func, cond)                                 \
+	db_query_list_funcname(ctxt, list, (db_list_query_func_t) func, cond, \
+			       XSTRINGIFY(func), __func__)
 
 /*
  * Query database API for List output
- * IN errors - data list to append a new error
- * IN auth - connection authentication attr
+ * IN ctxt - connection context
  * IN/OUT list - ptr to List ptr to populate with result (on success)
  * IN func - function ptr to call
  * IN cond - conditional to pass to func
  * IN func_name - string of func name (for errors)
  * RET SLURM_SUCCESS or error
  */
-extern int db_query_list_funcname(data_t *errors, rest_auth_context_t *auth,
-				  List *list, db_list_query_func_t func,
-				  void *cond, const char *func_name);
+extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
+				  db_list_query_func_t func, void *cond,
+				  const char *func_name, const char *caller);
 
 /*
  * Macro helper for Query database API for rc output.
  * Converts the function name to string.
  */
-#define db_query_rc(errors, auth, list, func) \
-	db_query_rc_funcname(errors, auth, list, (db_rc_query_func_t)func, \
-			     #func)
+#define db_query_rc(ctxt, list, func)                               \
+	db_query_rc_funcname(ctxt, list, (db_rc_query_func_t) func, \
+			     XSTRINGIFY(func), __func__)
 
 /*
  * Query database API for List output
- * IN errors - data list to append a new error
- * IN auth - connection authentication attr
+ * IN ctxt - connection context
  * IN list - ptr to List to pass to func
  * IN func - function ptr to call
  * IN func_name - string of func name (for errors)
  * RET SLURM_SUCCESS or error
  */
-extern int db_query_rc_funcname(data_t *errors,
-				rest_auth_context_t *auth, List list,
-				db_rc_query_func_t func,
-				const char *func_name);
+extern int db_query_rc_funcname(ctxt_t *ctxt, List list,
+				db_rc_query_func_t func, const char *func_name,
+				const char *caller);
 
 /*
  * Macro helper for modify database API for List output.
  * Converts the function name to string.
  */
-#define db_modify_rc(errors, auth, cond, obj, func)                  \
-	db_modify_rc_funcname(errors, auth, cond, obj,               \
-			      (db_rc_modify_func_t)func, #func)
+#define db_modify_rc(ctxt, cond, obj, func)                                \
+	db_modify_rc_funcname(ctxt, cond, obj, (db_rc_modify_func_t) func, \
+			      XSTRINGIFY(func), __func__)
 
 /*
  * Modify object in database API
- * IN errors - data list to append a new error
- * IN auth - connection authentication attr
+ * IN ctxt - connection context
  * IN cond - ptr to filter conditional to pass to func
  * IN obj - ptr to obj to pass to func
  * IN func - function ptr to call
  * IN func_name - string of func name (for errors)
  * RET SLURM_SUCCESS or error
  */
-extern int db_modify_rc_funcname(data_t *errors, rest_auth_context_t *auth,
-				 void *cond, void *obj,
+extern int db_modify_rc_funcname(ctxt_t *ctxt, void *cond, void *obj,
 				 db_rc_modify_func_t func,
-				 const char *func_name);
+				 const char *func_name, const char *caller);
+
+#define db_query_commit(ctxt) db_query_commit_funcname(ctxt, __func__)
 
 /*
  * Request database API to commit connection
- * IN errors - data list to append a new error
- * IN auth - connection authentication attr
- * RET SLURM_SUCCESS or error
+ * IN ctxt - connection context
  */
-extern int db_query_commit(data_t *errors, rest_auth_context_t *auth);
+extern void db_query_commit_funcname(ctxt_t *ctxt, const char *caller);
 
 /* ------------ handlers for user requests --------------- */
+
+#define get_str_param(path, ctxt) get_str_param_funcname(path, ctxt, __func__)
 
 /*
  * Retrieve parameter
  * IN path - Path to parameter in query
- * IN errors - data list to append a new error
- * IN parameters - paramets from http request
+ * IN ctxt - connection context
  * RET string or NULL on error
  */
-extern char *get_str_param(const char *path, data_t *errors,
-			   data_t *parameters);
+extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
+				    const char *caller);
+
+#define get_query_key_list(path, ctxt, parent_path) \
+	get_query_key_list_funcname(path, ctxt, parent_path, __func__)
 
 /*
  * Retrieve List from query list
- * IN path - Path to parameter in query
- * IN errors - data list to append a new error
+ * IN path - Path to parameter in query (case insensitive)
+ * IN ctxt - connection context
  * IN query - query from http request
+ * IN/OUT parent_path - data to init to hold parse path
  * RET List ptr or NULL on error
  */
-extern data_t *get_query_key_list(const char *path, data_t *errors,
-				   data_t *query);
+extern data_t *get_query_key_list_funcname(const char *path, ctxt_t *ctxt,
+					   data_t **parent_path,
+					   const char *caller);
 
 /* ------------ declarations for each operation --------------- */
 

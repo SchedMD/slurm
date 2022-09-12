@@ -58,169 +58,117 @@
 #include "src/plugins/openapi/dbv0.0.39/api.h"
 
 #define MAGIC_FOREACH_WCKEY 0xb3a2faf2
+
 typedef struct {
-	int magic;
+	int magic; /* MAGIC_FOREACH_WCKEY */
 	data_t *wckeys;
+	ctxt_t *ctxt;
 } foreach_wckey_t;
 
 static int _foreach_wckey(void *x, void *arg)
 {
 	slurmdb_wckey_rec_t *wckey = x;
 	foreach_wckey_t *args = arg;
-	parser_env_t penv = { 0 };
 
 	xassert(args->magic == MAGIC_FOREACH_WCKEY);
+	xassert(args->ctxt->magic == MAGIC_CTXT);
 
-	if (dump(PARSE_WCKEY, wckey,
-		 data_set_dict(data_list_append(args->wckeys)), &penv))
-		return -1;
+	if (DATA_DUMP(args->ctxt->parser, WCKEY, *wckey,
+		      data_list_append(args->wckeys)))
+		return SLURM_ERROR;
 
-	return 1;
+	return SLURM_SUCCESS;
 }
 
-static int _dump_wckeys(data_t *resp, data_t *errors, char *wckey,
-			void *auth)
+static void _dump_wckeys(ctxt_t *ctxt, char *wckey)
 {
-	int rc = SLURM_SUCCESS;
 	slurmdb_wckey_cond_t wckey_cond = {
 		.with_deleted = true,
 	};
 	foreach_wckey_t args = {
 		.magic = MAGIC_FOREACH_WCKEY,
-		.wckeys = data_set_list(data_key_set(resp, "wckeys")),
+		.ctxt = ctxt,
 	};
 	List wckey_list = NULL;
+
+	args.wckeys = data_set_list(data_key_set(ctxt->resp, "wckeys"));
 
 	if (wckey) {
 		wckey_cond.name_list = list_create(NULL);
 		list_append(wckey_cond.name_list, wckey);
 	}
 
-	if (!(rc = db_query_list(errors, auth, &wckey_list, slurmdb_wckeys_get,
-				 &wckey_cond)) &&
-	    (list_for_each(wckey_list, _foreach_wckey, &args) < 0))
-		rc = ESLURM_DATA_CONV_FAILED;
+	if (!db_query_list(ctxt, &wckey_list, slurmdb_wckeys_get,
+			   &wckey_cond) &&
+	    wckey_list)
+		list_for_each(wckey_list, _foreach_wckey, &args);
 
 	FREE_NULL_LIST(wckey_list);
 	FREE_NULL_LIST(wckey_cond.name_list);
-
-	return rc;
 }
-
-#define MAGIC_FOREACH_DEL_WCKEY 0xb3a2faf1
-typedef struct {
-	int magic;
-	data_t *wckeys;
-} foreach_del_wckey_t;
 
 static int _foreach_del_wckey(void *x, void *arg)
 {
 	char *wckey = x;
-	foreach_del_wckey_t *args = arg;
+	data_t *wckeys = arg;
 
-	data_set_string(data_list_append(args->wckeys), wckey);
-	return 1;
+	data_set_string(data_list_append(wckeys), wckey);
+	return SLURM_SUCCESS;
 }
 
-static int _delete_wckey(data_t *resp, data_t *errors, char *wckey,
-			 void *auth)
+static void _delete_wckey(ctxt_t *ctxt)
 {
-	int rc = SLURM_SUCCESS;
+	List wckey_list = NULL;
 	slurmdb_wckey_cond_t wckey_cond = {
 		.with_deleted = true,
-		.name_list = list_create(NULL),
 	};
-	foreach_del_wckey_t args = {
-		.magic = MAGIC_FOREACH_DEL_WCKEY,
-		.wckeys = data_set_list(data_key_set(resp, "deleted_wckeys")),
-	};
-	List wckey_list = NULL;
+	char *wckey = get_str_param("wckey", ctxt);
+	data_t *wckeys =
+		data_set_list(data_key_set(ctxt->resp, "deleted_wckeys"));
 
-	if (!wckey) {
-		rc = ESLURM_REST_EMPTY_RESULT;
+	if (!wckey || !wckey[0]) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "wckey name must be provided for delete operation");
 		goto cleanup;
 	}
 
+	wckey_cond.name_list = list_create(NULL);
 	list_append(wckey_cond.name_list, wckey);
 
-	if (!(rc = db_query_list(errors, auth, &wckey_list,
-				 slurmdb_wckeys_remove, &wckey_cond)))
-		rc = db_query_commit(errors, auth);
+	if (!db_query_list(ctxt, &wckey_list, slurmdb_wckeys_remove,
+			   &wckey_cond))
+		db_query_commit(ctxt);
 
-	if (!rc && (list_for_each(wckey_list, _foreach_del_wckey, &args) < 0))
-		rc = ESLURM_DATA_CONV_FAILED;
+	if (!ctxt->rc && wckey_list) {
+		list_for_each(wckey_list, _foreach_del_wckey, wckeys);
+	}
+
 cleanup:
 	FREE_NULL_LIST(wckey_list);
 	FREE_NULL_LIST(wckey_cond.name_list);
-
-	return rc;
 }
 
-#define MAGIC_FOREACH_UP_WCKEY 0xdabd1019
-typedef struct {
-	int magic;
-	List wckey_list;
-	data_t *errors;
-	rest_auth_context_t *auth;
-} foreach_update_wckey_t;
-
-static data_for_each_cmd_t _foreach_update_wckey(data_t *data, void *arg)
+static void _update_wckeys(ctxt_t *ctxt, bool commit)
 {
-	foreach_update_wckey_t *args = arg;
-	slurmdb_wckey_rec_t *wckey;
-	parser_env_t penv = {
-		.auth = args->auth,
-	};
-
-	xassert(args->magic == MAGIC_FOREACH_UP_WCKEY);
-
-	if (data_get_type(data) != DATA_TYPE_DICT) {
-		data_t *e = data_set_dict(data_list_append(args->errors));
-		data_set_string(data_key_set(e, "field"), "wckey");
-		data_set_string(data_key_set(e, "error"),
-				"each wckey entry must be a dictionary");
-		return DATA_FOR_EACH_FAIL;
-	}
-
-	wckey = xmalloc(sizeof(slurmdb_wckey_rec_t));
-	slurmdb_init_wckey_rec(wckey, false);
-
-	wckey->accounting_list = list_create(slurmdb_destroy_account_rec);
-	(void)list_append(args->wckey_list, wckey);
-
-	if (parse(PARSE_WCKEY, wckey, data, args->errors, &penv))
-		return DATA_FOR_EACH_FAIL;
-
-	return DATA_FOR_EACH_CONT;
-}
-
-static int _update_wckeys(const char *context_id, data_t *query, data_t *resp,
-			  data_t *errors, void *auth, bool commit)
-{
-	int rc = SLURM_SUCCESS;
-	foreach_update_wckey_t args = {
-		.magic = MAGIC_FOREACH_UP_WCKEY,
-		.auth = auth,
-		.errors = errors,
-		.wckey_list = list_create(slurmdb_destroy_wckey_rec),
-	};
-	data_t *dwckeys = get_query_key_list("wckeys", errors, query);
+	data_t *parent_path = NULL;
+	data_t *dwckeys = get_query_key_list("wckeys", ctxt, &parent_path);
+	List wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
 	if (!dwckeys) {
-		debug("%s: [%s] ignoring empty or non-existant wckeys array",
-		      __func__, context_id);
-	} else if (data_list_for_each(dwckeys, _foreach_update_wckey, &args) <
-		   0) {
-		rc = ESLURM_REST_INVALID_QUERY;
-	} else if (!(rc = db_query_rc(errors, auth, args.wckey_list,
-				      slurmdb_wckeys_add)) &&
-		   commit) {
-		rc = db_query_commit(errors, auth);
+		resp_warn(ctxt, __func__,
+			  "ignoring empty or non-existant wckeys array for update");
+		goto cleanup;
 	}
 
-	FREE_NULL_LIST(args.wckey_list);
+	if (DATA_PARSE(ctxt->parser, WCKEY_LIST, wckey_list, dwckeys,
+		       parent_path))
+		goto cleanup;
 
-	return rc;
+	if (!db_query_rc(ctxt, wckey_list, slurmdb_wckeys_add) && commit)
+		db_query_commit(ctxt);
+
+cleanup:
+	FREE_NULL_LIST(wckey_list);
 }
 
 extern int op_handler_wckey(const char *context_id,
@@ -228,20 +176,26 @@ extern int op_handler_wckey(const char *context_id,
 			    data_t *parameters, data_t *query, int tag,
 			    data_t *resp, void *auth)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
-	char *wckey = get_str_param("wckey", errors, parameters);
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
+	char *wckey = get_str_param("wckey", ctxt);
 
-	if (!wckey)
-		rc = ESLURM_REST_INVALID_QUERY;
-	else if (method == HTTP_REQUEST_GET)
-		rc = _dump_wckeys(resp, errors, wckey, auth);
-	else if (!rc && (method == HTTP_REQUEST_DELETE))
-		rc = _delete_wckey(resp, errors, wckey, auth);
-	else
-		rc = ESLURM_REST_INVALID_QUERY;
+	if (ctxt->rc) {
+		/* no-op - already logged */;
+	} else if (!wckey) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "wckey required for singular query");
+	} else if (method == HTTP_REQUEST_GET) {
+		_dump_wckeys(ctxt, wckey);
+	} else if (method == HTTP_REQUEST_DELETE) {
+		_delete_wckey(ctxt);
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+	}
 
-	return rc;
+	return fini_connection(ctxt);
 }
 
 extern int op_handler_wckeys(const char *context_id,
@@ -249,18 +203,22 @@ extern int op_handler_wckeys(const char *context_id,
 			     data_t *query, int tag, data_t *resp,
 			     void *auth)
 {
-	data_t *errors = populate_response_format(resp);
-	int rc = SLURM_SUCCESS;
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
 
-	if (method == HTTP_REQUEST_GET)
-		rc = _dump_wckeys(resp, errors, NULL, auth);
+	if (ctxt->rc)
+		/* no-op - already logged */;
+	else if (method == HTTP_REQUEST_GET)
+		_dump_wckeys(ctxt, NULL);
 	else if (method == HTTP_REQUEST_POST)
-		rc = _update_wckeys(context_id, query, resp, errors, auth,
-				    (tag != CONFIG_OP_TAG));
-	else
-		rc = ESLURM_REST_INVALID_QUERY;
+		_update_wckeys(ctxt, (tag != CONFIG_OP_TAG));
+	else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+	}
 
-	return rc;
+	return fini_connection(ctxt);
 }
 
 extern void init_op_wckeys(void)

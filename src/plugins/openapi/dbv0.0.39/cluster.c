@@ -34,12 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
 #include <stdint.h>
-
-#include "slurm/slurm.h"
-#include "slurm/slurmdb.h"
 
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -58,36 +53,37 @@
 #include "src/plugins/openapi/dbv0.0.39/api.h"
 
 #define MAGIC_FOREACH_CLUSTER 0x2aa2faf2
+#define MAGIC_FOREACH_DEL_CLUSTER 0xa3a2aa3a
+
 typedef struct {
-	int magic;
+	int magic; /* MAGIC_FOREACH_CLUSTER */
 	data_t *clusters;
-	List tres_list;
+	ctxt_t *ctxt;
 } foreach_cluster_t;
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_DEL_CLUSTER */
+	data_t *clusters;
+	ctxt_t *ctxt;
+} foreach_del_cluster_t;
 
 static int _foreach_cluster(void *x, void *arg)
 {
 	slurmdb_cluster_rec_t *cluster = x;
 	foreach_cluster_t *args = arg;
-	parser_env_t penv = {
-		.g_tres_list = args->tres_list,
-	};
 
 	xassert(args->magic == MAGIC_FOREACH_CLUSTER);
+	xassert(args->ctxt->magic == MAGIC_CTXT);
 
-	if (dump(PARSE_CLUSTER_REC, cluster,
-		 data_set_dict(data_list_append(args->clusters)), &penv))
-		return -1;
+	if (DATA_DUMP(args->ctxt->parser, CLUSTER_REC, *cluster,
+		      data_list_append(args->clusters)))
+		return SLURM_ERROR;
 
-	return 1;
+	return SLURM_SUCCESS;
 }
 
-static int _dump_clusters(data_t *resp, data_t *errors, char *cluster,
-			  void *auth)
+static void _dump_clusters(ctxt_t *ctxt, char *cluster)
 {
-	int rc = SLURM_SUCCESS;
-	slurmdb_tres_cond_t tres_cond = {
-		.with_deleted = 1,
-	};
 	slurmdb_cluster_cond_t cluster_cond = {
 		.cluster_list = list_create(NULL),
 		.with_deleted = true,
@@ -96,32 +92,24 @@ static int _dump_clusters(data_t *resp, data_t *errors, char *cluster,
 	};
 	foreach_cluster_t args = {
 		.magic = MAGIC_FOREACH_CLUSTER,
-		.clusters = data_set_list(data_key_set(resp, "clusters")),
+		.ctxt = ctxt,
 	};
 	List cluster_list = NULL;
+
+	args.clusters = data_set_list(data_key_set(ctxt->resp, "clusters"));
 
 	if (cluster)
 		list_append(cluster_cond.cluster_list, cluster);
 
-	if (!(rc = db_query_list(errors, auth, &args.tres_list,
-				 slurmdb_tres_get, &tres_cond)) &&
-	    !(rc = db_query_list(errors, auth, &cluster_list,
-				 slurmdb_clusters_get, &cluster_cond)) &&
-	    (list_for_each(cluster_list, _foreach_cluster, &args) < 0))
-		rc = ESLURM_DATA_CONV_FAILED;
+	if (db_query_list(ctxt, &cluster_list, slurmdb_clusters_get,
+			  &cluster_cond))
+		/* no-op - error already logged */;
+	else
+		list_for_each(cluster_list, _foreach_cluster, &args);
 
 	FREE_NULL_LIST(cluster_list);
 	FREE_NULL_LIST(cluster_cond.cluster_list);
-	FREE_NULL_LIST(args.tres_list);
-
-	return rc;
 }
-
-#define MAGIC_FOREACH_DEL_CLUSTER 0xa3a2aa3a
-typedef struct {
-	int magic;
-	data_t *clusters;
-} foreach_del_cluster_t;
 
 static int _foreach_del_cluster(void *x, void *arg)
 {
@@ -132,131 +120,86 @@ static int _foreach_del_cluster(void *x, void *arg)
 	return 1;
 }
 
-static int _delete_cluster(data_t *resp, data_t *errors, char *cluster,
-			   void *auth)
+static void _delete_cluster(ctxt_t *ctxt, char *cluster)
 {
-	int rc = SLURM_SUCCESS;
 	slurmdb_cluster_cond_t cluster_cond = {
 		.with_deleted = true,
 		.cluster_list = list_create(NULL),
 	};
 	foreach_del_cluster_t args = {
 		.magic = MAGIC_FOREACH_DEL_CLUSTER,
-		.clusters = data_set_list(
-			data_key_set(resp, "deleted_clusters")),
+		.ctxt = ctxt,
 	};
 	List cluster_list = NULL;
 
-	if (!cluster) {
-		rc = ESLURM_REST_EMPTY_RESULT;
+	args.clusters =
+		data_set_list(data_key_set(ctxt->resp, "deleted_clusters"));
+
+	if (!cluster || !cluster[0]) {
+		resp_warn(ctxt, __func__,
+			  "ignoring empty delete cluster request");
 		goto cleanup;
 	}
 
 	list_append(cluster_cond.cluster_list, cluster);
 
-	if (!(rc = db_query_list(errors, auth, &cluster_list,
-				 slurmdb_clusters_remove, &cluster_cond)))
-		rc = db_query_commit(errors, auth);
+	if (!db_query_list(ctxt, &cluster_list, slurmdb_clusters_remove,
+			   &cluster_cond))
+		db_query_commit(ctxt);
 
-	if (!rc &&
-	    (list_for_each(cluster_list, _foreach_del_cluster, &args) < 0))
-		rc = ESLURM_DATA_CONV_FAILED;
+	if (cluster_list)
+		list_for_each(cluster_list, _foreach_del_cluster, &args);
+
 cleanup:
 	FREE_NULL_LIST(cluster_list);
 	FREE_NULL_LIST(cluster_cond.cluster_list);
-
-	return rc;
 }
 
-#define MAGIC_FOREACH_UP_CLUSTER 0xdaba3019
-typedef struct {
-	int magic;
-	List cluster_list;
-	List tres_list;
-	data_t *errors;
-	rest_auth_context_t *auth;
-} foreach_update_cluster_t;
-
-static data_for_each_cmd_t _foreach_update_cluster(data_t *data, void *arg)
+static void _update_clusters(ctxt_t *ctxt, bool commit)
 {
-	foreach_update_cluster_t *args = arg;
-	slurmdb_cluster_rec_t *cluster;
-	parser_env_t penv = {
-		.auth = args->auth,
-		.g_tres_list = args->tres_list,
-	};
+	data_t *parent_path = NULL;
+	data_t *dclusters;
+	List cluster_list = list_create(slurmdb_destroy_cluster_rec);
 
-	xassert(args->magic == MAGIC_FOREACH_UP_CLUSTER);
+	dclusters = get_query_key_list("clusters", ctxt, &parent_path);
 
-	if (data_get_type(data) != DATA_TYPE_DICT) {
-		resp_error(args->errors, ESLURM_REST_INVALID_QUERY,
-			   "each cluster entry must be a dictionary", NULL);
-		return DATA_FOR_EACH_FAIL;
+	if (!dclusters) {
+		resp_warn(ctxt, __func__,
+			  "ignoring non-existant clusters array");
+	} else if (!data_get_list_length(dclusters)) {
+		resp_warn(ctxt, __func__, "ignoring empty clusters array");
+	} else if (DATA_PARSE(ctxt->parser, CLUSTER_REC_LIST, cluster_list,
+			      dclusters, parent_path)) {
+		/* no-op already logged */
+	} else if (!db_query_rc(ctxt, cluster_list, slurmdb_clusters_add) &&
+		   commit) {
+		db_query_commit(ctxt);
 	}
 
-	cluster = xmalloc(sizeof(slurmdb_cluster_rec_t));
-	slurmdb_init_cluster_rec(cluster, false);
-
-	cluster->accounting_list = list_create(
-		slurmdb_destroy_cluster_accounting_rec);
-	(void)list_append(args->cluster_list, cluster);
-
-	if (parse(PARSE_CLUSTER_REC, cluster, data, args->errors, &penv))
-		return DATA_FOR_EACH_FAIL;
-
-	return DATA_FOR_EACH_CONT;
-}
-
-static int _update_clusters(const char *context_id, data_t *query, data_t *resp,
-			    data_t *errors, void *auth, bool commit)
-{
-	int rc = SLURM_SUCCESS;
-	foreach_update_cluster_t args = {
-		.magic = MAGIC_FOREACH_UP_CLUSTER,
-		.auth = auth,
-		.errors = errors,
-		.cluster_list = list_create(slurmdb_destroy_cluster_rec),
-	};
-	slurmdb_tres_cond_t tres_cond = {
-		.with_deleted = 1,
-	};
-	data_t *dclusters = get_query_key_list("clusters", errors, query);
-
-	if (!dclusters || !data_get_list_length(dclusters)) {
-		debug("%s: [%s] ignoring empty or non-existant clusters array",
-		      __func__, context_id);
-	} else if (!(rc = db_query_list(errors, auth, &args.tres_list,
-					slurmdb_tres_get, &tres_cond)) &&
-	    (data_list_for_each(dclusters, _foreach_update_cluster,
-				&args) < 0)) {
-		rc = ESLURM_REST_INVALID_QUERY;
-	} else if (!(rc = db_query_rc(errors, auth, args.cluster_list,
-			       slurmdb_clusters_add)) && commit) {
-		db_query_commit(errors, auth);
-	}
-
-	FREE_NULL_LIST(args.cluster_list);
-	FREE_NULL_LIST(args.tres_list);
-
-	return rc;
+	FREE_NULL_LIST(cluster_list);
 }
 
 extern int op_handler_cluster(const char *context_id,
 			      http_request_method_t method, data_t *parameters,
 			      data_t *query, int tag, data_t *resp, void *auth)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
-	char *cluster = get_str_param("cluster_name", errors, parameters);
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
+	char *cluster = get_str_param("cluster_name", ctxt);
 
-	if (!rc && (method == HTTP_REQUEST_GET))
-		rc = _dump_clusters(resp, errors, cluster, auth);
-	else if (!rc && (method == HTTP_REQUEST_DELETE))
-		rc = _delete_cluster(resp, errors, cluster, auth);
-	else
-		rc = ESLURM_REST_INVALID_QUERY;
+	if (ctxt->rc)
+		/* no-op - already logged */;
+	else if (method == HTTP_REQUEST_GET)
+		_dump_clusters(ctxt, cluster);
+	else if (method == HTTP_REQUEST_DELETE)
+		_delete_cluster(ctxt, cluster);
+	else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+	}
 
-	return rc;
+	return fini_connection(ctxt);
 }
 
 extern int op_handler_clusters(const char *context_id,
@@ -264,18 +207,22 @@ extern int op_handler_clusters(const char *context_id,
 			       data_t *query, int tag, data_t *resp,
 			       void *auth)
 {
-	data_t *errors = populate_response_format(resp);
-	int rc = SLURM_SUCCESS;
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
 
-	if (method == HTTP_REQUEST_GET)
-		rc = _dump_clusters(resp, errors, NULL, auth);
+	if (ctxt->rc)
+		/* no-op - already logged */;
+	else if (method == HTTP_REQUEST_GET)
+		_dump_clusters(ctxt, NULL);
 	else if (method == HTTP_REQUEST_POST)
-		rc = _update_clusters(context_id, query, resp, errors, auth,
-				      (tag != CONFIG_OP_TAG));
-	else
-		rc = ESLURM_REST_INVALID_QUERY;
+		_update_clusters(ctxt, (tag != CONFIG_OP_TAG));
+	else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+	}
 
-	return rc;
+	return fini_connection(ctxt);
 }
 
 extern void init_op_cluster(void)

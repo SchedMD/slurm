@@ -58,48 +58,57 @@
 #include "src/plugins/openapi/dbv0.0.39/api.h"
 
 #define MAGIC_FOREACH_USER 0xa13efef2
+#define MAGIC_QUERY_SEARCH 0x9e8dbee1
+#define MAGIC_USER_COORD 0x8e8dbee1
+
 typedef struct {
-	int magic;
+	int magic; /* MAGIC_FOREACH_USER */
 	data_t *users;
-	List tres_list;
-	List qos_list;
+	ctxt_t *ctxt;
 } foreach_user_t;
 
 typedef struct {
-	data_t *errors;
+	int magic; /* MAGIC_QUERY_SEARCH */
+	ctxt_t *ctxt;
 	slurmdb_user_cond_t *user_cond;
 } foreach_query_search_t;
+
+typedef struct {
+	int magic; /* MAGIC_USER_COORD */
+	List acct_list; /* list of char *'s of names of accounts */
+	slurmdb_user_cond_t user_cond;
+	slurmdb_assoc_cond_t assoc_cond;
+} add_user_coord_t;
 
 static int _foreach_user(void *x, void *arg)
 {
 	slurmdb_user_rec_t *user = x;
 	foreach_user_t *args = arg;
-	parser_env_t penv = {
-		.g_tres_list = args->tres_list,
-		.g_qos_list = args->qos_list,
-	};
 
 	xassert(args->magic == MAGIC_FOREACH_USER);
+	xassert(args->ctxt->magic == MAGIC_CTXT);
 	xassert(user);
 
-	if (dump(PARSE_USER, user, data_set_dict(data_list_append(args->users)),
-		 &penv))
+	if (DATA_DUMP(args->ctxt->parser, USER, *user,
+		      data_list_append(args->users)))
 		return -1;
 	else
 		return 0;
 }
 
-static data_for_each_cmd_t _foreach_query_search(const char *key,
-						 data_t *data,
+static data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 						 void *arg)
 {
 	foreach_query_search_t *args = arg;
-	data_t *errors = args->errors;
+
+	xassert(args->magic == MAGIC_QUERY_SEARCH);
+	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	if (!xstrcasecmp("with_deleted", key)) {
 		if (data_convert_type(data, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
-			resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				   "must be a Boolean", NULL);
+			resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY, key,
+				   "%s must be a Boolean instead of %s", key,
+				   data_type_to_string(data_get_type(data)));
 			return DATA_FOR_EACH_FAIL;
 		}
 
@@ -111,28 +120,22 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 		return DATA_FOR_EACH_CONT;
 	}
 
-	resp_error(errors, ESLURM_REST_INVALID_QUERY, "Unknown query field",
-		   NULL);
+	resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY, key,
+		   "Unknown query field %s", key);
 	return DATA_FOR_EACH_FAIL;
 }
 
-static int _dump_users(data_t *resp, data_t *errors, void *auth, char *user_name,
-		       slurmdb_user_cond_t *user_cond)
+static void _dump_users(ctxt_t *ctxt, char *user_name,
+			slurmdb_user_cond_t *user_cond)
 {
-	int rc = SLURM_SUCCESS;
 	List user_list = NULL;
-	slurmdb_qos_cond_t qos_cond = {
-		.with_deleted = 1,
-	};
-	slurmdb_tres_cond_t tres_cond = {
-		.with_deleted = 1,
-	};
 	foreach_user_t args = {
 		.magic = MAGIC_FOREACH_USER,
-		.users = data_set_list(data_key_set(resp, "users")),
+		.ctxt = ctxt,
 	};
 	slurmdb_assoc_cond_t assoc_cond = { 0 };
 
+	args.users = data_set_list(data_key_set(ctxt->resp, "users"));
 	user_cond->assoc_cond = &assoc_cond;
 	user_cond->with_assocs = true;
 	user_cond->with_coords = true;
@@ -144,150 +147,76 @@ static int _dump_users(data_t *resp, data_t *errors, void *auth, char *user_name
 		list_append(assoc_cond.user_list, user_name);
 	}
 
-	if (!(rc = db_query_list(errors, auth, &user_list, slurmdb_users_get,
-				 user_cond)) &&
-	    !(rc = db_query_list(errors, auth, &args.tres_list,
-				 slurmdb_tres_get, &tres_cond)) &&
-	    !(rc = db_query_list(errors, auth, &args.qos_list, slurmdb_qos_get,
-				 &qos_cond)) &&
-	    (list_for_each(user_list, _foreach_user, &args) < 0))
-		resp_error(errors, ESLURM_DATA_CONV_FAILED, NULL,
-			   "_foreach_user");
+	if (!db_query_list(ctxt, &user_list, slurmdb_users_get, user_cond))
+		list_for_each(user_list, _foreach_user, &args);
 
-	FREE_NULL_LIST(args.tres_list);
-	FREE_NULL_LIST(args.qos_list);
 	FREE_NULL_LIST(user_list);
 	FREE_NULL_LIST(assoc_cond.user_list);
-
-	return rc;
+	user_cond->assoc_cond = NULL;
 }
 
-#define MAGIC_USER_COORD 0x8e8dbee1
-typedef struct {
-	int magic;
-	List acct_list; /* list of char *'s of names of accounts */
-	slurmdb_user_cond_t user_cond;
-	slurmdb_assoc_cond_t assoc_cond;
-} add_user_coord_t;
-
-#define MAGIC_FOREACH_UP_USER 0xdbed1a12
-typedef struct {
-	int magic;
-	List user_list;
-	data_t *errors;
-	rest_auth_context_t *auth;
-} foreach_update_user_t;
-
-static data_for_each_cmd_t _foreach_update_user(data_t *data, void *arg)
-{
-	foreach_update_user_t *args = arg;
-	data_t *errors = args->errors;
-	slurmdb_user_rec_t *user;
-	parser_env_t penv = {
-		.auth = args->auth,
-	};
-
-	xassert(args->magic == MAGIC_FOREACH_UP_USER);
-
-	if (data_get_type(data) != DATA_TYPE_DICT) {
-		resp_error(errors, ESLURM_NOT_SUPPORTED,
-			   "each user entry must be a dictionary", NULL);
-		return DATA_FOR_EACH_FAIL;
-	}
-
-	user = xmalloc(sizeof(slurmdb_user_rec_t));
-	user->assoc_list = list_create(slurmdb_destroy_assoc_rec);
-	user->coord_accts = list_create(slurmdb_destroy_coord_rec);
-
-	if (parse(PARSE_USER, user, data, args->errors, &penv)) {
-		slurmdb_destroy_user_rec(user);
-		return DATA_FOR_EACH_FAIL;
-	} else {
-		(void)list_append(args->user_list, user);
-		return DATA_FOR_EACH_CONT;
-	}
-}
-
-#define MAGIC_USER_COORD_SPLIT_COORD 0x8e8dbee3
-typedef struct {
-	int magic;
-	add_user_coord_t *uc;
-} _foreach_user_coord_split_coord_t;
-
-static int _foreach_user_coord_split_coord(void *x, void *arg)
+static int _foreach_user_split_coord(void *x, void *arg)
 {
 	slurmdb_coord_rec_t *coord = x;
-	_foreach_user_coord_split_coord_t *args = arg;
+	add_user_coord_t *uc = arg;
 
-	xassert(args->magic == MAGIC_USER_COORD_SPLIT_COORD);
-	xassert(args->uc->magic == MAGIC_USER_COORD);
+	xassert(uc->magic == MAGIC_USER_COORD);
 
+	/* ignore inherited coordinators */
 	if (coord->direct)
-		list_append(args->uc->acct_list, xstrdup(coord->name));
+		list_append(uc->acct_list, xstrdup(coord->name));
 
-	return 0;
+	return SLURM_SUCCESS;
 }
-
-#define MAGIC_USER_COORD_SPLIT 0x8e8dbee2
-typedef struct {
-	int magic;
-	List list_coords; /* list of add_user_coord_t */
-} _foreach_user_coord_split_t;
 
 static int _foreach_user_coord_split(void *x, void *arg)
 {
 	slurmdb_user_rec_t *user = x;
-	_foreach_user_coord_split_t *args = arg;
-	add_user_coord_t *uc = NULL;
-	_foreach_user_coord_split_coord_t c_args = {
-		.magic = MAGIC_USER_COORD_SPLIT_COORD,
-	};
+#ifndef NDEBUG
+	List add_coord_list = arg;
+#endif
+	add_user_coord_t *uc;
 
-	xassert(args->magic == MAGIC_USER_COORD_SPLIT);
+	xassert(list_count(add_coord_list) >= 0);
 
 	if (!user->coord_accts || list_is_empty(user->coord_accts))
 		/* nothing to do here */
-		return 0;
+		return SLURM_SUCCESS;
 
-	c_args.uc = uc = xmalloc(sizeof(*uc));
+	uc = xmalloc(sizeof(*uc));
 	uc->magic = MAGIC_USER_COORD;
 	uc->acct_list = list_create(xfree_ptr);
 	uc->user_cond.assoc_cond = &uc->assoc_cond;
 	uc->assoc_cond.user_list = list_create(xfree_ptr);
 	list_append(uc->assoc_cond.user_list, xstrdup(user->name));
 
-	if (list_for_each(user->coord_accts, _foreach_user_coord_split_coord,
-			  &c_args) < 0)
-		return -1;
+	if (list_for_each(user->coord_accts, _foreach_user_split_coord, uc) < 0)
+		return SLURM_ERROR;
 
-	(void)list_append(args->list_coords, uc);
-
-	return 1;
+	return SLURM_SUCCESS;
 }
-
-#define MAGIC_USER_COORD_ADD 0x8e8ffee2
-typedef struct {
-	int magic;
-	rest_auth_context_t *auth;
-	int rc;
-	data_t *errors;
-} _foreach_user_coord_add_t;
 
 static int _foreach_user_coord_add(void *x, void *arg)
 {
 	int rc = SLURM_SUCCESS;
 	add_user_coord_t *uc = x;
-	_foreach_user_coord_add_t *args = arg;
+	ctxt_t *ctxt = arg;
 
 	xassert(uc->magic == MAGIC_USER_COORD);
-	xassert(args->magic == MAGIC_USER_COORD_ADD);
+	xassert(ctxt->magic == MAGIC_CTXT);
 
-	if ((args->rc = slurmdb_coord_add(openapi_get_db_conn(args->auth),
-					  uc->acct_list, &uc->user_cond)))
-		rc = resp_error(args->errors, args->rc, NULL,
-				"slurmdb_coord_add");
+	errno = 0;
+	if ((rc = slurmdb_coord_add(ctxt->db_conn, uc->acct_list,
+				    &uc->user_cond))) {
+		if (errno)
+			rc = errno;
 
-	return (rc ? -1 : 0);
+		resp_error(ctxt, rc, "slurmdb_coord_add",
+			   "adding coordinators failed");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 static void _destroy_user_coord_t(void *x)
@@ -301,51 +230,39 @@ static void _destroy_user_coord_t(void *x)
 	xfree(uc);
 }
 
-static int _update_users(const char *context_id, data_t *query, data_t *resp,
-			 void *auth, bool commit)
+static void _update_users(ctxt_t *ctxt, bool commit)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
-	foreach_update_user_t args = {
-		.magic = MAGIC_FOREACH_UP_USER,
-		.auth = auth,
-		.errors = errors,
-		.user_list = list_create(slurmdb_destroy_user_rec),
-	};
-	_foreach_user_coord_split_t c_args = {
-		.magic = MAGIC_USER_COORD_SPLIT,
-		.list_coords = list_create(_destroy_user_coord_t),
-	};
-	_foreach_user_coord_add_t add_args = {
-		.magic = MAGIC_USER_COORD_ADD,
-		.auth = auth,
-		.errors = errors,
-	};
-	data_t *dusers = get_query_key_list("users", errors, query);
+	data_t *parent_path = NULL;
+	data_t *dusers = get_query_key_list("users", ctxt, &parent_path);
+	List user_list = list_create(slurmdb_destroy_user_rec);
+	List add_coord_list = list_create(_destroy_user_coord_t);
 
 	if (!dusers) {
-		debug("%s: [%s] ignoring empty or non-existant users array",
-		      __func__, context_id);
-	} else if (data_list_for_each(dusers, _foreach_update_user,
-				      &args) < 0) {
-		rc = ESLURM_REST_INVALID_QUERY;
-	/* split out the coordinators until after the users are done */
-	} else if (list_for_each(args.user_list, _foreach_user_coord_split,
-				 &c_args) < 0) {
-		rc = ESLURM_REST_INVALID_QUERY;
-	} else if (!(rc = db_query_rc(errors, auth, args.user_list,
-				      slurmdb_users_add))) {
-		(void)list_for_each(c_args.list_coords, _foreach_user_coord_add,
-				    &add_args);
-		rc = add_args.rc;
-	} else if (commit) {
-		db_query_commit(errors, auth);
+		resp_warn(ctxt, __func__,
+			  "ignoring empty or non-existant users array");
+		goto cleanup;
 	}
 
-	FREE_NULL_LIST(args.user_list);
-	FREE_NULL_LIST(c_args.list_coords);
+	if (DATA_PARSE(ctxt->parser, USER_LIST, user_list, dusers, parent_path))
+		goto cleanup;
 
-	return rc;
+	/* split out the coordinators until after the users are added */
+	if (list_for_each(user_list, _foreach_user_coord_split,
+			  add_coord_list) < 0)
+		goto cleanup;
+
+	if (db_query_rc(ctxt, user_list, slurmdb_users_add))
+		goto cleanup;
+
+	if (list_for_each(add_coord_list, _foreach_user_coord_add, ctxt) < 0)
+		goto cleanup;
+
+	if (commit)
+		db_query_commit(ctxt);
+
+cleanup:
+	FREE_NULL_LIST(user_list);
+	FREE_NULL_LIST(add_coord_list);
 }
 
 static int _foreach_delete_user(void *x, void *arg)
@@ -358,11 +275,11 @@ static int _foreach_delete_user(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _delete_user(data_t *resp, void *auth,
-			char *user_name, data_t *errors)
+static void _delete_user(ctxt_t *ctxt, char *user_name)
 {
-	int rc = SLURM_SUCCESS;
-	slurmdb_assoc_cond_t assoc_cond = { .user_list = list_create(NULL) };
+	slurmdb_assoc_cond_t assoc_cond = {
+		.user_list = list_create(NULL),
+	};
 	slurmdb_user_cond_t user_cond = {
 		.assoc_cond = &assoc_cond,
 		.with_assocs = true,
@@ -371,25 +288,20 @@ static int _delete_user(data_t *resp, void *auth,
 		.with_wckeys = true,
 	};
 	List user_list = NULL;
+	data_t *dremoved_users =
+		data_set_list(data_key_set(ctxt->resp, "removed_users"));
 
 	list_append(assoc_cond.user_list, user_name);
 
-	if (!(rc = db_query_list(errors, auth, &user_list, slurmdb_users_remove,
-				 &user_cond)) &&
-	    (list_for_each(user_list, _foreach_delete_user,
-			   data_set_list(data_key_set(resp, "removed_users"))) <
+	if (!db_query_list(ctxt, &user_list, slurmdb_users_remove,
+			   &user_cond) &&
+	    (list_for_each(user_list, _foreach_delete_user, dremoved_users) >=
 	     0))
-		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				"_foreach_delete_user unexpectedly failed",
-				NULL);
-
-	if (!rc)
-		rc = db_query_commit(errors, auth);
+		db_query_commit(ctxt);
 
 	FREE_NULL_LIST(user_list);
 	FREE_NULL_LIST(assoc_cond.user_list);
-
-	return rc;
+	assoc_cond.user_list = NULL;
 }
 
 /* based on sacctmgr_list_user() */
@@ -398,47 +310,59 @@ extern int op_handler_users(const char *context_id,
 			    data_t *parameters, data_t *query, int tag,
 			    data_t *resp, void *auth)
 {
-	data_t *errors = populate_response_format(resp);
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
 
-	if (method == HTTP_REQUEST_GET) {
-		slurmdb_user_cond_t user_cond = {0};
+	if (ctxt->rc) {
+		/* no-op - already logged */
+	} else if (method == HTTP_REQUEST_GET) {
+		slurmdb_user_cond_t user_cond = { 0 };
+
 		if (query && data_get_dict_length(query)) {
 			/* Default to no deleted users */
 			foreach_query_search_t args = {
-				.errors = errors,
+				.magic = MAGIC_QUERY_SEARCH,
+				.ctxt = ctxt,
 				.user_cond = &user_cond,
 			};
 
-			if (data_dict_for_each(query, _foreach_query_search,
-					       &args) < 0)
-				return ESLURM_REST_INVALID_QUERY;
+			data_dict_for_each(query, _foreach_query_search, &args);
 		}
 
-		return _dump_users(resp, errors, auth, NULL, &user_cond);
+		if (!ctxt->rc)
+			_dump_users(ctxt, NULL, &user_cond);
+
 	} else if (method == HTTP_REQUEST_POST) {
-		return _update_users(context_id, query, resp, auth,
-				     (tag != CONFIG_OP_TAG));
+		_update_users(ctxt, (tag != CONFIG_OP_TAG));
 	} else {
-		return ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
 	}
+
+	return fini_connection(ctxt);
 }
 
 static int op_handler_user(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
 			   data_t *resp, void *auth)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
-	char *user_name = get_str_param("user_name", errors, parameters);
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
+	char *user_name = get_str_param("user_name", ctxt);
 
-	if (!user_name) {
-		rc = ESLURM_REST_INVALID_QUERY;
+	if (ctxt->rc) {
+		/* no-op - already logged */
+	} else if (!user_name) {
+		resp_error(ctxt, ESLURM_USER_ID_MISSING, __func__,
+			   "User name must be provided singular query");
 	} else if (method == HTTP_REQUEST_GET) {
 		slurmdb_user_cond_t user_cond = {0};
 		if (query && data_get_dict_length(query)) {
 			/* Default to no deleted users */
 			foreach_query_search_t args = {
-				.errors = errors,
+				.magic = MAGIC_QUERY_SEARCH,
+				.ctxt = ctxt,
 				.user_cond = &user_cond,
 			};
 
@@ -447,14 +371,16 @@ static int op_handler_user(const char *context_id, http_request_method_t method,
 				return ESLURM_REST_INVALID_QUERY;
 		}
 
-		rc = _dump_users(resp, errors, auth, user_name, &user_cond);
+		_dump_users(ctxt, user_name, &user_cond);
 	} else if (method == HTTP_REQUEST_DELETE) {
-		rc = _delete_user(resp, auth, user_name, errors);
+		_delete_user(ctxt, user_name);
 	} else {
-		rc = ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
 	}
 
-	return rc;
+	return fini_connection(ctxt);
 }
 
 extern void init_op_users(void)

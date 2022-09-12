@@ -34,8 +34,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
 #include <stdint.h>
 
 #include "slurm/slurm.h"
@@ -61,23 +59,21 @@ static int _op_handler_diag(const char *context_id,
 			    data_t *query, int tag, data_t *resp,
 			    void *auth)
 {
-	data_t *errors = populate_response_format(resp);
-	parser_env_t penv = { 0 };
-	slurmdb_stats_rec_t *stats_rec = NULL;
 	int rc;
+	slurmdb_stats_rec_t *stats_rec = NULL;
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
 
-	debug4("%s:[%s] diag handler called", __func__, context_id);
+	debug4("%s: [%s] diag handler called", __func__, context_id);
 
-	if ((rc = slurmdb_get_stats(openapi_get_db_conn(auth), &stats_rec)))
-		resp_error(errors, rc, NULL, "slurmdb_get_stats");
+	if ((rc = slurmdb_get_stats(ctxt->db_conn, &stats_rec)))
+		resp_error(ctxt, rc, "slurmdb_get_stats", "stats query failed");
 	else
-		rc = dump(PARSE_STATS_REC, stats_rec,
-			  data_set_dict(data_key_set(resp, "statistics")),
-			  &penv);
+		rc = DATA_DUMP(ctxt->parser, STATS_REC_ARRAY, *stats_rec,
+			       data_key_set(ctxt->resp, "statistics"));
 
 	slurmdb_destroy_stats_rec(stats_rec);
-
-	return rc;
+	return fini_connection(ctxt);
 }
 
 extern void init_op_diag(void)

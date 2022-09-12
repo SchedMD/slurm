@@ -59,30 +59,43 @@
 #include "src/plugins/openapi/dbv0.0.39/api.h"
 
 #define MAGIC_FOREACH_ACCOUNT 0xaefefef0
+#define MAGIC_FOREACH_SEARCH 0xaefef9fa
+
 typedef struct {
-	int magic;
+	int magic; /* MAGIC_FOREACH_ACCOUNT */
+	ctxt_t *ctxt;
 	data_t *accts;
-	List tres_list;
-	List qos_list;
 } foreach_account_t;
 
 typedef struct {
-	data_t *errors;
+	int magic; /* MAGIC_FOREACH_SEARCH */
+	ctxt_t *ctxt;
 	slurmdb_account_cond_t *account_cond;
 } foreach_query_search_t;
 
 /* Change the account search conditions based on input parameters */
-static data_for_each_cmd_t _foreach_query_search(const char *key,
-						 data_t *data,
+static data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 						 void *arg)
 {
 	foreach_query_search_t *args = arg;
-	data_t *errors = args->errors;
+
+	xassert(args->magic == MAGIC_FOREACH_SEARCH);
+	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	if (!xstrcasecmp("with_deleted", key)) {
 		if (data_convert_type(data, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
-			resp_error(errors, ESLURM_REST_INVALID_QUERY,
-				   "must be a Boolean", NULL);
+			char *str = NULL;
+
+			data_get_string_converted(data, &str);
+
+			resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY,
+				   __func__, "Query %s=%s must be a Boolean",
+				   key,
+				   (str ? str :
+					  data_type_to_string(
+						  data_get_type(data))));
+
+			xfree(str);
 			return DATA_FOR_EACH_FAIL;
 		}
 
@@ -94,149 +107,78 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 		return DATA_FOR_EACH_CONT;
 	}
 
-	resp_error(errors, ESLURM_REST_INVALID_QUERY, "Unknown query field",
-		   NULL);
+	resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+		   "Unknown query key %s field value", key);
 	return DATA_FOR_EACH_FAIL;
 }
 
-static int _parse_other_params(data_t *query,
-			       slurmdb_account_cond_t *cond,
-			       data_t *errors)
+static int _parse_other_params(ctxt_t *ctxt, slurmdb_account_cond_t *cond)
 {
-	if (!query || !data_get_dict_length(query))
+	foreach_query_search_t args;
+
+	if (!ctxt->query || !data_get_dict_length(ctxt->query))
 		return SLURM_SUCCESS;
 
-	foreach_query_search_t args = {
-		.errors = errors,
-		.account_cond = cond,
-	};
+	xassert(ctxt->magic == MAGIC_CTXT);
 
-	if (data_dict_for_each(query, _foreach_query_search, &args) < 0)
-		return SLURM_ERROR;
+	args.magic = MAGIC_FOREACH_SEARCH;
+	args.ctxt = ctxt;
+	args.account_cond = cond;
+
+	if (data_dict_for_each(ctxt->query, _foreach_query_search, &args) < 0)
+		return ESLURM_REST_INVALID_QUERY;
 	else
 		return SLURM_SUCCESS;
 }
 
 static int _foreach_account(void *x, void *arg)
 {
-	parser_env_t penv = { 0 };
-
 	slurmdb_account_rec_t *acct = x;
 	foreach_account_t *args = arg;
 
 	xassert(args->magic == MAGIC_FOREACH_ACCOUNT);
+	xassert(args->ctxt->magic == MAGIC_CTXT);
 
-	if (dump(PARSE_ACCOUNT, acct,
-		 data_set_dict(data_list_append(args->accts)), &penv))
-		return DATA_FOR_EACH_FAIL;
-	else
-		return DATA_FOR_EACH_CONT;
+	DATA_DUMP(args->ctxt->parser, ACCOUNT, *acct,
+		  data_list_append(args->accts));
+
+	return (!args->ctxt->rc ? SLURM_SUCCESS : SLURM_ERROR);
 }
 
 /* based on sacctmgr_list_account() */
-static int _dump_accounts(data_t *resp, void *auth,
-			  slurmdb_account_cond_t *acct_cond)
+static void _dump_accounts(ctxt_t *ctxt, slurmdb_account_cond_t *acct_cond)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
-	slurmdb_qos_cond_t qos_cond = {
-		.with_deleted = 1,
-	};
-	slurmdb_tres_cond_t tres_cond = {
-		.with_deleted = 1,
-	};
 	foreach_account_t args = {
 		.magic = MAGIC_FOREACH_ACCOUNT,
-		.accts = data_set_list(data_key_set(resp, "accounts")),
+		.ctxt = ctxt,
 	};
 	List acct_list = NULL;
 
-	if (!(rc = db_query_list(errors, auth, &args.tres_list,
-				 slurmdb_tres_get, &tres_cond)) &&
-	    !(rc = db_query_list(errors, auth, &args.qos_list, slurmdb_qos_get,
-				 &qos_cond)) &&
-	    !(rc = db_query_list(errors, auth, &acct_list, slurmdb_accounts_get,
-				 acct_cond)) &&
-	    (list_for_each(acct_list, _foreach_account, &args) < 0))
-		rc = ESLURM_REST_INVALID_QUERY;
+	args.accts = data_set_list(data_key_set(ctxt->resp, "accounts"));
+
+	if (!db_query_list(ctxt, &acct_list, slurmdb_accounts_get, acct_cond) &&
+	    acct_list)
+		list_for_each(acct_list, _foreach_account, &args);
 
 	FREE_NULL_LIST(acct_list);
-	FREE_NULL_LIST(args.tres_list);
-	FREE_NULL_LIST(args.qos_list);
-
-	return rc;
 }
 
-#define MAGIC_FOREACH_UP_ACCT 0xefad1a19
-typedef struct {
-	int magic;
-	List acct_list;
-	data_t *errors;
-	rest_auth_context_t *auth;
-} foreach_update_acct_t;
-
-static data_for_each_cmd_t _foreach_update_acct(data_t *data, void *arg)
+static void _update_accts(ctxt_t *ctxt, bool commit)
 {
-	foreach_update_acct_t *args = arg;
-	data_t *errors = args->errors;
-	slurmdb_account_rec_t *acct;
-	parser_env_t penv = {
-		.auth = args->auth,
-	};
+	data_t *parent_path = NULL;
+	List acct_list = list_create(slurmdb_destroy_account_rec);
+	data_t *daccts = get_query_key_list("accounts", ctxt, &parent_path);
 
-	xassert(args->magic == MAGIC_FOREACH_UP_ACCT);
+	if (DATA_PARSE(ctxt->parser, ACCOUNT_LIST, acct_list, daccts,
+		       parent_path))
+		goto cleanup;
 
-	if (data_get_type(data) != DATA_TYPE_DICT) {
-		resp_error(errors, ESLURM_REST_INVALID_QUERY,
-			   "each account entry must be a dictionary", NULL);
-		return DATA_FOR_EACH_FAIL;
-	}
+	if (!db_query_rc(ctxt, acct_list, slurmdb_accounts_add) && commit)
+		db_query_commit(ctxt);
 
-	acct = xmalloc(sizeof(slurmdb_account_rec_t));
-	acct->assoc_list = list_create(slurmdb_destroy_assoc_rec);
-	acct->coordinators = list_create(slurmdb_destroy_coord_rec);
-
-	if (parse(PARSE_ACCOUNT, acct, data, args->errors, &penv)) {
-		slurmdb_destroy_account_rec(acct);
-		return DATA_FOR_EACH_FAIL;
-	} else {
-		/* sacctmgr will set the org/desc as name if NULL */
-		if (!acct->organization)
-			acct->organization = xstrdup(acct->name);
-		if (!acct->description)
-			acct->description = xstrdup(acct->name);
-
-		(void)list_append(args->acct_list, acct);
-		return DATA_FOR_EACH_CONT;
-	}
-}
-
-static int _update_accts(data_t *query, data_t *resp, void *auth,
-			 bool commit)
-{
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
-	foreach_update_acct_t args = {
-		.magic = MAGIC_FOREACH_UP_ACCT,
-		.auth = auth,
-		.errors = errors,
-		.acct_list = list_create(slurmdb_destroy_account_rec),
-	};
-	data_t *daccts = get_query_key_list("accounts", errors, query);
-
-	if (daccts &&
-	    (data_list_for_each(daccts, _foreach_update_acct, &args) < 0))
-		rc = ESLURM_REST_INVALID_QUERY;
-
-	if (!rc &&
-	    !(rc = db_query_rc(errors, auth, args.acct_list,
-			       slurmdb_accounts_add)) &&
-	    commit)
-		rc = db_query_commit(errors, auth);
-
-	FREE_NULL_LIST(args.acct_list);
-
-	return rc;
+cleanup:
+	FREE_NULL_LIST(acct_list);
+	FREE_NULL_DATA(parent_path);
 }
 
 static int _foreach_delete_acct(void *x, void *arg)
@@ -249,10 +191,9 @@ static int _foreach_delete_acct(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _delete_account(data_t *resp, void *auth, char *account)
+static void _delete_account(ctxt_t *ctxt, char *account)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
+	data_t *dremoved;
 	List removed = NULL;
 	slurmdb_assoc_cond_t assoc_cond = {
 		.acct_list = list_create(NULL),
@@ -264,22 +205,19 @@ static int _delete_account(data_t *resp, void *auth, char *account)
 
 	list_append(assoc_cond.acct_list, account);
 
-	if (!db_query_list(errors, auth, &removed, slurmdb_accounts_remove,
-			   &acct_cond) &&
-	    (list_for_each(removed, _foreach_delete_acct,
-			   data_set_list(data_key_set(
-				   resp, "removed_associations"))) < 0))
-		resp_error(errors, ESLURM_REST_INVALID_QUERY,
-			   "unable to delete accounts", NULL);
+	if (db_query_list(ctxt, &removed, slurmdb_accounts_remove, &acct_cond))
+		goto cleanup;
 
-	if (!rc)
-		rc = db_query_commit(errors, auth);
+	dremoved =
+		data_set_list(data_key_set(ctxt->resp, "removed_associations"));
 
+	if (list_for_each(removed, _foreach_delete_acct, dremoved) >= 0)
+		db_query_commit(ctxt);
+
+cleanup:
 	FREE_NULL_LIST(removed);
 	FREE_NULL_LIST(assoc_cond.acct_list);
 	FREE_NULL_LIST(assoc_cond.user_list);
-
-	return rc;
 }
 
 extern int op_handler_account(const char *context_id,
@@ -287,12 +225,14 @@ extern int op_handler_account(const char *context_id,
 			      data_t *parameters, data_t *query, int tag,
 			      data_t *resp, void *auth)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(resp);
-	char *acct = get_str_param("account_name", errors, parameters);
+	char *acct;
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
 
-	if (!acct) {
-		/* no-op */;
+	if (!ctxt) {
+		/* no-op already logged */
+	} else if (!(acct = get_str_param("account_name", ctxt))) {
+		/* no-op already logged */
 	} else if (method == HTTP_REQUEST_GET) {
 		slurmdb_assoc_cond_t assoc_cond = {
 			.acct_list = list_create(NULL),
@@ -307,20 +247,19 @@ extern int op_handler_account(const char *context_id,
 		list_append(assoc_cond.acct_list, acct);
 
 		/* Change search conditions based on parameters */
-		if (_parse_other_params(query, &acct_cond, errors) !=
-		    SLURM_SUCCESS)
-			rc = ESLURM_REST_INVALID_QUERY;
-		else
-			rc = _dump_accounts(resp, auth, &acct_cond);
+		if (!_parse_other_params(ctxt, &acct_cond))
+			_dump_accounts(ctxt, &acct_cond);
 
 		FREE_NULL_LIST(assoc_cond.acct_list);
-
-		return rc;
 	} else if (method == HTTP_REQUEST_DELETE) {
-		return _delete_account(resp, auth, acct);
+		_delete_account(ctxt, acct);
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
 	}
 
-	return ESLURM_REST_INVALID_QUERY;
+	return fini_connection(ctxt);
 }
 
 /* based on sacctmgr_list_account() */
@@ -328,8 +267,12 @@ extern int op_handler_accounts(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
 			       data_t *query, int tag, data_t *resp, void *auth)
 {
-	data_t *errors = populate_response_format(resp);
-	if (method == HTTP_REQUEST_GET) {
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
+
+	if (!ctxt) {
+		/* no-op already logged */
+	} else if (method == HTTP_REQUEST_GET) {
 		slurmdb_account_cond_t acct_cond = {
 			.with_assocs = true,
 			.with_coords = true,
@@ -337,14 +280,18 @@ extern int op_handler_accounts(const char *context_id,
 		};
 
 		/* Change search conditions based on parameters */
-		_parse_other_params(query, &acct_cond, errors);
+		_parse_other_params(ctxt, &acct_cond);
 
-		return _dump_accounts(resp, auth, &acct_cond);
+		_dump_accounts(ctxt, &acct_cond);
 	} else if (method == HTTP_REQUEST_POST) {
-		return _update_accts(query, resp, auth, (tag != CONFIG_OP_TAG));
+		_update_accts(ctxt, (tag != CONFIG_OP_TAG));
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
 	}
 
-	return ESLURM_REST_INVALID_QUERY;
+	return fini_connection(ctxt);
 }
 
 extern void init_op_accounts(void)
