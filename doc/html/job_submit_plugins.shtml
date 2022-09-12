@@ -33,7 +33,10 @@ implementing these functions (actually a slight variation of them). Sample Lua
 scripts can be found with the Slurm distribution in the directory
 <i>contribs/lua</i>. The Lua script must be named "job_submit.lua" and must
 be located in the default configuration directory (typically the subdirectory
-"etc" of the installation directory).</li>
+"etc" of the installation directory). Slurmctld will fatal on startup if the
+configured lua script is invalid. Slurm will try to load the script for each
+job submission. If the script is broken or removed while slurmctld is running,
+Slurm will fallback to the previous working version of the script.</li>
 <li><b>partition</b> &mdash; Sets a job's default partition based upon job
 submission parameters and available partitions.</li>
 <li><b>pbs</b> &mdash; Translate PBS job submission options to Slurm equivalent
@@ -295,6 +298,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 08 July 2022</p>
+<p style="text-align:center;">Last modified 08 September 2022</p>
 
 <!--#include virtual="footer.txt"-->

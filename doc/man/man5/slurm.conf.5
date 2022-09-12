@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "August 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "September 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1797,7 +1797,10 @@ Execute a Lua script implementing site's own job_submit logic. Only one Lua
 script will be executed. It must be named "job_submit.lua" and must be located
 in the default configuration directory (typically the subdirectory "etc" of the
 installation directory). Sample Lua scripts can be found with the Slurm
-distribution, in the directory contribs/lua.
+distribution, in the directory contribs/lua. Slurmctld will fatal on startup if
+the configured lua script is invalid. Slurm will try to load the script for each
+job submission. If the script is broken or removed while slurmctld is running,
+Slurm will fallback to the previous working version of the script.
 .IP
 
 .TP
