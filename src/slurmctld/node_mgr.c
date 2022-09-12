@@ -4543,6 +4543,7 @@ extern void check_reboot_nodes()
 	uint16_t resume_timeout = slurm_conf.resume_timeout;
 	static bool power_save_on = false;
 	static time_t sched_update = 0;
+	hostlist_t resume_hostlist = NULL;
 
 	if (sched_update != slurm_conf.last_update) {
 		power_save_on = power_save_test();
@@ -4568,7 +4569,38 @@ extern void check_reboot_nodes()
 			set_node_down_ptr(node_ptr, NULL);
 
 			bit_clear(rs_node_bitmap, node_ptr->index);
+		} else if (node_ptr->resume_after &&
+			   (now > node_ptr->resume_after)) {
+			/* Fire resume, reset the time */
+			node_ptr->resume_after = 0;
+
+			if (!resume_hostlist)
+				resume_hostlist = hostlist_create(NULL);
+
+			hostlist_push_host(resume_hostlist, node_ptr->name);
 		}
+	}
+
+	if (resume_hostlist) {
+		char *host_str;
+		update_node_msg_t *resume_msg = NULL;
+
+		hostlist_uniq(resume_hostlist);
+		host_str = hostlist_ranged_string_xmalloc(resume_hostlist);
+		hostlist_destroy(resume_hostlist);
+		debug("Issuing resume request for nodes %s", host_str);
+
+		resume_msg = xmalloc(sizeof(*resume_msg));
+		slurm_init_update_node_msg(resume_msg);
+		resume_msg->node_state = NODE_RESUME;
+		resume_msg->node_names = host_str;
+
+		update_node(resume_msg, 0);
+
+		slurm_free_update_node_msg(resume_msg);
+
+		/* Back the node changes up */
+		schedule_node_save();
 	}
 }
 
