@@ -3258,7 +3258,7 @@ static int _links_str2array(char *links, char *node_name,
 	}
 
 end_it:
-	if (tmp) {
+	if (rc) {
 		error("%s: %s If using AutoDetect the amount of GPUs configured in slurm.conf does not match what was detected. If this is intentional, please turn off AutoDetect and manually specify them in gres.conf.",
 		      __func__, tmp);
 		if (reason_down && !(*reason_down)) {
@@ -3266,6 +3266,9 @@ end_it:
 			tmp = NULL;
 		} else
 			xfree(tmp);
+
+		/* create zeroed-out links array (NVLINK_NONE == 0) */
+		memset(gres_ns->links_cnt[gres_inx], 0, gres_cnt * sizeof(int));
 	}
 
 	return rc;
