@@ -332,7 +332,6 @@ DISPLAY variable.</dd>
 
 </dd>
 
-<dl>
 <dt>
   <b id="log_level">log_level</b>
   <a class="slurm_link" href="#log_level"></a>
@@ -342,7 +341,6 @@ SlurmdDebug</a> in slurm.conf for available options.
 The default log_level is <b>info</b>.
 </dd>
 
-<dl>
 <dt>
   <b id="nodename">nodename</b>
   <a class="slurm_link" href="#nodename"></a>
@@ -352,7 +350,6 @@ hostname (as reported by <b>hostname -s</b>), then this must be set to the
 NodeName in <b>slurm.conf</b> that this host operates as.
 </dd>
 
-<dl>
 <dt>
   <b id="service">service</b>
   <a class="slurm_link" href="#service"></a>
