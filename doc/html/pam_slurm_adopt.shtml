@@ -333,6 +333,31 @@ DISPLAY variable.</dd>
 </dd>
 
 <dt>
+  <b id="join_container">join_container</b>
+  <a class="slurm_link" href="#join_container"></a>
+</dt>
+<dd>Control the interaction with the job_container/tmpfs plugin.
+Configurable values are:
+<dl>
+<dt></dt>
+<dd>
+<dl>
+<dt>
+  <b id="join_container_true">true</b> (default)
+  <a class="slurm_link" href="#join_container_true"></a>
+</dt>
+<dd>Attempt to join a container created by the job_container/tmpfs plugin.</dd>
+<dt>
+  <b id="join_container_false">false</b>
+  <a class="slurm_link" href="#join_container_false"></a>
+</dt>
+<dd>Do not attempt to join a container.</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+
+<dt>
   <b id="log_level">log_level</b>
   <a class="slurm_link" href="#log_level"></a>
 </dt>
@@ -477,6 +502,6 @@ break process adoption with pam_slurm_adopt.</p>
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 12 July 2022</p>
+<p style="text-align:center;">Last modified 13 September 2022</p>
 
 <!--#include virtual="footer.txt"-->
