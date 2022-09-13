@@ -89,6 +89,7 @@ documents those changes that are of interest to users and administrators.
     OOM when step memory limit was the same as the job allocation. Detect OOM
     events via memory.oom_control oom_kill when exposed by the kernel instead of
     subscribing notifications with eventfd.
+ -- Fix accounting of oom_kill events in cgroup/v2 and task/cgroup.
 
 * Changes in Slurm 22.05.3
 ==========================

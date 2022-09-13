@@ -1811,6 +1811,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 	oom_step_results = xmalloc(sizeof(*oom_step_results));
 	oom_step_results->job_mem_failcnt = job_kills;
 	oom_step_results->job_memsw_failcnt = job_swkills;
+	oom_step_results->oom_kill_cnt = step_kills;
 	oom_step_results->step_mem_failcnt = step_kills;
 	oom_step_results->step_memsw_failcnt = step_swkills;
 
