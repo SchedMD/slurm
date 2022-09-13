@@ -689,6 +689,9 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 			opts.pam_service = xstrdup(v);
 		} else if (!xstrncasecmp(*argv, "join_container=false", 19)) {
 			opts.join_container = false;
+		} else {
+			pam_syslog(pamh, LOG_ERR,
+				   "ignoring unrecognized option '%s'", *argv);
 		}
 	}
 
