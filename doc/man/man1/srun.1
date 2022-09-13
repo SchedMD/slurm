@@ -1932,6 +1932,16 @@ procedures.
 .IP
 .RS
 .TP
+.B cray_shasta
+To enable Cray PMI support. This is for applications built with the Cray
+Programming Environment. The PMI Control Port can be specified with the
+\fB\-\-resv\-ports\fR option or with the
+\fBMpiParams\fR=\fBports\fR=<\fIport range\fR> parameter in your slurm.conf.
+This plugin does not have support for heterogeneous jobs.
+Support for cray_shasta is included by default.
+.IP
+
+.TP
 .B list
 Lists available mpi types to choose from.
 .IP
