@@ -346,8 +346,10 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step)
 	}
 
 	if (results->oom_kill_cnt) {
-		error("Detected %"PRIu64" oom-kill event(s) in %ps. Some of your processes may have been killed by the cgroup out-of-memory handler.",
-		      results->oom_kill_cnt, &step->step_id);
+		error("Detected %"PRIu64" oom_kill event%s in %ps. Some of the step tasks have been OOM Killed.",
+		      results->oom_kill_cnt,
+		      (results->oom_kill_cnt == 1) ? "" : "s" ,
+		      &step->step_id);
 		rc = ENOMEM;
 	}
 
