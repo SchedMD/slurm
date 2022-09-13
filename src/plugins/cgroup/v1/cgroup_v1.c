@@ -88,13 +88,19 @@ const char *g_cg_name[CG_CTL_CNT] = {
 /* Cgroup v1 control items for the oom monitor */
 #define STOP_OOM 0x987987987
 
+typedef enum {
+	OOM_KILL_NONE,		/* Don't account for oom_kill events. */
+	OOM_KILL_COUNTER,	/* Use memory.oom_control's oom_kill field. */
+	OOM_KILL_MON		/* Spawn a monitoring thread and use eventfd. */
+} oom_kill_type_t;
+
 typedef struct {
 	int cfd;	/* control file fd. */
 	int efd;	/* event file fd. */
 	int event_fd;	/* eventfd fd. */
 } oom_event_args_t;
 
-static bool oom_thread_created = false;
+static oom_kill_type_t oom_kill_type = OOM_KILL_NONE;
 static uint64_t oom_kill_count = 0;
 static int oom_pipe[2] = { -1, -1 };
 static pthread_t oom_thread;
@@ -115,6 +121,7 @@ typedef struct {
 extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f);
 
 static int _step_destroy_internal(cgroup_ctl_type_t sub, bool root_locked);
+static int _get_oom_kill_from_file(xcgroup_t *cg);
 
 static int _cgroup_init(cgroup_ctl_type_t sub)
 {
@@ -293,6 +300,19 @@ end:
 	if (!root_locked)
 		common_cgroup_unlock(root_cg);
 	return rc;
+}
+
+static int _acct_task(void *x, void *arg)
+{
+	task_cg_info_t *t = (task_cg_info_t *) x;
+	cgroup_ctl_type_t *ctl = (cgroup_ctl_type_t *) arg;
+
+	/* Before deleting the task we account for its oom_kill if needed. */
+	if ((oom_kill_type == OOM_KILL_COUNTER) &&
+	    (ctl && (*ctl == CG_MEMORY)))
+		_get_oom_kill_from_file(&t->task_cg);
+
+	return SLURM_SUCCESS;
 }
 
 static int _rmdir_task(void *x, void *arg)
@@ -1205,7 +1225,35 @@ extern int cgroup_p_step_start_oom_mgr(void)
 	char *control_file = NULL, *event_file = NULL, *line = NULL;
 	int rc = SLURM_SUCCESS, event_fd = -1, cfd = -1, efd = -1;
 	oom_event_args_t *event_args;
+	size_t sz;
 
+	rc = common_cgroup_get_param(&int_cg[CG_MEMORY][CG_LEVEL_STEP],
+				     "memory.oom_control",
+				     &event_file,
+				     &sz);
+
+	if (rc != SLURM_SUCCESS) {
+		error("Not monitoring OOM events, memory.oom_control could not be read.");
+		return rc;
+	}
+
+	/*
+	 * If oom_kill field is found we will read it from the cgroup interface,
+	 * so don't start the oom thread.
+	 */
+	if (event_file) {
+		line = xstrstr(event_file, "oom_kill ");
+		xfree(event_file);
+		if (line) {
+			oom_kill_type = OOM_KILL_COUNTER;
+			return SLURM_SUCCESS;
+		}
+	}
+
+	/*
+	 * Start a new OOM monitor thread, used in kernels which do not support
+	 * memory.oom_control's oom_kill field (<=3.x).
+	 */
 	xstrfmtcat(control_file, "%s/%s", int_cg[CG_MEMORY][CG_LEVEL_STEP].path,
 		   "memory.oom_control");
 
@@ -1257,11 +1305,11 @@ extern int cgroup_p_step_start_oom_mgr(void)
 
 	slurm_mutex_init(&oom_mutex);
 	slurm_thread_create(&oom_thread, _oom_event_monitor, event_args);
-	oom_thread_created = true;
+	oom_kill_type = OOM_KILL_MON;
 
 fini:
 	xfree(line);
-	if (!oom_thread_created) {
+	if (oom_kill_type != OOM_KILL_MON) {
 		if ((event_fd != -1) && (close(event_fd) == -1))
 			error("close: %m");
 		if ((efd != -1) && (close(efd) == -1))
@@ -1295,16 +1343,42 @@ static uint64_t _failcnt(xcgroup_t *cg, char *param)
 	return value;
 }
 
+static int _get_oom_kill_from_file(xcgroup_t *cg)
+{
+	char *oom_control = NULL, *ptr;
+	size_t sz;
+	uint64_t local_oom_kill_cnt = 0;
+
+	if (common_cgroup_get_param(cg, "memory.oom_control",
+				    &oom_control, &sz) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	if (oom_control) {
+		if ((ptr = xstrstr(oom_control, "oom_kill "))) {
+			if (sscanf(ptr, "oom_kill %"PRIu64,
+				   &local_oom_kill_cnt) != 1)
+				error("Cannot parse oom_kill counter from %s memory.oom_control.",
+				      cg->path);
+		}
+		xfree(oom_control);
+		log_flag(CGROUP, "Detected %"PRIu64" out-of-memory events in %s",
+			 local_oom_kill_cnt, cg->path);
+		oom_kill_count += local_oom_kill_cnt;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *results = NULL;
 	uint64_t stop_msg;
 	ssize_t ret;
 
-	if (!oom_thread_created) {
-		log_flag(CGROUP, "OOM events were not monitored for %ps",
-			 &step->step_id);
-		goto fail_oom_results;
+	if (oom_kill_type == OOM_KILL_NONE) {
+		error("OOM events were not monitored for %ps: couldn't read memory.oom_control or subscribe to its events.",
+		      &step->step_id);
+		return results;
 	}
 
 	if (common_cgroup_lock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]) !=
@@ -1328,6 +1402,26 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 	results->job_mem_failcnt = _failcnt(&int_cg[CG_MEMORY][CG_LEVEL_JOB],
 					    "memory.failcnt");
 
+	/*
+	 * If there's no OOM Thread, try to read oom_kill from the interface and
+	 * accumulate the kills of the step into the global counter which should
+	 * already contain all the tasks kills.
+	 */
+	if (oom_kill_type == OOM_KILL_COUNTER) {
+		cgroup_ctl_type_t ctl = CG_MEMORY;
+
+		list_for_each(g_task_list[ctl], _acct_task, &ctl);
+		if (_get_oom_kill_from_file(
+			    &int_cg[CG_MEMORY][CG_LEVEL_STEP]) !=
+		    SLURM_SUCCESS) {
+			log_flag(CGROUP,
+				 "OOM events were not monitored for %ps",
+				 &step->step_id);
+		}
+		results->oom_kill_cnt = oom_kill_count;
+		common_cgroup_unlock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]);
+		return results;
+	}
 	common_cgroup_unlock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]);
 
 	/*

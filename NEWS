@@ -85,6 +85,10 @@ documents those changes that are of interest to users and administrators.
  -- cgroup/v1 - Add check for swap when running OOM check after task
     termination.
  -- job_submit/lua - add --prefer support
+ -- cgroup/v1 - fix issue where sibling steps could incorrectly be accounted as
+    OOM when step memory limit was the same as the job allocation. Detect OOM
+    events via memory.oom_control oom_kill when exposed by the kernel instead of
+    subscribing notifications with eventfd.
 
 * Changes in Slurm 22.05.3
 ==========================
