@@ -5162,7 +5162,8 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr)
 	}
 
 	step_ptr->step_layout = fake_slurm_step_layout_create(
-		node_list, NULL, NULL, node_cnt, node_cnt, 0);
+		node_list, NULL, NULL, node_cnt, node_cnt,
+		SLURM_PROTOCOL_VERSION);
 
 	step_ptr->ext_sensors = ext_sensors_alloc();
 	step_ptr->name = xstrdup("extern");
@@ -5221,7 +5222,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	host = job_ptr->batch_host;
 #endif
 	step_ptr->step_layout = fake_slurm_step_layout_create(
-		host, NULL, NULL, 1, 1, 0);
+		host, NULL, NULL, 1, 1, SLURM_PROTOCOL_VERSION);
 	step_ptr->ext_sensors = ext_sensors_alloc();
 	step_ptr->name = xstrdup("batch");
 	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
