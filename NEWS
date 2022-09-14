@@ -4,6 +4,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 22.05.6
 ==========================
  -- Fix a partition's DisableRootJobs=no from preventing root jobs from working.
+ -- Fix the number of allocated cpus for an auto-adjustment case in which the
+    job requests --ntasks-per-node and --mem (per-node) but the limit is
+    MaxMemPerCPU.
 
 * Changes in Slurm 22.05.5
 ==========================
