@@ -478,6 +478,10 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	if (acct_gather_write_conf(fd) < 0)
 		goto rwfail;
 
+	/* Send job_container information to slurmstepd */
+	if (container_g_send_stepd(fd) != SLURM_SUCCESS)
+		goto rwfail;
+
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
 
