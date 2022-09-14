@@ -219,6 +219,7 @@ extern void free_jc_conf(void)
 		xfree(slurm_jc_conf.basepath);
 		xfree(slurm_jc_conf.initscript);
 		xfree(slurm_jc_conf.dirs);
+		slurm_jc_conf_inited = false;
 	}
 	return;
 }
