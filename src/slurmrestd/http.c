@@ -378,10 +378,14 @@ static int _on_body(http_parser *parser, const char *at, size_t length)
 
 		xassert(request->body_length > 0);
 
-		if ((nlength > MAX_BODY_BYTES) ||
-		    (request->expected_body_length &&
-		     ((nlength - 1) > (request->expected_body_length + 1))) ||
-		    !try_xrealloc(request->body, nlength))
+		if (nlength > MAX_BODY_BYTES)
+			goto no_mem;
+
+		if (request->expected_body_length &&
+		    ((nlength - 1) > (request->expected_body_length + 1)))
+			goto no_mem;
+
+		if (!try_xrealloc(request->body, nlength))
 			goto no_mem;
 
 		memmove((request->body + (request->body_length - 1)),
