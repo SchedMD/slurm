@@ -186,6 +186,7 @@ extern int init(void)
 		      plugin_type, tmpfs_conf_file);
 		return SLURM_ERROR;
 	}
+	debug("job_container.conf read successfully");
 
 	debug("%s loaded", plugin_name);
 
@@ -232,8 +233,6 @@ extern int container_p_restore(char *dir_name, bool recover)
 		error("%s: Configuration not loaded", __func__);
 		return SLURM_ERROR;
 	}
-
-	debug("job_container.conf read successfully");
 
 	if (jc_conf->auto_basepath) {
 		int fstatus;
