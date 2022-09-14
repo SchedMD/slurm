@@ -224,7 +224,8 @@ enum cluster_fed_states {
 #define SLURMDB_CLASS_BASE      0x00ff
 
 /* Cluster flags */
-#define CLUSTER_FLAG_A1     SLURM_BIT(0) /* UNUSED */
+#define CLUSTER_FLAG_REGISTER SLURM_BIT(0) /* If the cluster is registering
+					    * right now or not */
 #define CLUSTER_FLAG_A2     SLURM_BIT(1) /* UNUSED */
 #define CLUSTER_FLAG_A3     SLURM_BIT(2) /* UNUSED */
 #define CLUSTER_FLAG_A4     SLURM_BIT(3) /* UNUSED */
@@ -240,6 +241,7 @@ enum cluster_fed_states {
 
 /* Assoc flags */
 #define ASSOC_FLAG_DELETED  SLURM_BIT(0)
+#define ASSOC_FLAG_NO_UPDATE SLURM_BIT(1)
 
 /* Event condition flags */
 #define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */

@@ -2931,7 +2931,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				_set_assoc_lft_rgt(mysql_conn, object);
 		}
 
-		if (addto_update_list(mysql_conn->update_list,
+		if ((object->flags & ASSOC_FLAG_NO_UPDATE) ||
+		    addto_update_list(mysql_conn->update_list,
 				      SLURMDB_ADD_ASSOC,
 				      object) == SLURM_SUCCESS) {
 			list_remove(itr);

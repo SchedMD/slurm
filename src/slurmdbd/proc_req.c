@@ -2364,6 +2364,7 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		slurmdb_init_assoc_rec(&root_assoc, 0);
 		cluster.root_assoc = &root_assoc;
 		cluster.name = slurmdbd_conn->conn->cluster_name;
+		cluster.flags |= CLUSTER_FLAG_REGISTER;
 		rc = acct_storage_g_add_clusters(slurmdbd_conn->db_conn, *uid,
 						 add_list);
 		if (rc == ESLURM_ACCESS_DENIED)
