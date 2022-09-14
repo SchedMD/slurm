@@ -2942,6 +2942,7 @@ extern int slurmdb_send_accounting_update_persist(
 		    SLURM_SUCCESS) {
 			error("slurmdb_send_accounting_update_persist: Unable to open connection to registered cluster %s.",
 			      persist_conn->cluster_name);
+			persist_conn->fd = PERSIST_CONN_NOT_INITED;
 		}
 	}
 
