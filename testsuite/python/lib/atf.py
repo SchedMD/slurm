@@ -2410,13 +2410,20 @@ if 'slurmconfigdir' in testsuite_config:
     properties['slurm-config-dir'] = testsuite_config['slurmconfigdir']
 
 # Set derived directory properties
-# The environment (e.g. PATH, SLURM_CONF) overrides configuration
-properties['slurm-bin-dir'] = f"{properties['slurm-config-dir']}/bin"
+# The environment (e.g. PATH, SLURM_CONF) overrides the configuration.
+# If the Slurm clients and daemons are not in the current PATH
+# but can be found using the configured SlurmInstallDir, add the
+# derived bin and sbin dir to the current PATH.
+properties['slurm-bin-dir'] = f"{properties['slurm-prefix']}/bin"
 if squeue_path := shutil.which('squeue'):
     properties['slurm-bin-dir'] = os.path.dirname(squeue_path)
-properties['slurm-sbin-dir'] = f"{properties['slurm-config-dir']}/sbin"
+elif os.access(f"{properties['slurm-bin-dir']}/squeue", os.X_OK):
+	os.environ['PATH'] += ":" + properties['slurm-bin-dir']
+properties['slurm-sbin-dir'] = f"{properties['slurm-prefix']}/sbin"
 if slurmctld_path := shutil.which('slurmctld'):
     properties['slurm-sbin-dir'] = os.path.dirname(slurmctld_path)
+elif os.access(f"{properties['slurm-sbin-dir']}/slurmctld", os.X_OK):
+	os.environ['PATH'] += ":" + properties['slurm-sbin-dir']
 properties['slurm-config-dir'] = re.sub(r'\${prefix}', properties['slurm-prefix'], properties['slurm-config-dir'])
 if slurm_conf_path := os.getenv('SLURM_CONF'):
     properties['slurm-config-dir'] = os.path.dirname(slurm_conf_path)
