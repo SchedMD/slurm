@@ -62,6 +62,7 @@ typedef struct {
 	bool cluster_deleted;
 	char *cluster_name;
 	MYSQL *db_conn;
+	uint32_t flags;
 	pthread_mutex_t lock;
 	char *pre_commit_query;
 	bool rollback;
