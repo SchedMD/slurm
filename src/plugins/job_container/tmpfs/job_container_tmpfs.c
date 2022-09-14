@@ -210,6 +210,9 @@ extern int fini(void)
 		step_ns_fd = -1;
 	}
 
+#ifdef MEMORY_LEAK_DEBUG
+	free_jc_conf();
+#endif
 	return rc;
 }
 
