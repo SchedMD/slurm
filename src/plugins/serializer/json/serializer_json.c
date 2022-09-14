@@ -114,7 +114,7 @@ static json_object *_try_parse(const char *src, size_t stringlen,
 		return NULL;
 	}
 	if (tok->char_offset < stringlen)
-		info("%s: WARNING: Extra %zu characters after JSON string detected",
+		log_flag(DATA, "%s: Extra %zu characters after JSON string detected",
 		     __func__, (stringlen - tok->char_offset));
 
 	return jobj;
