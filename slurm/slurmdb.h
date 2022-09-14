@@ -239,7 +239,7 @@ enum cluster_fed_states {
 #define CLUSTER_FLAG_EXT    SLURM_BIT(12) /* This cluster is external */
 
 /* Assoc flags */
-#define ASSOC_FLAG_DELETED  0x0001
+#define ASSOC_FLAG_DELETED  SLURM_BIT(0)
 
 /* Event condition flags */
 #define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */
