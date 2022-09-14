@@ -5916,6 +5916,16 @@ static void _validate_spec_cores_options(slurm_opt_t *opt)
 	}
 }
 
+static void _validate_share_options(slurm_opt_t *opt)
+{
+	bool exclusive = slurm_option_set_by_cli(opt, LONG_OPT_EXCLUSIVE);
+	bool oversubscribe = slurm_option_set_by_cli(opt, 's');
+
+	if (exclusive && oversubscribe) {
+		fatal("--exclusive and --oversubscribe options are mutually exclusive");
+	}
+}
+
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
@@ -5923,6 +5933,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_spec_cores_options(opt);
 	_validate_threads_per_core_option(opt);
 	_validate_memory_options(opt);
+	_validate_share_options(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)

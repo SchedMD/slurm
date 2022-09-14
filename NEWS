@@ -57,6 +57,10 @@ documents those changes that are of interest to users and administrators.
  -- Add strigger --draining and -R/--resume options.
  -- Allow updating SLURM_NTASKS environment variable (from scontrol update job).
  -- Limit het job license requests to the leader job only.
+ -- Change --oversubscribe and --exclusive to be mutually exclusive for job
+    submission. Job submission commands will now fatal if both are set.
+    Previously, these options would override each other, with the last one in
+    the job submission command taking effect.
 
 * Changes in Slurm 22.05.4
 ==========================
