@@ -58,6 +58,8 @@ typedef struct job_container_ops {
 	int	(*container_p_stepd_create)	(uint32_t job_id,
 					         stepd_step_rec_t *step);
 	int	(*container_p_stepd_delete)	(uint32_t job_id);
+	int	(*container_p_send_stepd)(int fd);
+	int	(*container_p_recv_stepd)(int fd);
 
 } job_container_ops_t;
 
@@ -74,6 +76,8 @@ static const char *syms[] = {
 	"container_p_reconfig",
 	"container_p_stepd_create",
 	"container_p_stepd_delete",
+	"container_p_send_stepd",
+	"container_p_recv_stepd",
 };
 
 static job_container_ops_t	*ops = NULL;
@@ -323,6 +327,32 @@ extern int container_g_stepd_delete(uint32_t job_id)
 	     i++) {
 		rc = (*(ops[i].container_p_stepd_delete))(job_id);
 	}
+
+	return rc;
+}
+
+extern int container_g_send_stepd(int fd)
+{
+	int i, rc = SLURM_SUCCESS;
+
+	if (job_container_init())
+		return SLURM_ERROR;
+
+	for (i = 0; (i < g_container_context_num) && (rc == SLURM_SUCCESS); i++)
+		rc = (*(ops[i].container_p_send_stepd))(fd);
+
+	return rc;
+}
+
+extern int container_g_recv_stepd(int fd)
+{
+	int i, rc = SLURM_SUCCESS;
+
+	if (job_container_init())
+		return SLURM_ERROR;
+
+	for (i = 0; (i < g_container_context_num) && (rc == SLURM_SUCCESS); i++)
+		rc = (*(ops[i].container_p_recv_stepd))(fd);
 
 	return rc;
 }

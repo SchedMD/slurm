@@ -91,4 +91,11 @@ extern int container_g_stepd_create(uint32_t job_id, stepd_step_rec_t *step);
 
 /* Delete the container for the specified job, actions run in slurmstepd */
 extern int container_g_stepd_delete(uint32_t job_id);
+
+/* Send job_container config to slurmstepd on the provided file descriptor */
+extern int container_g_send_stepd(int fd);
+
+/* Receive job_container config from slurmd on the provided file descriptor */
+extern int container_g_recv_stepd(int fd);
+
 #endif /* _JOB_CONTAINER_PLUGIN_H_ */

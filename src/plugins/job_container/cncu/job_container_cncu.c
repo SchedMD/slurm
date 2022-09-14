@@ -477,3 +477,13 @@ extern int container_p_stepd_delete(uint32_t job_id)
 {
 	return SLURM_SUCCESS;
 }
+
+extern int container_p_send_stepd(int fd)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int container_p_recv_stepd(int fd)
+{
+	return SLURM_SUCCESS;
+}
