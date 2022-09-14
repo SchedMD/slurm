@@ -3001,10 +3001,15 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		ListIterator itr = NULL;
 		slurmdb_update_object_t *object = NULL;
 
-		slurm_mutex_lock(&registered_lock);
+		/*
+		 * We shouldn't need to lock registered_lock here the list lock
+		 * should be enough to protect us. We don't want to use
+		 * list_for_each_ro either for the same reason.
+		 * In the _commit_handler in slurmdbd.c registered_lock is
+		 * already locked as well.
+		 */
 		(void) list_for_each(registered_clusters,
 				     _send_ctld_update, update_list);
-		slurm_mutex_unlock(&registered_lock);
 
 		(void) assoc_mgr_update(update_list, 0);
 
