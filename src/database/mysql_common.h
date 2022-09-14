@@ -64,7 +64,6 @@ typedef struct {
 	uint32_t flags;
 	pthread_mutex_t lock;
 	char *pre_commit_query;
-	bool rollback;
 	List update_list;
 	int conn;
 } mysql_conn_t;

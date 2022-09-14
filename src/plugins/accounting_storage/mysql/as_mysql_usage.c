@@ -96,7 +96,7 @@ static void *_cluster_rollup_usage(void *arg)
 	xassert(rollup_stats);
 
 	memset(&mysql_conn, 0, sizeof(mysql_conn_t));
-	mysql_conn.rollback = 1;
+	mysql_conn.flags |= DB_CONN_FLAG_ROLLBACK;
 	mysql_conn.conn = local_rollup->mysql_conn->conn;
 	slurm_mutex_init(&mysql_conn.lock);
 

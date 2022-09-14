@@ -694,7 +694,8 @@ extern mysql_conn_t *create_mysql_conn(int conn_num, bool rollback,
 {
 	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));
 
-	mysql_conn->rollback = rollback;
+	if (rollback)
+		mysql_conn->flags |= DB_CONN_FLAG_ROLLBACK;
 	mysql_conn->conn = conn_num;
 	mysql_conn->cluster_name = xstrdup(cluster_name);
 	slurm_mutex_init(&mysql_conn->lock);
@@ -834,7 +835,7 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 		}
 
 		storage_init = true;
-		if (mysql_conn->rollback)
+		if (mysql_conn->flags & DB_CONN_FLAG_ROLLBACK)
 			mysql_autocommit(mysql_conn->db_conn, 0);
 		rc = _mysql_query_internal(mysql_conn->db_conn,
 					   "SET session sql_mode='ANSI_QUOTES,"

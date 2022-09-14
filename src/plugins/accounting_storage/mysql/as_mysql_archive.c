@@ -5002,7 +5002,7 @@ extern int as_mysql_jobacct_process_archive_load(
 	uint32_t data_size = 0;
 
 	/* Ensure that the connection is not set in autocommit mode. */
-	xassert(mysql_conn->rollback);
+	xassert(mysql_conn->flags & DB_CONN_FLAG_ROLLBACK);
 
 	if (!arch_rec) {
 		error("We need a slurmdb_archive_rec to load anything.");

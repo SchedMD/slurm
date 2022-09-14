@@ -1256,7 +1256,7 @@ extern int last_affected_rows(mysql_conn_t *mysql_conn)
 
 extern void reset_mysql_conn(mysql_conn_t *mysql_conn)
 {
-	if (mysql_conn->rollback)
+	if (mysql_conn->flags & DB_CONN_FLAG_ROLLBACK)
 		mysql_db_rollback(mysql_conn);
 	xfree(mysql_conn->pre_commit_query);
 	list_flush(mysql_conn->update_list);
@@ -2386,7 +2386,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if (table != assoc_table) {
 		if (!assoc_char) {
 			error("no assoc_char");
-			if (mysql_conn->rollback) {
+			if (mysql_conn->flags & DB_CONN_FLAG_ROLLBACK) {
 				mysql_db_rollback(mysql_conn);
 			}
 			list_flush(mysql_conn->update_list);
@@ -2407,7 +2407,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
-			if (mysql_conn->rollback) {
+			if (mysql_conn->flags & DB_CONN_FLAG_ROLLBACK) {
 				mysql_db_rollback(mysql_conn);
 			}
 			list_flush(mysql_conn->update_list);
@@ -2968,7 +2968,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 	list_transfer(update_list, mysql_conn->update_list);
 	debug4("got %d commits", list_count(update_list));
 
-	if (mysql_conn->rollback) {
+	if (mysql_conn->flags & DB_CONN_FLAG_ROLLBACK) {
 		if (!commit) {
 			if (mysql_db_rollback(mysql_conn))
 				error("rollback failed");
