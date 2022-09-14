@@ -244,6 +244,9 @@ enum cluster_fed_states {
 /* Event condition flags */
 #define SLURMDB_EVENT_COND_OPEN SLURM_BIT(0) /* Return only open events */
 
+/* Flags for slurmdbd_conn->db_conn */
+#define DB_CONN_FLAG_CLUSTER_DEL SLURM_BIT(0)
+
 /********************************************/
 
 /* Association conditions used for queries of the database */

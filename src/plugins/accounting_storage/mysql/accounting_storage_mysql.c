@@ -1218,7 +1218,7 @@ extern int check_connection(mysql_conn_t *mysql_conn)
 		}
 	}
 
-	if (mysql_conn->cluster_deleted) {
+	if (mysql_conn->flags & DB_CONN_FLAG_CLUSTER_DEL) {
 		errno = ESLURM_CLUSTER_DELETED;
 		return ESLURM_CLUSTER_DELETED;
 	}
@@ -1777,7 +1777,7 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	   we will require a commit before doing anything else.  This
 	   flag will give us that.
 	*/
-	mysql_conn->cluster_deleted = 1;
+	mysql_conn->flags |= DB_CONN_FLAG_CLUSTER_DEL;
 	return rc;
 }
 
@@ -2953,7 +2953,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 
 	/* always reset this here */
 	if (mysql_conn)
-		mysql_conn->cluster_deleted = 0;
+		mysql_conn->flags &= ~DB_CONN_FLAG_CLUSTER_DEL;
 
 	if ((rc != SLURM_SUCCESS) && (rc != ESLURM_CLUSTER_DELETED))
 		return rc;
