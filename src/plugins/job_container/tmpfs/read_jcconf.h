@@ -55,8 +55,10 @@ typedef struct slurm_jc_conf {
 
 extern char *tmpfs_conf_file;
 
+/* Return the job_container config structure, read config file if needed */
 extern slurm_jc_conf_t *get_slurm_jc_conf(void);
 
+/* Free the job_container config structure */
 extern void free_jc_conf(void);
 
 #endif
