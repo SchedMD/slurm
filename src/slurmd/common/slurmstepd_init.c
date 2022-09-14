@@ -210,7 +210,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* job_credential_private_key */
 	/* job_credential_public_certificate */
 	/* job_defaults_list */
-	/* job_file_append */
+	pack16(slurm_conf.job_file_append, buffer);
 	/* job_requeue */
 	/* job_submit_plugins */
 	pack32(slurm_conf.keepalive_interval, buffer);
@@ -440,7 +440,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* job_credential_private_key */
 	/* job_credential_public_certificate */
 	/* job_defaults_list */
-	/* job_file_append */
+	safe_unpack16(&slurm_conf.job_file_append, buffer);
 	/* job_requeue */
 	/* job_submit_plugins */
 	safe_unpack32(&slurm_conf.keepalive_interval, buffer);
