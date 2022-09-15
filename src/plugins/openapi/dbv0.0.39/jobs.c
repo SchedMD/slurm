@@ -277,6 +277,11 @@ static const csv_list_t csv_lists[] = {
 		_add_list_job_state
 	},
 	{
+		"users",
+		offsetof(slurmdb_job_cond_t, userid_list),
+		slurm_addto_char_list
+	},
+	{
 		"wckey",
 		offsetof(slurmdb_job_cond_t, wckey_list),
 		slurm_addto_char_list
