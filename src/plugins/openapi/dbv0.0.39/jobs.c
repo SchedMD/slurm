@@ -446,6 +446,34 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 					    csv_lists[i].add_to))
 				return DATA_FOR_EACH_FAIL;
 
+			if (!xstrcasecmp("groups", key)) {
+				List list2 = list_create(xfree_ptr);
+				if (list_for_each_ro(*list, groupname_to_gid,
+						     list2) < 0) {
+					list_destroy(list2);
+					resp_error(errors,
+						   ESLURM_REST_MISSING_GID,
+						   "error resolving GID from group name",
+						   key);
+					return DATA_FOR_EACH_FAIL;
+				}
+				list_destroy(*list);
+				*list = list2;
+			} else if (!xstrcasecmp("users", key)) {
+				List list2 = list_create(xfree_ptr);
+				if (list_for_each_ro(*list, username_to_uid,
+						     list2) < 0) {
+					list_destroy(list2);
+					resp_error(errors,
+						   ESLURM_REST_MISSING_UID,
+						   "error resolving UID from user name",
+						   key);
+					return DATA_FOR_EACH_FAIL;
+				}
+				list_destroy(*list);
+				*list = list2;
+			}
+
 			return DATA_FOR_EACH_CONT;
 		}
 	}

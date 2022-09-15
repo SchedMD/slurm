@@ -37,6 +37,7 @@
 #include "config.h"
 
 #include <math.h>
+#include <limits.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
@@ -327,4 +328,66 @@ extern void slurm_openapi_p_fini(void)
 	destroy_op_tres();
 	destroy_op_users();
 	destroy_op_wckeys();
+}
+
+extern int groupname_to_gid(void *x, void *arg)
+{
+	char *group = x, *p = NULL;
+	List list = arg;
+	long num;
+	gid_t gid;
+
+	xassert(group);
+	xassert(list);
+
+	/* Already a GID? */
+	errno = 0;
+	num = strtol(group, &p, 10);
+	if (!errno && !*p && (group != p) && (num >= 0) && (num < INT_MAX)) {
+		group = xstrdup(group);
+		list_append(list, group);
+		return SLURM_SUCCESS;
+	}
+
+	/* Get the underlying GID */
+	if (gid_from_string(group, &gid)) {
+		error("Group name (%s) is not valid", group);
+		return SLURM_ERROR;
+	}
+
+	/* Store the GID */
+	group = xstrdup_printf("%u", gid);
+	list_append(list, group);
+	return SLURM_SUCCESS;
+}
+
+extern int username_to_uid(void *x, void *arg)
+{
+	char *user = x, *p = NULL;
+	List list = arg;
+	long num;
+	uid_t uid;
+
+	xassert(user);
+	xassert(list);
+
+	/* Already an UID? */
+	errno = 0;
+	num = strtol(user, &p, 10);
+	if (!errno && !*p && (user != p) && (num >= 0) && (num < INT_MAX)) {
+		user = xstrdup(user);
+		list_append(list, user);
+		return SLURM_SUCCESS;
+	}
+
+	/* Get the underlying UID */
+	if (uid_from_string(user, &uid)) {
+		error("User name (%s) is not valid", user);
+		return SLURM_ERROR;
+	}
+
+	/* Store the UID */
+	user = xstrdup_printf("%u", uid);
+	list_append(list, user);
+	return SLURM_SUCCESS;
 }

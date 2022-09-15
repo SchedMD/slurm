@@ -241,4 +241,7 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 			  data_t *parameters, data_t *query, int tag,
 			  data_t *resp, void *auth);
 
+extern int username_to_uid(void *x, void *arg);
+extern int groupname_to_gid(void *x, void *arg);
+
 #endif

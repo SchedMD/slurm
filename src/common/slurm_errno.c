@@ -813,6 +813,12 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_REST_EMPTY_RESULT,
 	  "ESLURM_REST_EMPTY_RESULT",
 	  "Nothing found with query"},
+	{ ESLURM_REST_MISSING_UID,
+	  "ESLURM_REST_MISSING_UID",
+	  "Missing UNIX user in the system"},
+	{ ESLURM_REST_MISSING_GID,
+	  "ESLURM_REST_MISSING_GID",
+	  "Missing UNIX group in the system"},
 
 	/* data_t errors */
 	{ ESLURM_DATA_PATH_NOT_FOUND,
