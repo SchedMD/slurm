@@ -39,6 +39,10 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill - properly handle multi-reservation HetJobs.
  -- sched/backfill - don't try to start HetJobs after system state change.
  -- openapi/v0.0.38 - add submission of job->prefer value.
+ -- slurmdbd - become SlurmUser at the same point in logic as slurmctld to match
+    plugins initialization behavior. This avoids a fatal error when starting
+    slurmdbd as root and root cannot start the auth or accounting_storage
+    plugins (for example, if root cannot read the jwt key).
 
 * Changes in Slurm 22.05.3
 ==========================
