@@ -55,11 +55,18 @@ typedef struct slurm_jc_conf {
 
 extern char *tmpfs_conf_file;
 
-/* Return the job_container config structure, read config file if needed */
-extern slurm_jc_conf_t *get_slurm_jc_conf(void);
+/*
+ * Init the job_container/tmpfs config if required.
+ *
+ * Return a pointer to the config structure if succesful or NULL on error.
+ */
+extern slurm_jc_conf_t *init_slurm_jc_conf(void);
 
 /* Set slurm_jc_conf based on the provided buffer. */
 extern slurm_jc_conf_t *set_slurm_jc_conf(buf_t *buf);
+
+/* Return pointer to the slurm_jc_conf */
+extern slurm_jc_conf_t *get_slurm_jc_conf(void);
 
 /* Return pointer to the the slurm_jc_conf_buf */
 extern buf_t *get_slurm_jc_conf_buf(void);

@@ -196,7 +196,7 @@ end_it:
 	return rc;
 }
 
-extern slurm_jc_conf_t *get_slurm_jc_conf(void)
+extern slurm_jc_conf_t *init_slurm_jc_conf(void)
 {
 	int rc;
 	if (!slurm_jc_conf_inited) {

@@ -90,13 +90,7 @@ static int _create_paths(uint32_t job_id,
 			 char *src_bind)
 {
 	jc_conf = get_slurm_jc_conf();
-
-	if (!jc_conf) {
-		error("%s: Configuration not read correctly: did %s not exist?",
-		      __func__, tmpfs_conf_file);
-		return SLURM_ERROR;
-	}
-
+	xassert(jc_conf);
 	xassert(job_mount);
 
 	if (snprintf(job_mount, PATH_MAX, "%s/%u", jc_conf->basepath, job_id)
@@ -185,7 +179,7 @@ extern int init(void)
 		 * Only init the config here for the slurmd. It will be sent by
 		 * the slurmd to the slurmstepd at launch time.
 		 */
-		if (!get_slurm_jc_conf()) {
+		if (!init_slurm_jc_conf()) {
 			error("%s: Configuration not read correctly: Does '%s' not exist?",
 			      plugin_type, tmpfs_conf_file);
 			return SLURM_ERROR;
@@ -234,10 +228,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 #endif
 
 	jc_conf = get_slurm_jc_conf();
-	if (!jc_conf) {
-		error("%s: Configuration not loaded", __func__);
-		return SLURM_ERROR;
-	}
+	xassert(jc_conf);
 
 	if (jc_conf->auto_basepath) {
 		int fstatus;
