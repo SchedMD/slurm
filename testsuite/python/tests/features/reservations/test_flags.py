@@ -41,23 +41,18 @@ def create_resv(request, node_list):
 
 
 @pytest.fixture(scope='function')
-def delete_resv():
+def delete_resv(xfail=False):
 
     yield
 
     atf.run_command(
         f"scontrol update nodename={node1},{node2} state=idle reason='testing'",
-        user=atf.properties['slurm-user'], fatal=True)
-
-    atf.repeat_command_until(
-        f"sinfo -h -n {node1} -o %t",
-        lambda results: re.search(r'idle',results['stdout']))
+        user=atf.properties['slurm-user'])
 
     atf.run_command(
         "scontrol delete reservation resv1",
         user=atf.properties['slurm-user'],
-        xfail=atf.run_command_exit("scontrol show reservationname resv1"),
-        fatal=True)
+        xfail=xfail)
 
 
 @pytest.mark.parametrize("create_resv", ["REPLACE_DOWN", "REPLACE", ""], indirect=True)
@@ -166,4 +161,31 @@ def test_noreplace_flags(create_resv, delete_resv):
                 results['stdout']),
             quiet=False)
 
-# TODO: MAINT and REPLACE_* should be incompatible options in 23.02 (Bug 14634)
+@pytest.mark.parametrize(
+    "flag, delete_resv",
+    [("MAINT,REPLACE", True),        ("STATIC_ALLOC,REPLACE", True),
+     ("MAINT,REPLACE_DOWN", True),   ("STATIC_ALLOC,REPLACE_DOWN", True),
+     ("REPLACE,MAINT", True),        ("REPLACE_DOWN,MAINT", True),
+     ("REPLACE,STATIC_ALLOC", True), ("REPLACE_DOWN,STATIC_ALLOC", True),
+     ("HOURLY,WEEKDAY", True), ("WEEKDAY,WEEKEND", True),
+     ("WEEKEND,WEEKLY", True), ("WEEKLY,HOURLY", True),
+     ("TIME_FLOAT,HOURLY", True),  ("TIME_FLOAT,WEEKDAY", True),
+     ("TIME_FLOAT,WEEKEND", True), ("TIME_FLOAT,WEEKLY", True),
+     ("HOURLY,TIME_FLOAT", True),  ("WEEKDAY,TIME_FLOAT", True),
+     ("WEEKEND,TIME_FLOAT", True), ("WEEKLY,TIME_FLOAT", True)])
+def test_incompatible_flags(flag, delete_resv):
+    """Verify that reservations are not allowed to be created with incompatible
+    flags"""
+
+    logging.info(f"Attempt to create a reservation with incompatible flags: {flag}")
+    result = atf.run_command(
+        "scontrol create reservationname=resv1 "
+        f"user={atf.properties['test-user']} start=now duration=1 nodecnt=1 "
+        f"flags={flag}", user=atf.properties['slurm-user'], xfail=True)
+
+    expected_output = "Error creating the res"
+    logging.info(f"Assert output message is {expected_output}")
+    assert re.search(rf"{expected_output}", result['stderr']) is not None
+
+    logging.info(f"Assert exit code is not 0")
+    assert result['exit_code'] != 0
