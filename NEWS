@@ -90,6 +90,8 @@ documents those changes that are of interest to users and administrators.
     events via memory.oom_control oom_kill when exposed by the kernel instead of
     subscribing notifications with eventfd.
  -- Fix accounting of oom_kill events in cgroup/v2 and task/cgroup.
+ -- Fix segfault when slurmd reports less than configured gres with links after
+    a slurmctld restart.
 
 * Changes in Slurm 22.05.3
 ==========================

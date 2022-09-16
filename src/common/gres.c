@@ -3572,7 +3572,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 						    gres_inx, gres_cnt,
 						    reason_down) !=
 					    SLURM_SUCCESS)
-						return EINVAL;
+						rc = EINVAL;
 
 					gres_inx++;
 				}
