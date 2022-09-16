@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "June 2023" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "August 2023" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -447,7 +447,8 @@ Used to limit the combined total number of TRES minutes used by all
 jobs running with this association and its children.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
-time to free up.
+time to free up. To clear a previously set value use the modify command
+with a new value of \-1 for each TRES id.
 
 \fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
 \fInode\fR, etc...), or any defined generic resource. You can see the list
@@ -964,7 +965,9 @@ capapacity.
 .TP
 \fBFeatures\fR=<\fIcomma_separated_list_of_feature_names\fR>
 Features that are specific to the cluster. Federated jobs can be directed to
-clusters that contain the job requested features.
+clusters that contain the job requested features. To clear a previously set
+value, use the modify command with a new value of '' (two single quotes with
+nothing between them).
 .IP
 
 .TP
@@ -1393,13 +1396,17 @@ The index of the cluster in the federation.
 .TP
 \fBAdminComment\fR=<\fIadmin_comment\fR>
 Arbitrary descriptive string. Can only be modified by a Slurm administrator.
+To clear a previously set value, use the modify command with a new value
+of '' (two single quotes with nothing between them).
 .IP
 
 .TP
 \fBComment\fR=<\fIcomment\fR>
 The job's comment string when the AccountingStoreFlags parameter
 in the slurm.conf file contains 'job_comment'.  The user can only
-modify the comment string of their own job.
+modify the comment string of their own job. To clear a previously set value,
+use the modify command with a new value of '' (two single quotes with nothing
+between them).
 .IP
 
 .TP
@@ -1425,7 +1432,8 @@ variable.
 \fBExtra\fR=<\fIextra\fR>
 The job's extra string when the AccountingStoreFlags parameter in the slurm.conf
 file contains 'job_extra'. The user can only modify the extra string of their
-own job.
+own job. To clear a previously set value, use the modify command with a new
+value of '' (two single quotes with nothing between them).
 .IP
 
 .TP
@@ -1448,7 +1456,9 @@ Jobs must start at or after this time to be modified in the same format as
 .TP
 \fBSystemComment\fR=<\fIsystem_comment\fR>
 Arbitrary descriptive string, usually managed by the BurstBufferPlugin.
-Can only be modified by a Slurm administrator.
+Can only be modified by a Slurm administrator. To clear a previously set
+value, use the modify command with a new value of '' (two single quotes
+with nothing between them).
 .IP
 
 .TP
