@@ -808,6 +808,8 @@ partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 NOTE: Since shared GRES (MPS) cannot be allocated at the same time as a sharing
 GRES (GPU) this option only allocates all sharing GRES and no underlying shared
 GRES.
+
+\fBNOTE\fR: This option is mutually exclusive with \fB\-\-oversubscribe\fR.
 .IP
 
 .TP
@@ -1705,6 +1707,8 @@ This option may result in the allocation being granted sooner than if the
 \fB\-\-oversubscribe\fR option was not set and allow higher system utilization,
 but application performance will likely suffer due to competition for resources.
 Also see the \fB\-\-exclusive\fR option.
+
+\fBNOTE\fR: This option is mutually exclusive with \fB\-\-exclusive\fR.
 .IP
 
 .TP

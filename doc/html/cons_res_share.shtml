@@ -268,8 +268,12 @@ appropriate values before launching the tasks. Enforcement is also managed by
 the accounting plugin, which periodically gathers data about running jobs. Set
 <CODE>JobAcctGather</CODE> and <CODE>JobAcctFrequency</CODE> to
 values suitable for your system.</P>
+<P>
+<B>NOTE:</B> The <CODE>--oversubscribe</CODE> and <CODE>--exclusive</CODE>
+options are mutually exclusive when used at job submission. If both options are
+set when submitting a job, the job submission command used will fatal.
+</P>
 
-
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 19 September 2022</p>
 
 <!--#include virtual="footer.txt"-->

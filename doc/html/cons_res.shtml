@@ -139,6 +139,10 @@ man page for details. </li>
 resource environment and will therefore not be honored. Since this
 environment's nodes are shared by default, <i>--exclusive</i> allows users to
 obtain dedicated nodes.</li>
+
+<li>The <i>--oversubscribe</i> and <i>--exclusive</i> options are mutually
+exclusive when used at job submission. If both options are set when submitting
+a job, the job submission command used will fatal.</li>
 </ul>
 
 
@@ -381,6 +385,6 @@ programs that will take advantage of all the CPUs on a node but only need
 one mpi process per node.</p>
 
 
-<p style="text-align:center;">Last modified 31 May 2022</p>
+<p style="text-align:center;">Last modified 19 September 2022</p>
 
 <!--#include virtual="footer.txt"-->
