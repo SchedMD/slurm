@@ -108,8 +108,7 @@ def test_replace_flags(create_resv, delete_resv):
                 results['stdout']),
         quiet=False)
 
-# TODO: MAINT should work like STATIC_ALLOC in 23.02 (Bug 14308)
-@pytest.mark.parametrize("create_resv", ["STATIC_ALLOC"], indirect=True)
+@pytest.mark.parametrize("create_resv", ["STATIC_ALLOC", "MAINT"], indirect=True)
 def test_norepalce_flags(create_resv, delete_resv):
     """Verify that nodes in a reservation with static allocations aren't
     replaced when they go down
@@ -131,6 +130,13 @@ def test_norepalce_flags(create_resv, delete_resv):
             results['stdout']),
         quiet=False)
 
+    if flag == "MAINT":
+        logging.info(f"Assert that {node1} has the +MAINT state")
+        assert atf.repeat_command_until(
+            f"scontrol show node {node1}",
+            lambda results: re.search(rf"(?:State=).+(\+MAINT)",
+                results['stdout']),
+            quiet=False)
 
     logging.info(f"Set {node1} down")
     atf.run_command(
@@ -152,5 +158,12 @@ def test_norepalce_flags(create_resv, delete_resv):
             results['stdout']),
         quiet=False)
 
+    if flag == "MAINT":
+        logging.info(f"Assert that {node1} still has the +MAINT state")
+        assert atf.repeat_command_until(
+            f"scontrol show node {node1}",
+            lambda results: re.search(rf"(?:State=).+(\+MAINT)",
+                results['stdout']),
+            quiet=False)
 
 # TODO: MAINT and REPLACE_* should be incompatible options in 23.02 (Bug 14634)
