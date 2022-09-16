@@ -4826,6 +4826,7 @@ static int _delete_node(char *name)
 	bit_clear(avail_node_bitmap, node_ptr->index);
 
 	_remove_node_from_features(node_ptr);
+	gres_node_remove(node_ptr);
 
 	delete_node_record(node_ptr);
 	slurm_conf_remove_node(name);
