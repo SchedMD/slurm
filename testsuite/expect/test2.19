@@ -36,6 +36,12 @@ set qos_good       "test${test_id}_qos_good"
 set qos_bad        "test${test_id}_qos_bad"
 set part_name      "test${test_id}_part"
 
+# TODO: Remove this precondition check once Slurm 22.05 is no longer supported
+regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
+if {$major < 23} {
+        skip "This test is disabled in Slurm versions older than 23.02 (see bugs 11979 and 14864)"
+}
+
 #
 # Check accounting config and bail if not found.
 #
@@ -137,15 +143,7 @@ log_info "Testing AllowQos"
 # Test partition with good Qos
 # 0 = good test / 1 = bad test
 #
-set rc [test_part $acct1 $qos_good $part_name 0]
-
-# TODO Temporary debug to troubleshoot bug 11979 (remove once fixed)
-if {$rc != $::RETURN_SUCCESS} {
-	wait_for -timeout 30 {$rc == $::RETURN_SUCCESS} {
-		set rc [test_part $acct1 $qos_good $part_name 0]
-	}
-	fail "Unexpected failure for good QOS. This may be a recurrence of bug 11979. Check the prior wait_for output to see if it was a timing problem resolved by polling."
-}
+test_part $acct1 $qos_good $part_name 0
 
 #
 # Test partition with bad Qos
@@ -167,15 +165,7 @@ log_info "Testing DenyQos"
 # Test partition with good Qos
 # 0 = good test / 1 = bad test
 #
-set rc [test_part $acct1 $qos_good $part_name 0]
-
-# TODO Temporary debug to troubleshoot bug 11979 (remove once fixed)
-if {$rc != $::RETURN_SUCCESS} {
-	wait_for -timeout 30 {$rc == $::RETURN_SUCCESS} {
-		set rc [test_part $acct1 $qos_good $part_name 0]
-	}
-	fail "Unexpected failure for good QOS. This may be a recurrence of bug 11979. Check the prior wait_for output to see if it was a timing problem resolved by polling."
-}
+test_part $acct1 $qos_good $part_name 0
 
 #
 # Test partition with bad Qos
