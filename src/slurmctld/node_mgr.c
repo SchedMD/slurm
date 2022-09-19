@@ -4672,6 +4672,7 @@ static int _delete_node(char *name)
 	bit_clear(avail_node_bitmap, node_ptr->index);
 
 	_remove_node_from_features(node_ptr);
+	gres_node_remove(node_ptr);
 
 	xhash_pop_str(node_hash_table, node_ptr->name);
 	delete_node_record(node_ptr);
@@ -4727,6 +4728,7 @@ extern int delete_nodes(char *names, char **err_msg)
 	}
 
 	if (one_success) {
+		set_cluster_tres(false);
 		_update_parts();
 		select_g_reconfigure();
 	}
