@@ -289,7 +289,7 @@ extern void close_slurmd_conn(void)
 	dup2(STDERR_FILENO, STDOUT_FILENO);
 }
 
-static slurmd_conf_t *read_slurmd_conf_lite(int fd)
+static slurmd_conf_t *_read_slurmd_conf_lite(int fd)
 {
 	int rc;
 	int len;
@@ -439,7 +439,7 @@ static int _handle_spank_mode (int argc, char **argv)
 	 *   This could happen if slurmstepd is run standalone for
 	 *   testing.
 	 */
-	conf = read_slurmd_conf_lite (STDIN_FILENO);
+	conf = _read_slurmd_conf_lite (STDIN_FILENO);
 	close (STDIN_FILENO);
 
 	if (_get_jobid_uid_gid_from_env(&jobid, &uid, &gid))
@@ -571,7 +571,7 @@ _init_from_slurmd(int sock, char **argv,
 	};
 
 	/* receive conf from slurmd */
-	if (!(conf = read_slurmd_conf_lite(sock)))
+	if (!(conf = _read_slurmd_conf_lite(sock)))
 		fatal("Failed to read conf from slurmd");
 
 	slurm_conf.slurmd_port = conf->port;
