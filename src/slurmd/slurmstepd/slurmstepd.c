@@ -138,8 +138,6 @@ main (int argc, char **argv)
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg);
 
-	if (select_g_init(1) != SLURM_SUCCESS )
-		fatal( "failed to initialize node selection plugin" );
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
 		fatal( "failed to initialize authentication plugin" );
 
@@ -674,6 +672,14 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("%s: Unrecognized launch RPC (%d)", __func__, step_type);
 		break;
 	}
+
+	/* Init select and switch before unpack_msg to only init the default */
+	if (select_g_init(1) != SLURM_SUCCESS )
+		fatal( "failed to initialize node selection plugin" );
+
+	if (switch_init(1) != SLURM_SUCCESS)
+		fatal( "failed to initialize authentication plugin" );
+
 	if (unpack_msg(msg, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: we didn't unpack the request correctly");
 	free_buf(buffer);
@@ -699,7 +705,6 @@ _init_from_slurmd(int sock, char **argv,
 	 */
 	if ((acct_gather_conf_init() != SLURM_SUCCESS) ||
 	    (core_spec_g_init() != SLURM_SUCCESS) ||
-	    (switch_init(1) != SLURM_SUCCESS) ||
 	    (slurm_proctrack_init() != SLURM_SUCCESS) ||
 	    (slurmd_task_init() != SLURM_SUCCESS) ||
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
