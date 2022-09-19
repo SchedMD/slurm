@@ -686,6 +686,8 @@ _init_from_slurmd(int sock, char **argv,
 		break;
 	}
 
+	_set_job_log_prefix(&step_id);
+
 	/*
 	 * Init all plugins after recieving the slurm.conf from the slurmd.
 	 */
@@ -726,8 +728,6 @@ _init_from_slurmd(int sock, char **argv,
 	    (step_id.step_id != SLURM_INTERACTIVE_STEP) &&
 	    (mpi_conf_recv_stepd(sock) != SLURM_SUCCESS))
 		fatal("Failed to read MPI conf from slurmd");
-
-	_set_job_log_prefix(&step_id);
 
 	if (!conf->hwloc_xml) {
 		conf->hwloc_xml = xstrdup_printf("%s/hwloc_topo_%u.%u",
