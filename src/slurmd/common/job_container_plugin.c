@@ -187,8 +187,7 @@ extern int container_g_create(uint32_t job_id, uid_t uid)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_container_init())
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -207,8 +206,7 @@ extern int container_g_join(uint32_t job_id, uid_t uid)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_container_init())
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -225,8 +223,7 @@ extern int container_g_join_external(uint32_t job_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_container_init())
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -242,8 +239,7 @@ extern int container_g_add_cont(uint32_t job_id, uint64_t cont_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_container_init())
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -258,8 +254,7 @@ extern int container_g_delete(uint32_t job_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_container_init())
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -274,8 +269,7 @@ extern int container_g_restore(char * dir_name, bool recover)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_container_init())
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -290,7 +284,7 @@ extern void container_g_reconfig(void)
 {
 	int i;
 
-	(void) job_container_init();
+	xassert(init_run);
 
 	for (i = 0; i < g_container_context_num;i++) {
 		(*(ops[i].container_p_reconfig))();
@@ -304,8 +298,7 @@ extern int container_g_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_container_init())
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -320,8 +313,7 @@ extern int container_g_stepd_delete(uint32_t job_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_container_init())
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -335,8 +327,7 @@ extern int container_g_send_stepd(int fd)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_container_init())
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	for (i = 0; (i < g_container_context_num) && (rc == SLURM_SUCCESS); i++)
 		rc = (*(ops[i].container_p_send_stepd))(fd);
@@ -348,8 +339,7 @@ extern int container_g_recv_stepd(int fd)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (job_container_init())
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	for (i = 0; (i < g_container_context_num) && (rc == SLURM_SUCCESS); i++)
 		rc = (*(ops[i].container_p_recv_stepd))(fd);
