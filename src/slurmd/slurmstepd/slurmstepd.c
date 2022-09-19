@@ -71,6 +71,7 @@
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmstepd_init.h"
+#include "src/slurmd/common/task_plugin.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/xcpuinfo.h"
@@ -692,6 +693,21 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("%s: Unrecognized launch RPC (%d)", __func__, step_type);
 		break;
 	}
+
+	/*
+	 * Init all plugins after recieving the slurm.conf from the slurmd.
+	 */
+	if ((acct_gather_conf_init() != SLURM_SUCCESS) ||
+	    (core_spec_g_init() != SLURM_SUCCESS) ||
+	    (switch_init(1) != SLURM_SUCCESS) ||
+	    (slurm_proctrack_init() != SLURM_SUCCESS) ||
+	    (slurmd_task_init() != SLURM_SUCCESS) ||
+	    (jobacct_gather_init() != SLURM_SUCCESS) ||
+	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
+	    (slurm_cred_init() != SLURM_SUCCESS) ||
+	    (job_container_init() != SLURM_SUCCESS) ||
+	    (gres_init() != SLURM_SUCCESS))
+		fatal("Couldn't load all plugins");
 
 	/* Receive GRES information from slurmd */
 	gres_g_recv_stepd(sock, msg);

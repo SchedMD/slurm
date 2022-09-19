@@ -1209,26 +1209,6 @@ job_manager(stepd_step_rec_t *step)
 	debug("Setting slurmstepd(%d) oom_score_adj to -1000", getpid());
 
 	/*
-	 * Run acct_gather_conf_init() now so we don't drop permissions on any
-	 * of the gather plugins.
-	 * Preload all plugins afterwards to avoid plugin changes
-	 * (i.e. due to a Slurm upgrade) after the process starts.
-	 */
-	if ((acct_gather_conf_init() != SLURM_SUCCESS)          ||
-	    (core_spec_g_init() != SLURM_SUCCESS)		||
-	    (switch_init(1) != SLURM_SUCCESS)			||
-	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
-	    (slurmd_task_init() != SLURM_SUCCESS)		||
-	    (jobacct_gather_init() != SLURM_SUCCESS)		||
-	    (acct_gather_profile_init() != SLURM_SUCCESS)	||
-	    (slurm_cred_init() != SLURM_SUCCESS)		||
-	    (job_container_init() != SLURM_SUCCESS)		||
-	    (gres_init() != SLURM_SUCCESS)) {
-		rc = SLURM_PLUGIN_NAME_INVALID;
-		goto fail1;
-	}
-
-	/*
 	 * Readjust this slurmstepd oom_score_adj now that we've loaded the
 	 * task plugin. If the environment variable SLURMSTEPD_OOM_ADJ is set
 	 * and is a valid number (from -1000 to 1000) set the score to that
