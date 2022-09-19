@@ -180,13 +180,18 @@ extern int init(void)
 	fatal("%s is not available on this system. (mount bind limitation)",
 	      plugin_name);
 #endif
-
-	if (!get_slurm_jc_conf()) {
-		error("%s: Configuration not read correctly: Does '%s' not exist?",
-		      plugin_type, tmpfs_conf_file);
-		return SLURM_ERROR;
+	if (running_in_slurmd()) {
+		/*
+		 * Only init the config here for the slurmd. It will be sent by
+		 * the slurmd to the slurmstepd at launch time.
+		 */
+		if (!get_slurm_jc_conf()) {
+			error("%s: Configuration not read correctly: Does '%s' not exist?",
+			      plugin_type, tmpfs_conf_file);
+			return SLURM_ERROR;
+		}
+		debug("job_container.conf read successfully");
 	}
-	debug("job_container.conf read successfully");
 
 	debug("%s loaded", plugin_name);
 
@@ -841,10 +846,39 @@ extern int container_p_stepd_delete(uint32_t job_id)
 
 extern int container_p_send_stepd(int fd)
 {
+	int len;
+	buf_t *buf;
+
+	buf = get_slurm_jc_conf_buf();
+
+	/* The config should have been inited by now */
+	xassert(buf);
+
+	len = get_buf_offset(buf);
+	safe_write(fd, &len, sizeof(len));
+	safe_write(fd, get_buf_data(buf), len);
+
 	return SLURM_SUCCESS;
+rwfail:
+	error("%s: failed", __func__);
+	return SLURM_ERROR;
 }
 
 extern int container_p_recv_stepd(int fd)
 {
+	int len;
+	buf_t *buf;
+
+	safe_read(fd, &len, sizeof(len));
+
+	buf = init_buf(len);
+	safe_read(fd, buf->head, len);
+
+	if(!set_slurm_jc_conf(buf))
+		goto rwfail;
+
 	return SLURM_SUCCESS;
+rwfail:
+	error("%s: failed", __func__);
+	return SLURM_ERROR;
 }

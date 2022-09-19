@@ -58,7 +58,13 @@ extern char *tmpfs_conf_file;
 /* Return the job_container config structure, read config file if needed */
 extern slurm_jc_conf_t *get_slurm_jc_conf(void);
 
-/* Free the job_container config structure */
+/* Set slurm_jc_conf based on the provided buffer. */
+extern slurm_jc_conf_t *set_slurm_jc_conf(buf_t *buf);
+
+/* Return pointer to the the slurm_jc_conf_buf */
+extern buf_t *get_slurm_jc_conf_buf(void);
+
+/* Free the job_container config structures */
 extern void free_jc_conf(void);
 
 #endif

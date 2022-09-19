@@ -51,6 +51,7 @@
 char *tmpfs_conf_file = "job_container.conf";
 
 static slurm_jc_conf_t slurm_jc_conf;
+static buf_t *slurm_jc_conf_buf = NULL;
 static bool slurm_jc_conf_inited = false;
 static bool auto_basepath_set = false;
 
@@ -65,6 +66,18 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 	};
 
 	return s_p_hashtbl_create(ns_options);
+}
+
+static void _pack_slurm_jc_conf_buf(void)
+{
+	if (slurm_jc_conf_buf)
+		FREE_NULL_BUFFER(slurm_jc_conf_buf);
+
+	slurm_jc_conf_buf = init_buf(0);
+	packbool(slurm_jc_conf.auto_basepath, slurm_jc_conf_buf);
+	packstr(slurm_jc_conf.basepath, slurm_jc_conf_buf);
+	packstr(slurm_jc_conf.dirs, slurm_jc_conf_buf);
+	packstr(slurm_jc_conf.initscript, slurm_jc_conf_buf);
 }
 
 static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
@@ -207,10 +220,39 @@ extern slurm_jc_conf_t *get_slurm_jc_conf(void)
 		}
 		xfree(buffer);
 
+		_pack_slurm_jc_conf_buf();
+
 		slurm_jc_conf_inited = true;
 	}
 
 	return &slurm_jc_conf;
+}
+
+extern slurm_jc_conf_t *set_slurm_jc_conf(buf_t *buf)
+{
+	xassert(buf);
+
+	unpackbool(&slurm_jc_conf.auto_basepath, buf);
+	safe_unpackstr(&slurm_jc_conf.basepath, buf);
+	safe_unpackstr(&slurm_jc_conf.dirs, buf);
+	safe_unpackstr(&slurm_jc_conf.initscript, buf);
+	slurm_jc_conf_inited = true;
+
+	return &slurm_jc_conf;
+unpack_error:
+	return NULL;
+}
+
+extern slurm_jc_conf_t *get_slurm_jc_conf(void)
+{
+	if (!slurm_jc_conf_inited)
+		return NULL;
+	return &slurm_jc_conf;
+}
+
+extern buf_t *get_slurm_jc_conf_buf(void)
+{
+	return slurm_jc_conf_buf;
 }
 
 extern void free_jc_conf(void)
@@ -219,6 +261,7 @@ extern void free_jc_conf(void)
 		xfree(slurm_jc_conf.basepath);
 		xfree(slurm_jc_conf.initscript);
 		xfree(slurm_jc_conf.dirs);
+		FREE_NULL_BUFFER(slurm_jc_conf_buf);
 		slurm_jc_conf_inited = false;
 	}
 	return;
