@@ -138,9 +138,6 @@ main (int argc, char **argv)
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg);
 
-	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
-		fatal( "failed to initialize authentication plugin" );
-
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
 	if (!(step = _step_setup(cli, self, msg))) {
@@ -703,7 +700,8 @@ _init_from_slurmd(int sock, char **argv,
 	/*
 	 * Init all plugins after recieving the slurm.conf from the slurmd.
 	 */
-	if ((acct_gather_conf_init() != SLURM_SUCCESS) ||
+	if ((slurm_auth_init(NULL) != SLURM_SUCCESS) ||
+	    (acct_gather_conf_init() != SLURM_SUCCESS) ||
 	    (core_spec_g_init() != SLURM_SUCCESS) ||
 	    (slurm_proctrack_init() != SLURM_SUCCESS) ||
 	    (slurmd_task_init() != SLURM_SUCCESS) ||
