@@ -574,23 +574,12 @@ _init_from_slurmd(int sock, char **argv,
 	if (!(conf = read_slurmd_conf_lite(sock)))
 		fatal("Failed to read conf from slurmd");
 
-	/* receive cgroup conf from slurmd */
-	if (cgroup_read_conf(sock) != SLURM_SUCCESS)
-		fatal("Failed to read cgroup conf from slurmd");
-
 	slurm_conf.slurmd_port = conf->port;
 	xfree(slurm_conf.slurmd_spooldir);
 	slurm_conf.slurmd_spooldir = xstrdup(conf->spooldir);
 	slurm_conf.slurmd_syslog_debug = conf->syslog_debug;
 
 	setenvf(NULL, "SLURMD_NODENAME", "%s", conf->node_name);
-	/* receive acct_gather conf from slurmd */
-	if (acct_gather_read_conf(sock) != SLURM_SUCCESS)
-		fatal("Failed to read acct_gather conf from slurmd");
-
-	/* Receive job_container information from slurmd */
-	if (container_g_recv_stepd(sock) != SLURM_SUCCESS)
-		fatal("Failed to read job_container.conf from slurmd.");
 
 	/* receive job type from slurmd */
 	safe_read(sock, &step_type, sizeof(int));
@@ -711,6 +700,22 @@ _init_from_slurmd(int sock, char **argv,
 	    (job_container_init() != SLURM_SUCCESS) ||
 	    (gres_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
+
+	/*
+	 * Receive all secondary conf files from the slurmd.
+	 */
+
+	/* receive cgroup conf from slurmd */
+	if (cgroup_read_conf(sock) != SLURM_SUCCESS)
+		fatal("Failed to read cgroup conf from slurmd");
+
+	/* receive acct_gather conf from slurmd */
+	if (acct_gather_read_conf(sock) != SLURM_SUCCESS)
+		fatal("Failed to read acct_gather conf from slurmd");
+
+	/* Receive job_container information from slurmd */
+	if (container_g_recv_stepd(sock) != SLURM_SUCCESS)
+		fatal("Failed to read job_container.conf from slurmd.");
 
 	/* Receive GRES information from slurmd */
 	gres_g_recv_stepd(sock, msg);

@@ -470,18 +470,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	if (send_slurmd_conf_lite(fd, conf) < 0)
 		goto rwfail;
 
-	/* send cgroup conf over to slurmstepd */
-	if (cgroup_write_conf(fd) < 0)
-		goto rwfail;
-
-	/* send acct_gather.conf over to slurmstepd */
-	if (acct_gather_write_conf(fd) < 0)
-		goto rwfail;
-
-	/* Send job_container information to slurmstepd */
-	if (container_g_send_stepd(fd) != SLURM_SUCCESS)
-		goto rwfail;
-
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
 
@@ -618,6 +606,22 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	safe_write(fd, get_buf_data(buffer), len);
 	free_buf(buffer);
 	buffer = NULL;
+
+	/*
+	 * Send all secondary conf files to the stepd.
+	 */
+
+	/* send cgroup conf over to slurmstepd */
+	if (cgroup_write_conf(fd) < 0)
+		goto rwfail;
+
+	/* send acct_gather.conf over to slurmstepd */
+	if (acct_gather_write_conf(fd) < 0)
+		goto rwfail;
+
+	/* Send job_container information to slurmstepd */
+	if (container_g_send_stepd(fd) != SLURM_SUCCESS)
+		goto rwfail;
 
 	/* Send GRES information to slurmstepd */
 	gres_g_send_stepd(fd, &msg);
