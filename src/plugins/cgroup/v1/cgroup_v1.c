@@ -1205,14 +1205,10 @@ static void *_oom_event_monitor(void *x)
 		debug("No oom events detected.");
 	slurm_mutex_unlock(&oom_mutex);
 
-	if ((args->event_fd != -1) && (close(args->event_fd) == -1))
-		error("close(event_fd): %m");
-	if ((args->efd != -1) && (close(args->efd) == -1))
-		error("close(efd): %m");
-	if ((args->cfd != -1) && (close(args->cfd) == -1))
-		error("close(cfd): %m");
-	if ((oom_pipe[0] >= 0) && (close(oom_pipe[0]) == -1))
-		error("close(oom_pipe[0]): %m");
+	close(args->event_fd);
+	close(args->efd);
+	close(args->cfd);
+	close(oom_pipe[0]);
 	xfree(args);
 
 	debug("stopping.");
@@ -1310,16 +1306,11 @@ extern int cgroup_p_step_start_oom_mgr(void)
 fini:
 	xfree(line);
 	if (oom_kill_type != OOM_KILL_MON) {
-		if ((event_fd != -1) && (close(event_fd) == -1))
-			error("close: %m");
-		if ((efd != -1) && (close(efd) == -1))
-			error("close: %m");
-		if ((cfd != -1) && (close(cfd) == -1))
-			error("close: %m");
-		if ((oom_pipe[0] != -1) && (close(oom_pipe[0]) == -1))
-			error("close oom_pipe[0]: %m");
-		if ((oom_pipe[1] != -1) && (close(oom_pipe[1]) == -1))
-			error("close oom_pipe[1]: %m");
+		close(event_fd);
+		close(efd);
+		close(cfd);
+		close(oom_pipe[0]);
+		close(oom_pipe[1]);
 	}
 	xfree(event_file);
 	xfree(control_file);
@@ -1454,10 +1445,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 	slurm_mutex_unlock(&oom_mutex);
 
 fail_oom_results:
-	if ((oom_pipe[1] != -1) && (close(oom_pipe[1]) == -1)) {
-		error("close() failed on oom_pipe[1] fd, %ps: %m",
-		      &step->step_id);
-	}
+	close(oom_pipe[1]);
 	slurm_mutex_destroy(&oom_mutex);
 
 	return results;
