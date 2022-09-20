@@ -13783,12 +13783,17 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 					   job_ptr);
 				xfree(old_features);
 				FREE_NULL_LIST(old_list);
+				detail_ptr->features_use = detail_ptr->features;
+				detail_ptr->feature_list_use =
+					detail_ptr->feature_list;
 			}
 		} else {
 			sched_info("%s: cleared features for %pJ", __func__,
 				   job_ptr);
 			xfree(detail_ptr->features);
 			FREE_NULL_LIST(detail_ptr->feature_list);
+			detail_ptr->features_use = NULL;
+			detail_ptr->feature_list_use = NULL;
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -13821,12 +13826,17 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 					   job_ptr);
 				xfree(old_prefer);
 				FREE_NULL_LIST(old_list);
+				detail_ptr->features_use = detail_ptr->prefer;
+				detail_ptr->feature_list_use =
+					detail_ptr->prefer_list;
 			}
 		} else {
 			sched_info("%s: cleared prefer for %pJ", __func__,
 				   job_ptr);
 			xfree(detail_ptr->prefer);
 			FREE_NULL_LIST(detail_ptr->prefer_list);
+			detail_ptr->features_use = NULL;
+			detail_ptr->feature_list_use = NULL;
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
