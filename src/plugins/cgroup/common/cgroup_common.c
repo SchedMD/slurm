@@ -184,30 +184,24 @@ extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb)
 			fstatus = SLURM_ERROR;
 			continue;
 		}
-
-		do {
-			rc = write(fd, tstr, strlen(tstr)+1);
-		} while (rc < 0 && errno == EINTR);
-
-		if (rc < 1) {
-			log_flag(CGROUP, "unable to add value '%s' to file '%s' : %m",
-				 tstr, file_path);
-			if (errno != ESRCH)
-				fstatus = SLURM_ERROR;
-		}
-
+		safe_write(fd, tstr, strlen(tstr)+1);
 	}
 
 	/* close file */
 	close(fd);
 
 	return fstatus;
+
+rwfail:
+	close(fd);
+	log_flag(CGROUP, "unable to add value '%s' to file '%s' : %m",
+		 tstr, file_path);
+	return SLURM_ERROR;
 }
 
 extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 				    int *pnb)
 {
-	int rc;
 	int fd;
 
 	size_t fsize;
@@ -237,20 +231,16 @@ extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 
 	/* read file contents */
 	buf = xmalloc(fsize + 1);
-	do {
-		rc = read(fd, buf, fsize);
-	} while (rc < 0 && errno == EINTR);
+	safe_read(fd, buf, fsize);
 	close(fd);
 	buf[fsize]='\0';
 
 	/* count values (splitted by \n) */
 	i=0;
-	if (rc > 0) {
-		p = buf;
-		while (xstrchr(p, '\n') != NULL) {
-			i++;
-			p = xstrchr(p, '\n') + 1;
-		}
+	p = buf;
+	while (xstrchr(p, '\n') != NULL) {
+		i++;
+		p = xstrchr(p, '\n') + 1;
 	}
 
 	/* build uint64_t list */
@@ -273,6 +263,11 @@ extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 	*pvalues = pa;
 	*pnb = i;
 
+	return SLURM_SUCCESS;
+rwfail:
+	close(fd);
+	xfree(buf);
+	log_flag(CGROUP, "cannot read '%s' contents.", file_path);
 	return SLURM_SUCCESS;
 }
 
@@ -316,7 +311,6 @@ rwfail:
 extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
 				    int *pnb)
 {
-	int rc;
 	int fd;
 
 	size_t fsize;
@@ -347,20 +341,15 @@ extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
 
 	/* read file contents */
 	buf = xmalloc(fsize + 1);
-	do {
-		rc = read(fd, buf, fsize);
-	} while (rc < 0 && errno == EINTR);
+	safe_read(fd, buf, fsize);
 	close(fd);
-	buf[fsize]='\0';
 
 	/* count values (splitted by \n) */
 	i=0;
-	if (rc > 0) {
-		p = buf;
-		while (xstrchr(p, '\n') != NULL) {
-			i++;
-			p = xstrchr(p, '\n') + 1;
-		}
+	p = buf;
+	while (xstrchr(p, '\n') != NULL) {
+		i++;
+		p = xstrchr(p, '\n') + 1;
 	}
 
 	/* build uint32_t list */
@@ -382,6 +371,11 @@ extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
 	*pvalues = pa;
 	*pnb = i;
 
+	return SLURM_SUCCESS;
+rwfail:
+	close(fd);
+	xfree(buf);
+	log_flag(CGROUP, "cannot read '%s' contents.", file_path);
 	return SLURM_SUCCESS;
 }
 
@@ -414,7 +408,6 @@ extern int common_file_read_content(char *file_path, char **content,
 				    size_t *csize)
 {
 	int fstatus;
-	int rc;
 	int fd;
 	size_t fsize;
 	char *buf;
@@ -441,23 +434,21 @@ extern int common_file_read_content(char *file_path, char **content,
 
 	/* read file contents */
 	buf = xmalloc(fsize + 1);
-	buf[fsize]='\0';
-	do {
-		rc = read(fd, buf, fsize);
-	} while (rc < 0 && errno == EINTR);
+	safe_read(fd, buf, fsize);
 
 	/* set output values */
-	if (rc >= 0) {
-		*content = buf;
-		*csize = rc;
-		fstatus = SLURM_SUCCESS;
-	} else {
-		xfree(buf);
-	}
+	*content = buf;
+	*csize = fsize;
+	fstatus = SLURM_SUCCESS;
 
 	/* close file */
 	close(fd);
+	return fstatus;
 
+rwfail:
+	log_flag(CGROUP, "unable to read '%s'", file_path);
+	close(fd);
+	xfree(buf);
 	return fstatus;
 }
 

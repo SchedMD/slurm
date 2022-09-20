@@ -1278,11 +1278,7 @@ extern int cgroup_p_step_start_oom_mgr(void)
 
 	oom_kill_count = 0;
 
-	if (write(efd, line, strlen(line) + 1) == -1) {
-		error("Cannot write to %s", event_file);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
+	safe_write(efd, line, strlen(line) + 1);
 
 	if (pipe2(oom_pipe, O_CLOEXEC) == -1) {
 		error("pipe(): %m");
@@ -1319,6 +1315,11 @@ fini:
 		error("Unable to register OOM notifications for %s",
 		      int_cg[CG_MEMORY][CG_LEVEL_STEP].path);
 	return rc;
+
+rwfail:
+	error("Cannot write to %s", event_file);
+	rc = SLURM_ERROR;
+	goto fini;
 }
 
 static uint64_t _failcnt(xcgroup_t *cg, char *param)
@@ -1364,7 +1365,6 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *results = NULL;
 	uint64_t stop_msg;
-	ssize_t ret;
 
 	if (oom_kill_type == OOM_KILL_NONE) {
 		error("OOM events were not monitored for %ps: couldn't read memory.oom_control or subscribe to its events.",
@@ -1421,21 +1421,9 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 	 * closed the read endpoint of oom_pipe.
 	 */
 	stop_msg = STOP_OOM;
-	while (1) {
-		ret = write(oom_pipe[1], &stop_msg, sizeof(stop_msg));
-		if (ret == -1) {
-			if (errno == EINTR)
-				continue;
-			log_flag(CGROUP, "oom stop msg write() failed: %m");
-		} else if (ret == 0)
-			log_flag(CGROUP, "oom stop msg nothing written: %m");
-		else if (ret == sizeof(stop_msg))
-			log_flag(CGROUP, "oom stop msg write success.");
-		else
-			log_flag(CGROUP, "oom stop msg not fully written.");
-		break;
-	}
+	safe_write(oom_pipe[1], &stop_msg, sizeof(stop_msg));
 
+rwfail: /* Ignore safe_write issues. */
 	log_flag(CGROUP, "attempt to join oom_thread.");
 	if (oom_thread && pthread_join(oom_thread, NULL) != 0)
 		error("pthread_join(): %m");
