@@ -1,21 +1,19 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Slurm User Group Meeting 2021</h1>
+<h1>Slurm User Group Meeting 2022</h1>
 
-<p>The Slurm User Group Meeting (SLUG'21) this fall will be held online once again.</p>
+<p>The Slurm User Group Meeting (SLUG'22) this fall will be held online once again.</p>
 
-<p>In lieu of an in-person meeting, SchedMD will broadcast a set of presentations on Tuesday, September 21st, 2021 through YouTube Live from the <a href="https://www.youtube.com/c/schedmdslurm/">SchedMD Slurm</a> channel. All of the sessions are listed under the <a href="https://youtube.com/playlist?list=PLZfwi0jHMBxCJlLMxci0JOAKnlUYpYanb">Slurm User Group 2021</a> playlist. No registration is required.</p>
+<p>In lieu of an in-person meeting, SchedMD will broadcast a set of presentations on Tuesday, September 20th, 2022 through YouTube Live from the <a href="https://www.youtube.com/c/schedmdslurm/">SchedMD Slurm</a> channel. All of the sessions are listed under the <a href="https://www.youtube.com/playlist?list=PLZfwi0jHMBxDkdmRn91ImqnweZH9-1eIF">Slurm User Group 2022</a> playlist. No registration is required.</p>
 
-<p>Viewers are encouraged to ask questions through the live chat feature. SchedMD staff will be moderating the chat, and will forward relevant and timely questions to the presenter. The last 5-10 minutes of each presentation will be reserved for further Q+A, as well as provide a brief break between each session. (Unfortunately, we cannot provide snacks in the hallway for virtual SLUG; you will need to raid your own pantry instead.)</p>
+<p>Viewers are encouraged to ask questions through the live chat feature. Community presentations are pre-recorded, but the presenters have been encouraged to participate and respond directly through the live chat if able. For the SchedMD presentations (which will be done live), SchedMD staff will be moderating the chat, and will forward relevant and timely questions to the presenter. The last 5-10 minutes of each presentation will be reserved for further Q+A, as well as provide a brief break between each session.</p>
 
 <p>Please note that each presentation is contained in a separate broadcast, and you will need to switch between them at the breaks.</p>
-
-<p>These presentations will remain online for at least one week after the live broadcast.</p>
 
 <a name="schedule"><h2>Schedule</h2></a>
 
 <h3>All times are US Mountain Daylight Time (UTC-6)</h3>
-<h2>Tuesday, 21 September 2021</h2>
+<h2>Tuesday, 20 September 2022</h2>
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 
 <tr>
@@ -24,13 +22,24 @@
   <th width="45%">Title</th>
  </tr>
 
-<tr><td nowrap>9:00 - 9:50</td><td>Booth (SchedMD)</td><td><a href="https://youtu.be/-YAW-PBvLJc">Field Notes 5: From The Frontlines of Slurm Support</a></td></tr>
-<tr><td nowrap>10:00 - 10:25</td><td>Rini (SchedMD)</td><td><a href="https://youtu.be/bqDdW5XfUIw">REST API <i>and also</i> Containers</a></td></tr>
-<tr><td nowrap>10:30 - 10:55</td><td>Garey (SchedMD)</td><td><a href="https://youtu.be/q5j5meDDPpA">burst_buffer/lua and slurmscriptd</a></td></tr>
-<tr><td nowrap>11:00 - 11:25</td><td>Ihli (SchedMD)</td><td><a href="https://youtu.be/WV4d49pIp24">Slurm in the Clouds</a></td></tr>
-<tr><td nowrap>11:30 - 11:55</td><td>Wickberg (SchedMD)</td><td><a href="https://youtu.be/-0tD7gLTxiI">Slurm 21.08 and Beyond</a></td></tr>
+<tr><td nowrap>9:00 - 9:50</td><td>Booth &mdash; SchedMD</td><td><a href="https://youtu.be/njEgeMUAqMY">Field Notes 6: From The Frontlines of Slurm Support</a></td></tr>
+
+<tr><td nowrap>10:00 - 10:25</td><td>Nielsen &mdash; Technical University of Denmark (DTU)</td><td><a href="https://youtu.be/WUbuPQ0RB68">Pathfinding into the clouds</a></td></tr>
+
+<tr><td nowrap>10:30 - 10:55</td><td>Rini &mdash; SchedMD</td><td><a href="https://youtu.be/7y7IpCTj5mk">OCI Containers, and scrun</a></td></tr>
+
+<tr><td nowrap>11:00 - 11:25</td><td>Feinstein &mdash; LBNL</td><td><a href="https://youtu.be/uwYsoPySxmU">LBNL Site Report</a></td></tr>
+
+<tr><td nowrap>11:30 - 11:55</td><td>Ihli &mdash; SchedMD</td><td><a href="https://youtu.be/YhSF9YhlSS8">Cloudy, With a Chance of Dynamic Nodes</a></td></tr>
+
+<tr><td nowrap>12:00 - 12:25</td><td>Tsuyuzaki &mdash; NTT</td><td><a href="https://youtu.be/jyUQ33GTnnE">Burst Buffer Lua Plugin For Lustre</a></td></tr>
+
+<tr><td nowrap>12:30 - 12:55</td><td>Wickberg &mdash; SchedMD</td><td><a href="https://youtu.be/sloTCJaeabs">Slurm 22.05, 23.02, and Beyond</a></td></tr>
+
+<tr><td nowrap>14:00</td><td>Carter &mdash; AWS</td><td><a href="https://youtu.be/qbJKkUmgJ18">EDA Slurm Cluster on AWS (Extra Session &mdash; no live chat)</a></td></tr>
+
 </table>
 
-<p style="text-align:center;">Last modified 15 September 2021</p>
+<p style="text-align:center;">Last modified 19 September 2022</p>
 
 <!--#include virtual="footer.txt"-->
