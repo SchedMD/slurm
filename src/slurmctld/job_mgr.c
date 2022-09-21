@@ -13773,6 +13773,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 					   __func__, job_specs->features,
 					   job_ptr);
 				FREE_NULL_LIST(detail_ptr->feature_list);
+				xfree(detail_ptr->features);
 				detail_ptr->features = old_features;
 				detail_ptr->feature_list = old_list;
 				error_code = ESLURM_INVALID_FEATURE;
@@ -13810,6 +13811,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 					   __func__, job_specs->prefer,
 					   job_ptr);
 				FREE_NULL_LIST(detail_ptr->prefer_list);
+				xfree(detail_ptr->prefer);
 				detail_ptr->prefer = old_prefer;
 				detail_ptr->prefer_list = old_list;
 				error_code = ESLURM_INVALID_PREFER;
