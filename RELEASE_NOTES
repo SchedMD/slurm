@@ -40,6 +40,7 @@ HIGHLIGHTS
     directories ownership were set to the user and group of the job.
  -- accounting_storage/mysql - change purge/archive to calculate record ages
     based on end time, rather than start or submission times.
+ -- job_submit/lua - add support for log_user() from slurm_job_modify().
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

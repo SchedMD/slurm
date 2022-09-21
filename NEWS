@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
     submission. Job submission commands will now fatal if both are set.
     Previously, these options would override each other, with the last one in
     the job submission command taking effect.
+ -- job_submit/lua - add support for log_user() from slurm_job_modify().
 
 * Changes in Slurm 22.05.4
 ==========================
