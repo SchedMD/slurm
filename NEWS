@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
     Previously, these options would override each other, with the last one in
     the job submission command taking effect.
  -- job_submit/lua - add support for log_user() from slurm_job_modify().
+ -- openapi/v0.0.39 - add submission of job->prefer value.
 
 * Changes in Slurm 22.05.4
 ==========================

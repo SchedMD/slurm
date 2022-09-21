@@ -187,6 +187,7 @@ const params_t job_params[] = {
 	{ "hetjob_group", LONG_OPT_HET_GROUP, true },
 	{ "parsable", LONG_OPT_PARSABLE, true },
 	{ "partition", 'p' },
+	{ "prefer", LONG_OPT_PREFER },
 	{ "power_flags", LONG_OPT_POWER, true },
 	{ "preserve_environment", 'E', true },
 	{ "priority", LONG_OPT_PRIORITY, false },
@@ -900,6 +901,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 			job->het_job_id_set);
 	data_set_int(data_key_set(jd, "het_job_offset"), job->het_job_offset);
 	data_set_string(data_key_set(jd, "partition"), job->partition);
+	data_set_string(data_key_set(jd, "prefer"), job->prefer);
 	if (job->pn_min_memory & MEM_PER_CPU) {
 		data_set_null(data_key_set(jd, "memory_per_node"));
 		data_set_int(data_key_set(jd, "memory_per_cpu"),

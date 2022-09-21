@@ -2298,6 +2298,10 @@
 	    "type": "string",
 	    "description": "Request a specific partition for the resource allocation."
 	  },
+	  "prefer": {
+	    "type": "string",
+	    "description": "Comma delimited list of features for scheduler to prefer but not a strict requirement like a constraint. This value is not dumped but can be used for job submission."
+	  },
 	  "priority": {
 	    "type": "string",
 	    "description": "Request a specific job priority."
