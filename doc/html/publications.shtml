@@ -4,6 +4,34 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from Slurm User Group Meeting, September 2022</h2>
+<ul>
+<li><a href="SLUG22/Field_Notes_6.pdf">Field Notes 6: From The Frontlines of Slurm Support</a>,
+Jason Booth, SchedMD</li>
+
+<li><a href="SLUG22/Pathfinding2Clouds.pdf">Pathfinding into the clouds</a>,
+Ole Nielsen, Technical University of Denmark (DTU)</li>
+
+<li><a href="SLUG22/OCI_Containers_with_scrun.pdf">OCI Containers with scrun</a>,
+Nathan Rini, SchedMD</li>
+
+<li><a href="SLUG22/LBNL-site-report.pdf">LBNL Site Report</a>,
+Wei Feinstein, Lawrence Berkeley National Laboratory</li>
+
+<li><a href="SLUG22/Dynamic_Nodes.pdf">Cloudy, With a Chance of Dynamic Nodes</a>,
+Nick Rini, SchedMD</li>
+
+<li><a href="SLUG22/NTT-SLUG22.pdf">Burst Buffer Lua Plugin For Lustre</a>,
+Kota Tsuyuzaki / Rikimaru Honjo / Yusuke Kaneko / Kohei Tahara, NTT Computer and Data Science Laboratory / NTT TechnoCross Corporation</li>
+
+<li><a href="SLUG22/Roadmap.pdf">22.05, 23.02, and Beyond</a>,
+Tim Wickberg, SchedMD</li>
+
+<li><a href="SLUG22/EDA-Slurm-Cluster.pdf">EDA Slurm Cluster on AWS</a>,
+Allan Carter, AWS</li>
+
+</ul>
+
 <h2>Presentations from NHR Container Workshop, December 2021</h2>
 <ul>
 <li><a href="NHR21/containers.pdf">Containers and Slurm</a>,
@@ -1098,6 +1126,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 15 September 2020</p>
+<p style="text-align:center;">Last modified 20 September 2022</p>
 
 <!--#include virtual="footer.txt"-->

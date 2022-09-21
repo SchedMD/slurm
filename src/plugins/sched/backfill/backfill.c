@@ -149,6 +149,7 @@ typedef struct {
 	job_record_t *job_ptr;
 	time_t latest_start;		/* Time when expected to start */
 	part_record_t *part_ptr;
+	slurmctld_resv_t *resv_ptr;
 } het_job_rec_t;
 
 typedef struct {
@@ -1734,6 +1735,7 @@ static void _attempt_backfill(void)
 	time_t tmp_preempt_start_time = 0;
 	bool tmp_preempt_in_progress = false;
 	bitstr_t *tmp_bitmap = NULL;
+	bool state_changed_break = false;
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock =
 		{ NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
@@ -1905,6 +1907,7 @@ static void _attempt_backfill(void)
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
+				state_changed_break = true;
 				break;
 			}
 			/* Reset backfill scheduling timers, resume testing */
@@ -2124,8 +2127,9 @@ next_task:
 			continue;
 		}
 
-		log_flag(BACKFILL, "test for %pJ Prio=%u Partition=%s",
-			 job_ptr, job_ptr->priority, job_ptr->part_ptr->name);
+		log_flag(BACKFILL, "test for %pJ Prio=%u Partition=%s Reservation=%s",
+			 job_ptr, job_ptr->priority, job_ptr->part_ptr->name,
+			 job_ptr->resv_ptr ? job_ptr->resv_ptr->name : "NONE");
 
 		/* Test to see if we've exceeded any per user/partition limit */
 		if (_job_exceeds_max_bf_param(job_ptr, orig_sched_start))
@@ -2254,6 +2258,7 @@ next_task:
 				log_flag(BACKFILL, "system state changed, breaking out after testing %u(%d) jobs",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
+				state_changed_break = true;
 				break;
 			}
 
@@ -3013,7 +3018,7 @@ skip_start:
 	}
 
 	_het_job_deadlock_fini();
-	if (!bf_hetjob_immediate &&
+	if (!bf_hetjob_immediate && !state_changed_break &&
 	    (!max_backfill_jobs_start ||
 	     (job_start_cnt < max_backfill_jobs_start)))
 		_het_job_start_test(node_space, 0);
@@ -3483,7 +3488,7 @@ static time_t _het_job_start_find(job_record_t *job_ptr)
 /*
  * Record the earliest that a hetjob component can start. If it can be
  * started in multiple partitions, we only record the earliest start time
- * for the job in any partition.
+ * for the job in any partition and reservation.
  */
 static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			       uint32_t comp_time_limit)
@@ -3514,12 +3519,14 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			} else if (rec) {
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
+				rec->resv_ptr = job_ptr->resv_ptr;
 			} else {
 				rec = xmalloc(sizeof(het_job_rec_t));
 				rec->job_id = job_ptr->job_id;
 				rec->job_ptr = job_ptr;
 				rec->latest_start = latest_start;
 				rec->part_ptr = job_ptr->part_ptr;
+				rec->resv_ptr = job_ptr->resv_ptr;
 				list_append(map->het_job_rec_list, rec);
 			}
 		} else {
@@ -3528,6 +3535,7 @@ static void _het_job_start_set(job_record_t *job_ptr, time_t latest_start,
 			rec->job_ptr = job_ptr;
 			rec->latest_start = latest_start;
 			rec->part_ptr = job_ptr->part_ptr;
+			rec->resv_ptr = job_ptr->resv_ptr;
 
 			map = xmalloc(sizeof(het_job_map_t));
 			map->comp_time_limit = comp_time_limit;
@@ -3616,6 +3624,10 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 
 		job_ptr = rec->job_ptr;
 		job_ptr->part_ptr = rec->part_ptr;
+		if (rec->resv_ptr) {
+			job_ptr->resv_ptr = rec->resv_ptr;
+			job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
+		}
 		selected_node_cnt = job_ptr->node_cnt_wag;
 		memcpy(tres_req_cnt, job_ptr->tres_req_cnt,
 		       slurmctld_tres_size);
@@ -3708,6 +3720,10 @@ static int _het_job_start_now(het_job_map_t *map, node_space_map_t *node_space)
 		bool reset_time = false;
 		job_ptr = rec->job_ptr;
 		job_ptr->part_ptr = rec->part_ptr;
+		if (rec->resv_ptr) {
+			job_ptr->resv_ptr = rec->resv_ptr;
+			job_ptr->resv_id = job_ptr->resv_ptr->resv_id;
+		}
 
 		/*
 		 * Identify the nodes which this job can use
