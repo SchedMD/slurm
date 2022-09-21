@@ -150,6 +150,7 @@ int main(int argc, char **argv)
 	 * able to write a core dump.
 	 */
 	_init_pidfile();
+	_become_slurm_user();
 
 	/*
 	 * Do plugin init's after _init_pidfile so systemd is happy as
@@ -164,7 +165,6 @@ int main(int argc, char **argv)
 		      slurm_conf.accounting_storage_type);
 	}
 
-	_become_slurm_user();
 	if (foreground == 0 || setwd)
 		_set_work_dir();
 	log_config();
