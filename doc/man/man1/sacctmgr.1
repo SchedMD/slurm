@@ -1156,14 +1156,17 @@ account or list user.
 
 .SH "SPECIFICATIONS FOR EVENTS"
 
+.LP
+Options you can specify to filter for specific types of events.
+
 .TP
 \fBAll_Clusters\fR
-Get information on all cluster shortcut.
+Shortcut to get information on all clusters.
 .IP
 
 .TP
 \fBAll_Time\fR
-Get time period for all time shortcut.
+Shortcut to get time period for all time.
 .IP
 
 .TP
@@ -1176,7 +1179,7 @@ command was run.
 \fBCondFlags\fR=<\fIflag\fR>[,<\fIflag\fR>,...]
 Optional list of flags to filter events by.
 .br
-Valid options are
+Valid options are:
 .RS
 .TP
 \fBOpen\fR
@@ -1188,9 +1191,10 @@ If set, only open node events (currently down) will be returned.
 .TP
 \fBEnd\fR=<\fIOPT\fR>
 Period ending of events. Default is now.
-
-Valid time formats are...
 .br
+Valid time formats are:
+.RS
+.LP
 HH:MM[:SS] [AM|PM]
 .br
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
@@ -1200,12 +1204,13 @@ MM/DD[/YY]\-HH:MM[:SS]
 YYYY\-MM\-DD[THH:MM[:SS]]
 .br
 now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.RE
 .IP
 
 .TP
 \fBEvent\fR=<\fIOPT\fR>
-Specific events to look for, valid options are Cluster or Node,
-default is both.
+Specific types of events to look for. Valid options are Cluster or Node.
+The default is both.
 .IP
 
 .TP
@@ -1225,18 +1230,19 @@ Node names affected by an event.
 
 .TP
 \fBReason\fR=<\fIreason\fR>[,<\fIreason\fR>,...]
-Reason an event happened.
+Reason associated with a node going down. A reason that contains a space
+should be surrounded by quotes.
 .IP
 
 .TP
 \fBStart\fR=<\fIOPT\fR>
 Period start of events.  Default is 00:00:00 of previous day, unless
-states are given with the States= spec events.  If this is the case
+states are given with the States=<spec> events.  If this is the case
 the default behavior is to return events currently in
 the states specified.
-
-Valid time formats are...
 .br
+Valid time formats are:
+.RS
 HH:MM[:SS] [AM|PM]
 .br
 MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
@@ -1246,6 +1252,7 @@ MM/DD[/YY]\-HH:MM[:SS]
 YYYY\-MM\-DD[THH:MM[:SS]]
 .br
 now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.RE
 .IP
 
 .TP
@@ -1257,11 +1264,17 @@ set automatically to Node.
 .TP
 \fBUser\fR=<\fIuser_name\fR>[,<\fIuser_name\fR>,...]
 Query against users who set the event.  If this is set, the event type is
-set automatically to Node since only user slurm can perform a cluster event.
+set automatically to Node since only the slurm user can perform a cluster
+event.
 .IP
 
 
 .SH "LIST/SHOW EVENT FORMAT OPTIONS"
+
+.LP
+Fields you can display when viewing event records by using the \fIformat=\fR
+option. The default format is:
+Cluster,NodeName,TimeStart,TimeEnd,State,Reason,User
 
 .TP
 \fBCluster\fR
