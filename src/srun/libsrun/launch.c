@@ -276,6 +276,11 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 
 	step_req->num_tasks = opt_local->ntasks;
 
+	if (opt_local->ntasks_per_core != NO_VAL)
+		step_req->ntasks_per_core = opt_local->ntasks_per_core;
+	else
+		step_req->ntasks_per_core = INFINITE16;
+
 	if (opt_local->mem_per_cpu != NO_VAL64)
 		step_req->pn_min_memory = opt_local->mem_per_cpu | MEM_PER_CPU;
 	else if (opt_local->pn_min_memory != NO_VAL64)

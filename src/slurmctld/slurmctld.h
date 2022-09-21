@@ -1005,6 +1005,7 @@ typedef struct {
 	uint32_t cpu_freq_max; 		/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov; 		/* cpu frequency governor */
 	uint16_t cpus_per_task;		/* cpus per task initiated */
+	uint16_t ntasks_per_core;	/* Maximum tasks per core */
 	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation
 					 * across nodes */

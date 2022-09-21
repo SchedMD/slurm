@@ -2190,6 +2190,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	int rc = SLURM_SUCCESS;
 	uint16_t req_tpc = NO_VAL16;
 
+
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
@@ -3209,6 +3210,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		step_ptr->cpu_freq_gov = step_specs->cpu_freq_gov;
 	}
 	step_ptr->cpus_per_task = (uint16_t)cpus_per_task;
+	step_ptr->ntasks_per_core = step_specs->ntasks_per_core;
 	step_ptr->pn_min_memory = step_specs->pn_min_memory;
 	step_ptr->cpu_count = orig_cpu_count;
 	step_ptr->exit_code = NO_VAL;
@@ -3488,7 +3490,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	uint32_t cpu_count_reps[node_count];
 	uint32_t cpus_task_reps[node_count];
 	uint32_t cpus_task = 0;
-	uint16_t ntasks_per_core = 0;
+	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
 	uint16_t ntasks_per_socket = 0;
 	bool first_step_node = true;
 	node_record_t *node_ptr;
@@ -3513,14 +3515,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		step_ptr->start_protocol_ver =
 			step_ptr->job_ptr->front_end_ptr->protocol_version;
 #endif
-
-	if (job_ptr->details && job_ptr->details->mc_ptr) {
-		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
-		if (mc_ptr->ntasks_per_core &&
-		    (mc_ptr->ntasks_per_core != INFINITE16)) {
-			ntasks_per_core = mc_ptr->ntasks_per_core;
-		}
-	}
 
 	/* build cpus-per-node arrays for the subset of nodes used by step */
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);

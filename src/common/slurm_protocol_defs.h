@@ -774,6 +774,7 @@ typedef struct job_step_specs {
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
+	uint16_t ntasks_per_core; /* number of tasks that can access each cpu */
 	uint16_t ntasks_per_tres;/* number of tasks that can access each gpu */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from step's allocation, default NONE */
