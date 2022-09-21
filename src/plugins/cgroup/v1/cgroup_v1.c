@@ -86,7 +86,7 @@ const char *g_cg_name[CG_CTL_CNT] = {
 };
 
 /* Cgroup v1 control items for the oom monitor */
-#define STOP_OOM 0x987987987
+#define STOP_OOM 1
 
 typedef enum {
 	OOM_KILL_NONE,		/* Don't account for oom_kill events. */
