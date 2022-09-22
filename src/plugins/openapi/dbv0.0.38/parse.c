@@ -1776,8 +1776,18 @@ static int _dump_assoc_id(const parser_t *const parse, void *obj, data_t *dst,
 	xassert(penv->g_assoc_list);
 
 	if (!(assoc = list_find_first(penv->g_assoc_list,
-				      slurmdb_find_assoc_in_list, associd)))
-		return ESLURM_DATA_CONV_FAILED;
+				      slurmdb_find_assoc_in_list, associd))) {
+		error("%s: unable to resolve assoc_id %u",
+		      __func__, *associd);
+
+		data_set_dict(dst);
+		data_set_int(data_key_set(dst, "id"), *associd);
+		data_set_null(data_key_set(dst, "account"));
+		data_set_null(data_key_set(dst, "cluster"));
+		data_set_null(data_key_set(dst, "partition"));
+		data_set_null(data_key_set(dst, "user"));
+		return SLURM_SUCCESS;
+	}
 
 	return _parser_dump(assoc, parse_assoc_short,
 			    ARRAY_SIZE(parse_assoc_short), dst, penv);
