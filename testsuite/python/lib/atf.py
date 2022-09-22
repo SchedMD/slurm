@@ -526,7 +526,7 @@ def backup_config_file(config='slurm'):
 
     # If a backup already exists, issue a warning and return (honor existing backup)
     if os.path.isfile(backup_config_file):
-        logging.warning(f"Backup file already exists ({backup_config_file})")
+        logging.trace(f"Backup file already exists ({backup_config_file})")
         return
 
     # If the file to backup does not exist, touch an empty backup file with
@@ -557,7 +557,7 @@ def restore_config_file(config='slurm'):
     # If backup file doesn't exist, it has probably already been
     # restored by a previous call to restore_config_file
     if not os.path.isfile(backup_config_file):
-        logging.warning(f"Backup file does not exist for {config_file}. It has probably already been restored.")
+        logging.trace(f"Backup file does not exist for {config_file}. It has probably already been restored.")
         return
 
     # If the sticky bit is set and the file is empty, remove both the file and the backup
