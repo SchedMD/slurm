@@ -492,7 +492,6 @@ static int _dump_jobs(const char *context_id, http_request_method_t method,
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t assoc_cond = {
-		.only_defs = 1,
 		.with_deleted = 1,
 		.without_parent_info = 1,
 		.without_parent_limits = 1,
