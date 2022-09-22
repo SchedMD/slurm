@@ -10893,7 +10893,7 @@ static void _pack_job_array_resp_msg(job_array_resp_msg_t *msg, buf_t *buffer,
 static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, buf_t *buffer,
 				       uint16_t protocol_version)
 {
-	job_array_resp_msg_t *resp;
+	job_array_resp_msg_t *resp = NULL;
 	uint32_t i, uint32_tmp;
 
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
