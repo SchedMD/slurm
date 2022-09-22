@@ -19,6 +19,11 @@ end
 function _log_user_and_debug(fmt, ...)
 --[[Implicit definition of arg was removed in Lua 5.2]]--
 	local arg = {...}
+	--[[
+	--  Returning a message to user from slurm_job_modify is supported
+	--  since Slurm 23.02, using it in older versions will result in
+	--  an error message in slurmctld logs.
+	]]--
 	slurm.log_user(fmt, unpack(arg))
 	slurm.log_debug(fmt, unpack(arg))
 end
