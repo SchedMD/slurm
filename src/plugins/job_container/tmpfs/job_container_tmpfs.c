@@ -765,6 +765,8 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 		debug3("job entered namespace");
 	}
 
+	close(fd);
+
 	return SLURM_SUCCESS;
 }
 
