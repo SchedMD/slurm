@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
  -- Add support for padding StdOut/StdErr/StdIn format specifiers to scontrol
     show job.
 --  Fix sacctmgr qos filter to properly select assocs by qos inheritance rules.
+ -- Prevent slurmctld from starting with invalid jobcomp plugin.
 
 * Changes in Slurm 22.05.5
 ==========================
