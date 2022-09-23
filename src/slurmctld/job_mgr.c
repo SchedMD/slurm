@@ -4915,6 +4915,12 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	details_new->prefer = xstrdup(job_details->prefer);
 	details_new->prefer_list =
 		feature_list_copy(job_details->prefer_list);
+	/*
+	 * features_use and feature_list_use are set in the schedulers before
+	 * attempting to schedule the job, so just set them to NULL here.
+	 */
+	details_new->features_use = NULL;
+	details_new->feature_list_use = NULL;
 	if (job_details->mc_ptr) {
 		i = sizeof(multi_core_data_t);
 		details_new->mc_ptr = xmalloc(i);
