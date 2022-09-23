@@ -88,14 +88,18 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <p class="commandline">
 int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid, char **error_msg)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-This function is called by the slurmctld daemon with job submission parameters
-supplied by the salloc, sbatch or srun command. It can be used to log and/or
+This function is called by the slurmctld daemon with the job submission
+parameters supplied by the salloc, sbatch or srun command. Only explicitly
+defined values will be represented. For values not defined at submit time
+<span class="commandline">slurm.NO_VAL/16/64</span> or
+<span class="commandline">nil</span> will be set. It can be used to log and/or
 modify the job parameters supplied by the user as desired. Note that this
 function has access to the slurmctld's global data structures, for example
 to examine the available partitions, reservations, etc.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">job_desc</span>
-(input/output) the job allocation request specifications.<br>
+(input/output) the job allocation request specifications, before job defaults
+are set.<br>
 <span class="commandline">submit_uid</span>
 (input) user ID initiating the request.<br>
 <span class="commandline">error_msg</span>
@@ -117,7 +121,8 @@ function has access to the slurmctld's global data structures, for example to
 examine the available partitions, reservations, etc.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">job_desc</span>
-(input/output) the job allocation request specifications.<br>
+(input/output) the job allocation request specifications, before job defaults
+are set.<br>
 <span class="commandline">job_ptr</span>
 (input/output) slurmctld daemon's current data structure for the job to
 be modified.<br>
@@ -160,8 +165,11 @@ approach is to use <a href="cli_filter_plugins.html">CliFilterPlugins</a>.</p>
 int slurm_job_submit(job_desc_msg_t *job_desc, List part_list, uint32_t
 submit_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-This function is called by the slurmctld daemon with job submission parameters
-supplied by the salloc, sbatch or srun command. It can be used to log and/or
+This function is called by the slurmctld daemon with the job submission
+parameters supplied by the salloc, sbatch or srun command. Only explicitly
+defined values will be represented. For values not defined at submit time
+<span class="commandline">slurm.NO_VAL/16/64</span> or
+<span class="commandline">nil</span> will be set. It can be used to log and/or
 modify the job parameters supplied by the user as desired. Note that this
 function has access to the slurmctld's global data structures, for example
 to examine the available partitions, reservations, etc.
@@ -194,6 +202,21 @@ Job submission rejected due to missing size specification.<br>
 <span class="commandline">slurm.ESLURM_MISSING_TIME_LIMIT</span> &mdash;
 Job submission rejected due to missing time limit.<br>
 
+<p><b>NOTE</b>: As <span class="commandline">job_desc</span> contains only
+user-specified values, undefinded values can be recognized (before defaults
+are set) by either checking for <span class="commandline">nil</span> or for
+the corresponding <span class="commandline">slurm.NO_VAL/16/64</span>. This
+allows sites to apply policies, such as requiring users to define the number
+of nodes, as in the example below:</p>
+<pre>
+...
+	-- Number of nodes must be defined at submit time
+	if (job_desc.max_nodes == slurm.NO_VAL) then
+		slurm.log_user("No max_nodes specified, please specify a number of nodes")
+		return slurm.ERROR
+	end
+...
+</pre>
 <p class="commandline">
 int slurm_job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 List part_list, int modify_uid)
@@ -309,6 +332,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 08 September 2022</p>
+<p style="text-align:center;">Last modified 18 October 2022</p>
 
 <!--#include virtual="footer.txt"-->
