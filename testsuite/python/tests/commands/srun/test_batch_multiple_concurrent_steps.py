@@ -6,10 +6,9 @@ import re
 import pytest
 import time
 
+steps_submitted = 30
 memory = 6
-steps_started = 30
-total_mem = memory * steps_started * 2
-max_wait_time = 10
+total_mem = memory * steps_submitted * 2
 
 
 # Setup
@@ -34,32 +33,30 @@ def test_batch_multiple_concurrent_steps():
     #   memory limit, it will use the system default (same as the job) which may
     #   prevent the level of parallelism desired.
     #
-    atf.make_bash_script(file_in, f"""for ((i = 0; i < {steps_started}; i++)); do
-    srun --overlap -N1 -n1 {step_mem_opt} printenv SLURM_JOB_ID
-    srun --overlap -N1 -n1 {step_mem_opt} sleep 30 &
+    atf.make_bash_script(file_in, f"""for ((i = 0; i < {steps_submitted}; i++)); do
+    srun --overlap -N1 -n1 {step_mem_opt} bash -c "echo STEP_ID=$SLURM_JOB_ID.\\$SLURM_STEP_ID && sleep 30" &
 done
 wait""")
 
     # Spawn a batch job with multiple steps in background
-    job_id = atf.submit_job(f"-O {job_mem_opt} -n{steps_started} --output={file_out} {file_in}")
+    job_id = atf.submit_job(f"-O {job_mem_opt} -n{steps_submitted} --output={file_out} {file_in}")
     atf.wait_for_job_state(job_id, 'RUNNING', fatal=True)
     
-    # Check that all the steps in background are in squeue at the same time within a time limit
-    step_count = 0
-    time_end =  time.time() + max_wait_time
-    while step_count != steps_started and time.time() < time_end:
-        output = atf.run_command_output("squeue -s --state=RUNNING", quiet=True)
-        match = re.findall(rf'{job_id}.(\d+)', output)
-        step_count = len(match)
-        time.sleep(1)
-    assert step_count == steps_started, f"All steps ({steps_started}) should be reported by squeue ({step_count} != {steps_started})"
-    atf.wait_for_job_state(job_id, 'DONE', fatal=True, timeout=60)
+    # Check that all of the steps in background are in squeue at the same time within a time limit
+    steps_started = 0
+    def count_steps_started():
+        nonlocal steps_started
+        output = atf.run_command_output(f"squeue --steps --state=RUNNING --format=%i --noheader --job {job_id}", fatal=True)
+        steps_started = len(re.findall(fr"{job_id}\.\d+", output))
+        return steps_started
+    assert atf.repeat_until(count_steps_started, lambda n: n == steps_submitted), f"All steps ({steps_submitted}) should be reported by squeue ({steps_started} != {steps_submitted})"
 
-    # Check that the output of all srun was written to the sbatch output file
-    atf.wait_for_file(file_out)
-    step_count = 0
-    output_file = open(file_out, 'r')
-    for line in output_file:
-        if re.search(f'{job_id}', line) is not None:
-            step_count += 1
-    assert step_count == steps_started, f"All steps ({steps_started}) should be reported on the output file ({step_count} != {steps_started})"
+    # Check that the output of all steps was written to the sbatch output file
+    atf.wait_for_file(file_out, fatal=True)
+    steps_written = 0
+    def count_steps_written():
+        nonlocal steps_written
+        output = atf.run_command_output(f"cat {file_out}", fatal=True)
+        steps_written = len(re.findall(fr"STEP_ID={job_id}\.\d+", output))
+        return steps_written
+    assert atf.repeat_until(count_steps_written, lambda n: n == steps_submitted), f"All steps ({steps_submitted}) should be written to the output file ({steps_written} != {steps_submitted})"
