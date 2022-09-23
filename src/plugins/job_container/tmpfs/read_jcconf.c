@@ -232,7 +232,7 @@ extern slurm_jc_conf_t *set_slurm_jc_conf(buf_t *buf)
 {
 	xassert(buf);
 
-	unpackbool(&slurm_jc_conf.auto_basepath, buf);
+	safe_unpackbool(&slurm_jc_conf.auto_basepath, buf);
 	safe_unpackstr(&slurm_jc_conf.basepath, buf);
 	safe_unpackstr(&slurm_jc_conf.dirs, buf);
 	safe_unpackstr(&slurm_jc_conf.initscript, buf);
