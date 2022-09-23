@@ -33,6 +33,12 @@ set acct_good      "test${test_id}_acct_good"
 set acct_bad       "test${test_id}_acct_bad"
 set part_name      "test${test_id}_part"
 
+# TODO: Remove this precondition check once Slurm 22.05 is no longer supported
+regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
+if {$major < 23} {
+	skip "This test is disabled in Slurm versions older than 23.02 (see bugs 14459 and 14864)"
+}
+
 #
 # Check accounting config and bail if not found.
 #
