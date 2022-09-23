@@ -170,7 +170,7 @@ end
 --]]
 function slurm_bb_data_in(job_id, job_script, uid, gid)
 	slurm.log_info("%s: slurm_bb_data_in(). job id:%s, job script:%s, uid:%s, gid:%s",
-		lua_script_name, job_id, job_script)
+		lua_script_name, job_id, job_script, uid, gid)
 	local rc, ret_str = sleep_wrapper(1)
 	return rc, ret_str
 end
