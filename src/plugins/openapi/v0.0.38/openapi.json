@@ -2304,7 +2304,7 @@
           },
           "prefer": {
             "type": "string",
-            "description": "Comma delimited list of features for scheduler to prefer but not a strict requirement like a constraint. This value is not dumped but can be used for job submission."
+            "description": "Comma delimited list of features for scheduler to prefer but not a strict requirement like a constraint. Value can be used for job submission but is only displayed for PENDING jobs."
           },
           "priority": {
             "type": "string",
