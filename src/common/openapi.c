@@ -148,11 +148,6 @@ typedef struct {
 	char *at;
 } id_merge_path_t;
 
-typedef struct {
-	char *path;
-	char *at;
-} merge_path_strings_t;
-
 struct openapi_s {
 	int magic;
 	List paths;
@@ -1116,19 +1111,6 @@ data_for_each_cmd_t _merge_tag(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-data_for_each_cmd_t _merge_path_strings(data_t *data, void *arg)
-{
-	merge_path_strings_t *args = arg;
-
-	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
-		return DATA_FOR_EACH_FAIL;
-
-	xstrfmtcatat(args->path, &args->at, "%s%s%s", (!args->path ? "/" : ""),
-		     (args->at ? "/" : ""), data_get_string(data));
-
-	return DATA_FOR_EACH_CONT;
-}
-
 data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 {
 	id_merge_path_t *args = arg;
@@ -1216,10 +1198,10 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 	merge_path_t *args = arg;
 	data_t *e, *servers;
 	data_t *merge[3] = { 0 }, *merged = NULL;
-	merge_path_strings_t mp_args = { 0 };
 	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
 	id_merge_path_t id_merge = { 0 };
 	bool free_0 = false; /* free merge[0] ? */
+	char *path = NULL;
 
 	if (data_get_type(data) != DATA_TYPE_DICT) {
 		rc = DATA_FOR_EACH_FAIL;
@@ -1245,18 +1227,19 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 	}
 
 	merged = data_list_join((const data_t **)merge, true);
-	if (data_list_for_each(merged, _merge_path_strings, &mp_args) < 0) {
+
+	if (data_list_join_str(&path, merged, "/")) {
 		rc = DATA_FOR_EACH_FAIL;
 		goto cleanup;
 	}
 
-	e = data_key_set(args->paths, mp_args.path);
+	e = data_key_set(args->paths, path);
 	if (data_get_type(e) != DATA_TYPE_NULL) {
 		/*
 		 * path is going to be overwritten which should only happen for
 		 * /openapi/ paths which is fully expected.
 		 */
-		debug("%s: overwriting path %s", __func__, mp_args.path);
+		debug("%s: overwriting path %s", __func__, path);
 	}
 
 	data_set_dict(e);
@@ -1274,7 +1257,7 @@ cleanup:
 		FREE_NULL_DATA(merge[0]);
 	FREE_NULL_DATA(merge[1]);
 	FREE_NULL_DATA(merged);
-	xfree(mp_args.path);
+	xfree(path);
 
 	return rc;
 }
