@@ -497,6 +497,24 @@ extern data_t *data_list_join(const data_t **data, bool flatten_lists);
 extern size_t data_get_list_length(const data_t *data);
 
 /*
+ * Split up string using token and append values to dst
+ * IN dst - data list to append with values
+ * IN src - string to split by token
+ * IN token - token to split src with
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_list_split_str(data_t *dst, const char *src, const char *token);
+
+/*
+ * Create string by joining strings in list with token
+ * IN dst - ptr to string to populate (caller must xfree())
+ * IN src - data list to join
+ * IN token - token to join src with
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_list_join_str(char **dst, const data_t *src, const char *token);
+
+/*
  * Get data entry with given key (from constant data).
  * IN data constant data object to find entity with given key string
  * IN key string of key to find

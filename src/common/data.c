@@ -127,6 +127,12 @@ struct data_list_s {
 	data_list_node_t *end;
 };
 
+typedef struct {
+	char *path;
+	char *at;
+	const char *token;
+} merge_path_strings_t;
+
 static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
@@ -1256,6 +1262,66 @@ size_t data_get_list_length(const data_t *data)
 
 	xassert(data->type == DATA_TYPE_LIST);
 	return data->data.list_u->count;
+}
+
+extern int data_list_split_str(data_t *dst, const char *src, const char *token)
+{
+	char *save_ptr = NULL;
+	char *tok = NULL;
+	char *str = xstrdup(src);
+
+	if (data_get_type(dst) == DATA_TYPE_NULL)
+		data_set_list(dst);
+
+	xassert(data_get_type(dst) == DATA_TYPE_LIST);
+	if (data_get_type(dst) != DATA_TYPE_LIST)
+		return SLURM_ERROR;
+
+	tok = strtok_r(str, "/", &save_ptr);
+	while (tok) {
+		xstrtrim(tok);
+
+		data_set_string(data_list_append(dst), tok);
+
+		tok = strtok_r(NULL, "/", &save_ptr);
+	}
+	xfree(str);
+
+	return SLURM_SUCCESS;
+}
+
+static data_for_each_cmd_t _foreach_join_str(const data_t *data, void *arg)
+{
+	char *b = NULL;
+	merge_path_strings_t *args = arg;
+
+	data_get_string_converted(data, &b);
+
+	xstrfmtcatat(args->path, &args->at, "%s%s%s",
+		     (!args->path ? args->token : ""),
+		     (args->at ? args->token : ""), b);
+
+	xfree(b);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+extern int data_list_join_str(char **dst, const data_t *src, const char *token)
+{
+	merge_path_strings_t args = {
+		.token = token,
+	};
+
+	xassert(!*dst);
+	xassert(data_get_type(src) == DATA_TYPE_LIST);
+
+	if (data_list_for_each_const(src, _foreach_join_str, &args) < 0) {
+		xfree(args.path);
+		return SLURM_ERROR;
+	}
+
+	*dst = args.path;
+	return SLURM_SUCCESS;
 }
 
 extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *arg)
