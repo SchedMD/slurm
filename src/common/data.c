@@ -2066,7 +2066,10 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 
 data_t *data_copy(data_t *dest, const data_t *src)
 {
-	if (!src || !dest)
+	if (!dest)
+		dest = data_new();
+
+	if (!src)
 		return NULL;
 
 	_check_magic(src);
