@@ -3553,6 +3553,7 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 		fe_ptr->node_state = NODE_STATE_IDLE | node_flags;
 	}
 	if (IS_NODE_DOWN(fe_ptr) &&
+	    !IS_NODE_INVALID_REG(fe_ptr) &&
 	    ((slurm_conf.ret2service == 2) ||
 	     ((slurm_conf.ret2service == 1) &&
 	      !xstrcmp(fe_ptr->reason, "Not responding")))) {
@@ -3603,6 +3604,7 @@ static void _node_did_resp(node_record_t *node_ptr)
 		}
 	}
 	if (IS_NODE_DOWN(node_ptr) &&
+	    !IS_NODE_INVALID_REG(node_ptr) &&
 	    ((slurm_conf.ret2service == 2) ||
 	     (node_ptr->boot_req_time != 0)    ||
 	     ((slurm_conf.ret2service == 1) &&
