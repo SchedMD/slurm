@@ -1840,6 +1840,7 @@ static void _attempt_backfill(void)
 		uint32_t bf_job_priority, prio_reserve;
 		bool get_boot_time = false;
 		bool licenses_unavail;
+		bool use_prefer = false;
 
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr) {
@@ -1877,6 +1878,7 @@ static void _attempt_backfill(void)
 		job_ptr          = job_queue_rec->job_ptr;
 		part_ptr         = job_queue_rec->part_ptr;
 		bf_job_priority  = job_queue_rec->priority;
+		use_prefer = job_queue_rec->use_prefer;
 
 		if (job_ptr->array_recs &&
 		    (job_queue_rec->array_task_id == NO_VAL))
@@ -2047,9 +2049,7 @@ static void _attempt_backfill(void)
 		 * If we are trying to schedule preferred features don't
 		 * reserve.
 		 */
-		if (job_ptr->details->prefer &&
-		    (job_ptr->details->features_use ==
-		     job_ptr->details->prefer))
+		if (use_prefer)
 			job_no_reserve = TEST_NOW_ONLY;
 
 		/* If partition data is needed and not yet initialized, do so */
@@ -2306,6 +2306,31 @@ next_task:
 
 			job_ptr->time_limit = save_time_limit;
 			job_ptr->part_ptr = part_ptr;
+		}
+
+		/*
+		 * feature_list_use is a temporary variable and should
+		 * be reset before each use.
+		 * Do this after bf_yield to ensure the pointers are valid even
+		 * if the job was updated during the bf_yield.
+		 */
+		if (use_prefer) {
+			/*
+			 * Prefer was removed from the job since the
+			 * job_queue_rec was created (during bf_yield).
+			 * This is a separate queue record for prefer. Skip it.
+			 */
+			if (!job_ptr->details->prefer)
+				continue;
+			job_ptr->details->features_use =
+				job_ptr->details->prefer;
+			job_ptr->details->feature_list_use =
+				job_ptr->details->prefer_list;
+		} else {
+			job_ptr->details->features_use =
+				job_ptr->details->features;
+			job_ptr->details->feature_list_use =
+				job_ptr->details->feature_list;
 		}
 
 		FREE_NULL_BITMAP(avail_bitmap);

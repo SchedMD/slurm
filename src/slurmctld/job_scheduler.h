@@ -48,14 +48,14 @@ typedef struct job_queue_rec {
 	uint32_t array_task_id;		/* Job array, task ID */
 	uint32_t job_id;		/* Job ID */
 	job_record_t *job_ptr;		/* Pointer to job record */
-	char *features;
-	List feature_list;
 	part_record_t *part_ptr;	/* Pointer to partition record. Each
 					 * job may have multiple partitions. */
 	uint32_t priority;		/* Job priority in THIS partition */
 	slurmctld_resv_t *resv_ptr;     /* If job didn't ask for a reservation,
 					 * this reservation is one it can run
 					 * in without requesting */
+	bool use_prefer; /* This is a separate queue record to evaluate the
+			    job's prefer constraint. */
 } job_queue_rec_t;
 
 /* Use as return values for test_job_dependency. */

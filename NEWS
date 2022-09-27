@@ -106,6 +106,9 @@ documents those changes that are of interest to users and administrators.
     plugins initialization behavior. This avoids a fatal error when starting
     slurmdbd as root and root cannot start the auth or accounting_storage
     plugins (for example, if root cannot read the jwt key).
+ -- Fix memory leak when attempting to update a job's features with invalid
+    features.
+ -- Fix occasional slurmctld crash or hang in backfill due to invalid pointers.
 
 * Changes in Slurm 22.05.3
 ==========================
