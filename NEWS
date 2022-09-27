@@ -113,6 +113,9 @@ documents those changes that are of interest to users and administrators.
  -- Add ResumeAfter=<secs> option to "scontrol update nodename=".
  -- slurmrestd - switch to returning UNPROCESSABLE_CONTENT when parsing
     succeeds but an error about the actual contents causes a request to fail.
+ -- slurmrestd - queries that result in empty contents will now be treated as
+    SUCCESS. While the query worked, nothing was returned, which allows callers
+    to determine how to then proceed.
 
 * Changes in Slurm 22.05.6
 ==========================

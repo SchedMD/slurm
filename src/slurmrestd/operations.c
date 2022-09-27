@@ -471,7 +471,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		};
 
 		rc = send_http_response(&send_args);
-	} else if (rc) {
+	} else if (rc && (rc != ESLURM_REST_EMPTY_RESULT)) {
 		http_status_code_t e = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
 		if (rc == ESLURM_REST_INVALID_QUERY)
