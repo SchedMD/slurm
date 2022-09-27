@@ -1264,6 +1264,36 @@ size_t data_get_list_length(const data_t *data)
 	return data->data.list_u->count;
 }
 
+extern data_t *data_get_list_last(data_t *data)
+{
+	data_list_node_t *i;
+	_check_magic(data);
+
+	if (!data)
+		return NULL;
+
+	xassert(data->type == DATA_TYPE_LIST);
+	if (data->type != DATA_TYPE_LIST)
+		return NULL;
+
+	if (!data->data.list_u->count)
+		return NULL;
+
+	i = data->data.list_u->begin;
+	_check_data_list_magic(data->data.list_u);
+	while (i) {
+		_check_data_list_node_magic(i);
+		xassert(!i->key);
+
+		if (!i->next)
+			return i->data;
+
+		i = i->next;
+	}
+
+	fatal_abort("%s: malformed data list", __func__);
+}
+
 extern int data_list_split_str(data_t *dst, const char *src, const char *token)
 {
 	char *save_ptr = NULL;

@@ -497,6 +497,13 @@ extern data_t *data_list_join(const data_t **data, bool flatten_lists);
 extern size_t data_get_list_length(const data_t *data);
 
 /*
+ * Get last entity in data list
+ * IN data data list to get last entry
+ * RET last entity in data list or NULL (empty list)
+ */
+extern data_t *data_get_list_last(data_t *data);
+
+/*
  * Split up string using token and append values to dst
  * IN dst - data list to append with values
  * IN src - string to split by token
