@@ -177,8 +177,8 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 		   !oci->runtime_run && oci->runtime_start) {
 		debug("OCI container activated with create/start");
 	} else if (!oci->runtime_create && oci->runtime_delete &&
-		   oci->runtime_kill && oci->runtime_query &&
-		   oci->runtime_run && !oci->runtime_start) {
+		   oci->runtime_kill && oci->runtime_run &&
+		   !oci->runtime_start) {
 		debug("OCI container activated with run");
 	} else {
 		error("RunTimeRun and RunCreate/RunTimeStart are mutually exclusive. All other RunTime* configurations items must be populated.");
