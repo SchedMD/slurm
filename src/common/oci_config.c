@@ -200,6 +200,14 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	if (!rc) {
 		free_oci_conf(*oci_ptr);
 		*oci_ptr = oci;
+
+		debug("%s: oci.conf loaded: ContainerPath=%s CreateEnvFile=%c RunTimeCreate=%s RunTimeDelete=%s RunTimeKill=%s RunTimeQuery=%s RunTimeRun=%s RunTimeStart=%s IgnoreFileConfigJson=%c",
+		      __func__, oci->container_path,
+		      (oci->create_env_file ? 'T' : 'F'),
+		      oci->runtime_create, oci->runtime_delete,
+		      oci->runtime_kill, oci->runtime_query, oci->runtime_run,
+		      oci->runtime_start,
+		      (oci->ignore_config_json ? 'T' : 'F'));
 	} else {
 		free_oci_conf(oci);
 	}
