@@ -100,6 +100,9 @@ documents those changes that are of interest to users and administrators.
  -- Allow jobs to queue even if the user is not in AllowGroups when
     EnforcePartLimits=no is set. This ensures consistency for all the Partition
     access controls, and matches the documented behavior for EnforcePartLimits.
+ -- Fix srun tasks binding/allocation when using --ntasks-per-core option. Now,
+    --ntasks-per-core=1 implies --cpu-bind=cores and --ntasks-per-core>1 implies
+    --cpu-bind=threads.
 
 * Changes in Slurm 22.05.6
 ==========================

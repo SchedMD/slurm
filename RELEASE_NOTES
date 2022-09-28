@@ -79,6 +79,9 @@ COMMAND CHANGES (see man pages for details)
  -- scontrol - Requested TRES and allocated TRES will now always be printed when
     showing jobs, instead of one TRES output that was either the requested or
     allocated.
+ -- srun --ntasks-per-core now applies to job and step allocations. Now, use of
+    --ntasks-per-core=1 implies --cpu-bind=cores and --ntasks-per-core>1 implies
+    --cpu-bind=threads.
 
 API CHANGES
 ===========

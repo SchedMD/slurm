@@ -1177,7 +1177,10 @@ static bool _opt_verify(void)
 					   CPU_BIND_TO_CORES |
 					   CPU_BIND_TO_THREADS |
 					   CPU_BIND_TO_LDOMS))) {
-			sropt.cpu_bind_type |= CPU_BIND_TO_CORES;
+			if (opt.ntasks_per_core == 1)
+				sropt.cpu_bind_type |= CPU_BIND_TO_CORES;
+			else
+				sropt.cpu_bind_type |= CPU_BIND_TO_THREADS;
 		}
 	}
 	if (opt.ntasks_per_socket > 0) {

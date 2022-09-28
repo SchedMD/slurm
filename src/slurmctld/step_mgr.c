@@ -2009,9 +2009,9 @@ static bool _handle_core_select(step_record_t *step_ptr,
 static int _pick_step_cores(step_record_t *step_ptr,
 			    job_resources_t *job_resrcs_ptr, int job_node_inx,
 			    uint16_t task_cnt, uint16_t cpus_per_core,
-			    int node_inx)
+			    int node_inx, int ntasks_per_core)
 {
-	uint16_t sockets, cores, cpus_per_task;
+	uint16_t sockets, cores, cpus_per_task, tasks_per_node;
 	int cpu_cnt = (int) task_cnt;
 	bool use_all_cores;
 	bitstr_t *all_gres_core_bitmap = NULL, *any_gres_core_bitmap = NULL;
@@ -2024,7 +2024,14 @@ static int _pick_step_cores(step_record_t *step_ptr,
 				  &sockets, &cores))
 		fatal("get_job_resources_cnt");
 
-	if ((step_ptr->flags & SSF_WHOLE) || task_cnt == (cores * sockets)) {
+	if (ntasks_per_core != INFINITE16)
+		tasks_per_node = cores * ntasks_per_core * sockets;
+	else
+		tasks_per_node = cores * cpus_per_core * sockets;
+
+	if (((step_ptr->flags & SSF_WHOLE) || task_cnt == (cores * sockets)) &&
+	    (task_cnt <= tasks_per_node || (step_ptr->flags & SSF_OVERCOMMIT)))
+	{
 		use_all_cores = true;
 		cpu_cnt = job_resrcs_ptr->cpus[job_node_inx];
 	} else {
@@ -2037,7 +2044,9 @@ static int _pick_step_cores(step_record_t *step_ptr,
 			cpu_cnt *= cores_per_task;
 		}
 
-		if (cpu_cnt > job_resrcs_ptr->cpus[job_node_inx]) {
+		if (cpu_cnt * cpus_per_core >
+		    job_resrcs_ptr->cpus[job_node_inx] &&
+		    !(step_ptr->flags & SSF_OVERCOMMIT)) {
 			/* Node can never fullfill step request */
 			log_flag(STEPS, "%s: For step %pS node %d doesn't have enough cpus (%u) to full request of %u",
 				 __func__, step_ptr, job_node_inx,
@@ -2189,7 +2198,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	uint32_t rem_nodes;
 	int rc = SLURM_SUCCESS;
 	uint16_t req_tpc = NO_VAL16;
-
+	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
+	uint16_t cpus_per_task = step_ptr->cpus_per_task;
+	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -2214,7 +2225,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		/* "scontrol reconfig" of live system */
 		pick_step_cores = false;
 	} else if (!(step_ptr->flags & SSF_OVERCOMMIT) &&
-		   (step_ptr->cpu_count == job_ptr->total_cpus)) {
+		   (step_ptr->cpu_count == job_ptr->total_cpus) &&
+		   ((ntasks_per_core == mc_ptr->threads_per_core) ||
+		    (ntasks_per_core == INFINITE16))) {
 		/*
 		 * If the step isn't overcommitting and uses all of job's cores
 		 * Just copy the bitmap to save time
@@ -2241,7 +2254,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
 	     i++) {
 		uint64_t gres_step_node_mem_alloc = 0;
-		uint16_t vpus;
+		uint16_t vpus, avail_cpus_per_core, alloc_cpus_per_core;
 		bitstr_t *unused_core_bitmap;
 		job_node_inx++;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
@@ -2269,6 +2282,27 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		}
 
 		vpus = node_ptr->tpc;
+
+		if (req_tpc != NO_VAL16)
+			avail_cpus_per_core = req_tpc;
+		else
+			avail_cpus_per_core = vpus;
+
+		/*
+		 * Modify cpus-per-task to request full cores if they can't
+		 * be shared
+		*/
+		if ((ntasks_per_core != INFINITE16) && ntasks_per_core) {
+			alloc_cpus_per_core = avail_cpus_per_core /
+					      ntasks_per_core;
+			if ((alloc_cpus_per_core > 1) &&
+			    (cpus_per_task % alloc_cpus_per_core)) {
+				cpus_per_task += alloc_cpus_per_core -
+					(cpus_per_task % alloc_cpus_per_core);
+			}
+		}
+		step_ptr->cpus_per_task = cpus_per_task;
+
 		if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc_mem = cpus_alloc =
 				job_resrcs_ptr->cpus[job_node_inx];
@@ -2292,7 +2326,6 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 				cpus_alloc_mem *= req_tpc;
 			}
 		} else {
-			uint16_t cpus_per_task = step_ptr->cpus_per_task;
 			cpus_alloc =
 				step_ptr->step_layout->tasks[step_node_inx] *
 				cpus_per_task;
@@ -2410,8 +2443,6 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			 */
 			if (!_use_one_thread_per_core(step_ptr) &&
 			    (!(node_ptr->cpus == node_ptr->tot_cores))) {
-				multi_core_data_t *mc_ptr;
-				mc_ptr = job_ptr->details->mc_ptr;
 				if (step_ptr->threads_per_core != NO_VAL16)
 					cpus_per_core =
 						step_ptr->threads_per_core;
@@ -2426,7 +2457,8 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 						   job_node_inx,
 						   step_ptr->step_layout->
 						   tasks[step_node_inx],
-						   cpus_per_core, i))) {
+						   cpus_per_core, i,
+						   ntasks_per_core))) {
 				log_flag(STEPS, "unable to pick step cores for job node %d (%s): %s",
 					 job_node_inx,
 					 node_ptr->name,
