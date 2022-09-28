@@ -475,7 +475,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		http_status_code_t e = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
 		if (rc == ESLURM_REST_INVALID_QUERY)
-			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
+			e = HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT;
 		else if (rc == ESLURM_REST_FAIL_PARSING)
 			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
 		else if (rc == ESLURM_REST_INVALID_JOBS_DESC)

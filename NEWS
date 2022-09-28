@@ -111,6 +111,8 @@ documents those changes that are of interest to users and administrators.
  -- common/cgroup - improve possible TOCTOU situation when reading cgroup files.
  -- slurmctld will fatal() when reconfiguring the job_submit plugin fails.
  -- Add ResumeAfter=<secs> option to "scontrol update nodename=".
+ -- slurmrestd - switch to returning UNPROCESSABLE_CONTENT when parsing
+    succeeds but an error about the actual contents causes a request to fail.
 
 * Changes in Slurm 22.05.6
 ==========================
