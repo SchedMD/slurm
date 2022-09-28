@@ -57,6 +57,7 @@ typedef struct {
 	log_level_t syslog_log_level; /* container logging to syslog */
 	log_level_t file_log_level; /* container logging to file */
 	uint64_t debug_flags; /* container logging flags */
+	bool ignore_config_json; /* True to ignore config.json existence */
 } oci_conf_t;
 
 extern int get_oci_conf(oci_conf_t **oci);

@@ -66,6 +66,7 @@ static s_p_options_t options[] = {
 	{"SyslogDebug", S_P_STRING},
 	{"FileDebug", S_P_STRING},
 	{"DebugFlags", S_P_STRING},
+	{"IgnoreFileConfigJson", S_P_BOOLEAN},
 	{NULL}
 };
 
@@ -98,6 +99,7 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	(void) s_p_get_string(&oci->container_path, "ContainerPath", tbl);
 	(void) s_p_get_boolean(&oci->create_env_file, "CreateEnvFile", tbl);
 	(void) s_p_get_string(&disable_hooks, "DisableHooks", tbl);
+	(void) s_p_get_boolean(&oci->ignore_config_json, "IgnoreFileConfigJson", tbl);
 	(void) s_p_get_string(&oci->runtime_create, "RunTimeCreate", tbl);
 	(void) s_p_get_string(&oci->runtime_delete, "RunTimeDelete", tbl);
 	(void) s_p_get_string(&oci->runtime_kill, "RunTimeKill", tbl);
@@ -167,9 +169,16 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 		xfree(disable_hooks);
 	}
 
-	if (!oci->runtime_create && !oci->runtime_delete &&
-	    !oci->runtime_kill && !oci->runtime_query &&
-	    !oci->runtime_run && !oci->runtime_start) {
+	if (oci->ignore_config_json) {
+		/*
+		 * If site has enabled ignore config.json then sanity checking
+		 * the runtime commands is not required as the site is faking an
+		 * OCI runtime any way.
+		 */
+		debug("OCI container activated with IgnoreFileConfigJson=True");
+	} else if (!oci->runtime_create && !oci->runtime_delete &&
+		   !oci->runtime_kill && !oci->runtime_query &&
+		   !oci->runtime_run && !oci->runtime_start) {
 		error("oci.conf present but missing required options. Rejecting invalid configuration.");
 		rc = EINVAL;
 	} else if (oci->runtime_create && oci->runtime_delete &&

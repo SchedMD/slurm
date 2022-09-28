@@ -167,6 +167,8 @@ documents those changes that are of interest to users and administrators.
  -- oci.conf - remove requirement of RunTimeQuery when RunTimeRun is set.
  -- slurmstepd - cleanup generated environment file for containers when step
     completes instead of deferring cleanup to OCI runtime.
+ -- oci.conf - add configuration option "IgnoreFileConfigJson=" to allow a site
+    to choose to ignore config.json.
 
 * Changes in Slurm 22.05.7
 ==========================
