@@ -103,6 +103,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun tasks binding/allocation when using --ntasks-per-core option. Now,
     --ntasks-per-core=1 implies --cpu-bind=cores and --ntasks-per-core>1 implies
     --cpu-bind=threads.
+ -- salloc/sbatch/srun check and abort if ntasks-per-core > threads-per-core.
 
 * Changes in Slurm 22.05.6
 ==========================

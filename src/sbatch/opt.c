@@ -920,8 +920,15 @@ static bool _opt_verify(void)
 	if (opt.ntasks_set && (opt.ntasks > 0))
 		het_job_env.ntasks = opt.ntasks;
 
-	if (opt.ntasks_per_core != NO_VAL)
+	if (opt.ntasks_per_core != NO_VAL) {
 		het_job_env.ntasks_per_core = opt.ntasks_per_core;
+		if ((opt.threads_per_core != NO_VAL) &&
+		    (opt.threads_per_core < opt.ntasks_per_core)) {
+			error("--ntasks-per-core (%d) can not be bigger than --threads-per-core (%d)",
+			opt.ntasks_per_core, opt.threads_per_core);
+			verified = false;
+		}
+	}
 
 	if (opt.ntasks_per_tres != NO_VAL)
 		het_job_env.ntasks_per_tres = opt.ntasks_per_tres;

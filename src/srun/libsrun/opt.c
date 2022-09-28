@@ -1182,6 +1182,12 @@ static bool _opt_verify(void)
 			else
 				sropt.cpu_bind_type |= CPU_BIND_TO_THREADS;
 		}
+		if ((opt.threads_per_core !=  NO_VAL) &&
+		    (opt.threads_per_core < opt.ntasks_per_core)) {
+			error("--ntasks-per-core (%d) can not be bigger than --threads-per-core (%d)",
+			opt.ntasks_per_core, opt.threads_per_core);
+			verified = false;
+		}
 	}
 	if (opt.ntasks_per_socket > 0) {
 		/* if cpu_bind_type doesn't already have a auto pref,

@@ -82,6 +82,7 @@ COMMAND CHANGES (see man pages for details)
  -- srun --ntasks-per-core now applies to job and step allocations. Now, use of
     --ntasks-per-core=1 implies --cpu-bind=cores and --ntasks-per-core>1 implies
     --cpu-bind=threads.
+ -- salloc/sbatch/srun - Check and abort if ntasks-per-core > threads-per-core.
 
 API CHANGES
 ===========

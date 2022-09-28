@@ -663,6 +663,12 @@ static bool _opt_verify(void)
 	    (getenv("SLURM_NTASKS_PER_CORE") == NULL)) {
 		setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
 			opt.ntasks_per_core);
+		if ((opt.threads_per_core !=  NO_VAL) &&
+		    (opt.threads_per_core < opt.ntasks_per_core)) {
+			error("--ntasks-per-core (%d) can not be bigger than --threads-per-core (%d)",
+			opt.ntasks_per_core, opt.threads_per_core);
+			verified = false;
+		}
 	}
 
 	if ((opt.ntasks_per_gpu != NO_VAL) &&
