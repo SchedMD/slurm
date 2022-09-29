@@ -208,6 +208,12 @@ static int _set_qos_cnt(mysql_conn_t *mysql_conn)
 		return SLURM_ERROR;
 	}
 
+	if (!row[0]) {
+		error("No QoS present in the DB, start the primary slurmdbd to create the DefaultQOS.");
+		mysql_free_result(result);
+		return SLURM_ERROR;
+	}
+
 	/* Set the current qos_count on the system for
 	   generating bitstr of that length.  Since 0 isn't
 	   possible as an id we add 1 to the total to burn 0 and
