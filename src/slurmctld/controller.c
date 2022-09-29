@@ -1653,10 +1653,18 @@ static void _resize_qos(void)
 	unlock_slurmctld(part_write_lock);
 }
 
+static int _update_qos_for_each(void *x, void *arg) {
+	slurmdb_qos_rec_t *rec = arg;
+	job_record_t *job_ptr = x;
+
+	if ((rec == job_ptr->qos_ptr) && (IS_JOB_PENDING(job_ptr)))
+		acct_policy_update_pending_job(job_ptr);
+
+	return 0;
+}
+
 static void _update_qos(slurmdb_qos_rec_t *rec)
 {
-	ListIterator job_iterator;
-	job_record_t *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -1666,14 +1674,7 @@ static void _update_qos(slurmdb_qos_rec_t *rec)
 		return;
 
 	lock_slurmctld(job_write_lock);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if ((rec != job_ptr->qos_ptr) || (!IS_JOB_PENDING(job_ptr)))
-			continue;
-
-		acct_policy_update_pending_job(job_ptr);
-	}
-	list_iterator_destroy(job_iterator);
+	list_for_each(job_list, _update_qos_for_each, rec);
 	unlock_slurmctld(job_write_lock);
 }
 
