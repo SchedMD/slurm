@@ -128,8 +128,11 @@ scontrol_update_node (int argc, char **argv)
 			node_msg.gres = val;
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "Weight", MAX(tag_len,1)) == 0) {
-			if (parse_uint32(val, &node_msg.weight))
-				break;
+			if (parse_uint32(val, &node_msg.weight)) {
+				exit_code = 1;
+				error("Invalid value %s for Weight", argv[i]);
+				return -1;
+			}
 			update_cnt++;
 		} else if (!xstrncasecmp(tag, "Comment", MAX(tag_len, 2))) {
 			node_msg.comment = val;
