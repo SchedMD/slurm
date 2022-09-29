@@ -1830,8 +1830,10 @@ static int _init_tres(void)
  * NOTE: the job_write_lock as well as the assoc_mgr TRES Read lock should be
  * locked before coming in here.
  */
-static void _update_job_tres(job_record_t *job_ptr)
+static int _update_job_tres(void *x, void *args)
 {
+	job_record_t *job_ptr = x;
+
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	/* If this returns 1 it means the positions were
@@ -1847,6 +1849,8 @@ static void _update_job_tres(job_record_t *job_ptr)
 		job_set_alloc_tres(job_ptr, true);
 
 	update_job_limit_set_tres(&job_ptr->limit_set.tres);
+
+	return 0;
 }
 
 /* any association manager locks should be unlocked before hand */
@@ -3246,7 +3250,7 @@ static void *_assoc_cache_mgr(void *no_data)
 	assoc_mgr_lock(&locks);
 	itr = list_iterator_create(job_list);
 	while ((job_ptr = list_next(itr))) {
-		_update_job_tres(job_ptr);
+		(void) _update_job_tres(job_ptr, NULL);
 
 		if (job_ptr->assoc_id) {
 			memset(&assoc_rec, 0,
