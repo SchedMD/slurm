@@ -2135,7 +2135,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	int min_rem_nodes;	/* remaining resources desired */
 	bool enforce_binding = false;
 	struct job_details *details_ptr = job_ptr->details;
-	bool gres_per_job, requested;
+	bool gres_per_job, requested, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
 	uint32_t *switches_dist= NULL;
 	time_t time_waiting = 0;
@@ -2406,6 +2406,16 @@ try_again:
 			}
 		}
 
+		if (!sufficient) {
+			sufficient = (best_cpu_cnt >= rem_cpus) &&
+				     _enough_nodes(best_node_cnt, rem_nodes,
+						   min_nodes, req_nodes);
+			if (sufficient && gres_per_job) {
+				sufficient = gres_sched_sufficient(
+						job_ptr->gres_list_req,
+						best_gres);
+			}
+		}
 		requested = ((best_node_cnt >= rem_nodes) &&
 			     (best_cpu_cnt >= rem_cpus) &&
 			     (!gres_per_job ||
@@ -2433,7 +2443,7 @@ try_again:
 		xfree(node_names);
 		xfree(gres_str);
 	}
-	if (!requested) {
+	if (!sufficient) {
 		log_flag(SELECT_TYPE, "insufficient resources currently available for %pJ",
 		      job_ptr);
 		rc = SLURM_ERROR;
