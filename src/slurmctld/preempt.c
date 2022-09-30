@@ -392,8 +392,10 @@ static int _job_check_grace_internal(void *x, void *arg)
 	uint32_t grace_time = 0;
 
 	if (job_ptr->preempt_time) {
-		if (time(NULL) >= job_ptr->end_time)
+		if (time(NULL) >= job_ptr->end_time) {
+			job_ptr->preempt_time = time(NULL);
 			rc = 1;
+		}
 		return rc;
 	}
 
@@ -503,9 +505,6 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 			     __func__, job_ptr, slurm_strerror(rc));
 		}
 	}
-
-	if (rc == SLURM_SUCCESS)
-		job_ptr->preempt_time = time(NULL);
 
 	return rc;
 }
