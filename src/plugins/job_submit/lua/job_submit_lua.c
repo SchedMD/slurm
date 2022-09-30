@@ -178,6 +178,27 @@ static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 	}
 }
 
+/* Get the comment for an association (or NULL if not present) */
+static char *_get_assoc_comment(uint32_t user_id, char *account)
+{
+	slurmdb_assoc_rec_t assoc;
+	char *comment = NULL;
+
+	memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
+	assoc.uid = user_id;
+	if (account) {
+		assoc.acct = account;
+	} else {
+		assoc.acct = _get_default_account(user_id);
+	}
+
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc, accounting_enforce,
+				    NULL, false) != SLURM_ERROR)
+		comment = xstrdup(assoc.comment);
+
+	return comment;
+}
+
 /* Get fields in an existing slurmctld job_record */
 static int _job_rec_field_index(lua_State *L)
 {
@@ -488,6 +509,9 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		}
 	} else if (!xstrcmp(name, "array_inx")) {
 		lua_pushstring(L, job_desc->array_inx);
+	} else if (!xstrcmp(name, "assoc_comment")) {
+		lua_pushstring(L, _get_assoc_comment(job_desc->user_id,
+						     job_desc->account));
 	} else if (!xstrcmp(name, "batch_features")) {
 		lua_pushstring(L, job_desc->batch_features);
 	} else if (!xstrcmp(name, "begin_time")) {

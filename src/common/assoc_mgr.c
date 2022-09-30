@@ -2512,6 +2512,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	if (!assoc->cluster)
 		assoc->cluster = ret_assoc->cluster;
 
+	assoc->comment = ret_assoc->comment;
 	assoc->def_qos_id = ret_assoc->def_qos_id;
 
 	if (!assoc->grp_tres_mins)
