@@ -49,6 +49,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"
+#include "src/common/hash.h"
 #include "src/common/plugstack.h"
 #include "src/common/run_command.h"
 #include "src/common/select.h"
@@ -139,6 +140,8 @@ main (int argc, char **argv)
 		fatal( "failed to initialize node selection plugin" );
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
 		fatal( "failed to initialize authentication plugin" );
+	if (hash_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize hash plugin");
 
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg);
