@@ -442,6 +442,12 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			else
 				i_last = i_first - 1;
 			for (int i = i_first; i <= i_last; i++) {
+				/*
+				 * job_epilog_complete() can free
+				 * job_ptr->node_bitmap_cg
+				 */
+				if (!job_ptr->node_bitmap_cg)
+					break;
 				if (!bit_test(job_ptr->node_bitmap_cg, i))
 					continue;
 				job_epilog_complete(
