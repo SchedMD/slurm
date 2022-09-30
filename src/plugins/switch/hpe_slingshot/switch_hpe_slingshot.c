@@ -545,11 +545,11 @@ error:
  */
 extern int switch_p_job_preinit(stepd_step_rec_t *step)
 {
-	xassert(job);
-	slingshot_jobinfo_t *jobinfo = job->switch_job->data;
+	xassert(step);
+	slingshot_jobinfo_t *jobinfo = step->switch_job->data;
 	xassert(jobinfo);
-	int step_cpus = job->node_tasks * job->cpus_per_task;
-	if (!slingshot_create_services(jobinfo, job->uid, step_cpus))
+	int step_cpus = step->node_tasks * step->cpus_per_task;
+	if (!slingshot_create_services(jobinfo, step->uid, step_cpus))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
@@ -613,9 +613,9 @@ extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
  */
 extern int switch_p_job_postfini(stepd_step_rec_t *step)
 {
-	xassert(job);
+	xassert(step);
 
-	uid_t pgid = job->jmgr_pid;
+	uid_t pgid = step->jmgr_pid;
 	/*
 	 *  Kill all processes in the job's session
 	 */
@@ -623,11 +623,11 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 		debug2("Sending SIGKILL to pgid %lu", (unsigned long) pgid);
 		kill(-pgid, SIGKILL);
 	} else
-		debug("%ps: Bad pid value %lu", &job->step_id,
+		debug("%ps: Bad pid value %lu", &step->step_id,
 		      (unsigned long) pgid);
 
 	slingshot_jobinfo_t *jobinfo;
-	jobinfo = (slingshot_jobinfo_t *)job->switch_job->data;
+	jobinfo = (slingshot_jobinfo_t *)step->switch_job->data;
 	xassert(jobinfo);
 	if (!slingshot_destroy_services(jobinfo))
 		return SLURM_ERROR;

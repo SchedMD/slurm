@@ -89,7 +89,7 @@ static void *_create_container_thread(void *args)
 {
 	stepd_step_rec_t *step = (stepd_step_rec_t *)args;
 
-	job->cont_id = (uint64_t)job_create(0, job->uid, 0);
+	step->cont_id = (uint64_t)job_create(0, step->uid, 0);
 
 	/* Signal the container_create we are done */
 	slurm_mutex_lock(&notify_mutex);
@@ -102,7 +102,7 @@ static void *_create_container_thread(void *args)
 	 * and can cause deadlock if done.
 	 */
 
-	if (job->cont_id == (jid_t)-1) {
+	if (step->cont_id == (jid_t) -1) {
 		error("Failed to create job container: %m");
 	} else {
 		/*
@@ -161,13 +161,13 @@ extern int proctrack_p_create(stepd_step_rec_t *step)
 	if (!libjob_handle)
 		init();
 
-	if (!job->cont_id) {
+	if (!step->cont_id) {
 		/*
 		 * If we are forked then we can just use the pid from the fork
 		 * instead of using the thread method below.
 		 */
 		if (proctrack_forked) {
-			job->cont_id = (uint64_t)job_create(0, job->uid, 0);
+			step->cont_id = (uint64_t) job_create(0, step->uid, 0);
 			goto endit;
 		}
 
@@ -198,13 +198,13 @@ extern int proctrack_p_create(stepd_step_rec_t *step)
 		 * started waiting for it.
 		 */
 		slurm_mutex_lock(&notify_mutex);
-		slurm_thread_create(&threadid, _create_container_thread, job);
+		slurm_thread_create(&threadid, _create_container_thread, step);
 		slurm_cond_wait(&notify, &notify_mutex);
 		slurm_mutex_unlock(&notify_mutex);
 		slurm_mutex_unlock(&thread_mutex);
-		if (job->cont_id != (jid_t)-1)
+		if (step->cont_id != (jid_t) -1)
 			debug("proctrack_p_create: created jid 0x%08lx thread 0x%08lx",
-			      job->cont_id, threadid);
+			      step->cont_id, threadid);
 	} else
 		error("proctrack_p_create: already have a cont_id");
 endit:
@@ -240,10 +240,10 @@ try_again:
 	 * the time to add the pid to the job container.
 	 */
 	if (!proctrack_forked &&
-	    job_attachpid(pid, job->cont_id) == (jid_t) -1) {
+	    job_attachpid(pid, step->cont_id) == (jid_t) -1) {
 		if (errno == EINVAL && (count < 1)) {
 			jid_t jid;
-			if (proctrack_p_has_pid(job->cont_id, pid)) {
+			if (proctrack_p_has_pid(step->cont_id, pid)) {
 				debug("%s: Trying to add pid (%d) again to the same container, ignoring.",
 				      __func__, pid);
 				return SLURM_SUCCESS;
@@ -251,7 +251,7 @@ try_again:
 
 			if ((jid = job_detachpid(pid)) != (jid_t) -1) {
 				error("%s: Pid %d was attached to container %"PRIu64" incorrectly.  Moving to correct (%"PRIu64").",
-				      __func__, pid, jid, job->cont_id);
+				      __func__, pid, jid, step->cont_id);
 				count++;
 				goto try_again;
 			} else {
@@ -269,12 +269,12 @@ try_again:
 
 #ifdef HAVE_NATIVE_CRAY
 	// Set apid for this pid
-	if (job->het_job_id && (job->het_job_id != NO_VAL))
-		jobid = job->het_job_id;
+	if (step->het_job_id && (step->het_job_id != NO_VAL))
+		jobid = step->het_job_id;
 	else
-		jobid = job->step_id.job_id;
+		jobid = step->step_id.job_id;
 	if (job_setapid(pid, SLURM_ID_HASH(jobid,
-					   job->step_id.step_id)) == -1) {
+					   step->step_id.step_id)) == -1) {
 		error("Failed to set pid %d apid: %m", pid);
 		return SLURM_ERROR;
 	}
