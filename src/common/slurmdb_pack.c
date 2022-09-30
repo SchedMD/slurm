@@ -1033,6 +1033,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 
 		packstr(object->acct, buffer);
 		packstr(object->cluster, buffer);
+		packstr(object->comment, buffer);
 
 		pack32(object->def_qos_id, buffer);
 		pack16(object->flags, buffer);
@@ -1209,6 +1210,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpackstr_xmalloc(&object_ptr->acct, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
+		safe_unpackstr(&object_ptr->comment, buffer);
 
 		safe_unpack32(&object_ptr->def_qos_id, buffer);
 		safe_unpack16(&object_ptr->flags, buffer);

@@ -404,6 +404,11 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 				printf("MinPrioThresh=");
 
 			/* NEW LINE */
+			printf("%s", new_line_char);
+
+			printf("Comment=%s", assoc_rec->comment);
+
+			/* NEW LINE */
 			printf("\n");
 
 			/* Doesn't do anything yet */

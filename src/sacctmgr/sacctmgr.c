@@ -1055,13 +1055,13 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             DefaultWCKey=, Format=, Names=,                \n\
                             QosLevel=, WithAssoc, WithCoordinators,        \n\
                             WithDeleted, WithRawQOS, and WOPLimits         \n\
-       add user           - Accounts=, AdminLevel=, Clusters=,             \n\
+       add user           - Accounts=, AdminLevel=, Clusters=, Comment=,   \n\
                             DefaultAccount=, DefaultQOS=, DefaultWCKey=,   \n\
                             Fairshare=, MaxTRESMins=, MaxTRES=,            \n\
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=, \n\
                             Names=, Partitions=, Priority= and QosLevel=   \n\
        modify user        - (set options) AdminLevel=, DefaultAccount=,    \n\
-                            DefaultQOS=, DefaultWCKey=, Fairshare=,        \n\
+                            Comment=, DefaultQOS=, DefaultWCKey=, Fairshare=,\n\
                             MaxTRESMins=, MaxTRES=, MaxJobs=, MaxNodes=,   \n\
                             MaxSubmitJobs=, MaxWall=, NewName=,            \n\
                             and QosLevel=,                                 \n\
@@ -1089,7 +1089,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        Account            - Account, Coordinators, Description, Organization\n\
                                                                            \n\
-       Association        - Account, Cluster, DefaultQOS, Fairshare,       \n\
+       Association        - Account, Cluster, Comment, DefaultQOS, Fairshare,\n\
                             GrpTRESMins, GrpTRESRunMins, GrpTRES, GrpJobs, \n\
                             GrpMemory, GrpNodes, GrpSubmitJob, GrpWall,    \n\
                             ID, LFT, MaxTRESMins, MaxTRES,                 \n\

@@ -327,7 +327,10 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	if (!assoc)
 		return set;
 
-	if (!xstrncasecmp(type, "DefaultQOS", MAX(command_len, 8))) {
+	if (!xstrncasecmp(type, "Comment", MAX(command_len, 2))) {
+		assoc->comment = strip_quotes(value, NULL, 1);
+		set = 1;
+	} else if (!xstrncasecmp(type, "DefaultQOS", MAX(command_len, 8))) {
 		if (!g_qos_list)
 			g_qos_list = slurmdb_qos_get(
 				db_conn, NULL);
@@ -656,6 +659,9 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		break;
 	case PRINT_CLUSTER:
 		field->print_routine(field, assoc->cluster, last);
+		break;
+	case PRINT_COMMENT:
+		field->print_routine(field, assoc->comment, last);
 		break;
 	case PRINT_DQOS:
 		if (!g_qos_list)

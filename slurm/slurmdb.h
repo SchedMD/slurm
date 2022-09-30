@@ -472,6 +472,8 @@ typedef struct slurmdb_assoc_rec {
 				       * (DON'T PACK) */
 	char *cluster;		   /* cluster associated to association */
 
+	char *comment;		   /* comment for the association */
+
 	uint32_t def_qos_id;       /* Which QOS id is this
 				    * associations default */
 	uint16_t flags;            /* various flags see ASSOC_FLAG_* */

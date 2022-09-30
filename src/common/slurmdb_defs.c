@@ -872,6 +872,7 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		FREE_NULL_LIST(assoc->accounting_list);
 		xfree(assoc->acct);
 		xfree(assoc->cluster);
+		xfree(assoc->comment);
 		xfree(assoc->grp_tres);
 		xfree(assoc->grp_tres_ctld);
 		xfree(assoc->grp_tres_mins);
@@ -2559,6 +2560,7 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 	debug2("association rec id : %u", assoc_ptr->id);
 	debug2("  acct             : %s", assoc_ptr->acct);
 	debug2("  cluster          : %s", assoc_ptr->cluster);
+	debug2("  comment          : %s", assoc_ptr->comment);
 
 	if (assoc_ptr->shares_raw == INFINITE)
 		debug2("  RawShares        : NONE");
@@ -3334,6 +3336,7 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 	out->max_wall_pj = in->max_wall_pj;
 
 	out->priority = in->priority;
+	out->comment = xstrdup(in->comment);
 
 	FREE_NULL_LIST(out->qos_list);
 	out->qos_list = slurm_copy_char_list(in->qos_list);

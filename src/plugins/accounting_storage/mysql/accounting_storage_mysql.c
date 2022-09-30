@@ -1269,6 +1269,7 @@ extern int create_cluster_assoc_table(
 		{ "creation_time", "bigint unsigned not null" },
 		{ "mod_time", "bigint unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
+		{ "comment", "text" },
 		{ "is_def", "tinyint default 0 not null" },
 		{ "id_assoc", "int unsigned not null auto_increment" },
 		{ "user", "tinytext not null default ''" },
@@ -1980,6 +1981,12 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrfmtcat(*extra, ", def_qos_id=%u", assoc->def_qos_id);
 	}
 
+	if (assoc->comment) {
+		xstrcat(*cols, ", comment");
+		xstrfmtcat(*vals, ", '%s'", assoc->comment);
+		xstrfmtcat(*extra, ", comment='%s'", assoc->comment);
+	}
+
 	/* When modifying anything below this comment it happens in
 	 * the actual function since we have to wait until we hear
 	 * about the parent first.
@@ -2578,7 +2585,8 @@ just_update:
 			       "grp_tres_mins=DEFAULT, "
 			       "grp_tres_run_mins=DEFAULT, "
 			       "qos=DEFAULT, delta_qos=DEFAULT, "
-			       "priority=DEFAULT, is_def=DEFAULT "
+			       "priority=DEFAULT, is_def=DEFAULT, "
+			       "comment=DEFAULT "
 			       "where (%s);",
 			       cluster_name, assoc_table, now,
 			       loc_assoc_char);

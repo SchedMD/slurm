@@ -3720,6 +3720,14 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				break;
 			}
 
+			if (object->comment) {
+				xfree(rec->comment);
+				if (object->comment[0]) {
+					rec->comment = object->comment;
+					object->comment = NULL;
+				}
+			}
+
 			if (object->shares_raw != NO_VAL) {
 				rec->shares_raw = object->shares_raw;
 				if (setup_children) {

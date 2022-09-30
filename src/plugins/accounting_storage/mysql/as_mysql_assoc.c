@@ -50,6 +50,7 @@ char *assoc_req_inx[] = {
 	"user",
 	"acct",
 	"`partition`",
+	"comment",
 	"shares",
 	"grp_tres_mins",
 	"grp_tres_run_mins",
@@ -82,6 +83,7 @@ enum {
 	ASSOC_REQ_USER,
 	ASSOC_REQ_ACCT,
 	ASSOC_REQ_PART,
+	ASSOC_REQ_COMMENT,
 	ASSOC_REQ_FS,
 	ASSOC_REQ_GTM,
 	ASSOC_REQ_GTRM,
@@ -1579,6 +1581,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		else
 			mod_assoc->def_qos_id = assoc->def_qos_id;
 
+		mod_assoc->comment = xstrdup(assoc->comment);
+
 		mod_assoc->is_def = assoc->is_def;
 
 		mod_assoc->shares_raw = assoc->shares_raw;
@@ -2088,6 +2092,8 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		list_append(assoc_list, assoc);
 		assoc->id = slurm_atoul(row[ASSOC_REQ_ID]);
 		assoc->is_def = slurm_atoul(row[ASSOC_REQ_DEFAULT]);
+
+		assoc->comment = xstrdup(row[ASSOC_REQ_COMMENT]);
 
 		if (deleted)
 			assoc->flags |= ASSOC_FLAG_DELETED;

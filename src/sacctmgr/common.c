@@ -221,11 +221,16 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Cluster");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!xstrncasecmp("Coordinators", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Coordinators", object, MAX(command_len, 3))) {
 		field->type = PRINT_COORDS;
 		field->name = xstrdup("Coord Accounts");
 		field->len = 20;
 		field->print_routine = sacctmgr_print_coord_list;
+	} else if (!xstrncasecmp("Comment", object, MAX(command_len, 3))) {
+		field->type = PRINT_COMMENT;
+		field->name = xstrdup("Comment");
+		field->len = 20;
+		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("ControlHost", object, MAX(command_len, 8))) {
 		field->type = PRINT_CHOST;
 		field->name = xstrdup("ControlHost");
@@ -1825,6 +1830,10 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 		printf("  DefQOS        = %s\n",
 		       slurmdb_qos_str(g_qos_list, assoc->def_qos_id));
 	}
+
+	/* This should be last because it might be long */
+	if (assoc->comment)
+		printf("  Comment       = %s\n", assoc->comment);
 
 }
 
