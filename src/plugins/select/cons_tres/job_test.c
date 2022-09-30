@@ -2135,7 +2135,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	int min_rem_nodes;	/* remaining resources desired */
 	bool enforce_binding = false;
 	struct job_details *details_ptr = job_ptr->details;
-	bool gres_per_job, sufficient;
+	bool gres_per_job, requested;
 	uint16_t *avail_cpu_per_node = NULL;
 	uint32_t *switches_dist= NULL;
 	time_t time_waiting = 0;
@@ -2361,12 +2361,12 @@ try_again:
 	 * usually identify more nodes than required to satisfy the request.
 	 * Later logic selects from those nodes to get the best topology.
 	 */
-	sufficient = false;
+	requested = false;
 	best_node_cnt = 0;
 	best_cpu_cnt = 0;
 	best_nodes_bitmap = bit_alloc(node_record_count);
 	iter = list_iterator_create(node_weight_list);
-	while (!sufficient && (nw = list_next(iter))) {
+	while (!requested && (nw = list_next(iter))) {
 		if (best_node_cnt > 0) {
 			/*
 			 * All of the lower priority nodes should be included
@@ -2406,11 +2406,11 @@ try_again:
 			}
 		}
 
-		sufficient = ((best_node_cnt >= rem_nodes) &&
-			      (best_cpu_cnt >= rem_cpus) &&
-			      (!gres_per_job ||
-			       gres_sched_sufficient(job_ptr->gres_list_req,
-						     best_gres)));
+		requested = ((best_node_cnt >= rem_nodes) &&
+			     (best_cpu_cnt >= rem_cpus) &&
+			     (!gres_per_job ||
+			      gres_sched_sufficient(job_ptr->gres_list_req,
+						    best_gres)));
 	}
 	list_iterator_destroy(iter);
 
@@ -2433,7 +2433,7 @@ try_again:
 		xfree(node_names);
 		xfree(gres_str);
 	}
-	if (!sufficient) {
+	if (!requested) {
 		log_flag(SELECT_TYPE, "insufficient resources currently available for %pJ",
 		      job_ptr);
 		rc = SLURM_ERROR;
