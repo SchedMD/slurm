@@ -64,6 +64,21 @@ function get_radio_value(form)
   }
 }
 
+function get_checkbox_value(form)
+{
+  comma_list = ""
+  for (var i=0; i < form.length; i++)
+  {
+    if (form[i].checked)
+    {
+     if (comma_list != "")
+      comma_list = comma_list +","
+     comma_list = comma_list+form[i].value
+    }
+  }
+  return comma_list
+}
+
 function hide_box()
 {
    var popup = document.getElementById('out_box');
@@ -126,7 +141,7 @@ function displayfile()
    "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
    "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
    get_field("TaskEpilog",document.config.task_epilog) + "<br>" +
-   "TaskPlugin=task/" + get_radio_value(document.config.task_plugin) + "<br>" +
+   "TaskPlugin=" + get_checkbox_value(document.config.task_plugin) + "<br>" +
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
    "#TopologyPlugin=topology/tree <br>" +
    "#TmpFS=/tmp <br>" +
@@ -478,13 +493,13 @@ Define a task launch plugin. This may be used to
 provide resource management within a node (e.g. pinning
 tasks to specific processors).
 Select one value for <B>TaskPlugin</B>:<BR>
-<input type="radio" name="task_plugin" value="cray_aries"> <B>Cray XC</B>: Cray XC proprietary
+<input type="checkbox" name="task_plugin" value="task/cray_aries"> <B>Cray XC</B>: Cray XC proprietary
 task launch<BR>
-<input type="radio" name="task_plugin" value="none"> <B>None</B>: No task launch actions<BR>
-<input type="radio" name="task_plugin" value="affinity" checked> <B>Affinity</B>:
+<input type="checkbox" name="task_plugin" value="task/none"> <B>None</B>: No task launch actions<BR>
+<input type="checkbox" name="task_plugin" value="task/affinity" checked> <B>Affinity</B>:
 CPU affinity support
 (see srun man pages for the --cpu-bind, --mem-bind, and -E options)<BR>
-<input type="radio" name="task_plugin" value="cgroup"> <B>Cgroup</B>:
+<input type="checkbox" name="task_plugin" value="task/cgroup" checked> <B>Cgroup</B>:
 Allocated resources constraints enforcement using Linux Control Groups
 (see cgroup.conf man page)
 <P>
