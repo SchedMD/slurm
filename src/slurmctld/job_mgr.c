@@ -17372,7 +17372,11 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 	if (is_running) {
 		job_ptr->job_state |= JOB_COMPLETING;
 		deallocate_nodes(job_ptr, false, is_suspended, preempt);
-		job_ptr->job_state &= (~JOB_COMPLETING);
+		if (!IS_JOB_COMPLETING(job_ptr) && !job_ptr->fed_details &&
+		    job_ptr->db_index)
+			is_completed = true;
+		else
+			job_ptr->job_state &= (~JOB_COMPLETING);
 	}
 
 	_set_requeued_job_pending_completing(job_ptr);
