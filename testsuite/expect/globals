@@ -1998,9 +1998,6 @@ proc wait_for_file args {
 # RETURN VALUE
 #	RETURN_SUCCESS, or non-zero on error.
 #
-# NOTE: We sleep for two seconds before replying that a job is
-# done to give time for I/O completion (stdout/stderr files)
-#
 ################################################################
 
 proc _wait_for_single_job args {
@@ -2066,12 +2063,10 @@ proc _wait_for_single_job args {
 			"CANCELLED" {
 				if {$desired_state eq "CANCELLED"} {
 					log_debug "Job $job_id is CANCELLED"
-					sleep 2
 					return $::RETURN_SUCCESS
 				}
 				if {$desired_state eq "DONE"} {
 					log_debug "Job $job_id is DONE ($state)"
-					sleep 2
 					return $::RETURN_SUCCESS
 				}
 				set message "Job ($job_id) is $state, but we wanted $desired_state"
@@ -2092,7 +2087,6 @@ proc _wait_for_single_job args {
 			"TIMEOUT" {
 				if {$desired_state eq "DONE"} {
 					log_debug "Job $job_id is DONE ($state)"
-					sleep 2
 					return $::RETURN_SUCCESS
 				}
 				set message "Job ($job_id) is $state, but we wanted $desired_state"
