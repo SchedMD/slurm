@@ -45,8 +45,6 @@
 #include "src/common/xstring.h"
 #include "src/common/slurmdbd_defs.h"
 
-extern int retry_list_size(void);
-
 /* Pack all scheduling statistics */
 extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			  uint16_t protocol_version)
