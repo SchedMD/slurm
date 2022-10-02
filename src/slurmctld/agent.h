@@ -45,7 +45,6 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define AGENT_THREAD_COUNT	10	/* maximum active threads per agent */
-#define COMMAND_TIMEOUT 	30	/* command requeue or error, seconds */
 
 #define LOTS_OF_AGENTS_CNT 50
 #define LOTS_OF_AGENTS ((get_agent_count() <= LOTS_OF_AGENTS_CNT) ? 0 : 1)
