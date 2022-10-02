@@ -46,14 +46,14 @@
  *
  * Returns a Slurm errno.
  */
-extern int job_submit_plugin_init(void);
+extern int job_submit_g_init(void);
 
 /*
  * Terminate the job submit plugin. Free memory.
  *
  * Returns a Slurm errno.
  */
-extern int job_submit_plugin_fini(void);
+extern int job_submit_g_fini(void);
 
 /*
  **************************************************************************
@@ -64,7 +64,7 @@ extern int job_submit_plugin_fini(void);
 /*
  * Perform reconfig, re-read any configuration files
  */
-extern int job_submit_plugin_reconfig(void);
+extern int job_submit_g_reconfig(void);
 
 /*
  * Execute the job_submit() function in each job submit plugin.
@@ -74,8 +74,8 @@ extern int job_submit_plugin_reconfig(void);
  * IN submit_uid - User issuing job submit request
  * OUT err_msg - Custom error message to the user, caller to xfree results
  */
-extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
-				    uint32_t submit_uid, char **err_msg);
+extern int job_submit_g_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+			       char **err_msg);
 
 /*
  * Execute the job_modify() function in each job submit plugin.
@@ -83,9 +83,7 @@ extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
  */
-extern int job_submit_plugin_modify(job_desc_msg_t *job_desc,
-				    job_record_t *job_ptr,
-				    uint32_t submit_uid,
-				    char **err_msg);
+extern int job_submit_g_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
+			       uint32_t submit_uid, char **err_msg);
 
 #endif /* !_JOB_SUBMIT_H */

@@ -549,7 +549,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize jobacct_gather plugin");
 		}
 	}
-	if (job_submit_plugin_init() != SLURM_SUCCESS) {
+	if (job_submit_g_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize job_submit plugin");
 			test_config_rc = 1;
@@ -917,7 +917,7 @@ int main(int argc, char **argv)
 	 * unplug after other data structures are purged */
 	ext_sensors_fini();
 	gres_fini();
-	job_submit_plugin_fini();
+	job_submit_g_fini();
 	prep_g_fini();
 	slurm_preempt_fini();
 	jobacct_gather_fini();

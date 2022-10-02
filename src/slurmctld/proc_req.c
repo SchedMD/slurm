@@ -1381,7 +1381,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 
 	/*
 	 * In validate_job_create_req(), err_msg is currently only modified in
-	 * the call to job_submit_plugin_submit. We save the err_msg in a temp
+	 * the call to job_submit_g_submit. We save the err_msg in a temp
 	 * char *job_submit_user_msg because err_msg can be overwritten later
 	 * in the calls to fed_mgr_job_allocate and/or job_allocate, and we
 	 * need the job submit plugin value to build the resource allocation
@@ -3654,7 +3654,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 
 	/*
 	 * In validate_job_create_req(), err_msg is currently only modified in
-	 * the call to job_submit_plugin_submit. We save the err_msg in a temp
+	 * the call to job_submit_g_submit. We save the err_msg in a temp
 	 * char *job_submit_user_msg because err_msg can be overwritten later
 	 * in the calls to fed_mgr_job_allocate and/or job_allocate, and we
 	 * need the job submit plugin value to build the resource allocation
@@ -3889,7 +3889,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 
 	/*
 	 * In validate_job_create_req, err_msg is currently only modified in
-	 * the call to job_submit_plugin_submit. We save the err_msg in a temp
+	 * the call to job_submit_g_submit. We save the err_msg in a temp
 	 * char *job_submit_user_msg because err_msg can be overwritten later
 	 * in the calls to job_allocate, and we need the job submit plugin value
 	 * to build the resource allocation response in the call to

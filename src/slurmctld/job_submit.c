@@ -82,7 +82,7 @@ static bool init_run = false;
  *
  * Returns a Slurm errno.
  */
-extern int job_submit_plugin_init(void)
+extern int job_submit_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *last = NULL, *tmp_plugin_list, *names;
@@ -132,7 +132,7 @@ fini:
 	slurm_mutex_unlock(&g_context_lock);
 
 	if (rc != SLURM_SUCCESS)
-		job_submit_plugin_fini();
+		job_submit_g_fini();
 
 	return rc;
 }
@@ -142,7 +142,7 @@ fini:
  *
  * Returns a Slurm errno.
  */
-extern int job_submit_plugin_fini(void)
+extern int job_submit_g_fini(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
 
@@ -176,7 +176,7 @@ fini:	slurm_mutex_unlock(&g_context_lock);
 /*
  * Perform reconfig, re-read any configuration files
  */
-extern int job_submit_plugin_reconfig(void)
+extern int job_submit_g_reconfig(void)
 {
 	int rc = SLURM_SUCCESS;
 	bool plugin_change;
@@ -194,9 +194,9 @@ extern int job_submit_plugin_reconfig(void)
 	if (plugin_change) {
 		info("JobSubmitPlugins changed to %s",
 		     slurm_conf.job_submit_plugins);
-		rc = job_submit_plugin_fini();
+		rc = job_submit_g_fini();
 		if (rc == SLURM_SUCCESS)
-			rc = job_submit_plugin_init();
+			rc = job_submit_g_init();
 	}
 
 	return rc;
@@ -210,8 +210,8 @@ extern int job_submit_plugin_reconfig(void)
  * IN submit_uid - User issuing job submit request
  * OUT err_msg - Custom error message to the user, caller to xfree results
  */
-extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
-				    uint32_t submit_uid, char **err_msg)
+extern int job_submit_g_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
+			       char **err_msg)
 {
 	DEF_TIMERS;
 	int i, rc;
@@ -226,7 +226,7 @@ extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
 	/* Set to NO_VAL so that it can only be set by the job submit plugin. */
 	job_desc->site_factor = NO_VAL;
 
-	rc = job_submit_plugin_init();
+	rc = job_submit_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	/* NOTE: On function entry read locks are set on config, job, node and
 	 * partition structures. Do not attempt to unlock them and then
@@ -235,7 +235,7 @@ extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].submit))(job_desc, submit_uid, err_msg);
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("job_submit_plugin_submit");
+	END_TIMER2(__func__);
 
 	return rc;
 }
@@ -245,10 +245,8 @@ extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
  */
-extern int job_submit_plugin_modify(job_desc_msg_t *job_desc,
-				    job_record_t *job_ptr,
-				    uint32_t submit_uid,
-				    char **err_msg)
+extern int job_submit_g_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
+			       uint32_t submit_uid, char **err_msg)
 {
 	DEF_TIMERS;
 	int i, rc;
@@ -263,12 +261,12 @@ extern int job_submit_plugin_modify(job_desc_msg_t *job_desc,
 	/* Set to NO_VAL so that it can only be set by the job submit plugin. */
 	job_desc->site_factor = NO_VAL;
 
-	rc = job_submit_plugin_init();
+	rc = job_submit_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].modify))(job_desc, job_ptr, submit_uid, err_msg);
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("job_submit_plugin_modify");
+	END_TIMER2(__func__);
 
 	return rc;
 }

@@ -1844,7 +1844,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	_update_preempt(old_preempt_mode);
 
 	/* Update plugin parameters as possible */
-	rc = job_submit_plugin_reconfig();
+	rc = job_submit_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = prep_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
