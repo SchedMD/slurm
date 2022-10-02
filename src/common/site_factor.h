@@ -39,8 +39,8 @@
 
 #include "src/slurmctld/slurmctld.h"
 
-extern int site_factor_plugin_init(void);
-extern int site_factor_plugin_fini(void);
+extern int site_factor_g_init(void);
+extern int site_factor_g_fini(void);
 
 /*
  * Reconfigure the plugin.

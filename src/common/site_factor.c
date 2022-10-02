@@ -69,7 +69,7 @@ static bool init_run = false;
  *
  * Returns a Slurm errno.
  */
-extern int site_factor_plugin_init(void)
+extern int site_factor_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "site_factor";
@@ -102,7 +102,7 @@ done:
 	return retval;
 }
 
-extern int site_factor_plugin_fini(void)
+extern int site_factor_g_fini(void)
 {
 	int rc;
 
@@ -122,7 +122,7 @@ extern void site_factor_g_reconfig(void)
 {
 	DEF_TIMERS;
 
-	if (site_factor_plugin_init() < 0)
+	if (site_factor_g_init() < 0)
 		return;
 
 	START_TIMER;
@@ -133,7 +133,7 @@ extern void site_factor_g_reconfig(void)
 extern void site_factor_g_set(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
-	if (site_factor_plugin_init() < 0)
+	if (site_factor_g_init() < 0)
 		return;
 
 	START_TIMER;
@@ -145,7 +145,7 @@ extern void site_factor_g_update(void)
 {
 	DEF_TIMERS;
 
-	if (site_factor_plugin_init() < 0)
+	if (site_factor_g_init() < 0)
 		return;
 
 	START_TIMER;

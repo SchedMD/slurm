@@ -1797,7 +1797,7 @@ int init ( void )
 		calc_fairshare = 0;
 	}
 
-	site_factor_plugin_init();
+	site_factor_g_init();
 
 	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -1825,7 +1825,7 @@ int fini ( void )
 	if (decay_handler_thread)
 		pthread_join(decay_handler_thread, NULL);
 
-	site_factor_plugin_fini();
+	site_factor_g_fini();
 
 	return SLURM_SUCCESS;
 }
