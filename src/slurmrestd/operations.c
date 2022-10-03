@@ -438,6 +438,11 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	int rc;
 	data_t *resp = data_new();
 	char *body = NULL;
+	http_status_code_t e;
+
+	debug3("%s: [%s] BEGIN: calling handler: 0x%"PRIXPTR"[%d] for path: %s",
+	       __func__, args->context->con->name, (uintptr_t) callback,
+	       callback_tag, args->path);
 
 	rc = callback(args->context->con->name, args->method, params, query,
 		      callback_tag, resp, args->context->auth);
@@ -469,10 +474,10 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 			.http_minor = args->http_minor,
 			.status_code = HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED,
 		};
-
+		e = send_args.status_code;
 		rc = send_http_response(&send_args);
 	} else if (rc && (rc != ESLURM_REST_EMPTY_RESULT)) {
-		http_status_code_t e = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+		e = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
 		if (rc == ESLURM_REST_INVALID_QUERY)
 			e = HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT;
@@ -501,7 +506,13 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		}
 
 		rc = send_http_response(&send_args);
+		e = send_args.status_code;
 	}
+
+	debug3("%s: [%s] END: calling handler: (0x%"PRIXPTR") callback_tag %d for path: %s rc[%d]=%s status[%d]=%s",
+	       __func__, args->context->con->name, (uintptr_t) callback,
+	       callback_tag, args->path, rc, slurm_strerror(rc), e,
+	       get_http_status_code_string(e));
 
 	xfree(body);
 	FREE_NULL_DATA(resp);
