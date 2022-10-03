@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  apinfo.c - Cray Shasta PMI apinfo file creation
  *****************************************************************************
- *  Copyright 2019 Hewlett Packard Enterprise Development LP
+ *  Copyright 2019,2022 Hewlett Packard Enterprise Development LP
  *  Written by David Gloe <dgloe@cray.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -43,72 +43,6 @@
 #include "src/common/xstring.h"
 
 #include "apinfo.h"
-
-/* Application file format version */
-#define PALS_APINFO_VERSION 1
-
-/* File header structure */
-typedef struct {
-	int version;
-	size_t total_size;
-	size_t comm_profile_size;
-	size_t comm_profile_offset;
-	int ncomm_profiles;
-	size_t cmd_size;
-	size_t cmd_offset;
-	int ncmds;
-	size_t pe_size;
-	size_t pe_offset;
-	int npes;
-	size_t node_size;
-	size_t node_offset;
-	int nnodes;
-	size_t nic_size;
-	size_t nic_offset;
-	int nnics;
-} pals_header_t;
-
-/* Network communication profile structure */
-typedef struct {
-	char tokenid[40];    /* Token UUID */
-	int vni;             /* VNI associated with this token */
-	int vlan;            /* VLAN associated with this token */
-	int traffic_classes; /* Bitmap of allowed traffic classes */
-} pals_comm_profile_t;
-
-/* MPMD command information structure */
-typedef struct {
-	int npes;         /* Number of PEs in this command */
-	int pes_per_node; /* Number of PEs per node */
-	int cpus_per_pe;  /* Number of CPUs per PE */
-} pals_cmd_t;
-
-/* PE (i.e. task) information structure */
-typedef struct {
-	int localidx; /* Node-local PE index */
-	int cmdidx;   /* Command index for this PE */
-	int nodeidx;  /* Node index this PE is running on */
-} pals_pe_t;
-
-/* Node information structure */
-typedef struct {
-	int nid;           /* Node ID */
-	char hostname[64]; /* Node hostname */
-} pals_node_t;
-
-/* NIC address type */
-typedef enum {
-	PALS_ADDR_IPV4,
-	PALS_ADDR_IPV6,
-	PALS_ADDR_MAC
-} pals_address_type_t;
-
-/* NIC information structure */
-typedef struct {
-	int nodeidx;                      /* Node index this NIC belongs to */
-	pals_address_type_t address_type; /* Address type for this NIC */
-	char address[40];                 /* Address of this NIC */
-} pals_nic_t;
 
 /*
  * Get a NID from a hostname, in format nidXXXXXX.
@@ -361,10 +295,15 @@ static void _build_header(pals_header_t *hdr, int ncmds, int npes, int nnodes)
 	hdr->nnodes = nnodes;
 	offset += hdr->node_size * hdr->nnodes;
 
-	hdr->nic_size = sizeof(pals_nic_t);
+	hdr->nic_size = sizeof(pals_hsn_nic_t);
 	hdr->nic_offset = offset;
 	hdr->nnics = 0;
 	offset += hdr->nic_size * hdr->nnics;
+
+	/* Don't support status reporting or NIC distances yet */
+	hdr->status_offset = 0;
+	hdr->dist_size = 0;
+	hdr->dist_offset = 0;
 
 	hdr->total_size = offset;
 }
