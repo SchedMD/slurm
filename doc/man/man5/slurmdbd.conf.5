@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "April 2022" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "October 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -722,10 +722,10 @@ Daemon and have the same UID as the hosts on which \fBslurmctld\fR executes.
 For security purposes, a user other than "root" is recommended.
 The default value is "root".
 
-\fBNOTE\fR: If the SlurmUser defined for \fBslurmctld\fR is not root and is
-different than the SlurmUser defined for \fBslurmdbd\fR, the user used for
-\fBslurmctld\fR must be added to accounting with AdminLevel=Admin and
-\fBslurmctld\fR must be restarted.
+\fBNOTE\fR: If the SlurmUser for slurmctld is root you can still use a
+non-root SlurmUser for slurmdbd (in any other case, both SlurmUsers should
+match) by explicitly setting the user's AdminLevel to Admin. After adding a
+user in this way, you must restart slurmctld.
 .IP
 
 .TP
