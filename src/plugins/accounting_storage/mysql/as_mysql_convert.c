@@ -47,6 +47,8 @@
  */
 #define CONVERT_VERSION 12
 
+#define MIN_CONVERT_VERSION 10
+
 #define JOB_CONVERT_LIMIT_CNT 1000
 
 typedef enum {
@@ -441,6 +443,30 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 	}
 
 	return rc;
+}
+
+extern void as_mysql_convert_possible(mysql_conn_t *mysql_conn)
+{
+	(void) _set_db_curr_ver(mysql_conn);
+
+	/*
+	 * Check to see if conversion is possible.
+	 */
+	if (db_curr_ver < MIN_CONVERT_VERSION) {
+		fatal("Database schema is too old for this version of Slurm to upgrade.");
+	} else if (db_curr_ver > CONVERT_VERSION) {
+		char *err_msg = "Database schema is from a newer version of Slurm, downgrading is not possible.";
+		/*
+		 * If we are configured --enable-debug only make this a
+		 * debug statement instead of fatal to allow developers
+		 * easier bisects.
+		 */
+#ifdef NDEBUG
+		fatal("%s", err_msg);
+#else
+		debug("%s", err_msg);
+#endif
+	}
 }
 
 extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)

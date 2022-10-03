@@ -914,6 +914,12 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	int rc = SLURM_SUCCESS, rc2;
 	ListIterator itr = NULL;
 
+	/*
+	 * Before attempting to create tables, make sure conversion/create
+	 * should be possible.
+	 */
+	as_mysql_convert_possible(mysql_conn);
+
 	/* Make the convert version table since we will check that going
 	 * forward to see if we need to update or not.
 	 */
