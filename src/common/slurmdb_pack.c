@@ -985,6 +985,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			packnull(buffer);
+			packnull(buffer);
 
 			pack32(NO_VAL, buffer);
 			pack16(0, buffer);
