@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     --distribution=cyclic.
  -- Fix task distribution calculations with --ntasks-per-gpu specified without
     an explicit --ntasks value.
+ -- Fix job arrays not showing correct features.
 
 * Changes in Slurm 22.05.4
 ==========================
