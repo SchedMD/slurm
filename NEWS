@@ -69,6 +69,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 22.05.5
 ==========================
  -- Fix node becoming IDLE while in an invalid registration state.
+ -- When a job is completing avoid potential dereference.
+ -- Avoid setting preempt_time for a job erroneously.
+ -- Fix situation where we don't requeue correctly when a job is finishing.
 
 * Changes in Slurm 22.05.4
 ==========================

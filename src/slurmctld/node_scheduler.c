@@ -410,8 +410,14 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			    !job_ptr->epilog_running)
 				cleanup_completing(job_ptr);
 
-			for (int i = 0; (node_ptr = next_node_bitmap(
-						 job_ptr->node_bitmap_cg, &i));
+			/*
+			 * job_epilog_complete() can free
+			 * job_ptr->node_bitmap_cg
+			 */
+			for (int i = 0;
+			     job_ptr->node_bitmap_cg &&
+				     (node_ptr = next_node_bitmap(
+					     job_ptr->node_bitmap_cg, &i));
 			     i++) {
 				job_epilog_complete(job_ptr->job_id,
 						    node_ptr->name, 0);
