@@ -66,6 +66,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.5
 ==========================
+ -- Fix node becoming IDLE while in an invalid registration state.
 
 * Changes in Slurm 22.05.4
 ==========================
