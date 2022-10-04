@@ -389,7 +389,7 @@ extern int switch_p_duplicate_jobinfo(switch_jobinfo_t *tmp,
 
 	if (old->num_profiles > 0) {
 		size_t profilesz = old->num_profiles *
-				   sizeof(pals_comm_profile_t);
+				   sizeof(slingshot_comm_profile_t);
 		new->profiles = xmalloc(profilesz);
 		memcpy(new->profiles, old->profiles, profilesz);
 	}
@@ -430,7 +430,7 @@ unpack_error:
 	return false;
 }
 
-static void _pack_comm_profile(pals_comm_profile_t *profile, buf_t *buffer)
+static void _pack_comm_profile(slingshot_comm_profile_t *profile, buf_t *buffer)
 {
 	pack32(profile->svc_id, buffer);
 	pack16(profile->vnis[0], buffer);
@@ -441,7 +441,7 @@ static void _pack_comm_profile(pals_comm_profile_t *profile, buf_t *buffer)
 	packstr(profile->device_name, buffer);
 }
 
-static bool _unpack_comm_profile(pals_comm_profile_t *profile, buf_t *buffer)
+static bool _unpack_comm_profile(slingshot_comm_profile_t *profile, buf_t *buffer)
 {
 	char *device_name;
 	uint32_t name_len;
@@ -546,7 +546,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 	safe_unpack32(&jobinfo->depth, buffer);
 	safe_unpack32(&jobinfo->num_profiles, buffer);
 	jobinfo->profiles = xcalloc(jobinfo->num_profiles,
-				    sizeof(pals_comm_profile_t));
+				    sizeof(slingshot_comm_profile_t));
 	for (pidx = 0; pidx < jobinfo->num_profiles; pidx++) {
 		if (!_unpack_comm_profile(&jobinfo->profiles[pidx], buffer))
 			goto unpack_error;
@@ -574,6 +574,8 @@ extern int switch_p_job_preinit(stepd_step_rec_t *step)
 	int step_cpus = step->node_tasks * step->cpus_per_task;
 	if (!slingshot_create_services(jobinfo, step->uid, step_cpus,
 				       step->step_id.job_id))
+		return SLURM_ERROR;
+	if (!create_slingshot_apinfo(step))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
@@ -650,6 +652,8 @@ extern int switch_p_job_postfini(stepd_step_rec_t *step)
 		debug("%ps: Bad pid value %lu", &step->step_id,
 		      (unsigned long) pgid);
 
+	remove_slingshot_apinfo(step);
+
 	slingshot_jobinfo_t *jobinfo;
 	jobinfo = (slingshot_jobinfo_t *)step->switch_job->data;
 	xassert(jobinfo);
@@ -679,7 +683,7 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 	/* svc_ids, devices, traffic classes are per-device, comma-separated */
 	for (pidx = 0; pidx < job->num_profiles; pidx++) {
 		char *sep = pidx ? "," : "";
-		pals_comm_profile_t *profile = &job->profiles[pidx];
+		slingshot_comm_profile_t *profile = &job->profiles[pidx];
 		xstrfmtcat(svc_ids, "%s%u", sep, profile->svc_id);
 		xstrfmtcat(devices, "%s%s", sep, profile->device_name);
 		xstrfmtcat(tcss, "%s%#x", sep, profile->tcs);

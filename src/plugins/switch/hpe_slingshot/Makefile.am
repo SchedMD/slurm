@@ -11,6 +11,7 @@ pkglib_LTLIBRARIES = switch_hpe_slingshot.la
 
 # HPE Slingshot switch plugin.
 switch_hpe_slingshot_la_SOURCES = \
+	apinfo.c \
 	config.c \
 	setup_nic.c \
 	switch_hpe_slingshot.c \

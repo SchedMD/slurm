@@ -88,9 +88,6 @@ const char plugin_type[] = "mpi/cray_shasta";
 const uint32_t plugin_id = MPI_PLUGIN_CRAY_SHASTA;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-/* Name of the directory to store Cray MPI data */
-#define MPI_CRAY_DIR "mpi_cray_shasta"
-
 /* Environment variables available for applications */
 #define PALS_APID_ENV "PALS_APID"
 #define PALS_APINFO_ENV "PALS_APINFO"

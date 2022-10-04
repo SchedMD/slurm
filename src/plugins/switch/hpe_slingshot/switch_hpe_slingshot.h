@@ -43,6 +43,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /* Version of the state file */
 #define SLINGSHOT_STATE_VERSION 1
@@ -154,13 +155,13 @@ typedef struct slingshot_config {
 #define SLINGSHOT_JOB_VNI_USER   2  /* Job VNIs using srun --network=job_vni */
 
 /* NIC communication profile structure (compute-node specific) */
-typedef struct pals_comm_profile {
+typedef struct slingshot_comm_profile {
 	uint32_t svc_id;        /* Slingshot service ID */
 	uint16_t vnis[SLINGSHOT_VNIS]; /* VNIs for this service */
 	uint16_t vnis_used;     /* Number of valid VNIs in vnis[] */
 	uint32_t tcs;           /* Bitmap of allowed traffic classes */
 	char device_name[16];   /* NIC device name (e.g. "cxi0") */
-} pals_comm_profile_t;
+} slingshot_comm_profile_t;
 
 /* Version of the jobinfo structure */
 #define SLINGSHOT_JOBINFO_VERSION SLURM_PROTOCOL_VERSION
@@ -176,7 +177,7 @@ typedef struct slingshot_jobinfo {
 	slingshot_limits_set_t limits; /* Set of NIC resource limits */
 	uint32_t depth;        /* Threads-per-task for limit calculation */
 	uint32_t num_profiles; /* Number of communication profiles */
-	pals_comm_profile_t *profiles; /* List of communication profiles */
+	slingshot_comm_profile_t *profiles; /* List of communication profiles */
 	bitstr_t *vni_pids;    /* Set of Slingshot job VNI allocated PIDs */
 	uint32_t flags;        /* Configuration flags */
 } slingshot_jobinfo_t;
@@ -210,6 +211,9 @@ extern slingshot_state_t slingshot_state;
 extern slingshot_config_t slingshot_config;
 
 /* Global functions */
+/* apinfo.c */
+extern bool create_slingshot_apinfo(const stepd_step_rec_t *step);
+extern void remove_slingshot_apinfo(const stepd_step_rec_t *step);
 /* config.c */
 extern bool slingshot_setup_config(const char *switch_params);
 extern bool slingshot_setup_job_step(slingshot_jobinfo_t *job, int node_cnt,

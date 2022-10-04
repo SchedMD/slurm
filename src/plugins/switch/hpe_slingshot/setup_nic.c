@@ -734,7 +734,7 @@ extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
 	struct cxi_svc_desc desc;
 	struct cxil_dev *dev;
 	struct cxi_svc_fail_info failinfo;
-	pals_comm_profile_t *profile;
+	slingshot_comm_profile_t *profile;
 
 	xassert(job);
 

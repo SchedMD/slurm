@@ -182,7 +182,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 switch_hpe_slingshot_la_LIBADD =
-am_switch_hpe_slingshot_la_OBJECTS = config.lo setup_nic.lo \
+am_switch_hpe_slingshot_la_OBJECTS = apinfo.lo config.lo setup_nic.lo \
 	switch_hpe_slingshot.lo
 switch_hpe_slingshot_la_OBJECTS =  \
 	$(am_switch_hpe_slingshot_la_OBJECTS)
@@ -209,8 +209,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/config.Plo ./$(DEPDIR)/setup_nic.Plo \
-	./$(DEPDIR)/switch_hpe_slingshot.Plo
+am__depfiles_remade = ./$(DEPDIR)/apinfo.Plo ./$(DEPDIR)/config.Plo \
+	./$(DEPDIR)/setup_nic.Plo ./$(DEPDIR)/switch_hpe_slingshot.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -528,6 +528,7 @@ pkglib_LTLIBRARIES = switch_hpe_slingshot.la
 
 # HPE Slingshot switch plugin.
 switch_hpe_slingshot_la_SOURCES = \
+	apinfo.c \
 	config.c \
 	setup_nic.c \
 	switch_hpe_slingshot.c \
@@ -612,6 +613,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/apinfo.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setup_nic.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_hpe_slingshot.Plo@am__quote@ # am--include-marker
@@ -743,7 +745,8 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/config.Plo
+		-rm -f ./$(DEPDIR)/apinfo.Plo
+	-rm -f ./$(DEPDIR)/config.Plo
 	-rm -f ./$(DEPDIR)/setup_nic.Plo
 	-rm -f ./$(DEPDIR)/switch_hpe_slingshot.Plo
 	-rm -f Makefile
@@ -791,7 +794,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/config.Plo
+		-rm -f ./$(DEPDIR)/apinfo.Plo
+	-rm -f ./$(DEPDIR)/config.Plo
 	-rm -f ./$(DEPDIR)/setup_nic.Plo
 	-rm -f ./$(DEPDIR)/switch_hpe_slingshot.Plo
 	-rm -f Makefile

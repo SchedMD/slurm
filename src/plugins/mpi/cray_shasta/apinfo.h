@@ -40,6 +40,10 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+/* Name of the directory to store Cray MPI data */
+#define MPI_CRAY_DIR "mpi_cray_shasta"
+#define HPE_SLINGSHOT_DIR "switch_hpe_slingshot"
+
 /*
  * Application file format version
  */
