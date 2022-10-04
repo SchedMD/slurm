@@ -63,6 +63,8 @@ documents those changes that are of interest to users and administrators.
     the job submission command taking effect.
  -- job_submit/lua - add support for log_user() from slurm_job_modify().
  -- openapi/v0.0.39 - add submission of job->prefer value.
+ -- Fix tasks binding to GPUs when using --ntasks-per-gpu and GPUs have
+    different core/socket affinity.
 
 * Changes in Slurm 22.05.5
 ==========================
