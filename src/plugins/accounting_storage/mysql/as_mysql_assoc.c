@@ -2557,7 +2557,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	while ((object = list_next(itr))) {
 		if (!object->cluster || !object->cluster[0]
 		    || !object->acct || !object->acct[0]) {
-			error("We need a association cluster and acct to add one.");
+			error("We need an association, cluster and acct to add one.");
 			rc = SLURM_ERROR;
 			continue;
 		}
