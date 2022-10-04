@@ -1514,9 +1514,24 @@ These codes identify the reason that a job is waiting for execution.
 A job may be waiting for more than one reason, in which case only
 one of those reasons is displayed.
 
+The Reasons listed below are some of the more common ones you might see.
+For a full list of Reason codes see our Resource Limits page:
+<https://slurm.schedmd.com/resource_limits.html>
+
 .TP 22
+\fBAssocGrp*Limit\fR
+The job's association has reached an aggregate limit on some resource.
+.IP
+
+.TP
 \fBAssociationJobLimit\fR
 The job's association has reached its maximum job count.
+.IP
+
+.TP
+\fBAssocMax*Limit\fR
+The job requests a resource that violates a per-job limit on the requested
+association.
 .IP
 
 .TP
@@ -1546,7 +1561,12 @@ The job is being requeued and still cleaning up from its previous execution.
 
 .TP
 \fBDependency\fR
-This job is waiting for a dependent job to complete.
+This job has a dependency on another job that has not been satisfied.
+.IP
+
+.TP
+\fBDependencyNeverSatisfied\fR
+This job has a dependency on another job that will never be satisfied.
 .IP
 
 .TP
@@ -1634,8 +1654,19 @@ Its PrologSlurmctld program is still running.
 .IP
 
 .TP
+\fBQOSGrp*Limit\fR
+The job's QOS has reached an aggregate limit on some resource.
+.IP
+
+.TP
 \fBQOSJobLimit\fR
 The job's QOS has reached its maximum job count.
+.IP
+
+.TP
+\fBQOSMax*Limit\fR
+The job requests a resource that violates a per-job limit on the requested
+QOS.
 .IP
 
 .TP
@@ -1646,6 +1677,11 @@ The job's QOS has reached some resource limit.
 .TP
 \fBQOSTimeLimit\fR
 The job's QOS has reached its time limit.
+.IP
+
+.TP
+\fBQOSUsageThreshold\fR
+Required QOS threshold has been breached.
 .IP
 
 .TP
@@ -1676,11 +1712,6 @@ Failure of the Slurm system, a file system, the network, etc.
 .TP
 \fBTimeLimit\fR
 The job exhausted its time limit.
-.IP
-
-.TP
-\fBQOSUsageThreshold\fR
-Required QOS threshold has been breached.
 .IP
 
 .TP
