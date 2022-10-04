@@ -8885,6 +8885,7 @@ static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
 	}
 	list_iterator_destroy(iter);
 	bit_clear(gres_slots, best_slot);
+	bit_free(task_cpus_bitmap);
 	return (best_slot / ntasks_per_gres);
 }
 
