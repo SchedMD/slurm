@@ -5507,15 +5507,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	 * If we have a prefer feature list check that, if not check the
 	 * normal features.
 	 */
-	if (job_ptr->details->prefer) {
-		job_ptr->details->features_use = job_ptr->details->prefer;
-		job_ptr->details->feature_list_use =
-			job_ptr->details->prefer_list;
-	} else {
-		job_ptr->details->features_use = job_ptr->details->features;
-		job_ptr->details->feature_list_use =
-			job_ptr->details->feature_list;
-	}
+	set_job_features_use(job_ptr->details);
 
 	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL, err_msg);
 	if (!test_only) {
