@@ -1856,8 +1856,6 @@ static int _update_job_tres(void *x, void *args)
 /* any association manager locks should be unlocked before hand */
 static void _update_cluster_tres(void)
 {
-	ListIterator job_iterator;
-	job_record_t *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -1868,11 +1866,7 @@ static void _update_cluster_tres(void)
 
 	lock_slurmctld(job_write_lock);
 	assoc_mgr_lock(&locks);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator)))
-		_update_job_tres(job_ptr);
-	list_iterator_destroy(job_iterator);
-
+	list_for_each(job_list, _update_job_tres, NULL);
 	assoc_mgr_unlock(&locks);
 	unlock_slurmctld(job_write_lock);
 }
