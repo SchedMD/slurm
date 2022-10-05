@@ -18279,7 +18279,8 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 	    job_ptr->details->crontab_entry) {
 		job_ptr->job_state |= JOB_REQUEUE;
 		job_ptr->details->begin_time =
-			calc_next_cron_start(job_ptr->details->crontab_entry);
+			calc_next_cron_start(job_ptr->details->crontab_entry,
+					     0);
 	} else if (job_ptr->bit_flags & CRON_JOB) {
 		/*
 		 * Skip requeuing this instead of crashing.

@@ -77,7 +77,7 @@ extern char *cronspec_from_cron_entry(cron_entry_t *entry);
  * Calculate the next starting time given a cron entry.
  * Always advances at least one minute into the future.
  */
-extern time_t calc_next_cron_start(cron_entry_t *entry);
+extern time_t calc_next_cron_start(cron_entry_t *entry, time_t next);
 
 /*
  * Function signatures adjusted for use with slurm_{pack,unpack}_list().

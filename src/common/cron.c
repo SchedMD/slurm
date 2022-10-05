@@ -291,18 +291,24 @@ static int _next_day_of_month(cron_entry_t *entry, struct tm *tm)
 	return days_to_advance;
 }
 
-extern time_t calc_next_cron_start(cron_entry_t *entry)
+extern time_t calc_next_cron_start(cron_entry_t *entry, time_t next)
 {
 	struct tm tm;
 	time_t now = time(NULL);
-	localtime_r(&now, &tm);
 	int validated_month, days_to_add;
 
 	/*
-	 * Always move into the next minute to avoid running again this minute.
+	 * Avoid running twice in the same minute.
 	 */
-	tm.tm_sec = 0;
-	tm.tm_min++;
+	if (next && next > now + 60) {
+		now = next;
+		localtime_r(&now, &tm);
+		tm.tm_sec = 0;
+	} else {
+		localtime_r(&now, &tm);
+		tm.tm_sec = 0;
+		tm.tm_min++;
+	}
 
 month:
 	_next_month(entry, &tm);

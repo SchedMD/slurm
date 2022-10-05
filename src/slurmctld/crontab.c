@@ -80,7 +80,7 @@ static int _handle_job(void *x, void *y)
 	 * next run. On requeue, the job will need to recalculate this to
 	 * determine the next valid interval.
 	 */
-	job->begin_time = calc_next_cron_start(job->crontab_entry);
+	job->begin_time = calc_next_cron_start(job->crontab_entry, 0);
 
 	/*
 	 * always use the authenticated values from crontab_update_request_msg_t
