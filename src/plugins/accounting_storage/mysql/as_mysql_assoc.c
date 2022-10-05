@@ -1204,6 +1204,20 @@ static char *_setup_assoc_cond_qos(slurmdb_assoc_cond_t *assoc_cond,
 	return extra;
 }
 
+static char *_setup_assoc_table_query(slurmdb_assoc_cond_t *assoc_cond,
+				      char *cluster_name, char *fields,
+				      char *filters, char *end)
+{
+	char *query;
+	char *qos_extra = _setup_assoc_cond_qos(assoc_cond, cluster_name);
+
+	query = xstrdup_printf("select distinct %s from \"%s_%s\" as t1%s%s%s",
+			       fields, cluster_name, assoc_table,
+			       qos_extra, filters, end);
+	return query;
+}
+
+
 /* When doing a select on this all the select should have a prefix of t1. */
 static int _setup_assoc_cond_limits(
 	slurmdb_assoc_cond_t *assoc_cond,
@@ -1987,7 +2001,6 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	uint32_t parent_id = 0;
 	char *query = NULL;
 	char *extra = xstrdup(sent_extra);
-	char *qos_extra = NULL;
 
 	/* needed if we don't have an assoc_cond */
 	uint16_t without_parent_info = 0;
@@ -2054,16 +2067,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			return SLURM_SUCCESS;
 		}
 	}
-
-	qos_extra = _setup_assoc_cond_qos(assoc_cond, cluster_name);
-
-
 	//START_TIMER;
-	query = xstrdup_printf("select distinct %s from \"%s_%s\" as t1%s%s "
-			       "order by lft;",
-			       fields, cluster_name, assoc_table,
-			       qos_extra, extra);
-	xfree(qos_extra);
+	query = _setup_assoc_table_query(assoc_cond, cluster_name, fields,
+					 extra, " order by lft;");
 	xfree(extra);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
@@ -3256,15 +3262,9 @@ is_same_user:
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
-		char *qos_extra = _setup_assoc_cond_qos(
-			assoc_cond, cluster_name);
-
-		xstrfmtcat(query, "select distinct %s "
-			   "from \"%s_%s\" as t1%s%s "
-			   "order by lft FOR UPDATE;",
-			   object, cluster_name,
-			   assoc_table, qos_extra, extra);
-		xfree(qos_extra);
+		query = _setup_assoc_table_query(assoc_cond, cluster_name,
+						 object, extra,
+						 " ORDER BY lft FOR UPDATE;");
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
@@ -3374,15 +3374,9 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
-		char *qos_extra = _setup_assoc_cond_qos(
-			assoc_cond, cluster_name);
-
-		query = xstrdup_printf("select distinct t1.lft, t1.rgt from "
-				       "\"%s_%s\" as t1%s%s order by "
-				       "lft FOR UPDATE;",
-				       cluster_name, assoc_table,
-				       qos_extra, extra);
-		xfree(qos_extra);
+		query = _setup_assoc_table_query(assoc_cond, cluster_name,
+						 "t1.lft, t1.rgt", extra,
+						 " ORDER BY lft FOR UPDATE;");
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
