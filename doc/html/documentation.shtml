@@ -48,10 +48,11 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
 <li><a href="dynamic_nodes.html">Dynamic Nodes</a></li>
 <li><a href="elasticsearch.html">Elasticsearch Guide</a></li>
+<li><a href="job_container_tmpfs.html">job_container/tmpfs - Job Specific Temporary File Management</a></li>
 <li><a href="jwt.html">JSON Web Tokens Authentication</a></li>
 <li><a href="nonstop.html">Failure Management Support</a></li>
 <li><a href="federation.html">Federated Scheduling Guide</a></li>
-<li><a href="pam_slurm_adopt.html">Job Containment with pam_slurm_adopt</a></li>
+<li><a href="pam_slurm_adopt.html">Job Containment (SSH Session Control) with pam_slurm_adopt</a></li>
 <li><a href="big_sys.html">Large Cluster Administration Guide</a></li>
 <li><a href="licenses.html">License Management</a></li>
 <li><a href="mcs.html">Multi-Category Security (MCS) Guide</a></li>
@@ -131,6 +132,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 26 May 2022</p>
+<p style="text-align:center;">Last modified 5 October 2022</p>
 
 <!--#include virtual="footer.txt"-->
