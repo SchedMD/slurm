@@ -1016,6 +1016,42 @@ extern data_t *data_key_get_int(data_t *data, int64_t key)
 	return node;
 }
 
+extern data_t *data_dict_find_first(
+	data_t *data,
+	bool (*match)(const char *key, data_t *data, void *needle),
+	void *needle)
+{
+	data_list_node_t *i;
+
+	_check_magic(data);
+	if (!data)
+		return NULL;
+
+	xassert(data->type == DATA_TYPE_DICT);
+	if (data->type != DATA_TYPE_DICT)
+		return NULL;
+
+	/* don't bother searching empty dictionary */
+	if (!data->data.dict_u->count)
+		return NULL;
+
+	_check_data_list_magic(data->data.dict_u);
+	i = data->data.dict_u->begin;
+	while (i) {
+		_check_data_list_node_magic(i);
+
+		if (match(i->key, i->data, needle))
+			break;
+
+		i = i->next;
+	}
+
+	if (i)
+		return i->data;
+	else
+		return NULL;
+}
+
 data_t *data_key_set(data_t *data, const char *key)
 {
 	data_t *d;

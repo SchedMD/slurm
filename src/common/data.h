@@ -538,6 +538,21 @@ extern const data_t *data_key_get_const(const data_t *data, const char *key);
 extern data_t *data_key_get(data_t *data, const char *key);
 
 /*
+ * Use match() function ptr find a specific matching value in dictionary
+ * IN data - data object to find entity with given key string
+ * IN match - strict weak ordering function that compares two data to arg
+ *   returning true if the first precedes the second.
+ * IN needle - match against needle value
+ * NOTE: the dictionaries are currently unordered but this is being implemented
+ *   as strict weak order to allow log(n) searching in the future.
+ * RET ptr to matching data or NULL if match not found
+ */
+extern data_t *data_dict_find_first(
+	data_t *data,
+	bool (*match)(const char *key, data_t *data, void *needle),
+	void *needle);
+
+/*
  * Get data entry with given integer key
  * IN data data object to find entity with given key string
  * IN key string of key to find
