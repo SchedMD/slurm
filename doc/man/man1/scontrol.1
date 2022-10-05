@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "August 2022" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "October 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1052,8 +1052,10 @@ as ReqNodes.
 
 .TP
 \fBNumTasks\fR=<\fIcount\fR>
-Set the job's count of required tasks to the specified value. This is the same
-as ReqProcs.
+Set the job's count of requested tasks to the specified value.
+The number of tasks started in a specific step inside the allocation may differ
+from this value, for instance when a different number of tasks is requested on
+step creation. This is the same as ReqProcs.
 .IP
 
 .TP
