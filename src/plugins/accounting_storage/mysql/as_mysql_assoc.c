@@ -1171,13 +1171,9 @@ static char *_setup_assoc_cond_qos(slurmdb_assoc_cond_t *assoc_cond,
 	   parent thing
 	*/
 	if (assoc_cond->qos_list && list_count(assoc_cond->qos_list)) {
-		/* we have to do the same thing as with_sub_accts does
-		   first since we are looking for something that is
-		   really most likely a parent thing */
-		assoc_cond->with_sub_accts = 1;
-		prefix = "t2";
-		xstrfmtcat(extra, ", \"%s_%s\" as t2 where "
-			   "(t1.lft between t2.lft and t2.rgt) && (",
+		prefix = "t3";
+		xstrfmtcat(extra, ", \"%s_%s\" as t3 where "
+			   "(t1.lft between t3.lft and t3.rgt) && (",
 			   cluster_name, assoc_table);
 		set = 0;
 		itr = list_iterator_create(assoc_cond->qos_list);
@@ -1195,10 +1191,6 @@ static char *_setup_assoc_cond_qos(slurmdb_assoc_cond_t *assoc_cond,
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ") &&");
-	} else if (assoc_cond->with_sub_accts) {
-		xstrfmtcat(extra, ", \"%s_%s\" as t2 where "
-			   "(t1.lft between t2.lft and t2.rgt) &&",
-			   cluster_name, assoc_table);
 	} else
 		xstrcat(extra, " where");
 	return extra;
@@ -1209,11 +1201,25 @@ static char *_setup_assoc_table_query(slurmdb_assoc_cond_t *assoc_cond,
 				      char *filters, char *end)
 {
 	char *query;
-	char *qos_extra = _setup_assoc_cond_qos(assoc_cond, cluster_name);
+	char *with_sub_accts_str;
 
-	query = xstrdup_printf("select distinct %s from \"%s_%s\" as t1%s%s%s",
+	/*
+	* If we are looking for with_sub_accts, another join after the qos
+	* subquery is necessary, as filtering the parents during it would
+	* remove some inherited qos values.
+	*/
+	if (assoc_cond && assoc_cond->with_sub_accts)
+		xstrfmtcat(with_sub_accts_str,
+			   ", \"%s_%s\" as t2 on "
+			   "(t1.lft between t2.lft and t2.rgt) ",
+			   cluster_name, assoc_table);
+	else
+		xstrcat(with_sub_accts_str, "");
+
+	query = xstrdup_printf("select distinct %s from \"%s_%s\" as t1"
+			       "%s%s%s%s",
 			       fields, cluster_name, assoc_table,
-			       qos_extra, filters, end);
+			       with_sub_accts_str, qos_extra, filters, end);
 	return query;
 }
 
@@ -3207,8 +3213,7 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 is_same_user:
 
-	if ((assoc_cond->qos_list && list_count(assoc_cond->qos_list))
-	    || assoc_cond->with_sub_accts)
+	if (assoc_cond->with_sub_accts)
 		prefix = "t2";
 
 	(void) _setup_assoc_cond_limits(assoc_cond, prefix, &extra);
@@ -3352,8 +3357,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 
-	if ((assoc_cond->qos_list && list_count(assoc_cond->qos_list))
-	    || assoc_cond->with_sub_accts)
+	if (assoc_cond->with_sub_accts)
 		prefix = "t2";
 
 	(void)_setup_assoc_cond_limits(assoc_cond, prefix, &extra);
@@ -3507,8 +3511,7 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 	}
 
-	if ((assoc_cond->qos_list && list_count(assoc_cond->qos_list))
-	    || assoc_cond->with_sub_accts)
+	if (assoc_cond->with_sub_accts)
 		prefix = "t2";
 
 	(void) _setup_assoc_cond_limits(assoc_cond, prefix, &extra);
