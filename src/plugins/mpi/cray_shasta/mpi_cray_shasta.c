@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  mpi_cray_shasta.c - Cray Shasta MPI plugin
  *****************************************************************************
- *  Copyright 2019 Hewlett Packard Enterprise Development LP
+ *  Copyright 2019,2022 Hewlett Packard Enterprise Development LP
  *  Written by David Gloe <dgloe@cray.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -254,7 +254,7 @@ extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 	// Set up spool directory and apinfo
 	if (_create_mpi_dir(spool) == SLURM_ERROR ||
 	    _create_app_dir(step, spool) == SLURM_ERROR ||
-	    create_apinfo(step) == SLURM_ERROR) {
+	    create_apinfo(step, spool) == SLURM_ERROR) {
 		xfree(spool);
 		return SLURM_ERROR;
 	}

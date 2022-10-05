@@ -266,9 +266,90 @@ static pals_cmd_t *_setup_pals_cmds(int ncmds, int ntasks, int nnodes,
 }
 
 /*
+ * Get a list of communication profiles from the Slingshot plugin (if available)
+ */
+static pals_comm_profile_t *_setup_pals_profiles(const stepd_step_rec_t *job,
+						 const char *spool,
+						 int *nprofiles)
+{
+	int fd = -1;
+	pals_header_t hdr;
+	pals_comm_profile_t *profiles = NULL;
+	size_t profiles_size = 0;
+	char *ss_apinfo = NULL;
+
+	/* Open info file written by the Slingshot plugin */
+	ss_apinfo = xstrdup_printf("%s/%s/apinfo.%u.%u",
+				   spool, HPE_SLINGSHOT_DIR,
+				   job->step_id.job_id, job->step_id.step_id);
+	fd = open(ss_apinfo, O_RDONLY);
+	if (fd == -1) {
+		/* This is expected if Slingshot plugin isn't in use */
+		debug("%s: Couldn't open %s: %m", plugin_type, ss_apinfo);
+		goto rwfail;
+	}
+
+	/* Read header */
+	safe_read(fd, &hdr, sizeof(hdr));
+
+	/* Check header fields */
+	if (hdr.version != PALS_APINFO_VERSION) {
+		error("%s: %s version %d doesn't match expected version %d",
+		      plugin_type, ss_apinfo, hdr.version, PALS_APINFO_VERSION);
+		goto rwfail;
+	}
+	if (hdr.ncomm_profiles < 0) {
+		error("%s: %s invalid ncomm_profiles %d",
+		      plugin_type, ss_apinfo, hdr.ncomm_profiles);
+		goto rwfail;
+	}
+	if (hdr.comm_profile_size != sizeof(pals_comm_profile_t)) {
+		error("%s: %s invalid comm_profile_size %zu != %zu",
+		      plugin_type, ss_apinfo, hdr.comm_profile_size,
+		      sizeof(pals_comm_profile_t));
+		goto rwfail;
+	}
+
+	debug("%s: Found %d comm profiles in %s",
+	      plugin_type, hdr.ncomm_profiles, ss_apinfo);
+
+	if (hdr.ncomm_profiles == 0) {
+		*nprofiles = 0;
+		close(fd);
+		xfree(ss_apinfo);
+		return NULL;
+	}
+
+	/* Allocate space for the profiles */
+	profiles_size = hdr.ncomm_profiles * hdr.comm_profile_size;
+	profiles = xmalloc(profiles_size);
+
+	/* Read the profiles from the correct position */
+	if (lseek(fd, hdr.comm_profile_offset, SEEK_SET) == -1) {
+		error("%s: Couldn't seek to %zu in %s: %m",
+		      plugin_type, hdr.comm_profile_offset, ss_apinfo);
+		goto rwfail;
+	}
+	safe_read(fd, profiles, profiles_size);
+
+	*nprofiles = hdr.ncomm_profiles;
+	close(fd);
+	xfree(ss_apinfo);
+	return profiles;
+
+rwfail:
+	*nprofiles = 0;
+	xfree(profiles);
+	close(fd);
+	xfree(ss_apinfo);
+	return NULL;
+}
+
+/*
  * Fill in the apinfo header
  */
-static void _build_header(pals_header_t *hdr, int ncmds, int npes, int nnodes)
+static void _build_header(pals_header_t *hdr, int ncmds, int npes, int nnodes,
+			  int nprofiles)
 {
 	size_t offset = sizeof(pals_header_t);
 
@@ -277,7 +358,7 @@ static void _build_header(pals_header_t *hdr, int ncmds, int npes, int nnodes)
 
 	hdr->comm_profile_size = sizeof(pals_comm_profile_t);
 	hdr->comm_profile_offset = offset;
-	hdr->ncomm_profiles = 0;
+	hdr->ncomm_profiles = nprofiles;
 	offset += hdr->comm_profile_size * hdr->ncomm_profiles;
 
 	hdr->cmd_size = sizeof(pals_cmd_t);
@@ -367,13 +448,14 @@ rwfail:
 /*
  * Write the application information file
  */
-extern int create_apinfo(const stepd_step_rec_t *step)
+extern int create_apinfo(const stepd_step_rec_t *step, const char *spool)
 {
 	int fd = -1;
 	pals_header_t hdr;
+	pals_comm_profile_t *profiles = NULL;
 	pals_cmd_t *cmds = NULL;
 	pals_pe_t *pes = NULL;
-	int ntasks, ncmds, nnodes;
+	int ntasks, ncmds, nnodes, nprofiles;
 	uint16_t *task_cnts;
 	uint32_t **tids;
 	uint32_t *tid_offsets;
@@ -437,7 +519,8 @@ extern int create_apinfo(const stepd_step_rec_t *step)
 	}
 
 	// Get information to write
-	_build_header(&hdr, ncmds, ntasks, nnodes);
+	profiles = _setup_pals_profiles(step, spool, &nprofiles);
+	_build_header(&hdr, ncmds, ntasks, nnodes, nprofiles);
 	pes = _setup_pals_pes(ntasks, nnodes, task_cnts, tids, tid_offsets);
 	cmds = _setup_pals_cmds(ncmds, ntasks, nnodes,
 				step->cpus_per_task, pes);
@@ -450,13 +533,14 @@ extern int create_apinfo(const stepd_step_rec_t *step)
 
 	// Write info
 	safe_write(fd, &hdr, sizeof(pals_header_t));
+	safe_write(fd, profiles,
+		   (hdr.ncomm_profiles * sizeof(pals_comm_profile_t)));
 	safe_write(fd, cmds, (hdr.ncmds * sizeof(pals_cmd_t)));
 	safe_write(fd, pes, (hdr.npes * sizeof(pals_pe_t)));
 
 	if (_write_pals_nodes(fd, nodelist) == SLURM_ERROR)
 		goto rwfail;
 
-	// TODO: Write communication profiles
 	// TODO write nics
 
 	// Flush changes to disk
