@@ -94,6 +94,9 @@ static int _handle_job(void *x, void *y)
 	/* enforce this flag so the job submit plugin can differentiate */
 	job->bitflags |= CRON_JOB;
 
+	/* always enable requeue to allow scontrol requeue to work */
+	job->requeue = 1;
+
 	/* give job_submit a chance to play with it first */
 	args->return_code = validate_job_create_req(job, args->uid,
 						    args->err_msg);

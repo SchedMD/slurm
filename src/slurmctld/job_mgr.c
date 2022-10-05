@@ -16011,10 +16011,25 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		 * the job credential purged by slurmd. */
 		if (job_ptr->details->begin_time <= now) {
 			int cred_lifetime = DEFAULT_EXPIRATION_WINDOW;
+			time_t begin_time;
 			(void) slurm_cred_ctx_get(slurmctld_config.cred_ctx,
 						  SLURM_CRED_OPT_EXPIRY_WINDOW,
 						  &cred_lifetime);
-			job_ptr->details->begin_time = now + cred_lifetime + 1;
+			begin_time = now + cred_lifetime + 1;
+			if ((job_ptr->bit_flags & CRON_JOB) &&
+			    job_ptr->details->crontab_entry) {
+				begin_time = calc_next_cron_start(
+					job_ptr->details->crontab_entry,
+					begin_time);
+			} else if (job_ptr->bit_flags & CRON_JOB) {
+				/*
+				 * Skip requeuing this instead of crashing.
+				 */
+				error("Missing cron details for %pJ. This should never happen. Clearing CRON_JOB flag and skipping requeue.",
+				      job_ptr);
+				job_ptr->bit_flags &= ~CRON_JOB;
+			}
+			job_ptr->details->begin_time = begin_time;
 		}
 
 		/* Since this could happen on a launch we need to make sure the
