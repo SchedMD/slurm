@@ -844,6 +844,7 @@ static slurm_cli_opt_t slurm_opt_c_constraint = {
 
 static int arg_set_chdir(slurm_opt_t *opt, const char *arg)
 {
+	xfree(opt->chdir);
 	if (is_full_path(arg))
 		opt->chdir = xstrdup(arg);
 	else
@@ -857,6 +858,7 @@ static int arg_set_data_chdir(slurm_opt_t *opt, const data_t *arg,
 	int rc;
 	char *str = NULL;
 
+	xfree(opt->chdir);
 	if ((rc = data_get_string_converted(arg, &str)))
 		ADD_DATA_ERROR("Unable to read string", rc);
 	else if (is_full_path(str)) {
