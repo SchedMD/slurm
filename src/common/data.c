@@ -973,37 +973,15 @@ const data_t *data_key_get_const(const data_t *data, const char *key)
 		return NULL;
 }
 
+static bool _match_string(const char *key, data_t *data, void *needle_ptr)
+{
+	const char *needle = needle_ptr;
+	return !xstrcmp(key, needle);
+}
+
 data_t *data_key_get(data_t *data, const char *key)
 {
-	data_list_node_t *i;
-
-	_check_magic(data);
-	if (!data)
-		return NULL;
-
-	xassert(data->type == DATA_TYPE_DICT);
-	if (!key || data->type != DATA_TYPE_DICT)
-		return NULL;
-
-	/* don't bother searching empty dictionary */
-	if (!data->data.dict_u->count)
-		return NULL;
-
-	_check_data_list_magic(data->data.dict_u);
-	i = data->data.dict_u->begin;
-	while (i) {
-		_check_data_list_node_magic(i);
-
-		if (!xstrcmp(key, i->key))
-			break;
-
-		i = i->next;
-	}
-
-	if (i)
-		return i->data;
-	else
-		return NULL;
+	return data_dict_find_first(data, _match_string, (void *) key);
 }
 
 extern data_t *data_key_get_int(data_t *data, int64_t key)
