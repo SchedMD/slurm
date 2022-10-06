@@ -57,6 +57,8 @@
 #include "src/slurmctld/reservation.h"
 
 typedef struct slurm_bb_ops {
+	char * 		(*build_het_job_script) (char *script,
+						 uint32_t het_job_offset);
 	uint64_t	(*get_system_size)	(void);
 	int		(*load_state)	(bool init_config);
 	char *		(*get_status)	(uint32_t argc, char **argv);
@@ -89,6 +91,7 @@ typedef struct slurm_bb_ops {
  * Must be synchronized with slurm_bb_ops_t above.
  */
 static const char *syms[] = {
+	"bb_p_build_het_job_script",
 	"bb_p_get_system_size",
 	"bb_p_load_state",
 	"bb_p_get_status",

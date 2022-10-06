@@ -2739,6 +2739,11 @@ static void _purge_vestigial_bufs(void)
 	}
 }
 
+extern char *bb_p_build_het_job_script(char *script, uint32_t het_job_offset)
+{
+	return NULL;
+}
+
 /*
  * Return the total burst buffer size in MB
  */
