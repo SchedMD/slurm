@@ -465,6 +465,10 @@ create a reservation that will allow jobs to run in it without requiring that
 they specify the name of the reservation. The reservation will only "attract"
 jobs that meet the access control requirements.</p>
 
+<p><b>NOTE</b>: Magnetic reservations cannot "attract" heterogeneous jobs -
+heterogeneous jobs will only run in magnetic reservations if they explicitly
+request the reservation.</p>
+
 <p>The following example shows a reservation created on node05. The user
 specified as being able to access the reservation then submits a job and
 the job starts on the reserved node.</p>
@@ -525,7 +529,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 28 August 2020</p>
+<p style="text-align: center;">Last modified 10 October 2022</p>
 
 <!--#include virtual="footer.txt"-->
 
