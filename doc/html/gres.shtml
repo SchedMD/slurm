@@ -475,11 +475,7 @@ in <i>slurm.conf</i> as if the MIGs were regular GPUs. An optional
 GRES type can be specified to distinguish MIGs of different sizes from each
 other, as well as from other GPUs in the cluster. This type must be a substring
 of the "MIG Profile" string as reported by the node in its slurmd log under the
-<code class="commandline">debug2</code> log level. Other MIG attributes will be
-displayed as well, including MIG UUID, GPU Instance (GI) ID, Compute Instance
-(CI) ID, GI and CI minor numbers, the associated MIG device files, and
-"UniqueID" (the value Slurm will use to select MIGs via
-<code class="commandline">CUDA_VISIBLE_DEVICES</code>).</p>
+<code class="commandline">debug2</code> log level.
 
 <p>The <a href="gres.conf.html#OPT_MultipleFiles">MultipleFiles</a> parameter
 allows you to specify multiple device files for the GPU card.</p>
