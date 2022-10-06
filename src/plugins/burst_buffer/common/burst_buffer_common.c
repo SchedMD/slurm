@@ -765,6 +765,18 @@ static void _pack_alloc(struct bb_alloc *bb_alloc, buf_t *buffer,
 	}
 }
 
+/* Return true if hetjob separator in the script */
+static bool _hetjob_check(char *tok)
+{
+	if (strncmp(tok + 1, "SLURM",  5) &&
+	    strncmp(tok + 1, "SBATCH", 6))
+		return false;
+	if (!strstr(tok + 6, "packjob") &&
+	    !strstr(tok + 6, "hetjob"))
+		return false;
+	return true;
+}
+
 /* Pack individual burst buffer records into a buffer */
 extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, buf_t *buffer,
 			uint16_t protocol_version)
@@ -1179,6 +1191,52 @@ extern int bb_build_bb_script(job_record_t *job_ptr, char *script_file)
 	xfree(out_buf);
 
 	return rc;
+}
+
+extern char *bb_common_build_het_job_script(char *script,
+					    uint32_t het_job_offset,
+					    bool (*is_directive) (char *tok))
+{
+	char *result = NULL, *tmp = NULL;
+	char *tok, *save_ptr = NULL;
+	bool fini = false;
+	int cur_offset = 0;
+
+	tmp = xstrdup(script);
+	tok = strtok_r(tmp, "\n", &save_ptr);
+	while (tok) {
+		if (!result) {
+			xstrfmtcat(result, "%s\n", tok);
+		} else if (tok[0] != '#') {
+			fini = true;
+		} else if (_hetjob_check(tok)) {
+			cur_offset++;
+			if (cur_offset > het_job_offset)
+				fini = true;
+		} else if (cur_offset == het_job_offset) {
+			xstrfmtcat(result, "%s\n", tok);
+		}
+		if (fini)
+			break;
+		tok = strtok_r(NULL, "\n", &save_ptr);
+	}
+
+	if (het_job_offset == 0) {
+		while (tok) {
+			char *sep = "";
+			if (is_directive(tok)) {
+				sep = "#EXCLUDED ";
+				tok++;
+			}
+			xstrfmtcat(result, "%s%s\n", sep, tok);
+			tok = strtok_r(NULL, "\n", &save_ptr);
+		}
+	} else if (result) {
+		xstrcat(result, "exit 0\n");
+	}
+	xfree(tmp);
+
+	return result;
 }
 
 /* Free memory associated with allocated bb record, caller is responsible for
