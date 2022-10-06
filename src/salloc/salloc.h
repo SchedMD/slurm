@@ -44,8 +44,6 @@
 #include <unistd.h>
 
 extern char *argvzero;
-extern char **  command_argv;
-extern int      command_argc;
 extern pid_t    command_pid;
 extern uint64_t debug_flags;
 

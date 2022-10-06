@@ -289,20 +289,19 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	if ((optind < argc) && !xstrcmp(argv[optind], ":")) {
 		debug("hetjob component separator");
 	} else {
-		command_argc = 0;
+		opt.argc = 0;
 		if (optind < argc) {
 			rest = argv + optind;
-			while (rest[command_argc] != NULL)
-				command_argc++;
+			while (rest[opt.argc] != NULL)
+				opt.argc++;
 		}
-		command_argv = (char **) xmalloc((command_argc + 1) *
-						 sizeof(char *));
-		for (i = 0; i < command_argc; i++) {
+		opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
+		for (i = 0; i < opt.argc; i++) {
 			if ((i == 0) && (rest == NULL))
 				break;	/* Fix for CLANG false positive */
-			command_argv[i] = xstrdup(rest[i]);
+			opt.argv[i] = xstrdup(rest[i]);
 		}
-		command_argv[i] = NULL;	/* End of argv's (for possible execv) */
+		opt.argv[i] = NULL; /* End of argv's (for possible execv) */
 	}
 
 	if (opt.container &&
@@ -490,8 +489,8 @@ static bool _opt_verify(void)
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 
-	if ((saopt.no_shell == false) && (command_argc == 0))
-		_salloc_default_command(&command_argc, &command_argv);
+	if ((saopt.no_shell == false) && (opt.argc == 0))
+		_salloc_default_command(&opt.argc, &opt.argv);
 
 	/* check for realistic arguments */
 	if (opt.ntasks <= 0) {

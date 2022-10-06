@@ -84,8 +84,6 @@ extern pid_t getpgid(pid_t pid);
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
 char *argvzero = NULL;
-char **command_argv;
-int command_argc;
 pid_t command_pid = -1;
 char *work_dir = NULL;
 static int is_interactive;
@@ -613,7 +611,7 @@ int main(int argc, char **argv)
 	slurm_mutex_lock(&allocation_state_lock);
 	if (suspend_flag)
 		slurm_cond_wait(&allocation_state_cond, &allocation_state_lock);
-	command_pid = _fork_command(command_argv);
+	command_pid = _fork_command(opt.argv);
 	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
 
@@ -634,7 +632,7 @@ int main(int argc, char **argv)
 			rc_pid = waitpid(command_pid, &status, WUNTRACED);
 		} while (WIFSTOPPED(status) || ((rc_pid == -1) && (!exit_flag)));
 		if ((rc_pid == -1) && (errno != EINTR))
-			error("waitpid for %s failed: %m", command_argv[0]);
+			error("waitpid for %s failed: %m", opt.argv[0]);
 	}
 
 	if (is_interactive)
@@ -676,7 +674,7 @@ relinquish:
 			_forward_signal(SIGKILL);
 		} else if (WIFSIGNALED(status)) {
 			verbose("Command \"%s\" was terminated by signal %d",
-				command_argv[0], WTERMSIG(status));
+				opt.argv[0], WTERMSIG(status));
 			/* if we get these signals we return a normal
 			 * exit since this was most likely sent from the
 			 * user */
@@ -745,8 +743,8 @@ static void _match_job_name(job_desc_msg_t *desc_last, List job_req_list)
 	if (!desc_last)
 		return;
 
-	if (!desc_last->name && command_argv[0])
-		desc_last->name = xstrdup(xbasename(command_argv[0]));
+	if (!desc_last->name && opt.argv[0])
+		desc_last->name = xstrdup(xbasename(opt.argv[0]));
 	name = desc_last->name;
 
 	if (!job_req_list)
@@ -820,8 +818,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		return -1;
 
 	desc->wait_all_nodes = saopt.wait_all_nodes;
-	desc->argv = command_argv;
-	desc->argc = command_argc;
+	desc->argv = opt.argv;
+	desc->argc = opt.argc;
 
 	return 0;
 }
@@ -988,7 +986,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 			if (signal) {
 				 verbose("Sending signal %d to command \"%s\","
 					 " pid %d",
-					 signal, command_argv[0], command_pid);
+					 signal, opt.argv[0], command_pid);
 				if (suspend_flag)
 					_forward_signal(SIGCONT);
 				_forward_signal(signal);
