@@ -471,11 +471,19 @@ cgroup isolation and task binding.</p>
 <p>To configure MIGs in Slurm, specify
 <code class="commandline">AutoDetect=nvml</code> in <i>gres.conf</i> for the
 nodes with MIGs, and specify <code class="commandline">Gres</code>
-in <i>slurm.conf</i> as if the MIGs were regular GPUs. An optional
+in <i>slurm.conf</i> as if the MIGs were regular GPUs, like this:
+<code class="commandline">NodeName=tux[1-16] gres=gpu:2</code>. An optional
 GRES type can be specified to distinguish MIGs of different sizes from each
 other, as well as from other GPUs in the cluster. This type must be a substring
 of the "MIG Profile" string as reported by the node in its slurmd log under the
-<code class="commandline">debug2</code> log level.
+<code class="commandline">debug2</code> log level. Here is an example slurm.conf
+for a system with 2 gpus, one of which is partitioned into 2 MIGs where the
+"MIG Profile" is <code class="commandline">nvidia_a100_3g.20gb</code>:</p>
+<pre>
+AccountingStorageTRES=gres/gpu
+GresTypes=gpu
+NodeName=tux[1-16] gres=gpu:a100:1,gpu:a100_3g.20gb:2
+</pre>
 
 <p>The <a href="gres.conf.html#OPT_MultipleFiles">MultipleFiles</a> parameter
 allows you to specify multiple device files for the GPU card.</p>
@@ -594,6 +602,6 @@ or <code class="commandline">GPU_DEVICE_ORDINAL</code> environment variable set
 which would be the same as if it were a GPU.
 </p>
 
-<p style="text-align: center;">Last modified 10 August 2022</p>
+<p style="text-align: center;">Last modified 25 October 2022</p>
 
 <!--#include virtual="footer.txt"-->
