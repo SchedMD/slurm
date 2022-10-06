@@ -379,7 +379,14 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	/****** Line ******/
 	slurm_make_time_str((time_t *)&node_ptr->last_busy, time_str,
 			    sizeof(time_str));
-	xstrfmtcat(out, "LastBusyTime=%s", time_str);
+	xstrfmtcat(out, "LastBusyTime=%s ", time_str);
+	if (node_ptr->resume_after) {
+		slurm_make_time_str((time_t *)&node_ptr->resume_after, time_str,
+				    sizeof(time_str));
+		xstrfmtcat(out, "ResumeAfterTime=%s", time_str);
+	} else {
+		xstrcat(out, "ResumeAfterTime=None");
+	}
 	xstrcat(out, line_end);
 
 	/****** TRES Line ******/
