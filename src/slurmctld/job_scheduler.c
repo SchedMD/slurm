@@ -242,6 +242,20 @@ static void _job_queue_append(List job_queue, job_record_t *job_ptr,
 	if (job_ptr->resv_name)
 		return;
 
+	/*
+	 * For het jobs, backfill makes a plan for each component; however,
+	 * backfill doesn't track magnetic reservations in the plan, so backfill
+	 * can't start hetjobs in a magnetic reservation unless the het job
+	 * explicitly requests the magnetic reservation.
+	 *
+	 * Also, if there is a magnetic reservation that starts in the future,
+	 * backfill will not be able to start the het job if there is a separate
+	 * magnetic reservation queue record for the component. So, don't create
+	 * a separate magnetic reservation queue record for het jobs.
+	 */
+	if (job_ptr->het_job_id)
+		return;
+
 	job_resv_append_magnetic(&job_queue_req);
 }
 
