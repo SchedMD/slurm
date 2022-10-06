@@ -76,6 +76,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid setting preempt_time for a job erroneously.
  -- Fix situation where we don't requeue correctly when a job is finishing.
  -- job_container/tmpfs - Avoid leaking namespace file descriptor.
+ -- common/slurm_opt - fix memory leak in client commands or slurmrestd when the
+    --chdir option is set after option reset.
 
 * Changes in Slurm 22.05.4
 ==========================
