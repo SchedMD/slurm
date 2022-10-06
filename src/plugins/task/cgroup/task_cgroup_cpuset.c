@@ -120,8 +120,10 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *step)
 		"%s,%s", job_alloc_cpus, slurm_limits->allow_cores);
 	rc = cgroup_g_constrain_set(CG_CPUS, CG_LEVEL_USER, &limits);
 	xfree(limits.allow_cores);
-	if (rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS) {
+		error("slurm cgroup might have been modified by an external software");
 		goto endit;
+	}
 
 	/* Job constrain */
 	limits.allow_cores = job_alloc_cpus;
