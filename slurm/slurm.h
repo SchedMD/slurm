@@ -2262,6 +2262,8 @@ typedef struct node_info {
 				 * no reason is set. */
 	uint32_t reason_uid;   	/* User that set the reason, ignore if
 				 * no reason is set. */
+	time_t resume_after;    /* automatically resume DOWN or DRAINED node at
+			         * this point in time */
 	char *resv_name;        /* If node is in a reservation this is
 				 * the name of the reservation */
 	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,

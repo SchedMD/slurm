@@ -1164,6 +1164,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack_time(dump_node_ptr->boot_time, buffer);
 		pack_time(dump_node_ptr->last_busy, buffer);
 		pack_time(dump_node_ptr->reason_time, buffer);
+		pack_time(dump_node_ptr->resume_after, buffer);
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
 
 		select_g_select_nodeinfo_pack(dump_node_ptr->select_nodeinfo,

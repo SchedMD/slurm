@@ -1733,6 +1733,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpack_time(&node->boot_time, buffer);
 		safe_unpack_time(&node->last_busy, buffer);
 		safe_unpack_time(&node->reason_time, buffer);
+		safe_unpack_time(&node->resume_after, buffer);
 		safe_unpack_time(&node->slurmd_start_time, buffer);
 
 		if (select_g_select_nodeinfo_unpack(&node->select_nodeinfo,
