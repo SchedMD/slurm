@@ -1790,9 +1790,18 @@ static void _purge_vestigial_bufs(void)
 	FREE_NULL_LIST(orphan_rec_list);
 }
 
+static bool _is_directive(char *tok)
+{
+	xassert(directive_str);
+	if ((tok[0] == '#') && !xstrncmp(tok + 1, directive_str, directive_len))
+		return true;
+	return false;
+}
+
 extern char *bb_p_build_het_job_script(char *script, uint32_t het_job_offset)
 {
-	return NULL;
+	return bb_common_build_het_job_script(script, het_job_offset,
+					      _is_directive);
 }
 
 /*
