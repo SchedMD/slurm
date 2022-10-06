@@ -155,6 +155,9 @@ proc cleanup { } {
 	global sacctmgr test_acct test_qos
 	global partition save_billing_weights scontrol job_id
 
+	# Cancel the submitted job
+	cancel_job $job_id
+
 	# Delete test account and qos
 	spawn $sacctmgr -i delete account $test_acct
 	expect {
@@ -190,9 +193,6 @@ proc cleanup { } {
 			}
 		}
 	}
-
-	# Cancel the submitted job
-	cancel_job $job_id
 }
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
