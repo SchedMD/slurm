@@ -48,6 +48,18 @@
 #include "src/common/pack.h"
 
 /*
+ * Default credential information expiration window.
+ * Long enough for loading user environment, running prolog, paging slurmd
+ * into memory, plus sending a launch request to all compute nodes of a job
+ * (i.e. MessageTimeout * message_depth, where
+ * (TreeWidth ^^ message_depth) >= count_of_compute_nodes).
+ *
+ * The default value may be altered with the configuration option of this sort:
+ * "AuthInfo=cred_expire=600"
+ */
+#define DEFAULT_EXPIRATION_WINDOW 120
+
+/*
  * The incomplete slurm_cred_t type is also defined in slurm.h for
  * users of the api, so check to ensure that this header has not been
  * included after slurm.h:

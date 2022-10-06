@@ -75,6 +75,7 @@
 #include "src/common/select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_mcs.h"
 #include "src/common/slurm_priority.h"
@@ -16009,9 +16010,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		 * I/O must be all cleared out, the named socket purged and
 		 * the job credential purged by slurmd. */
 		if (job_ptr->details->begin_time <= now) {
-			/* See src/common/slurm_cred.c
-			 * #define DEFAULT_EXPIRATION_WINDOW 1200 */
-			int cred_lifetime = 1200;
+			int cred_lifetime = DEFAULT_EXPIRATION_WINDOW;
 			(void) slurm_cred_ctx_get(slurmctld_config.cred_ctx,
 						  SLURM_CRED_OPT_EXPIRY_WINDOW,
 						  &cred_lifetime);
