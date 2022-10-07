@@ -310,7 +310,7 @@ static char *_node_names_2_nid_list(char *node_names)
 	i = strlen(node_names) + 1;
 	nid_list = xmalloc(i);
 	bit_fmt(nid_list, i, node_bitmap);
-	bit_free(node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
 
 	return nid_list;
 }

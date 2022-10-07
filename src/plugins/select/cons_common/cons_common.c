@@ -1296,7 +1296,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	tmp_bitmap2 = bit_copy(to_job_ptr->node_bitmap);
 	bit_or(tmp_bitmap2, from_job_ptr->node_bitmap);
 	bit_and(tmp_bitmap, tmp_bitmap2);
-	bit_free(tmp_bitmap2);
+	FREE_NULL_BITMAP(tmp_bitmap2);
 	node_cnt = bit_set_count(tmp_bitmap);
 
 	new_job_resrcs_ptr = _create_job_resources(node_cnt);

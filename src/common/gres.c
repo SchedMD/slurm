@@ -4136,7 +4136,7 @@ static char *_core_bitmap2str(bitstr_t *core_map, int cores_per_sock,
 		/* We have a core bitmap with no bits set */
 		sock_info = xstrdup("");
 	}
-	bit_free(sock_map);
+	FREE_NULL_BITMAP(sock_map);
 
 	return sock_info;
 }
@@ -4230,7 +4230,7 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 						core_map,
 						cores_per_sock,
 						sock_per_node);
-					bit_free(core_map);
+					FREE_NULL_BITMAP(core_map);
 					sock_str = sock_info;
 				} else
 					sock_str = "";
@@ -4253,7 +4253,7 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 				xfree(sock_info);
 				sep = ",";
 			}
-			bit_free(done_topo);
+			FREE_NULL_BITMAP(done_topo);
 		} else if (gres_ns->type_cnt &&
 			   gres_ns->gres_cnt_avail) {
 			for (i = 0; i < gres_ns->type_cnt; i++) {
@@ -8885,7 +8885,7 @@ static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
 	}
 	list_iterator_destroy(iter);
 	bit_clear(gres_slots, best_slot);
-	bit_free(task_cpus_bitmap);
+	FREE_NULL_BITMAP(task_cpus_bitmap);
 	return (best_slot / ntasks_per_gres);
 }
 

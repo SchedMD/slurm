@@ -3405,7 +3405,7 @@ extern bool acct_policy_validate_het_job(List submit_job_list)
 						&reason,
 						&acct_policy_limit_set,
 						false);
-				bit_free(job_desc.array_bitmap);
+				FREE_NULL_BITMAP(job_desc.array_bitmap);
 				if (!rc)
 					break;
 			}

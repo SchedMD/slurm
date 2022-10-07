@@ -451,7 +451,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		}
 		pending_append = true;
 	}
-	bit_free(het_grp_bits);
+	FREE_NULL_BITMAP(het_grp_bits);
 
 	if (opt_list && pending_append) {		/* Last record */
 		list_append(opt_list, _opt_copy());

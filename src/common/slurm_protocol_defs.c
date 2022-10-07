@@ -6353,7 +6353,7 @@ out:
 	*array_task_str = out_buf;
 
 	if (!array_bitmap)
-		bit_free(task_bitmap);
+		FREE_NULL_BITMAP(task_bitmap);
 }
 
 extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,

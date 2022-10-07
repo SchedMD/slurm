@@ -1345,7 +1345,7 @@ static int _schedule(bool full_queue)
 				xfree(cg_part_str);
 			}
 		}
-		bit_free(eff_cg_bitmap);
+		FREE_NULL_BITMAP(eff_cg_bitmap);
 	}
 
 	if (max_jobs_per_part) {
@@ -3179,7 +3179,7 @@ static char *_xlate_array_dep(char *new_depend)
 			    ((t_first = bit_ffs(array_bitmap)) == -1)) {
 				/* Invalid format */
 				xfree(array_tmp);
-				bit_free(array_bitmap);
+				FREE_NULL_BITMAP(array_bitmap);
 				xfree(new_array_dep);
 				return NULL;
 			}
@@ -3196,7 +3196,7 @@ static char *_xlate_array_dep(char *new_depend)
 						   job_id, t);
 				}
 			}
-			bit_free(array_bitmap);
+			FREE_NULL_BITMAP(array_bitmap);
 			jobid_ptr = NULL;
 		} else {
 			jobid_ptr = NULL;
@@ -4237,7 +4237,7 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr)
 				    &active_bitmap);
 	if (active_bitmap == NULL)	/* All nodes have desired features */
 		return NULL;
-	bit_free(active_bitmap);
+	FREE_NULL_BITMAP(active_bitmap);
 
 	/*
 	 * If some XOR/XAND option, filter out only first set of features
@@ -4253,10 +4253,10 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr)
 	xfree(reboot_features);
 	boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	bit_and(boot_node_bitmap, feature_node_bitmap);
-	bit_free(feature_node_bitmap);
+	FREE_NULL_BITMAP(feature_node_bitmap);
 	if (tmp_bitmap) {
 		bit_and_not(boot_node_bitmap, tmp_bitmap);
-		bit_free(tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 	if (bit_ffs(boot_node_bitmap) == -1)
 		FREE_NULL_BITMAP(boot_node_bitmap);

@@ -174,7 +174,7 @@ static void _update_crontab_with_disabled_lines(char **crontab,
 	}
 	xfree(*crontab);
 	*crontab = new_crontab;
-	bit_free(disabled);
+	FREE_NULL_BITMAP(disabled);
 	xfree(lines);
 }
 

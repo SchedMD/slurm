@@ -12422,7 +12422,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
-			bit_free(rem_nodes);
+			FREE_NULL_BITMAP(rem_nodes);
 			(void) gs_job_start(job_ptr);
 			gres_ctld_job_build_details(job_ptr->gres_list_alloc,
 						    &job_ptr->gres_detail_cnt,
@@ -13884,7 +13884,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				else {
 					bit_and_not(tmp_nodes,
 						    batch_host_bitmap);
-					bit_free(batch_host_bitmap);
+					FREE_NULL_BITMAP(batch_host_bitmap);
 					/*
 					 * Set total to 1 since we're
 					 * guaranteeing that we won't remove the
@@ -13909,8 +13909,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
-			bit_free(rem_nodes);
-			bit_free(tmp_nodes);
+			FREE_NULL_BITMAP(rem_nodes);
+			FREE_NULL_BITMAP(tmp_nodes);
 			(void) gs_job_start(job_ptr);
 			job_post_resize_acctg(job_ptr);
 			sched_info("%s: set nodes to %s for %pJ",
@@ -15275,9 +15275,9 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 		agent_info->protocol_version = protocol_version;
 		set_agent_arg_r_uid(agent_info, SLURM_AUTH_UID_ANY);
 		agent_queue_request(agent_info);
-		bit_free(tmp_node_bitmap);
+		FREE_NULL_BITMAP(tmp_node_bitmap);
 	}
-	bit_free(full_node_bitmap);
+	FREE_NULL_BITMAP(full_node_bitmap);
 }
 
 /*

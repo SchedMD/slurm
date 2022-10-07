@@ -1131,7 +1131,7 @@ static void _hypercube_add_nodes(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 			new_nodes;
 	}
 
-	bit_free(tmp_bitmap);
+	FREE_NULL_BITMAP(tmp_bitmap);
 
 	/* Let's see how good this right-sided cluster is */
 	_hypercube_update_variance(
@@ -1390,7 +1390,7 @@ static void _explore_hypercube(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 		}
 	}
 
-	bit_free(tmp_bitmap);
+	FREE_NULL_BITMAP(tmp_bitmap);
 }
 
 /* a hypercube topology version of _job_test -
@@ -2427,7 +2427,7 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 	tmp_bitmap2 = bit_copy(to_job_ptr->node_bitmap);
 	bit_or(tmp_bitmap2, from_job_ptr->node_bitmap);
 	bit_and(tmp_bitmap, tmp_bitmap2);
-	bit_free(tmp_bitmap2);
+	FREE_NULL_BITMAP(tmp_bitmap2);
 	node_cnt = bit_set_count(tmp_bitmap);
 	new_job_resrcs_ptr = _create_job_resources(node_cnt);
 	new_job_resrcs_ptr->ncpus = from_job_resrcs_ptr->ncpus +

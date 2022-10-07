@@ -1270,9 +1270,9 @@ extern int job_resources_or(job_resources_t *job_resrcs1_ptr,
 
 	/* Update data structure fields as needed */
 	job_resrcs1_ptr->nhosts = node_inx + 1;
-	bit_free(job_resrcs1_ptr->core_bitmap);
+	FREE_NULL_BITMAP(job_resrcs1_ptr->core_bitmap);
 	job_resrcs1_ptr->core_bitmap = job_resrcs_new->core_bitmap;
-	bit_free(job_resrcs1_ptr->node_bitmap);
+	FREE_NULL_BITMAP(job_resrcs1_ptr->node_bitmap);
 	job_resrcs1_ptr->node_bitmap = job_resrcs_new->node_bitmap;
 	xfree(job_resrcs1_ptr->cores_per_socket);
 	job_resrcs1_ptr->cores_per_socket = job_resrcs_new->cores_per_socket;

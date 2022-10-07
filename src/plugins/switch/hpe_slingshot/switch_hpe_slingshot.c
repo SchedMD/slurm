@@ -296,8 +296,7 @@ unpack_error:
 error:
 	free_buf(state_buf);
 	xfree(state_file);
-	if (slingshot_state.vni_table)
-		bit_free(slingshot_state.vni_table);
+	FREE_NULL_BITMAP(slingshot_state.vni_table);
 	xfree(slingshot_state.job_vnis);
 
 	return SLURM_ERROR;
@@ -309,8 +308,7 @@ extern int switch_p_libstate_clear(void)
 		slingshot_state.vni_table, slingshot_state.job_vnis,
 		slingshot_state.num_job_vnis);
 
-	if (slingshot_state.vni_table)
-		bit_free(slingshot_state.vni_table);
+	FREE_NULL_BITMAP(slingshot_state.vni_table);
 	xfree(slingshot_state.job_vnis);
 
 	return SLURM_SUCCESS;

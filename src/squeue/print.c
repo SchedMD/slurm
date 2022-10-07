@@ -3015,12 +3015,12 @@ static int _filter_job(job_info_t * job)
 		}
 		list_iterator_destroy(iterator);
 		bit_and(job->array_bitmap, new_array_bitmap);
-		bit_free(new_array_bitmap);
+		FREE_NULL_BITMAP(new_array_bitmap);
 		xfree(job->array_task_str);
 		i = bit_set_count(job->array_bitmap);
 		if (i == 1) {
 			job->array_task_id = bit_ffs(job->array_bitmap);
-			bit_free(job->array_bitmap);
+			FREE_NULL_BITMAP(job->array_bitmap);
 		} else {
 			i = i * 16 + 10;
 			job->array_task_str = xmalloc(i);

@@ -1622,7 +1622,7 @@ extern char *gpu_p_test_cpu_conv(char *cpu_range)
 	// Convert from bitstr_t to cpu range str
 	result = bit_fmt_full(cpu_aff_mac_bitstr);
 
-	bit_free(cpu_aff_mac_bitstr);
+	FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
 	return result;
 }
 

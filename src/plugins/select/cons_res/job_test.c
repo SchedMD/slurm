@@ -228,9 +228,9 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 	bit_or(core_bitmap, other_node_cores);
 
 	/* Free local data structures */
-	bit_free(other_node_cores);
+	FREE_NULL_BITMAP(other_node_cores);
 	for (i = 0; i < sock_cnt; i++)
-		bit_free(sock_core_bitmap[i]);
+		FREE_NULL_BITMAP(sock_core_bitmap[i]);
 	xfree(sock_core_bitmap);
 	xfree(avail_cores);
 

@@ -124,8 +124,8 @@ extern void core_array_and(bitstr_t **core_array1, bitstr_t **core_array2)
 			else if (s1 < s2)
 				bit_realloc(core_array1[n], s2);
 			bit_and(core_array1[n], core_array2[n]);
-		} else if (core_array1[n])
-			bit_free(core_array1[n]);
+		} else
+			FREE_NULL_BITMAP(core_array1[n]);
 	}
 }
 

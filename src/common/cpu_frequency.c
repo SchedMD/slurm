@@ -501,8 +501,8 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *step)
 			if (cpu_num >= cpu_freq_count) {
 				error("cpu_freq_cpuset_validate: invalid cpu "
 				      "number %d", cpu_num);
-				bit_free(cpu_map);
-				bit_free(cpus_to_set);
+				FREE_NULL_BITMAP(cpu_map);
+				FREE_NULL_BITMAP(cpus_to_set);
 				xfree(cpu_bind);
 				return;
 			}
@@ -511,8 +511,8 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *step)
 			if (bit_unfmt_hexmask(cpu_map, cpu_str) == -1) {
 				error("cpu_freq_cpuset_validate: invalid cpu "
 				      "mask %s", cpu_bind);
-				bit_free(cpu_map);
-				bit_free(cpus_to_set);
+				FREE_NULL_BITMAP(cpu_map);
+				FREE_NULL_BITMAP(cpus_to_set);
 				xfree(cpu_bind);
 				return;
 			}
@@ -527,8 +527,8 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *step)
 	}
 	cpu_freq_set(step);
 
-	bit_free(cpu_map);
-	bit_free(cpus_to_set);
+	FREE_NULL_BITMAP(cpu_map);
+	FREE_NULL_BITMAP(cpus_to_set);
 	xfree(cpu_bind);
 	return;
 }

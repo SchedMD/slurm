@@ -1148,7 +1148,7 @@ bit_rotate(bitstr_t *b1, int32_t n)
 
 	new = bit_rotate_copy(b1, n, bitsize);
 	bit_copybits(b1, new);
-	bit_free(new);
+	FREE_NULL_BITMAP(new);
 }
 
 /*
@@ -1194,8 +1194,7 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
 		}
 	}
 	if (count < nbits) {
-		bit_free (new);
-		new = NULL;
+		FREE_NULL_BITMAP(new);
 	}
 
 	return new;

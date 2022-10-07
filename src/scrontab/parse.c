@@ -99,7 +99,7 @@ static int _handle_step(bitstr_t *b, int start, char **pos)
 		bit_set(mask, i);
 
 	bit_and(b, mask);
-	bit_free(mask);
+	FREE_NULL_BITMAP(mask);
 
 	return SLURM_SUCCESS;
 }

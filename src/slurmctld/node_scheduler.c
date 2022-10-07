@@ -1145,7 +1145,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					error("%s@%d: %pJ has bad feature expression: %s",
 					      __func__, __LINE__, job_ptr,
 					      job_ptr->details->features_use);
-					bit_free(paren_bitmap);
+					FREE_NULL_BITMAP(paren_bitmap);
 				}
 				feat_change |= feat_ptr->changeable;
 				paren_bitmap =
@@ -1368,7 +1368,7 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			error("%s@%d: %pJ has bad feature expression: %s",
 			      __func__, __LINE__, job_ptr,
 			      job_ptr->details->features_use);
-			bit_free(paren_bitmap);
+			FREE_NULL_BITMAP(paren_bitmap);
 		}
 	}
 
@@ -1598,7 +1598,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			*select_bitmap = avail_bitmap;
 			return SLURM_SUCCESS;
 		} else {
-			bit_free(avail_bitmap);
+			FREE_NULL_BITMAP(avail_bitmap);
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
 	} else if (node_set_size == 0) {
@@ -3148,7 +3148,7 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 					error("%s: Reservation has bad feature expression: %s",
 					      __func__, features);
 				}
-				bit_free(paren_bitmap);
+				FREE_NULL_BITMAP(paren_bitmap);
 			}
 			paren_bitmap = bit_copy(node_bitmap);
 			work_bitmap = paren_bitmap;
@@ -4218,7 +4218,7 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 					bit_and_not(tmp_node_bitmap,
 						    active_node_bitmap);
 					bit_or(reboot_bitmap, tmp_node_bitmap);
-					bit_free(tmp_node_bitmap);
+					FREE_NULL_BITMAP(tmp_node_bitmap);
 				}
 			}
 			position++;

@@ -2603,7 +2603,7 @@ static int _core_spec_init(void)
 			bit_not(res_mac_bitmap);
 			bit_fmt(other_mac_cpus, sizeof(other_mac_cpus),
 				res_mac_bitmap);
-			bit_free(res_mac_bitmap);
+			FREE_NULL_BITMAP(res_mac_bitmap);
 			rval = set_system_cgroup_cpus(other_mac_cpus);
 		} else {
 			rval = set_system_cgroup_cpus(res_mac_cpus);
@@ -2630,7 +2630,7 @@ static int _core_spec_init(void)
 				CPU_SET(i, &mask);
 			}
 		}
-		bit_free(res_mac_bitmap);
+		FREE_NULL_BITMAP(res_mac_bitmap);
 
 #ifdef __FreeBSD__
 		rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID,

@@ -856,7 +856,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 		}
 		if (rem_nodes == 0) {	/* Reached node limit, not CPU limit */
 			xfree(usable_cpu_array);
-			bit_free(picked_node_bitmap);
+			FREE_NULL_BITMAP(picked_node_bitmap);
 			return NULL;
 		}
 	}
@@ -877,7 +877,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 	}
 	if ((rem_cpus > 0) || (rem_nodes > 0)){	/* Can not satisfy request */
 		xfree(usable_cpu_array);
-		bit_free(picked_node_bitmap);
+		FREE_NULL_BITMAP(picked_node_bitmap);
 		return NULL;
 	}
 	rem_nodes = save_rem_nodes;
@@ -904,7 +904,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 
 	/* Can not satisfy request */
 	xfree(usable_cpu_array);
-	bit_free(picked_node_bitmap);
+	FREE_NULL_BITMAP(picked_node_bitmap);
 	return NULL;
 }
 
@@ -5121,7 +5121,7 @@ static int _rebuild_bitmaps(void *x, void *arg)
 		if (new_node_set)
 			new_core_offset += node_record_table_ptr[i]->tot_cores;
 	}
-	bit_free(orig_step_core_bitmap);
+	FREE_NULL_BITMAP(orig_step_core_bitmap);
 
 	return 0;
 }

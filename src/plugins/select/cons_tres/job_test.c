@@ -122,7 +122,7 @@ static int _node_weight_find(void *x, void *key)
 static void _node_weight_free(void *x)
 {
 	node_weight_type *nwt = (node_weight_type *) x;
-	bit_free(nwt->node_bitmap);
+	FREE_NULL_BITMAP(nwt->node_bitmap);
 	xfree(nwt);
 }
 
@@ -691,7 +691,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			     i, consec_cpus[i], consec_nodes[i],
 			     host_list, gres_print, consec_start[i],
 			     consec_end[i], consec_req[i], consec_weight[i]);
-			bit_free(host_bitmap);
+			FREE_NULL_BITMAP(host_bitmap);
 			xfree(gres_str);
 			xfree(host_list);
 		}
@@ -1163,7 +1163,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 	}
 
 fini:	FREE_NULL_LIST(node_weight_list);
-	bit_free(orig_node_map);
+	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 }
 
@@ -1351,7 +1351,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 	}
 
 fini:	FREE_NULL_LIST(node_weight_list);
-	bit_free(orig_node_map);
+	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 }
 
@@ -2931,7 +2931,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 	}
 
 fini:	FREE_NULL_LIST(node_weight_list);
-	bit_free(orig_node_map);
+	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 }
 
@@ -3106,7 +3106,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 	}
 
 fini:	FREE_NULL_LIST(node_weight_list);
-	bit_free(orig_node_map);
+	FREE_NULL_BITMAP(orig_node_map);
 	return error_code;
 
 }

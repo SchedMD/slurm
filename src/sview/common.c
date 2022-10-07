@@ -588,7 +588,7 @@ extern void free_switch_nodes_maps(
 	while (sw_nodes_bitmaps_ptr++) {
 		if (!sw_nodes_bitmaps_ptr->node_bitmap)
 			break;
-		bit_free(sw_nodes_bitmaps_ptr->node_bitmap);
+		FREE_NULL_BITMAP(sw_nodes_bitmaps_ptr->node_bitmap);
 		if (sw_nodes_bitmaps_ptr->node_bitmap)
 			xfree(sw_nodes_bitmaps_ptr->nodes);
 	}

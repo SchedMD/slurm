@@ -604,7 +604,7 @@ int main(int argc, char *argv[])
 	/* Wait for all nodes to change state to "on" */
 	_wait_all_nodes_on();
 
-	bit_free(node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
 	xfree(prog_name);
 	if (rc == SLURM_SUCCESS)
 		exit(0);

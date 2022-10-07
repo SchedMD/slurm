@@ -4643,7 +4643,7 @@ static void _remove_node_from_features(node_record_t *node_ptr)
 	bit_set(node_bitmap, node_ptr->index);
 	update_feature_list(avail_feature_list, NULL, node_bitmap);
 	update_feature_list(active_feature_list, NULL, node_bitmap);
-	bit_free(node_bitmap);
+	FREE_NULL_BITMAP(node_bitmap);
 }
 
 /*

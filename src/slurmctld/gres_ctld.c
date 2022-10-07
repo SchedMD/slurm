@@ -2563,13 +2563,13 @@ void gres_ctld_step_state_rebase(List gres_list,
 				 * Node removed from job allocation,
 				 * release step's resources
 				 */
-				bit_free(gres_ss->
+				FREE_NULL_BITMAP(gres_ss->
 					 gres_bit_alloc[old_inx]);
 			}
 		}
 
 		gres_ss->node_cnt = new_node_cnt;
-		bit_free(gres_ss->node_in_use);
+		FREE_NULL_BITMAP(gres_ss->node_in_use);
 		gres_ss->node_in_use = new_node_in_use;
 		xfree(gres_ss->gres_bit_alloc);
 		gres_ss->gres_bit_alloc = new_gres_bit_alloc;
