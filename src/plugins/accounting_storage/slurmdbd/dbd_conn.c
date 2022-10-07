@@ -233,7 +233,7 @@ extern void dbd_conn_close(slurm_persist_conn_t **pc)
 	slurmdbd_pack_fini_msg(&req, SLURM_PROTOCOL_VERSION, buffer);
 
 	rc = slurm_persist_send_msg(*pc, buffer);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	log_flag(NET, "sent DB_FINI msg to %s:%u rc(%d):%s",
 		 (*pc)->rem_host, (*pc)->rem_port,
@@ -277,7 +277,7 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 	}
 
 	rc = slurm_persist_send_msg(use_conn, buffer);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (rc != SLURM_SUCCESS) {
 		error("Sending message type %s: %d: %s",
 		      slurmdbd_msg_type_2_str(req->msg_type, 1), rc,
@@ -298,7 +298,7 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 	if (rc == SLURM_SUCCESS && resp->msg_type == DBD_ID_RC)
 		rc = ((dbd_id_rc_msg_t *)resp->data)->return_code;
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 end_it:
 
 	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",

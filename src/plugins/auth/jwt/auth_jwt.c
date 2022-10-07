@@ -178,7 +178,7 @@ static void _init_jwks(void)
 	if (data_g_deserialize(&jwks, buf->head, buf->size, MIME_TYPE_JSON))
 		fatal("%s: failed to deserialize jwks file `%s`",
 		      __func__, key_file);
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 
 	/* force everything to be a string */
 	(void) data_convert_tree(jwks, DATA_TYPE_STRING);

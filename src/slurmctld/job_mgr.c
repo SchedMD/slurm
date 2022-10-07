@@ -988,7 +988,7 @@ int dump_all_job_state(void)
 	xfree(new_file);
 	unlock_state_files();
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	END_TIMER2("dump_all_job_state");
 	return error_code;
 }
@@ -1196,7 +1196,7 @@ static time_t _get_last_job_state_write_time(void)
 
 unpack_error:
 	xfree(ver_str);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return buf_time;
 }
 
@@ -1243,7 +1243,7 @@ extern int load_all_job_state(void)
 		error("***********************************************");
 		error("Can not recover job state, incompatible version");
 		error("***********************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return EFAULT;
 	}
 
@@ -1272,7 +1272,7 @@ extern int load_all_job_state(void)
 	}
 	debug3("Set job_id_sequence to %u", job_id_sequence);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	info("Recovered information about %d jobs", job_cnt);
 	return error_code;
 
@@ -1281,7 +1281,7 @@ unpack_error:
 		fatal("Incomplete job state save file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete job state save file");
 	info("Recovered information about %d jobs", job_cnt);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_ERROR;
 }
 
@@ -1322,7 +1322,7 @@ extern int load_last_job_id( void )
 		debug("*************************************************");
 		debug("Can not recover last job ID, incompatible version");
 		debug("*************************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return EFAULT;
 	}
 
@@ -1333,7 +1333,7 @@ extern int load_last_job_id( void )
 	/* Ignore the state for individual jobs stored here */
 
 	xfree(ver_str);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1341,7 +1341,7 @@ unpack_error:
 		fatal("Invalid job data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Invalid job data checkpoint file");
 	xfree(ver_str);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_ERROR;
 }
 
@@ -10401,7 +10401,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	assoc_mgr_unlock(&locks);
 
 	if (jobs_packed == 0) {
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return ESLURM_INVALID_JOB_ID;
 	}
 

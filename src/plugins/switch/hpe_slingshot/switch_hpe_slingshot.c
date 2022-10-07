@@ -208,14 +208,14 @@ extern int switch_p_libstate_save(char *dir_name)
 
 	debug("State file %s saved", state_file);
 	close(state_fd);
-	free_buf(state_buf);
+	FREE_NULL_BUFFER(state_buf);
 	xfree(new_state_file);
 	xfree(state_file);
 	return SLURM_SUCCESS;
 
 error:
 	close(state_fd);
-	free_buf(state_buf);
+	FREE_NULL_BUFFER(state_buf);
 	unlink(new_state_file);
 	xfree(new_state_file);
 	xfree(state_file);
@@ -287,14 +287,14 @@ extern int switch_p_libstate_restore(char *dir_name, bool recover)
 	}
 
 	debug("State file %s recovered", state_file);
-	free_buf(state_buf);
+	FREE_NULL_BUFFER(state_buf);
 	xfree(state_file);
 	return SLURM_SUCCESS;
 
 unpack_error:
 	error("Error unpacking state file %s", state_file);
 error:
-	free_buf(state_buf);
+	FREE_NULL_BUFFER(state_buf);
 	xfree(state_file);
 	FREE_NULL_BITMAP(slingshot_state.vni_table);
 	xfree(slingshot_state.job_vnis);

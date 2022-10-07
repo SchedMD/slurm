@@ -741,7 +741,7 @@ extern int dump_all_front_end_state(void)
 	xfree (new_file);
 	unlock_state_files ();
 
-	free_buf (buffer);
+	FREE_NULL_BUFFER(buffer);
 	END_TIMER2("dump_all_front_end_state");
 	return error_code;
 #else
@@ -796,7 +796,7 @@ extern int load_all_front_end_state(bool state_only)
 		error("Can not recover front_end state, version incompatible");
 		error("*****************************************************");
 		xfree(ver_str);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return EFAULT;
 	}
 	xfree(ver_str);
@@ -883,7 +883,7 @@ extern int load_all_front_end_state(bool state_only)
 	}
 
 fini:	info("Recovered state of %d front_end nodes", node_cnt);
-	free_buf (buffer);
+	FREE_NULL_BUFFER(buffer);
 	return error_code;
 
 unpack_error:

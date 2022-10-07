@@ -2251,7 +2251,7 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 	rc = (*(ops.cred_sign))(
 		ctx->key, get_buf_data(buffer), get_buf_offset(buffer),
 		&sbcast_cred->signature, &sbcast_cred->siglen);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	if (rc) {
 		error("sbcast_cred sign: %s",
@@ -2332,7 +2332,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 		rc = (*(ops.cred_verify_sign)) (
 			ctx->key, get_buf_data(buffer), get_buf_offset(buffer),
 			sbcast_cred->signature, sbcast_cred->siglen);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 
 		if (rc) {
 			error("sbcast_cred verify: %s",
@@ -2374,7 +2374,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				ctx->key, get_buf_data(buffer),
 				get_buf_offset(buffer),
 				sbcast_cred->signature, sbcast_cred->siglen);
-			free_buf(buffer);
+			FREE_NULL_BUFFER(buffer);
 			if (rc)
 				err_str = (char *)(*(ops.cred_str_error))(rc);
 			if (err_str && xstrcmp(err_str, "Credential replayed")){

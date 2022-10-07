@@ -1165,7 +1165,7 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 		if (keep_buffer)
 			msg->buffer = buffer;
 		else
-			free_buf(buffer);
+			FREE_NULL_BUFFER(buffer);
 
 		if (rc) {
 			error("%s: Failed to unpack persist msg", __func__);
@@ -1217,7 +1217,7 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 	if (keep_buffer)
 		msg->buffer = buffer;
 	else
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 
 endit:
 	slurm_seterrno(rc);
@@ -1305,7 +1305,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	buffer = create_buf(buf, buflen);
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 		goto total_return;
 	}
@@ -1320,7 +1320,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		error("%s: [%s] Invalid Protocol Version %u from uid=%u: %m",
 		      __func__, peer, header.version, uid);
 
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
@@ -1350,7 +1350,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 			peer = fd_resolve_peer(fd);
 
 		error("%s: [%s] auth_g_unpack: %m", __func__, peer);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
@@ -1369,7 +1369,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		error("%s: [%s] auth_g_verify: %s has authentication error: %m",
 		      __func__, peer, rpc_num2string(header.msg_type));
 		(void) auth_g_destroy(auth_cred);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
 	}
@@ -1388,13 +1388,13 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	    _check_hash(buffer, &header, &msg, auth_cred) ||
 	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
 		(void) auth_g_destroy(auth_cred);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
 	auth_g_destroy(auth_cred);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	rc = SLURM_SUCCESS;
 
 total_return:
@@ -1504,7 +1504,7 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	buffer = create_buf(buf, buflen);
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 		goto total_return;
 	}
@@ -1517,7 +1517,7 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 		error("%s: [%s] Invalid Protocol Version %u: %m",
 		      __func__, peer, header.version);
 
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
@@ -1551,7 +1551,7 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 			peer = fd_resolve_peer(fd);
 
 		error("%s: [%s] auth_g_unpack: %m", __func__, peer);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
@@ -1566,11 +1566,11 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 
 	if ((header.body_length > remaining_buf(buffer)) ||
 	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	rc = SLURM_SUCCESS;
 
 total_return:
@@ -1689,7 +1689,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	buffer = create_buf(buf, buflen);
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 		goto total_return;
 	}
@@ -1704,7 +1704,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		error("%s: [%s] Invalid Protocol Version %u from uid=%u: %m",
 		      __func__, peer, header.version, uid);
 
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
 	}
@@ -1774,7 +1774,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 		error("%s: [%s] auth_g_unpack: %s has authentication error: %m",
 		      __func__, peer, rpc_num2string(header.msg_type));
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
@@ -1793,7 +1793,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		error("%s: [%s] auth_g_verify: %s has authentication error: %m",
 		      __func__, peer, rpc_num2string(header.msg_type));
 		(void) auth_g_destroy(auth_cred);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
 	}
@@ -1812,13 +1812,13 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
 		(void) auth_g_destroy(auth_cred);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
 	msg->auth_cred = (void *) auth_cred;
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	rc = SLURM_SUCCESS;
 
 total_return:
@@ -1877,7 +1877,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 			return SLURM_ERROR;
 
 		rc = slurm_persist_send_msg(msg->conn, buffer);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 
 		if ((rc < 0) && (errno == ENOTCONN)) {
 			if (slurm_conf.debug_flags & DEBUG_FLAG_NET)
@@ -1917,7 +1917,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	if (h_len < 0) {
 		error("%s: hash_g_compute: %s has error",
 		      __func__, rpc_num2string(msg->msg_type));
-		free_buf(buffers.body);
+		FREE_NULL_BUFFER(buffers.body);
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 	}
 	log_flag_hex(NET_RAW, &hash, sizeof(hash),
@@ -1957,7 +1957,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	if (auth_cred == NULL) {
 		error("%s: auth_g_create: %s has authentication error",
 		      __func__, rpc_num2string(msg->msg_type));
-		free_buf(buffers.body);
+		FREE_NULL_BUFFER(buffers.body);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 
@@ -1973,8 +1973,8 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		error("%s: auth_g_pack: %s has  authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
 		(void) auth_g_destroy(auth_cred);
-		free_buf(buffers.auth);
-		free_buf(buffers.body);
+		FREE_NULL_BUFFER(buffers.auth);
+		FREE_NULL_BUFFER(buffers.body);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
 	(void) auth_g_destroy(auth_cred);
@@ -2015,9 +2015,9 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		xfree(peer);
 	}
 
-	free_buf(buffers.header);
-	free_buf(buffers.auth);
-	free_buf(buffers.body);
+	FREE_NULL_BUFFER(buffers.header);
+	FREE_NULL_BUFFER(buffers.auth);
+	FREE_NULL_BUFFER(buffers.body);
 	return rc;
 }
 
@@ -2946,7 +2946,7 @@ extern void slurm_free_msg_members(slurm_msg_t *msg)
 	if (msg) {
 		if (msg->auth_cred)
 			(void) auth_g_destroy(msg->auth_cred);
-		free_buf(msg->buffer);
+		FREE_NULL_BUFFER(msg->buffer);
 		slurm_free_msg_data(msg->msg_type, msg->data);
 		FREE_NULL_LIST(msg->ret_list);
 	}

@@ -3284,7 +3284,7 @@ extern int dump_config_state_lite(void)
 	xfree(reg_file);
 	xfree(new_file);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	END_TIMER2("dump_config_state_lite");
 	return error_code;
@@ -3324,7 +3324,7 @@ extern int load_config_state_lite(void)
 		      "(%u not between %d and %d)",
 		      ver, SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return EFAULT;
 	} else {
 		safe_unpack_time(&buf_time, buffer);
@@ -3339,14 +3339,14 @@ extern int load_config_state_lite(void)
 		slurmctld_init_db = 0;
 	xfree(last_accounting_storage_type);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
 	if (!ignore_state_errors)
 		fatal("Incomplete last_config_lite checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete last_config_lite checkpoint file");
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return SLURM_ERROR;
 }

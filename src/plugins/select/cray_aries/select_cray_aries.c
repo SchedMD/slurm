@@ -1030,7 +1030,7 @@ extern int select_p_state_save(char *dir_name)
 	xfree(reg_file);
 	xfree(new_file);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 #ifdef HAVE_NATIVE_CRAY
 	if (slurmctld_config.shutdown_time)
@@ -1081,7 +1081,7 @@ extern int select_p_state_restore(char *dir_name)
 		error("Can not recover blade state, "
 		      "data version incompatible");
 		error("***********************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return EFAULT;
 	}
 
@@ -1163,7 +1163,7 @@ extern int select_p_state_restore(char *dir_name)
 	}
 	slurm_mutex_unlock(&blade_mutex);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return other_state_restore(dir_name);
 
@@ -1174,7 +1174,7 @@ unpack_error:
 		fatal("Incomplete blade data checkpoint file, you may get unexpected issues if jobs were running. Start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete blade data checkpoint file, you may get "
 	      "unexpected issues if jobs were running.");
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	/* Since this is more of a sanity check continue without FAILURE. */
 	return SLURM_SUCCESS;
 }

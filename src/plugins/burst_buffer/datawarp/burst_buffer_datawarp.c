@@ -808,7 +808,7 @@ static void _save_bb_state(void)
 	xfree(old_file);
 	xfree(reg_file);
 	xfree(new_file);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 }
 
 /* Recover saved burst buffer state and use it to preserve account, partition,
@@ -923,7 +923,7 @@ static void _recover_bb_state(void)
 	}
 
 	info("Recovered state of %d burst buffers", rec_count);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return;
 
 unpack_error:
@@ -934,7 +934,7 @@ unpack_error:
 	xfree(name);
 	xfree(partition);
 	xfree(qos);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return;
 }
 

@@ -508,7 +508,7 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 				lua_pushnil(L);
 		} else
 			lua_pushnil(L);
-		free_buf(bscript);
+		FREE_NULL_BUFFER(bscript);
 	} else if (!xstrcmp(name, "selinux_context")) {
 		lua_pushstring(L, job_ptr->selinux_context);
  	} else if (!xstrcmp(name, "site_factor")) {

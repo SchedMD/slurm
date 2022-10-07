@@ -171,7 +171,7 @@ int main(int argc, char **argv)
 			}
 			run_command_add_to_script(&script_body,
 						  get_buf_data(buf));
-			free_buf(buf);
+			FREE_NULL_BUFFER(buf);
 		}
 
 		if (spank_init_post_opt() < 0) {

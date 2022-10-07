@@ -205,8 +205,7 @@ static int _read_config(const char *jconfig, data_t **config)
 	}
 
 cleanup:
-	free_buf(buffer);
-	buffer = NULL;
+	FREE_NULL_BUFFER(buffer);
 
 	return rc;
 }

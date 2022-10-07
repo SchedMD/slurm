@@ -3573,7 +3573,7 @@ extern int dump_all_resv_state(void)
 	xfree(new_file);
 	unlock_state_files();
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	END_TIMER2("dump_all_resv_state");
 	return 0;
 }
@@ -4167,7 +4167,7 @@ extern int load_all_resv_state(int recover)
 		error("Can not recover reservation state, data version incompatible");
 		error("************************************************************");
 		xfree(ver_str);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		schedule_resv_save();	/* Schedule save with new format */
 		return EFAULT;
 	}
@@ -4186,7 +4186,7 @@ extern int load_all_resv_state(int recover)
 
 	_validate_all_reservations();
 	info("Recovered state of %d reservations", list_count(resv_list));
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return error_code;
 
 unpack_error:
@@ -4195,7 +4195,7 @@ unpack_error:
 	error("Incomplete reservation data checkpoint file");
 	_validate_all_reservations();
 	info("Recovered state of %d reservations", list_count(resv_list));
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return EFAULT;
 }
 

@@ -1658,7 +1658,7 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 		      req->msg_type,
 		      slurmdbd_msg_type_2_str(req->msg_type, 1),
 		      req->msg_type);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return NULL;
 	}
 	return buffer;

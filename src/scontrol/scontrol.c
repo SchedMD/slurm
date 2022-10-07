@@ -967,7 +967,7 @@ static int _process_command (int argc, char **argv)
 				hash_len = hash_g_compute(buf->head, buf->size,
 							  NULL, 0, &hash);
 
-				free_buf(buf);
+				FREE_NULL_BUFFER(buf);
 				for (int i = 0; i < hash_len; i++)
 					printf("%02x", (int)hash.hash[i]);
 				printf("\n");

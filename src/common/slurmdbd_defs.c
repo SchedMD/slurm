@@ -808,8 +808,7 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 extern void slurmdbd_free_buffer(void *x)
 {
 	buf_t *buffer = (buf_t *) x;
-	if (buffer)
-		free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 }
 
 extern void slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg)

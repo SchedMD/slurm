@@ -2130,8 +2130,7 @@ _restore_cred_state(slurm_cred_ctx_t ctx)
 
 cleanup:
 	xfree(file_name);
-	if (buffer)
-		free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_SUCCESS;
 }
 
@@ -2231,8 +2230,7 @@ cleanup:
 	xfree(old_file);
 	xfree(reg_file);
 	xfree(new_file);
-	if (buffer)
-		free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	if (cred_fd >= 0)
 		close(cred_fd);
 	return error_code;

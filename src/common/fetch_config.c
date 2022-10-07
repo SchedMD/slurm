@@ -405,7 +405,7 @@ static void _load_conf(const char *dir, const char *name, char **target)
 	if (config)
 		*target = xstrndup(config->head, config->size);
 
-	free_buf(config);
+	FREE_NULL_BUFFER(config);
 }
 
 extern void load_config_response_msg(config_response_msg_t *msg, int flags)
@@ -466,7 +466,7 @@ static void _load_conf2list(config_response_msg_t *msg, char *file_name)
 	       __func__, file_name,
 	       (config_exists ? "exists" : "does not exist"));
 
-	free_buf(config);
+	FREE_NULL_BUFFER(config);
 }
 
 /*

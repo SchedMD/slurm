@@ -439,7 +439,7 @@ int dump_all_part_state(void)
 	xfree(new_file);
 	unlock_state_files();
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	END_TIMER2("dump_all_part_state");
 	return 0;
 }
@@ -578,7 +578,7 @@ int load_all_part_state(void)
 		error("Can not recover partition state, data version incompatible");
 		error("**********************************************************");
 		xfree(ver_str);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return EFAULT;
 	}
 	xfree(ver_str);
@@ -799,7 +799,7 @@ int load_all_part_state(void)
 	}
 
 	info("Recovered state of %d partitions", part_cnt);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return error_code;
 
 unpack_error:
@@ -807,7 +807,7 @@ unpack_error:
 		fatal("Incomplete partition data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete partition data checkpoint file");
 	info("Recovered state of %d partitions", part_cnt);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return EFAULT;
 }
 

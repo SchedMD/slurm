@@ -305,7 +305,7 @@ static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 
 	safe_unpack_time(last_ran, buffer);
 	safe_unpack_time(last_reset, buffer);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	log_flag(PRIO, "Last ran decay on jobs at %ld", (long) *last_ran);
 
 	return;
@@ -314,7 +314,7 @@ unpack_error:
 	if (!ignore_state_errors)
 		fatal("Incomplete priority last decay file exiting, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete priority last decay file returning");
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return;
 
 }
@@ -389,7 +389,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 
 	unlock_state_files();
 	debug4("done writing time %ld", (long)last_ran);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return error_code;
 }

@@ -951,7 +951,7 @@ static bool _opt_verify(void)
 			exit(error_exit);
 		}
 		opt.burst_buffer = xstrdup(get_buf_data(buf));
-		free_buf(buf);
+		FREE_NULL_BUFFER(buf);
 		xfree(opt.burst_buffer_file);
 	}
 

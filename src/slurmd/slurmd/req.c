@@ -558,8 +558,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
-	free_buf(buffer);
-	buffer = NULL;
+	FREE_NULL_BUFFER(buffer);
 
 	/* send self address over to slurmstepd */
 	if (self) {
@@ -568,8 +567,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		len = get_buf_offset(buffer);
 		safe_write(fd, &len, sizeof(int));
 		safe_write(fd, get_buf_data(buffer), len);
-		free_buf(buffer);
-		buffer = NULL;
+		FREE_NULL_BUFFER(buffer);
 
 	} else {
 		len = 0;
@@ -604,8 +602,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
-	free_buf(buffer);
-	buffer = NULL;
+	FREE_NULL_BUFFER(buffer);
 
 	/*
 	 * Send all secondary conf files to the stepd.
@@ -644,8 +641,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	return 0;
 
 rwfail:
-	if (buffer)
-		free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	error("_send_slurmstepd_init failed");
 	return errno;
 }

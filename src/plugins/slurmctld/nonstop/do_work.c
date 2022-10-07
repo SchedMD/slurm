@@ -364,7 +364,7 @@ extern int save_nonstop_state(void)
 	xfree(old_file);
 	xfree(reg_file);
 	xfree(new_file);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return error_code;
 }
@@ -402,7 +402,7 @@ extern int restore_nonstop_state(void)
 		error("*************************************************************");
 		error("Can not recover slurmctld/nonstop state, incompatible version");
 		error("*************************************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return EFAULT;
 	}
 	safe_unpack_time(&buf_time, buffer);
@@ -422,14 +422,14 @@ extern int restore_nonstop_state(void)
 		list_append(job_fail_list, job_fail_ptr);
 	}
 	slurm_mutex_unlock(&job_fail_mutex);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return error_code;
 
 unpack_error:
 	if (!ignore_state_errors)
 		fatal("Incomplete nonstop state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete nonstop state file");
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_ERROR;
 }
 

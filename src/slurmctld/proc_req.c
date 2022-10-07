@@ -2409,7 +2409,7 @@ static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 		response_msg.msg_type = RESPONSE_BATCH_SCRIPT;
 		response_msg.data = script;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		free_buf(script);
+		FREE_NULL_BUFFER(script);
 	}
 }
 
@@ -2593,7 +2593,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 			\* error message is printed elsewhere    */
 			log_flag(STEPS, "%s: %s",
 				 __func__, slurm_strerror(error_code));
-			free_buf(buffer);
+			FREE_NULL_BUFFER(buffer);
 		} else {
 			resp_buffer_size = get_buf_offset(buffer);
 			resp_buffer = xfer_buf_data(buffer);
@@ -5867,7 +5867,7 @@ end_it:
 		slurm_persist_conn_destroy(persist_conn);
 	}
 	xfree(comment);
-	free_buf(ret_buf);
+	FREE_NULL_BUFFER(ret_buf);
 	END_TIMER;
 
 	/* Don't free this here, it will be done elsewhere */
@@ -6050,7 +6050,7 @@ static void _proc_multi_msg(slurm_msg_t *msg)
 	/* Send message */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	FREE_NULL_LIST(full_resp_list);
-	free_buf(resp_buf);
+	FREE_NULL_BUFFER(resp_buf);
 	return;
 }
 
@@ -6181,7 +6181,7 @@ static void _slurm_rpc_request_crontab(slurm_msg_t *msg)
 		resp_msg.crontab = crontab->head;
 		resp_msg.disabled_lines = disabled_lines;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		free_buf(crontab);
+		FREE_NULL_BUFFER(crontab);
 		xfree(disabled_lines);
 	}
 }

@@ -286,11 +286,11 @@ spawn_req_send_to_srun(spawn_req_t *req, spawn_resp_t **resp_ptr)
 	spawn_req_pack(req, req_buf);
 	rc = tree_msg_to_srun_with_resp(get_buf_offset(req_buf),
 					get_buf_data(req_buf), &resp_buf);
-	free_buf(req_buf);
+	FREE_NULL_BUFFER(req_buf);
 
 	if (rc == SLURM_SUCCESS) {
 		rc = spawn_resp_unpack(resp_ptr, resp_buf);
-		free_buf(resp_buf);
+		FREE_NULL_BUFFER(resp_buf);
 	}
 	return rc;
 }
@@ -372,7 +372,7 @@ spawn_resp_send_to_stepd(spawn_resp_t *resp, char **node)
 	rc = slurm_forward_data(node, tree_sock_addr,
 				get_buf_offset(buf),
 				get_buf_data(buf));
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 	return rc;
 }
 
@@ -390,7 +390,7 @@ spawn_resp_send_to_srun(spawn_resp_t *resp)
 	spawn_resp_pack(resp, buf);
 
 	rc = tree_msg_to_srun(get_buf_offset(buf), get_buf_data(buf));
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 	return rc;
 }
 
@@ -407,7 +407,7 @@ spawn_resp_send_to_fd(spawn_resp_t *resp, int fd)
 /* 	pack16(cmd, buf); */
 	spawn_resp_pack(resp, buf);
 	rc = slurm_msg_sendto(fd, get_buf_data(buf), get_buf_offset(buf));
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 
 	return rc;
 }

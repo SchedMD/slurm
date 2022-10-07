@@ -743,7 +743,7 @@ again:
 	msg->ref_count = 0; /* make certain it is initialized */
 	/* free the packbuf structure, but not the memory to which it points */
 	packbuf->head = NULL;
-	free_buf(packbuf);
+	FREE_NULL_BUFFER(packbuf);
 	debug3("  msg->length = %d", msg->length);
 
 	/*
@@ -1340,7 +1340,7 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 		io_hdr_pack(&header, packbuf);
 		/* free the packbuf, but not the memory to which it points */
 		packbuf->head = NULL;
-		free_buf(packbuf);
+		FREE_NULL_BUFFER(packbuf);
 
 		list_enqueue( server->msg_queue, msg );
 

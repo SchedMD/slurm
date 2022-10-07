@@ -210,7 +210,7 @@ int dump_all_node_state ( void )
 	xfree (new_file);
 	unlock_state_files ();
 
-	free_buf (buffer);
+	FREE_NULL_BUFFER(buffer);
 	END_TIMER2("dump_all_node_state");
 	return error_code;
 }
@@ -341,7 +341,7 @@ extern int load_all_node_state ( bool state_only )
 		error("Can not recover node state, data version incompatible");
 		error("*****************************************************");
 		xfree(ver_str);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return EFAULT;
 	}
 	xfree(ver_str);
@@ -758,7 +758,7 @@ fini:	info("Recovered state of %d nodes", node_cnt);
 		hostlist_destroy(down_nodes);
 	}
 
-	free_buf (buffer);
+	FREE_NULL_BUFFER(buffer);
 	return error_code;
 
 unpack_error:

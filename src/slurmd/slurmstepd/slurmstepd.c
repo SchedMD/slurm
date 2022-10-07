@@ -330,7 +330,7 @@ static slurmd_conf_t *_read_slurmd_conf_lite(int fd)
 	    != SLURM_SUCCESS)
 		fatal("slurmstepd: problem with unpack of tres list");
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	confl->log_opts.prefix_level = 1;
 	confl->log_opts.logfile_level = confl->debug_level;
@@ -609,7 +609,7 @@ _init_from_slurmd(int sock, char **argv,
 	cli = xmalloc(sizeof(slurm_addr_t));
 	if (slurm_unpack_addr_no_alloc(cli, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	/* receive self from slurmd */
 	safe_read(sock, &len, sizeof(int));
@@ -624,7 +624,7 @@ _init_from_slurmd(int sock, char **argv,
 			fatal("slurmstepd: problem with unpack of "
 			      "slurmd_conf");
 		}
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 	}
 
 	/* Grab the slurmd's spooldir. Has %n expanded. */
@@ -668,7 +668,7 @@ _init_from_slurmd(int sock, char **argv,
 
 	if (unpack_msg(msg, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: we didn't unpack the request correctly");
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	switch (step_type) {
 	case LAUNCH_BATCH_JOB:

@@ -921,7 +921,7 @@ static int _persist_update_job(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 
 	rc = _queue_rpc(conn, &req_msg, 0, false);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return rc;
 }
@@ -1172,7 +1172,7 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 
 	rc = _queue_rpc(conn, &req_msg, job_id, false);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return rc;
 }
@@ -1222,7 +1222,7 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 
 	rc = _queue_rpc(conn, &req_msg, job_id, false);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return rc;
 }
@@ -2158,7 +2158,7 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 
 	rc = _queue_rpc(sibling, &req_msg, 0, false);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	xfree(dump);
 
 	return rc;
@@ -3384,7 +3384,7 @@ extern int fed_mgr_state_save(char *state_save_location)
 	xfree(reg_file);
 	xfree(new_file);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	END_TIMER2("fed_mgr_state_save");
 
@@ -3425,7 +3425,7 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 		      "got %u need > %u <= %u", ver,
 		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return NULL;
 	}
 
@@ -3499,7 +3499,7 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 	}
 	FREE_NULL_LIST(tmp_list);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return ret_fed;
 
@@ -3507,7 +3507,7 @@ unpack_error:
 	if (!ignore_state_errors)
 		fatal("Incomplete fed_mgr state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete fed_mgr state file");
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return NULL;
 }
@@ -3775,7 +3775,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 		 * packed according to each siblings rpc_version. */
 		if (!msg->buffer &&
 		    (last_rpc_version != sibling->rpc_version)) {
-			free_buf(buffer);
+			FREE_NULL_BUFFER(buffer);
 			msg->protocol_version = sibling->rpc_version;
 			buffer = init_buf(BUF_SIZE);
 			pack_msg(msg, buffer);
@@ -3794,7 +3794,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	}
 	list_iterator_destroy(sib_itr);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	return ret_rc;
 }

@@ -909,7 +909,7 @@ extern int trigger_state_save(void)
 	xfree(reg_file);
 	xfree(new_file);
 	unlock_state_files();
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return error_code;
 }
 
@@ -967,7 +967,7 @@ extern void trigger_state_restore(void)
 		error("Can't recover trigger state, data version "
 		      "incompatible");
 		xfree(ver_str);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		return;
 	}
 	xfree(ver_str);
@@ -988,7 +988,7 @@ unpack_error:
 		fatal("Incomplete trigger data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete trigger data checkpoint file");
 fini:	verbose("State of %d triggers recovered", trigger_cnt);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 }
 
 static bool _front_end_job_test(bitstr_t *front_end_bitmap,

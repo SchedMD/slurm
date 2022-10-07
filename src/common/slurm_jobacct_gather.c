@@ -986,7 +986,7 @@ extern int jobacctinfo_getinfo(
 			buffer = create_buf(buf, len);
 			jobacctinfo_unpack(&jobacct, protocol_version,
 					   PROTOCOL_TYPE_SLURM, buffer, 0);
-			free_buf(buffer);
+			FREE_NULL_BUFFER(buffer);
 		}
 
 		break;

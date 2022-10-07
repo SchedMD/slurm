@@ -130,7 +130,7 @@ temp_kvs_init(void)
 	}
 	memcpy(&temp_kvs_buf[temp_kvs_cnt], get_buf_data(buf), size);
 	temp_kvs_cnt += size;
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 
 	tasks_to_wait = 0;
 	children_to_wait = 0;
@@ -157,7 +157,7 @@ temp_kvs_add(char *key, char *val)
 	}
 	memcpy(&temp_kvs_buf[temp_kvs_cnt], get_buf_data(buf), size);
 	temp_kvs_cnt += size;
-	free_buf(buf);
+	FREE_NULL_BUFFER(buf);
 
 	return SLURM_SUCCESS;
 }

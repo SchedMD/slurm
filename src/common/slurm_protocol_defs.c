@@ -1040,7 +1040,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->reservation);
 		xfree(msg->resp_host);
 		xfree(msg->script);
-		free_buf(msg->script_buf);
+		FREE_NULL_BUFFER(msg->script_buf);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
 		xfree(msg->selinux_context);
@@ -1071,7 +1071,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 extern void slurm_free_sib_msg(sib_msg_t *msg)
 {
 	if (msg) {
-		free_buf(msg->data_buffer);
+		FREE_NULL_BUFFER(msg->data_buffer);
 		xfree(msg->resp_host);
 		if (msg->data)
 			slurm_free_msg_data(msg->data_type, msg->data);
@@ -1158,7 +1158,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->qos);
 		xfree(msg->resv_name);
 		xfree(msg->script);
-		free_buf(msg->script_buf);
+		FREE_NULL_BUFFER(msg->script_buf);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		if (msg->spank_job_env) {
 			for (i = 0; i < msg->spank_job_env_size; i++)
@@ -1284,8 +1284,7 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->features_active);
 		xfree(msg->features_avail);
 		xfree(msg->hostname);
-		if (msg->gres_info)
-			free_buf(msg->gres_info);
+		FREE_NULL_BUFFER(msg->gres_info);
 		xfree(msg->node_name);
 		xfree(msg->os);
 		xfree(msg->step_id);
@@ -4961,7 +4960,7 @@ extern void slurm_free_comp_msg_list(void *x)
 	slurm_msg_t *msg = (slurm_msg_t*)x;
 	if (msg) {
 		if (msg->data_size)
-			free_buf(msg->data);
+			FREE_NULL_BUFFER(msg->data);
 		else
 			slurm_free_msg_data(msg->msg_type, msg->data);
 

@@ -311,7 +311,7 @@ static int _process_service_connection(
 						 persist_conn->fd, uid);
 				fini = true;
 			}
-			free_buf(buffer);
+			FREE_NULL_BUFFER(buffer);
 		}
 	}
 
@@ -636,7 +636,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		 * communication . */
 		persist_conn_tmp.flags &= (~PERSIST_FLAG_DBD);
 		rc = slurm_persist_msg_unpack(&persist_conn_tmp, &msg, buffer);
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 
 		resp = (persist_rc_msg_t *)msg.data;
 		if (resp && (rc == SLURM_SUCCESS)) {
@@ -1028,7 +1028,7 @@ extern buf_t *slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
 
 		pack16(req_msg->msg_type, buffer);
 		if (pack_msg(&msg, buffer) != SLURM_SUCCESS) {
-			free_buf(buffer);
+			FREE_NULL_BUFFER(buffer);
 			return NULL;
                 }
 	}

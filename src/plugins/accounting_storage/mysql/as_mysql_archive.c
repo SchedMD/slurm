@@ -4418,7 +4418,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 					period_start, period_end,
 					arch_dir, sql_table,
 					archive_period);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	if (error_code != SLURM_SUCCESS)
 		return error_code;

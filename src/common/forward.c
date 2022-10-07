@@ -190,7 +190,7 @@ void *_forward_thread(void *arg)
 					       errno);
 			free(name);
 			if (hostlist_count(hl) > 0) {
-				free_buf(buffer);
+				FREE_NULL_BUFFER(buffer);
 				buffer = init_buf(fwd_struct->buf_len);
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
 				close(fd);
@@ -256,7 +256,7 @@ void *_forward_thread(void *arg)
 			free(name);
 			FREE_NULL_LIST(ret_list);
 			if (hostlist_count(hl) > 0) {
-				free_buf(buffer);
+				FREE_NULL_BUFFER(buffer);
 				buffer = init_buf(fwd_struct->buf_len);
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
 				close(fd);
@@ -336,7 +336,7 @@ cleanup:
 		error ("close(%d): %m", fd);
 	hostlist_destroy(hl);
 	destroy_forward(&fwd_msg->header.forward);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	slurm_cond_signal(&fwd_struct->notify);
 	slurm_mutex_unlock(&fwd_struct->forward_mutex);
 	xfree(fwd_msg);

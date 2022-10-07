@@ -5415,7 +5415,7 @@ extern int dump_assoc_mgr_state(void)
 	xfree(reg_file);
 	xfree(new_file);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	/* Now write the rest of the lists */
 	buffer = init_buf(high_buffer_size);
@@ -5515,7 +5515,7 @@ extern int dump_assoc_mgr_state(void)
 	xfree(reg_file);
 	xfree(new_file);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	/* now make a file for assoc_usage */
 
 	buffer = init_buf(high_buffer_size);
@@ -5586,7 +5586,7 @@ extern int dump_assoc_mgr_state(void)
 	xfree(reg_file);
 	xfree(new_file);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	/* now make a file for qos_usage */
 
 	buffer = init_buf(high_buffer_size);
@@ -5655,7 +5655,7 @@ extern int dump_assoc_mgr_state(void)
 	xfree(new_file);
 	assoc_mgr_unlock(&locks);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	END_TIMER2("dump_assoc_mgr_state");
 	return error_code;
 
@@ -5702,7 +5702,7 @@ extern int load_assoc_usage(void)
 		      "incompatible version, got %u need >= %u <= %u", ver,
 		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		assoc_mgr_unlock(&locks);
 		return EFAULT;
 	}
@@ -5756,7 +5756,7 @@ extern int load_assoc_usage(void)
 	}
 	assoc_mgr_unlock(&locks);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -5764,7 +5764,7 @@ unpack_error:
 		fatal("Incomplete assoc usage state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete assoc usage state file");
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	xfree(tmp_str);
 	assoc_mgr_unlock(&locks);
@@ -5812,7 +5812,7 @@ extern int load_qos_usage(void)
 		      "incompatible version, got %u need > %u <= %u", ver,
 		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		assoc_mgr_unlock(&locks);
 		return EFAULT;
 	}
@@ -5848,7 +5848,7 @@ extern int load_qos_usage(void)
 	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -5856,7 +5856,7 @@ unpack_error:
 		fatal("Incomplete QOS usage state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete QOS usage state file");
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	if (itr)
 		list_iterator_destroy(itr);
@@ -5902,7 +5902,7 @@ extern int load_assoc_mgr_last_tres(void)
 		error("Can not recover last_tres state, incompatible version, got %u need > %u <= %u", ver,
 		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		assoc_mgr_unlock(&locks);
 		return EFAULT;
 	}
@@ -5923,7 +5923,7 @@ extern int load_assoc_mgr_last_tres(void)
 	}
 	slurmdbd_free_list_msg(msg);
 	assoc_mgr_unlock(&locks);
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -5931,7 +5931,7 @@ unpack_error:
 		fatal("Incomplete last_tres state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete last_tres state file");
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;
@@ -5980,7 +5980,7 @@ extern int load_assoc_mgr_state(bool only_tres)
 		      "got %u need > %u <= %u", ver,
 		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
 		error("***********************************************");
-		free_buf(buffer);
+		FREE_NULL_BUFFER(buffer);
 		assoc_mgr_unlock(&locks);
 		return EFAULT;
 	}
@@ -6097,7 +6097,7 @@ extern int load_assoc_mgr_state(bool only_tres)
 	if (!only_tres && init_setup.running_cache)
 		*init_setup.running_cache = RUNNING_CACHE_STATE_RUNNING;
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 	assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
 
@@ -6106,7 +6106,7 @@ unpack_error:
 		fatal("Incomplete assoc mgr state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 	error("Incomplete assoc mgr state file");
 
-	free_buf(buffer);
+	FREE_NULL_BUFFER(buffer);
 
 	assoc_mgr_unlock(&locks);
 	return SLURM_ERROR;

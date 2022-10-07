@@ -545,7 +545,7 @@ _local_file_write(eio_obj_t *obj, List objs)
 	}
 	io_hdr_unpack(&header, header_tmp_buf);
 	header_tmp_buf->head = NULL;	/* CLANG false positive bug here */
-	free_buf(header_tmp_buf);
+	FREE_NULL_BUFFER(header_tmp_buf);
 
 	/*
 	 * A zero-length message indicates the end of a stream from one
@@ -1268,7 +1268,7 @@ _build_connection_okay_message(stepd_step_rec_t *step)
 
 	/* free packbuf, but not the memory to which it points */
 	packbuf->head = NULL;	/* CLANG false positive bug here */
-	free_buf(packbuf);
+	FREE_NULL_BUFFER(packbuf);
 
 	return msg;
 }
@@ -1757,7 +1757,7 @@ _send_eof_msg(struct task_read_info *out)
 
 	/* free packbuf, but not the memory to which it points */
 	packbuf->head = NULL;	/* CLANG false positive bug here */
-	free_buf(packbuf);
+	FREE_NULL_BUFFER(packbuf);
 
 	/* Add eof message to the msg_queue of all clients */
 	clients = list_iterator_create(out->step->clients);
@@ -1848,7 +1848,7 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 
 	/* free packbuf, but not the memory to which it points */
 	packbuf->head = NULL;	/* CLANG false positive bug here */
-	free_buf(packbuf);
+	FREE_NULL_BUFFER(packbuf);
 
 	debug4("%s: Leaving", __func__);
 	return msg;
