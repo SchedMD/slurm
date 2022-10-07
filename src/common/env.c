@@ -1006,23 +1006,32 @@ extern int env_array_for_job(char ***dest,
 	env_array_overwrite_het_fmt(dest, "SLURM_NODELIST", het_job_offset, "%s",
 				    alloc->node_list);
 
+	/*
+	 * If we know how many tasks we are going to do then we set
+	 * SLURM_TASKS_PER_NODE. If no tasks were given we can figure it out
+	 * here by totalling up the number of tasks each node can hold (which is
+	 * the cpus in a node divided by the number of cpus per task).
+	 */
 	if (step_layout_req.num_tasks == NO_VAL) {
-		/* If we know how many tasks we are going to do then
-		   we set SLURM_TASKS_PER_NODE */
-		int i = 0;
-		/* If no tasks were given we can figure it out here
-		 * by totalling up the cpus and then dividing by the
-		 * number of cpus per task */
-
 		step_layout_req.num_tasks = 0;
-		for (i = 0; i < alloc->num_cpu_groups; i++) {
-			step_layout_req.num_tasks += alloc->cpu_count_reps[i]
-				* alloc->cpus_per_node[i];
+
+		/* Iterate over all kind of cluster nodes. */
+		for (int i = 0; i < alloc->num_cpu_groups; i++) {
+			/* Get the CPU count for this type of nodes. */
+			uint32_t ntasks = alloc->cpus_per_node[i];
+
+			/*
+			 * If CPUs/tasks is set, determine how many tasks a node
+			 * of this type can hold.
+			 */
+			if ((desc->cpus_per_task != NO_VAL16) &&
+			    (desc->cpus_per_task > 1))
+				ntasks /= desc->cpus_per_task;
+
+			/* Accum. the number of tasks all the group can hold. */
+			step_layout_req.num_tasks += ntasks *
+						     alloc->cpu_count_reps[i];
 		}
-		if ((int)desc->cpus_per_task > 1
-		   && desc->cpus_per_task != NO_VAL16)
-			step_layout_req.num_tasks /= desc->cpus_per_task;
-		//num_tasks = desc->min_cpus;
 	}
 
 	if ((desc->task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY) {
