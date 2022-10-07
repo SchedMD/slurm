@@ -85,6 +85,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - query all associations to avoid errors while dumping jobs.
  -- Load hash plugin at slurmstepd launch time to prevent issues loading the
     plugin at step completion if the Slurm installation is upgraded.
+ -- Fix gcc 12.2.1 compile errors.
 
 * Changes in Slurm 22.05.4
 ==========================
@@ -550,6 +551,7 @@ documents those changes that are of interest to users and administrators.
     cons_tres cluster from a non-con_tres cluster.
  -- select/linear - fix regression introduced in 21.08.6 which prevented step
     requests with --threads-per-core or --hint=nomultithread from being created.
+ -- Fix gcc 12.2.1 compile errors.
 
 * Changes in Slurm 21.08.8-2
 ============================

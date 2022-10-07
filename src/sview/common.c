@@ -1708,6 +1708,7 @@ extern void *popup_thr(popup_info_t *popup_win)
 		gdk_threads_leave();
 		sleep(working_sview_config.refresh_delay);
 	}
+	popup_win->running = NULL;
 	return NULL;
 }
 
