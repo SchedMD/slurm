@@ -199,6 +199,7 @@ static void _send_reply(int new_fd, char *msg)
 
 static char *_decrypt(char *msg, uid_t *uid)
 {
+	char *xbuf_out = NULL;
 	void *buf_out = NULL;
 	int buf_out_size = 0, err;
 	gid_t gid;
@@ -207,9 +208,12 @@ static char *_decrypt(char *msg, uid_t *uid)
 	if (err != EMUNGE_SUCCESS) {
 		info("slurmctld/nonstop: munge_decode error: %s",
 		     munge_strerror(err));
-		xfree(buf_out);
 	}
-	return (char *) buf_out;
+	if (buf_out) {
+		xbuf_out = xstrdup(buf_out);
+		free(buf_out);
+	}
+	return xbuf_out;
 }
 
 static void _proc_msg(int new_fd, char *msg, slurm_addr_t cli_addr)
@@ -297,8 +301,7 @@ static void _proc_msg(int new_fd, char *msg, slurm_addr_t cli_addr)
 		info("slurmctld/nonstop: msg send:%s", resp);
 	_send_reply(new_fd, resp);
 	xfree(resp);
-	if (msg_decrypted)
-		free(msg_decrypted);
+	xfree(msg_decrypted);
 	return;
 }
 
