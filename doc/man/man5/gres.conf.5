@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "July 2022" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "October 2022" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -7,8 +7,9 @@ gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
 \fBgres.conf\fP is an ASCII file which describes the configuration
 of Generic RESource(s) (GRES) on each compute node.
 If the GRES information in the slurm.conf file does not fully describe those
-resources, then a gres.conf file should be included on each compute node.
-The file will always be located in the same directory as the \fBslurm.conf\fR.
+resources, then a gres.conf file should be included on each compute node and the
+slurm controller. The file will always be located in the same directory as
+\fBslurm.conf\fR.
 
 .LP
 If the GRES information in the slurm.conf file fully describes those resources
