@@ -2835,11 +2835,13 @@ extern bool valid_tres_cnt(char *tres);
 extern bool valid_gres_name(char *name);
 
 /*
- * Check for nodes that haven't rebooted yet.
+ * Check for node timed events
  *
- * If the node hasn't booted by ResumeTimeout, mark the node as down.
+ * Such as:
+ * reboots - If the node hasn't booted by ResumeTimeout, mark the node as down.
+ * resume_after - Resume a down|drain node after resume_after time.
  */
-extern void check_reboot_nodes();
+extern void check_node_timers();
 
 /*
  * Send warning signal to job before end time.
