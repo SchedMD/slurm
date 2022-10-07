@@ -2215,9 +2215,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	if (step_ptr->threads_per_core &&
 	    (step_ptr->threads_per_core != NO_VAL16))
 		req_tpc = step_ptr->threads_per_core;
-	else if (job_ptr->details->mc_ptr->threads_per_core &&
-		 (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16))
-		req_tpc = job_ptr->details->mc_ptr->threads_per_core;
+	else if (mc_ptr->threads_per_core &&
+		 (mc_ptr->threads_per_core != NO_VAL16))
+		req_tpc = mc_ptr->threads_per_core;
 
 	xassert(job_resrcs_ptr->core_bitmap);
 	xassert(job_resrcs_ptr->core_bitmap_used);
