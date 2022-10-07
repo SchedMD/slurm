@@ -1154,6 +1154,38 @@ static bool _nvml_is_device_mig(nvmlDevice_t *device)
 }
 
 /*
+ * According to NVIDIA documentation:
+ * "With drivers >= R470 (470.42.01+), each MIG device is assigned a GPU UUID
+ * starting with MIG-<UUID>."
+ * https://docs.nvidia.com/datacenter/tesla/mig-user-guide/#:~:text=CUDA_VISIBLE_DEVICES%20has%20been,instance%20ID%3E
+ */
+static bool _nvml_use_mig_uuid()
+{
+	static bool nvml_use_mig_uuid;
+	static bool set = false;
+
+	if (!set) {
+		int m_major = 470, m_minor = 42, m_rev = 1; /* 470.42.01 */
+		int major, minor, rev;
+		char v[NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE];
+
+		_nvml_get_driver(v, NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE);
+		sscanf(v, "%d.%d.%d", &major, &minor, &rev);
+
+		if ((major > m_major) ||
+		    ((major == m_major) && (minor > m_minor)) ||
+		    ((major == m_major) && (minor == m_minor) &&
+		     (rev >= m_rev)))
+			nvml_use_mig_uuid = true;
+		else
+			nvml_use_mig_uuid = false;
+		set = true;
+	}
+
+	return nvml_use_mig_uuid;
+}
+
+/*
  * Print out a MIG device and return a populated nvml_mig struct.
  *
  * device	(IN) The MIG device handle
@@ -1212,7 +1244,10 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_index,
 		   (unsigned long)roundl((long double)attributes.memorySizeMB /
 					 (long double)1024));
 
-	xstrfmtcat(nvml_mig->unique_id, "MIG-%s/%u/%u", gpu_uuid, gi_id, ci_id);
+	if (_nvml_use_mig_uuid())
+		xstrfmtcat(nvml_mig->unique_id, "%s", mig_uuid);
+	else
+		xstrfmtcat(nvml_mig->unique_id, "MIG-%s/%u/%u", gpu_uuid, gi_id, ci_id);
 
 	/* Allow access to both the GPU instance and the compute instance */
 	xstrfmtcat(nvml_mig->files, ",/dev/nvidia-caps/nvidia-cap%u,/dev/nvidia-caps/nvidia-cap%u",
