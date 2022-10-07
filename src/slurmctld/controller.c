@@ -585,6 +585,13 @@ int main(int argc, char **argv)
 		} else
 			fatal("Failed to initialize MPI plugins.");
 	}
+	if (data_init(NULL, NULL)) {
+		if (test_config) {
+			error("Failed to initialize serialization plugins.");
+			test_config_rc = 1;
+		} else
+			fatal("Failed to initialize serialization plugins.");
+	}
 	agent_init();
 
 	while (1) {

@@ -46,6 +46,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix step cpu count calculation when using --ntasks-per-gpu=.
  -- Fix overflow problems when validating array index parameters in slurmctld
     and prevent a potential condition causing slurmctld to crash.
+ -- Remove dependency on json-c in slurmctld when running with power saving.
+    Only the new "SLURM_RESUME_FILE" support relies on this, and it will be
+    disabled if json-c support is unavailable instead.
 
 * Changes in Slurm 22.05.5
 ==========================
