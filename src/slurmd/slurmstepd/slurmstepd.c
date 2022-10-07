@@ -49,6 +49,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"
+#include "src/common/hash.h"
 #include "src/common/plugstack.h"
 #include "src/common/run_command.h"
 #include "src/common/select.h"
@@ -692,6 +693,7 @@ _init_from_slurmd(int sock, char **argv,
 	 * Init all plugins after recieving the slurm.conf from the slurmd.
 	 */
 	if ((slurm_auth_init(NULL) != SLURM_SUCCESS) ||
+	    (hash_g_init() != SLURM_SUCCESS) ||
 	    (acct_gather_conf_init() != SLURM_SUCCESS) ||
 	    (core_spec_g_init() != SLURM_SUCCESS) ||
 	    (slurm_proctrack_init() != SLURM_SUCCESS) ||

@@ -83,6 +83,8 @@ documents those changes that are of interest to users and administrators.
     --chdir option is set after option reset.
  -- openapi/dbv0.0.38 - gracefully handle unknown associations assigned to jobs.
  -- openapi/dbv0.0.38 - query all associations to avoid errors while dumping jobs.
+ -- Load hash plugin at slurmstepd launch time to prevent issues loading the
+    plugin at step completion if the Slurm installation is upgraded.
 
 * Changes in Slurm 22.05.4
 ==========================
