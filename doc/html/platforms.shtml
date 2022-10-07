@@ -45,10 +45,16 @@ for assistance.</p>
 <p>Slurm has optional support for managing a variety of accelerator cards.
 Specific plugins have been developed for:</p>
 <ul>
-<li>gres/gpu with AutoDetect=nvml &mdash; autodetection of NVIDIA GPUs through their proprietary NVML library (tested on x86_64 and arm64)</li>
-<li>gres/mps &mdash; NVIDIA CUDA Multi-Process Service provides ways to share GPUs between multiple compute processes</li>
+<li>gres/gpu &mdash; AutoDetect=nvml enables autodetection of NVIDIA GPUs
+through their proprietary NVML library. AutoDetect=rsmi enables
+autodetection of AMD GPUs through their proprietary RSMI library
+(tested on x86_64 and arm64)</li>
+<li>gres/mps &mdash; NVIDIA CUDA Multi-Process Service provides ways to
+share GPUs between multiple compute processes</li>
+<li>gres/shard &mdash; Generic mechanism that provides a way to share
+GPUs between multiple compute processes</li>
 </ul>
 
-<p style="text-align:center;">Last modified 01 September 2022</p>
+<p style="text-align:center;">Last modified 08 September 2022</p>
 
 <!--#include virtual="footer.txt"-->
