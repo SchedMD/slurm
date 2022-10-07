@@ -650,7 +650,7 @@ relinquish:
 		if (destroy_job && my_job_id) {
 			slurm_complete_job(my_job_id, 1);
 		}
-		list_destroy(job_resp_list);
+		FREE_NULL_LIST(job_resp_list);
 	}
 	exit(error_exit);
 	return NULL;

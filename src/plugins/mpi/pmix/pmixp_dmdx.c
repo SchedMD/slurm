@@ -95,7 +95,7 @@ int pmixp_dmdx_init(void)
 
 int pmixp_dmdx_finalize(void)
 {
-	list_destroy(_dmdx_requests);
+	FREE_NULL_LIST(_dmdx_requests);
 	return 0;
 }
 

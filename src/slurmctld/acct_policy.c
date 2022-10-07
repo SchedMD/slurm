@@ -3414,7 +3414,7 @@ extern bool acct_policy_validate_het_job(List submit_job_list)
 	list_iterator_destroy(iter1);
 
 	xfree(job_desc.tres_req_cnt);
-	list_destroy(het_job_limit_list);
+	FREE_NULL_LIST(het_job_limit_list);
 	xfree(acct_policy_limit_set.tres);
 
 	return rc;

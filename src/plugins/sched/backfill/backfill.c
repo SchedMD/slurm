@@ -474,7 +474,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 			*avail_bitmap = bit_copy(tmp_bitmap);
 			if (low_bitmap)
 				bit_and_not(*avail_bitmap, low_bitmap);
-			list_destroy(detail_ptr->feature_list_use);
+			FREE_NULL_LIST(detail_ptr->feature_list_use);
 		}
 		list_iterator_destroy(feat_iter);
 
@@ -562,7 +562,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 			}
 			FREE_NULL_BITMAP(*avail_bitmap);
 			*avail_bitmap = bit_copy(tmp_bitmap);
-			list_destroy(detail_ptr->feature_list_use);
+			FREE_NULL_LIST(detail_ptr->feature_list_use);
 		}
 		list_iterator_destroy(feat_iter);
 		FREE_NULL_LIST(preemptee_candidates);

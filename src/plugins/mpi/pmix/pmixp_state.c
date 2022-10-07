@@ -68,7 +68,7 @@ void pmixp_state_finalize(void)
 #ifndef NDEBUG
 	_pmixp_state.magic = 0;
 #endif
-	list_destroy(_pmixp_state.coll);
+	FREE_NULL_LIST(_pmixp_state.coll);
 }
 
 static bool _compare_ranges(const pmix_proc_t *r1, const pmix_proc_t *r2,

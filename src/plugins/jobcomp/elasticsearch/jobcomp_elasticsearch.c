@@ -830,7 +830,7 @@ extern int fini(void)
 	pthread_join(job_handler_thread, NULL);
 
 	_save_state();
-	list_destroy(jobslist);
+	FREE_NULL_LIST(jobslist);
 	xfree(log_url);
 	return SLURM_SUCCESS;
 }

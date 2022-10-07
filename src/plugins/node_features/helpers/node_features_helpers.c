@@ -567,7 +567,7 @@ static int _foreach_helper_get_modes(void *x, void *y)
 	/* filter out duplicates */
 	list_for_each(current, _foreach_check_duplicates, all_current);
 
-	list_destroy(current);
+	FREE_NULL_LIST(current);
 
 	return 0;
 }
@@ -601,8 +601,8 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 
 	list_for_each(filtered_modes, _list_make_str, current_mode);
 
-	list_destroy(all_current);
-	list_destroy(filtered_modes);
+	FREE_NULL_LIST(all_current);
+	FREE_NULL_LIST(filtered_modes);
 
 	log_flag(NODE_FEATURES, "new: avail=%s current=%s",
 		 *avail_modes, *current_mode);
@@ -653,7 +653,7 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
 
 	list_for_each(features, _list_make_str, &merged);
 
-	list_destroy(features);
+	FREE_NULL_LIST(features);
 	log_flag(NODE_FEATURES, "merged features: %s", merged);
 
 	return merged;

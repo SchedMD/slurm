@@ -194,7 +194,7 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 		close(to_parent[1]);
 		return NULL;
 	} else if (pid > 0) {
-		list_destroy(controllers);
+		FREE_NULL_LIST(controllers);
 		return _fetch_parent(pid);
 	}
 

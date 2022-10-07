@@ -1813,7 +1813,7 @@ static int _init_tres(void)
 
 	if (!slurm_with_slurmdbd()) {
 		assoc_mgr_update_tres(&update_object, false);
-		list_destroy(update_object.objects);
+		FREE_NULL_LIST(update_object.objects);
 	}
 
 	/* Set up the slurmctld_tres_cnt here (Current code is set to

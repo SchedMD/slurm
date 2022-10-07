@@ -76,7 +76,7 @@ int pmixp_nspaces_init(void)
 
 int pmixp_nspaces_finalize(void)
 {
-	list_destroy(_pmixp_nspaces.nspaces);
+	FREE_NULL_LIST(_pmixp_nspaces.nspaces);
 	return 0;
 }
 

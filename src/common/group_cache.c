@@ -90,9 +90,7 @@ static void _group_cache_list_delete(void *x)
 void group_cache_purge(void)
 {
 	slurm_mutex_lock(&gids_mutex);
-	if (gids_cache_list)
-		list_destroy(gids_cache_list);
-	gids_cache_list = NULL;
+	FREE_NULL_LIST(gids_cache_list);
 	slurm_mutex_unlock(&gids_mutex);
 }
 

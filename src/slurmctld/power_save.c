@@ -1159,7 +1159,7 @@ static void *_init_power_save(void *arg)
 fini:	_clear_power_config();
 	_shutdown_power();
 	slurm_mutex_lock(&power_mutex);
-	list_destroy(proc_track_list);
+	FREE_NULL_LIST(proc_track_list);
 	proc_track_list = NULL;
 	power_save_enabled = false;
 	power_save_started = false;

@@ -207,8 +207,8 @@ void pmixp_io_finalize(pmixp_io_engine_t *eng, int err)
 
 		/* Release all sender resources*/
 		if (eng->h.send_on) {
-			list_destroy(eng->send_queue);
-			list_destroy(eng->complete_queue);
+			FREE_NULL_LIST(eng->send_queue);
+			FREE_NULL_LIST(eng->complete_queue);
 			eng->send_msg_size = eng->send_offs = 0;
 		}
 		break;

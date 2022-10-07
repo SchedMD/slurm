@@ -498,13 +498,13 @@ edit:
 			printf("There are errors in your crontab.\n");
 			xfree(badline);
 			xfree(crontab);
-			list_destroy(jobs);
+			FREE_NULL_LIST(jobs);
 			exit(1);
 		}
 
 		char c = '\0';
 
-		list_destroy(jobs);
+		FREE_NULL_LIST(jobs);
 
 		while (tolower(c) != 'y' && tolower(c) != 'n') {
 			printf("There are errors in your crontab.\n"
@@ -535,12 +535,12 @@ edit:
 				response->err_msg);
 			slurm_free_crontab_update_response_msg(response);
 			xfree(crontab);
-			list_destroy(jobs);
+			FREE_NULL_LIST(jobs);
 			exit(1);
 		}
 
 		char c = '\0';
-		list_destroy(jobs);
+		FREE_NULL_LIST(jobs);
 		while (tolower(c) != 'y' && tolower(c) != 'n') {
 			printf("There was an issue with the job submission on lines %s\n"
 			       "The error code return was: %s\n"
@@ -568,7 +568,7 @@ edit:
 
 	slurm_free_crontab_update_response_msg(response);
 	xfree(crontab);
-	list_destroy(jobs);
+	FREE_NULL_LIST(jobs);
 }
 
 static void _handle_first_form(char **new_crontab)

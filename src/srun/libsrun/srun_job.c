@@ -590,7 +590,7 @@ static void _het_grp_test(List opt_list)
 			multi_comp = true;
 		FREE_NULL_BITMAP(master_map);
 		list_iterator_destroy(iter);
-		list_destroy(missing_argv_list);
+		FREE_NULL_LIST(missing_argv_list);
 	} else if (!sropt.het_group && !getenv("SLURM_HET_SIZE")) {
 		FREE_NULL_BITMAP(sropt.het_grp_bits);
 		/* het_group is already NULL */
@@ -1131,7 +1131,7 @@ static char *_compress_het_job_nodelist(List used_resp_list)
 	xfree(reps);
 	xfree(cpus);
 	hostset_destroy(hs);
-	list_destroy(het_job_resp_list);
+	FREE_NULL_LIST(het_job_resp_list);
 
 	return het_job_nodelist;
 }
@@ -1382,7 +1382,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			het_job_nodelist =
 				_compress_het_job_nodelist(used_resp_list);
 		}
-		list_destroy(used_resp_list);
+		FREE_NULL_LIST(used_resp_list);
 		if (_create_job_step(job, false, srun_job_list, het_job_id,
 				     het_job_nodelist) < 0) {
 			if (*got_alloc)

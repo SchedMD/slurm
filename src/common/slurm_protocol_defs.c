@@ -910,8 +910,7 @@ extern void slurm_free_config_request_msg(config_request_msg_t *msg)
 extern void slurm_free_config_response_msg(config_response_msg_t *msg)
 {
 	if (msg) {
-		if (msg->config_files)
-			list_destroy(msg->config_files);
+		FREE_NULL_LIST(msg->config_files);
 		xfree(msg->config);
 		xfree(msg->acct_gather_config);
 		xfree(msg->cgroup_config);

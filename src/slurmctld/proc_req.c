@@ -747,7 +747,7 @@ extern void configless_update(void)
 		config_for_slurmd->plugstack_config;
 
 	/* free new_client and the old list */
-	list_destroy(config_files);
+	FREE_NULL_LIST(config_files);
 	xfree(new_client);
 
 	/*
@@ -1263,7 +1263,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(het_job_id);
-		list_destroy(resp);
+		FREE_NULL_LIST(resp);
 	} else {
 		char *aggregate_user_msg;
 

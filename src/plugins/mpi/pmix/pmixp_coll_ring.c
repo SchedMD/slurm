@@ -519,8 +519,8 @@ void pmixp_coll_ring_free(pmixp_coll_ring_t *ring)
 		FREE_NULL_BUFFER(coll_ctx->ring_buf);
 		xfree(coll_ctx->contrib_map);
 	}
-	list_destroy(ring->fwrd_buf_pool);
-	list_destroy(ring->ring_buf_pool);
+	FREE_NULL_LIST(ring->fwrd_buf_pool);
+	FREE_NULL_LIST(ring->ring_buf_pool);
 }
 
 inline static int _pmixp_coll_contrib(pmixp_coll_ring_ctx_t *coll_ctx,

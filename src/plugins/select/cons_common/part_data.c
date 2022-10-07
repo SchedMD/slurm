@@ -360,7 +360,7 @@ extern void part_data_create_array(void)
 		last_ptr = this_ptr;
 	}
 	list_iterator_destroy(part_iterator);
-	list_destroy(part_rec_list);
+	FREE_NULL_LIST(part_rec_list);
 }
 
 /* Delete the given list of partition data */

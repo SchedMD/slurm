@@ -60,8 +60,8 @@ void pmixp_conn_init(pmixp_p2p_data_t slurm_hdr,
 
 void pmixp_conn_fini(void)
 {
-	list_destroy(_conn_list);
-	list_destroy(_empty_hndl_list);
+	FREE_NULL_LIST(_conn_list);
+	FREE_NULL_LIST(_empty_hndl_list);
 	_tmp_engines_fini();
 }
 
@@ -229,8 +229,8 @@ static void _tmp_engines_init()
 
 static void _tmp_engines_fini()
 {
-	list_destroy(_slurm_engines);
-	list_destroy(_direct_engines);
+	FREE_NULL_LIST(_slurm_engines);
+	FREE_NULL_LIST(_direct_engines);
 }
 
 static void _temp_engine_destruct(void *obj)

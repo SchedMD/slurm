@@ -387,7 +387,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 			}
 		}
 		list_iterator_destroy(itr);
-		list_destroy(accept);
+		FREE_NULL_LIST(accept);
 	} else {
 		debug3("%s: [%s] Accept header not specified. Defaulting to JSON.",
 		       __func__, args->context->con->name);

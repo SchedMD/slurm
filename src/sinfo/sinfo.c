@@ -502,7 +502,7 @@ static void *_load_job_prio_thread(void *args)
 			sinfo_ptr->cluster_name = cluster->name;
 		list_iterator_destroy(iter);
 		list_transfer(load_args->resp_msg_list, sinfo_list);
-		list_destroy(sinfo_list);
+		FREE_NULL_LIST(sinfo_list);
 	}
 
 	xfree(args);

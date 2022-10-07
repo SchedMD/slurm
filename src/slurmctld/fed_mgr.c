@@ -2677,7 +2677,7 @@ static void *_agent_thread(void *arg)
 			(void) slurm_free_msg_data(resp_msg.msg_type,
 						   resp_msg.data);
 
-			list_destroy(ctld_req_msg.my_list);
+			FREE_NULL_LIST(ctld_req_msg.my_list);
 		}
 		list_iterator_destroy(cluster_iter);
 

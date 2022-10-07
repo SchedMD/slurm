@@ -4166,8 +4166,8 @@ void file_bcast_init(void)
 void file_bcast_purge(void)
 {
 	_fb_wrlock();
-	list_destroy(file_bcast_list);
-	list_destroy(bcast_libdir_list);
+	FREE_NULL_LIST(file_bcast_list);
+	FREE_NULL_LIST(bcast_libdir_list);
 	/* destroying list before exit, no need to unlock */
 }
 

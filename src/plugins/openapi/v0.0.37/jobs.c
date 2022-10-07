@@ -1282,7 +1282,7 @@ static int _op_handler_submit_job_post(const char *context_id,
 				if (slurm_submit_batch_het_job(jobs_rc.jobs,
 							       &resp))
 					rc = errno;
-				list_destroy(jobs_rc.jobs);
+				FREE_NULL_LIST(jobs_rc.jobs);
 			} else {
 				if (slurm_submit_batch_job(jobs_rc.job, &resp))
 					rc = errno;

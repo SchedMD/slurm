@@ -2415,7 +2415,7 @@ extern int gres_node_config_load(List gres_conf_list,
 			index++;
 	}
 	list_iterator_destroy(itr);
-	list_destroy(names_list);
+	FREE_NULL_LIST(names_list);
 
 	if (*gres_devices) {
 		gres_device_t *gres_device;

@@ -303,8 +303,8 @@ static int _assign_clusters_to_federation(mysql_conn_t *mysql_conn,
 		goto end_it;
 
 end_it:
-	list_destroy(add_list);
-	list_destroy(rem_list);
+	FREE_NULL_LIST(add_list);
+	FREE_NULL_LIST(rem_list);
 
 	return rc;
 }
