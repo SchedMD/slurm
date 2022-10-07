@@ -79,6 +79,8 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - Avoid leaking namespace file descriptor.
  -- common/slurm_opt - fix memory leak in client commands or slurmrestd when the
     --chdir option is set after option reset.
+ -- openapi/dbv0.0.38 - gracefully handle unknown associations assigned to jobs.
+ -- openapi/dbv0.0.38 - query all associations to avoid errors while dumping jobs.
 
 * Changes in Slurm 22.05.4
 ==========================
@@ -126,8 +128,6 @@ documents those changes that are of interest to users and administrators.
     features.
  -- Fix occasional slurmctld crash or hang in backfill due to invalid pointers.
  -- Fix segfault on Cray machines if cgroup cpuset is used in cgroup/v1.
- -- openapi/dbv0.0.38 - gracefully handle unknown associations assigned to jobs.
- -- openapi/dbv0.0.38 - query all associations to avoid errors while dumping jobs.
 
 * Changes in Slurm 22.05.3
 ==========================
