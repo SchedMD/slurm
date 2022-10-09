@@ -7904,7 +7904,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		}
 	}
 
-	rc = job_submit_g_submit(job_desc, (uint32_t) submit_uid, err_msg);
+	rc = job_submit_g_submit(job_desc, submit_uid, err_msg);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 	rc = node_features_g_job_valid(job_desc->features);
@@ -12134,8 +12134,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		 */
 		job_specs->user_id = job_ptr->user_id;
 	}
-	error_code = job_submit_g_modify(job_specs, job_ptr, (uint32_t) uid,
-					 err_msg);
+	error_code = job_submit_g_modify(job_specs, job_ptr, uid, err_msg);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 	error_code = node_features_g_job_valid(job_specs->features);
