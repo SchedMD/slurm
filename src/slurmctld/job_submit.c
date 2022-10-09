@@ -75,7 +75,6 @@ static slurm_submit_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static char *submit_plugin_list = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 /*
  * Initialize the job submit plugin.
@@ -88,9 +87,6 @@ extern int job_submit_g_init(void)
 	char *last = NULL, *tmp_plugin_list, *names;
 	char *plugin_type = "job_submit";
 	char *type;
-
-	if (init_run && (g_context_cnt >= 0))
-		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context_cnt >= 0)
@@ -125,7 +121,6 @@ extern int job_submit_g_init(void)
 		g_context_cnt++;
 		names = NULL; /* for next strtok_r() iteration */
 	}
-	init_run = true;
 	xfree(tmp_plugin_list);
 
 fini:
@@ -150,7 +145,6 @@ extern int job_submit_g_fini(void)
 	if (g_context_cnt < 0)
 		goto fini;
 
-	init_run = false;
 	for (i=0; i<g_context_cnt; i++) {
 		if (g_context[i]) {
 			j = plugin_context_destroy(g_context[i]);
@@ -214,7 +208,7 @@ extern int job_submit_g_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 			       char **err_msg)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
@@ -226,8 +220,8 @@ extern int job_submit_g_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	/* Set to NO_VAL so that it can only be set by the job submit plugin. */
 	job_desc->site_factor = NO_VAL;
 
-	rc = job_submit_g_init();
 	slurm_mutex_lock(&g_context_lock);
+	xassert(g_context_cnt >= 0);
 	/* NOTE: On function entry read locks are set on config, job, node and
 	 * partition structures. Do not attempt to unlock them and then
 	 * lock again (say with a write lock) since doing so will trigger
@@ -249,7 +243,7 @@ extern int job_submit_g_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 			       uint32_t submit_uid, char **err_msg)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
@@ -261,8 +255,8 @@ extern int job_submit_g_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	/* Set to NO_VAL so that it can only be set by the job submit plugin. */
 	job_desc->site_factor = NO_VAL;
 
-	rc = job_submit_g_init();
 	slurm_mutex_lock(&g_context_lock);
+	xassert(g_context_cnt >= 0);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].modify))(job_desc, job_ptr, submit_uid, err_msg);
 	slurm_mutex_unlock(&g_context_lock);
