@@ -4,6 +4,11 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from CNCF Research End User Group, October 2022</h2>
+<ul>
+<li><a href="CNCF22/CNCF_RUG_20221005.pdf">Slurm Container Support</a>, Nathan Rini, SchedMD</li>
+</ul>
+
 <h2>Presentations from Slurm User Group Meeting, September 2022</h2>
 <ul>
 <li><a href="SLUG22/Field_Notes_6.pdf">Field Notes 6: From The Frontlines of Slurm Support</a>,
@@ -1126,6 +1131,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 20 September 2022</p>
+<p style="text-align:center;">Last modified 9 October 2022</p>
 
 <!--#include virtual="footer.txt"-->
