@@ -1867,7 +1867,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_cpu_cnt[40],   tmp_node_cnt[40],    tmp_disk[40];
 	char tmp_cpus_max[40],  tmp_mem_min[40],     tmp_cpu_req[40];
 	char tmp_nodes_min[40], tmp_nodes_max[40],   tmp_cpus_per_task[40];
-	char tmp_prio[40],      tmp_nice[40],        tmp_preempt_time[40];
+	char tmp_prio[40], tmp_nice[40], tmp_preempt_time[256];
 	char tmp_rqswitch[40],  tmp_core_spec[40],   tmp_job_id[40];
 	char tmp_std_err[128],  tmp_std_in[128],     tmp_std_out[128];
 	char tmp_thread_spec[40], tmp_time_deadline[256], tmp_het_job_id[40];
@@ -2170,7 +2170,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	if (job_ptr->preempt_time) {
 		slurm_make_time_str((time_t *)&job_ptr->preempt_time,
-				    tmp_preempt_time, sizeof(tmp_time_resize));
+				    tmp_preempt_time, sizeof(tmp_preempt_time));
 	} else
 		sprintf(tmp_preempt_time, "N/A");
 
