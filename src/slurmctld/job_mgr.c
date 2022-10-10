@@ -7823,7 +7823,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 
 	if (max_script == -1) {
 		char *tmp_ptr;
-		max_script = 4 * 1024 * 1024;
+		max_script = DEFAULT_BATCH_SCRIPT_LIMIT;
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 		                           "max_script_size="))) {
 			max_script = atoi(tmp_ptr + 16);
