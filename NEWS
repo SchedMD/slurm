@@ -90,6 +90,8 @@ documents those changes that are of interest to users and administrators.
     starting.
  -- Prevent incorrect error message from being generated for operator/admins
     using the 'scontrol top' command.
+ -- slurmrestd - correct issue where larger requests could result in a single
+    byte getting removed from inside of the POST request.
 
 * Changes in Slurm 22.05.4
 ==========================

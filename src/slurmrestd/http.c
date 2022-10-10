@@ -374,31 +374,38 @@ static int _on_body(http_parser *parser, const char *at, size_t length)
 	       __func__, request->context->con->name);
 
 	if (request->body) {
-		size_t nlength = (length + request->body_length + 1);
+		size_t nlength = length + request->body_length;
 
 		xassert(request->body_length > 0);
+		xassert(request->body_length <= MAX_BODY_BYTES);
+		xassert((request->body_length + 1) == xsize(request->body));
 
-		if ((nlength > MAX_BODY_BYTES) ||
-		    (request->expected_body_length &&
-		     ((nlength - 1) > (request->expected_body_length + 1))) ||
-		    !try_xrealloc(request->body, nlength))
+		if (nlength > MAX_BODY_BYTES)
 			goto no_mem;
 
-		memmove((request->body + (request->body_length - 1)),
-		       at, length);
+		if (request->expected_body_length &&
+		    (nlength > request->expected_body_length))
+			goto no_mem;
+
+		if (!try_xrealloc(request->body, (nlength + 1)))
+			goto no_mem;
+
+		memmove((request->body + request->body_length), at, length);
 		request->body_length += length;
-		request->body[nlength] = '\0';
 	} else {
-		if ((length > MAX_BODY_BYTES) ||
+		if ((length >= MAX_BODY_BYTES) ||
 		    (request->expected_body_length &&
 		     (length > request->expected_body_length)) ||
 		    !(request->body = try_xmalloc(length + 1)))
 			goto no_mem;
 
-		request->body_length = (length + 1);
+		request->body_length = length;
 		memmove(request->body, at, length);
-		request->body[length] = '\0';
 	}
+
+	/* final byte must in body must always be NULL terminated */
+	xassert(!request->body[request->body_length]);
+	request->body[request->body_length] = '\0';
 
 	log_flag(NET, "%s: [%s] received %zu bytes for HTTP body length %zu/%zu bytes",
 		 __func__, request->context->con->name, length,
@@ -674,7 +681,7 @@ static int _on_message_complete(http_parser *parser)
 	}
 
 	if ((request->expected_body_length > 0) &&
-	    (request->expected_body_length != (request->body_length - 1))) {
+	    (request->expected_body_length != request->body_length)) {
 		error("%s: [%s] Content-Length %zu and received body length %zu mismatch",
 		      __func__, request->context->con->name,
 		      request->expected_body_length, request->body_length);
