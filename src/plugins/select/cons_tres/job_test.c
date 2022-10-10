@@ -363,7 +363,8 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			      mc_ptr->cpus_per_task;
 		if (alloc_tasks < min_tasks_this_node)
 			max_tasks_this_node = 0;
-		else
+		else if ((max_tasks_this_node == NO_VAL) ||
+			 (alloc_tasks < max_tasks_this_node))
 			max_tasks_this_node = alloc_tasks;
 	}
 
