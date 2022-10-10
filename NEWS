@@ -98,6 +98,8 @@ documents those changes that are of interest to users and administrators.
     byte getting removed from inside of the POST request.
  -- Fix regression in task count calculation for --ntasks-per-gpu with multiple
     nodes.
+ -- Update nvml plugin to match the unique id format for MIG devices in new
+    Nvidia drivers.
 
 * Changes in Slurm 22.05.4
 ==========================
