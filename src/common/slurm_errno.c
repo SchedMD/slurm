@@ -840,7 +840,7 @@ slurm_errtab_t slurm_errtab[] = {
 	  "MIME type is unknown to any loaded plugins"},
 	{ ESLURM_DATA_TOO_LARGE,
 	  "ESLURM_DATA_TOO_LARGE",
-	  "DATA too large to handle"},
+	  "Data too large to handle"},
 	{ ESLURM_DATA_FLAGS_INVALID_TYPE,
 	  "ESLURM_DATA_FLAGS_INVALID_TYPE",
 	  "Data parser expects flags to be a list"},
