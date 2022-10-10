@@ -73,6 +73,8 @@ documents those changes that are of interest to users and administrators.
     going from powering down to powered down state.
  -- auth/jwt - support Azure (among other) JWKS files by preferring x5c field
     over locally reconstructing an RSA256 key file.
+ -- auth/jwt - add optional AuthAltParameters field "userclaimfield=" to allow
+    overriding "sun" claim to site specific field.
 
 * Changes in Slurm 22.05.5
 ==========================

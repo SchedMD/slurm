@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "September 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "October 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -490,6 +490,16 @@ Used by \fIauth/munge\fR and \fIcred/munge\fR.
 Credential lifetime, in seconds (e.g. "ttl=300").
 The default value is dependent upon the MUNGE installation, but is typically
 300 seconds.
+.RE
+.IP
+
+.TP
+\fBuserclaimfield=\fR
+Use an alternative claim field for the Slurm UserName \fBsun\fR field. This
+option is designed to allow compatibility with tokens generated outside of
+Slurm. (This field may also be known as a grant.)
+.NR
+Default: (disabled)
 .RE
 .IP
 

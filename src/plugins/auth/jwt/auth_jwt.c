@@ -105,6 +105,7 @@ typedef struct {
 data_t *jwks = NULL;
 buf_t *key = NULL;
 char *token = NULL;
+static char *claim_field = NULL;
 __thread char *thread_token = NULL;
 __thread char *thread_username = NULL;
 
@@ -242,8 +243,24 @@ static void _init_hs256(void)
 extern int init(void)
 {
 	if (running_in_slurmctld() || running_in_slurmdbd()) {
+		char *claim;
+
 		_init_jwks();
 		_init_hs256();
+
+		/*
+		 * Support an optional custom username claim field in addition
+		 * to 'sun' and 'username'.
+		 */
+		if ((claim = xstrstr(slurm_conf.authalt_params, "userclaimfield="))) {
+			char *end;
+
+			claim_field = xstrdup(claim + 15);
+			if ((end = xstrstr(claim_field, ",")))
+				*end = '\0';
+
+			info("Custom user claim field: %s", claim_field);
+		}
 	} else {
 		/* we must be in a client command */
 		token = getenv("SLURM_JWT");
@@ -262,6 +279,7 @@ extern int init(void)
 
 extern int fini(void)
 {
+	xfree(claim_field);
 	FREE_NULL_DATA(jwks);
 	FREE_NULL_BUFFER(key);
 
@@ -427,7 +445,10 @@ int auth_p_verify(auth_token_t *cred, char *auth_info)
 	 * 'username' is used otherwise
 	 */
 	if (!(username = xstrdup(jwt_get_grant(jwt, "sun"))) &&
-	    !(username = xstrdup(jwt_get_grant(jwt, "username")))) {
+	    !(username = xstrdup(jwt_get_grant(jwt, "username"))) &&
+	    (!claim_field ||
+	     !(username = xstrdup(jwt_get_grant(jwt, claim_field)))))
+	{
 		error("%s: jwt_get_grant failure", __func__);
 		goto fail;
 	}
