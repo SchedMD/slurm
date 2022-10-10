@@ -403,4 +403,7 @@ do {				\
 	y = b;			\
 } while (0)
 
+/* macro to force stringification */
+#define XSTRINGIFY(s) #s
+
 #endif /* !_MACROS_H */
