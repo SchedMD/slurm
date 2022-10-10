@@ -1487,8 +1487,8 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version,
 			pack32(0, buffer);
 			pack32(0, buffer);
 
-			packdouble(NO_VAL64, buffer);
-			packdouble(NO_VAL64, buffer);
+			packdouble((double) NO_VAL64, buffer);
+			packdouble((double) NO_VAL64, buffer);
 			return;
 		}
 		packstr(object->description, buffer);
@@ -1577,8 +1577,8 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version,
 			pack32(0, buffer);
 			pack32(0, buffer);
 
-			packdouble(NO_VAL64, buffer);
-			packdouble(NO_VAL64, buffer);
+			packdouble((double) NO_VAL64, buffer);
+			packdouble((double) NO_VAL64, buffer);
 			return;
 		}
 		packstr(object->description, buffer);

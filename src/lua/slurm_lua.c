@@ -254,7 +254,7 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "ALLOC_SID_USER_HOLD");
 	lua_pushnumber(L, INFINITE);
 	lua_setfield(L, -2, "INFINITE");
-	lua_pushnumber(L, INFINITE64);
+	lua_pushnumber(L, (double) INFINITE64);
 	lua_setfield(L, -2, "INFINITE64");
 	lua_pushnumber(L, MAIL_INVALID_DEPEND);
 	lua_setfield(L, -2, "MAIL_INVALID_DEPEND");
@@ -288,7 +288,7 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "JOB_SHARED_USER");
 	lua_pushnumber(L, JOB_SHARED_MCS);
 	lua_setfield(L, -2, "JOB_SHARED_MCS");
-	lua_pushnumber(L, NO_VAL64);
+	lua_pushnumber(L, (double) NO_VAL64);
 	lua_setfield(L, -2, "NO_VAL64");
 	lua_pushnumber(L, NO_VAL);
 	lua_setfield(L, -2, "NO_VAL");
@@ -483,7 +483,7 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		if (job_ptr->details)
 			lua_pushnumber(L, job_ptr->details->pn_min_memory);
 		else
-			lua_pushnumber(L, NO_VAL64);
+			lua_pushnumber(L, (double) NO_VAL64);
 	} else if (!xstrcmp(name, "priority")) {
 		lua_pushnumber(L, job_ptr->priority);
 	} else if (!xstrcmp(name, "qos")) {

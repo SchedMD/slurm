@@ -260,8 +260,8 @@ extern void print_fields_double(print_field_t *field, double value, int last)
 {
 	int abs_len = abs(field->len);
 	/* (value == unset)  || (value == cleared) */
-	if ((value == NO_VAL64) || (value == INFINITE64) ||
-	    (value == (uint64_t)NO_VAL) || (value == (uint64_t)INFINITE)) {
+	if ((value == (double) NO_VAL64) || (value == (double) INFINITE64) ||
+	    (value == (double) NO_VAL) || (value == (double) INFINITE)) {
 		if (print_fields_parsable_print
 		   == PRINT_FIELDS_PARSABLE_NO_ENDING
 		   && last)
