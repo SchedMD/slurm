@@ -1217,8 +1217,8 @@ static char *_setup_assoc_table_query(slurmdb_assoc_cond_t *assoc_cond,
 	*/
 	if (assoc_cond && assoc_cond->with_sub_accts)
 		xstrfmtcat(with_sub_accts_str,
-			   ", \"%s_%s\" as t2 on "
-			   "(t1.lft between t2.lft and t2.rgt) ",
+			   " join \"%s_%s\" as t2 on "
+			   "(t1.lft between t2.lft and t2.rgt)",
 			   cluster_name, assoc_table);
 	else
 		xstrcat(with_sub_accts_str, "");
