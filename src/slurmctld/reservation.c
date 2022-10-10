@@ -710,7 +710,7 @@ static int _update_resv_pend_cnt(void *x, void *arg)
 static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 {
 
-	char start_str[32] = "-1", end_str[32] = "-1", *flag_str = NULL;
+	char start_str[256] = "-1", end_str[256] = "-1", *flag_str = NULL;
 	char watts_str[32] = "n/a";
 	char *node_cnt_str = NULL, *core_cnt_str = NULL;
 	int duration, i;
@@ -2205,7 +2205,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 {
 	uint64_t cpu_cnt = 0;
 	node_record_t *node_ptr;
-	char start_time[32], end_time[32], tmp_msd[40];
+	char start_time[256], end_time[256], tmp_msd[40];
 	char *name1, *name2, *name3, *val1, *val2, *val3;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
@@ -5958,7 +5958,7 @@ static void _print_constraint_planning(constraint_planning_t* sched)
 {
 	ListIterator iter;
 	constraint_slot_t *cur_slot;
-	char start_str[32] = "-1", end_str[32] = "-1";
+	char start_str[256] = "-1", end_str[256] = "-1";
 	uint32_t i = 0;
 
 	iter = list_iterator_create(sched->slot_list);
@@ -6019,7 +6019,7 @@ extern uint32_t job_test_watts_resv(job_record_t *job_ptr, time_t when,
 	ListIterator iter;
 	constraint_planning_t wsched;
 	time_t start, end;
-	char start_str[32] = "-1", end_str[32] = "-1";
+	char start_str[256] = "-1", end_str[256] = "-1";
 	uint32_t resv_cnt = 0;
 
 	_init_constraint_planning(&wsched);

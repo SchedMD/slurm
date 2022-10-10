@@ -345,7 +345,7 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
 {
 	int i;
 	job_info_t *job_ptr = jinfo->job_array;
-	char time_str[32];
+	char time_str[256];
 
 	slurm_make_time_str ((time_t *)&jinfo->last_update, time_str,
 		sizeof(time_str));
@@ -396,7 +396,7 @@ extern char *
 slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 {
 	int i, j, k;
-	char time_str[32], *group_name, *user_name;
+	char time_str[256], *group_name, *user_name;
 	char *gres_last = "", tmp1[128], tmp2[128];
 	char *tmp6_ptr;
 	char tmp_line[1024 * 128];

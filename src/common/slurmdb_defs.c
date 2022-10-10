@@ -495,7 +495,7 @@ static local_cluster_rec_t * _job_will_run (job_desc_msg_t *req)
 {
 	local_cluster_rec_t *local_cluster = NULL;
 	will_run_response_msg_t *will_run_resp;
-	char buf[64];
+	char buf[256];
 	int rc;
 
 	rc = slurm_job_will_run2(req, &will_run_resp);

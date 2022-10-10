@@ -194,7 +194,7 @@ static void _layout_bb_record(GtkTreeView *treeview,
 			      sview_bb_info_t *sview_bb_info, int update)
 {
 	GtkTreeIter iter;
-	char time_buf[20], tmp_user_id[60], tmp_size[20];
+	char time_buf[256], tmp_user_id[60], tmp_size[20];
 	char bb_name_id[32];
 	char *tmp_state, *tmp_user_name;
 	burst_buffer_resv_t *bb_ptr = sview_bb_info->bb_ptr;
@@ -315,7 +315,7 @@ static void _get_size_str(char *buf, size_t buf_size, uint64_t num)
 static void _update_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 			      GtkTreeStore *treestore)
 {
-	char tmp_create_time[40];
+	char tmp_create_time[256];
 	char tmp_size[20], tmp_user_id[60], bb_name_id[32];
 	char *tmp_state, *tmp_user_name;
 	burst_buffer_resv_t *bb_ptr = sview_bb_info_ptr->bb_ptr;

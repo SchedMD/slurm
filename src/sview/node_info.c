@@ -857,7 +857,7 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 	int i = 0;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
-	char user[32], time_str[32];
+	char user[32], time_str[256];
 
 	if (!by_partition) {
 		if (!node_info_ptr

@@ -123,13 +123,13 @@ extern void dump_data(int argc, char **argv)
 	 */
 
 	if (job_cond->usage_start) {
-		char str[1024] = {0};
+		char str[256] = {0};
 		slurm_make_time_str(&job_cond->usage_start, str, sizeof(str));
 		data_set_string(data_key_set(query, "start_time"), str);
 	}
 
 	if (job_cond->usage_end) {
-		char str[1024] = {0};
+		char str[256] = {0};
 		slurm_make_time_str(&job_cond->usage_end, str, sizeof(str));
 		data_set_string(data_key_set(query, "end_time"), str);
 	}

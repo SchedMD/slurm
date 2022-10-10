@@ -1197,7 +1197,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 			       int update)
 {
 	char *nodes = NULL, *reason = NULL, *uname = NULL;
-	char tmp_char[64];
+	char tmp_char[256];
 	char time_buf[32];
 	char tmp1[128];
 	char running_char[50];
@@ -1860,8 +1860,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			       bool handle_pending)
 {
 	char tmp_array_job_id[20], tmp_array_task_id[20];
-	char tmp_time_run[40],  tmp_time_resize[40], tmp_time_submit[40];
-	char tmp_time_elig[40], tmp_time_start[40],  tmp_time_end[40];
+	char tmp_time_run[40],  tmp_time_resize[256], tmp_time_submit[256];
+	char tmp_time_elig[256], tmp_time_start[256],  tmp_time_end[256];
 	char tmp_time_sus[40],  tmp_time_limit[40],  tmp_alloc_node[40];
 	char tmp_exit[40],      tmp_group_id[40],    tmp_derived_ec[40];
 	char tmp_cpu_cnt[40],   tmp_node_cnt[40],    tmp_disk[40];
@@ -1870,9 +1870,9 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_prio[40],      tmp_nice[40],        tmp_preempt_time[40];
 	char tmp_rqswitch[40],  tmp_core_spec[40],   tmp_job_id[40];
 	char tmp_std_err[128],  tmp_std_in[128],     tmp_std_out[128];
-	char tmp_thread_spec[40], tmp_time_deadline[40], tmp_het_job_id[40];
+	char tmp_thread_spec[40], tmp_time_deadline[256], tmp_het_job_id[40];
 	char tmp_het_job_id_set[40], tmp_het_job_offset[40];
-	char tmp_time_accrue[40];
+	char tmp_time_accrue[256];
 	char *tmp_batch,  *tmp_cont, *tmp_requeue, *tmp_uname;
 	char *tmp_reboot, *tmp_reason, *tmp_nodes;
 	char time_buf[32];
@@ -2605,7 +2605,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	char *tmp_uname;
 	char tmp_nodes[50];
 	char tmp_cpu_min[40],  tmp_time_run[40],   tmp_time_limit[40];
-	char tmp_node_cnt[40], tmp_time_start[40], tmp_task_cnt[40];
+	char tmp_node_cnt[40], tmp_time_start[256], tmp_task_cnt[40];
 	char tmp_step_id[40], tmp_job_id[400];
 	char tmp_fmt_stepid[40];
 	uint32_t state;

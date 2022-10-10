@@ -391,7 +391,7 @@ int _print_secs(long time, int width, bool right, bool cut_output)
 int _print_time(time_t t, int level, int width, bool right)
 {
 	if (t) {
-		char time_str[32];
+		char time_str[256];
 		slurm_make_time_str(&t, time_str, sizeof(time_str));
 		_print_str(time_str, width, right, true);
 	} else

@@ -967,7 +967,7 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (job_cond->usage_end &&
 	    (job_cond->usage_start > job_cond->usage_end)) {
-		char start_str[32], end_str[32];
+		char start_str[256], end_str[256];
 		slurm_make_time_str(&job_cond->usage_start, start_str,
 				    sizeof(start_str));
 		slurm_make_time_str(&job_cond->usage_end, end_str,

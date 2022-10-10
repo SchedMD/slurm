@@ -944,7 +944,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	itr = list_iterator_create(job_list);
 	while ((job_rec = list_next(itr))) {
-		char tmp_char[25];
+		char tmp_char[256];
 		char *vals_mod = NULL;
 
 		if ((uid != job_rec->uid) && !is_admin) {

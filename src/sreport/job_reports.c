@@ -761,8 +761,8 @@ static int _run_report(int type, int argc, char **argv)
 		goto end_it;
 
 	if (print_fields_have_header) {
-		char start_char[20];
-		char end_char[20];
+		char start_char[256];
+		char end_char[256];
 		time_t my_start = job_cond->usage_start;
 		time_t my_end = job_cond->usage_end - 1;
 

@@ -115,7 +115,7 @@ slurm_print_job_step_info_msg ( FILE* out,
 {
 	int i;
 	job_step_info_t *job_step_ptr = job_step_info_msg_ptr->job_steps ;
-	char time_str[32];
+	char time_str[256];
 
 	slurm_make_time_str ((time_t *)&job_step_info_msg_ptr->last_update,
 			time_str, sizeof(time_str));
@@ -158,7 +158,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 			    int one_liner )
 {
 	char tmp_node_cnt[40];
-	char time_str[32];
+	char time_str[256];
 	char limit_str[32];
 	char tmp_line[128];
 	char *out = NULL;

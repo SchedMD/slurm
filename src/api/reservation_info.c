@@ -60,7 +60,7 @@ void slurm_print_reservation_info_msg ( FILE* out,
 {
 	int i ;
 	reserve_info_t * resv_ptr = resv_info_ptr->reservation_array ;
-	char time_str[32];
+	char time_str[256];
 
 	slurm_make_time_str( (time_t *)&resv_info_ptr->last_update, time_str,
 			     sizeof(time_str));
@@ -100,7 +100,7 @@ void slurm_print_reservation_info ( FILE* out, reserve_info_t * resv_ptr,
 char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 				      int one_liner )
 {
-	char tmp1[32], tmp2[32], tmp3[32], *flag_str = NULL;
+	char tmp1[256], tmp2[256], tmp3[32], *flag_str = NULL;
 	char *state="INACTIVE";
 	char *out = NULL, *watts_str = NULL;
 	uint32_t duration;

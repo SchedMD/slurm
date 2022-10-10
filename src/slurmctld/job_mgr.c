@@ -4355,7 +4355,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
 	long ntasks_per_tres;
 	int spec_count;
-	char *mem_type, buf[100], *signal_flags, *spec_type, *job_id;
+	char *mem_type, buf[256], *signal_flags, *spec_type, *job_id;
 
 	if (get_log_level() < LOG_LEVEL_DEBUG3)
 		return;
@@ -7065,8 +7065,8 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		goto fini;
 	}
 	if ((job_desc->deadline) && (job_desc->deadline != NO_VAL)) {
-		char time_str_now[32];
-		char time_str_deadline[32];
+		char time_str_now[256];
+		char time_str_deadline[256];
 		time_t now = time(NULL);
 		slurm_make_time_str(&job_desc->deadline, time_str_deadline,
 				    sizeof(time_str_deadline));
@@ -13224,7 +13224,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	}
 
 	if ((job_specs->deadline) && (!IS_JOB_RUNNING(job_ptr))) {
-		char time_str[32];
+		char time_str[256];
 		slurm_make_time_str(&job_ptr->deadline, time_str,
 				    sizeof(time_str));
 		if (job_specs->deadline < now) {
@@ -14020,7 +14020,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 
 	if (job_specs->begin_time) {
 		if (IS_JOB_PENDING(job_ptr) && detail_ptr) {
-			char time_str[32];
+			char time_str[256];
 			/*
 			 * Make sure this time is current, it does no good for
 			 * accounting to say this job could have started before

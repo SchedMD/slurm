@@ -150,7 +150,7 @@ static int _resv_name_width(reserve_info_t *resv_ptr)
 
 static void _print_reservation(reserve_info_t *resv_ptr, int width)
 {
-	char format[64], tmp1[32], tmp2[32], tmp3[32];
+	char format[64], tmp1[256], tmp2[256], tmp3[32];
 	char *state = "INACTIVE";
 	uint32_t duration;
 	time_t now = time(NULL);
@@ -1140,7 +1140,7 @@ int _print_timestamp(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
 	if (sinfo_data && sinfo_data->reason_time) {
-		char time_str[32];
+		char time_str[256];
 		slurm_make_time_str(&sinfo_data->reason_time,
 				    time_str, sizeof(time_str));
 		_print_str(time_str, width, right_justify, true);

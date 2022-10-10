@@ -827,8 +827,8 @@ extern List dump_config(void)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("BOOT_TIME");
-	key_pair->value = xmalloc(128);
-	slurm_make_time_str ((time_t *)&boot_time, key_pair->value, 128);
+	key_pair->value = xmalloc(256);
+	slurm_make_time_str ((time_t *)&boot_time, key_pair->value, 256);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

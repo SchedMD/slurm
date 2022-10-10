@@ -61,7 +61,7 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	int i;
 	int lc = 0;
 	jobcomp_job_rec_t *job = NULL;
-	char time_str[32];
+	char time_str[256];
 	time_t temp_time;
 	List job_list = list_create(jobcomp_destroy_job);
 

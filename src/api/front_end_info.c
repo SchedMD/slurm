@@ -68,7 +68,7 @@ slurm_print_front_end_info_msg (FILE * out,
 {
 	int i;
 	front_end_info_t *front_end_ptr;
-	char time_str[32];
+	char time_str[256];
 
 	front_end_ptr = front_end_info_msg_ptr->front_end_array;
 	slurm_make_time_str((time_t *)&front_end_info_msg_ptr->last_update,
@@ -114,7 +114,7 @@ slurm_sprint_front_end_table (front_end_info_t * front_end_ptr,
 {
 	uint32_t my_state = front_end_ptr->node_state;
 	char *drain_str = "";
-	char time_str[32];
+	char time_str[256];
 	char *out = NULL;
 
 	if (my_state & NODE_STATE_DRAIN) {

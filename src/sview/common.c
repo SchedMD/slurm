@@ -1824,7 +1824,7 @@ extern char *get_reason(void)
 		NULL);
 	int response = 0;
 	char *user_name = NULL;
-	char time_str[32];
+	char time_str[256];
 	time_t now = time(NULL);
 
 	gtk_window_set_type_hint(GTK_WINDOW(popup),

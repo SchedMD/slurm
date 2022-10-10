@@ -891,7 +891,7 @@ static void *_sched_agent(void *args)
 extern bool deadline_ok(job_record_t *job_ptr, char *func)
 {
 	time_t now;
-	char time_str_deadline[32];
+	char time_str_deadline[256];
 	bool fail_job = false;
 	time_t inter;
 

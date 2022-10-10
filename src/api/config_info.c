@@ -107,7 +107,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 			    partition_info_msg_t * part_info_ptr)
 {
 	int i = 0;
-	char time_str[32];
+	char time_str[256];
 	char *tmp_str = NULL;
 	char *base_path = NULL;
 	char *path = NULL;
@@ -465,7 +465,7 @@ static void _print_config_plugin_params_list(FILE* out, List l, char *title)
 void slurm_print_ctl_conf ( FILE* out,
 			    slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
 {
-	char time_str[32], tmp_str[128];
+	char time_str[32], tmp_str[256];
 	void *ret_list = NULL;
 	char *select_title = "Select Plugin Configuration";
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
@@ -517,7 +517,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 {
 	List ret_list = NULL;
 	config_key_pair_t *key_pair;
-	char tmp_str[128];
+	char tmp_str[256];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	int i;
 
@@ -1991,7 +1991,7 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 void slurm_print_slurmd_status (FILE* out,
 				slurmd_status_t * slurmd_status_ptr)
 {
-	char time_str[32];
+	char time_str[256];
 
 	if (slurmd_status_ptr == NULL )
 		return ;

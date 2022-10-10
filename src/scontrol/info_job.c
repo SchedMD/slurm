@@ -199,7 +199,7 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	node_info_t *node_info;
 	hostlist_t comp_nodes, down_nodes;
 	char *node_buf;
-	char time_str[32];
+	char time_str[256];
 	time_t completing_time = 0;
 
 	comp_nodes = hostlist_create(NULL);
@@ -265,7 +265,7 @@ scontrol_get_job_state(uint32_t job_id)
 		return NO_VAL16;
 	}
 	if (quiet_flag == -1) {
-		char time_str[32];
+		char time_str[256];
 		slurm_make_time_str((time_t *)&job_buffer_ptr->last_update,
 				    time_str, sizeof(time_str));
 		printf("last_update_time=%s, records=%d\n",
@@ -352,7 +352,7 @@ extern void scontrol_print_job(char * job_id_str)
 		return;
 	}
 	if (quiet_flag == -1) {
-		char time_str[32];
+		char time_str[256];
 		slurm_make_time_str ((time_t *)&job_buffer_ptr->last_update,
 				     time_str, sizeof(time_str));
 		printf ("last_update_time=%s, records=%d\n",
@@ -480,7 +480,7 @@ scontrol_print_step (char *job_step_id_str)
 	last_step_id = step_id.step_id;
 
 	if (quiet_flag == -1) {
-		char time_str[32];
+		char time_str[256];
 		slurm_make_time_str ((time_t *)&job_step_info_ptr->last_update,
 			             time_str, sizeof(time_str));
 		printf ("last_update_time=%s, records=%d\n",

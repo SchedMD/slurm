@@ -322,7 +322,7 @@ static List _create_front_end_info_list(
 	front_end_info_msg_t *front_end_info_ptr, int changed)
 {
 	char *upper = NULL;
-	char user[32], time_str[32];
+	char user[32], time_str[256];
 	static List info_list = NULL;
 	List last_list = NULL;
 	ListIterator last_list_itr = NULL;

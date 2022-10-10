@@ -485,8 +485,8 @@ extern int user_top(int argc, char **argv)
 		_merge_user_report(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
-		char start_char[20];
-		char end_char[20];
+		char start_char[256];
+		char end_char[256];
 		time_t my_start = user_cond->assoc_cond->usage_start;
 		time_t my_end = user_cond->assoc_cond->usage_end-1;
 

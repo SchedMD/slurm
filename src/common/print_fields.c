@@ -106,6 +106,7 @@ extern void print_fields_date(print_field_t *field, time_t value, int last)
 	int abs_len = abs(field->len);
 	char temp_char[abs_len+1];
 
+
 	slurm_make_time_str(&value, (char *)temp_char, sizeof(temp_char));
 	if (print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
 	   && last)

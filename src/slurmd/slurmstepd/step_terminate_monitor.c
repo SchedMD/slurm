@@ -123,7 +123,7 @@ static void *_monitor(void *arg)
 
 	rc = pthread_cond_timedwait(&cond, &lock, &ts);
 	if (rc == ETIMEDOUT) {
-		char entity[45], time_str[24];
+		char entity[45], time_str[256];
 		time_t now = time(NULL);
 
 		_call_external_program(step);

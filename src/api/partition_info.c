@@ -80,7 +80,7 @@ void slurm_print_partition_info_msg ( FILE* out,
 {
 	int i ;
 	partition_info_t * part_ptr = part_info_ptr->partition_array ;
-	char time_str[32];
+	char time_str[256];
 
 	slurm_make_time_str ((time_t *)&part_info_ptr->last_update, time_str,
 		sizeof(time_str));

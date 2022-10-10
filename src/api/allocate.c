@@ -543,7 +543,7 @@ List slurm_allocate_het_job_blocking(List job_req_list, time_t timeout,
 int slurm_job_will_run(job_desc_msg_t *req)
 {
 	will_run_response_msg_t *will_run_resp = NULL;
-	char buf[64];
+	char buf[256];
 	int rc;
 	char *cluster_name = NULL;
 	void *ptr = NULL;
@@ -607,7 +607,7 @@ extern int slurm_het_job_will_run(List job_req_list)
 {
 	job_desc_msg_t *req;
 	will_run_response_msg_t *will_run_resp;
-	char buf[64], *sep = "";
+	char buf[256], *sep = "";
 	int rc = SLURM_SUCCESS, inx = 0;
 	ListIterator iter, itr;
 	time_t first_start = (time_t) 0;

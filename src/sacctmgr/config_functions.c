@@ -92,7 +92,7 @@ static void _free_slurm_config(void)
 static void _print_slurm_config(void)
 {
 	time_t now = time(NULL);
-	char tmp_str[128], *user_name = NULL;
+	char tmp_str[256], *user_name = NULL;
 
 	slurm_make_time_str(&now, tmp_str, sizeof(tmp_str));
 	printf("Configuration data as of %s\n", tmp_str);

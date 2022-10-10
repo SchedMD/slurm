@@ -633,8 +633,8 @@ static List _get_cluster_list(int argc, char **argv, uint32_t *total_time,
 	}
 
 	if (print_fields_have_header) {
-		char start_char[20];
-		char end_char[20];
+		char start_char[256];
+		char end_char[256];
 		time_t my_start = cluster_cond->usage_start;
 		time_t my_end = cluster_cond->usage_end-1;
 
@@ -877,8 +877,8 @@ extern int cluster_account_by_user(int argc, char **argv)
 		_merge_cluster_reps(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
-		char start_char[20];
-		char end_char[20];
+		char start_char[256];
+		char end_char[256];
 		time_t my_start = assoc_cond->usage_start;
 		time_t my_end = assoc_cond->usage_end - 1;
 
@@ -1086,8 +1086,8 @@ extern int cluster_user_by_account(int argc, char **argv)
 		_merge_cluster_reps(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
-		char start_char[20];
-		char end_char[20];
+		char start_char[256];
+		char end_char[256];
 		time_t my_start = assoc_cond->usage_start;
 		time_t my_end = assoc_cond->usage_end-1;
 
@@ -1281,8 +1281,8 @@ extern int cluster_user_by_wckey(int argc, char **argv)
 		_merge_cluster_reps(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
-		char start_char[20];
-		char end_char[20];
+		char start_char[256];
+		char end_char[256];
 		time_t my_start = wckey_cond->usage_start;
 		time_t my_end = wckey_cond->usage_end-1;
 
@@ -1743,8 +1743,8 @@ extern int cluster_wckey_by_user(int argc, char **argv)
 		_merge_cluster_reps(slurmdb_report_cluster_list);
 
 	if (print_fields_have_header) {
-		char start_char[20];
-		char end_char[20];
+		char start_char[256];
+		char end_char[256];
 		time_t my_start = wckey_cond->usage_start;
 		time_t my_end = wckey_cond->usage_end-1;
 

@@ -703,7 +703,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 	    (step->nodeid == msg_target_node_id) && (msg_sent == 0) &&
 	    (step->state < SLURMSTEPD_STEP_ENDING)) {
 		time_t now = time(NULL);
-		char entity[45], time_str[24];
+		char entity[45], time_str[256];
 
 		if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 			snprintf(entity, sizeof(entity), "JOB %u",

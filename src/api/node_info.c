@@ -88,7 +88,7 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
 {
 	int i;
 	node_info_t * node_ptr = node_info_msg_ptr -> node_array ;
-	char time_str[32];
+	char time_str[256];
 
 	slurm_make_time_str ((time_t *)&node_info_msg_ptr->last_update,
 			     time_str, sizeof(time_str));
@@ -178,7 +178,7 @@ slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
 char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 {
 	uint32_t my_state = node_ptr->node_state;
-	char time_str[32];
+	char time_str[256];
 	char *out = NULL, *reason_str = NULL, *complete_state = NULL;
 	uint16_t alloc_cpus = 0;
 	int idle_cpus;

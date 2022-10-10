@@ -154,7 +154,7 @@ scontrol_print_node_list (char *node_list)
 	}
 
 	if (quiet_flag == -1) {
-		char time_str[32];
+		char time_str[256];
 		slurm_make_time_str ((time_t *)&node_info_ptr->last_update,
 			             time_str, sizeof(time_str));
 		printf ("last_update_time=%s, records=%d\n",
@@ -358,7 +358,7 @@ scontrol_print_front_end_list(char *node_list)
 	}
 
 	if (quiet_flag == -1) {
-		char time_str[32];
+		char time_str[256];
 		slurm_make_time_str((time_t *)&front_end_info_ptr->last_update,
 			            time_str, sizeof(time_str));
 		printf ("last_update_time=%s, records=%d\n",

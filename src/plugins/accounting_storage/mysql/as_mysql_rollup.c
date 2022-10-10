@@ -537,7 +537,7 @@ static void _setup_cluster_tres_usage(mysql_conn_t *mysql_conn,
 				      local_tres_usage_t *loc_tres,
 				      char **query)
 {
-	char start_char[20], end_char[20];
+	char start_char[256], end_char[256];
 	uint64_t total_used;
 
 	if (!loc_tres)

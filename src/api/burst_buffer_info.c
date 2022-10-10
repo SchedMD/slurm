@@ -226,7 +226,7 @@ static void _print_burst_buffer_resv(FILE *out,
 				     burst_buffer_resv_t* burst_buffer_ptr,
 				     int one_liner, bool verbose)
 {
-	char sz_buf[32], time_buf[64];
+	char sz_buf[32], time_buf[256];
 	char *out_buf = NULL, *user_name;
 
 	/****** Line 1 ******/

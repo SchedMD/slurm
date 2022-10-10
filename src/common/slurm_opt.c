@@ -763,7 +763,7 @@ static int arg_set_data_begin(slurm_opt_t *opt, const data_t *arg,
 }
 static char *arg_get_begin(slurm_opt_t *opt)
 {
-	char time_str[32];
+	char time_str[256];
 	slurm_make_time_str(&opt->begin, time_str, sizeof(time_str));
 	return xstrdup(time_str);
 }
@@ -1283,7 +1283,7 @@ static int arg_set_data_deadline(slurm_opt_t *opt, const data_t *arg,
 }
 static char *arg_get_deadline(slurm_opt_t *opt)
 {
-	char time_str[32];
+	char time_str[256];
 	slurm_make_time_str(&opt->deadline, time_str, sizeof(time_str));
 	return xstrdup(time_str);
 }

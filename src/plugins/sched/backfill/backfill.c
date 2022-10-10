@@ -269,7 +269,7 @@ static void _bf_map_free(void *item);
 static void _dump_job_sched(job_record_t *job_ptr, time_t end_time,
 			    bitstr_t *avail_bitmap)
 {
-	char begin_buf[32], end_buf[32], *node_list;
+	char begin_buf[256], end_buf[256], *node_list;
 
 	slurm_make_time_str(&job_ptr->start_time, begin_buf, sizeof(begin_buf));
 	slurm_make_time_str(&end_time, end_buf, sizeof(end_buf));
@@ -282,7 +282,7 @@ static void _dump_job_sched(job_record_t *job_ptr, time_t end_time,
 static void _dump_job_test(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 			   time_t start_time)
 {
-	char begin_buf[32], *node_list;
+	char begin_buf[256], *node_list;
 
 	if (start_time == 0)
 		strcpy(begin_buf, "NOW");
@@ -297,7 +297,7 @@ static void _dump_job_test(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 {
 	int i = 0;
-	char begin_buf[32], end_buf[32], *node_list, *licenses;
+	char begin_buf[256], end_buf[256], *node_list, *licenses;
 
 	info("=========================================");
 	while (1) {

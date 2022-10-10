@@ -338,8 +338,8 @@ static List _get_resv_list(int argc, char **argv,
 	}
 
 	if (print_fields_have_header) {
-		char start_char[20];
-		char end_char[20];
+		char start_char[256];
+		char end_char[256];
 		time_t my_start = resv_cond->time_start;
 		time_t my_end = resv_cond->time_end-1;
 

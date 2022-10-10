@@ -240,7 +240,7 @@ _gtk_print_config_plugin_params_list(List l, char *title, bool first,
 static void _layout_conf_ctl(GtkTreeStore *treestore,
 			     slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr)
 {
-	char time_str[32], tmp_str[128];
+	char time_str[256], tmp_str[300];
 	GtkTreeIter iter;
 	List ret_list = NULL;
 	char *select_title = "Select Plugin Configuration";
@@ -295,7 +295,7 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	config_key_pair_t *key_pair;
 	int update = 0;
 	time_t now = time(NULL);
-	char tmp_str[128], *user_name = NULL;
+	char tmp_str[256], *user_name = NULL;
 	List dbd_config_list = NULL;
 
 	/* first load accounting parms from slurm.conf */

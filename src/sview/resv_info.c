@@ -509,7 +509,7 @@ static void _layout_resv_record(GtkTreeView *treeview,
 				int update)
 {
 	GtkTreeIter iter;
-	char time_buf[20];
+	char time_buf[256];
 	reserve_info_t *resv_ptr = sview_resv_info->resv_ptr;
 	char *temp_char = NULL;
 
@@ -626,7 +626,7 @@ static void _layout_resv_record(GtkTreeView *treeview,
 static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 				GtkTreeStore *treestore)
 {
-	char tmp_duration[40], tmp_end[40], tmp_nodes[40], tmp_start[40];
+	char tmp_duration[40], tmp_end[256], tmp_nodes[40], tmp_start[256];
 	char tmp_cores[40], tmp_msd[40];
 	char *tmp_flags;
 	char *tmp_watts = NULL;

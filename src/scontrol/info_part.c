@@ -98,7 +98,7 @@ scontrol_print_part (char *partition_name)
 	}
 
 	if (quiet_flag == -1) {
-		char time_str[32];
+		char time_str[256];
 		slurm_make_time_str ((time_t *)&part_info_ptr->last_update,
 			       time_str, sizeof(time_str));
 		printf ("last_update_time=%s, records=%d\n",
