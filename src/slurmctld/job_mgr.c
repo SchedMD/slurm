@@ -14845,6 +14845,9 @@ fini:
 	/* This was a local variable, so set it back to NULL */
 	job_desc->tres_req_cnt = NULL;
 
+	if (!list_count(job_ptr->gres_list_req))
+		FREE_NULL_LIST(job_ptr->gres_list_req);
+
 	FREE_NULL_LIST(gres_list);
 	FREE_NULL_LIST(license_list);
 	if (update_accounting) {
