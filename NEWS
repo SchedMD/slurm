@@ -100,6 +100,7 @@ documents those changes that are of interest to users and administrators.
     nodes.
  -- Update nvml plugin to match the unique id format for MIG devices in new
     Nvidia drivers.
+ -- Fix segfault on backup slurmdbd if no QoS is present in DB.
 
 * Changes in Slurm 22.05.4
 ==========================
