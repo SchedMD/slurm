@@ -1211,10 +1211,10 @@ static char *_setup_assoc_table_query(slurmdb_assoc_cond_t *assoc_cond,
 	}
 
 	/*
-	* If we are looking for with_sub_accts, another join after the qos
-	* subquery is necessary, as filtering the parents during it would
-	* remove some inherited qos values.
-	*/
+	 * If we are looking for with_sub_accts, another join after the qos
+	 * subquery is necessary, as filtering the parents during it would
+	 * remove some inherited qos values.
+	 */
 	if (assoc_cond && assoc_cond->with_sub_accts)
 		xstrfmtcat(with_sub_accts_str,
 			   " join \"%s_%s\" as t2 on "
@@ -1232,6 +1232,7 @@ static char *_setup_assoc_table_query(slurmdb_assoc_cond_t *assoc_cond,
 	xfree(selection_target);
 	xfree(qos_filter);
 	xfree(with_sub_accts_str);
+
 	return query;
 }
 
