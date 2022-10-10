@@ -96,6 +96,8 @@ documents those changes that are of interest to users and administrators.
     using the 'scontrol top' command.
  -- slurmrestd - correct issue where larger requests could result in a single
     byte getting removed from inside of the POST request.
+ -- Fix regression in task count calculation for --ntasks-per-gpu with multiple
+    nodes.
 
 * Changes in Slurm 22.05.4
 ==========================
