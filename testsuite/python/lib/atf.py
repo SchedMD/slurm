@@ -24,6 +24,10 @@ import traceback
 # ATF module functions
 ##############################################################################
 
+default_command_timeout = 60
+default_polling_timeout = 15
+
+
 def node_range_to_list(node_expression):
     """Converts a node range expression into a list of node names.
 
@@ -73,7 +77,7 @@ def list_to_range(numeric_list):
     return re.sub(r'^\[(.*)\]$', r'\1', node_range_expression)
 
 
-def run_command(command, fatal=False, timeout=60, quiet=False, chdir=None, user=None, input=None, xfail=False):
+def run_command(command, fatal=False, timeout=default_command_timeout, quiet=False, chdir=None, user=None, input=None, xfail=False):
     """Executes a command and returns a dictionary result.
 
     Args:
@@ -212,7 +216,7 @@ def run_command_exit(command, **run_command_kwargs):
     return results['exit_code']
 
 
-def repeat_until(callable, condition, timeout=15, poll_interval=None, fatal=False):
+def repeat_until(callable, condition, timeout=default_polling_timeout, poll_interval=None, fatal=False):
     """Repeats a callable until a condition is met or it times out.
 
     The callable returns an object that the condition operates on.
@@ -223,14 +227,14 @@ def repeat_until(callable, condition, timeout=15, poll_interval=None, fatal=Fals
         condition (callable): A callable object that returns a boolean. This
             function will return True when the condition call returns True.
         timeout (integer): If timeout number of seconds expires before the
-            condition is met, return False. The default timeout is 15 seconds.
+            condition is met, return False.
         poll_interval (float): Number of seconds to wait between condition
             polls. This may be a decimal fraction. The default poll interval
             depends on the timeout used, but varies between .1 and 1 seconds.
         fatal (boolean): If True, a timeout will result in the test failing.
 
     Example:
-        >>> repeat_until(lambda : random.randint(1,10), lambda n: n == 5, timeout=10, poll_interval=1)
+        >>> repeat_until(lambda : random.randint(1,10), lambda n: n == 5, timeout=30, poll_interval=1)
         True
     """
 
@@ -1005,7 +1009,7 @@ def get_user_name():
     return pwd.getpwuid(os.getuid()).pw_name
 
 
-def cancel_jobs(job_list, timeout=5, poll_interval=.1, fatal=False, quiet=False):
+def cancel_jobs(job_list, timeout=default_polling_timeout, poll_interval=.1, fatal=False, quiet=False):
     """Cancels a list of jobs and waits for them to complete.
 
     Args:
@@ -1035,7 +1039,7 @@ def cancel_jobs(job_list, timeout=5, poll_interval=.1, fatal=False, quiet=False)
     return True
 
 
-def cancel_all_jobs(fatal=True, timeout=5, quiet=False):
+def cancel_all_jobs(timeout=default_polling_timeout, poll_interval=.1, fatal=False, quiet=False):
     """Cancels all jobs belonging to the test user.
 
     Args:
@@ -1052,8 +1056,7 @@ def cancel_all_jobs(fatal=True, timeout=5, quiet=False):
     if results['exit_code'] != 0 and results['exit_code'] != 60:
         pytest.fail(f"Failure cancelling jobs: {results['stderr']}")
 
-    # Inherits timeout from repeat_until
-    return repeat_command_until(f"squeue -u {user_name} --noheader", lambda results: results['stdout'] == '', fatal=fatal, timeout=timeout, quiet=quiet)
+    return repeat_command_until(f"squeue -u {user_name} --noheader", lambda results: results['stdout'] == '', timeout=timeout, poll_interval=poll_interval, fatal=fatal, quiet=quiet)
 
 
 def is_integer(value):
@@ -1598,7 +1601,7 @@ def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
         return default
 
 
-def wait_for_job_state(job_id, desired_job_state, timeout=5, poll_interval=None, fatal=False, quiet=False):
+def wait_for_job_state(job_id, desired_job_state, timeout=default_polling_timeout, poll_interval=None, fatal=False, quiet=False):
     """Waits for the specified job state to be reached.
 
     This function polls the job state every poll interval seconds, waiting up
@@ -2459,5 +2462,3 @@ if results.returncode == 0:
         properties['sudo-rights'] = True
 else:
         properties['sudo-rights'] = False
-
-
