@@ -17864,9 +17864,10 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 	uint32_t job_id = 0, task_id = 0;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
+	uid_t job_uid = uid;
 
 	if (validate_operator(uid)) {
-		uid = 0;
+		job_uid = 0;
 	} else {
 		bool disable_user_top = true;
 		if (xstrcasestr(slurm_conf.sched_params, "enable_user_top"))
@@ -17921,7 +17922,7 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
-	rc = _set_top(top_job_list, uid);
+	rc = _set_top(top_job_list, job_uid);
 
 reply:	FREE_NULL_LIST(top_job_list);
 	xfree(job_str_tmp);

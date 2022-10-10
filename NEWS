@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix gcc 12.2.1 compile errors.
  -- Fix future magnetic reservations preventing heterogeneous jobs from
     starting.
+ -- Prevent incorrect error message from being generated for operator/admins
+    using the 'scontrol top' command.
 
 * Changes in Slurm 22.05.4
 ==========================
