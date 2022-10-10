@@ -685,7 +685,7 @@ extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt)
 	usage =	xmalloc(sizeof(slurmdb_assoc_usage_t));
 
 	usage->level_shares = NO_VAL;
-	usage->shares_norm = NO_VAL64;
+	usage->shares_norm = (double)NO_VAL64;
 	usage->usage_efctv = 0;
 	usage->usage_norm = (long double)NO_VAL;
 	usage->usage_raw = 0;

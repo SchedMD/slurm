@@ -101,6 +101,7 @@ documents those changes that are of interest to users and administrators.
  -- Update nvml plugin to match the unique id format for MIG devices in new
     Nvidia drivers.
  -- Fix segfault on backup slurmdbd if no QoS is present in DB.
+ -- Fix clang 11 compile errors.
 
 * Changes in Slurm 22.05.4
 ==========================
