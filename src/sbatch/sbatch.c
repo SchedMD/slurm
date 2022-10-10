@@ -645,10 +645,20 @@ static void *_get_script_buffer(const char *filename, int *size)
 			error("Unable to open file %s", filename);
 			goto fail;
 		}
+		/* Quick check against absurdly large file sizes */
+		if (fd != STDIN_FILENO) {
+			struct stat st;
+			if (fstat(fd, &st) == -1)
+				fatal("Cannot stat %s: %m", filename);
+			if (st.st_size > MAX_BATCH_SCRIPT_SIZE)
+				fatal("Script file %s is too large",
+				      filename);
+			buf_size = st.st_size + 1;
+		}
 	}
 
 	/*
-	 * Then read in the script.
+	 * Then read in the script, in chunks of BUFSIZE bytes.
 	 */
 	buf = ptr = xmalloc(buf_size);
 	buf_left = buf_size;
@@ -656,7 +666,24 @@ static void *_get_script_buffer(const char *filename, int *size)
 		buf_left -= tmp_size;
 		script_size += tmp_size;
 		if (buf_left == 0) {
-			buf_size += BUFSIZ;
+			if (buf_size >= MAX_BATCH_SCRIPT_SIZE) {
+				if (filename)
+					close(fd);
+				xfree(buf);
+				if (filename)
+					fatal("Script %s is too big, read %d > %d bytes.",
+					      filename, script_size,
+					      MAX_BATCH_SCRIPT_SIZE);
+				else
+					fatal("Script from STDIN is too big, read %d > %d bytes.",
+					      script_size,
+					      MAX_BATCH_SCRIPT_SIZE);
+			}
+
+			if (buf_size < (MAX_BATCH_SCRIPT_SIZE - BUFSIZ))
+				buf_size += BUFSIZ;
+			else
+				buf_size = MAX_BATCH_SCRIPT_SIZE;
 			xrealloc(buf, buf_size);
 		}
 		ptr = buf + script_size;
