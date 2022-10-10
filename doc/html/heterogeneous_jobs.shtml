@@ -630,6 +630,10 @@ partition for the first job component, preventing the scheduler from being
 able to fulfill the second request, resulting in a job that is never able to
 start.</p>
 
+<p>Magnetic reservations cannot "attract" heterogeneous jobs - heterogeneous
+jobs will only run in magnetic reservations if they explicitly request the
+reservation.</p>
+
 <p>Job arrays of heterogeneous jobs are not supported.</p>
 
 <p>The srun command's --no-allocate option is not supported
@@ -781,6 +785,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 10 February 2022</p>
+<p style="text-align:center;">Last modified 10 October 2022</p>
 
 <!--#include virtual="footer.txt"-->
