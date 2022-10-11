@@ -276,46 +276,6 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 
 	step_req->num_tasks = opt_local->ntasks;
 
-	step_req->plane_size = NO_VAL16;
-	switch (opt_local->distribution & SLURM_DIST_NODESOCKMASK) {
-	case SLURM_DIST_BLOCK:
-	case SLURM_DIST_ARBITRARY:
-	case SLURM_DIST_CYCLIC:
-	case SLURM_DIST_CYCLIC_CYCLIC:
-	case SLURM_DIST_CYCLIC_BLOCK:
-	case SLURM_DIST_BLOCK_CYCLIC:
-	case SLURM_DIST_BLOCK_BLOCK:
-	case SLURM_DIST_CYCLIC_CFULL:
-	case SLURM_DIST_BLOCK_CFULL:
-		step_req->task_dist = opt_local->distribution;
-		if (opt_local->ntasks_per_node != NO_VAL)
-			step_req->plane_size = opt_local->ntasks_per_node;
-		break;
-	case SLURM_DIST_PLANE:
-		step_req->task_dist = SLURM_DIST_PLANE;
-		step_req->plane_size = opt_local->plane_size;
-		break;
-	default:
-	{
-		uint16_t base_dist;
-		/* Leave distribution set to unknown if taskcount <= nodes and
-		 * memory is set to 0. step_mgr will handle the mem=0 case. */
-		if (!opt_local->mem_per_cpu || !opt_local->pn_min_memory ||
-		    srun_opt->interactive)
-			base_dist = SLURM_DIST_UNKNOWN;
-		else
-			base_dist = (step_req->num_tasks <=
-				     step_req->min_nodes) ?
-				SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
-		opt_local->distribution &= SLURM_DIST_STATE_FLAGS;
-		opt_local->distribution |= base_dist;
-		step_req->task_dist = opt_local->distribution;
-		if (opt_local->ntasks_per_node != NO_VAL)
-			step_req->plane_size = opt_local->ntasks_per_node;
-		break;
-	}
-	}
-
 	if (opt_local->mem_per_cpu != NO_VAL64)
 		step_req->pn_min_memory = opt_local->mem_per_cpu | MEM_PER_CPU;
 	else if (opt_local->pn_min_memory != NO_VAL64)
@@ -421,6 +381,47 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	if (rc) {
 		error("%s", slurm_strerror(rc));
 		return NULL;
+	}
+
+	step_req->plane_size = NO_VAL16;
+
+	switch (opt_local->distribution & SLURM_DIST_NODESOCKMASK) {
+	case SLURM_DIST_BLOCK:
+	case SLURM_DIST_ARBITRARY:
+	case SLURM_DIST_CYCLIC:
+	case SLURM_DIST_CYCLIC_CYCLIC:
+	case SLURM_DIST_CYCLIC_BLOCK:
+	case SLURM_DIST_BLOCK_CYCLIC:
+	case SLURM_DIST_BLOCK_BLOCK:
+	case SLURM_DIST_CYCLIC_CFULL:
+	case SLURM_DIST_BLOCK_CFULL:
+		step_req->task_dist = opt_local->distribution;
+		if (opt_local->ntasks_per_node != NO_VAL)
+			step_req->plane_size = opt_local->ntasks_per_node;
+		break;
+	case SLURM_DIST_PLANE:
+		step_req->task_dist = SLURM_DIST_PLANE;
+		step_req->plane_size = opt_local->plane_size;
+		break;
+	default:
+	{
+		uint16_t base_dist;
+		/* Leave distribution set to unknown if taskcount <= nodes and
+		 * memory is set to 0. step_mgr will handle the mem=0 case. */
+		if (!opt_local->mem_per_cpu || !opt_local->pn_min_memory ||
+		    srun_opt->interactive)
+			base_dist = SLURM_DIST_UNKNOWN;
+		else
+			base_dist = (step_req->num_tasks <=
+				     step_req->min_nodes) ?
+				SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
+		opt_local->distribution &= SLURM_DIST_STATE_FLAGS;
+		opt_local->distribution |= base_dist;
+		step_req->task_dist = opt_local->distribution;
+		if (opt_local->ntasks_per_node != NO_VAL)
+			step_req->plane_size = opt_local->ntasks_per_node;
+		break;
+	}
 	}
 
 	/*
