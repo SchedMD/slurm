@@ -4633,6 +4633,23 @@ char *slurm_sprint_reservation_info(reserve_info_t *resv_ptr, int one_liner);
 extern void slurm_free_reservation_info_msg(reserve_info_msg_t *resv_info_ptr);
 
 /*****************************************************************************\
+ *	SLURM PING/RECONFIGURE/SHUTDOWN STRUCTURES
+\*****************************************************************************/
+
+typedef struct {
+	char *hostname; /* symlink - do not xfree() */
+	bool pinged; /* true on successful ping */
+	long latency; /* time to ping or timeout on !pinged */
+	/*
+	 * controller offset which defines default mode:
+	 * 0: primary
+	 * 1: backup
+	 * 2+: backup#
+	 */
+	int offset;
+} controller_ping_t;
+
+/*****************************************************************************\
  *	SLURM PING/RECONFIGURE/SHUTDOWN FUNCTIONS
 \*****************************************************************************/
 
@@ -4642,6 +4659,12 @@ extern void slurm_free_reservation_info_msg(reserve_info_msg_t *resv_info_ptr);
  * RET 0 or a slurm error code
  */
 extern int slurm_ping(int dest);
+
+/*
+ * RET array of each ping result (NULL terminated).
+ * Caller must xfree() the result.
+ */
+extern controller_ping_t *ping_all_controllers();
 
 /*
  * slurm_reconfigure - issue RPC to have Slurm controller (slurmctld)

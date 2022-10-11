@@ -48,6 +48,7 @@
 #include "src/common/forward.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 
 static int _send_message_controller(int dest, slurm_msg_t *req);
@@ -92,6 +93,27 @@ extern int slurm_ping(int dest)
 	rc = _send_message_controller(dest, &request_msg);
 
 	return rc;
+}
+
+extern controller_ping_t *ping_all_controllers(void)
+{
+	controller_ping_t *pings =
+		xcalloc(slurm_conf.control_cnt + 1, sizeof(*pings));
+
+	for (int i = 0; i < slurm_conf.control_cnt; i++) {
+		DEF_TIMERS;
+
+		pings[i].hostname = slurm_conf.control_machine[i];
+		pings[i].offset = i;
+
+		START_TIMER;
+		pings[i].pinged = !slurm_ping(i);
+		END_TIMER;
+
+		pings[i].latency = DELTA_TIMER;
+	}
+
+	return pings;
 }
 
 /*
