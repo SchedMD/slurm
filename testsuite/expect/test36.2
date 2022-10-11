@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set file_in     "$test_dir/input"
 set job_id      0
 
 if {[file executable $sbatch] == 0} {
@@ -43,46 +42,13 @@ proc cleanup {} {
 	cancel_job $job_id
 }
 
-spawn $bjobs
-expect {
-	-re "No unfinished job found" {
-		exp_continue
-	}
-	-re "Problem loading jobs" {
-		fail "Problem loading jobs"
-	}
-	timeout {
-		fail "bjobs not responding"
-	}
-	eof {
-		wait
-	}
-}
-
+# Test that bjobs with no arguments does not fail or timeout
+run_command -fail "$bjobs"
 
 #
 # Submit a slurm job
 #
-make_bash_script $file_in "
-  $bin_sleep 10
-"
-
-spawn $sbatch -N1 -o /dev/null -t1 $file_in
-expect {
-        -re "Submitted batch job ($number)" {
-                set job_id $expect_out(1,string)
-                exp_continue
-        }
-        timeout {
-                fail "sbatch not responding"
-        }
-        eof {
-                wait
-        }
-}
-if { $job_id == 0 } {
-        fail "Failed to submit job"
-}
+set job_id [submit_job -fail "-N1 -o /dev/null -t1 --wrap='$bin_sleep 10'"]
 
 if {[string length $job_id] > 7} {
         fail "Jobid is longer than 7 characters"
@@ -92,8 +58,7 @@ if {[string length $job_id] > 7} {
 # Test bjobs <jobid> wrapper
 #
 if [wait_for -pollinterval .1 -timeout 2 {$matches == 1} {
-	set matches [regexp $job_id [run_command_output "$bjobs $job_id"]]
+	set matches [regexp $job_id [run_command_output -fail "$bjobs $job_id"]]
 }] {
 	fail "bjobs ($job_id) does not work"
 }
-
