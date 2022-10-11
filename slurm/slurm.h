@@ -5056,6 +5056,7 @@ extern int slurm_request_crontab(uid_t uid, char **crontab,
 
 typedef struct {
 	char *err_msg;
+	char *job_submit_user_msg;
 	char *failed_lines;
 	uint32_t *jobids;
 	uint32_t jobids_count;

@@ -6253,6 +6253,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	}
 
 	resp_msg.err_msg = NULL;
+	resp_msg.job_submit_user_msg = NULL;
 	resp_msg.failed_lines = NULL;
 	resp_msg.return_code = SLURM_SUCCESS;
 

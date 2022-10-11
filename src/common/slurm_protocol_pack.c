@@ -12198,6 +12198,7 @@ static void _pack_crontab_update_response_msg(const slurm_msg_t *smsg,
 
 	if (smsg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		packstr(msg->err_msg, buffer);
+		packstr(msg->job_submit_user_msg, buffer);
 		packstr(msg->failed_lines, buffer);
 		pack32_array(msg->jobids, msg->jobids_count, buffer);
 		pack32(msg->return_code, buffer);
@@ -12217,6 +12218,8 @@ static int _unpack_crontab_update_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 	if (smsg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg->err_msg, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->job_submit_user_msg, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&msg->failed_lines, &uint32_tmp, buffer);
 		safe_unpack32_array(&msg->jobids, &msg->jobids_count, buffer);
 		safe_unpack32(&msg->return_code, buffer);

@@ -576,6 +576,10 @@ edit:
 		goto edit;
 	}
 
+	if (response->job_submit_user_msg)
+		print_multi_line_string(response->job_submit_user_msg, -1,
+					LOG_LEVEL_INFO);
+
 	for (int i = 0; i < response->jobids_count; i++)
 		cli_filter_g_post_submit(0, response->jobids[i], NO_VAL);
 

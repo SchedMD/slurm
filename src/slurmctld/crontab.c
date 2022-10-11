@@ -55,6 +55,7 @@ typedef struct {
 	uid_t uid;
 	gid_t gid;
 	char **err_msg;
+	char **job_submit_user_msg;
 	char **failed_lines;
 	List new_jobs;
 	uint16_t protocol_version;
@@ -99,7 +100,7 @@ static int _handle_job(void *x, void *y)
 
 	/* give job_submit a chance to play with it first */
 	args->return_code = validate_job_create_req(job, args->uid,
-						    args->err_msg);
+						    args->job_submit_user_msg);
 
 	if (args->return_code) {
 		xstrfmtcat(*args->failed_lines, "%u-%u",
@@ -241,6 +242,7 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 		args.uid = request->uid;
 		args.gid = request->gid;
 		args.err_msg = &response->err_msg;
+		args.job_submit_user_msg = &response->job_submit_user_msg;
 		args.failed_lines = &response->failed_lines;
 		args.new_jobs = list_create(NULL);
 		args.protocol_version = protocol_version;
