@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix clang 11 compile errors.
  -- Fix task distribution calculations across sockets with
     --distribution=cyclic.
+ -- Fix task distribution calculations with --ntasks-per-gpu specified without
+    an explicit --ntasks value.
 
 * Changes in Slurm 22.05.4
 ==========================
