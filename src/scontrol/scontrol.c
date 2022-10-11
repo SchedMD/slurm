@@ -42,16 +42,20 @@
 #include "config.h"
 
 #include "scontrol.h"
+#include "src/common/data.h"
 #include "src/common/proc_args.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/serializer.h"
 
 #define OPT_LONG_HIDE    0x102
 #define OPT_LONG_LOCAL   0x103
 #define OPT_LONG_SIBLING 0x104
 #define OPT_LONG_FEDR    0x105
 #define OPT_LONG_AUTOCOMP 0x106
+#define OPT_LONG_JSON 0x107
+#define OPT_LONG_YAML 0x108
 
 /* Global externs from scontrol.h */
 char *command_name;
@@ -69,6 +73,7 @@ int sibling_flag = 0;   /* show sibling jobs (if any fed job). */
 int verbosity = 0;	/* count of "-v" options */
 uint32_t cluster_flags; /* what type of cluster are we talking to */
 uint32_t euid = SLURM_AUTH_NOBODY; /* proxy request as user */
+const char *mime_type = NULL; /* mimetype if we are using data_parser */
 
 front_end_info_msg_t *old_front_end_info_ptr = NULL;
 job_info_msg_t *old_job_info_ptr = NULL;
@@ -111,6 +116,7 @@ int main(int argc, char **argv)
 		{"future",   0, 0, 'F'},
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},
+		{"json", 0, 0, OPT_LONG_JSON},
 		{"local",    0, 0, OPT_LONG_LOCAL},
 		{"oneliner", 0, 0, 'o'},
 		{"quiet",    0, 0, 'Q'},
@@ -119,6 +125,7 @@ int main(int argc, char **argv)
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
+		{"yaml", 0, 0, OPT_LONG_YAML},
 		{NULL,       0, 0, 0}
 	};
 
@@ -222,6 +229,19 @@ int main(int argc, char **argv)
 		case OPT_LONG_AUTOCOMP:
 			suggest_completion(long_options, optarg);
 			exit(0);
+		case OPT_LONG_JSON :
+			mime_type = MIME_TYPE_JSON;
+			if (data_init())
+				fatal("data_init() failed");
+			if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
+				fatal("JSON plugin load failure");
+			break;
+		case OPT_LONG_YAML :
+			mime_type = MIME_TYPE_YAML;
+			if (data_init())
+				fatal("data_init() failed");
+			if (serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL))
+				fatal("YAML plugin load failure");
 			break;
 		default:
 			exit_code = 1;
@@ -262,8 +282,14 @@ int main(int argc, char **argv)
 		}
 		xfree(input_fields);
 	}
+
+#ifdef MEMORY_LEAK_DEBUG
 	FREE_NULL_LIST(clusters);
 	slurm_conf_destroy();
+	serializer_g_fini();
+	data_fini();
+#endif /* MEMORY_LEAK_DEBUG */
+
 	exit(exit_code);
 }
 
@@ -1945,6 +1971,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      -F, --future   Report information about nodes in \"FUTURE\" state.    \n\
      -h, --help     Equivalent to \"help\" command                         \n\
      --hide         Equivalent to \"hide\" command                         \n\
+     --json         Produce JSON output                                    \n\
      --local        Report information only about jobs on the local cluster.\n\
 	            Overrides --federation.                                \n\
      -M, --cluster  Equivalent to \"cluster\" command. Implies --local.    \n\
@@ -1956,6 +1983,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      -u,--uid       Update job as user \"uid\" instead of the invoking user.\n\
      -v, --verbose  Equivalent to \"verbose\" command                      \n\
      -V, --version  Equivalent to \"version\" command                      \n\
+     --yaml         Produce YAML output                                    \n\
 									   \n\
   <keyword> may be omitted from the execute line and scontrol will execute \n\
   in interactive mode. It will process commands as entered until explicitly\n\
