@@ -11008,16 +11008,9 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 			packstr(detail_ptr->work_dir, buffer);
 			packstr(detail_ptr->dependency, buffer);
 
-			if (detail_ptr->argv) {
-				char *cmd_line = NULL, *pos = NULL;
-				for (i = 0; detail_ptr->argv[i]; i++) {
-					xstrfmtcatat(cmd_line, &pos, "%s%s",
-					             (i ? " " : ""),
-						     detail_ptr->argv[i]);
-				}
-				packstr(cmd_line, buffer);
-				xfree(cmd_line);
-			} else
+			if (detail_ptr->argv)
+				packstr(detail_ptr->argv[0], buffer);
+			else
 				packnull(buffer);
 
 			if (IS_JOB_COMPLETING(job_ptr) && job_ptr->cpu_cnt) {

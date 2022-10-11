@@ -82,6 +82,8 @@ documents those changes that are of interest to users and administrators.
     consolidating like config records.
  -- Expose argc and entire argv to job_submit and cli_filter plugins for jobs
     submitted via salloc/srun or sbatch <script> (not via --wrap).
+ -- Job command/script name is now packed with no arguments, thus clients
+    displaying job information will only show the command/script name.
 
 * Changes in Slurm 22.05.6
 ==========================
