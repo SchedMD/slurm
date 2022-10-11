@@ -518,6 +518,15 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 			CRAY_ERR("snprintf failed. Return code: %d", rc);
 			return SLURM_ERROR;
 		}
+	} else if (job->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+		/* Interactive Job Step */
+		rc = snprintf(path, sizeof(path),
+			      "/dev/cpuset/slurm/uid_%u/job_%u/step_interactive",
+			      job->uid, jobid);
+		if (rc < 0) {
+			CRAY_ERR("snprintf failed. Return code: %d", rc);
+			return SLURM_ERROR;
+		}
 	} else {
 		// Normal Job Step
 
