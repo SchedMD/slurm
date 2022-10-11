@@ -259,9 +259,8 @@ typedef struct slurm_conf_partition {
 				 * NULL indicates all */
 	char *deny_qos;		/* comma delimited list of denied qos,
 				 * NULL indicates all */
-	uint16_t disable_root_jobs; /* if set then user root can't run
-				     * jobs if NO_VAL use global
-				     * default */
+	uint8_t disable_root_jobs; /* if set then user root can't run jobs
+				    * if NO_VAL8, use global default */
 	uint16_t exclusive_user; /* 1 if node allocations by user */
 	uint32_t grace_time;	/* default grace time for partition */
 	bool     hidden_flag;	/* 1 if hidden by default */

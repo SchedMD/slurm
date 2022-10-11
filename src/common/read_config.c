@@ -1701,7 +1701,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
  */
 static void _init_conf_part(slurm_conf_partition_t *conf_part)
 {
-	conf_part->disable_root_jobs = NO_VAL16;
+	conf_part->disable_root_jobs = NO_VAL8;
 
 	/* sync with part_record_t */
 	conf_part->default_time = NO_VAL;
