@@ -5771,8 +5771,8 @@ static int _process_persist_conn(void *arg,
 			DEF_TIMERS;
 			START_TIMER;
 			_slurm_rpc_accounting_update_msg(&msg);
-			record_rpc_stats(&msg, DELTA_TIMER);
 			END_TIMER;
+			record_rpc_stats(&msg, DELTA_TIMER);
 		} else {
 			slurm_send_rc_msg(&msg, EINVAL);
 		}
