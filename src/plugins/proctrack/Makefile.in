@@ -468,8 +468,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@HAVE_NATIVE_CRAY_TRUE@CRAY = cray_aries
-SUBDIRS = $(CRAY) linuxproc pgid $(am__append_1)
+SUBDIRS = cray_aries linuxproc pgid $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

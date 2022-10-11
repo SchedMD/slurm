@@ -49,7 +49,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef HAVE_NATIVE_CRAY
 #include <job.h>	/* Cray's job module component */
+#else
+#define jid_t int
+#endif
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -88,9 +92,9 @@ extern bool proctrack_p_has_pid (uint64_t cont_id, pid_t pid);
 static void *_create_container_thread(void *args)
 {
 	stepd_step_rec_t *step = (stepd_step_rec_t *)args;
-
+#ifdef HAVE_NATIVE_CRAY
 	step->cont_id = (uint64_t)job_create(0, step->uid, 0);
-
+#endif
 	/* Signal the container_create we are done */
 	slurm_mutex_lock(&notify_mutex);
 
@@ -167,7 +171,9 @@ extern int proctrack_p_create(stepd_step_rec_t *step)
 		 * instead of using the thread method below.
 		 */
 		if (proctrack_forked) {
+#ifdef HAVE_NATIVE_CRAY
 			step->cont_id = (uint64_t) job_create(0, step->uid, 0);
+#endif
 			goto endit;
 		}
 
@@ -228,7 +234,6 @@ int proctrack_p_add(stepd_step_rec_t *step, pid_t pid)
 	char fname[64];
 	int fd;
 	uint32_t jobid;
-#endif
 	int count = 0;
 
 	DEF_TIMERS;
@@ -267,7 +272,6 @@ try_again:
 	}
 	_end_container_thread();
 
-#ifdef HAVE_NATIVE_CRAY
 	// Set apid for this pid
 	if (step->het_job_id && (step->het_job_id != NO_VAL))
 		jobid = step->het_job_id;
@@ -292,16 +296,17 @@ try_again:
 		return SLURM_ERROR;
 	}
 	TEMP_FAILURE_RETRY(close(fd));
-#endif
 	END_TIMER;
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
+#endif
 
 	return SLURM_SUCCESS;
 }
 
 int proctrack_p_signal(uint64_t id, int sig)
 {
+#ifdef HAVE_NATIVE_CRAY
 	DEF_TIMERS;
 	START_TIMER;
 	if (!threadid) {
@@ -317,11 +322,13 @@ int proctrack_p_signal(uint64_t id, int sig)
 	END_TIMER;
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
+#endif
 	return (SLURM_SUCCESS);
 }
 
 int proctrack_p_destroy(uint64_t id)
 {
+#ifdef HAVE_NATIVE_CRAY
 	int status;
 	DEF_TIMERS;
 	START_TIMER;
@@ -338,12 +345,14 @@ int proctrack_p_destroy(uint64_t id)
 	END_TIMER;
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
+#endif
 	return SLURM_SUCCESS;
 }
 
 uint64_t proctrack_p_find(pid_t pid)
 {
-	jid_t jid;
+	jid_t jid = 0;
+#ifdef HAVE_NATIVE_CRAY
 	DEF_TIMERS;
 	START_TIMER;
 
@@ -353,33 +362,38 @@ uint64_t proctrack_p_find(pid_t pid)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
+#endif
 	return ((uint64_t) jid);
 }
 
 bool proctrack_p_has_pid (uint64_t cont_id, pid_t pid)
 {
+#ifdef HAVE_NATIVE_CRAY
 	jid_t jid;
 
 	if ((jid = job_getjid(pid)) == (jid_t) -1)
 		return false;
 	if ((uint64_t)jid != cont_id)
 		return false;
-
+#endif
 	return true;
 }
 
 int proctrack_p_wait(uint64_t id)
 {
+#ifdef HAVE_NATIVE_CRAY
 	int status;
 
 	if (!threadid && job_waitjid((jid_t) id, &status, 0) == (jid_t)-1)
 		return SLURM_ERROR;
 
+#endif
 	return SLURM_SUCCESS;
 }
 
 int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
+#ifdef HAVE_NATIVE_CRAY
 	int pidcnt, bufsize;
 	pid_t *p;
 	DEF_TIMERS;
@@ -424,5 +438,6 @@ int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
+#endif
 	return SLURM_SUCCESS;
 }
