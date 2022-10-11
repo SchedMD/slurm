@@ -1645,6 +1645,13 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 		}
 	}
 
+	/*
+	 * Don't count queue records for magnetic reservation against
+	 * backfill limits.
+	 */
+	if (job_ptr->bit_flags & JOB_MAGNETIC)
+		return false;
+
 	/* Increment our user/partition limit counters as needed */
 	if (user_part_usage)
 		user_part_usage->count++;
@@ -2102,9 +2109,17 @@ next_task:
 			job_ptr->preempt_in_progress = false;
 		}
 
-		job_test_count++;
-		slurmctld_diag_stats.bf_last_depth++;
-		already_counted = false;
+		/*
+		 * Don't count queue records for magnetic reservation against
+		 * backfill limits.
+		 */
+		if (job_ptr->bit_flags & JOB_MAGNETIC) {
+			already_counted = true;
+		} else {
+			job_test_count++;
+			slurmctld_diag_stats.bf_last_depth++;
+			already_counted = false;
+		}
 
 		if (!IS_JOB_PENDING(job_ptr) ||	/* Started in other partition */
 		    (job_ptr->priority == 0))	/* Job has been held */
