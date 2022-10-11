@@ -1966,7 +1966,8 @@ static bool _handle_core_select(step_record_t *step_ptr,
 	 * distribute to sockets.
 	 */
 	if (step_ptr->step_layout &&
-	    (step_ptr->step_layout->task_dist & SLURM_DIST_SOCKBLOCK)) {
+	    ((step_ptr->step_layout->task_dist & SLURM_DIST_SOCKMASK) ==
+	     SLURM_DIST_SOCKBLOCK)) {
 		/* Fill sockets before allocating to the next socket */
 		for (sock_inx=0; sock_inx < sockets; sock_inx++) {
 			for (i=0; i < cores; i++) {
