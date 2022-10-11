@@ -44,8 +44,6 @@
 
 #include "src/common/data.h"
 
-#include "src/slurmrestd/operations.h"
-
 #include "src/plugins/openapi/dbv0.0.39/parse.h"
 
 #define CONFIG_OP_TAG 0xfffffffe
