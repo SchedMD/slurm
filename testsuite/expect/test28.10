@@ -27,7 +27,6 @@
 source ./globals
 
 set array_size    4
-set file_script   "$test_dir/script"
 set job_id        0
 set task_limit    1
 
@@ -42,65 +41,23 @@ proc cleanup {} {
 }
 
 # Submit a job array with 4 elements
-make_bash_script $file_script "sleep 20"
-
-spawn $sbatch -n1 --array=0-[expr $array_size -1]%$task_limit --output=/dev/null -t1 $file_script
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "error" {
-		fail "sbatch did not submit jobs"
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "sbatch did not submit jobs"
-}
+set job_id [submit_job -fail "-n1 --array=0-[expr $array_size -1]%$task_limit --output=/dev/null -t1 --wrap 'sleep 60'"]
 
 wait_for_job -fail ${job_id}_0 "RUNNING"
 
-set inx 0
-while { $inx < 10 } {
-	sleep 6
-	set run_count 0
-	spawn $scontrol show job $job_id
-	expect {
-		-re "RUNNING" {
-			incr run_count
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$run_count > $task_limit} {
-		fail "Too many tasks in the job array are running ($run_count > $task_limit)"
-	}
-	log_debug "+++ $run_count running tasks +++"
-	if {$run_count == 0} {
-		break
-	}
-	if {$run_count == $task_limit} {
+# We want to see the array task limit increased up to the array size
+# and the running array elements increase to match until all are running.
+wait_for -fail -timeout 60 {$task_limit == $array_size && $run_count == $array_size} {
+	set output [run_command_output -fail "$squeue --state=RUNNING --job $job_id --format %i --noheader"]
+	set run_count [regexp -all -line "^${job_id}_\\d+" $output]
+	log_debug "Array task limit: $task_limit, running job array elements: $run_count"
+
+	# Make sure we aren't running more elements than our current limit
+	subtest {$run_count <= $task_limit} "Running jobs cannot exceed current limit" "$run_count > $task_limit"
+
+	# If we have reached our previous limit, increase it incrementally up to the array size
+	if {$run_count == $task_limit && $task_limit < $array_size} {
 		incr task_limit
-		spawn $scontrol update jobid=$job_id arraytaskthrottle $task_limit
-		expect {
-			timeout {
-				fail "scontrol not responding"
-			}
-			eof {
-				wait
-			}
-		}
+		run_command -fail "$scontrol update jobid=$job_id arraytaskthrottle $task_limit"
 	}
-	incr inx
 }
