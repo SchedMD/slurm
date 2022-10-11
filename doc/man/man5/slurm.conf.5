@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "September 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "October 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -3362,10 +3362,11 @@ in power save mode is assigned work to perform.
 For reasons of reliability, \fBResumeProgram\fR may execute more than once
 for a node when the \fBslurmctld\fR daemon crashes and is restarted.
 If \fBResumeProgram\fR is unable to restore a node to service with a responding
-slurmd and an updated BootTime, it should requeue any job associated with the
-node and set the node state to DOWN. If the node isn't actually rebooted
-(i.e. when multiple\-slurmd is configured) starting slurmd with "\-b" option
-might be useful.
+slurmd and an updated BootTime, it should set the node state to DOWN, which will
+result in a requeue of any job associated with the node - this will happen
+automatically if the node doesn't register within ResumeTimeout.
+If the node isn't actually rebooted (i.e. when multiple\-slurmd is configured)
+starting slurmd with "\-b" option might be useful.
 The program executes as \fBSlurmUser\fR.
 The argument to the program will be the names of nodes to
 be removed from power savings mode (using Slurm's hostlist
