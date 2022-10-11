@@ -268,6 +268,20 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 	}
 }
 
+extern void set_job_features_use(struct job_details *details_ptr)
+{
+	if (!details_ptr)
+		return;
+
+	if (details_ptr->prefer) {
+		details_ptr->features_use = details_ptr->prefer;
+		details_ptr->feature_list_use = details_ptr->prefer_list;
+	} else {
+		details_ptr->features_use = details_ptr->features;
+		details_ptr->feature_list_use = details_ptr->feature_list;
+	}
+}
+
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make
  *	their state NODE_STATE_COMPLETING also release the job's licenses

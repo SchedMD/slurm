@@ -1456,22 +1456,6 @@ next_part:
 			part_ptr = job_queue_rec->part_ptr;
 			job_ptr->priority = job_queue_rec->priority;
 
-			/*
-			 * feature_list_use is a temporary variable and should
-			 * be reset before each use.
-			 */
-			if (job_queue_rec->use_prefer) {
-				job_ptr->details->features_use =
-					job_ptr->details->prefer;
-				job_ptr->details->feature_list_use =
-					job_ptr->details->prefer_list;
-			} else {
-				job_ptr->details->features_use =
-					job_ptr->details->features;
-				job_ptr->details->feature_list_use =
-					job_ptr->details->feature_list;
-			}
-
 			if (!avail_front_end(job_ptr)) {
 				job_ptr->state_reason = WAIT_FRONT_END;
 				xfree(job_ptr->state_desc);
@@ -1489,6 +1473,24 @@ next_part:
 			if (!job_ptr || !IS_JOB_PENDING(job_ptr)) {
 				xfree(job_queue_rec);
 				continue;	/* started in other partition */
+			}
+
+			/*
+			 * feature_list_use is a temporary variable and should
+			 * be reset before each use. Do this after the check for
+			 * pending because the job could have started with
+			 * "preferred" job_queue_rec.
+			 */
+			if (job_queue_rec->use_prefer) {
+				job_ptr->details->features_use =
+					job_ptr->details->prefer;
+				job_ptr->details->feature_list_use =
+					job_ptr->details->prefer_list;
+			} else {
+				job_ptr->details->features_use =
+					job_ptr->details->features;
+				job_ptr->details->feature_list_use =
+					job_ptr->details->feature_list;
 			}
 
 			if (job_ptr->resv_list)
