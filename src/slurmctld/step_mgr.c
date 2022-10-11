@@ -2160,12 +2160,12 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	}
 
 	/* We need to over-subscribe one or more cores. */
-	verbose("%s: %pS needs to over-subscribe cores required:%u assigned:%u/%"PRIu64 " overcommit:%c exclusive:%c",
-		__func__, step_ptr, cores,
-		bit_set_count(job_resrcs_ptr->core_bitmap),
-		bit_size(job_resrcs_ptr->core_bitmap),
-		((step_ptr->flags & SSF_OVERCOMMIT) ? 'T' : 'F'),
-		((step_ptr->flags & SSF_EXCLUSIVE) ? 'T' : 'F'));
+	log_flag(STEPS, "%s: %pS needs to over-subscribe cores required:%u assigned:%u/%"PRIu64 " overcommit:%c exclusive:%c",
+		 __func__, step_ptr, cores,
+		 bit_set_count(job_resrcs_ptr->core_bitmap),
+		 bit_size(job_resrcs_ptr->core_bitmap),
+		 ((step_ptr->flags & SSF_OVERCOMMIT) ? 'T' : 'F'),
+		 ((step_ptr->flags & SSF_EXCLUSIVE) ? 'T' : 'F'));
 
 	/* oversubscribe cores that fit all gres binding first */
 	if (_handle_core_select(step_ptr, job_resrcs_ptr,
