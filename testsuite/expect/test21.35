@@ -37,18 +37,17 @@ set job_id       0
 set save_billing_weights ""
 set tres_cpu_mult 2
 
-# mod qos
-array set max_tres_type {
+# Mod qos
+array set max_tres_limit {
 	billing   2
 	cpu       2
 	node      1
 }
 
-array set lim_type_type {
-	0         MaxTres
-	1         MaxTresPerUser
-	2         MaxTresMin
-
+array set limit_map {
+	MaxTres        MaxTRESPJ
+	MaxTresPerUser MaxTRESPU
+	MaxTresMin     MaxTRESMinsPJ
 }
 
 # Reset QoS
@@ -67,7 +66,7 @@ array set reset_qos_val {
 	MaxTRESPerUser=billing    -1
 }
 
-# Reset Associtions
+# Reset Associations
 array set reset_assoc_val {
 	MaxCpus         -1
 	MaxNode         -1
@@ -76,84 +75,28 @@ array set reset_assoc_val {
 	MaxCpuMin       -1
 	MaxWall         -1
 	MaxNode         -1
-
 	MaxTRESMinsPerJob=billing -1
 	MaxTRESPerJob=billing     -1
 }
 
-proc check_limit { type name } {
-	global sacctmgr sbatch lim_type_type i option max_tres_type
-	global job_id test_qos test_acct reset_qos_val reset_assoc_val
-	global file_in number tres_cpu_mult
 
-	set flag ""
-	set modified 0
-	set type_value $max_tres_type($option)
-	if {$option eq "billing"} {
-		set type_value [expr $type_value * $tres_cpu_mult]
-	}
-	spawn $sacctmgr -i mod $type $name set $lim_type_type($i)=$option=$type_value
-	expect {
-		-re "Modified" {
-			set modified 1
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$modified != 1} {
-		fail "sacctmgr did not modify tres=$option=$max_tres_type($option)"
-	}
-
-	set tmp [expr  $max_tres_type($option) + 1]
-	if {$option eq "node"} {
-		set flag "-N$tmp"
-	} else {
-		set flag "-n$tmp"
-	}
-
-	set match 0
-	spawn $sbatch $flag -t1 -o/dev/null --account=$test_acct $file_in
-	expect {
-		-re "Job violates accounting/QOS policy" {
-			set match 1
-			exp_continue
-		}
-		-re "Node count specification invalid" {
-			log_warn "Test exceeds available node count"
-			set match 1
-			exp_continue
-		}
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-		}
-		timeout {
-			fail "srun is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$match != 1 || $job_id} {
-		fail "Job should have been killed upon submission"
-	}
-
-	# Reset limits
-	mod_qos $test_qos [array get reset_qos_val]
-	mod_acct $test_acct "" "" [array get reset_assoc_val]
-
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+if {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
+	skip "This test can't be run without enforcing limits"
+}
+if {![is_super_user]} {
+	skip "Test can only be ran as SlurmUser"
 }
 
 
 proc cleanup { } {
 	global sacctmgr test_acct test_qos
 	global partition save_billing_weights scontrol job_id
+
+	# Cancel the submitted job
+	cancel_job $job_id
 
 	# Delete test account and qos
 	spawn $sacctmgr -i delete account $test_acct
@@ -190,20 +133,61 @@ proc cleanup { } {
 			}
 		}
 	}
-
-	# Cancel the submitted job
-	cancel_job $job_id
 }
 
-if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
-	skip "This test can't be run without a usable AccountStorageType"
+
+proc set_limit { entity name limit tres_type tres_value } {
+	global sacctmgr scontrol srun test_acct limit_map
+
+	# Set the limit
+	set output [run_command_output -fail "$sacctmgr -i modify $entity $name set $limit=$tres_type=$tres_value"]
+	if {![regexp "Modified" $output]} {
+		fail "sacctmgr did not modify tres=$tres_type=$tres_value"
+	}
+
+	# Verify that the limit has been transmitted to the controller.
+	# If checking per-user limits, we wrap the scontrol call in an srun since
+	# the per-user limits only show up if a job has run under by that user.
+	set command "[expr {[string match "*PerUser" $limit] ? "$srun --account=$test_acct " : ""}]"
+	append command "$scontrol show assoc -o"
+	append command " flags=[expr {$entity eq "account" ? "assoc" : $entity}]"
+	append command " $entity=$name"
+	set pattern "$limit_map($limit)=\[^ \]*$tres_type=$tres_value"
+	wait_for_command_match -fail -timeout 15 $command $pattern
 }
-if {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
-	skip "This test can't be run without enforcing limits"
+
+
+proc test_limit { type name limit tres_type } {
+	global sbatch max_tres_limit
+	global job_id test_qos test_acct reset_qos_val reset_assoc_val
+	global file_in number tres_cpu_mult
+
+	set flag ""
+	set tres_value $max_tres_limit($tres_type)
+	if {$tres_type eq "billing"} {
+		set tres_value [expr $tres_value * $tres_cpu_mult]
+	}
+
+	set_limit $type $name $limit $tres_type $tres_value
+
+	set tmp [expr $max_tres_limit($tres_type) + 1]
+	if {$tres_type eq "node"} {
+		set flag "-N$tmp"
+	} else {
+		set flag "-n$tmp"
+	}
+
+	set output [run_command_output -xfail -subtest "$sbatch $flag -t1 -o/dev/null --account=$test_acct $file_in"]
+	subtest {[regexp "Job violates accounting/QOS policy" $output]} "Job should display the expected error message"
+	if {![regexp "Submitted batch job ($number)" $output - job_id]} {
+		cancel_job $job_id
+	}
+
+	# Reset limits
+	mod_qos $test_qos [array get reset_qos_val]
+	mod_acct $test_acct "" "" [array get reset_assoc_val]
 }
-if {![is_super_user]} {
-	skip "Test can only be ran as SlurmUser"
-}
+
 
 # Clean up any vestigial data
 cleanup
@@ -213,7 +197,7 @@ set partition [default_partition]
 make_bash_script $file_in "
 sleep 2"
 
-#add qos
+# Add qos
 set added 1
 spawn $sacctmgr -i create qos $test_qos
 expect {
@@ -305,17 +289,16 @@ expect {
 	}
 }
 
-for {set i 0} {$i < 3} {incr i} {
-
-	foreach option [array names max_tres_type] {
+foreach limit [array names limit_map] {
+	foreach tres_type [array names max_tres_limit] {
 		# Check DenyOnLimit for QoS
 		log_info "==== Testing QoS ===="
-		check_limit "qos" $test_qos
+		test_limit "qos" $test_qos $limit $tres_type
 
-		if {$i == 0} {
+		if {$tres_type eq "MaxTresPerUser"} {
 			# Check DenyOnLimit for Association
 			log_info "==== Testing Association ===="
-			check_limit "account" $test_acct
+			test_limit "account" $test_acct $limit $tres_type
 		}
 	}
 }
@@ -323,24 +306,17 @@ for {set i 0} {$i < 3} {incr i} {
 #
 # Test Max Wall
 #
-set modified 0
-spawn $sacctmgr -i mod qos $test_qos set maxwall=$max_wall_val
-expect {
-	-re "Modified qos" {
-		set modified 1
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr is not responding"
-	}
-	eof {
-		wait
-	}
+
+# Set the limit
+set output [run_command_output -fail "$sacctmgr -i modify qos $test_qos set MaxWall=$max_wall_val"]
+if {![regexp "Modified" $output]} {
+	fail "sacctmgr did not modify MaxWall=$max_wall_val"
 }
 
-if {$modified != 1} {
-	fail "sacctmgr did not modify tres=$option=$max_tres_qos($option)"
-}
+# Verify that the limit has been transmitted to the controller.
+set command "$scontrol show assoc -o flags=qos qos=$test_qos"
+set pattern "MaxWallPJ=$max_wall_val"
+wait_for_command_match -fail -timeout 10 $command $pattern
 
 set match 0
 spawn $sbatch -N1 -t[expr $max_wall_val + 1] -o/dev/null --account=$test_acct $file_in
@@ -360,6 +336,4 @@ expect {
 	}
 }
 
-if {$match != 1 || $job_id} {
-	fail "Job should have been killed upon submission"
-}
+subtest {$match == 1 && ! $job_id} "Job should not be accepted for submission"
