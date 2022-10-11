@@ -142,8 +142,8 @@ int plugrack_destroy(plugrack_t *rack)
 	it = list_iterator_create(rack->entries);
 	while ((e = list_next(it))) {
 		if (e->refcount > 0) {
-			debug2("%s: attempt to destroy plugin rack that is still in use",
-			       __func__);
+			debug2("%s: attempt to destroy %s plugin rack that is still in use",
+			       __func__, rack->major_type);
 			list_iterator_destroy(it);
 			return SLURM_ERROR; /* plugins still in use. */
 		}
