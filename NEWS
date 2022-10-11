@@ -109,6 +109,8 @@ documents those changes that are of interest to users and administrators.
     an explicit --ntasks value.
  -- Fix job arrays not showing correct features.
  -- Fix job having wrong features used when using preferred features.
+ -- Fix task/cray_aries error finishing an interactive step, avoiding correct
+    cleanup.
 
 * Changes in Slurm 22.05.4
 ==========================
