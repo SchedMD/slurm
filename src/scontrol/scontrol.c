@@ -46,6 +46,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
+#include "src/interfaces/data_parser.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/serializer.h"
 
@@ -87,10 +88,10 @@ static void	_delete_it(int argc, char **argv);
 static void     _show_it(int argc, char **argv);
 static void	_fetch_token(int argc, char **argv);
 static int _get_command(int *argc, char **argv);
-static void	_print_config(char *config_param);
+static void _print_config(char *config_param, int argc, char **argv);
 static void     _print_daemons(void);
 static void     _print_aliases(char* node_hostname);
-static void	_print_ping(void);
+static void _print_ping(int argc, char **argv);
 static void	_print_slurmd(char *hostlist);
 static void     _print_version(void);
 static int	_process_command(int argc, char **argv);
@@ -489,8 +490,7 @@ static void _write_config(char *file_name)
  * _print_config - print the specified configuration parameter and value
  * IN config_param - NULL to print all parameters and values
  */
-static void
-_print_config (char *config_param)
+static void _print_config(char *config_param, int argc, char **argv)
 {
 	int error_code;
 	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
@@ -528,7 +528,7 @@ _print_config (char *config_param)
 		fprintf(stdout, "\n");
 	}
 	if (slurm_ctl_conf_ptr)
-		_print_ping();
+		_print_ping(argc, argv);
 }
 
 /* Print slurmd status on localhost.
@@ -548,12 +548,19 @@ static void _print_slurmd(char *hostlist)
 }
 
 /* Print state of controllers only */
-static void _print_ping(void)
+static void _print_ping(int argc, char **argv)
 {
 	static const char *state[2] = { "DOWN", "UP" };
 	char mode[64];
 	bool down_msg = false;
 	controller_ping_t *pings = ping_all_controllers();
+
+	if (mime_type) {
+		exit_code = DATA_DUMP_CLI(CONTROLLER_PING_ARRAY, pings, "pings",
+					  argc, argv, NULL, mime_type);
+		xfree(pings);
+		return;
+	}
 
 	exit_code = 1;
 	for (controller_ping_t *ping = pings; ping && ping->hostname; ping++) {
@@ -1122,7 +1129,7 @@ static int _process_command (int argc, char **argv)
 				 "too many arguments for keyword:%s\n",
 				 tag);
 		} else
-			_print_ping();
+			_print_ping(argc, argv);
 	}
 	else if ((xstrncasecmp(tag, "\\q", 2) == 0) ||
 		 (xstrncasecmp(tag, "quiet", MAX(tag_len, 4)) == 0)) {
@@ -1779,7 +1786,7 @@ static void _show_it(int argc, char **argv)
 		   !xstrncasecmp(tag, "cache", MAX(tag_len, 2))) {
 		scontrol_print_assoc_mgr_info(argc - 2, argv + 2);
 	} else if (xstrncasecmp(tag, "config", MAX(tag_len, 1)) == 0) {
-		_print_config (val);
+		_print_config(val, argc, argv);
 	} else if (xstrncasecmp(tag, "daemons", MAX(tag_len, 1)) == 0) {
 		if (val) {
 			exit_code = 1;
