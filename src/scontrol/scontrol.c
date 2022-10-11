@@ -81,8 +81,7 @@ static void	_create_it(int argc, char **argv);
 static void	_delete_it(int argc, char **argv);
 static void     _show_it(int argc, char **argv);
 static void	_fetch_token(int argc, char **argv);
-static int	_get_command(int *argc, char **argv);
-static void     _ping_slurmctld(uint32_t control_cnt, char **control_machine);
+static int _get_command(int *argc, char **argv);
 static void	_print_config(char *config_param);
 static void     _print_daemons(void);
 static void     _print_aliases(char* node_hostname);
@@ -502,10 +501,8 @@ _print_config (char *config_param)
 		slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
 		fprintf(stdout, "\n");
 	}
-	if (slurm_ctl_conf_ptr) {
-		_ping_slurmctld(slurm_ctl_conf_ptr->control_cnt,
-				slurm_ctl_conf_ptr->control_machine);
-	}
+	if (slurm_ctl_conf_ptr)
+		_print_ping();
 }
 
 /* Print slurmd status on localhost.
@@ -525,53 +522,30 @@ static void _print_slurmd(char *hostlist)
 }
 
 /* Print state of controllers only */
-static void
-_print_ping (void)
+static void _print_ping(void)
 {
-	slurm_ctl_conf_info_msg_t *conf;
-	uint32_t control_cnt, i;
-	char **control_machine;
-
-	conf = slurm_conf_lock();
-	control_cnt = conf->control_cnt;
-	control_machine = xmalloc(sizeof(char *) * control_cnt);
-	for (i = 0; i < control_cnt; i++)
-		control_machine[i] = xstrdup(conf->control_machine[i]);
-	slurm_conf_unlock();
-
-	_ping_slurmctld(control_cnt, control_machine);
-
-	for (i = 0; i < control_cnt; i++)
-		xfree(control_machine[i]);
-	xfree(control_machine);
-}
-
-/* Report if slurmctld daemons are responding */
-static void
-_ping_slurmctld(uint32_t control_cnt, char **control_machine)
-{
-	static char *state[2] = { "DOWN", "UP" };
+	static const char *state[2] = { "DOWN", "UP" };
 	char mode[64];
 	bool down_msg = false;
-	int i;
+	controller_ping_t *pings = ping_all_controllers();
 
 	exit_code = 1;
-	for (i = 0; i < control_cnt; i++) {
-		int status = 0;
-		if (slurm_ping(i) == SLURM_SUCCESS) {
-			status = 1;
-			exit_code = 0;
-		} else
+	for (controller_ping_t *ping = pings; ping && ping->hostname; ping++) {
+		if (ping->pinged)
+			exit_code = SLURM_SUCCESS;
+		else
 			down_msg = true;
-		if (i == 0)
+
+		if (ping->offset == 0)
 			snprintf(mode, sizeof(mode), "primary");
-		else if ((i == 1) && (control_cnt == 2))
+		else if ((ping->offset == 1) && (slurm_conf.control_cnt == 2))
 			snprintf(mode, sizeof(mode), "backup");
 		else
-			snprintf(mode, sizeof(mode), "backup%d", i);
+			snprintf(mode, sizeof(mode), "backup%d", ping->offset);
 		fprintf(stdout, "Slurmctld(%s) at %s is %s\n",
-			mode, control_machine[i], state[status]);
+			mode, ping->hostname, state[ping->pinged]);
 	}
+	xfree(pings);
 
 	if (down_msg && (getuid() == 0)) {
 		fprintf(stdout, "*****************************************\n");
