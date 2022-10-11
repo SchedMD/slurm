@@ -728,9 +728,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 16 ******/
 	/* Tres should already of been converted at this point from simple */
-	xstrfmtcat(out, "TRES=%s",
-		   job_ptr->tres_alloc_str ? job_ptr->tres_alloc_str
-					   : job_ptr->tres_req_str);
+	xstrfmtcat(out, "ReqTRES=%s", job_ptr->tres_req_str);
+	xstrcat(out, line_end);
+
+	/****** Line ******/
+	xstrfmtcat(out, "AllocTRES=%s", job_ptr->tres_alloc_str);
 	xstrcat(out, line_end);
 
 	/****** Line 17 ******/

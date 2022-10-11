@@ -75,9 +75,9 @@ documents those changes that are of interest to users and administrators.
     over locally reconstructing an RSA256 key file.
  -- auth/jwt - add optional AuthAltParameters field "userclaimfield=" to allow
     overriding "sun" claim to site specific field.
- -- Run the following scripts in slurmscriptd instead of slurmctld:
-    ResumeProgram, ResumeFailProgram, SuspendProgram, ResvProlog, ResvEpilog,
-    and RebootProgram (only with SlurmctldParameters=reboot_from_controller).
+ -- scontrol - Requested TRES and allocated TRES will now always be printed when
+    showing jobs, instead of one TRES output that was either the requested or
+    allocated.
 
 * Changes in Slurm 22.05.5
 ==========================

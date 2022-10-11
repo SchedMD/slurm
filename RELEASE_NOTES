@@ -71,6 +71,9 @@ COMMAND CHANGES (see man pages for details)
     submission. Job submission commands will now fatal if both are set.
     Previously, these options would override each other, with the last one in
     the job submission command taking effect.
+ -- scontrol - Requested TRES and allocated TRES will now always be printed when
+    showing jobs, instead of one TRES output that was either the requested or
+    allocated.
 
 API CHANGES
 ===========
