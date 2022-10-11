@@ -10995,7 +10995,167 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 	} else
 		_find_node_config(&max_cpu_cnt, &max_core_cnt);
 
-	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		if (detail_ptr) {
+			if (!IS_JOB_PENDING(job_ptr)) {
+				packstr(detail_ptr->features_use, buffer);
+				packnull(buffer);
+			} else {
+				packstr(detail_ptr->features, buffer);
+				packstr(detail_ptr->prefer, buffer);
+			}
+			packstr(detail_ptr->cluster_features, buffer);
+			packstr(detail_ptr->work_dir, buffer);
+			packstr(detail_ptr->dependency, buffer);
+
+			if (detail_ptr->argv) {
+				char *cmd_line = NULL, *pos = NULL;
+				for (i = 0; detail_ptr->argv[i]; i++) {
+					xstrfmtcatat(cmd_line, &pos, "%s%s",
+					             (i ? " " : ""),
+						     detail_ptr->argv[i]);
+				}
+				packstr(cmd_line, buffer);
+				xfree(cmd_line);
+			} else
+				packnull(buffer);
+
+			if (IS_JOB_COMPLETING(job_ptr) && job_ptr->cpu_cnt) {
+				pack32(job_ptr->cpu_cnt, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else if (job_ptr->total_cpus &&
+				   !IS_JOB_PENDING(job_ptr)) {
+				/* If job is PENDING ignore total_cpus,
+				 * which may have been set by previous run
+				 * followed by job requeue. */
+				pack32(job_ptr->total_cpus, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else {
+				pack32(detail_ptr->min_cpus, buffer);
+				if (detail_ptr->max_cpus != NO_VAL)
+					pack32(detail_ptr->max_cpus, buffer);
+				else
+					pack32((uint32_t) 0, buffer);
+			}
+
+			if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
+				pack32(job_ptr->node_cnt, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else if (job_ptr->total_nodes) {
+				pack32(job_ptr->total_nodes, buffer);
+				pack32((uint32_t) 0, buffer);
+			} else if (job_ptr->node_cnt_wag) {
+				/* This should catch everything else, but
+				 * just in case this is 0 (startup or
+				 * whatever) we will keep the rest of
+				 * this if statement around.
+				 */
+				pack32(job_ptr->node_cnt_wag, buffer);
+				pack32((uint32_t) detail_ptr->max_nodes,
+				       buffer);
+			} else if (detail_ptr->ntasks_per_node) {
+				/* min_nodes based upon task count and ntasks
+				 * per node */
+				uint32_t min_nodes;
+				min_nodes = detail_ptr->num_tasks /
+					detail_ptr->ntasks_per_node;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			} else if (detail_ptr->cpus_per_task > 1) {
+				/* min_nodes based upon task count and cpus
+				 * per task */
+				uint32_t ntasks_per_node, min_nodes;
+				ntasks_per_node = max_cpu_cnt /
+					detail_ptr->cpus_per_task;
+				ntasks_per_node = MAX(ntasks_per_node, 1);
+				min_nodes = detail_ptr->num_tasks /
+					ntasks_per_node;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				if (detail_ptr->num_tasks % ntasks_per_node)
+					min_nodes++;
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			} else if (detail_ptr->mc_ptr &&
+				   detail_ptr->mc_ptr->ntasks_per_core &&
+				   (detail_ptr->mc_ptr->ntasks_per_core
+				    != INFINITE16)) {
+				/* min_nodes based upon task count and ntasks
+				 * per core */
+				uint32_t min_cores, min_nodes;
+				min_cores = detail_ptr->num_tasks +
+					detail_ptr->mc_ptr->ntasks_per_core - 1;
+				min_cores /=
+					detail_ptr->mc_ptr->ntasks_per_core;
+
+				min_nodes = min_cores + max_core_cnt - 1;
+				min_nodes /= max_core_cnt;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			} else {
+				/* min_nodes based upon task count only */
+				uint32_t min_nodes;
+				min_nodes = detail_ptr->num_tasks +
+					max_cpu_cnt - 1;
+				min_nodes /= max_cpu_cnt;
+				min_nodes = MAX(min_nodes,
+						detail_ptr->min_nodes);
+				pack32(min_nodes, buffer);
+				pack32(detail_ptr->max_nodes, buffer);
+			}
+
+			pack16(detail_ptr->requeue,   buffer);
+			pack16(detail_ptr->ntasks_per_node, buffer);
+			pack16(detail_ptr->ntasks_per_tres, buffer);
+			if (detail_ptr->num_tasks)
+				pack32(detail_ptr->num_tasks, buffer);
+			else if (IS_JOB_PENDING(job_ptr))
+				pack32(detail_ptr->min_nodes, buffer);
+			else if (job_ptr->tres_alloc_cnt)
+				pack32((uint32_t)
+				       job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE],
+				       buffer);
+			else
+				pack32(NO_VAL, buffer);
+
+			pack16(shared, buffer);
+			pack32(detail_ptr->cpu_freq_min, buffer);
+			pack32(detail_ptr->cpu_freq_max, buffer);
+			pack32(detail_ptr->cpu_freq_gov, buffer);
+
+			if (detail_ptr->crontab_entry)
+				packstr(detail_ptr->crontab_entry->cronspec,
+					buffer);
+			else
+				packnull(buffer);
+		} else {
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+
+			if (job_ptr->total_cpus)
+				pack32(job_ptr->total_cpus, buffer);
+			else
+				pack32(job_ptr->cpu_cnt, buffer);
+			pack32((uint32_t) 0, buffer);
+
+			pack32(job_ptr->node_cnt, buffer);
+			pack32((uint32_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+			pack16((uint16_t) 0, buffer);
+			pack32((uint32_t) 0, buffer);
+			pack32((uint32_t) 0, buffer);
+			pack32((uint32_t) 0, buffer);
+
+			packnull(buffer);
+		}
+	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		if (detail_ptr) {
 			if (!IS_JOB_PENDING(job_ptr)) {
 				packstr(detail_ptr->features_use, buffer);
