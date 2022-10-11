@@ -1046,7 +1046,7 @@ extern avail_res_t *common_allocate(job_record_t *job_ptr,
 		*cpu_alloc_size = node_record_table_ptr[node_i]->cores *
 			node_record_table_ptr[node_i]->tpc;
 	} else {
-		/* cpu_alloc_size = # of CPUs per socket || 1 individual CPU */
+		/* cpu_alloc_size = # of CPUs per core || 1 individual CPU */
 		alloc_sockets = false;
 		*cpu_alloc_size = (cr_type & CR_CORE) ?
 			node_record_table_ptr[node_i]->tpc : 1;
