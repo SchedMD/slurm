@@ -2071,9 +2071,10 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		use_all_cores = false;
 
 		if (step_ptr->cpus_per_task > 0) {
-			cpu_cnt *= step_ptr->cpus_per_task;
-			cpu_cnt += (cpus_per_core - 1);
-			cpu_cnt /= cpus_per_core;
+			int cores_per_task = step_ptr->cpus_per_task;
+			cores_per_task += (cpus_per_core - 1);
+			cores_per_task /= cpus_per_core;
+			cpu_cnt *= cores_per_task;
 		}
 
 		if (cpu_cnt > job_resrcs_ptr->cpus[job_node_inx]) {
