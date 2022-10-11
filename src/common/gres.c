@@ -8183,11 +8183,13 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 	} else if (tmp != NO_VAL64) {
 		tmp = tmp * ntasks_per_tres;
 		if (*num_tasks < tmp) {
+			uint32_t cpus_per_task = *cpu_count / *num_tasks;
 			*num_tasks = tmp;
-		}
-		if (*cpu_count && (*cpu_count < tmp)) {
-			/* step_spec->cpu_count == 0 means SSF_OVERSUBSCRIBE */
-			*cpu_count = tmp;
+			tmp = tmp * cpus_per_task;
+			if (*cpu_count && (*cpu_count < tmp)) {
+				/* step_spec->cpu_count == 0 means SSF_OVERSUBSCRIBE */
+				*cpu_count = tmp;
+			}
 		}
 	} else {
 		error("%s: ntasks_per_tres was specified, but there was either no task count or no GPU specification to go along with it, or both were already specified.",
