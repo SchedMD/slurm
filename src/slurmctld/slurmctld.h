@@ -2313,6 +2313,9 @@ extern void server_thread_incr(void);
 /* Set a job's alias_list string */
 extern void set_job_alias_list(job_record_t *job_ptr);
 
+/* Set a job's features_use and feature_list_use pointers */
+extern void set_job_features_use(struct job_details *details_ptr);
+
 /*
  * set_job_prio - set a default job priority
  * IN job_ptr - pointer to the job_record

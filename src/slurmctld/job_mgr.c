@@ -4915,12 +4915,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	details_new->prefer = xstrdup(job_details->prefer);
 	details_new->prefer_list =
 		feature_list_copy(job_details->prefer_list);
-	/*
-	 * features_use and feature_list_use are set in the schedulers before
-	 * attempting to schedule the job, so just set them to NULL here.
-	 */
-	details_new->features_use = NULL;
-	details_new->feature_list_use = NULL;
+	set_job_features_use(details_new);
 	if (job_details->mc_ptr) {
 		i = sizeof(multi_core_data_t);
 		details_new->mc_ptr = xmalloc(i);
@@ -5507,15 +5502,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	 * If we have a prefer feature list check that, if not check the
 	 * normal features.
 	 */
-	if (job_ptr->details->prefer) {
-		job_ptr->details->features_use = job_ptr->details->prefer;
-		job_ptr->details->feature_list_use =
-			job_ptr->details->prefer_list;
-	} else {
-		job_ptr->details->features_use = job_ptr->details->features;
-		job_ptr->details->feature_list_use =
-			job_ptr->details->feature_list;
-	}
+	set_job_features_use(job_ptr->details);
 
 	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL, err_msg);
 	if (!test_only) {
