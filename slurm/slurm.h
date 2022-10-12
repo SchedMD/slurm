@@ -2906,6 +2906,7 @@ typedef struct {
 	char *power_plugin;	/* power management plugin type */
 	uint32_t preempt_exempt_time; /* Time before jobs are preemptable */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
+	char *preempt_params; /* PreemptParameters to tune preemption */
 	char *preempt_type;	/* job preemption selection plugin */
 	char *prep_params;	/* PrEp parameters */
 	char *prep_plugins;	/* PrEp plugins */

@@ -1200,6 +1200,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("PreemptParameters");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->preempt_params);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PreemptType");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->preempt_type);
 	list_append(ret_list, key_pair);
@@ -2218,6 +2223,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !xstrcasecmp(key_pair->name, "SchedulerType") ||
 		    !xstrcasecmp(key_pair->name, "SlurmSchedLogLevel") ||
 		    !xstrcasecmp(key_pair->name, "PreemptMode") ||
+		    !xstrcasecmp(key_pair->name, "PreemptParameters") ||
 		    !xstrcasecmp(key_pair->name, "PreemptType") ||
 		    !xstrcasecmp(key_pair->name, "PreemptExemptTime") ||
 		    !xstrcasecmp(key_pair->name, "PriorityType") ||

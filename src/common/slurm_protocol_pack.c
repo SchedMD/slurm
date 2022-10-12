@@ -4121,6 +4121,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->power_parameters, buffer);
 		packstr(build_ptr->power_plugin, buffer);
 		pack16(build_ptr->preempt_mode, buffer);
+		packstr(build_ptr->preempt_params, buffer);
 		packstr(build_ptr->preempt_type, buffer);
 		pack32(build_ptr->preempt_exempt_time, buffer);
 		packstr(build_ptr->prep_params, buffer);
@@ -5021,6 +5022,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->power_plugin, buffer);
 
 		safe_unpack16(&build_ptr->preempt_mode, buffer);
+		safe_unpackstr(&build_ptr->preempt_params, buffer);
 		safe_unpackstr(&build_ptr->preempt_type, buffer);
 		safe_unpack32(&build_ptr->preempt_exempt_time, buffer);
 		safe_unpackstr(&build_ptr->prep_params, buffer);

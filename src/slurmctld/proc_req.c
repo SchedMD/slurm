@@ -426,6 +426,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->power_plugin        = xstrdup(conf->power_plugin);
 
 	conf_ptr->preempt_mode        = conf->preempt_mode;
+	conf_ptr->preempt_params = xstrdup(conf->preempt_params);
 	conf_ptr->preempt_type        = xstrdup(conf->preempt_type);
 	conf_ptr->preempt_exempt_time = conf->preempt_exempt_time;
 	conf_ptr->prep_params         = xstrdup(conf->prep_params);

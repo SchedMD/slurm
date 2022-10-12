@@ -220,6 +220,9 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 
 	STORE_FIELD(hv, conf, preempt_mode, uint16_t);
 
+	if (conf->preempt_params)
+		STORE_FIELD(hv, conf, preempt_params, charp);
+
 	if (conf->preempt_type)
 		STORE_FIELD(hv, conf, preempt_type, charp);
 

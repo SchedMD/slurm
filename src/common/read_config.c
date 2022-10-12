@@ -326,6 +326,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PowerParameters", S_P_STRING},
 	{"PowerPlugin", S_P_STRING},
 	{"PreemptMode", S_P_STRING},
+	{"PreemptParameters", S_P_STRING},
 	{"PreemptType", S_P_STRING},
 	{"PreemptExemptTime", S_P_STRING},
 	{"PrEpParameters", S_P_STRING},
@@ -2933,6 +2934,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	FREE_NULL_LIST(ctl_conf_ptr->slurmctld_plugstack_conf);
 	xfree (ctl_conf_ptr->power_parameters);
 	xfree (ctl_conf_ptr->power_plugin);
+	xfree(ctl_conf_ptr->preempt_params);
 	xfree (ctl_conf_ptr->preempt_type);
 	xfree(ctl_conf_ptr->prep_params);
 	xfree(ctl_conf_ptr->prep_plugins);
@@ -3109,6 +3111,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->power_parameters);
 	xfree (ctl_conf_ptr->power_plugin);
 	ctl_conf_ptr->preempt_mode              = 0;
+	xfree(ctl_conf_ptr->preempt_params);
 	xfree (ctl_conf_ptr->preempt_type);
 	xfree (ctl_conf_ptr->priority_params);
 	xfree (ctl_conf_ptr->priority_type);
@@ -4574,6 +4577,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else {
 		conf->preempt_mode = PREEMPT_MODE_OFF;
 	}
+
+	(void) s_p_get_string(&conf->preempt_params, "PreemptParameters",
+			      hashtbl);
+
 	if (!s_p_get_string(&conf->preempt_type, "PreemptType", hashtbl))
 		conf->preempt_type = xstrdup(DEFAULT_PREEMPT_TYPE);
 	if (xstrcmp(conf->preempt_type, "preempt/qos") == 0) {
