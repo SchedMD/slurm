@@ -1965,7 +1965,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 		}
 	}
 
-	if ((job_ptr->details->num_tasks > 1) &&
+	if (job_ptr->details->num_tasks &&
 	    (max_nodes > job_ptr->details->num_tasks))
 		max_nodes = MAX(job_ptr->details->num_tasks, min_nodes);
 
