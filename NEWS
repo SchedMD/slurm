@@ -111,6 +111,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix job having wrong features used when using preferred features.
  -- Fix task/cray_aries error finishing an interactive step, avoiding correct
     cleanup.
+ -- Correctly set max_nodes when --ntasks=1.
 
 * Changes in Slurm 22.05.4
 ==========================
