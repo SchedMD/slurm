@@ -50,7 +50,10 @@ typedef enum {
 	SLURMSCRIPTD_BB_LUA,
 	SLURMSCRIPTD_EPILOG,
 	SLURMSCRIPTD_MAIL,
+	SLURMSCRIPTD_POWER,
 	SLURMSCRIPTD_PROLOG,
+	SLURMSCRIPTD_REBOOT,
+	SLURMSCRIPTD_RESV,
 } script_type_t;
 
 typedef struct {
@@ -78,6 +81,8 @@ typedef struct {
 	char *script_path;
 	script_type_t script_type;
 	uint32_t timeout;
+	char *tmp_file_env_name;
+	char *tmp_file_str;
 } run_script_msg_t;
 
 typedef struct {

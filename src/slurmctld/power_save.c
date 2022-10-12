@@ -76,19 +76,12 @@
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 #define MAX_SHUTDOWN_DELAY	10	/* seconds to wait for child procs
 					 * to exit after daemon shutdown
 					 * request, then orphan or kill proc */
-
-/* Records for tracking processes forked to suspend/resume nodes */
-typedef struct proc_track_struct {
-	pid_t  child_pid;	/* pid of process		*/
-	time_t child_time;	/* start time of process	*/
-	int tmp_fd;
-} proc_track_struct_t;
-static List proc_track_list = NULL;
 
 pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -127,11 +120,6 @@ static void  _do_resume(char *host, char *json);
 static void  _do_suspend(char *host);
 static int   _init_power_config(void);
 static void *_init_power_save(void *arg);
-static int   _kill_procs(void);
-static void  _reap_procs(void);
-static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id,
-		       char *json);
-static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
 
 static void _exc_node_part_free(void *x)
@@ -645,10 +633,11 @@ extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
 
 	nodes = bitmap2node_name(node_bitmap);
 	if (nodes) {
-		pid_t pid = _run_prog(resume_prog, nodes, features,
-				      job_ptr->job_id, NULL);
-		log_flag(POWER, "%s: pid %d reboot nodes %s features %s",
-			 __func__, (int) pid, nodes, features);
+		slurmscriptd_run_power(resume_prog, nodes, features,
+				       job_ptr->job_id, "resumeprog_reboot",
+				       max_timeout, NULL, NULL);
+		log_flag(POWER, "%s: reboot nodes %s features %s",
+			 __func__, nodes, features);
 	} else {
 		error("%s: bitmap2nodename", __func__);
 		rc = SLURM_ERROR;
@@ -660,184 +649,23 @@ extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
 
 static void _do_failed_nodes(char *hosts)
 {
-	pid_t pid = _run_prog(resume_fail_prog, hosts, NULL, 0, NULL);
-	log_flag(POWER, "power_save: pid %d handle failed nodes %s",
-		 (int)pid, hosts);
+	slurmscriptd_run_power(resume_fail_prog, hosts, NULL, 0,
+			       "resumefailprog", max_timeout, NULL, NULL);
+	log_flag(POWER, "power_save: handle failed nodes %s", hosts);
 }
 
 static void _do_resume(char *host, char *json)
 {
-	pid_t pid = _run_prog(resume_prog, host, NULL, 0, json);
-	log_flag(POWER, "power_save: pid %d waking nodes %s",
-		 (int) pid, host);
+	slurmscriptd_run_power(resume_prog, host, NULL, 0, "resumeprog",
+			       max_timeout, "SLURM_RESUME_FILE", json);
+	log_flag(POWER, "power_save: waking nodes %s", host);
 }
 
 static void _do_suspend(char *host)
 {
-	pid_t pid = _run_prog(suspend_prog, host, NULL, 0, NULL);
-	log_flag(POWER, "power_save: pid %d suspending nodes %s",
-		 (int) pid, host);
-}
-
-/* run a suspend or resume program
- * prog IN	- program to run
- * arg1 IN	- first program argument, the hostlist expression
- * arg2 IN	- second program argumentor NULL
- * job_id IN	- Passed as SLURM_JOB_ID environment variable
- * json IN	- Passed as tmp file in SLURM_RESUME_FILE environment variable
- */
-static pid_t _run_prog(char *prog, char *arg1, char *arg2,
-		       uint32_t job_id, char *json)
-{
-	char *argv[4], *pname, *tmp_file = NULL;
-	pid_t child;
-	int tmp_fd = -1;
-
-	if (prog == NULL)	/* disabled, useful for testing */
-		return -1;
-
-	pname = strrchr(prog, '/');
-	if (pname == NULL)
-		argv[0] = prog;
-	else
-		argv[0] = pname + 1;
-	argv[1] = arg1;
-	argv[2] = arg2;
-	argv[3] = NULL;
-
-	if (json &&
-	    ((tmp_fd = dump_to_memfd("resumeprog", json, &tmp_file)) == -1))
-		error("failed to create tmp file for ResumeProgram");
-
-	child = fork();
-	if (child == 0) {
-		char **env = NULL;
-		closeall(0);
-		setpgid(0, 0);
-
-		env = env_array_create();
-		env_array_append(&env, "SLURM_CONF", slurm_conf.slurm_conf);
-		if (job_id)
-			env_array_append_fmt(&env, "SLURM_JOB_ID", "%u",
-					     job_id);
-		if (tmp_file)
-			env_array_append(&env, "SLURM_RESUME_FILE", tmp_file);
-
-		execve(prog, argv, env);
-		_exit(1);
-	} else if (child < 0) {
-		error("fork: %m");
-	} else {
-		/* save the pid */
-		proc_track_struct_t *proc_track;
-		proc_track = xmalloc(sizeof(proc_track_struct_t));
-		proc_track->child_pid = child;
-		proc_track->child_time = time(NULL);
-		proc_track->tmp_fd = tmp_fd;
-		list_append(proc_track_list, proc_track);
-	}
-
-	xfree(tmp_file);
-	return child;
-}
-
-/* reap child processes previously forked to modify node state. */
-static void _reap_procs(void)
-{
-	int delay, rc, status;
-	ListIterator iter;
-	proc_track_struct_t *proc_track;
-
-	iter = list_iterator_create(proc_track_list);
-	while ((proc_track = list_next(iter))) {
-		rc = waitpid(proc_track->child_pid, &status, WNOHANG);
-		if (rc == 0)
-			continue;
-
-		delay = difftime(time(NULL), proc_track->child_time);
-		if (power_save_debug && (delay > max_timeout)) {
-			log_flag(POWER, "program %d ran for %d sec",
-				 (int) proc_track->child_pid, delay);
-		}
-
-		if (WIFEXITED(status)) {
-			rc = WEXITSTATUS(status);
-			if (rc != 0) {
-				error("power_save: program exit status of %d",
-				      rc);
-			} else
-				ping_nodes_now = true;
-		} else if (WIFSIGNALED(status)) {
-			error("power_save: program signaled: %s",
-			      strsignal(WTERMSIG(status)));
-		}
-
-		if (proc_track->tmp_fd != -1)
-			close(proc_track->tmp_fd);
-
-		list_delete_item(iter);
-	}
-	list_iterator_destroy(iter);
-}
-
-/* kill (or orphan) child processes previously forked to modify node state.
- * return the count of killed/orphaned processes */
-static int  _kill_procs(void)
-{
-	int killed = 0, rc, status;
-	ListIterator iter;
-	proc_track_struct_t *proc_track;
-
-	iter = list_iterator_create(proc_track_list);
-	while ((proc_track = list_next(iter))) {
-		rc = waitpid(proc_track->child_pid, &status, WNOHANG);
-		if (rc == 0) {
-#ifdef  POWER_SAVE_KILL_PROCS
-			error("power_save: killing process %d",
-			      proc_track->child_pid);
-			kill((0 - proc_track->child_pid), SIGKILL);
-#else
-			error("power_save: orphaning process %d",
-			      proc_track->child_pid);
-#endif
-			killed++;
-		} else {
-			/* process already completed */
-		}
-		list_delete_item(iter);
-	}
-	list_iterator_destroy(iter);
-
-	return killed;
-}
-
-/* shutdown power save daemons */
-static void _shutdown_power(void)
-{
-	int i, proc_cnt, shutdown_timeout;
-
-	shutdown_timeout = MIN(max_timeout, MAX_SHUTDOWN_DELAY);
-	/* Try to avoid orphan processes */
-	for (i = 0; ; i++) {
-		_reap_procs();
-		proc_cnt = list_count(proc_track_list);
-		if (proc_cnt == 0)	/* all procs completed */
-			break;
-		if (i >= shutdown_timeout) {
-			error("power_save: orphaning %d processes which are "
-			      "not terminating so slurmctld can exit",
-			      proc_cnt);
-			_kill_procs();
-			break;
-		} else if (i == 2) {
-			info("power_save: waiting for %d processes to complete",
-			     proc_cnt);
-		} else if (i % 5 == 0) {
-			debug("power_save: waiting for %d processes to complete",
-			      proc_cnt);
-		}
-		sleep(1);
-	}
+	slurmscriptd_run_power(suspend_prog, host, NULL, 0, "suspendprog",
+			       max_timeout, NULL, NULL);
+	log_flag(POWER, "power_save: suspending nodes %s", host);
 }
 
 /* Free all allocated memory */
@@ -1064,7 +892,6 @@ extern void start_power_mgr(pthread_t *thread_id)
 		return;
 	}
 	power_save_started = true;
-	proc_track_list = list_create(xfree_ptr);
 	slurm_mutex_unlock(&power_mutex);
 
 	slurm_thread_create(thread_id, _init_power_save, NULL);
@@ -1091,7 +918,6 @@ extern void power_save_fini(void)
 	slurm_mutex_lock(&power_mutex);
 	if (power_save_started) {     /* Already running */
 		power_save_started = false;
-		FREE_NULL_LIST(proc_track_list);
 		FREE_NULL_LIST(resume_job_list);
 	}
 	slurm_mutex_unlock(&power_mutex);
@@ -1145,8 +971,6 @@ static void *_init_power_save(void *arg)
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 
-		_reap_procs();
-
 		if (!power_save_enabled) {
 			debug("power_save mode not enabled, stopping power_save thread");
 			goto fini;
@@ -1164,10 +988,7 @@ static void *_init_power_save(void *arg)
 	}
 
 fini:	_clear_power_config();
-	_shutdown_power();
 	slurm_mutex_lock(&power_mutex);
-	FREE_NULL_LIST(proc_track_list);
-	proc_track_list = NULL;
 	power_save_enabled = false;
 	power_save_started = false;
 	slurm_cond_signal(&power_cond);

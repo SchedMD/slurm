@@ -50,7 +50,9 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/eio.h"
+#include "src/common/env.c"
 #include "src/common/fd.h"
+#include "src/common/fetch_config.h"
 #include "src/common/log.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
@@ -65,6 +67,7 @@
 #include "src/slurmctld/slurmscriptd_protocol_pack.h"
 
 #define MAX_POLL_WAIT 500 /* in milliseconds */
+#define MAX_SHUTDOWN_DELAY 10
 
 /*
  *****************************************************************************
@@ -123,6 +126,8 @@ static xhash_t *script_resp_map = NULL;
  */
 static int slurmscriptd_readfd = -1;
 static int slurmscriptd_writefd = -1;
+static pthread_mutex_t powersave_script_count_mutex;
+static int powersave_script_count = 0;
 
 
 /* Function definitions: */
@@ -200,6 +205,63 @@ static void _wait_for_script_resp(script_response_t *script_resp,
 	slurm_mutex_unlock(&script_resp->mutex);
 }
 
+static void _wait_for_powersave_scripts()
+{
+	static bool called = false;
+	int i, cnt;
+
+	/*
+	 * Only do this wait once. Under normal operation, this is called twice:
+	 * (1) _handle_shutdown()
+	 * (2) _handle_close()
+	 * We could just call this from _handle_shutdown(). However, if
+	 * slurmctld fatal()'s or dies in some other way without sending
+	 * SLURMSCRIPTD_SHUTDOWN, then only _handle_close() is called. So, we
+	 * need this to be called from both places but only happen once.
+	 */
+	if (called)
+		return;
+	called = true;
+
+	/*
+	 * ResumeProgram has a temporary file open held in memory.
+	 * Wait a short time for powersave scripts to finish before
+	 * shutting down (which will close the temporary file).
+	 */
+	for (i = 0; i < MAX_SHUTDOWN_DELAY; i++) {
+		slurm_mutex_lock(&powersave_script_count_mutex);
+		cnt = powersave_script_count;
+		slurm_mutex_unlock(&powersave_script_count_mutex);
+		if (!cnt)
+			break;
+		if (i == 0)
+			log_flag(SCRIPT, "Waiting up to %d seconds for %d powersave scripts to complete",
+				 MAX_SHUTDOWN_DELAY, cnt);
+
+		sleep(1);
+	}
+
+	/* Kill or orphan running scripts. */
+	run_command_shutdown();
+	if (cnt) {
+		error("power_save: orphaning %d processes which are not terminating so slurmctld can exit",
+		      cnt);
+
+		/*
+		 * Wait for the script completion messages to be processed and
+		 * sent to slurmctld, otherwise slurmctld may wait forever for
+		 * a message that won't come.
+		 */
+		while (cnt) {
+			slurm_mutex_lock(&powersave_script_count_mutex);
+			cnt = powersave_script_count;
+			slurm_mutex_unlock(&powersave_script_count_mutex);
+			usleep(100000); /* 100 ms */
+		}
+	}
+
+}
+
 static int _handle_close(eio_obj_t *obj, List objs)
 {
 	debug3("Called %s", __func__);
@@ -217,7 +279,7 @@ static int _handle_close(eio_obj_t *obj, List objs)
 	obj->shutdown = true;
 
 	if (!running_in_slurmctld()) { /* Only do this for slurmscriptd */
-		run_command_shutdown();
+		_wait_for_powersave_scripts();
 		track_script_flush();
 	}
 
@@ -377,12 +439,15 @@ static int _tot_wait (struct timeval *start_time)
  * Return the status or SLURM_ERROR if fork() fails.
  */
 static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
-		       int timeout, char **resp_msg, bool *signalled)
+		       int timeout, char *tmp_file_env_name, char *tmp_file_str,
+		       char **resp_msg, bool *signalled)
 {
 	int status = SLURM_ERROR;
 	int ms_timeout;
 	char *resp = NULL;
-	bool killed;
+	bool killed = false;
+	int tmp_fd = 0;
+	char *tmp_file = NULL;
 
 	if ((timeout <= 0) || (timeout == NO_VAL16))
 		ms_timeout = -1; /* wait indefinitely in run_command() */
@@ -392,9 +457,34 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	run_command_args->max_wait = ms_timeout;
 	run_command_args->status = &status;
 
-	track_script_rec_add(job_id, 0, pthread_self());
+	if (tmp_file_str) {
+		/*
+		 * Open a file into which we dump tmp_file_str.
+		 * Set an environment variable so the script will know how to
+		 * read this file. We need to keep this file open for as long
+		 * as the script is running.
+		 */
+		xassert(tmp_file_env_name);
+		tmp_fd = dump_to_memfd((char*) run_command_args->script_type,
+				       tmp_file_str, &tmp_file);
+		if (tmp_fd == SLURM_ERROR) {
+			error("Failed to create tmp file for %s",
+			      run_command_args->script_type);
+			tmp_fd = 0;
+		} else {
+			env_array_append(&run_command_args->env,
+					 tmp_file_env_name, tmp_file);
+		}
+	}
+
+	if (run_command_args->tid)
+		track_script_rec_add(job_id, 0, pthread_self());
 	resp = run_command(run_command_args);
-	if ((killed = track_script_killed(pthread_self(), status, true))) {
+	if (run_command_args->tid)
+		killed = track_script_killed(pthread_self(), status, true);
+	else if (WIFSIGNALED(status) && (WTERMSIG(status) == SIGKILL))
+		killed = true;
+	if (killed) {
 		info("%s: JobId=%u %s killed by signal %u",
 		     __func__, job_id, run_command_args->script_type,
 		     WTERMSIG(status));
@@ -417,7 +507,11 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	 * Use pthread_self here instead of track_script_rec->tid to avoid any
 	 * potential for race.
 	 */
-	track_script_remove(pthread_self());
+	if (run_command_args->tid)
+		track_script_remove(pthread_self());
+
+	if (tmp_fd)
+		close(tmp_fd);
 
 	if (resp_msg)
 		*resp_msg = resp;
@@ -433,7 +527,6 @@ static int _handle_flush(slurmscriptd_msg_t *recv_msg)
 {
 	log_flag(SCRIPT, "Handling %s", rpc_num2string(recv_msg->msg_type));
 	/* Kill all running scripts */
-	run_command_shutdown();
 	track_script_flush();
 
 	/* We need to respond to slurmctld that we are done */
@@ -636,8 +729,8 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 static int _handle_shutdown(slurmscriptd_msg_t *recv_msg)
 {
 	log_flag(SCRIPT, "Handling %s", rpc_num2string(recv_msg->msg_type));
-	/* Kill all running scripts. */
-	run_command_shutdown();
+	/* Kill or orphan all running scripts. */
+	_wait_for_powersave_scripts();
 	track_script_flush();
 
 	eio_signal_shutdown(msg_handle);
@@ -662,12 +755,18 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		.timed_out = &timed_out,
 	};
 
+	log_flag(SCRIPT, "Handling %s (name=%s%s, JobId=%u, timeout=%u seconds, argc=%u, key=%s)",
+		 rpc_num2string(recv_msg->msg_type),
+		 script_msg->script_type == SLURMSCRIPTD_BB_LUA ?
+		 "burst_buffer.lua:" : "",
+		 script_msg->script_name,
+		 script_msg->job_id,
+		 script_msg->timeout,
+		 script_msg->argc,
+		 recv_msg->key);
+
 	switch (script_msg->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
-		log_flag(SCRIPT, "Handling %s (burst_buffer.lua:%s) for JobId=%u: timeout=%u seconds, argc=%u, key=%s",
-			 rpc_num2string(recv_msg->msg_type),
-			 script_msg->script_name, script_msg->job_id,
-			 script_msg->timeout, script_msg->argc, recv_msg->key);
 		status = _run_bb_script(script_msg->script_name,
 					script_msg->job_id,
 					script_msg->timeout, script_msg->argc,
@@ -677,14 +776,8 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
 	case SLURMSCRIPTD_MAIL:
 	case SLURMSCRIPTD_PROLOG:
-		if (script_msg->job_id)
-			log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
-				 rpc_num2string(recv_msg->msg_type),
-				 script_msg->script_name, script_msg->job_id);
-		else
-			log_flag(SCRIPT, "Handling %s (%s)",
-				 rpc_num2string(recv_msg->msg_type),
-				 script_msg->script_name);
+	case SLURMSCRIPTD_REBOOT:
+	case SLURMSCRIPTD_RESV:
 		/*
 		 * script_msg->timeout is in seconds but
 		 * run_command_args.max_wait expects milliseconds.
@@ -693,7 +786,31 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		 */
 		status = _run_script(&run_command_args, script_msg->job_id,
 				     script_msg->timeout,
+				     script_msg->tmp_file_env_name,
+				     script_msg->tmp_file_str,
 				     &resp_msg, &signalled);
+		break;
+	case SLURMSCRIPTD_POWER:
+		slurm_mutex_lock(&powersave_script_count_mutex);
+		powersave_script_count++;
+		slurm_mutex_unlock(&powersave_script_count_mutex);
+
+		/*
+		 * We want these scripts to keep running even if slurmctld
+		 * shuts down, so do not track these scripts with track_script
+		 * so they don't get killed when slurmctld shuts down.
+		 */
+		run_command_args.tid = 0;
+		run_command_args.orphan_on_shutdown = true;
+		status = _run_script(&run_command_args, script_msg->job_id,
+				     script_msg->timeout,
+				     script_msg->tmp_file_env_name,
+				     script_msg->tmp_file_str,
+				     &resp_msg, &signalled);
+
+		slurm_mutex_lock(&powersave_script_count_mutex);
+		powersave_script_count--;
+		slurm_mutex_unlock(&powersave_script_count_mutex);
 		break;
 	default:
 		error("%s: Invalid script type=%d",
@@ -752,31 +869,27 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 	if (msg->key)
 		rc = _notify_script_done(msg->key, script_complete);
 
+	log_flag(SCRIPT, "Handling %s (name=%s, JobId=%u, resp_msg=%s)",
+		 rpc_num2string(msg->msg_type),
+		 script_complete->script_name,
+		 script_complete->job_id,
+		 script_complete->resp_msg);
+
 	switch (script_complete->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
 	case SLURMSCRIPTD_MAIL:
-		if (script_complete->job_id)
-			log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
-				 rpc_num2string(msg->msg_type),
-				 script_complete->script_name,
-				 script_complete->job_id);
-		else
-			log_flag(SCRIPT, "Handling %s (%s)",
-				 rpc_num2string(msg->msg_type),
-				 script_complete->script_name);
+	case SLURMSCRIPTD_REBOOT:
+	case SLURMSCRIPTD_RESV:
 		break; /* Nothing more to do */
 	case SLURMSCRIPTD_EPILOG:
-		log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
-			 rpc_num2string(msg->msg_type),
-			 script_complete->script_name, script_complete->job_id);
 		prep_epilog_slurmctld_callback(script_complete->status,
 					       script_complete->job_id,
 					       script_complete->timed_out);
 		break;
+	case SLURMSCRIPTD_POWER:
+		ping_nodes_now = true;
+		break;
 	case SLURMSCRIPTD_PROLOG:
-		log_flag(SCRIPT, "Handling %s (%s) for JobId=%u",
-			 rpc_num2string(msg->msg_type),
-			 script_complete->script_name, script_complete->job_id);
 		prep_prolog_slurmctld_callback(script_complete->status,
 					       script_complete->job_id,
 					       script_complete->timed_out);
@@ -789,9 +902,6 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 		 * since it wasn't a script that ran, so we just return right
 		 * now.
 		 */
-		log_flag(SCRIPT, "Handling %s: Received response from %s",
-			 rpc_num2string(msg->msg_type),
-			 script_complete->script_name);
 		return SLURM_SUCCESS;
 	default:
 		error("%s: unknown script type for script=%s, JobId=%u",
@@ -1094,6 +1204,51 @@ extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
 	return status;
 }
 
+extern void slurmscriptd_run_power(char *script_path, char *hosts,
+				   char *features, uint32_t job_id,
+				   char *script_name, uint32_t timeout,
+				   char *tmp_file_env_name, char *tmp_file_str)
+{
+	run_script_msg_t run_script_msg;
+	int argc;
+	char **env, **argv;
+
+	argc = 3;
+	argv = xcalloc(argc + 1, sizeof(char*)); /* Null terminated */
+	argv[0] = script_path;
+	argv[1] = hosts;
+	argv[2] = features;
+
+	env = env_array_create();
+	env_array_append(&env, "SLURM_CONF", slurm_conf.slurm_conf);
+	if (job_id)
+		env_array_append_fmt(&env, "SLURM_JOB_ID", "%u", job_id);
+
+	memset(&run_script_msg, 0, sizeof(run_script_msg));
+
+	/* Init run_script_msg */
+	run_script_msg.argc = argc;
+	run_script_msg.argv = argv;
+	run_script_msg.env = env;
+	run_script_msg.job_id = job_id;
+	run_script_msg.script_name = script_name;
+	run_script_msg.script_path = script_path;
+	run_script_msg.script_type = SLURMSCRIPTD_POWER;
+	run_script_msg.timeout = timeout;
+	run_script_msg.tmp_file_env_name = tmp_file_env_name;
+	run_script_msg.tmp_file_str = tmp_file_str;
+
+	/* Send message; wait for response */
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
+			      &run_script_msg, false, NULL, NULL);
+
+
+	/* Cleanup */
+	/* Don't free contents of argv since those were not xstrdup()'d */
+	xfree(argv);
+	xfree_array(env);
+}
+
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				   uint32_t argc, char **argv, uint32_t timeout,
 				   char **resp, bool *track_script_signalled)
@@ -1155,6 +1310,49 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 
 	/* Don't free argv[0], since we did not xstrdup that. */
 	xfree(run_script_msg.argv);
+}
+
+extern int slurmscriptd_run_reboot(char *script_path, uint32_t argc,
+				   char **argv)
+{
+	int status;
+
+	run_script_msg_t run_script_msg;
+
+	memset(&run_script_msg, 0, sizeof(run_script_msg));
+
+	/* Init run_script_msg */
+	run_script_msg.argc = argc;
+	run_script_msg.argv = argv;
+	run_script_msg.script_name = "RebootProgram";
+	run_script_msg.script_path = script_path;
+	run_script_msg.script_type = SLURMSCRIPTD_REBOOT;
+
+	/* Send message; wait for response */
+	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
+				       &run_script_msg, true, NULL, NULL);
+
+	return status;
+}
+
+extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
+				  uint32_t timeout, char *script_name)
+{
+	run_script_msg_t run_script_msg;
+
+	memset(&run_script_msg, 0, sizeof(run_script_msg));
+
+	/* Init run_script_msg */
+	run_script_msg.argc = argc;
+	run_script_msg.argv = argv;
+	run_script_msg.script_name = script_name;
+	run_script_msg.script_path = script_path;
+	run_script_msg.script_type = SLURMSCRIPTD_RESV;
+	run_script_msg.timeout = timeout;
+
+	/* Send message; wait for response */
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
+			      &run_script_msg, false, NULL, NULL);
 }
 
 extern void slurmscriptd_update_debug_flags(uint64_t debug_flags)
@@ -1317,11 +1515,13 @@ extern int slurmscriptd_init(int argc, char **argv)
 		}
 
 		debug("slurmscriptd: Got ack from slurmctld, initialization successful");
+		slurm_mutex_init(&powersave_script_count_mutex);
 		slurm_mutex_init(&write_mutex);
 		_slurmscriptd_mainloop();
 
 #ifdef MEMORY_LEAK_DEBUG
 		track_script_fini();
+		slurm_mutex_destroy(&powersave_script_count_mutex);
 #endif
 
 		/* We never want to return from here, only exit. */

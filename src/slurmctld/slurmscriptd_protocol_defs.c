@@ -57,6 +57,8 @@ extern void slurmscriptd_free_run_script_msg(run_script_msg_t *msg)
 	xfree_array(msg->env);
 	xfree(msg->script_name);
 	xfree(msg->script_path);
+	xfree(msg->tmp_file_env_name);
+	xfree(msg->tmp_file_str);
 	xfree(msg);
 }
 

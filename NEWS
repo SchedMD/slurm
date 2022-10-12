@@ -75,6 +75,9 @@ documents those changes that are of interest to users and administrators.
     over locally reconstructing an RSA256 key file.
  -- auth/jwt - add optional AuthAltParameters field "userclaimfield=" to allow
     overriding "sun" claim to site specific field.
+ -- Run the following scripts in slurmscriptd instead of slurmctld:
+    ResumeProgram, ResumeFailProgram, SuspendProgram, ResvProlog, ResvEpilog,
+    and RebootProgram (only with SlurmctldParameters=reboot_from_controller).
 
 * Changes in Slurm 22.05.5
 ==========================

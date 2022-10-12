@@ -44,6 +44,7 @@ typedef struct {
 	char **env;
 	uint32_t job_id;
 	int max_wait;
+	bool orphan_on_shutdown;
 	char **script_argv;
 	const char *script_path;
 	const char *script_type;
@@ -90,6 +91,8 @@ extern int run_command_count(void);
  * env IN - environment for the command, if NULL execv is used
  * max_wait IN - Maximum time to wait in milliseconds,
  *		 -1 for no limit (asynchronous)
+ * orphan_on_shutdown IN - If true, then instead of killing the script on
+ *                         shutdown, orphan the script instead.
  * script_argv IN - Arguments to the script
  * script_path IN - Fully qualified pathname of the program to execute
  * script_type IN - Type of program being run (e.g. "StartStageIn")
