@@ -43,6 +43,7 @@
 #include "preempt.h"
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
+#include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -52,6 +53,7 @@
 #include "src/slurmctld/acct_policy.h"
 
 static bool youngest_order = false;
+static uint32_t min_exempt_priority = NO_VAL;
 
 typedef struct slurm_preempt_ops {
 	bool		(*job_preempt_check)  (job_queue_rec_t *preemptor,
@@ -93,6 +95,9 @@ static int _is_job_preempt_exempt_internal(void *x, void *key)
 		 * Automatic preemption.
 		 */
 	} else if (!(*(ops.preemptable))(preemptee_ptr, preemptor_ptr))
+		return 1;
+
+	if (min_exempt_priority < preemptee_ptr->priority)
 		return 1;
 
 	if (preemptor_ptr->details &&
@@ -220,7 +225,7 @@ static int _sort_by_youngest(void *x, void *y)
 extern int slurm_preempt_init(void)
 {
 	int retval = SLURM_SUCCESS;
-	char *plugin_type = "preempt";
+	char *plugin_type = "preempt", *temp_str;
 
 	/* This function is called frequently, so it should be as fast as
 	 * possible. The test below will be true almost all of the time and
@@ -247,6 +252,10 @@ extern int slurm_preempt_init(void)
 
 	if (xstrcasestr(slurm_conf.sched_params, "preempt_youngest_first"))
 		youngest_order = true;
+
+	if ((temp_str = xstrcasestr(slurm_conf.preempt_params,
+				    "min_exempt_priority=")))
+		parse_uint32((temp_str + 20), &min_exempt_priority);
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
