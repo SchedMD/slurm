@@ -50,7 +50,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/eio.h"
-#include "src/common/env.c"
+#include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
 #include "src/common/log.h"
