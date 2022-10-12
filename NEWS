@@ -78,6 +78,8 @@ documents those changes that are of interest to users and administrators.
  -- scontrol - Requested TRES and allocated TRES will now always be printed when
     showing jobs, instead of one TRES output that was either the requested or
     allocated.
+ -- Improve scheduling performance for dynamic nodes and nodes with features by
+    consolidating like config records.
 
 * Changes in Slurm 22.05.6
 ==========================
