@@ -41,6 +41,9 @@ HIGHLIGHTS
  -- accounting_storage/mysql - change purge/archive to calculate record ages
     based on end time, rather than start or submission times.
  -- job_submit/lua - add support for log_user() from slurm_job_modify().
+ -- Run the following scripts in slurmscriptd instead of slurmctld:
+    ResumeProgram, ResumeFailProgram, SuspendProgram, ResvProlog, ResvEpilog,
+    and RebootProgram (only with SlurmctldParameters=reboot_from_controller).
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
