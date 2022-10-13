@@ -760,7 +760,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	if (part->preempt_mode != NO_VAL16)
 		part_ptr->preempt_mode = part->preempt_mode;
 
-	if (part->disable_root_jobs == NO_VAL16) {
+	if (part->disable_root_jobs == NO_VAL8) {
 		if (slurm_conf.conf_flags & CTL_CONF_DRJ)
 			part_ptr->flags |= PART_FLAG_NO_ROOT;
 	} else if (part->disable_root_jobs) {
