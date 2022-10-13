@@ -198,7 +198,7 @@ const int num_classes = sizeof(classes) / sizeof(classes[0]);
  */
 static bool _config_tcs(const char *token)
 {
-	char *arg, *save_ptr = NULL, *tcs, *tc;
+	char *arg, *save_ptr = NULL, *tcs = NULL, *tc;
 	uint32_t tcbits = 0;
 	int i;
 
