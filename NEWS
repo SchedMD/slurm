@@ -115,6 +115,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix task/cray_aries error finishing an interactive step, avoiding correct
     cleanup.
  -- Correctly set max_nodes when --ntasks=1.
+ -- Fix configure script on FreeBSD.
 
 * Changes in Slurm 22.05.4
 ==========================
