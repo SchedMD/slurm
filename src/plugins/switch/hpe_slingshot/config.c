@@ -36,7 +36,6 @@
 
 #include "config.h"
 
-#include "src/common/slurm_xlator.h"
 #include "switch_hpe_slingshot.h"
 
 /* Set this to true if VNI table is re-sized and loses some bits */

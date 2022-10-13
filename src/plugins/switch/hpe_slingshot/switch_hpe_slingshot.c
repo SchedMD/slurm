@@ -38,15 +38,28 @@
 #include "config.h"
 
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/strlcpy.h"
 
+#include "src/slurmctld/slurmctld.h"
+
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
 #include "switch_hpe_slingshot.h"
 
 /*
+ * These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern slurm_conf_t slurm_conf __attribute__((weak_import));
+#else
+slurm_conf_t slurm_conf;
+#endif
+
+ /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
  *
