@@ -54,6 +54,8 @@ static int cxi_ndevs = 0;
 
 /* Function pointers loaded from libcxi */
 static int (*cxil_get_device_list_p)(struct cxil_device_list **);
+static int (*cxil_get_svc_list_p)(struct cxil_dev *dev,
+				  struct cxil_svc_list **svc_list);
 static int (*cxil_open_device_p)(uint32_t, struct cxil_dev **);
 static int (*cxil_alloc_svc_p)(struct cxil_dev *, struct cxi_svc_desc *,
 	struct cxi_svc_fail_info *);
@@ -74,6 +76,7 @@ do { \
 static bool _load_cxi_funcs(void *lib, char *version)
 {
 	LOOKUP_SYM(lib, version, cxil_get_device_list);
+	LOOKUP_SYM(lib, version, cxil_get_svc_list);
 	LOOKUP_SYM(lib, version, cxil_open_device);
 	LOOKUP_SYM(lib, version, cxil_alloc_svc);
 	LOOKUP_SYM(lib, version, cxil_destroy_svc);
@@ -121,7 +124,7 @@ static bool _get_reserved_limits(int dev, slingshot_limits_set_t *limits)
 
 	if (!cxi_devs[dev])
 		return true;
-	if ((rc = cxil_get_svc_list(cxi_devs[dev], &list))) {
+	if ((rc = cxil_get_svc_list_p(cxi_devs[dev], &list))) {
 		error("Could not get service list for CXI device[%d] dev_id=%d (%s): %d",
 			dev, cxi_devs[dev]->info.dev_id,
 			cxi_devs[dev]->info.device_name, rc);
