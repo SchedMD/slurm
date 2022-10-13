@@ -43,7 +43,7 @@
 
 #include "src/common/cli_filter.h"
 #include "src/common/data.h"
-#include "src/common/plugstack.h"
+#include "src/common/spank.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 

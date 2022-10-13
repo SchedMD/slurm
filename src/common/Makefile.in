@@ -166,12 +166,11 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	io_hdr.lo job_options.lo job_resources.lo list.lo log.lo \
 	net.lo node_conf.lo node_features.lo oci_config.lo openapi.lo \
 	optz.lo pack.lo parse_config.lo parse_time.lo parse_value.lo \
-	plugin.lo plugrack.lo plugstack.lo power.lo prep.lo \
-	print_fields.lo proc_args.lo read_config.lo reverse_tree.lo \
-	run_command.lo run_in_daemon.lo select.lo setproctitle.lo \
-	site_factor.lo slurm_accounting_storage.lo \
-	slurm_acct_gather.lo slurm_acct_gather_energy.lo \
-	slurm_acct_gather_filesystem.lo \
+	plugin.lo plugrack.lo power.lo prep.lo print_fields.lo \
+	proc_args.lo read_config.lo reverse_tree.lo run_command.lo \
+	run_in_daemon.lo select.lo setproctitle.lo site_factor.lo \
+	slurm_accounting_storage.lo slurm_acct_gather.lo \
+	slurm_acct_gather_energy.lo slurm_acct_gather_filesystem.lo \
 	slurm_acct_gather_interconnect.lo slurm_acct_gather_profile.lo \
 	slurm_auth.lo slurm_cred.lo slurm_errno.lo \
 	slurm_ext_sensors.lo slurm_jobacct_gather.lo slurm_jobcomp.lo \
@@ -182,7 +181,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	slurm_resource_info.lo slurm_route.lo slurm_rlimits_info.lo \
 	slurm_selecttype_info.lo slurm_step_layout.lo slurm_time.lo \
 	slurm_topology.lo slurmdb_defs.lo slurmdb_pack.lo \
-	slurmdbd_defs.lo slurmdbd_pack.lo state_control.lo \
+	slurmdbd_defs.lo slurmdbd_pack.lo spank.lo state_control.lo \
 	stepd_api.lo strlcpy.lo strnatcmp.lo switch.lo timers.lo \
 	track_script.lo tres_bind.lo tres_frequency.lo uid.lo \
 	util-net.lo working_cluster.lo workq.lo \
@@ -234,13 +233,12 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/optz.Plo ./$(DEPDIR)/pack.Plo \
 	./$(DEPDIR)/parse_config.Plo ./$(DEPDIR)/parse_time.Plo \
 	./$(DEPDIR)/parse_value.Plo ./$(DEPDIR)/plugin.Plo \
-	./$(DEPDIR)/plugrack.Plo ./$(DEPDIR)/plugstack.Plo \
-	./$(DEPDIR)/power.Plo ./$(DEPDIR)/prep.Plo \
-	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/proc_args.Plo \
-	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/reverse_tree.Plo \
-	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
-	./$(DEPDIR)/select.Plo ./$(DEPDIR)/setproctitle.Plo \
-	./$(DEPDIR)/site_factor.Plo \
+	./$(DEPDIR)/plugrack.Plo ./$(DEPDIR)/power.Plo \
+	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/print_fields.Plo \
+	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
+	./$(DEPDIR)/reverse_tree.Plo ./$(DEPDIR)/run_command.Plo \
+	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/select.Plo \
+	./$(DEPDIR)/setproctitle.Plo ./$(DEPDIR)/site_factor.Plo \
 	./$(DEPDIR)/slurm_accounting_storage.Plo \
 	./$(DEPDIR)/slurm_acct_gather.Plo \
 	./$(DEPDIR)/slurm_acct_gather_energy.Plo \
@@ -266,14 +264,14 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/slurm_step_layout.Plo ./$(DEPDIR)/slurm_time.Plo \
 	./$(DEPDIR)/slurm_topology.Plo ./$(DEPDIR)/slurmdb_defs.Plo \
 	./$(DEPDIR)/slurmdb_pack.Plo ./$(DEPDIR)/slurmdbd_defs.Plo \
-	./$(DEPDIR)/slurmdbd_pack.Plo ./$(DEPDIR)/state_control.Plo \
-	./$(DEPDIR)/stepd_api.Plo ./$(DEPDIR)/strlcpy.Plo \
-	./$(DEPDIR)/strnatcmp.Plo ./$(DEPDIR)/switch.Plo \
-	./$(DEPDIR)/timers.Plo ./$(DEPDIR)/track_script.Plo \
-	./$(DEPDIR)/tres_bind.Plo ./$(DEPDIR)/tres_frequency.Plo \
-	./$(DEPDIR)/uid.Plo ./$(DEPDIR)/util-net.Plo \
-	./$(DEPDIR)/working_cluster.Plo ./$(DEPDIR)/workq.Plo \
-	./$(DEPDIR)/write_labelled_message.Plo \
+	./$(DEPDIR)/slurmdbd_pack.Plo ./$(DEPDIR)/spank.Plo \
+	./$(DEPDIR)/state_control.Plo ./$(DEPDIR)/stepd_api.Plo \
+	./$(DEPDIR)/strlcpy.Plo ./$(DEPDIR)/strnatcmp.Plo \
+	./$(DEPDIR)/switch.Plo ./$(DEPDIR)/timers.Plo \
+	./$(DEPDIR)/track_script.Plo ./$(DEPDIR)/tres_bind.Plo \
+	./$(DEPDIR)/tres_frequency.Plo ./$(DEPDIR)/uid.Plo \
+	./$(DEPDIR)/util-net.Plo ./$(DEPDIR)/working_cluster.Plo \
+	./$(DEPDIR)/workq.Plo ./$(DEPDIR)/write_labelled_message.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xassert.Plo \
 	./$(DEPDIR)/xhash.Plo ./$(DEPDIR)/xmalloc.Plo \
 	./$(DEPDIR)/xsignal.Plo ./$(DEPDIR)/xstring.Plo
@@ -671,8 +669,6 @@ libcommon_la_SOURCES = \
 	plugin.h				\
 	plugrack.c				\
 	plugrack.h				\
-	plugstack.c				\
-	plugstack.h				\
 	power.c					\
 	power.h					\
 	prep.c					\
@@ -765,6 +761,8 @@ libcommon_la_SOURCES = \
 	slurmdbd_defs.h				\
 	slurmdbd_pack.c				\
 	slurmdbd_pack.h				\
+	spank.c					\
+	spank.h					\
 	state_control.c				\
 	state_control.h				\
 	stepd_api.c				\
@@ -917,7 +915,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_value.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugrack.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugstack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print_fields.Plo@am__quote@ # am--include-marker
@@ -963,6 +960,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdb_pack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_defs.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_pack.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spank.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_control.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@ # am--include-marker
@@ -1149,7 +1147,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/parse_value.Plo
 	-rm -f ./$(DEPDIR)/plugin.Plo
 	-rm -f ./$(DEPDIR)/plugrack.Plo
-	-rm -f ./$(DEPDIR)/plugstack.Plo
 	-rm -f ./$(DEPDIR)/power.Plo
 	-rm -f ./$(DEPDIR)/prep.Plo
 	-rm -f ./$(DEPDIR)/print_fields.Plo
@@ -1195,6 +1192,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/slurmdb_pack.Plo
 	-rm -f ./$(DEPDIR)/slurmdbd_defs.Plo
 	-rm -f ./$(DEPDIR)/slurmdbd_pack.Plo
+	-rm -f ./$(DEPDIR)/spank.Plo
 	-rm -f ./$(DEPDIR)/state_control.Plo
 	-rm -f ./$(DEPDIR)/stepd_api.Plo
 	-rm -f ./$(DEPDIR)/strlcpy.Plo
@@ -1301,7 +1299,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/parse_value.Plo
 	-rm -f ./$(DEPDIR)/plugin.Plo
 	-rm -f ./$(DEPDIR)/plugrack.Plo
-	-rm -f ./$(DEPDIR)/plugstack.Plo
 	-rm -f ./$(DEPDIR)/power.Plo
 	-rm -f ./$(DEPDIR)/prep.Plo
 	-rm -f ./$(DEPDIR)/print_fields.Plo
@@ -1347,6 +1344,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/slurmdb_pack.Plo
 	-rm -f ./$(DEPDIR)/slurmdbd_defs.Plo
 	-rm -f ./$(DEPDIR)/slurmdbd_pack.Plo
+	-rm -f ./$(DEPDIR)/spank.Plo
 	-rm -f ./$(DEPDIR)/state_control.Plo
 	-rm -f ./$(DEPDIR)/stepd_api.Plo
 	-rm -f ./$(DEPDIR)/strlcpy.Plo

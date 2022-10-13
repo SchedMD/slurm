@@ -90,8 +90,6 @@ libcommon_la_SOURCES =				\
 	plugin.h				\
 	plugrack.c				\
 	plugrack.h				\
-	plugstack.c				\
-	plugstack.h				\
 	power.c					\
 	power.h					\
 	prep.c					\
@@ -184,6 +182,8 @@ libcommon_la_SOURCES =				\
 	slurmdbd_defs.h				\
 	slurmdbd_pack.c				\
 	slurmdbd_pack.h				\
+	spank.c					\
+	spank.h					\
 	state_control.c				\
 	state_control.h				\
 	stepd_api.c				\

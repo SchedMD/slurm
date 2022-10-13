@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  plugstack.c -- stackable plugin architecture for node job kontrol (SPANK)
+ *  spank.c -- stackable plugin architecture for node job kontrol (SPANK)
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -53,7 +53,7 @@
 #include "src/common/xassert.h"
 #include "src/common/strlcpy.h"
 #include "src/common/read_config.h"
-#include "src/common/plugstack.h"
+#include "src/common/spank.h"
 #include "src/common/optz.h"
 #include "src/common/job_options.h"
 #include "src/common/env.h"

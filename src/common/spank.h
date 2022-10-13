@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  plugstack.h -- plugin stack handling
+ *  spank.h -- plugin stack handling
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
