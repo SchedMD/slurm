@@ -333,6 +333,7 @@ extern bool slingshot_open_cxi_lib(void)
 	cxi_avail = true;
 out:
 	log_flag(SWITCH, "cxi_avail=%d", cxi_avail);
+
 	return cxi_avail;
 }
 
@@ -348,6 +349,7 @@ static struct cxil_dev *_device_name_to_dev(const char *devname)
 		if (!xstrcmp(devname, cxi_devs[dev]->info.device_name))
 			return cxi_devs[dev];
 	}
+
 	return NULL;
 }
 
@@ -533,6 +535,7 @@ extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
 
 error:
 	slingshot_destroy_services(job);
+
 	return false;
 }
 
