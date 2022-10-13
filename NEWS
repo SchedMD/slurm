@@ -79,6 +79,9 @@ documents those changes that are of interest to users and administrators.
     showing jobs, instead of one TRES output that was either the requested or
     allocated.
 
+* Changes in Slurm 22.05.6
+==========================
+
 * Changes in Slurm 22.05.5
 ==========================
  -- Fix node becoming IDLE while in an invalid registration state.
