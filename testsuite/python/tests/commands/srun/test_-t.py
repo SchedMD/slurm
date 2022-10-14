@@ -28,8 +28,8 @@ def test_t():
     # "Terminated" message, but if the timing is bad only the "Terminated"
     # message gets sent. This is due to srun recognizing job termination
     # prior to the message from slurmd being processed.
-    
-    
+
+
     timeout = int(sleep_time) + int(kill_wait)
     output = atf.run_command_error("srun -t1 sleep " + sleep_time, timeout=timeout)
     assert re.search(r'time limit|terminated', output, re.IGNORECASE) is not None

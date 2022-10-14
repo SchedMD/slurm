@@ -10,7 +10,7 @@ node_count = 1
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
-def setup():    
+def setup():
     atf.require_slurm_running()
     atf.require_nodes(node_count)
 

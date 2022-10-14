@@ -37,7 +37,7 @@ class FPC:
     # only works for file names, not full paths
     def remove_file(self, file_path):
         os.remove(str(self.tmp_path) + "/" + file_path)
-    
+
     # returns the first file in the tmp_path
     # usful when you only have 1 file in tmp_path
     def get_tmp_file(self):
@@ -126,7 +126,7 @@ def test_output_error_formatting(tmp_path):
     file_err = fpc.get_tmp_file()
     assert re.search(user_name, file_err), f"%u: User name ({user_name}) was not in file name ({file_err})"
     fpc.remove_file(file_err)
-    
+
     # Test %n puts the node identifier relative to current job in the file name
     node_id = 0
     file_out = fpc.create_file_path("n")
@@ -195,7 +195,7 @@ done""")
     fpc.remove_file(result_err)
 
     # Test %N puts the short hostname in the file name
-    file_out = fpc.create_file_path("N")    
+    file_out = fpc.create_file_path("N")
     file_err = fpc.create_file_path("N", ERROR_TYPE)
     atf.run_job(f"--output={file_out} printenv SLURMD_NODENAME")
     result_out = fpc.get_tmp_file()
@@ -219,7 +219,7 @@ done""")
 
     # Test %A puts the Job array's master job allocation number in the file name
     array_size = 2
-    file_out = fpc.create_file_path("A")    
+    file_out = fpc.create_file_path("A")
     file_err = fpc.create_file_path("A", ERROR_TYPE)
     file_in = tmp_path / "file_in.A.input"
     atf.make_bash_script(file_in, f"""srun -O --output={file_out} hostname""")
@@ -236,13 +236,13 @@ done""")
     job_id = atf.submit_job(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
     atf.wait_for_job_state(job_id, "DONE")
     os.remove(file_in)
-    result_err = fpc.get_tmp_file()    
+    result_err = fpc.get_tmp_file()
     assert str(job_id) in result_err, f"%A: Job array's master job allocation number ({job_id}) was not in file name ({result_err})"
     fpc.remove_file(result_err)
 
     # Test %a puts the Job array ID in the file name
     array_size = 2
-    file_out = fpc.create_file_path(f"A.%a")    
+    file_out = fpc.create_file_path(f"A.%a")
     file_err = fpc.create_file_path(f"A.%a", ERROR_TYPE)
     file_in = tmp_path / "file_in.A.a.input"
     atf.make_bash_script(file_in, f"""srun -O --output={file_out} hostname""")

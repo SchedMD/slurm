@@ -9,7 +9,7 @@ import re
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
-def setup():    
+def setup():
     atf.require_slurm_running()
 
 

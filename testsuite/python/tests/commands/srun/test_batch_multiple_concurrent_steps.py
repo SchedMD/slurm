@@ -26,7 +26,7 @@ def test_batch_multiple_concurrent_steps():
     file_err = atf.module_tmp_path / 'file_err'
     job_mem_opt = f"--mem-per-cpu={total_mem}M"
     step_mem_opt = f"--mem-per-cpu={memory}M"
-    
+
     # Build input script file
     #
     # NOTE: Explicitly set a small memory limit. Without explicitly setting the step
@@ -41,7 +41,7 @@ wait""")
     # Spawn a batch job with multiple steps in background
     job_id = atf.submit_job(f"-O {job_mem_opt} -n{steps_submitted} --output={file_out} {file_in}")
     atf.wait_for_job_state(job_id, 'RUNNING', fatal=True)
-    
+
     # Check that all of the steps in background are in squeue at the same time within a time limit
     steps_started = 0
     def count_steps_started():

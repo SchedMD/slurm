@@ -329,7 +329,7 @@ def test_add_cluster_verify_state():
     output = atf.run_command_output(f"sacctmgr show cluster {cluster4} format=\"cluster%20,federation%20,fedstate%20,id\"", user=atf.properties['slurm-user'])
     assert first_match(r'Cluster +Federation +FedState +ID', output)
     assert next_match(fr"(?m)^ +{cluster4} +NA +0")
-    
+
 def test_add_cluster_federation_activates():
     """Test adding cluster to federation sets state to ACTIVE"""
 
@@ -353,7 +353,7 @@ def test_modify_cluster_same_federation():
     results = atf.run_command(f"sacctmgr -i modify cluster {cluster4} set federation={federation3}", user=atf.properties['slurm-user'])
     assert first_match(rf"The cluster {cluster4} is already assigned to federation {federation3}", results['stderr'])
     assert first_match(r"Nothing to change", results['stdout'])
-    
+
     output = atf.run_command_output(f"sacctmgr show cluster {cluster4} format=\"cluster%20,federation%20,fedstate%20,id\"", user=atf.properties['slurm-user'])
     assert first_match(r'Cluster +Federation +FedState +ID', output)
     assert next_match(fr"(?m)^ +{cluster4} +{federation3} +DRAIN +3")

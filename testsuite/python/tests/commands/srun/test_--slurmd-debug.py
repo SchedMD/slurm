@@ -14,7 +14,7 @@ def test_slurmdDebug():
     # Test error level
     error = atf.run_command_error('srun --slurmd-debug=error true')
     assert re.search(r'debug.*?verbose', error) is not None
-    
+
     # Test info level
     error = atf.run_command_error('srun --slurmd-debug=info true')
     assert re.search(r'debug.*?debug', error) is not None

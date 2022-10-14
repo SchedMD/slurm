@@ -70,7 +70,7 @@ def init_gpu_vars():
     memory_per_gpu = int(min_memory_per_node/min_gpus_per_node)
     if memory_per_gpu < 1:
         pytest.skip("This test requires at least one node with {min_gpus_per_node} memory")
-                
+
 
 def test_gpus_per_cpu(init_gpu_vars):
     """Test a batch job with various gpu options including ---gpus"""

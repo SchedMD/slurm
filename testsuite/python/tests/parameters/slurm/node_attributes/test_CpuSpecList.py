@@ -32,7 +32,7 @@ def node_name():
     cores_per_socket = atf.get_node_parameter(node, 'CoresPerSocket')
 
     total_cores = sockets * cores_per_socket
-    available_cores = total_cores - 1 
+    available_cores = total_cores - 1
     allowed_cpu_list = create_cpu_list(node)
 
     # Reserve the lowest cpu id# (first) on our CPUSpecList
