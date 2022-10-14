@@ -2115,7 +2115,8 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 			     job_ptr->job_id, false, &resp_msg, NULL);
 	END_TIMER;
 	xfree_array(argv);
-	log_flag(BURST_BUF, "%s ran for %s", lua_func_name, TIME_STR);
+	log_flag(BURST_BUF, "%s for job %pJ ran for %s",
+		 lua_func_name, job_ptr, TIME_STR);
 
 	if (rc) {
 		if (err_msg && resp_msg) {
