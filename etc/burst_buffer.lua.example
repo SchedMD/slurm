@@ -187,9 +187,9 @@ end
 --string) as the second return value. If it does, the job's usage of the pool
 --will be changed to this number. A commented out example is given.
 --]]
-function slurm_bb_real_size(job_id)
-	slurm.log_info("%s: slurm_bb_real_size(). job id:%s",
-		lua_script_name, job_id)
+function slurm_bb_real_size(job_id, uid, gid)
+	slurm.log_info("%s: slurm_bb_real_size(). job id:%s, uid:%s, gid:%s",
+		lua_script_name, job_id, uid, gid)
 	--return slurm.SUCCESS, "10000"
 	return slurm.SUCCESS
 end
@@ -206,9 +206,9 @@ end
 --written to path_file, these environment variables are added to the job's
 --environment. A commented out example is given.
 --]]
-function slurm_bb_paths(job_id, job_script, path_file)
-	slurm.log_info("%s: slurm_bb_paths(). job id:%s, job script:%s, path file:%s",
-		lua_script_name, job_id, job_script, path_file)
+function slurm_bb_paths(job_id, job_script, path_file, uid, gid)
+	slurm.log_info("%s: slurm_bb_paths(). job id:%s, job script:%s, path file:%s, uid:%s, gid:%s",
+		lua_script_name, job_id, job_script, path_file, uid, gid)
 	--io.output(path_file)
 	--io.write("FOO=BAR")
 	return slurm.SUCCESS

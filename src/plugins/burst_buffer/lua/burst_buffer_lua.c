@@ -2627,9 +2627,11 @@ static void *_start_stage_in(void *x)
 	if (get_real_size) {
 		xfree(resp_msg);
 		xfree_array(argv);
-		argc = 1;
+		argc = 3;
 		argv = xcalloc(argc + 1, sizeof(char *)); /* NULL terminated */
 		argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
+		argv[1] = xstrdup_printf("%u", stage_in_args->uid);
+		argv[2] = xstrdup_printf("%u", stage_in_args->gid);
 
 		START_TIMER;
 		op = "slurm_bb_real_size";
@@ -3199,11 +3201,13 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	xstrfmtcat(path_file, "%s/path", job_dir);
 	bb_write_file(path_file, "");
 	/* Initialize args and run the "paths" function. */
-	argc = 3;
+	argc = 5;
 	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
 	argv[0] = xstrdup_printf("%u", job_ptr->job_id);
 	argv[1] = xstrdup_printf("%s", job_script);
 	argv[2] = xstrdup_printf("%s", path_file);
+	argv[3] = xstrdup_printf("%u", job_ptr->user_id);
+	argv[4] = xstrdup_printf("%u", job_ptr->group_id);
 	START_TIMER;
 	rc = _run_lua_script("slurm_bb_paths", 0, argc, argv,
 			     job_ptr->job_id, false, &resp_msg, NULL);
