@@ -548,7 +548,17 @@ static void _recover_bb_state(void)
 
 	safe_unpack32(&rec_count, buffer);
 	for (i = 0; i < rec_count; i++) {
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc(&account,   &name_len, buffer);
+			safe_unpack_time(&create_time, buffer);
+			safe_unpack32(&id, buffer);
+			safe_unpackstr_xmalloc(&name,      &name_len, buffer);
+			safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+			safe_unpackstr_xmalloc(&pool,      &name_len, buffer);
+			safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
+			safe_unpack32(&user_id, buffer);
+			safe_unpack64(&size, buffer);
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&account,   &name_len, buffer);
 			safe_unpack_time(&create_time, buffer);
 			safe_unpack32(&id, buffer);
