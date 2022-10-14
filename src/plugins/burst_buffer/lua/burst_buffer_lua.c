@@ -2027,6 +2027,8 @@ fini:
 extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 {
 	char *lua_func_name = "slurm_bb_job_process";
+	uint32_t argc;
+	char **argv;
 	int rc = SLURM_SUCCESS, fd = -1, hash_inx;
 	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
 	char *task_script_file = NULL, *resp_msg = NULL;
@@ -2103,10 +2105,16 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 
 
 	/* Run "job_process" function, validates user script */
+	argc = 3;
+	argv = xcalloc(argc + 1, sizeof(char *));
+	argv[0] = xstrdup_printf("%s", script_file);
+	argv[1] = xstrdup_printf("%u", job_ptr->user_id);
+	argv[2] = xstrdup_printf("%u", job_ptr->group_id);
 	START_TIMER;
-	rc = _run_lua_script(lua_func_name, 0, 1, &script_file,
+	rc = _run_lua_script(lua_func_name, 0, argc, argv,
 			     job_ptr->job_id, false, &resp_msg, NULL);
 	END_TIMER;
+	xfree_array(argv);
 	log_flag(BURST_BUF, "%s ran for %s", lua_func_name, TIME_STR);
 
 	if (rc) {

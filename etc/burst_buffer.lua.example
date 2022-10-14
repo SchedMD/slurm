@@ -79,10 +79,10 @@ end
 --If this function returns an error, the job is rejected and the second return
 --value (if given) is printed where salloc, sbatch, or srun was called.
 --]]
-function slurm_bb_job_process(job_script)
+function slurm_bb_job_process(job_script, uid, gid)
 	local contents
-	slurm.log_info("%s: slurm_bb_job_process(). job_script=%s",
-		lua_script_name, job_script)
+	slurm.log_info("%s: slurm_bb_job_process(). job_script=%s, uid=%s, gid=%s",
+		lua_script_name, job_script, uid, gid)
 	io.input(job_script)
 	contents = io.read("*all")
 	return slurm.SUCCESS, contents
