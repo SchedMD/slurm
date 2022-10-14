@@ -142,9 +142,9 @@ end
 --This function is called asynchronously and is not required to return quickly.
 --This function is normally called after the job completes (or is cancelled).
 --]]
-function slurm_bb_job_teardown(job_id, job_script, hurry)
-	slurm.log_info("%s: slurm_bb_job_teardown(). job id:%s, job script:%s, hurry:%s",
-		lua_script_name, job_id, job_script, hurry)
+function slurm_bb_job_teardown(job_id, job_script, hurry, uid, gid)
+	slurm.log_info("%s: slurm_bb_job_teardown(). job id:%s, job script:%s, hurry:%s, uid:%s, gid:%s",
+		lua_script_name, job_id, job_script, hurry, uid, gid)
 	local rc, ret_str = sleep_wrapper(1)
 	return rc, ret_str
 end

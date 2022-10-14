@@ -147,6 +147,7 @@ typedef struct {
 } data_pools_arg_t;
 
 typedef struct {
+	uint32_t group_id;
 	bool hurry;
 	uint32_t job_id;
 	uint32_t user_id;
@@ -206,7 +207,8 @@ static int stage_in_cnt = 0;
 
 /* Function prototypes */
 static bb_job_t *_get_bb_job(job_record_t *job_ptr);
-static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
+static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
+			    uint32_t group_id);
 
 static int _get_lua_thread_cnt(void)
 {
@@ -1079,7 +1081,8 @@ static void *_start_stage_out(void *x)
 							    BB_STATE_TEARDOWN);
 				_queue_teardown(stage_out_args->job_id,
 						stage_out_args->uid,
-						false);
+						false,
+						stage_out_args->gid);
 			}
 		} else {
 			job_ptr->job_state &= (~JOB_STAGE_OUT);
@@ -1091,7 +1094,8 @@ static void *_start_stage_out(void *x)
 				bb_set_job_bb_state(job_ptr, bb_job,
 						    BB_STATE_TEARDOWN);
 			_queue_teardown(stage_out_args->job_id,
-					stage_out_args->uid, false);
+					stage_out_args->uid, false,
+					stage_out_args->gid);
 		}
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
@@ -1685,7 +1689,8 @@ static void _recover_job_bb(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
 		/* This shouldn't happen. */
 		error("%s: %pJ does not have a burst buffer specification, tearing down vestigial burst buffer.",
 		      __func__, job_ptr);
-		_queue_teardown(bb_alloc->job_id, bb_alloc->user_id, false);
+		_queue_teardown(bb_alloc->job_id, bb_alloc->user_id, false,
+				bb_alloc->group_id);
 		return;
 	}
 
@@ -1715,7 +1720,8 @@ static void _recover_job_bb(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
 				 job_ptr);
 			bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
 			_queue_teardown(bb_alloc->job_id,
-					bb_alloc->user_id, true);
+					bb_alloc->user_id, true,
+					bb_alloc->group_id);
 			if (job_ptr->details &&
 			    (job_ptr->details->begin_time < defer_time)) {
 				job_ptr->details->begin_time = defer_time;
@@ -1748,7 +1754,8 @@ static void _recover_job_bb(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
 			log_flag(BURST_BUF, "Restarting burst buffer teardown for %pJ",
 				 job_ptr);
 			_queue_teardown(bb_alloc->job_id,
-					bb_alloc->user_id, false);
+					bb_alloc->user_id, false,
+					bb_alloc->group_id);
 			break;
 		case BB_STATE_COMPLETE:
 			/*
@@ -1792,7 +1799,8 @@ static void _purge_vestigial_bufs(void)
 				info("Purging vestigial buffer for JobId=%u",
 				     bb_alloc->job_id);
 				_queue_teardown(bb_alloc->job_id,
-						bb_alloc->user_id, false);
+						bb_alloc->user_id, false,
+						bb_alloc->group_id);
 			} else {
 				_recover_job_bb(job_ptr, bb_alloc, defer_time,
 						orphan_rec_list);
@@ -2357,11 +2365,13 @@ static void *_start_teardown(void *x)
 	DEF_STAGE_THROTTLE;
 	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
-	argc = 3;
+	argc = 5;
 	argv = xcalloc(argc + 1, sizeof(char *)); /* NULL-terminated */
 	argv[0] = xstrdup_printf("%u", teardown_args->job_id);
 	argv[1] = xstrdup_printf("%s", teardown_args->job_script);
 	argv[2] = xstrdup_printf("%s", teardown_args->hurry ? "true" : "false");
+	argv[3] = xstrdup_printf("%u", teardown_args->user_id);
+	argv[4] = xstrdup_printf("%u", teardown_args->group_id);
 
 	timeout = bb_state.bb_config.other_timeout;
 
@@ -2474,7 +2484,8 @@ fini:
 	return NULL;
 }
 
-static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
+static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
+			    uint32_t group_id)
 {
 	char *hash_dir = NULL, *job_script = NULL;
 	int hash_inx = job_id % 10;
@@ -2502,6 +2513,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	teardown_args = xmalloc(sizeof *teardown_args);
 	teardown_args->job_id = job_id;
 	teardown_args->user_id = user_id;
+	teardown_args->group_id = group_id;
 	teardown_args->job_script = job_script;
 	teardown_args->hurry = hurry;
 
@@ -2712,7 +2724,8 @@ static void *_start_stage_in(void *x)
 				bb_set_job_bb_state(job_ptr, bb_job,
 						    BB_STATE_TEARDOWN);
 			_queue_teardown(job_ptr->job_id,
-					job_ptr->user_id, true);
+					job_ptr->user_id, true,
+					job_ptr->group_id);
 		}
 	}
 	stage_in_cnt--;
@@ -3092,7 +3105,8 @@ static void *_start_pre_run(void *x)
 					hold_job = true;
 			}
 		}
-		_queue_teardown(pre_run_args->job_id, pre_run_args->uid, true);
+		_queue_teardown(pre_run_args->job_id, pre_run_args->uid, true,
+				pre_run_args->gid);
 	} else if (bb_job) {
 		/* pre_run success and the job's BB record exists */
 		if (bb_job->state == BB_STATE_ALLOC_REVOKE)
@@ -3168,7 +3182,8 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 		job_ptr->state_desc =
 			xstrdup("Could not find burst buffer record");
 		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
+		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true,
+				job_ptr->group_id);
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 		return SLURM_ERROR;
 	}
@@ -3291,7 +3306,8 @@ extern int bb_p_job_start_stage_out(job_record_t *job_ptr)
 	} else if (bb_job->state < BB_STATE_RUNNING) {
 		/* Job never started. Just teardown the buffer */
 		bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
-		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
+		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true,
+				job_ptr->group_id);
 	} else if (bb_job->state < BB_STATE_POST_RUN) {
 		_pre_queue_stage_out(job_ptr, bb_job);
 	}
@@ -3433,7 +3449,8 @@ extern int bb_p_job_cancel(job_record_t *job_ptr)
 		/* Teardown already done. */
 	} else {
 		bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
-		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
+		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true,
+				job_ptr->group_id);
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
