@@ -27,16 +27,14 @@
 ############################################################################
 
 proc inc21_34_2 { qostest } {
-	global salloc srun acct bin_sleep grpwall_num number
+	global sbatch srun acct bin_sleep grpwall_num
 
 	log_info "Starting Grpwall test"
-	set job_id1 0
-	set job_id2 0
+	set job_id_list [list]
+	set consumption_job_count 6 ; # This should be an evenly divisible factor of 60
 
 	# Raise an error to abort the catch block
 	set exception_code [catch {
-
-		set timeout 120
 
 		# Since wall is a decayed variable, reset it to make sure the test
 		# gets exactly what we would expect.
@@ -44,55 +42,44 @@ proc inc21_34_2 { qostest } {
 			error "Unable to reset QOS usage"
 		}
 
-		spawn $salloc --account=$acct -N2 -t1 $srun $bin_sleep [expr $grpwall_num * 60 + 1]
-		expect {
-			-re "Granted job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				log_debug "Job $job_id1 has been submitted"
+		# If we just ran a single job to consume the full group wall time, the priority decay
+		# would make it consume slightly less than the limit. Using a larger time limit would
+		# be blocked by the GrpWall limit. So, we use multiple jobs to consume the GrpWall limit.
+		# The last job will consume an additional second to supercede the priority decay.
+		log_debug "Submitting multiple jobs to consume the usage of the GrpWall limit"
+		for {set i 0} {$i < $consumption_job_count} {incr i} {
+			set sleep_time [expr $grpwall_num * 60 / $consumption_job_count]
+			if {$i == $consumption_job_count - 1} {
+				incr sleep_time
 			}
-			-re "Job violates accounting/QOS policy" {
-				error "This job should not be pending, but is"
+
+			set result [run_command "$sbatch --account=$acct -N2 -t1 --wrap '$srun $bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
+
+			if [dict get $result exit_code] {
+				error "Consumption$i job submission failed ([dict get $result output])"
 			}
-			-re "error" {
-				error "Job allocation should not have failed"
-			}
-			timeout {
-				error "salloc not responding"
-			}
-			eof {
-				wait
+
+			if {[regexp {Submitted batch job (\d+)} [dict get $result output] - job_id]} {
+				lappend job_id_list $job_id
 			}
 		}
 
-		if {$job_id1 == 0} {
-			error "Job was not submitted"
-		} else {
-			# Wait for job 1 to finish so that we can test wall time limit
-			wait_for_job $job_id1 DONE
-		}
-
-		set match 0
-		spawn $salloc -I --account=$acct -N2 -t1 $srun $bin_sleep 10
-		expect {
-			-re "Job violates accounting/QOS policy" {
-				log_debug "Job is waiting for resources. This is exected"
-				set match 1
-			}
-			-re "Granted job allocation ($number)" {
-				set job_id2 $expect_out(1,string)
-				error "Job ($job_id2) should be waiting for resources, but is not"
-			}
-			timeout {
-				error "salloc is not responding"
-			}
-			eof {
-				wait
+		foreach job_id $job_id_list {
+			if {[wait_for_job $job_id DONE] != $::RETURN_SUCCESS} {
+				error "Job ($job_id) did not complete"
 			}
 		}
 
-		if {$match != 1} {
-			error "Job was submitted when it should not have been"
+		log_debug "Submitting a final job to surpass the GrpWall limit"
+		set result [run_command "$sbatch --account=$acct -N1 -t1 --wrap '$srun $bin_sleep 10' -o /dev/null -e /dev/null"]
+		if [dict get $result exit_code] {
+			error "Final job submission failed ([dict get $result output])"
 		}
+		if {[regexp {Submitted batch job (\d+)} [dict get $result output] - job_id]} {
+			lappend job_id_list $job_id
+		}
+
+		subtest {[wait_job_reason $job_id PENDING QOSGrpWallLimit] == $::RETURN_SUCCESS} "Job should be pending with reason QOSGrpWallLimit"
 
 	} message] ; # Store the error message in $message
 
@@ -100,8 +87,7 @@ proc inc21_34_2 { qostest } {
 	reset_qos_usage "" $qostest
 
 	# Cancel job
-	cancel_job $job_id1
-	cancel_job $job_id2
+	cancel_job $job_id_list
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only
