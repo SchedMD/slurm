@@ -10,7 +10,7 @@ node_count = 4
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    
+
     atf.require_accounting()
     atf.require_slurm_running()
     atf.require_nodes(node_count)
@@ -28,7 +28,7 @@ def sacct_verify_unique_nodes(sacct_string):
     if len(sacct_output_set) == node_count:
         return True
     return False
-    
+
 
 def test_exclusive(tmp_path):
     file_in = str(tmp_path / "exclusive.in")

@@ -25,7 +25,7 @@ def setup():
 # Creates the script called by each helper in the helpers.conf
 def make_helper_script():
 
-    # Helper variable storage location: 
+    # Helper variable storage location:
     helpers_variable_file = f"{atf.module_tmp_path}/helper.vars"
 
     helper_script = f"{atf.module_tmp_path}/helper.sh"
@@ -43,7 +43,7 @@ cat {helpers_variable_file}"""
     return helper_script
 
 
-# Creates the rebooter script referenced in slurm.conf that kills and restarts the proper slurmd 
+# Creates the rebooter script referenced in slurm.conf that kills and restarts the proper slurmd
 def make_rebooter_script(node_name, out_file):
     reboot_file = f"{atf.module_tmp_path}/rebooter.sh"
     slurmd_path = f"{atf.properties['slurm-sbin-dir']}/slurmd -N {node_name}"
@@ -65,7 +65,7 @@ while [ $SECONDS -lt 10 ]; do
     fi
 done
 """)
-    
+
     atf.run_command(f"chmod 0777 {reboot_file}", user='root', fatal=True, quiet=True)
 
 
@@ -87,13 +87,13 @@ def test_plugin_features(our_node):
 
 def test_request_adds_new_ActiveFeature(our_node):
     """Verify job request with new ActiveFeature restarts, adds new ActiveFeature, and runs"""
-    
+
     out_file = f"{atf.module_tmp_path}/file.out"
     make_rebooter_script(our_node, out_file)
-    
+
     # Submit a job with inactive available feature 'f2', should trigger reboot
     atf.submit_job(f"--wrap='true' -C f2 -w {our_node}", fatal=True)
-    
+
     # Wait for output from rebooter script that indicates a successful reboot
     atf.repeat_command_until(f"cat {out_file}", lambda results: re.search(r'done', results['stdout']), fatal=True, timeout=30)
 

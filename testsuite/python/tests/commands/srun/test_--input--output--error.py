@@ -31,6 +31,6 @@ def test_input_ouput_error(tmp_path):
 
     # Test the none parameter
     stderr = atf.run_command_error(f"srun --input={str(file_in)} --error=none -t1 bash")
-    assert not stderr 
+    assert not stderr
     stdout = atf.run_command_output(f"srun --output=none -t1 id")
     assert not stdout

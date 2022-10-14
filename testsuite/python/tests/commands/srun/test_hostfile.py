@@ -20,7 +20,7 @@ def write_host_file(matchs):
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
-def setup():    
+def setup():
     atf.require_nodes(node_num + 2)
     atf.require_config_parameter('FrontendName', None)
     atf.require_slurm_running()
@@ -52,7 +52,7 @@ def test_hostfile():
     for iter in range(len(match1)):
         match_ordered.append((str(iter), match2[iter][1]))
     write_host_file(match2)
-    
+
     # Test pass 2
     output = atf.run_job_output(f"-N{node_num} -l --distribution=arbitrary printenv SLURMD_NODENAME")
     match3 = re.findall(r'(\d+): (\S+)', output)

@@ -17,7 +17,7 @@ def setup():
 
 def test_account():
     """Test of job account (--account option)."""
-    
+
     my_acct = 'MY_ACCT'
     qa_acct = 'QA_ACCT'
     os.environ["SLURM_ACCOUNT"] = "QA_ACCT"

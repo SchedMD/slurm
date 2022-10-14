@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
 
 bail = 0
-# Wait in an endless loop for signals 
+# Wait in an endless loop for signals
 while bail < 15:
     time.sleep(1)
     bail += 1

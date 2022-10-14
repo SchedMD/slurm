@@ -45,7 +45,7 @@ def create_account_with_limit():
 
     mps_limit = mps_cnt * node_count
     mps_limit = 50 if mps_limit > 8 else (mps_limit - 1)
-    acct = "test_mps_acct" 
+    acct = "test_mps_acct"
     cluster = atf.get_config_parameter("ClusterName")
     user = atf.get_user_name()
 
@@ -81,4 +81,4 @@ def test_gres_mps_option_job():
 
     job_id2 = atf.submit_job(f"--account='test_mps_acct' --gres=craynetwork:0 --gres=mps:{mps_good_cnt} -N{node_count} -t1 -o {file_out2} -J 'test_job2' {file_in}")
     assert job_id2 != 0, "Job 2 failed to submit"
-    assert atf.wait_for_job_state(job_id2, 'DONE', fatal=True)    
+    assert atf.wait_for_job_state(job_id2, 'DONE', fatal=True)

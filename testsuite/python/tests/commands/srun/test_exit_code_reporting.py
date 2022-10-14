@@ -27,7 +27,7 @@ def test_exit_code_reporting():
     # Spawn program and check for exit code messages from srun
     result_exit_code = atf.run_command_exit(f"srun -n{task_count} -O {exit_script}", xfail=True)
     assert exit_code == result_exit_code, f"Srun failed to report exit code: {exit_code}, reported: {result_exit_code}"
-    
+
     # Spawn program to check the exit code of srun itself
     result_exit_string = atf.run_command_output(f"{test_script}").strip()
     assert f'{exit_string}{exit_code}' == result_exit_string, f"Sruns exit code is bad {exit_string}{exit_code} != {result_exit_string}"

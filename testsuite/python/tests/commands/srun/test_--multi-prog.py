@@ -31,7 +31,7 @@ def test_multi_prog():
     assert re.search("1: task:1:offset:0", output) is not None, "Label 1 did not have correct task or offset"
     assert re.search("2: task:2:offset:1", output) is not None, "Label 2 did not have correct task or offset"
     assert re.search("3: task:3:offset:1", output) is not None, "Label 3 did not have correct task or offset"
-    
+
     # Submit a slurm job that will execute different executables and check debug info
     content = r"""1-2   hostname
 0,3   date"""

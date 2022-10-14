@@ -729,7 +729,7 @@ def set_config_parameter(parameter_name, parameter_value, source='slurm', restar
         When setting a complex parameter (one which may be repeated and has
         its own subparameters, such as with nodes, partitions and gres),
         the parameter_value should be a dictionary of dictionaries.
- 
+
     Example:
         >>> set_config_parameter('ClusterName', 'cluster1')
     """
@@ -867,7 +867,7 @@ def require_config_parameter(parameter_name, parameter_value, condition=None, so
         When requiring a complex parameter (one which may be repeated and has
         its own subparameters, such as with nodes, partitions and gres),
         the parameter_value should be a dictionary of dictionaries.
- 
+
     Examples:
         >>> require_config_parameter('SelectType', 'select/cons_tres')
         >>> require_config_parameter('SlurmdTimeout', 5, lambda v: v <= 5)

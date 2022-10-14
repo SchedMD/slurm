@@ -20,7 +20,7 @@ def test_signal_forwarding():
     """Test of srun signal forwarding"""
 
     sig1_count = 2
-    sig2_count = 2    
+    sig2_count = 2
 
     file_in = atf.module_tmp_path / 'file_in'
     file_out = atf.module_tmp_path / 'file_out'

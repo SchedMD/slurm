@@ -104,7 +104,7 @@ def test_slurm_directed_env_variables():
     sorted_file_out = atf.module_tmp_path / 'sorted_file_out'
 
     min_nodes = 1
-    max_nodes = 2 
+    max_nodes = 2
     slurm_debug = 'SLURM_DEBUG'
     slurm_debug_val = '1'
     slurm_nnodes = 'SLURM_NNODES'

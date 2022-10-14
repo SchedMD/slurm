@@ -8,7 +8,7 @@ import re
 
 # Setup
 @pytest.fixture(scope='module', autouse=True)
-def setup():    
+def setup():
     atf.require_config_parameter('FrontendName', None)
     atf.require_config_parameter_excludes('LaunchParameters', 'test_exec')
     atf.require_slurm_running()

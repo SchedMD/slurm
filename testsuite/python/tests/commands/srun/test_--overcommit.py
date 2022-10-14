@@ -28,6 +28,6 @@ def test_overcommit():
         pytest.skip("This test requires at least one idle node with a cpu")
 
     results = atf.run_command(f"srun -N 1 -w {eligible_node} -n {cpu_count + 1} --overcommit -v true")
-            
+
     assert results['exit_code'] == 0
     assert re.search(rf"srun: ntasks\s+: {cpu_count + 1}", results['stderr']) is not None
