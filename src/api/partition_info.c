@@ -420,6 +420,11 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		else
 			xstrfmtcat(out, " SuspendTime=%d",
 				part_ptr->suspend_time);
+		
+		if (part_ptr->flags & PART_FLAG_PDOI)
+			xstrcat(out, " PowerDownOnIdle=YES");
+		else
+			xstrcat(out, " PowerDownOnIdle=NO");
 	}
 
 	if (one_liner)

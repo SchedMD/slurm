@@ -2367,6 +2367,8 @@ typedef struct job_defaults {
 					      * is desired */
 #define PART_FLAG_EXCLUSIVE_USER SLURM_BIT(6)/* Set if nodes allocated exclusively
 					      * by user */
+#define PART_FLAG_PDOI		SLURM_BIT(7) /* Set if nodes POWER_DOWN on IDLE,
+					      * after running jobs */
 /* Used with slurm_update_partition() to clear flags associated with existing
  * partitions. For example, if a partition is currently hidden and you want
  * to make it visible then set flags to PART_FLAG_HIDDEN_CLR and call
@@ -2378,6 +2380,7 @@ typedef struct job_defaults {
 #define PART_FLAG_REQ_RESV_CLR	SLURM_BIT(12) /* Clear RES_REQ partition flag */
 #define PART_FLAG_LLN_CLR	SLURM_BIT(13) /* Clear LLN partition flag */
 #define PART_FLAG_EXC_USER_CLR	SLURM_BIT(14) /* Clear EXCLUSIVE_USER flag */
+#define PART_FLAG_PDOI_CLR	SLURM_BIT(15) /* Clear PDOI partition flag */
 
 typedef struct partition_info {
 	char *allow_alloc_nodes;/* list names of allowed allocating

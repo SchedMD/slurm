@@ -134,6 +134,30 @@ static int	_update_node_gres(char *node_names, char *gres);
 static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint32_t old, uint32_t new);
 
+/* Make node power down on idle */
+static void _make_node_pdoi(node_record_t *node_ptr, job_record_t *job_ptr)
+{
+	static time_t sched_update = 0;
+	static bool power_save_on = false;
+
+	xassert(node_ptr);
+
+	if (sched_update != slurm_conf.last_update) {
+		power_save_on = power_save_test();
+		sched_update = slurm_conf.last_update;
+	}
+
+	if (!power_save_on ||
+	    !IS_NODE_IDLE(node_ptr) ||
+	    IS_NODE_POWERING_DOWN(node_ptr) ||
+	    IS_NODE_POWERED_DOWN(node_ptr))
+		return;
+
+	if (job_ptr && job_ptr->part_ptr &&
+	    (job_ptr->part_ptr->flags & PART_FLAG_PDOI))
+		node_ptr->node_state |= NODE_STATE_POWER_DOWN;
+}
+
 /* dump_all_node_state - save the state of all nodes to file */
 int dump_all_node_state ( void )
 {
@@ -4235,6 +4259,7 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 	else {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
+		_make_node_pdoi(node_ptr, job_ptr);
 		node_ptr->last_busy = now;
 	}
 	last_node_update = now;
@@ -4409,6 +4434,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_COMPLETING(node_ptr))
 			bit_set(idle_node_bitmap, node_ptr->index);
+		_make_node_pdoi(node_ptr, job_ptr);
 		node_ptr->last_busy = now;
 	}
 
