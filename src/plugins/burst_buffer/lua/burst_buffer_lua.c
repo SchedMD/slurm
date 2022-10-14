@@ -1887,13 +1887,23 @@ extern int bb_p_load_state(bool init_config)
 extern char *bb_p_get_status(uint32_t argc, char **argv, uint32_t uid,
 			     uint32_t gid)
 {
+	char **pass_argv;
 	char *status_resp = NULL;
 	int rc;
+	uint32_t pass_argc;
 	DEF_TIMERS;
+
+	pass_argc = argc + 2;
+	pass_argv = xcalloc(pass_argc + 1, sizeof(char *));
+	pass_argv[0] = xstrdup_printf("%u", uid);
+	pass_argv[1] = xstrdup_printf("%u", gid);
+	for (int i = 0; i < argc; i++)
+		pass_argv[i + 2] = xstrdup(argv[i]);
 
 	START_TIMER;
 	rc = _run_lua_script("slurm_bb_get_status",
-			     bb_state.bb_config.other_timeout, argc, argv, 0,
+			     bb_state.bb_config.other_timeout,
+			     pass_argc, pass_argv, 0,
 			     true, &status_resp, NULL);
 	END_TIMER;
 	log_flag(BURST_BUF, "slurm_bb_get_status ran for %s", TIME_STR);
@@ -1902,6 +1912,8 @@ extern char *bb_p_get_status(uint32_t argc, char **argv, uint32_t uid,
 		xfree(status_resp);
 		status_resp = xstrdup("Error running slurm_bb_get_status\n");
 	}
+
+	xfree_array(pass_argv);
 
 	return status_resp;
 }

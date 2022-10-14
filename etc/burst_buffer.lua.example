@@ -262,13 +262,15 @@ end
 --
 --This function is called asynchronously and is not required to return quickly.
 --
---This function is called when "scontrol show bbstat" is run. It recieves a
---variable number of arguments - whatever arguments are after "bbstat".
+--This function is called when "scontrol show bbstat" is run. It receives the
+--authenticated user id and group id of the caller, as well as a variable
+--number of arguments - whatever arguments are after "bbstat".
 --For example:
 --
 --  scontrol show bbstat foo bar
 --
---This command will pass 2 arguments to this functions: "foo" and "bar".
+--This command will pass 2 arguments after uid and gid to this function:
+--  "foo" and "bar".
 --
 --If this function returns slurm.SUCCESS, then this function's second return
 --value will be printed where the scontrol command was run. If this function
@@ -277,9 +279,11 @@ end
 --
 --The example in this function simply prints the arguments that were given.
 --]]
-function slurm_bb_get_status(...)
+function slurm_bb_get_status(uid, gid, ...)
+
 	local i, v, args
-	slurm.log_info("%s: slurm_bb_get_status().", lua_script_name)
+	slurm.log_info("%s: slurm_bb_get_status(), uid: %s, gid:%s",
+		lua_script_name, uid, gid)
 
 	-- Create a table from variable arg list
 	args = {...}
