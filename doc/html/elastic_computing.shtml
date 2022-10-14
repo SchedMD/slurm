@@ -147,6 +147,16 @@ weights.
 </dl>
 </p>
 
+<p>Some partition parameters that are of interest include:
+<dl>
+<dt><b>PowerDownOnIdle</b>
+<dd>If set to <b>YES</b>, then nodes allocated from this partition will
+immediately be requested to power down upon becoming IDLE. A power down request
+prevents further scheduling to the node until it has been put into power save
+mode by <b>SuspendProgram</b>.
+</dl>
+</p>
+
 <p>Nodes to be acquired on demand can be placed into their own Slurm partition.
 This mode of operation can be used to use these nodes only if so requested by
 the user. Note that jobs can be submitted to multiple partitions and will use
@@ -484,6 +494,6 @@ debug*      up    infinite     1    drng!  c1-compute-0-0
 debug*      up    infinite    99    idle~  c1-compute-0-[1-99]
 </pre>
 
-<p style="text-align:center;">Last modified 22 June 2022</p>
+<p style="text-align:center;">Last modified 28 October 2022</p>
 
 <!--#include virtual="footer.txt"-->

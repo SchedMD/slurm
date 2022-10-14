@@ -6795,6 +6795,22 @@ default values and not a reinitialize the default values.
 .IP
 
 .TP
+\fBPowerDownOnIdle\fR
+If set to "YES", then nodes allocated from this partition will immediately be
+requested to power down upon becoming IDLE. A power down request prevents
+further scheduling to the node until it has been put into power save mode by
+\fBSuspendProgram\fR.
+
+\fBNOTE:\fR
+This option requires power_save to be enabled to function. Otherwise it will be
+ignored, as if set to "NO", until power_save is enabled.
+See <https://slurm.schedmd.com/power_save.html> and
+<https://slurm.schedmd.com/elastic_computing.html> for more details.
+
+Also see \fBSuspendTime\fR.
+.IP
+
+.TP
 \fBPreemptMode\fR
 Mechanism used to preempt jobs or enable gang scheduling for this
 partition when \fBPreemptType=preempt/partition_prio\fR is configured.

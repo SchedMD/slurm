@@ -2128,6 +2128,16 @@ Identify the partition to be updated. This specification is required.
 .IP
 
 .TP
+\fBPowerDownOnIdle\fR
+If set to "YES", then nodes allocated from this partition will immediately be
+requested to power down upon becoming IDLE. A power down request prevents
+further scheduling to the node until it has been put into power save mode by
+\fBSuspendProgram\fR.
+
+Also see \fBSuspendTime\fR.
+.IP
+
+.TP
 \fBPreemptMode\fR=<\fImode\fR>
 Reset the mechanism used to preempt jobs in this partition if \fIPreemptType\fP
 is configured to \fIpreempt/partition_prio\fP. The default preemption mechanism
