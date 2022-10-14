@@ -98,6 +98,7 @@ typedef struct bb_alloc {
 	bool cancelled;
 	time_t create_time;	/* Time of creation */
 	time_t end_time;	/* Expected time when use will end */
+	uint32_t group_id;
 	uint32_t id;		/* ID for reservation/accounting */
 	uint32_t job_id;
 	uint32_t magic;

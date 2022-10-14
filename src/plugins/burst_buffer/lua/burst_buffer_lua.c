@@ -462,6 +462,7 @@ static void _save_bb_state(void)
 				packstr(bb_alloc->pool, buffer);
 				packstr(bb_alloc->qos, buffer);
 				pack32(bb_alloc->user_id, buffer);
+				pack32(bb_alloc->group_id, buffer);
 				pack64(bb_alloc->size,	buffer);
 				rec_count++;
 				bb_alloc = bb_alloc->next;
@@ -498,7 +499,7 @@ static void _recover_bb_state(void)
 	int data_allocated, data_read = 0;
 	uint16_t protocol_version = NO_VAL16;
 	uint32_t data_size = 0, rec_count = 0, name_len = 0;
-	uint32_t id = 0, user_id = 0;
+	uint32_t id = 0, user_id = 0, group_id = 0;
 	uint64_t size = 0;
 	int i, state_fd;
 	char *account = NULL, *name = NULL;
@@ -557,6 +558,7 @@ static void _recover_bb_state(void)
 			safe_unpackstr_xmalloc(&pool,      &name_len, buffer);
 			safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
 			safe_unpack32(&user_id, buffer);
+			safe_unpack32(&group_id, buffer);
 			safe_unpack64(&size, buffer);
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc(&account,   &name_len, buffer);
@@ -572,6 +574,7 @@ static void _recover_bb_state(void)
 
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_alloc = bb_alloc_name_rec(&bb_state, name, user_id);
+		bb_alloc->group_id = group_id;
 		bb_alloc->id = id;
 		if (name && (name[0] >='0') && (name[0] <='9')) {
 			bb_alloc->job_id = strtol(name, &end_ptr, 10);

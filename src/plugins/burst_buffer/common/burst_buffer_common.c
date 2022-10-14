@@ -1163,6 +1163,7 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 	bb_alloc->state_time = time(NULL);
 	bb_alloc->seen_time = time(NULL);
 	bb_alloc->user_id = job_ptr->user_id;
+	bb_alloc->group_id = job_ptr->group_id;
 
 	return bb_alloc;
 }
