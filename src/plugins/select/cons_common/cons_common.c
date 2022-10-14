@@ -1174,19 +1174,6 @@ extern int select_p_node_init()
 				     sizeof(node_use_record_t));
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if ((node_ptr->cpus != node_ptr->tot_cores) &&
-		    (node_ptr->cpus != node_ptr->tot_cores * node_ptr->threads))
-			fatal("NodeName=%s CPUs=%u doesn't match neither Sockets(%u)*CoresPerSocket(%u)=(%u) nor Sockets(%u)*CoresPerSocket(%u)*ThreadsPerCore(%u)=(%u).  Please fix your slurm.conf.",
-			      node_ptr->name,
-			      node_ptr->cpus,
-			      node_ptr->tot_sockets,
-			      node_ptr->cores,
-			      node_ptr->tot_cores,
-			      node_ptr->tot_sockets,
-			      node_ptr->cores,
-			      node_ptr->threads,
-			      node_ptr->tot_cores * node_ptr->threads);
-
 		if ((slurm_conf.select_type_param & CR_SOCKET) &&
 		    (slurm_conf.conf_flags & CTL_CONF_ASRU) == 0)
 			_check_allocatable_sockets(node_ptr);
