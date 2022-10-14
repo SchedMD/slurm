@@ -76,9 +76,12 @@ extern int bb_g_load_state(bool init_config);
  * Return string containing current burst buffer status
  * argc IN - count of status command arguments
  * argv IN - status command arguments
+ * uid - authenticated UID
+ * gid - authenticated GID
  * RET status string, release memory using xfree()
  */
-extern char *bb_g_get_status(uint32_t argc, char **argv);
+extern char *bb_g_get_status(uint32_t argc, char **argv, uint32_t uid,
+			     uint32_t gid);
 
 /*
  * Pack current burst buffer state information for network transmission to

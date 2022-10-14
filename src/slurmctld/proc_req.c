@@ -5543,16 +5543,21 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 
 static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
 {
+	uid_t auth_gid;
 	slurm_msg_t response_msg;
 	bb_status_resp_msg_t status_resp_msg;
 	bb_status_req_msg_t *status_req_msg = (bb_status_req_msg_t *)msg->data;
+
+	auth_gid = auth_g_get_gid(msg->auth_cred);
 
 	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_BURST_BUFFER_STATUS;
 	memset(&status_resp_msg, 0, sizeof(status_resp_msg));
 	response_msg.data = &status_resp_msg;
 	status_resp_msg.status_resp = bb_g_get_status(status_req_msg->argc,
-						      status_req_msg->argv);
+						      status_req_msg->argv,
+						      msg->auth_uid,
+						      auth_gid);
 	if (status_resp_msg.status_resp)
 		response_msg.data_size =
 			strlen(status_resp_msg.status_resp) + 1;

@@ -61,7 +61,8 @@ typedef struct slurm_bb_ops {
 						 uint32_t het_job_offset);
 	uint64_t	(*get_system_size)	(void);
 	int		(*load_state)	(bool init_config);
-	char *		(*get_status)	(uint32_t argc, char **argv);
+	char *		(*get_status)	(uint32_t argc, char **argv,
+					 uint32_t uid, uint32_t gid);
 	int		(*state_pack)	(uid_t uid, buf_t *buffer,
 					 uint16_t protocol_version);
 	int		(*reconfig)	(void);
@@ -256,9 +257,12 @@ extern int bb_g_load_state(bool init_config)
  * Return string containing current burst buffer status
  * argc IN - count of status command arguments
  * argv IN - status command arguments
+ * uid - authenticated UID
+ * gid - authenticated GID
  * RET status string, release memory using xfree()
  */
-extern char *bb_g_get_status(uint32_t argc, char **argv)
+extern char *bb_g_get_status(uint32_t argc, char **argv, uint32_t uid,
+			     uint32_t gid)
 {
 	DEF_TIMERS;
 	int i;
@@ -268,7 +272,7 @@ extern char *bb_g_get_status(uint32_t argc, char **argv)
 	(void) bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
-		tmp = (*(ops[i].get_status))(argc, argv);
+		tmp = (*(ops[i].get_status))(argc, argv, uid, gid);
 		if (status) {
 			xstrcat(status, tmp);
 			xfree(tmp);
