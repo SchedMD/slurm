@@ -1644,7 +1644,10 @@ proc kill_srun {  } {
 #
 # OPTIONS
 #	-fail
-#		abort the test with failure if the condition is not met
+#		fail the test if the condition is not met within the timeout
+#	-subtest
+#		if the condition is met within the timeout call subpass, otherwise
+#		call subfail
 #	-timeout <float_number>
 #		time in seconds to wait for the condition to be met before
 #		timing out (default is 60.0)
@@ -1665,16 +1668,18 @@ proc kill_srun {  } {
 ################################################################
 
 proc wait_for args {
-	set fatal         false
-	set timeout       60
-	set poll_interval 1
+	set action          "none"
+	set subtest         false
+	set timeout         60
+	set poll_interval   1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
-			-fail   {set fatal true; set args [lrange $args 1 end]}
-			-time*  {set args [lassign $args - timeout]}
-			-poll*  {set args [lassign $args - poll_interval]}
-			-*      {fail "Unknown option: [lindex $args 0]"}
-			default break
+			-fail       {set action "fail"; set args [lrange $args 1 end]}
+			-subtest    {set action "subtest"; set args [lrange $args 1 end]}
+			-time*      {set args [lassign $args - timeout]}
+			-poll*      {set args [lassign $args - poll_interval]}
+			-*          {fail "Unknown option: [lindex $args 0]"}
+			default     break
 		}
 	}
 	if {[llength $args] == 2} {
@@ -1696,6 +1701,9 @@ proc wait_for args {
 		if {[uplevel expr [format "{%s}" $condition]]} {
 			set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 			log_debug "Condition ($condition) was met"
+			if {$action eq "subtest"} {
+				subpass "Condition ($condition) should be met (within $timeout seconds)"
+			}
 			return $::RETURN_SUCCESS
 		} else {
 			log_trace "Condition ($condition) was not met"
@@ -1709,11 +1717,14 @@ proc wait_for args {
 		set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 		log_trace "Checking whether the current time ([clock format [expr int($now)] -format %Y-%m-%dT%X].[lindex [split $now '.'] 1]) is greater than the start time plus the timeout ([clock format [expr int($start_time + $timeout)] -format %Y-%m-%dT%X].[lindex [split [expr $start_time + $timeout] '.'] 1])"
 		if {$now > $start_time + $timeout} {
-			set message "Condition ($condition) did not occur before timeout ($timeout) seconds"
-			if {$fatal} {
+			set message "Condition ($condition) was not met before timeout ($timeout seconds)"
+			if {$action eq "fail"} {
 				fail $message
 			} else {
 				log_warn $message
+				if {$action eq "subtest"} {
+					subfail "Condition ($condition) should be met (within $timeout seconds)" "Timed out"
+				}
 				return $::RETURN_TIMEOUT
 			}
 		}
@@ -1736,8 +1747,10 @@ proc wait_for args {
 #
 # OPTIONS
 #	-fail
-#		abort the test with failure if the condition is not met by
-#		the timeout
+#		fail the testif the condition is not met within the timeout
+#	-subfail
+#		if the condition is met within the timeout call subpass, otherwise
+#		call subfail
 #	-timeout <float_number>
 #		time in seconds to wait for the condition to be met before
 #		timing out (default is 60.0)
@@ -1764,16 +1777,17 @@ proc wait_for args {
 ################################################################
 
 proc wait_for_command args {
-	set fatal         false
-	set timeout       60
-	set poll_interval 1
+	set action          "none"
+	set timeout         60
+	set poll_interval   1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
-			-fail   {set fatal true; set args [lrange $args 1 end]}
-			-time*  {set args [lassign $args - timeout]}
-			-poll*  {set args [lassign $args - poll_interval]}
-			-*      {fail "Unknown option: [lindex $args 0]"}
-			default break
+			-fail       {set action "fail"; set args [lrange $args 1 end]}
+			-subtest    {set action "subtest"; set args [lrange $args 1 end]}
+			-time*      {set args [lassign $args - timeout]}
+			-poll*      {set args [lassign $args - poll_interval]}
+			-*          {fail "Unknown option: [lindex $args 0]"}
+			default     break
 		}
 	}
 
@@ -1802,6 +1816,9 @@ proc wait_for_command args {
 		if {[eval expr [format "{%s}" $condition]]} {
 			set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 			log_debug "Condition ($condition) was met"
+			if {$action eq "subtest"} {
+				subpass "Condition ($condition) should be met (within $timeout seconds)"
+			}
 			return $::RETURN_SUCCESS
 		} else {
 			log_trace "Condition ($condition) was not met"
@@ -1811,15 +1828,18 @@ proc wait_for_command args {
 		log_trace "Sleeping for $poll_interval seconds"
 		after [expr {int($poll_interval * 1000)}]
 
-		# Check if we have surpassed our timeout
+		# Check whether we have surpassed our timeout
 		set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 		log_trace "Checking whether the current time ([clock format [expr int($now)] -format %Y-%m-%dT%X].[lindex [split $now '.'] 1]) is greater than the start time plus the timeout ([clock format [expr int($start_time + $timeout)] -format %Y-%m-%dT%X].[lindex [split [expr $start_time + $timeout] '.'] 1])"
 		if {$now > $start_time + $timeout} {
-			set message "Condition ($condition) did not occur before timeout ($timeout) seconds"
-			if {$fatal} {
+			set message "Condition ($condition) was not met before timeout ($timeout seconds)"
+			if {$action eq "fail"} {
 				fail $message
 			} else {
 				log_warn $message
+				if {$action eq "subtest"} {
+					subfail "Condition ($condition) should be met (within $timeout seconds)" "Timed out"
+				}
 				return $::RETURN_TIMEOUT
 			}
 		}
@@ -1843,8 +1863,11 @@ proc wait_for_command args {
 #		negates the match. The command is repeated until its output does not
 #		match the specified pattern
 #	-fail
-#		abort the test with failure if output does not match the pattern
-#		by the timeout
+#		fail the test if the output does not match the pattern within the
+#		timeout
+#	-subfail
+#		if the condition is met within the timeout call subpass, otherwise
+#		call subfail
 #	-timeout <float_number>
 #		time in seconds to wait for the pattern to be matched before
 #		timing out (default is 60.0)
