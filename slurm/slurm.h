@@ -2358,26 +2358,26 @@ typedef struct job_defaults {
 
 /* Current partition state information and used to set partition options
  * using slurm_update_partition(). */
-#define PART_FLAG_DEFAULT	0x0001	/* Set if default partition */
-#define PART_FLAG_HIDDEN	0x0002	/* Set if partition is hidden */
-#define PART_FLAG_NO_ROOT	0x0004	/* Set if user root jobs disabled */
-#define PART_FLAG_ROOT_ONLY	0x0008	/* Set if only root can submit jobs */
-#define PART_FLAG_REQ_RESV	0x0010	/* Set if reservation is required */
-#define PART_FLAG_LLN		0x0020	/* Set if least loaded node selection
-					 * is desired */
-#define PART_FLAG_EXCLUSIVE_USER 0x0040	/* Set if nodes allocated exclusively
-					 * by user */
+#define PART_FLAG_DEFAULT	SLURM_BIT(0) /* Set if default partition */
+#define PART_FLAG_HIDDEN	SLURM_BIT(1) /* Set if partition is hidden */
+#define PART_FLAG_NO_ROOT	SLURM_BIT(2) /* Set if user root jobs disabled */
+#define PART_FLAG_ROOT_ONLY	SLURM_BIT(3) /* Set if only root can submit jobs */
+#define PART_FLAG_REQ_RESV	SLURM_BIT(4) /* Set if reservation is required */
+#define PART_FLAG_LLN		SLURM_BIT(5) /* Set if least loaded node selection
+					      * is desired */
+#define PART_FLAG_EXCLUSIVE_USER SLURM_BIT(6)/* Set if nodes allocated exclusively
+					      * by user */
 /* Used with slurm_update_partition() to clear flags associated with existing
  * partitions. For example, if a partition is currently hidden and you want
  * to make it visible then set flags to PART_FLAG_HIDDEN_CLR and call
  * slurm_update_partition(). */
-#define PART_FLAG_DEFAULT_CLR	0x0100	/* Clear DEFAULT partition flag */
-#define PART_FLAG_HIDDEN_CLR	0x0200	/* Clear HIDDEN partition flag */
-#define PART_FLAG_NO_ROOT_CLR	0x0400	/* Clear NO_ROOT partition flag */
-#define PART_FLAG_ROOT_ONLY_CLR	0x0800	/* Clear ROOT_ONLY partition flag */
-#define PART_FLAG_REQ_RESV_CLR	0x1000	/* Clear RES_REQ partition flag */
-#define PART_FLAG_LLN_CLR	0x2000	/* Clear LLN partition flag */
-#define PART_FLAG_EXC_USER_CLR	0x4000	/* Clear EXCLUSIVE_USER flag */
+#define PART_FLAG_DEFAULT_CLR	SLURM_BIT(8)  /* Clear DEFAULT partition flag */
+#define PART_FLAG_HIDDEN_CLR	SLURM_BIT(9)  /* Clear HIDDEN partition flag */
+#define PART_FLAG_NO_ROOT_CLR	SLURM_BIT(10) /* Clear NO_ROOT partition flag */
+#define PART_FLAG_ROOT_ONLY_CLR	SLURM_BIT(11) /* Clear ROOT_ONLY partition flag */
+#define PART_FLAG_REQ_RESV_CLR	SLURM_BIT(12) /* Clear RES_REQ partition flag */
+#define PART_FLAG_LLN_CLR	SLURM_BIT(13) /* Clear LLN partition flag */
+#define PART_FLAG_EXC_USER_CLR	SLURM_BIT(14) /* Clear EXCLUSIVE_USER flag */
 
 typedef struct partition_info {
 	char *allow_alloc_nodes;/* list names of allowed allocating
