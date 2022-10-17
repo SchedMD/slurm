@@ -2672,7 +2672,7 @@ _slurmd_job_log_init(stepd_step_rec_t *step)
 	 * Reset stderr logging to user requested level
 	 * (Logfile and syslog levels remain the same)
 	 *
-	 * The maximum stderr log level is LOG_LEVEL_DEBUG3 because
+	 * The maximum stderr log level is LOG_LEVEL_DEBUG2 because
 	 * some higher level debug messages are generated in the
 	 * stdio code, which would otherwise create more stderr traffic
 	 * to srun and therefore more debug messages in an endless loop.
@@ -2685,8 +2685,8 @@ _slurmd_job_log_init(stepd_step_rec_t *step)
 			error("Use of --slurmd-debug is allowed only for root and SlurmUser(%s), ignoring it",
 			      slurm_conf.slurm_user_name);
 	}
-	if (conf->log_opts.stderr_level > LOG_LEVEL_DEBUG3)
-		conf->log_opts.stderr_level = LOG_LEVEL_DEBUG3;
+	if (conf->log_opts.stderr_level > LOG_LEVEL_DEBUG2)
+		conf->log_opts.stderr_level = LOG_LEVEL_DEBUG2;
 
 #if defined(MULTIPLE_SLURMD)
 	snprintf(argv0, sizeof(argv0), "slurmstepd-%s", conf->node_name);
