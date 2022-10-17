@@ -1060,6 +1060,7 @@ static void *_start_stage_out(void *x)
 	memset(&run_lua_args, 0, sizeof run_lua_args);
 	run_lua_args.argc = argc;
 	run_lua_args.argv = argv;
+	run_lua_args.get_job_ptr = true;
 	run_lua_args.job_id = stage_out_args->job_id;
 	run_lua_args.lua_func = op;
 	run_lua_args.resp_msg = &resp_msg;
@@ -1110,6 +1111,7 @@ static void *_start_stage_out(void *x)
 		memset(&run_lua_args, 0, sizeof run_lua_args);
 		run_lua_args.argc = argc;
 		run_lua_args.argv = argv;
+		run_lua_args.get_job_ptr = true;
 		run_lua_args.job_id = stage_out_args->job_id;
 		run_lua_args.lua_func = op;
 		run_lua_args.resp_msg = &resp_msg;
@@ -2671,6 +2673,7 @@ static void *_start_stage_in(void *x)
 	memset(&run_lua_args, 0, sizeof run_lua_args);
 	run_lua_args.argc = argc;
 	run_lua_args.argv = argv;
+	run_lua_args.get_job_ptr = true;
 	run_lua_args.job_id = stage_in_args->job_id;
 	run_lua_args.lua_func = op;
 	run_lua_args.resp_msg = &resp_msg;
@@ -2719,6 +2722,7 @@ static void *_start_stage_in(void *x)
 		memset(&run_lua_args, 0, sizeof run_lua_args);
 		run_lua_args.argc = argc;
 		run_lua_args.argv = argv;
+		run_lua_args.get_job_ptr = true;
 		run_lua_args.job_id = stage_in_args->job_id;
 		run_lua_args.lua_func = op;
 		run_lua_args.resp_msg = &resp_msg;
@@ -2774,6 +2778,7 @@ static void *_start_stage_in(void *x)
 		memset(&run_lua_args, 0, sizeof run_lua_args);
 		run_lua_args.argc = argc;
 		run_lua_args.argv = argv;
+		run_lua_args.get_job_ptr = true;
 		run_lua_args.job_id = stage_in_args->job_id;
 		run_lua_args.lua_func = op;
 		run_lua_args.resp_msg = &resp_msg;
@@ -3219,6 +3224,7 @@ static void *_start_pre_run(void *x)
 	memset(&run_lua_args, 0, sizeof run_lua_args);
 	run_lua_args.argc = argc;
 	run_lua_args.argv = argv;
+	run_lua_args.get_job_ptr = true;
 	run_lua_args.job_id = pre_run_args->job_id;
 	run_lua_args.lua_func = op;
 	run_lua_args.resp_msg = &resp_msg;
