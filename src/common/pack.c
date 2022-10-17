@@ -1104,7 +1104,7 @@ int unpackstr_array(char ***valp, uint32_t *size_valp, buf_t *buffer)
 	if (*size_valp > 0) {
 		*valp = xcalloc(*size_valp + 1, sizeof(char *));
 		for (i = 0; i < *size_valp; i++) {
-			if (unpackmem_xmalloc(&(*valp)[i], &uint32_tmp, buffer)) {
+			if (unpackstr_xmalloc(&(*valp)[i], &uint32_tmp, buffer)) {
 				*size_valp = 0;
 				xfree_array(*valp);
 				return SLURM_ERROR;
