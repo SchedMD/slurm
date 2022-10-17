@@ -326,10 +326,6 @@ static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
 	env_array_overwrite(&job->environment, "SLURM_GET_USER_ENV", "1");
 	job->env_size = envcount(job->environment);
 
-	job->argc = 1;
-	job->argv = xmalloc(sizeof(char *));
-	job->argv[0] = xstrdup(entry->command);
-
 	if (!job->name) {
 		char *pos;
 		job->name = xstrdup(entry->command);
