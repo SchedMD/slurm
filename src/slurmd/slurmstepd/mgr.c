@@ -2678,8 +2678,13 @@ _slurmd_job_log_init(stepd_step_rec_t *step)
 	 * to srun and therefore more debug messages in an endless loop.
 	 */
 	conf->log_opts.stderr_level = LOG_LEVEL_ERROR;
-	if (step->debug > LOG_LEVEL_ERROR)
-		conf->log_opts.stderr_level = step->debug;
+	if (step->debug > LOG_LEVEL_ERROR) {
+		if ((step->uid == 0) || (step->uid == slurm_conf.slurm_user_id))
+			conf->log_opts.stderr_level = step->debug;
+		else
+			error("Use of --slurmd-debug is allowed only for root and SlurmUser(%s), ignoring it",
+			      slurm_conf.slurm_user_name);
+	}
 	if (conf->log_opts.stderr_level > LOG_LEVEL_DEBUG3)
 		conf->log_opts.stderr_level = LOG_LEVEL_DEBUG3;
 

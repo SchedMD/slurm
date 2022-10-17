@@ -89,6 +89,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix --slurmd-debug to treat its argument as log level (as documented)
     instead of previous approach with it being an offset to configured log
     level.
+ -- srun --slurmd-debug option is now only allowed for root and SlurmUser
 
 * Changes in Slurm 22.05.6
 ==========================

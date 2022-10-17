@@ -44,6 +44,8 @@ HIGHLIGHTS
  -- Run the following scripts in slurmscriptd instead of slurmctld:
     ResumeProgram, ResumeFailProgram, SuspendProgram, ResvProlog, ResvEpilog,
     and RebootProgram (only with SlurmctldParameters=reboot_from_controller).
+ -- Only permit changing log levels with 'srun --slurmd-debug' by root
+    or SlurmUser.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
