@@ -84,6 +84,8 @@ documents those changes that are of interest to users and administrators.
     submitted via salloc/srun or sbatch <script> (not via --wrap).
  -- Job command/script name is now packed with no arguments, thus clients
     displaying job information will only show the command/script name.
+ -- Make acct_gather_energy plugins handle slurmd reconfiguration and support
+    restart for gpu and xcc implementations.
 
 * Changes in Slurm 22.05.6
 ==========================
