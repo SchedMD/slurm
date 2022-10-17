@@ -456,6 +456,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	bool *req_sock; /* Required socket */
 	int *socket_index; /* Socket indexes */
 	uint16_t *avail_cores_per_sock;
+	bool has_cpus_per_gres = false;
 
 	if (*max_tasks_this_node == 0)
 		return;
@@ -533,14 +534,18 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		min_core_cnt = (min_core_cnt + cpus_per_core - 1) /
 			cpus_per_core;
 
-		if (gres_js->cpus_per_gres)
+		if (gres_js->cpus_per_gres) {
 			cpus_per_gres = gres_js->cpus_per_gres;
-		else if (gres_js->ntasks_per_gres &&
+			has_cpus_per_gres = true;
+		} else if (gres_js->ntasks_per_gres &&
 			 (gres_js->ntasks_per_gres != NO_VAL16))
 			cpus_per_gres = gres_js->ntasks_per_gres *
 				mc_ptr->cpus_per_task;
-		else
+		else {
 			cpus_per_gres = gres_js->def_cpus_per_gres;
+			if (cpus_per_gres)
+				has_cpus_per_gres = true;
+		}
 
 		/* Filter out unusable GRES by socket */
 		cnt_avail_total = sock_gres->cnt_any_sock;
@@ -881,8 +886,9 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	xfree(req_sock);
 	xfree(socket_index);
 
-	if ((mc_ptr->cpus_per_task > 1) ||
-	    !(slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE)) {
+	if (!has_cpus_per_gres &&
+	    ((mc_ptr->cpus_per_task > 1) ||
+	     !(slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE))) {
 		/*
 		 * Only adjust *avail_cpus for the maximum task count if
 		 * cpus_per_task is explicitly set. There is currently no way
