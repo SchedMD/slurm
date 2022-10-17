@@ -572,14 +572,15 @@ static int _handle_reconfig(slurmscriptd_msg_t *recv_msg)
 }
 
 static void _run_bb_script_child(int fd, char *script_func, uint32_t job_id,
-				 uint32_t argc, char **argv)
+				 uint32_t argc, char **argv,
+				 job_info_msg_t *job_info)
 {
 	int exit_code;
 	char *resp = NULL;
 
 	setpgid(0, 0);
 
-	exit_code = bb_g_run_script(script_func, job_id, argc, argv, NULL,
+	exit_code = bb_g_run_script(script_func, job_id, argc, argv, job_info,
 				    &resp);
 	if (resp)
 		safe_write(fd, resp, strlen(resp));
@@ -659,7 +660,8 @@ static int _run_bb_script(run_script_msg_t *script_msg,
 		return 127;
 	} else if (cpid == 0) { /* child - run the script */
 		close(pfd[0]); /* Close the read fd, we're only writing */
-		_run_bb_script_child(pfd[1], script_func, job_id, argc, argv);
+		_run_bb_script_child(pfd[1], script_func, job_id, argc, argv,
+				     job_info);
 	} else { /* parent */
 		int new_wait, max_wait;
 		int resp_offset = 0, resp_size = 0;
