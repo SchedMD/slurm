@@ -6649,13 +6649,6 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	if (validate_group(part_ptr, job_desc->user_id) == 0) {
-		debug2("%s: uid %u access to partition %s "
-		       "denied, bad group", __func__,
-		       (unsigned int) job_desc->user_id, part_ptr->name);
-		return ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
-	}
-
 	if (validate_alloc_node(part_ptr, job_desc->alloc_node) == 0) {
 		debug2("%s: uid %u access to partition %s "
 		       "denied, bad allocating node: %s", __func__,
@@ -6741,6 +6734,13 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (slurm_conf.enforce_part_limits) {
+		if (!validate_group(part_ptr, job_desc->user_id)) {
+			debug2("%s: uid %u access to partition %s denied, bad group",
+			       __func__, job_desc->user_id, part_ptr->name);
+			rc = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
+			goto fini;
+		}
+
 		if ((rc = part_policy_valid_acct(part_ptr, acct, NULL))
 		    != SLURM_SUCCESS)
 			goto fini;
