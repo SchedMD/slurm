@@ -408,7 +408,6 @@ static int _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
 					     buf_t *buffer,
 					     uint16_t protocol_version)
 {
-	uint32_t uint32_tmp;
 	network_callerid_resp_t *msg;
 	xassert(msg_ptr);
 
@@ -417,7 +416,7 @@ static int _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id,		buffer);
 		safe_unpack32(&msg->return_code,	buffer);
-		safe_unpackmem_xmalloc(&msg->node_name, &uint32_tmp, buffer);
+		safe_unpackstr(&msg->node_name, buffer);
 	}
 
 	return SLURM_SUCCESS;
