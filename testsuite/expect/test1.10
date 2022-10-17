@@ -29,7 +29,7 @@
 source ./globals
 
 set debug_get   0
-set debug_set "error"
+set debug_set "verbose"
 set debug_expected "verbose"
 
 if [param_contains [get_config_param "LaunchParameters"] "test_exec"] {
@@ -52,6 +52,6 @@ expect {
 	}
 }
 
-if {$debug_get != $debug_expected} {
+if {$debug_get != $debug_set} {
 	fail "Did not log at proper level ($debug_get != $debug_expected)"
 }
