@@ -598,16 +598,18 @@ rwfail:
  * Set the response of the script in resp_msg.
  * Return the exit code of the script.
  */
-static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
-			  uint32_t argc, char **argv,
-			  run_script_msg_t *script_msg,
+static int _run_bb_script(run_script_msg_t *script_msg,
 			  char **resp_msg,
 			  bool *track_script_signalled)
 {
 	int pfd[2] = {-1, -1};
 	bool got_resp = false;
 	int status = 0;
+	uint32_t job_id = script_msg->job_id, timeout = script_msg->timeout;
+	uint32_t argc = script_msg->argc;
+	char **argv = script_msg->argv;
 	char *resp = NULL;
+	char *script_func = script_msg->script_name;
 	pid_t cpid;
 	job_info_msg_t *job_info = NULL;
 
@@ -795,11 +797,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 
 	switch (script_msg->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
-		status = _run_bb_script(script_msg->script_name,
-					script_msg->job_id,
-					script_msg->timeout, script_msg->argc,
-					script_msg->argv,
-					script_msg,
+		status = _run_bb_script(script_msg,
 					&resp_msg,
 					&signalled);
 		break;
