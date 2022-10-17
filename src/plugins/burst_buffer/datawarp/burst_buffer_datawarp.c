@@ -5199,7 +5199,8 @@ _json_parse_sessions_object(json_object *jobj, bb_sessions_t *ent)
  * Returns the status of the script.
  */
 extern int bb_p_run_script(char *func, uint32_t job_id, uint32_t argc,
-			   char **argv, char **resp_msg)
+			   char **argv, job_info_msg_t *job_info,
+			   char **resp_msg)
 {
 	return 0;
 }

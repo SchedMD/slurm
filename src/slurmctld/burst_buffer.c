@@ -84,6 +84,7 @@ typedef struct slurm_bb_ops {
 	int		(*job_cancel) (job_record_t *job_ptr);
 	int		(*run_script) (char *func, uint32_t job_id,
 				       uint32_t argc, char **argv,
+				       job_info_msg_t *job_info,
 				       char **resp_msg);
 	char *		(*xlate_bb_2_tres_str) (char *burst_buffer);
 } slurm_bb_ops_t;
@@ -764,14 +765,15 @@ extern int bb_g_job_cancel(job_record_t *job_ptr)
 }
 
 extern int bb_g_run_script(char *func, uint32_t job_id, uint32_t argc,
-			   char **argv, char **resp_msg)
+			   char **argv, job_info_msg_t *job_info,
+			   char **resp_msg)
 {
 	int i, rc, rc2;
 
 	rc = bb_g_init();
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
-		rc2 = (*(ops[i].run_script))(func, job_id, argc, argv,
+		rc2 = (*(ops[i].run_script))(func, job_id, argc, argv, job_info,
 					     resp_msg);
 		if (rc2 != SLURM_SUCCESS) {
 			rc = rc2;

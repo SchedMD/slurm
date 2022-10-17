@@ -3641,7 +3641,8 @@ extern int bb_p_job_cancel(job_record_t *job_ptr)
  * Returns the status of the script.
  */
 extern int bb_p_run_script(char *func, uint32_t job_id, uint32_t argc,
-			   char **argv, char **resp_msg)
+			   char **argv, job_info_msg_t *job_info,
+			   char **resp_msg)
 {
 	return _start_lua_script(func, job_id, argc, argv, resp_msg);
 }

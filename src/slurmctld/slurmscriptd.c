@@ -579,7 +579,8 @@ static void _run_bb_script_child(int fd, char *script_func, uint32_t job_id,
 
 	setpgid(0, 0);
 
-	exit_code = bb_g_run_script(script_func, job_id, argc, argv, &resp);
+	exit_code = bb_g_run_script(script_func, job_id, argc, argv, NULL,
+				    &resp);
 	if (resp)
 		safe_write(fd, resp, strlen(resp));
 

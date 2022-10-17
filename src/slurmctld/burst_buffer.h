@@ -229,7 +229,8 @@ extern int bb_g_job_cancel(job_record_t *job_ptr);
  * Returns the status of the script.
  */
 extern int bb_g_run_script(char *func, uint32_t job_id, uint32_t argc,
-			   char **argv, char **resp_msg);
+			   char **argv, job_info_msg_t *job_info,
+			   char **resp_msg);
 
 /*
  * Translate a burst buffer string to it's equivalent TRES string
