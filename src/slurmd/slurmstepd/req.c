@@ -852,8 +852,8 @@ _handle_notify_job(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	safe_read(fd, &len, sizeof(int));
 	if (len) {
-		message = xmalloc (len);
-		safe_read(fd, message, len); /* '\0' terminated */
+		message = xmalloc(len + 1);
+		safe_read(fd, message, len);
 	}
 
 	debug3("  uid = %u", uid);
