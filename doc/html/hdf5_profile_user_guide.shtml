@@ -312,7 +312,7 @@ correlate activity with other sources such as logs.</DD>
 <h3 id="network">Network (Infiniband Data)
 <a class="slurm_link" href="#network"></a>
 </h3>
-<p><b>JobAcctInfinibandType</b>=acct_gather_interconnect/ofed<p>
+<p><b>AcctGatherInterconnectType</b>=acct_gather_interconnect/ofed<p>
 is required in slurm.conf to collect task data.
 Appropriately set network=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
@@ -367,6 +367,6 @@ correlate activity with other sources such as logs.</DD>
 
 
 
-<p style="text-align:center;">Last modified 8 March 2022</p>
+<p style="text-align:center;">Last modified 17 October 2022</p>
 
 <!--#include virtual="footer.txt"-->
