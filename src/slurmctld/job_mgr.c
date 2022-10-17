@@ -6735,8 +6735,9 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 
 	if (slurm_conf.enforce_part_limits) {
 		if (!validate_group(part_ptr, job_desc->user_id)) {
-			debug2("%s: uid %u access to partition %s denied, bad group",
-			       __func__, job_desc->user_id, part_ptr->name);
+			debug2("%s: uid %u not in group permitted to use this partition (%s). groups allowed: %s",
+			     __func__, job_desc->user_id, part_ptr->name,
+			     part_ptr->allow_groups);
 			rc = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 			goto fini;
 		}
