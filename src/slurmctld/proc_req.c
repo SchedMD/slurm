@@ -657,9 +657,9 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
 	/*
 	 * If UID/GID not given use the authenticated values.
 	 */
-	if (msg->user_id == NO_VAL)
+	if ((msg->user_id == NO_VAL) || (msg->user_id == SLURM_AUTH_NOBODY))
 		msg->user_id = uid;
-	if (msg->group_id == NO_VAL)
+	if ((msg->group_id == NO_VAL) || (msg->group_id == SLURM_AUTH_NOBODY))
 		msg->group_id = gid;
 
 	if (validate_slurm_user(uid))
