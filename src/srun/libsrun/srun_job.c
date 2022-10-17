@@ -1775,9 +1775,7 @@ static int _become_user (void)
 
 static int _call_spank_local_user(srun_job_t *job, slurm_opt_t *opt_local)
 {
-	srun_opt_t *srun_opt = opt_local->srun_opt;
 	struct spank_launcher_job_info info[1];
-	xassert(srun_opt);
 
 	info->argc = opt_local->argc;
 	info->argv = opt_local->argv;
