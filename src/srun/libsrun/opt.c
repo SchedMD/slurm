@@ -930,10 +930,10 @@ static bool _opt_verify(void)
 	 *   these debug messages cause the generation of more
 	 *   debug messages ad infinitum)
 	 */
-	if (sropt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2) {
-		sropt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
-		info("Using srun's max debug increment of %d",
-		     sropt.slurmd_debug);
+	if (sropt.slurmd_debug > LOG_LEVEL_DEBUG2) {
+		sropt.slurmd_debug = LOG_LEVEL_DEBUG2;
+		info("Using max slurmd-debug value of '%s'",
+		     log_num2string(sropt.slurmd_debug));
 	}
 
 	if (opt.quiet && opt.verbose) {

@@ -2677,7 +2677,9 @@ _slurmd_job_log_init(stepd_step_rec_t *step)
 	 * stdio code, which would otherwise create more stderr traffic
 	 * to srun and therefore more debug messages in an endless loop.
 	 */
-	conf->log_opts.stderr_level = LOG_LEVEL_ERROR + step->debug;
+	conf->log_opts.stderr_level = LOG_LEVEL_ERROR;
+	if (step->debug > LOG_LEVEL_ERROR)
+		conf->log_opts.stderr_level = step->debug;
 	if (conf->log_opts.stderr_level > LOG_LEVEL_DEBUG3)
 		conf->log_opts.stderr_level = LOG_LEVEL_DEBUG3;
 

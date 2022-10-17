@@ -86,6 +86,9 @@ documents those changes that are of interest to users and administrators.
     displaying job information will only show the command/script name.
  -- Make acct_gather_energy plugins handle slurmd reconfiguration and support
     restart for gpu and xcc implementations.
+ -- Fix --slurmd-debug to treat its argument as log level (as documented)
+    instead of previous approach with it being an offset to configured log
+    level.
 
 * Changes in Slurm 22.05.6
 ==========================
