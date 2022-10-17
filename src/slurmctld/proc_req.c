@@ -2438,13 +2438,26 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	START_TIMER;
-	dump_step_desc(req_step_msg);
-	if (msg->auth_uid && (msg->auth_uid != req_step_msg->user_id)) {
+
+	xassert(msg->auth_uid_set);
+
+	if (req_step_msg->user_id == SLURM_AUTH_NOBODY) {
+		req_step_msg->user_id = msg->auth_uid;
+
+		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
+			char *host = auth_g_get_host(msg->auth_cred);
+			debug3("%s: [%s] set RPC user_id to %d",
+			       __func__, host, msg->auth_uid);
+			xfree(host);
+		}
+	} else if (msg->auth_uid != req_step_msg->user_id) {
 		error("Security violation, JOB_STEP_CREATE RPC from uid=%u to run as uid %u",
 		      msg->auth_uid, req_step_msg->user_id);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
+
+	dump_step_desc(req_step_msg);
 
 #if defined HAVE_FRONT_END
 	/* Limited job step support */
