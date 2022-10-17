@@ -55,6 +55,9 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     result in fatal() rather than just an error.
  -- Deprecate AllowedKmemSpace, ConstrainKmemSpace, MaxKmemPercent, and
     MinKmemSpace.
+ -- Allow jobs to queue even if the user is not in AllowGroups when
+    EnforcePartLimits=no is set. This ensures consistency for all the Partition
+    access controls, and matches the documented behavior for EnforcePartLimits.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

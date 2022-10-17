@@ -6907,7 +6907,6 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			if ((rc != SLURM_SUCCESS) &&
 			    ((rc == ESLURM_ACCESS_DENIED) ||
 			     (rc == ESLURM_USER_ID_MISSING) ||
-			     (rc == ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP) ||
 			     (slurm_conf.enforce_part_limits ==
 			      PARTITION_ENFORCE_ALL))) {
 				fail_rc = rc;
@@ -6956,7 +6955,6 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		if ((rc != SLURM_SUCCESS) &&
 		    ((rc == ESLURM_ACCESS_DENIED) ||
 		     (rc == ESLURM_USER_ID_MISSING) ||
-		     (rc == ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP) ||
 		     slurm_conf.enforce_part_limits))
 			goto fini;
 		/* Enforce Part Limit = no */

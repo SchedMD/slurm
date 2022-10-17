@@ -2348,6 +2348,10 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	}
 	assoc_mgr_unlock(&qos_read_lock);
 
+	/* Quick check to see if this group is allowed on this partition. */
+	if (!validate_group(job_ptr->part_ptr, job_ptr->user_id))
+		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+
 	if (job_ptr->priority == 0) {	/* user/admin hold */
 		if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
 		    && (job_ptr->state_reason != FAIL_BURST_BUFFER_OP)

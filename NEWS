@@ -97,6 +97,9 @@ documents those changes that are of interest to users and administrators.
  -- Add --autocomplete= option to all client commands.
  -- Allow for concurrent processing of job_submit_g_submit() and
     job_submit_g_modify() calls.
+ -- Allow jobs to queue even if the user is not in AllowGroups when
+    EnforcePartLimits=no is set. This ensures consistency for all the Partition
+    access controls, and matches the documented behavior for EnforcePartLimits.
 
 * Changes in Slurm 22.05.6
 ==========================
