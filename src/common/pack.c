@@ -99,6 +99,7 @@ strong_alias(packmem,		slurm_packmem);
 strong_alias(unpackmem_ptr,	slurm_unpackmem_ptr);
 strong_alias(unpackmem_xmalloc,	slurm_unpackmem_xmalloc);
 strong_alias(unpackmem_malloc,	slurm_unpackmem_malloc);
+strong_alias(unpackstr_xmalloc, slurm_unpackstr_xmalloc);
 strong_alias(unpackstr_xmalloc_escaped, slurm_unpackstr_xmalloc_escaped);
 strong_alias(unpackstr_xmalloc_chooser, slurm_unpackstr_xmalloc_chooser);
 strong_alias(packstr_array,	slurm_packstr_array);
@@ -939,6 +940,45 @@ int unpackmem_malloc(char **valp, uint32_t *size_valp, buf_t *buffer)
 
 /*
  * Given a buffer containing a network byte order 16-bit integer,
+ * and an arbitrary data string, copy the data string into the location
+ * specified by valp.  Also return the sizes of 'valp' in bytes.
+ * Adjust buffer counters.
+ * NOTE: valp is set to point into a newly created buffer,
+ *	the caller is responsible for calling xfree() on *valp
+ *	if non-NULL (set to NULL on zero size buffer value)
+ */
+int unpackstr_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer)
+{
+	uint32_t ns;
+
+	if (remaining_buf(buffer) < sizeof(ns))
+		return SLURM_ERROR;
+
+	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
+	*size_valp = ntohl(ns);
+	buffer->processed += sizeof(ns);
+
+	if (*size_valp > MAX_PACK_MEM_LEN) {
+		error("%s: Buffer to be unpacked is too large (%u > %u)",
+		      __func__, *size_valp, MAX_PACK_MEM_LEN);
+		return SLURM_ERROR;
+	} else if (*size_valp > 0) {
+		if (remaining_buf(buffer) < *size_valp)
+			return SLURM_ERROR;
+		if (buffer->head[buffer->processed + *size_valp - 1] != '\0')
+			return SLURM_ERROR;
+		*valp = xmalloc_nz(*size_valp);
+		memcpy(*valp, &buffer->head[buffer->processed],
+		       *size_valp);
+		buffer->processed += *size_valp;
+	} else
+		*valp = NULL;
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Given a buffer containing a network byte order 16-bit integer,
  * and an arbitrary char string, copy the data string into the location
  * specified by valp and escape ' and \ to be database safe.
  * Also return the sizes of 'valp' in bytes.
@@ -1006,7 +1046,7 @@ int unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp, buf_t *buf)
 	if (slurmdbd_conf)
 		return unpackstr_xmalloc_escaped(valp, size_valp, buf);
 	else
-		return unpackmem_xmalloc(valp, size_valp, buf);
+		return unpackstr_xmalloc(valp, size_valp, buf);
 }
 
 

@@ -143,6 +143,7 @@ extern int unpackmem_ptr(char **valp, uint32_t *size_valp, buf_t *buffer);
 extern int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer);
 extern int unpackmem_malloc(char **valp, uint32_t *size_valp, buf_t *buffer);
 
+extern int unpackstr_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer);
 extern int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp,
 				     buf_t *buffer);
 extern int unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp,
@@ -337,9 +338,6 @@ extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 
 #define unpackstr_malloc	                        \
         unpackmem_malloc
-
-#define unpackstr_xmalloc	                        \
-        unpackmem_xmalloc
 
 #define safe_unpackstr_malloc	                        \
         safe_unpackmem_malloc
