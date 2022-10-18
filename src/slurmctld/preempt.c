@@ -253,6 +253,7 @@ extern int slurm_preempt_init(void)
 	if (xstrcasestr(slurm_conf.sched_params, "preempt_youngest_first"))
 		youngest_order = true;
 
+	min_exempt_priority = NO_VAL;
 	if ((temp_str = xstrcasestr(slurm_conf.preempt_params,
 				    "min_exempt_priority=")))
 		parse_uint32((temp_str + 20), &min_exempt_priority);
