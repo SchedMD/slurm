@@ -86,6 +86,12 @@ set sq_format(partition)     [default_partition]
 # comment
 set sq_format(comment)       1234567890
 
+# TODO: Remove this precondition check once Slurm 22.05 is no longer supported
+regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
+if {$major < 23} {
+	skip "This test is disabled in Slurm versions older than 23.02 (see bugs 15178 and 14864)"
+}
+
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
