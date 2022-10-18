@@ -2587,6 +2587,17 @@ only be set directly on a relevant subset of the system qos values instead.
 .IP
 
 .TP
+\fBPreemptParameters\fR
+Multiple options may be comma separated.
+.RS
+.TP
+\fBmin_exempt_priority=#\fR
+Threshold value for the job's global priority. Only those jobs with priority
+lower than this value will be marked as preemptable.
+.RE
+.IP
+
+.TP
 \fBPreemptType\fR
 Specifies the plugin used to identify which jobs can be
 preempted in order to start a pending job.
