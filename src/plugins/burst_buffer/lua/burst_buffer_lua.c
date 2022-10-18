@@ -593,32 +593,125 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 	return 1;
 }
 
+/*
+ * Arguments are passed to us on the stack of L:
+ * (1) The table (second from the top of the stack)
+ * (2) The key (top of the stack)
+ */
 static int _job_info_field_index(lua_State *L)
 {
 	const char *name = luaL_checkstring(L, 2);
 	job_info_t *job_info;
 
+	/* Pushes the metatable of the table onto the stack */
 	lua_getmetatable(L, -2);
+	/*
+	 * Pushes metatable["_job_info_ptr"] onto the stack, which is just a
+	 * pointer to job_info.
+	 */
 	lua_getfield(L, -1, "_job_info_ptr");
+	/* Now we can get the pointer to job_info from the top of the stack */
 	job_info = lua_touserdata(L, -1);
 
 	return _lua_job_info_field(L, job_info, name);
 }
 
+/*
+ * This function results in a single metatable on the stack:
+ *
+ * <metatable> = {
+ *   __index = _job_info_field_index
+ *   _job_info_ptr = job_info
+ * }
+ *
+ * The metatable defines the behavior of special operations on the table.
+ * The __index operation is called when indexing job_info in lua.
+ * When burst_buffer.lua does this:
+ *   job_info["some_value"]
+ * Then the function _job_info_field_index is called with the table and key
+ * as the arguments:
+ *   (1) This job_info table, (2) "some_value"
+ *
+ * See the lua manual section 2.4 Metatables and Metamethods for the various
+ * table operations (which are identified by keys in the metatable).
+ *
+ * Negative indices reference the top of the stack:
+ *   stack[-1] is the top of the stack, stack[-2] is the second from the top of
+ *   the stack, etc.
+ */
 static void _push_job_info(job_info_t *job_info, lua_State *L)
 {
+	/*
+	 * Push a table onto the stack
+	 * Stack after this call:
+	 * -1  table1
+	 */
 	lua_newtable(L);
 
+	/*
+	 * Push a table the stack.
+	 * Stack after this call:
+	 * -1  table2
+	 * -2  table1
+	 */
 	lua_newtable(L);
+	/*
+	 * Push a c function to the stack.
+	 * Stack after this call:
+	 * -1  function = _push_job_info_field_index
+	 * -2  table2
+	 * -3  table1
+	 */
 	lua_pushcfunction(L, _job_info_field_index);
+	/*
+	 * - Pop _job_info_field_index
+	 * - table2["__index"] = _job_info_field_index
+	 * Stack after this call:
+	 * -1  table2 = {
+	 *     __index = _job_info_field_index
+	 *   }
+	 * -2  table1
+	 */
 	lua_setfield(L, -2, "__index");
 	/*
-	 * Store the job_info in the metatable, so the index
+	 * The next two calls store the job_info in the metatable, so the index
 	 * function knows which struct it's getting data for.
 	 * lightuserdata represents a C pointer (a void*).
 	 */
+	/*
+	 * Pushes lightuserdata onto the stack.
+	 * Stack after this call:
+	 * -1 userdata = pointer to job_info
+	 * -2  table2 = {
+	 *     __index = _job_info_field_index
+	 *   }
+	 * -3  table1
+	 */
 	lua_pushlightuserdata(L, job_info);
+	/*
+	 * - Pop userdata (pointer to job_info) from the stack
+	 * - table2["_job_info_ptr"] = userdata
+	 * Stack after this call:
+	 * Assigns second from top value on stack to the value on the top
+	 * of the stack and pops the top value from the stack
+	 * -1  table2 = {
+	 *     __index = _job_info_field_index
+	 *     _job_info_ptr = job_info
+	 *   }
+	 * -2  table1
+	 */
 	lua_setfield(L, -2, "_job_info_ptr");
+	/*
+	 * Pops a value from the stack and sets it as the new metatable for
+	 * the value at the given index (second from the top value on the stack)
+	 * - Pop table2 from the stack
+	 * - table1 metatable = table2
+	 * Stack after this call:
+	 * -1 table1 metatable = {
+	 *      __index = _job_info_field_index
+	 *     _job_info_ptr = job_info
+	 *    }
+	 */
 	lua_setmetatable(L, -2);
 }
 
