@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix deadlock caused by race condition when disabling power save with a
     reconfigure.
  -- Fix memory leak in the dbd when container is sent to the database.
+ -- openapi/dbv0.0.38 - correct dbv0.0.38_tres_info.
 
 * Changes in Slurm 22.05.5
 ==========================
