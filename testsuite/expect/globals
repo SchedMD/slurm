@@ -4119,7 +4119,7 @@ proc range_to_list {range_expression} {
 #		comma-separated list of allowed states
 #
 # RETURN VALUE
-#	node names list, -1 on sinfo error
+#	list of nodes having the required state
 #
 #####################################################################
 
@@ -7142,6 +7142,9 @@ proc _test_init {} {
 	# Default precondition checks
 	if {![regexp "is UP" [run_command_output -nolog -none "$scontrol ping"]]} {
 		skip "The expect testsuite requires Slurm to be running, but 'scontrol ping' failed."
+	}
+	if {[llength [get_nodes_by_state]] < 1} {
+		skip "The expect testsuite requires there to be at least one idle node in the default partition."
 	}
 }
 
