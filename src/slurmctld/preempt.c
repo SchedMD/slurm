@@ -250,6 +250,7 @@ extern int slurm_preempt_init(void)
 	}
 	init_run = true;
 
+	youngest_order = false;
 	if (xstrcasestr(slurm_conf.sched_params, "preempt_youngest_first"))
 		youngest_order = true;
 
