@@ -445,7 +445,6 @@ test12.11  Test acct_gather_profile/influxdb.
 
 test13.#   Testing of switch plugins
 ====================================
-test13.1   Test that we avoid re-using active switch contexts.
 
 test14.#   Testing of sbcast options.
 =====================================
