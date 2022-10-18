@@ -257,7 +257,7 @@ extern int slurm_preempt_init(void)
 	min_exempt_priority = NO_VAL;
 	if ((temp_str = xstrcasestr(slurm_conf.preempt_params,
 				    "min_exempt_priority=")))
-		parse_uint32((temp_str + 20), &min_exempt_priority);
+		retval = parse_uint32((temp_str + 20), &min_exempt_priority);
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
