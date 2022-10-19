@@ -1823,7 +1823,7 @@ static void _show_it(int argc, char **argv)
 		   xstrncasecmp(tag, "jobid", MAX(tag_len, 1)) == 0 ) {
 		scontrol_print_job (val);
 	} else if (xstrncasecmp(tag, "licenses", MAX(tag_len, 2)) == 0) {
-		scontrol_print_licenses(val);
+		scontrol_print_licenses(val, argc, argv);
 	} else if (xstrncasecmp(tag, "nodes", MAX(tag_len, 1)) == 0) {
 		scontrol_print_node_list (val);
 	} else if (xstrncasecmp(tag, "partitions", MAX(tag_len, 2)) == 0 ||

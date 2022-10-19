@@ -88,6 +88,7 @@ extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern int sibling_flag; /* show sibling jobs (if any fed job). */
 extern uint32_t cluster_flags; /* what type of cluster are we talking to */
 extern uint32_t euid; /* send request to the slurmctld in behave of this user */
+extern const char *mime_type; /* user requested JSON or YAML */
 
 extern front_end_info_msg_t *old_front_end_info_ptr;
 extern job_info_msg_t *old_job_info_ptr;
@@ -132,7 +133,7 @@ extern void	scontrol_print_front_end(char *node_name,
 					 front_end_buffer_ptr);
 extern void	scontrol_print_job (char * job_id_str);
 extern void	scontrol_print_hosts (char * node_list);
-extern void	scontrol_print_licenses(const char *feature);
+extern void scontrol_print_licenses(const char *name, int argc, char **argv);
 extern void	scontrol_print_node (char *node_name,
 				     node_info_msg_t *node_info_ptr);
 extern void	scontrol_print_node_list (char *node_list);

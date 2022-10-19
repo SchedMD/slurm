@@ -39,6 +39,8 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
+#include "src/common/data.h"
+#include "src/interfaces/data_parser.h"
 
 static void _print_license_info(const char *, license_info_msg_t *);
 static slurm_license_info_t ** _license_sort(license_info_msg_t
@@ -83,8 +85,7 @@ static slurm_license_info_t ** _license_sort(license_info_msg_t
  * from the controller
  *
  */
-void
-scontrol_print_licenses(const char *name)
+extern void scontrol_print_licenses(const char *name, int argc, char **argv)
 {
 	int cc;
 	license_info_msg_t *msg;
@@ -105,9 +106,15 @@ scontrol_print_licenses(const char *name)
 	}
 
 	last_update = time(NULL);
-	/* print the info
+	/*
+	 * Print the info
 	 */
-	_print_license_info(name, msg);
+	if (mime_type) {
+		exit_code = DATA_DUMP_CLI(LICENSES, msg, "licenses", argc, argv,
+					  NULL, mime_type);
+	} else {
+		_print_license_info(name, msg);
+	}
 
 	/* free at last
 	 */
