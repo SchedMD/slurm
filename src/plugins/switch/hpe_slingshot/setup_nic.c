@@ -62,24 +62,22 @@ static int (*cxil_alloc_svc_p)(struct cxil_dev *, struct cxi_svc_desc *,
 static int (*cxil_destroy_svc_p)(struct cxil_dev *, unsigned int);
 
 
-#define LOOKUP_SYM(_lib, _version, x) \
+#define LOOKUP_SYM(_lib, x) \
 do { \
-	x ## _p = (_version && _version[0]) ? \
-		dlvsym(_lib, #x, _version) : dlsym(_lib, #x); \
+	x ## _p = dlsym(_lib, #x); \
 	if (x ## _p == NULL) { \
-		error("Error loading symbol %s, version '%s': %s", \
-			#x, _version, dlerror()); \
+		error("Error loading symbol %s: %s", #x, dlerror()); \
 		return false; \
 	} \
 } while (0)
 
-static bool _load_cxi_funcs(void *lib, char *version)
+static bool _load_cxi_funcs(void *lib)
 {
-	LOOKUP_SYM(lib, version, cxil_get_device_list);
-	LOOKUP_SYM(lib, version, cxil_get_svc_list);
-	LOOKUP_SYM(lib, version, cxil_open_device);
-	LOOKUP_SYM(lib, version, cxil_alloc_svc);
-	LOOKUP_SYM(lib, version, cxil_destroy_svc);
+	LOOKUP_SYM(lib, cxil_get_device_list);
+	LOOKUP_SYM(lib, cxil_get_svc_list);
+	LOOKUP_SYM(lib, cxil_open_device);
+	LOOKUP_SYM(lib, cxil_alloc_svc);
+	LOOKUP_SYM(lib, cxil_destroy_svc);
 
 	return true;
 }
@@ -303,8 +301,6 @@ static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
  */
 extern bool slingshot_open_cxi_lib(void)
 {
-	char *version;
-
 	if (!(cxi_handle = dlopen(HPE_SLINGSHOT_LIB,
 				  RTLD_LAZY | RTLD_GLOBAL))) {
 		error("Couldn't find CXI library %s: %s",
@@ -312,11 +308,7 @@ extern bool slingshot_open_cxi_lib(void)
 		goto out;
 	}
 
-	if (!(version = getenv(SLINGSHOT_CXI_LIB_VERSION_ENV)))
-		version = SLINGSHOT_CXI_LIB_VERSION;
-
-	debug("CXI library %s, version '%s'", HPE_SLINGSHOT_LIB, version);
-	if (!_load_cxi_funcs(cxi_handle, version))
+	if (!_load_cxi_funcs(cxi_handle))
 		goto out;
 
 	if (!_create_cxi_devs())
