@@ -164,6 +164,10 @@ environment variable. If the variable is not set /tmp is used.
 Jobs created with \fBscrontab\fR are assigned a single job id. When cancelled
 all future runs of the job will also be cancelled. The job definition will be
 commented out in the users \fBscrontab\fR file.
+.LP
+Using "\fBscontrol requeue\fR <\fIjob_id\fR>" will skip the next run of the
+cron job and reschedule it for the next available time based on the cron
+expression.
 
 .SH "EXAMPLES"
 To create a job that would run at the beginning of each hour, using the 'high'
