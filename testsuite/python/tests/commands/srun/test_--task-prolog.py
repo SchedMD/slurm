@@ -16,8 +16,6 @@ def setup():
 def test_task_prolog(tmp_path):
     """Test srun --task-prolog"""
 
-    sleep_symlink = str(tmp_path / f"sleep_symlink_{os.getpid()}")
-    os.symlink(shutil.which('sleep'), sleep_symlink)
     task_prolog = str(tmp_path / 'task_prolog.sh')
     touched_file = str(tmp_path / 'touched_file')
     atf.make_bash_script(task_prolog, f"""touch {touched_file}
