@@ -74,7 +74,7 @@ static int g_context_cnt = -1;
 static slurm_submit_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static char *submit_plugin_list = NULL;
-static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 /*
  * Initialize the job submit plugin.
@@ -88,7 +88,7 @@ extern int job_submit_g_init(void)
 	char *plugin_type = "job_submit";
 	char *type;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&context_lock);
 	if (g_context_cnt >= 0)
 		goto fini;
 
@@ -124,7 +124,7 @@ extern int job_submit_g_init(void)
 	xfree(tmp_plugin_list);
 
 fini:
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&context_lock);
 
 	if (rc != SLURM_SUCCESS)
 		job_submit_g_fini();
@@ -141,7 +141,7 @@ extern int job_submit_g_fini(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&context_lock);
 	if (g_context_cnt < 0)
 		goto fini;
 
@@ -157,7 +157,8 @@ extern int job_submit_g_fini(void)
 	xfree(submit_plugin_list);
 	g_context_cnt = -1;
 
-fini:	slurm_mutex_unlock(&g_context_lock);
+fini:
+	slurm_rwlock_unlock(&context_lock);
 	return rc;
 }
 
@@ -178,12 +179,12 @@ extern int job_submit_g_reconfig(void)
 	if (!slurm_conf.job_submit_plugins && !submit_plugin_list)
 		return rc;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_wrlock(&context_lock);
 	if (xstrcmp(slurm_conf.job_submit_plugins, submit_plugin_list))
 		plugin_change = true;
 	else
 		plugin_change = false;
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&context_lock);
 
 	if (plugin_change) {
 		info("JobSubmitPlugins changed to %s",
@@ -220,15 +221,17 @@ extern int job_submit_g_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	/* Set to NO_VAL so that it can only be set by the job submit plugin. */
 	job_desc->site_factor = NO_VAL;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&context_lock);
 	xassert(g_context_cnt >= 0);
-	/* NOTE: On function entry read locks are set on config, job, node and
+	/*
+	 * NOTE: On function entry read locks are set on config, job, node and
 	 * partition structures. Do not attempt to unlock them and then
 	 * lock again (say with a write lock) since doing so will trigger
-	 * a deadlock with the g_context_lock above. */
+	 * a deadlock with the context_lock above.
+	 */
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].submit))(job_desc, submit_uid, err_msg);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&context_lock);
 	END_TIMER2(__func__);
 
 	return rc;
@@ -255,11 +258,11 @@ extern int job_submit_g_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	/* Set to NO_VAL so that it can only be set by the job submit plugin. */
 	job_desc->site_factor = NO_VAL;
 
-	slurm_mutex_lock(&g_context_lock);
+	slurm_rwlock_rdlock(&context_lock);
 	xassert(g_context_cnt >= 0);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].modify))(job_desc, job_ptr, submit_uid, err_msg);
-	slurm_mutex_unlock(&g_context_lock);
+	slurm_rwlock_unlock(&context_lock);
 	END_TIMER2(__func__);
 
 	return rc;

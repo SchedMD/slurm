@@ -88,3 +88,6 @@ API CHANGES
  -- task plugins - replace task_p_pre_set_affinity(), task_p_set_affinity(), and
     task_p_post_set_affinity() with task_p_pre_launch_priv() like it was back in
     slurm 20.11.
+ -- Allow for concurrent processing of job_submit_g_submit() and
+    job_submit_g_modify() calls. If your plugin is not capable of concurrent
+    operation you must add additional locking within your plugin.

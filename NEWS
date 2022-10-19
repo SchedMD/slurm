@@ -95,6 +95,8 @@ documents those changes that are of interest to users and administrators.
  -- serializer/url-encoded - interpet query keys without a value (flags) to be
     true instead of NULL.
  -- Add --autocomplete= option to all client commands.
+ -- Allow for concurrent processing of job_submit_g_submit() and
+    job_submit_g_modify() calls.
 
 * Changes in Slurm 22.05.6
 ==========================
