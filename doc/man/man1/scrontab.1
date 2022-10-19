@@ -1,4 +1,4 @@
-.TH scrontab "1" "Slurm Commands" "August 2022" "Slurm Commands"
+.TH scrontab "1" "Slurm Commands" "October 2022" "Slurm Commands"
 
 .SH "NAME"
 scrontab \- manage Slurm crontab files
@@ -160,6 +160,10 @@ been enabled in the \fBslurm.conf\fR.
 .LP
 \fBscrontab\fR will create a temporary file in the directory set by \fBTMPDIR\fR
 environment variable. If the variable is not set /tmp is used.
+.LP
+Jobs created with \fBscrontab\fR are assigned a single job id. When cancelled
+all future runs of the job will also be cancelled. The job definition will be
+commented out in the users \fBscrontab\fR file.
 
 .SH "EXAMPLES"
 To create a job that would run at the beginning of each hour, using the 'high'
