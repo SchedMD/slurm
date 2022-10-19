@@ -103,6 +103,7 @@ documents those changes that are of interest to users and administrators.
     job requests --ntasks-per-node and --mem (per-node) but the limit is
     MaxMemPerCPU.
  -- Fix POWER_DOWN_FORCE request leaving node in completing state.
+ -- Do not count magnetic reservation queue records towards backfill limits.
 
 * Changes in Slurm 22.05.5
 ==========================
