@@ -303,27 +303,19 @@ static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
  */
 extern bool slingshot_open_cxi_lib(void)
 {
-	char *libfile;
 	char *version;
 
-	if (!(libfile = getenv(SLINGSHOT_CXI_LIB_ENV)))
-		libfile = HPE_SLINGSHOT_LIB;
-
-	if (!libfile || (libfile[0] == '\0')) {
-		error("Bad library file specified by %s variable",
-		      SLINGSHOT_CXI_LIB_ENV);
-		goto out;
-	}
-
-	if (!(cxi_handle = dlopen(libfile, RTLD_LAZY | RTLD_GLOBAL))) {
-		error("Couldn't find CXI library %s: %s", libfile, dlerror());
+	if (!(cxi_handle = dlopen(HPE_SLINGSHOT_LIB,
+				  RTLD_LAZY | RTLD_GLOBAL))) {
+		error("Couldn't find CXI library %s: %s",
+		      HPE_SLINGSHOT_LIB, dlerror());
 		goto out;
 	}
 
 	if (!(version = getenv(SLINGSHOT_CXI_LIB_VERSION_ENV)))
 		version = SLINGSHOT_CXI_LIB_VERSION;
 
-	debug("CXI library %s, version '%s'", libfile, version);
+	debug("CXI library %s, version '%s'", HPE_SLINGSHOT_LIB, version);
 	if (!_load_cxi_funcs(cxi_handle, version))
 		goto out;
 

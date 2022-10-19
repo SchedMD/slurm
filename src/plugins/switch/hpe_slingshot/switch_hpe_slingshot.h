@@ -54,7 +54,6 @@
 #define SLINGSHOT_STATE_FILE_NEW "slingshot_state.new"
 
 /* Environment variable for libcxi library name (for dlopen()) */
-#define SLINGSHOT_CXI_LIB_ENV         "SLURM_SLINGSHOT_CXI_LIB"
 #define SLINGSHOT_CXI_LIB_VERSION_ENV "SLURM_SLINGSHOT_CXI_VERSION"
 
 /* Suffix of versioned CXI library functions if environment variable not set */
