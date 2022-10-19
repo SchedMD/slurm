@@ -26,8 +26,9 @@
 ############################################################################
 source ./globals
 
-set array1_job_id 0
-set array2_job_id 0
+set array1_job_id   0
+set array2_job_id   0
+set job_array_size  6
 set timeout $max_job_delay
 
 #
@@ -58,8 +59,8 @@ proc run_sacct { jobs exp_match_1 exp_match_2 } {
 	subtest [regexp $array2_job_id $output] "Verify job record for array job 2 was found in the accounting database"
 }
 
-set array1_job_id [submit_job -fail "-N1 --array=0-5 --output=/dev/null -t1 --wrap=exit"]
-set array2_job_id [submit_job -fail "-N1 --array=0-5 --output=/dev/null -t1 --wrap=exit"]
+set array1_job_id [submit_job -fail "-N1 --array=0-[expr $job_array_size - 1] --output=/dev/null -t1 --wrap=exit"]
+set array2_job_id [submit_job -fail "-N1 --array=0-[expr $job_array_size - 1] --output=/dev/null -t1 --wrap=exit"]
 
 # If PrologFlags=contain is in slurm.conf, then an "extern" step will be
 # launched on each node, so we need to check for 3 steps per job instead of 2.
@@ -69,21 +70,15 @@ if {[param_contains [get_config_param "PrologFlags"] "Contain"]} {
 	set expected_steps 2
 }
 
-#
-# Wait for both jobs to complete
-#
-wait_for_job -fail $array1_job_id "DONE"
-wait_for_job -fail $array2_job_id "DONE"
-
-# Wait for accounting records to reach slurmdbd
-wait_for_job_acct -fail $array1_job_id end
-wait_for_job_acct -fail $array2_job_id end
+# Wait for the accounting records for all job array elements to reach slurmdbd
+wait_for_command -fail "$sacct -j $array1_job_id --allocation --format state --parsable2 --noheader" "\[regexp -all {COMPLETED} \[dict get \$result output\]\] == $job_array_size"
+wait_for_command -fail "$sacct -j $array2_job_id --allocation --format state --parsable2 --noheader" "\[regexp -all {COMPLETED} \[dict get \$result output\]\] == $job_array_size"
 
 # Now test sacct one task from each array
 run_sacct "$array1_job_id\_1,$array2_job_id\_3" $expected_steps $expected_steps
 
 # Now test sacct first full array and one task from the second array
-run_sacct "$array1_job_id,$array2_job_id\_3" [expr $expected_steps * 6] $expected_steps
+run_sacct "$array1_job_id,$array2_job_id\_3" [expr $expected_steps * $job_array_size] $expected_steps
 
 # Now test sacct one task from the first array and the second full
-run_sacct "$array1_job_id\_2,$array2_job_id" $expected_steps [expr $expected_steps * 6]
+run_sacct "$array1_job_id\_2,$array2_job_id" $expected_steps [expr $expected_steps * $job_array_size]
