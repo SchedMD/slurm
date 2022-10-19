@@ -1698,6 +1698,17 @@
 	],
 	"operationId": "get_jobs",
 	"parameters": [
+          {
+            "in": "query",
+            "name": "users",
+            "description": "Filter by comma delimited list of user names",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
 	  {
 	    "in": "query",
 	    "name": "submit_time",
