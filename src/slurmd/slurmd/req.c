@@ -1438,7 +1438,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 	if ((super_user == false) && (msg->auth_uid != req->uid)) {
-		error("launch task request from uid %u", msg->auth_uid);
+		error("%s: launch task request from uid %u != %u",
+		      __func__, msg->auth_uid, req->uid);
 		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
 		goto done;
 	}
