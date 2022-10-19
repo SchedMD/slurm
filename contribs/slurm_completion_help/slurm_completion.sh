@@ -3706,6 +3706,7 @@ function __scontrol_update_partitionname() {
 		"overtimelimit="
 		"oversubscribe="
 		"partitionname=" # meta
+		"powerdownonidle="
 		"preemptmode="
 		"priority="
 		"priorityjobfactor="
@@ -3756,6 +3757,7 @@ function __scontrol_update_partitionname() {
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes) ALL" ;;
 	oversubscribe) __slurm_compreply "${oversubscribe_types[*]}" ;;
 	partitionname) __slurm_compreply "$(__slurm_partitions)" ;;
+	powerdownonidle) __slurm_compreply "$(__slurm_boolean)" ;;
 	preemptmode) __slurm_compreply "${preempt_modes[*]}" ;;
 	qos?(s)) __slurm_compreply "$(__slurm_qos)" ;;
 	rootonly) __slurm_compreply "$(__slurm_boolean)" ;;
