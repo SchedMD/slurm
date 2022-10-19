@@ -99,6 +99,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix the number of allocated cpus for an auto-adjustment case in which the
     job requests --ntasks-per-node and --mem (per-node) but the limit is
     MaxMemPerCPU.
+ -- Fix POWER_DOWN_FORCE request leaving node in completing state.
 
 * Changes in Slurm 22.05.5
 ==========================
