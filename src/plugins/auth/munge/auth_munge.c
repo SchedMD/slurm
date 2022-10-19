@@ -555,7 +555,12 @@ again:
 		error("auth_munge: Unable to retrieve addr: %s",
 		      munge_ctx_strerror(ctx));
 
-	c->verified = true;
+	if (c->uid == SLURM_AUTH_NOBODY)
+		err = EMUNGE_CRED_INVALID;
+	else if (c->gid == SLURM_AUTH_NOBODY)
+		err = EMUNGE_CRED_INVALID;
+	else
+		c->verified = true;
 
 done:
 	munge_ctx_destroy(ctx);
