@@ -279,6 +279,9 @@ void *auth_g_create(int index, char *auth_info, uid_t r_uid,
 	if (slurm_auth_init(NULL) < 0)
 		return NULL;
 
+	if (r_uid == SLURM_AUTH_NOBODY)
+		return NULL;
+
 	cred = (*(ops[index].create))(auth_info, r_uid, data, dlen);
 	if (cred)
 		cred->index = index;
