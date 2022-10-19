@@ -307,7 +307,7 @@ extern bool slingshot_open_cxi_lib(void)
 	char *version;
 
 	if (!(libfile = getenv(SLINGSHOT_CXI_LIB_ENV)))
-		libfile = SLINGSHOT_CXI_LIB;
+		libfile = HPE_SLINGSHOT_LIB;
 
 	if (!libfile || (libfile[0] == '\0')) {
 		error("Bad library file specified by %s variable",

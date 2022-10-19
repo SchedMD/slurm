@@ -26188,6 +26188,9 @@ fi
       if test "$ac_hpe_ss_h" = "yes"; then
         ac_hpe_ss="yes"
 
+
+printf "%s\n" "#define HPE_SLINGSHOT_LIB \"$_x_ac_hpe_ss_dir/lib64/libcxi.so\"" >>confdefs.h
+
         break;
       fi
     done

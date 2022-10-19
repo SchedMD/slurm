@@ -359,6 +359,9 @@
    */
 #undef HAVE___BUILTIN_POPCOUNTLL
 
+/* Full path of libcxi.so */
+#undef HPE_SLINGSHOT_LIB
+
 /* Defined if libcurl supports AsynchDNS */
 #undef LIBCURL_FEATURE_ASYNCHDNS
 

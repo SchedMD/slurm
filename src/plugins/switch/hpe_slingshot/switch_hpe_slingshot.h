@@ -57,8 +57,6 @@
 #define SLINGSHOT_CXI_LIB_ENV         "SLURM_SLINGSHOT_CXI_LIB"
 #define SLINGSHOT_CXI_LIB_VERSION_ENV "SLURM_SLINGSHOT_CXI_VERSION"
 
-/* Name of CXI library if environment variable not set */
-#define SLINGSHOT_CXI_LIB         "libcxi.so"
 /* Suffix of versioned CXI library functions if environment variable not set */
 #define SLINGSHOT_CXI_LIB_VERSION "LIBCXI_1.0"
 
