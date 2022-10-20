@@ -250,38 +250,6 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	hostlist_destroy(down_nodes);
 }
 
-extern uint16_t
-scontrol_get_job_state(uint32_t job_id)
-{
-	job_info_msg_t * job_buffer_ptr = NULL;
-	int error_code = SLURM_SUCCESS, i;
-	job_info_t *job_ptr = NULL;
-
-	error_code = scontrol_load_job(&job_buffer_ptr, job_id);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag == -1)
-			slurm_perror ("slurm_load_job error");
-		return NO_VAL16;
-	}
-	if (quiet_flag == -1) {
-		char time_str[256];
-		slurm_make_time_str((time_t *)&job_buffer_ptr->last_update,
-				    time_str, sizeof(time_str));
-		printf("last_update_time=%s, records=%d\n",
-		       time_str, job_buffer_ptr->record_count);
-	}
-
-	job_ptr = job_buffer_ptr->job_array ;
-	for (i = 0; i < job_buffer_ptr->record_count; i++) {
-		if (job_ptr->job_id == job_id)
-			return job_ptr->job_state;
-	}
-	if (quiet_flag == -1)
-		printf("Could not find job %u", job_id);
-	return NO_VAL16;
-}
-
 static bool _het_job_offset_match(job_info_t *job_ptr, uint32_t het_job_offset)
 {
 	if ((het_job_offset == NO_VAL) ||
