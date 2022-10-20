@@ -3963,6 +3963,16 @@ socket count, but \fBnot\fR optimize resource allocations on the NUMA nodes.
 because of that if Slurm is build with hwloc 2.0 or above Slurm will treat
 HWLOC_OBJ_PACKAGE as Socket, you can change this behavior using
 \fBSlurmdParameters\fR=l3cache_as_socket.
+.IP
+
+.TP
+\fBignore_prefer_validation\fR
+If set, and a job requests --prefer any features in the request that would
+create an invalid request with the current system will not generate an error.
+This is helpful for dynamic systems where nodes with features come and go.
+Please note using this option will not protect you from typos.
+.IP
+
 .TP
 \fBmax_array_tasks\fR
 Specify the maximum number of tasks that can be included in a job array.

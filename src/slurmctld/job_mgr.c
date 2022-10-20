@@ -5316,6 +5316,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 {
 	static time_t sched_update = 0;
 	static int defer_sched = 0;
+	static bool ignore_prefer_val = false;
 	int error_code, i;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	job_record_t *job_ptr;
@@ -5355,6 +5356,12 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 		if (xstrcasestr(slurm_conf.sched_params, "allow_zero_lic"))
 			validate_cfgd_licenses = false;
+
+		if (xstrcasestr(slurm_conf.sched_params,
+				"ignore_prefer_validation"))
+			ignore_prefer_val = true;
+		else
+			ignore_prefer_val = false;
 	}
 
 	if (job_specs->array_bitmap)
@@ -5505,6 +5512,18 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	set_job_features_use(job_ptr->details);
 
 	error_code = _select_nodes_parts(job_ptr, no_alloc, NULL, err_msg);
+
+	if ((error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
+	    (job_ptr->details->features_use == job_ptr->details->prefer) &&
+	    ignore_prefer_val) {
+		job_ptr->details->features_use = job_ptr->details->features;
+		job_ptr->details->feature_list_use =
+			job_ptr->details->feature_list;
+		error_code = _select_nodes_parts(job_ptr, no_alloc, NULL,
+						 err_msg);
+		set_job_features_use(job_ptr->details);
+	}
+
 	if (!test_only) {
 		last_job_update = now;
 	}
