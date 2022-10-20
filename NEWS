@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     reconfigure.
  -- Fix memory leak in the dbd when container is sent to the database.
  -- openapi/dbv0.0.38 - correct dbv0.0.38_tres_info.
+ -- Fix node SuspendTime, SuspendTimeout, ResumeTimeout being updated after
+    altering partition node lists with scontrol.
 
 * Changes in Slurm 22.05.5
 ==========================
