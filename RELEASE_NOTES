@@ -49,8 +49,8 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
- - job_container.conf - Added "Dirs" option to list desired private mount
-   points.
+ -- job_container.conf - Added "Dirs" option to list desired private mount
+    points.
  -- node_features plugins - invalid users specified for AllowUserBoot will now
     result in fatal() rather than just an error.
  -- Deprecate AllowedKmemSpace, ConstrainKmemSpace, MaxKmemPercent, and
