@@ -1199,6 +1199,13 @@ extern void power_save_set_timeouts(bool *partition_suspend_time_set)
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
+	/* Reset timeouts so new values can be caluclated. */
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
+		node_ptr->suspend_time = NO_VAL;
+		node_ptr->suspend_timeout = NO_VAL16;
+		node_ptr->resume_timeout = NO_VAL16;
+	}
+
 	/* Figure out per-partition options and push to node level. */
 	list_for_each(part_list, _set_partition_options,
 		      partition_suspend_time_set);
