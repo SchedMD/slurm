@@ -124,6 +124,14 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	char *allow_deny, *value;
 	uint16_t force, preempt_mode, val;
 	char *line_end = (one_liner) ? " " : "\n   ";
+	bool power_save_on = false;
+
+	/*
+	 * This is a good enough to determine if power_save is enabled.
+	 * power_save_test() is better but makes more dependencies.
+	 */
+	if (slurm_conf.suspend_program && slurm_conf.resume_program)
+		power_save_on = true;
 
 	/****** Line 1 ******/
 
@@ -386,9 +394,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	}
 
 	/****** Line ******/
-	if ((part_ptr->resume_timeout != NO_VAL16) ||
-	    (part_ptr->suspend_timeout != NO_VAL16) ||
-	    (part_ptr->suspend_time != NO_VAL)) {
+	if (power_save_on) {
 		xstrcat(out, line_end);
 
 		if (part_ptr->resume_timeout == NO_VAL16)
