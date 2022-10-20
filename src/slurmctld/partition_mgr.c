@@ -67,6 +67,7 @@
 #include "src/slurmctld/groups.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
@@ -1795,6 +1796,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			xfree(backup_node_list);
 		}
 		update_part_nodes_in_resv(part_ptr);
+		power_save_set_timeouts(NULL);
 
 		assoc_mgr_lock(&assoc_tres_read_lock);
 		_calc_part_tres(part_ptr, NULL);
