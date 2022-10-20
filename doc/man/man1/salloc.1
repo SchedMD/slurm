@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "September 2022" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "October 2022" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -1620,9 +1620,11 @@ that the \fB\-\-cpus\-per\-task\fR option will change this default.
 Request the maximum \fIntasks\fR be invoked on each core.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the core level
-instead of the node level.
+instead of the node level. This option will be inhertited by srun.
+.br
 \fBNOTE\fR: This option is not supported when using
-\fISelectType=select/linear\fR.
+\fISelectType=select/linear\fR. This value can not be greater than
+\fB\-\-threads\-per\-core\fR.
 .IP
 
 .TP

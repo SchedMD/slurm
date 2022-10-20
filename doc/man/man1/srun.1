@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "September 2022" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "October 2022" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -2229,14 +2229,17 @@ applies to job and step allocations.
 .TP
 \fB\-\-ntasks\-per\-core\fR=<\fIntasks\fR>
 Request the maximum \fIntasks\fR be invoked on each core.
-This option applies to the job allocation, but not to step allocations.
+This option applies to job and step allocations.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the core level
-instead of the node level.  Masks will automatically be generated
-to bind the tasks to specific cores unless \fB\-\-cpu\-bind=none\fR
-is specified.
+instead of the node level. If set to 1, it will imply \fB\-\-cpu\-bind=cores\fR.
+Otherwise, if set to a value greater than 1, it will imply
+\fB\-\-cpu\-bind=threads\fR. Automatic binding behavior can be avoided by also
+specifying \fB\-\-cpu\-bind=none\fR.
+.br
 \fBNOTE\fR: This option is not supported when using
-\fISelectType=select/linear\fR.
+\fISelectType=select/linear\fR. This value can not be greater than
+\fB\-\-threads\-per\-core\fR.
 .IP
 
 .TP
