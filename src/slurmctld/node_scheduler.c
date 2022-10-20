@@ -1080,16 +1080,19 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			return ESLURM_NODES_BUSY;	/* reserved */
 		} else if (resv_bitmap &&
 			   (!bit_equal(resv_bitmap, avail_node_bitmap))) {
-			int cnt_in, cnt_out;
-			cnt_in = bit_set_count(avail_node_bitmap);
 			bit_and(resv_bitmap, avail_node_bitmap);
 			save_avail_node_bitmap = avail_node_bitmap;
-			avail_node_bitmap = resv_bitmap;
-			cnt_out = bit_set_count(avail_node_bitmap);
-			if (cnt_in != cnt_out) {
-				debug2("Advanced reservation removed %d nodes from consideration for %pJ",
-				       (cnt_in - cnt_out), job_ptr);
+			if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION &&
+			    !bit_equal(avail_node_bitmap, resv_bitmap)) {
+				bitstr_t *removed_nodes =
+					bit_copy(save_avail_node_bitmap);
+				bit_and_not(removed_nodes, resv_bitmap);
+				log_flag(RESERVATION, "Advanced reservation removed nodes:%s from consideration for %pJ",
+					 bitmap2node_name(removed_nodes),
+					 job_ptr);
+				FREE_NULL_BITMAP(removed_nodes);
 			}
+			avail_node_bitmap = resv_bitmap;
 			resv_bitmap = NULL;
 		} else {
 			FREE_NULL_BITMAP(resv_bitmap);
