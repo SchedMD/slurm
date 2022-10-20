@@ -79,6 +79,11 @@ def module_setup(request, tmp_path_factory):
     name = name[:30]
     atf.module_tmp_path = tmp_path_factory.mktemp(name, numbered=True)
 
+    # Stop Slurm if using auto-config and Slurm is already running
+    if atf.properties['auto-config'] and atf.is_slurmctld_running(quiet=True):
+        logging.warning("Auto-config requires Slurm to be initially stopped but Slurm was found running. Stopping Slurm")
+        atf.stop_slurm(quiet=True)
+
     yield
 
     # Teardown
