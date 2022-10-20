@@ -96,7 +96,7 @@ static List _fill_in_excluded_paths(struct bcast_parameters *params);
 static int _find_subpath(void *x, void *key);
 static int _foreach_shared_object(void *x, void *y);
 static int   _get_job_info(struct bcast_parameters *params);
-static int _get_lib_paths(char *filename, List lib_paths);
+static List _get_lib_paths(char *filename);
 
 static int _file_state(struct bcast_parameters *params)
 {
@@ -419,17 +419,17 @@ static int _decompress_data_lz4(file_bcast_msg_t *req)
 
 /*
  * IN: char pointer with the filename.
- * IN/OUT: List of shared object direct and indirect dependencies.
- *
- * RET:	SLURM_[SUCCESS|ERROR]
+ * OUT: List of shared object direct and indirect dependencies.
+ *      or NULL on error.
  */
-static int _get_lib_paths(char *filename, List lib_paths)
+static List _get_lib_paths(char *filename)
 {
+	List lib_paths = NULL;
 	char **ldd_argv;
 	char *result = NULL;
 	char *lpath = NULL, *lpath_end = NULL;
 	char *tok = NULL, *save_ptr = NULL;
-	int status = SLURM_ERROR, rc = SLURM_SUCCESS;
+	int status = SLURM_ERROR;
 	run_command_args_t run_command_args = {
 		.max_wait = 5000,
 		.script_path = LDD_PATH,
@@ -437,10 +437,8 @@ static int _get_lib_paths(char *filename, List lib_paths)
 		.status = &status,
 	};
 
-	if (!filename || !lib_paths) {
-		rc = SLURM_ERROR;
+	if (!filename)
 		goto fini;
-	}
 
 	ldd_argv = xcalloc(3, sizeof(char *));
 	ldd_argv[0] = xstrdup("ldd");
@@ -460,15 +458,15 @@ static int _get_lib_paths(char *filename, List lib_paths)
 	xfree_array(ldd_argv);
 
 	if (status) {
-		error("Cannot autodetect libraries for '%s' with ldd command",
+		error("Cannot autodetect libraries for '%s' with ldd command; still sending the file but ignoring send_libs",
 		      filename);
-		rc = SLURM_ERROR;
 		goto fini;
 	} else if (!result) {
 		verbose("ldd exited normally but returned no libraries");
-		rc = SLURM_SUCCESS;
 		goto fini;
 	}
+
+	lib_paths = list_create(xfree_ptr);
 
 	/*
 	 * FIXME: does not handle spaces in library paths correctly.
@@ -487,7 +485,7 @@ static int _get_lib_paths(char *filename, List lib_paths)
 
 fini:
 	xfree(result);
-	return rc;
+	return lib_paths;
 }
 
 /*
@@ -589,20 +587,16 @@ static List _fill_in_excluded_paths(struct bcast_parameters *params)
  *
  * RET: SLURM_[ERROR|SUCCESS]
  */
-static int _bcast_shared_objects(struct bcast_parameters *params)
+static int _bcast_shared_objects(struct bcast_parameters *params,
+				 List lib_paths)
 {
-	foreach_shared_object_t args;
-	int rc;
-	List lib_paths = NULL, excl_paths = NULL;
+	foreach_shared_object_t args =
+		{ .return_code = SLURM_SUCCESS };
+	List excl_paths = NULL;
 	char *save_dst = params->dst_fname;
 	char *save_src = params->src_fname;
 
 	memset(&args, 0, sizeof(args));
-	lib_paths = list_create(xfree_ptr);
-	if ((rc = _get_lib_paths(params->src_fname, lib_paths)) !=
-	    SLURM_SUCCESS)
-		goto fini;
-
 	if (!(args.bcast_total_cnt = list_count(lib_paths))) {
 		verbose("No shared objects detected for '%s'",
 			params->src_fname);
@@ -615,30 +609,47 @@ static int _bcast_shared_objects(struct bcast_parameters *params)
 	args.excluded_paths = excl_paths;
 
 	list_for_each(lib_paths, _foreach_shared_object, &args);
-	rc = args.return_code;
 	params->flags &= ~BCAST_FLAG_SHARED_OBJECT;
 	params->dst_fname = save_dst;
 	params->src_fname = save_src;
 
 fini:
-	FREE_NULL_LIST(excl_paths);
-	FREE_NULL_LIST(lib_paths);
-	return rc;
+	return args.return_code;
 }
 
 extern int bcast_file(struct bcast_parameters *params)
 {
+	List lib_paths = NULL;
 	int rc;
 
 	if ((rc = _file_state(params)) != SLURM_SUCCESS)
 		return rc;
 	if ((rc = _get_job_info(params)) != SLURM_SUCCESS)
 		return rc;
+
+	/*
+	 * If getting the shared libraries fail, still send the file but
+	 * ignore send_libs.
+	 */
+	if (params->flags & BCAST_FLAG_SEND_LIBS) {
+		if (!(lib_paths = _get_lib_paths(params->src_fname))) {
+			/*
+			 * Clear BCAST_FLAG_SEND_LIBS to avoid creating the
+			 * empty "<filename>_libs" directory
+			 */
+			params->flags &= ~BCAST_FLAG_SEND_LIBS;
+		}
+	}
+
+	/* Now send files */
 	if ((rc = _bcast_file(params)) != SLURM_SUCCESS)
 		return rc;
-	if ((params->flags & BCAST_FLAG_SEND_LIBS) &&
-	    ((rc = _bcast_shared_objects(params)) != SLURM_SUCCESS))
-		return rc;
+
+	/* Send libraries, if required */
+	if (lib_paths) {
+		rc = _bcast_shared_objects(params, lib_paths);
+		FREE_NULL_LIST(lib_paths);
+	}
 
 /*	slurm_free_sbcast_cred_msg(sbcast_cred); */
 	return rc;

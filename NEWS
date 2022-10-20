@@ -109,6 +109,9 @@ documents those changes that are of interest to users and administrators.
     MaxMemPerCPU.
  -- Fix POWER_DOWN_FORCE request leaving node in completing state.
  -- Do not count magnetic reservation queue records towards backfill limits.
+ -- Clarify error message when --send-libs=yes or BcastParameters=send_libs
+    fails to identify shared library files, and avoid creating an empty
+    "<filename>_libs" directory on the target filesystem.
 
 * Changes in Slurm 22.05.5
 ==========================
