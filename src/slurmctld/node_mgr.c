@@ -488,6 +488,7 @@ extern int load_all_node_state ( bool state_only )
 			config_ptr = create_config_record();
 			config_ptr->boards = boards;
 			config_ptr->cores = cores;
+			config_ptr->cpu_spec_list = xstrdup(cpu_spec_list);
 			config_ptr->cpus = cpus;
 			config_ptr->feature = xstrdup(features);
 			config_ptr->gres = xstrdup(gres);
