@@ -30,6 +30,45 @@ NumCPUs value reported by the <i>scontrol</i>, <i>sview</i> and <i>squeue</i>
 commands will reflect all non-specialized CPUS on all allocated nodes as will
 the job's accounting.</p>
 
+<p>If AllowSpecResourcesUsage=yes and the explicitly requested specialized
+core/thread count is lower than the number of cores in the CoreSpecCount or in
+the CpuSpecList (leaving what would otherwise be specialized cores available
+for use), then the step will have access to all of the normal cores as well as
+the extra unused specialized cores. In <i>sacct</i>, the step's allocated CPUs
+will include the specialized cores or threads that it has access to. However,
+the job's allocated CPU count never includes specialized cores or threads to
+ensure that utilization reports are accurate.</p>
+
+<p>Here is an example configuration, setting cores 0 and 1 as
+specialized:</p>
+
+<pre>
+AllowSpecResourcesUsage=yes
+Nodename=n0 Port=10100 CoresPerSocket=16 ThreadsPerCore=1 CpuSpecList=0-1
+</pre>
+
+<p>Submit a job requesting a core spec count of 1 (freeing up core
+number 1 for job use).</p>
+
+<pre>
+$ salloc --core-spec=1
+salloc: Granted job allocation 4152
+$ srun bash -c 'cat /proc/self/status |grep Cpus_'
+Cpus_allowed:        fffe
+Cpus_allowed_list:   1-15
+</pre>
+
+<p>Notice the job CPU count vs the step CPU count.</p>
+
+<pre>
+$ sacct -j 4152 -ojobid%20,alloccpus
+               JobID  AllocCPUS
+-------------------- ----------
+                4152         14
+    4152.interactive         15
+              4152.0         15
+</pre>
+
 <h2 id="core">Core Selection<a class="slurm_link" href="#core"></a></h2>
 <p>The specific resources to be used for specialization may be identified using
 the <i>CPUSpecList</i> configuration parameter associated with each node in
@@ -106,6 +145,6 @@ system use.</p>
 cores for their job, the configuration parameter <i>AllowSpecResourcesUsage</i>
 must be set to a value of <i>1</i>.</p>
 
-<p style="text-align:center;">Last modified 26 August 2022</p>
+<p style="text-align:center;">Last modified 21 October 2022</p>
 
 <!--#include virtual="footer.txt"-->
