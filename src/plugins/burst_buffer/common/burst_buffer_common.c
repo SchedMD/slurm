@@ -768,11 +768,11 @@ static void _pack_alloc(struct bb_alloc *bb_alloc, buf_t *buffer,
 /* Return true if hetjob separator in the script */
 static bool _hetjob_check(char *tok)
 {
-	if (strncmp(tok + 1, "SLURM",  5) &&
-	    strncmp(tok + 1, "SBATCH", 6))
+	if (xstrncmp(tok + 1, "SLURM",  5) &&
+	    xstrncmp(tok + 1, "SBATCH", 6))
 		return false;
-	if (!strstr(tok + 6, "packjob") &&
-	    !strstr(tok + 6, "hetjob"))
+	if (!xstrstr(tok + 6, "packjob") &&
+	    !xstrstr(tok + 6, "hetjob"))
 		return false;
 	return true;
 }
