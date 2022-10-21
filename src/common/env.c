@@ -766,7 +766,7 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_ERROR;
 	}
 
-	if (env->uid) {
+	if (env->uid != SLURM_AUTH_NOBODY) {
 		if (setenvf(&env->env, "SLURM_JOB_UID", "%u",
 			    (unsigned int) env->uid)) {
 			error("Can't set SLURM_JOB_UID env variable");
