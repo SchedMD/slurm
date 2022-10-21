@@ -810,8 +810,8 @@ static int _parse_to_int64(const parser_t *const parse, void *obj, data_t *str,
 
 	if (data_get_type(str) == DATA_TYPE_NULL)
 		*dst = (double)NO_VAL;
-	else if (data_convert_type(str, DATA_TYPE_FLOAT) == DATA_TYPE_FLOAT)
-		*dst = data_get_float(str);
+	else if (data_convert_type(str, DATA_TYPE_INT_64) == DATA_TYPE_INT_64)
+		*dst = data_get_int(str);
 	else
 		rc = ESLURM_DATA_CONV_FAILED;
 
