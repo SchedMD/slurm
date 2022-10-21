@@ -810,6 +810,8 @@ slurm_copy_resource_allocation_response_msg(
 	}
 
 	new->environment = env_array_copy((const char **)msg->environment);
+	new->gid = msg->gid;
+	new->group_name = xstrdup(msg->group_name);
 	new->job_submit_user_msg = xstrdup(msg->job_submit_user_msg);
 	if (msg->node_addr) {
 		new->node_addr = xmalloc(sizeof(*new->node_addr));
@@ -819,6 +821,8 @@ slurm_copy_resource_allocation_response_msg(
 	new->partition = xstrdup(msg->partition);
 	new->qos = xstrdup(msg->qos);
 	new->resv_name = xstrdup(msg->resv_name);
+	new->uid = msg->uid;
+	new->user_name = xstrdup(msg->user_name);
 	new->working_cluster_rec = NULL;
 	return new;
 }
@@ -4262,6 +4266,7 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		xfree(msg->cpu_count_reps);
 		env_array_free(msg->environment);
 		msg->environment = NULL;
+		xfree(msg->group_name);
 		xfree(msg->job_submit_user_msg);
 		xfree(msg->node_addr);
 		xfree(msg->node_list);
@@ -4269,6 +4274,7 @@ extern void slurm_free_resource_allocation_response_msg_members (
 		xfree(msg->qos);
 		xfree(msg->resv_name);
 		slurmdb_destroy_cluster_rec(msg->working_cluster_rec);
+		xfree(msg->user_name);
 	}
 }
 

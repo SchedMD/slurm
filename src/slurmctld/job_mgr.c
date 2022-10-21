@@ -18908,6 +18908,12 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 		job_info_resp_msg->environment[i] = NULL;
 	}
 
+	job_info_resp_msg->uid = job_ptr->user_id;
+	job_info_resp_msg->user_name = uid_to_string_or_null(job_ptr->user_id);
+	job_info_resp_msg->gid = job_ptr->group_id;
+	job_info_resp_msg->group_name =
+		gid_to_string_or_null(job_ptr->group_id);
+
 	return job_info_resp_msg;
 }
 

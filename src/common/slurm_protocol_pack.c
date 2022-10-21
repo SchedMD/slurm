@@ -1349,6 +1349,8 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		packstr(msg->batch_host, buffer);
 		packstr_array(msg->environment, msg->env_size, buffer);
 		pack32(msg->error_code, buffer);
+		pack32(msg->gid, buffer);
+		packstr(msg->group_name, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->node_cnt, buffer);
@@ -1382,6 +1384,8 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		select_g_select_jobinfo_pack(msg->select_jobinfo,
 					     buffer,
 					     protocol_version);
+		pack32(msg->uid, buffer);
+		packstr(msg->user_name, buffer);
 
 		if (msg->working_cluster_rec) {
 			pack8(1, buffer);
@@ -1507,6 +1511,8 @@ _unpack_resource_allocation_response_msg(
 		safe_unpackstr_array(&tmp_ptr->environment,
 				     &tmp_ptr->env_size, buffer);
 		safe_unpack32(&tmp_ptr->error_code, buffer);
+		safe_unpack32(&tmp_ptr->gid, buffer);
+		safe_unpackstr(&tmp_ptr->group_name, buffer);
 		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->node_cnt, buffer);
@@ -1548,6 +1554,8 @@ _unpack_resource_allocation_response_msg(
 		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
+		safe_unpack32(&tmp_ptr->uid, buffer);
+		safe_unpackstr(&tmp_ptr->user_name, buffer);
 
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {

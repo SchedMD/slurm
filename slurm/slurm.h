@@ -2452,6 +2452,8 @@ typedef struct resource_allocation_response_msg {
 	char **environment;	/* environment variables to set for job,
 				 *  name=value pairs, one per line */
 	uint32_t error_code;	/* error code for warning message */
+	gid_t gid; /* resolved group id of job */
+	char *group_name; /* resolved group name of job */
 	char *job_submit_user_msg;/* job_submit plugin user_msg */
 	slurm_addr_t *node_addr;  /* network addresses */
 	uint32_t node_cnt;	/* count of nodes */
@@ -2472,6 +2474,8 @@ typedef struct resource_allocation_response_msg {
 						 * use
 						 * select_g_select_jobinfo_*
 						 * to access contents */
+	uid_t uid; /* resolved user id of job */
+	char *user_name; /* resolved user name of job */
 	void *working_cluster_rec; /* Cluster to direct remaining messages to.
 				    * slurmdb_cluster_rec_t* because slurm.h
 				    * doesn't know about slurmdb.h. */
