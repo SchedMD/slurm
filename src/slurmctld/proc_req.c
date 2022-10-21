@@ -2489,16 +2489,16 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 			_throttle_fini(&active_rpc_cnt);
 		}
 		if (error_code == ESLURM_PROLOG_RUNNING)
-			log_flag(STEPS, "%s for configuring JobId=%u: %s",
-				 __func__, req_step_msg->step_id.job_id,
+			log_flag(STEPS, "%s for configuring %ps: %s",
+				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
 		else if (error_code == ESLURM_DISABLED)
-			log_flag(STEPS, "%s for suspended JobId=%u: %s",
-				 __func__, req_step_msg->step_id.job_id,
+			log_flag(STEPS, "%s for suspended %ps: %s",
+				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
 		else
-			log_flag(STEPS, "%s for JobId=%u: %s",
-				 __func__, req_step_msg->step_id.job_id,
+			log_flag(STEPS, "%s for %ps: %s",
+				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
 		if (err_msg)
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
