@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix node remaining allocated after a reconfig with a completing job that
     has an EpilogSlurmctld instance still running.
  -- openapi/dbv0.0.38 - fix a cast to a wrong type
+ -- openapi/dbv0.0.38 - correct issues where modifying association fields were
+    ignored.
 
 * Changes in Slurm 22.05.6
 ==========================

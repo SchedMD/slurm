@@ -204,6 +204,173 @@ static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
 	return rc;
 }
 
+/* Turn *dst into a TRES string that will turn submitted *dst to match mod */
+static void _diff_tres(char **dst, char *mod)
+{
+	ListIterator itr;
+	List dst_list = NULL;
+	List mod_list = NULL;
+	slurmdb_tres_rec_t *tres;
+
+	if (!*dst || !*dst[0]) {
+		/* direct assignment when dst is empty */
+		xfree(*dst);
+		*dst = xstrdup(mod);
+		return;
+	}
+
+	slurmdb_tres_list_from_string(&dst_list, *dst, TRES_STR_FLAG_REPLACE);
+	xfree(*dst);
+	slurmdb_tres_list_from_string(&mod_list, mod, TRES_STR_FLAG_REPLACE);
+
+	/* find all removed or tres with updated counts */
+	itr = list_iterator_create(dst_list);
+	while ((tres = list_next(itr))) {
+		slurmdb_tres_rec_t *m  =
+			list_find_first(mod_list, slurmdb_find_tres_in_list,
+					&tres->id);
+
+		if (!m) {
+			/* mark TRES for removal in slurmdbd */
+			tres->count = -1;
+		} else {
+			tres->count = m->count;
+		}
+	}
+	list_iterator_destroy(itr);
+
+	/* add any new tres */
+	itr = list_iterator_create(mod_list);
+	while ((tres = list_next(itr))) {
+		slurmdb_tres_rec_t *d  =
+			list_find_first(dst_list, slurmdb_find_tres_in_list,
+					&tres->id);
+
+		if (!d) {
+			list_append(dst_list, slurmdb_copy_tres_rec(tres));
+		} else {
+			xassert(tres->count == d->count);
+		}
+	}
+	list_iterator_destroy(itr);
+
+	*dst = slurmdb_make_tres_string(dst_list, TRES_STR_FLAG_SIMPLE);
+
+	FREE_NULL_LIST(dst_list);
+	FREE_NULL_LIST(mod_list);
+}
+
+#if SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(23, 2, 0)
+// TODO: remove in 23.02 as already defined in macros.h
+#define SWAP(x, y)              \
+do {                            \
+	__typeof__(x) b = x;    \
+	x = y;                  \
+	y = b;                  \
+} while (0)
+#endif
+
+/*
+ * Create a diff of the current association and the requested destination state.
+ *
+ * Feed that diff to slurmdbd to get the dst state.
+ */
+static slurmdb_assoc_rec_t *_diff_assoc(slurmdb_assoc_rec_t *assoc,
+					slurmdb_assoc_rec_t *dst)
+{
+	if (dst->accounting_list)
+		SWAP(assoc->accounting_list, dst->accounting_list);
+	if (dst->acct)
+		SWAP(assoc->acct, dst->acct);
+
+	/* skip assoc_next */
+	/* skip assoc_next_id */
+	/* skip bf_usage */
+
+	if (dst->cluster)
+		SWAP(assoc->cluster, dst->cluster);
+
+	assoc->def_qos_id = dst->def_qos_id;
+
+	/* skip flags */
+
+	assoc->grp_jobs = dst->grp_jobs;
+	assoc->grp_jobs_accrue = dst->grp_jobs_accrue;
+	assoc->grp_submit_jobs = dst->grp_submit_jobs;
+
+	_diff_tres(&assoc->grp_tres, dst->grp_tres);
+
+	/* skip grp_tres_ctld */
+
+	_diff_tres(&assoc->grp_tres_mins, dst->grp_tres_mins);
+
+	/* skip grp_tres_mins_ctld */
+
+	_diff_tres(&assoc->grp_tres_run_mins, dst->grp_tres_run_mins);
+
+	/* skip grp_tres_run_mins_ctld */
+
+	assoc->grp_wall = dst->grp_wall;
+
+	/* skip id */
+
+	assoc->is_def = dst->is_def;
+
+
+	/* skip leaf_usage */
+	/* skip lft */
+
+	assoc->max_jobs = dst->max_jobs;
+	assoc->max_jobs_accrue = dst->max_jobs_accrue;
+	assoc->max_submit_jobs = dst->max_submit_jobs;
+
+	_diff_tres(&assoc->max_tres_mins_pj, dst->max_tres_mins_pj);
+
+	/* skip max_tres_mins_ctld */
+
+	_diff_tres(&assoc->max_tres_run_mins, dst->max_tres_run_mins);
+
+	/* skip max_tres_run_mins_ctld */
+
+	_diff_tres(&assoc->max_tres_pj, dst->max_tres_pj);
+
+	/* skip max_tres_ctld */
+
+	_diff_tres(&assoc->max_tres_pn, dst->max_tres_pn);
+
+	/* skip max_tres_pn_ctld */
+
+	assoc->max_wall_pj = dst->max_wall_pj;
+	assoc->min_prio_thresh = dst->min_prio_thresh;
+
+	if (dst->parent_acct)
+		SWAP(assoc->parent_acct, dst->parent_acct);
+
+	/* skip parent_id */
+
+	if (dst->partition)
+		SWAP(assoc->partition, dst->partition);
+
+	assoc->priority = dst->priority;
+
+	if (dst->qos_list)
+		SWAP(assoc->qos_list, dst->qos_list);
+
+	/* skip rgt */
+
+	assoc->shares_raw = dst->shares_raw;
+
+	/* skip uid */
+	/* skip usage */
+
+	if (dst->user)
+		SWAP(assoc->user, dst->user);
+
+	/* skip user_rec */
+
+	return assoc;
+}
+
 #define MAGIC_FOREACH_UP_ASSOC 0xbaed2a12
 typedef struct {
 	int magic;
@@ -289,12 +456,22 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 				"ambiguous modify request",
 				"slurmdb_associations_get");
 	} else {
+		slurmdb_assoc_rec_t *diff_assoc;
+
 		debug("%s: modifying association request: acct=%s cluster=%s partition=%s user=%s",
 		      __func__, assoc->acct, assoc->cluster, assoc->partition,
 		      assoc->user);
 
-		rc = db_modify_rc(errors, args->auth, &cond, assoc,
+		/*
+		 * slurmdb requires that the modify request will be a list of
+		 * diffs instead of the final state of the assoc unlike add
+		 */
+		diff_assoc = _diff_assoc(list_pop(assoc_list), assoc);
+
+		rc = db_modify_rc(errors, args->auth, &cond, diff_assoc,
 				  slurmdb_associations_modify);
+
+		slurmdb_destroy_assoc_rec(diff_assoc);
 	}
 
 cleanup:
