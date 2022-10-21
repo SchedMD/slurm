@@ -249,8 +249,6 @@ static int _close_controller_conn(slurmdb_cluster_rec_t *cluster)
 	cluster->fed.recv = NULL;
 	slurm_persist_conn_destroy(cluster->fed.send);
 	cluster->fed.send = NULL;
-	xfree(cluster->control_host);
-	cluster->control_port = 0;
 
 	log_flag(FEDR, "closed sibling conn to %s", cluster->name);
 	slurm_mutex_unlock(&cluster->lock);
