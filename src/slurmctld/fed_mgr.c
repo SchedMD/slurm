@@ -863,8 +863,6 @@ static void _persist_callback_fini(void *arg)
 			 cluster->name);
 		slurm_persist_conn_destroy(persist_conn);
 		cluster->fed.send = NULL;
-		xfree(cluster->control_host);
-		cluster->control_port = 0;
 	}
 	cluster->fed.sync_recvd = false;
 	cluster->fed.sync_sent  = false;
