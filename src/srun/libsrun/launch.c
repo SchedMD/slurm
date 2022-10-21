@@ -510,8 +510,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		if (job->step_ctx != NULL) {
 			job->step_ctx->verbose_level = opt_local->verbose;
 			if (i > 0) {
-				info("Step created for job %u",
-				     step_req->step_id.job_id);
+				info("Step created for %ps",
+				     &step_req->step_id);
 			}
 			break;
 		}
