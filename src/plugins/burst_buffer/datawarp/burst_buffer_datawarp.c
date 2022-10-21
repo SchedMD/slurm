@@ -2739,6 +2739,22 @@ static void _purge_vestigial_bufs(void)
 	}
 }
 
+static bool _is_directive(char *tok)
+{
+	if ((tok[0] == '#') &&
+	    (((tok[1] == 'B') && (tok[2] == 'B')) ||
+	     ((tok[1] == 'D') && (tok[2] == 'W')))) {
+		return true;
+	}
+	return false;
+}
+
+extern char *bb_p_build_het_job_script(char *script, uint32_t het_job_offset)
+{
+	return bb_common_build_het_job_script(script, het_job_offset,
+					      _is_directive);
+}
+
 /*
  * Return the total burst buffer size in MB
  */

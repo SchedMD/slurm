@@ -57,6 +57,8 @@
 #include "src/slurmctld/reservation.h"
 
 typedef struct slurm_bb_ops {
+	char * 		(*build_het_job_script) (char *script,
+						 uint32_t het_job_offset);
 	uint64_t	(*get_system_size)	(void);
 	int		(*load_state)	(bool init_config);
 	char *		(*get_status)	(uint32_t argc, char **argv);
@@ -89,6 +91,7 @@ typedef struct slurm_bb_ops {
  * Must be synchronized with slurm_bb_ops_t above.
  */
 static const char *syms[] = {
+	"bb_p_build_het_job_script",
 	"bb_p_get_system_size",
 	"bb_p_load_state",
 	"bb_p_get_status",
@@ -420,18 +423,6 @@ extern int bb_g_job_validate2(job_record_t *job_ptr, char **err_msg)
 }
 
 
-/* Return true if hetjob separator in the script */
-static bool _hetjob_check(char *tok)
-{
-	if (strncmp(tok + 1, "SLURM",  5) &&
-	    strncmp(tok + 1, "SBATCH", 6))
-		return false;
-	if (!strstr(tok+6, "packjob") &&
-	    !strstr(tok+6, "hetjob"))
-		return false;
-	return true;
-}
-
 /*
  * Convert a hetjob batch script into a script containing only the portions
  * relevant to a specific hetjob component.
@@ -442,10 +433,7 @@ static bool _hetjob_check(char *tok)
  */
 extern char *bb_g_build_het_job_script(char *script, uint32_t het_job_offset)
 {
-	char *result = NULL, *tmp = NULL;
-	char *tok, *save_ptr = NULL;
-	bool fini = false;
-	int cur_offset = 0;
+	char *result;
 	DEF_TIMERS;
 
 	if (!script) {
@@ -454,41 +442,16 @@ extern char *bb_g_build_het_job_script(char *script, uint32_t het_job_offset)
 	}
 
 	START_TIMER;
-	tmp = xstrdup(script);
-	tok = strtok_r(tmp, "\n", &save_ptr);
-	while (tok) {
-		if (!result) {
-			xstrfmtcat(result, "%s\n", tok);
-		} else if (tok[0] != '#') {
-			fini = true;
-		} else if (_hetjob_check(tok)) {
-			cur_offset++;
-			if (cur_offset > het_job_offset)
-				fini = true;
-		} else if (cur_offset == het_job_offset) {
-			xstrfmtcat(result, "%s\n", tok);
-		}
-		if (fini)
-			break;
-		tok = strtok_r(NULL, "\n", &save_ptr);
+	if (bb_g_init() != SLURM_SUCCESS) {
+		END_TIMER2(__func__);
+		return NULL;
 	}
 
-	if (het_job_offset == 0) {
-		while (tok) {
-			char *sep = "";
-			if ((tok[0] == '#') &&
-			    (((tok[1] == 'B') && (tok[2] == 'B')) ||
-			     ((tok[1] == 'D') && (tok[2] == 'W')))) {
-				sep = "#EXCLUDED ";
-				tok++;
-			}
-			xstrfmtcat(result, "%s%s\n", sep, tok);
-			tok = strtok_r(NULL, "\n", &save_ptr);
-		}
-	} else if (result) {
-		xstrcat(result, "exit 0\n");
-	}
-	xfree(tmp);
+	slurm_mutex_lock(&g_context_lock);
+	/* This currently only supports a single burst buffer plugin */
+	result = (*(ops[0].build_het_job_script))(script, het_job_offset);
+	slurm_mutex_unlock(&g_context_lock);
+
 	END_TIMER2(__func__);
 
 	return result;

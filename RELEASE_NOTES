@@ -98,3 +98,4 @@ API CHANGES
  -- Allow for concurrent processing of job_submit_g_submit() and
     job_submit_g_modify() calls. If your plugin is not capable of concurrent
     operation you must add additional locking within your plugin.
+ -- burst buffer plugins - add bb_g_build_het_job_script().

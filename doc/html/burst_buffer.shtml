@@ -31,6 +31,7 @@ administrators)</a>
 </ul>
 </li>
 <li><a href="#persist">Persistent Burst Buffer Creation and Deletion Directives</a></li>
+<li><a href="#het-job-support">Heterogeneous Job Support</a></li>
 <li><a href="#command-line">Command-line Job Options</a>
 <ul>
 	<li><a href="#command-line-dw">Datawarp</a></li>
@@ -559,6 +560,18 @@ By default only <a href="user_permissions.html">privileged users</a>
 (i.e. Slurm operators and administrators)
 can create or destroy persistent burst buffers.</p>
 
+<h2 id="het-job-support">Heterogeneous Job Support
+<a class="slurm_link" href="#het-job-support"></a>
+</h2>
+
+<p>Heterogeneous jobs may request burst buffers. Burst buffer hooks will run
+once for each component that has burst buffer directives. For example, if a
+heterogeneous job has three components and two of them have burst buffer
+directives, the burst buffer hooks will run once for each of the two components
+with burst buffer directives, but not for the third component without burst
+buffer directives. Further information and examples can be found in the
+<a href=heterogeneous_jobs.html#burst_buffer>heterogeneous jobs</a> page.
+</p>
 
 <h2 id="command-line">Command-line Job Options
 <a class="slurm_link" href="#command-line"></a>
@@ -907,6 +920,6 @@ for each job it reads the burst buffer state and does one of the following:</li>
 state. This document focuses on burst buffers and does not attempt to address
 all possible job state transitions.</p>
 
-<p style="text-align:center;">Last modified 13 August 2021</p>
+<p style="text-align:center;">Last modified 21 October 2022</p>
 
 <!--#include virtual="footer.txt"-->

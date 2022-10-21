@@ -104,6 +104,8 @@ documents those changes that are of interest to users and administrators.
     --ntasks-per-core=1 implies --cpu-bind=cores and --ntasks-per-core>1 implies
     --cpu-bind=threads.
  -- salloc/sbatch/srun check and abort if ntasks-per-core > threads-per-core.
+ -- burst_buffer/lua - fix building heterogeneous job scripts where the
+    directive is not the default "BB_LUA".
 
 * Changes in Slurm 22.05.6
 ==========================

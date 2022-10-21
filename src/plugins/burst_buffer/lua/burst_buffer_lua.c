@@ -114,6 +114,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static bb_state_t bb_state;
 
 static char *directive_str;
+static int directive_len = 0;
 
 static char *lua_script_path;
 static const char *req_fxns[] = {
@@ -1167,10 +1168,8 @@ static int _xlate_batch(job_desc_msg_t *job_desc)
 	char *script, *save_ptr = NULL, *tok;
 	bool is_cont = false, has_space = false;
 	int len, rc = SLURM_SUCCESS;
-	int directive_len;
 
 	xassert(directive_str);
-	directive_len = strlen(directive_str);
 
 	/*
 	 * Any command line --bb options get added to the script
@@ -1294,7 +1293,6 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 	char *capacity;
 	char *tok;
 	int rc = SLURM_SUCCESS;
-	int directive_len;
 	bool have_bb = false;
 
 	xassert(bb_size);
@@ -1305,7 +1303,6 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 		      __func__);
 		return SLURM_ERROR;
 	}
-	directive_len = strlen(directive_str);
 
 	/*
 	 * Combine command line options with script, and copy the script to
@@ -1387,7 +1384,6 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 	char *save_ptr = NULL, *sub_tok, *tok;
 	bool have_bb = false;
 	uint16_t new_bb_state;
-	int directive_len;
 	bb_job_t *bb_job;
 
 	if ((job_ptr->burst_buffer == NULL) ||
@@ -1402,7 +1398,6 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 		      __func__);
 		return NULL;
 	}
-	directive_len = strlen(directive_str);
 
 	bb_job = bb_job_alloc(&bb_state, job_ptr->job_id);
 	bb_job->account = xstrdup(job_ptr->account);
@@ -1513,6 +1508,8 @@ static void _test_config(void)
 		directive_str = bb_state.bb_config.directive_str;
 	else
 		directive_str = DEFAULT_DIRECTIVE_STR;
+	directive_len = strlen(directive_str);
+
 	if (bb_state.bb_config.default_pool) {
 		error("%s: found DefaultPool=%s, but DefaultPool is unused for this plugin, unsetting",
 		      plugin_type, bb_state.bb_config.default_pool);
@@ -1791,6 +1788,20 @@ static void _purge_vestigial_bufs(void)
 		}
 	}
 	FREE_NULL_LIST(orphan_rec_list);
+}
+
+static bool _is_directive(char *tok)
+{
+	xassert(directive_str);
+	if ((tok[0] == '#') && !xstrncmp(tok + 1, directive_str, directive_len))
+		return true;
+	return false;
+}
+
+extern char *bb_p_build_het_job_script(char *script, uint32_t het_job_offset)
+{
+	return bb_common_build_het_job_script(script, het_job_offset,
+					      _is_directive);
 }
 
 /*
