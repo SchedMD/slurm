@@ -254,7 +254,7 @@ extern void slurm_cred_unlock_args(slurm_cred_t *cred);
 
 /*
  * Access the credential's arguments. NULL on error.
- * *Must* release lock with slurm_cred_unlock_arg().
+ * *Must* release lock with slurm_cred_unlock_args().
  */
 extern slurm_cred_arg_t *slurm_cred_get_args(slurm_cred_t *cred);
 
@@ -291,7 +291,7 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred,
  *   - Credential has not been revoked
  *   - Credential has not been replayed
  *
- * *Must* release lock with slurm_cred_unlock_arg().
+ * *Must* release lock with slurm_cred_unlock_args().
  */
 extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
 					   slurm_cred_t *cred);
