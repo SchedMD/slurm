@@ -192,6 +192,17 @@ int srun(int ac, char **av)
 	} else
 		create_srun_job((void **) &job, &got_alloc, 0, 1);
 
+	/*
+	 * Detect is process is in non-matching user namespace or UIDs
+	 * with controller are mismatching.
+	 */
+	if (job->uid != getuid())
+		debug3("%s: %ps UID %u and srun process UID %u mismatch",
+		       __func__, &job->step_id, job->uid, getuid());
+	if (job->gid != getgid())
+		debug3("%s: %ps GID %u and srun process GID %u mismatch",
+		       __func__, &job->step_id, job->gid, getgid());
+
 	_setup_job_env(job, srun_job_list, got_alloc);
 
 	/*
@@ -657,8 +668,10 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	env->account = job->account;
 	env->qos = job->qos;
 	env->resv_name = job->resv_name;
-	env->uid = getuid();
-	env->user_name = uid_to_string(env->uid);
+	env->uid = job->uid;
+	env->user_name = xstrdup(job->user_name);
+	env->gid = job->gid;
+	env->group_name = xstrdup(job->group_name);
 
 	if (srun_opt->pty && (set_winsize(job) < 0)) {
 		error("Not using a pseudo-terminal, disregarding --pty option");

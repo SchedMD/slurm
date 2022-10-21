@@ -128,6 +128,10 @@ typedef struct srun_job {
 	char *account;    /* account of this job */
 	char *qos;        /* job's qos */
 	char *resv_name;  /* reservation the job is using */
+	uid_t uid; /* resolved user id of job */
+	char *user_name; /* resolved user name of job */
+	gid_t gid; /* resolved group id of job */
+	char *group_name; /* resolved group name of job */
 } srun_job_t;
 
 void    update_job_state(srun_job_t *job, srun_job_state_t newstate);

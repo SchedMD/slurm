@@ -101,6 +101,10 @@ typedef struct allocation_info {
 	char                   *partition;
 	dynamic_plugin_data_t  *select_jobinfo;
 	slurm_step_id_t         step_id;
+	uid_t uid; /* resolved user id of job */
+	char *user_name; /* resolved user name of job */
+	gid_t gid; /* resolved group id of job */
+	char *group_name; /* resolved group name of job */
 } allocation_info_t;
 
 typedef struct het_job_resp_struct {
@@ -505,6 +509,11 @@ extern srun_job_t *job_create_allocation(
 	i->ntasks_per_socket = resp->ntasks_per_socket;
 
 	i->select_jobinfo = select_g_select_jobinfo_copy(resp->select_jobinfo);
+
+	i->uid = resp->uid;
+	i->user_name = xstrdup(resp->user_name);
+	i->gid = resp->gid;
+	i->group_name = xstrdup(resp->group_name);
 
 	job = _job_create_structure(i, opt_local);
 	if (job) {
@@ -1715,6 +1724,11 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 	job->rc       = -1;
 
 	job_update_io_fnames(job, opt_local);
+
+	job->uid = ainfo->uid;
+	job->user_name = xstrdup(ainfo->user_name);
+	job->gid = ainfo->gid;
+	job->group_name = xstrdup(ainfo->group_name);
 
 	return (job);
 }
