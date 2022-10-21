@@ -55,6 +55,11 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define common_file_read_uint32s(__fp, __vs, __nb) \
+	common_file_read_uints(__fp, (void **)__vs, __nb, 32)
+#define common_file_read_uint64s(__fp, __vs, __nb) \
+	common_file_read_uints(__fp, (void **)__vs, __nb, 64)
+
 typedef struct {
 	bitstr_t *avail_controllers;
 	char *mnt_point;	/* mount point to use */
@@ -71,12 +76,10 @@ typedef struct {
 	int fd;			/* used for locking */
 } xcgroup_t;
 
+extern int common_file_read_uints(char *file_path, void **values, int *nb,
+				  int base);
 extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb);
-extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
-				    int *pnb);
 extern int common_file_write_uint32s(char *file_path, uint32_t *values, int nb);
-extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
-				    int *pnb);
 extern int common_file_write_content(char *file_path, char *content,
 				     size_t csize);
 extern int common_file_read_content(char *file_path, char **content,

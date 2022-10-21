@@ -220,39 +220,54 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
-				    int *pnb)
+extern int common_file_read_uints(char *file_path, void **values, int *nb,
+				  int base)
 {
-	size_t fsize;
-	char *buf = NULL, *p;
-	uint64_t *pa = NULL;
 	int i;
+	ssize_t fsize;
+	char *buf = NULL, *p;
+	uint32_t *values32 = NULL;
+	uint64_t *values64 = NULL;
+	long long unsigned int ll_tmp;
 
 	/* check input pointers */
-	if (pvalues == NULL || pnb == NULL)
+	if (values == NULL || nb == NULL)
 		return SLURM_ERROR;
 
 	if ((fsize = _read_cg_file(file_path, &buf)) < 0)
 		return SLURM_ERROR;
 
 	/* count values (splitted by \n) */
-	i=0;
+	i = 0;
 	p = buf;
 	while (xstrchr(p, '\n') != NULL) {
 		i++;
 		p = xstrchr(p, '\n') + 1;
 	}
 
-	/* build uint64_t list */
-	if (i > 0) {
-		pa = xcalloc(i, sizeof(uint64_t));
-		p = buf;
-		i = 0;
-		while (xstrchr(p, '\n') != NULL) {
-			long long unsigned int ll_tmp;
-			sscanf(p, "%llu", &ll_tmp);
-			pa[i++] = ll_tmp;
+	if (base == 32) {
+		/* build uint32_t list */
+		if (i > 0) {
+			values32 = xcalloc(i, sizeof(uint32_t));
+			p = buf;
+			i = 0;
+			while (xstrchr(p, '\n') != NULL) {
+				sscanf(p, "%u", (values32 + i));
+				p = xstrchr(p, '\n') + 1;
+				i++;
+			}
+		}
+	} else if (base == 64) {
+		/* build uint64_t list */
+		if (i > 0) {
+			values64 = xcalloc(i, sizeof(uint64_t));
+			p = buf;
+			i = 0;
+			while (xstrchr(p, '\n') != NULL) {
+				sscanf(p, "%llu", &ll_tmp);
+				values64[i++] = ll_tmp;
 			p = xstrchr(p, '\n') + 1;
+			}
 		}
 	}
 
@@ -260,8 +275,12 @@ extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 	xfree(buf);
 
 	/* set output values */
-	*pvalues = pa;
-	*pnb = i;
+	if (base == 32)
+		*values = values32;
+	else if (base == 64)
+		*values = values64;
+
+	*nb = i;
 
 	return SLURM_SUCCESS;
 }
@@ -301,51 +320,6 @@ rwfail:
 	      __func__, tstr, file_path);
 	close(fd);
 	return rc;;
-}
-
-extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
-				    int *pnb)
-{
-	int i;
-	ssize_t fsize;
-	char *buf = NULL, *p;
-	uint32_t *pa = NULL;
-
-	/* check input pointers */
-	if (pvalues == NULL || pnb == NULL)
-		return SLURM_ERROR;
-
-	if ((fsize = _read_cg_file(file_path, &buf)) < 0)
-		return SLURM_ERROR;
-
-	/* count values (splitted by \n) */
-	i=0;
-	p = buf;
-	while (xstrchr(p, '\n') != NULL) {
-		i++;
-		p = xstrchr(p, '\n') + 1;
-	}
-
-	/* build uint32_t list */
-	if (i > 0) {
-		pa = xcalloc(i, sizeof(uint32_t));
-		p = buf;
-		i = 0;
-		while (xstrchr(p, '\n') != NULL) {
-			sscanf(p, "%u", pa+i);
-			p = xstrchr(p, '\n') + 1;
-			i++;
-		}
-	}
-
-	/* free buffer */
-	xfree(buf);
-
-	/* set output values */
-	*pvalues = pa;
-	*pnb = i;
-
-	return SLURM_SUCCESS;
 }
 
 extern int common_file_write_content(char *file_path, char *content,
