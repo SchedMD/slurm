@@ -71,7 +71,6 @@ typedef struct {
 	int fd;			/* used for locking */
 } xcgroup_t;
 
-extern size_t common_file_getsize(int fd);
 extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb);
 extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 				    int *pnb);
