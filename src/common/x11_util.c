@@ -183,6 +183,22 @@ extern char *x11_get_xauth(void)
 				      "[[:space:]]+MIT-MAGIC-COOKIE-1"
 				      "[[:space:]]+([[:xdigit:]]+)$";
 
+	/*
+	 * In some cases the only xauth cookie available may be the wildcard
+	 * cookie. It is not included in the initial regex to make sure that
+	 * the wildcard is only used if nothing else is available.
+	 *
+	 * The format for this cookie is:
+	 * "#ffff#abcdef0123456789#:12345  MIT-MAGIC-COOKIE-1  abcdef0123456789"
+	 *
+	 * Definition of FamilyWild can be found in <X11/Xauth.h>
+	 * The output format can be interpreted from dump_entry() in the xauth
+	 * source code (process.c).
+	 */
+	static char *wildcard_pattern = "^#ffff#[[:xdigit:]./-]+#:[[:digit:]]+"
+					"[[:space:]]+MIT-MAGIC-COOKIE-1"
+					"[[:space:]]+([[:xdigit:]]+)$";
+
 	xauth_argv = xmalloc(sizeof(char *) * 10);
 	xauth_argv[0] = xstrdup("xauth");
 	xauth_argv[1] = xstrdup("list");
@@ -202,9 +218,15 @@ extern char *x11_get_xauth(void)
 
 	regcomp(&reg, cookie_pattern, REG_EXTENDED|REG_NEWLINE);
 	if (regexec(&reg, result, 2, regmatch, 0) == REG_NOMATCH) {
-		error("%s: Could not retrieve magic cookie. "
-		      "Cannot use X11 forwarding.", __func__);
-		exit(-1);
+		debug2("%s: Could not retrieve magic cookie, checking for wildcard cookie.",
+		      __func__);
+
+		regcomp(&reg, wildcard_pattern, REG_EXTENDED|REG_NEWLINE);
+		if (regexec(&reg, result, 2, regmatch, 0) == REG_NOMATCH) {
+			error("%s: Could not retrieve magic cookie. Cannot use X11 forwarding.",
+			      __func__);
+			exit(-1);
+		}
 	}
 
 	matchlen = regmatch[1].rm_eo - regmatch[1].rm_so + 1;
