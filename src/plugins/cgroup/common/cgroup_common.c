@@ -175,51 +175,6 @@ static ssize_t _read_cg_file(char *file_path, char **out)
 	return (rc == -1) ? rc : read_bytes;
 }
 
-extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb)
-{
-	int fstatus;
-	int rc;
-	int fd;
-	char tstr[256];
-	uint64_t value;
-	int i;
-
-	/* open file for writing */
-	fd = open(file_path, O_WRONLY, 0700);
-	if (fd < 0) {
-		log_flag(CGROUP, "unable to open '%s' for writing : %m",
-			 file_path);
-		return SLURM_ERROR;
-	}
-
-	/* add one value per line */
-	fstatus = SLURM_SUCCESS;
-	for (i = 0; i < nb ; i++) {
-
-		value = values[i];
-
-		rc = snprintf(tstr, sizeof(tstr), "%"PRIu64"", value);
-		if (rc < 0) {
-			log_flag(CGROUP, "unable to build %"PRIu64" string value, skipping",
-				 value);
-			fstatus = SLURM_ERROR;
-			continue;
-		}
-		safe_write(fd, tstr, strlen(tstr)+1);
-	}
-
-	/* close file */
-	close(fd);
-
-	return fstatus;
-
-rwfail:
-	close(fd);
-	log_flag(CGROUP, "unable to add value '%s' to file '%s' : %m",
-		 tstr, file_path);
-	return SLURM_ERROR;
-}
-
 extern int common_file_read_uints(char *file_path, void **values, int *nb,
 				  int base)
 {
@@ -285,11 +240,14 @@ extern int common_file_read_uints(char *file_path, void **values, int *nb,
 	return SLURM_SUCCESS;
 }
 
-extern int common_file_write_uint32s(char *file_path, uint32_t *values, int nb)
+extern int common_file_write_uints(char *file_path, void *values, int nb,
+				   int base)
 {
 	int rc;
 	int fd;
 	char tstr[256];
+	uint32_t *values32 = NULL;
+	uint64_t *values64 = NULL;
 
 	/* open file for writing */
 	if ((fd = open(file_path, O_WRONLY, 0700)) < 0) {
@@ -298,13 +256,31 @@ extern int common_file_write_uint32s(char *file_path, uint32_t *values, int nb)
 		return SLURM_ERROR;
 	}
 
+	if (base == 32)
+		values32 = (uint32_t *) values;
+	else if (base == 64)
+		values64 = (uint64_t *) values;
+
 	/* add one value per line */
 	for (int i = 0; i < nb; i++) {
-		uint32_t value = values[i];
-
-		if (snprintf(tstr, sizeof(tstr), "%u", value) < 0)
-			fatal("%s: unable to build %u string value",
-			      __func__, value);
+		if (base == 32) {
+			uint32_t value = values32[i];
+			if (snprintf(tstr, sizeof(tstr), "%u", value) < 0) {
+				error("%s: unable to build %u string value: %m",
+				      __func__, value);
+				close(fd);
+				return SLURM_ERROR;
+			}
+		} else if (base == 64) {
+			uint64_t value = values64[i];
+			if (snprintf(tstr, sizeof(tstr),
+				     "%"PRIu64"", value) <0) {
+				error("%s: unable to build %"PRIu64" string value: %m",
+				      __func__, value);
+				close(fd);
+				return SLURM_ERROR;
+			}
+		}
 
 		/* write terminating NUL byte */
 		safe_write(fd, tstr, strlen(tstr) + 1);
@@ -313,13 +289,11 @@ extern int common_file_write_uint32s(char *file_path, uint32_t *values, int nb)
 	/* close file */
 	close(fd);
 	return SLURM_SUCCESS;
-
 rwfail:
 	rc = errno;
-	error("%s: write pid %s to %s failed: %m",
-	      __func__, tstr, file_path);
+	error("%s: write pid %s to %s failed: %m", __func__, tstr, file_path);
 	close(fd);
-	return rc;;
+	return rc;
 }
 
 extern int common_file_write_content(char *file_path, char *content,
