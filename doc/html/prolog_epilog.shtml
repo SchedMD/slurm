@@ -487,8 +487,7 @@ The GPU IDs of GPUs in the job allocation (if any).
 Available in the Prolog and Epilog.</li>
 
 <li><b>SLURM_JOB_GROUP</b>
-Group name of the job's owner.
-Available in PrologSlurmctld and EpilogSlurmctld only.</li>
+Group name of the job's owner.</li>
 
 <li><b>SLURM_JOB_ID</b>
 Job ID.</li>
@@ -718,6 +717,6 @@ canceled.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 23 August 2022</p>
+<p style="text-align:center;">Last modified 3 November 2022</p>
 
 <!--#include virtual="footer.txt"-->

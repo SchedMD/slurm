@@ -778,6 +778,21 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
+	if (env->gid != SLURM_AUTH_NOBODY) {
+		if (setenvf(&env->env, "SLURM_JOB_GID", "%u", env->gid)) {
+			error("Can't set SLURM_JOB_GID env variable");
+			rc = SLURM_ERROR;
+		}
+	}
+
+	if (env->group_name) {
+		if (setenvf(&env->env, "SLURM_JOB_GROUP", "%s",
+			    env->group_name)) {
+			error("Can't set SLURM_JOB_GROUP env variable");
+			rc = SLURM_ERROR;
+		}
+	}
+
 	if (env->account) {
 		if (setenvf(&env->env,
 			    "SLURM_JOB_ACCOUNT",
