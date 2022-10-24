@@ -118,6 +118,7 @@ documents those changes that are of interest to users and administrators.
  -- Clarify error message when --send-libs=yes or BcastParameters=send_libs
     fails to identify shared library files, and avoid creating an empty
     "<filename>_libs" directory on the target filesystem.
+ -- Fix missing CoreSpec on dynamic nodes upon slurmctld restart.
 
 * Changes in Slurm 22.05.5
 ==========================
