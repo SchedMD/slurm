@@ -119,6 +119,7 @@ documents those changes that are of interest to users and administrators.
     fails to identify shared library files, and avoid creating an empty
     "<filename>_libs" directory on the target filesystem.
  -- Fix missing CoreSpec on dynamic nodes upon slurmctld restart.
+ -- Fix node state reporting when using specialized cores.
 
 * Changes in Slurm 22.05.5
 ==========================
@@ -204,7 +205,6 @@ documents those changes that are of interest to users and administrators.
     features.
  -- Fix occasional slurmctld crash or hang in backfill due to invalid pointers.
  -- Fix segfault on Cray machines if cgroup cpuset is used in cgroup/v1.
- -- Fix node state reporting when using specialized cores
 
 * Changes in Slurm 22.05.3
 ==========================
