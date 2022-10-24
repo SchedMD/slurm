@@ -2169,7 +2169,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	details.env_hash = job_start_msg->env_hash;
 	job.user_id = job_start_msg->uid;
 	job.group_id = job_start_msg->gid;
-	job.container = xstrdup(job_start_msg->container);
+	job.container = _replace_double_quotes(job_start_msg->container);
 	job.het_job_id = job_start_msg->het_job_id;
 	job.het_job_offset = job_start_msg->het_job_offset;
 	job.job_id = job_start_msg->job_id;
@@ -3068,7 +3068,7 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	job.assoc_id = step_start_msg->assoc_id;
 	if (step_start_msg->db_index != NO_VAL64)
 		job.db_index = step_start_msg->db_index;
-	step.container = xstrdup(step_start_msg->container);
+	step.container = _replace_double_quotes(step_start_msg->container);
 	job.job_id = step_start_msg->step_id.job_id;
 	step.name = step_start_msg->name;
 	job.nodes = step_start_msg->nodes;
