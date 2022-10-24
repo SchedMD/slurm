@@ -1941,10 +1941,24 @@ The default value is "ALL".
 .IP
 
 .TP
+\fBAllowAccounts\fR=<\fIname\fR>
+Identify the Accounts which may use this partition.
+Multiple Accounts may be specified in a comma separated list.
+To permit all Accounts to use the partition specify "AllowAccounts=ALL".
+.IP
+
+.TP
 \fBAllowGroups\fR=<\fIname\fR>
 Identify the user groups which may use this partition.
 Multiple groups may be specified in a comma separated list.
 To permit all groups to use the partition specify "AllowGroups=ALL".
+.IP
+
+.TP
+\fBAllowQOS\fR=<\fIname\fR>
+Identify the QOS's which may use this partition.
+Multiple QOS's may be specified in a comma separated list.
+To permit all QOS's to use the partition specify "AllowQOS=ALL".
 .IP
 
 .TP
@@ -1990,9 +2004,27 @@ The memory size is specified in megabytes.
 .IP
 
 .TP
+\fBDenyAccounts\fR=<\fIname\fR>
+Identify the Accounts which should be denied access to this partition.
+Multiple Accounts may be specified in a comma separated list.
+.IP
+
+.TP
+\fBDenyQOS\fR=<\fIname\fR>
+Identify the QOS's which should be denied access to this partition.
+Multiple QOS's may be specified in a comma separated list.
+.IP
+
+.TP
 \fBDisableRootJobs\fR={yes|no}
 Specify if jobs can be executed as user root.
 Possible values are "YES" and "NO".
+.IP
+
+.TP
+\fBExclusiveUser\fR={yes|no}
+When enabled nodes will be exclusively allocated to users. Multiple jobs can
+be run simultaneously, but those jobs must be from a single user.
 .IP
 
 .TP
@@ -2027,6 +2059,17 @@ Default number of CPUs per allocated GPU.
 \fBDefMemPerGPU\fR
 Default memory limit (in megabytes) per allocated GPU.
 .RE
+.IP
+
+.TP
+\fBMaxCPUsPerNode\fR=<\fIcount\fR>
+Set the maximum number of CPUs that can be allocated per node to all jobs
+in this partition.
+.IP
+
+.TP
+\fBLLN\fR={yes|no}
+Schedule jobs on the least loaded nodes (based on the number of idle CPUs).
 .IP
 
 .TP
