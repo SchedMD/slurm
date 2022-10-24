@@ -1932,19 +1932,19 @@ that node to be terminated.
 .SH "PARTITIONS \- SPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS"
 
 .TP
-\fBAllowGroups\fR=<\fIname\fR>
-Identify the user groups which may use this partition.
-Multiple groups may be specified in a comma separated list.
-To permit all groups to use the partition specify "AllowGroups=ALL".
-.IP
-
-.TP
 \fBAllocNodes\fR=<\fIname\fR>
 Comma separated list of nodes from which users can execute jobs in the
 partition.
 Node names may be specified using the node range expression syntax
 described above.
 The default value is "ALL".
+.IP
+
+.TP
+\fBAllowGroups\fR=<\fIname\fR>
+Identify the user groups which may use this partition.
+Multiple groups may be specified in a comma separated list.
+To permit all groups to use the partition specify "AllowGroups=ALL".
 .IP
 
 .TP
@@ -2084,6 +2084,15 @@ have already begun execution.
 .IP
 
 .TP
+\fBOverSubscribe\fR={yes|no|exclusive|force}[:<\fIjob_count\fR>]
+Specify if compute resources (i.e. individual CPUs) in this partition can be
+shared by multiple jobs.
+Possible values are "YES", "NO", "EXCLUSIVE" and "FORCE".
+An optional job count specifies how many jobs can be allocated to use
+each resource.
+.IP
+
+.TP
 \fBOverTimeLimit\fR=<\fIcount\fR>
 Number of minutes by which a job can exceed its time limit before
 being canceled.
@@ -2098,15 +2107,6 @@ If not specified, the global \fIOverTimeLimit\fP value will take precedence.
 May not exceed 65533 minutes.
 An input value of "UNLIMITED" will clear any previously configured
 partition\-specific \fIOverTimeLimit\fP value.
-.IP
-
-.TP
-\fBOverSubscribe\fR={yes|no|exclusive|force}[:<\fIjob_count\fR>]
-Specify if compute resources (i.e. individual CPUs) in this partition can be
-shared by multiple jobs.
-Possible values are "YES", "NO", "EXCLUSIVE" and "FORCE".
-An optional job count specifies how many jobs can be allocated to use
-each resource.
 .IP
 
 .TP
@@ -2155,17 +2155,17 @@ leave the option blank.
 .IP
 
 .TP
-\fBRootOnly\fR={yes|no}
-Specify if only allocation requests initiated by user root will be satisfied.
-This can be used to restrict control of the partition to some meta\-scheduler.
-Possible values are "YES" and "NO".
-.IP
-
-.TP
 \fBReqResv\fR={yes|no}
 Specify if only allocation requests designating a reservation will be
 satisfied.  This is used to restrict partition usage to be allowed only
 within a reservation.
+Possible values are "YES" and "NO".
+.IP
+
+.TP
+\fBRootOnly\fR={yes|no}
+Specify if only allocation requests initiated by user root will be satisfied.
+This can be used to restrict control of the partition to some meta\-scheduler.
 Possible values are "YES" and "NO".
 .IP
 
