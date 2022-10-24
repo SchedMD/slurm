@@ -36,6 +36,9 @@
 
 #include "cgroup_common.h"
 
+/* Testing read() on cgroup interfaces returns 4092 bytes at most. */
+#define CGROUP_READ_COUNT 4092
+
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined.  They will get
  * overwritten when linking with the slurmctld.
@@ -122,6 +125,56 @@ static bool _is_empty_dir(const char *dirpath)
 	return empty;
 }
 
+/*
+ * Read a cgroup file interface in chunks of CGROUP_READ_COUNT. If the read is
+ * atomic, we should have a correct snapshot of the data. If multiple read()
+ * have been needed, the file might have been changed in between calls.
+ *
+ * IN: file_path - file path
+ * IN/OUT: out - pointer to file contents
+ *
+ * RET: -1 on error, accumulated number of read bytes otherwise
+ */
+static ssize_t _read_cg_file(char *file_path, char **out)
+{
+	int fd, nr_reads = 0;
+	size_t count = CGROUP_READ_COUNT;
+	ssize_t rc, read_bytes = 0;
+	char *buf;
+
+	xassert(!*out);
+
+	/* open file for reading */
+	fd = open(file_path, O_RDONLY, 0700);
+	if (fd < 0) {
+		error("unable to open '%s' for reading : %m", file_path);
+		return SLURM_ERROR;
+	}
+
+	/* read file contents */
+	buf = xmalloc(count);
+	while ((rc = read(fd, buf + read_bytes, count))) {
+		if (rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("unable to read '%s': %m", file_path);
+			xfree(buf);
+			break;
+		}
+		read_bytes += rc;
+		xrealloc(buf, (read_bytes + count));
+		nr_reads++;
+	}
+
+	if (nr_reads > 1)
+		log_flag(CGROUP, "%s: Read %ld bytes after %d read() syscalls. File may have changed between syscalls.",
+			 file_path, read_bytes, nr_reads);
+
+	close(fd);
+	*out = buf;
+	return (rc == -1) ? rc : read_bytes;
+}
+
 extern size_t common_file_getsize(int fd)
 {
 	int rc;
@@ -202,38 +255,17 @@ rwfail:
 extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 				    int *pnb)
 {
-	int fd;
-
 	size_t fsize;
-	char *buf;
-	char *p;
-
-	uint64_t *pa=NULL;
+	char *buf = NULL, *p;
+	uint64_t *pa = NULL;
 	int i;
 
 	/* check input pointers */
 	if (pvalues == NULL || pnb == NULL)
 		return SLURM_ERROR;
 
-	/* open file for reading */
-	fd = open(file_path, O_RDONLY, 0700);
-	if (fd < 0) {
-		log_flag(CGROUP, "unable to open '%s' for reading : %m", file_path);
+	if ((fsize = _read_cg_file(file_path, &buf)) < 0)
 		return SLURM_ERROR;
-	}
-
-	/* get file size */
-	fsize = common_file_getsize(fd);
-	if (fsize == -1) {
-		close(fd);
-		return SLURM_ERROR;
-	}
-
-	/* read file contents */
-	buf = xmalloc(fsize + 1);
-	safe_read(fd, buf, fsize);
-	close(fd);
-	buf[fsize]='\0';
 
 	/* count values (splitted by \n) */
 	i=0;
@@ -263,11 +295,6 @@ extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 	*pvalues = pa;
 	*pnb = i;
 
-	return SLURM_SUCCESS;
-rwfail:
-	close(fd);
-	xfree(buf);
-	log_flag(CGROUP, "cannot read '%s' contents.", file_path);
 	return SLURM_SUCCESS;
 }
 
@@ -311,38 +338,17 @@ rwfail:
 extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
 				    int *pnb)
 {
-	int fd;
-
-	size_t fsize;
-	char *buf;
-	char *p;
-
-	uint32_t *pa=NULL;
 	int i;
+	ssize_t fsize;
+	char *buf = NULL, *p;
+	uint32_t *pa = NULL;
 
 	/* check input pointers */
 	if (pvalues == NULL || pnb == NULL)
 		return SLURM_ERROR;
 
-	/* open file for reading */
-	fd = open(file_path, O_RDONLY, 0700);
-	if (fd < 0) {
-		log_flag(CGROUP, "unable to open '%s' for reading : %m",
-			 file_path);
+	if ((fsize = _read_cg_file(file_path, &buf)) < 0)
 		return SLURM_ERROR;
-	}
-
-	/* get file size */
-	fsize = common_file_getsize(fd);
-	if (fsize == -1) {
-		close(fd);
-		return SLURM_ERROR;
-	}
-
-	/* read file contents */
-	buf = xmalloc(fsize + 1);
-	safe_read(fd, buf, fsize);
-	close(fd);
 
 	/* count values (splitted by \n) */
 	i=0;
@@ -371,11 +377,6 @@ extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
 	*pvalues = pa;
 	*pnb = i;
 
-	return SLURM_SUCCESS;
-rwfail:
-	close(fd);
-	xfree(buf);
-	log_flag(CGROUP, "cannot read '%s' contents.", file_path);
 	return SLURM_SUCCESS;
 }
 
@@ -407,49 +408,21 @@ rwfail:
 extern int common_file_read_content(char *file_path, char **content,
 				    size_t *csize)
 {
-	int fstatus;
-	int fd;
-	size_t fsize;
-	char *buf;
-
-	fstatus = SLURM_ERROR;
+	ssize_t fsize;
+	char *buf = NULL;
 
 	/* check input pointers */
 	if (content == NULL || csize == NULL)
-		return fstatus;
+		return SLURM_ERROR;
 
-	/* open file for reading */
-	fd = open(file_path, O_RDONLY, 0700);
-	if (fd < 0) {
-		log_flag(CGROUP, "unable to open '%s' for reading : %m", file_path);
-		return fstatus;
-	}
-
-	/* get file size */
-	fsize=common_file_getsize(fd);
-	if (fsize == -1) {
-		close(fd);
-		return fstatus;
-	}
-
-	/* read file contents */
-	buf = xmalloc(fsize + 1);
-	safe_read(fd, buf, fsize);
+	if ((fsize = _read_cg_file(file_path, &buf)) < 0)
+		return SLURM_ERROR;
 
 	/* set output values */
 	*content = buf;
 	*csize = fsize;
-	fstatus = SLURM_SUCCESS;
 
-	/* close file */
-	close(fd);
-	return fstatus;
-
-rwfail:
-	log_flag(CGROUP, "unable to read '%s'", file_path);
-	close(fd);
-	xfree(buf);
-	return fstatus;
+	return SLURM_SUCCESS;
 }
 
 extern int common_cgroup_instantiate(xcgroup_t *cg)
