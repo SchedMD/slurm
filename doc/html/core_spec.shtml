@@ -24,16 +24,50 @@ The <i>scontrol</i> and <i>sview</i> commands can also be used to modify
 the count for pending jobs.</p>
 
 <p>Explicitly setting a job's specialized core value implicitly sets its
-<i>--exclusive</i> option, reserving entire nodes for the job, however
-the number of CPUs available for the job's steps will not exceed that
-explicitly requested by the job. For example "salloc -n1 --core-spec=1 bash"
-will result in one entire node being reserved for the job, but only one CPU
-will be available for subsequent job steps. The remaining CPUs on the node
-(at least one core because of "--core-spec=1") will only be available for
-system use. The job will be charged for all CPUs on the node and the job's
+<i>--exclusive</i> option, reserving entire nodes for the job.
+The job will be charged for all non-specialized CPUs on the node and the job's
 NumCPUs value reported by the <i>scontrol</i>, <i>sview</i> and <i>squeue</i>
-commands will reflect all CPUS on all allocated nodes as will the job's
-accounting.</p>
+commands will reflect all non-specialized CPUS on all allocated nodes as will
+the job's accounting.</p>
+
+<p>If AllowSpecResourcesUsage=yes and the explicitly requested specialized
+core/thread count is lower than the number of cores in the CoreSpecCount or in
+the CpuSpecList (leaving what would otherwise be specialized cores available
+for use), then the step will have access to all of the normal cores as well as
+the extra unused specialized cores. In <i>sacct</i>, the step's allocated CPUs
+will include the specialized cores or threads that it has access to. However,
+the job's allocated CPU count never includes specialized cores or threads to
+ensure that utilization reports are accurate.</p>
+
+<p>Here is an example configuration, setting cores 0 and 1 as
+specialized:</p>
+
+<pre>
+AllowSpecResourcesUsage=yes
+Nodename=n0 Port=10100 CoresPerSocket=16 ThreadsPerCore=1 CpuSpecList=0-1
+</pre>
+
+<p>Submit a job requesting a core spec count of 1 (freeing up core
+number 1 for job use).</p>
+
+<pre>
+$ salloc --core-spec=1
+salloc: Granted job allocation 4152
+$ srun bash -c 'cat /proc/self/status |grep Cpus_'
+Cpus_allowed:        fffe
+Cpus_allowed_list:   1-15
+</pre>
+
+<p>Notice the job CPU count vs the step CPU count.</p>
+
+<pre>
+$ sacct -j 4152 -ojobid%20,alloccpus
+               JobID  AllocCPUS
+-------------------- ----------
+                4152         14
+    4152.interactive         15
+              4152.0         15
+</pre>
 
 <h2 id="core">Core Selection<a class="slurm_link" href="#core"></a></h2>
 <p>The specific resources to be used for specialization may be identified using
@@ -111,6 +145,6 @@ system use.</p>
 cores for their job, the configuration parameter <i>AllowSpecResourcesUsage</i>
 must be set to a value of <i>1</i>.</p>
 
-<p style="text-align:center;">Last modified 26 August 2022</p>
+<p style="text-align:center;">Last modified 21 October 2022</p>
 
 <!--#include virtual="footer.txt"-->
