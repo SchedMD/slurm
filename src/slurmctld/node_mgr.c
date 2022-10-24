@@ -300,10 +300,9 @@ extern int load_all_node_state ( bool state_only )
 	char *comm_name = NULL, *node_hostname = NULL;
 	char *node_name = NULL, *comment = NULL, *reason = NULL, *state_file;
 	char *features = NULL, *features_act = NULL;
-	char *gres = NULL, *cpu_spec_list = NULL, *extra = NULL;
+	char *gres = NULL, *extra = NULL;
 	char *mcs_label = NULL;
 	int error_code = 0, node_cnt = 0;
-	uint16_t core_spec_cnt = 0;
 	uint32_t node_state, cpu_bind = 0, next_state = NO_VAL;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
 	uint64_t real_memory;
@@ -311,6 +310,13 @@ extern int load_all_node_state ( bool state_only )
 	uint32_t reason_uid = NO_VAL;
 	time_t boot_req_time = 0, reason_time = 0, last_response = 0;
 	time_t power_save_req_time = 0;
+
+	/*
+	 * cpu_spec_list and core_spec_cnt are only restored for dynamic nodes,
+	 * otherwise always trust slurm.conf
+	 */
+	char *cpu_spec_list;
+	uint16_t core_spec_cnt = 0;
 
 	List gres_list = NULL;
 	node_record_t *node_ptr;
@@ -589,13 +595,6 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->tot_sockets = sockets;
 					node_ptr->cores         = cores;
 					node_ptr->tot_cores = sockets * cores;
-					node_ptr->core_spec_cnt =
-						core_spec_cnt;
-					xfree(node_ptr->cpu_spec_list);
-					node_ptr->cpu_spec_list =
-						cpu_spec_list;
-					cpu_spec_list = NULL;/* Nothing */
-							     /* to free */
 					node_ptr->threads       = threads;
 					node_ptr->real_memory   = real_memory;
 					node_ptr->tmp_disk      = tmp_disk;
@@ -686,9 +685,6 @@ extern int load_all_node_state ( bool state_only )
 			gres			= NULL;	/* Nothing to free */
 			node_ptr->gres_list	= gres_list;
 			gres_list		= NULL;	/* Nothing to free */
-			xfree(node_ptr->cpu_spec_list);
-			node_ptr->cpu_spec_list = cpu_spec_list;
-			cpu_spec_list 		= NULL; /* Nothing to free */
 			node_ptr->part_cnt      = 0;
 			xfree(node_ptr->part_pptr);
 			node_ptr->cpu_bind      = cpu_bind;
@@ -697,7 +693,6 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->tot_sockets = sockets;
 			node_ptr->cores         = cores;
 			node_ptr->tot_cores = sockets * cores;
-			node_ptr->core_spec_cnt = core_spec_cnt;
 			node_ptr->threads       = threads;
 			node_ptr->real_memory   = real_memory;
 			node_ptr->tmp_disk      = tmp_disk;
