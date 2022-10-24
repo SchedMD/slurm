@@ -4896,6 +4896,8 @@ static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 			       bool can_reboot)
 {
+	static time_t sched_update = 0;
+	static bool ignore_prefer_val = false;
 	ListIterator feat_iter;
 	job_feature_t *feat_ptr;
 	char *buf = NULL;
@@ -4909,6 +4911,15 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 		else
 			debug2("Reservation feature list is empty");
 		return rc;
+	}
+
+	if (sched_update != slurm_conf.last_update) {
+		sched_update = slurm_conf.last_update;
+		if (xstrcasestr(slurm_conf.sched_params,
+				"ignore_prefer_validation"))
+			ignore_prefer_val = true;
+		else
+			ignore_prefer_val = false;
 	}
 
 	feat_iter = list_iterator_create(feature_list);
@@ -4928,7 +4939,9 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 			xstrcat(buf, ")");
 			paren = feat_ptr->paren;
 		}
-		if (rc == SLURM_SUCCESS)
+		if (rc == SLURM_SUCCESS &&
+		    (!ignore_prefer_val ||
+		     (feature_list != job_ptr->details->prefer_list)))
 			rc = _valid_node_feature(feat_ptr->name, can_reboot);
 		if (feat_ptr->count)
 			xstrfmtcat(buf, "*%u", feat_ptr->count);

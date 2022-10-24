@@ -121,6 +121,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix missing CoreSpec on dynamic nodes upon slurmctld restart.
  -- Fix node state reporting when using specialized cores.
  -- Fix number of CPUs allocated if --cpus-per-gpu used.
+ -- Add flag ignore_prefer_validation to not validate --prefer on a job.
 
 * Changes in Slurm 22.05.5
 ==========================
