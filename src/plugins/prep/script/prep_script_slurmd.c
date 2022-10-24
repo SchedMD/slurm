@@ -321,6 +321,9 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			xfree(tmp);
 		}
 		if (cred_arg->job_ntasks)
+			setenvf(&env, "SLURM_JOB_LICENSES", "%s",
+				cred_arg->job_licenses);
+		if (cred_arg->job_ntasks)
 			setenvf(&env, "SLURM_JOB_NTASKS", "%u",
 				cred_arg->job_ntasks);
 		if (cred_arg->job_nhosts)

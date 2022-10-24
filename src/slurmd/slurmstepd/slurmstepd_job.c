@@ -261,6 +261,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 	cred_arg->gids = copy_gids(cred_arg->ngids, cred_arg->gids);
 	step->gr_names = copy_gr_names(cred_arg->ngids, cred_arg->gr_names);
 
+	step->job_licenses = xstrdup(cred_arg->job_licenses);
 	step->selinux_context = xstrdup(cred_arg->selinux_context);
 
 	step->alias_list = xstrdup(cred_arg->job_alias_list);
@@ -670,6 +671,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 	xfree(step->cpu_bind);
 	xfree(step->cwd);
 	xfree(step->envtp);
+	xfree(step->job_licenses);
 	xfree(step->pw_gecos);
 	xfree(step->pw_dir);
 	xfree(step->pw_shell);

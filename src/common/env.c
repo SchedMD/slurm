@@ -631,6 +631,14 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
+	if (env->job_licenses) {
+		if (setenvf(&env->env, "SLURM_JOB_LICENSES", "%s",
+			    env->job_licenses)) {
+			error("Unable to set SLURM_JOB_LICENSES environment");
+			rc = SLURM_ERROR;
+		}
+	}
+
 	if (env->job_name) {
 		if (setenvf(&env->env, "SLURM_JOB_NAME", "%s", env->job_name)) {
 			error("Unable to set SLURM_JOB_NAME environment");

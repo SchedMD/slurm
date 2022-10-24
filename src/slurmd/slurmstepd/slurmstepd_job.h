@@ -232,6 +232,7 @@ typedef struct {
 	List           step_gres_list;	/* Needed by GRES plugin */
 	char          *tres_bind;	/* TRES binding */
 	char          *tres_freq;	/* TRES frequency */
+	char *job_licenses;		/* Licenses allocated to job */
 	launch_tasks_request_msg_t *msg; /* When a non-batch step this
 					  * is the message sent.  DO
 					  * NOT FREE, IT IS JUST A

@@ -89,6 +89,7 @@ typedef struct env_options {
 	char *account;          /* job's account */
 	char *qos;              /* job's qos */
 	char *resv_name;        /* job's reservation */
+	char *job_licenses;	/* job's licenses */
 } env_t;
 
 
