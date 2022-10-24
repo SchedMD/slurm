@@ -649,6 +649,7 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->job_alias_list);
 	xfree(arg->job_comment);
 	xfree(arg->job_constraints);
+	xfree(arg->job_licenses);
 	xfree(arg->job_hostlist);
 	xfree(arg->sock_core_rep_count);
 	xfree(arg->sockets_per_node);
@@ -1295,6 +1296,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpack32(&cred->job_nhosts, buffer);
 		safe_unpack32(&cred->job_ntasks, buffer);
 		safe_unpackstr(&cred->job_hostlist, buffer);
+		safe_unpackstr(&cred->job_licenses, buffer);
 
 		safe_unpack32(&cred->job_mem_alloc_size, buffer);
 		if (cred->job_mem_alloc_size) {
@@ -1835,6 +1837,7 @@ static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		pack32(cred->job_nhosts, buffer);
 		pack32(cred->job_ntasks, buffer);
 		packstr(cred->job_hostlist, buffer);
+		packstr(cred->job_licenses, buffer);
 		pack32(cred->job_mem_alloc_size, buffer);
 		if (cred->job_mem_alloc_size) {
 			pack64_array(cred->job_mem_alloc,

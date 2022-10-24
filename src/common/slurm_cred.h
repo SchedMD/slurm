@@ -189,6 +189,7 @@ typedef struct {
 	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
 	uint16_t  job_core_spec;	/* count of specialized cores */
 	char     *job_hostlist;		/* list of nodes allocated to JOB */
+	char *job_licenses;		/* Licenses allocated to job */
 	uint64_t *job_mem_alloc;	/* Per node allocated mem in rep.cnt. */
 	uint32_t *job_mem_alloc_rep_count;
 	uint32_t job_mem_alloc_size;	/* Size of memory arrays above */
