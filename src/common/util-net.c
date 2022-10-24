@@ -71,7 +71,6 @@ typedef struct {
 
 static list_t *nameinfo_cache = NULL;
 
-#define GETNAMEINFO_CACHE_TIMEOUT 60
 
 static int copy_hostent(const struct hostent *src, char *dst, int len);
 #ifndef NDEBUG
@@ -368,6 +367,9 @@ extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
 	char *name = NULL;
 	time_t now = 0;
 	bool new = false;
+
+	if (!slurm_conf.getnameinfo_cache_timeout)
+		return _getnameinfo(addr, addrlen);
 
 	slurm_mutex_lock(&getnameinfo_cache_lock);
 	now = time(NULL);

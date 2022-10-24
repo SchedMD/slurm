@@ -90,6 +90,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_EXT_SENSORS_TYPE    "ext_sensors/none"
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_GET_ENV_TIMEOUT     2
+#define DEFAULT_GETNAMEINFO_CACHE_TIMEOUT 60
 #define DEFAULT_GROUP_TIME          600
 #define DEFAULT_GROUP_FORCE         1	/* if set, update group membership
 					 * info even if no updates to

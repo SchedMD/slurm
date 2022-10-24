@@ -255,6 +255,8 @@ documents those changes that are of interest to users and administrators.
     for consumers of the get/print/write configuration API functions.
  -- mpi/cray_shasta - Add new PALS/PMI environment variables.
  -- Add cache around calls to getnameinfo().
+ -- Add CommunicationParameters=getnameinfo_cache_timeout to tune or disable the
+    getnameinfo cache.
 
 * Changes in Slurm 22.05.8
 ==========================

@@ -117,6 +117,9 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     This allows autofs to work with the job_container/tmpfs plugin when enabled.
  -- acct_gather.conf - Added EnergyIPMIPowerSensors=Node=DCMI and
     Node=DCMI_ENHANCED.
+ -- Add new "getnameinfo_cache_timeout=<number>" option to
+    CommunicationParameters to adjust or disable caching the results of
+    getnameinfo().
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

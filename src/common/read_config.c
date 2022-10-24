@@ -4010,6 +4010,14 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	    !(conf->conf_flags & CTL_CONF_IPV6_ENABLED))
 		fatal("Both IPv4 and IPv6 support disabled, cannot communicate");
 
+	if ((temp_str = xstrcasestr(conf->comm_params,
+				   "getnameinfo_cache_timeout="))) {
+		slurm_conf.getnameinfo_cache_timeout = atoi(temp_str + 26);
+	} else {
+		slurm_conf.getnameinfo_cache_timeout =
+			DEFAULT_GETNAMEINFO_CACHE_TIMEOUT;
+	}
+
 	if (!s_p_get_string(&conf->core_spec_plugin, "CoreSpecPlugin",
 	    hashtbl)) {
 		conf->core_spec_plugin =

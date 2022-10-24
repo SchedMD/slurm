@@ -698,6 +698,14 @@ using both IPv4 and IPv6, address family preferences will be based on your
 .IP
 
 .TP
+\fBgetnameinfo_cache_timeout\fR
+When munge is used as AuthType slurmctld makes use of getnameinfo to obtain
+the hostname from IP address stored in munge credential. This parameter controls
+the number of seconds slurmctld should keep the IP to hostname resolution. When
+set to 0 cache is disabled. The default value is 60.
+.IP
+
+.TP
 \fBkeepaliveinterval=#\fR
 Specifies the interval between keepalive probes on the socket communications
 between srun and its slurmstepd process.
