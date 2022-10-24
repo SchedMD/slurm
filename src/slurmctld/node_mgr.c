@@ -461,6 +461,7 @@ extern int load_all_node_state ( bool state_only )
 			config_record_t *config_ptr;
 			config_ptr = create_config_record();
 			config_ptr->boards = boards;
+			config_ptr->core_spec_cnt = core_spec_cnt;
 			config_ptr->cores = cores;
 			config_ptr->cpu_spec_list = xstrdup(cpu_spec_list);
 			config_ptr->cpus = cpus;
