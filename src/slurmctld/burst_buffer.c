@@ -441,6 +441,9 @@ extern char *bb_g_build_het_job_script(char *script, uint32_t het_job_offset)
 		return NULL;
 	}
 
+	if (!g_context_cnt)
+		return xstrdup(script);
+
 	START_TIMER;
 	if (bb_g_init() != SLURM_SUCCESS) {
 		END_TIMER2(__func__);
