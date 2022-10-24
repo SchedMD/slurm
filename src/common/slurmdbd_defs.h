@@ -264,6 +264,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t het_job_offset; /* Hetjob component ID, zero-origin */
 	uint32_t job_id;	/* job ID */
 	uint32_t job_state;	/* job state */
+	char *licenses; 	/* job licenses */
 	char *   mcs_label;	/* job mcs_label */
 	char *   name;		/* job name */
 	char *   nodes;		/* hosts allocated to the job */

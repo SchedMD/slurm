@@ -142,6 +142,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->constraints);
 		xfree(req->container);
 		xfree(req->env_hash);
+		xfree(req->licenses);
 		xfree(req->mcs_label);
 		xfree(req->name);
 		xfree(req->nodes);
@@ -228,6 +229,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 		req->constraints   = xstrdup(job_ptr->details->features);
 
 	req->container     = xstrdup(job_ptr->container);
+	req->licenses = xstrdup(job_ptr->licenses);
 	req->job_state     = job_ptr->job_state;
 	req->state_reason_prev = job_ptr->state_reason_prev_db;
 	req->name          = xstrdup(job_ptr->name);

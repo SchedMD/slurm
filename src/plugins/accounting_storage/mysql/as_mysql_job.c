@@ -600,6 +600,8 @@ no_rollup_change:
 			xstrcat(query, ", submit_line");
 		if (job_ptr->container)
 			xstrcat(query, ", container");
+		if (job_ptr->licenses)
+			xstrcat(query, ", licenses");
 
 		xstrfmtcat(query,
 			   ") values (%u, UNIX_TIMESTAMP(), "
@@ -658,6 +660,9 @@ no_rollup_change:
 		if (job_ptr->container)
 			xstrfmtcat(query, ", '%s'",
 				   job_ptr->container);
+		if (job_ptr->licenses)
+			xstrfmtcat(query, ", '%s'",
+				   job_ptr->licenses);
 
 		xstrfmtcat(query,
 			   ") on duplicate key update "
@@ -729,6 +734,9 @@ no_rollup_change:
 		if (job_ptr->container)
 			xstrfmtcat(query, ", container='%s'",
 				   job_ptr->container);
+		if (job_ptr->licenses)
+			xstrfmtcat(query, ", licenses='%s'",
+				   job_ptr->licenses);
 
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 	try_again:
@@ -792,6 +800,9 @@ no_rollup_change:
 		if (job_ptr->container)
 			xstrfmtcat(query, "container='%s', ",
 				   job_ptr->container);
+		if (job_ptr->licenses)
+			xstrfmtcat(query, "licenses='%s', ",
+				   job_ptr->licenses);
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', "
 			   "state=greatest(state, %u), "

@@ -1403,6 +1403,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "het_job_offset", "int unsigned not null" },
 		{ "kill_requid", "int unsigned default null" },
 		{ "state_reason_prev", "int unsigned not null" },
+		{ "licenses", "text" },
 		{ "mcs_label", "tinytext default ''" },
 		{ "mem_req", "bigint unsigned default 0 not null" },
 		{ "nodelist", "text" },

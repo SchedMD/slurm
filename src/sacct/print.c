@@ -977,6 +977,22 @@ extern void print_fields(type_t type, void *object)
 			xfree(name);
 			break;
 		}
+		case PRINT_LICENSES:
+			switch(type) {
+			case JOB:
+				tmp_char = job->licenses;
+				break;
+			case JOBSTEP:
+				break;
+			case JOBCOMP:
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_MAXDISKREAD:
 			tmp_uint64 = _get_tres_cnt(
 				type, object, TRES_FS_DISK, 0);
