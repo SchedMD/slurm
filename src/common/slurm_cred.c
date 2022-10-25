@@ -1201,7 +1201,7 @@ void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 
 slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 {
-	uint32_t     cred_uid, cred_gid, u32_ngids, len;
+	uint32_t u32_ngids, len;
 	slurm_cred_t *credential = NULL;
 	/*
 	 * The slightly confusing name is to avoid changing the entire unpack
@@ -1224,10 +1224,8 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack32(&cred_uid, buffer);
-		cred->uid = cred_uid;
-		safe_unpack32(&cred_gid, buffer);
-		cred->gid = cred_gid;
+		safe_unpack32(&cred->uid, buffer);
+		safe_unpack32(&cred->gid, buffer);
 		safe_unpackstr(&cred->pw_name, buffer);
 		safe_unpackstr(&cred->pw_gecos, buffer);
 		safe_unpackstr(&cred->pw_dir, buffer);
@@ -1335,10 +1333,8 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack32(&cred_uid, buffer);
-		cred->uid = cred_uid;
-		safe_unpack32(&cred_gid, buffer);
-		cred->gid = cred_gid;
+		safe_unpack32(&cred->uid, buffer);
+		safe_unpack32(&cred->gid, buffer);
 		safe_unpackstr_xmalloc(&cred->pw_name, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->pw_gecos, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->pw_dir, &len, buffer);
@@ -1446,10 +1442,8 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack32(&cred_uid, buffer);
-		cred->uid = cred_uid;
-		safe_unpack32(&cred_gid, buffer);
-		cred->gid = cred_gid;
+		safe_unpack32(&cred->uid, buffer);
+		safe_unpack32(&cred->gid, buffer);
 		safe_unpackstr_xmalloc(&cred->pw_name, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->pw_gecos, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->pw_dir, &len, buffer);
