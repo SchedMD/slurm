@@ -3677,16 +3677,30 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 	char *format = NULL, *format_pos = NULL;
 	local_resv_t object;
 	int i = 0;
+	int safe_attributes[] = {
+		RESV_REQ_ID,
+		RESV_REQ_ASSOCS,
+		RESV_REQ_DELETED,
+		RESV_REQ_FLAGS,
+		RESV_REQ_TRES,
+		RESV_REQ_NODES,
+		RESV_REQ_NODE_INX,
+		RESV_REQ_NAME,
+		RESV_REQ_START,
+		RESV_REQ_END,
+		RESV_REQ_UNUSED,
+		RESV_REQ_COUNT
+	};
+
 
 	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
-		     cluster_name, resv_table, resv_req_inx[0]);
-	xstrcatat(format, &format_pos, "('%s'");
-	for(i=1; i<RESV_REQ_COUNT; i++) {
-		xstrfmtcatat(insert, &insert_pos, ", %s", resv_req_inx[i]);
-		xstrcatat(format, &format_pos, ", '%s'");
+		     cluster_name, resv_table,
+		     resv_req_inx[safe_attributes[0]]);
+	for (i = 1; safe_attributes[i] < RESV_REQ_COUNT; i++) {
+		xstrfmtcatat(insert, &insert_pos, ", %s",
+			     resv_req_inx[safe_attributes[1]]);
 	}
 	xstrcatat(insert, &insert_pos, ") values ");
-	xstrcatat(format, &format_pos, ")");
 
 	for(i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_resv_t));
@@ -3699,6 +3713,13 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 
 		if (i)
 			xstrcatat(insert, &insert_pos, ", ");
+
+		xstrcatat(format, &format_pos, "('%s'");
+		for (int j = 1; safe_attributes[j] < RESV_REQ_COUNT; j++) {
+			xstrcatat(format, &format_pos, ", '%s'");
+		}
+
+		xstrcatat(format, &format_pos, ")");
 
 		xstrfmtcatat(insert, &insert_pos, format,
 			     object.id,
@@ -3714,6 +3735,9 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 			     object.unused_wall);
 
 		_free_local_resv_members(&object);
+		format_pos = NULL;
+		xfree(format);
+
 	}
 //	END_TIMER2("step query");
 //	info("resv query took %s", TIME_STR);
