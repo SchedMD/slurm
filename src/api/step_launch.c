@@ -677,7 +677,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	struct step_launch_state *sls;
 	struct timespec ts = {0, 0};
 	bool time_set = false;
-	int errnum;
+	int errnum, ret_code;
 
 	if (!ctx || (ctx->magic != STEP_CTX_MAGIC))
 		return;
@@ -787,7 +787,12 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	client_io_handler_destroy(sls->io);
 	sls->io = NULL;
 
-	sls->mpi_rc = mpi_g_client_fini(sls->mpi_state);
+	/*
+	 * Check for specific error, but keep node failure error if nothing else
+	 * happens.
+	 */
+	ret_code = mpi_g_client_fini(sls->mpi_state);
+	sls->ret_code = MAX(sls->ret_code, ret_code);
 	slurm_mutex_unlock(&sls->lock);
 }
 
@@ -1330,6 +1335,13 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 				sls->layout->tids[node_id][j]);
 		}
 	}
+
+	/*
+	 * Just mark the node failure to make srun exit code not 0 so the node
+	 * failure can be caught while executing an allocating script or a step
+	 * inside a batch job.
+	 */
+	sls->ret_code = 1;
 
 	client_io_handler_downnodes(sls->io, node_ids, num_node_ids);
 	slurm_cond_broadcast(&sls->cond);

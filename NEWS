@@ -145,6 +145,7 @@ documents those changes that are of interest to users and administrators.
  -- squeue - removed unused '%s' and 'SelectJobInfo' formats.
  -- Add purge and archive functionality for job environment and job batch script
     records.
+ -- srun - return an error if step suffers a node failure.
 
 * Changes in Slurm 22.05.7
 ==========================

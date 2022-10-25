@@ -290,8 +290,8 @@ relaunch:
 				  opt_local)) {
 		if (launch_g_step_wait(job, got_alloc, opt_local) == -1)
 			goto relaunch;
-		if (job->step_ctx->launch_state->mpi_rc > mpi_plugin_rc)
-			mpi_plugin_rc = job->step_ctx->launch_state->mpi_rc;
+		if (job->step_ctx->launch_state->ret_code > mpi_plugin_rc)
+			mpi_plugin_rc = job->step_ctx->launch_state->ret_code;
 	}
 
 	if (opts->step_mutex) {
