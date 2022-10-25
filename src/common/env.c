@@ -1242,7 +1242,14 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		env_array_append_fmt(dest, "SLURM_NPROCS", "%u",
 				     step_layout_req.num_tasks);
 	} else {
-		step_layout_req.num_tasks = num_cpus / cpus_per_task;
+		/*
+		 * Iterate over all kind of cluster nodes, and accum. the number
+		 * of tasks all the group can hold.
+		 */
+		for (int i = 0; i < batch->num_cpu_groups; i++)
+			step_layout_req.num_tasks += (batch->cpus_per_node[i] /
+						      cpus_per_task) *
+						     batch->cpu_count_reps[i];
 	}
 
 	if ((step_layout_req.node_list =
