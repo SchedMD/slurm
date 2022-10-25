@@ -190,6 +190,7 @@ typedef struct {
 	bool get_job_ptr;
 	bool have_job_lock;
 	uint32_t job_id;
+	job_record_t *job_ptr;
 	char *lua_func;
 	char **resp_msg;
 	uint32_t timeout;
@@ -874,19 +875,23 @@ static int _run_lua_script(run_lua_args_t *args)
 		if (!args->have_job_lock)
 			lock_slurmctld(job_read_lock);
 
-		job_ptr = find_job_record(args->job_id);
-		if (!job_ptr) {
-			error("Unable to find job record for JobId=%u, cannot run %s",
-			      args->job_id, args->lua_func);
-			if (args->resp_msg)
-				*args->resp_msg =
-					xstrdup_printf("Unable to find job record for JobId=%u, cannot run %s",
-						       args->job_id,
-						       args->lua_func);
-			rc = SLURM_ERROR;
-			if (!args->have_job_lock)
-				unlock_slurmctld(job_read_lock);
-			return rc;
+		if (args->job_ptr)
+			job_ptr = args->job_ptr;
+		else {
+			job_ptr = find_job_record(args->job_id);
+			if (!job_ptr) {
+				error("Unable to find job record for JobId=%u, cannot run %s",
+				      args->job_id, args->lua_func);
+				if (args->resp_msg)
+					*args->resp_msg =
+						xstrdup_printf("Unable to find job record for JobId=%u, cannot run %s",
+							       args->job_id,
+							       args->lua_func);
+				rc = SLURM_ERROR;
+				if (!args->have_job_lock)
+					unlock_slurmctld(job_read_lock);
+				return rc;
+			}
 		}
 		job_ids = list_create(NULL);
 		list_append(job_ids, &job_ptr->job_id);
