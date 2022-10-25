@@ -2707,7 +2707,10 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	memset(&run_lua_args, 0, sizeof run_lua_args);
 	run_lua_args.argc = argc;
 	run_lua_args.argv = argv;
+	run_lua_args.get_job_ptr = true;
+	run_lua_args.have_job_lock = true;
 	run_lua_args.job_id = job_ptr->job_id;
+	run_lua_args.job_ptr = job_ptr;
 	run_lua_args.lua_func = lua_func_name;
 	run_lua_args.resp_msg = &resp_msg;
 
