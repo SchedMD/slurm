@@ -98,6 +98,7 @@ typedef struct {
 	pid_t *pids;
 } foreach_pid_array_t;
 
+extern bool cgroup_p_has_feature(cgroup_ctl_feature_t f);
 extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
 			       pid_t pid, uint32_t task_id);
 
@@ -1745,26 +1746,12 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 		error("Cannot read %s/memory.events",
 		      int_cg[CG_LEVEL_STEP_USER].path);
 
-	if (common_cgroup_get_param(&int_cg[CG_LEVEL_STEP_USER],
-				    "memory.swap.events",
-				    &mem_swap_events, &sz) != SLURM_SUCCESS)
-		error("Cannot read %s/memory.swap.events",
-		      int_cg[CG_LEVEL_STEP_USER].path);
-
 	if (mem_events) {
 		if ((ptr = xstrstr(mem_events, "oom_kill "))) {
 			if (sscanf(ptr, "oom_kill %"PRIu64, &step_kills) != 1)
 				error("Cannot read step's oom_kill counter from memory.events file.");
 		}
 		xfree(mem_events);
-	}
-
-	if (mem_swap_events) {
-		if ((ptr = xstrstr(mem_swap_events, "fail "))) {
-			if (sscanf(ptr, "fail %"PRIu64, &step_swkills) != 1)
-				error("Cannot read step's fail counter from memory.swap.events file.");
-		}
-		xfree(mem_swap_events);
 	}
 
 	/* Get stats for the job */
@@ -1774,12 +1761,6 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 		error("Cannot read %s/memory.events",
 		      int_cg[CG_LEVEL_STEP_USER].path);
 
-	if (common_cgroup_get_param(&int_cg[CG_LEVEL_JOB], "memory.swap.events",
-				    &mem_swap_events, &sz) != SLURM_SUCCESS)
-		error("Cannot read %s/memory.swap.events",
-		      int_cg[CG_LEVEL_STEP_USER].path);
-
-
 	if (mem_events) {
 		if ((ptr = xstrstr(mem_events, "oom_kill "))) {
 			if (sscanf(ptr, "oom_kill %"PRIu64, &job_kills) != 1)
@@ -1788,12 +1769,39 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 		xfree(mem_events);
 	}
 
-	if (mem_swap_events) {
-		if ((ptr = xstrstr(mem_swap_events, "fail "))) {
-			if (sscanf(ptr, "fail %"PRIu64, &job_swkills) != 1)
-				error("Cannot read job's fail counter from memory.swap.events file.");
+	if (cgroup_p_has_feature(CG_MEMCG_SWAP)) {
+		/* Get latest swap stats for the step */
+		if (common_cgroup_get_param(&int_cg[CG_LEVEL_STEP_USER],
+					    "memory.swap.events",
+					    &mem_swap_events,
+					    &sz) != SLURM_SUCCESS)
+			error("Cannot read %s/memory.swap.events",
+			      int_cg[CG_LEVEL_STEP_USER].path);
+
+		if (mem_swap_events) {
+			if ((ptr = xstrstr(mem_swap_events, "fail "))) {
+				if (sscanf(ptr, "fail %"PRIu64,
+					   &step_swkills) != 1)
+					error("Cannot read step's fail counter from memory.swap.events file.");
+			}
+			xfree(mem_swap_events);
 		}
-		xfree(mem_swap_events);
+
+		/* Get swap stats for the job */
+		if (common_cgroup_get_param(&int_cg[CG_LEVEL_JOB], "memory.swap.events",
+					    &mem_swap_events,
+					    &sz) != SLURM_SUCCESS)
+			error("Cannot read %s/memory.swap.events",
+			      int_cg[CG_LEVEL_STEP_USER].path);
+
+		if (mem_swap_events) {
+			if ((ptr = xstrstr(mem_swap_events, "fail "))) {
+				if (sscanf(ptr, "fail %"PRIu64,
+					   &job_swkills) != 1)
+					error("Cannot read job's fail counter from memory.swap.events file.");
+			}
+			xfree(mem_swap_events);
+		}
 	}
 
 	/* Return stats */

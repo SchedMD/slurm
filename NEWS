@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix salloc/sbatch SLURM_TASKS_PER_NODE output environment variable when the
     number of tasks is not requested.
  -- Permit using wildcard magic cookies with X11 forwarding.
+ -- cgroup/v2 - Add check for swap when running OOM check after task
+    termination.
 
 * Changes in Slurm 22.05.5
 ==========================
