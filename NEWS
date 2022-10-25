@@ -127,6 +127,8 @@ documents those changes that are of interest to users and administrators.
  -- Permit using wildcard magic cookies with X11 forwarding.
  -- cgroup/v2 - Add check for swap when running OOM check after task
     termination.
+ -- Fix deadlock caused by race condition when disabling power save with a
+    reconfigure.
 
 * Changes in Slurm 22.05.5
 ==========================
