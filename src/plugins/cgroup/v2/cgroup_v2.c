@@ -798,6 +798,83 @@ static int _migrate_to_stepd_scope()
 	return _setup_controllers();
 }
 
+static void _get_memory_events(uint64_t *job_kills, uint64_t *step_kills)
+{
+	size_t sz;
+	char *mem_events = NULL, *ptr;
+
+	/*
+	 * memory.events:
+	 * all fields in this file are hierarchical and the file modified event
+	 * can be generated due to an event down the hierarchy. For the local
+	 * events at the cgroup level we can check memory.events.local instead.
+	 */
+
+	/* Get latest stats for the step */
+	if (common_cgroup_get_param(&int_cg[CG_LEVEL_STEP_USER],
+				    "memory.events",
+				    &mem_events, &sz) != SLURM_SUCCESS)
+		error("Cannot read %s/memory.events",
+		      int_cg[CG_LEVEL_STEP_USER].path);
+
+	if (mem_events) {
+		if ((ptr = xstrstr(mem_events, "oom_kill "))) {
+			if (sscanf(ptr, "oom_kill %"PRIu64, step_kills) != 1)
+				error("Cannot read step's oom_kill counter from memory.events file.");
+		}
+		xfree(mem_events);
+	}
+
+	/* Get stats for the job */
+	if (common_cgroup_get_param(&int_cg[CG_LEVEL_JOB],
+				    "memory.events",
+				    &mem_events, &sz) != SLURM_SUCCESS)
+		error("Cannot read %s/memory.events",
+		      int_cg[CG_LEVEL_STEP_USER].path);
+
+	if (mem_events) {
+		if ((ptr = xstrstr(mem_events, "oom_kill "))) {
+			if (sscanf(ptr, "oom_kill %"PRIu64, job_kills) != 1)
+				error("Cannot read job's oom_kill counter from memory.events file.");
+		}
+		xfree(mem_events);
+	}
+}
+
+static void _get_swap_events(uint64_t *job_swkills, uint64_t *step_swkills)
+{
+	size_t sz;
+	char *mem_swap_events = NULL, *ptr;
+
+	/* Get latest swap stats for the step */
+	if (common_cgroup_get_param(&int_cg[CG_LEVEL_STEP_USER],
+				    "memory.swap.events",
+				    &mem_swap_events, &sz) != SLURM_SUCCESS)
+		error("Cannot read %s/memory.swap.events",
+		      int_cg[CG_LEVEL_STEP_USER].path);
+
+	if (mem_swap_events) {
+		if ((ptr = xstrstr(mem_swap_events, "fail "))) {
+			if (sscanf(ptr, "fail %"PRIu64, step_swkills) != 1)
+				error("Cannot read step's fail counter from memory.swap.events file.");
+		}
+		xfree(mem_swap_events);
+	}
+
+	/* Get swap stats for the job */
+	if (common_cgroup_get_param(&int_cg[CG_LEVEL_JOB], "memory.swap.events",
+				    &mem_swap_events, &sz) != SLURM_SUCCESS)
+		error("Cannot read %s/memory.swap.events",
+		      int_cg[CG_LEVEL_STEP_USER].path);
+
+	if (mem_swap_events) {
+		if ((ptr = xstrstr(mem_swap_events, "fail "))) {
+			if (sscanf(ptr, "fail %"PRIu64, job_swkills) != 1)
+				error("Cannot read job's fail counter from memory.swap.events file.");
+		}
+		xfree(mem_swap_events);
+	}
+}
 
 /*
  * Initialize the cgroup plugin. Slurmd MUST be started by systemd and the
@@ -1733,89 +1810,21 @@ extern int cgroup_p_step_start_oom_mgr()
 extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
 {
 	cgroup_oom_t *oom_step_results = NULL;
-	char *mem_events = NULL, *mem_swap_events = NULL, *ptr;
-	size_t sz;
 	uint64_t job_kills = 0, step_kills = 0;
 	uint64_t job_swkills = 0, step_swkills = 0;
 
 	if (!bit_test(int_cg_ns.avail_controllers, CG_MEMORY))
 		return NULL;
 
-	/*
-	 * memory.events:
-	 * all fields in this file are hierarchical and the file modified event
-	 * can be generated due to an event down the hierarchy. For the local
-	 * events at the cgroup level we can check memory.events.local instead.
-	 */
+	_get_memory_events(&job_kills, &step_kills);
 
-	/* Get latest stats for the step */
-	if (common_cgroup_get_param(&int_cg[CG_LEVEL_STEP_USER],
-				    "memory.events",
-				    &mem_events, &sz) != SLURM_SUCCESS)
-		error("Cannot read %s/memory.events",
-		      int_cg[CG_LEVEL_STEP_USER].path);
-
-	if (mem_events) {
-		if ((ptr = xstrstr(mem_events, "oom_kill "))) {
-			if (sscanf(ptr, "oom_kill %"PRIu64, &step_kills) != 1)
-				error("Cannot read step's oom_kill counter from memory.events file.");
-		}
-		xfree(mem_events);
-	}
-
-	/* Get stats for the job */
-	if (common_cgroup_get_param(&int_cg[CG_LEVEL_JOB],
-				    "memory.events",
-				    &mem_events, &sz) != SLURM_SUCCESS)
-		error("Cannot read %s/memory.events",
-		      int_cg[CG_LEVEL_STEP_USER].path);
-
-	if (mem_events) {
-		if ((ptr = xstrstr(mem_events, "oom_kill "))) {
-			if (sscanf(ptr, "oom_kill %"PRIu64, &job_kills) != 1)
-				error("Cannot read job's oom_kill counter from memory.events file.");
-		}
-		xfree(mem_events);
-	}
-
-	if (cgroup_p_has_feature(CG_MEMCG_SWAP)) {
-		/* Get latest swap stats for the step */
-		if (common_cgroup_get_param(&int_cg[CG_LEVEL_STEP_USER],
-					    "memory.swap.events",
-					    &mem_swap_events,
-					    &sz) != SLURM_SUCCESS)
-			error("Cannot read %s/memory.swap.events",
-			      int_cg[CG_LEVEL_STEP_USER].path);
-
-		if (mem_swap_events) {
-			if ((ptr = xstrstr(mem_swap_events, "fail "))) {
-				if (sscanf(ptr, "fail %"PRIu64,
-					   &step_swkills) != 1)
-					error("Cannot read step's fail counter from memory.swap.events file.");
-			}
-			xfree(mem_swap_events);
-		}
-
-		/* Get swap stats for the job */
-		if (common_cgroup_get_param(&int_cg[CG_LEVEL_JOB], "memory.swap.events",
-					    &mem_swap_events,
-					    &sz) != SLURM_SUCCESS)
-			error("Cannot read %s/memory.swap.events",
-			      int_cg[CG_LEVEL_STEP_USER].path);
-
-		if (mem_swap_events) {
-			if ((ptr = xstrstr(mem_swap_events, "fail "))) {
-				if (sscanf(ptr, "fail %"PRIu64,
-					   &job_swkills) != 1)
-					error("Cannot read job's fail counter from memory.swap.events file.");
-			}
-			xfree(mem_swap_events);
-		}
-	}
+	if (cgroup_p_has_feature(CG_MEMCG_SWAP))
+		_get_swap_events(&job_swkills, &step_swkills);
 
 	/* Return stats */
 	log_flag(CGROUP, "OOM detected %"PRIu64" job and %"PRIu64" step kills",
 		 job_kills, step_kills);
+
 	oom_step_results = xmalloc(sizeof(*oom_step_results));
 	oom_step_results->job_mem_failcnt = job_kills;
 	oom_step_results->job_memsw_failcnt = job_swkills;
