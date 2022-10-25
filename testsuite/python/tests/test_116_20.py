@@ -13,16 +13,16 @@ def setup():
 
 
 def test_slurmdDebug():
-    # Test error level
-    error = atf.run_command_error('srun --slurmd-debug=error true')
-    assert re.search(r'debug.*?verbose', error) is not None
-
     # Test info level
-    error = atf.run_command_error('srun --slurmd-debug=info true')
-    assert re.search(r'debug.*?debug', error) is not None
-    assert re.search(r'debug:', error) is not None
+    error = atf.run_command_error('srun --slurmd-debug=info true', user=atf.properties['slurm-user'], fatal=True)
+    assert re.search(r'debug levels are stderr=', error) is None
 
     # Test verbose level
-    error = atf.run_command_error('srun --slurmd-debug=verbose true')
-    assert re.search(r'debug.*?debug2', error) is not None
-    assert re.search(r'debug2:', error) is not None
+    error = atf.run_command_error('srun --slurmd-debug=verbose true', user=atf.properties['slurm-user'], fatal=True)
+    assert re.search(r"debug levels are stderr='verbose'", error) is not None
+    assert re.search(r'starting 1 task', error) is not None
+
+    # Test debug level
+    error = atf.run_command_error('srun --slurmd-debug=debug true', user=atf.properties['slurm-user'], fatal=True)
+    assert re.search(r"debug levels are stderr='debug'", error) is not None
+    assert re.search(r'debug:', error) is not None
