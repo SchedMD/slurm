@@ -1301,7 +1301,7 @@ def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
                 remainder_node_expression = node_list_to_range(node_list)
                 remainder_node_line = f"NodeName={remainder_node_expression}"
                 if node_index < len(port_list):
-                    port_list.pop(node_index, None)
+                    port_list.pop(node_index)
                 if port_list:
                     remainder_port_expression = list_to_range(port_list)
                     remainder_node_line += f" Port={remainder_port_expression}"
