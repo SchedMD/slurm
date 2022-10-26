@@ -142,6 +142,19 @@ extern int gres_p_node_config_load(List gres_conf_list,
 	return rc;
 }
 
+static void _set_shard_env(char ***env_ptr, uint64_t gres_per_node,
+			   gres_internal_flags_t flags)
+{
+	if (gres_per_node) {
+		char *gpus_on_node = xstrdup_printf("%"PRIu64, gres_per_node);
+		env_array_overwrite(env_ptr, "SLURM_SHARDS_ON_NODE",
+				    gpus_on_node);
+		xfree(gpus_on_node);
+	} else if (!(flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
+		unsetenvp(*env_ptr, "SLURM_SHARDS_ON_NODE");
+	}
+}
+
 /*
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job's GRES state.
@@ -165,6 +178,7 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 	gres_common_gpu_set_env(job_env_ptr, gres_bit_alloc, NULL,
 				&already_seen, &local_inx, false, true, flags,
 				node_flags, gres_devices);
+	_set_shard_env(job_env_ptr, gres_per_node, flags);
 }
 
 /*
@@ -182,6 +196,7 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 	gres_common_gpu_set_env(step_env_ptr, gres_bit_alloc, NULL,
 				&already_seen, &local_inx, false, false, flags,
 				node_flags, gres_devices);
+	_set_shard_env(step_env_ptr, gres_per_node, flags);
 }
 
 /*
@@ -200,6 +215,7 @@ extern void gres_p_task_set_env(char ***step_env_ptr,
 	gres_common_gpu_set_env(step_env_ptr, gres_bit_alloc, usable_gres,
 				&already_seen, &local_inx, true, false, flags,
 				node_flags, gres_devices);
+	_set_shard_env(step_env_ptr, gres_per_node, flags);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
