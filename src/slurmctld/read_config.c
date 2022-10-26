@@ -3104,8 +3104,21 @@ static void _restore_job_accounting(void)
 				job_claim_resv(job_ptr);
 			} else if (IS_JOB_PENDING(job_ptr) &&
 				   job_ptr->details &&
-				   job_ptr->details->accrue_time)
+				   job_ptr->details->accrue_time) {
+				/*
+				 * accrue usage was cleared above with
+				 * assoc_mgr_clear_used_info(). Clear accrue
+				 * time so that _handle_add_accrue() will add
+				 * the usage back.
+				 */
+				time_t save_accrue_time =
+					job_ptr->details->accrue_time;
+				job_ptr->details->accrue_time = 0;
 				acct_policy_add_accrue_time(job_ptr, false);
+				if (job_ptr->details->accrue_time)
+					job_ptr->details->accrue_time =
+						save_accrue_time;
+			}
 		}
 
 		license_list = license_validate(job_ptr->licenses, false, false,

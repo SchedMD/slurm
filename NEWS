@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
     allocation contains more cores than required for step.
  -- gpu/nvml - Fix MIG minor number generation when GPU minor number
     (/dev/nvidia[minor_number]) and index (as seen in nvidia-smi) do not match.
+ -- Fix accrue time underflow errors after slurmctld reconfig or restart.
 
 * Changes in Slurm 22.05.5
 ==========================
