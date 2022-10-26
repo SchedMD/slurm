@@ -56,6 +56,7 @@
 #include "src/common/log.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/track_script.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -598,7 +599,9 @@ rwfail:
  * Return the exit code of the script.
  */
 static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
-			  uint32_t argc, char **argv, char **resp_msg,
+			  uint32_t argc, char **argv,
+			  run_script_msg_t *script_msg,
+			  char **resp_msg,
 			  bool *track_script_signalled)
 {
 	int pfd[2] = {-1, -1};
@@ -606,11 +609,34 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 	int status = 0;
 	char *resp = NULL;
 	pid_t cpid;
+	job_info_msg_t *job_info = NULL;
 
 	xassert(resp_msg);
 	xassert(track_script_signalled);
 
 	*track_script_signalled = false;
+
+	if (script_msg->extra_buf_size) {
+		buf_t *extra_buf;
+		slurm_msg_t *extra_msg = xmalloc(sizeof *extra_msg);
+
+		slurm_msg_t_init(extra_msg);
+		extra_msg->protocol_version = SLURM_PROTOCOL_VERSION;
+		extra_msg->msg_type = RESPONSE_JOB_INFO;
+		extra_buf = create_buf(script_msg->extra_buf,
+				       script_msg->extra_buf_size);
+		unpack_msg(extra_msg, extra_buf);
+		job_info = extra_msg->data;
+		extra_msg->data = NULL;
+
+		/*
+		 * create_buf() does not duplicate the data, just points to it.
+		 * So just NULL it out here. It will get free'd later.
+		 */
+		extra_buf->head = NULL;
+		FREE_NULL_BUFFER(extra_buf);
+		slurm_free_msg(extra_msg);
+	}
 
 	if (pipe(pfd) != 0) {
 		*resp_msg = xstrdup_printf("pipe(): %m");
@@ -618,6 +644,7 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 		      __func__, script_func, job_id, *resp_msg);
 		return 127;
 	}
+
 
 	cpid = fork();
 	if (cpid < 0) { /* fork() failed */
@@ -722,6 +749,7 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 		*resp_msg = resp;
 	else
 		xfree(resp);
+	slurm_free_job_info_msg(job_info);
 
 	return status;
 }
@@ -770,7 +798,9 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 		status = _run_bb_script(script_msg->script_name,
 					script_msg->job_id,
 					script_msg->timeout, script_msg->argc,
-					script_msg->argv, &resp_msg,
+					script_msg->argv,
+					script_msg,
+					&resp_msg,
 					&signalled);
 		break;
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
@@ -1251,6 +1281,7 @@ extern void slurmscriptd_run_power(char *script_path, char *hosts,
 
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				   uint32_t argc, char **argv, uint32_t timeout,
+				   char *job_buf, int job_buf_size,
 				   char **resp, bool *track_script_signalled)
 {
 	int status, rc;
@@ -1262,6 +1293,8 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 	run_script_msg.argc = argc;
 	run_script_msg.argv = argv;
 	run_script_msg.env = NULL;
+	run_script_msg.extra_buf = job_buf;
+	run_script_msg.extra_buf_size = job_buf_size;
 	run_script_msg.job_id = job_id;
 	run_script_msg.script_name = function; /* Shallow copy, do not free */
 	run_script_msg.script_path = NULL;

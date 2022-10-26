@@ -77,6 +77,7 @@ extern void slurmscriptd_reconfig(void);
  */
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				   uint32_t argc, char **argv, uint32_t timeout,
+				   char *job_buf, int job_buf_size,
 				   char **resp, bool *track_script_signalled);
 
 extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,

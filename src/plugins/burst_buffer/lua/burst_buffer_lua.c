@@ -186,6 +186,8 @@ typedef struct {
 typedef struct {
 	uint32_t argc;
 	char **argv;
+	bool get_job_ptr;
+	bool have_job_lock;
 	uint32_t job_id;
 	char *lua_func;
 	char **resp_msg;
@@ -422,20 +424,61 @@ static int _start_lua_script(char *func, uint32_t job_id, uint32_t argc,
 static int _run_lua_script(run_lua_args_t *args)
 {
 	int rc;
+	int job_buf_size = 0;
+	char *job_buf = NULL;
+	List job_ids = NULL;
+	job_record_t *job_ptr;
+	slurmctld_lock_t job_read_lock = {
+		.conf = READ_LOCK, .job = READ_LOCK,
+	};
+
+	if (args->get_job_ptr) {
+		if (!args->have_job_lock)
+			lock_slurmctld(job_read_lock);
+
+		job_ptr = find_job_record(args->job_id);
+		if (!job_ptr) {
+			error("Unable to find job record for JobId=%u, cannot run %s",
+			      args->job_id, args->lua_func);
+			if (args->resp_msg)
+				*args->resp_msg =
+					xstrdup_printf("Unable to find job record for JobId=%u, cannot run %s",
+						       args->job_id,
+						       args->lua_func);
+			rc = SLURM_ERROR;
+			if (!args->have_job_lock)
+				unlock_slurmctld(job_read_lock);
+			return rc;
+		}
+		job_ids = list_create(NULL);
+		list_append(job_ids, &job_ptr->job_id);
+		pack_spec_jobs(&job_buf, &job_buf_size, job_ids, SHOW_DETAIL,
+			       slurm_conf.slurm_user_id, NO_VAL,
+			       SLURM_PROTOCOL_VERSION);
+
+		if (!args->have_job_lock)
+			unlock_slurmctld(job_read_lock);
+	}
 
 	_incr_lua_thread_cnt();
-	if (args->with_scriptd)
+	if (args->with_scriptd) {
 		rc = slurmscriptd_run_bb_lua(args->job_id,
 					     args->lua_func,
 					     args->argc,
 					     args->argv,
 					     args->timeout,
+					     job_buf,
+					     job_buf_size,
 					     args->resp_msg,
 					     args->track_script_signal);
-	else
+	} else {
 		rc = _start_lua_script(args->lua_func, args->job_id, args->argc,
 				       args->argv, args->resp_msg);
+	}
 	_decr_lua_thread_cnt();
+
+	FREE_NULL_LIST(job_ids);
+	xfree(job_buf);
 
 	return rc;
 }
