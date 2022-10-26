@@ -113,8 +113,8 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
 extern int init(void)
 {
-	if (!dlopen("librocm_smi64.so", RTLD_NOW | RTLD_GLOBAL))
-		fatal("RSMI configured, but wasn't found.");
+	if (!dlopen(AMD_RSMI_LIB, RTLD_NOW | RTLD_GLOBAL))
+		info("Configured with rsmi, but that lib wasn't found.");
 
 	rsmi_init(0);
 

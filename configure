@@ -23559,6 +23559,9 @@ fi
 
 printf "%s\n" "#define HAVE_RSMI 1" >>confdefs.h
 
+
+printf "%s\n" "#define AMD_RSMI_LIB \"$_x_ac_rsmi_dir/lib/librocm_smi64.so\"" >>confdefs.h
+
           break;
         fi
       fi
