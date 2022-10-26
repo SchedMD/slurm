@@ -91,9 +91,8 @@ extern void print_gres_list_parsable(List gres_list);
  * Set the appropriate env variables for all gpu like gres.
  */
 extern void gres_common_gpu_set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
-				    bitstr_t *usable_gres, uint64_t gres_cnt,
-				    bool *already_seen, int *local_inx,
-				    bool is_task, bool is_job,
+				    bitstr_t *usable_gres, bool *already_seen,
+				    int *local_inx, bool is_task, bool is_job,
 				    gres_internal_flags_t flags,
 				    uint32_t gres_conf_flags,
 				    List gres_devices);

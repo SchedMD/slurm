@@ -166,8 +166,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	}
 
 	gres_common_gpu_set_env(env_ptr, gres_bit_alloc,
-				usable_gres, gres_per_node,
-				already_seen, local_inx,
+				usable_gres, already_seen, local_inx,
 				is_task, is_job, flags, GRES_CONF_ENV_NVML,
 				gres_devices);
 

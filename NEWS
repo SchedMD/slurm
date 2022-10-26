@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
     altering partition node lists with scontrol.
  -- jobcomp/elasticsearch - fix data_t memory leak after serialization.
  -- Fix issue where '*' wasn't accepted in gpu/cpu bind.
+ -- Fix SLURM_GPUS_ON_NODE for shared GPU gres (MPS, shards).
 
 * Changes in Slurm 22.05.5
 ==========================

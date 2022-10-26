@@ -884,7 +884,7 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 	int local_inx = 0;
 	bool already_seen = false;
 
-	gres_common_gpu_set_env(job_env_ptr, gres_bit_alloc, NULL, gres_cnt,
+	gres_common_gpu_set_env(job_env_ptr, gres_bit_alloc, NULL,
 				&already_seen, &local_inx, false, true, flags,
 				node_flags, gres_devices);
 }
@@ -901,7 +901,7 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 	static int local_inx = 0;
 	static bool already_seen = false;
 
-	gres_common_gpu_set_env(step_env_ptr, gres_bit_alloc, NULL, gres_cnt,
+	gres_common_gpu_set_env(step_env_ptr, gres_bit_alloc, NULL,
 				&already_seen, &local_inx, false, false, flags,
 				node_flags, gres_devices);
 }
@@ -920,7 +920,7 @@ extern void gres_p_task_set_env(char ***step_env_ptr,
 	static bool already_seen = false;
 
 	gres_common_gpu_set_env(
-		step_env_ptr, gres_bit_alloc, usable_gres, gres_cnt,
+		step_env_ptr, gres_bit_alloc, usable_gres,
 		&already_seen, &local_inx, true, false, flags,
 		node_flags, gres_devices);
 }
