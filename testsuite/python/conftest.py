@@ -87,27 +87,34 @@ def module_setup(request, tmp_path_factory):
 
 def module_teardown():
 
+    failures = []
+
     # Cancel any jobs that were submitted via submit_job
     if atf.properties['jobs-submitted']:
-        atf.cancel_all_jobs(quiet=True)
+        if not atf.cancel_all_jobs(quiet=True):
+            failures.append("Not all jobs were successsfully cancelled")
 
     if atf.properties['auto-config']:
 
-        # Stop slurm if we started it
+        # Stop Slurm if we started it
         if atf.properties['slurm-started'] == True:
-            atf.stop_slurm(quiet=True)
+            if not atf.stop_slurm(fatal=False, quiet=True):
+                failures.append("Not all Slurm daemons were successfully stopped")
 
         # Restore any backed up configuration files
         for config in set(atf.properties['configurations-modified']):
             atf.restore_config_file(config)
 
-        # Restore the slurm database if modified
+        # Restore the Slurm database if modified
         if atf.properties['accounting-database-modified']:
             atf.restore_accounting_database()
 
     # Restore the prior environment
     os.environ.clear()
     os.environ.update(atf.properties['orig-environment'])
+
+    if failures:
+        pytest.fail(failures[0])
 
 
 @pytest.fixture(scope="function", autouse=True)
