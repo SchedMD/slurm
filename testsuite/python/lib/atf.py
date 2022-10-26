@@ -233,6 +233,9 @@ def repeat_until(callable, condition, timeout=default_polling_timeout, poll_inte
             depends on the timeout used, but varies between .1 and 1 seconds.
         fatal (boolean): If True, a timeout will result in the test failing.
 
+    Returns:
+        True if the condition is met by the timeout, False otherwise.
+
     Example:
         >>> repeat_until(lambda : random.randint(1,10), lambda n: n == 5, timeout=30, poll_interval=1)
         True
@@ -256,6 +259,7 @@ def repeat_until(callable, condition, timeout=default_polling_timeout, poll_inte
     if fatal:
         pytest.fail(f"Condition was not met within the {timeout} second timeout")
     else:
+        logging.warning(f"Condition was not met within the {timeout} second timeout")
         return False
 
 
