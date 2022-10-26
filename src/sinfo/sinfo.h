@@ -105,6 +105,7 @@ typedef struct {
 	char *extra;
 	char *reason;
 	time_t reason_time;
+	char *resv_name;
 	uint32_t reason_uid;
 	char *version;
 
@@ -148,6 +149,7 @@ struct sinfo_match_flags {
 	bool priority_tier_flag;
 	bool comment_flag;
 	bool reason_flag;
+	bool resv_name_flag;
 	bool root_flag;
 	bool oversubscribe_flag;
 	bool state_flag;

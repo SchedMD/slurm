@@ -862,6 +862,11 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		return false;
 	}
 
+	if (sinfo_ptr->nodes &&
+	    params.match_flags.resv_name_flag &&
+	    xstrcmp(node_ptr->resv_name, sinfo_ptr->resv_name))
+		return false;
+
 	if (params.match_flags.state_flag) {
 		char *state1, *state2;
 		state1 = node_state_string(node_ptr->node_state);
@@ -1040,6 +1045,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->reason     = node_ptr->reason;
 		sinfo_ptr->reason_time= node_ptr->reason_time;
 		sinfo_ptr->reason_uid = node_ptr->reason_uid;
+		sinfo_ptr->resv_name  = node_ptr->resv_name;
 		sinfo_ptr->min_cpus    = node_ptr->cpus;
 		sinfo_ptr->max_cpus    = node_ptr->cpus;
 		sinfo_ptr->min_sockets = node_ptr->sockets;

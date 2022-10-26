@@ -74,7 +74,7 @@ options are:
 
 .TP
 .I "\-\-long"
-"%#P %.5a %.10l %.10s %.4r %.8h %.10g %.6D %.11T %N"
+"%#P %.5a %.10l %.10s %.4r %.8h %.10g %.6D %.11T %.11i %N"
 .IP
 
 .TP
@@ -223,6 +223,11 @@ Print the OverSubscribe setting for the partition.
 .TP
 \fB%H\fR
 Print the timestamp of the reason a node is unavailable.
+.IP
+
+.TP
+\fB%i\fR
+If a node is in an advanced reservation print the name of that reservation.
 .IP
 
 .TP

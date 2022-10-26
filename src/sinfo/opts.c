@@ -367,13 +367,13 @@ extern void parse_command_line(int argc, char **argv)
 			long_form = true;
 			params.part_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
-				xstrdup("partition:9 ,cluster:8 ,available:.5 ,time:.10 ,size:.10 ,root:.4 ,oversubscribe:.8 ,groups:.10 ,nodes:.6 ,statelong:.11 ,nodelist:0") :
+				xstrdup("partition:9 ,cluster:8 ,available:.5 ,time:.10 ,size:.10 ,root:.4 ,oversubscribe:.8 ,groups:.10 ,nodes:.6 ,statelong:.11 ,reservation:.11 ,nodelist:0") :
 				xstrdup("partition:9 ,cluster:8 ,available:.5 ,time:.10 ,nodes:.6 ,statecompact:.6 ,nodelist:0");
 		} else {
 			long_form = true;
 			params.part_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
-				xstrdup("partition:9 ,available:.5 ,time:.10 ,size:.10 ,root:.4 ,oversubscribe:.8 ,groups:.10 ,nodes:.6 ,statelong:.11 ,nodelist:0") :
+				xstrdup("partition:9 ,available:.5 ,time:.10 ,size:.10 ,root:.4 ,oversubscribe:.8 ,groups:.10 ,nodes:.6 ,statelong:.11 ,reservation:.11 ,nodelist:0") :
 				xstrdup("partition:9 ,available:.5 ,time:.10 ,nodes:.6 ,statecompact:.6 ,nodelist:0");
 		}
 	}
@@ -759,6 +759,12 @@ _parse_format( char* format )
 					      field_size,
 					      right_justify,
 					      suffix );
+		} else if (field[0] == 'i') {
+			params.match_flags.resv_name_flag = true;
+			format_add_resv_name(params.format_list,
+					     field_size,
+					     right_justify,
+					     suffix);
 		} else if (field[0] == 'I') {
 			params.match_flags.priority_job_factor_flag = true;
 			format_add_priority_job_factor(params.format_list,
@@ -1145,6 +1151,12 @@ static int _parse_long_format (char* format_long)
 					   field_size,
 					   right_justify,
 					   suffix );
+		} else if (!xstrcasecmp(token, "reservation")) {
+			params.match_flags.resv_name_flag = true;
+			format_add_resv_name(params.format_list,
+					     field_size,
+					     right_justify,
+					     suffix);
 		} else if (!xstrcasecmp(token, "root")) {
 			params.match_flags.root_flag = true;
 			format_add_root( params.format_list,
@@ -1409,6 +1421,8 @@ void _print_options( void )
 			params.match_flags.reason_user_flag ?  "true" : "false");
 	printf("reservation_flag = %s\n", params.reservation_flag ?
 			"true" : "false");
+	printf("resv_name_flag   = %s\n", params.match_flags.resv_name_flag ?
+	       "true" : "false");
 	printf("root_flag       = %s\n", params.match_flags.root_flag ?
 			"true" : "false");
 	printf("oversubscribe_flag      = %s\n",

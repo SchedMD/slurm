@@ -6955,6 +6955,7 @@ extern int set_node_maint_mode(bool reset_all)
 		flags |= NODE_STATE_MAINT;
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		node_ptr->node_state &= (~flags);
+		xfree(node_ptr->resv_name);
 	}
 
 	if (!reset_all) {
@@ -7182,6 +7183,9 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 				node_ptr, now, NULL,
 				slurm_conf.slurm_user_id);
 		}
+		xfree(node_ptr->resv_name);
+		if (IS_NODE_RES(node_ptr))
+			node_ptr->resv_name = xstrdup(resv_ptr->name);
 	}
 	FREE_NULL_BITMAP(maint_node_bitmap);
 }

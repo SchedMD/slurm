@@ -160,6 +160,8 @@ struct node_record {
 					 * no reason is set. */
 	uint16_t resume_timeout; 	/* time required in order to perform a
 					 * node resume operation */
+	char *resv_name;                /* If node is in a reservation this is
+					 * the name of the reservation */
 	uint16_t run_job_cnt;		/* count of jobs running on node */
 	uint64_t sched_weight;		/* Node's weight for scheduling
 					 * purposes. For cons_tres use */

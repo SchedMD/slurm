@@ -983,6 +983,21 @@ int _print_reason(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_resv_name(sinfo_data_t *sinfo_data, int width,
+		     bool right_justify, char *suffix)
+{
+	if (sinfo_data) {
+		char *resv_name = sinfo_data->resv_name ?
+			sinfo_data->resv_name : "";
+		_print_str(resv_name, width, right_justify, true);
+	} else
+		_print_str("RESERVATION", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_root(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {

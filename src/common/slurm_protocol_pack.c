@@ -1761,6 +1761,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 			goto unpack_error;
 
 		safe_unpackstr(&node->tres_fmt_str, buffer);
+		safe_unpackstr(&node->resv_name, buffer);
 	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&node->name, buffer);
 		safe_unpackstr(&node->node_hostname, buffer);

@@ -106,6 +106,8 @@ documents those changes that are of interest to users and administrators.
  -- salloc/sbatch/srun check and abort if ntasks-per-core > threads-per-core.
  -- burst_buffer/lua - fix building heterogeneous job scripts where the
     directive is not the default "BB_LUA".
+ -- If a node is in a reservation add the reservation name to it for
+    scontrol/sinfo/sview.
 
 * Changes in Slurm 22.05.6
 ==========================

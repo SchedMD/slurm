@@ -2263,6 +2263,8 @@ typedef struct node_info {
 				 * no reason is set. */
 	uint32_t reason_uid;   	/* User that set the reason, ignore if
 				 * no reason is set. */
+	char *resv_name;        /* If node is in a reservation this is
+				 * the name of the reservation */
 	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
 						  * use
 						  * slurm_get_select_nodeinfo()

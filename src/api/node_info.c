@@ -473,6 +473,12 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		xstrfmtcat(out, "Extra=%s", node_ptr->extra);
 	}
 
+	/****** Line (optional) ******/
+	if (node_ptr->resv_name) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "ReservationName=%s", node_ptr->resv_name);
+	}
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
