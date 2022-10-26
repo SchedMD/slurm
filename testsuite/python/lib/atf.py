@@ -1074,10 +1074,7 @@ def cancel_all_jobs(timeout=default_polling_timeout, poll_interval=.1, fatal=Fal
 
     user_name = get_user_name()
 
-    results = run_command(f"scancel -u {user_name}", quiet=quiet)
-    # Have to account for het scancel bug until bug 11806 is fixed
-    if results['exit_code'] != 0 and results['exit_code'] != 60:
-        pytest.fail(f"Failure cancelling jobs: {results['stderr']}")
+    run_command(f"scancel -u {user_name}", fatal=fatal, quiet=quiet)
 
     return repeat_command_until(f"squeue -u {user_name} --noheader", lambda results: results['stdout'] == '', timeout=timeout, poll_interval=poll_interval, fatal=fatal, quiet=quiet)
 
