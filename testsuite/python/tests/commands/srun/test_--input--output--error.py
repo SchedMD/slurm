@@ -5,10 +5,12 @@ import atf
 import pytest
 import re
 
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_slurm_running()
+
 
 def test_input_ouput_error(tmp_path):
     """Verify srun -input,--output, and --error options work"""

@@ -7,11 +7,13 @@ import re
 
 node_num = 4
 
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_slurm_running()
     atf.require_nodes(node_num)
+    atf.require_slurm_running()
+
 
 def test_threads():
     """Verify a job executes with various launch thread fanouts with --threads option"""

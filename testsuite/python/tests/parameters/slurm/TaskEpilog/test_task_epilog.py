@@ -6,11 +6,13 @@ import os
 import pytest
 import shutil
 
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_auto_config("wants to set the TaskEpilog")
     atf.require_slurm_running()
+
 
 def test_task_epilog(tmp_path):
     """Test TaskEpilog"""

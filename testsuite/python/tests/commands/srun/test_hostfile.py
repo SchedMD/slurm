@@ -9,6 +9,14 @@ import os
 node_num = 3
 
 
+# Setup
+@pytest.fixture(scope="module", autouse=True)
+def setup():
+    atf.require_nodes(node_num + 2)
+    atf.require_config_parameter('FrontendName', None)
+    atf.require_slurm_running()
+
+
 def write_host_file(matchs):
     host_file = atf.module_tmp_path / 'host_file'
     hf = open(host_file, 'w')
@@ -16,14 +24,6 @@ def write_host_file(matchs):
         hf.write(line[1] + '\n')
     hf.seek(0)
     hf.close
-
-
-# Setup
-@pytest.fixture(scope="module", autouse=True)
-def setup():
-    atf.require_nodes(node_num + 2)
-    atf.require_config_parameter('FrontendName', None)
-    atf.require_slurm_running()
 
 
 def test_hostfile():

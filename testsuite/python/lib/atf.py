@@ -515,6 +515,9 @@ def require_slurm_running():
 
     In local-config mode, the test is skipped if slurm is not running.
     In auto-config mode, slurm is started if necessary.
+
+    In order to avoid multiple restarts of Slurm (in auto-config), this function
+    should be called at the end of the setup preconditions.
     """
 
     global nodes

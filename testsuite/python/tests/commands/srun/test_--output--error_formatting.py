@@ -11,11 +11,13 @@ ERROR_TYPE = "error"
 OUTPUT_TYPE = "output"
 node_count = 4
 
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_nodes(node_count)
     atf.require_slurm_running()
+
 
 class FPC:
     def __init__(self,tmp_path):
@@ -42,6 +44,7 @@ class FPC:
     # usful when you only have 1 file in tmp_path
     def get_tmp_file(self):
         return os.listdir(self.tmp_path)[0]
+
 
 def test_output_error_formatting(tmp_path):
     """Verify srun stdout/err file name formatting (--output and --error options)."""

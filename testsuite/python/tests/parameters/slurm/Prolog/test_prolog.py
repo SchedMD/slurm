@@ -5,11 +5,13 @@ import atf
 import pytest
 import re
 
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_auto_config("wants to set the Prolog")
     atf.require_slurm_running()
+
 
 def test_prolog_success(tmp_path):
     """Test successful exit"""

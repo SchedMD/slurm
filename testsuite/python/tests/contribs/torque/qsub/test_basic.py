@@ -6,12 +6,14 @@ import pytest
 import re
 import shutil
 
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_slurm_running()
     if shutil.which('qsub') is None:
         pytest.skip("This test requires the contribs to be built and for qsub to be in your path", allow_module_level=True)
+
 
 def test_output(tmp_path):
     """Verify that qsub -o and -e results in creation of output and error files"""
