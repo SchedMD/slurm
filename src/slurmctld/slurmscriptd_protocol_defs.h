@@ -76,6 +76,8 @@ typedef struct {
 	uint32_t argc;
 	char **argv;
 	char **env;
+	char *extra_buf;
+	uint32_t extra_buf_size;
 	uint32_t job_id;
 	char *script_name;
 	char *script_path;

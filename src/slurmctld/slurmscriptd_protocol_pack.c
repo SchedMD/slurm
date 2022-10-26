@@ -63,6 +63,9 @@ static void _pack_run_script(run_script_msg_t *script_msg, buf_t *buffer)
 {
 	packstr_array(script_msg->argv, script_msg->argc, buffer);
 	_pack_env(script_msg->env, buffer);
+	/* Use packmem for extra_buf - treat it as data, not as a string */
+	pack32(script_msg->extra_buf_size, buffer);
+	packmem(script_msg->extra_buf, script_msg->extra_buf_size, buffer);
 	pack32(script_msg->job_id, buffer);
 	packstr(script_msg->script_name, buffer);
 	packstr(script_msg->script_path, buffer);
@@ -82,6 +85,9 @@ static int _unpack_run_script(run_script_msg_t **msg, buf_t *buffer)
 
 	safe_unpackstr_array(&script_msg->argv, &script_msg->argc, buffer);
 	safe_unpackstr_array(&script_msg->env, &tmp32, buffer);
+	safe_unpack32(&script_msg->extra_buf_size, buffer);
+	safe_unpackmem_xmalloc(&script_msg->extra_buf,
+			       &script_msg->extra_buf_size, buffer);
 	safe_unpack32(&script_msg->job_id, buffer);
 	safe_unpackstr_xmalloc(&script_msg->script_name, &tmp32, buffer);
 	safe_unpackstr_xmalloc(&script_msg->script_path, &tmp32, buffer);
