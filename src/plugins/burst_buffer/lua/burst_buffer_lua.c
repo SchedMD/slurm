@@ -273,14 +273,43 @@ static void _stage_throttle_fini(pthread_mutex_t *mutex, pthread_cond_t *cond,
 	slurm_mutex_unlock(mutex);
 }
 
+static int _job_info_to_string(lua_State *L)
+{
+	job_info_t *job_info;
+	char *msg;
+
+	/* Pushes the metatable of the table onto the stack */
+	if (!lua_getmetatable(L, -1)) {
+		error("job_info_to_string requires one argument - job_info table");
+		lua_pushinteger(L, SLURM_ERROR);
+		lua_pushstring(L, "job_info_to_string requires one argument - job_info table");
+		return 2;
+	}
+
+	/*
+	 * Pushes metatable["_job_info_ptr"] onto the stack, which is just a
+	 * pointer to job_info.
+	 */
+	lua_getfield(L, -1, "_job_info_ptr");
+	/* Now we can get the pointer to job_info from the top of the stack */
+	job_info = lua_touserdata(L, -1);
+
+	msg = slurm_sprint_job_info(job_info, 0);
+	lua_pushinteger(L, SLURM_SUCCESS);
+	lua_pushstring(L, msg);
+
+	return 2;
+}
+
+static const struct luaL_Reg slurm_functions [] = {
+	{ "job_info_to_string", _job_info_to_string },
+	{ NULL, NULL }
+};
+
 static void _loadscript_extra(lua_State *st)
 {
         /* local setup */
-	/*
-	 * We may add functions later (like job_submit/lua and cli_filter/lua),
-	 * but for now we don't have any.
-	 */
-	//slurm_lua_table_register(st, NULL, slurm_functions);
+	slurm_lua_table_register(st, NULL, slurm_functions);
 
 	/* Must be always done after we register the slurm_functions */
 	lua_setglobal(st, "slurm");
