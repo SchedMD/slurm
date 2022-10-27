@@ -20,6 +20,25 @@ function _find_in_str(str, arg)
         end
 end
 
+function _verbose_wrapper(options, fmt, ...)
+	--[[ Implicit definition of arg was removed in Lua 5.2 ]]--
+	local arg = {...}
+
+	--[[
+	--   Logging to client at levels lower than info is only possible for
+	--   sbatch and scrontab in case of salloc and srun only info and error
+	--   are displayed.
+	--]]
+
+	if options["type"] == "sbatch" or options["type"] == "scrontab" then
+		slurm.log_verbose(fmt, unpack(arg))
+	else
+		if options["verbose"] and tonumber(options["verbose"]) >= 1 then
+			slurm.log_info(fmt, unpack(arg))
+		end
+	end
+end
+
 function slurm_cli_pre_submit(options, pack_offset)
 
 	--[[
@@ -31,11 +50,11 @@ function slurm_cli_pre_submit(options, pack_offset)
 
 	--[[ Dump environment in JSON format ]]--
 	env_json = slurm.json_env()
-	slurm.log_verbose("slurm_cli_pre_submit: Running with following environment variables:%s", env_json);
+	_verbose_wrapper(options, "slurm_cli_pre_submit: Running with following environment variables:%s", env_json);
 
 	--[[ Dump options set when running (slurmctld default behavior is not shown here) ]]--
 	opt_json = slurm.json_cli_options(options)
-	slurm.log_verbose("slurm_cli_pre_submit: Running with following options set:%s", opt_json)
+	_verbose_wrapper(options, "slurm_cli_pre_submit: Running with following options set:%s", opt_json)
 
 	--[[ Store a variable for potential use in slurm_cli_post_submit ]]--
 	slurm.cli_store(0,options["type"])
