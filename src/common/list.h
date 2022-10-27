@@ -303,9 +303,8 @@ void list_flip(List l);
 
 /*
  *  Pushes data [x] onto the top of stack [l].
- *  Returns the data's ptr.
  */
-void *list_push(List l, void *x);
+void list_push(List l, void *x);
 
 /*
  *  Pops the data item at the top of the stack [l].

@@ -650,20 +650,14 @@ int list_flush_max(List l, int max)
 
 /* list_push()
  */
-void *
-list_push (List l, void *x)
+void list_push(List l, void *x)
 {
-	void *v;
-
 	xassert(l != NULL);
 	xassert(x != NULL);
 	xassert(l->magic == LIST_MAGIC);
 	slurm_rwlock_wrlock(&l->mutex);
-
-	v = _list_node_create(l, &l->head, x);
+	_list_node_create(l, &l->head, x);
 	slurm_rwlock_unlock(&l->mutex);
-
-	return v;
 }
 
 /*
