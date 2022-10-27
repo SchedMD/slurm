@@ -100,7 +100,6 @@ strong_alias(list_delete_item,	slurm_list_delete_item);
 
 #define list_alloc() xmalloc(sizeof(struct xlist))
 #define list_free(_l) xfree(l)
-#define list_node_alloc() xmalloc(sizeof(struct listNode))
 #define list_node_free(_p) xfree(_p)
 #define list_iterator_alloc() xmalloc(sizeof(struct listIterator))
 #define list_iterator_free(_i) xfree(_i)
@@ -998,7 +997,7 @@ static void _list_node_create(List l, list_node_t **pp, void *x)
 	xassert(pp != NULL);
 	xassert(x != NULL);
 
-	p = list_node_alloc();
+	p = xmalloc(sizeof(list_node_t));
 
 	p->data = x;
 	if (!(p->next = *pp))
