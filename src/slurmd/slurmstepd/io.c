@@ -1887,11 +1887,9 @@ _incoming_buf_free(stepd_step_rec_t *step)
 		return true;
 	} else if (step->incoming_count < STDIO_MAX_FREE_BUF) {
 		buf = alloc_io_buf();
-		if (buf != NULL) {
-			list_enqueue(step->free_incoming, buf);
-			step->incoming_count++;
-			return true;
-		}
+		list_enqueue(step->free_incoming, buf);
+		step->incoming_count++;
+		return true;
 	}
 
 	return false;
@@ -1906,11 +1904,9 @@ _outgoing_buf_free(stepd_step_rec_t *step)
 		return true;
 	} else if (step->outgoing_count < STDIO_MAX_FREE_BUF) {
 		buf = alloc_io_buf();
-		if (buf != NULL) {
-			list_enqueue(step->free_outgoing, buf);
-			step->outgoing_count++;
-			return true;
-		}
+		list_enqueue(step->free_outgoing, buf);
+		step->outgoing_count++;
+		return true;
 	}
 
 	return false;
