@@ -140,7 +140,6 @@ typedef struct listNode * ListNode;
 static void *_list_node_create(List l, ListNode *pp, void *x);
 static void *_list_node_destroy(List l, ListNode *pp);
 static void *_list_pop_locked(List l);
-static void *_list_append_locked(List l, void *x);
 static void *_list_find_first_locked(List l, ListFindF f, void *key);
 
 #ifndef NDEBUG
@@ -258,7 +257,7 @@ list_append (List l, void *x)
 	xassert(x != NULL);
 	xassert(l->magic == LIST_MAGIC);
 	slurm_rwlock_wrlock(&l->mutex);
-	v = _list_append_locked(l, x);
+	v = _list_node_create(l, l->tail, x);
 	slurm_rwlock_unlock(&l->mutex);
 
 	return v;
@@ -282,7 +281,7 @@ list_append_list (List l, List sub)
 	slurm_rwlock_wrlock(&sub->mutex);
 	p = sub->head;
 	while (p) {
-		if (!_list_append_locked(l, p->data))
+		if (!_list_node_create(l, l->tail, p->data))
 			break;
 		n++;
 		p = p->next;
@@ -315,7 +314,7 @@ int list_transfer_max(List l, List sub, int max)
 	slurm_rwlock_wrlock(&l->mutex);
 	slurm_rwlock_wrlock(&sub->mutex);
 	while ((!max || n <= max) && (v = _list_pop_locked(sub))) {
-		_list_append_locked(l, v);
+		_list_node_create(l, l->tail, v);
 		n++;
 	}
 	slurm_rwlock_unlock(&sub->mutex);
@@ -367,7 +366,7 @@ int list_transfer_unique(List l, ListFindF f, List sub)
 		/* Is this element already in destination list? */
 		if (!_list_find_first_locked(l, f, v)) {
 			/* Not found: Transfer the element */
-			_list_append_locked(l, v);
+			_list_node_create(l, l->tail, v);
 			/* Destroy increases index */
 			_list_node_destroy(sub, pp);
 			n++;
@@ -714,7 +713,7 @@ list_sort(List l, ListCmpF f)
 	qsort(v, n, sizeof(char *), (ConstListCmpF)f);
 
 	for (n = 0; n < lsize; n++) {
-		_list_append_locked(l, v[n]);
+		 _list_node_create(l, l->tail, v[n]);
 	}
 
 	xfree(v);
@@ -1136,21 +1135,6 @@ _list_pop_locked(List l)
 	void *v;
 
 	v = _list_node_destroy(l, &l->head);
-
-	return v;
-}
-
-/* _list_append_locked()
- *
- * Append an item to the list. The function assumes
- * the list is already locked.
- */
-static void *
-_list_append_locked(List l, void *x)
-{
-	void *v;
-
-	v = _list_node_create(l, l->tail, x);
 
 	return v;
 }
