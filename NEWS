@@ -137,6 +137,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix node SuspendTime, SuspendTimeout, ResumeTimeout being updated after
     altering partition node lists with scontrol.
  -- jobcomp/elasticsearch - fix data_t memory leak after serialization.
+ -- Fix issue where '*' wasn't accepted in gpu/cpu bind.
 
 * Changes in Slurm 22.05.5
 ==========================
