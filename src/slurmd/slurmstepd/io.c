@@ -1229,8 +1229,8 @@ _send_connection_okay_response(stepd_step_rec_t *step)
 
 		debug5("Sent connection okay message");
 		xassert(client->magic == CLIENT_IO_MAGIC);
-		if (list_enqueue(client->msg_queue, msg))
-			msg->ref_count++;
+		list_enqueue(client->msg_queue, msg);
+		msg->ref_count++;
 	}
 	list_iterator_destroy(clients);
 
@@ -1313,16 +1313,15 @@ _route_msg_task_to_client(eio_obj_t *obj)
 
 			debug5("======================== Enqueued message");
 			xassert(client->magic == CLIENT_IO_MAGIC);
-			if (list_enqueue(client->msg_queue, msg))
-				msg->ref_count++;
+			list_enqueue(client->msg_queue, msg);
+			msg->ref_count++;
 		}
 		list_iterator_destroy(clients);
 
 		/* Update the outgoing message cache */
-		if (list_enqueue(out->step->outgoing_cache, msg)) {
-			msg->ref_count++;
-			_shrink_msg_cache(out->step->outgoing_cache, out->step);
-		}
+		list_enqueue(out->step->outgoing_cache, msg);
+		msg->ref_count++;
+		_shrink_msg_cache(out->step->outgoing_cache, out->step);
 	}
 }
 
@@ -1767,8 +1766,8 @@ _send_eof_msg(struct task_read_info *out)
 		xassert(client->magic == CLIENT_IO_MAGIC);
 
 		/* Send eof message to all clients */
-		if (list_enqueue(client->msg_queue, msg))
-			msg->ref_count++;
+		list_enqueue(client->msg_queue, msg);
+		msg->ref_count++;
 	}
 	list_iterator_destroy(clients);
 	if (msg->ref_count == 0)
