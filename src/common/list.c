@@ -100,8 +100,6 @@ strong_alias(list_delete_item,	slurm_list_delete_item);
 
 #define list_alloc() xmalloc(sizeof(struct xlist))
 #define list_free(_l) xfree(l)
-#define list_iterator_alloc() xmalloc(sizeof(struct listIterator))
-#define list_iterator_free(_i) xfree(_i)
 
 /****************
  *  Data Types  *
@@ -112,13 +110,13 @@ typedef struct listNode {
 	struct listNode      *next;         /* next node in list                 */
 } list_node_t;
 
-struct listIterator {
+typedef struct listIterator {
 	unsigned int          magic;        /* sentinel for asserting validity   */
 	struct xlist         *list;         /* the list being iterated           */
 	struct listNode      *pos;          /* the next node to be iterated      */
 	struct listNode     **prev;         /* addr of 'next' ptr to prv It node */
 	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
-};
+} list_iterator_t;
 
 struct xlist {
 	unsigned int          magic;        /* sentinel for asserting validity   */
@@ -182,7 +180,7 @@ list_destroy (List l)
 		xassert(i->magic == LIST_ITR_MAGIC);
 		i->magic = ~LIST_ITR_MAGIC;
 		iTmp = i->iNext;
-		list_iterator_free(i);
+		xfree(i);
 		i = iTmp;
 	}
 	p = l->head;
@@ -798,7 +796,7 @@ list_iterator_create (List l)
 	ListIterator i;
 
 	xassert(l != NULL);
-	i = list_iterator_alloc();
+	i = xmalloc(sizeof(list_iterator_t));
 
 	i->magic = LIST_ITR_MAGIC;
 	i->list = l;
@@ -853,7 +851,7 @@ list_iterator_destroy (ListIterator i)
 	slurm_rwlock_unlock(&i->list->mutex);
 
 	i->magic = ~LIST_ITR_MAGIC;
-	list_iterator_free(i);
+	xfree(i);
 }
 
 static void * _list_next_locked(ListIterator i)
