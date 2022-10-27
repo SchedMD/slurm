@@ -79,7 +79,8 @@ strong_alias(list_flip,		slurm_list_flip);
 strong_alias(list_push,		slurm_list_push);
 strong_alias(list_pop,		slurm_list_pop);
 strong_alias(list_peek,		slurm_list_peek);
-strong_alias(list_enqueue,	slurm_list_enqueue);
+strong_alias(list_append,	list_enqueue);
+strong_alias(list_append,	slurm_list_enqueue);
 strong_alias(list_dequeue,	slurm_list_dequeue);
 strong_alias(list_iterator_create,	slurm_list_iterator_create);
 strong_alias(list_iterator_reset,	slurm_list_iterator_reset);
@@ -799,17 +800,7 @@ list_peek (List l)
 	return v;
 }
 
-/* list_enqueue()
- */
-void list_enqueue(List l, void *x)
-{
-	xassert(l != NULL);
-	xassert(x != NULL);
-	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
-	_list_node_create(l, l->tail, x);
-	slurm_rwlock_unlock(&l->mutex);
-}
+/* list_enqueue() is aliased to list_append() */
 
 /* list_dequeue()
  */
