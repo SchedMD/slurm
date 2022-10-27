@@ -139,7 +139,7 @@ typedef struct listNode * ListNode;
  *  Prototypes  *
  ****************/
 
-static void *_list_node_create(List l, ListNode *pp, void *x);
+static void _list_node_create(List l, ListNode *pp, void *x);
 static void *_list_node_destroy(List l, ListNode *pp);
 static void *_list_pop_locked(List l);
 static void *_list_find_first_locked(List l, ListFindF f, void *key);
@@ -990,7 +990,7 @@ list_delete_item (ListIterator i)
  * Returns a ptr to data [x], or NULL if insertion fails.
  * This routine assumes the list is already locked upon entry.
  */
-static void *_list_node_create(List l, ListNode *pp, void *x)
+static void _list_node_create(List l, ListNode *pp, void *x)
 {
 	ListNode p;
 	ListIterator i;
@@ -1018,8 +1018,6 @@ static void *_list_node_create(List l, ListNode *pp, void *x)
 		xassert((i->pos == *i->prev) ||
 		       ((*i->prev) && (i->pos == (*i->prev)->next)));
 	}
-
-	return x;
 }
 
 /*
