@@ -1033,11 +1033,9 @@ _incoming_buf_free(client_io_t *cio)
 		return true;
 	} else if (cio->incoming_count < STDIO_MAX_FREE_BUF) {
 		buf = _alloc_io_buf();
-		if (buf != NULL) {
-			list_enqueue(cio->free_incoming, buf);
-			cio->incoming_count++;
-			return true;
-		}
+		list_enqueue(cio->free_incoming, buf);
+		cio->incoming_count++;
+		return true;
 	}
 	return false;
 }
@@ -1051,11 +1049,9 @@ _outgoing_buf_free(client_io_t *cio)
 		return true;
 	} else if (cio->outgoing_count < STDIO_MAX_FREE_BUF) {
 		buf = _alloc_io_buf();
-		if (buf != NULL) {
-			list_enqueue(cio->free_outgoing, buf);
-			cio->outgoing_count++;
-			return true;
-		}
+		list_enqueue(cio->free_outgoing, buf);
+		cio->outgoing_count++;
+		return true;
 	}
 
 	return false;
