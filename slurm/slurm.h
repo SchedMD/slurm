@@ -1365,9 +1365,8 @@ typedef int (*ListForF) (void *x, void *arg);
 /* slurm_list_append():
  *
  *  Inserts data [x] at the end of list [l].
- *  Returns the data's ptr.
  */
-extern void *slurm_list_append(List l, void *x);
+extern void slurm_list_append(List l, void *x);
 
 /* slurm_list_count():
  *

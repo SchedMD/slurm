@@ -137,9 +137,8 @@ List list_shallow_copy(List l);
 
 /*
  *  Inserts data [x] at the end of list [l].
- *  Returns the data's ptr.
  */
-void *list_append(List l, void *x);
+void list_append(List l, void *x);
 
 /*
  *  Inserts list [sub] at the end of list [l].
@@ -327,9 +326,8 @@ void *list_peek(List l);
 
 /*
  *  Enqueues data [x] at the tail of queue [l].
- *  Returns the data's ptr.
  */
-void *list_enqueue(List l, void *x);
+void list_enqueue(List l, void *x);
 
 /*
  *  Dequeues the data item at the head of the queue [l].

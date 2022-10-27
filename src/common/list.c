@@ -248,19 +248,14 @@ List list_shallow_copy(List l)
 
 /* list_append()
  */
-void *
-list_append (List l, void *x)
+void list_append(List l, void *x)
 {
-	void *v;
-
 	xassert(l != NULL);
 	xassert(x != NULL);
 	xassert(l->magic == LIST_MAGIC);
 	slurm_rwlock_wrlock(&l->mutex);
-	v = _list_node_create(l, l->tail, x);
+	_list_node_create(l, l->tail, x);
 	slurm_rwlock_unlock(&l->mutex);
-
-	return v;
 }
 
 /* list_append_list()
@@ -806,20 +801,14 @@ list_peek (List l)
 
 /* list_enqueue()
  */
-void *
-list_enqueue (List l, void *x)
+void list_enqueue(List l, void *x)
 {
-	void *v;
-
 	xassert(l != NULL);
 	xassert(x != NULL);
 	xassert(l->magic == LIST_MAGIC);
 	slurm_rwlock_wrlock(&l->mutex);
-
-	v = _list_node_create(l, l->tail, x);
+	_list_node_create(l, l->tail, x);
 	slurm_rwlock_unlock(&l->mutex);
-
-	return v;
 }
 
 /* list_dequeue()
