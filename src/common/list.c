@@ -109,10 +109,10 @@ strong_alias(list_delete_item,	slurm_list_delete_item);
  *  Data Types  *
  ****************/
 
-struct listNode {
+typedef struct listNode {
 	void                 *data;         /* node's data                       */
 	struct listNode      *next;         /* next node in list                 */
-};
+} list_node_t;
 
 struct listIterator {
 	unsigned int          magic;        /* sentinel for asserting validity   */
@@ -132,15 +132,12 @@ struct xlist {
 	pthread_rwlock_t      mutex;        /* mutex to protect access to list   */
 };
 
-typedef struct listNode * ListNode;
-
-
 /****************
  *  Prototypes  *
  ****************/
 
-static void _list_node_create(List l, ListNode *pp, void *x);
-static void *_list_node_destroy(List l, ListNode *pp);
+static void _list_node_create(List l, list_node_t **pp, void *x);
+static void *_list_node_destroy(List l, list_node_t **pp);
 static void *_list_pop_locked(List l);
 static void *_list_find_first_locked(List l, ListFindF f, void *key);
 
@@ -176,7 +173,7 @@ void
 list_destroy (List l)
 {
 	ListIterator i, iTmp;
-	ListNode p, pTmp;
+	list_node_t *p, *pTmp;
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
@@ -266,7 +263,7 @@ int
 list_append_list (List l, List sub)
 {
 	int n = 0;
-	ListNode p;
+	list_node_t *p;
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
@@ -341,7 +338,7 @@ int list_transfer(List l, List sub)
  */
 int list_transfer_unique(List l, ListFindF f, List sub)
 {
-	ListNode *pp;
+	list_node_t **pp;
 	void *v;
 	int n = 0;
 
@@ -379,7 +376,7 @@ int list_transfer_unique(List l, ListFindF f, List sub)
 
 static void *_list_find_first_locked(List l, ListFindF f, void *key)
 {
-	for (ListNode p = l->head; p; p = p->next) {
+	for (list_node_t *p = l->head; p; p = p->next) {
 		if (f(p->data, key))
 			return p->data;
 	}
@@ -429,7 +426,7 @@ void *list_find_first_ro(List l, ListFindF f, void *key)
 void *
 list_remove_first (List l, ListFindF f, void *key)
 {
-	ListNode *pp;
+	list_node_t **pp;
 	void *v = NULL;
 
 	xassert(l != NULL);
@@ -457,7 +454,7 @@ list_remove_first (List l, ListFindF f, void *key)
 int
 list_delete_all (List l, ListFindF f, void *key)
 {
-	ListNode *pp;
+	list_node_t **pp;
 	void *v;
 	int n = 0;
 
@@ -486,7 +483,7 @@ list_delete_all (List l, ListFindF f, void *key)
 
 int list_delete_first(List l, ListFindF f, void *key)
 {
-	ListNode *pp;
+	list_node_t **pp;
 	void *v;
 	int n = 0;
 
@@ -522,7 +519,7 @@ int list_delete_first(List l, ListFindF f, void *key)
  */
 int list_delete_ptr(List l, void *key)
 {
-	ListNode *pp;
+	list_node_t **pp;
 	void *v;
 	int n = 0;
 
@@ -572,7 +569,7 @@ int list_for_each_nobreak(List l, ListForF f, void *arg)
 int list_for_each_max(List l, int *max, ListForF f, void *arg,
 		      int break_on_fail, int write_lock)
 {
-	ListNode p;
+	list_node_t *p;
 	int n = 0;
 	bool failed = false;
 
@@ -609,7 +606,7 @@ int list_flush(List l)
 
 int list_flush_max(List l, int max)
 {
-	ListNode *pp;
+	list_node_t **pp;
 	void *v;
 	int n = 0;
 
@@ -707,7 +704,7 @@ list_sort(List l, ListCmpF f)
  */
 void list_flip(List l)
 {
-	ListNode old_head, prev = NULL, curr, next = NULL;
+	list_node_t *old_head, *prev = NULL, *curr, *next = NULL;
 	ListIterator i;
 
 	xassert(l);
@@ -863,7 +860,7 @@ list_iterator_destroy (ListIterator i)
 
 static void * _list_next_locked(ListIterator i)
 {
-	ListNode p;
+	list_node_t *p;
 
 	if ((p = i->pos))
 		i->pos = p->next;
@@ -896,7 +893,7 @@ void *list_next (ListIterator i)
 void *
 list_peek_next (ListIterator i)
 {
-	ListNode p;
+	list_node_t *p;
 
 	xassert(i != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
@@ -990,9 +987,9 @@ list_delete_item (ListIterator i)
  * Returns a ptr to data [x], or NULL if insertion fails.
  * This routine assumes the list is already locked upon entry.
  */
-static void _list_node_create(List l, ListNode *pp, void *x)
+static void _list_node_create(List l, list_node_t **pp, void *x)
 {
-	ListNode p;
+	list_node_t *p;
 	ListIterator i;
 
 	xassert(l != NULL);
@@ -1027,10 +1024,10 @@ static void _list_node_create(List l, ListNode *pp, void *x)
  * or NULL if [*pp] points to the NULL element.
  * This routine assumes the list is already locked upon entry.
  */
-static void *_list_node_destroy(List l, ListNode *pp)
+static void *_list_node_destroy(List l, list_node_t **pp)
 {
 	void *v;
-	ListNode p;
+	list_node_t *p;
 	ListIterator i;
 
 	xassert(l != NULL);
