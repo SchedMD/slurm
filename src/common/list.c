@@ -98,9 +98,6 @@ strong_alias(list_delete_item,	slurm_list_delete_item);
 #define LIST_MAGIC 0xDEADBEEF
 #define LIST_ITR_MAGIC 0xDEADBEFF
 
-#define list_alloc() xmalloc(sizeof(struct xlist))
-#define list_free(_l) xfree(l)
-
 /****************
  *  Data Types  *
  ****************/
@@ -118,7 +115,7 @@ typedef struct listIterator {
 	struct listIterator  *iNext;        /* iterator chain for list_destroy() */
 } list_iterator_t;
 
-struct xlist {
+typedef struct xlist {
 	unsigned int          magic;        /* sentinel for asserting validity   */
 	struct listNode      *head;         /* head of the list                  */
 	struct listNode     **tail;         /* addr of last node's 'next' ptr    */
@@ -126,7 +123,7 @@ struct xlist {
 	ListDelF              fDel;         /* function to delete node data      */
 	int                   count;        /* number of nodes in list           */
 	pthread_rwlock_t      mutex;        /* mutex to protect access to list   */
-};
+} list_t;
 
 /****************
  *  Prototypes  *
@@ -150,7 +147,7 @@ static int _list_mutex_is_locked(pthread_rwlock_t *mutex);
 List
 list_create (ListDelF f)
 {
-	List l = list_alloc();
+	list_t *l = xmalloc(sizeof(*l));
 
 	l->magic = LIST_MAGIC;
 	l->head = NULL;
@@ -194,7 +191,7 @@ list_destroy (List l)
 	l->magic = ~LIST_MAGIC;
 	slurm_rwlock_unlock(&l->mutex);
 	slurm_rwlock_destroy(&l->mutex);
-	list_free(l);
+	xfree(l);
 }
 
 /* list_is_empty()
