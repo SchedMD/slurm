@@ -176,9 +176,8 @@ int list_transfer_max(List l, List sub, int max);
 
 /*
  *  Inserts data [x] at the beginning of list [l].
- *  Returns the data's ptr.
  */
-void *list_prepend(List l, void *x);
+void list_prepend(List l, void *x);
 
 /*
  *  Traverses list [l] using [f] to match each item with [key].

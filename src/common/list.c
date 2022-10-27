@@ -63,7 +63,8 @@ strong_alias(list_append_list,	slurm_list_append_list);
 strong_alias(list_transfer,	slurm_list_transfer);
 strong_alias(list_transfer_max,	slurm_list_transfer_max);
 strong_alias(list_transfer_unique,	slurm_list_transfer_unique);
-strong_alias(list_prepend,	slurm_list_prepend);
+strong_alias(list_push,		list_prepend);
+strong_alias(list_push,		slurm_list_prepend);
 strong_alias(list_find_first,	slurm_list_find_first);
 strong_alias(list_find_first_ro, slurm_list_find_first_ro);
 strong_alias(list_delete_all,	slurm_list_delete_all);
@@ -374,24 +375,6 @@ int list_transfer_unique(List l, ListFindF f, List sub)
 	slurm_rwlock_unlock(&l->mutex);
 
 	return n;
-}
-
-/* list_prepend()
- */
-void *
-list_prepend (List l, void *x)
-{
-	void *v;
-
-	xassert(l != NULL);
-	xassert(x != NULL);
-	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
-
-	v = _list_node_create(l, &l->head, x);
-	slurm_rwlock_unlock(&l->mutex);
-
-	return v;
 }
 
 static void *_list_find_first_locked(List l, ListFindF f, void *key)
