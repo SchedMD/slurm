@@ -2599,7 +2599,7 @@ _drop_privileges(stepd_step_rec_t *step, bool do_setuid,
 		return -1;
 	}
 	if (get_list) {
-		ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
+		ps->gid_list = xcalloc(ps->ngids, sizeof(gid_t));
 
 		if (getgroups(ps->ngids, ps->gid_list) == -1) {
 			error("%s: couldn't get %d groups: %m",
