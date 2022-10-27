@@ -745,6 +745,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 				   MIME_TYPE_JSON, DATA_SER_FLAGS_COMPACT))) {
 		xfree(jnode->serialized_job);
 		xfree(jnode);
+		log_flag(ESEARCH, "unable to serialize %pJ to JSON: %s",
+			 job_ptr, slurm_strerror(rc));
 	} else {
 		list_enqueue(jobslist, jnode);
 	}
