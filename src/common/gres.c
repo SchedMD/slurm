@@ -2405,7 +2405,7 @@ extern int gres_node_config_load(List gres_conf_list,
 				rc = SLURM_ERROR;
 			}
 
-			(void) list_append(names_list, one_name);
+			list_append(names_list, one_name);
 
 			/* Increment device bitmap index */
 			index++;

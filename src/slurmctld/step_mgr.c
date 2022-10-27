@@ -204,7 +204,7 @@ static step_record_t *_create_step_record(job_record_t *job_ptr,
 		step_ptr->start_protocol_ver = job_ptr->start_protocol_ver;
 
 	step_ptr->magic = STEP_MAGIC;
-	(void) list_append (job_ptr->step_list, step_ptr);
+	list_append(job_ptr->step_list, step_ptr);
 
 	return step_ptr;
 }

@@ -1379,7 +1379,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list == NULL)
 		retry_list = list_create(_list_delete_retry);
-	(void) list_append(retry_list, (void *) queued_req_ptr);
+	list_append(retry_list, queued_req_ptr);
 	slurm_mutex_unlock(&retry_mutex);
 }
 
@@ -2177,7 +2177,7 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 	slurm_mutex_lock(&mail_mutex);
 	if (!mail_list)
 		mail_list = list_create(_mail_free);
-	(void) list_enqueue(mail_list, (void *) mi);
+	list_enqueue(mail_list, mi);
 	slurm_mutex_unlock(&mail_mutex);
 	return;
 }

@@ -650,7 +650,7 @@ static job_record_t *_create_job_record(uint32_t num_jobs)
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet  */
 	job_ptr->billable_tres = (double)NO_VAL;
-	(void) list_append(job_list, job_ptr);
+	list_append(job_list, job_ptr);
 
 	return job_ptr;
 }

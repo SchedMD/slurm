@@ -358,7 +358,7 @@ part_record_t *create_part_record(const char *name)
 	_init_part_record(part_ptr);
 	part_ptr->name = xstrdup(name);
 
-	(void) list_append(part_list, part_ptr);
+	list_append(part_list, part_ptr);
 
 	return part_ptr;
 }
