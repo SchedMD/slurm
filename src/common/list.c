@@ -100,7 +100,6 @@ strong_alias(list_delete_item,	slurm_list_delete_item);
 
 #define list_alloc() xmalloc(sizeof(struct xlist))
 #define list_free(_l) xfree(l)
-#define list_node_free(_p) xfree(_p)
 #define list_iterator_alloc() xmalloc(sizeof(struct listIterator))
 #define list_iterator_free(_i) xfree(_i)
 
@@ -191,7 +190,7 @@ list_destroy (List l)
 		pTmp = p->next;
 		if (p->data && l->fDel)
 			l->fDel(p->data);
-		list_node_free(p);
+		xfree(p);
 		p = pTmp;
 	}
 	l->magic = ~LIST_MAGIC;
@@ -1051,7 +1050,7 @@ static void *_list_node_destroy(List l, list_node_t **pp)
 		xassert((i->pos == *i->prev) ||
 		       ((*i->prev) && (i->pos == (*i->prev)->next)));
 	}
-	list_node_free(p);
+	xfree(p);
 
 	return v;
 }
