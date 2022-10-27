@@ -912,21 +912,16 @@ list_peek_next (ListIterator i)
 
 /* list_insert()
  */
-void *
-list_insert (ListIterator i, void *x)
+void list_insert(ListIterator i, void *x)
 {
-	void *v;
-
 	xassert(i != NULL);
 	xassert(x != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
 	xassert(i->list->magic == LIST_MAGIC);
+
 	slurm_rwlock_wrlock(&i->list->mutex);
-
-	v = _list_node_create(i->list, i->prev, x);
+	_list_node_create(i->list, i->prev, x);
 	slurm_rwlock_unlock(&i->list->mutex);
-
-	return v;
 }
 
 /* list_find()

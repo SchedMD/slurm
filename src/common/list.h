@@ -374,9 +374,8 @@ void *list_peek_next(ListIterator i);
  *  Inserts data [x] immediately before the last item returned via list
  *    iterator [i]; once the list iterator reaches the end of the list,
  *    insertion is made at the list's end.
- *  Returns the data's ptr.
  */
-void *list_insert(ListIterator i, void *x);
+void list_insert(ListIterator i, void *x);
 
 /*
  *  Traverses the list from the point of the list iterator [i]
