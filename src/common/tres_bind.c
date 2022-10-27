@@ -73,7 +73,7 @@ static int _valid_num_list(const char *arg, bool hex)
 		if (hex && !xstrncmp(tok, "0x", 2))
 			tok += 2;
 		for (int i = 0; tok[i]; i++)
-			if (!isvalid(tok[i])) {
+			if (!isvalid(tok[i]) && (tok[i] != '*')) {
 				error("Failed to validate %s, offending character is %c",
 				      tok, tok[i]);
 				return -1;

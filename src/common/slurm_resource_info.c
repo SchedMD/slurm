@@ -113,7 +113,8 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 
 		ast = strchr(tok, '*');
 		if (ast) {
-			for (int i = 0; ast[i]; i++)
+			/* Starting from 1 since we know that ast[0] == '*' */
+			for (int i = 1; ast[i]; i++)
 				if (!isdigit(ast[i])) {
 					error("Failed to validate number: %s, the offending character is %c",
 					      ast, ast[i]);

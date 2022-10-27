@@ -893,12 +893,11 @@ all GPUs in that NUMA environment).
 \fBmap_gpu:<list>\fR
 Bind by setting GPU masks on tasks (or ranks) as specified where <list> is
 <gpu_id_for_task_0>,<gpu_id_for_task_1>,... GPU IDs are interpreted as decimal
-values unless they are preceded with '0x' in which case they interpreted as
-hexadecimal values. If the number of tasks (or ranks) exceeds the number of
-elements in this list, elements in the list will be reused as needed starting
-from the beginning of the list. To simplify support for large task counts,
-the lists may follow a map with an asterisk and repetition count.
-For example "map_gpu:0*4,1*4".
+values.
+If the number of tasks (or ranks) exceeds the number of elements in this list,
+elements in the list will be reused as needed starting from the beginning of the
+list. To simplify support for large task counts, the lists may follow a map with
+an asterisk and repetition count. For example "map_gpu:0*4,1*4".
 If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
 then the GPU IDs are zero\-based indexes relative to the GPUs allocated to the
 job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
