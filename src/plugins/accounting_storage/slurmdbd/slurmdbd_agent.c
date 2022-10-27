@@ -360,8 +360,7 @@ static void _load_dbd_state(void)
 				error("no buffer given");
 				continue;
 			}
-			if (!list_enqueue(agent_list, buffer))
-				fatal("list_enqueue, no memory");
+			list_enqueue(agent_list, buffer);
 			recovered++;
 			buffer = NULL;
 		}
@@ -934,8 +933,7 @@ extern int slurmdbd_agent_send(uint16_t rpc_version, persist_msg_t *req)
 	_max_dbd_msg_action(&cnt);
 
 	if (cnt < slurm_conf.max_dbd_msgs) {
-		if (list_enqueue(agent_list, buffer) == NULL)
-			fatal("list_enqueue: memory allocation failure");
+		list_enqueue(agent_list, buffer);
 	} else {
 		error("agent queue is full (%u), discarding %s:%u request",
 		      cnt,
