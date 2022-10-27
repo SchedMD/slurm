@@ -277,8 +277,7 @@ list_append_list (List l, List sub)
 	slurm_rwlock_wrlock(&sub->mutex);
 	p = sub->head;
 	while (p) {
-		if (!_list_node_create(l, l->tail, p->data))
-			break;
+		_list_node_create(l, l->tail, p->data);
 		n++;
 		p = p->next;
 	}
