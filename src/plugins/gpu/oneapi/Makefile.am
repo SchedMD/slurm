@@ -10,6 +10,5 @@ ONEAPI_SOURCES = gpu_oneapi.c
 
 pkglib_LTLIBRARIES = gpu_oneapi.la
 gpu_oneapi_la_SOURCES = $(ONEAPI_SOURCES)
-# gpu_oneapi_la_LDFLAGS = $(PLUGIN_FLAGS) $(ONEAPI_LDFLAGS)
 gpu_oneapi_la_LDFLAGS = $(PLUGIN_FLAGS)
 gpu_oneapi_la_LIBADD = ../common/libgpu_common.la

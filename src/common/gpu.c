@@ -103,10 +103,7 @@ static char *_get_gpu_type(void)
 #endif
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI) {
 #ifdef HAVE_ONEAPI
-		if (!dlopen("libze_loader.so", RTLD_NOW | RTLD_GLOBAL))
-			info("Configured with oneAPI, but that lib wasn't found.");
-		else
-			return "gpu/oneapi";
+		return "gpu/oneapi";
 #else
 		info("Configured with oneAPI, but oneAPI isn't enabled during the build.");
 #endif

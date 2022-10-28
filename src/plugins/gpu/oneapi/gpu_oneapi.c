@@ -39,6 +39,7 @@
 #define _GNU_SOURCE
 
 #include <dirent.h>
+#include <dlfcn.h>
 #include <limits.h>
 #include <regex.h>
 #include <sys/types.h>
@@ -962,6 +963,9 @@ static bool _oneapi_get_device_affinity(const char *device_name,
 extern int init(void)
 {
 	debug("loading");
+
+	if (!dlopen(INTEL_ONEAPI_LIB, RTLD_NOW | RTLD_GLOBAL))
+		fatal("Configured with oneAPI, but that lib wasn't found.");
 
 	/* Init oneAPI */
 	setenv("ZES_ENABLE_SYSMAN", "1", 1);
