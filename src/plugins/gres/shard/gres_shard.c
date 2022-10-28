@@ -142,16 +142,16 @@ extern int gres_p_node_config_load(List gres_conf_list,
 	return rc;
 }
 
-static void _set_shard_env(char ***env_ptr, uint64_t gres_per_node,
-			   gres_internal_flags_t flags)
+static void _set_shard_env(common_gres_env_t *gres_env)
 {
-	if (gres_per_node) {
-		char *gpus_on_node = xstrdup_printf("%"PRIu64, gres_per_node);
-		env_array_overwrite(env_ptr, "SLURM_SHARDS_ON_NODE",
+	if (gres_env->gres_cnt) {
+		char *gpus_on_node = xstrdup_printf("%"PRIu64,
+						    gres_env->gres_cnt);
+		env_array_overwrite(gres_env->env_ptr, "SLURM_SHARDS_ON_NODE",
 				    gpus_on_node);
 		xfree(gpus_on_node);
-	} else if (!(flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
-		unsetenvp(*env_ptr, "SLURM_SHARDS_ON_NODE");
+	} else if (!(gres_env->flags & GRES_INTERNAL_FLAG_PROTECT_ENV)) {
+		unsetenvp(*(gres_env->env_ptr), "SLURM_SHARDS_ON_NODE");
 	}
 }
 
@@ -175,7 +175,7 @@ extern void gres_p_job_set_env(char ***job_env_ptr,
 	};
 
 	gres_common_gpu_set_env(&gres_env);
-	_set_shard_env(job_env_ptr, gres_per_node, flags);
+	_set_shard_env(&gres_env);
 }
 
 /*
@@ -197,7 +197,7 @@ extern void gres_p_step_set_env(char ***step_env_ptr,
 	};
 
 	gres_common_gpu_set_env(&gres_env);
-	_set_shard_env(step_env_ptr, gres_per_node, flags);
+	_set_shard_env(&gres_env);
 }
 
 /*
@@ -222,7 +222,7 @@ extern void gres_p_task_set_env(char ***task_env_ptr,
 	};
 
 	gres_common_gpu_set_env(&gres_env);
-	_set_shard_env(task_env_ptr, gres_per_node, flags);
+	_set_shard_env(&gres_env);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
