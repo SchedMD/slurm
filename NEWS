@@ -109,6 +109,7 @@ documents those changes that are of interest to users and administrators.
  -- If a node is in a reservation add the reservation name to it for
     scontrol/sinfo/sview.
  -- common/cgroup - improve possible TOCTOU situation when reading cgroup files.
+ -- slurmctld will fatal() when reconfiguring the job_submit plugin fails.
 
 * Changes in Slurm 22.05.6
 ==========================
