@@ -135,14 +135,14 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 
 	rc = stepd_add_extern_pid(fd, stepd->protocol_version, pid);
 
-	if (rc == PAM_SUCCESS) {
+	if (rc == SLURM_SUCCESS) {
 		char *env;
 		env = xstrdup_printf("SLURM_JOB_ID=%u", stepd->step_id.job_id);
 		pam_putenv(pamh, env);
 		xfree(env);
 	}
 
-	if ((rc == PAM_SUCCESS) && !opts.disable_x11) {
+	if ((rc == SLURM_SUCCESS) && !opts.disable_x11) {
 		int display;
 		char *xauthority;
 		display = stepd_get_x11_display(fd, stepd->protocol_version,
@@ -186,7 +186,7 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 
 	close(fd);
 
-	if (rc == PAM_SUCCESS)
+	if (rc == SLURM_SUCCESS)
 		info("Process %d adopted into job %u",
 		     pid, stepd->step_id.job_id);
 	else
