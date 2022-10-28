@@ -1440,7 +1440,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 					xstrdup(tmp_device_name);
 
 				/* If MIG exists, print and and return files */
-				if (_handle_mig(&device, i, j,
+				if (_handle_mig(&device, minor_number, j,
 						uuid, &nvml_mig) !=
 				    SLURM_SUCCESS) {
 					_free_nvml_mig_members(&nvml_mig);
