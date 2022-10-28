@@ -122,8 +122,8 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 
 	if (!stepd)
 		return -1;
-	debug("_adopt_process: trying to get %ps to adopt %d",
-	      &stepd->step_id, pid);
+	debug("%s: trying to get %ps to adopt %d",
+	      __func__, &stepd->step_id, pid);
 	fd = stepd_connect(stepd->directory, stepd->nodename,
 			   &stepd->step_id, &protocol_version);
 	if (fd < 0) {
@@ -177,7 +177,7 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 			 * slurm to give us the right one
 			 */
 			if (setns(ns_fd, 0)) {
-				error("setns() failed: %s", strerror(errno));
+				error("setns() failed: %m");
 				rc = SLURM_ERROR;
 			}
 		}
