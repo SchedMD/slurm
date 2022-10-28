@@ -2061,17 +2061,16 @@ static int _pick_step_cores(step_record_t *step_ptr,
 			}
 		}
 
+		log_flag(STEPS, "%s: For step %pS required cores:%u on node: %d available cores: %u",
+			 __func__, step_ptr, cpu_cnt, job_node_inx,
+			 job_resrcs_ptr->cpus[job_node_inx]);
+
 		if (cpu_cnt * cpus_per_core >
 		    job_resrcs_ptr->cpus[job_node_inx] &&
 		    !(step_ptr->flags & SSF_OVERCOMMIT)) {
 			/* Node can never fullfill step request */
-			log_flag(STEPS, "%s: For step %pS node %d doesn't have enough cpus (%u) to full request of %u",
-				 __func__, step_ptr, job_node_inx,
-				 job_resrcs_ptr->cpus[job_node_inx],
-				 cpu_cnt);
 			return ESLURM_TOO_MANY_REQUESTED_CPUS;
 		}
-
 	}
 
 	all_gres_core_bitmap = bit_copy(job_resrcs_ptr->core_bitmap);
