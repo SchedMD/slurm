@@ -226,6 +226,8 @@ extern int bb_g_job_cancel(job_record_t *job_ptr);
  * argv IN - argument list to pass to script
  * resp_msg OUT - string returned by script
  *
+ * NOTE: This is currently only called for the lua plugin.
+ *
  * Returns the status of the script.
  */
 extern int bb_g_run_script(char *func, uint32_t job_id, uint32_t argc,
