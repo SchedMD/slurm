@@ -36,6 +36,7 @@
 
 #define _GNU_SOURCE
 
+#include <dlfcn.h>
 #include <nvml.h>
 #include <math.h>
 
@@ -1512,6 +1513,9 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 
 extern int init(void)
 {
+	if (!dlopen("libnvidia-ml.so", RTLD_NOW | RTLD_GLOBAL))
+		fatal("We were configured with nvml functionality, but that lib wasn't found on the system.");
+
 	if (running_in_slurmstepd()) {
 		gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
 	}
