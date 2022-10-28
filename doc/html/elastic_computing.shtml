@@ -154,6 +154,12 @@ weights.
 immediately be requested to power down upon becoming IDLE. A power down request
 prevents further scheduling to the node until it has been put into power save
 mode by <b>SuspendProgram</b>.
+<dt><b>ResumeTimeout</b>, <b>SuspendTimeout</b> and <b>SuspendTime</b>
+<dd>These can be applied at the partition level. If a node is in multiple
+partitions and these options are configured on the partitions, the higher value
+will be used for the node. If the option is not set, it will use the global
+setting. Configuring <b>SuspendTime</b> on a partition will enable power save
+mode if the global <b>SuspendTime</b> is not set.
 </dl>
 </p>
 
@@ -183,14 +189,6 @@ NodeName=ec[0-127]  Weight=8 Feature=cloud State=CLOUD
 PartitionName=debug MaxTime=1:00:00 Nodes=tux[0-32] Default=yes
 PartitionName=batch MaxTime=8:00:00 Nodes=tux[0-127],ec[0-127] Default=no
 </pre>
-
-<p><b>ResumeTimeout</b>, <b>SuspendTimeout</b> and <b>SuspendTime</b> can be
-applied at the partition level. If a node is in multiple partitions and these
-options are configured on the partitions, the higher value will be used for the
-node. If the option is not set, it will use the global setting. Configuring
-<b>SuspendTime</b> on a partition will enable power save mode if the global
-SuspendTime is not set.
-</p>
 
 <p>By default, when power save mode is enabled Slurm attempts to "suspend" all
 nodes unless excluded by <b>SuspendExcNodes</b> or <b>SuspendExcParts</b>. For
