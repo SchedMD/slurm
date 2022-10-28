@@ -176,8 +176,7 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 			 * No need to specify the type of namespace, rely on
 			 * slurm to give us the right one
 			 */
-			rc = setns(ns_fd, 0);
-			if (rc) {
+			if (setns(ns_fd, 0)) {
 				error("setns() failed: %s", strerror(errno));
 				rc = SLURM_ERROR;
 			}
