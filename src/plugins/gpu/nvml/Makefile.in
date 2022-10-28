@@ -180,9 +180,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-am__DEPENDENCIES_1 =
-gpu_nvml_la_DEPENDENCIES = ../common/libgpu_common.la \
-	$(am__DEPENDENCIES_1)
+gpu_nvml_la_DEPENDENCIES = ../common/libgpu_common.la
 am__objects_1 = gpu_nvml.lo
 am_gpu_nvml_la_OBJECTS = $(am__objects_1)
 gpu_nvml_la_OBJECTS = $(am_gpu_nvml_la_OBJECTS)
@@ -373,7 +371,6 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 NUMA_LIBS = @NUMA_LIBS@
 NVML_CPPFLAGS = @NVML_CPPFLAGS@
-NVML_LIBS = @NVML_LIBS@
 OBJCOPY = @OBJCOPY@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
@@ -521,7 +518,7 @@ NVML_SOURCES = gpu_nvml.c
 pkglib_LTLIBRARIES = gpu_nvml.la
 gpu_nvml_la_SOURCES = $(NVML_SOURCES)
 gpu_nvml_la_LDFLAGS = $(PLUGIN_FLAGS)
-gpu_nvml_la_LIBADD = ../common/libgpu_common.la $(NVML_LIBS)
+gpu_nvml_la_LIBADD = ../common/libgpu_common.la
 all: all-am
 
 .SUFFIXES:
