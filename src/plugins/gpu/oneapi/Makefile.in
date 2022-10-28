@@ -415,8 +415,6 @@ RRDTOOL_CPPFLAGS = @RRDTOOL_CPPFLAGS@
 RRDTOOL_LDFLAGS = @RRDTOOL_LDFLAGS@
 RRDTOOL_LIBS = @RRDTOOL_LIBS@
 RSMI_CPPFLAGS = @RSMI_CPPFLAGS@
-RSMI_LDFLAGS = @RSMI_LDFLAGS@
-RSMI_LIBS = @RSMI_LIBS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -521,7 +519,6 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(
 ONEAPI_SOURCES = gpu_oneapi.c
 pkglib_LTLIBRARIES = gpu_oneapi.la
 gpu_oneapi_la_SOURCES = $(ONEAPI_SOURCES)
-# gpu_oneapi_la_LDFLAGS = $(PLUGIN_FLAGS) $(ONEAPI_LDFLAGS)
 gpu_oneapi_la_LDFLAGS = $(PLUGIN_FLAGS)
 gpu_oneapi_la_LIBADD = ../common/libgpu_common.la
 all: all-am

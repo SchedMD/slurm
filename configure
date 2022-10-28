@@ -782,9 +782,7 @@ ONEAPI_CPPFLAGS
 ONEAPI_LIBS
 BUILD_RSMI_FALSE
 BUILD_RSMI_TRUE
-RSMI_LDFLAGS
 RSMI_CPPFLAGS
-RSMI_LIBS
 BUILD_NVML_FALSE
 BUILD_NVML_TRUE
 NVML_CPPFLAGS
@@ -23454,8 +23452,10 @@ printf "%s\n" "" >&6; }
     for _x_ac_rsmi_dir in $_x_ac_rsmi_dirs; do
       cppflags_save="$CPPFLAGS"
       ldflags_save="$LDFLAGS"
-      CPPFLAGS="-I$_x_ac_rsmi_dir/include $CPPFLAGS"
-      LDFLAGS="-L$_x_ac_rsmi_dir/lib $LDFLAGS"
+      RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include"
+      CPPFLAGS="$RSMI_CPPFLAGS"
+      RSMI_LIB_DIR="$_x_ac_rsmi_dir/lib"
+      LDFLAGS="-L$RSMI_LIB_DIR"
       ac_fn_c_check_header_compile "$LINENO" "rocm_smi/rocm_smi.h" "ac_cv_header_rocm_smi_rocm_smi_h" "$ac_includes_default"
 if test "x$ac_cv_header_rocm_smi_rocm_smi_h" = xyes
 then :
@@ -23552,15 +23552,13 @@ fi
       LDFLAGS="$ldflags_save"
       if test "$ac_rsmi_l" = "yes" && test "$ac_rsmi_h" = "yes"; then
         if test "$ac_rsmi_version" = "yes"; then
-          RSMI_LDFLAGS="-L$_x_ac_rsmi_dir/lib"
-          RSMI_LIBS="-lrocm_smi64"
-          RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include"
           ac_rsmi="yes"
 
 printf "%s\n" "#define HAVE_RSMI 1" >>confdefs.h
 
 
-printf "%s\n" "#define AMD_RSMI_LIB \"$_x_ac_rsmi_dir/lib/librocm_smi64.so\"" >>confdefs.h
+printf "%s\n" "#define AMD_RSMI_LIB \"$RSMI_LIB_DIR/librocm_smi64.so\"" >>confdefs.h
+
 
           break;
         fi
@@ -23585,9 +23583,6 @@ printf "%s\n" "$as_me: WARNING: unable to locate librocm_smi64.so and/or rocm_sm
         as_fn_error $? "unable to locate librocm_smi64.so and/or rocm_smi.h" "$LINENO" 5
       fi
     fi
-
-
-
   fi
    if test "$ac_rsmi" = "yes"; then
   BUILD_RSMI_TRUE=
