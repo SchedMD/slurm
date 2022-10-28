@@ -296,7 +296,8 @@ extern int common_file_write_uints(char *file_path, void *values, int nb,
 	return SLURM_SUCCESS;
 rwfail:
 	rc = errno;
-	error("%s: write pid %s to %s failed: %m", __func__, tstr, file_path);
+	error("%s: write value '%s' to '%s' failed: %m",
+	      __func__, tstr, file_path);
 	close(fd);
 	return rc;
 }
