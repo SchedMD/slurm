@@ -1476,7 +1476,6 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 
 				add_gres_to_list(gres_list_system,
 						 &gres_slurmd_conf);
-
 				_free_nvml_mig_members(&nvml_mig);
 			}
 			xfree(tmp_device_name);
@@ -1494,9 +1493,8 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 
 		FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
 		xfree(cpu_aff_mac_range);
-		xfree(gres_slurmd_conf.cpus);
-		xfree(gres_slurmd_conf.links);
-		xfree(gres_slurmd_conf.file);
+		xfree(device_file);
+		xfree(nvlinks);
 	}
 
 	/*
