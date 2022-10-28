@@ -102,7 +102,17 @@ API CHANGES
  -- Allow for concurrent processing of job_submit_g_submit() and
     job_submit_g_modify() calls. If your plugin is not capable of concurrent
     operation you must add additional locking within your plugin.
- -- burst buffer plugins - add bb_g_build_het_job_script().
  -- Removed return value from slurm_list_append().
  -- The List and ListIterator types have been removed in favor of list_t and
     list_itr_t respectively.
+ -- burst buffer plugins - add bb_g_build_het_job_script().
+    bb_g_get_status() - added authenticated UID and GID.
+    bb_g_run_script() - added job_info argument.
+ -- burst_buffer.lua - Pass UID and GID to most hooks. Pass job_info (detailed
+    job information) to many hooks. See etc/burst_buffer.lua.example for a
+    complete list of changes. WARNING: Backwards compatibility is broken for
+    slurm_bb_get_status: UID and GID are passed before the variadic arguments.
+    If UID and GID are not explicitly listed as arguments to
+    slurm_bb_get_status(), then they will be included in the variadic arguments.
+    Backwards compatibility is maintained for all other hooks because the new
+    arguments are passed after the existing arguments.
