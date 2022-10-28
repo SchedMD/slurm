@@ -257,6 +257,7 @@ extern void print_gres_list_parsable(List gres_list)
 extern void gres_common_gpu_set_env(common_gres_env_t *gres_env)
 {
 	char *slurm_env_var;
+	uint64_t gres_cnt;
 
 	if (gres_env->is_job)
 		slurm_env_var = "SLURM_JOB_GPUS";
@@ -275,9 +276,10 @@ extern void gres_common_gpu_set_env(common_gres_env_t *gres_env)
 	 * Do not unset envs that could have already been set by an allocated
 	 * sharing GRES (GPU).
 	 */
-	if (gres_env->gres_cnt) {
+	gres_cnt = gres_env->bit_alloc ? bit_set_count(gres_env->bit_alloc) : 0;
+	if (gres_cnt) {
 		char *gpus_on_node = xstrdup_printf("%"PRIu64,
-						    gres_env->gres_cnt);
+						    gres_cnt);
 		env_array_overwrite(gres_env->env_ptr, "SLURM_GPUS_ON_NODE",
 				    gpus_on_node);
 		xfree(gpus_on_node);
