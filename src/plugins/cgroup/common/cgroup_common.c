@@ -280,6 +280,11 @@ extern int common_file_write_uints(char *file_path, void *values, int nb,
 				close(fd);
 				return SLURM_ERROR;
 			}
+		} else {
+			error("%s: unexpected base %d. Unable to write to %s",
+			      __func__, base, file_path);
+			close(fd);
+			return SLURM_ERROR;
 		}
 
 		/* write terminating NUL byte */
