@@ -275,6 +275,9 @@ extern void gres_common_gpu_set_env(common_gres_env_t *gres_env)
 	 * existing job allocation with GRES.
 	 * Do not unset envs that could have already been set by an allocated
 	 * sharing GRES (GPU).
+	 *
+	 * NOTE: Use gres_env->bit_alloc to ensure SLURM_GPUS_ON_NODE is
+	 * correct with shared gres. Do not use gres_env->gres_cnt.
 	 */
 	gres_cnt = gres_env->bit_alloc ? bit_set_count(gres_env->bit_alloc) : 0;
 	if (gres_cnt) {
