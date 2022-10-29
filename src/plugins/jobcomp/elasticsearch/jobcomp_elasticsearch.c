@@ -778,7 +778,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	}
 
 	FREE_NULL_DATA(record);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern void *_process_jobs(void *x)
