@@ -2196,6 +2196,9 @@ extern int data_g_serialize(char **dest, const data_t *src,
 	rc = (*(plugins[pmt->index].serialize))(dest, src, flags);
 	END_TIMER2(__func__);
 
+	/* dest must never be changed on failure */
+	xassert(!rc || !*dest);
+
 	return rc;
 }
 
