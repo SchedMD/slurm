@@ -771,7 +771,6 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 
 	if ((rc = data_g_serialize(&jnode->serialized_job, record,
 				   MIME_TYPE_JSON, DATA_SER_FLAGS_COMPACT))) {
-		xfree(jnode->serialized_job);
 		xfree(jnode);
 	} else {
 		list_enqueue(jobslist, jnode);
