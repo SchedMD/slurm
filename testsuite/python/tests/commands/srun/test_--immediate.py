@@ -5,10 +5,12 @@ import atf
 import pytest
 import re
 
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_slurm_running()
+
 
 def test_immediate():
 

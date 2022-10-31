@@ -6,10 +6,12 @@ import pytest
 import re
 import pexpect
 
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_slurm_running()
+
 
 def test_unbuffered(tmp_path):
     """Verify srun --unbuffered"""

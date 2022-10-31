@@ -8,11 +8,13 @@ import pexpect
 
 node_count = 4
 
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_slurm_running()
     atf.require_nodes(node_count)
+    atf.require_slurm_running()
+
 
 def test_input_ouput_taskid():
     """Verify srun stdin/out routing with specific task number."""

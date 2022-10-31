@@ -8,11 +8,13 @@ import re
 
 node_count = 1
 
+
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_slurm_running()
     atf.require_nodes(node_count)
+    atf.require_slurm_running()
+
 
 def test_wait(tmp_path):
     """Verify srun --wait"""

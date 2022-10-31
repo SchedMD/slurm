@@ -10,11 +10,13 @@ iteration_count = 100
 node_count = 4
 task_count = 4
 
+
 # Setup/Teardown
 @pytest.fixture(scope='module', autouse=True)
 def setup():
-    atf.require_slurm_running()
     atf.require_nodes(node_count, [('CPUs', task_count)])
+    atf.require_slurm_running()
+
 
 @pytest.fixture(scope='function')
 def input_file(request, tmp_path):
@@ -26,6 +28,7 @@ def input_file(request, tmp_path):
                 f.write(chr(ord('0') + i % 10))
             f.write('\n')
     return in_file
+
 
 def test_stdin_broadcast(input_file, tmp_path):
     """Copy job input to job output and compare sizes"""

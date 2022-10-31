@@ -5,16 +5,18 @@ import atf
 import pytest
 import re
 
-sleep_time = '90'
-kill_wait =  '30'
+sleep_time = 90
+kill_wait =  30
+
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_slurm_running()
     atf.require_config_parameter("OverTimeLimit", 0)
     atf.require_config_parameter("KillWait", kill_wait)
     atf.require_config_parameter("InactiveLimit", sleep_time)
+    atf.require_slurm_running()
+
 
 def test_t():
     """Verify srun job time limit function works (-t option)"""
@@ -29,10 +31,9 @@ def test_t():
     # message gets sent. This is due to srun recognizing job termination
     # prior to the message from slurmd being processed.
 
+    timeout = sleep_time + kill_wait
+    error = atf.run_command_error(f"srun -t1 sleep {sleep_time}", timeout=timeout, xfail=True)
+    assert re.search(r'time limit|terminated', error, re.IGNORECASE) is not None
 
-    timeout = int(sleep_time) + int(kill_wait)
-    output = atf.run_command_error("srun -t1 sleep " + sleep_time, timeout=timeout)
-    assert re.search(r'time limit|terminated', output, re.IGNORECASE) is not None
-
-    output = atf.run_command_error("srun -t4 sleep " + sleep_time,timeout=timeout)
-    assert not (re.search(r'time limit|terminated', output, re.IGNORECASE)) is not None
+    error = atf.run_command_error(f"srun -t4 sleep {sleep_time}", timeout=timeout)
+    assert not (re.search(r'time limit|terminated', error, re.IGNORECASE)) is not None

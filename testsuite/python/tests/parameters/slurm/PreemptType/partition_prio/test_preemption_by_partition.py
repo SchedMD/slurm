@@ -6,6 +6,7 @@ import pytest
 import re
 import time
 
+
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_config_parameter('PreemptType', 'preempt/partition_prio')

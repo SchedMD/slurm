@@ -5,11 +5,11 @@ import atf
 import pytest
 import re
 
+
 # Setup/Teardown
 @pytest.fixture(scope='module', autouse=True)
 def setup():
     atf.require_config_parameter('FairShareDampeningFactor', 1)
-#    atf.require_slurm_running()
 
 
 @pytest.fixture(scope='function')
