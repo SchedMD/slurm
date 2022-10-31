@@ -606,10 +606,21 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 			req->cpu_bind_type &= (~bind_mode);
 			req->cpu_bind_type |= CPU_BIND_MASK;
 		}
-		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		error("JobId=%u overriding binding: %s",
-		      req->step_id.job_id, buf_type);
-		error("Verify socket/core/thread counts in configuration");
+
+		if (req->flags & LAUNCH_OVERCOMMIT) {
+			/*
+			 * Allow the step to run despite being able to
+			 * distribute tasks.
+			 * e.g. Overcommit will fail to distribute tasks because
+			 * the step has wants more cpus than allocated.
+			 */
+			rc = SLURM_SUCCESS;
+		} else if (err_msg) {
+			slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
+			xstrfmtcat(*err_msg, "JobId=%u failed to distribute tasks (bind_type:%s) - this should never happen",
+				   req->step_id.job_id, buf_type);
+			error("%s", *err_msg);
+		}
 	}
 	if (masks)
 		_lllp_free_masks(maxtasks, masks);
