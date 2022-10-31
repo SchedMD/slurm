@@ -1240,7 +1240,7 @@
           "maximum_memory_per_node": {
             "type": "integer",
             "format": "int64",
-            "description": "maximum memory per allocated CPU (MiB)"
+            "description": "maximum memory per allocated node (MiB)"
           },
           "maximum_nodes_per_job": {
             "type": "integer",

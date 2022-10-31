@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential segfault in slurmd when using acct_gather_energy/ipmi.
  -- Fix controller being able to contact non-addressable step hosts.
  -- Allow setting SuspendTime to -1 when used on a partition.
+ -- openapi/v0.0.38 - fix maximum_memory_per_node description typo.
 
 * Changes in Slurm 22.05.6
 ==========================
