@@ -68,6 +68,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmd/common/proctrack.h"
 
+#define DEFAULT_INFLUXDB_TIMEOUT 10
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -104,6 +105,7 @@ typedef struct {
 	uint32_t def;
 	char *password;
 	char *rt_policy;
+	uint32_t timeout;
 	char *username;
 } slurm_influxdb_conf_t;
 
@@ -253,6 +255,7 @@ static int _send_data(const char *data)
 				 influxdb_conf.username);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, _write_callback);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *) &chunk);
+	curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, influxdb_conf.timeout);
 
 	if ((res = curl_easy_perform(curl_handle)) != CURLE_OK) {
 		if ((error_cnt++ % 100) == 0)
@@ -356,6 +359,7 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 		{"ProfileInfluxDBDefault", S_P_STRING},
 		{"ProfileInfluxDBPass", S_P_STRING},
 		{"ProfileInfluxDBRTPolicy", S_P_STRING},
+		{"ProfileInfluxDBTimeout", S_P_UINT32},
 		{"ProfileInfluxDBUser", S_P_STRING},
 		{NULL} };
 
@@ -386,6 +390,9 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 			       "ProfileInfluxDBPass", tbl);
 		s_p_get_string(&influxdb_conf.rt_policy,
 			       "ProfileInfluxDBRTPolicy", tbl);
+		if (!s_p_get_uint32(&influxdb_conf.timeout,
+				    "ProfileInfluxDBTimeout", tbl))
+			influxdb_conf.timeout = DEFAULT_INFLUXDB_TIMEOUT;
 		s_p_get_string(&influxdb_conf.username,
 			       "ProfileInfluxDBUser", tbl);
 	}
@@ -623,6 +630,11 @@ extern void acct_gather_profile_p_conf_values(List *data)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ProfileInfluxDBRTPolicy");
 	key_pair->value = xstrdup(influxdb_conf.rt_policy);
+	list_append(*data, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ProfileInfluxDBTimeout");
+	key_pair->value = xstrdup_printf("%u", influxdb_conf.timeout);
 	list_append(*data, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

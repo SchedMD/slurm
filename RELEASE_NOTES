@@ -61,6 +61,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Allow jobs to queue even if the user is not in AllowGroups when
     EnforcePartLimits=no is set. This ensures consistency for all the Partition
     access controls, and matches the documented behavior for EnforcePartLimits.
+ -- Add InfluxDBTimeout parameter to acct_gather.conf.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

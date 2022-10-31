@@ -306,6 +306,15 @@ in the [http] config section and a user has been granted at least WRITE access
 to the database. See also \fBProfileInfluxDBPass\fR.
 .IP
 
+.TP
+\fBProfileInfluxDBTimeout\fR=<seconds>
+The maximum time in seconds that an HTTP query to the InfluxDB server can take.
+After this timeout the data is discarded. Be aware that a long timeout can drain
+your nodes if the InfluxDB server is unresponsive and, when terminating the job,
+the last dataset takes more than UnkillableStepTimeout to be sent. Internally,
+that option sets CURLOPT_TIMEOUT library option. Default is 10 seconds.
+.IP
+
 .SS
 NOTES:
 .LP
