@@ -844,10 +844,17 @@ static int _parse_to_uint16(const parser_t *const parse, void *obj, data_t *str,
 	int rc = SLURM_SUCCESS;
 
 	if (data_get_type(str) == DATA_TYPE_NULL)
-		*dst = 0;
-	else if (data_convert_type(str, DATA_TYPE_INT_64) == DATA_TYPE_INT_64)
-		*dst = data_get_int(str);
-	else
+		*dst = INFINITE16;
+	else if (data_convert_type(str, DATA_TYPE_INT_64) == DATA_TYPE_INT_64) {
+		if (data_get_int(str) == NO_VAL64)
+			*dst = NO_VAL16;
+		else if (data_get_int(str) == INFINITE64)
+			*dst = INFINITE16;
+		else if (0xFFFFFFFFFFFF0000 & data_get_int(str))
+			rc = ESLURM_DATA_CONV_FAILED;
+		else
+			*dst = data_get_int(str);
+	} else
 		rc = ESLURM_DATA_CONV_FAILED;
 
 	log_flag(DATA, "%s: string %hu rc[%d]=%s", __func__, *dst, rc,

@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - fix a cast to a wrong type
  -- openapi/dbv0.0.38 - correct issues where modifying association fields were
     ignored.
+ -- openapi/dbv0.0.38 - correct issue where 16 bit integers were not able to be
+    unset.
 
 * Changes in Slurm 22.05.6
 ==========================
