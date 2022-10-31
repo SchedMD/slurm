@@ -1294,6 +1294,11 @@
           "tres": {
             "type": "string",
             "description": "configured TRES in partition"
+          },
+          "maximum_memory_per_cpu": {
+            "type": "integer",
+            "format": "int64",
+            "description": "maximum memory per allocated CPU (MiB)"
           }
         }
       },
