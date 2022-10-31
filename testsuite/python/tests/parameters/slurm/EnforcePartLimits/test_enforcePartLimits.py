@@ -110,7 +110,7 @@ def setup_account():
 def cancel_jobs():
     """Cancel all jobs after each test"""
     yield
-    atf.cancel_all_jobs()
+    atf.cancel_all_jobs(fatal=True)
 
 
 # Helper funcs:
