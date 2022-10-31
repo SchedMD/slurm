@@ -167,7 +167,7 @@ static ssize_t _read_cg_file(char *file_path, char **out)
 	}
 
 	if (nr_reads > 1)
-		log_flag(CGROUP, "%s: Read %ld bytes after %d read() syscalls. File may have changed between syscalls.",
+		log_flag(CGROUP, "%s: Read %zd bytes after %d read() syscalls. File may have changed between syscalls.",
 			 file_path, read_bytes, nr_reads);
 
 	close(fd);

@@ -209,7 +209,7 @@ extern int proctrack_p_create(stepd_step_rec_t *step)
 		slurm_mutex_unlock(&notify_mutex);
 		slurm_mutex_unlock(&thread_mutex);
 		if (step->cont_id != (jid_t) -1)
-			debug("proctrack_p_create: created jid 0x%08lx thread 0x%08lx",
+			debug("proctrack_p_create: created jid 0x%08"PRIx64" thread 0x%08lx",
 			      step->cont_id, threadid);
 	} else
 		error("proctrack_p_create: already have a cont_id");
