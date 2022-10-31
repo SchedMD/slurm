@@ -478,6 +478,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Container runtime not configured or invalid"		},
 	{ ESLURMD_CPU_BIND_ERROR,
 	  "Unable to satisfy cpu bind request"			},
+	{ ESLURMD_CPU_LAYOUT_ERROR,
+	  "Unable to layout tasks on given cpus"		},
 
 	/* slurmd errors in user batch job */
 	{ ESCRIPT_CHDIR_FAILED,

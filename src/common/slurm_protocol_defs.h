@@ -832,13 +832,14 @@ typedef struct job_step_create_response_msg {
 				      */
 } job_step_create_response_msg_t;
 
-#define LAUNCH_PARALLEL_DEBUG	0x00000001
-#define LAUNCH_MULTI_PROG	0x00000002
-#define LAUNCH_PTY		0x00000004
-#define LAUNCH_BUFFERED_IO	0x00000008
-#define LAUNCH_LABEL_IO		0x00000010
-/* free for reuse two versions after 22.05: 0x00000020 */
-#define LAUNCH_NO_ALLOC 	0x00000040
+#define LAUNCH_PARALLEL_DEBUG	SLURM_BIT(0)
+#define LAUNCH_MULTI_PROG	SLURM_BIT(1)
+#define LAUNCH_PTY		SLURM_BIT(2)
+#define LAUNCH_BUFFERED_IO	SLURM_BIT(3)
+#define LAUNCH_LABEL_IO		SLURM_BIT(4)
+/* free for reuse two versions after 22.05: SLURM_BIT(5) */
+#define LAUNCH_NO_ALLOC 	SLURM_BIT(6)
+#define LAUNCH_OVERCOMMIT 	SLURM_BIT(7)
 
 typedef struct launch_tasks_request_msg {
 	uint32_t  het_job_node_offset;	/* Hetjob node offset or NO_VAL */

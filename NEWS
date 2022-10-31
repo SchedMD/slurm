@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where '*' wasn't accepted in gpu/cpu bind.
  -- Fix SLURM_GPUS_ON_NODE for shared GPU gres (MPS, shards).
  -- Add SLURM_SHARDS_ON_NODE environment variable for shards.
+ -- Fix srun error with overcommit.
 
 * Changes in Slurm 22.05.5
 ==========================
