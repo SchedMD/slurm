@@ -1013,7 +1013,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 
 	avail_map = _get_avail_map(req, &hw_sockets, &hw_cores, &hw_threads);
 	if (!avail_map)
-		return SLURM_ERROR;
+		return ESLURMD_CPU_LAYOUT_ERROR;
 
 	if (req->threads_per_core && (req->threads_per_core != NO_VAL16))
 		req_threads_per_core = req->threads_per_core;
@@ -1029,14 +1029,14 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			      (req->cpus_per_task * (hw_threads /
 						     req_threads_per_core)));
 			FREE_NULL_BITMAP(avail_map);
-			return SLURM_ERROR;
+			return ESLURMD_CPU_LAYOUT_ERROR;
 		}
 	}
 	if (size < max_tasks) {
 		error("only %d bits in avail_map for %d tasks!",
 		      size, max_tasks);
 		FREE_NULL_BITMAP(avail_map);
-		return SLURM_ERROR;
+		return ESLURMD_CPU_LAYOUT_ERROR;
 	}
 	if (size < max_cpus) {
 		/* Possible result of overcommit */
@@ -1065,7 +1065,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			xfree(core_tasks);
 			xfree(core_threads);
 			xfree(socket_last_pu);
-			return SLURM_ERROR;
+			return ESLURMD_CPU_LAYOUT_ERROR;
 		}
 		last_taskcount = taskcount;
 		for (i = 0; i < size; i++) {
@@ -1220,7 +1220,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 
 	avail_map = _get_avail_map(req, &hw_sockets, &hw_cores, &hw_threads);
 	if (!avail_map) {
-		return SLURM_ERROR;
+		return ESLURMD_CPU_LAYOUT_ERROR;
 	}
 
 	if (req->threads_per_core && (req->threads_per_core != NO_VAL16))
@@ -1237,14 +1237,14 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			      (req->cpus_per_task * (hw_threads /
 						     req_threads_per_core)));
 			FREE_NULL_BITMAP(avail_map);
-			return SLURM_ERROR;
+			return ESLURMD_CPU_LAYOUT_ERROR;
 		}
 	}
 	if (size < max_tasks) {
 		error("only %d bits in avail_map for %d tasks!",
 		      size, max_tasks);
 		FREE_NULL_BITMAP(avail_map);
-		return SLURM_ERROR;
+		return ESLURMD_CPU_LAYOUT_ERROR;
 	}
 	if (size < max_cpus) {
 		/* Possible result of overcommit */
@@ -1273,7 +1273,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			xfree(core_tasks);
 			xfree(core_threads);
 			xfree(socket_tasks);
-			return SLURM_ERROR;
+			return ESLURMD_CPU_LAYOUT_ERROR;
 		}
 		if (taskcount > 0) {
 			/* Clear counters to over-subscribe, if necessary */
