@@ -91,6 +91,8 @@ const uint32_t plugin_id = SWITCH_PLUGIN_SLINGSHOT;
 slingshot_state_t slingshot_state;    /* VNI min/max/last/bitmap */
 slingshot_config_t slingshot_config;  /* Configuration defaults */
 
+extern int switch_p_libstate_clear(void);	/* for fini() below */
+
 /*
  * Set up slingshot_state defaults
  */
@@ -118,12 +120,11 @@ extern int init(void)
 
 extern int fini(void)
 {
-/*FIXME definition doesn't belong here: */
-	extern int switch_p_libstate_clear(void);
-
-	if (running_in_slurmctld())
+	if (running_in_slurmctld()) {
 		switch_p_libstate_clear();
-	else
+		slingshot_fini_instant_on();
+		slingshot_free_config();
+	} else
 		slingshot_free_services();
 	return SLURM_SUCCESS;
 }
@@ -137,6 +138,7 @@ extern int fini(void)
 extern int switch_p_reconfig(void)
 {
 	if (running_in_slurmctld()) {
+		slingshot_fini_instant_on();
 		if (!slingshot_setup_config(slurm_conf.switch_param))
 			return SLURM_ERROR;
 	}
@@ -333,7 +335,7 @@ extern int switch_p_libstate_clear(void)
 extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job,
 				  uint32_t job_id, uint32_t step_id)
 {
-	slingshot_jobinfo_t *new = xmalloc(sizeof(*new));
+	slingshot_jobinfo_t *new = xcalloc(1, sizeof(*new));
 
 	xassert(switch_job);
 
@@ -368,6 +370,14 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 				      step_ptr->step_id.job_id,
 				      step_ptr->network))
 		return SLURM_ERROR;
+
+	/*
+	 * Fetch any Instant On data if configured;
+	 * don't fail launch on Instant On failure
+	 */
+	slingshot_fetch_instant_on(job, step_layout->node_list,
+				   step_layout->node_cnt);
+
 	return SLURM_SUCCESS;
 }
 
@@ -397,6 +407,12 @@ extern int switch_p_duplicate_jobinfo(switch_jobinfo_t *tmp,
 	if (old->vni_pids)
 		new->vni_pids = bit_copy(old->vni_pids);
 
+	if (old->num_nics) {
+		size_t nicsz = old->num_nics * sizeof(slingshot_hsn_nic_t);
+		new->nics = xmalloc(nicsz);
+		memcpy(new->nics, old->nics, nicsz);
+	}
+
 	*dest = (switch_jobinfo_t *)new;
 	return SLURM_SUCCESS;
 }
@@ -409,6 +425,7 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	xfree(jobinfo->profiles);
 	if (jobinfo->vni_pids)
 		bit_free(jobinfo->vni_pids);
+	xfree(jobinfo->nics);
 	xfree(jobinfo);
 }
 
@@ -441,7 +458,17 @@ static void _pack_comm_profile(slingshot_comm_profile_t *profile, buf_t *buffer)
 	packstr(profile->device_name, buffer);
 }
 
-static bool _unpack_comm_profile(slingshot_comm_profile_t *profile, buf_t *buffer)
+static void _pack_hsn_nic(slingshot_hsn_nic_t *nic, buf_t *buffer)
+{
+	pack32(nic->nodeidx, buffer);
+	pack32(nic->address_type, buffer);
+	packstr(nic->address, buffer);
+	pack16(nic->numa_node, buffer);
+	packstr(nic->device_name, buffer);
+}
+
+static bool _unpack_comm_profile(slingshot_comm_profile_t *profile,
+				 buf_t *buffer)
 {
 	char *device_name;
 	uint32_t name_len;
@@ -456,6 +483,30 @@ static bool _unpack_comm_profile(slingshot_comm_profile_t *profile, buf_t *buffe
 	safe_unpackstr_xmalloc(&device_name, &name_len, buffer);
 	strlcpy(profile->device_name, device_name,
 		sizeof(profile->device_name));
+	xfree(device_name);
+
+	return true;
+
+unpack_error:
+	return false;
+}
+
+static bool _unpack_hsn_nic(slingshot_hsn_nic_t *nic, buf_t *buffer)
+{
+	char *address, *device_name;
+	uint32_t name_len;
+
+	safe_unpack32(&nic->nodeidx, buffer);
+	safe_unpack32(&nic->address_type, buffer);
+
+	safe_unpackstr_xmalloc(&address, &name_len, buffer);
+	strlcpy(nic->address, address, sizeof(nic->address));
+	xfree(address);
+
+	safe_unpack16(&nic->numa_node, buffer);
+
+	safe_unpackstr_xmalloc(&device_name, &name_len, buffer);
+	strlcpy(nic->device_name, device_name, sizeof(nic->device_name));
 	xfree(device_name);
 
 	return true;
@@ -484,7 +535,6 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		pack32(jobinfo->version, buffer);
 		pack16_array(jobinfo->vnis, jobinfo->num_vnis, buffer);
 		pack32(jobinfo->tcs, buffer);
-		pack32(jobinfo->flags, buffer);
 		_pack_slingshot_limits(&jobinfo->limits.txqs, buffer);
 		_pack_slingshot_limits(&jobinfo->limits.tgqs, buffer);
 		_pack_slingshot_limits(&jobinfo->limits.eqs, buffer);
@@ -499,6 +549,11 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 			_pack_comm_profile(&jobinfo->profiles[pidx], buffer);
 		}
 		pack_bit_str_hex(jobinfo->vni_pids, buffer);
+		pack32(jobinfo->flags, buffer);
+		pack32(jobinfo->num_nics, buffer);
+		for (pidx = 0; pidx < jobinfo->num_nics; pidx++) {
+			_pack_hsn_nic(&jobinfo->nics[pidx], buffer);
+		}
 	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		/* use SLURM_MIN_PROTOCOL_VERSION in 23.11 */
 		/* nothing to pack, pack special "null" version number */
@@ -565,7 +620,6 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 
 		safe_unpack16_array(&jobinfo->vnis, &jobinfo->num_vnis, buffer);
 		safe_unpack32(&jobinfo->tcs, buffer);
-		safe_unpack32(&jobinfo->flags, buffer);
 		if (!_unpack_slingshot_limits(&jobinfo->limits.txqs, buffer) ||
 		    !_unpack_slingshot_limits(&jobinfo->limits.tgqs, buffer) ||
 		    !_unpack_slingshot_limits(&jobinfo->limits.eqs, buffer) ||
@@ -586,6 +640,15 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 				goto unpack_error;
 		}
 		unpack_bit_str_hex(&jobinfo->vni_pids, buffer);
+		safe_unpack32(&jobinfo->flags, buffer);
+
+		safe_unpack32(&jobinfo->num_nics, buffer);
+		jobinfo->nics = xcalloc(jobinfo->num_nics,
+					sizeof(slingshot_hsn_nic_t));
+		for (pidx = 0; pidx < jobinfo->num_nics; pidx++) {
+			if (!_unpack_hsn_nic(&jobinfo->nics[pidx], buffer))
+				goto unpack_error;
+		}
 	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		/* use SLURM_MIN_PROTOCOL_VERSION in 23.11 */
 		safe_unpack32(&jobinfo->version, buffer);
@@ -622,6 +685,9 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 				goto unpack_error;
 		}
 		unpack_bit_str_hex(&jobinfo->vni_pids, buffer);
+		/* Not present in this version, set to none */
+		jobinfo->num_nics = 0;
+		jobinfo->nics = NULL;
 	} else {
 		error("invalid protocol version");
 		goto error;

@@ -181,9 +181,15 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-switch_hpe_slingshot_la_LIBADD =
-am_switch_hpe_slingshot_la_OBJECTS = apinfo.lo config.lo setup_nic.lo \
-	switch_hpe_slingshot.lo
+am__DEPENDENCIES_1 =
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_DEPENDENCIES =  \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1) \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1)
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@am_switch_hpe_slingshot_la_OBJECTS =  \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	apinfo.lo config.lo \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	instant_on.lo \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	setup_nic.lo \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	switch_hpe_slingshot.lo
 switch_hpe_slingshot_la_OBJECTS =  \
 	$(am_switch_hpe_slingshot_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -194,6 +200,8 @@ switch_hpe_slingshot_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(switch_hpe_slingshot_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@am_switch_hpe_slingshot_la_rpath =  \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	-rpath $(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -210,7 +218,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/apinfo.Plo ./$(DEPDIR)/config.Plo \
-	./$(DEPDIR)/setup_nic.Plo ./$(DEPDIR)/switch_hpe_slingshot.Plo
+	./$(DEPDIR)/instant_on.Plo ./$(DEPDIR)/setup_nic.Plo \
+	./$(DEPDIR)/switch_hpe_slingshot.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -522,19 +531,21 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common \
-	      $(HPE_SLINGSHOT_CFLAGS)
+	      $(HPE_SLINGSHOT_CFLAGS) $(LIBCURL_CPPFLAGS) $(JSON_CPPFLAGS)
 
-pkglib_LTLIBRARIES = switch_hpe_slingshot.la
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@pkglib_LTLIBRARIES = switch_hpe_slingshot.la
 
 # HPE Slingshot switch plugin.
-switch_hpe_slingshot_la_SOURCES = \
-	apinfo.c \
-	config.c \
-	setup_nic.c \
-	switch_hpe_slingshot.c \
-	switch_hpe_slingshot.h
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_SOURCES = \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	apinfo.c \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	config.c \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	instant_on.c \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	setup_nic.c \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	switch_hpe_slingshot.c \
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@	switch_hpe_slingshot.h
 
-switch_hpe_slingshot_la_LDFLAGS = $(PLUGIN_FLAGS)
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_LDFLAGS = $(PLUGIN_FLAGS)
+@WITH_CURL_TRUE@@WITH_JSON_PARSER_TRUE@switch_hpe_slingshot_la_LIBADD = $(LIBCURL) $(JSON_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -605,7 +616,7 @@ clean-pkglibLTLIBRARIES:
 	}
 
 switch_hpe_slingshot.la: $(switch_hpe_slingshot_la_OBJECTS) $(switch_hpe_slingshot_la_DEPENDENCIES) $(EXTRA_switch_hpe_slingshot_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(switch_hpe_slingshot_la_LINK) -rpath $(pkglibdir) $(switch_hpe_slingshot_la_OBJECTS) $(switch_hpe_slingshot_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(switch_hpe_slingshot_la_LINK) $(am_switch_hpe_slingshot_la_rpath) $(switch_hpe_slingshot_la_OBJECTS) $(switch_hpe_slingshot_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -615,6 +626,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/apinfo.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/instant_on.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setup_nic.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch_hpe_slingshot.Plo@am__quote@ # am--include-marker
 
@@ -747,6 +759,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/apinfo.Plo
 	-rm -f ./$(DEPDIR)/config.Plo
+	-rm -f ./$(DEPDIR)/instant_on.Plo
 	-rm -f ./$(DEPDIR)/setup_nic.Plo
 	-rm -f ./$(DEPDIR)/switch_hpe_slingshot.Plo
 	-rm -f Makefile
@@ -796,6 +809,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/apinfo.Plo
 	-rm -f ./$(DEPDIR)/config.Plo
+	-rm -f ./$(DEPDIR)/instant_on.Plo
 	-rm -f ./$(DEPDIR)/setup_nic.Plo
 	-rm -f ./$(DEPDIR)/switch_hpe_slingshot.Plo
 	-rm -f Makefile

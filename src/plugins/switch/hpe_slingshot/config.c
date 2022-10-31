@@ -36,6 +36,8 @@
 
 #include "config.h"
 
+#include <sys/stat.h>
+
 #include "switch_hpe_slingshot.h"
 
 /* Set this to true if VNI table is re-sized and loses some bits */
@@ -78,36 +80,35 @@ static void _config_defaults(void)
  * Parse the VNI min/max token, with format "vni=<min>-<max>";
  * put results in *minp, *maxp
  */
-static bool _config_vnis(const char *token, uint16_t *min_ptr,
+static bool _config_vnis(const char *token, char *arg, uint16_t *min_ptr,
 			 uint16_t *max_ptr)
 {
-	char *arg, *end_ptr;
+	char *end_ptr;
 	int min, max;
 
-	if (!(arg = strchr(token, '=')))
-		goto error;
-	arg++;
+	if (!arg)
+		goto err;
 	end_ptr = NULL;
 	min = strtol(arg, &end_ptr, 10);
 	if (!end_ptr || (end_ptr == arg) || (*end_ptr != '-'))
-		goto error;
+		goto err;
 	if ((min < SLINGSHOT_VNI_MIN) || (min > SLINGSHOT_VNI_MAX))
-		goto error;
+		goto err;
 
 	arg = end_ptr + 1;
 	end_ptr = NULL;
 	max = strtol(arg, &end_ptr, 10);
 	if (!end_ptr || (end_ptr == arg) || (*end_ptr != '\0'))
-		goto error;
+		goto err;
 	if ((max <= min) || (max > SLINGSHOT_VNI_MAX))
-		goto error;
+		goto err;
 
 	*min_ptr = min;
 	*max_ptr = max;
 	log_flag(SWITCH, "[token=%s]: min/max %hu %hu", token, min, max);
 	return true;
 
-error:
+err:
 	error("Invalid vni token '%s' (example: 'vnis=10-100', valid range %d-%d)",
 	      token, SLINGSHOT_VNI_MIN, SLINGSHOT_VNI_MAX);
 	return false;
@@ -198,15 +199,14 @@ const int num_classes = sizeof(classes) / sizeof(classes[0]);
  * Parse the Slingshot traffic classes token, with format
  * "tcs=<class1>:<class2>[:...]
  */
-static bool _config_tcs(const char *token)
+static bool _config_tcs(const char *token, char *arg)
 {
-	char *arg, *save_ptr = NULL, *tcs = NULL, *tc;
+	char *save_ptr = NULL, *tcs = NULL, *tc;
 	uint32_t tcbits = 0;
 	int i;
 
-	if (!(arg = strchr(token, '=')))
+	if (!arg)
 		goto err;
-	arg++;
 	tcs = xstrdup(arg);
 	for (tc = strtok_r(tcs, ":", &save_ptr); tc;
 		tc = strtok_r(NULL, ":", &save_ptr)) {
@@ -237,16 +237,13 @@ err:
 /*
  * Parse the Slingshot job VNI token, with format "job_vni={all,user,none}"
  */
-static bool _config_job_vni(const char *token)
+static bool _config_job_vni(const char *token, char *arg)
 {
-	char *arg;
-
 	/* Backwards compatibility: no argument = SLINGSHOT_JOB_VNI_ALL */
-	if (!(arg = strchr(token, '='))) {
+	if (!arg) {
 		slingshot_config.job_vni = SLINGSHOT_JOB_VNI_ALL;
 		goto out;
 	}
-	arg++;
 	if (!xstrcasecmp(arg, "all"))
 		slingshot_config.job_vni = SLINGSHOT_JOB_VNI_ALL;
 	else if (!xstrcasecmp(arg, "user"))
@@ -269,16 +266,13 @@ out:
  * Parse the Slingshot single-node VNI token, with format
  * "single_node_vni={all,user,none}"
  */
-static bool _config_single_node_vni(const char *token)
+static bool _config_single_node_vni(const char *token, char *arg)
 {
-	char *arg;
-
 	/* Backwards compatibility: no argument = SLINGSHOT_SN_VNI_ALL */
-	if (!(arg = strchr(token, '='))) {
+	if (!arg) {
 		slingshot_config.single_node_vni = SLINGSHOT_SN_VNI_ALL;
 		goto out;
 	}
-	arg++;
 	if (!xstrcasecmp(arg, "all"))
 		slingshot_config.single_node_vni = SLINGSHOT_SN_VNI_ALL;
 	else if (!xstrcasecmp(arg, "user"))
@@ -295,6 +289,93 @@ out:
 	log_flag(SWITCH, "[token=%s]: single_node_vni %d",
 		 token, slingshot_config.single_node_vni);
 	return true;
+}
+
+/*
+ * Parse the "jlope_url" token, with format "jlope_url=<url>"
+ */
+static bool _config_jlope_url(const char *token, char *arg)
+{
+	if (!arg)
+		goto err;
+	slingshot_config.jlope_url = xstrdup(arg);
+
+	log_flag(SWITCH, "[token=%s]: jlope_url %s",
+		 token, slingshot_config.jlope_url);
+	return true;
+err:
+	error("Invalid jlope_url token '%s' (example 'jlope_url=https://api-gw-service-nmn.local/apis/jackaloped')",
+		token);
+	return false;
+}
+
+/*
+ * Parse the "jlope_auth" token, with format "jlope_auth={BASIC,OAUTH}"
+ */
+static bool _config_jlope_auth(const char *token, char *arg)
+{
+	if (!arg)
+		goto err;
+	if (!xstrcasecmp(arg, SLINGSHOT_JLOPE_AUTH_BASIC_STR))
+		slingshot_config.jlope_auth = SLINGSHOT_JLOPE_AUTH_BASIC;
+	else if (!xstrcasecmp(arg, SLINGSHOT_JLOPE_AUTH_OAUTH_STR))
+		slingshot_config.jlope_auth = SLINGSHOT_JLOPE_AUTH_OAUTH;
+	else
+		goto err;
+
+	log_flag(SWITCH, "[token=%s]: jlope_auth %d",
+		 token, slingshot_config.jlope_auth);
+	return true;
+err:
+	error("Invalid jlope_auth token '%s' (example 'jlope_auth={BASIC,OAUTH}')",
+		token);
+	return false;
+}
+
+/*
+ * Parse the "jlope_authdir" token, with format "jlope_authdir=<dirpath>"
+ */
+static bool _config_jlope_authdir(const char *token, char *arg)
+{
+	struct stat statbuf;
+
+	if (!arg)
+		goto err;
+	if (stat(arg, &statbuf) != 0 || !S_ISDIR(statbuf.st_mode)) {
+		error("jlope_authdir directory '%s' is not a directory", arg);
+		return false;
+	}
+	slingshot_config.jlope_authdir = xstrdup(arg);
+
+	log_flag(SWITCH, "[token=%s]: jlope_authdir %s",
+		 token, slingshot_config.jlope_authdir);
+	return true;
+err:
+	error("Invalid jlope_authdir token '%s' (example 'jlope_authdir=/etc/wlm-client-auth')",
+		token);
+	return false;
+}
+
+/*
+ * If jlope_url is set, set up default values for jlope_auth{dir}
+ * (if not already set)
+ */
+static void _config_jlope_defaults(void)
+{
+	if (!slingshot_config.jlope_url)
+		return;
+	if (slingshot_config.jlope_auth == SLINGSHOT_JLOPE_AUTH_NONE)
+		slingshot_config.jlope_auth = SLINGSHOT_JLOPE_AUTH_OAUTH;
+	if (!slingshot_config.jlope_authdir) {
+		if (slingshot_config.jlope_auth == SLINGSHOT_JLOPE_AUTH_OAUTH)
+			slingshot_config.jlope_authdir =
+					xstrdup(SLINGSHOT_JLOPE_AUTH_OAUTH_DIR);
+		else if (slingshot_config.jlope_auth ==
+				SLINGSHOT_JLOPE_AUTH_BASIC)
+			slingshot_config.jlope_authdir =
+					xstrdup(SLINGSHOT_JLOPE_AUTH_BASIC_DIR);
+	}
+	xassert(slingshot_config.jlope_authdir);
 }
 
 /*
@@ -415,12 +496,21 @@ static void _print_limits(slingshot_limits_set_t *limits)
 }
 
 /*
+ * Free any configuration memory
+ */
+extern void slingshot_free_config(void)
+{
+	xfree(slingshot_config.jlope_url);
+	xfree(slingshot_config.jlope_authdir);
+}
+
+/*
  * Set up passed-in slingshot_config_t based on values in 'SwitchParameters'
  * slurm.conf setting.  Return true on success, false on bad parameters
  */
 extern bool slingshot_setup_config(const char *switch_params)
 {
-	char *params = NULL, *token, *save_ptr = NULL;
+	char *params = NULL, *token, *arg, *save_ptr = NULL;
 	const char vnis[] = "vnis";
 	const size_t size_vnis = sizeof(vnis) - 1;
 	const char tcs[] = "tcs";
@@ -433,6 +523,12 @@ extern bool slingshot_setup_config(const char *switch_params)
 	const size_t size_adjust_limits = sizeof(adjust_limits) - 1;
 	const char no_adjust_limits[] = "no_adjust_limits";
 	const size_t size_no_adjust_limits = sizeof(no_adjust_limits) - 1;
+	const char jlope_url[] = "jlope_url";
+	const size_t size_jlope_url = sizeof(jlope_url) - 1;
+	const char jlope_auth[] = "jlope_auth";
+	const size_t size_jlope_auth = sizeof(jlope_auth) - 1;
+	const char jlope_authdir[] = "jlope_authdir";
+	const size_t size_jlope_authdir = sizeof(jlope_authdir) - 1;
 	/* Use min/max in state file if SwitchParameters not set */
 	uint16_t vni_min = slingshot_state.vni_min;
 	uint16_t vni_max = slingshot_state.vni_max;
@@ -452,6 +548,11 @@ extern bool slingshot_setup_config(const char *switch_params)
 	 *   {no_}adjust_limits: {don't} adjust resource reservations
 	 *     for each NIC by subtracting resources already
 	 *     used/reserved by system services
+	 *   jlope_url=<url>: use URL for jackaloped REST requests
+	 *   jlope_auth="BASIC|OAUTH": jackaloped REST API authentication type
+	 *   jlope_authdir=<dir>: directory containing authentication info
+	 *     (i.e. /etc/jackaloped for BASIC, /etc/wlm-client-auth for OAUTH)
+	 *
 	 *   def_<NIC_resource>: default per-thread value for resource
 	 *   res_<NIC_resource>: reserved value for resource
 	 *   max_<NIC_resource>: maximum value for resource
@@ -467,6 +568,7 @@ extern bool slingshot_setup_config(const char *switch_params)
 	 *   acs:  addressing contexts
 	 */
 
+	slingshot_free_config();
 	_config_defaults();
 	if (!switch_params) {
 		if (!_setup_vni_table(vni_min, vni_max))
@@ -477,21 +579,23 @@ extern bool slingshot_setup_config(const char *switch_params)
 	params = xstrdup(switch_params);
 	for (token = strtok_r(params, ",", &save_ptr); token;
 		token = strtok_r(NULL, ",", &save_ptr)) {
+		if ((arg = strchr(token, '=')))
+			arg++;	/* points to argument after = if any */
 		if (!xstrncasecmp(token, vnis, size_vnis)) {
-			if (!_config_vnis(token, &vni_min, &vni_max))
+			if (!_config_vnis(token, arg, &vni_min, &vni_max))
 				goto err;
 			/* See if any incompatible changes in VNI range */
 			if (!_setup_vni_table(vni_min, vni_max))
 				goto err;
 		} else if (!xstrncasecmp(token, tcs, size_tcs)) {
-			if (!_config_tcs(token))
+			if (!_config_tcs(token, arg))
 				goto err;
 		} else if (!xstrncasecmp(token, job_vni, size_job_vni)) {
-			if (!_config_job_vni(token))
+			if (!_config_job_vni(token, arg))
 				goto err;
 		} else if (!xstrncasecmp(token, single_node_vni,
 					 size_single_node_vni)) {
-			if (!_config_single_node_vni(token))
+			if (!_config_single_node_vni(token, arg))
 				goto err;
 		} else if (!xstrncasecmp(token, adjust_limits,
 					 size_adjust_limits)) {
@@ -500,16 +604,39 @@ extern bool slingshot_setup_config(const char *switch_params)
 					 size_no_adjust_limits)) {
 			slingshot_config.flags &=
 					~(SLINGSHOT_FLAGS_ADJUST_LIMITS);
+		} else if (!xstrncasecmp(token, jlope_url, size_jlope_url)) {
+			if (!_config_jlope_url(token, arg))
+				goto err;
+		/*
+		 * NOTE: jlope_authdir needs to come before jlope_auth
+		 * since jlope_auth is a prefix of jlope_authdir
+		 */
+		} else if (!xstrncasecmp(token, jlope_authdir,
+			   size_jlope_authdir)) {
+			if (!_config_jlope_authdir(token, arg))
+				goto err;
+		} else if (!xstrncasecmp(token, jlope_auth, size_jlope_auth)) {
+			if (!_config_jlope_auth(token, arg))
+				goto err;
 		} else {
 			if (!_config_limits(token, &slingshot_config.limits))
 				goto err;
 		}
 	}
+	/* If jlope_url is set, set up default values for jlope_auth{dir} */
+	_config_jlope_defaults();
+
+	/* Set up connection to jackaloped */
+	if (!slingshot_init_instant_on())
+		goto err;
 
 out:
 	debug("single_node_vni=%d job_vni=%d tcs=%#x flags=%#x",
 	      slingshot_config.single_node_vni, slingshot_config.job_vni,
 	      slingshot_config.tcs, slingshot_config.flags);
+	debug("jlope_url=%s jlope_auth=%u jlope_authdir=%s",
+	      slingshot_config.jlope_url, slingshot_config.jlope_auth,
+	      slingshot_config.jlope_authdir);
 	_print_limits(&slingshot_config.limits);
 
 	xfree(params);

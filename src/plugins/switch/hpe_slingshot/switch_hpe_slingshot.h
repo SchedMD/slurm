@@ -38,6 +38,7 @@
 #ifndef _SWITCH_HPE_SLINGSHOT_H_
 #define _SWITCH_HPE_SLINGSHOT_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "src/common/read_config.h"
@@ -75,6 +76,26 @@
 #define SLINGSHOT_VNI_PIDS_BUFSIZ ((SLINGSHOT_VNI_PIDS / 4) + 3)
 /* Format for VNI "PIDs" job file name */
 #define SLINGSHOT_VNI_PIDS_FMT "%s/vni_pids.%u" /* <spooldir>, <job_id> */
+
+/*
+ * Values/directories/filenames for jackaloped BASIC/OAUTH authentication
+ */
+typedef enum {
+	SLINGSHOT_JLOPE_AUTH_NONE = 0, /* No authentication */
+	SLINGSHOT_JLOPE_AUTH_BASIC,    /* User name and password */
+	SLINGSHOT_JLOPE_AUTH_OAUTH     /* OAuth2 client credentials grant */
+} jlope_auth_t;
+#define SLINGSHOT_JLOPE_AUTH_BASIC_STR  "BASIC" /* jlope_auth token */
+#define SLINGSHOT_JLOPE_AUTH_OAUTH_STR  "OAUTH" /* jlope_auth token */
+#define SLINGSHOT_JLOPE_AUTH_BASIC_USER "cxi"   /* user name for BASIC auth */
+#define SLINGSHOT_JLOPE_TIMEOUT         10      /* timeout for REST calls */
+#define SLINGSHOT_JLOPE_CONNECT_TIMEOUT 10      /* timeout for REST connect */
+#define SLINGSHOT_JLOPE_AUTH_BASIC_DIR                "/etc/jackaloped"
+#define SLINGSHOT_JLOPE_AUTH_OAUTH_DIR                "/etc/wlm-client-auth"
+#define SLINGSHOT_JLOPE_AUTH_BASIC_PWD_FILE           "passwd"
+#define SLINGSHOT_JLOPE_AUTH_OAUTH_CLIENT_ID_FILE     "client-id"
+#define SLINGSHOT_JLOPE_AUTH_OAUTH_CLIENT_SECRET_FILE "client-secret"
+#define SLINGSHOT_JLOPE_AUTH_OAUTH_ENDPOINT_FILE      "endpoint"
 
 /* Per-job shared VNI structure */
 typedef struct job_vni {
@@ -142,6 +163,9 @@ typedef struct slingshot_config {
 	uint32_t tcs;                   /* Bitmap of default traffic classes */
 	uint32_t flags;                 /* Bitmap of configuration flags */
 	slingshot_limits_set_t limits;  /* Set of NIC resource limits */
+	char *jlope_url;                /* URL of jackaloped REST interface */
+	jlope_auth_t jlope_auth;        /* jackaloped authentication type */
+	char *jlope_authdir;            /* directory containing auth files */
 } slingshot_config_t;
 
 /* Values for slingshot_config_t.single_node_vni */
@@ -163,6 +187,22 @@ typedef struct slingshot_comm_profile {
 	char device_name[16];   /* NIC device name (e.g. "cxi0") */
 } slingshot_comm_profile_t;
 
+/*
+ * Slingshot HSN NIC information structure
+ */
+typedef enum {
+	SLINGSHOT_ADDR_IPV4,
+	SLINGSHOT_ADDR_IPV6,
+	SLINGSHOT_ADDR_MAC
+} slingshot_addr_type_t;
+typedef struct {
+	uint32_t nodeidx;       /* Node index this NIC belongs to */
+	slingshot_addr_type_t address_type; /* Address type for this NIC */
+	char address[64];      /* Address of this NIC */
+	uint16_t numa_node;    /* NUMA node it is in */
+	char device_name[16];  /* Device name */
+} slingshot_hsn_nic_t;
+
 /* Version of the jobinfo structure */
 #define SLINGSHOT_JOBINFO_VERSION SLURM_PROTOCOL_VERSION
 /* Denotes packing a null jobinfo structure */
@@ -180,6 +220,8 @@ typedef struct slingshot_jobinfo {
 	slingshot_comm_profile_t *profiles; /* List of communication profiles */
 	bitstr_t *vni_pids;    /* Set of Slingshot job VNI allocated PIDs */
 	uint32_t flags;        /* Configuration flags */
+	uint32_t num_nics;     /* Number of entries in 'nics' array */
+	slingshot_hsn_nic_t *nics; /* HSN NIC information for instant on */
 } slingshot_jobinfo_t;
 
 /* Slingshot traffic classes (bitmap) */
@@ -215,11 +257,17 @@ extern slingshot_config_t slingshot_config;
 extern bool create_slingshot_apinfo(const stepd_step_rec_t *step);
 extern void remove_slingshot_apinfo(const stepd_step_rec_t *step);
 /* config.c */
+extern void slingshot_free_config(void);
 extern bool slingshot_setup_config(const char *switch_params);
 extern bool slingshot_setup_job_step(slingshot_jobinfo_t *job, int node_cnt,
 	uint32_t job_id, const char *network_params);
 extern void slingshot_free_job_step(slingshot_jobinfo_t *job);
 extern void slingshot_free_job(uint32_t job_id);
+/* instant_on.c */
+extern bool slingshot_init_instant_on(void);
+extern void slingshot_fini_instant_on(void);
+extern bool slingshot_fetch_instant_on(slingshot_jobinfo_t *job,
+				       char *node_list, uint32_t node_cnt);
 /* setup_nic.c */
 extern bool slingshot_open_cxi_lib(slingshot_jobinfo_t *job);
 extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
