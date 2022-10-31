@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "September 2022" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "October 2022" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1439,7 +1439,8 @@ command will exit if the option argument is "help".
 Examples of use include "\-\-gres=gpu:2", "\-\-gres=gpu:kepler:2", and
 "\-\-gres=help".
 NOTE: This option applies to job and step allocations. By default, a job step
-is allocated all of the generic resources that have been allocated to the job.
+is allocated all of the generic resources that have been requested by the job,
+except those implicitly requested when a job is exclusive.
 To change the behavior so that each job step is allocated no generic resources,
 explicitly set the value of \-\-gres to specify zero counts for each generic
 resource OR set "\-\-gres=none" OR set the SLURM_STEP_GRES environment variable
