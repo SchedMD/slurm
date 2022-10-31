@@ -74,28 +74,26 @@ AC_DEFUN([X_AC_NVML],
 	break;
       fi
     done
-  fi
-  LDFLAGS="$ldflags_save"
-  CPPFLAGS="$cppflags_save"
+    LDFLAGS="$ldflags_save"
+    CPPFLAGS="$cppflags_save"
 
+    if [ test "$ac_nvml" = "yes" ]; then
+      AC_DEFINE(HAVE_NVML, 1, [Define to 1 if NVML library found])
+      AC_DEFINE_UNQUOTED(NVIDIA_NVML_LIB, "$NVML_LIB_DIR/libnvidia-ml.so", [Full path of libnvidia-ml.so])
+      AC_SUBST(NVML_CPPFLAGS)
+
+      if [ test "$ac_mig_support" = "yes" ]; then
+	AC_DEFINE(HAVE_MIG_SUPPORT, 1, [Define to 1 if NVML library has MIG support])
+      else
+        AC_MSG_WARN([NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well.])
+      fi
+    else
+      if test -z "$with_nvml"; then
+        AC_MSG_WARN([unable to locate libnvidia-ml.so and/or nvml.h])
+      else
+        AC_MSG_ERROR([unable to locate libnvidia-ml.so and/or nvml.h])
+      fi
+    fi
+  fi
   AM_CONDITIONAL(BUILD_NVML, test "$ac_nvml" = "yes")
-
-  if [ test "$ac_nvml" = "yes" ]; then
-    NVML_CPPFLAGS="$nvml_includes"
-    AC_DEFINE(HAVE_NVML, 1, [Define to 1 if NVML library found])
-    AC_DEFINE_UNQUOTED(NVIDIA_NVML_LIB, "$NVML_LIB_DIR/libnvidia-ml.so", [Full path of libnvidia-ml.so])
-    AC_SUBST(NVML_CPPFLAGS)
-
-    if [ test "$ac_mig_support" = "yes" ]; then
-      AC_DEFINE(HAVE_MIG_SUPPORT, 1, [Define to 1 if NVML library has MIG support])
-    else
-      AC_MSG_WARN([NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well.])
-    fi
-  else
-    if test -z "$with_nvml"; then
-      AC_MSG_WARN([unable to locate libnvidia-ml.so and/or nvml.h])
-    else
-      AC_MSG_ERROR([unable to locate libnvidia-ml.so and/or nvml.h])
-    fi
-  fi
 ])

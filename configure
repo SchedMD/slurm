@@ -782,9 +782,9 @@ ONEAPI_CPPFLAGS
 BUILD_RSMI_FALSE
 BUILD_RSMI_TRUE
 RSMI_CPPFLAGS
-NVML_CPPFLAGS
 BUILD_NVML_FALSE
 BUILD_NVML_TRUE
+NVML_CPPFLAGS
 HWLOC_LDFLAGS
 HWLOC_CPPFLAGS
 HWLOC_LIBS
@@ -23368,21 +23368,10 @@ fi
 	break;
       fi
     done
-  fi
-  LDFLAGS="$ldflags_save"
-  CPPFLAGS="$cppflags_save"
+    LDFLAGS="$ldflags_save"
+    CPPFLAGS="$cppflags_save"
 
-   if test "$ac_nvml" = "yes"; then
-  BUILD_NVML_TRUE=
-  BUILD_NVML_FALSE='#'
-else
-  BUILD_NVML_TRUE='#'
-  BUILD_NVML_FALSE=
-fi
-
-
-  if  test "$ac_nvml" = "yes" ; then
-    NVML_CPPFLAGS="$nvml_includes"
+    if  test "$ac_nvml" = "yes" ; then
 
 printf "%s\n" "#define HAVE_NVML 1" >>confdefs.h
 
@@ -23391,22 +23380,31 @@ printf "%s\n" "#define NVIDIA_NVML_LIB \"$NVML_LIB_DIR/libnvidia-ml.so\"" >>conf
 
 
 
-    if  test "$ac_mig_support" = "yes" ; then
+      if  test "$ac_mig_support" = "yes" ; then
 
 printf "%s\n" "#define HAVE_MIG_SUPPORT 1" >>confdefs.h
 
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well." >&5
+      else
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well." >&5
 printf "%s\n" "$as_me: WARNING: NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well." >&2;}
-    fi
-  else
-    if test -z "$with_nvml"; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&5
-printf "%s\n" "$as_me: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&2;}
+      fi
     else
-      as_fn_error $? "unable to locate libnvidia-ml.so and/or nvml.h" "$LINENO" 5
+      if test -z "$with_nvml"; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&5
+printf "%s\n" "$as_me: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&2;}
+      else
+        as_fn_error $? "unable to locate libnvidia-ml.so and/or nvml.h" "$LINENO" 5
+      fi
     fi
   fi
+   if test "$ac_nvml" = "yes"; then
+  BUILD_NVML_TRUE=
+  BUILD_NVML_FALSE='#'
+else
+  BUILD_NVML_TRUE='#'
+  BUILD_NVML_FALSE=
+fi
+
 
 
 
