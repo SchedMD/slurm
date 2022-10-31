@@ -491,7 +491,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	int rc;
 
 	if (list_count(jobslist) > MAX_JOBS) {
-		error("%s: Limit of %d enqueued jobs in memory waiting to be indexed reached. Job %pJ discarded",
+		error("%s: Limit of %d enqueued jobs in memory waiting to be indexed reached. %pJ discarded",
 		      plugin_type, MAX_JOBS, job_ptr);
 		return SLURM_ERROR;
 	}
