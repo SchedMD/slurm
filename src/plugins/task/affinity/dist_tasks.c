@@ -561,10 +561,21 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 			req->cpu_bind_type &= (~bind_mode);
 			req->cpu_bind_type |= CPU_BIND_MASK;
 		}
-		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		error("JobId=%u overriding binding: %s",
-		      req->step_id.job_id, buf_type);
-		error("Verify socket/core/thread counts in configuration");
+
+		if (req->flags & LAUNCH_OVERCOMMIT) {
+			/*
+			 * Allow the step to run despite being able to
+			 * distribute tasks.
+			 * e.g. Overcommit will fail to distribute tasks because
+			 * the step has wants more cpus than allocated.
+			 */
+			rc = SLURM_SUCCESS;
+		} else if (err_msg) {
+			slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
+			xstrfmtcat(*err_msg, "JobId=%u failed to distribute tasks (bind_type:%s) - this should never happen",
+				   req->step_id.job_id, buf_type);
+			error("%s", *err_msg);
+		}
 	}
 	if (masks)
 		_lllp_free_masks(maxtasks, masks);
@@ -956,7 +967,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	avail_map = _get_avail_map(req->cred, &hw_sockets, &hw_cores,
 				   &hw_threads);
 	if (!avail_map)
-		return SLURM_ERROR;
+		return ESLURMD_CPU_LAYOUT_ERROR;
 
 	if (req->threads_per_core && (req->threads_per_core != NO_VAL16))
 		req_threads_per_core = req->threads_per_core;
@@ -972,14 +983,14 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			      (req->cpus_per_task * (hw_threads /
 						     req_threads_per_core)));
 			FREE_NULL_BITMAP(avail_map);
-			return SLURM_ERROR;
+			return ESLURMD_CPU_LAYOUT_ERROR;
 		}
 	}
 	if (size < max_tasks) {
 		error("only %d bits in avail_map for %d tasks!",
 		      size, max_tasks);
 		FREE_NULL_BITMAP(avail_map);
-		return SLURM_ERROR;
+		return ESLURMD_CPU_LAYOUT_ERROR;
 	}
 	if (size < max_cpus) {
 		/* Possible result of overcommit */
@@ -1008,7 +1019,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			xfree(core_tasks);
 			xfree(core_threads);
 			xfree(socket_last_pu);
-			return SLURM_ERROR;
+			return ESLURMD_CPU_LAYOUT_ERROR;
 		}
 		last_taskcount = taskcount;
 		for (i = 0; i < size; i++) {
@@ -1164,7 +1175,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	avail_map = _get_avail_map(req->cred, &hw_sockets, &hw_cores,
 				   &hw_threads);
 	if (!avail_map) {
-		return SLURM_ERROR;
+		return ESLURMD_CPU_LAYOUT_ERROR;
 	}
 
 	if (req->threads_per_core && (req->threads_per_core != NO_VAL16))
@@ -1181,14 +1192,14 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			      (req->cpus_per_task * (hw_threads /
 						     req_threads_per_core)));
 			FREE_NULL_BITMAP(avail_map);
-			return SLURM_ERROR;
+			return ESLURMD_CPU_LAYOUT_ERROR;
 		}
 	}
 	if (size < max_tasks) {
 		error("only %d bits in avail_map for %d tasks!",
 		      size, max_tasks);
 		FREE_NULL_BITMAP(avail_map);
-		return SLURM_ERROR;
+		return ESLURMD_CPU_LAYOUT_ERROR;
 	}
 	if (size < max_cpus) {
 		/* Possible result of overcommit */
@@ -1217,7 +1228,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			xfree(core_tasks);
 			xfree(core_threads);
 			xfree(socket_tasks);
-			return SLURM_ERROR;
+			return ESLURMD_CPU_LAYOUT_ERROR;
 		}
 		if (taskcount > 0) {
 			/* Clear counters to over-subscribe, if necessary */
