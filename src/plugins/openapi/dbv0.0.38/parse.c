@@ -921,12 +921,15 @@ static int _parse_to_uint32(const parser_t *const parse, void *obj, data_t *str,
 	int rc = SLURM_SUCCESS;
 
 	if (data_get_type(str) == DATA_TYPE_NULL) {
-		*dst = 0;
+		*dst = INFINITE;
 	} else if (data_convert_type(str, DATA_TYPE_INT_64) ==
 		   DATA_TYPE_INT_64) {
-		/* catch -1 and set to NO_VAL instead of rolling */
-		if (0xFFFFFFFF00000000 & data_get_int(str))
+		if (data_get_int(str) == NO_VAL64)
 			*dst = NO_VAL;
+		else if (data_get_int(str) == INFINITE64)
+			*dst = INFINITE;
+		else if (0xFFFFFFFF00000000 & data_get_int(str))
+			rc = ESLURM_DATA_CONV_FAILED;
 		else
 			*dst = data_get_int(str);
 	} else

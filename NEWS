@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
     ignored.
  -- openapi/dbv0.0.38 - correct issue where 16 bit integers were not able to be
     unset.
+ -- openapi/dbv0.0.38 - correct issue where 16 & 32 bit integers were not able
+    to be unset.
 
 * Changes in Slurm 22.05.6
 ==========================
