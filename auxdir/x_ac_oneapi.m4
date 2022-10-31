@@ -52,16 +52,17 @@ AC_DEFUN([X_AC_ONEAPI],
 	break;
       fi
     done
-  fi
-  CPPFLAGS="$cppflags_save"
-  LDFLAGS="$ldflags_save"
 
-  AM_CONDITIONAL(BUILD_ONEAPI, test "$ac_oneapi" = "yes")
-  if test "$ac_oneapi" != "yes"; then
-    if test -z "$with_oneapi"; then
-      AC_MSG_WARN([unable to locate libze_loader.so and/or ze_api.h])
-    else
-      AC_MSG_ERROR([unable to locate libze_loader.so and/or ze_api.h])
+    CPPFLAGS="$cppflags_save"
+    LDFLAGS="$ldflags_save"
+
+    if test "$ac_oneapi" != "yes"; then
+      if test -z "$with_oneapi"; then
+	AC_MSG_WARN([unable to locate libze_loader.so and/or ze_api.h])
+      else
+        AC_MSG_ERROR([unable to locate libze_loader.so and/or ze_api.h])
+      fi
     fi
   fi
+  AM_CONDITIONAL(BUILD_ONEAPI, test "$ac_oneapi" = "yes")
 ])
