@@ -42,10 +42,7 @@
 
 /* Convert a comma delimited list of account names into a NULL terminated
  * array of pointers to strings. Call accounts_list_free() to release memory */
-extern void accounts_list_build(char *accounts, char ***accounts_array);
-
-/* Free memory allocated for an account array by accounts_list_build() */
-extern void accounts_list_free(char ***accounts_array);
+extern list_t *accounts_list_build(char *accounts);
 
 /*
  * Free the global response_cluster_rec

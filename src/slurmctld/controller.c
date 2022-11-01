@@ -1871,6 +1871,11 @@ static void _update_cluster_tres(void)
 	unlock_slurmctld(job_write_lock);
 }
 
+static void _update_parts_and_resvs()
+{
+	update_assocs_in_resvs();
+	part_update_assoc_lists();
+}
 
 static void _queue_reboot_msg(void)
 {
@@ -2412,7 +2417,7 @@ extern void ctld_assoc_mgr_init(void)
 	assoc_init_arg.update_license_notify = license_update_remote;
 	assoc_init_arg.update_qos_notify = _update_qos;
 	assoc_init_arg.update_cluster_tres = _update_cluster_tres;
-	assoc_init_arg.update_resvs = update_assocs_in_resvs;
+	assoc_init_arg.update_resvs = _update_parts_and_resvs;
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_ASSOC |
 				     ASSOC_MGR_CACHE_USER  |
 				     ASSOC_MGR_CACHE_QOS   |
@@ -3332,6 +3337,12 @@ handle_parts:
 				      part_ptr->name, qos_rec.name);
 			}
 		}
+		FREE_NULL_LIST(part_ptr->allow_accts_list);
+		part_ptr->allow_accts_list =
+			accounts_list_build(part_ptr->allow_accounts);
+		FREE_NULL_LIST(part_ptr->deny_accts_list);
+		part_ptr->deny_accts_list =
+			accounts_list_build(part_ptr->deny_accounts);
 	}
 	list_iterator_destroy(itr);
 

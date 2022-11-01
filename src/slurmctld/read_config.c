@@ -636,43 +636,53 @@ static void _handle_all_downnodes(void)
 	}
 }
 
-/* Convert a comma delimited list of account names into a NULL terminated
- * array of pointers to strings. Call accounts_list_free() to release memory */
-extern void accounts_list_build(char *accounts, char ***accounts_array)
+/*
+ * Convert a comma delimited string of account names into a List containing
+ * pointers to those associations.
+ */
+extern list_t *accounts_list_build(char *accounts)
 {
-	char *tmp_accts, *one_acct_name, *name_ptr = NULL, **tmp_array = NULL;
-	int array_len = 0, array_used = 0;
+	char *tmp_accts, *one_acct_name, *name_ptr = NULL;
+	list_t *acct_list = NULL;
+	slurmdb_assoc_rec_t *assoc_ptr = NULL;
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
 
-	if (!accounts) {
-		accounts_list_free(accounts_array);
-		*accounts_array = NULL;
-		return;
-	}
+	if (!accounts)
+		return acct_list;
 
+	assoc_mgr_lock(&locks);
 	tmp_accts = xstrdup(accounts);
 	one_acct_name = strtok_r(tmp_accts, ",", &name_ptr);
 	while (one_acct_name) {
-		if (array_len < array_used + 2) {
-			array_len += 10;
-			xrealloc(tmp_array, sizeof(char *) * array_len);
+		slurmdb_assoc_rec_t assoc = {
+			.acct = one_acct_name,
+			.uid = NO_VAL,
+		};
+
+		if (assoc_mgr_fill_in_assoc(
+			    acct_db_conn, &assoc,
+			    accounting_enforce,
+			    &assoc_ptr, true) != SLURM_SUCCESS) {
+			if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
+				error("%s: No association for account %s",
+				      __func__, assoc.acct);
+			} else {
+				verbose("%s: No association for account %s",
+					__func__, assoc.acct);
+			}
+
 		}
-		tmp_array[array_used++] = xstrdup(one_acct_name);
+		if (assoc_ptr) {
+			if (!acct_list)
+				acct_list = list_create(NULL);
+			list_append(acct_list, assoc_ptr);
+		}
+
 		one_acct_name = strtok_r(NULL, ",", &name_ptr);
 	}
 	xfree(tmp_accts);
-	accounts_list_free(accounts_array);
-	*accounts_array = tmp_array;
-}
-/* Free memory allocated for an account array by accounts_list_build() */
-extern void accounts_list_free(char ***accounts_array)
-{
-	int i;
-
-	if (*accounts_array == NULL)
-		return;
-	for (i = 0; accounts_array[0][i]; i++)
-		xfree(accounts_array[0][i]);
-	xfree(*accounts_array);
+	assoc_mgr_unlock(&locks);
+	return acct_list;
 }
 
 /* Convert a comma delimited list of QOS names into a bitmap */
@@ -829,8 +839,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 
 	if (part->allow_accounts) {
 		part_ptr->allow_accounts = xstrdup(part->allow_accounts);
-		accounts_list_build(part_ptr->allow_accounts,
-				    &part_ptr->allow_account_array);
+		part_ptr->allow_accts_list =
+			accounts_list_build(part_ptr->allow_accounts);
 	}
 
 	if (part->allow_qos) {
@@ -840,8 +850,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 
 	if (part->deny_accounts) {
 		part_ptr->deny_accounts = xstrdup(part->deny_accounts);
-		accounts_list_build(part_ptr->deny_accounts,
-				    &part_ptr->deny_account_array);
+		part_ptr->deny_accts_list =
+			accounts_list_build(part_ptr->deny_accounts);
 	}
 
 	if (part->deny_qos) {
@@ -2513,8 +2523,10 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				xfree(part_ptr->allow_accounts);
 				part_ptr->allow_accounts =
 					xstrdup(old_part_ptr->allow_accounts);
-				accounts_list_build(part_ptr->allow_accounts,
-						&part_ptr->allow_account_array);
+				FREE_NULL_LIST(part_ptr->allow_accts_list);
+				part_ptr->allow_accts_list =
+					accounts_list_build(
+						part_ptr->allow_accounts);
 			}
 			if (xstrcmp(part_ptr->allow_alloc_nodes,
 				    old_part_ptr->allow_alloc_nodes)) {
@@ -2571,8 +2583,10 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				xfree(part_ptr->deny_accounts);
 				part_ptr->deny_accounts =
 					xstrdup(old_part_ptr->deny_accounts);
-				accounts_list_build(part_ptr->deny_accounts,
-						&part_ptr->deny_account_array);
+				FREE_NULL_LIST(part_ptr->deny_accts_list);
+				part_ptr->deny_accts_list =
+					accounts_list_build(
+						part_ptr->deny_accounts);
 			}
 			if (xstrcmp(part_ptr->deny_qos,
 				    old_part_ptr->deny_qos)) {
@@ -2782,8 +2796,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 
 			part_ptr->allow_accounts =
 				xstrdup(old_part_ptr->allow_accounts);
-			accounts_list_build(part_ptr->allow_accounts,
-					 &part_ptr->allow_account_array);
+			part_ptr->allow_accts_list =
+				accounts_list_build(part_ptr->allow_accounts);
 			part_ptr->allow_alloc_nodes =
 				xstrdup(old_part_ptr->allow_alloc_nodes);
 			part_ptr->allow_groups = xstrdup(old_part_ptr->
@@ -2797,8 +2811,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			part_ptr->default_time = old_part_ptr->default_time;
 			part_ptr->deny_accounts = xstrdup(old_part_ptr->
 							  deny_accounts);
-			accounts_list_build(part_ptr->deny_accounts,
-					 &part_ptr->deny_account_array);
+			part_ptr->deny_accts_list =
+				accounts_list_build(part_ptr->deny_accounts);
 			part_ptr->deny_qos = xstrdup(old_part_ptr->
 						     deny_qos);
 			qos_list_build(part_ptr->deny_qos,

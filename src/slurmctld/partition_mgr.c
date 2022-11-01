@@ -753,8 +753,9 @@ int load_all_part_state(void)
 		xfree(part_ptr->allow_accounts);
 		part_ptr->allow_accounts = allow_accounts;
 		xfree(part_ptr->allow_groups);
-		accounts_list_build(part_ptr->allow_accounts,
-				    &part_ptr->allow_account_array);
+		FREE_NULL_LIST(part_ptr->allow_accts_list);
+		part_ptr->allow_accts_list =
+			accounts_list_build(part_ptr->allow_accounts);
 		part_ptr->allow_groups   = allow_groups;
 		xfree(part_ptr->allow_qos);
 		part_ptr->allow_qos      = allow_qos;
@@ -784,8 +785,9 @@ int load_all_part_state(void)
 		part_ptr->alternate      = alternate;
 		xfree(part_ptr->deny_accounts);
 		part_ptr->deny_accounts  = deny_accounts;
-		accounts_list_build(part_ptr->deny_accounts,
-				    &part_ptr->deny_account_array);
+		FREE_NULL_LIST(part_ptr->deny_accts_list);
+		part_ptr->deny_accts_list =
+			accounts_list_build(part_ptr->deny_accounts);
 		xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos       = deny_qos;
 		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
@@ -959,7 +961,7 @@ static void _list_delete_part(void *part_entry)
 	}
 
 	xfree(part_ptr->allow_accounts);
-	accounts_list_free(&part_ptr->allow_account_array);
+	FREE_NULL_LIST(part_ptr->allow_accts_list);
 	xfree(part_ptr->allow_alloc_nodes);
 	xfree(part_ptr->allow_groups);
 	xfree(part_ptr->allow_uids);
@@ -969,7 +971,7 @@ static void _list_delete_part(void *part_entry)
 	xfree(part_ptr->billing_weights_str);
 	xfree(part_ptr->billing_weights);
 	xfree(part_ptr->deny_accounts);
-	accounts_list_free(&part_ptr->deny_account_array);
+	FREE_NULL_LIST(part_ptr->deny_accts_list);
 	xfree(part_ptr->deny_qos);
 	FREE_NULL_BITMAP(part_ptr->deny_qos_bitstr);
 	FREE_NULL_LIST(part_ptr->job_defaults_list);
@@ -1667,8 +1669,9 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			     __func__, part_ptr->allow_accounts,
 			     part_desc->name);
 		}
-		accounts_list_build(part_ptr->allow_accounts,
-				    &part_ptr->allow_account_array);
+		FREE_NULL_LIST(part_ptr->allow_accts_list);
+		part_ptr->allow_accts_list =
+			accounts_list_build(part_ptr->allow_accounts);
 	}
 
 	if (part_desc->allow_groups != NULL) {
@@ -1785,8 +1788,9 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_desc->deny_accounts = NULL;
 		info("%s: setting DenyAccounts to %s for partition %s",
 		     __func__, part_ptr->deny_accounts, part_desc->name);
-		accounts_list_build(part_ptr->deny_accounts,
-				    &part_ptr->deny_account_array);
+		FREE_NULL_LIST(part_ptr->deny_accts_list);
+		part_ptr->deny_accts_list =
+			accounts_list_build(part_ptr->deny_accounts);
 	}
 	if (part_desc->allow_accounts && part_desc->deny_accounts) {
 		error("%s: Both AllowAccounts and DenyAccounts are defined, DenyAccounts will be ignored",
@@ -2101,6 +2105,33 @@ static int _update_part_uid_access_list(void *x, void *arg)
 	return 0;
 }
 
+static int _find_acct_in_list(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *acct_assoc_ptr = x;
+	slurmdb_assoc_rec_t *query_assoc_ptr = arg;
+
+	while (query_assoc_ptr) {
+		if (acct_assoc_ptr == query_assoc_ptr)
+			return 1;
+		query_assoc_ptr = query_assoc_ptr->usage->parent_assoc_ptr;
+	}
+	return 0;
+}
+
+static int _update_part_assoc_list(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+
+	FREE_NULL_LIST(part_ptr->allow_accts_list);
+	part_ptr->allow_accts_list =
+		accounts_list_build(part_ptr->allow_accounts);
+	FREE_NULL_LIST(part_ptr->deny_accts_list);
+	part_ptr->deny_accts_list =
+		accounts_list_build(part_ptr->deny_accounts);
+
+	return 0;
+}
+
 /*
  * load_part_uid_allow_list - reload the allow_uid list of partitions
  *	if required (updated group file or force set)
@@ -2216,85 +2247,43 @@ extern bool part_policy_job_runnable_state(job_record_t *job_ptr)
 extern int part_policy_valid_acct(part_record_t *part_ptr, char *acct,
 				  job_record_t *job_ptr)
 {
-	char *tmp_err = NULL;
-	int i;
+	int rc = SLURM_SUCCESS;
+	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 
-	if (part_ptr->allow_account_array && part_ptr->allow_account_array[0]) {
-		int match = 0;
-		if (!acct) {
-			xstrfmtcat(tmp_err,
-				   "Job's account not known, so it can't use this partition "
-				   "(%s allows %s)",
-				   part_ptr->name, part_ptr->allow_accounts);
-			info("%s: %s", __func__, tmp_err);
-			if (job_ptr) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_desc = tmp_err;
-				job_ptr->state_reason = WAIT_ACCOUNT;
-				last_job_update = time(NULL);
-			} else {
-				xfree(tmp_err);
-			}
-			return ESLURM_INVALID_ACCOUNT;
-		}
+	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
 
-		for (i = 0; part_ptr->allow_account_array[i]; i++) {
-			if (xstrcmp(part_ptr->allow_account_array[i], acct))
-				continue;
-			match = 1;
-			break;
-		}
-		if (match == 0) {
-			xstrfmtcat(tmp_err,
-				   "Job's account not permitted to use this partition "
-				   "(%s allows %s not %s)",
-				   part_ptr->name, part_ptr->allow_accounts,
-				   acct);
-			info("%s: %s", __func__, tmp_err);
-			if (job_ptr) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_desc = tmp_err;
-				job_ptr->state_reason = WAIT_ACCOUNT;
-				last_job_update = time(NULL);
-			} else {
-				xfree(tmp_err);
-			}
-			return ESLURM_INVALID_ACCOUNT;
-		}
-	} else if (part_ptr->deny_account_array &&
-		   part_ptr->deny_account_array[0]) {
-		int match = 0;
-		if (!acct) {
-			debug2("%s: job's account not known, so couldn't check if it was denied or not",
-			       __func__);
-			return SLURM_SUCCESS;
-		}
-		for (i = 0; part_ptr->deny_account_array[i]; i++) {
-			if (xstrcmp(part_ptr->deny_account_array[i], acct))
-				continue;
-			match = 1;
-			break;
-		}
-		if (match == 1) {
-			xstrfmtcat(tmp_err,
-				   "Job's account not permitted to use this partition "
-				   "(%s denies %s including %s)",
-				   part_ptr->name, part_ptr->deny_accounts,
-				   acct);
-			info("%s: %s", __func__, tmp_err);
-			if (job_ptr) {
-				xfree(job_ptr->state_desc);
-				job_ptr->state_desc = tmp_err;
-				job_ptr->state_reason = WAIT_ACCOUNT;
-				last_job_update = time(NULL);
-			} else {
-				xfree(tmp_err);
-			}
-			return ESLURM_INVALID_ACCOUNT;
-		}
+	if (job_ptr)
+		assoc_ptr = job_ptr->assoc_ptr;
+	else if (acct) {
+		slurmdb_assoc_rec_t assoc_rec = {
+			.acct = acct,
+			.uid = NO_VAL,
+		};
+		if (assoc_mgr_fill_in_assoc(
+			    acct_db_conn, &assoc_rec,
+			    accounting_enforce,
+			    &assoc_ptr, true) != SLURM_SUCCESS)
+			rc = ESLURM_INVALID_ACCOUNT;
+	} else
+		rc = ESLURM_INVALID_ACCOUNT;
+
+	if (!assoc_ptr)
+		return rc;
+
+	if (part_ptr->allow_accts_list) {
+		if (!list_find_first(part_ptr->allow_accts_list,
+				     _find_acct_in_list,
+				     assoc_ptr))
+			rc = ESLURM_INVALID_ACCOUNT;
+	} else if (part_ptr->deny_accts_list) {
+		if (list_find_first(part_ptr->deny_accts_list,
+				    _find_acct_in_list,
+				    assoc_ptr))
+			rc = ESLURM_INVALID_ACCOUNT;
 	}
 
-	return SLURM_SUCCESS;
+
+	return rc;
 }
 
 /*
@@ -2381,4 +2370,20 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 	}
 
 	return SLURM_SUCCESS;
+}
+
+extern void part_update_assoc_lists()
+{
+	/* Write lock on part */
+	slurmctld_lock_t part_write_lock = {
+		.part = WRITE_LOCK,
+	};
+
+	if (!part_list)
+		return;
+
+	lock_slurmctld(part_write_lock);
+	list_for_each(part_list, _update_part_assoc_list, NULL);
+	unlock_slurmctld(part_write_lock);
+	return;
 }

@@ -117,6 +117,8 @@ documents those changes that are of interest to users and administrators.
     SUCCESS. While the query worked, nothing was returned, which allows callers
     to determine how to then proceed.
  -- Add PowerDownOnIdle partition option.
+ -- Make it so the [Allow|Deny]Accounts parameter for a partition is
+    hierarchical.
 
 * Changes in Slurm 22.05.6
 ==========================

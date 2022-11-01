@@ -359,6 +359,8 @@ typedef struct {
 typedef struct {
 	uint32_t magic;		/* magic cookie to test data integrity */
 				/* DO NOT ALPHABETIZE */
+	list_t *allow_accts_list; /* List of ptrs to allow_accounts in
+				   * assoc_mgr */
 	char *allow_accounts;	/* comma delimited list of accounts,
 				 * NULL indicates all */
 	char **allow_account_array; /* NULL terminated list of allowed
@@ -380,6 +382,8 @@ typedef struct {
 	uint64_t def_mem_per_cpu; /* default MB memory per allocated CPU */
 	uint32_t default_time;	/* minutes, NO_VAL or INFINITE */
 	char *deny_accounts;	/* comma delimited list of denied accounts */
+	list_t *deny_accts_list; /* List of ptrs to deny_accounts in
+				  * assoc_mgr */
 	char **deny_account_array; /* NULL terminated list of denied accounts */
 	char *deny_qos;		/* comma delimited list of denied qos */
 	bitstr_t *deny_qos_bitstr; /* (DON'T PACK) associated with
@@ -2195,6 +2199,12 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uid_t submit_uid,
 				 job_record_t *job_ptr);
+
+/*
+ * part_update_assoc_lists - Update assoc_mgr pointers from
+ *                           [allow|deny]_accts_lists.
+ */
+extern void part_update_assoc_lists(void);
 
 /*
  * partition_in_use - determine whether a partition is in use by a RUNNING
