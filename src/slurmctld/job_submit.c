@@ -81,14 +81,15 @@ static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
  *
  * Returns a Slurm errno.
  */
-extern int job_submit_g_init(void)
+extern int job_submit_g_init(bool locked)
 {
 	int rc = SLURM_SUCCESS;
 	char *last = NULL, *tmp_plugin_list, *names;
 	char *plugin_type = "job_submit";
 	char *type;
 
-	slurm_rwlock_wrlock(&context_lock);
+	if (!locked)
+		slurm_rwlock_wrlock(&context_lock);
 	if (g_context_cnt >= 0)
 		goto fini;
 
@@ -124,10 +125,11 @@ extern int job_submit_g_init(void)
 	xfree(tmp_plugin_list);
 
 fini:
-	slurm_rwlock_unlock(&context_lock);
-
 	if (rc != SLURM_SUCCESS)
-		job_submit_g_fini();
+		job_submit_g_fini(true);
+
+	if (!locked)
+		slurm_rwlock_unlock(&context_lock);
 
 	return rc;
 }
@@ -137,11 +139,12 @@ fini:
  *
  * Returns a Slurm errno.
  */
-extern int job_submit_g_fini(void)
+extern int job_submit_g_fini(bool locked)
 {
 	int i, j, rc = SLURM_SUCCESS;
 
-	slurm_rwlock_wrlock(&context_lock);
+	if (!locked)
+		slurm_rwlock_wrlock(&context_lock);
 	if (g_context_cnt < 0)
 		goto fini;
 
@@ -158,7 +161,8 @@ extern int job_submit_g_fini(void)
 	g_context_cnt = -1;
 
 fini:
-	slurm_rwlock_unlock(&context_lock);
+	if (!locked)
+		slurm_rwlock_unlock(&context_lock);
 	return rc;
 }
 
@@ -184,15 +188,15 @@ extern int job_submit_g_reconfig(void)
 		plugin_change = true;
 	else
 		plugin_change = false;
-	slurm_rwlock_unlock(&context_lock);
 
 	if (plugin_change) {
 		info("JobSubmitPlugins changed to %s",
 		     slurm_conf.job_submit_plugins);
-		rc = job_submit_g_fini();
+		rc = job_submit_g_fini(true);
 		if (rc == SLURM_SUCCESS)
-			rc = job_submit_g_init();
+			rc = job_submit_g_init(true);
 	}
+	slurm_rwlock_unlock(&context_lock);
 
 	return rc;
 }

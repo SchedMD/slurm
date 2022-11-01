@@ -46,14 +46,14 @@
  *
  * Returns a Slurm errno.
  */
-extern int job_submit_g_init(void);
+extern int job_submit_g_init(bool locked);
 
 /*
  * Terminate the job submit plugin. Free memory.
  *
  * Returns a Slurm errno.
  */
-extern int job_submit_g_fini(void);
+extern int job_submit_g_fini(bool locked);
 
 /*
  **************************************************************************
