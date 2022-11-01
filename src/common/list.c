@@ -129,10 +129,10 @@ struct xlist {
  *  Prototypes  *
  ****************/
 
-static void _list_node_create(List l, list_node_t **pp, void *x);
-static void *_list_node_destroy(List l, list_node_t **pp);
-static void *_list_pop_locked(List l);
-static void *_list_find_first_locked(List l, ListFindF f, void *key);
+static void _list_node_create(list_t *l, list_node_t **pp, void *x);
+static void *_list_node_destroy(list_t *l, list_node_t **pp);
+static void *_list_pop_locked(list_t *l);
+static void *_list_find_first_locked(list_t *l, ListFindF f, void *key);
 
 #ifndef NDEBUG
 static int _list_mutex_is_locked(pthread_rwlock_t *mutex);
@@ -163,7 +163,7 @@ extern list_t *list_create(ListDelF f)
  */
 extern void list_destroy(list_t *l)
 {
-	ListIterator i, iTmp;
+	list_itr_t *i, *iTmp;
 	list_node_t *p, *pTmp;
 
 	xassert(l != NULL);
@@ -228,7 +228,7 @@ extern int list_count(list_t *l)
 
 extern list_t *list_shallow_copy(list_t *l)
 {
-	List m = list_create(NULL);
+	list_t *m = list_create(NULL);
 
 	(void) list_append_list(m, l);
 
@@ -363,7 +363,7 @@ extern int list_transfer_unique(list_t *l, ListFindF f, list_t *sub)
 	return n;
 }
 
-static void *_list_find_first_locked(List l, ListFindF f, void *key)
+static void *_list_find_first_locked(list_t *l, ListFindF f, void *key)
 {
 	for (list_node_t *p = l->head; p; p = p->next) {
 		if (f(p->data, key))
@@ -373,8 +373,8 @@ static void *_list_find_first_locked(List l, ListFindF f, void *key)
 	return NULL;
 }
 
-static void *_list_find_first_lock(
-	List l, ListFindF f, void *key, bool write_lock)
+static void *_list_find_first_lock(list_t *l, ListFindF f, void *key,
+				   bool write_lock)
 {
 	void *v = NULL;
 
@@ -643,7 +643,7 @@ extern void list_sort(list_t *l, ListCmpF f)
 	int n;
 	int lsize;
 	void *e;
-	ListIterator i;
+	list_itr_t *i;
 
 	xassert(l != NULL);
 	xassert(f != NULL);
@@ -690,7 +690,7 @@ extern void list_sort(list_t *l, ListCmpF f)
 extern void list_flip(list_t *l)
 {
 	list_node_t *old_head, *prev = NULL, *curr, *next = NULL;
-	ListIterator i;
+	list_itr_t *i;
 
 	xassert(l);
 	xassert(l->magic == LIST_MAGIC);
@@ -778,10 +778,9 @@ extern void *list_dequeue(list_t *l)
  */
 extern list_itr_t *list_iterator_create(list_t *l)
 {
-	ListIterator i;
+	list_itr_t *i = xmalloc(sizeof(*i));
 
 	xassert(l != NULL);
-	i = xmalloc(sizeof(list_itr_t));
 
 	i->magic = LIST_ITR_MAGIC;
 	i->list = l;
@@ -817,7 +816,7 @@ extern void list_iterator_reset(list_itr_t *i)
  */
 extern void list_iterator_destroy(list_itr_t *i)
 {
-	ListIterator *pi;
+	list_itr_t **pi;
 
 	xassert(i != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
@@ -837,7 +836,7 @@ extern void list_iterator_destroy(list_itr_t *i)
 	xfree(i);
 }
 
-static void * _list_next_locked(ListIterator i)
+static void *_list_next_locked(list_itr_t *i)
 {
 	list_node_t *p;
 
@@ -962,10 +961,10 @@ extern int list_delete_item(list_itr_t *i)
  * Returns a ptr to data [x], or NULL if insertion fails.
  * This routine assumes the list is already locked upon entry.
  */
-static void _list_node_create(List l, list_node_t **pp, void *x)
+static void _list_node_create(list_t *l, list_node_t **pp, void *x)
 {
 	list_node_t *p;
-	ListIterator i;
+	list_itr_t *i;
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
@@ -999,11 +998,11 @@ static void _list_node_create(List l, list_node_t **pp, void *x)
  * or NULL if [*pp] points to the NULL element.
  * This routine assumes the list is already locked upon entry.
  */
-static void *_list_node_destroy(List l, list_node_t **pp)
+static void *_list_node_destroy(list_t *l, list_node_t **pp)
 {
 	void *v;
 	list_node_t *p;
-	ListIterator i;
+	list_itr_t *i;
 
 	xassert(l != NULL);
 	xassert(l->magic == LIST_MAGIC);
@@ -1050,8 +1049,7 @@ static int _list_mutex_is_locked(pthread_rwlock_t *mutex)
  * Pop an item from the list assuming the
  * the list is already locked.
  */
-static void *
-_list_pop_locked(List l)
+static void *_list_pop_locked(list_t *l)
 {
 	void *v;
 
