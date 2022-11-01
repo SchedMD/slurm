@@ -2012,33 +2012,44 @@ static bool _handle_core_select(step_record_t *step_ptr,
 		}
 	} else { /* SLURM_DIST_SOCKCYCLIC */
 		int task_alloc_cpus = 0;
-		int start_core = 0;
-		int last_core = 0;
-		for (int j=0; j < bit_set_count(avail_core_bitmap); j++) {
-			for (sock_inx=0; sock_inx < sockets; sock_inx++) {
-				for (i = start_core; i < cores; i++) {
+		int *next_core = xcalloc(sockets, sizeof(int));
+		bool nothing_allocated = false;
+		while (!nothing_allocated) {
+			nothing_allocated = true;
+			for (sock_inx = 0; sock_inx < sockets; sock_inx++) {
+				for (i = next_core[sock_inx]; i < cores;
+				     i++) {
 					if (oversubscribing_cpus)
-						core_inx = (last_core_inx + i) % cores;
+						core_inx = (last_core_inx + i) %
+							   cores;
 					else
 						core_inx = i;
-					if (!_pick_step_core(step_ptr, job_resrcs_ptr,
-							     avail_core_bitmap,
-							     job_node_inx, sock_inx,
-							     core_inx, use_all_cores,
-							     oversubscribing_cpus))
+
+					next_core[sock_inx] = i + 1;
+					if (!_pick_step_core(
+						step_ptr,
+						job_resrcs_ptr,
+						avail_core_bitmap,
+						job_node_inx,
+						sock_inx,
+						core_inx,
+						use_all_cores,
+						oversubscribing_cpus))
 						continue;
-					if (--(*cpu_cnt) == 0)
+					nothing_allocated = false;
+					if (--(*cpu_cnt) == 0) {
+						xfree(next_core);
 						return true;
+					}
 					if (++task_alloc_cpus ==
 					    cpus_per_task) {
 						task_alloc_cpus = 0;
-						last_core = i;
 						break;
 					}
 				}
 			}
-			start_core = last_core + 1;
 		}
+		xfree(next_core);
 	}
 	return false;
 }
@@ -2071,10 +2082,16 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		use_all_cores = false;
 
 		if (step_ptr->cpus_per_task > 0) {
-			int cores_per_task = step_ptr->cpus_per_task;
-			cores_per_task += (cpus_per_core - 1);
-			cores_per_task /= cpus_per_core;
-			cpu_cnt *= cores_per_task;
+			if (step_ptr->cpus_per_task > cpus_per_core) {
+				int cores_per_task = step_ptr->cpus_per_task;
+				cores_per_task += (cpus_per_core - 1);
+				cores_per_task /= cpus_per_core;
+				cpu_cnt *= cores_per_task;
+			} else {
+				cpu_cnt *= step_ptr->cpus_per_task;
+				cpu_cnt += (cpus_per_core - 1);
+				cpu_cnt /= cpus_per_core;
+			}
 		}
 
 		if (cpu_cnt > job_resrcs_ptr->cpus[job_node_inx]) {
