@@ -142,6 +142,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix SLURM_GPUS_ON_NODE for shared GPU gres (MPS, shards).
  -- Add SLURM_SHARDS_ON_NODE environment variable for shards.
  -- Fix srun error with overcommit.
+ -- Fix bug in core selection for the default cyclic distribution of tasks
+    across sockets, that resulted in random task launch failures.
+ -- Fix core selection for steps requesting multiple tasks per core when
+    allocation contains more cores than required for step.
 
 * Changes in Slurm 22.05.5
 ==========================
