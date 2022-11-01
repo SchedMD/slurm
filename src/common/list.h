@@ -50,6 +50,7 @@
 #ifndef   __list_datatypes_defined
 #  define __list_datatypes_defined
 typedef struct xlist *List;
+typedef struct xlist list_t;
 
 /*
  *  List opaque data type.
@@ -59,6 +60,7 @@ typedef struct xlist *List;
  *  List Iterator opaque data type.
  */
 typedef struct listIterator *ListIterator;
+typedef struct listIterator list_iterator_t;
 
 /*
  *  Function prototype to deallocate data stored in a list.
