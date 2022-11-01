@@ -55,12 +55,11 @@ save_conf $config_dir/job_submit.lua
 save_conf $config_dir/slurm.conf
 
 # Activate lua plugin
+run_command "$bin_rm $config_dir/job_submit.lua"
+run_command -fail "$bin_cp $test_lua_min_mem $config_dir/job_submit.lua"
 exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
 exec $bin_echo "\n### $test_name additions####\nJobSubmitPlugins=lua" >> $config_dir/slurm.conf
 reconfigure -fail
-
-run_command "$bin_rm $config_dir/job_submit.lua"
-run_command -fail "$bin_cp $test_lua_min_mem $config_dir/job_submit.lua"
 
 testproc test_min_mem "$salloc -J $job_name $bin_true" nil nil
 testproc test_min_mem "$srun -J $job_name $bin_true" nil nil
