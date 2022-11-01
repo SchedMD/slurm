@@ -6403,7 +6403,8 @@ The default value is "ALL".
 .TP
 \fBAllowAccounts\fR
 Comma\-separated list of accounts which may execute jobs in the partition.
-The default value is "ALL".
+The default value is "ALL". This list is also hierarchical, meaning subaccounts
+are included automatically.
 \fBNOTE:\fR If AllowAccounts is used then DenyAccounts will not be enforced.
 Also refer to DenyAccounts.
 .IP
@@ -6524,7 +6525,8 @@ exclusive.
 .TP
 \fBDenyAccounts\fR
 Comma\-separated list of accounts which may not execute jobs in the partition.
-By default, no accounts are denied access
+By default, no accounts are denied access. This list is also hierarchical,
+meaning subaccounts are included automatically.
 \fBNOTE:\fR If AllowAccounts is used then DenyAccounts will not be enforced.
 Also refer to AllowAccounts.
 .IP
