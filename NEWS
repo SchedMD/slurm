@@ -116,6 +116,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - queries that result in empty contents will now be treated as
     SUCCESS. While the query worked, nothing was returned, which allows callers
     to determine how to then proceed.
+ -- Add PowerDownOnIdle partition option.
 
 * Changes in Slurm 22.05.6
 ==========================

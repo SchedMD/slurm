@@ -114,6 +114,7 @@ enum {
 	SORTID_OVER_SUBSCRIBE,
 	SORTID_OVER_TIME_LIMIT,
 	SORTID_PART_STATE,
+	SORTID_POWER_DOWN_ON_IDLE,
 	SORTID_PREEMPT_MODE,
 	SORTID_PRIORITY_JOB_FACTOR,
 	SORTID_PRIORITY_TIER,
@@ -166,6 +167,8 @@ static display_data_t display_data_part[] = {
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", false,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_POWER_DOWN_ON_IDLE, "PowerDownOnIdle", false,
+	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", false,
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PRIORITY_JOB_FACTOR, "PriorityJobFactor", false,
@@ -247,6 +250,8 @@ static display_data_t create_data_part[] = {
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", false,
 	 EDIT_TEXTBOX, refresh_part, _create_model_part2, admin_edit_part},
+	{G_TYPE_STRING, SORTID_POWER_DOWN_ON_IDLE, "PowerDownOnIdle", false,
+	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PREEMPT_MODE, "PreemptMode", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_PRIORITY_JOB_FACTOR, "PriorityJobFactor", false,
@@ -367,6 +372,7 @@ static void _set_active_combo_part(GtkComboBox *combo,
 	case SORTID_DEFAULT:
 	case SORTID_EXCLUSIVE_USER:
 	case SORTID_HIDDEN:
+	case SORTID_POWER_DOWN_ON_IDLE:
 	case SORTID_ROOT:
 		if (!xstrcmp(temp_char, "yes"))
 			action = 0;
@@ -559,6 +565,16 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		if ((temp_int <= 0) && (temp_int != INFINITE))
 			goto return_error;
 		part_msg->max_time = (uint32_t)temp_int;
+		break;
+	case SORTID_POWER_DOWN_ON_IDLE:
+		if (!xstrcasecmp(new_text, "yes")) {
+			part_msg->flags |= PART_FLAG_PDOI;
+			part_msg->flags &= (~PART_FLAG_PDOI_CLR);
+		} else if (!xstrcasecmp(new_text, "no")) {
+			part_msg->flags &= (~PART_FLAG_PDOI);
+			part_msg->flags |= PART_FLAG_PDOI_CLR;
+		}
+		type = "power_down_on_idle";
 		break;
 	case SORTID_PREEMPT_MODE:
 		if (!xstrcasecmp(new_text, "cancel"))
@@ -1105,6 +1121,12 @@ static void _layout_part_record(GtkTreeView *treeview,
 			break;
 		case SORTID_ONLY_LINE:
 			break;
+		case SORTID_POWER_DOWN_ON_IDLE:
+			if (part_ptr->flags & PART_FLAG_PDOI)
+				yes_no = 1;
+			else
+				yes_no = 0;
+			break;
 		case SORTID_PREEMPT_MODE:
 			temp_uint16 = part_ptr->preempt_mode;
 			if (temp_uint16 == NO_VAL16)
@@ -1232,7 +1254,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	char tmp_cpu_cnt[40], tmp_node_cnt[40], tmp_max_cpus_per_node[40];
 	char tmp_max_cpus_per_socket[40];
 	char *tmp_alt, *tmp_default, *tmp_accounts, *tmp_groups, *tmp_hidden;
-	char *tmp_deny_accounts, *tmp_qos_char, *tmp_exc_user;
+	char *tmp_deny_accounts, *tmp_qos_char, *tmp_pdoi, *tmp_exc_user;
 	char *tmp_qos, *tmp_deny_qos, *job_def_str = NULL;
 	char *tmp_root, *tmp_over_subscribe, *tmp_over_time_limit, *tmp_state;
 	uint16_t tmp_preempt;
@@ -1275,6 +1297,11 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		tmp_deny_qos = part_ptr->deny_qos;
 	else
 		tmp_deny_qos = "none";
+
+	if (part_ptr->flags & PART_FLAG_PDOI)
+		tmp_pdoi = "yes";
+	else
+		tmp_pdoi = "no";
 
 	if (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
 		tmp_exc_user = "yes";
@@ -1435,6 +1462,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			   SORTID_OVER_SUBSCRIBE, tmp_over_subscribe,
 			   SORTID_OVER_TIME_LIMIT, tmp_over_time_limit,
 			   SORTID_PART_STATE, tmp_state,
+			   SORTID_POWER_DOWN_ON_IDLE, tmp_pdoi,
 			   SORTID_PREEMPT_MODE,
 				preempt_mode_string(tmp_preempt),
 			   SORTID_PRIORITY_JOB_FACTOR, tmp_prio_job_factor,
@@ -2196,6 +2224,7 @@ static GtkListStore *_create_model_part2(int type)
 	case SORTID_DEFAULT:
 	case SORTID_EXCLUSIVE_USER:
 	case SORTID_HIDDEN:
+	case SORTID_POWER_DOWN_ON_IDLE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
@@ -2280,6 +2309,7 @@ extern GtkListStore *create_model_part(int type)
 	case SORTID_EXCLUSIVE_USER:
 	case SORTID_HIDDEN:
 	case SORTID_ROOT:
+	case SORTID_POWER_DOWN_ON_IDLE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,

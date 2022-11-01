@@ -630,6 +630,7 @@ int load_all_part_state(void)
 			    (flags & PART_FLAG_EXC_USER_CLR)  ||
 			    (flags & PART_FLAG_HIDDEN_CLR)    ||
 			    (flags & PART_FLAG_NO_ROOT_CLR)   ||
+			    (flags & PART_FLAG_PDOI_CLR)      ||
 			    (flags & PART_FLAG_ROOT_ONLY_CLR) ||
 			    (flags & PART_FLAG_REQ_RESV_CLR)  ||
 			    (flags & PART_FLAG_LLN_CLR)) {
@@ -1506,6 +1507,16 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		info("%s: clearing no_root for partition %s", __func__,
 		     part_desc->name);
 		part_ptr->flags &= (~PART_FLAG_NO_ROOT);
+	}
+
+	if (part_desc->flags & PART_FLAG_PDOI) {
+		info("%s: setting PDOI for partition %s", __func__,
+		     part_desc->name);
+		part_ptr->flags |= PART_FLAG_PDOI;
+	} else if (part_desc->flags & PART_FLAG_PDOI_CLR) {
+		info("%s: clearing PDOI for partition %s", __func__,
+		     part_desc->name);
+		part_ptr->flags &= (~PART_FLAG_PDOI);
 	}
 
 	if (part_desc->flags & PART_FLAG_EXCLUSIVE_USER) {

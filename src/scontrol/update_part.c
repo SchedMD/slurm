@@ -297,6 +297,19 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			}
 			(*update_cnt_ptr)++;
 		}
+		else if (!xstrncasecmp(tag, "PowerDownOnIdle", MAX(taglen, 1))) {
+			if (!xstrncasecmp(val, "NO", MAX(vallen, 1)))
+				part_msg_ptr->flags |= PART_FLAG_PDOI_CLR;
+			else if (!xstrncasecmp(val, "YES", MAX(vallen, 1)))
+				part_msg_ptr->flags |= PART_FLAG_PDOI;
+			else {
+				exit_code = 1;
+				error("Invalid input: %s", argv[i]);
+				error("Acceptable PowerDownOnIdle values are YES and NO");
+				return SLURM_ERROR;
+			}
+			(*update_cnt_ptr)++;
+		}
 		else if (xstrncasecmp(tag, "PreemptMode", MAX(taglen, 3)) == 0) {
 			uint16_t new_mode = preempt_mode_num(val);
 			if (new_mode != NO_VAL16)

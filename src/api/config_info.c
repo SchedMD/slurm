@@ -388,6 +388,9 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		else if (p[i].cr_type & CR_SOCKET)
 			fprintf(fp, " SelectTypeParameters=CR_SOCKET");
 
+		if (p[i].flags & PART_FLAG_PDOI)
+			fprintf(fp, " PowerDownOnIdle=YES");
+
 		force = p[i].max_share & SHARED_FORCE;
 		val = p[i].max_share & (~SHARED_FORCE);
 		if (val == 0)

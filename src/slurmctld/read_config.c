@@ -782,6 +782,8 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		part_ptr->flags |= PART_FLAG_EXCLUSIVE_USER;
 	if (part->hidden_flag)
 		part_ptr->flags |= PART_FLAG_HIDDEN;
+	if (part->power_down_on_idle)
+		part_ptr->flags |= PART_FLAG_PDOI;
 	if (part->root_only_flag)
 		part_ptr->flags |= PART_FLAG_ROOT_ONLY;
 	if (part->req_resv_flag)
@@ -2721,6 +2723,16 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				      part_ptr->name);
 				part_ptr->over_time_limit =
 					old_part_ptr->over_time_limit;
+			}
+			if ((part_ptr->flags & PART_FLAG_PDOI) !=
+			    (old_part_ptr->flags & PART_FLAG_PDOI)) {
+				error("Partition %s PowerDownOnIdle differs from slurm.conf",
+				      part_ptr->name);
+				if (old_part_ptr->flags & PART_FLAG_PDOI) {
+					part_ptr->flags |= PART_FLAG_PDOI;
+				} else {
+					part_ptr->flags &= (~PART_FLAG_PDOI);
+				}
 			}
 			if (part_ptr->preempt_mode !=
 			    old_part_ptr->preempt_mode) {

@@ -1315,6 +1315,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Nodes", S_P_STRING},
 		{"OverSubscribe", S_P_STRING}, /* YES, NO, or FORCE */
 		{"OverTimeLimit", S_P_STRING},
+		{"PowerDownOnIdle", S_P_BOOLEAN}, /* YES or NO */
 		{"PreemptMode", S_P_STRING},
 		{"Priority", S_P_UINT16},
 		{"PriorityJobFactor", S_P_UINT16},
@@ -1569,6 +1570,8 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			}
 			xfree(tmp);
 		}
+
+		s_p_get_boolean(&p->power_down_on_idle, "PowerDownOnIdle", tbl);
 
 		if (s_p_get_string(&tmp, "PreemptMode", tbl) ||
 		    s_p_get_string(&tmp, "PreemptMode", dflt)) {

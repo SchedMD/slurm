@@ -171,6 +171,9 @@ static int _dump_part(data_t *p, partition_info_t *part)
 	else
 		data_set_int(data_key_set(d, "over_time_limit"),
 			     part->over_time_limit);
+	
+	if (part->flags & PART_FLAG_PDOI)
+		data_set_string(data_list_append(flags), "power_down_on_idle");
 
 	if ((part->preempt_mode == PREEMPT_MODE_OFF) ||
 	    (part->preempt_mode == NO_VAL16)) {

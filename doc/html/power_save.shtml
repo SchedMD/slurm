@@ -111,6 +111,13 @@ Specifies how long to wait after a batch job start request is issued
 before we expect the batch job to be running on the compute node.
 Depending upon how nodes are returned to service, this value may need to
 be increased above its default value of 10 seconds.</li>
+
+<li><b>PartitionName= ... PowerDownOnIdle=[YES|NO]</b>:
+If set to <b>YES</b>, then nodes allocated from this partition will immediately
+be requested to power down upon becoming IDLE. A power down request prevents
+further scheduling to the node until it has been put into power save mode by
+<b>SuspendProgram</b>.
+
 </ul></p>
 
 <p>Note that <i>SuspendProgram</i> and <i>ResumeProgram</i> execute as
@@ -248,6 +255,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 11 October 2022</p>
+<p style="text-align:center;">Last modified 28 October 2022</p>
 
 <!--#include virtual="footer.txt"-->
