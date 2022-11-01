@@ -6646,6 +6646,9 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 	uint32_t job_min_nodes, job_max_nodes;
 	int rc = SLURM_SUCCESS;
 
+	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+
 	if ((part_ptr->flags & PART_FLAG_REQ_RESV) &&
 	    (!job_desc->reservation || job_desc->reservation[0] == '\0')) {
 		debug2("%s: uid %u access to partition %s "
@@ -6908,6 +6911,9 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 	uint32_t max_time = 0;
 	bool any_check = false;
 
+	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+
 	/* Change partition pointer(s) to alternates as needed */
 	if (part_ptr_list) {
 		int fail_rc = SLURM_SUCCESS;
@@ -7122,6 +7128,14 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 	job_desc_msg_t job_desc;
 	int rc;
 
+	assoc_mgr_lock_t assoc_mgr_read_lock = {
+		.assoc = READ_LOCK,
+		.qos = READ_LOCK,
+		.user = READ_LOCK,
+	};
+
+	assoc_mgr_lock(&assoc_mgr_read_lock);
+
 	job_ptr = *job_pptr;
 	detail_ptr = job_ptr->details;
 	part_ptr = job_ptr->part_ptr;
@@ -7130,6 +7144,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 	if (!detail_ptr || !part_ptr) {
 		fatal_abort("%pJ has NULL details_ptr and/or part_ptr",
 			    job_ptr);
+		assoc_mgr_unlock(&assoc_mgr_read_lock);
 		return WAIT_NO_REASON;	/* To prevent CLANG error */
 	}
 
@@ -7251,6 +7266,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 			detail_ptr->pn_min_cpus = job_desc.pn_min_cpus;
 		}
 	}
+	assoc_mgr_unlock(&assoc_mgr_read_lock);
 
 	return (fail_reason);
 }
@@ -7285,6 +7301,11 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	slurmdb_qos_rec_t qos_rec, *qos_ptr;
 	uint32_t user_submit_priority, acct_reason = 0;
 	acct_policy_limit_set_t acct_policy_limit_set;
+	assoc_mgr_lock_t assoc_mgr_read_lock = {
+		.assoc = READ_LOCK,
+		.qos = READ_LOCK,
+		.user = READ_LOCK,
+	};
 
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set));
 	acct_policy_limit_set.tres = xcalloc(slurmctld_tres_cnt,
@@ -7345,12 +7366,14 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	 * Checks are done later to validate assoc_ptr, so we don't
 	 * need to lock outside of fill_in_assoc.
 	 */
+	assoc_mgr_lock(&assoc_mgr_read_lock);
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-				    accounting_enforce, &assoc_ptr, false)) {
+				    accounting_enforce, &assoc_ptr, true)) {
 		info("%s: invalid account or partition for user %u, "
 		     "account '%s', and partition '%s'", __func__,
 		     job_desc->user_id, assoc_rec.acct, assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
+		assoc_mgr_unlock(&assoc_mgr_read_lock);
 		goto cleanup_fail;
 	} else if (slurm_with_slurmdbd() &&
 		   !assoc_ptr &&
@@ -7363,7 +7386,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		assoc_rec.acct = NULL;
 		(void) assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 					       accounting_enforce, &assoc_ptr,
-					       false);
+					       true);
 		if (assoc_ptr) {
 			info("%s: account '%s' has no association for user %u "
 			     "using default account '%s'",
@@ -7374,8 +7397,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	if ((error_code = _check_for_part_assocs(
-		     part_ptr_list, assoc_ptr)) != SLURM_SUCCESS)
+		     part_ptr_list, assoc_ptr)) != SLURM_SUCCESS) {
+		assoc_mgr_unlock(&assoc_mgr_read_lock);
 		goto cleanup_fail;
+	}
 
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
@@ -7386,16 +7411,18 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	qos_ptr = _determine_and_validate_qos(
 		job_desc->reservation, assoc_ptr, false, &qos_rec, &qos_error,
-		false, LOG_LEVEL_ERROR);
+		true, LOG_LEVEL_ERROR);
 
 	if (qos_error != SLURM_SUCCESS) {
 		error_code = qos_error;
+		assoc_mgr_unlock(&assoc_mgr_read_lock);
 		goto cleanup_fail;
 	}
 
 	error_code = _valid_job_part(job_desc, submit_uid, req_bitmap,
 				     part_ptr, part_ptr_list,
 				     assoc_ptr, qos_ptr);
+	assoc_mgr_unlock(&assoc_mgr_read_lock);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 
