@@ -2262,6 +2262,8 @@ typedef struct node_info {
 				 * no reason is set. */
 	uint32_t reason_uid;   	/* User that set the reason, ignore if
 				 * no reason is set. */
+	time_t resume_after;    /* automatically resume DOWN or DRAINED node at
+			         * this point in time */
 	char *resv_name;        /* If node is in a reservation this is
 				 * the name of the reservation */
 	dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
@@ -3081,6 +3083,8 @@ typedef struct slurm_update_node_msg {
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	uint32_t reason_uid;	/* user ID of sending (needed if user
 				 * root is sending message) */
+	uint32_t resume_after;	/* automatically resume DOWN or DRAINED node
+				 * after this amount of seconds */
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
 

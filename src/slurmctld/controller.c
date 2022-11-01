@@ -2154,7 +2154,7 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(job_write_lock);
 
 			lock_slurmctld(node_write_lock);
-			check_reboot_nodes();
+			check_node_timers();
 			unlock_slurmctld(node_write_lock);
 		}
 

@@ -163,6 +163,7 @@ void slurm_init_update_node_msg (update_node_msg_t * update_node_msg)
 {
 	memset(update_node_msg, 0, sizeof(update_node_msg_t));
 	update_node_msg->node_state = NO_VAL;
+	update_node_msg->resume_after = NO_VAL;
 	update_node_msg->weight = NO_VAL;
 }
 

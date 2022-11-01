@@ -200,6 +200,7 @@ hv_to_update_node_msg(HV *hv, update_node_msg_t *update_msg)
 	FETCH_FIELD(hv, update_msg, node_names, charp, TRUE);
 	FETCH_FIELD(hv, update_msg, node_state, uint32_t, FALSE);
 	FETCH_FIELD(hv, update_msg, reason, charp, FALSE);
+	FETCH_FIELD(hv, update_msg, resume_after, uint32_t, FALSE);
 	FETCH_FIELD(hv, update_msg, features, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, features_act, charp, FALSE);
 	FETCH_FIELD(hv, update_msg, weight, uint32_t, FALSE);
