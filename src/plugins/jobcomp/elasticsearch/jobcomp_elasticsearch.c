@@ -743,7 +743,6 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 
 	if ((rc = data_g_serialize(&jnode->serialized_job, record,
 				   MIME_TYPE_JSON, DATA_SER_FLAGS_COMPACT))) {
-		xfree(jnode->serialized_job);
 		xfree(jnode);
 		log_flag(ESEARCH, "unable to serialize %pJ to JSON: %s",
 			 job_ptr, slurm_strerror(rc));
@@ -752,7 +751,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	}
 
 	FREE_NULL_DATA(record);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern void *_process_jobs(void *x)
