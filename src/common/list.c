@@ -144,8 +144,7 @@ static int _list_mutex_is_locked(pthread_rwlock_t *mutex);
 
 /* list_create()
  */
-List
-list_create (ListDelF f)
+extern list_t *list_create(ListDelF f)
 {
 	list_t *l = xmalloc(sizeof(*l));
 
@@ -162,8 +161,7 @@ list_create (ListDelF f)
 
 /* list_destroy()
  */
-void
-list_destroy (List l)
+extern void list_destroy(list_t *l)
 {
 	ListIterator i, iTmp;
 	list_node_t *p, *pTmp;
@@ -196,8 +194,7 @@ list_destroy (List l)
 
 /* list_is_empty()
  */
-int
-list_is_empty (List l)
+extern int list_is_empty(list_t *l)
 {
 	int n;
 
@@ -214,7 +211,7 @@ list_is_empty (List l)
  * Return the number of items in list [l].
  * If [l] is NULL, return 0.
  */
-int list_count(List l)
+extern int list_count(list_t *l)
 {
 	int n;
 
@@ -229,7 +226,7 @@ int list_count(List l)
 	return n;
 }
 
-List list_shallow_copy(List l)
+extern list_t *list_shallow_copy(list_t *l)
 {
 	List m = list_create(NULL);
 
@@ -240,7 +237,7 @@ List list_shallow_copy(List l)
 
 /* list_append()
  */
-void list_append(List l, void *x)
+extern void list_append(list_t *l, void *x)
 {
 	xassert(l != NULL);
 	xassert(x != NULL);
@@ -252,8 +249,7 @@ void list_append(List l, void *x)
 
 /* list_append_list()
  */
-int
-list_append_list (List l, List sub)
+extern int list_append_list(list_t *l, list_t *sub)
 {
 	int n = 0;
 	list_node_t *p;
@@ -286,7 +282,7 @@ list_append_list (List l, List sub)
  *  Note: list [sub] may be returned empty, but not destroyed.
  *  Returns a count of the number of items added to list [l].
  */
-int list_transfer_max(List l, List sub, int max)
+extern int list_transfer_max(list_t *l, list_t *sub, int max)
 {
 	void *v;
 	int n = 0;
@@ -316,7 +312,7 @@ int list_transfer_max(List l, List sub, int max)
  *  Note: list [sub] will be returned empty, but not destroyed.
  *  Returns a count of the number of items added to list [l].
  */
-int list_transfer(List l, List sub)
+extern int list_transfer(list_t *l, list_t *sub)
 {
 	return list_transfer_max(l, sub, 0);
 }
@@ -329,7 +325,7 @@ int list_transfer(List l, List sub)
  *        but never destroyed.
  *  Returns a count of the number of items added to list [l].
  */
-int list_transfer_unique(List l, ListFindF f, List sub)
+extern int list_transfer_unique(list_t *l, ListFindF f, list_t *sub)
 {
 	list_node_t **pp;
 	void *v;
@@ -400,7 +396,7 @@ static void *_list_find_first_lock(
 /*
  * list_find_first()
  */
-void *list_find_first(List l, ListFindF f, void *key)
+extern void *list_find_first(list_t *l, ListFindF f, void *key)
 {
 	return _list_find_first_lock(l, f, key, true);
 }
@@ -409,15 +405,14 @@ void *list_find_first(List l, ListFindF f, void *key)
  * list_find_first_ro()
  * Same as list_find_first, but use a rdlock instead of wrlock
  */
-void *list_find_first_ro(List l, ListFindF f, void *key)
+extern void *list_find_first_ro(list_t *l, ListFindF f, void *key)
 {
 	return _list_find_first_lock(l, f, key, false);
 }
 
 /* list_remove_first()
  */
-void *
-list_remove_first (List l, ListFindF f, void *key)
+extern void *list_remove_first(list_t *l, ListFindF f, void *key)
 {
 	list_node_t **pp;
 	void *v = NULL;
@@ -444,8 +439,7 @@ list_remove_first (List l, ListFindF f, void *key)
 
 /* list_delete_all()
  */
-int
-list_delete_all (List l, ListFindF f, void *key)
+extern int list_delete_all(list_t *l, ListFindF f, void *key)
 {
 	list_node_t **pp;
 	void *v;
@@ -474,7 +468,7 @@ list_delete_all (List l, ListFindF f, void *key)
 	return n;
 }
 
-int list_delete_first(List l, ListFindF f, void *key)
+extern int list_delete_first(list_t *l, ListFindF f, void *key)
 {
 	list_node_t **pp;
 	void *v;
@@ -510,7 +504,7 @@ int list_delete_first(List l, ListFindF f, void *key)
 
 /* list_delete_ptr()
  */
-int list_delete_ptr(List l, void *key)
+extern int list_delete_ptr(list_t *l, void *key)
 {
 	list_node_t **pp;
 	void *v;
@@ -540,27 +534,26 @@ int list_delete_ptr(List l, void *key)
 
 /* list_for_each()
  */
-int
-list_for_each (List l, ListForF f, void *arg)
+extern int list_for_each(list_t *l, ListForF f, void *arg)
 {
 	int max = -1;	/* all values */
 	return list_for_each_max(l, &max, f, arg, 1, true);
 }
 
-int list_for_each_ro(List l, ListForF f, void *arg)
+extern int list_for_each_ro(list_t *l, ListForF f, void *arg)
 {
 	int max = -1;	/* all values */
 	return list_for_each_max(l, &max, f, arg, 1, false);
 }
 
-int list_for_each_nobreak(List l, ListForF f, void *arg)
+extern int list_for_each_nobreak(list_t *l, ListForF f, void *arg)
 {
 	int max = -1;	/* all values */
 	return list_for_each_max(l, &max, f, arg, 0, true);
 }
 
-int list_for_each_max(List l, int *max, ListForF f, void *arg,
-		      int break_on_fail, int write_lock)
+extern int list_for_each_max(list_t *l, int *max, ListForF f, void *arg,
+			     int break_on_fail, int write_lock)
 {
 	list_node_t *p;
 	int n = 0;
@@ -592,12 +585,12 @@ int list_for_each_max(List l, int *max, ListForF f, void *arg,
 	return n;
 }
 
-int list_flush(List l)
+extern int list_flush(list_t *l)
 {
 	return list_flush_max(l, -1);
 }
 
-int list_flush_max(List l, int max)
+extern int list_flush_max(list_t *l, int max)
 {
 	list_node_t **pp;
 	void *v;
@@ -622,7 +615,7 @@ int list_flush_max(List l, int max)
 
 /* list_push()
  */
-void list_push(List l, void *x)
+extern void list_push(list_t *l, void *x)
 {
 	xassert(l != NULL);
 	xassert(x != NULL);
@@ -644,8 +637,7 @@ typedef int (*ConstListCmpF) (__const void *, __const void *);
  * This function uses the libC qsort().
  *
  */
-void
-list_sort(List l, ListCmpF f)
+extern void list_sort(list_t *l, ListCmpF f)
 {
 	char **v;
 	int n;
@@ -695,7 +687,7 @@ list_sort(List l, ListCmpF f)
 /*
  * list_flip - not called list_reverse due to collision with MariaDB
  */
-void list_flip(List l)
+extern void list_flip(list_t *l)
 {
 	list_node_t *old_head, *prev = NULL, *curr, *next = NULL;
 	ListIterator i;
@@ -734,8 +726,7 @@ void list_flip(List l)
 
 /* list_pop()
  */
-void *
-list_pop (List l)
+extern void *list_pop(list_t *l)
 {
 	void *v;
 
@@ -751,8 +742,7 @@ list_pop (List l)
 
 /* list_peek()
  */
-void *
-list_peek (List l)
+extern void *list_peek(list_t *l)
 {
 	void *v;
 
@@ -770,8 +760,7 @@ list_peek (List l)
 
 /* list_dequeue()
  */
-void *
-list_dequeue (List l)
+extern void *list_dequeue(list_t *l)
 {
 	void *v;
 
@@ -787,8 +776,7 @@ list_dequeue (List l)
 
 /* list_iterator_create()
  */
-ListIterator
-list_iterator_create (List l)
+extern list_itr_t *list_iterator_create(list_t *l)
 {
 	ListIterator i;
 
@@ -812,8 +800,7 @@ list_iterator_create (List l)
 
 /* list_iterator_reset()
  */
-void
-list_iterator_reset (ListIterator i)
+extern void list_iterator_reset(list_itr_t *i)
 {
 	xassert(i != NULL);
 	xassert(i->magic == LIST_ITR_MAGIC);
@@ -828,8 +815,7 @@ list_iterator_reset (ListIterator i)
 
 /* list_iterator_destroy()
  */
-void
-list_iterator_destroy (ListIterator i)
+extern void list_iterator_destroy(list_itr_t *i)
 {
 	ListIterator *pi;
 
@@ -865,7 +851,7 @@ static void * _list_next_locked(ListIterator i)
 
 /* list_next()
  */
-void *list_next (ListIterator i)
+extern void *list_next(list_itr_t *i)
 {
 	void *rc;
 
@@ -883,8 +869,7 @@ void *list_next (ListIterator i)
 
 /* list_peek_next()
  */
-void *
-list_peek_next (ListIterator i)
+extern void *list_peek_next(list_itr_t *i)
 {
 	list_node_t *p;
 
@@ -902,7 +887,7 @@ list_peek_next (ListIterator i)
 
 /* list_insert()
  */
-void list_insert(ListIterator i, void *x)
+extern void list_insert(list_itr_t *i, void *x)
 {
 	xassert(i != NULL);
 	xassert(x != NULL);
@@ -916,8 +901,7 @@ void list_insert(ListIterator i, void *x)
 
 /* list_find()
  */
-void *
-list_find (ListIterator i, ListFindF f, void *key)
+extern void *list_find(list_itr_t *i, ListFindF f, void *key)
 {
 	void *v;
 
@@ -938,8 +922,7 @@ list_find (ListIterator i, ListFindF f, void *key)
 
 /* list_remove()
  */
-void *
-list_remove (ListIterator i)
+extern void *list_remove(list_itr_t *i)
 {
 	void *v = NULL;
 
@@ -957,8 +940,7 @@ list_remove (ListIterator i)
 
 /* list_delete_item()
  */
-int
-list_delete_item (ListIterator i)
+extern int list_delete_item(list_itr_t *i)
 {
 	void *v;
 

@@ -1368,13 +1368,13 @@ typedef int (*ListForF) (void *x, void *arg);
  *
  *  Inserts data [x] at the end of list [l].
  */
-extern void slurm_list_append(List l, void *x);
+extern void slurm_list_append(list_t *l, void *x);
 
 /* slurm_list_count():
  *
  *  Returns the number of items in list [l].
  */
-extern int slurm_list_count(List l);
+extern int slurm_list_count(list_t *l);
 
 /* slurm_list_create():
  *
@@ -1385,7 +1385,7 @@ extern int slurm_list_count(List l);
  *  Note: Abandoning a list without calling slurm_list_destroy() will result
  *    in a memory leak.
  */
-extern List slurm_list_create(ListDelF f);
+extern list_t *slurm_list_create(ListDelF f);
 
 /* slurm_list_destroy():
  *
@@ -1393,7 +1393,7 @@ extern List slurm_list_create(ListDelF f);
  *    list itself; if a deletion function was specified when the list
  *    was created, it will be called for each item in the list.
  */
-extern void slurm_list_destroy(List l);
+extern void slurm_list_destroy(list_t *l);
 
 /* slurm_list_find():
  *
@@ -1404,33 +1404,33 @@ extern void slurm_list_destroy(List l);
  *  Example: i=slurm_list_iterator_reset(i);
  *	     while ((x=slurm_list_find(i,f,k))) {...}
  */
-extern void *slurm_list_find(ListIterator i, ListFindF f, void *key);
+extern void *slurm_list_find(list_itr_t *i, ListFindF f, void *key);
 
 /* slurm_list_is_empty():
  *
  *  Returns non-zero if list [l] is empty; o/w returns zero.
  */
-extern int slurm_list_is_empty(List l);
+extern int slurm_list_is_empty(list_t *l);
 
 /*
  *  Creates and returns a list iterator for non-destructively traversing
  *    list [l].
  */
-extern ListIterator slurm_list_iterator_create(List l);
+extern list_itr_t *slurm_list_iterator_create(list_t *l);
 
 /* slurm_list_iterator_reset():
  *
  *  Resets the list iterator [i] to start traversal at the beginning
  *    of the list.
  */
-extern void slurm_list_iterator_reset(ListIterator i);
+extern void slurm_list_iterator_reset(list_itr_t *i);
 
 /*
  *  Destroys the list iterator [i]; list iterators not explicitly destroyed
  *    in this manner will be destroyed when the list is deallocated via
  *    list_destroy().
  */
-extern void slurm_list_iterator_destroy(ListIterator i);
+extern void slurm_list_iterator_destroy(list_itr_t *i);
 
 /* slurm_list_next():
  *
@@ -1439,7 +1439,7 @@ extern void slurm_list_iterator_destroy(ListIterator i);
  *  Example: i=slurm_list_iterator_create(i);
  *	     while ((x=slurm_list_next(i))) {...}
  */
-extern void *slurm_list_next(ListIterator i);
+extern void *slurm_list_next(list_itr_t *i);
 
 /* slurm_list_sort():
  *
@@ -1447,14 +1447,14 @@ extern void *slurm_list_next(ListIterator i);
  *  Note: Sorting a list resets all iterators associated with the list.
  *  Note: The sort algorithm is stable.
  */
-extern void slurm_list_sort(List l, ListCmpF f);
+extern void slurm_list_sort(list_t *l, ListCmpF f);
 
 /* slurm_list_pop():
  *
  *  Pops the data item at the top of the stack [l].
  *  Returns the data's ptr, or NULL if the stack is empty.
  */
-extern void *slurm_list_pop(List l);
+extern void *slurm_list_pop(list_t *l);
 
 /*****************************************************************************\
  *      SLURM BITSTR FUNCTIONS
