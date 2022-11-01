@@ -609,7 +609,7 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 
 		if (req->flags & LAUNCH_OVERCOMMIT) {
 			/*
-			 * Allow the step to run despite being able to
+			 * Allow the step to run despite not being able to
 			 * distribute tasks.
 			 * e.g. Overcommit will fail to distribute tasks because
 			 * the step has wants more cpus than allocated.
