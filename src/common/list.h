@@ -60,7 +60,7 @@ typedef struct xlist list_t;
  *  List Iterator opaque data type.
  */
 typedef struct listIterator *ListIterator;
-typedef struct listIterator list_iterator_t;
+typedef struct listIterator list_itr_t;
 
 /*
  *  Function prototype to deallocate data stored in a list.

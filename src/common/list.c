@@ -793,7 +793,7 @@ list_iterator_create (List l)
 	ListIterator i;
 
 	xassert(l != NULL);
-	i = xmalloc(sizeof(list_iterator_t));
+	i = xmalloc(sizeof(list_itr_t));
 
 	i->magic = LIST_ITR_MAGIC;
 	i->list = l;
