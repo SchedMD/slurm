@@ -1053,7 +1053,7 @@ static void _nvml_get_device_mig_mode(nvmlDevice_t *device,
  * Get the minor numbers for the GPU instance and compute instance for a MIG
  * device.
  *
- * gpu_index	(IN) The index of the parent GPU of the MIG device.
+ * gpu_minor	(IN) The minor number of the parent GPU of the MIG device.
  * gi_id	(IN) The GPU instance ID of the MIG device.
  * ci_id	(IN) The compute instance ID of the MIG device.
  * gi_minor	(OUT) The minor number of the GPU instance.
@@ -1061,7 +1061,7 @@ static void _nvml_get_device_mig_mode(nvmlDevice_t *device,
  *
  * Returns SLURM_SUCCESS on success and SLURM_ERROR on failure.
  */
-static int _nvml_get_mig_minor_numbers(unsigned int gpu_index,
+static int _nvml_get_mig_minor_numbers(unsigned int gpu_minor,
 				       unsigned int gi_id, unsigned int ci_id,
 				       unsigned int *gi_minor,
 				       unsigned int *ci_minor)
@@ -1089,9 +1089,9 @@ static int _nvml_get_mig_minor_numbers(unsigned int gpu_index,
 		return rc;
 	}
 
-	snprintf(gi_fmt, MIG_LINE_SIZE, "gpu%u/gi%u/access", gpu_index,
+	snprintf(gi_fmt, MIG_LINE_SIZE, "gpu%u/gi%u/access", gpu_minor,
 		 gi_id);
-	snprintf(ci_fmt, MIG_LINE_SIZE, "gpu%u/gi%u/ci%u/access", gpu_index,
+	snprintf(ci_fmt, MIG_LINE_SIZE, "gpu%u/gi%u/ci%u/access", gpu_minor,
 		 gi_id, ci_id);
 
 	while (1) {
@@ -1102,7 +1102,7 @@ static int _nvml_get_mig_minor_numbers(unsigned int gpu_index,
 		count = fscanf(fp, "%s%u", tmp_str, &tmp_val);
 		if (count == EOF) {
 			error("mig-minors: %d: Reached end of file. Could not find GPU=%u|GI=%u|CI=%u",
-			      i, gpu_index, gi_id, ci_id);
+			      i, gpu_minor, gi_id, ci_id);
 			break;
 		} else if (count != 2) {
 			error("mig-minors: %d: Could not find tmp_str and/or tmp_val",
@@ -1127,7 +1127,7 @@ static int _nvml_get_mig_minor_numbers(unsigned int gpu_index,
 		if ((*gi_minor != 0) && (*ci_minor != 0)) {
 			rc = SLURM_SUCCESS;
 			debug3("GPU:%u|GI:%u,GI_minor=%u|CI:%u,CI_minor=%u",
-			      gpu_index, gi_id, *gi_minor, ci_id, *ci_minor);
+			      gpu_minor, gi_id, *gi_minor, ci_id, *ci_minor);
 			break;
 		}
 	}
@@ -1200,7 +1200,7 @@ static bool _nvml_use_mig_uuid()
  * Print out a MIG device and return a populated nvml_mig struct.
  *
  * device	(IN) The MIG device handle
- * gpu_index	(IN) The GPU index
+ * gpu_minor	(IN) The GPU minor number
  * mig_index	(IN) The MIG index
  * gpu_uuid	(IN) The UUID string of the parent GPU
  * nvml_mig	(OUT) An nvml_mig_t struct. This function sets profile_name,
@@ -1214,7 +1214,7 @@ static bool _nvml_use_mig_uuid()
  * (/dev/nividia-caps/...) associated with the compute instance behind this MIG
  * device.
  */
-static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_index,
+static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
 		       unsigned int mig_index, char *gpu_uuid,
 		       nvml_mig_t *nvml_mig)
 {
@@ -1238,7 +1238,7 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_index,
 	_nvml_get_gpu_instance_id(&mig, &gi_id);
 	_nvml_get_compute_instance_id(&mig, &ci_id);
 
-	if (_nvml_get_mig_minor_numbers(gpu_index, gi_id, ci_id, &gi_minor,
+	if (_nvml_get_mig_minor_numbers(gpu_minor, gi_id, ci_id, &gi_minor,
 					&ci_minor) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
@@ -1264,7 +1264,7 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_index,
 	xstrfmtcat(nvml_mig->files, ",/dev/nvidia-caps/nvidia-cap%u,/dev/nvidia-caps/nvidia-cap%u",
 		   gi_minor, ci_minor);
 
-	debug2("GPU index %u, MIG index %u:", gpu_index, mig_index);
+	debug2("GPU minor %u, MIG index %u:", gpu_minor, mig_index);
 	debug2("    MIG Profile: %s", nvml_mig->profile_name);
 	debug2("    MIG UUID: %s", mig_uuid);
 	debug2("    UniqueID: %s", nvml_mig->unique_id);
@@ -1453,7 +1453,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 					xstrdup(tmp_device_name);
 
 				/* If MIG exists, print and and return files */
-				if (_handle_mig(&device, i, j,
+				if (_handle_mig(&device, minor_number, j,
 						uuid, &nvml_mig) !=
 				    SLURM_SUCCESS) {
 					_free_nvml_mig_members(&nvml_mig);

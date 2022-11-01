@@ -147,6 +147,8 @@ documents those changes that are of interest to users and administrators.
     across sockets, that resulted in random task launch failures.
  -- Fix core selection for steps requesting multiple tasks per core when
     allocation contains more cores than required for step.
+ -- gpu/nvml - Fix MIG minor number generation when GPU minor number
+    (/dev/nvidia[minor_number]) and index (as seen in nvidia-smi) do not match.
 
 * Changes in Slurm 22.05.5
 ==========================
