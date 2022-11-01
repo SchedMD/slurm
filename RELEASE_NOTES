@@ -84,6 +84,7 @@ COMMAND CHANGES (see man pages for details)
     --ntasks-per-core=1 implies --cpu-bind=cores and --ntasks-per-core>1 implies
     --cpu-bind=threads.
  -- salloc/sbatch/srun - Check and abort if ntasks-per-core > threads-per-core.
+ -- scontrol - Add ResumeAfter=<secs> option to "scontrol update nodename=".
 
 API CHANGES
 ===========
