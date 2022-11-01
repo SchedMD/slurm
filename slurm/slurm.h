@@ -1905,7 +1905,7 @@ typedef struct priority_factors_object {
 } priority_factors_object_t;
 
 typedef struct priority_factors_response_msg {
-	List	 priority_factors_list;	/* priority_factors_object_t list */
+	list_t *priority_factors_list;	/* priority_factors_object_t list */
 } priority_factors_response_msg_t;
 
 typedef struct job_info_msg {
@@ -2201,7 +2201,7 @@ typedef struct {
 } job_step_pids_t;
 
 typedef struct {
-	List pid_list; /* List of job_step_pids_t *'s */
+	list_t *pid_list;	/* list of job_step_pids_t *'s */
 	slurm_step_id_t step_id;
 } job_step_pids_response_msg_t;
 
@@ -2213,7 +2213,7 @@ typedef struct {
 } job_step_stat_t;
 
 typedef struct {
-	List stats_list;	/* List of job_step_stat_t *'s */
+	list_t *stats_list;	/* list of job_step_stat_t *'s */
 	slurm_step_id_t step_id;
 } job_step_stat_response_msg_t;
 
@@ -2402,7 +2402,7 @@ typedef struct partition_info {
 	char *deny_qos;		/* comma delimited list of denied qos */
 	uint16_t flags;		/* see PART_FLAG_* above */
 	uint32_t grace_time; 	/* preemption grace time in seconds */
-	List job_defaults_list;	/* List of job_defaults_t elements */
+	list_t *job_defaults_list; /* List of job_defaults_t elements */
 	char *job_defaults_str;	/* String of job defaults,
 				 * used only for partition update RPC */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
@@ -2490,7 +2490,7 @@ typedef struct will_run_response_msg {
 	char *job_submit_user_msg; /* job submit plugin user_msg */
 	char *node_list;	/* nodes where job will start */
 	char *part_name;	/* partition where job will start */
-	List preemptee_job_id;	/* jobs preempted to start this job */
+	list_t *preemptee_job_id; /* jobs preempted to start this job */
 	uint32_t proc_cnt;	/* CPUs allocated to job at start */
 	time_t start_time;	/* time when job will start */
 	double sys_usage_per;	/* System usage percentage */
@@ -2868,7 +2868,7 @@ typedef struct {
 	char *job_container_plugin; /* job container plugin type */
 	char *job_credential_private_key;	/* path to private key */
 	char *job_credential_public_certificate;/* path to public certificate*/
-	List job_defaults_list;	/* List of job_defaults_t elements */
+	list_t *job_defaults_list; /* list of job_defaults_t elements */
 	uint16_t job_file_append; /* if set, append to stdout/err file */
 	uint16_t job_requeue;	/* If set, jobs get requeued on node failre */
 	char *job_submit_plugins;  /* List of job_submit plugins to use */
@@ -3274,11 +3274,11 @@ typedef struct {
 
 /* Association manager state running in the slurmctld */
 typedef struct {
-	List assoc_list; /* list of slurmdb_assoc_rec_t with usage packed */
-	List qos_list;   /* list of slurmdb_qos_rec_t with usage packed */
+	list_t *assoc_list; /* list of slurmdb_assoc_rec_t with usage packed */
+	list_t *qos_list; /* list of slurmdb_qos_rec_t with usage packed */
 	uint32_t tres_cnt;
 	char **tres_names;
-	List user_list;  /* list of slurmdb_user_rec_t */
+	list_t *user_list; /* list of slurmdb_user_rec_t */
 } assoc_mgr_info_msg_t;
 
 #define ASSOC_MGR_INFO_FLAG_ASSOC 0x00000001
@@ -3286,10 +3286,10 @@ typedef struct {
 #define ASSOC_MGR_INFO_FLAG_QOS   0x00000004
 
 typedef struct {
-	List acct_list; /* char * list of account names */
+	list_t *acct_list; /* char * list of account names */
 	uint32_t flags; /* flags determining what is returned */
-	List qos_list;  /* char * list of qos names */
-	List user_list; /* char * list of user names */
+	list_t *qos_list; /* char * list of qos names */
+	list_t *user_list; /* char * list of user names */
 } assoc_mgr_info_request_msg_t;
 
 typedef struct network_callerid_msg {
@@ -3361,7 +3361,7 @@ extern void slurm_free_resource_allocation_response_msg(resource_allocation_resp
  *	allocate resources for a list of job requests.  This call will block
  *	until the entire allocation is granted, or the specified timeout limit
  *	is reached.
- * IN job_req_list - List of resource allocation requests, type job_desc_msg_t
+ * IN job_req_list - list of resource allocation requests, type job_desc_msg_t
  * IN timeout - amount of time, in seconds, to wait for a response before
  * 	giving up.
  *	A timeout of zero will wait indefinitely.
@@ -3370,13 +3370,15 @@ extern void slurm_free_resource_allocation_response_msg(resource_allocation_resp
  *      pending callback is not NULL, it will be called with the job_id
  *      of the pending job as the sole parameter.
  *
- * RET List of allocation structures on success, NULL on error set errno to
+ * RET list of allocation structures on success, NULL on error set errno to
  *	indicate the error (errno will be ETIMEDOUT if the timeout is reached
  *      with no allocation granted)
  * NOTE: free the response using list_destroy()
  */
-List slurm_allocate_het_job_blocking(List job_req_list, time_t timeout,
-				      void(*pending_callback)(uint32_t job_id));
+extern list_t *slurm_allocate_het_job_blocking(
+	list_t *job_req_list,
+	time_t timeout,
+	void(*pending_callback)(uint32_t job_id));
 
 /*
  * slurm_allocation_lookup - retrieve info for an existing resource
@@ -3399,7 +3401,7 @@ extern int slurm_allocation_lookup(uint32_t job_id,
  * NOTE: returns information an individual job as well
  * NOTE: free the response using list_destroy()
  */
-extern int slurm_het_job_lookup(uint32_t jobid, List *resp);
+extern int slurm_het_job_lookup(uint32_t jobid, list_t **resp);
 
 /*
  * slurm_read_hostfile - Read a Slurm hostfile specified by "filename".
@@ -3452,11 +3454,11 @@ extern int slurm_submit_batch_job(job_desc_msg_t *job_desc_msg,
  * slurm_submit_batch_het_job - issue RPC to submit a heterogeneous job for
  *				 later execution
  * NOTE: free the response using slurm_free_submit_response_response_msg
- * IN job_req_list - List of resource allocation requests, type job_desc_msg_t
+ * IN job_req_list - list of resource allocation requests, type job_desc_msg_t
  * OUT slurm_alloc_msg - response to request
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_submit_batch_het_job(List job_req_list,
+extern int slurm_submit_batch_het_job(list_t *job_req_list,
 				      submit_response_msg_t **slurm_alloc_msg);
 
 /*
@@ -3484,11 +3486,11 @@ extern int slurm_job_will_run(job_desc_msg_t *job_desc_msg);
 /*
  * slurm_het_job_will_run - determine if a heterogeneous job would execute
  *	immediately if submitted now
- * IN job_req_list - List of job_desc_msg_t structures describing the resource
+ * IN job_req_list - list of job_desc_msg_t structures describing the resource
  *		allocation request
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_het_job_will_run(List job_req_list);
+extern int slurm_het_job_will_run(list_t *job_req_list);
 
 
 /*
@@ -3767,9 +3769,9 @@ extern void slurm_write_ctl_conf(slurm_conf_t *slurm_ctl_conf_ptr,
 
 /*
  * slurm_ctl_conf_2_key_pairs - put the slurm_conf_t variables into
- *	a List of opaque data type config_key_pair_t
+ *	a list_t of opaque data type config_key_pair_t
  * IN slurm_ctl_conf_ptr - slurm control configuration pointer
- * RET List of opaque data type config_key_pair_t
+ * RET list of opaque data type config_key_pair_t
  */
 extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr);
 
@@ -3777,7 +3779,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr);
  * slurm_print_key_pairs - output the contents of key_pairs
  * which is a list of opaque data type config_key_pair_t
  * IN out - file to write to
- * IN key_pairs - List containing key pairs to be printed
+ * IN key_pairs - list containing key pairs to be printed
  * IN title - title of key pair list
  */
 extern void slurm_print_key_pairs(FILE *out, void *key_pairs, char *title);
@@ -5041,7 +5043,7 @@ typedef struct {
 
 extern crontab_update_response_msg_t *slurm_update_crontab(uid_t uid, gid_t gid,
 							   char *crontab,
-							   List jobs);
+							   list_t *jobs);
 
 extern int slurm_remove_crontab(uid_t uid, gid_t gid);
 

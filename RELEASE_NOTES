@@ -104,3 +104,5 @@ API CHANGES
     operation you must add additional locking within your plugin.
  -- burst buffer plugins - add bb_g_build_het_job_script().
  -- Removed return value from slurm_list_append().
+ -- The List and ListIterator types have been removed in favor of list_t and
+    list_itr_t respectively.
