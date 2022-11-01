@@ -376,10 +376,8 @@ enum job_state_reason {
 	WAIT_QOS_JOB_LIMIT,	/* QOS job limit reached */
 	WAIT_QOS_RESOURCE_LIMIT,/* QOS resource limit reached */
 	WAIT_QOS_TIME_LIMIT,	/* QOS time limit reached */
-	WAIT_BLOCK_MAX_ERR,     /* BLUEGENE Block has too many cnodes
-				 * in error state to allow more jobs. */
-	WAIT_BLOCK_D_ACTION,    /* BLUEGENE Block is being freed,
-				 * can't allow more jobs. */
+	DEFUNCT_WAIT_33, /* free for reuse */
+	DEFUNCT_WAIT_34, /* free for reuse */
 	WAIT_CLEANING,          /* If a job is requeued and it is
 				 * still cleaning up from the last run. */
 	WAIT_PROLOG,		/* Prolog is running */

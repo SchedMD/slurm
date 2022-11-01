@@ -1813,10 +1813,6 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "QOSResourceLimit";
 	case WAIT_QOS_TIME_LIMIT:
 		return "QOSTimeLimit";
-	case WAIT_BLOCK_MAX_ERR:
-		return "BlockMaxError";
-	case WAIT_BLOCK_D_ACTION:
-		return "BlockFreeAction";
 	case WAIT_CLEANING:
 		return "Cleaning";
 	case WAIT_QOS:
@@ -2219,10 +2215,6 @@ extern enum job_state_reason job_reason_num(char *reason)
 		return WAIT_QOS_RESOURCE_LIMIT;
 	if (!xstrcasecmp(reason, "QOSTimeLimit"))
 		return WAIT_QOS_TIME_LIMIT;
-	if (!xstrcasecmp(reason, "BlockMaxError"))
-		return WAIT_BLOCK_MAX_ERR;
-	if (!xstrcasecmp(reason, "BlockFreeAction"))
-		return WAIT_BLOCK_D_ACTION;
 	if (!xstrcasecmp(reason, "Cleaning"))
 		return WAIT_CLEANING;
 	if (!xstrcasecmp(reason, "QOSNotAllowed"))

@@ -2592,9 +2592,6 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 			   (error_code == ESLURM_RESERVATION_BUSY)) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			xfree(job_ptr->state_desc);
-		} else if ((job_ptr->state_reason == WAIT_BLOCK_MAX_ERR) ||
-			   (job_ptr->state_reason == WAIT_BLOCK_D_ACTION)) {
-			/* state_reason was already setup */
 		} else if ((job_ptr->state_reason == WAIT_HELD) &&
 			   (job_ptr->priority == 0)) {
 			/* Held by select plugin due to some failure */
