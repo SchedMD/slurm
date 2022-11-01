@@ -82,6 +82,9 @@ elif ! [[ -f "/usr/share/bash-completion/bash_completion" ]] ||
 	return
 fi
 
+# Enable shell options
+shopt -s extglob
+
 ################################################################################
 #			Slurm Completion Logger Functions
 ################################################################################
