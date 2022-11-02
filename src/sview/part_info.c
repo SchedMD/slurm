@@ -187,8 +187,8 @@ static display_data_t display_data_part[] = {
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_OVER_TIME_LIMIT, "OverTimeLimit", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ROOT, "Root", false, EDIT_MODEL, refresh_part,
-	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ROOT, "RootOnly", false, EDIT_MODEL,
+	 refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_QOS_CHAR, "Qos", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Allowed Accounts", false,
@@ -267,7 +267,7 @@ static display_data_t create_data_part[] = {
 	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_SOCKET, "Max CPUs Per Socket",
 	 false, EDIT_TEXTBOX, refresh_part,
 	 _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ROOT, "Root", false,
+	{G_TYPE_STRING, SORTID_ROOT, "RootOnly", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
@@ -650,7 +650,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 			part_msg->flags |= PART_FLAG_ROOT_ONLY_CLR;
 		}
 
-		type = "root";
+		type = "rootonly";
 		break;
 	case SORTID_OVER_SUBSCRIBE:
 		if (!xstrcasecmp(new_text, "yes")) {
