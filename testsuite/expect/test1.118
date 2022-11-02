@@ -27,11 +27,13 @@ source ./globals
 
 set job_id 0
 
+
 proc cleanup {} {
 	global job_id
 
 	cancel_job $job_id
 }
+
 
 proc check_error {client option prog error} {
 	global sbatch salloc srun test_name number job_id
@@ -95,11 +97,21 @@ mutual_error_tests
 set env(SLURM_HINT) "nomultithread"
 mutual_error_tests
 
+# Options are given a higher precedence than the environment. Options that conflict
+# with the environment cause the conflicting environment variables to be overridden.
+# Thus, when --ntasks-per-core or --threads-per-core options are specified
+# in conjunction with SLURM_HINT, since these conflict, the SLURM_HINT is ignored.
+
+# We will use 2 threads per core and tasks per core if available in order to
+# demonstrate that the nomultithread hint is being ignored.
+set node_name [get_nodes_by_request "--ntasks-per-core=2 -t1"]
+set threads_per_core [expr [get_node_param $node_name "ThreadsPerCore"] > 1 ? 2 : 1]
+
 set client "$sbatch"
 set prog "--wrap=hostname"
-set options [list "--threads-per-core=2 --ntasks-per-core=3"]
+set options [list "--threads-per-core=$threads_per_core --ntasks-per-core=$threads_per_core"]
 foreach option $options {
-	set cmd "$client -v -H -J$test_name -t1 $option $prog"
+	set cmd "$client -w $node_name -v -H -J$test_name -t1 $option $prog"
 
 	set job_id 0
 	set matches 0
@@ -124,8 +136,8 @@ foreach option $options {
 
 	set threads_req [get_job_param $job_id "ReqB:S:C:T"]
 	set tasks_req [get_job_param $job_id "NtasksPerN:B:S:C"]
-	set threads_match "0:0:*:2"
-	set tasks_match "0:0:*:3"
+	set threads_match "0:0:*:$threads_per_core"
+	set tasks_match "0:0:*:$threads_per_core"
 	subtest {$threads_match eq $threads_req} "ReqB:S:C:T should be $threads_match" "$threads_req != $threads_match"
 	subtest {$tasks_match eq $tasks_req} "NtasksPerN:B:S:C should be $tasks_match" "$tasks_req != $tasks_match"
 	cancel_job $job_id
