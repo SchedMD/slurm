@@ -2353,7 +2353,10 @@ A new reservation must specify one or more resource to be included: NodeCnt,
 Nodes and/or Licenses. A specification of "ALL" will reserve all nodes. Set
 \fIFlags=PART_NODES\fP and \fIPartitionName=\fP in order for changes in the
 nodes associated with a partition to also be reflected in the nodes associated
-with a reservation.
+with a reservation. You can add or remove nodes from an existing reservation by
+adding a '+' or '\-' sign before the '=' sign. It also works to do
+nodes=+lx0,\-lx[2\-4] if you want to remove lx[2\-4] and add lx0 at the same
+time.
 
 \fBNOTE\fR: When updating a reservation, if Nodes and Nodecnt are set
 simultaneously, nodecnt will always be honored. The reservation will get a

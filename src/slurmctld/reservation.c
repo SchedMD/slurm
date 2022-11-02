@@ -2484,6 +2484,72 @@ static int _delete_resv_internal(slurmctld_resv_t *resv_ptr)
 	return _post_resv_delete(resv_ptr);
 }
 
+static bitstr_t *_get_update_node_bitmap(slurmctld_resv_t *resv_ptr,
+					 char *node_list)
+{
+	char *last = NULL, *tmp, *tok, *node_name;
+	node_record_t *node_ptr;
+	bitstr_t *node_bitmap = NULL;
+	hostlist_t hl = NULL;
+
+	tmp = xstrdup(node_list);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+		bool minus = false, plus = false;
+		if (tok[0] == '-') {
+			minus = true;
+			tok++;
+		} else if (tok[0] == '+') {
+			plus = true;
+			tok++;
+		} else if (tok[0] == '\0') {
+			break;
+		}
+
+		if (!plus && !minus) {
+			if (node_bitmap) {
+				info("Reservation %s request has bad nodelist given (%s)",
+				     resv_ptr->name, node_list);
+				FREE_NULL_BITMAP(node_bitmap);
+			} else
+				(void)node_name2bitmap(node_list,
+						       false, &node_bitmap);
+			break;
+		}
+
+		/* Create hostlist to handle ranges i.e. tux[0-10] */
+		hl = hostlist_create(tok);
+		while ((node_name = hostlist_shift(hl))) {
+			node_ptr = find_node_record(node_name);
+			if (!node_ptr) {
+				info("Reservation %s request has bad node name given (%s)",
+				     resv_ptr->name, node_name);
+				free(node_name);
+				FREE_NULL_BITMAP(node_bitmap);
+				break;
+			}
+			free(node_name);
+
+			if (!node_bitmap)
+				node_bitmap = bit_copy(resv_ptr->node_bitmap);
+
+			if (plus)
+				bit_set(node_bitmap, node_ptr->index);
+			else if (minus)
+				bit_clear(node_bitmap, node_ptr->index);
+		}
+		hostlist_destroy(hl);
+
+		if (!node_bitmap)
+			break;
+
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp);
+
+	return node_bitmap;
+}
+
 /* Create a resource reservation */
 extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 {
@@ -3320,14 +3386,16 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		} else {
 			resv_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
 			resv_ptr->flags &= (~RESERVE_FLAG_ALL_NODES);
-			if (node_name2bitmap(resv_desc_ptr->node_list,
-					    false, &node_bitmap)) {
+
+			if (!(node_bitmap = _get_update_node_bitmap(
+				      resv_ptr, resv_desc_ptr->node_list))) {
 				info("Reservation %s request has invalid node name (%s)",
 				     resv_desc_ptr->name,
 				     resv_desc_ptr->node_list);
 				error_code = ESLURM_INVALID_NODE_NAME;
 				goto update_failure;
 			}
+
 			xfree(resv_desc_ptr->node_list);
 			xfree(resv_ptr->node_list);
 			resv_ptr->node_list = bitmap2node_name(node_bitmap);

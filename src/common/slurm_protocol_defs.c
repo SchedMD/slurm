@@ -1367,6 +1367,8 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->node_cnt);
 	if (res_free_flags & RESV_FREE_STR_GROUP)
 		xfree(msg->groups);
+	if (res_free_flags & RESV_FREE_STR_NODES)
+		xfree(msg->node_list);
 }
 
 extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
