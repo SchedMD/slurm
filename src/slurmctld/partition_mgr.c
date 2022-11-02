@@ -755,7 +755,7 @@ int load_all_part_state(void)
 		xfree(part_ptr->allow_groups);
 		FREE_NULL_LIST(part_ptr->allow_accts_list);
 		part_ptr->allow_accts_list =
-			accounts_list_build(part_ptr->allow_accounts);
+			accounts_list_build(part_ptr->allow_accounts, false);
 		part_ptr->allow_groups   = allow_groups;
 		xfree(part_ptr->allow_qos);
 		part_ptr->allow_qos      = allow_qos;
@@ -787,7 +787,7 @@ int load_all_part_state(void)
 		part_ptr->deny_accounts  = deny_accounts;
 		FREE_NULL_LIST(part_ptr->deny_accts_list);
 		part_ptr->deny_accts_list =
-			accounts_list_build(part_ptr->deny_accounts);
+			accounts_list_build(part_ptr->deny_accounts, false);
 		xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos       = deny_qos;
 		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
@@ -1671,7 +1671,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		}
 		FREE_NULL_LIST(part_ptr->allow_accts_list);
 		part_ptr->allow_accts_list =
-			accounts_list_build(part_ptr->allow_accounts);
+			accounts_list_build(part_ptr->allow_accounts, false);
 	}
 
 	if (part_desc->allow_groups != NULL) {
@@ -1790,7 +1790,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		     __func__, part_ptr->deny_accounts, part_desc->name);
 		FREE_NULL_LIST(part_ptr->deny_accts_list);
 		part_ptr->deny_accts_list =
-			accounts_list_build(part_ptr->deny_accounts);
+			accounts_list_build(part_ptr->deny_accounts, false);
 	}
 	if (part_desc->allow_accounts && part_desc->deny_accounts) {
 		error("%s: Both AllowAccounts and DenyAccounts are defined, DenyAccounts will be ignored",
@@ -2118,20 +2118,6 @@ static int _find_acct_in_list(void *x, void *arg)
 	return 0;
 }
 
-static int _update_part_assoc_list(void *x, void *arg)
-{
-	part_record_t *part_ptr = x;
-
-	FREE_NULL_LIST(part_ptr->allow_accts_list);
-	part_ptr->allow_accts_list =
-		accounts_list_build(part_ptr->allow_accounts);
-	FREE_NULL_LIST(part_ptr->deny_accts_list);
-	part_ptr->deny_accts_list =
-		accounts_list_build(part_ptr->deny_accounts);
-
-	return 0;
-}
-
 /*
  * load_part_uid_allow_list - reload the allow_uid list of partitions
  *	if required (updated group file or force set)
@@ -2372,18 +2358,38 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern void part_update_assoc_lists()
+extern void part_list_update_assoc_lists()
 {
 	/* Write lock on part */
 	slurmctld_lock_t part_write_lock = {
 		.part = WRITE_LOCK,
 	};
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
 
 	if (!part_list)
 		return;
 
 	lock_slurmctld(part_write_lock);
-	list_for_each(part_list, _update_part_assoc_list, NULL);
+	assoc_mgr_lock(&locks);
+	list_for_each(part_list, part_update_assoc_lists, NULL);
+	assoc_mgr_unlock(&locks);
 	unlock_slurmctld(part_write_lock);
 	return;
 }
+
+extern int part_update_assoc_lists(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+
+	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
+
+	FREE_NULL_LIST(part_ptr->allow_accts_list);
+	part_ptr->allow_accts_list =
+		accounts_list_build(part_ptr->allow_accounts, true);
+	FREE_NULL_LIST(part_ptr->deny_accts_list);
+	part_ptr->deny_accts_list =
+		accounts_list_build(part_ptr->deny_accounts, true);
+
+	return 0;
+}
+

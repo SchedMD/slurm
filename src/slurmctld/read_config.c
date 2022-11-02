@@ -640,7 +640,7 @@ static void _handle_all_downnodes(void)
  * Convert a comma delimited string of account names into a List containing
  * pointers to those associations.
  */
-extern list_t *accounts_list_build(char *accounts)
+extern list_t *accounts_list_build(char *accounts, bool locked)
 {
 	char *tmp_accts, *one_acct_name, *name_ptr = NULL;
 	list_t *acct_list = NULL;
@@ -650,7 +650,8 @@ extern list_t *accounts_list_build(char *accounts)
 	if (!accounts)
 		return acct_list;
 
-	assoc_mgr_lock(&locks);
+	if (!locked)
+		assoc_mgr_lock(&locks);
 	tmp_accts = xstrdup(accounts);
 	one_acct_name = strtok_r(tmp_accts, ",", &name_ptr);
 	while (one_acct_name) {
@@ -681,7 +682,8 @@ extern list_t *accounts_list_build(char *accounts)
 		one_acct_name = strtok_r(NULL, ",", &name_ptr);
 	}
 	xfree(tmp_accts);
-	assoc_mgr_unlock(&locks);
+	if (!locked)
+		assoc_mgr_unlock(&locks);
 	return acct_list;
 }
 
@@ -840,7 +842,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	if (part->allow_accounts) {
 		part_ptr->allow_accounts = xstrdup(part->allow_accounts);
 		part_ptr->allow_accts_list =
-			accounts_list_build(part_ptr->allow_accounts);
+			accounts_list_build(part_ptr->allow_accounts, false);
 	}
 
 	if (part->allow_qos) {
@@ -851,7 +853,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	if (part->deny_accounts) {
 		part_ptr->deny_accounts = xstrdup(part->deny_accounts);
 		part_ptr->deny_accts_list =
-			accounts_list_build(part_ptr->deny_accounts);
+			accounts_list_build(part_ptr->deny_accounts, false);
 	}
 
 	if (part->deny_qos) {
@@ -2526,7 +2528,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				FREE_NULL_LIST(part_ptr->allow_accts_list);
 				part_ptr->allow_accts_list =
 					accounts_list_build(
-						part_ptr->allow_accounts);
+						part_ptr->allow_accounts,
+						false);
 			}
 			if (xstrcmp(part_ptr->allow_alloc_nodes,
 				    old_part_ptr->allow_alloc_nodes)) {
@@ -2586,7 +2589,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				FREE_NULL_LIST(part_ptr->deny_accts_list);
 				part_ptr->deny_accts_list =
 					accounts_list_build(
-						part_ptr->deny_accounts);
+						part_ptr->deny_accounts, false);
 			}
 			if (xstrcmp(part_ptr->deny_qos,
 				    old_part_ptr->deny_qos)) {
@@ -2797,7 +2800,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			part_ptr->allow_accounts =
 				xstrdup(old_part_ptr->allow_accounts);
 			part_ptr->allow_accts_list =
-				accounts_list_build(part_ptr->allow_accounts);
+				accounts_list_build(part_ptr->allow_accounts,
+						    false);
 			part_ptr->allow_alloc_nodes =
 				xstrdup(old_part_ptr->allow_alloc_nodes);
 			part_ptr->allow_groups = xstrdup(old_part_ptr->
@@ -2812,7 +2816,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			part_ptr->deny_accounts = xstrdup(old_part_ptr->
 							  deny_accounts);
 			part_ptr->deny_accts_list =
-				accounts_list_build(part_ptr->deny_accounts);
+				accounts_list_build(part_ptr->deny_accounts,
+						    false);
 			part_ptr->deny_qos = xstrdup(old_part_ptr->
 						     deny_qos);
 			qos_list_build(part_ptr->deny_qos,

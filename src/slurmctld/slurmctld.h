@@ -2201,10 +2201,18 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 				 job_record_t *job_ptr);
 
 /*
+ * part_list_update_assoc_lists - Update assoc_mgr pointers from
+ *                                [allow|deny]_accts_lists.
+ */
+extern void part_list_update_assoc_lists(void);
+
+
+/*
  * part_update_assoc_lists - Update assoc_mgr pointers from
  *                           [allow|deny]_accts_lists.
+ * IN x - part_rec_t
  */
-extern void part_update_assoc_lists(void);
+extern int part_update_assoc_lists(void *x, void *arg);
 
 /*
  * partition_in_use - determine whether a partition is in use by a RUNNING

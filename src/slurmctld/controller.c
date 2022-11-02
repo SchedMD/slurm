@@ -1874,7 +1874,7 @@ static void _update_cluster_tres(void)
 static void _update_parts_and_resvs()
 {
 	update_assocs_in_resvs();
-	part_update_assoc_lists();
+	part_list_update_assoc_lists();
 }
 
 static void _queue_reboot_msg(void)
@@ -3337,12 +3337,8 @@ handle_parts:
 				      part_ptr->name, qos_rec.name);
 			}
 		}
-		FREE_NULL_LIST(part_ptr->allow_accts_list);
-		part_ptr->allow_accts_list =
-			accounts_list_build(part_ptr->allow_accounts);
-		FREE_NULL_LIST(part_ptr->deny_accts_list);
-		part_ptr->deny_accts_list =
-			accounts_list_build(part_ptr->deny_accounts);
+
+		part_update_assoc_lists(part_ptr, NULL);
 	}
 	list_iterator_destroy(itr);
 
