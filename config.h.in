@@ -359,9 +359,6 @@
    */
 #undef HAVE___BUILTIN_POPCOUNTLL
 
-/* Full path of libze_loader.so */
-#undef INTEL_ONEAPI_LIB
-
 /* Defined if libcurl supports AsynchDNS */
 #undef LIBCURL_FEATURE_ASYNCHDNS
 
