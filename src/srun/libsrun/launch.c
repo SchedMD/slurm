@@ -249,7 +249,9 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		xfree(tmp_str);
 		step_req->cpu_count = opt_local->ntasks * gpus_per_task *
 				      opt_local->cpus_per_gpu;
-	} else if (opt_local->ntasks_set) {
+	} else if (opt_local->ntasks_set ||
+		   (opt_local->ntasks_per_tres != NO_VAL) ||
+		   (opt_local->ntasks_per_gpu != NO_VAL)) {
 		step_req->cpu_count = opt_local->ntasks;
 	} else if (use_all_cpus) {	/* job allocation created by srun */
 		step_req->cpu_count = job->cpu_count;
