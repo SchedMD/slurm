@@ -320,7 +320,7 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 			setenvf(&env, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
 			xfree(tmp);
 		}
-		if (cred_arg->job_ntasks)
+		if (cred_arg->job_licenses)
 			setenvf(&env, "SLURM_JOB_LICENSES", "%s",
 				cred_arg->job_licenses);
 		if (cred_arg->job_ntasks)
