@@ -1051,7 +1051,7 @@ data_for_each_cmd_t _merge_schema(const char *key, data_t *data, void *arg)
 		debug("%s: WARNING: overwriting component schema %s",
 		      __func__, key);
 
-	data_copy(e, data);
+	(void) data_copy(e, data);
 
 	return DATA_FOR_EACH_CONT;
 }
@@ -1243,7 +1243,7 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 	}
 
 	data_set_dict(e);
-	data_copy(e, data);
+	(void) data_copy(e, data);
 
 	if ((args->flags & OAS_FLAG_MANGLE_OPID) &&
 	    data_dict_for_each(e, _differentiate_path_operationId,
@@ -1324,7 +1324,7 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 		if (!src)
 			continue;
 
-		data_copy(data_key_set(j, "security"), src);
+		(void) data_copy(data_key_set(j, "security"), src);
 		break;
 	}
 	for (int i = 0; oas->spec[i]; i++) {
