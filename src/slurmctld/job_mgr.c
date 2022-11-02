@@ -1016,7 +1016,7 @@ static int _find_part_assoc(void *x, void *key)
 	assoc_rec.uid       = assoc_ptr->uid;
 
 	(void) assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-				       accounting_enforce, NULL, false);
+				       accounting_enforce, NULL, true);
 
 	if (assoc_rec.id != assoc_ptr->id) {
 		info("%s: can't check multiple partitions with partition based associations",
@@ -12956,9 +12956,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	if (new_qos_ptr || new_assoc_ptr || new_part_ptr) {
 		List use_part_list = new_part_ptr ?
 			part_ptr_list : job_ptr->part_ptr_list;
+		assoc_mgr_lock(&locks);
 		if ((error_code = _check_for_part_assocs(
-			     use_part_list, use_assoc_ptr)) != SLURM_SUCCESS)
+			     use_part_list, use_assoc_ptr)) != SLURM_SUCCESS) {
+			assoc_mgr_unlock(&locks);
 			goto fini;
+		}
+		assoc_mgr_unlock(&locks);
 
 		if (!operator &&
 		    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
