@@ -23445,6 +23445,10 @@ printf "%s\n" "$as_me: WARNING: support for rsmi disabled" >&2;}
 printf %s "checking whether RSMI/ROCm in installed in this system... " >&6; }
     # Check for RSMI header and library in the default location
     # or in the location specified during configure
+    #
+    # NOTE: Just because this is where we are looking and finding the
+    # libraries they must be in the ldcache when running as that is what the
+    # card will be using.
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: " >&5
 printf "%s\n" "" >&6; }
     for _x_ac_rsmi_dir in $_x_ac_rsmi_dirs; do
@@ -23454,6 +23458,9 @@ printf "%s\n" "" >&6; }
       CPPFLAGS="$RSMI_CPPFLAGS"
       RSMI_LIB_DIR="$_x_ac_rsmi_dir/lib"
       LDFLAGS="-L$RSMI_LIB_DIR"
+      { ac_cv_header_rocm_smi_h=; unset ac_cv_header_rocm_smi_h;}
+      { ac_cv_lib_rocm_smi64_rsmi_init=; unset ac_cv_lib_rocm_smi64_rsmi_init;}
+      { ac_cv_lib_rocm_smi64_dev_drm_render_minor_get=; unset ac_cv_lib_rocm_smi64_dev_drm_render_minor_get;}
       ac_fn_c_check_header_compile "$LINENO" "rocm_smi/rocm_smi.h" "ac_cv_header_rocm_smi_rocm_smi_h" "$ac_includes_default"
 if test "x$ac_cv_header_rocm_smi_rocm_smi_h" = xyes
 then :
@@ -23553,9 +23560,6 @@ fi
           ac_rsmi="yes"
 
 printf "%s\n" "#define HAVE_RSMI 1" >>confdefs.h
-
-
-printf "%s\n" "#define AMD_RSMI_LIB \"$RSMI_LIB_DIR/librocm_smi64.so\"" >>confdefs.h
 
 
           break;
