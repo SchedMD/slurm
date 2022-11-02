@@ -30,6 +30,10 @@ AC_DEFUN([X_AC_RSMI],
     AC_MSG_CHECKING([whether RSMI/ROCm in installed in this system])
     # Check for RSMI header and library in the default location
     # or in the location specified during configure
+    #
+    # NOTE: Just because this is where we are looking and finding the
+    # libraries they must be in the ldcache when running as that is what the
+    # card will be using.
     AC_MSG_RESULT([])
     for _x_ac_rsmi_dir in $_x_ac_rsmi_dirs; do
       cppflags_save="$CPPFLAGS"
@@ -38,6 +42,9 @@ AC_DEFUN([X_AC_RSMI],
       CPPFLAGS="$RSMI_CPPFLAGS"
       RSMI_LIB_DIR="$_x_ac_rsmi_dir/lib"
       LDFLAGS="-L$RSMI_LIB_DIR"
+      AS_UNSET([ac_cv_header_rocm_smi_h])
+      AS_UNSET([ac_cv_lib_rocm_smi64_rsmi_init])
+      AS_UNSET([ac_cv_lib_rocm_smi64_dev_drm_render_minor_get])
       AC_CHECK_HEADER([rocm_smi/rocm_smi.h], [ac_rsmi_h=yes], [ac_rsmi_h=no])
       AC_CHECK_LIB([rocm_smi64], [rsmi_init], [ac_rsmi_l=yes], [ac_rsmi_l=no])
       AC_CHECK_LIB([rocm_smi64], [rsmi_dev_drm_render_minor_get], [ac_rsmi_version=yes], [ac_rsmi_version=no])
@@ -47,7 +54,6 @@ AC_DEFUN([X_AC_RSMI],
         if test "$ac_rsmi_version" = "yes"; then
           ac_rsmi="yes"
           AC_DEFINE(HAVE_RSMI, 1, [Define to 1 if RSMI library found])
-	  AC_DEFINE_UNQUOTED(AMD_RSMI_LIB, "$RSMI_LIB_DIR/librocm_smi64.so", [Full path of librocm_smi64.so])
 	  AC_SUBST(RSMI_CPPFLAGS)
           break;
         fi

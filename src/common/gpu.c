@@ -97,7 +97,10 @@ static char *_get_gpu_type(void)
 #endif
 	} else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI) {
 #ifdef HAVE_RSMI
-		return "gpu/rsmi";
+		if (!dlopen("librocm_smi64.so", RTLD_NOW | RTLD_GLOBAL))
+			info("Configured with rsmi, but that lib wasn't found.");
+		else
+			return "gpu/rsmi";
 #else
 		info("Configured with rsmi, but rsmi isn't enabled during the build.");
 #endif
