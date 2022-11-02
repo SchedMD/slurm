@@ -27,12 +27,17 @@ AC_DEFUN([X_AC_ONEAPI],
     AC_MSG_CHECKING([whether oneAPI in installed in this system])
     # Check for oneAPI header and library in the default location
     # or in the location specified during configure
+    #
+    # NOTE: Just because this is where we are looking and finding the
+    # libraries they must be in the ldcache when running as that is what the
+    # card will be using.
     AC_MSG_RESULT([])
     cppflags_save="$CPPFLAGS"
     ldflags_save="$LDFLAGS"
     for _x_ac_oneapi_dir in $_x_ac_oneapi_dirs; do
       ONEAPI_CPPFLAGS="-I$_x_ac_oneapi_dir/include/level_zero"
       CPPFLAGS="$ONEAPI_CPPFLAGS"
+      AS_UNSET([ac_cv_header_ze_api_h])
       AC_CHECK_HEADER([ze_api.h], [ac_oneapi_h=yes], [ac_oneapi_h=no])
       if test "$ac_oneapi_h" = "no"; then
 	continue
@@ -40,10 +45,10 @@ AC_DEFUN([X_AC_ONEAPI],
       for _x_ac_oneapi_lib_dir in $_x_ac_oneapi_lib_dirs; do
 	ONEAPI_LIB_DIR="$_x_ac_oneapi_dir/$_x_ac_oneapi_lib_dir"
 	LDFLAGS="-L$ONEAPI_LIB_DIR"
+	AS_UNSET([ac_cv_lib_ze_loader_zeInit])
 	AC_CHECK_LIB([ze_loader], [zeInit], [ac_oneapi=yes], [ac_oneapi=no])
         if test "$ac_oneapi" = "yes"; then
           AC_DEFINE(HAVE_ONEAPI, 1, [Define to 1 if oneAPI library found])
-	  AC_DEFINE_UNQUOTED(INTEL_ONEAPI_LIB, "$ONEAPI_LIB_DIR/libze_loader.so", [Full path of libze_loader.so])
 	  AC_SUBST(ONEAPI_CPPFLAGS)
           break;
         fi

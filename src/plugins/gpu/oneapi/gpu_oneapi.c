@@ -964,9 +964,6 @@ extern int init(void)
 {
 	debug("loading");
 
-	if (!dlopen(INTEL_ONEAPI_LIB, RTLD_NOW | RTLD_GLOBAL))
-		fatal("Configured with oneAPI, but that lib wasn't found.");
-
 	/* Init oneAPI */
 	setenv("ZES_ENABLE_SYSMAN", "1", 1);
 	if (zeInit(0) != ZE_RESULT_SUCCESS)
