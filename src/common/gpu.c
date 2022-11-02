@@ -83,6 +83,16 @@ static char *_get_gpu_type(void)
 {
 	/*
 	 *  Here we are dlopening the gpu .so to verify it exists on this node.
+	 *
+	 *  NOTE: We are dlopening these genericly on purpose.  This is to make
+	 *  it so we always use the lib that the card is running regardless of
+	 *  what was put in configure.  This dlopen is what will load the
+	 *  symbols for the plugin to use.
+	 *
+	 *  We are also doing this outside of the plugins on purpose as we want
+	 *  to be able to deal with heterogenous systems where not all the nodes
+	 *  will have cards and we want the slurmds to still run there with only
+	 *  1 gres.conf file.
 	 */
 	uint32_t autodetect_flags = gres_get_autodetect_flags();
 
