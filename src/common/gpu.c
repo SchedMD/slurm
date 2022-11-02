@@ -34,6 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <dlfcn.h>
+
 #include "src/common/assoc_mgr.h"
 #include "src/common/gpu.h"
 #include "src/common/plugin.h"
@@ -79,11 +81,17 @@ static bool init_run = false;
  */
 static char *_get_gpu_type(void)
 {
+	/*
+	 *  Here we are dlopening the gpu .so to verify it exists on this node.
+	 */
 	uint32_t autodetect_flags = gres_get_autodetect_flags();
 
 	if (autodetect_flags & GRES_AUTODETECT_GPU_NVML) {
 #ifdef HAVE_NVML
-		return "gpu/nvml";
+		if (!dlopen("libnvidia-ml.so", RTLD_NOW | RTLD_GLOBAL))
+			info("We were configured with nvml functionality, but that lib wasn't found on the system.");
+		else
+			return "gpu/nvml";
 #else
 		info("We were configured to autodetect nvml functionality, but we weren't able to find that lib when Slurm was configured.");
 #endif
