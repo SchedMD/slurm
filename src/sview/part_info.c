@@ -2237,10 +2237,10 @@ static GtkListStore *_create_model_part2(int type)
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "yes (default)", 1, SORTID_DEFAULT, -1);
+				   0, "no (default)", 1, SORTID_DEFAULT, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "no", 1, SORTID_DEFAULT, -1);
+				   0, "yes", 1, SORTID_DEFAULT, -1);
 		break;
 	case SORTID_OVER_SUBSCRIBE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
