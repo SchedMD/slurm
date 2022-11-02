@@ -309,7 +309,9 @@ backfill</a> section for more details. For any scheduler, you can check prioriti
 of jobs using the command <span class="commandline">scontrol show job</span>.
 Other reasons can include waiting for resources, memory, qos, reservations, etc.
 As a guideline, issue an <span class="commandline">scontrol show job &lt;jobid&gt;</span>
-and look at the field <i>State</i> and <i>Reason</i> to investigate the cause.</p></p>
+and look at the field <i>State</i> and <i>Reason</i> to investigate the cause.
+A full list and explanation of the different Reasons can be found in the
+<a href="resource_limits.html#reasons">resource limits</a> page.</p>
 
 <p><a id="sharing"><b>Why does the srun --overcommit option not permit multiple jobs
 to run on nodes?</b></a><br>
@@ -2304,6 +2306,6 @@ exclude=slurm*
 </pre>
 </p>
 
-<p style="text-align:center;">Last modified 3 May 2022</p>
+<p style="text-align:center;">Last modified 02 November 2022</p>
 
 <!--#include virtual="footer.txt"-->
