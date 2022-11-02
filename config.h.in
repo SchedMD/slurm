@@ -451,9 +451,6 @@
 /* Define to 1 if you are building a production release. */
 #undef NDEBUG
 
-/* Full path of libnvidia-ml.so */
-#undef NVIDIA_NVML_LIB
-
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 

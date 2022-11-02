@@ -782,9 +782,9 @@ ONEAPI_CPPFLAGS
 BUILD_RSMI_FALSE
 BUILD_RSMI_TRUE
 RSMI_CPPFLAGS
-NVML_CPPFLAGS
 BUILD_NVML_FALSE
 BUILD_NVML_TRUE
+NVML_CPPFLAGS
 HWLOC_LDFLAGS
 HWLOC_CPPFLAGS
 HWLOC_LIBS
@@ -1805,7 +1805,7 @@ Optional Packages:
   --with-hdf5=yes/no/PATH location of h5cc or h5pcc for HDF5 configuration
   --with-lz4=PATH         Specify path to liblz4 installation
   --with-hwloc=PATH       Specify path to hwloc installation
-  --with-nvml=PATH        Specify path to NVML installation
+  --with-nvml=PATH        Specify path to CUDA installation
   --with-rsmi=PATH        Specify path to rsmi installation
   --with-oneapi=PATH      Specify path to oneAPI installation
   --with-pmix=PATH        Specify path to pmix installation(s). Multiple
@@ -23240,6 +23240,16 @@ printf "%s\n" "#define HAVE_HWLOC 1" >>confdefs.h
 
   func_check_path ()
   {
+      { ac_cv_header_nvml_h=; unset ac_cv_header_nvml_h;}
+      { ac_cv_lib_nvidia_ml_nvmlInit=; unset ac_cv_lib_nvidia_ml_nvmlInit;}
+      ac_fn_c_check_header_compile "$LINENO" "nvml.h" "ac_cv_header_nvml_h" "$ac_includes_default"
+if test "x$ac_cv_header_nvml_h" = xyes
+then :
+  ac_nvml_h=yes
+else $as_nop
+  ac_nvml_h=no
+fi
+
       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for nvmlInit in -lnvidia-ml" >&5
 printf %s "checking for nvmlInit in -lnvidia-ml... " >&6; }
 if test ${ac_cv_lib_nvidia_ml_nvmlInit+y}
@@ -23283,7 +23293,7 @@ else $as_nop
 fi
 
 
-      if  test "$ac_nvml" = "yes" ; then
+      if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
           # Check indirectly that CUDA 11.1+ was installed to see if we
 	  # can build NVML MIG code. Do this by checking for the existence of
 	  # gpuInstanceSliceCount in the nvmlDeviceAttributes_t struct.
@@ -23314,8 +23324,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
       fi
   }
 
-  _x_ac_nvml_dirs="/usr /usr/local/cuda /usr/cuda"
-  _x_ac_nvml_lib_dirs="lib/x86_64-linux-gnu lib/stubs lib64/stubs"
+  _x_ac_nvml_dirs="/usr/local/cuda /usr/cuda"
+  _x_ac_nvml_libs="lib/stubs lib64/stubs"
 
 
 # Check whether --with-nvml was given.
@@ -23332,47 +23342,74 @@ fi
      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for nvml disabled" >&5
 printf "%s\n" "$as_me: WARNING: support for nvml disabled" >&2;}
   else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether NVML in installed in this system" >&5
-printf %s "checking whether NVML in installed in this system... " >&6; }
-    # Check for nvml header and library in the default location
-    # or in the location specified during configure
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: " >&5
-printf "%s\n" "" >&6; }
-    cppflags_save="$CPPFLAGS"
-    ldflags_save="$LDFLAGS"
-    for _x_ac_nvml_dir in $_x_ac_nvml_dirs; do
-      NVML_CPPFLAGS="-I$_x_ac_nvml_dir/include"
-      CPPFLAGS="$NVML_CPPFLAGS"
-      ac_fn_c_check_header_compile "$LINENO" "nvml.h" "ac_cv_header_nvml_h" "$ac_includes_default"
-if test "x$ac_cv_header_nvml_h" = xyes
-then :
-  ac_nvml_h=yes
-else $as_nop
-  ac_nvml_h=no
-fi
 
-      if test "$ac_nvml_h" = "no"; then
-	continue
-      fi
-      for _x_ac_nvml_lib_dir in $_x_ac_nvml_lib_dirs; do
-	NVML_LIB_DIR="$_x_ac_nvml_dir/$_x_ac_nvml_lib_dir"
-	LDFLAGS="-L$NVML_LIB_DIR"
+    # Check if libnvml is already in the system paths
+    func_check_path
 
-	func_check_path
+    if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
+          # found in system path
+          nvml_includes=""
+          nvml_libs="-lnvidia-ml"
+    else
+      #try to find libnvml
+      #
+      # NOTE: Just because this is where we are looking and finding the
+      # libraries they must be in the ldcache when running as that is what the
+      # card will be using.
+      for d in $_x_ac_nvml_dirs; do
+        if  ! test -d "$d" ; then
+          continue
+        fi
+        for bit in $_x_ac_nvml_libs; do
+          if  ! test -d "$d/$bit" || ! test -d "$d/include" ; then
+            continue
+          fi
+          _x_ac_nvml_ldflags_save="$LDFLAGS"
+          _x_ac_nvml_cppflags_save="$CPPFLAGS"
+          LDFLAGS="-L$d/$bit -lnvidia-ml"
+          CPPFLAGS="-I$d/include $CPPFLAGS"
 
-        if test "$ac_nvml" = "yes"; then
-          break;
+          func_check_path
+
+          LDFLAGS="$_x_ac_nvml_ldflags_save"
+          CPPFLAGS="$_x_ac_nvml_cppflags_save"
+          if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
+            nvml_includes="-I$d/include"
+            break
+          fi
+        done
+        if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
+          break
         fi
       done
-      if test "$ac_nvml" = "yes"; then
-	break;
-      fi
-    done
-  fi
-  LDFLAGS="$ldflags_save"
-  CPPFLAGS="$cppflags_save"
+    fi
 
-   if test "$ac_nvml" = "yes"; then
+    if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
+      NVML_CPPFLAGS="$nvml_includes"
+
+printf "%s\n" "#define HAVE_NVML 1" >>confdefs.h
+
+
+      if  test "$ac_mig_support" = "yes" ; then
+
+printf "%s\n" "#define HAVE_MIG_SUPPORT 1" >>confdefs.h
+
+      else
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well." >&5
+printf "%s\n" "$as_me: WARNING: NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well." >&2;}
+      fi
+    else
+      if test -z "$with_nvml"; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&5
+printf "%s\n" "$as_me: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&2;}
+      else
+        as_fn_error $? "unable to locate libnvidia-ml.so and/or nvml.h" "$LINENO" 5
+      fi
+    fi
+
+
+  fi
+   if test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes"; then
   BUILD_NVML_TRUE=
   BUILD_NVML_FALSE='#'
 else
@@ -23380,33 +23417,6 @@ else
   BUILD_NVML_FALSE=
 fi
 
-
-  if  test "$ac_nvml" = "yes" ; then
-    NVML_CPPFLAGS="$nvml_includes"
-
-printf "%s\n" "#define HAVE_NVML 1" >>confdefs.h
-
-
-printf "%s\n" "#define NVIDIA_NVML_LIB \"$NVML_LIB_DIR/libnvidia-ml.so\"" >>confdefs.h
-
-
-
-    if  test "$ac_mig_support" = "yes" ; then
-
-printf "%s\n" "#define HAVE_MIG_SUPPORT 1" >>confdefs.h
-
-    else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well." >&5
-printf "%s\n" "$as_me: WARNING: NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well." >&2;}
-    fi
-  else
-    if test -z "$with_nvml"; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&5
-printf "%s\n" "$as_me: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&2;}
-    else
-      as_fn_error $? "unable to locate libnvidia-ml.so and/or nvml.h" "$LINENO" 5
-    fi
-  fi
 
 
 
