@@ -39,7 +39,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#include "src/common/slurm_jobacct_gather.h"
+#include "src/interfaces/jobacct_gather.h"
 
 extern int jobacct_gather_cgroup_cpuacct_init(void);
 extern int jobacct_gather_cgroup_cpuacct_fini(void);

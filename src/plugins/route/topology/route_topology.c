@@ -46,8 +46,8 @@
 #include "src/common/forward.h"
 #include "src/common/node_conf.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_route.h"
-#include "src/common/slurm_topology.h"
+#include "src/interfaces/route.h"
+#include "src/interfaces/topology.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 

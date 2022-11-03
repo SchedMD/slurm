@@ -57,7 +57,7 @@
 #include "src/common/net.h"
 #include "src/common/proc_args.h"
 #include "src/common/reverse_tree.h"
-#include "src/common/slurm_mpi.h"
+#include "src/interfaces/mpi.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 

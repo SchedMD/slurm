@@ -42,7 +42,7 @@
 
 
 #include "src/common/bitstring.h"
-#include "src/common/cli_filter.h"
+#include "src/interfaces/cli_filter.h"
 #include "src/common/cron.h"
 #include "src/common/env.h"
 #include "src/common/fetch_config.h"

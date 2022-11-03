@@ -42,10 +42,10 @@
 #include "as_mysql_wckey.h"
 
 #include "src/common/assoc_mgr.h"
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 #include "src/common/parse_time.h"
-#include "src/common/select.h"
-#include "src/common/slurm_jobacct_gather.h"
+#include "src/interfaces/select.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_time.h"
 
 #define MAX_FLUSH_JOBS 500

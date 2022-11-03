@@ -50,7 +50,7 @@
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xsignal.h"
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 
 typedef struct {
 	int (*setup_srun_opt)      (char **rest, slurm_opt_t *opt_local);

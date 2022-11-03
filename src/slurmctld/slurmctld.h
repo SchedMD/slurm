@@ -61,7 +61,7 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h" /* location of slurm_conf */
 #include "src/common/job_resources.h"
-#include "src/common/slurm_cred.h"
+#include "src/interfaces/cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/timers.h"

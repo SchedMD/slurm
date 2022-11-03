@@ -45,7 +45,7 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/slurm_jobcomp.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/lua/slurm_lua.h"
 #include "src/slurmctld/slurmctld.h"
 

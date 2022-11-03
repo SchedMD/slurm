@@ -46,7 +46,7 @@
 
 #include "src/common/data.h"
 #include "src/common/ref.h"
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"

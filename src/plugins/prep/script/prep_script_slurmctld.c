@@ -38,7 +38,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/prep.h"
+#include "src/interfaces/prep.h"
 #include "src/common/track_script.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"

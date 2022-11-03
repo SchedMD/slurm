@@ -50,7 +50,7 @@
 #include "pmixp_conn.h"
 #include "pmixp_dconn.h"
 
-#include "src/common/slurm_auth.h"
+#include "src/interfaces/auth.h"
 
 #define PMIXP_DEBUG_SERVER 1
 

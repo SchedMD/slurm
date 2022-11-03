@@ -47,13 +47,13 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/assoc_mgr.h"
-#include "src/common/gpu.h"
-#include "src/common/slurm_jobacct_gather.h"
+#include "src/interfaces/gpu.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_acct_gather_energy.h"
-#include "src/common/slurm_acct_gather_filesystem.h"
-#include "src/common/slurm_acct_gather_interconnect.h"
+#include "src/interfaces/acct_gather_energy.h"
+#include "src/interfaces/acct_gather_filesystem.h"
+#include "src/interfaces/acct_gather_interconnect.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/common/proctrack.h"
 

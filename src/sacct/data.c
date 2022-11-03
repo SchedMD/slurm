@@ -41,7 +41,7 @@
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
-#include "src/common/openapi.h"
+#include "src/interfaces/openapi.h"
 #include "src/common/parse_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"

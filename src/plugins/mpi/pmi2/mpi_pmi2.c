@@ -44,7 +44,7 @@
 
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
-#include "src/common/slurm_mpi.h"
+#include "src/interfaces/mpi.h"
 
 #include "setup.h"
 #include "agent.h"

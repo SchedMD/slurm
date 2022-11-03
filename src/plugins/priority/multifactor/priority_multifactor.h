@@ -45,7 +45,7 @@
 #ifndef _PRIORITY_MULTIFACTOR_H
 #define _PRIORITY_MULTIFACTOR_H
 
-#include "src/common/slurm_priority.h"
+#include "src/interfaces/priority.h"
 #include "src/common/assoc_mgr.h"
 
 #include "src/slurmctld/locks.h"

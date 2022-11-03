@@ -49,7 +49,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/pack.h"
-#include "src/common/slurm_auth.h"
+#include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_util.h"

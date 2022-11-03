@@ -42,9 +42,9 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
-#include "src/common/openapi.h"
+#include "src/interfaces/openapi.h"
 #include "src/common/plugin.h"
-#include "src/common/slurm_auth.h"
+#include "src/interfaces/auth.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

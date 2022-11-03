@@ -2,7 +2,7 @@
  *  gres_select_filter.h - filters used in the select plugin
  *****************************************************************************
  *  Copyright (C) 2020 SchedMD LLC.
- *  Derived in large part from code previously in common/gres.h
+ *  Derived in large part from code previously in interfaces/gres.h
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -37,7 +37,7 @@
 #ifndef _GRES_SELECT_FILTER_H
 #define _GRES_SELECT_FILTER_H
 
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 
 /*
  * Clear the core_bitmap for cores which are not usable by this job (i.e. for

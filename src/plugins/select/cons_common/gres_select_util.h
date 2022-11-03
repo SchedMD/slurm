@@ -2,7 +2,7 @@
  *  gres_select_util.h - filters used in the select plugin
  *****************************************************************************
  *  Copyright (C) 2020 SchedMD LLC.
- *  Derived in large part from code previously in common/gres.h
+ *  Derived in large part from code previously in interfaces/gres.h
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -37,7 +37,7 @@
 #ifndef _GRES_SELECT_UTIL_H
 #define _GRES_SELECT_UTIL_H
 
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 
 /*
  * Set job default parameters in a given element of a list

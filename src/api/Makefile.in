@@ -209,7 +209,8 @@ libslurmfull_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(libslurmfull_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
-am__DEPENDENCIES_1 = $(common_dir)/libcommon.la
+am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
+	$(top_builddir)/src/interfaces/libcommon_interfaces.la
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = account_functions.lo archive_functions.lo \
 	assoc_functions.lo cluster_functions.lo \
@@ -236,7 +237,8 @@ libslurmhelper_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	-o $@
 am_libslurm_o_OBJECTS =
 libslurm_o_OBJECTS = $(am_libslurm_o_OBJECTS)
-libslurm_o_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o
+libslurm_o_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
+	$(top_builddir)/src/interfaces/libcommon_interfaces.o
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -717,6 +719,7 @@ slurmapi_src = \
 common_dir = $(top_builddir)/src/common
 slurmapi_add = \
 	$(common_dir)/libcommon.la	\
+	$(top_builddir)/src/interfaces/libcommon_interfaces.la \
 	-lpthread
 
 libslurmhelper_la_SOURCES = $(slurmapi_src)
@@ -751,7 +754,8 @@ libslurm_pmi_la_LDFLAGS = \
 # on multiple platforms
 libslurm_o_SOURCES = 
 libslurm_o_LDADD = \
-	$(top_builddir)/src/common/libcommon.o
+	$(top_builddir)/src/common/libcommon.o \
+	$(top_builddir)/src/interfaces/libcommon_interfaces.o
 
 CLEANFILES = \
 	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)

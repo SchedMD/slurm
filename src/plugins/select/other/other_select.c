@@ -51,7 +51,7 @@
 #include "other_select.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 
@@ -137,7 +137,7 @@ extern int other_select_init(void)
 	if (n_syms != sizeof(ops))
 		fatal("For some reason node_select_syms in "
 		      "src/plugins/select/other/other_select.c differs from "
-		      "slurm_select_ops_t found in src/common/select.h.  "
+		      "slurm_select_ops_t found in src/interfaces/select.h.  "
 		      "node_select_syms should match what is in "
 		      "src/common/node_select.c");
 

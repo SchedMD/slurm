@@ -38,7 +38,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/list.h"
-#include "src/common/slurm_jobacct_gather.h"
+#include "src/interfaces/jobacct_gather.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

@@ -38,8 +38,8 @@
 #include "slurm/slurm_errno.h"
 #include "slurm/slurmdb.h"
 
-#include "src/common/slurm_accounting_storage.h"
-#include "src/common/slurm_jobcomp.h"
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/jobcomp.h"
 
 /*
  * modify existing job in the accounting system

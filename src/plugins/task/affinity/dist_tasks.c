@@ -40,7 +40,7 @@
 #include "dist_tasks.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
-#include "src/common/slurm_cred.h"
+#include "src/interfaces/cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/strlcpy.h"

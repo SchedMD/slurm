@@ -39,7 +39,7 @@
 /* acct_gather_energy_ibmaem */
 
 #include "src/common/slurm_xlator.h"
-#include "src/common/slurm_acct_gather_energy.h"
+#include "src/interfaces/acct_gather_energy.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

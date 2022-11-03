@@ -38,7 +38,7 @@
 
 #include "src/common/slurm_xlator.h"
 
-#include "src/common/hash.h"
+#include "src/interfaces/hash.h"
 #include "src/common/log.h"
 
 #include "KangarooTwelve.h"

@@ -47,7 +47,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/node_conf.h"
-#include "src/common/slurm_topology.h"
+#include "src/interfaces/topology.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 

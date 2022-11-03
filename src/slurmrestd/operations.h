@@ -38,7 +38,7 @@
 #define SLURMRESTD_OPERATIONS_H
 
 #include "src/common/data.h"
-#include "src/common/openapi.h"
+#include "src/interfaces/openapi.h"
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/rest_auth.h"
 

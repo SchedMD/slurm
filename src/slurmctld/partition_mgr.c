@@ -56,7 +56,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/uid.h"

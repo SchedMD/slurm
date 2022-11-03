@@ -46,7 +46,7 @@
 
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_priority.h"
+#include "src/interfaces/priority.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/slurmdbd/read_config.h"
 

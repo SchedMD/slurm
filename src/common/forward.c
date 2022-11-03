@@ -48,8 +48,8 @@
 
 #include "src/common/forward.h"
 #include "src/common/macros.h"
-#include "src/common/slurm_auth.h"
-#include "src/common/slurm_route.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/route.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_pack.h"

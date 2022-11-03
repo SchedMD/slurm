@@ -38,7 +38,7 @@
 #include <string.h>
 
 #include "slurm/slurm_errno.h"
-#include "src/common/slurm_mcs.h"
+#include "src/interfaces/mcs.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 

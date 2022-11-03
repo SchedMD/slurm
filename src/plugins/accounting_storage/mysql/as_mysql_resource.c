@@ -41,7 +41,7 @@
 #include "as_mysql_usage.h"
 #include "as_mysql_wckey.h"
 
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 
 static void _setup_res_cond(slurmdb_res_cond_t *res_cond,
 			    char **extra)

@@ -45,12 +45,12 @@
 #endif
 
 #include "src/common/cpu_frequency.h"
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 #include "src/common/log.h"
 #include "src/common/optz.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
-#include "src/common/slurm_acct_gather_profile.h"
+#include "src/interfaces/acct_gather_profile.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/spank.h"
 #include "src/common/tres_bind.h"

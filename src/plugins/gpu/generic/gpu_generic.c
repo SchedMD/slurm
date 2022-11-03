@@ -37,8 +37,8 @@
 #define _GNU_SOURCE
 
 #include "src/common/slurm_xlator.h"
-#include "src/common/gpu.h"
-#include "src/common/gres.h"
+#include "src/interfaces/gpu.h"
+#include "src/interfaces/gres.h"
 #include "src/common/log.h"
 
 /*

@@ -41,7 +41,7 @@
 #include <pwd.h>
 #include "cli_filter_common.h"
 
-#include "src/common/cli_filter.h"
+#include "src/interfaces/cli_filter.h"
 #include "src/common/data.h"
 #include "src/common/spank.h"
 #include "src/common/xstring.h"

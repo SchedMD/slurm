@@ -45,7 +45,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
-#include "src/common/hash.h"
+#include "src/interfaces/hash.h"
 
 #define OPT_LONG_HIDE    0x102
 #define OPT_LONG_LOCAL   0x103

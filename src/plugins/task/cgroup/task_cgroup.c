@@ -44,7 +44,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/xstring.h"
-#include "src/common/cgroup.h"
+#include "src/interfaces/cgroup.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "task_cgroup.h"

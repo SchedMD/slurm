@@ -41,7 +41,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurmdb_defs.h"
-#include "src/common/slurm_accounting_storage.h"
+#include "src/interfaces/accounting_storage.h"
 #include "src/common/xstring.h"
 
 typedef enum {

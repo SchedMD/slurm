@@ -428,6 +428,7 @@ AC_CONFIG_FILES([Makefile
 		 src/bcast/Makefile
 		 src/common/Makefile
 		 src/database/Makefile
+		 src/interfaces/Makefile
 		 src/lua/Makefile
 		 src/plugins/Makefile
 		 src/plugins/accounting_storage/Makefile

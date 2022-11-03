@@ -41,7 +41,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
-#include "src/common/slurm_priority.h"
+#include "src/interfaces/priority.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/xstring.h"
 #include "src/common/log.h"

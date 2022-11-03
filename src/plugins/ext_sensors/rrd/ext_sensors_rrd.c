@@ -51,11 +51,11 @@
 #include "src/common/slurm_xlator.h"
 #include "ext_sensors_rrd.h"
 #include "src/common/fd.h"
-#include "src/common/slurm_jobacct_gather.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_ext_sensors.h"
+#include "src/interfaces/ext_sensors.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/common/proctrack.h"
 

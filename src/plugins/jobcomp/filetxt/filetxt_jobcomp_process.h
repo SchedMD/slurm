@@ -46,9 +46,9 @@
 
 #include <sys/stat.h>
 
-#include "src/common/select.h"
-#include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_accounting_storage.h"
+#include "src/interfaces/select.h"
+#include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/accounting_storage.h"
 #include "src/common/xstring.h"
 
 extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond);

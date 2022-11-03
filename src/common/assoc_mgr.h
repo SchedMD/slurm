@@ -45,7 +45,7 @@
 #define _SLURM_ASSOC_MGR_H
 
 #include "src/common/list.h"
-#include "src/common/slurm_accounting_storage.h"
+#include "src/interfaces/accounting_storage.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/locks.h"

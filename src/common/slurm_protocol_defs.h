@@ -58,7 +58,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
-#include "src/common/slurm_cred.h"
+#include "src/interfaces/cred.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_persist_conn.h"
 #include "src/common/slurm_step_layout.h"

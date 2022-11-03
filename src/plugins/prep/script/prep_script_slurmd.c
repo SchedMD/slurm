@@ -44,7 +44,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/prep.h"
+#include "src/interfaces/prep.h"
 #include "src/common/run_command.h"
 #include "src/common/spank.h"
 #include "src/common/track_script.h"

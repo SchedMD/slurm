@@ -35,7 +35,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/slurm_auth.h"
+#include "src/interfaces/auth.h"
 
 #include "sacct.h"
 

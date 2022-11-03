@@ -47,7 +47,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
 #include "src/common/macros.h"
-#include "src/common/slurm_auth.h"
+#include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"

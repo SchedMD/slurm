@@ -41,7 +41,7 @@
 #include "slurm/slurmdb.h"
 
 #include "src/common/slurmdb_defs.h"
-#include "src/common/slurm_accounting_storage.h"
+#include "src/interfaces/accounting_storage.h"
 #include "src/common/xstring.h"
 
 extern List slurmdb_report_user_top_usage(void *db_conn,

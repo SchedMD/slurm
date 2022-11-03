@@ -43,7 +43,7 @@
 #include "part_data.h"
 #include "job_resources.h"
 
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct avail_res {	/* Per-node resource availability */

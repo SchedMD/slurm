@@ -39,7 +39,7 @@
 #include <string.h>
 
 #include "src/common/env.h"
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

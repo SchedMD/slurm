@@ -38,7 +38,7 @@
 #ifndef _SELECT_LINEAR_H
 #define _SELECT_LINEAR_H
 
-#include "src/common/slurm_topology.h"
+#include "src/interfaces/topology.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*

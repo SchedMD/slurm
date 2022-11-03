@@ -53,7 +53,7 @@
 #include <unistd.h>
 
 #include "src/common/bitstring.h"
-#include "src/common/cli_filter.h"
+#include "src/interfaces/cli_filter.h"
 #include "src/common/cbuf.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"

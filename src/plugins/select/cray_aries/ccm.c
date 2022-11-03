@@ -48,7 +48,7 @@
 
 #include "src/common/env.h"
 #include "src/common/pack.h"
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 

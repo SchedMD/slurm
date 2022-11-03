@@ -54,7 +54,7 @@
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/parse_time.h"
-#include "src/common/slurm_jobcomp.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdb_defs.h"

@@ -35,9 +35,9 @@
 \*****************************************************************************/
 
 #include <sys/stat.h>
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 #include "src/common/read_config.h"
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 #include "src/common/xstring.h"
 
 /*

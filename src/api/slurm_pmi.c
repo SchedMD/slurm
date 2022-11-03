@@ -50,7 +50,7 @@
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/fd.h"
-#include "src/common/slurm_auth.h"
+#include "src/interfaces/auth.h"
 
 #define DEFAULT_PMI_TIME 500
 #define MAX_RETRIES      5

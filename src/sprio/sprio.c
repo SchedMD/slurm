@@ -46,7 +46,7 @@
 #include <sys/ioctl.h>
 
 #include "src/common/read_config.h"
-#include "src/common/slurm_priority.h"
+#include "src/interfaces/priority.h"
 #include "src/common/xstring.h"
 #include "src/sprio/sprio.h"
 

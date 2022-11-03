@@ -39,7 +39,7 @@
 #include "gres_select_filter.h"
 #include "gres_select_util.h"
 
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/gres_ctld.h"

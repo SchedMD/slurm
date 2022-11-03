@@ -37,7 +37,7 @@
 
 #include "as_mysql_convert.h"
 #include "as_mysql_tres.h"
-#include "src/common/slurm_jobacct_gather.h"
+#include "src/interfaces/jobacct_gather.h"
 
 /*
  * Any time you have to add to an existing convert update this number.

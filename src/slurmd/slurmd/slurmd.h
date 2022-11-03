@@ -46,7 +46,7 @@
 #include "src/common/log.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_cred.h"
+#include "src/interfaces/cred.h"
 
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */

@@ -38,7 +38,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
-#include "src/common/prep.h"
+#include "src/interfaces/prep.h"
 
 #include "prep_script.h"
 

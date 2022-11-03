@@ -67,7 +67,7 @@
 #include "src/common/slurm_xlator.h"
 
 #include "src/common/callerid.h"
-#include "src/common/cgroup.h"
+#include "src/interfaces/cgroup.h"
 #include "src/common/slurm_protocol_api.h"
 
 typedef enum {

@@ -67,11 +67,11 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/env.h"
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/run_command.h"
-#include "src/common/slurm_mpi.h"
+#include "src/interfaces/mpi.h"
 #include "src/common/strlcpy.h"
 #include "src/common/spank.h"
 #include "src/common/switch.h"

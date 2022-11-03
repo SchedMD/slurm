@@ -44,14 +44,14 @@
   #include <sys/prctl.h>
 #endif
 
-#include "src/common/slurm_auth.h"
-#include "src/common/gres.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/gres.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"
-#include "src/common/slurm_accounting_storage.h"
-#include "src/common/slurm_jobacct_gather.h"
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/timers.h"

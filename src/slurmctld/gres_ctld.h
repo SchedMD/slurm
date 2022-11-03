@@ -2,7 +2,7 @@
  *  gres_ctld.h - Functions for gres used only in the slurmctld
  *****************************************************************************
  *  Copyright (C) 2020 SchedMD LLC.
- *  Derived in large part from code previously in common/gres.h
+ *  Derived in large part from code previously in interfaces/gres.h
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -37,7 +37,7 @@
 #ifndef _GRES_CTLD_H
 #define _GRES_CTLD_H
 
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 
 /*
  * Fill in job_gres_list with the total amount of GRES on a node.

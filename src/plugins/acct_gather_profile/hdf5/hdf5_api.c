@@ -44,7 +44,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/slurm_acct_gather_profile.h"
+#include "src/interfaces/acct_gather_profile.h"
 
 #include "hdf5_api.h"
 

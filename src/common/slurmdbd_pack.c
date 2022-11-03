@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/hash.h"
-#include "src/common/slurm_jobacct_gather.h"
+#include "src/interfaces/hash.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdb_pack.h"
 #include "src/common/slurmdbd_defs.h"

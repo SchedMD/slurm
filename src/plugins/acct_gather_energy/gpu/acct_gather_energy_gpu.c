@@ -40,11 +40,11 @@
 #include <dlfcn.h>
 
 #include "src/common/slurm_xlator.h"
-#include "src/common/cgroup.h"
-#include "src/common/slurm_acct_gather_energy.h"
-#include "src/common/slurm_acct_gather_profile.h"
-#include "src/common/gpu.h"
-#include "src/common/gres.h"
+#include "src/interfaces/cgroup.h"
+#include "src/interfaces/acct_gather_energy.h"
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/gpu.h"
+#include "src/interfaces/gres.h"
 
 #define DEFAULT_GPU_TIMEOUT 10
 #define DEFAULT_GPU_FREQ 30

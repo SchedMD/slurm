@@ -46,7 +46,7 @@
 #include "src/common/eio.h"
 #include "src/common/cbuf.h"
 #include "src/common/macros.h"
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_defs.h"
 
 #include "src/api/step_io.h"

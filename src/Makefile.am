@@ -3,6 +3,7 @@ SUBDIRS =		\
 	bcast		\
 	common		\
 	database	\
+	interfaces	\
 	lua		\
 	plugins		\
 	sacct		\

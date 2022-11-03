@@ -48,7 +48,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"

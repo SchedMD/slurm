@@ -40,7 +40,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 #include "src/common/xstring.h"
-#include "src/common/cgroup.h"
+#include "src/interfaces/cgroup.h"
 
 #include "task_cgroup.h"
 

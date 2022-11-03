@@ -42,7 +42,7 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/slurm_priority.h"
+#include "src/interfaces/priority.h"
 #include "src/common/assoc_mgr.h"
 
 /* These are defined here so when we link with something other than

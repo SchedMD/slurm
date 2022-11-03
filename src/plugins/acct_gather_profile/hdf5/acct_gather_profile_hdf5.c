@@ -57,7 +57,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/fd.h"
-#include "src/common/slurm_acct_gather_profile.h"
+#include "src/interfaces/acct_gather_profile.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"

@@ -53,7 +53,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/bitstring.h"
 #include "src/common/env.h"
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"

@@ -44,7 +44,7 @@
 
 #include "src/common/env.h"
 #include "src/common/slurmdbd_defs.h"
-#include "src/common/slurm_auth.h"
+#include "src/interfaces/auth.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"

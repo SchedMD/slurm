@@ -42,9 +42,9 @@
 
 #include "src/common/slurm_xlator.h"
 
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 #include "src/common/list.h"
-#include "src/common/cgroup.h"
+#include "src/interfaces/cgroup.h"
 
 typedef struct {
 	bitstr_t *bit_alloc;

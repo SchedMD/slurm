@@ -42,7 +42,7 @@
 
 #include "src/plugins/topology/3d_torus/hilbert.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 
 #define _DEBUG 0
 

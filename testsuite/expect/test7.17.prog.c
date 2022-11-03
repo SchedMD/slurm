@@ -49,7 +49,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"

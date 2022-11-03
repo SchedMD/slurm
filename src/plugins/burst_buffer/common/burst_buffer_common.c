@@ -65,7 +65,7 @@
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
 #include "src/common/run_command.h"
-#include "src/common/slurm_accounting_storage.h"
+#include "src/interfaces/accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"

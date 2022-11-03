@@ -48,7 +48,7 @@
 
 #include "src/common/data.h"
 #include "src/common/log.h"
-#include "src/common/slurm_auth.h"
+#include "src/interfaces/auth.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"

@@ -48,7 +48,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 #include "src/common/xstring.h"
-#include "src/common/cgroup.h"
+#include "src/interfaces/cgroup.h"
 #include "src/common/read_config.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"

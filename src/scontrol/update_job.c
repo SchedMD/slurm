@@ -39,7 +39,7 @@
 
 #include "scontrol.h"
 #include "src/common/env.h"
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 #include "src/common/proc_args.h"
 #include "src/common/uid.h"
 

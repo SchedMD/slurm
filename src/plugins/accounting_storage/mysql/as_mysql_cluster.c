@@ -43,7 +43,7 @@
 #include "as_mysql_usage.h"
 #include "as_mysql_wckey.h"
 
-#include "src/common/select.h"
+#include "src/interfaces/select.h"
 #include "src/common/slurm_time.h"
 
 extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,

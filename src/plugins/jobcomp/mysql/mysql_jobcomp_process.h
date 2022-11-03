@@ -45,9 +45,9 @@
 #define _HAVE_MYSQL_JOBCOMP_PROCESS_H
 
 #include "src/database/mysql_common.h"
-#include "src/common/slurm_jobcomp.h"
-#include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_accounting_storage.h"
+#include "src/interfaces/jobcomp.h"
+#include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/accounting_storage.h"
 
 extern mysql_conn_t *jobcomp_mysql_conn;
 extern int jobcomp_db_init;

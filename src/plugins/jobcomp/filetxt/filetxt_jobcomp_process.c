@@ -44,7 +44,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#include "src/common/slurm_jobcomp.h"
+#include "src/interfaces/jobcomp.h"
 #include "src/common/xmalloc.h"
 #include "src/common/parse_time.h"
 #include "filetxt_jobcomp_process.h"

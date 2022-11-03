@@ -43,7 +43,7 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
-#include "src/common/openapi.h"
+#include "src/interfaces/openapi.h"
 #include "src/common/parse_time.h"
 #include "src/common/ref.h"
 #include "src/common/slurmdbd_defs.h"

@@ -51,8 +51,8 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/read_config.h"
-#include "src/common/select.h"
-#include "src/common/slurm_accounting_storage.h"
+#include "src/interfaces/select.h"
+#include "src/interfaces/accounting_storage.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_persist_conn.h"
 #include "src/common/uid.h"

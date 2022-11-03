@@ -48,7 +48,7 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_opt.h"
-#include "src/common/slurm_mpi.h"
+#include "src/interfaces/mpi.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/srun/libsrun/debugger.h"

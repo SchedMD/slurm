@@ -47,7 +47,7 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
-#include "src/common/cli_filter.h"
+#include "src/interfaces/cli_filter.h"
 #include "src/common/data.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/xmalloc.h"

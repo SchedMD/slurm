@@ -38,7 +38,7 @@
 \*****************************************************************************/
 
 #include "src/common/slurmdbd_defs.h"
-#include "src/common/slurm_jobacct_gather.h"
+#include "src/interfaces/jobacct_gather.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h

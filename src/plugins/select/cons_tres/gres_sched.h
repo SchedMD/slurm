@@ -2,7 +2,7 @@
  *  gres_sched.h - Scheduling functions used by cons_tres
  *****************************************************************************
  *  Copyright (C) 2020 SchedMD LLC.
- *  Derived in large part from code previously in common/gres.h
+ *  Derived in large part from code previously in interfaces/gres.h
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -37,7 +37,7 @@
 #ifndef _CONS_TRES_GRES_SCHED_H
 #define _CONS_TRES_GRES_SCHED_H
 
-#include "src/common/gres.h"
+#include "src/interfaces/gres.h"
 
 /*
  * Given a List of sock_gres_t entries, return a string identifying the
