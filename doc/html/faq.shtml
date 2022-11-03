@@ -1794,13 +1794,14 @@ also cache all user limits and fair share information.</li>
 <li>You cannot use NDB, since SlurmDBD's MySQL implementation uses keys on BLOB
 values (and potentially other features on the incompatibility list).</li>
 <li>You can set up "classical" Linux HA, with heartbeat/corosync to migrate IP
-between primary/backup mysql servers and:</li>
+between primary/backup mysql servers and:
 <ul>
 <li>Configure one way replication of mysql, and change primary/backup roles on
 failure</li>
 <li>Use shared storage for primary/backup mysql servers database, and start
 backup on primary mysql failure.</li>
 </ul>
+</li>
 </ul>
 
 <p><a id="sql"><b>How can I use double quotes in MySQL queries?</b></a><br>
@@ -2166,13 +2167,16 @@ of <a href="https://www.kernel.org/doc/Documentation/sysctl/kernel.txt">
 sysctl kernel.shm_rmid_forced</a> (added in Linux kernel 3.1):
 </p>
 <ul>
-<li>shm_rmid_forced = 1</li>
+<li>shm_rmid_forced = 1
+<br>
 Forces all shared memory usage of processes to be accounted and reported by the
 kernel to Slurm. This breaks the separate namespace of sysv ipc and may cause
 unexpected application issues without careful planning. Processes that share
 the same sysv ipc namespaces across jobs may end up getting OOM killed when
 another job ends and their allocation percentage increases.
-<li>shm_rmid_forced = 0 (default in most Linux distributions)</li>
+</li>
+<li>shm_rmid_forced = 0 (default in most Linux distributions)
+<br>
 System V memory usage will not be reported by Slurm for jobs.
 It is generally suggested to configure the
 <a href="https://www.kernel.org/doc/Documentation/sysctl/kernel.txt">
@@ -2185,6 +2189,7 @@ processes use sysv memory mechanisms, the Linux kernel OOM killer will never
 be able to free the used memory. A Slurm job epilog script will be needed to
 free any of the user memory. Setting kernel.shmmax=0 will disable sysv ipc
 memory allocations but may cause application issues.
+</li>
 </ul>
 
 <p><a id="opencl_pmix"><b>Why is Multi-Instance GPU not working with Slurm and
