@@ -4,6 +4,11 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from the HPC Containers Advisory Working Group, November 2022</h2>
+<ul>
+<li><a href="MISC22/Slurm_and_Containers_20221103.pdf">Slurm ♥ Containers</a>, Nathan Rini, SchedMD</li>
+</ul>
+
 <h2>Presentations from CNCF Research End User Group, October 2022</h2>
 <ul>
 <li><a href="MISC22/CNCF_RUG_20221005.pdf">Slurm Container Support</a>, Nathan Rini, SchedMD</li>
