@@ -69,7 +69,6 @@ def module_setup(request, tmp_path_factory):
     atf.properties['slurm-started'] = False
     atf.properties['configurations-modified'] = set()
     atf.properties['accounting-database-modified'] = False
-    atf.properties['jobs-submitted'] = False
     atf.properties['orig-environment'] = dict(os.environ)
     #print(f"properties = {atf.properties}")
 
@@ -100,15 +99,15 @@ def module_teardown():
 
     failures = []
 
-    # Cancel any jobs that were submitted via submit_job
-    if atf.properties['jobs-submitted']:
-        if not atf.cancel_all_jobs(quiet=True):
-            failures.append("Not all jobs were successsfully cancelled")
-
     if atf.properties['auto-config']:
 
-        # Stop Slurm if we started it
         if atf.properties['slurm-started'] == True:
+
+            # Cancel all jobs
+            if not atf.cancel_all_jobs(quiet=True):
+                failures.append("Not all jobs were successfully cancelled")
+
+            # Stop Slurm if we started it
             if not atf.stop_slurm(fatal=False, quiet=True):
                 failures.append("Not all Slurm daemons were successfully stopped")
 

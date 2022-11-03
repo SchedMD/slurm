@@ -1359,8 +1359,6 @@ def submit_job(sbatch_args="--wrap \"sleep 60\"", **run_command_kwargs):
     output = run_command_output(f"sbatch {sbatch_args}", **run_command_kwargs)
 
     if match := re.search(r'Submitted \S+ job (\d+)', output):
-        if not properties['jobs-submitted']:
-            properties['jobs-submitted'] = True
         job_id = int(match.group(1))
         return job_id
     else:
@@ -1384,10 +1382,6 @@ def run_job(srun_args, **run_command_kwargs):
     """
 
     results = run_command(f"srun {srun_args}", **run_command_kwargs)
-
-    if results['exit_code'] == errno.ETIMEDOUT:
-        if not properties['jobs-submitted']:
-            properties['jobs-submitted'] = True
 
     return results
 
@@ -1497,8 +1491,6 @@ def alloc_job_id(salloc_args, **run_command_kwargs):
 
     results = run_command(f"salloc {salloc_args}", **run_command_kwargs)
     if match := re.search(r'Granted job allocation (\d+)', results['stderr']):
-        if not properties['jobs-submitted']:
-            properties['jobs-submitted'] = True
         job_id = int(match.group(1))
         return job_id
     else:

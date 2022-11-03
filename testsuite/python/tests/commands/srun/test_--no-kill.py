@@ -22,7 +22,6 @@ def setup():
 def no_kill_job():
     """Submit a job that should not be killed on node failure"""
     child = pexpect.spawn(f'srun --no-kill -N2 -v sleep 300')
-    atf.properties['jobs-submitted'] = True # So teardown will clean up the job
     child.expect(r'jobid (\d+)', timeout=5)
     job_id = int(child.match.group(1))
     atf.wait_for_job_state(job_id, "RUNNING")

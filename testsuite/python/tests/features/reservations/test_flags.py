@@ -109,7 +109,7 @@ def test_replace_flags(create_resv, delete_resv):
         quiet=False)
 
 @pytest.mark.parametrize("create_resv", ["STATIC_ALLOC", "MAINT"], indirect=True)
-def test_norepalce_flags(create_resv, delete_resv):
+def test_noreplace_flags(create_resv, delete_resv):
     """Verify that nodes in a reservation with static allocations aren't
     replaced when they go down
     """
