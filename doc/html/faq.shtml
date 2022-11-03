@@ -1728,7 +1728,7 @@ controller will kill the job on any remaining allocated nodes and attempt to
 requeue the job if possible. The following procedure is recommended:
 
 <ol>
-<li>Drain node of all jobs (e.g. "scontrol update nodenname=<nodes> state=drain reason="removing nodes")</li>
+<li>Drain node of all jobs (e.g. "scontrol update nodename='%N' state=drain reason='removing nodes'")</li>
 <li>Stop the slurmctld daemon (e.g. "systemctl stop slurmctld" on the head node)</li>
 <li>Update the slurm.conf file on all nodes in the cluster</li>
 <li>Restart the slurmd daemons on all nodes (e.g. "systemctl restart slurmd" on all nodes)</li>
