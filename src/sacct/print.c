@@ -254,6 +254,29 @@ static void _print_tres_field(char *tres_in, char *nodes, bool convert,
 	return;
 }
 
+static void _print_expanded_array_job(slurmdb_job_rec_t *job)
+{
+	int i_first, i_last;
+	bitstr_t *bitmap;
+
+	bitmap = bit_alloc(slurm_conf.max_array_sz);
+	bit_unfmt_hexmask(bitmap, job->array_task_str);
+	xfree(job->array_task_str);
+
+	i_first = bit_ffs(bitmap);
+	if (i_first == -1)
+		i_last = -2;
+	else
+		i_last = bit_fls(bitmap);
+	for (int i = i_first; i <= i_last; i++) {
+		if (!bit_test(bitmap, i))
+			continue;
+		job->array_task_id = i;
+		print_fields(JOB, job);
+	}
+	FREE_NULL_BITMAP(bitmap);
+}
+
 extern void print_fields(type_t type, void *object)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
@@ -268,6 +291,11 @@ extern void print_fields(type_t type, void *object)
 
 	if (!object) {
 		fatal("Job or step record is NULL");
+		return;
+	}
+
+	if (params.opt_array && job->array_task_str && (type == JOB)) {
+		_print_expanded_array_job(job);
 		return;
 	}
 

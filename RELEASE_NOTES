@@ -118,6 +118,8 @@ COMMAND CHANGES (see man pages for details)
  -- squeue - removed unused '%s' and 'SelectJobInfo' formats.
  -- squeue - align print format for exit and derived codes with that of other
     components (<exit_status>:<signal_number>).
+ -- sacct - Add --array option to expand job arrays and display array tasks on
+    separate lines.
 
 API CHANGES
 ===========

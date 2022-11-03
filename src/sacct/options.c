@@ -61,6 +61,7 @@
 #define OPT_LONG_JSON      0x109
 #define OPT_LONG_YAML      0x110
 #define OPT_LONG_AUTOCOMP  0x111
+#define OPT_LONG_ARRAY     0x112
 
 #define JOB_HASH_SIZE 1000
 
@@ -214,6 +215,9 @@ sacct [<OPTION>]                                                            \n \
      -A, --accounts:                                                        \n\
 	           Use this comma separated list of accounts to select jobs \n\
                    to display.  By default, all accounts are selected.      \n\
+     --array:                                                               \n\
+                   Expand job arrays. Display array tasks on separate lines \n\
+                   instead of consolidating them to a single line.          \n\
      -b, --brief:                                                           \n\
 	           Equivalent to '--format=jobstep,state,error'.            \n\
      -B, --batch-script:                                                    \n\
@@ -584,6 +588,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"allusers",       no_argument,       0,    'a'},
                 {"accounts",       required_argument, 0,    'A'},
                 {"allocations",    no_argument,       0,    'X'},
+                {"array",          no_argument,       0,    OPT_LONG_ARRAY},
                 {"brief",          no_argument,       0,    'b'},
 		{"batch-script",   no_argument,       0,    'B'},
                 {"completion",     no_argument,       0,    'c'},
@@ -667,6 +672,9 @@ extern void parse_command_line(int argc, char **argv)
 			if (!job_cond->acct_list)
 				job_cond->acct_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->acct_list, optarg);
+			break;
+		case OPT_LONG_ARRAY:
+			params.opt_array = true;
 			break;
 		case 'b':
 			brief_output = true;

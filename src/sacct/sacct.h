@@ -202,6 +202,7 @@ typedef struct {
 	char *cluster_name;	/* Set if in federated cluster */
 	uint32_t convert_flags;	/* --noconvert */
 	slurmdb_job_cond_t *job_cond;
+	bool opt_array;		/* --array */
 	int opt_completion;	/* --completion */
 	bool opt_federation;	/* --federation */
 	char *opt_field_list;	/* --fields= */
