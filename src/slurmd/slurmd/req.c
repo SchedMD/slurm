@@ -6207,13 +6207,13 @@ static void _launch_complete_rm(uint32_t job_id)
 
 static void _launch_complete_wait(uint32_t job_id)
 {
-	int i, j, empty;
+	int j, empty;
 	time_t start = time(NULL);
 	struct timeval now;
 	struct timespec timeout;
 
 	slurm_mutex_lock(&job_state_mutex);
-	for (i = 0; ; i++) {
+	while (true) {
 		empty = -1;
 		for (j = 0; j < JOB_STATE_CNT; j++) {
 			if (job_id == active_job_id[j].job_id)
