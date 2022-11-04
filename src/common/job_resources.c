@@ -990,7 +990,7 @@ extern int job_resources_and(job_resources_t *job_resrcs1_ptr,
 			     job_resources_t *job_resrcs2_ptr)
 {
 	int i, i_first, i_last, j;
-	int node_cnt, node_inx1 = -1, node_inx2 = -1;
+	int node_cnt;
 	int sock_core_cnt1 = 0, sock_core_cnt2 = 0;
 	int so_co_off1 = 0, so_co_off2 = 0;
 	int core_cnt, core_cnt1, core_cnt2;;
@@ -1029,14 +1029,10 @@ extern int job_resources_and(job_resources_t *job_resrcs1_ptr,
 		i_last = -2;
 	for (i = i_first; i <= i_last; i++) {
 		bool match1 = false, match2 = false;
-		if (bit_test(job_resrcs1_ptr->node_bitmap, i)) {
-			node_inx1++;
+		if (bit_test(job_resrcs1_ptr->node_bitmap, i))
 			match1 = true;
-		}
-		if (bit_test(job_resrcs2_ptr->node_bitmap, i)) {
-			node_inx2++;
+		if (bit_test(job_resrcs2_ptr->node_bitmap, i))
 			match2 = true;
-		}
 		if (!match1 && !match2)	/* Unused node */
 			continue;
 		if (match1 && match2) {	/* Merge (AND) core_bitmaps */
@@ -1118,7 +1114,7 @@ extern int job_resources_or(job_resources_t *job_resrcs1_ptr,
 {
 	job_resources_t *job_resrcs_new;
 	int i, i_first, i_last, j;
-	int node_cnt, node_inx = -1, node_inx1 = -1, node_inx2 = -1;
+	int node_cnt, node_inx = -1;
 	int sock_core_cnt1 = 0, sock_core_cnt2 = 0;
 	int so_co_off1 = 0, so_co_off2 = 0;
 	int core_cnt, core_cnt1, core_cnt2;
@@ -1167,14 +1163,10 @@ extern int job_resources_or(job_resources_t *job_resrcs1_ptr,
 		i_last = -2;
 	for (i = i_first; i <= i_last; i++) {
 		bool match1 = false, match2 = false;
-		if (bit_test(job_resrcs1_ptr->node_bitmap, i)) {
-			node_inx1++;
+		if (bit_test(job_resrcs1_ptr->node_bitmap, i))
 			match1 = true;
-		}
-		if (bit_test(job_resrcs2_ptr->node_bitmap, i)) {
-			node_inx2++;
+		if (bit_test(job_resrcs2_ptr->node_bitmap, i))
 			match2 = true;
-		}
 		if (!match1 && !match2)	/* Unused node */
 			continue;
 		bit_set(job_resrcs_new->node_bitmap, i);
