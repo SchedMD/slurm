@@ -219,7 +219,6 @@ static int       _set_topo_info(void);
 static int       _set_work_dir(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
-static void      _update_logging(void);
 static void      _update_nice(void);
 static void      _usage(void);
 static void      _usr_handler(int);
@@ -496,7 +495,7 @@ _msg_engine(void)
 		if (_update_log) {
 			DEF_TIMERS;
 			START_TIMER;
-			_update_logging();
+			update_slurmd_logging(LOG_LEVEL_END);
 			END_TIMER3("_update_log request - slurmd doesn't accept new connections during this time.",
 				   5000000);
 		}
@@ -988,9 +987,9 @@ _read_config(void)
 	xfree(conf->block_map_inv);
 
 	/*
-	 * This must be reset before _update_logging(), otherwise the
-	 * slurmstepd processes will not get the reconfigure request,
-	 * and logs may be lost if the path changed or the log was rotated.
+	 * This must be reset before update_slurmd_logging(), otherwise the
+	 * slurmstepd processes will not get the reconfigure request, and logs
+	 * may be lost if the path changed or the log was rotated.
 	 */
 	_free_and_set(conf->spooldir,
 		      slurm_conf_expand_slurmd_path(
@@ -1005,7 +1004,7 @@ _read_config(void)
 		_free_and_set(conf->conf_cache,
 			      xstrdup_printf("%s/conf-cache", conf->spooldir));
 
-	_update_logging();
+	update_slurmd_logging(LOG_LEVEL_END);
 	_update_nice();
 
 	conf->actual_cpus = 0;
@@ -2361,7 +2360,7 @@ _kill_old_slurmd(void)
 }
 
 /* Reset slurmd logging based upon configuration parameters */
-static void _update_logging(void)
+extern void update_slurmd_logging(log_level_t log_lvl)
 {
 	List steps;
 	ListIterator i;
@@ -2372,7 +2371,9 @@ static void _update_logging(void)
 	_update_log = 0;
 	/* Preserve execute line verbose arguments (if any) */
 	cf = slurm_conf_lock();
-	if (!conf->debug_level_set && (cf->slurmd_debug != NO_VAL16))
+	if (log_lvl != LOG_LEVEL_END) {
+		conf->debug_level = log_lvl;
+	} else if (!conf->debug_level_set && (cf->slurmd_debug != NO_VAL16))
 		conf->debug_level = cf->slurmd_debug;
 	conf->syslog_debug = cf->slurmd_syslog_debug;
 	slurm_conf_unlock();

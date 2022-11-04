@@ -181,4 +181,7 @@ int run_script_health_check(void);
 /* Handler for SIGTERM; can also be called to shutdown the slurmd. */
 void slurmd_shutdown(int signum);
 
+/* Handler for debug level update */
+extern void update_slurmd_logging(log_level_t log_lvl);
+
 #endif /* !_SLURMD_H */
