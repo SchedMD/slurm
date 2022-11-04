@@ -697,7 +697,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 			      uint32_t req_nodes, avail_res_t **avail_res_array)
 {
 	int i, i_start, i_end, error_code = SLURM_ERROR;
-	int rem_cpus, rem_nodes; /* remaining resources desired */
+	int rem_cpus; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	int avail_cpus = 0;
@@ -705,7 +705,6 @@ static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 
 	rem_cpus = details_ptr->min_cpus;
-	rem_nodes = MAX(min_nodes, req_nodes);
 	min_rem_nodes = min_nodes;
 	i_start = bit_ffs(node_map);
 	if (i_start >= 0)
@@ -723,7 +722,6 @@ static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 				if ((avail_cpus > 0) && (max_nodes > 0)) {
 					total_cpus += avail_cpus;
 					rem_cpus   -= avail_cpus;
-					rem_nodes--;
 					min_rem_nodes--;
 					/* leaving bitmap set, decr max limit */
 					max_nodes--;
@@ -750,7 +748,6 @@ static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 			bit_set(node_map, i);
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
-			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
 			if (max_nodes <= 0)
