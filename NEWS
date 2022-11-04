@@ -124,6 +124,8 @@ documents those changes that are of interest to users and administrators.
  -- Enhanced burst_buffer.lua - pass UID and GID to most hooks; pass a table
     containing detailed job information to many hooks. See
     etc/burst_buffer.lua.example for a complete list of changes.
+ -- Add a new "nodes=" argument to scontrol setdebug to allow the debug level
+    on the slurmd processes to be temporarily altered.
 
 * Changes in Slurm 22.05.6
 ==========================

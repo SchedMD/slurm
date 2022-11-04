@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "October 2022" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "November 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -351,7 +351,7 @@ SlurmSchedLogLevel parameter is present.
 .IP
 
 .TP
-\fBsetdebug\fR <\fILEVEL\fR>
+\fBsetdebug\fR <\fILEVEL\fR> [nodes=<\fINODES\fR>]
 Change the debug level of the slurmctld daemon for all active logging channels
 not originally configured off (quiet).
 \fILEVEL\fP may be an integer value between zero and nine (using the
@@ -359,9 +359,17 @@ same values as \fISlurmctldDebug\fP in the \fIslurm.conf\fP file) or
 the name of the most detailed message type to be printed:
 "quiet", "fatal", "error", "info", "verbose", "debug", "debug2", "debug3",
 "debug4", or "debug5".
-This value is temporary and will be overwritten whenever the slurmctld
-daemon reads the slurm.conf configuration file (e.g. when the daemon
-is restarted or \fBscontrol reconfigure\fR is executed).
+This value is temporary, and will be overwritten whenever the daemon reads the
+slurm.conf configuration file. (Such as when the daemon is restarted or
+\fBscontrol reconfigure\fR is executed).
+.IP
+.RS
+.TP
+\fBnodes\fR=<\fINodeName\fR>
+If set, the request to change debug level is sent to the slurmd processes on
+the nodes instead of to the slurmctld. A node range expression may be used for
+NodeName.
+.RE
 .IP
 
 .TP
