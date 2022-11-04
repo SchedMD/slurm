@@ -758,6 +758,57 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 	}
 }
 
+static void _setdebug(int argc, char **argv)
+{
+	int level = -1, index = 0, error_code;
+	char *endptr;
+	char *levels[] = {
+		"quiet", "fatal", "error", "info", "verbose", "debug",
+		"debug2", "debug3", "debug4", "debug5", NULL
+	};
+
+	if (argc > 2) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			fprintf(stderr, "too many arguments for keyword:%s\n",
+				argv[0]);
+		return;
+	} else if (argc < 2) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			fprintf(stderr, "too few arguments for keyword:%s\n",
+				argv[0]);
+		return;
+	}
+
+	while (levels[index]) {
+		if (!xstrcasecmp(argv[1], levels[index])) {
+			level = index;
+			break;
+		}
+		index ++;
+	}
+
+	if (level == -1) {
+		/* effective levels: 0 - 9 */
+		level = (int) strtoul(argv[1], &endptr, 10);
+		if (*endptr != '\0' || level > 9) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, "invalid debug level: %s\n",
+					argv[1]);
+			return;
+		}
+	}
+
+	error_code = slurm_set_debug_level(level);
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror("slurm_set_debug_level error");
+	}
+}
+
 static void _fetch_token(int argc, char **argv)
 {
 	char *username = NULL, *token;
@@ -1289,57 +1340,7 @@ static int _process_command (int argc, char **argv)
 		}
 	}
 	else if (xstrncasecmp(tag, "setdebug", MAX(tag_len, 2)) == 0) {
-		if (argc > 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
-		} else if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
-		} else {
-			int level = -1;
-			char *endptr;
-			char *levels[] = {
-				"quiet", "fatal", "error", "info", "verbose",
-				"debug", "debug2", "debug3", "debug4",
-				"debug5", NULL};
-			int index = 0;
-			while (levels[index]) {
-				if (xstrcasecmp(argv[1], levels[index]) == 0) {
-					level = index;
-					break;
-				}
-				index ++;
-			}
-			if (level == -1) {
-				/* effective levels: 0 - 9 */
-				level = (int)strtoul (argv[1], &endptr, 10);
-				if (*endptr != '\0' || level > 9) {
-					level = -1;
-					exit_code = 1;
-					if (quiet_flag != 1)
-						fprintf(stderr, "invalid "
-							"debug level: %s\n",
-							argv[1]);
-				}
-			}
-			if (level != -1) {
-				error_code = slurm_set_debug_level(
-					level);
-				if (error_code) {
-					exit_code = 1;
-					if (quiet_flag != 1)
-						slurm_perror(
-							"slurm_set_debug_level "
-							"error");
-				}
-			}
-		}
+		_setdebug(argc, argv);
 	}
 	else if (xstrncasecmp(tag, "schedloglevel", MAX(tag_len, 3)) == 0) {
 		if (argc > 2) {
