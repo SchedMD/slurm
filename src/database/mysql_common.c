@@ -1039,7 +1039,7 @@ extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 				 storage_field_t *fields, char *ending)
 {
 	char *query = NULL;
-	int i = 0, rc;
+	int rc;
 	storage_field_t *first_field = fields;
 
 	if (!fields || !fields->name) {
@@ -1067,13 +1067,11 @@ extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 
 	query = xstrdup_printf("create table if not exists %s (`%s` %s",
 			       table_name, fields->name, fields->options);
-	i = 1;
 	fields++;
 
 	while (fields && fields->name) {
 		xstrfmtcat(query, ", `%s` %s", fields->name, fields->options);
 		fields++;
-		i++;
 	}
 	xstrcat(query, ending);
 
