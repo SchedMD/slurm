@@ -1464,7 +1464,7 @@ static void _filter_job(job_record_t *job_ptr,
 {
 	part_record_t *job_part_ptr = NULL, *filter_part_ptr = NULL;
 	List req_job_list, req_user_list;
-	int filter = 0, inx;
+	int filter = 0;
 	ListIterator iterator, job_iter, filter_iter;
 	uint32_t *job_id;
 	uint32_t *user_id;
@@ -1534,7 +1534,6 @@ static void _filter_job(job_record_t *job_ptr,
 	}
 
 	/* Filter by partition, job in multiple partitions */
-	inx = 0;
 	job_iter = list_iterator_create(job_ptr->part_ptr_list);
 	while ((job_part_ptr = list_next(job_iter))) {
 		filter = 0;
@@ -1555,7 +1554,6 @@ static void _filter_job(job_record_t *job_ptr,
 				    _create_prio_factors_obj(job_ptr,
 							     job_part_ptr));
 		}
-		inx++;
 	}
 	list_iterator_destroy(job_iter);
 }
