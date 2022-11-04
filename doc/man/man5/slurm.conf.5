@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "October 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "November 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -3366,6 +3366,8 @@ set to the number of times the job has been restarted.
 The program that will be executed when nodes fail to resume to by
 \fBResumeTimeout\fR. The argument to the program will be the names of the failed
 nodes (using Slurm's hostlist expression format).
+Programs will be killed if they run longer than the largest configured, global
+or partition, \fBResumeTimeout\fR or \fBSuspendTimeout\fR.
 .IP
 
 .TP
@@ -3395,6 +3397,8 @@ slurmctld shutdown is delayed by up to ten seconds to give ResumeProgram time
 to read this file. Therefore, this file should be read at the beginning of
 ResumeProgram.
 By default no program is run.
+Programs will be killed if they run longer than the largest configured, global
+or partition, \fBResumeTimeout\fR or \fBSuspendTimeout\fR.
 .IP
 
 .TP
@@ -5220,6 +5224,8 @@ The argument to the program will be the names of nodes to
 be placed into power savings mode (using Slurm's hostlist
 expression format).
 By default, no program is run.
+Programs will be killed if they run longer than the largest configured, global
+or partition, \fBResumeTimeout\fR or \fBSuspendTimeout\fR.
 .IP
 
 .TP
