@@ -767,7 +767,7 @@ static void _setdebug(int argc, char **argv)
 		"debug2", "debug3", "debug4", "debug5", NULL
 	};
 
-	if (argc > 2) {
+	if (argc > 3) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			fprintf(stderr, "too many arguments for keyword:%s\n",
@@ -801,11 +801,36 @@ static void _setdebug(int argc, char **argv)
 		}
 	}
 
-	error_code = slurm_set_debug_level(level);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror("slurm_set_debug_level error");
+	if (argc == 2) {
+		error_code = slurm_set_debug_level(level);
+		if (error_code) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				slurm_perror("slurm_set_debug_level error");
+		}
+	} else if (argc == 3) {
+		/*
+		 * scontrol setdebug <level> nodes=<list of nodes>
+		 */
+		char *nodes;
+
+		if (xstrncasecmp(argv[2], "Nodes=", 6)) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, "Invalid option: %s\n",
+					argv[1]);
+			return;
+		}
+
+		nodes = strchr(argv[2], '=');
+		nodes++;
+
+		error_code = slurm_set_slurmd_debug_level(nodes, level);
+		if (error_code) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, "Failed to change debug level on one or more nodes.\n");
+		}
 	}
 }
 
