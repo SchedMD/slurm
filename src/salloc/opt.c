@@ -418,7 +418,7 @@ static bool _opt_verify(void)
 
 	if (opt.container && !getenv("SLURM_CONTAINER"))
 		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
-	if (opt.container && !getenv("SLURM_CONTAINER_ID"))
+	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
 
 	if (opt.hint &&
