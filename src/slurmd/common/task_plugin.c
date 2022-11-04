@@ -309,7 +309,7 @@ extern int task_g_pre_setuid(stepd_step_rec_t *step)
 	for (i = 0; i < g_task_context_num; i++) {
 		rc = (*(ops[i].pre_setuid))(step);
 		if (rc != SLURM_SUCCESS) {
-			debug("%s: %s: %s", __func__,
+			error("%s: %s: %s", __func__,
 			      g_task_context[i]->type, slurm_strerror(rc));
 			break;
 		}
