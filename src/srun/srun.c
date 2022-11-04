@@ -196,10 +196,10 @@ int srun(int ac, char **av)
 	 * Detect is process is in non-matching user namespace or UIDs
 	 * with controller are mismatching.
 	 */
-	if (job->uid != getuid())
+	if (job && (job->uid != getuid()))
 		debug3("%s: %ps UID %u and srun process UID %u mismatch",
 		       __func__, &job->step_id, job->uid, getuid());
-	if (job->gid != getgid())
+	if (job && (job->gid != getgid()))
 		debug3("%s: %ps GID %u and srun process GID %u mismatch",
 		       __func__, &job->step_id, job->gid, getgid());
 
