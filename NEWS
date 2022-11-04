@@ -130,6 +130,8 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - add support for expanding %h and %n in BasePath.
  -- Prevent job submission/update with afterok/afternotok dependency set to
     an unknown jobid.
+ -- Change to a new FAIL_SIGNAL job state reason (instead of FAIL_LAUNCH) for
+    jobs that have raised a signal on setup.
 
 * Changes in Slurm 22.05.6
 ==========================

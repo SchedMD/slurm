@@ -376,7 +376,7 @@ enum job_state_reason {
 	WAIT_QOS_JOB_LIMIT,	/* QOS job limit reached */
 	WAIT_QOS_RESOURCE_LIMIT,/* QOS resource limit reached */
 	WAIT_QOS_TIME_LIMIT,	/* QOS time limit reached */
-	DEFUNCT_WAIT_33, /* free for reuse */
+	FAIL_SIGNAL,		/* raised a signal that caused it to exit */
 	DEFUNCT_WAIT_34, /* free for reuse */
 	WAIT_CLEANING,          /* If a job is requeued and it is
 				 * still cleaning up from the last run. */

@@ -6494,7 +6494,12 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		} else if (WIFSIGNALED(job_return_code)) {
 			job_ptr->job_state = JOB_FAILED | job_comp_flag;
 			job_ptr->exit_code = job_return_code;
-			job_ptr->state_reason = FAIL_LAUNCH;
+			job_ptr->state_reason = FAIL_SIGNAL;
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc,
+				   "RaisedSignal:%d(%s)",
+				   WTERMSIG(job_return_code),
+				   strsignal(WTERMSIG(job_return_code)));
 		} else if (job_comp_flag
 			   && ((job_ptr->end_time
 				+ over_time_limit * 60) < now)) {

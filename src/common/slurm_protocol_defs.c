@@ -1803,6 +1803,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "JobLaunchFailure";
 	case FAIL_EXIT_CODE:
 		return "NonZeroExitCode";
+	case FAIL_SIGNAL:
+		return "RaisedSignal";
 	case FAIL_TIMEOUT:
 		return "TimeLimit";
 	case FAIL_INACTIVE_LIMIT:
@@ -2205,6 +2207,8 @@ extern enum job_state_reason job_reason_num(char *reason)
 		return FAIL_LAUNCH;
 	if (!xstrcasecmp(reason, "NonZeroExitCode"))
 		return FAIL_EXIT_CODE;
+	if (!xstrcasecmp(reason, "RaisedSignal"))
+		return FAIL_SIGNAL;
 	if (!xstrcasecmp(reason, "TimeLimit"))
 		return FAIL_TIMEOUT;
 	if (!xstrcasecmp(reason, "InactiveLimit"))
