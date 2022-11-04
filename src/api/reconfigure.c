@@ -228,6 +228,48 @@ slurm_set_debugflags (uint64_t debug_flags_plus, uint64_t debug_flags_minus)
 }
 
 /*
+ * slurm_set_slurmd_debug_level - issue RPC to set slurmd debug level
+ * IN debug_level - requested debug level
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR
+ */
+extern int slurm_set_slurmd_debug_level(char *node_list, uint32_t debug_level)
+{
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	set_debug_level_msg_t req;
+	list_t *ret_list;
+	list_itr_t *itr;
+	ret_data_info_t *ret_data_info = NULL;
+	int rc = SLURM_SUCCESS;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	slurm_msg_set_r_uid(&req_msg, slurm_conf.slurmd_user_id);
+
+	memset(&req, 0, sizeof(req));
+	req.debug_level = debug_level;
+	req_msg.msg_type = REQUEST_SET_DEBUG_LEVEL;
+	req_msg.data = &req;
+
+	if (!(ret_list = slurm_send_recv_msgs(node_list, &req_msg, 0)))
+		return SLURM_ERROR;
+
+	itr = list_iterator_create(ret_list);
+	while ((ret_data_info = list_next(itr))) {
+		rc = slurm_get_return_code(ret_data_info->type,
+					   ret_data_info->data);
+		if (rc)
+			break;
+
+	}
+	list_iterator_destroy(itr);
+	FREE_NULL_LIST(ret_list);
+
+	return rc;
+}
+
+/*
  * slurm_set_debug_level - issue RPC to set slurm controller debug level
  * IN debug_level - requested debug level
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set

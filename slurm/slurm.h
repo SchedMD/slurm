@@ -4669,6 +4669,12 @@ extern int slurm_takeover(int backup_inx);
  */
 extern int slurm_set_debugflags(uint64_t debug_flags_plus,
 				uint64_t debug_flags_minus);
+/*
+ * slurm_set_slurmd_debug_level - issue RPC to set slurmd debug level
+ * IN debug_level - requested debug level
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR
+ */
+extern int slurm_set_slurmd_debug_level(char *node_list, uint32_t debug_level);
 
 /*
  * slurm_set_debug_level - issue RPC to set slurm controller debug level
