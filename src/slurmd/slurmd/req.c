@@ -963,7 +963,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	uint32_t	jobid = req->step_id.job_id;
 	uint32_t	stepid = req->step_id.step_id;
 	int		tasks_to_launch = req->tasks_to_launch[node_id];
-	uint32_t	job_cpus = 0, step_cpus = 0;
+	uint32_t	step_cpus = 0;
 
 	if (req->flags & LAUNCH_NO_ALLOC) {
 		if (super_user) {
@@ -1116,7 +1116,6 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		for (i=i_first_bit, j=0; i<i_last_bit; i++, j++) {
 			char *who_has = NULL;
 			if (bit_test(arg->job_core_bitmap, i)) {
-				job_cpus++;
 				who_has = "Job";
 			}
 			if (bit_test(arg->step_core_bitmap, i)) {
@@ -1148,7 +1147,6 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 						 i_last_bit,
 						 i_first_bit);
 				step_cpus *= i;
-				job_cpus *= i;
 			}
 		}
 		if (tasks_to_launch > step_cpus) {
@@ -1160,7 +1158,6 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		}
 	} else {
 		step_cpus = 1;
-		job_cpus  = 1;
 	}
 
 	/*
