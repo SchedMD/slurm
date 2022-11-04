@@ -51,23 +51,6 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 
-/* These are defined here so when we link with something other than
- * the slurmctld we will have these symbols defined.  They will get
- * overwritten when linking with the slurmctld.
- */
-#if defined (__APPLE__)
-extern node_record_t **node_record_table_ptr __attribute__((weak_import));
-extern switch_record_t *switch_record_table __attribute__((weak_import));
-extern int switch_record_cnt __attribute__((weak_import));
-extern int switch_levels __attribute__((weak_import));
-#else
-node_record_t **node_record_table_ptr;
-switch_record_t *switch_record_table = NULL;
-int switch_record_cnt = 0;
-int switch_levels = 0;
-#endif
-
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
