@@ -2669,7 +2669,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 	GtkTreeView *tree_view = NULL;
 	List info_list = NULL;
 	List send_info_list = NULL;
-	int j=0, i=-1;
+	int j=0;
 	sview_part_info_t *sview_part_info_ptr = NULL;
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
@@ -2773,9 +2773,7 @@ display_it:
 	send_info_list = list_create(NULL);
 
 	itr = list_iterator_create(info_list);
-	i = -1;
 	while ((sview_part_info_ptr = list_next(itr))) {
-		i++;
 		part_ptr = sview_part_info_ptr->part_ptr;
 		switch (spec_info->type) {
 		case RESV_PAGE:

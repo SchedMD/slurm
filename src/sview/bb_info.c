@@ -790,7 +790,6 @@ extern void specific_info_bb(popup_info_t *popup_win)
 	List bb_list = NULL;
 	List send_bb_list = NULL;
 	sview_bb_info_t *sview_bb_info_ptr = NULL;
-	int i = -1;
 	ListIterator itr = NULL;
 
 	if (!spec_info->display_widget) {
@@ -868,12 +867,10 @@ display_it:
 	 */
 	send_bb_list = list_create(NULL);
 	itr = list_iterator_create(bb_list);
-	i = -1;
 	/*
 	 * Set up additional menu options(ie the right click menu stuff)
 	 */
 	while ((sview_bb_info_ptr = list_next(itr))) {
-		i++;
 		switch (spec_info->type) {
 		case BB_PAGE:
 			list_push(send_bb_list, sview_bb_info_ptr);

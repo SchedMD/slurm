@@ -1281,7 +1281,7 @@ extern void specific_info_resv(popup_info_t *popup_win)
 	List resv_list = NULL;
 	List send_resv_list = NULL;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
-	int j=0, i=-1;
+	int j=0;
 	hostset_t hostset = NULL;
 	ListIterator itr = NULL;
 
@@ -1358,9 +1358,7 @@ display_it:
 	   the list */
 	send_resv_list = list_create(NULL);
 	itr = list_iterator_create(resv_list);
-	i = -1;
 	while ((sview_resv_info_ptr = list_next(itr))) {
-		i++;
 		resv_ptr = sview_resv_info_ptr->resv_ptr;
 		switch(spec_info->type) {
 		case PART_PAGE:

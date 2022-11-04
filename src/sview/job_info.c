@@ -3907,7 +3907,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 	GtkTreeView *tree_view = NULL;
 	List info_list = NULL;
 	List send_info_list = NULL;
-	int i=-1, j, k;
+	int j, k;
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
@@ -4011,9 +4011,7 @@ display_it:
 	 * the list */
 	send_info_list = list_create(NULL);
 	itr = list_iterator_create(info_list);
-	i = -1;
 	while ((sview_job_info_ptr = list_next(itr))) {
-		i++;
 		job_ptr = sview_job_info_ptr->job_ptr;
 		switch (spec_info->type) {
 		case JOB_PAGE:
