@@ -79,10 +79,6 @@
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#define MAX_SHUTDOWN_DELAY	10	/* seconds to wait for child procs
-					 * to exit after daemon shutdown
-					 * request, then orphan or kill proc */
-
 pthread_cond_t power_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
 bool power_save_config = false;
