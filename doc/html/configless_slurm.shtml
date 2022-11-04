@@ -107,6 +107,7 @@ is as follows:
 <li>The -f $config_file option</li>
 <li>The SLURM_CONF environment variable (if set)</li>
 <li>The default slurm config file (likely /etc/slurm.conf)</li>
+<li>The SLURM_CONF_SERVER environment variable (if set)</li>
 <li>Any DNS SRV records (from lowest priority value to highest)</li>
 </ol>
 </p>
@@ -130,6 +131,6 @@ is as follows:
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 24 May 2022</p>
+<p style="text-align:center;">Last modified 04 November 2022</p>
 
 <!--#include virtual="footer.txt"-->
