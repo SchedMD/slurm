@@ -3136,7 +3136,7 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 			avail_res_t **avail_res_array, uint16_t cr_type,
 			bool prefer_alloc_nodes, gres_mc_data_t *tres_mc_ptr)
 {
-	int i, count, ec, most_res = 0, rem_nodes, node_cnt = 0;
+	int i, count, ec, most_res = 0, rem_nodes;
 	bitstr_t *orig_node_map, *req_node_map = NULL;
 	bitstr_t **orig_core_array;
 
@@ -3161,8 +3161,6 @@ extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 				return SLURM_ERROR;
 			}
 			bit_clear(node_map, i);
-		} else {
-			node_cnt++;
 		}
 	}
 

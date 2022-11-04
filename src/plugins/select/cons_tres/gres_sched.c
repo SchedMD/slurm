@@ -318,7 +318,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	 */
 	add_gres = min_gres - sock_gres->cnt_any_sock;
 	if (match && core_bitmap && (add_gres > 0)) {
-		int avail_sock = 0, best_sock_inx = -1;
+		int best_sock_inx = -1;
 		bool *avail_sock_flag = xcalloc(sockets, sizeof(bool));
 		for (s = 0; s < sockets; s++) {
 			if (sock_gres->cnt_by_sock[s] == 0)
@@ -327,7 +327,6 @@ static sock_gres_t *_build_sock_gres_by_topo(
 				i = (s * cores_per_sock) + c;
 				if (!bit_test(core_bitmap, i))
 					continue;
-				avail_sock++;
 				avail_sock_flag[s] = true;
 				if ((best_sock_inx == -1) ||
 				    (sock_gres->cnt_by_sock[s] >
