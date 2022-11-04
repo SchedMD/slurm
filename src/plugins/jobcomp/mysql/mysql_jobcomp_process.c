@@ -59,7 +59,6 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	int i;
-	int lc = 0;
 	jobcomp_job_rec_t *job = NULL;
 	char time_str[256];
 	time_t temp_time;
@@ -129,8 +128,6 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	xfree(query);
 
 	while ((row = mysql_fetch_row(result))) {
-		lc++;
-
 		job = xmalloc(sizeof(jobcomp_job_rec_t));
 		if (row[JOBCOMP_REQ_JOBID])
 			job->jobid = slurm_atoul(row[JOBCOMP_REQ_JOBID]);

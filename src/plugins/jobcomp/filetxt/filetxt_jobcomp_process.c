@@ -182,7 +182,6 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	int jobid = 0;
 	char *partition = NULL;
 	FILE *fd = NULL;
-	int lc = 0;
 	jobcomp_job_rec_t *job = NULL;
 	slurm_selected_step_t *selected_step = NULL;
 	char *selected_part = NULL;
@@ -194,7 +193,6 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 	fd = _open_log_file(slurm_conf.job_comp_loc);
 
 	while (fgets(line, BUFFER_SIZE, fd)) {
-		lc++;
 		fptr = line;	/* break the record into NULL-
 				   terminated strings */
 		FREE_NULL_LIST(job_info_list);
