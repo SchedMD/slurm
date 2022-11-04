@@ -120,6 +120,7 @@ documents those changes that are of interest to users and administrators.
  -- Make it so the [Allow|Deny]Accounts parameter for a partition is
     hierarchical.
  -- Add the ability for a add (+=) or remove (-=) nodes from a reservation
+ -- Fix several problems when creating/editing partitions in sview.
 
 * Changes in Slurm 22.05.6
 ==========================

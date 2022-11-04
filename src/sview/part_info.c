@@ -187,8 +187,8 @@ static display_data_t display_data_part[] = {
 	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_OVER_TIME_LIMIT, "OverTimeLimit", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ROOT, "Root", false, EDIT_MODEL, refresh_part,
-	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ROOT, "RootOnly", false, EDIT_MODEL,
+	 refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_QOS_CHAR, "Qos", false,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_ALLOW_ACCOUNTS, "Allowed Accounts", false,
@@ -267,7 +267,7 @@ static display_data_t create_data_part[] = {
 	{G_TYPE_STRING, SORTID_MAX_CPUS_PER_SOCKET, "Max CPUs Per Socket",
 	 false, EDIT_TEXTBOX, refresh_part,
 	 _create_model_part2, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ROOT, "Root", false,
+	{G_TYPE_STRING, SORTID_ROOT, "RootOnly", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
 	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", false,
 	 EDIT_MODEL, refresh_part, _create_model_part2, admin_edit_part},
@@ -514,20 +514,20 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->alternate = xstrdup(new_text);
 		break;
 	case SORTID_DEFAULT:
-		if (!xstrcasecmp(new_text, "yes")) {
+		if (!xstrncasecmp(new_text, "yes", 3)) {
 			part_msg->flags |= PART_FLAG_DEFAULT;
 			part_msg->flags &= (~PART_FLAG_DEFAULT_CLR);
-		} else if (!xstrcasecmp(new_text, "no")) {
+		} else if (!xstrncasecmp(new_text, "no", 2)) {
 			part_msg->flags &= (~PART_FLAG_DEFAULT);
 			part_msg->flags |= PART_FLAG_DEFAULT_CLR;
 		}
 		type = "default";
 		break;
 	case SORTID_EXCLUSIVE_USER:
-		if (!xstrcasecmp(new_text, "yes")) {
+		if (!xstrncasecmp(new_text, "yes", 3)) {
 			part_msg->flags |= PART_FLAG_EXCLUSIVE_USER;
 			part_msg->flags &= (~PART_FLAG_EXC_USER_CLR);
-		} else if (!xstrcasecmp(new_text, "no")) {
+		} else if (!xstrncasecmp(new_text, "no", 2)) {
 			part_msg->flags &= (~PART_FLAG_EXCLUSIVE_USER);
 			part_msg->flags |= PART_FLAG_EXC_USER_CLR;
 		}
@@ -542,10 +542,10 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->grace_time = (uint32_t)(temp_int * 60);
 		break;
 	case SORTID_HIDDEN:
-		if (!xstrcasecmp(new_text, "yes")) {
+		if (!xstrncasecmp(new_text, "yes", 3)) {
 			part_msg->flags |= PART_FLAG_HIDDEN;
 			part_msg->flags &= (~PART_FLAG_HIDDEN_CLR);
-		} else if (!xstrcasecmp(new_text, "no")) {
+		} else if (!xstrncasecmp(new_text, "no", 2)) {
 			part_msg->flags &= (~PART_FLAG_HIDDEN);
 			part_msg->flags |= PART_FLAG_HIDDEN_CLR;
 		}
@@ -567,10 +567,10 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->max_time = (uint32_t)temp_int;
 		break;
 	case SORTID_POWER_DOWN_ON_IDLE:
-		if (!xstrcasecmp(new_text, "yes")) {
+		if (!xstrncasecmp(new_text, "yes", 3)) {
 			part_msg->flags |= PART_FLAG_PDOI;
 			part_msg->flags &= (~PART_FLAG_PDOI_CLR);
-		} else if (!xstrcasecmp(new_text, "no")) {
+		} else if (!xstrncasecmp(new_text, "no", 2)) {
 			part_msg->flags &= (~PART_FLAG_PDOI);
 			part_msg->flags |= PART_FLAG_PDOI_CLR;
 		}
@@ -642,25 +642,25 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		part_msg->max_nodes = (uint32_t)temp_int;
 		break;
 	case SORTID_ROOT:
-		if (!xstrcasecmp(new_text, "yes")) {
+		if (!xstrncasecmp(new_text, "yes", 3)) {
 			part_msg->flags |= PART_FLAG_ROOT_ONLY;
 			part_msg->flags &= (~PART_FLAG_ROOT_ONLY_CLR);
-		} else if (!xstrcasecmp(new_text, "no")) {
+		} else if (!xstrncasecmp(new_text, "no", 2)) {
 			part_msg->flags &= (~PART_FLAG_ROOT_ONLY);
 			part_msg->flags |= PART_FLAG_ROOT_ONLY_CLR;
 		}
 
-		type = "root";
+		type = "rootonly";
 		break;
 	case SORTID_OVER_SUBSCRIBE:
-		if (!xstrcasecmp(new_text, "yes")) {
+		if (!xstrncasecmp(new_text, "yes", 3)) {
 			part_msg->max_share = _set_part_over_subscribe_popup();
 		} else if (!xstrcasecmp(new_text, "exclusive")) {
 			part_msg->max_share = 0;
 		} else if (!xstrcasecmp(new_text, "force")) {
 			part_msg->max_share = _set_part_over_subscribe_popup()
 					      | SHARED_FORCE;
-		} else if (!xstrcasecmp(new_text, "no"))
+		} else if (!xstrncasecmp(new_text, "no", 2))
 			part_msg->max_share = 1;
 		else
 			goto return_error;
@@ -705,13 +705,13 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		type = "nodelist";
 		break;
 	case SORTID_PART_STATE:
-		if (!xstrcasecmp(new_text, "up"))
+		if (!xstrncasecmp(new_text, "up", 2))
 			part_msg->state_up = PARTITION_UP;
-		else if (!xstrcasecmp(new_text, "down"))
+		else if (!xstrncasecmp(new_text, "down", 4))
 			part_msg->state_up = PARTITION_DOWN;
-		else if (!xstrcasecmp(new_text, "inactive"))
+		else if (!xstrncasecmp(new_text, "inactive", 8))
 			part_msg->state_up = PARTITION_INACTIVE;
-		else if (!xstrcasecmp(new_text, "drain"))
+		else if (!xstrncasecmp(new_text, "drain", 5))
 			part_msg->state_up = PARTITION_DRAIN;
 		else
 			goto return_error;
@@ -2225,22 +2225,14 @@ static GtkListStore *_create_model_part2(int type)
 	case SORTID_EXCLUSIVE_USER:
 	case SORTID_HIDDEN:
 	case SORTID_POWER_DOWN_ON_IDLE:
-		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "no (default)", 1, SORTID_DEFAULT, -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   0, "yes", 1, SORTID_DEFAULT, -1);
-		break;
 	case SORTID_ROOT:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "yes (default)", 1, SORTID_DEFAULT, -1);
+				   0, "no (default)", 1, type, -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "no", 1, SORTID_DEFAULT, -1);
+				   0, "yes", 1, type, -1);
 		break;
 	case SORTID_OVER_SUBSCRIBE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
