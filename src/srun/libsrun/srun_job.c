@@ -671,7 +671,7 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 		      bool handle_signals)
 {
 	bool het_job_fini = false;
-	int i, het_job_argc, het_job_inx, het_job_argc_off;
+	int i, het_job_argc, het_job_argc_off;
 	char **het_job_argv;
 
 	/*
@@ -703,7 +703,7 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 
 	het_job_argc = argc;
 	het_job_argv = argv;
-	for (het_job_inx = 0; !het_job_fini; het_job_inx++) {
+	while (!het_job_fini) {
 		het_job_argc_off = -1;
 		if (initialize_and_process_args(het_job_argc, het_job_argv,
 						&het_job_argc_off) < 0) {
