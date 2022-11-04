@@ -664,7 +664,7 @@ static void _build_full_nid_string(void)
 	node_record_t *node_ptr;
 	hostset_t hs = NULL;
 	char *sep, *tmp_str;
-	int i, num_ent = 0;
+	int i;
 
 	if (full_nid_string)
 		return;
@@ -677,7 +677,6 @@ static void _build_full_nid_string(void)
 			hs = hostset_create(_node_name2nid(node_ptr->name));
 		else
 			hostset_insert(hs, _node_name2nid(node_ptr->name));
-		num_ent++;
 	}
 	unlock_slurmctld(read_node_lock);
 	if (!hs) {
