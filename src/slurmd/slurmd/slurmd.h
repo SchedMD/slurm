@@ -184,4 +184,10 @@ void slurmd_shutdown(int signum);
 /* Handler for debug level update */
 extern void update_slurmd_logging(log_level_t log_lvl);
 
+/*
+ * Build a slurmd configuration buffer _once_ for sending to slurmstepd
+ * This must happen after all configuration is available, including topology
+ */
+extern void build_conf_buf(void);
+
 #endif /* !_SLURMD_H */

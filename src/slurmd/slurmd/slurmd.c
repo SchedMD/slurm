@@ -1153,7 +1153,7 @@ _read_config(void)
  * Build a slurmd configuration buffer _once_ for sending to slurmstepd
  * This must happen after all configuration is available, including topology
  */
-static void _build_conf_buf(void)
+extern void build_conf_buf(void)
 {
 	slurm_mutex_lock(&conf->config_mutex);
 	FREE_NULL_BUFFER(conf->buf);
@@ -1223,7 +1223,7 @@ _reconfigure(void)
 	_dynamic_reconfig();
 	_load_gres();
 
-	_build_conf_buf();
+	build_conf_buf();
 
 	slurm_mutex_lock(&cached_features_mutex);
 	refresh_cached_features = true;
@@ -2020,7 +2020,7 @@ _slurmd_init(void)
 	rehash_node();
 	slurm_topo_build_config();
 	_set_topo_info();
-	_build_conf_buf();
+	build_conf_buf();
 	route_init();
 
 	/*

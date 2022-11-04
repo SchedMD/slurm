@@ -178,6 +178,7 @@ static void _rpc_reattach_tasks(slurm_msg_t *);
 static void _rpc_suspend_job(slurm_msg_t *msg);
 static void _rpc_terminate_job(slurm_msg_t *);
 static void _rpc_shutdown(slurm_msg_t *msg);
+static void _rpc_set_slurmd_debug(slurm_msg_t *msg);
 static void _rpc_reconfig(slurm_msg_t *msg);
 static void _rpc_reconfig_with_config(slurm_msg_t *msg);
 static void _rpc_reboot(slurm_msg_t *msg);
@@ -341,6 +342,9 @@ slurmd_req(slurm_msg_t *msg)
 	case REQUEST_RECONFIGURE:
 		_rpc_reconfig(msg);
 		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_SET_DEBUG_LEVEL:
+		_rpc_set_slurmd_debug(msg);
 		break;
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
 		_rpc_reconfig_with_config(msg);
@@ -2749,6 +2753,24 @@ _rpc_reconfig(slurm_msg_t *msg)
 		kill(conf->pid, SIGHUP);
 	forward_wait(msg);
 	/* Never return a message, slurmctld does not expect one */
+}
+
+static void _rpc_set_slurmd_debug(slurm_msg_t *msg)
+{
+	set_debug_level_msg_t *request_msg = msg->data;
+	int rc = SLURM_SUCCESS;
+
+	if (!_slurm_authorized_user(msg->auth_uid)) {
+		error("Security violation, %s from uid %u",
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;
+	} else {
+		update_slurmd_logging(request_msg->debug_level);
+		build_conf_buf();
+	}
+
+	forward_wait(msg);
+	slurm_send_rc_msg(msg, rc);
 }
 
 static void _rpc_reconfig_with_config(slurm_msg_t *msg)
