@@ -1163,7 +1163,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 			const char *node_name)
 {
 	char *tmp = NULL;
-	uint32_t num_cpus = 0;
 	int i;
 	slurm_step_layout_t *step_layout = NULL;
 	uint16_t cpus_per_task;
@@ -1184,7 +1183,6 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	 */
 	for (i = 0; i < batch->num_cpu_groups; i++) {
 		step_layout_req.num_hosts += batch->cpu_count_reps[i];
-		num_cpus += batch->cpu_count_reps[i] * batch->cpus_per_node[i];
 	}
 
 	env_array_overwrite_fmt(dest, "SLURM_CLUSTER_NAME", "%s",
