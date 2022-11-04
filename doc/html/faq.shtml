@@ -264,7 +264,7 @@ user's job.
 The Slurm daemons running on the allocated nodes then try to establish
 identical resource limits for the job being initiated.
 There are several possible reasons for not being able to establish those
-resource limits.
+resource limits.</p>
 <ul>
 <li>The hard resource limits applied to Slurm's slurmd daemon are lower
 than the user's soft resources limits on the submit host. Typically
@@ -280,7 +280,6 @@ within a cluster to prevent this from occurring.</li>
 <li>PropagateResourceLimits or PropagateResourceLimitsExcept parameters are
 configured in slurm.conf and avoid propagation of specified limits.</li>
 </ul>
-</p>
 <p>NOTE: This may produce the error message &quot;Can't propagate RLIMIT_...&quot;.
 The error message is printed only if the user explicitly specifies that
 the resource limit should be propagated or the srun command is running
@@ -309,7 +308,9 @@ backfill</a> section for more details. For any scheduler, you can check prioriti
 of jobs using the command <span class="commandline">scontrol show job</span>.
 Other reasons can include waiting for resources, memory, qos, reservations, etc.
 As a guideline, issue an <span class="commandline">scontrol show job &lt;jobid&gt;</span>
-and look at the field <i>State</i> and <i>Reason</i> to investigate the cause.</p></p>
+and look at the field <i>State</i> and <i>Reason</i> to investigate the cause.
+A full list and explanation of the different Reasons can be found in the
+<a href="resource_limits.html#reasons">resource limits</a> page.</p>
 
 <p><a id="sharing"><b>Why does the srun --overcommit option not permit multiple jobs
 to run on nodes?</b></a><br>
@@ -710,7 +711,6 @@ $ srun -n &lt;tasks&gt; ./fluent-srun.sh
 
 <p><a id="req"><b>How can a job in a complete or failed state be requeued?</b></a>
 <br>
-<p>
 Slurm supports requeuing jobs in a done or failed state. Use the
 command:</p>
 <p><b>scontrol requeue job_id</b></p>
@@ -751,8 +751,6 @@ $ squeue
     JOBID PARTITION  NAME     USER ST       TIME  NODES NODELIST(REASON)
     10      mira    zoppo    david PD       0:00      1 (JobHeldUser)
 </pre>
-
-</p>
 
 <p><a id="cpu_count"><b>Slurm documentation refers to CPUs, cores and threads.
 What exactly is considered a CPU?</b></a><br>
@@ -1483,19 +1481,19 @@ localhost, but not the actual name of the node.</p>
 <p><a id="stop_sched"><b>How can I stop Slurm from scheduling jobs?</b></a><br>
 You can stop Slurm from scheduling jobs on a per partition basis by setting
 that partition's state to DOWN. Set its state UP to resume scheduling.
-For example:
+For example:</p>
 <pre>
 $ scontrol update PartitionName=foo State=DOWN
 $ scontrol update PartitionName=bar State=UP
-</pre></p>
+</pre>
 
 <p><a id="scontrol_multi_jobs"><b>Can I update multiple jobs with a
 single <i>scontrol</i> command?</b></a><br>
 No, but you can probably use <i>squeue</i> to build the script taking
-advantage of its filtering and formatting options. For example:
+advantage of its filtering and formatting options. For example:</p>
 <pre>
 $ squeue -tpd -h -o "scontrol update jobid=%i priority=1000" >my.script
-</pre></p>
+</pre>
 
 <p><a id="amazon_ec2"><b>Can Slurm be used to run jobs on
 Amazon's EC2?</b></a><br>
@@ -1547,7 +1545,7 @@ as that described above for the slurmd daemon. If it is running in an
 unprivileged phase, it will be in the spawned job's working directory.</p>
 
 
-<p>Nevertheless, in some operating systems this can vary:
+<p>Nevertheless, in some operating systems this can vary:</p>
 <ul>
 <li>
 I.e. in RHEL the event
@@ -1559,7 +1557,6 @@ In Cray XC ATP
 (Abnormal Termination Processing) daemon acts the same way, if it is enabled.
 </li>
 </ul>
-</p>
 
 <p>Normally, distributions need some more tweaking in order to allow the core
 files to be generated correctly.</p>
@@ -1635,7 +1632,7 @@ system, get sure it is allowing to dump cores:</p>
 <p><a id="totalview"><b>How can TotalView be configured to operate with
   Slurm?</b></a><br>
 The following lines should also be added to the global <i>.tvdrc</i> file
-for TotalView to operate with Slurm:
+for TotalView to operate with Slurm:</p>
 <pre>
 # Enable debug server bulk launch: Checked
 dset -set_as_default TV::bulk_launch_enabled true
@@ -1653,7 +1650,7 @@ dset -set_as_default TV::bulk_launch_string {srun --mem-per-cpu=0 -N%N -n%N -w`a
 # fully qualified hostnames, list the hostnames in %t1 here, and use
 # awk in the launch string above to strip away domain name suffixes.
 dset -set_as_default TV::bulk_launch_tmpfile1_host_lines {%R}
-</pre></p>
+</pre>
 <!-- OLD FORMAT
 dset TV::parallel_configs {
 	name: Slurm;
@@ -1706,7 +1703,7 @@ to rebuild all of those bitmaps, which the developers feel would be safer to do 
 restarting the daemon. Communications from the slurmd daemons on the compute
 nodes to the slurmctld daemon include a configuration file checksum, so you
 probably also want to maintain a common slurm.conf file on all nodes. The
-following procedure is recommended:
+following procedure is recommended:</p>
 <ol>
 <li>Stop the slurmctld daemon (e.g. "systemctl stop slurmctld" on the head node)</li>
 <li>Update the slurm.conf file on all nodes in the cluster</li>
@@ -1716,23 +1713,21 @@ following procedure is recommended:
 
 <p>NOTE: Jobs submitted with srun, and that are waiting for an allocation,
 prior to new nodes being added to the slurm.conf can fail if the job is
-allocated one of the new nodes.
+allocated one of the new nodes.</p>
 
 <p><a id="rem_nodes"><b>What process should I follow to remove nodes from Slurm?</b></a><br>
 To safely remove a node from a system, it's best to drain the node of all jobs.
 This ensures that job processes aren't running on the node after removal. On
 restart of the controller, if a node is removed from a running job the
 controller will kill the job on any remaining allocated nodes and attempt to
-requeue the job if possible. The following procedure is recommended:
-
+requeue the job if possible. The following procedure is recommended:</p>
 <ol>
-<li>Drain node of all jobs (e.g. "scontrol update nodenname=<nodes> state=drain reason="removing nodes")</li>
+<li>Drain node of all jobs (e.g. "scontrol update nodename='%N' state=drain reason='removing nodes'")</li>
 <li>Stop the slurmctld daemon (e.g. "systemctl stop slurmctld" on the head node)</li>
 <li>Update the slurm.conf file on all nodes in the cluster</li>
 <li>Restart the slurmd daemons on all nodes (e.g. "systemctl restart slurmd" on all nodes)</li>
 <li>Restart the slurmctld daemon (e.g. "systemctl start slurmctld" on the head node)</li>
 </ol>
-</p>
 
 <p><a id="licenses"><b>Can Slurm be configured to manage licenses?</b></a><br>
 Slurm is not currently integrated with FlexLM, but it does provide for the
@@ -1799,13 +1794,14 @@ also cache all user limits and fair share information.</li>
 <li>You cannot use NDB, since SlurmDBD's MySQL implementation uses keys on BLOB
 values (and potentially other features on the incompatibility list).</li>
 <li>You can set up "classical" Linux HA, with heartbeat/corosync to migrate IP
-between primary/backup mysql servers and:</li>
+between primary/backup mysql servers and:
 <ul>
 <li>Configure one way replication of mysql, and change primary/backup roles on
 failure</li>
 <li>Use shared storage for primary/backup mysql servers database, and start
 backup on primary mysql failure.</li>
 </ul>
+</li>
 </ul>
 
 <p><a id="sql"><b>How can I use double quotes in MySQL queries?</b></a><br>
@@ -2169,14 +2165,18 @@ System V IPC</a> (a.k.a. "sysv ipc" in the Linux kernel).
 Memory accounting of processes using sysv ipc changes depending on the value
 of <a href="https://www.kernel.org/doc/Documentation/sysctl/kernel.txt">
 sysctl kernel.shm_rmid_forced</a> (added in Linux kernel 3.1):
+</p>
 <ul>
-<li>shm_rmid_forced = 1</li>
+<li>shm_rmid_forced = 1
+<br>
 Forces all shared memory usage of processes to be accounted and reported by the
 kernel to Slurm. This breaks the separate namespace of sysv ipc and may cause
 unexpected application issues without careful planning. Processes that share
 the same sysv ipc namespaces across jobs may end up getting OOM killed when
 another job ends and their allocation percentage increases.
-<li>shm_rmid_forced = 0 (default in most Linux distributions)</li>
+</li>
+<li>shm_rmid_forced = 0 (default in most Linux distributions)
+<br>
 System V memory usage will not be reported by Slurm for jobs.
 It is generally suggested to configure the
 <a href="https://www.kernel.org/doc/Documentation/sysctl/kernel.txt">
@@ -2189,8 +2189,8 @@ processes use sysv memory mechanisms, the Linux kernel OOM killer will never
 be able to free the used memory. A Slurm job epilog script will be needed to
 free any of the user memory. Setting kernel.shmmax=0 will disable sysv ipc
 memory allocations but may cause application issues.
+</li>
 </ul>
-</p>
 
 <p><a id="opencl_pmix"><b>Why is Multi-Instance GPU not working with Slurm and
     PMIx, and complaining about GPUs being 'In use by another client'?</b></a>
@@ -2202,12 +2202,12 @@ Infiniband HCAs. With the above mentioned features, hwloc defaults to
 querying the OpenCL devices, which creates handles on <i>/dev/nvidia*</i> files.
 These handles are kept by slurmstepd and will result in the following error
 inside a job:
-<br/>
+</p>
 <pre>
 $ nvidia-smi mig --id 1 --create-gpu-instance FOO,FOO --default-compute-instance
 Unable to create a GPU instance on GPU 1 using profile FOO: In use by another client
 </pre>
-
+<p>
 In order to use Multi-Instance GPUs with Slurm and PMIx you can instruct hwloc
 to not query OpenCL devices by setting the
 <span class="commandline">HWLOC_COMPONENTS=-opencl</span> environment
@@ -2261,7 +2261,6 @@ but can be disabled explicitly by appending <i>join_container=false</i> as shown
 <pre>
 account	sufficient  pam_slurm_adopt.so join_container=false
 </pre>
-</p>
 
 <p><a id="json_serializer"><b>Why am I getting the following error: "Unable to
     find plugin: serializer/json"?</b></a>
@@ -2270,9 +2269,11 @@ Several parts of Slurm have swapped to using our centralized serializer
 code. JSON or YAML plugins are only required if one of the functions that
 require it is executed. If one of the functions is executed it will fail to
 create the JSON/YAML output and the linker will fail with the following error:
+</p>
 <pre>
 slurmctld: fatal: Unable to find plugin: serializer/json
 </pre>
+<p>
 In most cases, these are required for new functionality added after Slurm-20.02.
 However, with each release, we have been adding more places that use the
 serializer plugins. Because the list is evolving we do not plan on listing all
@@ -2280,9 +2281,11 @@ the commands that require the plugins but will instead provide the error
 (shown above). To correct the issue, please make sure that Slurm is configured,
 compiled and installed with the relavent JSON or YAML library (or preferably
 both). Configure can be made to explicity request these libraries:
+</p>
 <pre>
 ./configure --with-json=PATH --with-yaml=PATH $@
 </pre>
+<p>
 Most distributions include packages to make installation relatively easy.
 Please make sure to install the 'dev' or 'devel' packages along with the
 library packages. We also provide explicit instructions on how to install from
@@ -2298,12 +2301,11 @@ supported or maintained by SchedMD, and is not recommend for customers at this
 time. If you are using the EPEL repo you could be offered an update for Slurm
 that you may not anticipate. In order to prevent Slurm from being upgraded
 unintentionally, we recommend you modify the EPEL repository configuration file
-to exclude all Slurm packages from automatic updates.
+to exclude all Slurm packages from automatic updates.</p>
 <pre>
 exclude=slurm*
 </pre>
-</p>
 
-<p style="text-align:center;">Last modified 3 May 2022</p>
+<p style="text-align:center;">Last modified 02 November 2022</p>
 
 <!--#include virtual="footer.txt"-->
