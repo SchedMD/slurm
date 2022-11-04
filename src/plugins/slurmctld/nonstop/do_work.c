@@ -687,7 +687,6 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
 	uint32_t job_id;
 	char *sep1;
 	char *resp = NULL;
-	int fail_cnt = 0;
 	int state_flags;
 
 	sep1 = cmd_ptr + 21;
@@ -723,7 +722,6 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
 		     i++) {
 			if (!IS_NODE_FAIL(node_ptr))
 				continue;
-			fail_cnt++;
 			/* Format: nodename number_of_cpus state */
 			xstrfmtcat(resp, "%s %u %u ",
 				   node_ptr->name,
