@@ -78,6 +78,8 @@ strong_alias(init_node_conf, slurm_init_node_conf);
 strong_alias(build_all_nodeline_info, slurm_build_all_nodeline_info);
 strong_alias(rehash_node, slurm_rehash_node);
 strong_alias(hostlist2bitmap, slurm_hostlist2bitmap);
+strong_alias(bitmap2node_name, slurm_bitmap2node_name);
+strong_alias(find_node_record, slurm_find_node_record);
 
 /* Global variables */
 List config_list  = NULL;	/* list of config_record entries */

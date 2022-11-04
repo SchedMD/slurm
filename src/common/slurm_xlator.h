@@ -272,6 +272,8 @@
 #define build_all_nodeline_info slurm_build_all_nodeline_info
 #define rehash_node		slurm_rehash_node
 #define hostlist2bitmap		slurm_hostlist2bitmap
+#define bitmap2node_name	slurm_bitmap2node_name
+#define find_node_record	slurm_find_node_record
 
 /* pack.[ch] functions */
 #define	create_buf		slurm_create_buf
