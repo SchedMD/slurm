@@ -43,7 +43,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmd/common/job_container_plugin.h"
+#include "src/interfaces/job_container.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 

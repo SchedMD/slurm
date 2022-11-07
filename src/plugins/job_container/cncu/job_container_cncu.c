@@ -52,7 +52,7 @@
 #include "src/common/read_config.h"
 #include "src/common/timers.h"
 #include "src/common/xstring.h"
-#include "src/slurmd/common/proctrack.h"
+#include "src/interfaces/proctrack.h"
 
 #define ADD_FLAGS	0
 #define CREATE_FLAGS	0

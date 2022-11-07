@@ -49,7 +49,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmd/common/task_plugin.h"
+#include "src/interfaces/task.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 

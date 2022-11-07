@@ -103,13 +103,13 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 
-#include "src/slurmd/common/core_spec_plugin.h"
+#include "src/interfaces/core_spec.h"
 #include "src/slurmd/common/fname.h"
-#include "src/slurmd/common/job_container_plugin.h"
-#include "src/slurmd/common/proctrack.h"
+#include "src/interfaces/job_container.h"
+#include "src/interfaces/proctrack.h"
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
-#include "src/slurmd/common/task_plugin.h"
+#include "src/interfaces/task.h"
 #include "src/slurmd/common/xcpuinfo.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd.h"

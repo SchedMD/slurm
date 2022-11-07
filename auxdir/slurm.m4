@@ -109,6 +109,7 @@ AC_DEFUN([X_AC_LIBSLURM], [
   if test "$x_ac_shared_libslurm" = no; then
     LIB_SLURM_BUILD='$(top_builddir)/src/api/libslurm.o'
     SLURMCTLD_INTERFACES='$(top_builddir)/src/interfaces/libslurmctld_interfaces.o'
+    SLURMD_INTERFACES='$(top_builddir)/src/interfaces/libslurmd_interfaces.o'
     LIB_SLURM=$LIB_SLURM_BUILD
     AC_MSG_RESULT([static]);
   else
@@ -116,6 +117,7 @@ AC_DEFUN([X_AC_LIBSLURM], [
     # compiling the bin
     LIB_SLURM_BUILD='$(top_builddir)/src/api/full_version.map $(top_builddir)/src/api/libslurmfull.la'
     SLURMCTLD_INTERFACES='$(top_builddir)/src/interfaces/libslurmctld_interfaces.la'
+    SLURMD_INTERFACES='$(top_builddir)/src/interfaces/libslurmd_interfaces.la'
     # You will notice " or ' each does something different when resolving
     # variables.  Some need to be resolved now ($libdir) and others
     # ($(top_builddir)) need to be resolved when dealing with the Makefile.am's
@@ -127,6 +129,7 @@ AC_DEFUN([X_AC_LIBSLURM], [
   AC_SUBST(LIB_SLURM)
   AC_SUBST(LIB_SLURM_BUILD)
   AC_SUBST(SLURMCTLD_INTERFACES)
+  AC_SUBST(SLURMD_INTERFACES)
 ])
 
 dnl

@@ -61,7 +61,7 @@
 #include "src/common/macros.h"
 #include "src/common/timers.h"
 
-#include "src/slurmd/common/proctrack.h"
+#include "src/interfaces/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /* These are defined here so when we link with something other than

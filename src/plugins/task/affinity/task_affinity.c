@@ -52,7 +52,7 @@
 #include "affinity.h"
 #include "dist_tasks.h"
 
-#include "src/slurmd/common/task_plugin.h"
+#include "src/interfaces/task.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

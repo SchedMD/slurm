@@ -65,8 +65,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmd/common/core_spec_plugin.h"
-#include "src/slurmd/common/proctrack.h"
+#include "src/interfaces/core_spec.h"
+#include "src/interfaces/proctrack.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/mgr.h"
@@ -76,8 +76,8 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 
-#include "src/slurmd/common/task_plugin.h"
-#include "src/slurmd/common/job_container_plugin.h"
+#include "src/interfaces/task.h"
+#include "src/interfaces/job_container.h"
 
 static void *_handle_accept(void *arg);
 static int _handle_request(int fd, stepd_step_rec_t *step,

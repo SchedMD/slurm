@@ -46,7 +46,7 @@
 #include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/slurmd/common/proctrack.h"
+#include "src/interfaces/proctrack.h"
 #include "src/interfaces/acct_gather_profile.h"
 
 #include <fcntl.h>

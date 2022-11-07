@@ -62,7 +62,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
-#include "src/slurmd/common/proctrack.h"
+#include "src/interfaces/proctrack.h"
 #include "hdf5_api.h"
 
 #define HDF5_CHUNK_SIZE 10

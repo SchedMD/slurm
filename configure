@@ -832,6 +832,7 @@ WITH_JSON_PARSER_FALSE
 WITH_JSON_PARSER_TRUE
 JSON_LDFLAGS
 JSON_CPPFLAGS
+SLURMD_INTERFACES
 SLURMCTLD_INTERFACES
 LIB_SLURM_BUILD
 LIB_SLURM
@@ -20204,6 +20205,7 @@ fi
   if test "$x_ac_shared_libslurm" = no; then
     LIB_SLURM_BUILD='$(top_builddir)/src/api/libslurm.o'
     SLURMCTLD_INTERFACES='$(top_builddir)/src/interfaces/libslurmctld_interfaces.o'
+    SLURMD_INTERFACES='$(top_builddir)/src/interfaces/libslurmd_interfaces.o'
     LIB_SLURM=$LIB_SLURM_BUILD
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: static" >&5
 printf "%s\n" "static" >&6; };
@@ -20212,6 +20214,7 @@ printf "%s\n" "static" >&6; };
     # compiling the bin
     LIB_SLURM_BUILD='$(top_builddir)/src/api/full_version.map $(top_builddir)/src/api/libslurmfull.la'
     SLURMCTLD_INTERFACES='$(top_builddir)/src/interfaces/libslurmctld_interfaces.la'
+    SLURMD_INTERFACES='$(top_builddir)/src/interfaces/libslurmd_interfaces.la'
     # You will notice " or ' each does something different when resolving
     # variables.  Some need to be resolved now ($libdir) and others
     # ($(top_builddir)) need to be resolved when dealing with the Makefile.am's
@@ -20220,6 +20223,7 @@ printf "%s\n" "static" >&6; };
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: shared" >&5
 printf "%s\n" "shared" >&6; };
   fi
+
 
 
 

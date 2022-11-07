@@ -57,7 +57,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/interfaces/ext_sensors.h"
 #include "src/common/xstring.h"
-#include "src/slurmd/common/proctrack.h"
+#include "src/interfaces/proctrack.h"
 
 #include <rrd.h>
 

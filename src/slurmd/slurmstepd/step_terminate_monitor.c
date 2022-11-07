@@ -38,7 +38,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/read_config.h"
-#include "src/slurmd/common/job_container_plugin.h"
+#include "src/interfaces/job_container.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 

@@ -55,7 +55,7 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/cgroup.h"
 #include "src/slurmd/common/xcpuinfo.h"
-#include "src/slurmd/common/task_plugin.h"
+#include "src/interfaces/task.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmd/slurmd.h"
 

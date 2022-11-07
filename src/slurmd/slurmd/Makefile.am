@@ -19,7 +19,7 @@ depend_ldflags += -Wl,--no-as-needed
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
 slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(NUMA_LIBS) \
-	$(depend_ldadd)
+	$(depend_ldadd) $(SLURMD_INTERFACES)
 
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(depend_ldflags)
 
@@ -30,7 +30,7 @@ SLURMD_SOURCES = \
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
 
-slurmd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
+slurmd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD) $(SLURMD_INTERFACES)
 
 force:
 $(slurmd_DEPENDENCIES) : force

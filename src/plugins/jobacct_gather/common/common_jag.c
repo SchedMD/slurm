@@ -55,7 +55,7 @@
 #include "src/interfaces/acct_gather_filesystem.h"
 #include "src/interfaces/acct_gather_interconnect.h"
 #include "src/common/xstring.h"
-#include "src/slurmd/common/proctrack.h"
+#include "src/interfaces/proctrack.h"
 
 #include "common_jag.h"
 

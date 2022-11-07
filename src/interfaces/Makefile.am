@@ -7,10 +7,15 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 # making a .la
 
-noinst_PROGRAMS = libcommon_interfaces.o libslurmctld_interfaces.o
+noinst_PROGRAMS = \
+	libcommon_interfaces.o \
+	libslurmctld_interfaces.o \
+	libslurmd_interfaces.o
+
 noinst_LTLIBRARIES = \
 	libcommon_interfaces.la \
-	libslurmctld_interfaces.la
+	libslurmctld_interfaces.la \
+	libslurmd_interfaces.la
 
 libcommon_interfaces_la_SOURCES =    \
 	accounting_storage.c			\
@@ -80,6 +85,16 @@ libslurmctld_interfaces_la_SOURCES =    \
 	slurmctld.c \
 	slurmctld.h
 
+libslurmd_interfaces_la_SOURCES =    \
+	core_spec.c \
+	core_spec.h \
+	job_container.c \
+	job_container.h \
+	proctrack.c \
+	proctrack.h \
+	task.c \
+	task.h
+
 # This was made so we could export all symbols from libcommon_interfaces
 # on multiple platforms
 libcommon_interfaces_o_SOURCES =
@@ -91,3 +106,9 @@ libcommon_interfaces.o$(EXEEXT) :  $(libcommon_interfaces_la_OBJECTS) $(libcommo
 libslurmctld_interfaces_o_SOURCES =
 libslurmctld_interfaces.o$(EXEEXT) :  $(libslurmctld_interfaces_la_OBJECTS) $(libslurmctld_interfaces_la_DEPENDENCIES)
 	$(LINK)  $(libslurmctld_interfaces_la_OBJECTS)
+
+# This was made so we could export all symbols from libslurmd_interfaces
+# on multiple platforms
+libslurmd_interfaces_o_SOURCES =
+libslurmd_interfaces.o$(EXEEXT) :  $(libslurmd_interfaces_la_OBJECTS) $(libslurmd_interfaces_la_DEPENDENCIES)
+	$(LINK)  $(libslurmd_interfaces_la_OBJECTS)

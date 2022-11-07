@@ -93,7 +93,8 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 noinst_PROGRAMS = libcommon_interfaces.o$(EXEEXT) \
-	libslurmctld_interfaces.o$(EXEEXT)
+	libslurmctld_interfaces.o$(EXEEXT) \
+	libslurmd_interfaces.o$(EXEEXT)
 subdir = src/interfaces
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -175,6 +176,11 @@ am_libslurmctld_interfaces_la_OBJECTS = burst_buffer.lo job_submit.lo \
 	preempt.lo sched_plugin.lo slurmctld.lo
 libslurmctld_interfaces_la_OBJECTS =  \
 	$(am_libslurmctld_interfaces_la_OBJECTS)
+libslurmd_interfaces_la_LIBADD =
+am_libslurmd_interfaces_la_OBJECTS = core_spec.lo job_container.lo \
+	proctrack.lo task.lo
+libslurmd_interfaces_la_OBJECTS =  \
+	$(am_libslurmd_interfaces_la_OBJECTS)
 am_libcommon_interfaces_o_OBJECTS =
 libcommon_interfaces_o_OBJECTS = $(am_libcommon_interfaces_o_OBJECTS)
 libcommon_interfaces_o_LDADD = $(LDADD)
@@ -182,6 +188,9 @@ am_libslurmctld_interfaces_o_OBJECTS =
 libslurmctld_interfaces_o_OBJECTS =  \
 	$(am_libslurmctld_interfaces_o_OBJECTS)
 libslurmctld_interfaces_o_LDADD = $(LDADD)
+am_libslurmd_interfaces_o_OBJECTS =
+libslurmd_interfaces_o_OBJECTS = $(am_libslurmd_interfaces_o_OBJECTS)
+libslurmd_interfaces_o_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -203,18 +212,19 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/acct_gather_interconnect.Plo \
 	./$(DEPDIR)/acct_gather_profile.Plo ./$(DEPDIR)/auth.Plo \
 	./$(DEPDIR)/burst_buffer.Plo ./$(DEPDIR)/cgroup.Plo \
-	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/cred.Plo \
-	./$(DEPDIR)/ext_sensors.Plo ./$(DEPDIR)/gpu.Plo \
-	./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
-	./$(DEPDIR)/job_submit.Plo ./$(DEPDIR)/jobacct_gather.Plo \
-	./$(DEPDIR)/jobcomp.Plo ./$(DEPDIR)/mcs.Plo \
-	./$(DEPDIR)/mpi.Plo ./$(DEPDIR)/node_features.Plo \
-	./$(DEPDIR)/openapi.Plo ./$(DEPDIR)/power.Plo \
-	./$(DEPDIR)/preempt.Plo ./$(DEPDIR)/prep.Plo \
-	./$(DEPDIR)/priority.Plo ./$(DEPDIR)/route.Plo \
+	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/core_spec.Plo \
+	./$(DEPDIR)/cred.Plo ./$(DEPDIR)/ext_sensors.Plo \
+	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
+	./$(DEPDIR)/job_container.Plo ./$(DEPDIR)/job_submit.Plo \
+	./$(DEPDIR)/jobacct_gather.Plo ./$(DEPDIR)/jobcomp.Plo \
+	./$(DEPDIR)/mcs.Plo ./$(DEPDIR)/mpi.Plo \
+	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/openapi.Plo \
+	./$(DEPDIR)/power.Plo ./$(DEPDIR)/preempt.Plo \
+	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/priority.Plo \
+	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/route.Plo \
 	./$(DEPDIR)/sched_plugin.Plo ./$(DEPDIR)/select.Plo \
 	./$(DEPDIR)/site_factor.Plo ./$(DEPDIR)/slurmctld.Plo \
-	./$(DEPDIR)/topology.Plo
+	./$(DEPDIR)/task.Plo ./$(DEPDIR)/topology.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -236,8 +246,10 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(libcommon_interfaces_la_SOURCES) \
 	$(libslurmctld_interfaces_la_SOURCES) \
+	$(libslurmd_interfaces_la_SOURCES) \
 	$(libcommon_interfaces_o_SOURCES) \
-	$(libslurmctld_interfaces_o_SOURCES)
+	$(libslurmctld_interfaces_o_SOURCES) \
+	$(libslurmd_interfaces_o_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -432,6 +444,7 @@ SLURMCTLD_INTERFACES = @SLURMCTLD_INTERFACES@
 SLURMCTLD_PORT = @SLURMCTLD_PORT@
 SLURMCTLD_PORT_COUNT = @SLURMCTLD_PORT_COUNT@
 SLURMDBD_PORT = @SLURMDBD_PORT@
+SLURMD_INTERFACES = @SLURMD_INTERFACES@
 SLURMD_PORT = @SLURMD_PORT@
 SLURMRESTD_PORT = @SLURMRESTD_PORT@
 SLURM_API_AGE = @SLURM_API_AGE@
@@ -528,7 +541,8 @@ CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir)
 noinst_LTLIBRARIES = \
 	libcommon_interfaces.la \
-	libslurmctld_interfaces.la
+	libslurmctld_interfaces.la \
+	libslurmd_interfaces.la
 
 libcommon_interfaces_la_SOURCES = \
 	accounting_storage.c			\
@@ -598,6 +612,16 @@ libslurmctld_interfaces_la_SOURCES = \
 	slurmctld.c \
 	slurmctld.h
 
+libslurmd_interfaces_la_SOURCES = \
+	core_spec.c \
+	core_spec.h \
+	job_container.c \
+	job_container.h \
+	proctrack.c \
+	proctrack.h \
+	task.c \
+	task.h
+
 
 # This was made so we could export all symbols from libcommon_interfaces
 # on multiple platforms
@@ -606,6 +630,10 @@ libcommon_interfaces_o_SOURCES =
 # This was made so we could export all symbols from libslurmctld_interfaces
 # on multiple platforms
 libslurmctld_interfaces_o_SOURCES = 
+
+# This was made so we could export all symbols from libslurmd_interfaces
+# on multiple platforms
+libslurmd_interfaces_o_SOURCES = 
 all: all-am
 
 .SUFFIXES:
@@ -666,6 +694,9 @@ libcommon_interfaces.la: $(libcommon_interfaces_la_OBJECTS) $(libcommon_interfac
 libslurmctld_interfaces.la: $(libslurmctld_interfaces_la_OBJECTS) $(libslurmctld_interfaces_la_DEPENDENCIES) $(EXTRA_libslurmctld_interfaces_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libslurmctld_interfaces_la_OBJECTS) $(libslurmctld_interfaces_la_LIBADD) $(LIBS)
 
+libslurmd_interfaces.la: $(libslurmd_interfaces_la_OBJECTS) $(libslurmd_interfaces_la_DEPENDENCIES) $(EXTRA_libslurmd_interfaces_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK)  $(libslurmd_interfaces_la_OBJECTS) $(libslurmd_interfaces_la_LIBADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -682,11 +713,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cgroup.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli_filter.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core_spec.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cred.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ext_sensors.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpu.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_container.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_submit.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp.Plo@am__quote@ # am--include-marker
@@ -698,11 +731,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/preempt.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/priority.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/route.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_plugin.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/site_factor.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmctld.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topology.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -840,11 +875,13 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/burst_buffer.Plo
 	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
+	-rm -f ./$(DEPDIR)/core_spec.Plo
 	-rm -f ./$(DEPDIR)/cred.Plo
 	-rm -f ./$(DEPDIR)/ext_sensors.Plo
 	-rm -f ./$(DEPDIR)/gpu.Plo
 	-rm -f ./$(DEPDIR)/gres.Plo
 	-rm -f ./$(DEPDIR)/hash.Plo
+	-rm -f ./$(DEPDIR)/job_container.Plo
 	-rm -f ./$(DEPDIR)/job_submit.Plo
 	-rm -f ./$(DEPDIR)/jobacct_gather.Plo
 	-rm -f ./$(DEPDIR)/jobcomp.Plo
@@ -856,11 +893,13 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/preempt.Plo
 	-rm -f ./$(DEPDIR)/prep.Plo
 	-rm -f ./$(DEPDIR)/priority.Plo
+	-rm -f ./$(DEPDIR)/proctrack.Plo
 	-rm -f ./$(DEPDIR)/route.Plo
 	-rm -f ./$(DEPDIR)/sched_plugin.Plo
 	-rm -f ./$(DEPDIR)/select.Plo
 	-rm -f ./$(DEPDIR)/site_factor.Plo
 	-rm -f ./$(DEPDIR)/slurmctld.Plo
+	-rm -f ./$(DEPDIR)/task.Plo
 	-rm -f ./$(DEPDIR)/topology.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -917,11 +956,13 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/burst_buffer.Plo
 	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
+	-rm -f ./$(DEPDIR)/core_spec.Plo
 	-rm -f ./$(DEPDIR)/cred.Plo
 	-rm -f ./$(DEPDIR)/ext_sensors.Plo
 	-rm -f ./$(DEPDIR)/gpu.Plo
 	-rm -f ./$(DEPDIR)/gres.Plo
 	-rm -f ./$(DEPDIR)/hash.Plo
+	-rm -f ./$(DEPDIR)/job_container.Plo
 	-rm -f ./$(DEPDIR)/job_submit.Plo
 	-rm -f ./$(DEPDIR)/jobacct_gather.Plo
 	-rm -f ./$(DEPDIR)/jobcomp.Plo
@@ -933,11 +974,13 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/preempt.Plo
 	-rm -f ./$(DEPDIR)/prep.Plo
 	-rm -f ./$(DEPDIR)/priority.Plo
+	-rm -f ./$(DEPDIR)/proctrack.Plo
 	-rm -f ./$(DEPDIR)/route.Plo
 	-rm -f ./$(DEPDIR)/sched_plugin.Plo
 	-rm -f ./$(DEPDIR)/select.Plo
 	-rm -f ./$(DEPDIR)/site_factor.Plo
 	-rm -f ./$(DEPDIR)/slurmctld.Plo
+	-rm -f ./$(DEPDIR)/task.Plo
 	-rm -f ./$(DEPDIR)/topology.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
@@ -979,6 +1022,8 @@ libcommon_interfaces.o$(EXEEXT) :  $(libcommon_interfaces_la_OBJECTS) $(libcommo
 	$(LINK)  $(libcommon_interfaces_la_OBJECTS)
 libslurmctld_interfaces.o$(EXEEXT) :  $(libslurmctld_interfaces_la_OBJECTS) $(libslurmctld_interfaces_la_DEPENDENCIES)
 	$(LINK)  $(libslurmctld_interfaces_la_OBJECTS)
+libslurmd_interfaces.o$(EXEEXT) :  $(libslurmd_interfaces_la_OBJECTS) $(libslurmd_interfaces_la_DEPENDENCIES)
+	$(LINK)  $(libslurmd_interfaces_la_OBJECTS)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

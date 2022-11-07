@@ -107,10 +107,10 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 #include "src/slurmd/common/fname.h"
-#include "src/slurmd/common/job_container_plugin.h"
-#include "src/slurmd/common/proctrack.h"
+#include "src/interfaces/job_container.h"
+#include "src/interfaces/proctrack.h"
 #include "src/slurmd/common/slurmstepd_init.h"
-#include "src/slurmd/common/task_plugin.h"
+#include "src/interfaces/task.h"
 
 #define _LIMIT_INFO 0
 

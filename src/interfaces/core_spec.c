@@ -42,7 +42,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmd/common/core_spec_plugin.h"
+#include "src/interfaces/core_spec.h"
 
 
 typedef struct core_spec_ops {

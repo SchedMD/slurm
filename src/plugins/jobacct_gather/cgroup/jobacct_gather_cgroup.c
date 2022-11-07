@@ -47,7 +47,7 @@
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/cgroup.h"
-#include "src/slurmd/common/proctrack.h"
+#include "src/interfaces/proctrack.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/plugins/jobacct_gather/cgroup/jobacct_gather_cgroup.h"
