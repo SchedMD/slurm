@@ -7774,7 +7774,7 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max)
 {
 	char *end_ptr = NULL;
-	int i, first, last, step = 1;
+	long int i, first, last, step = 1;
 
 	if (tok[0] == '[')	/* Strip leading "[" */
 		tok++;
