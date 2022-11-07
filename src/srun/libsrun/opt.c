@@ -940,6 +940,10 @@ static bool _opt_verify(void)
 		sropt.slurmd_debug = LOG_LEVEL_DEBUG2;
 		info("Using max slurmd-debug value of '%s'",
 		     log_num2string(sropt.slurmd_debug));
+	} else if (sropt.slurmd_debug < LOG_LEVEL_ERROR) {
+		sropt.slurmd_debug = LOG_LEVEL_ERROR;
+		info("Using min slurmd-debug level of %s",
+		     log_num2string(sropt.slurmd_debug));
 	}
 
 	if (opt.quiet && opt.verbose) {
