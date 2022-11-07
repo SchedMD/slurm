@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
  -- gpu/nvml - Fix MIG minor number generation when GPU minor number
     (/dev/nvidia[minor_number]) and index (as seen in nvidia-smi) do not match.
  -- Fix accrue time underflow errors after slurmctld reconfig or restart.
+ -- Surpress errant errors from prolog_complete about being unable to locate
+    "node:(null)".
 
 * Changes in Slurm 22.05.5
 ==========================

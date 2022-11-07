@@ -6353,13 +6353,17 @@ extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
 		error("Prolog launch failure, %pJ", job_ptr);
 #ifndef HAVE_FRONT_END
 	if (job_ptr->node_bitmap_pr) {
-		node_record_t *node_ptr;
+		node_record_t *node_ptr = NULL;
 
-		node_ptr = find_node_record(node_name);
+		if (node_name)
+			node_ptr = find_node_record(node_name);
+
 		if (node_ptr) {
 			bit_clear(job_ptr->node_bitmap_pr, node_ptr->index);
 		} else {
-			error("%s: can't find node:%s", __func__, node_name);
+			if (node_name)
+				error("%s: can't find node:%s",
+				      __func__, node_name);
 			bit_clear_all(job_ptr->node_bitmap_pr);
 		}
 	}
