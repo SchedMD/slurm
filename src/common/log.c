@@ -1537,7 +1537,7 @@ extern void _log_flag_hex(const void *data, size_t len, const char *fmt, ...)
 {
 	va_list ap;
 	char *prepend;
-	static const int hex_cols = 16, hex_rows = 16;
+	static const int hex_cols = 16;
 
 	if (!data || !len)
 		return;
@@ -1546,7 +1546,7 @@ extern void _log_flag_hex(const void *data, size_t len, const char *fmt, ...)
 	prepend = vxstrfmt(fmt, ap);
 	va_end(ap);
 
-	for (int i = 0; (i < len) && (i < (hex_cols * hex_rows)); ) {
+	for (int i = 0; (i < len); ) {
 		int remain = len - i;
 		int print = (remain < hex_cols) ? remain : hex_cols;
 		char *phex = xstring_bytes2hex((data + i), print, " ");
