@@ -734,7 +734,7 @@ fini:
 	}
 	if (have_shared && running_in_slurmctld() &&
 	    (select_plugin_type != SELECT_TYPE_CONS_TRES)) {
-		fatal("Use of gres/mps requires the use of select/cons_tres");
+		fatal("Use of shared gres requires the use of select/cons_tres");
 	}
 
 	init_run = true;

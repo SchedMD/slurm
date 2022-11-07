@@ -126,10 +126,14 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			}
 		}
 
-		/* gres/'shared' can only use one GPU per node */
+		/* shared gres can only use one GPU per job */
 		if (gres_id_shared(gres_state_node->config_flags) &&
-		    (gres_state_node->config_flags & GRES_CONF_ONE_SHARING) &&
-		    (avail_gres > sock_gres->max_node_gres))
+		    (avail_gres > sock_gres->max_node_gres) &&
+		    !use_total_gres)
+			/*
+			 * Test use_total_gres so we don't reject shared gres
+			 * jobs as never runnable (see bug 15283)
+			 */
 			sock_gres->max_node_gres = avail_gres;
 
 		tot_cores = sockets * cores_per_sock;

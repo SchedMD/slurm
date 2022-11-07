@@ -169,6 +169,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix accrue time underflow errors after slurmctld reconfig or restart.
  -- Surpress errant errors from prolog_complete about being unable to locate
     "node:(null)".
+ -- Fix issue where shards were selected from multiple gpus and failed to
+    allocate.
 
 * Changes in Slurm 22.05.5
 ==========================
