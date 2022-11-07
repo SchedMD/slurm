@@ -3400,11 +3400,24 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
+
+		dep_job_ptr = _find_dependent_job_ptr(job_id, &array_task_id);
+
+		if (!dep_job_ptr &&
+		    ((depend_type == SLURM_DEPEND_AFTER_OK) ||
+		     (depend_type == SLURM_DEPEND_AFTER_NOT_OK))) {
+			/*
+			 * Reject the job since we won't be able to check if
+			 * job dependency was fulfilled or not.
+			 */
+			*rc = ESLURM_DEPENDENCY;
+			break;
+		}
+
 		/*
 		 * _find_dependent_job_ptr() may modify array_task_id, so check
 		 * if the job is the same after that.
 		 */
-		dep_job_ptr = _find_dependent_job_ptr(job_id, &array_task_id);
 		if (_depends_on_same_job(job_ptr, dep_job_ptr, job_id,
 					 array_task_id)) {
 			*rc = ESLURM_DEPENDENCY;

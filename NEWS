@@ -128,6 +128,8 @@ documents those changes that are of interest to users and administrators.
     on the slurmd processes to be temporarily altered.
  -- Add InfluxDBTimeout parameter to acct_gather.conf.
  -- job_container/tmpfs - add support for expanding %h and %n in BasePath.
+ -- Prevent job submission/update with afterok/afternotok dependency set to
+    an unknown jobid.
 
 * Changes in Slurm 22.05.6
 ==========================
