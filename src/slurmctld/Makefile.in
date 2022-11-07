@@ -156,18 +156,16 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
-	backup.$(OBJEXT) burst_buffer.$(OBJEXT) controller.$(OBJEXT) \
-	crontab.$(OBJEXT) fed_mgr.$(OBJEXT) front_end.$(OBJEXT) \
-	gang.$(OBJEXT) gres_ctld.$(OBJEXT) groups.$(OBJEXT) \
-	heartbeat.$(OBJEXT) job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) \
-	job_submit.$(OBJEXT) licenses.$(OBJEXT) locks.$(OBJEXT) \
-	node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
+	backup.$(OBJEXT) controller.$(OBJEXT) crontab.$(OBJEXT) \
+	fed_mgr.$(OBJEXT) front_end.$(OBJEXT) gang.$(OBJEXT) \
+	gres_ctld.$(OBJEXT) groups.$(OBJEXT) heartbeat.$(OBJEXT) \
+	job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) licenses.$(OBJEXT) \
+	locks.$(OBJEXT) node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
 	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
-	port_mgr.$(OBJEXT) power_save.$(OBJEXT) preempt.$(OBJEXT) \
+	port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
 	prep_slurmctld.$(OBJEXT) proc_req.$(OBJEXT) \
 	read_config.$(OBJEXT) reservation.$(OBJEXT) \
-	rpc_queue.$(OBJEXT) sched_plugin.$(OBJEXT) \
-	slurmctld_plugstack.$(OBJEXT) slurmscriptd.$(OBJEXT) \
+	rpc_queue.$(OBJEXT) slurmscriptd.$(OBJEXT) \
 	slurmscriptd_protocol_defs.$(OBJEXT) \
 	slurmscriptd_protocol_pack.$(OBJEXT) srun_comm.$(OBJEXT) \
 	state_save.$(OBJEXT) statistics.$(OBJEXT) step_mgr.$(OBJEXT) \
@@ -197,21 +195,19 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/acct_policy.Po ./$(DEPDIR)/agent.Po \
-	./$(DEPDIR)/backup.Po ./$(DEPDIR)/burst_buffer.Po \
-	./$(DEPDIR)/controller.Po ./$(DEPDIR)/crontab.Po \
-	./$(DEPDIR)/fed_mgr.Po ./$(DEPDIR)/front_end.Po \
-	./$(DEPDIR)/gang.Po ./$(DEPDIR)/gres_ctld.Po \
-	./$(DEPDIR)/groups.Po ./$(DEPDIR)/heartbeat.Po \
-	./$(DEPDIR)/job_mgr.Po ./$(DEPDIR)/job_scheduler.Po \
-	./$(DEPDIR)/job_submit.Po ./$(DEPDIR)/licenses.Po \
+	./$(DEPDIR)/backup.Po ./$(DEPDIR)/controller.Po \
+	./$(DEPDIR)/crontab.Po ./$(DEPDIR)/fed_mgr.Po \
+	./$(DEPDIR)/front_end.Po ./$(DEPDIR)/gang.Po \
+	./$(DEPDIR)/gres_ctld.Po ./$(DEPDIR)/groups.Po \
+	./$(DEPDIR)/heartbeat.Po ./$(DEPDIR)/job_mgr.Po \
+	./$(DEPDIR)/job_scheduler.Po ./$(DEPDIR)/licenses.Po \
 	./$(DEPDIR)/locks.Po ./$(DEPDIR)/node_mgr.Po \
 	./$(DEPDIR)/node_scheduler.Po ./$(DEPDIR)/partition_mgr.Po \
 	./$(DEPDIR)/ping_nodes.Po ./$(DEPDIR)/port_mgr.Po \
-	./$(DEPDIR)/power_save.Po ./$(DEPDIR)/preempt.Po \
-	./$(DEPDIR)/prep_slurmctld.Po ./$(DEPDIR)/proc_req.Po \
-	./$(DEPDIR)/read_config.Po ./$(DEPDIR)/reservation.Po \
-	./$(DEPDIR)/rpc_queue.Po ./$(DEPDIR)/sched_plugin.Po \
-	./$(DEPDIR)/slurmctld_plugstack.Po ./$(DEPDIR)/slurmscriptd.Po \
+	./$(DEPDIR)/power_save.Po ./$(DEPDIR)/prep_slurmctld.Po \
+	./$(DEPDIR)/proc_req.Po ./$(DEPDIR)/read_config.Po \
+	./$(DEPDIR)/reservation.Po ./$(DEPDIR)/rpc_queue.Po \
+	./$(DEPDIR)/slurmscriptd.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_defs.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_pack.Po \
 	./$(DEPDIR)/srun_comm.Po ./$(DEPDIR)/state_save.Po \
@@ -427,6 +423,7 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SLEEP_CMD = @SLEEP_CMD@
+SLURMCTLD_INTERFACES = @SLURMCTLD_INTERFACES@
 SLURMCTLD_PORT = @SLURMCTLD_PORT@
 SLURMCTLD_PORT_COUNT = @SLURMCTLD_PORT_COUNT@
 SLURMDBD_PORT = @SLURMDBD_PORT@
@@ -534,8 +531,6 @@ slurmctld_SOURCES = \
 	agent.c  	\
 	agent.h		\
 	backup.c	\
-	burst_buffer.c	\
-	burst_buffer.h	\
 	controller.c 	\
 	crontab.c 	\
 	fed_mgr.c 	\
@@ -553,8 +548,6 @@ slurmctld_SOURCES = \
 	job_mgr.c 	\
 	job_scheduler.c	\
 	job_scheduler.h	\
-	job_submit.c	\
-	job_submit.h	\
 	licenses.c	\
 	licenses.h	\
 	locks.c   	\
@@ -569,8 +562,6 @@ slurmctld_SOURCES = \
 	port_mgr.h	\
 	power_save.c	\
 	power_save.h	\
-	preempt.c	\
-	preempt.h	\
 	prep_slurmctld.c \
 	proc_req.c	\
 	proc_req.h	\
@@ -580,11 +571,7 @@ slurmctld_SOURCES = \
 	reservation.h	\
 	rpc_queue.c	\
 	rpc_queue.h	\
-	sched_plugin.c	\
-	sched_plugin.h	\
 	slurmctld.h	\
-	slurmctld_plugstack.c \
-	slurmctld_plugstack.h \
 	slurmscriptd.c \
 	slurmscriptd.h \
 	slurmscriptd_protocol_defs.c \
@@ -600,9 +587,9 @@ slurmctld_SOURCES = \
 	trigger_mgr.c	\
 	trigger_mgr.h
 
-slurmctld_LDADD = $(LIB_SLURM) $(DL_LIBS)
+slurmctld_LDADD = $(LIB_SLURM) $(DL_LIBS) $(SLURMCTLD_INTERFACES)
 slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
-slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD)
+slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES)
 all: all-am
 
 .SUFFIXES:
@@ -699,7 +686,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_policy.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agent.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backup.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/controller.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/crontab.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fed_mgr.Po@am__quote@ # am--include-marker
@@ -710,7 +696,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heartbeat.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_scheduler.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_submit.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/licenses.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/locks.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_mgr.Po@am__quote@ # am--include-marker
@@ -719,14 +704,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ping_nodes.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/port_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power_save.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/preempt.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep_slurmctld.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_req.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservation.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc_queue.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_plugin.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmctld_plugstack.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd_protocol_defs.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd_protocol_pack.Po@am__quote@ # am--include-marker
@@ -867,7 +849,6 @@ distclean: distclean-am
 		-rm -f ./$(DEPDIR)/acct_policy.Po
 	-rm -f ./$(DEPDIR)/agent.Po
 	-rm -f ./$(DEPDIR)/backup.Po
-	-rm -f ./$(DEPDIR)/burst_buffer.Po
 	-rm -f ./$(DEPDIR)/controller.Po
 	-rm -f ./$(DEPDIR)/crontab.Po
 	-rm -f ./$(DEPDIR)/fed_mgr.Po
@@ -878,7 +859,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/heartbeat.Po
 	-rm -f ./$(DEPDIR)/job_mgr.Po
 	-rm -f ./$(DEPDIR)/job_scheduler.Po
-	-rm -f ./$(DEPDIR)/job_submit.Po
 	-rm -f ./$(DEPDIR)/licenses.Po
 	-rm -f ./$(DEPDIR)/locks.Po
 	-rm -f ./$(DEPDIR)/node_mgr.Po
@@ -887,14 +867,11 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/ping_nodes.Po
 	-rm -f ./$(DEPDIR)/port_mgr.Po
 	-rm -f ./$(DEPDIR)/power_save.Po
-	-rm -f ./$(DEPDIR)/preempt.Po
 	-rm -f ./$(DEPDIR)/prep_slurmctld.Po
 	-rm -f ./$(DEPDIR)/proc_req.Po
 	-rm -f ./$(DEPDIR)/read_config.Po
 	-rm -f ./$(DEPDIR)/reservation.Po
 	-rm -f ./$(DEPDIR)/rpc_queue.Po
-	-rm -f ./$(DEPDIR)/sched_plugin.Po
-	-rm -f ./$(DEPDIR)/slurmctld_plugstack.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_defs.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_pack.Po
@@ -951,7 +928,6 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/acct_policy.Po
 	-rm -f ./$(DEPDIR)/agent.Po
 	-rm -f ./$(DEPDIR)/backup.Po
-	-rm -f ./$(DEPDIR)/burst_buffer.Po
 	-rm -f ./$(DEPDIR)/controller.Po
 	-rm -f ./$(DEPDIR)/crontab.Po
 	-rm -f ./$(DEPDIR)/fed_mgr.Po
@@ -962,7 +938,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/heartbeat.Po
 	-rm -f ./$(DEPDIR)/job_mgr.Po
 	-rm -f ./$(DEPDIR)/job_scheduler.Po
-	-rm -f ./$(DEPDIR)/job_submit.Po
 	-rm -f ./$(DEPDIR)/licenses.Po
 	-rm -f ./$(DEPDIR)/locks.Po
 	-rm -f ./$(DEPDIR)/node_mgr.Po
@@ -971,14 +946,11 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/ping_nodes.Po
 	-rm -f ./$(DEPDIR)/port_mgr.Po
 	-rm -f ./$(DEPDIR)/power_save.Po
-	-rm -f ./$(DEPDIR)/preempt.Po
 	-rm -f ./$(DEPDIR)/prep_slurmctld.Po
 	-rm -f ./$(DEPDIR)/proc_req.Po
 	-rm -f ./$(DEPDIR)/read_config.Po
 	-rm -f ./$(DEPDIR)/reservation.Po
 	-rm -f ./$(DEPDIR)/rpc_queue.Po
-	-rm -f ./$(DEPDIR)/sched_plugin.Po
-	-rm -f ./$(DEPDIR)/slurmctld_plugstack.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_defs.Po
 	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_pack.Po

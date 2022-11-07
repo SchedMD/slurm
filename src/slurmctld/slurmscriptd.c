@@ -60,7 +60,9 @@
 #include "src/common/track_script.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/slurmctld/burst_buffer.h"
+
+#include "src/interfaces/burst_buffer.h"
+
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"

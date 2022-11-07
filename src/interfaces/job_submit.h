@@ -41,6 +41,8 @@
 
 #include "slurm/slurm.h"
 
+#include "src/slurmctld/slurmctld.h"
+
 /*
  * Initialize the job submit plugin.
  *

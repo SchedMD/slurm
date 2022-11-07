@@ -37,10 +37,12 @@
 #include "src/common/slurm_xlator.h"	/* Must be first */
 
 #include "src/common/xstring.h"
+
+#include "src/interfaces/slurmctld.h"
+
 #include "src/plugins/slurmctld/nonstop/do_work.h"
 #include "src/plugins/slurmctld/nonstop/read_config.h"
 #include "src/plugins/slurmctld/nonstop/msg.h"
-#include "src/slurmctld/slurmctld_plugstack.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

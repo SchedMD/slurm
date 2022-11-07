@@ -39,11 +39,12 @@
 #include "gres_select_filter.h"
 #include "gres_select_util.h"
 
+#include "src/interfaces/preempt.h"
 #include "src/interfaces/select.h"
+
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/gres_ctld.h"
-#include "src/slurmctld/preempt.h"
 
 typedef struct {
 	int action;

@@ -1,10 +1,8 @@
 /*****************************************************************************\
- *  sched_plugin.h - Define scheduler plugin functions.
+ *  slurmctld.h - driver for slurmctld plugstack plugin
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Jay Windley <jwindley@lnxi.com>
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) 2012 SchedMD LLC
+ *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -36,35 +34,42 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_CONTROLLER_SCHED_PLUGIN_API_H__
-#define __SLURM_CONTROLLER_SCHED_PLUGIN_API_H__
+#ifndef _SLURMCTLD_PLUGSTACK_H
+#define _SLURMCTLD_PLUGSTACK_H
 
 #include "slurm/slurm.h"
 #include "src/slurmctld/slurmctld.h"
 
+/*****************************************************************************\
+ *  Plugin slurmctld/nonstop callback functions
+\*****************************************************************************/
+typedef struct slurm_nonstop_ops {
+	void		(*job_begin)	(job_record_t *job_ptr);
+	void		(*job_fini)	(job_record_t *job_ptr);
+	void		(*node_fail)	(job_record_t *job_ptr,
+					 node_record_t *node_ptr);
+} slurm_nonstop_ops_t;
+extern slurm_nonstop_ops_t nonstop_ops;
+
 /*
- * Initialize the sched plugin.
+ * Initialize the slurmctld plugstack plugin.
  *
  * Returns a Slurm errno.
  */
-extern int sched_g_init(void);
+extern int slurmctld_plugstack_init(void);
 
 /*
- * Terminate sched plugin, free memory.
+ * Terminate the slurmctld plugstack plugin. Free memory.
  *
  * Returns a Slurm errno.
  */
-extern int sched_g_fini(void);
+extern int slurmctld_plugstack_fini(void);
 
 /*
- **************************************************************************
- *                          P L U G I N   C A L L S                       *
- **************************************************************************
+ * Gets the configuration for all slurmctl plugins in a List in key,value format
+ *
+ * Returns a List or NULL.
  */
+extern List slurmctld_plugstack_g_get_config(void);
 
-/*
- * Perform reconfig, re-read any configuration files
- */
-extern int sched_g_reconfig(void);
-
-#endif /*__SLURM_CONTROLLER_SCHED_PLUGIN_API_H__*/
+#endif /* !_SLURMCTLD_PLUGSTACK_H */

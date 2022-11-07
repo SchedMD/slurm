@@ -7,9 +7,10 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 # making a .la
 
-noinst_PROGRAMS = libcommon_interfaces.o
+noinst_PROGRAMS = libcommon_interfaces.o libslurmctld_interfaces.o
 noinst_LTLIBRARIES = \
-	libcommon_interfaces.la
+	libcommon_interfaces.la \
+	libslurmctld_interfaces.la
 
 libcommon_interfaces_la_SOURCES =    \
 	accounting_storage.c			\
@@ -67,8 +68,26 @@ libcommon_interfaces_la_SOURCES =    \
 	topology.c				\
 	topology.h
 
+libslurmctld_interfaces_la_SOURCES =    \
+	burst_buffer.c	\
+	burst_buffer.h	\
+	job_submit.c	\
+	job_submit.h	\
+	preempt.c	\
+	preempt.h	\
+	sched_plugin.c	\
+	sched_plugin.h	\
+	slurmctld.c \
+	slurmctld.h
+
 # This was made so we could export all symbols from libcommon_interfaces
 # on multiple platforms
 libcommon_interfaces_o_SOURCES =
 libcommon_interfaces.o$(EXEEXT) :  $(libcommon_interfaces_la_OBJECTS) $(libcommon_interfaces_la_DEPENDENCIES)
 	$(LINK)  $(libcommon_interfaces_la_OBJECTS)
+
+# This was made so we could export all symbols from libslurmctld_interfaces
+# on multiple platforms
+libslurmctld_interfaces_o_SOURCES =
+libslurmctld_interfaces.o$(EXEEXT) :  $(libslurmctld_interfaces_la_OBJECTS) $(libslurmctld_interfaces_la_DEPENDENCIES)
+	$(LINK)  $(libslurmctld_interfaces_la_OBJECTS)

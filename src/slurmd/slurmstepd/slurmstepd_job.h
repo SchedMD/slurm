@@ -41,6 +41,13 @@
 #ifndef _SLURMSTEPD_JOB_H
 #define _SLURMSTEPD_JOB_H
 
+#ifdef __FreeBSD__
+#include <sys/cpuset.h>
+typedef cpuset_t cpu_set_t;
+#endif
+
+#define _GNU_SOURCE
+
 #include <pthread.h>
 #include <pwd.h>
 

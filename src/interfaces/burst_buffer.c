@@ -43,6 +43,8 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/interfaces/burst_buffer.h"
+
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -52,7 +54,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
-#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/reservation.h"
 

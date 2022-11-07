@@ -56,13 +56,14 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
-#include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmctld/burst_buffer.h"
+#include "src/interfaces/burst_buffer.h"
+#include "src/interfaces/select.h"
+
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/groups.h"
 #include "src/slurmctld/licenses.h"

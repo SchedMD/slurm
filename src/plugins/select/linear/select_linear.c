@@ -58,22 +58,23 @@
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/assoc_mgr.h"
-#include "src/interfaces/gres.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
-#include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/interfaces/topology.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/gres.h"
+#include "src/interfaces/preempt.h"
+#include "src/interfaces/select.h"
+#include "src/interfaces/topology.h"
+
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/gres_ctld.h"
-#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/plugins/select/linear/select_linear.h"
 

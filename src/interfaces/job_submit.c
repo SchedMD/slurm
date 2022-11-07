@@ -45,14 +45,16 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/interfaces/job_submit.h"
+
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/job_submit.h"
 #include "src/slurmctld/locks.h"
 
 typedef struct slurm_submit_ops {

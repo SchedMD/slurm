@@ -49,11 +49,13 @@
 #include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
-#include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/preempt.h"
+#include "src/interfaces/select.h"
+
 #include "src/slurmctld/locks.h"
-#include "src/slurmctld/preempt.h"
 #include "src/slurmctld/slurmctld.h"
 
 /* global timeslicer thread variables */

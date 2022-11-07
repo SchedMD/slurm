@@ -47,7 +47,9 @@
 #include "src/common/log.h"
 #include "src/common/plugin.h"
 #include "src/common/xstring.h"
-#include "src/slurmctld/preempt.h"
+
+#include "src/interfaces/preempt.h"
+
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
 

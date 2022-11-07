@@ -39,6 +39,8 @@
 
 #include <pthread.h>
 
+#include "src/interfaces/sched_plugin.h"
+
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
@@ -46,7 +48,6 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/gang.h"
-#include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct {

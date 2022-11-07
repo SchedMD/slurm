@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurmctld_plugstack.c - driver for slurmctld plugstack plugin
+ *  slurmctld.c - driver for slurmctld plugstack plugin
  *****************************************************************************
  *  Copyright (C) 2012 SchedMD LLC
  *  Written by Morris Jette <jette@schedmd.com>
@@ -43,6 +43,8 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/interfaces/slurmctld.h"
+
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -50,7 +52,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/slurmctld/slurmctld_plugstack.h"
 
 slurm_nonstop_ops_t nonstop_ops = { NULL, NULL, NULL };
 

@@ -15,8 +15,6 @@ slurmctld_SOURCES =     \
 	agent.c  	\
 	agent.h		\
 	backup.c	\
-	burst_buffer.c	\
-	burst_buffer.h	\
 	controller.c 	\
 	crontab.c 	\
 	fed_mgr.c 	\
@@ -34,8 +32,6 @@ slurmctld_SOURCES =     \
 	job_mgr.c 	\
 	job_scheduler.c	\
 	job_scheduler.h	\
-	job_submit.c	\
-	job_submit.h	\
 	licenses.c	\
 	licenses.h	\
 	locks.c   	\
@@ -50,8 +46,6 @@ slurmctld_SOURCES =     \
 	port_mgr.h	\
 	power_save.c	\
 	power_save.h	\
-	preempt.c	\
-	preempt.h	\
 	prep_slurmctld.c \
 	proc_req.c	\
 	proc_req.h	\
@@ -61,11 +55,7 @@ slurmctld_SOURCES =     \
 	reservation.h	\
 	rpc_queue.c	\
 	rpc_queue.h	\
-	sched_plugin.c	\
-	sched_plugin.h	\
 	slurmctld.h	\
-	slurmctld_plugstack.c \
-	slurmctld_plugstack.h \
 	slurmscriptd.c \
 	slurmscriptd.h \
 	slurmscriptd_protocol_defs.c \
@@ -84,10 +74,10 @@ slurmctld_SOURCES =     \
 
 sbin_PROGRAMS = slurmctld
 
-slurmctld_LDADD = $(LIB_SLURM) $(DL_LIBS)
+slurmctld_LDADD = $(LIB_SLURM) $(DL_LIBS) $(SLURMCTLD_INTERFACES)
 slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
-slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD)
+slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES)
 
 force:
 $(slurmctld_DEPENDENCIES) : force

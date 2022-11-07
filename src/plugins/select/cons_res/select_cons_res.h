@@ -47,18 +47,20 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/bitstring.h"
-#include "src/interfaces/gres.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
-#include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
-#include "src/interfaces/topology.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/slurmctld/preempt.h"
+
+#include "src/interfaces/gres.h"
+#include "src/interfaces/preempt.h"
+#include "src/interfaces/select.h"
+#include "src/interfaces/topology.h"
+
 #include "src/slurmctld/slurmctld.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
