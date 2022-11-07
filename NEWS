@@ -127,6 +127,7 @@ documents those changes that are of interest to users and administrators.
  -- Add a new "nodes=" argument to scontrol setdebug to allow the debug level
     on the slurmd processes to be temporarily altered.
  -- Add InfluxDBTimeout parameter to acct_gather.conf.
+ -- job_container/tmpfs - add support for expanding %h and %n in BasePath.
 
 * Changes in Slurm 22.05.6
 ==========================

@@ -84,17 +84,22 @@ static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
 				   const char *key, const char *value,
 				   const char *line, char **leftover)
 {
+	char *basepath = NULL;
 	int rc = 1;
 	s_p_hashtbl_t *tbl = _create_ns_hashtbl();
 	s_p_parse_line(tbl, *leftover, leftover);
 	if (value) {
-		slurm_jc_conf.basepath = xstrdup(value);
-	} else if (!s_p_get_string(&slurm_jc_conf.basepath, "BasePath", tbl)) {
+		basepath = xstrdup(value);
+	} else if (!s_p_get_string(&basepath, "BasePath", tbl)) {
 		fatal("empty basepath detected, please verify %s is correct",
 		      tmpfs_conf_file);
 		rc = 0;
 		goto end_it;
 	}
+
+	slurm_jc_conf.basepath = slurm_conf_expand_slurmd_path(basepath, NULL,
+							       conf->node_name);
+	xfree(basepath);
 
 #ifdef MULTIPLE_SLURMD
 	xstrfmtcat(slurm_jc_conf.basepath, "/%s", conf->node_name);

@@ -62,6 +62,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     EnforcePartLimits=no is set. This ensures consistency for all the Partition
     access controls, and matches the documented behavior for EnforcePartLimits.
  -- Add InfluxDBTimeout parameter to acct_gather.conf.
+ -- job_container/tmpfs - add support for expanding %h and %n in BasePath.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
