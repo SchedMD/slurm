@@ -822,8 +822,8 @@ static void _setdebug(int argc, char **argv)
 			return;
 		}
 
-		nodes = strchr(argv[2], '=');
-		nodes++;
+		if ((nodes = strchr(argv[2], '=')))
+			nodes++;
 
 		error_code = slurm_set_slurmd_debug_level(nodes, level);
 		if (error_code) {
