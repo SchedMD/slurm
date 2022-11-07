@@ -7793,7 +7793,7 @@ static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max)
 				end_ptr++;
 			if ((end_ptr[0] != '\0') && (end_ptr[0] != '%'))
 				return false;
-			if (step <= 0)
+			if ((step <= 0) || (step >= max))
 				return false;
 		} else if ((end_ptr[0] != '\0') && (end_ptr[0] != '%')) {
 			return false;
