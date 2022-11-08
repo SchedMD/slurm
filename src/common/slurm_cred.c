@@ -2564,6 +2564,18 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 		}
 	}
 
+	if (sbcast_cred->uid == SLURM_AUTH_NOBODY) {
+		error("%s: refusing to create bcast credential for invalid user nobody",
+		      __func__);
+		return NULL;
+	}
+
+	if (sbcast_cred->gid == SLURM_AUTH_NOBODY) {
+		error("%s: refusing to create bcast credential for invalid group nobody",
+		      __func__);
+		return NULL;
+	}
+
 	arg = xmalloc(sizeof(sbcast_cred_arg_t));
 	arg->job_id = sbcast_cred->jobid;
 	arg->step_id = sbcast_cred->step_id;
