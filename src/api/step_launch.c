@@ -248,7 +248,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	memcpy(&launch.step_id, &ctx->step_req->step_id,
 	       sizeof(launch.step_id));
 
-	if (ctx->step_resp && ctx->step_resp->cred) {
+	if (ctx->step_resp->cred) {
 		slurm_cred_arg_t *args = slurm_cred_get_args(ctx->step_resp->cred);
 		launch.uid = args->uid;
 		launch.gid = args->gid;
