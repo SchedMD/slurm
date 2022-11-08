@@ -138,11 +138,11 @@ proc test_out_file { file_out target } {
 	set match 0
 	spawn $bin_cat $file_out
 	expect {
-		-re "TRES=.*,gres/gpu=($number)" {
+		-re "AllocTRES=.*,gres/gpu=($number)" {
 			set match $expect_out(1,string)
 			exp_continue
 		}
-		-re "TRES=.*,gres/gpu:($re_word_str)=($number)" {
+		-re "AllocTRES=.*,gres/gpu:($re_word_str)=($number)" {
 			set match $expect_out(2,string)
 			exp_continue
 		}
@@ -258,11 +258,11 @@ set have_gpu_types 0
 set match 0
 spawn $bin_cat $file_out
 expect {
-	-re "TRES=.*,gres/gpu=($number)" {
+	-re "AllocTRES=.*,gres/gpu=($number)" {
 		set match $expect_out(1,string)
 		exp_continue
 	}
-	-re "TRES=.*,gres/gpu:($re_word_str)=($number)" {
+	-re "AllocTRES=.*,gres/gpu:($re_word_str)=($number)" {
 		if {$match == 0} {
 			set have_gpu_types 1
 			set match $expect_out(2,string)
