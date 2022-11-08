@@ -43,22 +43,25 @@ is no local configuration file on the compute node.</p>
 <p>The <b>--conf-server</b> options takes precedence over the DNS record.</p>
 
 <p>The command line option takes "$host[:$port]", so an example would look like:
+</p>
 <pre>
 slurmd --conf-server slurmctl-primary:6817
 </pre>
+<p>
 Specifying the port is optional and will default to 6817 if it is not present.
 Multiple slurmctlds can be specified as a comma-separated list, in priority
 order (highest to lowest).
+</p>
 <pre>
 slurmd --conf-server slurmctl-primary:6817,slurmctl-secondary
 </pre>
-</p>
 
-<p>The same information can be provided in a DNS SRV record. For example:
+<p>The same information can be provided in a DNS SRV record. For example:</p>
 <pre>
 _slurmctld._tcp 3600 IN SRV 10 0 6817 slurmctl-backup
 _slurmctld._tcp 3600 IN SRV 0 0 6817 slurmctl-primary
 </pre>
+<p>
 Will provide the required information to the slurmd on startup. As shown above,
 multiple SRV records can be specified if you have deployed Slurm in an HA
 setup. The DNS SRV entry with the lowest priority should be your primary
@@ -101,17 +104,17 @@ the parent config.
 <h2 id="NOTES">Notes<a class="slurm_link" href="#NOTES"></a></h2>
 
 <p>The order of precedence for determining what configuration source to use
-is as follows:
+is as follows:</p>
 <ol>
 <li>The slurmd --conf-server $host[:$port] option</li>
 <li>The -f $config_file option</li>
 <li>The SLURM_CONF environment variable (if set)</li>
 <li>The default slurm config file (likely /etc/slurm.conf)</li>
+<li>The SLURM_CONF_SERVER environment variable (if set)</li>
 <li>Any DNS SRV records (from lowest priority value to highest)</li>
 </ol>
-</p>
 
-<p>Supported configuration files are:
+<p>Supported configuration files are:</p>
 <ul>
 <li>slurm.conf</li>
 <li>acct_gather.conf</li>
@@ -128,8 +131,7 @@ is as follows:
 <li>plugstack.conf</li>
 <li>topology.conf</li>
 </ul>
-</p>
 
-<p style="text-align:center;">Last modified 24 May 2022</p>
+<p style="text-align:center;">Last modified 04 November 2022</p>
 
 <!--#include virtual="footer.txt"-->
