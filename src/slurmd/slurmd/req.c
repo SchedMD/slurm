@@ -2796,6 +2796,7 @@ static void _rpc_set_slurmd_debug_flags(slurm_msg_t *msg)
 		cf->debug_flags &= (~request_msg->debug_flags_minus);
 		cf->debug_flags |= request_msg->debug_flags_plus;
 		flag_string = debug_flags2str(cf->debug_flags);
+		build_conf_buf();
 		slurm_conf_unlock();
 		info("Set DebugFlags to %s",
 		     flag_string ? flag_string : "none");
