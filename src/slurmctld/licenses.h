@@ -62,7 +62,6 @@ typedef struct {
 } bf_license_t;
 
 extern List license_list;
-extern List clus_license_list;
 extern time_t last_license_update;
 
 /* Initialize licenses on this system based upon slurm.conf */
