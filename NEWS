@@ -173,6 +173,7 @@ documents those changes that are of interest to users and administrators.
     "node:(null)".
  -- Fix issue where shards were selected from multiple gpus and failed to
     allocate.
+ -- Fix step cpu count calculation when using --ntasks-per-gpu=.
 
 * Changes in Slurm 22.05.5
 ==========================
