@@ -2373,7 +2373,8 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			 * requested. Don't worry about cpus_alloc_mem, it's
 			 * already correct.
 			 */
-			if ((req_tpc != NO_VAL16) && (req_tpc < vpus)) {
+			if ((job_resrcs_ptr->cr_type & (CR_CORE | CR_SOCKET)) &&
+			    (req_tpc != NO_VAL16) && (req_tpc < vpus)) {
 				cpus_alloc += req_tpc - 1;
 				cpus_alloc /= req_tpc;
 				cpus_alloc *= vpus;
