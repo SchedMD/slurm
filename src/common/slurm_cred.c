@@ -115,7 +115,7 @@ struct sbcast_cred {
 	uint32_t het_job_id;	/* Slurm hetjob leader id for the job	*/
 	uint32_t step_id;	/* StepId				*/
 	uint32_t uid;		/* user for which this cred is valid	*/
-	uint32_t gid;		/* user's primary group id 		*/
+	uint32_t gid;		/* user's primary group id		*/
 	char *user_name;	/* user_name as a string		*/
 	uint32_t ngids;		/* number of extended group ids sent in
 				 * credential. if 0, these will need to
@@ -158,7 +158,7 @@ struct slurm_job_credential {
 	slurm_cred_arg_t *arg;	/* fields */
 
 	time_t ctime;		/* time of credential creation */
-	char *signature; 	/* credential signature */
+	char *signature;	/* credential signature */
 	uint32_t siglen;	/* signature length in bytes */
 	bool verified;		/* credential has been verified successfully */
 };
@@ -411,7 +411,7 @@ slurm_cred_creator_ctx_create(const char *path)
 
 	ctx->key = (*(ops.cred_read_private_key))(path);
 	if (!ctx->key)
- 		goto fail;
+		goto fail;
 
 	slurm_mutex_unlock(&ctx->mutex);
 	return ctx;
