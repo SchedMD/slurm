@@ -798,6 +798,14 @@ extern data_t *data_set_string(data_t *data, const char *value)
 		return NULL;
 	_release(data);
 
+	if (!value) {
+		log_flag(DATA, "%s: set data (0x%"PRIXPTR") to NULL string",
+		       __func__, (uintptr_t) data);
+
+		data->type = DATA_TYPE_NULL;
+		return data;
+	}
+
 	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to string: %s",
 	       __func__, (uintptr_t) data, value);
 
@@ -814,8 +822,13 @@ extern data_t *data_set_string_own(data_t *data, char *value)
 	if (!data)
 		return NULL;
 
-	if (!value)
-		return data_set_null(data);
+	if (!value) {
+		log_flag(DATA, "%s: set data (0x%"PRIXPTR") to NULL string",
+		       __func__, (uintptr_t) data);
+
+		data->type = DATA_TYPE_NULL;
+		return data;
+	}
 
 	/* check that the string was xmalloc()ed and actually has contents */
 	xassert(xsize(value));
