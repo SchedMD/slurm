@@ -1767,8 +1767,8 @@ static int _become_user (void)
 	char *user;
 
 	/* Already the user, so there's nothing to change. Return early. */
-	if (opt.uid == getuid())
-		return 0;
+	if (opt.uid == SLURM_AUTH_NOBODY)
+		return SLURM_SUCCESS;
 
 	if (!(user = uid_to_string_or_null(opt.uid))) {
 		xfree(user);
