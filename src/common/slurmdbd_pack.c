@@ -393,29 +393,25 @@ static void _pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 static int _unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 				    uint16_t rpc_version, buf_t *buffer)
 {
-	uint32_t uint32_tmp;
 	dbd_job_comp_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_comp_msg_t));
 	*msg = msg_ptr;
 
 	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&msg_ptr->admin_comment,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&msg_ptr->admin_comment, buffer);
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
+		safe_unpackstr(&msg_ptr->comment, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack32(&msg_ptr->derived_ec, buffer);
 		safe_unpack_time(&msg_ptr->end_time, buffer);
 		safe_unpack32(&msg_ptr->exit_code, buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->job_state, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpackstr(&msg_ptr->nodes, buffer);
 		safe_unpack32(&msg_ptr->req_uid, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->system_comment,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg_ptr->tres_alloc_str,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&msg_ptr->system_comment, buffer);
+		safe_unpackstr(&msg_ptr->tres_alloc_str, buffer);
 	} else
 		goto unpack_error;
 
