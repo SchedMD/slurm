@@ -1896,7 +1896,7 @@ static int arg_set_data_gid(slurm_opt_t *opt, const data_t *arg,
 	return rc;
 }
 COMMON_INT_OPTION_GET(gid);
-COMMON_OPTION_RESET(gid, getgid());
+COMMON_OPTION_RESET(gid, SLURM_AUTH_NOBODY);
 static slurm_cli_opt_t slurm_opt_gid = {
 	.name = "gid",
 	.has_arg = required_argument,
@@ -4684,7 +4684,7 @@ static int arg_set_data_uid(slurm_opt_t *opt, const data_t *arg,
 	return rc;
 }
 COMMON_INT_OPTION_GET(uid);
-COMMON_OPTION_RESET(uid, getuid());
+COMMON_OPTION_RESET(uid, SLURM_AUTH_NOBODY);
 static slurm_cli_opt_t slurm_opt_uid = {
 	.name = "uid",
 	.has_arg = required_argument,
