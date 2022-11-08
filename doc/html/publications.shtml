@@ -11,66 +11,82 @@
 
 <h2>Presentations from CNCF Research End User Group, October 2022</h2>
 <ul>
-<li><a href="MISC22/CNCF_RUG_20221005.pdf">Slurm Container Support</a>, Nathan Rini, SchedMD</li>
+<li><a href="MISC22/CNCF_RUG_20221005.pdf">Slurm Container Support</a>,
+<a href="https://youtu.be/9-He_yN_Gzg">Video</a>,
+Nathan Rini, SchedMD
+</li>
 </ul>
 
 <h2>Presentations from Slurm User Group Meeting, September 2022</h2>
 <ul>
 <li><a href="SLUG22/Field_Notes_6.pdf">Field Notes 6: From The Frontlines of Slurm Support</a>,
+<a href="https://youtu.be/njEgeMUAqMY">Video</a>,
 Jason Booth, SchedMD</li>
 
 <li><a href="SLUG22/Pathfinding2Clouds.pdf">Pathfinding into the clouds</a>,
+<a href="https://youtu.be/WUbuPQ0RB68">Video</a>,
 Ole Nielsen, Technical University of Denmark (DTU)</li>
 
-<li><a href="SLUG22/OCI_Containers_with_scrun.pdf">OCI Containers with scrun</a>,
+<li><a href="SLUG22/OCI_Containers_with_scrun.pdf">OCI Containers with scrun</a>
+<a href="https://youtu.be/7y7IpCTj5mk">Video</a>,
 Nathan Rini, SchedMD</li>
 
 <li><a href="SLUG22/LBNL-site-report.pdf">LBNL Site Report</a>,
+<a href="https://youtu.be/uwYsoPySxmU">Video</a>,
 Wei Feinstein, Lawrence Berkeley National Laboratory</li>
 
 <li><a href="SLUG22/Dynamic_Nodes.pdf">Cloudy, With a Chance of Dynamic Nodes</a>,
+<a href="https://youtu.be/YhSF9YhlSS8">Video</a>,
 Nick Rini, SchedMD</li>
 
 <li><a href="SLUG22/NTT-SLUG22.pdf">Burst Buffer Lua Plugin For Lustre</a>,
+<a href="https://youtu.be/jyUQ33GTnnE">Video</a>,
 Kota Tsuyuzaki / Rikimaru Honjo / Yusuke Kaneko / Kohei Tahara, NTT Computer and Data Science Laboratory / NTT TechnoCross Corporation</li>
 
 <li><a href="SLUG22/Roadmap.pdf">22.05, 23.02, and Beyond</a>,
+<a href="https://youtu.be/sloTCJaeabs">Video</a>,
 Tim Wickberg, SchedMD</li>
 
 <li><a href="SLUG22/EDA-Slurm-Cluster.pdf">EDA Slurm Cluster on AWS</a>,
+<a href="https://youtu.be/qbJKkUmgJ18">Video</a>,
 Allan Carter, AWS</li>
-
 </ul>
 
 <h2>Presentations from NHR Container Workshop, December 2021</h2>
 <ul>
 <li><a href="NHR21/containers.pdf">Containers and Slurm</a>,
+<a href="https://youtu.be/5bPRVLe4w6U">Video</a>,
 Nathan Rini, SchedMD</li>
 </ul>
 
 <h2>Presentations from SC21, November 2021</h2>
 <ul>
 <li>BOF: <a href="SC21/BoF.pdf">Slurm Birds of a Feather</a>,
+<a href="https://youtu.be/LjfPvHc3ezQ">Video</a>,
 Tim Wickberg, SchedMD</li>
 </ul>
 
 <h2>Presentations from Slurm User Group Meeting, September 2021</h2>
 <ul>
 <li><a href="SLUG21/Field_Notes_5.pdf">Field Notes 5: From The Frontlines of Slurm Support</a>,
+<a href="https://youtu.be/-YAW-PBvLJc">Video</a>,
 Jason Booth, SchedMD</li>
 
 <li><a href="SLUG21/REST_and_Containers.pdf">REST API <i>and also</i> Containers</a>,
+<a href="https://youtu.be/bqDdW5XfUIw">Video</a>,
 Nathan Rini, SchedMD</li>
 
 <li><a href="SLUG21/burst_buffer_lua.pdf">burst_buffer/lua and slurmscriptd</a>,
+<a href="https://youtu.be/q5j5meDDPpA">Video</a>,
 Marshall Garey, SchedMD</li>
 
 <li><a href="SLUG21/Slurm_in_the_Clouds.pdf">Slurm in the Clouds</a>,
+<a href="https://youtu.be/WV4d49pIp24">Video</a>,
 Nick Ihli, SchedMD</li>
 
 <li><a href="SLUG21/Roadmap.pdf">Slurm 21.08 and Beyond</a>,
+<a href="https://youtu.be/-0tD7gLTxiI">Video</a>,
 Tim Wickberg, SchedMD</li>
-
 </ul>
 
 <h2>Presentations from SC20, November 2020</h2>
@@ -82,15 +98,19 @@ Tim Wickberg, SchedMD</li>
 <h2>Presentations from Slurm User Group Meeting, September 2020</h2>
 <ul>
 <li><a href="SLUG20/Field_Notes.pdf">Field Notes 4: From The Frontlines of Slurm Support</a>,
+<a href="https://youtu.be/F8CZaqOQ4Sk">Video</a>,
 Jason Booth, SchedMD</li>
 
 <li><a href="SLUG20/Cloud_and_Stuff.pdf">Cloud and Stuff</a>,
+<a href="https://youtu.be/Ww-xBZMV0lA">Video</a>,
 Brian Christiansen, SchedMD</li>
 
 <li><a href="SLUG20/REST_API.pdf">REST API</a>,
+<a href="https://youtu.be/RtdJlstFB28">Video</a>,
 Nathan Rini, SchedMD</li>
 
 <li><a href="SLUG20/Roadmap.pdf">Slurm 20.11 and Beyond</a>,
+<a href="https://youtu.be/vHPtttXIiWs">Video</a>,
 Tim Wickberg, SchedMD</li>
 
 </ul>
@@ -1136,6 +1156,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 9 October 2022</p>
+<p style="text-align:center;">Last modified 15 November 2022</p>
 
 <!--#include virtual="footer.txt"-->
