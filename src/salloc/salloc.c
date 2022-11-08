@@ -338,7 +338,7 @@ int main(int argc, char **argv)
 	 */
 	if (is_interactive)
 		atexit(_reset_input_mode);
-	if (opt.gid != getgid()) {
+	if (opt.gid != SLURM_AUTH_NOBODY) {
 		if (setgid(opt.gid) < 0) {
 			error("setgid: %m");
 			exit(error_exit);
@@ -424,7 +424,7 @@ int main(int argc, char **argv)
 	}
 
 	/* If the requested uid is different than ours, become that uid */
-	if (getuid() != opt.uid) {
+	if (opt.uid != SLURM_AUTH_NOBODY) {
 		/* drop extended groups before changing uid/gid */
 		if ((setgroups(0, NULL) < 0)) {
 			error("setgroups: %m");
