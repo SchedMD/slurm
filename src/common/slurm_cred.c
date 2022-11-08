@@ -567,6 +567,18 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	if (_slurm_cred_init() < 0)
 		return NULL;
 
+	if (arg->uid == SLURM_AUTH_NOBODY) {
+		error("%s: refusing to create job %u credential for invalid user nobody",
+		      __func__, arg->step_id.job_id);
+		goto fail;
+	}
+
+	if (arg->gid == SLURM_AUTH_NOBODY) {
+		error("%s: refusing to create job %u credential for invalid group nobody",
+		      __func__, arg->step_id.job_id);
+		goto fail;
+	}
+
 	cred = _slurm_cred_alloc();
 	xassert(cred->magic == CRED_MAGIC);
 
