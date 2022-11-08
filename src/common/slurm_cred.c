@@ -641,6 +641,9 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 
 void slurm_cred_free_args(slurm_cred_arg_t *arg)
 {
+	if (!arg)
+		return;
+
 	xfree(arg->pw_name);
 	xfree(arg->pw_gecos);
 	xfree(arg->pw_dir);
