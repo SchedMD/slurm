@@ -1001,6 +1001,12 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		goto fail;
 	}
 
+	if (arg->uid == SLURM_AUTH_NOBODY) {
+		error("%s: rejecting job %u credential for invalid user nobody",
+		      __func__, arg->step_id.job_id);
+		goto fail;
+	}
+
 	if (req->uid == SLURM_AUTH_NOBODY) {
 		debug3("%s: setting job %u credential to uid %u",
 		      __func__, arg->step_id.job_id, arg->uid);
@@ -1008,6 +1014,12 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	} else if (arg->uid != req->uid) {
 		error("job %u credential created for uid %u, expected %u",
 		      arg->step_id.job_id, arg->uid, req->uid);
+		goto fail;
+	}
+
+	if (arg->gid == SLURM_AUTH_NOBODY) {
+		error("%s: rejecting job %u credential for invalid group nobody",
+		      __func__, arg->step_id.job_id);
 		goto fail;
 	}
 
