@@ -34,7 +34,7 @@ proc run_gpu_per_job { mem_per_gpu } {
 	set mem_size 0
 	spawn $srun --gpus=1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in
 	expect {
-		-re "TRES=cpu=($number),mem=($number)M" {
+		-re "AllocTRES=cpu=($number),mem=($number)M" {
 			set mem_size $expect_out(2,string)
 			exp_continue
 		}
@@ -56,7 +56,7 @@ proc run_gpu_per_node { mem_per_gpu } {
 	set mem_size 0
 	spawn $srun --gpus-per-node=1 -N1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in
 	expect {
-		-re "TRES=cpu=($number),mem=($number)M" {
+		-re "AllocTRES=cpu=($number),mem=($number)M" {
 			set mem_size $expect_out(2,string)
 			exp_continue
 		}
@@ -78,7 +78,7 @@ proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
 	set mem_size 0
 	spawn $srun --gpus-per-task=$gpu_cnt -n1 --mem-per-gpu=$mem_per_gpu -J $test_name -t1 $file_in
 	expect {
-		-re "TRES=cpu=($number),mem=($number)M" {
+		-re "AllocTRES=cpu=($number),mem=($number)M" {
 			set mem_size $expect_out(2,string)
 			exp_continue
 		}
@@ -103,7 +103,7 @@ proc run_gpu_check_mem { srun_opts mem_target node_target } {
 
 	set output [run_command_output -fail "$srun $srun_opts -J $test_name -t1 $file_in"]
 	regexp "NumNodes=($number)"                $output - node_count
-	regexp "TRES=cpu=($number),mem=($number)M" $output - - mem_size
+	regexp "AllocTRES=cpu=($number),mem=($number)M" $output - - mem_size
 
 	if {$node_count < $node_target} {
 		fail "srun --mem-per-gpu failure, bad node count ($node_count < $node_target)"
