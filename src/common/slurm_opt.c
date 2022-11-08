@@ -4104,7 +4104,7 @@ static char *arg_get_slurmd_debug(slurm_opt_t *opt)
 static void arg_reset_slurmd_debug(slurm_opt_t *opt)
 {
 	if (opt->srun_opt)
-		opt->srun_opt->slurmd_debug = LOG_LEVEL_QUIET;
+		opt->srun_opt->slurmd_debug = LOG_LEVEL_ERROR;
 }
 static slurm_cli_opt_t slurm_opt_slurmd_debug = {
 	.name = "slurmd-debug",
