@@ -3320,7 +3320,7 @@ _destroy_slurm_conf(void)
  *   b. SLURM_CONF if not NULL
  *   c. default_slurm_config_file if it exists.
  *   d. /run/slurm/conf/slurm.conf if it exists.
- * 2. SLURM_CONF_SERVER env var (not documented, meant for testing only)
+ * 2. SLURM_CONF_SERVER env var
  * 3. DNS SRV record
  */
 static int _establish_config_source(char **config_file, int *memfd)
