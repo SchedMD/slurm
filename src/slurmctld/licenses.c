@@ -614,13 +614,15 @@ extern void license_job_merge(job_record_t *job_ptr)
 }
 
 /*
- * license_job_test - Test if the licenses required for a job are available
+ * license_job_test_with_list - Test if the licenses required for a job are
+ *	available in provided list
  * IN job_ptr - job identification
  * IN when    - time to check
  * IN reboot    - true if node reboot required to start job
  * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */
-extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
+extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
+				      bool reboot, list_t *license_list)
 {
 	list_itr_t *iter;
 	licenses_t *license_entry, *match;
@@ -632,8 +634,8 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = list_next(iter))) {
-		match = list_find_first(cluster_license_list, _license_find_rec,
-			license_entry->name);
+		match = list_find_first(license_list, _license_find_rec,
+					license_entry->name);
 		if (!match) {
 			error("could not find license %s for job %u",
 			      license_entry->name, job_ptr->job_id);
@@ -664,6 +666,19 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 	list_iterator_destroy(iter);
 	slurm_mutex_unlock(&license_mutex);
 	return rc;
+}
+
+/*
+ * license_job_test - Test if the licenses required for a job are available
+ * IN job_ptr - job identification
+ * IN when    - time to check
+ * IN reboot    - true if node reboot required to start job
+ * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
+ */
+extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
+{
+	return license_job_test_with_list(job_ptr, when, reboot,
+					  cluster_license_list);
 }
 
 /*
@@ -729,11 +744,12 @@ extern int license_job_get(job_record_t *job_ptr)
 }
 
 /*
- * license_job_return - Return the licenses allocated to a job
+ * license_job_return_to_list - Return the licenses allocated to a job to the
+ *	`provided list
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
  */
-extern int license_job_return(job_record_t *job_ptr)
+extern int license_job_return_to_list(job_record_t *job_ptr, list_t *license_list)
 {
 	list_itr_t *iter;
 	licenses_t *license_entry, *match;
@@ -747,7 +763,7 @@ extern int license_job_return(job_record_t *job_ptr)
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((license_entry = list_next(iter))) {
-		match = list_find_first(cluster_license_list, _license_find_rec,
+		match = list_find_first(license_list, _license_find_rec,
 			license_entry->name);
 		if (match) {
 			if (match->used >= license_entry->total)
@@ -766,8 +782,22 @@ extern int license_job_return(job_record_t *job_ptr)
 		}
 	}
 	list_iterator_destroy(iter);
-	_licenses_print("return_license", cluster_license_list, job_ptr);
 	slurm_mutex_unlock(&license_mutex);
+	return rc;
+}
+
+/*
+ * license_job_return - Return the licenses allocated to a job
+ * IN job_ptr - job identification
+ * RET SLURM_SUCCESS or failure code
+ */
+extern int license_job_return(job_record_t *job_ptr)
+{
+	int rc;
+
+	rc = license_job_return_to_list(job_ptr, cluster_license_list);
+	_licenses_print("return_license", cluster_license_list, job_ptr);
+
 	return rc;
 }
 

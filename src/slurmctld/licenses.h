@@ -109,7 +109,26 @@ extern void license_job_merge(job_record_t *job_ptr);
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
  */
+extern int license_job_return_to_list(job_record_t *job_ptr,
+				      list_t *license_list);
+
+/*
+ * license_job_return - Return the licenses allocated to a job
+ * IN job_ptr - job identification
+ * RET SLURM_SUCCESS or failure code
+ */
 extern int license_job_return(job_record_t *job_ptr);
+
+/*
+ * license_job_test_with_list - Test if the licenses required for a job are
+ *	available in provided list
+ * IN job_ptr - job identification
+ * IN when    - time to check
+ * IN reboot    - true if node reboot required to start job
+ * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
+ */
+extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
+				      bool reboot, list_t *license_list);
 
 /*
  * license_job_test - Test if the licenses required for a job are available
