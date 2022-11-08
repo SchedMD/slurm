@@ -432,7 +432,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 
 	debug("Entering %s", __func__);
 
-	if ((ctx == NULL) || (ctx->magic != STEP_CTX_MAGIC)) {
+	if (!ctx || (ctx->magic != STEP_CTX_MAGIC) || !ctx->step_resp) {
 		error("%s: Not a valid slurm_step_ctx_t", __func__);
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
@@ -450,7 +450,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	memcpy(&launch.step_id, &ctx->step_req->step_id,
 	       sizeof(launch.step_id));
 
-	if (ctx->step_resp && ctx->step_resp->cred) {
+	if (ctx->step_resp->cred) {
 		slurm_cred_arg_t *args = slurm_cred_get_args(ctx->step_resp->cred);
 		launch.uid = args->uid;
 		launch.gid = args->gid;
