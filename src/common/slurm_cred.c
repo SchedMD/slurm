@@ -1710,8 +1710,8 @@ _slurm_cred_alloc(void)
 
 	slurm_rwlock_init(&cred->mutex);
 	cred->arg = xmalloc(sizeof(slurm_cred_arg_t));
-	cred->arg->uid = (uid_t) -1;
-	cred->arg->gid = (gid_t) -1;
+	cred->arg->uid = SLURM_AUTH_NOBODY;
+	cred->arg->gid = SLURM_AUTH_NOBODY;
 	cred->verified = false;
 
 	cred->magic = CRED_MAGIC;
