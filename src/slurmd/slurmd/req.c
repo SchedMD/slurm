@@ -2788,13 +2788,18 @@ static void _rpc_set_slurmd_debug_flags(slurm_msg_t *msg)
 		      rpc_num2string(msg->msg_type), msg->auth_uid);
 		rc = ESLURM_USER_ID_MISSING;
 	} else {
+		char *flag_string = NULL;
 		slurm_conf_t *cf = NULL;
 		set_debug_flags_msg_t *request_msg = msg->data;
 
 		cf = slurm_conf_lock();
 		cf->debug_flags &= (~request_msg->debug_flags_minus);
 		cf->debug_flags |= request_msg->debug_flags_plus;
+		flag_string = debug_flags2str(cf->debug_flags);
 		slurm_conf_unlock();
+		info("Set DebugFlags to %s",
+		     flag_string ? flag_string : "none");
+		xfree(flag_string);
 	}
 
 	forward_wait(msg);
