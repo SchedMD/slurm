@@ -183,6 +183,10 @@ job_create_noalloc(void)
 	ai->step_id.step_het_comp = NO_VAL;
 	ai->nodelist       = opt_local->nodelist;
 	ai->nnodes         = hostlist_count(hl);
+	ai->uid = getuid();
+	ai->user_name = uid_to_string_or_null(ai->uid);
+	ai->gid = getgid();
+	ai->group_name = gid_to_string_or_null(ai->gid);
 
 	hostlist_destroy(hl);
 

@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "October 2022" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "November 2022" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -2137,7 +2137,9 @@ Run the specified tasks on a set of nodes without creating a Slurm
 allocation step.  The list of nodes must be specified with the
 \fB\-w\fR, \fB\-\-nodelist\fR option.  This is a privileged option
 only available for the users "SlurmUser" and "root". This option applies to job
-allocations.
+allocations. If user namespaces are active, then the mapping of users in the
+namespace must match the same namespace as MUNGE. If not, then the job will be
+rejected by slurmd.
 .IP
 
 .TP
