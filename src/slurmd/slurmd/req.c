@@ -1001,13 +1001,21 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		goto fail;
 	}
 
-	if (arg->uid != req->uid) {
+	if (req->uid == SLURM_AUTH_NOBODY) {
+		debug3("%s: setting job %u credential to uid %u",
+		      __func__, arg->step_id.job_id, arg->uid);
+		req->uid = arg->uid;
+	} else if (arg->uid != req->uid) {
 		error("job %u credential created for uid %u, expected %u",
 		      arg->step_id.job_id, arg->uid, req->uid);
 		goto fail;
 	}
 
-	if (arg->gid != req->gid) {
+	if (req->gid == SLURM_AUTH_NOBODY) {
+		debug3("%s: setting job %u credential to group %u",
+		      __func__, arg->step_id.job_id, arg->gid);
+		req->gid = arg->gid;
+	} else if (arg->gid != req->gid) {
 		error("job %u credential created for gid %u, expected %u",
 		      arg->step_id.job_id, arg->gid, req->gid);
 		goto fail;
