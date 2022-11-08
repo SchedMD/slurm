@@ -81,9 +81,7 @@ libslurmctld_interfaces_la_SOURCES =    \
 	preempt.c	\
 	preempt.h	\
 	sched_plugin.c	\
-	sched_plugin.h	\
-	slurmctld.c \
-	slurmctld.h
+	sched_plugin.h
 
 libslurmd_interfaces_la_SOURCES =    \
 	core_spec.c \

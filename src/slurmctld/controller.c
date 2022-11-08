@@ -98,7 +98,6 @@
 #include "src/interfaces/route.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/sched_plugin.h"
-#include "src/interfaces/slurmctld.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/acct_policy.h"
@@ -737,8 +736,6 @@ int main(int argc, char **argv)
 
 		if (priority_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
-		if (slurmctld_plugstack_init())
-			fatal("failed to initialize slurmctld_plugstack");
 		if (bb_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize burst buffer plugin");
 		if (power_g_init() != SLURM_SUCCESS)
@@ -795,7 +792,6 @@ int main(int argc, char **argv)
 		/* termination of controller */
 		switch_g_save(slurm_conf.state_save_location);
 		priority_g_fini();
-		slurmctld_plugstack_fini();
 		shutdown_state_save();
 		slurm_mutex_lock(&purge_thread_lock);
 		slurm_cond_signal(&purge_thread_cond); /* wake up last time */

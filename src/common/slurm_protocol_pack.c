@@ -4490,11 +4490,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->slurmctld_logfile, buffer);
 		packstr(build_ptr->slurmctld_params, buffer);
 		packstr(build_ptr->slurmctld_pidfile, buffer);
-		packstr(build_ptr->slurmctld_plugstack, buffer);
-		pack_config_plugin_params_list(
-			build_ptr->slurmctld_plugstack_conf,
-			protocol_version,
-			buffer);
 		pack32(build_ptr->slurmctld_port, buffer);
 		pack16(build_ptr->slurmctld_port_count, buffer);
 		packstr(build_ptr->slurmctld_primary_off_prog, buffer);
@@ -4788,11 +4783,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->slurmctld_logfile, buffer);
 		packstr(build_ptr->slurmctld_params, buffer);
 		packstr(build_ptr->slurmctld_pidfile, buffer);
-		packstr(build_ptr->slurmctld_plugstack, buffer);
-		pack_config_plugin_params_list(
-			build_ptr->slurmctld_plugstack_conf,
-			protocol_version,
-			buffer);
+		packnull(buffer);
+		pack32(NO_VAL, buffer);
 		pack32(build_ptr->slurmctld_port, buffer);
 		pack16(build_ptr->slurmctld_port_count, buffer);
 		packstr(build_ptr->slurmctld_primary_off_prog, buffer);
@@ -5088,11 +5080,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->slurmctld_logfile, buffer);
 		packstr(build_ptr->slurmctld_params, buffer);
 		packstr(build_ptr->slurmctld_pidfile, buffer);
-		packstr(build_ptr->slurmctld_plugstack, buffer);
-		pack_config_plugin_params_list(
-			build_ptr->slurmctld_plugstack_conf,
-			protocol_version,
-			buffer);
+		packnull(buffer);
+		pack32(NO_VAL, buffer);
 		pack32(build_ptr->slurmctld_port, buffer);
 		pack16(build_ptr->slurmctld_port_count, buffer);
 		packstr(build_ptr->slurmctld_primary_off_prog, buffer);
@@ -5395,11 +5384,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->slurmctld_logfile, buffer);
 		safe_unpackstr(&build_ptr->slurmctld_params, buffer);
 		safe_unpackstr(&build_ptr->slurmctld_pidfile, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_plugstack, buffer);
-		if (unpack_config_plugin_params_list(
-			    &build_ptr->slurmctld_plugstack_conf,
-			    protocol_version, buffer) != SLURM_SUCCESS)
-			goto unpack_error;
 		safe_unpack32(&build_ptr->slurmctld_port, buffer);
 		safe_unpack16(&build_ptr->slurmctld_port_count, buffer);
 		safe_unpackstr(&build_ptr->slurmctld_primary_off_prog, buffer);
@@ -5452,6 +5436,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->wait_time, buffer);
 		safe_unpackstr(&build_ptr->x11_params, buffer);
 	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		char *tmp_char;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -5778,12 +5763,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		                       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->slurmctld_pidfile,
 		                       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->slurmctld_plugstack,
+		safe_unpackstr_xmalloc(&tmp_char,
 		                       &uint32_tmp, buffer);
-		if (unpack_config_plugin_params_list(
-			    &build_ptr->slurmctld_plugstack_conf,
-			    protocol_version, buffer) != SLURM_SUCCESS)
-			goto unpack_error;
+		xfree(tmp_char);
+		safe_unpack32(&uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->slurmctld_port, buffer);
 		safe_unpack16(&build_ptr->slurmctld_port_count, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->slurmctld_primary_off_prog,
@@ -5859,6 +5842,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->x11_params,
 		                       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *tmp_char;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -6183,12 +6167,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		                       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->slurmctld_pidfile,
 		                       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->slurmctld_plugstack,
+		safe_unpackstr_xmalloc(&tmp_char,
 		                       &uint32_tmp, buffer);
-		if (unpack_config_plugin_params_list(
-			    &build_ptr->slurmctld_plugstack_conf,
-			    protocol_version, buffer) != SLURM_SUCCESS)
-			goto unpack_error;
+		xfree(tmp_char);
+		safe_unpack32(&uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->slurmctld_port, buffer);
 		safe_unpack16(&build_ptr->slurmctld_port_count, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->slurmctld_primary_off_prog,

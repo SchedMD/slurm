@@ -278,12 +278,6 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 		tmp_title, 0, treestore, &iter);
 	xfree(tmp_title);
 
-	xstrcat(tmp_title, "Slurmctld Plugstack Plugins:");
-	_gtk_print_config_plugin_params_list(
-		slurm_ctl_conf_ptr->slurmctld_plugstack_conf,
-		tmp_title, 0, treestore, &iter);
-	xfree(tmp_title);
-
 	_gtk_print_key_pairs(slurm_ctl_conf_ptr->select_conf_key_pairs,
 			     select_title, 0, treestore, &iter);
 }

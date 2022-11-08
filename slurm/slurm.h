@@ -2993,8 +2993,6 @@ typedef struct {
 	uint16_t slurmctld_debug; /* slurmctld logging level */
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
 	char *slurmctld_pidfile;/* where to put slurmctld pidfile         */
-	char *slurmctld_plugstack;/* generic slurmctld plugins */
-	void *slurmctld_plugstack_conf ;/* generic slurmctld plugins configs */
 	uint32_t slurmctld_port;  /* default communications port to slurmctld */
 	uint16_t slurmctld_port_count; /* number of slurmctld comm ports */
 	char *slurmctld_primary_off_prog; /* Run when becomes slurmctld backup */

@@ -729,18 +729,6 @@ test28.11  Test that job arrays requesting features with --constraint are
 test28.12  Verify head job isn't purged before other jobs in the array.
 test28.13  Test requeue of only failed tasks in the job array.
 
-
-test29.#   Testing of smd command and option.
-=============================================
-test29.1   Validate smd usage command.
-test29.2   Validate smd show -c (config command).
-test29.3   Validate smd -f (--faulty-nodes) command.
-test29.4   Validate smd -d (--drain-node), and -R (--reason) set.
-test29.5   Validate smd -r (--replace-node) option.
-test29.7   Validates that the smd -j (--job-info) display.
-test29.8   Validate that the MaxSpareNodeCount is enforced
-
-
 test31.#   Test of Slurm Epilog and Prolog.
 ===========================================
 test31.2   Validate that job is set to requeue held state at prolog failure.

@@ -63,6 +63,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     access controls, and matches the documented behavior for EnforcePartLimits.
  -- Add InfluxDBTimeout parameter to acct_gather.conf.
  -- job_container/tmpfs - add support for expanding %h and %n in BasePath.
+ -- slurm.conf - Removed SlurmctldPlugstack option.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

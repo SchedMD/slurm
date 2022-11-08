@@ -173,7 +173,7 @@ am__v_lt_0 = --silent
 am__v_lt_1 = 
 libslurmctld_interfaces_la_LIBADD =
 am_libslurmctld_interfaces_la_OBJECTS = burst_buffer.lo job_submit.lo \
-	preempt.lo sched_plugin.lo slurmctld.lo
+	preempt.lo sched_plugin.lo
 libslurmctld_interfaces_la_OBJECTS =  \
 	$(am_libslurmctld_interfaces_la_OBJECTS)
 libslurmd_interfaces_la_LIBADD =
@@ -223,8 +223,8 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/priority.Plo \
 	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/route.Plo \
 	./$(DEPDIR)/sched_plugin.Plo ./$(DEPDIR)/select.Plo \
-	./$(DEPDIR)/site_factor.Plo ./$(DEPDIR)/slurmctld.Plo \
-	./$(DEPDIR)/task.Plo ./$(DEPDIR)/topology.Plo
+	./$(DEPDIR)/site_factor.Plo ./$(DEPDIR)/task.Plo \
+	./$(DEPDIR)/topology.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -608,9 +608,7 @@ libslurmctld_interfaces_la_SOURCES = \
 	preempt.c	\
 	preempt.h	\
 	sched_plugin.c	\
-	sched_plugin.h	\
-	slurmctld.c \
-	slurmctld.h
+	sched_plugin.h
 
 libslurmd_interfaces_la_SOURCES = \
 	core_spec.c \
@@ -736,7 +734,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_plugin.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/site_factor.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmctld.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topology.Plo@am__quote@ # am--include-marker
 
@@ -898,7 +895,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/sched_plugin.Plo
 	-rm -f ./$(DEPDIR)/select.Plo
 	-rm -f ./$(DEPDIR)/site_factor.Plo
-	-rm -f ./$(DEPDIR)/slurmctld.Plo
 	-rm -f ./$(DEPDIR)/task.Plo
 	-rm -f ./$(DEPDIR)/topology.Plo
 	-rm -f Makefile
@@ -979,7 +975,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/sched_plugin.Plo
 	-rm -f ./$(DEPDIR)/select.Plo
 	-rm -f ./$(DEPDIR)/site_factor.Plo
-	-rm -f ./$(DEPDIR)/slurmctld.Plo
 	-rm -f ./$(DEPDIR)/task.Plo
 	-rm -f ./$(DEPDIR)/topology.Plo
 	-rm -f Makefile

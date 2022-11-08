@@ -93,7 +93,6 @@
 #include "src/interfaces/priority.h"
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
-#include "src/interfaces/slurmctld.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -4200,8 +4199,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 		bool suspended = false;
 		if (!_het_job_on_node(job_ptr, node_ptr->index))
 			continue;	/* job not on this node */
-		if (nonstop_ops.node_fail)
-			(nonstop_ops.node_fail)(job_ptr, node_ptr);
 		if (IS_JOB_SUSPENDED(job_ptr)) {
 			uint32_t suspend_job_state = job_ptr->job_state;
 			/*
@@ -6511,8 +6508,6 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		} else {
 			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
 			job_ptr->exit_code = job_return_code;
-			if (nonstop_ops.job_fini)
-				(nonstop_ops.job_fini)(job_ptr);
 		}
 
 		if (suspended) {

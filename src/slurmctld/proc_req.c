@@ -87,9 +87,7 @@
 #include "src/interfaces/priority.h"
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
-#include "src/interfaces/slurmctld.h"
 #include "src/interfaces/topology.h"
-
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -493,8 +491,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->slurmctld_logfile   = xstrdup(conf->slurmctld_logfile);
 	conf_ptr->slurmctld_params    = xstrdup(conf->slurmctld_params);
 	conf_ptr->slurmctld_pidfile   = xstrdup(conf->slurmctld_pidfile);
-	conf_ptr->slurmctld_plugstack = xstrdup(conf->slurmctld_plugstack);
-	conf_ptr->slurmctld_plugstack_conf = slurmctld_plugstack_g_get_config();
 	conf_ptr->slurmctld_port      = conf->slurmctld_port;
 	conf_ptr->slurmctld_port_count = conf->slurmctld_port_count;
 	conf_ptr->slurmctld_primary_off_prog  =

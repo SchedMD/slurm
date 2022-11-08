@@ -321,8 +321,6 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 		STORE_FIELD(hv, conf, slurmctld_logfile, charp);
 	if (conf->slurmctld_pidfile)
 		STORE_FIELD(hv, conf, slurmctld_pidfile, charp);
-	if (conf->slurmctld_plugstack)
-		STORE_FIELD(hv, conf, slurmctld_plugstack, charp);
 	STORE_FIELD(hv, conf, slurmctld_port, uint32_t);
 	STORE_FIELD(hv, conf, slurmctld_port_count, uint16_t);
 	STORE_FIELD(hv, conf, slurmctld_timeout, uint16_t);
@@ -578,7 +576,6 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, slurmctld_debug, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, slurmctld_logfile, charp, FALSE);
 	FETCH_FIELD(hv, conf, slurmctld_pidfile, charp, FALSE);
-	FETCH_FIELD(hv, conf, slurmctld_plugstack, charp, FALSE);
 	FETCH_FIELD(hv, conf, slurmctld_port, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, slurmctld_port_count, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, slurmctld_timeout, uint16_t, TRUE);

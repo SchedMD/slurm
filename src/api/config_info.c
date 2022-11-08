@@ -507,11 +507,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		 (List) slurm_ctl_conf_ptr->node_features_conf, tmp2_str);
 	xfree(tmp2_str);
 
-	xstrcat(tmp2_str, "\nSlurmctld Plugstack Plugins Configuration:");
-	_print_config_plugin_params_list(out,
-		 (List) slurm_ctl_conf_ptr->slurmctld_plugstack_conf, tmp2_str);
-	xfree(tmp2_str);
-
 	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
 			      select_title);
 
@@ -1600,11 +1595,6 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("SlurmctldParameters");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->slurmctld_params);
-	list_append(ret_list, key_pair);
-
 	snprintf(tmp_str, sizeof(tmp_str), "%s",
 		 log_num2string(slurm_ctl_conf_ptr->slurmd_debug));
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -1676,11 +1666,6 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmctldPidFile");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->slurmctld_pidfile);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("SlurmctldPlugstack");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->slurmctld_plugstack);
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

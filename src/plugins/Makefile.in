@@ -498,7 +498,6 @@ SUBDIRS = \
 	select			\
 	serializer		\
 	site_factor		\
-	slurmctld		\
 	switch			\
 	task			\
 	topology

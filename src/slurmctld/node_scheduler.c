@@ -71,7 +71,6 @@
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/priority.h"
 #include "src/interfaces/select.h"
-#include "src/interfaces/slurmctld.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/acct_policy.h"
@@ -2732,9 +2731,6 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	job_array_start(job_ptr);
 	build_node_details(job_ptr, true);
 	rebuild_job_part_list(job_ptr);
-
-	if (nonstop_ops.job_begin)
-		(nonstop_ops.job_begin)(job_ptr);
 
 	if ((job_ptr->mail_type & MAIL_JOB_BEGIN) &&
 	    ((job_ptr->mail_type & MAIL_ARRAY_TASKS) ||

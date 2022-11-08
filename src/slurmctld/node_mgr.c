@@ -73,8 +73,6 @@
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/power.h"
 #include "src/interfaces/select.h"
-#include "src/interfaces/slurmctld.h"
-
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
@@ -1846,7 +1844,6 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 				bit_clear (idle_node_bitmap, node_ptr->index);
 			} else if ((state_val == NODE_STATE_DRAIN) ||
 				   (state_val == NODE_STATE_FAIL)) {
-				uint32_t new_state = state_val;
 				if ((IS_NODE_ALLOCATED(node_ptr) ||
 				     IS_NODE_MIXED(node_ptr)) &&
 				    (IS_NODE_POWERED_DOWN(node_ptr) ||
@@ -1869,9 +1866,6 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 						node_ptr, now, NULL,
 						node_ptr->reason_uid);
 				}
-				if ((new_state == NODE_STATE_FAIL) &&
-				    (nonstop_ops.node_fail))
-					(nonstop_ops.node_fail)(NULL, node_ptr);
 			} else if (state_val & NODE_STATE_POWER_DOWN) {
 				if ((state_val & NODE_STATE_POWER_UP) &&
 				    (IS_NODE_POWERING_UP(node_ptr))) {
