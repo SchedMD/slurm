@@ -1232,7 +1232,19 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&cred->uid, buffer);
+		if (cred->uid == SLURM_AUTH_NOBODY) {
+			error("%s: refusing to unpack credential for invalid user nobody",
+			      __func__);
+			goto unpack_error;
+		}
+
 		safe_unpack32(&cred->gid, buffer);
+		if (cred->uid == SLURM_AUTH_NOBODY) {
+			error("%s: refusing to unpack credential for invalid group nobody",
+			      __func__);
+			goto unpack_error;
+		}
+
 		safe_unpackstr(&cred->pw_name, buffer);
 		safe_unpackstr(&cred->pw_gecos, buffer);
 		safe_unpackstr(&cred->pw_dir, buffer);
@@ -1341,7 +1353,18 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&cred->uid, buffer);
+		if (cred->uid == SLURM_AUTH_NOBODY) {
+			error("%s: refusing to unpack credential for invalid user nobody",
+			      __func__);
+			goto unpack_error;
+		}
+
 		safe_unpack32(&cred->gid, buffer);
+		if (cred->uid == SLURM_AUTH_NOBODY) {
+			error("%s: refusing to unpack credential for invalid group nobody",
+			      __func__);
+			goto unpack_error;
+		}
 		safe_unpackstr_xmalloc(&cred->pw_name, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->pw_gecos, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->pw_dir, &len, buffer);
@@ -1450,7 +1473,19 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&cred->uid, buffer);
+		if (cred->uid == SLURM_AUTH_NOBODY) {
+			error("%s: refusing to unpack credential for invalid user nobody",
+			      __func__);
+			goto unpack_error;
+		}
+
 		safe_unpack32(&cred->gid, buffer);
+		if (cred->uid == SLURM_AUTH_NOBODY) {
+			error("%s: refusing to unpack credential for invalid group nobody",
+			      __func__);
+			goto unpack_error;
+		}
+
 		safe_unpackstr_xmalloc(&cred->pw_name, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->pw_gecos, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->pw_dir, &len, buffer);
