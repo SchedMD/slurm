@@ -9734,9 +9734,9 @@ rwfail:
 }
 
 /* Receive GRES information from slurmd on the specified file descriptor */
-extern void gres_g_recv_stepd(int fd, slurm_msg_t *msg)
+extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 {
-	int len, rc;
+	int len, rc = SLURM_ERROR;
 	buf_t *buffer = NULL;
 
 	slurm_mutex_lock(&gres_context_lock);
@@ -9776,7 +9776,7 @@ extern void gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 	/* Set debug flags and init_run only */
 	(void) gres_init();
 
-	return;
+	return rc;
 rwfail:
 	FREE_NULL_BUFFER(buffer);
 	error("%s: failed", __func__);
@@ -9785,7 +9785,7 @@ rwfail:
 	/* Set debug flags and init_run only */
 	(void) gres_init();
 
-	return;
+	return rc;
 }
 
 /* Get generic GRES data types here. Call the plugin for others */

@@ -493,7 +493,7 @@ extern void gres_recv_stepd(buf_t *buffer, List *gres_devices);
 extern void gres_g_send_stepd(int fd, slurm_msg_t *msg);
 
 /* Receive GRES information from slurmd on the specified file descriptor */
-extern void gres_g_recv_stepd(int fd, slurm_msg_t *msg);
+extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg);
 
 /*
  * Pack this node's gres configuration into a buffer

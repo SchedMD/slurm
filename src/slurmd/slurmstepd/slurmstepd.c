@@ -722,7 +722,8 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("Failed to read job_container.conf from slurmd.");
 
 	/* Receive GRES information from slurmd */
-	gres_g_recv_stepd(sock, msg);
+	if (gres_g_recv_stepd(sock, msg) != SLURM_SUCCESS)
+		fatal("Failed to read gres.conf from slurmd.");
 
 	/* Receive mpi.conf from slurmd */
 	if ((step_type == LAUNCH_TASKS) &&
