@@ -88,7 +88,7 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	slurm_cred_arg_t *arg = xmalloc(sizeof(*arg));
 
 	memcpy(&arg->step_id, &ctx->step_req->step_id, sizeof(arg->step_id));
-	arg->uid = ctx->user_id;
+	arg->uid = getuid();
 
 	arg->job_nhosts = node_cnt;
 	arg->job_hostlist = ctx->step_resp->step_layout->node_list;
@@ -202,7 +202,6 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 		ctx->launch_state = NULL;
 		ctx->magic	= STEP_CTX_MAGIC;
 		ctx->job_id	= step_req->step_id.job_id;
-		ctx->user_id	= step_req->user_id;
 		ctx->step_req   = step_req;
 		/*
 		 * Grab the step id here if we don't already have it, we will
@@ -272,7 +271,6 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 	ctx->launch_state = NULL;
 	ctx->magic	= STEP_CTX_MAGIC;
 	ctx->job_id	= step_req->step_id.job_id;
-	ctx->user_id	= step_req->user_id;
 	ctx->step_req   = step_req;
 
 	/*
