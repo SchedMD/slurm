@@ -404,6 +404,7 @@ do {				\
 } while (0)
 
 /* macro to force stringification */
-#define XSTRINGIFY(s) #s
+#define XSTRINGIFY(s) XSTRINGIFY2(s)
+#define XSTRINGIFY2(s) #s
 
 #endif /* !_MACROS_H */
