@@ -726,7 +726,6 @@ static int _set_partition_options(void *x, void *arg)
  */
 static int _init_power_config(void)
 {
-	int rc;
 	char *tmp_ptr;
 	bool partition_suspend_time_set = false;
 
@@ -812,12 +811,6 @@ static int _init_power_config(void)
 	if (resume_fail_prog && !_valid_prog(resume_fail_prog)) {
 		/* error's already reported in _valid_prog() */
 		xfree(resume_fail_prog);
-	}
-
-	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
-		error("%s: unable to load JSON serializer: %s",
-		      __func__, slurm_strerror(rc));
-		return -1;
 	}
 
 	return 0;
