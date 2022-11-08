@@ -652,14 +652,34 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 	}
 }
 
-static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid)
+static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid,
+		     uint16_t protocol_version)
 {
+	/* TODO: remove this 2 versions after 23.02 release */
+	if (protocol_version <= SLURM_22_05_PROTOCOL_VERSION) {
+		/*
+		 * Correct uid/gid with value NO_VAL set by
+		 * slurm_init_job_desc_msg() in prior releases
+		 */
+		if (msg->user_id == NO_VAL)
+			msg->user_id = uid;
+		if (msg->group_id == NO_VAL)
+			msg->group_id = gid;
+	} else if ((msg->user_id == NO_VAL) || (msg->group_id == NO_VAL)) {
+		/*
+		 * Catch and reject NO_VAL in >= 23.02.
+		 */
+		error("%s: rejecting requested UID=NO_VAL or GID=NO_VAL as invalid",
+		      caller);
+		return ESLURM_USER_ID_MISSING;
+	}
+
 	/*
 	 * If UID/GID not given use the authenticated values.
 	 */
-	if ((msg->user_id == NO_VAL) || (msg->user_id == SLURM_AUTH_NOBODY))
+	if (msg->user_id == SLURM_AUTH_NOBODY)
 		msg->user_id = uid;
-	if ((msg->group_id == NO_VAL) || (msg->group_id == SLURM_AUTH_NOBODY))
+	if (msg->group_id == SLURM_AUTH_NOBODY)
 		msg->group_id = gid;
 
 	if (validate_slurm_user(uid))
@@ -1126,8 +1146,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 			job_uid = job_desc_msg->user_id;
 
 		if ((error_code = _valid_id("REQUEST_HET_JOB_ALLOCATION",
-					    job_desc_msg, msg->auth_uid,
-					    gid))) {
+					    job_desc_msg, msg->auth_uid, gid,
+					    msg->protocol_version))) {
 			break;
 		}
 
@@ -1357,8 +1377,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		goto send_msg;
 	}
 
-	if ((error_code = _valid_id("REQUEST_RESOURCE_ALLOCATION",
-				    job_desc_msg, msg->auth_uid, gid))) {
+	if ((error_code = _valid_id("REQUEST_RESOURCE_ALLOCATION", job_desc_msg,
+				    msg->auth_uid, gid,
+				    msg->protocol_version))) {
 		reject_job = true;
 		goto send_msg;
 	}
@@ -2661,8 +2682,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	}
 
 	START_TIMER;
-	if ((error_code = _valid_id("REQUEST_JOB_WILL_RUN",
-				    job_desc_msg, msg->auth_uid, gid)))
+	if ((error_code = _valid_id("REQUEST_JOB_WILL_RUN", job_desc_msg,
+				    msg->auth_uid, gid, msg->protocol_version)))
 		goto send_reply;
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
@@ -3643,8 +3664,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	if ((error_code = _valid_id("REQUEST_SUBMIT_BATCH_JOB",
-				    job_desc_msg, msg->auth_uid, gid))) {
+	if ((error_code = _valid_id("REQUEST_SUBMIT_BATCH_JOB", job_desc_msg,
+				    msg->auth_uid, gid,
+				    msg->protocol_version))) {
 		reject_job = true;
 		goto send_msg;
 	}
@@ -3845,8 +3867,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			job_uid = job_desc_msg->user_id;
 
 		if ((error_code = _valid_id("REQUEST_SUBMIT_BATCH_JOB",
-					    job_desc_msg, msg->auth_uid,
-					    gid))) {
+					    job_desc_msg, msg->auth_uid, gid,
+					    msg->protocol_version))) {
 			reject_job = true;
 			break;
 		}
