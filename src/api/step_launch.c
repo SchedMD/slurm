@@ -137,7 +137,6 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr)
 
 	ptr->buffered_stdio = true;
 	memcpy(&ptr->local_fds, &fds, sizeof(fds));
-	ptr->gid = getgid();
 	ptr->cpu_freq_min = NO_VAL;
 	ptr->cpu_freq_max = NO_VAL;
 	ptr->cpu_freq_gov = NO_VAL;
@@ -248,8 +247,14 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	/* Start tasks on compute nodes */
 	memcpy(&launch.step_id, &ctx->step_req->step_id,
 	       sizeof(launch.step_id));
-	launch.uid = ctx->step_req->user_id;
-	launch.gid = params->gid;
+
+	if (ctx->step_resp && ctx->step_resp->cred) {
+		slurm_cred_arg_t *args = slurm_cred_get_args(ctx->step_resp->cred);
+		launch.uid = args->uid;
+		launch.gid = args->gid;
+		slurm_cred_unlock_args(ctx->step_resp->cred);
+	}
+
 	launch.argc = params->argc;
 	launch.argv = params->argv;
 	launch.spank_job_env = params->spank_job_env;
@@ -444,8 +449,14 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	/* Start tasks on compute nodes */
 	memcpy(&launch.step_id, &ctx->step_req->step_id,
 	       sizeof(launch.step_id));
-	launch.uid = ctx->step_req->user_id;
-	launch.gid = params->gid;
+
+	if (ctx->step_resp && ctx->step_resp->cred) {
+		slurm_cred_arg_t *args = slurm_cred_get_args(ctx->step_resp->cred);
+		launch.uid = args->uid;
+		launch.gid = args->gid;
+		slurm_cred_unlock_args(ctx->step_resp->cred);
+	}
+
 	launch.argc = params->argc;
 	launch.argv = params->argv;
 	launch.spank_job_env = params->spank_job_env;

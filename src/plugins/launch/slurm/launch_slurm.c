@@ -727,7 +727,6 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		task_state_alter(task_state, job->ntasks);
 	}
 
-	launch_params.gid = opt_local->gid;
 	launch_params.alias_list = job->alias_list;
 	launch_params.argc = opt_local->argc;
 	launch_params.argv = opt_local->argv;

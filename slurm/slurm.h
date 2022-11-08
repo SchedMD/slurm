@@ -2065,7 +2065,6 @@ typedef struct {
 	slurm_step_io_fds_t local_fds;
 	/*  END  - only used if user_managed_io is false */
 
-	uint32_t gid;
 	bool multi_prog;
 	bool no_alloc;
 	uint32_t slurmd_debug;  /* remote slurmd debug level */
