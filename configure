@@ -20781,53 +20781,166 @@ fi
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for jwt disabled" >&5
 printf "%s\n" "$as_me: WARNING: support for jwt disabled" >&2;}
   else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for jwt installation" >&5
-printf %s "checking for jwt installation... " >&6; }
-if test ${x_ac_cv_jwt_dir+y}
+      x_ac_jwt_found="no";
+      if test -z "$with_jwt" || test "x$with_jwt" = "xyes"
+then :
+
+	  ac_fn_c_check_header_compile "$LINENO" "jwt.h" "ac_cv_header_jwt_h" "$ac_includes_default"
+if test "x$ac_cv_header_jwt_h" = xyes
+then :
+  ac_jwt_h=yes
+else $as_nop
+  ac_jwt_h=no
+fi
+
+	  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for jwt_add_header in -ljwt" >&5
+printf %s "checking for jwt_add_header in -ljwt... " >&6; }
+if test ${ac_cv_lib_jwt_jwt_add_header+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-
-        for d in $_x_ac_jwt_dirs; do
-          test -d "$d" || continue
-          test -d "$d/include" || continue
-          test -f "$d/include/jwt.h" || continue
-          for bit in $_x_ac_jwt_libs; do
-            test -d "$d/$bit" || continue
-            _x_ac_jwt_libs_save="$LIBS"
-            LIBS="-L$d/$bit -ljwt $LIBS"
-            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljwt  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 /* Override any GCC internal prototype to avoid an error.
    Use char because int might match the return type of a GCC
    builtin and then its argument prototype would still apply.  */
-char jwt_new ();
+char jwt_add_header ();
 int
 main (void)
 {
-return jwt_new ();
+return jwt_add_header ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"
 then :
-  x_ac_cv_jwt_dir=$d
+  ac_cv_lib_jwt_jwt_add_header=yes
+else $as_nop
+  ac_cv_lib_jwt_jwt_add_header=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-            LIBS="$_x_ac_jwt_libs_save"
-            test -n "$x_ac_cv_jwt_dir" && break
-          done
-          test -n "$x_ac_cv_jwt_dir" && break
-        done
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_jwt_jwt_add_header" >&5
+printf "%s\n" "$ac_cv_lib_jwt_jwt_add_header" >&6; }
+if test "x$ac_cv_lib_jwt_jwt_add_header" = xyes
+then :
+  ac_jwt=yes
+else $as_nop
+  ac_jwt=no
+fi
+
+
+	  if test "$ac_jwt" = "yes" && test "$ac_jwt_h" = "yes"
+then :
+
+	      JWT_CPPFLAGS=""
+	      JWT_LDFLAGS="-ljwt"
+	      x_ac_jwt_found="yes"
+
+else $as_nop
+
+              { ac_cv_header_jwt_h=; unset ac_cv_header_jwt_h;}
+              { ac_cv_lib_jwt_jwt_add_header=; unset ac_cv_lib_jwt_jwt_add_header;}
 
 fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_jwt_dir" >&5
-printf "%s\n" "$x_ac_cv_jwt_dir" >&6; }
 
-    if test -z "$x_ac_cv_jwt_dir"; then
+
+fi
+
+      if test "x$x_ac_jwt_found" != "xyes"
+then :
+
+	  for d in $_x_ac_jwt_dirs; do
+	    test -f "$d/include/jwt.h" || continue
+	    for bit in $_x_ac_jwt_libs; do
+	      JWT_CPPFLAGS="-I$d/include"
+	      if test "$ac_with_rpath" = "yes"
+then :
+  JWT_LDFLAGS="-Wl,-rpath -Wl,$d/$bit -L$d/$bit -ljwt"
+else $as_nop
+  JWT_LDFLAGS="-L$d/$bit -ljwt"
+fi
+
+	      _x_ac_jwt_ldflags_save="$LDFLAGS"
+	      _x_ac_jwt_cppflags_save="$CPPFLAGS"
+	      CPPFLAGS="$JWT_CPPFLAGS $CPPFLAGS"
+	      LDFLAGS="$JWT_LDFLAGS $LIBS"
+
+	      ac_fn_c_check_header_compile "$LINENO" "jwt.h" "ac_cv_header_jwt_h" "$ac_includes_default"
+if test "x$ac_cv_header_jwt_h" = xyes
+then :
+  ac_jwt_h=yes
+else $as_nop
+  ac_jwt_h=no
+fi
+
+	      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for jwt_add_header in -ljwt" >&5
+printf %s "checking for jwt_add_header in -ljwt... " >&6; }
+if test ${ac_cv_lib_jwt_jwt_add_header+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljwt  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char jwt_add_header ();
+int
+main (void)
+{
+return jwt_add_header ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_jwt_jwt_add_header=yes
+else $as_nop
+  ac_cv_lib_jwt_jwt_add_header=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_jwt_jwt_add_header" >&5
+printf "%s\n" "$ac_cv_lib_jwt_jwt_add_header" >&6; }
+if test "x$ac_cv_lib_jwt_jwt_add_header" = xyes
+then :
+  ac_jwt=yes
+else $as_nop
+  ac_jwt=no
+fi
+
+
+	      LDFLAGS="$_x_ac_jwt_ldflags_save"
+	      CPPFLAGS="$_x_ac_jwt_cppflags_save"
+
+	      if test "$ac_jwt" = "yes" && test "$ac_jwt_h" = "yes"
+then :
+  x_ac_jwt_found="yes"; break 2
+else $as_nop
+  x_ac_jwt_found="no"
+fi;
+
+              { ac_cv_header_jwt_h=; unset ac_cv_header_jwt_h;}
+              { ac_cv_lib_jwt_jwt_add_header=; unset ac_cv_lib_jwt_jwt_add_header;}
+	    done
+	  done
+
+fi
+
+    if test "x$x_ac_jwt_found" = "xno"; then
       if test -z "$with_jwt"; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate jwt library" >&5
 printf "%s\n" "$as_me: WARNING: unable to locate jwt library" >&2;}
@@ -20838,15 +20951,13 @@ printf "%s\n" "$as_me: WARNING: unable to locate jwt library" >&2;}
 
 printf "%s\n" "#define HAVE_JWT 1" >>confdefs.h
 
-      JWT_CPPFLAGS="-I$x_ac_cv_jwt_dir/include"
-      JWT_LDFLAGS="-L$x_ac_cv_jwt_dir/$bit -ljwt"
     fi
 
 
 
   fi
 
-   if test -n "$x_ac_cv_jwt_dir"; then
+   if test "x$x_ac_jwt_found" = "xyes"; then
   WITH_JWT_TRUE=
   WITH_JWT_FALSE='#'
 else
