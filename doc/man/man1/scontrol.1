@@ -2131,6 +2131,12 @@ pending job using the scontrol command will allow that job to be scheduled.
 .IP
 
 .TP
+\fBMaxCPUsPerSocket\fR=<\fIcount\fR>
+Set the maximum number of CPUs that can be allocated per socket to all jobs
+in this partition.
+.IP
+
+.TP
 \fBNodes\fR=<\fIname\fR>
 Identify the node(s) to be associated with this partition. Multiple node names
 may be specified using simple node range expressions (e.g. "lx[10\-20]").
