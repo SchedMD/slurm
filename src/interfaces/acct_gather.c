@@ -100,6 +100,15 @@ extern int acct_gather_conf_init(void)
 		return SLURM_SUCCESS;
 	inited = 1;
 
+	/* initialize all the plugins */
+	rc += acct_gather_energy_init();
+	rc += acct_gather_profile_init();
+	rc += acct_gather_interconnect_init();
+	rc += acct_gather_filesystem_init();
+
+	if (rc)
+		return rc;
+
 	/* get options from plugins using acct_gather.conf */
 
 	rc += acct_gather_energy_g_conf_options(&full_options,

@@ -128,7 +128,7 @@ static void *_watch_node(void *arg)
 }
 
 
-extern int slurm_acct_gather_energy_init(void)
+extern int acct_gather_energy_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "acct_gather_energy";
@@ -173,8 +173,6 @@ extern int slurm_acct_gather_energy_init(void)
 	init_run = true;
 done:
 	slurm_mutex_unlock(&g_context_lock);
-	if (retval == SLURM_SUCCESS)
-		retval = acct_gather_conf_init();
 	if (retval != SLURM_SUCCESS)
 		fatal("can not open the %s plugin", type);
 	xfree(type);
