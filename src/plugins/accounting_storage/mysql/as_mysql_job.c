@@ -284,21 +284,18 @@ static uint64_t _get_hash_inx(mysql_conn_t *mysql_conn,
 			      uint64_t flag)
 {
 	char *query, *hash;
-	char *hash_col = NULL, *type_col = NULL, *type_table = NULL;
+	char *hash_col = NULL, *type_table = NULL;
 	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
 	uint64_t hash_inx = 0;
 
 	switch (flag) {
 	case JOB_SEND_ENV:
 		hash_col = "env_hash";
-		type_col = "env_vars";
 		type_table = job_env_table;
 		hash = job_ptr->details->env_hash;
 		break;
 	case JOB_SEND_SCRIPT:
 		hash_col = "script_hash";
-		type_col = "batch_script";
 		type_table = job_script_table;
 		hash = job_ptr->details->script_hash;
 		break;
@@ -312,36 +309,19 @@ static uint64_t _get_hash_inx(mysql_conn_t *mysql_conn,
 		return 0;
 
 	query = xstrdup_printf(
-		"select hash_inx from \"%s_%s\" where %s = '%s';",
+		"insert into \"%s_%s\" (%s) values ('%s') "
+		"on duplicate key update last_used=VALUES(last_used), "
+		"hash_inx=LAST_INSERT_ID(hash_inx);",
 		mysql_conn->cluster_name, type_table,
 		hash_col, hash);
 
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return NO_VAL64;
-	}
-
+	hash_inx = mysql_db_insert_ret_id(mysql_conn, query);
+	if (!hash_inx)
+		hash_inx = NO_VAL64;
+	else
+		job_ptr->bit_flags |= flag;
 	xfree(query);
 
-	if ((row = mysql_fetch_row(result))) {
-		debug3("%u has an %s we have already seen, no need to add again",
-		       job_ptr->job_id, type_col);
-		hash_inx = slurm_atoull(row[0]);
-	} else {
-		query = xstrdup_printf(
-			"insert into \"%s_%s\" (%s) values ('%s') "
-			"on duplicate key update last_used=VALUES(last_used), "
-			"hash_inx=LAST_INSERT_ID(hash_inx);",
-			mysql_conn->cluster_name, type_table,
-			hash_col, hash);
-
-		hash_inx = mysql_db_insert_ret_id(mysql_conn, query);
-		if (!hash_inx)
-			hash_inx = NO_VAL64;
-		else
-			job_ptr->bit_flags |= flag;
-		xfree(query);
-	}
 	mysql_free_result(result);
 
 	return hash_inx;
