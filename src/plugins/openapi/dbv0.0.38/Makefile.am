@@ -42,6 +42,5 @@ openapi_dbv0_0_38_la_SOURCES = \
 	config.c diag.c jobs.c qos.c parse.c parse.h \
 	tres.c users.c wckeys.c
 
-openapi_dbv0_0_38_la_DEPENDENCIES = $(LIB_SLURM_BUILD)
 openapi_dbv0_0_38_la_LDFLAGS = $(PLUGIN_FLAGS)
-openapi_dbv0_0_38_la_LIBADD = $(libslurmfull_la_LIBADD) openapi_ref.lo
+openapi_dbv0_0_38_la_LIBADD = openapi_ref.lo

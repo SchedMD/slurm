@@ -11,6 +11,4 @@ pkglib_LTLIBRARIES = rest_auth_local.la
 
 rest_auth_local_la_SOURCES = local.c
 
-rest_auth_local_la_DEPENDENCIES = $(LIB_SLURM_BUILD)
 rest_auth_local_la_LDFLAGS = $(PLUGIN_FLAGS)
-rest_auth_local_la_LIBADD = $(libslurmfull_la_LIBADD)

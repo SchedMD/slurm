@@ -40,6 +40,5 @@ noinst_LTLIBRARIES = libopenapi_ref.la
 openapi_v0_0_37_la_SOURCES = \
 	api.c api.h diag.c jobs.c nodes.c partitions.c reservations.c
 
-openapi_v0_0_37_la_DEPENDENCIES = $(LIB_SLURM_BUILD)
 openapi_v0_0_37_la_LDFLAGS = $(PLUGIN_FLAGS)
-openapi_v0_0_37_la_LIBADD = $(libslurmfull_la_LIBADD) openapi_ref.lo
+openapi_v0_0_37_la_LIBADD = openapi_ref.lo

@@ -11,6 +11,4 @@ pkglib_LTLIBRARIES = rest_auth_jwt.la
 
 rest_auth_jwt_la_SOURCES = jwt.c
 
-rest_auth_jwt_la_DEPENDENCIES = $(LIB_SLURM_BUILD)
 rest_auth_jwt_la_LDFLAGS = $(PLUGIN_FLAGS)
-rest_auth_jwt_la_LIBADD = $(libslurmfull_la_LIBADD)

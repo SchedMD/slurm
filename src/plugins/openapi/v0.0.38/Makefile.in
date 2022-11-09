@@ -187,6 +187,7 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+openapi_v0_0_38_la_DEPENDENCIES = openapi_ref.lo
 am_openapi_v0_0_38_la_OBJECTS = api.lo diag.lo jobs.lo nodes.lo \
 	partitions.lo reservations.lo
 openapi_v0_0_38_la_OBJECTS = $(am_openapi_v0_0_38_la_OBJECTS)
@@ -532,9 +533,8 @@ noinst_LTLIBRARIES = libopenapi_ref.la
 openapi_v0_0_38_la_SOURCES = \
 	api.c api.h diag.c jobs.c nodes.c partitions.c reservations.c
 
-openapi_v0_0_38_la_DEPENDENCIES = $(LIB_SLURM_BUILD)
 openapi_v0_0_38_la_LDFLAGS = $(PLUGIN_FLAGS)
-openapi_v0_0_38_la_LIBADD = $(libslurmfull_la_LIBADD) openapi_ref.lo
+openapi_v0_0_38_la_LIBADD = openapi_ref.lo
 all: all-am
 
 .SUFFIXES:
