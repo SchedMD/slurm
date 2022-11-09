@@ -399,7 +399,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmctldDebug", S_P_STRING},
 	{"SlurmctldLogFile", S_P_STRING},
 	{"SlurmctldPidFile", S_P_STRING},
-	{"SlurmctldPlugstack", S_P_STRING},
 	{"SlurmctldPort", S_P_STRING},
 	{"SlurmctldPrimaryOffProg", S_P_STRING},
 	{"SlurmctldPrimaryOnProg", S_P_STRING},
