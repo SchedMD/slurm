@@ -500,6 +500,14 @@ int main(int argc, char **argv)
 	 * Initialize plugins.
 	 * If running configuration test, report ALL failures.
 	 */
+	if (slurm_acct_storage_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize accounting_storage plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize accounting_storage plugin");
+		}
+	}
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize authentication plugin");

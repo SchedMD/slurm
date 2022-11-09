@@ -36,6 +36,8 @@
 
 #include "src/common/read_config.h"
 
+#include "src/interfaces/accounting_storage.h"
+
 extern void slurm_init(const char *conf)
 {
 	slurm_conf_init(conf);
@@ -49,4 +51,7 @@ extern void slurm_fini(void)
 
 extern void slurm_client_init_plugins(void)
 {
+	if (slurm_acct_storage_init() != SLURM_SUCCESS)
+		fatal("failed to initialize the accounting storage plugin");
+
 }
