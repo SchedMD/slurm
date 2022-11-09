@@ -930,6 +930,7 @@ scontrol_encode_hostlist(char *hostlist, bool sorted)
 {
 	char *io_buf = NULL, *tmp_list, *ranged_string;
 	int buf_size = 1024 * 1024;
+	int data_read = 0;
 	hostlist_t hl;
 
 	if (!hostlist) {
@@ -944,8 +945,17 @@ scontrol_encode_hostlist(char *hostlist, bool sorted)
 			fprintf(stderr, "Can not open %s\n", hostlist);
 			return SLURM_ERROR;
 		}
-		io_buf = xmalloc(buf_size);
-		buf_read = read(fd, io_buf, buf_size);
+		io_buf = xmalloc(buf_size + 1);
+		while ((buf_read = read(fd, &io_buf[data_read],
+					buf_size - data_read)) > 0) {
+			data_read += buf_read;
+		}
+
+		if (buf_read < 0) {
+			fprintf(stderr, "Error reading %s\n", hostlist);
+			return SLURM_ERROR;
+		}
+
 		close(fd);
 		if (buf_read >= buf_size) {
 			/* If over 1MB, the file is almost certainly invalid */
@@ -953,7 +963,7 @@ scontrol_encode_hostlist(char *hostlist, bool sorted)
 			xfree(io_buf);
 			return SLURM_ERROR;
 		}
-		io_buf[buf_read] = '\0';
+		io_buf[data_read] = '\0';
 		_reformat_hostlist(io_buf);
 		tmp_list = io_buf;
 	} else
