@@ -296,7 +296,7 @@ static const char *syms[] = {
 
 static slurm_acct_storage_ops_t ops;
 static plugin_context_t *plugin_context = NULL;
-static pthread_mutex_t plugin_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t plugin_context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 /*
  * If running with slurmdbd don't run if we don't have an index, else
@@ -319,7 +319,7 @@ extern int slurm_acct_storage_init(void)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "accounting_storage";
 
-	slurm_mutex_lock(&plugin_context_lock);
+	slurm_rwlock_wrlock(&plugin_context_lock);
 
 	if (plugin_context)
 		goto done;
@@ -336,20 +336,21 @@ extern int slurm_acct_storage_init(void)
 	}
 
 done:
-	slurm_mutex_unlock(&plugin_context_lock);
+	slurm_rwlock_unlock(&plugin_context_lock);
 	return retval;
 }
 
 extern int slurm_acct_storage_fini(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
-	if (!plugin_context)
-		return SLURM_SUCCESS;
-
-//	(*(ops.acct_storage_fini))();
-	rc = plugin_context_destroy(plugin_context);
-	plugin_context = NULL;
+	slurm_rwlock_wrlock(&plugin_context_lock);
+	if (plugin_context) {
+		//(*(ops.acct_storage_fini))();
+		rc = plugin_context_destroy(plugin_context);
+		plugin_context = NULL;
+	}
+	slurm_rwlock_unlock(&plugin_context_lock);
 	return rc;
 }
 
