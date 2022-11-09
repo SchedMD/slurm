@@ -114,9 +114,6 @@ extern int acct_gather_filesystem_init(void)
 	char *plugin_type = "acct_gather_filesystem";
 	char *type = NULL;
 
-	if (init_run && g_context)
-		return retval;
-
 	slurm_mutex_lock(&g_context_lock);
 
 	if (g_context)
@@ -176,8 +173,7 @@ extern int acct_gather_filesystem_g_get_data(acct_gather_data_t *data)
 {
 	int retval = SLURM_SUCCESS;
 
-	if (acct_gather_filesystem_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 	retval = (*(ops.get_data))(data);
 	return retval;
 }
@@ -186,8 +182,7 @@ extern int acct_gather_filesystem_startpoll(uint32_t frequency)
 {
 	int retval = SLURM_SUCCESS;
 
-	if (acct_gather_filesystem_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	if (!acct_shutdown) {
 		error("acct_gather_filesystem_startpoll: "
@@ -216,16 +211,14 @@ extern int acct_gather_filesystem_startpoll(uint32_t frequency)
 extern int acct_gather_filesystem_g_conf_options(s_p_options_t **full_options,
 						  int *full_options_cnt)
 {
-        if (acct_gather_filesystem_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
         (*(ops.conf_options))(full_options, full_options_cnt);
 	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_filesystem_g_conf_set(s_p_hashtbl_t *tbl)
 {
-        if (acct_gather_filesystem_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
         (*(ops.conf_set))(tbl);
 	return SLURM_SUCCESS;
@@ -234,8 +227,7 @@ extern int acct_gather_filesystem_g_conf_set(s_p_hashtbl_t *tbl)
 
 extern int acct_gather_filesystem_g_conf_values(void *data)
 {
-	if (acct_gather_filesystem_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	(*(ops.conf_values))(data);
 	return SLURM_SUCCESS;
