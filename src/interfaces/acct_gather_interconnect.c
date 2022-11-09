@@ -124,9 +124,6 @@ extern int acct_gather_interconnect_init(void)
 	char *full_plugin_type = NULL;
 	char *last = NULL, *plugin_entry, *type = NULL;
 
-	if (init_run && (g_context_num >= 0))
-		return retval;
-
 	slurm_mutex_lock(&g_context_lock);
 
 	if (g_context_num >= 0)
@@ -214,8 +211,7 @@ extern int acct_gather_interconnect_startpoll(uint32_t frequency)
 {
 	int retval = SLURM_SUCCESS;
 
-	if (acct_gather_interconnect_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	if (!acct_shutdown) {
 		error("%s: poll already started!", __func__);
@@ -245,8 +241,7 @@ extern int acct_gather_interconnect_g_conf_options(
 {
 	int i;
 
-	if (acct_gather_interconnect_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
@@ -262,8 +257,7 @@ extern int acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl)
 {
 	int i;
 
-	if (acct_gather_interconnect_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
@@ -279,8 +273,7 @@ extern int acct_gather_interconnect_g_conf_values(void *data)
 {
 	int i;
 
-	if (acct_gather_interconnect_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
@@ -302,8 +295,7 @@ extern int acct_gather_interconnect_g_get_data(acct_gather_data_t *data)
 
 	int retval = SLURM_SUCCESS;
 
-	if (acct_gather_interconnect_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
