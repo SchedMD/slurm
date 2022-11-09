@@ -195,6 +195,12 @@ extern int select_get_plugin_id(void);
 extern int select_running_linear_based(void);
 
 /*
+ * Convert SelectTypeParameter to equivalent string
+ * NOTE: Not reentrant
+ */
+extern char *select_type_param_string(uint16_t select_type_param);
+
+/*
  * Save any global state information
  * IN dir_name - directory into which the data can be stored
  */

@@ -50,12 +50,13 @@
 #include "src/common/list.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
-#include "src/common/slurm_selecttype_info.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/auth.h"
+#include "src/interfaces/select.h"
 
 /* Local functions */
 static void _write_group_header(FILE* out, char * header);

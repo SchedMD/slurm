@@ -45,7 +45,6 @@
 #include "src/common/list.h"
 #include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_selecttype_info.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -404,6 +403,69 @@ extern int select_running_linear_based(void)
 		break;
 	}
 	return rc;
+}
+
+/*
+ * Convert SelectTypeParameter to equivalent string
+ * NOTE: Not reentrant
+ */
+extern char *select_type_param_string(uint16_t select_type_param)
+{
+	static char select_str[1024];
+
+	select_str[0] = '\0';
+	if ((select_type_param & CR_CPU) &&
+	    (select_type_param & CR_MEMORY))
+		strcat(select_str, "CR_CPU_MEMORY");
+	else if ((select_type_param & CR_CORE) &&
+		 (select_type_param & CR_MEMORY))
+		strcat(select_str, "CR_CORE_MEMORY");
+	else if ((select_type_param & CR_SOCKET) &&
+		 (select_type_param & CR_MEMORY))
+		strcat(select_str, "CR_SOCKET_MEMORY");
+	else if (select_type_param & CR_CPU)
+		strcat(select_str, "CR_CPU");
+	else if (select_type_param & CR_CORE)
+		strcat(select_str, "CR_CORE");
+	else if (select_type_param & CR_SOCKET)
+		strcat(select_str, "CR_SOCKET");
+	else if (select_type_param & CR_MEMORY)
+		strcat(select_str, "CR_MEMORY");
+
+	if (select_type_param & CR_OTHER_CONS_RES) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "OTHER_CONS_RES");
+	}
+	if (select_type_param & CR_OTHER_CONS_TRES) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "OTHER_CONS_TRES");
+	}
+	if (select_type_param & CR_ONE_TASK_PER_CORE) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_ONE_TASK_PER_CORE");
+	}
+	if (select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_CORE_DEFAULT_DIST_BLOCK");
+	}
+	if (select_type_param & CR_LLN) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_LLN");
+	}
+	if (select_type_param & CR_PACK_NODES) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_PACK_NODES");
+	}
+	if (select_str[0] == '\0')
+		strcat(select_str, "NONE");
+
+	return select_str;
 }
 
 /*

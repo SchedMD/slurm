@@ -113,8 +113,6 @@ libcommon_la_SOURCES =				\
 	slurm_resource_info.h			\
 	slurm_rlimits_info.c			\
 	slurm_rlimits_info.h			\
-	slurm_selecttype_info.c			\
-	slurm_selecttype_info.h			\
 	slurm_step_layout.c			\
 	slurm_step_layout.h			\
 	slurm_time.c				\

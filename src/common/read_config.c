@@ -82,7 +82,6 @@
 #include "src/common/slurm_resource_info.h"
 #include "src/common/slurm_resolv.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/slurm_selecttype_info.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
@@ -3829,6 +3828,84 @@ static int _validate_bcast_exclude(slurm_conf_t *conf)
 }
 
 /*
+ * Parse a comma separated list of SelectType Parameters
+ *
+ * Return SLURM_SUCCESS on success, or SLURM_ERROR otherwise
+ */
+static int _parse_select_type_param(
+	char *select_type_parameters, uint16_t *param)
+{
+	int rc = SLURM_SUCCESS;
+	char *str_parameters, *st_str = NULL;
+	int param_cnt = 0;
+
+	*param = 0;
+	st_str = xstrdup(select_type_parameters);
+	str_parameters = strtok(st_str,",");
+	while (str_parameters) {
+		if (!xstrcasecmp(str_parameters, "CR_Socket")) {
+			*param |= CR_SOCKET;
+			param_cnt++;
+		} else if (!xstrcasecmp(str_parameters, "CR_Socket_Memory")) {
+			*param |= CR_SOCKET;
+			*param |= CR_MEMORY;
+			param_cnt++;
+		} else if (!xstrcasecmp(str_parameters, "CR_Core")) {
+			*param |= CR_CORE;
+			param_cnt++;
+		} else if (!xstrcasecmp(str_parameters, "CR_Core_Memory")) {
+			*param |= CR_CORE;
+			*param |= CR_MEMORY;
+			param_cnt++;
+		} else if (!xstrcasecmp(str_parameters, "CR_Memory")) {
+			*param |= CR_MEMORY;
+			param_cnt++;
+		} else if (!xstrcasecmp(str_parameters, "CR_CPU")) {
+			*param |= CR_CPU;
+			param_cnt++;
+		} else if (!xstrcasecmp(str_parameters, "CR_CPU_Memory")) {
+			*param |= CR_CPU;
+			*param |= CR_MEMORY;
+			param_cnt++;
+		} else if (!xstrcasecmp(str_parameters, "other_cons_res")) {
+			*param |= CR_OTHER_CONS_RES;
+		} else if (!xstrcasecmp(str_parameters, "other_cons_tres")) {
+			*param |= CR_OTHER_CONS_TRES;
+		} else if (!xstrcasecmp(str_parameters,
+				       "CR_ONE_TASK_PER_CORE")) {
+			*param |= CR_ONE_TASK_PER_CORE;
+		} else if (!xstrcasecmp(str_parameters,
+				       "CR_CORE_DEFAULT_DIST_BLOCK")) {
+			*param |= CR_CORE_DEFAULT_DIST_BLOCK;
+		} else if (!xstrcasecmp(str_parameters, "CR_LLN")) {
+			*param |= CR_LLN;
+		} else if (!xstrcasecmp(str_parameters, "CR_PACK_NODES")) {
+			*param |= CR_PACK_NODES;
+		} else {
+			error("Bad SelectTypeParameter: %s", str_parameters);
+			rc = SLURM_ERROR;
+			xfree(st_str);
+			return rc;
+		}
+
+		if ((*param & CR_CPU) && (*param & CR_ONE_TASK_PER_CORE)) {
+			error("CR_ONE_TASK_PER_CORE is not compatible with CR_CPU*, please change to use CR_CORE* instead.");
+			rc = SLURM_ERROR;
+			xfree(st_str);
+			return rc;
+		}
+
+		str_parameters = strtok(NULL,",");
+	}
+	xfree(st_str);
+
+	if (param_cnt > 1)
+		rc = SLURM_ERROR;
+
+	return rc;
+}
+
+/*
  *
  * IN/OUT ctl_conf_ptr - a configuration as loaded by read_slurm_conf_ctl
  *
@@ -4956,7 +5033,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (s_p_get_string(&temp_str,
 			   "SelectTypeParameters", hashtbl)) {
 		uint16_t type_param;
-		if ((parse_select_type_param(temp_str, &type_param) < 0)) {
+		if ((_parse_select_type_param(temp_str, &type_param) < 0)) {
 			error("Bad SelectTypeParameter: %s", temp_str);
 			xfree(temp_str);
 			return SLURM_ERROR;
