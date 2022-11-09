@@ -121,7 +121,6 @@ static slurm_bb_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static char *bb_plugin_list = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 /*
  * Initialize the burst buffer infrastructure.
@@ -134,9 +133,6 @@ extern int bb_g_init(void)
 	char *last = NULL, *names;
 	char *plugin_type = "burst_buffer";
 	char *type;
-
-	if (init_run && (g_context_cnt >= 0))
-		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context_cnt >= 0)
@@ -170,7 +166,6 @@ extern int bb_g_init(void)
 		g_context_cnt++;
 		names = NULL; /* for next iteration */
 	}
-	init_run = true;
 
 	/*
 	 * Although the burst buffer plugin interface was designed to support
@@ -205,7 +200,6 @@ extern int bb_g_fini(void)
 	if (g_context_cnt < 0)
 		goto fini;
 
-	init_run = false;
 	for (i = 0; i < g_context_cnt; i++) {
 		if (g_context[i]) {
 			j = plugin_context_destroy(g_context[i]);
@@ -240,10 +234,10 @@ fini:	slurm_mutex_unlock(&g_context_lock);
 extern int bb_g_load_state(bool init_config)
 {
 	DEF_TIMERS;
-	int i, rc, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 
 	START_TIMER;
-	rc = bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		rc2 = (*(ops[i].load_state))(init_config);
@@ -271,7 +265,7 @@ extern char *bb_g_get_status(uint32_t argc, char **argv, uint32_t uid,
 	char *status = NULL, *tmp;
 
 	START_TIMER;
-	(void) bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		tmp = (*(ops[i].get_status))(argc, argv, uid, gid);
@@ -297,14 +291,14 @@ extern char *bb_g_get_status(uint32_t argc, char **argv, uint32_t uid,
 extern int bb_g_state_pack(uid_t uid, buf_t *buffer, uint16_t protocol_version)
 {
 	DEF_TIMERS;
-	int i, rc, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 	uint32_t rec_count = 0;
 	int eof, last_offset, offset;
 
 	START_TIMER;
 	offset = get_buf_offset(buffer);
 	pack32(rec_count, buffer);
-	rc = bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		last_offset = get_buf_offset(buffer);
@@ -333,10 +327,10 @@ extern int bb_g_state_pack(uid_t uid, buf_t *buffer, uint16_t protocol_version)
 extern int bb_g_reconfig(void)
 {
 	DEF_TIMERS;
-	int i, rc, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 
 	START_TIMER;
-	rc = bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		rc2 = (*(ops[i].reconfig))();
@@ -357,7 +351,7 @@ extern uint64_t bb_g_get_system_size(char *name)
 	uint64_t size = 0;
 	int i, offset = 0;
 
-	(void) bb_g_init();
+	xassert(g_context_cnt >= 0);
 
 	if (xstrncmp(name, "burst_buffer/", 13))
 		offset = 13;
@@ -389,10 +383,10 @@ extern int bb_g_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
 			     char **err_msg)
 {
 	DEF_TIMERS;
-	int i, rc, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 
 	START_TIMER;
-	rc = bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_validate))(job_desc, submit_uid, err_msg);
@@ -413,10 +407,10 @@ extern int bb_g_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid,
 extern int bb_g_job_validate2(job_record_t *job_ptr, char **err_msg)
 {
 	DEF_TIMERS;
-	int i, rc, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 
 	START_TIMER;
-	rc = bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_validate2))(job_ptr, err_msg);
@@ -451,10 +445,7 @@ extern char *bb_g_build_het_job_script(char *script, uint32_t het_job_offset)
 		return xstrdup(script);
 
 	START_TIMER;
-	if (bb_g_init() != SLURM_SUCCESS) {
-		END_TIMER2(__func__);
-		return NULL;
-	}
+	xassert(g_context_cnt >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 	/* This currently only supports a single burst buffer plugin */
@@ -480,7 +471,7 @@ extern void bb_g_job_set_tres_cnt(job_record_t *job_ptr, uint64_t *tres_cnt,
 	int i;
 
 	START_TIMER;
-	(void) bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		(*(ops[i].job_set_tres_cnt))(job_ptr, tres_cnt, locked);
@@ -515,8 +506,7 @@ extern time_t bb_g_job_get_est_start(job_record_t *job_ptr)
 	time_t start_time = time(NULL), new_time;
 
 	START_TIMER;
-	if (bb_g_init() != SLURM_SUCCESS)
-		return start_time + 24 * 60 * 60;
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		new_time = (*(ops[i].job_get_est_start))(job_ptr);
@@ -559,7 +549,7 @@ extern int bb_g_job_try_stage_in(void)
 	list_iterator_destroy(job_iterator);
 	list_sort(job_queue, _sort_job_queue);
 
-	rc = bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_try_stage_in))(job_queue);
@@ -587,8 +577,7 @@ extern int bb_g_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 	int i, rc = 1, rc2;
 
 	START_TIMER;
-	if (bb_g_init() != SLURM_SUCCESS)
-		rc = -1;
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_test_stage_in))(job_ptr, test_only);
@@ -612,8 +601,7 @@ extern int bb_g_job_begin(job_record_t *job_ptr)
 	int i, rc = SLURM_SUCCESS, rc2;
 
 	START_TIMER;
-	if (bb_g_init() != SLURM_SUCCESS)
-		rc = SLURM_ERROR;
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_begin))(job_ptr);
@@ -638,8 +626,7 @@ extern int bb_g_job_revoke_alloc(job_record_t *job_ptr)
 	int i, rc = SLURM_SUCCESS, rc2;
 
 	START_TIMER;
-	if (bb_g_init() != SLURM_SUCCESS)
-		rc = SLURM_ERROR;
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_revoke_alloc))(job_ptr);
@@ -660,10 +647,10 @@ extern int bb_g_job_revoke_alloc(job_record_t *job_ptr)
 extern int bb_g_job_start_stage_out(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
-	int i, rc, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 
 	START_TIMER;
-	rc = bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_start_stage_out))(job_ptr);
@@ -688,8 +675,7 @@ extern int bb_g_job_test_post_run(job_record_t *job_ptr)
 	int i, rc = 1, rc2;
 
 	START_TIMER;
-	if (bb_g_init() != SLURM_SUCCESS)
-		rc = -1;
+	xassert(g_context_cnt >= 0);
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
@@ -719,8 +705,7 @@ extern int bb_g_job_test_stage_out(job_record_t *job_ptr)
 	int i, rc = 1, rc2;
 
 	START_TIMER;
-	if (bb_g_init() != SLURM_SUCCESS)
-		rc = -1;
+	xassert(g_context_cnt >= 0);
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
@@ -750,10 +735,10 @@ extern int bb_g_job_test_stage_out(job_record_t *job_ptr)
 extern int bb_g_job_cancel(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
-	int i, rc, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 
 	START_TIMER;
-	rc = bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].job_cancel))(job_ptr);
@@ -769,9 +754,9 @@ extern int bb_g_run_script(char *func, uint32_t job_id, uint32_t argc,
 			   char **argv, job_info_msg_t *job_info,
 			   char **resp_msg)
 {
-	int i, rc, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 
-	rc = bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].run_script))(func, job_id, argc, argv, job_info,
@@ -798,7 +783,7 @@ extern char *bb_g_xlate_bb_2_tres_str(char *burst_buffer)
 	char *tmp = NULL, *tmp2;
 
 	START_TIMER;
-	(void) bb_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		tmp2 = (*(ops[i].xlate_bb_2_tres_str))(burst_buffer);
