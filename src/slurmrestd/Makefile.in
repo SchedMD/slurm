@@ -14,6 +14,24 @@
 
 @SET_MAKE@
 
+# This is common code for a Makefile.am and creates $(LIB_REF) to be used
+# afterwards in noinst_LTLIBRARIES and EXTRA_slurmrestd_DEPENDENCIES
+#
+# usage
+#
+# REF = usage.txt
+# include $(top_srcdir)/make_ref.include
+# noinst_LTLIBRARIES [+]= $(LIB_REF)
+# EXTRA_$PROGRAMNAME_DEPENDENCIES [+]= $(LIB_REF)
+# $PROGRAMNAME_LDADD += $(LIB_REF)
+#
+# What the above lines do is include this file in a Makefile.am
+# It will insert usage.txt as a variable that the calling program can access
+# with the calls in src/common/ref.h.
+#
+# If I where doing this for the slurmrestd I would put 'slurmrestd' in for
+# $PROGRAMNAME i.e. EXTRA_slurmrestd_DEPENDENCIES, slurmrestd_LDADD.
+
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -91,6 +109,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @WITH_SLURMRESTD_TRUE@sbin_PROGRAMS = slurmrestd$(EXEEXT)
+@WITH_SLURMRESTD_TRUE@am__append_1 = *.bino
 subdir = src/slurmrestd
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -154,22 +173,19 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-@WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_DEPENDENCIES =  \
-@WITH_SLURMRESTD_TRUE@	libslurmrest_ref.lo
-am_libslurmrest_ref_la_OBJECTS =
-libslurmrest_ref_la_OBJECTS = $(am_libslurmrest_ref_la_OBJECTS)
+@WITH_SLURMRESTD_TRUE@lib_ref_la_DEPENDENCIES = lib_ref.lo
+lib_ref_la_SOURCES = lib_ref.c
+lib_ref_la_OBJECTS = lib_ref.lo
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-@WITH_SLURMRESTD_TRUE@am_libslurmrest_ref_la_rpath =
+@WITH_SLURMRESTD_TRUE@am_lib_ref_la_rpath =
 am__objects_1 = http.$(OBJEXT) operations.$(OBJEXT) \
 	slurmrestd.$(OBJEXT) rest_auth.$(OBJEXT)
 @WITH_SLURMRESTD_TRUE@am_slurmrestd_OBJECTS = $(am__objects_1)
 slurmrestd_OBJECTS = $(am_slurmrestd_OBJECTS)
 am__DEPENDENCIES_1 =
-@WITH_SLURMRESTD_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
-@WITH_SLURMRESTD_TRUE@	$(am__DEPENDENCIES_1)
 slurmrestd_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurmrestd_LDFLAGS) $(LDFLAGS) -o $@
@@ -188,8 +204,9 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/http.Po ./$(DEPDIR)/operations.Po \
-	./$(DEPDIR)/rest_auth.Po ./$(DEPDIR)/slurmrestd.Po
+am__depfiles_remade = ./$(DEPDIR)/http.Po ./$(DEPDIR)/lib_ref.Plo \
+	./$(DEPDIR)/operations.Po ./$(DEPDIR)/rest_auth.Po \
+	./$(DEPDIR)/slurmrestd.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -209,7 +226,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libslurmrest_ref_la_SOURCES) $(slurmrestd_SOURCES)
+SOURCES = lib_ref.c $(slurmrestd_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -514,8 +531,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 @WITH_SLURMRESTD_TRUE@SUBDIRS = plugins
 AUTOMAKE_OPTIONS = foreign
-CLEANFILES = core.* *.bino
-REF = usage.txt
+CLEANFILES = core.* $(am__append_1)
 SRCS = \
 	http.c http.h \
 	operations.c operations.h \
@@ -523,26 +539,22 @@ SRCS = \
 	rest_auth.h rest_auth.c
 
 @WITH_SLURMRESTD_TRUE@AM_CPPFLAGS = -I$(top_srcdir) $(HTTP_PARSER_CPPFLAGS)
-@WITH_SLURMRESTD_TRUE@BIN_REF = $(REF:.txt=.bino)
-@WITH_SLURMRESTD_TRUE@BIN_REF2 = $(BIN_REF:.json=.bino)
-
-# making a .la
-@WITH_SLURMRESTD_TRUE@noinst_LTLIBRARIES = libslurmrest_ref.la
-@WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_SOURCES = 
 @WITH_SLURMRESTD_TRUE@slurmrestd_SOURCES = $(SRCS)
-@WITH_SLURMRESTD_TRUE@convenience_libs = $(LIB_SLURM) $(DL_LIBS)
-@WITH_SLURMRESTD_TRUE@slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD) libslurmrest_ref.la
+@WITH_SLURMRESTD_TRUE@slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD)
 @WITH_SLURMRESTD_TRUE@slurmrestd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
-@WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
-@WITH_SLURMRESTD_TRUE@slurmrestd_LDADD = \
-@WITH_SLURMRESTD_TRUE@	$(convenience_libs) $(HTTP_PARSER_LDFLAGS) \
-@WITH_SLURMRESTD_TRUE@	libslurmrest_ref.la
-
+@WITH_SLURMRESTD_TRUE@slurmrestd_LDADD = $(LIB_SLURM) $(DL_LIBS) \
+@WITH_SLURMRESTD_TRUE@	$(HTTP_PARSER_LDFLAGS) $(LIB_REF)
+@WITH_SLURMRESTD_TRUE@REF = usage.txt
+@WITH_SLURMRESTD_TRUE@BIN_REF = $(REF:.txt=.bino)
+@WITH_SLURMRESTD_TRUE@LIB_REF = lib_ref.la
+@WITH_SLURMRESTD_TRUE@lib_ref_la_LIBADD = lib_ref.lo
+@WITH_SLURMRESTD_TRUE@noinst_LTLIBRARIES = $(LIB_REF)
+@WITH_SLURMRESTD_TRUE@EXTRA_slurmrestd_DEPENDENCIES = $(LIB_REF)
 all: all-recursive
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/make_ref.include $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -562,6 +574,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__maybe_remake_depfiles)'; \
 	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__maybe_remake_depfiles);; \
 	esac;
+$(top_srcdir)/make_ref.include $(am__empty):
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
@@ -632,8 +645,8 @@ clean-noinstLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-libslurmrest_ref.la: $(libslurmrest_ref_la_OBJECTS) $(libslurmrest_ref_la_DEPENDENCIES) $(EXTRA_libslurmrest_ref_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK) $(am_libslurmrest_ref_la_rpath) $(libslurmrest_ref_la_OBJECTS) $(libslurmrest_ref_la_LIBADD) $(LIBS)
+lib_ref.la: $(lib_ref_la_OBJECTS) $(lib_ref_la_DEPENDENCIES) $(EXTRA_lib_ref_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK) $(am_lib_ref_la_rpath) $(lib_ref_la_OBJECTS) $(lib_ref_la_LIBADD) $(LIBS)
 
 slurmrestd$(EXEEXT): $(slurmrestd_OBJECTS) $(slurmrestd_DEPENDENCIES) $(EXTRA_slurmrestd_DEPENDENCIES) 
 	@rm -f slurmrestd$(EXEEXT)
@@ -646,6 +659,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lib_ref.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/operations.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rest_auth.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmrestd.Po@am__quote@ # am--include-marker
@@ -827,6 +841,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 
 distclean: distclean-recursive
 		-rm -f ./$(DEPDIR)/http.Po
+	-rm -f ./$(DEPDIR)/lib_ref.Plo
 	-rm -f ./$(DEPDIR)/operations.Po
 	-rm -f ./$(DEPDIR)/rest_auth.Po
 	-rm -f ./$(DEPDIR)/slurmrestd.Po
@@ -876,6 +891,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
 		-rm -f ./$(DEPDIR)/http.Po
+	-rm -f ./$(DEPDIR)/lib_ref.Plo
 	-rm -f ./$(DEPDIR)/operations.Po
 	-rm -f ./$(DEPDIR)/rest_auth.Po
 	-rm -f ./$(DEPDIR)/slurmrestd.Po
@@ -921,11 +937,7 @@ uninstall-am: uninstall-sbinPROGRAMS
 @WITH_SLURMRESTD_TRUE@	$(AM_V_GEN)pushd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; popd
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
 
-@WITH_SLURMRESTD_TRUE@%.bino: %.json
-@WITH_SLURMRESTD_TRUE@	$(AM_V_GEN)pushd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; popd
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
-
-@WITH_SLURMRESTD_TRUE@libslurmrest_ref.lo: $(BIN_REF2)
+@WITH_SLURMRESTD_TRUE@lib_ref.lo: $(BIN_REF)
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# $@ - a libtool object file" >"$@"
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Generated by $(shell @LIBTOOL@ --version | head -n 1)" >>"$@"
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "#" >>"$@"
@@ -933,13 +945,14 @@ uninstall-am: uninstall-sbinPROGRAMS
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# It is necessary for linking the library." >>"$@"
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo >>"$@"
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Name of the PIC object." >>"$@"
-@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "pic_object='$(BIN_REF2)'" >>"$@"
+@WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "pic_object='$(BIN_REF)'" >>"$@"
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo >>"$@"
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "# Name of the non-PIC object" >>"$@"
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo "non_pic_object=''" >>"$@"
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)echo >>"$@"
+
 force:
-$(convenience_libs) : force
+$(slurmrestd_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
