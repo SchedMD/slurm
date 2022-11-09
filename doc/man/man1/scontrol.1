@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "October 2022" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "November 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -463,20 +463,13 @@ Shows configured frontend nodes.
 
 .TP
 \fBhostlist\fR
-Takes a list of host names and prints the hostlist
-expression for them (the inverse of \fBhostnames\fR).
-\fBhostlist\fR can also take the absolute pathname of a file
-(beginning with the character '/') containing a list of hostnames.
-Multiple node names may be specified using simple node range expressions
-(e.g. "lx[10\-20]"). All other \fIID\fP values must identify a single
-element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
-\fBslurmd\fR reports the current status of the slurmd daemon executing
-on the same node from which the scontrol command is executed (the
-local host). It can be useful to diagnose problems.
-By default \fBhostlist\fR does not sort the node list or make it
-unique (e.g. tux2,tux1,tux2 = tux[2,1\-2]).  If you wanted a sorted
-list use \fBhostlistsorted\fR (e.g. tux2,tux1,tux2 = tux[1\-2,2]).
-By default, all elements of the entity type specified are printed.
+Takes a list of host names and prints the hostlist expression for them (the
+inverse of \fBhostnames\fR). \fBhostlist\fR can also take the absolute pathname
+of a file (beginning with the character '/') containing a list of hostnames.
+Multiple node names may be specified using simple node range expressions (e.g.
+"lx[10\-20]"). By default \fBhostlist\fR does not sort the node list or make it
+unique (e.g. tux2,tux1,tux2 = tux[2,1\-2]). If you wanted a sorted list use
+\fBhostlistsorted\fR (e.g. tux2,tux1,tux2 = tux[1\-2,2]).
 .IP
 
 .TP
