@@ -372,7 +372,7 @@ set no_delim_slash       "\[^(,:/\r\n\]"
 # The second **optional** group matches GRES type.
 # The third group matches GRES count.
 # Test out the regex here: https://regex101.com/r/FlNYKM/7
-set gres_regex "($no_delim_slash*):($no_delim*)?:($no_delim*)?:?($no_delim*)"
+set gres_regex "($no_delim_slash*):($no_delim*)?:?($no_delim*)?:?($no_delim*)"
 
 #basic #defines in slurm.h
 set NO_VAL 0xfffffffe
