@@ -135,9 +135,6 @@ extern int acct_gather_energy_init(void)
 	char *full_plugin_type = NULL;
 	char *last = NULL, *plugin_entry, *type = NULL;
 
-	if (init_run && (g_context_num >= 0))
-		return retval;
-
 	slurm_mutex_lock(&g_context_lock);
 
 	if (g_context_num >= 0)
@@ -289,8 +286,7 @@ extern int acct_gather_energy_g_update_node_energy(void)
 {
 	int retval = SLURM_ERROR;
 
-	if (slurm_acct_gather_energy_init() < 0)
-		return retval;
+	xassert(g_context_num >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; i < g_context_num; i++) {
@@ -309,8 +305,7 @@ extern int acct_gather_energy_g_get_sum(enum acct_energy_type data_type,
 	int retval = SLURM_ERROR;
 	static acct_gather_energy_t *e, *energy_array;
 
-	if (slurm_acct_gather_energy_init() < 0)
-		return retval;
+	xassert(g_context_num >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -357,8 +352,7 @@ extern int acct_gather_energy_g_get_data(int context_id,
 {
 	int retval = SLURM_ERROR;
 
-	if (slurm_acct_gather_energy_init() < 0)
-		return retval;
+	xassert(g_context_num >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -377,8 +371,7 @@ extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
 {
 	int retval = SLURM_ERROR;
 
-	if (slurm_acct_gather_energy_init() < 0)
-		return retval;
+	xassert(g_context_num >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; i < g_context_num; i++) {
@@ -395,8 +388,7 @@ extern int acct_gather_energy_startpoll(uint32_t frequency)
 {
 	int retval = SLURM_SUCCESS;
 
-	if (slurm_acct_gather_energy_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context_num >= 0);
 
 	if (!acct_shutdown) {
 		error("%s: poll already started!", __func__);
@@ -423,8 +415,7 @@ extern int acct_gather_energy_startpoll(uint32_t frequency)
 extern int acct_gather_energy_g_conf_options(s_p_options_t **full_options,
 					      int *full_options_cnt)
 {
-	if (slurm_acct_gather_energy_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context_num >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; i < g_context_num; i++) {
@@ -438,8 +429,7 @@ extern int acct_gather_energy_g_conf_options(s_p_options_t **full_options,
 
 extern int acct_gather_energy_g_conf_set(s_p_hashtbl_t *tbl)
 {
-	if (slurm_acct_gather_energy_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context_num >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; i < g_context_num; i++) {
@@ -453,8 +443,7 @@ extern int acct_gather_energy_g_conf_set(s_p_hashtbl_t *tbl)
 
 extern int acct_gather_energy_g_conf_values(void *data)
 {
-	if (slurm_acct_gather_energy_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context_num >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; i < g_context_num; i++) {

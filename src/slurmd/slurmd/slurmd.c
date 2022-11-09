@@ -360,6 +360,8 @@ main (int argc, char **argv)
 	if (!conf->cleanstart && (_restore_cred_state(conf->vctx) < 0))
 		return SLURM_ERROR;
 
+	if (acct_gather_conf_init() != SLURM_SUCCESS)
+		fatal("Unable to initialize acct_gather_conf");
 	if (jobacct_gather_init() != SLURM_SUCCESS)
 		fatal("Unable to initialize jobacct_gather");
 	if (job_container_init() < 0)
