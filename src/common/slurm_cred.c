@@ -1239,7 +1239,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		}
 
 		safe_unpack32(&cred->gid, buffer);
-		if (cred->uid == SLURM_AUTH_NOBODY) {
+		if (cred->gid == SLURM_AUTH_NOBODY) {
 			error("%s: refusing to unpack credential for invalid group nobody",
 			      __func__);
 			goto unpack_error;
@@ -1360,7 +1360,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		}
 
 		safe_unpack32(&cred->gid, buffer);
-		if (cred->uid == SLURM_AUTH_NOBODY) {
+		if (cred->gid == SLURM_AUTH_NOBODY) {
 			error("%s: refusing to unpack credential for invalid group nobody",
 			      __func__);
 			goto unpack_error;
@@ -1480,7 +1480,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		}
 
 		safe_unpack32(&cred->gid, buffer);
-		if (cred->uid == SLURM_AUTH_NOBODY) {
+		if (cred->gid == SLURM_AUTH_NOBODY) {
 			error("%s: refusing to unpack credential for invalid group nobody",
 			      __func__);
 			goto unpack_error;
