@@ -146,11 +146,9 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 		if {$stdout_lines != $stdin_lines} {
 			# TODO: Temporary debug for bug 15302 (remove once fixed)
 			set hostname [string trimright [run_command_output "hostname -s"]]
-			if {$hostname eq "knl2" || [regexp "vagrant-ubuntu" $hostname]} {
-				run_command "sudo dmesg -T | grep -i 'killed process'"
-				run_command "free -h"
-				run_command "top -o %MEM -n 1"
-			}
+			run_command "sudo dmesg -T | grep -i 'killed process'"
+			run_command "free -h"
+			run_command "top -o %MEM -n 1"
 
 			if {$stdout_lines == 0} {
 				fail "stdout is empty. Is current working directory writable from compute nodes?"
