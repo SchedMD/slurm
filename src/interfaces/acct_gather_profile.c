@@ -215,9 +215,6 @@ extern int acct_gather_profile_init(void)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "acct_gather_profile";
 
-	if (init_run && g_context)
-		return retval;
-
 	slurm_mutex_lock(&g_context_lock);
 
 	if (g_context)
@@ -451,8 +448,7 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	int i;
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
 
-	if (acct_gather_profile_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_running_mutex);
 	if (acct_gather_profile_running) {
@@ -563,8 +559,7 @@ extern void acct_gather_profile_endpoll(void)
 
 extern int acct_gather_profile_g_child_forked(void)
 {
-	if (acct_gather_profile_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	(*(ops.child_forked))();
 	return SLURM_SUCCESS;
@@ -573,8 +568,7 @@ extern int acct_gather_profile_g_child_forked(void)
 extern int acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 					       int *full_options_cnt)
 {
-	if (acct_gather_profile_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	(*(ops.conf_options))(full_options, full_options_cnt);
 	return SLURM_SUCCESS;
@@ -582,8 +576,7 @@ extern int acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 
 extern int acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl)
 {
-	if (acct_gather_profile_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	(*(ops.conf_set))(tbl);
 	return SLURM_SUCCESS;
@@ -592,8 +585,7 @@ extern int acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl)
 extern int acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
 				      void *data)
 {
-	if (acct_gather_profile_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	(*(ops.get))(info_type, data);
 	return SLURM_SUCCESS;
@@ -601,8 +593,7 @@ extern int acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
 
 extern int acct_gather_profile_g_node_step_start(stepd_step_rec_t* job)
 {
-	if (acct_gather_profile_init() < 0)
-		return SLURM_ERROR;
+	xassert(init_run);
 
 	return (*(ops.node_step_start))(job);
 }
@@ -620,8 +611,7 @@ extern int acct_gather_profile_g_task_start(uint32_t taskid)
 {
 	int retval = SLURM_ERROR;
 
-	if (acct_gather_profile_init() < 0)
-		return retval;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.task_start))(taskid);
@@ -633,8 +623,7 @@ extern int acct_gather_profile_g_task_end(pid_t taskpid)
 {
 	int retval = SLURM_ERROR;
 
-	if (acct_gather_profile_init() < 0)
-		return retval;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.task_end))(taskpid);
@@ -646,8 +635,7 @@ extern int64_t acct_gather_profile_g_create_group(const char *name)
 {
 	int64_t retval = SLURM_ERROR;
 
-	if (acct_gather_profile_init() < 0)
-		return retval;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.create_group))(name);
@@ -661,8 +649,7 @@ extern int acct_gather_profile_g_create_dataset(
 {
 	int retval = SLURM_ERROR;
 
-	if (acct_gather_profile_init() < 0)
-		return retval;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.create_dataset))(name, parent, dataset);
@@ -675,8 +662,7 @@ extern int acct_gather_profile_g_add_sample_data(int dataset_id, void* data,
 {
 	int retval = SLURM_ERROR;
 
-	if (acct_gather_profile_init() < 0)
-		return retval;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.add_sample_data))(dataset_id, data, sample_time);
@@ -686,16 +672,14 @@ extern int acct_gather_profile_g_add_sample_data(int dataset_id, void* data,
 
 extern void acct_gather_profile_g_conf_values(void *data)
 {
-	if (acct_gather_profile_init() < 0)
-		return;
+	xassert(init_run);
 
 	(*(ops.conf_values))(data);
 }
 
 extern bool acct_gather_profile_g_is_active(uint32_t type)
 {
-	if (acct_gather_profile_init() < 0)
-		return false;
+	xassert(init_run);
 
 	return (*(ops.is_active))(type);
 }
