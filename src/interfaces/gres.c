@@ -3173,8 +3173,8 @@ extern int gres_init_node_config(char *orig_config, List *gres_list)
  * topo_cnt OUT - count of gres.conf records of this ID found by slurmd
  *		  (each can have different topology)
  * config_type_cnt OUT - Count of records for this GRES found in configuration,
- *		  each of this represesents a different Type of of GRES with
- *		  with this name (e.g. GPU model)
+ *		  each of this represents a different Type of of GRES with
+ *		  this name (e.g. GPU model)
  * RET - total number of GRES available of this ID on this node in (sum
  *	 across all records of this ID)
  */
