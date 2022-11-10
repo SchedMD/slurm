@@ -64,7 +64,11 @@
 ################################################################################
 
 # Source guard
-if [[ -z $BASH_VERSION ]] && [[ -z ${BASH_SOURCE[-1]} ]]; then
+(return 0 2>/dev/null) && SOURCED=1 || SOURCED=0
+if [ $SOURCED -eq 0 ]; then
+	echo "FATAL: this script (slurm_completion.sh) is meant to be sourced." 1>&2
+	exit 1
+elif [[ -z $BASH_VERSION ]] && [[ -z ${BASH_SOURCE[-1]} ]]; then
 	echo "FATAL: this script (slurm_completion.sh) only supports bash." 1>&2
 	return
 elif ! [[ -f "/usr/share/bash-completion/bash_completion" ]] ||
@@ -77,6 +81,9 @@ elif ! [[ -f "/usr/share/bash-completion/bash_completion" ]] ||
 	EOF
 	return
 fi
+
+# Enable shell options
+shopt -s extglob
 
 ################################################################################
 #			Slurm Completion Logger Functions
