@@ -52,6 +52,8 @@ typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t avail_gpus;	/* Count of available GPUs */
 	uint16_t avail_res_cnt;	/* Count of available CPUs + GPUs */
 	uint16_t *avail_cores_per_sock;	/* Per-socket available core count */
+	uint32_t gres_min_cores; /* Minimum number of cores to satisfy GRES
+				    constraints */
 	uint16_t max_cpus;	/* Maximum available CPUs on the node */
 	uint16_t min_cpus;	/* Minimum allocated CPUs */
 	uint16_t sock_cnt;	/* Number of sockets on this node */

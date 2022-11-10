@@ -444,6 +444,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 uint16_t *avail_cpus,
 					 uint32_t *min_tasks_this_node,
 					 uint32_t *max_tasks_this_node,
+					 uint32_t *min_cores_this_node,
 					 int rem_nodes,
 					 bool enforce_binding,
 					 bool first_pass,
@@ -457,6 +458,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	int *socket_index; /* Socket indexes */
 	uint16_t *avail_cores_per_sock;
 	bool has_cpus_per_gres = false;
+
+	*min_cores_this_node = NO_VAL;
 
 	if (*max_tasks_this_node == 0)
 		return;
@@ -887,6 +890,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				*max_tasks_this_node = 0;
 			}
 		}
+		*min_cores_this_node = MIN(*min_cores_this_node, req_cpus);
 	}
 	list_iterator_destroy(sock_gres_iter);
 	xfree(avail_cores_per_sock);
@@ -905,6 +909,9 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		*avail_cpus = MIN(*avail_cpus,
 				  *max_tasks_this_node * mc_ptr->cpus_per_task);
 	}
+
+	if (!(*max_tasks_this_node) || (*min_cores_this_node == NO_VAL))
+		*min_cores_this_node = 0;
 }
 
 /*

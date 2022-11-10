@@ -302,6 +302,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 {
 	int alloc_tasks = 0;
 	uint32_t min_tasks_this_node = 0, max_tasks_this_node = 0;
+	uint32_t min_cores_this_node = 0;
 	struct job_details *details_ptr = job_ptr->details;
 	node_record_t *node_ptr = node_record_table_ptr[node_inx];
 
@@ -376,6 +377,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			avail_res_array[node_inx]->sock_cnt,
 			node_ptr->cores, node_ptr->tpc, avail_cpus,
 			&min_tasks_this_node, &max_tasks_this_node,
+			&min_cores_this_node,
 			rem_nodes, enforce_binding, first_pass,
 			avail_core[node_inx]);
 	}
@@ -387,6 +389,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		   details_ptr && (details_ptr->min_gres_cpu == 0)) {
 		*avail_cpus = bit_set_count(avail_core[node_inx]);
 	}
+	avail_res_array[node_inx]->gres_min_cores = min_cores_this_node;
 }
 
 /*
