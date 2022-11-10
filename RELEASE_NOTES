@@ -49,6 +49,9 @@ HIGHLIGHTS
  -- slurmctld will fatal() when reconfiguring the job_submit plugin fails.
  -- Add PowerDownOnIdle partition option to power down nodes after nodes become
     idle.
+ -- Add "[jobid.stepid]" prefix from slurmstepd and "slurmscriptd" prefix from
+    slurmcriptd to Syslog logging. Previously was only happening when logging
+    to a file.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
