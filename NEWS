@@ -132,6 +132,9 @@ documents those changes that are of interest to users and administrators.
     an unknown jobid.
  -- Change to a new FAIL_SIGNAL job state reason (instead of FAIL_LAUNCH) for
     jobs that have raised a signal on setup.
+ -- Add "[jobid.stepid]" prefix from slurmstepd and "slurmscriptd" prefix from
+    slurmcriptd to Syslog logging. Previously was only happening when logging
+    to a file.
 
 * Changes in Slurm 22.05.6
 ==========================
