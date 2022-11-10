@@ -136,6 +136,9 @@ documents those changes that are of interest to users and administrators.
     slurmcriptd to Syslog logging. Previously was only happening when logging
     to a file.
 
+* Changes in Slurm 22.05.7
+==========================
+
 * Changes in Slurm 22.05.6
 ==========================
  -- Fix a partition's DisableRootJobs=no from preventing root jobs from working.
