@@ -565,7 +565,6 @@ test17.31  Tests #PBS entry functionality in a batch script.
 test17.32  Test of --overcommit option.
 test17.33  Test of --open-mode option.
 test17.34  Test of --core-spec option.
-test17.35  Test performance/timing of job submissions.
 test17.36  Test that the OverSubscribe option in partitions is enforced.
 test17.37  Validate that afternotok dependency is enforced.
 test17.38  Test for sbatch --signal.
