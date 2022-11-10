@@ -1516,9 +1516,9 @@ extern int slurmscriptd_init(int argc, char **argv)
 			      __func__, proc_name);
 		}
 #endif
-		/* log_set_fpfx takes control of an xmalloc()'d string */
+		/* log_set_prefix takes control of an xmalloc()'d string */
 		log_prefix = xstrdup_printf("%s: ", proc_name);
-		log_set_fpfx(&log_prefix);
+		log_set_prefix(&log_prefix);
 
 		/* Close extra fd's. */
 		if (close(to_slurmscriptd[1]) < 0) {

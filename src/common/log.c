@@ -104,7 +104,7 @@ strong_alias(log_reinit,	slurm_log_reinit);
 strong_alias(log_fini,		slurm_log_fini);
 strong_alias(log_alter,		slurm_log_alter);
 strong_alias(log_alter_with_fp, slurm_log_alter_with_fp);
-strong_alias(log_set_fpfx,	slurm_log_set_fpfx);
+strong_alias(log_set_prefix,	slurm_log_set_prefix);
 strong_alias(log_fp,		slurm_log_fp);
 strong_alias(log_oom,		slurm_log_oom);
 strong_alias(log_has_data,	slurm_log_has_data);
@@ -123,7 +123,7 @@ strong_alias(sched_verbose,	slurm_sched_verbose);
 */
 typedef struct {
 	char *argv0;
-	char *fpfx;              /* optional prefix with log_set_fpfx */
+	char *prefix;            /* optional prefix with log_set_prefix */
 	FILE *logfp;             /* log file pointer                    */
 	cbuf_t *buf;              /* stderr data buffer                  */
 	cbuf_t *fbuf;             /* logfile data buffer                 */
@@ -284,7 +284,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->argv0 = NULL;
 		log->buf   = NULL;
 		log->fbuf  = NULL;
-		log->fpfx  = NULL;
+		log->prefix = NULL;
 		atfork_install_handlers();
 	}
 
@@ -305,8 +305,8 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	if (!slurm_prog_name && log->argv0 && (strlen(log->argv0) > 0))
 		slurm_prog_name = xstrdup(log->argv0);
 
-	if (!log->fpfx)
-		log->fpfx = xstrdup("");
+	if (!log->prefix)
+		log->prefix = xstrdup("");
 
 	log->opt = opt;
 
@@ -396,8 +396,8 @@ _sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 		sched_log->argv0 = xstrdup(short_name);
 	}
 
-	if (!sched_log->fpfx)
-		sched_log->fpfx = xstrdup("");
+	if (!sched_log->prefix)
+		sched_log->prefix = xstrdup("");
 
 	sched_log->opt = opt;
 
@@ -499,7 +499,7 @@ void log_fini(void)
 	slurm_mutex_lock(&log_lock);
 	_log_flush(log);
 	xfree(log->argv0);
-	xfree(log->fpfx);
+	xfree(log->prefix);
 	if (log->buf)
 		cbuf_destroy(log->buf);
 	if (log->fbuf)
@@ -519,7 +519,7 @@ void sched_log_fini(void)
 	slurm_mutex_lock(&log_lock);
 	_log_flush(sched_log);
 	xfree(sched_log->argv0);
-	xfree(sched_log->fpfx);
+	xfree(sched_log->prefix);
 	if (sched_log->buf)
 		cbuf_destroy(sched_log->buf);
 	if (sched_log->fbuf)
@@ -535,14 +535,14 @@ void log_reinit(void)
 	slurm_mutex_init(&log_lock);
 }
 
-void log_set_fpfx(char **prefix)
+void log_set_prefix(char **prefix)
 {
 	slurm_mutex_lock(&log_lock);
-	xfree(log->fpfx);
+	xfree(log->prefix);
 	if (!prefix || !*prefix)
-		log->fpfx = xstrdup("");
+		log->prefix = xstrdup("");
 	else {
-		log->fpfx = *prefix;
+		log->prefix = *prefix;
 		*prefix = NULL;
 	}
 	slurm_mutex_unlock(&log_lock);
@@ -1179,7 +1179,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 	if (SCHED_LOG_INITIALIZED && sched &&
 	    (highest_sched_log_level > LOG_LEVEL_QUIET)) {
 		buf = vxstrfmt(fmt, args);
-		xlogfmtcat(&msgbuf, "[%M] %s%s%s", sched_log->fpfx, pfx, buf);
+		xlogfmtcat(&msgbuf, "[%M] %s%s%s", sched_log->prefix, pfx, buf);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
 			    "sched: %s\n", msgbuf);
 		fflush(sched_log->logfp);
@@ -1269,7 +1269,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 
 	if ((level <= log->opt.logfile_level) && (log->logfp != NULL)) {
 
-		xlogfmtcat(&msgbuf, "[%M] %s%s%s", log->fpfx, pfx, buf);
+		xlogfmtcat(&msgbuf, "[%M] %s%s%s", log->prefix, pfx, buf);
 		_log_printf(log, log->fbuf, log->logfp, "%s\n", msgbuf);
 		fflush(log->logfp);
 
@@ -1280,7 +1280,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 
 		/* Avoid changing errno if syslog fails */
 		int orig_errno = slurm_get_errno();
-		xlogfmtcat(&msgbuf, "%s%s%s", log->fpfx, pfx, buf);
+		xlogfmtcat(&msgbuf, "%s%s%s", log->prefix, pfx, buf);
 		openlog(log->argv0, LOG_PID, log->facility);
 		syslog(priority, "%.500s", msgbuf);
 		closelog();

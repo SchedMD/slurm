@@ -245,7 +245,7 @@
 #define	log_fini		slurm_log_fini
 #define	log_alter		slurm_log_alter
 #define	log_alter_with_fp	slurm_log_alter_with_fp
-#define	log_set_fpfx		slurm_log_set_fpfx
+#define	log_set_prefix		slurm_log_set_prefix
 #define	log_fp			slurm_log_fp
 #define	log_oom			slurm_log_oom
 #define	log_has_data		slurm_log_has_data

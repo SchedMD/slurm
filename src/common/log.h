@@ -191,7 +191,7 @@ int sched_log_alter(log_options_t opts, log_facility_t fac, char *logfile);
 /* Set prefix for log file entries
  * Note: will store pfx internally, do not use after this call.
  */
-void log_set_fpfx(char **pfx);
+void log_set_prefix(char **pfx);
 
 /*
  * (re)set argv0 string prepended to all log messages

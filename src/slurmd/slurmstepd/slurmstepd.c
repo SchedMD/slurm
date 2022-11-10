@@ -546,7 +546,7 @@ static void _set_job_log_prefix(slurm_step_id_t *step_id)
 	setproctitle("%s", buf);
 	/* note: will claim ownership of buf, do not free */
 	xstrcat(buf, " ");
-	log_set_fpfx(&buf);
+	log_set_prefix(&buf);
 }
 
 /*
