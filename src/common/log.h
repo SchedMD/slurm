@@ -189,7 +189,6 @@ int log_alter_with_fp(log_options_t opt, log_facility_t fac, FILE *fp_in);
 int sched_log_alter(log_options_t opts, log_facility_t fac, char *logfile);
 
 /* Set prefix for log file entries
- * (really only useful for slurmd at this point).
  * Note: will store pfx internally, do not use after this call.
  */
 void log_set_fpfx(char **pfx);

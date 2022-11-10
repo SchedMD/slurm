@@ -123,7 +123,7 @@ strong_alias(sched_verbose,	slurm_sched_verbose);
 */
 typedef struct {
 	char *argv0;
-	char *fpfx;              /* optional prefix for logfile entries */
+	char *fpfx;              /* optional prefix with log_set_fpfx */
 	FILE *logfp;             /* log file pointer                    */
 	cbuf_t *buf;              /* stderr data buffer                  */
 	cbuf_t *fbuf;             /* logfile data buffer                 */
@@ -1280,7 +1280,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 
 		/* Avoid changing errno if syslog fails */
 		int orig_errno = slurm_get_errno();
-		xlogfmtcat(&msgbuf, "%s%s", pfx, buf);
+		xlogfmtcat(&msgbuf, "%s%s%s", log->fpfx, pfx, buf);
 		openlog(log->argv0, LOG_PID, log->facility);
 		syslog(priority, "%.500s", msgbuf);
 		closelog();
