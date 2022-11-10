@@ -122,7 +122,12 @@ static void _init_or_reinit_entry(gids_cache_t **in,
 
 	rc = slurm_getpwuid_r(needle->uid, &pwd, buffer, PW_BUF_SIZE, &result);
 	if (!result || !result->pw_name) {
-		error("slurm_getpwuid_r() failed: %s", strerror(rc));
+		if (!result && !rc)
+			error("%s: getpwuid_r(%u): no record found",
+			      __func__, needle->uid);
+		else
+			error("%s: getpwuid_r(%u): %s",
+			      __func__, needle->uid, strerror(rc));
 
 		if (*in) {
 			/* discard this now-invalid cache entry */

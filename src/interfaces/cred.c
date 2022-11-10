@@ -344,8 +344,12 @@ static int _fill_cred_gids(slurm_cred_arg_t *arg)
 
 	rc = slurm_getpwuid_r(arg->uid, &pwd, buffer, PW_BUF_SIZE, &result);
 	if (rc || !result) {
-		error("%s: getpwuid failed for uid=%u: %s",
-		      __func__, arg->uid, slurm_strerror(rc));
+		if (!result && !rc)
+			error("%s: getpwuid_r(%u): no record found",
+			      __func__, arg->uid);
+		else
+			error("%s: getpwuid_r(%u): %s",
+			      __func__, arg->uid, slurm_strerror(rc));
 		return SLURM_ERROR;
 	}
 
