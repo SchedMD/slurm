@@ -40,11 +40,11 @@ if {![is_super_user]} {
 proc cleanup {} {
 	global test_part_1 test_part_2 job_id
 
+	cancel_job $job_id
+
 	# Delete test partitions
 	delete_part $test_part_1
 	delete_part $test_part_2
-
-	cancel_job $job_id
 }
 
 proc create_part { name prio } {
