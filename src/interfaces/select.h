@@ -46,21 +46,6 @@
 #include "src/common/plugrack.h"
 #include "src/slurmctld/slurmctld.h"
 
-typedef struct {
-	bitstr_t *avail_nodes;      /* usable nodes are set on input, nodes
-				     * not required to satisfy the request
-				     * are cleared, other left set */
-	job_record_t *job_ptr;      /* pointer to job being scheduled
-				     * start_time is set when we can
-				     * possibly start job. Or must not
-				     * increase for success of running
-				     * other jobs.
-				     */
-	uint32_t max_nodes;         /* maximum count of nodes (0==don't care) */
-	uint32_t min_nodes;         /* minimum count of nodes */
-	uint32_t req_nodes;         /* requested (or desired) count of nodes */
-} select_will_run_t;
-
 /*
  * Local data
  */
