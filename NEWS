@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
     slurmctld restart or a federation update.
  -- Fix incorrectly rejecting jobs that request GRES on multiple sockets and
     --gres-flags=enforce-binding.
+ -- Fix job core selection with --gres-flags=enforce-binding: this fixes cases
+    where enforce-binding was not respected.
 
 * Changes in Slurm 22.05.6
 ==========================
