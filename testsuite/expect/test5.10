@@ -38,96 +38,13 @@ if {![is_super_user]} {
 }
 
 proc cleanup {} {
-	global test_part_1 test_part_2 job_id
+	global test_part_1 test_part_2 job_id scontrol
 
 	cancel_job $job_id
 
 	# Delete test partitions
-	delete_part $test_part_1
-	delete_part $test_part_2
-}
-
-proc create_part { name prio } {
-	global scontrol nodes
-
-	spawn $scontrol create partitionname=$name priority=$prio nodes=$nodes
-	expect {
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	set found 0
-	spawn $scontrol show partitionname=$name
-	expect {
-		-re "PartitionName=$name" {
-			set found 1
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$found == 0} {
-		fail "scontrol did not create partition ($name)"
-	}
-}
-
-proc change_prio { name prio } {
-	global scontrol nodes
-
-	spawn $scontrol update partitionname=$name priority=$prio
-	expect {
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-proc delete_part { name } {
-	global scontrol
-
-	log_user 0
-	spawn $scontrol delete partition=$name
-	expect {
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	# Double check that the partition has been deleted
-	set deleted 0
-	spawn $scontrol show partitionname=$name
-	expect {
-		-re "not found" {
-			set deleted 1
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$deleted != 1} {
-		log_warn "Partition $name was not deleted"
-	}
+	run_command "$scontrol delete partitionname=$test_part_1"
+	run_command "$scontrol delete partitionname=$test_part_2"
 }
 
 proc sub_job { } {
@@ -159,8 +76,7 @@ proc sub_job { } {
 }
 
 # Remove any vestigial partitions
-delete_part $test_part_1
-delete_part $test_part_2
+cleanup
 
 if {[string length [default_partition]] == 0} {
 	skip "This test can not run without a default partition"
@@ -187,8 +103,8 @@ if {[string length $nodes] == 0} {
 }
 
 # Create 2 test partitions
-create_part $test_part_1 1
-create_part $test_part_2 2
+run_command -fail "$scontrol create partitionname=$test_part_1 priority=1 nodes=$nodes"
+run_command -fail "$scontrol create partitionname=$test_part_2 priority=2 nodes=$nodes"
 
 # Submit a job to check priority
 log_info "Test 1"
@@ -219,8 +135,8 @@ subtest {$part_chk == 2} "Check partition priority" "--priority option did not l
 cancel_job $job_id
 
 # Switch up the partition priority to make sure the sort works
-change_prio $test_part_1 2
-change_prio $test_part_2 1
+run_command -fail "$scontrol update partitionname=$test_part_1 priority=2 nodes=$nodes"
+run_command -fail "$scontrol update partitionname=$test_part_2 priority=1 nodes=$nodes"
 
 # Submit another job to check priority
 log_info "Test 2"
