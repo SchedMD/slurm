@@ -55,24 +55,11 @@ if {[string length [default_partition]] == 0} {
 }
 
 # Get a list of nodes
-set timeout $max_job_delay
-spawn $bin_bash -c "exec $srun -t1 -N[llength [get_nodes_by_state]] $bin_printenv | $bin_grep NODE"
-expect {
-	-re "SLURM_NODELIST=($re_word_str)" {
-		set nodes $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "srun is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {[string length $nodes] == 0} {
+set nodes [get_nodes_by_request "-N2"]
+if {[llength $nodes] == 0} {
 	fail "Did not get a valid node list"
 }
+set nodes [join $nodes ","]
 
 # Create 2 test partitions
 run_command -fail "$scontrol create partitionname=$test_part_1 priority=1 nodes=$nodes"
