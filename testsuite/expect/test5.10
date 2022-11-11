@@ -71,25 +71,8 @@ make_bash_script $file_in "sleep 20"
 set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now+1hour -p$test_part_1,$test_part_2 $file_in"]
 
 # Check partition
-set part_chk 0
-spawn $squeue --priority --sort=p,i --noheader -j$job_id -Opartition,state --state=PD
-expect {
-	-re "$test_part_1" {
-		incr part_chk 1
-		exp_continue
-	}
-	-re "$test_part_2" {
-		incr part_chk 1
-		exp_continue
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$part_chk == 2} "Check partition priority" "--priority option did not list priority properly ($part_chk != 2)"
+set output [run_command_output -fail "$squeue --priority --sort=p,i --noheader -j$job_id -Opartition --state=PD"]
+subtest {[regexp "$test_part_1.+$test_part_2" $output]} "Both partitions should appear and $test_part_1 should be first priority with --priority and --sort"
 
 cancel_job $job_id
 
@@ -102,25 +85,8 @@ log_info "Test 2"
 set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now+1hour -p$test_part_1,$test_part_2 $file_in"]
 
 # Check partition
-set part_chk 0
-spawn $squeue --priority --noheader --sort=p,i -j$job_id -Opartition,state --state=PD
-expect {
-	-re "$test_part_2" {
-		incr part_chk 1
-		exp_continue
-	}
-	-re "$test_part_1" {
-		incr part_chk 1
-		exp_continue
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$part_chk == 2} "Recheck partition priority after switching it" "--priority option did not list priority properly ($part_chk != 2)"
+set output [run_command_output -fail "$squeue --priority --sort=p,i --noheader -j$job_id -Opartition --state=PD"]
+subtest {[regexp "$test_part_2.+$test_part_1" $output]} "Both partitions should appear and $test_part_2 should be first priority with --priority and --sort"
 
 cancel_job $job_id
 
@@ -131,18 +97,6 @@ set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now -p$test_part_1,$te
 wait_for_job -fail $job_id RUNNING
 
 # Check partition
-set part_chk 0
-spawn $squeue --priority --noheader --sort=p,i -j$job_id -Opartition,state
-expect {
-	-re "$test_part_1 *RUNNING" {
-		incr part_chk 1
-		exp_continue
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$part_chk == 1} "Job should be running in partition"
+set output [run_command_output -fail "$squeue --priority --sort=p,i --noheader -j$job_id -Opartition"]
+subtest {[regexp "$test_part_1" $output]} "$test_part_1 should appear as job is running on it"
+subtest {![regexp "$test_part_2" $output]} "$test_part_2 should NOT appear as job is NOT running on it and it's not PD"
