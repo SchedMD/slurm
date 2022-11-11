@@ -812,9 +812,40 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			req_cpus = sock_cnt;
 		}
 
+		/*
+		 * Test against both avail_cores_tot and *avail_cpus.
+		 *
+		 * - avail_cores_tot: the number of cores that are available on
+		 *   this node
+		 * - *avail_cpus: the number of cpus the job can use on this
+		 *   node based on the job constraints.
+		 *
+		 * For example, assume a node has 16 cores, 2 threads per core. and
+		 * Assume that 4 cores are in use by other jobs. If a job's
+		 * constraints only allow the job to use 2 cpus:
+		 *
+		 * avail_cores_tot is 12 (16 cores total minus 4 cores in use)
+		 * *avail_cpus is 2
+		 *
+		 * req_cpus is cores, not CPUs.
+		 */
 		if (req_cpus > avail_cores_tot) {
 			log_flag(SELECT_TYPE, "Job cannot run on node required CPUs:%d > aval_cores_tot:%d",
 				 req_cpus, avail_cores_tot);
+			*max_tasks_this_node = 0;
+			break;
+		}
+
+		/*
+		 * Only reject if enforce_binding=true, since a job may be able
+		 * to run on fewer cores than required by GRES if
+		 * enforce_binding=false.
+		 */
+		if (enforce_binding &&
+		    ((req_cpus * threads_per_core) > *avail_cpus)) {
+			log_flag(SELECT_TYPE, "Job cannot run on node, avail_cpus=%u < %u (required cores %u * threads_per_core %u",
+				 *avail_cpus, req_cpus * threads_per_core,
+				 req_cpus, threads_per_core);
 			*max_tasks_this_node = 0;
 			break;
 		}
@@ -891,7 +922,15 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				*max_tasks_this_node = 0;
 			}
 		}
-		*min_cores_this_node = MIN(*min_cores_this_node, req_cpus);
+
+		/*
+		 * Only do this if enforce_binding=true, since without
+		 * enforce_binding a job may run on fewer cores than required
+		 * for optimal binding.
+		 */
+		if (enforce_binding)
+			*min_cores_this_node =
+				MIN(*min_cores_this_node, req_cpus);
 	}
 	list_iterator_destroy(sock_gres_iter);
 	xfree(avail_cores_per_sock);
