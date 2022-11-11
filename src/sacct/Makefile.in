@@ -155,8 +155,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_sacct_OBJECTS = options.$(OBJEXT) print.$(OBJEXT) process.$(OBJEXT) \
-	sacct.$(OBJEXT)
+am_sacct_OBJECTS = array_unique.$(OBJEXT) options.$(OBJEXT) \
+	print.$(OBJEXT) process.$(OBJEXT) sacct.$(OBJEXT)
 sacct_OBJECTS = $(am_sacct_OBJECTS)
 am__DEPENDENCIES_1 =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -181,7 +181,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/options.Po ./$(DEPDIR)/print.Po \
+am__depfiles_remade = ./$(DEPDIR)/array_unique.Po \
+	./$(DEPDIR)/options.Po ./$(DEPDIR)/print.Po \
 	./$(DEPDIR)/process.Po ./$(DEPDIR)/sacct.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -498,6 +499,7 @@ sacct_DEPENDENCIES = $(LIB_SLURM_BUILD)
 sacct_LDFLAGS = $(CMD_LDFLAGS)
 noinst_HEADERS = sacct.h
 sacct_SOURCES = \
+	array_unique.c	\
 	options.c	\
 	print.c		\
 	process.c	\
@@ -597,6 +599,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/array_unique.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/process.Po@am__quote@ # am--include-marker
@@ -729,7 +732,8 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/options.Po
+		-rm -f ./$(DEPDIR)/array_unique.Po
+	-rm -f ./$(DEPDIR)/options.Po
 	-rm -f ./$(DEPDIR)/print.Po
 	-rm -f ./$(DEPDIR)/process.Po
 	-rm -f ./$(DEPDIR)/sacct.Po
@@ -778,7 +782,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/options.Po
+		-rm -f ./$(DEPDIR)/array_unique.Po
+	-rm -f ./$(DEPDIR)/options.Po
 	-rm -f ./$(DEPDIR)/print.Po
 	-rm -f ./$(DEPDIR)/process.Po
 	-rm -f ./$(DEPDIR)/sacct.Po

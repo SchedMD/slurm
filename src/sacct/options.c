@@ -63,6 +63,7 @@
 #define OPT_LONG_YAML      0x110
 #define OPT_LONG_AUTOCOMP  0x111
 #define OPT_LONG_ARRAY     0x112
+#define OPT_LONG_ARRAY_UNIQ 0x113
 
 #define JOB_HASH_SIZE 1000
 
@@ -219,6 +220,9 @@ sacct [<OPTION>]                                                            \n \
      --array:                                                               \n\
                    Expand job arrays. Display array tasks on separate lines \n\
                    instead of consolidating them to a single line.          \n\
+     --array-unique:							    \n\
+                   Combine job array tasks with matching fields and display \n\
+                   them on a single line.                                   \n\
      -b, --brief:                                                           \n\
 	           Equivalent to '--format=jobstep,state,error'.            \n\
      -B, --batch-script:                                                    \n\
@@ -590,6 +594,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"accounts",       required_argument, 0,    'A'},
                 {"allocations",    no_argument,       0,    'X'},
                 {"array",          no_argument,       0,    OPT_LONG_ARRAY},
+                {"array-unique",   no_argument,       0,    OPT_LONG_ARRAY_UNIQ},
                 {"brief",          no_argument,       0,    'b'},
 		{"batch-script",   no_argument,       0,    'B'},
                 {"completion",     no_argument,       0,    'c'},
@@ -676,6 +681,9 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_ARRAY:
 			params.opt_array = true;
+			break;
+		case OPT_LONG_ARRAY_UNIQ:
+			params.opt_array_unique = true;
 			break;
 		case 'b':
 			brief_output = true;
@@ -974,6 +982,9 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (long_output && params.opt_field_list)
 		fatal("Options -o(--format) and -l(--long) are mutually exclusive. Please remove one and retry.");
+
+	if (params.opt_array && params.opt_array_unique)
+		fatal("Options --array and --array-unqiue are mutually exclusive.");
 
 	if (verbosity) {
 		opts.stderr_level += verbosity;
@@ -1392,6 +1403,7 @@ static void _print_env(slurmdb_job_rec_t *job)
 	return;
 }
 
+
 /* do_list() -- List the assembled data
  *
  * In:	Nothing explicit.
@@ -1407,6 +1419,7 @@ extern void do_list(int argc, char **argv)
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
 	slurmdb_job_cond_t *job_cond = params.job_cond;
+	uint32_t prev_array_job_id = 0;
 
 	if (params.mimetype) {
 		errno = DATA_DUMP_CLI(JOB_LIST, jobs, "jobs", argc, argv,
@@ -1432,8 +1445,16 @@ extern void do_list(int argc, char **argv)
 			continue;
 		}
 
-		if (job->show_full)
+		if (job->show_full) {
+			if (params.opt_array_unique) {
+				if (handle_job_for_array_unique(
+					    job, &prev_array_job_id)) {
+					continue;
+				}
+			}
+
 			print_fields(JOB, job);
+		}
 
 		if (!(job_cond->flags & JOBCOND_FLAG_NO_STEP)) {
 			itr_step = list_iterator_create(job->steps);

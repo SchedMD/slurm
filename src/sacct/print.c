@@ -277,6 +277,24 @@ static void _print_expanded_array_job(slurmdb_job_rec_t *job)
 	FREE_NULL_BITMAP(bitmap);
 }
 
+extern void print_unique_array_job_group(list_t *comb_job_bitmap_list,
+					 uint32_t max)
+{
+	list_itr_t *comb_job_bitmap_list_itr;
+	sacct_combined_job_bitmap_t *curr_comb_job_bitmap;
+
+	comb_job_bitmap_list_itr = list_iterator_create(comb_job_bitmap_list);
+	while ((curr_comb_job_bitmap = list_next(comb_job_bitmap_list_itr))) {
+		slurmdb_job_rec_t job = curr_comb_job_bitmap->job_key;
+		job.array_task_str =
+			bit_fmt_hexmask_trim(curr_comb_job_bitmap->bitmap);
+		job.array_max_tasks = max;
+		print_fields(JOB, &job);
+		xfree(job.array_task_str);
+	}
+	list_iterator_destroy(comb_job_bitmap_list_itr);
+}
+
 extern void print_fields(type_t type, void *object)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;

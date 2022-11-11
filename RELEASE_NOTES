@@ -129,6 +129,8 @@ COMMAND CHANGES (see man pages for details)
     components (<exit_status>:<signal_number>).
  -- sacct - Add --array option to expand job arrays and display array tasks on
     separate lines.
+ -- sacct - Add --array-unique option to combine job array tasks with matching
+    fields and display them on a single line.
 
 API CHANGES
 ===========

@@ -205,6 +205,7 @@ typedef struct {
 	uint32_t convert_flags;	/* --noconvert */
 	slurmdb_job_cond_t *job_cond;
 	bool opt_array;		/* --array */
+	bool opt_array_unique;	/* --array-unique */
 	int opt_completion;	/* --completion */
 	bool opt_federation;	/* --federation */
 	char *opt_field_list;	/* --fields= */
@@ -218,6 +219,11 @@ typedef struct {
 	char *mimetype;         /* --yaml or --json */
 } sacct_parameters_t;
 
+typedef struct {
+	slurmdb_job_rec_t job_key;
+	bitstr_t *bitmap;
+} sacct_combined_job_bitmap_t;
+
 extern print_field_t fields[];
 extern sacct_parameters_t params;
 
@@ -228,11 +234,17 @@ extern int field_count;
 extern List g_qos_list;
 extern List g_tres_list;
 
+/* array_unique.c */
+extern bool handle_job_for_array_unique(slurmdb_job_rec_t *job,
+					uint32_t *prev_array_job_id);
+
 /* process.c */
 void aggregate_stats(slurmdb_stats_t *dest, slurmdb_stats_t *from);
 
 /* print.c */
 void print_fields(type_t type, void *object);
+extern void print_unique_array_job_group(list_t *comb_job_bitmap_list,
+					 uint32_t max);
 
 /* options.c */
 int  get_data(void);
