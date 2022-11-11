@@ -47,34 +47,6 @@ proc cleanup {} {
 	run_command "$scontrol delete partitionname=$test_part_2"
 }
 
-proc sub_job { } {
-	global sbatch test_part_1 test_part_2 file_in job_id
-	global number
-
-	set job_id 0
-	spawn $sbatch -N1 -o/dev/null -t1 --begin=now+1hour \
-	    -p$test_part_1,$test_part_2 $file_in
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sbatch is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$job_id == 0} {
-		fail "sbatch did not submit job"
-	}
-
-	# Wait a bit for the job to start if it does
-	sleep 2
-}
-
 # Remove any vestigial partitions
 cleanup
 
@@ -109,7 +81,7 @@ run_command -fail "$scontrol create partitionname=$test_part_2 priority=2 nodes=
 # Submit a job to check priority
 log_info "Test 1"
 make_bash_script $file_in "sleep 20"
-sub_job
+set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now+1hour -p$test_part_1,$test_part_2 $file_in"]
 
 # Check partition
 set part_chk 0
@@ -140,7 +112,7 @@ run_command -fail "$scontrol update partitionname=$test_part_2 priority=1 nodes=
 
 # Submit another job to check priority
 log_info "Test 2"
-sub_job
+set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now+1hour -p$test_part_1,$test_part_2 $file_in"]
 
 # Check partition
 set part_chk 0
@@ -168,24 +140,7 @@ cancel_job $job_id
 # Submit a job that will run now to check that the --priority option for
 # squeue will only list the job running on the partition
 log_info "Test 3"
-set job_id 0
-spawn $sbatch -N1 -o/dev/null -t1 --begin=now -p$test_part_1,$test_part_2 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-
-}
-if {$job_id == 0} {
-	fail "sbatch did not submit job"
-}
+set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now -p$test_part_1,$test_part_2 $file_in"]
 wait_for_job -fail $job_id RUNNING
 
 # Check partition
