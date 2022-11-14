@@ -987,8 +987,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 		}
 	}
 	if (size < max_tasks) {
-		error("only %d bits in avail_map for %d tasks!",
-		      size, max_tasks);
+		if (!(req->flags & LAUNCH_OVERCOMMIT))
+			error("only %d bits in avail_map for %d tasks!",
+			      size, max_tasks);
 		FREE_NULL_BITMAP(avail_map);
 		return ESLURMD_CPU_LAYOUT_ERROR;
 	}
@@ -1196,8 +1197,9 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 		}
 	}
 	if (size < max_tasks) {
-		error("only %d bits in avail_map for %d tasks!",
-		      size, max_tasks);
+		if (!(req->flags & LAUNCH_OVERCOMMIT))
+			error("only %d bits in avail_map for %d tasks!",
+			      size, max_tasks);
 		FREE_NULL_BITMAP(avail_map);
 		return ESLURMD_CPU_LAYOUT_ERROR;
 	}
