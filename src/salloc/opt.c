@@ -330,7 +330,11 @@ static char *_get_shell(void)
 {
 	struct passwd *pw_ent_ptr;
 
-	pw_ent_ptr = getpwuid(opt.uid);
+	if (opt.uid == SLURM_AUTH_NOBODY)
+		pw_ent_ptr = getpwuid(getuid());
+	else
+		pw_ent_ptr = getpwuid(opt.uid);
+
 	if (!pw_ent_ptr) {
 		pw_ent_ptr = getpwnam("nobody");
 		error("warning - no user information for user %u", opt.uid);
