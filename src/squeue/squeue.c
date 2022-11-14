@@ -50,6 +50,9 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/select.h"
+
 #include "src/squeue/squeue.h"
 
 /********************
