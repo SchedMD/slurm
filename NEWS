@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow setting SuspendTime to -1 when used on a partition.
  -- openapi/v0.0.38 - fix maximum_memory_per_node description typo.
  -- openapi/v0.0.38 - add maximum_memory_per_cpu to GET /partitions
+ -- openapi/v0.0.38 - add default_memory_per_node to GET /partitions
 
 * Changes in Slurm 22.05.6
 ==========================

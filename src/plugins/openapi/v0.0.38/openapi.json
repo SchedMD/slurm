@@ -1299,6 +1299,11 @@
             "type": "integer",
             "format": "int64",
             "description": "maximum memory per allocated CPU (MiB)"
+          },
+          "default_memory_per_node": {
+            "type": "integer",
+            "format": "int64",
+            "description": "default MB memory per allocated node"
           }
         }
       },

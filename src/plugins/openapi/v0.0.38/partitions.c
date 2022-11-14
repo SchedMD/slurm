@@ -76,8 +76,22 @@ static int _dump_part(data_t *p, partition_info_t *part)
 	data_set_string(data_key_set(d, "billing_weights"),
 			part->billing_weights_str);
 
-	data_set_int(data_key_set(d, "default_memory_per_cpu"),
-		     part->def_mem_per_cpu);
+	xassert(part->def_mem_per_cpu != INFINITE64);
+	if ((part->def_mem_per_cpu == NO_VAL64) ||
+	    (part->def_mem_per_cpu == DEFAULT_MEM_PER_CPU) ||
+	    !(part->def_mem_per_cpu & ~MEM_PER_CPU)) {
+		data_set_null(data_key_set(d, "default_memory_per_cpu"));
+		data_set_null(data_key_set(d, "default_memory_per_node"));
+	} else if (part->def_mem_per_cpu & MEM_PER_CPU) {
+		data_set_int(data_key_set(d, "default_memory_per_cpu"),
+			     (part->def_mem_per_cpu & ~MEM_PER_CPU));
+		data_set_null(data_key_set(d, "default_memory_per_node"));
+	} else if (!(part->def_mem_per_cpu & MEM_PER_CPU)) {
+		data_set_null(data_key_set(d, "default_memory_per_cpu"));
+		data_set_int(data_key_set(d, "default_memory_per_node"),
+			     part->def_mem_per_cpu);
+	}
+
 	if (part->default_time == INFINITE)
 		data_set_int(data_key_set(d, "default_time_limit"), -1);
 	if (part->default_time == NO_VAL)
