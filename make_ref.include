@@ -41,4 +41,6 @@ lib_ref.lo: $(BIN_REF)
 
 LIB_REF = lib_ref.la
 
+# a blank lib_ref_la_SOURCES is needed for 'make cscope' to work correctly.
+lib_ref_la_SOURCES =
 lib_ref_la_LIBADD = lib_ref.lo

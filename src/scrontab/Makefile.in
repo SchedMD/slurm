@@ -173,8 +173,8 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 lib_ref_la_DEPENDENCIES = lib_ref.lo
-lib_ref_la_SOURCES = lib_ref.c
-lib_ref_la_OBJECTS = lib_ref.lo
+am_lib_ref_la_OBJECTS =
+lib_ref_la_OBJECTS = $(am_lib_ref_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -202,9 +202,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/env.Po ./$(DEPDIR)/lib_ref.Plo \
-	./$(DEPDIR)/opt.Po ./$(DEPDIR)/parse.Po \
-	./$(DEPDIR)/scrontab.Po
+am__depfiles_remade = ./$(DEPDIR)/env.Po ./$(DEPDIR)/opt.Po \
+	./$(DEPDIR)/parse.Po ./$(DEPDIR)/scrontab.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -224,7 +223,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = lib_ref.c $(scrontab_SOURCES)
+SOURCES = $(lib_ref_la_SOURCES) $(scrontab_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -528,6 +527,9 @@ scrontab_LDADD = $(LIB_SLURM) $(DL_LIBS) $(LIB_REF)
 REF = default_crontab.txt usage.txt
 BIN_REF = $(REF:.txt=.bino)
 LIB_REF = lib_ref.la
+
+# a blank lib_ref_la_SOURCES is needed for 'make cscope' to work correctly.
+lib_ref_la_SOURCES = 
 lib_ref_la_LIBADD = lib_ref.lo
 noinst_LTLIBRARIES = $(LIB_REF)
 EXTRA_scrontab_DEPENDENCIES = $(LIB_REF)
@@ -640,7 +642,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/env.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lib_ref.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scrontab.Po@am__quote@ # am--include-marker
@@ -774,7 +775,6 @@ clean-am: clean-binPROGRAMS clean-generic clean-libtool \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/env.Po
-	-rm -f ./$(DEPDIR)/lib_ref.Plo
 	-rm -f ./$(DEPDIR)/opt.Po
 	-rm -f ./$(DEPDIR)/parse.Po
 	-rm -f ./$(DEPDIR)/scrontab.Po
@@ -824,7 +824,6 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/env.Po
-	-rm -f ./$(DEPDIR)/lib_ref.Plo
 	-rm -f ./$(DEPDIR)/opt.Po
 	-rm -f ./$(DEPDIR)/parse.Po
 	-rm -f ./$(DEPDIR)/scrontab.Po
