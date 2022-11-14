@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix assertion and locks for dynamic node registrations with rpc queueing.
  -- rest_auth/local - avoid logging root access as an error but instead as a
     normal info log.
+ -- slurmrestd - switch users earlier on startup to avoid sockets being made as
+    root.
 
 * Changes in Slurm 22.05.6
 ==========================

@@ -387,6 +387,10 @@ int main(int argc, char **argv)
 
 	_parse_env();
 	_parse_commandline(argc, argv);
+
+	/* attempt to release all unneeded permissions */
+	_lock_down();
+
 	_examine_stdin();
 	_examine_stderr();
 	_examine_stdout();
@@ -504,9 +508,6 @@ int main(int argc, char **argv)
 		FREE_NULL_LIST(socket_listen);
 		debug("%s: server listen mode activated", __func__);
 	}
-
-	/* attempt to release all unneeded permissions before talking to clients */
-	_lock_down();
 
 	rc = con_mgr_run(conmgr);
 
