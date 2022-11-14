@@ -1709,6 +1709,14 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 			       pid);
 			xfree(proc_util);
 			continue;
+		} else if ((rc == NVML_ERROR_NOT_SUPPORTED) &&
+			   _nvml_is_device_mig(&device)) {
+			/*
+			 * NOTE: At the moment you can not query MIGs for
+			 * utilization. This will probably be fixed in the
+			 * future and hopefully this will start working.
+			 */
+			debug2("On MIG-enabled GPUs, querying process utilization is not currently supported.");
 		} else if (rc != NVML_SUCCESS) {
 			error("NVML: Failed to get usage(%d): %s",
 			      rc, nvmlErrorString(rc));
