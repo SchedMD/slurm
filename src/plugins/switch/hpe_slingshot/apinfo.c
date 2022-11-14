@@ -85,10 +85,9 @@ static void _build_header(pals_header_t *hdr, slingshot_jobinfo_t *jobinfo)
 	hdr->ncomm_profiles = jobinfo->num_profiles;
 	offset += hdr->comm_profile_size * hdr->ncomm_profiles;
 
-	// Don't support instant on yet
 	hdr->nic_size = sizeof(pals_hsn_nic_t);
 	hdr->nic_offset = offset;
-	hdr->nnics = 0;
+	hdr->nnics = jobinfo->num_nics;
 	offset += hdr->nic_size * hdr->nnics;
 
 	// Don't support NIC distances yet
@@ -111,6 +110,24 @@ static void _comm_profile_convert(slingshot_comm_profile_t *ss_profile,
 	profile->nvnis = ss_profile->vnis_used;
 	memcpy(profile->device_name, ss_profile->device_name,
 	       sizeof(profile->device_name));
+}
+
+/*
+ * Convert to the apinfo HSN NIC information structure (for Instant On)
+ */
+static void _hsn_nic_convert(slingshot_hsn_nic_t *ss_nic, pals_hsn_nic_t *nic)
+{
+	memset(nic, 0, sizeof(pals_hsn_nic_t));
+	nic->nodeidx = ss_nic->nodeidx;
+	if (ss_nic->address_type == SLINGSHOT_ADDR_MAC)
+		nic->address_type = PALS_ADDR_MAC;
+	else if (ss_nic->address_type == SLINGSHOT_ADDR_IPV4)
+		nic->address_type = PALS_ADDR_IPV4;
+	else
+		nic->address_type = PALS_ADDR_IPV6;
+	memcpy(nic->address, ss_nic->address, sizeof(nic->address));
+	nic->numa_node = ss_nic->numa_node;
+	memcpy(nic->device_name, ss_nic->device_name, sizeof(nic->device_name));
 }
 
 /*
@@ -153,7 +170,14 @@ extern bool create_slingshot_apinfo(const stepd_step_rec_t *step)
 		safe_write(fd, &profile, sizeof(pals_comm_profile_t));
 	}
 
-	debug("%s: Wrote Slingshot apinfo file %s", plugin_type, apinfo);
+	/* Write Instant On data */
+	for (int i = 0; i < jobinfo->num_nics; i++) {
+		pals_hsn_nic_t nic;
+		_hsn_nic_convert(&jobinfo->nics[i], &nic);
+		safe_write(fd, &nic, sizeof(pals_hsn_nic_t));
+	}
+
+	debug("%s: Wrote %s", plugin_type, apinfo);
 
 	close(fd);
 	xfree(apinfo);
@@ -180,8 +204,9 @@ extern void remove_slingshot_apinfo(const stepd_step_rec_t *step)
 	apinfo = _get_apinfo_file(step, spool);
 
 	if (unlink(apinfo) == -1) {
-		error("%s: Couldn't unlink Slingshot apinfo file %s: %m",
-		      plugin_type, apinfo);
+		error("%s: Couldn't unlink %s: %m", plugin_type, apinfo);
+	} else {
+		debug("%s: Removed %s", plugin_type, apinfo);
 	}
 
 	xfree(apinfo);
