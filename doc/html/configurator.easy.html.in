@@ -209,7 +209,7 @@ as <I>slurm.conf</I> for use by Slurm.
 <h2>Cluster Name</h2>
 <input type="text" name="cluster_name" value="cluster"> <b>ClusterName</b>:
 The name of your cluster. Using different names for each of your clusters is
-important when usign a single database to record information from multiple
+important when using a single database to record information from multiple
 Slurm-managed clusters.
 
 <H2>Control Machines</H2>
