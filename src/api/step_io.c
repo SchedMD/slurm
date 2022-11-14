@@ -236,6 +236,7 @@ _create_server_eio_obj(int fd, client_io_t *cio, int nodeid,
 	info->out_remaining = 0;
 	info->out_eof = false;
 
+	net_set_keep_alive(fd);
 	eio = eio_obj_create(fd, &server_ops, (void *)info);
 
 	return eio;
