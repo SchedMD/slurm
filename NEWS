@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix 'scontrol reconfigure' with configless enabled to send updated configs
     to 21.08 nodes correctly. (22.05 nodes are unaffected.)
  -- Fix assertion and locks for dynamic node registrations with rpc queueing.
+ -- rest_auth/local - avoid logging root access as an error but instead as a
+    normal info log.
 
 * Changes in Slurm 22.05.6
 ==========================
