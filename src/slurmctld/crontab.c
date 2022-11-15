@@ -67,6 +67,7 @@ static int _handle_job(void *x, void *y)
 	job_desc_msg_t *job = (job_desc_msg_t *) x;
 	foreach_cron_job_args_t *args = (foreach_cron_job_args_t *) y;
 	job_record_t *job_ptr = NULL;
+	char *err_msg = NULL;
 
 	dump_job_desc(job);
 
@@ -99,8 +100,12 @@ static int _handle_job(void *x, void *y)
 	job->requeue = 1;
 
 	/* give job_submit a chance to play with it first */
-	args->return_code = validate_job_create_req(job, args->uid,
-						    args->job_submit_user_msg);
+	args->return_code = validate_job_create_req(job, args->uid, &err_msg);
+
+	if (err_msg) {
+		xstrfmtcat(*args->job_submit_user_msg, "%s\n", err_msg);
+		xfree(err_msg);
+	}
 
 	if (args->return_code) {
 		xstrfmtcat(*args->failed_lines, "%u-%u",
