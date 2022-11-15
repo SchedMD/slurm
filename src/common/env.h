@@ -310,8 +310,11 @@ char **env_array_from_file(const char *filename);
 
 /*
  * Write environment to specified file name.
+ * IN newline - if true, write 1 env variable terminated with \n
+ * 	if false, write 1 env variable terminated with \0
  */
-int env_array_to_file(const char *filename, const char **env_array);
+int env_array_to_file(const char *filename, const char **env_array,
+		      bool newline);
 
 /*
  * Return an array of strings representing the specified user's default

@@ -1923,10 +1923,12 @@ char **env_array_from_file(const char *fname)
 	return env;
 }
 
-int env_array_to_file(const char *filename, const char **env_array)
+int env_array_to_file(const char *filename, const char **env_array,
+		      bool newline)
 {
 	int outfd = -1;
 	int rc = SLURM_SUCCESS;
+	const char *terminator = newline ? "\n" : "\0";
 
 	outfd = open(filename, (O_WRONLY | O_CREAT | O_EXCL), 0600);
 	if (outfd < 0) {
@@ -1937,7 +1939,7 @@ int env_array_to_file(const char *filename, const char **env_array)
 
 	for (const char **p = env_array; p && *p; p++) {
 		safe_write(outfd, *p, strlen(*p));
-		safe_write(outfd, "\0", 1);
+		safe_write(outfd, terminator, 1);
 	}
 
 	(void) close(outfd);

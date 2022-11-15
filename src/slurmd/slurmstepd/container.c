@@ -416,7 +416,7 @@ static int _modify_config(stepd_step_rec_t *step, data_t *config,
 		xstrfmtcat(envfile, "%s/%s",
 			   step->cwd, SLURM_CONTAINER_ENV_FILE);
 
-		rc = env_array_to_file(envfile, (const char **) cmd_env);
+		rc = env_array_to_file(envfile, (const char **) cmd_env, false);
 
 		if (!rc && chown(envfile, step->uid, step->gid) < 0) {
 			error("%s: chown(%s): %m", __func__, envfile);
