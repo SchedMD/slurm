@@ -1715,6 +1715,13 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 	}
 
+	/*
+	 * config_power_mgr() Must be after node and partitions have been loaded
+	 * and before any calls to power_save_test().
+	 */
+	config_power_mgr();
+
+
 	_gres_reconfig(reconfig);
 	_sync_jobs_to_conf();		/* must follow select_g_job_init() */
 
@@ -1894,7 +1901,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	_set_response_cluster_rec();
 
-	config_power_mgr();
 	consolidate_config_list(true, true);
 
 	slurm_conf.last_update = time(NULL);
