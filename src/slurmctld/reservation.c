@@ -2551,6 +2551,23 @@ static bitstr_t *_get_update_node_bitmap(slurmctld_resv_t *resv_ptr,
 	return node_bitmap;
 }
 
+/* Returns false if only one reoccurring flag is set, true otherwise */
+static bool _has_multiple_reoccurring(resv_desc_msg_t *resv_desc_ptr){
+	int flag_count = 0;
+	if (resv_desc_ptr->flags & RESERVE_FLAG_HOURLY)
+		flag_count++;
+	if (resv_desc_ptr->flags & RESERVE_FLAG_DAILY)
+		flag_count++;
+	if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKDAY)
+		flag_count++;
+	if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKEND)
+		flag_count++;
+	if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKLY)
+		flag_count++;
+
+	return (flag_count > 1);
+}
+
 /* Create a resource reservation */
 extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 {
@@ -2621,6 +2638,16 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 					  (resv_desc_ptr->duration * 60);
 	} else
 		resv_desc_ptr->end_time = INFINITE;
+
+	if (resv_desc_ptr->flags & RESERVE_REOCCURRING) {
+		if (_has_multiple_reoccurring(resv_desc_ptr)) {
+			info("Reservation has multiple reoccurring flags. Please specify only one reoccurring flag");
+			if (err_msg)
+				*err_msg = xstrdup("Reservation has multiple reoccurring flags. Please specify only one reoccurring flag");
+			rc = ESLURM_NOT_SUPPORTED;
+			goto bad_parse;
+		}
+	}
 
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
 	    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
@@ -3052,24 +3079,14 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			resv_ptr->flags |= RESERVE_FLAG_IGN_JOBS;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_IGN_JOB)
 			resv_ptr->flags &= (~RESERVE_FLAG_IGN_JOBS);
-		if (resv_desc_ptr->flags & RESERVE_FLAG_HOURLY)
-			resv_ptr->flags |= RESERVE_FLAG_HOURLY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_HOURLY)
 			resv_ptr->flags &= (~RESERVE_FLAG_HOURLY);
-		if (resv_desc_ptr->flags & RESERVE_FLAG_DAILY)
-			resv_ptr->flags |= RESERVE_FLAG_DAILY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_DAILY)
 			resv_ptr->flags &= (~RESERVE_FLAG_DAILY);
-		if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKDAY)
-			resv_ptr->flags |= RESERVE_FLAG_WEEKDAY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKDAY)
 			resv_ptr->flags &= (~RESERVE_FLAG_WEEKDAY);
-		if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKEND)
-			resv_ptr->flags |= RESERVE_FLAG_WEEKEND;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKEND)
 			resv_ptr->flags &= (~RESERVE_FLAG_WEEKEND);
-		if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKLY)
-			resv_ptr->flags |= RESERVE_FLAG_WEEKLY;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_WEEKLY)
 			resv_ptr->flags &= (~RESERVE_FLAG_WEEKLY);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES)
@@ -3080,6 +3097,32 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			resv_ptr->flags &= (~RESERVE_FLAG_STATIC);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_FIRST_CORES)
 			resv_ptr->flags |= RESERVE_FLAG_FIRST_CORES;
+		if (resv_desc_ptr->flags & RESERVE_REOCCURRING) {
+
+			/*
+			 * If the reservation already has a reoccurring flag
+			 * or is being updated to have multiple reoccurring
+			 * flags, then reject the update
+			 */
+			if ((resv_ptr->flags & RESERVE_REOCCURRING) ||
+			    (_has_multiple_reoccurring(resv_desc_ptr))) {
+				info("Cannot update reservation to have multiple reoccurring flags. Please specify only one reoccurring flag");
+				if (err_msg)
+					*err_msg = xstrdup("Cannot update reservation to have multiple reoccurring flags. Please specify only one reoccurring flag");
+				error_code = ESLURM_NOT_SUPPORTED;
+				goto update_failure;
+			}
+			else if (resv_desc_ptr->flags & RESERVE_FLAG_HOURLY)
+				resv_ptr->flags |= RESERVE_FLAG_HOURLY;
+			else if (resv_desc_ptr->flags & RESERVE_FLAG_DAILY)
+				resv_ptr->flags |= RESERVE_FLAG_DAILY;
+			else if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKDAY)
+				resv_ptr->flags |= RESERVE_FLAG_WEEKDAY;
+			else if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKEND)
+				resv_ptr->flags |= RESERVE_FLAG_WEEKEND;
+			else if (resv_desc_ptr->flags & RESERVE_FLAG_WEEKLY)
+				resv_ptr->flags |= RESERVE_FLAG_WEEKLY;
+		}
 		if ((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
 		    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 			if ((resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
