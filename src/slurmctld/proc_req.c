@@ -4540,6 +4540,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
+	char *err_msg = NULL;
 	DEF_TIMERS;
 	resv_desc_msg_t *resv_desc_ptr = (resv_desc_msg_t *)
 		msg->data;
@@ -4574,7 +4575,7 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
-		error_code = update_resv(resv_desc_ptr);
+		error_code = update_resv(resv_desc_ptr, &err_msg);
 		END_TIMER2("_slurm_rpc_resv_update");
 	}
 	unlock_slurmctld(node_write_lock);
@@ -4583,7 +4584,7 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 	if (error_code) {
 		info("_slurm_rpc_resv_update reservation=%s: %s",
 		     resv_desc_ptr->name, slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
+		slurm_send_rc_err_msg(msg, error_code, err_msg);
 	} else {
 		debug2("_slurm_rpc_resv_update complete for %s %s",
 		       resv_desc_ptr->name, TIME_STR);
@@ -4591,6 +4592,7 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 
 		queue_job_scheduler();
 	}
+	xfree(err_msg);
 }
 
 /* _slurm_rpc_resv_delete - process RPC to delete a reservation */

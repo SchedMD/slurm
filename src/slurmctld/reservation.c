@@ -3006,7 +3006,7 @@ extern void resv_fini(void)
 }
 
 /* Update an exiting resource reservation */
-extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
+extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 {
 	time_t now = time(NULL);
 	slurmctld_resv_t *resv_backup, *resv_ptr;
@@ -3090,6 +3090,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			    !(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
 				info("%s: reservation %s can't be updated with REPLACE or REPLACE_DOWN flags; they should be updated on a NodeCnt reservation",
 				     __func__, resv_desc_ptr->name);
+				if (err_msg)
+					*err_msg = xstrdup("Reservation can't be updated with REPLACE or REPLACE_DOWN flags; they should be updated on a NodeCnt reservation");
 				error_code = ESLURM_NOT_SUPPORTED;
 				goto update_failure;
 			}
@@ -3378,6 +3380,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		    (resv_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 			info("%s: reservation %s can't be updated with Nodes option; it is incompatible with REPLACE[_DOWN]",
 			     __func__, resv_desc_ptr->name);
+			if (err_msg)
+				*err_msg = xstrdup("Reservation can't be updated with Nodes option; it is incompatible with REPLACE[_DOWN]");
 			error_code = ESLURM_NOT_SUPPORTED;
 			goto update_failure;
 		}
