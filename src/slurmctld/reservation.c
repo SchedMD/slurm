@@ -3044,8 +3044,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			resv_ptr->flags |= RESERVE_FLAG_FLEX;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_FLEX)
 			resv_ptr->flags &= (~RESERVE_FLAG_FLEX);
-		if (resv_desc_ptr->flags & RESERVE_FLAG_MAINT)
-			resv_ptr->flags |= RESERVE_FLAG_MAINT;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_MAINT)
 			resv_ptr->flags &= (~RESERVE_FLAG_MAINT);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)
@@ -3078,8 +3076,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			resv_ptr->flags |= RESERVE_FLAG_ANY_NODES;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_ANY_NODES)
 			resv_ptr->flags &= (~RESERVE_FLAG_ANY_NODES);
-		if (resv_desc_ptr->flags & RESERVE_FLAG_STATIC)
-			resv_ptr->flags |= RESERVE_FLAG_STATIC;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC)
 			resv_ptr->flags &= (~RESERVE_FLAG_STATIC);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_FIRST_CORES)
@@ -3095,10 +3091,49 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 				error_code = ESLURM_NOT_SUPPORTED;
 				goto update_failure;
 			}
+
+			/*
+			 * If requesting to add the REPLACE or REPLACE_DOWN
+			 * flags, and the STATIC or MAINT flags were already
+			 * set, then reject the update.
+			 */
+			if ((resv_ptr->flags & RESERVE_FLAG_STATIC) ||
+			    (resv_ptr->flags & RESERVE_FLAG_MAINT)) {
+				info("%s: reservation %s can't be updated: REPLACE and REPLACE_DOWN flags cannot be used with STATIC_ALLOC or MAINT flags",
+				     __func__, resv_desc_ptr->name);
+				if (err_msg)
+					*err_msg = xstrdup("REPLACE and REPLACE_DOWN flags cannot be used with STATIC_ALLOC or MAINT flags");
+				error_code = ESLURM_NOT_SUPPORTED;
+				goto update_failure;
+			}
+
+
 			if (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE)
 				resv_ptr->flags |= RESERVE_FLAG_REPLACE;
 			else
 				resv_ptr->flags |= RESERVE_FLAG_REPLACE_DOWN;
+		}
+		if ((resv_desc_ptr->flags & RESERVE_FLAG_STATIC) ||
+		    (resv_desc_ptr->flags & RESERVE_FLAG_MAINT)) {
+			/*
+			 * If requesting to add the MAINT or STATIC flag,
+			 * and the REPLACE or REPLACE_DOWN flags were already
+			 * set, then reject the update.
+			 */
+			if ((resv_ptr->flags & RESERVE_FLAG_REPLACE) ||
+		            (resv_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
+		     		info("%s: reservation %s can't be updated: REPLACE and REPLACE_DOWN flags cannot be used with STATIC_ALLOC or MAINT flags",
+				     __func__, resv_desc_ptr->name);
+				if (err_msg)
+					*err_msg = xstrdup("REPLACE and REPLACE_DOWN flags cannot be used with STATIC_ALLOC or MAINT flags");
+				error_code = ESLURM_NOT_SUPPORTED;
+				goto update_failure;
+			}
+
+			if (resv_desc_ptr->flags & RESERVE_FLAG_STATIC)
+				resv_ptr->flags |= RESERVE_FLAG_STATIC;
+			else
+				resv_ptr->flags |= RESERVE_FLAG_MAINT;
 		}
 		if (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES) {
 			if ((resv_ptr->partition == NULL) &&
