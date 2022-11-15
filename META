@@ -16,8 +16,6 @@
 #  src/common/slurm_protocol_common.h
 #  with a new SLURM_PROTOCOL_VERSION signifing the old one and the version
 #  it was so the slurmdbd can continue to send the old protocol version.
-#  In src/plugins/slurmctld/nonstop/msg.c needs to have version_string updated.
-#  The META of libsmd needs to reflect this version and API_CURRENT as well.
 #
 #  NOTE: The API version can not be the same as the Slurm version above.  The
 #        version in the code is referenced as a uint16_t which if 1403 was the
