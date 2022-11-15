@@ -3099,6 +3099,14 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			resv_ptr->flags |= RESERVE_FLAG_FIRST_CORES;
 		if (resv_desc_ptr->flags & RESERVE_REOCCURRING) {
 
+			if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
+				info("Cannot add a reoccurring flag to a floating reservation");
+				if (err_msg)
+					*err_msg = xstrdup("Cannot add a reoccurring flag to a floating reservation");
+				error_code = ESLURM_NOT_SUPPORTED;
+				goto update_failure;
+			}
+
 			/*
 			 * If the reservation already has a reoccurring flag
 			 * or is being updated to have multiple reoccurring
