@@ -702,11 +702,41 @@ static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc)
 		if (!user->default_acct
 		    || xstrcmp(user->default_acct, assoc->acct)) {
 			xfree(user->default_acct);
-			user->default_acct = xstrdup(assoc->acct);
-			debug2("user %s default acct is %s",
-			       user->name, user->default_acct);
+			if (assoc->is_def == 1) {
+				user->default_acct = xstrdup(assoc->acct);
+				debug2("user %s default acct is %s",
+				       user->name, user->default_acct);
+			} else
+				debug2("user %s default acct %s removed",
+				       user->name, assoc->acct);
 		}
 		/* cache user rec reference for backfill*/
+		assoc->user_rec = user;
+	}
+}
+
+/* locks should be put in place before calling this function USER_WRITE */
+static void _clear_user_default_acct(slurmdb_assoc_rec_t *assoc)
+{
+	xassert(assoc);
+	xassert(assoc->acct);
+	xassert(assoc_mgr_user_list);
+
+	/* set up the default if this is it */
+	if ((assoc->is_def == 0) && (assoc->uid != NO_VAL)) {
+		slurmdb_user_rec_t *user = list_find_first(
+			assoc_mgr_user_list, _list_find_uid, &assoc->uid);
+
+		if (!user)
+			return;
+
+		if (!user->default_acct
+		    || !xstrcmp(user->default_acct, assoc->acct)) {
+			xfree(user->default_acct);
+			debug2("user %s default acct %s removed",
+			       user->name, assoc->acct);
+		}
+		/* cache user rec reference for backfill */
 		assoc->user_rec = user;
 	}
 }
@@ -3924,8 +3954,10 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				/* parents_changed will set this later
 				   so try to avoid doing it twice.
 				*/
-				if (rec->is_def && !parents_changed)
+				if (!parents_changed) {
 					_set_user_default_acct(rec);
+					_clear_user_default_acct(rec);
+				}
 			}
 
 			/* info("now rec has def of %d", rec->def_qos_id); */

@@ -3756,3 +3756,66 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 
 	return rc;
 }
+
+extern int as_mysql_assoc_remove_default(mysql_conn_t *mysql_conn,
+					 List user_list, List cluster_list)
+{
+	char *query = NULL;
+	List use_cluster_list = NULL;
+	ListIterator itr, itr2;
+	slurmdb_assoc_rec_t assoc;
+	bool locked = false;
+	int rc = SLURM_SUCCESS;
+
+	xassert(user_list);
+
+	if (!(slurmdbd_conf->flags & DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT))
+		return ESLURM_NO_REMOVE_DEFAULT_ACCOUNT;
+
+	slurmdb_init_assoc_rec(&assoc, 0);
+	assoc.acct = "";
+	assoc.is_def = 1;
+
+	if (cluster_list && list_count(cluster_list))
+		use_cluster_list = cluster_list;
+	else {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		locked = true;
+	}
+
+	itr = list_iterator_create(use_cluster_list);
+	itr2 = list_iterator_create(user_list);
+	while ((assoc.cluster = list_next(itr))) {
+		list_iterator_reset(itr2);
+		while ((assoc.user = list_next(itr2))) {
+			rc = _reset_default_assoc(
+				mysql_conn, &assoc, &query, true);
+
+			if (rc != SLURM_SUCCESS)
+				break;
+		}
+		if (rc != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy(itr2);
+	list_iterator_destroy(itr);
+
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
+
+	if (rc != SLURM_SUCCESS)
+		xfree(query);
+
+	if (query) {
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+		if (rc != SLURM_SUCCESS)
+			error("Couldn't remove default assocs");
+	}
+
+	return rc;
+}

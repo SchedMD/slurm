@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - disable umask during socket creation as the authentication is
     handled by Slurm instead of file ACLs.
  -- Fix sbcast, srun --bcast, sstat not working with cloud/dynamic nodes.
+ -- sacctmgr - Allow removal of user's default account when AllowNoDefAcct=yes.
 
 * Changes in Slurm 22.05.6
 ==========================

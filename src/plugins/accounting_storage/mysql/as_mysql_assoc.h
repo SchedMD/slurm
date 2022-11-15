@@ -61,4 +61,7 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 				  List cluster_list);
 
+extern int as_mysql_assoc_remove_default(mysql_conn_t *mysql_conn,
+					 List user_list, List cluster_list);
+
 #endif

@@ -718,11 +718,10 @@ no_user_table:
 		FREE_NULL_LIST(ret_list);
 	}
 
-	if (user->default_acct) {
+	if (user->default_acct && user->default_acct[0]) {
 		slurmdb_assoc_cond_t assoc_cond;
 		slurmdb_assoc_rec_t assoc;
 		List tmp_list = NULL;
-
 		memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 		slurmdb_init_assoc_rec(&assoc, 0);
 		assoc.is_def = 1;
@@ -748,6 +747,19 @@ no_user_table:
 		/* } */
 		/* list_iterator_destroy(itr); */
 		FREE_NULL_LIST(tmp_list);
+	} else if (user->default_acct) {
+		List cluster_list = NULL;
+		if (user_cond->assoc_cond
+		    && user_cond->assoc_cond->cluster_list)
+			cluster_list = user_cond->assoc_cond->cluster_list;
+
+		rc = as_mysql_assoc_remove_default(
+			mysql_conn, ret_list, cluster_list);
+		if (rc != SLURM_SUCCESS) {
+			FREE_NULL_LIST(ret_list);
+			errno = rc;
+			goto end_it;
+		}
 	}
 
 	if (user->default_wckey) {
