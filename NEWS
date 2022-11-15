@@ -137,6 +137,11 @@ documents those changes that are of interest to users and administrators.
     to a file.
  -- Make it so scrontab prints client-side the job_submit() err_msg (which can
     be set i.e. by using the log_user() function for the lua plugin).
+ -- Remove ability for reservation to have STATIC_ALLOC or MAINT flags and
+    REPLACE[_DOWN] flags simultaneously.
+ -- Accept only one reoccurring flag when creating/updating any reservation.
+ -- Remove ability to update a reservation to have a reoccurring flag if it
+    is a floating reservation.
 
 * Changes in Slurm 22.05.7
 ==========================

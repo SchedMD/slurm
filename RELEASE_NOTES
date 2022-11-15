@@ -97,6 +97,12 @@ COMMAND CHANGES (see man pages for details)
     on the slurmd processes to be temporarily altered.
  -- Make it so scrontab prints client-side the job_submit() err_msg (which can
     be set i.e. by using the log_user() function for the lua plugin).
+ -- scontrol - Reservations will not be allowed to have STATIC_ALLOC or MAINT
+    flags and REPLACE[_DOWN] flags simultaneously.
+ -- scontrol - Reservations will only accept one reoccurring flag when
+    being created or updated.
+ -- scontrol - A reservation cannot be updated to be reoccurring if it is
+    already a floating reservation.
 
 API CHANGES
 ===========
