@@ -403,8 +403,10 @@ static void _open_persist_sends(void)
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurm_persist_conn_t *send = NULL;
 
-	if (!fed_mgr_fed_rec || ! fed_mgr_fed_rec->cluster_list)
+	if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list) {
+		log_flag(FEDR, "bailing on empty cluster list");
 		return;
+	}
 
 	/* This open_send_mutex will make this like a write lock since at the
 	 * same time we are sending out these open requests the other slurmctlds
