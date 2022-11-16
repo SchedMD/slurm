@@ -1946,6 +1946,22 @@ that node to be terminated.
 .SH "PARTITIONS \- SPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS"
 
 .TP
+\fBAllocNodes\fR=<\fIname\fR>
+Comma separated list of nodes from which users can execute jobs in the
+partition.
+Node names may be specified using the node range expression syntax
+described above.
+The default value is "ALL".
+.IP
+
+.TP
+\fBAllowAccounts\fR=<\fIname\fR>
+Identify the Accounts which may use this partition.
+Multiple Accounts may be specified in a comma separated list.
+To permit all Accounts to use the partition specify "AllowAccounts=ALL".
+.IP
+
+.TP
 \fBAllowGroups\fR=<\fIname\fR>
 Identify the user groups which may use this partition.
 Multiple groups may be specified in a comma separated list.
@@ -1953,12 +1969,10 @@ To permit all groups to use the partition specify "AllowGroups=ALL".
 .IP
 
 .TP
-\fBAllocNodes\fR=<\fIname\fR>
-Comma separated list of nodes from which users can execute jobs in the
-partition.
-Node names may be specified using the node range expression syntax
-described above.
-The default value is "ALL".
+\fBAllowQOS\fR=<\fIname\fR>
+Identify the QOS's which may use this partition.
+Multiple QOS's may be specified in a comma separated list.
+To permit all QOS's to use the partition specify "AllowQOS=ALL".
 .IP
 
 .TP
@@ -2004,9 +2018,27 @@ The memory size is specified in megabytes.
 .IP
 
 .TP
+\fBDenyAccounts\fR=<\fIname\fR>
+Identify the Accounts which should be denied access to this partition.
+Multiple Accounts may be specified in a comma separated list.
+.IP
+
+.TP
+\fBDenyQOS\fR=<\fIname\fR>
+Identify the QOS's which should be denied access to this partition.
+Multiple QOS's may be specified in a comma separated list.
+.IP
+
+.TP
 \fBDisableRootJobs\fR={yes|no}
 Specify if jobs can be executed as user root.
 Possible values are "YES" and "NO".
+.IP
+
+.TP
+\fBExclusiveUser\fR={yes|no}
+When enabled nodes will be exclusively allocated to users. Multiple jobs can
+be run simultaneously, but those jobs must be from a single user.
 .IP
 
 .TP
@@ -2041,6 +2073,17 @@ Default number of CPUs per allocated GPU.
 \fBDefMemPerGPU\fR
 Default memory limit (in megabytes) per allocated GPU.
 .RE
+.IP
+
+.TP
+\fBMaxCPUsPerNode\fR=<\fIcount\fR>
+Set the maximum number of CPUs that can be allocated per node to all jobs
+in this partition.
+.IP
+
+.TP
+\fBLLN\fR={yes|no}
+Schedule jobs on the least loaded nodes (based on the number of idle CPUs).
 .IP
 
 .TP
@@ -2098,6 +2141,15 @@ have already begun execution.
 .IP
 
 .TP
+\fBOverSubscribe\fR={yes|no|exclusive|force}[:<\fIjob_count\fR>]
+Specify if compute resources (i.e. individual CPUs) in this partition can be
+shared by multiple jobs.
+Possible values are "YES", "NO", "EXCLUSIVE" and "FORCE".
+An optional job count specifies how many jobs can be allocated to use
+each resource.
+.IP
+
+.TP
 \fBOverTimeLimit\fR=<\fIcount\fR>
 Number of minutes by which a job can exceed its time limit before
 being canceled.
@@ -2112,15 +2164,6 @@ If not specified, the global \fIOverTimeLimit\fP value will take precedence.
 May not exceed 65533 minutes.
 An input value of "UNLIMITED" will clear any previously configured
 partition\-specific \fIOverTimeLimit\fP value.
-.IP
-
-.TP
-\fBOverSubscribe\fR={yes|no|exclusive|force}[:<\fIjob_count\fR>]
-Specify if compute resources (i.e. individual CPUs) in this partition can be
-shared by multiple jobs.
-Possible values are "YES", "NO", "EXCLUSIVE" and "FORCE".
-An optional job count specifies how many jobs can be allocated to use
-each resource.
 .IP
 
 .TP
@@ -2179,17 +2222,17 @@ leave the option blank.
 .IP
 
 .TP
-\fBRootOnly\fR={yes|no}
-Specify if only allocation requests initiated by user root will be satisfied.
-This can be used to restrict control of the partition to some meta\-scheduler.
-Possible values are "YES" and "NO".
-.IP
-
-.TP
 \fBReqResv\fR={yes|no}
 Specify if only allocation requests designating a reservation will be
 satisfied.  This is used to restrict partition usage to be allowed only
 within a reservation.
+Possible values are "YES" and "NO".
+.IP
+
+.TP
+\fBRootOnly\fR={yes|no}
+Specify if only allocation requests initiated by user root will be satisfied.
+This can be used to restrict control of the partition to some meta\-scheduler.
 Possible values are "YES" and "NO".
 .IP
 
