@@ -4211,7 +4211,7 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
 			continue;
 
 		req_msg.protocol_version = sibling->rpc_version;
-		rc |= _queue_rpc(sibling, &req_msg, 0, false);
+		rc |= _queue_rpc(sibling, &req_msg, job_ptr->job_id, false);
 	}
 	list_iterator_destroy(sib_itr);
 	return rc;
