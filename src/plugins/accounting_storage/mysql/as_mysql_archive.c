@@ -4797,6 +4797,39 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 	return 1; /* found one record */
 }
 
+static int _purge_hash_table(mysql_conn_t *mysql_conn, char *cluster_name,
+			     char *hash_table, char *parent_table,
+			     char *col_name)
+{
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;
+
+	query = xstrdup_printf("delete from \"%s_%s\" where hash_inx not in"
+			       "(select %s from \"%s_%s\") LIMIT %d",
+			       cluster_name, hash_table, col_name, cluster_name,
+			       parent_table, MAX_PURGE_LIMIT);
+
+	DB_DEBUG(DB_ARCHIVE, mysql_conn->conn, "query\n%s", query);
+
+	while ((rc = mysql_db_delete_affected_rows(mysql_conn, query)) > 0) {
+		/* Commit here every time since this could create a huge
+			* transaction.
+			*/
+		if ((rc = mysql_db_commit(mysql_conn)))
+			error("Couldn't commit cluster (%s) purge",
+			      cluster_name);
+	}
+
+	xfree(query);
+	if (rc != SLURM_SUCCESS) {
+		error("Couldn't remove old data from %s table", hash_table);
+		return SLURM_ERROR;
+	} else if (mysql_db_commit(mysql_conn)) {
+		error("Couldn't commit cluster (%s) purge", cluster_name);
+	}
+	return SLURM_SUCCESS;
+}
+
 /* Archive and purge a table.
  *
  * Returns SLURM_ERROR on error and SLURM_SUCCESS on success.
@@ -5084,6 +5117,18 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 	if (arch_cond->purge_job != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_JOB, 0, mysql_conn,
 					       cluster_name, arch_cond)))
+			return rc;
+		/*
+		 * We archive the hash table data with the job table.
+		 * Now we just need to purge the hash tables.
+		 */
+		if ((rc = _purge_hash_table(mysql_conn, cluster_name,
+					    job_script_table, job_table,
+					    "script_hash_inx")))
+			return rc;
+		if ((rc = _purge_hash_table(mysql_conn, cluster_name,
+					    job_env_table, job_table,
+					    "env_hash_inx")))
 			return rc;
 	}
 
