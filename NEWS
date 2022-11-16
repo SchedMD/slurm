@@ -138,6 +138,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.7
 ==========================
+ -- Fix slurmctlds in a federation not recovering a lost connection until a
+    slurmctld restart or a federation update.
 
 * Changes in Slurm 22.05.6
 ==========================

@@ -1563,6 +1563,7 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	char *query = NULL;
 	bool free_it = false;
+	bool affected_rows = false;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -1585,7 +1586,11 @@ extern int as_mysql_fini_ctld(mysql_conn_t *mysql_conn,
 	if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (!last_affected_rows(mysql_conn) || !slurmdbd_conf->track_ctld ||
+	affected_rows = last_affected_rows(mysql_conn);
+	if (affected_rows)
+		as_mysql_add_feds_to_update_list(mysql_conn);
+
+	if (!affected_rows || !slurmdbd_conf->track_ctld ||
 	    (cluster_rec->flags & CLUSTER_FLAG_EXT))
 		return rc;
 
