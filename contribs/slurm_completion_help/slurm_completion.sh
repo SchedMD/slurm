@@ -3692,7 +3692,9 @@ function __scontrol_update_nodename() {
 # completion handler for: scontrol update partitionname=* [key=val]...
 function __scontrol_update_partitionname() {
 	local parameters=(
+		"allowaccounts="
 		"allowgroups="
+		"allowqos="
 		"allocnodes="
 		"alternate="
 		"cpubind="
@@ -3700,10 +3702,16 @@ function __scontrol_update_partitionname() {
 		"defaulttime="
 		"defmempercpu="
 		"defmempernode="
+		"denyaccounts="
+		"denyqos="
 		"disablerootjobs="
+		"exclusiveuser="
 		"gracetime="
 		"hidden="
 		"jobdefaults="
+		"lln="
+		"maxcpuspernode="
+		"maxcpuspersocket="
 		"maxmempercpu="
 		"maxmempernode="
 		"maxnodes="
@@ -3753,14 +3761,20 @@ function __scontrol_update_partitionname() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	case "${prev}" in
+	allowaccount?(s)) __slurm_compreply_list "$(__slurm_accounts) ALL" ;;
 	allowgroup?(s)) __slurm_compreply_list "$(__slurm_linux_groups) ALL" ;;
+	allowqos) __slurm_compreply_list "$(__slurm_qos) ALL" ;;
 	allocnode?(s)) __slurm_compreply_list "$(__slurm_nodes) ALL" ;;
 	alternate) __slurm_compreply "$(__slurm_partitions) NONE" ;;
 	cpubind) __slurm_compreply "$(__slurm_cpubind_types)" ;;
 	default) __slurm_compreply "$(__slurm_boolean)" ;;
+	denyaccount?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
+	denyqos) __slurm_compreply_list "$(__slurm_qos)" ;;
 	disablerootjob?(s)) __slurm_compreply "$(__slurm_boolean)" ;;
+	exclusiveuser) __slurm_compreply "$(__slurm_boolean)" ;;
 	hidden) __slurm_compreply "$(__slurm_boolean)" ;;
 	jobdefault?(s)) __slurm_compreply "${job_defaults[*]}" ;;
+	lln) __slurm_compreply "$(__slurm_boolean)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes) ALL" ;;
 	oversubscribe) __slurm_compreply "${oversubscribe_types[*]}" ;;
 	partitionname) __slurm_compreply "$(__slurm_partitions)" ;;
