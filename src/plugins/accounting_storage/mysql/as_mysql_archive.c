@@ -232,6 +232,20 @@ static void _free_local_job_members(local_job_t *object)
 }
 
 typedef struct {
+	char *hash_inx;
+	char *last_used;
+	char *env_hash;
+	char *env_vars;
+} local_job_env_t;
+
+typedef struct {
+	char *hash_inx;
+	char *last_used;
+	char *script_hash;
+	char *batch_script;
+} local_job_script_t;
+
+typedef struct {
 	char *assocs;
 	char *comment;
 	char *deleted;
@@ -597,6 +611,38 @@ enum {
 	JOB_REQ_COUNT
 };
 
+/* if this changes you will need to edit the corresponding enum below */
+static char *job_env_inx[] = {
+	"hash_inx",
+	"last_used",
+	"env_hash",
+	"env_vars",
+};
+
+enum {
+	JOB_ENV_HASH_INX,
+	JOB_ENV_LAST_USED,
+	JOB_ENV_ENV_HASH,
+	JOB_ENV_ENV_VARS,
+	JOB_ENV_COUNT
+};
+
+/* if this changes you will need to edit the corresponding enum below */
+static char *job_script_inx[] = {
+	"hash_inx",
+	"last_used",
+	"script_hash",
+	"batch_script",
+};
+
+enum {
+	JOB_SCRIPT_HASH_INX,
+	JOB_SCRIPT_LAST_USED,
+	JOB_SCRIPT_SCRIPT_HASH,
+	JOB_SCRIPT_BATCH_SCRIPT,
+	JOB_SCRIPT_COUNT
+};
+
 /* if this changes you will need to edit the corresponding enum */
 char *resv_req_inx[] = {
 	"id_resv",
@@ -823,6 +869,8 @@ typedef enum {
 	PURGE_SUSPEND,
 	PURGE_RESV,
 	PURGE_JOB,
+	PURGE_JOB_ENV,
+	PURGE_JOB_SCRIPT,
 	PURGE_STEP,
 	PURGE_TXN,
 	PURGE_USAGE,
@@ -831,9 +879,9 @@ typedef enum {
 
 static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 			       char *cluster_name, char *col_name,
-			       time_t period_end, char *arch_dir,
-			       uint32_t archive_period, char *sql_table,
-			       uint32_t usage_info);
+			       time_t *period_start, time_t period_end,
+			       char *arch_dir, uint32_t archive_period,
+			       char *sql_table, uint32_t usage_info);
 
 static uint32_t high_buffer_size = (1024 * 1024);
 
@@ -1664,6 +1712,24 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 unpack_error:
 	_free_local_job_members(object);
 	return SLURM_ERROR;
+}
+
+static void _pack_local_job_env(local_job_env_t *object, uint16_t rpc_version,
+				buf_t *buffer)
+{
+	packstr(object->hash_inx, buffer);
+	packstr(object->last_used, buffer);
+	packstr(object->env_hash, buffer);
+	packstr(object->env_vars, buffer);
+}
+
+static void _pack_local_job_script(local_job_script_t *object,
+				   uint16_t rpc_version, buf_t *buffer)
+{
+	packstr(object->hash_inx, buffer);
+	packstr(object->last_used, buffer);
+	packstr(object->script_hash, buffer);
+	packstr(object->batch_script, buffer);
 }
 
 static void _pack_local_resv(local_resv_t *object, uint16_t rpc_version,
@@ -3199,6 +3265,14 @@ static char *_get_archive_columns(purge_type_t type)
 		cols      = job_req_inx;
 		col_count = JOB_REQ_COUNT;
 		break;
+	case PURGE_JOB_ENV:
+		cols      = job_env_inx;
+		col_count = JOB_ENV_COUNT;
+		break;
+	case PURGE_JOB_SCRIPT:
+		cols      = job_script_inx;
+		col_count = JOB_SCRIPT_COUNT;
+		break;
 	case PURGE_STEP:
 		cols      = step_req_inx;
 		col_count = STEP_REQ_COUNT;
@@ -3634,6 +3708,70 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 //	info("job query took %s", TIME_STR);
 
 	return insert;
+}
+
+static buf_t *_pack_archive_job_env(MYSQL_RES *result, char *cluster_name,
+				    uint32_t cnt, uint32_t usage_info,
+				    time_t *period_start)
+{
+	MYSQL_ROW row;
+	buf_t *buffer;
+	local_job_env_t job;
+
+	buffer = init_buf(high_buffer_size);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+	pack16(DBD_GOT_JOB_ENV, buffer); // FIXME
+	packstr(cluster_name, buffer);
+	pack32(cnt, buffer);
+
+	while ((row = mysql_fetch_row(result))) {
+		if (period_start && !*period_start)
+			error("period_start should already be set");
+
+		memset(&job, 0, sizeof(local_job_env_t));
+
+		job.hash_inx = row[JOB_ENV_HASH_INX];
+		job.last_used = row[JOB_ENV_LAST_USED];
+		job.env_hash = row[JOB_ENV_ENV_HASH];
+		job.env_vars = row[JOB_ENV_ENV_VARS];
+
+		_pack_local_job_env(&job, SLURM_PROTOCOL_VERSION, buffer);
+	}
+
+	return buffer;
+}
+
+static buf_t *_pack_archive_job_script(MYSQL_RES *result, char *cluster_name,
+				       uint32_t cnt, uint32_t usage_info,
+				       time_t *period_start)
+{
+	MYSQL_ROW row;
+	buf_t *buffer;
+	local_job_script_t job;
+
+	buffer = init_buf(high_buffer_size);
+	pack16(SLURM_PROTOCOL_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+	pack16(DBD_GOT_JOB_SCRIPT, buffer); //FIXME
+	packstr(cluster_name, buffer);
+	pack32(cnt, buffer);
+
+	while ((row = mysql_fetch_row(result))) {
+		if (period_start && !*period_start)
+			error("period_start should already be set");
+
+		memset(&job, 0, sizeof(local_job_script_t));
+
+		job.hash_inx = row[JOB_SCRIPT_HASH_INX];
+		job.last_used = row[JOB_SCRIPT_LAST_USED];
+		job.script_hash = row[JOB_SCRIPT_SCRIPT_HASH];
+		job.batch_script = row[JOB_SCRIPT_BATCH_SCRIPT];
+
+		_pack_local_job_script(&job, SLURM_PROTOCOL_VERSION, buffer);
+	}
+
+	return buffer;
 }
 
 static buf_t *_pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
@@ -4456,13 +4594,13 @@ static char *_load_cluster_usage(uint16_t rpc_version, buf_t *buffer,
 /* returns count of events archived or SLURM_ERROR on error */
 static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 			       char *cluster_name, char *col_name,
-			       time_t period_end, char *arch_dir,
-			       uint32_t archive_period, char *sql_table,
-			       uint32_t usage_info)
+			       time_t *period_start, time_t period_end,
+			       char *arch_dir, uint32_t archive_period,
+			       char *sql_table, uint32_t usage_info)
 {
 	MYSQL_RES *result = NULL;
-	char *cols = NULL, *query = NULL;
-	time_t period_start = 0;
+	char *cols = NULL, *query = NULL, *parent_table = NULL,
+		*hash_col = NULL;
 	uint32_t cnt = 0;
 	buf_t *buffer;
 	int error_code = 0;
@@ -4484,6 +4622,16 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 		break;
 	case PURGE_JOB:
 		pack_func = &_pack_archive_jobs;
+		break;
+	case PURGE_JOB_ENV:
+		parent_table = job_table;
+		hash_col = "env_hash_inx";
+		pack_func = &_pack_archive_job_env;
+		break;
+	case PURGE_JOB_SCRIPT:
+		parent_table = job_table;
+		hash_col = "script_hash_inx";
+		pack_func = &_pack_archive_job_script;
 		break;
 	case PURGE_STEP:
 		pack_func = &_pack_archive_steps;
@@ -4518,6 +4666,19 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 				       cols, cluster_name, sql_table, col_name,
 				       period_end, col_name, MAX_PURGE_LIMIT);
 		break;
+	case PURGE_JOB_ENV:
+	case PURGE_JOB_SCRIPT:
+		query = xstrdup_printf("select distinct %s from \"%s_%s\" "
+				       "inner join (select %s from \"%s_%s\" "
+				       "where %s <= %ld && time_end != 0 "
+				       "order by %s asc LIMIT %d) as j "
+				       "on hash_inx = j.%s "
+				       "order by hash_inx asc",
+				       cols, cluster_name, sql_table, hash_col,
+				       cluster_name, parent_table, col_name,
+				       period_end, col_name, MAX_PURGE_LIMIT,
+				       hash_col);
+		break;
 	default:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "%s <= %ld && time_end != 0 "
@@ -4542,11 +4703,11 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	}
 
 	buffer = (*pack_func)(result, cluster_name, cnt, usage_info,
-			      &period_start);
+			      period_start);
 	mysql_free_result(result);
 
 	error_code = archive_write_file(buffer, cluster_name,
-					period_start, period_end,
+					*period_start, period_end,
 					arch_dir, sql_table,
 					archive_period);
 	FREE_NULL_BUFFER(buffer);
@@ -4789,9 +4950,10 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 
 		/* Do archive */
 		if (SLURMDB_PURGE_ARCHIVE_SET(purge_attr)) {
+			time_t start = 0;
 			rc = _archive_table(purge_type, mysql_conn,
-					    cluster_name, col_name, tmp_end,
-					    arch_cond->archive_dir,
+					    cluster_name, col_name, &start,
+					    tmp_end, arch_cond->archive_dir,
 					    tmp_archive_period, sql_table,
 					    usage_info);
 			if (!rc) { /* no records archived */
@@ -4800,6 +4962,27 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 				return SLURM_ERROR;
 			} else if (rc == SLURM_ERROR)
 				return rc;
+
+			if (purge_type == PURGE_JOB) {
+				/* Archive associated data from hash tables */
+				rc = _archive_table(PURGE_JOB_ENV,
+						    mysql_conn, cluster_name,
+						    col_name, &start, tmp_end,
+						    arch_cond->archive_dir,
+						    tmp_archive_period,
+						    job_env_table, usage_info);
+				if (rc == SLURM_ERROR)
+					return rc;
+				rc = _archive_table(PURGE_JOB_SCRIPT,
+						    mysql_conn, cluster_name,
+						    col_name, &start, tmp_end,
+						    arch_cond->archive_dir,
+						    tmp_archive_period,
+						    job_script_table,
+						    usage_info);
+				if (rc == SLURM_ERROR)
+					return rc;
+			}
 		}
 
 		/*
