@@ -335,7 +335,8 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 		}
 	}
 
-	log_flag(FEDR, "opening sibling conn to %s", cluster->name);
+	log_flag(FEDR, "opening sibling conn to %s[%s:%u]",
+		 cluster->name, cluster->control_host, cluster->control_port);
 
 	if (!cluster->fed.send) {
 		persist_conn = xmalloc(sizeof(slurm_persist_conn_t));
