@@ -880,6 +880,19 @@ extern void cleanup_container(stepd_step_rec_t *step)
 
 		if (rmdir(step->cwd))
 			error("rmdir(%s): %m", jconfig);
+
+		if (oci_conf->create_env_file) {
+			char *envfile = NULL;
+
+			/* keep _generate_pattern() in sync with this path */
+			xstrfmtcat(envfile, "%s/%s",
+				   step->cwd, SLURM_CONTAINER_ENV_FILE);
+
+			if (unlink(envfile))
+				error("unlink(%s): %m", envfile);
+
+			xfree(envfile);
+		}
 	}
 
 	_kill_container();

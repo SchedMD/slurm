@@ -165,6 +165,8 @@ documents those changes that are of interest to users and administrators.
  -- oci.conf - add StdIODebug, SyslogDebug, FileDebug and DebugFlags options to
     allow controlling container specific logging.
  -- oci.conf - remove requirement of RunTimeQuery when RunTimeRun is set.
+ -- slurmstepd - cleanup generated environment file for containers when step
+    completes instead of deferring cleanup to OCI runtime.
 
 * Changes in Slurm 22.05.7
 ==========================
