@@ -444,6 +444,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 uint16_t *avail_cpus,
 					 uint32_t *min_tasks_this_node,
 					 uint32_t *max_tasks_this_node,
+					 uint32_t *min_cores_this_node,
 					 int rem_nodes,
 					 bool enforce_binding,
 					 bool first_pass,
@@ -457,6 +458,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	int *socket_index; /* Socket indexes */
 	uint16_t *avail_cores_per_sock;
 	bool has_cpus_per_gres = false;
+
+	*min_cores_this_node = NO_VAL;
 
 	if (*max_tasks_this_node == 0)
 		return;
@@ -485,6 +488,14 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		uint64_t max_gres = 0, rem_gres = 0;
 		uint16_t avail_cores_tot = 0, cpus_per_gres;
 		int min_core_cnt, req_cpus, rem_sockets, sock_cnt = 0;
+		int threads_per_core;
+
+		if (mc_ptr->threads_per_core)
+			threads_per_core =
+				MIN(cpus_per_core,
+				    mc_ptr->threads_per_core);
+		else
+			threads_per_core = cpus_per_core;
 
 		if (!sock_gres->gres_state_job)
 			continue;
@@ -636,7 +647,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			}
 
 			if (!sock_gres->cnt_any_sock &&
-			    ((max_gres && (max_gres >= cnt_avail_total)) ||
+			    ((max_gres && (cnt_avail_total >= max_gres)) ||
 			     (gres_js->gres_per_node &&
 			      (cnt_avail_total >= gres_js->gres_per_node)))) {
 				/*
@@ -728,15 +739,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 */
 		req_cpus = *max_tasks_this_node;
 		if (mc_ptr->cpus_per_task) {
-			int threads_per_core, removed_tasks = 0;
+			int removed_tasks = 0;
 			int efctv_cpt = mc_ptr->cpus_per_task;
-
-			if (mc_ptr->threads_per_core)
-				threads_per_core =
-					MIN(cpus_per_core,
-					    mc_ptr->threads_per_core);
-			else
-				threads_per_core = cpus_per_core;
 
 			if ((mc_ptr->ntasks_per_core == 1) &&
 			    (efctv_cpt % threads_per_core)) {
@@ -800,10 +804,48 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 i, cpus_per_gres, cpus_per_core);
 			req_cpus = MAX(req_cpus, i);
 		}
+		/*
+		 * Ensure that the number required cores is at least equal to
+		 * the number of required sockets.
+		 */
+		if (req_cpus < sock_cnt) {
+			req_cpus = sock_cnt;
+		}
 
+		/*
+		 * Test against both avail_cores_tot and *avail_cpus.
+		 *
+		 * - avail_cores_tot: the number of cores that are available on
+		 *   this node
+		 * - *avail_cpus: the number of cpus the job can use on this
+		 *   node based on the job constraints.
+		 *
+		 * For example, assume a node has 16 cores, 2 threads per core. and
+		 * Assume that 4 cores are in use by other jobs. If a job's
+		 * constraints only allow the job to use 2 cpus:
+		 *
+		 * avail_cores_tot is 12 (16 cores total minus 4 cores in use)
+		 * *avail_cpus is 2
+		 *
+		 * req_cpus is cores, not CPUs.
+		 */
 		if (req_cpus > avail_cores_tot) {
 			log_flag(SELECT_TYPE, "Job cannot run on node required CPUs:%d > aval_cores_tot:%d",
 				 req_cpus, avail_cores_tot);
+			*max_tasks_this_node = 0;
+			break;
+		}
+
+		/*
+		 * Only reject if enforce_binding=true, since a job may be able
+		 * to run on fewer cores than required by GRES if
+		 * enforce_binding=false.
+		 */
+		if (enforce_binding &&
+		    ((req_cpus * threads_per_core) > *avail_cpus)) {
+			log_flag(SELECT_TYPE, "Job cannot run on node, avail_cpus=%u < %u (required cores %u * threads_per_core %u",
+				 *avail_cpus, req_cpus * threads_per_core,
+				 req_cpus, threads_per_core);
 			*max_tasks_this_node = 0;
 			break;
 		}
@@ -880,6 +922,15 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				*max_tasks_this_node = 0;
 			}
 		}
+
+		/*
+		 * Only do this if enforce_binding=true, since without
+		 * enforce_binding a job may run on fewer cores than required
+		 * for optimal binding.
+		 */
+		if (enforce_binding)
+			*min_cores_this_node =
+				MIN(*min_cores_this_node, req_cpus);
 	}
 	list_iterator_destroy(sock_gres_iter);
 	xfree(avail_cores_per_sock);
@@ -898,6 +949,9 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		*avail_cpus = MIN(*avail_cpus,
 				  *max_tasks_this_node * mc_ptr->cpus_per_task);
 	}
+
+	if (!(*max_tasks_this_node) || (*min_cores_this_node == NO_VAL))
+		*min_cores_this_node = 0;
 }
 
 /*
