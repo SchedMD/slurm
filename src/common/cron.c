@@ -72,6 +72,7 @@ extern void free_cron_entry(void *in)
 	xfree(entry->day_of_month);
 	xfree(entry->month);
 	xfree(entry->day_of_week);
+	xfree(entry->cronspec);
 	xfree(entry->command);
 	xfree(entry);
 }
