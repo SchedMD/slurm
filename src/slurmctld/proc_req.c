@@ -6211,6 +6211,7 @@ static void _slurm_rpc_request_crontab(slurm_msg_t *msg)
 				disabled_lines[len] = '\0';
 			}
 		}
+		xfree(file);
 	}
 
 	unlock_slurmctld(job_read_lock);
