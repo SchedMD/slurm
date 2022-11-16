@@ -335,7 +335,8 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 		}
 	}
 
-	log_flag(FEDR, "opening sibling conn to %s", cluster->name);
+	log_flag(FEDR, "opening sibling conn to %s[%s:%u]",
+		 cluster->name, cluster->control_host, cluster->control_port);
 
 	if (!cluster->fed.send) {
 		persist_conn = xmalloc(sizeof(slurm_persist_conn_t));
@@ -403,8 +404,10 @@ static void _open_persist_sends(void)
 	slurmdb_cluster_rec_t *cluster = NULL;
 	slurm_persist_conn_t *send = NULL;
 
-	if (!fed_mgr_fed_rec || ! fed_mgr_fed_rec->cluster_list)
+	if (!fed_mgr_fed_rec || !fed_mgr_fed_rec->cluster_list) {
+		log_flag(FEDR, "bailing on empty cluster list");
 		return;
+	}
 
 	/* This open_send_mutex will make this like a write lock since at the
 	 * same time we are sending out these open requests the other slurmctlds
@@ -4211,7 +4214,7 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
 			continue;
 
 		req_msg.protocol_version = sibling->rpc_version;
-		rc |= _queue_rpc(sibling, &req_msg, 0, false);
+		rc |= _queue_rpc(sibling, &req_msg, job_ptr->job_id, false);
 	}
 	list_iterator_destroy(sib_itr);
 	return rc;
