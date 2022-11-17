@@ -798,7 +798,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t *orig_node_map, **part_core_map = NULL;
 	bitstr_t **free_cores_tmp = NULL,  *node_bitmap_tmp = NULL;
 	bitstr_t **free_cores_tmp2 = NULL, *node_bitmap_tmp2 = NULL;
-	bitstr_t **avail_cores, **free_cores;
+	bitstr_t **avail_cores, **free_cores, **avail_cores_tmp = NULL;
 	bool test_only = false, will_run = false;
 	uint32_t sockets_per_node = 1;
 	uint32_t c, j, n, c_alloc = 0, c_size, total_cpus;
@@ -817,6 +817,8 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	char *nodename = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
 	node_record_t *node_ptr;
+	uint32_t orig_min_nodes = min_nodes;
+	uint32_t next_job_size = 0;
 
 	free_job_resources(&job_ptr->job_resrcs);
 
@@ -833,6 +835,18 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		if (error_code != SLURM_SUCCESS) {
 			return error_code;
 		}
+	}
+	if (details_ptr->job_size_bitmap) {
+		int start;
+		n = bit_set_count(node_bitmap);
+		if (max_nodes < n)
+			n = max_nodes;
+		start = bit_fls_from_bit(details_ptr->job_size_bitmap, n);
+		if (start < 0 || start < orig_min_nodes)
+			return SLURM_ERROR;
+		max_nodes = start;
+		min_nodes = max_nodes;
+		req_nodes = max_nodes;
 	}
 
 	/*
@@ -895,12 +909,30 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	if (is_cons_tres)
 		tres_mc_ptr = _build_gres_mc_data(job_ptr);
 
+try_next_nodes_cnt:
+	if (details_ptr->job_size_bitmap) {
+		int next = bit_fls_from_bit(details_ptr->job_size_bitmap,
+					    max_nodes - 1);
+		if (next > 0 && next >= orig_min_nodes)
+			next_job_size = next;
+		else
+			next_job_size = 0;
+	}
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 					req_nodes, node_bitmap, free_cores,
 					node_usage, cr_type, test_only,
 					will_run, part_core_map,
 					prefer_alloc_nodes, tres_mc_ptr);
-	if (!avail_res_array) {
+	if ((!avail_res_array || !job_ptr->best_switch) && next_job_size) {
+		log_flag(SELECT_TYPE, "test 0 fail: try again");
+		bit_copybits(node_bitmap, orig_node_map);
+		free_core_array(&free_cores);
+		free_cores = copy_core_array(avail_cores);
+		min_nodes = next_job_size;
+		max_nodes = next_job_size;
+		req_nodes = next_job_size;
+		goto try_next_nodes_cnt;
+	} else if (!avail_res_array) {
 		/* job can not fit */
 		xfree(tres_mc_ptr);
 		FREE_NULL_BITMAP(orig_node_map);
@@ -1096,7 +1128,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		_block_whole_nodes(node_bitmap, avail_cores, free_cores);
 
 	/* make these changes permanent */
-	free_core_array(&avail_cores);
+	avail_cores_tmp = avail_cores;
 	avail_cores = copy_core_array(free_cores);
 
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
@@ -1307,6 +1339,26 @@ alloc_job:
 	 * create the job_resources struct,
 	 * distribute the job on the bits, and exit
 	 */
+	if ((!avail_res_array || !job_ptr->best_switch) && next_job_size) {
+		log_flag(SELECT_TYPE, "no idle resources, try next job size:%u",
+			 next_job_size);
+		bit_copybits(node_bitmap, orig_node_map);
+		free_core_array(&free_cores);
+		if (avail_cores_tmp) {
+			free_core_array(&avail_cores);
+			avail_cores = avail_cores_tmp;
+			avail_cores_tmp = NULL;
+		}
+		free_cores = copy_core_array(avail_cores);
+		min_nodes = next_job_size;
+		max_nodes = next_job_size;
+		req_nodes = next_job_size;
+		goto try_next_nodes_cnt;
+	}
+
+	if (avail_cores_tmp)
+		free_core_array(&avail_cores_tmp);
+
 	FREE_NULL_BITMAP(orig_node_map);
 	free_core_array(&part_core_map);
 	free_core_array(&free_cores_tmp);
