@@ -1451,18 +1451,18 @@ alloc_job:
 			bit_set(job_res->core_bitmap, c);
 			c_alloc++;
 		}
-		gres_min_cores = avail_res_array[n]->gres_min_cores;
+		gres_min_cores = avail_res_array[i]->gres_min_cores;
 		if (gres_min_cores) {
 			uint16_t vpus =
-				common_cpus_per_core(job_ptr->details, n);
+				common_cpus_per_core(job_ptr->details, i);
 			uint32_t new_cpus = gres_min_cores * vpus;
 			gres_min_cpus += new_cpus;
 			log_flag(SELECT_TYPE, "Node=%s: gres_min_cores=%u, vpus=%u, job_res->cpus[%d]=%u, gres_min_cpus=%u (added %u)",
-			     node_record_table_ptr[n]->name,
+			     node_record_table_ptr[i]->name,
 			     gres_min_cores, vpus, i,
 			     job_res->cpus[i], gres_min_cpus, new_cpus);
 		} else {
-			gres_min_cpus += avail_res_array[n]->min_cpus;
+			gres_min_cpus += avail_res_array[i]->min_cpus;
 		}
 		total_cpus += job_res->cpus[n];
 		n++;
