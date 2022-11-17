@@ -281,6 +281,7 @@ documents those changes that are of interest to users and administrators.
     that were previously transmitted.
  -- hpe/slingshot - Add support for user requestible job VNIs.
  -- hpe/slingshot - Add support for user requestible single node vnis.
+ -- hpe/slingshot - Add support for the instant-on feature.
 
 * Changes in Slurm 22.05.9
 ==========================

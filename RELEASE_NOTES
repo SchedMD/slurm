@@ -94,6 +94,7 @@ HIGHLIGHTS
     priority jobs to preempt jobs to free up used licenses. (This is only
     enabled for with PreemptModes of CANCEL and REQUEUE, as Slurm cannot
     guarantee suspended jobs will release licenses correctly.)
+ -- hpe/slingshot - add support for the instant-on feature.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

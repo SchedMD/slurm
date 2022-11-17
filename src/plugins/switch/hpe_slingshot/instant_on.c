@@ -48,6 +48,10 @@
 #elif HAVE_JSON_INC
 #  include <json/json.h>
 #endif
+#define CURL_TRACE 0	/* Turn on curl debug tracing */
+#if CURL_TRACE
+#include <ctype.h>
+#endif
 
 #include "src/common/slurm_xlator.h"
 
@@ -74,6 +78,9 @@ typedef struct rest_conn {
 static rest_conn_t jlope_conn;  /* Connection to jackaloped */
 
 static bool instant_on_enabled = false;
+static char *auth_header = NULL; /* cache OAUTH auth header here */
+static char *_get_auth_header(bool cache_use);
+
 
 /*
  * If an error response was received, log it
@@ -159,6 +166,44 @@ static void _rest_disconnect(rest_conn_t *conn)
 	memset(conn, 0, sizeof(*conn));
 }
 
+#if CURL_TRACE
+/*
+ * Callback for libcurl tracing - print out datatype and data
+ */
+static int _libcurl_trace(CURL *handle, curl_infotype type, char *data,
+			  size_t size, void *userp)
+{
+	char *buf = xmalloc(size + 1);
+	char *typestr = "unknown";
+
+	if (type == CURLINFO_TEXT)
+		typestr = "text";
+	else if (type == CURLINFO_HEADER_OUT)
+		typestr = "header_out";
+	else if (type == CURLINFO_DATA_OUT)
+		typestr = "data_out";
+	else if (type == CURLINFO_SSL_DATA_OUT)
+		typestr = "ssl_data_out";
+	else if (type == CURLINFO_HEADER_IN)
+		typestr = "header_in";
+	else if (type == CURLINFO_DATA_IN)
+		typestr = "data_in";
+	else if (type == CURLINFO_SSL_DATA_IN)
+		typestr = "ssl_data_in";
+
+	while (size > 0 && (data[size-1] == '\n' || data[size-1] == '\r'))
+		data[--size] = '\0';
+
+	for (int i = 0; i < size; i++)
+		buf[i] = isprint(data[i]) ? data[i] : '_';
+	buf[size] = '\0';
+
+	log_flag(SWITCH, "%s: '%s'", typestr, buf);
+	xfree(buf);
+	return 0;
+}
+#endif
+
 /*
  * Generic handle set up function for UNIX and network connections to use
  */
@@ -194,6 +239,11 @@ static bool _rest_connect(rest_conn_t *conn, const char *name,
 	CURL_SETOPT(conn->handle, CURLOPT_WRITEDATA, conn);
 	CURL_SETOPT(conn->handle, CURLOPT_READFUNCTION, _read_function);
 	CURL_SETOPT(conn->handle, CURLOPT_FOLLOWLOCATION, 0);
+
+#if CURL_TRACE
+	CURL_SETOPT(conn->handle, CURLOPT_DEBUGFUNCTION, _libcurl_trace);
+	CURL_SETOPT(conn->handle, CURLOPT_VERBOSE, 1L);
+#endif
 
 	/* These are needed to work with self-signed certificates */
 	CURL_SETOPT(conn->handle, CURLOPT_SSL_VERIFYPEER, 0);
@@ -285,7 +335,12 @@ again:
 
 	/* Create header list */
 	headers = curl_slist_append(headers, "Content-Type: application/json");
-	/* TODO: OAUTH here */
+	if (conn->auth == SLINGSHOT_JLOPE_AUTH_OAUTH) {
+		const char *hdr = _get_auth_header(use_cache);
+		if (!hdr)
+			goto err;
+		headers = curl_slist_append(headers, hdr);
+	}
 
 	/* Set up connection handle for the POST */
 	CURL_SETOPT(conn->handle, CURLOPT_URL, url);
@@ -368,6 +423,99 @@ rwfail:
 }
 
 /*
+ * Clear OAUTH authentication header
+ */
+static void _clear_auth_header(void)
+{
+	if (auth_header) {
+		memset(auth_header, 0, strlen(auth_header));
+		xfree(auth_header);
+		auth_header = NULL;
+	}
+}
+
+/*
+ * If needed, access a token service to get an OAUTH2 auth token;
+ * return the authorization header (and cache in 'auth_header' global);
+ * if 'cache_use' is set, return the cached auth_header if set
+ */
+static char *_get_auth_header(bool cache_use)
+{
+	char *client_id = NULL;
+	char *client_secret = NULL;
+	char *url = NULL;
+	rest_conn_t conn = { 0 };  /* Connection to token service */
+	char *req = NULL;
+	json_object *respjson = NULL;
+	json_object *tokjson = NULL;
+	const char *token = NULL;
+	long status = 0;
+
+	/* Use what we've got if allowed */
+	if (auth_header && cache_use)
+		return auth_header;
+
+	/* Get a new token from the token service */
+	_clear_auth_header();
+
+	/* Get the token URL and client_{id,secret}, create request string */
+	client_id = _read_authfile(SLINGSHOT_JLOPE_AUTH_OAUTH_CLIENT_ID_FILE);
+	if (!client_id)
+		goto err;
+	client_secret =
+		_read_authfile(SLINGSHOT_JLOPE_AUTH_OAUTH_CLIENT_SECRET_FILE);
+	if (!client_secret)
+		goto err;
+	url = _read_authfile(SLINGSHOT_JLOPE_AUTH_OAUTH_ENDPOINT_FILE);
+	if (url)
+		goto err;
+	req = xstrdup_printf("grant_type=client_credentials&client_id=%s"
+			     "&client_secret=%s", client_id, client_secret);
+
+	/* Connect and POST request to OAUTH token endpoint */
+	if (!_rest_connect(&conn, "OAUTH token grant", url,
+			   SLINGSHOT_JLOPE_AUTH_NONE, SLINGSHOT_JLOPE_TIMEOUT,
+			   SLINGSHOT_JLOPE_CONNECT_TIMEOUT, NULL, NULL))
+		goto err;
+
+	/* Set up connection handle for the POST */
+	CURL_SETOPT(conn.handle, CURLOPT_URL, url);
+	CURL_SETOPT(conn.handle, CURLOPT_CUSTOMREQUEST, NULL);
+	CURL_SETOPT(conn.handle, CURLOPT_POST, 1);
+	CURL_SETOPT(conn.handle, CURLOPT_POSTFIELDS, req);
+
+	/* Issue the POST and get the response */
+	if (!_rest_request(&conn, &status, &respjson))
+		goto err;
+
+	/* On a successful response, get the access_token out of it */
+	if (status == HTTP_OK) {
+		debug("%s POST %s successful", conn.name, url);
+	} else {
+		_log_rest_detail(conn.name, "POST", url, respjson, status);
+		goto err;
+	}
+
+	/* Create an authentication header from the access_token */
+	tokjson = json_object_object_get(respjson, "access_token");
+	if (!tokjson || !(token = json_object_get_string(tokjson))) {
+		error("Couldn't get auth token from OAUTH service: json='%s'",
+		      json_object_to_json_string(respjson));
+		goto err;
+	}
+	auth_header = xstrdup_printf("Authorization: Bearer %s", token);
+
+err:
+	xfree(client_id);
+	xfree(client_secret);
+	xfree(url);
+	_rest_disconnect(&conn);
+	xfree(req);
+	json_object_put(respjson);
+	return auth_header;
+}
+
+/*
  * Read any authentication files and connect to the jackalope daemon,
  * which implements a REST interface providing Instant On data
  */
@@ -386,8 +534,9 @@ extern bool slingshot_init_instant_on(void)
 					SLINGSHOT_JLOPE_AUTH_BASIC_PWD_FILE)))
 			goto err;
 	} else if (slingshot_config.jlope_auth == SLINGSHOT_JLOPE_AUTH_OAUTH) {
-		// TODO: OAUTH
-		goto err;
+		/* Attempt to get an OAUTH token for later use */
+		if (!_get_auth_header(false))
+			goto err;
 	} else {
 		error("Invalid jlope_auth value %u",
 			slingshot_config.jlope_auth);
@@ -423,6 +572,7 @@ err:
 extern void slingshot_fini_instant_on(void)
 {
 	_rest_disconnect(&jlope_conn);
+	_clear_auth_header();
 }
 
 /*
