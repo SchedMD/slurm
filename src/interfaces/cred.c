@@ -709,6 +709,12 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
 	xassert(cred != NULL);
 
 	slurm_rwlock_rdlock(&cred->mutex);
+
+	if (!cred->arg) {
+		slurm_rwlock_unlock(&cred->mutex);
+		return NULL;
+	}
+
 	switch (cred_data_type) {
 	case CRED_DATA_JOB_GRES_LIST:
 		rc = (void *) cred->arg->job_gres_list;
