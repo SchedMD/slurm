@@ -144,6 +144,8 @@ documents those changes that are of interest to users and administrators.
     --gres-flags=enforce-binding.
  -- Fix job core selection with --gres-flags=enforce-binding: this fixes cases
     where enforce-binding was not respected.
+ -- openapi/v0.0.38 - set assoc_id resolution failure as a debug log instead of
+    an error log.
 
 * Changes in Slurm 22.05.6
 ==========================
