@@ -269,8 +269,11 @@ extern int container_p_restore(char *dir_name, bool recover)
 	}
 
 	while ((ep = readdir(dp))) {
-		if (_restore_ns(steps, ep->d_name))
-			rc = SLURM_ERROR;
+		/* If possible, only check directories */
+		if ((ep->d_type == DT_DIR) || (ep->d_type == DT_UNKNOWN)) {
+			if (_restore_ns(steps, ep->d_name))
+				rc = SLURM_ERROR;
+		}
 	}
 	closedir(dp);
 	FREE_NULL_LIST(steps);
