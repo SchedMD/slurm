@@ -501,10 +501,10 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			log_flag(AGENT, "%s: sending msg_type %s to node %s",
 				 __func__,
 				 rpc_num2string(agent_arg_ptr->msg_type),
-				 thread_ptr[thr_count].nodename);
+				 thread_ptr[0].nodename);
 		} else {
 			thread_ptr[0].nodelist = agent_arg_ptr->hostlist;
-			thread_ptr[thr_count].addr = NULL;
+			thread_ptr[0].addr = NULL;
 			if (slurm_conf.debug_flags & DEBUG_FLAG_AGENT) {
 				char *buf;
 				buf = hostlist_ranged_string_xmalloc(
