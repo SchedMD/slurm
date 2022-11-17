@@ -128,20 +128,23 @@ static int _find_step_in_list(step_loc_t *stepd, uint32_t *job_id)
 
 static int _restore_ns(List steps, const char *d_name)
 {
+	char *endptr;
 	int fd;
-	uint32_t job_id;
+	unsigned long job_id;
 	step_loc_t *stepd;
 
-	if (!(job_id = slurm_atoul(d_name))) {
+	errno = 0;
+	job_id = strtoul(d_name, &endptr, 10);
+	if ((errno != 0) || (job_id >= NO_VAL) || (*endptr != '\0')) {
 		debug3("ignoring %s, could not convert to jobid.", d_name);
 		return SLURM_SUCCESS;
 	}
 
 	/* here we think this is a job container */
-	debug3("determine if job %u is still running", job_id);
+	debug3("determine if job %lu is still running", job_id);
 	stepd = list_find_first(steps, (ListFindF)_find_step_in_list, &job_id);
 	if (!stepd) {
-		debug("%s: Job %u not found, deleting the namespace",
+		debug("%s: Job %lu not found, deleting the namespace",
 		      __func__, job_id);
 		return _delete_ns(job_id);
 	}
@@ -149,7 +152,7 @@ static int _restore_ns(List steps, const char *d_name)
 	fd = stepd_connect(stepd->directory, stepd->nodename,
 			   &stepd->step_id, &stepd->protocol_version);
 	if (fd == -1) {
-		error("%s: failed to connect to stepd for %u.",
+		error("%s: failed to connect to stepd for %lu.",
 		      __func__, job_id);
 		return _delete_ns(job_id);
 	}
@@ -266,8 +269,11 @@ extern int container_p_restore(char *dir_name, bool recover)
 	}
 
 	while ((ep = readdir(dp))) {
-		if (_restore_ns(steps, ep->d_name))
-			rc = SLURM_ERROR;
+		/* If possible, only check directories */
+		if ((ep->d_type == DT_DIR) || (ep->d_type == DT_UNKNOWN)) {
+			if (_restore_ns(steps, ep->d_name))
+				rc = SLURM_ERROR;
+		}
 	}
 	closedir(dp);
 	FREE_NULL_LIST(steps);
