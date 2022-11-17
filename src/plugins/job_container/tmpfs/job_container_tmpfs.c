@@ -128,11 +128,14 @@ static int _find_step_in_list(step_loc_t *stepd, uint32_t *job_id)
 
 static int _restore_ns(List steps, const char *d_name)
 {
+	char *endptr;
 	int fd;
 	uint32_t job_id;
 	step_loc_t *stepd;
 
-	if (!(job_id = slurm_atoul(d_name))) {
+	errno = 0;
+	job_id = strtoul(d_name, &endptr, 10);
+	if ((errno != 0) || (*endptr != '\0')) {
 		debug3("ignoring %s, could not convert to jobid.", d_name);
 		return SLURM_SUCCESS;
 	}
