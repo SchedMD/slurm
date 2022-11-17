@@ -961,9 +961,15 @@ static void *_thread_per_group_rpc(void *args)
 				error("%s: no ret_list given", __func__);
 				goto cleanup;
 			}
-		} else {
+		} else if (thread_ptr->nodelist) {
 			if (!(ret_list = start_msg_tree(thread_ptr->nodelist,
 							&msg, 0))) {
+				error("%s: no ret_list given", __func__);
+				goto cleanup;
+			}
+		} else {
+			if (!(ret_list = slurm_send_recv_msgs(
+				thread_ptr->nodename, &msg, 0))) {
 				error("%s: no ret_list given", __func__);
 				goto cleanup;
 			}
