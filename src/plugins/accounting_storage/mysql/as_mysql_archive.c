@@ -238,12 +238,32 @@ typedef struct {
 	char *env_vars;
 } local_job_env_t;
 
+static void _free_local_job_env_members(local_job_env_t *object)
+{
+	if (object) {
+		xfree(object->hash_inx);
+		xfree(object->last_used);
+		xfree(object->env_hash);
+		xfree(object->env_vars);
+	}
+}
+
 typedef struct {
 	char *hash_inx;
 	char *last_used;
 	char *script_hash;
 	char *batch_script;
 } local_job_script_t;
+
+static void _free_local_job_script_members(local_job_script_t *object)
+{
+	if (object) {
+		xfree(object->hash_inx);
+		xfree(object->last_used);
+		xfree(object->script_hash);
+		xfree(object->batch_script);
+	}
+}
 
 typedef struct {
 	char *assocs;
@@ -1723,6 +1743,25 @@ static void _pack_local_job_env(local_job_env_t *object, uint16_t rpc_version,
 	packstr(object->env_vars, buffer);
 }
 
+/* this needs to be allocated before calling, and since we aren't
+ * doing any copying it needs to be used before destroying buffer */
+static int _unpack_local_job_env(local_job_env_t *object, uint16_t rpc_version,
+				 buf_t *buffer)
+{
+	if (rpc_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->hash_inx, buffer);
+		safe_unpackstr(&object->last_used, buffer);
+		safe_unpackstr(&object->env_hash, buffer);
+		safe_unpackstr(&object->env_vars, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	_free_local_job_env_members(object);
+	return SLURM_ERROR;
+}
+
 static void _pack_local_job_script(local_job_script_t *object,
 				   uint16_t rpc_version, buf_t *buffer)
 {
@@ -1730,6 +1769,25 @@ static void _pack_local_job_script(local_job_script_t *object,
 	packstr(object->last_used, buffer);
 	packstr(object->script_hash, buffer);
 	packstr(object->batch_script, buffer);
+}
+
+/* this needs to be allocated before calling, and since we aren't
+ * doing any copying it needs to be used before destroying buffer */
+static int _unpack_local_job_script(local_job_script_t *object,
+				    uint16_t rpc_version, buf_t *buffer)
+{
+	if (rpc_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpackstr(&object->hash_inx, buffer);
+		safe_unpackstr(&object->last_used, buffer);
+		safe_unpackstr(&object->script_hash, buffer);
+		safe_unpackstr(&object->batch_script, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	_free_local_job_script_members(object);
+	return SLURM_ERROR;
 }
 
 static void _pack_local_resv(local_resv_t *object, uint16_t rpc_version,
@@ -3742,6 +3800,82 @@ static buf_t *_pack_archive_job_env(MYSQL_RES *result, char *cluster_name,
 	return buffer;
 }
 
+/* returns sql statement from archived data or NULL on error */
+static char *_load_job_env(uint16_t rpc_version, buf_t *buffer,
+			   char *cluster_name, uint32_t rec_cnt)
+{
+	char *insert = NULL, *insert_pos = NULL;
+	char *format = NULL, *format_pos = NULL;
+	int safe_attributes[] = {
+		JOB_ENV_HASH_INX,
+		JOB_ENV_LAST_USED,
+		JOB_ENV_ENV_HASH,
+		JOB_ENV_COUNT
+	};
+
+	/* Sync w/ job_table_fields where text/tinytext can be NULL */
+	int null_attributes[] = {
+		JOB_ENV_ENV_VARS,
+		JOB_ENV_COUNT
+	};
+
+	local_job_env_t object;
+	int i = 0;
+
+	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
+		     cluster_name, job_env_table,
+		     job_env_inx[safe_attributes[0]]);
+	for (i = 1; safe_attributes[i] < JOB_ENV_COUNT; i++)
+		xstrfmtcatat(insert, &insert_pos, ", %s",
+			     job_env_inx[safe_attributes[i]]);
+	/* Some attributes that might be NULL require special handling */
+	for (i = 0; null_attributes[i] < JOB_ENV_COUNT; i++)
+		xstrfmtcatat(insert, &insert_pos, ", %s",
+			     job_env_inx[null_attributes[i]]);
+	xstrcatat(insert, &insert_pos, ") values ");
+
+	for (i = 0; i < rec_cnt; i++) {
+		if (_unpack_local_job_env(&object, rpc_version, buffer) !=
+		    SLURM_SUCCESS) {
+			error("issue unpacking");
+			xfree(insert);
+			break;
+		}
+
+		if (i)
+			xstrcatat(insert, &insert_pos, ", ");
+
+		xstrcatat(format, &format_pos, "('%s'");
+		for (int j = 1; safe_attributes[j] < JOB_ENV_COUNT; j++) {
+			xstrcatat(format, &format_pos, ", '%s'");
+		}
+
+		/* special handling for NULL attributes */
+		if (object.env_vars == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
+
+		xstrcatat(format, &format_pos, ")");
+
+		xstrfmtcatat(insert, &insert_pos, format, object.hash_inx,
+			     object.last_used, object.env_hash,
+			     (object.env_vars == NULL) ? "NULL" :
+							 object.env_vars);
+
+		_free_local_job_env_members(&object);
+		format_pos = NULL;
+		xfree(format);
+	}
+	xstrfmtcatat(insert, &insert_pos, " on duplicate key update %s=%s;",
+		     job_env_inx[JOB_ENV_HASH_INX],
+		     job_env_inx[JOB_ENV_HASH_INX]); /* Do nothing */
+	//	END_TIMER2("step query");
+	//	info("job query took %s", TIME_STR);
+
+	return insert;
+}
+
 static buf_t *_pack_archive_job_script(MYSQL_RES *result, char *cluster_name,
 				       uint32_t cnt, uint32_t usage_info,
 				       time_t *period_start)
@@ -3772,6 +3906,84 @@ static buf_t *_pack_archive_job_script(MYSQL_RES *result, char *cluster_name,
 	}
 
 	return buffer;
+}
+
+/* returns sql statement from archived data or NULL on error */
+static char *_load_job_script(uint16_t rpc_version, buf_t *buffer,
+			      char *cluster_name, uint32_t rec_cnt)
+{
+	char *insert = NULL, *insert_pos = NULL;
+	char *format = NULL, *format_pos = NULL;
+	int safe_attributes[] = {
+		JOB_SCRIPT_HASH_INX,
+		JOB_SCRIPT_LAST_USED,
+		JOB_SCRIPT_SCRIPT_HASH,
+		JOB_SCRIPT_COUNT
+	};
+
+	/* Sync w/ job_table_fields where text/tinytext can be NULL */
+	int null_attributes[] = {
+		JOB_SCRIPT_BATCH_SCRIPT,
+		JOB_SCRIPT_COUNT
+	};
+
+	local_job_script_t object;
+	int i = 0;
+
+	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
+		     cluster_name, job_script_table,
+		     job_script_inx[safe_attributes[0]]);
+	for (i = 1; safe_attributes[i] < JOB_SCRIPT_COUNT; i++)
+		xstrfmtcatat(insert, &insert_pos, ", %s",
+			     job_script_inx[safe_attributes[i]]);
+	/* Some attributes that might be NULL require special handling */
+	for (i = 0; null_attributes[i] < JOB_SCRIPT_COUNT; i++)
+		xstrfmtcatat(insert, &insert_pos, ", %s",
+			     job_script_inx[null_attributes[i]]);
+	xstrcatat(insert, &insert_pos, ") values ");
+
+	for (i = 0; i < rec_cnt; i++) {
+		if (_unpack_local_job_script(&object, rpc_version, buffer) !=
+		    SLURM_SUCCESS) {
+			error("issue unpacking");
+			xfree(insert);
+			break;
+		}
+
+		if (i)
+			xstrcatat(insert, &insert_pos, ", ");
+
+		xstrcatat(format, &format_pos, "('%s'");
+		for (int j = 1; safe_attributes[j] < JOB_SCRIPT_COUNT; j++) {
+			xstrcatat(format, &format_pos, ", '%s'");
+		}
+
+		/* special handling for NULL attributes */
+		if (object.batch_script == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
+
+		xstrcatat(format, &format_pos, ")");
+
+		xstrfmtcatat(insert, &insert_pos, format, object.hash_inx,
+			     object.last_used, object.script_hash,
+			     (object.batch_script == NULL) ?
+				     "NULL" :
+				     object.batch_script);
+
+		_free_local_job_script_members(&object);
+		format_pos = NULL;
+		xfree(format);
+	}
+	xstrfmtcatat(insert, &insert_pos, " on duplicate key update %s=%s;",
+		     job_script_inx[JOB_SCRIPT_HASH_INX],
+		     job_script_inx[JOB_SCRIPT_HASH_INX]); /* Do nothing */
+
+	//	END_TIMER2("step query");
+	//	info("job query took %s", TIME_STR);
+
+	return insert;
 }
 
 static buf_t *_pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
@@ -5304,6 +5516,12 @@ static int _process_archive_data(char **data_in, uint32_t data_size,
 			break;
 		case DBD_GOT_JOBS:
 			data = _load_jobs(ver, buffer, cluster_name, rec_cnt);
+			break;
+		case DBD_GOT_JOB_ENV:
+			data = _load_job_env(ver, buffer, cluster_name, rec_cnt);
+			break;
+		case DBD_GOT_JOB_SCRIPT:
+			data = _load_job_script(ver, buffer, cluster_name, rec_cnt);
 			break;
 		case DBD_GOT_RESVS:
 			data = _load_resvs(ver, buffer, cluster_name, rec_cnt);
