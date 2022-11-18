@@ -856,6 +856,9 @@ slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 
 	xassert(ctx != NULL);
 
+	if (!cred->verified)
+		return SLURM_ERROR;
+
 	slurm_mutex_lock(&ctx->mutex);
 
 	xassert(ctx->magic == CRED_CTX_MAGIC);
