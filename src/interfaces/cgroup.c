@@ -109,7 +109,6 @@ static const char *syms[] = {
 static slurm_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 cgroup_conf_t slurm_cgroup_conf;
 
@@ -795,9 +794,6 @@ extern int cgroup_g_init(void)
 	char *plugin_type = "cgroup";
 	char *type = NULL;
 
-	if (init_run && g_context)
-		return rc;
-
 	slurm_mutex_lock(&g_context_lock);
 
 	if (g_context)
@@ -821,7 +817,6 @@ extern int cgroup_g_init(void)
 		rc = SLURM_ERROR;
 		goto done;
 	}
-	init_run = true;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -837,7 +832,6 @@ extern int cgroup_g_fini(void)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&g_context_lock);
-	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	slurm_mutex_unlock(&g_context_lock);
@@ -849,88 +843,77 @@ extern int cgroup_g_fini(void)
 
 extern int cgroup_g_initialize(cgroup_ctl_type_t sub)
 {
-	if (cgroup_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.initialize))(sub);
 }
 
 extern int cgroup_g_system_create(cgroup_ctl_type_t sub)
 {
-	if (cgroup_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.system_create))(sub);
 }
 
 extern int cgroup_g_system_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 {
-	if (cgroup_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.system_addto))(sub, pids, npids);
 }
 
 extern int cgroup_g_system_destroy(cgroup_ctl_type_t sub)
 {
-	if (cgroup_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.system_destroy))(sub);
 }
 
 extern int cgroup_g_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *step)
 {
-	if (cgroup_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.step_create))(sub, step);
 }
 
 extern int cgroup_g_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 {
-	if (cgroup_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.step_addto))(sub, pids, npids);
 }
 
 extern int cgroup_g_step_get_pids(pid_t **pids, int *npids)
 {
-	if (cgroup_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.step_get_pids))(pids, npids);
 }
 
 extern int cgroup_g_step_suspend(void)
 {
-	if (cgroup_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.step_suspend))();
 }
 
 extern int cgroup_g_step_resume(void)
 {
-	if (cgroup_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.step_resume))();
 }
 
 extern int cgroup_g_step_destroy(cgroup_ctl_type_t sub)
 {
-	if (cgroup_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.step_destroy))(sub);
 }
 
 extern bool cgroup_g_has_pid(pid_t pid)
 {
-	if (cgroup_g_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.has_pid))(pid);
 }
@@ -938,8 +921,7 @@ extern bool cgroup_g_has_pid(pid_t pid)
 extern cgroup_limits_t *cgroup_g_constrain_get(cgroup_ctl_type_t sub,
 					       cgroup_level_t level)
 {
-	if (cgroup_g_init() < 0)
-		return NULL;
+	xassert(g_context);
 
 	return (*(ops.constrain_get))(sub, level);
 }
@@ -947,8 +929,7 @@ extern cgroup_limits_t *cgroup_g_constrain_get(cgroup_ctl_type_t sub,
 extern int cgroup_g_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 				  cgroup_limits_t *limits)
 {
-	if (cgroup_g_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.constrain_set))(sub, level, limits);
 }
@@ -956,24 +937,21 @@ extern int cgroup_g_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
                                     uint32_t task_id)
 {
-	if (cgroup_g_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.constrain_apply))(sub, level, task_id);
 }
 
 extern int cgroup_g_step_start_oom_mgr()
 {
-	if (cgroup_g_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.step_start_oom_mgr))();
 }
 
 extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step)
 {
-	if (cgroup_g_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.step_stop_oom_mgr))(step);
 }
@@ -981,32 +959,28 @@ extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *step)
 extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *step,
 			       pid_t pid, uint32_t task_id)
 {
-	if (cgroup_g_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.task_addto))(sub, step, pid, task_id);
 }
 
 extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid)
 {
-	if (cgroup_g_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.task_get_acct_data))(taskid);
 }
 
 extern long int cgroup_g_get_acct_units()
 {
-	if (cgroup_g_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.get_acct_units))();
 }
 
 extern bool cgroup_g_has_feature(cgroup_ctl_feature_t f)
 {
-	if (cgroup_g_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.has_feature))(f);
 }

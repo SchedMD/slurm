@@ -694,6 +694,7 @@ _init_from_slurmd(int sock, char **argv,
 	 * Init all plugins after recieving the slurm.conf from the slurmd.
 	 */
 	if ((slurm_auth_init(NULL) != SLURM_SUCCESS) ||
+	    (cgroup_g_init() != SLURM_SUCCESS) ||
 	    (hash_g_init() != SLURM_SUCCESS) ||
 	    (acct_gather_conf_init() != SLURM_SUCCESS) ||
 	    (core_spec_g_init() != SLURM_SUCCESS) ||
