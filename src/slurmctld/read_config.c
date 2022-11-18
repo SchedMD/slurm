@@ -59,7 +59,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/strnatcmp.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/burst_buffer.h"

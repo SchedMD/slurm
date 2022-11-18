@@ -85,7 +85,7 @@
 #include "src/common/log.h"
 #include "src/interfaces/select.h"
 #include "src/common/slurm_resource_info.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/util-net.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"

@@ -56,7 +56,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/accounting_storage.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 

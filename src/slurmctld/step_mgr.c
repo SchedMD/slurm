@@ -65,7 +65,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_resource_info.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xstring.h"

@@ -74,7 +74,7 @@
 #include "src/interfaces/mpi.h"
 #include "src/common/strlcpy.h"
 #include "src/common/spank.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"

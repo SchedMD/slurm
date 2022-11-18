@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/common/switch.h - Generic switch (switch_g) info for slurm
+ *  src/interfaces/switch.h - Generic switch (switch_g) info for slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.

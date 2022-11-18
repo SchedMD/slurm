@@ -52,7 +52,7 @@
 #include "slurm/slurm.h"
 #include "src/srun/libsrun/launch.h"
 #include "src/common/strlcpy.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 

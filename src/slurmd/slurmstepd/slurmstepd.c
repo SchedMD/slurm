@@ -62,7 +62,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"

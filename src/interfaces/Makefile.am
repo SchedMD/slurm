@@ -70,6 +70,8 @@ libcommon_interfaces_la_SOURCES =    \
 	select.h				\
 	site_factor.c				\
 	site_factor.h				\
+	switch.c				\
+	switch.h				\
 	topology.c				\
 	topology.h
 

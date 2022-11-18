@@ -59,7 +59,7 @@
 #include "src/interfaces/acct_gather.h"
 #include "src/common/stepd_api.h"
 #include "src/common/strlcpy.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/timers.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xmalloc.h"

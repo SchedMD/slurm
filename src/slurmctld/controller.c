@@ -71,7 +71,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
 #include "src/common/uid.h"

@@ -68,7 +68,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_pack.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
 #include "src/common/tres_bind.h"

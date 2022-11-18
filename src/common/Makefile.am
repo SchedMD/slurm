@@ -136,8 +136,6 @@ libcommon_la_SOURCES =				\
 	strlcpy.h				\
 	strnatcmp.c				\
 	strnatcmp.h				\
-	switch.c				\
-	switch.h				\
 	timers.c				\
 	timers.h				\
 	track_script.c				\

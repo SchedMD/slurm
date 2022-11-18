@@ -94,7 +94,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
-#include "src/common/switch.h"
+#include "src/interfaces/switch.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
 #include "src/common/xstring.h"
