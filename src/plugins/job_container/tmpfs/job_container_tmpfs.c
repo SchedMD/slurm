@@ -439,11 +439,11 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 	 * done by calling mount() a second time with MS_PRIVATE and MS_REC
 	 * flags.
 	 */
-	if (mount(job_mount, job_mount, "xfs", MS_BIND, NULL)) {
+	if (mount(job_mount, job_mount, NULL, MS_BIND, NULL)) {
 		error("%s: Initial base mount failed: %m", __func__);
 		return SLURM_ERROR;
 	}
-	if (mount(job_mount, job_mount, "xfs", MS_PRIVATE | MS_REC, NULL)) {
+	if (mount(job_mount, job_mount, NULL, MS_PRIVATE | MS_REC, NULL)) {
 		error("%s: Initial base mount failed: %m", __func__);
 		return SLURM_ERROR;
 	}
