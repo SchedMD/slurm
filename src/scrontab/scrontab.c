@@ -610,7 +610,7 @@ extern int main(int argc, char **argv)
 	int rc;
 	char *crontab = NULL, *disabled_lines = NULL;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	_parse_args(argc, argv);
 
 	if (!xstrcasestr(slurm_conf.scron_params, "enable"))

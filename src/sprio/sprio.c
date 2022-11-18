@@ -71,7 +71,7 @@ int main (int argc, char **argv)
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	uint16_t show_flags = 0;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 
 	parse_command_line(argc, argv);

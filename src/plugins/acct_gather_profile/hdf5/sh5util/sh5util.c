@@ -200,7 +200,11 @@ main(int argc, char **argv)
 {
 	int cc;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
+
+	if (acct_gather_conf_init() != SLURM_SUCCESS)
+		fatal("Unable to initialize acct_gather_conf");
+
 	cc = _set_options(argc, argv);
 	if (cc < 0)
 		goto ouch;

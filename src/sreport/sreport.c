@@ -120,7 +120,7 @@ main (int argc, char **argv)
 	federation_flag   = false;
 	local_flag        = false;
 	quiet_flag        = 0;
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	log_init("sreport", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	/* Check to see if we are running a supported accounting plugin */

@@ -125,7 +125,7 @@ int main(int argc, char **argv)
 	};
 
 	command_name = argv[0];
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	if (xstrstr(slurm_conf.fed_params, "fed_display"))

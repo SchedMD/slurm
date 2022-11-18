@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	int rc = 0;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_USER, NULL);
 	memset(&params, 0, sizeof(params));
 	params.format_list = list_create(_free_sinfo_format);

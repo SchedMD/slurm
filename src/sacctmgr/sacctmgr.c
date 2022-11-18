@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 	quiet_flag        = 0;
 	readonly_flag     = 0;
 	verbosity         = 0;
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	while((opt_char = getopt_long(argc, argv, "hionpPQrsvV",

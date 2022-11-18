@@ -107,7 +107,7 @@ main (int argc, char **argv)
 	log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 	int rc = 0;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	log_init (xbasename(argv[0]), log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	initialize_and_process_args(argc, argv);
 	if (opt.verbose) {

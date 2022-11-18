@@ -185,8 +185,9 @@ int main(int argc, char **argv)
 	slurm_allocation_callbacks_t callbacks;
 	ListIterator iter_req, iter_resp;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
+
 	argvzero = argv[0];
 	_set_exit_code();
 

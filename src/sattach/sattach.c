@@ -124,7 +124,7 @@ int sattach(int argc, char **argv)
 	client_io_t *io;
 	char *hosts;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	_set_exit_code();
 	if (initialize_and_process_args(argc, argv) < 0) {

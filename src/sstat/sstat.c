@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 	};
 	slurm_selected_step_t *selected_step = NULL;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	print_fields_list = list_create(NULL);
 	print_fields_itr = list_iterator_create(print_fields_list);
 

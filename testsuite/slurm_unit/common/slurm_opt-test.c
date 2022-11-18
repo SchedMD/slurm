@@ -757,7 +757,7 @@ int main(void)
 	log_opts.stderr_level = LOG_LEVEL_DEBUG5;
 	log_init("slurm_opt-test", log_opts, 0, NULL);
 
-	/* Call slurm_conf_init() with a mock slurm.conf*/
+	/* Call slurm_init() with a mock slurm.conf*/
 	int fd;
 	char *slurm_unit_conf_filename = xstrdup("slurm_unit.conf-XXXXXX");
 	if ((fd = mkstemp(slurm_unit_conf_filename)) == -1) {
@@ -777,8 +777,8 @@ int main(void)
 		      slurm_unit_conf_filename);
 		return EXIT_FAILURE;
 	}
-	if (slurm_conf_init(slurm_unit_conf_filename)) {
-		error("slurm_conf_init() failed");
+	if (slurm_init(slurm_unit_conf_filename)) {
+		error("slurm_init() failed");
 		return EXIT_FAILURE;
 	}
 

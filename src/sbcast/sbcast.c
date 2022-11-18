@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	log_init("sbcast", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	route_init();
 	parse_command_line(argc, argv);
 	if (params.verbose) {

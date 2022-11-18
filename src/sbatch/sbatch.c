@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	if (!isatty(STDERR_FILENO))
 		setvbuf(stderr, NULL, _IOLBF, 0);
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
 	_set_exit_code();

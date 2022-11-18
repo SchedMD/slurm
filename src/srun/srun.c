@@ -172,7 +172,7 @@ int srun(int ac, char **av)
 	bool got_alloc = false;
 	List srun_job_list = NULL;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 	_set_exit_code();
 

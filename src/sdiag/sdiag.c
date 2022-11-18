@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 {
 	int rc = 0;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 	parse_command_line(argc, argv);
 
 	if (params.mimetype) {
