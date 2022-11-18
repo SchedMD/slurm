@@ -1177,6 +1177,11 @@ extern void slurm_init(const char *conf);
  */
 extern void slurm_fini(void);
 
+/*
+ * Call in a client to load general plugins.
+ */
+extern void slurm_client_init_plugins(void);
+
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/

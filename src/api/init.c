@@ -39,9 +39,14 @@
 extern void slurm_init(const char *conf)
 {
 	slurm_conf_init(conf);
+	slurm_client_init_plugins();
 }
 
 extern void slurm_fini(void)
 {
 	slurm_conf_destroy();
+}
+
+extern void slurm_client_init_plugins(void)
+{
 }
