@@ -396,6 +396,41 @@ static int _rm_data(const char *path, const struct stat *st_buf,
 	return rc;
 }
 
+static int _clean_job_basepath(uint32_t job_id)
+{
+	DIR *dp;
+	struct dirent *ep;
+	char path[PATH_MAX];
+	int rc;
+
+	if (!(dp = opendir(jc_conf->basepath))) {
+		error("%s: Unable to open %s", __func__, jc_conf->basepath);
+		return SLURM_ERROR;
+	}
+
+	while ((ep = readdir(dp))) {
+		if (!xstrcmp(ep->d_name, ".") || !xstrcmp(ep->d_name, ".."))
+			continue;
+		/* If possible, only attempt with directories */
+		if ((ep->d_type == DT_DIR) || (ep->d_type == DT_UNKNOWN)) {
+			rc = snprintf(path, PATH_MAX, "%s/%s",
+				      jc_conf->basepath, ep->d_name);
+			if (rc >= PATH_MAX) {
+				error("%s: Unable to build path: %m",
+				      __func__);
+				continue;
+			}
+			/* it is not important if this fails */
+			if (umount2(path, MNT_DETACH))
+				debug2("failed to unmount %s for job %u",
+				       path, job_id);
+		}
+	}
+	closedir(dp);
+
+	return SLURM_SUCCESS;
+}
+
 static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 {
 	char job_mount[PATH_MAX];
@@ -618,9 +653,9 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		 * mounts inside the job, they will only see their job mount
 		 * but not the basepath mount.
 		 */
-		rc = umount2(job_mount, MNT_DETACH);
+		rc = _clean_job_basepath(job_id);
 		if (rc) {
-			error("%s: umount2 failed: %m", __func__);
+			error("%s: failed to clean job mounts: %m", __func__);
 			goto child_exit;
 		}
 	child_exit:
