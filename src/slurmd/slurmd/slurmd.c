@@ -2045,6 +2045,8 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (spank_slurmd_init() < 0)
 		return SLURM_ERROR;
+	if (slurm_cred_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	if (getrlimit(RLIMIT_CPU, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;

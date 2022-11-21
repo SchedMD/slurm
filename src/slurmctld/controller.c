@@ -462,6 +462,14 @@ int main(int argc, char **argv)
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
 	/* init job credential stuff */
+	if (slurm_cred_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize cred plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize cred plugin");
+		}
+	}
 	slurmctld_config.cred_ctx = slurm_cred_creator_ctx_create(
 		slurm_conf.job_credential_private_key);
 	if (!slurmctld_config.cred_ctx) {

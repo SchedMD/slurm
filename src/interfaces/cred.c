@@ -198,7 +198,6 @@ struct sbcast_cache {
 static slurm_cred_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 static time_t cred_restart_time = (time_t) 0;
 static List sbcast_cache_list = NULL;
 static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
@@ -265,9 +264,6 @@ static int _slurm_cred_init(void)
 	char    *plugin_type = "cred";
 	int	retval = SLURM_SUCCESS;
 
-	if ( init_run && g_context )  /* mostly avoid locks for better speed */
-		return retval;
-
 	/*					 123456789012 */
 	if ((tok = xstrstr(slurm_conf.authinfo, "cred_expire="))) {
 		cred_expire = atoi(tok + 12);
@@ -299,7 +295,6 @@ static int _slurm_cred_init(void)
 		goto done;
 	}
 	sbcast_cache_list = list_create(xfree_ptr);
-	init_run = true;
 
 done:
 	slurm_mutex_unlock( &g_context_lock );
@@ -323,7 +318,6 @@ static int _slurm_cred_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
-	init_run = false;
 	FREE_NULL_LIST(sbcast_cache_list);
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
@@ -405,8 +399,7 @@ slurm_cred_creator_ctx_create(const char *path)
 {
 	slurm_cred_ctx_t ctx = NULL;
 
-	if (_slurm_cred_init() < 0)
-		return NULL;
+	xassert(g_context);
 
 	ctx = _slurm_cred_ctx_alloc();
 	slurm_mutex_lock(&ctx->mutex);
@@ -432,8 +425,7 @@ slurm_cred_verifier_ctx_create(const char *path)
 {
 	slurm_cred_ctx_t ctx = NULL;
 
-	if (_slurm_cred_init() < 0)
-		return NULL;
+	xassert(g_context);
 
 	ctx = _slurm_cred_ctx_alloc();
 	slurm_mutex_lock(&ctx->mutex);
@@ -568,8 +560,7 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 
 	xassert(ctx != NULL);
 	xassert(arg != NULL);
-	if (_slurm_cred_init() < 0)
-		return NULL;
+	xassert(g_context);
 
 	if (arg->uid == SLURM_AUTH_NOBODY) {
 		error("%s: refusing to create job %u credential for invalid user nobody",
@@ -750,8 +741,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
 	xassert(ctx  != NULL);
 	xassert(cred != NULL);
 
-	if (_slurm_cred_init() < 0)
-		return NULL;
+	xassert(g_context);
 
 	slurm_rwlock_rdlock(&cred->mutex);
 	slurm_mutex_lock(&ctx->mutex);
@@ -2450,8 +2440,7 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 	sbcast_cred_t *sbcast_cred;
 
 	xassert(ctx);
-	if (_slurm_cred_init() < 0)
-		return NULL;
+	xassert(g_context);
 
 	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
 	sbcast_cred->ctime = time(NULL);
@@ -2547,8 +2536,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 
 	xassert(ctx);
 
-	if (_slurm_cred_init() < 0)
-		return NULL;
+	xassert(g_context);
 
 	if (now > sbcast_cred->expiration)
 		return NULL;
