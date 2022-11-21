@@ -2043,8 +2043,6 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (slurmd_task_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
-		return SLURM_ERROR;
 	if (spank_slurmd_init() < 0)
 		return SLURM_ERROR;
 

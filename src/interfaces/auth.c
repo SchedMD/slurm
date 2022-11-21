@@ -52,8 +52,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-static bool init_run = false;
-
 typedef struct {
 	int index;
 	char data[];
@@ -132,8 +130,7 @@ extern const char *auth_get_plugin_name(int plugin_id)
 
 extern bool slurm_get_plugin_hash_enable(int index)
 {
-	if (slurm_auth_init(NULL) < 0)
-		return true;
+	xassert(g_context_num > 0);
 
 	return *(ops[index].hash_enable);
 
@@ -146,9 +143,6 @@ extern int slurm_auth_init(char *auth_type)
 	char *type, *last = NULL;
 	char *plugin_type = "auth";
 	static bool daemon_run = false, daemon_set = false;
-
-	if (init_run && (g_context_num > 0))
-		return retval;
 
 	slurm_mutex_lock(&context_lock);
 
@@ -205,8 +199,6 @@ extern int slurm_auth_init(char *auth_type)
 			type = NULL;
 		}
 	}
-	init_run = true;
-
 done:
 	xfree(auth_alt_types);
 	slurm_mutex_unlock(&context_lock);
@@ -221,8 +213,6 @@ extern int slurm_auth_fini(void)
 	slurm_mutex_lock(&context_lock);
 	if (!g_context)
 		goto done;
-
-	init_run = false;
 
 	for (i = 0; i < g_context_num; i++) {
 		rc2 = plugin_context_destroy(g_context[i]);
@@ -276,8 +266,7 @@ void *auth_g_create(int index, char *auth_info, uid_t r_uid,
 {
 	cred_wrapper_t *cred;
 
-	if (slurm_auth_init(NULL) < 0)
-		return NULL;
+	xassert(g_context_num > 0);
 
 	if (r_uid == SLURM_AUTH_NOBODY)
 		return NULL;
@@ -292,7 +281,9 @@ int auth_g_destroy(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
-	if (!wrap || slurm_auth_init(NULL) < 0)
+	xassert(g_context_num > 0);
+
+	if (!wrap)
 		return SLURM_ERROR;
 
 	return (*(ops[wrap->index].destroy))(cred);
@@ -302,7 +293,9 @@ int auth_g_verify(void *cred, char *auth_info)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
-	if (!wrap || slurm_auth_init(NULL) < 0)
+	xassert(g_context_num > 0);
+
+	if (!wrap)
 		return SLURM_ERROR;
 
 	return (*(ops[wrap->index].verify))(cred, auth_info);
@@ -312,7 +305,9 @@ uid_t auth_g_get_uid(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
-	if (!wrap || slurm_auth_init(NULL) < 0)
+	xassert(g_context_num > 0);
+
+	if (!wrap)
 		return SLURM_AUTH_NOBODY;
 
 	return (*(ops[wrap->index].get_uid))(cred);
@@ -322,7 +317,9 @@ gid_t auth_g_get_gid(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
-	if (!wrap || slurm_auth_init(NULL) < 0)
+	xassert(g_context_num > 0);
+
+	if (!wrap)
 		return SLURM_AUTH_NOBODY;
 
 	return (*(ops[wrap->index].get_gid))(cred);
@@ -332,7 +329,9 @@ char *auth_g_get_host(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
-	if (!wrap || slurm_auth_init(NULL) < 0)
+	xassert(g_context_num > 0);
+
+	if (!wrap)
 		return NULL;
 
 	return (*(ops[wrap->index].get_host))(cred);
@@ -342,7 +341,9 @@ extern int auth_g_get_data(void *cred, char **data, uint32_t *len)
 {
 	cred_wrapper_t *wrap = cred;
 
-	if (!wrap || slurm_auth_init(NULL) < 0)
+	xassert(g_context_num > 0);
+
+	if (!wrap)
 		return SLURM_ERROR;
 
 	return (*(ops[wrap->index].get_data))(cred, data, len);
@@ -352,7 +353,9 @@ int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
-	if (!wrap || slurm_auth_init(NULL) < 0)
+	xassert(g_context_num > 0);
+
+	if (!wrap)
 		return SLURM_ERROR;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -370,7 +373,9 @@ void *auth_g_unpack(buf_t *buf, uint16_t protocol_version)
 	uint32_t plugin_id = 0;
 	cred_wrapper_t *cred;
 
-	if (!buf || slurm_auth_init(NULL) < 0)
+	xassert(g_context_num > 0);
+
+	if (!buf)
 		return NULL;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -399,16 +404,14 @@ unpack_error:
 
 int auth_g_thread_config(const char *token, const char *username)
 {
-	if (slurm_auth_init(NULL) < 0)
-		return SLURM_ERROR;
+	xassert(g_context_num > 0);
 
 	return (*(ops[0].thread_config))(token, username);
 }
 
 void auth_g_thread_clear(void)
 {
-	if (slurm_auth_init(NULL) < 0)
-		return;
+	xassert(g_context_num > 0);
 
 	(*(ops[0].thread_clear))();
 }
@@ -416,8 +419,7 @@ void auth_g_thread_clear(void)
 char *auth_g_token_generate(int plugin_id, const char *username,
 			    int lifespan)
 {
-	if (slurm_auth_init(NULL) < 0)
-		return NULL;
+	xassert(g_context_num > 0);
 
 	for (int i = 0; i < g_context_num; i++) {
 		if (plugin_id == *(ops[i].plugin_id)) {

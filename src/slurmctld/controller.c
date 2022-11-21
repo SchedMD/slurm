@@ -508,14 +508,6 @@ int main(int argc, char **argv)
 			fatal("failed to initialize accounting_storage plugin");
 		}
 	}
-	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize authentication plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize authentication plugin");
-		}
-	}
 	if (select_g_init(0) != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize node selection plugin");

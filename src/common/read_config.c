@@ -3628,6 +3628,9 @@ slurm_conf_init(const char *file_name)
 	slurm_mutex_unlock(&conf_lock);
 	xfree(config_file);
 
+	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
+		fatal("failed to initialize auth plugin");
+
 	if (hash_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize hash plugin");
 
