@@ -77,6 +77,7 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/bitstring.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/gpu.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -2333,6 +2334,17 @@ static gres_device_t *_init_gres_device(int index, char *one_name,
 	return gres_device;
 }
 
+/* Load the specific GRES plugins here */
+static int _load_specific_gres_plugins(void)
+{
+	int rc;
+
+	if ((rc = gpu_plugin_init()) != SLURM_SUCCESS)
+		return rc;
+
+	return rc;
+}
+
 extern int gres_node_config_load(List gres_conf_list,
 				 node_config_load_t *config,
 				 List *gres_devices)
@@ -2557,6 +2569,9 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 
 	/* Merge slurm.conf and gres.conf together into gres_conf_list */
 	_merge_config(&node_conf, gres_conf_list, gres_list);
+
+	if ((rc = _load_specific_gres_plugins()) != SLURM_SUCCESS)
+		return rc;
 
 	for (i = 0; i < gres_context_cnt; i++) {
 		node_conf.gres_name = gres_context[i].gres_name;
@@ -9806,6 +9821,8 @@ extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 	/* Set debug flags and init_run only */
 	(void) gres_init();
 
+	rc = _load_specific_gres_plugins();
+
 	return rc;
 rwfail:
 	FREE_NULL_BUFFER(buffer);
@@ -9814,6 +9831,8 @@ rwfail:
 
 	/* Set debug flags and init_run only */
 	(void) gres_init();
+
+	rc = _load_specific_gres_plugins();
 
 	return rc;
 }

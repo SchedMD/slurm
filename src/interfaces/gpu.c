@@ -73,7 +73,6 @@ static const char *syms[] = {
 static slurm_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 /*
  *  Common function to dlopen() the appropriate gpu libraries, and
@@ -140,9 +139,6 @@ extern int gpu_plugin_init(void)
 	char *plugin_type = "gpu";
 	char *type = NULL;
 
-	if (init_run && g_context)
-		return retval;
-
 	slurm_mutex_lock(&g_context_lock);
 
 	if (g_context)
@@ -158,7 +154,6 @@ extern int gpu_plugin_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	init_run = true;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -174,7 +169,6 @@ extern int gpu_plugin_fini(void)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&g_context_lock);
-	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	slurm_mutex_unlock(&g_context_lock);
@@ -207,59 +201,50 @@ extern void gpu_get_tres_pos(int *gpumem_pos, int *gpuutil_pos)
 
 extern void gpu_g_reconfig(void)
 {
-	if (gpu_plugin_init() < 0)
-		return;
+	xassert(g_context);
 	(*(ops.reconfig))();
 }
 
 extern List gpu_g_get_system_gpu_list(node_config_load_t *node_conf)
 {
-	if (gpu_plugin_init() < 0)
-		return NULL;
-
+	xassert(g_context);
 	return (*(ops.get_system_gpu_list))(node_conf);
 }
 
 extern void gpu_g_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
-	if (gpu_plugin_init() < 0)
-		return;
+	xassert(g_context);
 	(*(ops.step_hardware_init))(usable_gpus, tres_freq);
 }
 
 extern void gpu_g_step_hardware_fini(void)
 {
-	if (gpu_plugin_init() < 0)
-		return;
+	xassert(g_context);
 	(*(ops.step_hardware_fini))();
 }
 
 extern char *gpu_g_test_cpu_conv(char *cpu_range)
 {
-	if (gpu_plugin_init() < 0)
-		return NULL;
+	xassert(g_context);
 	return (*(ops.test_cpu_conv))(cpu_range);
 
 }
 
 extern int gpu_g_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 {
-	if (gpu_plugin_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 	return (*(ops.energy_read))(dv_ind, gpu);
 }
 
 extern void gpu_g_get_device_count(unsigned int *device_count)
 {
-	if (gpu_plugin_init() < 0)
-		return;
+	xassert(g_context);
 	(*(ops.get_device_count))(device_count);
 }
 
 extern int gpu_g_usage_read(pid_t pid, acct_gather_data_t *data)
 {
-	if (gpu_plugin_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 	return (*(ops.usage_read))(pid, data);
 
 }

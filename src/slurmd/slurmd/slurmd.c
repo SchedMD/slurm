@@ -109,8 +109,10 @@
 #include "src/common/xsignal.h"
 
 #include "src/interfaces/core_spec.h"
+#include "src/interfaces/gpu.h"
 #include "src/interfaces/job_container.h"
 #include "src/interfaces/proctrack.h"
+
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
 #include "src/slurmd/common/slurmstepd_init.h"

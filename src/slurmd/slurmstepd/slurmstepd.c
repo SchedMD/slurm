@@ -69,7 +69,9 @@
 #include "src/interfaces/cgroup.h"
 
 #include "src/interfaces/core_spec.h"
+#include "src/interfaces/gpu.h"
 #include "src/interfaces/job_container.h"
+
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/interfaces/task.h"
