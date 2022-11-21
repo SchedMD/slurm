@@ -701,6 +701,7 @@ extern list_t *license_copy(List license_list_src)
 		license_entry_dest = xmalloc(sizeof(licenses_t));
 		license_entry_dest->name = xstrdup(license_entry_src->name);
 		license_entry_dest->total = license_entry_src->total;
+		license_entry_dest->used = license_entry_src->used;
 		list_push(license_list_dest, license_entry_dest);
 	}
 	list_iterator_destroy(iter);
