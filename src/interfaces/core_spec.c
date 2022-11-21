@@ -67,7 +67,6 @@ static plugin_context_t		**g_core_spec_context = NULL;
 static int			g_core_spec_context_num = -1;
 static pthread_mutex_t		g_core_spec_context_lock =
 					PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 /*
  * Initialize the core specialization plugin.
@@ -80,9 +79,6 @@ extern int core_spec_g_init(void)
 	char *plugin_type = "core_spec";
 	char *core_spec_plugin_type = NULL;
 	char *last = NULL, *core_spec_plugin_list, *core_spec = NULL;
-
-	if (init_run && (g_core_spec_context_num >= 0))
-		return retval;
 
 	slurm_mutex_lock(&g_core_spec_context_lock);
 
@@ -124,7 +120,6 @@ extern int core_spec_g_init(void)
 		g_core_spec_context_num++;
 		core_spec_plugin_list = NULL; /* for next iteration */
 	}
-	init_run = true;
 
  done:
 	slurm_mutex_unlock(&g_core_spec_context_lock);
@@ -149,7 +144,6 @@ extern int core_spec_g_fini(void)
 	if (!g_core_spec_context)
 		goto done;
 
-	init_run = false;
 	for (i = 0; i < g_core_spec_context_num; i++) {
 		if (g_core_spec_context[i]) {
 			if (plugin_context_destroy(g_core_spec_context[i])
@@ -177,8 +171,7 @@ extern int core_spec_g_set(uint64_t cont_id, uint16_t core_count)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (core_spec_g_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	xassert(g_core_spec_context_num >= 0);
 
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -197,8 +190,7 @@ extern int core_spec_g_clear(uint64_t cont_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (core_spec_g_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	xassert(g_core_spec_context_num >= 0);
 
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -217,8 +209,7 @@ extern int core_spec_g_suspend(uint64_t cont_id, uint16_t count)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (core_spec_g_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	xassert(g_core_spec_context_num >= 0);
 
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -237,8 +228,7 @@ extern int core_spec_g_resume(uint64_t cont_id, uint16_t count)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	if (core_spec_g_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	xassert(g_core_spec_context_num >= 0);
 
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
