@@ -51,6 +51,7 @@ typedef cpuset_t cpu_set_t;
 #include <pthread.h>
 #include <pwd.h>
 
+#include "src/common/data.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -130,6 +131,7 @@ typedef struct {		/* MPMD specifications, needed for Cray */
 typedef struct {
 	char *alias_list; /* node name to address aliases */
 	char *container;		/* OCI Container Bundle path	*/
+	data_t *container_config; /* OCI Container config.json contents */
 	slurmstepd_state_t state;	/* Job state			*/
 	pthread_cond_t state_cond;	/* Job state conditional	*/
 	pthread_mutex_t state_mutex;	/* Job state mutex		*/

@@ -668,6 +668,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 	FREE_NULL_LIST(step->step_gres_list);
 	xfree(step->alias_list);
 	xfree(step->container);
+	FREE_NULL_DATA(step->container_config);
 	xfree(step->cpu_bind);
 	xfree(step->cwd);
 	xfree(step->envtp);
