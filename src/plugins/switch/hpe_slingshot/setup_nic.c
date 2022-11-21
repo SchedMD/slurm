@@ -531,8 +531,8 @@ static bool _alloc_vni_pids(slingshot_jobinfo_t *step, int step_cpus,
 	bitstr_t *job_vni_pids = NULL;
 	bool retval = false;	/* assume failure */
 
-	/* Return if no job VNI */
-	if (step->num_vnis < 2)
+	/* Return if VNI PIDs not configured, or no job VNI */
+	if (!(step->flags & SLINGSHOT_FLAGS_VNI_PIDS) || step->num_vnis < 2)
 		return true;
 
 	/* Create filename for this job's allocated VNI PIDs */

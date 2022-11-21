@@ -237,8 +237,11 @@ typedef struct slingshot_jobinfo {
  * If SLINGSHOT_FLAGS_ADJUST_LIMITS is set (default), slurmd will adjust
  * resource limit reservations by subtracting system service reserved/used
  * resources
+ * If SLINGSHOT_FLAGS_VNI_PIDS is set, slurmd will create a set of Slingshot
+ * "VNI PIDs" to support overlapping job steps on compute nodes (deprecated)
  */
 #define SLINGSHOT_FLAGS_ADJUST_LIMITS 0x1
+#define SLINGSHOT_FLAGS_VNI_PIDS      0x2
 #define SLINGSHOT_FLAGS_DEFAULT SLINGSHOT_FLAGS_ADJUST_LIMITS
 
 /* Environment variables set for applications */
