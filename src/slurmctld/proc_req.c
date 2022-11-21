@@ -6440,6 +6440,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 			.conf = READ_LOCK,
 			.job = WRITE_LOCK,
 			.node = WRITE_LOCK,
+			.part = WRITE_LOCK,
 			.fed = READ_LOCK,
 		},
 	},{
