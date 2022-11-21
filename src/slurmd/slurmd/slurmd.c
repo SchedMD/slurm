@@ -1975,8 +1975,10 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	}
 
+#ifndef HAVE_FRONT_END
 	if (!find_node_record(conf->node_name))
 		return SLURM_ERROR;
+#endif
 
 	/*
 	 * slurmd -G, calling it here rather than from _process_cmdline
