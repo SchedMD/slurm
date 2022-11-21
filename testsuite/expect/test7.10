@@ -1,8 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
-#          Test if we can trick Slurm into using the wrong user ID
-#          through an LD_PRELOAD option.
+#          Test user namespaces support
 ############################################################################
 # Copyright (C) 2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -29,7 +28,8 @@
 ############################################################################
 source ./globals
 
-set ld_preload           "ld_preload"
+set ld_preload  "ld_preload"
+set output_file "$test_dir/output.log"
 
 proc cleanup {} {
 	global bin_rm ld_preload test_name sacctmgr testsuite_user
@@ -73,11 +73,11 @@ exec $bin_cc -c -fPIC -o ${ld_preload}.lo ${ld_preload}.c
 exec $bin_cc -shared -o ${ld_preload}.so ${ld_preload}.lo
 
 #
-# Submit a slurm job that will execute 'id'
+# Submit a job as a non-root user but with LD_PRELOAD to impersonate uid=0
 #
-set output [run_command_output -user $testsuite_user -fail "$srun -N1 -t1 $bin_id"]
-subtest {[regexp "(uid=.*\n)" $output]} "Verify that id command can be executed"
+set job_id [submit_job -fail -user $testsuite_user -env "LD_PRELOAD=./${ld_preload}.so" "-N1 -t1 --wrap='$bin_id' --output=$output_file --error=none"]
+subtest {[regexp "$testsuite_user" [get_job_param $job_id UserId]]} "Verify that job has been launched by the right user"
+wait_for_job -fail $job_id DONE
+set output [run_command_output -fail -user $testsuite_user "$bin_cat $output_file"]
+subtest {[regexp "(uid=0)" $output]} "Verify that user namespaces allows uid 0"
 
-set output [run_command_output -user $testsuite_user -xfail -fail "LD_PRELOAD=./${ld_preload}.so $srun -N1 -t1 $bin_id"]
-subtest {![regexp "(uid=.*\n)" $output]} "Verify that id command cannot not executed with LD_PRELOAD"
-subtest {[regexp "error.* Invalid user id" $output]} "Verify that an error is reported by srun"
