@@ -86,6 +86,9 @@ static void *_rpc_queue_worker(void *arg)
 		if (!msg) {
 			unlock_slurmctld(q->locks);
 
+			if (processed && q->post_func)
+				q->post_func();
+
 			log_flag(PROTOCOL, "%s(%s): sleeping after processing %d",
 				 __func__, q->msg_name, processed);
 			processed = 0;
