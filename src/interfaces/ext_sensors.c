@@ -76,16 +76,12 @@ static const char *syms[] = {
 static slurm_ext_sensors_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 extern int ext_sensors_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "ext_sensors";
 	char *type = NULL;
-
-	if (init_run && g_context)
-		return retval;
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -102,7 +98,6 @@ extern int ext_sensors_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	init_run = true;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -118,7 +113,6 @@ extern int ext_sensors_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
-	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 
@@ -187,8 +181,7 @@ extern int ext_sensors_g_update_component_data(void)
 {
 	int retval = SLURM_ERROR;
 
-	if (ext_sensors_init() < 0)
-		return retval;
+	xassert(g_context);
 
 	retval = (*(ops.update_component_data))();
 
@@ -199,8 +192,7 @@ extern int ext_sensors_g_get_stepstartdata(step_record_t *step_rec)
 {
 	int retval = SLURM_ERROR;
 
-	if (ext_sensors_init() < 0)
-		return retval;
+	xassert(g_context);
 
 	retval = (*(ops.get_stepstartdata))(step_rec);
 
@@ -211,8 +203,7 @@ extern int ext_sensors_g_get_stependdata(step_record_t *step_rec)
 {
 	int retval = SLURM_ERROR;
 
-	if (ext_sensors_init() < 0)
-		return retval;
+	xassert(g_context);
 
 	retval = (*(ops.get_stependdata))(step_rec);
 
@@ -224,8 +215,7 @@ extern int ext_sensors_g_get_config(void *data)
 
 	List *tmp_list = (List *) data;
 
-	if (ext_sensors_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	*tmp_list = (*(ops.get_config))();
 
