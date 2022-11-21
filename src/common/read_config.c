@@ -89,6 +89,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/hash.h"
+
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
 ** for details.
@@ -3625,6 +3627,10 @@ slurm_conf_init(const char *file_name)
 	}
 	slurm_mutex_unlock(&conf_lock);
 	xfree(config_file);
+
+	if (hash_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize hash plugin");
+
 	return SLURM_SUCCESS;
 }
 

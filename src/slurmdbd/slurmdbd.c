@@ -67,6 +67,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/hash.h"
+
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmdbd/proc_req.h"
@@ -159,6 +161,9 @@ int main(int argc, char **argv)
 	 */
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize authentication plugins");
+	}
+	if (hash_g_init() != SLURM_SUCCESS) {
+		fatal("failed to initialize hash plugin");
 	}
 	if (slurm_acct_storage_init() != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",

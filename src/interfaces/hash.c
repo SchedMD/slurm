@@ -70,7 +70,6 @@ static slurm_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static int g_context_num = -1;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 static unsigned char hash_id_to_inx[HASH_PLUGIN_CNT];
 
@@ -81,9 +80,6 @@ extern int hash_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *plugin_type = "hash";
-
-	if (init_run && g_context)
-		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -110,8 +106,6 @@ extern int hash_g_init(void)
 
 	hash_id_to_inx[HASH_PLUGIN_DEFAULT] = 0;
 
-	init_run = true;
-
 done:
 	slurm_mutex_unlock(&g_context_lock);
 
@@ -123,8 +117,7 @@ extern int hash_g_compute(char *input, int len, char *custom_str, int cs_len,
 {
 	int index;
 
-	if (hash_g_init() < 0)
-		return -1;
+	xassert(g_context);
 
 	if ((hash->type >= sizeof(hash_id_to_inx)) ||
 	    ((index = hash_id_to_inx[hash->type]) == 0xff)) {
