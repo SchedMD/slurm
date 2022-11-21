@@ -38,253 +38,65 @@ if {![is_super_user]} {
 }
 
 proc cleanup {} {
-	global test_part_1 test_part_2 job_id
-
-	# Delete test partitions
-	delete_part $test_part_1
-	delete_part $test_part_2
+	global test_part_1 test_part_2 job_id scontrol
 
 	cancel_job $job_id
-}
 
-proc create_part { name prio } {
-	global scontrol nodes
-
-	spawn $scontrol create partitionname=$name priority=$prio nodes=$nodes
-	expect {
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	set found 0
-	spawn $scontrol show partitionname=$name
-	expect {
-		-re "PartitionName=$name" {
-			set found 1
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$found == 0} {
-		fail "scontrol did not create partition ($name)"
-	}
-}
-
-proc change_prio { name prio } {
-	global scontrol nodes
-
-	spawn $scontrol update partitionname=$name priority=$prio
-	expect {
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-proc delete_part { name } {
-	global scontrol
-
-	log_user 0
-	spawn $scontrol delete partition=$name
-	expect {
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	# Double check that the partition has been deleted
-	set deleted 0
-	spawn $scontrol show partitionname=$name
-	expect {
-		-re "not found" {
-			set deleted 1
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$deleted != 1} {
-		log_warn "Partition $name was not deleted"
-	}
-}
-
-proc sub_job { } {
-	global sbatch test_part_1 test_part_2 file_in job_id
-	global number
-
-	set job_id 0
-	spawn $sbatch -N1 -o/dev/null -t1 --begin=now+1hour \
-	    -p$test_part_1,$test_part_2 $file_in
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sbatch is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$job_id == 0} {
-		fail "sbatch did not submit job"
-	}
-
-	# Wait a bit for the job to start if it does
-	sleep 2
+	# Delete test partitions
+	run_command "$scontrol delete partitionname=$test_part_1"
+	run_command "$scontrol delete partitionname=$test_part_2"
 }
 
 # Remove any vestigial partitions
-delete_part $test_part_1
-delete_part $test_part_2
+cleanup
 
 if {[string length [default_partition]] == 0} {
 	skip "This test can not run without a default partition"
 }
 
 # Get a list of nodes
-set timeout $max_job_delay
-spawn $bin_bash -c "exec $srun -t1 -N[llength [get_nodes_by_state]] $bin_printenv | $bin_grep NODE"
-expect {
-	-re "SLURM_NODELIST=($re_word_str)" {
-		set nodes $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "srun is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {[string length $nodes] == 0} {
+set nodes [get_nodes_by_request "-N2"]
+if {[llength $nodes] == 0} {
 	fail "Did not get a valid node list"
 }
+set nodes [join $nodes ","]
 
 # Create 2 test partitions
-create_part $test_part_1 1
-create_part $test_part_2 2
+run_command -fail "$scontrol create partitionname=$test_part_1 priority=1 nodes=$nodes"
+run_command -fail "$scontrol create partitionname=$test_part_2 priority=2 nodes=$nodes"
 
 # Submit a job to check priority
 log_info "Test 1"
 make_bash_script $file_in "sleep 20"
-sub_job
+set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now+1hour -p$test_part_1,$test_part_2 $file_in"]
 
 # Check partition
-set part_chk 0
-spawn $squeue --priority --sort=p,i --noheader -j$job_id -Opartition,state --state=PD
-expect {
-	-re "$test_part_1" {
-		incr part_chk 1
-		exp_continue
-	}
-	-re "$test_part_2" {
-		incr part_chk 1
-		exp_continue
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$part_chk == 2} "Check partition priority" "--priority option did not list priority properly ($part_chk != 2)"
+set output [run_command_output -fail "$squeue --priority --sort=p,i --noheader -j$job_id -Opartition --state=PD"]
+subtest {[regexp "$test_part_1.+$test_part_2" $output]} "Both partitions should appear and $test_part_1 should be first priority with --priority and --sort"
 
 cancel_job $job_id
 
 # Switch up the partition priority to make sure the sort works
-change_prio $test_part_1 2
-change_prio $test_part_2 1
+run_command -fail "$scontrol update partitionname=$test_part_1 priority=2 nodes=$nodes"
+run_command -fail "$scontrol update partitionname=$test_part_2 priority=1 nodes=$nodes"
 
 # Submit another job to check priority
 log_info "Test 2"
-sub_job
+set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now+1hour -p$test_part_1,$test_part_2 $file_in"]
 
 # Check partition
-set part_chk 0
-spawn $squeue --priority --noheader --sort=p,i -j$job_id -Opartition,state --state=PD
-expect {
-	-re "$test_part_2" {
-		incr part_chk 1
-		exp_continue
-	}
-	-re "$test_part_1" {
-		incr part_chk 1
-		exp_continue
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$part_chk == 2} "Recheck partition priority after switching it" "--priority option did not list priority properly ($part_chk != 2)"
+set output [run_command_output -fail "$squeue --priority --sort=p,i --noheader -j$job_id -Opartition --state=PD"]
+subtest {[regexp "$test_part_2.+$test_part_1" $output]} "Both partitions should appear and $test_part_2 should be first priority with --priority and --sort"
 
 cancel_job $job_id
 
 # Submit a job that will run now to check that the --priority option for
 # squeue will only list the job running on the partition
 log_info "Test 3"
-set job_id 0
-spawn $sbatch -N1 -o/dev/null -t1 --begin=now -p$test_part_1,$test_part_2 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-
-}
-if {$job_id == 0} {
-	fail "sbatch did not submit job"
-}
+set job_id [submit_job -fail "-N1 -o/dev/null -t1 --begin=now -p$test_part_1,$test_part_2 $file_in"]
 wait_for_job -fail $job_id RUNNING
 
 # Check partition
-set part_chk 0
-spawn $squeue --priority --noheader --sort=p,i -j$job_id -Opartition,state
-expect {
-	-re "$test_part_1 *RUNNING" {
-		incr part_chk 1
-		exp_continue
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$part_chk == 1} "Job should be running in partition"
+set output [run_command_output -fail "$squeue --priority --sort=p,i --noheader -j$job_id -Opartition"]
+subtest {[regexp "$test_part_1" $output]} "$test_part_1 should appear as job is running on it"
+subtest {![regexp "$test_part_2" $output]} "$test_part_2 should NOT appear as job is NOT running on it and it's not PD"
