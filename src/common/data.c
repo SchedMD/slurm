@@ -733,6 +733,42 @@ extern data_t *data_key_get_int(data_t *data, int64_t key)
 	return node;
 }
 
+extern data_t *data_list_find_first(
+	data_t *data,
+	bool (*match)(const data_t *data, void *needle),
+	void *needle)
+{
+	data_list_node_t *i;
+
+	_check_magic(data);
+	if (!data)
+		return NULL;
+
+	xassert(data->type == DATA_TYPE_LIST);
+	if (data->type != DATA_TYPE_LIST)
+		return NULL;
+
+	/* don't bother searching empty list */
+	if (!data->data.list_u->count)
+		return NULL;
+
+	_check_data_list_magic(data->data.list_u);
+	i = data->data.list_u->begin;
+	while (i) {
+		_check_data_list_node_magic(i);
+
+		if (match(i->data, needle))
+			break;
+
+		i = i->next;
+	}
+
+	if (i)
+		return i->data;
+	else
+		return NULL;
+}
+
 extern data_t *data_dict_find_first(
 	data_t *data,
 	bool (*match)(const char *key, data_t *data, void *needle),

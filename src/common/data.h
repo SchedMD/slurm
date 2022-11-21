@@ -432,6 +432,21 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg);
 extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *arg);
 
 /*
+ * Use match() function ptr find a specific matching value in list
+ * IN data - data list to find entity with given needle
+ * IN match - strict weak ordering function that compares two data to arg
+ *   returning true if the first precedes the second.
+ * IN needle - match against needle value
+ * NOTE: the lists are currently unordered but this is being implemented
+ *   as strict weak order to allow log(n) searching in the future.
+ * RET ptr to matching data or NULL if match not found
+ */
+extern data_t *data_list_find_first(
+	data_t *data,
+	bool (*match)(const data_t *data, void *needle),
+	void *needle);
+
+/*
  *  For each item in data dictionary [d], invokes the function [f] with [arg].
  *
  *  Returns a count of the number of items on which [f] returned
