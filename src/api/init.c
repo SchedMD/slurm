@@ -37,6 +37,7 @@
 #include "src/common/read_config.h"
 
 #include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/cli_filter.h"
 #include "src/interfaces/select.h"
 
 extern void slurm_init(const char *conf)
@@ -57,4 +58,7 @@ extern void slurm_client_init_plugins(void)
 
 	if (select_g_init(0) != SLURM_SUCCESS)
 		fatal("failed to initialize node selection plugin");
+
+	if (cli_filter_init() != SLURM_SUCCESS)
+		fatal("failed to initialize cli_filter plugin");
 }

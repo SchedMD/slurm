@@ -78,7 +78,6 @@ static int g_context_cnt = -1;
 static cli_filter_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 /*
  * Initialize the cli filter plugin.
@@ -91,9 +90,6 @@ extern int cli_filter_init(void)
 	char *last = NULL, *names;
 	char *plugin_type = "cli_filter";
 	char *type, *plugin_list;
-
-	if (init_run && (g_context_cnt >= 0))
-		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context_cnt >= 0)
@@ -128,7 +124,6 @@ extern int cli_filter_init(void)
 		names = NULL; /* for next strtok_r() iteration */
 	}
 	xfree(plugin_list);
-	init_run = true;
 
 fini:
 	slurm_mutex_unlock(&g_context_lock);
@@ -152,7 +147,6 @@ extern int cli_filter_fini(void)
 	if (g_context_cnt < 0)
 		goto fini;
 
-	init_run = false;
 	for (i = 0; i < g_context_cnt; i++) {
 		if (g_context[i]) {
 			j = plugin_context_destroy(g_context[i]);
@@ -178,12 +172,11 @@ fini:
 extern int cli_filter_g_setup_defaults(slurm_opt_t *opt, bool early)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 
 	START_TIMER;
 
-	if ((rc = cli_filter_init()) != SLURM_SUCCESS)
-	    return rc;
+	xassert(g_context_cnt >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
@@ -197,12 +190,11 @@ extern int cli_filter_g_setup_defaults(slurm_opt_t *opt, bool early)
 extern int cli_filter_g_pre_submit(slurm_opt_t *opt, int offset)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 
 	START_TIMER;
 
-	if ((rc = cli_filter_init()) != SLURM_SUCCESS)
-	    return rc;
+	xassert(g_context_cnt >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
@@ -217,12 +209,11 @@ extern void cli_filter_g_post_submit(int offset, uint32_t jobid,
 				     uint32_t stepid)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 
 	START_TIMER;
 
-	if ((rc = cli_filter_init()) != SLURM_SUCCESS)
-	    return;
+	xassert(g_context_cnt >= 0);
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
