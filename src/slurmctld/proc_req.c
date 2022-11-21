@@ -118,6 +118,8 @@ static uint32_t rpc_user_id[RPC_USER_SIZE] = { 0 };
 static uint32_t rpc_user_cnt[RPC_USER_SIZE] = { 0 };
 static uint64_t rpc_user_time[RPC_USER_SIZE] = { 0 };
 
+static bool do_post_rpc_node_registration = false;
+
 char *slurmd_config_files[] = {
 	"slurm.conf", "acct_gather.conf", "cgroup.conf",
 	"cli_filter.lua", "ext_sensors.conf", "gres.conf", "helpers.conf",
@@ -2806,6 +2808,14 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 	}
 }
 
+static void _slurm_post_rpc_node_registration()
+{
+	if (do_post_rpc_node_registration)
+		clusteracct_storage_g_cluster_tres(acct_db_conn, NULL, NULL, 0,
+						   SLURM_PROTOCOL_VERSION);
+	do_post_rpc_node_registration = false;
+}
+
 /* _slurm_rpc_node_registration - process RPC to determine if a node's
  *	actual configuration satisfies the configured specification */
 static void _slurm_rpc_node_registration(slurm_msg_t *msg)
@@ -2933,10 +2943,14 @@ send_resp:
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		if (node_reg_stat_msg->dynamic_type == DYN_NODE_NORM) {
-			/* Must be called outside of locks */
-			clusteracct_storage_g_cluster_tres(
-				acct_db_conn, NULL, NULL, 0,
-				SLURM_PROTOCOL_VERSION);
+			if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+				/* Must be called outside of locks */
+				clusteracct_storage_g_cluster_tres(
+					acct_db_conn, NULL, NULL, 0,
+					SLURM_PROTOCOL_VERSION);
+			} else {
+				do_post_rpc_node_registration = true;
+			}
 		}
 	}
 }
@@ -6420,6 +6434,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = MESSAGE_NODE_REGISTRATION_STATUS,
 		.func = _slurm_rpc_node_registration,
+		.post_func = _slurm_post_rpc_node_registration,
 		.queue_enabled = true,
 		.locks = {
 			.conf = READ_LOCK,
