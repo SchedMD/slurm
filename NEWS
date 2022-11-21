@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
     where enforce-binding was not respected.
  -- openapi/v0.0.38 - set assoc_id resolution failure as a debug log instead of
     an error log.
+ -- Fix issues when running in FrontEnd mode.
 
 * Changes in Slurm 22.05.6
 ==========================
