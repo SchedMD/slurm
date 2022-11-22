@@ -422,80 +422,6 @@ static int _modify_config(stepd_step_rec_t *step)
 		xfree(name);
 	}
 
-	/* Overwrite args */
-	if (step->node_tasks <= 0) {
-		/* should have been caught at submission */
-		error("%s: no node tasks?", __func__);
-
-		return ESLURM_BAD_TASK_COUNT;
-	} else if (step->node_tasks > 1) {
-		/* should have been caught at submission */
-		error("%s: unexpected number of tasks %u > 1",
-		      __func__, step->node_tasks);
-
-		return ESLURM_BAD_TASK_COUNT;
-	} else {
-		/* just 1 task */
-		stepd_step_task_info_t *task = step->task[0];
-		data_t *args = data_set_list(
-			data_define_dict_path(config, "/process/args/"));
-		char *gen, **old_argv = task->argv;
-
-		/* move args to the config.json for runtime to handle */
-		for (int i = 0; i < task->argc; i++) {
-			data_set_string_own(data_list_append(args),
-					    task->argv[i]);
-			task->argv[i] = NULL;
-		}
-
-		/*
-		 * containers do not use task->argv but we will leave a canary
-		 * to catch any code paths that avoid the container code
-		 */
-		xassert(step->argv == task->argv);
-		step->argv = task->argv = xcalloc(4, sizeof(*task->argv));
-		task->argv[0] = xstrdup("/bin/sh");
-		task->argv[1] = xstrdup("-c");
-		task->argv[2] = xstrdup("echo 'this should never execute with a container'; exit 1");
-
-		/*
-		 * Generate all the operations for later while we have all the
-		 * info needed
-		 */
-		gen = _generate_pattern(oci_conf->runtime_create, step,
-					task->id, old_argv);
-		if (gen)
-			create_argv[2] = gen;
-
-		gen = _generate_pattern(oci_conf->runtime_delete, step,
-					task->id, old_argv);
-		if (gen)
-			delete_argv[2] = gen;
-
-		gen = _generate_pattern(oci_conf->runtime_kill, step, task->id,
-					old_argv);
-		if (gen)
-			kill_argv[2] = gen;
-
-		gen = _generate_pattern(oci_conf->runtime_query, step, task->id,
-					old_argv);
-		if (gen)
-			query_argv[2] = gen;
-
-		gen = _generate_pattern(oci_conf->runtime_run, step, task->id,
-					old_argv);
-
-		if (gen)
-			run_argv[2] = gen;
-
-		gen = _generate_pattern(oci_conf->runtime_start, step, task->id,
-					old_argv);
-		if (gen)
-			start_argv[2] = gen;
-
-		env_array_free(old_argv);
-	}
-
 	return rc;
 }
 
@@ -865,6 +791,72 @@ static void _create_start(stepd_step_rec_t *step,
 	_exit(rc);
 }
 
+static void _generate_args(stepd_step_rec_t *step, stepd_step_task_info_t *task)
+{
+	char *gen;
+
+	gen = _generate_pattern(oci_conf->runtime_create, step,
+				task->id, task->argv);
+	if (gen)
+		create_argv[2] = gen;
+
+	gen = _generate_pattern(oci_conf->runtime_delete, step,
+				task->id, task->argv);
+	if (gen)
+		delete_argv[2] = gen;
+
+	gen = _generate_pattern(oci_conf->runtime_kill, step, task->id,
+				task->argv);
+	if (gen)
+		kill_argv[2] = gen;
+
+	gen = _generate_pattern(oci_conf->runtime_query, step, task->id,
+				task->argv);
+	if (gen)
+		query_argv[2] = gen;
+
+	gen = _generate_pattern(oci_conf->runtime_run, step, task->id,
+				task->argv);
+
+	if (gen)
+		run_argv[2] = gen;
+
+	gen = _generate_pattern(oci_conf->runtime_start, step, task->id,
+				task->argv);
+	if (gen)
+		start_argv[2] = gen;
+
+	if (step->container_config) {
+		data_t *args = data_define_dict_path(step->container_config,
+							    "/process/args/");
+
+		data_set_list(args);
+
+		/* move args to the config.json for runtime to handle */
+		for (int i = 0; i < task->argc; i++) {
+			data_set_string_own(data_list_append(args),
+					    task->argv[i]);
+			task->argv[i] = NULL;
+		}
+	} else {
+		/* argv is about to be overriden so cleanup first */
+		for (int i = 0; i < task->argc; i++) {
+			xfree(task->argv[i]);
+		}
+	}
+
+	/*
+	 * containers do not use task->argv but we will leave a canary
+	 * to catch any code paths that avoid the container code
+	 */
+	xassert(step->argv == task->argv);
+	step->argv = task->argv = xcalloc(4, sizeof(*task->argv));
+	env_array_free(task->argv);
+	task->argv[0] = xstrdup("/bin/sh");
+	task->argv[1] = xstrdup("-c");
+	task->argv[2] = xstrdup("echo 'this should never execute with a container'; exit 1");
+}
+
 extern void container_run(stepd_step_rec_t *step,
 			  stepd_step_task_info_t *task)
 {
@@ -922,6 +914,8 @@ extern void container_run(stepd_step_rec_t *step,
 
 		xfree(envfile);
 	}
+
+	_generate_args(step, task);
 
 	if (oci_conf->runtime_run)
 		_run(step, task);
