@@ -63,6 +63,7 @@ extern bitstr_t *avail_node_bitmap __attribute__((weak_import));
 extern int slurmctld_tres_cnt __attribute__((weak_import));
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
+extern list_t *cluster_license_list __attribute__((weak_import));
 #else
 slurm_conf_t slurm_conf;
 node_record_t **node_record_table_ptr;
@@ -76,6 +77,7 @@ bitstr_t *avail_node_bitmap;
 int slurmctld_tres_cnt = 0;
 slurmctld_config_t slurmctld_config;
 bitstr_t *idle_node_bitmap;
+list_t *cluster_license_list;
 #endif
 
 /* init common global variables */
