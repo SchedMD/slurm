@@ -3774,6 +3774,7 @@ end_node_set:
 		if (power_cnt == 0)
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].node_cnt) {
+			node_set_ptr[i].flags = NODE_SET_POWER_DN;
 			if (node_set_ptr[i].node_weight != reboot_weight)
 				node_set_ptr[i].node_weight = reboot_weight;
 			continue;	/* all nodes powered down */
