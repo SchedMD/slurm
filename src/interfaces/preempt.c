@@ -174,7 +174,7 @@ static int _add_preemptable_job(void *x, void *arg)
 	 * each part of a hetjob in _is_job_preempt_exempt()
 	 */
 	if (!job_overlap_and_running(preemptor->part_ptr->node_bitmap,
-				     candidate))
+				     preemptor->license_list, candidate))
 		return 0;
 
 	/* This job is a preemption candidate */

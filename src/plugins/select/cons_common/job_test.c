@@ -1824,7 +1824,7 @@ static int _job_res_rm_job(part_res_record_t *part_record_ptr,
 		.node_map = node_map
 	};
 
-	if (!job_overlap_and_running(node_map, job_ptr))
+	if (!job_overlap_and_running(node_map, license_list, job_ptr))
 		return 1;
 
 	if (!job_ptr->het_job_list)
@@ -2292,7 +2292,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 				    (mode != PREEMPT_MODE_CANCEL))
 					continue;
 				if (!job_overlap_and_running(
-					    node_bitmap, tmp_job_ptr))
+					    node_bitmap, job_ptr->license_list,
+					    tmp_job_ptr))
 					continue;
 				if (tmp_job_ptr->details->usable_nodes)
 					break;

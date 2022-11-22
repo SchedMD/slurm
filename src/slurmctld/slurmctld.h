@@ -2880,7 +2880,8 @@ extern bool waiting_for_node_power_down(node_record_t *node_ptr);
  *
  * RET true if we overlap, false otherwise
  */
-extern bool job_overlap_and_running(bitstr_t *node_map, job_record_t *job_ptr);
+extern bool job_overlap_and_running(bitstr_t *node_map, list_t *license_list,
+				    job_record_t *job_ptr);
 
 /*
  * Respond to request for backup slurmctld status

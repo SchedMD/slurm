@@ -156,6 +156,7 @@ typedef struct {
 
 typedef struct {
 	bitstr_t *node_map;
+	list_t *license_list;
 	int rc;
 } job_overlap_args_t;
 
@@ -19243,17 +19244,21 @@ static int _overlap_and_running_internal(void *x, void *arg)
 	 * We are just looking for something overlapping.  On a hetjob we need
 	 * to check everything.
 	 */
-	if (job_ptr->node_bitmap &&
-	    bit_overlap_any(overlap_args->node_map, job_ptr->node_bitmap))
+	if (license_list_overlap(overlap_args->license_list,
+				 job_ptr->license_list) ||
+	    (job_ptr->node_bitmap &&
+	    bit_overlap_any(overlap_args->node_map, job_ptr->node_bitmap)))
 		overlap_args->rc = 1;
 
 	return 0;
 }
 
-extern bool job_overlap_and_running(bitstr_t *node_map, job_record_t *job_ptr)
+extern bool job_overlap_and_running(bitstr_t *node_map, list_t *license_list,
+				    job_record_t *job_ptr)
 {
 	job_overlap_args_t overlap_args = {
-		.node_map = node_map
+		.node_map = node_map,
+		.license_list = license_list,
 	};
 
 	if (!job_ptr->het_job_list)
