@@ -49,6 +49,7 @@
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xregex.h"
 #include "src/common/xstring.h"
 
 #include "src/common/data.h"
@@ -136,50 +137,6 @@ typedef struct {
 static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
-
-static void _dump_regex_error(int rc, const regex_t *preg)
-{
-	char *buffer = NULL;
-	size_t len = regerror(rc, preg, NULL, 0);
-
-	if (len == 0) {
-		error("%s: unknown regex error code: %d", __func__, rc);
-		return;
-	}
-
-	buffer = xmalloc(len);
-	len = regerror(rc, preg, buffer, len);
-
-	if (len)
-		error("%s: regex error: %s", __func__, buffer);
-	else
-		error("%s: unexpected failure to get regex error", __func__);
-
-	xfree(buffer);
-}
-
-static bool _regex_quick_match(const char *str, const regex_t *preg)
-{
-	int rc;
-
-	// TODO: nmatch may safely be able to be 0 for this function
-	size_t nmatch = 1;
-	regmatch_t pmatch[nmatch];
-
-	/* not possible to match a NULL string */
-	if (!str)
-		return false;
-
-	rc = regexec(preg, str, nmatch, pmatch, 0);
-	if (!rc) { /* matched */
-		return true;
-	} else if (rc == REG_NOMATCH) {
-		return false;
-	} else { /* other error */
-		_dump_regex_error(rc, preg);
-		return false;
-	}
-}
 
 extern void data_fini(void)
 {
@@ -400,25 +357,29 @@ extern int data_init(const char *plugin_list, plugrack_foreach_t listf)
 
 	if (!rc && (reg_rc = regcomp(&bool_pattern_true_re, bool_pattern_true,
 			      REG_EXTENDED)) != 0) {
-		_dump_regex_error(reg_rc, &bool_pattern_true_re);
+		dump_regex_error(reg_rc, &bool_pattern_true_re,
+				 "compile \"%s\"", bool_pattern_true);
 		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
 	if (!rc && (reg_rc = regcomp(&bool_pattern_false_re, bool_pattern_false,
 			      REG_EXTENDED)) != 0) {
-		_dump_regex_error(reg_rc, &bool_pattern_false_re);
+		dump_regex_error(reg_rc, &bool_pattern_false_re,
+				 "compile \"%s\"", bool_pattern_false);
 		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
 	if (!rc && (reg_rc = regcomp(&int_pattern_re, int_pattern,
 				     REG_EXTENDED)) != 0) {
-		_dump_regex_error(reg_rc, &int_pattern_re);
+		dump_regex_error(reg_rc, &int_pattern_re,
+				 "compile \"%s\"", int_pattern);
 		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
 	if (!rc && (reg_rc = regcomp(&float_pattern_re, float_pattern,
 				     REG_EXTENDED)) != 0) {
-		_dump_regex_error(reg_rc, &float_pattern_re);
+		dump_regex_error(reg_rc, &float_pattern_re,
+				 "compile \"%s\"", float_pattern);
 		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
@@ -1619,8 +1580,8 @@ static int _convert_data_force_bool(data_t *data)
 		if (data->data.string_u == NULL ||
 		    data->data.string_u[0] == '\0')
 			data_set_bool(data, false);
-		else if (_regex_quick_match(data->data.string_u,
-					    &bool_pattern_true_re))
+		else if (regex_quick_match(data->data.string_u,
+					   &bool_pattern_true_re))
 			data_set_bool(data, true);
 		else { /* try to auto detect the type and try again */
 			if (data_convert_type(data, DATA_TYPE_NONE)
@@ -1683,15 +1644,15 @@ static int _convert_data_bool(data_t *data)
 
 	switch (data->type) {
 	case DATA_TYPE_STRING:
-		if (_regex_quick_match(data->data.string_u,
-				       &bool_pattern_true_re)) {
+		if (regex_quick_match(data->data.string_u,
+				      &bool_pattern_true_re)) {
 			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to bool: %s->true",
 				 __func__, (uintptr_t) data,
 				 data->data.string_u);
 			data_set_bool(data, true);
 			return SLURM_SUCCESS;
-		} else if (_regex_quick_match(data->data.string_u,
-					      &bool_pattern_false_re)) {
+		} else if (regex_quick_match(data->data.string_u,
+					     &bool_pattern_false_re)) {
 			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to bool: %s->false",
 				 __func__, (uintptr_t) data,
 				 data->data.string_u);
@@ -1715,7 +1676,7 @@ static int _convert_data_int(data_t *data)
 
 	switch (data->type) {
 	case DATA_TYPE_STRING:
-		if (_regex_quick_match(data->data.string_u, &int_pattern_re)) {
+		if (regex_quick_match(data->data.string_u, &int_pattern_re)) {
 			int64_t x;
 			if (sscanf(data->data.string_u, "%"SCNd64, &x) == 1) {
 				log_flag(DATA, "%s: converted data (0x%"PRIXPTR") to int: %s->%"PRId64,
@@ -1749,8 +1710,7 @@ static int _convert_data_float(data_t *data)
 
 	switch (data->type) {
 	case DATA_TYPE_STRING:
-		if (_regex_quick_match(data->data.string_u,
-				       &float_pattern_re)) {
+		if (regex_quick_match(data->data.string_u, &float_pattern_re)) {
 			double x;
 			if (sscanf(data->data.string_u, "%lf", &x) == 1) {
 				log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to float: %s->%lf",
