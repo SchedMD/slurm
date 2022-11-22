@@ -232,7 +232,6 @@ static char *gres_node_name = NULL;
 static char *local_plugins_str = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static List gres_conf_list = NULL;
-static bool init_run = false;
 static uint32_t gpu_plugin_id = NO_VAL;
 static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
 static uint32_t select_plugin_type = NO_VAL;
@@ -640,9 +639,6 @@ extern int gres_init(void)
 	bool have_gpu = false, have_shared = false;
 	char *shared_sep = "";
 
-	if (init_run && (gres_context_cnt >= 0))
-		return rc;
-
 	slurm_mutex_lock(&gres_context_lock);
 
 	if (gres_context_cnt >= 0)
@@ -738,7 +734,6 @@ fini:
 		fatal("Use of shared gres requires the use of select/cons_tres");
 	}
 
-	init_run = true;
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
@@ -751,7 +746,7 @@ extern int gres_get_gres_cnt(void)
 	if (cnt != -1)
 		return cnt;
 
-	gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	cnt = gres_context_cnt;
@@ -845,7 +840,6 @@ extern int gres_fini(void)
 	if (gres_context_cnt < 0)
 		goto fini;
 
-	init_run = false;
 	for (i = 0; i < gres_context_cnt; i++) {
 		j = _unload_plugin(gres_context + i);
 		if (j != SLURM_SUCCESS)
@@ -880,7 +874,7 @@ extern char *gres_help_msg(void)
 	int i;
 	char *msg = xstrdup("Valid gres options are:\n");
 
-	gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
@@ -2500,7 +2494,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	if (xcpuinfo_abs_to_mac)
 		xcpuinfo_ops.xcpuinfo_abs_to_mac = xcpuinfo_abs_to_mac;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 
@@ -2611,13 +2605,13 @@ fini:
  */
 extern int gres_node_config_pack(buf_t *buffer)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	uint32_t magic = GRES_MAGIC;
 	uint16_t rec_cnt = 0, version = SLURM_PROTOCOL_VERSION;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	pack16(version, buffer);
@@ -2653,7 +2647,7 @@ extern int gres_node_config_pack(buf_t *buffer)
  */
 extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 {
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 	uint32_t cpu_cnt = 0, magic = 0, plugin_id = 0, utmp32 = 0;
 	uint64_t count64 = 0;
 	uint16_t rec_cnt = 0, protocol_version = 0;
@@ -2665,7 +2659,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 	bool locked = false;
 	slurm_gres_context_t *gres_ctx;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(destroy_gres_slurmd_conf);
@@ -3132,7 +3126,7 @@ extern int gres_init_node_config(char *orig_config, List *gres_list)
 	gres_state_t *gres_state_node, *gres_state_node_sharing = NULL,
 		*gres_state_node_shared = NULL;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
@@ -3874,12 +3868,12 @@ extern int gres_node_config_validate(char *node_name,
 				     bool config_overrides,
 				     char **reason_down)
 {
-	int i, rc, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 	gres_state_t *gres_state_node, *gres_gpu_ptr = NULL;
 	int core_cnt = sock_cnt * cores_per_sock;
 	int cpu_cnt  = core_cnt * threads_per_core;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL))
@@ -4312,11 +4306,11 @@ extern int gres_node_reconfig(char *node_name,
 			      int cores_per_sock,
 			      int sock_per_node)
 {
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 	gres_state_t *gres_state_node = NULL, **gres_state_node_array;
 	gres_state_t *gpu_gres_state_node = NULL;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
 	slurm_mutex_lock(&gres_context_lock);
 	gres_state_node_array = xcalloc(gres_context_cnt,
 					sizeof(gres_state_t *));
@@ -4408,7 +4402,7 @@ extern int gres_node_state_pack(List gres_list, buf_t *buffer,
 	top_offset = get_buf_offset(buffer);
 	pack16(rec_cnt, buffer);	/* placeholder if data */
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
@@ -4449,7 +4443,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 				  char *node_name,
 				  uint16_t protocol_version)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	uint32_t magic = 0, plugin_id = 0;
 	uint64_t gres_cnt_avail = 0;
 	uint16_t gres_bitmap_size = 0, rec_cnt = 0;
@@ -4461,7 +4455,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 	if (rec_cnt == 0)
 		return SLURM_SUCCESS;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	locked = true;
@@ -4616,7 +4610,7 @@ extern List gres_node_state_list_dup(List gres_list)
 	if (gres_list == NULL)
 		return new_list;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0)) {
@@ -4697,7 +4691,7 @@ extern void gres_node_state_dealloc_all(List gres_list)
 	if (gres_list == NULL)
 		return;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
@@ -4900,7 +4894,7 @@ extern void gres_node_state_log(List gres_list, char *node_name)
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
@@ -4956,7 +4950,7 @@ extern char *gres_get_node_used(List gres_list)
 	if (!gres_list)
 		return gres_used;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
@@ -4985,7 +4979,7 @@ extern uint64_t gres_get_system_cnt(char *name)
 	if (!name)
 		return NO_VAL64;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
@@ -5014,7 +5008,7 @@ extern uint64_t gres_node_config_cnt(List gres_list, char *name)
 	if (!gres_list || !name || !list_count(gres_list))
 		return count;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
@@ -5103,8 +5097,7 @@ extern void gres_job_list_delete(void *list_element)
 {
 	gres_state_t *gres_state_job;
 
-	if (gres_init() != SLURM_SUCCESS)
-		return;
+	xassert(gres_context_cnt >= 0);
 
 	gres_state_job = (gres_state_t *) list_element;
 	slurm_mutex_lock(&gres_context_lock);
@@ -5884,8 +5877,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 			*num_tasks = *min_nodes;
 	}
 
-	if ((rc = gres_init()) != SLURM_SUCCESS)
-		return rc;
+	xassert(gres_context_cnt >= 0);
 
 	if ((select_plugin_type != SELECT_TYPE_CONS_TRES) &&
 	    (cpus_per_tres || tres_per_job || tres_per_socket ||
@@ -6284,7 +6276,7 @@ static bool _validate_node_gres_cnt(uint32_t job_id, List job_gres_list,
 	if (!job_gres_list)
 		return true;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
@@ -6474,7 +6466,7 @@ extern List gres_job_state_extract(List gres_list, int node_index)
 	if (gres_list == NULL)
 		return new_gres_list;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
@@ -6533,7 +6525,7 @@ extern int gres_job_state_pack(List gres_list, buf_t *buffer,
 	if (gres_list == NULL)
 		return rc;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
@@ -6621,7 +6613,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 				 uint32_t job_id,
 				 uint16_t protocol_version)
 {
-	int i = 0, rc;
+	int i = 0, rc = SLURM_SUCCESS;
 	uint32_t magic = 0, plugin_id = 0, utmp32 = 0;
 	uint16_t rec_cnt = 0;
 	uint8_t  has_more = 0;
@@ -6633,7 +6625,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 	if (rec_cnt == 0)
 		return SLURM_SUCCESS;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	locked = true;
@@ -6766,7 +6758,7 @@ extern int gres_prep_pack(List gres_list, buf_t *buffer,
 	if (gres_list == NULL)
 		return rc;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
@@ -6836,7 +6828,7 @@ static void _prep_list_del(void *x)
 extern int gres_prep_unpack(List *gres_list, buf_t *buffer,
 			    uint16_t protocol_version)
 {
-	int i = 0, rc;
+	int i = 0, rc = SLURM_SUCCESS;
 	uint32_t magic = 0, utmp32 = 0;
 	uint16_t rec_cnt = 0;
 	uint8_t filled = 0;
@@ -6847,7 +6839,7 @@ extern int gres_prep_unpack(List *gres_list, buf_t *buffer,
 	if (rec_cnt == 0)
 		return SLURM_SUCCESS;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	locked = true;
@@ -6936,7 +6928,7 @@ extern List gres_g_prep_build_env(List job_gres_list, char *node_list)
 	if (!job_gres_list)
 		return NULL;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(job_gres_list);
@@ -6984,7 +6976,7 @@ extern void gres_g_prep_set_env(char ***prep_env_ptr,
 	if (!prep_gres_list)
 		return;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	prep_iter = list_iterator_create(prep_gres_list);
@@ -7409,7 +7401,7 @@ extern uint32_t gres_job_test(List job_gres_list, List node_gres_list,
 		return 0;
 
 	core_cnt = NO_VAL;
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
@@ -7554,7 +7546,7 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 	bool sharing_gres_alloced = false;
 	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
@@ -7795,7 +7787,7 @@ extern void gres_job_state_log(List gres_list, uint32_t job_id)
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
@@ -7849,7 +7841,7 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 	bitstr_t *usable_gres = NULL;
 	tres_bind_t tres_bind;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	/*
 	 * Create a unique device list of all possible GRES device files.
@@ -8276,14 +8268,13 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 				    uint32_t *num_tasks,
 				    uint32_t *cpu_count, char **err_msg)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	gres_step_state_t *gres_ss;
 	List new_step_list;
 	uint64_t cnt = 0;
 
 	*step_gres_list = NULL;
-	if ((rc = gres_init()) != SLURM_SUCCESS)
-		return rc;
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	new_step_list = list_create(gres_step_list_delete);
@@ -8507,7 +8498,7 @@ List gres_step_state_extract(List gres_list, int node_index)
 	if (gres_list == NULL)
 		return new_gres_list;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
@@ -8556,7 +8547,7 @@ extern int gres_step_state_pack(List gres_list, buf_t *buffer,
 	if (gres_list == NULL)
 		return rc;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
@@ -8620,7 +8611,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 				  slurm_step_id_t *step_id,
 				  uint16_t protocol_version)
 {
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 	uint32_t magic = 0, plugin_id = 0, uint32_tmp = 0;
 	uint16_t rec_cnt = 0;
 	uint8_t data_flag = 0;
@@ -8632,7 +8623,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 	if (rec_cnt == 0)
 		return SLURM_SUCCESS;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	locked = true;
@@ -8989,7 +8980,7 @@ extern void gres_g_step_hardware_init(List step_gres_list,
 	if (!step_gres_list)
 		return;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
 		if (gres_context[i].ops.step_hardware_init == NULL)
@@ -9024,7 +9015,7 @@ extern void gres_g_step_hardware_init(List step_gres_list,
 extern void gres_g_step_hardware_fini(void)
 {
 	int i;
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
 		if (gres_context[i].ops.step_hardware_fini == NULL) {
@@ -9323,7 +9314,7 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 	bool sharing_gres_alloced = false;
 	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
 		slurm_gres_context_t *gres_ctx = &gres_context[i];
@@ -9384,7 +9375,7 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 	_parse_tres_bind(step->accel_bind_type, step->tres_bind, &tres_bind);
 	flags = tres_bind.gres_internal_flags;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
 		slurm_gres_context_t *gres_ctx = &gres_context[i];
@@ -9498,7 +9489,7 @@ extern void gres_step_state_log(List gres_list, uint32_t job_id,
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES) || !gres_list)
 		return;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	tmp_step_id.job_id = job_id;
 	tmp_step_id.step_het_comp = NO_VAL;
@@ -9553,7 +9544,7 @@ extern uint64_t gres_get_value_by_type(List job_gres_list, char *gres_name)
 		return NO_VAL64;
 
 	gres_cnt = NO_VAL64;
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 	plugin_id = gres_build_id(gres_name);
 
 	slurm_mutex_lock(&gres_context_lock);
@@ -9594,7 +9585,8 @@ extern int gres_node_count(List gres_list, int arr_len,
 	uint64_t      val;
 	int           rc, ix = 0;
 
-	rc = gres_init();
+	xassert(gres_context_cnt >= 0);
+
 	if ((rc == SLURM_SUCCESS) && (arr_len <= 0))
 		rc = EINVAL;
 	if (rc != SLURM_SUCCESS)
@@ -9721,7 +9713,7 @@ extern void gres_g_send_stepd(int fd, slurm_msg_t *msg)
 	slurm_cred_t *cred = NULL;
 
 	/* Setup the gres_device list and other plugin-specific data */
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 
 	slurm_mutex_lock(&gres_context_lock);
 	xassert(gres_context_buf);
@@ -9818,7 +9810,7 @@ extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
-	/* Set debug flags and init_run only */
+	/* Set debug flags only */
 	(void) gres_init();
 
 	rc = _load_specific_gres_plugins();
@@ -9829,7 +9821,7 @@ rwfail:
 	error("%s: failed", __func__);
 	slurm_mutex_unlock(&gres_context_lock);
 
-	/* Set debug flags and init_run only */
+	/* Set debug flags only */
 	(void) gres_init();
 
 	rc = _load_specific_gres_plugins();
@@ -9892,7 +9884,7 @@ extern int gres_get_job_info(List job_gres_list, char *gres_name,
 	if (job_gres_list == NULL)	/* No GRES allocated */
 		return ESLURM_INVALID_GRES;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 	plugin_id = gres_build_id(gres_name);
 
 	slurm_mutex_lock(&gres_context_lock);
@@ -9970,7 +9962,7 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 	if (step_gres_list == NULL)	/* No GRES allocated */
 		return ESLURM_INVALID_GRES;
 
-	(void) gres_init();
+	xassert(gres_context_cnt >= 0);
 	plugin_id = gres_build_id(gres_name);
 
 	slurm_mutex_lock(&gres_context_lock);

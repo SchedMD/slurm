@@ -670,6 +670,9 @@ _init_from_slurmd(int sock, char **argv,
 	if (switch_init(1) != SLURM_SUCCESS)
 		fatal( "failed to initialize authentication plugin" );
 
+	if (gres_init() != SLURM_SUCCESS)
+		fatal("failed to initialize gres plugins");
+
 	if (unpack_msg(msg, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: we didn't unpack the request correctly");
 	FREE_NULL_BUFFER(buffer);
@@ -705,8 +708,7 @@ _init_from_slurmd(int sock, char **argv,
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
 	    (slurm_cred_init() != SLURM_SUCCESS) ||
-	    (job_container_init() != SLURM_SUCCESS) ||
-	    (gres_init() != SLURM_SUCCESS))
+	    (job_container_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 
 	/*
