@@ -793,7 +793,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		     uint32_t req_nodes, int mode, uint16_t cr_type,
 		     enum node_cr_state job_node_req,
 		     part_res_record_t *cr_part_ptr,
-		     node_use_record_t *node_usage,
+		     node_use_record_t *node_usage, list_t *license_list,
 		     bitstr_t **exc_cores, bool prefer_alloc_nodes,
 		     bool qos_preemptor, bool preempt_mode)
 {
@@ -850,6 +850,22 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		max_nodes = start;
 		min_nodes = max_nodes;
 		req_nodes = max_nodes;
+	}
+
+	if (license_list) {
+		/* Ensure job has access to requested licenses */
+		int license_rc = license_job_test_with_list(job_ptr, time(NULL),
+							    true, license_list);
+		if (license_rc == SLURM_ERROR) {
+			log_flag(SELECT_TYPE,
+				 "test 0 fail: insufficient licenses configured");
+			return SLURM_ERROR;
+		}
+		if (!test_only && license_rc == EAGAIN) {
+			log_flag(SELECT_TYPE,
+				 "test 0 fail: insufficient licenses available");
+			return SLURM_ERROR;
+		}
 	}
 
 	/*
@@ -1751,8 +1767,8 @@ static int _test_only(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
-		       select_part_record, select_node_usage, NULL, false,
-		       false, false);
+		       select_part_record, select_node_usage,
+		       cluster_license_list, NULL, false, false, false);
 	return rc;
 }
 
@@ -1911,8 +1927,9 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	/* Try to run with currently available nodes */
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
-		       select_part_record, select_node_usage, exc_core_bitmap,
-		       false, false, false);
+		       select_part_record, select_node_usage,
+		       cluster_license_list, exc_core_bitmap, false, false,
+		       false);
 	if (rc == SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(orig_map);
 		job_ptr->start_time = now;
@@ -1960,8 +1977,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		bit_or(node_bitmap, orig_map);
 		rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
 			       req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
-			       job_node_req, future_part,
-			       future_usage, exc_core_bitmap, false,
+			       job_node_req, future_part, future_usage,
+			       future_license_list, exc_core_bitmap, false,
 			       qos_preemptor, true);
 		if (rc == SLURM_SUCCESS) {
 			/*
@@ -2056,8 +2073,9 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN, tmp_cr_type,
 				       job_node_req, future_part, future_usage,
-				       exc_core_bitmap, backfill_busy_nodes,
-				       qos_preemptor, true);
+				       future_license_list, exc_core_bitmap,
+				       backfill_busy_nodes, qos_preemptor,
+				       true);
 			if (rc == SLURM_SUCCESS) {
 				if (last_job_ptr->end_time <= now) {
 					job_ptr->start_time =
@@ -2131,8 +2149,9 @@ top:	orig_node_map = bit_copy(save_node_map);
 
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
-		       select_part_record, select_node_usage, exc_cores, false,
-		       false, preempt_mode);
+		       select_part_record, select_node_usage,
+		       cluster_license_list, exc_cores, false, false,
+		       preempt_mode);
 
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos) {
 		/* Determine QOS preempt mode of first job */
@@ -2150,8 +2169,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 		rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
 			       req_nodes, SELECT_MODE_RUN_NOW, tmp_cr_type,
 			       job_node_req, select_part_record,
-			       select_node_usage, exc_cores, false, true,
-			       preempt_mode);
+			       select_node_usage, cluster_license_list,
+			       exc_cores, false, true, preempt_mode);
 	} else if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
@@ -2190,7 +2209,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
 				       tmp_cr_type, job_node_req,
-				       future_part, future_usage, exc_cores,
+				       future_part, future_usage,
+				       future_license_list, exc_cores,
 				       false, false, preempt_mode);
 			tmp_job_ptr->details->usable_nodes = 0;
 			if (rc != SLURM_SUCCESS)
