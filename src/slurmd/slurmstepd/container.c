@@ -541,13 +541,26 @@ static void _generate_bundle_path(stepd_step_rec_t *step, char *rootfs_path)
 	step->cwd = path;
 }
 
+static char *_get_config_path(stepd_step_rec_t *step)
+{
+	char *path = NULL;
+
+	if (!step->container)
+		return NULL;
+
+	/* OCI runtime spec reqires config.json to be in root of bundle */
+	xstrfmtcat(path, "%s/config.json", step->container);
+
+	return path;
+}
+
 extern int setup_container(stepd_step_rec_t *step)
 {
 	int rc;
-	char *jconfig = NULL;
 	data_t *config = NULL;
 	char *out = NULL;
 	char *rootfs_path = NULL;
+	char *jconfig = _get_config_path(step);
 
 	if ((rc = get_oci_conf(&oci_conf)) && (rc != ENOENT)) {
 		error("%s: error loading oci.conf: %s",
@@ -572,9 +585,6 @@ extern int setup_container(stepd_step_rec_t *step)
 		      slurm_strerror(rc));
 		goto error;
 	}
-
-	/* OCI runtime spec reqires config.json to be in root of bundle */
-	xstrfmtcat(jconfig, "%s/config.json", step->container);
 
 	if ((rc = _read_config(jconfig, &config))) {
 		goto error;
