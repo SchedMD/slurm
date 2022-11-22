@@ -61,7 +61,7 @@ static bool _srv_fence_coll_barrier = false;
 pmix_jobinfo_t _pmixp_job_info;
 
 static int _resources_set(char ***env);
-static int _env_set(char ***env);
+static int _env_set(const stepd_step_rec_t *step, char ***env);
 
 /* stepd global UNIX socket contact information */
 void pmixp_info_srv_usock_set(char *path, int fd)
@@ -193,7 +193,7 @@ int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 		return rc;
 	}
 
-	if ((rc = _env_set(env))) {
+	if ((rc = _env_set(step, env))) {
 		return rc;
 	}
 
@@ -419,7 +419,7 @@ static void _parse_pmix_conf_env(char ***env, char *pmix_conf_env)
 	xfree(tmp);
 }
 
-static int _env_set(char ***env)
+static int _env_set(const stepd_step_rec_t *step, char ***env)
 {
 	char *p = NULL;
 
