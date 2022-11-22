@@ -94,7 +94,6 @@ static plugin_context_t **g_context = NULL;
 static buf_t **mpi_confs = NULL;
 static int g_context_cnt = 0;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 static uint32_t client_plugin_id = 0;
 
 static void _log_env(char **env)
@@ -247,8 +246,6 @@ static int _load_plugin(void *x, void *arg)
 static int _mpi_fini_locked(void)
 {
 	int rc = SLURM_SUCCESS;
-
-	init_run = false;
 
 	/* Conf cleanup */
 	if (mpi_confs) {
@@ -457,17 +454,12 @@ static int _mpi_init_locked(char **mpi_type)
 		xfree(all_tbls);
 	}
 
-	init_run = true;
-
 	return SLURM_SUCCESS;
 }
 
 static int _mpi_init(char **mpi_type)
 {
 	int rc = SLURM_SUCCESS;
-
-	if (init_run && g_context)
-		return rc;
 
 	slurm_mutex_lock(&context_lock);
 
@@ -727,9 +719,6 @@ extern int mpi_id_from_plugin_type(char *mpi_type)
 extern int mpi_fini(void)
 {
 	int rc = SLURM_SUCCESS;
-
-	if (!init_run || !g_context)
-		return rc;
 
 	slurm_mutex_lock(&context_lock);
 
