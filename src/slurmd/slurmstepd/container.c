@@ -660,9 +660,6 @@ extern int setup_container(stepd_step_rec_t *step)
 	if ((rc = _mkpath(step->cwd, step->uid, step->gid)))
 		goto error;
 
-	if ((rc = _modify_config(step)))
-		goto error;
-
 error:
 	if (rc)
 		error("%s: container setup failed: %s",
@@ -901,6 +898,10 @@ extern void container_run(stepd_step_rec_t *step,
 		int rc;
 		char *out = NULL;
 		char *jconfig = _get_config_path(step);
+
+		if ((rc = _modify_config(step)))
+			fatal("%s: configuring container failed: %s",
+			      __func__, slurm_strerror(rc));
 
 		if ((rc = data_g_serialize(&out, step->container_config,
 					   MIME_TYPE_JSON, SER_FLAGS_PRETTY))) {
