@@ -5363,10 +5363,6 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 	if (job_ptr->state_reason == WAIT_HELD_USER)
 		held_user = true;
 
-	if (independent &&
-	    (license_job_test(job_ptr, time(NULL), true) != SLURM_SUCCESS))
-		independent = false;
-
 	/* Avoid resource fragmentation if important */
 	if ((submit_uid || (job_desc->req_nodes == NULL)) &&
 	    independent && job_is_completing(NULL))

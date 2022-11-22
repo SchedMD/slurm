@@ -1751,23 +1751,6 @@ next_task:
 			fail_by_part = true;
 			goto fail_this_part;
 		}
-		if (license_job_test(job_ptr, time(NULL), true) !=
-		    SLURM_SUCCESS) {
-			job_ptr->state_reason = WAIT_LICENSES;
-			xfree(job_ptr->state_desc);
-			last_job_update = now;
-			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
-				     job_ptr,
-				     job_state_string(job_ptr->job_state),
-				     job_reason_string(job_ptr->state_reason),
-				     job_ptr->priority);
-			if (bf_licenses) {
-				sched_debug("%pJ is blocked on licenses. Stopping scheduling so license backfill can handle this",
-					    job_ptr);
-				break;
-			}
-			continue;
-		}
 
 		if (assoc_mgr_validate_assoc_id(acct_db_conn,
 						job_ptr->assoc_id,
