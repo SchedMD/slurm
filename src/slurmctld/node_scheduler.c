@@ -3870,6 +3870,8 @@ end_node_set:
  */
 static void _set_sched_weight(struct node_set *node_set_ptr)
 {
+	xassert(node_set_ptr);
+
 	node_set_ptr->sched_weight = node_set_ptr->node_weight << 8;
 	node_set_ptr->sched_weight |= 0xff;
 	if ((node_set_ptr->flags & NODE_SET_REBOOT) ||
@@ -3883,6 +3885,9 @@ static int _sort_node_set(const void *x, const void *y)
 {
 	struct node_set *node_set_ptr1 = (struct node_set *) x;
 	struct node_set *node_set_ptr2 = (struct node_set *) y;
+
+	xassert(node_set_ptr1);
+	xassert(node_set_ptr2);
 
 	if (node_set_ptr1->sched_weight < node_set_ptr2->sched_weight)
 		return -1;
