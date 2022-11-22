@@ -3255,6 +3255,18 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer,
 	DEF_TIMERS;
 	START_TIMER;
 
+	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
+		char *p = slurmdbd_msg_type_2_str(msg->msg_type, 1);
+		if (slurmdbd_conn->conn->cluster_name) {
+			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
+			     __func__, p, slurmdbd_conn->conn->cluster_name,
+			     slurmdbd_conn->conn->rem_host, *uid);
+		} else {
+			info("%s: received opcode %s from %s uid %u",
+			     __func__, p, slurmdbd_conn->conn->rem_host, *uid);
+		}
+	}
+
 	switch (msg->msg_type) {
 	case REQUEST_PERSIST_INIT:
 		rc = _unpack_persist_init(slurmdbd_conn, msg, out_buffer, uid);
