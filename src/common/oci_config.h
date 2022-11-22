@@ -39,6 +39,7 @@
 #define OCI_CONFIG_H
 
 #include "src/common/log.h"
+#include "src/common/xregex.h"
 
 typedef enum {
 	DISABLED_ENV_FILE = 0,
@@ -51,9 +52,13 @@ typedef struct {
 	/* create file with environment */
 	oci_conf_create_env_file_t create_env_file;
 	char **disable_hooks; /* OCI hooks to disable (null terminated) */
+	regex_t env_exclude; /* REGEX to filter step environment */
+	bool env_exclude_set; /* true if env_exclude populated */
 	char *runtime_create; /* OCI runtime pattern to execute create */
 	char *runtime_delete; /* OCI runtime pattern to execute delete */
 	char *runtime_kill; /* OCI runtime pattern to execute kill */
+	regex_t runtime_env_exclude; /* REGEX to filter runtime_* environmentt */
+	bool runtime_env_exclude_set; /* true if runtime_env_exclude populated */
 	char *runtime_query; /* OCI runtime pattern to execute query */
 	char *runtime_run; /* OCI runtime pattern to execute run */
 	char *runtime_start; /* OCI runtime pattern to execute start */

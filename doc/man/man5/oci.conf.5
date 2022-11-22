@@ -62,6 +62,29 @@ Default: false
 Comma separated list of hook types to disable.
 .sp
 Default: allow all hooks.
+.IP
+
+.TP
+\fBEnvExclude\fR
+Exteneded regular expression to filter environment before. This allows for
+excluding variables to avoid unwanted environment variables inside of
+containers.
+.sp
+Example: \fBEnvExclude\fR="^(SLURM_CONF|SLURM_CONF_SERVER)="
+.sp
+Default is not exclude any environment variables.
+.IP
+
+.TP
+\fBRunTimeEnvExclude\fR
+Exteneded regular expression to filter environment before calling any
+\fBRunTime*\fR commands. This allows for excluding variables to avoid unwanted
+inheritance inside of the OCI runtimes.
+.sp
+Example: \fBRunTimeEnvExclude\fR="^(SLURM_CONF|SLURM_CONF_SERVER)="
+.sp
+Default is not exclude any environment variables.
+.IP
 
 .TP
 \fBFileDebug\fR

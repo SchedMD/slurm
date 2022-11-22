@@ -53,9 +53,11 @@ static s_p_options_t options[] = {
 	{"ContainerPath", S_P_STRING},
 	{"CreateEnvFile", S_P_STRING},
 	{"DisableHooks", S_P_STRING},
+	{"EnvExclude", S_P_STRING},
 	{"RunTimeCreate", S_P_STRING},
 	{"RunTimeDelete", S_P_STRING},
 	{"RunTimeKill", S_P_STRING},
+	{"RunTimeEnvExclude", S_P_STRING},
 	{"RunTimeQuery", S_P_STRING},
 	{"RunTimeRun", S_P_STRING},
 	{"RunTimeStart", S_P_STRING},
@@ -83,6 +85,7 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	char *debug_stdio = NULL, *debug_syslog = NULL;
 	char *debug_flags = NULL, *debug_file = NULL;
 	char *create_env_file = NULL;
+	char *runtime_env_exclude = NULL, *env_exclude = NULL;
 
 	if ((stat(conf_path, &buf) == -1)) {
 		error("No %s file", OCI_CONF);
@@ -101,9 +104,11 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	(void) s_p_get_string(&create_env_file, "CreateEnvFile", tbl);
 	(void) s_p_get_string(&disable_hooks, "DisableHooks", tbl);
 	(void) s_p_get_boolean(&oci->ignore_config_json, "IgnoreFileConfigJson", tbl);
+	(void) s_p_get_string(&env_exclude, "EnvExclude", tbl);
 	(void) s_p_get_string(&oci->runtime_create, "RunTimeCreate", tbl);
 	(void) s_p_get_string(&oci->runtime_delete, "RunTimeDelete", tbl);
 	(void) s_p_get_string(&oci->runtime_kill, "RunTimeKill", tbl);
+	(void) s_p_get_string(&runtime_env_exclude, "RunTimeEnvExclude", tbl);
 	(void) s_p_get_string(&oci->runtime_query, "RunTimeQuery", tbl);
 	(void) s_p_get_string(&oci->runtime_run, "RunTimeRun", tbl);
 	(void) s_p_get_string(&oci->runtime_start, "RunTimeStart", tbl);
@@ -217,6 +222,26 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	s_p_hashtbl_destroy(tbl);
 	xfree(conf_path);
 
+	if (!rc && env_exclude) {
+		if ((rc = regcomp(&oci->env_exclude, env_exclude,
+				  REG_EXTENDED)))
+			dump_regex_error(rc, &oci->env_exclude, "compile %s",
+					 env_exclude);
+		else
+			oci->env_exclude_set = true;
+	}
+	xfree(env_exclude);
+
+	if (!rc && runtime_env_exclude) {
+		if ((rc = regcomp(&oci->runtime_env_exclude, runtime_env_exclude,
+				  REG_EXTENDED)))
+			dump_regex_error(rc, &oci->runtime_env_exclude,
+					 "compile %s", runtime_env_exclude);
+		else
+			oci->runtime_env_exclude_set = true;
+	}
+	xfree(runtime_env_exclude);
+
 	if (!rc) {
 		const char *envfile = "disabled";
 		free_oci_conf(*oci_ptr);
@@ -246,9 +271,11 @@ extern void free_oci_conf(oci_conf_t *oci)
 		return;
 
 	xfree(oci->container_path);
+	regfree(&oci->runtime_env_exclude);
 	xfree(oci->runtime_create);
 	xfree(oci->runtime_delete);
 	xfree(oci->runtime_kill);
+	regfree(&oci->runtime_env_exclude);
 	xfree(oci->runtime_query);
 	xfree(oci->runtime_run);
 	xfree(oci->runtime_start);
