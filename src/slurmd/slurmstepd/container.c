@@ -868,10 +868,21 @@ static void _generate_args(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 extern void container_run(stepd_step_rec_t *step,
 			  stepd_step_task_info_t *task)
 {
+	int rc;
+
 	if (!oci_conf) {
 		debug("%s: OCI Container not configured. Ignoring %pS requested container: %s",
 		      __func__, step, step->container);
 		return;
+	}
+
+	if (oci_conf->env_exclude_set) {
+		char **env = env_array_exclude((const char **) step->env,
+					       &oci_conf->env_exclude);
+#ifdef MEMORY_LEAK_DEBUG
+		env_array_free(step->env);
+#endif
+		step->env = env;
 	}
 
 	if (step->container_config) {
@@ -900,7 +911,6 @@ extern void container_run(stepd_step_rec_t *step,
 	}
 
 	if (oci_conf->create_env_file) {
-		int rc;
 		char *envfile = NULL;
 		bool nl = (oci_conf->create_env_file ==
 			   NEWLINE_TERMINATED_ENV_FILE);
@@ -924,6 +934,17 @@ extern void container_run(stepd_step_rec_t *step,
 	}
 
 	_generate_args(step, task);
+
+	if (oci_conf->runtime_env_exclude_set) {
+		extern char **environ;
+		char **env = env_array_exclude((const char **) environ,
+					       &oci_conf->runtime_env_exclude);
+
+#ifdef MEMORY_LEAK_DEBUG
+		env_unset_environment();
+#endif
+		environ = env;
+	}
 
 	if (oci_conf->runtime_run)
 		_run(step, task);
