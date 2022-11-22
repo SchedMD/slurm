@@ -9717,8 +9717,15 @@ extern void gres_g_send_stepd(int fd, slurm_msg_t *msg)
 	if (msg->msg_type != REQUEST_BATCH_JOB_LAUNCH) {
 		launch_tasks_request_msg_t *job =
 			(launch_tasks_request_msg_t *)msg->data;
+		cred_data_enum_t check;
+
+		/* If we are a special step we get the JOB_GRES_LIST */
+		if (job->step_id.step_id >= SLURM_MAX_NORMAL_STEP_ID)
+			check = CRED_DATA_JOB_GRES_LIST;
+		else
+			check = CRED_DATA_STEP_GRES_LIST;
 		/* Send the merged slurm.conf/gres.conf and autodetect data */
-		if (slurm_cred_get(job->cred, CRED_DATA_STEP_GRES_LIST)) {
+		if (slurm_cred_get(job->cred, check)) {
 			len = get_buf_offset(gres_conf_buf);
 			safe_write(fd, &len, sizeof(len));
 			safe_write(fd, get_buf_data(gres_conf_buf), len);
@@ -9755,9 +9762,16 @@ extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 	if (msg->msg_type != REQUEST_BATCH_JOB_LAUNCH) {
 		launch_tasks_request_msg_t *job =
 			(launch_tasks_request_msg_t *)msg->data;
+		cred_data_enum_t check;
+
+		/* If we are a special step we get the JOB_GRES_LIST */
+		if (job->step_id.step_id >= SLURM_MAX_NORMAL_STEP_ID)
+			check = CRED_DATA_JOB_GRES_LIST;
+		else
+			check = CRED_DATA_STEP_GRES_LIST;
 
 		/* Recv the merged slurm.conf/gres.conf and autodetect data */
-		if (slurm_cred_get(job->cred, CRED_DATA_STEP_GRES_LIST)) {
+		if (slurm_cred_get(job->cred, check)) {
 			safe_read(fd, &len, sizeof(int));
 
 			buffer = init_buf(len);
