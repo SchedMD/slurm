@@ -147,6 +147,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - set assoc_id resolution failure as a debug log instead of
     an error log.
  -- Fix issues when running in FrontEnd mode.
+ -- Fix srun and salloc I/O code to set keepaliveinterval/keepalivetime on
+    connections.
 
 * Changes in Slurm 22.05.6
 ==========================

@@ -47,6 +47,7 @@
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
@@ -154,6 +155,7 @@ static void *_pty_thread(void *arg)
 		return NULL;
 	}
 
+	net_set_keep_alive(fd);
 	while (job->state <= SRUN_JOB_RUNNING) {
 		debug2("waiting for SIGWINCH");
 		if ((poll(NULL, 0, -1) < 1) && (errno != EINTR)) {
