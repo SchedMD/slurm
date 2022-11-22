@@ -90,9 +90,11 @@ static int _at_tpn_limit(const uint32_t n, const job_record_t *job_ptr,
  *			job_ptr->job_resrcs->node_bitmap
  */
 extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
-				  uint32_t *gres_task_limit)
+				  uint32_t *gres_task_limit,
+				  uint32_t *gres_min_cpus)
 {
 	bool over_subscribe = false;
+	bool do_gres_min_cpus = false;
 	uint32_t n, tid, t, maxtasks, l;
 	uint16_t *avail_cpus;
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -163,6 +165,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	tid = 0;
 	for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 		if (avail_cpus[n]) {
+			if (gres_min_cpus[n])
+				do_gres_min_cpus = true;
 			/* Ignore gres_task_limit for first task per node */
 			tid++;
 			job_res->tasks_per_node[n]++;
@@ -262,6 +266,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 		if (!space_remaining)
 			over_subscribe = true;
 	}
+	if (do_gres_min_cpus)
+		dist_tasks_gres_min_cpus(job_ptr, avail_cpus, gres_min_cpus);
 	xfree(avail_cpus);
 	xfree(vpus);
 

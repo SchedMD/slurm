@@ -88,7 +88,8 @@ typedef struct {
 			    bool prefer_alloc_nodes,
 			    gres_mc_data_t *tres_mc_ptr);
 	int (*dist_tasks_compute_c_b)(job_record_t *job_ptr,
-				      uint32_t *gres_task_limit);
+				      uint32_t *gres_task_limit,
+				      uint32_t *gres_min_cpus);
 	bitstr_t **(*mark_avail_cores)(bitstr_t *node_map, uint16_t core_spec);
 	bitstr_t *(*pick_first_cores)(bitstr_t *avail_node_bitmap,
 				      uint32_t node_cnt,

@@ -58,7 +58,8 @@
  *
  */
 extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
-				  uint32_t *gres_task_limit)
+				  uint32_t *gres_task_limit,
+				  uint32_t *gres_min_cpus)
 {
 	bool over_subscribe = false;
 	uint32_t n, i, tid, maxtasks, l;
