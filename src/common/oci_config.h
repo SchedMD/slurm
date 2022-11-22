@@ -40,9 +40,16 @@
 
 #include "src/common/log.h"
 
+typedef enum {
+	DISABLED_ENV_FILE = 0,
+	NULL_TERMINATED_ENV_FILE,
+	NEWLINE_TERMINATED_ENV_FILE,
+} oci_conf_create_env_file_t;
+
 typedef struct {
 	char *container_path; /* path pattern to use for holding OCI config */
-	bool create_env_file; /* create file with environment */
+	/* create file with environment */
+	oci_conf_create_env_file_t create_env_file;
 	char **disable_hooks; /* OCI hooks to disable (null terminated) */
 	char *runtime_create; /* OCI runtime pattern to execute create */
 	char *runtime_delete; /* OCI runtime pattern to execute delete */

@@ -178,6 +178,8 @@ documents those changes that are of interest to users and administrators.
     container will not have access to job environment variables.
  -- slurmstepd - defer creating container environment file until after all
     plugin based modifications to the job environment are complete.
+ -- oci.conf - modify configuration option "CreateEnvFile=" to support creating
+    an enviroment file using NULL character or newline termination.
 
 * Changes in Slurm 22.05.7
 ==========================

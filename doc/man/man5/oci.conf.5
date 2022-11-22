@@ -27,11 +27,19 @@ Default is unique directory generated in \fBSlurmdSpoolDir\fR.
 .IP
 
 .TP
-\fBCreateEnvFile=(true|false)\fR
+\fBCreateEnvFile=(null|newline|disabled)\fR
 Create environment file for container. File will have one environment variable
-per line.
+per line if value is "newline". File will have one environment
+variable terminated by NULL character (aka '\0') if value is "null". If value
+is "disabled", then the environment file will not be created.
+
+Value of "true" is treated as "null" for backwards compatibility.
+Value of "false" is treated as "disabled" for backwards compatibility.
+
+Note: When CreateEnvFile=newline, any environment variables with a newline will
+be dropped before writting to the environment file.
 .sp
-Default is false.
+Default is "disabled".
 .IP
 
 .TP

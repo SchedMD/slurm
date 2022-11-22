@@ -51,7 +51,7 @@
 
 static s_p_options_t options[] = {
 	{"ContainerPath", S_P_STRING},
-	{"CreateEnvFile", S_P_BOOLEAN},
+	{"CreateEnvFile", S_P_STRING},
 	{"DisableHooks", S_P_STRING},
 	{"RunTimeCreate", S_P_STRING},
 	{"RunTimeDelete", S_P_STRING},
@@ -82,6 +82,7 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	int srun_args_count = 0;
 	char *debug_stdio = NULL, *debug_syslog = NULL;
 	char *debug_flags = NULL, *debug_file = NULL;
+	char *create_env_file = NULL;
 
 	if ((stat(conf_path, &buf) == -1)) {
 		error("No %s file", OCI_CONF);
@@ -97,7 +98,7 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 		fatal("Could not parse %s file: %s", OCI_CONF, conf_path);
 
 	(void) s_p_get_string(&oci->container_path, "ContainerPath", tbl);
-	(void) s_p_get_boolean(&oci->create_env_file, "CreateEnvFile", tbl);
+	(void) s_p_get_string(&create_env_file, "CreateEnvFile", tbl);
 	(void) s_p_get_string(&disable_hooks, "DisableHooks", tbl);
 	(void) s_p_get_boolean(&oci->ignore_config_json, "IgnoreFileConfigJson", tbl);
 	(void) s_p_get_string(&oci->runtime_create, "RunTimeCreate", tbl);
@@ -194,16 +195,40 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 		rc = SLURM_ERROR;
 	}
 
+	if (!xstrcasecmp(create_env_file, "null") ||
+	    !xstrcasecmp(create_env_file, "true") ||
+	    !xstrcasecmp(create_env_file, "Y") ||
+	    !xstrcasecmp(create_env_file, "Yes") ||
+	    !xstrcasecmp(create_env_file, "1")) {
+		oci->create_env_file = NULL_TERMINATED_ENV_FILE;
+	} else if (!xstrcasecmp(create_env_file, "newline")) {
+		oci->create_env_file = NEWLINE_TERMINATED_ENV_FILE;
+	} else if (!create_env_file || !xstrcasecmp(create_env_file, "false") ||
+		 !xstrcasecmp(create_env_file, "disabled") ||
+		 !xstrcasecmp(create_env_file, "N") ||
+		 !xstrcasecmp(create_env_file, "No") ||
+		 !xstrcasecmp(create_env_file, "0")) {
+		oci->create_env_file = DISABLED_ENV_FILE;
+	} else {
+		error("Invalid value of CreateEnvFile=%s", create_env_file);
+		rc = SLURM_ERROR;
+	}
+
 	s_p_hashtbl_destroy(tbl);
 	xfree(conf_path);
 
 	if (!rc) {
+		const char *envfile = "disabled";
 		free_oci_conf(*oci_ptr);
 		*oci_ptr = oci;
 
-		debug("%s: oci.conf loaded: ContainerPath=%s CreateEnvFile=%c RunTimeCreate=%s RunTimeDelete=%s RunTimeKill=%s RunTimeQuery=%s RunTimeRun=%s RunTimeStart=%s IgnoreFileConfigJson=%c",
-		      __func__, oci->container_path,
-		      (oci->create_env_file ? 'T' : 'F'),
+		if (oci->create_env_file == NULL_TERMINATED_ENV_FILE)
+			envfile = "null";
+		else if (oci->create_env_file == NEWLINE_TERMINATED_ENV_FILE)
+			envfile = "newline";
+
+		debug("%s: oci.conf loaded: ContainerPath=%s CreateEnvFile=%s RunTimeCreate=%s RunTimeDelete=%s RunTimeKill=%s RunTimeQuery=%s RunTimeRun=%s RunTimeStart=%s IgnoreFileConfigJson=%c",
+		      __func__, oci->container_path, envfile,
 		      oci->runtime_create, oci->runtime_delete,
 		      oci->runtime_kill, oci->runtime_query, oci->runtime_run,
 		      oci->runtime_start,

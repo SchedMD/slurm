@@ -902,13 +902,15 @@ extern void container_run(stepd_step_rec_t *step,
 	if (oci_conf->create_env_file) {
 		int rc;
 		char *envfile = NULL;
+		bool nl = (oci_conf->create_env_file ==
+			   NEWLINE_TERMINATED_ENV_FILE);
 
 		/* keep _generate_pattern() in sync with this path */
 		xstrfmtcat(envfile, "%s/%s", step->cwd,
 			   SLURM_CONTAINER_ENV_FILE);
 
 		if ((rc = env_array_to_file(envfile, (const char **) step->env,
-				       false)))
+				       nl)))
 			fatal("%s: unable to write %s: %s",
 			      __func__, envfile, slurm_strerror(rc));
 

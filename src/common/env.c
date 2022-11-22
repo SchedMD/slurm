@@ -1938,6 +1938,14 @@ int env_array_to_file(const char *filename, const char **env_array,
 	}
 
 	for (const char **p = env_array; p && *p; p++) {
+		/* skip any env variables with a newline in newline mode */
+		if (newline && xstrstr(*p, "\n")) {
+			log_flag_hex(STEPS, *p, strlen(*p),
+				     "%s: skiping environment variable with newline",
+				     __func__);
+			continue;
+		}
+
 		safe_write(outfd, *p, strlen(*p));
 		safe_write(outfd, terminator, 1);
 	}
