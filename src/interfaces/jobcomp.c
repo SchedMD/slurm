@@ -71,7 +71,6 @@ static const char *syms[] = {
 static slurm_jobcomp_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 extern void
 jobcomp_destroy_job(void *object)
@@ -116,11 +115,8 @@ extern int jobcomp_g_init(char *jobcomp_loc)
 
 	slurm_mutex_lock( &context_lock );
 
-	if (init_run && g_context)
-		goto done;
-
 	if (g_context)
-		plugin_context_destroy(g_context);
+		goto done;
 
 	g_context = plugin_context_create(plugin_type,
 					  slurm_conf.job_comp_type,
@@ -132,7 +128,6 @@ extern int jobcomp_g_init(char *jobcomp_loc)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	init_run = true;
 
 done:
 	if (g_context)
@@ -148,7 +143,6 @@ extern int jobcomp_g_fini(void)
 	if ( !g_context)
 		goto done;
 
-	init_run = false;
 	plugin_context_destroy ( g_context );
 	g_context = NULL;
 
@@ -162,12 +156,10 @@ extern int jobcomp_g_write(job_record_t *job_ptr)
 	int retval = SLURM_SUCCESS;
 
 	slurm_mutex_lock( &context_lock );
-	if ( g_context )
-		retval = (*(ops.job_write))(job_ptr);
-	else {
-		error ("slurm_jobcomp plugin context not initialized");
-		retval = ENOENT;
-	}
+
+	xassert(g_context);
+	retval = (*(ops.job_write))(job_ptr);
+
 	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
@@ -177,10 +169,8 @@ extern List jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond)
 	List job_list = NULL;
 
 	slurm_mutex_lock( &context_lock );
-	if ( g_context )
-		job_list = (*(ops.get_jobs))(job_cond);
-	else
-		error ("slurm_jobcomp plugin context not initialized");
+	xassert(g_context);
+	job_list = (*(ops.get_jobs))(job_cond);
 	slurm_mutex_unlock( &context_lock );
 	return job_list;
 }
@@ -190,12 +180,8 @@ extern int jobcomp_g_set_location(char *jobcomp_loc)
 	int retval = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&context_lock);
-	if (g_context)
-		retval = (*(ops.set_loc))(jobcomp_loc);
-	else {
-		error("slurm_jobcomp plugin context not initialized");
-		retval = ENOENT;
-	}
+	xassert(g_context);
+	retval = (*(ops.set_loc))(jobcomp_loc);
 	slurm_mutex_unlock(&context_lock);
 	return retval;
 }
