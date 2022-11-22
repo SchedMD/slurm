@@ -45,9 +45,11 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/gres_ctld.h"
+#include "src/slurmctld/licenses.h"
 
 typedef struct {
 	int action;
+	list_t *license_list;
 	bitstr_t *node_map;
 	node_use_record_t *node_usage;
 	part_res_record_t *part_record_ptr;
@@ -59,6 +61,7 @@ typedef struct {
 	List cr_job_list;
 	node_use_record_t *future_usage;
 	part_res_record_t *future_part;
+	list_t *future_license_list;
 	bitstr_t *orig_map;
 	bool *qos_preemptor;
 } cr_job_list_args_t;
@@ -1786,18 +1789,20 @@ static int _wrapper_job_res_rm_job(void *x, void *arg)
 	wrapper_rm_job_args_t *wargs = (wrapper_rm_job_args_t *)arg;
 
 	(void)job_res_rm_job(wargs->part_record_ptr, wargs->node_usage,
-			     job_ptr, wargs->action, wargs->node_map);
+			     wargs->license_list, job_ptr, wargs->action,
+			     wargs->node_map);
 
 	return 0;
 }
 
 static int _job_res_rm_job(part_res_record_t *part_record_ptr,
-			   node_use_record_t *node_usage,
+			   node_use_record_t *node_usage, list_t *license_list,
 			   job_record_t *job_ptr, int action,
 			   bitstr_t *node_map)
 {
 	wrapper_rm_job_args_t wargs = {
 		.action = action,
+		.license_list = license_list,
 		.node_usage = node_usage,
 		.part_record_ptr = part_record_ptr,
 		.node_map = node_map
@@ -1869,7 +1874,7 @@ static int _build_cr_job_list(void *x, void *arg)
 			action = 0;	/* remove cores and memory */
 		/* Remove preemptable job now */
 		_job_res_rm_job(args->future_part, args->future_usage,
-				tmp_job_ptr, action,
+				args->future_license_list, tmp_job_ptr, action,
 				args->orig_map);
 	}
 	return 0;
@@ -1890,6 +1895,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 {
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
+	list_t *future_license_list;
 	job_record_t *tmp_job_ptr;
 	List cr_job_list;
 	ListIterator job_iterator, preemptee_iterator;
@@ -1934,6 +1940,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		return SLURM_ERROR;
 	}
 
+	future_license_list = license_copy(cluster_license_list);
+
 	/* Build list of running and suspended jobs */
 	cr_job_list = list_create(NULL);
 	args = (cr_job_list_args_t) {
@@ -1941,6 +1949,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		.cr_job_list = cr_job_list,
 		.future_usage = future_usage,
 		.future_part = future_part,
+		.future_license_list = future_license_list,
 		.orig_map = orig_map,
 		.qos_preemptor = &qos_preemptor,
 	};
@@ -2021,7 +2030,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				last_job_ptr = tmp_job_ptr;
 				(void) job_res_rm_job(
 					future_part, future_usage,
-					tmp_job_ptr, 0, orig_map);
+					future_license_list, tmp_job_ptr, 0,
+					orig_map);
 				next_job_ptr = list_peek_next(job_iterator);
 				if (!next_job_ptr) {
 					more_jobs = false;
@@ -2091,6 +2101,7 @@ timer_check:
 	part_data_destroy_res(future_part);
 	node_data_destroy(future_usage);
 	FREE_NULL_BITMAP(orig_map);
+	FREE_NULL_LIST(future_license_list);
 
 	return rc;
 }
@@ -2108,6 +2119,7 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	ListIterator job_iterator, preemptee_iterator;
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
+	list_t *future_license_list;
 	bool remove_some_jobs = false;
 	uint16_t pass_count = 0;
 	uint16_t mode = NO_VAL16;
@@ -2160,6 +2172,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 			return SLURM_ERROR;
 		}
 
+		future_license_list = license_copy(cluster_license_list);
+
 		job_iterator = list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = list_next(job_iterator))) {
 			mode = slurm_job_preempt_mode(tmp_job_ptr);
@@ -2168,7 +2182,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				continue;	/* can't remove job */
 			/* Remove preemptable job now */
 			if(_job_res_rm_job(future_part, future_usage,
-					   tmp_job_ptr, 0,
+					   future_license_list, tmp_job_ptr, 0,
 					   orig_node_map))
 				continue;
 			bit_or(node_bitmap, orig_node_map);
@@ -2236,6 +2250,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 			list_iterator_destroy(job_iterator);
 			part_data_destroy_res(future_part);
 			node_data_destroy(future_usage);
+			FREE_NULL_LIST(future_license_list);
 			goto top;
 		}
 		list_iterator_destroy(job_iterator);

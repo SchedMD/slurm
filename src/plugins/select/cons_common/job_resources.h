@@ -121,7 +121,7 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action);
  * See also: job_res_add_job()
  */
 extern int job_res_rm_job(part_res_record_t *part_record_ptr,
-			  node_use_record_t *node_usage,
+			  node_use_record_t *node_usage, list_t *license_list,
 			  job_record_t *job_ptr, job_res_job_action_t action,
 			  bitstr_t *node_map);
 

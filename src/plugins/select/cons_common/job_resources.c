@@ -39,6 +39,7 @@
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/gres_ctld.h"
+#include "src/slurmctld/licenses.h"
 
 bool select_state_initializing = true;
 
@@ -458,7 +459,7 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
  * See also: job_res_add_job()
  */
 extern int job_res_rm_job(part_res_record_t *part_record_ptr,
-			  node_use_record_t *node_usage,
+			  node_use_record_t *node_usage, list_t *license_list,
 			  job_record_t *job_ptr, job_res_job_action_t action,
 			  bitstr_t *node_map)
 {
@@ -492,6 +493,10 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 		debug3("%pJ action:%s",
 		       job_ptr, job_res_job_action_string(action));
 	}
+
+	if (license_list)
+		license_job_return_to_list(job_ptr, license_list);
+
 	if (job_ptr->start_time < slurmctld_config.boot_time)
 		old_job = true;
 	for (i = 0, n = -1; (node_ptr = next_node_bitmap(job->node_bitmap, &i));
