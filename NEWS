@@ -170,6 +170,9 @@ documents those changes that are of interest to users and administrators.
  -- oci.conf - add configuration option "IgnoreFileConfigJson=" to allow a site
     to choose to ignore config.json.
  -- oci.conf - Add PID (%p) pattern replacement.
+ -- slurmrestd - correct ordering issue of saving changes to a container's
+    modified config.json where config changes by job modifing plugins would be
+    silently lost.
 
 * Changes in Slurm 22.05.7
 ==========================

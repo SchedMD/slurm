@@ -561,9 +561,7 @@ static char *_get_config_path(stepd_step_rec_t *step)
 extern int setup_container(stepd_step_rec_t *step)
 {
 	int rc;
-	char *jconfig = NULL;
 	data_t *config = NULL;
-	char *out = NULL;
 	char *rootfs_path = NULL;
 
 	if ((rc = get_oci_conf(&oci_conf)) && (rc != ENOENT)) {
@@ -613,32 +611,14 @@ extern int setup_container(stepd_step_rec_t *step)
 	if ((rc = _mkpath(step->cwd, step->uid, step->gid)))
 		goto error;
 
-	jconfig = _get_config_path(step);
-
 	if ((rc = _modify_config(step, config, rootfs_path)))
 		goto error;
-
-	if ((rc = serialize_g_data_to_string(&out, NULL, config, MIME_TYPE_JSON,
-					     SER_FLAGS_PRETTY))) {
-		error("%s: serialization of config failed: %s",
-		      __func__, slurm_strerror(rc));
-		goto error;
-	}
-
-	FREE_NULL_DATA(config);
-
-	if ((rc = _write_config(step, jconfig, out)))
-	    goto error;
 
 error:
 	if (rc)
 		error("%s: container setup failed: %s",
 		      __func__, slurm_strerror(rc));
 	xfree(rootfs_path);
-	xfree(out);
-	xfree(jconfig);
-	FREE_NULL_DATA(config);
-	xfree(jconfig);
 
 	return rc;
 }
@@ -867,6 +847,27 @@ extern void container_run(stepd_step_rec_t *step,
 		debug("%s: OCI Container not configured. Ignoring %pS requested container: %s",
 		      __func__, step, step->container);
 		return;
+	}
+
+	if (step->container_config) {
+		int rc;
+		char *out = NULL;
+		char *jconfig = _get_config_path(step);
+
+		if ((rc = data_g_serialize(&out, step->container_config,
+					   MIME_TYPE_JSON, SER_FLAGS_PRETTY))) {
+			fatal("%s: serialization of config failed: %s",
+			      __func__, slurm_strerror(rc));
+		}
+
+		FREE_NULL_DATA(step->container_config);
+
+		if ((rc = _write_config(step, jconfig, out)))
+			fatal("%s: unable to write %s: %s",
+			      __func__, jconfig, slurm_strerror(rc));
+
+		xfree(out);
+		xfree(jconfig);
 	}
 
 	if (oci_conf->runtime_run)
