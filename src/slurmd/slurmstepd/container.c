@@ -79,6 +79,8 @@ static char *run_argv[] = {
 static char *start_argv[] = {
 	"/bin/sh", "-c", "echo 'start disabled'; exit 1", NULL };
 
+static char *_get_config_path(stepd_step_rec_t *step);
+
 static void _dump_command_args(run_command_args_t *args, const char *caller)
 {
 	if (get_log_level() < LOG_LEVEL_DEBUG3)
@@ -200,30 +202,32 @@ static int _mkpath(const char *path, uid_t uid, gid_t gid)
 	return SLURM_SUCCESS;
 }
 
-static int _read_config(const char *jconfig, data_t **config)
+static int _load_config(stepd_step_rec_t *step)
 {
 	int rc;
 	buf_t *buffer = NULL;
+	char *path = _get_config_path(step);
 
-	xassert(config && !*config);
+	xassert(!step->container_config);
+	xassert(path);
 
 	errno = SLURM_SUCCESS;
-	if (!(buffer = create_mmap_buf(jconfig))) {
+	if (!(buffer = create_mmap_buf(path))) {
 		rc = errno;
-		error("%s: unable to open: %s", __func__, jconfig);
+		error("%s: unable to open: %s", __func__, path);
 		goto cleanup;
 	}
 
-	if ((rc = serialize_g_string_to_data(config, get_buf_data(buffer),
+	if ((rc = serialize_g_string_to_data(&step->container_config, get_buf_data(buffer),
 					     remaining_buf(buffer),
 					     MIME_TYPE_JSON))) {
-		error("%s: unable to parse config.json: %s",
-		      __func__, slurm_strerror(rc));
+		error("%s: unable to parse %s: %s",
+		      __func__, path, slurm_strerror(rc));
 	}
 
 cleanup:
 	FREE_NULL_BUFFER(buffer);
-
+	xfree(path);
 	return rc;
 }
 
@@ -557,10 +561,10 @@ static char *_get_config_path(stepd_step_rec_t *step)
 extern int setup_container(stepd_step_rec_t *step)
 {
 	int rc;
+	char *jconfig = NULL;
 	data_t *config = NULL;
 	char *out = NULL;
 	char *rootfs_path = NULL;
-	char *jconfig = _get_config_path(step);
 
 	if ((rc = get_oci_conf(&oci_conf)) && (rc != ENOENT)) {
 		error("%s: error loading oci.conf: %s",
@@ -586,12 +590,8 @@ extern int setup_container(stepd_step_rec_t *step)
 		goto error;
 	}
 
-	if ((rc = _read_config(jconfig, &config))) {
+	if (!oci_conf->ignore_config_json && (rc = _load_config(step)))
 		goto error;
-	}
-	xassert(config);
-
-	xfree(jconfig);
 
 	if ((rc = data_retrieve_dict_path_string(config, "/root/path/",
 						 &rootfs_path))) {
@@ -613,7 +613,7 @@ extern int setup_container(stepd_step_rec_t *step)
 	if ((rc = _mkpath(step->cwd, step->uid, step->gid)))
 		goto error;
 
-	xstrfmtcat(jconfig, "%s/config.json", step->cwd);
+	jconfig = _get_config_path(step);
 
 	if ((rc = _modify_config(step, config, rootfs_path)))
 		goto error;
