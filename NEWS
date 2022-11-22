@@ -173,6 +173,9 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - correct ordering issue of saving changes to a container's
     modified config.json where config changes by job modifing plugins would be
     silently lost.
+ -- slurmstepd - merge container config.json environment into job environment
+    and then overwrite config.json environment. Avoids instance where processes in
+    container will not have access to job environment variables.
 
 * Changes in Slurm 22.05.7
 ==========================

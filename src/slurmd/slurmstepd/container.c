@@ -276,6 +276,22 @@ rwfail:
 	return rc;
 }
 
+static bool _match_env(const data_t *data, void *needle)
+{
+	const char *needle_name = needle;
+	char *name = NULL, *value;
+
+	if (!data_get_string_converted(data, &name))
+		return false;
+
+	value = xstrstr(name, "=");
+
+	if (value)
+		*value = '\0';
+
+	return !xstrcmp(name, needle_name);
+}
+
 static int _modify_config(stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
@@ -390,9 +406,22 @@ static int _modify_config(stepd_step_rec_t *step)
 		}
 	}
 
-	env = data_define_dict_path(config, "/process/env/");
-	if (data_get_type(env) != DATA_TYPE_LIST)
-		data_set_list(env);
+	/* overwrite environ with the final step->env contents */
+	env = data_set_list(data_define_dict_path(config, "/process/env/"));
+	for (char **ptr = step->env; *ptr; ptr++) {
+		data_t *entry;
+		char *name = xstrdup(*ptr);
+		char *value = xstrstr(name, "=");
+
+		if (value)
+			*value = '\0';
+
+		if (!(entry = data_list_find_first(env, _match_env, name)))
+			entry = data_list_append(env);
+
+		data_set_string(entry, *ptr);
+		xfree(name);
+	}
 
 	if (oci_conf->create_env_file) {
 		cmd_env = env_array_create();
