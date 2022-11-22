@@ -37,4 +37,23 @@
 #ifndef _XREGEX_H
 #define _XREGEX_H
 
+#include <regex.h>
+
+/*
+ * Dump REGEX error using error().
+ * REGEX have their own error rules and need to be queried directly.
+ *
+ * IN rc - error encountered
+ * IN regex_ptr - ptr to regex that generated error
+ * IN fmt - string describing events
+ */
+extern void dump_regex_error(int rc, const regex_t *regex_ptr, char *fmt, ...);
+
+/*
+ * Perform a REGEX match against string
+ * IN str - string to match against
+ * IN regex_ptr - ptr to regex to match with
+ */
+extern bool regex_quick_match(const char *str, const regex_t *regex_ptr);
+
 #endif

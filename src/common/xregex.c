@@ -33,3 +33,57 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/xregex.h"
+
+extern void dump_regex_error(int rc, const regex_t *regex_ptr, char *fmt, ...)
+{
+	va_list ap;
+	char *buffer = NULL, *desc;
+	size_t len = regerror(rc, regex_ptr, NULL, 0);
+
+	va_start(ap, fmt);
+	desc = vxstrfmt(fmt, ap);
+	va_end(ap);
+
+	if (len == 0) {
+		error("%s: %s: unknown regex error code %d",
+		      __func__, desc, rc);
+		xfree(desc);
+		return;
+	}
+
+	buffer = xmalloc(len);
+	len = regerror(rc, regex_ptr, buffer, len);
+
+	if (len)
+		error("%s: %s: %s", __func__, desc, buffer);
+	else
+		error("%s: %s: unexpected failure to get regex error",
+		      __func__, desc);
+
+	xfree(buffer);
+	xfree(desc);
+}
+
+extern bool regex_quick_match(const char *str, const regex_t *regex_ptr)
+{
+	int rc;
+	regmatch_t pmatch[1] = {0};
+
+	/* not possible to match a NULL string */
+	if (!str)
+		return false;
+
+	rc = regexec(regex_ptr, str, 1, pmatch, 0);
+	if (!rc) { /* matched */
+		return true;
+	} else if (rc == REG_NOMATCH) {
+		return false;
+	} else { /* other error */
+		dump_regex_error(rc, regex_ptr, "%s(%s)", __func__, str);
+		return false;
+	}
+}
