@@ -608,8 +608,7 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
-	if (jobacct_gather_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	if (!_jobacct_shutdown_test()) {
 		error("jobacct_gather_startpoll: poll already started!");
@@ -639,8 +638,7 @@ extern int jobacct_gather_endpoll(void)
 {
 	int retval = SLURM_SUCCESS;
 
-	if (jobacct_gather_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	slurm_mutex_lock(&jobacct_shutdown_mutex);
 	jobacct_shutdown = true;
@@ -660,8 +658,7 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 {
 	struct jobacctinfo *jobacct;
 
-	if (jobacct_gather_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
@@ -1080,9 +1077,6 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct, uint16_t rpc_version,
 {
 	uint32_t uint32_tmp;
 	uint8_t  uint8_tmp;
-
-	if (jobacct_gather_init() < 0)
-		return SLURM_ERROR;
 
 	safe_unpack8(&uint8_tmp, buffer);
 	if (uint8_tmp == (uint8_t) 0)
