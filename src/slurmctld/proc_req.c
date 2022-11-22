@@ -926,6 +926,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	set_remote_working_response(alloc_msg, job_ptr,
 				    job_ptr->origin_cluster);
 
+	alloc_msg->tres_per_node = xstrdup(job_ptr->tres_per_node);
 	alloc_msg->uid = job_ptr->user_id;
 	alloc_msg->user_name = uid_to_string_or_null(job_ptr->user_id);
 	alloc_msg->gid = job_ptr->group_id;

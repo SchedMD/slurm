@@ -1384,6 +1384,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		select_g_select_jobinfo_pack(msg->select_jobinfo,
 					     buffer,
 					     protocol_version);
+		packstr(msg->tres_per_node, buffer);
 		pack32(msg->uid, buffer);
 		packstr(msg->user_name, buffer);
 
@@ -1554,6 +1555,7 @@ _unpack_resource_allocation_response_msg(
 		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
+		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
 		safe_unpack32(&tmp_ptr->uid, buffer);
 		safe_unpackstr(&tmp_ptr->user_name, buffer);
 

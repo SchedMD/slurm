@@ -446,6 +446,8 @@ extern resource_allocation_response_msg_t *
 
 		opt_local->min_nodes = resp->node_cnt;
 		opt_local->max_nodes = resp->node_cnt;
+		xfree(opt_local->gres);
+		opt_local->gres = xstrdup(resp->tres_per_node);
 
 		if (resp->working_cluster_rec)
 			slurm_setup_remote_working_cluster(resp);
@@ -619,6 +621,9 @@ List allocate_het_job_nodes(bool handle_signals)
 
 			opt_local->min_nodes = resp->node_cnt;
 			opt_local->max_nodes = resp->node_cnt;
+
+			xfree(opt_local->gres);
+			opt_local->gres = xstrdup(resp->tres_per_node);
 
 			if (resp->working_cluster_rec)
 				slurm_setup_remote_working_cluster(resp);
