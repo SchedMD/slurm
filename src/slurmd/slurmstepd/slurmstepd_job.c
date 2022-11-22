@@ -669,6 +669,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 	xfree(step->alias_list);
 	xfree(step->container);
 	FREE_NULL_DATA(step->container_config);
+	xfree(step->container_rootfs);
 	xfree(step->cpu_bind);
 	xfree(step->cwd);
 	xfree(step->envtp);
