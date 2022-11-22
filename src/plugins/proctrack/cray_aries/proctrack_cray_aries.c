@@ -78,10 +78,6 @@ const char plugin_name[]      = "Process tracking via Cray/Aries job module";
 const char plugin_type[]      = "proctrack/cray_aries";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-/*
- *  Handle to libjob.so
- */
-static void *libjob_handle = NULL;
 static pthread_t threadid = 0;
 static pthread_cond_t notify = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t notify_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -161,9 +157,6 @@ extern int proctrack_p_create(stepd_step_rec_t *step)
 {
 	DEF_TIMERS;
 	START_TIMER;
-
-	if (!libjob_handle)
-		init();
 
 	if (!step->cont_id) {
 		/*
