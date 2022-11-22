@@ -9701,6 +9701,9 @@ unpack_error:
 extern void gres_g_send_stepd(int fd, slurm_msg_t *msg)
 {
 	int len;
+	uint32_t step_id;
+	cred_data_enum_t check;
+	slurm_cred_t *cred = NULL;
 
 	/* Setup the gres_device list and other plugin-specific data */
 	(void) gres_init();
@@ -9714,22 +9717,27 @@ extern void gres_g_send_stepd(int fd, slurm_msg_t *msg)
 
 	slurm_mutex_unlock(&gres_context_lock);
 
-	if (msg->msg_type != REQUEST_BATCH_JOB_LAUNCH) {
+	if (msg->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
+		batch_job_launch_msg_t *job = msg->data;
+		step_id = SLURM_BATCH_SCRIPT;
+		cred = job->cred;
+	} else {
 		launch_tasks_request_msg_t *job =
 			(launch_tasks_request_msg_t *)msg->data;
-		cred_data_enum_t check;
+		step_id = job->step_id.step_id;
+		cred = job->cred;
+	}
 
-		/* If we are a special step we get the JOB_GRES_LIST */
-		if (job->step_id.step_id >= SLURM_MAX_NORMAL_STEP_ID)
-			check = CRED_DATA_JOB_GRES_LIST;
-		else
-			check = CRED_DATA_STEP_GRES_LIST;
-		/* Send the merged slurm.conf/gres.conf and autodetect data */
-		if (slurm_cred_get(job->cred, check)) {
-			len = get_buf_offset(gres_conf_buf);
-			safe_write(fd, &len, sizeof(len));
-			safe_write(fd, get_buf_data(gres_conf_buf), len);
-		}
+	/* If we are a special step we get the JOB_GRES_LIST */
+	if (step_id >= SLURM_MAX_NORMAL_STEP_ID)
+		check = CRED_DATA_JOB_GRES_LIST;
+	else
+		check = CRED_DATA_STEP_GRES_LIST;
+	/* Send the merged slurm.conf/gres.conf and autodetect data */
+	if (slurm_cred_get(cred, check)) {
+		len = get_buf_offset(gres_conf_buf);
+		safe_write(fd, &len, sizeof(len));
+		safe_write(fd, get_buf_data(gres_conf_buf), len);
 	}
 
 	return;
@@ -9745,6 +9753,9 @@ extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 {
 	int len, rc = SLURM_ERROR;
 	buf_t *buffer = NULL;
+	uint32_t step_id;
+	cred_data_enum_t check;
+	slurm_cred_t *cred = NULL;
 
 	slurm_mutex_lock(&gres_context_lock);
 
@@ -9759,31 +9770,36 @@ extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 		goto rwfail;
 
 	FREE_NULL_BUFFER(buffer);
-	if (msg->msg_type != REQUEST_BATCH_JOB_LAUNCH) {
+
+	if (msg->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
+		batch_job_launch_msg_t *job = msg->data;
+		step_id = SLURM_BATCH_SCRIPT;
+		cred = job->cred;
+	} else {
 		launch_tasks_request_msg_t *job =
 			(launch_tasks_request_msg_t *)msg->data;
-		cred_data_enum_t check;
+		step_id = job->step_id.step_id;
+		cred = job->cred;
+	}
 
-		/* If we are a special step we get the JOB_GRES_LIST */
-		if (job->step_id.step_id >= SLURM_MAX_NORMAL_STEP_ID)
-			check = CRED_DATA_JOB_GRES_LIST;
-		else
-			check = CRED_DATA_STEP_GRES_LIST;
+	/* If we are a special step we get the JOB_GRES_LIST */
+	if (step_id >= SLURM_MAX_NORMAL_STEP_ID)
+		check = CRED_DATA_JOB_GRES_LIST;
+	else
+		check = CRED_DATA_STEP_GRES_LIST;
+	/* Recv the merged slurm.conf/gres.conf and autodetect data */
+	if (slurm_cred_get(cred, check)) {
+		safe_read(fd, &len, sizeof(int));
 
-		/* Recv the merged slurm.conf/gres.conf and autodetect data */
-		if (slurm_cred_get(job->cred, check)) {
-			safe_read(fd, &len, sizeof(int));
+		buffer = init_buf(len);
+		safe_read(fd, buffer->head, len);
 
-			buffer = init_buf(len);
-			safe_read(fd, buffer->head, len);
+		rc = _unpack_gres_conf(buffer);
 
-			rc = _unpack_gres_conf(buffer);
+		if (rc == SLURM_ERROR)
+			goto rwfail;
 
-			if (rc == SLURM_ERROR)
-				goto rwfail;
-
-			FREE_NULL_BUFFER(buffer);
-		}
+		FREE_NULL_BUFFER(buffer);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
