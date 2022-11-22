@@ -295,9 +295,13 @@ typedef struct conf_file_options {
 		       const char *line, char **leftover);
 	void (*destroy)(void *data);
 	struct conf_file_options* line_options;
+	void (*pack)(void *data, buf_t *buffer);
+	void *(*unpack)(buf_t *buffer);
 } s_p_options_t;
 
 
+s_p_hashtbl_t *s_p_hashtbl_create_cnt(const struct conf_file_options options[],
+				      int *cnt);
 s_p_hashtbl_t *s_p_hashtbl_create(const struct conf_file_options options[]);
 void s_p_hashtbl_destroy(s_p_hashtbl_t *hashtbl);
 
@@ -638,6 +642,8 @@ extern buf_t *s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
 /*
  * Given a buffer, unpack key, type, op and value into a hashtbl.
  */
+extern s_p_hashtbl_t *s_p_unpack_hashtbl_full(buf_t *buffer,
+					      const s_p_options_t options[]);
 extern s_p_hashtbl_t *s_p_unpack_hashtbl(buf_t *buffer);
 
 /*

@@ -2248,6 +2248,15 @@ extern buf_t *s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
 			continue;
 
 		switch (options[i].type) {
+		case S_P_ARRAY:
+			if (options[i].pack) {
+				pack32(p->data_count, buffer);
+				void **ptr_array = (void **)p->data;
+				for (int j = 0; j < p->data_count; j++) {
+					options[i].pack(ptr_array[j], buffer);
+				}
+			}
+			break;
 		case S_P_STRING:
 		case S_P_PLAIN_STRING:
 			packstr((char *)p->data, buffer);
@@ -2289,7 +2298,8 @@ extern buf_t *s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
 /*
  * Given a buffer, unpack key, type, op and value into a hashtbl.
  */
-extern s_p_hashtbl_t *s_p_unpack_hashtbl(buf_t *buffer)
+extern s_p_hashtbl_t *s_p_unpack_hashtbl_full(buf_t *buffer,
+					      const s_p_options_t options[])
 {
 	s_p_values_t *value = NULL;
 	s_p_hashtbl_t *hashtbl = NULL;
@@ -2324,6 +2334,21 @@ extern s_p_hashtbl_t *s_p_unpack_hashtbl(buf_t *buffer)
 			continue;
 
 		switch (value->type) {
+		case S_P_ARRAY:
+			xassert(options);
+			if (options[i].unpack) {
+				void **ptr_array;
+				safe_unpack32(&uint32_tmp, buffer);
+				value->data_count = uint32_tmp;
+				value->data = xcalloc(value->data_count,
+						      sizeof(void *));
+				ptr_array = (void **)value->data;
+				for (int j = 0; j < value->data_count; j++) {
+					ptr_array[j] =
+						options[i].unpack(buffer);
+				}
+			}
+			break;
 		case S_P_STRING:
 		case S_P_PLAIN_STRING:
 			safe_unpackstr_xmalloc(&tmp_char, &uint32_tmp, buffer);
@@ -2383,6 +2408,11 @@ unpack_error:
 	s_p_hashtbl_destroy(hashtbl);
 	error("%s: failed", __func__);
 	return NULL;
+}
+
+extern s_p_hashtbl_t *s_p_unpack_hashtbl(buf_t *buffer)
+{
+	return s_p_unpack_hashtbl_full(buffer, NULL);
 }
 
 extern void transfer_s_p_options(s_p_options_t **full_options,
