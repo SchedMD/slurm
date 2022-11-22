@@ -7503,7 +7503,8 @@ A distinct file must exist on each compute node.
 
 .TP
 \fBSlurmdSpoolDir\fR
-Must be writable by user root.
+Must be writable by user root. Permissions must be set to 755 so that
+job scripts can be executed from this directory.
 A distinct file must exist on each compute node.
 .IP
 
