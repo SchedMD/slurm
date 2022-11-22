@@ -67,17 +67,17 @@
 oci_conf_t *oci_conf = NULL;
 
 static char *create_argv[] = {
-	"/bin/sh", "-c", "echo 'create disabled'; exit 1", NULL };
+	"/bin/sh", "-c", "echo 'RunTimeCreate never configured in oci.conf'; exit 1", NULL };
 static char *delete_argv[] = {
-	"/bin/sh", "-c", "echo 'delete disabled'; exit 1", NULL };
+	"/bin/sh", "-c", "echo 'RunTimeDelete never configured in oci.conf'; exit 1", NULL };
 static char *kill_argv[] = {
-	"/bin/sh", "-c", "echo 'kill disabled'; exit 1", NULL };
+	"/bin/sh", "-c", "echo 'RunTimeKill never configured in oci.conf'; exit 1", NULL };
 static char *query_argv[] = {
-	"/bin/sh", "-c", "echo 'query disabled'; exit 1", NULL };
+	"/bin/sh", "-c", "echo 'RunTimeQuery never configured in oci.conf'; exit 1", NULL };
 static char *run_argv[] = {
-	"/bin/sh", "-c", "echo 'run disabled'; exit 1", NULL };
+	"/bin/sh", "-c", "echo 'RunTimeRun never configured in oci.conf'; exit 1", NULL };
 static char *start_argv[] = {
-	"/bin/sh", "-c", "echo 'start disabled'; exit 1", NULL };
+	"/bin/sh", "-c", "echo 'RunTimeStart never configured in oci.conf'; exit 1", NULL };
 
 static char *_get_config_path(stepd_step_rec_t *step);
 
