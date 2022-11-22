@@ -35,6 +35,7 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xregex.h"
 
 typedef struct env_options {
 	int ntasks;		/* --ntasks=n,      -n n	*/
@@ -222,6 +223,16 @@ void env_array_merge(char ***dest_array, const char **src_array);
  * overwritten with the value from src_array.
  */
 void env_array_merge_slurm(char ***dest_array, const char **src_array);
+
+/*
+ * Remove environment variables in env_ptr matching regex.
+ *
+ * IN env_ptr - source env array to remove matching variables
+ * IN regex - regex to select variables to remove
+ * RET new array with regex matching items removed.
+ * 	Caller must env_array_free();
+ */
+extern char **env_array_exclude(const char **env_ptr, const regex_t *regex);
 
 /*
  * Copy env_array must be freed by env_array_free

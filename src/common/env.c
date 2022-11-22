@@ -2406,3 +2406,19 @@ extern void env_merge_filter(slurm_opt_t *opt, job_desc_msg_t *desc)
 				(const char **)save_env);
 	}
 }
+
+extern char **env_array_exclude(const char **env, const regex_t *regex)
+{
+	/* alloc with NULL termination */
+	char **purged = xcalloc(1, sizeof(char *));
+
+	/* use regex to skip every matching variable */
+	for (; *env; env++) {
+		if (!regex_quick_match(*env, regex)) {
+			char **e = _extend_env(&purged);
+			*e = xstrdup(*env);
+		}
+	}
+
+	return purged;
+}
