@@ -92,7 +92,7 @@ static void _dump_command_args(run_command_args_t *args, const char *caller)
 }
 
 static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
-			       int task_id, char *rootfs_path, char **cmd_args)
+			       int task_id, char **cmd_args)
 {
 	char *buffer = NULL, *offset = NULL;
 
@@ -154,7 +154,7 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 				break;
 			case 'r':
 				xstrfmtcatat(buffer, &offset, "%s",
-					     rootfs_path);
+					     step->container_rootfs);
 				break;
 			case 's':
 				xstrfmtcatat(buffer, &offset, "%u",
@@ -276,20 +276,20 @@ rwfail:
 	return rc;
 }
 
-static int _modify_config(stepd_step_rec_t *step, data_t *config,
-			  char *rootfs_path)
+static int _modify_config(stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *mnts, *env;
 	char **cmd_env = NULL;
+	data_t *config = step->container_config;
 
 	/* Disable terminal to ensure stdin/err/out are used */
 	data_set_bool(data_define_dict_path(config, "/process/terminal/"),
 		      false);
 
 	/* point to correct rootfs */
-	data_set_string_fmt(data_define_dict_path(config, "/root/path/"),
-			    "%s/rootfs", step->container);
+	data_set_string(data_define_dict_path(config, "/root/path/"),
+			step->container_rootfs);
 
 	mnts = data_define_dict_path(config, "/mounts/");
 	if (data_get_type(mnts) != DATA_TYPE_LIST)
@@ -480,36 +480,34 @@ static int _modify_config(stepd_step_rec_t *step, data_t *config,
 		 * Generate all the operations for later while we have all the
 		 * info needed
 		 */
-		gen = _generate_pattern(oci_conf->runtime_create,
-					step, task->id,
-					rootfs_path, old_argv);
+		gen = _generate_pattern(oci_conf->runtime_create, step,
+					task->id, old_argv);
 		if (gen)
 			create_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_delete,
-					step, task->id,
-					rootfs_path, old_argv);
+		gen = _generate_pattern(oci_conf->runtime_delete, step,
+					task->id, old_argv);
 		if (gen)
 			delete_argv[2] = gen;
 
 		gen = _generate_pattern(oci_conf->runtime_kill, step, task->id,
-					rootfs_path, old_argv);
+					old_argv);
 		if (gen)
 			kill_argv[2] = gen;
 
 		gen = _generate_pattern(oci_conf->runtime_query, step, task->id,
-					rootfs_path, old_argv);
+					old_argv);
 		if (gen)
 			query_argv[2] = gen;
 
 		gen = _generate_pattern(oci_conf->runtime_run, step, task->id,
-					rootfs_path, old_argv);
+					old_argv);
 
 		if (gen)
 			run_argv[2] = gen;
 
 		gen = _generate_pattern(oci_conf->runtime_start, step, task->id,
-					rootfs_path, old_argv);
+					old_argv);
 		if (gen)
 			start_argv[2] = gen;
 
@@ -521,14 +519,37 @@ static int _modify_config(stepd_step_rec_t *step, data_t *config,
 	return rc;
 }
 
-static void _generate_bundle_path(stepd_step_rec_t *step, char *rootfs_path)
+static int _generate_bundle_path(stepd_step_rec_t *step)
 {
+	int rc = SLURM_SUCCESS;
 	char *path = NULL;
+
+	if (step->container_config) {
+		if ((rc = data_retrieve_dict_path_string(
+			     step->container_config, "/root/path/",
+			     &step->container_rootfs))) {
+			debug("%s: unable to find /root/path/", __func__);
+			return rc;
+		}
+
+		if (step->container_rootfs[0] != '/') {
+			/* always provide absolute path */
+			char *t = NULL;
+
+			xstrfmtcat(t, "%s/%s", step->container,
+				   step->container_rootfs);
+			SWAP(step->container_rootfs, t);
+			xfree(t);
+		}
+	} else {
+		/* default to bundle path without config.json */
+		step->container_rootfs = xstrdup(step->container);
+	}
 
 	/* write new config.json in spool dir or requested pattern */
 	if (oci_conf->container_path) {
 		path = _generate_pattern(oci_conf->container_path, step,
-					 step->task[0]->id, rootfs_path, NULL);
+					 step->task[0]->id, NULL);
 	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		xstrfmtcat(path, "%s/oci-job%05u-batch/", conf->spooldir,
 			   step->step_id.job_id);
@@ -543,6 +564,8 @@ static void _generate_bundle_path(stepd_step_rec_t *step, char *rootfs_path)
 	debug4("%s: swapping cwd from %s to %s", __func__, step->cwd, path);
 	xfree(step->cwd);
 	step->cwd = path;
+
+	return rc;
 }
 
 static char *_get_config_path(stepd_step_rec_t *step)
@@ -558,11 +581,46 @@ static char *_get_config_path(stepd_step_rec_t *step)
 	return path;
 }
 
+static data_for_each_cmd_t _foreach_config_env(const data_t *data, void *arg)
+{
+	stepd_step_rec_t *step = arg;
+	char *name = NULL, *value;
+
+	if (data_get_string_converted(data, &name))
+		return DATA_FOR_EACH_FAIL;
+
+	value = xstrstr(name, "=");
+
+	if (value) {
+		*value = '\0';
+		value++;
+	}
+
+	if (setenvf(&step->env, name, "%s", value))
+		return DATA_FOR_EACH_FAIL;
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int _merge_step_config_env(stepd_step_rec_t *step)
+{
+	data_t *env = data_resolve_dict_path(step->container_config,
+					     "/process/env/");
+
+	if (!env)
+		return SLURM_SUCCESS;
+
+	xassert(!oci_conf->ignore_config_json);
+
+	if (data_list_for_each_const(env, _foreach_config_env, step) < 0)
+		return ESLURM_DATA_CONV_FAILED;
+
+	return SLURM_SUCCESS;
+}
+
 extern int setup_container(stepd_step_rec_t *step)
 {
 	int rc;
-	data_t *config = NULL;
-	char *rootfs_path = NULL;
 
 	if ((rc = get_oci_conf(&oci_conf)) && (rc != ENOENT)) {
 		error("%s: error loading oci.conf: %s",
@@ -588,37 +646,27 @@ extern int setup_container(stepd_step_rec_t *step)
 		goto error;
 	}
 
-	if (!oci_conf->ignore_config_json && (rc = _load_config(step)))
-		goto error;
+	if (!oci_conf->ignore_config_json) {
+		if ((rc = _load_config(step)))
+			goto error;
 
-	if ((rc = data_retrieve_dict_path_string(config, "/root/path/",
-						 &rootfs_path))) {
-		debug("%s: unable to find /root/path/", __func__);
-		goto error;
+		if ((rc = _merge_step_config_env(step)))
+			goto error;
 	}
 
-	if (rootfs_path[0] != '/') {
-		/* always provide absolute path */
-		char *t = NULL;
-
-		xstrfmtcat(t, "%s/%s", step->container, rootfs_path);
-		xfree(rootfs_path);
-		rootfs_path = t;
-	}
-
-	_generate_bundle_path(step, rootfs_path);
+	if ((rc = _generate_bundle_path(step)))
+		goto error;
 
 	if ((rc = _mkpath(step->cwd, step->uid, step->gid)))
 		goto error;
 
-	if ((rc = _modify_config(step, config, rootfs_path)))
+	if ((rc = _modify_config(step)))
 		goto error;
 
 error:
 	if (rc)
 		error("%s: container setup failed: %s",
 		      __func__, slurm_strerror(rc));
-	xfree(rootfs_path);
 
 	return rc;
 }
