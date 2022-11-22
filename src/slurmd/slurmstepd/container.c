@@ -91,6 +91,30 @@ static void _dump_command_args(run_command_args_t *args, const char *caller)
 		       caller, i, args->script_argv[i]);
 }
 
+static void _pattern_argv(char **buffer, char **offset, char **cmd_args)
+{
+	for (char **arg = cmd_args; arg && *arg; arg++) {
+		if (arg != cmd_args)
+			xstrfmtcatat(*buffer, offset, " ");
+
+		xstrfmtcatat(*buffer, offset, "'");
+
+		/*
+		 * POSIX 1003.1 2.2.2 only bans a single quote in single quotes
+		 * for escaping
+		 */
+
+		for (char *c = *arg; *c != '\0'; c++) {
+			if (*c == '\'')
+				xstrfmtcatat(*buffer, offset, "'\"'\"'");
+
+			xstrfmtcatat(*buffer, offset, "%c", *c);
+		}
+
+		xstrfmtcatat(*buffer, offset, "'");
+	}
+}
+
 static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 			       int task_id, char **cmd_args)
 {
@@ -106,31 +130,7 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 				xstrfmtcatat(buffer, &offset, "%s", "%");
 				break;
 			case '@':
-				for (char **arg = cmd_args; arg && *arg;
-				     arg++) {
-					if (arg != cmd_args)
-						xstrfmtcatat(buffer, &offset,
-							     " ");
-
-					xstrfmtcatat(buffer, &offset, "'");
-
-					/*
-					 * POSIX 1003.1 2.2.2 only bans a single
-					 * quote in single quotes for escaping
-					 */
-
-					for (char *c = *arg; *c != '\0'; c++) {
-						if (*c == '\'')
-							xstrfmtcatat(buffer,
-								     &offset,
-								     "'\"'\"'");
-
-						xstrfmtcatat(buffer, &offset,
-							     "%c", *c);
-					}
-
-					xstrfmtcatat(buffer, &offset, "'");
-				}
+				_pattern_argv(&buffer, &offset, cmd_args);
 				break;
 			case 'b':
 				xstrfmtcatat(buffer, &offset, "%s", step->cwd);
