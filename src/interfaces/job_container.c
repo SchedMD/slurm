@@ -85,7 +85,6 @@ static plugin_context_t		**g_container_context = NULL;
 static int			g_container_context_num = -1;
 static pthread_mutex_t		g_container_context_lock =
 					PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 /*
  * Initialize the job container plugin.
@@ -97,9 +96,6 @@ extern int job_container_init(void)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "job_container";
 	char *type = NULL, *last = NULL, *plugin_list, *job_container = NULL;
-
-	if (init_run && (g_container_context_num >= 0))
-		return retval;
 
 	slurm_mutex_lock(&g_container_context_lock);
 
@@ -138,7 +134,6 @@ extern int job_container_init(void)
 		g_container_context_num++;
 		plugin_list = NULL; /* for next iteration */
 	}
-	init_run = true;
 
  done:
 	slurm_mutex_unlock(&g_container_context_lock);
@@ -163,7 +158,6 @@ extern int job_container_fini(void)
 	if (!g_container_context)
 		goto done;
 
-	init_run = false;
 	for (i = 0; i < g_container_context_num; i++) {
 		if (g_container_context[i]) {
 			if (plugin_context_destroy(g_container_context[i])
@@ -187,7 +181,7 @@ extern int container_g_create(uint32_t job_id, uid_t uid)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -206,7 +200,7 @@ extern int container_g_join(uint32_t job_id, uid_t uid)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -223,7 +217,7 @@ extern int container_g_join_external(uint32_t job_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -239,7 +233,7 @@ extern int container_g_add_cont(uint32_t job_id, uint64_t cont_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -254,7 +248,7 @@ extern int container_g_delete(uint32_t job_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -269,7 +263,7 @@ extern int container_g_restore(char * dir_name, bool recover)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -284,7 +278,7 @@ extern void container_g_reconfig(void)
 {
 	int i;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; i < g_container_context_num;i++) {
 		(*(ops[i].container_p_reconfig))();
@@ -298,7 +292,7 @@ extern int container_g_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -313,7 +307,7 @@ extern int container_g_stepd_delete(uint32_t job_id)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
@@ -327,7 +321,7 @@ extern int container_g_send_stepd(int fd)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; (i < g_container_context_num) && (rc == SLURM_SUCCESS); i++)
 		rc = (*(ops[i].container_p_send_stepd))(fd);
@@ -339,7 +333,7 @@ extern int container_g_recv_stepd(int fd)
 {
 	int i, rc = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(g_container_context_num >= 0);
 
 	for (i = 0; (i < g_container_context_num) && (rc == SLURM_SUCCESS); i++)
 		rc = (*(ops[i].container_p_recv_stepd))(fd);
