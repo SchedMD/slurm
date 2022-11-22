@@ -296,7 +296,6 @@ static int _modify_config(stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *mnts, *env;
-	char **cmd_env = NULL;
 	data_t *config = step->container_config;
 
 	/* Disable terminal to ensure stdin/err/out are used */
@@ -423,52 +422,6 @@ static int _modify_config(stepd_step_rec_t *step)
 		xfree(name);
 	}
 
-	if (oci_conf->create_env_file) {
-		cmd_env = env_array_create();
-		env_array_merge(&cmd_env, (const char **) step->env);
-	}
-
-	/* set/append requested env */
-	for (char **ptr = step->env; *ptr != NULL; ptr++) {
-		data_set_string(data_list_append(env), *ptr);
-
-		if (oci_conf->create_env_file) {
-			char *name = xstrdup(*ptr);
-			char *value = xstrstr(name, "=");
-
-			if (value) {
-				*value = '\0';
-				value++;
-			}
-
-			env_array_append(&cmd_env, name, value);
-
-			xfree(name);
-		}
-	}
-
-	if (oci_conf->create_env_file) {
-		char *envfile = NULL;
-
-		/* keep _generate_pattern() in sync with this path */
-		xstrfmtcat(envfile, "%s/%s",
-			   step->cwd, SLURM_CONTAINER_ENV_FILE);
-
-		rc = env_array_to_file(envfile, (const char **) cmd_env, false);
-
-		if (!rc && chown(envfile, step->uid, step->gid) < 0) {
-			error("%s: chown(%s): %m", __func__, envfile);
-			rc = errno;
-		}
-
-		if (!rc && chmod(envfile, 0750) < 0) {
-			error("%s: chmod(%s, 750): %m", __func__, envfile);
-			rc = errno;
-		}
-
-		xfree(envfile);
-	}
-
 	/* Overwrite args */
 	if (step->node_tasks <= 0) {
 		/* should have been caught at submission */
@@ -542,8 +495,6 @@ static int _modify_config(stepd_step_rec_t *step)
 
 		env_array_free(old_argv);
 	}
-
-	env_array_free(cmd_env);
 
 	return rc;
 }
@@ -946,6 +897,28 @@ extern void container_run(stepd_step_rec_t *step,
 
 		xfree(out);
 		xfree(jconfig);
+	}
+
+	if (oci_conf->create_env_file) {
+		int rc;
+		char *envfile = NULL;
+
+		/* keep _generate_pattern() in sync with this path */
+		xstrfmtcat(envfile, "%s/%s", step->cwd,
+			   SLURM_CONTAINER_ENV_FILE);
+
+		if ((rc = env_array_to_file(envfile, (const char **) step->env,
+				       false)))
+			fatal("%s: unable to write %s: %s",
+			      __func__, envfile, slurm_strerror(rc));
+
+		if (chown(envfile, step->uid, step->gid) < 0)
+			fatal("%s: chown(%s): %m", __func__, envfile);
+
+		if (!rc && chmod(envfile, 0750) < 0)
+			error("%s: chmod(%s, 750): %m", __func__, envfile);
+
+		xfree(envfile);
 	}
 
 	if (oci_conf->runtime_run)

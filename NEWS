@@ -176,6 +176,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmstepd - merge container config.json environment into job environment
     and then overwrite config.json environment. Avoids instance where processes in
     container will not have access to job environment variables.
+ -- slurmstepd - defer creating container environment file until after all
+    plugin based modifications to the job environment are complete.
 
 * Changes in Slurm 22.05.7
 ==========================
