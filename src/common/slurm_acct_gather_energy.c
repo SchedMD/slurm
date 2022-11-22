@@ -130,6 +130,7 @@ static void *_watch_node(void *arg)
 
 extern int slurm_acct_gather_energy_init(void)
 {
+	slurm_conf_t *conf;
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "acct_gather_energy";
 	char *full_plugin_type = NULL;
@@ -143,7 +144,10 @@ extern int slurm_acct_gather_energy_init(void)
 	if (g_context_num >= 0)
 		goto done;
 
-	full_plugin_type = xstrdup(slurm_conf.acct_gather_energy_type);
+	conf = slurm_conf_lock();
+	full_plugin_type = xstrdup(conf->acct_gather_energy_type);
+	slurm_conf_unlock();
+
 	g_context_num = 0; /* mark it before anything else */
 	plugin_entry = full_plugin_type;
 	while ((type = strtok_r(plugin_entry, ",", &last))) {

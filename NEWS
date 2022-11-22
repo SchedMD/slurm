@@ -37,6 +37,8 @@ documents those changes that are of interest to users and administrators.
     handled by Slurm instead of file ACLs.
  -- Fix sbcast, srun --bcast, sstat not working with cloud/dynamic nodes.
  -- sacctmgr - Allow removal of user's default account when AllowNoDefAcct=yes.
+ -- Fix segfault caused by race condition when a reconfiguration is requested
+    while slurmd initializes.
 
 * Changes in Slurm 22.05.6
 ==========================
