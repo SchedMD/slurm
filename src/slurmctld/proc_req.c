@@ -6237,7 +6237,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	crontab_update_request_msg_t *req_msg =
 		(crontab_update_request_msg_t *) msg->data;
 	slurm_msg_t response_msg;
-	crontab_update_response_msg_t resp_msg;
+	crontab_update_response_msg_t *resp_msg;
 	/* probably need to mirror _slurm_rpc_dump_batch_script() */
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
@@ -6253,25 +6253,26 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 		return;
 	}
 
-	resp_msg.err_msg = NULL;
-	resp_msg.job_submit_user_msg = NULL;
-	resp_msg.failed_lines = NULL;
-	resp_msg.return_code = SLURM_SUCCESS;
+	resp_msg = xmalloc(sizeof(*resp_msg));
+	resp_msg->err_msg = NULL;
+	resp_msg->job_submit_user_msg = NULL;
+	resp_msg->failed_lines = NULL;
+	resp_msg->return_code = SLURM_SUCCESS;
 
 	lock_slurmctld(job_write_lock);
 
 	if (((req_msg->uid != msg->auth_uid) || (req_msg->gid != gid)) &&
 	    !validate_slurm_user(msg->auth_uid)) {
-		resp_msg.return_code = ESLURM_USER_ID_MISSING;
+		resp_msg->return_code = ESLURM_USER_ID_MISSING;
 	}
 
-	if (!resp_msg.return_code) {
+	if (!resp_msg->return_code) {
 		char *alloc_node = NULL;
 		_set_hostname(msg, &alloc_node);
 		if (!alloc_node || (alloc_node[0] == '\0'))
-			resp_msg.return_code = ESLURM_INVALID_NODE_NAME;
+			resp_msg->return_code = ESLURM_INVALID_NODE_NAME;
 		else
-			crontab_submit(req_msg, &resp_msg, alloc_node,
+			crontab_submit(req_msg, resp_msg, alloc_node,
 				       msg->protocol_version);
 		xfree(alloc_node);
 	}
@@ -6281,8 +6282,10 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 
 	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_UPDATE_CRONTAB;
-	response_msg.data = &resp_msg;
+	response_msg.data = resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
+
+	slurm_free_crontab_update_response_msg(resp_msg);
 }
 
 slurmctld_rpc_t slurmctld_rpcs[] =
