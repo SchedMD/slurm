@@ -626,6 +626,15 @@ int main(int argc, char **argv)
 		} else
 			fatal("Failed to initialize site_factor plugin.");
 	}
+	if (switch_init(1) != SLURM_SUCCESS) {
+		if (test_config) {
+			error("Failed to initialize switch plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("Failed to initialize switch plugin");
+		}
+	}
+
 	agent_init();
 
 	while (1) {
