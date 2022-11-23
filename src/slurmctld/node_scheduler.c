@@ -3854,12 +3854,15 @@ end_node_set:
  */
 static void _set_reboot_weight(struct node_set *node_set_ptr)
 {
-	static uint32_t reboot_weight = 0;
+	static uint32_t reboot_weight = NO_VAL;
+	static time_t sched_update = 0;
 
 	xassert(node_set_ptr);
 
-	if (reboot_weight == 0)
+	if (sched_update != slurm_conf.last_update) {
 		reboot_weight = node_features_g_reboot_weight();
+		sched_update = slurm_conf.last_update;
+	}
 
 	if ((reboot_weight != NO_VAL) &&
 	    ((node_set_ptr->flags & NODE_SET_REBOOT) ||
