@@ -152,6 +152,7 @@ documents those changes that are of interest to users and administrators.
     allow concurrent hostname resolution at slurmctld startup.
  -- Have 'scontrol show hostlist -' read from stdin.
  -- Extend support for Include files to all "configless" client commands.
+ -- Make node weight usable for powered down and rebooting nodes.
 
 * Changes in Slurm 22.05.7
 ==========================

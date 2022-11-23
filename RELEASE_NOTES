@@ -55,6 +55,7 @@ HIGHLIGHTS
  -- Add purge and archive functionality for job environment and job batch script
     records.
  -- Extend support for Include files to all "configless" client commands.
+ -- Make node weight usable for powered down and rebooting nodes.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
