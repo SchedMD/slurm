@@ -9583,14 +9583,12 @@ extern int gres_node_count(List gres_list, int arr_len,
 	ListIterator  node_gres_iter;
 	gres_state_t *gres_state_node;
 	uint64_t      val;
-	int           rc, ix = 0;
+	int           rc = SLURM_SUCCESS, ix = 0;
 
 	xassert(gres_context_cnt >= 0);
 
-	if ((rc == SLURM_SUCCESS) && (arr_len <= 0))
-		rc = EINVAL;
-	if (rc != SLURM_SUCCESS)
-		return rc;
+	if (arr_len <= 0)
+		return EINVAL;
 
 	slurm_mutex_lock(&gres_context_lock);
 
