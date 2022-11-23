@@ -618,7 +618,7 @@ extern List node_features_g_get_config(void)
 extern uint32_t node_features_g_reboot_weight(void)
 {
 	DEF_TIMERS;
-	uint32_t weight = INFINITE - 1;
+	uint32_t weight = NO_VAL;
 
 	START_TIMER;
 	xassert(g_context_cnt >= 0);

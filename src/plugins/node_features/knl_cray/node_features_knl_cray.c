@@ -175,7 +175,7 @@ static uint32_t cpu_bind[KNL_NUMA_CNT];	/* Derived from numa_cpu_bind */
 static uint16_t default_mcdram = KNL_CACHE;
 static uint16_t default_numa = KNL_ALL2ALL;
 static char *mc_path = NULL;
-static uint32_t node_reboot_weight = (INFINITE - 1);
+static uint32_t node_reboot_weight = NO_VAL;
 static char *numa_cpu_bind = NULL;
 static char *syscfg_path = NULL;
 static pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;

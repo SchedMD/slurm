@@ -60,7 +60,7 @@ static List helper_features = NULL;
 static List helper_exclusives = NULL;
 static uint32_t boot_time = (5 * 60);
 static uint32_t exec_time = 10;
-static uint32_t node_reboot_weight = (INFINITE - 1);
+static uint32_t node_reboot_weight = NO_VAL;
 
 typedef struct {
 	const char *name;
