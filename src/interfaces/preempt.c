@@ -82,7 +82,6 @@ static const char *syms[] = {
 static slurm_preempt_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t	    g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 static int _is_job_preempt_exempt_internal(void *x, void *key)
 {
@@ -135,9 +134,10 @@ static uint16_t _job_preempt_mode_internal(job_record_t *job_ptr)
 {
 	uint16_t data = (uint16_t)PREEMPT_MODE_OFF;
 
-	if ((slurm_preempt_init() < 0) ||
-	    ((*(ops.get_data))(job_ptr, PREEMPT_DATA_MODE, &data) !=
-	     SLURM_SUCCESS))
+	xassert(g_context);
+
+	if ((*(ops.get_data))(job_ptr, PREEMPT_DATA_MODE, &data) !=
+	    SLURM_SUCCESS)
 		return data;
 
 	return data;
@@ -227,12 +227,6 @@ extern int slurm_preempt_init(void)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "preempt", *temp_str;
 
-	/* This function is called frequently, so it should be as fast as
-	 * possible. The test below will be true almost all of the time and
-	 * is as fast as possible. */
-	if (init_run && g_context)
-		return retval;
-
 	slurm_mutex_lock(&g_context_lock);
 
 	if (g_context)
@@ -248,7 +242,6 @@ extern int slurm_preempt_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	init_run = true;
 
 	youngest_order = false;
 	if (xstrcasestr(slurm_conf.sched_params, "preempt_youngest_first"))
@@ -271,7 +264,6 @@ extern int slurm_preempt_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
-	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;
@@ -366,9 +358,10 @@ extern bool slurm_preemption_enabled(void)
 {
 	bool data = false;
 
-	if ((slurm_preempt_init() < 0) ||
-	    ((*(ops.get_data))(NULL, PREEMPT_DATA_ENABLED, &data) !=
-	     SLURM_SUCCESS))
+	xassert(g_context);
+
+	if ((*(ops.get_data))(NULL, PREEMPT_DATA_ENABLED, &data) !=
+	    SLURM_SUCCESS)
 		return data;
 
 	return data;
@@ -381,9 +374,10 @@ extern uint32_t slurm_job_get_grace_time(job_record_t *job_ptr)
 {
 	uint32_t data = 0;
 
-	if ((slurm_preempt_init() < 0) ||
-	    ((*(ops.get_data))(job_ptr, PREEMPT_DATA_GRACE_TIME, &data) !=
-	     SLURM_SUCCESS))
+	xassert(g_context);
+
+	if ((*(ops.get_data))(job_ptr, PREEMPT_DATA_GRACE_TIME, &data) !=
+	    SLURM_SUCCESS)
 		return data;
 
 	return data;
@@ -525,8 +519,7 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 extern bool preempt_g_job_preempt_check(job_queue_rec_t *preemptor,
 					job_queue_rec_t *preemptee)
 {
-	if (slurm_preempt_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.job_preempt_check))(preemptor, preemptee);
 }
@@ -534,8 +527,7 @@ extern bool preempt_g_job_preempt_check(job_queue_rec_t *preemptor,
 extern bool preempt_g_preemptable(
 	job_record_t *preemptee, job_record_t *preemptor)
 {
-	if (slurm_preempt_init() < 0)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.preemptable))(preemptor, preemptee);
 }
@@ -544,8 +536,7 @@ extern int preempt_g_get_data(job_record_t *job_ptr,
 			      slurm_preempt_data_type_t data_type,
 			      void *data)
 {
-	if (slurm_preempt_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.get_data))(job_ptr, data_type, data);
 }
