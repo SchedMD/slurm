@@ -98,6 +98,7 @@
 #include "src/interfaces/route.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/sched_plugin.h"
+#include "src/interfaces/site_factor.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/acct_policy.h"
@@ -617,6 +618,13 @@ int main(int argc, char **argv)
 			test_config_rc = 1;
 		} else
 			fatal("Failed to initialize route plugins.");
+	}
+	if (site_factor_g_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("Failed to initialize site_factor plugin.");
+			test_config_rc = 1;
+		} else
+			fatal("Failed to initialize site_factor plugin.");
 	}
 	agent_init();
 
