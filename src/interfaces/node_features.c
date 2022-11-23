@@ -105,7 +105,6 @@ static node_features_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *node_features_plugin_list = NULL;
-static bool init_run = false;
 
 /* Perform plugin initialization: read configuration files, etc. */
 extern int node_features_g_init(void)
@@ -114,9 +113,6 @@ extern int node_features_g_init(void)
 	char *last = NULL, *names;
 	char *plugin_type = "node_features";
 	char *type;
-
-	if (init_run && (g_context_cnt >= 0))
-		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context_cnt >= 0)
@@ -152,7 +148,6 @@ extern int node_features_g_init(void)
 		g_context_cnt++;
 		names = NULL; /* for next strtok_r() iteration */
 	}
-	init_run = true;
 
 fini:
 	slurm_mutex_unlock(&g_context_lock);
@@ -172,7 +167,6 @@ extern int node_features_g_fini(void)
 	if (g_context_cnt < 0)
 		goto fini;
 
-	init_run = false;
 	for (i = 0; i < g_context_cnt; i++) {
 		if (g_context[i]) {
 			j = plugin_context_destroy(g_context[i]);
@@ -194,7 +188,7 @@ extern int node_features_g_count(void)
 {
 	int rc;
 
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	rc = g_context_cnt;
 	slurm_mutex_unlock(&g_context_lock);
@@ -211,8 +205,8 @@ extern void node_features_g_step_config(bool mem_sort, bitstr_t *numa_bitmap)
 	int i;
 
 	START_TIMER;
-	if (node_features_g_init() != SLURM_SUCCESS)
-		return;
+	xassert(g_context_cnt >= 0);
+
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++)
 		(*(ops[i].step_config))(mem_sort, numa_bitmap);
@@ -224,10 +218,10 @@ extern void node_features_g_step_config(bool mem_sort, bitstr_t *numa_bitmap)
 extern int node_features_g_reconfig(void)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 
 	START_TIMER;
-	rc = node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].reconfig))();
@@ -245,7 +239,7 @@ extern bool node_features_g_changeable_feature(char *feature)
 	bool changeable = false;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && !changeable); i++)
 		changeable = (*(ops[i].changeable_feature))(feature);
@@ -260,10 +254,10 @@ extern bool node_features_g_changeable_feature(char *feature)
 extern int node_features_g_get_node(char *node_list)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 
 	START_TIMER;
-	rc = node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].get_node))(node_list);
@@ -277,10 +271,10 @@ extern int node_features_g_get_node(char *node_list)
 extern int node_features_g_job_valid(char *job_features)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 
 	START_TIMER;
-	rc = node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].job_valid))(job_features);
@@ -304,7 +298,7 @@ extern char *node_features_g_job_xlate(char *job_features)
 	int i;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		tmp_str = (*(ops[i].job_xlate))(job_features);
@@ -331,7 +325,7 @@ extern bitstr_t *node_features_g_get_node_bitmap(void)
 	int i;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		node_bitmap = (*(ops[i].get_node_bitmap))();
@@ -352,7 +346,7 @@ extern int node_features_g_overlap(bitstr_t *active_bitmap)
 	int i;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++)
 		cnt += (*(ops[i].overlap))(active_bitmap);
@@ -370,7 +364,7 @@ extern bool node_features_g_node_power(void)
 	int i;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		node_power = (*(ops[i].node_power))();
@@ -393,7 +387,7 @@ extern int node_features_g_node_set(char *active_features)
 	int i, rc = SLURM_SUCCESS;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		rc = (*(ops[i].node_set))(active_features);
@@ -413,7 +407,7 @@ extern void node_features_g_node_state(char **avail_modes, char **current_mode)
 	int i;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		(*(ops[i].node_state))(avail_modes, current_mode);
@@ -434,7 +428,7 @@ extern int node_features_g_node_update(char *active_features,
 	int i, rc = SLURM_SUCCESS;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		rc = (*(ops[i].node_update))(active_features, node_bitmap);
@@ -461,7 +455,7 @@ extern bool node_features_g_node_update_valid(void *node_ptr,
 	int i;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		update_valid = (*(ops[i].node_update_valid))(node_ptr,
@@ -493,7 +487,7 @@ extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
 	int i;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 
 	if (!g_context_cnt)
@@ -526,7 +520,7 @@ extern char *node_features_g_node_xlate2(char *new_features)
 	int i;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 
 	if (!g_context_cnt)
@@ -556,7 +550,7 @@ extern bool node_features_g_user_update(uid_t uid)
 	int i;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (result == true)); i++) {
 		result = (*(ops[i].user_update))(uid);
@@ -575,7 +569,7 @@ extern uint32_t node_features_g_boot_time(void)
 	int i;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
 		boot_time = MAX(boot_time, (*(ops[i].boot_time))());
@@ -590,12 +584,12 @@ extern uint32_t node_features_g_boot_time(void)
 extern List node_features_g_get_config(void)
 {
 	DEF_TIMERS;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 	List conf_list = NULL;
 	config_plugin_params_t *p;
 
 	START_TIMER;
-	rc = node_features_g_init();
+	xassert(g_context_cnt >= 0);
 
 	if (g_context_cnt > 0)
 		conf_list = list_create(destroy_config_plugin_params);
@@ -627,7 +621,7 @@ extern uint32_t node_features_g_reboot_weight(void)
 	uint32_t weight = INFINITE - 1;
 
 	START_TIMER;
-	(void) node_features_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context_cnt > 0)
 		weight = (*(ops[0].reboot_weight))();
