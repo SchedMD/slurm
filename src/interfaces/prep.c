@@ -69,7 +69,6 @@ static prep_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static char *prep_plugin_list = NULL;
 static pthread_rwlock_t g_context_lock = PTHREAD_RWLOCK_INITIALIZER;
-static bool init_run = false;
 static bool prep_is_required[PREP_CALL_CNT] = { false };
 
 /*
@@ -83,9 +82,6 @@ extern int prep_g_init(prep_callbacks_t *callbacks)
 	char *last = NULL, *names, *tmp_plugin_list;
 	char *plugin_type = "prep";
 	char *type;
-
-	if (init_run && (g_context_cnt >= 0))
-		return rc;
 
 	slurm_rwlock_wrlock(&g_context_lock);
 	if (g_context_cnt >= 0)
@@ -124,7 +120,6 @@ extern int prep_g_init(prep_callbacks_t *callbacks)
 		g_context_cnt++;
 		names = NULL; /* for next strtok_r() iteration */
 	}
-	init_run = true;
 	xfree(tmp_plugin_list);
 
 	for (int j = 0; j < PREP_CALL_CNT; j++) {
@@ -157,7 +152,6 @@ extern int prep_g_fini(void)
 	if (g_context_cnt < 0)
 		goto fini;
 
-	init_run = false;
 	for (int i = 0; i < g_context_cnt; i++) {
 		if (g_context[i]) {
 			int j = plugin_context_destroy(g_context[i]);
@@ -211,11 +205,11 @@ extern int prep_g_reconfig(void)
 extern int prep_g_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	DEF_TIMERS;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	START_TIMER;
 
-	rc = prep_g_init(NULL);
+	xassert(g_context_cnt >= 0);
 	slurm_rwlock_rdlock(&g_context_lock);
 	for (int i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].prolog))(job_env, cred);
@@ -228,11 +222,11 @@ extern int prep_g_prolog(job_env_t *job_env, slurm_cred_t *cred)
 extern int prep_g_epilog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	DEF_TIMERS;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	START_TIMER;
 
-	rc = prep_g_init(NULL);
+	xassert(g_context_cnt >= 0);
 	slurm_rwlock_rdlock(&g_context_lock);
 	for (int i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].epilog))(job_env, cred);
@@ -245,11 +239,11 @@ extern int prep_g_epilog(job_env_t *job_env, slurm_cred_t *cred)
 extern void prep_g_prolog_slurmctld(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	START_TIMER;
 
-	rc = prep_g_init(NULL);
+	xassert(g_context_cnt >= 0);
 	slurm_rwlock_rdlock(&g_context_lock);
 	for (int i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		bool async = false;
@@ -266,11 +260,11 @@ extern void prep_g_prolog_slurmctld(job_record_t *job_ptr)
 extern void prep_g_epilog_slurmctld(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	START_TIMER;
 
-	rc = prep_g_init(NULL);
+	xassert(g_context_cnt >= 0);
 	slurm_rwlock_rdlock(&g_context_lock);
 	for (int i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		bool async = false;
@@ -290,12 +284,9 @@ extern void prep_g_epilog_slurmctld(job_record_t *job_ptr)
 
 extern bool prep_g_required(prep_call_type_t type)
 {
-	int rc;
 	bool required = false;
 
-	rc = prep_g_init(NULL);
-	if (rc != SLURM_SUCCESS)
-		return required;
+	xassert(g_context_cnt >= 0);
 
 	slurm_rwlock_rdlock(&g_context_lock);
 	required = prep_is_required[type];
