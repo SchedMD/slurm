@@ -777,10 +777,8 @@ int main(void)
 		      slurm_unit_conf_filename);
 		return EXIT_FAILURE;
 	}
-	if (slurm_init(slurm_unit_conf_filename)) {
-		error("slurm_init() failed");
-		return EXIT_FAILURE;
-	}
+
+	slurm_init(slurm_unit_conf_filename);
 
 	unlink(slurm_unit_conf_filename);
 	xfree(slurm_unit_conf_filename);
