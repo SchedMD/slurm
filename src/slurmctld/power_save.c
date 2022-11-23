@@ -262,45 +262,6 @@ static void _do_power_work(time_t now)
 	uint32_t *job_id_ptr;
 	bool nodes_updated = false;
 
-	if (last_work_scan == 0) {
-		if (exc_nodes && (_parse_exc_nodes() != SLURM_SUCCESS))
-			error("Invalid SuspendExcNodes %s ignored", exc_nodes);
-
-		if (exc_parts) {
-			char *tmp = NULL, *one_part = NULL, *part_list = NULL;
-			part_record_t *part_ptr = NULL;
-
-			part_list = xstrdup(exc_parts);
-			one_part = strtok_r(part_list, ",", &tmp);
-			while (one_part != NULL) {
-				part_ptr = find_part_record(one_part);
-				if (!part_ptr) {
-					error("Invalid SuspendExcPart %s ignored",
-					      one_part);
-				} else if (exc_node_bitmap) {
-					bit_or(exc_node_bitmap,
-					       part_ptr->node_bitmap);
-				} else {
-					exc_node_bitmap =
-						bit_copy(part_ptr->node_bitmap);
-				}
-				one_part = strtok_r(NULL, ",", &tmp);
-			}
-			xfree(part_list);
-		}
-
-		if (exc_node_bitmap && power_save_debug) {
-			char *tmp = bitmap2node_name(exc_node_bitmap);
-			log_flag(POWER, "excluded nodes %s", tmp);
-			xfree(tmp);
-		}
-		if (partial_node_list && power_save_debug) {
-			(void) list_for_each(partial_node_list,
-					     _list_part_node_lists, NULL);
-
-		}
-	}
-
 	/* Set limit on counts of nodes to have state changed */
 	delta_t = now - last_work_scan;
 	if (delta_t >= 60) {
@@ -731,6 +692,47 @@ static int _set_partition_options(void *x, void *arg)
 	return 0;
 }
 
+static void _setup_exc_nodes_parts(void)
+{
+	if (exc_nodes && (_parse_exc_nodes() != SLURM_SUCCESS))
+		error("Invalid SuspendExcNodes %s ignored", exc_nodes);
+
+	if (exc_parts) {
+		char *tmp = NULL, *one_part = NULL, *part_list = NULL;
+		part_record_t *part_ptr = NULL;
+
+		part_list = xstrdup(exc_parts);
+		one_part = strtok_r(part_list, ",", &tmp);
+		while (one_part != NULL) {
+			part_ptr = find_part_record(one_part);
+			if (!part_ptr) {
+				error("Invalid SuspendExcPart %s ignored",
+				      one_part);
+			} else if (exc_node_bitmap) {
+				bit_or(exc_node_bitmap,
+				       part_ptr->node_bitmap);
+			} else {
+				exc_node_bitmap =
+					bit_copy(part_ptr->node_bitmap);
+			}
+			one_part = strtok_r(NULL, ",", &tmp);
+		}
+		xfree(part_list);
+	}
+
+	if (power_save_debug) {
+		if (exc_node_bitmap) {
+			char *tmp = bitmap2node_name(exc_node_bitmap);
+			log_flag(POWER, "excluded nodes %s", tmp);
+			xfree(tmp);
+		}
+		if (partial_node_list) {
+			(void) list_for_each(partial_node_list,
+					     _list_part_node_lists, NULL);
+		}
+	}
+}
+
 /*
  * Initialize power_save module parameters.
  * Return 0 on valid configuration to run power saving,
@@ -824,6 +826,8 @@ static int _init_power_config(void)
 		/* error's already reported in _valid_prog() */
 		xfree(resume_fail_prog);
 	}
+
+	_setup_exc_nodes_parts();
 
 	return 0;
 }
