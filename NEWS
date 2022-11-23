@@ -143,6 +143,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove ability to update a reservation to have a reoccurring flag if it
     is a floating reservation.
  -- squeue - removed unused '%s' and 'SelectJobInfo' formats.
+ -- Add purge and archive functionality for job environment and job batch script
+    records.
 
 * Changes in Slurm 22.05.7
 ==========================

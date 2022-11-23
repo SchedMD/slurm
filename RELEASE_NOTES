@@ -52,6 +52,8 @@ HIGHLIGHTS
  -- Add "[jobid.stepid]" prefix from slurmstepd and "slurmscriptd" prefix from
     slurmcriptd to Syslog logging. Previously was only happening when logging
     to a file.
+ -- Add purge and archive functionality for job environment and job batch script
+    records.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
