@@ -324,7 +324,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* slurmd_params */
 	/* slurmd_pidfile */
 	/* slurmd_port */
-	/* slurmd_spooldir */
+	packstr(slurm_conf.slurmd_spooldir, buffer);
 	/* slurmd_syslog_debug */
 	/* slurmd_timeout */
 	/* srun_epilog */
@@ -554,7 +554,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* slurmd_params */
 	/* slurmd_pidfile */
 	/* slurmd_port */
-	/* slurmd_spooldir */
+	safe_unpackstr(&slurm_conf.slurmd_spooldir, buffer);
 	/* slurmd_syslog_debug */
 	/* slurmd_timeout */
 	/* srun_epilog */

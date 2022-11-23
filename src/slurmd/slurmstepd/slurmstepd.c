@@ -576,8 +576,6 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("Failed to read conf from slurmd");
 
 	slurm_conf.slurmd_port = conf->port;
-	xfree(slurm_conf.slurmd_spooldir);
-	slurm_conf.slurmd_spooldir = xstrdup(conf->spooldir);
 	slurm_conf.slurmd_syslog_debug = conf->syslog_debug;
 
 	setenvf(NULL, "SLURMD_NODENAME", "%s", conf->node_name);
