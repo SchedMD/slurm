@@ -96,7 +96,6 @@ static const char *syms[] = {
 static slurm_proctrack_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 /*
  * The proctrack plugin can only be changed by restarting slurmd
@@ -106,9 +105,6 @@ extern int slurm_proctrack_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "proctrack";
-
-	if (init_run && g_context)
-		return retval;
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -125,7 +121,6 @@ extern int slurm_proctrack_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	init_run = true;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -139,7 +134,6 @@ extern int slurm_proctrack_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
-	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;
@@ -155,8 +149,7 @@ extern int slurm_proctrack_fini(void)
  */
 extern int proctrack_g_create(stepd_step_rec_t *step)
 {
-	if (slurm_proctrack_init() < 0)
-		return 0;
+	xassert(g_context);
 
 	return (*(ops.create))(step);
 }
@@ -174,8 +167,7 @@ extern int proctrack_g_add(stepd_step_rec_t *step, pid_t pid)
 {
 	int i = 0, max_retry = 3, rc;
 
-	if (slurm_proctrack_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	/* Sometimes a plugin is transient in adding a pid, so lets
 	 * try a few times before we call it quits.
@@ -372,8 +364,7 @@ static void _spawn_signal_thread(uint64_t cont_id, int signal)
  */
 extern int proctrack_g_signal(uint64_t cont_id, int signal)
 {
-	if (slurm_proctrack_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	if (signal == SIGKILL) {
 		pid_t *pids = NULL;
@@ -425,8 +416,7 @@ extern int proctrack_g_signal(uint64_t cont_id, int signal)
 */
 extern int proctrack_g_destroy(uint64_t cont_id)
 {
-	if (slurm_proctrack_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.destroy)) (cont_id);
 }
@@ -438,8 +428,7 @@ extern int proctrack_g_destroy(uint64_t cont_id)
  */
 extern uint64_t proctrack_g_find(pid_t pid)
 {
-	if (slurm_proctrack_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.find_cont)) (pid);
 }
@@ -450,8 +439,7 @@ extern uint64_t proctrack_g_find(pid_t pid)
  */
 extern bool proctrack_g_has_pid(uint64_t cont_id, pid_t pid)
 {
-	if (slurm_proctrack_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.has_pid)) (cont_id, pid);
 }
@@ -463,8 +451,7 @@ extern bool proctrack_g_has_pid(uint64_t cont_id, pid_t pid)
  */
 extern int proctrack_g_wait(uint64_t cont_id)
 {
-	if (slurm_proctrack_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.wait)) (cont_id);
 }
@@ -483,8 +470,7 @@ extern int proctrack_g_wait(uint64_t cont_id)
  */
 extern int proctrack_g_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
-	if (slurm_proctrack_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.get_pids)) (cont_id, pids, npids);
 }
