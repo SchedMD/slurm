@@ -78,6 +78,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/route.h"
+#include "src/interfaces/topology.h"
 
 #include "src/bcast/file_bcast.h"
 
@@ -182,6 +183,9 @@ int srun(int ac, char **av)
 		fatal("failed to initialize switch plugins");
 
 	if (route_init() != SLURM_SUCCESS)
+		fatal("failed to initialize route plugins");
+
+	if (slurm_topo_init() != SLURM_SUCCESS)
 		fatal("failed to initialize route plugins");
 
 	_setup_env_working_cluster();

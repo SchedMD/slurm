@@ -78,7 +78,6 @@ static const char *syms[] = {
 static slurm_topo_ops_t ops;
 static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 /*
  * The topology plugin can not be changed via reconfiguration
@@ -90,9 +89,6 @@ extern int slurm_topo_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "topo";
-
-	if (init_run && g_context)
-		return retval;
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -109,7 +105,6 @@ extern int slurm_topo_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	init_run = true;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -123,7 +118,6 @@ extern int slurm_topo_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
-	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;
@@ -134,8 +128,7 @@ extern int slurm_topo_build_config(void)
 	int rc;
 	DEF_TIMERS;
 
-	if ( slurm_topo_init() < 0 )
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	START_TIMER;
 	rc = (*(ops.build_config))();
@@ -150,8 +143,7 @@ extern int slurm_topo_build_config(void)
  */
 extern bool slurm_topo_generate_node_ranking(void)
 {
-	if ( slurm_topo_init() < 0 )
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.node_ranking))();
 }
@@ -160,8 +152,7 @@ extern int slurm_topo_get_node_addr(char* node_name,
 				    char **addr,
 				    char **pattern)
 {
-	if ( slurm_topo_init() < 0 )
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.get_node_addr))(node_name,addr,pattern);
 }
