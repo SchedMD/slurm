@@ -432,12 +432,23 @@ static int _env_set(const stepd_step_rec_t *step, char ***env)
 	 */
 	_parse_pmix_conf_env(env, slurm_pmix_conf.env);
 
-	_pmixp_job_info.server_addr_unfmt =
-		xstrdup(slurm_conf.slurmd_spooldir);
+	if (step->container) {
+		_pmixp_job_info.server_addr_unfmt =
+			xstrdup(step->container->spool_dir);
+		_pmixp_job_info.client_lib_tmpdir =
+			xstrdup(step->container->mount_spool_dir);
+	} else {
+		_pmixp_job_info.server_addr_unfmt =
+			xstrdup(slurm_conf.slurmd_spooldir);
+	}
 
-	_pmixp_job_info.lib_tmpdir = slurm_conf_expand_slurmd_path(
-				_pmixp_job_info.server_addr_unfmt,
-				_pmixp_job_info.hostname, NULL);
+	debug2("set _pmixp_job_info.server_addr_unfmt = %s",
+	       _pmixp_job_info.server_addr_unfmt);
+
+	if (!_pmixp_job_info.lib_tmpdir)
+		_pmixp_job_info.lib_tmpdir = slurm_conf_expand_slurmd_path(
+			_pmixp_job_info.server_addr_unfmt,
+			_pmixp_job_info.hostname, NULL);
 
 	xstrfmtcat(_pmixp_job_info.server_addr_unfmt,
 		   "/stepd.slurm.pmix.%d.%d",
@@ -457,6 +468,9 @@ static int _env_set(const stepd_step_rec_t *step, char ***env)
 
 	if (p){
 		_pmixp_job_info.cli_tmpdir_base = xstrdup(p);
+	} else if (step->container) {
+		_pmixp_job_info.cli_tmpdir_base = xstrdup(
+			step->container->spool_dir);
 	} else if (slurm_pmix_conf.cli_tmpdir_base)
 		_pmixp_job_info.cli_tmpdir_base =
 			xstrdup(slurm_pmix_conf.cli_tmpdir_base);
