@@ -611,6 +611,13 @@ int main(int argc, char **argv)
 		} else
 			fatal("Failed to initialize serialization plugins.");
 	}
+	if (route_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("Failed to initialize route plugins.");
+			test_config_rc = 1;
+		} else
+			fatal("Failed to initialize route plugins.");
+	}
 	agent_init();
 
 	while (1) {

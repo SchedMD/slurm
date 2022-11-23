@@ -77,6 +77,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/route.h"
+
 #include "src/bcast/file_bcast.h"
 
 #include "launch.h"
@@ -178,6 +180,9 @@ int srun(int ac, char **av)
 
 	if (switch_init(0) != SLURM_SUCCESS )
 		fatal("failed to initialize switch plugins");
+
+	if (route_init() != SLURM_SUCCESS)
+		fatal("failed to initialize route plugins");
 
 	_setup_env_working_cluster();
 

@@ -40,6 +40,8 @@
 
 #include "sstat.h"
 
+#include "src/interfaces/route.h"
+
 /*
  * Globals
  */
@@ -260,6 +262,10 @@ int main(int argc, char **argv)
 	slurm_selected_step_t *selected_step = NULL;
 
 	slurm_init(NULL);
+
+	if (route_init() != SLURM_SUCCESS)
+		fatal("failed to initialize route plugin");
+
 	print_fields_list = list_create(NULL);
 	print_fields_itr = list_iterator_create(print_fields_list);
 

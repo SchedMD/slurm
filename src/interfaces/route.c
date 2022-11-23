@@ -77,15 +77,11 @@ static const char *syms[] = {
 static slurm_route_ops_t ops;
 static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 extern int route_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "route";
-
-	if (init_run && g_context)
-		return retval;
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -103,8 +99,6 @@ extern int route_init(void)
 		goto done;
 	}
 
-	init_run = true;
-
 done:
 	slurm_mutex_unlock(&g_context_lock);
 	return retval;
@@ -117,7 +111,6 @@ extern int route_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
-	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 
@@ -149,8 +142,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
 	char *buf;
 
 	nnodes = nnodex = 0;
-	if (route_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_ROUTE) {
 		/* nnodes has to be set here as the hl is empty after the
@@ -189,8 +181,7 @@ extern int route_g_split_hostlist(hostlist_t hl,
  */
 extern int route_g_reconfigure(void)
 {
-	if (route_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return (*(ops.reconfigure))();
 }
