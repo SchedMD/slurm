@@ -68,7 +68,6 @@ static int g_context_cnt = -1;
 static slurm_power_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 /* Initialize the power plugin */
 extern int power_g_init(void)
@@ -77,9 +76,6 @@ extern int power_g_init(void)
 	char *last = NULL, *names, *power_plugin;
 	char *plugin_type = "power";
 	char *type;
-
-	if (init_run && (g_context_cnt >= 0))
-		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context_cnt >= 0)
@@ -113,7 +109,6 @@ extern int power_g_init(void)
 		names = NULL; /* for next iteration */
 	}
 	xfree(power_plugin);
-	init_run = true;
 
 fini:
 	slurm_mutex_unlock(&g_context_lock);
@@ -133,7 +128,6 @@ extern void power_g_fini(void)
 	if (g_context_cnt < 0)
 		goto fini;
 
-	init_run = false;
 	for (i = 0; i < g_context_cnt; i++) {
 		if (g_context[i])
 			plugin_context_destroy(g_context[i]);
@@ -151,7 +145,7 @@ extern void power_g_reconfig(void)
 {
 	int i;
 
-	(void) power_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++)
 		(*(ops[i].reconfig))();
@@ -163,7 +157,7 @@ extern void power_g_job_resume(job_record_t *job_ptr)
 {
 	int i;
 
-	(void) power_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++)
 		(*(ops[i].job_resume))(job_ptr);
@@ -175,7 +169,7 @@ extern void power_g_job_start(job_record_t *job_ptr)
 {
 	int i;
 
-	(void) power_g_init();
+	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++)
 		(*(ops[i].job_start))(job_ptr);
