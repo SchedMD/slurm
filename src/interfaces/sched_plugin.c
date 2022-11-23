@@ -64,7 +64,6 @@ static const char *syms[] = {
 static slurm_sched_ops_t ops;
 static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 /*
  * The scheduler plugin can not be changed via reconfiguration
@@ -76,9 +75,6 @@ extern int sched_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "sched";
-
-	if ( init_run && g_context )
-		return retval;
 
 	slurm_mutex_lock( &g_context_lock );
 
@@ -96,7 +92,6 @@ extern int sched_g_init(void)
 		goto done;
 	}
 	main_sched_init();
-	init_run = true;
 
 done:
 	slurm_mutex_unlock( &g_context_lock );
@@ -110,7 +105,6 @@ extern int sched_g_fini(void)
 	if (!g_context)
 		return SLURM_SUCCESS;
 
-	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 
@@ -124,8 +118,7 @@ extern int sched_g_fini(void)
 
 extern int sched_g_reconfig(void)
 {
-	if (sched_g_init() < 0)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	gs_reconfig();
 
