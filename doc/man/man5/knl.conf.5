@@ -1,4 +1,4 @@
-.TH "knl.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
+.TH "knl.conf" "5" "Slurm Configuration File" "November 2022" "Slurm Configuration File"
 
 .SH "NAME"
 knl.conf \- Slurm configuration file for Intel Knights Landing processor.
@@ -186,9 +186,8 @@ See also \fBUmeCheckInterval\fR.
 
 .TP
 \fBNodeRebootWeight\fR
-If a compute node requires a reboot to be usable for a pending job, then reset
-the node's weight to the specified value.
-The default value is 4,294,967,294 (0xfffffffe).
+If a compute node requires a reboot to be usable for a pending job, then
+temporarily use the specified value as the node's weight for scheduling.
 See also "Weight" in the node configuration specification of slurm.conf.
 .IP
 

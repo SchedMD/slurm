@@ -1,4 +1,4 @@
-.TH "helpers.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
+.TH "helpers.conf" "5" "Slurm Configuration File" "November 2022" "Slurm Configuration File"
 
 .SH "NAME"
 helpers.conf \- Slurm configuration file for the helpers plugin.
@@ -72,14 +72,13 @@ that are mutually exclusive among themselves (i.e. features on one line are
 only mutually exclusive with other features on the same line, but not mutually
 exclusive with features on other lines).
 .IP
-.ig
-#### The NodeRebootWeight looks like a placeholder. Commenting out for now.
-.IP
 
 .TP
 \fBNodeRebootWeight\fR=<\fIweight\fR>
-Default value is infinite.
-..
+If a compute node requires a reboot to be usable for a pending job, then
+temporarily use the specified value as the node's weight for scheduling.
+See also "Weight" in the node configuration specification of slurm.conf.
+.IP
 
 .SH "EXAMPLE"
 
