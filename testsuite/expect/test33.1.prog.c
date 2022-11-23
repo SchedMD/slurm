@@ -57,6 +57,7 @@
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/interfaces/route.h"
+#include "src/interfaces/topology.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -292,6 +293,8 @@ int main(int argc, char *argv[])
 		goto ouch;
 
 	slurm_init(NULL);
+	route_init();
+	slurm_topo_init();
 	opts.stderr_level = LOG_LEVEL_DEBUG;
 	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);
 
