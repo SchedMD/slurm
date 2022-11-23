@@ -405,8 +405,8 @@ slurmd_req(slurm_msg_t *msg)
 		_rpc_network_callerid(msg);
 		break;
 	default:
-		error("slurmd_req: invalid request msg type %d",
-		      msg->msg_type);
+		error("%s: invalid request msg type %d",
+		      __func__, msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
 		break;
 	}
