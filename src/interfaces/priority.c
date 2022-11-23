@@ -69,7 +69,6 @@ static const char *syms[] = {
 static slurm_priority_ops_t ops;
 static plugin_context_t *g_priority_context = NULL;
 static pthread_mutex_t g_priority_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
 
 extern int priority_sort_part_tier(void *x, void *y)
 {
@@ -92,9 +91,6 @@ extern int priority_g_init(void)
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "priority";
 
-	if (init_run && g_priority_context)
-		return retval;
-
 	slurm_mutex_lock(&g_priority_context_lock);
 
 	if (g_priority_context)
@@ -111,7 +107,6 @@ extern int priority_g_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
-	init_run = true;
 
 done:
 	slurm_mutex_unlock(&g_priority_context_lock);
@@ -125,7 +120,6 @@ extern int priority_g_fini(void)
 	if (!g_priority_context)
 		return SLURM_SUCCESS;
 
-	init_run = false;
 	rc = plugin_context_destroy(g_priority_context);
 	g_priority_context = NULL;
 	return rc;
@@ -133,16 +127,14 @@ extern int priority_g_fini(void)
 
 extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr)
 {
-	if (priority_g_init() < 0)
-		return 0;
+	xassert(g_priority_context);
 
 	return (*(ops.set))(last_prio, job_ptr);
 }
 
 extern void priority_g_reconfig(bool assoc_clear)
 {
-	if (priority_g_init() < 0)
-		return;
+	xassert(g_priority_context);
 
 	(*(ops.reconfig))(assoc_clear);
 
@@ -151,8 +143,7 @@ extern void priority_g_reconfig(bool assoc_clear)
 
 extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 {
-	if (priority_g_init() < 0)
-		return;
+	xassert(g_priority_context);
 
 	(*(ops.set_assoc_usage))(assoc);
 	return;
@@ -161,8 +152,7 @@ extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 extern double priority_g_calc_fs_factor(long double usage_efctv,
 					long double shares_norm)
 {
-	if (priority_g_init() < 0)
-		return 0.0;
+	xassert(g_priority_context);
 
 	return (*(ops.calc_fs_factor))
 		(usage_efctv, shares_norm);
@@ -172,8 +162,7 @@ extern double priority_g_calc_fs_factor(long double usage_efctv,
 extern List priority_g_get_priority_factors_list(
 	priority_factors_request_msg_t *req_msg, uid_t uid)
 {
-	if (priority_g_init() < 0)
-		return NULL;
+	xassert(g_priority_context);
 
 	/* req_msg can be removed 2 versions after 23.02 */
 	return (*(ops.get_priority_factors))(req_msg, uid);
@@ -181,8 +170,7 @@ extern List priority_g_get_priority_factors_list(
 
 extern void priority_g_job_end(job_record_t *job_ptr)
 {
-	if (priority_g_init() < 0)
-		return;
+	xassert(g_priority_context);
 
 	(*(ops.job_end))(job_ptr);
 }
