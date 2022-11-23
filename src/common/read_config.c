@@ -111,6 +111,7 @@ uint16_t drop_priv_flag = 0;
 
 static pthread_mutex_t conf_lock = PTHREAD_MUTEX_INITIALIZER;
 static s_p_hashtbl_t *conf_hashtbl = NULL;
+static buf_t *conf_buf = NULL;
 static slurm_conf_t *conf_ptr = &slurm_conf;
 static bool conf_initialized = false;
 static s_p_hashtbl_t *default_frontend_tbl;
@@ -159,6 +160,8 @@ typedef struct slurm_conf_server {
 } slurm_conf_server_t;
 
 static slurm_conf_node_t *_create_conf_node(void);
+static void _pack_node_conf_lite(void *n, buf_t *buffer);
+static void *_unpack_node_conf_lite(buf_t *buffer);
 static void _init_conf_node(slurm_conf_node_t *conf_node);
 static void _destroy_nodename(void *ptr);
 static int _parse_frontend(void **dest, slurm_parser_enum_t type,
@@ -206,6 +209,18 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 			      char *cpu_spec_list, uint16_t core_spec_cnt,
 			      uint64_t mem_spec_limit, slurm_addr_t *addr,
 			      bool initialized);
+
+static s_p_options_t slurm_conf_stepd_options[] = {
+	{.key = "NodeName",
+	 .type = S_P_ARRAY,
+	 .handler = _parse_nodename,
+	 .destroy = _destroy_nodename,
+	 .pack = _pack_node_conf_lite,
+	 .unpack = _unpack_node_conf_lite,
+	},
+	{NULL}
+};
+static int slurm_conf_stepd_options_cnt = 1;
 
 s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageTRES", S_P_STRING},
@@ -924,6 +939,37 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	}
 
 	/* should not get here */
+}
+
+/* This should only be going to the stepd, no protocol version neede */
+static void _pack_node_conf_lite(void *ptr, buf_t *buffer)
+{
+	slurm_conf_node_t *n = ptr;
+
+	xassert(n);
+
+	packstr(n->nodenames, buffer);
+	packstr(n->addresses, buffer);
+	packstr(n->bcast_addresses, buffer);
+	packstr(n->hostnames, buffer);
+	packstr(n->port_str, buffer);
+}
+
+static void *_unpack_node_conf_lite(buf_t *buffer)
+{
+	slurm_conf_node_t *n = xmalloc(sizeof(*n));
+
+	safe_unpackstr(&n->nodenames, buffer);
+	safe_unpackstr(&n->addresses, buffer);
+	safe_unpackstr(&n->bcast_addresses, buffer);
+	safe_unpackstr(&n->hostnames, buffer);
+	safe_unpackstr(&n->port_str, buffer);
+
+	return n;
+
+unpack_error:
+	_destroy_nodename(n);
+	return NULL;
 }
 
 /*
@@ -3242,7 +3288,7 @@ extern slurm_conf_node_t *slurm_conf_parse_nodeline(const char *nodeline,
 static int _init_slurm_conf(const char *file_name)
 {
 	char *name = (char *)file_name;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, cnt = 0;
 
 	if (name == NULL) {
 		name = getenv("SLURM_CONF");
@@ -3252,7 +3298,7 @@ static int _init_slurm_conf(const char *file_name)
 	if (conf_initialized)
 		error("the conf_hashtbl is already inited");
 	debug("Reading slurm.conf file: %s", name);
-	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
+	conf_hashtbl = s_p_hashtbl_create_cnt(slurm_conf_options, &cnt);
 	conf_ptr->last_update = time(NULL);
 
 	/* init hash to 0 */
@@ -3264,6 +3310,10 @@ static int _init_slurm_conf(const char *file_name)
 	if (_validate_and_set_defaults(conf_ptr, conf_hashtbl) == SLURM_ERROR)
 		rc = SLURM_ERROR;
 	conf_ptr->slurm_conf = xstrdup(name);
+	if (running_in_slurmd())
+		conf_buf = s_p_pack_hashtbl(conf_hashtbl,
+					    slurm_conf_stepd_options,
+					    slurm_conf_stepd_options_cnt);
 
 	no_addr_cache = false;
 	if (xstrcasestr("NoAddrCache", conf_ptr->comm_params))
@@ -3289,6 +3339,7 @@ _destroy_slurm_conf(void)
 	}
 
 	s_p_hashtbl_destroy(conf_hashtbl);
+	FREE_NULL_BUFFER(conf_buf);
 	if (default_frontend_tbl != NULL) {
 		s_p_hashtbl_destroy(default_frontend_tbl);
 		default_frontend_tbl = NULL;
@@ -3456,6 +3507,36 @@ extern int set_nodes_alias(const char *alias_list)
 	xfree(aliases);
 
 	return rc;
+}
+
+extern void read_conf_send_stepd(int fd)
+{
+	int len;
+
+	xassert(running_in_slurmd());
+	xassert(conf_buf);
+
+	len = get_buf_offset(conf_buf);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, get_buf_data(conf_buf), len);
+rwfail:
+
+}
+
+extern void read_conf_recv_stepd(int fd)
+{
+	int len;
+
+	xassert(running_in_slurmstepd());
+
+	safe_read(fd, &len, sizeof(int));
+
+	conf_buf = init_buf(len);
+	safe_read(fd, conf_buf->head, len);
+	conf_hashtbl = s_p_unpack_hashtbl_full(conf_buf,
+					       slurm_conf_stepd_options);
+rwfail:
+	FREE_NULL_BUFFER(conf_buf);
 }
 
 extern void slurm_conf_init_stepd(void)

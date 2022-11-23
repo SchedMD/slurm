@@ -582,6 +582,9 @@ _init_from_slurmd(int sock, char **argv,
 
 	setenvf(NULL, "SLURMD_NODENAME", "%s", conf->node_name);
 
+	/* receive conf_hashtbl from slurmd */
+	read_conf_recv_stepd(sock);
+
 	/* receive job type from slurmd */
 	safe_read(sock, &step_type, sizeof(int));
 	debug3("step_type = %d", step_type);

@@ -375,6 +375,12 @@ extern int job_defaults_unpack(void **out, uint16_t protocol_version,
  */
 extern int set_nodes_alias(const char *alias_list);
 
+/* Send conf_hashtbl to the stepd */
+extern void read_conf_send_stepd(int fd);
+
+/* Receive conf_hashtbl from the slurmd */
+extern void read_conf_recv_stepd(int fd);
+
 /*
  * slurm_conf_init_stepd - Since the stepd does not read in the file and
  * receives it from the slurm we need to call a different function to do this.
