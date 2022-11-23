@@ -962,6 +962,7 @@ int main(int argc, char **argv)
 	slurm_auth_fini();
 	switch_fini();
 	route_fini();
+	site_factor_g_fini();
 
 	/* purge remaining data structures */
 	group_cache_purge();
