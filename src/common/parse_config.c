@@ -174,12 +174,16 @@ static s_p_values_t *_conf_hashtbl_lookup(const s_p_hashtbl_t *tbl,
 	return NULL;
 }
 
-s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
+s_p_hashtbl_t *s_p_hashtbl_create_cnt(const s_p_options_t options[], int *cnt)
 {
 	s_p_hashtbl_t *tbl = xmalloc(sizeof(*tbl));
 
+	if (cnt)
+		*cnt = 0;
 	for (const s_p_options_t *op = options; op->key; op++) {
 		s_p_values_t *value = xmalloc(sizeof(*value));
+		if (cnt)
+			(*cnt)++;
 		value->key = xstrdup(op->key);
 		value->operator = S_P_OPERATOR_SET;
 		value->type = op->type;
@@ -205,6 +209,11 @@ s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
 		fatal("keyvalue regex compilation failed");
 
 	return tbl;
+}
+
+extern s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
+{
+	return s_p_hashtbl_create_cnt(options, NULL);
 }
 
 /* Swap the data in two data structures without changing the linked list
