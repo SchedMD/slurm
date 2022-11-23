@@ -701,6 +701,7 @@ static void _delete_job_details(job_record_t *job_entry)
 	FREE_NULL_LIST(job_entry->details->feature_list);
 	xfree(job_entry->details->features);
 	xfree(job_entry->details->cluster_features);
+	FREE_NULL_BITMAP(job_entry->details->job_size_bitmap);
 	xfree(job_entry->details->std_in);
 	xfree(job_entry->details->mc_ptr);
 	xfree(job_entry->details->mem_bind);
@@ -2830,6 +2831,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer)
 		pack8(2, buffer);
 	else
 		pack8(0, buffer);
+	pack_bit_str_hex(detail_ptr->job_size_bitmap, buffer);
 	pack_dep_list(detail_ptr->depend_list, buffer, SLURM_PROTOCOL_VERSION);
 	packstr(detail_ptr->dependency, buffer);
 	packstr(detail_ptr->orig_dependency, buffer);	/* subject to change */
@@ -2882,6 +2884,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	multi_core_data_t *mc_ptr;
 	cron_entry_t *crontab_entry = NULL;
 	buf_t *script_buf;
+	bitstr_t *job_size_bitmap = NULL;
 
 	/* unpack the job's details from the buffer */
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
@@ -2929,6 +2932,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&cluster_features, &name_len, buffer);
 		safe_unpackstr_xmalloc(&prefer, &name_len, buffer);
 		safe_unpack8(&features_use, buffer);
+		unpack_bit_str_hex(&job_size_bitmap, buffer);
 
 		unpack_dep_list(&depend_list, buffer, protocol_version);
 		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
@@ -3105,6 +3109,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->cluster_features = cluster_features;
 	job_ptr->details->prefer = prefer;
 	job_ptr->details->env_hash = env_hash;
+	job_ptr->details->job_size_bitmap = job_size_bitmap;
 
 	/* 2 versions after 22.05 we can remove this if */
 	if (env_hash && !script_hash &&
@@ -3191,6 +3196,7 @@ unpack_error:
 	xfree(cluster_features);
 	xfree(prefer);
 	xfree(in);
+	FREE_NULL_BITMAP(job_size_bitmap);
 	xfree(mem_bind);
 	xfree(out);
 	xfree(req_nodes);
@@ -4853,6 +4859,10 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 		feature_list_copy(job_details->feature_list);
 	details_new->features = xstrdup(job_details->features);
 	details_new->cluster_features = xstrdup(job_details->cluster_features);
+	if (job_details->job_size_bitmap) {
+		details_new->job_size_bitmap =
+			bit_copy(job_details->job_size_bitmap);
+	}
 	details_new->prefer = xstrdup(job_details->prefer);
 	details_new->prefer_list =
 		feature_list_copy(job_details->prefer_list);
