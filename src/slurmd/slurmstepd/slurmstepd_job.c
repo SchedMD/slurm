@@ -330,7 +330,13 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		step->gids = copy_gids(msg->ngids, msg->gids);
 	}
 
-	step->container = xstrdup(msg->container);
+	if (msg->container) {
+		step_container_t *c = xmalloc(sizeof(*step->container));
+		c->magic = STEP_CONTAINER_MAGIC;
+		c->bundle = xstrdup(msg->container);
+		step->container = c;
+	}
+
 	step->cwd	= xstrdup(msg->cwd);
 	step->task_dist	= msg->task_dist;
 
@@ -576,7 +582,13 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->overcommit = (bool) msg->overcommit;
 
 	step->cwd     = xstrdup(msg->work_dir);
-	step->container = xstrdup(msg->container);
+
+	if (msg->container) {
+		step_container_t *c = xmalloc(sizeof(*step->container));
+		c->magic = STEP_CONTAINER_MAGIC;
+		c->bundle = xstrdup(msg->container);
+		step->container = c;
+	}
 
 	step->env     = _array_copy(msg->envc, msg->environment);
 	step->eio     = eio_handle_create(0);
@@ -667,9 +679,16 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 	FREE_NULL_LIST(step->job_gres_list);
 	FREE_NULL_LIST(step->step_gres_list);
 	xfree(step->alias_list);
-	xfree(step->container);
-	FREE_NULL_DATA(step->container_config);
-	xfree(step->container_rootfs);
+
+	if (step->container) {
+		step_container_t *c = step->container;
+		xassert(c->magic == STEP_CONTAINER_MAGIC);
+		xfree(c->bundle);
+		FREE_NULL_DATA(c->config);
+		xfree(c->rootfs);
+		xfree(step->container);
+	}
+
 	xfree(step->cpu_bind);
 	xfree(step->cwd);
 	xfree(step->envtp);

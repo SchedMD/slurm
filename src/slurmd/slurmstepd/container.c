@@ -118,7 +118,10 @@ static void _pattern_argv(char **buffer, char **offset, char **cmd_args)
 static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 			       int task_id, char **cmd_args)
 {
+	step_container_t *c = step->container;
 	char *buffer = NULL, *offset = NULL;
+
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
 	if (!pattern)
 		return NULL;
@@ -153,8 +156,7 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 					     step->task[task_id]->pid);
 				break;
 			case 'r':
-				xstrfmtcatat(buffer, &offset, "%s",
-					     step->container_rootfs);
+				xstrfmtcatat(buffer, &offset, "%s", c->rootfs);
 				break;
 			case 's':
 				xstrfmtcatat(buffer, &offset, "%u",
@@ -204,11 +206,13 @@ static int _mkpath(const char *path, uid_t uid, gid_t gid)
 
 static int _load_config(stepd_step_rec_t *step)
 {
+	step_container_t *c = step->container;
 	int rc;
 	buf_t *buffer = NULL;
 	char *path = _get_config_path(step);
 
-	xassert(!step->container_config);
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
+	xassert(!c->config);
 	xassert(path);
 
 	errno = SLURM_SUCCESS;
@@ -218,7 +222,7 @@ static int _load_config(stepd_step_rec_t *step)
 		goto cleanup;
 	}
 
-	if ((rc = serialize_g_string_to_data(&step->container_config, get_buf_data(buffer),
+	if ((rc = serialize_g_string_to_data(&c->config, get_buf_data(buffer),
 					     remaining_buf(buffer),
 					     MIME_TYPE_JSON))) {
 		error("%s: unable to parse %s: %s",
@@ -294,19 +298,21 @@ static bool _match_env(const data_t *data, void *needle)
 
 static int _modify_config(stepd_step_rec_t *step)
 {
+	step_container_t *c = step->container;
 	int rc = SLURM_SUCCESS;
 	data_t *mnts, *env;
-	data_t *config = step->container_config;
+
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
 	/* Disable terminal to ensure stdin/err/out are used */
-	data_set_bool(data_define_dict_path(config, "/process/terminal/"),
+	data_set_bool(data_define_dict_path(c->config, "/process/terminal/"),
 		      false);
 
 	/* point to correct rootfs */
-	data_set_string(data_define_dict_path(config, "/root/path/"),
-			step->container_rootfs);
+	data_set_string(data_define_dict_path(c->config, "/root/path/"),
+			c->rootfs);
 
-	mnts = data_define_dict_path(config, "/mounts/");
+	mnts = data_define_dict_path(c->config, "/mounts/");
 	if (data_get_type(mnts) != DATA_TYPE_LIST)
 		data_set_list(mnts);
 
@@ -376,7 +382,7 @@ static int _modify_config(stepd_step_rec_t *step)
 	}
 
 	if (oci_conf->disable_hooks) {
-		data_t *hooks = data_resolve_dict_path(config, "/hooks/");
+		data_t *hooks = data_resolve_dict_path(c->config, "/hooks/");
 
 		for (int i = 0; oci_conf->disable_hooks[i]; i++) {
 			data_t *hook = data_key_get(hooks,
@@ -406,7 +412,7 @@ static int _modify_config(stepd_step_rec_t *step)
 	}
 
 	/* overwrite environ with the final step->env contents */
-	env = data_set_list(data_define_dict_path(config, "/process/env/"));
+	env = data_set_list(data_define_dict_path(c->config, "/process/env/"));
 	for (char **ptr = step->env; *ptr; ptr++) {
 		data_t *entry;
 		char *name = xstrdup(*ptr);
@@ -427,29 +433,31 @@ static int _modify_config(stepd_step_rec_t *step)
 
 static int _generate_bundle_path(stepd_step_rec_t *step)
 {
+	step_container_t *c = step->container;
 	int rc = SLURM_SUCCESS;
 	char *path = NULL;
 
-	if (step->container_config) {
-		if ((rc = data_retrieve_dict_path_string(
-			     step->container_config, "/root/path/",
-			     &step->container_rootfs))) {
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
+
+	if (c->config) {
+		if ((rc = data_retrieve_dict_path_string(c->config,
+							 "/root/path/",
+							 &c->rootfs))) {
 			debug("%s: unable to find /root/path/", __func__);
 			return rc;
 		}
 
-		if (step->container_rootfs[0] != '/') {
+		if (c->rootfs[0] != '/') {
 			/* always provide absolute path */
 			char *t = NULL;
 
-			xstrfmtcat(t, "%s/%s", step->container,
-				   step->container_rootfs);
-			SWAP(step->container_rootfs, t);
+			xstrfmtcat(t, "%s/%s", c->bundle, c->rootfs);
+			SWAP(c->rootfs, t);
 			xfree(t);
 		}
 	} else {
 		/* default to bundle path without config.json */
-		step->container_rootfs = xstrdup(step->container);
+		c->rootfs = xstrdup(c->bundle);
 	}
 
 	/* write new config.json in spool dir or requested pattern */
@@ -476,13 +484,16 @@ static int _generate_bundle_path(stepd_step_rec_t *step)
 
 static char *_get_config_path(stepd_step_rec_t *step)
 {
+	step_container_t *c = step->container;
 	char *path = NULL;
 
 	if (!step->container)
 		return NULL;
 
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
+
 	/* OCI runtime spec reqires config.json to be in root of bundle */
-	xstrfmtcat(path, "%s/config.json", step->container);
+	xstrfmtcat(path, "%s/config.json", c->bundle);
 
 	return path;
 }
@@ -510,8 +521,10 @@ static data_for_each_cmd_t _foreach_config_env(const data_t *data, void *arg)
 
 static int _merge_step_config_env(stepd_step_rec_t *step)
 {
-	data_t *env = data_resolve_dict_path(step->container_config,
-					     "/process/env/");
+	step_container_t *c = step->container;
+	data_t *env = data_resolve_dict_path(c->config, "/process/env/");
+
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
 	if (!env)
 		return SLURM_SUCCESS;
@@ -526,7 +539,10 @@ static int _merge_step_config_env(stepd_step_rec_t *step)
 
 extern int setup_container(stepd_step_rec_t *step)
 {
+	step_container_t *c = step->container;
 	int rc;
+
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
 	if ((rc = get_oci_conf(&oci_conf)) && (rc != ENOENT)) {
 		error("%s: error loading oci.conf: %s",
@@ -536,7 +552,7 @@ extern int setup_container(stepd_step_rec_t *step)
 
 	if (!oci_conf) {
 		debug("%s: OCI Container not configured. Ignoring %pS requested container: %s",
-		      __func__, step, step->container);
+		      __func__, step, c->bundle);
 		return ESLURM_CONTAINER_NOT_CONFIGURED;
 	}
 
@@ -801,7 +817,10 @@ static void _create_start(stepd_step_rec_t *step,
 
 static void _generate_args(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 {
+	step_container_t *c = step->container;
 	char *gen;
+
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
 	gen = _generate_pattern(oci_conf->runtime_create, step,
 				task->id, task->argv);
@@ -834,10 +853,9 @@ static void _generate_args(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 	if (gen)
 		start_argv[2] = gen;
 
-	if (step->container_config) {
-		data_t *args = data_define_dict_path(step->container_config,
-							    "/process/args/");
-
+	if (c->config) {
+		data_t *args = data_define_dict_path(c->config,
+						     "/process/args/");
 		data_set_list(args);
 
 		/* move args to the config.json for runtime to handle */
@@ -868,11 +886,14 @@ static void _generate_args(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 extern void container_run(stepd_step_rec_t *step,
 			  stepd_step_task_info_t *task)
 {
+	step_container_t *c = step->container;
 	int rc;
+
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
 	if (!oci_conf) {
 		debug("%s: OCI Container not configured. Ignoring %pS requested container: %s",
-		      __func__, step, step->container);
+		      __func__, step, c->bundle);
 		return;
 	}
 
@@ -885,7 +906,7 @@ extern void container_run(stepd_step_rec_t *step,
 		step->env = env;
 	}
 
-	if (step->container_config) {
+	if (c->config) {
 		int rc;
 		char *out = NULL;
 		char *jconfig = _get_config_path(step);
@@ -894,13 +915,14 @@ extern void container_run(stepd_step_rec_t *step,
 			fatal("%s: configuring container failed: %s",
 			      __func__, slurm_strerror(rc));
 
-		if ((rc = data_g_serialize(&out, step->container_config,
-					   MIME_TYPE_JSON, SER_FLAGS_PRETTY))) {
+		if ((rc = serialize_g_data_to_string(&out, NULL, c->config,
+						     MIME_TYPE_JSON,
+						     SER_FLAGS_PRETTY))) {
 			fatal("%s: serialization of config failed: %s",
 			      __func__, slurm_strerror(rc));
 		}
 
-		FREE_NULL_DATA(step->container_config);
+		FREE_NULL_DATA(c->config);
 
 		if ((rc = _write_config(step, jconfig, out)))
 			fatal("%s: unable to write %s: %s",
@@ -955,10 +977,13 @@ extern void container_run(stepd_step_rec_t *step,
 
 extern void cleanup_container(stepd_step_rec_t *step)
 {
+	step_container_t *c = step->container;
+
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
 	if (!oci_conf) {
 		debug("%s: OCI Container not configured. Ignoring %pS requested container: %s",
-		      __func__, step, step->container);
+		      __func__, step, c->bundle);
 		return;
 	}
 

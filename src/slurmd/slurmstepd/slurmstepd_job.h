@@ -61,6 +61,8 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/io_hdr.h"
 #include "src/common/stepd_api.h"
 
+#define STEP_CONTAINER_MAGIC 0xa0b9b2ba
+
 typedef struct {
 	char *data;
 	uint32_t len;
@@ -129,10 +131,15 @@ typedef struct {		/* MPMD specifications, needed for Cray */
 } mpmd_set_t;
 
 typedef struct {
+	int magic;
+	char *bundle; /* OCI Container Bundle path	*/
+	data_t *config; /* OCI Container config.json contents */
+	char *rootfs; /* path to container rootfs */
+} step_container_t;
+
+typedef struct {
 	char *alias_list; /* node name to address aliases */
-	char *container;		/* OCI Container Bundle path	*/
-	data_t *container_config; /* OCI Container config.json contents */
-	char *container_rootfs;		/* path to container rootfs */
+	step_container_t *container; /* populated if step is a container */
 	slurmstepd_state_t state;	/* Job state			*/
 	pthread_cond_t state_cond;	/* Job state conditional	*/
 	pthread_mutex_t state_mutex;	/* Job state mutex		*/
