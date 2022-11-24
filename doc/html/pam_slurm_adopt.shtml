@@ -15,7 +15,7 @@ originated the ssh connection. The user's connection is "adopted" into the
 
 <h3 id="source">Source:<a class="slurm_link" href="#source"></a></h3>
 
-<p>In your Slurm build directory, navigate to slurm/contribs/pam_slurm_adopt/
+<p>In your Slurm source directory, navigate to ./contribs/pam_slurm_adopt/
 and run</p>
 
 <pre>make &amp;&amp; make install</pre>
@@ -502,6 +502,6 @@ break process adoption with pam_slurm_adopt.</p>
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 13 September 2022</p>
+<p style="text-align:center;">Last modified 29 November 2022</p>
 
 <!--#include virtual="footer.txt"-->
