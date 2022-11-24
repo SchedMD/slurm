@@ -2050,7 +2050,9 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		use_all_cores = false;
 
 		if (step_ptr->cpus_per_task > 0) {
-			if (step_ptr->cpus_per_task > cpus_per_core) {
+			if (((ntasks_per_core == INFINITE16) ||
+			     (ntasks_per_core == 1)) &&
+			    (step_ptr->cpus_per_task > cpus_per_core)) {
 				int cores_per_task = step_ptr->cpus_per_task;
 				cores_per_task += (cpus_per_core - 1);
 				cores_per_task /= cpus_per_core;
