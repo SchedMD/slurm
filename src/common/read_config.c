@@ -3510,7 +3510,7 @@ extern int set_nodes_alias(const char *alias_list)
 	return rc;
 }
 
-extern void read_conf_send_stepd(int fd)
+extern int read_conf_send_stepd(int fd)
 {
 	int len;
 
@@ -3520,8 +3520,11 @@ extern void read_conf_send_stepd(int fd)
 	len = get_buf_offset(conf_buf);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(conf_buf), len);
-rwfail:
 
+	return SLURM_SUCCESS;
+rwfail:
+	error("%s: failed", __func__);
+	return SLURM_ERROR;
 }
 
 extern void read_conf_recv_stepd(int fd)

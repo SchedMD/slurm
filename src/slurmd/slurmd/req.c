@@ -479,7 +479,8 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		goto rwfail;
 
 	/* send conf_hashtbl */
-	read_conf_send_stepd(fd);
+	if (read_conf_send_stepd(fd))
+		goto rwfail;
 
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
