@@ -768,7 +768,6 @@ int main(void)
 		debug("fake slurm.conf created: %s", slurm_unit_conf_filename);
 
 	char slurm_unit_conf_content[] = "ClusterName=slurm_unit\n"
-					 "PluginDir=.\n"
 					 "SlurmctldHost=slurm_unit\n";
 	size_t csize = sizeof(slurm_unit_conf_content);
 	ssize_t rc = write(fd, slurm_unit_conf_content, csize);
